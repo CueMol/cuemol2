@@ -6,10 +6,18 @@
  * while a modal is up); the 1 -> 0 transition re-enables it. Mirrors the UXP
  * behaviour where XUL modal dialogs implicitly suppress parent-window menu
  * accelerators.
+ *
+ * The block deliberately spares the text-edit items (see `TEXT_EDIT_MENU_IDS`
+ * in `main/menuBlock.ts`): on macOS the menu owns the Cmd+X/C/V/A/Z key
+ * equivalents, so disabling them would leave a dialog's text fields with no
+ * way to paste at all. The same edges therefore also tell the renderer-side
+ * clipboard router that a modal is up, so those keystrokes stay confined to
+ * the focused field instead of reaching a panel behind the dialog.
  */
 
 import React, { createContext, useCallback, useContext, useRef } from 'react'
 import { IPC } from '../../shared/ipcChannels'
+import { setClipboardModalOpen } from '../utils/editClipboard'
 
 interface ModalOpenCounter {
   inc: () => void
@@ -25,6 +33,7 @@ export const ModalOpenCounterProvider: React.FC<{ children: React.ReactNode }> =
   const countRef = useRef(0)
 
   const notify = useCallback((blocked: boolean) => {
+    setClipboardModalOpen(blocked)
     const api = window.electronAPI
     if (!api) return
     api.invoke(IPC.MENU_SET_MODAL_BLOCKED, blocked).catch((err: unknown) => {

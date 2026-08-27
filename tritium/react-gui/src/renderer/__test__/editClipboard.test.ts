@@ -10,7 +10,9 @@
  *     (the menu takes DOM focus, which is why the "last scope" memory
  *     exists at all);
  *   - undo/redo report back whether they were handled, so the caller knows
- *     when to fall through to the scene-level undo.
+ *     when to fall through to the scene-level undo;
+ *   - while a modal dialog is open the keystroke stays in the dialog: it
+ *     never reaches a panel behind it, and Cmd+Z never rewinds the scene.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { IPC } from '../../shared/ipcChannels'
@@ -21,6 +23,7 @@ import {
   installClipboardScopeTracking,
   isEditableFocused,
   registerClipboardScope,
+  setClipboardModalOpen,
 } from '../utils/editClipboard'
 import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 
@@ -207,5 +210,44 @@ describe('dispatchEditUndoRedo', () => {
     expect(dispatchEditUndoRedo('undo')).toBe(false)
     expect(dispatchEditUndoRedo('redo')).toBe(false)
     expect(nativeCalls()).toEqual([])
+  })
+})
+
+// A modal owns the keystroke. Without this the "last scope" memory (which
+// survives a menu click by design) would let Cmd+V inside a dialog paste into
+// the panel the user was in before opening it.
+describe('editClipboard -- while a modal dialog is open', () => {
+  it('routes clipboard actions to the native edit, not the last scope', () => {
+    const scope = makeScope()
+    _resetClipboardScopesForTest()
+    registerClipboardScope('scene-tree', scope)
+    pointerDown(mountScope('scene-tree'))
+    setClipboardModalOpen(true)
+
+    dispatchEditClipboard('paste')
+
+    expect(scope.paste).not.toHaveBeenCalled()
+    expect(api.invoke).toHaveBeenCalledWith(IPC.TEXT_CTX_ACTION, 'paste')
+  })
+
+  it('reports undo/redo as handled so the scene undo never runs', () => {
+    setClipboardModalOpen(true)
+    // No text field focused: outside a modal this would fall through (false).
+    expect(dispatchEditUndoRedo('undo')).toBe(true)
+    expect(api.invoke).toHaveBeenCalledWith(IPC.TEXT_CTX_ACTION, 'undo')
+  })
+
+  it('restores normal panel routing once the modal closes', () => {
+    const scope = makeScope()
+    _resetClipboardScopesForTest()
+    registerClipboardScope('scene-tree', scope)
+    pointerDown(mountScope('scene-tree'))
+
+    setClipboardModalOpen(true)
+    setClipboardModalOpen(false)
+    dispatchEditClipboard('paste')
+
+    expect(scope.paste).toHaveBeenCalledTimes(1)
+    expect(dispatchEditUndoRedo('undo')).toBe(false)
   })
 })

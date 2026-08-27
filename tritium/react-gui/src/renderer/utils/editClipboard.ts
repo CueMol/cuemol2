@@ -25,6 +25,14 @@
  *
  * Register a panel with `useClipboardScope` and tag its container with the
  * matching `data-clipboard-scope` attribute.
+ *
+ * While a modal dialog is open the routing collapses to step 1: a modal owns
+ * the keystroke, so Cmd+X/C/V must edit the text field the user is in and
+ * must never reach a panel behind the dialog (the last-scope memory of step 3
+ * would otherwise let a stray Cmd+V paste into the scene tree). Undo / Redo
+ * collapse the same way -- inside a modal they are the field's undo, never
+ * the scene's. `ModalOpenCounterProvider` drives this via
+ * `setClipboardModalOpen`.
  */
 
 import { IPC } from '../../shared/ipcChannels'
@@ -44,6 +52,19 @@ const scopes = new Map<string, ClipboardScopeHandlers>()
 /** Id of the scope the user last interacted with; see the file header. */
 let lastScopeId: string | null = null
 
+/** Whether a modal dialog is open; see the file header. */
+let modalOpen = false
+
+/**
+ * Tell the router whether a modal dialog is up. Called from
+ * `ModalOpenCounterProvider` on the 0 <-> 1 edges.
+ *
+ * @param open - true while at least one modal is open.
+ */
+export function setClipboardModalOpen(open: boolean): void {
+  modalOpen = open
+}
+
 /**
  * Register a panel's clipboard handlers under `id`.
  * @returns an unregister function.
@@ -59,10 +80,11 @@ export function registerClipboardScope(
   }
 }
 
-/** Test seam: forget every registration and the last-scope memory. */
+/** Test seam: forget every registration, the last-scope memory and the modal flag. */
 export function _resetClipboardScopesForTest(): void {
   scopes.clear()
   lastScopeId = null
+  modalOpen = false
 }
 
 /** Test seam: the handlers registered under `id`, if any. */
@@ -155,6 +177,11 @@ export function dispatchEditClipboard(action: ClipboardAction): void {
     runNativeEdit(action)
     return
   }
+  // A modal owns the keystroke: never let a panel behind the dialog answer.
+  if (modalOpen) {
+    runNativeEdit(action)
+    return
+  }
   const scope = resolveScope()
   const handler = scope?.[action]
   if (handler) {
@@ -170,10 +197,13 @@ export function dispatchEditClipboard(action: ClipboardAction): void {
  * Route Undo / Redo.
  *
  * @returns true when the action was handled natively (focus is in a text
- *   field), false when the caller should run the scene-level undo instead.
+ *   field, or a modal is open), false when the caller should run the
+ *   scene-level undo instead.
  */
 export function dispatchEditUndoRedo(action: 'undo' | 'redo'): boolean {
-  if (!isEditableFocused()) return false
+  // Inside a modal, Cmd+Z is the field's undo -- rewinding the scene behind a
+  // dialog the user is still filling in would be a surprise they cannot see.
+  if (!isEditableFocused() && !modalOpen) return false
   runNativeEdit(action)
   return true
 }

@@ -133,7 +133,9 @@ function installEnabledMenu(): FakeMenu {
     Object.assign(new FakeMenuItem('view-perspective'), { enabled: true }),
     Object.assign(new FakeMenuItem('view-orthographic'), { enabled: true }),
     new FakeMenuItem('sep', 'separator'),
+    // Text-edit items: spared by a block so dialogs can still edit text.
     Object.assign(new FakeMenuItem('undo'), { enabled: true }),
+    Object.assign(new FakeMenuItem('paste'), { enabled: true }),
   ])
   setApplicationMenu(menu as unknown as never)
   return menu
@@ -157,7 +159,6 @@ describe('menu block machinery (main side)', () => {
     // 0 -> 1: disable all and snapshot
     setMenuBlocked('blueprint', true)
     expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(false)
-    expect(menu.getMenuItemById('undo')!.enabled).toBe(false)
 
     // 1 -> 2: same reason again; still blocked, idempotent on the items
     setMenuBlocked('blueprint', true)
@@ -166,12 +167,24 @@ describe('menu block machinery (main side)', () => {
     // 2 -> 1: still blocked; items NOT yet restored
     setMenuBlocked('blueprint', false)
     expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(false)
-    expect(menu.getMenuItemById('undo')!.enabled).toBe(false)
 
     // 1 -> 0: last decrement restores the snapshotted enabled values
     setMenuBlocked('blueprint', false)
     expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(true)
     expect(menu.getMenuItemById('view-orthographic')!.enabled).toBe(true)
+  })
+
+  // On macOS the application menu owns Cmd+X/C/V/A/Z, so blocking these would
+  // leave a modal dialog's text fields unable to paste at all.
+  it('(a) text-edit items stay enabled through a block', () => {
+    const menu = installEnabledMenu()
+
+    setMenuBlocked('blueprint', true)
+    expect(menu.getMenuItemById('paste')!.enabled).toBe(true)
+    expect(menu.getMenuItemById('undo')!.enabled).toBe(true)
+    // ... and are not touched on the way out either.
+    setMenuBlocked('blueprint', false)
+    expect(menu.getMenuItemById('paste')!.enabled).toBe(true)
     expect(menu.getMenuItemById('undo')!.enabled).toBe(true)
   })
 
@@ -218,13 +231,13 @@ describe('menu block machinery (main side)', () => {
 
     setMenuBlocked('blueprint', true)
     // While blocked, updateMenuState must not mutate the live menu.
-    updateMenuState({ undo: { enabled: true }, redo: { enabled: true } })
-    // (undo item was disabled by the block; the guard prevents re-enabling)
-    expect(menu.getMenuItemById('undo')!.enabled).toBe(false)
+    updateMenuState({ viewProjection: { enabled: true, perspective: true } })
+    // (the item was disabled by the block; the guard prevents re-enabling)
+    expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(false)
 
     setMenuBlocked('blueprint', false)
     // After unblock the renderer re-emits; updateMenuState now applies.
-    updateMenuState({ undo: { enabled: true } })
-    expect(menu.getMenuItemById('undo')!.enabled).toBe(true)
+    updateMenuState({ viewProjection: { enabled: true, perspective: true } })
+    expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(true)
   })
 })
