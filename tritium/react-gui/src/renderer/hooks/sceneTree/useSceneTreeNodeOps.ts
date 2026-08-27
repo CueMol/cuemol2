@@ -335,6 +335,18 @@ export function useSceneTreeNodeOps(
         [cm, sceneIdRef],
     )
 
+    /**
+     * Map selected row ids to bulk-service items.
+     *
+     * Rows a bulk op cannot act on (camera / style / the synthesised roots)
+     * are dropped, matching the worker's own `isOperable` filter.
+     *
+     * A selected group already carries its members in `childIds`, so a member
+     * selected alongside its group would be visited twice -- harmless for
+     * Show/Hide but a delete of an already-freed uid the second time. Drop any
+     * row that a selected `rendGroup` ancestor will handle, so each node is
+     * touched exactly once.
+     */
     const resolveBulkItems = useCallback(
         (ids: Iterable<string>): {
             nodeId: number
@@ -346,12 +358,24 @@ export function useSceneTreeNodeOps(
                 nodeType: SceneNodeType
                 childIds?: number[]
             }[] = []
-            for (const idStr of ids) {
+            const idList = [...ids]
+            // uids covered by a selected group, collected before the walk so
+            // the group may appear after its members in the selection order.
+            const coveredByGroup = new Set<number>()
+            for (const idStr of idList) {
+                const found = findTypedNode(tree, idStr, 'rendGroup')
+                if (!found) continue
+                for (const c of found.node.children) {
+                    if (c.id >= 0) coveredByGroup.add(c.id)
+                }
+            }
+            for (const idStr of idList) {
                 const found = findTypedNode(
                     tree, idStr, 'object', 'renderer', 'rendGroup',
                 )
                 if (!found) continue
                 const { numId, node } = found
+                if (coveredByGroup.has(numId)) continue
                 const childIds = node.type === 'rendGroup'
                     ? node.children.map((c) => c.id).filter((n) => n >= 0)
                     : undefined

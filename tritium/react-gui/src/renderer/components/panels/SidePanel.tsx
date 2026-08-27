@@ -141,6 +141,12 @@ interface SidePanelProps {
   onSceneSelect: (id: string) => void;
   /** Cmd/Ctrl+click toggle handler for multi-select. */
   onSceneToggleSelect?: (id: string) => void;
+  /** Shift+click range handler; `visibleIds` is the drawn row order. */
+  onSceneSelectRange?: (
+    id: string,
+    visibleIds: string[],
+    additive?: boolean,
+  ) => void;
   onToggleVisibility: (id: string) => void;
 
   /** Called when the user clicks the Property button in ScenePane. */
@@ -221,6 +227,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   sceneSelectedIds,
   onSceneSelect,
   onSceneToggleSelect,
+  onSceneSelectRange,
   onToggleVisibility,
   onShowProperty,
   onFocusSelected,
@@ -281,6 +288,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             selectedIds={sceneSelectedIds}
             onSelect={onSceneSelect}
             onToggleSelect={onSceneToggleSelect}
+            onSelectRange={onSceneSelectRange}
             onToggleVisibility={onToggleVisibility}
             onShowProperty={onShowProperty}
             onFocusSelected={onFocusSelected}
@@ -426,7 +434,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     viewProjection, viewCenterMark,
     onSetPerspective, onSetCenterMark,
     sceneTree, sceneSelected, sceneSelectedIds,
-    onSceneSelect, onSceneToggleSelect,
+    onSceneSelect, onSceneToggleSelect, onSceneSelectRange,
     onToggleVisibility, onShowProperty,
     onFocusSelected, onDeleteSelected, onAddSelected, sceneOpsEnabled,
     onShowSceneContextMenu, onMoveSceneNode, onSceneNodeExpandChange,

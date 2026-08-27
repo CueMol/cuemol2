@@ -90,13 +90,28 @@ export function useSceneTreeController({
     [activeMolViewId, focusNode],
   );
 
+  /**
+   * Delete from the toolbar button / Delete key.
+   *
+   * Deletes the whole multi-selection under a single undo transaction when
+   * more than one row is selected -- UXP's `onDeleteCmd` drove the same
+   * button through the same multi loop, and `useSceneTree` deliberately
+   * leaves `delete` enabled while multi-selected. Falls back to the
+   * single-node path (which also covers cameras and styles) otherwise.
+   */
   const handleDelete = useCallback(
     (id: string) => {
+      if (selectedIds.size > 1) {
+        bulkDeleteNodes(new Set(selectedIds)).catch((err: unknown) => {
+          console.warn("bulkDeleteSceneNodes failed:", err);
+        });
+        return;
+      }
       deleteNode(id).catch((err: unknown) => {
         console.warn("deleteSceneNode failed:", err);
       });
     },
-    [deleteNode],
+    [deleteNode, bulkDeleteNodes, selectedIds],
   );
 
   // Inline-rename commit: camera rows go through renameCamera (cameras have

@@ -375,6 +375,15 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     // fires while the user is focused inside the scene tree.
     const handleTreeKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLDivElement>) => {
+            // Delete / Backspace removes the selection. `onDeleteSelected`
+            // is the same handler the toolbar button uses, so it deletes the
+            // whole multi-selection under one undo transaction.
+            if (e.key === "Delete" || e.key === "Backspace") {
+                if (!onDeleteSelected || !canDelete) return;
+                e.preventDefault();
+                onDeleteSelected(selectedId);
+                return;
+            }
             if (e.key !== "F2") return;
             if (!beginRenameRef.current) return;
             if (!selectedId) return;
@@ -384,7 +393,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             e.preventDefault();
             beginRenameRef.current(selectedId);
         },
-        [selectedId, nodeLookup, isRenameableType],
+        [selectedId, nodeLookup, isRenameableType, onDeleteSelected, canDelete],
     );
 
     // Auto-focus + select the inline input each time the editor opens.
