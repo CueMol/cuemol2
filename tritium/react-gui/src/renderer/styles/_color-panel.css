@@ -30,8 +30,13 @@
   background: var(--bg-input);
 }
 
+/* Fixed layout so the <colgroup> widths are authoritative. With `auto` the
+   px width is only a hint: a cell whose min-content is wider (the colour
+   swatch + its select) pushes the table past 100%, and the wrapper's
+   `overflow-x: hidden` then clips the selected row's outline. */
 .color-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--fs-lg);
 }
@@ -55,26 +60,89 @@
 }
 
 .color-th-selection {
-  width: 45%;
+  /* Width comes from the <colgroup>, which useColumnResize drives; the
+     header only needs to host the drag handle. */
+  position: relative;
 }
 
-.color-th-color {
-  width: 55%;
+.color-th-label {
+  pointer-events: none;
+}
+
+/* Drag handle splitting Selection from Color -- the tritium home of UXP's
+   `<splitter class="tree-splitter"/>` between the paint treecols. A wide
+   transparent hit area straddling the 1px column rule, per the same
+   convention as the inspector's generic tab. */
+.color-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 2;
+  background: transparent;
+}
+
+.color-resize-handle:hover,
+.color-resize-handle:active {
+  background: var(--accent);
+  opacity: 0.6;
 }
 
 .color-row {
   cursor: pointer;
   transition: background 0.1s;
+  /* Rows are selected as units; their labels are not text to sweep across.
+     Editable controls inside keep their own selection (`user-select: auto`
+     resolves to `contain` on editable elements), so typing into the
+     Selection cell is unaffected. */
+  user-select: none;
 }
 
-.color-row:hover {
-  outline: 1px solid var(--border);
-  outline-offset: -1px;
+/* Hover / selection ring.
+   Painted by a positioned overlay on each cell, above the cell's content.
+   Two earlier attempts failed on the Selection cell: an `outline` on the
+   <tr>, and inset box-shadows on the <td>. Both draw in the row / cell
+   background phase, and the Selection cell strips its padding so the
+   MolSelList InputGroup (a positioned element, painted later) sits flush
+   with the cell edge and covered the ring's left segment. An overlay with
+   its own z-index paints after the input, so every segment survives no
+   matter what the cell holds or how tightly it is packed. The overlay has
+   no pointer events and adds no height, so a selected row neither blocks
+   clicks nor shifts its neighbours. */
+.color-row > td {
+  --color-row-ring: transparent;
+  position: relative;
+  /* Own stacking context, so the overlay's z-index is scoped to the cell
+     and cannot rise above the sticky header (z-index 1) while scrolling. */
+  z-index: 0;
 }
 
-.color-row.selected {
-  outline: 1px solid var(--accent);
-  outline-offset: -1px;
+.color-row > td::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  border-top: 1px solid var(--color-row-ring);
+  border-bottom: 1px solid var(--color-row-ring);
+}
+
+.color-row > td:first-child::after {
+  border-left: 1px solid var(--color-row-ring);
+}
+
+.color-row > td:last-child::after {
+  border-right: 1px solid var(--color-row-ring);
+}
+
+.color-row:hover > td {
+  --color-row-ring: var(--border);
+}
+
+.color-row.selected > td {
+  --color-row-ring: var(--accent);
 }
 
 .color-cell-selection {
@@ -95,13 +163,14 @@
 }
 
 /* Bottom action buttons */
-/* Two groups (list edits, then the clipboard trio); wraps to a second
-   line rather than overflowing when the panel is dragged narrow. */
+/* One group of list edits (Add / Remove / Move up / Move down). Cut, Copy,
+   Paste and Delete all live in the row context menu, so the row stays on a
+   single line at every panel width and never wraps. */
 .color-actions {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-2);
   padding-top: var(--space-1);
   border-top: 1px solid var(--border-subtle);

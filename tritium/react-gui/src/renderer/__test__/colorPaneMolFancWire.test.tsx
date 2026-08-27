@@ -47,6 +47,7 @@ vi.mock('../components/panes/PaintSelCell', () => ({
 }))
 
 import { ColorPane } from '../components/panes/ColorPane'
+import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 const SCENE_ID = 7
@@ -127,7 +128,11 @@ function makeCm(coloringState: Record<string, unknown>): MockCm {
 
 async function mountWith(coloringState: Record<string, unknown>) {
     const cm = makeCm(coloringState)
-    const handle = mountTree(<ColorPane cm={cm as never} sceneId={SCENE_ID} />)
+    const handle = mountTree(
+        <ContextMenuProvider>
+            <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+        </ContextMenuProvider>,
+    )
     await flushPromises()
     return { cm, ...handle }
 }
