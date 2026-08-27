@@ -15,6 +15,7 @@
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
 #include <cmath>
+#include <string>
 #include <vector>
 #include "xtal/DensityMap.hpp"
 #include "xtal/MapMeshRenderer.hpp"
@@ -190,11 +191,20 @@ TEST_F(MapMeshViewRegionTest, BoxModeIgnoresViewUpdates)
 
 // The level-of-detail properties live on MapRenderer, so every map
 // renderer exposes them; the contour keeps its smaller default budget.
+// gpu_mapmesh is only registered in OpenGL-enabled builds, so the map's
+// own list of compatible renderers decides which types are checked.
 TEST_F(MapMeshViewRegionTest, LodPropertiesOnAllMapRenderers)
 {
+    const std::string compat =
+        "," + std::string(m_pObj->searchCompatibleRendererNames().c_str()) + ",";
     const char *types[3] = {"contour", "isosurf", "gpu_mapmesh"};
     const int budgets[3] = {2, 16, 16};
     for (int i = 0; i < 3; ++i) {
+        if (compat.find("," + std::string(types[i]) + ",") == std::string::npos) {
+            // only the GL-only renderer may be absent from a build
+            EXPECT_STREQ(types[i], "gpu_mapmesh");
+            continue;
+        }
         qsys::RendererPtr pRend = (i == 0) ? m_pRend : m_pObj->createRenderer(types[i]);
         ASSERT_FALSE(pRend.isnull()) << types[i];
         EXPECT_TRUE(pRend->hasProperty("lod")) << types[i];
