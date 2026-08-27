@@ -54,6 +54,7 @@ import {
   SCENE_AA_QUALITY_AXIS,
   sceneStepOf,
 } from '../data/sceneQualityPresets'
+import { RENDER_QUALITY_CUSTOM } from '../data/renderSettings'
 import { getRendererPropSections } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
 
@@ -204,6 +205,30 @@ describe('Scene quality presets', () => {
     expect(sceneStepOf(SCENE_AO_PRESET_AXIS, read(entries))).toBe('low')
   })
 
+  // The costlier AO rungs take the adaptive half-resolution path so tumbling
+  // stays responsive; Low stays full-res (and must, to match the C++ default).
+  it('AO presets drive aoHalfRes: off on Low, on from Medium up', () => {
+    const halfResOf = (id: string) =>
+      SCENE_AO_PRESET_AXIS.steps.find((s) => s.id === id)?.patch.aoHalfRes
+    expect(halfResOf('low')).toBe(false)
+    expect(halfResOf('medium')).toBe(true)
+    expect(halfResOf('high')).toBe(true)
+  })
+
+  it('a scene with Medium values but half-res off reads Custom', () => {
+    const entries = fullEntries().map((e) => {
+      if (e.key === 'aoRadius') return entry({ key: 'aoRadius', type: 'real', value: 8 })
+      if (e.key === 'aoSteps') return entry({ key: 'aoSteps', type: 'integer', value: 4 })
+      if (e.key === 'aoIntensity') return entry({ key: 'aoIntensity', type: 'real', value: 1.9 })
+      return e
+    })
+    expect(sceneStepOf(SCENE_AO_PRESET_AXIS, read(entries))).toBe(RENDER_QUALITY_CUSTOM)
+    const withHalfRes = entries.map((e) =>
+      e.key === 'aoHalfRes' ? entry({ key: 'aoHalfRes', type: 'boolean', value: true }) : e,
+    )
+    expect(sceneStepOf(SCENE_AO_PRESET_AXIS, read(withHalfRes))).toBe('medium')
+  })
+
   it('editing a prop outside the patch (aoSlices) keeps the AO preset step', () => {
     const entries = fullEntries().map((e) =>
       e.key === 'aoSlices' ? entry({ key: 'aoSlices', type: 'integer', value: 12 }) : e,
@@ -236,6 +261,7 @@ describe('Scene quality presets', () => {
       { key: 'aoRadius', valueType: 'real', value: 8 },
       { key: 'aoSteps', valueType: 'integer', value: 4 },
       { key: 'aoIntensity', valueType: 'real', value: 1.9 },
+      { key: 'aoHalfRes', valueType: 'boolean', value: true },
     ])
     expect(onSet).not.toHaveBeenCalled()
     unmount()

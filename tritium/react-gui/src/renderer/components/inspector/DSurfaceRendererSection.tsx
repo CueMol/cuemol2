@@ -22,13 +22,14 @@
  * property is absent (mirroring the UXP `findPropData` null checks).
  *
  * Per request: drag-numeric rows commit on drag end / Enter (no realtime
- * preview), and "Detail" uses the plain inline stepper, not a slider.
+ * preview), and "Detail" -- the surface tessellation density, the knob users
+ * sweep to trade smoothness against build time -- is a slider.
  */
 
 import React from "react";
 import {
   NumRow,
-  NumInputRow,
+  SliderRow,
   MappedEnumRow,
 } from "./RendererCommonSection";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
@@ -51,7 +52,7 @@ const SURFTYPE_LABELS: Record<string, string> = {
  * "Surface" section: the UXP MolSurf "Draw" groupbox. Drawing mode, line / point
  * size, surface type and tessellation detail, in the UXP row order. The size row
  * is disabled while the draw mode is "fill" (a filled mesh has no line / point
- * width); "Detail" uses the plain inline stepper.
+ * width); "Detail" is a slider so the density range can be swept.
  */
 export const DSurfaceMainSection: React.FC<RendererPropSectionProps> = ({
   entries,
@@ -102,8 +103,7 @@ export const DSurfaceMainSection: React.FC<RendererPropSectionProps> = ({
         />
       )}
       {detail && (
-        <NumInputRow
-          key={`detail:${detail.value}`}
+        <SliderRow
           entry={detail}
           label="Detail"
           onSet={onSet}

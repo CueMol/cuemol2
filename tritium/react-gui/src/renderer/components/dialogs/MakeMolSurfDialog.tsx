@@ -22,7 +22,7 @@
 import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { CheckboxField, Field, FieldSection, NumericField, SelectField, SliderField, TextField } from '../../h3-kit/form'
+import { CheckboxField, Field, FieldSection, SelectField, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
@@ -173,17 +173,15 @@ export function MakeMolSurfDialog({
                             onCommit={setDensity}
                             disabled={submitting}
                         />
-                        <Field label="Probe radius (A)">
-                            <NumericField
-                                value={probeRadius}
-                                onChange={setProbeRadius}
-                                min={0.1}
-                                max={10}
-                                step={0.1}
-                                slider={false}
-                                disabled={submitting}
-                            />
-                        </Field>
+                        <SliderField
+                            label="Probe radius (A)"
+                            value={probeRadius}
+                            min={0.1}
+                            max={10}
+                            step={0.1}
+                            onCommit={setProbeRadius}
+                            disabled={submitting}
+                        />
                         <Field label="Algorithm">
                             <SelectField
                                 value={backend}

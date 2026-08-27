@@ -3,9 +3,18 @@
  * @description Modal-aware application-menu accelerator block machinery.
  *
  * When a Blueprint Dialog (or message box) is open in the renderer, or when
- * a native OS dialog is being shown from main, all application-menu items are
+ * a native OS dialog is being shown from main, application-menu items are
  * temporarily disabled so accelerators like Cmd+Q stop firing -- matching
  * UXP's XUL `openDialog(..., 'modal')` behaviour.
+ *
+ * The text-edit items are the one exception (`TEXT_EDIT_MENU_IDS`). They are
+ * declared as custom `ipcChannel` items rather than Electron roles (see
+ * `shared/menuTemplate.ts`), and on macOS the application menu owns the
+ * Cmd+X/C/V/A/Z key equivalents outright -- Chromium does not paste into a
+ * renderer input by itself. Disabling them therefore left every dialog's text
+ * field unable to cut, copy, paste, select-all or undo. They stay enabled
+ * through a block; the renderer keeps them confined to the focused field for
+ * the duration (see `contexts/ModalOpenCounterContext.tsx`).
  *
  * Multiple block sources are reference-counted via `blockReasons`. The
  * snapshot captures each item's `enabled` value at the moment we enter the
@@ -22,6 +31,19 @@
 
 import { Menu } from 'electron'
 import type { MenuItem } from 'electron'
+
+/**
+ * Menu item ids spared by a block, so text editing keeps working inside a
+ * modal dialog. Keep in sync with the ids in `shared/menuTemplate.ts`.
+ */
+export const TEXT_EDIT_MENU_IDS: ReadonlySet<string> = new Set([
+  'cut',
+  'copy',
+  'paste',
+  'select-all',
+  'undo',
+  'redo',
+])
 
 /** Distinct block sources, each ref-counted independently. */
 export type MenuBlockReason = 'blueprint' | 'native'
@@ -76,7 +98,11 @@ function totalBlockCount(): number {
   return total
 }
 
-/** Disable every menu item, snapshotting their current `enabled` values. */
+/**
+ * Disable every menu item except the text-edit ones, snapshotting the
+ * disabled items' current `enabled` values. Spared items are left untouched
+ * (and out of the snapshot), so a later `updateMenuState()` still owns them.
+ */
 export function applyBlock(): void {
   const menu = Menu.getApplicationMenu()
   if (!menu) return
@@ -84,6 +110,7 @@ export function applyBlock(): void {
   const snap = new Map<MenuItem, boolean>()
   walkMenuItems(menu, (item) => {
     if (item.type === 'separator') return
+    if (item.id && TEXT_EDIT_MENU_IDS.has(item.id)) return
     snap.set(item, item.enabled)
     item.enabled = false
   })
