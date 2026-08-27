@@ -44,13 +44,19 @@ describe('mapReaderDefaultsToFormatOptions', () => {
     it('maps CCP4 map reader props onto dialog fields', () => {
         const res = mapReaderDefaultsToFormatOptions('ccp4map', {
             normalize: false, truncate_min: false, min: 0, truncate_max: false, max: 5,
+            subsample: 1,
         })
         expect(res).toEqual({
             kind: 'ccp4map',
             options: {
                 normalize: false, truncateMinEnabled: false, truncateMin: 0,
                 truncateMaxEnabled: false, truncateMax: 5,
+                // the map kind override is dialog-only and always starts at auto
+                mapType: 'auto', subsample: 1,
             },
         })
+        // a reader without the subsample prop (older addon) seeds 1
+        const res2 = mapReaderDefaultsToFormatOptions('ccp4map', { normalize: true })
+        expect((res2 as { options: { subsample: number } }).options.subsample).toBe(1)
     })
 })

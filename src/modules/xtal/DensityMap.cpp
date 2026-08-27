@@ -9,7 +9,10 @@
 #include "QdfDenMapWriter.hpp"
 
 #include <qlib/Box3D.hpp>
+#include <qlib/parallel.hpp>
 #include <qsys/View.hpp>
+#include <algorithm>
+#include <cmath>
 
 using namespace xtal;
 using symm::CrystalInfo;
@@ -22,19 +25,21 @@ DensityMap::DensityMap()
   m_nStartCol = m_nStartRow = m_nStartSec = 0;
 
   m_dMinMap = m_dMaxMap = m_dMeanMap = m_dRmsdMap = 0.0;
-  m_pByteMap = NULL;
-  // m_pRealMap = NULL;
   m_dLevelBase = m_dLevelStep = 0.0;
+
+  m_nMapType = MAPTYPE_AUTO;
+  m_nDetectedType = MAPTYPE_XTAL;
 
 //  m_bUseMolBndry = false;
 }
 
+LString DensityMap::getMapTypeResolvedStr() const
+{
+  return (getEffectiveMapType() == MAPTYPE_EM) ? LString("em") : LString("xtal");
+}
+
 DensityMap::~DensityMap()
 {
-  if (m_pByteMap!=NULL)
-    delete m_pByteMap;
-  //if (m_pRealMap!=NULL)
-  //delete m_pRealMap;
 }
 
 ///////////////////////////////////////////////
@@ -45,7 +50,7 @@ void DensityMap::setMapFloatArray(const float *array,
 				  int ncol, int nrow, int nsect,
                                   int axcol, int axrow, int axsect)
 {
-  int ntotal = ncol*nrow*nsect;
+  const size_t ntotal = size_t(ncol)*size_t(nrow)*size_t(nsect);
   m_nCols = ncol;
   m_nRows = nrow;
   m_nSecs = nsect;
@@ -56,7 +61,7 @@ void DensityMap::setMapFloatArray(const float *array,
     rhomean=0.0, sqmean=0.0,
     rhodev=0.0;
 
-  for (int i=0; i<ntotal; i++) {
+  for (size_t i=0; i<ntotal; i++) {
     double rho = (double)array[i];
     rhomean += rho/float(ntotal);
     sqmean += rho*rho/float(ntotal);
@@ -68,11 +73,6 @@ void DensityMap::setMapFloatArray(const float *array,
 
   rhodev = sqrt(sqmean-rhomean*rhomean);
 
-  m_dMinMap = rhomin;
-  m_dMaxMap = rhomax;
-  m_dMeanMap = rhomean;
-  m_dRmsdMap = rhodev;
-
   LOG_DPRINT("DensityMap.load> calculated stats:\n");
   LOG_DPRINT("  map minimum density  : %f\n", rhomin);
   LOG_DPRINT("  map maximum density  : %f\n", rhomax);
@@ -80,35 +80,28 @@ void DensityMap::setMapFloatArray(const float *array,
   LOG_DPRINT("  map density r.m.s.d. : %f\n", rhodev);
 
   // map truncation
-  m_dLevelStep = (double)(rhomax - rhomin)/256.0;
-  m_dLevelBase = rhomin;
+  MapQuant q;
+  q.step = (double)(rhomax - rhomin)/256.0;
+  q.base = rhomin;
 
-  MB_DPRINT("truncating to 8bit map base: %f, step: %f\n",
-	    m_dLevelBase, m_dLevelStep);
-
-  if (m_pByteMap!=NULL)
-    delete [] m_pByteMap;
-
-  //
-  //
+  MB_DPRINT("truncating to 8bit map base: %f, step: %f\n", q.base, q.step);
 
   rotate(m_nCols,m_nRows,m_nSecs,axcol,axrow,axsect);
+  beginByteMap(m_nCols, m_nRows, m_nSecs, q);
 
-  m_pByteMap = new qlib::ByteMap(m_nCols,m_nRows,m_nSecs);
   for (int k=0; k<nsect; k++)
     for (int j=0; j<nrow; j++)
       for (int i=0; i<ncol; i++) {
-	double rho = (double)array[i + (j + k*nrow)*ncol];
-	//rho = floor((rho-m_dLevelBase)/m_dLevelStep);
+	double rho = (double)array[size_t(i) + (size_t(j) + size_t(k)*nrow)*ncol];
 	rho = (rho-m_dLevelBase)/m_dLevelStep;
 	if (rho<0) rho = 0.0;
 	if (rho>255) rho = 255.0;
 	int ii=i,jj=j,kk=k;
 	rotate(ii,jj,kk,axcol,axrow,axsect);
-        m_pByteMap->at(ii,jj,kk) = (unsigned char)rho;
-        // (*m_pByteMap)[ii][jj][kk] = (unsigned char)rho;
+        m_map.at(ii,jj,kk) = (quint8)rho;
       }
 
+  endByteMap(rhomin, rhomax, rhomean, rhodev);
 
   MB_DPRINTLN("OK.");
 }
@@ -120,16 +113,6 @@ void DensityMap::setMapByteArray(const unsigned char*array,
                                  int ncol, int nrow, int nsect,
                                  double rhomin, double rhomax, double mean, double sigma)
 {
-  int ntotal = ncol*nrow*nsect;
-  m_nCols = ncol;
-  m_nRows = nrow;
-  m_nSecs = nsect;
-
-  m_dMinMap = rhomin;
-  m_dMaxMap = rhomax;
-  m_dMeanMap = mean;
-  m_dRmsdMap = sigma;
-
   MB_DPRINTLN("load density map ...");
   MB_DPRINTLN("   minimum: %f", rhomin);
   MB_DPRINTLN("   maximum: %f", rhomax);
@@ -137,21 +120,175 @@ void DensityMap::setMapByteArray(const unsigned char*array,
   MB_DPRINTLN("   r.m.s.d: %f", sigma);
 
   // calc map trunc params
-  m_dLevelStep = (double)(rhomax - rhomin)/256.0;
-  m_dLevelBase = rhomin;
+  MapQuant q;
+  q.step = (double)(rhomax - rhomin)/256.0;
+  q.base = rhomin;
 
-  if (m_pByteMap!=NULL)
-    delete [] m_pByteMap;
+  beginByteMap(ncol, nrow, nsect, q);
+  const size_t nslice = m_map.sliceSize();
+  for (int k=0; k<nsect; ++k)
+    std::copy(array + size_t(k)*nslice, array + size_t(k+1)*nslice, m_map.slice(k));
 
-  m_pByteMap = new qlib::ByteMap(m_nCols,m_nRows,m_nSecs, array);
-
-  //typedef boost::const_multi_array_ref<QUE_BYTE, 3> ConstArrayRef;
-  //ConstArrayRef source(array, boost::extents[m_nCols][m_nRows][m_nSecs]);
-  //m_pByteMap = new ByteMap(boost::extents[m_nCols][m_nRows][m_nSecs]);
-  //(*m_pByteMap) = source;
-
-  MB_DPRINTLN("OK.");
+  endByteMap(rhomin, rhomax, mean, sigma);
 }
+
+void DensityMap::beginByteMap(int ncol, int nrow, int nsec, const MapQuant &q)
+{
+  m_nCols = ncol;
+  m_nRows = nrow;
+  m_nSecs = nsec;
+  m_dLevelBase = q.base;
+  m_dLevelStep = q.step;
+  m_byteHist.clear();
+  invalidateHistogram();
+  m_map.resize(ncol, nrow, nsec);
+}
+
+void DensityMap::endByteMap(double rhomin, double rhomax, double mean, double rmsd)
+{
+  m_dMinMap = rhomin;
+  m_dMaxMap = rhomax;
+  m_dMeanMap = mean;
+  m_dRmsdMap = rmsd;
+  m_byteHist.clear();
+  invalidateHistogram();
+}
+
+void DensityMap::ensureByteHistogram() const
+{
+  if (!m_byteHist.empty())
+    return;
+
+  // Per-chunk partial histograms in parallel, then merged (the samples
+  // are only read, and the partials are disjoint).
+  const int nchunk = m_map.chunkCount();
+  std::vector< std::vector<qint64> > parts(nchunk, std::vector<qint64>(256, 0));
+  qlib::parallel_for(0, (size_t) nchunk, [&](size_t c) {
+    const quint8 *p = m_map.chunkData((int) c);
+    const size_t n = size_t(m_map.chunkSecs((int) c)) * m_map.sliceSize();
+    std::vector<qint64> &h = parts[c];
+    for (size_t i=0; i<n; ++i)
+      h[p[i]]++;
+  });
+
+  m_byteHist.assign(256, 0);
+  for (int c=0; c<nchunk; ++c)
+    for (int b=0; b<256; ++b)
+      m_byteHist[b] += parts[c][b];
+}
+
+bool DensityMap::getBaseHistogram(std::vector<qint64> &hist, double &hmin,
+                                  double &binsz) const
+{
+  if (m_map.empty() || m_dLevelStep<=0.0)
+    return false;
+  ensureByteHistogram();
+  hist = m_byteHist;
+  hmin = m_dLevelBase;
+  binsz = m_dLevelStep;
+  return true;
+}
+
+namespace {
+  inline int wrapIdx(int x, int n)
+  {
+    const int r = x % n;
+    return (r < 0) ? r + n : r;
+  }
+
+  /// Shared body of the byte / float block extraction: one output section
+  /// per task, rows copied with the map's row pointers; Conv maps a stored
+  /// byte to the output value.
+  template <class T, class Conv>
+  void extractBlockImpl(const qlib::ChunkedArray3D<quint8> &map,
+                        const qsys::ScalarObject::MapBlockSpec &spec, bool pbc,
+                        T fill, T *out, Conv conv)
+  {
+    const int nc = map.cols(), nr = map.rows(), ns = map.secs();
+    const int s = (spec.step < 1) ? 1 : spec.step;
+    const size_t nrowOut = size_t(spec.size[0]);
+    const size_t nsliceOut = nrowOut * size_t(spec.size[1]);
+    const bool bEmpty = (nc <= 0 || nr <= 0 || ns <= 0);
+
+    qlib::parallel_for(0, (size_t) spec.size[2], [&](size_t ko) {
+      T *plane = out + ko * nsliceOut;
+      const int k = spec.start[2] + int(ko) * s;
+      if (bEmpty || (!pbc && (k < 0 || k >= ns))) {
+        std::fill(plane, plane + nsliceOut, fill);
+        return;
+      }
+      const int kk = pbc ? wrapIdx(k, ns) : k;
+      for (int jo = 0; jo < spec.size[1]; ++jo) {
+        T *o = plane + size_t(jo) * nrowOut;
+        const int j = spec.start[1] + jo * s;
+        if (!pbc && (j < 0 || j >= nr)) {
+          std::fill(o, o + nrowOut, fill);
+          continue;
+        }
+        const quint8 *row = map.row(pbc ? wrapIdx(j, nr) : j, kk);
+        const int i0 = spec.start[0];
+        const int i1 = i0 + (spec.size[0] - 1) * s;
+        if (!pbc && i0 >= 0 && i1 < nc) {
+          // whole row inside: no per-sample test
+          for (int io = 0; io < spec.size[0]; ++io)
+            o[io] = conv(row[i0 + io * s]);
+        }
+        else {
+          for (int io = 0; io < spec.size[0]; ++io) {
+            const int i = i0 + io * s;
+            if (pbc)
+              o[io] = conv(row[wrapIdx(i, nc)]);
+            else
+              o[io] = (i < 0 || i >= nc) ? fill : conv(row[i]);
+          }
+        }
+      }
+    });
+  }
+}
+
+void DensityMap::extractBlock(const MapBlockSpec &spec, bool pbc, float fill,
+                              float *out) const
+{
+  // the same value lattice atFloat() returns (double math, then float)
+  float lut[256];
+  for (int b = 0; b < 256; ++b)
+    lut[b] = float(double(b) * m_dLevelStep + m_dLevelBase);
+  extractBlockImpl<float>(m_map, spec, pbc, fill, out,
+                          [&](quint8 b) { return lut[b]; });
+}
+
+void DensityMap::extractBlockBytes(const MapBlockSpec &spec, bool pbc,
+                                   unsigned char fill, unsigned char *out) const
+{
+  extractBlockImpl<unsigned char>(m_map, spec, pbc, fill, out,
+                                  [](quint8 b) { return b; });
+}
+
+double DensityMap::getLevelAtTopFraction(double frac) const
+{
+  if (m_map.empty())
+    return 0.0;
+  ensureByteHistogram();
+
+  const qint64 ntotal = (qint64) m_map.size();
+  if (frac<=0.0)
+    return m_dMaxMap;
+  if (frac>=1.0)
+    return m_dMinMap;
+  const qint64 target = (qint64) ceil(double(ntotal) * frac);
+
+  // walk down from the top bin until the cumulative count reaches the
+  // requested fraction of the samples
+  qint64 acc = 0;
+  for (int b=255; b>=0; --b) {
+    acc += m_byteHist[b];
+    if (acc>=target)
+      return double(b)*m_dLevelStep + m_dLevelBase;
+  }
+  return m_dMinMap;
+}
+
 
 // setup column, row, section params
 void DensityMap::setMapParams(int stacol, int starow, int stasect,
@@ -188,9 +325,11 @@ Vector4D DensityMap::getCenter() const
   m_xtalInfo.fracToOrth(fcen);
   return fcen;
 */
-  Vector4D tv(double(m_nStartCol+m_nCols)/2.0,
-              double(m_nStartRow+m_nRows)/2.0,
-              double(m_nStartSec+m_nSecs)/2.0);
+  // Block center in map-local grid index (convToOrth adds the start
+  // indices), so the start must not be halved along with the size.
+  Vector4D tv(double(m_nCols)/2.0,
+              double(m_nRows)/2.0,
+              double(m_nSecs)/2.0);
   tv = convToOrth(tv);
   return tv;
 }
@@ -235,6 +374,9 @@ double DensityMap::getValueAt(const Vector4D &pos) const
     tv = rmat.mulvec(tv);
   }
 
+  // map origin (MRC ORIGIN; zero for crystallographic maps)
+  tv -= m_vOrigin;
+
   m_xtalInfo.orthToFrac(tv);
   
   tv.x() *= double(getColInterval());
@@ -270,6 +412,9 @@ bool DensityMap::isInRange(const Vector4D &pos) const
     tv -= tr;
     tv = rmat.mulvec(tv);
   }
+
+  // map origin (MRC ORIGIN; zero for crystallographic maps)
+  tv -= m_vOrigin;
 
   m_xtalInfo.orthToFrac(tv);
   
@@ -310,6 +455,8 @@ Vector4D DensityMap::convToOrth(const Vector4D &index) const
   m_xtalInfo.fracToOrth(tv);
 
   // tv is now in orthogonal coord.
+  // map origin (MRC ORIGIN; zero for crystallographic maps)
+  tv += m_vOrigin;
 
   const Matrix4D &xfm = getXformMatrix();
   if (!xfm.isIdent()) {
@@ -348,20 +495,11 @@ double DensityMap::getQuantStep() const
 
 bool DensityMap::isInBoundary(int i, int j, int k) const
 {
-  /*
-  if (i<0 || m_pByteMap->shape()[0]<=i)
+  if (i<0 || m_map.cols()<=i)
     return false;
-  if (j<0 || m_pByteMap->shape()[1]<=j)
+  if (j<0 || m_map.rows()<=j)
     return false;
-  if (k<0 || m_pByteMap->shape()[2]<=k)
-    return false;
-*/
-
-  if (i<0 || m_pByteMap->getColumns()<=i)
-    return false;
-  if (j<0.0 || m_pByteMap->getRows()<=j)
-    return false;
-  if (k<0.0 || m_pByteMap->getSections()<=k)
+  if (k<0 || m_map.secs()<=k)
     return false;
 
   return true;
@@ -369,12 +507,7 @@ bool DensityMap::isInBoundary(int i, int j, int k) const
 
 unsigned char DensityMap::atByte(int i, int j, int k) const
 {
-//  if (m_bUseBndry)
-//    return getAtWithBndry(i, j, k);
-//  else 
-//    return (*m_pByteMap)[i][j][k];
-  //return (*m_pByteMap)[i][j][k];
-  return m_pByteMap->at(i,j,k);
+  return m_map.at(i,j,k);
 }
 
 double DensityMap::atFloat(int i, int j, int k) const
@@ -414,7 +547,7 @@ unsigned char DensityMap::getAtWithBndry(int nx, int ny, int nz) const
 
 Vector4D DensityMap::getOrigin() const
 {
-  return Vector4D(0,0,0);
+  return m_vOrigin;
 }
 
 double DensityMap::getColGridSize() const
@@ -520,6 +653,10 @@ void DensityMap::fitView(const qsys::ViewPtr &pView, bool dummy) const
 
     // get object xform
     Matrix4D xform = getXformMatrix();
+
+    // map origin (MRC ORIGIN; zero for crystallographic maps)
+    if (!m_vOrigin.isZero3D())
+      xform.matprod( Matrix4D::makeTransMat(m_vOrigin) );
 
     // get frac-->orth matrix
     Matrix3D orthmat = getXtalInfo().getOrthMat();

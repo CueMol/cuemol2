@@ -8,6 +8,7 @@
 #define INPUT_OUTPUT_STREAM_HPP__
 
 #include "qlib.hpp"
+#include "LTypes.hpp"
 #include "SmartPtr.hpp"
 #include "LStreamImpl.hpp"
 
@@ -66,6 +67,21 @@ namespace qlib {
 
     /// get source URI of this stream
     LString getURI() const override =0;
+
+    ///////////////////////
+    // Random access (optional; see detail::InImpl). Adaptors that read
+    // straight through the implementation (FormatInStream, BinInStream,
+    // ...) inherit the source's seekability; a decoder in between makes
+    // the stream non-seekable.
+
+    /// True when tell()/seekTo() are supported
+    virtual bool isSeekable() const { return getImpl()->isSeekable(); }
+
+    /// Current byte offset from the start of the source, or -1
+    virtual qint64 tell() const { return getImpl()->tell(); }
+
+    /// Move to an absolute byte offset; false when unsupported
+    virtual bool seekTo(qint64 pos) { return getImpl()->seekTo(pos); }
 
     ///////////////////////
 

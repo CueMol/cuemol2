@@ -49,6 +49,27 @@ struct SurfSummary {
     double checksum;
 };
 
+/// Fill an n^3 grid with the pinned analytic field: two Gaussians on a
+/// negative background, so both positive and negative iso-levels cut real
+/// surfaces. The Gaussian centers are fixed in grid units, independent of n.
+void fillPinField(std::vector<float> &data, int n)
+{
+    data.resize((size_t)n * n * n);
+    for (int k = 0; k < n; ++k)
+        for (int j = 0; j < n; ++j)
+            for (int i = 0; i < n; ++i) {
+                const double d1 = (i - 4.0) * (i - 4.0) +
+                                  (j - 5.0) * (j - 5.0) +
+                                  (k - 6.0) * (k - 6.0);
+                const double d2 = (i - 8.0) * (i - 8.0) +
+                                  (j - 3.5) * (j - 3.5) +
+                                  (k - 4.5) * (k - 4.5);
+                data[(size_t)(k * n + j) * n + i] =
+                    float(100.0 * std::exp(-d1 / 8.0) +
+                          60.0 * std::exp(-d2 / 5.0) - 40.0);
+            }
+}
+
 class MapSurfPin : public ::testing::Test {
 protected:
     qsys::ScenePtr m_pScene;
@@ -56,45 +77,53 @@ protected:
     qsys::RendererPtr m_pRend;
     xtal::MapSurfRenderer *m_pMSR;
 
+    /// Extra fixture created by makeFixture() (kept alive for the test).
+    qsys::ObjectPtr m_pObj2;
+    qsys::RendererPtr m_pRend2;
+
     static const int N = 12;
+
+    /// Build an n^3 map of the pinned field placed at grid start
+    /// (stcol,strow,stsec) inside a cubic cell of ncell grid points per axis
+    /// (1 A grid spacing), attach an isosurf renderer to it and return the
+    /// renderer. The default fixture is makeFixture(12, 0,0,0, 12, ...).
+    xtal::MapSurfRenderer *makeFixture(int n, int stcol, int strow, int stsec,
+                                       int ncell, const char *name,
+                                       qsys::ObjectPtr &rpObj,
+                                       qsys::RendererPtr &rpRend)
+    {
+        xtal::DensityMap *pMap = MB_NEW xtal::DensityMap();
+        std::vector<float> data;
+        fillPinField(data, n);
+        pMap->setMapFloatArray(data.data(), n, n, n, 0, 1, 2);
+        pMap->setMapParams(stcol, strow, stsec, ncell, ncell, ncell);
+        pMap->setXtalParams(double(ncell), double(ncell), double(ncell),
+                            90.0, 90.0, 90.0);
+
+        rpObj = qsys::ObjectPtr(pMap);
+        rpObj->setName(name);
+        m_pScene->addObject(rpObj);
+
+        rpRend = rpObj->createRenderer("isosurf");
+        xtal::MapSurfRenderer *pMSR =
+            dynamic_cast<xtal::MapSurfRenderer *>(rpRend.get());
+        if (pMSR == nullptr)
+            return nullptr;
+        // A map covering the whole cell would enable PBC and extend the
+        // marching range; keep it bounded like a real cropped map view.
+        pMSR->setUsePBC(false);
+        // Center the display extent on the map block so the whole field is
+        // covered (default extent 15 A exceeds the block half-size).
+        pMSR->setCenter(Vector4D(stcol + n / 2.0, strow + n / 2.0,
+                                 stsec + n / 2.0));
+        return pMSR;
+    }
 
     void SetUp() override
     {
         m_pScene = qsys::SceneManager::getInstance()->createScene();
-
-        xtal::DensityMap *pMap = MB_NEW xtal::DensityMap();
-        // Asymmetric smooth field: two Gaussians on a negative background,
-        // so both positive and negative iso-levels cut real surfaces.
-        std::vector<float> data(N * N * N);
-        for (int k = 0; k < N; ++k)
-            for (int j = 0; j < N; ++j)
-                for (int i = 0; i < N; ++i) {
-                    const double d1 = (i - 4.0) * (i - 4.0) +
-                                      (j - 5.0) * (j - 5.0) +
-                                      (k - 6.0) * (k - 6.0);
-                    const double d2 = (i - 8.0) * (i - 8.0) +
-                                      (j - 3.5) * (j - 3.5) +
-                                      (k - 4.5) * (k - 4.5);
-                    data[(size_t)(k * N + j) * N + i] =
-                        float(100.0 * std::exp(-d1 / 8.0) +
-                              60.0 * std::exp(-d2 / 5.0) - 40.0);
-                }
-        pMap->setMapFloatArray(data.data(), N, N, N, 0, 1, 2);
-        pMap->setMapParams(0, 0, 0, N, N, N);
-        pMap->setXtalParams(double(N), double(N), double(N), 90.0, 90.0, 90.0);
-
-        m_pObj = qsys::ObjectPtr(pMap);
-        m_pObj->setName("pinmap");
-        m_pScene->addObject(m_pObj);
-
-        m_pRend = m_pObj->createRenderer("isosurf");
-        m_pMSR = dynamic_cast<xtal::MapSurfRenderer *>(m_pRend.get());
+        m_pMSR = makeFixture(N, 0, 0, 0, N, "pinmap", m_pObj, m_pRend);
         ASSERT_NE(m_pMSR, nullptr);
-        // The map covers the whole cell, which would enable PBC and extend
-        // the marching range; keep it bounded like a real cropped map view.
-        m_pMSR->setUsePBC(false);
-        // Center the display extent on the map so the whole field is covered.
-        m_pMSR->setCenter(Vector4D(6.0, 6.0, 6.0));
     }
 
     void TearDown() override
@@ -102,15 +131,18 @@ protected:
         qsys::SceneManager::getInstance()->destroyScene(m_pScene->getUID());
     }
 
-    SurfSummary summarize()
+    SurfSummary summarize(xtal::MapSurfRenderer *pMSR = nullptr)
     {
+        if (pMSR == nullptr)
+            pMSR = m_pMSR;
+
         SurfSummary s;
         s.nverts = -1;
         s.nfaces = -1;
         s.area = 0.0;
         s.checksum = 0.0;
 
-        qsys::ObjectPtr pSurfObj = m_pMSR->generateSurfObj();
+        qsys::ObjectPtr pSurfObj = pMSR->generateSurfObj();
         surface::MolSurfObj *pSurf =
             dynamic_cast<surface::MolSurfObj *>(pSurfObj.get());
         if (pSurf == nullptr)
@@ -205,7 +237,10 @@ TEST_F(MapSurfPin, DefaultSurface)
                   /*area*/ 69.305242, /*checksum*/ 7610693.011298);
 }
 
-// P2: binning factor 2 exercises the strided cell iteration.
+// P2: binning factor 2 exercises the strided cell iteration. The
+// checksum was re-captured when the vertex normals became central
+// differences over one stride (they were +-1 node at any stride); the
+// vertex positions are unchanged.
 TEST_F(MapSurfPin, BinFac2)
 {
     m_pMSR->setBinFac(2);
@@ -216,7 +251,7 @@ TEST_F(MapSurfPin, BinFac2)
                   /*bbox*/ 2.247477, 2.872503, 3.843344,
                   8.187305, 7.093184, 7.771781,
                   /*centroid*/ 5.691435, 4.680012, 5.422827,
-                  /*area*/ 52.900922, /*checksum*/ 241464.930009);
+                  /*area*/ 52.900922, /*checksum*/ 242977.127854);
 }
 
 // P3: negative iso-level exercises the normal-flip branch.
@@ -268,6 +303,126 @@ TEST_F(MapSurfPin, MolBoundary)
                   8.409676, 7.000000, 8.000000,
                   /*centroid*/ 4.995943, 4.581498, 5.608023,
                   /*area*/ 63.268962, /*checksum*/ 5370513.295668);
+}
+
+// P5: periodic-boundary path. The 12^3 block spans the whole 12 A cell, so
+// use_pbc enables PBC: makerange() stops clamping to the block and getDen()
+// wraps by modulo, so the default 15 A extent around (6,6,6) marches the
+// grid range [-9, 21) and the field is replicated across cell images.
+TEST_F(MapSurfPin, PeriodicBoundary)
+{
+    m_pMSR->setUsePBC(true);
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P5",
+                  /*nverts*/ 18252,
+                  /*bbox*/ -9.000000, -9.000000, -8.168703,
+                  20.409676, 19.105778, 20.105778,
+                  /*centroid*/ 5.200788, 4.648226, 5.641436,
+                  /*area*/ 1841.648228, /*checksum*/ 6273541076.147788);
+}
+
+// P7: non-zero block start inside a larger cell (a cropped map, as written
+// by CCP4 with NCSTART != 0). The block is 12^3 at grid (3,4,5) in a 24-grid
+// cell, so the surface must be the P1 surface translated by (3,4,5) A;
+// pins the start-offset handling of makerange()/runMarchingCubes()/xform.
+TEST_F(MapSurfPin, NonZeroStart)
+{
+    xtal::MapSurfRenderer *pMSR =
+        makeFixture(N, 3, 4, 5, 24, "offmap", m_pObj2, m_pRend2);
+    ASSERT_NE(pMSR, nullptr);
+    const SurfSummary s = summarize(pMSR);
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P7",
+                  /*nverts*/ 684,
+                  /*bbox*/ 4.906816, 6.831297, 8.831297,
+                  11.409676, 11.105779, 13.105779,
+                  /*centroid*/ 8.004821, 8.650756, 10.644808,
+                  /*area*/ 69.305244, /*checksum*/ 13701713.042362);
+}
+
+// P8: odd grid size with binning 2. With 13 nodes per axis the last stride
+// cube [10,12] is complete, so no cube may read past the block; pins the
+// tail-cube boundary test of the strided iteration (P2 covers the even case
+// where the last stride cube is incomplete). Checksum re-captured with the
+// stride-wide normals (see P2).
+TEST_F(MapSurfPin, OddSizeBinFac2)
+{
+    xtal::MapSurfRenderer *pMSR =
+        makeFixture(13, 0, 0, 0, 13, "oddmap", m_pObj2, m_pRend2);
+    ASSERT_NE(pMSR, nullptr);
+    pMSR->setBinFac(2);
+    const SurfSummary s = summarize(pMSR);
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P8",
+                  /*nverts*/ 132,
+                  /*bbox*/ 2.166022, 2.820098, 3.775218,
+                  8.268761, 7.145958, 7.854132,
+                  /*centroid*/ 5.630172, 4.618672, 5.305923,
+                  /*area*/ 56.548720, /*checksum*/ 285869.518535);
+}
+
+// P9: full region mode (the map is flagged cryo-EM): the whole block is
+// marched at stride 1 with the surface closed at the block boundary. The
+// field never reaches the block boundary above the level, so no caps are
+// emitted and the result must equal P1 (box mode covering the same block).
+TEST_F(MapSurfPin, FullRegion)
+{
+    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
+    ASSERT_NE(pMap, nullptr);
+    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    ASSERT_EQ(m_pMSR->getEffectiveRegionMode(), xtal::MapRenderer::REGION_FULL);
+
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P9",
+                  /*nverts*/ 684,
+                  /*bbox*/ 1.906816, 2.831297, 3.831297,
+                  8.409676, 7.105779, 8.105779,
+                  /*centroid*/ 5.004821, 4.650756, 5.644807,
+                  /*area*/ 69.305242, /*checksum*/ 7610693.011298);
+}
+
+// P10: full region mode with an explicit stride of 2. On the 12-node
+// block the aligned span is 10 nodes, i.e. the same five complete stride
+// cubes per axis that the box path marches after its tail-cube check, so
+// the result must equal P2.
+TEST_F(MapSurfPin, FullRegionStep2)
+{
+    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
+    ASSERT_NE(pMap, nullptr);
+    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    m_pMSR->setLod(2);
+
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P10",
+                  /*nverts*/ 120,
+                  /*bbox*/ 2.247477, 2.872503, 3.843344,
+                  8.187305, 7.093184, 7.771781,
+                  /*centroid*/ 5.691435, 4.680012, 5.422827,
+                  /*area*/ 52.900922, /*checksum*/ 242977.127854);
+}
+
+// P11: full region mode clipped to a view box: (6,6,6) +- 2 A padded 1.5x
+// to +-3 A gives the node range [3,9] on every axis. The surface is cut
+// by the region boundary and closed with caps (the bbox is exactly the
+// region box), unlike the box-mode P1 which leaves it open.
+TEST_F(MapSurfPin, FullRegionViewCrop)
+{
+    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
+    ASSERT_NE(pMap, nullptr);
+    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    m_pMSR->setViewBox(Vector4D(6.0, 6.0, 6.0), 2.0);
+
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P11",
+                  /*nverts*/ 660,
+                  /*bbox*/ 3.000000, 3.000000, 3.831297,
+                  8.409676, 7.105779, 8.105779,
+                  /*centroid*/ 5.170610, 4.642984, 5.634449,
+                  /*area*/ 66.017100, /*checksum*/ 7083127.227520);
 }
 
 // P6: two runs must be bitwise identical (catches nondeterminism in-process).

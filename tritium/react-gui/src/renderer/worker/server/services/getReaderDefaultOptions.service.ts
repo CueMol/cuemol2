@@ -45,6 +45,7 @@ export interface ReaderDefaultOptions {
     min?: number;
     truncate_max?: boolean;
     max?: number;
+    subsample?: number;
 }
 
 export interface GetReaderDefaultOptionsResult {
@@ -57,7 +58,7 @@ export interface GetReaderDefaultOptionsResult {
 const PROPS_BY_NICKNAME: Record<string, readonly (keyof ReaderDefaultOptions)[]> = {
     pdb: ['loadmodel', 'loadanisou', 'loadaltconf', 'loadsegid', 'build2ndry', 'autoTopoGen'],
     mmcif: ['loadmodel', 'loadanisou', 'loadaltconf', 'loadsecstr', 'autoTopoGen'],
-    ccp4map: ['normalize', 'truncate_min', 'min', 'truncate_max', 'max'],
+    ccp4map: ['normalize', 'truncate_min', 'min', 'truncate_max', 'max', 'subsample'],
 };
 
 function getReaderDefaultOptions(

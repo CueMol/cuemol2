@@ -7,6 +7,8 @@
 #ifndef QLIB_ARRAY_3D_HPP
 #define QLIB_ARRAY_3D_HPP
 
+#include <cstddef>
+
 namespace qlib {
 
   template <class T>
@@ -37,16 +39,18 @@ namespace qlib {
     Array3D(int ncol, int nrow, int nsect, const T *p)
       : m_nCols(ncol), m_nRows(nrow), m_nSecs(nsect)
     {
-      m_array = MB_NEW T[ncol*nrow*nsect];
-      for (int i=0; i<ncol*nrow*nsect; i++)
+      const size_t n = getSize();
+      m_array = MB_NEW T[n];
+      for (size_t i=0; i<n; i++)
 	m_array[i] = p[i];
     }
 
     Array3D(const Array3D<T> &arg)
       : m_nCols(arg.m_nCols), m_nRows(arg.m_nRows), m_nSecs(arg.m_nSecs)
     {
-      m_array = MB_NEW T[arg.getSize()];
-      for(int i=0; i<arg.getSize(); i++)
+      const size_t n = arg.getSize();
+      m_array = MB_NEW T[n];
+      for(size_t i=0; i<n; i++)
 	m_array[i] = arg[i];
     }
 
@@ -55,12 +59,14 @@ namespace qlib {
     }
 
     // member methods
-    int getSize() const { return m_nCols*m_nRows*m_nSecs; }
+    /// total number of elements (64-bit; the product of three ints can
+    /// exceed the int range for large volumes)
+    size_t getSize() const { return size_t(m_nCols)*size_t(m_nRows)*size_t(m_nSecs); }
     int getColumns() const { return m_nCols; }
     int getRows() const { return m_nRows; }
     int getSections() const { return m_nSecs; }
 
-    int size() const { return getSize(); }
+    size_t size() const { return getSize(); }
     int cols() const { return getColumns(); }
     int rows() const { return getRows(); }
     int secs() const { return getSections(); }
@@ -87,27 +93,27 @@ namespace qlib {
       MB_ASSERT(i>=0); MB_ASSERT(i<m_nCols);
       MB_ASSERT(j>=0); MB_ASSERT(j<m_nRows);
       MB_ASSERT(k>=0); MB_ASSERT(k<m_nSecs);
-      return m_array[i + (j + k*m_nRows)*m_nCols];
+      return m_array[size_t(i) + (size_t(j) + size_t(k)*m_nRows)*m_nCols];
     }
 
     T &at(int i, int j, int k) {
       MB_ASSERT(i>=0); MB_ASSERT(i<m_nCols);
       MB_ASSERT(j>=0); MB_ASSERT(j<m_nRows);
       MB_ASSERT(k>=0); MB_ASSERT(k<m_nSecs);
-      return m_array[i + (j + k*m_nRows)*m_nCols];
+      return m_array[size_t(i) + (size_t(j) + size_t(k)*m_nRows)*m_nCols];
     }
 
     // 2-D access
     const T &at(int i, int j) const {
       MB_ASSERT(i>=0); MB_ASSERT(i<m_nCols);
       MB_ASSERT(j>=0); MB_ASSERT(j<m_nRows);
-      return m_array[i + j*m_nCols];
+      return m_array[size_t(i) + size_t(j)*m_nCols];
     }
 
     T &at(int i, int j) {
       MB_ASSERT(i>=0); MB_ASSERT(i<m_nCols);
       MB_ASSERT(j>=0); MB_ASSERT(j<m_nRows);
-      return m_array[i + j*m_nCols];
+      return m_array[size_t(i) + size_t(j)*m_nCols];
     }
 
     const T *data() const { return m_array; }
@@ -117,12 +123,13 @@ namespace qlib {
     {
       if(&arg!=this){
 	if(m_array!=NULL)	delete [] m_array;
-	m_array = MB_NEW T[arg.getSize()];
+	const size_t n = arg.getSize();
+	m_array = MB_NEW T[n];
 
 	m_nCols = arg.m_nCols;
 	m_nRows = arg.m_nRows;
 	m_nSecs = arg.m_nSecs;
-	for(int i=0; i<arg.getSize(); i++)
+	for(size_t i=0; i<n; i++)
 	  m_array[i] = arg[i];
       }
       return *this;

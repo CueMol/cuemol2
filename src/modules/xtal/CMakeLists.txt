@@ -24,6 +24,7 @@ SET(XTAL_SRCS
   XplorMapReader.cpp
   MTZ2MapReader.cpp
   DensityMap.cpp
+  MapKindDetect.cpp
   MapMeshRenderer.cpp
   MapSurfRenderer.cpp
   MapRenderer.cpp

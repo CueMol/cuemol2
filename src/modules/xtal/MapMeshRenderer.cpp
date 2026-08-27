@@ -7,6 +7,9 @@
 
 #include "MapMeshRenderer.hpp"
 #include "DensityMap.hpp"
+#include "MapLod.hpp"
+
+#include <vector>
 #include <gfx/DisplayContext.hpp>
 
 #include <qsys/ScrEventManager.hpp>
@@ -34,6 +37,11 @@ MapMeshRenderer::MapMeshRenderer()
   m_bPBC = false;
   m_bAutoUpdate = true;
   m_bDragUpdate = false;
+  // contour lines are drawn per cell: a smaller budget than the isosurface
+  m_nLodBudget = 2;
+  m_nStep = 1;
+  m_nActCol = m_nActRow = m_nActSec = 0;
+  m_nStCol = m_nStRow = m_nStSec = 0;
 
   //resetAllProps();
 
@@ -175,6 +183,11 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
   
   m_delta = pMap->getRmsdDensity()*0.01;
 
+  // Full region mode: the whole block at the budget-derived stride
+  if (getEffectiveRegionMode()==REGION_FULL)
+    return generateFull(pMap, pXtal, lv);
+  m_nStep = 1;
+
   //
   // col,row,sec
   //
@@ -201,19 +214,17 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
     xt.orthToFrac(vmin);
     xt.orthToFrac(vmax);
 
-    // check PBC
-    m_bPBC = false;
+    // check PBC (the stored block must span the whole cell)
     const double dimx = pMap->getColGridSize()*pMap->getColNo();
     const double dimy = pMap->getRowGridSize()*pMap->getRowNo();
     const double dimz = pMap->getSecGridSize()*pMap->getSecNo();
     const double cea = xt.a();
     const double ceb = xt.b();
     const double cec = xt.c();
-    if (qlib::isNear4(dimx, cea) &&
-        qlib::isNear4(dimy, ceb) &&
-        qlib::isNear4(dimz, cec) &&
-        isUsePBC())
-      m_bPBC = true;
+    const bool bSpansCell = qlib::isNear4(dimx, cea) &&
+                            qlib::isNear4(dimy, ceb) &&
+                            qlib::isNear4(dimz, cec);
+    m_bPBC = isPBCEligible(pXtal, bSpansCell);
   }
 
   if (pXtal!=NULL) {
@@ -384,6 +395,116 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
   return true;
 }
 
+void MapMeshRenderer::ensureCrossArraySize(int ncol, int nrow, int nsec)
+{
+  if (m_pXCrsLst!=NULL && m_nColCrs>=ncol && m_nRowCrs>=nrow && m_nSecCrs>=nsec)
+    return;
+  setCrossArraySize(qlib::max(m_nColCrs, ncol),
+                    qlib::max(m_nRowCrs, nrow),
+                    qlib::max(m_nSecCrs, nsec));
+}
+
+bool MapMeshRenderer::generateFull(ScalarObject *pMap, DensityMap *pXtal, unsigned int lv)
+{
+  // No periodic wrap in full region mode; the range is the stored block
+  // clipped to the padded view box / molecule boundary, sampled every
+  // m_nStep nodes (aligned to the block start as the isosurface does), and
+  // the crossing buffers grow to the sample count.
+  m_bPBC = false;
+
+  m_nMapColNo = pMap->getColNo();
+  m_nMapRowNo = pMap->getRowNo();
+  m_nMapSecNo = pMap->getSecNo();
+
+  const int st[3] = {pMap->getStartCol(), pMap->getStartRow(), pMap->getStartSec()};
+  const int n[3] = {pMap->getColNo(), pMap->getRowNo(), pMap->getSecNo()};
+  if (n[0]<=0 || n[1]<=0 || n[2]<=0)
+    return false;
+
+  int lo[3], hi[3], s;
+  computeFullRegion(pMap, lo, hi, s);
+
+  const LodRange rc = lodAlignRange(lo[0], hi[0], st[0], n[0], s);
+  const LodRange rr = lodAlignRange(lo[1], hi[1], st[1], n[1], s);
+  const LodRange rs = lodAlignRange(lo[2], hi[2], st[2], n[2], s);
+
+  // sample counts (nodes) per axis
+  const int nn[3] = {rc.span/s + 1, rr.span/s + 1, rs.span/s + 1};
+  ensureCrossArraySize(nn[0], nn[1], nn[2]);
+
+  // strided samples of the block (map-local start indices)
+  ScalarObject::MapBlockSpec sp;
+  sp.start[0] = rc.start - st[0];
+  sp.start[1] = rr.start - st[1];
+  sp.start[2] = rs.start - st[2];
+  sp.size[0] = nn[0];
+  sp.size[1] = nn[1];
+  sp.size[2] = nn[2];
+  sp.step = s;
+  std::vector<quint8> blk(size_t(nn[0])*size_t(nn[1])*size_t(nn[2]));
+  pMap->extractBlockBytes(sp, false, 0, blk.data());
+
+  auto sample = [&](int i, int j, int k) -> unsigned int {
+    return blk[size_t(i) + (size_t(j) + size_t(k)*size_t(nn[1]))*size_t(nn[0])];
+  };
+  auto inside = [&](int i, int j, int k) -> bool {
+    return inMolBndry(pMap, sp.start[0]+i*s, sp.start[1]+j*s, sp.start[2]+k*s);
+  };
+
+  unsigned char crs;
+  unsigned int s0, s1;
+  int i, j, k;
+
+  for (k=0; k<nn[2]; k++)
+    for (j=0; j<nn[1]; j++)
+      for (i=0; i<nn[0]-1; i++) {
+        s0 = sample(i, j, k)*SCALE;
+        s1 = sample(i+1, j, k)*SCALE;
+        crs = getContSec(s0, s1, lv);
+        if (crs!=0 && (!inside(i, j, k) || !inside(i+1, j, k)))
+          crs = 0;
+        m_pXCrsLst->at(i,j,k) = crs;
+      }
+
+  for (k=0; k<nn[2]; k++)
+    for (i=0; i<nn[0]; i++)
+      for (j=0; j<nn[1]-1; j++) {
+        s0 = sample(i, j, k)*SCALE;
+        s1 = sample(i, j+1, k)*SCALE;
+        crs = getContSec(s0, s1, lv);
+        if (crs!=0 && (!inside(i, j, k) || !inside(i, j+1, k)))
+          crs = 0;
+        m_pYCrsLst->at(i,j,k) = crs;
+      }
+
+  for (j=0; j<nn[1]; j++)
+    for (i=0; i<nn[0]; i++)
+      for (k=0; k<nn[2]-1; k++) {
+        s0 = sample(i, j, k)*SCALE;
+        s1 = sample(i, j, k+1)*SCALE;
+        crs = getContSec(s0, s1, lv);
+        if (crs!=0 && (!inside(i, j, k) || !inside(i, j, k+1)))
+          crs = 0;
+        m_pZCrsLst->at(i,j,k) = crs;
+      }
+
+  m_nActCol = nn[0];
+  m_nActRow = nn[1];
+  m_nActSec = nn[2];
+  m_nStCol = rc.start;
+  m_nStRow = rr.start;
+  m_nStSec = rs.start;
+  m_nStep = s;
+
+  const int clo[3] = {rc.start, rr.start, rs.start};
+  const int chi[3] = {rc.start + rc.span, rr.start + rr.span, rs.start + rs.span};
+  setCurRegion(clo, chi, s);
+
+  MB_DPRINTLN("MapMesh> full region [%d,%d]x[%d,%d]x[%d,%d], %dx%dx%d samples, step %d",
+              clo[0], chi[0], clo[1], chi[1], clo[2], chi[2], nn[0], nn[1], nn[2], s);
+  return true;
+}
+
 void MapMeshRenderer::drawline(DisplayContext *pdl,
                                float x1, float y1, float z1,
                                float x2, float y2, float z2)
@@ -436,10 +557,12 @@ void MapMeshRenderer::render(DisplayContext *pdl)
     pdl->multMatrix(xfm);
   }
 
-  if (pXtal==NULL) {
-    pdl->translate(pMap->getOrigin());
-  }
-  else {
+  // map origin (MRC ORIGIN for DensityMap; zero for crystallographic maps)
+  const Vector4D vorig = pMap->getOrigin();
+  if (pXtal==NULL || !vorig.isZero3D())
+    pdl->translate(vorig);
+
+  if (pXtal!=NULL) {
     Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
     pdl->multMatrix(Matrix4D(orthmat));
   }
@@ -471,6 +594,10 @@ void MapMeshRenderer::render(DisplayContext *pdl)
 
     vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
     pdl->translate(vtmp);
+
+    // strided samples: one buffer cell spans m_nStep grid nodes
+    if (m_nStep>1)
+      pdl->scale(Vector4D(m_nStep, m_nStep, m_nStep));
   }
 
   MB_DPRINTLN("MapMeshRenderer Rendereing...\n");
@@ -788,7 +915,15 @@ qlib::uid_t MapMeshRenderer::detachObj()
 void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
 {
   const int nType = ev.getType();
-  
+
+  if (getEffectiveRegionMode()==REGION_FULL) {
+    // Full region mode: the center follows the view without regenerating
+    // and the visible box drives the debounced region refinement
+    handleFullModeViewEvent(ev, m_bAutoUpdate, m_bDragUpdate);
+    return;
+  }
+
+  // Box region mode: the historical center following
   if (nType!=qsys::ViewEvent::VWE_PROPCHG &&
       nType!=qsys::ViewEvent::VWE_PROPCHG_DRG)
     return;

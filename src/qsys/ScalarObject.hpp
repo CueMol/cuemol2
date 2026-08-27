@@ -72,12 +72,52 @@ namespace qsys {
     /// Convert grid index to orthogonal coordinate (in angstrom)
     virtual Vector4D convToOrth(const Vector4D &index) const =0;
 
+    //////////
+    // Strided sub-block extraction (level-of-detail renderers)
+
+    /// A sub-block of the sample grid: start is the map-local grid index of
+    /// the first sample (may be negative or past the block), size the
+    /// number of samples per axis in the output, and step the stride in
+    /// grid nodes between output samples.
+    struct MapBlockSpec {
+      int start[3];
+      int size[3];
+      int step;
+    };
+
+    /// Copy the strided sub-block into out (size[0]*size[1]*size[2]
+    /// values, column fastest). Samples outside the map wrap by the map
+    /// dimensions when pbc is true, otherwise they take fill. The default
+    /// walks atFloat(); quantized implementations override it with a fast
+    /// row-wise copy.
+    virtual void extractBlock(const MapBlockSpec &spec, bool pbc, float fill,
+                              float *out) const;
+
+    /// Byte (atByte) version of extractBlock
+    virtual void extractBlockBytes(const MapBlockSpec &spec, bool pbc,
+                                   unsigned char fill, unsigned char *out) const;
+
     LString getHistogramJSON(double min, double max, int nbins);
+
+    /// Drop the cached base histogram (call whenever the samples change)
+    void invalidateHistogram() { m_bashist.clear(); }
+
+  protected:
+    /// Hook for implementations with a cheap lossless base histogram
+    /// (e.g. the 256-bin histogram of 8-bit quantized samples): fill hist
+    /// with the counts of bins [hmin + i*binsz, hmin + (i+1)*binsz) and
+    /// return true. The default returns false, and the base histogram is
+    /// then accumulated by scanning every sample through atFloat().
+    virtual bool getBaseHistogram(std::vector<qint64> &hist, double &hmin,
+                                  double &binsz) const { return false; }
 
   private:
     void calcBaseHistogram();
-    double m_dHisMin, m_dHisMax, m_dBinSz;
-    std::vector<int> m_bashist;
+    /// reported data range (min / max density)
+    double m_dHisMin, m_dHisMax;
+    /// base histogram bins: [m_dBaseMin + j*m_dBinSz, ... + (j+1)*m_dBinSz)
+    double m_dBaseMin, m_dBinSz;
+    std::vector<qint64> m_bashist;
 
   };
 

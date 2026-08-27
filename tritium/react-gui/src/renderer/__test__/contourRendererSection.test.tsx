@@ -129,10 +129,16 @@ function contourEntries(over?: {
   autoupdate?: boolean
   dragupdate?: boolean
   bndryMol?: string
+  regionResolved?: string
 }): GenericPropEntry[] {
   return [
     entry({ key: 'autoupdate', type: 'boolean', value: over?.autoupdate ?? true }),
     entry({ key: 'dragupdate', type: 'boolean', value: over?.dragupdate ?? false }),
+    entry({ key: 'region_mode', type: 'enum', value: 'auto', enumdef: ['auto', 'box', 'full'] }),
+    entry({ key: 'region_mode_resolved', type: 'string', value: over?.regionResolved ?? 'box', readonly: true }),
+    entry({ key: 'lod', type: 'enum', value: 'auto', enumdef: ['auto', 'step1', 'step2', 'step4', 'step8'] }),
+    entry({ key: 'lod_budget', type: 'integer', value: 2 }),
+    entry({ key: 'zoom_refine', type: 'boolean', value: true }),
     entry({ key: 'width', type: 'real', value: 1.0 }),
     entry({ key: 'bufsize', type: 'integer', value: 100 }),
     entry({ key: 'use_pbc', type: 'boolean', value: true }),
@@ -150,6 +156,13 @@ describe('Contour renderer section registry', () => {
     expect(sections[0].Component).toBe(ContourMainSection)
     expect(RENDERER_SECTION_REGISTRY.contour).toBe(sections)
   })
+
+  it('reuses the contour section for the GPU contour renderer ("gpu_mapmesh")', () => {
+    const sections = getRendererPropSections('gpu_mapmesh')
+    expect(sections.map((s) => s.title)).toEqual(['GPU contour'])
+    expect(sections[0].defaultExpanded).toBe(true)
+    expect(sections[0].Component).toBe(ContourMainSection)
+  })
 })
 
 describe('ContourMainSection', () => {
@@ -164,6 +177,8 @@ describe('ContourMainSection', () => {
       <ContourMainSection entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     expect(rowByLabel(container, 'Center update')).not.toBeNull()
+    expect(rowByLabel(container, 'Region')).not.toBeNull()
+    expect(rowByLabel(container, 'Level of detail')).not.toBeNull()
     expect(rowByLabel(container, 'Line width')).not.toBeNull()
     expect(rowByLabel(container, 'Buffer size')).not.toBeNull()
     expect(rowByLabel(container, 'Use periodic boundary')).not.toBeNull()
@@ -171,8 +186,32 @@ describe('ContourMainSection', () => {
     expect(rowByLabel(container, 'Target')).not.toBeNull()
     expect(rowByLabel(container, 'Selection')).not.toBeNull()
     expect(rowByLabel(container, 'Distance')).not.toBeNull()
-    // Exactly the eight curated rows -- coloring props produce no row.
-    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(8)
+    // The LoD budget and the zoom refinement only apply to the full region.
+    expect(rowByLabel(container, 'LoD budget')).toBeNull()
+    expect(rowByLabel(container, 'Refine on zoom')).toBeNull()
+    // Exactly the ten curated rows -- coloring props produce no row.
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(10)
+    unmount()
+  })
+
+  it('hides the box-only rows and shows the LoD budget / zoom refinement in the full region', () => {
+    const onSet = vi.fn()
+    const { container, unmount } = mountTree(
+      <ContourMainSection
+        entries={contourEntries({ regionResolved: 'full' })}
+        onSet={onSet}
+        onReset={vi.fn()}
+        sceneId={1}
+        nodeId={2}
+      />,
+    )
+    expect(rowByLabel(container, 'Buffer size')).toBeNull()
+    expect(rowByLabel(container, 'Use periodic boundary')).toBeNull()
+    expect(rowByLabel(container, 'LoD budget')).not.toBeNull()
+    const refine = rowByLabel(container, 'Refine on zoom')
+    expect(refine).not.toBeNull()
+    act(() => switchIn(refine!).click())
+    expect(onSet).toHaveBeenCalledWith('zoom_refine', 'boolean', false)
     unmount()
   })
 

@@ -44,6 +44,16 @@ describe('getRendererChangeTypes', () => {
         })
     })
 
+    it('hides legacy renderer types (gpu_mapmesh) from the conversion targets', () => {
+        const ctx = makeCtx({
+            rendType: 'contour',
+            compatList: 'contour,isosurf,gpu_mapmesh,gpu_mapvol,*unitcell',
+        })
+        expect(getRendererChangeTypes(ctx, { sceneId: 1, rendId: 2 })).toEqual({
+            typeNames: ['isosurf', 'gpu_mapvol'],
+        })
+    })
+
     it('returns empty when the source renderer is *selection (uses dedicated dialog)', () => {
         const ctx = makeCtx({ rendType: '*selection', compatList: 'simple,ballstick' })
         expect(getRendererChangeTypes(ctx, { sceneId: 1, rendId: 2 })).toEqual({ typeNames: [] })

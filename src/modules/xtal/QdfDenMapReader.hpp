@@ -63,9 +63,13 @@ namespace xtal {
     void readData();
 
     int m_nx, m_ny, m_nz;
-    
-    void readDataArray(qbyte *);
-    void readDataArray2(qbyte *);
+
+    /// MAP2 layout: the samples are split into several bmap chunks
+    bool m_bSplit;
+
+    /// Read the sections [k0, k1) of the current bmap chunk
+    void readDataArray(int k0, int k1);
+    void readDataArray2(int k0, int k1);
 
   };
 

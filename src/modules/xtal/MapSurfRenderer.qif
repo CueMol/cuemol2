@@ -42,7 +42,8 @@ runtime_class MapSurfRenderer extends MapRenderer
   property real width => redirect(getLineWidth, setLineWidth);
   default width = 1.2;
 
-  /// Binning factor
+  /// Binning factor (marching stride in box region mode; superseded by the
+  /// lod property of MapRenderer)
   property integer binning => redirect(getBinFac, setBinFac);
   default binning = 1;
 

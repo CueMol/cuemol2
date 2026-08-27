@@ -40,6 +40,8 @@ add_executable(test_qlib
   qlib/test_lprocmgr.cpp
   qlib/test_limited_in_stream.cpp
   qlib/test_parallel.cpp
+  qlib/test_chunked_array3d.cpp
+  qlib/test_seekable_stream.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -180,10 +182,21 @@ gtest_discover_tests(test_surface PROPERTIES LABELS "test_surface")
 add_executable(test_xtal
   modules/xtal/test_main.cpp
   modules/xtal/test_atomposmap2.cpp
+  modules/xtal/test_ccp4_origin.cpp
+  modules/xtal/test_ccp4map_stream.cpp
+  modules/xtal/test_map_block_extract.cpp
+  modules/xtal/test_map_histogram.cpp
+  modules/xtal/test_mapkind_detect.cpp
+  modules/xtal/test_maplod.cpp
+  modules/xtal/test_mapmesh_full.cpp
+  modules/xtal/test_mapmesh_viewregion.cpp
   modules/xtal/test_maprenderer_color.cpp
+  modules/xtal/test_maprenderer_region.cpp
   modules/xtal/test_mapsurf_molfanc.cpp
   modules/xtal/test_mapsurf_pin.cpp
+  modules/xtal/test_mapsurf_viewregion.cpp
   modules/xtal/test_multigrad_undo.cpp
+  modules/xtal/test_qdfmap_roundtrip.cpp
   modules/xtal/test_quant_step.cpp
 )
 target_include_directories(test_xtal PRIVATE

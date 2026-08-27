@@ -43,6 +43,14 @@ private:
     /// Internal buffer size (default: 100x100x100 points)
     int m_nBufSize;
 
+    /// grid stride of the current texture (1 in box mode)
+    int m_nStep;
+
+  public:
+    int getStep() const { return m_nStep; }
+
+  private:
+
     /// Periodic boundary flag
     bool m_bPBC;
 
@@ -116,6 +124,11 @@ public:
 
     void make3DTexMap(DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
 
+    /// Full region mode texture: the block clipped to the padded view box /
+    /// molecule boundary (MapRenderer::computeFullRegion) at the budget
+    /// stride
+    void make3DTexMapFull(DisplayContext *pdc, ScalarObject *pMap);
+
     ///////////////////////////////////////////////////////////////
 
     void setLineWidth(double f)
@@ -125,10 +138,17 @@ public:
     }
     double getLineWidth() const { return m_lw; }
 
+    /// Max extent of the box region (angstrom; from the buffer size)
     double getMaxExtent() const;
 
     int getBufSize() const { return m_nBufSize; }
-    void setBufSize(int nsize) { m_nBufSize = nsize; }
+    void setBufSize(int nsize)
+    {
+        if (nsize <= 10) nsize = 10;
+        if (m_nBufSize == nsize) return;
+        m_nBufSize = nsize;
+        invalidateDisplayCache();
+    }
 
     ///////////////////////////////////////////////////////////////
 

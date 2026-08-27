@@ -93,3 +93,8 @@ architecture, it belongs here.
   フォールバックとして併存)。umbreon 1:1 のビルド配線、density → mesh_size
   変換、例外時 BALL フォールバック、RSCache による density 変更時の再生成
   高速化、MeshMS 側の多成分/孤立原子対応、atom_id → MSVert::info 見送りの判断。
+- [Cryo-EM map mode](cryo-em-map-mode.md) (日本語) --
+  density map の結晶学 / cryo-EM モード分離。`DensityMap.map_type` (読込時自動判定) と
+  `MapRenderer.region_mode` (box / full) の 2 層モデル、PBC 適格条件の一本化、MRC2014 ORIGIN、
+  full モードの budget 由来 stride (ChimeraX `limit_voxels` 流) とノード整列、却下案とロードマップ
+  (chunk メモリ、reader streaming、zoom 連動 refine)。

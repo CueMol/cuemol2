@@ -26,9 +26,21 @@ namespace xtal {
 
     DensityMap *m_pObj;
 
+    /// Max records per QDF data chunk (the record count is a 32-bit int);
+    /// lowered by tests to exercise the split (MAP2) layout
+    size_t m_nChunkLimit;
+
+    /// Chunking of the sample block decided by write()
+    bool m_bSplit;
+    int m_nSecChunk;
+    int m_nChunks;
+
   public:
     QdfDenMapWriter();
     ~QdfDenMapWriter() override;
+
+    size_t getChunkLimit() const { return m_nChunkLimit; }
+    void setChunkLimit(size_t n) { m_nChunkLimit = n; }
 
     /// Attach to and lock the target object
     void attach(qsys::ObjectPtr pObj) override;

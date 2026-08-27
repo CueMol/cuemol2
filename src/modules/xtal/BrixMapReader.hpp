@@ -13,6 +13,8 @@
 #include <qlib/LExceptions.hpp>
 #include <qsys/ObjReader.hpp>
 
+#include "DensityMap.hpp"
+
 namespace xtal {
 
   class DensityMap;
@@ -43,7 +45,6 @@ namespace xtal {
     double m_alpha, m_beta, m_gamma;
     double m_prod, m_plus, m_sigma;
     
-    unsigned char *m_denbuf;
     
     ///////////////////////////////////////////
   public:
@@ -91,7 +92,7 @@ namespace xtal {
     bool readDns6Header(const char *sbuf);
 
     inline void setmap(int i, int j, int k, unsigned char rho) {
-      m_denbuf[i + (j + k*m_nrow)*m_ncol] = rho;
+      m_pMap->sliceBytes(k)[size_t(i) + size_t(j)*size_t(m_ncol)] = rho;
     }
   };
 }

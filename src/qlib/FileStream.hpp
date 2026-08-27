@@ -109,9 +109,11 @@ namespace qlib {
 
     //////////////////////////////////////////////////////
 
-    int getFilePos() { return m_pimpl->seek(0,0); }
+    /// Current file position (64-bit); -1 when the source cannot seek
+    qint64 getFilePos() { return m_pimpl->tell(); }
 
-    void setFilePos(int pos) { m_pimpl->seek(pos,1); }
+    /// Set the absolute file position (64-bit)
+    void setFilePos(qint64 pos) { m_pimpl->seekTo(pos); }
 
     // get standard input stream
     static FileInStream &getStdIn();

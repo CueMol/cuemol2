@@ -608,12 +608,13 @@ void QdfInStream::readColorRGBA(const LString &name, qbyte *pvec)
 
 void QdfInStream::readFxRecords(int nrec, void *pbuf, int nbufsz)
 {
-  int nrecsz = getFxRecordSize();
+  const int nrecsz = getFxRecordSize();
 
-  int ntotal = nrecsz * nrec;
-  MB_ASSERT(nbufsz>=ntotal);
+  const size_t ntotal = size_t(nrecsz) * size_t(nrec);
+  MB_ASSERT(size_t(nbufsz)>=ntotal);
+  MB_ASSERT(ntotal <= size_t(0x7fffffff));
 
-  m_pBinIn->readFully((char *)pbuf, 0, ntotal);
+  m_pBinIn->readFully((char *)pbuf, 0, int(ntotal));
 
   m_nRecInd = m_recdefs.size();
 }
@@ -814,6 +815,23 @@ void QdfOutStream::endData()
 void QdfOutStream::startRecord()
 {
   m_nRecInd = 0;
+}
+
+void QdfOutStream::writeFxRecords(int nrec, const void *pbuf, int nbufsz)
+{
+  // Counterpart of QdfInStream::readFxRecords(): the caller's buffer holds
+  // nrec records in the file byte order (only meaningful for single-byte
+  // record elements, which need no swapping).
+  int nrecsz = 0;
+  const int nelem = m_recdefs.size();
+  for (int i=0; i<nelem; ++i)
+    nrecsz += QdfDataType::getSize(m_recdefs[i].second, true);
+
+  const size_t ntotal = size_t(nrecsz) * size_t(nrec);
+  MB_ASSERT(size_t(nbufsz)>=ntotal);
+  MB_ASSERT(ntotal <= size_t(0x7fffffff));
+
+  m_pOut->write((const char *)pbuf, 0, int(ntotal));
 }
 
 void QdfOutStream::endRecord()

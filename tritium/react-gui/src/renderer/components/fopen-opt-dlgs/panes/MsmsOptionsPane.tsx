@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { InputGroup, FormGroup } from '@blueprintjs/core';
+import { Field, FieldSection, TextField } from '../../../h3-kit/form';
 import type { MsmsOptions } from '../types';
 
 interface MsmsOptionsPaneProps {
@@ -14,19 +14,15 @@ interface MsmsOptionsPaneProps {
 
 export const MsmsOptionsPane: React.FC<MsmsOptionsPaneProps> = ({ options, onChange }) => (
   <div className="fod-section">
-    <div className="fod-section-title">Surface Options</div>
-    <FormGroup
-      label="Companion vertex (.vert) file path"
-      labelFor="msms-vert"
-      helperText="Required for face-based surface rendering"
-      className="fod-form-group"
-    >
-      <InputGroup
-        id="msms-vert"
-        placeholder="/path/to/surface.vert"
-        value={options.vertFilePath}
-        onChange={(e) => onChange({ vertFilePath: e.target.value })}
-      />
-    </FormGroup>
+    <FieldSection title="Surface Options">
+      <Field label="Companion vertex (.vert) file path">
+        <TextField
+          value={options.vertFilePath}
+          placeholder="/path/to/surface.vert"
+          onChange={(v) => onChange({ vertFilePath: v })}
+        />
+      </Field>
+      <div className="fod-hint">Required for face-based surface rendering</div>
+    </FieldSection>
   </div>
 );

@@ -38,7 +38,7 @@ void CCP4InStream::setFileByteOrder(int iType, int fType)
   m_fltType = fType;
 }
 
-void CCP4InStream::fetch_floatArray(float *fbuf, int size)
+void CCP4InStream::fetch_floatArray(float *fbuf, size_t size)
 {
   readFully((char *)fbuf, 0, size*sizeof(float));
 
@@ -48,7 +48,7 @@ void CCP4InStream::fetch_floatArray(float *fbuf, int size)
   }
 
   MB_DPRINTLN("CCP4InStream read : performing byte order conversion...");
-  for (int i=0; i<size; i++) {
+  for (size_t i=0; i<size; i++) {
     unsigned char a;
     unsigned char *buf = (unsigned char *)(&fbuf[i]);
     a = buf[0];
@@ -60,7 +60,7 @@ void CCP4InStream::fetch_floatArray(float *fbuf, int size)
   }    
 }
 
-void CCP4InStream::fetch_byteArray(quint8 *fbuf, int size)
+void CCP4InStream::fetch_byteArray(quint8 *fbuf, size_t size)
 {
   readFully((char *)fbuf, 0, size*sizeof(quint8));
 }

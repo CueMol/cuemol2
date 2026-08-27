@@ -73,9 +73,18 @@ function setSelectValue(select: HTMLSelectElement, value: string): void {
     select.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
-function getById<T extends HTMLElement>(id: string): T {
-    const el = document.body.querySelector('#' + id) as T | null
-    if (!el) throw new Error(`#${id} not found in mounted tree`)
+/**
+ * Locate a control by the label of its form-kit `Field` row (the renderer
+ * options pane is built from the h3-kit catalog, which owns the row markup
+ * and exposes no element ids).
+ */
+function controlByLabel<T extends HTMLElement>(label: string, sel: string): T {
+    const lab = Array.from(document.body.querySelectorAll('.h3-form-field-label'))
+        .find((l) => (l.textContent ?? '').trim() === label)
+    if (!lab) throw new Error(`field row "${label}" not found in mounted tree`)
+    const row = lab.closest('.h3-form-field-row') as HTMLElement | null
+    const el = row?.querySelector(sel) as T | null
+    if (!el) throw new Error(`"${sel}" not found in the "${label}" row`)
     return el
 }
 
@@ -112,7 +121,7 @@ describe('NewRendererDialog (renderer-add parity)', () => {
     it('initial renderer type is rendererTypes[0] without history', async () => {
         const handle = mount()
         await flushPromises()
-        expect(getById<HTMLSelectElement>('rend-type').value).toBe('simple')
+        expect(controlByLabel<HTMLSelectElement>('Renderer type', 'select').value).toBe('simple')
         handle.unmount()
     })
 
@@ -120,18 +129,18 @@ describe('NewRendererDialog (renderer-add parity)', () => {
         setDefaultRendType('MolCoord', 'ribbon')
         const handle = mount()
         await flushPromises()
-        expect(getById<HTMLSelectElement>('rend-type').value).toBe('ribbon')
+        expect(controlByLabel<HTMLSelectElement>('Renderer type', 'select').value).toBe('ribbon')
         handle.unmount()
     })
 
     it('renderer name follows the selected type while still default', async () => {
         const handle = mount()
         await flushPromises()
-        expect(getById<HTMLInputElement>('rend-name').value).toBe('simple1')
+        expect(controlByLabel<HTMLInputElement>('Renderer name', 'input').value).toBe('simple1')
 
         mockCm.invokeService.mockClear()
         await act(async () => {
-            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'cartoon')
+            setSelectValue(controlByLabel<HTMLSelectElement>('Renderer type', 'select'), 'cartoon')
         })
         await flushPromises()
 
@@ -139,7 +148,7 @@ describe('NewRendererDialog (renderer-add parity)', () => {
         expect(calls[calls.length - 1]).toMatchObject({
             kind: 'sceneRenderer', prefix: 'cartoon', sceneId: 7,
         })
-        expect(getById<HTMLInputElement>('rend-name').value).toBe('cartoon1')
+        expect(controlByLabel<HTMLInputElement>('Renderer name', 'input').value).toBe('cartoon1')
         handle.unmount()
     })
 
@@ -147,13 +156,13 @@ describe('NewRendererDialog (renderer-add parity)', () => {
         const handle = mount()
         await flushPromises()
 
-        const nameInput = getById<HTMLInputElement>('rend-name')
+        const nameInput = controlByLabel<HTMLInputElement>('Renderer name', 'input')
         await act(async () => { setInputValue(nameInput, 'myrend') })
         await flushPromises()
 
         mockCm.invokeService.mockClear()
         await act(async () => {
-            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'ribbon')
+            setSelectValue(controlByLabel<HTMLSelectElement>('Renderer type', 'select'), 'ribbon')
         })
         await flushPromises()
 
@@ -167,7 +176,7 @@ describe('NewRendererDialog (renderer-add parity)', () => {
         await flushPromises()
 
         await act(async () => {
-            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'ribbon')
+            setSelectValue(controlByLabel<HTMLSelectElement>('Renderer type', 'select'), 'ribbon')
         })
         await flushPromises()
 
@@ -239,7 +248,7 @@ describe('NewRendererDialog presets', () => {
     it('renders a leading Presets optgroup (label=desc||name) but keeps the plain-type default', async () => {
         const handle = mount({ presetTypes: PRESETS })
         await flushPromises()
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         const groups = Array.from(select.querySelectorAll('optgroup'))
         expect(groups.map((g) => g.label)).toEqual(['Presets', 'Renderer types'])
         const presetOpts = Array.from(groups[0].querySelectorAll('option'))
@@ -262,7 +271,7 @@ describe('NewRendererDialog presets', () => {
 
         mockCm.invokeService.mockClear()
         await act(async () => {
-            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'Default1RendPreset')
+            setSelectValue(controlByLabel<HTMLSelectElement>('Renderer type', 'select'), 'Default1RendPreset')
         })
         await flushPromises()
 
@@ -271,7 +280,7 @@ describe('NewRendererDialog presets', () => {
         expect(calls[calls.length - 1]).toMatchObject({
             kind: 'sceneRenderer', prefix: 'default1_', sceneId: 7,
         })
-        expect(getById<HTMLInputElement>('rend-name').value).toBe('default1_1')
+        expect(controlByLabel<HTMLInputElement>('Renderer name', 'input').value).toBe('default1_1')
         // The preset's children carry sel from the style definition.
         expect(selectionCheckbox().disabled).toBe(true)
 
@@ -289,11 +298,11 @@ describe('NewRendererDialog presets', () => {
         const handle = mount({ presetTypes: PRESETS, isMol: true, molID: 10 })
         await flushPromises()
         await act(async () => {
-            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'Default1RendPreset')
+            setSelectValue(controlByLabel<HTMLSelectElement>('Renderer type', 'select'), 'Default1RendPreset')
         })
         await flushPromises()
         await act(async () => {
-            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'ribbon')
+            setSelectValue(controlByLabel<HTMLSelectElement>('Renderer type', 'select'), 'ribbon')
         })
         await flushPromises()
         expect(selectionCheckbox().disabled).toBe(false)
@@ -309,14 +318,14 @@ describe('NewRendererDialog presets', () => {
         setDefaultRendType('MolCoord', 'Default1RendPreset')
         const withPresets = mount({ presetTypes: PRESETS })
         await flushPromises()
-        expect(getById<HTMLSelectElement>('rend-type').value).toBe('Default1RendPreset')
+        expect(controlByLabel<HTMLSelectElement>('Renderer type', 'select').value).toBe('Default1RendPreset')
         withPresets.unmount()
 
         // Same history, but no presets offered (e.g. group context / style
         // removed) -> falls back to the first plain type.
         const withoutPresets = mount()
         await flushPromises()
-        expect(getById<HTMLSelectElement>('rend-type').value).toBe('simple')
+        expect(controlByLabel<HTMLSelectElement>('Renderer type', 'select').value).toBe('simple')
         withoutPresets.unmount()
     })
 })

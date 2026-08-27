@@ -81,6 +81,9 @@ namespace xtal {
     int m_nActCol, m_nActRow, m_nActSec;
     int m_nStCol, m_nStRow, m_nStSec;
 
+    /// grid stride of the current range (full region mode; 1 in box mode)
+    int m_nStep;
+
     /// section array for x(column) direction
     qlib::ByteMap *m_pXCrsLst;
 
@@ -126,8 +129,27 @@ namespace xtal {
     /// Generate contour level lines
     bool generate(ScalarObject *pMap, DensityMap *pXtal);
 
+    /// Full region mode: the block clipped to the padded view box /
+    /// molecule boundary (MapRenderer::computeFullRegion) at the
+    /// budget-derived stride, sampled through extractBlockBytes() into the
+    /// crossing buffers
+    bool generateFull(ScalarObject *pMap, DensityMap *pXtal, unsigned int lv);
+
+    /// Range of the last generate() (absolute cell-grid node index of the
+    /// first sample, number of samples, stride); for tests
+    int getStCol() const { return m_nStCol; }
+    int getStRow() const { return m_nStRow; }
+    int getStSec() const { return m_nStSec; }
+    int getActCol() const { return m_nActCol; }
+    int getActRow() const { return m_nActRow; }
+    int getActSec() const { return m_nActSec; }
+    int getStep() const { return m_nStep; }
+
     /// Set internal buffer size
     bool setCrossArraySize(int ncol, int nrow, int nsec);
+
+    /// Grow the crossing buffers to hold at least (ncol, nrow, nsec)
+    void ensureCrossArraySize(int ncol, int nrow, int nsec);
     /// Get internal buffer size (in col direction)
     int getColCrsSize() const { return m_nColCrs; }
     int getRowCrsSize() const { return m_nRowCrs; }

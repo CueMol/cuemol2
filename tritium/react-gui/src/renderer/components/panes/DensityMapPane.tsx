@@ -474,6 +474,8 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                             onWrite={(v, opts) => setProp('siglevel', v, opts)}
                             disabled={disabled}
                         />
+                        {/* Extent only shapes the box region; in the full
+                          * region (cryo-EM maps) the whole map is marched. */}
                         <DragRow
                             label="Extent"
                             value={state?.extent ?? 0}
@@ -483,7 +485,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                             unit="Å"
                             committedIsDefault={state?.defaults.extent}
                             onWrite={(v, opts) => setProp('extent', v, opts)}
-                            disabled={disabled}
+                            disabled={disabled || state?.regionResolved === 'full'}
                         />
                     </FieldGrid>
                 </div>

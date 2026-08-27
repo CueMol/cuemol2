@@ -9,11 +9,13 @@
 
 #include "MapSurfRenderer.hpp"
 #include "MapSurfRenderer_consts.hpp"
+#include "MapLod.hpp"
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <gfx/MarchingCubes.hpp>
 #include <gfx/Mesh.hpp>
 #include <qlib/parallel.hpp>
+#include <qlib/EventManager.hpp>
 
 #include <unordered_map>
 
@@ -52,6 +54,8 @@ MapSurfRenderer::MapSurfRenderer()
 
   m_nBinFac = 1;
   m_nMaxGrid = 100;
+  m_nStep = 1;
+  m_bCapDisplay = false;
 
   m_bGenSurfMode = false;
 
@@ -110,19 +114,32 @@ qlib::uid_t MapSurfRenderer::detachObj()
 void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
 {
   const int nType = ev.getType();
-  
+
   if (nType!=qsys::ViewEvent::VWE_PROPCHG &&
-      nType!=qsys::ViewEvent::VWE_PROPCHG_DRG)
+      nType!=qsys::ViewEvent::VWE_PROPCHG_DRG &&
+      nType!=qsys::ViewEvent::VWE_SIZECHG)
+    return;
+
+  qsys::View *pView = ev.getTargetPtr();
+  if (pView==NULL)
+    return;
+
+  if (getEffectiveRegionMode()==REGION_FULL) {
+    // Full region mode: the center follows the view without a rebuild and
+    // the visible box drives the debounced region refinement (MapRenderer)
+    handleFullModeViewEvent(ev, m_bAutoUpdate, m_bDragUpdate);
+    return;
+  }
+
+  // Box region mode: the historical center following (a center change is
+  // a geometry change of the center +- extent box).
+  if (nType==qsys::ViewEvent::VWE_SIZECHG)
     return;
 
   if (!m_bAutoUpdate && !m_bDragUpdate)
     return;
 
   if (!ev.getDescr().equals("center"))
-    return;
-
-  qsys::View *pView = ev.getTargetPtr();
-  if (pView==NULL)
     return;
 
   Vector4D c = pView->getViewCenter();
@@ -149,7 +166,11 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
 
 void MapSurfRenderer::setMaxGrids(int n)
 {
+  if (m_nMaxGrid == n)
+    return;
   m_nMaxGrid = n;
+  // the max extent clamps the box range, so this is a geometry change
+  invalidateGeomCache();
 
   /*
   if (getClientObj().isnull())
@@ -231,11 +252,15 @@ void MapSurfRenderer::setupXformMat(DisplayContext *pdl)
     pdl->multMatrix(xfm);
   }
 
-  //  setup frac-->orth matrix
-  if (pXtal==NULL) {
-    pdl->translate(pMap->getOrigin());
+  // map origin (MRC ORIGIN for DensityMap; zero for crystallographic maps)
+  {
+    const Vector4D vorig = pMap->getOrigin();
+    if (pXtal==NULL || !vorig.isZero3D())
+      pdl->translate(vorig);
   }
-  else {
+
+  //  setup frac-->orth matrix
+  if (pXtal!=NULL) {
     Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
     pdl->multMatrix(Matrix4D(orthmat));
   }
@@ -276,11 +301,16 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   ScalarObject *pMap = getScalarObj();
   m_pCMap = pMap;
 
-  // check and setup mol boundary data
-  setupMolBndry();
-
-  // generate map-range information
-  makerange();
+  // The mol boundary and the map range are only recomputed when the mesh
+  // is rebuilt: the cached vertices are in cell-grid coordinates relative
+  // to the range start (setupXformMat translates by it), so a color-only
+  // display-list rebuild must keep the range the cache was built with. In
+  // full region mode the view box may have moved inside the hysteresis
+  // margin since, and recomputing the range here would shift the surface.
+  if (!m_bMeshCacheValid) {
+    setupMolBndry();
+    makerange();
+  }
 
   pdl->pushMatrix();
   setupXformMat(pdl);
@@ -325,6 +355,20 @@ void MapSurfRenderer::makerange()
   if (pMap==NULL)
     return;
 
+  // Box region mode (the historical center +- extent cube) unless the
+  // effective region policy is full.
+  m_bCapDisplay = false;
+  if (getEffectiveRegionMode()==REGION_FULL) {
+    makerangeFull(pMap);
+    return;
+  }
+
+  // Marching stride: the explicit lod step, or the binning factor in auto
+  // mode (the cell budget only applies to the full region mode).
+  m_nStep = (m_nLod==LOD_AUTO) ? m_nBinFac : m_nLod;
+  if (m_nStep<1)
+    m_nStep = 1;
+
   //
   // col,row,sec
   //
@@ -351,19 +395,20 @@ void MapSurfRenderer::makerange()
     xt.orthToFrac(vmin);
     xt.orthToFrac(vmax);
 
-    // check PBC
-    m_bPBC = false;
+    // check PBC (the stored block must span the whole cell)
     const double dimx = pMap->getColGridSize()*pMap->getColNo();
     const double dimy = pMap->getRowGridSize()*pMap->getRowNo();
     const double dimz = pMap->getSecGridSize()*pMap->getSecNo();
     const double cea = xt.a();
     const double ceb = xt.b();
     const double cec = xt.c();
-    if (qlib::isNear4(dimx, cea) &&
-        qlib::isNear4(dimy, ceb) &&
-        qlib::isNear4(dimz, cec) &&
-        isUsePBC())
-      m_bPBC = true;
+    const bool bSpansCell = qlib::isNear4(dimx, cea) &&
+                            qlib::isNear4(dimy, ceb) &&
+                            qlib::isNear4(dimz, cec);
+    m_bPBC = isPBCEligible(pXtal, bSpansCell);
+  }
+  else {
+    m_bPBC = false;
   }
 
   if (pXtal!=NULL) {
@@ -406,8 +451,43 @@ void MapSurfRenderer::makerange()
   //int stsec = int(vmin.z())-pMap->getStartSec();
 }
 
-/////////////////////////////////////////////////////////////////////////////////
+void MapSurfRenderer::makerangeFull(ScalarObject *pMap)
+{
+  // Full region mode: no periodic wrap, the surface is closed at the
+  // region boundary, and the range is the stored block clipped to the
+  // padded view box / molecule boundary, in absolute cell-grid node
+  // indices.
+  m_bPBC = false;
+  m_bCapDisplay = true;
 
+  int lo[3], hi[3], s;
+  computeFullRegion(pMap, lo, hi, s);
+
+  const int st[3] = {pMap->getStartCol(), pMap->getStartRow(), pMap->getStartSec()};
+  const int n[3] = {pMap->getColNo(), pMap->getRowNo(), pMap->getSecNo()};
+
+  // Align the sample nodes to multiples of the stride relative to the
+  // block start; the aligned span never passes the last aligned node, so
+  // no cube reads past the block.
+  const LodRange rc = lodAlignRange(lo[0], hi[0], st[0], n[0], s);
+  const LodRange rr = lodAlignRange(lo[1], hi[1], st[1], n[1], s);
+  const LodRange rs = lodAlignRange(lo[2], hi[2], st[2], n[2], s);
+
+  m_nStCol = rc.start;
+  m_nStRow = rr.start;
+  m_nStSec = rs.start;
+  m_nActCol = rc.span;
+  m_nActRow = rr.span;
+  m_nActSec = rs.span;
+  m_nStep = s;
+
+  const int clo[3] = {rc.start, rr.start, rs.start};
+  const int chi[3] = {rc.start + rc.span, rr.start + rr.span, rs.start + rs.span};
+  setCurRegion(clo, chi, s);
+
+  MB_DPRINTLN("MapSurfRend> full region [%d,%d]x[%d,%d]x[%d,%d] of %dx%dx%d nodes, step %d",
+              clo[0], chi[0], clo[1], chi[1], clo[2], chi[2], n[0], n[1], n[2], s);
+}
 
 void MapSurfRenderer::setupColorEnv()
 {
@@ -547,37 +627,40 @@ void MapSurfRenderer::runMarchingCubes(bool bGenSurf,
   // The kernel only reads shared state, so the slabs run concurrently on
   // oneTBB; consuming the buffers in slab order reproduces the serial
   // emission order exactly, independent of the thread count.
-  const int nslabs = (ncol + m_nBinFac - 1) / m_nBinFac;
+  const int nslabs = (ncol + m_nStep - 1) / m_nStep;
   slabs.clear();
   slabs.resize(nslabs);
 
   qlib::parallel_for(0, (size_t) nslabs, [&](size_t si) {
-    const int i = (int) si * m_nBinFac;
+    const int i = (int) si * m_nStep;
     MCVertBuf &out = slabs[si];
     float values[8];
     bool bary[8];
 
-    for (int j=0; j<nrow; j+=m_nBinFac)
-      for (int k=0; k<nsec; k+=m_nBinFac) {
+    for (int j=0; j<nrow; j+=m_nStep)
+      for (int k=0; k<nsec; k+=m_nStep) {
 
         int ix = i+m_nStCol - pMap->getStartCol();
         int iy = j+m_nStRow - pMap->getStartRow();
         int iz = k+m_nStSec - pMap->getStartSec();
         if (!m_bPBC) {
+          // The whole cube (far corner at +step) must lie inside the map
+          // block; getDen() returns 0 outside, which would cut a bogus
+          // surface along the block edge.
           if (ix<0||iy<0||iz<0)
             continue;
-          if (ix+1>=m_nMapColNo||
-              iy+1>=m_nMapRowNo||
-              iz+1>=m_nMapSecNo)
+          if (ix+m_nStep>=m_nMapColNo||
+              iy+m_nStep>=m_nMapRowNo||
+              iz+m_nStep>=m_nMapSecNo)
             continue;
         }
 
         bool bin = false;
         int ii;
         for (ii=0; ii<8; ii++) {
-          const int ixx = ix + (mct::cubeVertexOffset[ii][0]) * m_nBinFac;
-          const int iyy = iy + (mct::cubeVertexOffset[ii][1]) * m_nBinFac;
-          const int izz = iz + (mct::cubeVertexOffset[ii][2]) * m_nBinFac;
+          const int ixx = ix + (mct::cubeVertexOffset[ii][0]) * m_nStep;
+          const int iyy = iy + (mct::cubeVertexOffset[ii][1]) * m_nStep;
+          const int izz = iz + (mct::cubeVertexOffset[ii][2]) * m_nStep;
           values[ii] = getDen(ixx, iyy, izz);
 
           // check mol boundary
@@ -721,6 +804,7 @@ void MapSurfRenderer::invalidateMeshCache()
   std::vector<CachedVert>().swap(m_meshCache);
   m_bMeshCacheValid = false;
   m_bAidValid = false;
+  invalidateCurRegion();
   m_trigGpuPrim.invalidate();
   super_t::invalidateDisplayCache();
 }
@@ -749,7 +833,9 @@ Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz) const
 {
   Vector4D rval;
 
-  const int n = 1;
+  // Central difference over one marching stride: at coarse strides the
+  // +-1 node difference is high-frequency noise relative to the surface.
+  const int n = m_nStep;
   rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
   rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
   rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
@@ -797,18 +883,23 @@ void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
   int border_flag = 0;
   if (fx==0)
     border_flag |= 1<<0;
-  if (m_nActCol<=fx+m_nBinFac)
+  if (m_nActCol<=fx+m_nStep)
     border_flag |= 1<<1;
   if (fy==0)
     border_flag |= 1<<2;
-  if (m_nActRow<=fy+m_nBinFac)
+  if (m_nActRow<=fy+m_nStep)
     border_flag |= 1<<3;
   if (fz==0)
     border_flag |= 1<<4;
-  if (m_nActSec<=fz+m_nBinFac)
+  if (m_nActSec<=fz+m_nStep)
     border_flag |= 1<<5;
 
-  if(iFlagIndex == 0 && bGenSurf) {
+  // Border caps close the surface at the range boundary: always for the
+  // generated surface object, and in the display path in full region
+  // mode (m_bCapDisplay).
+  const bool bCap = bGenSurf || m_bCapDisplay;
+
+  if(iFlagIndex == 0 && bCap) {
     // Fill the border of the extent
     // inside of the iso-surface
     int nx, ny, nz, dx, dy, dz, dx2, dy2, dz2;
@@ -821,9 +912,9 @@ void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
         ny = border_normal[i][1];
         nz = border_normal[i][2];
 
-        dx = ( (nx+1)/2 )*m_nBinFac;
-        dy = ( (ny+1)/2 )*m_nBinFac;
-        dz = ( (nz+1)/2 )*m_nBinFac;
+        dx = ( (nx+1)/2 )*m_nStep;
+        dy = ( (ny+1)/2 )*m_nStep;
+        dz = ( (nz+1)/2 )*m_nStep;
 
         for (int j=0; j<6; ++j) {
           int k = (i%2) * 6 + j;
@@ -870,29 +961,29 @@ void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
 
       asEdgeVertex[iEdge].x() =
         double(fx) +
-          (mct::cubeVertexOffset[ec0][0] + fOffset*mct::cubeEdgeDirection[iEdge][0]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][0] + fOffset*mct::cubeEdgeDirection[iEdge][0]) * m_nStep;
       asEdgeVertex[iEdge].y() =
         double(fy) +
-          (mct::cubeVertexOffset[ec0][1] + fOffset*mct::cubeEdgeDirection[iEdge][1]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][1] + fOffset*mct::cubeEdgeDirection[iEdge][1]) * m_nStep;
       asEdgeVertex[iEdge].z() =
         double(fz) +
-          (mct::cubeVertexOffset[ec0][2] + fOffset*mct::cubeEdgeDirection[iEdge][2]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][2] + fOffset*mct::cubeEdgeDirection[iEdge][2]) * m_nStep;
       asEdgeVertex[iEdge].w() = 0;
 
       Vector4D nv0,nv1;
       if (norms[ ec0 ].w()<0.0) {
-        const int ixx = ix + (mct::cubeVertexOffset[ec0][0]) * m_nBinFac;
-        const int iyy = iy + (mct::cubeVertexOffset[ec0][1]) * m_nBinFac;
-        const int izz = iz + (mct::cubeVertexOffset[ec0][2]) * m_nBinFac;
+        const int ixx = ix + (mct::cubeVertexOffset[ec0][0]) * m_nStep;
+        const int iyy = iy + (mct::cubeVertexOffset[ec0][1]) * m_nStep;
+        const int izz = iz + (mct::cubeVertexOffset[ec0][2]) * m_nStep;
         nv0 = norms[ec0] = getGrdNorm2(ixx, iyy, izz);
       }
       else {
         nv0 = norms[ec0];
       }
       if (norms[ ec1 ].w()<0.0) {
-        const int ixx = ix + (mct::cubeVertexOffset[ec1][0]) * m_nBinFac;
-        const int iyy = iy + (mct::cubeVertexOffset[ec1][1]) * m_nBinFac;
-        const int izz = iz + (mct::cubeVertexOffset[ec1][2]) * m_nBinFac;
+        const int ixx = ix + (mct::cubeVertexOffset[ec1][0]) * m_nStep;
+        const int iyy = iy + (mct::cubeVertexOffset[ec1][1]) * m_nStep;
+        const int izz = iz + (mct::cubeVertexOffset[ec1][2]) * m_nStep;
         nv1 = norms[ec1] = getGrdNorm2(ixx, iyy, izz);
       }
       else {
@@ -934,12 +1025,12 @@ void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
 
 
   // Fill the border of the extent
-  if(bGenSurf) {
+  if(bCap) {
     Vector4D v[8+12];
     for (int i=0; i<8; ++i) {
-      v[i].x() = double(fx) + mct::cubeVertexOffset[i][0] * m_nBinFac;
-      v[i].y() = double(fy) + mct::cubeVertexOffset[i][1] * m_nBinFac;
-      v[i].z() = double(fz) + mct::cubeVertexOffset[i][2] * m_nBinFac;
+      v[i].x() = double(fx) + mct::cubeVertexOffset[i][0] * m_nStep;
+      v[i].y() = double(fy) + mct::cubeVertexOffset[i][1] * m_nStep;
+      v[i].z() = double(fz) + mct::cubeVertexOffset[i][2] * m_nStep;
       v[i].w() = 0;
     }
     for (int i=0; i<12; ++i) {
@@ -1001,9 +1092,12 @@ void MapSurfRenderer::display(DisplayContext *pdc)
       (getColorMode()==MapRenderer::MAPREND_MOLFANC && !m_bAidValid);
 
   if (bNeedBuild) {
-    // check and setup mol boundary data + map-range info (as render() does)
-    setupMolBndry();
-    makerange();
+    // mol boundary + map-range info only for a geometry rebuild (see
+    // render(): the mesh cache is relative to the range start)
+    if (!m_bMeshCacheValid) {
+      setupMolBndry();
+      makerange();
+    }
 
     setupColorEnv();
 
@@ -1176,11 +1270,15 @@ void MapSurfRenderer::setupXformMat()
   // setupXformMat(pdl) used in the display-list path.
   m_xform = pMap->getXformMatrix();
 
-  //  setup frac-->orth matrix
-  if (pXtal==NULL) {
-    m_xform.matprod( Matrix4D::makeTransMat(pMap->getOrigin()) );
+  // map origin (MRC ORIGIN for DensityMap; zero for crystallographic maps)
+  {
+    const Vector4D vorig = pMap->getOrigin();
+    if (pXtal==NULL || !vorig.isZero3D())
+      m_xform.matprod( Matrix4D::makeTransMat(vorig) );
   }
-  else {
+
+  //  setup frac-->orth matrix
+  if (pXtal!=NULL) {
     Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
     m_xform.matprod( Matrix4D(orthmat) );
   }

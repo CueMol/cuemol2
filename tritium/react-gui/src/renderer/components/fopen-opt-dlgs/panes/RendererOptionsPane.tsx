@@ -1,5 +1,13 @@
 import React from 'react';
-import { InputGroup, HTMLSelect, Switch, FormGroup, Divider, Checkbox } from '@blueprintjs/core';
+import { Divider } from '@blueprintjs/core';
+import {
+  CheckboxField,
+  Field,
+  FieldSection,
+  SelectField,
+  SwitchField,
+  TextField,
+} from '../../../h3-kit/form';
 import type { PresetTypeEntry, RendererOptions } from '../types';
 import { MolSelList } from '../../../h3-kit/MolSelList';
 
@@ -49,89 +57,78 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
 
   return (
     <div className="fod-section">
-      <div className="fod-section-title">Object</div>
-      <FormGroup label="Object name" labelFor="rend-objname" className="fod-form-group">
-        <InputGroup
-          id="rend-objname"
-          value={options.objectName}
-          onChange={(e) => set('objectName')(e.target.value)}
-        />
-      </FormGroup>
+      <FieldSection title="Object">
+        <Field label="Object name">
+          <TextField value={options.objectName} onChange={set('objectName')} />
+        </Field>
+      </FieldSection>
       <Divider />
-      <div className="fod-section-title">Renderer</div>
-      <FormGroup label="Renderer type" labelFor="rend-type" className="fod-form-group">
-        <HTMLSelect
-          id="rend-type"
-          className="h3-form-select"
-          fill
-          value={options.presetName ?? options.rendererType}
-          onChange={(e) => onTypeChange(e.target.value)}
-          disabled={rendererTypes.length === 0 && presets.length === 0}
-        >
-          {presets.length > 0 ? (
-            <>
-              <optgroup label="Presets">
-                {presets.map((p) => (
-                  <option key={p.name} value={p.name}>{p.desc || p.name}</option>
-                ))}
-              </optgroup>
-              <optgroup label="Renderer types">
-                {rendererTypes.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </optgroup>
-            </>
-          ) : (
-            rendererTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))
-          )}
-        </HTMLSelect>
-      </FormGroup>
-      <FormGroup label="Renderer name" labelFor="rend-name" className="fod-form-group">
-        <InputGroup
-          id="rend-name"
-          value={options.rendererName}
-          onChange={(e) => {
-            if (onRendererNameUserEdit) onRendererNameUserEdit(e.target.value);
-            else set('rendererName')(e.target.value);
-          }}
-        />
-      </FormGroup>
-      {isMolFormat && (
-        <FormGroup
-          label={
-            <Checkbox
-              checked={options.selectionEnabled}
-              onChange={(e) => set('selectionEnabled')(e.target.checked)}
-              label="Selection"
-              style={{ marginBottom: 0 }}
-              // A preset's children carry their sel from the style
-              // definition; the dialog selection would be ignored
-              // (RendGroup has no sel), so disable it while picked.
-              disabled={isPreset}
-            />
-          }
-          labelFor="rend-sel"
-          className="fod-form-group"
-        >
-          <MolSelList
-            sceneID={sceneId}
-            molID={molID}
-            selectedSel={options.selection}
-            onSelectedSelChange={set('selection')}
-            disabled={!options.selectionEnabled || isPreset}
-            placeholder="* (all atoms)"
+      <FieldSection title="Renderer">
+        <Field label="Renderer type">
+          <SelectField
+            value={options.presetName ?? options.rendererType}
+            onChange={onTypeChange}
+            disabled={rendererTypes.length === 0 && presets.length === 0}
+          >
+            {presets.length > 0 ? (
+              <>
+                <optgroup label="Presets">
+                  {presets.map((p) => (
+                    <option key={p.name} value={p.name}>{p.desc || p.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Renderer types">
+                  {rendererTypes.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </optgroup>
+              </>
+            ) : (
+              rendererTypes.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))
+            )}
+          </SelectField>
+        </Field>
+        <Field label="Renderer name">
+          <TextField
+            value={options.rendererName}
+            onChange={(v) => {
+              if (onRendererNameUserEdit) onRendererNameUserEdit(v);
+              else set('rendererName')(v);
+            }}
           />
-        </FormGroup>
-      )}
+        </Field>
+        {isMolFormat && (
+          <>
+            {/* Gate for the selection list below -> Checkbox (value / gate
+              * rule in ui-style-guide.md). A preset's children carry their
+              * sel from the style definition, so the dialog selection would
+              * be ignored (RendGroup has no sel): disable it while picked. */}
+            <Field label="Selection" inline controlFirst>
+              <CheckboxField
+                checked={options.selectionEnabled}
+                disabled={isPreset}
+                onChange={set('selectionEnabled')}
+              />
+            </Field>
+            <Field label="Atoms">
+              <MolSelList
+                sceneID={sceneId}
+                molID={molID}
+                selectedSel={options.selection}
+                onSelectedSelChange={set('selection')}
+                disabled={!options.selectionEnabled || isPreset}
+                placeholder="* (all atoms)"
+              />
+            </Field>
+          </>
+        )}
+      </FieldSection>
       <Divider />
-      <Switch
-        label="Center view on molecule after loading"
-        checked={options.centerView}
-        onChange={(e) => set('centerView')(e.target.checked)}
-        className="fod-switch"
-      />
+      <Field label="Center view on molecule after loading" inline>
+        <SwitchField checked={options.centerView} onChange={set('centerView')} />
+      </Field>
     </div>
   );
 };

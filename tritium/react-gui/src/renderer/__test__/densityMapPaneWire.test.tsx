@@ -104,6 +104,7 @@ function makeCm(useAbsLevel: boolean, colormode = 'solid'): MockCm {
                         alpha: 1, color: '#ffffff', colormode, extent: 10,
                         siglevel: 1.5, useAbsLevel,
                         maxLevel: 5, minLevel: -5, maxExtent: 100, denSigma: 1,
+                        regionResolved: 'box', mapType: 'xtal',
                         defaults: { alpha: false, siglevel: false, extent: false },
                     },
                 })

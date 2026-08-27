@@ -96,11 +96,11 @@ bool XplorMapReader::read(qlib::InStream &arg)
   //
   //  allocate memory
   //
-  int ntotal = m_ncol*m_nrow*m_nsect;
+  const size_t ntotal = size_t(m_ncol)*size_t(m_nrow)*size_t(m_nsect);
   if (m_fbuf!=NULL)
     delete [] m_fbuf;
   m_fbuf = new float[ntotal];
-  LOG_DPRINT("memory allocation %d bytes\n", ntotal*4);
+  LOG_DPRINT("memory allocation %.1f MB\n", double(ntotal)*4.0/(1024.0*1024.0));
   if (m_fbuf==NULL) {
     MB_THROW(qlib::OutOfMemoryException, "X-PLOR MapFile read: cannot allocate memory");
     return false;
@@ -109,7 +109,7 @@ bool XplorMapReader::read(qlib::InStream &arg)
   m_nFloatArrayCurPos = 0;
   m_nFloatArraySize = 0;
 
-  int ii=0;
+  size_t ii=0;
   for (int isec=0; isec<m_nsect; isec++) {
     readRecord(ins);
     int ksec;

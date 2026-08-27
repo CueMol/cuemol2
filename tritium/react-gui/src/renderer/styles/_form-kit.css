@@ -1019,7 +1019,7 @@
  * a single flex item, so the gap collapses and it stays flush in its row.
  *
  * `margin-bottom` is deliberately not set here -- the per-surface rules
- * (.h3-form-switch / .fod-switch) own the inter-row spacing. */
+ * (.h3-form-switch and the Field row) own the inter-row spacing. */
 .bp5-control.bp5-switch {
   display: flex;
   align-items: center;

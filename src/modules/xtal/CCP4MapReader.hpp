@@ -40,6 +40,18 @@ private:
   bool m_bTruncMax;
   double m_dMax;
 
+  /// Keep every n-th grid point on each axis (1 = full grid). The map
+  /// size, cell grid and start indices must be divisible by n.
+  int m_nSubsample;
+
+  /// Upper bound of the stored voxel count (0 = unlimited); a larger map
+  /// raises an exception before anything is allocated
+  double m_dMaxVoxels;
+
+  /// Quantize from the header DMIN/DMAX in one pass when they are valid
+  /// (false: always measure the range first)
+  bool m_bUseHdrStats;
+
   ///////////////////////////////////////////
 public:
   /// default constructor
@@ -73,6 +85,12 @@ public:
 
   /// create default object for this reader
   qsys::ObjectPtr createDefaultObj() const override;
+
+  /// Read only the header of a CCP4/MRC file (a .gz path is decoded) and
+  /// report it as JSON: size, mode, voxel count and storage estimate,
+  /// ISPG, NVERSION, EXTTYP, ORIGIN and the header statistics. Lets a
+  /// caller decide about subsampling before the whole map is read.
+  LString probeHeader(const LString &path);
 
   ///////////////////////////////////////////
 

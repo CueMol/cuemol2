@@ -6,9 +6,8 @@
  * (last-used history, else the coordinate path with a .psf extension) is
  * seeded by FileOpenOptionDialog.
  */
-
 import React, { useCallback } from 'react';
-import { InputGroup, FormGroup, Button, ControlGroup } from '@blueprintjs/core';
+import { Field, FieldSection, FormButton, TextField } from '../../../h3-kit/form';
 import type { NamdCoorOptions } from '../types';
 import { IPC } from '../../../../shared/ipcChannels';
 
@@ -35,24 +34,19 @@ export const NamdCoorOptionsPane: React.FC<NamdCoorOptionsPaneProps> = ({ option
 
   return (
     <div className="fod-section">
-      <div className="fod-section-title">Topology</div>
-      <FormGroup
-        label="PSF topology file"
-        labelFor="namd-psf"
-        helperText="Required to assign atom types and connectivity"
-        className="fod-form-group"
-      >
-        <ControlGroup fill>
-          <InputGroup
-            id="namd-psf"
-            placeholder="/path/to/topology.psf"
-            value={options.psfFilePath}
-            onChange={(e) => onChange({ psfFilePath: e.target.value })}
-            fill
-          />
-          <Button text="Change..." onClick={handleBrowse} />
-        </ControlGroup>
-      </FormGroup>
+      <FieldSection title="Topology">
+        <Field label="PSF topology file">
+          <div className="fod-path-row">
+            <TextField
+              value={options.psfFilePath}
+              placeholder="/path/to/topology.psf"
+              onChange={(v) => onChange({ psfFilePath: v })}
+            />
+            <FormButton text="Change..." onClick={handleBrowse} />
+          </div>
+        </Field>
+        <div className="fod-hint">Required to assign atom types and connectivity</div>
+      </FieldSection>
     </div>
   );
 };

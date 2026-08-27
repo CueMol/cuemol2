@@ -21,15 +21,13 @@ using qlib::LChar;
 
 // default constructor
 BrixMapReader::BrixMapReader()
-     : m_pMap(NULL), m_denbuf(NULL)
+     : m_pMap(NULL)
 {
 }
 
 // destructor
 BrixMapReader::~BrixMapReader()
 {
-  if (m_denbuf!=NULL)
-    delete [] m_denbuf;
 }
 
 ///////////////////////////////////////////
@@ -124,11 +122,14 @@ bool BrixMapReader::read(qlib::InStream &ins)
 
   LOG_DPRINTLN("BRIX> rhomin %f rhomax %f", rmin, rmax);
 
-  int ntotal = m_ncol*m_nrow*m_nsect;
-  if (m_denbuf!=NULL)
-    delete [] m_denbuf;
-  m_denbuf = new unsigned char[ntotal];
-  LOG_DPRINT("BRIX> memory allocation %d bytes\n", ntotal*4);
+  // The bricks are scattered straight into the map storage (no whole-map
+  // temporary buffer); the statistics are accumulated on the way.
+  const size_t ntotal = size_t(m_ncol)*size_t(m_nrow)*size_t(m_nsect);
+  LOG_DPRINT("BRIX> memory allocation %.1f MB\n", double(ntotal)/(1024.0*1024.0));
+  DensityMap::MapQuant q;
+  q.base = rmin;
+  q.step = (rmax - rmin)/256.0;
+  m_pMap->beginByteMap(m_ncol, m_nrow, m_nsect, q);
   
   // fseek(fp, 512, SEEK_SET);
   double sum=0.0;
@@ -143,8 +144,6 @@ bool BrixMapReader::read(qlib::InStream &ins)
         int res = ins.read((char*)buf, 0, 512);
         if (res!=512) {
           LOG_DPRINTLN("BRIX> read error (invalid file length). (%d %d %d) %d",ibx, iby, ibz, res);
-          delete [] m_denbuf;
-          m_denbuf = NULL;
           return false;
         }
         int bx = ibx*8;
@@ -175,10 +174,7 @@ bool BrixMapReader::read(qlib::InStream &ins)
   //
   // setup DensityMap object
   //
-  m_pMap->setMapByteArray(m_denbuf, m_ncol, m_nrow, m_nsect, rmin, rmax, mean, sigma);
-
-  delete [] m_denbuf;
-  m_denbuf = NULL;
+  m_pMap->endByteMap(rmin, rmax, mean, sigma);
 
   m_pMap->setMapParams(m_stacol, m_starow, m_stasect, m_na, m_nb, m_nc);
 

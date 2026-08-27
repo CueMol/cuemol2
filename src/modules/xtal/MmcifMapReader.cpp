@@ -66,6 +66,13 @@ int MmcifMapReader::canHandleContent(qlib::InStream &ins) const
         if (line.startsWith("#")) continue;
         if (line.startsWith("_refln.")) return CONTENT_YES;
         if (line.startsWith("_atom_site.")) return CONTENT_NO;
+        // Coordinate-model categories (see MmcifMolReader::canHandleContent):
+        // they appear in the first ~10 KB, long before the `_atom_site.`
+        // loop, so a coordinate CIF is rejected without scanning its whole
+        // header.
+        if (line.startsWith("_entity.") || line.startsWith("_entity_poly.") ||
+            line.startsWith("_struct_asym.") || line.startsWith("_atom_type."))
+            return CONTENT_NO;
     }
     return CONTENT_UNKNOWN;
 }

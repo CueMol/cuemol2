@@ -119,7 +119,7 @@ namespace xtal {
       m_nBinFac = n;
       invalidateGeomCache();
     }
-    
+
   private:
     /// Max grid size (default=100x100x100 grid)
     int m_nMaxGrid;
@@ -189,6 +189,14 @@ namespace xtal {
     /// contour level (not a property)
     double m_dLevel;
 
+    /// Marching stride of the current range (grid nodes per cube edge);
+    /// set by makerange() from the lod/binning properties
+    int m_nStep;
+
+    /// Close the surface at the range boundary in the display path too
+    /// (full region mode; the gen-surf path always caps)
+    bool m_bCapDisplay;
+
     /// for debug
     std::deque<Vector4D> m_tmpv;
     
@@ -242,6 +250,12 @@ namespace xtal {
     ScalarObject *m_pCMap;
 
     void makerange();
+
+    /// Full region mode range: the stored block clipped to the padded view
+    /// box / molecule boundary (MapRenderer::computeFullRegion), marched at
+    /// the budget-derived (or explicit) stride with the nodes aligned to
+    /// the stride relative to the block start
+    void makerangeFull(ScalarObject *pMap);
 
     void renderImpl(DisplayContext *pdl);
 

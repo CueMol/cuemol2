@@ -7,6 +7,7 @@
 
 #include "GLSLMapMeshRenderer2.hpp"
 #include "DensityMap.hpp"
+#include "MapLod.hpp"
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
@@ -24,9 +25,11 @@ GLSLMapMeshRenderer2::GLSLMapMeshRenderer2() : super_t()
 {
     m_bChkShaderDone = false;
     m_nBufSize = 100;
+    m_nStep = 1;
     m_lw = 1.0;
     m_bPBC = false;
     m_bAutoUpdate = true;
+    m_bDragUpdate = false;
     m_pGpuPrim = nullptr;
     m_bMapTexOK = false;
 }
@@ -48,9 +51,9 @@ double GLSLMapMeshRenderer2::getMaxExtent() const
 {
     ScalarObject *pMap = qlib::ensureNotNull(getScalarObj());
 
-    const double xmax = 100 * pMap->getColGridSize() / 2.0;
-    const double ymax = 100 * pMap->getRowGridSize() / 2.0;
-    const double zmax = 100 * pMap->getSecGridSize() / 2.0;
+    const double xmax = m_nBufSize * pMap->getColGridSize() / 2.0;
+    const double ymax = m_nBufSize * pMap->getRowGridSize() / 2.0;
+    const double zmax = m_nBufSize * pMap->getSecGridSize() / 2.0;
 
     return qlib::min(xmax, qlib::min(ymax, zmax));
 }
@@ -76,6 +79,14 @@ void GLSLMapMeshRenderer2::viewChanged(qsys::ViewEvent &ev)
 {
     const int nType = ev.getType();
 
+    if (getEffectiveRegionMode() == REGION_FULL) {
+        // Full region mode: the center follows the view without rebuilding
+        // and the visible box drives the debounced region refinement
+        handleFullModeViewEvent(ev, m_bAutoUpdate, m_bDragUpdate);
+        return;
+    }
+
+    // Box region mode: the historical center following
     if (nType != qsys::ViewEvent::VWE_PROPCHG &&
         nType != qsys::ViewEvent::VWE_PROPCHG_DRG)
         return;
@@ -130,7 +141,9 @@ void GLSLMapMeshRenderer2::unloading()
     delete m_pGpuPrim;
     m_pGpuPrim = nullptr;
 
-    // m_mapBufTex destructor handles GPU resource cleanup
+    // release the lookup texture while the view context is still alive
+    m_mapBufTex.invalidate();
+    m_bMapTexOK = false;
 
     super_t::unloading();
 }
@@ -146,6 +159,12 @@ void GLSLMapMeshRenderer2::invalidateDisplayCache()
 void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
                                         DensityMap *pXtal)
 {
+    if (getEffectiveRegionMode() == REGION_FULL) {
+        make3DTexMapFull(pdc, pMap);
+        return;
+    }
+    m_nStep = 1;
+
     const Vector4D cent = getCenter();
     const double extent = getExtent();
 
@@ -160,16 +179,17 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
         xt.orthToFrac(vmin);
         xt.orthToFrac(vmax);
 
-        m_bPBC = false;
+        // check PBC (the stored block must span the whole cell)
         const double dimx = pMap->getColGridSize() * pMap->getColNo();
         const double dimy = pMap->getRowGridSize() * pMap->getRowNo();
         const double dimz = pMap->getSecGridSize() * pMap->getSecNo();
         const double cea = xt.a();
         const double ceb = xt.b();
         const double cec = xt.c();
-        if (qlib::isNear4(dimx, cea) && qlib::isNear4(dimy, ceb) &&
-            qlib::isNear4(dimz, cec))
-            m_bPBC = true;
+        const bool bSpansCell = qlib::isNear4(dimx, cea) &&
+                                qlib::isNear4(dimy, ceb) &&
+                                qlib::isNear4(dimz, cec);
+        m_bPBC = isPBCEligible(pXtal, bSpansCell);
     }
 
     if (pXtal != NULL) {
@@ -217,21 +237,10 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
     int nrow = int(vmax.y() - vmin.y());
     int nsec = int(vmax.z() - vmin.z());
 
-    bool bReuse;
     MapBufTex::DataArray &maptmp = m_mapBufTex.m_data;
-
-    if (qlib::abs(maptmp.cols() - ncol) < 1 &&
-        qlib::abs(maptmp.rows() - nrow) < 1 &&
-        qlib::abs(maptmp.secs() - nsec) < 1) {
-        MB_DPRINTLN("reuse texture");
-        ncol = maptmp.cols();
-        nrow = maptmp.rows();
-        nsec = maptmp.secs();
-        bReuse = true;
-    } else {
+    if (int(maptmp.cols()) != ncol || int(maptmp.rows()) != nrow ||
+        int(maptmp.secs()) != nsec)
         maptmp.resize(ncol, nrow, nsec);
-        bReuse = false;
-    }
 
     m_nActCol = ncol;
     m_nActRow = nrow;
@@ -248,12 +257,8 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
                 maptmp.at(i, j, k) = getMap(pMap, stcol + i, strow + j, stsec + k);
             }
 
-    // Sync to GPU
-    if (!bReuse || !m_mapBufTex.isValid()) {
-        m_mapBufTex.create(pdc);
-    } else {
-        m_mapBufTex.update();
-    }
+    // Sync to GPU (the lookup texture is immutable: re-created per region)
+    if (!m_mapBufTex.create(pdc)) return;
 
     {
         const double siglevel = getSigLevel();
@@ -268,6 +273,74 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
     }
 
     MB_DPRINTLN("make3D texture OK.");
+    m_bMapTexOK = true;
+}
+
+void GLSLMapMeshRenderer2::make3DTexMapFull(DisplayContext *pdc, ScalarObject *pMap)
+{
+    // Full region mode: the block clipped to the padded view box /
+    // molecule boundary at the budget-derived stride (aligned to the block
+    // start), copied into the buffer texture with extractBlockBytes(); no
+    // periodic wrap.
+    m_bPBC = false;
+
+    m_nMapColNo = pMap->getColNo();
+    m_nMapRowNo = pMap->getRowNo();
+    m_nMapSecNo = pMap->getSecNo();
+
+    const int st[3] = {pMap->getStartCol(), pMap->getStartRow(), pMap->getStartSec()};
+    const int n[3] = {pMap->getColNo(), pMap->getRowNo(), pMap->getSecNo()};
+    if (n[0] <= 0 || n[1] <= 0 || n[2] <= 0) return;
+
+    int lo[3], hi[3], s;
+    computeFullRegion(pMap, lo, hi, s);
+
+    const LodRange rc = lodAlignRange(lo[0], hi[0], st[0], n[0], s);
+    const LodRange rr = lodAlignRange(lo[1], hi[1], st[1], n[1], s);
+    const LodRange rs = lodAlignRange(lo[2], hi[2], st[2], n[2], s);
+    const int nn[3] = {rc.span / s + 1, rr.span / s + 1, rs.span / s + 1};
+
+    MapBufTex::DataArray &maptmp = m_mapBufTex.m_data;
+    if (int(maptmp.cols()) != nn[0] || int(maptmp.rows()) != nn[1] ||
+        int(maptmp.secs()) != nn[2])
+        maptmp.resize(nn[0], nn[1], nn[2]);
+
+    ScalarObject::MapBlockSpec sp;
+    sp.start[0] = rc.start - st[0];
+    sp.start[1] = rr.start - st[1];
+    sp.start[2] = rs.start - st[2];
+    sp.size[0] = nn[0];
+    sp.size[1] = nn[1];
+    sp.size[2] = nn[2];
+    sp.step = s;
+    pMap->extractBlockBytes(sp, false, 0, &maptmp.at(0, 0, 0));
+
+    m_nStCol = rc.start;
+    m_nStRow = rr.start;
+    m_nStSec = rs.start;
+    m_nActCol = nn[0];
+    m_nActRow = nn[1];
+    m_nActSec = nn[2];
+    m_nStep = s;
+
+    const int clo[3] = {rc.start, rr.start, rs.start};
+    const int chi[3] = {rc.start + rc.span, rr.start + rr.span, rs.start + rs.span};
+    setCurRegion(clo, chi, s);
+
+    // Sync to GPU (the lookup texture is immutable: re-created per region)
+    if (!m_mapBufTex.create(pdc)) return;
+
+    {
+        const double siglevel = getSigLevel();
+        const double level = pMap->getRmsdDensity() * siglevel;
+        double lvtmp = floor((level - pMap->getLevelBase()) / pMap->getLevelStep());
+        unsigned int lv = (unsigned int)lvtmp;
+        if (lvtmp < 0) lv = 0;
+        if (lvtmp > 0xFF) lv = 0xFF;
+        m_isolevel = lv;
+    }
+
+    MB_DPRINTLN("GLSLMapMesh2> full region %dx%dx%d samples, step %d", nn[0], nn[1], nn[2], s);
     m_bMapTexOK = true;
 }
 
@@ -291,7 +364,9 @@ void GLSLMapMeshRenderer2::display(DisplayContext *pdc)
 
     pdc->pushMatrix();
 
-    if (pXtal == NULL) pdc->translate(pMap->getOrigin());
+    // map origin (MRC ORIGIN for DensityMap; zero for crystallographic maps)
+    const Vector4D vorig = pMap->getOrigin();
+    if (pXtal == NULL || !vorig.isZero3D()) pdc->translate(vorig);
 
     if (pXtal != NULL) {
         Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
@@ -311,6 +386,9 @@ void GLSLMapMeshRenderer2::display(DisplayContext *pdc)
 
     vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
     pdc->translate(vtmp);
+
+    // strided samples: one texture cell spans m_nStep grid nodes
+    if (m_nStep > 1) pdc->scale(Vector4D(m_nStep, m_nStep, m_nStep));
 
     renderGPU(pdc);
 
