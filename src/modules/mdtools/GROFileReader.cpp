@@ -80,6 +80,12 @@ qsys::ObjectPtr GROFileReader::createDefaultObj() const
 /// Content sniff: line 2 must be a non-negative integer (declared atom
 /// count) and line 3 must look like a GROMOS87 fixed-column atom line
 /// (>= 44 chars with three parseable doubles at columns 20/28/36).
+///
+/// Every fall-through is CONTENT_UNKNOWN, never CONTENT_NO: the caller
+/// may hand us a byte-capped stream whose last line is cut short, and
+/// a length / numeric-parse / missing-line failure on a truncated line
+/// says nothing about the format. NO is reserved for positively
+/// recognising a competing format, which this sniffer never does.
 int GROFileReader::canHandleContent(qlib::InStream &ins) const
 {
   qlib::LineStream lin(ins);
@@ -92,8 +98,8 @@ int GROFileReader::canHandleContent(qlib::InStream &ins) const
   if (!lin.ready()) return CONTENT_UNKNOWN;
   LString count_line = stripLineEnd(lin.readLine()).trim();
   int natoms = -1;
-  if (!count_line.toInt(&natoms)) return CONTENT_NO;
-  if (natoms < 0) return CONTENT_NO;
+  if (!count_line.toInt(&natoms)) return CONTENT_UNKNOWN;
+  if (natoms < 0) return CONTENT_UNKNOWN;
 
   // An empty .gro (natoms == 0) is theoretically valid but
   // indistinguishable from arbitrary text, so report UNKNOWN.
@@ -101,15 +107,15 @@ int GROFileReader::canHandleContent(qlib::InStream &ins) const
 
   // Line 3: first atom line. Require the standard fixed layout to be
   // recognizable -- length must accommodate the 3 position fields.
-  if (!lin.ready()) return CONTENT_NO;
+  if (!lin.ready()) return CONTENT_UNKNOWN;
   LString atom_line = stripLineEnd(lin.readLine());
   if (static_cast<int>(atom_line.length()) < GRO_MIN_ATOM_LINE_LEN)
-    return CONTENT_NO;
+    return CONTENT_UNKNOWN;
 
   double xyz;
-  if (!atom_line.substr(20, 8).trim().toDouble(&xyz)) return CONTENT_NO;
-  if (!atom_line.substr(28, 8).trim().toDouble(&xyz)) return CONTENT_NO;
-  if (!atom_line.substr(36, 8).trim().toDouble(&xyz)) return CONTENT_NO;
+  if (!atom_line.substr(20, 8).trim().toDouble(&xyz)) return CONTENT_UNKNOWN;
+  if (!atom_line.substr(28, 8).trim().toDouble(&xyz)) return CONTENT_UNKNOWN;
+  if (!atom_line.substr(36, 8).trim().toDouble(&xyz)) return CONTENT_UNKNOWN;
 
   return CONTENT_YES;
 }
