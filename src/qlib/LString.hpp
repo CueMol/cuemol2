@@ -200,6 +200,13 @@ public:
         return m_data.find_first_of(s.m_data);
     }
 
+    /// Same as indexOneOf(s) but starts the search at `from`, so a
+    /// caller that appends to a buffer can scan only the new bytes.
+    int indexOneOf(const LString &s, size_type from) const
+    {
+        return m_data.find_first_of(s.m_data, from);
+    }
+
     int indexOf(const LString &str) const
     {
         return m_data.find(str.m_data);

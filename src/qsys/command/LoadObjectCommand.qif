@@ -43,11 +43,12 @@ runtime_class LoadObjectCommand extends Command
     property boolean content_first => m_bContentFirst;
     default content_first = false;
 
-    /// Caps how many bytes the canHandleContent() of each reader is allowed
-    /// to consume during sniff. 0 (default) means unbounded -- the
-    /// streaming sniffer reads each candidate stream until it returns
-    /// a verdict or hits EOF. Set a positive value to bound sniffing
-    /// against pathological / very large inputs.
+    /// Ceiling of the escalating sniff byte budget: each reader first
+    /// sees 64 KiB and is retried with 8x more only while that budget
+    /// (not the file) cut it off. 0 (default) means no ceiling -- retry
+    /// until EOF or a verdict. Set a positive value to bound how many
+    /// bytes any single sniff call may consume on pathological / very
+    /// large inputs.
     property integer max_sniff_bytes => m_nMaxSniffBytes;
     default max_sniff_bytes = 0;
 

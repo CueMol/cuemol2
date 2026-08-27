@@ -367,22 +367,33 @@ TEST(StreamManagerTest, GetWriterInfoJSONStructureAndSizeZero)
 }
 
 // -----------------------------------------------------------------------
-// unregistReader (always returns false — TODO stub)
+// unregistReader
 // -----------------------------------------------------------------------
 
-TEST(StreamManagerTest, UnregistReaderAlwaysReturnsFalse)
+TEST(StreamManagerTest, UnregistReaderUnknownAbiNameReturnsFalse)
 {
-    // The function body is "// TO DO: implementation" — returns false unconditionally.
-    LString abiname(typeid(qsys::SceneXMLReader).name());
-    bool result = StreamManager::getInstance()->unregistReader(abiname);
-    EXPECT_FALSE(result);
+    StreamManager *sm = StreamManager::getInstance();
+    EXPECT_FALSE(sm->unregistReader(LString("no::such::Reader")));
+    // The writer flag does not change the lookup (one table, ABI-keyed).
+    EXPECT_FALSE(sm->unregistReader(LString("no::such::Writer"), true));
 }
 
-TEST(StreamManagerTest, UnregistReaderWithWriterFlagAlwaysReturnsFalse)
+// Unregistering a registered handler removes it from the table; the
+// same ABI name can then be registered again (regIOHImpl throws on
+// duplicates, so this also proves the entry is really gone).
+TEST(StreamManagerTest, UnregistReaderRoundTrip)
 {
-    LString abiname(typeid(qsys::SceneXMLWriter).name());
-    bool result = StreamManager::getInstance()->unregistReader(abiname, true);
-    EXPECT_FALSE(result);
+    StreamManager *sm = StreamManager::getInstance();
+    LString abiname(typeid(qsys::SceneXMLReader).name());
+    ASSERT_TRUE(sm->isReaderRegistered(abiname));
+
+    EXPECT_TRUE(sm->unregistReader(abiname));
+    EXPECT_FALSE(sm->isReaderRegistered(abiname));
+    EXPECT_FALSE(sm->unregistReader(abiname));
+
+    // Restore for the rest of the suite.
+    sm->registReader<qsys::SceneXMLReader>();
+    EXPECT_TRUE(sm->isReaderRegistered(abiname));
 }
 
 // -----------------------------------------------------------------------

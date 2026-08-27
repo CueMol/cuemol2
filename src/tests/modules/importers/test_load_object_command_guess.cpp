@@ -184,29 +184,43 @@ TEST(LoadObjectCommandMaxSniffBytesDefault, IsZeroByDefault)
 
 namespace {
 
-// CIF whose `_atom_site.` token sits past ~8 KB of padding lines. With
-// a small maxBytes cap the sniffer never reaches the hit and the
-// ambiguous-extension fallback kicks in.
-std::string makeBigHeaderCoordCif()
+// CIF whose `_atom_site.` token sits past `padBytes` of padding lines.
+// With a maxBytes ceiling below that offset the sniffer never reaches
+// the hit and the ambiguous-extension fallback kicks in.
+std::string makePaddedCoordCif(size_t padBytes)
 {
     std::string out;
-    out.reserve(16 * 1024);
+    out.reserve(padBytes + 1024);
     out.append("data_test\n");
     const std::string line = std::string("# padding line - ignored by the "
                                          "sniffer (kept long enough to "
                                          "force atom_site past any small "
                                          "maxBytes cap with few lines)\n");
-    while (out.size() < 8 * 1024) out += line;
+    while (out.size() < padBytes) out += line;
     out += "loop_\n_atom_site.group_PDB\nATOM 1 N\n";
     return out;
 }
 
+// ~8 KB of padding: past a 1 KiB ceiling, inside the 64 KiB first round.
+std::string makeBigHeaderCoordCif()
+{
+    return makePaddedCoordCif(8 * 1024);
+}
+
+// ~300 KB of padding: past the 64 KiB first round, so only the
+// escalating budget (second round, 512 KiB) reaches the marker.
+std::string makeVeryBigHeaderCoordCif()
+{
+    return makePaddedCoordCif(300 * 1024);
+}
+
 }  // namespace
 
-// With m_nMaxSniffBytes > 0 in ext-first mode, the sniffer only sees
-// the capped head. For an ambiguous .cif where the verdict lies past
-// the cap, sniff disambiguation fails and guessFileFormat falls back
-// to the first ext-matched candidate. The candidate list is collected
+// With m_nMaxSniffBytes > 0 in ext-first mode, the sniffer never sees
+// past that ceiling (a ceiling below the 64 KiB initial budget is a
+// single round). For an ambiguous .cif where the verdict lies past
+// the ceiling, sniff disambiguation fails and guessFileFormat falls
+// back to the first ext-matched candidate. The candidate list is collected
 // in m_rdrinfotab iteration order (sorted by ABI name), which for the
 // CIF pair starts with mmcifmap (xtal namespace) before mmcif
 // (importers namespace). The exact identity matters less than that the
@@ -225,8 +239,8 @@ TEST(LoadObjectCommandMaxSniffBytesExtFirst, CapLimitsSniffDisambiguation)
         << "', expected one of the registered CIF readers";
 }
 
-// Same setup but in content-first mode: cap applies, no reader claims
-// the head, result is empty.
+// Same setup but in content-first mode: ceiling applies, no reader
+// claims the head, result is empty.
 TEST(LoadObjectCommandMaxSniffBytesContentFirst, CapForcesEmpty)
 {
     LoadObjectCommand cmd;
@@ -238,9 +252,9 @@ TEST(LoadObjectCommandMaxSniffBytesContentFirst, CapForcesEmpty)
     EXPECT_TRUE(fmt.isEmpty());
 }
 
-// With m_nMaxSniffBytes = 0 (unbounded, the default), the same payload
-// resolves to the right reader because the streaming scan reaches the
-// `_atom_site.` token.
+// With m_nMaxSniffBytes = 0 (no ceiling, the default), the same payload
+// resolves to the right reader because the first 64 KiB round already
+// reaches the `_atom_site.` token.
 TEST(LoadObjectCommandMaxSniffBytesContentFirst, ZeroCapIsUnbounded)
 {
     LoadObjectCommand cmd;
@@ -250,4 +264,45 @@ TEST(LoadObjectCommandMaxSniffBytesContentFirst, ZeroCapIsUnbounded)
                                       /*bContentFirst=*/true,
                                       cmd.m_nMaxSniffBytes);
     EXPECT_EQ(std::string(fmt.c_str()), std::string("mmcif"));
+}
+
+// -----------------------------------------------------------------------
+// Escalating budget: a marker past the 64 KiB first round is reached in
+// a later round unless the ceiling stops the growth first.
+// -----------------------------------------------------------------------
+
+TEST(LoadObjectCommandMaxSniffBytesContentFirst, MarkerAt300KbResolvesWithNoCeiling)
+{
+    LoadObjectCommand cmd;
+    cmd.m_filePath = writeTempCif(".cif", makeVeryBigHeaderCoordCif().c_str());
+    cmd.m_nMaxSniffBytes = 0;
+    LString fmt = cmd.guessFileFormat(InOutHandler::IOH_CAT_OBJREADER,
+                                      /*bContentFirst=*/true,
+                                      cmd.m_nMaxSniffBytes);
+    EXPECT_EQ(std::string(fmt.c_str()), std::string("mmcif"));
+}
+
+TEST(LoadObjectCommandMaxSniffBytesContentFirst, CeilingBelowMarkerYieldsEmpty)
+{
+    LoadObjectCommand cmd;
+    cmd.m_filePath = writeTempCif(".cif", makeVeryBigHeaderCoordCif().c_str());
+    cmd.m_nMaxSniffBytes = 128 * 1024;  // 64 KiB round, then clamped 128 KiB round
+    LString fmt = cmd.guessFileFormat(InOutHandler::IOH_CAT_OBJREADER,
+                                      /*bContentFirst=*/true,
+                                      cmd.m_nMaxSniffBytes);
+    EXPECT_TRUE(fmt.isEmpty());
+}
+
+TEST(LoadObjectCommandMaxSniffBytesExtFirst, CeilingBelowMarkerFallsBackToFirstCandidate)
+{
+    LoadObjectCommand cmd;
+    cmd.m_filePath = writeTempCif(".cif", makeVeryBigHeaderCoordCif().c_str());
+    cmd.m_nMaxSniffBytes = 128 * 1024;
+    LString fmt = cmd.guessFileFormat(InOutHandler::IOH_CAT_OBJREADER,
+                                      /*bContentFirst=*/false,
+                                      cmd.m_nMaxSniffBytes);
+    const std::string got(fmt.c_str());
+    EXPECT_TRUE(got == "mmcif" || got == "mmcifmap")
+        << "Fallback returned '" << got
+        << "', expected one of the registered CIF readers";
 }

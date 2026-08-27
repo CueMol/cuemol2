@@ -39,6 +39,7 @@ add_executable(test_qlib
   qlib/test_eventmanager.cpp
   qlib/test_lprocmgr.cpp
   qlib/test_limited_in_stream.cpp
+  qlib/test_line_stream.cpp
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
   qlib/test_seekable_stream.cpp
@@ -92,6 +93,7 @@ add_executable(test_qsys
   qsys/test_scene.cpp
   qsys/test_streammanager.cpp
   qsys/test_stream_manager_search.cpp
+  qsys/test_stream_manager_sniff_escalation.cpp
   qsys/test_objreader.cpp
   qsys/test_objwriter.cpp
   qsys/test_sceneexporter.cpp

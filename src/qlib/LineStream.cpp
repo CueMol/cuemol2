@@ -52,10 +52,13 @@ void LineInImpl::readLine(LString &r)
       //MB_THROW(IOException, "cannot read from stream");
     }
     sbuf[res] = '\0';
-    //printf("read %d:%s", res, sbuf);
+    // Only the bytes just appended can contain a new delimiter; the
+    // prefix was already scanned. Searching from the old length keeps
+    // a long delimiter-free run linear instead of quadratic.
+    const LString::size_type prevLen = m_buf.length();
     m_buf.append(sbuf);
 
-    int pos = m_buf.indexOneOf(m_delim);
+    int pos = m_buf.indexOneOf(m_delim, prevLen);
     if (pos>=0) {
       r.append(m_buf.substr(0, pos+1));
       // save remains

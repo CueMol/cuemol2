@@ -22,8 +22,10 @@ export const OBJREADER_CATEGORY = 0;
  *   purely by content-sniffing every registered reader; when false, the
  *   extension narrows the candidate set first and content sniff only
  *   disambiguates when several readers share the extension.
- * @param maxSniffBytes - upper bound on bytes each reader's canHandleContent
- *   may consume during sniff. Defaults to DEFAULT_SNIFF_CAP.
+ * @param maxSniffBytes - ceiling of the escalating content-sniff byte
+ *   budget (see shared/sniffConfig.ts). Defaults to DEFAULT_SNIFF_CAP;
+ *   0 / negative map to the default as well, so tritium never runs the
+ *   C++ "no ceiling" mode.
  * @returns the resolved reader nickname, or '' when none matches.
  */
 export function pickReaderName(
@@ -32,6 +34,8 @@ export function pickReaderName(
     contentFirst: boolean,
     maxSniffBytes: number = DEFAULT_SNIFF_CAP,
 ): string {
+    // 0 would mean "no ceiling" on the C++ side; the worker always bounds
+    // the scan so a huge undecidable file cannot stall it.
     const cap = maxSniffBytes > 0 ? maxSniffBytes : DEFAULT_SNIFF_CAP;
 
     // Every user-facing obj reader (internal qdf* readers are never chosen --
@@ -47,8 +51,8 @@ export function pickReaderName(
         // Content-first: sniff every user-facing reader's canHandleContent;
         // the first YES wins. Restrict the candidate list to non-qdf readers
         // (passing a CSV instead of '' so the C++ sniff never considers qdf*).
-        // The cap bounds each candidate's stream scan so pathological inputs
-        // can't stall the sniff loop.
+        // The ceiling bounds each candidate's escalating stream scan so
+        // pathological inputs can't stall the sniff loop.
         const csv = objReaders.map((e) => e.name).join(',');
         if (!csv) return '';
         return ctx.strMgr.searchReaderByContent(filePath, csv, OBJREADER_CATEGORY, false, cap);

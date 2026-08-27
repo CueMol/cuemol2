@@ -284,6 +284,9 @@ export class AsyncCueMol {
      * ignored; when false (a specific filter was selected), the
      * extension narrows the candidate set first and sniff disambiguates
      * only when multiple readers share the extension.
+     *
+     * `maxSniffBytes` is the ceiling of the escalating sniff byte budget
+     * (0 / undefined = DEFAULT_SNIFF_CAP, see worker/shared/sniffConfig.ts).
      */
     loadObject(filePath: string, scene_id: number, options: FileOpenOptions,
                contentFirst = false, maxSniffBytes?: number, readerName?: string): Promise<boolean> {

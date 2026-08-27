@@ -161,10 +161,10 @@ export async function loadScene(
  * @param contentFirst - When true, the worker selects the reader purely
  *   from content sniffing (extension is ignored). When false (default),
  *   the extension narrows the candidate set first.
- * @param maxSniffBytes - Optional byte cap forwarded to
- *   LoadObjectCommand.max_sniff_bytes. 0 / undefined leaves the worker
- *   in unbounded mode (each reader scans its stream until it returns a
- *   verdict or hits EOF).
+ * @param maxSniffBytes - Optional ceiling of the escalating content-sniff
+ *   byte budget used by the worker's pickReaderName (see
+ *   worker/shared/sniffConfig.ts). 0 / undefined uses DEFAULT_SNIFF_CAP;
+ *   the worker never runs the C++ "no ceiling" mode.
  * @returns `true` on success.
  * @remarks Calls `loadObject` worker service.
  */

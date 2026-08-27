@@ -7,12 +7,14 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 import { pickReaderName } from '../worker/server/services/helpers/pickReaderName'
+import { DEFAULT_SNIFF_CAP } from '../worker/shared/sniffConfig'
 
 interface ReaderInfo { name: string; fext: string; category: number }
 
 function makeCtx(readers: ReaderInfo[], sniff: (csv: string) => string) {
     const searchReaderByContent = vi.fn(
-        (_path: string, csv: string) => sniff(csv),
+        (_path: string, csv: string, _category: number, _compression: boolean, _maxBytes: number) =>
+            sniff(csv),
     )
     const ctx = {
         strMgr: {
@@ -74,5 +76,40 @@ describe('pickReaderName -- qdf* exclusion', () => {
         expect(name).toBe('mmcif')
         const csv = searchReaderByContent.mock.calls[0][1] as string
         expect(csv.split(',').sort()).toEqual(['mmcif', 'mmcifmap'])
+    })
+})
+
+// The 5th argument of searchReaderByContent is the ceiling of the C++
+// escalating sniff budget (64 KiB first, x8 while cut off, up to the
+// ceiling). tritium must always pass a finite ceiling.
+describe('pickReaderName -- sniff ceiling', () => {
+    function ceilingOfFirstCall(searchReaderByContent: ReturnType<typeof vi.fn>): number {
+        return searchReaderByContent.mock.calls[0][4] as number
+    }
+
+    it('passes DEFAULT_SNIFF_CAP when maxSniffBytes is omitted', () => {
+        const { ctx, searchReaderByContent } = makeCtx(PDB_READERS, () => 'mmcif')
+        pickReaderName(ctx, '/x/foo.cif', true)
+        expect(ceilingOfFirstCall(searchReaderByContent)).toBe(DEFAULT_SNIFF_CAP)
+    })
+
+    it('maps 0 to DEFAULT_SNIFF_CAP instead of the C++ "no ceiling" mode', () => {
+        const { ctx, searchReaderByContent } = makeCtx(PDB_READERS, () => 'mmcif')
+        pickReaderName(ctx, '/x/foo.cif', true, 0)
+        expect(ceilingOfFirstCall(searchReaderByContent)).toBe(DEFAULT_SNIFF_CAP)
+    })
+
+    it('forwards an explicit positive ceiling unchanged (content-first and ext-first)', () => {
+        const a = makeCtx(PDB_READERS, () => 'mmcif')
+        pickReaderName(a.ctx, '/x/foo.cif', true, 4096)
+        expect(ceilingOfFirstCall(a.searchReaderByContent)).toBe(4096)
+
+        const b = makeCtx(PDB_READERS, () => 'mmcif')
+        pickReaderName(b.ctx, '/x/foo.cif', false, 4096)
+        expect(ceilingOfFirstCall(b.searchReaderByContent)).toBe(4096)
+    })
+
+    it('DEFAULT_SNIFF_CAP is large enough for a marker several hundred KB in', () => {
+        expect(DEFAULT_SNIFF_CAP).toBeGreaterThanOrEqual(1 << 20)
     })
 })

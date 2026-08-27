@@ -119,6 +119,16 @@ public:
     /// Returns comma separated list of compatible ObjWriter names for the object
     LString findCompatibleWriterNamesForObj(qlib::uid_t objid);
 
+    /// Content-sniff byte budget policy. Round 1 hands every candidate
+    /// reader a LimitedInStream of SNIFF_INITIAL_BYTES. A reader that
+    /// answers CONTENT_UNKNOWN because that budget ran out (and not
+    /// because the file ended) is asked again with the budget multiplied
+    /// by SNIFF_GROWTH_FACTOR, and so on up to the caller's ceiling.
+    /// Readers that decide (YES / NO), reach true EOF, stop early with
+    /// budget to spare, or throw are final after their first call.
+    static constexpr qlib::quint64 SNIFF_INITIAL_BYTES = 64 * 1024;
+    static constexpr qlib::quint64 SNIFF_GROWTH_FACTOR = 8;
+
     /// Sniff the file at `path` and return every registered reader whose
     /// canHandleContent() returns CONTENT_YES, joined with ',' (in
     /// m_rdrinfotab iteration order, which is sorted by ABI name).
@@ -133,11 +143,15 @@ public:
     /// canHandleContent(). When false, paths ending in .gz / .xz short-
     /// circuit to an empty result.
     ///
-    /// `maxBytes` caps how many bytes each candidate's
-    /// canHandleContent() is allowed to consume. The default value
-    /// (0) means unlimited -- each reader reads until it returns a
-    /// verdict or hits EOF. Pass a positive value to bound pathological
-    /// scans against huge inputs.
+    /// `maxBytes` is the ceiling of the escalating byte budget described
+    /// at SNIFF_INITIAL_BYTES: no candidate is ever handed more than
+    /// `maxBytes` bytes in one call. 0 (the default) means no ceiling --
+    /// a reader that keeps getting cut off is retried until it reaches
+    /// EOF or returns a verdict. A ceiling below SNIFF_INITIAL_BYTES
+    /// yields a single round at the ceiling. Because every round re-opens
+    /// the file, the bytes read for one reader sum to at most about 8/7
+    /// of the deciding round's budget (plus the ceiling-clamped final
+    /// round, if any).
     ///
     /// Reader nicknames are alphanumeric, so no escaping is needed.
     LString searchReadersByContent(const LString &path,
@@ -146,8 +160,10 @@ public:
                                    bool supportCompression = false,
                                    qlib::quint64 maxBytes = 0) const;
 
-    /// Same as searchReadersByContent() but returns only the first YES
-    /// match (or empty string when none matches).
+    /// Same as searchReadersByContent() but returns at the first YES
+    /// (or empty string when none matches). The search is round-major:
+    /// a reader that says YES in an early round wins even if a reader
+    /// earlier in ABI order is still pending with a larger budget.
     LString searchReaderByContent(const LString &path,
                                   const LString &nicknames_csv,
                                   int nCatID,
@@ -160,10 +176,10 @@ private:
     /// Register an object reader/writer by C++-ABI name (implementation)
     void regIOHImpl(const LString &abiname);
 
-    /// Shared core of searchReader{,s}ByContent. When `bFirstOnly` is
-    /// true, returns at the first YES verdict without querying further
-    /// readers; otherwise collects every YES match and joins them with
-    /// ','.
+    /// Shared core of searchReader{,s}ByContent: runs the escalating
+    /// budget loop over the candidate set. When `bFirstOnly` is true,
+    /// returns at the first YES verdict; otherwise collects every YES
+    /// match (candidate order) and joins them with ','.
     LString searchByContentImpl(const LString &path,
                                 const LString &nicknames_csv,
                                 int nCatID,

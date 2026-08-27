@@ -47,10 +47,10 @@ public:
     /// disambiguates among just those candidates, with a final
     /// alphabetic-first fallback when sniffing yields nothing.
     ///
-    /// `maxSniffBytes` caps how many bytes each reader's
-    /// canHandleContent() sees during disambiguation. 0 (the default)
-    /// means unbounded -- the streaming sniff reads each candidate's
-    /// stream until it returns a verdict or hits EOF.
+    /// `maxSniffBytes` is the ceiling of the escalating sniff budget
+    /// (see StreamManager::SNIFF_INITIAL_BYTES): each reader first sees
+    /// 64 KiB and is retried with 8x more only while the budget, not
+    /// the file, cut it off. 0 (the default) means no ceiling.
     LString guessFileFormat(int nCatID, bool bContentFirst = false,
                             qlib::quint64 maxSniffBytes = 0) const;
 
@@ -88,11 +88,12 @@ public:
     /// multiple readers share that extension.
     bool m_bContentFirst = false;
 
-    /// Maximum bytes each reader's canHandleContent() is allowed to
-    /// consume during sniff. 0 = unbounded (default), positive value
-    /// = byte cap exposed to StreamManager's searchReader{,s}ByContent.
-    /// Scripts override this when they want to bound sniffing against
-    /// pathological / very large inputs.
+    /// Ceiling of the escalating sniff budget forwarded to
+    /// StreamManager's searchReader{,s}ByContent as `maxBytes`. 0 = no
+    /// ceiling (default); a positive value bounds how many bytes any
+    /// single canHandleContent() call may consume. Scripts override
+    /// this when they want to bound sniffing against pathological /
+    /// very large inputs.
     qlib::quint64 m_nMaxSniffBytes = 0;
 
     //////////
