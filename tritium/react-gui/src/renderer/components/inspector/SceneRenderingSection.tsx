@@ -92,11 +92,11 @@ const QualityRow: React.FC<{
 
 /**
  * Ambient occlusion (GTAO): enable toggle, a look-preset dropdown (radius /
- * steps / intensity as one tuned set, see `SCENE_AO_PRESET_AXIS`). The
- * individual tuning knobs (aoRadius / aoIntensity / aoSlices / aoSteps /
- * aoHalfRes) are deliberately NOT surfaced here -- they remain editable in
- * the generic property tree, where edits reflect back into this dropdown as
- * "Custom". The preset is disabled while AO is off.
+ * steps / intensity / half-res as one tuned set, see `SCENE_AO_PRESET_AXIS`).
+ * The individual tuning knobs (aoRadius / aoIntensity / aoSlices / aoSteps /
+ * aoHalfRes) are deliberately NOT surfaced as their own rows here -- they
+ * remain editable in the generic property tree, where edits reflect back into
+ * this dropdown as "Custom". The preset is disabled while AO is off.
  */
 export const SceneAmbientOcclusionSection: React.FC<RendererPropSectionProps> = ({
   entries,

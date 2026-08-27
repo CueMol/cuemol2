@@ -16,6 +16,12 @@
  *   aoIntensity falls to keep large radii from crushing the image to black.
  *   aoSlices is deliberately absent: it barely changes the denoised image
  *   (and gtao_frag.glsl clamps it to 16).
+ * - aoHalfRes rides along with that cost: Medium and High raise the per-pixel
+ *   AO work, so they take the adaptive half-resolution path (half-res only
+ *   while the camera moves, full res once it settles, always full res for
+ *   off-screen export) to keep tumbling responsive. Low is cheap enough to
+ *   stay full resolution, which is also the C++ default the default step must
+ *   match.
  */
 import { RENDER_QUALITY_CUSTOM } from "./renderSettings";
 import type { RenderQualityAxis } from "./renderSettings";
@@ -27,9 +33,9 @@ export const SCENE_AO_PRESET_AXIS: RenderQualityAxis = {
   defaultStep: "low",
   steps: [
     // = C++ defaults (Scene.qif)
-    { id: "low", label: "Low", patch: { aoRadius: 4, aoSteps: 3, aoIntensity: 2.2 } },
-    { id: "medium", label: "Medium", patch: { aoRadius: 8, aoSteps: 4, aoIntensity: 1.9 } },
-    { id: "high", label: "High", patch: { aoRadius: 12, aoSteps: 5, aoIntensity: 1.7 } },
+    { id: "low", label: "Low", patch: { aoRadius: 4, aoSteps: 3, aoIntensity: 2.2, aoHalfRes: false } },
+    { id: "medium", label: "Medium", patch: { aoRadius: 8, aoSteps: 4, aoIntensity: 1.9, aoHalfRes: true } },
+    { id: "high", label: "High", patch: { aoRadius: 12, aoSteps: 5, aoIntensity: 1.7, aoHalfRes: true } },
   ],
 };
 
