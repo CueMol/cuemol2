@@ -17,6 +17,9 @@
 #include <qlib/LVarArray.hpp>
 #include <qlib/LimitedInStream.hpp>
 
+#include <limits>
+#include <memory>
+
 #ifdef HAVE_LZMA_H
 #include <qlib/XzStream.hpp>
 #endif
@@ -129,10 +132,11 @@ void StreamManager::regIOHImpl(const LString &abiname)
   }
 }
 
-bool StreamManager::unregistReader(const LString &abiname, bool bWriter /*= false*/)
+bool StreamManager::unregistReader(const LString &abiname, bool /*bWriter = false*/)
 {
-  // TO DO: implementation
-  return false;
+  // Readers and writers share one table keyed by ABI name, so the
+  // category flag does not change the lookup.
+  return m_rdrinfotab.remove(abiname);
 }
 
 bool StreamManager::isReaderRegistered(const LString &abiname)
@@ -342,59 +346,88 @@ HeadEncoding detectEncoding(const LString &path)
   return ENC_RAW;
 }
 
-// Run `rdr.canHandleContent` against a freshly opened stream for `path`.
-// The file is wrapped with a Gzip/Xz decompressor when `enc` says so,
-// and again with a LimitedInStream when `maxBytes` is positive. Each
-// candidate gets its own stream chain (per-candidate re-open / re-decode)
-// because canHandleContent is non-rewinding -- the OS page cache covers
-// the cost of repeated file reads, and readers typically break out of
-// their scan within a few KB.
-int sniffWithChain(qsys::ObjReader &rdr, const LString &path,
-                   HeadEncoding enc, qlib::quint64 maxBytes)
+// Outcome of one canHandleContent call under a byte budget.
+struct SniffResult
 {
+  int verdict;
+  /// verdict == UNKNOWN and the budget (not the source) ended the scan:
+  /// the reader might still decide if given more bytes.
+  bool truncated;
+  qlib::quint64 consumed;
+};
+
+// Run `rdr.canHandleContent` against a freshly opened stream for `path`
+// with a byte budget of `maxBytes` (> 0). The file is wrapped with a
+// Gzip/Xz decompressor when `enc` says so, then with a LimitedInStream.
+// Each call gets its own stream chain (per-candidate, per-round re-open
+// / re-decode) because canHandleContent is non-rewinding -- the OS page
+// cache covers the cost of repeated file reads, and readers typically
+// break out of their scan within a few KB.
+SniffResult sniffWithChain(qsys::ObjReader &rdr, const LString &path,
+                           HeadEncoding enc, qlib::quint64 maxBytes)
+{
+  SniffResult res{qsys::ObjReader::CONTENT_UNKNOWN, false, 0};
+
   qlib::FileInStream fis;
   try {
     fis.open(path);
   }
   catch (...) {
-    return qsys::ObjReader::CONTENT_UNKNOWN;
+    return res;
   }
 
-  // Inner helper: apply the optional byte cap and call canHandleContent.
-  auto withCap = [&](qlib::InStream &stream) -> int {
-    if (maxBytes > 0) {
-      qlib::LimitedInStream lim(stream, static_cast<qlib::qint64>(maxBytes));
-      return rdr.canHandleContent(lim);
-    }
-    return rdr.canHandleContent(stream);
+  // Inner helper: apply the byte cap and call canHandleContent. The
+  // LimitedInStream must outlive the call so its accounting can be
+  // read back.
+  auto withCap = [&](qlib::InStream &stream) {
+    qlib::LimitedInStream lim(stream, static_cast<qlib::qint64>(maxBytes));
+    res.verdict = rdr.canHandleContent(lim);
+    res.consumed = static_cast<qlib::quint64>(lim.consumed());
+    res.truncated =
+        (res.verdict == qsys::ObjReader::CONTENT_UNKNOWN) && lim.isLimitHit();
   };
-
-  int verdict = qsys::ObjReader::CONTENT_UNKNOWN;
 
   try {
     if (enc == ENC_GZIP) {
       qlib::GzipInStream gzin(fis);
-      verdict = withCap(gzin);
+      withCap(gzin);
       try { gzin.close(); } catch (...) {}
     }
 #ifdef HAVE_LZMA_H
     else if (enc == ENC_XZ) {
       qlib::XzInStream xzin(fis);
-      verdict = withCap(xzin);
+      withCap(xzin);
       try { xzin.close(); } catch (...) {}
     }
 #endif
     else {
-      verdict = withCap(fis);
+      withCap(fis);
     }
   }
   catch (...) {
     // Corrupt input, mid-decompression error, reader exception, etc.
-    verdict = qsys::ObjReader::CONTENT_UNKNOWN;
+    // Final: a retry with a bigger budget would just throw again.
+    res = SniffResult{qsys::ObjReader::CONTENT_UNKNOWN, false, 0};
   }
 
   try { fis.close(); } catch (...) {}
-  return verdict;
+  return res;
+}
+
+// Budget for the round after one that used `cap`: grow by the factor,
+// never past `ceiling` (0 = no ceiling) nor past what LimitedInStream
+// can represent. Returns `cap` itself when no growth is possible.
+qlib::quint64 nextSniffCap(qlib::quint64 cap, qlib::quint64 ceiling)
+{
+  const qlib::quint64 kRepresentable =
+      static_cast<qlib::quint64>(std::numeric_limits<qlib::qint64>::max());
+  qlib::quint64 next;
+  if (cap > kRepresentable / qsys::StreamManager::SNIFF_GROWTH_FACTOR)
+    next = kRepresentable;
+  else
+    next = cap * qsys::StreamManager::SNIFF_GROWTH_FACTOR;
+  if (ceiling > 0 && next > ceiling) next = ceiling;
+  return next;
 }
 
 }  // namespace
@@ -453,20 +486,66 @@ LString StreamManager::searchByContentImpl(const LString &path,
   // Probe magic bytes once -- candidates share the encoding decision.
   HeadEncoding enc = supportCompression ? detectEncoding(path) : ENC_RAW;
 
-  qlib::LStringList hits;
+  // Escalation loop. Every candidate starts with SNIFF_INITIAL_BYTES.
+  // A candidate whose UNKNOWN was caused by the budget running out
+  // (truncated) is kept pending and asked again with a budget grown by
+  // SNIFF_GROWTH_FACTOR; everything else (YES, NO, UNKNOWN at true
+  // EOF, decisive early UNKNOWN, exception) is final after one call.
+  // `maxBytes` is the ceiling of that growth (0 = no ceiling: grow
+  // until every pending reader reaches EOF or a verdict).
+  struct Candidate
+  {
+    const ReaderInfo *pInfo;
+    std::unique_ptr<ObjReader> pRdr;
+    bool pending;
+    bool yes;
+  };
+  std::vector<Candidate> cands;
+  cands.reserve(candidates.size());
   for (const ReaderInfo *pInfo : candidates) {
     qlib::LClass *pCls = pInfo->pClass;
     MB_ASSERT(pCls != NULL);
     ObjReader *pRdr = dynamic_cast<ObjReader *>(pCls->createObj());
     if (pRdr == NULL) continue;
+    cands.push_back(Candidate{pInfo, std::unique_ptr<ObjReader>(pRdr), true, false});
+  }
 
-    int verdict = sniffWithChain(*pRdr, path, enc, maxBytes);
-    delete pRdr;
+  const qlib::quint64 ceiling = maxBytes;
+  qlib::quint64 cap = SNIFF_INITIAL_BYTES;
+  if (ceiling > 0 && ceiling < cap) cap = ceiling;
 
-    if (verdict == ObjReader::CONTENT_YES) {
-      if (bFirstOnly) return pInfo->nickname;
-      hits.push_back(pInfo->nickname);
+  for (int round = 1;; ++round) {
+    int nPending = 0;
+    for (Candidate &c : cands) {
+      if (!c.pending) continue;
+      SniffResult r = sniffWithChain(*c.pRdr, path, enc, cap);
+      if (r.verdict == ObjReader::CONTENT_YES) {
+        c.pending = false;
+        c.yes = true;
+        if (bFirstOnly) return c.pInfo->nickname;
+      }
+      else if (r.truncated) {
+        ++nPending;
+      }
+      else {
+        c.pending = false;
+      }
     }
+    if (nPending == 0) break;
+    if (ceiling > 0 && cap >= ceiling) break;
+    const qlib::quint64 next = nextSniffCap(cap, ceiling);
+    if (next <= cap) break;
+    MB_DPRINTLN("StreamManager> sniff round %d: %d reader(s) truncated at %llu bytes, retrying with %llu",
+                round, nPending, static_cast<unsigned long long>(cap),
+                static_cast<unsigned long long>(next));
+    cap = next;
+  }
+
+  // Multi-match: report YES readers in candidate (ABI name) order,
+  // independent of the round in which each one decided.
+  qlib::LStringList hits;
+  for (const Candidate &c : cands) {
+    if (c.yes) hits.push_back(c.pInfo->nickname);
   }
 
   if (hits.empty()) return LString();

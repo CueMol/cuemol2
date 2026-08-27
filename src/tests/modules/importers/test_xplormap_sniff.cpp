@@ -15,7 +15,7 @@ namespace {
 
 // Build a minimal CCP4 binary header buffer: 216 bytes of zero with
 // "MAP " at offset 208. Used as the negative-case payload for Xplor's
-// sniffer (binary input -> CONTENT_NO via NUL-byte rejection).
+// sniffer (binary input never carries the ZYX line -> CONTENT_UNKNOWN).
 std::string makeMinimalCcp4Header()
 {
     std::string buf(216, '\0');
@@ -143,4 +143,7 @@ TEST(XplorMapReaderSniffTest, CapShorterThanZyxReturnsUnknown)
     StrInStream raw(payload.data(), static_cast<int>(payload.size()));
     LimitedInStream capped(raw, 1024);
     EXPECT_EQ(reader.canHandleContent(capped), ObjReader::CONTENT_UNKNOWN);
+    // The cap, not the payload, ended the scan: the sniff harness uses
+    // this flag to retry the reader with a larger budget.
+    EXPECT_TRUE(capped.isLimitHit());
 }

@@ -20,7 +20,8 @@ using qlib::StrInStream;
 
 // -----------------------------------------------------------------------
 // Minimal synthesised CIF fragments. These are *headers only*, sized to
-// fit comfortably inside the 8 KB sniff buffer used by StreamManager.
+// fit comfortably inside the 64 KiB first-round budget of StreamManager's
+// content sniff.
 // They're not valid enough to read() into a MolCoord / DensityMap (that
 // is the read-path's job), but they are valid enough for the sniffer's
 // line-prefix scan.
@@ -335,8 +336,9 @@ TEST(MmcifSniffIntegration, LongHeaderSfCifIsFoundBeyondLegacyPeekCap)
     EXPECT_EQ(std::string(hit.c_str()), std::string("mmcifmap"));
 }
 
-// maxBytes=0 (the default) means unbounded -- equivalent to omitting
-// the parameter. Long-header CIF still hits.
+// maxBytes=0 (the default) means no ceiling on the escalating budget --
+// equivalent to omitting the parameter. The marker sits past the 64 KiB
+// first round, so the second round (512 KiB) finds it.
 TEST(MmcifSniffIntegration, MaxBytesZeroIsUnbounded)
 {
     const std::string content = makeLongHeaderCif(
@@ -349,10 +351,10 @@ TEST(MmcifSniffIntegration, MaxBytesZeroIsUnbounded)
     EXPECT_EQ(std::string(hit.c_str()), std::string("mmcif"));
 }
 
-// maxBytes set to a small cap prevents readers from seeing the hit
-// even when content sits later in the file. Result: no YES verdict,
-// empty string returned. Acts as the safety knob script callers can
-// use against pathological / very large inputs.
+// A maxBytes ceiling below the 64 KiB initial budget means a single
+// round at that ceiling: readers never see a hit that sits past it.
+// Result: no YES verdict, empty string returned. Acts as the safety
+// knob script callers can use against pathological / very large inputs.
 TEST(MmcifSniffIntegration, MaxBytesCapPreventsLateHitDiscovery)
 {
     const std::string content = makeLongHeaderCif(
@@ -365,8 +367,8 @@ TEST(MmcifSniffIntegration, MaxBytesCapPreventsLateHitDiscovery)
     EXPECT_TRUE(hit.isEmpty());
 }
 
-// Same maxBytes cap, but with the hit positioned within the cap range:
-// the verdict comes back normally.
+// Same maxBytes ceiling, but with the hit positioned within it: the
+// verdict comes back normally.
 TEST(MmcifSniffIntegration, MaxBytesAllowsHitInsideCap)
 {
     // No padding: `_atom_site.` is near the top of the file, well
@@ -448,5 +450,53 @@ TEST(MmcifSniffIntegration, NonCifGarbageReturnsEmpty)
     LString path = writeTempCif(".dat", content.c_str());
     LString hit = StreamManager::getInstance()->searchReaderByContent(
         path, LString(), InOutHandler::IOH_CAT_OBJREADER);
+    EXPECT_TRUE(hit.isEmpty());
+}
+
+// -----------------------------------------------------------------------
+// Byte-budget escalation: `maxBytes` is the ceiling of a growing budget
+// (64 KiB first, then x8 for a reader that was cut off while still
+// undecided), not a flat cap. See test_stream_manager_sniff_escalation
+// for the loop itself; these pin the real mmCIF readers under it.
+// -----------------------------------------------------------------------
+
+// The marker sits at ~300 KB: past the 64 KiB first round, inside the
+// 512 KiB second round, under a 1 MiB ceiling. Both the coordinate and
+// the structure-factor marker resolve.
+TEST(MmcifSniffIntegration, MarkerAt300KbResolvesViaEscalationUnderMibCeiling)
+{
+    const qlib::quint64 ceiling = 1 << 20;
+
+    const std::string coord = makeLongHeaderCif(
+        /*padBytes=*/300 * 1024,
+        std::string("loop_\n_atom_site.group_PDB\nATOM 1 N N\n"));
+    LString path = writeTempCif(".cif", coord.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER,
+        /*supportCompression=*/false, ceiling);
+    EXPECT_EQ(std::string(hit.c_str()), std::string("mmcif"));
+
+    const std::string sf = makeLongHeaderCif(
+        /*padBytes=*/300 * 1024,
+        std::string("loop_\n_refln.index_h\n0 0 0 1.0\n"));
+    path = writeTempCif(".cif", sf.c_str());
+    hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER,
+        /*supportCompression=*/false, ceiling);
+    EXPECT_EQ(std::string(hit.c_str()), std::string("mmcifmap"));
+}
+
+// A ceiling under the marker (128 KiB < 300 KB) stops the escalation
+// short: the 64 KiB round is cut off, the clamped 128 KiB round is cut
+// off too, and the search gives up with no verdict.
+TEST(MmcifSniffIntegration, MarkerBeyondCeilingReturnsEmpty)
+{
+    const std::string coord = makeLongHeaderCif(
+        /*padBytes=*/300 * 1024,
+        std::string("loop_\n_atom_site.group_PDB\nATOM 1 N N\n"));
+    LString path = writeTempCif(".cif", coord.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER,
+        /*supportCompression=*/false, /*maxBytes=*/128 * 1024);
     EXPECT_TRUE(hit.isEmpty());
 }

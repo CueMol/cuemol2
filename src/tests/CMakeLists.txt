@@ -93,6 +93,7 @@ add_executable(test_qsys
   qsys/test_scene.cpp
   qsys/test_streammanager.cpp
   qsys/test_stream_manager_search.cpp
+  qsys/test_stream_manager_sniff_escalation.cpp
   qsys/test_objreader.cpp
   qsys/test_objwriter.cpp
   qsys/test_sceneexporter.cpp

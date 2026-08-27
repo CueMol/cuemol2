@@ -14,10 +14,11 @@ using qsys::InOutHandler;
 
 // -----------------------------------------------------------------------
 // Test fixtures: write temp files and probe the search API.
-// We can't register a mock ObjReader (would require a full wrap.cpp /
-// LClass registration), so these tests pin the *API contract*: empty
-// candidate set returns empty, .gz paths short-circuit the peek, etc.
-// Full sniff-scenario coverage lives in Phase 2 alongside Mmcif*Reader.
+// These tests pin the *API contract* with the real (empty) reader set:
+// empty candidate set returns empty, .gz paths short-circuit the peek,
+// etc. The byte-budget escalation loop is exercised with scripted fake
+// readers in test_stream_manager_sniff_escalation.cpp, and real-format
+// scenarios live in src/tests/modules/importers/test_*_sniff.cpp.
 // -----------------------------------------------------------------------
 
 namespace {
