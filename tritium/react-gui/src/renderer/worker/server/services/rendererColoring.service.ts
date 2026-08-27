@@ -42,6 +42,7 @@ import {
     copyPaintEntries,
     cutPaintEntries,
     pastePaintEntries,
+    removePaintEntries,
     clearPaintEntries,
 } from './coloring/paintClipboard';
 import {
@@ -142,6 +143,7 @@ export const services = {
     copyPaintEntries,
     cutPaintEntries,
     pastePaintEntries,
+    removePaintEntries,
     clearPaintEntries,
     setRendererDefaultColor,
     setColoringProp,

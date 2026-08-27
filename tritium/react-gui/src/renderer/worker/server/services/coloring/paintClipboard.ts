@@ -174,6 +174,34 @@ export function pastePaintEntries(
 }
 
 /**
+ * Delete the selected paint rows under one undo transaction (UXP
+ * `onDeleteCmd` -> `_deletePaintEntriesImpl`).
+ *
+ * Rows are removed in descending index order so each removal leaves the
+ * lower indices valid -- the same reason `cutPaintEntries` does it, and
+ * the same order UXP sorts into. Deleting one row is just the one-element
+ * case, so this is the only delete path the deck needs.
+ */
+export function removePaintEntries(
+    ctx: WorkerContext,
+    args: CopyPaintEntriesArgs,
+): PaintMutationResult {
+    const target = resolvePaintTarget(ctx, args);
+    if (!target) return { ok: false };
+    const idxs = normalizeIdxs(args.idxs, target.coloring.size);
+    if (idxs.length === 0) return { ok: false };
+
+    withUndoTxn(target.scene, 'Delete paint entry', () => {
+        materializeColoringIfDefault(target.rend);
+        const live = liveColoring(target.rend);
+        for (let i = idxs.length - 1; i >= 0; --i) {
+            live.removeAt(idxs[i]);
+        }
+    });
+    return { ok: true };
+}
+
+/**
  * Remove every paint row (UXP `onDeleteCmd` delete-all branch, which
  * calls `PaintColoring.clear()` instead of removing row by row).
  */

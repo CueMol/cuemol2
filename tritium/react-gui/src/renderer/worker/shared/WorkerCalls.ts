@@ -620,6 +620,7 @@ export interface ServiceMap {
   movePaintEntry:             { args: MovePaintEntryArgs;              result: PaintMutationResult }
   copyPaintEntries:           { args: CopyPaintEntriesArgs;            result: CopyPaintEntriesResult }
   cutPaintEntries:            { args: CopyPaintEntriesArgs;            result: CopyPaintEntriesResult }
+  removePaintEntries:         { args: CopyPaintEntriesArgs;            result: PaintMutationResult }
   pastePaintEntries:          { args: PastePaintEntriesArgs;           result: PastePaintEntriesResult }
   clearPaintEntries:          { args: ClearPaintEntriesArgs;           result: PaintMutationResult }
   setRendererDefaultColor:    { args: SetRendererDefaultColorArgs;     result: SetRendererDefaultColorResult }

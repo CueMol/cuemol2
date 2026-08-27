@@ -29,7 +29,7 @@
  * This pane is one of the components within the ExplorerView.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     Button,
     ButtonGroup,
@@ -75,6 +75,9 @@ import { PaintSelCell } from './PaintSelCell'
 import { fireService } from '../../utils/fireService'
 import { IPC } from '../../../shared/ipcChannels'
 import { useClipboardScope } from '../../hooks/useClipboardScope'
+import { useColumnResize } from '../../hooks/useColumnResize'
+import { useShowContextMenu } from '../menu/ContextMenuProvider'
+import type { MenuNode } from '../../../shared/menuNodes'
 
 // ------------------------------------------------------------
 // Coloring type dropdown items
@@ -104,6 +107,29 @@ interface ColoringModeItem {
  * whose entries are built at render time (see `paintSubmenuItems`).
  */
 const PAINT_SUBMENU_ID = 'paint-type-paint'
+
+/**
+ * Default width of the paint table's Selection column, in px; Color takes
+ * whatever is left. Persisted per user so the split survives a restart --
+ * UXP persisted the treecol widths (`persist="hidden ordinal width"`) for
+ * the same reason.
+ */
+const PAINT_COL_WIDTHS = { selection: 130 }
+const PAINT_COL_WIDTHS_KEY = 'cuemol.colorPane.paint.colWidths'
+
+/**
+ * Width the Color column keeps no matter how far the splitter is dragged.
+ * The table is `table-layout: fixed`, so an oversized Selection column would
+ * otherwise push the table past its wrapper -- which clips the selected
+ * row's outline and can hide the colour control entirely.
+ */
+const PAINT_MIN_COLOR_COL = 90
+
+/** Floor for the Selection column, matching useColumnResize's own minimum. */
+const PAINT_COL_MIN = 40
+
+/** Actions the paint row context menu can return. */
+type PaintCtxAction = 'cut' | 'copy' | 'paste' | 'delete' | 'deleteAll'
 
 const COLORING_MODE_ITEMS: ColoringModeItem[] = [
     { label: 'Paint coloring',          coloringId: 'paint-type-paint',    enabled: true  },
@@ -224,8 +250,15 @@ const RendererSelector: React.FC<RendererSelectorProps> = ({
 
 interface PaintTableProps {
     entries: PaintEntryDto[]
+    /** Anchor row: drives Add's insert point and Move up/down. */
     selectedIdx: number | null
+    /** Whole selection; the multi-target actions read this. */
+    selectedIdxs: Set<number>
     onSelect: (idx: number) => void
+    /** Cmd/Ctrl+click toggle. */
+    onToggleSelect: (idx: number) => void
+    /** Shift+click range from the anchor; `additive` unions instead of replacing. */
+    onSelectRange: (idx: number, additive: boolean) => void
     onAdd: () => void
     onRemove: () => void
     onMoveUp: () => void
@@ -252,7 +285,10 @@ interface PaintTableProps {
 const PaintTable: React.FC<PaintTableProps> = ({
     entries,
     selectedIdx,
+    selectedIdxs,
     onSelect,
+    onToggleSelect,
+    onSelectRange,
     onAdd,
     onRemove,
     onMoveUp,
@@ -266,7 +302,114 @@ const PaintTable: React.FC<PaintTableProps> = ({
     sceneId,
     molId,
 }) => {
-    const isRowSelected = selectedIdx !== null
+    const isRowSelected = selectedIdxs.size > 0
+    const isSingleRow = selectedIdxs.size === 1
+    const showContextMenu = useShowContextMenu()
+
+    // Drag-resizable split between the Selection and Color columns, the
+    // tritium home of UXP's `<splitter class="tree-splitter"/>` between the
+    // `paint_name` and `paint_value` treecols. Only the first column is
+    // sized; Color absorbs the remainder, as in GenericTab.
+    const { widths, startResize } = useColumnResize(
+        PAINT_COL_WIDTHS,
+        undefined,
+        PAINT_COL_WIDTHS_KEY,
+    )
+
+    // Measure the table wrapper so the stored Selection width can be clamped
+    // against the space actually available. The stored value is left alone:
+    // widening the panel again restores the width the user chose.
+    const wrapRef = useRef<HTMLDivElement | null>(null)
+    const [wrapWidth, setWrapWidth] = useState(0)
+    useEffect(() => {
+        const el = wrapRef.current
+        if (!el || typeof ResizeObserver === 'undefined') return
+        const ro = new ResizeObserver(() => setWrapWidth(el.clientWidth))
+        ro.observe(el)
+        setWrapWidth(el.clientWidth)
+        return () => ro.disconnect()
+    }, [])
+    const selWidth =
+        wrapWidth > 0
+            ? Math.max(
+                  PAINT_COL_MIN,
+                  Math.min(widths.selection, wrapWidth - PAINT_MIN_COLOR_COL),
+              )
+            : widths.selection
+
+    /**
+     * A modifier-click is a row-selection gesture, not a text gesture: the
+     * browser's default for Shift+mousedown is to extend the DOM text
+     * selection from the last caret, which painted every row between the
+     * anchor and the click as selected text. Cancelling the default here
+     * leaves the click itself (and `onRowClick` below) intact.
+     */
+    const onRowMouseDown = useCallback((e: React.MouseEvent) => {
+        if (e.shiftKey || e.metaKey || e.ctrlKey) e.preventDefault()
+    }, [])
+
+    /**
+     * Row click with the standard modifiers: Cmd/Ctrl toggles, Shift ranges
+     * from the anchor (Shift+Cmd unions), a plain click replaces.
+     */
+    const onRowClick = useCallback(
+        (idx: number, e: React.MouseEvent) => {
+            if (e.shiftKey) {
+                onSelectRange(idx, e.metaKey || e.ctrlKey)
+                return
+            }
+            if (e.metaKey || e.ctrlKey) {
+                onToggleSelect(idx)
+                return
+            }
+            onSelect(idx)
+        },
+        [onSelect, onToggleSelect, onSelectRange],
+    )
+
+    /**
+     * Right-click menu: the clipboard trio plus the destructive actions,
+     * matching UXP's `paintPanelCtxtMenu` -- Cut / Copy / Paste lived there,
+     * never on the toolbar. The accelerators shown here are the ones the app
+     * menu already owns; they reach this deck through the `paint-deck`
+     * clipboard scope, so the menu is a discoverability surface for keys that
+     * work with or without it.
+     *
+     * Right-clicking a row that is already part of a multi-selection keeps
+     * that selection, so the menu acts on all of it; right-clicking elsewhere
+     * selects just that row first (scene-tree parity).
+     */
+    const onRowContextMenu = useCallback(
+        (idx: number | null, e: React.MouseEvent) => {
+            e.preventDefault()
+            if (idx !== null && !selectedIdxs.has(idx)) onSelect(idx)
+            const rows = idx !== null || isRowSelected
+            const nodes: MenuNode<PaintCtxAction>[] = [
+                { label: 'Cut', accelerator: 'CmdOrCtrl+X', enabled: rows, action: 'cut' },
+                { label: 'Copy', accelerator: 'CmdOrCtrl+C', enabled: rows, action: 'copy' },
+                { label: 'Paste', accelerator: 'CmdOrCtrl+V', enabled: canPaste, action: 'paste' },
+                { type: 'separator' },
+                { label: 'Delete', enabled: rows, action: 'delete' },
+                { label: 'Delete all', enabled: entries.length > 0, action: 'deleteAll' },
+            ]
+            void showContextMenu(nodes, { x: e.clientX, y: e.clientY }).then(
+                (action) => {
+                    switch (action) {
+                        case 'cut': onCut(); break
+                        case 'copy': onCopy(); break
+                        case 'paste': onPaste(); break
+                        case 'delete': onRemove(); break
+                        case 'deleteAll': onRemoveAll(); break
+                        default: break
+                    }
+                },
+            )
+        },
+        [
+            showContextMenu, selectedIdxs, isRowSelected, onSelect, entries.length,
+            onCut, onCopy, onPaste, onRemove, onRemoveAll, canPaste,
+        ],
+    )
 
     return (
         <>
@@ -276,21 +419,33 @@ const PaintTable: React.FC<PaintTableProps> = ({
                 focusable so a row click parks focus inside the scope; the
                 handlers are registered by useClipboardScope below. */}
             <div
+                ref={wrapRef}
                 className="color-table-wrap"
                 tabIndex={-1}
                 data-clipboard-scope="paint-deck"
                 style={{ outline: 'none' }}
             >
                 <table className="color-table">
+                    <colgroup>
+                        <col style={{ width: selWidth }} />
+                        {/* Color takes the remaining width */}
+                        <col />
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th className="color-th-selection">Selection</th>
+                            <th className="color-th-selection">
+                                <span className="color-th-label">Selection</span>
+                                <div
+                                    className="color-resize-handle"
+                                    onMouseDown={(e) => startResize('selection', e)}
+                                />
+                            </th>
                             <th className="color-th-color">Color</th>
                         </tr>
                     </thead>
                     <tbody>
                         {entries.length === 0 ? (
-                            <tr>
+                            <tr onContextMenu={(e) => onRowContextMenu(null, e)}>
                                 <td colSpan={2} className="color-empty-row">
                                     (no paint entries — click + to add)
                                 </td>
@@ -299,8 +454,12 @@ const PaintTable: React.FC<PaintTableProps> = ({
                             entries.map((entry) => (
                                 <tr
                                     key={entry.idx}
-                                    className={`color-row ${selectedIdx === entry.idx ? 'selected' : ''}`}
-                                    onClick={() => onSelect(entry.idx)}
+                                    className={`color-row ${selectedIdxs.has(entry.idx) ? 'selected' : ''}`}
+                                    onMouseDown={onRowMouseDown}
+                                    onClick={(e) => onRowClick(entry.idx, e)}
+                                    onContextMenu={(e) =>
+                                        onRowContextMenu(entry.idx, e)
+                                    }
                                 >
                                     <td className="color-cell-selection">
                                         <PaintSelCell
@@ -356,7 +515,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                             aria-label="Move row up"
                             className="color-action-btn"
                             onClick={onMoveUp}
-                            disabled={!isRowSelected || selectedIdx === 0}
+                            disabled={!isSingleRow || selectedIdx === 0}
                         />
                     </Tooltip>
                     <Tooltip content="Move down" placement="top" compact>
@@ -367,59 +526,9 @@ const PaintTable: React.FC<PaintTableProps> = ({
                             className="color-action-btn"
                             onClick={onMoveDown}
                             disabled={
-                                !isRowSelected ||
+                                !isSingleRow ||
                                 (selectedIdx !== null && selectedIdx >= entries.length - 1)
                             }
-                        />
-                    </Tooltip>
-                    <Tooltip content="Remove all rows" placement="top" compact>
-                        <Button
-                            small
-                            icon={<AppIcon name="ui.trash" aria-hidden />}
-                            aria-label="Remove all rows"
-                            className="color-action-btn"
-                            onClick={onRemoveAll}
-                            disabled={entries.length === 0}
-                        />
-                    </Tooltip>
-                </ButtonGroup>
-                <ButtonGroup minimal>
-                    <Tooltip content="Cut row" placement="top" compact>
-                        <Button
-                            small
-                            icon={<AppIcon name="ui.cut" aria-hidden />}
-                            aria-label="Cut row"
-                            className="color-action-btn"
-                            onClick={onCut}
-                            disabled={!isRowSelected}
-                        />
-                    </Tooltip>
-                    <Tooltip content="Copy row" placement="top" compact>
-                        <Button
-                            small
-                            icon={<AppIcon name="ui.duplicate" aria-hidden />}
-                            aria-label="Copy row"
-                            className="color-action-btn"
-                            onClick={onCopy}
-                            disabled={!isRowSelected}
-                        />
-                    </Tooltip>
-                    <Tooltip
-                        content={
-                            isRowSelected
-                                ? 'Paste before the selected row'
-                                : 'Paste at the end'
-                        }
-                        placement="top"
-                        compact
-                    >
-                        <Button
-                            small
-                            icon={<AppIcon name="ui.paste" aria-hidden />}
-                            aria-label="Paste rows"
-                            className="color-action-btn"
-                            onClick={onPaste}
-                            disabled={!canPaste}
                         />
                     </Tooltip>
                 </ButtonGroup>
@@ -756,7 +865,52 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     // Selected row is stored as a key (`<kind>:<uid>`) so a single state
     // captures both the target kind and the C++ uid. Parsed at use sites.
     const [selectedKey, setSelectedKey] = useState<TargetKey | null>(null)
-    const [selectedRow, setSelectedRow] = useState<number | null>(null)
+    // `selectedRow` is the anchor / primary row: it drives the single-target
+    // operations (Add insert point, Move up/down) and is the origin a
+    // Shift+click ranges from. `selectedRows` is the full selection the
+    // multi-target operations (Delete, Cut, Copy, paste anchor) act on; it
+    // always contains `selectedRow` while anything is selected.
+    const [selectedRow, setSelectedRowState] = useState<number | null>(null)
+    const [selectedRows, setSelectedRows] = useState<Set<number>>(() => new Set())
+
+    /** Replace the selection with a single row (or clear it with null). */
+    const setSelectedRow = useCallback((idx: number | null) => {
+        setSelectedRowState(idx)
+        setSelectedRows(idx === null ? new Set() : new Set([idx]))
+    }, [])
+
+    /** Cmd/Ctrl+click: toggle one row in the selection. */
+    const toggleSelectedRow = useCallback((idx: number) => {
+        setSelectedRows((prev) => {
+            const next = new Set(prev)
+            if (next.has(idx)) next.delete(idx)
+            else next.add(idx)
+            setSelectedRowState(next.size === 0 ? null : idx)
+            return next
+        })
+    }, [])
+
+    /**
+     * Shift+click: select the range between the anchor and `idx`.
+     *
+     * The anchor stays put so repeated Shift+clicks re-extend from the same
+     * origin (Finder parity, matching the scene tree's `selectRangeTo`).
+     */
+    const selectRowRange = useCallback((idx: number, additive: boolean) => {
+        setSelectedRowState((anchor) => {
+            if (anchor === null) {
+                setSelectedRows(new Set([idx]))
+                return idx
+            }
+            const [lo, hi] = anchor <= idx ? [anchor, idx] : [idx, anchor]
+            const range: number[] = []
+            for (let i = lo; i <= hi; ++i) range.push(i)
+            setSelectedRows((prev) =>
+                additive ? new Set([...prev, ...range]) : new Set(range),
+            )
+            return anchor
+        })
+    }, [])
 
     // Auto-select the first row when the list changes, and clear when the
     // active row disappears.
@@ -935,14 +1089,18 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         // The new entry occupies the insert position; track it so the
         // toolbar buttons act on the freshly-added row.
         setSelectedRow(idx)
-    }, [cm, requireTarget, selectedRow, entries])
+    }, [cm, requireTarget, selectedRow, entries, setSelectedRow])
 
+    /**
+     * Delete every selected row under one undo transaction (UXP
+     * `onDeleteCmd`, which loops the whole `getSelectedNodeList()`).
+     */
     const onRemoveRow = useCallback(() => {
         const t = requireTarget()
-        if (!t || !cm || selectedRow === null) return
-        fireService(cm, 'removePaintEntry', { ...t, idx: selectedRow })
+        if (!t || !cm || selectedRows.size === 0) return
+        fireService(cm, 'removePaintEntries', { ...t, idxs: [...selectedRows] })
         setSelectedRow(null)
-    }, [cm, requireTarget, selectedRow])
+    }, [cm, requireTarget, selectedRows, setSelectedRow])
 
     const onMoveRow = useCallback(
         (dir: 'up' | 'down') => {
@@ -957,7 +1115,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
             })
             setSelectedRow(toIdx)
         },
-        [cm, requireTarget, selectedRow, entries.length],
+        [cm, requireTarget, selectedRow, entries.length, setSelectedRow],
     )
 
     const onRemoveAllRows = useCallback(() => {
@@ -965,7 +1123,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         if (!t || !cm) return
         fireService(cm, 'clearPaintEntries', t)
         setSelectedRow(null)
-    }, [cm, requireTarget])
+    }, [cm, requireTarget, setSelectedRow])
 
     /**
      * Copy / Cut the selected row onto the OS clipboard.
@@ -977,9 +1135,9 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const onClipboardTake = useCallback(
         (mode: 'copy' | 'cut') => {
             const t = requireTarget()
-            if (!t || !cm || selectedRow === null) return
+            if (!t || !cm || selectedRows.size === 0) return
             const name = mode === 'cut' ? 'cutPaintEntries' : 'copyPaintEntries'
-            cm.invokeService(name, { ...t, idxs: [selectedRow] })
+            cm.invokeService(name, { ...t, idxs: [...selectedRows] })
                 .then(async (res) => {
                     if (!res.ok || res.entries.length === 0) return
                     if (mode === 'cut') setSelectedRow(null)
@@ -991,7 +1149,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                 })
                 .catch((err: unknown) => console.warn(`${name} failed:`, err))
         },
-        [cm, requireTarget, selectedRow],
+        [cm, requireTarget, selectedRows, setSelectedRow],
     )
 
     const onPasteRows = useCallback(() => {
@@ -1006,11 +1164,13 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                     setCanPastePaint(false)
                     return
                 }
-                // UXP `_getPaintSelImpl`: insert before the selected row, or
-                // append when nothing is selected.
+                // UXP `_getPaintSelImpl`: insert before the *first* selected
+                // row (`elems[0]`), or append when nothing is selected.
+                const anchor =
+                    selectedRows.size === 0 ? null : Math.min(...selectedRows)
                 const res = await cm.invokeService('pastePaintEntries', {
                     ...t,
-                    idx: selectedRow,
+                    idx: anchor,
                     entries: clip.entries,
                 })
                 if (res.ok) setSelectedRow(res.startIdx)
@@ -1018,7 +1178,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                 console.warn('pastePaintEntries failed:', err)
             }
         })()
-    }, [cm, requireTarget, selectedRow])
+    }, [cm, requireTarget, selectedRows, setSelectedRow])
 
     const onUpdateCell = useCallback(
         (idx: number, field: 'selStr' | 'colorValue', value: string) => {
@@ -1194,7 +1354,10 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                     <PaintTable
                         entries={entries}
                         selectedIdx={selectedRow}
+                        selectedIdxs={selectedRows}
                         onSelect={setSelectedRow}
+                        onToggleSelect={toggleSelectedRow}
+                        onSelectRange={selectRowRange}
                         onAdd={onAddRow}
                         onRemove={onRemoveRow}
                         onMoveUp={() => onMoveRow('up')}

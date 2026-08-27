@@ -207,6 +207,42 @@ describe('cutPaintEntries', () => {
     })
 })
 
+describe('removePaintEntries', () => {
+    it('deletes every selected row descending under a single undo txn', () => {
+        const { ctx, list, removeAt, startUndoTxn, commitUndoTxn } = makeFixture()
+        expect(services.removePaintEntries(ctx, { ...TARGET, idxs: [0, 2] }))
+            .toEqual({ ok: true })
+        // Descending, so removing 0 first cannot shift 2 out from under us
+        // (UXP `_deletePaintEntriesImpl` sorts the same way).
+        expect(removeAt.mock.calls.map((c) => c[0])).toEqual([2, 0])
+        expect(list.map(selOf)).toEqual(['B'])
+        expect(startUndoTxn).toHaveBeenCalledExactlyOnceWith('Delete paint entry')
+        expect(commitUndoTxn).toHaveBeenCalledTimes(1)
+    })
+
+    it('deleting one row is just the one-element case', () => {
+        const { ctx, list, removeAt } = makeFixture()
+        expect(services.removePaintEntries(ctx, { ...TARGET, idxs: [1] }))
+            .toEqual({ ok: true })
+        expect(removeAt.mock.calls.map((c) => c[0])).toEqual([1])
+        expect(list.map(selOf)).toEqual(['A', 'C'])
+    })
+
+    it('materializes a style-default coloring before deleting', () => {
+        const { ctx, setColoring, coloring } = makeFixture({ propDefault: true })
+        services.removePaintEntries(ctx, { ...TARGET, idxs: [1] })
+        expect(setColoring).toHaveBeenCalledWith(coloring)
+    })
+
+    it('opens no transaction when no index is in range', () => {
+        const { ctx, removeAt, startUndoTxn } = makeFixture()
+        expect(services.removePaintEntries(ctx, { ...TARGET, idxs: [7] }))
+            .toEqual({ ok: false })
+        expect(removeAt).not.toHaveBeenCalled()
+        expect(startUndoTxn).not.toHaveBeenCalled()
+    })
+})
+
 describe('pastePaintEntries', () => {
     /** Copy from one fixture and paste into another, as the clipboard does. */
     function copiedFrom(f: ReturnType<typeof makeFixture>, idxs: number[]) {

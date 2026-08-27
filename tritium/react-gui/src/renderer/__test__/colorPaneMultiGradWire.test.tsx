@@ -59,6 +59,7 @@ vi.mock('../components/panes/PaintSelCell', () => ({
 }))
 
 import { ColorPane } from '../components/panes/ColorPane'
+import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 // jsdom has no ResizeObserver; the histogram strip observes its parent.
@@ -152,7 +153,11 @@ const MAP_REND_MULTIGRAD = {
 
 async function mountWith(coloringState: Record<string, unknown>) {
     const cm = makeCm({ coloringState })
-    const handle = mountTree(<ColorPane cm={cm as never} sceneId={SCENE_ID} />)
+    const handle = mountTree(
+        <ContextMenuProvider>
+            <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+        </ContextMenuProvider>,
+    )
     await flushPromises()
     return { cm, ...handle }
 }
@@ -343,7 +348,9 @@ describe('ColorPane multigrad wire', () => {
             },
         })
         const handle = mountTree(
-            <ColorPane cm={cm as never} sceneId={SCENE_ID} />,
+            <ContextMenuProvider>
+                <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+            </ContextMenuProvider>,
         )
         await flushPromises()
         await act(async () => {
@@ -376,7 +383,9 @@ describe('ColorPane multigrad wire', () => {
             },
         })
         const handle = mountTree(
-            <ColorPane cm={cm as never} sceneId={SCENE_ID} />,
+            <ContextMenuProvider>
+                <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+            </ContextMenuProvider>,
         )
         await flushPromises()
         // zoom in twice: span 10 -> 4.44, so the unfloored width would be

@@ -87,6 +87,7 @@ vi.mock('../components/panes/PaintSelCell', () => ({
 }))
 
 import { ColorPane } from '../components/panes/ColorPane'
+import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
 import { IPC } from '../../shared/ipcChannels'
 import {
     mountTree,
@@ -207,8 +208,13 @@ function makeCm(coloringState: ColoringState): MockCm {
 async function mountWith(state: ColoringState, clipboardHasPaint = false) {
     stubClipboard(clipboardHasPaint)
     const cm = makeCm(state)
+    // ColorPane's row context menu uses `useShowContextMenu`, which is
+    // provider-scoped; the app mounts the provider at the DialogContext
+    // level, so the test has to supply it too.
     const handle = mountTree(
-        <ColorPane cm={cm as never} sceneId={SCENE_ID} />,
+        <ContextMenuProvider>
+            <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+        </ContextMenuProvider>,
     )
     await flushPromises()
     return { cm, ...handle }
@@ -496,11 +502,47 @@ describe('ColorPane wire', () => {
         return view
     }
 
+    /**
+     * Right-click a row (or the empty-list row when `idx` is null) and pick
+     * `label` from the context menu. Cut / Copy / Paste / Delete / Delete all
+     * live only there now -- the toolbar keeps just the list edits so it
+     * stays on one line, which mirrors UXP where the clipboard commands were
+     * context-menu-only too.
+     */
+    async function pickCtxItem(
+        container: HTMLElement,
+        rowIdx: number | null,
+        label: string,
+    ): Promise<HTMLElement | null> {
+        const rows = container.querySelectorAll('.color-row, .color-empty-row')
+        const row = (rowIdx === null ? rows[0] : rows[rowIdx]) as HTMLElement
+        await act(async () => {
+            row.dispatchEvent(
+                new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+            )
+        })
+        const item = Array.from(
+            document.body.querySelectorAll('.menu-item'),
+        ).find((el) => el.textContent?.startsWith(label)) as HTMLElement | undefined
+        return item ?? null
+    }
+
+    /** Right-click a row, click a menu item, and let the handlers settle. */
+    async function runCtxItem(
+        container: HTMLElement,
+        rowIdx: number | null,
+        label: string,
+    ): Promise<void> {
+        const item = await pickCtxItem(container, rowIdx, label)
+        if (!item) throw new Error(`context menu item "${label}" not rendered`)
+        await act(async () => { item.click() })
+        await flushPromises()
+    }
+
     it('Paint Copy reads the row then writes it to the OS clipboard', async () => {
         const { cm, container, unmount } = await mountPaintDeckWithRowSelected()
         const api = window.electronAPI as unknown as { invoke: ReturnType<typeof vi.fn> }
-        await act(async () => { actionBtn(container, 'Copy row').click() })
-        await flushPromises()
+        await runCtxItem(container, 1, 'Copy')
         expect(cm.invokeService).toHaveBeenCalledWith('copyPaintEntries', {
             ...TARGET,
             idxs: [1],
@@ -517,8 +559,7 @@ describe('ColorPane wire', () => {
     it('Paint Cut deletes in the worker and writes the rows out', async () => {
         const { cm, container, unmount } = await mountPaintDeckWithRowSelected()
         const api = window.electronAPI as unknown as { invoke: ReturnType<typeof vi.fn> }
-        await act(async () => { actionBtn(container, 'Cut row').click() })
-        await flushPromises()
+        await runCtxItem(container, 1, 'Cut')
         expect(cm.invokeService).toHaveBeenCalledWith('cutPaintEntries', {
             ...TARGET,
             idxs: [1],
@@ -531,16 +572,14 @@ describe('ColorPane wire', () => {
     })
 
     it('Paint Paste is gated on the OS clipboard and passes the selected row as idx', async () => {
-        // Nothing on the clipboard: the button is disabled.
+        // Nothing on the clipboard: the menu item is disabled.
         const empty = await mountPaintDeckWithRowSelected(false)
-        expect(actionBtn(empty.container, 'Paste rows').disabled).toBe(true)
+        const disabled = await pickCtxItem(empty.container, 1, 'Paste')
+        expect(disabled?.className).toContain('disabled')
         empty.unmount()
 
         const { cm, container, unmount } = await mountPaintDeckWithRowSelected(true)
-        const paste = actionBtn(container, 'Paste rows')
-        expect(paste.disabled).toBe(false)
-        await act(async () => { paste.click() })
-        await flushPromises()
+        await runCtxItem(container, 1, 'Paste')
         // The rows come from the clipboard, not from worker-held state.
         expect(cm.invokeService).toHaveBeenCalledWith('pastePaintEntries', {
             ...TARGET,
@@ -551,11 +590,16 @@ describe('ColorPane wire', () => {
     })
 
     it('Paint Paste with no row selected appends (idx null)', async () => {
-        const { cm, container, unmount } = await mountWith(
+        const { cm, unmount } = await mountWith(
             { ok: true, className: 'PaintColoring', paintEntries: PAINT_ROWS },
             true,
         )
-        await act(async () => { actionBtn(container, 'Paste rows').click() })
+        // Right-click with no selection would select the row under the
+        // cursor first, so drive Paste from the deck's own clipboard-scope
+        // handler (the path Cmd+V takes) to keep "nothing selected" true.
+        const scope = getClipboardScopeForTest('paint-deck')
+        if (!scope) throw new Error('paint-deck scope was not registered')
+        await act(async () => { scope.paste() })
         await flushPromises()
         expect(cm.invokeService).toHaveBeenCalledWith('pastePaintEntries', {
             ...TARGET,
@@ -565,22 +609,190 @@ describe('ColorPane wire', () => {
         unmount()
     })
 
-    it('Paint Remove all fires clearPaintEntries and is disabled on an empty list', async () => {
+    it('Paint Delete all fires clearPaintEntries and is absent from the toolbar', async () => {
         const { cm, container, unmount } = await mountWith({
             ok: true,
             className: 'PaintColoring',
             paintEntries: PAINT_ROWS,
         })
-        await act(async () => { actionBtn(container, 'Remove all rows').click() })
-        await flushPromises()
+        // The toolbar must stay on one line, so the destructive / clipboard
+        // commands are context-menu only.
+        expect(
+            container.querySelector('.color-actions button[aria-label="Remove all rows"]'),
+        ).toBeNull()
+        await runCtxItem(container, 0, 'Delete all')
         expect(cm.invokeService).toHaveBeenCalledWith('clearPaintEntries', TARGET)
         unmount()
 
         const empty = await mountWith({
             ok: true, className: 'PaintColoring', paintEntries: [],
         })
-        expect(actionBtn(empty.container, 'Remove all rows').disabled).toBe(true)
+        const item = await pickCtxItem(empty.container, null, 'Delete all')
+        expect(item?.className).toContain('disabled')
         empty.unmount()
+    })
+
+    it('Paint Delete removes every selected row in one call', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const rows = container.querySelectorAll('.color-row')
+        await act(async () => { (rows[0] as HTMLElement).click() })
+        // Cmd+click adds the second row without dropping the first.
+        await act(async () => {
+            ;(rows[1] as HTMLElement).dispatchEvent(
+                new MouseEvent('click', { bubbles: true, metaKey: true }),
+            )
+        })
+        await flushPromises()
+        await runCtxItem(container, 1, 'Delete')
+        expect(cm.invokeService).toHaveBeenCalledWith('removePaintEntries', {
+            ...TARGET,
+            idxs: [0, 1],
+        })
+        unmount()
+    })
+
+    // Move up / down act on one row: a multi-row move would have to compact a
+    // disjoint selection into a contiguous block (what UXP did), which loses
+    // the user's arrangement. They stay single-target and gate off instead.
+    it('Move up/down are disabled while several rows are selected', async () => {
+        const { container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const rows = container.querySelectorAll('.color-row')
+        await act(async () => { (rows[1] as HTMLElement).click() })
+        await flushPromises()
+        expect(actionBtn(container, 'Move row up').disabled).toBe(false)
+
+        await act(async () => {
+            ;(rows[0] as HTMLElement).dispatchEvent(
+                new MouseEvent('click', { bubbles: true, metaKey: true }),
+            )
+        })
+        await flushPromises()
+        expect(actionBtn(container, 'Move row up').disabled).toBe(true)
+        expect(actionBtn(container, 'Move row down').disabled).toBe(true)
+        unmount()
+    })
+
+    // Shift+click ranges from the anchor, so a Copy after it carries the
+    // whole block rather than just the two endpoints.
+    it('Shift+click selects the range and Copy takes all of it', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const rows = container.querySelectorAll('.color-row')
+        await act(async () => { (rows[0] as HTMLElement).click() })
+        await act(async () => {
+            ;(rows[1] as HTMLElement).dispatchEvent(
+                new MouseEvent('click', { bubbles: true, shiftKey: true }),
+            )
+        })
+        await flushPromises()
+        expect(container.querySelectorAll('.color-row.selected').length).toBe(2)
+        await runCtxItem(container, 1, 'Copy')
+        expect(cm.invokeService).toHaveBeenCalledWith('copyPaintEntries', {
+            ...TARGET,
+            idxs: [0, 1],
+        })
+        unmount()
+    })
+
+    // The Selection / Color split is drag-resizable, standing in for UXP's
+    // `<splitter class="tree-splitter"/>` between the two treecols.
+    it('the Selection column has a drag handle sizing the colgroup', async () => {
+        const { container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const handle = container.querySelector('.color-resize-handle')
+        expect(handle).toBeTruthy()
+        const col = container.querySelector('.color-table colgroup col') as HTMLElement
+        const before = col.style.width
+        await act(async () => {
+            handle!.dispatchEvent(
+                new MouseEvent('mousedown', { bubbles: true, clientX: 100 }),
+            )
+            document.dispatchEvent(
+                new MouseEvent('mousemove', { bubbles: true, clientX: 160 }),
+            )
+            document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+        })
+        expect(col.style.width).not.toBe(before)
+        unmount()
+    })
+
+    // A wide Selection column must never push the table past its wrapper.
+    // The wrapper is `overflow-x: hidden`, and focusing an input inside an
+    // overflowing container makes the browser scroll it sideways -- which is
+    // what clipped the left edge of the selected row's outline.
+    it('clamps the Selection column so the Color column stays usable', async () => {
+        const { container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const wrap = container.querySelector('.color-table-wrap') as HTMLElement
+        // jsdom reports 0 for clientWidth; feed the observer a real width.
+        Object.defineProperty(wrap, 'clientWidth', {
+            value: 200,
+            configurable: true,
+        })
+        const handle = container.querySelector('.color-resize-handle')!
+        await act(async () => {
+            handle.dispatchEvent(
+                new MouseEvent('mousedown', { bubbles: true, clientX: 0 }),
+            )
+            // Drag far past the wrapper's own width.
+            document.dispatchEvent(
+                new MouseEvent('mousemove', { bubbles: true, clientX: 900 }),
+            )
+            document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+        })
+        const col = container.querySelector('.color-table colgroup col') as HTMLElement
+        const w = parseFloat(col.style.width)
+        // Either the observer never fired (jsdom without ResizeObserver, so
+        // the raw width is used) or the clamp left room for the Color column.
+        if (typeof ResizeObserver !== 'undefined') {
+            expect(w).toBeLessThanOrEqual(200)
+        }
+        expect(w).toBeGreaterThan(0)
+        unmount()
+    })
+
+    // Shift / Cmd + mousedown must not start or extend a DOM text selection:
+    // that is what painted the row labels as selected text during a range
+    // select. A plain mousedown keeps its default so the cell input can
+    // place its caret.
+    it('cancels the default of a modifier mousedown on a row, not a plain one', async () => {
+        const { container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const row = container.querySelectorAll('.color-row')[1] as HTMLElement
+        const shift = new MouseEvent('mousedown', {
+            bubbles: true, cancelable: true, shiftKey: true,
+        })
+        const meta = new MouseEvent('mousedown', {
+            bubbles: true, cancelable: true, metaKey: true,
+        })
+        const plain = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+        await act(async () => { row.dispatchEvent(shift) })
+        await act(async () => { row.dispatchEvent(meta) })
+        await act(async () => { row.dispatchEvent(plain) })
+        expect(shift.defaultPrevented).toBe(true)
+        expect(meta.defaultPrevented).toBe(true)
+        expect(plain.defaultPrevented).toBe(false)
+        unmount()
     })
 
     // --- Paint cell color edit -> updatePaintEntry (merge keeps selStr) ---

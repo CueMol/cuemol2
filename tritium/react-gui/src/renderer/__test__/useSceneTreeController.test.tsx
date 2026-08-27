@@ -365,6 +365,33 @@ describe('useSceneTreeController clipboard scope', () => {
     h.unmount();
   });
 
+  // The toolbar Delete button and the Delete key both land on
+  // `onDeleteSelected`. UXP drove its Delete button through the same multi
+  // loop, and `useSceneTree` keeps `delete` enabled while multi-selected, so
+  // the bundle handler has to fan out rather than delete only the anchor.
+  it('deletes the whole multi-selection from onDeleteSelected', () => {
+    const ids = new Set(['42', '43']);
+    const scene = makeScene({ tree: treeWith(42), selectedId: '42', selectedIds: ids });
+    const showGeneric = vi.fn();
+    const h = renderController(scene, showGeneric);
+    act(() => { h.result.onDeleteSelected('42'); });
+    expect(scene.bulkDeleteNodes).toHaveBeenCalledWith(ids);
+    expect(scene.deleteNode).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
+  it('deletes a single row through the single-node path (cameras / styles)', () => {
+    const scene = makeScene({
+      tree: treeWith(42), selectedId: '42', selectedIds: new Set(['42']),
+    });
+    const showGeneric = vi.fn();
+    const h = renderController(scene, showGeneric);
+    act(() => { h.result.onDeleteSelected('42'); });
+    expect(scene.deleteNode).toHaveBeenCalledWith('42');
+    expect(scene.bulkDeleteNodes).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
   it('cuts a multi-selection through the bulk delete', async () => {
     const ids = new Set(['42', '43']);
     const scene = makeScene({ tree: treeWith(42), selectedId: '42', selectedIds: ids });
