@@ -74,17 +74,17 @@ const UMBREON_PROPS: PropDef[] = [
   // --- Ambient Occlusion (off by default via the aoEnabled switch, like
   //     Shadows/GI; the backend maps aoEnabled=false to aoSamples 0) ---
   { key: "aoEnabled",     label: "Enable AO",          type: "boolean", value: false, group: "Ambient Occlusion" },
-  { key: "aoSamples",     label: "AO samples",         type: "integer", value: 64,   group: "Ambient Occlusion", min: 1, max: 256, step: 8 },
+  { key: "aoSamples",     label: "AO samples",         type: "integer", value: 64,   group: "Ambient Occlusion", min: 1, max: 256, step: 8, slider: true },
   // 0 = auto: libcuemol2 derives the radius from the scene bounding box, so AO
   // strength does not depend on how large the molecule is. A positive value
   // overrides it with a fixed world radius.
-  { key: "aoDistance",    label: "AO distance (0 = auto)", type: "real", value: 0,   group: "Ambient Occlusion", min: 0, max: 1000, step: 10 },
-  { key: "aoIntensity",   label: "AO intensity",       type: "real",    value: 1.0,  group: "Ambient Occlusion", min: 0, max: 1,    step: 0.1 },
+  { key: "aoDistance",    label: "AO distance (0 = auto)", type: "real", value: 0,   group: "Ambient Occlusion", min: 0, max: 1000, step: 10, slider: true },
+  { key: "aoIntensity",   label: "AO intensity",       type: "real",    value: 1.0,  group: "Ambient Occlusion", min: 0, max: 1,    step: 0.1, slider: true },
   // AO quality recipe (umbreon quality_presets.md section 2a). aoDiffuseFactor
   // defaults to the recipe value 1.0, NOT umbreon's 0.0: with CueMol's default
   // lighting most energy is direct, and AO at 0 darkens only the ambient term,
   // so it would be all but invisible.
-  { key: "aoDiffuseFactor", label: "AO on direct light", type: "real",  value: 1.0,  group: "Ambient Occlusion", min: 0, max: 1, step: 0.1 },
+  { key: "aoDiffuseFactor", label: "AO on direct light", type: "real",  value: 1.0,  group: "Ambient Occlusion", min: 0, max: 1, step: 0.1, slider: true },
   { key: "aoMultiScale",  label: "Multi-scale AO",     type: "boolean", value: true, group: "Ambient Occlusion" },
   { key: "aoBentNormal",  label: "Bent normal",        type: "boolean", value: true, group: "Ambient Occlusion" },
   { key: "aoLowDiscrepancy", label: "Low-discrepancy sampling", type: "boolean", value: true, group: "Ambient Occlusion" },

@@ -9,8 +9,8 @@
  *   - the registry resolves `type_name === "dsurface"` to two default-expanded
  *     sections (Surface / Atom radii);
  *   - each row renders only when its property exists;
- *   - "Detail" uses the plain inline stepper NumericField (no slider, no drag
- *     arrows) and commits a single-step integer `onSet`;
+ *   - "Detail" is a SliderField row (slider + number box, no drag arrows) and
+ *     commits a single-step integer `onSet`;
  *   - a drag-numeric row (Line/Point size) commits a plain single step (no
  *     realtime opts);
  *   - the "Line/Point size" row is disabled while draw mode is "fill";
@@ -161,7 +161,7 @@ describe('DSurfaceMainSection', () => {
     unmount()
   })
 
-  it('renders Detail as a stepper NumericField (no slider, no drag arrows)', () => {
+  it('renders Detail as a slider field (sweepable density, no drag arrows)', () => {
     const { container, unmount } = mountTree(
       <DSurfaceMainSection
         entries={mainEntries()}
@@ -172,13 +172,14 @@ describe('DSurfaceMainSection', () => {
       />,
     )
     const detail = rowByLabel(container, 'Detail')!
-    expect(detail.querySelector('.h3-form-numeric-row')).not.toBeNull()
-    expect(detail.querySelector('.h3-form-slider')).toBeNull()
+    expect(detail.querySelector('.h3-form-sliderfield-row')).not.toBeNull()
+    expect(detail.querySelector('.h3-form-sliderfield-slider')).not.toBeNull()
+    expect(detail.querySelector('.h3-form-sliderfield-number')).not.toBeNull()
     expect(dragArrow(detail)).toBeNull()
     unmount()
   })
 
-  it('commits Detail as a single-step integer on Enter', () => {
+  it('commits a typed Detail as a single-step integer on blur', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
       <DSurfaceMainSection
@@ -189,11 +190,13 @@ describe('DSurfaceMainSection', () => {
         nodeId={2}
       />,
     )
-    const input = rowByLabel(container, 'Detail')!.querySelector('input') as HTMLInputElement
+    const input = rowByLabel(container, 'Detail')!.querySelector(
+      '.h3-form-sliderfield-number',
+    ) as HTMLInputElement
     act(() => typeInto(input, '8'))
-    act(() =>
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })),
-    )
+    // SliderField holds the keystrokes locally and commits on blur (Enter
+    // blurs the input), so focusout is the commit edge.
+    act(() => input.dispatchEvent(new FocusEvent('focusout', { bubbles: true })))
     expect(onSet).toHaveBeenCalledWith('detail', 'integer', 8)
     unmount()
   })
