@@ -39,6 +39,7 @@ add_executable(test_qlib
   qlib/test_eventmanager.cpp
   qlib/test_lprocmgr.cpp
   qlib/test_limited_in_stream.cpp
+  qlib/test_line_stream.cpp
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
   qlib/test_seekable_stream.cpp
