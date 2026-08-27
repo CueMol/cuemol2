@@ -42,7 +42,8 @@ export interface LoadObjectArgs {
      */
     contentFirst: boolean;
     /**
-     * Optional byte cap forwarded to pickReaderName's content-sniff. 0 /
+     * Optional ceiling of the escalating content-sniff byte budget
+     * forwarded to pickReaderName (see shared/sniffConfig.ts). 0 /
      * undefined falls back to DEFAULT_SNIFF_CAP. Lets scripts bound sniff
      * against pathological / very large inputs.
      */
