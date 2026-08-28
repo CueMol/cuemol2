@@ -11,6 +11,11 @@
  * a second native addon), no dialog/command providers, and no
  * installGlobalCrashHandlers (a satellite-window crash must not exit the
  * app; the main process destroys just this window on render-process-gone).
+ *
+ * ContextMenuProvider is the exception: main registers the text context menu
+ * on this window too, and on Windows / Linux that arrives as an
+ * IPC.TEXT_CTX_SHOW push the renderer has to draw itself. Without a subscriber
+ * here, right-clicking a text field in this window produced no menu at all.
  */
 
 import { createRoot } from 'react-dom/client'
@@ -23,6 +28,7 @@ import './index.css'
 import './app.css'
 
 import { ThemeProvider } from './contexts/ThemeContext'
+import { ContextMenuProvider } from './components/menu/ContextMenuProvider'
 import { ErrorBoundary } from './crash/ErrorBoundary'
 import { RenderWindowApp } from './components/renderwindow/RenderWindowApp'
 
@@ -30,7 +36,9 @@ const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(
   <ErrorBoundary>
     <ThemeProvider>
-      <RenderWindowApp />
+      <ContextMenuProvider>
+        <RenderWindowApp />
+      </ContextMenuProvider>
     </ThemeProvider>
   </ErrorBoundary>
 )

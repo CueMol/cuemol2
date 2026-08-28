@@ -93,6 +93,12 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     vi.restoreAllMocks()
   })
 
+/** PROCEED replies only, ignoring any other channel the chain touches. */
+function proceedCalls(api: Record<string, unknown>): unknown[][] {
+  const invoke = api.invoke as { mock: { calls: unknown[][] } }
+  return invoke.mock.calls.filter((c) => c[0] === IPC.WINDOW_CLOSE_PROCEED)
+}
+
   it('walks all tabs in order and calls WINDOW_CLOSE_PROCEED { proceed: true } when every close succeeds', async () => {
     const tabs: TabData[] = [
       { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
@@ -111,7 +117,7 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     expect(h.setActiveTab.mock.calls.map((c) => c[0])).toEqual([
       'molview-1', 'molview-2',
     ])
-    expect(h.api.invoke).toHaveBeenCalledTimes(1)
+    expect(proceedCalls(h.api)).toHaveLength(1)
     expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     h.unmount()
@@ -131,7 +137,7 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     expect(h.handleCloseTab.mock.calls.map((c) => c[0])).toEqual([
       'molview-1', 'molview-2',
     ])
-    expect(h.api.invoke).toHaveBeenCalledTimes(1)
+    expect(proceedCalls(h.api)).toHaveLength(1)
     expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: false })
 
     h.unmount()
@@ -224,9 +230,33 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     await flushPromises()
     await flushPromises()
 
-    expect(api.invoke).toHaveBeenCalledTimes(1)
+    expect(proceedCalls(api)).toHaveLength(1)
     expect(api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     handle.unmount()
   })
+
+  /**
+   * Main force-closes the window if no reply arrives, so every path through
+   * this handler has to answer. It used to have a `finally` but no `catch`: a
+   * throw from handleCloseTab or setActiveTab aborted the walk before either
+   * invoke, main heard nothing, and the watchdog discarded the unsaved scenes.
+   */
+  it('replies proceed:false when a step throws instead of leaving main waiting', async () => {
+    const tabs: TabData[] = [
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
+    ]
+    const h = mount({ tabs, closeResults: [true] })
+    h.handleCloseTab.mockImplementation(() => { throw new Error('close blew up') })
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await h.triggerCloseRequest()
+    errSpy.mockRestore()
+
+    expect(proceedCalls(h.api)).toHaveLength(1)
+    expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: false })
+
+    h.unmount()
+  })
+
 })

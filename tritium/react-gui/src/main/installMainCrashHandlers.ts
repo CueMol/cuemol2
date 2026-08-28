@@ -6,13 +6,27 @@
  *
  * Electron's built-in handler only pops a modal "A JavaScript error occurred
  * in the main process" dialog, whose text cannot be copied and which never
- * reaches the log a headless / piped run captures. These listeners are added
- * alongside it (Node runs every `uncaughtException` listener), so the dialog
- * still appears while the same report also lands on stderr.
+ * reaches the log a headless / piped run captures. This funnel adds the stderr
+ * copy.
+ *
+ * It has to raise the dialog itself, though. Electron's listener (verified in
+ * the shipped binary) is:
+ *
+ *   process.on('uncaughtException', function (e) {
+ *     process.listenerCount('uncaughtException') > 1 || ...showErrorBox(...)
+ *   })
+ *
+ * -- so merely registering a listener here suppresses it, and a GUI user would
+ * be left with no sign at all that anything went wrong. Neither Electron's
+ * handler nor this one exits: staying up after an uncaught exception is
+ * Electron's deliberate choice for a desktop app, and this file does not
+ * change it.
  *
  * The renderer has its own funnel in `renderer/crash/`; this covers the main
  * process only.
  */
+
+import { dialog } from 'electron';
 
 /** stdio write errors that mean "nobody is reading" rather than a real fault. */
 const PIPE_ERROR_CODES = new Set(['EPIPE', 'ERR_STREAM_DESTROYED', 'ERR_STREAM_WRITE_AFTER_END']);
@@ -38,6 +52,27 @@ function report(kind: string, err: unknown): void {
 }
 
 /**
+ * Raise the modal Electron's own handler would have shown, since registering a
+ * listener here suppressed it.
+ *
+ * @remarks Fully guarded: this runs on the crash path, where the dialog API may
+ *   be unavailable (before `ready`, in tests), and a throw here would replace
+ *   the report with a different crash.
+ */
+function showErrorDialog(err: unknown): void {
+    try {
+        const detail =
+            err instanceof Error ? (err.stack ?? `${err.name}: ${err.message}`) : String(err);
+        dialog?.showErrorBox(
+            'A JavaScript error occurred in the main process',
+            `Uncaught Exception:\n${detail}`,
+        );
+    } catch {
+        // No dialog available -- the stderr report above is the whole record.
+    }
+}
+
+/**
  * Install the main-process crash handlers. Call once, as early as possible in
  * `main/index.ts` (before any window or store access).
  */
@@ -57,6 +92,9 @@ export function installMainCrashHandlers(): void {
         });
     }
 
-    process.on('uncaughtException', (err) => report('uncaughtException', err));
+    process.on('uncaughtException', (err) => {
+        report('uncaughtException', err);
+        showErrorDialog(err);
+    });
     process.on('unhandledRejection', (reason) => report('unhandledRejection', reason));
 }

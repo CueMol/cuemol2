@@ -83,38 +83,3 @@ export function setForceQuit(value: boolean): void {
   forceQuit = value
 }
 
-// --- Close-request watchdog ---
-
-/**
- * Time the main process will wait for a WINDOW_CLOSE_PROCEED reply before
- * assuming the renderer is wedged and forcing the window closed. Tuned to
- * avoid false positives during slow confirm dialogs; shorten if hangs
- * become a routine issue.
- */
-export const WINDOW_CLOSE_WATCHDOG_MS = 10000
-
-const closeWatchdogs = new WeakMap<BrowserWindow, ReturnType<typeof setTimeout>>()
-
-export function setCloseWatchdog(
-  win: BrowserWindow,
-  timer: ReturnType<typeof setTimeout>,
-): void {
-  closeWatchdogs.set(win, timer)
-}
-
-/**
- * Cancel the WINDOW_CLOSE_REQUEST watchdog for `win`. Called when the
- * renderer replies via WINDOW_CLOSE_PROCEED so the timer does not fire
- * after a successful confirm.
- */
-export function clearCloseWatchdog(win: BrowserWindow): void {
-  const timer = closeWatchdogs.get(win)
-  if (timer !== undefined) {
-    clearTimeout(timer)
-    closeWatchdogs.delete(win)
-  }
-}
-
-export function hasCloseWatchdog(win: BrowserWindow): boolean {
-  return closeWatchdogs.has(win)
-}

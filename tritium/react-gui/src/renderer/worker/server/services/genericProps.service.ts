@@ -14,6 +14,7 @@ import { parseGenericProps, type GenericPropEntry } from './helpers/parseGeneric
 import { makeSel } from './helpers/makeSel';
 import { safeRead } from './helpers/safeRead';
 import { listGroupChildRenderers } from './helpers/groupChildren';
+import { checkGroupAssignment } from './helpers/rendGroup';
 
 export type { GenericPropEntry } from './helpers/parseGenericProps';
 export type { PropTargetType } from './helpers/resolvePropTarget';
@@ -257,6 +258,27 @@ function setGenericProp(
             children: listGroupChildRenderers(scene, grp),
             newName,
         };
+    }
+
+    // Group membership is an unvalidated name reference, so a `group` write
+    // naming no existing group (a typo, or a group deleted meanwhile) drops the
+    // renderer out of getGroupedRendListJSON -- it keeps drawing but is gone
+    // from the scene tree, and every way to select / hide / delete it starts
+    // there. Reject instead of writing. See helpers/rendGroup.ts.
+    if (
+        args.op === 'set' &&
+        args.propName === 'group' &&
+        (args.nodeType === 'renderer' || args.nodeType === 'rendGroup')
+    ) {
+        const reason = checkGroupAssignment(
+            scene,
+            target as unknown as Renderer,
+            String(args.value ?? ''),
+        );
+        if (reason) {
+            console.warn(`setGenericProp: refusing group write -- ${reason}`);
+            return fail;
+        }
     }
 
     try {

@@ -72,6 +72,12 @@ function setupApi() {
             pushCbs.set(channel, cb);
             return () => pushCbs.delete(channel);
         }),
+        // Mirror the real handler: RENDER_HISTORY_STORE reports whether the
+        // archive copy landed, and the bridge only publishes an entry when it
+        // did (an unstored id reads back as a blank frame).
+        invoke: vi.fn((channel: string) =>
+            Promise.resolve(channel === IPC.RENDER_HISTORY_STORE ? { ok: true } : undefined),
+        ),
     });
     return {
         api,
@@ -285,6 +291,7 @@ describe('useRenderWindowBridge', () => {
     it('VIEW_SIZE_REQUEST replies with the canvas pixel size', async () => {
         const { cm } = makeCm();
         const canvas = document.createElement('canvas');
+        canvas.setAttribute('data-molview-canvas', '');
         canvas.getBoundingClientRect = () =>
             ({ width: 400, height: 300 } as DOMRect);
         document.body.appendChild(canvas);
@@ -301,6 +308,39 @@ describe('useRenderWindowBridge', () => {
         });
         h.unmount();
         document.body.removeChild(canvas);
+    });
+
+    /**
+     * The sequence panel and the multi-gradient histogram also render a
+     * <canvas>, and the sidebar comes before the content area in the DOM. A
+     * bare `document.querySelector('canvas')` therefore measured whichever of
+     * those happened to be on screen, and the render ran at that widget's size
+     * with nothing to indicate it.
+     */
+    it('measures the molview canvas, not whichever canvas comes first', async () => {
+        const { cm } = makeCm();
+        const decoy = document.createElement('canvas');
+        decoy.getBoundingClientRect = () => ({ width: 64, height: 12 } as DOMRect);
+        document.body.appendChild(decoy);
+
+        const molview = document.createElement('canvas');
+        molview.setAttribute('data-molview-canvas', '');
+        molview.getBoundingClientRect = () => ({ width: 800, height: 600 } as DOMRect);
+        document.body.appendChild(molview);
+
+        const h = mountBridge(cm);
+        await act(async () => {
+            harness.requestViewSize(12);
+            await flushPromises();
+        });
+
+        expect(harness.api.invoke).toHaveBeenCalledWith(IPC.RENDER_VIEW_SIZE_REPLY, {
+            reqId: 12,
+            size: { width: 800, height: 600 },
+        });
+        h.unmount();
+        document.body.removeChild(decoy);
+        document.body.removeChild(molview);
     });
 });
 
@@ -337,6 +377,52 @@ describe('useRenderWindowBridge hatch style template', () => {
             .find((c) => c[0] === IPC.RENDER_HATCH_STYLE_REPLY)?.[1] as { reqId: number; result: { ok: boolean } };
         expect(reply.reqId).toBe(6);
         expect(reply.result.ok).toBe(false);
+        h.unmount();
+    });
+});
+
+/**
+ * A failed archive used to produce a history entry anyway. Its
+ * RENDER_HISTORY_READ then returns null -- a blank frame in the render window,
+ * and "no longer available" from Save Image -- and, because the work directory
+ * is only registered on a successful store, that render's temp directory
+ * leaked for the run.
+ */
+describe('useRenderWindowBridge history store failure', () => {
+    it('does not publish a history entry when the archive copy fails', async () => {
+        const pushCbs = new Map<string, (payload: unknown) => void>();
+        const api = setupElectronAPI({
+            onPush: vi.fn((channel: string, cb: (payload: unknown) => void) => {
+                pushCbs.set(channel, cb);
+                return () => pushCbs.delete(channel);
+            }),
+            invoke: vi.fn((channel: string) =>
+                Promise.resolve(
+                    channel === IPC.RENDER_HISTORY_STORE ? { ok: false } : undefined,
+                ),
+            ),
+        });
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { cm, emit } = makeCm();
+        const h = mountBridge(cm);
+
+        await act(async () => {
+            pushCbs.get(IPC.RENDER_WINDOW_EXEC)?.({ type: 'start', snapshot });
+            await flushPromises();
+        });
+        act(() => emit({
+            type: 'complete', jobId: 'job-1',
+            imagePath: '/tmp/render/out.png', workDir: '/tmp/render',
+            width: 800, height: 600, elapsedSec: 3.5,
+        }));
+        await flushPromises();
+        warn.mockRestore();
+
+        const historyPushes = (api.invoke as ReturnType<typeof vi.fn>).mock.calls
+            .filter((c) => c[0] === IPC.RENDER_WINDOW_STATE)
+            .map((c) => c[1] as { kind: string })
+            .filter((u) => u.kind === 'history');
+        expect(historyPushes).toHaveLength(0);
         h.unmount();
     });
 });

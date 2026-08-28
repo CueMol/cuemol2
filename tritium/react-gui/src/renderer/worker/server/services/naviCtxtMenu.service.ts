@@ -8,6 +8,7 @@ import { makeSel } from './helpers/makeSel';
 import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selStrTransforms';
 import { getViewSceneOrNull, getViewSceneObjOrNull } from './helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
+import { quoteSelName } from './helpers/selName';
 
 /**
  * Granularity of an atom context-menu selection. Canonical source for the
@@ -38,10 +39,17 @@ function buildSelStr(mol: MolCoord, atomId: number, mode: SelectMode): string | 
     const chainName: string = atom.chainName;
     const residIndex: string = atom.residIndex;
 
+    // A chain name reaches the selection grammar as a literal, so it has to be
+    // quoted: mmCIF auth_asym_id may contain a space, which would otherwise
+    // parse as a different expression. quoteSelName returns null for a name the
+    // grammar cannot represent at all.
+    const chain = quoteSelName(chainName);
+    if (!chain) return null;
+
     switch (mode) {
         case 'atom':     return `aid ${atomId}`;
-        case 'residue':  return `'${chainName}'.${residIndex}.*`;
-        case 'chain':    return `c;${chainName}`;
+        case 'residue':  return `${chain}.${residIndex}.*`;
+        case 'chain':    return `c;${chain}`;
         case 'mol':      return '*';
     }
 }

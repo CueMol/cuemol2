@@ -28,6 +28,7 @@ import { RenderPanel } from "../panels/RenderPanel";
 import { RenderSettingsPane } from "./RenderSettingsPane";
 import { useRenderSettings } from "../../hooks/useRenderSettings";
 import { useHatchTemplate } from "../../hooks/useHatchTemplate";
+import { useTextContextMenu } from "../../hooks/useTextContextMenu";
 import type { HatchLookEditorProps } from "../inspector/HatchLookEditor";
 import { useMovieOutputPrefs } from "../../hooks/useMovieOutputPrefs";
 import { isRenderJobActive } from "../../hooks/useRenderJob";
@@ -37,6 +38,10 @@ import { sizePresetsForMode } from "../../data/renderSettings";
 import { IPC } from "@shared/ipcChannels";
 
 export const RenderWindowApp: React.FC = () => {
+  // Main registers the text context menu on this window too; on Windows /
+  // Linux it arrives as a push the renderer has to draw. Without this the
+  // window's text fields had no context menu at all.
+  useTextContextMenu();
   const client = useRenderWindowClient();
   // Umbreon is the default backend when the build supports it (forwarded from
   // the main window); otherwise fall back to the static default (POV-Ray).

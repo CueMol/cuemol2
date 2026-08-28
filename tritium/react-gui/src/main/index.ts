@@ -9,7 +9,7 @@ import { IPC } from '@shared/ipcChannels'
 import { applyDevDockIcon } from './helpers/appIcon'
 import { loadUi } from './stateStore'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
-import { clearRenderHistory } from './renderHistory'
+import { clearRenderHistory, sweepStaleRenderHistory } from './renderHistory'
 import { sweepMovieOutputs } from './movieOutput'
 import { APP_PRODUCT_NAME } from '@shared/appInfo'
 import { installMainCrashHandlers } from './installMainCrashHandlers'
@@ -48,9 +48,7 @@ if (!gotSingleInstanceLock) {
   // requestSingleInstanceLock() has already handed our argv and cwd to the
   // primary instance, which opens the files. Every side effect below is gated
   // on this flag rather than relying on app.quit() winning the race: quit is
-  // asynchronous, whenReady() can still resolve, and will-quit's
-  // clearRenderHistory() would wipe the RUNNING instance's history (the
-  // history directory is a fixed path under os.tmpdir()).
+  // asynchronous, so whenReady() can still resolve and run them.
   console.log('[Main] another instance owns the single-instance lock; exiting')
   app.quit()
 }
@@ -120,9 +118,10 @@ app.whenReady().then(() => {
   // Dev runs have no .app bundle to take the dock icon from (see appIcon.ts).
   applyDevDockIcon()
 
-  // Drop any render-history images a previous run left behind (its metadata
-  // died with that run, so the files are unreachable).
-  clearRenderHistory()
+  // Drop what previous runs left behind (their metadata died with them, so the
+  // images are unreachable). Only directories whose owning process is gone are
+  // touched -- another instance may be running right now.
+  sweepStaleRenderHistory()
 
   // Age out past runs' movie output. Unlike the render history this is not
   // wiped wholesale: a movie can represent hours of rendering, so only stale
@@ -150,9 +149,8 @@ app.whenReady().then(() => {
 // The render history is per-run: its images are temp files and the settings
 // that produced them are not persisted either.
 app.on('will-quit', () => {
-  // Guarded: the history directory is a fixed path under os.tmpdir(), shared by
-  // every instance. Without this, an instance that loses the single-instance
-  // lock and quits would wipe the running instance's render history.
+  // Each run owns its own directory, so this only ever removes ours. The lock
+  // check just keeps a losing instance from creating one on its way out.
   if (!gotSingleInstanceLock) return
   clearRenderHistory()
 })
@@ -182,11 +180,16 @@ app.on('before-quit', (event) => {
   // skip the confirm funnel entirely.
   if (isForceQuit()) return
   if (isAppQuitting()) return
-  const wins = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed())
-  if (wins.length === 0) return
+  // Close the main window only. It is the one with a confirm funnel, and its
+  // 'closed' handler takes the Rendering window down with it. Closing every
+  // window here destroyed the Rendering window first -- it has no funnel -- so
+  // cancelling the main window's save prompt restored the app minus its render
+  // history view and any in-flight settings.
+  const main = getMainWindow()
+  if (!main || main.isDestroyed()) return
   setAppQuitting(true)
   event.preventDefault()
-  for (const w of wins) w.close()
+  main.close()
 })
 
 // Utility/GPU process crashes (Web Workers run inside the renderer process

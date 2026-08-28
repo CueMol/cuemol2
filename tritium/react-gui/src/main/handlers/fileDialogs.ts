@@ -15,6 +15,7 @@ import type { BrowserWindow, FileFilter } from 'electron'
 import path from 'path'
 import { promises as fsp } from 'fs'
 import { withMenuBlocked } from '../menu'
+import { hasExt } from '@shared/fileExt'
 
 /**
  * Show a native save dialog (menu blocked while it is up) and normalize the
@@ -246,10 +247,13 @@ export async function handleObjectSaveDialog(
   // Electron does not return the chosen filter index. Best-effort recover
   // it from the file extension. Falls back to defaultFilterIndex (or 0)
   // when no match -- the worker will use that writer name.
-  const ext = (result.filePath.split('.').pop() ?? '').toLowerCase()
+  // Suffix match, not a dot-segment: a parent directory containing a dot
+  // ("/Users/me/v1.2/output") used to yield "2/output", so no filter matched
+  // and the object was written with a writer the user did not choose. See
+  // shared/fileExt.ts.
   let filterIndex = payload.defaultFilterIndex ?? 0
   for (let i = 0; i < payload.filters.length; i++) {
-    if (payload.filters[i].extensions.some((e) => e.toLowerCase() === ext)) {
+    if (payload.filters[i].extensions.some((e) => hasExt(result.filePath, e))) {
       filterIndex = i
       break
     }

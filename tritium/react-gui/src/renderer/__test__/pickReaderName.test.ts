@@ -113,3 +113,50 @@ describe('pickReaderName -- sniff ceiling', () => {
         expect(DEFAULT_SNIFF_CAP).toBeGreaterThanOrEqual(1 << 20)
     })
 })
+
+/**
+ * Readers declare multi-dot extensions -- the PDB reader's fext is
+ * "*.pdb; *.ent; *.pdb.gz". Reducing the path to its last dot-segment turned
+ * "znub.pdb.gz" into "gz", which matched no reader, so the ext-first branch
+ * returned "" and the open failed with "could not determine a compatible
+ * reader". It only surfaced once inferContentFirst started routing such files
+ * here instead of to the content sniff.
+ */
+describe('pickReaderName -- multi-dot extensions', () => {
+    const GZ_READERS: ReaderInfo[] = [
+        { name: 'pdb', fext: '*.pdb;*.ent;*.pdb.gz', category: 0 },
+        { name: 'mmcif', fext: '*.cif;*.cif.gz', category: 0 },
+    ]
+
+    it('resolves a .pdb.gz to the PDB reader without sniffing', () => {
+        const { ctx, searchReaderByContent } = makeCtx(GZ_READERS, () => '')
+        expect(pickReaderName(ctx, '/x/znub.pdb.gz', false)).toBe('pdb')
+        expect(searchReaderByContent).not.toHaveBeenCalled()
+    })
+
+    it('resolves a .cif.gz to the mmCIF reader', () => {
+        const { ctx } = makeCtx(GZ_READERS, () => '')
+        expect(pickReaderName(ctx, '/x/znub.cif.gz', false)).toBe('mmcif')
+    })
+
+    it('still resolves a plain .pdb', () => {
+        const { ctx } = makeCtx(GZ_READERS, () => '')
+        expect(pickReaderName(ctx, '/x/znub.pdb', false)).toBe('pdb')
+    })
+
+    it('prefers the most specific extension when two readers overlap', () => {
+        // A generic gzip reader must not win over the one claiming pdb.gz.
+        const readers: ReaderInfo[] = [
+            ...GZ_READERS,
+            { name: 'anygz', fext: '*.gz', category: 0 },
+        ]
+        const { ctx, searchReaderByContent } = makeCtx(readers, () => '')
+        expect(pickReaderName(ctx, '/x/znub.pdb.gz', false)).toBe('pdb')
+        expect(searchReaderByContent).not.toHaveBeenCalled()
+    })
+
+    it('returns "" for an extension no reader claims', () => {
+        const { ctx } = makeCtx(GZ_READERS, () => '')
+        expect(pickReaderName(ctx, '/x/znub.xyz', false)).toBe('')
+    })
+})

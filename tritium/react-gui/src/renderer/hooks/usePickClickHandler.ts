@@ -81,8 +81,16 @@ export function usePickClickHandler({
             const click = decodeClick(args)
             if (!click) return
             if (!(click.mod & INDEV_LBTN)) return
-            const result = await pick(click.x, click.y)
-            if (result?.statusMessage) setStatusMessage(result.statusMessage)
+            try {
+                const result = await pick(click.x, click.y)
+                if (result?.statusMessage) setStatusMessage(result.statusMessage)
+            } catch (err) {
+                // useCueMolEventListener discards the promise this handler
+                // returns, so nothing else can catch this. Picking an object
+                // that was deleted between the click and the dispatch is an
+                // ordinary outcome, not a crash.
+                console.warn('pick failed:', err)
+            }
         },
     })
 
@@ -91,7 +99,7 @@ export function usePickClickHandler({
     useEffect(() => {
         if (!cm || !enabled) return
         return () => {
-            void reset()
+            reset().catch((err: unknown) => console.warn('pick reset failed:', err))
         }
         // `reset` identity is stable per (cm, viewId); deps mirror the
         // original per-tool cleanup gating.
@@ -103,9 +111,11 @@ export function usePickClickHandler({
         if (!cm || !enabled) return
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key !== 'Escape') return
-            void reset().then((r) => {
-                if (r?.cleared) setStatusMessage(escapeMessage)
-            })
+            reset()
+                .then((r) => {
+                    if (r?.cleared) setStatusMessage(escapeMessage)
+                })
+                .catch((err: unknown) => console.warn('pick reset failed:', err))
         }
         window.addEventListener('keydown', onKeyDown)
         return () => window.removeEventListener('keydown', onKeyDown)

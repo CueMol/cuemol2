@@ -202,3 +202,99 @@ describe('renderStart in-process branch', () => {
         expect(res.error).toMatch(/umbreon backend not compiled in/)
     })
 })
+
+/**
+ * Shutdown cancellation. Renders started through the ProcessManager are
+ * external processes (posix_spawn children), so they outlive the app unless
+ * they are killed -- and their work directory is only registered for cleanup
+ * once the job completes. Nothing was cancelling them when the window closed.
+ */
+describe('cancelAllRenderJobs', () => {
+    let intervalCb: (() => void) | null
+
+    beforeEach(() => {
+        intervalCb = null
+        vi.spyOn(globalThis, 'setInterval').mockImplementation(((cb: () => void) => {
+            intervalCb = cb
+            return 1 as never
+        }) as never)
+        vi.spyOn(globalThis, 'clearInterval').mockImplementation((() => {}) as never)
+    })
+    afterEach(() => vi.restoreAllMocks())
+
+    function startInProcessJob(): { jobId: string; handle: ReturnType<typeof makeInProcHandle> } {
+        const handle = makeInProcHandle()
+        hoisted.getRenderBackend.mockReturnValue({
+            id: 'umbreon',
+            exportScene: vi.fn((_c: unknown, _s: unknown, _snap: unknown, workDir: string) => ({
+                inputPath: '',
+                workDir,
+                blendTable: {},
+            })),
+            outputImagePath: () => '/tmp/never-written.png',
+            beginInProcess: vi.fn(() => handle),
+            buildTasks: vi.fn(),
+            parseProgress: () => null,
+        })
+        const ctx = { svc: { pushMessage: vi.fn(), getService: vi.fn() } } as unknown as WorkerContext
+        const res = services.renderStart(ctx, {
+            sceneId: 1,
+            viewId: 2,
+            snapshot: {
+                mode: 'still',
+                backend: 'umbreon',
+                commonProps: [
+                    { key: 'width', label: 'w', type: 'real', value: 320, group: 'g' },
+                    { key: 'height', label: 'h', type: 'real', value: 240, group: 'g' },
+                    { key: 'unit', label: 'u', type: 'string', value: 'px', group: 'g' },
+                    { key: 'dpi', label: 'd', type: 'real', value: 600, group: 'g' },
+                ] as PropDef[],
+                backendProps: [],
+            } as RenderSettingsSnapshot,
+            binaries: { povrayExe: '', povrayInc: '', blendpng: '', ffmpeg: '' },
+        })
+        if (!res.ok || !res.jobId) throw new Error('renderStart did not start a job')
+        return { jobId: res.jobId, handle }
+    }
+
+    function makeInProcHandle() {
+        return {
+            progress: vi.fn(() => 0.1),
+            phase: vi.fn(() => 'Primary'),
+            isDone: vi.fn(() => false),
+            finish: vi.fn(() => false),
+            cancel: vi.fn(),
+        }
+    }
+
+    it('cancels a running job and reports the count', async () => {
+        const { handle } = startInProcessJob()
+        expect(intervalCb).toBeTypeOf('function')
+
+        const { cancelAllRenderJobs } = await import('../worker/server/services/renderJob.service')
+        const ctx = { svc: { pushMessage: vi.fn(), getService: vi.fn() } } as unknown as WorkerContext
+
+        expect(cancelAllRenderJobs(ctx)).toBe(1)
+        // In-process renders are cancelled cooperatively (the poll loop then
+        // joins the C++ thread); external ones are killed through ProcessManager.
+        expect(handle.cancel).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps going when one job refuses to cancel', async () => {
+        const bad = startInProcessJob()
+        bad.handle.cancel.mockImplementation(() => {
+            throw new Error('cancel blew up')
+        })
+        const good = startInProcessJob()
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        const { cancelAllRenderJobs } = await import('../worker/server/services/renderJob.service')
+        const ctx = { svc: { pushMessage: vi.fn(), getService: vi.fn() } } as unknown as WorkerContext
+        expect(() => cancelAllRenderJobs(ctx)).not.toThrow()
+        warn.mockRestore()
+
+        // The second job is still cancelled: one failure must not strand the
+        // rest, since each one may own an external process.
+        expect(good.handle.cancel).toHaveBeenCalled()
+    })
+})

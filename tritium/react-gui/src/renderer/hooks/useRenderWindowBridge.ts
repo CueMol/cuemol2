@@ -39,6 +39,7 @@ import type {
 } from "../data/renderResult";
 import { useRenderJob, type RenderJob } from "./useRenderJob";
 import type { TabData } from "../types";
+import { MOLVIEW_CANVAS_SELECTOR } from '../components/panes/molViewCanvas';
 
 /**
  * Drop the live preview image from a job before it goes on a context push.
@@ -96,7 +97,16 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
             })
             .catch(() => ({ ok: false }))
         : Promise.resolve({ ok: false });
-      void stored.then(() => {
+      void stored.then((res) => {
+        // Only publish an entry the archive actually holds. A failed store
+        // still produced a history row whose RENDER_HISTORY_READ returns null
+        // -- a blank frame in the render window, and "no longer available" from
+        // Save Image -- and left the render's work directory unregistered, so
+        // nothing ever reclaimed it.
+        if (!res?.ok) {
+          console.warn("render history store failed; entry not published:", result.id);
+          return;
+        }
         historyRef.current = [...historyRef.current, result].slice(
           -RENDER_HISTORY_LIMIT,
         );
@@ -222,7 +232,7 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
     const offSize = api.onPush(IPC.RENDER_VIEW_SIZE_REQUEST, ({ reqId }) => {
       // Resolve the molview canvas pixel size ("Current view" preset).
       let size: ViewSizePx | null = null;
-      const canvas = document.querySelector("canvas");
+      const canvas = document.querySelector(MOLVIEW_CANVAS_SELECTOR);
       if (canvas) {
         const rect = canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;

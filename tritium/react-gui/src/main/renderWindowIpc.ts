@@ -41,6 +41,7 @@ import {
   storeRenderImage,
 } from './renderHistory'
 import { handleInvoke } from './ipcHandlers'
+import { withMenuBlocked } from './menu'
 
 /** How long to wait for a main-window reply (view size / view camera). */
 const VIEW_SIZE_TIMEOUT_MS = 2000
@@ -251,14 +252,19 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
     }
     const rw = getRenderWindow()
     const parent = rw && !rw.isDestroyed() ? rw : mainWindow
-    const picked = await dialog.showSaveDialog(parent, {
-      title: 'Save Rendered Image',
-      defaultPath: defaultName,
-      filters: [
-        { name: 'PNG Image', extensions: ['png'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-    })
+    // Blocked like every other native dialog (see handlers/fileDialogs.ts):
+    // without it the application-menu accelerators -- Cmd+Q, Cmd+W, Cmd+S --
+    // still fire while the save sheet is up.
+    const picked = await withMenuBlocked('native', () =>
+      dialog.showSaveDialog(parent, {
+        title: 'Save Rendered Image',
+        defaultPath: defaultName,
+        filters: [
+          { name: 'PNG Image', extensions: ['png'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      }),
+    )
     if (picked.canceled || !picked.filePath) return { canceled: true }
     try {
       fs.copyFileSync(source, picked.filePath)
@@ -278,14 +284,16 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
     const rw = getRenderWindow()
     const parent = rw && !rw.isDestroyed() ? rw : mainWindow
     const ext = path.extname(moviePath).replace(/^\./, '')
-    const picked = await dialog.showSaveDialog(parent, {
-      title: 'Save Movie',
-      defaultPath: defaultName,
-      filters: [
-        ...(ext ? [{ name: `${ext.toUpperCase()} Movie`, extensions: [ext] }] : []),
-        { name: 'All Files', extensions: ['*'] },
-      ],
-    })
+    const picked = await withMenuBlocked('native', () =>
+      dialog.showSaveDialog(parent, {
+        title: 'Save Movie',
+        defaultPath: defaultName,
+        filters: [
+          ...(ext ? [{ name: `${ext.toUpperCase()} Movie`, extensions: [ext] }] : []),
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      }),
+    )
     if (picked.canceled || !picked.filePath) return { canceled: true }
     try {
       fs.copyFileSync(moviePath, picked.filePath)

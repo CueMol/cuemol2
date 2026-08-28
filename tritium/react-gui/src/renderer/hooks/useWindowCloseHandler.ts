@@ -80,6 +80,17 @@ export function useWindowCloseHandler({
           }
         }
         await api.invoke(IPC.WINDOW_CLOSE_PROCEED, { proceed: true });
+      } catch (err) {
+        // Main is waiting for a reply and force-closes the window if none
+        // arrives. Anything unexpected in here (a throw from handleCloseTab or
+        // setActiveTab) must therefore still answer -- aborting the close is
+        // the safe answer, since we cannot know the tabs are saved.
+        console.error('window close handling failed; aborting the close:', err);
+        try {
+          await api.invoke(IPC.WINDOW_CLOSE_PROCEED, { proceed: false });
+        } catch {
+          /* main is gone -- nothing left to reply to */
+        }
       } finally {
         isProcessingRef.current = false;
       }

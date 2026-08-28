@@ -13,6 +13,8 @@
  * sniffing (return true).
  */
 
+import { hasExt } from '@shared/fileExt';
+
 export interface FileFilter {
     name: string;
     extensions: string[];
@@ -32,12 +34,13 @@ export interface FileFilter {
  *   only catch-all matches), `false` when the extension should win.
  */
 export function inferContentFirst(filePath: string, filters: FileFilter[]): boolean {
-    const ext = (filePath.split('.').pop() ?? '').toLowerCase();
+    // Suffix match, not a single trailing segment: the filter rows carry
+    // multi-dot extensions (*.pdb.gz, *.cif.gz). See shared/fileExt.ts.
     let matched = 0;
     for (const f of filters) {
         if (f.extensions.includes('*')) continue;
         if (f.name === 'All Supported') continue;
-        if (f.extensions.some((e) => e.toLowerCase() === ext)) {
+        if (f.extensions.some((e) => hasExt(filePath, e))) {
             matched++;
             if (matched > 1) break;
         }

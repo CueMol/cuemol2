@@ -50,10 +50,19 @@ export function useAppInitialization({
 
     let cancelled = false;
     (async () => {
-      const result = await newScene({ bindView: false });
+      let result: unknown;
+      try {
+        result = await newScene({ bindView: false });
+      } catch (err) {
+        // A failed launch scene must not leave the gate closed: it also
+        // releases useShellOpenFiles, so a file passed on the command line or
+        // opened from Finder would be dropped for the rest of the session.
+        console.warn('initial scene creation failed:', err);
+        result = undefined;
+      }
       if (cancelled) return;
       if (!result) {
-        // Allow retry on next ready/newScene change in case of failure.
+        // Clear the guard so an explicit New Scene can still take this path.
         initialSceneCreatedRef.current = false;
       }
       setInitialSceneSettled(true);

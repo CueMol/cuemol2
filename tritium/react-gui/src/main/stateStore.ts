@@ -7,6 +7,9 @@
  *   - `ui`           -- miscellaneous UI preferences
  */
 
+import fs from 'fs'
+import path from 'path'
+import { app } from 'electron'
 import Store from 'electron-store'
 import type { LayoutState, RecentFileEntry, UiState } from '@shared/ipcTypes'
 
@@ -56,19 +59,66 @@ const DEFAULTS: StoreSchema = {
 
 // --- Store instance (lazy singleton) ---
 
+const STORE_NAME = 'app-state'
+
 let _store: Store<StoreSchema> | null = null
 
+/**
+ * Move a damaged store file aside so the next construction starts clean.
+ *
+ * Renaming rather than deleting keeps the file for support: everything in it
+ * is a UI preference, so losing it costs the user their window geometry and
+ * panel layout, not data.
+ */
+function quarantineStoreFile(): void {
+  try {
+    const file = path.join(app.getPath('userData'), `${STORE_NAME}.json`)
+    if (fs.existsSync(file)) {
+      fs.renameSync(file, `${file}.corrupt`)
+      console.error(`[stateStore] unreadable ${file}; moved to ${file}.corrupt`)
+    }
+  } catch (e) {
+    console.error('[stateStore] could not quarantine the damaged store file:', e)
+  }
+}
+
+/**
+ * The electron-store singleton.
+ *
+ * conf leaves `clearInvalidConfig` false, so unparseable JSON throws out of the
+ * constructor. The first read happens inside `app.whenReady()`, which has no
+ * catch: a truncated write (power loss, full disk) meant createWindow() never
+ * ran, no window was ever created, `window-all-closed` therefore never fired,
+ * and the app sat there as a windowless process. Recover instead -- the file
+ * holds only UI preferences.
+ */
 function getStore(): Store<StoreSchema> {
-  if (!_store) {
-    _store = new Store<StoreSchema>({ name: 'app-state', defaults: DEFAULTS })
+  if (_store) return _store
+  try {
+    _store = new Store<StoreSchema>({ name: STORE_NAME, defaults: DEFAULTS })
+  } catch (e) {
+    console.error('[stateStore] failed to open the state store:', e)
+    quarantineStoreFile()
+    _store = new Store<StoreSchema>({ name: STORE_NAME, defaults: DEFAULTS })
   }
   return _store
 }
 
 // --- Public API ---
 
-export function loadWindowBounds(): WindowBounds {
-  return getStore().get('windowBounds')
+/**
+ * Load the main-window geometry, or undefined when it has never been saved.
+ *
+ * The `{0,0}` guard is the same one loadRenderWindowBounds uses, and for the
+ * same reason: the schema default sits at 0,0, and it passes
+ * isVisibleOnAnyDisplay, so on a fresh profile the window was pinned to the
+ * top-left corner instead of getting the OS's own placement.
+ */
+export function loadWindowBounds(): WindowBounds | undefined {
+  const b = getStore().get('windowBounds')
+  if (!b) return undefined
+  if (b.x === 0 && b.y === 0) return undefined
+  return b
 }
 
 export function saveWindowBounds(bounds: WindowBounds): void {

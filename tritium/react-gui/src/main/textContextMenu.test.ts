@@ -148,3 +148,30 @@ describe('buildTextCtxMenuNodes (win/linux React path)', () => {
     expect(nodes).toEqual([])
   })
 })
+
+/**
+ * The Rendering window registers the same context menu. Its Select All used to
+ * push MENU_GENERIC, which only the main window listens for, so from the
+ * Rendering window it was a silent no-op. Acting on the window's own contents
+ * works for both.
+ */
+describe('text context menu Select All (macOS native path)', () => {
+    it('selects in the window that showed the menu', async () => {
+        const { buildTextContextMenuTemplate } = await import('./textContextMenu')
+        const selectAll = vi.fn()
+        const template = buildTextContextMenuTemplate(
+            {
+                isEditable: true,
+                selectionText: '',
+                editFlags: { canCut: false, canCopy: false, canPaste: true, canSelectAll: true },
+            },
+            selectAll,
+        )
+        const item = template.find(
+            (t) => typeof t.label === 'string' && /select all/i.test(t.label),
+        )
+        expect(item).toBeDefined()
+        item!.click?.(undefined as never, undefined as never, undefined as never)
+        expect(selectAll).toHaveBeenCalledTimes(1)
+    })
+})

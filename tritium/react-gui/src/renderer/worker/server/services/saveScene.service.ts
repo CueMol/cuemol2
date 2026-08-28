@@ -77,9 +77,14 @@ function saveScene(ctx: WorkerContext, args: SaveSceneArgs): SaveSceneResult {
     }
 
     writer.attach(scene);
-    writer.setPath(args.filePath);
-    writer.write();
-    writer.detach();
+    try {
+        writer.setPath(args.filePath);
+        writer.write();
+    } finally {
+        // A failed write (read-only path, disk full) used to leave the writer
+        // attached to the scene. objectSave.saveObjectToFile already does this.
+        writer.detach();
+    }
 
     // UXP: writing the scene drops undo/redo data. Also align the displayed
     // scene name with the new file name (matches the Save As path in UXP).

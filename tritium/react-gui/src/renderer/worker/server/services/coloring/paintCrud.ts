@@ -106,7 +106,10 @@ export function addPaintEntry(
 ): PaintMutationResult {
     const target = resolvePaintTarget(ctx, args);
     if (!target) return { ok: false };
-    const { scene, rend } = target;
+    const { scene, rend, coloring } = target;
+
+    // Insert position: `size` is legal and means append (see below).
+    if (args.idx < 0 || args.idx > coloring.size) return { ok: false };
 
     const sel = makeSel(ctx, args.selStr, scene.uid);
     if (!sel) return { ok: false };
@@ -130,7 +133,13 @@ export function removePaintEntry(
 ): PaintMutationResult {
     const target = resolvePaintTarget(ctx, args);
     if (!target) return { ok: false };
-    const { scene, rend } = target;
+    const { scene, rend, coloring } = target;
+
+    // A stale deck index (the row was deleted by another panel, or by an undo,
+    // between the panel's refetch and the click) makes C++ return false and
+    // mutate nothing -- but the service reported ok, so the row appeared to
+    // survive a successful delete, and the empty commit cleared the redo stack.
+    if (args.idx < 0 || args.idx >= coloring.size) return { ok: false };
 
     withUndoTxn(scene, 'Delete paint entry', () => {
         materializeColoringIfDefault(rend);
@@ -146,7 +155,12 @@ export function updatePaintEntry(
 ): PaintMutationResult {
     const target = resolvePaintTarget(ctx, args);
     if (!target) return { ok: false };
-    const { scene, rend } = target;
+    const { scene, rend, coloring } = target;
+
+    // A stale deck index makes C++ return false and mutate nothing, but the
+    // service reported ok -- the row appeared to change and did not, and the
+    // empty commit cleared the redo stack.
+    if (args.idx < 0 || args.idx >= coloring.size) return { ok: false };
 
     const sel = makeSel(ctx, args.selStr, scene.uid);
     if (!sel) return { ok: false };

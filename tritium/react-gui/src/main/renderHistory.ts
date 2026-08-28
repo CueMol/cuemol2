@@ -18,18 +18,37 @@ import * as os from 'os'
 import * as path from 'path'
 import { RENDER_HISTORY_LIMIT, renderHistoryFileName } from '@shared/renderHistory'
 
-/** Fixed directory name, so a crashed run's leftovers are found on restart. */
-const HISTORY_DIR = path.join(os.tmpdir(), 'cuemol-render-history')
+/** Fixed root, so a crashed run's leftovers are found on restart. */
+const HISTORY_ROOT = path.join(os.tmpdir(), 'cuemol-render-history')
+
+/** Prefix of a per-run directory under {@link HISTORY_ROOT}. */
+const RUN_PREFIX = 'run-'
 
 /**
- * Index of the work directories this run registered, kept beside the archived
- * images. The directories have random names, so a run that dies without
- * reaching its cleanup would otherwise leave them unidentifiable; the next
- * start reads this file and removes exactly those. Sweeping the temp dir by
- * name pattern instead would risk deleting a second instance's in-flight
- * directory.
+ * This run's own directory.
+ *
+ * The root is a fixed path under os.tmpdir() shared by every instance, and
+ * CUEMOL_FRESH_PREFS deliberately gives a second instance its own
+ * single-instance lock domain -- so two instances really do run at once. When
+ * they shared one directory, the second one's boot sweep deleted the first
+ * one's archived images and rm -rf'd its live work directories.
+ *
+ * Ownership cannot be expressed with a marker file inside a shared directory:
+ * whichever instance writes last owns it, and the marker only existed at all
+ * once a work directory had been registered. Giving each run its own directory
+ * makes the separation structural -- no instance can reach another's files --
+ * which is the same shape movieOutput.ts uses for movie sessions.
  */
-const WORKDIR_INDEX = path.join(HISTORY_DIR, 'workdirs.json')
+const RUN_DIR = path.join(HISTORY_ROOT, `${RUN_PREFIX}${process.pid}`)
+
+/**
+ * Index of the work directories this run registered, kept beside its archived
+ * images. The directories have random names and live elsewhere under the temp
+ * dir, so a run that dies without reaching its cleanup would otherwise leave
+ * them unidentifiable; a later start reads this file out of the dead run's
+ * directory and removes exactly those.
+ */
+const WORKDIR_INDEX = path.join(RUN_DIR, 'workdirs.json')
 
 /** Archived ids, oldest first -- the eviction order. */
 let archived: string[] = []
@@ -46,10 +65,10 @@ let archived: string[] = []
  */
 let workDirs: string[] = []
 
-/** Create the history directory, returning false when it cannot be used. */
+/** Create this run's history directory, returning false when it cannot be used. */
 function ensureDir(): boolean {
   try {
-    fs.mkdirSync(HISTORY_DIR, { recursive: true })
+    fs.mkdirSync(RUN_DIR, { recursive: true })
     return true
   } catch {
     return false
@@ -57,32 +76,97 @@ function ensureDir(): boolean {
 }
 
 /**
- * Remove the whole store. Called at startup (clearing a crashed run's images)
- * and on quit; the history is deliberately not kept across app runs, since the
- * settings that produced each render are not either.
+ * Whether a process is still running. EPERM means it exists but belongs to
+ * another user -- alive as far as this check is concerned. Mirrors the guard
+ * movieOutput.ts uses for the same reason.
+ */
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM'
+  }
+}
+
+/**
+ * Remove this run's own history: its archived images and the work directories
+ * it registered.
+ *
+ * Called on quit, and when the user clears the history from the Rendering
+ * window. Only ever touches this run's directory, so a second instance running
+ * at the same time is unaffected.
  */
 export function clearRenderHistory(): void {
-  // Adopt a previous run's directories: the on-disk index outlived the
-  // in-memory list when that run crashed. Done silently -- the images they
-  // hold are unreachable (the history metadata died with that run), so there
-  // is nothing for a user to decide.
-  for (const dir of readWorkDirIndex()) registerRenderWorkDir(dir)
   clearRenderWorkDirs()
   archived = []
   try {
-    fs.rmSync(HISTORY_DIR, { recursive: true, force: true })
+    fs.rmSync(RUN_DIR, { recursive: true, force: true })
   } catch {
     /* a locked or already-removed directory is not worth failing over */
   }
 }
 
-/** Work directories recorded on disk, or none when there is no usable index. */
-function readWorkDirIndex(): string[] {
+/**
+ * Remove what previous runs left behind, at boot.
+ *
+ * Only directories belonging to a process that is no longer running are
+ * touched: another instance may be live right now (CUEMOL_FRESH_PREFS gives it
+ * its own lock domain), and its images and in-flight work directories must
+ * survive. Each dead run's work directories are read out of its own index and
+ * removed before its directory goes -- they live elsewhere under the temp dir
+ * and would otherwise be unidentifiable.
+ */
+export function sweepStaleRenderHistory(): void {
+  let names: string[]
   try {
-    const parsed: unknown = JSON.parse(fs.readFileSync(WORKDIR_INDEX, 'utf8'))
-    return Array.isArray(parsed)
-      ? parsed.filter((d): d is string => typeof d === 'string')
-      : []
+    names = fs.readdirSync(HISTORY_ROOT)
+  } catch {
+    return // nothing has ever been written
+  }
+
+  let removed = 0
+  for (const name of names) {
+    if (!name.startsWith(RUN_PREFIX)) continue
+    const pid = Number.parseInt(name.slice(RUN_PREFIX.length), 10)
+    if (!Number.isInteger(pid) || pid <= 0) continue
+    if (pid === process.pid) continue
+    if (isPidAlive(pid)) continue
+
+    const dir = path.join(HISTORY_ROOT, name)
+    for (const workDir of readWorkDirIndex(path.join(dir, 'workdirs.json'))) {
+      try {
+        fs.rmSync(workDir, { recursive: true, force: true })
+      } catch {
+        /* ignore */
+      }
+    }
+    try {
+      fs.rmSync(dir, { recursive: true, force: true })
+      removed++
+    } catch {
+      /* ignore */
+    }
+  }
+  if (removed > 0) {
+    const plural = removed === 1 ? '' : 's'
+    console.log(`[Main] render history: removed ${removed} stale run director${plural ? 'ies' : 'y'}`)
+  }
+}
+
+/**
+ * Work directories recorded in one run's index file.
+ *
+ * Ownership is the directory the file sits in, not anything inside it, so the
+ * bare-array format an older build wrote reads back unchanged.
+ *
+ * @param file - index path; a dead run's during the boot sweep, ours otherwise.
+ */
+function readWorkDirIndex(file: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf8'))
+    const list = Array.isArray(parsed) ? parsed : (parsed as { dirs?: unknown }).dirs
+    return Array.isArray(list) ? list.filter((d): d is string => typeof d === 'string') : []
   } catch {
     return []
   }
@@ -92,7 +176,7 @@ function readWorkDirIndex(): string[] {
 function writeWorkDirIndex(): void {
   if (!ensureDir()) return
   try {
-    fs.writeFileSync(WORKDIR_INDEX, JSON.stringify(workDirs))
+    fs.writeFileSync(WORKDIR_INDEX, JSON.stringify({ pid: process.pid, dirs: workDirs }))
   } catch {
     /* losing the index only costs the next start's cleanup */
   }
@@ -146,7 +230,7 @@ export function clearRenderWorkDirs(): void {
  */
 export function storeRenderImage(resultId: string, sourcePath: string): boolean {
   if (!resultId || !sourcePath || !ensureDir()) return false
-  const dest = path.join(HISTORY_DIR, renderHistoryFileName(resultId))
+  const dest = path.join(RUN_DIR, renderHistoryFileName(resultId))
   try {
     fs.copyFileSync(sourcePath, dest)
   } catch {
@@ -159,7 +243,7 @@ export function storeRenderImage(resultId: string, sourcePath: string): boolean 
     const evicted = archived.shift()
     if (evicted === undefined) break
     try {
-      fs.rmSync(path.join(HISTORY_DIR, renderHistoryFileName(evicted)), { force: true })
+      fs.rmSync(path.join(RUN_DIR, renderHistoryFileName(evicted)), { force: true })
     } catch {
       /* ignore */
     }
@@ -169,7 +253,7 @@ export function storeRenderImage(resultId: string, sourcePath: string): boolean 
 
 /** Where an archived render lives, whether or not it is still there. */
 export function renderImagePath(resultId: string): string {
-  return path.join(HISTORY_DIR, renderHistoryFileName(resultId))
+  return path.join(RUN_DIR, renderHistoryFileName(resultId))
 }
 
 /**

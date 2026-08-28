@@ -82,6 +82,8 @@ interface FakeWebContents {
   on: ReturnType<typeof vi.fn>
   openDevTools: ReturnType<typeof vi.fn>
   listeners: Map<string, Listener[]>
+  isDestroyed: ReturnType<typeof vi.fn>
+  isCrashed: ReturnType<typeof vi.fn>
 }
 
 interface FakeWindow {
@@ -97,6 +99,8 @@ function makeWebContents(): FakeWebContents {
   return {
     send: vi.fn(),
     openDevTools: vi.fn(),
+    isDestroyed: vi.fn(() => false),
+    isCrashed: vi.fn(() => false),
     on: vi.fn((event: string, cb: Listener) => {
       const l = listeners.get(event) ?? []
       l.push(cb)
@@ -168,18 +172,22 @@ vi.mock('@main/stateStore', () => ({
   loadWindowBounds: vi.fn(() => null),
   saveWindowBounds: vi.fn(),
 }))
+const menuBlocked = { value: false }
 vi.mock('@main/menu', () => ({
   rebuildApplicationMenu: vi.fn(),
   setMenuBlocked: vi.fn(),
+  resetMenuBlockReason: vi.fn(),
   updateMenuState: vi.fn(),
   withMenuBlocked: vi.fn((_m: unknown, fn: () => unknown) => fn()),
   createMenu: vi.fn(),
+  isBlocked: vi.fn(() => menuBlocked.value),
 }))
 vi.mock('@main/textContextMenu', () => ({ registerTextContextMenu: vi.fn() }))
 vi.mock('@main/recentFiles', () => ({
   addRecent: vi.fn(() => []),
   clearRecents: vi.fn(() => []),
   getRecents: vi.fn(() => []),
+  refreshRecentsExistence: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('@main/naviContextMenu', () => ({ showNaviContextMenu: vi.fn() }))
 vi.mock('@main/sceneContextMenu', () => ({ showSceneContextMenu: vi.fn() }))
@@ -244,19 +252,31 @@ async function importIndexAndGetBeforeQuit(): Promise<Listener> {
 }
 
 describe('before-quit guard (main/index.ts)', () => {
-  it('routes a fresh quit through every live window: preventDefault + close() each, sets appQuitting', async () => {
+  /**
+   * Only the main window is closed. It is the one with a confirm funnel, and
+   * its 'closed' handler takes the Rendering window down with it. Closing every
+   * window here destroyed the Rendering window first -- it has no funnel -- so
+   * cancelling the main window's save prompt restored the app minus its render
+   * history view and any in-flight settings.
+   */
+  it('routes a fresh quit through the main window only, and sets appQuitting', async () => {
     const beforeQuit = await importIndexAndGetBeforeQuit()
-    const winA = makeWin()
-    const winB = makeWin()
-    allWindows = [winA, winB]
+    constructedWin = null
+    const wm = (await import(windowManagerEntry)) as unknown as { createWindow(): void }
+    wm.createWindow()
+    const mainWin = getConstructedWin()
+    if (!mainWin) throw new Error('createWindow did not construct a BrowserWindow')
+
+    // A second live window (the Rendering window) must be left alone.
+    const other = makeWin()
+    allWindows = [mainWin, other]
 
     const ev = makeEvent()
     beforeQuit(ev)
 
-    // Quit is intercepted so each window runs its own confirm funnel.
     expect(ev.preventDefault).toHaveBeenCalledTimes(1)
-    expect(winA.close).toHaveBeenCalledTimes(1)
-    expect(winB.close).toHaveBeenCalledTimes(1)
+    expect(mainWin.close).toHaveBeenCalledTimes(1)
+    expect(other.close).not.toHaveBeenCalled()
     expect(quitState.isAppQuitting()).toBe(true)
   })
 
@@ -422,5 +442,38 @@ describe('handleWindowClose funnel + render-process-gone (main/windowManager.ts)
     expect(quitState.isForceQuit()).toBe(true)
     expect(quitState.isAppQuitting()).toBe(true)
     expect(appExit).toHaveBeenCalledWith(1)
+  })
+
+  /**
+   * There is deliberately no close timeout. A stopwatch cannot tell "the
+   * renderer is stuck" from "the renderer is busy" or "the user is thinking",
+   * and the chain shows a "Save changes?" confirm per modified scene -- so a
+   * timeout fires on a slow decision and discards the very scenes it was
+   * asking about. The cases where the renderer genuinely cannot answer are
+   * covered elsewhere: a crash by 'render-process-gone' above, and a hung
+   * renderer by the OS's own force-quit.
+   */
+  describe('no close timeout', () => {
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
+    it('never closes the window on its own, however long the renderer takes', async () => {
+      const { win, fireClose } = await buildWindow()
+      fireClose(makeEvent())
+      win.close.mockClear()
+
+      // Far longer than any timeout this funnel ever had.
+      vi.advanceTimersByTime(10 * 60 * 1000)
+
+      expect(win.close).not.toHaveBeenCalled()
+      expect(quitState.isCloseInFlight(win as object)).toBe(true)
+    })
+
+    it('schedules no timer when the close request goes out', async () => {
+      const { fireClose } = await buildWindow()
+      const before = vi.getTimerCount()
+      fireClose(makeEvent())
+      expect(vi.getTimerCount()).toBe(before)
+    })
   })
 })

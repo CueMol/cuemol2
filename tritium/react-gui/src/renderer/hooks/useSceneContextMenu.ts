@@ -131,8 +131,9 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     // menu bar dropdowns.
     const showSceneCtxMenu = useCallback(
         async (payload: SceneCtxMenuPayload): Promise<SceneCtxAction | null> => {
-            if (window.electronAPI.platform === 'darwin') {
-                return await window.electronAPI.invoke(IPC.SCENE_CTX_SHOW, payload)
+            const api = window.electronAPI
+            if (api?.platform === 'darwin') {
+                return await api.invoke(IPC.SCENE_CTX_SHOW, payload)
             }
             return await showContextMenu(buildTemplate(payload), { x: payload.x, y: payload.y })
         },

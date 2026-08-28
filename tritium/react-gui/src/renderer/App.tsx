@@ -77,6 +77,7 @@ const App: React.FC = () => {
     setInspectorOpen: persistInspectorOpen,
     setViewSizes,
     setViewCollapsed,
+    flushPendingSaves,
   } = useLayoutPersistence();
 
   // --- Activity-bar state ---
@@ -250,11 +251,30 @@ const App: React.FC = () => {
   // the user style file when the window closes -- UXP `Qm2Main.onUnLoad`
   // parity. The path is resolved by Main via APP_PATH.
   const saveUserStyleOnClose = useCallback(async (): Promise<void> => {
+    // Closing the window does not unmount the renderer, so the debounced
+    // layout / UI writes have no other chance to land: dragging a splitter and
+    // closing straight after used to lose the new layout.
+    await flushPendingSaves();
     if (!cm) return;
+    // Stop anything still running before the worker goes away with the window.
+    // Renders and APBS runs are external processes (posix_spawn children of
+    // this app), so they outlive it unless they are killed -- and their work
+    // directory is only registered for cleanup on completion, so it would be
+    // left behind too.
+    try {
+      const stopped = await cm.invokeService('cancelAllJobs', {});
+      if (stopped.render > 0 || stopped.apbs > 0) {
+        console.log(
+          `[close] cancelled ${stopped.render} render / ${stopped.apbs} apbs job(s)`,
+        );
+      }
+    } catch (err: unknown) {
+      console.warn('cancelling in-flight jobs failed:', err);
+    }
     const info = await window.electronAPI?.invoke(IPC.APP_PATH);
     const path = info?.userStylePath;
     if (path) await cm.saveUserStyle(path);
-  }, [cm]);
+  }, [cm, flushPendingSaves]);
 
   useWindowCloseHandler({
     tabsRef,
@@ -284,7 +304,9 @@ const App: React.FC = () => {
     if (tab?.type === 'molview' && tab.viewId !== undefined) {
       if (cm && cueMolReady) {
         setActiveViewByID(tab.viewId);
-        cm.activateView(tab.viewId);
+        cm.activateView(tab.viewId).catch((err: unknown) => {
+          console.warn('activateView failed:', err);
+        });
       }
     } else {
       clearActiveView();

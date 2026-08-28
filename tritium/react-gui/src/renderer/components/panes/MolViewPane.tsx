@@ -80,7 +80,17 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     ;(async () => {
       if (cancelled || !canvasRef.current) return
       const dpr = window.devicePixelRatio || 1
-      await cm.bindCanvas(canvasRef.current, view_uid, dpr)
+      try {
+        await cm.bindCanvas(canvasRef.current, view_uid, dpr)
+      } catch (err) {
+        // transferControlToOffscreen() throws InvalidStateError if this
+        // element was ever transferred, and the worker call can reject.
+        // Clear the guard so a later mount can try again rather than leaving
+        // the view permanently blank.
+        initStartedRef.current = false
+        console.warn('bindCanvas failed:', err)
+        return
+      }
 
       // Send initial resize with actual layout dimensions.
       // The ResizeObserver may have already fired (and been ignored because
@@ -217,7 +227,12 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     }
   }, []) // stable -- reads state via refs
 
-  return <canvas className={styles.molView} ref={canvasRef} />
+  // The data attribute is how anything outside this component finds the 3D
+  // canvas -- see MOLVIEW_CANVAS_SELECTOR. There are other <canvas> elements in
+  // the app (the sequence panel, the multi-gradient histogram), so a bare
+  // `document.querySelector('canvas')` picks whichever happens to come first in
+  // the DOM.
+  return <canvas className={styles.molView} ref={canvasRef} data-molview-canvas="" />
 })
 
 MolViewPane.displayName = 'MolViewPane'

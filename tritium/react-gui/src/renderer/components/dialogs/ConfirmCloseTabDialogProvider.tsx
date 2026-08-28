@@ -14,6 +14,9 @@ export const {
   useShow: useShowConfirmCloseTabDialog,
 } = createDialogHook<ConfirmCloseTabDialogArgs, ConfirmCloseResult>({
   name: 'ConfirmCloseTabDialog',
+  // A displaced caller must not fall through to the 'save' branch of
+  // App.confirmCloseTab: it never asked the user anything, so the tab stays.
+  supersededResult: 'cancel',
   render: ({ visible, args, resolve }) => (
     <ConfirmCloseTabDialog
       visible={visible}

@@ -199,13 +199,22 @@ function computeGrid(
 
   let min: { x: number; y: number; z: number };
   let max: { x: number; y: number; z: number };
+  // Sizing the grid to a selection means borrowing mol.sel for two getter
+  // calls. Only do that when the current value can be read back: the restore
+  // used to be `if (oldSel)`, so a throwing getter -- or a molecule with no
+  // selection -- left the user's selection permanently replaced by the APBS
+  // one, outside any undo transaction.
+  let oldSel: MolSelection | null = null;
+  let canRestore = false;
   if (sel) {
-    let oldSel: MolSelection | null = null;
     try {
       oldSel = anyMol.sel;
+      canRestore = true;
     } catch {
-      oldSel = null;
+      canRestore = false;
     }
+  }
+  if (sel && canRestore) {
     anyMol.sel = sel;
     try {
       const vmin = anyMol.getBoundBoxMin(true);
@@ -214,9 +223,11 @@ function computeGrid(
       max = { x: vmax.x, y: vmax.y, z: vmax.z };
     } finally {
       try {
-        if (oldSel) anyMol.sel = oldSel;
-      } catch {
-        /* best-effort restore */
+        // Assign back exactly what was read, null included -- the point is to
+        // leave mol.sel as it was found.
+        (anyMol as { sel: MolSelection | null }).sel = oldSel;
+      } catch (e) {
+        console.warn('APBS grid: could not restore the molecule selection:', e);
       }
     }
   } else {
@@ -583,6 +594,25 @@ function calcApbsCancel(
   }
   cleanupDir(entry.workDir);
   return { ok: true };
+}
+
+/**
+ * Cancel every APBS job still in flight. Same reasoning as
+ * cancelAllRenderJobs: apbs / pdb2pqr run as external processes that outlive
+ * the app unless they are killed.
+ *
+ * @returns how many jobs were cancelled.
+ */
+export function cancelAllApbsJobs(ctx: WorkerContext): number {
+  const ids = [...jobs.keys()];
+  for (const jobId of ids) {
+    try {
+      calcApbsCancel(ctx, { jobId });
+    } catch (e) {
+      console.warn(`calcApbsCancel(${jobId}) failed during shutdown:`, e);
+    }
+  }
+  return ids.length;
 }
 
 export const services = { calcApbsStart, calcApbsCancel, proposeElepotName };

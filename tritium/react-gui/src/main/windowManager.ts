@@ -13,22 +13,19 @@ import {
 } from './stateStore'
 import { registerIpcHandlers } from './ipcHandlers'
 import { registerRenderWindowIpc } from './renderWindowIpc'
-import { createMenu } from './menu'
+import { resetMenuBlockReason, createMenu } from './menu'
 import { registerTextContextMenu } from './textContextMenu'
 import { registerCuemolClipboardIpc } from './cuemolClipboard'
 import { getDevIconPath } from './helpers/appIcon'
 import { APP_PRODUCT_NAME } from '@shared/appInfo'
 import { IPC } from '@shared/ipcChannels'
 import {
-  clearCloseWatchdog,
   isCloseConfirmed,
   isCloseInFlight,
   setAppQuitting,
   setCloseConfirmed,
   setCloseInFlight,
-  setCloseWatchdog,
   setForceQuit,
-  WINDOW_CLOSE_WATCHDOG_MS,
 } from './quitState'
 
 function isVisibleOnAnyDisplay(bounds: WindowBounds): boolean {
@@ -50,22 +47,34 @@ function trackWindowState(
 ): void {
   let saveTimer: ReturnType<typeof setTimeout> | null = null
 
+  const writeBounds = (): void => {
+    if (win.isDestroyed()) return
+    const isMaximized = win.isMaximized()
+    const bounds = isMaximized ? (loadBounds() ?? win.getBounds()) : win.getBounds()
+    saveBounds({ ...bounds, isMaximized })
+  }
+
   const persist = (): void => {
     if (saveTimer) clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => {
-      if (!win.isDestroyed()) {
-        const isMaximized = win.isMaximized()
-        const bounds = isMaximized ? (loadBounds() ?? win.getBounds()) : win.getBounds()
-        saveBounds({ ...bounds, isMaximized })
-      }
-    }, 300)
+    saveTimer = setTimeout(writeBounds, 300)
   }
 
   win.on('resize', persist)
   win.on('move', persist)
   win.on('maximize', persist)
   win.on('unmaximize', persist)
-  win.on('close', persist)
+  // Write synchronously on close. Going through `persist` cancelled whatever
+  // resize/move was still pending and re-scheduled it 300 ms past the point
+  // where `win.isDestroyed()` becomes true, so moving or resizing a window and
+  // closing it straight away lost the new geometry. For the Rendering window,
+  // which has no confirm funnel to delay its teardown, that was every close.
+  win.on('close', () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    writeBounds()
+  })
 }
 
 /**
@@ -75,6 +84,16 @@ function trackWindowState(
  * IPC.WINDOW_CLOSE_PROCEED the window is marked confirmed and re-closed,
  * and this funnel lets the second 'close' through. The red-button and
  * Cmd+Q (which calls win.close() per window) both reach this funnel.
+ *
+ * There is deliberately no timeout here. A stopwatch cannot tell "the renderer
+ * is stuck" from "the renderer is busy" or "the user is thinking", and the
+ * chain shows a "Save changes?" confirm per modified scene -- so a timeout
+ * fires on a slow decision and discards the very scenes it was asking about.
+ * The two cases where the renderer genuinely cannot answer are covered
+ * elsewhere: a crash exits through 'render-process-gone' below, and a hung
+ * renderer is what the OS's own "application not responding" force-quit is
+ * for. If an in-app escape is ever wanted for the hung case, it should ask
+ * (a native message box from main) rather than close on its own.
  */
 function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
   if (isCloseConfirmed(win)) return
@@ -84,23 +103,6 @@ function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
   if (isCloseInFlight(win)) return
   setCloseInFlight(win, true)
   win.webContents.send(IPC.WINDOW_CLOSE_REQUEST)
-
-  // Watchdog: if the renderer never replies (crashed or wedged), force the
-  // window closed so the user is not stuck unable to quit. Cleared on
-  // WINDOW_CLOSE_PROCEED via `clearCloseWatchdog`.
-  const timer = setTimeout(() => {
-    if (win.isDestroyed()) return
-    if (!isCloseInFlight(win)) return
-    console.error(
-      '[Main] WINDOW_CLOSE_REQUEST watchdog fired after',
-      WINDOW_CLOSE_WATCHDOG_MS,
-      'ms; forcing close',
-    )
-    setCloseInFlight(win, false)
-    setCloseConfirmed(win, true)
-    win.close()
-  }, WINDOW_CLOSE_WATCHDOG_MS)
-  setCloseWatchdog(win, timer)
 }
 
 const isMac = process.platform === 'darwin'
@@ -218,11 +220,21 @@ export function createWindow(): void {
       details.reason,
       'exitCode=' + details.exitCode,
     )
-    clearCloseWatchdog(win)
     setCloseConfirmed(win, true)
     setForceQuit(true)
     setAppQuitting(true)
     app.exit(1)
+  })
+
+  // A reload discards the React tree, and with it every component that owed a
+  // menu-unblock. The 'blueprint' block count is incremented when a dialog
+  // mounts and decremented when it unmounts, both from the renderer, so a
+  // reload with a dialog open left the count stuck above zero and every menu
+  // item except the text-edit ones disabled for the rest of the run -- Cmd+Q
+  // included, with no way to recover. Main sees the navigation, so it clears
+  // the reason here.
+  win.webContents.on('did-start-navigation', (_event, _url, _isInPlace, isMainFrame) => {
+    if (isMainFrame) resetMenuBlockReason('blueprint')
   })
 
   // Renderer is hung (e.g. infinite loop in JS or blocked on a sync call).

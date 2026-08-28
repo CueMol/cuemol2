@@ -111,7 +111,10 @@ export function registerTextContextMenu(mainWindow: BrowserWindow): void {
 
     const template = buildTextContextMenuTemplate(
       menuParams,
-      () => mainWindow.webContents.send(IPC.MENU_GENERIC, 'menu:select-all'),
+      // Act on this window's own contents. Routing through MENU_GENERIC only
+      // works for the main window, which is the only one with a listener --
+      // from the Rendering window it was a silent no-op.
+      () => mainWindow.webContents.selectAll(),
     )
     if (template.length === 0) return
     const menu = Menu.buildFromTemplate(template)

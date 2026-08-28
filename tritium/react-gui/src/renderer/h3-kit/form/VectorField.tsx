@@ -67,7 +67,12 @@ export const VectorField: React.FC<VectorFieldProps> = ({
     const count = parsed ? parsed.length : 3;
 
     const commitAt = (index: number, text: string): void => {
-        const next = Number(text.trim());
+        const trimmed = text.trim();
+        // `Number('')` is 0 and `Number.isFinite(0)` is true, so an emptied
+        // cell would silently write 0 into that axis. An unparseable cell is
+        // rejected and snaps back, as documented at the top of this file.
+        if (trimmed === '') return;
+        const next = Number(trimmed);
         if (!Number.isFinite(next)) return;
         const base = parsed ?? new Array<number>(count).fill(0);
         const out = base.slice();

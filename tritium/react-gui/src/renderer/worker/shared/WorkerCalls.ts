@@ -30,6 +30,7 @@ import type {
 import type { AppInfoResult } from '../server/services/appInfo.service'
 import type { GetHatchStyleSpecArgs, GetHatchStyleSpecResult } from '../server/services/hatchStyleSpec.service'
 import type { DrainLogMessagesResult } from '../server/services/drainLogMessages.service'
+import type { CancelAllJobsResult } from '../server/services/shutdown.service';
 import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimSetStartCamArgs, AnimTransportResult, AnimSetElementTimeArgs, AnimAddElementArgs, AnimRemoveElementArgs, AnimMoveElementArgs, AnimEditResult, AnimAddResult } from '../server/services/animation.service'
 import type { GetAnimElementDetailArgs, GetAnimElementDetailResult, SetAnimElementPropArgs, SetAnimElementPropResult, GetAnimTargetOptionsArgs, GetAnimTargetOptionsResult, GetAnimElementGenericPropsArgs, SetAnimElementGenericPropArgs, ResetAnimElementGenericPropsArgs, AnimGenericPropsResult } from '../server/services/animDetail.service'
 import type { AnimTimeline, AnimMgrState } from '../../types'
@@ -526,6 +527,7 @@ export interface SerializedGestureEvent {
 export interface ServiceMap {
   appInfo:                    { args: Record<string, never>;          result: AppInfoResult }
   drainLogMessages:           { args: Record<string, never>;          result: DrainLogMessagesResult }
+  cancelAllJobs:              { args: Record<string, never>;          result: CancelAllJobsResult }
   createNewSceneAndView:      { args: CreateNewSceneAndViewArgs;       result: CreateNewSceneAndViewResult }
   createViewInScene:          { args: CreateViewInSceneArgs;           result: CreateViewInSceneResult }
   getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs;  result: GetCompatibleRendererNamesResult }

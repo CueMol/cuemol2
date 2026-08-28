@@ -10,6 +10,7 @@
 import type { WorkerContext } from '../../types/WorkerContext';
 import { DEFAULT_SNIFF_CAP } from '../../../shared/sniffConfig';
 import { isHiddenObjReader } from './readerFilter';
+import { matchExtLength, parseExtList } from '@shared/fileExt';
 
 export const OBJREADER_CATEGORY = 0;
 
@@ -58,14 +59,19 @@ export function pickReaderName(
         return ctx.strMgr.searchReaderByContent(filePath, csv, OBJREADER_CATEGORY, false, cap);
     }
 
-    // Ext-first: collect every user-facing reader whose fext claims this extension.
-    const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
-    const candidates = objReaders
-        .filter(
-            (e) =>
-                e.fext.split(';').map((s) => s.trim().replace(/^\*\./, '').toLowerCase()).includes(ext),
-        )
-        .map((e) => e.name);
+    // Ext-first: collect every user-facing reader whose fext claims this path.
+    //
+    // Matched by suffix, most specific first. A reader's fext is a pattern list
+    // ("*.pdb; *.ent; *.pdb.gz"), so an extension is not one dot-segment:
+    // reducing "1crn.pdb.gz" to "gz" matched no reader at all and the open
+    // failed with "could not determine a compatible reader". Scoring by the
+    // matched length also keeps a reader claiming "pdb.gz" ahead of one
+    // claiming only "gz".
+    const scored = objReaders
+        .map((e) => ({ name: e.name, len: matchExtLength(filePath, parseExtList(e.fext)) }))
+        .filter((c) => c.len > 0);
+    const best = scored.reduce((m, c) => (c.len > m ? c.len : m), 0);
+    const candidates = scored.filter((c) => c.len === best).map((c) => c.name);
 
     if (candidates.length === 0) return '';
     if (candidates.length === 1) return candidates[0];

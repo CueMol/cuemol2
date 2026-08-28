@@ -9,12 +9,13 @@
  * order, and that a cleared store reports its images as gone.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {
   clearRenderHistory,
+  sweepStaleRenderHistory,
   clearRenderWorkDirs,
   readRenderImage,
   registerRenderWorkDir,
@@ -133,19 +134,21 @@ describe('main render history work directories', () => {
     expect(() => clearRenderWorkDirs()).not.toThrow();
   });
 
-  it('reclaims a crashed run\'s directories on the next start', async () => {
-    // A run registers a work dir ...
+  it('records a registered directory in this run\'s index, for a later start to reclaim', () => {
+    // The in-memory list dies with a crashed run, so the index on disk is what
+    // makes its work directories identifiable afterwards. Reclaiming them is
+    // the boot sweep's job now that each run owns a directory -- a crashed run
+    // has a different pid, which is what marks it as reclaimable. The sweep
+    // itself is covered under 'per-run isolation' below.
     const dir = makeWorkDir();
     registerRenderWorkDir(dir);
 
-    // ... then dies without reaching its cleanup, losing the in-memory list.
-    // A fresh module instance is exactly that: same files, no state.
-    vi.resetModules();
-    const restarted = await import('@main/renderHistory');
-
-    // The next start clears the history, which adopts the on-disk index.
-    restarted.clearRenderHistory();
-    expect(fs.existsSync(dir)).toBe(false);
+    const index = path.join(
+      os.tmpdir(), 'cuemol-render-history', `run-${process.pid}`, 'workdirs.json',
+    );
+    const parsed = JSON.parse(fs.readFileSync(index, 'utf8')) as { pid: number; dirs: string[] };
+    expect(parsed.pid).toBe(process.pid);
+    expect(parsed.dirs).toContain(path.resolve(dir));
   });
 
   it('ignores a directory outside the temp dir', () => {
@@ -156,5 +159,94 @@ describe('main render history work directories', () => {
     registerRenderWorkDir(path.join(path.parse(outside).root, 'definitely-not-temp'));
     clearRenderWorkDirs();
     expect(fs.existsSync(outside)).toBe(true);
+  });
+});
+
+/**
+ * HISTORY_DIR is a fixed path under os.tmpdir() shared by every instance, and
+ * CUEMOL_FRESH_PREFS deliberately gives a second instance its own
+ * single-instance lock domain -- so it acquires the lock, reaches the startup
+ * sweep, and used to delete the running instance's history and rm -rf its live
+ * work directories. movieOutput.sweepMovieSessions already guarded this way.
+ */
+/**
+ * HISTORY_DIR is a fixed path under os.tmpdir() shared by every instance, and
+ * CUEMOL_FRESH_PREFS deliberately gives a second instance its own
+ * single-instance lock domain -- so it acquires the lock, reaches the startup
+ * sweep, and used to delete the running instance's history and rm -rf its live
+ * work directories. movieOutput.sweepMovieSessions already guarded this way.
+ */
+/**
+ * Two instances really do run at once: CUEMOL_FRESH_PREFS gives the second one
+ * its own single-instance lock domain. They used to share one directory under
+ * os.tmpdir(), so the second one's boot sweep deleted the first one's archived
+ * images and rm -rf'd its live work directories.
+ *
+ * A marker file inside a shared directory cannot express ownership -- whichever
+ * instance writes last owns it, and the marker only existed once a work
+ * directory had been registered, so a run that had only archived images was
+ * unprotected. Each run now owns its own directory instead, which makes the
+ * separation structural.
+ */
+describe('per-run isolation', () => {
+  const root = (): string => path.join(os.tmpdir(), 'cuemol-render-history');
+  const runDir = (pid: number): string => path.join(root(), `run-${pid}`);
+
+  /** Plant a directory as if `pid` had written it. */
+  function plantRun(pid: number, workDirs: string[] = []): string {
+    const dir = runDir(pid);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'image.png'), 'PLANTED');
+    fs.writeFileSync(path.join(dir, 'workdirs.json'), JSON.stringify({ pid, dirs: workDirs }));
+    return dir;
+  }
+
+  it('archives into this run own directory', () => {
+    expect(storeRenderImage('own-1', makeImage('own', 'X'))).toBe(true);
+    expect(fs.existsSync(runDir(process.pid))).toBe(true);
+  });
+
+  it('leaves a live instance directory alone', () => {
+    // The parent process: alive, and not us -- the shape of a second instance
+    // finding the first one's directory. (Portable, unlike pid 1.)
+    const live = plantRun(process.ppid);
+    const liveWork = path.join(srcDir, 'live-work');
+    fs.mkdirSync(liveWork, { recursive: true });
+    fs.writeFileSync(path.join(live, 'workdirs.json'), JSON.stringify({ pid: process.ppid, dirs: [liveWork] }));
+
+    sweepStaleRenderHistory();
+
+    expect(fs.existsSync(live)).toBe(true);
+    expect(fs.existsSync(liveWork)).toBe(true);
+    fs.rmSync(live, { recursive: true, force: true });
+  });
+
+  it('removes a dead run directory and the work dirs it registered', () => {
+    const deadWork = path.join(srcDir, 'dead-work');
+    fs.mkdirSync(deadWork, { recursive: true });
+    // A pid no live process can hold on any supported platform.
+    const dead = plantRun(2147483646, [deadWork]);
+
+    sweepStaleRenderHistory();
+
+    expect(fs.existsSync(dead)).toBe(false);
+    expect(fs.existsSync(deadWork)).toBe(false);
+  });
+
+  it('never removes its own directory during the boot sweep', () => {
+    storeRenderImage('own-2', makeImage('own2', 'Y'));
+    sweepStaleRenderHistory();
+    expect(readRenderImage('own-2')).not.toBeNull();
+  });
+
+  it('clearRenderHistory removes only this run', () => {
+    storeRenderImage('own-3', makeImage('own3', 'Z'));
+    const live = plantRun(process.ppid);
+
+    clearRenderHistory();
+
+    expect(fs.existsSync(runDir(process.pid))).toBe(false);
+    expect(fs.existsSync(live)).toBe(true);
+    fs.rmSync(live, { recursive: true, force: true });
   });
 });

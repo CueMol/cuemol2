@@ -82,11 +82,18 @@ export function useLayoutPersistence() {
       return;
     }
 
-    Promise.all([api.invoke(IPC.LAYOUT_LOAD), api.invoke(IPC.UI_LOAD)]).then(([savedLayout, savedUi]) => {
-      if (savedLayout) setLayout((prev) => ({ ...prev, ...savedLayout }));
-      if (savedUi) setUi((prev) => ({ ...prev, ...savedUi }));
-      setLoaded(true);
-    });
+    Promise.all([api.invoke(IPC.LAYOUT_LOAD), api.invoke(IPC.UI_LOAD)])
+      .then(([savedLayout, savedUi]) => {
+        if (savedLayout) setLayout((prev) => ({ ...prev, ...savedLayout }));
+        if (savedUi) setUi((prev) => ({ ...prev, ...savedUi }));
+      })
+      .catch((err: unknown) => {
+        // Fall back to the defaults rather than leaving `loaded` false: App
+        // gates the whole main content area on it, so a rejected store read
+        // would render a permanently blank window.
+        console.warn('layout/ui load failed; using defaults:', err);
+      })
+      .finally(() => setLoaded(true));
   }, []);
 
   // --- Debounced save helpers ---
@@ -201,25 +208,45 @@ export function useLayoutPersistence() {
     [scheduleUiSave],
   );
 
+  /**
+   * Write any debounced layout / UI state immediately.
+   *
+   * Closing the window does not unmount the renderer -- there is no
+   * `beforeunload` handler anywhere -- so the unmount cleanup below never runs
+   * in practice. Without an explicit flush, dragging a splitter and closing the
+   * window inside the debounce window lost the new layout. App calls this from
+   * the window-close chain.
+   */
+  const flushPendingSaves = useCallback(async (): Promise<void> => {
+    const api = window.electronAPI;
+    if (!api) return;
+    const writes: Promise<unknown>[] = [];
+    if (layoutTimerRef.current) {
+      clearTimeout(layoutTimerRef.current);
+      layoutTimerRef.current = null;
+      writes.push(api.invoke(IPC.LAYOUT_SAVE, layoutRef.current));
+    }
+    if (uiTimerRef.current) {
+      clearTimeout(uiTimerRef.current);
+      uiTimerRef.current = null;
+      writes.push(api.invoke(IPC.UI_SAVE, uiRef.current));
+    }
+    await Promise.allSettled(writes);
+  }, []);
+
   // --- Flush pending saves on unmount ---
   useEffect(() => {
     return () => {
-      if (layoutTimerRef.current) {
-        clearTimeout(layoutTimerRef.current);
-        window.electronAPI?.invoke(IPC.LAYOUT_SAVE, layoutRef.current);
-      }
-      if (uiTimerRef.current) {
-        clearTimeout(uiTimerRef.current);
-        window.electronAPI?.invoke(IPC.UI_SAVE, uiRef.current);
-      }
+      void flushPendingSaves();
     };
-  }, []);
+  }, [flushPendingSaves]);
 
   return {
     // State
     layout,
     ui,
     loaded,
+    flushPendingSaves,
     // Layout setters
     setMainSizes,
     setRightPanelSizes,

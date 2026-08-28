@@ -14,6 +14,7 @@ import type { SceneNodeType } from '../../shared/sceneTreeTypes';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
 import { listGroupChildRenderers } from './helpers/groupChildren';
+import { collectGroupMemberUids } from './helpers/rendGroup';
 
 export interface BulkSceneNodeItem {
     nodeId: number;
@@ -118,7 +119,9 @@ function bulkDeleteNode(
                 if (!grp) continue;
                 const client = grp.getClientObj() as CueMolObject | null;
                 if (!client) continue;
-                for (const cid of it.childIds ?? []) {
+                // Live membership, not just the caller's tree snapshot -- see
+                // collectGroupMemberUids.
+                for (const cid of collectGroupMemberUids(scene, grp, it.childIds)) {
                     try { client.destroyRenderer(cid); }
                     catch (e) { console.warn('destroyRenderer (group child) failed:', e); }
                 }

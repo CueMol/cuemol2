@@ -1348,4 +1348,34 @@ function renderCancel(ctx: WorkerContext, args: RenderCancelArgs): RenderCancelR
   return { ok: true };
 }
 
+/**
+ * Cancel every render job still in flight.
+ *
+ * Called from the window-close chain. An external-process render (POV-Ray, and
+ * the ffmpeg encode of a movie) is spawned through the C++ ProcessManager with
+ * posix_spawn, so it is an ordinary child: killing the app leaves it running,
+ * writing into a work directory nothing will reclaim. renderCancel already
+ * kills the tasks and cleans the directory up -- nothing was calling it on the
+ * way out.
+ *
+ * An in-process render (umbreon) is cancelled cooperatively and keeps its
+ * registry entry, because normally the poll loop is what observes the
+ * cancellation and finishes the job. That loop will not run again here, but
+ * there is no external process to strand either -- the render thread goes with
+ * the worker.
+ *
+ * @returns how many jobs were asked to stop.
+ */
+export function cancelAllRenderJobs(ctx: WorkerContext): number {
+  const ids = [...jobs.keys()];
+  for (const jobId of ids) {
+    try {
+      renderCancel(ctx, { jobId });
+    } catch (e) {
+      console.warn(`renderCancel(${jobId}) failed during shutdown:`, e);
+    }
+  }
+  return ids.length;
+}
+
 export const services = { renderStart, renderCancel };

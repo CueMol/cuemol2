@@ -67,9 +67,14 @@ export const NumericField: React.FC<NumericFieldProps> = ({
             const text = e.target.value;
             setEditText(text);
             const parsed = parseFloat(text);
-            if (!isNaN(parsed)) onChange(parsed);
+            if (isNaN(parsed)) return;
+            // `min` / `max` on <input type="number"> only bind the spinner
+            // buttons; a typed value is not constrained by the browser. Clamp
+            // here so an out-of-range keystroke cannot be committed to a C++
+            // property (RejectNumberInput's doc comment already promised this).
+            onChange(Math.min(max, Math.max(min, parsed)));
         },
-        [onChange],
+        [onChange, min, max],
     );
 
     // Commit reads `value` (not `editText`): every parseable keystroke already

@@ -30,6 +30,11 @@ export const InlineRenameInput: React.FC<{
                 e.preventDefault();
                 e.stopPropagation();
                 onCancel();
+            } else if (e.key === "Backspace" || e.key === "Delete") {
+                // Editing keys belong to the input. The scene tree binds these
+                // to "delete the selected node" on an ancestor, so let the
+                // default text edit happen but keep the event out of the tree.
+                e.stopPropagation();
             }
         },
         [value, onCommit, onCancel],

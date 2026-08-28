@@ -18,6 +18,7 @@ import type { SceneNodeType } from '../../shared/sceneTreeTypes';
 import { withUndoTxn } from './withUndoTxn';
 import { safeRead } from './helpers/safeRead';
 import { listGroupChildRenderers } from './helpers/groupChildren';
+import { collectGroupMemberUids } from './helpers/rendGroup';
 
 export interface FocusOnNodeArgs {
     sceneId: number;
@@ -183,9 +184,12 @@ function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNodeResult 
         if (!client) return { ok: false };
         const objName = safeRead(() => client.name) ?? '';
         const grpName = safeRead(() => grp.name) ?? '';
-        const childIds = args.childIds ?? [];
         withUndoTxn(scene, `Delete rend group: ${objName}/${grpName}`, () => {
-            for (const cid of childIds) {
+            // Union the caller's snapshot with the live membership: a renderer
+            // moved into the group after the tree was fetched would otherwise
+            // survive with `group` still naming the destroyed group, which
+            // hides it from the scene tree for good.
+            for (const cid of collectGroupMemberUids(scene, grp, args.childIds)) {
                 try {
                     client.destroyRenderer(cid);
                 } catch (e) {

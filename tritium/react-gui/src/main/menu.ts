@@ -18,7 +18,7 @@ import {
 } from '@shared/menuActionMap'
 import type { MenuState, RecentFileEntry } from '@shared/ipcTypes'
 import { applyMenuStateTo, mergeMenuState } from '@shared/menuStateApply'
-import { getExistingRecents } from './recentFiles'
+import { getExistingRecents, refreshRecentsExistence } from './recentFiles'
 import {
   isBlocked,
   setDeferredRebuild,
@@ -30,6 +30,7 @@ import {
 // importing the block API from `./menu` unchanged.
 export {
   setMenuBlocked,
+  resetMenuBlockReason,
   withMenuBlocked,
   walkMenuItems,
   applyBlock,
@@ -108,6 +109,10 @@ function buildSpecificHandlers(
     [IPC.MENU_EDIT_PASTE, 'paste'],
     [IPC.MENU_UNDO, 'undo'],
     [IPC.MENU_REDO, 'redo'],
+    // Cmd+A is focus-dependent too: with the Rendering window focused it used
+    // to run selectAllInScope() in the MAIN window instead of selecting the
+    // text in the field under the cursor.
+    [IPC.MENU_SELECT_ALL, 'selectAll'],
   ]
   for (const [ch, native] of focusRouted) {
     const toRenderer = handlers[ch] ?? (() => mainWindow.webContents.send(IPC.MENU_GENERIC, ch))
@@ -124,7 +129,7 @@ function buildSpecificHandlers(
 }
 
 /** Native edit actions a focused webContents can run against its own selection. */
-type NativeEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo'
+type NativeEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo' | 'selectAll'
 
 function runNativeEdit(wc: WebContents, action: NativeEditAction): void {
   switch (action) {
@@ -133,6 +138,7 @@ function runNativeEdit(wc: WebContents, action: NativeEditAction): void {
     case 'paste': wc.paste(); break
     case 'undo': wc.undo(); break
     case 'redo': wc.redo(); break
+    case 'selectAll': wc.selectAll(); break
   }
 }
 
@@ -287,16 +293,30 @@ function flushPendingRebuild(): void {
   if (pendingRebuild && mainWindowRef) {
     pendingRebuild = false
     buildAndSetMenu(mainWindowRef)
+    // buildAndSetMenu already replays lastMenuState onto the new items.
+    return
   }
+  // No rebuild was pending, but state may have arrived during the block
+  // (updateMenuState merges it and skips the live write). Apply it now.
+  if (!lastMenuState) return
+  const menu = Menu.getApplicationMenu()
+  if (menu) applyMenuStateTo(menu, lastMenuState)
 }
+
+// Wire the unblock callback at module load rather than from createMenu: it also
+// replays state pushed during a block, which can happen before -- or without --
+// a menu ever being created for a window.
+setDeferredRebuild(flushPendingRebuild)
 
 /** Build and install the application menu for the given window (first run). */
 export function createMenu(mainWindow: BrowserWindow): void {
   mainWindowRef = mainWindow
-  // Wire the deferred-rebuild callback so a rebuild requested while the menu
-  // is blocked fires once on unblock (see menuBlock.applyUnblock).
-  setDeferredRebuild(flushPendingRebuild)
   buildAndSetMenu(mainWindow)
+  // Prune MRU entries whose file is gone. Deliberately after the first build
+  // and off the menu path: this touches the filesystem, and one entry on a
+  // disconnected network mount used to block every window for the mount
+  // timeout. The menu is rebuilt only if the result actually changed.
+  void refreshRecentsExistence(() => rebuildApplicationMenu())
 }
 
 /**
@@ -325,6 +345,9 @@ export function _resetMenuBlockForTest(): void {
   mainWindowRef = null
   pendingRebuild = false
   lastMenuState = null
+  // The menuBlock reset drops the injected callback; restore the production
+  // wiring so a test does not silently run without the unblock hook.
+  setDeferredRebuild(flushPendingRebuild)
 }
 
 /**
@@ -333,16 +356,17 @@ export function _resetMenuBlockForTest(): void {
  * No-op while the menu is blocked.
  */
 export function updateMenuState(state: MenuState): void {
-  // While the menu is blocked, ignore renderer-side state updates. The
-  // renderer is expected to re-emit on the next active-view change after
-  // unblock; the snapshot itself preserves whatever enabled values were
-  // current at block entry, so on unblock the menu returns to its last
-  // known-good state.
-  if (isBlocked()) return
-
-  // Merge into the persistent cache so a later menu rebuild can replay
-  // the full view/scene state onto the freshly built MenuItem instances.
+  // Always merge into the persistent cache, even while blocked. The cache is
+  // what a rebuild -- and the unblock replay below -- work from, so dropping
+  // an update here loses it for good: nothing prompts the renderer to re-emit.
+  // (An edit committed from inside a dialog pushes {undo:{enabled:true}} while
+  // the dialog holds the block; Edit > Undo then stayed greyed out until the
+  // next scene event happened to fire one.)
   lastMenuState = mergeMenuState(lastMenuState, state)
+
+  // Writing to the live items while blocked would fight the block snapshot,
+  // which restores the pre-block `enabled` values on unblock. Defer instead.
+  if (isBlocked()) return
 
   const menu = Menu.getApplicationMenu()
   if (!menu) return

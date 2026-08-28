@@ -204,7 +204,12 @@ export class WorkerService {
                 }
             } catch (e) {
                 log.error(`Worker> call method failed: ${method},`, e);
-                this._postMessage([method, seqno, false, e]);
+                // Stringify like the service branch below does: a raw thrown
+                // value is not necessarily structured-cloneable, and a
+                // DataCloneError raised inside this catch would escape
+                // self.onmessage and be funnelled as __worker_crash__ --
+                // tearing down the whole worker over one failed call.
+                this._postMessage([method, seqno, false, String(e)]);
             }
         } else if (serviceFn) {
             Promise.resolve()
