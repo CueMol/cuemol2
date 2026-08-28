@@ -256,6 +256,21 @@ const App: React.FC = () => {
     // closing straight after used to lose the new layout.
     await flushPendingSaves();
     if (!cm) return;
+    // Stop anything still running before the worker goes away with the window.
+    // Renders and APBS runs are external processes (posix_spawn children of
+    // this app), so they outlive it unless they are killed -- and their work
+    // directory is only registered for cleanup on completion, so it would be
+    // left behind too.
+    try {
+      const stopped = await cm.invokeService('cancelAllJobs', {});
+      if (stopped.render > 0 || stopped.apbs > 0) {
+        console.log(
+          `[close] cancelled ${stopped.render} render / ${stopped.apbs} apbs job(s)`,
+        );
+      }
+    } catch (err: unknown) {
+      console.warn('cancelling in-flight jobs failed:', err);
+    }
     const info = await window.electronAPI?.invoke(IPC.APP_PATH);
     const path = info?.userStylePath;
     if (path) await cm.saveUserStyle(path);

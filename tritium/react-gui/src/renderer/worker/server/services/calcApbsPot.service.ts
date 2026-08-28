@@ -596,4 +596,23 @@ function calcApbsCancel(
   return { ok: true };
 }
 
+/**
+ * Cancel every APBS job still in flight. Same reasoning as
+ * cancelAllRenderJobs: apbs / pdb2pqr run as external processes that outlive
+ * the app unless they are killed.
+ *
+ * @returns how many jobs were cancelled.
+ */
+export function cancelAllApbsJobs(ctx: WorkerContext): number {
+  const ids = [...jobs.keys()];
+  for (const jobId of ids) {
+    try {
+      calcApbsCancel(ctx, { jobId });
+    } catch (e) {
+      console.warn(`calcApbsCancel(${jobId}) failed during shutdown:`, e);
+    }
+  }
+  return ids.length;
+}
+
 export const services = { calcApbsStart, calcApbsCancel, proposeElepotName };
