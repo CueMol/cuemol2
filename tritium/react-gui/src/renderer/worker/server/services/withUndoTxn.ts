@@ -28,46 +28,6 @@ export function withUndoTxn<T>(scene: Scene, label: string, fn: () => T): T {
     }
 }
 
-/** Result shape returned by {@link tryUndoTxn}. */
-export interface TryUndoTxnResult {
-    ok: boolean;
-    /** Populated with the failure reason when ok=false (throw path only). */
-    error?: string;
-}
-
-/**
- * Run `fn` inside an undo transaction and translate the outcome into an
- * `{ ok, error? }` result, committing ONLY on success.
- *
- * Non-rethrowing counterpart to {@link withUndoTxn}, kept until its callers
- * move to {@link undoTxnResult}.
- *
- * @param scene - Scene owning the UndoManager.
- * @param label - Undo-stack label for this edit.
- * @param fn - Mutation thunk. Return `false` to force a rollback.
- * @returns `{ ok, error? }` describing the outcome.
- */
-export function tryUndoTxn(
-    scene: Scene,
-    label: string,
-    fn: () => boolean | void,
-): TryUndoTxnResult {
-    scene.startUndoTxn(label);
-    let result: boolean | void;
-    try {
-        result = fn();
-    } catch (e) {
-        scene.rollbackUndoTxn();
-        return { ok: false, error: String(e) };
-    }
-    if (result === false) {
-        scene.rollbackUndoTxn();
-        return { ok: false };
-    }
-    scene.commitUndoTxn();
-    return { ok: true };
-}
-
 /**
  * Run `fn` inside an undo transaction, committing only when it returns a
  * success result.

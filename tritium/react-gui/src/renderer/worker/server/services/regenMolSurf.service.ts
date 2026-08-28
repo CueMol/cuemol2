@@ -24,7 +24,8 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { safeRead } from './helpers/safeRead';
-import { tryUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
+import { ok, fail, type Result } from '../../shared/result';
 
 export interface GetMolSurfRegenInfoArgs {
     sceneId: number;
@@ -64,11 +65,7 @@ export interface RegenMolSurfArgs {
     backend?: 'auto' | 'meshms' | 'ball';
 }
 
-export interface RegenMolSurfResult {
-    ok: boolean;
-    /** Populated with the failure reason when ok=false. */
-    error?: string;
-}
+export type RegenMolSurfResult = Result;
 
 const EMPTY_INFO: GetMolSurfRegenInfoResult = {
     ok: false,
@@ -151,18 +148,18 @@ function regenMolSurf(
     args: RegenMolSurfArgs,
 ): RegenMolSurfResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false, error: 'scene not found' };
+    if (!scene) return fail('scene not found', 'not-found');
 
     const obj = scene.getObject(args.objId) as CueMolObject | null;
-    if (!obj) return { ok: false, error: 'surface object not found' };
+    if (!obj) return fail('surface object not found', 'not-found');
 
     const surf = obj as unknown as MolSurfObj;
     if (typeof surf.regenerateSES1 !== 'function') {
-        return { ok: false, error: 'object is not a MolSurfObj' };
+        return fail('object is not a MolSurfObj', 'unsupported');
     }
 
     const density = coerceDensity(args.density);
-    return tryUndoTxn(scene, 'Regenerate mol surface', () => {
+    return undoTxnResult(scene, 'Regenerate mol surface', () => {
         // `sesbackend` is an enum property: the generated wrapper types it as
         // number, but the C++ layer takes/returns the string id.
         if (args.backend && args.backend !== 'auto') {
@@ -170,6 +167,7 @@ function regenMolSurf(
                 args.backend;
         }
         surf.regenerateSES1(density);
+        return ok();
     });
 }
 

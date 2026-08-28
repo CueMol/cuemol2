@@ -89,7 +89,7 @@ describe('changeChainName', () => {
         })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/selection/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/selection/) }))
         expect(changeChainNameFn).not.toHaveBeenCalled()
         expect(scene.startUndoTxn).not.toHaveBeenCalled()
     })
@@ -104,7 +104,7 @@ describe('changeChainName', () => {
         })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/MolAnlManager/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/MolAnlManager/) }))
     })
 
     it('returns the error message when changeChainName throws', () => {
@@ -118,7 +118,7 @@ describe('changeChainName', () => {
         })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/dup resid/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/dup resid/) }))
         // A throwing mutation must roll the txn back and must NOT commit a
         // bogus undo entry.
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
@@ -135,6 +135,6 @@ describe('changeChainName', () => {
         })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/molecule/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/molecule/) }))
     })
 })

@@ -17,7 +17,8 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { WorkerContext } from '../types/WorkerContext';
 import { resolveMolTool } from './helpers/molAnlTool';
-import { tryUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
+import { ok, fail, type Result } from '../../shared/result';
 
 export interface ChangeResidueIndexArgs {
     sceneId: number;
@@ -33,11 +34,7 @@ export interface ChangeResidueIndexArgs {
     renumber: boolean;
 }
 
-export interface ChangeResidueIndexResult {
-    ok: boolean;
-    /** Populated with the failure reason when ok=false. */
-    error?: string;
-}
+export type ChangeResidueIndexResult = Result;
 
 function changeResidueIndex(
     ctx: WorkerContext,
@@ -49,12 +46,13 @@ function changeResidueIndex(
 
     // renumResIndex / shiftResIndex return a boolean success flag:
     // false -> rollback (no commit).
-    return tryUndoTxn(scene, 'Change residue index', () => {
+    return undoTxnResult(scene, 'Change residue index', () => {
         const m = mol as unknown as MolCoord;
         const s = sel as unknown as MolSelection;
-        return args.renumber
+        const done = args.renumber
             ? mgr.renumResIndex(m, s, args.bshift, args.value)
             : mgr.shiftResIndex(m, s, args.bshift, args.value);
+        return done ? ok() : fail('residue index change was rejected', 'native');
     });
 }
 

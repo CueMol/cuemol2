@@ -38,7 +38,7 @@ UXP パリティを優先し、**density のみを編集可能**とする。prob
   - `getMolSurfRegenInfo` — class 判定 (`getClassName()` メソッド)、`orig_mol` の
     シーン内解決、`orig_den` / `orig_prad` / `orig_sel.toString()` の読み出し。
     メニューゲートと dialog prefill の両方がこれ 1 本を使う。
-  - `regenMolSurf` — `tryUndoTxn(scene, 'Regenerate mol surface', ...)` の中で
+  - `regenMolSurf` — `undoTxnResult(scene, 'Regenerate mol surface', ...)` の中で
     `MolSurfObj.regenerateSES1(density)` を呼ぶ。
 - コンテキストメニューは `SceneCtxAction` に `{ kind: 'regenSurface' }`、
   payload に `canRegenSurface` (可視) と `regenSurfaceEnabled` (活性) の 2 段ゲート。
@@ -69,7 +69,7 @@ UXP がその機能をコメントアウトしたまま出荷しているため�
   read-only stub) のみになる。行の status は `wip` のまま。
 - `MolSurfObj` の undo は C++ 側 (`MolSurfEditInfo`) が頂点/面のスナップショットを
   積むので、worker 側は undo ラベルを供給するだけでよい。txn を張らないと
-  スナップショットが宙に浮くため `tryUndoTxn` は必須。
+  スナップショットが宙に浮くため `undoTxnResult` (Fail/throw で rollback) は必須。
 - 「表示するが disabled」を選んだため、object 行の prefetch が MolSurfObj のときだけ
   1 回増える。prefetch 失敗時は disabled に縮退する (このファイルの既存方針)。
 - `regenerateSES1` は `clean()` + `createSESFromMol()` を行うため、既存の
