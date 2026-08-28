@@ -13,7 +13,7 @@ import {
 } from './stateStore'
 import { registerIpcHandlers } from './ipcHandlers'
 import { registerRenderWindowIpc } from './renderWindowIpc'
-import { createMenu } from './menu'
+import { resetMenuBlockReason, createMenu } from './menu'
 import { registerTextContextMenu } from './textContextMenu'
 import { registerCuemolClipboardIpc } from './cuemolClipboard'
 import { getDevIconPath } from './helpers/appIcon'
@@ -223,6 +223,17 @@ export function createWindow(): void {
     setForceQuit(true)
     setAppQuitting(true)
     app.exit(1)
+  })
+
+  // A reload discards the React tree, and with it every component that owed a
+  // menu-unblock. The 'blueprint' block count is incremented when a dialog
+  // mounts and decremented when it unmounts, both from the renderer, so a
+  // reload with a dialog open left the count stuck above zero and every menu
+  // item except the text-edit ones disabled for the rest of the run -- Cmd+Q
+  // included, with no way to recover. Main sees the navigation, so it clears
+  // the reason here.
+  win.webContents.on('did-start-navigation', (_event, _url, _isInPlace, isMainFrame) => {
+    if (isMainFrame) resetMenuBlockReason('blueprint')
   })
 
   // Renderer is hung (e.g. infinite loop in JS or blocked on a sync call).

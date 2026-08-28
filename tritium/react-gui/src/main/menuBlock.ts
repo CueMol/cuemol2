@@ -144,6 +144,32 @@ export function setMenuBlocked(reason: MenuBlockReason, blocked: boolean): void 
   const prev = blockReasons.get(reason) ?? 0
   const next = blocked ? prev + 1 : Math.max(0, prev - 1)
   blockReasons.set(reason, next)
+  settleBlockState()
+}
+
+/**
+ * Drop every outstanding block for one reason.
+ *
+ * The 'blueprint' counter is incremented from the renderer (a Blueprint dialog
+ * mounting) and decremented from the renderer too. A reload or navigation
+ * between those two points -- devtools Cmd+R, a dev HMR full reload,
+ * webContents.reload() -- destroys the component that owed the decrement, so
+ * the count never returns to zero and every menu item except the text-edit
+ * ones stays disabled for the rest of the run, Cmd+Q included. Nothing
+ * recovers it: a later open/close goes 1 -> 2 -> 1.
+ *
+ * Main observes the reload itself, so it can clear the reason there.
+ *
+ * @param reason - the block source to clear.
+ */
+export function resetMenuBlockReason(reason: MenuBlockReason): void {
+  if ((blockReasons.get(reason) ?? 0) === 0) return
+  blockReasons.set(reason, 0)
+  settleBlockState()
+}
+
+/** Apply or lift the block to match the current total count. */
+function settleBlockState(): void {
   const total = totalBlockCount()
   if (total > 0 && !snapshot) applyBlock()
   else if (total === 0 && snapshot) applyUnblock()

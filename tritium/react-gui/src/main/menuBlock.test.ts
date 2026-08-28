@@ -122,6 +122,7 @@ import {
   createMenu,
   rebuildApplicationMenu,
   setMenuBlocked,
+  resetMenuBlockReason,
   updateMenuState,
   _resetMenuBlockForTest,
 } from '@main/menu'
@@ -226,18 +227,65 @@ describe('menu block machinery (main side)', () => {
     expect(setApplicationMenu).toHaveBeenCalledTimes(1)
   })
 
-  it('(c) updateMenuState is a no-op while blocked, applies after unblock', () => {
+  it('(c) updateMenuState does not touch the live menu while blocked', () => {
     const menu = installEnabledMenu()
 
     setMenuBlocked('blueprint', true)
-    // While blocked, updateMenuState must not mutate the live menu.
+    // Writing here would fight the block snapshot, which restores the
+    // pre-block enabled values on unblock.
     updateMenuState({ viewProjection: { enabled: true, perspective: true } })
-    // (the item was disabled by the block; the guard prevents re-enabling)
+    expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(false)
+  })
+
+  /**
+   * State pushed during a block must not be dropped. Nothing prompts the
+   * renderer to re-emit: useUndoRedoState only pushes on a scene undo event or
+   * a tab switch, and useActiveViewState only on a tab switch or an explicit
+   * user action. An edit committed from inside a dialog therefore left
+   * Edit > Undo greyed out until some later scene event happened to fire one.
+   */
+  it('(c2) state pushed while blocked is applied on unblock without a re-emit', () => {
+    const menu = installEnabledMenu()
+
+    setMenuBlocked('blueprint', true)
+    updateMenuState({ viewProjection: { enabled: true, perspective: true } })
+    setMenuBlocked('blueprint', false)
+
+    expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(true)
+    expect(menu.getMenuItemById('view-perspective')!.checked).toBe(true)
+  })
+
+  /**
+   * The 'blueprint' count is incremented and decremented from the renderer. A
+   * reload between the two destroys the component that owed the decrement, so
+   * the menu stayed disabled -- Cmd+Q included -- for the rest of the run, with
+   * no way back: a later open/close goes 1 -> 2 -> 1.
+   */
+  it('(d) resetMenuBlockReason lifts a block the renderer can no longer release', () => {
+    const menu = installEnabledMenu()
+
+    setMenuBlocked('blueprint', true)
     expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(false)
 
+    resetMenuBlockReason('blueprint')
+    expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(true)
+
+    // And the counter really is zero: one open/close cycle unblocks again.
+    setMenuBlocked('blueprint', true)
+    expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(false)
     setMenuBlocked('blueprint', false)
-    // After unblock the renderer re-emits; updateMenuState now applies.
-    updateMenuState({ viewProjection: { enabled: true, perspective: true } })
+    expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(true)
+  })
+
+  it('(e) resetMenuBlockReason leaves an unrelated reason blocking', () => {
+    const menu = installEnabledMenu()
+
+    setMenuBlocked('blueprint', true)
+    setMenuBlocked('native', true)
+    resetMenuBlockReason('blueprint')
+    expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(false)
+
+    setMenuBlocked('native', false)
     expect(menu.getMenuItemById('view-perspective')!.enabled).toBe(true)
   })
 })
