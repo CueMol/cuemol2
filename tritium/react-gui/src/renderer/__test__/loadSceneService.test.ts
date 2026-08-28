@@ -111,7 +111,9 @@ describe('loadScene.service — direct API', () => {
         const { ctx, scene, calls } = makeFixture({
             readFn: () => { calls.push('read'); throw new Error('parse fail') },
         })
-        expect(() => loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })).toThrow('parse fail')
+        // A damaged .qsc used to escape as a throw; it is an io failure now.
+        expect(loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 }))
+            .toEqual(expect.objectContaining({ ok: false, code: 'io', error: 'parse fail' }))
         expect(scene.setName).not.toHaveBeenCalled()
     })
 
@@ -128,7 +130,7 @@ describe('loadScene.service — direct API', () => {
             ]),
         })
         const result = loadScene(ctx, { filePath: '/test.txt', sceneId: 1 })
-        expect(result).toEqual({ ok: false })
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'unsupported' }))
         expect(scene.startUndoTxn).not.toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
@@ -136,15 +138,17 @@ describe('loadScene.service — direct API', () => {
     it('returns ok:false when createHandler returns null', () => {
         const { ctx } = makeFixture({ readerCreateFails: true })
         const result = loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })
-        expect(result).toEqual({ ok: false })
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'unsupported' }))
     })
 
-    it('still calls detach when read throws, and propagates the error (no undo txn)', () => {
+    it('still calls detach when read throws, and returns the failure (no undo txn)', () => {
         const { ctx, scene, reader, calls } = makeFixture({
             viewUids: '10',
             readFn: () => { calls.push('read'); throw new Error('parse fail') },
         })
-        expect(() => loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })).toThrow('parse fail')
+        // A damaged .qsc used to escape as a throw; it is an io failure now.
+        expect(loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 }))
+            .toEqual(expect.objectContaining({ ok: false, code: 'io', error: 'parse fail' }))
         expect(reader.detach).toHaveBeenCalled()
         // No txn was opened, so there is nothing to commit or roll back.
         expect(scene.startUndoTxn).not.toHaveBeenCalled()

@@ -1,4 +1,5 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
+import { failFrom, type Result } from '../../shared/result';
 
 /**
  * Run `fn` inside an undo transaction, committing on success and
@@ -38,23 +39,12 @@ export interface TryUndoTxnResult {
  * Run `fn` inside an undo transaction and translate the outcome into an
  * `{ ok, error? }` result, committing ONLY on success.
  *
- * This is the non-rethrowing counterpart to {@link withUndoTxn}. It exists
- * so that a failed or partial mutation never reaches `commitUndoTxn()` (which
- * would leave a bogus undo entry on the stack) while the dialogs still get the
- * `{ ok:false }` UX they expect instead of a thrown exception:
- *
- *   - `fn()` throws         -> `rollbackUndoTxn()` + `{ ok:false, error:String(e) }`
- *                              (NOT rethrown -- unlike `withUndoTxn`).
- *   - `fn()` returns `false` -> `rollbackUndoTxn()` + `{ ok:false }`. Use a
- *                              boolean return only when the C++ mutation has a
- *                              meaningful success flag; a `false` means the
- *                              edit did not take effect and must be rolled back.
- *   - `fn()` returns `void` / `true` / `undefined` -> `commitUndoTxn()` + `{ ok:true }`.
+ * Non-rethrowing counterpart to {@link withUndoTxn}, kept until its callers
+ * move to {@link undoTxnResult}.
  *
  * @param scene - Scene owning the UndoManager.
  * @param label - Undo-stack label for this edit.
- * @param fn - Mutation thunk. Return `false` to force a rollback; return
- *   `void`/`true` (or nothing) for the success commit path.
+ * @param fn - Mutation thunk. Return `false` to force a rollback.
  * @returns `{ ok, error? }` describing the outcome.
  */
 export function tryUndoTxn(
@@ -76,4 +66,45 @@ export function tryUndoTxn(
     }
     scene.commitUndoTxn();
     return { ok: true };
+}
+
+/**
+ * Run `fn` inside an undo transaction, committing only when it returns a
+ * success result.
+ *
+ * This is the default for a service that returns {@link Result}:
+ *
+ *   - `fn()` returns `{ ok: true, ... }` -> `commitUndoTxn()`, result passed through.
+ *   - `fn()` returns `{ ok: false }`     -> `rollbackUndoTxn()`, result passed through.
+ *   - `fn()` throws                     -> `rollbackUndoTxn()` + `failFrom(e)`.
+ *
+ * Rolling back on a Fail return is the point. `commitUndoTxn` commits whatever
+ * mutations happened, and -- because `UndoManager::commitTxn` clears the redo
+ * stack even for an *empty* transaction (src/qsys/UndoManager.cpp) -- a body
+ * that bailed out early without mutating used to leave the user's Redo dead.
+ * Rollback touches neither stack.
+ *
+ * Prefer this over {@link withUndoTxn} unless the body cannot fail short of
+ * throwing.
+ *
+ * @param scene - Scene owning the UndoManager.
+ * @param label - Undo-stack label for this edit.
+ * @param fn - Mutation thunk returning the service result.
+ */
+export function undoTxnResult<T extends object>(
+    scene: Scene,
+    label: string,
+    fn: () => Result<T>,
+): Result<T> {
+    scene.startUndoTxn(label);
+    let result: Result<T>;
+    try {
+        result = fn();
+    } catch (e) {
+        scene.rollbackUndoTxn();
+        return failFrom(e);
+    }
+    if (result.ok) scene.commitUndoTxn();
+    else scene.rollbackUndoTxn();
+    return result;
 }

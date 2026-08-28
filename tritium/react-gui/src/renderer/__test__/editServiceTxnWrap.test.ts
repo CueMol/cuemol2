@@ -107,16 +107,17 @@ describe('loadObject service — undo txn wrapping', () => {
         expect(calls).not.toContain('rollback')
     })
 
-    it('calls rollbackUndoTxn and re-throws on error', () => {
+    it('calls rollbackUndoTxn and returns the failure on error', () => {
         const m = makeCtx({ objreaderReadFn: () => { throw new Error('cmd failed') } })
-        expect(() =>
-            loadObject(m.ctx, {
-                filePath: '/fail.pdb',
-                sceneId: 1,
-                options: { format: { kind: 'unknown' }, renderer: { objectName: '', rendererType: '', rendererName: '', centerView: false, selection: '' } } as any,
-                contentFirst: false,
-            })
-        ).toThrow('cmd failed')
+        // A reader throw is converted at the service boundary (undoTxnResult);
+        // it no longer escapes as a rejected promise.
+        const result = loadObject(m.ctx, {
+            filePath: '/fail.pdb',
+            sceneId: 1,
+            options: { format: { kind: 'unknown' }, renderer: { objectName: '', rendererType: '', rendererName: '', centerView: false, selection: '' } } as any,
+            contentFirst: false,
+        })
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'io', error: 'cmd failed' }))
         expect(m.calls).toContain('start:Open file')
         expect(m.calls).toContain('rollback')
         expect(m.calls).not.toContain('commit')

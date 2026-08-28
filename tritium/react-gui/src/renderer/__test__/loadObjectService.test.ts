@@ -190,19 +190,21 @@ describe('loadObject.service — reader-based path', () => {
             options: { format: unknownFormat, renderer: baseRendererOpts } as any,
             contentFirst: false,
         })
-        expect(result).toEqual({ ok: false })
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'unsupported' }))
         expect(createHandler).not.toHaveBeenCalled()
         expect(setupRenderer).not.toHaveBeenCalled()
     })
 
-    it('read() throwing propagates and rolls back the undo txn', () => {
+    it('read() throwing rolls back the undo txn and comes back as an io failure', () => {
         const { ctx, calls } = makeFixture({ readThrows: true })
-        expect(() => loadObject(ctx, {
+        // Used to escape as a throw -- a rejected promise on the renderer side.
+        const result = loadObject(ctx, {
             filePath: '/data/1ubq.pdb',
             sceneId: 1,
             options: { format: unknownFormat, renderer: baseRendererOpts } as any,
             contentFirst: false,
-        })).toThrow('parse fail')
+        })
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'io', error: 'parse fail' }))
         expect(calls).toContain('rollback')
         expect(calls).not.toContain('commit')
         expect(calls).not.toContain('addObject')

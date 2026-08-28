@@ -12,10 +12,11 @@
 // property setters.
 
 import type { WorkerContext } from '../types/WorkerContext';
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { SceneXMLReader } from '@cuemol/core/src/wrappers/SceneXMLReader';
 import type { View } from '@cuemol/core/src/wrappers/View';
 import { matchExtLength, parseExtList } from '@shared/fileExt';
+import { fail, failFrom, ok, type Result } from '../../shared/result';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 const log = console;
 
@@ -70,9 +71,12 @@ export interface LoadSceneArgs {
     sceneId: number;
 }
 
-function loadScene(ctx: WorkerContext, args: LoadSceneArgs): { ok: boolean } {
+export type LoadSceneResult = Result;
+
+function loadScene(ctx: WorkerContext, args: LoadSceneArgs): LoadSceneResult {
     log.info(`[worker] loading QSC scene: ${args.filePath}`);
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
 
     // No undo transaction here, by design. A whole-scene load is not an edit:
     // it mirrors UXP `qsc-io.readSceneFile` / C++ `LoadSceneCommand::run()`,
@@ -84,7 +88,7 @@ function loadScene(ctx: WorkerContext, args: LoadSceneArgs): { ok: boolean } {
     const readerName = guessReaderName(ctx, args.filePath);
     if (!readerName) {
         log.warn(`[worker] loadScene: cannot guess reader for ${args.filePath}`);
-        return { ok: false };
+        return fail(`no scene reader claims ${args.filePath}`, 'unsupported');
     }
     const reader = ctx.strMgr.createHandler(
         readerName,
@@ -92,12 +96,17 @@ function loadScene(ctx: WorkerContext, args: LoadSceneArgs): { ok: boolean } {
     ) as unknown as SceneXMLReader | null;
     if (!reader) {
         log.warn(`[worker] loadScene: createHandler('${readerName}') failed`);
-        return { ok: false };
+        return fail(`createHandler('${readerName}') failed`, 'unsupported');
     }
     reader.setPath(args.filePath);
     reader.attach(scene);
     try {
         reader.read();
+    } catch (e) {
+        // A damaged .qsc used to escape as a rejected promise that only ever
+        // reached console.error; the caller shows it now like any other load.
+        log.warn('[worker] loadScene: reader.read() failed:', e);
+        return failFrom(e, 'io');
     } finally {
         reader.detach();
     }
@@ -124,7 +133,7 @@ function loadScene(ctx: WorkerContext, args: LoadSceneArgs): { ok: boolean } {
             }
         }
     }
-    return { ok: true };
+    return ok();
 }
 
 export const services = { loadScene };
