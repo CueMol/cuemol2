@@ -77,6 +77,7 @@ const App: React.FC = () => {
     setInspectorOpen: persistInspectorOpen,
     setViewSizes,
     setViewCollapsed,
+    flushPendingSaves,
   } = useLayoutPersistence();
 
   // --- Activity-bar state ---
@@ -250,11 +251,15 @@ const App: React.FC = () => {
   // the user style file when the window closes -- UXP `Qm2Main.onUnLoad`
   // parity. The path is resolved by Main via APP_PATH.
   const saveUserStyleOnClose = useCallback(async (): Promise<void> => {
+    // Closing the window does not unmount the renderer, so the debounced
+    // layout / UI writes have no other chance to land: dragging a splitter and
+    // closing straight after used to lose the new layout.
+    await flushPendingSaves();
     if (!cm) return;
     const info = await window.electronAPI?.invoke(IPC.APP_PATH);
     const path = info?.userStylePath;
     if (path) await cm.saveUserStyle(path);
-  }, [cm]);
+  }, [cm, flushPendingSaves]);
 
   useWindowCloseHandler({
     tabsRef,

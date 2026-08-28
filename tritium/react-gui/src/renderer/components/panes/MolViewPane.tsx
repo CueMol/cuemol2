@@ -227,7 +227,12 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     }
   }, []) // stable -- reads state via refs
 
-  return <canvas className={styles.molView} ref={canvasRef} />
+  // The data attribute is how anything outside this component finds the 3D
+  // canvas -- see MOLVIEW_CANVAS_SELECTOR. There are other <canvas> elements in
+  // the app (the sequence panel, the multi-gradient histogram), so a bare
+  // `document.querySelector('canvas')` picks whichever happens to come first in
+  // the DOM.
+  return <canvas className={styles.molView} ref={canvasRef} data-molview-canvas="" />
 })
 
 MolViewPane.displayName = 'MolViewPane'

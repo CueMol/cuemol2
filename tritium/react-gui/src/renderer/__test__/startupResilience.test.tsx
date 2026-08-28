@@ -16,6 +16,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { act } from 'react'
 import { makeRenderHook, flushPromises, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 import { IPC } from '@shared/ipcChannels'
 import { useLayoutPersistence } from '../hooks/useLayoutPersistence'
@@ -85,6 +86,44 @@ describe('useAppInitialization launch failure', () => {
     await flushPromises()
     await flushPromises()
     expect(h.result.initialSceneSettled).toBe(true)
+    h.unmount()
+  })
+})
+
+/**
+ * Closing the window does not unmount the renderer -- main preventDefaults the
+ * close, asks the renderer to confirm each tab, and then destroys the window --
+ * and there is no `beforeunload` handler anywhere. The unmount cleanup that was
+ * supposed to flush the debounced writes therefore never ran, so dragging a
+ * splitter and closing straight after lost the new layout.
+ */
+describe('useLayoutPersistence flushPendingSaves', () => {
+  afterEach(() => { teardownElectronAPI(); vi.restoreAllMocks() })
+
+  it('writes the pending layout immediately instead of waiting out the debounce', async () => {
+    const api = setupElectronAPI()
+    const h = makeRenderHook(() => useLayoutPersistence())
+    await flushPromises()
+
+    act(() => { h.result.setMainSizes([100, 200]) })
+    expect((api.invoke.mock.calls as unknown[][]).filter((c) => c[0] === IPC.LAYOUT_SAVE)).toHaveLength(0)
+
+    await act(async () => { await h.result.flushPendingSaves() })
+
+    const saves = (api.invoke.mock.calls as unknown[][]).filter((c) => c[0] === IPC.LAYOUT_SAVE)
+    expect(saves).toHaveLength(1)
+    expect((saves[0][1] as { mainSizes: number[] }).mainSizes).toEqual([100, 200])
+    h.unmount()
+  })
+
+  it('is a no-op when nothing is pending', async () => {
+    const api = setupElectronAPI()
+    const h = makeRenderHook(() => useLayoutPersistence())
+    await flushPromises()
+    api.invoke.mockClear()
+
+    await act(async () => { await h.result.flushPendingSaves() })
+    expect(api.invoke).not.toHaveBeenCalled()
     h.unmount()
   })
 })

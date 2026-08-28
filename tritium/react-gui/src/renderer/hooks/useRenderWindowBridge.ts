@@ -39,6 +39,7 @@ import type {
 } from "../data/renderResult";
 import { useRenderJob, type RenderJob } from "./useRenderJob";
 import type { TabData } from "../types";
+import { MOLVIEW_CANVAS_SELECTOR } from '../components/panes/molViewCanvas';
 
 /**
  * Drop the live preview image from a job before it goes on a context push.
@@ -222,7 +223,7 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
     const offSize = api.onPush(IPC.RENDER_VIEW_SIZE_REQUEST, ({ reqId }) => {
       // Resolve the molview canvas pixel size ("Current view" preset).
       let size: ViewSizePx | null = null;
-      const canvas = document.querySelector("canvas");
+      const canvas = document.querySelector(MOLVIEW_CANVAS_SELECTOR);
       if (canvas) {
         const rect = canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;

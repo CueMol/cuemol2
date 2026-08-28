@@ -285,6 +285,7 @@ describe('useRenderWindowBridge', () => {
     it('VIEW_SIZE_REQUEST replies with the canvas pixel size', async () => {
         const { cm } = makeCm();
         const canvas = document.createElement('canvas');
+        canvas.setAttribute('data-molview-canvas', '');
         canvas.getBoundingClientRect = () =>
             ({ width: 400, height: 300 } as DOMRect);
         document.body.appendChild(canvas);
@@ -301,6 +302,39 @@ describe('useRenderWindowBridge', () => {
         });
         h.unmount();
         document.body.removeChild(canvas);
+    });
+
+    /**
+     * The sequence panel and the multi-gradient histogram also render a
+     * <canvas>, and the sidebar comes before the content area in the DOM. A
+     * bare `document.querySelector('canvas')` therefore measured whichever of
+     * those happened to be on screen, and the render ran at that widget's size
+     * with nothing to indicate it.
+     */
+    it('measures the molview canvas, not whichever canvas comes first', async () => {
+        const { cm } = makeCm();
+        const decoy = document.createElement('canvas');
+        decoy.getBoundingClientRect = () => ({ width: 64, height: 12 } as DOMRect);
+        document.body.appendChild(decoy);
+
+        const molview = document.createElement('canvas');
+        molview.setAttribute('data-molview-canvas', '');
+        molview.getBoundingClientRect = () => ({ width: 800, height: 600 } as DOMRect);
+        document.body.appendChild(molview);
+
+        const h = mountBridge(cm);
+        await act(async () => {
+            harness.requestViewSize(12);
+            await flushPromises();
+        });
+
+        expect(harness.api.invoke).toHaveBeenCalledWith(IPC.RENDER_VIEW_SIZE_REPLY, {
+            reqId: 12,
+            size: { width: 800, height: 600 },
+        });
+        h.unmount();
+        document.body.removeChild(decoy);
+        document.body.removeChild(molview);
     });
 });
 
