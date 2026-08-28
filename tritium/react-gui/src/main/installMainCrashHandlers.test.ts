@@ -1,5 +1,7 @@
 /**
- * Pins the two behaviours the main-process crash funnel exists for:
+ * @file main/installMainCrashHandlers.test.ts
+ *
+ * Pins the behaviours the main-process crash funnel exists for:
  *
  *   1. A closed stdout pipe (`npm start | head`) must be swallowed, not turned
  *      into an uncaught exception -- that is what popped the untranslatable
@@ -14,11 +16,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-// installMainCrashHandlers lives in src/main (tsconfig.node project). A
-// string-variable dynamic import keeps tsc's cross-project check (TS6307) off
-// this file while Vitest still resolves it at runtime -- same trick as
-// quitState.test.ts.
-const crashHandlersEntry = '../../main/installMainCrashHandlers'
+const crashHandlersEntry = './installMainCrashHandlers'
 
 interface CrashHandlersModule {
     installMainCrashHandlers(): void
@@ -115,5 +113,79 @@ describe('installMainCrashHandlers', () => {
         addedListener(before, UNCAUGHT)(new Error('boom'))
 
         expect(writeSpy).not.toHaveBeenCalled()
+    })
+})
+
+/**
+ * Electron's own `uncaughtException` listener (verified in the shipped
+ * Electron 42 binary) reads:
+ *
+ *   process.on("uncaughtException", function (e) {
+ *     process.listenerCount("uncaughtException") > 1 || ...showErrorBox(...)
+ *   })
+ *
+ * So registering a listener here suppresses the only user-visible sign that
+ * anything went wrong, leaving a single stderr line a GUI user never sees.
+ * (Electron does not exit either, before or after -- that is its deliberate
+ * choice for a desktop app, and this funnel does not change it.)
+ */
+describe('uncaughtException visibility', () => {
+    const added: Array<[NodeJS.EventEmitter, string, Listener]> = []
+
+    async function install(): Promise<Listener> {
+        const before = process.listeners('uncaughtException') as Listener[]
+        const mod = (await import(crashHandlersEntry)) as CrashHandlersModule
+        mod.installMainCrashHandlers()
+        const after = process.listeners('uncaughtException') as Listener[]
+        const mine = after.filter((l) => !before.includes(l))
+        for (const l of mine) added.push([process, 'uncaughtException', l])
+        return mine[0]
+    }
+
+    afterEach(() => {
+        for (const [t, e, l] of added) t.removeListener(e, l)
+        added.length = 0
+        vi.doUnmock('electron')
+        vi.resetModules()
+    })
+
+    it('shows the error box Electron would have shown', async () => {
+        const showErrorBox = vi.fn()
+        vi.resetModules()
+        vi.doMock('electron', () => ({ dialog: { showErrorBox } }))
+
+        const handler = await install()
+        const writeSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+        handler(new Error('main blew up'))
+        writeSpy.mockRestore()
+
+        expect(showErrorBox).toHaveBeenCalledTimes(1)
+        const [title, body] = showErrorBox.mock.calls[0] as [string, string]
+        expect(title).toMatch(/JavaScript error occurred in the main process/i)
+        expect(body).toMatch(/main blew up/)
+    })
+
+    it('still writes the stderr copy alongside the dialog', async () => {
+        vi.resetModules()
+        vi.doMock('electron', () => ({ dialog: { showErrorBox: vi.fn() } }))
+
+        const handler = await install()
+        const writeSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+        handler(new Error('main blew up'))
+        const written = writeSpy.mock.calls.map((c) => String(c[0])).join('')
+        writeSpy.mockRestore()
+
+        expect(written).toMatch(/uncaughtException/)
+        expect(written).toMatch(/main blew up/)
+    })
+
+    it('never throws when the dialog API is unavailable', async () => {
+        vi.resetModules()
+        vi.doMock('electron', () => ({ dialog: undefined }))
+
+        const handler = await install()
+        const writeSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+        expect(() => handler(new Error('boom'))).not.toThrow()
+        writeSpy.mockRestore()
     })
 })
