@@ -26,7 +26,7 @@ import {
     SEM_SCENE,
     SEM_ANY,
 } from '../event'
-import { useLiveFetch } from './useLiveFetch'
+import { useLiveFetch } from '@renderer/lib/useLiveFetch'
 
 export interface UseSymmetryPanelOptions {
     cm: AsyncCueMol | null

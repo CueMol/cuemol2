@@ -28,9 +28,9 @@ import {
   type MovieFormatId,
   type MovieSettings,
 } from "../data/renderSettings";
+import { PERSIST_DEBOUNCE_MS } from "@renderer/lib/timing";
 
 /** How long an edit rests before it is written back (base name is typed). */
-const SAVE_DEBOUNCE_MS = 400;
 
 /** Whether a persisted format id is one this build still knows. */
 function knownFormat(id: string | undefined): id is MovieFormatId {
@@ -148,7 +148,7 @@ export function useMovieOutputPrefs(
     if (!loadedRef.current) return;
     const timer = setTimeout(() => {
       void window.electronAPI?.invoke(IPC.UI_SAVE, { movieRender: prefsFromSettings(movie) });
-    }, SAVE_DEBOUNCE_MS);
+    }, PERSIST_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [movie]);
 

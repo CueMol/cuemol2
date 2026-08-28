@@ -15,9 +15,8 @@ import { useRef } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { GetMultiGradStateResult } from '../worker/server/services/rendererColoring.service'
 import { SEM_OBJECT, SEM_RENDERER, SEM_ANY } from '../event'
-import { useLiveFetch } from './useLiveFetch'
-
-const REFETCH_DEBOUNCE_MS = 30
+import { useLiveFetch } from '@renderer/lib/useLiveFetch'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
 
 const EMPTY_STATE: GetMultiGradStateResult = {
     ok: false,
@@ -111,7 +110,7 @@ export function useMultiGradState({
                 srcMask: SEM_OBJECT | SEM_RENDERER,
                 evtMask: SEM_ANY,
                 scopeId: sceneId ?? -1,
-                debounceMs: REFETCH_DEBOUNCE_MS,
+                debounceMs: EVENT_BURST_DEBOUNCE_MS,
             },
         ],
     })

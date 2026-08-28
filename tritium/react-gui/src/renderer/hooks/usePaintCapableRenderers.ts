@@ -15,14 +15,14 @@ import { useRef } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { PaintCapableRendererEntry } from '../worker/server/services/rendererColoring.service'
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_ANY } from '../event'
-import { useLiveFetch } from './useLiveFetch'
+import { useLiveFetch } from '@renderer/lib/useLiveFetch'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
 
 // SEM_SCENE is included for the bulk-load path: a slow qsc load fires no
 // per-object ADDED events the pane can use (the first fetch resolves before
 // the backend finishes), so the scene-level sceneLoaded event is the only
 // signal to refetch the list.
 const SCENE_EVENT_MASK = SEM_OBJECT | SEM_RENDERER | SEM_SCENE
-const REFETCH_DEBOUNCE_MS = 30
 const EMPTY: PaintCapableRendererEntry[] = []
 
 export interface UsePaintCapableRenderersOptions {
@@ -70,7 +70,7 @@ export function usePaintCapableRenderers({
                 srcMask: SCENE_EVENT_MASK,
                 evtMask: SEM_ANY,
                 scopeId: sceneId ?? -1,
-                debounceMs: REFETCH_DEBOUNCE_MS,
+                debounceMs: EVENT_BURST_DEBOUNCE_MS,
             },
         ],
     })

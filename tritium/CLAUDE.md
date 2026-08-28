@@ -269,15 +269,11 @@ The UXP reference is `uxp_gui/cuemol2/base/content/workspace_panel.js` `_attachS
 
 ### Debouncing event bursts
 
-A single high-level operation (PDB load, scene load, paste, undo) fires **many** events in quick succession. If the listener triggers an expensive refetch / re-render per event, the UI jitters. Coalesce with a small timer (~30 ms is enough):
+A single high-level operation (PDB load, scene load, paste, undo) fires **many** events in quick succession. If the listener triggers an expensive refetch / re-render per event, the UI jitters. Coalesce them with `useCueMolEventListener({ debounceMs: EVENT_BURST_DEBOUNCE_MS })` (`renderer/lib/timing.ts`; never a local `30`). An event that must not open or consume a debounce window (e.g. a `ui_collapsed` PROPCHG) goes through the listener's `filter`, which runs before the debounce.
 
-```ts
-let timer: ReturnType<typeof setTimeout> | null = null
-const scheduleRefetch = () => {
-    if (timer !== null) return
-    timer = setTimeout(() => { timer = null; refetch() }, 30)
-}
-```
+### Fetch + auto-refresh: `useLiveFetch` (renderer/lib)
+
+A panel hook that fetches from the worker and refetches on scene events uses `useLiveFetch({ cm, initial, fallback, fetch, fetchDeps, listeners })` instead of hand-rolling `useState` + `refetch` + `useEffect` + listener. It owns the **stale-fetch guard**: a fetch that resolves after a newer one started is dropped, so switching A -> B can never end with A's late result on screen. For a one-off async result outside `useLiveFetch`, take a token from `useStaleGuard()` (`renderer/lib/useStaleGuard.ts`) and check `isCurrent(token)` before applying the result. Never write a `tokenRef` / `let cancelled` guard by hand.
 
 ### When to use the event manager (vs alternatives)
 

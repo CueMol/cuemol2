@@ -29,6 +29,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PaneCollapseState, LayoutState, UiState } from "@shared/ipcTypes";
 import { IPC } from "@shared/ipcChannels";
+import { PERSIST_DEBOUNCE_MS } from "@renderer/lib/timing";
 
 export type { PaneCollapseState, LayoutState, UiState };
 
@@ -55,7 +56,6 @@ const UI_DEFAULTS: UiState = {
 };
 
 /** Debounce interval for persisting layout changes (ms). */
-const SAVE_DEBOUNCE_MS = 400;
 
 // --- Hook ---
 
@@ -103,7 +103,7 @@ export function useLayoutPersistence() {
     if (layoutTimerRef.current) clearTimeout(layoutTimerRef.current);
     layoutTimerRef.current = setTimeout(() => {
       api.invoke(IPC.LAYOUT_SAVE, layoutRef.current);
-    }, SAVE_DEBOUNCE_MS);
+    }, PERSIST_DEBOUNCE_MS);
   }, []);
 
   const scheduleUiSave = useCallback(() => {
@@ -112,7 +112,7 @@ export function useLayoutPersistence() {
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
     uiTimerRef.current = setTimeout(() => {
       api.invoke(IPC.UI_SAVE, uiRef.current);
-    }, SAVE_DEBOUNCE_MS);
+    }, PERSIST_DEBOUNCE_MS);
   }, []);
 
   // --- Layout updaters (each triggers a debounced persist) ---

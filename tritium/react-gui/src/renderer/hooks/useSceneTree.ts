@@ -12,14 +12,15 @@
  * (`uxp_gui/cuemol2/base/content/workspace_panel.js` `_attachScene`).
  * Events are coalesced through a small debounce so a burst (e.g. PDB load
  * fires many SEM_ADDED / SEM_PROPCHG in quick succession) results in one
- * refetch.
+ * refetch. The fetch runs through `useLiveFetch`, whose stale-fetch guard
+ * drops a late-resolving fetch for a scene the user has already left.
  *
  * This file is the core hook: it owns the tree fetch, the event
  * subscription, and the selection state. The 40+ action callbacks are
  * grouped by domain into the `sceneTree/` sub-hooks, composed below.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import {
@@ -31,7 +32,7 @@ import {
     SEM_ANY,
     SEM_PROPCHG,
 } from '../event'
-import { useCueMolEventListener } from './useCueMolEventListener'
+import { useLiveFetch } from '@renderer/lib/useLiveFetch'
 import { findNode } from './sceneTree/sceneTreeNodeUtils'
 import {
     useSceneTreeNodeOps,
@@ -49,6 +50,7 @@ import {
     useSceneTreeStyleOps,
     type SceneTreeStyleOps,
 } from './sceneTree/useSceneTreeStyleOps'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
 
 interface UseSceneTreeOptions {
     cm: AsyncCueMol | null
@@ -106,9 +108,6 @@ export type UseSceneTreeResult = SceneTreeCoreState &
 const SCENE_EVENT_MASK =
     SEM_SCENE | SEM_OBJECT | SEM_RENDERER | SEM_CAMERA | SEM_STYLE
 
-// Coalesce event bursts (PDB load fires many add/propchg in quick succession).
-const REFETCH_DEBOUNCE_MS = 30
-
 /**
  * Discard `ui_collapsed` PROPCHG events before they reach the debounce.
  * Expanding/collapsing a group row writes the flag back to C++ (via
@@ -124,7 +123,6 @@ function ignoreUiCollapsedPropChg(args: unknown): boolean {
 }
 
 export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTreeResult {
-    const [tree, setTree] = useState<SceneTreeNode | null>(null)
     const [selectedId, setSelectedIdState] = useState<string>('')
     const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
 
@@ -187,39 +185,28 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
     const sceneIdRef = useRef<number | undefined>(sceneId)
     sceneIdRef.current = sceneId
 
-    const refetch = useCallback(() => {
-        const sid = sceneIdRef.current
-        if (!cm || sid === undefined) {
-            setTree(null)
-            return
-        }
-        cm.invokeService('getSceneTree', { sceneId: sid })
-            .then((res) => {
-                setTree(res?.tree ?? null)
-            })
-            .catch((err: unknown) => {
-                console.warn('getSceneTree failed:', err)
-                setTree(null)
-            })
-    }, [cm])
-
-    // Initial fetch + re-fetch on scene switch.
-    useEffect(() => {
-        refetch()
-    }, [cm, sceneId, refetch])
-
-    // Subscribe to CueMol event manager; debounce a flurry of events into
-    // one refetch. Unsubscribe on unmount or when sceneId changes.
-    useCueMolEventListener({
+    // Fetch on mount / scene switch, refetch on scene events (a burst is
+    // debounced into one refetch), drop a fetch that resolves after the
+    // scene has already changed again.
+    const { state: tree, refetch } = useLiveFetch<SceneTreeNode | null>({
         cm,
-        enabled: sceneId !== undefined,
-        category: '',
-        srcMask: SCENE_EVENT_MASK,
-        evtMask: SEM_ANY,
-        scopeId: sceneId ?? -1,
-        handler: refetch,
-        debounceMs: REFETCH_DEBOUNCE_MS,
-        filter: ignoreUiCollapsedPropChg,
+        initial: null,
+        fallback: null,
+        fetch: () => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return null
+            return cm.invokeService('getSceneTree', { sceneId: sid }).then((res) => res?.tree ?? null)
+        },
+        onError: (err) => console.warn('getSceneTree failed:', err),
+        fetchDeps: [sceneId],
+        listeners: [{
+            enabled: sceneId !== undefined,
+            srcMask: SCENE_EVENT_MASK,
+            evtMask: SEM_ANY,
+            scopeId: sceneId ?? -1,
+            debounceMs: EVENT_BURST_DEBOUNCE_MS,
+            filter: ignoreUiCollapsedPropChg,
+        }],
     })
 
     // --- Domain action callbacks ---

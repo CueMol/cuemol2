@@ -16,9 +16,9 @@ import type {
     GetRendererColoringStateResult,
 } from '../worker/server/services/rendererColoring.service'
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_ANY } from '../event'
-import { useLiveFetch } from './useLiveFetch'
+import { useLiveFetch } from '@renderer/lib/useLiveFetch'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
 
-const REFETCH_DEBOUNCE_MS = 30
 // Listen for renderer events when editing a renderer's coloring and for
 // object events when editing an object's coloring. Combining the masks
 // keeps the subscription wire identical regardless of target kind.
@@ -152,7 +152,7 @@ export function useRendererColoringState({
                 srcMask: COLORING_EVENT_MASK,
                 evtMask: SEM_ANY,
                 scopeId: sceneId ?? -1,
-                debounceMs: REFETCH_DEBOUNCE_MS,
+                debounceMs: EVENT_BURST_DEBOUNCE_MS,
             },
         ],
     })

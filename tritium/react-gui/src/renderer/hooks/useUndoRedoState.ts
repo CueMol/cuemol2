@@ -26,6 +26,7 @@ import { CmdId } from '../commands/ids'
 import { useRegisterCommand } from '../commands/CommandRegistry'
 import { useCueMolEventListener } from './useCueMolEventListener'
 import { SEM_SCENE, SEM_ANY } from '../event'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
 
 interface UseUndoRedoStateOptions {
   cm: AsyncCueMol | null
@@ -154,7 +155,7 @@ export function useUndoRedoState({
     evtMask: SEM_ANY,
     scopeId: activeSceneId ?? SEM_ANY,
     handler: () => { void refresh() },
-    debounceMs: 50,
+    debounceMs: EVENT_BURST_DEBOUNCE_MS,
   })
 
   return { canUndo, canRedo, undoDescs, redoDescs, pickUndo, pickRedo }

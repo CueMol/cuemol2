@@ -18,7 +18,7 @@
  * strip is hidden, UXP collapse parity).
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { GradientHistogram } from '../components/multigrad/GradientStopBar'
 import {
@@ -26,6 +26,7 @@ import {
     histogramTargetBins,
     niceBinWidth,
 } from '../components/multigrad/gradientGeometry'
+import { useStaleGuard } from '@renderer/lib/useStaleGuard'
 
 const DOMAIN_DEBOUNCE_MS = 100
 
@@ -64,7 +65,7 @@ export function useMultiGradHistogram({
     enabled = true,
 }: UseMultiGradHistogramOptions): GradientHistogram | null {
     const [histogram, setHistogram] = useState<GradientHistogram | null>(null)
-    const tokenRef = useRef(0)
+    const guard = useStaleGuard()
 
     const min = domain?.min
     const max = domain?.max
@@ -85,14 +86,14 @@ export function useMultiGradHistogram({
             setHistogram(null)
             return
         }
-        const token = ++tokenRef.current
+        const token = guard.next()
         const timer = setTimeout(() => {
             cm.invokeService('getMultiGradHistogram', {
                 sceneId, rendId,
                 min: grid.min, max: grid.max, nbins: grid.nbins,
             })
                 .then((res) => {
-                    if (token !== tokenRef.current) return
+                    if (!guard.isCurrent(token)) return
                     setHistogram(
                         res.ok
                             ? {
@@ -105,13 +106,13 @@ export function useMultiGradHistogram({
                     )
                 })
                 .catch(() => {
-                    if (token !== tokenRef.current) return
+                    if (!guard.isCurrent(token)) return
                     setHistogram(null)
                 })
         }, DOMAIN_DEBOUNCE_MS)
         return () => clearTimeout(timer)
     }, [cm, enabled, paused, sceneId, rendId,
-        grid?.min, grid?.max, grid?.nbins])
+        grid?.min, grid?.max, grid?.nbins, guard])
 
     return histogram
 }

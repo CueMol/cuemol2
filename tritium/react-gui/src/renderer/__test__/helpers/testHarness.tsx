@@ -38,13 +38,16 @@ export function makeRenderHook<T>(
     return null
   }
 
-  const tree = wrapper
-    ? React.createElement(wrapper, null, React.createElement(Probe))
-    : React.createElement(Probe)
+  // A fresh element per render: re-rendering the same element object lets
+  // React bail out of Probe, so `rerender()` would never re-run the hook.
+  const makeTree = (): React.ReactElement =>
+    wrapper
+      ? React.createElement(wrapper, null, React.createElement(Probe))
+      : React.createElement(Probe)
 
   act(() => {
     root = createRoot(container)
-    root.render(tree)
+    root.render(makeTree())
   })
 
   return {
@@ -53,7 +56,7 @@ export function makeRenderHook<T>(
     },
     rerender() {
       act(() => {
-        root.render(tree)
+        root.render(makeTree())
       })
     },
     unmount() {

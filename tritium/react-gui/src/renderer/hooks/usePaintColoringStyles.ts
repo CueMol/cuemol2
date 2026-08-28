@@ -16,11 +16,10 @@ import { useRef } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { PaintColoringStyleEntry } from '../worker/server/services/rendererColoring.service'
 import { SEM_STYLE, SEM_ANY } from '../event'
-import { useLiveFetch } from './useLiveFetch'
+import { useLiveFetch } from '@renderer/lib/useLiveFetch'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
 
 const EMPTY: PaintColoringStyleEntry[] = []
-
-const REFETCH_DEBOUNCE_MS = 30
 
 export interface UsePaintColoringStylesOptions {
     cm: AsyncCueMol | null
@@ -68,7 +67,7 @@ export function usePaintColoringStyles({
                 srcMask: SEM_STYLE,
                 evtMask: SEM_ANY,
                 scopeId: sceneId ?? -1,
-                debounceMs: REFETCH_DEBOUNCE_MS,
+                debounceMs: EVENT_BURST_DEBOUNCE_MS,
             },
         ],
     })
