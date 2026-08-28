@@ -15,7 +15,7 @@
  */
 import { Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
-import type { SceneCtxAction, SceneCtxMenuPayload } from '@shared/ipcTypes'
+import type { SceneCtxAction, SceneCtxMenuPayload } from '@shared/types/sceneCtxMenu'
 import { buildTemplate } from '@shared/sceneCtxMenu/sceneCtxTemplates'
 import { toElectronTemplate } from './menuNodeAdapter'
 

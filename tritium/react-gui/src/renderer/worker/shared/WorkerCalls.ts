@@ -488,7 +488,7 @@ import type {
   RedrawMapCenterArgs,
   RedrawMapCenterResult,
 } from '../server/services/densityMapPanelOps.service'
-import type { ElectronFileFilter } from '@shared/ipcTypes'
+import type { ElectronFileFilter } from '@shared/types/fileDialog'
 import type { WorkerContext } from '../server/types/WorkerContext'
 
 // -

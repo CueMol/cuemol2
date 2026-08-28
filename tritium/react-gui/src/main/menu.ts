@@ -16,7 +16,8 @@ import {
   GENERIC_RELAY_CHANNELS,
   isMenuActionChannel,
 } from '@shared/menuActionMap'
-import type { MenuState, RecentFileEntry } from '@shared/ipcTypes'
+import type { RecentFileEntry } from '@shared/types/recent'
+import type { MenuState } from '@shared/types/menuState'
 import { applyMenuStateTo, mergeMenuState } from '@shared/menuStateApply'
 import { getExistingRecents, refreshRecentsExistence } from './recentFiles'
 import {

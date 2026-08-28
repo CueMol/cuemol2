@@ -51,7 +51,7 @@ import {
     RejectNumberInput,
 } from '../../h3-kit/form'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { RendColoringId } from '@shared/ipcTypes'
+import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 import type {
     BfacParams,
     ColoringTargetKind,

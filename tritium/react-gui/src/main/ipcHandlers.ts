@@ -15,7 +15,8 @@ import type {
   InvokeReq,
   InvokeRes,
 } from '@shared/ipcContract'
-import type { AppPathInfo, FileDialogOptions } from '@shared/ipcTypes'
+import type { FileDialogOptions } from '@shared/types/fileDialog'
+import type { AppPathInfo } from '@shared/types/appPath'
 import { APP_PRODUCT_NAME } from '@shared/appInfo'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'

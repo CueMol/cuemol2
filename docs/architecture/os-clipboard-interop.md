@@ -144,7 +144,7 @@ paste 側は既に meta に依存しない構造だった: camera paste は
 ## Notes
 
 - 実装: `shared/cuemolClipboard.ts` (純粋 codec)、`main/cuemolClipboard.ts` (Electron I/O +
-  3 チャネル)、`shared/ipcChannels.ts` / `ipcContract.ts` / `ipcTypes.ts` の契約、
+  3 チャネル)、`shared/ipcChannels.ts` / `ipcContract.ts` / `types/clipboard.ts` の契約、
   `WorkerService.ts` の `copyToTypedArray` / `copyFromTypedArray` forwarder、
   `sceneClipboard.service.ts` と `coloring/paintClipboard.ts` のステートレス化、
   `hooks/sceneTree/useSceneTreeNodeOps.ts` / `hooks/sceneContextMenu/buildSceneCtxPayload.ts` /

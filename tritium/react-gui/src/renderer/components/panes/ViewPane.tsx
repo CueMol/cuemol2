@@ -29,7 +29,7 @@ import { SectionHeader } from './SectionHeader'
 import { FieldSection, FieldGrid, FieldGridRow, DragNumericField, SwitchField, SelectField } from '../../h3-kit/form'
 import type { DragNumericFieldHandle } from '../../h3-kit/form'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { ViewCenterMark } from '@shared/ipcTypes'
+import type { ViewCenterMark } from '@shared/types/menuState'
 import { useViewXform, type CenterAxis } from '../../hooks/useViewXform'
 
 export interface ViewPaneProps {

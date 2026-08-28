@@ -11,7 +11,8 @@
  */
 import { getRoleLabel, isExportItemUnavailable } from '@shared/menuTemplate'
 import type { AppMenuItem } from '@shared/menuTemplate'
-import type { RecentFileEntry, SceneBgColor, ViewCenterMark } from '@shared/ipcTypes'
+import type { RecentFileEntry } from '@shared/types/recent'
+import type { SceneBgColor, ViewCenterMark } from '@shared/types/menuState'
 import { SCENE_REQUIRING_MENU_IDS } from '@shared/menuStateApply'
 import type { MenuNode } from '@shared/menuNodes'
 

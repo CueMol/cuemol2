@@ -51,7 +51,7 @@ Rendering window は別 BrowserWindow で worker を持たないため、`RENDER
 | `worker/shared/WorkerCalls.ts` `ServiceMap` | `getHatchStyleSpec: { args: GetHatchStyleSpecArgs; result: GetHatchStyleSpecResult }` |
 | `shared/ipcChannels.ts` | `RENDER_HATCH_STYLE_GET` (invoke) / `RENDER_HATCH_STYLE_REQUEST` (push) / `RENDER_HATCH_STYLE_REPLY` (invoke) |
 | `shared/ipcContract.ts` | `InvokeChannels` に GET / REPLY、`PushChannels` に REQUEST |
-| `shared/ipcTypes.ts` | `HatchStyleSpecReply`、`RenderSettingsSnapshotWire.hatch?` |
+| `shared/types/renderWindow.ts` | `HatchStyleSpecReply`、`RenderSettingsSnapshotWire.hatch?` |
 | `data/renderResult.ts` | `RenderSettingsSnapshot.hatch?: RenderHatchSnapshot` |
 | `.qif` (`UmbreonSceneExporter`) | `hatchLayersSpec` / `hatchToneSpec` / `hatchToneStrength` / `hatchToneCurve` / `getHatchStyleSpec(name)` |
 

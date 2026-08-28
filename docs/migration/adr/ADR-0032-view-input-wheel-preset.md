@@ -70,7 +70,7 @@ device stays 2-valued.
   - tritium: `react-gui/src/renderer/viewInputConfig.ts` (mode -> style map);
     `contexts/ViewInputConfigContext.tsx`; `createAndInitCueMol.ts`;
     `components/panes/SettingsPane.tsx` + `settings/settingsConfig.ts`
-    (`input.device`); `shared/ipcTypes.ts` `UiState.inputDeviceMode`;
+    (`input.device`); `shared/types/uiPrefs.ts` `UiState.inputDeviceMode`;
     `main/stateStore.ts` default.
 - Axis facts: `WHEEL1 = deltaX`, `WHEEL2 = deltaY`; wheel -> camera in
   `View::handleMouseDragImpl` (`VIEW_ZOOM`/`VIEW_TRAX`/...).

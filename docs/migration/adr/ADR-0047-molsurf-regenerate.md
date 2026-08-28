@@ -81,7 +81,7 @@ UXP がその機能をコメントアウトしたまま出荷しているため�
   - `tritium/react-gui/src/renderer/worker/server/services/regenMolSurf.service.ts`
   - `tritium/react-gui/src/renderer/components/dialogs/RegenMolSurfDialog.tsx` (+ Provider)
   - `tritium/react-gui/src/renderer/components/dialogs/molSurfDensity.ts`
-  - `shared/ipcTypes.ts` (`regenSurface` action / `canRegenSurface` / `regenSurfaceEnabled`)
+  - `shared/types/sceneCtxMenu.ts` (`regenSurface` action / `canRegenSurface` / `regenSurfaceEnabled`)
   - `shared/sceneCtxMenu/sceneCtxItems.ts` (`regenSurfaceItem`) / `sceneCtxTemplates.ts` (object 分岐)
   - `hooks/sceneContextMenu/buildSceneCtxPayload.ts` / `dispatchSceneCtxAction.ts` /
     `hooks/useSceneContextMenu.ts`

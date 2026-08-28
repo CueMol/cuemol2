@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { CrashReport, CrashSource } from '@shared/ipcTypes'
+import type { CrashReport, CrashSource } from '@shared/types/crash'
 import { IPC } from '@shared/ipcChannels'
 
 const mountFallbackDom = vi.fn()

@@ -3,14 +3,17 @@
 // Resolve an NPR hatch style name to umbreon's spec text (the layer editor's
 // template) through the umbreon exporter's getHatchStyleSpec.
 import type { WorkerContext } from '../types/WorkerContext';
+import type { HatchStyleSpecReply } from '@shared/types/renderWindow';
 
 export interface GetHatchStyleSpecArgs {
     style: string;
 }
 
-export type GetHatchStyleSpecResult =
-    | { ok: true; spec: string }
-    | { ok: false; error: string };
+/**
+ * Same shape as the render-window relay reply: main forwards this result to
+ * the Rendering window verbatim, so the two must not drift apart.
+ */
+export type GetHatchStyleSpecResult = HatchStyleSpecReply;
 
 function getHatchStyleSpec(ctx: WorkerContext, args: GetHatchStyleSpecArgs): GetHatchStyleSpecResult {
     // Same handler the render backends create; a build without umbreon has none.

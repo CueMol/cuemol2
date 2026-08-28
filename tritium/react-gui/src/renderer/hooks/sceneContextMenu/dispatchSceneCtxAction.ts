@@ -8,12 +8,7 @@
  * per-action work here.
  */
 
-import type {
-    ChangeRendSelKind,
-    RendColoringId,
-    SceneCtxAction,
-    SelectMolKind,
-} from '@shared/ipcTypes'
+import type { ChangeRendSelKind, RendColoringId, SceneCtxAction, SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { IPC } from '@shared/ipcChannels'
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'

@@ -13,7 +13,7 @@
  * `main/sceneContextMenu.ts`.
  */
 
-import type { SceneCtxMenuPayload } from '../ipcTypes'
+import type { SceneCtxMenuPayload } from '../types/sceneCtxMenu'
 import {
     type SceneCtxNode,
     bgColorSubmenu,

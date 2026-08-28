@@ -6,7 +6,7 @@
  * Electron menu on macOS (`main/naviContextMenu.ts` via `toElectronTemplate`).
  */
 import type { MenuNode } from './menuNodes'
-import type { NaviCtxAction, NaviCtxMenuPayload } from './ipcTypes'
+import type { NaviCtxAction, NaviCtxMenuPayload } from './types/naviCtxMenu'
 
 type Node = MenuNode<NaviCtxAction>
 

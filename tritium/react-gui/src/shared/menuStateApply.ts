@@ -15,7 +15,7 @@
  * path.
  */
 
-import type { MenuState } from './ipcTypes'
+import type { MenuState } from './types/menuState'
 import { SCENE_EXPORT_MENU_EXPORTERS } from './menuTemplate'
 
 /**

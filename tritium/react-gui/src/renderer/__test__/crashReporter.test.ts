@@ -13,7 +13,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IPC } from '@shared/ipcChannels'
-import type { CrashReport } from '@shared/ipcTypes'
+import type { CrashReport } from '@shared/types/crash'
 import {
   _resetForTests,
   getCurrentCrash,

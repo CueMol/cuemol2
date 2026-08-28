@@ -97,7 +97,7 @@ main 側では 5 チャネル (EDIT_CUT/COPY/PASTE + MENU_UNDO/REDO) に
 
 ## Notes
 
-- 実装: `shared/{ipcChannels,ipcTypes,ipcContract,menuActionMap,menuTemplate}.ts` の契約 5 点、
+- 実装: `shared/{ipcChannels,types/textCtxMenu,ipcContract,menuActionMap,menuTemplate}.ts` の契約 5 点、
   `main/menu.ts` (focused-wc ガード + `runNativeEdit`)、`main/ipcHandlers.ts`
   (`TEXT_CTX_ACTION` に undo/redo)、`renderer/utils/editClipboard.ts` (新規)、
   `renderer/hooks/useClipboardScope.ts` (新規)、`renderer/hooks/useMenuDispatch.ts`

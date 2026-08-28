@@ -14,7 +14,7 @@
  * rejected before the drop, but only for types that are certainly unopenable.
  */
 
-import type { ElectronFileFilter } from '@shared/ipcTypes'
+import type { ElectronFileFilter } from '@shared/types/fileDialog'
 
 /** InOutHandler categories (src/qsys/InOutHandler.hpp IOH_CAT_*). */
 export const IOH_CAT_OBJREADER = 0

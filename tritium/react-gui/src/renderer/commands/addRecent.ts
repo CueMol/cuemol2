@@ -5,7 +5,7 @@
  */
 
 import { IPC } from '@shared/ipcChannels'
-import type { RecentFileType } from '@shared/ipcTypes'
+import type { RecentFileType } from '@shared/types/recent'
 
 export function addRecent(
     path: string,

@@ -73,7 +73,7 @@ Electron filter-index constraint above).
 - Renderer: `hooks/useSceneExportCaps.ts` (probe + `MENU_UPDATE_STATE` push);
   wired in `App.tsx`, prop passed to `components/MenuBar.tsx`.
 - Shared: `shared/menuTemplate.ts` `SCENE_EXPORT_MENU_EXPORTERS` +
-  `isExportItemUnavailable`; `shared/ipcTypes.ts` `MenuState.exportCaps`;
+  `isExportItemUnavailable`; `shared/types/menuState.ts` `MenuState.exportCaps`;
   `shared/menuStateApply.ts` (`MenuItemLike.visible`, `mergeMenuState`,
   `applyMenuStateTo` export gate).
 - Tests: `__test__/sceneExportCaps.test.ts` (probe cat-2 filter / umbreon

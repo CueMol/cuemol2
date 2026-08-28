@@ -13,35 +13,19 @@
 
 import { IPC } from './ipcChannels'
 import type { MenuActionChannel } from './menuActionMap'
-import type {
-  AppPathInfo,
-  CrashReport,
-  FileDialogOptions,
-  FileErrorData,
-  FileOpenedData,
-  LayoutState,
-  MenuState,
-  NaviCtxAction,
-  NaviCtxMenuPayload,
-  RecentFileEntry,
-  RenderWindowCommand,
-  RenderWindowModeRequest,
-  RenderWindowOpenOptions,
-  RenderWindowStateUpdate,
-  SceneCtxAction,
-  SceneCtxMenuPayload,
-  ShellOpenRequest,
-  TextEditAction,
-  TextCtxShowPayload,
-  UiState,
-  ViewSizePx,
-  RenderImageRef,
-  RenderViewCamera,
-  HatchStyleSpecReply,
-  CuemolClipWriteReq,
-  CuemolClipReadRes,
-  CuemolClipPeekRes,
-} from './ipcTypes'
+import type { LayoutState } from './types/layout'
+import type { UiState } from './types/uiPrefs'
+import type { FileDialogOptions } from './types/fileDialog'
+import type { RecentFileEntry } from './types/recent'
+import type { FileErrorData, FileOpenedData, ShellOpenRequest } from './types/fileEvents'
+import type { AppPathInfo } from './types/appPath'
+import type { NaviCtxAction, NaviCtxMenuPayload } from './types/naviCtxMenu'
+import type { TextEditAction, TextCtxShowPayload } from './types/textCtxMenu'
+import type { SceneCtxAction, SceneCtxMenuPayload } from './types/sceneCtxMenu'
+import type { MenuState } from './types/menuState'
+import type { CrashReport } from './types/crash'
+import type { RenderWindowCommand, RenderWindowModeRequest, RenderWindowOpenOptions, RenderWindowStateUpdate, ViewSizePx, RenderImageRef, RenderViewCamera, HatchStyleSpecReply } from './types/renderWindow'
+import type { CuemolClipWriteReq, CuemolClipReadRes, CuemolClipPeekRes } from './types/clipboard'
 
 export interface InvokeChannels {
   [IPC.APP_PATH]:          { req: void;                  res: AppPathInfo }

@@ -13,7 +13,7 @@
  *   keeps this from colliding with the scene-tree / navi context menus.
  */
 import type { MenuNode } from './menuNodes'
-import type { TextCtxAction, TextCtxShowPayload } from './ipcTypes'
+import type { TextCtxAction, TextCtxShowPayload } from './types/textCtxMenu'
 
 type Node = MenuNode<TextCtxAction>
 
