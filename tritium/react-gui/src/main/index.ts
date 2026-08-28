@@ -121,8 +121,9 @@ app.whenReady().then(() => {
   applyDevDockIcon()
 
   // Drop any render-history images a previous run left behind (its metadata
-  // died with that run, so the files are unreachable).
-  clearRenderHistory()
+  // died with that run, so the files are unreachable). Marked as the startup
+  // sweep so it stands down when another live instance owns the directory.
+  clearRenderHistory({ startup: true })
 
   // Age out past runs' movie output. Unlike the render history this is not
   // wiped wholesale: a movie can represent hours of rendering, so only stale

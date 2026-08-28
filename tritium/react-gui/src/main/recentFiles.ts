@@ -10,7 +10,7 @@
  * second window mutated the store.
  */
 
-import fs from 'fs'
+import { promises as fsp } from 'fs'
 import type { RecentFileEntry } from '@shared/ipcTypes'
 import { addToRecents, MAX_RECENTS } from '@shared/recentFilesLogic'
 import { loadRecentFiles, saveRecentFiles } from './stateStore'
@@ -45,12 +45,45 @@ export function clearRecents(): RecentFileEntry[] {
  * not pruned -- a transiently unmounted volume must not cause permanent
  * loss of history.
  */
+/**
+ * Paths last seen as missing. Everything not in here is treated as present.
+ *
+ * The menu is rebuilt on startup and on every RECENT_ADD / RECENT_CLEAR, and
+ * this used to stat each entry synchronously on the main thread. One MRU path
+ * on a disconnected SMB / NFS mount then blocked every window's IPC and input
+ * for the mount timeout -- tens of seconds. The check runs off the menu path
+ * now; the worst case is one stale entry shown until the refresh lands.
+ */
+const missingPaths = new Set<string>()
+
+/** Recent entries minus the ones the last refresh found missing. */
 export function getExistingRecents(): RecentFileEntry[] {
-  return getRecents().filter((e) => {
-    try {
-      return fs.existsSync(e.path)
-    } catch {
-      return false
-    }
-  })
+  return getRecents().filter((e) => !missingPaths.has(e.path))
+}
+
+/**
+ * Re-check which recent paths still exist, off the main thread's critical path.
+ *
+ * @param onChange - called when the missing set actually changed, so the caller
+ *   can rebuild the menu.
+ */
+export async function refreshRecentsExistence(onChange?: () => void): Promise<void> {
+  const before = new Set(missingPaths)
+  const entries = getRecents()
+  const results = await Promise.all(
+    entries.map(async (e) => {
+      try {
+        await fsp.access(e.path)
+        return [e.path, true] as const
+      } catch {
+        return [e.path, false] as const
+      }
+    }),
+  )
+  missingPaths.clear()
+  for (const [p, exists] of results) if (!exists) missingPaths.add(p)
+
+  const changed =
+    before.size !== missingPaths.size || [...missingPaths].some((p) => !before.has(p))
+  if (changed) onChange?.()
 }

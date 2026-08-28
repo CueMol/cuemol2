@@ -32,12 +32,21 @@ export interface FileFilter {
  *   only catch-all matches), `false` when the extension should win.
  */
 export function inferContentFirst(filePath: string, filters: FileFilter[]): boolean {
-    const ext = (filePath.split('.').pop() ?? '').toLowerCase();
+    // Match against the tail of the path, not against a single trailing
+    // segment: the filter rows carry multi-dot extensions (*.pdb.gz, *.cif.gz),
+    // and `split('.').pop()` reduced "1crn.pdb.gz" to "gz", which matches no
+    // reader-specific row. The user's explicit PDB choice was then discarded
+    // and the reader re-sniffed from content.
+    const lower = filePath.toLowerCase();
+    const matchesExt = (e: string): boolean => {
+        const suffix = '.' + e.toLowerCase();
+        return lower.endsWith(suffix);
+    };
     let matched = 0;
     for (const f of filters) {
         if (f.extensions.includes('*')) continue;
         if (f.name === 'All Supported') continue;
-        if (f.extensions.some((e) => e.toLowerCase() === ext)) {
+        if (f.extensions.some(matchesExt)) {
             matched++;
             if (matched > 1) break;
         }

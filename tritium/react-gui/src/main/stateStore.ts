@@ -106,8 +106,19 @@ function getStore(): Store<StoreSchema> {
 
 // --- Public API ---
 
-export function loadWindowBounds(): WindowBounds {
-  return getStore().get('windowBounds')
+/**
+ * Load the main-window geometry, or undefined when it has never been saved.
+ *
+ * The `{0,0}` guard is the same one loadRenderWindowBounds uses, and for the
+ * same reason: the schema default sits at 0,0, and it passes
+ * isVisibleOnAnyDisplay, so on a fresh profile the window was pinned to the
+ * top-left corner instead of getting the OS's own placement.
+ */
+export function loadWindowBounds(): WindowBounds | undefined {
+  const b = getStore().get('windowBounds')
+  if (!b) return undefined
+  if (b.x === 0 && b.y === 0) return undefined
+  return b
 }
 
 export function saveWindowBounds(bounds: WindowBounds): void {

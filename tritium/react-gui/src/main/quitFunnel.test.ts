@@ -180,6 +180,7 @@ vi.mock('@main/recentFiles', () => ({
   addRecent: vi.fn(() => []),
   clearRecents: vi.fn(() => []),
   getRecents: vi.fn(() => []),
+  refreshRecentsExistence: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('@main/naviContextMenu', () => ({ showNaviContextMenu: vi.fn() }))
 vi.mock('@main/sceneContextMenu', () => ({ showSceneContextMenu: vi.fn() }))

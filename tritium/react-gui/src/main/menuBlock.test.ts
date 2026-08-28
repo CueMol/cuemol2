@@ -110,6 +110,7 @@ vi.mock('electron', () => {
 
 vi.mock('@main/recentFiles', () => ({
   getExistingRecents: vi.fn(() => []),
+  refreshRecentsExistence: vi.fn(() => Promise.resolve()),
 }))
 
 import { Menu } from 'electron'

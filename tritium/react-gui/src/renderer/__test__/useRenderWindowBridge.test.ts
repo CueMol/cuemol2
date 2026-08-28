@@ -72,6 +72,12 @@ function setupApi() {
             pushCbs.set(channel, cb);
             return () => pushCbs.delete(channel);
         }),
+        // Mirror the real handler: RENDER_HISTORY_STORE reports whether the
+        // archive copy landed, and the bridge only publishes an entry when it
+        // did (an unstored id reads back as a blank frame).
+        invoke: vi.fn((channel: string) =>
+            Promise.resolve(channel === IPC.RENDER_HISTORY_STORE ? { ok: true } : undefined),
+        ),
     });
     return {
         api,
@@ -371,6 +377,52 @@ describe('useRenderWindowBridge hatch style template', () => {
             .find((c) => c[0] === IPC.RENDER_HATCH_STYLE_REPLY)?.[1] as { reqId: number; result: { ok: boolean } };
         expect(reply.reqId).toBe(6);
         expect(reply.result.ok).toBe(false);
+        h.unmount();
+    });
+});
+
+/**
+ * A failed archive used to produce a history entry anyway. Its
+ * RENDER_HISTORY_READ then returns null -- a blank frame in the render window,
+ * and "no longer available" from Save Image -- and, because the work directory
+ * is only registered on a successful store, that render's temp directory
+ * leaked for the run.
+ */
+describe('useRenderWindowBridge history store failure', () => {
+    it('does not publish a history entry when the archive copy fails', async () => {
+        const pushCbs = new Map<string, (payload: unknown) => void>();
+        const api = setupElectronAPI({
+            onPush: vi.fn((channel: string, cb: (payload: unknown) => void) => {
+                pushCbs.set(channel, cb);
+                return () => pushCbs.delete(channel);
+            }),
+            invoke: vi.fn((channel: string) =>
+                Promise.resolve(
+                    channel === IPC.RENDER_HISTORY_STORE ? { ok: false } : undefined,
+                ),
+            ),
+        });
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { cm, emit } = makeCm();
+        const h = mountBridge(cm);
+
+        await act(async () => {
+            pushCbs.get(IPC.RENDER_WINDOW_EXEC)?.({ type: 'start', snapshot });
+            await flushPromises();
+        });
+        act(() => emit({
+            type: 'complete', jobId: 'job-1',
+            imagePath: '/tmp/render/out.png', workDir: '/tmp/render',
+            width: 800, height: 600, elapsedSec: 3.5,
+        }));
+        await flushPromises();
+        warn.mockRestore();
+
+        const historyPushes = (api.invoke as ReturnType<typeof vi.fn>).mock.calls
+            .filter((c) => c[0] === IPC.RENDER_WINDOW_STATE)
+            .map((c) => c[1] as { kind: string })
+            .filter((u) => u.kind === 'history');
+        expect(historyPushes).toHaveLength(0);
         h.unmount();
     });
 });

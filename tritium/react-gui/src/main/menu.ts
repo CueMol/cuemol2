@@ -18,7 +18,7 @@ import {
 } from '@shared/menuActionMap'
 import type { MenuState, RecentFileEntry } from '@shared/ipcTypes'
 import { applyMenuStateTo, mergeMenuState } from '@shared/menuStateApply'
-import { getExistingRecents } from './recentFiles'
+import { getExistingRecents, refreshRecentsExistence } from './recentFiles'
 import {
   isBlocked,
   setDeferredRebuild,
@@ -312,6 +312,11 @@ setDeferredRebuild(flushPendingRebuild)
 export function createMenu(mainWindow: BrowserWindow): void {
   mainWindowRef = mainWindow
   buildAndSetMenu(mainWindow)
+  // Prune MRU entries whose file is gone. Deliberately after the first build
+  // and off the menu path: this touches the filesystem, and one entry on a
+  // disconnected network mount used to block every window for the mount
+  // timeout. The menu is rebuilt only if the result actually changed.
+  void refreshRecentsExistence(() => rebuildApplicationMenu())
 }
 
 /**

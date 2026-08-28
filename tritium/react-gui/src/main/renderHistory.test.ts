@@ -158,3 +158,70 @@ describe('main render history work directories', () => {
     expect(fs.existsSync(outside)).toBe(true);
   });
 });
+
+/**
+ * HISTORY_DIR is a fixed path under os.tmpdir() shared by every instance, and
+ * CUEMOL_FRESH_PREFS deliberately gives a second instance its own
+ * single-instance lock domain -- so it acquires the lock, reaches the startup
+ * sweep, and used to delete the running instance's history and rm -rf its live
+ * work directories. movieOutput.sweepMovieSessions already guarded this way.
+ */
+/**
+ * HISTORY_DIR is a fixed path under os.tmpdir() shared by every instance, and
+ * CUEMOL_FRESH_PREFS deliberately gives a second instance its own
+ * single-instance lock domain -- so it acquires the lock, reaches the startup
+ * sweep, and used to delete the running instance's history and rm -rf its live
+ * work directories. movieOutput.sweepMovieSessions already guarded this way.
+ */
+describe('clearRenderHistory startup sweep ownership', () => {
+  /** The shared history directory the module writes into. */
+  const historyDir = (): string => path.join(os.tmpdir(), 'cuemol-render-history');
+  const indexFile = (): string => path.join(historyDir(), 'workdirs.json');
+
+  /** Seed the on-disk index as if `pid` had written it. */
+  function writeIndex(pid: number, dirs: string[]): void {
+    fs.mkdirSync(historyDir(), { recursive: true });
+    fs.writeFileSync(indexFile(), JSON.stringify({ pid, dirs }));
+  }
+
+  it('stands down when the index names another live process', () => {
+    const dir = path.join(srcDir, 'live-workdir');
+    fs.mkdirSync(dir, { recursive: true });
+    // The parent process: alive, and not us -- exactly the shape of a second
+    // instance finding the first one's index. (Portable, unlike pid 1.)
+    writeIndex(process.ppid, [dir]);
+
+    clearRenderHistory({ startup: true });
+
+    expect(fs.existsSync(dir)).toBe(true);
+    expect(fs.existsSync(indexFile())).toBe(true);
+  });
+
+  it('sweeps when the recorded owner is gone', () => {
+    // A pid no live process can hold on any supported platform.
+    writeIndex(2147483646, []);
+
+    clearRenderHistory({ startup: true });
+
+    expect(fs.existsSync(historyDir())).toBe(false);
+  });
+
+  it('the quit sweep always runs, even for its own index', () => {
+    writeIndex(process.pid, []);
+
+    clearRenderHistory();
+
+    expect(fs.existsSync(historyDir())).toBe(false);
+  });
+
+  it('still adopts a legacy bare-array index', () => {
+    const dir = path.join(srcDir, 'legacy-workdir');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.mkdirSync(historyDir(), { recursive: true });
+    fs.writeFileSync(indexFile(), JSON.stringify([dir]));
+
+    clearRenderHistory({ startup: true });
+
+    expect(fs.existsSync(dir)).toBe(false);
+  });
+});

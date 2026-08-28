@@ -97,7 +97,16 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
             })
             .catch(() => ({ ok: false }))
         : Promise.resolve({ ok: false });
-      void stored.then(() => {
+      void stored.then((res) => {
+        // Only publish an entry the archive actually holds. A failed store
+        // still produced a history row whose RENDER_HISTORY_READ returns null
+        // -- a blank frame in the render window, and "no longer available" from
+        // Save Image -- and left the render's work directory unregistered, so
+        // nothing ever reclaimed it.
+        if (!res?.ok) {
+          console.warn("render history store failed; entry not published:", result.id);
+          return;
+        }
         historyRef.current = [...historyRef.current, result].slice(
           -RENDER_HISTORY_LIMIT,
         );

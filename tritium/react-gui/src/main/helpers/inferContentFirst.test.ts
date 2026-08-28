@@ -77,3 +77,34 @@ describe('inferContentFirst', () => {
         expect(inferContentFirst('/data/1UBQ.PDB', FILTERS)).toBe(false)
     })
 })
+
+/**
+ * The filter rows carry multi-dot extensions (PDB Coordinates ->
+ * *.pdb;*.ent;*.pdb.gz). Reducing the path to a single trailing segment made
+ * "1crn.pdb.gz" match no reader-specific row, so the user's explicit PDB
+ * choice was discarded and the reader re-sniffed from content.
+ */
+describe('multi-dot extensions', () => {
+    const filters = [
+        { name: 'All Supported', extensions: ['pdb', 'ent', 'pdb.gz', 'cif', 'cif.gz'] },
+        { name: 'PDB Coordinates', extensions: ['pdb', 'ent', 'pdb.gz'] },
+        { name: 'mmCIF Coordinates', extensions: ['cif', 'cif.gz'] },
+        { name: 'All Files', extensions: ['*'] },
+    ]
+
+    it('resolves a .pdb.gz to the PDB row alone', () => {
+        expect(inferContentFirst('/tmp/1crn.pdb.gz', filters)).toBe(false)
+    })
+
+    it('resolves a .cif.gz to the mmCIF row alone', () => {
+        expect(inferContentFirst('/tmp/1crn.cif.gz', filters)).toBe(false)
+    })
+
+    it('still resolves a plain .pdb', () => {
+        expect(inferContentFirst('/tmp/1crn.pdb', filters)).toBe(false)
+    })
+
+    it('falls back to sniffing for an extension no row claims', () => {
+        expect(inferContentFirst('/tmp/1crn.xyz', filters)).toBe(true)
+    })
+})

@@ -57,16 +57,52 @@ function ensureDir(): boolean {
 }
 
 /**
+ * Whether a process is still running. EPERM means it exists but belongs to
+ * another user -- alive as far as this check is concerned. Mirrors the guard
+ * movieOutput.ts uses for the same reason.
+ */
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM'
+  }
+}
+
+/**
  * Remove the whole store. Called at startup (clearing a crashed run's images)
  * and on quit; the history is deliberately not kept across app runs, since the
  * settings that produced each render are not either.
+ *
+ * @param opts.startup - true for the boot-time sweep. HISTORY_DIR is a fixed
+ *   path under os.tmpdir() shared by every instance, and CUEMOL_FRESH_PREFS
+ *   deliberately gives a second instance its own single-instance lock domain,
+ *   so that instance reaches this sweep while the first is still running. The
+ *   startup sweep therefore stands down when the recorded owner is another
+ *   live process -- otherwise it deleted the running instance's history and
+ *   rm -rf'd its live work directories. The quit sweep always runs: it is
+ *   clearing up after itself.
  */
-export function clearRenderHistory(): void {
+export function clearRenderHistory(opts: { startup?: boolean } = {}): void {
+  const index = readWorkDirIndex()
+  if (
+    opts.startup &&
+    index.ownerPid !== null &&
+    index.ownerPid !== process.pid &&
+    isPidAlive(index.ownerPid)
+  ) {
+    console.log(
+      `[Main] render history is owned by live pid ${index.ownerPid}; leaving it alone`,
+    )
+    return
+  }
+
   // Adopt a previous run's directories: the on-disk index outlived the
   // in-memory list when that run crashed. Done silently -- the images they
   // hold are unreachable (the history metadata died with that run), so there
   // is nothing for a user to decide.
-  for (const dir of readWorkDirIndex()) registerRenderWorkDir(dir)
+  for (const dir of index.dirs) registerRenderWorkDir(dir)
   clearRenderWorkDirs()
   archived = []
   try {
@@ -76,15 +112,25 @@ export function clearRenderHistory(): void {
   }
 }
 
-/** Work directories recorded on disk, or none when there is no usable index. */
-function readWorkDirIndex(): string[] {
+/**
+ * Work directories recorded on disk, with the pid of the run that wrote them.
+ *
+ * Accepts the legacy bare-array format as "no recorded owner", so an index
+ * written by an older build is still adopted rather than stranded.
+ */
+function readWorkDirIndex(): { ownerPid: number | null; dirs: string[] } {
+  const asDirs = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((d): d is string => typeof d === 'string') : []
   try {
     const parsed: unknown = JSON.parse(fs.readFileSync(WORKDIR_INDEX, 'utf8'))
-    return Array.isArray(parsed)
-      ? parsed.filter((d): d is string => typeof d === 'string')
-      : []
+    if (Array.isArray(parsed)) return { ownerPid: null, dirs: asDirs(parsed) }
+    const pid = (parsed as { pid?: unknown }).pid
+    return {
+      ownerPid: typeof pid === 'number' && Number.isInteger(pid) && pid > 0 ? pid : null,
+      dirs: asDirs((parsed as { dirs?: unknown }).dirs),
+    }
   } catch {
-    return []
+    return { ownerPid: null, dirs: [] }
   }
 }
 
@@ -92,7 +138,9 @@ function readWorkDirIndex(): string[] {
 function writeWorkDirIndex(): void {
   if (!ensureDir()) return
   try {
-    fs.writeFileSync(WORKDIR_INDEX, JSON.stringify(workDirs))
+    // The pid identifies the owner so another instance's startup sweep can
+    // tell "a crashed run's leftovers" from "a running instance's live data".
+    fs.writeFileSync(WORKDIR_INDEX, JSON.stringify({ pid: process.pid, dirs: workDirs }))
   } catch {
     /* losing the index only costs the next start's cleanup */
   }
