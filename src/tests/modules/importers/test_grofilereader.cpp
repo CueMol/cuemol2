@@ -118,6 +118,28 @@ const char *const kElementVariety =
     "    1RES    1HD    5   0.500   0.000   0.000\n"
     "   1.00000   1.00000   1.00000\n";
 
+// Residue number wraparound: the %5d field rolls 99999 over to 0, so the
+// water numbered 1 after the roll would otherwise collide with the protein
+// residue 1 (both would be A/1, and both carry an atom named "O").
+const char *const kResidWraparound =
+    "wraparound\n"
+    "    5\n"
+    "    1MET      N    1   0.100   0.000   0.000\n"
+    "    1MET      O    2   0.200   0.000   0.000\n"
+    "99999WAT      O    3   0.300   0.000   0.000\n"
+    "    0WAT      O    4   0.400   0.000   0.000\n"
+    "    1WAT      O    5   0.500   0.000   0.000\n"
+    "   1.00000   1.00000   1.00000\n";
+
+// Same atom name twice in one residue: an unfixable duplicate.
+const char *const kDuplicatedAtom =
+    "duplicated\n"
+    "    3\n"
+    "    1SOL     OW    1   0.100   0.000   0.000\n"
+    "    1SOL     OW    2   0.200   0.000   0.000\n"
+    "    1SOL    HW1    3   0.300   0.000   0.000\n"
+    "   1.00000   1.00000   1.00000\n";
+
 }  // namespace
 
 // ---- nm -> Angstrom conversion (the most important correctness pin) ----
@@ -281,6 +303,49 @@ TEST(GROFileReaderTest, NonNumericAtomCountThrows)
     GROFileReader reader;
     StrInStream ins(kBadCountLine, static_cast<int>(std::string(kBadCountLine).size()));
     EXPECT_THROW(reader.load(ins), GROFileFormatException);
+}
+
+// ---- Residue number wraparound (%5d overflow at 100000) ----
+
+TEST(GROFileReaderTest, ResidWraparoundKeepsResiduesSeparate)
+{
+    GROFileReader reader;
+    MolCoordPtr pMol = loadGRO(reader, kResidWraparound);
+    ASSERT_FALSE(pMol.isnull());
+    // No atom is lost to a residue-index collision.
+    ASSERT_EQ(pMol->getAtomSize(), 5);
+
+    // The protein residue keeps its original number.
+    MolAtomPtr pMetO = pMol->getAtom(LString("A"), molstr::ResidIndex(1),
+                                     LString("O"));
+    ASSERT_FALSE(pMetO.isnull());
+    EXPECT_EQ(pMetO->getResName(), LString("MET"));
+
+    // Residues after the wraparound are renumbered 100000, 100001, ...
+    EXPECT_FALSE(pMol->getResidue(LString("A"),
+                                  molstr::ResidIndex(99999)).isnull());
+    MolAtomPtr pWat0 = pMol->getAtom(LString("A"), molstr::ResidIndex(100000),
+                                     LString("O"));
+    ASSERT_FALSE(pWat0.isnull());
+    EXPECT_EQ(pWat0->getResName(), LString("WAT"));
+
+    MolAtomPtr pWat1 = pMol->getAtom(LString("A"), molstr::ResidIndex(100001),
+                                     LString("O"));
+    ASSERT_FALSE(pWat1.isnull());
+    EXPECT_EQ(pWat1->getResName(), LString("WAT"));
+}
+
+// ---- Unfixable duplicate: skipped, not fatal ----
+
+TEST(GROFileReaderTest, DuplicatedAtomIsSkippedNotFatal)
+{
+    GROFileReader reader;
+    MolCoordPtr pMol = loadGRO(reader, kDuplicatedAtom);
+    ASSERT_FALSE(pMol.isnull());
+    // The second OW is dropped; the remaining atoms are still read.
+    EXPECT_EQ(pMol->getAtomSize(), 2);
+    EXPECT_FALSE(pMol->getAtom(LString("A"), molstr::ResidIndex(1),
+                               LString("HW1")).isnull());
 }
 
 // ---- Element guessing from atom name ----

@@ -37,6 +37,12 @@ constexpr int GRO_DEFAULT_POS_WIDTH = 8;
 // Minimum length for a valid atom line: prefix + 3 standard position fields
 constexpr int GRO_MIN_ATOM_LINE_LEN = GRO_PREFIX_LEN + 3 * GRO_DEFAULT_POS_WIDTH;
 
+// The residue number is written as %5d, so it wraps around at 100000.
+constexpr int GRO_RESID_MODULO = 100000;
+
+// Upper bound on the per-file skipped-atom warnings written to the log.
+constexpr int GRO_MAX_WARN = 10;
+
 LString stripLineEnd(const LString &line)
 {
   return line.trim("\r\n");
@@ -46,7 +52,8 @@ LString stripLineEnd(const LString &line)
 
 GROFileReader::GROFileReader()
     : m_lineno(0), m_nDeclAtoms(0), m_nReadAtoms(0),
-      m_nPosWidth(GRO_DEFAULT_POS_WIDTH), m_curChain("A")
+      m_nPosWidth(GRO_DEFAULT_POS_WIDTH), m_curChain("A"), m_nResidOffset(0),
+      m_nPrevResid(0), m_bHasPrevResid(false), m_nSkipAtoms(0)
 {
 }
 
@@ -132,6 +139,10 @@ bool GROFileReader::read(qlib::InStream &ins)
   m_nPosWidth = GRO_DEFAULT_POS_WIDTH;
   m_title = LString();
   m_curChain = LString("A");
+  m_nResidOffset = 0;
+  m_nPrevResid = 0;
+  m_bHasPrevResid = false;
+  m_nSkipAtoms = 0;
 
   try {
     qlib::LineStream lin(ins);
@@ -159,6 +170,12 @@ bool GROFileReader::read(qlib::InStream &ins)
   }
 
   LOG_DPRINTLN("GROFileReader> read %d atoms", m_nReadAtoms);
+  if (m_nSkipAtoms > 0) {
+    LOG_DPRINTLN("GROFileReader> Warning: %d atom(s) skipped (duplicated in the "
+                 "same residue); the atom count no longer matches the file, so "
+                 "trajectory (xtc/trr/dcd) attachment will fail",
+                 m_nSkipAtoms);
+  }
 
   m_pMol = MolCoordPtr();
   return true;
@@ -191,7 +208,11 @@ bool GROFileReader::readFrame(qlib::LineStream &lin)
     return false;
   }
 
-  // Atom lines.
+  // Atom lines. The residue unwrapping state is per frame.
+  m_nResidOffset = 0;
+  m_nPrevResid = 0;
+  m_bHasPrevResid = false;
+
   for (int i = 0; i < m_nDeclAtoms; ++i) {
     if (!lin.ready()) {
       MB_THROW(GROFileFormatException,
@@ -204,8 +225,7 @@ bool GROFileReader::readFrame(qlib::LineStream &lin)
     if (i == 0) {
       determineFieldLayout(line);
     }
-    parseAtomLine(line);
-    ++m_nReadAtoms;
+    if (parseAtomLine(line)) ++m_nReadAtoms;
   }
 
   // Box vector line.
@@ -271,7 +291,7 @@ void GROFileReader::determineFieldLayout(const LString &line)
   m_nPosWidth = W;
 }
 
-void GROFileReader::parseAtomLine(const LString &line)
+bool GROFileReader::parseAtomLine(const LString &line)
 {
   const int len = static_cast<int>(line.length());
   const int required = GRO_PREFIX_LEN + 3 * m_nPosWidth;
@@ -280,7 +300,7 @@ void GROFileReader::parseAtomLine(const LString &line)
              LString::format("Atom line too short at line %d (length=%d, "
                              "expected>=%d): '%s'",
                              m_lineno, len, required, line.c_str()));
-    return;
+    return false;
   }
 
   // Fixed prefix: resid(0..5), resname(5..10), aname(10..15), atomid(15..20).
@@ -294,14 +314,37 @@ void GROFileReader::parseAtomLine(const LString &line)
     MB_THROW(GROFileFormatException,
              LString::format("Invalid residue number at line %d: '%s'",
                              m_lineno, resid_str.c_str()));
-    return;
+    return false;
   }
+
+  // The %5d residue field wraps around at 100000, so a decreasing residue
+  // number means the numbering restarted. Add a 100000 offset to keep the
+  // residue index unique and monotonic: for a genuine wraparound this
+  // restores the sequential numbering GROMACS intended, and for any other
+  // restart the original number is still recoverable as (index % 100000).
+  if (m_bHasPrevResid && resid < m_nPrevResid) {
+    m_nResidOffset += GRO_RESID_MODULO;
+    if (m_nPrevResid == GRO_RESID_MODULO - 1 && resid == 0) {
+      LOG_DPRINTLN("GROFileReader> residue number wraparound at line %d; "
+                   "renumbering the following residues from %d",
+                   m_lineno, m_nResidOffset);
+    }
+    else {
+      LOG_DPRINTLN("GROFileReader> Warning: residue number decreased at line "
+                   "%d (%d -> %d); renumbering the following residues with a "
+                   "%d offset",
+                   m_lineno, m_nPrevResid, resid, m_nResidOffset);
+    }
+  }
+  m_nPrevResid = resid;
+  m_bHasPrevResid = true;
+  const int ext_resid = resid + m_nResidOffset;
 
   if (resname.isEmpty()) resname = "UNK";
   if (aname.isEmpty()) {
     MB_THROW(GROFileFormatException,
              LString::format("Missing atom name at line %d", m_lineno));
-    return;
+    return false;
   }
 
   // Positions (nm in source, converted to Angstrom).
@@ -310,17 +353,17 @@ void GROFileReader::parseAtomLine(const LString &line)
   if (!line.substr(GRO_PREFIX_LEN + 0 * W, W).trim().toDouble(&x)) {
     MB_THROW(GROFileFormatException,
              LString::format("Invalid X coordinate at line %d", m_lineno));
-    return;
+    return false;
   }
   if (!line.substr(GRO_PREFIX_LEN + 1 * W, W).trim().toDouble(&y)) {
     MB_THROW(GROFileFormatException,
              LString::format("Invalid Y coordinate at line %d", m_lineno));
-    return;
+    return false;
   }
   if (!line.substr(GRO_PREFIX_LEN + 2 * W, W).trim().toDouble(&z)) {
     MB_THROW(GROFileFormatException,
              LString::format("Invalid Z coordinate at line %d", m_lineno));
-    return;
+    return false;
   }
   // Velocities (columns 20+3W .. 20+6W) are intentionally skipped:
   // MolAtom does not carry a velocity slot and the visualization use
@@ -333,17 +376,24 @@ void GROFileReader::parseAtomLine(const LString &line)
   pAtom->setName(aname);
   pAtom->setElement(guessElement(aname));
   pAtom->setChainName(m_curChain);
-  pAtom->setResIndex(ResidIndex(resid));
+  pAtom->setResIndex(ResidIndex(ext_resid));
   pAtom->setResName(resname);
   pAtom->setPos(pos);
 
   int aid = m_pMol->appendAtom(pAtom);
   if (aid < 0) {
-    MB_THROW(GROFileFormatException,
-             LString::format("Failed to append atom at line %d: %s/%d/%s",
-                             m_lineno, m_curChain.c_str(), resid, aname.c_str()));
-    return;
+    // Duplicated atom (same chain/residue/name): skip it and keep reading,
+    // so that a partially malformed file still loads.
+    ++m_nSkipAtoms;
+    if (m_nSkipAtoms <= GRO_MAX_WARN) {
+      LOG_DPRINTLN("GROFileReader> Warning: skipped duplicated atom at line "
+                   "%d: %s/%d/%s",
+                   m_lineno, m_curChain.c_str(), ext_resid, aname.c_str());
+    }
+    return false;
   }
+
+  return true;
 }
 
 void GROFileReader::parseBoxLine(const LString &line)

@@ -23,16 +23,25 @@ runs:
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/download_deplibs/run.sh $BASEDIR ${{ runner.os }} ${{ runner.arch }}
 
+  # The tarball comes from the third-party source mirror in CueMol/build_scripts
+  # rather than ftp.gnu.org, which is frequently unreachable and used to take the
+  # whole macOS matrix down with it.
   - name: Install autoconf 2.13 (macOS)
     if: ${{ runner.os == 'macOS' }}
     shell: bash
     run: |
-      curl -fsSL https://ftp.gnu.org/gnu/autoconf/autoconf-2.13.tar.gz | tar xz
-      cd autoconf-2.13
-      ./configure --prefix=$HOME/autoconf-2.13 --program-suffix=213
+      set -eux
+      . "${GITHUB_WORKSPACE}/build_scripts/deplibs.env"
+      TGZ="autoconf-${AUTOCONF213_VER}.tar.gz"
+      cd "${RUNNER_TEMP}"
+      curl -fsSL --retry 3 --connect-timeout 20 -o "$TGZ" "${THIRDPARTY_MIRROR_URL}/${TGZ}"
+      echo "${AUTOCONF213_SHA256}  $TGZ" | shasum -a 256 -c -
+      tar xzf "$TGZ"
+      cd "autoconf-${AUTOCONF213_VER}"
+      ./configure --prefix=$HOME/autoconf-${AUTOCONF213_VER} --program-suffix=213
       make
       make install
-      echo "$HOME/autoconf-2.13/bin" >> $GITHUB_PATH
+      echo "$HOME/autoconf-${AUTOCONF213_VER}/bin" >> $GITHUB_PATH
 
   - name: Check autoconf 2.13 (macOS)
     if: ${{ runner.os == 'macOS' }}
