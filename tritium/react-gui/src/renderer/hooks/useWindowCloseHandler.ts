@@ -64,11 +64,6 @@ export function useWindowCloseHandler({
           // UXP parity: switch to the tab being closed so the user sees
           // which scene the confirm dialog refers to.
           if (tab.type === "molview") setActiveTabRef.current(id);
-          // This step can sit on a "Save changes?" confirm for as long as the
-          // user takes. Tell main we are alive so its watchdog measures
-          // silence, not deliberation -- it used to force the window shut
-          // mid-decision and discard the unsaved scenes.
-          await api.invoke(IPC.WINDOW_CLOSE_PROGRESS);
           const ok = await handleCloseTabRef.current(id);
           if (!ok) {
             await api.invoke(IPC.WINDOW_CLOSE_PROCEED, { proceed: false });
@@ -78,7 +73,6 @@ export function useWindowCloseHandler({
         // All tabs confirmed: persist user-defined defaults before closing
         // (UXP onUnLoad). Failure must not block the close.
         if (onBeforeProceedRef.current) {
-          await api.invoke(IPC.WINDOW_CLOSE_PROGRESS);
           try {
             await onBeforeProceedRef.current();
           } catch {

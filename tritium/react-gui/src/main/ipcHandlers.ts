@@ -24,7 +24,6 @@ import { inferContentFirst } from './helpers/inferContentFirst'
 import { rebuildApplicationMenu, setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
 import { addRecent, clearRecents, getRecents } from './recentFiles'
 import { takeShellOpen } from './shellOpenQueue'
-import { armCloseWatchdog } from './windowManager'
 import {
   clearCloseWatchdog,
   setAppQuitting,
@@ -346,14 +345,6 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       case 'redo': wc.redo(); break
       case 'selectAll': wc.selectAll(); break
     }
-  })
-
-  // "Still working on the close": the renderer is about to wait on the user
-  // (a per-tab save confirm) or on a slow save. Re-arm the watchdog so its
-  // timeout measures renderer silence rather than how long a person takes to
-  // decide -- firing mid-decision discarded the unsaved scenes.
-  handleInvoke(IPC.WINDOW_CLOSE_PROGRESS, () => {
-    armCloseWatchdog(mainWindow)
   })
 
   // Renderer reply to a WINDOW_CLOSE_REQUEST. `proceed: true` means every

@@ -13,7 +13,7 @@ import {
 } from './stateStore'
 import { registerIpcHandlers } from './ipcHandlers'
 import { registerRenderWindowIpc } from './renderWindowIpc'
-import { resetMenuBlockReason, createMenu } from './menu'
+import { isBlocked, resetMenuBlockReason, createMenu } from './menu'
 import { registerTextContextMenu } from './textContextMenu'
 import { registerCuemolClipboardIpc } from './cuemolClipboard'
 import { getDevIconPath } from './helpers/appIcon'
@@ -99,29 +99,75 @@ function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
   armCloseWatchdog(win)
 }
 
+/** Windows whose renderer Chromium currently reports as unresponsive. */
+const unresponsiveWindows = new WeakSet<BrowserWindow>()
+
+/** Record Chromium's responsiveness verdict for `win`. */
+export function setRendererUnresponsive(win: BrowserWindow, value: boolean): void {
+  if (value) unresponsiveWindows.add(win)
+  else unresponsiveWindows.delete(win)
+}
+
+/**
+ * Whether the renderer is provably not running JavaScript right now.
+ *
+ * This -- not a stopwatch -- is what "the renderer cannot answer" means.
+ */
+function rendererCannotAnswer(win: BrowserWindow): boolean {
+  if (win.webContents.isDestroyed()) return true
+  if (win.webContents.isCrashed()) return true
+  return unresponsiveWindows.has(win)
+}
+
 /**
  * (Re-)start the WINDOW_CLOSE_REQUEST watchdog for `win`.
  *
- * The watchdog exists for a renderer that never replies at all -- crashed, or
- * wedged in a loop -- so the user is not left unable to quit. It must not fire
- * while the renderer is simply *waiting on the user*: the close chain walks
- * every tab and shows a "Save changes?" confirm for each modified scene, so a
- * user who thinks for more than the timeout, or a save that takes longer than
- * it, would have had the window forced shut and the unsaved scenes discarded.
+ * The watchdog exists so the user is never trapped by a renderer that cannot
+ * answer the close request. It must never fire because the renderer is *busy*
+ * or because the *user* is taking their time -- forcing the window shut then
+ * discards the unsaved scenes the confirm chain was asking about, which is the
+ * exact opposite of what the chain is for.
  *
- * The renderer therefore re-arms this before each step that can block on a
- * person (see IPC.WINDOW_CLOSE_PROGRESS), and the timeout only measures
- * silence.
+ * A timeout alone cannot tell those apart, so the timeout is only a polling
+ * interval here. When it elapses the window is closed only if the renderer is
+ * provably not running JavaScript (crashed, or reported unresponsive by
+ * Chromium). Otherwise:
+ *
+ *   - a modal is on screen -- the chain is waiting on a person. Main already
+ *     knows this: the renderer reports every dialog through
+ *     IPC.MENU_SET_MODAL_BLOCKED, and native dialogs go through
+ *     withMenuBlocked('native'). Wait.
+ *   - no modal, renderer alive -- it is working (a large scene write can take
+ *     a while). Wait.
+ *
+ * A renderer that is alive but whose chain has stalled on a logic bug is
+ * therefore never force-closed. That is deliberate: it cannot be told apart
+ * from slow work, its own re-entrancy guard means clearing the in-flight flag
+ * would not let the user retry anyway, and quitting on a guess costs the user
+ * their unsaved scenes. A crash still exits through 'render-process-gone'.
  */
 export function armCloseWatchdog(win: BrowserWindow): void {
   clearCloseWatchdog(win)
   const timer = setTimeout(() => {
     if (win.isDestroyed()) return
     if (!isCloseInFlight(win)) return
+
+    if (!rendererCannotAnswer(win)) {
+      // Alive. Either a dialog is up or the chain is still working; keep
+      // waiting rather than throwing away what it is trying to save.
+      if (!isBlocked()) {
+        console.warn(
+          '[Main] no WINDOW_CLOSE_PROCEED after',
+          WINDOW_CLOSE_WATCHDOG_MS,
+          'ms, but the renderer is responsive; still waiting',
+        )
+      }
+      armCloseWatchdog(win)
+      return
+    }
+
     console.error(
-      '[Main] WINDOW_CLOSE_REQUEST watchdog fired after',
-      WINDOW_CLOSE_WATCHDOG_MS,
-      'ms of silence; forcing close',
+      '[Main] renderer cannot answer WINDOW_CLOSE_REQUEST (crashed or unresponsive); forcing close',
     )
     setCloseInFlight(win, false)
     setCloseConfirmed(win, true)
@@ -268,9 +314,11 @@ export function createWindow(): void {
   // work and false-positive force-quits would be worse than the symptom.
   win.webContents.on('unresponsive', () => {
     console.error('[Main] renderer unresponsive')
+    setRendererUnresponsive(win, true)
   })
   win.webContents.on('responsive', () => {
     console.log('[Main] renderer responsive again')
+    setRendererUnresponsive(win, false)
   })
 
   trackWindowState(win, loadWindowBounds, saveWindowBounds)

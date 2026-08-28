@@ -82,6 +82,8 @@ interface FakeWebContents {
   on: ReturnType<typeof vi.fn>
   openDevTools: ReturnType<typeof vi.fn>
   listeners: Map<string, Listener[]>
+  isDestroyed: ReturnType<typeof vi.fn>
+  isCrashed: ReturnType<typeof vi.fn>
 }
 
 interface FakeWindow {
@@ -97,6 +99,8 @@ function makeWebContents(): FakeWebContents {
   return {
     send: vi.fn(),
     openDevTools: vi.fn(),
+    isDestroyed: vi.fn(() => false),
+    isCrashed: vi.fn(() => false),
     on: vi.fn((event: string, cb: Listener) => {
       const l = listeners.get(event) ?? []
       l.push(cb)
@@ -168,12 +172,15 @@ vi.mock('@main/stateStore', () => ({
   loadWindowBounds: vi.fn(() => null),
   saveWindowBounds: vi.fn(),
 }))
+const menuBlocked = { value: false }
 vi.mock('@main/menu', () => ({
   rebuildApplicationMenu: vi.fn(),
   setMenuBlocked: vi.fn(),
+  resetMenuBlockReason: vi.fn(),
   updateMenuState: vi.fn(),
   withMenuBlocked: vi.fn((_m: unknown, fn: () => unknown) => fn()),
   createMenu: vi.fn(),
+  isBlocked: vi.fn(() => menuBlocked.value),
 }))
 vi.mock('@main/textContextMenu', () => ({ registerTextContextMenu: vi.fn() }))
 vi.mock('@main/recentFiles', () => ({
@@ -207,6 +214,8 @@ interface IpcHandlersModule {
   registerIpcHandlers(win: unknown): void
 }
 interface QuitStateModule {
+  WINDOW_CLOSE_WATCHDOG_MS: number
+  setCloseInFlight(win: object, value: boolean): void
   isAppQuitting(): boolean
   setAppQuitting(v: boolean): void
   isForceQuit(): boolean
@@ -435,5 +444,89 @@ describe('handleWindowClose funnel + render-process-gone (main/windowManager.ts)
     expect(quitState.isForceQuit()).toBe(true)
     expect(quitState.isAppQuitting()).toBe(true)
     expect(appExit).toHaveBeenCalledWith(1)
+  })
+
+  /**
+   * The watchdog is there so the user is never trapped by a renderer that
+   * cannot answer. It must never fire because the renderer is busy, or because
+   * the *user* is taking their time -- forcing the window shut then discards
+   * the very scenes the confirm chain was asking about.
+   */
+  describe('close watchdog', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      menuBlocked.value = false
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+      menuBlocked.value = false
+    })
+
+    /** Let the watchdog interval elapse `times` over. */
+    function elapse(times = 1): void {
+      for (let i = 0; i < times; i++) {
+        vi.advanceTimersByTime(quitState.WINDOW_CLOSE_WATCHDOG_MS + 1)
+      }
+    }
+
+    it('does not close while a dialog is on screen, however long the user takes', async () => {
+      const { win, fireClose } = await buildWindow()
+      fireClose(makeEvent())
+      win.close.mockClear()
+      // The renderer reported a modal through MENU_SET_MODAL_BLOCKED.
+      menuBlocked.value = true
+
+      elapse(6)
+
+      expect(win.close).not.toHaveBeenCalled()
+      expect(quitState.isCloseInFlight(win as object)).toBe(true)
+    })
+
+    it('does not close while the renderer is alive and simply slow', async () => {
+      const { win, fireClose } = await buildWindow()
+      fireClose(makeEvent())
+      win.close.mockClear()
+
+      elapse(3)
+
+      expect(win.close).not.toHaveBeenCalled()
+      expect(quitState.isCloseInFlight(win as object)).toBe(true)
+    })
+
+    it('closes once Chromium reports the renderer unresponsive', async () => {
+      const { win, fireClose } = await buildWindow()
+      fireClose(makeEvent())
+      win.close.mockClear()
+
+      const unresponsive = win.webContents.listeners.get('unresponsive') ?? []
+      unresponsive[0]?.()
+      elapse()
+
+      expect(win.close).toHaveBeenCalledTimes(1)
+      expect(quitState.isCloseConfirmed(win as object)).toBe(true)
+    })
+
+    it('closes when the renderer has crashed', async () => {
+      const { win, fireClose } = await buildWindow()
+      fireClose(makeEvent())
+      win.close.mockClear()
+      win.webContents.isCrashed.mockReturnValue(true)
+
+      elapse()
+
+      expect(win.close).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops once the renderer replies', async () => {
+      const { win, fireClose } = await buildWindow()
+      fireClose(makeEvent())
+      win.close.mockClear()
+      // WINDOW_CLOSE_PROCEED clears the in-flight flag.
+      quitState.setCloseInFlight(win as object, false)
+
+      elapse(3)
+
+      expect(win.close).not.toHaveBeenCalled()
+    })
   })
 })

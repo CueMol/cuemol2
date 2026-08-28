@@ -93,10 +93,7 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     vi.restoreAllMocks()
   })
 
-/**
- * PROCEED replies only. The chain also emits WINDOW_CLOSE_PROGRESS pings to
- * re-arm main's watchdog; those are asserted separately.
- */
+/** PROCEED replies only, ignoring any other channel the chain touches. */
 function proceedCalls(api: Record<string, unknown>): unknown[][] {
   const invoke = api.invoke as { mock: { calls: unknown[][] } }
   return invoke.mock.calls.filter((c) => c[0] === IPC.WINDOW_CLOSE_PROCEED)
@@ -159,8 +156,7 @@ function proceedCalls(api: Record<string, unknown>): unknown[][] {
 
     expect(onBeforeProceed).toHaveBeenCalledTimes(1)
     // Save runs before the proceed reply.
-    expect(order.filter((e) => e !== `invoke:${IPC.WINDOW_CLOSE_PROGRESS}`))
-      .toEqual(['save', `invoke:${IPC.WINDOW_CLOSE_PROCEED}`])
+    expect(order).toEqual(['save', `invoke:${IPC.WINDOW_CLOSE_PROCEED}`])
     expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     h.unmount()
@@ -263,25 +259,4 @@ function proceedCalls(api: Record<string, unknown>): unknown[][] {
     h.unmount()
   })
 
-  /**
-   * The per-tab confirm can sit on the user for as long as they take. The
-   * watchdog must therefore measure renderer silence, not deliberation, so the
-   * chain pings before each step that can block on a person.
-   */
-  it('pings WINDOW_CLOSE_PROGRESS before each tab confirm', async () => {
-    const tabs: TabData[] = [
-      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
-      { id: 'molview-2', title: 'B', icon: 'file.molview', type: 'molview', viewId: 2 },
-    ]
-    const h = mount({ tabs, closeResults: [true, true] })
-
-    await h.triggerCloseRequest()
-
-    const pings = h.api.invoke.mock.calls.filter(
-      (c: unknown[]) => c[0] === IPC.WINDOW_CLOSE_PROGRESS,
-    )
-    expect(pings.length).toBeGreaterThanOrEqual(tabs.length)
-
-    h.unmount()
-  })
 })

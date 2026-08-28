@@ -114,7 +114,6 @@ export const IPC = {
   // through win.on('close'))
   WINDOW_CLOSE_REQUEST: 'window:close-request',
   WINDOW_CLOSE_PROCEED: 'window:close-proceed',
-  WINDOW_CLOSE_PROGRESS: 'window:close-progress',
 
   // Window menu: raise the main window (the Rendering window has its own
   // open-or-focus channel, RENDER_WINDOW_OPEN).
