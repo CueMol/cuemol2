@@ -422,6 +422,8 @@ export interface FakeScene {
     getRendByName: (name: string) => FakeRenderer | null;
     getView: Mock<(uid: number) => FakeView | null>;
     getViewCount: () => number;
+    createView: Mock<() => FakeView>;
+    clearAllData: Mock<() => void>;
     addObject: Mock<(obj: FakeObject) => void>;
     destroyObject: Mock<(uid: number) => boolean>;
     getSceneDataJSON: Mock<() => string>;
@@ -488,6 +490,24 @@ export function fakeScene(opts: FakeSceneOptions = {}): FakeScene {
         getRendByName: (name: string) => allRenderers().find((r) => r.name === name) ?? null,
         getView: vi.fn((uid: number) => views.find((v) => v.uid === uid) ?? null),
         getViewCount: () => views.length,
+        createView: vi.fn(() => {
+            const view = fakeView({ log, tag: 'view' });
+            view.scene = scene as unknown as FakeScene;
+            views.push(view);
+            log?.push(`${tag}.createView`);
+            return view;
+        }),
+        clearAllData: vi.fn(() => {
+            // Mirrors C++ Scene::clearAllData: objects, renderers, cameras and
+            // undo history go; the view table survives.
+            objects.length = 0;
+            cameras.length = 0;
+            undo.started.length = 0;
+            undo.committed.length = 0;
+            undo.rolledBack.length = 0;
+            undo.open = null;
+            log?.push(`${tag}.clearAllData`);
+        }),
         addObject: vi.fn((obj: FakeObject) => {
             obj.scene = scene as unknown as FakeScene;
             objects.push(obj);

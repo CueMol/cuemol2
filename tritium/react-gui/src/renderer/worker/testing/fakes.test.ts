@@ -54,6 +54,24 @@ describe('object / renderer wiring', () => {
         expect('getCenter' in rend).toBe(false);
     });
 
+    it('createView attaches a view the scene resolves, and clearAllData spares it', () => {
+        const scene = fakeScene({ objects: [fakeObject({ name: 'mol' })], cameras: [fakeCamera({ name: 'cam' })] });
+        const view = scene.createView();
+        expect(scene.getView(view.uid)).toBe(view);
+        expect(view.getScene()).toBe(scene);
+        expect(scene.view_uids).toBe(String(view.uid));
+
+        // Mirrors C++ Scene::clearAllData: objects, renderers, cameras and the
+        // undo history go; the view table survives.
+        scene.startUndoTxn('edit');
+        scene.commitUndoTxn();
+        scene.clearAllData();
+        expect(scene.objects).toHaveLength(0);
+        expect(scene.cameras).toHaveLength(0);
+        expect(scene.undo.committed).toHaveLength(0);
+        expect(scene.views).toEqual([view]);
+    });
+
     it('a mol-like class gets fitView, a map does not', () => {
         expect(typeof fakeObject({ className: 'PDBMol' }).fitView).toBe('function');
         expect('fitView' in fakeObject({ className: 'DensityMap' })).toBe(false);
