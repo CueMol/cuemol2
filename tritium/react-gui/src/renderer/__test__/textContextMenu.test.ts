@@ -18,9 +18,9 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { APP_MENU, type AppMenuItem } from '../../shared/menuTemplate'
-import { buildTextCtxMenuNodes } from '../../shared/textCtxMenu'
-import { isSeparatorNode } from '../../shared/menuNodes'
+import { APP_MENU, type AppMenuItem } from '@shared/menuTemplate'
+import { buildTextCtxMenuNodes } from '@shared/textCtxMenu'
+import { isSeparatorNode } from '@shared/menuNodes'
 
 // textContextMenu.ts imports `Menu` from electron at module load; mock it so the
 // pure template builder can be exercised under jsdom without a real Electron.

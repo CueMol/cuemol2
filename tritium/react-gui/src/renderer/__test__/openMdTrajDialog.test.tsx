@@ -25,7 +25,7 @@ vi.mock('../contexts/ThemeContext', () => ({
 }))
 
 import { OpenMdTrajDialog } from '../components/dialogs/OpenMdTrajDialog'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { mountTree, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness'
 
 function button(label: string): HTMLButtonElement {

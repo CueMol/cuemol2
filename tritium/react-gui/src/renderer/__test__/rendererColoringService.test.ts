@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { services } from '../worker/server/services/rendererColoring.service'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import type { RendColoringId } from '../../shared/ipcTypes'
+import type { RendColoringId } from '@shared/ipcTypes'
 
 interface MakeFixtureOpts {
     /** Initial renderer.style value (UXP-style comma-separated). */

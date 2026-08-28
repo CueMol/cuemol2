@@ -19,8 +19,8 @@
  */
 
 import { useCallback, useEffect, useRef } from "react";
-import { IPC } from "../../shared/ipcChannels";
-import { RENDER_HISTORY_LIMIT } from "../../shared/renderHistory";
+import { IPC } from "@shared/ipcChannels";
+import { RENDER_HISTORY_LIMIT } from "@shared/renderHistory";
 import type {
   RenderJobWire,
   RenderTargetViewWire,
@@ -29,7 +29,7 @@ import type {
   RenderWindowCommand,
   RenderWindowStateUpdate,
   ViewSizePx,
-} from "../../shared/ipcTypes";
+} from "@shared/ipcTypes";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { RenderBinaries } from "../worker/shared/renderTypes";
 import type {

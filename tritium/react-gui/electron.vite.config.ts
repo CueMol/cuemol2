@@ -71,15 +71,45 @@ const workerGlobals: Record<string, string> = {
   path: 'require("path")',
 }
 
+// ---------------------------------------------------------------------------
+// Path aliases
+// ---------------------------------------------------------------------------
+// Mirrors `paths` in tsconfig.web.json / tsconfig.node.json. Declared as an
+// explicit `resolve.alias` (rather than relying on vite-tsconfig-paths alone)
+// because Vite does NOT apply plugins to the worker bundle, while `resolve` IS
+// inherited by it -- the Web Worker sources under src/renderer/worker/server
+// must be able to use the same aliases as the UI code.
+//
+// The renderer prefix is `@renderer`, not `@`: the sibling workspace package
+// @cuemol/core maps `@/*` onto its OWN src/ (core/tsconfig.json), and we deep
+// import core TypeScript sources (e.g. '@cuemol/core/src/cuemol' from
+// WorkerService.ts), so core modules are compiled inside our bundle. A bare `@`
+// alias here would capture core's internal `@/...` specifiers and resolve them
+// into src/renderer/. Today core only uses `@/` in type positions (erased
+// before bundling), so nothing breaks -- but the collision would appear
+// silently the day core adds a value import.
+const rendererAlias = {
+  '@renderer': resolve(__dirname, 'src/renderer'),
+  '@shared': resolve(__dirname, 'src/shared'),
+}
+
+const mainAlias = {
+  '@main': resolve(__dirname, 'src/main'),
+  '@shared': resolve(__dirname, 'src/shared'),
+}
+
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
+    resolve: { alias: mainAlias },
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
+    resolve: { alias: mainAlias },
   },
   renderer: {
     plugins: [react(), tsconfigPaths()],
+    resolve: { alias: rendererAlias },
     define: {
       __DEV_UI__: JSON.stringify(devUi),
     },

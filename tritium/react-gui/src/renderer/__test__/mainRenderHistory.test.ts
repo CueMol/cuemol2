@@ -20,7 +20,7 @@ import {
   registerRenderWorkDir,
   storeRenderImage,
 } from '../../main/renderHistory';
-import { RENDER_HISTORY_LIMIT } from '../../shared/renderHistory';
+import { RENDER_HISTORY_LIMIT } from '@shared/renderHistory';
 
 /** Directory holding the fake "rendered" PNGs a test archives from. */
 let srcDir: string;

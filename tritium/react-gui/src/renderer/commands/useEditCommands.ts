@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import type { SaveSceneOptions } from '../worker/server/services/saveScene.service'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'

@@ -17,8 +17,8 @@ import { createMenu } from './menu'
 import { registerTextContextMenu } from './textContextMenu'
 import { registerCuemolClipboardIpc } from './cuemolClipboard'
 import { getDevIconPath } from './helpers/appIcon'
-import { APP_PRODUCT_NAME } from '../shared/appInfo'
-import { IPC } from '../shared/ipcChannels'
+import { APP_PRODUCT_NAME } from '@shared/appInfo'
+import { IPC } from '@shared/ipcChannels'
 import {
   clearCloseWatchdog,
   isCloseConfirmed,

@@ -9,14 +9,14 @@
 import { ipcMain, app, dialog, nativeTheme, shell, BrowserWindow } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { IPC } from '../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import type {
   InvokeChannel,
   InvokeReq,
   InvokeRes,
-} from '../shared/ipcContract'
-import type { AppPathInfo, FileDialogOptions } from '../shared/ipcTypes'
-import { APP_PRODUCT_NAME } from '../shared/appInfo'
+} from '@shared/ipcContract'
+import type { AppPathInfo, FileDialogOptions } from '@shared/ipcTypes'
+import { APP_PRODUCT_NAME } from '@shared/appInfo'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
 import { showSceneContextMenu } from './sceneContextMenu'

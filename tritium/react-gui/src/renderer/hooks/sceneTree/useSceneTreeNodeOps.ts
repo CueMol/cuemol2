@@ -11,8 +11,8 @@ import type {
     SceneNodeType,
     SceneTreeNode,
 } from '../../worker/shared/sceneTreeTypes'
-import type { SelectMolKind } from '../../../shared/ipcTypes'
-import { IPC } from '../../../shared/ipcChannels'
+import type { SelectMolKind } from '@shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
 import { findNode, findTypedNode } from './sceneTreeNodeUtils'
 
 /** What a copy service returns for the caller to put on the clipboard. */

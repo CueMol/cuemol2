@@ -17,12 +17,12 @@ import { Alert, Button, Popover } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
 import { Tooltip } from "../../h3-kit/Tooltip";
 import { SliderField } from "../../h3-kit/form";
-import { IPC } from "../../../shared/ipcChannels";
+import { IPC } from "@shared/ipcChannels";
 
 import { RenderImageViewer } from "./RenderImageViewer";
 import { useTheme } from "../../contexts/ThemeContext";
 import type { RenderResult } from "../../data/renderResult";
-import type { RenderImageRef } from "../../../shared/ipcTypes";
+import type { RenderImageRef } from "@shared/ipcTypes";
 import type { PropDef } from "../../data/rendererProperties";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
 

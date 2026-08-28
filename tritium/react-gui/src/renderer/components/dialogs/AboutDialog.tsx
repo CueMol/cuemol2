@@ -3,7 +3,7 @@ import { Dialog, DialogBody, DialogFooter, Button } from '@blueprintjs/core';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCueMol } from '../../hooks/useCueMol';
 import aboutPng from '../../assets/about.png';
-import { APP_PRODUCT_NAME } from '../../../shared/appInfo';
+import { APP_PRODUCT_NAME } from '@shared/appInfo';
 
 interface Props {
   visible: boolean;

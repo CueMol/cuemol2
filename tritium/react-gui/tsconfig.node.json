@@ -3,6 +3,11 @@
   "include": ["electron.vite.config.*", "vitest.config.*", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"],
   "compilerOptions": {
     "composite": true,
-    "types": ["electron-vite/node", "vitest/globals"]
+    "types": ["electron-vite/node", "vitest/globals"],
+    "baseUrl": ".",
+    "paths": {
+      "@main/*": ["src/main/*"],
+      "@shared/*": ["src/shared/*"]
+    }
   }
 }

@@ -11,8 +11,8 @@
  * document. macOS never pushes this channel (native popup instead).
  */
 import { useEffect } from 'react'
-import { IPC } from '../../shared/ipcChannels'
-import { buildTextCtxMenuNodes } from '../../shared/textCtxMenu'
+import { IPC } from '@shared/ipcChannels'
+import { buildTextCtxMenuNodes } from '@shared/textCtxMenu'
 import { selectAllInScope } from '../utils/selectAllScope'
 import { useShowContextMenu } from '../components/menu/ContextMenuProvider'
 

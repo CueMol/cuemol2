@@ -11,7 +11,7 @@ import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act } from 'react';
 import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness';
-import { IPC } from '../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 import { ApbsConfigProvider, useApbsConfig } from '../contexts/ApbsConfigContext';
 import { DEFAULT_APBS_BINARIES } from '../worker/shared/apbsTypes';
 

@@ -18,8 +18,8 @@
 
 import { Menu } from 'electron'
 import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
-import { IPC } from '../shared/ipcChannels'
-import { buildTextCtxMenuNodes } from '../shared/textCtxMenu'
+import { IPC } from '@shared/ipcChannels'
+import { buildTextCtxMenuNodes } from '@shared/textCtxMenu'
 
 /**
  * Subset of Electron's `ContextMenuParams` consumed by the template builder.

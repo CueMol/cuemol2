@@ -314,6 +314,18 @@ tasks:
       # so its path has to come in from the caller rather than a default.
       - python3 scripts/make-icons.py "{{.MASTER}}"
 
+  lint_tritium:
+    desc: "Lint react-gui TypeScript with ESLint (layering + floating-promise rules; warn-only baseline)"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    cmds:
+      - pnpm run lint
+
+  typecheck_tritium:
+    desc: "Type-check react-gui (renderer+shared, then main+preload+shared)"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    cmds:
+      - pnpm run typecheck
+
   lint_tritium_style:
     desc: "Lint react-gui CSS for raw hex/px outside the design tokens (warn-only; not wired into build_tritium)"
     dir: "{{.ROOT_DIR}}/../tritium/react-gui"

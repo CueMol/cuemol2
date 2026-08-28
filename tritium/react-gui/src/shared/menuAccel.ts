@@ -36,7 +36,8 @@ const CMD_OR_CTRL = new Set(['cmdorctrl', 'commandorcontrol', 'cmd', 'command', 
  *
  * @param acc - accelerator string, e.g. `'CmdOrCtrl+Shift+O'`
  * @param isMac - true on darwin; selects glyphs over words
- * @returns display text, e.g. `'⇧⌘O'` on macOS, `'Ctrl+Shift+O'` elsewhere
+ * @returns display text: the Shift+Command glyph pair followed by the key on
+ *          macOS (U+21E7 U+2318 'O'), or `'Ctrl+Shift+O'` elsewhere
  */
 export function formatAccelerator(acc: string, isMac: boolean): string {
   const tokens = acc.split('+')

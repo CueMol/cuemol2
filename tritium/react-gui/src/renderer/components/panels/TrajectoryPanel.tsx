@@ -28,7 +28,7 @@ import { AppIcon } from '../AppIcon';
 import { ButtonRow, FormButton } from '../../h3-kit/form/ButtonRow';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
-import { IPC } from '../../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 import { useTrajectory } from '../../hooks/useTrajectory';
 import { useTrajPlayback } from '../../hooks/useTrajPlayback';
 import { TrajTransport } from './mdtraj/TrajTransport';

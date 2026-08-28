@@ -28,7 +28,7 @@
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { ANY_FRAME_FILE_RE, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
+import { ANY_FRAME_FILE_RE, MOVIE_FILE_EXTENSIONS } from '@shared/movieFrames'
 
 /** Fixed parent, so a previous run's session folders are found on restart. */
 const MOVIE_ROOT = path.join(os.tmpdir(), 'cuemol-movies')

@@ -8,7 +8,7 @@
 import { useCallback, type MutableRefObject } from 'react'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
-import type { ChangeRendSelKind, RendColoringId } from '../../../shared/ipcTypes'
+import type { ChangeRendSelKind, RendColoringId } from '@shared/ipcTypes'
 import type { RendererOptions } from '../../components/fopen-opt-dlgs/types'
 import { findTypedNode } from './sceneTreeNodeUtils'
 

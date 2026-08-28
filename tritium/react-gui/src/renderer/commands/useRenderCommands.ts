@@ -13,8 +13,8 @@
 
 import { useRegisterCommand } from "./CommandRegistry";
 import { CmdId } from "./ids";
-import { IPC } from "../../shared/ipcChannels";
-import type { RenderWindowOpenOptions } from "../../shared/ipcTypes";
+import { IPC } from "@shared/ipcChannels";
+import type { RenderWindowOpenOptions } from "@shared/ipcTypes";
 
 function openRenderWindow(opts: RenderWindowOpenOptions): void {
   window.electronAPI?.invoke(IPC.RENDER_WINDOW_OPEN, opts).catch((err: unknown) => {

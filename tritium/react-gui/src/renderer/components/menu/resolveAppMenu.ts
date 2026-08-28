@@ -9,11 +9,11 @@
  * available exporter list, and the dynamic "Open Recent" MRU expansion --
  * so the rendering side (`MenuPanel`) stays purely presentational.
  */
-import { getRoleLabel, isExportItemUnavailable } from '../../../shared/menuTemplate'
-import type { AppMenuItem } from '../../../shared/menuTemplate'
-import type { RecentFileEntry, SceneBgColor, ViewCenterMark } from '../../../shared/ipcTypes'
-import { SCENE_REQUIRING_MENU_IDS } from '../../../shared/menuStateApply'
-import type { MenuNode } from '../../../shared/menuNodes'
+import { getRoleLabel, isExportItemUnavailable } from '@shared/menuTemplate'
+import type { AppMenuItem } from '@shared/menuTemplate'
+import type { RecentFileEntry, SceneBgColor, ViewCenterMark } from '@shared/ipcTypes'
+import { SCENE_REQUIRING_MENU_IDS } from '@shared/menuStateApply'
+import type { MenuNode } from '@shared/menuNodes'
 
 /** Action payload resolved when a menu bar dropdown row is picked. */
 export type MenuBarPick =

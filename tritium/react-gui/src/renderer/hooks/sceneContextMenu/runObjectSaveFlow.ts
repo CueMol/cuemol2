@@ -13,7 +13,7 @@
  * filter list instead.
  */
 
-import { IPC } from '../../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 
 /** UXP default for the `save_writer_name` pref. */

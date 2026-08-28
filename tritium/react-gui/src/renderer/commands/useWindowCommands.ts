@@ -14,7 +14,7 @@
 
 import { useRegisterCommand } from "./CommandRegistry";
 import { CmdId } from "./ids";
-import { IPC } from "../../shared/ipcChannels";
+import { IPC } from "@shared/ipcChannels";
 
 export function useWindowCommands(): void {
   useRegisterCommand(CmdId.WindowFocusMain, () => {

@@ -15,8 +15,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { IPC } from '../../shared/ipcChannels';
-import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
+import { IPC } from '@shared/ipcChannels';
+import type { SceneBgColor, ViewCenterMark } from '@shared/ipcTypes';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
 
 interface UseActiveViewStateOptions {

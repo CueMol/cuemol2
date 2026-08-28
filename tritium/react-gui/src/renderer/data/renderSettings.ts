@@ -8,7 +8,7 @@
  * widgets (`PropEditors`) and accordion grouping can be reused as-is.
  */
 
-import { DEFAULT_MOVIE_BASE_NAME } from "../../shared/movieFrames";
+import { DEFAULT_MOVIE_BASE_NAME } from "@shared/movieFrames";
 import type { PropDef } from "./rendererProperties";
 
 /** Identifier of a rendering backend. Extended as backends are added. */

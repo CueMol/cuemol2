@@ -17,7 +17,7 @@ import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
 import { TrajectoryPanel } from "./TrajectoryPanel";
 import { useLogActions, useLogContents } from "../../contexts/LogContext";
-import { IPC } from "../../../shared/ipcChannels";
+import { IPC } from "@shared/ipcChannels";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 
 // ---------------------------------------------

@@ -51,7 +51,7 @@ import {
     RejectNumberInput,
 } from '../../h3-kit/form'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { RendColoringId } from '../../../shared/ipcTypes'
+import type { RendColoringId } from '@shared/ipcTypes'
 import type {
     BfacParams,
     ColoringTargetKind,
@@ -73,11 +73,11 @@ import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
 import { useMolCoordObjects } from '../../hooks/useMolCoordObjects'
 import { PaintSelCell } from './PaintSelCell'
 import { fireService } from '../../utils/fireService'
-import { IPC } from '../../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { useClipboardScope } from '../../hooks/useClipboardScope'
 import { useColumnResize } from '../../hooks/useColumnResize'
 import { useShowContextMenu } from '../menu/ContextMenuProvider'
-import type { MenuNode } from '../../../shared/menuNodes'
+import type { MenuNode } from '@shared/menuNodes'
 
 // ------------------------------------------------------------
 // Coloring type dropdown items

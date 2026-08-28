@@ -23,9 +23,9 @@
  * switch -> table refactor (Step3).
  */
 import { describe, it, expect } from 'vitest'
-import { IPC } from '../../shared/ipcChannels'
-import { APP_MENU } from '../../shared/menuTemplate'
-import type { AppMenuItem } from '../../shared/menuTemplate'
+import { IPC } from '@shared/ipcChannels'
+import { APP_MENU } from '@shared/menuTemplate'
+import type { AppMenuItem } from '@shared/menuTemplate'
 import {
   MENU_ACTION_MAP,
   DEDICATED_DIRECT_CHANNELS,
@@ -34,7 +34,7 @@ import {
   isMenuActionChannel,
   isUnimplementedMenuAction,
   type MenuActionChannel,
-} from '../../shared/menuActionMap'
+} from '@shared/menuActionMap'
 
 /** Collect every ipcChannel string reachable in the APP_MENU tree. */
 function collectTemplateChannels(): Set<string> {

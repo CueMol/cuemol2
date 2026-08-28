@@ -44,7 +44,7 @@ vi.mock('../components/dialogs/QscWriterOptionDialogProvider', () => ({
 import { CommandProvider, useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import { useEditCommands } from '../commands/useEditCommands'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import {
     flushPromises,
     mountTree,

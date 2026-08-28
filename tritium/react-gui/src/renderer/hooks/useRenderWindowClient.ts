@@ -20,7 +20,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { IPC } from "../../shared/ipcChannels";
+import { IPC } from "@shared/ipcChannels";
 import type {
   RenderFramePreviewWire,
   RenderTargetViewWire,
@@ -30,7 +30,7 @@ import type {
   RenderViewCamera,
   HatchStyleSpecReply,
   ViewSizePx,
-} from "../../shared/ipcTypes";
+} from "@shared/ipcTypes";
 import type { RenderJob } from "./useRenderJob";
 import type {
   RenderResult,

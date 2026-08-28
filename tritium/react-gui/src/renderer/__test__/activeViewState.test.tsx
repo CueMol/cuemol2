@@ -21,7 +21,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useActiveViewState } from '../hooks/useActiveViewState'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { makeRenderHook, flushPromises, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 
 interface MockCm {

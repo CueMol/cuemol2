@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { CommandProvider, useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness'
 

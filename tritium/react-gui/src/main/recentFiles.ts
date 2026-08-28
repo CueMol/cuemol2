@@ -11,8 +11,8 @@
  */
 
 import fs from 'fs'
-import type { RecentFileEntry } from '../shared/ipcTypes'
-import { addToRecents, MAX_RECENTS } from '../shared/recentFilesLogic'
+import type { RecentFileEntry } from '@shared/ipcTypes'
+import { addToRecents, MAX_RECENTS } from '@shared/recentFilesLogic'
 import { loadRecentFiles, saveRecentFiles } from './stateStore'
 
 export { MAX_RECENTS }

@@ -4,8 +4,8 @@
  * actual load/save that just succeeded).
  */
 
-import { IPC } from '../../shared/ipcChannels'
-import type { RecentFileType } from '../../shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import type { RecentFileType } from '@shared/ipcTypes'
 
 export function addRecent(
     path: string,

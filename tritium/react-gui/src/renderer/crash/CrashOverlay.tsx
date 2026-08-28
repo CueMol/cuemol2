@@ -11,8 +11,8 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { IPC } from '../../shared/ipcChannels'
-import type { CrashReport } from '../../shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import type { CrashReport } from '@shared/ipcTypes'
 import { getCurrentCrash, subscribe } from './CrashReporter'
 
 interface Props {

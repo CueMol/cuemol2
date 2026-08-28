@@ -13,8 +13,8 @@
  * and (d) notify subscribers (React `ErrorBoundary` -> `CrashOverlay`).
  */
 
-import { IPC } from '../../shared/ipcChannels'
-import type { CrashReport } from '../../shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import type { CrashReport } from '@shared/ipcTypes'
 import { mountFallbackDom } from './mountFallbackDom'
 
 type Subscriber = (report: CrashReport) => void

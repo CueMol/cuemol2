@@ -14,7 +14,7 @@
 
 import { useEffect, useRef } from "react";
 import type React from "react";
-import { IPC } from "../../shared/ipcChannels";
+import { IPC } from "@shared/ipcChannels";
 import type { TabData } from "../types";
 
 interface UseWindowCloseHandlerOptions {

@@ -14,9 +14,9 @@
 import React from "react";
 import { Tag } from "@blueprintjs/core";
 import appIcon from "../../assets/app-icon.png";
-import { APP_PRODUCT_NAME } from "../../../shared/appInfo";
-import { findMenuItemById } from "../../../shared/menuTemplate";
-import { formatAccelerator } from "../../../shared/menuAccel";
+import { APP_PRODUCT_NAME } from "@shared/appInfo";
+import { findMenuItemById } from "@shared/menuTemplate";
+import { formatAccelerator } from "@shared/menuAccel";
 
 /**
  * Menu item ids quoted on the start screen, in display order: the core

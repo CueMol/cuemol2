@@ -24,7 +24,7 @@ vi.mock('../hooks/useCueMol', () => ({
   useCueMol: () => ({ cueMolReady: false, cm: null }),
 }))
 
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import {
   ModalOpenCounterProvider,
   ModalOpenCounterTestProvider,

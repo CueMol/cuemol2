@@ -27,7 +27,7 @@ import React, {
   useEffect,
   useMemo,
 } from 'react';
-import { IPC } from '../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 import {
   type ApbsBinaries,
   DEFAULT_APBS_BINARIES,

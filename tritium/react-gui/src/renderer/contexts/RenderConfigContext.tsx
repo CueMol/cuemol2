@@ -23,7 +23,7 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import { IPC } from "../../shared/ipcChannels";
+import { IPC } from "@shared/ipcChannels";
 import {
   type RenderBinaries,
   DEFAULT_RENDER_BINARIES,

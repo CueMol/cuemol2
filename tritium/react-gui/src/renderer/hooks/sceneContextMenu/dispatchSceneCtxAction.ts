@@ -13,8 +13,8 @@ import type {
     RendColoringId,
     SceneCtxAction,
     SelectMolKind,
-} from '../../../shared/ipcTypes'
-import { IPC } from '../../../shared/ipcChannels'
+} from '@shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { RendererOptions } from '../../components/fopen-opt-dlgs/types'

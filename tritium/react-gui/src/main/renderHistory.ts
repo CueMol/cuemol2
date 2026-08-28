@@ -16,7 +16,7 @@
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { RENDER_HISTORY_LIMIT, renderHistoryFileName } from '../shared/renderHistory'
+import { RENDER_HISTORY_LIMIT, renderHistoryFileName } from '@shared/renderHistory'
 
 /** Fixed directory name, so a crashed run's leftovers are found on restart. */
 const HISTORY_DIR = path.join(os.tmpdir(), 'cuemol-render-history')

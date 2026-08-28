@@ -16,7 +16,7 @@ import type {
   InvokeRes,
   PushCallback,
   PushChannel,
-} from '../shared/ipcContract'
+} from '@shared/ipcContract'
 
 const api: ElectronAPI = {
   platform: process.platform,

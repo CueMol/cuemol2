@@ -58,7 +58,7 @@ import {
   movieFileNames,
   movieFrameFileName,
   resolveMovieBaseName,
-} from "../../../../shared/movieFrames";
+} from "@shared/movieFrames";
 import {
   buildFfmpegArgs,
   movieOutputPath,

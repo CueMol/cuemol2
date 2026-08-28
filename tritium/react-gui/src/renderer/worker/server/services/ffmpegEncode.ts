@@ -13,7 +13,7 @@
 
 import * as path from "path";
 
-import { movieFrameFileName } from "../../../../shared/movieFrames";
+import { movieFrameFileName } from "@shared/movieFrames";
 import { MOVIE_FORMAT_EXT, type MovieFormatId } from "../../../data/renderSettings";
 
 /** Codec / container options per format (UXP `onOutFmtChg`). */

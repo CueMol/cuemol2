@@ -7,8 +7,8 @@
  */
 import { Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
-import type { NaviCtxAction, NaviCtxMenuPayload } from '../shared/ipcTypes'
-import { buildNaviCtxMenuNodes } from '../shared/naviCtxMenu'
+import type { NaviCtxAction, NaviCtxMenuPayload } from '@shared/ipcTypes'
+import { buildNaviCtxMenuNodes } from '@shared/naviCtxMenu'
 import { toElectronTemplate } from './menuNodeAdapter'
 
 export function showNaviContextMenu(

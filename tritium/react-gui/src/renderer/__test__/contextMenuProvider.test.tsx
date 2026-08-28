@@ -12,7 +12,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import { ContextMenuProvider, useShowContextMenu } from '../components/menu/ContextMenuProvider'
 import type { ShowContextMenuFn } from '../components/menu/ContextMenuProvider'
-import type { MenuNode } from '../../shared/menuNodes'
+import type { MenuNode } from '@shared/menuNodes'
 
 void React
 

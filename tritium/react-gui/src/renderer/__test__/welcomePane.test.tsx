@@ -14,9 +14,9 @@ import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import { WelcomePane } from '../components/panes/WelcomePane'
-import { APP_PRODUCT_NAME } from '../../shared/appInfo'
-import { findMenuItemById } from '../../shared/menuTemplate'
-import { formatAccelerator } from '../../shared/menuAccel'
+import { APP_PRODUCT_NAME } from '@shared/appInfo'
+import { findMenuItemById } from '@shared/menuTemplate'
+import { formatAccelerator } from '@shared/menuAccel'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 

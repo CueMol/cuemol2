@@ -34,7 +34,7 @@ import { isRenderJobActive } from "../../hooks/useRenderJob";
 import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
 import { RENDER_BACKEND_IDS } from "../../data/renderBackends";
 import { sizePresetsForMode } from "../../data/renderSettings";
-import { IPC } from "../../../shared/ipcChannels";
+import { IPC } from "@shared/ipcChannels";
 
 export const RenderWindowApp: React.FC = () => {
   const client = useRenderWindowClient();

@@ -39,8 +39,8 @@ vi.mock('electron', () => ({
   ipcRenderer,
 }))
 
-import { IPC } from '../../shared/ipcChannels'
-import type { ElectronAPI } from '../../shared/ipcContract'
+import { IPC } from '@shared/ipcChannels'
+import type { ElectronAPI } from '@shared/ipcContract'
 
 let api: ElectronAPI
 

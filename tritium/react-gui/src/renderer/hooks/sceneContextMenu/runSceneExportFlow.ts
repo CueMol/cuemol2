@@ -11,7 +11,7 @@
  * both `*.png`).
  */
 
-import { IPC } from '../../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { ExportPngOptionsResult } from '../../components/dialogs/ExportPngOptionsDialog'
 

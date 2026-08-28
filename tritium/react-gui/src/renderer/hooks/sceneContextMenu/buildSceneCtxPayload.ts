@@ -12,7 +12,7 @@
 
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
-import { IPC } from '../../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 
 /**
  * Renderer type names that don't support a `coloring` property -- matches

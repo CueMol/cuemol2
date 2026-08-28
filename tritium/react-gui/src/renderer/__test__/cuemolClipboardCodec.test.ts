@@ -27,7 +27,7 @@ import {
   fromUxpPaintJson,
   legacyFormatFor,
   toUxpPaintJson,
-} from '../../shared/cuemolClipboard'
+} from '@shared/cuemolClipboard'
 
 const utf8 = (s: string): Uint8Array => new Uint8Array(Buffer.from(s, 'utf8'))
 

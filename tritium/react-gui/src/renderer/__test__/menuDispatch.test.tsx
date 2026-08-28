@@ -16,7 +16,7 @@ import React from 'react'
 import { CommandProvider, useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import type { CommandKey } from '../commands/CommandMap'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
 import {
   makeRenderHook,

@@ -72,7 +72,7 @@ function bubbleSwapOrder(
     dst: OrderedItem,
     ori: ReorderOri,
 ): void {
-    let ord_1 = src.ui_order;
+    const ord_1 = src.ui_order;
     let ord_2 = dst.ui_order;
 
     // ori adjustment: shift the target slot up/down one row to reflect

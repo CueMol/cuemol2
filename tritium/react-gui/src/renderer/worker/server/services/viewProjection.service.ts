@@ -1,5 +1,5 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { ViewCenterMark } from '../../../../shared/ipcTypes';
+import type { ViewCenterMark } from '@shared/ipcTypes';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { WorkerContext } from '../types/WorkerContext';
 
