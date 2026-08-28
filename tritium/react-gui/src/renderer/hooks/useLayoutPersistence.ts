@@ -82,11 +82,18 @@ export function useLayoutPersistence() {
       return;
     }
 
-    Promise.all([api.invoke(IPC.LAYOUT_LOAD), api.invoke(IPC.UI_LOAD)]).then(([savedLayout, savedUi]) => {
-      if (savedLayout) setLayout((prev) => ({ ...prev, ...savedLayout }));
-      if (savedUi) setUi((prev) => ({ ...prev, ...savedUi }));
-      setLoaded(true);
-    });
+    Promise.all([api.invoke(IPC.LAYOUT_LOAD), api.invoke(IPC.UI_LOAD)])
+      .then(([savedLayout, savedUi]) => {
+        if (savedLayout) setLayout((prev) => ({ ...prev, ...savedLayout }));
+        if (savedUi) setUi((prev) => ({ ...prev, ...savedUi }));
+      })
+      .catch((err: unknown) => {
+        // Fall back to the defaults rather than leaving `loaded` false: App
+        // gates the whole main content area on it, so a rejected store read
+        // would render a permanently blank window.
+        console.warn('layout/ui load failed; using defaults:', err);
+      })
+      .finally(() => setLoaded(true));
   }, []);
 
   // --- Debounced save helpers ---

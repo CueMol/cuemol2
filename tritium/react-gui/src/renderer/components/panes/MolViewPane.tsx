@@ -80,7 +80,17 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     ;(async () => {
       if (cancelled || !canvasRef.current) return
       const dpr = window.devicePixelRatio || 1
-      await cm.bindCanvas(canvasRef.current, view_uid, dpr)
+      try {
+        await cm.bindCanvas(canvasRef.current, view_uid, dpr)
+      } catch (err) {
+        // transferControlToOffscreen() throws InvalidStateError if this
+        // element was ever transferred, and the worker call can reject.
+        // Clear the guard so a later mount can try again rather than leaving
+        // the view permanently blank.
+        initStartedRef.current = false
+        console.warn('bindCanvas failed:', err)
+        return
+      }
 
       // Send initial resize with actual layout dimensions.
       // The ResizeObserver may have already fired (and been ignored because

@@ -284,7 +284,9 @@ const App: React.FC = () => {
     if (tab?.type === 'molview' && tab.viewId !== undefined) {
       if (cm && cueMolReady) {
         setActiveViewByID(tab.viewId);
-        cm.activateView(tab.viewId);
+        cm.activateView(tab.viewId).catch((err: unknown) => {
+          console.warn('activateView failed:', err);
+        });
       }
     } else {
       clearActiveView();
