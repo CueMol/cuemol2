@@ -37,6 +37,16 @@ const NO_TEST_HELPERS = {
   message: 'Test helpers must not be imported from production code.',
 }
 
+/**
+ * `@/*` belongs to @cuemol/core (it maps onto core's own src/). tsconfig.web
+ * declares it so core's sources resolve when they are pulled into our program;
+ * react-gui code must never use it.
+ */
+const NO_CORE_ALIAS = {
+  group: ['@/**'],
+  message: 'The `@/` prefix is @cuemol/core\'s own alias. Use @renderer/ or @shared/.',
+}
+
 /** Relative specifiers that climb three or more levels. */
 const NO_DEEP_RELATIVE = {
   group: ['../../../**'],
@@ -48,7 +58,7 @@ const NO_DEEP_RELATIVE = {
 const restrict = (...patterns) => ({
   '@typescript-eslint/no-restricted-imports': [
     'warn',
-    { patterns: [NO_TEST_HELPERS, ...patterns] },
+    { patterns: [NO_TEST_HELPERS, NO_CORE_ALIAS, ...patterns] },
   ],
 })
 

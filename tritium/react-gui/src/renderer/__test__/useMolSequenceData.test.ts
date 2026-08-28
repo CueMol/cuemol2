@@ -1,5 +1,5 @@
 /**
- * Pin Phase 1 contract of `useMolSequenceData`:
+ * Pin the contract of `useMolSequenceData`:
  *
  *   - on mount with a sceneId: a single invokeService('getSeqPanelData',
  *     { sceneId }) call (no per-mol/per-chain fan-out -- the worker

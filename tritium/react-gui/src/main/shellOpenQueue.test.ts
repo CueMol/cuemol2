@@ -13,7 +13,7 @@ import {
   hasPendingShellOpen,
   resetShellOpenQueueForTests,
   takeShellOpen,
-} from '../../main/shellOpenQueue'
+} from '@main/shellOpenQueue'
 
 beforeEach(() => {
   resetShellOpenQueueForTests()

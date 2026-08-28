@@ -51,11 +51,6 @@ function makeCm() {
     return { invokeService }
 }
 
-function button(label: string): HTMLButtonElement | undefined {
-    return Array.from(document.body.querySelectorAll('button')).find(
-        (b) => b.textContent === label,
-    ) as HTMLButtonElement | undefined
-}
 
 function setNativeValue(el: HTMLInputElement, value: string): void {
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!

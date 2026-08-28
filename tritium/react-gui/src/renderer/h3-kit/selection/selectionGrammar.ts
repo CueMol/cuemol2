@@ -1,5 +1,5 @@
 /**
- * @file components/panes/selection/selectionGrammar.ts
+ * @file h3-kit/selection/selectionGrammar.ts
  * @description Grammar metadata for the Selection Builder: the set of
  * property keywords the builder can emit, how each keyword's value is
  * entered, and the built-in named macros.

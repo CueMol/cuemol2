@@ -1,5 +1,5 @@
 /**
- * Pin Phase 1 + Phase 2 contracts of `applyMolSelString.service`:
+ * Pin the contracts of `applyMolSelString.service`:
  *
  *   - applyMolSelString -> assigns mol.sel under "Change mol selection"
  *     undo txn, auto-creates the *selection renderer.

@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5b -- camera ctxmenu operations.
+// camera ctxmenu operations.
 //
 // Cameras are keyed by **name** at the Scene API level (`scene.{get,set,
 // has,destroy}Camera(name)`), not by uid. The tree-row id for synthesised

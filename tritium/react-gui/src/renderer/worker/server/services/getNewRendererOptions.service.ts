@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 4d: pre-fetch for the NewRendererDialog. Resolves the target obj
+// pre-fetch for the NewRendererDialog. Resolves the target obj
 // and reports its name, class, default renderer name suggestion, and the
 // list of compatible renderer types. Mirrors the data the UXP
 // `setupRendByObjID` flow stuffs into its `data[]` array before showing

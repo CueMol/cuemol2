@@ -1,5 +1,5 @@
 /**
- * Pin Phase 1 contracts of `seqPanelOps.service`:
+ * Pin the contracts of `seqPanelOps.service`:
  *
  *   - toggleResidueSelection -> ResidRangeSet.fromSel(mol.sel) ->
  *     contains(residue) ? remove(addSel) : append(addSel) ->

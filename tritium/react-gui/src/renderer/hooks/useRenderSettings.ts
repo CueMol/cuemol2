@@ -7,8 +7,8 @@
  * backend's own set. Switching backend keeps the common settings and
  * swaps in the new backend's defaults. A separate `preset` selection (used
  * by the BottomPanel Render tab) drives width / height; editing the size
- * directly resets the preset to "Custom". Phase 1 keeps a single in-memory
- * set; per-scene state is deferred to a later phase.
+ * directly resets the preset to "Custom". A single in-memory set is shared by
+ * every scene; per-scene render settings are not implemented.
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";

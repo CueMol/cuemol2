@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 6c -- camera "Edit visibility flags" (UXP `tools/visflagset-edit-dlg`).
+// camera "Edit visibility flags" (UXP `tools/visflagset-edit-dlg`).
 //
 // A camera optionally captures a per-object / per-renderer visibility set
 // (saved via `saveVisSettings`, applied via `loadVisSettings`). This service

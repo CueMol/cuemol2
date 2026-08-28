@@ -6,11 +6,8 @@
  * renderer-type-specific sections resolved from `getRendererPropSections`.
  * Both are backed by the live `getGenericProps` / `setGenericProp` bridge.
  *
- * This migration step has only the common page; per-type sections are still
- * empty, so a single collapsed placeholder (`DUMMY_SECTION`) is appended for
- * every renderer type. Once the per-type pages (ribbon / cpk / ...) are
- * ported, drop the placeholder and render `getRendererPropSections(type)`
- * directly -- unknown types then show the common page only.
+ * A renderer type with no registry entry gets a single collapsed placeholder
+ * (`DUMMY_SECTION`) after the common page, so the tab is never blank.
  */
 
 import React, { useMemo } from "react";

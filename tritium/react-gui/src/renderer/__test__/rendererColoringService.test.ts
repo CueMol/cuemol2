@@ -297,7 +297,7 @@ describe('setRendererColoring — failure modes', () => {
 })
 
 // -------------------------------------------------------------
-// Phase 1 (Coloring panel) -- new paint-type-* cases + listing,
+// Coloring panel -- paint-type-* cases + listing,
 // state fetch, Paint CRUD, default-color write.
 // -------------------------------------------------------------
 
@@ -1116,7 +1116,7 @@ describe('targetKind: "object" routes to scene.getObject', () => {
 })
 
 // -------------------------------------------------------------
-// Phase 2 -- CPK / Rainbow / Bfac decks
+// CPK / Rainbow / Bfac decks
 // -------------------------------------------------------------
 
 describe('setRendererColoring -- paint-type-cpk', () => {
@@ -1339,7 +1339,7 @@ describe('setColoringProp', () => {
 })
 
 // ============================================================
-// Elepot deck (Phase 3)
+// Elepot deck
 // ============================================================
 //
 // Elepot props live on the surface renderer itself (not on a coloring

@@ -69,7 +69,7 @@ export interface SceneTreeCoreState {
     tree: SceneTreeNode | null
     selectedId: string
     /**
-     * Multi-select set (Phase 4c). Primary `selectedId` is always present
+     * Multi-select set. Primary `selectedId` is always present
      * in `selectedIds` when non-empty; Cmd/Shift+click extends the set.
      */
     selectedIds: Set<string>

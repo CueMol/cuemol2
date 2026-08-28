@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { inferContentFirst, type FileFilter } from '../../main/helpers/inferContentFirst'
+import { inferContentFirst, type FileFilter } from '@main/helpers/inferContentFirst'
 
 // Realistic filter set produced by getOpenFilters.service.ts for the
 // object-reader category. PDB and CCP4/MRC have multi-extension rows;

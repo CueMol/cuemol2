@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 6c -- Create Renderer Style dialog support.
+// Create Renderer Style dialog support.
 //
 // UXP source:
 //   - `style/rendstyle_create.xul` / `rendstyle_create.js` -- dialog UI

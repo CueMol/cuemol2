@@ -1,5 +1,5 @@
 /**
- * @file components/panes/selection/selectionExpr.ts
+ * @file h3-kit/selection/selectionExpr.ts
  * @description Pure expression-building logic for the Selection Builder.
  *
  * The builder model keeps a single "current selection" expression and applies

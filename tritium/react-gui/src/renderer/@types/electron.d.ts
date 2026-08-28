@@ -1,3 +1,8 @@
+/// <reference types="vite/client" />
+// Pulls in Vite's ImportMeta augmentation, which is what types
+// `import.meta.glob` -- used by worker/server/services/index.ts to
+// auto-register the service modules.
+
 declare module '*.module.css' {
   const classes: Record<string, string>
   export default classes

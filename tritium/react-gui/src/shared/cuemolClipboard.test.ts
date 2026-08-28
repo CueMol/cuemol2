@@ -1,5 +1,5 @@
 /**
- * @file __test__/cuemolClipboardCodec.test.ts
+ * @file shared/cuemolClipboard.test.ts
  * @description Degrade-detection tests for the CueMol clipboard codec.
  *
  * This codec is the interop contract with the UXP CueMol2 app: if an

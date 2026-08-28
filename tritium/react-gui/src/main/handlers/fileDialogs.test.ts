@@ -27,14 +27,14 @@ vi.mock('electron', () => ({
 
 // withMenuBlocked wraps each dialog call; run the op transparently so the
 // dialog spy is reached and the menu side-effect is irrelevant under test.
-vi.mock('../../main/menu', () => ({
+vi.mock('@main/menu', () => ({
   withMenuBlocked: (_reason: string, op: () => unknown) => op(),
 }))
 
 // fileDialogs lives in src/main (tsconfig.node project). A string-variable
 // dynamic import keeps tsc's cross-project check (TS6307) off this file while
 // Vitest still resolves it at runtime -- same trick as quitState.test.ts.
-const fileDialogsEntry = '../../main/handlers/fileDialogs'
+const fileDialogsEntry = '@main/handlers/fileDialogs'
 
 type FileFilter = { name: string; extensions: string[] }
 interface FileDialogsModule {

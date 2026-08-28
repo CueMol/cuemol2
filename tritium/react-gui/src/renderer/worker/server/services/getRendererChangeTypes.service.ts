@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 6b: pre-fetch list of compatible renderer types for the
+// pre-fetch list of compatible renderer types for the
 // "Change type" submenu on `panel.workspace.ctxmenu.renderer`.
 // Mirrors UXP `ws.onChgRendTypeShowing` filter logic in
 // `workspace_panel.js`.
@@ -47,7 +47,7 @@ function getRendererChangeTypes(
     if (currentType.startsWith('*') && currentType !== '*selection') return empty;
     if (currentType === 'atomintr' || currentType === 'disorder') return empty;
     // *selection has its own conversion path (UXP setupRend dialog)
-    // that we don't migrate in Phase 6b -- gate it out too.
+    // that we do not migrate -- gate it out too.
     if (currentType === '*selection') return empty;
 
     const obj = rend.getClientObj() as CueMolObject | null;

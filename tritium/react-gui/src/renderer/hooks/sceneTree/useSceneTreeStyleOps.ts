@@ -1,6 +1,6 @@
 /**
  * @file hooks/sceneTree/useSceneTreeStyleOps.ts
- * @description Style-set operations (Phase 5c) plus scene-level operations
+ * @description Style-set operations plus scene-level operations
  * (background color, color proofing) for `useSceneTree`. These callbacks
  * dispatch directly to the worker without a tree lookup.
  */
@@ -9,7 +9,7 @@ import { useCallback, type MutableRefObject } from 'react'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 
 export interface SceneTreeStyleOps {
-    /** Phase 5c style ops. */
+    /** Style-set ops. */
     createStyleSet: (name: string) => Promise<{ ok: boolean; newId: number }>
     toggleStyleSetReadOnly: (
         nodeId: number,

@@ -160,7 +160,7 @@ vi.mock('electron', () => ({
 
 // ipcHandlers.ts pulls in several heavy main-process modules at import time.
 // Stub the ones unrelated to the close funnel so the module loads under jsdom.
-vi.mock('../../main/stateStore', () => ({
+vi.mock('@main/stateStore', () => ({
   loadLayout: vi.fn(),
   saveLayout: vi.fn(),
   loadUi: vi.fn(),
@@ -168,22 +168,22 @@ vi.mock('../../main/stateStore', () => ({
   loadWindowBounds: vi.fn(() => null),
   saveWindowBounds: vi.fn(),
 }))
-vi.mock('../../main/menu', () => ({
+vi.mock('@main/menu', () => ({
   rebuildApplicationMenu: vi.fn(),
   setMenuBlocked: vi.fn(),
   updateMenuState: vi.fn(),
   withMenuBlocked: vi.fn((_m: unknown, fn: () => unknown) => fn()),
   createMenu: vi.fn(),
 }))
-vi.mock('../../main/textContextMenu', () => ({ registerTextContextMenu: vi.fn() }))
-vi.mock('../../main/recentFiles', () => ({
+vi.mock('@main/textContextMenu', () => ({ registerTextContextMenu: vi.fn() }))
+vi.mock('@main/recentFiles', () => ({
   addRecent: vi.fn(() => []),
   clearRecents: vi.fn(() => []),
   getRecents: vi.fn(() => []),
 }))
-vi.mock('../../main/naviContextMenu', () => ({ showNaviContextMenu: vi.fn() }))
-vi.mock('../../main/sceneContextMenu', () => ({ showSceneContextMenu: vi.fn() }))
-vi.mock('../../main/handlers/fileDialogs', () => ({
+vi.mock('@main/naviContextMenu', () => ({ showNaviContextMenu: vi.fn() }))
+vi.mock('@main/sceneContextMenu', () => ({ showSceneContextMenu: vi.fn() }))
+vi.mock('@main/handlers/fileDialogs', () => ({
   handleSaveSceneDialog: vi.fn(),
   handleStyleOpenDialog: vi.fn(),
   handleStyleSaveDialog: vi.fn(),
@@ -194,13 +194,13 @@ vi.mock('../../main/handlers/fileDialogs', () => ({
   handlePickPathDialog: vi.fn(),
   handleSaveTextAsDialog: vi.fn(),
 }))
-vi.mock('../../main/helpers/inferContentFirst', () => ({ inferContentFirst: vi.fn(() => false) }))
+vi.mock('@main/helpers/inferContentFirst', () => ({ inferContentFirst: vi.fn(() => false) }))
 
 // String-variable dynamic import targets (dodge TS6307).
-const indexEntry = '../../main/index'
-const ipcHandlersEntry = '../../main/ipcHandlers'
-const windowManagerEntry = '../../main/windowManager'
-const quitStateEntry = '../../main/quitState'
+const indexEntry = '@main/index'
+const ipcHandlersEntry = '@main/ipcHandlers'
+const windowManagerEntry = '@main/windowManager'
+const quitStateEntry = '@main/quitState'
 
 interface IpcHandlersModule {
   registerIpcHandlers(win: unknown): void

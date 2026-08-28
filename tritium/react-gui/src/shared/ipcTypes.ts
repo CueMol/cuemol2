@@ -294,7 +294,7 @@ export interface TextCtxShowPayload {
 // - Scene-tree context menu (ScenePane right-click) -
 
 /**
- * Selection-submenu items applicable to object nodes (Phase 3b).
+ * Selection-submenu items applicable to object nodes.
  * Mirrors UXP `workspace_panel_molsel.js`.
  */
 export type SelectMolKind =
@@ -320,15 +320,15 @@ export type SelectMolKind =
   | 'aroundByres10'
 
 /**
- * Coloring-submenu IDs applicable to renderer nodes (Phase 3c).
+ * Coloring-submenu IDs applicable to renderer nodes.
  * Mirrors UXP `workspace_panel.xul` `wspcPanelRendColMenu` values.
  *
  * IDs prefixed with `style-` go through `Renderer.applyStyles` after
  * stripping existing `/Paint$/` entries (mirrors `Qm2Main.setRendColoring`'s
  * style-* branch). The suffix is the StyleManager style name; static labels
- * for the CPK molcol / dark / light wired in Phase 3c-1 are kept here as
+ * for the CPK molcol / dark / light variants are kept here as
  * literal subtypes for documentation. Dynamic Paint (Secondary str.) entries
- * (Phase 3c-2) fold into the same template-literal supertype.
+ * fold into the same template-literal supertype.
  *
  * IDs prefixed with `paint-type-` instantiate a fresh coloring object and
  * assign it to `rend.coloring`.
@@ -369,7 +369,7 @@ export type ChangeRendSelKind =
 
 /**
  * Discriminated action returned from the scene-tree native context menu.
- * Phase 3a covers the common items shared across node types; later phases
+ * The common items shared across node types are listed first; per-type items
  * add type-specific actions (selection ops, paint, camera/style file I/O).
  * Object-payload union (rather than a flat string union) keeps room to add
  * action arguments -- `selectMol` carries the chosen submenu item.
@@ -442,27 +442,27 @@ export interface SceneCtxMenuPayload {
   /** What the worker clipboard holds, used to gate Paste items. */
   clipboardKind: 'object' | 'renderer' | 'style' | 'camera' | null
   /**
-   * Whether the targeted renderer supports the Coloring submenu (Phase 3c).
+   * Whether the targeted renderer supports the Coloring submenu.
    * False for the special `*selection` / `*namelabel` / `atomintr` types
    * and for rendGroup containers. Renderer ctx only.
    */
   supportsColoring?: boolean
   /**
    * Dynamic entries for the "Paint (Secondary str.)" sub-submenu under
-   * Coloring (Phase 3c-2). Populated via `getPaintColoringStyles` worker
+   * Coloring. Populated via `getPaintColoringStyles` worker
    * service when `supportsColoring` is true; an empty list hides the
    * sub-submenu entirely.
    */
   paintStyles?: { name: string; label: string }[]
   /**
-   * Whether the Paint color-picker submenu (Phase 3c-3a) should appear.
+   * Whether the Paint color-picker submenu should appear.
    * True iff the renderer's current coloring is `PaintColoring` and the
    * parent mol has a non-empty selection -- matches UXP `checkPaintColoring`.
    * Pre-fetched via `getRendererPaintInfo` and gated client-side.
    */
   canPaint?: boolean
   /**
-   * Entries for the Style (shape) submenu (Phase 3c-3b). Pre-fetched via
+   * Entries for the Style (shape) submenu. Pre-fetched via
    * `getRendererStyleEntries`. Both groups can be empty; the submenu is
    * hidden when both are.
    */
@@ -517,19 +517,19 @@ export interface SceneCtxMenuPayload {
   canEditInteractions?: boolean
   /**
    * Selectable type names for the "Change type" submenu on the renderer
-   * ctx menu (Phase 6b). Pre-fetched via `getRendererChangeTypes` --
+   * ctx menu. Pre-fetched via `getRendererChangeTypes` --
    * an empty list hides the submenu and is the only signal the main
    * process uses (it does not re-evaluate gates).
    */
   rendChangeTypes?: string[]
   /**
-   * Multi-select context (Phase 4c). When `multiNodeIds.length > 1` AND
+   * Multi-select context. When `multiNodeIds.length > 1` AND
    * the right-clicked node is in the set, main renders the multi-only
    * menu (Show / Hide / Delete) instead of the type-specific branch.
    */
   multiNodeIds?: number[]
   /**
-   * Style-node pre-fetch (Phase 5c). Drives the Reload (has src) / Save
+   * Style-node pre-fetch. Drives the Reload (has src) / Save
    * (has src) / Read-only check + disable / Copy disable on global rows
    * gates in the style ctxmenu. Style ctx only.
    */
@@ -541,7 +541,7 @@ export interface SceneCtxMenuPayload {
     modified: boolean
   }
   /**
-   * Camera-node pre-fetch (Phase 5b). Drives Reload (has src) / Clear
+   * Camera-node pre-fetch. Drives Reload (has src) / Clear
    * vis flags (vis_size > 0) gates. Camera ctx only.
    */
   cameraInfo?: {

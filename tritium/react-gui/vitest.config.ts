@@ -22,7 +22,9 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    include: ["src/renderer/__test__/**/*.test.{ts,tsx}"],
+    // Tests live next to the module they cover; the renderer suite is still
+    // being migrated out of src/renderer/__test__/.
+    include: ["src/**/*.test.{ts,tsx}"],
     globals: false,
   },
 });

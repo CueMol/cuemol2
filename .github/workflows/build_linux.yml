@@ -147,6 +147,9 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    - name: Check tritium/react-gui
+      uses: ./build_scripts/check_tritium_react_gui
+
     - name: Build cuetty
       uses: ./build_scripts/build_cuetty_posix
       with:

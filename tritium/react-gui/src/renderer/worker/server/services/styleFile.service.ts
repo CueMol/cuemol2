@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5c -- style file I/O.
+// style file I/O.
 // Mirrors UXP `workspace_panel.js` handlers:
 //   - loadStyleSetFromFile      -> onStyLoadFile  (always loads as read-only)
 //   - saveStyleSetToFile        -> onStySaveFileAs (path-explicit save)

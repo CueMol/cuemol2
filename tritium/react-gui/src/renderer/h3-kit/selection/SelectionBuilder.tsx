@@ -1,5 +1,5 @@
 /**
- * @file components/panes/selection/SelectionBuilder.tsx
+ * @file h3-kit/selection/SelectionBuilder.tsx
  * @description Tabbed UI for picking or composing CueMol selection expressions
  * without typing the grammar. Hosted by the SelectionPane and the MolSelList
  * picker popover.

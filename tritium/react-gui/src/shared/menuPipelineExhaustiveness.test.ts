@@ -1,5 +1,5 @@
 /**
- * @file __test__/menuPipelineExhaustiveness.test.ts
+ * @file shared/menuPipelineExhaustiveness.test.ts
  * @description Step0 structural guard for the menu pipeline refactor (theme T6).
  *
  * The 4-table menu pipeline (menuTemplate ipcChannels -> menu.ts delivery

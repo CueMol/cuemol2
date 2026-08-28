@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { parseFileArgs } from '../../main/helpers/parseFileArgs'
+import { parseFileArgs } from '@main/helpers/parseFileArgs'
 
 /** Treat every path as an existing file unless it is listed as absent. */
 const allExist = () => true

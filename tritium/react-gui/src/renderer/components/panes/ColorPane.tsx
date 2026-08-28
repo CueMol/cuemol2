@@ -14,7 +14,7 @@
  *   - `panel.coloring.deck.solid`   -- defaultcolor picker
  *   - `panel.coloring.deck.undef`   -- "select a renderer" placeholder
  *   - `panel.coloring.deck.{cpk,rainbow,bfac,elepot,multigrad,script}`
- *                                   -- Phase 2+ placeholders
+ *                                   -- per-mode decks
  *
  * State flow:
  *   1. `usePaintCapableRenderers` lists candidate renderers for the active

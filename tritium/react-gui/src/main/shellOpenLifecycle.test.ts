@@ -64,18 +64,18 @@ vi.mock('electron', () => ({
 const createWindow = vi.fn()
 const getMainWindow = vi.fn<() => unknown>(() => null)
 const focusMainWindow = vi.fn()
-vi.mock('../../main/windowManager', () => ({
+vi.mock('@main/windowManager', () => ({
   createWindow,
   getMainWindow,
   focusMainWindow,
 }))
 
 const clearRenderHistory = vi.fn()
-vi.mock('../../main/renderHistory', () => ({ clearRenderHistory }))
-vi.mock('../../main/movieOutput', () => ({ sweepMovieOutputs: vi.fn() }))
-vi.mock('../../main/helpers/appIcon', () => ({ applyDevDockIcon: vi.fn() }))
-vi.mock('../../main/stateStore', () => ({ loadUi: vi.fn(() => ({ theme: 'dark' })) }))
-vi.mock('../../main/installMainCrashHandlers', () => ({
+vi.mock('@main/renderHistory', () => ({ clearRenderHistory }))
+vi.mock('@main/movieOutput', () => ({ sweepMovieOutputs: vi.fn() }))
+vi.mock('@main/helpers/appIcon', () => ({ applyDevDockIcon: vi.fn() }))
+vi.mock('@main/stateStore', () => ({ loadUi: vi.fn(() => ({ theme: 'dark' })) }))
+vi.mock('@main/installMainCrashHandlers', () => ({
   installMainCrashHandlers: vi.fn(),
 }))
 
@@ -86,16 +86,16 @@ vi.mock('fs', () => ({
   statSync: () => ({ isFile: () => true }),
   rmSync: () => undefined,
 }))
-vi.mock('../../main/quitState', () => ({
+vi.mock('@main/quitState', () => ({
   isAppQuitting: vi.fn(() => false),
   isForceQuit: vi.fn(() => false),
   setAppQuitting: vi.fn(),
 }))
 
 // String-variable dynamic import targets (dodge TS6307).
-const indexEntry = '../../main/index'
-const queueEntry = '../../main/shellOpenQueue'
-const channelsEntry = '../../shared/ipcChannels'
+const indexEntry = '@main/index'
+const queueEntry = '@main/shellOpenQueue'
+const channelsEntry = '@shared/ipcChannels'
 
 interface QueueModule {
   takeShellOpen(): { paths: string[]; missing: string[] }

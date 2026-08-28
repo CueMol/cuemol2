@@ -26,7 +26,7 @@ import { isSeparatorNode } from '@shared/menuNodes'
 // pure template builder can be exercised under jsdom without a real Electron.
 vi.mock('electron', () => ({ Menu: { buildFromTemplate: vi.fn() } }))
 
-const { buildTextContextMenuTemplate } = await import('../../main/textContextMenu')
+const { buildTextContextMenuTemplate } = await import('@main/textContextMenu')
 
 function editItem(id: string): AppMenuItem | undefined {
   const edit = APP_MENU.find((g) => g.label === 'Edit')

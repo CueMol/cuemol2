@@ -7,7 +7,13 @@
     "baseUrl": ".",
     "paths": {
       "@renderer/*": ["src/renderer/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      // Not for our own code -- use @renderer/*. @cuemol/core maps `@/*` onto
+      // its own src/ (tritium/core/tsconfig.json) and we deep import core
+      // TypeScript sources, so core's files are part of this program and their
+      // internal `@/...` specifiers have to resolve. ESLint forbids `@/...` in
+      // react-gui sources so the two never blur together.
+      "@/*": ["../core/src/*"]
     }
   }
 }

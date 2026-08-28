@@ -1,5 +1,5 @@
 /**
- * @file __test__/mainMovieOutput.test.ts
+ * @file main/movieOutput.test.ts
  * @description Lifetime rules for the app-managed movie output folders
  * (ADR-0043).
  *
@@ -21,7 +21,7 @@ import {
   MOVIE_SESSION_LIMIT,
   MOVIE_TTL_MS,
   sweepMovieSessions,
-} from '../../main/movieOutput';
+} from '@main/movieOutput';
 
 /** Stand-in for the cuemol-movies root. */
 let root: string;

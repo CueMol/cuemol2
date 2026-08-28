@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5b -- camera file I/O.
+// camera file I/O.
 //
 // UXP source:
 //   - loadCameraFromFile       -> workspace_panel.js  onCamLoadFile +

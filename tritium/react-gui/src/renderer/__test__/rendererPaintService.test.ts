@@ -172,7 +172,7 @@ describe('getRendererPaintInfo', () => {
     })
 })
 
-// --- paintObjectSelection / getObjectPaintInfo (Phase 5d) ---
+// --- paintObjectSelection / getObjectPaintInfo ---
 //
 // Mirrors `paintRendererSelection` but operates on a MolCoord directly
 // rather than walking from renderer -> parent mol. UXP `ws.onPaintMol`

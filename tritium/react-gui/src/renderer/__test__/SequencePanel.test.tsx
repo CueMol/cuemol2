@@ -1,17 +1,17 @@
 /**
- * Pin Phase 1 + Phase 2 + Phase 3 wire-up of `SequencePanel`:
+ * Pin the wire-up of `SequencePanel`:
  *
  *   - empty-state placeholder when rows is empty.
  *   - the chain-name column lists "<chain>:<molname>" for every row.
  *   - plain click (pointerdown + pointerup on same residue) dispatches
- *     `toggleResidueSelection` and `centerOnResidue` (Phase 1 / 2).
+ *     `toggleResidueSelection` and `centerOnResidue`.
  *   - drag (pointerdown on residue A, pointerup on residue B in same
- *     chain) dispatches `rangeSelectResidues` with toggle=true (Phase 2).
+ *     chain) dispatches `rangeSelectResidues` with toggle=true.
  *   - shift+click (pointerdown shift, pointerup on same residue with
  *     an existing marker) dispatches `rangeSelectResidues` with
- *     toggle=false (Phase 2).
+ *     toggle=false.
  *   - context menu items wire up to the corresponding worker services
- *     and clipboard call (Phase 3): Around / Around Byresid /
+ *     and clipboard call: Around / Around Byresid /
  *     Unselect all / Invert sel via `selectObjectMol`; Copy sequence
  *     via `navigator.clipboard.writeText`.
  *
@@ -40,7 +40,7 @@ vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-// Capture the menu JSX passed to `showContextMenu` so Phase 3 tests
+// Capture the menu JSX passed to `showContextMenu` so the context-menu tests
 // can mount it standalone and click individual items without going
 // through Blueprint's portal layer.
 const showContextMenuMock = vi.fn()
@@ -346,7 +346,7 @@ describe('SequencePanel', () => {
         unmount()
     })
 
-    // ---- Phase 3 context menu wiring ----
+    // ---- context menu wiring ----
 
     /**
      * Right-click the seq canvas to trigger the ctx menu, then render

@@ -13,13 +13,13 @@ import type { RendererOptions } from '../../components/fopen-opt-dlgs/types'
 import { findTypedNode } from './sceneTreeNodeUtils'
 
 export interface SceneTreeRendererOps {
-    /** Apply a static coloring submenu choice to a renderer (Phase 3c). */
+    /** Apply a static coloring submenu choice to a renderer. */
     setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
     /** Insert a paint entry (color + current mol sel) into a PaintColoring renderer. */
     paintRendererSelection: (id: string, colorValue: string) => Promise<boolean>
     /** Object-level paint: insert a paint entry into a MolCoord's coloring. */
     paintObjectSelection: (id: string, colorValue: string) => Promise<boolean>
-    /** Apply a Style (shape) submenu choice (Phase 3c-3b). */
+    /** Apply a Style (shape) submenu choice. */
     applyRendererStyle: (
         id: string,
         styleName: string,
@@ -37,10 +37,10 @@ export interface SceneTreeRendererOps {
      * worker auto-generate `groupN`.
      */
     createRendererGroup: (objId: string, name: string) => Promise<boolean>
-    /** Replace a renderer with a new type (Phase 6b). */
+    /** Replace a renderer with a new type. */
     changeRendererType: (rendId: string, newType: string) => Promise<boolean>
     /**
-     * Create a new renderer on the given object (Phase 4d).
+     * Create a new renderer on the given object.
      * Mirrors UXP `Qm2Main.setupRendByObjID`. Returns true on success;
      * the tree refresh happens via the event listener.
      */

@@ -224,7 +224,7 @@ describe('applyRendererStyle', () => {
 })
 
 
-// --- Phase 6c -- getRendererStyleEditInfo + applyRendererStyleList ---
+// --- getRendererStyleEditInfo + applyRendererStyleList ---
 
 describe("getRendererStyleEditInfo", () => {
     beforeEach(() => vi.clearAllMocks())
