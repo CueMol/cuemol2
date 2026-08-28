@@ -214,8 +214,6 @@ interface IpcHandlersModule {
   registerIpcHandlers(win: unknown): void
 }
 interface QuitStateModule {
-  WINDOW_CLOSE_WATCHDOG_MS: number
-  setCloseInFlight(win: object, value: boolean): void
   isAppQuitting(): boolean
   setAppQuitting(v: boolean): void
   isForceQuit(): boolean
@@ -447,86 +445,35 @@ describe('handleWindowClose funnel + render-process-gone (main/windowManager.ts)
   })
 
   /**
-   * The watchdog is there so the user is never trapped by a renderer that
-   * cannot answer. It must never fire because the renderer is busy, or because
-   * the *user* is taking their time -- forcing the window shut then discards
-   * the very scenes the confirm chain was asking about.
+   * There is deliberately no close timeout. A stopwatch cannot tell "the
+   * renderer is stuck" from "the renderer is busy" or "the user is thinking",
+   * and the chain shows a "Save changes?" confirm per modified scene -- so a
+   * timeout fires on a slow decision and discards the very scenes it was
+   * asking about. The cases where the renderer genuinely cannot answer are
+   * covered elsewhere: a crash by 'render-process-gone' above, and a hung
+   * renderer by the OS's own force-quit.
    */
-  describe('close watchdog', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-      menuBlocked.value = false
-    })
-    afterEach(() => {
-      vi.useRealTimers()
-      menuBlocked.value = false
-    })
+  describe('no close timeout', () => {
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
 
-    /** Let the watchdog interval elapse `times` over. */
-    function elapse(times = 1): void {
-      for (let i = 0; i < times; i++) {
-        vi.advanceTimersByTime(quitState.WINDOW_CLOSE_WATCHDOG_MS + 1)
-      }
-    }
-
-    it('does not close while a dialog is on screen, however long the user takes', async () => {
+    it('never closes the window on its own, however long the renderer takes', async () => {
       const { win, fireClose } = await buildWindow()
       fireClose(makeEvent())
       win.close.mockClear()
-      // The renderer reported a modal through MENU_SET_MODAL_BLOCKED.
-      menuBlocked.value = true
 
-      elapse(6)
+      // Far longer than any timeout this funnel ever had.
+      vi.advanceTimersByTime(10 * 60 * 1000)
 
       expect(win.close).not.toHaveBeenCalled()
       expect(quitState.isCloseInFlight(win as object)).toBe(true)
     })
 
-    it('does not close while the renderer is alive and simply slow', async () => {
-      const { win, fireClose } = await buildWindow()
+    it('schedules no timer when the close request goes out', async () => {
+      const { fireClose } = await buildWindow()
+      const before = vi.getTimerCount()
       fireClose(makeEvent())
-      win.close.mockClear()
-
-      elapse(3)
-
-      expect(win.close).not.toHaveBeenCalled()
-      expect(quitState.isCloseInFlight(win as object)).toBe(true)
-    })
-
-    it('closes once Chromium reports the renderer unresponsive', async () => {
-      const { win, fireClose } = await buildWindow()
-      fireClose(makeEvent())
-      win.close.mockClear()
-
-      const unresponsive = win.webContents.listeners.get('unresponsive') ?? []
-      unresponsive[0]?.()
-      elapse()
-
-      expect(win.close).toHaveBeenCalledTimes(1)
-      expect(quitState.isCloseConfirmed(win as object)).toBe(true)
-    })
-
-    it('closes when the renderer has crashed', async () => {
-      const { win, fireClose } = await buildWindow()
-      fireClose(makeEvent())
-      win.close.mockClear()
-      win.webContents.isCrashed.mockReturnValue(true)
-
-      elapse()
-
-      expect(win.close).toHaveBeenCalledTimes(1)
-    })
-
-    it('stops once the renderer replies', async () => {
-      const { win, fireClose } = await buildWindow()
-      fireClose(makeEvent())
-      win.close.mockClear()
-      // WINDOW_CLOSE_PROCEED clears the in-flight flag.
-      quitState.setCloseInFlight(win as object, false)
-
-      elapse(3)
-
-      expect(win.close).not.toHaveBeenCalled()
+      expect(vi.getTimerCount()).toBe(before)
     })
   })
 })

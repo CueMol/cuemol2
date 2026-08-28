@@ -13,22 +13,19 @@ import {
 } from './stateStore'
 import { registerIpcHandlers } from './ipcHandlers'
 import { registerRenderWindowIpc } from './renderWindowIpc'
-import { isBlocked, resetMenuBlockReason, createMenu } from './menu'
+import { resetMenuBlockReason, createMenu } from './menu'
 import { registerTextContextMenu } from './textContextMenu'
 import { registerCuemolClipboardIpc } from './cuemolClipboard'
 import { getDevIconPath } from './helpers/appIcon'
 import { APP_PRODUCT_NAME } from '@shared/appInfo'
 import { IPC } from '@shared/ipcChannels'
 import {
-  clearCloseWatchdog,
   isCloseConfirmed,
   isCloseInFlight,
   setAppQuitting,
   setCloseConfirmed,
   setCloseInFlight,
-  setCloseWatchdog,
   setForceQuit,
-  WINDOW_CLOSE_WATCHDOG_MS,
 } from './quitState'
 
 function isVisibleOnAnyDisplay(bounds: WindowBounds): boolean {
@@ -87,6 +84,16 @@ function trackWindowState(
  * IPC.WINDOW_CLOSE_PROCEED the window is marked confirmed and re-closed,
  * and this funnel lets the second 'close' through. The red-button and
  * Cmd+Q (which calls win.close() per window) both reach this funnel.
+ *
+ * There is deliberately no timeout here. A stopwatch cannot tell "the renderer
+ * is stuck" from "the renderer is busy" or "the user is thinking", and the
+ * chain shows a "Save changes?" confirm per modified scene -- so a timeout
+ * fires on a slow decision and discards the very scenes it was asking about.
+ * The two cases where the renderer genuinely cannot answer are covered
+ * elsewhere: a crash exits through 'render-process-gone' below, and a hung
+ * renderer is what the OS's own "application not responding" force-quit is
+ * for. If an in-app escape is ever wanted for the hung case, it should ask
+ * (a native message box from main) rather than close on its own.
  */
 function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
   if (isCloseConfirmed(win)) return
@@ -96,84 +103,6 @@ function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
   if (isCloseInFlight(win)) return
   setCloseInFlight(win, true)
   win.webContents.send(IPC.WINDOW_CLOSE_REQUEST)
-  armCloseWatchdog(win)
-}
-
-/** Windows whose renderer Chromium currently reports as unresponsive. */
-const unresponsiveWindows = new WeakSet<BrowserWindow>()
-
-/** Record Chromium's responsiveness verdict for `win`. */
-export function setRendererUnresponsive(win: BrowserWindow, value: boolean): void {
-  if (value) unresponsiveWindows.add(win)
-  else unresponsiveWindows.delete(win)
-}
-
-/**
- * Whether the renderer is provably not running JavaScript right now.
- *
- * This -- not a stopwatch -- is what "the renderer cannot answer" means.
- */
-function rendererCannotAnswer(win: BrowserWindow): boolean {
-  if (win.webContents.isDestroyed()) return true
-  if (win.webContents.isCrashed()) return true
-  return unresponsiveWindows.has(win)
-}
-
-/**
- * (Re-)start the WINDOW_CLOSE_REQUEST watchdog for `win`.
- *
- * The watchdog exists so the user is never trapped by a renderer that cannot
- * answer the close request. It must never fire because the renderer is *busy*
- * or because the *user* is taking their time -- forcing the window shut then
- * discards the unsaved scenes the confirm chain was asking about, which is the
- * exact opposite of what the chain is for.
- *
- * A timeout alone cannot tell those apart, so the timeout is only a polling
- * interval here. When it elapses the window is closed only if the renderer is
- * provably not running JavaScript (crashed, or reported unresponsive by
- * Chromium). Otherwise:
- *
- *   - a modal is on screen -- the chain is waiting on a person. Main already
- *     knows this: the renderer reports every dialog through
- *     IPC.MENU_SET_MODAL_BLOCKED, and native dialogs go through
- *     withMenuBlocked('native'). Wait.
- *   - no modal, renderer alive -- it is working (a large scene write can take
- *     a while). Wait.
- *
- * A renderer that is alive but whose chain has stalled on a logic bug is
- * therefore never force-closed. That is deliberate: it cannot be told apart
- * from slow work, its own re-entrancy guard means clearing the in-flight flag
- * would not let the user retry anyway, and quitting on a guess costs the user
- * their unsaved scenes. A crash still exits through 'render-process-gone'.
- */
-export function armCloseWatchdog(win: BrowserWindow): void {
-  clearCloseWatchdog(win)
-  const timer = setTimeout(() => {
-    if (win.isDestroyed()) return
-    if (!isCloseInFlight(win)) return
-
-    if (!rendererCannotAnswer(win)) {
-      // Alive. Either a dialog is up or the chain is still working; keep
-      // waiting rather than throwing away what it is trying to save.
-      if (!isBlocked()) {
-        console.warn(
-          '[Main] no WINDOW_CLOSE_PROCEED after',
-          WINDOW_CLOSE_WATCHDOG_MS,
-          'ms, but the renderer is responsive; still waiting',
-        )
-      }
-      armCloseWatchdog(win)
-      return
-    }
-
-    console.error(
-      '[Main] renderer cannot answer WINDOW_CLOSE_REQUEST (crashed or unresponsive); forcing close',
-    )
-    setCloseInFlight(win, false)
-    setCloseConfirmed(win, true)
-    win.close()
-  }, WINDOW_CLOSE_WATCHDOG_MS)
-  setCloseWatchdog(win, timer)
 }
 
 const isMac = process.platform === 'darwin'
@@ -291,7 +220,6 @@ export function createWindow(): void {
       details.reason,
       'exitCode=' + details.exitCode,
     )
-    clearCloseWatchdog(win)
     setCloseConfirmed(win, true)
     setForceQuit(true)
     setAppQuitting(true)
@@ -314,11 +242,9 @@ export function createWindow(): void {
   // work and false-positive force-quits would be worse than the symptom.
   win.webContents.on('unresponsive', () => {
     console.error('[Main] renderer unresponsive')
-    setRendererUnresponsive(win, true)
   })
   win.webContents.on('responsive', () => {
     console.log('[Main] renderer responsive again')
-    setRendererUnresponsive(win, false)
   })
 
   trackWindowState(win, loadWindowBounds, saveWindowBounds)

@@ -25,7 +25,6 @@ import { rebuildApplicationMenu, setMenuBlocked, updateMenuState, withMenuBlocke
 import { addRecent, clearRecents, getRecents } from './recentFiles'
 import { takeShellOpen } from './shellOpenQueue'
 import {
-  clearCloseWatchdog,
   setAppQuitting,
   setCloseConfirmed,
   setCloseInFlight,
@@ -353,7 +352,6 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   // the in-flight flag and aborts any in-progress quit so the next Cmd+Q
   // starts a fresh confirm chain.
   handleInvoke(IPC.WINDOW_CLOSE_PROCEED, (_event, { proceed }) => {
-    clearCloseWatchdog(mainWindow)
     setCloseInFlight(mainWindow, false)
     if (proceed) {
       setCloseConfirmed(mainWindow, true)
@@ -387,7 +385,6 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     setForceQuit(true)
     setAppQuitting(true)
     for (const w of mainWindow.isDestroyed() ? [] : [mainWindow]) {
-      clearCloseWatchdog(w)
       setCloseConfirmed(w, true)
     }
     app.exit(0)
