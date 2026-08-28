@@ -159,16 +159,25 @@ export interface DragNumericFieldProps {
     unit?: string;
     disabled?: boolean;
     /**
-     * Treat a drag as a live transaction: emit `onDragStart` / `onDragCancel`
-     * so the parent can preview-while-dragging and commit once on release. When
-     * false (default), no drag-lifecycle callbacks fire and behaviour is
-     * unchanged. See the file header.
+     * Treat a *drag* as a live transaction: preview while dragging and commit
+     * once on release. When false (default) a drag writes nothing until it is
+     * released. See the file header.
+     *
+     * This flag gates the drag lifecycle only. An arrow press announces itself
+     * either way -- see {@link DragNumericFieldProps.onDragStart}.
      */
     realtime?: boolean;
     /**
-     * Fired once when a drag crosses the movement threshold (only when
-     * `realtime`). The parent typically snapshots the pre-drag value here so it
-     * can roll back / build a single undo step.
+     * Fired once at the start of an interaction that will emit several
+     * `onChange` values, so the parent can snapshot the value they all step
+     * away from and build one undo entry for the whole run.
+     *
+     * Two interactions qualify, and they are gated differently on purpose:
+     *   - a drag, once it crosses the movement threshold -- only when
+     *     `realtime`, because a non-realtime drag writes nothing until release;
+     *   - an arrow-button press, always, because auto-repeat turns one press
+     *     into a run of steps whether or not it previews. Holding the arrow
+     *     must still collapse to a single undo entry.
      */
     onDragStart?: () => void;
     /**
