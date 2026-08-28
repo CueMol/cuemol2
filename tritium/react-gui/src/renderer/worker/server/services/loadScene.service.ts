@@ -15,6 +15,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { SceneXMLReader } from '@cuemol/core/src/wrappers/SceneXMLReader';
 import type { View } from '@cuemol/core/src/wrappers/View';
+import { matchExtLength, parseExtList } from '@shared/fileExt';
 
 const log = console;
 
@@ -50,16 +51,17 @@ function guessReaderName(ctx: WorkerContext, filePath: string): string | null {
     } catch {
         return null;
     }
-    const ext = filePath.toLowerCase().split('.').pop() ?? '';
-    if (!ext) return null;
-    const hit = info.find(
-        (e) =>
-            e.category === SCEREADER_CATEGORY &&
-            e.fext
-                .split(';')
-                .map((s) => s.trim().replace(/^\*\./, '').toLowerCase())
-                .includes(ext),
-    );
+    // Suffix match, most specific first -- see shared/fileExt.ts.
+    let hit: StreamHandlerInfo | null = null;
+    let best = 0;
+    for (const e of info) {
+        if (e.category !== SCEREADER_CATEGORY) continue;
+        const len = matchExtLength(filePath, parseExtList(e.fext));
+        if (len > best) {
+            best = len;
+            hit = e;
+        }
+    }
     return hit?.name ?? null;
 }
 
