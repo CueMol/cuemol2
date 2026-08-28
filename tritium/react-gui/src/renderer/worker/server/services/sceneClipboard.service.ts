@@ -503,7 +503,7 @@ export interface CopyNodesResult {
      * 'mixed' -- the selection spans more than one kind;
      * 'objectUnsupported' -- multiple objects, which UXP declines too.
      */
-    reason?: 'mixed' | 'objectUnsupported';
+    reason?: 'mixed' | 'objectUnsupported' | 'nodeTypesMismatch';
 }
 
 /** UXP `convElemNodeTypes`: a group counts as a renderer for type checking. */
@@ -541,16 +541,34 @@ function copyNodes(ctx: WorkerContext, args: CopyNodesArgs): CopyNodesResult {
 
     // A selected group contributes its member renderers, matching what a
     // single-group copy serializes.
+    //
+    // De-duplicated by uid: selecting a group *and* one of its own children
+    // reached the same renderer twice -- once through the group's membership
+    // scan and once directly -- so arrayToXML serialized it twice and the paste
+    // produced two copies. (Same shape as the group+child double-delete fixed
+    // in resolveBulkItems.)
     const natives: unknown[] = [];
+    const seen = new Set<number>();
+    const pushRend = (rend: Renderer): void => {
+        const uid = safeRead(() => rend.uid);
+        if (typeof uid === 'number') {
+            if (seen.has(uid)) return;
+            seen.add(uid);
+        }
+        natives.push((rend as unknown as { wrapped: unknown }).wrapped);
+    };
+    // nodeTypes is read positionally; a short array would silently reclassify
+    // the tail as plain renderers.
+    if (args.nodeTypes.length !== args.nodeIds.length) {
+        return { ok: false, kind: null, reason: 'nodeTypesMismatch' };
+    }
     for (let i = 0; i < args.nodeIds.length; ++i) {
         const rend = scene.getRenderer(args.nodeIds[i]) as Renderer | null;
         if (!rend) continue;
         if (args.nodeTypes[i] === 'rendGroup') {
-            for (const child of listGroupChildRenderers(scene, rend)) {
-                natives.push((child as unknown as { wrapped: unknown }).wrapped);
-            }
+            for (const child of listGroupChildRenderers(scene, rend)) pushRend(child);
         } else {
-            natives.push((rend as unknown as { wrapped: unknown }).wrapped);
+            pushRend(rend);
         }
     }
     if (natives.length === 0) return { ok: false, kind: null };

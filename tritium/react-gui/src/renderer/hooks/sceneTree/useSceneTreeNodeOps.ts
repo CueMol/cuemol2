@@ -434,7 +434,14 @@ export function useSceneTreeNodeOps(
                 nodeIds: items.map((i) => i.nodeId),
                 nodeTypes: items.map((i) => i.nodeType),
             })
-            if (res?.ok !== true) return { ok: false, reason: res?.reason }
+            if (res?.ok !== true) {
+                // 'nodeTypesMismatch' is a caller bug, not a user-facing case.
+                const reason = res?.reason
+                return {
+                    ok: false,
+                    reason: reason === 'nodeTypesMismatch' ? undefined : reason,
+                }
+            }
             return { ok: await writeSceneClip(res) }
         },
         [cm, sceneIdRef, resolveBulkItems],

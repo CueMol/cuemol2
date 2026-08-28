@@ -19,6 +19,7 @@ import type { PovSceneExporter } from "@cuemol/core/src/wrappers/PovSceneExporte
 import type { WorkerContext } from "../../types/WorkerContext";
 import type { RenderSettingsSnapshot } from "../../../../data/renderResult";
 import type { RenderBinaries } from "../../../shared/renderTypes";
+import { quoteProcArg } from "./procArgs";
 import {
   type RenderBackend,
   type ExportedScene,
@@ -251,12 +252,17 @@ export const povrayBackend: RenderBackend = {
     }));
 
     // blendpng finalize task: composite layers, stamp DPI.
-    const blendArgs: string[] = [layerPaths[0]];
+    //
+    // Every path is quoted: C++ splits this single string on spaces, so an
+    // unquoted path with a space in it becomes two arguments and the composite
+    // step fails with nothing but "Output image not produced". buildPovArgs
+    // above already quotes for the same reason.
+    const blendArgs: string[] = [quoteProcArg(layerPaths[0])];
     for (let i = 1; i < layers.length; i++) {
-      blendArgs.push(layerPaths[i]);
+      blendArgs.push(quoteProcArg(layerPaths[i]));
       blendArgs.push(String(layers[i].alpha));
     }
-    blendArgs.push(this.outputImagePath(exported));
+    blendArgs.push(quoteProcArg(this.outputImagePath(exported)));
     blendArgs.push(String(numVal(snapshot.commonProps, "dpi", 600)));
     tasks.push({
       exe: blendpngExe,

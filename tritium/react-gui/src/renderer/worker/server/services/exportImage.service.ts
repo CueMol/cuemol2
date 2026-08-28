@@ -149,13 +149,19 @@ function exportScene(ctx: WorkerContext, args: ExportSceneArgs): ExportSceneResu
     exporter.camera = '__current';
 
     exporter.attach(scene);
-    exporter.setPath(args.filePath);
-    // POV-Ray writes a sibling include file alongside the .pov (UXP parity).
-    if (args.exporterName === 'pov' && typeof exporter.setSubPath === 'function') {
-        exporter.setSubPath('inc', replaceExt(args.filePath, 'inc'));
+    try {
+        exporter.setPath(args.filePath);
+        // POV-Ray writes a sibling include file alongside the .pov (UXP parity).
+        if (args.exporterName === 'pov' && typeof exporter.setSubPath === 'function') {
+            exporter.setSubPath('inc', replaceExt(args.filePath, 'inc'));
+        }
+        exporter.write();
+    } finally {
+        // write() throws for an unwritable path, and for an off-screen buffer
+        // whose requested size exceeds MAX_TEXTURE_SIZE. Without the finally the
+        // exporter stayed attached to the scene and its FBO was never released.
+        exporter.detach();
     }
-    exporter.write();
-    exporter.detach();
 
     return { ok: true };
 }
