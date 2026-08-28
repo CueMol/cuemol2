@@ -100,6 +100,12 @@ export interface InvokeChannels {
   [IPC.RECENT_CLEAR]:      { req: void;                  res: void }
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
   [IPC.WINDOW_CLOSE_PROCEED]: { req: { proceed: boolean }; res: void }
+  /**
+   * "Still working on the close" -- re-arms the WINDOW_CLOSE_REQUEST watchdog.
+   * Sent before each step that can wait on the user, so a slow decision is not
+   * mistaken for a wedged renderer.
+   */
+  [IPC.WINDOW_CLOSE_PROGRESS]: { req: void; res: void }
   [IPC.WINDOW_FOCUS_MAIN]: { req: void;                  res: void }
   [IPC.WINDOW_SET_TITLE]:  { req: { subtitle: string }; res: void }
   // Rendering window relay (see ipcChannels.ts for direction of each leg)

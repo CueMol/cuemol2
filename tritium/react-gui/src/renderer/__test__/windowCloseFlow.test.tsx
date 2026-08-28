@@ -93,6 +93,15 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     vi.restoreAllMocks()
   })
 
+/**
+ * PROCEED replies only. The chain also emits WINDOW_CLOSE_PROGRESS pings to
+ * re-arm main's watchdog; those are asserted separately.
+ */
+function proceedCalls(api: Record<string, unknown>): unknown[][] {
+  const invoke = api.invoke as { mock: { calls: unknown[][] } }
+  return invoke.mock.calls.filter((c) => c[0] === IPC.WINDOW_CLOSE_PROCEED)
+}
+
   it('walks all tabs in order and calls WINDOW_CLOSE_PROCEED { proceed: true } when every close succeeds', async () => {
     const tabs: TabData[] = [
       { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
@@ -111,7 +120,7 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     expect(h.setActiveTab.mock.calls.map((c) => c[0])).toEqual([
       'molview-1', 'molview-2',
     ])
-    expect(h.api.invoke).toHaveBeenCalledTimes(1)
+    expect(proceedCalls(h.api)).toHaveLength(1)
     expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     h.unmount()
@@ -131,7 +140,7 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     expect(h.handleCloseTab.mock.calls.map((c) => c[0])).toEqual([
       'molview-1', 'molview-2',
     ])
-    expect(h.api.invoke).toHaveBeenCalledTimes(1)
+    expect(proceedCalls(h.api)).toHaveLength(1)
     expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: false })
 
     h.unmount()
@@ -150,7 +159,8 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
 
     expect(onBeforeProceed).toHaveBeenCalledTimes(1)
     // Save runs before the proceed reply.
-    expect(order).toEqual(['save', `invoke:${IPC.WINDOW_CLOSE_PROCEED}`])
+    expect(order.filter((e) => e !== `invoke:${IPC.WINDOW_CLOSE_PROGRESS}`))
+      .toEqual(['save', `invoke:${IPC.WINDOW_CLOSE_PROCEED}`])
     expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     h.unmount()
@@ -224,9 +234,54 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     await flushPromises()
     await flushPromises()
 
-    expect(api.invoke).toHaveBeenCalledTimes(1)
+    expect(proceedCalls(api)).toHaveLength(1)
     expect(api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     handle.unmount()
+  })
+
+  /**
+   * Main force-closes the window if no reply arrives, so every path through
+   * this handler has to answer. It used to have a `finally` but no `catch`: a
+   * throw from handleCloseTab or setActiveTab aborted the walk before either
+   * invoke, main heard nothing, and the watchdog discarded the unsaved scenes.
+   */
+  it('replies proceed:false when a step throws instead of leaving main waiting', async () => {
+    const tabs: TabData[] = [
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
+    ]
+    const h = mount({ tabs, closeResults: [true] })
+    h.handleCloseTab.mockImplementation(() => { throw new Error('close blew up') })
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await h.triggerCloseRequest()
+    errSpy.mockRestore()
+
+    expect(proceedCalls(h.api)).toHaveLength(1)
+    expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: false })
+
+    h.unmount()
+  })
+
+  /**
+   * The per-tab confirm can sit on the user for as long as they take. The
+   * watchdog must therefore measure renderer silence, not deliberation, so the
+   * chain pings before each step that can block on a person.
+   */
+  it('pings WINDOW_CLOSE_PROGRESS before each tab confirm', async () => {
+    const tabs: TabData[] = [
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
+      { id: 'molview-2', title: 'B', icon: 'file.molview', type: 'molview', viewId: 2 },
+    ]
+    const h = mount({ tabs, closeResults: [true, true] })
+
+    await h.triggerCloseRequest()
+
+    const pings = h.api.invoke.mock.calls.filter(
+      (c: unknown[]) => c[0] === IPC.WINDOW_CLOSE_PROGRESS,
+    )
+    expect(pings.length).toBeGreaterThanOrEqual(tabs.length)
+
+    h.unmount()
   })
 })

@@ -50,22 +50,34 @@ function trackWindowState(
 ): void {
   let saveTimer: ReturnType<typeof setTimeout> | null = null
 
+  const writeBounds = (): void => {
+    if (win.isDestroyed()) return
+    const isMaximized = win.isMaximized()
+    const bounds = isMaximized ? (loadBounds() ?? win.getBounds()) : win.getBounds()
+    saveBounds({ ...bounds, isMaximized })
+  }
+
   const persist = (): void => {
     if (saveTimer) clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => {
-      if (!win.isDestroyed()) {
-        const isMaximized = win.isMaximized()
-        const bounds = isMaximized ? (loadBounds() ?? win.getBounds()) : win.getBounds()
-        saveBounds({ ...bounds, isMaximized })
-      }
-    }, 300)
+    saveTimer = setTimeout(writeBounds, 300)
   }
 
   win.on('resize', persist)
   win.on('move', persist)
   win.on('maximize', persist)
   win.on('unmaximize', persist)
-  win.on('close', persist)
+  // Write synchronously on close. Going through `persist` cancelled whatever
+  // resize/move was still pending and re-scheduled it 300 ms past the point
+  // where `win.isDestroyed()` becomes true, so moving or resizing a window and
+  // closing it straight away lost the new geometry. For the Rendering window,
+  // which has no confirm funnel to delay its teardown, that was every close.
+  win.on('close', () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    writeBounds()
+  })
 }
 
 /**
@@ -84,17 +96,32 @@ function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
   if (isCloseInFlight(win)) return
   setCloseInFlight(win, true)
   win.webContents.send(IPC.WINDOW_CLOSE_REQUEST)
+  armCloseWatchdog(win)
+}
 
-  // Watchdog: if the renderer never replies (crashed or wedged), force the
-  // window closed so the user is not stuck unable to quit. Cleared on
-  // WINDOW_CLOSE_PROCEED via `clearCloseWatchdog`.
+/**
+ * (Re-)start the WINDOW_CLOSE_REQUEST watchdog for `win`.
+ *
+ * The watchdog exists for a renderer that never replies at all -- crashed, or
+ * wedged in a loop -- so the user is not left unable to quit. It must not fire
+ * while the renderer is simply *waiting on the user*: the close chain walks
+ * every tab and shows a "Save changes?" confirm for each modified scene, so a
+ * user who thinks for more than the timeout, or a save that takes longer than
+ * it, would have had the window forced shut and the unsaved scenes discarded.
+ *
+ * The renderer therefore re-arms this before each step that can block on a
+ * person (see IPC.WINDOW_CLOSE_PROGRESS), and the timeout only measures
+ * silence.
+ */
+export function armCloseWatchdog(win: BrowserWindow): void {
+  clearCloseWatchdog(win)
   const timer = setTimeout(() => {
     if (win.isDestroyed()) return
     if (!isCloseInFlight(win)) return
     console.error(
       '[Main] WINDOW_CLOSE_REQUEST watchdog fired after',
       WINDOW_CLOSE_WATCHDOG_MS,
-      'ms; forcing close',
+      'ms of silence; forcing close',
     )
     setCloseInFlight(win, false)
     setCloseConfirmed(win, true)

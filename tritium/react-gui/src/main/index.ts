@@ -182,11 +182,16 @@ app.on('before-quit', (event) => {
   // skip the confirm funnel entirely.
   if (isForceQuit()) return
   if (isAppQuitting()) return
-  const wins = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed())
-  if (wins.length === 0) return
+  // Close the main window only. It is the one with a confirm funnel, and its
+  // 'closed' handler takes the Rendering window down with it. Closing every
+  // window here destroyed the Rendering window first -- it has no funnel -- so
+  // cancelling the main window's save prompt restored the app minus its render
+  // history view and any in-flight settings.
+  const main = getMainWindow()
+  if (!main || main.isDestroyed()) return
   setAppQuitting(true)
   event.preventDefault()
-  for (const w of wins) w.close()
+  main.close()
 })
 
 // Utility/GPU process crashes (Web Workers run inside the renderer process

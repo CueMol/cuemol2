@@ -244,19 +244,31 @@ async function importIndexAndGetBeforeQuit(): Promise<Listener> {
 }
 
 describe('before-quit guard (main/index.ts)', () => {
-  it('routes a fresh quit through every live window: preventDefault + close() each, sets appQuitting', async () => {
+  /**
+   * Only the main window is closed. It is the one with a confirm funnel, and
+   * its 'closed' handler takes the Rendering window down with it. Closing every
+   * window here destroyed the Rendering window first -- it has no funnel -- so
+   * cancelling the main window's save prompt restored the app minus its render
+   * history view and any in-flight settings.
+   */
+  it('routes a fresh quit through the main window only, and sets appQuitting', async () => {
     const beforeQuit = await importIndexAndGetBeforeQuit()
-    const winA = makeWin()
-    const winB = makeWin()
-    allWindows = [winA, winB]
+    constructedWin = null
+    const wm = (await import(windowManagerEntry)) as unknown as { createWindow(): void }
+    wm.createWindow()
+    const mainWin = getConstructedWin()
+    if (!mainWin) throw new Error('createWindow did not construct a BrowserWindow')
+
+    // A second live window (the Rendering window) must be left alone.
+    const other = makeWin()
+    allWindows = [mainWin, other]
 
     const ev = makeEvent()
     beforeQuit(ev)
 
-    // Quit is intercepted so each window runs its own confirm funnel.
     expect(ev.preventDefault).toHaveBeenCalledTimes(1)
-    expect(winA.close).toHaveBeenCalledTimes(1)
-    expect(winB.close).toHaveBeenCalledTimes(1)
+    expect(mainWin.close).toHaveBeenCalledTimes(1)
+    expect(other.close).not.toHaveBeenCalled()
     expect(quitState.isAppQuitting()).toBe(true)
   })
 
