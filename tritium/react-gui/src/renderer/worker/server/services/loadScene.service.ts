@@ -12,11 +12,13 @@
 // property setters.
 
 import type { WorkerContext } from '../types/WorkerContext';
+import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { SceneXMLReader } from '@cuemol/core/src/wrappers/SceneXMLReader';
 import type { View } from '@cuemol/core/src/wrappers/View';
 import { matchExtLength, parseExtList } from '@shared/fileExt';
 import { fail, failFrom, ok, type Result } from '../../shared/result';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { createInitialView } from './helpers/createSceneView';
 
 const log = console;
 
@@ -73,11 +75,33 @@ export interface LoadSceneArgs {
 
 export type LoadSceneResult = Result;
 
-function loadScene(ctx: WorkerContext, args: LoadSceneArgs): LoadSceneResult {
-    log.info(`[worker] loading QSC scene: ${args.filePath}`);
-    const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
+/**
+ * Apply each view's saved "__current" camera, mirroring the
+ * `m_bSetCamera == true` block in `LoadSceneCommand::run()`. A scene with no
+ * views yet (the open-into-a-fresh-scene path creates its view afterwards)
+ * is a no-op.
+ */
+function applyCurrentCamera(scene: Scene): void {
+    const uidStr = scene.view_uids;
+    if (!uidStr) return;
+    for (const tok of uidStr.split(',')) {
+        const uid = Number(tok.trim());
+        if (!Number.isFinite(uid)) continue;
+        try {
+            const view = scene.getView(uid) as View | null;
+            if (view) scene.loadViewFromCam(uid, '__current');
+        } catch (e) {
+            log.warn(`loadViewFromCam failed for view ${uid}:`, e);
+        }
+    }
+}
 
+/**
+ * Read `filePath` into `scene` and name the scene after the file. Shared by
+ * the in-place load and the open-into-a-fresh-scene path; applying the saved
+ * camera is left to the caller, which knows when its views exist.
+ */
+function readSceneFile(ctx: WorkerContext, scene: Scene, filePath: string): Result {
     // No undo transaction here, by design. A whole-scene load is not an edit:
     // it mirrors UXP `qsc-io.readSceneFile` / C++ `LoadSceneCommand::run()`,
     // both of which run outside any txn. The C++ UndoManager only keeps an edit
@@ -85,10 +109,10 @@ function loadScene(ctx: WorkerContext, args: LoadSceneArgs): LoadSceneResult {
     // object-registration records be discarded -- the undo stack stays empty
     // after load (matching UXP). Wrapping it in withUndoTxn was the bug: it
     // captured those records and committed them, leaving a bogus undo entry.
-    const readerName = guessReaderName(ctx, args.filePath);
+    const readerName = guessReaderName(ctx, filePath);
     if (!readerName) {
-        log.warn(`[worker] loadScene: cannot guess reader for ${args.filePath}`);
-        return fail(`no scene reader claims ${args.filePath}`, 'unsupported');
+        log.warn(`[worker] loadScene: cannot guess reader for ${filePath}`);
+        return fail(`no scene reader claims ${filePath}`, 'unsupported');
     }
     const reader = ctx.strMgr.createHandler(
         readerName,
@@ -98,7 +122,7 @@ function loadScene(ctx: WorkerContext, args: LoadSceneArgs): LoadSceneResult {
         log.warn(`[worker] loadScene: createHandler('${readerName}') failed`);
         return fail(`createHandler('${readerName}') failed`, 'unsupported');
     }
-    reader.setPath(args.filePath);
+    reader.setPath(filePath);
     reader.attach(scene);
     try {
         reader.read();
@@ -116,24 +140,86 @@ function loadScene(ctx: WorkerContext, args: LoadSceneArgs): LoadSceneResult {
     // not touch the name, so without this the scene keeps the placeholder
     // "Untitled N" assigned at creation. setName fires a "name" PROPCHG event
     // that useMolViewTabTitleSync / scene tree already listen for.
-    scene.setName(basename(args.filePath));
-
-    // Apply the saved "__current" camera to every view, mirroring the
-    // `m_bSetCamera == true` block in LoadSceneCommand::run().
-    const uidStr = scene.view_uids;
-    if (uidStr) {
-        for (const tok of uidStr.split(',')) {
-            const uid = Number(tok.trim());
-            if (!Number.isFinite(uid)) continue;
-            try {
-                const view = scene.getView(uid) as View | null;
-                if (view) scene.loadViewFromCam(uid, '__current');
-            } catch (e) {
-                log.warn(`loadViewFromCam failed for view ${uid}:`, e);
-            }
-        }
-    }
+    scene.setName(basename(filePath));
     return ok();
 }
 
-export const services = { loadScene };
+/**
+ * Load a scene file into an existing scene (File > Reload, and opening into
+ * a freshly created empty scene -- UXP `openSceneImpl`'s in-place branch).
+ *
+ * A scene file describes a whole scene, so reading it into an existing scene
+ * REPLACES that scene's contents. `clearAllData` drops the objects,
+ * renderers, cameras, style context and undo history (the scene's views
+ * survive -- only `~Scene` clears the view table), mirroring UXP
+ * `onReloadScene`, which clears before the read and again if the read throws
+ * so a half-read scene never survives. Without the clear, File > Reload
+ * Scene merged the file into the live scene and every object appeared twice.
+ */
+function loadScene(ctx: WorkerContext, args: LoadSceneArgs): LoadSceneResult {
+    log.info(`[worker] loading QSC scene: ${args.filePath}`);
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
+
+    scene.clearAllData();
+    const res = readSceneFile(ctx, scene, args.filePath);
+    if (!res.ok) {
+        try {
+            scene.clearAllData();
+        } catch (e) {
+            log.warn('[worker] loadScene: clearAllData after a failed read failed:', e);
+        }
+        return res;
+    }
+
+    applyCurrentCamera(scene);
+    return ok();
+}
+
+export interface OpenSceneFileArgs {
+    filePath: string;
+    /** Device pixel ratio for the new view's `addView`. */
+    dpr: number;
+}
+
+export type OpenSceneFileResult = Result<{
+    scene_uid: number;
+    view_uid: number;
+    scene_name: string;
+    view_name: string;
+}>;
+
+/**
+ * Open a scene file into a scene of its own, for the caller to show as a new
+ * tab.
+ *
+ * Scene creation, the read and the view creation are one step on purpose: a
+ * failed read used to leave the already-created scene and its view (and the
+ * tab the renderer had registered for them) behind as an empty molview. The
+ * scene is dropped here when the read fails, and the view -- which the
+ * renderer's tab is keyed on -- only ever exists for a scene that loaded.
+ */
+function openSceneFile(ctx: WorkerContext, args: OpenSceneFileArgs): OpenSceneFileResult {
+    const scene = ctx.sceMgr.createScene() as Scene | null;
+    if (!scene) return fail('could not create a scene', 'native');
+    const scene_uid = scene.getUID();
+
+    const res = readSceneFile(ctx, scene, args.filePath);
+    if (!res.ok) {
+        try {
+            ctx.sceMgr.destroyScene(scene_uid);
+        } catch (e) {
+            log.warn(`[worker] openSceneFile: destroyScene(${scene_uid}) failed:`, e);
+        }
+        return res;
+    }
+
+    // After the read, so the camera the file restored is applied to the view
+    // the tab will show.
+    const { view_uid, view_name } = createInitialView(ctx, scene, args.dpr);
+    applyCurrentCamera(scene);
+
+    return ok({ scene_uid, view_uid, scene_name: scene.name, view_name });
+}
+
+export const services = { loadScene, openSceneFile };

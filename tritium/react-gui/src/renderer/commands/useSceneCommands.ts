@@ -24,7 +24,7 @@ import type { CoordServerType, MapServerType } from '../components/dialogs/GetPd
 import { useStreamProgressDialog, type StreamProgressApi } from '../components/dialogs/StreamProgressDialogProvider'
 import { pushHistory as pushPdbIdHistory } from '../components/dialogs/pdbIdHistory'
 import type { PresetTypeEntry } from '../components/fopen-opt-dlgs/types'
-import type { NewSceneAction } from '../hooks/useNewSceneAction'
+import type { NewSceneAction, OpenSceneFileAction } from '../hooks/useNewSceneAction'
 
 /**
  * Fetch the renderer presets (`<objType>-rendpreset` styles) for the
@@ -57,6 +57,8 @@ interface UseSceneCommandsOptions {
     /** Open the active scene in the generic property inspector (Scene > Properties...). */
     showSceneProperty?: (sceneId: number) => void
     newScene: NewSceneAction
+    /** Open a scene file in its own tab (created only once it has loaded). */
+    openSceneFile: OpenSceneFileAction
 }
 
 export function useSceneCommands({
@@ -65,6 +67,7 @@ export function useSceneCommands({
     onBgColorChanged,
     showSceneProperty,
     newScene,
+    openSceneFile,
 }: UseSceneCommandsOptions): void {
 
     const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
@@ -99,21 +102,23 @@ export function useSceneCommands({
                 }
             }
         }
-        // Same path as app launch and File > New Tab (UXP onNewScene).
-        const created = await newScene()
-        if (!created) return
         if (filePath) {
-            const loaded = await cm.loadScene(filePath, created.scene_uid)
-            if (!loaded.ok) {
+            // Scene, read and view are created together in the worker, so a
+            // file that cannot be read leaves no empty tab behind.
+            const opened = await openSceneFile(filePath)
+            if (!opened.ok) {
                 await showErrorAlert({
                     title: 'Open Scene failed',
-                    message: `Failed to open:\n${filePath}\n\n${loaded.error}`,
+                    message: `Failed to open:\n${filePath}\n\n${opened.error}`,
                 })
                 return
             }
             addRecent(filePath, 'scene')
+            return
         }
-    }, [cm, newScene, getActiveSceneInfo, showErrorAlert])
+        // File > New Scene: same path as app launch (UXP onNewScene).
+        await newScene()
+    }, [cm, newScene, openSceneFile, getActiveSceneInfo, showErrorAlert])
 
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 

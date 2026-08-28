@@ -51,7 +51,7 @@ function makeCm() {
       Promise.resolve({ types: ['simple'], objType: 'MolCoord', readerName: 'pdb' }),
     ),
     loadObject: vi.fn((..._args: unknown[]) => Promise.resolve()),
-    loadScene: vi.fn((..._args: unknown[]) => Promise.resolve()),
+    loadScene: vi.fn((..._args: unknown[]) => Promise.resolve({ ok: true })),
     invokeService: vi.fn(() => Promise.resolve(undefined)),
   }
 }
@@ -60,13 +60,23 @@ const NEW_SCENE = {
   scene_uid: 99, view_uid: 100, scene_name: 'Untitled', view_name: '0', tab_title: 'Untitled:0',
 }
 
+/** Default openSceneFile stub: succeeds, reporting the ids of a new tab. */
+const makeOpenSceneFile = () =>
+  vi.fn((_path: string) => Promise.resolve({ ok: true, ...NEW_SCENE }))
+
 function mountWith(
   cm: ReturnType<typeof makeCm>,
   getActiveSceneInfo: () => { scene_uid: number; view_id: number } | undefined,
   newScene: ReturnType<typeof vi.fn>,
+  openSceneFile: ReturnType<typeof vi.fn> = makeOpenSceneFile(),
 ) {
   return makeRenderHook(() => {
-    useSceneCommands({ cm: cm as unknown as AsyncCueMol, getActiveSceneInfo, newScene })
+    useSceneCommands({
+      cm: cm as unknown as AsyncCueMol,
+      getActiveSceneInfo,
+      newScene,
+      openSceneFile: openSceneFile as never,
+    })
     return useCommands()
   }, Wrapper)
 }
@@ -209,34 +219,59 @@ describe('useSceneCommands - open scene into just-created scene', () => {
     h.unmount()
   })
 
-  it('creates a new scene when the active scene is not just created', async () => {
+  it('opens into a scene of its own when the active scene is not just created', async () => {
     const cm = makeSceneCm(false)
     const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
-    const h = mountWith(cm, () => ({ scene_uid: 7, view_id: 8 }), newScene)
+    const openSceneFile = makeOpenSceneFile()
+    const h = mountWith(cm, () => ({ scene_uid: 7, view_id: 8 }), newScene, openSceneFile)
     await flushPromises()
 
     await h.result.dispatch(CmdId.OpenSceneByPath, '/tmp/a.qsc' as never)
     await drain()
 
-    expect(newScene).toHaveBeenCalledTimes(1)
-    expect(cm.loadScene).toHaveBeenCalledTimes(1)
-    // Loads into the freshly created scene, not the active one.
-    expect(cm.loadScene.mock.calls[0][1]).toBe(NEW_SCENE.scene_uid)
+    // The scene + view are created by the worker as part of the read, so no
+    // empty scene exists until the file has loaded.
+    expect(openSceneFile).toHaveBeenCalledWith('/tmp/a.qsc')
+    expect(newScene).not.toHaveBeenCalled()
+    expect(cm.loadScene).not.toHaveBeenCalled()
     h.unmount()
   })
 
-  it('creates a new scene (no empty-check) when no scene is active', async () => {
+  it('opens into a scene of its own (no empty-check) when no scene is active', async () => {
     const cm = makeSceneCm(true)
     const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
-    const h = mountWith(cm, () => undefined, newScene)
+    const openSceneFile = makeOpenSceneFile()
+    const h = mountWith(cm, () => undefined, newScene, openSceneFile)
     await flushPromises()
 
     await h.result.dispatch(CmdId.OpenSceneByPath, '/tmp/a.qsc' as never)
     await drain()
 
     expect(cm.invokeService).not.toHaveBeenCalled()
-    expect(newScene).toHaveBeenCalledTimes(1)
-    expect(cm.loadScene.mock.calls[0][1]).toBe(NEW_SCENE.scene_uid)
+    expect(openSceneFile).toHaveBeenCalledWith('/tmp/a.qsc')
+    expect(newScene).not.toHaveBeenCalled()
+    h.unmount()
+  })
+
+  it('leaves no tab behind and reports the reason when the file cannot be read', async () => {
+    const cm = makeSceneCm(false)
+    const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
+    const openSceneFile = vi.fn((_path: string) =>
+      Promise.resolve({ ok: false, error: 'XML parse error', code: 'io' }),
+    )
+    const h = mountWith(cm, () => ({ scene_uid: 7, view_id: 8 }), newScene, openSceneFile)
+    await flushPromises()
+
+    await h.result.dispatch(CmdId.OpenSceneByPath, '/tmp/broken.qsc' as never)
+    await drain()
+
+    expect(newScene).not.toHaveBeenCalled()
+    expect(showErrorAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Open Scene failed',
+        message: expect.stringContaining('XML parse error'),
+      }),
+    )
     h.unmount()
   })
 })

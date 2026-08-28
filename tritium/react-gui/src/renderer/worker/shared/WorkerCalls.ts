@@ -73,7 +73,12 @@ import type {
   RemoveMorphFrameArgs,
   MorphFrameEditResult,
 } from '../server/services/morphMol.service'
-import type { LoadSceneArgs, LoadSceneResult } from '../server/services/loadScene.service'
+import type {
+  LoadSceneArgs,
+  LoadSceneResult,
+  OpenSceneFileArgs,
+  OpenSceneFileResult,
+} from '../server/services/loadScene.service'
 import type {
   StreamLoadFromUrlArgs,
   StreamLoadFromUrlResult,
@@ -557,6 +562,7 @@ export interface ServiceMap {
   addMorphFrameFromMol:       { args: AddMorphFrameFromMolArgs;        result: MorphFrameEditResult }
   removeMorphFrame:           { args: RemoveMorphFrameArgs;            result: MorphFrameEditResult }
   loadScene:                  { args: LoadSceneArgs;                   result: LoadSceneResult }
+  openSceneFile:              { args: OpenSceneFileArgs;               result: OpenSceneFileResult }
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
   streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }
   cancelStreamLoad:           { args: CancelStreamLoadArgs;            result: CancelStreamLoadResult }
