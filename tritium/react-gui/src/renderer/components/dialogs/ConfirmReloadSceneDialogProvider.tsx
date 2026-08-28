@@ -14,6 +14,8 @@ export const {
   useShow: useShowConfirmReloadSceneDialog,
 } = createDialogHook<ConfirmReloadSceneDialogArgs, boolean>({
   name: 'ConfirmReloadSceneDialog',
+  // Never reload on behalf of a caller whose prompt was displaced.
+  supersededResult: false,
   render: ({ visible, args, resolve }) => (
     <ConfirmReloadSceneDialog
       visible={visible}

@@ -37,6 +37,20 @@ export interface CreateDialogHookOptions<TArgs, TResult> {
   render: (props: DialogRenderProps<TArgs, TResult>) => React.ReactNode
   /** Optional human label used in error messages. */
   name?: string
+  /**
+   * Value handed to a caller whose dialog is superseded, i.e. `show()` is
+   * called again while that one is still open.
+   *
+   * Only one dialog of a given kind can be on screen, so the earlier caller
+   * never gets an answer from the user. Its promise is settled with this
+   * instead of being abandoned -- an abandoned `await` parks the caller
+   * forever, which is how a queued shell-open drain used to lose its files.
+   *
+   * Defaults to `undefined`. Set it for a dialog whose result type has no
+   * natural empty value, so "superseded" cannot be mistaken for a real answer
+   * (e.g. `'cancel'`, not a fallthrough into "save").
+   */
+  supersededResult?: TResult
 }
 
 export interface DialogHookHandle<TArgs, TResult> {
@@ -66,7 +80,10 @@ export function createDialogHook<TArgs, TResult>(
 
     const show = useCallback((args: TArgs): Promise<TResult> => {
       return new Promise<TResult>((resolve) => {
+        // Settle the caller we are about to displace before taking the slot.
+        const superseded = resolveRef.current
         resolveRef.current = resolve
+        superseded?.(options.supersededResult as TResult)
         setState({ visible: true, args })
       })
     }, [])
@@ -139,6 +156,9 @@ export function createConfirmCancelDialog<TArgs, TResult>(
   const { component: Component, name } = options
   return createDialogHook<TArgs, TResult | null>({
     name,
+    // A confirm/cancel dialog already resolves null on cancel, so that is the
+    // right answer for a caller whose dialog was displaced.
+    supersededResult: null,
     render: ({ visible, args, resolve }) =>
       React.createElement(Component, {
         ...((args ?? {}) as TArgs),
