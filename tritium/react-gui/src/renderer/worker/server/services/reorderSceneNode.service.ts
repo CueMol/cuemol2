@@ -20,6 +20,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { enumerateObjectRenderers } from './helpers/groupChildren';
+import { isRendGroup } from './helpers/rendGroup';
 
 /** -1 = drop BEFORE target; 0 = drop AT target (used for rendGroup INTO); +1 = drop AFTER. */
 export type ReorderOri = -1 | 0 | 1;
@@ -178,6 +179,21 @@ function reorderSceneNode(
     if (!src) return { ok: false };
     const destObj = scene.getObject(args.destObjId) as CueMolObject | null;
     if (!destObj) return { ok: false };
+
+    // Nesting one renderer group inside another drops the inner group's members
+    // out of the scene tree for good: getGroupedRendListJSON is only one level
+    // deep, so they match no filter. The renderer-side DnD planner already
+    // refuses this (components/panes/sceneTreeDnd.ts); refuse it here too, since
+    // the service is reachable without it.
+    //
+    // The existence of `destGroupName` is NOT checked here: every caller derives
+    // it from a group node in the tree it just rendered. The Inspector, where a
+    // user can type an arbitrary string into `Renderer.group`, is guarded in
+    // genericProps.service.ts. See helpers/rendGroup.ts.
+    if (args.destGroupName.trim() !== '' && isRendGroup(src)) {
+        console.warn('reorderSceneNode: refusing to nest a renderer group');
+        return { ok: false };
+    }
 
     // Assign / clear rend.group BEFORE re-collecting siblings -- UXP does
     // the same; the group string is part of the rend, not of the obj.
