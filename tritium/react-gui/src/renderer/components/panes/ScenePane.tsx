@@ -375,6 +375,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     // fires while the user is focused inside the scene tree.
     const handleTreeKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLDivElement>) => {
+            // The inline rename editor is an <input> inside this wrapper, so
+            // everything typed into it bubbles to this handler. While it is
+            // open the tree owns no keys: Backspace there means "delete a
+            // character", not "delete the node".
+            if (editingNodeId != null) return;
             // Delete / Backspace removes the selection. `onDeleteSelected`
             // is the same handler the toolbar button uses, so it deletes the
             // whole multi-selection under one undo transaction.
@@ -393,7 +398,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             e.preventDefault();
             beginRenameRef.current(selectedId);
         },
-        [selectedId, nodeLookup, isRenameableType, onDeleteSelected, canDelete],
+        [selectedId, nodeLookup, isRenameableType, onDeleteSelected, canDelete, editingNodeId],
     );
 
     // Auto-focus + select the inline input each time the editor opens.
