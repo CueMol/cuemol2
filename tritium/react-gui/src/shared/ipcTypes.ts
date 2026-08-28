@@ -268,7 +268,7 @@ export type TextCtxAction = 'cut' | 'copy' | 'paste' | 'selectAll'
  * when focus is in a text field, and that includes undo / redo, which the
  * context menu never offers.
  */
-export type TextEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo'
+export type TextEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo' | 'selectAll'
 
 /** Subset of Electron's `ContextMenuParams.editFlags` the menu consumes. */
 export interface TextCtxEditFlags {

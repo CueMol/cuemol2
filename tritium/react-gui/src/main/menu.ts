@@ -109,6 +109,10 @@ function buildSpecificHandlers(
     [IPC.MENU_EDIT_PASTE, 'paste'],
     [IPC.MENU_UNDO, 'undo'],
     [IPC.MENU_REDO, 'redo'],
+    // Cmd+A is focus-dependent too: with the Rendering window focused it used
+    // to run selectAllInScope() in the MAIN window instead of selecting the
+    // text in the field under the cursor.
+    [IPC.MENU_SELECT_ALL, 'selectAll'],
   ]
   for (const [ch, native] of focusRouted) {
     const toRenderer = handlers[ch] ?? (() => mainWindow.webContents.send(IPC.MENU_GENERIC, ch))
@@ -125,7 +129,7 @@ function buildSpecificHandlers(
 }
 
 /** Native edit actions a focused webContents can run against its own selection. */
-type NativeEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo'
+type NativeEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo' | 'selectAll'
 
 function runNativeEdit(wc: WebContents, action: NativeEditAction): void {
   switch (action) {
@@ -134,6 +138,7 @@ function runNativeEdit(wc: WebContents, action: NativeEditAction): void {
     case 'paste': wc.paste(); break
     case 'undo': wc.undo(); break
     case 'redo': wc.redo(); break
+    case 'selectAll': wc.selectAll(); break
   }
 }
 
