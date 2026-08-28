@@ -381,7 +381,7 @@ const App: React.FC = () => {
   } = useActiveViewState({ cm, activeMolViewId, activeSceneId });
 
   // --- Undo/redo availability + history dropdown (owns CmdId.Undo/Redo) ---
-  const undoRedo = useUndoRedoState({ cm, activeMolViewId, getActiveSceneInfo });
+  const undoRedo = useUndoRedoState({ cm, activeSceneId });
 
   // --- View pane (Projection section) writers ---
   // Route through the existing view/scene commands so useActiveViewState (and

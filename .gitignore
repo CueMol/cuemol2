@@ -14,6 +14,9 @@ downloads/
 eggs/
 .eggs/
 lib/
+# ... but the react-gui renderer's lib/ is application source (generic
+# hooks + utilities), not a Python distribution artifact.
+!tritium/react-gui/src/renderer/lib/
 lib64/
 parts/
 sdist/
