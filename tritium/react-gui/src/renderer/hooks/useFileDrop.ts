@@ -63,7 +63,7 @@ export function useFileDrop({ cm }: { cm: AsyncCueMol | null }): { isDragActive:
     for (const file of files) {
       let path = ''
       try {
-        path = window.electronAPI.getPathForFile(file)
+        path = window.electronAPI?.getPathForFile(file) ?? ''
       } catch {
         // Non-filesystem File (should not happen for an OS drop).
       }

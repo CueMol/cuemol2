@@ -78,14 +78,30 @@ describe('WorkerService.invoke dispatch contract', () => {
         expect(posted).toEqual([['testArgs', 1, true, 30]]);
     });
 
-    it('_methods throw posts [method, seqno, false, error]', () => {
+    // The error must cross the wire as a string, matching the service branch.
+    // Posting the raw thrown value risks a DataCloneError inside the catch --
+    // a native exception is not necessarily structured-cloneable -- which
+    // would escape self.onmessage and be funnelled as __worker_crash__,
+    // turning one recoverable call failure into a whole-worker teardown.
+    it('_methods throw posts [method, seqno, false, String(error)]', () => {
         const { svc, posted } = makeSvc();
-        const err = new Error('boom');
         injectMethod(svc, 'testThrow', () => {
-            throw err;
+            throw new Error('boom');
         });
         svc.invoke('testThrow', 9, []);
-        expect(posted).toEqual([['testThrow', 9, false, err]]);
+        expect(posted).toEqual([['testThrow', 9, false, 'Error: boom']]);
+    });
+
+    it('_methods throw of a non-cloneable value still posts a plain string', () => {
+        const { svc, posted } = makeSvc();
+        // A value structuredClone() rejects (functions are not cloneable).
+        const nonCloneable = { fn: () => undefined, toString: () => 'native abort' };
+        injectMethod(svc, 'testThrowNative', () => {
+            throw nonCloneable;
+        });
+        svc.invoke('testThrowNative', 11, []);
+        expect(posted).toEqual([['testThrowNative', 11, false, 'native abort']]);
+        expect(() => structuredClone(posted[0])).not.toThrow();
     });
 
     it('registered service runs async as fn(ctx, args[0]) and posts the result', async () => {

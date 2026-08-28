@@ -62,7 +62,15 @@ export function CommandProvider({ children }: { children: React.ReactNode }): Re
     ): Promise<CommandResult<K>> {
       const h = map.current.get(id)
       if (!h) return Promise.reject(new Error(`[CommandRegistry] unknown command: ${id}`))
-      return Promise.resolve(h(args[0]) as CommandResult<K>)
+      // Call inside the try so a handler that throws synchronously comes back
+      // as a rejected promise. Callers attach `.catch(...)` to the return
+      // value; a synchronous throw would bypass that and escape through
+      // whatever invoked dispatch (an IPC push callback, a menu click).
+      try {
+        return Promise.resolve(h(args[0]) as CommandResult<K>)
+      } catch (e) {
+        return Promise.reject(e)
+      }
     },
 
     has(id) { return map.current.has(id) },

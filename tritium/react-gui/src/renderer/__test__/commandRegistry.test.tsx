@@ -69,6 +69,31 @@ describe('CommandRegistry', () => {
     h.unmount()
   })
 
+  // A handler that throws synchronously must still come back as a rejected
+  // promise. Every call site attaches `.catch(logErr(...))` to the returned
+  // promise; if dispatch throws instead, that catch is never attached and the
+  // error escapes through the IPC push callback into window.onerror.
+  it('a synchronously throwing handler rejects instead of throwing', async () => {
+    const h = makeRenderHook(() => {
+      useRegisterCommand(CmdId.SceneNew, () => {
+        throw new Error('handler blew up')
+      })
+      return useCommands()
+    }, Wrapper)
+    await flushPromises()
+
+    let threw = false
+    let promise: Promise<unknown> | undefined
+    try {
+      promise = h.result.dispatch(CmdId.SceneNew)
+    } catch {
+      threw = true
+    }
+    expect(threw).toBe(false)
+    await expect(promise).rejects.toThrow(/handler blew up/)
+    h.unmount()
+  })
+
   it('has() reflects registration state', async () => {
     const h = makeRenderHook(() => {
       useRegisterCommand(CmdId.FileSave, () => false)

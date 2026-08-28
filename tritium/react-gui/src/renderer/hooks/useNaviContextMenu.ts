@@ -30,9 +30,10 @@ export function useNaviContextMenu(): {
         // macOS shows the native menu (main process); Windows / Linux render
         // the same shared template with the React MenuPanel for a look that
         // matches the menu bar dropdowns.
+        const api = window.electronAPI;
         const action: NaviCtxAction | null =
-            window.electronAPI.platform === 'darwin'
-                ? await window.electronAPI.invoke(IPC.NAVI_CTX_SHOW, { x, y, ...payload })
+            api?.platform === 'darwin'
+                ? await api.invoke(IPC.NAVI_CTX_SHOW, { x, y, ...payload })
                 : await showContextMenu(buildNaviCtxMenuNodes(payload), { x, y });
 
         if (!action || !cm) return;

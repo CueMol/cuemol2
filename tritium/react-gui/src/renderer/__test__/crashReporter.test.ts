@@ -2,11 +2,13 @@
  * @file renderer/__test__/crashReporter.test.ts
  * @description Pin the CrashReporter wire contract.
  *
- * These tests are degrade-detectors: the four crash sources (worker, react,
- * window.onerror, unhandledrejection) all go through `report()` and rely on
- * it routing the FIRST call to log + IPC + DOM + subscribers, and silently
- * dropping subsequent calls. A future refactor that re-orders these steps
- * or breaks idempotency would break crash visibility for the user.
+ * These tests are degrade-detectors for the FATAL path: a worker or React
+ * crash must route the first call to log + IPC + DOM + subscribers and drop
+ * subsequent ones. A refactor that re-orders those steps or breaks idempotency
+ * would break crash visibility for the user.
+ *
+ * Which sources are fatal (and that the others stay recoverable) is pinned
+ * separately in crashSeverity.test.ts.
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,7 +24,7 @@ import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 
 function makeReport(overrides: Partial<CrashReport> = {}): CrashReport {
   return {
-    source: 'window-error',
+    source: 'worker-global',
     message: 'boom',
     timestamp: 1234,
     ...overrides,

@@ -5,19 +5,41 @@
  * Every crash source (window.onerror, unhandledrejection, React
  * ErrorBoundary, worker.onerror, worker.onmessageerror, worker postMessage
  * '__worker_crash__', and the worker render-loop try-catch) reports here.
- * The first report wins -- subsequent reports are only logged. On first
- * report we (a) log to console (which the main process tee's to stderr via
- * the console-message hook), (b) forward to main via IPC.CRASH_REPORT so
- * componentStack and other non-console info also reach stderr, (c) mount
- * the DOM-direct fallback so the user sees the crash even when React died,
- * and (d) notify subscribers (React `ErrorBoundary` -> `CrashOverlay`).
+ *
+ * Reports are split by severity. Everything is (a) logged to console -- which
+ * the main process tee's to stderr via the console-message hook -- and (b)
+ * forwarded to main via IPC.CRASH_REPORT so componentStack and other
+ * non-console fields reach stderr too.
+ *
+ * Only a FATAL source additionally (c) mounts the DOM-direct fallback so the
+ * user sees the crash even when React died, and (d) notifies subscribers
+ * (React `ErrorBoundary` -> `CrashOverlay`). Fatal means the app cannot carry
+ * on: the CueMol worker is gone, or the React tree is. A stray uncaught
+ * throw or unhandled rejection is neither -- `installGlobalCrashHandlers`
+ * funnels every one of them here, and the overlay has no way back, so
+ * treating them as fatal turned any recoverable failure (a worker service
+ * rejecting, a settings write failing on a full disk) into a dead session.
+ *
+ * The first FATAL report wins; later ones are only logged. A non-fatal report
+ * never occupies that slot.
  */
 
 import { IPC } from '@shared/ipcChannels'
-import type { CrashReport } from '@shared/ipcTypes'
+import type { CrashReport, CrashSource } from '@shared/ipcTypes'
 import { mountFallbackDom } from './mountFallbackDom'
 
 type Subscriber = (report: CrashReport) => void
+
+/**
+ * Sources that mean the app cannot continue, so the crash overlay is the
+ * right answer. Everything else is reported but left recoverable.
+ */
+const FATAL_SOURCES: ReadonlySet<CrashSource> = new Set<CrashSource>([
+  'worker-global',
+  'worker-message',
+  'worker-render-loop',
+  'react-error-boundary',
+])
 
 let firstReport: CrashReport | null = null
 const subscribers: Set<Subscriber> = new Set()
@@ -29,13 +51,14 @@ const subscribers: Set<Subscriber> = new Set()
  * IPC or re-mount the fallback.
  */
 export function report(payload: CrashReport): void {
-  if (firstReport !== null) {
+  const fatal = FATAL_SOURCES.has(payload.source)
+  if (fatal && firstReport !== null) {
     console.error('[Crash][repeat][' + payload.source + ']', payload.message)
     return
   }
-  firstReport = payload
+  if (fatal) firstReport = payload
 
-  console.error('[Crash][' + payload.source + ']', payload.message)
+  console.error('[' + (fatal ? 'Crash' : 'Error') + '][' + payload.source + ']', payload.message)
   if (payload.filename) {
     const loc = payload.lineno !== undefined
       ? `${payload.filename}:${payload.lineno}:${payload.colno ?? 0}`
@@ -60,6 +83,10 @@ export function report(payload: CrashReport): void {
   } catch (e) {
     console.error('[Crash] IPC.CRASH_REPORT threw:', e)
   }
+
+  // A non-fatal report stops here: it has been logged and forwarded, and the
+  // app keeps running.
+  if (!fatal) return
 
   // DOM-direct fallback so the user sees the crash even when React died.
   try {
