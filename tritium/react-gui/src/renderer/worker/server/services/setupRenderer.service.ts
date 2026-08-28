@@ -29,6 +29,7 @@ import type { RendererOptions } from '../../../components/fopen-opt-dlgs/types';
 import { getDefaultStyleName } from './helpers/getDefaultStyleName';
 import { makeSel } from './helpers/makeSel';
 import { molPostProc } from './helpers/molPostProc';
+import { safeRead } from './helpers/safeRead';
 
 const log = console;
 
@@ -105,7 +106,7 @@ export function setupRenderer(
         // Selection field while a preset is picked).
         recenterIfRequested(mol, rend, rendOpts);
         if (!NON_MOL_CLASSES.includes(mol.getClassName())) {
-            molPostProc(ctx, mol, true);
+            molPostProc(ctx, mol, true, safeRead(() => (mol.getScene() as Scene | null)?.uid) ?? 0);
         }
         return rend;
     }
@@ -138,10 +139,16 @@ export function setupRenderer(
 
     const className = mol.getClassName();
     if (!NON_MOL_CLASSES.includes(className)) {
-        molPostProc(ctx, mol, true);
+        // Named selections and colours are scoped to the scene's style set
+        // (saveSelDef writes them there and getSelDefs offers them to the UI),
+        // so compiling in the default global scope made a scene-local name
+        // fail to resolve -- the renderer was then created with no selection at
+        // all, showing every atom.
+        const sceneUid = safeRead(() => (mol.getScene() as Scene | null)?.uid) ?? 0;
+        molPostProc(ctx, mol, true, sceneUid);
 
         if (rendOpts.selectionEnabled && rendOpts.selection && rendOpts.selection !== '*') {
-            const sel = makeSel(ctx, rendOpts.selection);
+            const sel = makeSel(ctx, rendOpts.selection, sceneUid);
             if (sel) {
                 (rend as unknown as MolRenderer).sel = sel;
             } else {

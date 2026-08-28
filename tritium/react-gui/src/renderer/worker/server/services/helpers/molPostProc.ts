@@ -3,7 +3,17 @@ import { createDefPaintColoring } from './defPaintColoring';
 
 const log = console;
 
-export function molPostProc(ctx: WorkerContext, mol: any, newObj: boolean): void {
+/**
+ * @param sceneUid - style scope for the default colouring. Named colours live
+ *   in the scene's style set, so the scene's uid has to be threaded through;
+ *   the coloring panel already passes it (coloring/applyColoring.ts).
+ */
+export function molPostProc(
+    ctx: WorkerContext,
+    mol: any,
+    newObj: boolean,
+    sceneUid = 0,
+): void {
     try {
         const selRend = mol.getRendererByType('*selection');
         if (!selRend) {
@@ -15,7 +25,7 @@ export function molPostProc(ctx: WorkerContext, mol: any, newObj: boolean): void
 
     if (newObj) {
         try {
-            const coloring = createDefPaintColoring(ctx);
+            const coloring = createDefPaintColoring(ctx, sceneUid);
             if (coloring) {
                 mol.coloring = coloring;
                 log.info('*** default paint coloring set');

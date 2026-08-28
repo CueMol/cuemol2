@@ -16,6 +16,7 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { isValidUid } from '../../shared/uid';
 
 interface StyleManagerLike {
     loadStyleSetFromFile(scopeId: number, path: string, readOnly: boolean): number;
@@ -60,7 +61,7 @@ function loadStyleSetFromFile(
         // default. The user can toggle off later via the ctxmenu item.
         newId = mgr.loadStyleSetFromFile(args.sceneId, args.path, true);
     });
-    if (newId < 0) return empty;
+    if (!isValidUid(newId)) return empty;
     try { mgr.firePendingEvents?.(); } catch { /* ignore */ }
     return { ok: true, newId };
 }

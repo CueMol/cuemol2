@@ -14,6 +14,7 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { INVALID_UID, isValidUid } from '../../shared/uid';
 
 interface StyleManagerLike {
     createStyleSet(name: string, scopeId: number): number;
@@ -62,11 +63,11 @@ function createStyleSet(
     if (!mgr) return empty;
     if (mgr.hasStyleSet(trimmed, args.sceneId) !== 0) return empty;
 
-    let newId = -1;
+    let newId = INVALID_UID;
     withUndoTxn(scene, 'Create style', () => {
         newId = mgr.createStyleSet(trimmed, args.sceneId);
     });
-    if (newId < 0) return empty;
+    if (!isValidUid(newId)) return empty;
     return { ok: true, newId };
 }
 

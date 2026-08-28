@@ -12,6 +12,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
+import { isValidUid } from '../../shared/uid';
 
 export interface SaveSelDefArgs {
     sceneId: number;
@@ -62,7 +63,10 @@ function saveSelDef(ctx: WorkerContext, args: SaveSelDefArgs): SaveSelDefResult 
         let setId = findWritableSceneSet(styleMgr, args.sceneId);
         if (setId === null) {
             setId = styleMgr.createStyleSet('user', args.sceneId);
-            if (setId < 0) return;
+            // C++ returns qlib::invalid_uid (0) on failure, never a negative
+            // number -- the old `< 0` guard never fired and named selections
+            // were written into style-set id 0.
+            if (!isValidUid(setId)) return;
         }
         ok = styleMgr.setStrData('sel', name, expr, args.sceneId, setId);
     });

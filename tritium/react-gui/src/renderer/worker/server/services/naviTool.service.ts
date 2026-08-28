@@ -5,10 +5,11 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 import type { NameLabelRenderer } from '@cuemol/core/src/wrappers/NameLabelRenderer';
 import type { ResidRangeSet } from '@cuemol/core/src/wrappers/ResidRangeSet';
-import type { SelCommand } from '@cuemol/core/src/wrappers/SelCommand';
 import type { MolResidue } from '@cuemol/core/src/wrappers/MolResidue';
 import type { HitTestResult } from '../../../types';
 import { withUndoTxn } from './withUndoTxn';
+import { makeSel } from './helpers/makeSel';
+import { quoteSelName } from './helpers/selName';
 
 // ---- internal helpers ----
 
@@ -22,12 +23,6 @@ function runHitTest(ctx: WorkerContext, viewId: number, x: number, y: number): H
     } catch {
         return null;
     }
-}
-
-function makeSel(ctx: WorkerContext, selStr: string, sceneUid: number): SelCommand {
-    const sel = ctx.svc.createObj('SelCommand') as SelCommand;
-    sel.compile(selStr, sceneUid);
-    return sel;
 }
 
 function toggleAtomLabel(mol: MolCoord, atomId: number): void {
@@ -146,6 +141,8 @@ function naviResidSel(ctx: WorkerContext, args: NaviResidSelArgs): NaviResidSelR
 
     const chainName: string = atom.chainName;
     const residIndex: string = atom.residIndex;
+    const chain = quoteSelName(chainName);
+    if (!chain) return { handled: false };
 
     withUndoTxn(scene, 'Toggle select atom(s)', () => {
         const rrs = ctx.svc.createObj('ResidRangeSet') as ResidRangeSet;
@@ -160,11 +157,15 @@ function naviResidSel(ctx: WorkerContext, args: NaviResidSelArgs): NaviResidSelR
             if (prevAtom.chainName !== chainName) return;
 
             const prevResidIndex = prevAtom.residIndex;
-            const addSel = makeSel(ctx, `'${chainName}'.${prevResidIndex}:${residIndex}.*`, scene.uid);
+            const addSel = makeSel(ctx, `${chain}.${prevResidIndex}:${residIndex}.*`, scene.uid);
+            // A failed compile used to yield a match-nothing SelCommand that
+            // was appended anyway, silently changing the selection.
+            if (!addSel) return;
             rrs.append(mol, addSel);
         } else {
             const resid = mol.getResidue(chainName, residIndex) as MolResidue;
-            const addSel = makeSel(ctx, `'${chainName}'.${residIndex}.*`, scene.uid);
+            const addSel = makeSel(ctx, `${chain}.${residIndex}.*`, scene.uid);
+            if (!addSel) return;
             if (resid && rrs.contains(resid)) {
                 rrs.remove(mol, addSel);
             } else {

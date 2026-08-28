@@ -4,6 +4,7 @@ import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
 import type { ViewInputConfig } from '@cuemol/core/src/wrappers/ViewInputConfig';
 import * as event from '../../event';
 import { renderText } from './textRender';
+import { isValidUid } from '../shared/uid';
 
 /**
  * Worker bootstrap / configuration helpers extracted from `WorkerService`.
@@ -61,7 +62,7 @@ export function saveUserStyle(cm: CueMol, userStylePath: string): boolean {
     }
     try {
         const uid = stylem.hasStyleSet('user', 0);
-        if (uid < 0) {
+        if (!isValidUid(uid)) {
             log.info('Worker> no "user" style set; nothing to save');
             return false;
         }
