@@ -88,7 +88,7 @@ vi.mock('../components/panes/PaintSelCell', () => ({
 
 import { ColorPane } from '../components/panes/ColorPane'
 import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import {
     mountTree,
     flushPromises,

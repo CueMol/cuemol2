@@ -29,7 +29,7 @@ import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
 import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service';
 import type { MorphFrameInfo } from '../../worker/server/services/morphMol.service';
 import { useCueMol } from '../../hooks/useCueMol';
-import { IPC } from '../../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 
 interface Props {
     visible: boolean;

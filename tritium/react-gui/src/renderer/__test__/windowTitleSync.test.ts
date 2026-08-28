@@ -11,7 +11,7 @@
 import React from 'react'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import type { TabData } from '../types'
 import { useWindowTitleSync } from '../hooks/useWindowTitleSync'
 import {

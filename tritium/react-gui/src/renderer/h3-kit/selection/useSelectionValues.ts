@@ -1,5 +1,5 @@
 /**
- * @file components/panes/selection/useSelectionValues.ts
+ * @file h3-kit/selection/useSelectionValues.ts
  * @description Async value resolver feeding the SelectionBuilder's keyword
  * autocomplete with real values from the active molecule.
  *

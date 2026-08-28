@@ -14,7 +14,7 @@ import {
   dragItemsMayContainOpenable,
   isDeniedMime,
 } from '../utils/classifyDropFile'
-import type { ElectronFileFilter } from '../../shared/ipcTypes'
+import type { ElectronFileFilter } from '@shared/ipcTypes'
 
 /** Shape getOpenFilters returns: All Supported + concrete rows + All Files. */
 const OBJ_FILTERS: ElectronFileFilter[] = [

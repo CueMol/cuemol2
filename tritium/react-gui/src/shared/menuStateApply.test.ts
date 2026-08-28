@@ -19,14 +19,14 @@
  * pin it here.
  */
 import { describe, it, expect } from 'vitest'
-import type { MenuState } from '../../shared/ipcTypes'
+import type { MenuState } from '@shared/ipcTypes'
 import {
     applyMenuStateTo,
     mergeMenuState,
     SCENE_REQUIRING_MENU_IDS,
     type MenuItemLike,
     type MenuLike,
-} from '../../shared/menuStateApply'
+} from '@shared/menuStateApply'
 
 class FakeMenuItem implements MenuItemLike {
     constructor(public id: string) {}

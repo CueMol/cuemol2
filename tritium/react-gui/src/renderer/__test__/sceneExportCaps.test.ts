@@ -13,8 +13,8 @@ import {
     applyMenuStateTo,
     type MenuItemLike,
     type MenuLike,
-} from '../../shared/menuStateApply'
-import { SCENE_EXPORT_MENU_EXPORTERS } from '../../shared/menuTemplate'
+} from '@shared/menuStateApply'
+import { SCENE_EXPORT_MENU_EXPORTERS } from '@shared/menuTemplate'
 
 // --- Worker probe: getAvailableSceneExporters ---
 

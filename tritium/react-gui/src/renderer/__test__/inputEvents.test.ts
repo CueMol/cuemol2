@@ -10,7 +10,7 @@ import {
 
 /**
  * Degrade-detection test for the Worker input-event handlers extracted
- * from WorkerService in Phase 2. Pins the DOM->CueMol modifier-bit mapping
+ * from WorkerService. Pins the DOM->CueMol modifier-bit mapping
  * and the gesture scale constants -- both are easy to silently regress.
  */
 

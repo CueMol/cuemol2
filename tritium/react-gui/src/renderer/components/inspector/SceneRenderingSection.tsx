@@ -106,7 +106,7 @@ export const SceneAmbientOcclusionSection: React.FC<RendererPropSectionProps> = 
 }) => {
   const get = finder(entries);
   const aoEnabled = get("aoEnabled");
-  const off = aoEnabled ? !Boolean(aoEnabled.value) : true;
+  const off = aoEnabled ? !aoEnabled.value : true;
   return (
     <>
       {aoEnabled && (

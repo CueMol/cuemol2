@@ -6,8 +6,8 @@
  * The "Generic" tab is backed by the real C++ property bridge: selecting a
  * node in the scene tree fetches its full property list via the
  * `getGenericProps` worker service, and edits are written back live through
- * `setGenericProp`. The structured "Properties" tab still uses static
- * sample data pending its own migration.
+ * `setGenericProp`. The structured "Properties" tab reads the same entries and
+ * renders them through the per-renderer-type section registry.
  */
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";

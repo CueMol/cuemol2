@@ -15,7 +15,6 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { act } from 'react'
 import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 

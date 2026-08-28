@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useOpenFilePaths } from './useOpenFilePaths'

@@ -8,7 +8,7 @@
  * merely passes through.
  */
 
-import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
+import type { SceneBgColor, ViewCenterMark } from '@shared/ipcTypes';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
 import type { ActiveSceneCommandDeps } from '../commands/commandTypes';
 import { useSceneCommands } from '../commands/useSceneCommands';

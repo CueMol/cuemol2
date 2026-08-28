@@ -23,7 +23,7 @@ import type { RenderUpdate } from '../shared/renderTypes';
 import { RENDER_PROGRESS_CHANNEL } from '../shared/renderTypes';
 import type { ApbsUpdate } from '../shared/apbsTypes';
 import { APBS_PROGRESS_CHANNEL } from '../shared/apbsTypes';
-import type { CrashSource } from '../../../shared/ipcTypes';
+import type { CrashSource } from '@shared/ipcTypes';
 import { report as reportCrash } from '../../crash/CrashReporter';
 
 const log = console;

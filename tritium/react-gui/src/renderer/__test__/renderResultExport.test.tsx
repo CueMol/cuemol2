@@ -31,7 +31,7 @@ import {
   exportFileName,
   exportImageRef,
 } from '../components/panes/RenderResultPane';
-import { IPC } from '../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 import type { RenderResult } from '../data/renderResult';
 
 const RESULT: RenderResult = {

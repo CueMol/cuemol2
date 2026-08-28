@@ -1,6 +1,6 @@
 /**
  * @file hooks/sceneTree/useSceneTreeCameraOps.ts
- * @description Camera operations for `useSceneTree` (Phase 5b). Cameras are
+ * @description Camera operations for `useSceneTree`. Cameras are
  * keyed by name; these callbacks dispatch directly to the worker without a
  * tree lookup.
  */

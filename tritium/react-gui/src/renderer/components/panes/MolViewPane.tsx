@@ -6,7 +6,7 @@ import { useCueMol } from '../../hooks/useCueMol'
 import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
 import { useLogActions } from '../../contexts/LogContext'
 import { GES_PINCH, GES_ROTATE } from '../../worker/shared/gestureAxes'
-import { IPC } from '../../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 
 /**
  * Tab content pane for "molview" tabs -- WebGL canvas for molecular visualization.

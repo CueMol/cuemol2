@@ -15,11 +15,11 @@ import {
     flushPromises,
 } from './helpers/testHarness';
 import { useRenderWindowBridge } from '../hooks/useRenderWindowBridge';
-import { IPC } from '../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 import type {
     RenderTargetViewWire,
     RenderWindowStateUpdate,
-} from '../../shared/ipcTypes';
+} from '@shared/ipcTypes';
 import type { RenderUpdate, RenderStartResult } from '../worker/shared/renderTypes';
 import { DEFAULT_RENDER_BINARIES } from '../worker/shared/renderTypes';
 import type { RenderSettingsSnapshot } from '../data/renderResult';

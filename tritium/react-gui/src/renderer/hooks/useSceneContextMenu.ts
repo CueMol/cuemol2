@@ -5,9 +5,9 @@ import type {
     SceneCtxAction,
     SceneCtxMenuPayload,
     SelectMolKind,
-} from '../../shared/ipcTypes'
-import { IPC } from '../../shared/ipcChannels'
-import { buildTemplate } from '../../shared/sceneCtxMenu/sceneCtxTemplates'
+} from '@shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import { buildTemplate } from '@shared/sceneCtxMenu/sceneCtxTemplates'
 import { useShowContextMenu } from '../components/menu/ContextMenuProvider'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'

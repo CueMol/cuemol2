@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 6b: panel.workspace.ctxmenu.renderer -- "Change type" submenu.
+// panel.workspace.ctxmenu.renderer -- "Change type" submenu.
 // Mirrors UXP `ws.chgRendType` (non-selection branch) in
 // `workspace_panel.js`.
 //

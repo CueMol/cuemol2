@@ -197,7 +197,7 @@ function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNodeResult 
         return { ok: true };
     }
 
-    // scene / camera / style not supported in Phase 2.
+    // scene / camera / style nodes are not supported here.
     return { ok: false };
 }
 

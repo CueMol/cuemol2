@@ -27,8 +27,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { PaneCollapseState, LayoutState, UiState } from "../../shared/ipcTypes";
-import { IPC } from "../../shared/ipcChannels";
+import type { PaneCollapseState, LayoutState, UiState } from "@shared/ipcTypes";
+import { IPC } from "@shared/ipcChannels";
 
 export type { PaneCollapseState, LayoutState, UiState };
 

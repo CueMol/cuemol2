@@ -3,8 +3,8 @@
  *
  * Mirrors `panel.makeSelstrByTreeSel` / `panel.makeSelstrByNode` in
  * `uxp_gui/cuemol2/base/content/molstruct-panel.js` for the chain branch
- * (Phase 1 scope). Residue / atom encodings are also pinned through
- * the decoder so the wire format is locked while we add Phase 2 lazy
+ * Residue / atom encodings are also pinned through
+ * the decoder so the wire format is locked for the lazy
  * loading.
  */
 
@@ -22,7 +22,7 @@ function set(...ids: MolTreeId[]): Set<MolTreeId> {
     return new Set(ids)
 }
 
-describe('selStrFromTree — chain rows (Phase 1)', () => {
+describe('selStrFromTree — chain rows', () => {
     it('returns empty string for an empty selection', () => {
         expect(selStrFromTree(set())).toBe('')
     })

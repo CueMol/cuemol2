@@ -108,7 +108,7 @@ vi.mock('electron', () => {
   }
 })
 
-vi.mock('../../main/recentFiles', () => ({
+vi.mock('@main/recentFiles', () => ({
   getExistingRecents: vi.fn(() => []),
 }))
 
@@ -124,7 +124,7 @@ import {
   setMenuBlocked,
   updateMenuState,
   _resetMenuBlockForTest,
-} from '../../main/menu'
+} from '@main/menu'
 import type { BrowserWindow } from 'electron'
 
 /** Install a fresh, fully-enabled menu as the current application menu. */

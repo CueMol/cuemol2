@@ -8,7 +8,7 @@ import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes';
 void React;
 
 /**
- * Degrade-detection test for useSceneTreeController -- the Phase 4 extraction
+ * Degrade-detection test for useSceneTreeController -- the extraction
  * of App's scene-tree wiring. Pins:
  *   - the <SidePanel> prop bundle shape + field->source mapping
  *   - inline-rename commit routing (camera->renameCamera / else->renameNode)

@@ -16,7 +16,7 @@
  */
 
 import React, { createContext, useCallback, useContext, useRef } from 'react'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { setClipboardModalOpen } from '../utils/editClipboard'
 
 interface ModalOpenCounter {

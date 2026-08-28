@@ -23,7 +23,7 @@ import { dirname, resolve } from 'node:path'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { APP_MENU } from '../../shared/menuTemplate'
+import { APP_MENU } from '@shared/menuTemplate'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))

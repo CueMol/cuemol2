@@ -39,8 +39,8 @@ vi.mock('electron', () => ({
   ipcRenderer,
 }))
 
-import { IPC } from '../../shared/ipcChannels'
-import type { ElectronAPI } from '../../shared/ipcContract'
+import { IPC } from '@shared/ipcChannels'
+import type { ElectronAPI } from '@shared/ipcContract'
 
 let api: ElectronAPI
 
@@ -54,7 +54,7 @@ beforeEach(async () => {
   // preload/index lives outside this tsconfig project (it belongs to
   // tsconfig.node.json). Vite/Vitest resolves it at runtime; a string
   // variable bypasses tsc's TS6307 cross-project check.
-  const preloadEntry = '../../preload/index'
+  const preloadEntry = './index'
   await import(preloadEntry)
   expect(exposeInMainWorld).toHaveBeenCalledWith('electronAPI', expect.any(Object))
   api = exposeInMainWorld.mock.calls[0][1] as ElectronAPI

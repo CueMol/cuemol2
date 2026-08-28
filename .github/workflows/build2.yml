@@ -205,6 +205,12 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    # Source-only checks (typecheck / eslint / vitest) -- platform independent,
+    # so run them on a single matrix leg rather than on every one.
+    - name: Check tritium/react-gui
+      if: matrix.os == 'macos-15' && matrix.embed-python == ''
+      uses: ./build_scripts/check_tritium_react_gui
+
     # Fetch the external bundle apps (POV-Ray / apbs-pdb2pqr / ffmpeg) before
     # packaging so collect-cuemol2-runtime.sh can stage them into the DMG (via
     # BUNDLE_APPS below). The same download also feeds the UXP GUI build later.

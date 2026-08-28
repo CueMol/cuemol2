@@ -183,7 +183,7 @@ describe('useRendererColoringState', () => {
         // ColoringScheme), so their PROPCHG events surface with the
         // renderer-side propname. The hook must whitelist them; otherwise
         // committing a slider, swatch, or selector silently no-ops in the UI
-        // (the user reported this regression after Phase 3 wiring).
+        // (reported as a regression after the coloring wiring landed).
         for (const propname of [
             'colormode', 'elepot', 'ramp_above',
             'lowcol', 'midcol', 'highcol',

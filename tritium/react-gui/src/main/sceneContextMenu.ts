@@ -15,8 +15,8 @@
  */
 import { Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
-import type { SceneCtxAction, SceneCtxMenuPayload } from '../shared/ipcTypes'
-import { buildTemplate } from '../shared/sceneCtxMenu/sceneCtxTemplates'
+import type { SceneCtxAction, SceneCtxMenuPayload } from '@shared/ipcTypes'
+import { buildTemplate } from '@shared/sceneCtxMenu/sceneCtxTemplates'
 import { toElectronTemplate } from './menuNodeAdapter'
 
 export function showSceneContextMenu(

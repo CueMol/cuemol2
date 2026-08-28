@@ -1,0 +1,19 @@
+name: 'Check tritium/react-gui'
+description: 'Type-check, lint and unit-test the tritium react-gui package'
+
+runs:
+  using: "composite"
+  steps:
+  - name: Check tritium/react-gui (posix)
+    if: runner.os != 'Windows'
+    shell: bash
+    run: |
+      cd ${GITHUB_WORKSPACE}
+      bash build_scripts/check_tritium_react_gui/run.sh
+
+  - name: Check tritium/react-gui (windows)
+    if: runner.os == 'Windows'
+    shell: bash
+    run: |
+      cd ${GITHUB_WORKSPACE}
+      bash build_scripts/check_tritium_react_gui/run.sh

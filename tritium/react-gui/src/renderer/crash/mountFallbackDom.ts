@@ -10,8 +10,8 @@
  * a nicer UI; this is the universal backstop.
  */
 
-import { IPC } from '../../shared/ipcChannels'
-import type { CrashReport } from '../../shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import type { CrashReport } from '@shared/ipcTypes'
 
 const FALLBACK_DOM_ID = 'crash-fallback-dom'
 

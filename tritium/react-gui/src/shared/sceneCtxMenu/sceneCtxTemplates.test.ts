@@ -13,10 +13,10 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { buildTemplate } from '../../shared/sceneCtxMenu/sceneCtxTemplates'
-import type { SceneCtxNode } from '../../shared/sceneCtxMenu/sceneCtxItems'
-import type { SceneCtxMenuPayload } from '../../shared/ipcTypes'
-import { isSeparatorNode } from '../../shared/menuNodes'
+import { buildTemplate } from '@shared/sceneCtxMenu/sceneCtxTemplates'
+import type { SceneCtxNode } from '@shared/sceneCtxMenu/sceneCtxItems'
+import type { SceneCtxMenuPayload } from '@shared/ipcTypes'
+import { isSeparatorNode } from '@shared/menuNodes'
 
 function payload(o: Partial<SceneCtxMenuPayload>): SceneCtxMenuPayload {
     return {

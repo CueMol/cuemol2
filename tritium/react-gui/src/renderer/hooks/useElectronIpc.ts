@@ -16,9 +16,9 @@
 import { useEffect } from 'react'
 import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
-import { IPC } from '../../shared/ipcChannels'
-import { MENU_PASS_THROUGH_CHANNELS } from '../../shared/menuActionMap'
-import type { PushChannel } from '../../shared/ipcContract'
+import { IPC } from '@shared/ipcChannels'
+import { MENU_PASS_THROUGH_CHANNELS } from '@shared/menuActionMap'
+import type { PushChannel } from '@shared/ipcContract'
 import { useMenuDispatch } from './useMenuDispatch'
 import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
 

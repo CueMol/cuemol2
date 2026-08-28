@@ -17,7 +17,7 @@ import {
   teardownElectronAPI,
   flushPromises,
 } from './helpers/testHarness'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 
 void React
 

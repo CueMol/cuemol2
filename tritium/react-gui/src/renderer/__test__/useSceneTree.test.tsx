@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'

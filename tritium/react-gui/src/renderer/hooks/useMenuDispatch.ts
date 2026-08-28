@@ -10,8 +10,8 @@ import { useCallback } from 'react'
 import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import type { CommandKey } from '../commands/CommandMap'
-import { IPC } from '../../shared/ipcChannels'
-import type { RecentFileEntry } from '../../shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import type { RecentFileEntry } from '@shared/ipcTypes'
 import {
   MENU_ACTION_MAP,
   MENU_DISPATCH_RECENT_CLEAR,
@@ -22,7 +22,7 @@ import {
   isMenuActionChannel,
   isUnimplementedMenuAction,
   type MenuActionChannel,
-} from '../../shared/menuActionMap'
+} from '@shared/menuActionMap'
 import { selectAllInScope } from '../utils/selectAllScope'
 import { dispatchEditClipboard, dispatchEditUndoRedo } from '../utils/editClipboard'
 

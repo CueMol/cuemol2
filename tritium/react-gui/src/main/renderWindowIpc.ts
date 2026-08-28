@@ -18,20 +18,20 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { clipboard, dialog, nativeImage, type BrowserWindow } from 'electron'
-import { IPC } from '../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import type {
   RenderImageRef,
   RenderViewCamera,
   HatchStyleSpecReply,
   RenderWindowMode,
   ViewSizePx,
-} from '../shared/ipcTypes'
+} from '@shared/ipcTypes'
 import {
   frameFileRegExp,
   movieFileNames,
   movieFrameFileName,
   resolveMovieBaseName,
-} from '../shared/movieFrames'
+} from '@shared/movieFrames'
 import { getSessionMovieDir } from './movieOutput'
 import {
   clearRenderHistory,

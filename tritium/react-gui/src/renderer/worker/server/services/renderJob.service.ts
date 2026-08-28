@@ -58,7 +58,7 @@ import {
   movieFileNames,
   movieFrameFileName,
   resolveMovieBaseName,
-} from "../../../../shared/movieFrames";
+} from "@shared/movieFrames";
 import {
   buildFfmpegArgs,
   movieOutputPath,
@@ -193,7 +193,7 @@ function finishJob(
 ): void {
   stopTimer(entry);
   jobs.delete(entry.jobId);
-  // Phase 5 keeps the working dir (render.pov / .inc / .png) for inspection.
+  // The working dir (render.pov / .inc / .png) is kept for inspection.
   try {
     // Existence check only: the image itself is archived by the main process
     // and read back on demand, so it never becomes a multi-MB string here.

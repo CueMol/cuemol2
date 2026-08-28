@@ -23,7 +23,7 @@ import { SliderField } from '../../h3-kit/form/SliderField';
 import { ButtonRow, FormButton } from '../../h3-kit/form/ButtonRow';
 import { Listbox } from '../../h3-kit/list/Listbox';
 import { ListRow } from '../../h3-kit/list/ListRow';
-import { IPC } from '../../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 import {
     getLastTopologyPath,
     setLastTopologyPath,

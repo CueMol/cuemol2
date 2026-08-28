@@ -20,8 +20,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { IPC } from "../../shared/ipcChannels";
-import type { MovieRenderPrefs } from "../../shared/ipcTypes";
+import { IPC } from "@shared/ipcChannels";
+import type { MovieRenderPrefs } from "@shared/ipcTypes";
 import {
   DEFAULT_MOVIE_SETTINGS,
   MOVIE_FORMAT_EXT,

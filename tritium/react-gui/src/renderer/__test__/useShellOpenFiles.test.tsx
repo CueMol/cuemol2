@@ -16,7 +16,7 @@ import {
   setupElectronAPI,
   teardownElectronAPI,
 } from './helpers/testHarness'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { useShellOpenFiles } from '../hooks/useShellOpenFiles'
 import { resetOpenFilePathsForTests } from '../hooks/useOpenFilePaths'
 

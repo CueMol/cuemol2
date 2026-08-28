@@ -12,9 +12,9 @@
  */
 import React, { useLayoutEffect, useRef, useState } from 'react'
 import { AppIcon } from '../AppIcon'
-import { collapseSeparators, isSeparatorNode } from '../../../shared/menuNodes'
-import type { MenuActionNode, MenuNode } from '../../../shared/menuNodes'
-import { formatAccelerator } from '../../../shared/menuAccel'
+import { collapseSeparators, isSeparatorNode } from '@shared/menuNodes'
+import type { MenuActionNode, MenuNode } from '@shared/menuNodes'
+import { formatAccelerator } from '@shared/menuAccel'
 
 export interface MenuPanelProps<T> {
   nodes: ReadonlyArray<MenuNode<T>>

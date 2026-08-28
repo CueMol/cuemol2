@@ -1,5 +1,5 @@
 /**
- * @file __test__/mainRenderHistory.test.ts
+ * @file main/renderHistory.test.ts
  * @description Contract tests for the main-process render-history store.
  *
  * The store is what lets the Rendering window keep a deep history without
@@ -19,8 +19,8 @@ import {
   readRenderImage,
   registerRenderWorkDir,
   storeRenderImage,
-} from '../../main/renderHistory';
-import { RENDER_HISTORY_LIMIT } from '../../shared/renderHistory';
+} from '@main/renderHistory';
+import { RENDER_HISTORY_LIMIT } from '@shared/renderHistory';
 
 /** Directory holding the fake "rendered" PNGs a test archives from. */
 let srcDir: string;
@@ -141,7 +141,7 @@ describe('main render history work directories', () => {
     // ... then dies without reaching its cleanup, losing the in-memory list.
     // A fresh module instance is exactly that: same files, no state.
     vi.resetModules();
-    const restarted = await import('../../main/renderHistory');
+    const restarted = await import('@main/renderHistory');
 
     // The next start clears the history, which adopts the on-disk index.
     restarted.clearRenderHistory();

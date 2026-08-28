@@ -8,8 +8,8 @@
  * the normalization they share.
  */
 import { describe, it, expect } from 'vitest'
-import { collapseSeparators, isSeparatorNode } from '../../shared/menuNodes'
-import type { MenuNode } from '../../shared/menuNodes'
+import { collapseSeparators, isSeparatorNode } from '@shared/menuNodes'
+import type { MenuNode } from '@shared/menuNodes'
 
 const sep: MenuNode<string> = { type: 'separator' }
 const item = (label: string): MenuNode<string> => ({ label, action: label })

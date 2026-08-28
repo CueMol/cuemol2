@@ -8,16 +8,16 @@
 import { app, Menu, webContents } from 'electron'
 import type { BrowserWindow, MenuItemConstructorOptions, WebContents } from 'electron'
 import path from 'path'
-import { IPC } from '../shared/ipcChannels'
-import { APP_MENU } from '../shared/menuTemplate'
-import type { AppMenuItem, AppMenuGroup } from '../shared/menuTemplate'
+import { IPC } from '@shared/ipcChannels'
+import { APP_MENU } from '@shared/menuTemplate'
+import type { AppMenuItem, AppMenuGroup } from '@shared/menuTemplate'
 import {
   DEDICATED_DIRECT_CHANNELS,
   GENERIC_RELAY_CHANNELS,
   isMenuActionChannel,
-} from '../shared/menuActionMap'
-import type { MenuState, RecentFileEntry } from '../shared/ipcTypes'
-import { applyMenuStateTo, mergeMenuState } from '../shared/menuStateApply'
+} from '@shared/menuActionMap'
+import type { MenuState, RecentFileEntry } from '@shared/ipcTypes'
+import { applyMenuStateTo, mergeMenuState } from '@shared/menuStateApply'
 import { getExistingRecents } from './recentFiles'
 import {
   isBlocked,

@@ -5,8 +5,8 @@
  */
 
 import { useEffect, useState } from 'react'
-import { IPC } from '../../shared/ipcChannels'
-import type { RecentFileEntry } from '../../shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import type { RecentFileEntry } from '@shared/ipcTypes'
 
 export function useRecentFiles(): RecentFileEntry[] {
   const [recents, setRecents] = useState<RecentFileEntry[]>([])

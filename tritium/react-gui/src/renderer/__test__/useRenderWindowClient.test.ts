@@ -16,12 +16,12 @@ import {
     teardownElectronAPI,
 } from './helpers/testHarness';
 import { useRenderWindowClient } from '../hooks/useRenderWindowClient';
-import { IPC } from '../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 import type {
     RenderTargetViewWire,
     RenderWindowModeRequest,
     RenderWindowStateUpdate,
-} from '../../shared/ipcTypes';
+} from '@shared/ipcTypes';
 import type { RenderSettingsSnapshot } from '../data/renderResult';
 
 const snapshot: RenderSettingsSnapshot = {

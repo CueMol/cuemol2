@@ -35,8 +35,8 @@
  * `setClipboardModalOpen`.
  */
 
-import { IPC } from '../../shared/ipcChannels'
-import type { TextEditAction } from '../../shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import type { TextEditAction } from '@shared/ipcTypes'
 
 /** What a registered panel can do with the clipboard. */
 export interface ClipboardScopeHandlers {

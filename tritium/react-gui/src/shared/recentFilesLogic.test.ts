@@ -6,7 +6,7 @@
  * logic here is sufficient to pin the contract.
  */
 import { describe, it, expect } from 'vitest'
-import { addToRecents, MAX_RECENTS } from '../../shared/recentFilesLogic'
+import { addToRecents, MAX_RECENTS } from '@shared/recentFilesLogic'
 
 describe('shared/recentFilesLogic', () => {
     it('inserts a new entry at the head', () => {

@@ -13,7 +13,7 @@
  */
 
 import React from 'react'
-import type { CrashReport } from '../../shared/ipcTypes'
+import type { CrashReport } from '@shared/ipcTypes'
 import { CrashOverlay } from './CrashOverlay'
 import { report } from './CrashReporter'
 

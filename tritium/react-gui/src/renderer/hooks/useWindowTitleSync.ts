@@ -20,7 +20,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { TabData } from '../types'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 
 export function useWindowTitleSync(tabs: TabData[], activeTab: string): void {
   // Skip redundant IPC when an unrelated tab change leaves the title alone.

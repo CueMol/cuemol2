@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 4b: panel.workspace.tree -- drag-drop reorder. Mirrors UXP
+// panel.workspace.tree -- drag-drop reorder. Mirrors UXP
 // `workspace_panel_dnd.js` `moveObjTo` / `moveRendTo` / `_moveToImpl`.
 //
 // Reorder semantics: ui_order is a unique-per-parent integer property.
@@ -72,7 +72,7 @@ function bubbleSwapOrder(
     dst: OrderedItem,
     ori: ReorderOri,
 ): void {
-    let ord_1 = src.ui_order;
+    const ord_1 = src.ui_order;
     let ord_2 = dst.ui_order;
 
     // ori adjustment: shift the target slot up/down one row to reflect

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import type { RecentFileEntry, ViewCenterMark } from '../../shared/ipcTypes'
-import { IPC } from '../../shared/ipcChannels'
+import type { RecentFileEntry, ViewCenterMark } from '@shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))

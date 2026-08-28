@@ -1,5 +1,5 @@
 import { AsyncCueMol } from './worker/client/AsyncCueMol'
-import { IPC } from '../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import {
     DEFAULT_INPUT_DEVICE_MODE,
     normalizeInputDeviceMode,

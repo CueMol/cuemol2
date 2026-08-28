@@ -9,7 +9,7 @@
  * lack a CommandMap row.
  */
 
-import type { FileOpenedData } from '../../shared/ipcTypes'
+import type { FileOpenedData } from '@shared/ipcTypes'
 import { CmdId } from './ids'
 
 export interface CommandMap {

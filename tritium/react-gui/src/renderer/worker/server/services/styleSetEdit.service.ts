@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5a -- style-set editor (UXP `style/style_editor.xul`). Style-set-scoped
+// style-set editor (UXP `style/style_editor.xul`). Style-set-scoped
 // CRUD for the three editor tabs: named colors, named selections (MolSel defs,
 // the "sel" str-data category), and style entries. Edits are live-applied (one
 // undo step each) like the ColorPane decks; the dialog refetches after each.

@@ -8,7 +8,7 @@ void React;
 
 /**
  * Degrade-detection test for InlineRenameInput -- the inline-rename editor
- * extracted from ScenePane in Phase 5. Pins the commit / cancel keys and
+ * extracted from ScenePane. Pins the commit / cancel keys and
  * that the inner <input> is exposed through `inputRef` (ScenePane focuses
  * it when the editor opens).
  */

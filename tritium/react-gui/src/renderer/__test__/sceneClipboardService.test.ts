@@ -535,7 +535,7 @@ describe('sceneClipboard.pasteNode', () => {
     })
 })
 
-describe('sceneClipboard camera branch (Phase 5b)', () => {
+describe('sceneClipboard camera branch', () => {
     function buildCameraCtx(opts: { existingNames?: string[] } = {}) {
         const setCamera = vi.fn()
         const hasCamera = vi.fn((n: string) =>
@@ -637,7 +637,7 @@ describe('sceneClipboard camera branch (Phase 5b)', () => {
     })
 })
 
-describe('sceneClipboard style branch (Phase 5c)', () => {
+describe('sceneClipboard style branch', () => {
     it('rejects style copy on global scope (scopeId === 0)', () => {
         const { ctx, toXML } = buildCtx()
         const res = services.copyNode(ctx, {

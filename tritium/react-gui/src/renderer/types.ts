@@ -14,7 +14,7 @@ import type { AppIconKey } from "./data/appIcons";
 // --- Scene / File-tree ---
 
 /**
- * A single node in a generic tree displayed by `TreeView`.
+ * A single node in a generic tree view.
  *
  * The tree is recursive: each node may contain an arbitrary number of
  * child nodes, enabling multi-level hierarchies (e.g. Scene -> Object ->

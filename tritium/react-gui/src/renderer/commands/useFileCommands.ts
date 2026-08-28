@@ -14,7 +14,7 @@
  * command layer (dialog flow + service invocation).
  */
 
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'

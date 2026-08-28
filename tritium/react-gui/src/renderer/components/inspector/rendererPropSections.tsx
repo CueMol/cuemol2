@@ -10,10 +10,9 @@
  * dialog stacks its own tabs on top of the shared `renderer-common-page`
  * overlay.
  *
- * The registry is intentionally empty for now: only the common page has been
- * migrated. As each renderer-specific page is ported, add its sections to
- * `RENDERER_SECTION_REGISTRY` keyed by `type_name`. Unknown types resolve to
- * an empty list, so they will show the common page only.
+ * `RENDERER_SECTION_REGISTRY` is keyed by `type_name`. A type with no entry
+ * resolves to an empty list and shows the common page plus the placeholder
+ * section appended by PropertiesTab.
  */
 
 import React from "react";

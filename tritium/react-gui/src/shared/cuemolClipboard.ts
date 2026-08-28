@@ -163,7 +163,7 @@ export const ENVELOPE_MAGIC = 'CueMolClipboard/1';
 
 /** Strip a UTF-8 BOM and a trailing CR so line compares are exact. */
 function cleanLine(line: string): string {
-    return line.replace(/^﻿/, '').replace(/\r$/, '').trim();
+    return line.replace(/^\uFEFF/, '').replace(/\r$/, '').trim();
 }
 
 /**

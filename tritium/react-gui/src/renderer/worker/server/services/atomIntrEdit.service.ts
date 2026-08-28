@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 6c -- atom-interaction "Edit interaction list" (UXP `tools/aintr-edit-dlg`).
+// atom-interaction "Edit interaction list" (UXP `tools/aintr-edit-dlg`).
 //
 // Lists the distance / angle / torsion definitions stored on an `atomintr`
 // renderer and deletes selected entries. Backs the renderer-ctxmenu "Edit

@@ -1,5 +1,5 @@
 /**
- * @file components/panes/selection/selBuilderReducer.ts
+ * @file h3-kit/selection/selBuilderReducer.ts
  * @description Operand-draft state model for the Selection Builder.
  *
  * Holds only the in-progress "term" draft: the selected keyword plus either its

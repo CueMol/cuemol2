@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 4d: panel.workspace ctxmenu "New Renderer..." (object / renderer /
+// panel.workspace ctxmenu "New Renderer..." (object / renderer /
 // rendGroup entry points). Mirrors UXP `Qm2Main.setupRendByObjID`
 // (`renderer.js`). The actual renderer-creation work is shared with the
 // file-open flow via `setupRenderer.service.ts` -- UXP also reuses the

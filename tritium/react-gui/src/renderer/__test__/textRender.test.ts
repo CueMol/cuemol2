@@ -3,7 +3,7 @@ import { renderText } from '../worker/server/textRender';
 
 /**
  * Degrade-detection test for renderText -- the OffscreenCanvas text
- * rasteriser extracted from WorkerService in Phase 2. Pins the 4-byte
+ * rasteriser extracted from WorkerService. Pins the 4-byte
  * width alignment and the write-back contract (tr.width / tr.resize /
  * tr.setDataFromRGBA).
  */

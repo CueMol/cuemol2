@@ -15,7 +15,7 @@
  *     never reaches a panel behind it, and Cmd+Z never rewinds the scene.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import {
   _resetClipboardScopesForTest,
   dispatchEditClipboard,

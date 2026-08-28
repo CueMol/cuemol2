@@ -3,12 +3,12 @@
  * @description Backend-independent render settings shown in the Inspector
  * `renderSettings` target (Image / Camera / Quality / Output groups).
  *
- * Phase 1 uses mock defaults; values are driven through the same `PropDef`
- * descriptor format as the renderer Properties tab so the existing editor
- * widgets (`PropEditors`) and accordion grouping can be reused as-is.
+ * Values are driven through the same `PropDef` descriptor format as the
+ * renderer Properties tab so the existing editor widgets (`PropEditors`) and
+ * accordion grouping are reused as-is.
  */
 
-import { DEFAULT_MOVIE_BASE_NAME } from "../../shared/movieFrames";
+import { DEFAULT_MOVIE_BASE_NAME } from "@shared/movieFrames";
 import type { PropDef } from "./rendererProperties";
 
 /** Identifier of a rendering backend. Extended as backends are added. */

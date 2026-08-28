@@ -8,7 +8,7 @@
  * a warning on failure.
  */
 import { WorkerTransport } from '../WorkerTransport';
-import type { ElectronFileFilter } from '../../../../shared/ipcTypes';
+import type { ElectronFileFilter } from '@shared/ipcTypes';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import type { GetCompatibleRendererNamesResult } from '../../server/services/getCompatibleRendererNames.service';
 import type { GetMtzColumnInfoResult } from '../../server/services/getMtzColumnInfo.service';

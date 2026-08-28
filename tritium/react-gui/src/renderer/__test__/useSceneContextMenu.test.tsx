@@ -10,7 +10,7 @@ import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import { useSceneContextMenu, type UseSceneContextMenuOptions } from '../hooks/useSceneContextMenu'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 

@@ -14,7 +14,7 @@
  */
 import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { MenuPanel } from './MenuPanel'
-import type { MenuNode } from '../../../shared/menuNodes'
+import type { MenuNode } from '@shared/menuNodes'
 
 export type ShowContextMenuFn = <T>(nodes: ReadonlyArray<MenuNode<T>>, pos: { x: number; y: number }) => Promise<T | null>
 

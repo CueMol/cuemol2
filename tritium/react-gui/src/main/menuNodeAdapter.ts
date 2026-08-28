@@ -10,8 +10,8 @@
  * `naviContextMenu.ts` / `sceneContextMenu.ts`).
  */
 import type { MenuItemConstructorOptions } from 'electron'
-import { collapseSeparators, isSeparatorNode } from '../shared/menuNodes'
-import type { MenuNode } from '../shared/menuNodes'
+import { collapseSeparators, isSeparatorNode } from '@shared/menuNodes'
+import type { MenuNode } from '@shared/menuNodes'
 
 /** Map `MenuNode`s to an Electron template, routing picks to `onPick`. */
 export function toElectronTemplate<T>(

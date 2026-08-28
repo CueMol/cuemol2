@@ -8,7 +8,7 @@ import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowAboutDialog } from '../components/dialogs/AboutDialogProvider'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 
 // Category IDs from src/qsys/InOutHandler.hpp (IOH_CAT_*)
 const IOH_CAT_OBJREADER = 0

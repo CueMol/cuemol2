@@ -9,7 +9,7 @@ vi.mock('../worker/server/services/helpers/makeSel', () => ({
 import { services } from '../worker/server/services/setRendererSelection.service'
 import { makeSel } from '../worker/server/services/helpers/makeSel'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import type { ChangeRendSelKind } from '../../shared/ipcTypes'
+import type { ChangeRendSelKind } from '@shared/ipcTypes'
 
 interface FixtureOpts {
     /** When false, scene lookup returns null. */

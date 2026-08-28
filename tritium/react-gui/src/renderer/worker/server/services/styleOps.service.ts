@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5c -- style ctxmenu CRUD + read-only toggle. Mirrors the UXP
+// style ctxmenu CRUD + read-only toggle. Mirrors the UXP
 // handlers in `workspace_panel.js`:
 //   - createStyleSet      -> `createStyle` (NB UXP uses a window.prompt
 //                            here; the renderer handles the name input

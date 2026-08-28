@@ -8,9 +8,9 @@
  */
 
 import Store from 'electron-store'
-import type { LayoutState, RecentFileEntry, UiState } from '../shared/ipcTypes'
+import type { LayoutState, RecentFileEntry, UiState } from '@shared/ipcTypes'
 
-export type { LayoutState, UiState, PaneCollapseState } from '../shared/ipcTypes'
+export type { LayoutState, UiState, PaneCollapseState } from '@shared/ipcTypes'
 
 // --- Types ---
 

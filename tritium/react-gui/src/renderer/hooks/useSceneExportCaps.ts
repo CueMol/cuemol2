@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { IPC } from '../../shared/ipcChannels';
+import { IPC } from '@shared/ipcChannels';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
 
 interface UseSceneExportCapsOptions {

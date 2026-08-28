@@ -24,7 +24,7 @@ import React, {
   useEffect,
   useMemo,
 } from 'react'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { useCueMol } from '../hooks/useCueMol'
 import {
   type InputDeviceMode,

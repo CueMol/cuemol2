@@ -9,7 +9,7 @@ import {
     buildSceneCtxPayload,
     nodeMenuLabel,
 } from '../hooks/sceneContextMenu/buildSceneCtxPayload'
-import { IPC } from '../../shared/ipcChannels'
+import { IPC } from '@shared/ipcChannels'
 import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 
 /**

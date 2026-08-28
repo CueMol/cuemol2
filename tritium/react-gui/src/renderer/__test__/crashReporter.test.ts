@@ -10,8 +10,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { IPC } from '../../shared/ipcChannels'
-import type { CrashReport } from '../../shared/ipcTypes'
+import { IPC } from '@shared/ipcChannels'
+import type { CrashReport } from '@shared/ipcTypes'
 import {
   _resetForTests,
   getCurrentCrash,
