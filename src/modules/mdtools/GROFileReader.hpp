@@ -52,6 +52,19 @@ namespace mdtools {
     /// chain name assigned to all atoms (.gro has no chain concept)
     LString m_curChain;
 
+    /// offset added to the raw residue number to undo the %5d wraparound
+    /// (always a multiple of the 100000 field modulus)
+    int m_nResidOffset;
+
+    /// raw (as written in the file) residue number of the previous atom line
+    int m_nPrevResid;
+
+    /// false until the first atom line of the current frame has been parsed
+    bool m_bHasPrevResid;
+
+    /// number of atoms dropped because appendAtom() failed
+    int m_nSkipAtoms;
+
     //////////////////////////////////////////////
   public:
 
@@ -93,7 +106,8 @@ namespace mdtools {
     void determineFieldLayout(const LString &line);
 
     /// Parse one atom line and append a MolAtom to m_pMol.
-    void parseAtomLine(const LString &line);
+    /// Returns false if the atom was skipped (appendAtom() failed).
+    bool parseAtomLine(const LString &line);
 
     /// Parse the box vector line and attach CrystalInfo to m_pMol.
     void parseBoxLine(const LString &line);
