@@ -134,6 +134,14 @@ export interface SliderRowDef extends RowBase {
 /** A boolean property, shown as a switch. */
 export interface BoolRowDef extends RowBase {
   kind: 'bool'
+  /**
+   * The writes a toggle turns into, when flipping it has to bring something
+   * else with it: enabling colour proofing with no ICC profile named seeds a
+   * default one, or proofing would be on and do nothing. Return the plain
+   * single write for the ordinary case; one write goes through `onSet`,
+   * several through `onSetMany` so they land in one undo step.
+   */
+  commit?: (ctx: PropCtx, value: boolean) => PropMultiWrite[]
 }
 
 /** A colour property, shown as a swatch that opens the picker. */

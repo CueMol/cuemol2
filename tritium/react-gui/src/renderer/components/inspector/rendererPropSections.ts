@@ -15,7 +15,6 @@
  * section appended by PropertiesTab.
  */
 
-import React from "react";
 import type { SchemaSectionDef } from "./schema/types";
 import { SIMPLE_SECTIONS, TRACE_SECTIONS } from "./schema/simple";
 import { ANISOU_SECTIONS } from "./schema/anisou";
@@ -30,18 +29,12 @@ import { NUCL_SECTIONS } from "./schema/nucl";
 import { CARTOON_SECTIONS } from "./schema/cartoon";
 import { RIBBON_SECTIONS } from "./schema/ribbon";
 import { ATOMINTR_SECTIONS } from "./schema/atomintr";
+import { CONTOUR_SECTIONS, GPU_MAPMESH_SECTIONS, ISOSURF_SECTIONS } from "./schema/map";
+import { SCENE_SECTIONS } from "./schema/scene";
 import type {
   GenericPropEntry,
   PropWriteOpts,
 } from '@renderer/worker/shared/genericProps';
-import {
-  SceneAmbientOcclusionSection,
-  SceneAntialiasingSection,
-  SceneBackgroundSection,
-  SceneColorProofingSection,
-} from "./SceneRenderingSection";
-import { ContourMainSection } from "./ContourRendererSection";
-import { IsosurfMainSection } from "./IsosurfRendererSection";
 
 // ------------------------------------------------------------
 // Types
@@ -99,32 +92,12 @@ export interface RendererPropSectionProps {
 /**
  * One accordion section in the Properties tab.
  *
- * A section either names its rows as data (`rows`, rendered by
- * `SchemaSection`) or supplies a component that renders them itself. The
- * schema form is where the per-type pages are heading; the component form is
- * what the types not migrated yet still use, so the registry carries both
- * while that is true.
+ * A section names its rows as data; `SchemaSection` renders them. The blocks
+ * that are not rows (a synthetic toggle over six properties, a preset
+ * dropdown backed by no single property) are `custom` rows inside a section,
+ * not sections of their own.
  */
-export type RendererPropSectionDef = SchemaSectionDef | ComponentSectionDef;
-
-/** A section whose body is a hand-written component. */
-export interface ComponentSectionDef {
-  /** Stable React key / accordion identity. */
-  key: string;
-  /** Accordion header title. */
-  title: string;
-  /** Whether the accordion starts expanded. */
-  defaultExpanded?: boolean;
-  /** Section body. */
-  Component: React.FC<RendererPropSectionProps>;
-}
-
-/** Narrow a registry entry to the component form. */
-export function isComponentSection(
-  section: RendererPropSectionDef,
-): section is ComponentSectionDef {
-  return 'Component' in section;
-}
+export type RendererPropSectionDef = SchemaSectionDef;
 
 // ------------------------------------------------------------
 // Registry
@@ -141,32 +114,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // the scene's typeLabel ("Scene") -- the value PropertiesTab receives as
   // `rendererType` (genericProps `typeLabelOf` returns "Scene" for nodeType
   // "scene"), not the lowercase tree node type.
-  Scene: [
-    {
-      key: "scene-ao",
-      title: "Ambient occlusion",
-      defaultExpanded: true,
-      Component: SceneAmbientOcclusionSection,
-    },
-    {
-      key: "scene-aa",
-      title: "Anti-aliasing",
-      defaultExpanded: false,
-      Component: SceneAntialiasingSection,
-    },
-    {
-      key: "scene-bg",
-      title: "Background",
-      defaultExpanded: false,
-      Component: SceneBackgroundSection,
-    },
-    {
-      key: "scene-proof",
-      title: "Color proofing",
-      defaultExpanded: false,
-      Component: SceneColorProofingSection,
-    },
-  ],
+  Scene: SCENE_SECTIONS,
   // SimpleRenderer ("simple"): UXP simple-propdlg "Simple" tab -- line width only.
   simple: SIMPLE_SECTIONS,
   // TraceRenderer ("trace"): shares the UXP simple-propdlg with SimpleRenderer
@@ -200,40 +148,19 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // surfacing center-update mode, line width, buffer size, periodic boundary,
   // and the limit-display target / selection / distance. Coloring stays out
   // (not on the UXP Map tab).
-  contour: [
-    {
-      key: "contour-main",
-      title: "Contour",
-      defaultExpanded: true,
-      Component: ContourMainSection,
-    },
-  ],
+  contour: CONTOUR_SECTIONS,
   // GLSLMapMeshRenderer2 ("gpu_mapmesh"): the GPU marching-squares contour.
   // No UXP dialog of its own; it carries the same property set as the
   // contour renderer (both extend MapRenderer, same width / bufsize /
   // autoupdate / dragupdate), so the contour section is reused verbatim.
-  gpu_mapmesh: [
-    {
-      key: "gpu-mapmesh-main",
-      title: "GPU contour",
-      defaultExpanded: true,
-      Component: ContourMainSection,
-    },
-  ],
+  gpu_mapmesh: GPU_MAPMESH_SECTIONS,
   // MapSurfRenderer ("isosurf"): UXP isosurf-propdlg "Map" tab. One section --
   // drawing mode, line/point size (off for fill), max grid size, back-face
   // culling, plus the Center update / Limit display block shared with contour
   // (both extend MapRenderer). Coloring (colormode / target / MOLFANC scheme)
   // is owned by the Coloring panel (ColorPane), same as molsurf; tuning props
   // stay out.
-  isosurf: [
-    {
-      key: "isosurf-main",
-      title: "Isosurf",
-      defaultExpanded: true,
-      Component: IsosurfMainSection,
-    },
-  ],
+  isosurf: ISOSURF_SECTIONS,
   // DisoRenderer ("disorder"): UXP disorder-propdlg "Disorder" tab. One section
   // surfacing the target main-chain renderer, tessellation detail, dot size /
   // separation, the two loop strengths and the default color.
@@ -280,21 +207,3 @@ export function getRendererPropSections(rendererType: string): RendererPropSecti
   return RENDERER_SECTION_REGISTRY[rendererType] ?? [];
 }
 
-// ------------------------------------------------------------
-// Temporary placeholder
-// ------------------------------------------------------------
-
-/**
- * Placeholder section appended after the common page for every renderer type
- * in this migration step, so the eventual "Common + specific" layout is
- * visible end-to-end. Remove it once `getRendererPropSections` returns real
- * sections for the known types.
- */
-export const DUMMY_SECTION: RendererPropSectionDef = {
-  key: "dummy",
-  title: "Renderer settings",
-  defaultExpanded: false,
-  Component: () => (
-    <div className="insp-prop-readonly">Not implemented yet.</div>
-  ),
-};

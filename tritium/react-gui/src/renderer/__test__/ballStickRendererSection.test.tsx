@@ -46,20 +46,8 @@ import { BALLSTICK_SECTIONS } from '../components/inspector/schema/ballstick'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -102,9 +90,6 @@ describe('BallStickRenderer section registry', () => {
     expect(sections).toHaveLength(1)
     expect(sections[0].title).toBe('Ball and stick')
     expect(sections[0].defaultExpanded).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(isComponentSection(sections[0])).toBe(false)
-    expect(componentOf(sections[0])).toBe('schema:ballstick')
     expect(RENDERER_SECTION_REGISTRY.ballstick).toBe(sections)
   })
 })

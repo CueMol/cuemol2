@@ -31,20 +31,8 @@ import { CPK_SECTIONS } from '../components/inspector/schema/cpk'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -98,9 +86,6 @@ describe('CPKRenderer section registry', () => {
     const sections = getRendererPropSections('cpk')
     expect(sections.map((s) => s.title)).toEqual(['Atom radii', 'Detail'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
-    expect(sections.map(componentOf)).toEqual(['schema:cpk-radii', 'schema:cpk-detail'])
     expect(RENDERER_SECTION_REGISTRY.cpk).toBe(sections)
   })
 })

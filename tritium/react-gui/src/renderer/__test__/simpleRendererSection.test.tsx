@@ -35,20 +35,8 @@ import { SIMPLE_SECTIONS } from '../components/inspector/schema/simple'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -79,9 +67,6 @@ describe('SimpleRenderer section registry', () => {
     expect(sections).toHaveLength(1)
     expect(sections[0].title).toBe('Simple')
     expect(sections[0].defaultExpanded).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(isComponentSection(sections[0])).toBe(false)
-    expect(componentOf(sections[0])).toBe('schema:simple')
     // Sanity: the registry is keyed by the C++ type_name.
     expect(RENDERER_SECTION_REGISTRY.simple).toBe(sections)
   })
@@ -184,7 +169,7 @@ describe('PropertiesTab type-specific section dispatch', () => {
     unmount()
   })
 
-  it('falls back to the placeholder for a not-yet-ported renderer type', () => {
+  it('shows no type-specific page for a renderer type that has none', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab
         entries={[entry({ key: 'width', type: 'real', value: 1.2 })]}
@@ -192,9 +177,10 @@ describe('PropertiesTab type-specific section dispatch', () => {
         {...commonProps}
       />,
     )
-    const titles = accordionTitles(container)
-    expect(titles).toContain('Renderer settings')
-    expect(titles).not.toContain('Simple')
+    // The common page and nothing else: a placeholder would claim settings
+    // exist that do not. The `width` here belongs to the simple page, so it
+    // is not shown either.
+    expect(accordionTitles(container)).not.toContain('Simple')
     expect(rowByLabel(container, 'Line width')).toBeNull()
     unmount()
   })

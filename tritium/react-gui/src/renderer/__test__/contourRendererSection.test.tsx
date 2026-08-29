@@ -47,24 +47,13 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
   ),
 }))
 
-import { ContourMainSection } from '../components/inspector/ContourRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { CONTOUR_SECTIONS, GPU_MAPMESH_SECTIONS } from '../components/inspector/schema/map'
 import {
 
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 beforeEach(() => {
@@ -167,7 +156,7 @@ describe('Contour renderer section registry', () => {
     const sections = getRendererPropSections('contour')
     expect(sections.map((s) => s.title)).toEqual(['Contour'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(componentOf(sections[0])).toBe(ContourMainSection)
+    expect(sections).toBe(CONTOUR_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.contour).toBe(sections)
   })
 
@@ -175,11 +164,13 @@ describe('Contour renderer section registry', () => {
     const sections = getRendererPropSections('gpu_mapmesh')
     expect(sections.map((s) => s.title)).toEqual(['GPU contour'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(componentOf(sections[0])).toBe(ContourMainSection)
+    expect(sections).toBe(GPU_MAPMESH_SECTIONS)
+    // The same rows under its own title.
+    expect(GPU_MAPMESH_SECTIONS[0].rows).toEqual(CONTOUR_SECTIONS[0].rows)
   })
 })
 
-describe('ContourMainSection', () => {
+describe('the contour page', () => {
   it('renders the curated rows and ignores unrelated (coloring) props', () => {
     const entries = [
       ...contourEntries(),
@@ -188,7 +179,7 @@ describe('ContourMainSection', () => {
       entry({ key: 'siglevel', type: 'real', value: 1.1 }),
     ]
     const { container, unmount } = mountTree(
-      <ContourMainSection entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={CONTOUR_SECTIONS[0]} rendererType="contour" entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     expect(rowByLabel(container, 'Center update')).not.toBeNull()
     expect(rowByLabel(container, 'Region')).not.toBeNull()
@@ -211,7 +202,9 @@ describe('ContourMainSection', () => {
   it('hides the box-only rows and shows the LoD budget / zoom refinement in the full region', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <ContourMainSection
+      <SchemaSection
+        section={CONTOUR_SECTIONS[0]}
+        rendererType="contour"
         entries={contourEntries({ regionResolved: 'full' })}
         onSet={onSet}
         onReset={vi.fn()}
@@ -232,7 +225,9 @@ describe('ContourMainSection', () => {
   it('writes the autoupdate/dragupdate pair in one step for each Center-update choice', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <ContourMainSection
+      <SchemaSection
+        section={CONTOUR_SECTIONS[0]}
+        rendererType="contour"
         entries={contourEntries({ autoupdate: true, dragupdate: false })}
         onSet={vi.fn()}
         onSetMany={onSetMany}
@@ -260,7 +255,9 @@ describe('ContourMainSection', () => {
 
   it('derives the Center-update display from the boolean pair (drag)', () => {
     const { container, unmount } = mountTree(
-      <ContourMainSection
+      <SchemaSection
+        section={CONTOUR_SECTIONS[0]}
+        rendererType="contour"
         entries={contourEntries({ autoupdate: true, dragupdate: true })}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -277,7 +274,7 @@ describe('ContourMainSection', () => {
   it('commits Line width as a realtime single drag step', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <ContourMainSection entries={contourEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={CONTOUR_SECTIONS[0]} rendererType="contour" entries={contourEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     pressStepArrow(dragArrow(rowByLabel(container, 'Line width')!)!)
     // step 0.1 from 1.0 -> 1.1, committed live (preview restored to original first).
@@ -292,7 +289,7 @@ describe('ContourMainSection', () => {
   it('commits Buffer size as a single-step integer on Enter', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <ContourMainSection entries={contourEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={CONTOUR_SECTIONS[0]} rendererType="contour" entries={contourEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     const input = rowByLabel(container, 'Buffer size')!.querySelector('input') as HTMLInputElement
     act(() => typeInto(input, '120'))
@@ -303,13 +300,13 @@ describe('ContourMainSection', () => {
 
   it('checks "Limit display by" iff a target molecule is set', () => {
     const off = mountTree(
-      <ContourMainSection entries={contourEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={CONTOUR_SECTIONS[0]} rendererType="contour" entries={contourEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     expect(switchIn(rowByLabel(off.container, 'Limit display by')!).checked).toBe(false)
     off.unmount()
 
     const on = mountTree(
-      <ContourMainSection entries={contourEntries({ bndryMol: 'molX' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={CONTOUR_SECTIONS[0]} rendererType="contour" entries={contourEntries({ bndryMol: 'molX' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     expect(switchIn(rowByLabel(on.container, 'Limit display by')!).checked).toBe(true)
     on.unmount()
@@ -318,7 +315,9 @@ describe('ContourMainSection', () => {
   it('clears target + selection in one step when "Limit display by" is turned off', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <ContourMainSection
+      <SchemaSection
+        section={CONTOUR_SECTIONS[0]}
+        rendererType="contour"
         entries={contourEntries({ bndryMol: 'molX' })}
         onSet={vi.fn()}
         onSetMany={onSetMany}
@@ -339,7 +338,9 @@ describe('ContourMainSection', () => {
     stubCmWithMol('molA')
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <ContourMainSection
+      <SchemaSection
+        section={CONTOUR_SECTIONS[0]}
+        rendererType="contour"
         entries={contourEntries({ bndryMol: '' })}
         onSet={onSet}
         onReset={vi.fn()}
@@ -359,7 +360,7 @@ describe('ContourMainSection', () => {
     // cm is null -> the molecule list is empty; the toggle must still turn on so
     // the Target selector becomes usable once a molecule appears.
     const { container, unmount } = mountTree(
-      <ContourMainSection entries={contourEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={CONTOUR_SECTIONS[0]} rendererType="contour" entries={contourEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     const toggle = switchIn(rowByLabel(container, 'Limit display by')!)
     expect(toggle.checked).toBe(false)
@@ -372,7 +373,9 @@ describe('ContourMainSection', () => {
 
   it('disables Target / Selection / Distance when limiting is off', () => {
     const { container, unmount } = mountTree(
-      <ContourMainSection
+      <SchemaSection
+        section={CONTOUR_SECTIONS[0]}
+        rendererType="contour"
         entries={contourEntries({ bndryMol: '' })}
         onSet={vi.fn()}
         onReset={vi.fn()}
@@ -390,7 +393,9 @@ describe('ContourMainSection', () => {
 
   it('enables Target / Selection / Distance when a target is set', () => {
     const { container, unmount } = mountTree(
-      <ContourMainSection
+      <SchemaSection
+        section={CONTOUR_SECTIONS[0]}
+        rendererType="contour"
         entries={contourEntries({ bndryMol: 'molX' })}
         onSet={vi.fn()}
         onReset={vi.fn()}
@@ -409,7 +414,9 @@ describe('ContourMainSection', () => {
   it('lists molecules in the Target selector with no "(none)" entry', async () => {
     stubCmWithMol('molA')
     const { container, unmount } = mountTree(
-      <ContourMainSection
+      <SchemaSection
+        section={CONTOUR_SECTIONS[0]}
+        rendererType="contour"
         entries={contourEntries({ bndryMol: 'molA' })}
         onSet={vi.fn()}
         onReset={vi.fn()}

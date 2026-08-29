@@ -7,17 +7,14 @@
  * `getRendererPropSections` / `schema/common`, and both are backed by the live
  * `getGenericProps` / `setGenericProp` bridge.
  *
- * A type-specific section is either a schema -- rows as data, rendered by
- * `SchemaSection` -- or a hand-written component. The per-type pages are being
- * moved to the schema form one type at a time, so both appear here until that
- * is done.
- *
- * A renderer type with no registry entry gets a single collapsed placeholder
- * (`DUMMY_SECTION`) after the common page, so the tab is never blank.
+ * Every page is rows as data, rendered by `SchemaSection`. A renderer type
+ * with no registry entry shows the common page alone: there is nothing
+ * type-specific to say about it, and saying so in a placeholder only claimed
+ * settings existed that did not.
  */
 
 import React, { useMemo } from "react";
-import { AccordionSection, AccordionGroup } from "./AccordionSection";
+import { AccordionGroup } from "./AccordionSection";
 import { SchemaSection } from "./SchemaSection";
 import {
   OBJECT_COMMON_SECTIONS,
@@ -25,9 +22,7 @@ import {
   RENDERER_COMMON_SECTIONS,
 } from "./schema/common";
 import {
-  DUMMY_SECTION,
   getRendererPropSections,
-  isComponentSection,
   type PropMultiWrite,
   type RendererPropSectionDef,
 } from "./rendererPropSections";
@@ -82,16 +77,14 @@ function commonSectionsFor(
 /**
  * The type-specific sections, or none for the node kinds that have none: an
  * Object has no type page in UXP, and a renderer group's inherited renderer
- * properties are dead knobs (RendGroup::display draws nothing), so its
- * placeholder would advertise settings that do nothing.
+ * properties are dead knobs (RendGroup::display draws nothing).
  */
 function typeSectionsFor(
   rendererType: string,
   isObject: boolean | undefined,
 ): RendererPropSectionDef[] {
   if (isObject || rendererType === "*group") return [];
-  const sections = getRendererPropSections(rendererType);
-  return sections.length > 0 ? sections : [DUMMY_SECTION];
+  return getRendererPropSections(rendererType);
 }
 
 export const PropertiesTab: React.FC<PropertiesTabProps> = ({
@@ -132,40 +125,22 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   return (
     <div className="insp-properties-tab">
       <AccordionGroup initialOpen={initialOpen}>
-        {sections.map((section) =>
-          isComponentSection(section) ? (
-            <AccordionSection
-              key={section.key}
-              title={section.title}
-              defaultExpanded={section.defaultExpanded}
-            >
-              <section.Component
-                entries={displayEntries}
-                onSet={onSet}
-                onSetMany={onSetMany}
-                onReset={onReset}
-                sceneId={sceneId}
-                nodeId={nodeId}
-                molId={molId}
-              />
-            </AccordionSection>
-          ) : (
-            // A migrated page names its rows as data; the engine owns the
-            // accordion too, since a section can gate itself away entirely.
-            <SchemaSection
-              key={section.key}
-              section={section}
-              entries={displayEntries}
-              rendererType={rendererType}
-              sceneId={sceneId}
-              nodeId={nodeId}
-              molId={molId}
-              onSet={onSet}
-              onSetMany={onSetMany}
-              onReset={onReset}
-            />
-          ),
-        )}
+        {sections.map((section) => (
+          // The engine owns the accordion too, since a section can gate itself
+          // away entirely.
+          <SchemaSection
+            key={section.key}
+            section={section}
+            entries={displayEntries}
+            rendererType={rendererType}
+            sceneId={sceneId}
+            nodeId={nodeId}
+            molId={molId}
+            onSet={onSet}
+            onSetMany={onSetMany}
+            onReset={onReset}
+          />
+        ))}
       </AccordionGroup>
     </div>
   );

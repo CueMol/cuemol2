@@ -50,18 +50,7 @@ import {
 
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -132,9 +121,6 @@ describe('Direct-surface renderer section registry', () => {
     const sections = getRendererPropSections('dsurface')
     expect(sections.map((s) => s.title)).toEqual(['Surface', 'Atom radii'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
-    expect(sections.map(componentOf)).toEqual(['schema:dsurface-main', 'schema:dsurface-radii'])
     expect(RENDERER_SECTION_REGISTRY.dsurface).toBe(sections)
   })
 })

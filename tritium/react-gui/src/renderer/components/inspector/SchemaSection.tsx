@@ -37,6 +37,7 @@ import {
 } from './rows'
 import type { RendererPropSectionProps } from './rendererPropSections'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
+import type { PropMultiWrite } from './rendererPropSections'
 import {
   DRAFT_KINDS,
   makePropCtx,
@@ -75,6 +76,24 @@ export interface SchemaSectionProps {
 }
 
 /** Render one row, or null when the renderer does not expose its property. */
+/**
+ * Turn a row's own `commit` into the write callback it is handed: one write
+ * goes through `onSet`, several through `onSetMany` so they land in one undo
+ * step.
+ */
+function multiWriter(
+  commit: (ctx: PropCtx, value: boolean) => PropMultiWrite[],
+  ctx: PropCtx,
+  onSet: SetFn,
+  onSetMany: SetManyFn,
+): SetFn {
+  return (_key, _valueType, value) => {
+    const writes = commit(ctx, Boolean(value))
+    if (writes.length === 1) onSet(writes[0].key, writes[0].valueType, writes[0].value)
+    else if (writes.length > 1) onSetMany?.(writes)
+  }
+}
+
 /** A row standing for several properties rather than one. */
 function isMultiRow(row: PropRowDef): row is MultiRowDef {
   return 'keys' in row
@@ -195,7 +214,7 @@ function renderRow(
           key={key}
           entry={entry}
           label={row.label}
-          onSet={onSet}
+          onSet={row.commit ? multiWriter(row.commit, ctx, onSet, onSetMany) : onSet}
           onReset={onReset}
           disabled={disabled}
         />

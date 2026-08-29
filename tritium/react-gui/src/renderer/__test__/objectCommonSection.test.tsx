@@ -8,8 +8,8 @@
  *     Linked = read-only `src`);
  *   - Visible toggles emit `onSet('visible', 'boolean', <checked>)`;
  *   - Linked (`src`) is read-only;
- *   - PropertiesTab with `isObject` shows the object-common page (no renderer
- *     placeholder), and without it falls back to the renderer page.
+ *   - PropertiesTab with `isObject` shows the object-common page, and without
+ *     it the renderer-common one.
  */
 
 import React from 'react'
@@ -175,7 +175,7 @@ describe('PropertiesTab object vs renderer dispatch', () => {
     unmount()
   })
 
-  it('falls back to the renderer page (placeholder) when not isObject', () => {
+  it('shows the renderer-common page when not isObject', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab
         entries={objectEntries()}
@@ -185,8 +185,9 @@ describe('PropertiesTab object vs renderer dispatch', () => {
         sceneId={1}
       />,
     )
-    // Renderer fallback shows the "Renderer settings" placeholder section.
-    expect(accordionTitles(container)).toContain('Renderer settings')
+    // A type with no page of its own gets the common one and nothing else --
+    // there is nothing type-specific to say about it.
+    expect(accordionTitles(container)).toEqual(['Basic settings'])
     unmount()
   })
 })

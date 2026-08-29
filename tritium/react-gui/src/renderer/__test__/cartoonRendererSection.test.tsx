@@ -44,20 +44,8 @@ import { CARTOON_SECTIONS } from '../components/inspector/schema/cartoon'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -126,9 +114,6 @@ describe('Cartoon renderer section registry', () => {
     const sections = getRendererPropSections('cartoon')
     expect(sections.map((s) => s.title)).toEqual(['Cartoon', 'Helix', 'Sheet', 'Coil'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
-    expect(sections.map(componentOf)).toEqual(sections.map((s) => `schema:${s.key}`))
     expect(sections).toBe(CARTOON_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.cartoon).toBe(sections)
   })

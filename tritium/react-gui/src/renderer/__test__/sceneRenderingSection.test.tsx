@@ -43,12 +43,8 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import {
-  SceneAmbientOcclusionSection,
-  SceneAntialiasingSection,
-  SceneBackgroundSection,
-  SceneColorProofingSection,
-} from '../components/inspector/SceneRenderingSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { SCENE_SECTIONS } from '../components/inspector/schema/scene'
 import {
   SCENE_AO_PRESET_AXIS,
   SCENE_AA_QUALITY_AXIS,
@@ -70,6 +66,18 @@ function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
     depth: 0,
     ...over,
   } as GenericPropEntry
+}
+
+/**
+ * Open the section's accordion if it starts collapsed. Half of the Scene pages
+ * do -- only Ambient occlusion is expanded on arrival -- and a collapsed
+ * accordion renders no rows to look at.
+ */
+function expandSection(container: HTMLElement): void {
+  const section = container.querySelector('.insp-accordion')
+  if (!section || section.classList.contains('expanded')) return
+  const header = section.querySelector('.insp-accordion-header') as HTMLElement | null
+  if (header) act(() => header.click())
 }
 
 function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
@@ -120,10 +128,12 @@ describe('Scene section registry', () => {
   })
 })
 
-describe('SceneAmbientOcclusionSection', () => {
+describe('the scene ambient-occlusion page', () => {
   it('renders Enabled + Preset only; the tuning knobs have no rows', () => {
     const { container, unmount } = mountTree(
-      <SceneAmbientOcclusionSection
+      <SchemaSection
+        section={SCENE_SECTIONS[0]}
+        rendererType="Scene"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -131,6 +141,7 @@ describe('SceneAmbientOcclusionSection', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     expect(rowByLabel(container, 'Enabled')).not.toBeNull()
     expect(rowByLabel(container, 'Preset')).not.toBeNull()
     // The individual knobs live in the generic property tree, not here.
@@ -143,7 +154,9 @@ describe('SceneAmbientOcclusionSection', () => {
 
   it('keeps the Enabled toggle active while AO is off', () => {
     const { container, unmount } = mountTree(
-      <SceneAmbientOcclusionSection
+      <SchemaSection
+        section={SCENE_SECTIONS[0]}
+        rendererType="Scene"
         entries={fullEntries(false)}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -151,6 +164,7 @@ describe('SceneAmbientOcclusionSection', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     expect(
       (rowByLabel(container, 'Enabled')!.querySelector('input') as HTMLInputElement).disabled,
     ).toBe(false)
@@ -158,10 +172,12 @@ describe('SceneAmbientOcclusionSection', () => {
   })
 })
 
-describe('SceneAntialiasingSection', () => {
+describe('the scene anti-aliasing page', () => {
   it('renders the Quality dropdown only; method / jitter / threshold have no rows', () => {
     const { container, unmount } = mountTree(
-      <SceneAntialiasingSection
+      <SchemaSection
+        section={SCENE_SECTIONS[1]}
+        rendererType="Scene"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -169,6 +185,7 @@ describe('SceneAntialiasingSection', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     expect(rowByLabel(container, 'Quality')).not.toBeNull()
     for (const label of ['Method', 'Jitter SS', 'SMAA threshold']) {
       expect(rowByLabel(container, label)).toBeNull()
@@ -240,7 +257,9 @@ describe('Scene quality presets', () => {
     const onSet = vi.fn()
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <SceneAmbientOcclusionSection
+      <SchemaSection
+        section={SCENE_SECTIONS[0]}
+        rendererType="Scene"
         entries={fullEntries()}
         onSet={onSet}
         onSetMany={onSetMany}
@@ -248,6 +267,7 @@ describe('Scene quality presets', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     const sel = rowByLabel(container, 'Preset')!.querySelector('select') as HTMLSelectElement
     expect(sel.value).toBe('low')
     // Custom is only offered while it is the truth -- not on a step.
@@ -273,7 +293,9 @@ describe('Scene quality presets', () => {
     )
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <SceneAmbientOcclusionSection
+      <SchemaSection
+        section={SCENE_SECTIONS[0]}
+        rendererType="Scene"
         entries={entries}
         onSet={vi.fn()}
         onSetMany={onSetMany}
@@ -281,6 +303,7 @@ describe('Scene quality presets', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     const sel = rowByLabel(container, 'Preset')!.querySelector('select') as HTMLSelectElement
     expect(sel.value).toBe('custom')
     expect(Array.from(sel.options).map((o) => o.value)).toEqual([
@@ -297,7 +320,9 @@ describe('Scene quality presets', () => {
 
   it('disables the AO Preset while AO is off; the AA Quality stays enabled', () => {
     const ao = mountTree(
-      <SceneAmbientOcclusionSection
+      <SchemaSection
+        section={SCENE_SECTIONS[0]}
+        rendererType="Scene"
         entries={fullEntries(false)}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -311,7 +336,9 @@ describe('Scene quality presets', () => {
     ao.unmount()
 
     const aa = mountTree(
-      <SceneAntialiasingSection
+      <SchemaSection
+        section={SCENE_SECTIONS[1]}
+        rendererType="Scene"
         entries={fullEntries(false)}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -319,6 +346,7 @@ describe('Scene quality presets', () => {
         sceneId={1}
       />,
     )
+    expandSection(aa.container)
     expect(
       (rowByLabel(aa.container, 'Quality')!.querySelector('select') as HTMLSelectElement).disabled,
     ).toBe(false)
@@ -329,7 +357,9 @@ describe('Scene quality presets', () => {
     const onSet = vi.fn()
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <SceneAntialiasingSection
+      <SchemaSection
+        section={SCENE_SECTIONS[1]}
+        rendererType="Scene"
         entries={fullEntries()}
         onSet={onSet}
         onSetMany={onSetMany}
@@ -337,6 +367,7 @@ describe('Scene quality presets', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     const sel = rowByLabel(container, 'Quality')!.querySelector('select') as HTMLSelectElement
     expect(sel.value).toBe('standard')
     act(() => {
@@ -359,7 +390,9 @@ describe('Scene quality presets', () => {
         : e,
     )
     const { container, unmount } = mountTree(
-      <SceneAntialiasingSection
+      <SchemaSection
+        section={SCENE_SECTIONS[1]}
+        rendererType="Scene"
         entries={entries}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -367,6 +400,7 @@ describe('Scene quality presets', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     expect(
       (rowByLabel(container, 'Quality')!.querySelector('select') as HTMLSelectElement).value,
     ).toBe('custom')
@@ -374,27 +408,32 @@ describe('Scene quality presets', () => {
   })
 })
 
-describe('SceneBackgroundSection', () => {
+describe('the scene background page', () => {
   it('renders the background Color row', () => {
     const { container, unmount } = mountTree(
-      <SceneBackgroundSection
+      <SchemaSection
+        section={SCENE_SECTIONS[2]}
+        rendererType="Scene"
         entries={fullEntries()}
         onSet={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
+    expandSection(container)
     expect(rowByLabel(container, 'Color')).not.toBeNull()
     unmount()
   })
 })
 
-describe('SceneColorProofingSection', () => {
+describe('the scene colour-proofing page', () => {
   it('seeds the default ICC profile (one multi-write) when enabled with no profile', () => {
     const onSet = vi.fn()
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <SceneColorProofingSection
+      <SchemaSection
+        section={SCENE_SECTIONS[3]}
+        rendererType="Scene"
         entries={fullEntries()}
         onSet={onSet}
         onSetMany={onSetMany}
@@ -402,6 +441,7 @@ describe('SceneColorProofingSection', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     const sw = rowByLabel(container, 'Enabled')!.querySelector('input') as HTMLInputElement
     act(() => sw.click())
     expect(onSetMany).toHaveBeenCalledWith([
@@ -419,7 +459,9 @@ describe('SceneColorProofingSection', () => {
       e.key === 'icc_filename' ? entry({ key: 'icc_filename', type: 'string', value: 'p.icm' }) : e,
     )
     const { container, unmount } = mountTree(
-      <SceneColorProofingSection
+      <SchemaSection
+        section={SCENE_SECTIONS[3]}
+        rendererType="Scene"
         entries={withProfile}
         onSet={onSet}
         onSetMany={onSetMany}
@@ -427,6 +469,7 @@ describe('SceneColorProofingSection', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     const sw = rowByLabel(container, 'Enabled')!.querySelector('input') as HTMLInputElement
     act(() => sw.click())
     expect(onSet).toHaveBeenCalledWith('use_colproof', 'boolean', true)
@@ -453,6 +496,7 @@ describe('PropertiesTab scene dispatch', () => {
         sceneId={1}
       />,
     )
+    expandSection(container)
     const titles = accordionTitles(container)
     expect(titles).toContain('Ambient occlusion')
     expect(titles).toContain('Anti-aliasing')
