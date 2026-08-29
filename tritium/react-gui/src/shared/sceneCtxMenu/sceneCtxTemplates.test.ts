@@ -93,6 +93,22 @@ describe('buildTemplate — node-type branches', () => {
         expect(findItem(tpl, 'Create style…')).toBeTruthy()
     })
 
+    it('renderer: offers Paste Renderer so a copy lands beside it', () => {
+        // A renderer row had Copy but no Paste, so the pair only worked by
+        // switching to the parent object row first.
+        const tpl = buildTemplate(payload({
+            nodeType: 'renderer', nodeLabel: 'simple1', clipboardKind: 'renderer',
+        }))
+        expect(kindOf(findItem(tpl, 'Paste Renderer'))).toBe('paste')
+    })
+
+    it('renderer: hides Paste when the clipboard holds something else', () => {
+        const tpl = buildTemplate(payload({
+            nodeType: 'renderer', nodeLabel: 'simple1', clipboardKind: 'object',
+        }))
+        expect(findItem(tpl, 'Paste Renderer')).toBeUndefined()
+    })
+
     it('unknown node type: single disabled header item', () => {
         const tpl = buildTemplate(payload({ nodeType: 'bogus' as never, nodeLabel: 'X' }))
         expect(tpl).toHaveLength(1)

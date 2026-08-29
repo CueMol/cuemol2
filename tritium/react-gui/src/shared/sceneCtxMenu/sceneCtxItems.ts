@@ -47,8 +47,9 @@ export function copyItem(): SceneCtxNode {
 
 /**
  * Paste menu item -- only shown when the worker clipboard holds the
- * matching kind. Scene rows accept object pastes; object rows accept
- * renderer pastes.
+ * matching kind. Scene rows accept object pastes; object, rendGroup and
+ * renderer rows accept renderer pastes (a renderer row pastes beside
+ * itself).
  */
 export function pasteItem(
     payload: SceneCtxMenuPayload,

@@ -68,6 +68,8 @@ const MOCK_TREE: SceneTreeNode = node({
 const objectNode = (): SceneTreeNode => MOCK_TREE.children[0]
 const cameraNode = (): SceneTreeNode => MOCK_TREE.children[1]
 const styleNode = (): SceneTreeNode => MOCK_TREE.children[2]
+const rendererNode = (): SceneTreeNode => MOCK_TREE.children[0].children[0]
+const groupChildNode = (): SceneTreeNode => MOCK_TREE.children[0].children[1].children[0]
 
 // --- Mock cm ---
 
@@ -273,6 +275,29 @@ const WIRE_CASES: WireCase[] = [
         channel: 'pasteNode',
         payload: {
             sceneId: SCENE_ID, targetObjId: 42,
+            kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
+        },
+    },
+    {
+        // A renderer row pastes as a SIBLING: the destination is the object
+        // it hangs off, so the copy lands beside it. This used to resolve to
+        // no target at all and the paste silently did nothing.
+        name: 'pasteNode (renderer target -> parent object)',
+        run: (r) => r.pasteNode(rendererNode()),
+        channel: 'pasteNode',
+        payload: {
+            sceneId: SCENE_ID, targetObjId: 42,
+            kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
+        },
+    },
+    {
+        // Inside a group the sibling is a group member, so the group is the
+        // destination and the worker re-applies rend.group on attach.
+        name: 'pasteNode (renderer inside a group -> that group)',
+        run: (r) => r.pasteNode(groupChildNode()),
+        channel: 'pasteNode',
+        payload: {
+            sceneId: SCENE_ID, targetGroupId: 200,
             kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
         },
     },
