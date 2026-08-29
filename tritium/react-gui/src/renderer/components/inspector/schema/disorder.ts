@@ -41,7 +41,7 @@ export const DISORDER_SECTIONS: SchemaSectionDef[] = [
         source: { kind: 'siblingRenderers', typeNames: TARGET_TYPES },
         emptyOption: 'none',
       },
-      { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 2, max: 20 },
+      { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 2 },
       { kind: 'num', key: 'width', label: 'Dot size', min: 0, max: 3, step: 0.1, unit: 'Å' },
       { kind: 'num', key: 'dotsep', label: 'Dot separation', min: 0, max: 3, step: 0.1, unit: 'Å' },
       {

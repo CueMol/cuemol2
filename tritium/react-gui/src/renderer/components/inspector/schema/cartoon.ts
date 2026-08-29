@@ -46,7 +46,8 @@ interface SectionShapeOpts {
   allowFancy?: boolean
   /** Expose the width row (omitted for the cylinder-helix section). */
   width?: { max: number }
-  detail: { min: number; max: number }
+  /** Lowest tessellation level this section accepts. */
+  detailMin: number
   /** Gate sharpness on the "roundsquare" type (off for the ribbon section). */
   gateSharp?: boolean
 }
@@ -68,8 +69,7 @@ function sectionShapeRows(prefix: string, opts: SectionShapeOpts): PropRowDef[] 
       kind: 'numEnum',
       keys: [`${prefix}.detail`],
       label: 'Section detail',
-      min: opts.detail.min,
-      max: opts.detail.max,
+      min: opts.detailMin,
     },
   ]
   if (opts.width) {
@@ -129,7 +129,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
     title: 'Cartoon',
     defaultExpanded: true,
     rows: [
-      { kind: 'numEnum', keys: ['axialdetail'], label: 'Axial detail', min: 2, max: 20 },
+      { kind: 'numEnum', keys: ['axialdetail'], label: 'Axial detail', min: 2 },
       { kind: 'bool', key: 'smoothcolor', label: 'Smooth color' },
       { kind: 'text', key: 'pivotatom', label: 'Pivot atom name', placeholder: '(default)' },
       { kind: 'mappedEnum', key: 'start_captype', label: 'Start cap', labels: CAP_LABELS },
@@ -168,7 +168,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
           ...sectionShapeRows('ribhelix', {
             allowFancy: true,
             width: { max: 5 },
-            detail: { min: 4, max: 20 },
+            detailMin: 4,
           }),
           ...junctionRows(['ribhelix_head', 'ribhelix_tail'], CARTOON_JCT_LABELS),
         ],
@@ -179,7 +179,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
         rows: [
           smoothingRow('helix_smooth'),
           { kind: 'num', key: 'helix_extend', label: 'Extend', min: 0, max: 3, step: 0.05, decimals: 2, unit: 'Å' },
-          ...sectionShapeRows('helix', { detail: { min: 4, max: 50 }, gateSharp: true }),
+          ...sectionShapeRows('helix', { detailMin: 4, gateSharp: true }),
           {
             kind: 'mappedEnum',
             key: 'helix_width_mode',
@@ -212,7 +212,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
       smoothingRow('sheet_smooth'),
       ...sectionShapeRows('sheet', {
         width: { max: 3 },
-        detail: { min: 2, max: 20 },
+        detailMin: 2,
         gateSharp: true,
       }),
       { kind: 'num', key: 'sheet_wsmooth', label: 'Width smooth', min: -5, max: 5, step: 0.1, decimals: 1 },
@@ -227,7 +227,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
       smoothingRow('coil_smooth'),
       ...sectionShapeRows('coil', {
         width: { max: 3 },
-        detail: { min: 4, max: 20 },
+        detailMin: 4,
         gateSharp: true,
       }),
     ],

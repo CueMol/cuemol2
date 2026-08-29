@@ -169,8 +169,8 @@ describe('the direct-surface Surface section', () => {
     const detail = rowByLabel(container, 'Detail')!
     expect(dragArrow(detail)).toBeNull()
     const sel = detail.querySelector('select') as HTMLSelectElement
-    // Powers of two within 1..21, plus the default 6 the property carries.
-    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['1', '2', '4', '6', '8', '16'])
+    // Powers of two from 1 up, plus the default 6 the property carries.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['1', '2', '4', '6', '8', '16', '32'])
     expect(sel.value).toBe('6')
     unmount()
   })

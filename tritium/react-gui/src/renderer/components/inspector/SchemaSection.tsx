@@ -430,9 +430,7 @@ function renderMultiRow(
           key={key}
           label={row.label}
           targets={targets}
-          ladder={(row.ladder ?? TESSELLATION_LADDER).filter(
-            (n) => n >= row.min && n <= row.max,
-          )}
+          ladder={(row.ladder ?? TESSELLATION_LADDER).filter((n) => n >= row.min)}
           onSet={onSet}
           onSetMany={onSetMany}
           onReset={onReset}

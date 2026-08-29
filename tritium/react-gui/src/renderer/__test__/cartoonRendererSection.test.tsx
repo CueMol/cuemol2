@@ -159,8 +159,8 @@ describe('the cartoon main page', () => {
       <SchemaSection section={CARTOON_SECTIONS[0]} rendererType="cartoon" entries={mainEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
     )
     const sel = selectInRow(container, 'Axial detail')!
-    // Powers of two within 2..20; the value 8 is already one of them.
-    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '8', '16'])
+    // Powers of two from 2 up; the value 8 is already one of them.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '8', '16', '32'])
     act(() => {
       sel.value = '16'
       sel.dispatchEvent(new Event('change', { bubbles: true }))

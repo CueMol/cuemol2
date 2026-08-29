@@ -154,7 +154,7 @@ describe('the ball-and-stick page', () => {
     // not a power of two, so it has to be in the list or the row could not
     // show where it started.
     const detail = rowByLabel(container, 'Detail')!.querySelector('select') as HTMLSelectElement
-    expect(Array.from(detail.options).map((o) => o.value)).toEqual(['2', '3', '4', '8', '16'])
+    expect(Array.from(detail.options).map((o) => o.value)).toEqual(['2', '3', '4', '8', '16', '32'])
     expect(detail.value).toBe('3')
     // bondw / sphr / thickness carry the Angstrom unit.
     for (const label of ['Bond width', 'Atom radius', 'Thickness']) {

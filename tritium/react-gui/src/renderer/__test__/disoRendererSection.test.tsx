@@ -158,7 +158,7 @@ describe('the disorder page', () => {
     expect(dragArrow(detail)).toBeNull()
     const sel = detail.querySelector('select') as HTMLSelectElement
     // 5 is not a power of two, so it is merged into the ladder.
-    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '5', '8', '16'])
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '5', '8', '16', '32'])
     expect(sel.value).toBe('5')
     unmount()
   })

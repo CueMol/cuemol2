@@ -117,7 +117,7 @@ describe('the tube page', () => {
     const sel = selectIn(detail)
     // 6 is not a power of two, so it is merged into the ladder rather than
     // leaving the row unable to show its own value.
-    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '6', '8', '16'])
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '6', '8', '16', '32'])
     expect(sel.value).toBe('6')
     unmount()
   })

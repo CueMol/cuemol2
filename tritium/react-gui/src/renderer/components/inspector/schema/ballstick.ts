@@ -29,7 +29,7 @@ const ringOff = isOff('ring')
 export function ballstickRows(opts: { realtime: boolean }): PropRowDef[] {
   const { realtime } = opts
   return [
-    { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 2, max: 20 },
+    { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 2 },
     { kind: 'num', key: 'bondw', label: 'Bond width', min: 0, max: 3, step: 0.01, unit: 'Å', realtime },
     { kind: 'num', key: 'sphr', label: 'Atom radius', min: 0, max: 3, step: 0.01, unit: 'Å', realtime },
     { kind: 'bool', key: 'ring', label: 'Show ring' },

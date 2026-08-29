@@ -219,8 +219,8 @@ describe('the CPK Detail section', () => {
     )
     const detail = rowByLabel(container, 'Detail')!.querySelector('select') as HTMLSelectElement
     expect(detail.value).toBe('3')
-    // Powers of two within 2..20, plus whatever value the property holds.
-    expect(Array.from(detail.options).map((o) => o.value)).toEqual(['2', '3', '4', '8', '16'])
+    // Powers of two from 2 up, plus whatever value the property holds.
+    expect(Array.from(detail.options).map((o) => o.value)).toEqual(['2', '3', '4', '8', '16', '32'])
     unmount()
   })
 

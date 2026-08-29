@@ -16,7 +16,7 @@ exports[`renderer Properties page > anisou / default 1`] = `
   },
   "Atoms and bonds": {
     "rows": [
-      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
+      "Detail [select] {resettable} options=[2|3|4|8|16|32] selected=3",
       "Bond width [drag-numeric] {resettable}",
       "Atom radius [drag-numeric] {resettable}",
       "Show ring [switch] {resettable} value="on"",
@@ -69,7 +69,7 @@ exports[`renderer Properties page > atomintr / caps-arrow 1`] = `
 {
   "3D tube": {
     "rows": [
-      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
+      "Detail [select] {resettable} options=[2|4|5|8|16|32] selected=5",
       "Start cap [select] {modified,resettable} options=[arrow|flat|sphere] selected=arrow",
       "End cap [select] {modified,resettable} options=[arrow|flat|sphere] selected=arrow",
       "Arrow height [drag-numeric] {resettable}",
@@ -150,7 +150,7 @@ exports[`renderer Properties page > atomintr / default 1`] = `
 {
   "3D tube": {
     "rows": [
-      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
+      "Detail [select] {resettable} options=[2|4|5|8|16|32] selected=5",
       "Start cap [select] {resettable} options=[arrow|flat|sphere] selected=sphere",
       "End cap [select] {resettable} options=[arrow|flat|sphere] selected=sphere",
       "Arrow height [drag-numeric] {resettable,disabled}",
@@ -231,7 +231,7 @@ exports[`renderer Properties page > atomintr / labels-on 1`] = `
 {
   "3D tube": {
     "rows": [
-      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
+      "Detail [select] {resettable} options=[2|4|5|8|16|32] selected=5",
       "Start cap [select] {resettable} options=[arrow|flat|sphere] selected=sphere",
       "End cap [select] {resettable} options=[arrow|flat|sphere] selected=sphere",
       "Arrow height [drag-numeric] {resettable,disabled}",
@@ -312,7 +312,7 @@ exports[`renderer Properties page > atomintr / mode-simple 1`] = `
 {
   "3D tube": {
     "rows": [
-      "Detail [select] {resettable,disabled} options=[2|4|5|8|16] selected=5",
+      "Detail [select] {resettable,disabled} options=[2|4|5|8|16|32] selected=5",
       "Start cap [select] {resettable,disabled} options=[arrow|flat|sphere] selected=sphere",
       "End cap [select] {resettable,disabled} options=[arrow|flat|sphere] selected=sphere",
       "Arrow height [drag-numeric] {resettable,disabled}",
@@ -393,7 +393,7 @@ exports[`renderer Properties page > ballstick / default 1`] = `
 {
   "Ball and stick": {
     "rows": [
-      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
+      "Detail [select] {resettable} options=[2|3|4|8|16|32] selected=3",
       "Bond width [drag-numeric] {resettable}",
       "Atom radius [drag-numeric] {resettable}",
       "Show ring [switch] {resettable} value="on"",
@@ -446,7 +446,7 @@ exports[`renderer Properties page > ballstick / ring-on 1`] = `
 {
   "Ball and stick": {
     "rows": [
-      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
+      "Detail [select] {resettable} options=[2|3|4|8|16|32] selected=3",
       "Bond width [drag-numeric] {resettable}",
       "Atom radius [drag-numeric] {resettable}",
       "Show ring [switch] {modified,resettable} value="on"",
@@ -517,7 +517,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
   },
   "Cartoon": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|8|16] selected=8",
+      "Axial detail [select] {resettable} options=[2|4|8|16|32] selected=8",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=flat",
@@ -539,7 +539,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [select] {resettable} options=[4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -595,7 +595,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -644,7 +644,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
   },
   "Cartoon": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|8|16] selected=8",
+      "Axial detail [select] {resettable} options=[2|4|8|16|32] selected=8",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=flat",
@@ -666,7 +666,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [select] {resettable} options=[4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -696,7 +696,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "rows": [
       "Type [select] {modified,resettable} options=[cylinder|ribbon] selected=ribbon",
       "Section type [select] {resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Section detail [select] {resettable} options=[4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable}",
@@ -722,7 +722,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -771,7 +771,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
   },
   "Cartoon": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|8|16] selected=8",
+      "Axial detail [select] {resettable} options=[2|4|8|16|32] selected=8",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=flat",
@@ -793,7 +793,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [select] {resettable} options=[4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -849,7 +849,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -898,7 +898,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
   },
   "Cartoon": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|8|16] selected=8",
+      "Axial detail [select] {resettable} options=[2|4|8|16|32] selected=8",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=flat",
@@ -920,7 +920,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [select] {resettable} options=[4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -976,7 +976,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Section detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -1233,7 +1233,7 @@ exports[`renderer Properties page > cpk / default 1`] = `
   },
   "Detail": {
     "rows": [
-      "Detail [select] {resettable} options=[2|4|8|10|16] selected=10",
+      "Detail [select] {resettable} options=[2|4|8|10|16|32] selected=10",
     ],
     "writes": [
       "Detail -> set detail=2",
@@ -1277,7 +1277,7 @@ exports[`renderer Properties page > disorder / default 1`] = `
   "Disorder": {
     "rows": [
       "Target [select] {resettable} options=[] selected=",
-      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
+      "Detail [select] {resettable} options=[2|4|5|8|16|32] selected=5",
       "Dot size [drag-numeric] {resettable}",
       "Dot separation [drag-numeric] {resettable}",
       "Loop size [drag-numeric] {resettable}",
@@ -1332,7 +1332,7 @@ exports[`renderer Properties page > disorder / loopsize2-on 1`] = `
   "Disorder": {
     "rows": [
       "Target [select] {resettable} options=[] selected=",
-      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
+      "Detail [select] {resettable} options=[2|4|5|8|16|32] selected=5",
       "Dot size [drag-numeric] {resettable}",
       "Dot separation [drag-numeric] {resettable}",
       "Loop size [drag-numeric] {resettable}",
@@ -1421,7 +1421,7 @@ exports[`renderer Properties page > dsurf2 / default 1`] = `
       "Drawing mode [select] {resettable} options=[fill|line|point] selected=fill",
       "Line/Point size [drag-numeric] {resettable,disabled}",
       "Surface type [select] {resettable} options=[sas|ses|vdw] selected=ses",
-      "Detail [select] {resettable} options=[1|2|4|6|8|16] selected=6",
+      "Detail [select] {resettable} options=[1|2|4|6|8|16|32] selected=6",
     ],
     "writes": [
       "Drawing mode -> set drawmode="line"",
@@ -1490,7 +1490,7 @@ exports[`renderer Properties page > dsurface / default 1`] = `
       "Drawing mode [select] {resettable} options=[fill|line|point] selected=fill",
       "Line/Point size [drag-numeric] {resettable,disabled}",
       "Surface type [select] {resettable} options=[sas|ses|vdw] selected=ses",
-      "Detail [select] {resettable} options=[1|2|4|6|8|16] selected=6",
+      "Detail [select] {resettable} options=[1|2|4|6|8|16|32] selected=6",
     ],
     "writes": [
       "Drawing mode -> set drawmode="line"",
@@ -1901,7 +1901,7 @@ exports[`renderer Properties page > nucl / default 1`] = `
       "Show tube [switch] {resettable} value="on"",
       "Connect base pair [switch] {resettable} value="on"",
       "Base type [select] {resettable} options=[basepair|detail1|detail2|simple1] selected=basepair",
-      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
+      "Detail [select] {resettable} options=[2|3|4|8|16|32] selected=3",
       "Base size [drag-numeric] {resettable}",
       "Base thick [drag-numeric] {resettable}",
     ],
@@ -1931,7 +1931,7 @@ exports[`renderer Properties page > nucl / default 1`] = `
   "Section": {
     "rows": [
       "Type [select] {resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -1946,7 +1946,7 @@ exports[`renderer Properties page > nucl / default 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16|32] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -2004,7 +2004,7 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
       "Show tube [switch] {modified,resettable} value="on"",
       "Connect base pair [switch] {resettable} value="on"",
       "Base type [select] {resettable} options=[basepair|detail1|detail2|simple1] selected=basepair",
-      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
+      "Detail [select] {resettable} options=[2|3|4|8|16|32] selected=3",
       "Base size [drag-numeric] {resettable}",
       "Base thick [drag-numeric] {resettable}",
     ],
@@ -2034,7 +2034,7 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
   "Section": {
     "rows": [
       "Type [select] {resettable,disabled} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Detail [select] {resettable,disabled} options=[2|4|8|16] selected=16",
+      "Detail [select] {resettable,disabled} options=[2|4|8|16|32] selected=16",
       "Width1 [drag-numeric] {resettable,disabled}",
       "Width2 [drag-numeric] {resettable,disabled}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -2049,7 +2049,7 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [select] {resettable,disabled} options=[2|4|6|8|16] selected=6",
+      "Axial detail [select] {resettable,disabled} options=[2|4|6|8|16|32] selected=6",
       "Smoothness [drag-numeric] {resettable,disabled}",
       "Smooth color [switch] {resettable,disabled} value="on"",
       "Start cap [select] {resettable,disabled} options=[flat|none|sphere] selected=sphere",
@@ -2156,8 +2156,8 @@ exports[`renderer Properties page > ribbon / default 1`] = `
   },
   "Ribbon": {
     "rows": [
-      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
-      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
+      "Section detail [select] {resettable} options=[2|4|8|16|32] selected=16",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16|32] selected=6",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Cap type [select] {resettable} options=[flat|sphere|none] selected=sphere",
@@ -2297,8 +2297,8 @@ exports[`renderer Properties page > ribbon / junctions-smooth 1`] = `
   },
   "Ribbon": {
     "rows": [
-      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
-      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
+      "Section detail [select] {resettable} options=[2|4|8|16|32] selected=16",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16|32] selected=6",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Cap type [select] {resettable} options=[flat|sphere|none] selected=sphere",
@@ -2438,8 +2438,8 @@ exports[`renderer Properties page > ribbon / side-colours-on 1`] = `
   },
   "Ribbon": {
     "rows": [
-      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
-      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
+      "Section detail [select] {resettable} options=[2|4|8|16|32] selected=16",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16|32] selected=6",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Cap type [select] {resettable} options=[flat|sphere|none] selected=sphere",
@@ -2558,7 +2558,7 @@ exports[`renderer Properties page > spline / default 1`] = `
   },
   "Spline": {
     "rows": [
-      "Axial detail [select] {resettable} options=[1|2|4|6|8] selected=6",
+      "Axial detail [select] {resettable} options=[1|2|4|6|8|16|32] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Line width [drag-numeric] {resettable}",
@@ -2657,7 +2657,7 @@ exports[`renderer Properties page > tube / default 1`] = `
   "Section": {
     "rows": [
       "Type [select] {resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -2672,7 +2672,7 @@ exports[`renderer Properties page > tube / default 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16|32] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -2742,7 +2742,7 @@ exports[`renderer Properties page > tube / putty-scaling 1`] = `
   "Section": {
     "rows": [
       "Type [select] {resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -2757,7 +2757,7 @@ exports[`renderer Properties page > tube / putty-scaling 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16|32] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -2827,7 +2827,7 @@ exports[`renderer Properties page > tube / section-fancy 1`] = `
   "Section": {
     "rows": [
       "Type [select] {modified,resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=fancy1",
-      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable}",
@@ -2842,7 +2842,7 @@ exports[`renderer Properties page > tube / section-fancy 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16|32] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -2912,7 +2912,7 @@ exports[`renderer Properties page > tube / section-roundsquare 1`] = `
   "Section": {
     "rows": [
       "Type [select] {modified,resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=roundsquare",
-      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Detail [select] {resettable} options=[2|4|8|16|32] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable}",
@@ -2927,7 +2927,7 @@ exports[`renderer Properties page > tube / section-roundsquare 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16|32] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",

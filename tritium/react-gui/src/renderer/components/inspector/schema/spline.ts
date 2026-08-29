@@ -20,7 +20,7 @@ export const SPLINE_SECTIONS: SchemaSectionDef[] = [
     title: 'Spline',
     defaultExpanded: true,
     rows: [
-      { kind: 'numEnum', keys: ['axialdetail'], label: 'Axial detail', min: 1, max: 10 },
+      { kind: 'numEnum', keys: ['axialdetail'], label: 'Axial detail', min: 1 },
       { kind: 'num', key: 'smooth', label: 'Smoothness', min: 0, max: 0.5, step: 0.01, decimals: 2, realtime: true },
       { kind: 'bool', key: 'smoothcolor', label: 'Smooth color' },
       { kind: 'num', key: 'line_width', label: 'Line width', min: 0, max: 10, step: 0.2, unit: 'px', realtime: true },

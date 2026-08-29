@@ -256,8 +256,11 @@ export interface BoolSelectRowDef extends RowBase {
   onOption: { value: string; label: string }
 }
 
-/** Powers of two, the natural ladder for a subdivision count. */
-export const TESSELLATION_LADDER = [1, 2, 4, 8, 16, 32, 64]
+/**
+ * Powers of two, the natural ladder for a subdivision count. It stops at 32:
+ * past that the tessellation costs more than it shows.
+ */
+export const TESSELLATION_LADDER = [1, 2, 4, 8, 16, 32]
 
 /**
  * What a row standing for SEVERAL properties has in common.
@@ -330,8 +333,8 @@ export interface MultiNumInputRowDef extends MultiRowBase {
  */
 export interface NumEnumRowDef extends MultiRowBase {
   kind: 'numEnum'
+  /** Lowest level this property accepts; the ladder supplies the rest. */
   min: number
-  max: number
   /** Replaces the powers-of-two ladder when a property wants its own. */
   ladder?: number[]
 }
