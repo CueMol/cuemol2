@@ -40,13 +40,14 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `TimeField` | 時間 (ms) の timecode `M:SS.mmm`。**UXP の timeedit の移植先**。`DragNumericField` プリセットで drag scrub + ▲▼ spin + 打ち込み (`250ms` / `1.5s` / `+2s` の相対も可) | `.h3-form-drag` + `.h3-form-time` (`_form-kit.css`) |
 | `SwitchField` | **値としての真偽トグル** (Visible / Locked など。`inline` Field 内で `Label ...... [switch]` に読ませる) | Blueprint Switch (pill は `--icon-sm` スケール、focus ring 1px/offset 1px) |
 | `CheckboxField` | **opt-in ゲート** (「以下のグループを有効にする」トグル。`inline controlFirst` の Field 内で使い `[x] Label ......` に読ませる) | Blueprint Checkbox (box は `--icon-md` スケール、focus ring 1px/offset 1px) |
+| `GatedControl` | **1 つの property の「off」が別フラグではなく値** のとき (負なら未設定、等) に、checkbox と control を **同じ行**に置く。両者が同じ property を書くので、行の modified バーと reset を共有する。下のブロック全体を有効化する用途は `CheckboxField` 単体 | `.h3-form-gated-control` (`_form-kit.css`) |
 | `RadioField` | **設定としての二者択一/N択** (名前の付いた選択肢を並べて 1 つ選ぶ)。横並び + 幅が足りなければ自動で折返し (向きは選ばない) | ラベル `--fs-lg`, 間隔 `--space-5` (`.h3-form-radio-group`) |
 | `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |
 | `VectorField` | 3/4 成分ベクトル。x/y/z(/w) の `NumberCell` を並べる。値は C++ `qlib::Vector4D` の `(x,y,z[,w])` 文字列で往復し、成分数は入力を保持 | 配置のみ `.h3-form-vector*`; cell は `NumberCell` の `--field-cell-w`/`--field-h-sm` |
 | `ButtonRow` / `FormButton` | コンパクトボタンの行 / ボタン | 高 `--field-btn-h`, ラベル `--fs-base` |
 | `SegmentField` | **view/モード切替** (`Named\|History`, pane 上部の tab strip)。**設定行には使わない** — pane 内だとタブがもう 1 段あるように読める | 高 `--field-btn-h`, ラベル `--fs-base` (= `FormButton` と同一, `.h3-form-segmented`) |
 
-**真偽トグルの使い分け**: `SwitchField` = **値そのものが真偽** (Visible / Locked / Use hydrogen atoms)。行は `Label ...... [switch]` (`Field inline`) で、ラベルが左端に揃い property 行と整列する。`CheckboxField` = **下に続く control を有効化する opt-in ゲート** (dialog の Use selection)。行は `[x] Label ......` (`Field inline controlFirst`) で、チェックボックスが先に来て「これを入れると下が使える」と読ませる。**判断基準は「値か、ゲートか」**であり、見た目の好みで選ばない。
+**真偽トグルの使い分け**: `SwitchField` = **値そのものが真偽** (Visible / Locked / Use hydrogen atoms)。行は `Label ...... [switch]` (`Field inline`) で、ラベルが左端に揃い property 行と整列する。`CheckboxField` = **下に続く control を有効化する opt-in ゲート** (dialog の Use selection)。行は `[x] Label ......` (`Field inline controlFirst`) で、チェックボックスが先に来て「これを入れると下が使える」と読ませる。**判断基準は「値か、ゲートか」**であり、見た目の好みで選ばない。ゲートする対象が**下のブロックではなく同じ行の control 1 つ** (かつ両者が同じ property を書く) なら `GatedControl` を使う (Inspector の disorder Loop size 2 など)。
 
 **dialog も同じカタログで組む**: file-open のオプションペイン (`components/fopen-opt-dlgs/panes/*`) は
 form-kit より前に作られたため長らく生 Blueprint (`Switch` / `FormGroup` / `HTMLSelect` / `InputGroup` /
