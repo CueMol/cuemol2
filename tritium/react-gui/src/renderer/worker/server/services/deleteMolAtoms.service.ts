@@ -15,7 +15,8 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { WorkerContext } from '../types/WorkerContext';
 import { resolveMolTool } from './helpers/molAnlTool';
-import { tryUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
+import { ok, fail, type Result } from '../../shared/result';
 
 export interface DeleteMolAtomsArgs {
     sceneId: number;
@@ -25,11 +26,7 @@ export interface DeleteMolAtomsArgs {
     selStr: string;
 }
 
-export interface DeleteMolAtomsResult {
-    ok: boolean;
-    /** Populated with the failure reason when ok=false. */
-    error?: string;
-}
+export type DeleteMolAtomsResult = Result;
 
 function deleteMolAtoms(
     ctx: WorkerContext,
@@ -40,11 +37,13 @@ function deleteMolAtoms(
     const { scene, mol, sel, mgr } = t;
 
     // deleteAtoms returns a boolean success flag: false -> rollback (no commit).
-    return tryUndoTxn(scene, 'Delete atoms', () =>
+    return undoTxnResult(scene, 'Delete atoms', () =>
         mgr.deleteAtoms(
             mol as unknown as MolCoord,
             sel as unknown as MolSelection,
-        ),
+        )
+            ? ok()
+            : fail('atom deletion was rejected', 'native'),
     );
 }
 

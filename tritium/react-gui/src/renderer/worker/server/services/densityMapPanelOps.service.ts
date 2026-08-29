@@ -25,7 +25,8 @@ import {
     getSceneOrNull,
     getViewSceneOrNull,
 } from './helpers/sceneResolver';
-import { tryUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
+import { ok, fail, failFrom, type Result } from '../../shared/result';
 import { makeColor } from './helpers/makeColor';
 import { parseGenericProps } from './helpers/parseGenericProps';
 import { parseSceneTreeJSON } from '../../shared/sceneTreeTypes';
@@ -330,19 +331,16 @@ export interface SetMapRendererPropArgs {
     originalWasDefault?: boolean;
 }
 
-export interface SetMapRendererPropResult {
-    ok: boolean;
-    error?: string;
-}
+export type SetMapRendererPropResult = Result;
 
 function setMapRendererProp(
     ctx: WorkerContext,
     args: SetMapRendererPropArgs,
 ): SetMapRendererPropResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false, error: 'scene not found' };
+    if (!scene) return fail('scene not found', 'not-found');
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
-    if (!rend) return { ok: false, error: 'renderer not found' };
+    if (!rend) return fail('renderer not found', 'not-found');
 
     // Live preview during a drag: numeric write without an undo txn (the view
     // still redraws via the prop-change event). `color` never previews.
@@ -350,9 +348,9 @@ function setMapRendererProp(
         try {
             rend.setProp(args.propName, args.value);
         } catch (e) {
-            return { ok: false, error: String(e) };
+            return failFrom(e);
         }
-        return { ok: true };
+        return ok();
     }
 
     // Drag cancelled: restore the pre-drag snapshot, txn-free. `resetProp`
@@ -363,9 +361,9 @@ function setMapRendererProp(
             if (args.originalWasDefault) rend.resetProp(args.propName);
             else rend.setProp(args.propName, args.value);
         } catch (e) {
-            return { ok: false, error: String(e) };
+            return failFrom(e);
         }
-        return { ok: true };
+        return ok();
     }
 
     // Realtime commit: restore the pre-drag state first (txn-free, not
@@ -378,11 +376,11 @@ function setMapRendererProp(
             if (args.originalWasDefault) rend.resetProp(args.propName);
             else rend.setProp(args.propName, args.originalValue);
         } catch (e) {
-            return { ok: false, error: String(e) };
+            return failFrom(e);
         }
     }
     // The in-txn write is a void mutation: a throw rolls back (no commit).
-    return tryUndoTxn(scene as Scene, 'Change map renderer prop', () => {
+    return undoTxnResult(scene as Scene, 'Change map renderer prop', () => {
         if (args.propName === 'color') {
             // Use the typed property setter (same path as
             // `setRendererDefaultColor`): the wrapper layer
@@ -393,6 +391,7 @@ function setMapRendererProp(
         } else {
             rend.setProp(args.propName, args.value);
         }
+        return ok();
     });
 }
 
@@ -404,12 +403,10 @@ export interface RedrawMapCenterArgs {
     viewId: number;
 }
 
-export interface RedrawMapCenterResult {
-    ok: boolean;
+export type RedrawMapCenterResult = Result<{
     /** True iff a center change was actually applied (false on small-movement guard). */
     moved: boolean;
-    error?: string;
-}
+}>;
 
 /**
  * Set the map renderer's `center` to the current view center, unless
@@ -421,20 +418,20 @@ function redrawMapCenter(
     args: RedrawMapCenterArgs,
 ): RedrawMapCenterResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false, moved: false, error: 'scene not found' };
+    if (!scene) return fail('scene not found', 'not-found');
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
-    if (!rend) return { ok: false, moved: false, error: 'renderer not found' };
+    if (!rend) return fail('renderer not found', 'not-found');
 
     const vs = getViewSceneOrNull(ctx, args.viewId);
-    if (!vs) return { ok: false, moved: false, error: 'view not found' };
+    if (!vs) return fail('view not found', 'not-found');
 
     let viewCenter: Vector | null = null;
     try {
         viewCenter = vs.view.getViewCenter() as Vector;
     } catch {
-        return { ok: false, moved: false, error: 'view center unavailable' };
+        return fail('view center unavailable', 'native');
     }
-    if (!viewCenter) return { ok: false, moved: false, error: 'view center unavailable' };
+    if (!viewCenter) return fail('view center unavailable', 'native');
 
     const r = rend as unknown as { center: Vector };
     const distance = safeRead<number>(() => {
@@ -442,18 +439,18 @@ function redrawMapCenter(
         return cur.sub(viewCenter as Vector).length();
     }, Number.POSITIVE_INFINITY);
     if (distance < 0.1) {
-        return { ok: true, moved: false };
+        return ok({ moved: false });
     }
 
-    // Center assignment is a void mutation: a throw rolls back (no commit).
-    // `moved` mirrors ok -- true only when the new center was committed.
-    const res = tryUndoTxn(scene as Scene, 'Change map renderer center', () => {
+    // Center assignment is a void mutation: a throw rolls back (no commit),
+    // so `moved: true` only ever reports a committed center.
+    return undoTxnResult(scene as Scene, 'Change map renderer center', () => {
         // Typed setter: pass the wrapper itself (wrapper layer
         // unwraps for the C++ side and fires the PROPCHG that
         // triggers map redraw).
         r.center = viewCenter as Vector;
+        return ok({ moved: true });
     });
-    return { ...res, moved: res.ok };
 }
 
 export const services = {

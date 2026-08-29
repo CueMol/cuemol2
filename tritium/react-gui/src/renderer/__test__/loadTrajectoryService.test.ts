@@ -150,16 +150,17 @@ describe('loadTrajectory — block-centric assembly', () => {
         expect(calls.some((c) => c.startsWith('dcdtraj.nevery'))).toBe(false)
     })
 
-    it('rolls back and rethrows when a block append fails (atom-count mismatch)', () => {
+    it('rolls back and returns the failure when a block append fails (atom-count mismatch)', () => {
         const { ctx, scene, traj } = makeFixture()
         ;(traj.append as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
             throw new Error('atom count mismatch')
         })
-        expect(() =>
-            loadTrajServices.loadTrajectory(ctx, {
-                sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/a.dcd'], renderer,
-            }),
-        ).toThrow('atom count mismatch')
+        // The C++ throw used to escape as a rejected promise on the renderer
+        // side; undoTxnResult converts it after rolling back.
+        const result = loadTrajServices.loadTrajectory(ctx, {
+            sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/a.dcd'], renderer,
+        })
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'native', error: 'atom count mismatch' }))
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
         expect(setupRenderer).not.toHaveBeenCalled()
@@ -167,11 +168,12 @@ describe('loadTrajectory — block-centric assembly', () => {
 
     it('rolls back on an unsupported trajectory extension', () => {
         const { ctx, scene } = makeFixture()
-        expect(() =>
-            loadTrajServices.loadTrajectory(ctx, {
-                sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/a.xyz'], renderer,
-            }),
-        ).toThrow(/unsupported trajectory format/)
+        const result = loadTrajServices.loadTrajectory(ctx, {
+            sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/a.xyz'], renderer,
+        })
+        expect(result).toEqual(expect.objectContaining({
+            ok: false, code: 'unsupported', error: expect.stringMatching(/unsupported trajectory format/),
+        }))
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
     })
 
@@ -180,7 +182,7 @@ describe('loadTrajectory — block-centric assembly', () => {
         const result = loadTrajServices.loadTrajectory(ctx, {
             sceneId: 1, topologyPath: '/p/s.gro', trajPaths: [], renderer,
         })
-        expect(result).toEqual({ ok: false })
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'invalid-args' }))
         expect(scene.startUndoTxn).not.toHaveBeenCalled()
     })
 })

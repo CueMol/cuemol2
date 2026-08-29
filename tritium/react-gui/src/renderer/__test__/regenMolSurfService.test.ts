@@ -145,8 +145,7 @@ describe('regenMolSurf', () => {
     it('rolls back and reports the error when regeneration throws', () => {
         const { ctx, scene } = makeCtx({ regenThrows: true })
         const res = regenMolSurf(ctx, { sceneId: SCENE_ID, objId: OBJ_ID, density: 2 })
-        expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/boom/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/boom/) }))
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })

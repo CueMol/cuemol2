@@ -33,7 +33,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
  * renderer bundle -- is rejected.
  */
 const NO_TEST_HELPERS = {
-  group: ['**/__test__/**', '**/testHarness*'],
+  group: ['**/__test__/**', '**/testHarness*', '**/worker/testing', '**/worker/testing/**'],
   message: 'Test helpers must not be imported from production code.',
 }
 
@@ -200,7 +200,7 @@ export default tseslint.config(
 
   // --- Tests may reach anywhere ---
   {
-    files: ['src/**/*.test.{ts,tsx}', 'src/**/__test__/**'],
+    files: ['src/**/*.test.{ts,tsx}', 'src/**/__test__/**', 'src/renderer/worker/testing/**'],
     rules: {
       '@typescript-eslint/no-restricted-imports': 'off',
       '@typescript-eslint/no-floating-promises': 'off',

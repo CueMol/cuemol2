@@ -177,8 +177,7 @@ describe('changeSymmetryInfo', () => {
             sceneId: 100, objId: 1,
             a: 1, b: 1, c: 1, alpha: 90, beta: 90, gamma: 90, nsg: 1,
         })
-        expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/SymmOpManager/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/SymmOpManager/) }))
     })
 
     it('returns the error message when changeXtalInfo throws', () => {
@@ -190,8 +189,7 @@ describe('changeSymmetryInfo', () => {
             sceneId: 100, objId: 1,
             a: 1, b: 1, c: 1, alpha: 90, beta: 90, gamma: 90, nsg: 1,
         })
-        expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/bad sg/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/bad sg/) }))
         // A throwing mutation must roll the txn back and must NOT commit a
         // bogus undo entry (the error message is also carried through).
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
@@ -241,7 +239,7 @@ describe('showUnitCellRenderer', () => {
         expect(nameSet).toBe('unitcell')
     })
 
-    it('rolls back without committing when createRenderer throws (preserving created=false)', () => {
+    it('rolls back without committing when createRenderer throws (no created flag)', () => {
         const obj = {
             getRendererByType: vi.fn(() => null),
             createRenderer: vi.fn(() => { throw new Error('cannot create') }),
@@ -252,9 +250,9 @@ describe('showUnitCellRenderer', () => {
         scene.getObject = vi.fn(() => obj)
         const ctx = makeCtx({ scene })
         const res = showUnitCellRenderer(ctx, { sceneId: 100, objId: 1 })
-        expect(res.ok).toBe(false)
-        expect(res.created).toBe(false)
-        expect(res.error).toMatch(/cannot create/)
+        // A Fail carries no payload: `created` is only ever reported on success.
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/cannot create/) }))
+        expect(res).not.toHaveProperty('created')
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
@@ -334,8 +332,7 @@ describe('showSymmRenderer', () => {
         const res = showSymmRenderer(ctx, {
             sceneId: 100, objId: 1, viewId: 1, extent: 'unitcell',
         })
-        expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/symm create failed/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/symm create failed/) }))
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })

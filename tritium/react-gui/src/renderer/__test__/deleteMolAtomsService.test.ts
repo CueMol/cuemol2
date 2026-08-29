@@ -83,7 +83,7 @@ describe('deleteMolAtoms', () => {
         const res = deleteMolAtoms(ctx, { sceneId: 100, objId: 1, selStr: 'bogus(' })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/selection/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/selection/) }))
         expect(deleteAtomsFn).not.toHaveBeenCalled()
         expect(scene.startUndoTxn).not.toHaveBeenCalled()
     })
@@ -96,7 +96,7 @@ describe('deleteMolAtoms', () => {
         const res = deleteMolAtoms(ctx, { sceneId: 100, objId: 1, selStr: 'chain A' })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/MolAnlManager/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/MolAnlManager/) }))
     })
 
     it('returns ok=false when the molecule is missing', () => {
@@ -107,7 +107,7 @@ describe('deleteMolAtoms', () => {
         const res = deleteMolAtoms(ctx, { sceneId: 100, objId: 999, selStr: 'chain A' })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/molecule/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/molecule/) }))
     })
 
     it('returns ok=false when deleteAtoms returns false', () => {
@@ -129,7 +129,7 @@ describe('deleteMolAtoms', () => {
         const res = deleteMolAtoms(ctx, { sceneId: 100, objId: 1, selStr: 'chain A' })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/boom/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/boom/) }))
         // A throwing mutation must roll the txn back and must NOT commit a
         // bogus undo entry.
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()

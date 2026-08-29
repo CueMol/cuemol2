@@ -43,7 +43,7 @@ mapObjects / mapStats を 1 call) と `getMultiGradHistogram`
 (`getHistogramJSON` の rebin passthrough; 返却 JSON の min/max は無視し
 `nmax` で正規化)、唯一の書き込み経路 `setMultiGradNodes` (drag protocol:
 `preview` = txn なし / `abort` = original 復元 / `commit` = original 復元
-→ `tryUndoTxn` 内で final 書き込み、genericProps の restore-then-txn 方式)、
+→ `undoTxnResult` 内で final 書き込み、genericProps の restore-then-txn 方式)、
 `setMultiGradColorMap`。モード切替は `setRendererColoring` の
 `'paint-type-multigrad'` case: 1 txn で color_mapname default (map renderer
 は自身の client map 名、molsurf は scene 先頭の scalar map) → `colormode =

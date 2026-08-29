@@ -103,7 +103,7 @@ describe('changeResidueIndex', () => {
         const res = changeResidueIndex(ctx, { ...BASE, bshift: true, value: 1, renumber: false })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/selection/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/selection/) }))
         expect(shiftResIndex).not.toHaveBeenCalled()
         expect(scene.startUndoTxn).not.toHaveBeenCalled()
     })
@@ -116,7 +116,7 @@ describe('changeResidueIndex', () => {
         const res = changeResidueIndex(ctx, { ...BASE, bshift: true, value: 1, renumber: false })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/MolAnlManager/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/MolAnlManager/) }))
     })
 
     it('returns ok=false when the molecule is missing', () => {
@@ -127,7 +127,7 @@ describe('changeResidueIndex', () => {
         const res = changeResidueIndex(ctx, { ...BASE, objId: 999, bshift: true, value: 1, renumber: false })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/molecule/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/molecule/) }))
     })
 
     it('returns the error message when the underlying call throws', () => {
@@ -139,7 +139,7 @@ describe('changeResidueIndex', () => {
         const res = changeResidueIndex(ctx, { ...BASE, bshift: true, value: 1, renumber: false })
 
         expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/boom/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/boom/) }))
         // A throwing mutation must roll the txn back and must NOT commit a
         // bogus undo entry.
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()

@@ -21,13 +21,14 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import { setupRenderer } from './setupRenderer.service';
-import { withUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
 import { pickReaderName, OBJREADER_CATEGORY } from './helpers/pickReaderName';
 import { applyReaderOptions } from './helpers/applyReaderOptions';
 import { applyMapTypeChoice, applyEmMapDefaults, fitViewsToMap } from './helpers/emMapDefaults';
+import { fail, failFrom, ok, type Result } from '../../shared/result';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 const log = console;
 
@@ -65,19 +66,22 @@ function fileStem(filePath: string): string {
     return base.replace(/\.[^.]+$/, '');
 }
 
-function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
+/** `{ objId }` of the new object on success. */
+export type LoadObjectResult = Result<{ objId: number }>;
+
+function loadObject(ctx: WorkerContext, args: LoadObjectArgs): LoadObjectResult {
     log.info(`[worker] loading object file: ${args.filePath} (contentFirst=${args.contentFirst})`);
 
     const nickname = args.readerName ?? pickReaderName(ctx, args.filePath, args.contentFirst, args.maxSniffBytes);
     if (!nickname) {
         log.warn(`[worker] loadObject: no reader matched ${args.filePath}`);
-        return { ok: false };
+        return fail(`no reader matched ${args.filePath}`, 'unsupported');
     }
 
     const reader = ctx.strMgr.createHandler(nickname, OBJREADER_CATEGORY) as unknown as ObjReader | null;
     if (!reader) {
         log.warn(`[worker] loadObject: createHandler failed for "${nickname}"`);
-        return { ok: false };
+        return fail(`createHandler failed for "${nickname}"`, 'unsupported');
     }
 
     reader.setPath(args.filePath);
@@ -89,23 +93,30 @@ function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
     // Wire the dialog's format-specific reader options before read().
     applyReaderOptions(reader, nickname, args.options.format);
 
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
 
-    return withUndoTxn(scene, 'Open file', () => {
+    return undoTxnResult(scene, 'Open file', () => {
         let obj: CObject | null = null;
         try {
             obj = reader.createDefaultObj() as unknown as CObject;
             reader.attach(obj);
-            reader.read();
-            reader.detach();
+            try {
+                reader.read();
+            } finally {
+                reader.detach();
+            }
         } catch (e) {
+            // A parse failure rolls the transaction back (undoTxnResult sees
+            // the Fail) and reaches the dialog as its message, not as a
+            // rejected promise.
             log.warn('[worker] loadObject: reader.read() failed:', e);
-            throw e;  // bubble up so withUndoTxn rolls back
+            return failFrom(e, 'io');
         }
 
         if (!obj) {
             log.warn('[worker] loadObject: createDefaultObj returned null');
-            return { ok: false };
+            return fail('the reader produced no object', 'io');
         }
 
         (obj as unknown as { name: string }).name =
@@ -122,7 +133,7 @@ function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
         if (rend && applyEmMapDefaults(obj, rend) && args.options.renderer.centerView) {
             fitViewsToMap(scene, obj);
         }
-        return { ok: true };
+        return ok({ objId: (obj as unknown as { uid: number }).uid });
     });
 }
 

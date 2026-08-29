@@ -147,6 +147,12 @@ export function useFileCommands({
             const proceed = await showConfirmReload({ sceneName: closeInfo.sceneName })
             if (!proceed) return
         }
-        await cm.invokeService('loadScene', { filePath: src, sceneId: info.scene_uid })
+        const loaded = await cm.invokeService('loadScene', { filePath: src, sceneId: info.scene_uid })
+        if (!loaded.ok) {
+            await showErrorAlert({
+                title: 'Reload Scene failed',
+                message: `Failed to reload:\n${src}\n\n${loaded.error}`,
+            })
+        }
     })
 }

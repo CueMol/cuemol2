@@ -17,6 +17,9 @@ vi.mock('../worker/server/services/helpers/setupDensityMapRenderers', () => ({
 }))
 vi.mock('../worker/server/services/withUndoTxn', () => ({
     withUndoTxn: vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
+    // The Result-returning variant: commit on ok, roll back otherwise. The
+    // fixture only needs the body to run, so pass it straight through.
+    undoTxnResult: (_s: unknown, _l: string, fn: () => unknown) => fn(),
 }))
 
 import { services } from '../worker/server/services/streamLoadDensityMap.service'
@@ -220,7 +223,7 @@ describe('streamLoadDensityMap — post-load behavior', () => {
         expect(setupDensityMapRenderers).toHaveBeenCalledWith(env.ctx, env.scene, env.obj, '2fofc')
 
         expect(env.obj.fitView).toHaveBeenCalledWith(env.view, false)
-        expect(result).toEqual({ ok: true })
+        expect(result).toEqual(expect.objectContaining({ ok: true }))
     })
 
     it('cancel: drains IOThread, does NOT call addObject / setupDensityMapRenderers / fitView', async () => {
@@ -277,20 +280,20 @@ describe('streamLoadDensityMap — post-load behavior', () => {
         cancelStreamLoad(env.ctx, { reqId })
 
         const result = await promise
-        expect(result).toEqual({ ok: false, canceled: true })
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'canceled' }))
         expect(env.waitLoadAsync).toHaveBeenCalledWith(99)
         expect(env.scene.addObject).not.toHaveBeenCalled()
         expect(setupDensityMapRenderers).not.toHaveBeenCalled()
         expect(env.obj.fitView).not.toHaveBeenCalled()
     })
 
-    it('HTTP error: drains IOThread, throws, no scene mutation', async () => {
+    it('HTTP error: drains IOThread, returns an io failure, no scene mutation', async () => {
         const env = makeEnv()
         globalThis.fetch = vi.fn(async () => ({
             ok: false, status: 404, body: null,
         } as unknown as Response)) as unknown as typeof fetch
 
-        await expect(streamLoadDensityMap(env.ctx, {
+        const result = await streamLoadDensityMap(env.ctx, {
             reqId: 'r-404',
             url: 'http://x',
             readerName: 'mmcifmap',
@@ -299,7 +302,10 @@ describe('streamLoadDensityMap — post-load behavior', () => {
             objectName: '1mbn_2fofc',
             sceneId: 7,
             viewId: 1,
-        })).rejects.toThrow(/HTTP 404/)
+        })
+        expect(result).toEqual(expect.objectContaining({
+            ok: false, code: 'io', error: expect.stringMatching(/HTTP 404/),
+        }))
 
         expect(env.waitLoadAsync).toHaveBeenCalledWith(99)
         expect(env.scene.addObject).not.toHaveBeenCalled()

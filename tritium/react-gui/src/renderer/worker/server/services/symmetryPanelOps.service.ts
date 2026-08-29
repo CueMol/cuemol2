@@ -31,7 +31,8 @@ import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull, getViewSceneOrNull } from './helpers/sceneResolver';
-import { tryUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
+import { ok, fail, type Result } from '../../shared/result';
 
 const MOL_CLASSES = new Set(['MolCoord', 'PDBMol', 'MmCifMol']);
 
@@ -206,32 +207,29 @@ export interface ChangeSymmetryInfoArgs {
     nsg: number;
 }
 
-export interface ChangeSymmetryInfoResult {
-    ok: boolean;
-    /** Populated with the C++ error message when ok=false. */
-    error?: string;
-}
+export type ChangeSymmetryInfoResult = Result;
 
 function changeSymmetryInfo(
     ctx: WorkerContext,
     args: ChangeSymmetryInfoArgs,
 ): ChangeSymmetryInfoResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false, error: 'scene not found' };
+    if (!scene) return fail('scene not found', 'not-found');
     const obj = scene.getObject(args.objId) as CueMolObject | null;
-    if (!obj) return { ok: false, error: 'object not found' };
+    if (!obj) return fail('object not found', 'not-found');
 
     const symmMgr = ctx.svc.getService('SymmOpManager') as SymmOpManager | null;
-    if (!symmMgr) return { ok: false, error: 'SymmOpManager unavailable' };
+    if (!symmMgr) return fail('SymmOpManager unavailable', 'unsupported');
 
     // changeXtalInfo is a void mutation: success commits, a throw rolls back.
-    return tryUndoTxn(scene, 'Change symminfo', () => {
+    return undoTxnResult(scene, 'Change symminfo', () => {
         symmMgr.changeXtalInfo(
             args.objId,
             args.a, args.b, args.c,
             args.alpha, args.beta, args.gamma,
             args.nsg,
         );
+        return ok();
     });
 }
 
@@ -250,10 +248,7 @@ export interface ShowSymmRendererArgs {
     extent: SymmRendererExtent;
 }
 
-export interface ShowSymmRendererResult {
-    ok: boolean;
-    error?: string;
-}
+export type ShowSymmRendererResult = Result;
 
 function setupSymmRendererProps(
     rend: Renderer,
@@ -278,9 +273,9 @@ function showSymmRenderer(
     args: ShowSymmRendererArgs,
 ): ShowSymmRendererResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false, error: 'scene not found' };
+    if (!scene) return fail('scene not found', 'not-found');
     const obj = scene.getObject(args.objId) as CueMolObject | null;
-    if (!obj) return { ok: false, error: 'object not found' };
+    if (!obj) return fail('object not found', 'not-found');
 
     let viewCenter: Vector | null = null;
     if (args.extent !== 'unitcell') {
@@ -295,13 +290,14 @@ function showSymmRenderer(
     }
 
     // Renderer create + prop setup are void mutations: a throw rolls back.
-    return tryUndoTxn(scene as Scene, 'Show sym mol', () => {
+    return undoTxnResult(scene as Scene, 'Show sym mol', () => {
         let rend = obj.getRendererByType('*symm') as Renderer | null;
         if (!rend) {
             rend = obj.createRenderer('*symm') as Renderer;
             rend.name = 'symm';
         }
         setupSymmRendererProps(rend, args.extent, viewCenter);
+        return ok();
     });
 }
 
@@ -312,33 +308,31 @@ export interface ShowUnitCellRendererArgs {
     objId: number;
 }
 
-export interface ShowUnitCellRendererResult {
-    ok: boolean;
+export type ShowUnitCellRendererResult = Result<{
     /** True iff a new renderer was created (false = already existed). */
     created: boolean;
-    error?: string;
-}
+}>;
 
 function showUnitCellRenderer(
     ctx: WorkerContext,
     args: ShowUnitCellRendererArgs,
 ): ShowUnitCellRendererResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false, created: false, error: 'scene not found' };
+    if (!scene) return fail('scene not found', 'not-found');
     const obj = scene.getObject(args.objId) as CueMolObject | null;
-    if (!obj) return { ok: false, created: false, error: 'object not found' };
+    if (!obj) return fail('object not found', 'not-found');
 
     if (obj.getRendererByType('*unitcell')) {
-        return { ok: true, created: false };
+        return ok({ created: false });
     }
 
-    // Renderer creation is a void mutation: a throw rolls back. `created`
-    // mirrors ok -- true only when the new renderer was committed.
-    const res = tryUndoTxn(scene as Scene, 'Show unitcell', () => {
+    // Renderer creation is a void mutation: a throw rolls back, so
+    // `created: true` only ever reports a committed renderer.
+    return undoTxnResult(scene as Scene, 'Show unitcell', () => {
         const rend = obj.createRenderer('*unitcell') as Renderer;
         rend.name = 'unitcell';
+        return ok({ created: true });
     });
-    return { ...res, created: res.ok };
 }
 
 export const services = {

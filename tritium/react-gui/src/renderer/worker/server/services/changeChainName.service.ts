@@ -15,7 +15,8 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { WorkerContext } from '../types/WorkerContext';
 import { resolveMolTool } from './helpers/molAnlTool';
-import { tryUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
+import { ok, type Result } from '../../shared/result';
 
 export interface ChangeChainNameArgs {
     sceneId: number;
@@ -27,11 +28,7 @@ export interface ChangeChainNameArgs {
     chainName: string;
 }
 
-export interface ChangeChainNameResult {
-    ok: boolean;
-    /** Populated with the failure reason when ok=false. */
-    error?: string;
-}
+export type ChangeChainNameResult = Result;
 
 function changeChainName(
     ctx: WorkerContext,
@@ -42,12 +39,13 @@ function changeChainName(
     const { scene, mol, sel, mgr } = t;
 
     // changeChainName is a void mutation: success commits, a throw rolls back.
-    return tryUndoTxn(scene, 'Change chain name', () => {
+    return undoTxnResult(scene, 'Change chain name', () => {
         mgr.changeChainName(
             mol as unknown as MolCoord,
             sel as unknown as MolSelection,
             args.chainName,
         );
+        return ok();
     });
 }
 
