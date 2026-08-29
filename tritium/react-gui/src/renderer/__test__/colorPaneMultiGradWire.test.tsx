@@ -26,7 +26,7 @@ void React
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
-vi.mock('../hooks/useCueMolEventListener', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 

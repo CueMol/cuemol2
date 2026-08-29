@@ -22,7 +22,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { Button, Callout, ProgressBar } from '@blueprintjs/core'
-import { useCueMol } from '../../hooks/useCueMol'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { useApbsConfig } from '../../contexts/ApbsConfigContext'
 import { useCalcApbsJob, isApbsJobActive } from '../../hooks/useCalcApbsJob'
 import {

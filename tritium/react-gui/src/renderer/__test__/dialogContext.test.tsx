@@ -18,7 +18,7 @@ vi.mock('../contexts/ThemeContext', () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
 }))
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cueMolReady: false, cm: null }),
 }))
 // ApbsConfigProvider is mounted above DialogProvider in the app (like

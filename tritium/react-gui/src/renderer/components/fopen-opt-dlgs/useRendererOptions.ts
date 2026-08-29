@@ -28,7 +28,7 @@ import {
     type Dispatch,
     type SetStateAction,
 } from 'react';
-import { useCueMol } from '../../hooks/useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import type { PresetTypeEntry, RendererOptions } from './types';
 import { getDefaultRendType, setDefaultRendType } from './rendTypeHistory';
 import { presetNamePrefix } from './presetUtils';

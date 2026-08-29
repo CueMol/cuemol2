@@ -14,7 +14,7 @@ import { makeRenderHook } from './helpers/testHarness'
 import {
   useRealtimeDragProp,
   type RealtimeDragProps,
-} from '../hooks/useRealtimeDragProp'
+} from '@renderer/hooks/react/useRealtimeDragProp'
 
 void React
 

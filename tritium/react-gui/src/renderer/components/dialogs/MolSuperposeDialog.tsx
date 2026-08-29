@@ -21,8 +21,8 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { useCueMol } from '../../hooks/useCueMol'
-import { useMolEditCommit } from '../../hooks/useMolEditCommit'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useMolEditCommit } from '@renderer/hooks/cuemol/useMolEditCommit'
 import { Field, FieldSection, SegmentField, SwitchField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { objectFilters } from '../../h3-kit/ObjectSelect'

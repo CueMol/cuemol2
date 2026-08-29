@@ -19,7 +19,7 @@ import { ProgressBar, type Intent } from "@blueprintjs/core";
 import { SelectField, FormButton } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import { PanelTabButton } from "./PanelTabButton";
-import { useCollapsibleLabels } from "../../hooks/useCollapsibleLabels";
+import { useCollapsibleLabels } from "@renderer/hooks/react/useCollapsibleLabels";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
 import type { RenderBackendId, RenderMode } from "../../data/renderSettings";
 import { RENDER_BACKENDS } from "../../data/renderBackends";

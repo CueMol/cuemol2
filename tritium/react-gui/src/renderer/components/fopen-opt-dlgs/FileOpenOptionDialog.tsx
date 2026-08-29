@@ -21,7 +21,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Dialog, DialogBody, DialogFooter, Button, Collapse } from '@blueprintjs/core';
 import { AppIcon } from '../AppIcon';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useCueMol } from '../../hooks/useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 
 import {
   type FileOpenOptions,

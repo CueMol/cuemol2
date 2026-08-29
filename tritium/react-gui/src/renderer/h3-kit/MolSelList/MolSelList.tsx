@@ -29,7 +29,7 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
 import { AppIcon } from '../../components/AppIcon';
-import { useCueMol } from '../../hooks/useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useTheme } from '../../contexts/ThemeContext';
 import { TextField } from '../form';
 import {

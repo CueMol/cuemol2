@@ -28,7 +28,7 @@ vi.mock('../contexts/ThemeContext', () => ({
 const invokeService = vi.fn()
 const mockCm = { invokeService }
 
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 

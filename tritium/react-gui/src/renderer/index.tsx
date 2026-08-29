@@ -9,7 +9,7 @@ import './app.css'
 
 import App from './App'
 import { MolTabProvider } from './hooks/useMolTab'
-import { CueMolProvider } from './hooks/useCueMol'
+import { CueMolProvider } from '@renderer/hooks/cuemol/useCueMol'
 import { LogProvider } from './contexts/LogContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { CommandProvider } from './commands/CommandRegistry'

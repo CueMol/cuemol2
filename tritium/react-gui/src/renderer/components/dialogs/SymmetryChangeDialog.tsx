@@ -26,7 +26,7 @@ import {
     NumericInput,
 } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
-import { useCueMol } from '../../hooks/useCueMol'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import type {
     SpaceGroupEntry,
     SymmetryInfo,

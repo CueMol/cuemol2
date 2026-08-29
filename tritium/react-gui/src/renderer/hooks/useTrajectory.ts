@@ -18,7 +18,7 @@ import type {
     TrajBlockInfo,
 } from '../worker/server/services/trajectory.service';
 import { SEM_OBJECT, SEM_ANY, SEM_CHANGED } from '../event';
-import { useCueMolEventListener } from './useCueMolEventListener';
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 interface UseTrajectoryOptions {

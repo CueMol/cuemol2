@@ -33,7 +33,7 @@ import {
 } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
-import { useColumnResize } from "../../hooks/useColumnResize";
+import { useColumnResize } from "@renderer/hooks/useColumnResize";
 
 // ------------------------------------------------------------
 // Constants

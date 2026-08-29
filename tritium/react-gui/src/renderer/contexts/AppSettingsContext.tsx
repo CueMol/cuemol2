@@ -22,7 +22,7 @@ import React, {
   useEffect,
   useMemo,
 } from 'react'
-import { useCueMol } from '../hooks/useCueMol'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import type {
   LabelDefaults,
   SetLabelDefaultsArgs,

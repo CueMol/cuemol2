@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 
 export interface UseCueMolEventListenerOptions {
     cm: AsyncCueMol | null

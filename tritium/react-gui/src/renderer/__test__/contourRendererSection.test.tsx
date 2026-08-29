@@ -33,7 +33,7 @@ void React
 // `listSceneObjects` to one MolCoord object.
 const state = vi.hoisted(() => ({ cm: null as unknown }))
 
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: state.cm, cueMolReady: !!state.cm }),
 }))
 

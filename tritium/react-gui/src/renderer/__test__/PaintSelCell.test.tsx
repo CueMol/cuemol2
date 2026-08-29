@@ -27,7 +27,7 @@ const mockCm = {
     invokeService: vi.fn(),
 }
 
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 

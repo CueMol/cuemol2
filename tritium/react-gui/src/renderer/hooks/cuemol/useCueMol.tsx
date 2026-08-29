@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react'
-import { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { createAndInitCueMol } from '../createAndInitCueMol'
+import { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import { createAndInitCueMol } from '../../createAndInitCueMol'
 
 interface CueMolContextValue {
   cueMolReady: boolean

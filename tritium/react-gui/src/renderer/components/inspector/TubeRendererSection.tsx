@@ -49,7 +49,7 @@ import {
 } from "./RendererCommonSection";
 import { SECTION_TYPE_LABELS, SHARP_TYPES } from "./rowHelpers";
 import { PropertyField, DragNumericField } from "../../h3-kit/form";
-import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
+import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSections";
 

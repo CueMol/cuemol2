@@ -31,7 +31,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import { useCueMolEventListener } from '../useCueMolEventListener'
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 import { useLatestRef } from '../react/useLatestRef'
 import { useStaleGuard } from '../react/useStaleGuard'
 

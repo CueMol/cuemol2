@@ -35,7 +35,7 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 // Event-driven refetch is exercised by useRendererColoringState.test.tsx;
 // stub it so these tests are driven purely by mount + explicit user action.
-vi.mock('../hooks/useCueMolEventListener', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 

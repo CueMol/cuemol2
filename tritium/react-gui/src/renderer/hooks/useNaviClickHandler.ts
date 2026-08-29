@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 import * as event from '../event';
-import { useCueMol } from './useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
-import { useCueMolEventListener } from './useCueMolEventListener';
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { decodeClick, INDEV_LBTN, INDEV_RBTN, INDEV_SHIFT } from '../worker/shared/inDevModif';
 import type { HitTestResult } from '../types';
 

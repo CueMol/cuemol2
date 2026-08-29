@@ -17,7 +17,7 @@ import type { GenericPropEntry } from '../worker/server/services/genericProps.se
 void React
 
 // useCueMol is used by MaterialRow (material-name fetch) -- no backend in test.
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 

@@ -30,7 +30,7 @@ void React
 // Mutable cm holder; molsurf tests run with cm=null (the name list stays empty).
 const state = vi.hoisted(() => ({ cm: null as unknown }))
 
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: state.cm, cueMolReady: !!state.cm }),
 }))
 

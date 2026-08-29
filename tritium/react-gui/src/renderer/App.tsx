@@ -36,7 +36,7 @@ import { useSceneTreeController } from "./hooks/useSceneTreeController";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderWindowBridge } from "./hooks/useRenderWindowBridge";
 import { useTabManager } from "./hooks/useTabManager";
-import { useCueMol } from "./hooks/useCueMol";
+import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction } from "./hooks/useNewSceneAction";

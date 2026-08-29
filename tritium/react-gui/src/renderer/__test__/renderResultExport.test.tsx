@@ -21,7 +21,7 @@ import {
 
 void React;
 
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }));
 vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));

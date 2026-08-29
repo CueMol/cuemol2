@@ -20,7 +20,7 @@ import type {
   PropWriteOpts,
 } from "../worker/server/services/genericProps.service";
 import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
-import { useCueMolEventListener } from "./useCueMolEventListener";
+import { useCueMolEventListener } from "@renderer/hooks/cuemol/useCueMolEventListener";
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_PROPCHG } from "../event";
 import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/utils/timing";
 

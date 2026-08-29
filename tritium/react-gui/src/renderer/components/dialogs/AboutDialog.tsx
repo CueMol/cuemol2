@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogBody, DialogFooter, Button } from '@blueprintjs/core';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useCueMol } from '../../hooks/useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import aboutPng from '../../assets/about.png';
 import { APP_PRODUCT_NAME } from '@shared/appInfo';
 

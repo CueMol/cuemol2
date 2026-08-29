@@ -50,7 +50,7 @@ import type {
 } from "../../worker/server/services/animDetail.service";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import { SEM_ANIM, SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "../../event";
-import { useCueMolEventListener } from "../../hooks/useCueMolEventListener";
+import { useCueMolEventListener } from "@renderer/hooks/cuemol/useCueMolEventListener";
 
 interface AnimElementInspectorProps {
   cm: AsyncCueMol | null;

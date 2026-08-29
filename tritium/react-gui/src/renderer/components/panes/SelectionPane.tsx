@@ -42,7 +42,7 @@ import {
     initBuilderState,
 } from '../../h3-kit/selection';
 import { loadSnapshot, saveSnapshot } from './selection/selectionPaneStore';
-import { useCueMolEventListener } from '../../hooks/useCueMolEventListener';
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { SEM_ANY, SEM_OBJECT, SEM_RENDERER, SEM_SCENE } from '../../event';
 
 /* --- Props --- */

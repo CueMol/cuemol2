@@ -26,7 +26,7 @@ void React
 
 // RendererCommonSection -> MaterialRow uses useCueMol (pulled in transitively
 // via the rendererPropSections registry import).
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 

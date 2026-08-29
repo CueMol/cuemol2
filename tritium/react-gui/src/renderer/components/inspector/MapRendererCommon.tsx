@@ -25,7 +25,7 @@ import React, { useEffect, useState } from "react";
 import { NumRow, NumInputRow, BoolRow, MappedEnumRow, SelRow, resetProps } from "./RendererCommonSection";
 import { PropertyField, SelectField, SwitchField } from "../../h3-kit/form";
 import { objectFilters } from "../../h3-kit/ObjectSelect";
-import { useCueMol } from "../../hooks/useCueMol";
+import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import type { SceneObjectEntry } from "../../worker/server/services/listSceneObjects.service";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSections";

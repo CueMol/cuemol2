@@ -18,7 +18,7 @@ void React;
 
 // DragNumericField -> AppIcon and the editor pull nothing from useCueMol, but
 // mock it defensively so an unrelated context change cannot break this test.
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }));
 
