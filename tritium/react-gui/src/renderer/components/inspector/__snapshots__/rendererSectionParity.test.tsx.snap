@@ -24,9 +24,9 @@ exports[`renderer Properties page > anisou / default 1`] = `
       "Ring color [color] {resettable,disabled} value="#FFFFBF"",
     ],
     "writes": [
-      "Detail -> set detail=4 (preview) + set detail=4 (commit)",
-      "Bond width -> set bondw=0.21 (preview) + set bondw=0.21 (commit)",
-      "Atom radius -> set sphr=0.31 (preview) + set sphr=0.31 (commit)",
+      "Detail -> set detail=4",
+      "Bond width -> set bondw=0.21",
+      "Atom radius -> set sphr=0.31",
       "Show ring -> set ring=true",
       "Thickness -> (nothing)",
       "Ring color -> (nothing)",

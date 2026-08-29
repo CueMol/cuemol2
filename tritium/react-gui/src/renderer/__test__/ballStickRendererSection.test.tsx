@@ -41,7 +41,8 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import { BallStickRendererSection } from '../components/inspector/BallStickRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { BALLSTICK_SECTIONS } from '../components/inspector/schema/ballstick'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
@@ -101,19 +102,24 @@ describe('BallStickRenderer section registry', () => {
     expect(sections).toHaveLength(1)
     expect(sections[0].title).toBe('Ball and stick')
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(componentOf(sections[0])).toBe(BallStickRendererSection)
+    // A migrated page is rows as data, not a component.
+    expect(isComponentSection(sections[0])).toBe(false)
+    expect(componentOf(sections[0])).toBe('schema:ballstick')
     expect(RENDERER_SECTION_REGISTRY.ballstick).toBe(sections)
   })
 })
 
-describe('BallStickRendererSection', () => {
+describe('the ball-and-stick page', () => {
   it('renders one row per existing property', () => {
     const { container, unmount } = mountTree(
-      <BallStickRendererSection
+      <SchemaSection
+        section={BALLSTICK_SECTIONS[0]}
         entries={fullEntries()}
+        rendererType="ballstick"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     for (const label of [
@@ -131,11 +137,14 @@ describe('BallStickRendererSection', () => {
 
   it('omits a row when its property is absent', () => {
     const { container, unmount } = mountTree(
-      <BallStickRendererSection
+      <SchemaSection
+        section={BALLSTICK_SECTIONS[0]}
         entries={[entry({ key: 'bondw', type: 'real', value: 0.2 })]}
+        rendererType="ballstick"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(rowByLabel(container, 'Bond width')).not.toBeNull()
@@ -146,11 +155,14 @@ describe('BallStickRendererSection', () => {
 
   it('shows detail as an integer and radius / width with the Angstrom unit', () => {
     const { container, unmount } = mountTree(
-      <BallStickRendererSection
+      <SchemaSection
+        section={BALLSTICK_SECTIONS[0]}
         entries={fullEntries()}
+        rendererType="ballstick"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     // detail = 3 -> integer display (decimals 0), no unit.
@@ -169,11 +181,14 @@ describe('BallStickRendererSection', () => {
 
   it('disables thickness and ring color when ring is off', () => {
     const { container, unmount } = mountTree(
-      <BallStickRendererSection
+      <SchemaSection
+        section={BALLSTICK_SECTIONS[0]}
         entries={fullEntries(false)}
+        rendererType="ballstick"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(
@@ -189,11 +204,14 @@ describe('BallStickRendererSection', () => {
 
   it('enables thickness and ring color when ring is on', () => {
     const { container, unmount } = mountTree(
-      <BallStickRendererSection
+      <SchemaSection
+        section={BALLSTICK_SECTIONS[0]}
         entries={fullEntries(true)}
+        rendererType="ballstick"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(
@@ -210,11 +228,14 @@ describe('BallStickRendererSection', () => {
   it('commits a realtime single-step change of bond width on the step arrow', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <BallStickRendererSection
+      <SchemaSection
+        section={BALLSTICK_SECTIONS[0]}
         entries={fullEntries()}
+        rendererType="ballstick"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const incr = rowByLabel(container, 'Bond width')!.querySelector(

@@ -118,8 +118,8 @@ interface BoolRowProps extends RowProps {
 /**
  * Boolean toggle committed immediately (e.g. Visible / Locked).
  *
- * Exported so renderer-type-specific sections (e.g. `BallStickRendererSection`)
- * reuse the same toggle row contract instead of redefining it.
+ * Exported so the schema engine -- and the type-specific sections still to be
+ * migrated -- reuse the same toggle row contract instead of redefining it.
  */
 export const BoolRow: React.FC<BoolRowProps> = ({
   entry,
@@ -485,8 +485,8 @@ export interface ColorRowProps extends RowProps {
 /**
  * Colour editor committed on a completed change (e.g. Edge color).
  *
- * Exported so renderer-type-specific sections (e.g. `BallStickRendererSection`)
- * reuse the same colour row contract instead of redefining it.
+ * Exported so the schema engine -- and the type-specific sections still to be
+ * migrated -- reuse the same colour row contract instead of redefining it.
  */
 export const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
   <PropertyField label={label} {...resetProps(entry, onReset)}>

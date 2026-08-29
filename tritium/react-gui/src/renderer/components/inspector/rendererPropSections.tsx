@@ -18,6 +18,8 @@
 import React from "react";
 import type { SchemaSectionDef } from "./schema/types";
 import { SIMPLE_SECTIONS, TRACE_SECTIONS } from "./schema/simple";
+import { ANISOU_SECTIONS } from "./schema/anisou";
+import { BALLSTICK_SECTIONS } from "./schema/ballstick";
 import { CPK_SECTIONS } from "./schema/cpk";
 import { DSURF2_SECTIONS, DSURFACE_SECTIONS } from "./schema/dsurface";
 import type {
@@ -25,14 +27,12 @@ import type {
   PropWriteOpts,
 } from '@renderer/worker/shared/genericProps';
 import { SplineMainSection } from "./SplineRendererSection";
-import { BallStickRendererSection } from "./BallStickRendererSection";
 import {
   SceneAmbientOcclusionSection,
   SceneAntialiasingSection,
   SceneBackgroundSection,
   SceneColorProofingSection,
 } from "./SceneRenderingSection";
-import { AnIsoUDiscSection } from "./AnIsoURendererSection";
 import {
   AtomIntrMainSection,
   AtomIntrDashedSection,
@@ -202,34 +202,14 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
     },
   ],
   // BallStickRenderer ("ballstick"): UXP ballstick-propdlg "Ball & Stick" tab.
-  ballstick: [
-    {
-      key: "ballstick",
-      title: "Ball and stick",
-      defaultExpanded: true,
-      Component: BallStickRendererSection,
-    },
-  ],
+  ballstick: BALLSTICK_SECTIONS,
   // CPKRenderer ("cpk"): UXP cpk-propdlg "Atom radii" tab. The seven per-element
   // radii form the "Atom radii" groupbox; `detail` is a loose row outside it.
   cpk: CPK_SECTIONS,
   // AnIsoURenderer ("anisou"): ORTEP-like anisotropic-displacement variant of
   // ball-and-stick. The inherited base controls reuse the shared ball-and-stick
   // section; the disc-only controls live in their own section.
-  anisou: [
-    {
-      key: "anisou-ballstick",
-      title: "Atoms and bonds",
-      defaultExpanded: true,
-      Component: BallStickRendererSection,
-    },
-    {
-      key: "anisou-disc",
-      title: "Anisotropic displacement",
-      defaultExpanded: true,
-      Component: AnIsoUDiscSection,
-    },
-  ],
+  anisou: ANISOU_SECTIONS,
   // AtomIntrRenderer ("atomintr"): UXP atomintr-propdlg "Interaction" tab.
   // The line / dashed-pattern / 3D-tube / label-font groupboxes become four
   // accordion sections; the dashed toggle writes all six stipple values in one

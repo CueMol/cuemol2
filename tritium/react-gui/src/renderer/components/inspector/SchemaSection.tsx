@@ -16,7 +16,7 @@
 
 import React from 'react'
 import { AccordionSection } from './AccordionSection'
-import { MappedEnumRow, NumRow, SliderRow } from './RendererCommonSection'
+import { BoolRow, ColorRow, MappedEnumRow, NumRow, SliderRow } from './RendererCommonSection'
 import type { RendererPropSectionProps } from './rendererPropSections'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { makePropCtx, type PropCtx, type PropRowDef, type SchemaSectionDef } from './schema/types'
@@ -94,6 +94,30 @@ function renderRow(
           max={row.max}
           step={row.step}
           unit={row.unit}
+          disabled={disabled}
+        />
+      )
+
+    case 'bool':
+      return (
+        <BoolRow
+          key={row.key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'color':
+      return (
+        <ColorRow
+          key={row.key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
           disabled={disabled}
         />
       )

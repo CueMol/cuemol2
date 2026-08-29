@@ -107,8 +107,23 @@ export interface SliderRowDef extends RowBase {
   unit?: string
 }
 
+/** A boolean property, shown as a switch. */
+export interface BoolRowDef extends RowBase {
+  kind: 'bool'
+}
+
+/** A colour property, shown as a swatch that opens the picker. */
+export interface ColorRowDef extends RowBase {
+  kind: 'color'
+}
+
 /** A row of a Properties page. */
-export type PropRowDef = NumRowDef | MappedEnumRowDef | SliderRowDef
+export type PropRowDef =
+  | NumRowDef
+  | MappedEnumRowDef
+  | SliderRowDef
+  | BoolRowDef
+  | ColorRowDef
 
 /** One accordion of a Properties page. */
 export interface SchemaSectionDef {
