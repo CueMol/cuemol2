@@ -23,7 +23,7 @@ void React
 
 // The context re-applies the style through the worker via useCueMol().cm.
 const setStyle = vi.fn().mockResolvedValue(true)
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cueMolReady: true, cm: { setViewInputConfigStyle: setStyle } }),
 }))
 

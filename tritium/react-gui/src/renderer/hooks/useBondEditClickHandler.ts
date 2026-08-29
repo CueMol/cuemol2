@@ -11,7 +11,7 @@
  * view reports as `mouseClicked`) become picks. `useNaviClickHandler` is gated
  * to navigate / rectSelect only, so the two handlers never both fire here.
  */
-import { useCueMol } from './useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
 import { usePickClickHandler } from './usePickClickHandler';

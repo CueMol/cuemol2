@@ -23,7 +23,7 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 // The event subscription is exercised in useViewXform.test.ts; stub it here so
 // these tests are driven purely by mount + explicit user actions.
-vi.mock('../hooks/useCueMolEventListener', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 

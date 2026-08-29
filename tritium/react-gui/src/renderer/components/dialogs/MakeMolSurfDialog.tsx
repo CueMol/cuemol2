@@ -20,8 +20,8 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { useCueMol } from '../../hooks/useCueMol'
-import { useMolEditCommit } from '../../hooks/useMolEditCommit'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useMolEditCommit } from '@renderer/hooks/cuemol/useMolEditCommit'
 import { CheckboxField, Field, FieldSection, SelectField, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'

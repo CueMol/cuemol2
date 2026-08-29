@@ -32,6 +32,27 @@ import reactHooks from 'eslint-plugin-react-hooks'
  * a runtime import of the same module -- which would pull worker code into the
  * renderer bundle -- is rejected.
  */
+/**
+ * `hooks/react/` holds hooks that depend on React and nothing else, so they
+ * can be read and tested without knowing anything about CueMol. The rule is
+ * what makes that name true: a hook that needs the worker, the main process
+ * or a feature belongs in `hooks/cuemol/` or with its owner instead.
+ */
+const REACT_HOOKS_ONLY_REACT = {
+  group: [
+    '@renderer/*',
+    '@shared/*',
+    '@shared/**',
+    '@main/*',
+    '@cuemol/**',
+    '../*',
+    '../**',
+    'electron',
+  ],
+  message:
+    'hooks/react/ must depend on React only. A hook that needs CueMol, IPC or a feature belongs elsewhere.',
+}
+
 const NO_TEST_HELPERS = {
   group: ['**/__test__/**', '**/testHarness*', '**/worker/testing', '**/worker/testing/**'],
   message: 'Test helpers must not be imported from production code.',
@@ -199,6 +220,16 @@ export default tseslint.config(
   },
 
   // --- Tests may reach anywhere ---
+  {
+    files: ['src/renderer/hooks/react/**'],
+    ignores: ['src/renderer/hooks/react/**/*.test.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        { patterns: [REACT_HOOKS_ONLY_REACT] },
+      ],
+    },
+  },
   {
     files: ['src/**/*.test.{ts,tsx}', 'src/**/__test__/**', 'src/renderer/worker/testing/**'],
     rules: {

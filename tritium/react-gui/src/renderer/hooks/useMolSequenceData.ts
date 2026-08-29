@@ -43,7 +43,7 @@ import {
     SEM_CHANGED,
     SEM_ANY,
 } from '../event'
-import { useCueMolEventListener } from './useCueMolEventListener'
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 
 export interface UseMolSequenceDataOptions {
     cm: AsyncCueMol | null

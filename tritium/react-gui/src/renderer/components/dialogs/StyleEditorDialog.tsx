@@ -11,7 +11,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Dialog, DialogBody, DialogFooter, Button, Tabs, Tab, InputGroup } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
-import { useCueMol } from '../../hooks/useCueMol'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { ColorField } from '../../h3-kit/form'
 import { AppIcon } from '../AppIcon'

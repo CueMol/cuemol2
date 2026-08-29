@@ -36,7 +36,7 @@ import { useRenderConfig } from '../../contexts/RenderConfigContext'
 import { useApbsConfig } from '../../contexts/ApbsConfigContext'
 import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
 import { useAppSettings } from '../../contexts/AppSettingsContext'
-import { useCueMol } from '../../hooks/useCueMol'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import {
   INPUT_DEVICE_LABELS,

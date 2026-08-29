@@ -75,7 +75,7 @@ import { PaintSelCell } from './PaintSelCell'
 import { fireService } from '../../utils/fireService'
 import { IPC } from '@shared/ipcChannels'
 import { useClipboardScope } from '../../hooks/useClipboardScope'
-import { useColumnResize } from '../../hooks/useColumnResize'
+import { useColumnResize } from '@renderer/hooks/useColumnResize'
 import { useShowContextMenu } from '../menu/ContextMenuProvider'
 import type { MenuNode } from '@shared/menuNodes'
 

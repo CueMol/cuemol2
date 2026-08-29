@@ -28,7 +28,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { SetViewXformArgs } from '../worker/server/services/viewXform.service'
 import { SEM_VIEW, SEM_ANY } from '../event'
-import { useCueMolEventListener } from './useCueMolEventListener'
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 
 /** Mutable fields of `setViewXform` (everything except the target view id). */
 type ViewXformPatch = Omit<SetViewXformArgs, 'viewId'>

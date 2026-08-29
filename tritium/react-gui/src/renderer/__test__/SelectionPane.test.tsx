@@ -42,7 +42,7 @@ vi.mock('../h3-kit/MolSelList/selHistory', () => ({
 }))
 
 // The mol.sel-change event listener is not driven from these tests.
-vi.mock('../hooks/useCueMolEventListener', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 

@@ -25,7 +25,7 @@ import type {
     MolAtomEntry,
 } from '../worker/server/services/getMolStructure.service';
 import { SEM_OBJECT, SEM_ANY } from '../event';
-import { useCueMolEventListener } from './useCueMolEventListener';
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 
 export interface UseMolStructureOptions {
     cm: AsyncCueMol | null;

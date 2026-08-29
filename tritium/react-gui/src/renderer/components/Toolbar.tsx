@@ -12,7 +12,7 @@ import { Button, Divider, Navbar, Alignment } from "@blueprintjs/core";
 
 import { useCommands } from "../commands/CommandRegistry";
 import { CmdId } from "../commands/ids";
-import { useCollapsibleLabels } from "../hooks/useCollapsibleLabels";
+import { useCollapsibleLabels } from "@renderer/hooks/react/useCollapsibleLabels";
 import { Tooltip } from "../h3-kit/Tooltip";
 import { UndoRedoSplitButton } from "./toolbar/UndoRedoSplitButton";
 import { AppIcon } from "./AppIcon";

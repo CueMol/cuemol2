@@ -35,7 +35,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useActiveToolContext } from '../contexts/ActiveToolContext'
 import { useMolTabState } from '../hooks/useMolTab'
-import { useCueMol } from '../hooks/useCueMol'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { GES_PINCH } from '../worker/shared/gestureAxes'
 import type { ToolId } from '../data/viewportTools'
 

@@ -12,7 +12,7 @@
  * drives the camera; `useNaviClickHandler` is gated off for measure tools so
  * the two handlers never both fire.
  */
-import { useCueMol } from './useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
 import { usePickClickHandler } from './usePickClickHandler';

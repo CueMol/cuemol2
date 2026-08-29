@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
 import { SEM_OBJECT, SEM_CHANGED } from '../event';
-import { useCueMolEventListener } from './useCueMolEventListener';
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 
 interface UseTrajPlaybackOptions {
     cm: AsyncCueMol | null;

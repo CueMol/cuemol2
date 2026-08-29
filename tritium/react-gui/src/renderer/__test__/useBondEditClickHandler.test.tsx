@@ -27,7 +27,7 @@ let injectedCm: unknown = null;
 let injectedViewId: number | null = null;
 let injectedTool = 'bondEdit';
 
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: injectedCm != null, cm: injectedCm }),
 }));
 vi.mock('../hooks/useMolTab', () => ({

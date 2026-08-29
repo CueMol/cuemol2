@@ -24,7 +24,7 @@ import type { GenericPropEntry } from '../worker/server/services/genericProps.se
 void React
 
 // DisoMainSection -> TargetRow uses useCueMol; null cm keeps the name list empty.
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 

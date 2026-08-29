@@ -16,7 +16,7 @@
  */
 import { useEffect } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { useCueMolEventListener } from './useCueMolEventListener'
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 import * as event from '../event'
 import { decodeClick, INDEV_LBTN } from '../worker/shared/inDevModif'
 

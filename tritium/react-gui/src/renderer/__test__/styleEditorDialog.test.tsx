@@ -26,7 +26,7 @@ vi.mock('../h3-kit/form/ColorField', () => ({
 }))
 
 const cmHolder = vi.hoisted(() => ({ cm: null as unknown }))
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cm: cmHolder.cm, cueMolReady: !!cmHolder.cm }),
 }))
 

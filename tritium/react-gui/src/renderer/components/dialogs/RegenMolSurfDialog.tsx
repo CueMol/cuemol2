@@ -17,8 +17,8 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { useCueMol } from '../../hooks/useCueMol'
-import { useMolEditCommit } from '../../hooks/useMolEditCommit'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useMolEditCommit } from '@renderer/hooks/cuemol/useMolEditCommit'
 import { Field, FieldSection, SelectField, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { clampDensity, DENSITY_MAX, DENSITY_MIN } from './molSurfDensity'

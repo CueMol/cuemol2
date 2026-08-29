@@ -30,8 +30,8 @@ import {
   ColorField,
 } from "../../h3-kit/form";
 import { MolSelList } from "../../h3-kit/MolSelList/MolSelList";
-import { useCueMol } from "../../hooks/useCueMol";
-import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
+import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
+import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";
 import { isModified, isResettable, formatDefaultLabel } from "./propModel";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";

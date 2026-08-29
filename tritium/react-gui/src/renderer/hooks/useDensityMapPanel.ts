@@ -25,7 +25,7 @@ import {
     SEM_SCENE,
     SEM_ANY,
 } from '../event'
-import { useLiveFetch } from './useLiveFetch'
+import { useLiveFetch } from '@renderer/hooks/cuemol/useLiveFetch'
 
 export interface UseDensityMapPanelOptions {
     cm: AsyncCueMol | null

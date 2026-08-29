@@ -9,7 +9,7 @@
  * fetched from the worker (`measureListTargets`) when the popover opens.
  */
 import React, { useEffect, useState } from 'react';
-import { useCueMol } from '../hooks/useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useMolTabState } from '../hooks/useMolTab';
 import { TextField } from '../h3-kit/form';
 

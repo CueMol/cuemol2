@@ -14,11 +14,10 @@ import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { SceneObjectEntry } from '../worker/server/services/listSceneObjects.service'
 import { objectFilters } from '../h3-kit/ObjectSelect'
 import { SEM_OBJECT, SEM_ANY } from '../event'
-import { useLiveFetch } from './useLiveFetch'
+import { useLiveFetch } from '@renderer/hooks/cuemol/useLiveFetch'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
 
 const EMPTY: SceneObjectEntry[] = []
-
-const REFETCH_DEBOUNCE_MS = 30
 
 export interface UseMolCoordObjectsOptions {
     cm: AsyncCueMol | null
@@ -75,7 +74,7 @@ export function useMolCoordObjects({
                 srcMask: SEM_OBJECT,
                 evtMask: SEM_ANY,
                 scopeId: sceneId ?? -1,
-                debounceMs: REFETCH_DEBOUNCE_MS,
+                debounceMs: EVENT_BURST_DEBOUNCE_MS,
             },
         ],
     })

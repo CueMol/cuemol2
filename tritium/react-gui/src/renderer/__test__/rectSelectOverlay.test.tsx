@@ -32,7 +32,7 @@ const { invokeService, onMouseEvent, onWheelEvent, onGestureEvent } = vi.hoisted
     onGestureEvent: vi.fn(),
 }))
 
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({
         cueMolReady: true,
         cm: { invokeService, onMouseEvent, onWheelEvent, onGestureEvent },

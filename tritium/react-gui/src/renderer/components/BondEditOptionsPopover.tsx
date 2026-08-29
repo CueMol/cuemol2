@@ -12,9 +12,9 @@
  * event so undo / redo / script edits keep an open list in sync.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { useCueMol } from '../hooks/useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useMolTab } from '../hooks/useMolTab';
-import { useCueMolEventListener } from '../hooks/useCueMolEventListener';
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { ObjectSelect, objectFilters } from '../h3-kit/ObjectSelect';
 import { FormButton } from '../h3-kit/form';
 import { AppIcon } from './AppIcon';

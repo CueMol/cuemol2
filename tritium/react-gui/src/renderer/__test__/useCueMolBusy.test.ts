@@ -13,7 +13,7 @@ type BusyCallback = (busy: boolean) => void;
 let mockIsBusy: boolean;
 let subscribeBusyImpl: (cb: BusyCallback) => () => void;
 
-vi.mock("../hooks/useCueMol", () => ({
+vi.mock("@renderer/hooks/cuemol/useCueMol", () => ({
     useCueMol: () => ({
         cueMolReady: true,
         cm: {

@@ -29,7 +29,7 @@ void React
 // rendererPropSections imports sibling sections (e.g. DisoRendererSection)
 // whose rows pull in useCueMol and the colour leaf; stub both so the registry
 // import collects without the real worker / ColorPicker context.
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 vi.mock('../h3-kit/colorpicker/CueColorField', () => ({

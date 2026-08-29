@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useCueMol } from './useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import type { HitTestResult } from '../types';
 import type { NaviCtxAction } from '@shared/types/naviCtxMenu';
 import { IPC } from '@shared/ipcChannels';

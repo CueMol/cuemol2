@@ -23,7 +23,7 @@ import type { GenericPropEntry } from '../worker/server/services/genericProps.se
 void React
 
 // PropertiesTab -> RendererCommonSection -> MaterialRow uses useCueMol.
-vi.mock('../hooks/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 // Stub the colour field's picker (ThemeProvider / popover contexts) in unit tests.

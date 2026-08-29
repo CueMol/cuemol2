@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useCueMol } from './useCueMol';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 
 const RISING_EDGE_DELAY_MS = 150;
 

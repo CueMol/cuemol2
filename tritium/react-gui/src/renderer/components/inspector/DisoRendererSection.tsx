@@ -33,7 +33,7 @@ import {
   resetProps,
 } from "./RendererCommonSection";
 import { PropertyField, SelectField } from "../../h3-kit/form";
-import { useCueMol } from "../../hooks/useCueMol";
+import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";
 

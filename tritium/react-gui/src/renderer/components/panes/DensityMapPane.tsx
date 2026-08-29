@@ -43,7 +43,7 @@ import { AppIcon } from '../AppIcon'
 import { SectionHeader } from './SectionHeader'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
-import { useRealtimeDragProp } from '../../hooks/useRealtimeDragProp'
+import { useRealtimeDragProp } from '@renderer/hooks/react/useRealtimeDragProp'
 import { FieldGrid, FieldGridRow, DragNumericField } from '../../h3-kit/form'
 import type {
     MapRendererEntry,
@@ -55,7 +55,7 @@ import {
     SEM_SCENE,
     SEM_ANY,
 } from '../../event'
-import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { fireService } from '../../utils/fireService'

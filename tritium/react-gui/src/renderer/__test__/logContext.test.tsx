@@ -15,8 +15,8 @@ import { act } from 'react'
 
 // LogProvider pulls in useLogEvent -> useCueMol; stub the CueMol layer so the
 // provider mounts without a real worker (no core log events in this test).
-vi.mock('../hooks/useCueMol', () => ({ useCueMol: () => ({ cueMolReady: false, cm: null }) }))
-vi.mock('../hooks/useCueMolEventListener', () => ({ useCueMolEventListener: () => {} }))
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cueMolReady: false, cm: null }) }))
+vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({ useCueMolEventListener: () => {} }))
 
 import { LogProvider, useLogActions, useLogContents } from '../contexts/LogContext'
 

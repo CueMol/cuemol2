@@ -11,7 +11,7 @@ import type React from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act } from 'react'
 import { makeRenderHook } from './helpers/testHarness'
-import { useColumnResize } from '../hooks/useColumnResize'
+import { useColumnResize } from '@renderer/hooks/useColumnResize'
 
 const KEY = 'test.colWidths'
 const INITIAL = { name: 120, type: 80 }

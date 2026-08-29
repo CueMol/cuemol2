@@ -20,8 +20,9 @@ import type {
   PropWriteOpts,
 } from "../worker/server/services/genericProps.service";
 import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
-import { useCueMolEventListener } from "./useCueMolEventListener";
+import { useCueMolEventListener } from "@renderer/hooks/cuemol/useCueMolEventListener";
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_PROPCHG } from "../event";
+import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/utils/timing";
 
 // --- Types ---
 
@@ -76,7 +77,6 @@ export interface UseInspectorStateOptions {
 /** Source-type mask for the property-change event subscription. */
 const PROPCHG_SRC_MASK = SEM_OBJECT | SEM_RENDERER | SEM_SCENE;
 /** Coalesce event bursts (one high-level op fires many PROPCHG events). */
-const REFETCH_DEBOUNCE_MS = 30;
 
 // --- Hook ---
 
@@ -398,7 +398,7 @@ export function useInspectorState({
     handler: () => {
       void fetchGenericProps();
     },
-    debounceMs: REFETCH_DEBOUNCE_MS,
+    debounceMs: EVENT_BURST_DEBOUNCE_MS,
   });
 
   // Conceptual category of the current target, shown as a header badge.

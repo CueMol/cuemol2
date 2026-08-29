@@ -24,7 +24,7 @@ import { Field, SelectField } from './form'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { SceneObjectEntry } from '../worker/server/services/listSceneObjects.service'
 import { SEM_OBJECT, SEM_SCENE, SEM_ANY } from '../event'
-import { useCueMolEventListener } from '../hooks/useCueMolEventListener'
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 
 /** Predicate applied to each scene object; only matching items appear. */
 export type ObjectFilter = (item: SceneObjectEntry) => boolean

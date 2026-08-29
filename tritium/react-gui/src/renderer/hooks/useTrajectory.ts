@@ -18,7 +18,8 @@ import type {
     TrajBlockInfo,
 } from '../worker/server/services/trajectory.service';
 import { SEM_OBJECT, SEM_ANY, SEM_CHANGED } from '../event';
-import { useCueMolEventListener } from './useCueMolEventListener';
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 interface UseTrajectoryOptions {
     cm: AsyncCueMol | null;
@@ -60,7 +61,7 @@ export function useTrajectory({
     sceneIdRef.current = sceneId;
     const objIdRef = useRef(objId);
     objIdRef.current = objId;
-    const tokenRef = useRef(0);
+    const guard = useStaleGuard();
 
     const refetch = useCallback(() => {
         const sid = sceneIdRef.current;
@@ -69,22 +70,22 @@ export function useTrajectory({
             setState(EMPTY);
             return;
         }
-        const token = ++tokenRef.current;
+        const token = guard.next();
         setLoading(true);
         cm.invokeService('getTrajectoryState', { sceneId: sid, objId: oid })
             .then((res) => {
-                if (token === tokenRef.current) setState(res ?? EMPTY);
+                if (guard.isCurrent(token)) setState(res ?? EMPTY);
             })
             .catch((err: unknown) => {
-                if (token === tokenRef.current) {
+                if (guard.isCurrent(token)) {
                     console.warn('getTrajectoryState failed:', err);
                     setState(EMPTY);
                 }
             })
             .finally(() => {
-                if (token === tokenRef.current) setLoading(false);
+                if (guard.isCurrent(token)) setLoading(false);
             });
-    }, [cm]);
+    }, [cm, guard]);
 
     // Clear immediately on target switch so consumers see nframe=0 until the
     // new target's state arrives (so an auto-fit / seek does not run against the

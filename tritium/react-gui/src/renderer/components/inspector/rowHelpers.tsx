@@ -23,7 +23,7 @@
 import React, { useState } from "react";
 import { PropertyField, DragNumericField, SelectField, NumericField } from "../../h3-kit/form";
 import { resetProps } from "./RendererCommonSection";
-import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
+import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSections";
 

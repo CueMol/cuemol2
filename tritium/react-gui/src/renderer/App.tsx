@@ -36,7 +36,7 @@ import { useSceneTreeController } from "./hooks/useSceneTreeController";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderWindowBridge } from "./hooks/useRenderWindowBridge";
 import { useTabManager } from "./hooks/useTabManager";
-import { useCueMol } from "./hooks/useCueMol";
+import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction, useOpenSceneFileAction } from "./hooks/useNewSceneAction";
@@ -385,7 +385,7 @@ const App: React.FC = () => {
   } = useActiveViewState({ cm, activeMolViewId, activeSceneId });
 
   // --- Undo/redo availability + history dropdown (owns CmdId.Undo/Redo) ---
-  const undoRedo = useUndoRedoState({ cm, activeMolViewId, getActiveSceneInfo });
+  const undoRedo = useUndoRedoState({ cm, activeSceneId });
 
   // --- View pane (Projection section) writers ---
   // Route through the existing view/scene commands so useActiveViewState (and

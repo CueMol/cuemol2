@@ -1,8 +1,9 @@
 /**
- * @file hooks/useLiveFetch.ts
+ * @file renderer/hooks/cuemol/useLiveFetch.ts
  * @description Shared "fetch + auto-refresh + race-guard" engine for the
- * panel data hooks (coloring deck, density-map panel, symmetry panel,
- * elepot object list, paint-capable renderer list, animation timeline).
+ * panel data hooks (scene tree, coloring deck, density-map panel, symmetry
+ * panel, elepot object list, paint-capable renderer list, animation
+ * timeline).
  *
  * Every one of those hooks has the same skeleton:
  *   1. `useState` for the panel data,
@@ -14,12 +15,12 @@
  *      the refetch (optionally filtered by `propname`).
  *
  * Two correctness concerns are owned here so the adapters cannot drift:
- *   - **Fetch-token guard (always present).** Each `refetch` bumps a ref;
- *     in the `.then`/`.catch` the result is dropped if a newer fetch has
- *     started since. This fixes the stale-fetch race where an in-flight
- *     fetch for an OLD selection resolves after the user switches to a NEW
- *     one and clobbers the newer state (see
- *     `useRendererColoringState.race.test.tsx`).
+ *   - **Stale-fetch guard (always present).** Each `refetch` takes a
+ *     `useStaleGuard` token; a result whose token is no longer current is
+ *     dropped. This fixes the race where an in-flight fetch for an OLD
+ *     selection resolves after the user switches to a NEW one and clobbers
+ *     the newer state (see `useRendererColoringState.race.test.tsx` and
+ *     `useSceneTree.staleFetch.test.tsx`).
  *   - **Cancelled-flag + debounce** are delegated to
  *     `useCueMolEventListener`; this engine composes it rather than
  *     re-implementing them.
@@ -28,9 +29,11 @@
  * explicit `listeners` array (1-3 entries) and the masks stay verbatim.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { useCueMolEventListener } from './useCueMolEventListener'
+import { useCallback, useEffect, useState } from 'react'
+import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
+import { useLatestRef } from '../react/useLatestRef'
+import { useStaleGuard } from '../react/useStaleGuard'
 
 /** Max number of distinct event subscriptions any panel hook needs. */
 const MAX_LISTENERS = 3
@@ -47,8 +50,14 @@ export interface LiveFetchListener {
     evtMask: number
     /** Source uid scope (e.g. `scene.uid`); use `SEM_ANY` for global. */
     scopeId: number
-    /** Leading-edge debounce window in ms (0 = no debounce). */
+    /** Debounce window in ms (0 = no debounce); see `useCueMolEventListener`. */
     debounceMs: number
+    /**
+     * Predicate applied BEFORE the debounce: a rejected event neither opens
+     * nor consumes a debounce window. Use this to discard noise (e.g. a
+     * `ui_collapsed` PROPCHG) that must not swallow the next real event.
+     */
+    filter?: (args: unknown) => boolean
 }
 
 export interface UseLiveFetchOptions<S> {
@@ -58,8 +67,8 @@ export interface UseLiveFetchOptions<S> {
     /**
      * Kick off the fetch and resolve to the next state. Return `null`
      * (synchronously) to bail without fetching -- the engine then sets
-     * `fallback` and skips the token bump's effect on a no-op. Reading the
-     * latest scoping inputs from refs is the caller's responsibility.
+     * `fallback`. Reading the latest scoping inputs from refs is the
+     * caller's responsibility.
      */
     fetch: () => Promise<S> | null
     /** State applied when `fetch` bails or rejects. */
@@ -73,10 +82,14 @@ export interface UseLiveFetchOptions<S> {
     /** 1-3 event subscriptions whose handler is the refetch. */
     listeners: ReadonlyArray<LiveFetchListener>
     /**
-     * Optional predicate run on each event payload; when it returns false
-     * the refetch is skipped (e.g. coloring's propname whitelist).
+     * Optional predicate run on each event payload AFTER the debounce; when
+     * it returns false the refetch is skipped (e.g. coloring's propname
+     * whitelist). Prefer a listener `filter` when the rejected events are
+     * frequent enough to eat debounce windows.
      */
     eventFilter?: (args: unknown) => boolean
+    /** Called when the current fetch rejects (a stale rejection is ignored). */
+    onError?: (err: unknown) => void
     /** When true, expose a `loading` flag toggled around each fetch. */
     exposeLoading?: boolean
 }
@@ -97,25 +110,24 @@ export interface UseLiveFetchResult<S> {
  * @returns `{ state, refetch, loading }`.
  */
 export function useLiveFetch<S>(opts: UseLiveFetchOptions<S>): UseLiveFetchResult<S> {
-    const { cm, initial, fetch, fallback, fetchDeps, listeners, eventFilter, exposeLoading } = opts
+    const { cm, initial, fetchDeps, listeners, eventFilter, exposeLoading } = opts
 
     const [state, setState] = useState<S>(initial)
     const [loading, setLoading] = useState(false)
 
-    // Always-present guard: a fetch resolving after a newer one started is
-    // dropped. Without this a switch to a new selection can be overwritten
-    // by the old selection's late-resolving fetch.
-    const fetchTokenRef = useRef(0)
+    // A fetch resolving after a newer one started is dropped. Without this a
+    // switch to a new selection can be overwritten by the old selection's
+    // late-resolving fetch.
+    const guard = useStaleGuard()
 
-    // Hold the latest fetch closure in a ref so `refetch` identity stays
-    // stable across renders (its dep list is just `[cm]`).
-    const fetchRef = useRef(fetch)
-    fetchRef.current = fetch
-    const fallbackRef = useRef(fallback)
-    fallbackRef.current = fallback
+    // Latest closures in refs so `refetch` identity stays stable across
+    // renders (its dep list is just `[cm]`).
+    const fetchRef = useLatestRef(opts.fetch)
+    const fallbackRef = useLatestRef(opts.fallback)
+    const onErrorRef = useLatestRef(opts.onError)
 
     const refetch = useCallback(() => {
-        const token = ++fetchTokenRef.current
+        const token = guard.next()
         const promise = fetchRef.current()
         if (promise === null) {
             setState(fallbackRef.current)
@@ -124,17 +136,18 @@ export function useLiveFetch<S>(opts: UseLiveFetchOptions<S>): UseLiveFetchResul
         if (exposeLoading) setLoading(true)
         promise
             .then((res) => {
-                if (token !== fetchTokenRef.current) return
+                if (!guard.isCurrent(token)) return
                 setState(res)
             })
-            .catch(() => {
-                if (token !== fetchTokenRef.current) return
+            .catch((err: unknown) => {
+                if (!guard.isCurrent(token)) return
+                onErrorRef.current?.(err)
                 setState(fallbackRef.current)
             })
             .finally(() => {
-                if (exposeLoading && token === fetchTokenRef.current) setLoading(false)
+                if (exposeLoading && guard.isCurrent(token)) setLoading(false)
             })
-    }, [cm, exposeLoading])
+    }, [cm, exposeLoading, guard, fetchRef, fallbackRef, onErrorRef])
 
     // Initial fetch + refetch when scoping inputs change.
     useEffect(() => {
@@ -166,6 +179,7 @@ export function useLiveFetch<S>(opts: UseLiveFetchOptions<S>): UseLiveFetchResul
             scopeId: l ? l.scopeId : -1,
             handler,
             debounceMs: l ? l.debounceMs : 0,
+            filter: l?.filter,
         })
     }
 

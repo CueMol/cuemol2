@@ -14,7 +14,8 @@ import { useRef } from "react";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { AnimTimeline } from "../types";
 import { SEM_ANIM, SEM_CAMERA, SEM_SCENE, SEM_ANY } from "../event";
-import { useLiveFetch } from "./useLiveFetch";
+import { useLiveFetch } from "@renderer/hooks/cuemol/useLiveFetch";
+import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/utils/timing";
 
 interface UseAnimTimelineOptions {
   cm: AsyncCueMol | null;
@@ -30,10 +31,6 @@ export interface UseAnimTimelineResult {
   /** Force a refetch (also used as the event handler). */
   refetch: () => void;
 }
-
-// Coalesce event bursts: a single edit (add/remove/move) fires several
-// SEM_ANIM events in quick succession; one refetch is enough.
-const REFETCH_DEBOUNCE_MS = 30;
 
 /**
  * Subscribe to the active scene's animation timeline.
@@ -77,7 +74,7 @@ export function useAnimTimeline({
         srcMask: SEM_ANIM,
         evtMask: SEM_ANY,
         scopeId: sceneId ?? -1,
-        debounceMs: REFETCH_DEBOUNCE_MS,
+        debounceMs: EVENT_BURST_DEBOUNCE_MS,
       },
       // The start-camera selector lists the scene's cameras, which change
       // outside SEM_ANIM (Explorer create / delete / rename, scene load).
@@ -87,7 +84,7 @@ export function useAnimTimeline({
         srcMask: SEM_CAMERA | SEM_SCENE,
         evtMask: SEM_ANY,
         scopeId: sceneId ?? -1,
-        debounceMs: REFETCH_DEBOUNCE_MS,
+        debounceMs: EVENT_BURST_DEBOUNCE_MS,
       },
     ],
   });
