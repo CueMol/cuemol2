@@ -12,8 +12,8 @@
  */
 
 import React from 'react';
-import type { TrajBlockInfo } from '../../../worker/server/services/trajectory.service';
-import { Tooltip } from '../../../h3-kit/Tooltip';
+import type { TrajBlockInfo } from '@renderer/worker/server/services/trajectory.service';
+import { Tooltip } from '@renderer/h3-kit/Tooltip';
 import { frameToPx, blockColorIndex, basename } from './trackGeometry';
 
 interface TrajBlockStripProps {

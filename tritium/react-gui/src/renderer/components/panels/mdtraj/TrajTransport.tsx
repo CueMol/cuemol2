@@ -11,10 +11,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { AppIcon } from '../../AppIcon';
-import { ButtonRow, FormButton } from '../../../h3-kit/form/ButtonRow';
-import { SwitchField } from '../../../h3-kit/form/SwitchField';
-import { SelectField } from '../../../h3-kit/form/SelectField';
-import { NumericField } from '../../../h3-kit/form/NumericField';
+import { ButtonRow, FormButton } from '@renderer/h3-kit/form/ButtonRow';
+import { SwitchField } from '@renderer/h3-kit/form/SwitchField';
+import { SelectField } from '@renderer/h3-kit/form/SelectField';
+import { NumericField } from '@renderer/h3-kit/form/NumericField';
 
 interface TrajTransportProps {
     /** Rendered at the far left of the row (the target-object selector). */

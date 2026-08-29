@@ -36,7 +36,7 @@ import {
     getColorMapObjOrNull,
     readMapStats,
 } from './multiGrad';
-import { buildPresetNodes } from '../../../../components/multigrad/multiGradPresets';
+import { buildPresetNodes } from '@renderer/worker/shared/multiGradPresets';
 import type {
     SetRendererColoringArgs,
     SetRendererColoringResult,

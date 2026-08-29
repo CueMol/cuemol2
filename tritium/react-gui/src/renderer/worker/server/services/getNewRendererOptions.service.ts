@@ -10,7 +10,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
-import type { PresetTypeEntry } from '../../../components/fopen-opt-dlgs/types';
+import type { PresetTypeEntry } from '../../shared/fileOpenTypes';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { fetchStyleEntries } from './helpers/styleEntries';
 import { isLegacyRendererType } from './helpers/rendererFilter';

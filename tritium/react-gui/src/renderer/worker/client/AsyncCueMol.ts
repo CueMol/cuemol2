@@ -10,7 +10,7 @@
  * in sequence.
  */
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
-import type { FileOpenOptions } from '../../components/fopen-opt-dlgs/types';
+import type { FileOpenOptions } from '../shared/fileOpenTypes';
 import {
     WorkerTransport,
     type StreamProgressListener,

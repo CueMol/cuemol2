@@ -11,7 +11,7 @@
 
 import React from "react";
 import { AppIcon } from "../../AppIcon";
-import type { AnimElement } from "../../../types";
+import type { AnimElement } from "@renderer/types";
 import { msToPx } from "./timelineGeometry";
 import { typeIcon } from "./animElementMeta";
 

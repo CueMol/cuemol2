@@ -25,10 +25,13 @@ import {
   NumericField,
   SelectField,
   SwitchField,
-} from '../../../h3-kit/form';
+} from '@renderer/h3-kit/form';
 import type { Ccp4MapOptions, MapTypeChoice } from '../types';
-import type { MapHeaderInfo } from '../../../worker/server/services/probeMapHeader.service';
-import { LARGE_MAP_VOXELS, suggestSubsample } from '../../../worker/server/services/probeMapHeader.service';
+import {
+  LARGE_MAP_VOXELS,
+  suggestSubsample,
+  type MapHeaderInfo,
+} from '@renderer/worker/shared/mapHeader';
 
 interface Ccp4MapOptionsPaneProps {
   options: Ccp4MapOptions;

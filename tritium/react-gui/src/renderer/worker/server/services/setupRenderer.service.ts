@@ -25,7 +25,7 @@ import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { View } from '@cuemol/core/src/wrappers/View';
-import type { RendererOptions } from '../../../components/fopen-opt-dlgs/types';
+import type { RendererOptions } from '../../shared/fileOpenTypes';
 import { getDefaultStyleName } from './helpers/getDefaultStyleName';
 import { makeSel } from './helpers/makeSel';
 import { molPostProc } from './helpers/molPostProc';

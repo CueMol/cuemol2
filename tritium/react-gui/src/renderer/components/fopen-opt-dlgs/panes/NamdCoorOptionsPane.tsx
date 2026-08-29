@@ -7,7 +7,7 @@
  * seeded by FileOpenOptionDialog.
  */
 import React, { useCallback } from 'react';
-import { Field, FieldSection, FormButton, TextField } from '../../../h3-kit/form';
+import { Field, FieldSection, FormButton, TextField } from '@renderer/h3-kit/form';
 import type { NamdCoorOptions } from '../types';
 import { IPC } from '@shared/ipcChannels';
 

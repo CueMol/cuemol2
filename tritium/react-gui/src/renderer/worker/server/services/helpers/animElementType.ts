@@ -9,7 +9,7 @@
  * a base wrapper without the subtype getters.
  */
 
-import type { AnimElementType } from "../../../../types";
+import type { AnimElementType } from "@renderer/types";
 
 const KNOWN: readonly string[] = [
   "SimpleSpin",

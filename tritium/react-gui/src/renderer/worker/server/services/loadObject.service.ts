@@ -21,7 +21,7 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
-import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
+import type { FileOpenOptions } from '../../shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer.service';
 import { undoTxnResult } from './withUndoTxn';
 import { pickReaderName, OBJREADER_CATEGORY } from './helpers/pickReaderName';

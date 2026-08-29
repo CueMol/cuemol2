@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { Divider } from '@blueprintjs/core';
-import { Field, FieldSection, SwitchField } from '../../../h3-kit/form';
+import { Field, FieldSection, SwitchField } from '@renderer/h3-kit/form';
 import type { PdbOptions } from '../types';
 
 interface PdbOptionsPaneProps {

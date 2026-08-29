@@ -14,7 +14,7 @@
 import * as path from "path";
 
 import { movieFrameFileName } from "@shared/movieFrames";
-import { MOVIE_FORMAT_EXT, type MovieFormatId } from "../../../data/renderSettings";
+import { MOVIE_FORMAT_EXT, type MovieFormatId } from "@renderer/data/renderSettings";
 
 /** Codec / container options per format (UXP `onOutFmtChg`). */
 const FORMAT_MAIN_OPT: Record<MovieFormatId, string> = {

@@ -26,8 +26,8 @@ import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { UmbreonSceneExporter } from "@cuemol/core/src/wrappers/UmbreonSceneExporter";
 import type { WorkerContext } from "../../types/WorkerContext";
-import type { RenderSettingsSnapshot } from "../../../../data/renderResult";
-import type { RenderBinaries } from "../../../shared/renderTypes";
+import type { RenderSettingsSnapshot } from "@renderer/data/renderResult";
+import type { RenderBinaries } from "@renderer/worker/shared/renderTypes";
 import {
   type RenderBackend,
   type ExportedScene,

@@ -59,7 +59,21 @@ renderer/worker/
 └── shared/   # imported from both threads
     ├── calls/   # the renderer <-> worker contract, one slice per domain
     │            #   (scene.ts, anim.ts, ...), assembled in calls/index.ts
-    └── ...      # boundary DTOs (result.ts, animTypes.ts, sceneTreeTypes.ts)
+    └── ...      # boundary DTOs: result.ts, animTypes.ts, hitTest.ts,
+                 #   sceneTreeTypes.ts, fileOpenTypes.ts, mapHeader.ts,
+                 #   multiGradPresets.ts, eventConst.ts, renderTypes.ts
+```
+
+**A shape both threads name goes in `worker/shared/`**, even when one side
+feels like its owner. ESLint enforces the direction (as an error, not a
+warning): `worker/server/` may not import from the UI tree at all, and the UI
+may not import a worker *service* at runtime. Both directions shipped as real
+bugs before the rules existed -- a File Open pane importing
+`probeMapHeader.service` pulled worker code expecting `fs` into the renderer
+bundle, and the colouring service importing `components/multigrad/` pulled a
+components module into the worker bundle.
+
+```
 ```
 
 **Rule of thumb**: file location determines execution thread. `client/` code talks to the worker via the typed helpers `transport.invokeService<K>` / `invokeMethod<K>` / `invokeRpc<K>` (or the low-level `invokeWorker` escape hatch). `server/services/*.service.ts` runs synchronously inside the Web Worker.

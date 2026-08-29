@@ -19,7 +19,7 @@ import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "../types/WorkerContext";
-import type { AnimAddType, AnimElement, AnimMgrState, AnimTimeline } from "../../../types";
+import type { AnimAddType, AnimElement, AnimMgrState, AnimTimeline } from "@renderer/types";
 import { getSceneOrNull, getViewOrNull } from "./helpers/sceneResolver";
 import { classNameToType } from "./helpers/animElementType";
 import {

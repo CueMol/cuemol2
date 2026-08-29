@@ -6,7 +6,7 @@ import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 import type { NameLabelRenderer } from '@cuemol/core/src/wrappers/NameLabelRenderer';
 import type { ResidRangeSet } from '@cuemol/core/src/wrappers/ResidRangeSet';
 import type { MolResidue } from '@cuemol/core/src/wrappers/MolResidue';
-import type { HitTestResult } from '../../../types';
+import type { HitTestResult } from '@renderer/types';
 import { withUndoTxn } from './withUndoTxn';
 import { makeSel } from './helpers/makeSel';
 import { quoteSelName } from './helpers/selName';

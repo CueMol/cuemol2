@@ -2,7 +2,7 @@ import type { CueMol } from '@cuemol/core/src/cuemol';
 import type { ScrEventManager } from '@cuemol/core/src/wrappers/ScrEventManager';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
 import type { ViewInputConfig } from '@cuemol/core/src/wrappers/ViewInputConfig';
-import * as event from '../../event';
+import * as event from '../shared/eventConst';
 import { renderText } from './textRender';
 import { isValidUid } from '../shared/uid';
 

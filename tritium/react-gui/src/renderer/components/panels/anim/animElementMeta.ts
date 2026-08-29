@@ -3,8 +3,8 @@
  * @description UI metadata (icon) for each animation element subtype.
  */
 
-import type { AnimElementType } from "../../../types";
-import type { AppIconKey } from "../../../data/appIcons";
+import type { AnimElementType } from "@renderer/types";
+import type { AppIconKey } from "@renderer/data/appIcons";
 
 /** Leading icon per `AnimElementType` (color-blind-safe pairing with color). */
 const TYPE_ICON: Record<AnimElementType, AppIconKey> = {

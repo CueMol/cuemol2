@@ -8,7 +8,7 @@
  * Runs in the Web Worker thread (sync C++ wrappers, no await).
  */
 import type { WorkerContext } from '../../types/WorkerContext';
-import { DEFAULT_SNIFF_CAP } from '../../../shared/sniffConfig';
+import { DEFAULT_SNIFF_CAP } from '@renderer/worker/shared/sniffConfig';
 import { isHiddenObjReader } from './readerFilter';
 import { matchExtLength, parseExtList } from '@shared/fileExt';
 

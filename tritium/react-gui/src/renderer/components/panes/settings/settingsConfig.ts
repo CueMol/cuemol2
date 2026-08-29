@@ -16,18 +16,18 @@
  * electron-store.
  */
 
-import type { AppIconKey } from '../../../data/appIcons'
-import type { RenderBinaries } from '../../../worker/shared/renderTypes'
-import { DEFAULT_RENDER_BINARIES } from '../../../worker/shared/renderTypes'
+import type { AppIconKey } from '@renderer/data/appIcons'
+import type { RenderBinaries } from '@renderer/worker/shared/renderTypes'
+import { DEFAULT_RENDER_BINARIES } from '@renderer/worker/shared/renderTypes'
 import {
   PDB2PQR_FORCE_FIELDS,
   DEFAULT_PDB2PQR_FF,
   DEFAULT_APBS_BINARIES,
-} from '../../../worker/shared/apbsTypes'
-import type { ApbsConfigKey } from '../../../contexts/ApbsConfigContext'
-import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '../../../viewInputConfig'
-import type { LabelDefaults } from '../../../worker/server/services/labelDefaults.service'
-import type { ViewInputParams } from '../../../worker/server/services/viewInputParams.service'
+} from '@renderer/worker/shared/apbsTypes'
+import type { ApbsConfigKey } from '@renderer/contexts/ApbsConfigContext'
+import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '@renderer/viewInputConfig'
+import type { LabelDefaults } from '@renderer/worker/server/services/labelDefaults.service'
+import type { ViewInputParams } from '@renderer/worker/server/services/viewInputParams.service'
 import { FALLBACK_FONT_LIST } from './labelFont'
 
 // --- Category tree ---

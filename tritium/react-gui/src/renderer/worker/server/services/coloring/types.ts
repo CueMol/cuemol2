@@ -7,7 +7,7 @@
  * the service file re-exports them verbatim, so external importers
  * (`worker/shared/calls/`, `ColorPane.tsx`, the coloring hooks) are unchanged.
  */
-import type { Result } from '../../../shared/result';
+import type { Result } from '@renderer/worker/shared/result';
 import type { RendColoringId } from '@shared/types/sceneCtxMenu';
 
 /**

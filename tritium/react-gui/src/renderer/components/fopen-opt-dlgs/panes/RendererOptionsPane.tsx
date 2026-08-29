@@ -7,9 +7,9 @@ import {
   SelectField,
   SwitchField,
   TextField,
-} from '../../../h3-kit/form';
+} from '@renderer/h3-kit/form';
 import type { PresetTypeEntry, RendererOptions } from '../types';
-import { MolSelList } from '../../../h3-kit/MolSelList';
+import { MolSelList } from '@renderer/h3-kit/MolSelList';
 
 interface RendererOptionsPaneProps {
   options: RendererOptions;

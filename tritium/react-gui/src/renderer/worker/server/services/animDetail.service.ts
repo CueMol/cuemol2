@@ -20,7 +20,7 @@
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { WorkerContext } from "../types/WorkerContext";
-import type { AnimElementType } from "../../../types";
+import type { AnimElementType } from "@renderer/types";
 import { getSceneOrNull } from "./helpers/sceneResolver";
 import {
   safeNum,

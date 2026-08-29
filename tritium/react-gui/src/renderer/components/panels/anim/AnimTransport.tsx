@@ -11,10 +11,10 @@
 
 import React from "react";
 import { AppIcon } from "../../AppIcon";
-import { ButtonRow, FormButton } from "../../../h3-kit/form/ButtonRow";
-import { SwitchField } from "../../../h3-kit/form/SwitchField";
-import { SelectField } from "../../../h3-kit/form/SelectField";
-import type { AnimMgrState } from "../../../types";
+import { ButtonRow, FormButton } from "@renderer/h3-kit/form/ButtonRow";
+import { SwitchField } from "@renderer/h3-kit/form/SwitchField";
+import { SelectField } from "@renderer/h3-kit/form/SelectField";
+import type { AnimMgrState } from "@renderer/types";
 import { formatClock } from "./timelineGeometry";
 
 interface AnimTransportProps {
