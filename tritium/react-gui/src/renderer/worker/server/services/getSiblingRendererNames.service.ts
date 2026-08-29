@@ -6,11 +6,11 @@
 // where the disorder overlay must point at a sibling main-chain renderer
 // (tube / ribbon / cartoon / nucl). Mirrors UXP `cuemol.getRendNameList`.
 
-import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import { safeRead } from './helpers/safeRead';
+import { listRendererNamesByType } from './helpers/rendererNames';
 
 export interface GetSiblingRendererNamesArgs {
     /** Scene scope. */
@@ -43,20 +43,7 @@ function getSiblingRendererNames(
     const parent = safeRead(() => rend.getClientObj()) as unknown as CueObject | undefined;
     if (!parent) return empty;
 
-    const wanted = new Set(args.typeNames);
-    const out: string[] = [];
-    const count = safeRead(() => parent.getRendCount()) ?? 0;
-    for (let i = 0; i < count; ++i) {
-        const sibling = safeRead(() => parent.getRendererByIndex(i)) as
-            | (BaseWrapper & { type_name: string; name: string })
-            | undefined;
-        if (!sibling) continue;
-        const typeName = safeRead(() => sibling.type_name);
-        if (typeName === undefined || !wanted.has(typeName)) continue;
-        const name = safeRead(() => sibling.name);
-        if (name) out.push(name);
-    }
-    return { names: out };
+    return { names: listRendererNamesByType(parent, args.typeNames) };
 }
 
 export const services = { getSiblingRendererNames };

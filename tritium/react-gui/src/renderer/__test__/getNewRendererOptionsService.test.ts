@@ -33,7 +33,7 @@ function makeFixture(opts: FixtureOpts = {}) {
         objClassName = 'PDBMol',
         objName = 'mol1',
         objUid = 10,
-        compatible = 'simple,cartoon,*group,atomintr,ballstick',
+        compatible = 'simple,cartoon,*group,atomintr,ms2test,ballstick',
         existingRends = [],
         rendType = 'simple',
         rendGroup = '',
@@ -89,7 +89,11 @@ describe('getNewRendererOptions.service', () => {
         expect(res.ok).toBe(true)
         expect(res.targetObjId).toBe(10)
         expect(res.groupName).toBe('')
-        expect(res.rendererTypes).toEqual(['simple', 'cartoon', 'ballstick'])
+        // Synthetic ('*') and developer-only (ms2test / symm) types are
+        // dropped; atomintr and disorder are NOT -- UXP offers both when
+        // creating a renderer and only hides them when CONVERTING one
+        // (fopen-renderopt-page.js setupRendTypeBox vs workspace_panel.js).
+        expect(res.rendererTypes).toEqual(['simple', 'cartoon', 'atomintr', 'ballstick'])
         expect(res.isMol).toBe(true)
         expect(res.defaultName).toBe('simple1')
         // objClassName is the renderer-type history key -- must be the

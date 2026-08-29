@@ -32,7 +32,7 @@ vi.mock('../worker/server/services/helpers/getDefaultStyleName', () => ({
 import { setupRenderer } from '../worker/server/services/setupRenderer.service'
 import { makeSel } from '../worker/server/services/helpers/makeSel'
 import { molPostProc } from '../worker/server/services/helpers/molPostProc'
-import { fakeObject, fakeScene, fakeView, makeWorkerCtx } from '@renderer/worker/testing'
+import { fakeObject, fakeRenderer, fakeScene, fakeView, makeWorkerCtx } from '@renderer/worker/testing'
 
 /**
  * One object in one scene. Renderers the service creates through
@@ -208,5 +208,52 @@ describe('setupRenderer — preset renderer group (presetName set)', () => {
         const result = setupRenderer(f.ctx, f.mol as unknown, presetOpts)
         expect(result).toBeNull()
         expect(molPostProc).not.toHaveBeenCalled()
+    })
+})
+
+/**
+ * A disorder overlay draws along a main-chain renderer named by its `target`
+ * property, so one created with no target draws nothing. UXP seeds it in
+ * `molPostProc` ("setup disorder renderer"); these pin that tritium does the
+ * same, and only for `disorder`.
+ */
+describe('setupRenderer - disorder target seeding', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    const disoOpts: RendererOptions = { ...baseOpts, rendererType: 'disorder', rendererName: 'diso1' }
+
+    it('points a new disorder renderer at the first main-chain sibling', () => {
+        const f = makeFixture({ className: 'MolCoord' })
+        f.mol.attachRenderer(fakeRenderer({ type: 'simple', name: 'simple1' }))
+        f.mol.attachRenderer(fakeRenderer({ type: 'ribbon', name: 'ribbon1' }))
+        f.mol.attachRenderer(fakeRenderer({ type: 'cartoon', name: 'cartoon1' }))
+
+        setupRenderer(f.ctx, f.mol as unknown, disoOpts)
+
+        // 'simple' is not a main-chain type; 'ribbon' comes first among those.
+        const diso = f.mol.renderers.find((r) => r.type_name === 'disorder')
+        expect((diso as unknown as { target?: string }).target).toBe('ribbon1')
+    })
+
+    it('leaves the target unset when the molecule has no main-chain renderer', () => {
+        const f = makeFixture({ className: 'MolCoord' })
+        f.mol.attachRenderer(fakeRenderer({ type: 'simple', name: 'simple1' }))
+
+        setupRenderer(f.ctx, f.mol as unknown, disoOpts)
+
+        const diso = f.mol.renderers.find((r) => r.type_name === 'disorder')
+        expect((diso as unknown as { target?: string }).target).toBeUndefined()
+    })
+
+    it('does not touch the target of a renderer of any other type', () => {
+        const f = makeFixture({ className: 'MolCoord' })
+        f.mol.attachRenderer(fakeRenderer({ type: 'tube', name: 'tube1' }))
+
+        setupRenderer(f.ctx, f.mol as unknown, baseOpts)
+
+        const rend = f.mol.renderers.find((r) => r.type_name === 'simple')
+        expect((rend as unknown as { target?: string }).target).toBeUndefined()
     })
 })

@@ -6,11 +6,11 @@
 // inspect a loaded object. Instead it queries a throwaway empty Trajectory whose
 // compatible-renderer set depends only on the class (Trajectory : MolCoord).
 //
-// Mirrors the filtering in getCompatibleRendererNames.service.ts (drop internal
-// '*' renderers and the ms2test/symm test types).
+// Filters the list the same way every other create-side list does, through
+// helpers/rendererFilter.
 import type { WorkerContext } from '../types/WorkerContext';
+import { isSelectableRendererType } from './helpers/rendererFilter';
 
-const RENDERER_TEST_TYPES = new Set(['ms2test', 'symm']);
 
 export interface GetTrajectoryRendererInfoResult {
     types: string[];
@@ -35,7 +35,7 @@ function getTrajectoryRendererInfo(
     const types = (rendTypesStr ?? '')
         .split(',')
         .map((s: string) => s.trim())
-        .filter((s: string) => s.length > 0 && s.charAt(0) !== '*' && !RENDERER_TEST_TYPES.has(s));
+        .filter(isSelectableRendererType);
 
     return { types, objClassName };
 }

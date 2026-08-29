@@ -228,6 +228,7 @@ export interface FakeObject {
     getClassName: () => string;
     getScene: () => FakeScene | null;
     getRendCount: () => number;
+    getRendererByIndex: (index: number) => FakeRenderer | null;
     getRenderer: (uid: number) => FakeRenderer | null;
     getRendererByType: (type: string) => FakeRenderer | null;
     getRendererByName: (name: string) => FakeRenderer | null;
@@ -254,6 +255,7 @@ export function fakeObject(opts: FakeObjectOptions = {}): FakeObject {
         getClassName: () => className,
         getScene: () => obj.scene as FakeScene | null,
         getRendCount: () => renderers.length,
+        getRendererByIndex: (index: number) => renderers[index] ?? null,
         getRenderer: (uid: number) => renderers.find((r) => r.uid === uid) ?? null,
         getRendererByType: (type: string) => renderers.find((r) => r.type_name === type) ?? null,
         getRendererByName: (name: string) => renderers.find((r) => r.name === name) ?? null,

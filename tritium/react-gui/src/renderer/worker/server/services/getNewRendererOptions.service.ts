@@ -13,7 +13,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { PresetTypeEntry } from '../../shared/fileOpenTypes';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { fetchStyleEntries } from './helpers/styleEntries';
-import { isLegacyRendererType } from './helpers/rendererFilter';
+import { isSelectableRendererType } from './helpers/rendererFilter';
 
 const NON_MOL_CLASSES = new Set(['ElePotMap', 'MolSurfObj', 'DensityMap']);
 
@@ -135,13 +135,7 @@ export function getNewRendererOptions(
     const rendererTypes = listStr
         .split(',')
         .map((s) => s.trim())
-        .filter((s) => {
-            if (!s) return false;
-            if (s.startsWith('*')) return false;
-            if (s === 'atomintr' || s === 'disorder') return false;
-            if (isLegacyRendererType(s)) return false;
-            return true;
-        });
+        .filter(isSelectableRendererType);
 
     // Default name: `${firstType}1`, then `${firstType}2`, ... scene-wide.
     let defaultName = '';
