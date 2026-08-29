@@ -256,6 +256,9 @@ export interface BoolSelectRowDef extends RowBase {
   onOption: { value: string; label: string }
 }
 
+/** Powers of two, the natural ladder for a subdivision count. */
+export const TESSELLATION_LADDER = [1, 2, 4, 8, 16, 32, 64]
+
 /**
  * What a row standing for SEVERAL properties has in common.
  *
@@ -273,7 +276,11 @@ interface MultiRowBase {
 }
 
 /** Any row standing for several properties. */
-export type MultiRowDef = MultiEnumRowDef | MultiNumRowDef | MultiNumInputRowDef
+export type MultiRowDef =
+  | MultiEnumRowDef
+  | MultiNumRowDef
+  | MultiNumInputRowDef
+  | NumEnumRowDef
 
 /** An enum dropdown written to every target (see `MultiRowBase`). */
 export interface MultiEnumRowDef extends MultiRowBase {
@@ -309,6 +316,24 @@ export interface MultiNumInputRowDef extends MultiRowBase {
   min: number
   max: number
   step: number
+}
+
+/**
+ * A tessellation level, chosen from a ladder rather than typed.
+ *
+ * What the eye sees in a subdivision count is the difference between 4 and 8,
+ * not between 8 and 9, so offering every integer asks for a precision the
+ * value does not have and makes changing it a chore. The ladder is the powers
+ * of two inside `min`..`max`; the property's default and its current value are
+ * added to it, since a list that could not express either would show the row
+ * as something it is not.
+ */
+export interface NumEnumRowDef extends MultiRowBase {
+  kind: 'numEnum'
+  min: number
+  max: number
+  /** Replaces the powers-of-two ladder when a property wants its own. */
+  ladder?: number[]
 }
 
 /**
@@ -381,6 +406,7 @@ export type PropRowDef =
   | MultiEnumRowDef
   | MultiNumRowDef
   | MultiNumInputRowDef
+  | NumEnumRowDef
   | StringSelectRowDef
   | CustomRowDef
   | GroupRowDef

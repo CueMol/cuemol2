@@ -138,7 +138,7 @@ describe('the ball-and-stick page', () => {
     unmount()
   })
 
-  it('shows detail as an integer and radius / width with the Angstrom unit', () => {
+  it('offers detail as a ladder of levels and shows radius / width in Angstroms', () => {
     const { container, unmount } = mountTree(
       <SchemaSection
         section={BALLSTICK_SECTIONS[0]}
@@ -150,11 +150,12 @@ describe('the ball-and-stick page', () => {
         onReset={vi.fn()}
       />,
     )
-    // detail = 3 -> integer display (decimals 0), no unit.
-    const detail = rowByLabel(container, 'Detail')!
-    expect(detail.querySelector('.h3-form-drag-value')!.textContent).toContain('3')
-    expect(detail.querySelector('.h3-form-drag-value')!.textContent).not.toContain('.')
-    expect(detail.querySelector('.h3-form-drag-unit')).toBeNull()
+    // A tessellation level is picked from a ladder; the C++ default of 3 is
+    // not a power of two, so it has to be in the list or the row could not
+    // show where it started.
+    const detail = rowByLabel(container, 'Detail')!.querySelector('select') as HTMLSelectElement
+    expect(Array.from(detail.options).map((o) => o.value)).toEqual(['2', '3', '4', '8', '16'])
+    expect(detail.value).toBe('3')
     // bondw / sphr / thickness carry the Angstrom unit.
     for (const label of ['Bond width', 'Atom radius', 'Thickness']) {
       expect(

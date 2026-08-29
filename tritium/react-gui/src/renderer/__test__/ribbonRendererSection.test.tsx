@@ -16,7 +16,6 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { act } from 'react'
 import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
@@ -61,15 +60,6 @@ function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
     (l) => l.textContent === label,
   )
   return lab ? (lab.closest('.h3-form-prop-row') as HTMLElement) : null
-}
-
-function typeInto(input: HTMLInputElement, value: string): void {
-  const setter = Object.getOwnPropertyDescriptor(
-    window.HTMLInputElement.prototype,
-    'value',
-  )!.set!
-  setter.call(input, value)
-  input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
 function changeSelect(select: HTMLSelectElement, value: string): void {
@@ -149,13 +139,11 @@ describe('the ribbon main page', () => {
     const { container, unmount } = mountTree(
       <SchemaSection section={RIBBON_SECTIONS[0]} rendererType="ribbon" entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
     )
-    const input = rowByLabel(container, 'Section detail')!.querySelector('input') as HTMLInputElement
-    act(() => typeInto(input, '10'))
-    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    changeSelect(selectInRow(container, 'Section detail')!, '8')
     expect(onSetMany).toHaveBeenCalledWith([
-      { key: 'coil.detail', valueType: 'integer', value: 10 },
-      { key: 'helix.detail', valueType: 'integer', value: 10 },
-      { key: 'sheet.detail', valueType: 'integer', value: 10 },
+      { key: 'coil.detail', valueType: 'integer', value: 8 },
+      { key: 'helix.detail', valueType: 'integer', value: 8 },
+      { key: 'sheet.detail', valueType: 'integer', value: 8 },
     ])
     unmount()
   })

@@ -76,15 +76,6 @@ function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
 }
 
 /** Set a controlled <input> value so React's value tracker fires onChange. */
-function typeInto(input: HTMLInputElement, value: string): void {
-  const setter = Object.getOwnPropertyDescriptor(
-    window.HTMLInputElement.prototype,
-    'value',
-  )!.set!
-  setter.call(input, value)
-  input.dispatchEvent(new Event('input', { bubbles: true }))
-}
-
 /** The right step arrow of a drag-numeric row (present only for DragNumericField). */
 function dragArrow(row: HTMLElement): HTMLButtonElement | null {
   return row.querySelector('.h3-form-drag-arrow-right') as HTMLButtonElement | null
@@ -163,7 +154,7 @@ describe('the direct-surface Surface section', () => {
     unmount()
   })
 
-  it('renders Detail as a slider field (sweepable density, no drag arrows)', () => {
+  it('offers Detail as a ladder of levels, including the C++ default', () => {
     const { container, unmount } = mountTree(
       <SchemaSection
         section={DSURFACE_SECTIONS[0]}
@@ -176,14 +167,15 @@ describe('the direct-surface Surface section', () => {
       />,
     )
     const detail = rowByLabel(container, 'Detail')!
-    expect(detail.querySelector('.h3-form-sliderfield-row')).not.toBeNull()
-    expect(detail.querySelector('.h3-form-sliderfield-slider')).not.toBeNull()
-    expect(detail.querySelector('.h3-form-sliderfield-number')).not.toBeNull()
     expect(dragArrow(detail)).toBeNull()
+    const sel = detail.querySelector('select') as HTMLSelectElement
+    // Powers of two within 1..21, plus the default 6 the property carries.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['1', '2', '4', '6', '8', '16'])
+    expect(sel.value).toBe('6')
     unmount()
   })
 
-  it('commits a typed Detail as a single-step integer on blur', () => {
+  it('commits the chosen Detail level as an integer', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
       <SchemaSection
@@ -196,13 +188,11 @@ describe('the direct-surface Surface section', () => {
         onReset={vi.fn()}
       />,
     )
-    const input = rowByLabel(container, 'Detail')!.querySelector(
-      '.h3-form-sliderfield-number',
-    ) as HTMLInputElement
-    act(() => typeInto(input, '8'))
-    // SliderField holds the keystrokes locally and commits on blur (Enter
-    // blurs the input), so focusout is the commit edge.
-    act(() => input.dispatchEvent(new FocusEvent('focusout', { bubbles: true })))
+    const sel = rowByLabel(container, 'Detail')!.querySelector('select') as HTMLSelectElement
+    act(() => {
+      sel.value = '8'
+      sel.dispatchEvent(new Event('change', { bubbles: true }))
+    })
     expect(onSet).toHaveBeenCalledWith('detail', 'integer', 8)
     unmount()
   })

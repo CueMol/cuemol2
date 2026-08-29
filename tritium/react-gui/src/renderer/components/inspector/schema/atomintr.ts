@@ -82,7 +82,7 @@ export const ATOMINTR_SECTIONS: SchemaSectionDef[] = [
     // A simple line has no tube geometry, so the whole page is inert for it.
     disabledWhen: isSimple,
     rows: [
-      { kind: 'num', key: 'detail', label: 'Detail', min: 2, max: 20, step: 1, decimals: 0 },
+      { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 2, max: 20 },
       { kind: 'mappedEnum', key: 'captype_start', label: 'Start cap', labels: CAP_LABELS },
       { kind: 'mappedEnum', key: 'captype_end', label: 'End cap', labels: CAP_LABELS },
       {

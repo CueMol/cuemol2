@@ -205,7 +205,7 @@ describe('the CPK Atom radii section', () => {
 })
 
 describe('the CPK Detail section', () => {
-  it('shows detail as an integer with no unit', () => {
+  it('offers detail as a ladder of levels including the default', () => {
     const { container, unmount } = mountTree(
       <SchemaSection
         section={CPK_SECTIONS[1]}
@@ -217,10 +217,10 @@ describe('the CPK Detail section', () => {
         onReset={vi.fn()}
       />,
     )
-    const detail = rowByLabel(container, 'Detail')!
-    expect(detail.querySelector('.h3-form-drag-value')!.textContent).toContain('3')
-    expect(detail.querySelector('.h3-form-drag-value')!.textContent).not.toContain('.')
-    expect(detail.querySelector('.h3-form-drag-unit')).toBeNull()
+    const detail = rowByLabel(container, 'Detail')!.querySelector('select') as HTMLSelectElement
+    expect(detail.value).toBe('3')
+    // Powers of two within 2..20, plus whatever value the property holds.
+    expect(Array.from(detail.options).map((o) => o.value)).toEqual(['2', '3', '4', '8', '16'])
     unmount()
   })
 

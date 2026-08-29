@@ -16,7 +16,7 @@ exports[`renderer Properties page > anisou / default 1`] = `
   },
   "Atoms and bonds": {
     "rows": [
-      "Detail [drag-numeric] {resettable}",
+      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
       "Bond width [drag-numeric] {resettable}",
       "Atom radius [drag-numeric] {resettable}",
       "Show ring [switch] {resettable} value="on"",
@@ -24,7 +24,7 @@ exports[`renderer Properties page > anisou / default 1`] = `
       "Ring color [color] {resettable,disabled} value="#FFFFBF"",
     ],
     "writes": [
-      "Detail -> set detail=4",
+      "Detail -> set detail=2",
       "Bond width -> set bondw=0.21",
       "Atom radius -> set sphr=0.31",
       "Show ring -> set ring=true",
@@ -69,14 +69,14 @@ exports[`renderer Properties page > atomintr / caps-arrow 1`] = `
 {
   "3D tube": {
     "rows": [
-      "Detail [drag-numeric] {resettable}",
+      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
       "Start cap [select] {modified,resettable} options=[arrow|flat|sphere] selected=arrow",
       "End cap [select] {modified,resettable} options=[arrow|flat|sphere] selected=arrow",
       "Arrow height [drag-numeric] {resettable}",
       "Arrow width [drag-numeric] {resettable}",
     ],
     "writes": [
-      "Detail -> set detail=6",
+      "Detail -> set detail=2",
       "Start cap -> set captype_start="flat"",
       "End cap -> set captype_end="flat"",
       "Arrow height -> set arrowheight=1.1",
@@ -150,14 +150,14 @@ exports[`renderer Properties page > atomintr / default 1`] = `
 {
   "3D tube": {
     "rows": [
-      "Detail [drag-numeric] {resettable}",
+      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
       "Start cap [select] {resettable} options=[arrow|flat|sphere] selected=sphere",
       "End cap [select] {resettable} options=[arrow|flat|sphere] selected=sphere",
       "Arrow height [drag-numeric] {resettable,disabled}",
       "Arrow width [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
-      "Detail -> set detail=6",
+      "Detail -> set detail=2",
       "Start cap -> set captype_start="arrow"",
       "End cap -> set captype_end="arrow"",
       "Arrow height -> (nothing)",
@@ -231,14 +231,14 @@ exports[`renderer Properties page > atomintr / labels-on 1`] = `
 {
   "3D tube": {
     "rows": [
-      "Detail [drag-numeric] {resettable}",
+      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
       "Start cap [select] {resettable} options=[arrow|flat|sphere] selected=sphere",
       "End cap [select] {resettable} options=[arrow|flat|sphere] selected=sphere",
       "Arrow height [drag-numeric] {resettable,disabled}",
       "Arrow width [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
-      "Detail -> set detail=6",
+      "Detail -> set detail=2",
       "Start cap -> set captype_start="arrow"",
       "End cap -> set captype_end="arrow"",
       "Arrow height -> (nothing)",
@@ -312,14 +312,14 @@ exports[`renderer Properties page > atomintr / mode-simple 1`] = `
 {
   "3D tube": {
     "rows": [
-      "Detail [drag-numeric] {resettable,disabled}",
+      "Detail [select] {resettable,disabled} options=[2|4|5|8|16] selected=5",
       "Start cap [select] {resettable,disabled} options=[arrow|flat|sphere] selected=sphere",
       "End cap [select] {resettable,disabled} options=[arrow|flat|sphere] selected=sphere",
       "Arrow height [drag-numeric] {resettable,disabled}",
       "Arrow width [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
-      "Detail -> (nothing)",
+      "Detail -> set detail=2",
       "Start cap -> set captype_start="arrow"",
       "End cap -> set captype_end="arrow"",
       "Arrow height -> (nothing)",
@@ -393,7 +393,7 @@ exports[`renderer Properties page > ballstick / default 1`] = `
 {
   "Ball and stick": {
     "rows": [
-      "Detail [drag-numeric] {resettable}",
+      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
       "Bond width [drag-numeric] {resettable}",
       "Atom radius [drag-numeric] {resettable}",
       "Show ring [switch] {resettable} value="on"",
@@ -401,7 +401,7 @@ exports[`renderer Properties page > ballstick / default 1`] = `
       "Ring color [color] {resettable,disabled} value="#FFFFBF"",
     ],
     "writes": [
-      "Detail -> set detail=4 (preview) + set detail=4 (commit)",
+      "Detail -> set detail=2",
       "Bond width -> set bondw=0.21 (preview) + set bondw=0.21 (commit)",
       "Atom radius -> set sphr=0.31 (preview) + set sphr=0.31 (commit)",
       "Show ring -> set ring=true",
@@ -446,7 +446,7 @@ exports[`renderer Properties page > ballstick / ring-on 1`] = `
 {
   "Ball and stick": {
     "rows": [
-      "Detail [drag-numeric] {resettable}",
+      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
       "Bond width [drag-numeric] {resettable}",
       "Atom radius [drag-numeric] {resettable}",
       "Show ring [switch] {modified,resettable} value="on"",
@@ -454,7 +454,7 @@ exports[`renderer Properties page > ballstick / ring-on 1`] = `
       "Ring color [color] {resettable} value="#FFFFBF"",
     ],
     "writes": [
-      "Detail -> set detail=4 (preview) + set detail=4 (commit)",
+      "Detail -> set detail=2",
       "Bond width -> set bondw=0.21 (preview) + set bondw=0.21 (commit)",
       "Atom radius -> set sphr=0.31 (preview) + set sphr=0.31 (commit)",
       "Show ring -> set ring=false",
@@ -517,7 +517,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
   },
   "Cartoon": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="8"",
+      "Axial detail [select] {resettable} options=[2|4|8|16] selected=8",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=flat",
@@ -526,7 +526,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
       "Anchor weight [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=9",
+      "Axial detail -> set axialdetail=2",
       "Smooth color -> set smoothcolor=true",
       "Pivot atom name -> set pivotatom="x"",
       "Start cap -> set start_captype="none"",
@@ -539,7 +539,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -547,7 +547,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
     "writes": [
       "Smoothing -> set coil_smooth=-0.9",
       "Section type -> set coil.type="roundsquare"",
-      "Section detail -> set coil.detail=17",
+      "Section detail -> set coil.detail=4",
       "Section width -> set coil.width=0.4",
       "Tuber -> set coil.tuber=1.1",
       "Sharpness -> (nothing)",
@@ -571,7 +571,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
       "Smoothing [drag-numeric] {resettable}",
       "Extend [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[4|8|16|32] selected=16",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
       "Width mode [select] {resettable} options=[average|const|wavy] selected=average",
@@ -583,7 +583,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
       "Smoothing -> set helix_smooth=3.1",
       "Extend -> set helix_extend=0.55",
       "Section type -> set helix.type="roundsquare"",
-      "Section detail -> set helix.detail=17",
+      "Section detail -> set helix.detail=4",
       "Tuber -> set helix.tuber=1.1",
       "Sharpness -> (nothing)",
       "Width mode -> set helix_width_mode="const"",
@@ -595,7 +595,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -608,7 +608,7 @@ exports[`renderer Properties page > cartoon / default 1`] = `
     "writes": [
       "Smoothing -> set sheet_smooth=2.1",
       "Section type -> set sheet.type="roundsquare"",
-      "Section detail -> set sheet.detail=17",
+      "Section detail -> set sheet.detail=2",
       "Section width -> set sheet.width=0.4",
       "Tuber -> set sheet.tuber=1.1",
       "Sharpness -> (nothing)",
@@ -644,7 +644,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
   },
   "Cartoon": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="8"",
+      "Axial detail [select] {resettable} options=[2|4|8|16] selected=8",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=flat",
@@ -653,7 +653,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
       "Anchor weight [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=9",
+      "Axial detail -> set axialdetail=2",
       "Smooth color -> set smoothcolor=true",
       "Pivot atom name -> set pivotatom="x"",
       "Start cap -> set start_captype="none"",
@@ -666,7 +666,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -674,7 +674,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "writes": [
       "Smoothing -> set coil_smooth=-0.9",
       "Section type -> set coil.type="roundsquare"",
-      "Section detail -> set coil.detail=17",
+      "Section detail -> set coil.detail=4",
       "Section width -> set coil.width=0.4",
       "Tuber -> set coil.tuber=1.1",
       "Sharpness -> (nothing)",
@@ -696,7 +696,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "rows": [
       "Type [select] {modified,resettable} options=[cylinder|ribbon] selected=ribbon",
       "Section type [select] {resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable}",
@@ -708,7 +708,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "writes": [
       "Type -> set helix_ribbon=false",
       "Section type -> set ribhelix.type="fancy1"",
-      "Section detail -> set ribhelix.detail=17",
+      "Section detail -> set ribhelix.detail=4",
       "Section width -> set ribhelix.width=0.4",
       "Tuber -> set ribhelix.tuber=1.1",
       "Sharpness -> set ribhelix.sharp=0.45",
@@ -722,7 +722,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -735,7 +735,7 @@ exports[`renderer Properties page > cartoon / helix-ribbon-on 1`] = `
     "writes": [
       "Smoothing -> set sheet_smooth=2.1",
       "Section type -> set sheet.type="roundsquare"",
-      "Section detail -> set sheet.detail=17",
+      "Section detail -> set sheet.detail=2",
       "Section width -> set sheet.width=0.4",
       "Tuber -> set sheet.tuber=1.1",
       "Sharpness -> (nothing)",
@@ -771,7 +771,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
   },
   "Cartoon": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="8"",
+      "Axial detail [select] {resettable} options=[2|4|8|16] selected=8",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=flat",
@@ -780,7 +780,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
       "Anchor weight [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=9",
+      "Axial detail -> set axialdetail=2",
       "Smooth color -> set smoothcolor=true",
       "Pivot atom name -> set pivotatom="x"",
       "Start cap -> set start_captype="none"",
@@ -793,7 +793,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -801,7 +801,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
     "writes": [
       "Smoothing -> set coil_smooth=-0.9",
       "Section type -> set coil.type="roundsquare"",
-      "Section detail -> set coil.detail=17",
+      "Section detail -> set coil.detail=4",
       "Section width -> set coil.width=0.4",
       "Tuber -> set coil.tuber=1.1",
       "Sharpness -> (nothing)",
@@ -825,7 +825,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
       "Smoothing [drag-numeric] {resettable}",
       "Extend [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[4|8|16|32] selected=16",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
       "Width mode [select] {resettable} options=[average|const|wavy] selected=average",
@@ -837,7 +837,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
       "Smoothing -> set helix_smooth=3.1",
       "Extend -> set helix_extend=0.55",
       "Section type -> set helix.type="roundsquare"",
-      "Section detail -> set helix.detail=17",
+      "Section detail -> set helix.detail=4",
       "Tuber -> set helix.tuber=1.1",
       "Sharpness -> (nothing)",
       "Width mode -> set helix_width_mode="const"",
@@ -849,7 +849,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -862,7 +862,7 @@ exports[`renderer Properties page > cartoon / junction-flat 1`] = `
     "writes": [
       "Smoothing -> set sheet_smooth=2.1",
       "Section type -> set sheet.type="roundsquare"",
-      "Section detail -> set sheet.detail=17",
+      "Section detail -> set sheet.detail=2",
       "Section width -> set sheet.width=0.4",
       "Tuber -> set sheet.tuber=1.1",
       "Sharpness -> (nothing)",
@@ -898,7 +898,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
   },
   "Cartoon": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="8"",
+      "Axial detail [select] {resettable} options=[2|4|8|16] selected=8",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=flat",
@@ -907,7 +907,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
       "Anchor weight [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=9",
+      "Axial detail -> set axialdetail=2",
       "Smooth color -> set smoothcolor=true",
       "Pivot atom name -> set pivotatom="x"",
       "Start cap -> set start_captype="none"",
@@ -920,7 +920,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -928,7 +928,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
     "writes": [
       "Smoothing -> set coil_smooth=-0.9",
       "Section type -> set coil.type="roundsquare"",
-      "Section detail -> set coil.detail=17",
+      "Section detail -> set coil.detail=4",
       "Section width -> set coil.width=0.4",
       "Tuber -> set coil.tuber=1.1",
       "Sharpness -> (nothing)",
@@ -952,7 +952,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
       "Smoothing [drag-numeric] {resettable}",
       "Extend [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[4|8|16|32] selected=16",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
       "Width mode [select] {resettable} options=[average|const|wavy] selected=average",
@@ -964,7 +964,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
       "Smoothing -> set helix_smooth=3.1",
       "Extend -> set helix_extend=0.55",
       "Section type -> set helix.type="roundsquare"",
-      "Section detail -> set helix.detail=17",
+      "Section detail -> set helix.detail=4",
       "Tuber -> set helix.tuber=1.1",
       "Sharpness -> (nothing)",
       "Width mode -> set helix_width_mode="const"",
@@ -976,7 +976,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
     "rows": [
       "Smoothing [drag-numeric] {resettable}",
       "Section type [select] {resettable} options=[elliptical|roundsquare|rectangle] selected=elliptical",
-      "Section detail [numeric] {resettable} value="16"",
+      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Section width [drag-numeric] {resettable}",
       "Tuber [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
@@ -989,7 +989,7 @@ exports[`renderer Properties page > cartoon / junction-smooth 1`] = `
     "writes": [
       "Smoothing -> set sheet_smooth=2.1",
       "Section type -> set sheet.type="roundsquare"",
-      "Section detail -> set sheet.detail=17",
+      "Section detail -> set sheet.detail=2",
       "Section width -> set sheet.width=0.4",
       "Tuber -> set sheet.tuber=1.1",
       "Sharpness -> (nothing)",
@@ -1233,10 +1233,10 @@ exports[`renderer Properties page > cpk / default 1`] = `
   },
   "Detail": {
     "rows": [
-      "Detail [drag-numeric] {resettable}",
+      "Detail [select] {resettable} options=[2|4|8|10|16] selected=10",
     ],
     "writes": [
-      "Detail -> set detail=11 (preview) + set detail=11 (commit)",
+      "Detail -> set detail=2",
     ],
   },
   "Edge lines": {
@@ -1277,7 +1277,7 @@ exports[`renderer Properties page > disorder / default 1`] = `
   "Disorder": {
     "rows": [
       "Target [select] {resettable} options=[] selected=",
-      "Detail [numeric] {resettable} value="5"",
+      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
       "Dot size [drag-numeric] {resettable}",
       "Dot separation [drag-numeric] {resettable}",
       "Loop size [drag-numeric] {resettable}",
@@ -1286,7 +1286,7 @@ exports[`renderer Properties page > disorder / default 1`] = `
     ],
     "writes": [
       "Target -> (not driven)",
-      "Detail -> set detail=6",
+      "Detail -> set detail=2",
       "Dot size -> set width=0.4",
       "Dot separation -> set dotsep=1.1",
       "Loop size -> set loopsize=2.1",
@@ -1332,7 +1332,7 @@ exports[`renderer Properties page > disorder / loopsize2-on 1`] = `
   "Disorder": {
     "rows": [
       "Target [select] {resettable} options=[] selected=",
-      "Detail [numeric] {resettable} value="5"",
+      "Detail [select] {resettable} options=[2|4|5|8|16] selected=5",
       "Dot size [drag-numeric] {resettable}",
       "Dot separation [drag-numeric] {resettable}",
       "Loop size [drag-numeric] {resettable}",
@@ -1341,7 +1341,7 @@ exports[`renderer Properties page > disorder / loopsize2-on 1`] = `
     ],
     "writes": [
       "Target -> (not driven)",
-      "Detail -> set detail=6",
+      "Detail -> set detail=2",
       "Dot size -> set width=0.4",
       "Dot separation -> set dotsep=1.1",
       "Loop size -> set loopsize=2.1",
@@ -1421,13 +1421,13 @@ exports[`renderer Properties page > dsurf2 / default 1`] = `
       "Drawing mode [select] {resettable} options=[fill|line|point] selected=fill",
       "Line/Point size [drag-numeric] {resettable,disabled}",
       "Surface type [select] {resettable} options=[sas|ses|vdw] selected=ses",
-      "Detail [numeric] {resettable} value="6"",
+      "Detail [select] {resettable} options=[1|2|4|6|8|16] selected=6",
     ],
     "writes": [
       "Drawing mode -> set drawmode="line"",
       "Line/Point size -> (nothing)",
       "Surface type -> set surftype="sas"",
-      "Detail -> (nothing)",
+      "Detail -> set detail=1",
     ],
   },
 }
@@ -1490,13 +1490,13 @@ exports[`renderer Properties page > dsurface / default 1`] = `
       "Drawing mode [select] {resettable} options=[fill|line|point] selected=fill",
       "Line/Point size [drag-numeric] {resettable,disabled}",
       "Surface type [select] {resettable} options=[sas|ses|vdw] selected=ses",
-      "Detail [numeric] {resettable} value="6"",
+      "Detail [select] {resettable} options=[1|2|4|6|8|16] selected=6",
     ],
     "writes": [
       "Drawing mode -> set drawmode="line"",
       "Line/Point size -> (nothing)",
       "Surface type -> set surftype="sas"",
-      "Detail -> (nothing)",
+      "Detail -> set detail=1",
     ],
   },
 }
@@ -1901,7 +1901,7 @@ exports[`renderer Properties page > nucl / default 1`] = `
       "Show tube [switch] {resettable} value="on"",
       "Connect base pair [switch] {resettable} value="on"",
       "Base type [select] {resettable} options=[basepair|detail1|detail2|simple1] selected=basepair",
-      "Detail [numeric] {resettable} value="3"",
+      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
       "Base size [drag-numeric] {resettable}",
       "Base thick [drag-numeric] {resettable}",
     ],
@@ -1909,7 +1909,7 @@ exports[`renderer Properties page > nucl / default 1`] = `
       "Show tube -> set show_tube=false",
       "Connect base pair -> set show_basepair=false",
       "Base type -> set base_type="detail1"",
-      "Detail -> set base_detail=4",
+      "Detail -> set base_detail=2",
       "Base size -> setMany [{"key":"base_size","valueType":"real","value":0.6},{"key":"base_thick","valueType":"real","value":0.6}]",
       "Base thick -> (nothing)",
     ],
@@ -1931,14 +1931,14 @@ exports[`renderer Properties page > nucl / default 1`] = `
   "Section": {
     "rows": [
       "Type [select] {resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Detail [numeric] {resettable} value="16"",
+      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
       "Type -> set section.type="fancy1"",
-      "Detail -> set section.detail=17",
+      "Detail -> set section.detail=2",
       "Width1 -> setMany [{"key":"section.width","valueType":"real","value":0.36},{"key":"section.tuber","valueType":"real","value":0.9722222222222222}]",
       "Width2 -> set section.tuber=1.0285714285714287",
       "Sharpness -> (nothing)",
@@ -1946,7 +1946,7 @@ exports[`renderer Properties page > nucl / default 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="6"",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -1955,7 +1955,7 @@ exports[`renderer Properties page > nucl / default 1`] = `
       "Pivot atom name [text] {resettable} value=""",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=7",
+      "Axial detail -> set axialdetail=2",
       "Smoothness -> set smooth=0.01",
       "Smooth color -> set smoothcolor=false",
       "Start cap -> set start_captype="flat"",
@@ -2004,7 +2004,7 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
       "Show tube [switch] {modified,resettable} value="on"",
       "Connect base pair [switch] {resettable} value="on"",
       "Base type [select] {resettable} options=[basepair|detail1|detail2|simple1] selected=basepair",
-      "Detail [numeric] {resettable} value="3"",
+      "Detail [select] {resettable} options=[2|3|4|8|16] selected=3",
       "Base size [drag-numeric] {resettable}",
       "Base thick [drag-numeric] {resettable}",
     ],
@@ -2012,7 +2012,7 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
       "Show tube -> set show_tube=true",
       "Connect base pair -> set show_basepair=false",
       "Base type -> set base_type="detail1"",
-      "Detail -> set base_detail=4",
+      "Detail -> set base_detail=2",
       "Base size -> setMany [{"key":"base_size","valueType":"real","value":0.6},{"key":"base_thick","valueType":"real","value":0.6}]",
       "Base thick -> (nothing)",
     ],
@@ -2034,14 +2034,14 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
   "Section": {
     "rows": [
       "Type [select] {resettable,disabled} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Detail [numeric] {resettable,disabled} value="16"",
+      "Detail [select] {resettable,disabled} options=[2|4|8|16] selected=16",
       "Width1 [drag-numeric] {resettable,disabled}",
       "Width2 [drag-numeric] {resettable,disabled}",
       "Sharpness [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
       "Type -> set section.type="fancy1"",
-      "Detail -> set section.detail=17",
+      "Detail -> set section.detail=2",
       "Width1 -> (nothing)",
       "Width2 -> (nothing)",
       "Sharpness -> (nothing)",
@@ -2049,7 +2049,7 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [numeric] {resettable,disabled} value="6"",
+      "Axial detail [select] {resettable,disabled} options=[2|4|6|8|16] selected=6",
       "Smoothness [drag-numeric] {resettable,disabled}",
       "Smooth color [switch] {resettable,disabled} value="on"",
       "Start cap [select] {resettable,disabled} options=[flat|none|sphere] selected=sphere",
@@ -2058,7 +2058,7 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
       "Pivot atom name [text] {resettable,disabled} value=""",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=7",
+      "Axial detail -> set axialdetail=2",
       "Smoothness -> (nothing)",
       "Smooth color -> (nothing)",
       "Start cap -> set start_captype="flat"",
@@ -2156,16 +2156,16 @@ exports[`renderer Properties page > ribbon / default 1`] = `
   },
   "Ribbon": {
     "rows": [
-      "Section detail [numeric] {resettable} value="16"",
-      "Axial detail [numeric] {resettable} value="6"",
+      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Cap type [select] {resettable} options=[flat|sphere|none] selected=sphere",
       "Segment-end fade out [switch] {resettable} value="on"",
     ],
     "writes": [
-      "Section detail -> setMany [{"key":"coil.detail","valueType":"integer","value":17},{"key":"helix.detail","valueType":"integer","value":17},{"key":"sheet.detail","valueType":"integer","value":17}]",
-      "Axial detail -> set axialdetail=7",
+      "Section detail -> setMany [{"key":"coil.detail","valueType":"integer","value":2},{"key":"helix.detail","valueType":"integer","value":2},{"key":"sheet.detail","valueType":"integer","value":2}]",
+      "Axial detail -> set axialdetail=2",
       "Smooth color -> set smoothcolor=false",
       "Pivot atom name -> set pivotatom="x"",
       "Cap type -> setMany [{"key":"start_captype","valueType":"enum","value":"flat"},{"key":"end_captype","valueType":"enum","value":"flat"}]",
@@ -2297,16 +2297,16 @@ exports[`renderer Properties page > ribbon / junctions-smooth 1`] = `
   },
   "Ribbon": {
     "rows": [
-      "Section detail [numeric] {resettable} value="16"",
-      "Axial detail [numeric] {resettable} value="6"",
+      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Cap type [select] {resettable} options=[flat|sphere|none] selected=sphere",
       "Segment-end fade out [switch] {resettable} value="on"",
     ],
     "writes": [
-      "Section detail -> setMany [{"key":"coil.detail","valueType":"integer","value":17},{"key":"helix.detail","valueType":"integer","value":17},{"key":"sheet.detail","valueType":"integer","value":17}]",
-      "Axial detail -> set axialdetail=7",
+      "Section detail -> setMany [{"key":"coil.detail","valueType":"integer","value":2},{"key":"helix.detail","valueType":"integer","value":2},{"key":"sheet.detail","valueType":"integer","value":2}]",
+      "Axial detail -> set axialdetail=2",
       "Smooth color -> set smoothcolor=false",
       "Pivot atom name -> set pivotatom="x"",
       "Cap type -> setMany [{"key":"start_captype","valueType":"enum","value":"flat"},{"key":"end_captype","valueType":"enum","value":"flat"}]",
@@ -2438,16 +2438,16 @@ exports[`renderer Properties page > ribbon / side-colours-on 1`] = `
   },
   "Ribbon": {
     "rows": [
-      "Section detail [numeric] {resettable} value="16"",
-      "Axial detail [numeric] {resettable} value="6"",
+      "Section detail [select] {resettable} options=[2|4|8|16] selected=16",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
       "Smooth color [switch] {resettable} value="on"",
       "Pivot atom name [text] {resettable} value=""",
       "Cap type [select] {resettable} options=[flat|sphere|none] selected=sphere",
       "Segment-end fade out [switch] {resettable} value="on"",
     ],
     "writes": [
-      "Section detail -> setMany [{"key":"coil.detail","valueType":"integer","value":17},{"key":"helix.detail","valueType":"integer","value":17},{"key":"sheet.detail","valueType":"integer","value":17}]",
-      "Axial detail -> set axialdetail=7",
+      "Section detail -> setMany [{"key":"coil.detail","valueType":"integer","value":2},{"key":"helix.detail","valueType":"integer","value":2},{"key":"sheet.detail","valueType":"integer","value":2}]",
+      "Axial detail -> set axialdetail=2",
       "Smooth color -> set smoothcolor=false",
       "Pivot atom name -> set pivotatom="x"",
       "Cap type -> setMany [{"key":"start_captype","valueType":"enum","value":"flat"},{"key":"end_captype","valueType":"enum","value":"flat"}]",
@@ -2558,7 +2558,7 @@ exports[`renderer Properties page > spline / default 1`] = `
   },
   "Spline": {
     "rows": [
-      "Axial detail [drag-numeric] {resettable}",
+      "Axial detail [select] {resettable} options=[1|2|4|6|8] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Line width [drag-numeric] {resettable}",
@@ -2566,7 +2566,7 @@ exports[`renderer Properties page > spline / default 1`] = `
       "Pivot atom name [text] {resettable} value=""",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=7",
+      "Axial detail -> set axialdetail=1",
       "Smoothness -> set smooth=0.01 (preview) + set smooth=0.01 (commit)",
       "Smooth color -> set smoothcolor=false",
       "Line width -> set line_width=1.4 (preview) + set line_width=1.4 (commit)",
@@ -2657,14 +2657,14 @@ exports[`renderer Properties page > tube / default 1`] = `
   "Section": {
     "rows": [
       "Type [select] {resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Detail [numeric] {resettable} value="16"",
+      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
       "Type -> set section.type="fancy1"",
-      "Detail -> set section.detail=17",
+      "Detail -> set section.detail=2",
       "Width1 -> setMany [{"key":"section.width","valueType":"real","value":0.36},{"key":"section.tuber","valueType":"real","value":0.9722222222222222}]",
       "Width2 -> set section.tuber=1.0285714285714287",
       "Sharpness -> (nothing)",
@@ -2672,7 +2672,7 @@ exports[`renderer Properties page > tube / default 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="6"",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -2681,7 +2681,7 @@ exports[`renderer Properties page > tube / default 1`] = `
       "Pivot atom name [text] {resettable} value=""",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=7",
+      "Axial detail -> set axialdetail=2",
       "Smoothness -> set smooth=0.01",
       "Smooth color -> set smoothcolor=false",
       "Start cap -> set start_captype="flat"",
@@ -2742,14 +2742,14 @@ exports[`renderer Properties page > tube / putty-scaling 1`] = `
   "Section": {
     "rows": [
       "Type [select] {resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=elliptical",
-      "Detail [numeric] {resettable} value="16"",
+      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable,disabled}",
     ],
     "writes": [
       "Type -> set section.type="fancy1"",
-      "Detail -> set section.detail=17",
+      "Detail -> set section.detail=2",
       "Width1 -> setMany [{"key":"section.width","valueType":"real","value":0.36},{"key":"section.tuber","valueType":"real","value":0.9722222222222222}]",
       "Width2 -> set section.tuber=1.0285714285714287",
       "Sharpness -> (nothing)",
@@ -2757,7 +2757,7 @@ exports[`renderer Properties page > tube / putty-scaling 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="6"",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -2766,7 +2766,7 @@ exports[`renderer Properties page > tube / putty-scaling 1`] = `
       "Pivot atom name [text] {resettable} value=""",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=7",
+      "Axial detail -> set axialdetail=2",
       "Smoothness -> set smooth=0.01",
       "Smooth color -> set smoothcolor=false",
       "Start cap -> set start_captype="flat"",
@@ -2827,14 +2827,14 @@ exports[`renderer Properties page > tube / section-fancy 1`] = `
   "Section": {
     "rows": [
       "Type [select] {modified,resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=fancy1",
-      "Detail [numeric] {resettable} value="16"",
+      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable}",
     ],
     "writes": [
       "Type -> set section.type="elliptical"",
-      "Detail -> set section.detail=17",
+      "Detail -> set section.detail=2",
       "Width1 -> setMany [{"key":"section.width","valueType":"real","value":0.36},{"key":"section.tuber","valueType":"real","value":0.9722222222222222}]",
       "Width2 -> set section.tuber=1.0285714285714287",
       "Sharpness -> set section.sharp=0.45",
@@ -2842,7 +2842,7 @@ exports[`renderer Properties page > tube / section-fancy 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="6"",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -2851,7 +2851,7 @@ exports[`renderer Properties page > tube / section-fancy 1`] = `
       "Pivot atom name [text] {resettable} value=""",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=7",
+      "Axial detail -> set axialdetail=2",
       "Smoothness -> set smooth=0.01",
       "Smooth color -> set smoothcolor=false",
       "Start cap -> set start_captype="flat"",
@@ -2912,14 +2912,14 @@ exports[`renderer Properties page > tube / section-roundsquare 1`] = `
   "Section": {
     "rows": [
       "Type [select] {modified,resettable} options=[elliptical|fancy1|rectangle|roundsquare] selected=roundsquare",
-      "Detail [numeric] {resettable} value="16"",
+      "Detail [select] {resettable} options=[2|4|8|16] selected=16",
       "Width1 [drag-numeric] {resettable}",
       "Width2 [drag-numeric] {resettable}",
       "Sharpness [drag-numeric] {resettable}",
     ],
     "writes": [
       "Type -> set section.type="elliptical"",
-      "Detail -> set section.detail=17",
+      "Detail -> set section.detail=2",
       "Width1 -> setMany [{"key":"section.width","valueType":"real","value":0.36},{"key":"section.tuber","valueType":"real","value":0.9722222222222222}]",
       "Width2 -> set section.tuber=1.0285714285714287",
       "Sharpness -> set section.sharp=0.45",
@@ -2927,7 +2927,7 @@ exports[`renderer Properties page > tube / section-roundsquare 1`] = `
   },
   "Tube": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="6"",
+      "Axial detail [select] {resettable} options=[2|4|6|8|16] selected=6",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Start cap [select] {resettable} options=[flat|none|sphere] selected=sphere",
@@ -2936,7 +2936,7 @@ exports[`renderer Properties page > tube / section-roundsquare 1`] = `
       "Pivot atom name [text] {resettable} value=""",
     ],
     "writes": [
-      "Axial detail -> set axialdetail=7",
+      "Axial detail -> set axialdetail=2",
       "Smoothness -> set smooth=0.01",
       "Smooth color -> set smoothcolor=false",
       "Start cap -> set start_captype="flat"",

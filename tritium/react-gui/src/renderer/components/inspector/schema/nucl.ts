@@ -41,7 +41,7 @@ const NUCL_BASE_SECTION: SchemaSectionDef = {
     { kind: 'bool', key: 'show_tube', label: 'Show tube' },
     { kind: 'bool', key: 'show_basepair', label: 'Connect base pair' },
     { kind: 'enum', key: 'base_type', label: 'Base type' },
-    { kind: 'numInput', key: 'base_detail', label: 'Detail', min: 2, max: 20, step: 1 },
+    { kind: 'numEnum', keys: ['base_detail'], label: 'Detail', min: 2, max: 20 },
     {
       kind: 'derivedNum',
       key: 'base_size',

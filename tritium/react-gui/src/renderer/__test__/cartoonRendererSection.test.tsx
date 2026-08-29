@@ -71,15 +71,6 @@ function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
 }
 
 /** Set a controlled <input> value so React's value tracker fires onChange. */
-function typeInto(input: HTMLInputElement, value: string): void {
-  const setter = Object.getOwnPropertyDescriptor(
-    window.HTMLInputElement.prototype,
-    'value',
-  )!.set!
-  setter.call(input, value)
-  input.dispatchEvent(new Event('input', { bubbles: true }))
-}
-
 /** Change a controlled <select> so React's value tracker fires onChange. */
 function changeSelect(select: HTMLSelectElement, value: string): void {
   const setter = Object.getOwnPropertyDescriptor(
@@ -162,17 +153,19 @@ describe('the cartoon main page', () => {
     unmount()
   })
 
-  it('renders Axial detail as a stepper NumericField and commits a single step', () => {
+  it('offers Axial detail as a ladder of levels and commits the chosen one', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
       <SchemaSection section={CARTOON_SECTIONS[0]} rendererType="cartoon" entries={mainEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
     )
-    const detail = rowByLabel(container, 'Axial detail')!
-    expect(dragArrow(detail)).toBeNull()
-    const input = detail.querySelector('input') as HTMLInputElement
-    act(() => typeInto(input, '12'))
-    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
-    expect(onSet).toHaveBeenCalledWith('axialdetail', 'integer', 12)
+    const sel = selectInRow(container, 'Axial detail')!
+    // Powers of two within 2..20; the value 8 is already one of them.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '8', '16'])
+    act(() => {
+      sel.value = '16'
+      sel.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(onSet).toHaveBeenCalledWith('axialdetail', 'integer', 16)
     unmount()
   })
 

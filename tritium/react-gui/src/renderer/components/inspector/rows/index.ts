@@ -38,6 +38,8 @@ export { MultiNumRow } from './MultiNumRow';
 export type { MultiNumRowProps } from './MultiNumRow';
 export { MultiNumInputRow } from './MultiNumInputRow';
 export type { MultiNumInputRowProps } from './MultiNumInputRow';
+export { NumEnumRow } from './NumEnumRow';
+export type { NumEnumRowProps } from './NumEnumRow';
 export { AsyncSelectRow, useAsyncNames } from './AsyncSelectRow';
 export type { AsyncSelectRowProps, AsyncNameSource } from './AsyncSelectRow';
 export { DerivedNumRow } from './DerivedNumRow';

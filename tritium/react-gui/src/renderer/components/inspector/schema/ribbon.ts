@@ -100,14 +100,13 @@ export const RIBBON_SECTIONS: SchemaSectionDef[] = [
     defaultExpanded: true,
     rows: [
       {
-        kind: 'multiNumInput',
+        kind: 'numEnum',
         keys: ['coil.detail', 'helix.detail', 'sheet.detail'],
         label: 'Section detail',
         min: 2,
         max: 20,
-        step: 1,
       },
-      { kind: 'numInput', key: 'axialdetail', label: 'Axial detail', min: 2, max: 20, step: 1 },
+      { kind: 'numEnum', keys: ['axialdetail'], label: 'Axial detail', min: 2, max: 20 },
       { kind: 'bool', key: 'smoothcolor', label: 'Smooth color' },
       { kind: 'text', key: 'pivotatom', label: 'Pivot atom name', placeholder: '(default)' },
       {

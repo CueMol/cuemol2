@@ -27,6 +27,7 @@ import {
   MultiEnumRow,
   MultiNumInputRow,
   MultiNumRow,
+  NumEnumRow,
   NumInputRow,
   NumRow,
   OptionalNumRow,
@@ -41,6 +42,7 @@ import type { PropMultiWrite } from './rendererPropSections'
 import {
   DRAFT_KINDS,
   makePropCtx,
+  TESSELLATION_LADDER,
   type MultiRowDef,
   type PropCtx,
   type PropRowDef,
@@ -415,6 +417,22 @@ function renderMultiRow(
           unit={row.unit}
           toDisplay={row.toDisplay}
           toStored={row.toStored}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'numEnum':
+      return (
+        <NumEnumRow
+          key={key}
+          label={row.label}
+          targets={targets}
+          ladder={(row.ladder ?? TESSELLATION_LADDER).filter(
+            (n) => n >= row.min && n <= row.max,
+          )}
           onSet={onSet}
           onSetMany={onSetMany}
           onReset={onReset}

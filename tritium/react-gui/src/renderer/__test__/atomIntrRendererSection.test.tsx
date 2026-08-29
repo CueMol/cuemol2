@@ -411,10 +411,10 @@ describe('the atomintr tube page', () => {
         sceneId={1}
       />,
     )
-    const detailArrow = rowByLabel(container, 'Detail')!.querySelector(
-      '.h3-form-drag-arrow-right',
-    ) as HTMLButtonElement
-    expect(detailArrow.disabled).toBe(true)
+    const detailSelect = rowByLabel(container, 'Detail')!.querySelector(
+      'select',
+    ) as HTMLSelectElement
+    expect(detailSelect.disabled).toBe(true)
     const startSelect = rowByLabel(container, 'Start cap')!.querySelector(
       'select',
     ) as HTMLSelectElement
@@ -434,10 +434,10 @@ describe('the atomintr tube page', () => {
         sceneId={1}
       />,
     )
-    const detailArrow = rowByLabel(container, 'Detail')!.querySelector(
-      '.h3-form-drag-arrow-right',
-    ) as HTMLButtonElement
-    expect(detailArrow.disabled).toBe(false)
+    const detailSelect = rowByLabel(container, 'Detail')!.querySelector(
+      'select',
+    ) as HTMLSelectElement
+    expect(detailSelect.disabled).toBe(false)
     const arrowHArrow = rowByLabel(container, 'Arrow height')!.querySelector(
       '.h3-form-drag-arrow-right',
     ) as HTMLButtonElement

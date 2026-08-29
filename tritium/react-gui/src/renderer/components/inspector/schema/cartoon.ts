@@ -65,12 +65,11 @@ function sectionShapeRows(prefix: string, opts: SectionShapeOpts): PropRowDef[] 
       options: opts.allowFancy ? undefined : SECTION_TYPES_NO_FANCY,
     },
     {
-      kind: 'numInput',
-      key: `${prefix}.detail`,
+      kind: 'numEnum',
+      keys: [`${prefix}.detail`],
       label: 'Section detail',
       min: opts.detail.min,
       max: opts.detail.max,
-      step: 1,
     },
   ]
   if (opts.width) {
@@ -130,7 +129,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
     title: 'Cartoon',
     defaultExpanded: true,
     rows: [
-      { kind: 'numInput', key: 'axialdetail', label: 'Axial detail', min: 2, max: 20, step: 1 },
+      { kind: 'numEnum', keys: ['axialdetail'], label: 'Axial detail', min: 2, max: 20 },
       { kind: 'bool', key: 'smoothcolor', label: 'Smooth color' },
       { kind: 'text', key: 'pivotatom', label: 'Pivot atom name', placeholder: '(default)' },
       { kind: 'mappedEnum', key: 'start_captype', label: 'Start cap', labels: CAP_LABELS },

@@ -79,7 +79,7 @@ export function tubeSections(disabledWhen?: Predicate): SchemaSectionDef[] {
       defaultExpanded: true,
       disabledWhen,
       rows: [
-        { kind: 'numInput', key: 'axialdetail', label: 'Axial detail', min: 2, max: 20, step: 1 },
+        { kind: 'numEnum', keys: ['axialdetail'], label: 'Axial detail', min: 2, max: 20 },
         { kind: 'num', key: 'smooth', label: 'Smoothness', min: 0, max: 0.5, step: 0.01, decimals: 2 },
         { kind: 'bool', key: 'smoothcolor', label: 'Smooth color' },
         { kind: 'mappedEnum', key: 'start_captype', label: 'Start cap', labels: CAP_LABELS },
@@ -95,7 +95,7 @@ export function tubeSections(disabledWhen?: Predicate): SchemaSectionDef[] {
       disabledWhen,
       rows: [
         { kind: 'mappedEnum', key: 'section.type', label: 'Type', labels: SECTION_TYPE_LABELS },
-        { kind: 'numInput', key: 'section.detail', label: 'Detail', min: 2, max: 20, step: 1 },
+        { kind: 'numEnum', keys: ['section.detail'], label: 'Detail', min: 2, max: 20 },
         {
           kind: 'derivedNum',
           key: 'section.width',

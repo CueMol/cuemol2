@@ -8,7 +8,8 @@
  *   - the registry resolves `type_name === "tube"` to the Tube / Section / Putty
  *     sections (all default-expanded);
  *   - each section renders a row only when its property exists;
- *   - `axialdetail` / `section.detail` use the plain stepper NumericField;
+ *   - `axialdetail` / `section.detail` are tessellation levels picked from a
+ *     ladder, not typed;
  *   - the nested `section.*` cross-section props are surfaced (via their dot-path
  *     keys) and committed unchanged through `onSet`;
  *   - "Width2" is derived (`tuber * width`) and writes back `section.tuber`;
@@ -107,14 +108,17 @@ describe('the tube page', () => {
     unmount()
   })
 
-  it('renders Axial detail as a stepper (no slider, no drag arrows)', () => {
+  it('offers Axial detail as a ladder of levels, including the current one', () => {
     const { container, unmount } = mountTree(
       <SchemaSection section={TUBE_SECTIONS[0]} rendererType="tube" entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     const detail = rowByLabel(container, 'Axial detail')!
-    expect(detail.querySelector('.h3-form-numeric-row')).not.toBeNull()
-    expect(detail.querySelector('.h3-form-slider')).toBeNull()
     expect(dragArrow(detail)).toBeNull()
+    const sel = selectIn(detail)
+    // 6 is not a power of two, so it is merged into the ladder rather than
+    // leaving the row unable to show its own value.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '6', '8', '16'])
+    expect(sel.value).toBe('6')
     unmount()
   })
 
