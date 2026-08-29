@@ -14,9 +14,10 @@
  * mirror the C++ property bridge and commit on release.
  */
 
+import type React from 'react'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import type { AsyncNameSource } from '../rows/AsyncSelectRow'
-import type { PropMultiWrite } from '../rendererPropSections'
+import type { PropMultiWrite, RendererPropSectionProps } from '../rendererPropSections'
 
 /**
  * What a row can consult while the page renders: the live property list, and
@@ -84,7 +85,12 @@ export interface NumRowDef extends RowBase {
   fineSnap?: number
   /** Coarse drag snap (Ctrl / Cmd). Defaults to `step * 10`. */
   coarseSnap?: number
-  unit?: string
+  /**
+   * A function when the unit follows another property: an atom-interaction
+   * line is measured in Angstroms as a tube and in pixels as a line, and it is
+   * the same property either way.
+   */
+  unit?: string | ((ctx: PropCtx) => string)
   decimals?: number
   realtime?: boolean
 }
@@ -313,6 +319,45 @@ export interface GroupRowDef {
   disabledWhen?: Predicate
 }
 
+/**
+ * A dropdown over a fixed option set for a STRING property.
+ *
+ * Not every property with a handful of sensible values is a C++ enum: a
+ * label's font style and weight are CSS strings and carry no `enumdef`, so the
+ * page names the options instead.
+ */
+export interface StringSelectRowDef extends RowBase {
+  kind: 'stringSelect'
+  options: { label: string; value: string }[]
+}
+
+/** What a `custom` block is handed: the page's state and its writers. */
+export interface CustomRowProps {
+  ctx: PropCtx
+  onSet: RendererPropSectionProps['onSet']
+  onSetMany: RendererPropSectionProps['onSetMany']
+  onReset: RendererPropSectionProps['onReset']
+  disabled: boolean
+}
+
+/**
+ * An escape hatch for a block that is not a row.
+ *
+ * A page occasionally needs something the row catalog does not have and only
+ * it wants -- the atom-interaction dash pattern is a synthetic toggle over six
+ * properties plus a strip of compact cells. Describing that as data would mean
+ * inventing a kind for one caller, so the block stays a component and the
+ * schema names it.
+ */
+export interface CustomRowDef {
+  kind: 'custom'
+  /** Stable React key; not a property name. */
+  key: string
+  Component: React.FC<CustomRowProps>
+  visibleWhen?: Predicate
+  disabledWhen?: Predicate
+}
+
 /** A row of a Properties page. */
 export type PropRowDef =
   | NumRowDef
@@ -328,6 +373,8 @@ export type PropRowDef =
   | MultiEnumRowDef
   | MultiNumRowDef
   | MultiNumInputRowDef
+  | StringSelectRowDef
+  | CustomRowDef
   | GroupRowDef
   | TextRowDef
   | SelRowDef

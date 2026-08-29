@@ -32,6 +32,7 @@ import {
   OptionalNumRow,
   SelRow,
   SliderRow,
+  StringSelectRow,
   TextRow,
 } from './rows'
 import type { RendererPropSectionProps } from './rendererPropSections'
@@ -100,6 +101,20 @@ function renderRow(
 
   if (isMultiRow(row)) return renderMultiRow(row, ctx, disabled, onSet, onSetMany, onReset)
 
+  // A block, not a row: it reads the page for itself and decides what to show.
+  if (row.kind === 'custom') {
+    return (
+      <row.Component
+        key={row.key}
+        ctx={ctx}
+        onSet={onSet}
+        onSetMany={onSetMany}
+        onReset={onReset}
+        disabled={disabled}
+      />
+    )
+  }
+
   const entry = ctx.get(row.key)
   if (!entry) return null
   // A derived row reads more than its own property and cannot be shown
@@ -124,7 +139,7 @@ function renderRow(
           step={row.step}
           fineSnap={row.fineSnap}
           coarseSnap={row.coarseSnap}
-          unit={row.unit}
+          unit={typeof row.unit === 'function' ? row.unit(ctx) : row.unit}
           decimals={row.decimals}
           realtime={row.realtime}
           disabled={disabled}
@@ -281,6 +296,19 @@ function renderRow(
           label={row.label}
           offOption={row.offOption}
           onOption={row.onOption}
+          onSet={onSet}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'stringSelect':
+      return (
+        <StringSelectRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          options={row.options}
           onSet={onSet}
           onReset={onReset}
           disabled={disabled}

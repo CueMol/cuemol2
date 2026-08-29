@@ -49,12 +49,8 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import {
-  AtomIntrMainSection,
-  AtomIntrDashedSection,
-  AtomIntrTubeSection,
-  AtomIntrLabelSection,
-} from '../components/inspector/AtomIntrRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { ATOMINTR_SECTIONS } from '../components/inspector/schema/atomintr'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
@@ -152,18 +148,20 @@ describe('AtomIntrRenderer section registry', () => {
       'Value label',
     ])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(componentOf(sections[0])).toBe(AtomIntrMainSection)
-    expect(componentOf(sections[1])).toBe(AtomIntrDashedSection)
-    expect(componentOf(sections[2])).toBe(AtomIntrTubeSection)
-    expect(componentOf(sections[3])).toBe(AtomIntrLabelSection)
+    // A migrated page is rows as data, not a component.
+    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
+    expect(sections.map(componentOf)).toEqual(sections.map((s) => `schema:${s.key}`))
+    expect(sections).toBe(ATOMINTR_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.atomintr).toBe(sections)
   })
 })
 
-describe('AtomIntrMainSection', () => {
+describe('the atomintr interaction page', () => {
   it('renders mode, width, color and show-label rows', () => {
     const { container, unmount } = mountTree(
-      <AtomIntrMainSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[0]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -180,7 +178,9 @@ describe('AtomIntrMainSection', () => {
 
   it('shows the Angstrom width unit while fancy and pixels while simple', () => {
     const fancy = mountTree(
-      <AtomIntrMainSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[0]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -194,7 +194,9 @@ describe('AtomIntrMainSection', () => {
     fancy.unmount()
 
     const simple = mountTree(
-      <AtomIntrMainSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[0]}
+        rendererType="atomintr"
         entries={fullEntries({
           mode: entry({ key: 'mode', type: 'enum', value: 'simple', enumdef: ['simple', 'fancy'] }),
         })}
@@ -213,7 +215,9 @@ describe('AtomIntrMainSection', () => {
   it('commits a friendly-labelled mode change as the raw enum id', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <AtomIntrMainSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[0]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={onSet}
         onSetMany={vi.fn()}
@@ -233,10 +237,12 @@ describe('AtomIntrMainSection', () => {
   })
 })
 
-describe('AtomIntrDashedSection', () => {
+describe('the atomintr dashed-line page', () => {
   it('renders the Dashed toggle and six compact stipple cells with dash/gap captions', () => {
     const { container, unmount } = mountTree(
-      <AtomIntrDashedSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[1]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -262,7 +268,9 @@ describe('AtomIntrDashedSection', () => {
 
   it('shows blank cells for unused (negative) segments and the value otherwise', () => {
     const { container, unmount } = mountTree(
-      <AtomIntrDashedSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[1]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -284,7 +292,9 @@ describe('AtomIntrDashedSection', () => {
       stipple1: entry({ key: 'stipple1', type: 'real', value: -1 }),
     })
     const { container, unmount } = mountTree(
-      <AtomIntrDashedSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[1]}
+        rendererType="atomintr"
         entries={off}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -304,7 +314,9 @@ describe('AtomIntrDashedSection', () => {
   it('commits an edited stipple cell as a parsed number, blank as -1', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <AtomIntrDashedSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[1]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={onSet}
         onSetMany={vi.fn()}
@@ -327,7 +339,9 @@ describe('AtomIntrDashedSection', () => {
   it('turning Dashed off rewrites all six stipples to -1 in one onSetMany', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <AtomIntrDashedSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[1]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={onSetMany}
@@ -357,7 +371,9 @@ describe('AtomIntrDashedSection', () => {
       stipple1: entry({ key: 'stipple1', type: 'real', value: -1 }),
     })
     const { container, unmount } = mountTree(
-      <AtomIntrDashedSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[1]}
+        rendererType="atomintr"
         entries={solid}
         onSet={vi.fn()}
         onSetMany={onSetMany}
@@ -380,7 +396,9 @@ describe('AtomIntrDashedSection', () => {
 
   it('renders nothing when no stipple property is present', () => {
     const { container, unmount } = mountTree(
-      <AtomIntrDashedSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[1]}
+        rendererType="atomintr"
         entries={[entry({ key: 'width', type: 'real', value: 0.1 })]}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -393,10 +411,12 @@ describe('AtomIntrDashedSection', () => {
   })
 })
 
-describe('AtomIntrTubeSection', () => {
+describe('the atomintr tube page', () => {
   it('disables detail and cap controls while mode is simple', () => {
     const { container, unmount } = mountTree(
-      <AtomIntrTubeSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[2]}
+        rendererType="atomintr"
         entries={fullEntries({
           mode: entry({ key: 'mode', type: 'enum', value: 'simple', enumdef: ['simple', 'fancy'] }),
         })}
@@ -419,7 +439,9 @@ describe('AtomIntrTubeSection', () => {
 
   it('enables detail and caps while fancy but keeps arrow size disabled without an arrow cap', () => {
     const { container, unmount } = mountTree(
-      <AtomIntrTubeSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[2]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -445,7 +467,9 @@ describe('AtomIntrTubeSection', () => {
   // accidentally pull in the exported labels.
   it('shows the local CAP_LABELS option text on Start/End cap', () => {
     const { container, unmount } = mountTree(
-      <AtomIntrTubeSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[2]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -475,7 +499,9 @@ describe('AtomIntrTubeSection', () => {
 
   it('enables arrow size once a cap is set to arrow', () => {
     const { container, unmount } = mountTree(
-      <AtomIntrTubeSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[2]}
+        rendererType="atomintr"
         entries={fullEntries({
           captype_end: entry({
             key: 'captype_end',
@@ -498,10 +524,12 @@ describe('AtomIntrTubeSection', () => {
   })
 })
 
-describe('AtomIntrLabelSection', () => {
+describe('the atomintr label page', () => {
   it('disables font controls while showlabel is off and enables them when on', () => {
     const off = mountTree(
-      <AtomIntrLabelSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[3]}
+        rendererType="atomintr"
         entries={fullEntries()}
         onSet={vi.fn()}
         onSetMany={vi.fn()}
@@ -520,7 +548,9 @@ describe('AtomIntrLabelSection', () => {
     off.unmount()
 
     const on = mountTree(
-      <AtomIntrLabelSection
+      <SchemaSection
+        section={ATOMINTR_SECTIONS[3]}
+        rendererType="atomintr"
         entries={fullEntries({
           showlabel: entry({ key: 'showlabel', type: 'boolean', value: true }),
         })}

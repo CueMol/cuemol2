@@ -29,6 +29,7 @@ import { TUBE_SECTIONS } from "./schema/tube";
 import { NUCL_SECTIONS } from "./schema/nucl";
 import { CARTOON_SECTIONS } from "./schema/cartoon";
 import { RIBBON_SECTIONS } from "./schema/ribbon";
+import { ATOMINTR_SECTIONS } from "./schema/atomintr";
 import type {
   GenericPropEntry,
   PropWriteOpts,
@@ -39,12 +40,6 @@ import {
   SceneBackgroundSection,
   SceneColorProofingSection,
 } from "./SceneRenderingSection";
-import {
-  AtomIntrMainSection,
-  AtomIntrDashedSection,
-  AtomIntrTubeSection,
-  AtomIntrLabelSection,
-} from "./AtomIntrRendererSection";
 import { ContourMainSection } from "./ContourRendererSection";
 import { IsosurfMainSection } from "./IsosurfRendererSection";
 
@@ -194,32 +189,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // The line / dashed-pattern / 3D-tube / label-font groupboxes become four
   // accordion sections; the dashed toggle writes all six stipple values in one
   // undo step via `onSetMany`.
-  atomintr: [
-    {
-      key: "atomintr-main",
-      title: "Interaction",
-      defaultExpanded: true,
-      Component: AtomIntrMainSection,
-    },
-    {
-      key: "atomintr-dashed",
-      title: "Dashed line",
-      defaultExpanded: true,
-      Component: AtomIntrDashedSection,
-    },
-    {
-      key: "atomintr-tube",
-      title: "3D tube",
-      defaultExpanded: true,
-      Component: AtomIntrTubeSection,
-    },
-    {
-      key: "atomintr-label",
-      title: "Value label",
-      defaultExpanded: true,
-      Component: AtomIntrLabelSection,
-    },
-  ],
+  atomintr: ATOMINTR_SECTIONS,
   // Ribbon2Renderer ("cartoon"): UXP cartoon-propdlg tabs. Only the flat
   // top-level properties are surfaced here; the per-section shape controls live
   // on nested sub-objects (TubeSection / JctTable) and remain in the Generic tab
