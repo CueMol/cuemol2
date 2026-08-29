@@ -27,8 +27,7 @@
  */
 
 import { and, eq, notOneOf, present } from './predicates'
-import { CAP_LABELS } from './labels'
-import { SECTION_TYPE_LABELS, SHARP_TYPES } from '../rowHelpers'
+import { CAP_LABELS, SECTION_TYPE_LABELS, SHARP_TYPES } from './labels'
 import type { Predicate, PropCtx, SchemaSectionDef } from './types'
 import type { PropMultiWrite } from '../rendererPropSections'
 
@@ -46,9 +45,6 @@ const PUTTY_TGT_LABELS: Record<string, string> = {
   bfac: 'B-factor',
   occ: 'Occupancy',
 }
-
-/** Section types whose corners expose a meaningful sharpness (UXP gate). */
-const SHARP_TYPE_LIST = [...SHARP_TYPES]
 
 // The cross-section is stored as `section.width` (the major-axis size in A)
 // and `section.tuber` (the minor/major ratio). The UI presents two independent
@@ -154,7 +150,7 @@ export function tubeSections(disabledWhen?: Predicate): SchemaSectionDef[] {
           label: 'Sharpness',
           // Only the square / fancy corners have a sharpness to speak of (UXP
           // updateDisabledState). A section with no type at all is left alone.
-          disabledWhen: and(present('section.type'), notOneOf('section.type', SHARP_TYPE_LIST)),
+          disabledWhen: and(present('section.type'), notOneOf('section.type', SHARP_TYPES)),
           min: 0,
           max: 1,
           step: 0.05,

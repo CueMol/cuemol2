@@ -19,10 +19,14 @@ import { AccordionSection } from './AccordionSection'
 import {
   AsyncSelectRow,
   BoolRow,
+  BoolSelectRow,
   ColorRow,
   DerivedNumRow,
   EnumRow,
   MappedEnumRow,
+  MultiEnumRow,
+  MultiNumInputRow,
+  MultiNumRow,
   NumInputRow,
   NumRow,
   OptionalNumRow,
@@ -32,7 +36,14 @@ import {
 } from './rows'
 import type { RendererPropSectionProps } from './rendererPropSections'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
-import { DRAFT_KINDS, makePropCtx, type PropCtx, type PropRowDef, type SchemaSectionDef } from './schema/types'
+import {
+  DRAFT_KINDS,
+  makePropCtx,
+  type MultiRowDef,
+  type PropCtx,
+  type PropRowDef,
+  type SchemaSectionDef,
+} from './schema/types'
 
 type SetFn = RendererPropSectionProps['onSet']
 type ResetFn = RendererPropSectionProps['onReset']
@@ -63,6 +74,11 @@ export interface SchemaSectionProps {
 }
 
 /** Render one row, or null when the renderer does not expose its property. */
+/** A row standing for several properties rather than one. */
+function isMultiRow(row: PropRowDef): row is MultiRowDef {
+  return 'keys' in row
+}
+
 function renderRow(
   row: PropRowDef,
   ctx: PropCtx,
@@ -70,15 +86,26 @@ function renderRow(
   onSet: SetFn,
   onSetMany: SetManyFn,
   onReset: ResetFn,
-): React.ReactElement | null {
+): React.ReactElement | React.ReactElement[] | null {
   if (row.visibleWhen && !row.visibleWhen(ctx)) return null
+  const disabled = sectionDisabled || (row.disabledWhen?.(ctx) ?? false)
+
+  // A group is not a row: it lends its gate to the rows inside it.
+  if (row.kind === 'group') {
+    return row.rows
+      .map((child) => renderRow(child, ctx, disabled, onSet, onSetMany, onReset))
+      .flat()
+      .filter((el): el is React.ReactElement => el !== null)
+  }
+
+  if (isMultiRow(row)) return renderMultiRow(row, ctx, disabled, onSet, onSetMany, onReset)
+
   const entry = ctx.get(row.key)
   if (!entry) return null
   // A derived row reads more than its own property and cannot be shown
   // without them (a tube's minor axis is meaningless with no ratio).
   if (row.kind === 'derivedNum' && row.needs.some((k) => ctx.get(k) === undefined))
     return null
-  const disabled = sectionDisabled || (row.disabledWhen?.(ctx) ?? false)
   // A control holding a draft has to be remounted when the property changes
   // underneath it, or it keeps showing what the user abandoned typing.
   const key = DRAFT_KINDS.has(row.kind) ? `${row.key}:${String(entry.value)}` : row.key
@@ -246,6 +273,20 @@ function renderRow(
         />
       )
 
+    case 'boolSelect':
+      return (
+        <BoolSelectRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          offOption={row.offOption}
+          onOption={row.onOption}
+          onSet={onSet}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
     case 'sel':
       return (
         <SelRow
@@ -278,6 +319,80 @@ function renderRow(
   }
 }
 
+/**
+ * One control standing for several properties. The row is dropped only when
+ * none of them exist, and the first one that does drives the display.
+ */
+function renderMultiRow(
+  row: MultiRowDef,
+  ctx: PropCtx,
+  disabled: boolean,
+  onSet: SetFn,
+  onSetMany: SetManyFn,
+  onReset: ResetFn,
+): React.ReactElement | null {
+  const targets = row.keys
+    .map((k) => ctx.get(k))
+    .filter((e): e is GenericPropEntry => e !== undefined)
+  if (targets.length === 0) return null
+  const key = DRAFT_KINDS.has(row.kind)
+    ? `${row.keys[0]}:${String(targets[0].value)}`
+    : row.keys[0]
+
+  switch (row.kind) {
+    case 'multiEnum':
+      return (
+        <MultiEnumRow
+          key={key}
+          label={row.label}
+          targets={targets}
+          labels={row.labels}
+          options={row.options}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'multiNum':
+      return (
+        <MultiNumRow
+          key={key}
+          label={row.label}
+          targets={targets}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          decimals={row.decimals}
+          unit={row.unit}
+          toDisplay={row.toDisplay}
+          toStored={row.toStored}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'multiNumInput':
+      return (
+        <MultiNumInputRow
+          key={key}
+          label={row.label}
+          targets={targets}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+  }
+}
+
 /** The rows of a section that survive absence and gating. */
 export function renderRows(
   section: SchemaSectionDef,
@@ -289,6 +404,7 @@ export function renderRows(
   const sectionDisabled = section.disabledWhen?.(ctx) ?? false
   return section.rows
     .map((row) => renderRow(row, ctx, sectionDisabled, onSet, onSetMany, onReset))
+    .flat()
     .filter((el): el is React.ReactElement => el !== null)
 }
 

@@ -33,11 +33,8 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import {
-  RibbonMainSection,
-  RibbonHelixSection,
-  RibbonCoilSection,
-} from '../components/inspector/RibbonRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { RIBBON_SECTIONS } from '../components/inspector/schema/ribbon'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
@@ -119,12 +116,15 @@ describe('Ribbon renderer section registry', () => {
     const sections = getRendererPropSections('ribbon')
     expect(sections.map((s) => s.title)).toEqual(['Ribbon', 'Helix', 'Sheet', 'Coil'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(componentOf(sections[0])).toBe(RibbonMainSection)
+    // A migrated page is rows as data, not a component.
+    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
+    expect(sections.map(componentOf)).toEqual(sections.map((s) => `schema:${s.key}`))
+    expect(sections).toBe(RIBBON_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.ribbon).toBe(sections)
   })
 })
 
-describe('RibbonMainSection', () => {
+describe('the ribbon main page', () => {
   function mainEntries(): GenericPropEntry[] {
     return [
       entry({ key: 'coil.detail', type: 'integer', value: 16 }),
@@ -141,7 +141,7 @@ describe('RibbonMainSection', () => {
 
   it('renders the common rows with a "(default)" pivot placeholder', () => {
     const { container, unmount } = mountTree(
-      <RibbonMainSection entries={mainEntries()} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[0]} rendererType="ribbon" entries={mainEntries()} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     for (const label of [
       'Section detail',
@@ -162,7 +162,7 @@ describe('RibbonMainSection', () => {
   it('writes coil/helix/sheet detail together when Section detail changes', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <RibbonMainSection entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[0]} rendererType="ribbon" entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
     )
     const input = rowByLabel(container, 'Section detail')!.querySelector('input') as HTMLInputElement
     act(() => typeInto(input, '10'))
@@ -178,7 +178,7 @@ describe('RibbonMainSection', () => {
   it('writes both start and end cap type from the single Cap type control', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <RibbonMainSection entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[0]} rendererType="ribbon" entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
     )
     changeSelect(selectInRow(container, 'Cap type')!, 'sphere')
     expect(onSetMany).toHaveBeenCalledWith([
@@ -189,7 +189,7 @@ describe('RibbonMainSection', () => {
   })
 })
 
-describe('RibbonHelixSection', () => {
+describe('the ribbon helix page', () => {
   function helixEntries(opts: { sectType?: string; useBack?: boolean; headType?: string } = {}): GenericPropEntry[] {
     return [
       sectEntry('helix.type', opts.sectType ?? 'elliptical'),
@@ -211,7 +211,7 @@ describe('RibbonHelixSection', () => {
   }
   const render = (opts = {}) =>
     mountTree(
-      <RibbonHelixSection entries={helixEntries(opts)} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[1]} rendererType="ribbon" entries={helixEntries(opts)} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
 
   it('renders the section, head and tail rows (and not the non-UXP base smooth/line width)', () => {
@@ -255,7 +255,7 @@ describe('RibbonHelixSection', () => {
   it('shows the inverted basw percentage for Head arrow height and commits it back', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <RibbonHelixSection entries={helixEntries({ headType: 'arrow' })} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[1]} rendererType="ribbon" entries={helixEntries({ headType: 'arrow' })} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
     )
     const row = rowByLabel(container, 'Head arrow height')!
     // basw 0.5 -> (1 - 0.5) * 100 = 50 %
@@ -274,10 +274,12 @@ describe('RibbonHelixSection', () => {
   })
 })
 
-describe('RibbonCoilSection', () => {
+describe('the ribbon coil page', () => {
   it('omits fancy1, colour and head/tail', () => {
     const { container, unmount } = mountTree(
-      <RibbonCoilSection
+      <SchemaSection
+        section={RIBBON_SECTIONS[3]}
+        rendererType="ribbon"
         entries={[
           entry({ key: 'coil.type', type: 'enum', value: 'elliptical', enumdef: ['elliptical', 'roundsquare', 'rectangle', 'fancy1'] }),
           entry({ key: 'coil.width', type: 'real', value: 0.25 }),

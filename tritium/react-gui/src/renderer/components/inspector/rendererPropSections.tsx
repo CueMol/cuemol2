@@ -27,6 +27,8 @@ import { SPLINE_SECTIONS } from "./schema/spline";
 import { DSURF2_SECTIONS, DSURFACE_SECTIONS } from "./schema/dsurface";
 import { TUBE_SECTIONS } from "./schema/tube";
 import { NUCL_SECTIONS } from "./schema/nucl";
+import { CARTOON_SECTIONS } from "./schema/cartoon";
+import { RIBBON_SECTIONS } from "./schema/ribbon";
 import type {
   GenericPropEntry,
   PropWriteOpts,
@@ -43,20 +45,8 @@ import {
   AtomIntrTubeSection,
   AtomIntrLabelSection,
 } from "./AtomIntrRendererSection";
-import {
-  CartoonMainSection,
-  CartoonHelixSection,
-  CartoonSheetSection,
-  CartoonCoilSection,
-} from "./CartoonRendererSection";
 import { ContourMainSection } from "./ContourRendererSection";
 import { IsosurfMainSection } from "./IsosurfRendererSection";
-import {
-  RibbonMainSection,
-  RibbonHelixSection,
-  RibbonSheetSection,
-  RibbonCoilSection,
-} from "./RibbonRendererSection";
 
 // ------------------------------------------------------------
 // Types
@@ -235,32 +225,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // on nested sub-objects (TubeSection / JctTable) and remain in the Generic tab
   // for now. Those nested props ARE editable (dot-path writes route through
   // setNestedProperty); wiring them onto this page is a follow-up, not a gap.
-  cartoon: [
-    {
-      key: "cartoon-main",
-      title: "Cartoon",
-      defaultExpanded: true,
-      Component: CartoonMainSection,
-    },
-    {
-      key: "cartoon-helix",
-      title: "Helix",
-      defaultExpanded: true,
-      Component: CartoonHelixSection,
-    },
-    {
-      key: "cartoon-sheet",
-      title: "Sheet",
-      defaultExpanded: true,
-      Component: CartoonSheetSection,
-    },
-    {
-      key: "cartoon-coil",
-      title: "Coil",
-      defaultExpanded: true,
-      Component: CartoonCoilSection,
-    },
-  ],
+  cartoon: CARTOON_SECTIONS,
   // MapMeshRenderer ("contour"): UXP contour-propdlg "Map" tab. One section
   // surfacing center-update mode, line width, buffer size, periodic boundary,
   // and the limit-display target / selection / distance. Coloring stays out
@@ -329,32 +294,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // RibbonRenderer ("ribbon"): UXP ribbon-propdlg Common/Helix/Sheet/Coil tabs.
   // Section shapes (TubeSection) and head/tail junctions (JctTable) are nested,
   // edited by dotted keys.
-  ribbon: [
-    {
-      key: "ribbon-main",
-      title: "Ribbon",
-      defaultExpanded: true,
-      Component: RibbonMainSection,
-    },
-    {
-      key: "ribbon-helix",
-      title: "Helix",
-      defaultExpanded: true,
-      Component: RibbonHelixSection,
-    },
-    {
-      key: "ribbon-sheet",
-      title: "Sheet",
-      defaultExpanded: true,
-      Component: RibbonSheetSection,
-    },
-    {
-      key: "ribbon-coil",
-      title: "Coil",
-      defaultExpanded: true,
-      Component: RibbonCoilSection,
-    },
-  ],
+  ribbon: RIBBON_SECTIONS,
   // NARenderer ("nucl"): extends TubeRenderer. UXP nucl-propdlg adds a
   // "Nucleic acid" tab on top of the shared tube-page (Tube / Section / Putty),
   // which are reused here. The reused tube sections are disabled when

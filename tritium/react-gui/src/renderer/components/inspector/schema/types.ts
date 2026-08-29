@@ -231,6 +231,88 @@ export interface AsyncSelectRowDef extends RowBase {
   emptyOption: 'none' | 'blank'
 }
 
+/**
+ * A boolean shown as a two-choice dropdown rather than a switch, for a flag
+ * that reads as a choice between two things (a cartoon helix is a Cylinder or
+ * a Ribbon) rather than as something being on.
+ */
+export interface BoolSelectRowDef extends RowBase {
+  kind: 'boolSelect'
+  offOption: { value: string; label: string }
+  onOption: { value: string; label: string }
+}
+
+/**
+ * What a row standing for SEVERAL properties has in common.
+ *
+ * Some controls in the UXP dialogs set more than one stored property: a
+ * ribbon's section detail sets all three sections, a cartoon helix's cap
+ * controls set head and tail together. `keys` lists them; the first one
+ * present drives the display, and the row is dropped only when none exist.
+ */
+interface MultiRowBase {
+  /** The properties this one control stands for, in write order. */
+  keys: string[]
+  label: string
+  visibleWhen?: Predicate
+  disabledWhen?: Predicate
+}
+
+/** Any row standing for several properties. */
+export type MultiRowDef = MultiEnumRowDef | MultiNumRowDef | MultiNumInputRowDef
+
+/** An enum dropdown written to every target (see `MultiRowBase`). */
+export interface MultiEnumRowDef extends MultiRowBase {
+  kind: 'multiEnum'
+  labels: Record<string, string>
+  options?: string[]
+}
+
+/**
+ * A drag-numeric row written to every target, optionally in a unit of its own.
+ *
+ * The transform covers a value the user does not think in: a junction's arrow
+ * height is stored as a base width and shown as a percentage. One target with
+ * a transform is the percentage row; several targets without one is the plain
+ * shared slider.
+ */
+export interface MultiNumRowDef extends MultiRowBase {
+  kind: 'multiNum'
+  min: number
+  max: number
+  step: number
+  decimals?: number
+  unit?: string
+  /** Stored value -> displayed value (default identity). */
+  toDisplay?: (stored: number) => number
+  /** Displayed value -> stored value (default identity). */
+  toStored?: (display: number) => number
+}
+
+/** A stepper written to every target (see `MultiRowBase`). */
+export interface MultiNumInputRowDef extends MultiRowBase {
+  kind: 'multiNumInput'
+  min: number
+  max: number
+  step: number
+}
+
+/**
+ * A set of rows sharing one gate.
+ *
+ * A page sometimes switches whole blocks rather than single rows -- the
+ * cartoon Helix page is a deck showing either the cylinder controls or the
+ * ribbon ones. Writing the same `visibleWhen` on a dozen rows would say the
+ * same thing a dozen times and let one of them drift. The group's gate is
+ * ANDed with each child's own.
+ */
+export interface GroupRowDef {
+  kind: 'group'
+  rows: PropRowDef[]
+  visibleWhen?: Predicate
+  disabledWhen?: Predicate
+}
+
 /** A row of a Properties page. */
 export type PropRowDef =
   | NumRowDef
@@ -242,6 +324,11 @@ export type PropRowDef =
   | NumInputRowDef
   | OptionalNumRowDef
   | DerivedNumRowDef
+  | BoolSelectRowDef
+  | MultiEnumRowDef
+  | MultiNumRowDef
+  | MultiNumInputRowDef
+  | GroupRowDef
   | TextRowDef
   | SelRowDef
   | AsyncSelectRowDef
@@ -256,6 +343,7 @@ export type PropRowDef =
  */
 export const DRAFT_KINDS: ReadonlySet<PropRowDef['kind']> = new Set([
   'numInput',
+  'multiNumInput',
   'text',
   'sel',
 ])
