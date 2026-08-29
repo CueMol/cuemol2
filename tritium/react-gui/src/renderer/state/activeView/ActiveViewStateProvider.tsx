@@ -1,7 +1,8 @@
 /**
  * @file state/activeView/ActiveViewStateProvider.tsx
  * @description The active view's menu-mirrored attributes (projection,
- * center mark, background colour) and the scene-exporter capability probe.
+ * center mark, background colour, colour proofing) and the scene-exporter
+ * capability probe.
  *
  * Owns `useActiveViewState` and `useSceneExportCaps` so that MenuBar, the
  * View pane and the command layer read the same cache instead of App
@@ -20,6 +21,8 @@ export interface ActiveViewValues {
   viewProjection: boolean | null
   viewCenterMark: ViewCenterMark | null
   sceneBgColor: SceneBgColor | null
+  /** Whether colour proofing is on for the scene; null when there is none. */
+  sceneColorProof: boolean | null
   /** Scene-exporter nicknames this build offers; null until probed. */
   exportAvailable: string[] | null
 }
@@ -28,6 +31,7 @@ export interface ActiveViewDispatch {
   onProjectionChanged: (perspective: boolean) => void
   onCenterMarkChanged: (centerMark: ViewCenterMark) => void
   onBgColorChanged: (bgColor: SceneBgColor) => void
+  onColorProofingChanged: (active: boolean) => void
 }
 
 const ValuesContext = createContext<ActiveViewValues | null>(null)
@@ -48,18 +52,18 @@ export function ActiveViewStateProvider({ children }: { children: React.ReactNod
   const { cm, cueMolReady } = useCueMol()
   const { activeMolViewId, activeSceneId } = useActiveScene()
   const {
-    viewProjection, viewCenterMark, sceneBgColor,
-    onProjectionChanged, onCenterMarkChanged, onBgColorChanged,
+    viewProjection, viewCenterMark, sceneBgColor, sceneColorProof,
+    onProjectionChanged, onCenterMarkChanged, onBgColorChanged, onColorProofingChanged,
   } = useActiveViewState({ cm, activeMolViewId, activeSceneId })
   const exportAvailable = useSceneExportCaps({ cm, cueMolReady })
 
   const values = useMemo<ActiveViewValues>(
-    () => ({ viewProjection, viewCenterMark, sceneBgColor, exportAvailable }),
-    [viewProjection, viewCenterMark, sceneBgColor, exportAvailable],
+    () => ({ viewProjection, viewCenterMark, sceneBgColor, sceneColorProof, exportAvailable }),
+    [viewProjection, viewCenterMark, sceneBgColor, sceneColorProof, exportAvailable],
   )
   const dispatch = useMemo<ActiveViewDispatch>(
-    () => ({ onProjectionChanged, onCenterMarkChanged, onBgColorChanged }),
-    [onProjectionChanged, onCenterMarkChanged, onBgColorChanged],
+    () => ({ onProjectionChanged, onCenterMarkChanged, onBgColorChanged, onColorProofingChanged }),
+    [onProjectionChanged, onCenterMarkChanged, onBgColorChanged, onColorProofingChanged],
   )
 
   return (

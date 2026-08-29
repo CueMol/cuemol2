@@ -24,9 +24,9 @@ import { SCENE_EXPORT_MENU_EXPORTERS } from './menuTemplate'
  * active. Kept here (shared) so main and renderer agree on the set.
  *
  * Excludes items already gated by their own state slice (background colour,
- * perspective / orthographic, center mark) and the not-yet-ported placeholders
- * (scene-props, color-proof, image-render, ...), whose disabled-ness is a
- * separate concern.
+ * colour proofing, perspective / orthographic, center mark) and the
+ * not-yet-ported placeholders (scene-props, image-render, ...), whose
+ * disabled-ness is a separate concern.
  */
 export const SCENE_REQUIRING_MENU_IDS: readonly string[] = [
     // File
@@ -79,6 +79,7 @@ export function mergeMenuState(
         viewProjection: update.viewProjection ?? current?.viewProjection,
         viewCenterMark: update.viewCenterMark ?? current?.viewCenterMark,
         sceneBgColor: update.sceneBgColor ?? current?.sceneBgColor,
+        sceneColorProof: update.sceneColorProof ?? current?.sceneColorProof,
         undo: update.undo ?? current?.undo,
         redo: update.redo ?? current?.redo,
         sceneOps: update.sceneOps ?? current?.sceneOps,
@@ -120,6 +121,15 @@ export function applyMenuStateTo(menu: MenuLike, state: MenuState): void {
                 item.enabled = enabled
                 item.checked = enabled && centerMark === value
             }
+        }
+    }
+
+    if (state.sceneColorProof) {
+        const { enabled, checked } = state.sceneColorProof
+        const item = menu.getMenuItemById('color-proof')
+        if (item) {
+            item.enabled = enabled
+            item.checked = enabled && checked
         }
     }
 

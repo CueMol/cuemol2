@@ -71,6 +71,13 @@ function LeafRow<T>({ node, onPick }: { node: MenuActionNode<T>; onPick: (a: T) 
       <span className="menu-item__check" aria-hidden>
         {isCheckable && checked ? <AppIcon name="ui.check" size="sm" aria-hidden /> : null}
       </span>
+      {node.swatch && (
+        <span
+          className="menu-item__swatch"
+          style={{ '--swatch-color': node.swatch } as React.CSSProperties}
+          aria-hidden
+        />
+      )}
       <span className="menu-item__label">{node.label}</span>
       {node.accelerator && <span className="menu-item__accel">{toDisplayAccel(node.accelerator)}</span>}
     </div>

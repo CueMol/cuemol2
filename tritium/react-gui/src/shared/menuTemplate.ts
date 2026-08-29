@@ -27,6 +27,12 @@ export interface AppMenuItem {
   type?: 'separator' | 'checkbox' | 'radio'
   checked?: boolean
   enabled?: boolean
+  /**
+   * Name of a colour swatch shown beside the label (drawn by
+   * main/menuSwatches.ts). Native menu only: the React menu bar has no icon
+   * slot and ignores it.
+   */
+  swatch?: string
   submenu?: AppMenuItem[]
   /** If true, only include in the native menu on macOS (React menu bar never shows these). */
   darwinOnly?: boolean
@@ -143,12 +149,12 @@ export const APP_MENU: AppMenuGroup[] = [
       {
         id: 'background', label: 'Background',
         submenu: [
-          { id: 'bg-white', label: 'White', type: 'radio', enabled: false, ipcChannel: IPC.MENU_BG_WHITE },
-          { id: 'bg-black', label: 'Black', type: 'radio', enabled: false, ipcChannel: IPC.MENU_BG_BLACK },
+          { id: 'bg-white', label: 'White', type: 'radio', enabled: false, swatch: 'white', ipcChannel: IPC.MENU_BG_WHITE },
+          { id: 'bg-black', label: 'Black', type: 'radio', enabled: false, swatch: 'black', ipcChannel: IPC.MENU_BG_BLACK },
         ],
       },
       { type: 'separator' },
-      { id: 'color-proof', label: 'Use color proofing', ipcChannel: IPC.MENU_COLOR_PROOF },
+      { id: 'color-proof', label: 'Use color proofing', type: 'checkbox', enabled: false, ipcChannel: IPC.MENU_COLOR_PROOF },
       { id: 'scene-props', label: 'Properties...', ipcChannel: IPC.MENU_SCENE_PROPS },
     ],
   },

@@ -30,7 +30,8 @@ export function useCommandRegistrations(): void {
   const { cm } = useCueMol();
   const { getActiveSceneInfo, getActiveTabId, closeTab, openSettingsTab, getActiveViewId } =
     useWorkspaceDispatch();
-  const { onProjectionChanged, onCenterMarkChanged, onBgColorChanged } = useActiveViewDispatch();
+  const { onProjectionChanged, onCenterMarkChanged, onBgColorChanged, onColorProofingChanged } =
+    useActiveViewDispatch();
   const { showView: showViewProperty, showScene: showSceneProperty } = useInspectorActions();
   // Shared "create scene + view + register tab" action (UXP onNewScene
   // equivalent); a scene FILE goes through its own action so a failed open
@@ -38,7 +39,10 @@ export function useCommandRegistrations(): void {
   const newScene = useNewSceneAction({ cm });
   const openSceneFile = useOpenSceneFileAction({ cm });
 
-  useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, showSceneProperty, newScene, openSceneFile });
+  useSceneCommands({
+    cm, getActiveSceneInfo, onBgColorChanged, onColorProofingChanged,
+    showSceneProperty, newScene, openSceneFile,
+  });
   useUiDialogCommands({ cm });
   useTabCommands({ closeTab, openSettingsTab, getActiveTabId });
   useNewTabCommand({ cm, getActiveSceneInfo, newScene });

@@ -23,6 +23,7 @@ const cm = vi.hoisted(() => ({
     if (name === 'getViewProjection') return { ok: true, perspective: false }
     if (name === 'getViewCenterMark') return { ok: true, centerMark: 'axis' }
     if (name === 'getSceneBgColor') return { ok: true, bgColor: 'black' }
+    if (name === 'getSceneColorProofing') return { ok: true, enabled: true }
     return { ok: true }
   }),
 }))
@@ -64,11 +65,15 @@ describe('ActiveViewStateProvider', () => {
   it('with no molview in front, every mirrored item is disabled', async () => {
     const { live, unmount } = mount()
     await flushPromises()
-    expect(live.v).toEqual({ viewProjection: null, viewCenterMark: null, sceneBgColor: null, exportAvailable: ['png', 'umbreon'] })
+    expect(live.v).toEqual({
+      viewProjection: null, viewCenterMark: null, sceneBgColor: null,
+      sceneColorProof: null, exportAvailable: ['png', 'umbreon'],
+    })
     expect(menuUpdates(api).at(-1)).toEqual({
       viewProjection: { enabled: false, perspective: null },
       viewCenterMark: { enabled: false, centerMark: null },
       sceneBgColor: { enabled: false, bgColor: null },
+      sceneColorProof: { enabled: false, checked: false },
       sceneOps: { enabled: false },
     })
     unmount()
@@ -82,11 +87,15 @@ describe('ActiveViewStateProvider', () => {
     await flushPromises()
     expect(cm.invokeService).toHaveBeenCalledWith('getViewProjection', { viewId: 7 })
     expect(cm.invokeService).toHaveBeenCalledWith('getSceneBgColor', { sceneId: 100 })
-    expect(live.v).toMatchObject({ viewProjection: false, viewCenterMark: 'axis', sceneBgColor: 'black' })
+    expect(live.v).toMatchObject({
+      viewProjection: false, viewCenterMark: 'axis', sceneBgColor: 'black',
+      sceneColorProof: true,
+    })
     expect(menuUpdates(api).at(-1)).toEqual({
       viewProjection: { enabled: true, perspective: false },
       viewCenterMark: { enabled: true, centerMark: 'axis' },
       sceneBgColor: { enabled: true, bgColor: 'black' },
+      sceneColorProof: { enabled: true, checked: true },
       sceneOps: { enabled: true },
     })
     unmount()
@@ -106,6 +115,11 @@ describe('ActiveViewStateProvider', () => {
 
     act(() => live.d.onBgColorChanged('white'))
     expect(menuUpdates(api).at(-1)).toEqual({ sceneBgColor: { enabled: true, bgColor: 'white' } })
+
+    // Colour proofing reports what actually happened: the worker leaves it
+    // off when no profile is configured, so the check follows its answer.
+    act(() => live.d.onColorProofingChanged(false))
+    expect(menuUpdates(api).at(-1)).toEqual({ sceneColorProof: { enabled: true, checked: false } })
     unmount()
   })
 })

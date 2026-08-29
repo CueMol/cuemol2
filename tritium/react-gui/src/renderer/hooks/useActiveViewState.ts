@@ -1,8 +1,9 @@
 /**
  * @file hooks/useActiveViewState.ts
- * @description Owns the renderer-side cache of three view-scoped properties
- * (`viewProjection`, `viewCenterMark`, `sceneBgColor`) for the currently
- * active molview tab, and keeps the native menu in sync via IPC.
+ * @description Owns the renderer-side cache of the view-scoped properties
+ * the native menu mirrors (`viewProjection`, `viewCenterMark`,
+ * `sceneBgColor`, `sceneColorProof`) for the currently active molview tab,
+ * and keeps that menu in sync via IPC.
  *
  * Update flow (one direction: write -> read-back -> cache):
  *   - Tab switch (`activeMolViewId` change): pull all three from worker.
@@ -30,9 +31,12 @@ export interface ActiveViewState {
   viewProjection: boolean | null;
   viewCenterMark: ViewCenterMark | null;
   sceneBgColor: SceneBgColor | null;
+  /** Whether colour proofing is active on the scene; null when there is none. */
+  sceneColorProof: boolean | null;
   onProjectionChanged: (perspective: boolean) => void;
   onCenterMarkChanged: (centerMark: ViewCenterMark) => void;
   onBgColorChanged: (bgColor: SceneBgColor) => void;
+  onColorProofingChanged: (active: boolean) => void;
 }
 
 export function useActiveViewState({
@@ -43,11 +47,13 @@ export function useActiveViewState({
   const [viewProjection, setViewProjection] = useState<boolean | null>(null);
   const [viewCenterMark, setViewCenterMark] = useState<ViewCenterMark | null>(null);
   const [sceneBgColor, setSceneBgColor] = useState<SceneBgColor | null>(null);
+  const [sceneColorProof, setSceneColorProof] = useState<boolean | null>(null);
 
   const syncNativeViewMenu = useCallback((state: {
     perspective?: boolean | null;
     centerMark?: ViewCenterMark | null;
     bgColor?: SceneBgColor | null;
+    colorProof?: boolean | null;
     /** Enable/disable scene-operation menu items (Save / Export / tools, ...). */
     sceneEnabled?: boolean;
   }) => {
@@ -60,6 +66,9 @@ export function useActiveViewState({
         : {}),
       ...(state.bgColor !== undefined
         ? { sceneBgColor: { enabled: state.bgColor !== null, bgColor: state.bgColor } }
+        : {}),
+      ...(state.colorProof !== undefined
+        ? { sceneColorProof: { enabled: state.colorProof !== null, checked: state.colorProof === true } }
         : {}),
       ...(state.sceneEnabled !== undefined
         ? { sceneOps: { enabled: state.sceneEnabled } }
@@ -84,6 +93,11 @@ export function useActiveViewState({
     syncNativeViewMenu({ bgColor });
   }, [syncNativeViewMenu]);
 
+  const onColorProofingChanged = useCallback((active: boolean) => {
+    setSceneColorProof(active);
+    syncNativeViewMenu({ colorProof: active });
+  }, [syncNativeViewMenu]);
+
   // Tab-switch fetch: when the active view (or its scene) changes, pull all
   // three values from the worker. `activeSceneId` is in the dep list so the
   // effect re-runs once it resolves on a tab switch (it can briefly lag
@@ -94,9 +108,13 @@ export function useActiveViewState({
       setViewProjection(null);
       setViewCenterMark(null);
       setSceneBgColor(null);
+      setSceneColorProof(null);
       // No active molview tab -> disable both the view-property items and the
       // scene-operation items (Save / Export / tools, ...).
-      syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null, sceneEnabled: false });
+      syncNativeViewMenu({
+        perspective: null, centerMark: null, bgColor: null, colorProof: null,
+        sceneEnabled: false,
+      });
       return;
     }
 
@@ -105,24 +123,31 @@ export function useActiveViewState({
       cm.invokeService('getViewProjection', { viewId: activeMolViewId }),
       cm.invokeService('getViewCenterMark', { viewId: activeMolViewId }),
       activeSceneId !== undefined ? cm.invokeService('getSceneBgColor', { sceneId: activeSceneId }) : Promise.resolve(null),
-    ]).then(([projectionResult, centerMarkResult, bgColorResult]) => {
+      activeSceneId !== undefined ? cm.invokeService('getSceneColorProofing', { sceneId: activeSceneId }) : Promise.resolve(null),
+    ]).then(([projectionResult, centerMarkResult, bgColorResult, colorProofResult]) => {
       if (cancelled) return;
       const perspective = projectionResult?.ok ? projectionResult.perspective : null;
       const centerMark = centerMarkResult?.ok ? centerMarkResult.centerMark : null;
       const bgColor = bgColorResult?.ok ? bgColorResult.bgColor : null;
+      const colorProof = colorProofResult?.ok ? colorProofResult.enabled : null;
       setViewProjection(perspective);
       setViewCenterMark(centerMark);
       setSceneBgColor(bgColor);
-      syncNativeViewMenu({ perspective, centerMark, bgColor, sceneEnabled: true });
+      setSceneColorProof(colorProof);
+      syncNativeViewMenu({ perspective, centerMark, bgColor, colorProof, sceneEnabled: true });
     }).catch((err: unknown) => {
       if (!cancelled) {
         console.warn('get view state failed:', err);
         setViewProjection(null);
         setViewCenterMark(null);
         setSceneBgColor(null);
+        setSceneColorProof(null);
         // A molview tab is still active (only the property fetch failed), so
         // scene-operation items stay enabled.
-        syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null, sceneEnabled: true });
+        syncNativeViewMenu({
+          perspective: null, centerMark: null, bgColor: null, colorProof: null,
+          sceneEnabled: true,
+        });
       }
     });
 
@@ -133,8 +158,10 @@ export function useActiveViewState({
     viewProjection,
     viewCenterMark,
     sceneBgColor,
+    sceneColorProof,
     onProjectionChanged,
     onCenterMarkChanged,
     onBgColorChanged,
+    onColorProofingChanged,
   };
 }

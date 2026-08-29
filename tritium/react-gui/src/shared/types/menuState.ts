@@ -23,6 +23,15 @@ export interface MenuState {
     enabled: boolean
     bgColor: SceneBgColor | null
   }
+  /**
+   * Scene > Use color proofing. `checked` reflects the scene's live flag,
+   * which is on only when a profile is actually configured (the worker
+   * reports the combination, not the raw `use_colproof`).
+   */
+  sceneColorProof?: {
+    enabled: boolean
+    checked: boolean
+  }
   undo?: {
     enabled: boolean
   }
