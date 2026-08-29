@@ -25,11 +25,7 @@ import { InspectorPanel } from "./components/panels/InspectorPanel";
 import { installSelectAllScope } from "./utils/selectAllScope";
 import { installClipboardScopeTracking } from './utils/editClipboard';
 
-import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useTextContextMenu } from "./hooks/useTextContextMenu";
-import { useInputDeviceStatus } from "./hooks/useInputDeviceStatus";
-import { useActiveTool } from "./hooks/useActiveTool";
-import { ActiveToolProvider } from "./contexts/ActiveToolContext";
 import { IconContext } from "@phosphor-icons/react";
 import { useSceneTree } from "./hooks/useSceneTree";
 import { useSceneTreeController } from "./hooks/useSceneTreeController";
@@ -37,45 +33,30 @@ import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderWindowBridge } from "./hooks/useRenderWindowBridge";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useActiveScene, useWorkspaceDispatch, useWorkspaceTabs } from "./state/workspace";
+import { useLayout, useLayoutDispatch } from "./state/layout";
+import { useActiveViewDispatch, useActiveViewValues } from "./state/activeView";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction, useOpenSceneFileAction } from "./hooks/useNewSceneAction";
-import { useActiveViewState } from "./hooks/useActiveViewState";
-import { useSceneExportCaps } from "./hooks/useSceneExportCaps";
-import { useUndoRedoState } from "./hooks/useUndoRedoState";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
-import { useRecentFiles } from "./hooks/useRecentFiles";
 import { useFileDrop } from "./hooks/useFileDrop";
 import { useShellOpenFiles } from "./hooks/useShellOpenFiles";
 import { FileDropOverlay } from "./components/FileDropOverlay";
-import { useCommands } from "./commands/CommandRegistry";
-import { CmdId } from "./commands/ids";
-import type { ViewCenterMark } from "@shared/types/menuState";
 import { IPC } from "@shared/ipcChannels";
-import { useCueMolBusy } from "./hooks/useCueMolBusy";
-import { useBusyCursor } from "./hooks/useBusyCursor";
 import { useRenderConfig } from "./contexts/RenderConfigContext";
 import { useWindowCloseHandler } from "./hooks/useWindowCloseHandler";
 import { useWindowTitleSync } from "./hooks/useWindowTitleSync";
 
 const App: React.FC = () => {
 
-  // --- Active tool state ---
-
-  const { activeTool, activeDef, setActiveTool } = useActiveTool();
-
-  // --- Persistent layout state ---
-
+  // --- Persistent layout state (state/layout) ---
+  // Sizes are read once, as loaded; a drag writes the store without a
+  // re-render. Only the flags the UI renders from are reactive.
+  const { loaded, inspectorOpen: persistedInspectorOpen, viewCollapsed, savedSizes } = useLayout();
   const {
-    layout,
-    loaded,
-    setMainSizes,
-    setRightPanelSizes,
-    setCenterSizes,
-    setInspectorOpen: persistInspectorOpen,
-    setViewSizes,
-    setViewCollapsed,
-    flushPendingSaves,
-  } = useLayoutPersistence();
+    setMainSizes, setRightPanelSizes, setCenterSizes,
+    setInspectorOpen: persistInspectorOpen, setViewSizes, setViewCollapsed, flushPendingSaves,
+  } = useLayoutDispatch();
+  const inspectorLayout = useMemo(() => ({ inspectorOpen: persistedInspectorOpen }), [persistedInspectorOpen]);
 
   // --- Activity-bar state ---
 
@@ -120,6 +101,9 @@ const App: React.FC = () => {
   } = useWorkspaceDispatch();
   const { tabs, activeTabId: activeTab, activeTab: activeTabData, molViewEntries } = useWorkspaceTabs();
   const { activeSceneId, activeMolViewId } = useActiveScene();
+  // Menu-mirrored view attributes and the exporter probe (state/activeView).
+  const { exportAvailable } = useActiveViewValues();
+  const { onProjectionChanged, onCenterMarkChanged, onBgColorChanged } = useActiveViewDispatch();
 
   // --- Domain hooks ---
 
@@ -143,7 +127,7 @@ const App: React.FC = () => {
     handleSetMany,
     handleResetMany,
   } = useInspectorState({
-    layout,
+    layout: inspectorLayout,
     loaded,
     persistInspectorOpen,
     cm,
@@ -202,10 +186,6 @@ const App: React.FC = () => {
   // Persistent render binary paths (POV-Ray / blendpng) from SettingsPane.
   // Attached to render jobs started via the Rendering-window bridge.
   const { binaries: renderBinaries } = useRenderConfig();
-
-  // --- CueMol core / tabs ---
-
-  const { dispatch: dispatchCommand } = useCommands();
 
   // Persist user-defined style defaults (atom labels, view-input scalars) to
   // the user style file when the window closes -- UXP `Qm2Main.onUnLoad`
@@ -275,10 +255,8 @@ const App: React.FC = () => {
     [molViewEntries],
   );
 
-  // --- Scene-exporter availability (hides Umbreon etc. on builds lacking it) ---
-  // Probed here (before useRenderWindowBridge) so the umbreon capability can be
-  // forwarded to the modeless render window, which has no worker of its own.
-  const exportAvailable = useSceneExportCaps({ cm, cueMolReady });
+  // Scene-exporter availability (probed by ActiveViewStateProvider); the
+  // umbreon capability is forwarded to the modeless render window.
   const umbreonAvailable = exportAvailable?.includes("umbreon") ?? false;
 
   useRenderWindowBridge({
@@ -303,33 +281,8 @@ const App: React.FC = () => {
   });
 
   // --- View-state cache for the active molview tab ---
-  const {
-    viewProjection,
-    viewCenterMark,
-    sceneBgColor,
-    onProjectionChanged,
-    onCenterMarkChanged,
-    onBgColorChanged,
-  } = useActiveViewState({ cm, activeMolViewId, activeSceneId });
 
-  // --- Undo/redo availability + history dropdown (owns CmdId.Undo/Redo) ---
-  const undoRedo = useUndoRedoState({ cm, activeSceneId });
 
-  // --- View pane (Projection section) writers ---
-  // Route through the existing view/scene commands so useActiveViewState (and
-  // the native menu) remain the single source of truth for these attributes.
-  const handleSetPerspective = useCallback((perspective: boolean) => {
-    dispatchCommand(perspective ? CmdId.ViewPerspective : CmdId.ViewOrthographic)
-      .catch((err: unknown) => console.warn("set perspective failed:", err));
-  }, [dispatchCommand]);
-
-  const handleSetCenterMark = useCallback((mark: ViewCenterMark) => {
-    const cmd =
-      mark === "crosshair" ? CmdId.ViewCenterMarkCross
-      : mark === "axis" ? CmdId.ViewCenterMarkAxis
-      : CmdId.ViewCenterMarkNone;
-    dispatchCommand(cmd).catch((err: unknown) => console.warn("set center mark failed:", err));
-  }, [dispatchCommand]);
 
   // --- All command handlers + Electron IPC bridge ---
   useCommandRegistrations({
@@ -349,22 +302,11 @@ const App: React.FC = () => {
     openSceneFile,
   });
 
-  const cueMolBusy = useCueMolBusy();
-
   // --- OS file drag-and-drop open (window-level, UXP dragdropopen parity) ---
   const { isDragActive } = useFileDrop({ cm });
 
   // --- OS shell / command-line file open (UXP openFromShell parity) ---
   useShellOpenFiles({ cm, cueMolReady, initialSceneSettled });
-
-  // Same flag also drives a global wait cursor, so the busy state is visible
-  // wherever the pointer is -- not only in the status bar.
-  useBusyCursor(cueMolBusy);
-
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  // Announce pointing-device switches (auto-detected or manual) in the status bar.
-  useInputDeviceStatus(setStatusMessage);
 
   // --- macOS traffic-light inset ---
 
@@ -390,21 +332,6 @@ const App: React.FC = () => {
   // --- OS window title follows the active scene (UXP setWindowTitle) ---
   useWindowTitleSync(tabs, activeTab);
 
-  // --- Derived sidebar sub-panel state ---
-
-  const viewSizes = layout.viewSizes ?? {
-    explorer: [220, 240, 260],
-    selection: [260, 180],
-  };
-  const viewCollapsed = layout.viewCollapsed ?? {
-    explorer: { scene: false, color: false, view: false },
-    selection: { mol: false, selection: false },
-  };
-
-  // --- Recent files (MRU) for the File > Open Recent submenu ---
-
-  const recentFiles = useRecentFiles();
-
   // --- Derived values ---
 
   const sidebarVisible = activeView !== null;
@@ -413,14 +340,14 @@ const App: React.FC = () => {
   // --- Render ---
 
   return (
-    <ActiveToolProvider activeTool={activeTool}>
+    <>
     {/* Phosphor icon defaults: inherit text color (theme-aware), regular weight. */}
     <IconContext.Provider value={{ color: "currentColor", weight: "regular" }}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} hasScene={activeMolViewId !== undefined} exportAvailable={exportAvailable} recentFiles={recentFiles} />
+        <MenuBar />
       )}
-      <Toolbar undoRedo={undoRedo} hasScene={activeMolViewId !== undefined} />
+      <Toolbar />
 
       <div className="main-layout">
         <div className="main-layout-inner">
@@ -436,8 +363,8 @@ const App: React.FC = () => {
               <Allotment
                 onChange={handleMainSizesChange}
                 defaultSizes={
-                  layout.mainSizes && layout.mainSizes.length > 0
-                    ? layout.mainSizes
+                  savedSizes.mainSizes.length > 0
+                    ? savedSizes.mainSizes
                     : undefined
                 }
               >
@@ -453,12 +380,8 @@ const App: React.FC = () => {
                     cm={cm}
                     activeSceneId={activeSceneId}
                     activeMolViewId={activeMolViewId}
-                    viewProjection={viewProjection}
-                    viewCenterMark={viewCenterMark}
-                    onSetPerspective={handleSetPerspective}
-                    onSetCenterMark={handleSetCenterMark}
                     {...sceneController}
-                    viewSizes={viewSizes}
+                    viewSizes={savedSizes.viewSizes}
                     viewCollapsed={viewCollapsed}
                     onViewSizesChange={setViewSizes}
                     onViewCollapsedChange={setViewCollapsed}
@@ -470,8 +393,8 @@ const App: React.FC = () => {
                   <Allotment
                     onChange={handleRightPanelSizesChange}
                     defaultSizes={
-                      layout.rightPanelSizes && layout.rightPanelSizes.length > 0
-                        ? layout.rightPanelSizes
+                      savedSizes.rightPanelSizes.length > 0
+                        ? savedSizes.rightPanelSizes
                         : undefined
                     }
                   >
@@ -481,8 +404,8 @@ const App: React.FC = () => {
                         vertical
                         onChange={setCenterSizes}
                         defaultSizes={
-                          layout.centerSizes && layout.centerSizes.length > 0
-                            ? layout.centerSizes
+                          savedSizes.centerSizes.length > 0
+                            ? savedSizes.centerSizes
                             : undefined
                         }
                       >
@@ -493,9 +416,6 @@ const App: React.FC = () => {
                             onSelectTab={activateTab}
                             onCloseTab={closeTab}
                             onReorderTabs={reorderTabs}
-                            activeTool={activeTool}
-                            onSelectTool={setActiveTool}
-                            onStatusMessage={setStatusMessage}
                           />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
@@ -566,18 +486,12 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <StatusBar
-        activeToolLabel={activeDef.label}
-        activeToolShortcut={activeDef.shortcut}
-        activeToolIcon={activeDef.icon}
-        busy={cueMolBusy}
-        statusMessage={statusMessage}
-      />
+      <StatusBar />
 
       {isDragActive && <FileDropOverlay />}
     </div>
     </IconContext.Provider>
-    </ActiveToolProvider>
+    </>
   );
 };
 

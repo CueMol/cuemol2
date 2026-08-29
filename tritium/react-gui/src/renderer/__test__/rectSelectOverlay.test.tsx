@@ -17,7 +17,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { ActiveToolProvider } from '../contexts/ActiveToolContext'
 import { RectSelectOverlay } from '../components/RectSelectOverlay'
 import { GES_PINCH } from '../worker/shared/gestureAxes'
 import type { ToolId } from '../data/viewportTools'
@@ -38,6 +37,12 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
         cm: { invokeService, onMouseEvent, onWheelEvent, onGestureEvent },
     }),
 }))
+// The active tool is owned by its context; the test sets it per mount.
+const currentTool = vi.hoisted(() => ({ id: 'navigate' as string }))
+vi.mock('../contexts/ActiveToolContext', () => ({
+    useActiveToolContext: () => currentTool.id,
+    useSetActiveTool: () => () => undefined,
+}))
 vi.mock('../state/workspace', () => ({
     // The active view as the workspace reports it (undefined = no molview).
     useActiveScene: () => ({
@@ -51,14 +56,13 @@ let root: Root
 let container: HTMLDivElement
 
 function mount(tool: ToolId): HTMLDivElement {
+    currentTool.id = tool
     container = document.createElement('div')
     document.body.appendChild(container)
     act(() => {
         root = createRoot(container)
         root.render(
-            <ActiveToolProvider activeTool={tool}>
-                <RectSelectOverlay />
-            </ActiveToolProvider>,
+            <RectSelectOverlay />,
         )
     })
     return container.querySelector('.rectsel-overlay') as HTMLDivElement

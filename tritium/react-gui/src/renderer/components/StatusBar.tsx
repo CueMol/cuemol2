@@ -1,22 +1,19 @@
 import React from "react";
 import { AppIcon } from "./AppIcon";
-import type { AppIconKey } from "../data/appIcons";
+import { useActiveToolDef } from '../contexts/ActiveToolContext';
+import { useStatusMessage } from '../state/statusMessage';
+import { useCueMolBusy } from '../hooks/useCueMolBusy';
+import { useBusyCursor } from '../hooks/useBusyCursor';
 
-interface StatusBarProps {
-  activeToolLabel?: string;
-  activeToolShortcut?: string;
-  activeToolIcon?: AppIconKey;
-  busy?: boolean;
-  statusMessage?: string | null;
-}
-
-export const StatusBar: React.FC<StatusBarProps> = ({
-  activeToolLabel,
-  activeToolShortcut,
-  activeToolIcon,
-  busy,
-  statusMessage,
-}) => {
+export const StatusBar: React.FC = () => {
+  // Everything shown here is read from its owner; App passes nothing in.
+  const activeDef = useActiveToolDef();
+  const statusMessage = useStatusMessage();
+  const busy = useCueMolBusy();
+  // The same flag drives a global wait cursor, so the busy state is visible
+  // wherever the pointer is -- not only here.
+  useBusyCursor(busy);
+  const { label: activeToolLabel, shortcut: activeToolShortcut, icon: activeToolIcon } = activeDef;
   return (
     <div className="status-bar">
       <div className="status-left">

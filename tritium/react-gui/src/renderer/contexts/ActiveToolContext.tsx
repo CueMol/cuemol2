@@ -1,22 +1,46 @@
+/**
+ * @file contexts/ActiveToolContext.tsx
+ * @description The active viewport tool, owned here rather than by App.
+ *
+ * Three contexts so a subscriber pays only for what it reads: the tool id
+ * (click handlers, the tool palette), its definition (the status bar), and
+ * the setter (the palette; stable, never re-renders). The keyboard
+ * shortcuts are part of `useActiveTool`, which the provider calls.
+ */
+
 import React, { createContext, useContext } from 'react';
-import type { ToolId } from '../data/viewportTools';
+import type { ToolId, ToolDef } from '../data/viewportTools';
+import { TOOL_BY_ID } from '../data/viewportTools';
+import { useActiveTool } from '../hooks/useActiveTool';
 
-const ActiveToolContext = createContext<ToolId>('navigate');
+const IdContext = createContext<ToolId>('navigate');
+const DefContext = createContext<ToolDef>(TOOL_BY_ID.navigate);
+const SetContext = createContext<((id: ToolId) => void) | null>(null);
 
-export function ActiveToolProvider({
-    children,
-    activeTool,
-}: {
-    children: React.ReactNode;
-    activeTool: ToolId;
-}): React.JSX.Element {
+export function ActiveToolProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
+    const { activeTool, activeDef, setActiveTool } = useActiveTool();
     return (
-        <ActiveToolContext.Provider value={activeTool}>
-            {children}
-        </ActiveToolContext.Provider>
+        <SetContext.Provider value={setActiveTool}>
+            <DefContext.Provider value={activeDef}>
+                <IdContext.Provider value={activeTool}>{children}</IdContext.Provider>
+            </DefContext.Provider>
+        </SetContext.Provider>
     );
 }
 
+/** The active tool's id. */
 export function useActiveToolContext(): ToolId {
-    return useContext(ActiveToolContext);
+    return useContext(IdContext);
+}
+
+/** The active tool's definition (label, shortcut, icon). */
+export function useActiveToolDef(): ToolDef {
+    return useContext(DefContext);
+}
+
+/** Stable setter for the active tool. */
+export function useSetActiveTool(): (id: ToolId) => void {
+    const v = useContext(SetContext);
+    if (v === null) throw new Error('useSetActiveTool must be used inside ActiveToolProvider');
+    return v;
 }

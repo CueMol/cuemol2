@@ -20,8 +20,25 @@ vi.mock('../commands/CommandRegistry', () => ({
   useCommands: () => ({ dispatch, register: vi.fn(), has: vi.fn() }),
 }))
 
+// Toolbar reads undo/redo state and the active scene from their providers.
+const toolbarState = vi.hoisted(() => ({
+  undoRedo: null as unknown,
+  hasScene: true,
+}))
+vi.mock('../state/undoRedo', () => ({ useUndoRedo: () => toolbarState.undoRedo }))
+vi.mock('../state/workspace', () => ({
+  useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: toolbarState.hasScene }),
+}))
+
 import { Toolbar } from '../components/Toolbar'
 import type { UndoRedoState } from '../hooks/useUndoRedoState'
+
+/** Mount the toolbar over the given provider state. */
+function mountToolbar(undoRedo: UndoRedoState, hasScene = true) {
+  toolbarState.undoRedo = undoRedo
+  toolbarState.hasScene = hasScene
+  return mountTree(<Toolbar />)
+}
 
 void React
 
@@ -61,7 +78,7 @@ describe('Toolbar', () => {
   })
 
   it('real buttons dispatch their CmdId', () => {
-    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
+    const t = mountToolbar(makeUndoRedo(), true)
     const cases: [string, CmdId][] = [
       ['New Tab', CmdId.TabNew],
       ['Open File', CmdId.UiOpenObjDialog],
@@ -80,7 +97,7 @@ describe('Toolbar', () => {
   })
 
   it('Undo / Redo body buttons dispatch edit commands when enabled', () => {
-    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
+    const t = mountToolbar(makeUndoRedo(), true)
 
     clickButton(t.container, 'Undo')
     expect(dispatch).toHaveBeenCalledWith(CmdId.Undo)
@@ -93,9 +110,7 @@ describe('Toolbar', () => {
   })
 
   it('disables the Undo / Redo body buttons when nothing can be undone/redone', () => {
-    const t = mountTree(
-      <Toolbar undoRedo={makeUndoRedo({ canUndo: false, canRedo: false, undoDescs: [], redoDescs: [] })} hasScene={true} />,
-    )
+    const t = mountToolbar(makeUndoRedo({ canUndo: false, canRedo: false, undoDescs: [], redoDescs: [] }), true)
     const undoBtn = Array.from(t.container.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Undo',
     )
@@ -112,7 +127,7 @@ describe('Toolbar', () => {
     // logged a warning. UXP has no such button -- its ribbon offers Save As
     // and Save Scene only, and there is no object overwrite-save anywhere in
     // its File menu either -- so it was removed rather than implemented.
-    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
+    const t = mountToolbar(makeUndoRedo(), true)
     const labels = Array.from(t.container.querySelectorAll('button')).map((b) =>
       b.textContent?.trim(),
     )
@@ -130,7 +145,7 @@ describe('Toolbar', () => {
     )
 
   it('disables scene-only buttons when no molview tab is active', () => {
-    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={false} />)
+    const t = mountToolbar(makeUndoRedo(), false)
     for (const text of ['Save As', 'Reload Scene', 'Save Scene', 'Render']) {
       expect(findButton(t.container, text)?.disabled).toBe(true)
     }
@@ -142,7 +157,7 @@ describe('Toolbar', () => {
   })
 
   it('enables scene-only buttons when a molview tab is active', () => {
-    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
+    const t = mountToolbar(makeUndoRedo(), true)
     for (const text of ['Save As', 'Reload Scene', 'Save Scene', 'Render']) {
       expect(findButton(t.container, text)?.disabled).toBe(false)
     }

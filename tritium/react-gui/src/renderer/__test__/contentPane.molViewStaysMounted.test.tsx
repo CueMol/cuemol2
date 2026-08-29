@@ -38,6 +38,11 @@ vi.mock('../hooks/useBondEditClickHandler', () => ({ useBondEditClickHandler: ()
 vi.mock('../hooks/useNaviContextMenu', () => ({
   useNaviContextMenu: () => ({ openContextMenu: () => undefined }),
 }))
+vi.mock('../contexts/ActiveToolContext', () => ({
+  useActiveToolContext: () => 'navigate',
+  useSetActiveTool: () => () => undefined,
+}))
+vi.mock('../state/statusMessage', () => ({ useSetStatusMessage: () => () => undefined }))
 
 import { ContentPane } from '../components/panes/ContentPane'
 
@@ -45,7 +50,7 @@ const molTab: TabData = { id: 'molview-10', title: 'A:0', icon: 'file.molview', 
 const settingsTab: TabData = { id: '__settings__', title: 'Settings', icon: 'file.settings', type: 'settings' }
 
 function render(tabs: TabData[], active: TabData | undefined) {
-  return <ContentPane tabs={tabs} activeTab={active} activeTool="navigate" onSelectTool={() => undefined} />
+  return <ContentPane tabs={tabs} activeTab={active} />
 }
 
 describe('ContentPane keeps MolViewPane mounted', () => {

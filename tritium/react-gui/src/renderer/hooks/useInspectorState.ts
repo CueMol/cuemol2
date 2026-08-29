@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import type { LayoutState } from "./useLayoutPersistence";
+import type { LayoutState } from "@shared/types/layout";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { SceneTreeNode } from "../worker/shared/sceneTreeTypes";
 import type {

@@ -8,8 +8,8 @@
  *   4. a RotX step commits a RELATIVE rotation via rotateView (delta from 0)
  *   5. a TraX step applies a RELATIVE camera-pan via translateView (UXP wheel
  *      parity), not an absolute setViewXform center
- *   6. the Projection controls write through the threaded callbacks (which the
- *      app routes to the existing view/scene commands -- single source of truth)
+ *   6. the Projection controls dispatch the existing view commands (single
+ *      source of truth: the same handlers the View menu uses)
  */
 
 import React from 'react'
@@ -26,6 +26,18 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
+
+// The pane reads the mirrored view state and writes through the command
+// registry; both are provider-owned, so stand them in here.
+const viewState = vi.hoisted(() => ({
+    viewProjection: false as boolean | null,
+    viewCenterMark: 'crosshair' as 'crosshair' | 'axis' | 'none' | null,
+    sceneBgColor: null,
+    exportAvailable: [] as string[],
+}))
+const dispatch = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+vi.mock('../state/activeView', () => ({ useActiveViewValues: () => viewState }))
+vi.mock('../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }))
 
 import { ViewPane } from '../components/panes/ViewPane'
 import { mountTree, flushPromises, pressStepArrow } from './helpers/testHarness'
@@ -56,10 +68,6 @@ function makeProps(cm: ReturnType<typeof makeCm>) {
         activeSceneId: 100,
         activeMolViewId: 7,
         collapsed: false,
-        viewProjection: false as boolean | null,
-        viewCenterMark: 'crosshair' as const,
-        onSetPerspective: vi.fn(),
-        onSetCenterMark: vi.fn(),
     }
 }
 
@@ -84,6 +92,7 @@ describe('ViewPane', () => {
     let view: { container: HTMLElement; unmount(): void }
 
     beforeEach(async () => {
+        dispatch.mockClear()
         cm = makeCm()
         props = makeProps(cm)
         view = mountTree(<ViewPane {...props} />)
@@ -135,13 +144,13 @@ describe('ViewPane', () => {
         )
     })
 
-    it('routes Perspective toggle through the threaded callback', () => {
+    it('routes the Perspective toggle to the view.perspective command', () => {
         const sw = view.container.querySelector('.h3-form-switch input') as HTMLInputElement
         act(() => sw.click())
-        expect(props.onSetPerspective).toHaveBeenCalledWith(true)
+        expect(dispatch).toHaveBeenCalledWith('view.perspective')
     })
 
-    it('routes the Center mark select through the threaded callback', () => {
+    it('routes the Center mark select to the matching view.centerMark command', () => {
         const cmSel = view.container.querySelector(
             'select[aria-label="Center mark"]',
         ) as HTMLSelectElement
@@ -149,7 +158,7 @@ describe('ViewPane', () => {
             cmSel.value = 'axis'
             cmSel.dispatchEvent(new Event('change', { bubbles: true }))
         })
-        expect(props.onSetCenterMark).toHaveBeenCalledWith('axis')
+        expect(dispatch).toHaveBeenCalledWith('view.centerMark.axis')
     })
 
     it('does not surface a Background control (Scene property, not View)', () => {

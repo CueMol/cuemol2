@@ -16,7 +16,6 @@
 
 import React, { useCallback, useRef, useState } from "react";
 import type { TabData } from "../../types";
-import type { ToolId } from "../../data/viewportTools";
 import { WelcomePane } from "./WelcomePane";
 import { SettingsPane } from "./SettingsPane";
 import { MolViewPane } from "./MolViewPane";
@@ -26,6 +25,8 @@ import { useNaviClickHandler } from "../../hooks/useNaviClickHandler";
 import { useMeasureClickHandler } from "../../hooks/useMeasureClickHandler";
 import { useBondEditClickHandler } from "../../hooks/useBondEditClickHandler";
 import { useNaviContextMenu } from "../../hooks/useNaviContextMenu";
+import { useActiveToolContext, useSetActiveTool } from "../../contexts/ActiveToolContext";
+import { useSetStatusMessage } from "../../state/statusMessage";
 import type { HitTestResult } from "../../types";
 
 // ---------------------------------------------
@@ -37,12 +38,6 @@ interface ContentPaneProps {
   tabs: TabData[];
   /** The currently active tab, or `undefined` if no tab is selected. */
   activeTab: TabData | undefined;
-  /** Currently active viewport tool. */
-  activeTool: ToolId;
-  /** Callback to change the active viewport tool. */
-  onSelectTool: (id: ToolId) => void;
-  /** Callback to push atom/pick status messages to the app status bar. */
-  onStatusMessage?: (msg: string | null) => void;
 }
 
 // ---------------------------------------------
@@ -63,10 +58,11 @@ const renderContent = (tab: TabData | undefined): React.ReactNode => {
 export const ContentPane: React.FC<ContentPaneProps> = ({
   tabs,
   activeTab,
-  activeTool,
-  onSelectTool,
-  onStatusMessage,
 }) => {
+  // The tool and the status line are read from their owners, not passed in.
+  const activeTool = useActiveToolContext();
+  const onSelectTool = useSetActiveTool();
+  const onStatusMessage = useSetStatusMessage();
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
   // The molview canvas is visible -- and thus the viewport tools apply -- only
   // when a molview tab is active, never on Settings or the empty state.

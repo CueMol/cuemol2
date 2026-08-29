@@ -30,7 +30,6 @@
 
 import React from "react";
 import type { TabData } from "../types";
-import type { ToolId } from "../data/viewportTools";
 import { useTabDragDrop } from "../hooks/useTabDragDrop";
 import { TabBar } from "./TabBar";
 import { ContentPane } from "./panes/ContentPane";
@@ -52,9 +51,6 @@ interface ContentAreaProps {
    * @param insertAfter - `true` when dropped on the right half of the target.
    */
   onReorderTabs?: (fromId: string, toId: string, insertAfter: boolean) => void;
-  activeTool: ToolId;
-  onSelectTool: (id: ToolId) => void;
-  onStatusMessage?: (msg: string | null) => void;
 }
 
 // ------------------------------------------------------------
@@ -67,9 +63,6 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   onSelectTab,
   onCloseTab,
   onReorderTabs,
-  activeTool,
-  onSelectTool,
-  onStatusMessage,
 }) => {
   const active = tabs.find((t) => t.id === activeTab);
 
@@ -91,9 +84,6 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
       <ContentPane
         tabs={tabs}
         activeTab={active}
-        activeTool={activeTool}
-        onSelectTool={onSelectTool}
-        onStatusMessage={onStatusMessage}
       />
     </div>
   );

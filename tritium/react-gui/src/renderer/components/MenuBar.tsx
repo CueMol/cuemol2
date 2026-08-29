@@ -15,27 +15,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import appIcon from '../assets/app-icon.png'
 import { APP_MENU } from '@shared/menuTemplate'
 import type { AppMenuRole } from '@shared/menuTemplate'
-import type { RecentFileEntry } from '@shared/types/recent'
-import type { SceneBgColor, ViewCenterMark } from '@shared/types/menuState'
 import { IPC } from '@shared/ipcChannels'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
+import { useRecentFiles } from '../hooks/useRecentFiles'
+import { useActiveViewValues } from '../state/activeView'
+import { useActiveScene } from '../state/workspace'
 import { MenuPanel } from './menu/MenuPanel'
 import { resolveAppMenuNodes } from './menu/resolveAppMenu'
 import type { MenuBarPick } from './menu/resolveAppMenu'
-
-interface MenuBarProps {
-  viewProjection?: boolean | null
-  viewCenterMark?: ViewCenterMark | null
-  sceneBgColor?: SceneBgColor | null
-  /** Whether a molview tab is active; gates scene-operation items. */
-  hasScene?: boolean
-  /**
-   * Scene-exporter nicknames available in this libcuemol2 build; export items
-   * whose exporter is absent are hidden. `null` = unknown (show all).
-   */
-  exportAvailable?: string[] | null
-  recentFiles?: RecentFileEntry[]
-}
 
 
 /**
@@ -43,7 +30,11 @@ interface MenuBarProps {
  * plus the click-away / Escape close handlers, and renders each non-darwin
  * `APP_MENU` group as a `MenuPanel` dropdown.
  */
-export const MenuBar: React.FC<MenuBarProps> = ({ viewProjection = null, viewCenterMark = null, sceneBgColor = null, hasScene = false, exportAvailable = null, recentFiles = [] }) => {
+export const MenuBar: React.FC = () => {
+  // Menu state comes from the providers the menu mirrors, not from App.
+  const { viewProjection, viewCenterMark, sceneBgColor, exportAvailable } = useActiveViewValues()
+  const { hasScene } = useActiveScene()
+  const recentFiles = useRecentFiles()
   const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })

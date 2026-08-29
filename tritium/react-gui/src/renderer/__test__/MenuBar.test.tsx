@@ -9,6 +9,25 @@ import { CmdId } from '../commands/ids'
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
+const menuState = vi.hoisted(() => ({
+  viewProjection: null as boolean | null,
+  viewCenterMark: null as string | null,
+  recentFiles: [] as unknown[],
+  hasScene: false,
+}))
+vi.mock('../state/activeView', () => ({
+  useActiveViewValues: () => ({
+    viewProjection: menuState.viewProjection,
+    viewCenterMark: menuState.viewCenterMark,
+    sceneBgColor: null,
+    exportAvailable: null,
+  }),
+}))
+vi.mock('../state/workspace', () => ({
+  useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: menuState.hasScene }),
+}))
+vi.mock('../hooks/useRecentFiles', () => ({ useRecentFiles: () => menuState.recentFiles }))
+
 // Must import after mocks
 const { MenuBar } = await import('../components/MenuBar')
 const { CommandProvider, useCommands } = await import('../commands/CommandRegistry')
@@ -39,6 +58,11 @@ function render(
   unmount: () => void
   commands: ReturnType<typeof useCommands>
 } {
+  // MenuBar reads these from the providers; the mocks below serve them.
+  menuState.viewProjection = viewProjection
+  menuState.viewCenterMark = viewCenterMark
+  menuState.recentFiles = recentFiles
+  menuState.hasScene = hasScene
   const container = document.createElement('div')
   document.body.appendChild(container)
   let root!: Root
@@ -56,7 +80,7 @@ function render(
         CommandProvider,
         null,
         React.createElement(Probe),
-        React.createElement(MenuBar, { viewProjection, viewCenterMark, recentFiles, hasScene }),
+        React.createElement(MenuBar),
       ),
     )
   })

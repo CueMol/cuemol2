@@ -52,7 +52,7 @@ import { AppIcon } from "../AppIcon";
 import type { AppIconKey } from "../../data/appIcons";
 
 import type { ActivityView } from "../ActivityBar";
-import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
+import type { PaneCollapseState } from "@shared/types/layout";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 
 import type { MoveSceneNodeArgs } from "../panes/sceneTreeDnd";
@@ -68,7 +68,6 @@ import {
   CatalogPane2,
   CatalogPane3,
 } from "../panes";
-import type { ViewCenterMark } from "@shared/types/menuState";
 
 import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
@@ -124,14 +123,6 @@ interface SidePanelProps {
   activeSceneId: number | undefined;
   /** Active mol-view UID for the focused molview tab. */
   activeMolViewId: number | undefined;
-
-  /* --- View pane (Projection section) attributes ---
-   * Current values are owned by `useActiveViewState`; writes go through the
-   * existing view/scene commands so that hook stays the single source of truth. */
-  viewProjection: boolean | null;
-  viewCenterMark: ViewCenterMark | null;
-  onSetPerspective: (perspective: boolean) => void;
-  onSetCenterMark: (mark: ViewCenterMark) => void;
 
   /* Scene / Explorer props */
   sceneTree: SceneTreeNode | null;
@@ -218,10 +209,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   cm,
   activeSceneId,
   activeMolViewId,
-  viewProjection,
-  viewCenterMark,
-  onSetPerspective,
-  onSetCenterMark,
   sceneTree,
   sceneSelected,
   sceneSelectedIds,
@@ -328,10 +315,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             cm={cm}
             activeSceneId={activeSceneId}
             activeMolViewId={activeMolViewId}
-            viewProjection={viewProjection}
-            viewCenterMark={viewCenterMark}
-            onSetPerspective={onSetPerspective}
-            onSetCenterMark={onSetCenterMark}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
@@ -431,8 +414,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     ] } : {}),
   }), [
     cm, activeSceneId, activeMolViewId,
-    viewProjection, viewCenterMark,
-    onSetPerspective, onSetCenterMark,
     sceneTree, sceneSelected, sceneSelectedIds,
     onSceneSelect, onSceneToggleSelect, onSceneSelectRange,
     onToggleVisibility, onShowProperty,

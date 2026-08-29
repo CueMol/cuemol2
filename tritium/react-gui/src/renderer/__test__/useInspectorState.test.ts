@@ -11,7 +11,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { flushPromises } from './helpers/testHarness';
 import { useInspectorState } from '../hooks/useInspectorState';
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes';
-import type { LayoutState } from '../hooks/useLayoutPersistence';
+import type { LayoutState } from '@shared/types/layout';
 
 // Minimal scene tree: scene(uid `sceneId`) -> renderer(uid `rendId`).
 function makeTree(sceneId: number, rendId: number): SceneTreeNode {

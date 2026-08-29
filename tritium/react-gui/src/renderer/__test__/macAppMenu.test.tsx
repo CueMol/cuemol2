@@ -27,6 +27,12 @@ import { APP_MENU } from '@shared/menuTemplate'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
+// MenuBar reads its state from the providers; stub them at rest.
+vi.mock('../state/activeView', () => ({
+  useActiveViewValues: () => ({ viewProjection: null, viewCenterMark: null, sceneBgColor: null, exportAvailable: null }),
+}))
+vi.mock('../state/workspace', () => ({ useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: false }) }))
+vi.mock('../hooks/useRecentFiles', () => ({ useRecentFiles: () => [] }))
 
 // Must import after mocks
 const { MenuBar } = await import('../components/MenuBar')
@@ -54,11 +60,7 @@ function render(): { container: HTMLElement; root: Root; unmount: () => void } {
       React.createElement(
         CommandProvider,
         null,
-        React.createElement(MenuBar, {
-          viewProjection: null,
-          viewCenterMark: null,
-          recentFiles: [],
-        }),
+        React.createElement(MenuBar),
       ),
     )
   })
