@@ -313,6 +313,7 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
   onSet,
   onReset,
   sceneId,
+  molId,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
 
@@ -381,6 +382,7 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
           onSet={onSet}
           onReset={onReset}
           sceneId={sceneId}
+          molId={molId}
         />
       )}
       {anchorWeight && (

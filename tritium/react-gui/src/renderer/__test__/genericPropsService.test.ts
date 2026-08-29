@@ -268,3 +268,85 @@ describe('setGenericProp', () => {
     expect(withUndoTxnSpy).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * `getGenericProps` also reports which molecule the node's selection
+ * properties are about, so the picker can count the atoms an expression
+ * matches. A molecular renderer answers with its client object; a surface or
+ * map renderer is attached to something else and names its reference molecule
+ * in a property instead.
+ */
+describe('getGenericProps - selection-context molecule', () => {
+  const mol = { getClassName: () => 'MolCoord', uid: 7 }
+
+  /** A scene holding `mol` under `molName`, plus whatever else is named. */
+  function sceneWith(byName: Record<string, unknown>) {
+    return { uid: 42, getObjectByName: (n: string) => byName[n] ?? null }
+  }
+
+  function read(nodeType: 'renderer' | 'object' | 'scene' = 'renderer') {
+    return services.getGenericProps(ctx, { sceneId: 1, nodeId: 2, nodeType } as never)
+  }
+
+  it('answers with the client object of a molecular renderer', () => {
+    ;(resolvePropTarget as Mock).mockReturnValue({
+      scene: sceneWith({}),
+      target: { getPropsJSON: () => '[]', getClientObj: () => mol },
+    })
+    expect(read().molId).toBe(7)
+  })
+
+  it('falls back to the molecule a surface renderer names in `target`', () => {
+    ;(resolvePropTarget as Mock).mockReturnValue({
+      scene: sceneWith({ mol1: mol }),
+      target: {
+        getPropsJSON: () => '[]',
+        getClientObj: () => ({ getClassName: () => 'MolSurfObj', uid: 9 }),
+        target: 'mol1',
+      },
+    })
+    expect(read().molId).toBe(7)
+  })
+
+  it('falls back to the boundary molecule of a map renderer', () => {
+    ;(resolvePropTarget as Mock).mockReturnValue({
+      scene: sceneWith({ mol1: mol }),
+      target: {
+        getPropsJSON: () => '[]',
+        getClientObj: () => ({ getClassName: () => 'DensityMap', uid: 9 }),
+        bndry_molname: 'mol1',
+      },
+    })
+    expect(read().molId).toBe(7)
+  })
+
+  it('reports no molecule when the named one is gone, rather than a wrong uid', () => {
+    ;(resolvePropTarget as Mock).mockReturnValue({
+      scene: sceneWith({}),
+      target: {
+        getPropsJSON: () => '[]',
+        getClientObj: () => ({ getClassName: () => 'MolSurfObj', uid: 9 }),
+        target: 'deleted',
+      },
+    })
+    expect(read().molId).toBeUndefined()
+  })
+
+  it('an Object node answers for itself, and only when it is a molecule', () => {
+    ;(resolvePropTarget as Mock).mockReturnValue({ scene: sceneWith({}), target: { ...mol, getPropsJSON: () => '[]' } })
+    expect(read('object').molId).toBe(7)
+    ;(resolvePropTarget as Mock).mockReturnValue({
+      scene: sceneWith({}),
+      target: { getClassName: () => 'DensityMap', uid: 9, getPropsJSON: () => '[]' },
+    })
+    expect(read('object').molId).toBeUndefined()
+  })
+
+  it('has no molecule for a Scene node', () => {
+    ;(resolvePropTarget as Mock).mockReturnValue({
+      scene: sceneWith({}),
+      target: { getPropsJSON: () => '[]', name: 'scene1' },
+    })
+    expect(read('scene').molId).toBeUndefined()
+  })
+})

@@ -500,6 +500,12 @@ export const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, onReset
 
 export interface SelRowProps extends RowProps {
   sceneId: number | undefined;
+  /**
+   * The molecule the expression is evaluated against. Drives the picker's
+   * matched-atom count and its keyword suggestions; omit when the inspected
+   * node has no molecule and the count is simply not shown.
+   */
+  molId?: number;
   disabled?: boolean;
 }
 
@@ -516,6 +522,7 @@ export const SelRow: React.FC<SelRowProps> = ({
   onSet,
   onReset,
   sceneId,
+  molId,
   disabled,
 }) => {
   const [draft, setDraft] = useState(String(entry.value));
@@ -523,6 +530,7 @@ export const SelRow: React.FC<SelRowProps> = ({
     <PropertyField label={label} {...resetProps(entry, onReset)}>
       <MolSelList
         sceneID={sceneId ?? 0}
+        molID={molId}
         selectedSel={draft}
         onSelectedSelChange={setDraft}
         onCommit={(v) => {
@@ -608,6 +616,7 @@ export const RendererCommonSection: React.FC<RendererCommonSectionProps> = ({
   onSet,
   onReset,
   sceneId,
+  molId,
   rendererType,
 }) => {
   const byKey = new Map<string, GenericPropEntry>();
@@ -653,6 +662,7 @@ export const RendererCommonSection: React.FC<RendererCommonSectionProps> = ({
               onSet={onSet}
               onReset={onReset}
               sceneId={sceneId}
+              molId={molId}
             />
           )}
           {visible && (

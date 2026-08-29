@@ -56,7 +56,14 @@ const InspectorPanelComponent: React.FC = () => {
   // The target and its property data come from the inspector provider; the
   // writers are identity-stable, so a property change re-renders only what
   // reads the entries.
-  const { target, category: targetCategory, header, entries: genericEntries, loading: genericLoading } = useInspector();
+  const {
+    target,
+    category: targetCategory,
+    header,
+    entries: genericEntries,
+    molId: selContextMolId,
+    loading: genericLoading,
+  } = useInspector();
   const {
     setProp: onGenericSet,
     setMany: onGenericSetMany,
@@ -189,6 +196,7 @@ const InspectorPanelComponent: React.FC = () => {
                 onReset={onGenericReset}
                 sceneId={sceneId}
                 nodeId={nodeId}
+                molId={selContextMolId}
               />
             ) : (
               <GenericTab

@@ -21,12 +21,14 @@ import { SIMPLE_SECTIONS, TRACE_SECTIONS } from "./schema/simple";
 import { ANISOU_SECTIONS } from "./schema/anisou";
 import { BALLSTICK_SECTIONS } from "./schema/ballstick";
 import { CPK_SECTIONS } from "./schema/cpk";
+import { DISORDER_SECTIONS } from "./schema/disorder";
+import { MOLSURF_SECTIONS } from "./schema/molsurf";
+import { SPLINE_SECTIONS } from "./schema/spline";
 import { DSURF2_SECTIONS, DSURFACE_SECTIONS } from "./schema/dsurface";
 import type {
   GenericPropEntry,
   PropWriteOpts,
 } from '@renderer/worker/shared/genericProps';
-import { SplineMainSection } from "./SplineRendererSection";
 import {
   SceneAmbientOcclusionSection,
   SceneAntialiasingSection,
@@ -47,8 +49,6 @@ import {
 } from "./CartoonRendererSection";
 import { ContourMainSection } from "./ContourRendererSection";
 import { IsosurfMainSection } from "./IsosurfRendererSection";
-import { MolSurfMainSection } from "./MolSurfRendererSection";
-import { DisoMainSection } from "./DisoRendererSection";
 import {
   TubeMainSection,
   TubeSectionSection,
@@ -112,6 +112,12 @@ export interface RendererPropSectionProps {
    * always supplies it in production.
    */
   nodeId?: number;
+  /**
+   * UID of the molecule the node's selection properties are evaluated against
+   * (resolved worker-side). Selection rows pass it to the picker so it can
+   * count matched atoms; undefined when the node has no molecule.
+   */
+  molId?: number;
 }
 
 /**
@@ -193,14 +199,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // SplineRenderer ("spline"): no dedicated UXP dialog; curated from the C++
   // SplineRenderer.qif. A single section (no nested cross-section / putty), the
   // tube cap-type props are omitted (non-functional on a line).
-  spline: [
-    {
-      key: "spline",
-      title: "Spline",
-      defaultExpanded: true,
-      Component: SplineMainSection,
-    },
-  ],
+  spline: SPLINE_SECTIONS,
   // BallStickRenderer ("ballstick"): UXP ballstick-propdlg "Ball & Stick" tab.
   ballstick: BALLSTICK_SECTIONS,
   // CPKRenderer ("cpk"): UXP cpk-propdlg "Atom radii" tab. The seven per-element
@@ -312,14 +311,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // DisoRenderer ("disorder"): UXP disorder-propdlg "Disorder" tab. One section
   // surfacing the target main-chain renderer, tessellation detail, dot size /
   // separation, the two loop strengths and the default color.
-  disorder: [
-    {
-      key: "disorder-main",
-      title: "Disorder",
-      defaultExpanded: true,
-      Component: DisoMainSection,
-    },
-  ],
+  disorder: DISORDER_SECTIONS,
   // DirectSurfRenderer ("dsurface"): UXP dsurf-propdlg "MolSurf" + "Atom radii"
   // tabs. The MolSurf "Draw" groupbox (draw mode / line-point size / surface
   // type / detail) becomes the "Surface" section; the per-element van der Waals
@@ -337,14 +329,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // drawing mode, line/point size (off for fill), reference-molecule target and
   // shown selection. Coloring (colormode + the colors that go with it) is owned
   // by the Coloring panel (ColorPane), same as isosurf and dsurface.
-  molsurf: [
-    {
-      key: "molsurf-main",
-      title: "MolSurf",
-      defaultExpanded: true,
-      Component: MolSurfMainSection,
-    },
-  ],
+  molsurf: MOLSURF_SECTIONS,
   // TubeRenderer ("tube"): UXP tube-propdlg "Tube" tab. The loose controls form
   // the "Tube" section; the nested TubeSection shape (edited via dot-path keys
   // section.type / section.width / ...) forms the "Section" section; the putty

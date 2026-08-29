@@ -16,10 +16,21 @@
 
 import React from 'react'
 import { AccordionSection } from './AccordionSection'
-import { BoolRow, ColorRow, MappedEnumRow, NumRow, SliderRow } from './RendererCommonSection'
+import {
+  BoolRow,
+  ColorRow,
+  MappedEnumRow,
+  NumInputRow,
+  NumRow,
+  SelRow,
+  SliderRow,
+  TextRow,
+} from './RendererCommonSection'
+import { AsyncSelectRow } from './rows/AsyncSelectRow'
+import { OptionalNumRow } from './rows/OptionalNumRow'
 import type { RendererPropSectionProps } from './rendererPropSections'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
-import { makePropCtx, type PropCtx, type PropRowDef, type SchemaSectionDef } from './schema/types'
+import { DRAFT_KINDS, makePropCtx, type PropCtx, type PropRowDef, type SchemaSectionDef } from './schema/types'
 
 type SetFn = RendererPropSectionProps['onSet']
 type ResetFn = RendererPropSectionProps['onReset']
@@ -30,6 +41,12 @@ export interface SchemaSectionProps {
   rendererType: string
   sceneId: number | undefined
   nodeId: number | undefined
+  /**
+   * Molecule the section's selection rows count their atoms against. Optional
+   * because only a page with a `sel` row needs it; `PropertiesTab` always
+   * supplies it in production.
+   */
+  molId?: number
   onSet: SetFn
   onReset: ResetFn
 }
@@ -46,12 +63,15 @@ function renderRow(
   const entry = ctx.get(row.key)
   if (!entry) return null
   const disabled = sectionDisabled || (row.disabledWhen?.(ctx) ?? false)
+  // A control holding a draft has to be remounted when the property changes
+  // underneath it, or it keeps showing what the user abandoned typing.
+  const key = DRAFT_KINDS.has(row.kind) ? `${row.key}:${String(entry.value)}` : row.key
 
   switch (row.kind) {
     case 'num':
       return (
         <NumRow
-          key={row.key}
+          key={key}
           entry={entry}
           label={row.label}
           onSet={onSet}
@@ -71,7 +91,7 @@ function renderRow(
     case 'mappedEnum':
       return (
         <MappedEnumRow
-          key={row.key}
+          key={key}
           entry={entry}
           label={row.label}
           onSet={onSet}
@@ -85,7 +105,7 @@ function renderRow(
     case 'slider':
       return (
         <SliderRow
-          key={row.key}
+          key={key}
           entry={entry}
           label={row.label}
           onSet={onSet}
@@ -101,7 +121,7 @@ function renderRow(
     case 'bool':
       return (
         <BoolRow
-          key={row.key}
+          key={key}
           entry={entry}
           label={row.label}
           onSet={onSet}
@@ -113,11 +133,93 @@ function renderRow(
     case 'color':
       return (
         <ColorRow
-          key={row.key}
+          key={key}
           entry={entry}
           label={row.label}
           onSet={onSet}
           onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'numInput':
+      return (
+        <NumInputRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          unit={row.unit}
+          disabled={disabled}
+        />
+      )
+
+    case 'text':
+      return (
+        <TextRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          placeholder={row.placeholder}
+          disabled={disabled}
+        />
+      )
+
+    case 'optionalNum':
+      return (
+        <OptionalNumRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          gateLabel={row.gateLabel}
+          onSet={onSet}
+          onReset={onReset}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          fineSnap={row.fineSnap}
+          coarseSnap={row.coarseSnap}
+          unit={row.unit}
+          decimals={row.decimals}
+          realtime={row.realtime}
+          offValue={row.offValue}
+          onValue={row.onValue}
+          disabled={disabled}
+        />
+      )
+
+    case 'sel':
+      return (
+        <SelRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          sceneId={ctx.sceneId}
+          molId={ctx.molId}
+          disabled={disabled}
+        />
+      )
+
+    case 'asyncSelect':
+      return (
+        <AsyncSelectRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          source={row.source}
+          emptyOption={row.emptyOption}
+          sceneId={ctx.sceneId}
+          nodeId={ctx.nodeId}
           disabled={disabled}
         />
       )
@@ -150,10 +252,11 @@ export const SchemaSection: React.FC<SchemaSectionProps> = ({
   rendererType,
   sceneId,
   nodeId,
+  molId,
   onSet,
   onReset,
 }) => {
-  const ctx = makePropCtx(entries, rendererType, sceneId, nodeId)
+  const ctx = makePropCtx(entries, rendererType, sceneId, nodeId, molId)
   if (section.visibleWhen && !section.visibleWhen(ctx)) return null
   const rows = renderRows(section, ctx, onSet, onReset)
   if (section.hideWhenEmpty && rows.length === 0) return null

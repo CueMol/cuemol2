@@ -147,7 +147,7 @@ describe('makePropCtx', () => {
   it('reads properties by key, and reports an absent one as undefined', () => {
     const ctx = makePropCtx(
       [entry({ key: 'width', value: 1.5 }), entry({ key: 'on', type: 'boolean', value: true })],
-      'tube', 7, 42,
+      'tube', 7, 42, 3,
     )
     expect(ctx.value('width')).toBe(1.5)
     expect(ctx.value('on')).toBe(true)

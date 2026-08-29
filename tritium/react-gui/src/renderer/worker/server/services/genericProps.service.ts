@@ -7,6 +7,7 @@
 
 import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
+import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { resolvePropTarget } from './helpers/resolvePropTarget';
@@ -45,6 +46,13 @@ export interface GetGenericPropsResult {
     displayName: string;
     /** Type label shown in the inspector header (renderer type / class name). */
     typeLabel: string;
+    /**
+     * UID of the molecule this node's selection properties are evaluated
+     * against, when there is one. The selection picker counts matched atoms
+     * against it; without it the field still edits the expression but shows no
+     * hit count. See {@link resolveSelContextMol}.
+     */
+    molId?: number;
 }
 
 
@@ -162,6 +170,66 @@ function typeLabelOf(target: BaseWrapper, nodeType: PropTargetType): string {
     return (safeRead(() => rec.className) as string | undefined) ?? 'Object';
 }
 
+/**
+ * Property names that hold the NAME of a molecule a non-molecular renderer
+ * evaluates its selection against, in the order they are consulted: the
+ * surface renderer's reference molecule, then a map renderer's display-limit
+ * boundary molecule.
+ */
+const MOL_NAME_PROPS = ['target', 'bndry_molname'];
+
+/** True for MolCoord and the subclasses the object lists treat as molecules. */
+function isMoleculeClass(className: string): boolean {
+    return (
+        className === 'MolCoord' || className === 'Trajectory' || className.endsWith('Mol')
+    );
+}
+
+/** `obj`'s uid when it is a molecule, else undefined. */
+function molUidOf(obj: unknown): number | undefined {
+    if (!obj) return undefined;
+    const rec = obj as { getClassName?: () => string; uid?: number };
+    const className = safeRead(() => rec.getClassName?.() ?? '') ?? '';
+    if (!isMoleculeClass(className)) return undefined;
+    const uid = safeRead(() => rec.uid);
+    return typeof uid === 'number' ? uid : undefined;
+}
+
+/**
+ * The molecule a node's selection properties are about.
+ *
+ * A molecular renderer is attached to its molecule, so its client object is
+ * the answer. A surface or map renderer is attached to something else and
+ * names its reference molecule in a string property instead, so fall back to
+ * resolving that name in the scene. An Object node answers for itself.
+ *
+ * Returns undefined when the node has no molecule (a density map, a scene, a
+ * renderer whose named target has since been deleted); the selection picker
+ * then simply has no atom count to show.
+ */
+function resolveSelContextMol(
+    scene: Scene | null,
+    target: BaseWrapper,
+    nodeType: PropTargetType,
+): number | undefined {
+    if (nodeType === 'object') return molUidOf(target);
+    if (nodeType !== 'renderer' && nodeType !== 'rendGroup') return undefined;
+
+    const client = safeRead(() => (target as unknown as Renderer).getClientObj());
+    const clientMol = molUidOf(client);
+    if (clientMol !== undefined) return clientMol;
+
+    if (!scene) return undefined;
+    const rec = target as unknown as Record<string, unknown>;
+    for (const propName of MOL_NAME_PROPS) {
+        const name = safeRead(() => rec[propName]);
+        if (typeof name !== 'string' || name === '') continue;
+        const uid = molUidOf(safeRead(() => scene.getObjectByName(name)));
+        if (uid !== undefined) return uid;
+    }
+    return undefined;
+}
+
 // --- getGenericProps ---
 
 function getGenericProps(
@@ -174,7 +242,7 @@ function getGenericProps(
         displayName: '',
         typeLabel: '',
     };
-    const { target } = resolvePropTarget(ctx, args);
+    const { scene, target } = resolvePropTarget(ctx, args);
     if (!target) return empty;
 
     const entries = safeRead(() => collectProps(target)) ?? [];
@@ -191,6 +259,7 @@ function getGenericProps(
         entries,
         displayName,
         typeLabel: typeLabelOf(target, args.nodeType),
+        molId: resolveSelContextMol(scene, target, args.nodeType),
     };
 }
 

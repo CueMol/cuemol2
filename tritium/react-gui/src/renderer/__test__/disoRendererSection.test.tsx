@@ -12,7 +12,10 @@
  *     arrows) and commits a single-step integer `onSet`;
  *   - a drag-numeric row (Dot size) commits a plain single step (no realtime opts);
  *   - the Target selector always offers "(none)" and keeps the current value
- *     selectable even when no sibling-renderer names are available.
+ *     selectable even when no sibling-renderer names are available;
+ *   - "Loop size 2" is gated by a checkbox because C++ reads a non-positive
+ *     value as "fall back to Loop size": off leaves the field inert, ticking
+ *     it writes a usable size, and unticking writes the -1 sentinel back.
  */
 
 import React from 'react'
@@ -41,7 +44,8 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import { DisoMainSection } from '../components/inspector/DisoRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { DISORDER_SECTIONS } from '../components/inspector/schema/disorder'
 import {
 
   getRendererPropSections,
@@ -97,14 +101,14 @@ function dragArrow(row: HTMLElement): HTMLButtonElement | null {
   return row.querySelector('.h3-form-drag-arrow-right') as HTMLButtonElement | null
 }
 
-function disoEntries(): GenericPropEntry[] {
+function disoEntries(over?: { loopsize2?: number }): GenericPropEntry[] {
   return [
     entry({ key: 'target', type: 'string', value: 'tube1' }),
     entry({ key: 'detail', type: 'integer', value: 5 }),
     entry({ key: 'width', type: 'real', value: 0.3 }),
     entry({ key: 'dotsep', type: 'real', value: 1.0 }),
     entry({ key: 'loopsize', type: 'real', value: 2.0 }),
-    entry({ key: 'loopsize2', type: 'real', value: -1.0 }),
+    entry({ key: 'loopsize2', type: 'real', value: over?.loopsize2 ?? -1.0 }),
     entry({ key: 'defaultcolor', type: 'object<AbstractColor>', value: '#ffffff' }),
   ]
 }
@@ -114,20 +118,24 @@ describe('Disorder renderer section registry', () => {
     const sections = getRendererPropSections('disorder')
     expect(sections.map((s) => s.title)).toEqual(['Disorder'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(componentOf(sections[0])).toBe(DisoMainSection)
+    // A migrated page is rows as data, not a component.
+    expect(isComponentSection(sections[0])).toBe(false)
+    expect(componentOf(sections[0])).toBe(`schema:${sections[0].key}`)
     expect(RENDERER_SECTION_REGISTRY.disorder).toBe(sections)
   })
 })
 
-describe('DisoMainSection', () => {
+describe('the disorder page', () => {
   it('renders the curated rows when present', () => {
     const { container, unmount } = mountTree(
-      <DisoMainSection
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
         entries={disoEntries()}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
+        rendererType="disorder"
         sceneId={1}
         nodeId={2}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
       />,
     )
     expect(rowByLabel(container, 'Target')).not.toBeNull()
@@ -142,12 +150,14 @@ describe('DisoMainSection', () => {
 
   it('omits a row when its property is absent', () => {
     const { container, unmount } = mountTree(
-      <DisoMainSection
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
         entries={[entry({ key: 'detail', type: 'integer', value: 5 })]}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
+        rendererType="disorder"
         sceneId={1}
         nodeId={2}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
       />,
     )
     expect(rowByLabel(container, 'Detail')).not.toBeNull()
@@ -158,12 +168,14 @@ describe('DisoMainSection', () => {
 
   it('renders Detail as a stepper NumericField (no slider, no drag arrows)', () => {
     const { container, unmount } = mountTree(
-      <DisoMainSection
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
         entries={disoEntries()}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
+        rendererType="disorder"
         sceneId={1}
         nodeId={2}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
       />,
     )
     const detail = rowByLabel(container, 'Detail')!
@@ -176,12 +188,14 @@ describe('DisoMainSection', () => {
   it('commits Detail as a single-step integer on Enter', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <DisoMainSection
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
         entries={disoEntries()}
-        onSet={onSet}
-        onReset={vi.fn()}
+        rendererType="disorder"
         sceneId={1}
         nodeId={2}
+        onSet={onSet}
+        onReset={vi.fn()}
       />,
     )
     const input = rowByLabel(container, 'Detail')!.querySelector('input') as HTMLInputElement
@@ -196,12 +210,14 @@ describe('DisoMainSection', () => {
   it('commits a drag-numeric row as a plain single step (Dot size)', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <DisoMainSection
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
         entries={disoEntries()}
-        onSet={onSet}
-        onReset={vi.fn()}
+        rendererType="disorder"
         sceneId={1}
         nodeId={2}
+        onSet={onSet}
+        onReset={vi.fn()}
       />,
     )
     const incr = dragArrow(rowByLabel(container, 'Dot size')!)!
@@ -214,12 +230,14 @@ describe('DisoMainSection', () => {
   it('offers "(none)" and keeps the current Target value selectable', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <DisoMainSection
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
         entries={disoEntries()}
-        onSet={onSet}
-        onReset={vi.fn()}
+        rendererType="disorder"
         sceneId={1}
         nodeId={2}
+        onSet={onSet}
+        onReset={vi.fn()}
       />,
     )
     const select = rowByLabel(container, 'Target')!.querySelector('select') as HTMLSelectElement
@@ -236,6 +254,70 @@ describe('DisoMainSection', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
     expect(onSet).toHaveBeenCalledWith('target', 'string', '')
+    unmount()
+  })
+  it('leaves Loop size 2 inert while its checkbox is off, and turns it on with a usable size', () => {
+    const onSet = vi.fn()
+    const { container, unmount } = mountTree(
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
+        entries={disoEntries()}
+        rendererType="disorder"
+        sceneId={1}
+        nodeId={2}
+        onSet={onSet}
+        onReset={vi.fn()}
+      />,
+    )
+    const row = rowByLabel(container, 'Loop size 2')!
+    const gate = row.querySelector('input[type="checkbox"]') as HTMLInputElement
+    expect(gate.checked).toBe(false)
+    // The value half is dead while off, so a step writes nothing.
+    expect(row.querySelector('.h3-form-drag-disabled')).not.toBeNull()
+    pressStepArrow(dragArrow(row)!)
+    expect(onSet).not.toHaveBeenCalled()
+    // Ticking it writes a positive size, never the sentinel.
+    act(() => gate.click())
+    expect(onSet).toHaveBeenCalledWith('loopsize2', 'real', 2)
+    unmount()
+  })
+
+  it('unticking Loop size 2 writes the -1 sentinel, and reticking restores the last size', () => {
+    const onSet = vi.fn()
+    const { container, rerender, unmount } = mountTree(
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
+        entries={disoEntries({ loopsize2: 1.5 })}
+        rendererType="disorder"
+        sceneId={1}
+        nodeId={2}
+        onSet={onSet}
+        onReset={vi.fn()}
+      />,
+    )
+    const gate = () =>
+      rowByLabel(container, 'Loop size 2')!.querySelector('input[type="checkbox"]') as HTMLInputElement
+    expect(gate().checked).toBe(true)
+    act(() => gate().click())
+    expect(onSet).toHaveBeenCalledWith('loopsize2', 'real', -1)
+
+    // The worker write comes back as a new entry list; the row now reads off.
+    rerender(
+      <SchemaSection
+        section={DISORDER_SECTIONS[0]}
+        entries={disoEntries()}
+        rendererType="disorder"
+        sceneId={1}
+        nodeId={2}
+        onSet={onSet}
+        onReset={vi.fn()}
+      />,
+    )
+    expect(gate().checked).toBe(false)
+    onSet.mockClear()
+    act(() => gate().click())
+    // 1.5 is what it was before, not the 2 fallback.
+    expect(onSet).toHaveBeenCalledWith('loopsize2', 'real', 1.5)
     unmount()
   })
 })

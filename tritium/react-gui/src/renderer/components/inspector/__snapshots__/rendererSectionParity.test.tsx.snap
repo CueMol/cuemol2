@@ -1281,7 +1281,7 @@ exports[`renderer Properties page > disorder / default 1`] = `
       "Dot size [drag-numeric] {resettable}",
       "Dot separation [drag-numeric] {resettable}",
       "Loop size [drag-numeric] {resettable}",
-      "Loop size 2 [drag-numeric] {resettable}",
+      "Loop size 2 [gated-drag-numeric] {resettable,disabled} gate=off",
       "Color [color] {resettable} value="#FFFFFF"",
     ],
     "writes": [
@@ -1290,7 +1290,62 @@ exports[`renderer Properties page > disorder / default 1`] = `
       "Dot size -> set width=0.4",
       "Dot separation -> set dotsep=1.1",
       "Loop size -> set loopsize=2.1",
-      "Loop size 2 -> set loopsize2=-0.9",
+      "Loop size 2 -> set loopsize2=2",
+      "Color -> (nothing)",
+    ],
+  },
+  "Edge lines": {
+    "rows": [
+      "Edge type [select] {resettable} options=[none|edges|silhouette] selected=none",
+      "Width [drag-numeric] {resettable,disabled}",
+      "Color [color] {resettable,disabled} value="#000000"",
+    ],
+    "writes": [
+      "Edge type -> set egtype="edges"",
+      "Width -> (nothing)",
+      "Color -> (nothing)",
+    ],
+  },
+}
+`;
+
+exports[`renderer Properties page > disorder / loopsize2-on 1`] = `
+{
+  "Basic settings": {
+    "rows": [
+      "Name [text] value=""",
+      "Selection [text] value=""",
+      "Visible [switch] {resettable} value="on"",
+      "Locked [switch] {resettable} value="on"",
+      "Material [select] {resettable} options=[] selected=",
+      "Opacity [drag-numeric] {resettable}",
+    ],
+    "writes": [
+      "Name -> set name="x"",
+      "Selection -> (nothing)",
+      "Visible -> set visible=false",
+      "Locked -> set locked=true",
+      "Material -> (not driven)",
+      "Opacity -> (nothing)",
+    ],
+  },
+  "Disorder": {
+    "rows": [
+      "Target [select] {resettable} options=[] selected=",
+      "Detail [numeric] {resettable} value="5"",
+      "Dot size [drag-numeric] {resettable}",
+      "Dot separation [drag-numeric] {resettable}",
+      "Loop size [drag-numeric] {resettable}",
+      "Loop size 2 [gated-drag-numeric] {modified,resettable} gate=on",
+      "Color [color] {resettable} value="#FFFFFF"",
+    ],
+    "writes": [
+      "Target -> (not driven)",
+      "Detail -> set detail=6",
+      "Dot size -> set width=0.4",
+      "Dot separation -> set dotsep=1.1",
+      "Loop size -> set loopsize=2.1",
+      "Loop size 2 -> set loopsize2=-1 + set loopsize2=1.6",
       "Color -> (nothing)",
     ],
   },
@@ -2503,7 +2558,7 @@ exports[`renderer Properties page > spline / default 1`] = `
   },
   "Spline": {
     "rows": [
-      "Axial detail [numeric] {resettable} value="6"",
+      "Axial detail [drag-numeric] {resettable}",
       "Smoothness [drag-numeric] {resettable}",
       "Smooth color [switch] {resettable} value="on"",
       "Line width [drag-numeric] {resettable}",

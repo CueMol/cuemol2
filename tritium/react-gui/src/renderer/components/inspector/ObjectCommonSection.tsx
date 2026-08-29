@@ -23,6 +23,7 @@ export const ObjectCommonSection: React.FC<RendererPropSectionProps> = ({
   onSet,
   onReset,
   sceneId,
+  molId,
 }) => {
   const byKey = new Map<string, GenericPropEntry>();
   for (const e of entries) byKey.set(e.key, e);
@@ -57,6 +58,7 @@ export const ObjectCommonSection: React.FC<RendererPropSectionProps> = ({
           onSet={onSet}
           onReset={onReset}
           sceneId={sceneId}
+          molId={molId}
         />
       )}
       {visible && (

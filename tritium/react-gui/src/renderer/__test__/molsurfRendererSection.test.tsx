@@ -16,7 +16,9 @@
  *   - "Drawing mode" writes `drawmode`; Line/Point size is disabled while the
  *     mode is "fill" and enabled for line / point (UXP updateDisabledState);
  *   - "Selection mol" writes the raw `target` name and keeps the current value
- *     selectable (no "(none)" entry).
+ *     selectable (no "(none)" entry);
+ *   - the Selection picker is handed the reference molecule, which is what
+ *     lets it report how many atoms the expression matches.
  */
 
 import React from 'react'
@@ -35,14 +37,20 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 }))
 
 vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
-  MolSelList: ({ selectedSel, onCommit, disabled }: any) => (
-    <button data-testid="sel" data-disabled={String(!!disabled)} onClick={() => onCommit?.('newsel')}>
+  MolSelList: ({ selectedSel, onCommit, disabled, molID }: any) => (
+    <button
+      data-testid="sel"
+      data-disabled={String(!!disabled)}
+      data-molid={molID === undefined ? '' : String(molID)}
+      onClick={() => onCommit?.('newsel')}
+    >
       {selectedSel}
     </button>
   ),
 }))
 
-import { MolSurfMainSection } from '../components/inspector/MolSurfRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { MOLSURF_SECTIONS } from '../components/inspector/schema/molsurf'
 import {
 
   getRendererPropSections,
@@ -115,12 +123,14 @@ describe('MolSurf renderer section registry', () => {
     const sections = getRendererPropSections('molsurf')
     expect(sections.map((s) => s.title)).toEqual(['MolSurf'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(componentOf(sections[0])).toBe(MolSurfMainSection)
+    // A migrated page is rows as data, not a component.
+    expect(isComponentSection(sections[0])).toBe(false)
+    expect(componentOf(sections[0])).toBe(`schema:${sections[0].key}`)
     expect(RENDERER_SECTION_REGISTRY.molsurf).toBe(sections)
   })
 })
 
-describe('MolSurfMainSection', () => {
+describe('the molsurf page', () => {
   it('renders the curated rows and ignores dsurface-only / unrelated props', () => {
     const entries = [
       ...molsurfEntries(),
@@ -130,7 +140,15 @@ describe('MolSurfMainSection', () => {
       entry({ key: 'elepot', type: 'string', value: '' }),
     ]
     const { container, unmount } = mountTree(
-      <MolSurfMainSection entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection
+        section={MOLSURF_SECTIONS[0]}
+        entries={entries}
+        rendererType="molsurf"
+        sceneId={1}
+        nodeId={2}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+      />,
     )
     for (const label of ['Drawing mode', 'Line/Point size', 'Selection mol', 'Selection']) {
       expect(rowByLabel(container, label), label).not.toBeNull()
@@ -145,7 +163,15 @@ describe('MolSurfMainSection', () => {
     // Coloring belongs to the Coloring panel (ColorPane): the Inspector row
     // could switch the mode but never edit the colors that go with it.
     const { container, unmount } = mountTree(
-      <MolSurfMainSection entries={molsurfEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection
+        section={MOLSURF_SECTIONS[0]}
+        entries={molsurfEntries()}
+        rendererType="molsurf"
+        sceneId={1}
+        nodeId={2}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+      />,
     )
     expect(molsurfEntries().some((e) => e.key === 'colormode')).toBe(true)
     expect(rowByLabel(container, 'Coloring mode')).toBeNull()
@@ -155,7 +181,15 @@ describe('MolSurfMainSection', () => {
   it('writes drawmode and gates Line/Point size by mode', () => {
     const onSet = vi.fn()
     const fill = mountTree(
-      <MolSurfMainSection entries={molsurfEntries({ drawmode: 'fill' })} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection
+        section={MOLSURF_SECTIONS[0]}
+        entries={molsurfEntries({ drawmode: 'fill' })}
+        rendererType="molsurf"
+        sceneId={1}
+        nodeId={2}
+        onSet={onSet}
+        onReset={vi.fn()}
+      />,
     )
     expect(rowByLabel(fill.container, 'Line/Point size')!.querySelector('.h3-form-drag-disabled')).not.toBeNull()
     const select = rowByLabel(fill.container, 'Drawing mode')!.querySelector('select') as HTMLSelectElement
@@ -164,7 +198,15 @@ describe('MolSurfMainSection', () => {
     fill.unmount()
 
     const line = mountTree(
-      <MolSurfMainSection entries={molsurfEntries({ drawmode: 'line' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection
+        section={MOLSURF_SECTIONS[0]}
+        entries={molsurfEntries({ drawmode: 'line' })}
+        rendererType="molsurf"
+        sceneId={1}
+        nodeId={2}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+      />,
     )
     expect(rowByLabel(line.container, 'Line/Point size')!.querySelector('.h3-form-drag-disabled')).toBeNull()
     line.unmount()
@@ -173,7 +215,15 @@ describe('MolSurfMainSection', () => {
   it('commits the Selection mol target and keeps the current value selectable (no "(none)")', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <MolSurfMainSection entries={molsurfEntries({ target: 'molA' })} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection
+        section={MOLSURF_SECTIONS[0]}
+        entries={molsurfEntries({ target: 'molA' })}
+        rendererType="molsurf"
+        sceneId={1}
+        nodeId={2}
+        onSet={onSet}
+        onReset={vi.fn()}
+      />,
     )
     const select = rowByLabel(container, 'Selection mol')!.querySelector('select') as HTMLSelectElement
     expect(select.value).toBe('molA')
@@ -181,6 +231,26 @@ describe('MolSurfMainSection', () => {
     expect(Array.from(select.options).some((o) => o.textContent === '(none)')).toBe(false)
     selectValue(select, '')
     expect(onSet).toHaveBeenCalledWith('target', 'string', '')
+    unmount()
+  })
+  it('hands the Selection picker the molecule, so it can count matched atoms', () => {
+    // A molsurf renderer is attached to a MolSurfObj, so the molecule its
+    // `showsel` expression is about is resolved worker-side and arrives as
+    // `molId`. Without it the picker still edits the string but shows no count.
+    const { container, unmount } = mountTree(
+      <SchemaSection
+        section={MOLSURF_SECTIONS[0]}
+        entries={molsurfEntries({ target: 'molA' })}
+        rendererType="molsurf"
+        sceneId={1}
+        nodeId={2}
+        molId={7}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+      />,
+    )
+    const picker = rowByLabel(container, 'Selection')!.querySelector('[data-testid="sel"]')!
+    expect(picker.getAttribute('data-molid')).toBe('7')
     unmount()
   })
 })

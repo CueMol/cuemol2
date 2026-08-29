@@ -74,6 +74,8 @@ export function makeRenderHook<T>(
 export function mountTree(node: React.ReactNode): {
   container: HTMLElement
   root: Root
+  /** Re-render the same tree with new props, as a state change would. */
+  rerender(next: React.ReactNode): void
   unmount(): void
 } {
   const container = document.createElement('div')
@@ -86,6 +88,9 @@ export function mountTree(node: React.ReactNode): {
   return {
     container,
     root,
+    rerender(next: React.ReactNode) {
+      act(() => root.render(next as React.ReactElement))
+    },
     unmount() {
       act(() => root.unmount())
       if (container.parentNode) container.parentNode.removeChild(container)

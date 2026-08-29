@@ -26,7 +26,7 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// rendererPropSections imports sibling sections (e.g. DisoRendererSection)
+// rendererPropSections imports sibling sections (e.g. the atomintr page)
 // whose rows pull in useCueMol and the colour leaf; stub both so the registry
 // import collects without the real worker / ColorPicker context.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({

@@ -15,6 +15,7 @@
  */
 
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
+import type { AsyncNameSource } from '../rows/AsyncSelectRow'
 
 /**
  * What a row can consult while the page renders: the live property list, and
@@ -33,6 +34,12 @@ export interface PropCtx {
   rendererType: string
   sceneId: number | undefined
   nodeId: number | undefined
+  /**
+   * The molecule a selection row counts its atoms against, when the inspected
+   * node has one. Resolved worker-side (`getGenericProps`); undefined for a
+   * node with no molecule, in which case the picker shows no hit count.
+   */
+  molId: number | undefined
 }
 
 /**
@@ -117,6 +124,64 @@ export interface ColorRowDef extends RowBase {
   kind: 'color'
 }
 
+/**
+ * An integer property typed into a stepper, for a value dialled to an exact
+ * number rather than swept (a subdivision count).
+ */
+export interface NumInputRowDef extends RowBase {
+  kind: 'numInput'
+  min: number
+  max: number
+  step: number
+  unit?: string
+}
+
+/** A free-text property. */
+export interface TextRowDef extends RowBase {
+  kind: 'text'
+  /**
+   * Shown while the field is empty. Use "(default)" for a property whose empty
+   * value falls back to something the C++ side resolves.
+   */
+  placeholder?: string
+}
+
+/**
+ * A numeric property that can also be "not set", where a NEGATIVE value is
+ * what the C++ side reads as unset (the disorder overlay's second loop size,
+ * whose -1.0 default makes it fall back to the first). The checkbox owns
+ * set / unset and the drag field the value, both writing the one property.
+ */
+export interface OptionalNumRowDef extends RowBase {
+  kind: 'optionalNum'
+  min: number
+  max: number
+  step: number
+  fineSnap?: number
+  coarseSnap?: number
+  unit?: string
+  decimals?: number
+  realtime?: boolean
+  /** Written to turn the property off; must be negative. Usually the C++ default. */
+  offValue: number
+  /** Written when switched on with no earlier value to restore. */
+  onValue: number
+  /** Names what ticking the box does, for the checkbox's accessible name. */
+  gateLabel: string
+}
+
+/** A molecular-selection property, edited through the selection picker. */
+export interface SelRowDef extends RowBase {
+  kind: 'sel'
+}
+
+/** A dropdown whose choices the worker supplies (see rows/AsyncSelectRow). */
+export interface AsyncSelectRowDef extends RowBase {
+  kind: 'asyncSelect'
+  source: AsyncNameSource
+  emptyOption: 'none' | 'blank'
+}
+
 /** A row of a Properties page. */
 export type PropRowDef =
   | NumRowDef
@@ -124,6 +189,25 @@ export type PropRowDef =
   | SliderRowDef
   | BoolRowDef
   | ColorRowDef
+  | NumInputRowDef
+  | OptionalNumRowDef
+  | TextRowDef
+  | SelRowDef
+  | AsyncSelectRowDef
+
+/**
+ * Kinds whose control holds a draft of what the user is typing.
+ *
+ * Such a row has to be remounted when the property changes underneath it --
+ * an undo, a script -- or the field goes on showing the abandoned draft. The
+ * engine keys them by value so that cannot be forgotten per row, which is how
+ * one of them came to be missing it.
+ */
+export const DRAFT_KINDS: ReadonlySet<PropRowDef['kind']> = new Set([
+  'numInput',
+  'text',
+  'sel',
+])
 
 /** One accordion of a Properties page. */
 export interface SchemaSectionDef {
@@ -147,6 +231,7 @@ export function makePropCtx(
   rendererType: string,
   sceneId: number | undefined,
   nodeId: number | undefined,
+  molId: number | undefined,
 ): PropCtx {
   const byKey = new Map(entries.map((e) => [e.key, e]))
   return {
@@ -156,5 +241,6 @@ export function makePropCtx(
     rendererType,
     sceneId,
     nodeId,
+    molId,
   }
 }

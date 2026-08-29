@@ -85,6 +85,9 @@ function openSection(container: HTMLElement, index: number): string {
 
 /** The kind of control a row renders, named by what the DOM shows. */
 function controlKind(row: Element): string {
+  // A gated row carries both halves of one property, so name it as such --
+  // reading it as a plain drag field would hide the checkbox from the snapshot.
+  if (row.querySelector('.h3-form-gated-control')) return 'gated-drag-numeric'
   if (row.querySelector('.h3-form-drag-arrow-right')) return 'drag-numeric'
   if (row.querySelector('select')) return 'select'
   if (row.querySelector('.h3-form-switch input')) return 'switch'
@@ -116,9 +119,16 @@ function rowManifest(container: HTMLElement): string[] {
       const options = sel
         ? ` options=[${Array.from(sel.options).map((o) => o.value).join('|')}] selected=${sel.value}`
         : ''
-      const input = row.querySelector('input')
+      // On a gated row the first input is the gate, whose "value" is the
+      // HTML default for a checkbox and says nothing. Record whether it is
+      // ticked instead, since that is the half the row adds.
+      const gate = row.querySelector(
+        '.h3-form-gated-control input[type="checkbox"]',
+      ) as HTMLInputElement | null
+      const gated = gate ? ` gate=${gate.checked ? 'on' : 'off'}` : ''
+      const input = gate ? null : row.querySelector('input')
       const shown = !sel && input ? ` value=${JSON.stringify(input.value)}` : ''
-      return `${label} [${kind}]${flags.length ? ` {${flags.join(',')}}` : ''}${options}${shown}`
+      return `${label} [${kind}]${flags.length ? ` {${flags.join(',')}}` : ''}${options}${gated}${shown}`
     },
   )
 }
@@ -141,7 +151,15 @@ function interactionLog(container: HTMLElement): string[] {
     const sw = row.querySelector('.h3-form-switch input, input[type="checkbox"]') as HTMLInputElement | null
     const num = row.querySelector('input.h3-form-numeric, input[type="number"]') as HTMLInputElement | null
     const txt = row.querySelector('input[type="text"], input:not([type])') as HTMLInputElement | null
-    if (sel && sel.options.length > 1) {
+    const gate = row.querySelector(
+      '.h3-form-gated-control input[type="checkbox"]',
+    ) as HTMLInputElement | null
+    if (gate && step) {
+      // Both halves write the same property; drive each so the snapshot shows
+      // the on/off write as well as the value write.
+      act(() => gate.click())
+      pressStepArrow(step)
+    } else if (sel && sel.options.length > 1) {
       const next = Array.from(sel.options).find((o) => o.value !== sel.value)
       if (next) {
         act(() => {

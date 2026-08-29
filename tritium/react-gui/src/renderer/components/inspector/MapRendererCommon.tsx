@@ -192,6 +192,8 @@ interface LimitDisplayRowsProps {
   onSetMany: SetManyFn;
   onReset: ResetFn;
   sceneId: number | undefined;
+  /** The boundary molecule, so the selection picker can count its atoms. */
+  molId?: number;
 }
 
 /**
@@ -214,6 +216,7 @@ export const LimitDisplayRows: React.FC<LimitDisplayRowsProps> = ({
   onSetMany,
   onReset,
   sceneId,
+  molId,
 }) => {
   const get = (key: string) => entries.find((e) => e.key === key);
   const bndryMol = get("bndry_molname");
@@ -266,6 +269,7 @@ export const LimitDisplayRows: React.FC<LimitDisplayRowsProps> = ({
           onSet={onSet}
           onReset={onReset}
           sceneId={sceneId}
+          molId={molId}
           disabled={!limitOn}
         />
       )}

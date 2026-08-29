@@ -27,7 +27,8 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import { SplineMainSection } from '../components/inspector/SplineRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { SPLINE_SECTIONS } from '../components/inspector/schema/spline'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
@@ -87,19 +88,24 @@ describe('SplineRenderer section registry', () => {
     expect(sections).toHaveLength(1)
     expect(sections[0].title).toBe('Spline')
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(componentOf(sections[0])).toBe(SplineMainSection)
+    // A migrated page is rows as data, not a component.
+    expect(isComponentSection(sections[0])).toBe(false)
+    expect(componentOf(sections[0])).toBe(`schema:${sections[0].key}`)
     expect(RENDERER_SECTION_REGISTRY.spline).toBe(sections)
   })
 })
 
-describe('SplineMainSection', () => {
+describe('the spline page', () => {
   it('renders every migrated row when its property exists', () => {
     const { container, unmount } = mountTree(
-      <SplineMainSection
+      <SchemaSection
+        section={SPLINE_SECTIONS[0]}
         entries={splineEntries()}
+        rendererType="spline"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const labels = [
@@ -117,11 +123,14 @@ describe('SplineMainSection', () => {
 
   it('shows a "(default)" placeholder on the empty pivot atom name field', () => {
     const { container, unmount } = mountTree(
-      <SplineMainSection
+      <SchemaSection
+        section={SPLINE_SECTIONS[0]}
         entries={splineEntries()}
+        rendererType="spline"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const input = rowByLabel(container, 'Pivot atom name')!.querySelector('input')
@@ -131,7 +140,8 @@ describe('SplineMainSection', () => {
 
   it('does not expose the tube cap-type properties even when present', () => {
     const { container, unmount } = mountTree(
-      <SplineMainSection
+      <SchemaSection
+        section={SPLINE_SECTIONS[0]}
         entries={[
           ...splineEntries(),
           entry({
@@ -147,9 +157,11 @@ describe('SplineMainSection', () => {
             enumdef: ['sphere', 'flat', 'none'],
           }),
         ]}
+        rendererType="spline"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(rowByLabel(container, 'Start cap')).toBeNull()
@@ -159,11 +171,14 @@ describe('SplineMainSection', () => {
 
   it('renders nothing for an absent property', () => {
     const { container, unmount } = mountTree(
-      <SplineMainSection
+      <SchemaSection
+        section={SPLINE_SECTIONS[0]}
         entries={[entry({ key: 'smoothcolor', type: 'boolean', value: true })]}
+        rendererType="spline"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(rowByLabel(container, 'Line width')).toBeNull()
@@ -175,11 +190,14 @@ describe('SplineMainSection', () => {
   it('commits a realtime single-step change of line width on the step arrow', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <SplineMainSection
+      <SchemaSection
+        section={SPLINE_SECTIONS[0]}
         entries={splineEntries()}
+        rendererType="spline"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const incr = rowByLabel(container, 'Line width')!.querySelector(
@@ -198,11 +216,14 @@ describe('SplineMainSection', () => {
   it('commits a realtime single-step change of smoothness on the step arrow', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <SplineMainSection
+      <SchemaSection
+        section={SPLINE_SECTIONS[0]}
         entries={splineEntries()}
+        rendererType="spline"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const incr = rowByLabel(container, 'Smoothness')!.querySelector(

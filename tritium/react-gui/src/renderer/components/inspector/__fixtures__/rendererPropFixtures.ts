@@ -92,6 +92,8 @@ const VARIANTS: Partial<Record<FixtureRendererType, Record<string, Record<string
     'labels-on': { showlabel: true },
   },
   ballstick: { 'ring-on': { ring: true } },
+  // The second loop size is off by default (negative); on, its field is live.
+  disorder: { 'loopsize2-on': { loopsize2: 1.5 } },
   nucl: { 'tube-off': { show_tube: false } },
   // The extent rows apply to a bounded region only; "full" hides them, and
   // "auto" is resolved by the map kind (the read-only resolved prop is what

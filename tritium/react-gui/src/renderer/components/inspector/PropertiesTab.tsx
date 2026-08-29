@@ -57,6 +57,12 @@ interface PropertiesTabProps {
   sceneId: number | undefined;
   /** UID of the inspected node (for sections querying the node itself). */
   nodeId?: number;
+  /**
+   * UID of the molecule the node's selection properties are evaluated against,
+   * resolved worker-side by `getGenericProps`. Selection rows hand it to the
+   * picker so it can report how many atoms an expression matches.
+   */
+  molId?: number;
 }
 
 export const PropertiesTab: React.FC<PropertiesTabProps> = ({
@@ -68,6 +74,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   onReset,
   sceneId,
   nodeId,
+  molId,
 }) => {
   // Scene.name is a read-only C++ property, but a scene can be renamed via
   // setName() (setGenericProp routes the write). The Properties tab presents the
@@ -93,6 +100,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
             onReset={onReset}
             sceneId={sceneId}
             nodeId={nodeId}
+            molId={molId}
           />
         </AccordionGroup>
       </div>
@@ -113,6 +121,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
             onReset={onReset}
             sceneId={sceneId}
             nodeId={nodeId}
+            molId={molId}
           />
         </AccordionGroup>
       </div>
@@ -143,6 +152,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
           onReset={onReset}
           sceneId={sceneId}
           nodeId={nodeId}
+          molId={molId}
         />
         {sections.map((section) =>
           isComponentSection(section) ? (
@@ -158,6 +168,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
                 onReset={onReset}
                 sceneId={sceneId}
                 nodeId={nodeId}
+                molId={molId}
               />
             </AccordionSection>
           ) : (
@@ -170,6 +181,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
               rendererType={rendererType}
               sceneId={sceneId}
               nodeId={nodeId}
+              molId={molId}
               onSet={onSet}
               onReset={onReset}
             />
