@@ -1,8 +1,11 @@
 /**
  * @file state/sceneTree/SceneTreeProvider.test.tsx
- * @description The one thing that leaves the scene-tree provider: opening a
- * row in the inspector hands over a resolved target, and the actions keep
- * their identity while the tree and the selection change.
+ * @description What the scene-tree provider hands out, and what it mounts.
+ *
+ * Two contexts -- the state the rows render from and an actions bundle that
+ * keeps its identity so they can be memoized -- plus the command handlers,
+ * which need both the tree operations and the active scene and so can only
+ * be mounted here.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -17,19 +20,12 @@ void React
 const node = (partial: Partial<SceneTreeNode>): SceneTreeNode =>
   ({ children: [], ...partial }) as SceneTreeNode
 
-const fake = vi.hoisted(() => ({
-  tree: null as unknown,
-  selectedId: '',
-  showNode: vi.fn(),
-}))
+const fake = vi.hoisted(() => ({ tree: null as unknown, selectedId: '' }))
+const mounted = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }))
 
 vi.mock('../../hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cm: null, cueMolReady: false }) }))
 vi.mock('../workspace', () => ({
   useActiveScene: () => ({ activeSceneId: 1, activeMolViewId: 5, hasScene: true }),
-}))
-vi.mock('../inspector', async () => ({
-  ...(await import('../inspector/resolveNodeTarget')),
-  useInspectorActions: () => ({ showNode: fake.showNode }),
 }))
 vi.mock('../../hooks/useSceneTree', () => ({
   useSceneTree: () => ({
@@ -39,19 +35,24 @@ vi.mock('../../hooks/useSceneTree', () => ({
     selectedNode: null,
     selectedHasOps: { focus: true, delete: true, property: true, add: true },
     setSelectedId: vi.fn(), toggleInSelection: vi.fn(), selectRangeTo: vi.fn(), refetch: vi.fn(),
-    toggleVisibility: vi.fn(), setNodeUiCollapsed: vi.fn(), moveSceneNode: vi.fn(),
-    focusNode: vi.fn(), deleteNode: vi.fn(), renameNode: vi.fn(), renameCamera: vi.fn(),
-    applyCameraToView: vi.fn(), copyNode: vi.fn(), pasteNode: vi.fn(),
-    bulkCopyNodes: vi.fn(), bulkDeleteNodes: vi.fn(),
+    setNodeUiCollapsed: vi.fn(), moveSceneNode: vi.fn(), focusNode: vi.fn(),
+    renameNode: vi.fn(), renameCamera: vi.fn(),
   }),
 }))
 vi.mock('../../hooks/useSceneContextMenu', () => ({
-  useSceneContextMenu: () => ({
-    openContextMenu: vi.fn(), openNewRendererFlow: vi.fn(), openNewCameraFlow: vi.fn(),
-  }),
+  useSceneContextMenu: () => ({ openContextMenu: vi.fn() }),
 }))
 vi.mock('../../hooks/useClipboardScope', () => ({ useClipboardScope: () => undefined }))
-vi.mock('../../components/dialogs/ErrorAlertDialogProvider', () => ({ useShowErrorAlert: () => vi.fn() }))
+vi.mock('../../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch: vi.fn() }) }))
+// The handlers themselves are covered by their own tests; here only that
+// they are mounted, with the tree and the scene they need.
+vi.mock('./commands', () => ({
+  SceneTreeCommands: (props: Record<string, unknown>) => {
+    mounted.props = props
+    return null
+  },
+  useSceneNewFlows: () => ({ openNewRendererFlow: vi.fn(), openNewCameraFlow: vi.fn() }),
+}))
 
 function mount() {
   let state!: SceneTreeState
@@ -72,7 +73,7 @@ function mount() {
 }
 
 beforeEach(() => {
-  fake.showNode.mockClear()
+  mounted.props = null
   fake.selectedId = ''
   fake.tree = node({
     id: 1, type: 'scene', name: 'S',
@@ -81,22 +82,13 @@ beforeEach(() => {
 })
 
 describe('SceneTreeProvider', () => {
-  it('showProperty resolves the row against the live tree and hands the inspector a target', () => {
+  it('publishes the tree and the selection as state', () => {
+    fake.selectedId = '11'
     const h = mount()
-    act(() => h.actions.showProperty('11'))
-    expect(fake.showNode).toHaveBeenCalledWith({ kind: 'node', sceneId: 1, nodeId: 11, nodeType: 'renderer' })
-    // A row that is not a property-bridge node never reaches the inspector.
-    act(() => h.actions.showProperty('999'))
-    expect(fake.showNode).toHaveBeenCalledTimes(1)
-    h.unmount()
-  })
-
-  it('reads the tree that is current when the row is opened, not the one at mount', () => {
-    const h = mount()
-    fake.tree = node({ id: 1, type: 'scene', name: 'S', children: [node({ id: 20, type: 'object', name: 'late' })] })
-    h.rerender()
-    act(() => h.actions.showProperty('20'))
-    expect(fake.showNode).toHaveBeenCalledWith({ kind: 'node', sceneId: 1, nodeId: 20, nodeType: 'object' })
+    expect(h.state.tree).toBe(fake.tree)
+    expect(h.state.selectedId).toBe('11')
+    expect(h.state.selectedIds).toEqual(new Set(['11']))
+    expect(h.state.editingNodeId).toBeNull()
     h.unmount()
   })
 
@@ -110,6 +102,18 @@ describe('SceneTreeProvider', () => {
     fake.tree = node({ id: 1, type: 'scene', name: 'S' })
     h.rerender()
     expect(h.actions).toBe(first)
+    h.unmount()
+  })
+
+  it('mounts the command handlers with the live tree and the active scene', () => {
+    const h = mount()
+    expect(mounted.props).toMatchObject({
+      sceneId: 1,
+      activeViewId: 5,
+      scene: expect.objectContaining({ tree: fake.tree }),
+    })
+    // The rename editor is the controller's, so the handlers get its opener.
+    expect(typeof mounted.props!.beginInlineRename).toBe('function')
     h.unmount()
   })
 })

@@ -1,59 +1,48 @@
+/**
+ * @file state/sceneTree/useSceneTreeController.test.tsx
+ * @description What the Explorer's gestures do.
+ *
+ * The controller is the tree's UI layer: it owns the inline-rename editor
+ * and turns a toolbar click, a key or a double-click into a command
+ * dispatch. These pin which command each gesture reaches and with what
+ * arguments -- the context menu reaches the same ones, which is the point of
+ * routing them this way -- plus the two things the controller still does
+ * itself: the rename commit and the collapse persistence.
+ *
+ * They also pin that the action bundle keeps its identity while the
+ * selection changes, which is what lets the rows be memoized.
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React, { act } from 'react';
 import { makeRenderHook } from '../../__test__/helpers/testHarness';
 import { useSceneTreeController } from './useSceneTreeController';
 import type { UseSceneTreeControllerArgs } from './useSceneTreeController';
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes';
+import { CmdId } from '../../commands/ids';
 
 void React;
 
-/**
- * Degrade-detection test for useSceneTreeController -- the Explorer's
- * scene-tree behaviour on top of useSceneTree. Pins:
- *   - the action bundle: field -> useSceneTree source, and that it keeps its
- *     identity while the selection changes
- *   - inline-rename commit routing (camera->renameCamera / else->renameNode)
- *   - double-click routing (camera->applyCameraToView / else->showProperty)
- *   - toolbar Add routing (object->New Renderer / camera->New Camera flow)
- *   - that the whole useSceneTree result is forwarded to useSceneContextMenu
- */
+const dispatch = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const ctxMenu = vi.hoisted(() => ({ open: vi.fn().mockResolvedValue(undefined), opts: null as any }));
+const scope = new Map<string, { cut: () => void; copy: () => void; paste: () => void }>();
 
-// Mock useSceneContextMenu so this test does not pull in the dialog-provider
-// tree. The controller's contract with it is the three flow callbacks plus
-// the argument object it is handed.
-const mocks = vi.hoisted(() => ({
-  openContextMenu: vi.fn().mockResolvedValue(undefined),
-  openNewRendererFlow: vi.fn().mockResolvedValue(undefined),
-  openNewCameraFlow: vi.fn().mockResolvedValue(undefined),
-  ctxMenuArgs: { current: null as Record<string, unknown> | null },
-  showErrorAlert: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }));
+vi.mock('../../hooks/useSceneContextMenu', () => ({
+  useSceneContextMenu: (opts: unknown) => {
+    ctxMenu.opts = opts;
+    return { openContextMenu: ctxMenu.open };
+  },
 }));
-// Same reason: the controller now asks for the error-alert dialog so the
-// keyboard Copy can report UXP's multi-copy refusals.
-vi.mock('../../components/dialogs/ErrorAlertDialogProvider', () => ({
-  useShowErrorAlert: () => mocks.showErrorAlert,
-}));
-
 // Capture what the controller registers as its clipboard scope, so the
 // keyboard path can be driven without the DOM plumbing (covered separately
 // in editClipboard.test.ts).
-const registered = new Map<string, { cut: () => void; copy: () => void; paste: () => void }>();
 vi.mock('../../hooks/useClipboardScope', () => ({
   useClipboardScope: (
     id: string,
     handlers: { cut: () => void; copy: () => void; paste: () => void },
   ) => {
-    registered.set(id, handlers);
-  },
-}));
-vi.mock('../../hooks/useSceneContextMenu', () => ({
-  useSceneContextMenu: (opts: Record<string, unknown>) => {
-    mocks.ctxMenuArgs.current = opts;
-    return {
-      openContextMenu: mocks.openContextMenu,
-      openNewRendererFlow: mocks.openNewRendererFlow,
-      openNewCameraFlow: mocks.openNewCameraFlow,
-    };
+    scope.set(id, handlers);
   },
 }));
 
@@ -71,50 +60,42 @@ function makeScene(overrides: Record<string, unknown> = {}) {
     toggleInSelection: vi.fn(),
     selectRangeTo: vi.fn(),
     refetch: vi.fn(),
-    toggleVisibility: vi.fn(),
     setNodeUiCollapsed: vi.fn(),
     moveSceneNode: vi.fn(),
     focusNode: vi.fn().mockResolvedValue(true),
-    deleteNode: vi.fn().mockResolvedValue(true),
     renameNode: vi.fn().mockResolvedValue(true),
     renameCamera: vi.fn().mockResolvedValue(true),
-    applyCameraToView: vi.fn().mockResolvedValue(true),
-    copyNode: vi.fn().mockResolvedValue(true),
-    pasteNode: vi.fn().mockResolvedValue(true),
-    bulkCopyNodes: vi.fn().mockResolvedValue({ ok: true }),
-    bulkDeleteNodes: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
 }
 
 type Scene = ReturnType<typeof makeScene>;
 
-function renderController(
-  scene: Scene,
-  showProperty: (id: string) => void = vi.fn(),
-  activeMolViewId: number | undefined = 5,
-) {
+/**
+ * Mount the controller. The molview id is a rest tuple rather than a default
+ * parameter because `undefined` is a meaningful value here (no molview open)
+ * and a default would silently replace it.
+ */
+function renderController(scene: Scene, ...molView: [] | [number | undefined]) {
   const args = {
     scene: scene as unknown as UseSceneTreeControllerArgs['scene'],
     cm: null,
     activeSceneId: 7,
-    activeMolViewId,
-    showProperty,
+    activeMolViewId: molView.length ? molView[0] : 5,
   };
   return makeRenderHook(() => useSceneTreeController(args));
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  registered.clear();
-  mocks.ctxMenuArgs.current = null;
+  scope.clear();
+  ctxMenu.opts = null;
 });
 
 describe('useSceneTreeController bundle', () => {
-  it('maps the action bundle onto the useSceneTree operations', () => {
+  it('routes the selection gestures straight to useSceneTree', () => {
     const scene = makeScene({ tree: node({ id: 1, type: 'scene', name: 'S' }) });
-    const showProperty = vi.fn();
-    const h = renderController(scene, showProperty);
+    const h = renderController(scene);
     const a = h.result.actions;
     a.select('1');
     expect(scene.setSelectedId).toHaveBeenCalledWith('1');
@@ -122,13 +103,9 @@ describe('useSceneTreeController bundle', () => {
     expect(scene.toggleInSelection).toHaveBeenCalledWith('2');
     a.selectRange('3', ['1', '2', '3'], true);
     expect(scene.selectRangeTo).toHaveBeenCalledWith('3', ['1', '2', '3'], true);
-    a.toggleVisibility('1');
-    expect(scene.toggleVisibility).toHaveBeenCalledWith('1');
     const move = { kind: 'object', sourceId: 1, targetId: 2, ori: 1 };
     a.moveNode(move as never);
     expect(scene.moveSceneNode).toHaveBeenCalledWith(move);
-    a.showProperty('1');
-    expect(showProperty).toHaveBeenCalledWith('1');
     expect(h.result.editingNodeId).toBeNull();
     h.unmount();
   });
@@ -146,21 +123,97 @@ describe('useSceneTreeController bundle', () => {
     h.unmount();
   });
 
-  it('forwards the whole useSceneTree result + extras to useSceneContextMenu', () => {
-    const scene = makeScene();
-    const showGeneric = vi.fn();
-    const h = renderController(scene, showGeneric);
-    const args = mocks.ctxMenuArgs.current!;
-    // spread-through from `scene`
-    expect(args.toggleVisibility).toBe(scene.toggleVisibility);
-    expect(args.deleteNode).toBe(scene.deleteNode);
-    expect(args.renameNode).toBe(scene.renameNode);
-    // controller-supplied extras
-    expect(args.sceneId).toBe(7);
-    expect(args.activeViewId).toBe(5);
-    expect(args.showProperty).toBe(showGeneric);
-    expect(typeof args.beginInlineRename).toBe('function');
+  it('hands the context menu the live selection', () => {
+    const selectedIds = new Set(['42', '43']);
+    const scene = makeScene({ selectedIds });
+    const h = renderController(scene);
+    expect(ctxMenu.opts).toMatchObject({ sceneId: 7, selectedIds });
+    act(() => h.result.actions.showContextMenu(node({ id: 42, type: 'object' }), 1, 2));
+    expect(ctxMenu.open).toHaveBeenCalledWith(expect.objectContaining({ id: 42 }), 1, 2);
     h.unmount();
+  });
+});
+
+// The toolbar, the keyboard and the context menu all land on the same
+// commands; only their target differs.
+describe('useSceneTreeController gestures dispatch commands', () => {
+  it('visibility and property act on the row they were given', () => {
+    const h = renderController(makeScene());
+    act(() => h.result.actions.toggleVisibility('42'));
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeSetVisible, { ids: ['42'] });
+    act(() => h.result.actions.showProperty('42'));
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeProperty, { id: '42' });
+    h.unmount();
+  });
+
+  it('Delete takes the whole multi-selection, or just the row', () => {
+    const multi = makeScene({ selectedIds: new Set(['42', '43']) });
+    const h = renderController(multi);
+    act(() => h.result.actions.deleteSelected('42'));
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeDelete, { ids: ['42', '43'] });
+    h.unmount();
+
+    dispatch.mockClear();
+    const single = makeScene({ selectedIds: new Set(['42']) });
+    const h2 = renderController(single);
+    act(() => h2.result.actions.deleteSelected('42'));
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeDelete, { ids: ['42'] });
+    h2.unmount();
+  });
+
+  it('Add dispatches by the selected row type, as UXP onNewCmd did', () => {
+    const onObject = makeScene({ selectedNode: node({ id: 42, type: 'object', name: 'mol1' }) });
+    const h = renderController(onObject);
+    act(() => h.result.actions.addSelected());
+    expect(dispatch).toHaveBeenCalledWith(CmdId.RendererNew, { sourceNodeId: '42' });
+    h.unmount();
+
+    dispatch.mockClear();
+    const onCamera = makeScene({ selectedNode: node({ id: -3, type: 'camera', name: 'cam1' }) });
+    const h2 = renderController(onCamera);
+    act(() => h2.result.actions.addSelected());
+    expect(dispatch).toHaveBeenCalledWith(CmdId.CameraNew);
+    h2.unmount();
+
+    dispatch.mockClear();
+    const onStyle = makeScene({ selectedNode: node({ id: 7, type: 'style', name: 'st' }) });
+    const h3 = renderController(onStyle);
+    act(() => h3.result.actions.addSelected());
+    expect(dispatch).not.toHaveBeenCalled();
+    h3.unmount();
+  });
+
+  it('a double-click applies a camera, and opens the inspector for anything else', () => {
+    const h = renderController(makeScene());
+    act(() => h.result.actions.nodeDoubleClick(node({ id: -3, type: 'camera', name: 'cam1' })));
+    expect(dispatch).toHaveBeenCalledWith(CmdId.CameraApplyToView, {
+      name: 'cam1', withVisFlags: true,
+    });
+
+    dispatch.mockClear();
+    act(() => h.result.actions.nodeDoubleClick(node({ id: 42, type: 'object', name: 'mol1' })));
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeProperty, { id: '42' });
+
+    // The synthesised container rows do nothing.
+    dispatch.mockClear();
+    act(() => h.result.actions.nodeDoubleClick(node({ id: -1, type: 'cameraRoot', name: 'Cameras' })));
+    act(() => h.result.actions.nodeDoubleClick(node({ id: -2, type: 'styleRoot', name: 'Styles' })));
+    expect(dispatch).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
+  it('focus needs an active molview', () => {
+    const scene = makeScene();
+    const h = renderController(scene, 9);
+    act(() => h.result.actions.focusSelected('42'));
+    expect(scene.focusNode).toHaveBeenCalledWith(9, '42');
+    h.unmount();
+
+    const scene2 = makeScene();
+    const h2 = renderController(scene2, undefined);
+    act(() => h2.result.actions.focusSelected('42'));
+    expect(scene2.focusNode).not.toHaveBeenCalled();
+    h2.unmount();
   });
 });
 
@@ -169,10 +222,7 @@ describe('useSceneTreeController inline-rename commit', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.actions.commitInlineRename(
-        node({ id: -3, type: 'camera', name: 'cam1' }),
-        'cam-new',
-      );
+      h.result.actions.commitInlineRename(node({ id: -3, type: 'camera', name: 'cam1' }), 'cam-new');
     });
     expect(scene.renameCamera).toHaveBeenCalledWith('cam1', 'cam-new');
     expect(scene.renameNode).not.toHaveBeenCalled();
@@ -183,39 +233,19 @@ describe('useSceneTreeController inline-rename commit', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.actions.commitInlineRename(
-        node({ id: 42, type: 'object', name: 'mol1' }),
-        'mol-new',
-      );
+      h.result.actions.commitInlineRename(node({ id: 42, type: 'object', name: 'mol1' }), 'mol-new');
     });
     expect(scene.renameNode).toHaveBeenCalledWith('42', 'mol-new');
     expect(scene.renameCamera).not.toHaveBeenCalled();
     h.unmount();
   });
-});
 
-describe('useSceneTreeController double-click', () => {
-  it('applies a camera row to the active view with vis flags', () => {
-    const scene = makeScene();
-    const showGeneric = vi.fn();
-    const h = renderController(scene, showGeneric, 5);
-    act(() => {
-      h.result.actions.nodeDoubleClick(node({ id: -3, type: 'camera', name: 'cam1' }));
-    });
-    expect(scene.applyCameraToView).toHaveBeenCalledWith(5, 'cam1', true);
-    expect(showGeneric).not.toHaveBeenCalled();
-    h.unmount();
-  });
-
-  it('opens the property inspector for a non-camera row', () => {
-    const scene = makeScene();
-    const showGeneric = vi.fn();
-    const h = renderController(scene, showGeneric, 5);
-    act(() => {
-      h.result.actions.nodeDoubleClick(node({ id: 42, type: 'object', name: 'mol1' }));
-    });
-    expect(showGeneric).toHaveBeenCalledWith('42');
-    expect(scene.applyCameraToView).not.toHaveBeenCalled();
+  it('opens and closes the editor', () => {
+    const h = renderController(makeScene());
+    act(() => h.result.actions.beginInlineRename('42'));
+    expect(h.result.editingNodeId).toBe('42');
+    act(() => h.result.actions.cancelInlineRename());
+    expect(h.result.editingNodeId).toBeNull();
     h.unmount();
   });
 });
@@ -225,15 +255,11 @@ describe('useSceneTreeController expand/collapse persistence', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.actions.nodeExpandChange(
-        node({ id: 50, type: 'rendGroup', name: 'g1' }), true,
-      );
+      h.result.actions.nodeExpandChange(node({ id: 50, type: 'rendGroup', name: 'g1' }), true);
     });
     expect(scene.setNodeUiCollapsed).toHaveBeenCalledWith('50', true);
     act(() => {
-      h.result.actions.nodeExpandChange(
-        node({ id: 10, type: 'object', name: 'mol1' }), false,
-      );
+      h.result.actions.nodeExpandChange(node({ id: 10, type: 'object', name: 'mol1' }), false);
     });
     expect(scene.setNodeUiCollapsed).toHaveBeenCalledWith('10', false);
     h.unmount();
@@ -243,63 +269,13 @@ describe('useSceneTreeController expand/collapse persistence', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.actions.nodeExpandChange(
-        node({ id: -1, type: 'cameraRoot', name: 'Cameras' }), true,
-      );
-      h.result.actions.nodeExpandChange(
-        node({ id: -2, type: 'styleRoot', name: 'Styles' }), true,
-      );
+      h.result.actions.nodeExpandChange(node({ id: -1, type: 'cameraRoot', name: 'Cameras' }), true);
+      h.result.actions.nodeExpandChange(node({ id: -2, type: 'styleRoot', name: 'Styles' }), true);
       // Negative-id guard also applies to otherwise-persistable types.
-      h.result.actions.nodeExpandChange(
-        node({ id: -5, type: 'object', name: 'x' }), true,
-      );
-      h.result.actions.nodeExpandChange(
-        node({ id: 1, type: 'scene', name: 'S' }), true,
-      );
+      h.result.actions.nodeExpandChange(node({ id: -5, type: 'object', name: 'x' }), true);
+      h.result.actions.nodeExpandChange(node({ id: 1, type: 'scene', name: 'S' }), true);
     });
     expect(scene.setNodeUiCollapsed).not.toHaveBeenCalled();
-    h.unmount();
-  });
-});
-
-describe('useSceneTreeController toolbar handlers', () => {
-  it('focus drives focusNode with the active molview id', () => {
-    const scene = makeScene();
-    const h = renderController(scene, vi.fn(), 9);
-    act(() => {
-      h.result.actions.focusSelected('42');
-    });
-    expect(scene.focusNode).toHaveBeenCalledWith(9, '42');
-    h.unmount();
-  });
-
-  it('Add on an object row runs the New Renderer flow', () => {
-    const objNode = node({ id: 42, type: 'object', name: 'mol1' });
-    const scene = makeScene({
-      tree: node({ id: 1, type: 'scene', name: 'S', children: [objNode] }),
-      selectedId: '42',
-    });
-    const h = renderController(scene);
-    act(() => {
-      h.result.actions.addSelected();
-    });
-    expect(mocks.openNewRendererFlow).toHaveBeenCalledTimes(1);
-    expect(mocks.openNewCameraFlow).not.toHaveBeenCalled();
-    h.unmount();
-  });
-
-  it('Add on a camera row runs the New Camera flow', () => {
-    const camNode = node({ id: 99, type: 'camera', name: 'cam1' });
-    const scene = makeScene({
-      tree: node({ id: 1, type: 'scene', name: 'S', children: [camNode] }),
-      selectedId: '99',
-    });
-    const h = renderController(scene);
-    act(() => {
-      h.result.actions.addSelected();
-    });
-    expect(mocks.openNewCameraFlow).toHaveBeenCalledTimes(1);
-    expect(mocks.openNewRendererFlow).not.toHaveBeenCalled();
     h.unmount();
   });
 });
@@ -307,133 +283,63 @@ describe('useSceneTreeController toolbar handlers', () => {
 // --- Keyboard clipboard scope (Cmd+C / X / V over the scene tree) ---
 
 describe('useSceneTreeController clipboard scope', () => {
-  /** A one-node tree so findTypedNode can resolve the selection. */
-  const treeWith = (id: number) =>
-    node({ id: 0, type: 'scene', children: [node({ id, type: 'renderer' })] });
-
   /** Mount the controller and hand back the registered scope handlers. */
   function mountScope(scene: Scene) {
     const h = renderController(scene);
-    const handlers = registered.get('scene-tree');
+    const handlers = scope.get('scene-tree');
     if (!handlers) throw new Error('scene-tree scope was not registered');
     return { h, handlers };
   }
 
   it('registers under the id ScenePane tags its wrapper with', () => {
     const { h } = mountScope(makeScene());
-    expect(registered.has('scene-tree')).toBe(true);
+    expect(scope.has('scene-tree')).toBe(true);
     h.unmount();
   });
 
-  it('copies the single selected node', async () => {
-    const scene = makeScene({ tree: treeWith(42), selectedId: '42' });
-    const { h, handlers } = mountScope(scene);
+  it('copies the selection -- one row, or the whole multi-selection', async () => {
+    const { h, handlers } = mountScope(makeScene({ selectedId: '42' }));
     await act(async () => { handlers.copy(); });
-    expect(scene.copyNode).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 42 }),
-    );
-    expect(scene.bulkCopyNodes).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeCopy, { ids: ['42'] });
     h.unmount();
-  });
 
-  it('routes a multi-selection through bulkCopyNodes', async () => {
-    const ids = new Set(['42', '43']);
-    const scene = makeScene({ tree: treeWith(42), selectedId: '42', selectedIds: ids });
-    const { h, handlers } = mountScope(scene);
-    await act(async () => { handlers.copy(); });
-    expect(scene.bulkCopyNodes).toHaveBeenCalledWith(ids);
-    expect(scene.copyNode).not.toHaveBeenCalled();
-    h.unmount();
-  });
-
-  it('reports UXP\'s refusals for a multi-copy', async () => {
-    const scene = makeScene({
-      tree: treeWith(42),
-      selectedIds: new Set(['42', '43']),
-      bulkCopyNodes: vi.fn().mockResolvedValue({ ok: false, reason: 'mixed' }),
-    });
-    const { h, handlers } = mountScope(scene);
-    await act(async () => { handlers.copy(); });
-    expect(mocks.showErrorAlert).toHaveBeenCalledWith({
-      title: 'Copy',
-      message: 'Multiple items with different types selected.',
-    });
-    h.unmount();
+    dispatch.mockClear();
+    const multi = mountScope(makeScene({ selectedId: '42', selectedIds: new Set(['42', '43']) }));
+    await act(async () => { multi.handlers.copy(); });
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeCopy, { ids: ['42', '43'] });
+    multi.h.unmount();
   });
 
   it('cuts by copying first and deleting only once the copy landed', async () => {
-    const scene = makeScene({ tree: treeWith(42), selectedId: '42' });
-    const { h, handlers } = mountScope(scene);
+    dispatch.mockResolvedValue(true);
+    const { h, handlers } = mountScope(makeScene({ selectedId: '42' }));
     await act(async () => { handlers.cut(); });
-    expect(scene.copyNode).toHaveBeenCalled();
-    expect(scene.deleteNode).toHaveBeenCalledWith('42');
+    expect(dispatch).toHaveBeenNthCalledWith(1, CmdId.SceneNodeCopy, { ids: ['42'] });
+    expect(dispatch).toHaveBeenNthCalledWith(2, CmdId.SceneNodeDelete, { ids: ['42'] });
     h.unmount();
   });
 
-  it('does NOT delete when the copy failed', async () => {
-    // Losing the selection to a clipboard write that never happened would
-    // be unrecoverable from the user's point of view.
-    const scene = makeScene({
-      tree: treeWith(42),
-      selectedId: '42',
-      copyNode: vi.fn().mockResolvedValue(false),
-    });
-    const { h, handlers } = mountScope(scene);
+  it('does NOT delete when the copy was refused', async () => {
+    // Losing the selection to a clipboard write that never happened would be
+    // unrecoverable from the user's point of view.
+    dispatch.mockResolvedValue(false);
+    const { h, handlers } = mountScope(makeScene({ selectedId: '42' }));
     await act(async () => { handlers.cut(); });
-    expect(scene.deleteNode).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeCopy, { ids: ['42'] });
     h.unmount();
   });
 
-  // The toolbar Delete button and the Delete key both land on
-  // `onDeleteSelected`. UXP drove its Delete button through the same multi
-  // loop, and `useSceneTree` keeps `delete` enabled while multi-selected, so
-  // the bundle handler has to fan out rather than delete only the anchor.
-  it('deletes the whole multi-selection from onDeleteSelected', () => {
-    const ids = new Set(['42', '43']);
-    const scene = makeScene({ tree: treeWith(42), selectedId: '42', selectedIds: ids });
-    const showGeneric = vi.fn();
-    const h = renderController(scene, showGeneric);
-    act(() => { h.result.actions.deleteSelected('42'); });
-    expect(scene.bulkDeleteNodes).toHaveBeenCalledWith(ids);
-    expect(scene.deleteNode).not.toHaveBeenCalled();
-    h.unmount();
-  });
-
-  it('deletes a single row through the single-node path (cameras / styles)', () => {
-    const scene = makeScene({
-      tree: treeWith(42), selectedId: '42', selectedIds: new Set(['42']),
-    });
-    const showGeneric = vi.fn();
-    const h = renderController(scene, showGeneric);
-    act(() => { h.result.actions.deleteSelected('42'); });
-    expect(scene.deleteNode).toHaveBeenCalledWith('42');
-    expect(scene.bulkDeleteNodes).not.toHaveBeenCalled();
-    h.unmount();
-  });
-
-  it('cuts a multi-selection through the bulk delete', async () => {
-    const ids = new Set(['42', '43']);
-    const scene = makeScene({ tree: treeWith(42), selectedId: '42', selectedIds: ids });
-    const { h, handlers } = mountScope(scene);
-    await act(async () => { handlers.cut(); });
-    expect(scene.bulkDeleteNodes).toHaveBeenCalledWith(ids);
-    expect(scene.deleteNode).not.toHaveBeenCalled();
-    h.unmount();
-  });
-
-  it('pastes onto the selected node, and no-ops without a selection', async () => {
-    const scene = makeScene({ tree: treeWith(42), selectedId: '42' });
-    const { h, handlers } = mountScope(scene);
+  it('pastes onto the selected row, and no-ops without a selection', async () => {
+    const { h, handlers } = mountScope(makeScene({ selectedId: '42' }));
     await act(async () => { handlers.paste(); });
-    expect(scene.pasteNode).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 42 }),
-    );
+    expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodePaste, { targetId: '42' });
     h.unmount();
 
-    const empty = makeScene({ tree: treeWith(42), selectedId: '' });
-    const m2 = mountScope(empty);
-    await act(async () => { m2.handlers.paste(); });
-    expect(empty.pasteNode).not.toHaveBeenCalled();
-    m2.h.unmount();
+    dispatch.mockClear();
+    const empty = mountScope(makeScene({ selectedId: '' }));
+    await act(async () => { empty.handlers.paste(); });
+    expect(dispatch).not.toHaveBeenCalled();
+    empty.h.unmount();
   });
 });

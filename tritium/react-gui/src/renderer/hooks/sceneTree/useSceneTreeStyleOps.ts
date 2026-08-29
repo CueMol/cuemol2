@@ -1,8 +1,14 @@
 /**
  * @file hooks/sceneTree/useSceneTreeStyleOps.ts
- * @description Style-set operations plus scene-level operations
- * (background color, color proofing) for `useSceneTree`. These callbacks
+ * @description Style-set operations for `useSceneTree`. These callbacks
  * dispatch directly to the worker without a tree lookup.
+ *
+ * The scene's background colour and colour-proofing flag used to live here
+ * too, for the scene row's context menu. They were a second implementation
+ * of what the Scene menu already did, and the copy here did not tell the
+ * native menu about the change, so its radio items went stale. Both are now
+ * the `SceneBgWhite` / `SceneBgBlack` / `SceneColorProof` commands, which the
+ * context menu dispatches like every other entry.
  */
 
 import { useCallback, type MutableRefObject, useMemo} from 'react'
@@ -25,10 +31,6 @@ export interface SceneTreeStyleOps {
         nodeId: number,
         scopeId: number,
     ) => Promise<{ ok: boolean; saved: boolean }>
-    /** Set the scene's background color from the scene ctx menu. */
-    setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
-    /** Toggle the scene's color-proofing flag. */
-    toggleSceneColorProofing: () => Promise<boolean>
 }
 
 export function useSceneTreeStyleOps(
@@ -95,31 +97,6 @@ export function useSceneTreeStyleOps(
         [cm, sceneIdRef],
     )
 
-    const setSceneBackgroundColor = useCallback(
-        async (color: 'white' | 'black'): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('setSceneBgColor', {
-                sceneId: sid,
-                colorName: color,
-            })
-            return res?.ok === true
-        },
-        [cm, sceneIdRef],
-    )
-
-    const toggleSceneColorProofing = useCallback(
-        async (): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('toggleSceneColorProofing', {
-                sceneId: sid,
-            })
-            return res?.ok === true
-        },
-        [cm, sceneIdRef],
-    )
-
     /**
      * Style-set operations, memoized for the same reason as the node ops: the
      * bundle they are spread into is handed out as context.
@@ -131,13 +108,10 @@ export function useSceneTreeStyleOps(
             loadStyleSetFromFile,
             saveStyleSetToFile,
             saveStyleSetToCurrentSrc,
-            setSceneBackgroundColor,
-            toggleSceneColorProofing,
         }),
         [
-        createStyleSet, toggleStyleSetReadOnly, loadStyleSetFromFile,
-        saveStyleSetToFile, saveStyleSetToCurrentSrc, setSceneBackgroundColor,
-        toggleSceneColorProofing,
+            createStyleSet, toggleStyleSetReadOnly, loadStyleSetFromFile,
+            saveStyleSetToFile, saveStyleSetToCurrentSrc,
         ],
     )
 }

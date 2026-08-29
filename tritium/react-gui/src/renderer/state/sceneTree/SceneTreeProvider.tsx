@@ -10,19 +10,19 @@
  *                            the rows
  *   - useSceneTreeActions()  identity-stable for the provider's lifetime
  *
- * Opening a row in the inspector is the one thing that leaves this
- * provider: the id is resolved against the live tree here, and the
- * inspector receives a fully resolved target, so it never needs the tree.
+ * Also mounts the tree's command handlers: they need both the tree
+ * operations and the active scene, and this is the only place holding
+ * both. Every gesture -- a toolbar button, a key, the context menu --
+ * dispatches to them, so there is one implementation per operation.
  */
 
-import React, { createContext, useCallback, useContext, useMemo } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
 import { useSceneTree, type SceneTreeSelectionOps } from '../../hooks/useSceneTree'
 import { useCueMol } from '../../hooks/cuemol/useCueMol'
-import { useLatestRef } from '../../hooks/react/useLatestRef'
 import { useActiveScene } from '../workspace'
-import { useInspectorActions, resolveNodeTarget } from '../inspector'
 import { useSceneTreeController, type SceneTreeActions } from './useSceneTreeController'
+import { SceneTreeCommands, useSceneNewFlows } from './commands'
 
 export interface SceneTreeState {
   tree: SceneTreeNode | null
@@ -54,24 +54,15 @@ export function SceneTreeProvider({ children }: { children: React.ReactNode }): 
   const { cm } = useCueMol()
   const { activeSceneId, activeMolViewId } = useActiveScene()
   const scene = useSceneTree({ cm, sceneId: activeSceneId })
-  const { showNode } = useInspectorActions()
-
-  const treeRef = useLatestRef(scene.tree)
-  const showProperty = useCallback(
-    (id: string) => {
-      const target = resolveNodeTarget(treeRef.current, id)
-      if (target) showNode(target)
-    },
-    [treeRef, showNode],
-  )
 
   const { editingNodeId, actions } = useSceneTreeController({
     scene,
     cm,
     activeSceneId,
     activeMolViewId,
-    showProperty,
   })
+
+  const flows = useSceneNewFlows({ cm, sceneId: activeSceneId, activeViewId: activeMolViewId, scene })
 
   const state = useMemo<SceneTreeState>(
     () => ({
@@ -87,7 +78,17 @@ export function SceneTreeProvider({ children }: { children: React.ReactNode }): 
 
   return (
     <ActionsContext.Provider value={actions}>
-      <StateContext.Provider value={state}>{children}</StateContext.Provider>
+      <StateContext.Provider value={state}>
+        <SceneTreeCommands
+          cm={cm}
+          sceneId={activeSceneId}
+          activeViewId={activeMolViewId}
+          scene={scene}
+          beginInlineRename={actions.beginInlineRename}
+          {...flows}
+        />
+        {children}
+      </StateContext.Provider>
     </ActionsContext.Provider>
   )
 }

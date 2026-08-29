@@ -41,39 +41,48 @@ export function useFileCommands({
     const showConfirmReload = useShowConfirmReloadSceneDialog()
     const showExportPngOptions = useShowExportPngOptionsDialog()
 
-    // ObjectSaveAs -- UXP `onFileSaveAs`. The File menu has no right-clicked
-    // node, so the object to save is resolved from the active scene: save
-    // directly when there is exactly one, otherwise show a picker. Objects
-    // without a compatible writer are excluded, as UXP does.
-    useRegisterCommand(CmdId.ObjectSaveAs, async () => {
+    // ObjectSaveAs -- UXP `onFileSaveAs`. The scene tree right-clicks a
+    // specific object and passes its id; the File menu has none, so the
+    // object is resolved from the active scene: save directly when there is
+    // exactly one, otherwise show a picker. Objects without a compatible
+    // writer are excluded, as UXP does.
+    //
+    // One handler for both entry points: the scene tree used to run its own
+    // copy of this flow, which reported the same failure under a different
+    // title and skipped the "no object to save" case.
+    useRegisterCommand(CmdId.ObjectSaveAs, async (args) => {
         if (!cm) return
         const info = getActiveSceneInfo()
         if (!info) return
-        const res = await cm.invokeService('listSavableObjects', {
-            sceneId: info.scene_uid,
-        })
-        const objects = res?.ok ? res.objects : []
-        if (objects.length === 0) {
-            await showErrorAlert({
-                title: 'Save File As',
-                message: 'No object to save',
+
+        let objId = args?.objId
+        if (objId === undefined) {
+            const res = await cm.invokeService('listSavableObjects', {
+                sceneId: info.scene_uid,
             })
-            return
+            const objects = res?.ok ? res.objects : []
+            if (objects.length === 0) {
+                await showErrorAlert({
+                    title: 'Save File As',
+                    message: 'No object to save',
+                })
+                return
+            }
+            if (objects.length === 1) {
+                objId = objects[0].id
+            } else {
+                const picked = await showObjectPicker({
+                    // UXP labels its prompt rows "<name> (<type>, id=<ID>)".
+                    objects: objects.map((o) => ({
+                        id: o.id,
+                        name: `${o.name} (${o.className}, id=${o.id})`,
+                    })),
+                })
+                if (picked === null) return
+                objId = picked
+            }
         }
-        let objId: number
-        if (objects.length === 1) {
-            objId = objects[0].id
-        } else {
-            const picked = await showObjectPicker({
-                // UXP labels its prompt rows "<name> (<type>, id=<ID>)".
-                objects: objects.map((o) => ({
-                    id: o.id,
-                    name: `${o.name} (${o.className}, id=${o.id})`,
-                })),
-            })
-            if (picked === null) return
-            objId = picked
-        }
+
         const flow = await runObjectSaveFlow(cm, info.scene_uid, objId)
         if (flow.status === 'error') {
             await showErrorAlert({

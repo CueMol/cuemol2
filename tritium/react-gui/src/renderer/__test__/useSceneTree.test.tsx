@@ -380,18 +380,6 @@ const WIRE_CASES: WireCase[] = [
         },
     },
     {
-        name: 'setSceneBackgroundColor',
-        run: (r) => r.setSceneBackgroundColor('white'),
-        channel: 'setSceneBgColor',
-        payload: { sceneId: SCENE_ID, colorName: 'white' },
-    },
-    {
-        name: 'toggleSceneColorProofing',
-        run: (r) => r.toggleSceneColorProofing(),
-        channel: 'toggleSceneColorProofing',
-        payload: { sceneId: SCENE_ID },
-    },
-    {
         name: 'createStyleSet',
         run: (r) => r.createStyleSet('myStyle'),
         channel: 'createStyleSet',
