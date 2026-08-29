@@ -7,7 +7,7 @@
  */
 import { Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
-import type { NaviCtxAction, NaviCtxMenuPayload } from '@shared/ipcTypes'
+import type { NaviCtxAction, NaviCtxMenuPayload } from '@shared/types/naviCtxMenu'
 import { buildNaviCtxMenuNodes } from '@shared/naviCtxMenu'
 import { toElectronTemplate } from './menuNodeAdapter'
 

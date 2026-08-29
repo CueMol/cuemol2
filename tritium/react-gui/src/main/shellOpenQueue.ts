@@ -14,7 +14,7 @@
  */
 
 import type { ParsedFileArgs } from './helpers/parseFileArgs'
-import type { ShellOpenRequest } from '@shared/ipcTypes'
+import type { ShellOpenRequest } from '@shared/types/fileEvents'
 
 let pendingPaths: string[] = []
 let pendingMissing: string[] = []

@@ -178,7 +178,7 @@ Key constraints and choices:
     parameterized `trackWindowState`), `main/renderWindowIpc.ts` (relay +
     view-size correlation), `main/stateStore.ts` (`renderWindowBounds`).
   - IPC contract: `shared/ipcChannels.ts` (`render-window:*`),
-    `shared/ipcTypes.ts` (wire types `RenderWindowCommand` /
+    `shared/types/renderWindow.ts` (wire types `RenderWindowCommand` /
     `RenderWindowStateUpdate` / `ViewSizePx`), `shared/ipcContract.ts`.
   - Renderer: `render.html` / `render.tsx` (ErrorBoundary + ThemeProvider
     only; no `installGlobalCrashHandlers`),

@@ -22,7 +22,7 @@ import { IPC } from "@shared/ipcChannels";
 import { RenderImageViewer } from "./RenderImageViewer";
 import { useTheme } from "../../contexts/ThemeContext";
 import type { RenderResult } from "../../data/renderResult";
-import type { RenderImageRef } from "@shared/ipcTypes";
+import type { RenderImageRef } from "@shared/types/renderWindow";
 import type { PropDef } from "../../data/rendererProperties";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
 

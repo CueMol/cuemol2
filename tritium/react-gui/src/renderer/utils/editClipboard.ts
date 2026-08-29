@@ -36,7 +36,7 @@
  */
 
 import { IPC } from '@shared/ipcChannels'
-import type { TextEditAction } from '@shared/ipcTypes'
+import type { TextEditAction } from '@shared/types/textCtxMenu'
 
 /** What a registered panel can do with the clipboard. */
 export interface ClipboardScopeHandlers {

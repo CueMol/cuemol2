@@ -11,7 +11,7 @@
  */
 
 import { IPC } from '@shared/ipcChannels'
-import type { CrashReport } from '@shared/ipcTypes'
+import type { CrashReport } from '@shared/types/crash'
 
 const FALLBACK_DOM_ID = 'crash-fallback-dom'
 

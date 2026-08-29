@@ -59,7 +59,7 @@ pick" problem that drove ADR-0024 does not apply.
   (`listAtomIntrDefs` / `removeAtomIntrDefs`; `ServiceMap` rows in
   `worker/shared/WorkerCalls.ts`); `components/dialogs/EditInteractionListDialog.tsx`
   (+ Provider, registered in `contexts/DialogContext.tsx`); gating in
-  `shared/ipcTypes.ts` (`editInteractionList` action + `canEditInteractions`
+  `shared/types/sceneCtxMenu.ts` (`editInteractionList` action + `canEditInteractions`
   payload), `hooks/sceneContextMenu/buildSceneCtxPayload.ts`,
   `main/contextMenu/sceneCtxTemplates.ts` (renderer branch item),
   `hooks/sceneContextMenu/dispatchSceneCtxAction.ts` (case),

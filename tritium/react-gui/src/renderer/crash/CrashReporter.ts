@@ -25,7 +25,7 @@
  */
 
 import { IPC } from '@shared/ipcChannels'
-import type { CrashReport, CrashSource } from '@shared/ipcTypes'
+import type { CrashReport, CrashSource } from '@shared/types/crash'
 import { mountFallbackDom } from './mountFallbackDom'
 
 type Subscriber = (report: CrashReport) => void

@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildTemplate } from '@shared/sceneCtxMenu/sceneCtxTemplates'
 import type { SceneCtxNode } from '@shared/sceneCtxMenu/sceneCtxItems'
-import type { SceneCtxMenuPayload } from '@shared/ipcTypes'
+import type { SceneCtxMenuPayload } from '../types/sceneCtxMenu'
 import { isSeparatorNode } from '@shared/menuNodes'
 
 function payload(o: Partial<SceneCtxMenuPayload>): SceneCtxMenuPayload {

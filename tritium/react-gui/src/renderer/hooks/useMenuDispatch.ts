@@ -11,7 +11,7 @@ import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import type { CommandKey } from '../commands/CommandMap'
 import { IPC } from '@shared/ipcChannels'
-import type { RecentFileEntry } from '@shared/ipcTypes'
+import type { RecentFileEntry } from '@shared/types/recent'
 import {
   MENU_ACTION_MAP,
   MENU_DISPATCH_RECENT_CLEAR,

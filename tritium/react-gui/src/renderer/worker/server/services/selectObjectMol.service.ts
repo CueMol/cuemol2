@@ -10,7 +10,7 @@
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { WorkerContext } from '../types/WorkerContext';
-import type { SelectMolKind } from '@shared/ipcTypes';
+import type { SelectMolKind } from '@shared/types/sceneCtxMenu';
 import { makeSel } from './helpers/makeSel';
 import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selStrTransforms';
 import { withUndoTxn } from './withUndoTxn';

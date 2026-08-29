@@ -11,9 +11,12 @@ import fs from 'fs'
 import path from 'path'
 import { app } from 'electron'
 import Store from 'electron-store'
-import type { LayoutState, RecentFileEntry, UiState } from '@shared/ipcTypes'
+import type { LayoutState } from '@shared/types/layout'
+import type { UiState } from '@shared/types/uiPrefs'
+import type { RecentFileEntry } from '@shared/types/recent'
 
-export type { LayoutState, UiState, PaneCollapseState } from '@shared/ipcTypes'
+export type { LayoutState, PaneCollapseState } from '@shared/types/layout'
+export type { UiState } from '@shared/types/uiPrefs'
 
 // --- Types ---
 

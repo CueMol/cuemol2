@@ -7,7 +7,7 @@
  * fs.existsSync filter.
  */
 
-import type { RecentFileEntry } from './ipcTypes'
+import type { RecentFileEntry } from './types/recent'
 
 export const MAX_RECENTS = 10
 

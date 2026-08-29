@@ -136,7 +136,7 @@ rows now use the UXP label format `<name> (<type>, id=<ID>)`.
 
 ### Implementation / tests
 
-- `shared/ipcTypes.ts` (`UiState.saveWriterName`),
+- `shared/types/uiPrefs.ts` (`UiState.saveWriterName`),
   `worker/server/services/objectSave.service.ts` (`preferredWriter` reorder,
   `writeMsgLog`, `listSavableObjects`), `worker/shared/WorkerCalls.ts` (1 row),
   `hooks/sceneContextMenu/runObjectSaveFlow.ts`, `dispatchSceneCtxAction.ts`,

@@ -10,7 +10,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { act, useState } from 'react';
 import { makeRenderHook, flushPromises } from './helpers/testHarness';
 import { useHatchTemplate } from '../hooks/useHatchTemplate';
-import type { HatchStyleSpecReply } from '@shared/ipcTypes';
+import type { HatchStyleSpecReply } from '@shared/types/renderWindow';
 
 const okReply = (spec: string): HatchStyleSpecReply => ({ ok: true, spec });
 

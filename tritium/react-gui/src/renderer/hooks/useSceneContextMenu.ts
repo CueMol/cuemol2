@@ -1,11 +1,5 @@
 import { useCallback } from 'react'
-import type {
-    ChangeRendSelKind,
-    RendColoringId,
-    SceneCtxAction,
-    SceneCtxMenuPayload,
-    SelectMolKind,
-} from '@shared/ipcTypes'
+import type { ChangeRendSelKind, RendColoringId, SceneCtxAction, SceneCtxMenuPayload, SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { IPC } from '@shared/ipcChannels'
 import { buildTemplate } from '@shared/sceneCtxMenu/sceneCtxTemplates'
 import { useShowContextMenu } from '../components/menu/ContextMenuProvider'

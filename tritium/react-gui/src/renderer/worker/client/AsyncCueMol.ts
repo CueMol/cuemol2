@@ -9,7 +9,7 @@
  * does the work in one round-trip rather than calling many methods here
  * in sequence.
  */
-import type { ElectronFileFilter } from '@shared/ipcTypes';
+import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '../../components/fopen-opt-dlgs/types';
 import {
     WorkerTransport,

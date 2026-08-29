@@ -16,7 +16,7 @@ import {
     dispatchSceneCtxAction,
     type DispatchSceneCtxActionCtx,
 } from '../hooks/sceneContextMenu/dispatchSceneCtxAction'
-import type { SceneCtxAction } from '@shared/ipcTypes'
+import type { SceneCtxAction } from '@shared/types/sceneCtxMenu'
 import { IPC } from '@shared/ipcChannels'
 
 function makeCtx(overrides: Partial<DispatchSceneCtxActionCtx> = {}): DispatchSceneCtxActionCtx {

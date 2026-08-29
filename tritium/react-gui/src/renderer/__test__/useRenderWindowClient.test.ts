@@ -17,11 +17,7 @@ import {
 } from './helpers/testHarness';
 import { useRenderWindowClient } from '../hooks/useRenderWindowClient';
 import { IPC } from '@shared/ipcChannels';
-import type {
-    RenderTargetViewWire,
-    RenderWindowModeRequest,
-    RenderWindowStateUpdate,
-} from '@shared/ipcTypes';
+import type { RenderTargetViewWire, RenderWindowModeRequest, RenderWindowStateUpdate } from '@shared/types/renderWindow';
 import type { RenderSettingsSnapshot } from '../data/renderResult';
 
 const snapshot: RenderSettingsSnapshot = {

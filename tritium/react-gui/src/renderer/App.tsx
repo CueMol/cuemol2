@@ -51,7 +51,7 @@ import { useShellOpenFiles } from "./hooks/useShellOpenFiles";
 import { FileDropOverlay } from "./components/FileDropOverlay";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
-import type { ViewCenterMark } from "@shared/ipcTypes";
+import type { ViewCenterMark } from "@shared/types/menuState";
 import { IPC } from "@shared/ipcChannels";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useBusyCursor } from "./hooks/useBusyCursor";

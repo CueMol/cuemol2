@@ -19,7 +19,7 @@ import {
   flushPromises,
 } from './helpers/testHarness';
 import { IPC } from '@shared/ipcChannels';
-import type { MovieRenderPrefs } from '@shared/ipcTypes';
+import type { MovieRenderPrefs } from '@shared/types/uiPrefs';
 import { useMovieOutputPrefs } from '../hooks/useMovieOutputPrefs';
 import { DEFAULT_MOVIE_SETTINGS, type MovieSettings } from '../data/renderSettings';
 

@@ -98,7 +98,7 @@ from the `unimplemented` stub to `CmdId.UiCalcApbsPotDialog`).
   menu re-route in `shared/menuActionMap.ts` (`IPC.MENU_APBS`).
 - Settings: `contexts/ApbsConfigContext.tsx` (3-level fallback),
   `components/panes/settings/settingsConfig.ts` (`APBS_SETTING_KEYS`, Tools
-  category), `components/panes/SettingsPane.tsx`, `shared/ipcTypes.ts`
+  category), `components/panes/SettingsPane.tsx`, `shared/types/uiPrefs.ts`
   (`UiState.apbsExe` / `pdb2pqrExe` / `pdb2pqrFF`, `AppPathInfo.defaultApbsBinaries`).
 - Bundled-default resolver: `main/ipcHandlers.ts` `getApbsBinaries()` (packaged:
   `resourcesPath/bundle_apps/apbs/{apbs,pdb2pqr}`; dev: `BUNDLE_APPS/apbs/...`),
