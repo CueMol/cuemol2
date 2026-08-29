@@ -13,6 +13,7 @@
 #include <qlib/LTimeValue.hpp>
 
 #include <chrono>
+#include <vector>
 
 using qlib::LString;
 using qlib::LQuat;
@@ -535,4 +536,86 @@ TEST(ViewMomentumScrollTest, SetupXYReturnsNanoSeconds)
     // The result is handed straight to EventManager::setTimer(), so it must
     // already be in the internal (ns) representation.
     EXPECT_EQ(mms.setupXY(ev), qlib::timeval::fromMilliSec(500));
+}
+
+// --- Property-change events for the menu-mirrored view attributes ---
+//
+// Every other View setter fires VWE_PROPCHG; setPerspec() and
+// setCenterMark() did not, so a UI mirroring them (the View menu, the
+// property inspector) had no way to learn about a change made anywhere
+// else -- through a script, an undo, or another window -- and went stale.
+
+namespace {
+
+/// Records the descr of every non-drag property change on any view.
+class PropChgRecorder : public qsys::ViewEventListener
+{
+public:
+    std::vector<LString> descrs;
+
+    PropChgRecorder()
+    {
+        qsys::ScrEventManager::getInstance()->addViewListener(qlib::invalid_uid,
+                                                             this);
+    }
+    ~PropChgRecorder()
+    {
+        qsys::ScrEventManager::getInstance()->removeViewListener(this);
+    }
+
+    void viewChanged(qsys::ViewEvent &ev) override
+    {
+        if (ev.getType() == qsys::ViewEvent::VWE_PROPCHG)
+            descrs.push_back(ev.getDescr());
+    }
+
+    int count(const char *descr) const
+    {
+        int n = 0;
+        for (const LString &d : descrs)
+            if (d.equals(descr)) ++n;
+        return n;
+    }
+};
+
+}  // namespace
+
+TEST(ViewPropChgEventTest, SetPerspecFiresPropChange)
+{
+    qsys::TTYView v;
+    v.setPerspec(false);
+    PropChgRecorder rec;
+
+    v.setPerspec(true);
+    EXPECT_EQ(rec.count("perspective"), 1);
+}
+
+TEST(ViewPropChgEventTest, SetPerspecIsSilentWhenUnchanged)
+{
+    qsys::TTYView v;
+    v.setPerspec(true);
+    PropChgRecorder rec;
+
+    v.setPerspec(true);
+    EXPECT_EQ(rec.count("perspective"), 0);
+}
+
+TEST(ViewPropChgEventTest, SetCenterMarkFiresPropChange)
+{
+    qsys::TTYView v;
+    v.setCenterMark(qsys::Camera::CCM_CROSS);
+    PropChgRecorder rec;
+
+    v.setCenterMark(qsys::Camera::CCM_AXIS);
+    EXPECT_EQ(rec.count("centerMark"), 1);
+}
+
+TEST(ViewPropChgEventTest, SetCenterMarkIsSilentWhenUnchanged)
+{
+    qsys::TTYView v;
+    v.setCenterMark(qsys::Camera::CCM_AXIS);
+    PropChgRecorder rec;
+
+    v.setCenterMark(qsys::Camera::CCM_AXIS);
+    EXPECT_EQ(rec.count("centerMark"), 0);
 }

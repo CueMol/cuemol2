@@ -560,6 +560,12 @@ void View::setPerspec(bool b)
     m_curcam.m_fPerspec = b;
     setProjChange();
     setUpdateFlag();
+
+    // fire event
+    ViewEvent ev;
+    ev.setType(ViewEvent::VWE_PROPCHG);
+    ev.setDescr("perspective");
+    fireViewEvent(ev);
   }
 }
 
@@ -1138,6 +1144,12 @@ void View::setCenterMark(int nMode)
     if (m_curcam.getCenterMark() != nMode) {
         m_curcam.setCenterMark(nMode);
         setUpdateFlag();
+
+        // fire event
+        ViewEvent ev;
+        ev.setType(ViewEvent::VWE_PROPCHG);
+        ev.setDescr("centerMark");
+        fireViewEvent(ev);
     }
 }
 
