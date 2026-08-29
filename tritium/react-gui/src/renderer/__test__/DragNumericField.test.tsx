@@ -10,8 +10,11 @@
  * `mousemove` with explicit `movementX` -- exactly the input the widget
  * accumulates.
  *
- * Drag math under test: PX_PER_STEP = 8, so the raw value moves by
- * `step / 8` per pixel, then snaps to the active granularity.
+ * Drag math under test: a field with a finite range sweeps that range across
+ * three quarters of its own width, so the tests that exercise the rate give the
+ * widget a width (jsdom reports 0, which is the "no width to map onto" fallback
+ * -- `step / PX_PER_STEP` = `step / 8` per pixel -- the rest of the file relies
+ * on).
  */
 
 import React, { act } from 'react'
@@ -464,13 +467,68 @@ describe('DragNumericField', () => {
         expect(getEditInput()).toBeNull()
     })
 
+    // --- Drag rate ---
+
+    /**
+     * jsdom lays nothing out, so a field only has the width a test gives it.
+     * The value is read at drag start, which is what the widget does.
+     */
+    function giveRootWidth(px: number): void {
+        const el = getRoot()
+        el.getBoundingClientRect = () => ({ width: px, height: 20, x: 0, y: 0,
+            top: 0, left: 0, right: px, bottom: 20, toJSON: () => ({}) }) as DOMRect
+    }
+
+    it('sweeps the whole range across three quarters of the field width', () => {
+        const onChange = vi.fn()
+        // 200px wide -> 150px of travel spans 0..10.
+        render({ value: 0, min: 0, max: 10, step: 0.1, onChange })
+        giveRootWidth(200)
+        mouseDownBody()
+        moveBy(150)
+        expect(onChange).toHaveBeenLastCalledWith(10)
+        mouseUp()
+    })
+
+    it('spans the same fraction of a range whatever the numbers in it are', () => {
+        // The point of deriving the rate: the same gesture covers the same
+        // proportion of a 0-1 opacity and a 0-100 percentage.
+        const onOpacity = vi.fn()
+        render({ value: 0, min: 0, max: 1, step: 0.01, onChange: onOpacity })
+        giveRootWidth(200)
+        mouseDownBody()
+        moveBy(75) // half of the 150px sweep
+        expect(onOpacity).toHaveBeenLastCalledWith(0.5)
+        mouseUp()
+
+        const onPercent = vi.fn()
+        render({ value: 0, min: 0, max: 100, step: 1, onChange: onPercent })
+        giveRootWidth(200)
+        mouseDownBody()
+        moveBy(75)
+        expect(onPercent).toHaveBeenLastCalledWith(50)
+        mouseUp()
+    })
+
+    it('keeps the fixed rate for a field with no finite range', () => {
+        const onChange = vi.fn()
+        // Unbounded: there is no range to sweep, so step / 8 per pixel stands.
+        render({ value: 0, step: 1, onChange })
+        giveRootWidth(200)
+        mouseDownBody()
+        moveBy(8)
+        expect(onChange).toHaveBeenLastCalledWith(1)
+        mouseUp()
+    })
+
     // --- pxPerStep sensitivity override ---
 
     it('pxPerStep scales drag sensitivity (1 unit / pixel when pxPerStep=1)', () => {
         const onChange = vi.fn()
-        // pxPerStep 1, step 1: 5px * (1 / 1) = +5 -> 6.
-        // (The default pxPerStep 8 would give 5 * (1/8) = 0.625 -> snap 1 -> 2.)
+        // pxPerStep 1, step 1: 5px * (1 / 1) = +5 -> 6, even though the
+        // -100..100 range would otherwise be swept across the field.
         render({ value: 1, min: -100, max: 100, step: 1, pxPerStep: 1, onChange })
+        giveRootWidth(200)
         mouseDownBody()
         moveBy(5)
         expect(onChange).toHaveBeenLastCalledWith(6)

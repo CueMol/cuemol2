@@ -22,11 +22,17 @@
  * The fine / coarse snaps default to `step / 10` and `step * 10` but can be set
  * explicitly via `fineSnap` / `coarseSnap` when the desired granularity is not a
  * 10th / 10x of `step` (e.g. step 0.05 with a fine snap of 0.01).
- * The drag sensitivity is `step / pxPerStep` value units per pixel (constant
- * for a given field; `pxPerStep` defaults to 8). Only the snap granularity
+ * The drag sensitivity is derived from the field's own range and width:
+ * sweeping across three quarters of the widget takes the value from `min` to
+ * `max`. The same gesture therefore spans the same PROPORTION of the range
+ * whatever the numbers are, which is what keeps a 0-1 opacity and a 0-100
+ * percentage equally controllable -- with a fixed value-per-pixel rate one of
+ * them always ends up either impossible to nudge or impossible to sweep. A
+ * field with no finite range, or an explicit `pxPerStep`, keeps the fixed
+ * `step / pxPerStep` rate instead. Only the snap granularity
  * changes with a modifier, so Shift gives finer resolution rather than slower
  * motion. The `<` / `>` arrows, by contrast, increment / decrement by `step`
- * (independent of `pxPerStep`), and auto-repeat while held down (one immediate
+ * (independent of the drag rate), and auto-repeat while held down (one immediate
  * step, then -- after a short delay -- a steady stream of steps until release).
  * Pressing an arrow while text-editing leaves edit mode and steps relative to
  * the typed draft (or the current value when nothing valid was typed).
@@ -105,11 +111,43 @@ void React; // classic JSX runtime (vitest)
 /** Pixels of horizontal travel before a press becomes a drag (vs a click). */
 const DRAG_THRESHOLD_PX = 4;
 /**
- * Default pixels of horizontal travel that move the raw value by one normal
- * `step`. Overridable per-field via the `pxPerStep` prop (smaller = more
- * sensitive; e.g. 1 reproduces the UXP fakedial wheel's 1 unit / pixel).
+ * Pixels of horizontal travel that move the raw value by one normal `step`,
+ * for a field whose range cannot be swept (see `dragValuePerPx`). Settable
+ * per-field via the `pxPerStep` prop (smaller = more sensitive; e.g. 1
+ * reproduces the UXP fakedial wheel's 1 unit / pixel).
  */
 const PX_PER_STEP = 8;
+/**
+ * Fraction of the field's width a drag crosses to span its whole range. Less
+ * than 1 so the sweep is comfortably inside the widget rather than needing the
+ * full width exactly.
+ */
+const RANGE_DRAG_FRACTION = 0.75;
+
+/**
+ * Value units per pixel of horizontal drag.
+ *
+ * A field with a finite range maps that range onto a fraction of its own
+ * width, so the gesture is proportional to the range rather than to the
+ * numbers in it. Falls back to the fixed `step / pxPerStep` rate when there is
+ * no range to map (an unbounded field) or no width to map it onto (before
+ * layout, and under jsdom). An explicit `pxPerStep` opts out: the caller has
+ * said what the rate should be.
+ */
+function dragValuePerPx(
+    min: number,
+    max: number,
+    step: number,
+    pxPerStep: number | undefined,
+    widthPx: number,
+): number {
+    if (pxPerStep === undefined) {
+        const range = max - min;
+        const travel = widthPx * RANGE_DRAG_FRACTION;
+        if (Number.isFinite(range) && range > 0 && travel > 0) return range / travel;
+    }
+    return step / (pxPerStep ?? PX_PER_STEP);
+}
 /** Factor between the normal snap and the fine (Shift) / coarse (Ctrl) snaps. */
 const SNAP_FACTOR = 10;
 /** Delay before a held arrow starts auto-repeating (after the first step). */
@@ -138,10 +176,11 @@ export interface DragNumericFieldProps {
      */
     step?: number;
     /**
-     * Pixels of horizontal drag that move the raw value by one `step`. Default
-     * 8. Lower it to make the field more sensitive (e.g. 1 = 1 unit / pixel,
-     * matching the UXP fakedial wheel). Does not affect the snap granularity or
-     * the arrow increment, only the drag-speed.
+     * Fix the drag rate at `step / pxPerStep` value units per pixel instead of
+     * deriving it from the range (e.g. 1 = 1 unit / pixel, matching the UXP
+     * fakedial wheel). Only for a field whose range is not what the gesture
+     * should span -- an unbounded one, or one where a specific feel is part of
+     * the port. Does not affect the snap granularity or the arrow increment.
      */
     pxPerStep?: number;
     /**
@@ -241,6 +280,8 @@ interface DragState {
     startValue: number;
     accumPx: number;
     crossed: boolean;
+    /** Fixed for the drag, so a re-layout mid-gesture cannot change the feel. */
+    valuePerPx: number;
 }
 
 /** Transient arrow-press bookkeeping for the auto-repeat hold. */
@@ -280,7 +321,7 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     min = -Infinity,
     max = Infinity,
     step = 1,
-    pxPerStep = PX_PER_STEP,
+    pxPerStep,
     fineSnap,
     coarseSnap,
     decimals,
@@ -373,7 +414,7 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     const handleMouseMove = useCallback((e: MouseEvent) => {
         const d = dragRef.current;
         if (!d) return;
-        const { onChange, min, max, step, pxPerStep, fineStep, coarseStep } = cbRef.current;
+        const { onChange, min, max, fineStep, coarseStep, step } = cbRef.current;
 
         d.accumPx += e.movementX;
 
@@ -391,10 +432,10 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
             if (locked && typeof locked.catch === 'function') locked.catch(() => {});
         }
 
-        // Constant sensitivity (value units per pixel); the modifier only
-        // changes the snap granularity, so the raw value moves at the same
-        // rate but is forced to a finer / coarser multiple.
-        const raw = d.startValue + (d.accumPx / pxPerStep) * step;
+        // The rate was fixed when the drag started; the modifier only changes
+        // the snap granularity, so the raw value moves at the same rate but is
+        // forced to a finer / coarser multiple.
+        const raw = d.startValue + d.accumPx * d.valuePerPx;
         const snap = e.shiftKey
             ? fineStep
             : e.ctrlKey || e.metaKey
@@ -460,7 +501,19 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
             // Focus the widget as a whole (preventDefault above suppresses the
             // implicit focus, so do it explicitly).
             rootRef.current?.focus();
-            dragRef.current = { startValue: value, accumPx: 0, crossed: false };
+            const c = cbRef.current;
+            dragRef.current = {
+                startValue: value,
+                accumPx: 0,
+                crossed: false,
+                valuePerPx: dragValuePerPx(
+                    c.min,
+                    c.max,
+                    c.step,
+                    c.pxPerStep,
+                    rootRef.current?.getBoundingClientRect().width ?? 0,
+                ),
+            };
             document.body.style.userSelect = 'none';
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
