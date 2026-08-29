@@ -5,7 +5,7 @@
  * plus base sticks / cylinders along nucleic-acid chains.
  *
  * Migrated from the UXP `nucl-propdlg`, which stacks three tabs:
- *   - "Common"       -> the shared `RendererCommonSection`
+ *   - "Common"       -> the shared renderer-common page (`schema/common`)
  *   - "Nucleic acid" -> the nucl-specific controls (this file's `NuclBaseSection`)
  *   - "Tube"         -> the shared `tube-page` overlay, identical to the tube
  *     renderer's Tube / Section / Putty pages
@@ -33,7 +33,7 @@ import {
   BoolRow,
   EnumRow,
   resetProps,
-} from "./RendererCommonSection";
+} from "./rows";
 import {
   TubeMainSection,
   TubeSectionSection,

@@ -103,6 +103,16 @@ export interface MappedEnumRowDef extends RowBase {
 }
 
 /**
+ * An enum property shown as a dropdown reading as its raw C++ ids. Use
+ * `mappedEnum` when the ids are not what a user should read; `options` still
+ * fixes the order, since the `enumdef` C++ reports is alphabetical.
+ */
+export interface EnumRowDef extends RowBase {
+  kind: 'enum'
+  options?: string[]
+}
+
+/**
  * A numeric property shown as a slider, for a range meant to be swept rather
  * than dialled in (a tessellation density, say).
  */
@@ -185,6 +195,7 @@ export interface AsyncSelectRowDef extends RowBase {
 /** A row of a Properties page. */
 export type PropRowDef =
   | NumRowDef
+  | EnumRowDef
   | MappedEnumRowDef
   | SliderRowDef
   | BoolRowDef

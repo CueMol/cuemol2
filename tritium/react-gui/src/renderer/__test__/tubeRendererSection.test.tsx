@@ -24,8 +24,8 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// RendererCommonSection -> MaterialRow uses useCueMol (pulled in transitively
-// via the rendererPropSections registry import).
+// The common page's Material row fetches names through useCueMol (pulled in
+// transitively via the rendererPropSections registry import).
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))

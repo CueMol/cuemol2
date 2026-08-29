@@ -22,7 +22,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { NumRow, NumInputRow, BoolRow, MappedEnumRow, SelRow, resetProps } from "./RendererCommonSection";
+import { NumRow, NumInputRow, BoolRow, MappedEnumRow, SelRow, resetProps } from "./rows";
 import { PropertyField, SelectField, SwitchField } from "../../h3-kit/form";
 import { objectFilters } from "../../h3-kit/ObjectSelect";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";

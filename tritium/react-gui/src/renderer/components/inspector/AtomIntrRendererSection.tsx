@@ -39,7 +39,7 @@ import {
   TextRow,
   MappedEnumRow,
   resetProps,
-} from "./RendererCommonSection";
+} from "./rows";
 import {
   PropertyField,
   Field,

@@ -44,7 +44,7 @@
  */
 
 import React from "react";
-import { NumRow, NumInputRow, BoolRow, EnumRow } from "./RendererCommonSection";
+import { NumRow, NumInputRow, BoolRow, EnumRow } from "./rows";
 import {
   CenterUpdateRow,
   LimitDisplayRows,

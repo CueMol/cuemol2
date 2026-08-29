@@ -27,7 +27,7 @@ import {
   MappedEnumRow,
   ColorRow,
   TextRow,
-} from "./RendererCommonSection";
+} from "./rows";
 import { PropertyField, SelectField } from "../../h3-kit/form";
 import { RENDER_QUALITY_CUSTOM, stepPatch } from "../../data/renderSettings";
 import type { RenderQualityAxis } from "../../data/renderSettings";

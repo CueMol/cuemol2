@@ -30,7 +30,7 @@
  */
 
 import React from "react";
-import { NumRow, NumInputRow, BoolRow } from "./RendererCommonSection";
+import { NumRow, NumInputRow, BoolRow } from "./rows";
 import {
   CenterUpdateRow,
   LimitDisplayRows,

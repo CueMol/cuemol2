@@ -40,8 +40,8 @@ import {
   ColorRow,
   MappedEnumRow,
   TextRow,
-  CAP_LABELS,
-} from "./RendererCommonSection";
+} from "./rows";
+import { CAP_LABELS } from "./schema/labels";
 import {
   MultiEnumRow,
   MultiNumInputRow,

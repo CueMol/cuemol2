@@ -17,17 +17,18 @@
 import React from 'react'
 import { AccordionSection } from './AccordionSection'
 import {
+  AsyncSelectRow,
   BoolRow,
   ColorRow,
+  EnumRow,
   MappedEnumRow,
   NumInputRow,
   NumRow,
+  OptionalNumRow,
   SelRow,
   SliderRow,
   TextRow,
-} from './RendererCommonSection'
-import { AsyncSelectRow } from './rows/AsyncSelectRow'
-import { OptionalNumRow } from './rows/OptionalNumRow'
+} from './rows'
 import type { RendererPropSectionProps } from './rendererPropSections'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { DRAFT_KINDS, makePropCtx, type PropCtx, type PropRowDef, type SchemaSectionDef } from './schema/types'
@@ -40,11 +41,14 @@ export interface SchemaSectionProps {
   entries: GenericPropEntry[]
   rendererType: string
   sceneId: number | undefined
-  nodeId: number | undefined
   /**
-   * Molecule the section's selection rows count their atoms against. Optional
-   * because only a page with a `sel` row needs it; `PropertiesTab` always
-   * supplies it in production.
+   * UID of the inspected node, for a row that has to ask the C++ side about
+   * the node itself (the disorder Target lists its sibling renderers).
+   */
+  nodeId?: number
+  /**
+   * Molecule the section's selection rows count their atoms against. Only a
+   * page with a `sel` row needs it.
    */
   molId?: number
   onSet: SetFn
@@ -84,6 +88,19 @@ function renderRow(
           unit={row.unit}
           decimals={row.decimals}
           realtime={row.realtime}
+          disabled={disabled}
+        />
+      )
+
+    case 'enum':
+      return (
+        <EnumRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          options={row.options}
           disabled={disabled}
         />
       )

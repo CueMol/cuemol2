@@ -1,11 +1,13 @@
 /**
- * RendererCommonSection UI-wiring contract (renderer-common property page).
+ * Renderer-common page UI-wiring contract.
  *
- * Pins the renderer-common page's observable behaviour migrated from the UXP
+ * Pins the page's observable behaviour migrated from the UXP
  * `renderer-common-page`: which fields render for which properties, and which
- * `onSet(key, type, value)` call each control emits on commit. The heavy
- * selection / colour widgets are stubbed so this stays a focused wiring test;
- * their internals are covered by their own suites.
+ * `onSet(key, type, value)` call each control emits on commit. The page is
+ * rows as data now, so the test mounts the schema through the engine -- what
+ * it asserts is what the user sees either way. The heavy selection / colour
+ * widgets are stubbed so this stays a focused wiring test; their internals are
+ * covered by their own suites.
  */
 
 import React from 'react'
@@ -16,7 +18,7 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// useCueMol is used by MaterialRow (material-name fetch) -- no backend in test.
+// useCueMol is used by the Material row (name fetch) -- no backend in test.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
@@ -49,7 +51,8 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
 }))
 
 // Imported after the mocks so they take effect.
-import { RendererCommonSection } from '../components/inspector/RendererCommonSection'
+import { SchemaSection } from '@renderer/components/inspector/SchemaSection'
+import { RENDERER_COMMON_SECTIONS } from '@renderer/components/inspector/schema/common'
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -87,16 +90,22 @@ function render(
   entries: GenericPropEntry[],
   onSet = vi.fn(),
   onReset = vi.fn(),
-  rendererType?: string,
+  rendererType = '',
 ) {
   const r = mountTree(
-    <RendererCommonSection
-      entries={entries}
-      rendererType={rendererType}
-      onSet={onSet}
-      onReset={onReset}
-      sceneId={1}
-    />,
+    <>
+      {RENDERER_COMMON_SECTIONS.map((section) => (
+        <SchemaSection
+          key={section.key}
+          section={section}
+          entries={entries}
+          rendererType={rendererType}
+          sceneId={1}
+          onSet={onSet}
+          onReset={onReset}
+        />
+      ))}
+    </>,
   )
   return { ...r, onSet, onReset }
 }
@@ -116,7 +125,7 @@ function edgeEntries(egtype = 'none'): GenericPropEntry[] {
   ]
 }
 
-describe('RendererCommonSection', () => {
+describe('the renderer-common page', () => {
   it('renders only the fields whose property exists', () => {
     const { container, unmount } = render([
       entry({ key: 'name', type: 'string', value: 'rend1' }),

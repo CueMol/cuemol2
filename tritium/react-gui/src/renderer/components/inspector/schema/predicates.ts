@@ -38,6 +38,14 @@ export const isOn = (key: string): Predicate => (ctx) => ctx.value(key) === true
 /** A boolean property is off (an absent property counts as off). */
 export const isOff = (key: string): Predicate => (ctx) => ctx.value(key) !== true
 
+/**
+ * The inspected node's renderer type is one of these. A gate on the TYPE
+ * rather than on a property value, for a block that a type inherits from the
+ * C++ base but cannot act on (the line-only renderers' edge lines).
+ */
+export const typeIs = (...typeNames: string[]): Predicate =>
+  (ctx) => typeNames.includes(ctx.rendererType)
+
 /** The renderer does not expose this property at all. */
 export const absent = (key: string): Predicate => (ctx) => ctx.get(key) === undefined
 

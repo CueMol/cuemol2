@@ -15,7 +15,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { PropertyField, SelectField } from '@renderer/h3-kit/form'
-import { resetProps } from '../RendererCommonSection'
+import { resetProps } from './rowProps'
 import { objectFilters } from '@renderer/h3-kit/ObjectSelect'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'

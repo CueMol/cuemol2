@@ -4,7 +4,7 @@
  * Properties tab.
  *
  * The Properties tab always shows the renderer-common page first
- * (`RendererCommonSection`), then any renderer-type-specific sections. Those
+ * (`schema/common`), then any renderer-type-specific sections. Those
  * type-specific sections are looked up here by the renderer's `type_name`
  * (e.g. `ribbon`, `cpk`, `tube`), mirroring how each UXP renderer property
  * dialog stacks its own tabs on top of the shared `renderer-common-page`

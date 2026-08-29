@@ -44,9 +44,9 @@ import {
   BoolRow,
   TextRow,
   MappedEnumRow,
-  CAP_LABELS,
   resetProps,
-} from "./RendererCommonSection";
+} from "./rows";
+import { CAP_LABELS } from "./schema/labels";
 import { SECTION_TYPE_LABELS, SHARP_TYPES } from "./rowHelpers";
 import { PropertyField, DragNumericField } from "../../h3-kit/form";
 import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";

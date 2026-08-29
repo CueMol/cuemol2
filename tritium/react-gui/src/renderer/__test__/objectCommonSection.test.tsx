@@ -1,7 +1,8 @@
 /**
- * ObjectCommonSection wiring contract (UXP `object-propdlg` "Common" tab port).
+ * Object-common page wiring contract (UXP `object-propdlg` "Common" tab port).
  *
- * Pins the observable behaviour of the object-common inspector page:
+ * Pins the observable behaviour of the object-common inspector page (rows as
+ * data now, mounted through the schema engine):
  *   - renders Name / Selection / Visible / Locked / Linked rows only for the
  *     properties present on the inspected object (Selection only on MolCoord,
  *     Linked = read-only `src`);
@@ -21,7 +22,7 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-// RendererCommonSection (imported for the shared row helpers) uses useCueMol.
+// The Material row fetches names through useCueMol -- no backend in test.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
@@ -33,8 +34,36 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
   ),
 }))
 
-import { ObjectCommonSection } from '../components/inspector/ObjectCommonSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { OBJECT_COMMON_SECTIONS } from '../components/inspector/schema/common'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
+
+/** The object-common page, as PropertiesTab composes it for an Object node. */
+function ObjectCommonPage({
+  entries,
+  onSet = vi.fn(),
+  onReset = vi.fn(),
+}: {
+  entries: GenericPropEntry[]
+  onSet?: (key: string, type: string, value: string | number | boolean) => void
+  onReset?: (key: string) => void
+}) {
+  return (
+    <>
+      {OBJECT_COMMON_SECTIONS.map((section) => (
+        <SchemaSection
+          key={section.key}
+          section={section}
+          entries={entries}
+          rendererType="MolCoord"
+          sceneId={1}
+          onSet={onSet}
+          onReset={onReset}
+        />
+      ))}
+    </>
+  )
+}
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -67,10 +96,10 @@ function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
   return lab ? (lab.closest('.h3-form-prop-row') as HTMLElement) : null
 }
 
-describe('ObjectCommonSection', () => {
+describe('the object-common page', () => {
   it('renders Name / Visible / Locked / Linked rows; no Selection without sel', () => {
     const { container, unmount } = mountTree(
-      <ObjectCommonSection entries={objectEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <ObjectCommonPage entries={objectEntries()} />,
     )
     expect(rowByLabel(container, 'Name')).not.toBeNull()
     expect(rowByLabel(container, 'Visible')).not.toBeNull()
@@ -82,11 +111,8 @@ describe('ObjectCommonSection', () => {
 
   it('renders the Selection row when the object has a sel property', () => {
     const { container, unmount } = mountTree(
-      <ObjectCommonSection
+      <ObjectCommonPage
         entries={[...objectEntries(), entry({ key: 'sel', type: 'object', value: 'A.10-20' })]}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(rowByLabel(container, 'Selection')).not.toBeNull()
@@ -95,7 +121,7 @@ describe('ObjectCommonSection', () => {
 
   it('marks Linked (src) read-only', () => {
     const { container, unmount } = mountTree(
-      <ObjectCommonSection entries={objectEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <ObjectCommonPage entries={objectEntries()} />,
     )
     const input = rowByLabel(container, 'Linked')!.querySelector('input') as HTMLInputElement
     expect(input.readOnly).toBe(true)
@@ -105,7 +131,7 @@ describe('ObjectCommonSection', () => {
   it('commits a Visible toggle via onSet', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <ObjectCommonSection entries={objectEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
+      <ObjectCommonPage entries={objectEntries()} onSet={onSet} />,
     )
     const toggle = rowByLabel(container, 'Visible')!.querySelector(
       'input[type="checkbox"]',
@@ -117,12 +143,7 @@ describe('ObjectCommonSection', () => {
 
   it('renders nothing when the object exposes none of the known fields', () => {
     const { container, unmount } = mountTree(
-      <ObjectCommonSection
-        entries={[entry({ key: 'other', type: 'string', value: 'x' })]}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
-        sceneId={1}
-      />,
+      <ObjectCommonPage entries={[entry({ key: 'other', type: 'string', value: 'x' })]} />,
     )
     expect(rowByLabel(container, 'Name')).toBeNull()
     unmount()

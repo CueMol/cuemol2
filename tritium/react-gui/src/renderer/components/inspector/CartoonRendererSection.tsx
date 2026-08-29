@@ -42,9 +42,9 @@ import {
   MappedEnumRow,
   TextRow,
   SelRow,
-  CAP_LABELS,
   resetProps,
-} from "./RendererCommonSection";
+} from "./rows";
+import { CAP_LABELS } from "./schema/labels";
 import {
   MultiEnumRow,
   MultiNumRow,
