@@ -84,9 +84,9 @@ freed when its `Wrapper` is GC'd. So:
   blindly `destruct()` them.
 - `View` / `Scene` are **not destroyed by `removeView`** (CLAUDE.md, "the C++
   `View` / `Scene` objects are not destroyed by `removeView`; that is a
-  separate future concern"). Closing a tab calls `removeMolTab` +
-  `cm.removeView` (`App.tsx:164-167`) but leaves the native View/Scene alive
-  on purpose.
+  separate future concern"). Closing a tab removes the tab record and
+  calls `cm.removeView` (`state/workspace/WorkspaceProvider.tsx`,
+  `closeTab`) but leaves the native View/Scene alive on purpose.
 
 **Ownership constraint, stated precisely:** a slot may be deleted (allowing
 `~Wrapper -> destruct`) only once **no renderer-side `ObjProxy` can still

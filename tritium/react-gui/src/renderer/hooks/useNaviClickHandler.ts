@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import * as event from '../event';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { useMolTabState } from './useMolTab';
+import { useActiveScene } from '@renderer/state/workspace';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { decodeClick, INDEV_LBTN, INDEV_RBTN, INDEV_SHIFT } from '../worker/shared/inDevModif';
@@ -14,7 +14,7 @@ export interface UseNaviClickHandlerArgs {
 
 export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNaviClickHandlerArgs): void {
     const { cueMolReady, cm } = useCueMol();
-    const { activeViewID } = useMolTabState();
+    const { activeMolViewId: activeViewID } = useActiveScene();
     const activeTool = useActiveToolContext();
 
     // Track previous hit for shift+double-click extend selection

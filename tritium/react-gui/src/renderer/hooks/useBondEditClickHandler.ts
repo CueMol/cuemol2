@@ -12,7 +12,7 @@
  * to navigate / rectSelect only, so the two handlers never both fire here.
  */
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { useMolTabState } from './useMolTab';
+import { useActiveScene } from '@renderer/state/workspace';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
 import { usePickClickHandler } from './usePickClickHandler';
 
@@ -22,7 +22,7 @@ export interface UseBondEditClickHandlerArgs {
 
 export function useBondEditClickHandler({ setStatusMessage }: UseBondEditClickHandlerArgs): void {
     const { cueMolReady, cm } = useCueMol();
-    const { activeViewID } = useMolTabState();
+    const { activeMolViewId: activeViewID } = useActiveScene();
     const activeTool = useActiveToolContext();
 
     const enabled = cueMolReady && activeViewID != null && activeTool === 'bondEdit';

@@ -13,7 +13,7 @@
  * the two handlers never both fire.
  */
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { useMolTabState } from './useMolTab';
+import { useActiveScene } from '@renderer/state/workspace';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
 import { usePickClickHandler } from './usePickClickHandler';
 import type { ToolId } from '../data/viewportTools';
@@ -34,7 +34,7 @@ function isMeasureTool(tool: ToolId): tool is MeasureMode {
 
 export function useMeasureClickHandler({ setStatusMessage, target }: UseMeasureClickHandlerArgs): void {
     const { cueMolReady, cm } = useCueMol();
-    const { activeViewID } = useMolTabState();
+    const { activeMolViewId: activeViewID } = useActiveScene();
     const activeTool = useActiveToolContext();
 
     const enabled = cueMolReady && activeViewID != null && isMeasureTool(activeTool);

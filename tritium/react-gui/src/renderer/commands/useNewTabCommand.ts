@@ -13,23 +13,21 @@ import { CmdId } from './ids'
 import { useShowNewTabDialog } from '../components/dialogs/NewTabDialogProvider'
 import type { NewSceneAction } from '../hooks/useNewSceneAction'
 import { makeTabLabel } from '../worker/shared/tabLabel'
+import { useWorkspaceDispatch } from '../state/workspace'
 
 interface UseNewTabCommandOptions {
     cm: AsyncCueMol | null
-    addMolTab: (title: string, viewId: number, sceneId: number) => void
-    addMolViewTab: (title: string, viewId: number) => void
     getActiveSceneInfo: ActiveSceneCommandDeps
     newScene: NewSceneAction
 }
 
 export function useNewTabCommand({
     cm,
-    addMolTab,
-    addMolViewTab,
     getActiveSceneInfo,
     newScene,
 }: UseNewTabCommandOptions): void {
     const showNewTabDialog = useShowNewTabDialog()
+    const { openMolViewTab } = useWorkspaceDispatch()
 
     const openNewTab = useCallback(async (): Promise<void> => {
         if (!cm) return
@@ -62,10 +60,9 @@ export function useNewTabCommand({
             if (!res?.ok || res.view_uid === undefined) return
             // UXP makeTabLabel format: `<scene name>:<view name>`.
             const title = makeTabLabel(names.currentSceneName ?? '', result.name)
-            addMolTab(title, res.view_uid, active.scene_uid)
-            addMolViewTab(title, res.view_uid)
+            openMolViewTab(title, res.view_uid, active.scene_uid)
         }
-    }, [cm, addMolTab, addMolViewTab, getActiveSceneInfo, showNewTabDialog, newScene])
+    }, [cm, openMolViewTab, getActiveSceneInfo, showNewTabDialog, newScene])
 
     useRegisterCommand(CmdId.TabNew, () => {
         openNewTab().catch((e: unknown) => console.error('TabNew failed:', e))

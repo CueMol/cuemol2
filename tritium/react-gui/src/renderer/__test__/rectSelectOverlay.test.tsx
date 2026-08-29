@@ -38,8 +38,13 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
         cm: { invokeService, onMouseEvent, onWheelEvent, onGestureEvent },
     }),
 }))
-vi.mock('../hooks/useMolTab', () => ({
-    useMolTabState: () => ({ activeViewID: 7, molTabEntries: [] }),
+vi.mock('../state/workspace', () => ({
+    // The active view as the workspace reports it (undefined = no molview).
+    useActiveScene: () => ({
+        activeMolViewId: 7,
+        activeSceneId: undefined,
+        hasScene: true,
+    }),
 }))
 
 let root: Root

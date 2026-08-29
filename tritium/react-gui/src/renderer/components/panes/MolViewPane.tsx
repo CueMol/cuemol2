@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import { useWheel } from '@use-gesture/react'
 import styles from './MolViewPane.module.css'
-import { useMolTabDispatch } from '../../hooks/useMolTab'
+import { useWorkspaceDispatch } from '../../state/workspace'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
 import { useLogActions } from '../../contexts/LogContext'
@@ -12,20 +12,20 @@ import { IPC } from '@shared/ipcChannels'
  * Tab content pane for "molview" tabs -- WebGL canvas for molecular visualization.
  *
  * Design notes:
- * - Wrapped in React.memo and subscribes only to `useMolTabDispatch` (stable
+ * - Wrapped in React.memo and subscribes only to `useWorkspaceDispatch` (stable
  *   dispatch context) to avoid re-renders caused by tab-list or molViewID
  *   state changes. Canvas re-renders trigger visual artifacts in WebGL.
  * - All event handlers and observers are registered once (empty deps []) and
  *   access mutable state via refs, so their identities remain stable.
  * - Scene/view creation is handled in App.tsx. MolViewPane only binds the
- *   canvas to the already-created view identified by `getActiveViewID()`.
- * - `getActiveViewIDRef` is a ref to the stable `getActiveViewID` callback so
+ *   canvas to the already-created view identified by `getActiveViewId()`.
+ * - `getActiveViewIdRef` is a ref to the stable `getActiveViewId` callback so
  *   that stable effect callbacks (ResizeObserver, mouse handlers) can always
  *   read the currently active view without being re-registered.
  */
 export const MolViewPane = React.memo((): React.JSX.Element => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { getActiveViewID } = useMolTabDispatch()
+  const { getActiveViewId } = useWorkspaceDispatch()
   const { cueMolReady, cm } = useCueMol()
 
   // Write-only log access: stable identities, so consuming it does not defeat
@@ -35,10 +35,10 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
   const appendLogRef = useRef(logActions.appendLine)
   useEffect(() => { appendLogRef.current = logActions.appendLine }, [logActions])
 
-  // Ref to the stable getActiveViewID callback -- lets ResizeObserver and
+  // Ref to the stable getActiveViewId callback -- lets ResizeObserver and
   // mouse handlers always query the active view without re-registration.
-  const getActiveViewIDRef = useRef(getActiveViewID)
-  useEffect(() => { getActiveViewIDRef.current = getActiveViewID }, [getActiveViewID])
+  const getActiveViewIdRef = useRef(getActiveViewId)
+  useEffect(() => { getActiveViewIdRef.current = getActiveViewId }, [getActiveViewId])
 
   // Ref to the latest cm instance for stable callbacks
   const cmRef = useRef(cm)
@@ -64,14 +64,14 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
    *   `transferControlToOffscreen()` captures the canvas at whatever pixel size
    *   it has at call time (often 0×0 due to `height: 0px` in CSS + flex).
    *   The ResizeObserver may have already fired once at that point, but
-   *   `getActiveViewID()` was null so the event was ignored.
+   *   `getActiveViewId()` was null so the event was ignored.
    *   After this effect completes, the size no longer changes and the
    *   ResizeObserver will not re-fire -- so we must push the correct
    *   dimensions to the worker explicitly here.
    */
   useEffect(() => {
     if (!cueMolReady || !cm || !canvasRef.current) return
-    const view_uid = getActiveViewID()
+    const view_uid = getActiveViewId()
     if (view_uid === undefined) return
     if (initStartedRef.current) return
     initStartedRef.current = true
@@ -94,7 +94,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
 
       // Send initial resize with actual layout dimensions.
       // The ResizeObserver may have already fired (and been ignored because
-      // getActiveViewID() returned undefined), so we must explicitly sync.
+      // getActiveViewId() returned undefined), so we must explicitly sync.
       if (canvasRef.current) {
         const { width, height } = canvasRef.current.getBoundingClientRect()
         if (width > 0 && height > 0) {
@@ -110,7 +110,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
       }
     })()
     return () => { cancelled = true }
-  }, [cueMolReady, cm, getActiveViewID])
+  }, [cueMolReady, cm, getActiveViewId])
 
   /**
    * ResizeObserver effect registered once; reads latest IDs from refs.
@@ -130,7 +130,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
    */
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
-      const viewID = getActiveViewIDRef.current()
+      const viewID = getActiveViewIdRef.current()
       const currentCm = cmRef.current
       if (viewID === undefined || !currentCm) return
       const dpr = window.devicePixelRatio || 1
@@ -156,7 +156,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
   //     preventDefault() suppresses browser page-scroll / OS page-zoom.
   useWheel(
     ({ event }) => {
-      const viewID = getActiveViewIDRef.current()
+      const viewID = getActiveViewIdRef.current()
       if (viewID === undefined || !cmRef.current) return
       event.preventDefault()
       if (event.ctrlKey) {
@@ -193,7 +193,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
   // (e.g. conf_rotz = "...,GES_ROTATE" in default_style.xml).
   useEffect(() => {
     const unsubscribe = window.electronAPI.onPush(IPC.ROTATE_GESTURE, (rotation) => {
-      const viewID = getActiveViewIDRef.current()
+      const viewID = getActiveViewIdRef.current()
       if (viewID === undefined || !cmRef.current) return
       cmRef.current.onGestureEvent(viewID, GES_ROTATE, rotation)
       // Rotate is a definitive trackpad signal for the auto detector.
@@ -207,7 +207,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     const canvas = canvasRef.current
     if (!canvas) return
     const handleMouse = (method: string) => (event: MouseEvent): void => {
-      const viewID = getActiveViewIDRef.current()
+      const viewID = getActiveViewIdRef.current()
       if (viewID !== undefined && cmRef.current) cmRef.current.onMouseEvent(viewID, method, event)
     }
     const onMouseDown = handleMouse('mouseDown')

@@ -53,6 +53,12 @@ would destroy the canvas DOM element and make re-binding impossible.
 entry, Worker `bound_views`, view loop). Wired in `App.tsx` via
 `useTabManager({ onMolViewClose })`.
 
+> Superseded (react-gui refactoring, Phase 2-2): the two stores named here
+> (`useTabManager`, `MolTabProvider`) were merged into
+> `state/workspace/WorkspaceProvider.tsx`, which owns both the tab record
+> and the `cm.removeView` call inside `closeTab`. The constraint is the same;
+> only its owner moved.
+
 ## Consequences
 
 - **Canvas binding is invisible to the user** — they just open tabs.

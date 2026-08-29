@@ -13,7 +13,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { useMolTab } from '../hooks/useMolTab';
+import { useActiveScene } from '@renderer/state/workspace';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { ObjectSelect, objectFilters } from '../h3-kit/ObjectSelect';
 import { FormButton } from '../h3-kit/form';
@@ -29,8 +29,7 @@ function formatAtom(a: BondAtomJSON): string {
 
 export const BondEditOptionsPopover: React.FC = () => {
     const { cm } = useCueMol();
-    const { getActiveSceneInfo } = useMolTab();
-    const sceneId = getActiveSceneInfo()?.scene_uid;
+    const { activeSceneId: sceneId } = useActiveScene();
 
     const [molId, setMolId] = useState<number | undefined>(undefined);
     const [bonds, setBonds] = useState<BondAtomPair[]>([]);

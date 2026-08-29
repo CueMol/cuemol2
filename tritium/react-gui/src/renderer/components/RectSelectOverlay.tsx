@@ -34,7 +34,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { useActiveToolContext } from '../contexts/ActiveToolContext'
-import { useMolTabState } from '../hooks/useMolTab'
+import { useActiveScene } from '@renderer/state/workspace'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { GES_PINCH } from '../worker/shared/gestureAxes'
 import type { ToolId } from '../data/viewportTools'
@@ -95,7 +95,7 @@ function normalizeRect(x0: number, y0: number, x1: number, y1: number): Rect {
  */
 export const RectSelectOverlay: React.FC = () => {
     const activeTool = useActiveToolContext()
-    const { activeViewID } = useMolTabState()
+    const { activeMolViewId: activeViewID } = useActiveScene()
     const { cm } = useCueMol()
     const kind = selectKind(activeTool)
     const active = kind !== null

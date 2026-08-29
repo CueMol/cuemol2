@@ -27,13 +27,12 @@ import type { NewSceneAction, OpenSceneFileAction } from './useNewSceneAction';
 
 interface UseCommandRegistrationsOptions {
   cm: AsyncCueMol | null;
-  addMolTab: (title: string, viewId: number, sceneId: number) => void;
-  addMolViewTab: (title: string, viewId: number) => void;
   getActiveSceneInfo: ActiveSceneCommandDeps;
-  handleCloseTab: (id: string) => Promise<boolean>;
+  /** Id of the visible tab, read at dispatch time. */
+  getActiveTabId: () => string;
+  closeTab: (id: string) => Promise<boolean>;
   /** Open the Settings tab, or activate it when it is already open. */
   openSettingsTab: () => void;
-  activeTab: string | null;
   activeMolViewId: number | undefined;
   onProjectionChanged: (perspective: boolean) => void;
   onCenterMarkChanged: (centerMark: ViewCenterMark) => void;
@@ -49,12 +48,10 @@ interface UseCommandRegistrationsOptions {
 
 export function useCommandRegistrations({
   cm,
-  addMolTab,
-  addMolViewTab,
   getActiveSceneInfo,
-  handleCloseTab,
+  getActiveTabId,
+  closeTab,
   openSettingsTab,
-  activeTab,
   activeMolViewId,
   onProjectionChanged,
   onCenterMarkChanged,
@@ -66,8 +63,8 @@ export function useCommandRegistrations({
 }: UseCommandRegistrationsOptions): void {
   useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, showSceneProperty, newScene, openSceneFile });
   useUiDialogCommands({ cm });
-  useTabCommands({ handleCloseTab, openSettingsTab, activeTab });
-  useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, newScene });
+  useTabCommands({ closeTab, openSettingsTab, getActiveTabId });
+  useNewTabCommand({ cm, getActiveSceneInfo, newScene });
   useEditCommands({ cm, getActiveSceneInfo });
   useFocusEditCommands();
   useToolCommands({ cm, getActiveSceneInfo });

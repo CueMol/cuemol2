@@ -432,11 +432,9 @@ Variadic-tuple trick for `void` args (used in all three): `type Args<K> = X exte
 
 - `MolViewPane` must **stay mounted from its first render until app exit**. `ContentPane.tsx` uses an `everHadMolViewRef` flag so that the component is never unmounted even when all molview tabs are closed. Unmounting would destroy the canvas DOM and make re-binding impossible.
 - Adding a new view (new scene tab) uses `addView()` (via `createNewSceneAndView.service.ts`), **not** `bindCanvas()`. `bindCanvas()` is the one-time WebGL init that also transfers the OffscreenCanvas; `addView()` attaches a new C++ View to the already-bound canvas.
-- Closing a molview tab must call both `removeMolTab(viewId)` and `cm.removeView(viewId)`. Skipping these leaks `MolTabState` entries and leaves the Worker `bound_views` and view loop running indefinitely.
+- Closing a molview tab removes the tab record **and** calls `cm.removeView(viewId)`, in that order, after the save prompt. Skipping the second leaves the Worker `bound_views` and view loop running indefinitely.
 
-**Clean-up responsibility** (wired in `App.tsx` via `useTabManager({ onMolViewClose })`):
-1. `removeMolTab(viewId)` — removes the entry from `MolTabState`
-2. `cm.removeView(viewId)` — stops the view loop and removes from Worker `bound_views`
+**Tab ownership** lives in `state/workspace/` (`WorkspaceProvider`). One record per tab carries both the view and the scene, so `useActiveScene()` reads `activeSceneId` / `activeMolViewId` off the same record in the same render -- they can never disagree by a frame. The provider owns the two lifecycle effects (`cm.activateView` for the visible molview; `cm.removeView` inside `closeTab`), and `WorkspaceProvider.test.tsx` pins "activated once per activation, removed exactly once per close". Do not call `removeView` from anywhere else. Readers pick the slice they need: `useWorkspaceDispatch()` (stable, never re-renders), `useWorkspaceTabs()` (the strip), `useActiveScene()` (scene / view ids only).
 
 Note: the C++ `View` / `Scene` objects are not destroyed by `removeView`; that is a separate future concern.
 

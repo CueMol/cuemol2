@@ -35,12 +35,10 @@ import { useSceneTree } from "./hooks/useSceneTree";
 import { useSceneTreeController } from "./hooks/useSceneTreeController";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderWindowBridge } from "./hooks/useRenderWindowBridge";
-import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
-import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
+import { useActiveScene, useWorkspaceDispatch, useWorkspaceTabs } from "./state/workspace";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction, useOpenSceneFileAction } from "./hooks/useNewSceneAction";
-import { useMolViewTabTitleSync } from "./hooks/useMolViewTabTitleSync";
 import { useActiveViewState } from "./hooks/useActiveViewState";
 import { useSceneExportCaps } from "./hooks/useSceneExportCaps";
 import { useUndoRedoState } from "./hooks/useUndoRedoState";
@@ -55,7 +53,6 @@ import type { ViewCenterMark } from "@shared/types/menuState";
 import { IPC } from "@shared/ipcChannels";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useBusyCursor } from "./hooks/useBusyCursor";
-import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
 import { useRenderConfig } from "./contexts/RenderConfigContext";
 import { useWindowCloseHandler } from "./hooks/useWindowCloseHandler";
 import { useWindowTitleSync } from "./hooks/useWindowTitleSync";
@@ -115,9 +112,14 @@ const App: React.FC = () => {
   // --- CueMol core / tabs (cm needed early for useSceneTree) ---
 
   const { cueMolReady, cm } = useCueMol();
-  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID, clearActiveView } = useMolTabDispatch();
-  const { molTabEntries } = useMolTabState();
-  const activeSceneId = molTabEntries.find((t) => t.active)?.scene_uid;
+  // The tab strip and the active scene it implies come from one provider
+  // (state/workspace), so the scene and the view are never a render apart.
+  const {
+    openSettingsTab, activateTab, closeTab, reorderTabs,
+    getActiveSceneInfo, getActiveTabId, tabsRef,
+  } = useWorkspaceDispatch();
+  const { tabs, activeTabId: activeTab, activeTab: activeTabData, molViewEntries } = useWorkspaceTabs();
+  const { activeSceneId, activeMolViewId } = useActiveScene();
 
   // --- Domain hooks ---
 
@@ -203,49 +205,7 @@ const App: React.FC = () => {
 
   // --- CueMol core / tabs ---
 
-  const showConfirmCloseTabDialog = useShowConfirmCloseTabDialog();
   const { dispatch: dispatchCommand } = useCommands();
-
-  const handleMolViewClose = useCallback((viewId: number) => {
-    removeMolTab(viewId);
-    if (cm) {
-      cm.removeView(viewId).catch((err: unknown) => {
-        console.warn('removeView failed:', err);
-      });
-    }
-  }, [cm, removeMolTab]);
-
-  /**
-   * Decide whether a molview tab may close, prompting to save when it is
-   * the last view of a modified scene. Returns true to proceed with the
-   * close, false to abort it.
-   */
-  const confirmCloseTab = useCallback(async (viewId: number): Promise<boolean> => {
-    if (!cm) return true;
-    const info = await cm.invokeService('getSceneCloseInfo', { viewId });
-    if (!info?.ok) return true;
-    if (!info.modified || info.viewCount !== 1) return true;
-    const result = await showConfirmCloseTabDialog({ sceneName: info.sceneName });
-    if (result === 'cancel') return false;
-    if (result === 'discard') return true;
-    // 'save': run the FileSave command; if save succeeds, proceed with close.
-    // If the user cancels the save dialog (or save fails), abort the close --
-    // matches UXP onSaveScene behaviour.
-    const saved = await dispatchCommand(CmdId.FileSave);
-    return saved === true;
-  }, [cm, showConfirmCloseTabDialog, dispatchCommand]);
-
-  const {
-    tabs,
-    tabsRef,
-    activeTab,
-    setActiveTab,
-    openSettingsTab,
-    addMolViewTab,
-    updateMolViewTabTitle,
-    handleCloseTab,
-    handleReorderTabs,
-  } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
   // Persist user-defined style defaults (atom labels, view-input scalars) to
   // the user style file when the window closes -- UXP `Qm2Main.onUnLoad`
@@ -278,46 +238,21 @@ const App: React.FC = () => {
 
   useWindowCloseHandler({
     tabsRef,
-    handleCloseTab,
-    setActiveTab,
+    handleCloseTab: closeTab,
+    setActiveTab: activateTab,
     onBeforeProceed: saveUserStyleOnClose,
   });
 
-  // Keep molview tab titles in sync with their scene name (Explorer rename,
-  // scripts, undo, etc.) -- UXP TabMolView.onScenePropChanged equivalent.
-  useMolViewTabTitleSync({ cm, molTabEntries, updateMolViewTabTitle });
-
   // Shared "create scene + view + register tab" action used by both the
   // launch path and the New Tab dialog (UXP onNewScene equivalent).
-  const newScene = useNewSceneAction({ cm, addMolTab, addMolViewTab });
+  const newScene = useNewSceneAction({ cm });
   // Opening a scene FILE goes through its own action: the worker only creates
   // the view once the file has been read, so a failed open never leaves an
   // empty molview tab behind.
-  const openSceneFile = useOpenSceneFileAction({ cm, addMolTab, addMolViewTab });
+  const openSceneFile = useOpenSceneFileAction({ cm });
 
   // First scene/view on launch (StrictMode guarded)
   const { initialSceneSettled } = useAppInitialization({ cueMolReady, newScene });
-
-  // Keep the active scene/view bound to the active CONTENT tab: activate the
-  // worker view for a molview tab, or clear the active molview when a
-  // non-molview tab (Settings) is shown or no tab is open, so the Explorer /
-  // Inspector / File Open all follow the visible tab and treat that state
-  // as "no active scene".
-  useEffect(() => {
-    const tab = tabs.find((t) => t.id === activeTab);
-    if (tab?.type === 'molview' && tab.viewId !== undefined) {
-      if (cm && cueMolReady) {
-        setActiveViewByID(tab.viewId);
-        cm.activateView(tab.viewId).catch((err: unknown) => {
-          console.warn('activateView failed:', err);
-        });
-      }
-    } else {
-      clearActiveView();
-    }
-  }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID, clearActiveView]);
-
-  const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
   // --- Render: Rendering-window bridge ---
 
@@ -326,25 +261,18 @@ const App: React.FC = () => {
   // executes commands relayed from that window, and pushes job / target
   // state back.
 
-  // Renderable targets offered in the render window's Target dropdown.
-  // The scene name is the tab title minus its ":<viewIdx>" suffix. The live
-  // title comes from the tab strip (`tabs`), which useMolViewTabTitleSync keeps
-  // current on rename -- `molTabEntries[].title` is frozen at tab-creation time,
-  // so reading it here left the render window's Target names stale.
+  // Renderable targets offered in the render window's Target dropdown. The
+  // scene name is the tab title minus its ":<viewIdx>" suffix; the entries
+  // are the strip's own records, so a rename is already reflected here.
   const renderTargetViews = useMemo(
     () =>
-      molTabEntries.map((e) => {
-        const liveTitle =
-          tabs.find((t) => t.type === "molview" && t.viewId === e.view_id)?.title ??
-          e.title;
-        return {
-          viewId: e.view_id,
-          sceneId: e.scene_uid,
-          sceneName: liveTitle.replace(/:\d+$/, ""),
-          title: liveTitle,
-        };
-      }),
-    [molTabEntries, tabs],
+      molViewEntries.map((e) => ({
+        viewId: e.view_id,
+        sceneId: e.scene_uid,
+        sceneName: e.title.replace(/:\d+$/, ""),
+        title: e.title,
+      })),
+    [molViewEntries],
   );
 
   // --- Scene-exporter availability (hides Umbreon etc. on builds lacking it) ---
@@ -358,7 +286,7 @@ const App: React.FC = () => {
     views: renderTargetViews,
     activeViewId: activeMolViewId,
     tabs,
-    setActiveTab,
+    setActiveTab: activateTab,
     binaries: renderBinaries,
     umbreonAvailable,
   });
@@ -406,12 +334,10 @@ const App: React.FC = () => {
   // --- All command handlers + Electron IPC bridge ---
   useCommandRegistrations({
     cm,
-    addMolTab,
-    addMolViewTab,
     getActiveSceneInfo,
-    handleCloseTab,
+    getActiveTabId,
+    closeTab,
     openSettingsTab,
-    activeTab,
     activeMolViewId,
     onProjectionChanged,
     onCenterMarkChanged,
@@ -482,7 +408,7 @@ const App: React.FC = () => {
   // --- Derived values ---
 
   const sidebarVisible = activeView !== null;
-  const settingsActive = tabs.find((t) => t.id === activeTab)?.type === "settings";
+  const settingsActive = activeTabData?.type === "settings";
 
   // --- Render ---
 
@@ -564,9 +490,9 @@ const App: React.FC = () => {
                           <ContentArea
                             tabs={tabs}
                             activeTab={activeTab}
-                            onSelectTab={setActiveTab}
-                            onCloseTab={handleCloseTab}
-                            onReorderTabs={handleReorderTabs}
+                            onSelectTab={activateTab}
+                            onCloseTab={closeTab}
+                            onReorderTabs={reorderTabs}
                             activeTool={activeTool}
                             onSelectTool={setActiveTool}
                             onStatusMessage={setStatusMessage}
