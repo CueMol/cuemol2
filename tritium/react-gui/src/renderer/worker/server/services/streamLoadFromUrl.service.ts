@@ -4,7 +4,7 @@
 // UXP onOpenPDBsite path (uxp_gui/.../tools/netpdbopen.js).
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
-import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
+import type { FileOpenOptions } from '../../shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer.service';
 import { undoTxnResult } from './withUndoTxn';
 import { streamFetchToReader, cancelStream } from './helpers/streamFetchToReader';

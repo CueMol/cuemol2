@@ -10,7 +10,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { useMolTabState } from '../hooks/useMolTab';
+import { useActiveScene } from '@renderer/state/workspace';
 import { TextField } from '../h3-kit/form';
 
 interface Props {
@@ -22,7 +22,7 @@ interface Props {
 
 export const MeasureOptionsPopover: React.FC<Props> = ({ target, onTargetChange }) => {
     const { cm } = useCueMol();
-    const { activeViewID } = useMolTabState();
+    const { activeMolViewId: activeViewID } = useActiveScene();
     const [names, setNames] = useState<string[]>([]);
 
     // Fetch existing atomintr renderer names when the popover mounts (it mounts

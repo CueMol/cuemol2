@@ -19,7 +19,7 @@ import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 import type { DistPickDrawObj } from '@cuemol/core/src/wrappers/DistPickDrawObj';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { AtomIntrRenderer } from '@cuemol/core/src/wrappers/AtomIntrRenderer';
-import type { HitTestResult } from '../../../types';
+import type { HitTestResult } from '@renderer/types';
 import { withUndoTxn } from './withUndoTxn';
 import {
     ATOMINTR_TYPE,

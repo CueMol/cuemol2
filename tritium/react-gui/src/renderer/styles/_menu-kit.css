@@ -52,6 +52,21 @@
   flex: 0 1 auto;
 }
 
+/*
+ * Colour swatch beside a label (Scene > Background). The border is what
+ * makes the white one visible on a light menu and the black one on a dark
+ * menu, so it is not decoration.
+ */
+.menu-item__swatch {
+  flex: 0 0 auto;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  margin-right: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--swatch-color);
+}
+
 .menu-item__accel {
   margin-left: auto;
   padding-left: var(--space-6);

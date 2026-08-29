@@ -105,6 +105,9 @@ vi.mock('electron', () => {
   return {
     app: { name: 'CueMol', on: vi.fn() },
     Menu: { setApplicationMenu, getApplicationMenu, buildFromTemplate },
+    // The Background items carry a generated colour swatch; the drawing
+    // itself is not what this file is about.
+    nativeImage: { createFromBitmap: vi.fn(() => ({})) },
   }
 })
 

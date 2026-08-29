@@ -11,10 +11,10 @@
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { WorkerContext } from "../../types/WorkerContext";
-import type { PropDef } from "../../../../data/rendererProperties";
-import type { RenderSettingsSnapshot } from "../../../../data/renderResult";
-import type { RenderBinaries } from "../../../shared/renderTypes";
-import { sizeUnitToPx } from "../../../../data/renderSettings";
+import type { PropDef } from "@renderer/data/rendererProperties";
+import type { RenderSettingsSnapshot } from "@renderer/data/renderResult";
+import type { RenderBinaries } from "@renderer/worker/shared/renderTypes";
+import { sizeUnitToPx } from "@renderer/data/renderSettings";
 
 /** Paths produced by a backend's `exportScene`. */
 export interface ExportedScene {

@@ -5,6 +5,8 @@
  * `findNode` walks the live scene tree by C++ uid. `findTypedNode` folds the
  * `Number()` parse + `findNode` + node-type check that every id-keyed action
  * callback repeated, returning both the parsed uid and the resolved node.
+ * `findParentNode` answers "what does this row hang off", which is what a
+ * sibling-relative action (paste next to me) needs.
  */
 
 import type {
@@ -21,6 +23,23 @@ export function findNode(
     if (root.id === id) return root
     for (const child of root.children) {
         const found = findNode(child, id)
+        if (found) return found
+    }
+    return null
+}
+
+/**
+ * Depth-first lookup of a node's PARENT by the child's C++ uid. Returns null
+ * for the root (and for an id that is not in the tree).
+ */
+export function findParentNode(
+    root: SceneTreeNode | null,
+    id: number,
+): SceneTreeNode | null {
+    if (!root) return null
+    for (const child of root.children) {
+        if (child.id === id) return root
+        const found = findParentNode(child, id)
         if (found) return found
     }
     return null

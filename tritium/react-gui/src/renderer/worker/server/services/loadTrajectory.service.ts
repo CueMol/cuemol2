@@ -25,7 +25,7 @@
 // surfaces are described by the minimal local interfaces below (the generated
 // wrapper types add nothing over these casts).
 import type { WorkerContext } from '../types/WorkerContext';
-import type { RendererOptions } from '../../../components/fopen-opt-dlgs/types';
+import type { RendererOptions } from '../../shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer.service';
 import { undoTxnResult } from './withUndoTxn';
 import { OBJREADER_CATEGORY } from './helpers/pickReaderName';

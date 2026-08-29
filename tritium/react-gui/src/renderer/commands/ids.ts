@@ -90,6 +90,55 @@ export const CmdId = {
   // App settings
   UiSettingsTab:      'ui.settingsTab', // no args -- open/activate the Settings tab
   RecentClear:        'recent.clear',   // no args -- empty the MRU list
+
+  // --- Scene tree ---
+  //
+  // Everything the scene-tree context menu offers. The ones that also have a
+  // second entry point (a toolbar button, a keyboard shortcut, a
+  // double-click) take the ids they act on as args rather than reading a
+  // selection, so every entry point resolves its own target and lands on one
+  // handler.
+  SceneNodeSetVisible:   'scene.node.setVisible',   // args: { ids; visible }
+  SceneNodeDelete:       'scene.node.delete',       // args: { ids }
+  SceneNodeCopy:         'scene.node.copy',         // args: { ids }
+  SceneNodePaste:        'scene.node.paste',        // args: { targetId }
+  SceneNodeRenameBegin:  'scene.node.renameBegin',  // args: { id }
+  SceneNodeProperty:     'scene.node.property',     // args: { id }
+  SceneNodeSelectMol:    'scene.node.selectMol',    // args: { id; selectKind }
+
+  // Renderer / object operations, all scoped to a node id.
+  RendererNew:           'scene.renderer.new',           // args: { sourceNodeId }
+  RendererNewGroup:      'scene.renderer.newGroup',      // args: { objId }
+  RendererSetColoring:   'scene.renderer.setColoring',   // args: { id; coloringId }
+  RendererPaint:         'scene.renderer.paint',         // args: { id; colorValue }
+  RendererApplyStyle:    'scene.renderer.applyStyle',    // args: { id; styleName; pattern; flags }
+  RendererSetSelection:  'scene.renderer.setSelection',  // args: { id; selKind }
+  RendererGenSurfObj:    'scene.renderer.generateSurfObj', // args: { id }
+  RendererChangeType:    'scene.renderer.changeType',    // args: { id; typeName }
+  RendererEditStyle:     'scene.renderer.editStyle',     // args: { id }
+  RendererCreateStyle:   'scene.renderer.createStyle',   // args: { id }
+  RendererEditIntrList:  'scene.renderer.editInteractionList', // args: { id; rendName }
+  ObjectRegenSurface:    'scene.object.regenSurface',    // args: { objId }
+
+  // Style sets.
+  StyleNew:              'scene.style.new',              // no args
+  StyleEdit:             'scene.style.edit',             // args: { id; scopeId; name }
+  StyleToggleReadOnly:   'scene.style.toggleReadOnly',   // args: { id; scopeId }
+  StyleLoadFromFile:     'scene.style.load',             // no args
+  StyleReload:           'scene.style.reload',           // no args
+  StyleSave:             'scene.style.save',             // args: { id; scopeId; name }
+  StyleSaveAs:           'scene.style.saveAs',           // args: { id; scopeId; name }
+
+  // Cameras.
+  CameraNew:             'scene.camera.new',             // no args
+  CameraLoadFromFile:    'scene.camera.load',            // no args
+  CameraReload:          'scene.camera.reload',          // args: { name }
+  CameraSave:            'scene.camera.save',            // args: { name }
+  CameraSaveAs:          'scene.camera.saveAs',          // args: { name }
+  CameraSaveFromView:    'scene.camera.saveFromView',    // args: { name; withVisFlags }
+  CameraApplyToView:     'scene.camera.applyToView',     // args: { name; withVisFlags }
+  CameraEditVisFlags:    'scene.camera.editVisFlags',    // args: { name }
+  CameraClearVisFlags:   'scene.camera.clearVisFlags',   // args: { name }
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]

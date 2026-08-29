@@ -54,6 +54,7 @@ interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
     getActiveSceneInfo: ActiveSceneCommandDeps
     onBgColorChanged?: (bgColor: SceneBgColor) => void
+    onColorProofingChanged?: (active: boolean) => void
     /** Open the active scene in the generic property inspector (Scene > Properties...). */
     showSceneProperty?: (sceneId: number) => void
     newScene: NewSceneAction
@@ -65,6 +66,7 @@ export function useSceneCommands({
     cm,
     getActiveSceneInfo,
     onBgColorChanged,
+    onColorProofingChanged,
     showSceneProperty,
     newScene,
     openSceneFile,
@@ -156,7 +158,13 @@ export function useSceneCommands({
         if (!cm) return
         const info = getActiveSceneInfo()
         if (!info) return
-        await cm.invokeService('toggleSceneColorProofing', { sceneId: info.scene_uid })
+        const res = await cm.invokeService('toggleSceneColorProofing', {
+            sceneId: info.scene_uid,
+        })
+        // The worker reports the resulting state (it is off unless a profile
+        // is configured), so the menu's check follows what actually happened
+        // rather than what was asked for.
+        if (res?.ok) onColorProofingChanged?.(res.enabled)
     })
 
     // Scene > Properties... : open the active scene node in the inspector.

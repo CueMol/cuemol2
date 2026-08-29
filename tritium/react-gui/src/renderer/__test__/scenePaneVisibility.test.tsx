@@ -16,6 +16,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
 import { mountTree } from './helpers/testHarness'
 import { ScenePane } from '../components/panes/ScenePane'
+import { withSceneTree } from './helpers/sceneTreeEnv'
+
+// ScenePane reads the tree and its actions from the provider; stand it in.
+vi.mock('../state/sceneTree', async () => (await import('./helpers/sceneTreeEnv')).mockSceneTreeModule())
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 
 void React
@@ -99,13 +103,7 @@ function findToggle(container: HTMLElement, id: number): HTMLElement | null {
 describe('ScenePane visibility tristate', () => {
   it('classes the eye button visible / disabled / hidden per own + effective visibility', () => {
     const { container, unmount } = mountTree(
-      <ScenePane
-        tree={makeTristateTree()}
-        selectedId=""
-        onSelect={() => {}}
-        onToggleVisibility={() => {}}
-        onMoveNode={() => {}}
-      />,
+      withSceneTree({ tree: makeTristateTree(), selectedId: "", onSelect: () => {}, onToggleVisibility: () => {}, onMoveNode: () => {} }, <ScenePane />),
     )
     // visible / hidden are carried by the glyph alone (no CSS color rule);
     // pin their class computation only.
@@ -144,13 +142,7 @@ describe('ScenePane visibility tristate', () => {
   it('ignores clicks on the gray-out state; visible / hidden still toggle', () => {
     const onToggleVisibility = vi.fn()
     const { container, unmount } = mountTree(
-      <ScenePane
-        tree={makeTristateTree()}
-        selectedId=""
-        onSelect={() => {}}
-        onToggleVisibility={onToggleVisibility}
-        onMoveNode={() => {}}
-      />,
+      withSceneTree({ tree: makeTristateTree(), selectedId: "", onSelect: () => {}, onToggleVisibility: onToggleVisibility, onMoveNode: () => {} }, <ScenePane />),
     )
     // Gray-out: own flag is ON but an ancestor hides the renderer --
     // flipping the flag would visibly do nothing, so the click is a no-op.

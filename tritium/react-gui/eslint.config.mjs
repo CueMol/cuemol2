@@ -75,10 +75,18 @@ const NO_DEEP_RELATIVE = {
     'Use the @renderer/ or @shared/ alias instead of climbing three or more directory levels.',
 }
 
-/** Build the single `no-restricted-imports` entry for a layer. */
+/**
+ * Build the single `no-restricted-imports` entry for a layer.
+ *
+ * `error`, not `warn`: the layering is now clean (Phase 1-4 moved the last
+ * cross-boundary modules onto `worker/shared/`), and these rules exist to
+ * catch the two that shipped as real bugs -- a dialog importing a worker
+ * service at runtime, and the worker bundle pulling in a `components/`
+ * module. A warning would not have stopped either.
+ */
 const restrict = (...patterns) => ({
   '@typescript-eslint/no-restricted-imports': [
-    'warn',
+    'error',
     { patterns: [NO_TEST_HELPERS, NO_CORE_ALIAS, ...patterns] },
   ],
 })

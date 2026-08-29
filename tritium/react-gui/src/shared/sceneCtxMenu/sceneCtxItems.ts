@@ -47,8 +47,9 @@ export function copyItem(): SceneCtxNode {
 
 /**
  * Paste menu item -- only shown when the worker clipboard holds the
- * matching kind. Scene rows accept object pastes; object rows accept
- * renderer pastes.
+ * matching kind. Scene rows accept object pastes; object, rendGroup and
+ * renderer rows accept renderer pastes (a renderer row pastes beside
+ * itself).
  */
 export function pasteItem(
     payload: SceneCtxMenuPayload,
@@ -222,12 +223,14 @@ export function bgColorSubmenu(payload: SceneCtxMenuPayload): SceneCtxNode {
                 label: 'White',
                 type: 'radio',
                 checked: current === 'white',
+                swatch: 'white',
                 action: { kind: 'setSceneBgColor', color: 'white' },
             },
             {
                 label: 'Black',
                 type: 'radio',
                 checked: current === 'black',
+                swatch: 'black',
                 action: { kind: 'setSceneBgColor', color: 'black' },
             },
         ],

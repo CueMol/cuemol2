@@ -38,6 +38,9 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
+// The pane reads the bridge and the active scene from their providers.
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
 
 // Replace the colour field with a seam: a button that fires onCommit with a
 // fixed colour. Pins "this control commits a colour" without the picker JSX.
@@ -95,6 +98,7 @@ import {
     setupElectronAPI,
     teardownElectronAPI,
 } from './helpers/testHarness'
+import { withPaneEnv } from './helpers/paneEnv'
 import {
     _resetClipboardScopesForTest,
     getClipboardScopeForTest,
@@ -213,7 +217,7 @@ async function mountWith(state: ColoringState, clipboardHasPaint = false) {
     // level, so the test has to supply it too.
     const handle = mountTree(
         <ContextMenuProvider>
-            <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+            {withPaneEnv(cm as never, SCENE_ID, undefined, <ColorPane />)}
         </ContextMenuProvider>,
     )
     await flushPromises()

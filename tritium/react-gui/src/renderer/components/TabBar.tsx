@@ -86,7 +86,7 @@ function tabClassName(
 // Component
 // ------------------------------------------------------------
 
-export const TabBar: React.FC<TabBarProps> = ({
+const TabBarComponent: React.FC<TabBarProps> = ({
   tabs,
   activeTab,
   onSelectTab,
@@ -146,3 +146,10 @@ export const TabBar: React.FC<TabBarProps> = ({
     </div>
   );
 };
+
+/**
+ * The tab strip re-renders for its own props; a drag over it does not
+ * reach the panes.
+ */
+export const TabBar = React.memo(TabBarComponent)
+TabBar.displayName = 'TabBar'

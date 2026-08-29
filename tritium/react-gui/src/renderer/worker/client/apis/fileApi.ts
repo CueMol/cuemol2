@@ -9,7 +9,7 @@
  */
 import { WorkerTransport } from '../WorkerTransport';
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
-import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
+import type { FileOpenOptions } from '../../shared/fileOpenTypes';
 import type { GetCompatibleRendererNamesResult } from '../../server/services/getCompatibleRendererNames.service';
 import type { GetMtzColumnInfoResult } from '../../server/services/getMtzColumnInfo.service';
 import type { GetReaderDefaultOptionsResult } from '../../server/services/getReaderDefaultOptions.service';

@@ -19,7 +19,7 @@ import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "../types/WorkerContext";
-import type { AnimAddType, AnimElement, AnimMgrState, AnimTimeline } from "../../../types";
+import type { AnimAddType, AnimElement, AnimMgrState, AnimTimeline } from "@renderer/types";
 import { getSceneOrNull, getViewOrNull } from "./helpers/sceneResolver";
 import { classNameToType } from "./helpers/animElementType";
 import {
@@ -33,6 +33,10 @@ import {
   forEachAnimObj,
 } from "./helpers/animResolve";
 import { withUndoTxn } from "./withUndoTxn";
+import {
+  ANIM_PROGRESS_CHANNEL,
+  type AnimProgressUpdate,
+} from "@renderer/worker/shared/animTypes";
 
 /** Renderer-side default fps for the ms<->frame ruler readout. */
 const DEFAULT_FPS = 30;
@@ -265,6 +269,140 @@ function getMgrState(ctx: WorkerContext, args: AnimGetMgrStateArgs): AnimMgrStat
 // is needed here. Each op returns the post-mutation manager snapshot so the
 // renderer syncs play state / elapsed in a single round trip.
 
+/**
+ * Scenes whose animation is running, sampled on the render loop.
+ *
+ * C++ advances playback on its own timer and fires no per-frame event, so
+ * something has to look. The worker already runs a frame loop that pumps that
+ * timer, so it samples there and pushes what changed -- rather than the
+ * renderer asking ~15 times a second, which is a round trip per sample and
+ * kept asking whether or not anything had moved.
+ *
+ * Only the scene id is kept. Holding the manager wrapper instead would pin
+ * the native object: a scene closed mid-playback stayed alive, kept its timer
+ * running and kept drawing over whatever was opened next. The manager is
+ * resolved from the live scene each frame, so a closed scene simply stops
+ * resolving.
+ */
+interface PlayingScene {
+  /** Last pushed snapshot, to send only what changed. */
+  last: AnimMgrState | null;
+  /** Timestamp of the last push, to cap the rate. */
+  lastPushMs: number;
+}
+
+const playingScenes = new Map<number, PlayingScene>();
+
+/** Minimum gap between pushes: smooth for a progress readout, cheap to send. */
+const PROGRESS_MIN_GAP_MS = 66;
+
+function samePosition(a: AnimMgrState | null, b: AnimMgrState): boolean {
+  return (
+    a !== null &&
+    a.elapsedMs === b.elapsedMs &&
+    a.playState === b.playState &&
+    a.lengthMs === b.lengthMs &&
+    a.loop === b.loop
+  );
+}
+
+function postProgress(sceneId: number, mgr: AnimMgrState): void {
+  const update: AnimProgressUpdate = { sceneId, mgr };
+  (self as unknown as Worker).postMessage([ANIM_PROGRESS_CHANNEL, update]);
+}
+
+/**
+ * Sample every playing scene and push what moved. Called once per frame by
+ * the render loop, right after it pumps the C++ timer that advances playback.
+ */
+export function pumpAnimProgress(ctx: WorkerContext, now: number = Date.now()): void {
+  if (playingScenes.size === 0) return;
+  for (const [sceneId, entry] of [...playingScenes]) {
+    const mgr = resolveMgr(ctx, sceneId);
+    if (!mgr) {
+      // The scene was closed; there is nothing left to report on.
+      playingScenes.delete(sceneId);
+      continue;
+    }
+    const state = readMgrState(mgr);
+    // Playback that ended on its own gets one final push, then stops costing
+    // anything: nothing will move again until the renderer asks it to.
+    const ended = state.playState !== 'play';
+    if (!ended && samePosition(entry.last, state)) continue;
+    if (!ended && now - entry.lastPushMs < PROGRESS_MIN_GAP_MS) continue;
+    entry.last = state;
+    entry.lastPushMs = now;
+    postProgress(sceneId, state);
+    if (ended) playingScenes.delete(sceneId);
+  }
+}
+
+/** Follow a scene's playback until it stops. */
+function watchPlayback(sceneId: number): void {
+  playingScenes.set(sceneId, { last: null, lastPushMs: 0 });
+}
+
+/** Stop following a scene; its own reply carries the final state. */
+function unwatchPlayback(sceneId: number): void {
+  playingScenes.delete(sceneId);
+}
+
+/** Stop following a scene that is being torn down. */
+export function forgetAnimProgress(sceneId: number): void {
+  playingScenes.delete(sceneId);
+}
+
+/** Drop every watch. Used when the worker tears down. */
+export function clearAnimProgressWatches(): void {
+  playingScenes.clear();
+}
+
+/**
+ * Pause interactive playback in every scene except `activeSceneUid`.
+ *
+ * Only one view draws to the shared canvas, so an animation playing in a
+ * background tab moves a camera nobody sees while its timer keeps firing.
+ * Pausing keeps its position, so returning to the tab resumes from where it
+ * was. Called on activation, so switching tabs is what pauses the one left
+ * behind.
+ *
+ * `isProtected` names scenes whose manager something else is driving -- an
+ * animation render steps it frame by frame on its own schedule -- and those
+ * are left alone: pausing would stall the render. (A render never puts the
+ * manager into the running state this checks for, so the predicate is a
+ * second guard rather than the only one.)
+ */
+export function pauseInactivePlayback(
+  ctx: WorkerContext,
+  activeSceneUid: number | undefined,
+  isProtected: (sceneUid: number) => boolean,
+): number[] {
+  const paused: number[] = [];
+  let uids: string;
+  try {
+    uids = ctx.sceMgr.scene_uids;
+  } catch {
+    return paused;
+  }
+  if (!uids) return paused;
+  for (const tok of uids.split(',')) {
+    const uid = Number(tok.trim());
+    if (!Number.isFinite(uid) || uid === activeSceneUid) continue;
+    if (isProtected(uid)) continue;
+    const mgr = resolveMgr(ctx, uid);
+    if (!mgr || readPlayState(mgr) !== 'play') continue;
+    try {
+      mgr.pause();
+      paused.push(uid);
+    } catch (e) {
+      console.warn(`pauseInactivePlayback: scene ${uid}:`, e);
+    }
+    // The watch stays: the next frame pushes the paused snapshot to the
+    // renderer and drops it, the same way a finished animation does.
+  }
+  return paused;
+}
+
 function fail(): AnimTransportResult {
   return { ok: false, mgr: EMPTY_MGR_STATE };
 }
@@ -280,7 +418,9 @@ function play(ctx: WorkerContext, args: AnimPlayArgs): AnimTransportResult {
   } catch {
     return { ok: false, mgr: readMgrState(mgr) };
   }
-  return { ok: true, mgr: readMgrState(mgr) };
+  const state = readMgrState(mgr);
+  if (state.playState === 'play') watchPlayback(args.sceneId);
+  return { ok: true, mgr: state };
 }
 
 /** Pause playback (keeps elapsed; resumable via play). */
@@ -292,6 +432,7 @@ function pause(ctx: WorkerContext, args: AnimPauseArgs): AnimTransportResult {
   } catch {
     return { ok: false, mgr: readMgrState(mgr) };
   }
+  unwatchPlayback(args.sceneId);
   return { ok: true, mgr: readMgrState(mgr) };
 }
 
@@ -304,6 +445,7 @@ function stop(ctx: WorkerContext, args: AnimStopArgs): AnimTransportResult {
   } catch {
     return { ok: false, mgr: readMgrState(mgr) };
   }
+  unwatchPlayback(args.sceneId);
   return { ok: true, mgr: readMgrState(mgr) };
 }
 

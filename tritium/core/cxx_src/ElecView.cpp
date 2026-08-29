@@ -39,7 +39,25 @@ gfx::DisplayContext *ElecView::getDisplayContext()
 
 void ElecView::swapBuffers() {}
 
-void ElecView::unloading() {}
+/**
+ * Tear down while the GL context is still reachable.
+ *
+ * This used to be an empty override, which swallowed the base chain:
+ * GUIView::unloading() releases the AO / AA pipeline's render targets and
+ * primitives, View::unloading() cancels the view's timers and cleans the
+ * display context. With none of that run, the pipeline was torn down from
+ * ~GUIView instead -- where a buffer's destructor looks its view up by id,
+ * takes a strong reference to an object already at refcount zero, and
+ * re-enters the destructor on release (SIGTRAP). It never showed because
+ * views were never destroyed until closing a tab started doing so.
+ *
+ * The JS peer stays attached: the base teardown deletes GL objects through
+ * it, so it has to be alive here. It goes with the wrapper.
+ */
+void ElecView::unloading()
+{
+    GUIView::unloading();
+}
 
 bool ElecView::attach(Napi::Object peer)
 {

@@ -1,16 +1,18 @@
 /**
  * @file hooks/useCommandRegistrations.ts
  * @description Composes the per-domain command-registration hooks
- * (scene / dialog / tab / new-tab / edit / view) plus the Electron IPC bridge
- * into a single call so App.tsx stays focused on layout.
+ * (scene / dialog / tab / new-tab / edit / view / ...) plus the Electron IPC
+ * bridge into a single call.
  *
- * Each underlying hook keeps its own typed options surface; this composer
- * merely passes through.
+ * Everything the handlers need comes from the app-state providers, so this
+ * takes no arguments; App only has to mount it.
  */
 
-import type { SceneBgColor, ViewCenterMark } from '@shared/types/menuState';
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
-import type { ActiveSceneCommandDeps } from '../commands/commandTypes';
+import { useCueMol } from './cuemol/useCueMol';
+import { useWorkspaceDispatch } from '../state/workspace';
+import { useActiveViewDispatch } from '../state/activeView';
+import { useInspectorActions } from '../state/inspector';
+import { useNewSceneAction, useOpenSceneFileAction } from './useNewSceneAction';
 import { useSceneCommands } from '../commands/useSceneCommands';
 import { useUiDialogCommands } from '../commands/useUiDialogCommands';
 import { useTabCommands } from '../commands/useTabCommands';
@@ -23,58 +25,34 @@ import { useViewCommands } from '../commands/useViewCommands';
 import { useRenderCommands } from '../commands/useRenderCommands';
 import { useWindowCommands } from '../commands/useWindowCommands';
 import { useElectronIpc } from './useElectronIpc';
-import type { NewSceneAction, OpenSceneFileAction } from './useNewSceneAction';
 
-interface UseCommandRegistrationsOptions {
-  cm: AsyncCueMol | null;
-  addMolTab: (title: string, viewId: number, sceneId: number) => void;
-  addMolViewTab: (title: string, viewId: number) => void;
-  getActiveSceneInfo: ActiveSceneCommandDeps;
-  handleCloseTab: (id: string) => Promise<boolean>;
-  /** Open the Settings tab, or activate it when it is already open. */
-  openSettingsTab: () => void;
-  activeTab: string | null;
-  activeMolViewId: number | undefined;
-  onProjectionChanged: (perspective: boolean) => void;
-  onCenterMarkChanged: (centerMark: ViewCenterMark) => void;
-  onBgColorChanged: (bgColor: SceneBgColor) => void;
-  /** Open the active View in the generic property inspector. */
-  showViewProperty: (viewId: number) => void;
-  /** Open the active scene in the generic property inspector (Scene > Properties...). */
-  showSceneProperty: (sceneId: number) => void;
-  newScene: NewSceneAction;
-  /** Open a scene file in its own tab (created only once it has loaded). */
-  openSceneFile: OpenSceneFileAction;
-}
+export function useCommandRegistrations(): void {
+  const { cm } = useCueMol();
+  const { getActiveSceneInfo, getActiveTabId, closeTab, openSettingsTab, getActiveViewId } =
+    useWorkspaceDispatch();
+  const { onProjectionChanged, onCenterMarkChanged, onBgColorChanged, onColorProofingChanged } =
+    useActiveViewDispatch();
+  const { showView: showViewProperty, showScene: showSceneProperty } = useInspectorActions();
+  // Shared "create scene + view + register tab" action (UXP onNewScene
+  // equivalent); a scene FILE goes through its own action so a failed open
+  // never leaves an empty molview tab behind.
+  const newScene = useNewSceneAction({ cm });
+  const openSceneFile = useOpenSceneFileAction({ cm });
 
-export function useCommandRegistrations({
-  cm,
-  addMolTab,
-  addMolViewTab,
-  getActiveSceneInfo,
-  handleCloseTab,
-  openSettingsTab,
-  activeTab,
-  activeMolViewId,
-  onProjectionChanged,
-  onCenterMarkChanged,
-  onBgColorChanged,
-  showViewProperty,
-  showSceneProperty,
-  newScene,
-  openSceneFile,
-}: UseCommandRegistrationsOptions): void {
-  useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, showSceneProperty, newScene, openSceneFile });
+  useSceneCommands({
+    cm, getActiveSceneInfo, onBgColorChanged, onColorProofingChanged,
+    showSceneProperty, newScene, openSceneFile,
+  });
   useUiDialogCommands({ cm });
-  useTabCommands({ handleCloseTab, openSettingsTab, activeTab });
-  useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, newScene });
+  useTabCommands({ closeTab, openSettingsTab, getActiveTabId });
+  useNewTabCommand({ cm, getActiveSceneInfo, newScene });
   useEditCommands({ cm, getActiveSceneInfo });
   useFocusEditCommands();
   useToolCommands({ cm, getActiveSceneInfo });
   useFileCommands({ cm, getActiveSceneInfo });
   useViewCommands({
     cm,
-    getActiveViewId: () => activeMolViewId,
+    getActiveViewId,
     onProjectionChanged,
     onCenterMarkChanged,
     showViewProperty,

@@ -5,7 +5,7 @@
  * tree lookup.
  */
 
-import { useCallback, type MutableRefObject } from 'react'
+import { useCallback, type MutableRefObject, useMemo} from 'react'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 
 export interface SceneTreeCameraOps {
@@ -138,15 +138,26 @@ export function useSceneTreeCameraOps(
         [cm, sceneIdRef],
     )
 
-    return {
-        createCamera,
-        renameCamera,
-        saveViewToCamera,
-        applyCameraToView,
-        clearCameraVisFlags,
-        loadCameraFromFile,
-        saveCameraToFile,
-        saveCameraToCurrentSrc,
-        reloadCameraFromSrc,
-    }
+    /**
+     * Camera operations, memoized for the same reason as the node ops: the
+     * bundle they are spread into is handed out as context.
+     */
+    return useMemo(
+        () => ({
+            createCamera,
+            renameCamera,
+            saveViewToCamera,
+            applyCameraToView,
+            clearCameraVisFlags,
+            loadCameraFromFile,
+            saveCameraToFile,
+            saveCameraToCurrentSrc,
+            reloadCameraFromSrc,
+        }),
+        [
+        createCamera, renameCamera, saveViewToCamera, applyCameraToView,
+        clearCameraVisFlags, loadCameraFromFile, saveCameraToFile,
+        saveCameraToCurrentSrc, reloadCameraFromSrc,
+        ],
+    )
 }

@@ -50,7 +50,6 @@ import {
     SliderField,
     RejectNumberInput,
 } from '../../h3-kit/form'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 import type {
     BfacParams,
@@ -64,6 +63,7 @@ import type {
 } from '../../worker/server/services/rendererColoring.service'
 import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service'
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
+import { scrollRowIntoView, useListKeyNav } from '../../h3-kit/list'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { MultiGradSection } from '../multigrad/MultiGradSection'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
@@ -78,6 +78,8 @@ import { useClipboardScope } from '../../hooks/useClipboardScope'
 import { useColumnResize } from '@renderer/hooks/useColumnResize'
 import { useShowContextMenu } from '../menu/ContextMenuProvider'
 import type { MenuNode } from '@shared/menuNodes'
+import { useCueMol } from '../../hooks/cuemol/useCueMol'
+import { useActiveScene } from '../../state/workspace'
 
 // ------------------------------------------------------------
 // Coloring type dropdown items
@@ -152,8 +154,6 @@ const COLORING_MODE_ITEMS: ColoringModeItem[] = [
 // ------------------------------------------------------------
 
 interface ColorPaneProps {
-    cm: AsyncCueMol | null
-    sceneId: number | undefined
     collapsed?: boolean
     onToggleCollapse?: () => void
 }
@@ -302,6 +302,9 @@ const PaintTable: React.FC<PaintTableProps> = ({
     sceneId,
     molId,
 }) => {
+    /** Row ids in display order, for the shared keyboard navigation. */
+    const rowIds = useMemo(() => entries.map((e) => String(e.idx)), [entries])
+
     const isRowSelected = selectedIdxs.size > 0
     const isSingleRow = selectedIdxs.size === 1
     const showContextMenu = useShowContextMenu()
@@ -411,6 +414,21 @@ const PaintTable: React.FC<PaintTableProps> = ({
         ],
     )
 
+    /**
+     * Arrow / Home / End over the rows, the same binding the scene tree and
+     * every other list uses (h3-kit/list). Rows carry `data-row-idx` so the
+     * moved-to row can be scrolled into view.
+     */
+    const navKeyDown = useListKeyNav({
+        items: rowIds,
+        activeId: selectedIdx === null ? null : String(selectedIdx),
+        onSelect: (id) => onSelect(Number(id)),
+        onSelectRange: (id, _items, additive) => onSelectRange(Number(id), additive),
+        onScrollTo: (id) => {
+            scrollRowIntoView(wrapRef.current, `[data-row-idx="${id}"]`)
+        },
+    })
+
     return (
         <>
             <div className="color-section-label">Paint coloring:</div>
@@ -423,6 +441,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                 className="color-table-wrap"
                 tabIndex={-1}
                 data-clipboard-scope="paint-deck"
+                onKeyDown={navKeyDown}
                 style={{ outline: 'none' }}
             >
                 <table className="color-table">
@@ -454,6 +473,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                             entries.map((entry) => (
                                 <tr
                                     key={entry.idx}
+                                    data-row-idx={entry.idx}
                                     className={`color-row ${selectedIdxs.has(entry.idx) ? 'selected' : ''}`}
                                     onMouseDown={onRowMouseDown}
                                     onClick={(e) => onRowClick(entry.idx, e)}
@@ -854,12 +874,10 @@ const ElepotDeck: React.FC<ElepotDeckProps> = ({ params, objects, onCommit }) =>
 const PAINT_DECK_CLASS = 'PaintColoring'
 const SOLID_DECK_CLASSES = new Set(['', 'SolidColoring'])
 
-export const ColorPane: React.FC<ColorPaneProps> = ({
-    cm,
-    sceneId,
-    collapsed,
-    onToggleCollapse,
-}) => {
+export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollapse }) => {
+    const { cm } = useCueMol()
+    const { activeSceneId: sceneId } = useActiveScene()
+
     const { renderers } = usePaintCapableRenderers({ cm, sceneId })
 
     // Selected row is stored as a key (`<kind>:<uid>`) so a single state

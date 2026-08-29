@@ -9,7 +9,7 @@
  */
 
 import React from 'react'
-import { useAppSettings } from '../../../contexts/AppSettingsContext'
+import { useAppSettings } from '@renderer/contexts/AppSettingsContext'
 import { buildLabelFontCss } from './labelFont'
 
 /** Residue-like sample covering case + digits, representative of atom labels. */

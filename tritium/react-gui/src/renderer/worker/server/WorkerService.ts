@@ -6,6 +6,7 @@ import { CueMol } from '@cuemol/core/src/cuemol';
 import type { CueMolInternal } from '@cuemol/core/src/interfaces';
 import { GfxManager } from './gfx_manager';
 import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager';
+import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { CmdMgr } from '@cuemol/core/src/wrappers/CmdMgr';
 import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager';
 import type { ScrEventManager } from '@cuemol/core/src/wrappers/ScrEventManager';
@@ -32,6 +33,8 @@ import type {
     ServiceFn,
     ServiceKey,
 } from '../shared/calls';
+import { forgetAnimProgress, pauseInactivePlayback, pumpAnimProgress } from './services/animation.service';
+import { isSceneBeingRendered } from './services/renderJob.service';
 
 // import { createLogger } from '@cuemol/core/src/logger';
 // const log = createLogger(import.meta.url);
@@ -255,7 +258,14 @@ export class WorkerService {
         this._cm.initCueMol(loadPath);
         log.info('Worker> initCueMol OK');
 
-        this._gfx_mgr = new GfxManager(this._internal);
+        // Animation playback runs on a C++ timer the render loop pumps; this
+        // is where the worker notices it moved and tells the renderer. The
+        // context is built per frame so the sampler resolves the manager from
+        // whatever scene is live, rather than holding one.
+        this._gfx_mgr = new GfxManager(
+            this._internal,
+            () => pumpAnimProgress(this._buildContext()),
+        );
         this._sceMgr = this._cm.getSceneManager();
         this._cmdMgr = this._cm.getService('CmdMgr') as CmdMgr;
         this._strMgr = this._cm.getService('StreamManager') as StreamManager;
@@ -338,25 +348,101 @@ export class WorkerService {
         }
     }
 
-    /** Make `view_id` the view driven by the render loop. */
+    /**
+     * Make `view_id` the view driven by the render loop.
+     *
+     * Also pauses interactive playback in every other scene: only this view
+     * draws to the canvas, so an animation left playing in a background tab
+     * would move a camera nobody sees. A scene an animation render is
+     * driving is left alone (see pauseInactivePlayback).
+     */
     activateView(view_id: number): void {
-        if (this._gfx_mgr) {
-            this._gfx_mgr.activateView(view_id);
-        } else {
+        if (!this._gfx_mgr) {
             console.error('activateView: gfx mgr not initialized');
+            return;
         }
+        this._gfx_mgr.activateView(view_id);
+
+        if (!this._sceMgr) return;
+        let activeSceneUid: number | undefined;
+        try {
+            const view = this._sceMgr.getView(view_id) as unknown as { getScene: () => Scene | null } | null;
+            activeSceneUid = view?.getScene()?.uid;
+        } catch (e) {
+            console.warn(`activateView: view ${view_id} not found:`, e);
+            return;
+        }
+        // Without knowing which scene is in front there is no "behind" to
+        // pause; pausing everything could stop the one the user is watching.
+        if (activeSceneUid === undefined) return;
+        pauseInactivePlayback(this._buildContext(), activeSceneUid, isSceneBeingRendered);
     }
 
     /** Detach a view from the GfxManager (used when a scene tab closes). */
+    /**
+     * Close a molview tab's view, in the order that makes it safe.
+     *
+     * 1. Stop the scene's animation. Its timer would otherwise keep firing
+     *    into objects about to be destroyed, and a loop would restart it.
+     * 2. Unbind the view from the canvas.
+     * 3. Destroy. When this was the scene's last view the scene goes with it:
+     *    `destroyScene` runs `unloading()` over the views first, which
+     *    releases their GL resources while the context is still alive (the
+     *    pipeline torn down from a destructor instead re-enters the dying
+     *    view and traps), then the objects, then the scene itself -- whose
+     *    destructor removes the animation manager's timer for good.
+     *
+     * Until this existed, closing a tab left the scene alive with everything
+     * running: a looping animation kept drawing into the shared canvas over
+     * whatever was opened next, and every closed scene stayed in memory.
+     */
     removeView(view_id: number): boolean {
-        if (this._gfx_mgr) {
-            console.log('removeView:', view_id);
-            this._gfx_mgr.removeView(view_id);
-            return true;
-        } else {
+        if (!this._gfx_mgr) {
             console.error('removeView: gfx mgr not initialized');
             return false;
         }
+        console.log('removeView:', view_id);
+
+        const sceMgr = this._sceMgr;
+        let scene: Scene | null = null;
+        if (sceMgr) {
+            try {
+                const view = sceMgr.getView(view_id) as unknown as { getScene: () => Scene | null } | null;
+                scene = view?.getScene() ?? null;
+            } catch (e) {
+                console.warn(`removeView: view ${view_id} not found:`, e);
+            }
+        }
+
+        // 1. Stop the animation before anything it touches goes away. stop()
+        //    on an idle manager is a no-op, so there is nothing to check first.
+        if (scene) {
+            try {
+                scene.getAnimMgr()?.stop();
+            } catch (e) {
+                console.warn('removeView: stopping animation failed:', e);
+            }
+            forgetAnimProgress(scene.uid);
+        }
+
+        // 2. Off the canvas.
+        this._gfx_mgr.removeView(view_id);
+
+        // 3. Destroy: the scene with its last view, else just the view.
+        if (scene && sceMgr) {
+            try {
+                if (scene.getViewCount() <= 1) {
+                    const sceneUid = scene.uid;
+                    console.log('removeView: last view closed, destroying scene', sceneUid);
+                    sceMgr.destroyScene(sceneUid);
+                } else {
+                    scene.destroyView(view_id);
+                }
+            } catch (e) {
+                console.warn(`removeView: tearing down view ${view_id} failed:`, e);
+            }
+        }
+        return true;
     }
 
     /**

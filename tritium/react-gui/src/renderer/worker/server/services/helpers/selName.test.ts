@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { quoteSelName } from './selName'
-import { INVALID_UID, isValidUid } from '../../../shared/uid'
+import { INVALID_UID, isValidUid } from '@renderer/worker/shared/uid'
 
 describe('quoteSelName', () => {
   it('quotes a plain name', () => {

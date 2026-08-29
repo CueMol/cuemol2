@@ -14,13 +14,13 @@
  *
  * | View       | Panes                                       |
  * |------------|---------------------------------------------|
- * | Explorer   | ScenePane, ColorPane                        |
+ * | Explorer   | ScenePane, ColorPane, ViewPane              |
  * | Selection  | MolStructPane, SelectionPane                |
  * | Crystal    | SymmetryPane, DensityMapPane                |
  * | Catalog    | CatalogPane1, CatalogPane2, CatalogPane3    |
  *
- * New views and panes can be added by editing `buildViewPaneConfigs()`
- * without touching the layout / persistence logic.
+ * New views and panes can be added by editing `VIEW_PANES` without
+ * touching the layout / persistence logic.
  *
  * ## Terminology
  *
@@ -36,26 +36,24 @@
  * a `Record<string, number>` keyed by pane id so it scales to any
  * number of panes.
  *
- * ## Persistence
+ * ## State
  *
- * Splitter positions and collapse states are persisted via callback
- * props supplied by the parent (ultimately backed by
- * `useLayoutPersistence`). The component itself is stateless with
- * respect to layout; all layout state lives in the parent.
+ * The shell passes only which view is active. Each pane reads the domain
+ * state it shows (the scene tree, the active scene, the CueMol bridge) from
+ * its provider; splitter positions and collapse flags come from and go to
+ * `state/layout`.
  *
  * @module SidePanel
  */
 
-import React, { useCallback, useRef, useMemo } from "react";
+import React, { useCallback, useRef } from "react";
 import { Allotment } from "allotment";
 import { AppIcon } from "../AppIcon";
 import type { AppIconKey } from "../../data/appIcons";
 
 import type { ActivityView } from "../ActivityBar";
-import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
-import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
+import { useLayout, useLayoutDispatch } from "../../state/layout";
 
-import type { MoveSceneNodeArgs } from "../panes/sceneTreeDnd";
 import {
   ScenePane,
   ColorPane,
@@ -68,9 +66,6 @@ import {
   CatalogPane2,
   CatalogPane3,
 } from "../panes";
-import type { ViewCenterMark } from "@shared/types/menuState";
-
-import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
 /* --- Re-export types for external consumers --- */
 export type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
@@ -96,7 +91,7 @@ const VIEW_ICONS: Record<ActivityView, AppIconKey> = {
   catalog: "activity.catalog",
 };
 
-/* --- Pane configuration type --- */
+/* --- Pane configuration --- */
 
 /**
  * Describes a single pane within a view's Allotment.
@@ -112,98 +107,96 @@ interface PaneConfig {
   render: (collapsed: boolean, onToggleCollapse: () => void) => React.ReactNode;
 }
 
+const VIEW_PANES: Record<string, PaneConfig[]> = {
+  explorer: [
+    {
+      id: "scene",
+      defaultSize: 220,
+      render: (collapsed, onToggle) => (
+        <ScenePane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+    {
+      id: "color",
+      defaultSize: 240,
+      render: (collapsed, onToggle) => (
+        <ColorPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+    {
+      id: "view",
+      defaultSize: 260,
+      render: (collapsed, onToggle) => (
+        <ViewPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+  ],
+  selection: [
+    {
+      id: "mol",
+      defaultSize: 260,
+      render: (collapsed, onToggle) => (
+        <MolStructPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+    {
+      id: "selection",
+      defaultSize: 180,
+      render: (collapsed, onToggle) => (
+        <SelectionPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+  ],
+  crystal: [
+    {
+      id: "symmetry",
+      defaultSize: 240,
+      render: (collapsed, onToggle) => (
+        <SymmetryPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+    {
+      id: "density",
+      defaultSize: 240,
+      render: (collapsed, onToggle) => (
+        <DensityMapPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+  ],
+  /* Developer-only view: the whole entry (and, by tree-shaking, the
+   * CatalogPane modules) is dropped from a release build. `__DEV_UI__` is
+   * referenced inline rather than through a shared const so the bundler can
+   * fold the branch away -- see electron.vite.config.ts. */
+  ...(__DEV_UI__ ? { catalog: [
+    {
+      id: "catalog1",
+      defaultSize: 280,
+      render: (collapsed, onToggle) => (
+        <CatalogPane1 collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+    {
+      id: "catalog2",
+      defaultSize: 280,
+      render: (collapsed, onToggle) => (
+        <CatalogPane2 collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+    {
+      id: "catalog3",
+      defaultSize: 280,
+      render: (collapsed, onToggle) => (
+        <CatalogPane3 collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+  ] } : {}),
+};
+
 /* --- Props --- */
 
 interface SidePanelProps {
   /** Which activity-bar view is active. */
   activeView: ActivityView;
-
-  /** AsyncCueMol bridge; null until the worker finishes initialising. */
-  cm: AsyncCueMol | null;
-  /** Active scene UID, or undefined when no scene is active. */
-  activeSceneId: number | undefined;
-  /** Active mol-view UID for the focused molview tab. */
-  activeMolViewId: number | undefined;
-
-  /* --- View pane (Projection section) attributes ---
-   * Current values are owned by `useActiveViewState`; writes go through the
-   * existing view/scene commands so that hook stays the single source of truth. */
-  viewProjection: boolean | null;
-  viewCenterMark: ViewCenterMark | null;
-  onSetPerspective: (perspective: boolean) => void;
-  onSetCenterMark: (mark: ViewCenterMark) => void;
-
-  /* Scene / Explorer props */
-  sceneTree: SceneTreeNode | null;
-  sceneSelected: string;
-  /** Multi-select set. */
-  sceneSelectedIds?: Set<string>;
-  onSceneSelect: (id: string) => void;
-  /** Cmd/Ctrl+click toggle handler for multi-select. */
-  onSceneToggleSelect?: (id: string) => void;
-  /** Shift+click range handler; `visibleIds` is the drawn row order. */
-  onSceneSelectRange?: (
-    id: string,
-    visibleIds: string[],
-    additive?: boolean,
-  ) => void;
-  onToggleVisibility: (id: string) => void;
-
-  /** Called when the user clicks the Property button in ScenePane. */
-  onShowProperty?: (id: string) => void;
-  /** Called when the user clicks the Focus button in ScenePane. */
-  onFocusSelected?: (id: string) => void;
-  /** Called when the user clicks the Delete button in ScenePane. */
-  onDeleteSelected?: (id: string) => void;
-  /** Called when the user clicks the Add (Renderer) toolbar button. */
-  onAddSelected?: () => void;
-  /** Called when the user double-clicks a scene-tree row. */
-  onSceneNodeDoubleClick?: (node: SceneTreeNode) => void;
-  /**
-   * Controlled inline-rename target. A non-null id means that row shows
-   * an editor. `useSceneTreeController` owns this state so the F2 keypath
-   * and the ctxmenu Rename action both route through one controller.
-   */
-  sceneEditingNodeId?: string | null;
-  /** Row asks to begin inline rename (F2). */
-  onBeginInlineRename?: (id: string) => void;
-  /** Editor was dismissed (Esc, blur-without-commit, etc.). */
-  onCancelInlineRename?: () => void;
-  /**
-   * Called when the user commits an inline rename in the scene tree. The
-   * caller routes to the appropriate worker (camera rows go through
-   * `renameCamera`, as a registered camera has no in-place name setter)
-   * and also clears `sceneEditingNodeId`.
-   */
-  onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
-  /** Per-action enablement for the current scene selection. */
-  sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
-  /** Right-click context-menu opener for scene-tree nodes. */
-  onShowSceneContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
-  /** Drag-drop reorder callback. */
-  onMoveSceneNode?: (args: MoveSceneNodeArgs) => unknown;
-  /** Row expand/collapse notification (persists `ui_collapsed`). */
-  onSceneNodeExpandChange?: (node: SceneTreeNode, collapsed: boolean) => void;
-
-  /* --- Generic persistence props (per-view) --- */
-
-  /**
-   * Persisted splitter sizes keyed by view name.
-   * e.g. `{ explorer: [220, 240, 150], selection: [260, 180], crystal: [240, 200, 200] }`
-   */
-  viewSizes: Record<string, number[]>;
-
-  /**
-   * Persisted collapse state keyed by view name.
-   * e.g. `{ explorer: { scene: false, color: false, dummy4: false }, ... }`
-   */
-  viewCollapsed: Record<string, PaneCollapseState>;
-
-  /** Called when any view's splitter sizes change. */
-  onViewSizesChange: (view: string, sizes: number[]) => void;
-
-  /** Called when any view's collapse state changes. */
-  onViewCollapsedChange: (view: string, collapsed: PaneCollapseState) => void;
 }
 
 /* --- Component --- */
@@ -213,40 +206,11 @@ interface SidePanelProps {
  * via the generic `renderView` helper, which builds a vertical Allotment
  * from the view's `PaneConfig[]` and applies collapse / size tracking.
  */
-export const SidePanel: React.FC<SidePanelProps> = ({
-  activeView,
-  cm,
-  activeSceneId,
-  activeMolViewId,
-  viewProjection,
-  viewCenterMark,
-  onSetPerspective,
-  onSetCenterMark,
-  sceneTree,
-  sceneSelected,
-  sceneSelectedIds,
-  onSceneSelect,
-  onSceneToggleSelect,
-  onSceneSelectRange,
-  onToggleVisibility,
-  onShowProperty,
-  onFocusSelected,
-  onDeleteSelected,
-  onAddSelected,
-  onSceneNodeDoubleClick,
-  sceneEditingNodeId,
-  onBeginInlineRename,
-  onCancelInlineRename,
-  onCommitInlineRename,
-  sceneOpsEnabled,
-  onShowSceneContextMenu,
-  onMoveSceneNode,
-  onSceneNodeExpandChange,
-  viewSizes,
-  viewCollapsed,
-  onViewSizesChange,
-  onViewCollapsedChange,
-}) => {
+const SidePanelComponent: React.FC<SidePanelProps> = ({ activeView }) => {
+  const { viewCollapsed, savedSizes } = useLayout();
+  const { setViewSizes, setViewCollapsed } = useLayoutDispatch();
+  const viewSizes = savedSizes.viewSizes;
+
   /*
    * Open-size refs, keyed by `${view}:${paneId}`. Stores the last
    * user-set height of each pane while it was expanded. Used as
@@ -274,177 +238,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     [viewSizes],
   );
 
-  /* --- Build pane configs for each view --- */
-
-  const buildViewPaneConfigs = useMemo((): Record<string, PaneConfig[]> => ({
-    explorer: [
-      {
-        id: "scene",
-        defaultSize: 220,
-        render: (collapsed, onToggle) => (
-          <ScenePane
-            tree={sceneTree}
-            selectedId={sceneSelected}
-            selectedIds={sceneSelectedIds}
-            onSelect={onSceneSelect}
-            onToggleSelect={onSceneToggleSelect}
-            onSelectRange={onSceneSelectRange}
-            onToggleVisibility={onToggleVisibility}
-            onShowProperty={onShowProperty}
-            onFocusSelected={onFocusSelected}
-            onDeleteSelected={onDeleteSelected}
-            onAddRenderer={onAddSelected}
-            onNodeDoubleClick={onSceneNodeDoubleClick}
-            editingNodeId={sceneEditingNodeId}
-            onBeginInlineRename={onBeginInlineRename}
-            onCancelInlineRename={onCancelInlineRename}
-            onCommitInlineRename={onCommitInlineRename}
-            onShowContextMenu={onShowSceneContextMenu}
-            onMoveNode={onMoveSceneNode}
-            opsEnabled={sceneOpsEnabled}
-            onNodeExpandChange={onSceneNodeExpandChange}
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-          />
-        ),
-      },
-      {
-        id: "color",
-        defaultSize: 240,
-        render: (collapsed, onToggle) => (
-          <ColorPane
-            cm={cm}
-            sceneId={activeSceneId}
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-          />
-        ),
-      },
-      {
-        id: "view",
-        defaultSize: 260,
-        render: (collapsed, onToggle) => (
-          <ViewPane
-            cm={cm}
-            activeSceneId={activeSceneId}
-            activeMolViewId={activeMolViewId}
-            viewProjection={viewProjection}
-            viewCenterMark={viewCenterMark}
-            onSetPerspective={onSetPerspective}
-            onSetCenterMark={onSetCenterMark}
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-          />
-        ),
-      },
-    ],
-    selection: [
-      {
-        id: "mol",
-        defaultSize: 260,
-        render: (collapsed, onToggle) => (
-          <MolStructPane
-            cm={cm}
-            activeSceneId={activeSceneId}
-            activeMolViewId={activeMolViewId}
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-          />
-        ),
-      },
-      {
-        id: "selection",
-        defaultSize: 180,
-        render: (collapsed, onToggle) => (
-          <SelectionPane
-            cm={cm}
-            activeSceneId={activeSceneId}
-            activeMolViewId={activeMolViewId}
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-          />
-        ),
-      },
-    ],
-    crystal: [
-      {
-        id: "symmetry",
-        defaultSize: 240,
-        render: (collapsed, onToggle) => (
-          <SymmetryPane
-            cm={cm}
-            activeSceneId={activeSceneId}
-            activeMolViewId={activeMolViewId}
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-          />
-        ),
-      },
-      {
-        id: "density",
-        defaultSize: 240,
-        render: (collapsed, onToggle) => (
-          <DensityMapPane
-            cm={cm}
-            activeSceneId={activeSceneId}
-            activeMolViewId={activeMolViewId}
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-          />
-        ),
-      },
-    ],
-    /* Developer-only view: the whole entry (and, by tree-shaking, the
-     * CatalogPane modules) is dropped from a release build. `__DEV_UI__` is
-     * referenced inline rather than through a shared const so the bundler can
-     * fold the branch away -- see electron.vite.config.ts. */
-    ...(__DEV_UI__ ? { catalog: [
-      {
-        id: "catalog1",
-        defaultSize: 280,
-        render: (collapsed, onToggle) => (
-          <CatalogPane1 collapsed={collapsed} onToggleCollapse={onToggle} />
-        ),
-      },
-      {
-        id: "catalog2",
-        defaultSize: 280,
-        render: (collapsed, onToggle) => (
-          <CatalogPane2
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-            activeSceneId={activeSceneId}
-          />
-        ),
-      },
-      {
-        id: "catalog3",
-        defaultSize: 280,
-        render: (collapsed, onToggle) => (
-          <CatalogPane3
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-            activeSceneId={activeSceneId}
-          />
-        ),
-      },
-    ] } : {}),
-  }), [
-    cm, activeSceneId, activeMolViewId,
-    viewProjection, viewCenterMark,
-    onSetPerspective, onSetCenterMark,
-    sceneTree, sceneSelected, sceneSelectedIds,
-    onSceneSelect, onSceneToggleSelect, onSceneSelectRange,
-    onToggleVisibility, onShowProperty,
-    onFocusSelected, onDeleteSelected, onAddSelected, sceneOpsEnabled,
-    onShowSceneContextMenu, onMoveSceneNode, onSceneNodeExpandChange,
-  ]);
-
   /* --- Generic view renderer (works for any N panes) --- */
 
   const renderView = useCallback(
     (view: string) => {
-      const panes = buildViewPaneConfigs[view];
+      const panes = VIEW_PANES[view];
       if (!panes || panes.length === 0) return null;
 
       const collapsed = viewCollapsed[view] ?? {};
@@ -472,13 +270,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             openSizesRef.current[`${view}:${p.id}`] = sizes[i];
           });
         }
-        onViewSizesChange(view, sizes);
+        setViewSizes(view, sizes);
       };
 
       /* Toggle a single pane's collapse flag. */
       const togglePane = (paneId: string) => {
         const next = { ...collapsed, [paneId]: !collapsed[paneId] };
-        onViewCollapsedChange(view, next);
+        setViewCollapsed(view, next);
       };
 
       return (
@@ -500,13 +298,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         </Allotment>
       );
     },
-    [
-      buildViewPaneConfigs,
-      viewCollapsed,
-      getOpenSize,
-      onViewSizesChange,
-      onViewCollapsedChange,
-    ],
+    [viewCollapsed, getOpenSize, setViewSizes, setViewCollapsed],
   );
 
   /* --- Render --- */
@@ -523,3 +315,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     </div>
   );
 };
+
+/**
+ * Only `activeView` comes from the shell; everything the panes show they
+ * read themselves. A tab rename or a status message re-renders neither
+ * this nor the panes below it.
+ */
+export const SidePanel = React.memo(SidePanelComponent)
+SidePanel.displayName = 'SidePanel'

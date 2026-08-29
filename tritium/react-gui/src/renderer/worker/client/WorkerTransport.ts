@@ -6,7 +6,8 @@
  * replies back to their callers, and exposes typed `invokeService<K>` /
  * `invokeMethod<K>` / `invokeRpc<K>` helpers built on top of the low-level
  * `invokeWorker` array-tail protocol. Also fans out `event-notify`,
- * `stream-progress` and `render-progress` push messages to subscribers.
+ * `stream-progress`, `render-progress` and `anim-progress` push messages to
+ * subscribers.
  */
 import type {
     MethodArgs,
@@ -23,6 +24,8 @@ import type { RenderUpdate } from '../shared/renderTypes';
 import { RENDER_PROGRESS_CHANNEL } from '../shared/renderTypes';
 import type { ApbsUpdate } from '../shared/apbsTypes';
 import { APBS_PROGRESS_CHANNEL } from '../shared/apbsTypes';
+import type { AnimProgressUpdate } from '../shared/animTypes';
+import { ANIM_PROGRESS_CHANNEL } from '../shared/animTypes';
 import type { CrashSource } from '@shared/types/crash';
 import { report as reportCrash } from '../../crash/CrashReporter';
 
@@ -46,6 +49,9 @@ export type EventNotifyArgs = [number, string, number, number, number, string];
  * @param bytes - Cumulative bytes transferred so far.
  */
 export type StreamProgressListener = (reqId: string, bytes: number) => void;
+
+/** Listener for `anim-progress` push messages during playback. */
+export type AnimProgressListener = (update: AnimProgressUpdate) => void;
 
 /** Listener for `render-progress` push messages from `renderJob`. */
 export type RenderProgressListener = (update: RenderUpdate) => void;
@@ -73,6 +79,7 @@ export class WorkerTransport {
     private _busyListeners: Set<(busy: boolean) => void> = new Set();
     private _onEventNotify: (args: EventNotifyArgs) => void;
     private _streamProgressListeners: Set<StreamProgressListener> = new Set();
+    private _animProgressListeners = new Set<AnimProgressListener>();
     private _renderProgressListeners: Set<RenderProgressListener> = new Set();
     private _apbsProgressListeners: Set<ApbsProgressListener> = new Set();
 
@@ -154,6 +161,15 @@ export class WorkerTransport {
                 return;
             }
 
+            if (method === ANIM_PROGRESS_CHANNEL) {
+                // event.data shape: ['anim-progress', AnimProgressUpdate]
+                const [update] = event.data.slice(1) as [AnimProgressUpdate];
+                for (const cb of this._animProgressListeners) {
+                    try { cb(update); } catch (e) { log.warn('anim-progress listener:', e); }
+                }
+                return;
+            }
+
             if (method === RENDER_PROGRESS_CHANNEL) {
                 // event.data shape: ['render-progress', RenderUpdate]
                 const [update] = event.data.slice(1) as [RenderUpdate];
@@ -190,6 +206,16 @@ export class WorkerTransport {
     subscribeStreamProgress(cb: StreamProgressListener): () => void {
         this._streamProgressListeners.add(cb);
         return () => { this._streamProgressListeners.delete(cb); };
+    }
+
+    /**
+     * Subscribe to `anim-progress` push messages during playback.
+     *
+     * @returns An unsubscribe function.
+     */
+    subscribeAnimProgress(cb: AnimProgressListener): () => void {
+        this._animProgressListeners.add(cb);
+        return () => { this._animProgressListeners.delete(cb); };
     }
 
     /**

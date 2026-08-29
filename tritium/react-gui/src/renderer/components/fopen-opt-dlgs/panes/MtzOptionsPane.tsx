@@ -19,9 +19,9 @@ import {
   FieldSection,
   NumericField,
   SelectField,
-} from '../../../h3-kit/form';
+} from '@renderer/h3-kit/form';
 import type { MtzOptions } from '../types';
-import type { GetMtzColumnInfoResult } from '../../../worker/server/services/getMtzColumnInfo.service';
+import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/getMtzColumnInfo.service';
 
 interface MtzOptionsPaneProps {
   options: MtzOptions;

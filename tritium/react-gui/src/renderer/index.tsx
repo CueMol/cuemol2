@@ -8,7 +8,7 @@ import './index.css'
 import './app.css'
 
 import App from './App'
-import { MolTabProvider } from './hooks/useMolTab'
+import { AppStateProviders } from './state/AppStateProviders'
 import { CueMolProvider } from '@renderer/hooks/cuemol/useCueMol'
 import { LogProvider } from './contexts/LogContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -34,7 +34,6 @@ createRoot(container).render(
           inside CueMolProvider so useLogEvent can reach the core, and above
           App so any component can append via useLogPanel(). */}
       <LogProvider>
-      <MolTabProvider>
         <ThemeProvider>
           <CommandProvider>
             <ModalOpenCounterProvider>
@@ -48,7 +47,12 @@ createRoot(container).render(
                   <RenderConfigProvider>
                     <ViewInputConfigProvider>
                       <AppSettingsProvider>
-                        <App />
+                        {/* App-level state, below the dialog and command
+                            providers (closing a tab runs the save prompt and
+                            the FileSave command from inside the workspace). */}
+                        <AppStateProviders>
+                          <App />
+                        </AppStateProviders>
                       </AppSettingsProvider>
                     </ViewInputConfigProvider>
                   </RenderConfigProvider>
@@ -57,7 +61,6 @@ createRoot(container).render(
             </ModalOpenCounterProvider>
           </CommandProvider>
         </ThemeProvider>
-      </MolTabProvider>
       </LogProvider>
     </CueMolProvider>
   </ErrorBoundary>

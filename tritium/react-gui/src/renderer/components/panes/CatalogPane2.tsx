@@ -28,6 +28,7 @@ import {
 import { Listbox, ListRow } from "../../h3-kit/list";
 import { MolSelList } from "../../h3-kit/MolSelList";
 import { SliderNumericField } from "../../h3-kit/SliderNumericField";
+import { useActiveScene } from '../../state/workspace';
 
 /** Sample rows for the Listbox showcase. */
 const LISTBOX_ITEMS = ["1CRN", "3J3Q", "Water", "Ligand"];
@@ -37,8 +38,7 @@ const LISTBOX_ITEMS = ["1CRN", "3J3Q", "Water", "Ligand"];
 interface CatalogPane2Props {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
-  /** Active scene uid, forwarded to the MolSelList sample (picker defs). */
-  activeSceneId?: number;
+
 }
 
 /* --- Component --- */
@@ -46,8 +46,8 @@ interface CatalogPane2Props {
 export const CatalogPane2: React.FC<CatalogPane2Props> = ({
   collapsed = false,
   onToggleCollapse,
-  activeSceneId,
 }) => {
+  const { activeSceneId } = useActiveScene();
   const [gx, setGx] = useState(-0.52);
   const [gy, setGy] = useState(-0.7);
   const [gz, setGz] = useState(0.54612);

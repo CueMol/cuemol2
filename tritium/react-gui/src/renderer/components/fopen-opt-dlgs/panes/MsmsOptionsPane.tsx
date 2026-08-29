@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Field, FieldSection, TextField } from '../../../h3-kit/form';
+import { Field, FieldSection, TextField } from '@renderer/h3-kit/form';
 import type { MsmsOptions } from '../types';
 
 interface MsmsOptionsPaneProps {

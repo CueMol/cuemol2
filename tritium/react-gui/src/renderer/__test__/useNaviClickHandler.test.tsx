@@ -34,8 +34,13 @@ let injectedTool = 'navigate';
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: injectedCm != null, cm: injectedCm }),
 }));
-vi.mock('../hooks/useMolTab', () => ({
-    useMolTabState: () => ({ activeViewID: injectedViewId }),
+vi.mock('../state/workspace', () => ({
+    // The active view as the workspace reports it (undefined = no molview).
+    useActiveScene: () => ({
+        activeMolViewId: injectedViewId ?? undefined,
+        activeSceneId: undefined,
+        hasScene: injectedViewId != null,
+    }),
 }));
 vi.mock('../contexts/ActiveToolContext', () => ({
     useActiveToolContext: () => injectedTool,

@@ -35,10 +35,11 @@ import {
     computeOri,
     type DragSourcePayload,
     type DragOri,
-    type MoveSceneNodeArgs,
 } from "./sceneTreeDnd";
 import { InlineRenameInput } from "./InlineRenameInput";
 import { SectionHeader } from "./SectionHeader";
+import { scrollRowIntoView, useListKeyNav } from "../../h3-kit/list";
+import { useSceneTreeState, useSceneTreeActions } from "../../state/sceneTree";
 
 /* --- Node-type to icon mapping --- */
 
@@ -56,85 +57,7 @@ const TYPE_ICON: Record<SceneNodeType, AppIconKey> = {
 /* --- Props --- */
 
 interface ScenePaneProps {
-    /** Root scene node from `useSceneTree`. Null while loading or when no scene is active. */
-    tree: SceneTreeNode | null;
-    /** Currently selected node ID (string for compatibility with existing inspector wiring). */
-    selectedId: string;
-    /**
-     * Multi-select set. Drives visual selection on multiple rows. When
-     * omitted, falls back to single-select (selectedId only).
-     */
-    selectedIds?: Set<string>;
-    onSelect: (id: string) => void;
-    /**
-     * Cmd/Ctrl+click handler -- toggles membership of `id` in selectedIds.
-     * When omitted, modifier-clicks fall back to single-select.
-     */
-    onToggleSelect?: (id: string) => void;
-    /**
-     * Shift+click range select. Receives the clicked id, the ids of every
-     * currently visible row in display order, and whether the range should
-     * be added to the existing selection (Shift+Cmd) rather than replace it.
-     * When omitted, Shift+click falls back to single-select.
-     */
-    onSelectRange?: (id: string, visibleIds: string[], additive: boolean) => void;
-    onToggleVisibility: (id: string) => void;
-    onAddObject?: () => void;
-    onAddRenderer?: () => void;
-    onDeleteSelected?: (id: string) => void;
-    onFocusSelected?: (id: string) => void;
-    onShowProperty?: (id: string) => void;
-    /**
-     * Double-click handler -- UXP `onTreeItemClick` `aEvent.detail==2`
-     * branch: camera rows run `loadCamImpl(name, true)` (Apply to view
-     * with vis flags); other rows run `onPropCmd` (Properties dialog).
-     */
-    onNodeDoubleClick?: (node: SceneTreeNode) => void;
-    /**
-     * Controlled inline-rename: when non-null, the row with this id shows
-     * an `<InputGroup>` in place of its label. The trigger is owned by
-     * `useSceneTreeController` so both F2 (started via `onBeginInlineRename`)
-     * and the ctxmenu Rename action route through the same controller.
-     */
-    editingNodeId?: string | null;
-    /**
-     * F2 (or other in-tree trigger) requesting that the given row enter
-     * inline-rename mode. ScenePane forwards `selectedId` here on F2;
-     * `useSceneTreeController` decides whether to accept.
-     */
-    onBeginInlineRename?: (id: string) => void;
-    /** Esc / blur-without-commit asks the controller to drop the editor. */
-    onCancelInlineRename?: () => void;
-    /**
-     * Inline-rename commit handler. ScenePane handles the `<InputGroup>`
-     * editor; on Enter (or blur with a non-empty edit that differs from the
-     * original name) it calls back here with the targeted node and the
-     * user-entered name. The caller routes to the appropriate worker
-     * service (renameCamera for camera rows, renameNode otherwise) and
-     * clears `editingNodeId` afterwards.
-     */
-    onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
-    /** Right-click handler -- opens native context menu for the targeted node. */
-    onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
-    /**
-     * Drag-drop reorder callback. Receives a fully-resolved
-     * `MoveSceneNodeArgs`; ScenePane handles the validation and ori math.
-     * The return value is ignored - ScenePane uses event-driven refetch.
-     */
-    onMoveNode?: (args: MoveSceneNodeArgs) => unknown;
-    /**
-     * Per-action enablement for the current selection. When omitted, all
-     * actions are enabled (legacy callers). Defaults to enabled=true so a
-     * caller that does not yet compute this still works.
-     */
-    opsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
-    /**
-     * Row expand/collapse notification (collapsed=true on collapse). The
-     * controller persists object / rendGroup rows into C++ `ui_collapsed`
-     * so the state survives a qsc save/load. Unrelated to the pane-level
-     * `collapsed` / `onToggleCollapse` pair below (SectionHeader folding).
-     */
-    onNodeExpandChange?: (node: SceneTreeNode, collapsed: boolean) => void;
+    /** Pane-level fold (SectionHeader); unrelated to row expand / collapse. */
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -151,30 +74,30 @@ interface ScenePaneProps {
  * Blueprint `Tree` wiring, the click-pause-click rename schedule, and the
  * drag-drop geometry.
  */
-export const ScenePane: React.FC<ScenePaneProps> = ({
-    tree,
-    selectedId,
-    selectedIds,
-    onSelect,
-    onToggleSelect,
-    onSelectRange,
-    onToggleVisibility,
-    onAddRenderer,
-    onDeleteSelected,
-    onFocusSelected,
-    onShowProperty,
-    onNodeDoubleClick,
-    editingNodeId,
-    onBeginInlineRename,
-    onCancelInlineRename,
-    onCommitInlineRename,
-    onShowContextMenu,
-    onMoveNode,
-    opsEnabled,
-    onNodeExpandChange,
+const ScenePaneComponent: React.FC<ScenePaneProps> = ({
     collapsed,
     onToggleCollapse,
 }) => {
+    // The tree, the selection and the rename editor come from the provider;
+    // the actions are identity-stable, so only the state re-renders the rows.
+    const { tree, selectedId, selectedIds, editingNodeId, selectedHasOps: opsEnabled } = useSceneTreeState();
+    const {
+        select: onSelect,
+        toggleSelect: onToggleSelect,
+        selectRange: onSelectRange,
+        toggleVisibility: onToggleVisibility,
+        addSelected: onAddRenderer,
+        deleteSelected: onDeleteSelected,
+        focusSelected: onFocusSelected,
+        showProperty: onShowProperty,
+        nodeDoubleClick: onNodeDoubleClick,
+        beginInlineRename: onBeginInlineRename,
+        cancelInlineRename: onCancelInlineRename,
+        commitInlineRename: onCommitInlineRename,
+        showContextMenu: onShowContextMenu,
+        moveNode: onMoveNode,
+        nodeExpandChange: onNodeExpandChange,
+    } = useSceneTreeActions();
     const hasSelection = selectedId !== '';
     const canFocus = hasSelection && (opsEnabled?.focus ?? true);
     const canDelete = hasSelection && (opsEnabled?.delete ?? true);
@@ -293,29 +216,41 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const expandChangeRef = useRef(onNodeExpandChange);
     expandChangeRef.current = onNodeExpandChange;
 
-    const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
+    /**
+     * Open / close one row: the local override the tree renders from, plus
+     * the persistence callback. The twisty and the arrow keys both go
+     * through here so they cannot diverge.
+     */
+    const setNodeExpanded = useCallback((idStr: string, expanded: boolean) => {
         setExpandOverrides((prev) => {
             const next = new Map(prev);
-            next.set(String(node.id), true);
+            next.set(idStr, expanded);
             return next;
         });
-        const sceneNode = nodeLookup.get(String(node.id));
-        if (sceneNode) expandChangeRef.current?.(sceneNode, false);
+        const sceneNode = nodeLookup.get(idStr);
+        if (sceneNode) expandChangeRef.current?.(sceneNode, !expanded);
     }, [nodeLookup]);
 
+    /** Whether a row is currently open (override, else the C++ hint). */
+    const isNodeExpanded = useCallback((idStr: string): boolean => {
+        const ovr = expandOverrides.get(idStr);
+        if (ovr !== undefined) return ovr;
+        return !(nodeLookup.get(idStr)?.uiCollapsed ?? false);
+    }, [expandOverrides, nodeLookup]);
+
+    const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
+        setNodeExpanded(String(node.id), true);
+    }, [setNodeExpanded]);
+
     const handleNodeCollapse = useCallback((node: TreeNodeInfo) => {
-        setExpandOverrides((prev) => {
-            const next = new Map(prev);
-            next.set(String(node.id), false);
-            return next;
-        });
-        const sceneNode = nodeLookup.get(String(node.id));
-        if (sceneNode) expandChangeRef.current?.(sceneNode, true);
-    }, [nodeLookup]);
+        setNodeExpanded(String(node.id), false);
+    }, [setNodeExpanded]);
 
     // Visible-row order for Shift+click, kept in a ref because the handler
     // below is declared before `treeContents` (which it is derived from).
     const visibleRowIdsRef = useRef<string[]>([]);
+    /** Scrolling wrapper, so key navigation can bring a row into view. */
+    const treeScrollRef = useRef<HTMLDivElement | null>(null);
 
     const handleNodeClick = useCallback(
         (
@@ -370,36 +305,6 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     );
 
 
-    // F2 begins inline rename on the current selection. The listener is
-    // bound on the scrolling wrapper (not document) so the shortcut only
-    // fires while the user is focused inside the scene tree.
-    const handleTreeKeyDown = useCallback(
-        (e: React.KeyboardEvent<HTMLDivElement>) => {
-            // The inline rename editor is an <input> inside this wrapper, so
-            // everything typed into it bubbles to this handler. While it is
-            // open the tree owns no keys: Backspace there means "delete a
-            // character", not "delete the node".
-            if (editingNodeId != null) return;
-            // Delete / Backspace removes the selection. `onDeleteSelected`
-            // is the same handler the toolbar button uses, so it deletes the
-            // whole multi-selection under one undo transaction.
-            if (e.key === "Delete" || e.key === "Backspace") {
-                if (!onDeleteSelected || !canDelete) return;
-                e.preventDefault();
-                onDeleteSelected(selectedId);
-                return;
-            }
-            if (e.key !== "F2") return;
-            if (!beginRenameRef.current) return;
-            if (!selectedId) return;
-            const node = nodeLookup.get(selectedId);
-            if (!node) return;
-            if (!isRenameableType(node.type)) return;
-            e.preventDefault();
-            beginRenameRef.current(selectedId);
-        },
-        [selectedId, nodeLookup, isRenameableType, onDeleteSelected, canDelete, editingNodeId],
-    );
 
     // Auto-focus + select the inline input each time the editor opens.
     useEffect(() => {
@@ -648,14 +553,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const treeContents: TreeNodeInfo[] = useMemo(() => {
         if (!tree) return [];
 
-        const isExpanded = (n: SceneTreeNode, idStr: string): boolean => {
-            // User override wins (true=expanded, false=collapsed).
-            const ovr = expandOverrides.get(idStr);
-            if (ovr !== undefined) return ovr;
-            // Default: respect uiCollapsed hint from C++ / synthesized roots.
-            // (cameraRoot / styleRoot ship uiCollapsed=true so they start closed.)
-            return !n.uiCollapsed;
-        };
+        // Override wins (true=expanded, false=collapsed); otherwise the
+        // uiCollapsed hint from C++ / the synthesized roots (cameraRoot /
+        // styleRoot ship uiCollapsed=true so they start closed).
+        const isExpanded = (_n: SceneTreeNode, idStr: string): boolean =>
+            isNodeExpanded(idStr);
 
         const draggable =
             (n: SceneTreeNode): boolean =>
@@ -757,7 +659,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         };
         return [sceneRow, ...tree.children.map(buildNode)];
     }, [
-        tree, expandOverrides, selectedId, selectedIds, visibilityButton,
+        tree, isNodeExpanded, selectedId, selectedIds, visibilityButton,
         onMoveNode, handleDragStart, handleDragOver, handleDrop, handleDragEnd,
         dropIndicator, editingNodeId, commitEdit, cancelEdit,
     ]);
@@ -781,6 +683,81 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     }, [treeContents]);
 
     visibleRowIdsRef.current = visibleRowIds;
+
+    /**
+     * Arrow / Home / End selection movement, shared with every other list in
+     * the app (h3-kit/list). Declared after `visibleRowIds` because it
+     * navigates the rows as displayed -- collapsed children are skipped
+     * exactly as they are on screen.
+     */
+    const navKeyDown = useListKeyNav({
+        items: visibleRowIds,
+        activeId: selectedId || null,
+        onSelect,
+        onSelectRange: onSelectRange
+            ? (id, items, additive) => onSelectRange(id, [...items], additive)
+            : undefined,
+        // Right opens a closed row, then steps into it; Left closes an open
+        // one, then steps out to the parent -- the usual tree behaviour.
+        onExpand: (id) => {
+            const node = nodeLookup.get(id);
+            if (!node || node.children.length === 0) return;
+            if (!isNodeExpanded(id)) {
+                setNodeExpanded(id, true);
+                return;
+            }
+            onSelect(String(node.children[0].id));
+        },
+        onCollapse: (id) => {
+            const node = nodeLookup.get(id);
+            if (node && node.children.length > 0 && isNodeExpanded(id)) {
+                setNodeExpanded(id, false);
+                return;
+            }
+            const parent = node ? parentMap.get(node.id) : null;
+            if (parent) onSelect(String(parent.id));
+        },
+        // Keep the moved-to row on screen: without this the selection could
+        // walk out of the scroll viewport and leave the user looking at rows
+        // that are no longer selected.
+        onScrollTo: (id) => {
+            scrollRowIntoView(treeScrollRef.current, `[data-node-id="${id}"]`);
+        },
+        // An open inline editor owns the keyboard.
+        enabled: editingNodeId == null,
+    });
+
+    // Keys the tree owns beyond navigation: F2 renames, Delete removes. The
+    // listener is bound on the scrolling wrapper (not document) so they only
+    // fire while the user is focused inside the scene tree.
+    const handleTreeKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLDivElement>) => {
+            // The inline rename editor is an <input> inside this wrapper, so
+            // everything typed into it bubbles to this handler. While it is
+            // open the tree owns no keys: Backspace there means "delete a
+            // character", not "delete the node".
+            if (editingNodeId != null) return;
+            if (navKeyDown(e)) return;
+            // Delete / Backspace removes the selection. `onDeleteSelected`
+            // is the same handler the toolbar button uses, so it deletes the
+            // whole multi-selection under one undo transaction.
+            if (e.key === "Delete" || e.key === "Backspace") {
+                if (!onDeleteSelected || !canDelete) return;
+                e.preventDefault();
+                onDeleteSelected(selectedId);
+                return;
+            }
+            if (e.key !== "F2") return;
+            if (!beginRenameRef.current) return;
+            if (!selectedId) return;
+            const node = nodeLookup.get(selectedId);
+            if (!node) return;
+            if (!isRenameableType(node.type)) return;
+            e.preventDefault();
+            beginRenameRef.current(selectedId);
+        },
+        [navKeyDown, selectedId, nodeLookup, isRenameableType, onDeleteSelected, canDelete, editingNodeId],
+    );
 
     return (
         <div className="sp-pane">
@@ -845,6 +822,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 // conveys selection, and the ring rendered around an
                 // inner row label looked like a glitch (issue 2026-05-13).
                 <div
+                    ref={treeScrollRef}
                     className="sp-pane-scroll"
                     tabIndex={-1}
                     // Marks the tree as the target of Edit > Cut/Copy/Paste
@@ -888,3 +866,11 @@ function nodeLabel(node: SceneTreeNode): string {
             return node.name;
     }
 }
+
+/**
+ * Its two props are the pane-level fold; the tree and the selection come
+ * from the provider. The actions bundle is identity-stable, so a click
+ * re-renders the rows through the state context alone.
+ */
+export const ScenePane = React.memo(ScenePaneComponent)
+ScenePane.displayName = 'ScenePane'

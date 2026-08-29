@@ -8,8 +8,8 @@
  *   4. a RotX step commits a RELATIVE rotation via rotateView (delta from 0)
  *   5. a TraX step applies a RELATIVE camera-pan via translateView (UXP wheel
  *      parity), not an absolute setViewXform center
- *   6. the Projection controls write through the threaded callbacks (which the
- *      app routes to the existing view/scene commands -- single source of truth)
+ *   6. the Projection controls dispatch the existing view commands (single
+ *      source of truth: the same handlers the View menu uses)
  */
 
 import React from 'react'
@@ -27,8 +27,23 @@ vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 
+// The pane reads the mirrored view state and writes through the command
+// registry; both are provider-owned, so stand them in here.
+const viewState = vi.hoisted(() => ({
+    viewProjection: false as boolean | null,
+    viewCenterMark: 'crosshair' as 'crosshair' | 'axis' | 'none' | null,
+    sceneBgColor: null,
+    exportAvailable: [] as string[],
+}))
+const dispatch = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+vi.mock('../state/activeView', () => ({ useActiveViewValues: () => viewState }))
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
+vi.mock('../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }))
+
 import { ViewPane } from '../components/panes/ViewPane'
 import { mountTree, flushPromises, pressStepArrow } from './helpers/testHarness'
+import { withPaneEnv } from './helpers/paneEnv'
 
 const XFORM = {
     ok: true,
@@ -50,18 +65,6 @@ function makeCm() {
     }
 }
 
-function makeProps(cm: ReturnType<typeof makeCm>) {
-    return {
-        cm: cm as never,
-        activeSceneId: 100,
-        activeMolViewId: 7,
-        collapsed: false,
-        viewProjection: false as boolean | null,
-        viewCenterMark: 'crosshair' as const,
-        onSetPerspective: vi.fn(),
-        onSetCenterMark: vi.fn(),
-    }
-}
 
 /** Find a FieldGrid row by its label text. */
 function fieldRow(container: HTMLElement, label: string): HTMLElement {
@@ -80,13 +83,12 @@ function rightArrow(container: HTMLElement, label: string): HTMLElement {
 
 describe('ViewPane', () => {
     let cm: ReturnType<typeof makeCm>
-    let props: ReturnType<typeof makeProps>
     let view: { container: HTMLElement; unmount(): void }
 
     beforeEach(async () => {
+        dispatch.mockClear()
         cm = makeCm()
-        props = makeProps(cm)
-        view = mountTree(<ViewPane {...props} />)
+        view = mountTree(withPaneEnv(cm, 100, 7, <ViewPane collapsed={false} />))
         await flushPromises() // resolve getViewXform -> enable controls
     })
 
@@ -135,13 +137,13 @@ describe('ViewPane', () => {
         )
     })
 
-    it('routes Perspective toggle through the threaded callback', () => {
+    it('routes the Perspective toggle to the view.perspective command', () => {
         const sw = view.container.querySelector('.h3-form-switch input') as HTMLInputElement
         act(() => sw.click())
-        expect(props.onSetPerspective).toHaveBeenCalledWith(true)
+        expect(dispatch).toHaveBeenCalledWith('view.perspective')
     })
 
-    it('routes the Center mark select through the threaded callback', () => {
+    it('routes the Center mark select to the matching view.centerMark command', () => {
         const cmSel = view.container.querySelector(
             'select[aria-label="Center mark"]',
         ) as HTMLSelectElement
@@ -149,7 +151,7 @@ describe('ViewPane', () => {
             cmSel.value = 'axis'
             cmSel.dispatchEvent(new Event('change', { bubbles: true }))
         })
-        expect(props.onSetCenterMark).toHaveBeenCalledWith('axis')
+        expect(dispatch).toHaveBeenCalledWith('view.centerMark.axis')
     })
 
     it('does not surface a Background control (Scene property, not View)', () => {

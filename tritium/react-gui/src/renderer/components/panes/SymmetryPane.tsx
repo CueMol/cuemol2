@@ -23,18 +23,16 @@ import {
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { SectionHeader } from './SectionHeader'
 import { useSymmetryPanel } from '../../hooks/useSymmetryPanel'
 import { useShowSymmetryChangeDialog } from '../dialogs/SymmetryChangeDialogProvider'
 import type { SymmRendererExtent } from '../../worker/server/services/symmetryPanelOps.service'
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
 import { fireService } from '../../utils/fireService'
+import { useCueMol } from '../../hooks/cuemol/useCueMol'
+import { useActiveScene } from '../../state/workspace'
 
 interface SymmetryPaneProps {
-    cm: AsyncCueMol | null
-    activeSceneId: number | undefined
-    activeMolViewId: number | undefined
     collapsed?: boolean
     onToggleCollapse?: () => void
 }
@@ -78,13 +76,10 @@ function latticeDisplay(lat: string): string {
     return lat[0] + lat.slice(1).toLowerCase()
 }
 
-export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
-    cm,
-    activeSceneId,
-    activeMolViewId,
-    collapsed = false,
-    onToggleCollapse,
-}) => {
+export const SymmetryPane: React.FC<SymmetryPaneProps> = ({ collapsed, onToggleCollapse }) => {
+    const { cm } = useCueMol()
+    const { activeSceneId, activeMolViewId } = useActiveScene()
+
     const [selectedObjId, setSelectedObjId] = useState<number | undefined>(undefined)
     const {
         info,

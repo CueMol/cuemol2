@@ -1,273 +1,87 @@
+/**
+ * @file hooks/useSceneContextMenu.ts
+ * @description Opens the scene-tree context menu and runs what the user
+ * picked.
+ *
+ * Three steps and nothing else: build the payload the menu needs
+ * (`buildSceneCtxPayload`), show it, and turn the action it returns into a
+ * command (`sceneCtxActionToCommand`) to dispatch. The work itself lives in
+ * the command handlers, which the tree toolbar and the keyboard reach the
+ * same way -- so an entry that gains a second entry point cannot drift.
+ */
+
 import { useCallback } from 'react'
-import type { ChangeRendSelKind, RendColoringId, SceneCtxAction, SceneCtxMenuPayload, SelectMolKind } from '@shared/types/sceneCtxMenu'
+import type { SceneCtxAction, SceneCtxMenuPayload } from '@shared/types/sceneCtxMenu'
 import { IPC } from '@shared/ipcChannels'
 import { buildTemplate } from '@shared/sceneCtxMenu/sceneCtxTemplates'
 import { useShowContextMenu } from '../components/menu/ContextMenuProvider'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
-import { useShowTextPromptDialog } from '../components/dialogs/TextPromptDialogProvider'
-import { useShowNewRendererDialog } from '../components/dialogs/NewRendererDialogProvider'
-import { useShowApplyRendStyleDialog } from '../components/dialogs/ApplyRendStyleDialogProvider'
-import { useShowCreateRendStyleDialog } from '../components/dialogs/CreateRendStyleDialogProvider'
-import { useShowEditCameraVisFlagsDialog } from '../components/dialogs/EditCameraVisFlagsDialogProvider'
-import { useShowEditInteractionListDialog } from '../components/dialogs/EditInteractionListDialogProvider'
-import { useShowRegenMolSurfDialog } from '../components/dialogs/RegenMolSurfDialogProvider'
-import { useShowStyleEditorDialog } from '../components/dialogs/StyleEditorDialogProvider'
-import type { RendererOptions } from '../components/fopen-opt-dlgs/types'
+import { useCommands } from '../commands/CommandRegistry'
+import { sceneCtxActionToCommand } from '../state/sceneTree/commands/sceneCtxActionToCommand'
 import { buildSceneCtxPayload, nodeMenuLabel } from './sceneContextMenu/buildSceneCtxPayload'
-import { dispatchSceneCtxAction } from './sceneContextMenu/dispatchSceneCtxAction'
 
-/**
- * Opens the native scene-tree context menu and dispatches the returned
- * action against the appropriate worker service via the callbacks supplied
- * by `useSceneTree`. Mirrors the pattern in `useNaviContextMenu`.
- *
- * The hook itself is the React-side wiring: dialog hook resolution, the
- * shared "New Renderer / New Camera" sub-flows, and the orchestrator that
- * runs `buildSceneCtxPayload` -> `IPC.SCENE_CTX_SHOW` ->
- * `dispatchSceneCtxAction`. The pre-fetch and the per-action dispatch
- * live in `./sceneContextMenu/`.
- */
 export interface UseSceneContextMenuOptions {
-    cm: AsyncCueMol | null
-    /** Active scene UID -- required to pre-fetch dynamic Paint(SS) styles. */
-    sceneId: number | undefined
-    toggleVisibility: (id: string) => void
-    deleteNode: (id: string) => Promise<boolean>
-    renameNode: (id: string, newName: string) => Promise<boolean>
-    showProperty: (id: string) => Promise<void> | void
-    selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
-    /**
-     * Begin inline rename on the row with the given id. Both F2 and the
-     * ctxmenu Rename action go through this; the underlying editor lives in
-     * `ScenePane` and is controlled by `useSceneTreeController`.
-     */
-    beginInlineRename: (id: string) => void
-    copyNode: (node: SceneTreeNode) => Promise<boolean>
-    pasteNode: (node: SceneTreeNode) => Promise<boolean>
-    setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
-    paintRendererSelection: (id: string, colorValue: string) => Promise<boolean>
-    paintObjectSelection: (id: string, colorValue: string) => Promise<boolean>
-    applyRendererStyle: (
-        id: string, styleName: string, pattern: string, flags: string,
-    ) => Promise<boolean>
-    setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
-    toggleSceneColorProofing: () => Promise<boolean>
-    setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
-    generateRendererSurfObj: (id: string) => Promise<boolean>
-    createRendererGroup: (objId: string, name: string) => Promise<boolean>
-    changeRendererType: (rendId: string, newType: string) => Promise<boolean>
-    createRendererOnObject: (
-        targetObjId: number,
-        rendOpts: RendererOptions,
-        groupName?: string,
-    ) => Promise<boolean>
-    /** Current multi-select set. When size > 1 a right-click on a member
-     *  triggers the multi context menu. */
-    selectedIds?: Set<string>
-    bulkSetNodeVisible?: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
-    bulkDeleteNodes?: (ids: Iterable<string>) => Promise<boolean>
-    bulkCopyNodes?: (
-        ids: Iterable<string>,
-    ) => Promise<{ ok: boolean; reason?: 'mixed' | 'objectUnsupported' }>
-    /** Style-set ops (create / read-only toggle / file load-save). */
-    createStyleSet: (name: string) => Promise<{ ok: boolean; newId: number }>
-    toggleStyleSetReadOnly: (
-        nodeId: number, scopeId: number,
-    ) => Promise<{ ok: boolean; readonly: boolean }>
-    loadStyleSetFromFile: (path: string) => Promise<boolean>
-    saveStyleSetToFile: (nodeId: number, scopeId: number, path: string) => Promise<boolean>
-    saveStyleSetToCurrentSrc: (
-        nodeId: number, scopeId: number,
-    ) => Promise<{ ok: boolean; saved: boolean }>
-    /** Camera ops (create / rename / save-apply / file load-save). */
-    activeViewId: number | undefined
-    createCamera: (viewId: number, name: string) => Promise<boolean>
-    renameCamera: (oldName: string, newName: string) => Promise<boolean>
-    saveViewToCamera: (
-        viewId: number, name: string, withVisFlags: boolean,
-    ) => Promise<boolean>
-    applyCameraToView: (
-        viewId: number, name: string, withVisFlags: boolean,
-    ) => Promise<boolean>
-    clearCameraVisFlags: (name: string) => Promise<boolean>
-    loadCameraFromFile: (viewId: number, path: string) => Promise<boolean>
-    saveCameraToFile: (name: string, path: string) => Promise<boolean>
-    saveCameraToCurrentSrc: (
-        name: string,
-    ) => Promise<{ ok: boolean; saved: boolean }>
-    reloadCameraFromSrc: (name: string) => Promise<boolean>
+  cm: AsyncCueMol | null
+  /** Active scene UID -- required to pre-fetch dynamic Paint(SS) styles. */
+  sceneId: number | undefined
+  /**
+   * Current multi-select set. A right-click on a member of a set of more
+   * than one raises the multi menu instead of the per-type one.
+   */
+  selectedIds?: Set<string>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
-    openContextMenu: (node: SceneTreeNode, x: number, y: number) => Promise<void>
-    /**
-     * Run the shared "New Renderer..." flow against a given source node
-     * (object / renderer / rendGroup). Used by both the ctxmenu item and
-     * the toolbar Add button.
-     */
-    openNewRendererFlow: (node: SceneTreeNode) => Promise<void>
-    /**
-     * Run the shared "New Camera..." flow (suggest-name + prompt +
-     * `saveViewToCam` worker). Used by both the ctxmenu item and the
-     * toolbar Add button when a camera / cameraRoot row is selected.
-     */
-    openNewCameraFlow: () => Promise<void>
+  openContextMenu: (node: SceneTreeNode, x: number, y: number) => Promise<void>
 } {
-    const { cm, sceneId, activeViewId, createCamera, createRendererOnObject,
-            selectedIds, bulkSetNodeVisible, bulkDeleteNodes, bulkCopyNodes } = opts
+  const { cm, sceneId, selectedIds } = opts
+  const showContextMenu = useShowContextMenu()
+  const { dispatch } = useCommands()
 
-    const showContextMenu = useShowContextMenu()
+  // macOS shows the native menu (main process); Windows / Linux render the
+  // same shared template with the React MenuPanel so the look matches the
+  // menu bar dropdowns.
+  const showSceneCtxMenu = useCallback(
+    async (payload: SceneCtxMenuPayload): Promise<SceneCtxAction | null> => {
+      const api = window.electronAPI
+      if (api?.platform === 'darwin') {
+        return await api.invoke(IPC.SCENE_CTX_SHOW, payload)
+      }
+      return await showContextMenu(buildTemplate(payload), { x: payload.x, y: payload.y })
+    },
+    [showContextMenu],
+  )
 
-    // macOS shows the native menu (main process); Windows / Linux render the
-    // same shared template with the React MenuPanel so the look matches the
-    // menu bar dropdowns.
-    const showSceneCtxMenu = useCallback(
-        async (payload: SceneCtxMenuPayload): Promise<SceneCtxAction | null> => {
-            const api = window.electronAPI
-            if (api?.platform === 'darwin') {
-                return await api.invoke(IPC.SCENE_CTX_SHOW, payload)
-            }
-            return await showContextMenu(buildTemplate(payload), { x: payload.x, y: payload.y })
-        },
-        [showContextMenu],
-    )
+  const openContextMenu = useCallback(
+    async (node: SceneTreeNode, x: number, y: number): Promise<void> => {
+      const idStr = String(node.id)
 
-    // Electron disables window.prompt -- use the in-app Blueprint dialog
-    // for Rename / New Group text input flows instead.
-    const showErrorAlert = useShowErrorAlert()
-    const showTextPrompt = useShowTextPromptDialog()
-    const showNewRenderer = useShowNewRendererDialog()
-    const showApplyRendStyle = useShowApplyRendStyleDialog()
-    const showCreateRendStyle = useShowCreateRendStyleDialog()
-    const showEditCameraVisFlags = useShowEditCameraVisFlagsDialog()
-    const showEditInteractionList = useShowEditInteractionListDialog()
-    const showRegenMolSurf = useShowRegenMolSurfDialog()
-    const showStyleEditor = useShowStyleEditorDialog()
+      // Multi-select right-click: when the targeted node is part of a
+      // multi-select set, send the multi payload and skip the per-type
+      // pre-fetch -- the menu offers only Show / Hide / Copy / Delete.
+      const isMulti = !!selectedIds && selectedIds.size > 1 && selectedIds.has(idStr)
+      const payload: SceneCtxMenuPayload = isMulti
+        ? {
+            x, y,
+            nodeType: node.type,
+            nodeLabel: nodeMenuLabel(node),
+            isVisible: node.visible,
+            hasVisibility: false,
+            clipboardKind: null,
+            multiNodeIds: [...selectedIds!].map(Number),
+          }
+        : { x, y, ...(await buildSceneCtxPayload(cm, sceneId, node)) }
 
-    // Shared "New Camera..." flow -- also reused by the toolbar Add button.
-    // Mirrors UXP `onNewCmd` dispatch (camera / cameraRoot branch).
-    const openNewCameraFlow = useCallback(
-        async (): Promise<void> => {
-            if (activeViewId === undefined) return
-            if (sceneId === undefined) return
-            let suggestion = 'camera_0'
-            if (cm) {
-                try {
-                    const r = await cm.invokeService('proposeUniqName', {
-                        kind: 'camera',
-                        prefix: 'camera',
-                        sceneId,
-                    })
-                    suggestion = r?.name ?? suggestion
-                } catch (err) {
-                    console.warn('proposeUniqName failed:', err)
-                }
-            }
-            const entered = await showTextPrompt({
-                title: 'New Camera',
-                label: 'Name for new camera:',
-                defaultValue: suggestion,
-                confirmLabel: 'Create',
-            })
-            if (entered == null) return
-            await createCamera(activeViewId, entered)
-        },
-        [cm, sceneId, activeViewId, showTextPrompt, createCamera],
-    )
+      const action = await showSceneCtxMenu(payload)
+      if (!action) return
+      const invocation = sceneCtxActionToCommand(node, action, selectedIds)
+      // An action that does not apply to this row resolves to nothing.
+      if (!invocation) return
+      await dispatch(invocation.id, ...(invocation.args === undefined ? [] : [invocation.args]) as [never])
+    },
+    [cm, sceneId, selectedIds, showSceneCtxMenu, dispatch],
+  )
 
-    // Shared "New Renderer..." flow -- also reused by the toolbar Add button.
-    // Mirrors UXP `onNewCmd`, which calls the same `setupRendByObjID` from
-    // both the ctxmenu item and the toolbar.
-    const openNewRendererFlow = useCallback(
-        async (node: SceneTreeNode): Promise<void> => {
-            if (
-                node.type !== 'object' &&
-                node.type !== 'renderer' &&
-                node.type !== 'rendGroup'
-            ) return
-            if (!cm || sceneId === undefined) return
-            let info
-            try {
-                info = await cm.invokeService('getNewRendererOptions', {
-                    sceneId,
-                    sourceNodeId: node.id,
-                    sourceNodeType: node.type,
-                })
-            } catch (err) {
-                console.warn('getNewRendererOptions failed:', err)
-                return
-            }
-            if (!info?.ok || info.rendererTypes.length === 0) return
-            const result = await showNewRenderer({
-                sceneId,
-                objName: info.objName,
-                objClassName: info.objClassName,
-                rendererTypes: info.rendererTypes,
-                presetTypes: info.presetTypes ?? [],
-                defaultName: info.defaultName,
-                isMol: info.isMol,
-                molID: info.isMol && info.targetObjId >= 0 ? info.targetObjId : undefined,
-                currentSel: info.currentSel,
-                groupName: info.groupName || undefined,
-            })
-            if (!result) return
-            await createRendererOnObject(
-                info.targetObjId,
-                result.rendOpts,
-                info.groupName || undefined,
-            )
-        },
-        [cm, sceneId, showNewRenderer, createRendererOnObject],
-    )
-
-    const openContextMenu = useCallback(
-        async (node: SceneTreeNode, x: number, y: number): Promise<void> => {
-            const idStr = String(node.id)
-
-            // Multi-select right-click: when the targeted node is part of a
-            // multi-select set, send the multi payload and short-circuit the
-            // per-type pre-fetch -- the main process renders the multi-only
-            // menu (Show / Hide / Delete).
-            const isMulti =
-                !!selectedIds && selectedIds.size > 1 && selectedIds.has(idStr)
-            if (isMulti) {
-                const multiNodeIds = Array.from(selectedIds!).map((s) => Number(s))
-                const multiAction: SceneCtxAction | null = await showSceneCtxMenu({
-                    x, y,
-                    nodeType: node.type,
-                    nodeLabel: nodeMenuLabel(node),
-                    isVisible: node.visible,
-                    hasVisibility: false,
-                    clipboardKind: null,
-                    multiNodeIds,
-                })
-                if (!multiAction) return
-                await dispatchSceneCtxAction(node, multiAction, {
-                    ...opts,
-                    showErrorAlert, showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
-                    openNewRendererFlow, openNewCameraFlow,
-                })
-                return
-            }
-
-            const payload = await buildSceneCtxPayload(cm, sceneId, node)
-            const action: SceneCtxAction | null = await showSceneCtxMenu({ x, y, ...payload })
-            if (!action) return
-            await dispatchSceneCtxAction(node, action, {
-                ...opts,
-                showErrorAlert, showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
-                openNewRendererFlow, openNewCameraFlow,
-            })
-        },
-        [
-            cm, sceneId, opts, selectedIds, bulkSetNodeVisible, bulkDeleteNodes, bulkCopyNodes,
-            showSceneCtxMenu,
-            showErrorAlert, showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
-            openNewRendererFlow, openNewCameraFlow,
-        ],
-    )
-
-    return { openContextMenu, openNewRendererFlow, openNewCameraFlow }
+  return { openContextMenu }
 }

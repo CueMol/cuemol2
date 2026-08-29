@@ -9,7 +9,7 @@
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
-import type { RendererOptions } from '../../../components/fopen-opt-dlgs/types';
+import type { RendererOptions } from '../../shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer.service';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';

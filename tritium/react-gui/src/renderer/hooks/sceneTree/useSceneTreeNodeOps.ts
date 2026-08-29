@@ -5,7 +5,7 @@
  * reorder, and bulk multi-select ops.
  */
 
-import { useCallback, type MutableRefObject } from 'react'
+import { useCallback, type MutableRefObject, useMemo} from 'react'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type {
     SceneNodeType,
@@ -13,7 +13,7 @@ import type {
 } from '../../worker/shared/sceneTreeTypes'
 import type { SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { IPC } from '@shared/ipcChannels'
-import { findNode, findTypedNode } from './sceneTreeNodeUtils'
+import { findNode, findParentNode, findTypedNode } from './sceneTreeNodeUtils'
 
 /** What a copy service returns for the caller to put on the clipboard. */
 interface SceneClipPayload {
@@ -291,8 +291,13 @@ export function useSceneTreeNodeOps(
             // Scene row accepts object pastes (no target id). Object row
             // accepts renderer pastes via targetObjId. RendGroup row
             // accepts renderer pastes via targetGroupId -- worker resolves
-            // the group's parent mol and sets rend.group on attach. Other
-            // node types are rejected by the worker.
+            // the group's parent mol and sets rend.group on attach.
+            //
+            // A renderer row pastes as its SIBLING: the destination is
+            // whatever it hangs off, so a copied renderer lands beside the
+            // one that was right-clicked (inside the same group when there is
+            // one). Without this a renderer row was silently no-target and
+            // Paste did nothing.
             let args: {
                 sceneId: number
                 targetObjId?: number
@@ -302,13 +307,20 @@ export function useSceneTreeNodeOps(
                 args = { sceneId: sid, targetObjId: target.id }
             } else if (target.type === 'rendGroup') {
                 args = { sceneId: sid, targetGroupId: target.id }
+            } else if (target.type === 'renderer') {
+                const parent = findParentNode(tree, target.id)
+                if (parent?.type === 'rendGroup') {
+                    args = { sceneId: sid, targetGroupId: parent.id }
+                } else if (parent?.type === 'object') {
+                    args = { sceneId: sid, targetObjId: parent.id }
+                }
             }
             const clip = await readSceneClip()
             if (!clip) return false
             const res = await cm.invokeService('pasteNode', { ...args, ...clip })
             return res?.ok === true
         },
-        [cm, sceneIdRef],
+        [cm, sceneIdRef, tree],
     )
 
     const moveSceneNode = useCallback(
@@ -457,19 +469,31 @@ export function useSceneTreeNodeOps(
         [tree],
     )
 
-    return {
-        toggleVisibility,
-        setNodeUiCollapsed,
-        focusNode,
-        deleteNode,
-        renameNode,
-        selectObjectMol,
-        copyNode,
-        pasteNode,
-        moveSceneNode,
-        bulkSetNodeVisible,
-        bulkDeleteNodes,
-        bulkCopyNodes,
-        resolveNodeName,
-    }
+    /**
+     * Scene-tree node operations, memoized: `useSceneTree` spreads this into
+     * the bundle its provider hands out as context, so a fresh object here
+     * would re-render every row on any render.
+     */
+    return useMemo(
+        () => ({
+            toggleVisibility,
+            setNodeUiCollapsed,
+            focusNode,
+            deleteNode,
+            renameNode,
+            selectObjectMol,
+            copyNode,
+            pasteNode,
+            moveSceneNode,
+            bulkSetNodeVisible,
+            bulkDeleteNodes,
+            bulkCopyNodes,
+            resolveNodeName,
+        }),
+        [
+        toggleVisibility, setNodeUiCollapsed, focusNode, deleteNode, renameNode,
+        selectObjectMol, copyNode, pasteNode, moveSceneNode, bulkSetNodeVisible,
+        bulkDeleteNodes, bulkCopyNodes, resolveNodeName,
+        ],
+    )
 }

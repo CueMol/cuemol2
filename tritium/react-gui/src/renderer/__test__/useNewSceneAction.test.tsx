@@ -10,10 +10,13 @@
  *      directly.
  *   3. The bindView option flows through to createNewSceneAndView so the
  *      launch path can opt out (canvas not yet bound).
+ *
+ * The tab is registered through the workspace in one call (title, view,
+ * scene) -- what the old addMolTab + addMolViewTab pair collapsed into.
  */
 
 import React from 'react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useNewSceneAction } from '../hooks/useNewSceneAction'
 import { makeRenderHook, flushPromises } from './helpers/testHarness'
@@ -22,6 +25,11 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
+
+const openMolViewTab = vi.hoisted(() => vi.fn())
+vi.mock('../state/workspace', () => ({
+  useWorkspaceDispatch: () => ({ openMolViewTab }),
+}))
 
 interface MockCm {
   // After the apis/* facade collapse, `proposeNewTabNames` is reached via
@@ -58,30 +66,19 @@ function callsFor(cm: MockCm, name: string): unknown[] {
     .map((c) => c[1])
 }
 
+beforeEach(() => openMolViewTab.mockClear())
+
 describe('useNewSceneAction', () => {
   it('without name: fetches default and registers tab as "<scene>:<view>"', async () => {
     const cm = makeMockCm()
-    const addMolTab = vi.fn()
-    const addMolViewTab = vi.fn()
+    const h = makeRenderHook(() => useNewSceneAction({ cm: cm as unknown as AsyncCueMol }))
 
-    const h = makeRenderHook(() =>
-      useNewSceneAction({
-        cm: cm as unknown as AsyncCueMol,
-        addMolTab,
-        addMolViewTab,
-      }),
-    )
-
-    let result: Awaited<ReturnType<typeof h.result>> | null = null
     await flushPromises()
-    await (async () => {
-      result = await h.result()
-    })()
+    const result = await h.result()
 
     expect(callsFor(cm, 'proposeNewTabNames')).toContainEqual({})
     expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'Untitled 1', undefined)
-    expect(addMolTab).toHaveBeenCalledWith('Untitled 1:0', 20, 10)
-    expect(addMolViewTab).toHaveBeenCalledWith('Untitled 1:0', 20)
+    expect(openMolViewTab).toHaveBeenCalledWith('Untitled 1:0', 20, 10)
     expect(result).toEqual({
       scene_uid: 10,
       view_uid: 20,
@@ -89,74 +86,41 @@ describe('useNewSceneAction', () => {
       view_name: '0',
       tab_title: 'Untitled 1:0',
     })
-
     h.unmount()
   })
 
   it('with explicit name: skips proposeNewTabNames and uses "<name>:0"', async () => {
     const cm = makeMockCm()
-    const addMolTab = vi.fn()
-    const addMolViewTab = vi.fn()
-
-    const h = makeRenderHook(() =>
-      useNewSceneAction({
-        cm: cm as unknown as AsyncCueMol,
-        addMolTab,
-        addMolViewTab,
-      }),
-    )
+    const h = makeRenderHook(() => useNewSceneAction({ cm: cm as unknown as AsyncCueMol }))
 
     await flushPromises()
     await h.result({ name: 'MyScene' })
 
     expect(callsFor(cm, 'proposeNewTabNames')).toHaveLength(0)
     expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'MyScene', undefined)
-    expect(addMolTab).toHaveBeenCalledWith('MyScene:0', 20, 10)
-    expect(addMolViewTab).toHaveBeenCalledWith('MyScene:0', 20)
-
+    expect(openMolViewTab).toHaveBeenCalledWith('MyScene:0', 20, 10)
     h.unmount()
   })
 
   it('passes bindView=false to createNewSceneAndView (launch path)', async () => {
     const cm = makeMockCm()
-    const addMolTab = vi.fn()
-    const addMolViewTab = vi.fn()
-
-    const h = makeRenderHook(() =>
-      useNewSceneAction({
-        cm: cm as unknown as AsyncCueMol,
-        addMolTab,
-        addMolViewTab,
-      }),
-    )
+    const h = makeRenderHook(() => useNewSceneAction({ cm: cm as unknown as AsyncCueMol }))
 
     await flushPromises()
     await h.result({ bindView: false })
 
     expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'Untitled 1', false)
-
     h.unmount()
   })
 
   it('returns null and skips tab registration when cm is null', async () => {
-    const addMolTab = vi.fn()
-    const addMolViewTab = vi.fn()
-
-    const h = makeRenderHook(() =>
-      useNewSceneAction({
-        cm: null,
-        addMolTab,
-        addMolViewTab,
-      }),
-    )
+    const h = makeRenderHook(() => useNewSceneAction({ cm: null }))
 
     await flushPromises()
     const result = await h.result()
 
     expect(result).toBeNull()
-    expect(addMolTab).not.toHaveBeenCalled()
-    expect(addMolViewTab).not.toHaveBeenCalled()
-
+    expect(openMolViewTab).not.toHaveBeenCalled()
     h.unmount()
   })
 })

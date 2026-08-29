@@ -164,6 +164,26 @@ interface RenderJobEntry {
 
 const jobs = new Map<string, RenderJobEntry>();
 
+/**
+ * Whether an animation render is driving `sceneUid`'s animation manager.
+ *
+ * A render steps the manager frame by frame from here, on the job's own
+ * schedule; anything that pauses or stops playback (pausing a background
+ * tab's animation, for one) has to leave such a scene alone or it would
+ * stall the render.
+ */
+export function isSceneBeingRendered(sceneUid: number): boolean {
+  for (const entry of jobs.values()) {
+    if (entry.cancelled) continue;
+    const scene = entry.anim?.scene;
+    if (!scene) continue;
+    let uid: number | undefined;
+    try { uid = scene.uid; } catch { continue; }
+    if (uid === sceneUid) return true;
+  }
+  return false;
+}
+
 /** Push a render update to the renderer. */
 function emit(ctx: WorkerContext, update: RenderUpdate): void {
   ctx.svc.pushMessage(RENDER_PROGRESS_CHANNEL, update);

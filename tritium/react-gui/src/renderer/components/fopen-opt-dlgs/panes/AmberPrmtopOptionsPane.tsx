@@ -8,7 +8,7 @@
  * topology-only load (atoms at default positions).
  */
 import React, { useCallback } from 'react';
-import { Field, FieldSection, FormButton, TextField } from '../../../h3-kit/form';
+import { Field, FieldSection, FormButton, TextField } from '@renderer/h3-kit/form';
 import type { AmberPrmtopOptions } from '../types';
 import { IPC } from '@shared/ipcChannels';
 

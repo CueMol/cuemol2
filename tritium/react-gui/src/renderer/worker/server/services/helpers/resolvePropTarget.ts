@@ -9,7 +9,7 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { WorkerContext } from '../../types/WorkerContext';
-import type { SceneNodeType } from '../../../shared/sceneTreeTypes';
+import type { SceneNodeType } from '@renderer/worker/shared/sceneTreeTypes';
 
 /**
  * Node kinds the generic property inspector can target. Extends the

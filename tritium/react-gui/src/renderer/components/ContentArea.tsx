@@ -21,17 +21,15 @@
  * +---------------------------------------------+
  * ```
  *
- * All domain state (tab list, active tab, reorder logic) is owned by
- * the parent via props -- `ContentArea` holds no tab-management state of
- * its own.
+ * The tab list and the active tab come from the workspace provider
+ * (state/workspace); `ContentArea` holds no tab-management state of its own.
  *
  * @module ContentArea
  */
 
 import React from "react";
-import type { TabData } from "../types";
-import type { ToolId } from "../data/viewportTools";
 import { useTabDragDrop } from "../hooks/useTabDragDrop";
+import { useWorkspaceDispatch, useWorkspaceTabs } from "../state/workspace";
 import { TabBar } from "./TabBar";
 import { ContentPane } from "./panes/ContentPane";
 
@@ -39,43 +37,18 @@ import { ContentPane } from "./panes/ContentPane";
 // Types
 // ------------------------------------------------------------
 
-interface ContentAreaProps {
-  tabs: TabData[];
-  activeTab: string;
-  onSelectTab: (id: string) => void;
-  onCloseTab: (id: string) => void;
-  /**
-   * Callback to reorder tabs via drag-and-drop.
-   *
-   * @param fromId      - The dragged tab id.
-   * @param toId        - The drop-target tab id.
-   * @param insertAfter - `true` when dropped on the right half of the target.
-   */
-  onReorderTabs?: (fromId: string, toId: string, insertAfter: boolean) => void;
-  activeTool: ToolId;
-  onSelectTool: (id: ToolId) => void;
-  onStatusMessage?: (msg: string | null) => void;
-}
 
 // ------------------------------------------------------------
 // Component
 // ------------------------------------------------------------
 
-export const ContentArea: React.FC<ContentAreaProps> = ({
-  tabs,
-  activeTab,
-  onSelectTab,
-  onCloseTab,
-  onReorderTabs,
-  activeTool,
-  onSelectTool,
-  onStatusMessage,
-}) => {
-  const active = tabs.find((t) => t.id === activeTab);
+const ContentAreaComponent: React.FC = () => {
+  const { tabs, activeTabId: activeTab, activeTab: active } = useWorkspaceTabs();
+  const { activateTab: onSelectTab, closeTab: onCloseTab, reorderTabs } = useWorkspaceDispatch();
 
   const { dropTarget, ...dragDropHandlers } = useTabDragDrop(
     tabs,
-    onReorderTabs,
+    reorderTabs,
   );
 
   return (
@@ -91,10 +64,14 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
       <ContentPane
         tabs={tabs}
         activeTab={active}
-        activeTool={activeTool}
-        onSelectTool={onSelectTool}
-        onStatusMessage={onStatusMessage}
       />
     </div>
   );
 };
+
+/**
+ * Props-free: re-renders for the tab strip alone. Its ContentPane keeps
+ * the molview mounted, so this must never be remounted.
+ */
+export const ContentArea = React.memo(ContentAreaComponent)
+ContentArea.displayName = 'ContentArea'

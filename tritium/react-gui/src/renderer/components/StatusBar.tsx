@@ -1,22 +1,19 @@
 import React from "react";
 import { AppIcon } from "./AppIcon";
-import type { AppIconKey } from "../data/appIcons";
+import { useActiveToolDef } from '../contexts/ActiveToolContext';
+import { useStatusMessage } from '../state/statusMessage';
+import { useCueMolBusy } from '../hooks/useCueMolBusy';
+import { useBusyCursor } from '../hooks/useBusyCursor';
 
-interface StatusBarProps {
-  activeToolLabel?: string;
-  activeToolShortcut?: string;
-  activeToolIcon?: AppIconKey;
-  busy?: boolean;
-  statusMessage?: string | null;
-}
-
-export const StatusBar: React.FC<StatusBarProps> = ({
-  activeToolLabel,
-  activeToolShortcut,
-  activeToolIcon,
-  busy,
-  statusMessage,
-}) => {
+const StatusBarComponent: React.FC = () => {
+  // Everything shown here is read from its owner; App passes nothing in.
+  const activeDef = useActiveToolDef();
+  const statusMessage = useStatusMessage();
+  const busy = useCueMolBusy();
+  // The same flag drives a global wait cursor, so the busy state is visible
+  // wherever the pointer is -- not only here.
+  useBusyCursor(busy);
+  const { label: activeToolLabel, shortcut: activeToolShortcut, icon: activeToolIcon } = activeDef;
   return (
     <div className="status-bar">
       <div className="status-left">
@@ -53,3 +50,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     </div>
   );
 };
+
+/**
+ * Props-free: a status message re-renders this alone -- the reason the
+ * message lives in its own provider rather than in App.
+ */
+export const StatusBar = React.memo(StatusBarComponent)
+StatusBar.displayName = 'StatusBar'

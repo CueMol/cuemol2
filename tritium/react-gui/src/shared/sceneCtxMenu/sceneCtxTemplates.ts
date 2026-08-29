@@ -109,6 +109,8 @@ export function buildTemplate(payload: SceneCtxMenuPayload): SceneCtxNode[] {
                 { type: 'separator' },
                 renameItem(),
                 copyItem(),
+                // Pastes beside this renderer (same object, same group).
+                ...pasteItem(payload, 'renderer'),
                 newRendererItem(),
                 deleteItem(),
                 { type: 'separator' },

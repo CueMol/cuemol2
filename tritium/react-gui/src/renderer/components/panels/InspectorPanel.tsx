@@ -33,12 +33,10 @@ import { GenericTab } from "../inspector/GenericTab";
 import { AnimElementInspector } from "../inspector/AnimElementInspector";
 import { InspectorResetAllButton } from "../inspector/InspectorResetAllButton";
 import { modifiedKeys } from "../inspector/propModel";
-import type {
-  GenericPropEntry,
-  PropWriteOpts,
-} from "../../worker/server/services/genericProps.service";
-import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { ColorPickerProvider } from "../../h3-kit/colorpicker/ColorPickerContext";
+import { useInspector, useInspectorActions } from "../../state/inspector";
+import { useCueMol } from "../../hooks/cuemol/useCueMol";
+import { useActiveScene } from "../../state/workspace";
 
 // ------------------------------------------------------------
 // Types
@@ -49,76 +47,46 @@ type InspectorMode = "properties" | "generic";
 /** Kind of context the inspector is currently editing. */
 export type InspectorTargetKind = "node" | "animElement";
 
-interface InspectorPanelProps {
-  /** Whether something is currently being inspected. */
-  hasTarget: boolean;
-  /** Kind of the current target (null when nothing is inspected). */
-  targetKind: InspectorTargetKind | null;
-  /** Conceptual category label shown as a header badge. */
-  targetCategory: string;
-  /** Display name shown in the header. */
-  nodeName: string;
-  /** Type label shown in the header (renderer type / class name). */
-  nodeType: string;
-  /** Flat property entries shared by the Properties and Generic tabs. */
-  genericEntries: GenericPropEntry[];
-  /** True while the Generic property list is being (re)fetched. */
-  genericLoading: boolean;
-  /** Called to write a Generic property value (live-apply). `opts` carries realtime-drag info. */
-  onGenericSet: (
-    key: string,
-    valueType: string,
-    value: string | number | boolean,
-    opts?: PropWriteOpts,
-  ) => void;
-  /** Called to write several properties in one undo step (e.g. atomintr dashed toggle). */
-  onGenericSetMany: (
-    writes: { key: string; valueType: string; value: string | number | boolean }[],
-  ) => void;
-  /** Called to restore a Generic property to its C++ default. */
-  onGenericReset: (key: string) => void;
-  /** Called to restore several properties to their defaults in one undo step. */
-  onResetMany: (keys: string[]) => void;
-  /** Called when the user clicks the close button. */
-  onClose: () => void;
-  /** CueMol handle for colour resolution in property colour editors. */
-  cm: AsyncCueMol | null;
-  /** Active scene id for colour resolution (named colours / gamut). */
-  sceneId: number | undefined;
-  /** UID of the inspected node (for sections querying the node itself). */
-  nodeId: number | undefined;
-  /** Anim-element target (sceneId + stable uid) when targetKind is animElement. */
-  animElement: { sceneId: number; uid: number } | null;
-  /** Called when the inspected anim element is deleted -- closes the inspector. */
-  onAnimElementGone: (sceneId: number) => void;
-  /** Called by AnimElementInspector to set the header name / type. */
-  onAnimHeaderChange: (name: string, type: string) => void;
-}
 
 // ------------------------------------------------------------
 // Component
 // ------------------------------------------------------------
 
-export const InspectorPanel: React.FC<InspectorPanelProps> = ({
-  hasTarget,
-  targetKind,
-  targetCategory,
-  nodeName,
-  nodeType,
-  genericEntries,
-  genericLoading,
-  onGenericSet,
-  onGenericSetMany,
-  onGenericReset,
-  onResetMany,
-  onClose,
-  cm,
-  sceneId,
-  nodeId,
-  animElement,
-  onAnimElementGone,
-  onAnimHeaderChange,
-}) => {
+const InspectorPanelComponent: React.FC = () => {
+  // The target and its property data come from the inspector provider; the
+  // writers are identity-stable, so a property change re-renders only what
+  // reads the entries.
+  const { target, category: targetCategory, header, entries: genericEntries, loading: genericLoading } = useInspector();
+  const {
+    setProp: onGenericSet,
+    setMany: onGenericSetMany,
+    resetProp: onGenericReset,
+    resetMany: onResetMany,
+    close: onClose,
+    clearAnimElement: onAnimElementGone,
+    setAnimHeader: onAnimHeaderChange,
+  } = useInspectorActions();
+  const { cm } = useCueMol();
+  const { activeSceneId: sceneId } = useActiveScene();
+  const hasTarget = target !== null;
+  const targetKind: InspectorTargetKind | null = target?.kind ?? null;
+  const nodeName = header.name;
+  const nodeType = header.type;
+  const nodeId = target?.kind === "node" ? target.nodeId : undefined;
+  const animElement = target?.kind === "animElement" ? { sceneId: target.sceneId, uid: target.uid } : null;
+
+  /**
+   * Writer for the structured page. It presents a renderer group's `visible`
+   * flag as "show / hide this group", so the members follow -- the same thing
+   * the scene tree's eye toggle does. The Generic tab is a raw property
+   * editor and writes only the property it names, so it uses the plain
+   * writer.
+   */
+  const setStructuredProp = useCallback<typeof onGenericSet>(
+    (key, valueType, value, opts) =>
+      onGenericSet(key, valueType, value, { ...opts, cascadeGroupVisibility: true }),
+    [onGenericSet],
+  );
   // Renderer, Object and Scene targets have a migrated structured page, so
   // default to it; other node kinds fall back to the data-backed Generic tab.
   const isRenderer =
@@ -216,7 +184,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 entries={genericEntries}
                 rendererType={nodeType}
                 isObject={isObject}
-                onSet={onGenericSet}
+                onSet={setStructuredProp}
                 onSetMany={onGenericSetMany}
                 onReset={onGenericReset}
                 sceneId={sceneId}
@@ -237,3 +205,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     </ColorPickerProvider>
   );
 };
+
+/**
+ * Props-free: re-renders for the inspector target and its property
+ * entries alone.
+ */
+export const InspectorPanel = React.memo(InspectorPanelComponent)
+InspectorPanel.displayName = 'InspectorPanel'

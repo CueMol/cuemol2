@@ -142,3 +142,18 @@ export interface AnimTimeline {
    */
   fps: number;
 }
+
+/** Worker -> renderer push channel for playback progress. */
+export const ANIM_PROGRESS_CHANNEL = 'anim-progress'
+
+/**
+ * Worker -> renderer push payload (channel `anim-progress`).
+ *
+ * C++ drives playback on its own timer and fires no per-frame event, so the
+ * worker samples the manager on the frame loop it already runs and pushes
+ * what changed. The renderer used to ask for this ~15 times a second instead.
+ */
+export interface AnimProgressUpdate {
+  sceneId: number
+  mgr: AnimMgrState
+}

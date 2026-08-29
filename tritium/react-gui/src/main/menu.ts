@@ -20,6 +20,7 @@ import type { RecentFileEntry } from '@shared/types/recent'
 import type { MenuState } from '@shared/types/menuState'
 import { applyMenuStateTo, mergeMenuState } from '@shared/menuStateApply'
 import { getExistingRecents, refreshRecentsExistence } from './recentFiles'
+import { menuSwatch } from './menuSwatches'
 import {
   isBlocked,
   setDeferredRebuild,
@@ -164,6 +165,7 @@ function buildItem(
   if (item.type === 'checkbox' || item.type === 'radio') result.type = 'checkbox'
   if (item.checked !== undefined) result.checked = item.checked
   if (item.enabled !== undefined) result.enabled = item.enabled
+  if (item.swatch) result.icon = menuSwatch(item.swatch)
 
   // Pure role items (no ipcChannel) delegate entirely to Electron.
   if (item.role && !item.ipcChannel) {

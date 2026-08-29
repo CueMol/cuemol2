@@ -18,7 +18,7 @@ import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../../types/WorkerContext';
 import { getSceneOrNull } from '../helpers/sceneResolver';
 import { undoTxnResult, withUndoTxn } from '../withUndoTxn';
-import { ok, fail, failFrom } from '../../../shared/result';
+import { ok, fail, failFrom } from '@renderer/worker/shared/result';
 import { getMultiGradOrNull } from './colorTargets';
 import type {
     GetMultiGradStateArgs,

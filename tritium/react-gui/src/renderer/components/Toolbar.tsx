@@ -9,6 +9,8 @@
 
 import React, { useRef } from "react";
 import { Button, Divider, Navbar, Alignment } from "@blueprintjs/core";
+import { useUndoRedo } from '../state/undoRedo';
+import { useActiveScene } from '../state/workspace';
 
 import { useCommands } from "../commands/CommandRegistry";
 import { CmdId } from "../commands/ids";
@@ -17,7 +19,6 @@ import { Tooltip } from "../h3-kit/Tooltip";
 import { UndoRedoSplitButton } from "./toolbar/UndoRedoSplitButton";
 import { AppIcon } from "./AppIcon";
 import type { AppIconKey } from "../data/appIcons";
-import type { UndoRedoState } from "../hooks/useUndoRedoState";
 
 type ToolbarItem =
   | { kind: "cmd"; id: string; icon: AppIconKey; text: string; cmd: CmdId; requiresScene?: boolean }
@@ -43,13 +44,9 @@ const TOOLBAR_ITEMS: ToolbarItem[] = [
   { kind: "redo", id: "redo" },
 ];
 
-interface ToolbarProps {
-  undoRedo: UndoRedoState;
-  /** Whether a molview tab is active. Scene-only buttons are disabled when not. */
-  hasScene: boolean;
-}
-
-export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
+const ToolbarComponent: React.FC = () => {
+  const undoRedo = useUndoRedo();
+  const { hasScene } = useActiveScene();
   const { dispatch } = useCommands();
   const barRef = useRef<HTMLDivElement>(null);
   // Collapse each label to icon-only when the toolbar is too narrow to show
@@ -114,3 +111,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
     </div>
   );
 };
+
+/**
+ * Props-free: re-renders only for the active tool and the undo/redo
+ * availability it reads, never because the shell re-rendered.
+ */
+export const Toolbar = React.memo(ToolbarComponent)
+Toolbar.displayName = 'Toolbar'

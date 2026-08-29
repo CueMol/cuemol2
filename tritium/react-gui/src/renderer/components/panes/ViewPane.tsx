@@ -24,25 +24,21 @@
  * This pane is one of the components within the Explorer view.
  */
 
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useCallback } from 'react'
 import { SectionHeader } from './SectionHeader'
 import { FieldSection, FieldGrid, FieldGridRow, DragNumericField, SwitchField, SelectField } from '../../h3-kit/form'
 import type { DragNumericFieldHandle } from '../../h3-kit/form'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { ViewCenterMark } from '@shared/types/menuState'
 import { useViewXform, type CenterAxis } from '../../hooks/useViewXform'
+import { useActiveViewValues } from '../../state/activeView'
+import { useCommands } from '../../commands/CommandRegistry'
+import { CmdId } from '../../commands/ids'
+import { useCueMol } from '../../hooks/cuemol/useCueMol'
+import { useActiveScene } from '../../state/workspace'
 
 export interface ViewPaneProps {
-    cm: AsyncCueMol | null
-    activeSceneId: number | undefined
-    activeMolViewId: number | undefined
     collapsed?: boolean
     onToggleCollapse?: () => void
-    /* --- View attributes (current values owned by useActiveViewState) --- */
-    viewProjection: boolean | null
-    viewCenterMark: ViewCenterMark | null
-    onSetPerspective: (perspective: boolean) => void
-    onSetCenterMark: (mark: ViewCenterMark) => void
 }
 
 /**
@@ -162,17 +158,26 @@ const TranslationField: React.FC<{
     )
 }
 
-export const ViewPane: React.FC<ViewPaneProps> = ({
-    cm,
-    activeSceneId,
-    activeMolViewId,
-    collapsed = false,
-    onToggleCollapse,
-    viewProjection,
-    viewCenterMark,
-    onSetPerspective,
-    onSetCenterMark,
-}) => {
+export const ViewPane: React.FC<ViewPaneProps> = ({ collapsed, onToggleCollapse }) => {
+    const { cm } = useCueMol()
+    const { activeSceneId, activeMolViewId } = useActiveScene()
+
+    // Projection / center mark: current values from the active-view cache,
+    // writes routed through the view commands so that cache (and the native
+    // menu) stays the single source of truth.
+    const { viewProjection, viewCenterMark } = useActiveViewValues()
+    const { dispatch } = useCommands()
+    const onSetPerspective = useCallback((perspective: boolean) => {
+        dispatch(perspective ? CmdId.ViewPerspective : CmdId.ViewOrthographic)
+            .catch((err: unknown) => console.warn('set perspective failed:', err))
+    }, [dispatch])
+    const onSetCenterMark = useCallback((mark: ViewCenterMark) => {
+        const cmd =
+            mark === 'crosshair' ? CmdId.ViewCenterMarkCross
+            : mark === 'axis' ? CmdId.ViewCenterMarkAxis
+            : CmdId.ViewCenterMarkNone
+        dispatch(cmd).catch((err: unknown) => console.warn('set center mark failed:', err))
+    }, [dispatch])
     const xform = useViewXform({ cm, sceneId: activeSceneId, viewId: activeMolViewId })
     const st = xform.state
     const noView = !st

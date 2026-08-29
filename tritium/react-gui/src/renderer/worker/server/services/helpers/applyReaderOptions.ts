@@ -16,7 +16,7 @@
  * `format.kind` guard makes a mismatch a safe no-op.
  */
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
-import type { FormatOptions } from '../../../../components/fopen-opt-dlgs/types';
+import type { FormatOptions } from '@renderer/worker/shared/fileOpenTypes';
 
 // Narrow the reader to an indexable bag so subclass properties / setSubPath
 // can be assigned without the generated type complaining.

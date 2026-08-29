@@ -12,6 +12,7 @@
 import type { MenuItemConstructorOptions } from 'electron'
 import { collapseSeparators, isSeparatorNode } from '@shared/menuNodes'
 import type { MenuNode } from '@shared/menuNodes'
+import { menuSwatch } from './menuSwatches'
 
 /** Map `MenuNode`s to an Electron template, routing picks to `onPick`. */
 export function toElectronTemplate<T>(
@@ -30,6 +31,7 @@ export function toElectronTemplate<T>(
       item.type = node.type
       item.checked = node.checked === true
     }
+    if (node.swatch) item.icon = menuSwatch(node.swatch)
     if (node.accelerator) item.accelerator = node.accelerator
     if (node.submenu) item.submenu = toElectronTemplate(node.submenu, onPick)
     const action = node.action

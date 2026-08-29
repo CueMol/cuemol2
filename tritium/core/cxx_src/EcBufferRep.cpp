@@ -4,19 +4,18 @@
 #include "ElecView.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <gfx/DrawAttrArray.hpp>
+#include <qlib/ObjectManager.hpp>
 #include <qsys/SceneManager.hpp>
 
 namespace node_jsbr {
 
 EcBufferRep::~EcBufferRep()
 {
-    qsys::ViewPtr pView = qsys::SceneManager::getViewS(m_nViewID);
-    if (pView.isnull()) {
-        // If any views aren't found, it is no problem,
-        // because the parent context (and also all DLs) may be already destructed.
-        return;
-    }
-    auto pEView = dynamic_cast<ElecView *>(pView.get());
+    // A raw lookup on purpose (see EcRenderTarget::getView): a strong ViewPtr
+    // taken from a destructor re-enters ~GUIView when the view itself is the
+    // thing being destroyed. A missing view is no problem -- the parent
+    // context (and all display lists) may already be gone.
+    auto pEView = qlib::ObjectManager::sGetObj<ElecView>(m_nViewID);
     if (pEView != nullptr) {
         deleteBuffer(pEView);
     }
@@ -183,7 +182,7 @@ void EcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada) {}
 void EcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
 {
     auto pView =
-        dynamic_cast<ElecView *>(qsys::SceneManager::getViewS(m_nViewID).get());
+        qlib::ObjectManager::sGetObj<ElecView>(m_nViewID);
     if (pView == nullptr) {
         MB_THROW(qlib::RuntimeException, "target view is not set or not ElecView");
         return;

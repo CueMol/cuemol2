@@ -26,7 +26,7 @@ import type { Matrix } from '@cuemol/core/src/wrappers/Matrix';
 import type { SymmRenderer } from '@cuemol/core/src/wrappers/SymmRenderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
-import type { PresetTypeEntry, RendererOptions } from '../../../components/fopen-opt-dlgs/types';
+import type { PresetTypeEntry, RendererOptions } from '../../shared/fileOpenTypes';
 import { getNewRendererOptions } from './getNewRendererOptions.service';
 import { setupRenderer } from './setupRenderer.service';
 import { getViewSceneObjOrNull } from './helpers/sceneResolver';

@@ -19,6 +19,12 @@ export interface MenuActionNode<T> {
   /** Defaults to true when omitted. */
   enabled?: boolean
   checked?: boolean
+  /**
+   * Name of a colour swatch to show beside the label. Both render paths
+   * draw it: the native menu from a generated bitmap
+   * (main/menuSwatches.ts), the React MenuPanel from a CSS token.
+   */
+  swatch?: string
   /** Accelerator in Electron format; display conversion happens at render. */
   accelerator?: string
   submenu?: MenuNode<T>[]

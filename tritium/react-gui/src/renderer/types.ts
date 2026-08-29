@@ -78,6 +78,14 @@ export interface TabData {
    * Present only for tabs with `type === "molview"`.
    */
   viewId?: number;
+
+  /**
+   * Scene the view belongs to. Present only for `type === "molview"`. Kept on
+   * the tab so the active scene derives from the same record as the active
+   * view, in the same render -- the two used to live in separate stores and
+   * resolve one render apart.
+   */
+  sceneId?: number;
 }
 
 // --- Logging ---

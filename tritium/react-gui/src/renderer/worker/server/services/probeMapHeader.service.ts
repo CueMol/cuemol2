@@ -7,6 +7,9 @@
  * Runs in the Web Worker thread (sync C++ wrappers, no await).
  */
 import type { WorkerContext } from '../types/WorkerContext';
+import { LARGE_MAP_VOXELS, suggestSubsample, type MapHeaderInfo } from '../../shared/mapHeader';
+export { LARGE_MAP_VOXELS, suggestSubsample };
+export type { MapHeaderInfo };
 import { OBJREADER_CATEGORY } from './helpers/pickReaderName';
 
 const log = console;
@@ -15,45 +18,9 @@ export interface ProbeMapHeaderArgs {
     filePath: string;
 }
 
-/** Parsed subset of the CCP4MapReader.probeHeader JSON. */
-export interface MapHeaderInfo {
-    nc: number;
-    nr: number;
-    ns: number;
-    mode: number;
-    supported: boolean;
-    nvoxels: number;
-    /** bytes of the 8-bit map storage at subsample 1 (= nvoxels) */
-    storageBytes: number;
-    ispg: number;
-    nversion: number;
-    exttyp: string;
-    origin: [number, number, number];
-    dmin: number;
-    dmax: number;
-    dmean: number;
-    rms: number;
-}
-
 export interface ProbeMapHeaderResult {
     ok: boolean;
     info: MapHeaderInfo | null;
-}
-
-/**
- * Voxel count above which the dialog warns about the map size (ChimeraX's
- * voxel_limit_for_open, 256 Mvoxel).
- */
-export const LARGE_MAP_VOXELS = 256 * 1024 * 1024;
-
-/**
- * Smallest power-of-two subsample that keeps the stored voxel count under
- * LARGE_MAP_VOXELS (1 when the map is already under it).
- */
-export function suggestSubsample(nvoxels: number): number {
-    let n = 1;
-    while (nvoxels / (n * n * n) > LARGE_MAP_VOXELS && n < 8) n *= 2;
-    return n;
 }
 
 function probeMapHeader(ctx: WorkerContext, args: ProbeMapHeaderArgs): ProbeMapHeaderResult {

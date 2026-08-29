@@ -9,6 +9,7 @@
 #include "ElecView.hpp"
 
 #include <gfx/DisplayContext.hpp>
+#include <qlib/ObjectManager.hpp>
 #include <qsys/SceneManager.hpp>
 
 #include <cstring>
@@ -20,11 +21,18 @@ EcRenderTarget::EcRenderTarget()
 {
 }
 
+/**
+ * The owning view, or null once it is gone.
+ *
+ * A raw lookup on purpose: this runs from destructors, and a view being
+ * destroyed is still registered by id until ~View. A strong ViewPtr taken
+ * then would bump a refcount already at zero and re-enter ~GUIView on
+ * release. The raw pointer is only ever used synchronously here, while the
+ * object -- dying or not -- is still allocated.
+ */
 ElecView *EcRenderTarget::getView() const
 {
-    qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
-    if (rvw.isnull()) return nullptr;
-    return dynamic_cast<ElecView *>(rvw.get());
+    return qlib::ObjectManager::sGetObj<ElecView>(m_nViewID);
 }
 
 bool EcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)

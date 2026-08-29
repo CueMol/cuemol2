@@ -21,6 +21,7 @@ import { useCallback } from 'react';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
 import { fail, ok, type Result } from '../worker/shared/result';
 import { makeTabLabel } from '../worker/shared/tabLabel';
+import { useWorkspaceDispatch } from '../state/workspace';
 
 export interface NewSceneActionOptions {
   name?: string;
@@ -38,8 +39,6 @@ export interface NewSceneActionResult {
 
 interface UseNewSceneActionOptions {
   cm: AsyncCueMol | null;
-  addMolTab: (title: string, viewId: number, sceneId: number) => void;
-  addMolViewTab: (title: string, viewId: number) => void;
 }
 
 export type NewSceneAction = (opts?: NewSceneActionOptions) => Promise<NewSceneActionResult | null>;
@@ -60,11 +59,8 @@ export type OpenSceneFileAction = (filePath: string) => Promise<Result<NewSceneA
  * view (`openSceneFile`), so a failed read leaves nothing behind and the tab
  * registered here always has a loaded scene under it.
  */
-export function useOpenSceneFileAction({
-  cm,
-  addMolTab,
-  addMolViewTab,
-}: UseNewSceneActionOptions): OpenSceneFileAction {
+export function useOpenSceneFileAction({ cm }: UseNewSceneActionOptions): OpenSceneFileAction {
+  const { openMolViewTab } = useWorkspaceDispatch();
   return useCallback(async (filePath: string): Promise<Result<NewSceneActionResult>> => {
     if (!cm) return fail('CueMol is not ready', 'unsupported');
 
@@ -74,18 +70,14 @@ export function useOpenSceneFileAction({
 
     const { scene_uid, view_uid, scene_name, view_name } = res;
     const tab_title = makeTabLabel(scene_name, view_name);
-    addMolTab(tab_title, view_uid, scene_uid);
-    addMolViewTab(tab_title, view_uid);
+    openMolViewTab(tab_title, view_uid, scene_uid);
 
     return ok({ scene_uid, view_uid, scene_name, view_name, tab_title });
-  }, [cm, addMolTab, addMolViewTab]);
+  }, [cm, openMolViewTab]);
 }
 
-export function useNewSceneAction({
-  cm,
-  addMolTab,
-  addMolViewTab,
-}: UseNewSceneActionOptions): NewSceneAction {
+export function useNewSceneAction({ cm }: UseNewSceneActionOptions): NewSceneAction {
+  const { openMolViewTab } = useWorkspaceDispatch();
   return useCallback(async (opts?: NewSceneActionOptions): Promise<NewSceneActionResult | null> => {
     if (!cm) return null;
 
@@ -103,9 +95,8 @@ export function useNewSceneAction({
     const { scene_uid, view_uid, scene_name, view_name } = ids;
     // Mirror UXP TabMolView.makeTabLabel: `<scene name>:<view name>`.
     const tab_title = makeTabLabel(scene_name, view_name);
-    addMolTab(tab_title, view_uid, scene_uid);
-    addMolViewTab(tab_title, view_uid);
+    openMolViewTab(tab_title, view_uid, scene_uid);
 
     return { scene_uid, view_uid, scene_name, view_name, tab_title };
-  }, [cm, addMolTab, addMolViewTab]);
+  }, [cm, openMolViewTab]);
 }

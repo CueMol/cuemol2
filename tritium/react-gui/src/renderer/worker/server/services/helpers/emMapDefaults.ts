@@ -12,7 +12,7 @@
  * `getLevelAtTopFraction`, `fitView`) are probed before use so the helpers
  * are no-ops for other scalar objects and renderer types.
  */
-import type { FormatOptions } from '../../../../components/fopen-opt-dlgs/types';
+import type { FormatOptions } from '@renderer/worker/shared/fileOpenTypes';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { View } from '@cuemol/core/src/wrappers/View';
 
