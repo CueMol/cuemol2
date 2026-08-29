@@ -10,7 +10,7 @@
  * The page is shared with dsurface but `molsurf-page.js` branches by renderer
  * type: for molsurf the Surface type / Detail controls are disabled (no such
  * props) while the "Selection mol" target IS active (disabled for dsurface).
- * So this is a separate section from `DSurfaceRendererSection`.
+ * So this is a separate page from the direct-surface one (schema/dsurface.ts).
  *
  * Rows (UXP row order, molsurf-applicable):
  *   - Drawing mode   : `drawmode` (fill / line / point)

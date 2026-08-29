@@ -26,10 +26,8 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import {
-  CPKAtomRadiiSection,
-  CPKDetailSection,
-} from '../components/inspector/CPKRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { CPK_SECTIONS } from '../components/inspector/schema/cpk'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
@@ -100,20 +98,24 @@ describe('CPKRenderer section registry', () => {
     const sections = getRendererPropSections('cpk')
     expect(sections.map((s) => s.title)).toEqual(['Atom radii', 'Detail'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(componentOf(sections[0])).toBe(CPKAtomRadiiSection)
-    expect(componentOf(sections[1])).toBe(CPKDetailSection)
+    // A migrated page is rows as data, not a component.
+    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
+    expect(sections.map(componentOf)).toEqual(['schema:cpk-radii', 'schema:cpk-detail'])
     expect(RENDERER_SECTION_REGISTRY.cpk).toBe(sections)
   })
 })
 
-describe('CPKAtomRadiiSection', () => {
+describe('the CPK Atom radii section', () => {
   it('renders one row per existing element radius and no detail row', () => {
     const { container, unmount } = mountTree(
-      <CPKAtomRadiiSection
+      <SchemaSection
+        section={CPK_SECTIONS[0]}
         entries={fullEntries()}
+        rendererType="cpk"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     for (const label of RADII_LABELS) {
@@ -126,11 +128,14 @@ describe('CPKAtomRadiiSection', () => {
 
   it('omits a radius row when its property is absent', () => {
     const { container, unmount } = mountTree(
-      <CPKAtomRadiiSection
+      <SchemaSection
+        section={CPK_SECTIONS[0]}
         entries={[entry({ key: 'vdwr_C', type: 'real', value: 1.7 })]}
+        rendererType="cpk"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(rowByLabel(container, 'Carbon')).not.toBeNull()
@@ -140,11 +145,14 @@ describe('CPKAtomRadiiSection', () => {
 
   it('renders radii rows with the Angstrom unit', () => {
     const { container, unmount } = mountTree(
-      <CPKAtomRadiiSection
+      <SchemaSection
+        section={CPK_SECTIONS[0]}
         entries={fullEntries()}
+        rendererType="cpk"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     for (const label of RADII_LABELS) {
@@ -158,11 +166,14 @@ describe('CPKAtomRadiiSection', () => {
   it('commits a realtime single-step change of a radius on the step arrow', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <CPKAtomRadiiSection
+      <SchemaSection
+        section={CPK_SECTIONS[0]}
         entries={fullEntries()}
+        rendererType="cpk"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const incr = rowByLabel(container, 'Carbon')!.querySelector(
@@ -181,13 +192,16 @@ describe('CPKAtomRadiiSection', () => {
   it('threads the pre-edit default flag into a realtime commit', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <CPKAtomRadiiSection
+      <SchemaSection
+        section={CPK_SECTIONS[0]}
         entries={[
           entry({ key: 'vdwr_C', type: 'real', value: 1.7, hasdefault: true, isdefault: true }),
         ]}
+        rendererType="cpk"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const incr = rowByLabel(container, 'Carbon')!.querySelector(
@@ -205,14 +219,17 @@ describe('CPKAtomRadiiSection', () => {
   })
 })
 
-describe('CPKDetailSection', () => {
+describe('the CPK Detail section', () => {
   it('shows detail as an integer with no unit', () => {
     const { container, unmount } = mountTree(
-      <CPKDetailSection
+      <SchemaSection
+        section={CPK_SECTIONS[1]}
         entries={fullEntries()}
+        rendererType="cpk"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const detail = rowByLabel(container, 'Detail')!
@@ -224,11 +241,14 @@ describe('CPKDetailSection', () => {
 
   it('renders nothing when detail is absent', () => {
     const { container, unmount } = mountTree(
-      <CPKDetailSection
+      <SchemaSection
+        section={CPK_SECTIONS[1]}
         entries={[entry({ key: 'vdwr_C', type: 'real', value: 1.7 })]}
+        rendererType="cpk"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(rowByLabel(container, 'Detail')).toBeNull()

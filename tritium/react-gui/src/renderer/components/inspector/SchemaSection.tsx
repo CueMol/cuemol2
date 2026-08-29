@@ -16,7 +16,7 @@
 
 import React from 'react'
 import { AccordionSection } from './AccordionSection'
-import { NumRow } from './RendererCommonSection'
+import { MappedEnumRow, NumRow, SliderRow } from './RendererCommonSection'
 import type { RendererPropSectionProps } from './rendererPropSections'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { makePropCtx, type PropCtx, type PropRowDef, type SchemaSectionDef } from './schema/types'
@@ -64,6 +64,36 @@ function renderRow(
           unit={row.unit}
           decimals={row.decimals}
           realtime={row.realtime}
+          disabled={disabled}
+        />
+      )
+
+    case 'mappedEnum':
+      return (
+        <MappedEnumRow
+          key={row.key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          labels={row.labels}
+          options={row.options}
+          disabled={disabled}
+        />
+      )
+
+    case 'slider':
+      return (
+        <SliderRow
+          key={row.key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          unit={row.unit}
           disabled={disabled}
         />
       )

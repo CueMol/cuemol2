@@ -18,13 +18,14 @@
 import React from "react";
 import type { SchemaSectionDef } from "./schema/types";
 import { SIMPLE_SECTIONS, TRACE_SECTIONS } from "./schema/simple";
+import { CPK_SECTIONS } from "./schema/cpk";
+import { DSURF2_SECTIONS, DSURFACE_SECTIONS } from "./schema/dsurface";
 import type {
   GenericPropEntry,
   PropWriteOpts,
 } from '@renderer/worker/shared/genericProps';
 import { SplineMainSection } from "./SplineRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
-import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
 import {
   SceneAmbientOcclusionSection,
   SceneAntialiasingSection,
@@ -48,10 +49,6 @@ import { ContourMainSection } from "./ContourRendererSection";
 import { IsosurfMainSection } from "./IsosurfRendererSection";
 import { MolSurfMainSection } from "./MolSurfRendererSection";
 import { DisoMainSection } from "./DisoRendererSection";
-import {
-  DSurfaceMainSection,
-  DSurfaceRadiiSection,
-} from "./DSurfaceRendererSection";
 import {
   TubeMainSection,
   TubeSectionSection,
@@ -215,20 +212,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   ],
   // CPKRenderer ("cpk"): UXP cpk-propdlg "Atom radii" tab. The seven per-element
   // radii form the "Atom radii" groupbox; `detail` is a loose row outside it.
-  cpk: [
-    {
-      key: "cpk-radii",
-      title: "Atom radii",
-      defaultExpanded: true,
-      Component: CPKAtomRadiiSection,
-    },
-    {
-      key: "cpk-detail",
-      title: "Detail",
-      defaultExpanded: true,
-      Component: CPKDetailSection,
-    },
-  ],
+  cpk: CPK_SECTIONS,
   // AnIsoURenderer ("anisou"): ORTEP-like anisotropic-displacement variant of
   // ball-and-stick. The inherited base controls reuse the shared ball-and-stick
   // section; the disc-only controls live in their own section.
@@ -361,38 +345,12 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // type / detail) becomes the "Surface" section; the per-element van der Waals
   // radii form the "Atom radii" section. The MolSurf coloring controls (target /
   // showsel / coloring mode) stay out (UXP Coloring panel, not migrated yet).
-  dsurface: [
-    {
-      key: "dsurface-main",
-      title: "Surface",
-      defaultExpanded: true,
-      Component: DSurfaceMainSection,
-    },
-    {
-      key: "dsurface-radii",
-      title: "Atom radii",
-      defaultExpanded: true,
-      Component: DSurfaceRadiiSection,
-    },
-  ],
+  dsurface: DSURFACE_SECTIONS,
   // DirectSurfRenderer2 ("dsurf2"): the distance-field surface.
   // Temporary exposure alongside dsurface -- it shares the same property set
   // (surftype / detail / proberad / draw mode / per-element radii), so it
   // reuses the dsurface property sections verbatim.
-  dsurf2: [
-    {
-      key: "dsurf2-main",
-      title: "Surface",
-      defaultExpanded: true,
-      Component: DSurfaceMainSection,
-    },
-    {
-      key: "dsurf2-radii",
-      title: "Atom radii",
-      defaultExpanded: true,
-      Component: DSurfaceRadiiSection,
-    },
-  ],
+  dsurf2: DSURF2_SECTIONS,
   // MolSurfRenderer ("molsurf"): UXP molsurf-propdlg "MolSurf" tab (shared
   // molsurf-page with dsurface, but Surface type / Detail / Atom radii are
   // dsurface-only while the "Selection mol" target is molsurf-only). One section:

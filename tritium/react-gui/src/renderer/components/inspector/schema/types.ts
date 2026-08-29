@@ -81,8 +81,34 @@ export interface NumRowDef extends RowBase {
   realtime?: boolean
 }
 
+/**
+ * An enum property shown as a dropdown, with display text per raw value.
+ *
+ * The raw C++ ids stay the values; `labels` only decides what the user reads
+ * ("Wireframe" for `line`). `options` both restricts and orders the choices --
+ * the `enumdef` C++ reports is alphabetical, which is rarely the natural order
+ * (an edge type reads none, edges, silhouette).
+ */
+export interface MappedEnumRowDef extends RowBase {
+  kind: 'mappedEnum'
+  labels: Record<string, string>
+  options?: string[]
+}
+
+/**
+ * A numeric property shown as a slider, for a range meant to be swept rather
+ * than dialled in (a tessellation density, say).
+ */
+export interface SliderRowDef extends RowBase {
+  kind: 'slider'
+  min: number
+  max: number
+  step?: number
+  unit?: string
+}
+
 /** A row of a Properties page. */
-export type PropRowDef = NumRowDef
+export type PropRowDef = NumRowDef | MappedEnumRowDef | SliderRowDef
 
 /** One accordion of a Properties page. */
 export interface SchemaSectionDef {
