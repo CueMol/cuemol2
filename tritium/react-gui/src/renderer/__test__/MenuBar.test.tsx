@@ -4,14 +4,14 @@ import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import type { RecentFileEntry } from '@shared/types/recent'
 import type { ViewCenterMark } from '@shared/types/menuState'
-import { IPC } from '@shared/ipcChannels'
+import { CmdId } from '../commands/ids'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 // Must import after mocks
 const { MenuBar } = await import('../components/MenuBar')
-const { CommandProvider } = await import('../commands/CommandRegistry')
+const { CommandProvider, useCommands } = await import('../commands/CommandRegistry')
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -29,28 +29,41 @@ function setupElectronAPI(platform: string, overrides: Record<string, unknown> =
 }
 
 function render(
-  activeTab: string | null,
   viewProjection: boolean | null = null,
   viewCenterMark: ViewCenterMark | null = null,
   recentFiles: RecentFileEntry[] = [],
   hasScene: boolean = false,
-): { container: HTMLElement; root: Root; unmount: () => void } {
+): {
+  container: HTMLElement
+  root: Root
+  unmount: () => void
+  commands: ReturnType<typeof useCommands>
+} {
   const container = document.createElement('div')
   document.body.appendChild(container)
   let root!: Root
+  // The menu bar only dispatches; a probe inside the provider lets a test
+  // stand in for the command handlers the real app registers.
+  let commands!: ReturnType<typeof useCommands>
+  const Probe: React.FC = () => {
+    commands = useCommands()
+    return null
+  }
   act(() => {
     root = createRoot(container)
     root.render(
       React.createElement(
         CommandProvider,
         null,
-        React.createElement(MenuBar, { activeTab, viewProjection, viewCenterMark, recentFiles, hasScene }),
+        React.createElement(Probe),
+        React.createElement(MenuBar, { viewProjection, viewCenterMark, recentFiles, hasScene }),
       ),
     )
   })
   return {
     container,
     root,
+    get commands() { return commands },
     unmount() {
       act(() => root.unmount())
       document.body.removeChild(container)
@@ -68,7 +81,7 @@ describe('MenuBar', () => {
   })
 
   it('renders menu group labels', () => {
-    const { container, unmount } = render(null)
+    const { container, unmount } = render()
     const text = container.textContent ?? ''
     expect(text).toContain('File')
     expect(text).toContain('Edit')
@@ -79,7 +92,7 @@ describe('MenuBar', () => {
   })
 
   it('opens dropdown on click and shows items', () => {
-    const { container, unmount } = render(null)
+    const { container, unmount } = render()
     const fileItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('File'),
     ) as HTMLElement
@@ -97,7 +110,7 @@ describe('MenuBar', () => {
   })
 
   it('closes dropdown on Escape', () => {
-    const { container, unmount } = render(null)
+    const { container, unmount } = render()
     const fileItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('File'),
     ) as HTMLElement
@@ -113,7 +126,7 @@ describe('MenuBar', () => {
   })
 
   it('closes dropdown on outside click', () => {
-    const { container, unmount } = render(null)
+    const { container, unmount } = render()
     const fileItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('File'),
     ) as HTMLElement
@@ -134,13 +147,13 @@ describe('MenuBar', () => {
     // MenuBar always renders its content -- the platform guard lives in App.tsx.
     // This test verifies that the MenuBar component itself renders regardless of
     // platform (the guard is tested at the App level).
-    const { container, unmount } = render(null)
+    const { container, unmount } = render()
     expect(container.querySelector('.menubar')).toBeTruthy()
     unmount()
   })
 
   it('checks Perspective when the active view is perspective', () => {
-    const { container, unmount } = render('molview-1', true)
+    const { container, unmount } = render(true)
     const viewItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('View'),
     ) as HTMLElement
@@ -158,7 +171,7 @@ describe('MenuBar', () => {
   })
 
   it('checks Orthographic when the active view is not perspective', () => {
-    const { container, unmount } = render('molview-1', false)
+    const { container, unmount } = render(false)
     const viewItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('View'),
     ) as HTMLElement
@@ -174,7 +187,7 @@ describe('MenuBar', () => {
   })
 
   it('disables projection items without an active MolView', () => {
-    const { container, unmount } = render(null, null)
+    const { container, unmount } = render(null)
     const viewItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('View'),
     ) as HTMLElement
@@ -189,7 +202,7 @@ describe('MenuBar', () => {
   })
 
   it('disables scene-operation File items when no scene is active', () => {
-    const { container, unmount } = render(null, null, null, [], false)
+    const { container, unmount } = render(null, null, [], false)
     const fileItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('File'),
     ) as HTMLElement
@@ -209,7 +222,7 @@ describe('MenuBar', () => {
   })
 
   it('enables scene-operation File items when a scene is active', () => {
-    const { container, unmount } = render('molview-1', null, null, [], true)
+    const { container, unmount } = render(null, null, [], true)
     const fileItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('File'),
     ) as HTMLElement
@@ -223,7 +236,7 @@ describe('MenuBar', () => {
   })
 
   it('checks the active center mark radio item', () => {
-    const { container, unmount } = render('molview-1', true, 'axis')
+    const { container, unmount } = render(true, 'axis')
     const viewItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('View'),
     ) as HTMLElement
@@ -266,7 +279,7 @@ describe('MenuBar', () => {
   }
 
   it('shows "(none)" and a disabled Clear Menu when recents is empty', () => {
-    const { container, unmount } = render(null, null, null, [])
+    const { container, unmount } = render(null, null, [])
     const submenu = openFileThenRecent(container)
     expect(submenu).toBeTruthy()
     expect(submenu.textContent).toContain('(none)')
@@ -283,7 +296,7 @@ describe('MenuBar', () => {
       { path: '/tmp/dir/a.pdb', ftype: 'obj' },
       { path: '/another/b.qsc', ftype: 'scene' },
     ]
-    const { container, unmount } = render(null, null, null, recents)
+    const { container, unmount } = render(null, null, recents)
     const submenu = openFileThenRecent(container)
     expect(submenu.textContent).toContain('a.pdb')
     expect(submenu.textContent).toContain('b.qsc')
@@ -295,22 +308,26 @@ describe('MenuBar', () => {
     unmount()
   })
 
-  it('invokes RECENT_CLEAR when Clear Menu is clicked', () => {
-    const api = setupElectronAPI('win32')
-    const { container, unmount } = render(null, null, null, [
+  it('dispatches recent.clear when Clear Menu is clicked', () => {
+    // The menu bar dispatches; emptying the MRU is the RecentClear command's
+    // job (commands/useFileCommands.ts), which this tree does not mount.
+    setupElectronAPI('win32')
+    const dispatched: string[] = []
+    const { container, unmount, commands } = render(null, null, [
       { path: '/a.pdb', ftype: 'obj' },
     ])
+    commands.register(CmdId.RecentClear, (() => { dispatched.push(CmdId.RecentClear) }) as never)
     const submenu = openFileThenRecent(container)
     const clear = Array.from(submenu.querySelectorAll('.menu-item')).find(
       (el) => el.textContent?.includes('Clear Menu'),
     ) as HTMLElement
     act(() => { clear.click() })
-    expect(api.invoke).toHaveBeenCalledWith(IPC.RECENT_CLEAR)
+    expect(dispatched).toEqual([CmdId.RecentClear])
     unmount()
   })
 
   it('disables center mark radio items without an active MolView', () => {
-    const { container, unmount } = render(null, null, null)
+    const { container, unmount } = render(null, null)
     const viewItem = Array.from(container.querySelectorAll('.menubar__item')).find(
       (el) => el.textContent?.includes('View'),
     ) as HTMLElement

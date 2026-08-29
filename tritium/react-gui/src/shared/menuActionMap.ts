@@ -47,13 +47,17 @@ import { IPC } from './ipcChannels'
 export type MenuDeliver = 'dedicated-direct' | 'dedicated-relay' | 'generic'
 
 /**
- * Dispatch target for a menu action. Either the literal command-id string that
- * useMenuDispatch passes to the command bus, or a special marker:
- * - 'select-all'  : runs selectAllInScope() directly (no command bus)
- * - 'recent-clear': invokes IPC.RECENT_CLEAR directly
- * - 'unimplemented': genuinely not-yet-ported; hits the console.warn branch.
- *   These MUST stay in the template (UXP parity) and are marked so a typo is
- *   distinguishable from an intentional placeholder.
+ * Dispatch target for a menu action: the literal command-id string that
+ * useMenuDispatch passes to the command bus.
+ *
+ * The one exception is 'unimplemented' -- genuinely not-yet-ported actions
+ * that MUST stay in the template for UXP parity, marked so a typo is
+ * distinguishable from an intentional placeholder.
+ *
+ * Typed as `string` because this file is shared with the main process and so
+ * cannot import CmdId (see the layering note above). The renderer test
+ * `menuActionMap.pureCmdIds.test.tsx` checks every value against CmdId and
+ * against the commands actually registered, which is the same guarantee.
  */
 export type MenuDispatchTarget = string
 
@@ -71,18 +75,8 @@ export interface MenuActionEntry {
   deliver: MenuDeliver
 }
 
-/** Special dispatch markers (not command-bus ids). */
-export const MENU_DISPATCH_SELECT_ALL = 'select-all'
-export const MENU_DISPATCH_RECENT_CLEAR = 'recent-clear'
+/** Marker for an action that is in the template but not yet ported. */
 export const MENU_DISPATCH_UNIMPLEMENTED = 'unimplemented'
-/**
- * Clipboard + undo markers. These resolve by FOCUS rather than to a fixed
- * command: a text field gets the native edit, the scene tree gets node
- * copy/paste, the paint deck gets row copy/paste. See utils/editClipboard.
- */
-export const MENU_DISPATCH_EDIT_CUT = 'edit-cut'
-export const MENU_DISPATCH_EDIT_COPY = 'edit-copy'
-export const MENU_DISPATCH_EDIT_PASTE = 'edit-paste'
 
 /**
  * The map. Keys are IPC channel strings (= menuTemplate ipcChannel values).
@@ -95,10 +89,10 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_OPEN_FILE]:        { dispatch: 'ui.openObjDialog',   deliver: 'dedicated-direct' },
   [IPC.MENU_OPEN_TRAJ]:        { dispatch: 'ui.openTrajDialog',  deliver: 'generic' },
   [IPC.MENU_GET_PDB]:          { dispatch: 'ui.getPdbDialog',    deliver: 'generic' },
-  [IPC.MENU_CLEAR_RECENT]:     { dispatch: MENU_DISPATCH_RECENT_CLEAR, deliver: 'generic' },
+  [IPC.MENU_CLEAR_RECENT]:     { dispatch: 'recent.clear',       deliver: 'generic' },
   [IPC.MENU_SAVE_FILE_AS]:     { dispatch: 'object.saveAs',      deliver: 'generic' },
   [IPC.MENU_SAVE_CURRENT_VIEW]:{ dispatch: 'file.saveCurrentView', deliver: 'generic' },
-  [IPC.MENU_CLOSE_TAB]:        { dispatch: 'tab.close',          deliver: 'dedicated-direct' },
+  [IPC.MENU_CLOSE_TAB]:        { dispatch: 'tab.closeActive',    deliver: 'dedicated-direct' },
   [IPC.MENU_OPEN_SCENE]:       { dispatch: 'ui.openSceneDialog', deliver: 'dedicated-direct' },
   [IPC.MENU_RELOAD_SCENE]:     { dispatch: 'scene.reload',       deliver: 'generic' },
   [IPC.MENU_SAVE]:             { dispatch: 'file.save',          deliver: 'dedicated-direct' },
@@ -107,12 +101,12 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_NEW_SCENE]:        { dispatch: 'scene.new',          deliver: 'dedicated-direct' },
 
   // --- Edit ---
-  [IPC.MENU_UNDO]:             { dispatch: 'edit.undo',          deliver: 'dedicated-direct' },
-  [IPC.MENU_REDO]:             { dispatch: 'edit.redo',          deliver: 'dedicated-direct' },
-  [IPC.MENU_EDIT_CUT]:         { dispatch: MENU_DISPATCH_EDIT_CUT,   deliver: 'generic' },
-  [IPC.MENU_EDIT_COPY]:        { dispatch: MENU_DISPATCH_EDIT_COPY,  deliver: 'generic' },
-  [IPC.MENU_EDIT_PASTE]:       { dispatch: MENU_DISPATCH_EDIT_PASTE, deliver: 'generic' },
-  [IPC.MENU_SELECT_ALL]:       { dispatch: MENU_DISPATCH_SELECT_ALL, deliver: 'generic' },
+  [IPC.MENU_UNDO]:             { dispatch: 'edit.undoFocused',   deliver: 'dedicated-direct' },
+  [IPC.MENU_REDO]:             { dispatch: 'edit.redoFocused',   deliver: 'dedicated-direct' },
+  [IPC.MENU_EDIT_CUT]:         { dispatch: 'edit.cut',           deliver: 'generic' },
+  [IPC.MENU_EDIT_COPY]:        { dispatch: 'edit.copy',          deliver: 'generic' },
+  [IPC.MENU_EDIT_PASTE]:       { dispatch: 'edit.paste',         deliver: 'generic' },
+  [IPC.MENU_SELECT_ALL]:       { dispatch: 'edit.selectAll',     deliver: 'generic' },
   [IPC.MENU_CLEAR_UNDO]:       { dispatch: 'edit.clearUndo',     deliver: 'generic' },
   [IPC.MENU_MERGE_MOL]:        { dispatch: 'ui.mergeMolDialog',  deliver: 'generic' },
   [IPC.MENU_DELETE_MOL_ATOMS]: { dispatch: 'ui.deleteMolDialog', deliver: 'generic' },

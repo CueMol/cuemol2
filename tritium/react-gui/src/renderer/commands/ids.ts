@@ -32,6 +32,7 @@ export const CmdId = {
   // Tab management
   TabNew:             'tab.new',             // no args
   TabClose:           'tab.close',           // args: string (tab id)
+  TabCloseActive:     'tab.closeActive',     // no args -- the tab menu item
 
   // File operations
   FileSave:           'file.save',           // no args
@@ -50,6 +51,17 @@ export const CmdId = {
   Undo:               'edit.undo',           // no args
   Redo:               'edit.redo',           // no args
   ClearUndo:          'edit.clearUndo',      // no args -- discard undo/redo history
+  // Focus-routed edit actions. The Edit menu means "whatever has focus": a
+  // text field gets the native edit, the scene tree gets node copy/paste, the
+  // paint deck gets row copy/paste, and undo/redo fall through to the scene
+  // commands above only when no field is focused. The toolbar buttons stay on
+  // the plain scene Undo / Redo.
+  EditSelectAll:      'edit.selectAll',      // no args
+  EditCut:            'edit.cut',            // no args
+  EditCopy:           'edit.copy',           // no args
+  EditPaste:          'edit.paste',          // no args
+  EditUndoFocused:    'edit.undoFocused',    // no args
+  EditRedoFocused:    'edit.redoFocused',    // no args
 
   // View operations
   ViewPerspective:    'view.perspective',    // no args
@@ -77,6 +89,7 @@ export const CmdId = {
 
   // App settings
   UiSettingsTab:      'ui.settingsTab', // no args -- open/activate the Settings tab
+  RecentClear:        'recent.clear',   // no args -- empty the MRU list
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]

@@ -39,6 +39,7 @@ export interface CommandMap {
   // Tabs
   [CmdId.TabNew]:              { args: void;            result: void }
   [CmdId.TabClose]:            { args: string;          result: void }
+  [CmdId.TabCloseActive]:      { args: void;            result: void }
 
   // File
   [CmdId.FileSave]:            { args: void;            result: boolean }
@@ -56,6 +57,12 @@ export interface CommandMap {
   [CmdId.Undo]:                { args: void;            result: void }
   [CmdId.Redo]:                { args: void;            result: void }
   [CmdId.ClearUndo]:           { args: void;            result: void }
+  [CmdId.EditSelectAll]:       { args: void;            result: void }
+  [CmdId.EditCut]:             { args: void;            result: void }
+  [CmdId.EditCopy]:            { args: void;            result: void }
+  [CmdId.EditPaste]:           { args: void;            result: void }
+  [CmdId.EditUndoFocused]:     { args: void;            result: void }
+  [CmdId.EditRedoFocused]:     { args: void;            result: void }
 
   // View
   [CmdId.ViewPerspective]:     { args: void;            result: void }
@@ -81,6 +88,7 @@ export interface CommandMap {
 
   // App settings
   [CmdId.UiSettingsTab]:       { args: void;            result: void }
+  [CmdId.RecentClear]:         { args: void;            result: void }
 }
 
 export type CommandKey = keyof CommandMap

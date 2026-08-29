@@ -492,7 +492,7 @@ const App: React.FC = () => {
     <IconContext.Provider value={{ color: "currentColor", weight: "regular" }}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} hasScene={activeMolViewId !== undefined} exportAvailable={exportAvailable} recentFiles={recentFiles} />
+        <MenuBar viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} hasScene={activeMolViewId !== undefined} exportAvailable={exportAvailable} recentFiles={recentFiles} />
       )}
       <Toolbar undoRedo={undoRedo} hasScene={activeMolViewId !== undefined} />
 

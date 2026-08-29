@@ -55,7 +55,6 @@ function render(): { container: HTMLElement; root: Root; unmount: () => void } {
         CommandProvider,
         null,
         React.createElement(MenuBar, {
-          activeTab: null,
           viewProjection: null,
           viewCenterMark: null,
           recentFiles: [],

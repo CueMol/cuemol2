@@ -32,9 +32,9 @@ import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvide
  */
 const MENU_PASS_THROUGH = MENU_PASS_THROUGH_CHANNELS as readonly PushChannel[]
 
-export function useElectronIpc(activeTab: string | null): void {
+export function useElectronIpc(): void {
   const { dispatch } = useCommands()
-  const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
+  const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch()
   const showErrorAlert = useShowErrorAlert()
 
   useEffect(() => {

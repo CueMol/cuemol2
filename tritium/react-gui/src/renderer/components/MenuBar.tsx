@@ -24,7 +24,6 @@ import { resolveAppMenuNodes } from './menu/resolveAppMenu'
 import type { MenuBarPick } from './menu/resolveAppMenu'
 
 interface MenuBarProps {
-  activeTab: string | null
   viewProjection?: boolean | null
   viewCenterMark?: ViewCenterMark | null
   sceneBgColor?: SceneBgColor | null
@@ -44,8 +43,8 @@ interface MenuBarProps {
  * plus the click-away / Escape close handlers, and renders each non-darwin
  * `APP_MENU` group as a `MenuPanel` dropdown.
  */
-export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null, hasScene = false, exportAvailable = null, recentFiles = [] }) => {
-  const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
+export const MenuBar: React.FC<MenuBarProps> = ({ viewProjection = null, viewCenterMark = null, sceneBgColor = null, hasScene = false, exportAvailable = null, recentFiles = [] }) => {
+  const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
   const barRef = useRef<HTMLDivElement>(null)

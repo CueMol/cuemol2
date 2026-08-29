@@ -128,6 +128,14 @@ export function useFileCommands({
     useRegisterCommand(CmdId.ExportStl, makeExportHandler('stl'))
     useRegisterCommand(CmdId.ExportMqo, makeExportHandler('mqo'))
 
+    // Open Recent > Clear. A command rather than a direct IPC call from the
+    // menu dispatcher, so the MRU can be cleared from anywhere.
+    useRegisterCommand(CmdId.RecentClear, () => {
+        window.electronAPI.invoke(IPC.RECENT_CLEAR).catch((e: unknown) =>
+            console.error('recent.clear:', e),
+        )
+    })
+
     // SceneReload -- UXP `onReloadScene`: re-read the scene from its source
     // file, confirming first when there are unsaved changes.
     useRegisterCommand(CmdId.SceneReload, async () => {
