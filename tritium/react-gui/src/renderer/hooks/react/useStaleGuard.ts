@@ -1,5 +1,5 @@
 /**
- * @file renderer/lib/useStaleGuard.ts
+ * @file renderer/hooks/react/useStaleGuard.ts
  * @description Token guard that lets an async result be dropped when a
  * newer request has started since.
  *

@@ -1,5 +1,5 @@
 /**
- * @file renderer/lib/useLiveFetch.ts
+ * @file renderer/hooks/cuemol/useLiveFetch.ts
  * @description Shared "fetch + auto-refresh + race-guard" engine for the
  * panel data hooks (scene tree, coloring deck, density-map panel, symmetry
  * panel, elepot object list, paint-capable renderer list, animation
@@ -30,10 +30,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { useCueMolEventListener } from '../hooks/useCueMolEventListener'
-import { useLatestRef } from './useLatestRef'
-import { useStaleGuard } from './useStaleGuard'
+import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import { useCueMolEventListener } from '../useCueMolEventListener'
+import { useLatestRef } from '../react/useLatestRef'
+import { useStaleGuard } from '../react/useStaleGuard'
 
 /** Max number of distinct event subscriptions any panel hook needs. */
 const MAX_LISTENERS = 3

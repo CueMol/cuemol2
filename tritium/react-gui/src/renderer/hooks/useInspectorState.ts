@@ -22,7 +22,7 @@ import type {
 import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
 import { useCueMolEventListener } from "./useCueMolEventListener";
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_PROPCHG } from "../event";
-import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/lib/timing";
+import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/utils/timing";
 
 // --- Types ---
 

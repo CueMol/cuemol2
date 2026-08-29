@@ -28,7 +28,7 @@ import {
   type MovieFormatId,
   type MovieSettings,
 } from "../data/renderSettings";
-import { PERSIST_DEBOUNCE_MS } from "@renderer/lib/timing";
+import { PERSIST_DEBOUNCE_MS } from "@renderer/utils/timing";
 
 /** How long an edit rests before it is written back (base name is typed). */
 

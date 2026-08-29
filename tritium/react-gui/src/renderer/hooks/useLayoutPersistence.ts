@@ -29,7 +29,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PaneCollapseState, LayoutState, UiState } from "@shared/ipcTypes";
 import { IPC } from "@shared/ipcChannels";
-import { PERSIST_DEBOUNCE_MS } from "@renderer/lib/timing";
+import { PERSIST_DEBOUNCE_MS } from "@renderer/utils/timing";
 
 export type { PaneCollapseState, LayoutState, UiState };
 

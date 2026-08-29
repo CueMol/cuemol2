@@ -26,7 +26,7 @@ import {
     histogramTargetBins,
     niceBinWidth,
 } from '../components/multigrad/gradientGeometry'
-import { useStaleGuard } from '@renderer/lib/useStaleGuard'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 const DOMAIN_DEBOUNCE_MS = 100
 

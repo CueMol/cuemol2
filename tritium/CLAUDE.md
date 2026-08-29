@@ -271,9 +271,22 @@ The UXP reference is `uxp_gui/cuemol2/base/content/workspace_panel.js` `_attachS
 
 A single high-level operation (PDB load, scene load, paste, undo) fires **many** events in quick succession. If the listener triggers an expensive refetch / re-render per event, the UI jitters. Coalesce them with `useCueMolEventListener({ debounceMs: EVENT_BURST_DEBOUNCE_MS })` (`renderer/lib/timing.ts`; never a local `30`). An event that must not open or consume a debounce window (e.g. a `ui_collapsed` PROPCHG) goes through the listener's `filter`, which runs before the debounce.
 
-### Fetch + auto-refresh: `useLiveFetch` (renderer/lib)
+### Fetch + auto-refresh: `useLiveFetch` (hooks/cuemol/)
 
-A panel hook that fetches from the worker and refetches on scene events uses `useLiveFetch({ cm, initial, fallback, fetch, fetchDeps, listeners })` instead of hand-rolling `useState` + `refetch` + `useEffect` + listener. It owns the **stale-fetch guard**: a fetch that resolves after a newer one started is dropped, so switching A -> B can never end with A's late result on screen. For a one-off async result outside `useLiveFetch`, take a token from `useStaleGuard()` (`renderer/lib/useStaleGuard.ts`) and check `isCurrent(token)` before applying the result. Never write a `tokenRef` / `let cancelled` guard by hand.
+A panel hook that fetches from the worker and refetches on scene events uses `useLiveFetch({ cm, initial, fallback, fetch, fetchDeps, listeners })` instead of hand-rolling `useState` + `refetch` + `useEffect` + listener. It owns the **stale-fetch guard**: a fetch that resolves after a newer one started is dropped, so switching A -> B can never end with A's late result on screen. For a one-off async result outside `useLiveFetch`, take a token from `useStaleGuard()` (`hooks/react/useStaleGuard.ts`) and check `isCurrent(token)` before applying the result. Never write a `tokenRef` / `let cancelled` guard by hand.
+
+### Where a hook goes
+
+A hook lives with whatever **owns** it, and `hooks/` is only for the ones nothing owns:
+
+| | |
+|---|---|
+| Used by one component | Next to that component (its feature directory). Most hooks are this: 48 of the 71 have a single consumer -- they are that component's implementation, not shared code. |
+| Shared, needs React only | `hooks/react/` -- ESLint rejects any import of CueMol, IPC, `@shared`, `@main` or a feature from here, which is what keeps the name true. |
+| Shared, talks to the CueMol worker | `hooks/cuemol/` -- the React binding layer over `worker/client` (`useCueMol`, `useCueMolEventListener`, `useLiveFetch`, `useMolEditCommit`). |
+| Owns app state / chrome / dialogs | `state/`, `shell/`, `dialogs/` respectively, not `hooks/`. |
+
+Do not add a hook directly under `hooks/`: pick the owner, or one of the two groups above. A plain (non-hook) helper follows the same rule and lands in `utils/` only when nothing owns it.
 
 ### When to use the event manager (vs alternatives)
 

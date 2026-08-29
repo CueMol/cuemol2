@@ -1,11 +1,11 @@
 /**
- * @file renderer/lib/useStaleGuard.test.ts
+ * @file renderer/hooks/react/useStaleGuard.test.ts
  * @description Pins the token semantics the fetch hooks rely on.
  */
 
 import { describe, it, expect } from 'vitest'
 import { createStaleGuard, useStaleGuard } from './useStaleGuard'
-import { makeRenderHook } from '../__test__/helpers/testHarness'
+import { makeRenderHook } from '../../__test__/helpers/testHarness'
 
 describe('createStaleGuard', () => {
     it('only the latest token is current', () => {

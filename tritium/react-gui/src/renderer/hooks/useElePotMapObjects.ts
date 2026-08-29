@@ -11,8 +11,8 @@ import { useRef } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { ElePotMapObjectEntry } from '../worker/server/services/rendererColoring.service'
 import { SEM_OBJECT, SEM_ANY } from '../event'
-import { useLiveFetch } from '@renderer/lib/useLiveFetch'
-import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
+import { useLiveFetch } from '@renderer/hooks/cuemol/useLiveFetch'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
 
 const EMPTY: ElePotMapObjectEntry[] = []
 

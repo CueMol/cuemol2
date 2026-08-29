@@ -1,12 +1,12 @@
 /**
- * @file renderer/lib/useDebouncedCallback.test.ts
+ * @file renderer/hooks/react/useDebouncedCallback.test.ts
  * @description Pins trailing / leading debounce semantics, flush / cancel,
  * latest-callback reading and identity stability.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useDebouncedCallback } from './useDebouncedCallback'
-import { makeRenderHook } from '../__test__/helpers/testHarness'
+import { makeRenderHook } from '../../__test__/helpers/testHarness'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())

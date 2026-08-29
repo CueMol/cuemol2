@@ -32,7 +32,7 @@ import {
     SEM_ANY,
     SEM_PROPCHG,
 } from '../event'
-import { useLiveFetch } from '@renderer/lib/useLiveFetch'
+import { useLiveFetch } from '@renderer/hooks/cuemol/useLiveFetch'
 import { findNode } from './sceneTree/sceneTreeNodeUtils'
 import {
     useSceneTreeNodeOps,
@@ -50,7 +50,7 @@ import {
     useSceneTreeStyleOps,
     type SceneTreeStyleOps,
 } from './sceneTree/useSceneTreeStyleOps'
-import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
 
 interface UseSceneTreeOptions {
     cm: AsyncCueMol | null

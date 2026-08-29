@@ -14,9 +14,9 @@ downloads/
 eggs/
 .eggs/
 lib/
-# ... but the react-gui renderer's lib/ is application source (generic
-# hooks + utilities), not a Python distribution artifact.
-!tritium/react-gui/src/renderer/lib/
+# ... but never application source: this Python packaging rule silently
+# swallowed a TypeScript directory once (tritium/react-gui/src/renderer/lib).
+!tritium/**/src/**/lib/
 lib64/
 parts/
 sdist/

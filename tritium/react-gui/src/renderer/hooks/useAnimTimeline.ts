@@ -14,8 +14,8 @@ import { useRef } from "react";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { AnimTimeline } from "../types";
 import { SEM_ANIM, SEM_CAMERA, SEM_SCENE, SEM_ANY } from "../event";
-import { useLiveFetch } from "@renderer/lib/useLiveFetch";
-import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/lib/timing";
+import { useLiveFetch } from "@renderer/hooks/cuemol/useLiveFetch";
+import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/utils/timing";
 
 interface UseAnimTimelineOptions {
   cm: AsyncCueMol | null;

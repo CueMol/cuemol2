@@ -1,5 +1,5 @@
 /**
- * @file renderer/lib/useLatestRef.ts
+ * @file renderer/hooks/react/useLatestRef.ts
  * @description Ref that always holds the latest render's value.
  */
 

@@ -33,8 +33,8 @@ import { CmdId } from '../commands/ids'
 import { useRegisterCommand } from '../commands/CommandRegistry'
 import { useCueMolEventListener } from './useCueMolEventListener'
 import { SEM_SCENE, SEM_ANY } from '../event'
-import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/lib/timing'
-import { useLatestRef } from '@renderer/lib/useLatestRef'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
+import { useLatestRef } from '@renderer/hooks/react/useLatestRef'
 
 interface UseUndoRedoStateOptions {
   cm: AsyncCueMol | null
