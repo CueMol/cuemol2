@@ -58,7 +58,7 @@ describe('Window menu -- dispatch reaches the main process', () => {
     return makeRenderHook(() => {
       useRenderCommands()
       useWindowCommands()
-      return useMenuDispatch('molview-1')
+      return useMenuDispatch()
     }, Wrapper)
   }
 

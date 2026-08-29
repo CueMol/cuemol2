@@ -52,7 +52,7 @@ describe('Rendering menu -- mode entries', () => {
     it(`${channel} opens the Rendering window in "${mode}" mode`, async () => {
       const h = makeRenderHook(() => {
         useRenderCommands()
-        return useMenuDispatch('molview-1')
+        return useMenuDispatch()
       }, Wrapper)
 
       h.result.dispatchMenuChannel(channel)

@@ -14,6 +14,7 @@ import type { ActiveSceneCommandDeps } from '../commands/commandTypes';
 import { useSceneCommands } from '../commands/useSceneCommands';
 import { useUiDialogCommands } from '../commands/useUiDialogCommands';
 import { useTabCommands } from '../commands/useTabCommands';
+import { useFocusEditCommands } from '../commands/useFocusEditCommands';
 import { useNewTabCommand } from '../commands/useNewTabCommand';
 import { useEditCommands } from '../commands/useEditCommands';
 import { useToolCommands } from '../commands/useToolCommands';
@@ -65,9 +66,10 @@ export function useCommandRegistrations({
 }: UseCommandRegistrationsOptions): void {
   useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, showSceneProperty, newScene, openSceneFile });
   useUiDialogCommands({ cm });
-  useTabCommands({ handleCloseTab, openSettingsTab });
+  useTabCommands({ handleCloseTab, openSettingsTab, activeTab });
   useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, newScene });
   useEditCommands({ cm, getActiveSceneInfo });
+  useFocusEditCommands();
   useToolCommands({ cm, getActiveSceneInfo });
   useFileCommands({ cm, getActiveSceneInfo });
   useViewCommands({
@@ -79,5 +81,5 @@ export function useCommandRegistrations({
   });
   useRenderCommands();
   useWindowCommands();
-  useElectronIpc(activeTab);
+  useElectronIpc();
 }

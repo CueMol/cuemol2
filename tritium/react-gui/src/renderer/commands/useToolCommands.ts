@@ -21,7 +21,6 @@
 
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'
-import type { CommandKey } from './CommandMap'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowChangeChainIdDialog } from '../components/dialogs/ChangeChainIdDialogProvider'
@@ -41,6 +40,30 @@ interface UseToolCommandsOptions {
     getActiveSceneInfo: ActiveSceneCommandDeps
 }
 
+/**
+ * Tools-menu commands that open a dialog for the active scene, in
+ * registration order. Exported so the set can be checked from tests.
+ */
+export const ACTIVE_SCENE_DIALOG_COMMANDS = [
+    CmdId.UiChangeChainIdDialog,
+    CmdId.UiDeleteMolDialog,
+    CmdId.UiChangeResidueIndexDialog,
+    CmdId.UiMergeMolDialog,
+    CmdId.UiMakeMolSurfDialog,
+    CmdId.UiCalcApbsPotDialog,
+    CmdId.UiInteractionAnalysisDialog,
+    CmdId.UiCutSurfByPlaneDialog,
+    CmdId.UiReassignProt2ndryDialog,
+    CmdId.UiMolSuperpose,
+    CmdId.UiMorphAnimDialog,
+] as const
+
+/** The two whose dialog acts on the view as well as the scene. */
+const WANTS_VIEW_ID: ReadonlySet<string> = new Set<string>([
+    CmdId.UiCutSurfByPlaneDialog,
+    CmdId.UiMolSuperpose,
+])
+
 export function useToolCommands({
     cm,
     getActiveSceneInfo,
@@ -58,70 +81,40 @@ export function useToolCommands({
     const showMorphAnimDialog = useShowMorphAnimDialog()
 
     /**
-     * Register a command that resolves the active scene/view before running
-     * `run(info)`. No-op when there is no CueMol instance or no active scene,
-     * matching the per-command `if (!cm) ... if (!info) ...` preamble.
+     * The Tools menu is eleven variations on one shape: resolve the active
+     * scene, then open a dialog for it. Declaring them as data keeps the
+     * shape in one place -- and makes the set enumerable, which is what
+     * `menuActionMap.pureCmdIds.test.ts` reads to check that every Tools menu
+     * entry has a handler.
      *
-     * Named with a `use` prefix because it calls `useRegisterCommand`; it is
-     * invoked unconditionally in a fixed order so the hook-call order stays
-     * stable across renders.
+     * `viewId` is passed to the two dialogs that act on the view as well as
+     * the scene (a plane cut and a superposition both need the camera).
      */
-    const useActiveSceneCommand = (
-        id: CommandKey,
-        run: (info: { scene_uid: number; view_id: number }) => void,
-    ): void => {
+    const dialogs = {
+        [CmdId.UiChangeChainIdDialog]: showChangeChainIdDialog,
+        [CmdId.UiDeleteMolDialog]: showDeleteMolDialog,
+        [CmdId.UiChangeResidueIndexDialog]: showChangeResidueIndexDialog,
+        [CmdId.UiMergeMolDialog]: showMergeMolDialog,
+        [CmdId.UiMakeMolSurfDialog]: showMakeMolSurfDialog,
+        [CmdId.UiCalcApbsPotDialog]: showCalcApbsPotDialog,
+        [CmdId.UiInteractionAnalysisDialog]: showInteractionAnalysisDialog,
+        [CmdId.UiCutSurfByPlaneDialog]: showCutSurfByPlaneDialog,
+        [CmdId.UiReassignProt2ndryDialog]: showReassignProt2ndryDialog,
+        [CmdId.UiMolSuperpose]: showMolSuperposeDialog,
+        [CmdId.UiMorphAnimDialog]: showMorphAnimDialog,
+    }
+
+    // Fixed order over a module constant, so the hook-call order is stable.
+    for (const id of ACTIVE_SCENE_DIALOG_COMMANDS) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         useRegisterCommand(id, () => {
             if (!cm) return
             const info = getActiveSceneInfo()
             if (!info) return
-            run(info)
+            const args = WANTS_VIEW_ID.has(id)
+                ? { sceneId: info.scene_uid, viewId: info.view_id }
+                : { sceneId: info.scene_uid }
+            void (dialogs[id] as (a: typeof args) => Promise<unknown>)(args)
         })
     }
-
-    useActiveSceneCommand(CmdId.UiChangeChainIdDialog, (info) => {
-        void showChangeChainIdDialog({ sceneId: info.scene_uid })
-    })
-
-    useActiveSceneCommand(CmdId.UiDeleteMolDialog, (info) => {
-        void showDeleteMolDialog({ sceneId: info.scene_uid })
-    })
-
-    useActiveSceneCommand(CmdId.UiChangeResidueIndexDialog, (info) => {
-        void showChangeResidueIndexDialog({ sceneId: info.scene_uid })
-    })
-
-    useActiveSceneCommand(CmdId.UiMergeMolDialog, (info) => {
-        void showMergeMolDialog({ sceneId: info.scene_uid })
-    })
-
-    useActiveSceneCommand(CmdId.UiMakeMolSurfDialog, (info) => {
-        void showMakeMolSurfDialog({ sceneId: info.scene_uid })
-    })
-
-    useActiveSceneCommand(CmdId.UiCalcApbsPotDialog, (info) => {
-        void showCalcApbsPotDialog({ sceneId: info.scene_uid })
-    })
-
-    useActiveSceneCommand(CmdId.UiInteractionAnalysisDialog, (info) => {
-        void showInteractionAnalysisDialog({ sceneId: info.scene_uid })
-    })
-
-    useActiveSceneCommand(CmdId.UiCutSurfByPlaneDialog, (info) => {
-        void showCutSurfByPlaneDialog({
-            sceneId: info.scene_uid,
-            viewId: info.view_id,
-        })
-    })
-
-    useActiveSceneCommand(CmdId.UiReassignProt2ndryDialog, (info) => {
-        void showReassignProt2ndryDialog({ sceneId: info.scene_uid })
-    })
-
-    useActiveSceneCommand(CmdId.UiMolSuperpose, (info) => {
-        void showMolSuperposeDialog({ sceneId: info.scene_uid, viewId: info.view_id })
-    })
-
-    useActiveSceneCommand(CmdId.UiMorphAnimDialog, (info) => {
-        void showMorphAnimDialog({ sceneId: info.scene_uid })
-    })
 }
