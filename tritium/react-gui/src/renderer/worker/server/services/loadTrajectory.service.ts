@@ -27,8 +27,9 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import type { RendererOptions } from '../../../components/fopen-opt-dlgs/types';
 import { setupRenderer } from './setupRenderer.service';
-import { withUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
 import { OBJREADER_CATEGORY } from './helpers/pickReaderName';
+import { fail, ok, type Result } from '../../shared/result';
 
 const log = console;
 
@@ -93,31 +94,36 @@ function fileExt(filePath: string): string {
     return dot >= 0 ? base.slice(dot + 1).toLowerCase() : '';
 }
 
+/** `{ objId }` of the new Trajectory on success. */
+export type LoadTrajectoryResult = Result<{ objId: number }>;
+
 function loadTrajectory(
     ctx: WorkerContext,
     args: LoadTrajectoryArgs,
-): { ok: boolean; objId?: number } {
+): LoadTrajectoryResult {
     log.info(
         `[worker] loading MD trajectory: topology=${args.topologyPath}, ${args.trajPaths.length} traj file(s)`,
     );
 
     if (!args.trajPaths.length) {
         log.warn('[worker] loadTrajectory: no trajectory files given');
-        return { ok: false };
+        return fail('no trajectory files given', 'invalid-args');
     }
 
     const scene = ctx.sceMgr.getScene(args.sceneId);
     if (!scene) {
         log.warn(`[worker] loadTrajectory: scene ${args.sceneId} not found`);
-        return { ok: false };
+        return fail(`scene ${args.sceneId} not found`, 'not-found');
     }
 
     const nevery = args.nevery && args.nevery > 1 ? args.nevery : 1;
 
-    return withUndoTxn(scene, 'Open MD trajectory', () => {
+    // A throw inside (atom-count mismatch from the C++ reader, a missing
+    // reader) rolls the transaction back and comes out as a Fail.
+    return undoTxnResult(scene, 'Open MD trajectory', () => {
         // 1. Empty Trajectory object.
         const traj = ctx.svc.createObj('Trajectory') as unknown as TrajObj;
-        if (!traj) throw new Error('failed to create Trajectory object');
+        if (!traj) return fail('failed to create Trajectory object', 'native');
 
         // 2. Topology -> Trajectory. Attach the topology reader to the
         //    pre-created Trajectory (not to createDefaultObj's MolCoord) so the
@@ -125,7 +131,7 @@ function loadTrajectory(
         const topoReader = ctx.strMgr.createHandler(
             TOPOLOGY_READER, OBJREADER_CATEGORY,
         ) as unknown as ObjReaderHandle | null;
-        if (!topoReader) throw new Error(`topology reader "${TOPOLOGY_READER}" not available`);
+        if (!topoReader) return fail(`topology reader "${TOPOLOGY_READER}" not available`, 'unsupported');
         topoReader.setPath(args.topologyPath);
         topoReader.attach(traj);
         topoReader.read();
@@ -138,11 +144,11 @@ function loadTrajectory(
         for (const trajPath of args.trajPaths) {
             const ext = fileExt(trajPath);
             const nick = TRAJ_READER_BY_EXT[ext];
-            if (!nick) throw new Error(`unsupported trajectory format ".${ext}": ${trajPath}`);
+            if (!nick) return fail(`unsupported trajectory format ".${ext}": ${trajPath}`, 'unsupported');
             const reader = ctx.strMgr.createHandler(
                 nick, OBJREADER_CATEGORY,
             ) as unknown as TrajBlockReaderHandle | null;
-            if (!reader) throw new Error(`trajectory reader "${nick}" not available`);
+            if (!reader) return fail(`trajectory reader "${nick}" not available`, 'unsupported');
             reader.targTrajUID = traj.uid;
             if (nevery > 1) reader.nevery = nevery;
             const block = reader.createDefaultObj();
@@ -156,7 +162,7 @@ function loadTrajectory(
         // 4. Initial renderer (Trajectory is MolCoord-derived; reused as-is).
         setupRenderer(ctx, traj, args.renderer);
 
-        return { ok: true, objId: traj.uid };
+        return ok({ objId: traj.uid });
     });
 }
 

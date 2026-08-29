@@ -22,7 +22,7 @@ import { useViewCommands } from '../commands/useViewCommands';
 import { useRenderCommands } from '../commands/useRenderCommands';
 import { useWindowCommands } from '../commands/useWindowCommands';
 import { useElectronIpc } from './useElectronIpc';
-import type { NewSceneAction } from './useNewSceneAction';
+import type { NewSceneAction, OpenSceneFileAction } from './useNewSceneAction';
 
 interface UseCommandRegistrationsOptions {
   cm: AsyncCueMol | null;
@@ -42,6 +42,8 @@ interface UseCommandRegistrationsOptions {
   /** Open the active scene in the generic property inspector (Scene > Properties...). */
   showSceneProperty: (sceneId: number) => void;
   newScene: NewSceneAction;
+  /** Open a scene file in its own tab (created only once it has loaded). */
+  openSceneFile: OpenSceneFileAction;
 }
 
 export function useCommandRegistrations({
@@ -59,8 +61,9 @@ export function useCommandRegistrations({
   showViewProperty,
   showSceneProperty,
   newScene,
+  openSceneFile,
 }: UseCommandRegistrationsOptions): void {
-  useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, showSceneProperty, newScene });
+  useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, showSceneProperty, newScene, openSceneFile });
   useUiDialogCommands({ cm });
   useTabCommands({ handleCloseTab, openSettingsTab });
   useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, newScene });

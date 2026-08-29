@@ -148,14 +148,38 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit �
 
 ## Common service patterns
 
+### Service results: return `Result`, never throw across the boundary
+
+`worker/shared/result.ts` defines the wire contract for a service outcome:
+
+```ts
+type Result<T> = ({ ok: true } & T) | { ok: false; error: string; code?: FailCode }
+// FailCode = 'not-found' | 'invalid-args' | 'unsupported' | 'canceled' | 'io' | 'native'
+ok({ objId })             // success (payload optional)
+fail('scene not found', 'not-found')
+failFrom(e, 'io')         // wrap a caught exception (uses Error.message)
+```
+
+- A service **returns** a `Result`; it must not let an exception escape. Wrap
+  C++ calls that can throw in `try/catch -> failFrom(e)` (or `safeRead`).
+  `WorkerService` still converts an escaped throw into a rejected promise, but
+  logs it as a contract violation (`threw instead of returning fail()`): on the
+  renderer side a rejection now means "bug or worker crash", never an expected
+  failure.
+- `Fail.error` is required, so `tsc` flags any bare `{ ok: false }`.
+- Renderer callers branch on `res.ok` (`if (!res.ok) showErrorAlert(res.error)`),
+  and on `res.code === 'canceled'` where a user cancel must stay silent.
+- Keep a failure-side payload (`Ok<A> | (Fail & B)`) as a documented exception
+  only (e.g. `GetMtzColumnInfoResult`); by default `Fail` carries no data.
+
 ### View → Scene → Object
 
 ```typescript
 const view = ctx.sceMgr.getView(viewId) as GUIView;
-if (!view) return { ok: false };
+if (!view) return fail('view not found', 'not-found');
 const scene = view.getScene();
 const mol = scene.getObject(objId) as MolCoord;
-if (!mol) return { ok: false };
+if (!mol) return fail('object not found', 'not-found');
 ```
 
 Renderers: `scene.getRenderer(rendId)` or `mol.getRendererByType(type)` / `mol.getRendererByNameType(name, type)`. `scene.getRenderer` returns the same wrapper for both regular renderers and renderer groups (RendGroup extends Renderer in C++).
@@ -166,7 +190,7 @@ Use `server/services/helpers/makeSel.ts` to compile a selection string:
 
 ```typescript
 const sel = makeSel(ctx, selStr, scene.uid);  // returns SelCommand | null
-if (!sel) return { ok: false };
+if (!sel) return fail('invalid selection', 'invalid-args');
 mol.sel = sel;
 ```
 
@@ -293,11 +317,26 @@ const scheduleRefetch = () => {
 
 ## Undo/Redo transaction
 
-Wrap scene-mutating services with `withUndoTxn` from `server/services/withUndoTxn.ts`:
+Wrap scene-mutating services with a helper from `server/services/withUndoTxn.ts`:
 
 ```typescript
+// Default: body returns a Result; Fail or throw -> rollback, Ok -> commit.
+return undoTxnResult(scene, 'Label', () => {
+    if (!something) return fail('...', 'invalid-args');
+    /* mutations */
+    return ok({ ... });
+});
+
+// Only for a body that always mutates and cannot fail short of throwing.
 return withUndoTxn(scene, 'Label', () => { /* mutations */ return result; });
 ```
+
+- **Prefer `undoTxnResult`**. C++ `UndoManager::commitTxn` clears the redo stack
+  even for an *empty* transaction, so a `withUndoTxn` body that bails out early
+  without mutating silently kills the user's Redo. `undoTxnResult` rolls back
+  on a `Fail` return, which touches neither stack.
+- `withUndoTxn` rethrows; the caller is responsible for translating the throw.
+  Keep it for bodies that unconditionally mutate.
 
 - **Don't wrap**: read-only services, `createNewSceneAndView` (no UndoManager yet), `loadScene` (a whole-scene load is not an edit -- wrapping it captures the object-registration records and leaves a bogus undo entry; UXP `qsc-io.readSceneFile` / C++ `LoadSceneCommand::run()` run outside any txn so the records are discarded and the stack stays empty).
 - **Nested txns are safe**: inner `startUndoTxn` inside an active outer txn is silently absorbed.

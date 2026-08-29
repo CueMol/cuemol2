@@ -4,12 +4,13 @@
 // UXP onOpenPDBsite path (uxp_gui/.../tools/netpdbopen.js).
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import { setupRenderer } from './setupRenderer.service';
-import { withUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
 import { streamFetchToReader, cancelStream } from './helpers/streamFetchToReader';
 import { applyReaderOptions } from './helpers/applyReaderOptions';
+import { fail, failFrom, ok, type Result } from '../../shared/result';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 const log = console;
 
@@ -22,10 +23,8 @@ export interface StreamLoadFromUrlArgs {
     options: FileOpenOptions;
 }
 
-export interface StreamLoadFromUrlResult {
-    ok: boolean;
-    canceled?: boolean;
-}
+/** `{ objId }` on success; a cancel is `fail(..., 'canceled')`. */
+export type StreamLoadFromUrlResult = Result<{ objId: number }>;
 
 export interface CancelStreamLoadArgs {
     reqId: string;
@@ -43,24 +42,29 @@ async function streamLoadFromUrl(
 
     const reader = ctx.strMgr.createHandler(args.readerName, 0) as ObjReader;
     if (!reader) {
-        throw new Error(`createHandler failed for reader "${args.readerName}"`);
+        return fail(`createHandler failed for reader "${args.readerName}"`, 'unsupported');
     }
 
     // Wire the dialog's format-specific reader options before streaming, the
     // same way the local file-open path does (readerName is the nickname).
     applyReaderOptions(reader, args.readerName, args.options.format);
 
-    const { obj, canceled } = await streamFetchToReader(ctx, {
-        reqId: args.reqId,
-        url: args.url,
-        reader,
-    });
+    let fetched: Awaited<ReturnType<typeof streamFetchToReader>>;
+    try {
+        fetched = await streamFetchToReader(ctx, { reqId: args.reqId, url: args.url, reader });
+    } catch (e) {
+        // HTTP error. The helper throws so its own cleanup runs on every path;
+        // it is converted here, at the service boundary.
+        return failFrom(e, 'io');
+    }
+    const { obj, canceled } = fetched;
 
-    if (canceled) return { ok: false, canceled: true };
-    if (!obj) return { ok: false };
+    if (canceled) return fail('download canceled', 'canceled');
+    if (!obj) return fail('the reader produced no object', 'io');
 
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
-    return withUndoTxn(scene, 'Get PDB', () => {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
+    return undoTxnResult(scene, 'Get PDB', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (obj as any).name = args.objectName;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,7 +75,7 @@ async function streamLoadFromUrl(
             (obj as any).name = args.options.renderer.objectName;
         }
         setupRenderer(ctx, obj, args.options.renderer);
-        return { ok: true };
+        return ok({ objId: (obj as unknown as { uid: number }).uid });
     });
 }
 

@@ -49,8 +49,8 @@ import type { GetMaterialNamesArgs, GetMaterialNamesResult } from '../server/ser
 import type { GetSiblingRendererNamesArgs, GetSiblingRendererNamesResult } from '../server/services/getSiblingRendererNames.service'
 import type { GetSelHitCountArgs, GetSelHitCountResult } from '../server/services/getSelHitCount.service'
 import type { SaveSelDefArgs, SaveSelDefResult } from '../server/services/saveSelDef.service'
-import type { LoadObjectArgs } from '../server/services/loadObject.service'
-import type { LoadTrajectoryArgs } from '../server/services/loadTrajectory.service'
+import type { LoadObjectArgs, LoadObjectResult } from '../server/services/loadObject.service'
+import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '../server/services/loadTrajectory.service'
 import type { GetTrajectoryRendererInfoResult } from '../server/services/getTrajectoryRendererInfo.service'
 import type {
   GetTrajectoryStateArgs,
@@ -73,7 +73,12 @@ import type {
   RemoveMorphFrameArgs,
   MorphFrameEditResult,
 } from '../server/services/morphMol.service'
-import type { LoadSceneArgs } from '../server/services/loadScene.service'
+import type {
+  LoadSceneArgs,
+  LoadSceneResult,
+  OpenSceneFileArgs,
+  OpenSceneFileResult,
+} from '../server/services/loadScene.service'
 import type {
   StreamLoadFromUrlArgs,
   StreamLoadFromUrlResult,
@@ -543,8 +548,8 @@ export interface ServiceMap {
   getSiblingRendererNames:    { args: GetSiblingRendererNamesArgs;     result: GetSiblingRendererNamesResult }
   getSelHitCount:             { args: GetSelHitCountArgs;              result: GetSelHitCountResult }
   saveSelDef:                 { args: SaveSelDefArgs;                  result: SaveSelDefResult }
-  loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
-  loadTrajectory:             { args: LoadTrajectoryArgs;              result: { ok: boolean; objId?: number } }
+  loadObject:                 { args: LoadObjectArgs;                  result: LoadObjectResult }
+  loadTrajectory:             { args: LoadTrajectoryArgs;              result: LoadTrajectoryResult }
   getTrajectoryRendererInfo:  { args: Record<string, never>;          result: GetTrajectoryRendererInfoResult }
   getTrajectoryState:         { args: GetTrajectoryStateArgs;          result: TrajectoryState }
   setTrajectoryFrame:         { args: SetTrajectoryFrameArgs;          result: SetTrajectoryFrameResult }
@@ -556,7 +561,8 @@ export interface ServiceMap {
   addMorphFrameFromFile:      { args: AddMorphFrameFromFileArgs;       result: MorphFrameEditResult }
   addMorphFrameFromMol:       { args: AddMorphFrameFromMolArgs;        result: MorphFrameEditResult }
   removeMorphFrame:           { args: RemoveMorphFrameArgs;            result: MorphFrameEditResult }
-  loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
+  loadScene:                  { args: LoadSceneArgs;                   result: LoadSceneResult }
+  openSceneFile:              { args: OpenSceneFileArgs;               result: OpenSceneFileResult }
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
   streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }
   cancelStreamLoad:           { args: CancelStreamLoadArgs;            result: CancelStreamLoadResult }

@@ -10,6 +10,7 @@
 import { useCallback } from 'react'
 import type { SceneBgColor } from '@shared/ipcTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { Result } from '../worker/shared/result'
 import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
@@ -23,7 +24,7 @@ import type { CoordServerType, MapServerType } from '../components/dialogs/GetPd
 import { useStreamProgressDialog, type StreamProgressApi } from '../components/dialogs/StreamProgressDialogProvider'
 import { pushHistory as pushPdbIdHistory } from '../components/dialogs/pdbIdHistory'
 import type { PresetTypeEntry } from '../components/fopen-opt-dlgs/types'
-import type { NewSceneAction } from '../hooks/useNewSceneAction'
+import type { NewSceneAction, OpenSceneFileAction } from '../hooks/useNewSceneAction'
 
 /**
  * Fetch the renderer presets (`<objType>-rendpreset` styles) for the
@@ -56,6 +57,8 @@ interface UseSceneCommandsOptions {
     /** Open the active scene in the generic property inspector (Scene > Properties...). */
     showSceneProperty?: (sceneId: number) => void
     newScene: NewSceneAction
+    /** Open a scene file in its own tab (created only once it has loaded). */
+    openSceneFile: OpenSceneFileAction
 }
 
 export function useSceneCommands({
@@ -64,6 +67,7 @@ export function useSceneCommands({
     onBgColorChanged,
     showSceneProperty,
     newScene,
+    openSceneFile,
 }: UseSceneCommandsOptions): void {
 
     const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
@@ -85,20 +89,36 @@ export function useSceneCommands({
                     'isSceneJustCreated', { sceneId: active.scene_uid },
                 )
                 if (justCreated) {
-                    await cm.loadScene(filePath, active.scene_uid)
+                    const loaded = await cm.loadScene(filePath, active.scene_uid)
+                    if (!loaded.ok) {
+                        await showErrorAlert({
+                            title: 'Open Scene failed',
+                            message: `Failed to open:\n${filePath}\n\n${loaded.error}`,
+                        })
+                        return
+                    }
                     addRecent(filePath, 'scene')
                     return
                 }
             }
         }
-        // Same path as app launch and File > New Tab (UXP onNewScene).
-        const created = await newScene()
-        if (!created) return
         if (filePath) {
-            await cm.loadScene(filePath, created.scene_uid)
+            // Scene, read and view are created together in the worker, so a
+            // file that cannot be read leaves no empty tab behind.
+            const opened = await openSceneFile(filePath)
+            if (!opened.ok) {
+                await showErrorAlert({
+                    title: 'Open Scene failed',
+                    message: `Failed to open:\n${filePath}\n\n${opened.error}`,
+                })
+                return
+            }
             addRecent(filePath, 'scene')
+            return
         }
-    }, [cm, newScene, getActiveSceneInfo])
+        // File > New Scene: same path as app launch (UXP onNewScene).
+        await newScene()
+    }, [cm, newScene, openSceneFile, getActiveSceneInfo, showErrorAlert])
 
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 
@@ -199,7 +219,14 @@ export function useSceneCommands({
                     // Pass the resolved readerName so the actual load uses the
                     // exact reader the dialog previewed (no re-sniff drift), and
                     // record it in the MRU so a future reopen reuses it.
-                    await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst, undefined, readerName)
+                    const loaded = await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst, undefined, readerName)
+                    if (!loaded.ok) {
+                        await showErrorAlert({
+                            title: 'Open File failed',
+                            message: `Failed to open:\n${data.path}\n\n${loaded.error}`,
+                        })
+                        return
+                    }
                     addRecent(data.path, 'obj', readerName)
                 } catch (e) {
                     const msg = e instanceof Error ? e.message : String(e)
@@ -249,13 +276,19 @@ export function useSceneCommands({
                     isMol: true,
                 })
                 if (!rend) return
-                await cm.loadTrajectory({
+                const loaded = await cm.loadTrajectory({
                     sceneId: info.scene_uid,
                     topologyPath: picked.topologyPath,
                     trajPaths: picked.trajPaths,
                     nevery: picked.nevery,
                     renderer: rend.rendOpts,
                 })
+                if (!loaded.ok) {
+                    await showErrorAlert({
+                        title: 'Open MD Trajectory failed',
+                        message: `Failed to open trajectory:\n${loaded.error}`,
+                    })
+                }
             } catch (e) {
                 const msg = e instanceof Error ? e.message : String(e)
                 console.error('OpenMdTraj failed:', e)
@@ -295,7 +328,7 @@ export function useSceneCommands({
                 // dedup, capped) so future invocations can quickly recall it.
                 pushPdbIdHistory(inputs.pdbid)
 
-                const tasks: Array<() => Promise<{ canceled?: boolean; ok: boolean }>> = []
+                const tasks: Array<() => Promise<Result<object>>> = []
 
                 // Coord task: same flow as Open File... + pre-resolved readerName.
                 if (inputs.coord) {
@@ -356,14 +389,23 @@ export function useSceneCommands({
                 if (inputs.map2fofc) tasks.push(buildMapTask(inputs.map2fofc.serverType, '2fofc'))
                 if (inputs.mapFofc)  tasks.push(buildMapTask(inputs.mapFofc.serverType,  'fofc'))
 
-                // Run sequentially. Stop the chain on user cancel or HTTP/error.
+                // Run sequentially. Stop the chain on user cancel or on any
+                // failure. Failures arrive as a Result now (never a rejection):
+                // the try/catch below is for genuine bugs only.
                 for (const task of tasks) {
                     try {
                         const result = await task()
-                        if (result.canceled) break
+                        if (result.ok) continue
+                        if (result.code === 'canceled') break
+                        console.error('Get PDB chain item failed:', result.error)
+                        await showErrorAlert({
+                            title: 'Get PDB failed',
+                            message: `A download or load step failed:\n\n${result.error}`,
+                        })
+                        break
                     } catch (e) {
                         const msg = e instanceof Error ? e.message : String(e)
-                        console.error('Get PDB chain item failed:', e)
+                        console.error('Get PDB chain item threw:', e)
                         await showErrorAlert({
                             title: 'Get PDB failed',
                             message: `A download or load step failed:\n\n${msg}`,
@@ -454,8 +496,8 @@ async function streamWithProgress(
     cm: AsyncCueMol,
     streamProgress: StreamProgressApi,
     title: string,
-    invoke: (reqId: string) => Promise<{ ok: boolean; canceled?: boolean }>,
-): Promise<{ ok: boolean; canceled?: boolean }> {
+    invoke: (reqId: string) => Promise<Result<object>>,
+): Promise<Result<object>> {
     const reqId = makeReqId()
     streamProgress.show({
         title,
