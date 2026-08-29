@@ -36,7 +36,7 @@ import {
   SCENE_AA_QUALITY_AXIS,
   sceneStepOf,
 } from "../../data/sceneQualityPresets";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { PropMultiWrite, RendererPropSectionProps } from "./rendererPropSections";
 
 /** Find a live property entry by key. */

@@ -6,6 +6,11 @@
  * renderer-type-specific sections resolved from `getRendererPropSections`.
  * Both are backed by the live `getGenericProps` / `setGenericProp` bridge.
  *
+ * A type-specific section is either a hand-written component or a schema --
+ * rows as data, rendered by `SchemaSection`. The per-type pages are being
+ * moved to the schema form one type at a time, so both appear here until that
+ * is done.
+ *
  * A renderer type with no registry entry gets a single collapsed placeholder
  * (`DUMMY_SECTION`) after the common page, so the tab is never blank.
  */
@@ -15,15 +20,17 @@ import { AccordionSection, AccordionGroup } from "./AccordionSection";
 import { RendererCommonSection } from "./RendererCommonSection";
 import { ObjectCommonSection } from "./ObjectCommonSection";
 import { RendGroupCommonSection } from "./RendGroupCommonSection";
+import { SchemaSection } from "./SchemaSection";
 import {
   DUMMY_SECTION,
   getRendererPropSections,
+  isComponentSection,
   type PropMultiWrite,
 } from "./rendererPropSections";
 import type {
   GenericPropEntry,
   PropWriteOpts,
-} from "../../worker/server/services/genericProps.service";
+} from '@renderer/worker/shared/genericProps';
 
 interface PropertiesTabProps {
   /** Live property list of the inspected node. */
@@ -50,6 +57,12 @@ interface PropertiesTabProps {
   sceneId: number | undefined;
   /** UID of the inspected node (for sections querying the node itself). */
   nodeId?: number;
+  /**
+   * UID of the molecule the node's selection properties are evaluated against,
+   * resolved worker-side by `getGenericProps`. Selection rows hand it to the
+   * picker so it can report how many atoms an expression matches.
+   */
+  molId?: number;
 }
 
 export const PropertiesTab: React.FC<PropertiesTabProps> = ({
@@ -61,6 +74,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   onReset,
   sceneId,
   nodeId,
+  molId,
 }) => {
   // Scene.name is a read-only C++ property, but a scene can be renamed via
   // setName() (setGenericProp routes the write). The Properties tab presents the
@@ -86,6 +100,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
             onReset={onReset}
             sceneId={sceneId}
             nodeId={nodeId}
+            molId={molId}
           />
         </AccordionGroup>
       </div>
@@ -106,6 +121,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
             onReset={onReset}
             sceneId={sceneId}
             nodeId={nodeId}
+            molId={molId}
           />
         </AccordionGroup>
       </div>
@@ -136,19 +152,41 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
           onReset={onReset}
           sceneId={sceneId}
           nodeId={nodeId}
+          molId={molId}
         />
-        {sections.map(({ key, title, defaultExpanded, Component }) => (
-          <AccordionSection key={key} title={title} defaultExpanded={defaultExpanded}>
-            <Component
+        {sections.map((section) =>
+          isComponentSection(section) ? (
+            <AccordionSection
+              key={section.key}
+              title={section.title}
+              defaultExpanded={section.defaultExpanded}
+            >
+              <section.Component
+                entries={displayEntries}
+                onSet={onSet}
+                onSetMany={onSetMany}
+                onReset={onReset}
+                sceneId={sceneId}
+                nodeId={nodeId}
+                molId={molId}
+              />
+            </AccordionSection>
+          ) : (
+            // A migrated page names its rows as data; the engine owns the
+            // accordion too, since a section can gate itself away entirely.
+            <SchemaSection
+              key={section.key}
+              section={section}
               entries={displayEntries}
-              onSet={onSet}
-              onSetMany={onSetMany}
-              onReset={onReset}
+              rendererType={rendererType}
               sceneId={sceneId}
               nodeId={nodeId}
+              molId={molId}
+              onSet={onSet}
+              onReset={onReset}
             />
-          </AccordionSection>
-        ))}
+          ),
+        )}
       </AccordionGroup>
     </div>
   );

@@ -9,15 +9,11 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { WorkerContext } from '../../types/WorkerContext';
-import type { SceneNodeType } from '@renderer/worker/shared/sceneTreeTypes';
+import type { PropTargetType } from '@renderer/worker/shared/genericProps';
 
-/**
- * Node kinds the generic property inspector can target. Extends the
- * scene-tree `SceneNodeType` with `view` - the View has no scene-tree
- * node (it is reached via the View menu) but its properties are edited
- * through the same generic path.
- */
-export type PropTargetType = SceneNodeType | 'view';
+// The target kind is a wire DTO shared with the renderer; see
+// worker/shared/genericProps.ts.
+export type { PropTargetType };
 
 export interface PropTargetRef {
     sceneId: number;

@@ -24,7 +24,7 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import { mountTree, pressStepArrow, flushPromises } from './helpers/testHarness'
-import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
@@ -49,9 +49,23 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
 
 import { ContourMainSection } from '../components/inspector/ContourRendererSection'
 import {
+
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
+
 
 beforeEach(() => {
   state.cm = null
@@ -153,7 +167,7 @@ describe('Contour renderer section registry', () => {
     const sections = getRendererPropSections('contour')
     expect(sections.map((s) => s.title)).toEqual(['Contour'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(sections[0].Component).toBe(ContourMainSection)
+    expect(componentOf(sections[0])).toBe(ContourMainSection)
     expect(RENDERER_SECTION_REGISTRY.contour).toBe(sections)
   })
 
@@ -161,7 +175,7 @@ describe('Contour renderer section registry', () => {
     const sections = getRendererPropSections('gpu_mapmesh')
     expect(sections.map((s) => s.title)).toEqual(['GPU contour'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(sections[0].Component).toBe(ContourMainSection)
+    expect(componentOf(sections[0])).toBe(ContourMainSection)
   })
 })
 

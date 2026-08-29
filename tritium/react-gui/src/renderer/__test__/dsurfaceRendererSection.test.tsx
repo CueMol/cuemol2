@@ -22,11 +22,11 @@ import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
 import { mountTree, pressStepArrow } from './helpers/testHarness'
-import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// rendererPropSections imports sibling sections (e.g. DisoRendererSection)
+// rendererPropSections imports sibling sections (e.g. the atomintr page)
 // whose rows pull in useCueMol and the colour leaf; stub both so the registry
 // import collects without the real worker / ColorPicker context.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
@@ -44,14 +44,25 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { DSURFACE_SECTIONS } from '../components/inspector/schema/dsurface'
 import {
-  DSurfaceMainSection,
-  DSurfaceRadiiSection,
-} from '../components/inspector/DSurfaceRendererSection'
-import {
+
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -121,21 +132,24 @@ describe('Direct-surface renderer section registry', () => {
     const sections = getRendererPropSections('dsurface')
     expect(sections.map((s) => s.title)).toEqual(['Surface', 'Atom radii'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(sections[0].Component).toBe(DSurfaceMainSection)
-    expect(sections[1].Component).toBe(DSurfaceRadiiSection)
+    // A migrated page is rows as data, not a component.
+    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
+    expect(sections.map(componentOf)).toEqual(['schema:dsurface-main', 'schema:dsurface-radii'])
     expect(RENDERER_SECTION_REGISTRY.dsurface).toBe(sections)
   })
 })
 
-describe('DSurfaceMainSection', () => {
+describe('the direct-surface Surface section', () => {
   it('renders the curated rows when present', () => {
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={mainEntries()}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     expect(rowByLabel(container, 'Drawing mode')).not.toBeNull()
@@ -147,12 +161,14 @@ describe('DSurfaceMainSection', () => {
 
   it('omits a row when its property is absent', () => {
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={[entry({ key: 'detail', type: 'integer', value: 6 })]}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     expect(rowByLabel(container, 'Detail')).not.toBeNull()
@@ -163,12 +179,14 @@ describe('DSurfaceMainSection', () => {
 
   it('renders Detail as a slider field (sweepable density, no drag arrows)', () => {
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={mainEntries()}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     const detail = rowByLabel(container, 'Detail')!
@@ -182,12 +200,14 @@ describe('DSurfaceMainSection', () => {
   it('commits a typed Detail as a single-step integer on blur', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={mainEntries()}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     const input = rowByLabel(container, 'Detail')!.querySelector(
@@ -204,12 +224,14 @@ describe('DSurfaceMainSection', () => {
   it('commits a drag-numeric row as a plain single step (Line/Point size)', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={mainEntries('line')}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     const incr = dragArrow(rowByLabel(container, 'Line/Point size')!)!
@@ -221,12 +243,14 @@ describe('DSurfaceMainSection', () => {
 
   it('disables the Line/Point size row while draw mode is "fill"', () => {
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={mainEntries('fill')}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     const drag = rowByLabel(container, 'Line/Point size')!.querySelector('.h3-form-drag')!
@@ -236,12 +260,14 @@ describe('DSurfaceMainSection', () => {
 
   it('enables the Line/Point size row in line / point draw modes', () => {
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={mainEntries('line')}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     const drag = rowByLabel(container, 'Line/Point size')!.querySelector('.h3-form-drag')!
@@ -252,12 +278,14 @@ describe('DSurfaceMainSection', () => {
   it('shows friendly enum labels but commits the raw enum ID (Surface type)', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={mainEntries()}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     const select = rowByLabel(container, 'Surface type')!.querySelector(
@@ -285,12 +313,14 @@ describe('DSurfaceMainSection', () => {
   it('shows friendly DRAWMODE_LABELS but commits the raw enum ID (Drawing mode)', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <DSurfaceMainSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[0]}
         entries={mainEntries()}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     const select = rowByLabel(container, 'Drawing mode')!.querySelector(
@@ -312,15 +342,17 @@ describe('DSurfaceMainSection', () => {
   })
 })
 
-describe('DSurfaceRadiiSection', () => {
+describe('the direct-surface Atom radii section', () => {
   it('renders the seven per-element radius rows in tab order', () => {
     const { container, unmount } = mountTree(
-      <DSurfaceRadiiSection
+      <SchemaSection
+        section={DSURFACE_SECTIONS[1]}
         entries={radiiEntries()}
+        rendererType="dsurface"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
-        nodeId={2}
       />,
     )
     for (const label of [

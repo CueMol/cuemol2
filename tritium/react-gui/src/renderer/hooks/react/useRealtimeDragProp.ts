@@ -12,7 +12,10 @@
  *   - `onCommit(original, value)` -- push a single undo step on release; the
  *     worker restores `original` first so the recorded step is
  *     `original -> value` rather than `lastPreview -> value`.
- *   - `onAbort(original)` -- restore the object to `original` (drag cancelled).
+ *   - `onAbort(original)` -- restore the object to `original` (a realtime drag
+ *     was cancelled). Not called without `realtime`: nothing was previewed, so
+ *     the object is still at `original` and a write would be a round trip that
+ *     changes nothing.
  *
  * While idle, the field tracks the committed value (so external changes -- undo,
  * scripts -- sync in). While dragging, the committed value is ignored so a
@@ -141,11 +144,14 @@ export function useRealtimeDragProp(
     }, [])
 
     const onDragCancel = useCallback(() => {
+        const wasRealtime = realtimeRef.current
         draggingRef.current = false
         pendingRef.current = null
         const original = originalRef.current
         setDraft(original)
-        cbRef.current.onAbort?.(original, originalIsDefaultRef.current)
+        // Only a realtime drag moved the object; a plain one never left
+        // `original`, so there is nothing to restore.
+        if (wasRealtime) cbRef.current.onAbort?.(original, originalIsDefaultRef.current)
     }, [])
 
     return { value: draft, realtime, onChange, onDragStart, onRelease, onDragCancel }

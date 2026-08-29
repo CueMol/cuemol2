@@ -33,7 +33,7 @@ import { MolSelList } from "../../h3-kit/MolSelList/MolSelList";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";
 import { isModified, isResettable, formatDefaultLabel } from "./propModel";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 type SetFn = RendererPropSectionProps["onSet"];
@@ -118,8 +118,8 @@ interface BoolRowProps extends RowProps {
 /**
  * Boolean toggle committed immediately (e.g. Visible / Locked).
  *
- * Exported so renderer-type-specific sections (e.g. `BallStickRendererSection`)
- * reuse the same toggle row contract instead of redefining it.
+ * Exported so the schema engine -- and the type-specific sections still to be
+ * migrated -- reuse the same toggle row contract instead of redefining it.
  */
 export const BoolRow: React.FC<BoolRowProps> = ({
   entry,
@@ -485,8 +485,8 @@ export interface ColorRowProps extends RowProps {
 /**
  * Colour editor committed on a completed change (e.g. Edge color).
  *
- * Exported so renderer-type-specific sections (e.g. `BallStickRendererSection`)
- * reuse the same colour row contract instead of redefining it.
+ * Exported so the schema engine -- and the type-specific sections still to be
+ * migrated -- reuse the same colour row contract instead of redefining it.
  */
 export const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
   <PropertyField label={label} {...resetProps(entry, onReset)}>
@@ -500,6 +500,12 @@ export const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, onReset
 
 export interface SelRowProps extends RowProps {
   sceneId: number | undefined;
+  /**
+   * The molecule the expression is evaluated against. Drives the picker's
+   * matched-atom count and its keyword suggestions; omit when the inspected
+   * node has no molecule and the count is simply not shown.
+   */
+  molId?: number;
   disabled?: boolean;
 }
 
@@ -516,6 +522,7 @@ export const SelRow: React.FC<SelRowProps> = ({
   onSet,
   onReset,
   sceneId,
+  molId,
   disabled,
 }) => {
   const [draft, setDraft] = useState(String(entry.value));
@@ -523,6 +530,7 @@ export const SelRow: React.FC<SelRowProps> = ({
     <PropertyField label={label} {...resetProps(entry, onReset)}>
       <MolSelList
         sceneID={sceneId ?? 0}
+        molID={molId}
         selectedSel={draft}
         onSelectedSelChange={setDraft}
         onCommit={(v) => {
@@ -608,6 +616,7 @@ export const RendererCommonSection: React.FC<RendererCommonSectionProps> = ({
   onSet,
   onReset,
   sceneId,
+  molId,
   rendererType,
 }) => {
   const byKey = new Map<string, GenericPropEntry>();
@@ -653,6 +662,7 @@ export const RendererCommonSection: React.FC<RendererCommonSectionProps> = ({
               onSet={onSet}
               onReset={onReset}
               sceneId={sceneId}
+              molId={molId}
             />
           )}
           {visible && (

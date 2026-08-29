@@ -15,7 +15,7 @@
 import React from "react";
 import { AccordionSection } from "./AccordionSection";
 import { TextRow, SelRow, BoolRow } from "./RendererCommonSection";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 export const ObjectCommonSection: React.FC<RendererPropSectionProps> = ({
@@ -23,6 +23,7 @@ export const ObjectCommonSection: React.FC<RendererPropSectionProps> = ({
   onSet,
   onReset,
   sceneId,
+  molId,
 }) => {
   const byKey = new Map<string, GenericPropEntry>();
   for (const e of entries) byKey.set(e.key, e);
@@ -57,6 +58,7 @@ export const ObjectCommonSection: React.FC<RendererPropSectionProps> = ({
           onSet={onSet}
           onReset={onReset}
           sceneId={sceneId}
+          molId={molId}
         />
       )}
       {visible && (

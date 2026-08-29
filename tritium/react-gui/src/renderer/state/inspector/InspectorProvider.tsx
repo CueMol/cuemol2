@@ -23,7 +23,7 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import type { GenericPropEntry, PropTargetType, PropWriteOpts } from '../../worker/server/services/genericProps.service'
+import type { GenericPropEntry, PropTargetType, PropWriteOpts } from '@renderer/worker/shared/genericProps'
 import { useCueMol } from '../../hooks/cuemol/useCueMol'
 import { useCueMolEventListener } from '../../hooks/cuemol/useCueMolEventListener'
 import { useLatestRef } from '../../hooks/react/useLatestRef'
@@ -66,6 +66,12 @@ export interface InspectorState {
   header: { name: string; type: string }
   /** Flat property entries for a node target (empty for anim elements). */
   entries: GenericPropEntry[]
+  /**
+   * UID of the molecule the target's selection properties are evaluated
+   * against, when it has one. The selection picker counts matched atoms with
+   * it; undefined just means no count is shown.
+   */
+  molId: number | undefined
   /** True while the entries are being (re)fetched. */
   loading: boolean
 }
@@ -150,6 +156,7 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
 
   const [target, setTarget] = useState<InspectorTarget | null>(null)
   const [entries, setEntries] = useState<GenericPropEntry[]>([])
+  const [molId, setMolId] = useState<number | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [nodeHeader, setNodeHeader] = useState(EMPTY_HEADER)
   // The anim element's header comes from AnimElementInspector's own fetch:
@@ -186,6 +193,7 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
     // self-fetches. Blank the generic state for them.
     if (!cm || !t || t.kind === 'animElement') {
       setEntries([])
+      setMolId(undefined)
       setNodeHeader(EMPTY_HEADER)
       return
     }
@@ -200,14 +208,17 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
       if (targetRef.current !== t) return
       if (res?.ok) {
         setEntries(res.entries)
+        setMolId(res.molId)
         setNodeHeader({ name: res.displayName, type: res.typeLabel })
       } else {
         setEntries([])
+        setMolId(undefined)
         setNodeHeader(EMPTY_HEADER)
       }
     } catch (err) {
       console.warn('getGenericProps failed:', err)
       setEntries([])
+      setMolId(undefined)
     } finally {
       if (targetRef.current === t) setLoading(false)
     }
@@ -375,9 +386,10 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
       category: !target ? '' : isAnim ? 'Animation' : (NODE_CATEGORY_LABELS[target.nodeType] ?? 'Node'),
       header: isAnim ? (animHeader ?? EMPTY_HEADER) : nodeHeader,
       entries,
+      molId,
       loading,
     }
-  }, [open, target, animHeader, nodeHeader, entries, loading])
+  }, [open, target, animHeader, nodeHeader, entries, molId, loading])
 
   return (
     <ActionsContext.Provider value={actions}>

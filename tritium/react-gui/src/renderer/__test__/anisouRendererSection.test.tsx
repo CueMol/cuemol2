@@ -5,8 +5,8 @@
  * renderer extends `BallStickRenderer` and adds ORTEP-like disc controls; it has
  * no dedicated UXP property dialog, so the page is composed from two registry
  * sections:
- *   - the shared `BallStickRendererSection` for the inherited base controls;
- *   - `AnIsoUDiscSection` for the anisou-only disc controls (drawdisc /
+ *   - the shared ball-and-stick rows for the inherited base controls;
+ *   - its own disc section for the anisou-only controls (drawdisc /
  *     discscale / discthick).
  *
  * The pins:
@@ -23,7 +23,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
-import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
@@ -32,13 +32,26 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import { AnIsoUDiscSection } from '../components/inspector/AnIsoURendererSection'
-import { BallStickRendererSection } from '../components/inspector/BallStickRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { ANISOU_SECTIONS } from '../components/inspector/schema/anisou'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -88,20 +101,24 @@ describe('AnIsoURenderer section registry', () => {
       'Anisotropic displacement',
     ])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(sections[0].Component).toBe(BallStickRendererSection)
-    expect(sections[1].Component).toBe(AnIsoUDiscSection)
+    // A migrated page is rows as data, not a component.
+    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
+    expect(sections.map(componentOf)).toEqual(['schema:anisou-ballstick', 'schema:anisou-disc'])
     expect(RENDERER_SECTION_REGISTRY.anisou).toBe(sections)
   })
 })
 
-describe('AnIsoUDiscSection', () => {
+describe('the anisotropic-displacement section', () => {
   it('renders drawdisc, scale and thickness rows when present', () => {
     const { container, unmount } = mountTree(
-      <AnIsoUDiscSection
+      <SchemaSection
+        section={ANISOU_SECTIONS[1]}
         entries={fullEntries()}
+        rendererType="anisou"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(rowByLabel(container, 'Draw disc')).not.toBeNull()
@@ -114,11 +131,14 @@ describe('AnIsoUDiscSection', () => {
 
   it('omits a disc row when its property is absent', () => {
     const { container, unmount } = mountTree(
-      <AnIsoUDiscSection
+      <SchemaSection
+        section={ANISOU_SECTIONS[1]}
         entries={[entry({ key: 'drawdisc', type: 'boolean', value: true })]}
+        rendererType="anisou"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     expect(rowByLabel(container, 'Draw disc')).not.toBeNull()
@@ -133,7 +153,15 @@ describe('AnIsoUDiscSection', () => {
       entry({ key: 'discthick', type: 'real', value: 0.1 }),
     ]
     const { container, unmount } = mountTree(
-      <AnIsoUDiscSection entries={off} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection
+        section={ANISOU_SECTIONS[1]}
+        entries={off}
+        rendererType="anisou"
+        sceneId={1}
+        nodeId={100}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+      />,
     )
     const scaleArrow = rowByLabel(container, 'Disc scale')!.querySelector(
       '.h3-form-drag-arrow-right',
@@ -148,11 +176,14 @@ describe('AnIsoUDiscSection', () => {
 
   it('enables scale and thickness while drawdisc is on', () => {
     const { container, unmount } = mountTree(
-      <AnIsoUDiscSection
+      <SchemaSection
+        section={ANISOU_SECTIONS[1]}
         entries={fullEntries()}
+        rendererType="anisou"
+        sceneId={1}
+        nodeId={100}
         onSet={vi.fn()}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const scaleArrow = rowByLabel(container, 'Disc scale')!.querySelector(
@@ -165,11 +196,14 @@ describe('AnIsoUDiscSection', () => {
   it('commits a plain single-step change of disc scale on the step arrow', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <AnIsoUDiscSection
+      <SchemaSection
+        section={ANISOU_SECTIONS[1]}
         entries={fullEntries()}
+        rendererType="anisou"
+        sceneId={1}
+        nodeId={100}
         onSet={onSet}
         onReset={vi.fn()}
-        sceneId={1}
       />,
     )
     const incr = rowByLabel(container, 'Disc scale')!.querySelector(

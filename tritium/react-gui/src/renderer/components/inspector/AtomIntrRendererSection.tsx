@@ -47,7 +47,7 @@ import {
   SwitchField,
   NumberCell,
 } from "../../h3-kit/form";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type {
   RendererPropSectionProps,
   PropMultiWrite,
@@ -396,6 +396,11 @@ export const AtomIntrLabelSection: React.FC<RendererPropSectionProps> = ({
       )}
       {fontName && (
         <TextRow
+          // TextRow holds a local draft, so a change from anywhere else (an
+          // undo, a script) has to remount it or the field keeps showing what
+          // the user last typed. Every other draft-holding row is keyed this
+          // way; this one was missed.
+          key={`fontname:${fontName.value}`}
           entry={fontName}
           label="Font name"
           onSet={onSet}

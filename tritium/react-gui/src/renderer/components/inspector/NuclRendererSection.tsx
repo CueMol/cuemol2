@@ -41,7 +41,7 @@ import {
 } from "./TubeRendererSection";
 import { PropertyField, DragNumericField } from "../../h3-kit/form";
 import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 // --- Local rows ---------------------------------------------------------------

@@ -19,7 +19,7 @@ import {
   msToCppTime,
 } from '../components/inspector/GenericTab'
 import { parseVector, formatVector } from '../h3-kit/form'
-import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 

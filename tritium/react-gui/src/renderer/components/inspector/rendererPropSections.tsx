@@ -16,21 +16,25 @@
  */
 
 import React from "react";
+import type { SchemaSectionDef } from "./schema/types";
+import { SIMPLE_SECTIONS, TRACE_SECTIONS } from "./schema/simple";
+import { ANISOU_SECTIONS } from "./schema/anisou";
+import { BALLSTICK_SECTIONS } from "./schema/ballstick";
+import { CPK_SECTIONS } from "./schema/cpk";
+import { DISORDER_SECTIONS } from "./schema/disorder";
+import { MOLSURF_SECTIONS } from "./schema/molsurf";
+import { SPLINE_SECTIONS } from "./schema/spline";
+import { DSURF2_SECTIONS, DSURFACE_SECTIONS } from "./schema/dsurface";
 import type {
   GenericPropEntry,
   PropWriteOpts,
-} from "../../worker/server/services/genericProps.service";
-import { SimpleRendererSection } from "./SimpleRendererSection";
-import { SplineMainSection } from "./SplineRendererSection";
-import { BallStickRendererSection } from "./BallStickRendererSection";
-import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
+} from '@renderer/worker/shared/genericProps';
 import {
   SceneAmbientOcclusionSection,
   SceneAntialiasingSection,
   SceneBackgroundSection,
   SceneColorProofingSection,
 } from "./SceneRenderingSection";
-import { AnIsoUDiscSection } from "./AnIsoURendererSection";
 import {
   AtomIntrMainSection,
   AtomIntrDashedSection,
@@ -45,12 +49,6 @@ import {
 } from "./CartoonRendererSection";
 import { ContourMainSection } from "./ContourRendererSection";
 import { IsosurfMainSection } from "./IsosurfRendererSection";
-import { MolSurfMainSection } from "./MolSurfRendererSection";
-import { DisoMainSection } from "./DisoRendererSection";
-import {
-  DSurfaceMainSection,
-  DSurfaceRadiiSection,
-} from "./DSurfaceRendererSection";
 import {
   TubeMainSection,
   TubeSectionSection,
@@ -114,10 +112,27 @@ export interface RendererPropSectionProps {
    * always supplies it in production.
    */
   nodeId?: number;
+  /**
+   * UID of the molecule the node's selection properties are evaluated against
+   * (resolved worker-side). Selection rows pass it to the picker so it can
+   * count matched atoms; undefined when the node has no molecule.
+   */
+  molId?: number;
 }
 
-/** One accordion section in the Properties tab. */
-export interface RendererPropSectionDef {
+/**
+ * One accordion section in the Properties tab.
+ *
+ * A section either names its rows as data (`rows`, rendered by
+ * `SchemaSection`) or supplies a component that renders them itself. The
+ * schema form is where the per-type pages are heading; the component form is
+ * what the types not migrated yet still use, so the registry carries both
+ * while that is true.
+ */
+export type RendererPropSectionDef = SchemaSectionDef | ComponentSectionDef;
+
+/** A section whose body is a hand-written component. */
+export interface ComponentSectionDef {
   /** Stable React key / accordion identity. */
   key: string;
   /** Accordion header title. */
@@ -126,6 +141,13 @@ export interface RendererPropSectionDef {
   defaultExpanded?: boolean;
   /** Section body. */
   Component: React.FC<RendererPropSectionProps>;
+}
+
+/** Narrow a registry entry to the component form. */
+export function isComponentSection(
+  section: RendererPropSectionDef,
+): section is ComponentSectionDef {
+  return 'Component' in section;
 }
 
 // ------------------------------------------------------------
@@ -170,77 +192,23 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
     },
   ],
   // SimpleRenderer ("simple"): UXP simple-propdlg "Simple" tab -- line width only.
-  simple: [
-    {
-      key: "simple",
-      title: "Simple",
-      defaultExpanded: true,
-      Component: SimpleRendererSection,
-    },
-  ],
+  simple: SIMPLE_SECTIONS,
   // TraceRenderer ("trace"): shares the UXP simple-propdlg with SimpleRenderer
   // (line width only), so the same SimpleRendererSection is reused here.
-  trace: [
-    {
-      key: "trace",
-      title: "Trace",
-      defaultExpanded: true,
-      Component: SimpleRendererSection,
-    },
-  ],
+  trace: TRACE_SECTIONS,
   // SplineRenderer ("spline"): no dedicated UXP dialog; curated from the C++
   // SplineRenderer.qif. A single section (no nested cross-section / putty), the
   // tube cap-type props are omitted (non-functional on a line).
-  spline: [
-    {
-      key: "spline",
-      title: "Spline",
-      defaultExpanded: true,
-      Component: SplineMainSection,
-    },
-  ],
+  spline: SPLINE_SECTIONS,
   // BallStickRenderer ("ballstick"): UXP ballstick-propdlg "Ball & Stick" tab.
-  ballstick: [
-    {
-      key: "ballstick",
-      title: "Ball and stick",
-      defaultExpanded: true,
-      Component: BallStickRendererSection,
-    },
-  ],
+  ballstick: BALLSTICK_SECTIONS,
   // CPKRenderer ("cpk"): UXP cpk-propdlg "Atom radii" tab. The seven per-element
   // radii form the "Atom radii" groupbox; `detail` is a loose row outside it.
-  cpk: [
-    {
-      key: "cpk-radii",
-      title: "Atom radii",
-      defaultExpanded: true,
-      Component: CPKAtomRadiiSection,
-    },
-    {
-      key: "cpk-detail",
-      title: "Detail",
-      defaultExpanded: true,
-      Component: CPKDetailSection,
-    },
-  ],
+  cpk: CPK_SECTIONS,
   // AnIsoURenderer ("anisou"): ORTEP-like anisotropic-displacement variant of
   // ball-and-stick. The inherited base controls reuse the shared ball-and-stick
   // section; the disc-only controls live in their own section.
-  anisou: [
-    {
-      key: "anisou-ballstick",
-      title: "Atoms and bonds",
-      defaultExpanded: true,
-      Component: BallStickRendererSection,
-    },
-    {
-      key: "anisou-disc",
-      title: "Anisotropic displacement",
-      defaultExpanded: true,
-      Component: AnIsoUDiscSection,
-    },
-  ],
+  anisou: ANISOU_SECTIONS,
   // AtomIntrRenderer ("atomintr"): UXP atomintr-propdlg "Interaction" tab.
   // The line / dashed-pattern / 3D-tube / label-font groupboxes become four
   // accordion sections; the dashed toggle writes all six stipple values in one
@@ -343,65 +311,25 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // DisoRenderer ("disorder"): UXP disorder-propdlg "Disorder" tab. One section
   // surfacing the target main-chain renderer, tessellation detail, dot size /
   // separation, the two loop strengths and the default color.
-  disorder: [
-    {
-      key: "disorder-main",
-      title: "Disorder",
-      defaultExpanded: true,
-      Component: DisoMainSection,
-    },
-  ],
+  disorder: DISORDER_SECTIONS,
   // DirectSurfRenderer ("dsurface"): UXP dsurf-propdlg "MolSurf" + "Atom radii"
   // tabs. The MolSurf "Draw" groupbox (draw mode / line-point size / surface
   // type / detail) becomes the "Surface" section; the per-element van der Waals
   // radii form the "Atom radii" section. The MolSurf coloring controls (target /
   // showsel / coloring mode) stay out (UXP Coloring panel, not migrated yet).
-  dsurface: [
-    {
-      key: "dsurface-main",
-      title: "Surface",
-      defaultExpanded: true,
-      Component: DSurfaceMainSection,
-    },
-    {
-      key: "dsurface-radii",
-      title: "Atom radii",
-      defaultExpanded: true,
-      Component: DSurfaceRadiiSection,
-    },
-  ],
+  dsurface: DSURFACE_SECTIONS,
   // DirectSurfRenderer2 ("dsurf2"): the distance-field surface.
   // Temporary exposure alongside dsurface -- it shares the same property set
   // (surftype / detail / proberad / draw mode / per-element radii), so it
   // reuses the dsurface property sections verbatim.
-  dsurf2: [
-    {
-      key: "dsurf2-main",
-      title: "Surface",
-      defaultExpanded: true,
-      Component: DSurfaceMainSection,
-    },
-    {
-      key: "dsurf2-radii",
-      title: "Atom radii",
-      defaultExpanded: true,
-      Component: DSurfaceRadiiSection,
-    },
-  ],
+  dsurf2: DSURF2_SECTIONS,
   // MolSurfRenderer ("molsurf"): UXP molsurf-propdlg "MolSurf" tab (shared
   // molsurf-page with dsurface, but Surface type / Detail / Atom radii are
   // dsurface-only while the "Selection mol" target is molsurf-only). One section:
   // drawing mode, line/point size (off for fill), reference-molecule target and
   // shown selection. Coloring (colormode + the colors that go with it) is owned
   // by the Coloring panel (ColorPane), same as isosurf and dsurface.
-  molsurf: [
-    {
-      key: "molsurf-main",
-      title: "MolSurf",
-      defaultExpanded: true,
-      Component: MolSurfMainSection,
-    },
-  ],
+  molsurf: MOLSURF_SECTIONS,
   // TubeRenderer ("tube"): UXP tube-propdlg "Tube" tab. The loose controls form
   // the "Tube" section; the nested TubeSection shape (edited via dot-path keys
   // section.type / section.width / ...) forms the "Section" section; the putty

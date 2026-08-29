@@ -44,6 +44,8 @@ export { SwitchField } from './SwitchField';
 export type { SwitchFieldProps } from './SwitchField';
 export { CheckboxField } from './CheckboxField';
 export type { CheckboxFieldProps } from './CheckboxField';
+export { GatedControl } from './GatedControl';
+export type { GatedControlProps } from './GatedControl';
 export { RadioField } from './RadioField';
 export type { RadioFieldProps, RadioFieldOption } from './RadioField';
 export { ColorField } from './ColorField';

@@ -1,0 +1,8097 @@
+{
+ "simple": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.268829,9.787284,6.967089)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "simple",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 33,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 33,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "valbond",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vb_scl1",
+   "type": "real",
+   "value": 0.1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vb_scl2",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "trace": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.560435,9.950913,7.107652)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "pivotatom",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "trace",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 34,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 34,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "spline": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "axialdetail",
+   "type": "integer",
+   "value": 6,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 6,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.560435,9.950913,7.107652)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "end_captype",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "line_width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "pivotatom",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "segend_fade",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "smooth",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "smoothcolor",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "start_captype",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "spline",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 35,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 35,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "ballstick": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bondw",
+   "type": "real",
+   "value": 0.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.268829,9.787284,6.967089)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "detail",
+   "type": "integer",
+   "value": 3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "glrender_mode",
+   "type": "enum",
+   "value": "default",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "default",
+   "enumdef": [
+    "default",
+    "glu",
+    "shader",
+    "vbo"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ring",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ringcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFBF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sphr",
+   "type": "real",
+   "value": 0.3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "thickness",
+   "type": "real",
+   "value": 0.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "ballstick",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 36,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 36,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "valbond_mode",
+   "type": "enum",
+   "value": "off",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "off",
+   "enumdef": [
+    "off",
+    "type1"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "cpk": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.268829,9.787284,6.967089)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "detail",
+   "type": "integer",
+   "value": 10,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 10,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "glrender_mode",
+   "type": "enum",
+   "value": "default",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "default",
+   "enumdef": [
+    "default",
+    "glu",
+    "shader",
+    "vbo"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "cpk",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 37,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 37,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_C",
+   "type": "real",
+   "value": 1.7,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.7,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_H",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_N",
+   "type": "real",
+   "value": 1.55,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.55,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_O",
+   "type": "real",
+   "value": 1.52,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.52,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_P",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_S",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_X",
+   "type": "real",
+   "value": 1.7,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.7,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "anisou": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bondw",
+   "type": "real",
+   "value": 0.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.268829,9.787284,6.967089)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "detail",
+   "type": "integer",
+   "value": 3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "discscale",
+   "type": "real",
+   "value": 1.1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "discthick",
+   "type": "real",
+   "value": 0.1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "drawdisc",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "glrender_mode",
+   "type": "enum",
+   "value": "default",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "default",
+   "enumdef": [
+    "default",
+    "glu",
+    "shader",
+    "vbo"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "maxverts",
+   "type": "integer",
+   "value": 1000000,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1000000,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ring",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ringcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFBF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sphr",
+   "type": "real",
+   "value": 0.3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "thickness",
+   "type": "real",
+   "value": 0.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "anisou",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 38,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 38,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "valbond_mode",
+   "type": "enum",
+   "value": "off",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "off",
+   "enumdef": [
+    "off",
+    "type1"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "atomintr": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "arrowheight",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "arrowwidth",
+   "type": "real",
+   "value": 2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "captype_end",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "captype_start",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(0,0,0)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "color",
+   "type": "object<AbstractColor>",
+   "value": "#FFFF00",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "detail",
+   "type": "integer",
+   "value": 5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "font_name",
+   "type": "string",
+   "value": "sans-serif",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sans-serif",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "font_size",
+   "type": "real",
+   "value": 12,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 12,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "font_style",
+   "type": "string",
+   "value": "normal",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "normal",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "font_weight",
+   "type": "string",
+   "value": "normal",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "normal",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "mode",
+   "type": "enum",
+   "value": "fancy",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "fancy",
+   "enumdef": [
+    "fancy",
+    "simple"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "showlabel",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "stipple0",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "stipple1",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "stipple2",
+   "type": "real",
+   "value": -1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "stipple3",
+   "type": "real",
+   "value": -1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "stipple4",
+   "type": "real",
+   "value": -1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "stipple5",
+   "type": "real",
+   "value": -1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "atomintr",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 39,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 39,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 0.1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "cartoon": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "anchor_sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "anchor_weight",
+   "type": "real",
+   "value": 10,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 10,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "axialdetail",
+   "type": "integer",
+   "value": 8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 8,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.560435,9.950913,7.107652)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coil",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "coil.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil_smooth",
+   "type": "real",
+   "value": -1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "dump_curvature",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "end_captype",
+   "type": "enum",
+   "value": "flat",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "flat",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "helix.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix_extend",
+   "type": "real",
+   "value": 0.5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_ribbon",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_smooth",
+   "type": "real",
+   "value": 3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_waver",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_width",
+   "type": "real",
+   "value": 2.3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2.3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_width_mode",
+   "type": "enum",
+   "value": "average",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "average",
+   "enumdef": [
+    "average",
+    "const",
+    "wavy"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_wplus",
+   "type": "real",
+   "value": 0.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_wsmooth",
+   "type": "real",
+   "value": 5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "pivotatom",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ribhelix",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "ribhelix.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix_head",
+   "type": "object<JctTable>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "ribhelix_head.arrow",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix_head.basw",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix_head.gamma",
+   "type": "real",
+   "value": 2.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2.2,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix_head.type",
+   "type": "enum",
+   "value": "arrow",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "smooth",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "smooth"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix_tail",
+   "type": "object<JctTable>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "ribhelix_tail.arrow",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix_tail.basw",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix_tail.gamma",
+   "type": "real",
+   "value": 2.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2.2,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "ribhelix_tail.type",
+   "type": "enum",
+   "value": "arrow",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "smooth",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "smooth"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "segend_fade",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sheet",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "sheet.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet_smooth",
+   "type": "real",
+   "value": 2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sheet_wsmooth",
+   "type": "real",
+   "value": 5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sheethead",
+   "type": "object<JctTable>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "sheethead.arrow",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheethead.basw",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheethead.gamma",
+   "type": "real",
+   "value": 2.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2.2,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheethead.type",
+   "type": "enum",
+   "value": "arrow",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "smooth",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "smooth"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "smoothcolor",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "start_captype",
+   "type": "enum",
+   "value": "flat",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "flat",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "cartoon",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 40,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 40,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "tube": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "axialdetail",
+   "type": "integer",
+   "value": 6,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 6,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.560435,9.950913,7.107652)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "end_captype",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "line_width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "pivotatom",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "putty_hiscl",
+   "type": "real",
+   "value": 3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "putty_loscl",
+   "type": "real",
+   "value": 3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "putty_mode",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "linear1",
+    "none",
+    "scale1"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "putty_tgt",
+   "type": "enum",
+   "value": "bfac",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "bfac",
+   "enumdef": [
+    "bfac",
+    "occ"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "section",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "section.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "section.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "section.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "section.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "section.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "segend_fade",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "smooth",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "smoothcolor",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "start_captype",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "tube",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 41,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 41,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "ribbon": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "axialdetail",
+   "type": "integer",
+   "value": 6,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 6,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.560435,9.950913,7.107652)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coil",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "coil.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "coil_smooth",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "end_captype",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "helix.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helix_backcol",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_smooth",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helix_usebackcol",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "helixhead",
+   "type": "object<JctTable>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "helixhead.arrow",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helixhead.basw",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helixhead.gamma",
+   "type": "real",
+   "value": 2.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2.2,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helixhead.type",
+   "type": "enum",
+   "value": "arrow",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "smooth",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "smooth"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helixtail",
+   "type": "object<JctTable>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "helixtail.arrow",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helixtail.basw",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helixtail.gamma",
+   "type": "real",
+   "value": 2.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2.2,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "helixtail.type",
+   "type": "enum",
+   "value": "arrow",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "smooth",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "smooth"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "line_width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "pivotatom",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "segend_fade",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sheet",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "sheet.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheet_sidecol",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sheet_smooth",
+   "type": "real",
+   "value": 0.5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sheet_usesidecol",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sheethead",
+   "type": "object<JctTable>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "sheethead.arrow",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheethead.basw",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheethead.gamma",
+   "type": "real",
+   "value": 2.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2.2,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheethead.type",
+   "type": "enum",
+   "value": "arrow",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "smooth",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "smooth"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheettail",
+   "type": "object<JctTable>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "sheettail.arrow",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheettail.basw",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheettail.gamma",
+   "type": "real",
+   "value": 2.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2.2,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "sheettail.type",
+   "type": "enum",
+   "value": "arrow",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "smooth",
+   "enumdef": [
+    "arrow",
+    "flat",
+    "smooth"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "smooth",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "smoothcolor",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "start_captype",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "ribbon",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 42,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 42,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "nucl": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "axialdetail",
+   "type": "integer",
+   "value": 6,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 6,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "base_detail",
+   "type": "integer",
+   "value": 3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "base_size",
+   "type": "real",
+   "value": 0.5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "base_thick",
+   "type": "real",
+   "value": 0.5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "base_type",
+   "type": "enum",
+   "value": "basepair",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "basepair",
+   "enumdef": [
+    "basepair",
+    "detail1",
+    "detail2",
+    "simple1"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.560435,9.950913,7.107652)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "end_captype",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "line_width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "pivotatom",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "putty_hiscl",
+   "type": "real",
+   "value": 3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "putty_loscl",
+   "type": "real",
+   "value": 3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "putty_mode",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "linear1",
+    "none",
+    "scale1"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "putty_tgt",
+   "type": "enum",
+   "value": "bfac",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "bfac",
+   "enumdef": [
+    "bfac",
+    "occ"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "section",
+   "type": "object<TubeSection>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "section.detail",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "section.sharp",
+   "type": "real",
+   "value": 0.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.4,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "section.tuber",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "section.type",
+   "type": "enum",
+   "value": "elliptical",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "elliptical",
+   "enumdef": [
+    "elliptical",
+    "fancy1",
+    "rectangle",
+    "roundsquare"
+   ],
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "section.width",
+   "type": "real",
+   "value": 0.35,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.35,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "segend_fade",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "show_basepair",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "show_tube",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "smooth",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "smoothcolor",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "start_captype",
+   "type": "enum",
+   "value": "sphere",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "sphere",
+   "enumdef": [
+    "flat",
+    "none",
+    "sphere"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "nucl",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 43,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 43,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "molsurf": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(0,0,0)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "color_mapname",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "colormode",
+   "type": "enum",
+   "value": "solid",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "solid",
+   "enumdef": [
+    "molecule",
+    "multigrad",
+    "potential",
+    "solid"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "cullface",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#C0C0FF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "drawmode",
+   "type": "enum",
+   "value": "fill",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "fill",
+   "enumdef": [
+    "fill",
+    "line",
+    "point"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "elepot",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": false,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "highcol",
+   "type": "object<AbstractColor>",
+   "value": "#0000FF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "highpar",
+   "type": "real",
+   "value": 10,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 10,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lowcol",
+   "type": "object<AbstractColor>",
+   "value": "#FF0000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lowpar",
+   "type": "real",
+   "value": -10,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -10,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "midcol",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "midpar",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "multi_grad",
+   "type": "object<MultiGradient>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "multi_grad.size",
+   "type": "integer",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ramp_above",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ramp_value",
+   "type": "real",
+   "value": 1.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.4,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "showsel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "target",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "molsurf",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 45,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 45,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "dsurface": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.268829,9.787284,6.967089)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "colormode",
+   "type": "enum",
+   "value": "molecule",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "molecule",
+   "enumdef": [
+    "molecule",
+    "potential"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "cullface",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "detail",
+   "type": "integer",
+   "value": 6,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 6,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "drawmode",
+   "type": "enum",
+   "value": "fill",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "fill",
+   "enumdef": [
+    "fill",
+    "line",
+    "point"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "elepot",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "highcol",
+   "type": "object<AbstractColor>",
+   "value": "#0000FF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "highpar",
+   "type": "real",
+   "value": 10,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 10,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lowcol",
+   "type": "object<AbstractColor>",
+   "value": "#FF0000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lowpar",
+   "type": "real",
+   "value": -10,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -10,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "midcol",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "midpar",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "proberad",
+   "type": "real",
+   "value": 1.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.4,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ramp_above",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ramp_value",
+   "type": "real",
+   "value": 1.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.4,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "showsel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "surfalgor",
+   "type": "enum",
+   "value": "edtsurf",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "edtsurf",
+   "enumdef": [
+    "edtsurf",
+    "msms"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "surftype",
+   "type": "enum",
+   "value": "ses",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "ses",
+   "enumdef": [
+    "sas",
+    "ses",
+    "vdw"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "target",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "dsurface",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 46,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 46,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_C",
+   "type": "real",
+   "value": 1.7,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.7,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_H",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_N",
+   "type": "real",
+   "value": 1.55,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.55,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_O",
+   "type": "real",
+   "value": 1.52,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.52,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_P",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_S",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_X",
+   "type": "real",
+   "value": 1.7,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.7,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "dsurf2": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.268829,9.787284,6.967089)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "colormode",
+   "type": "enum",
+   "value": "molecule",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "molecule",
+   "enumdef": [
+    "molecule",
+    "potential"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "cullface",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "detail",
+   "type": "integer",
+   "value": 6,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 6,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "drawmode",
+   "type": "enum",
+   "value": "fill",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "fill",
+   "enumdef": [
+    "fill",
+    "line",
+    "point"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "elepot",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "highcol",
+   "type": "object<AbstractColor>",
+   "value": "#0000FF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "highpar",
+   "type": "real",
+   "value": 10,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 10,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lowcol",
+   "type": "object<AbstractColor>",
+   "value": "#FF0000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lowpar",
+   "type": "real",
+   "value": -10,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -10,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "midcol",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "midpar",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "proberad",
+   "type": "real",
+   "value": 1.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.4,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ramp_above",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ramp_value",
+   "type": "real",
+   "value": 1.4,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.4,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "showsel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "surftype",
+   "type": "enum",
+   "value": "ses",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "ses",
+   "enumdef": [
+    "sas",
+    "ses",
+    "vdw"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "target",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "dsurf2",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 47,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 47,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_C",
+   "type": "real",
+   "value": 1.7,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.7,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_H",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_N",
+   "type": "real",
+   "value": 1.55,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.55,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_O",
+   "type": "real",
+   "value": 1.52,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.52,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_P",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_S",
+   "type": "real",
+   "value": 1.8,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.8,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "vdwr_X",
+   "type": "real",
+   "value": 1.7,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.7,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "disorder": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(9.268829,9.787284,6.967089)",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#FFFFFF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "detail",
+   "type": "integer",
+   "value": 5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "dotsep",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "loopsize",
+   "type": "real",
+   "value": 2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "loopsize2",
+   "type": "real",
+   "value": -1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": -1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 30,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "target",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "disorder",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 48,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 48,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 0.3,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.3,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "contour": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "autoupdate",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_molname",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_rng",
+   "type": "real",
+   "value": 5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bufsize",
+   "type": "integer",
+   "value": 100,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 100,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(0,0,0)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "color",
+   "type": "object<AbstractColor>",
+   "value": "#0000FF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "color_mapname",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "colormode",
+   "type": "enum",
+   "value": "solid",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "solid",
+   "enumdef": [
+    "molecule",
+    "multigrad",
+    "solid"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#0000FF",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "dragupdate",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "extent",
+   "type": "real",
+   "value": 15,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 15,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "level",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lod",
+   "type": "enum",
+   "value": "auto",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "auto",
+   "enumdef": [
+    "auto",
+    "step1",
+    "step2",
+    "step4",
+    "step8"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lod_budget",
+   "type": "integer",
+   "value": 2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "maxExtent",
+   "type": "real",
+   "value": 1,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "maxLevel",
+   "type": "real",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "minLevel",
+   "type": "real",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "multi_grad",
+   "type": "object<MultiGradient>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "multi_grad.size",
+   "type": "integer",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "region_mode",
+   "type": "enum",
+   "value": "auto",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "auto",
+   "enumdef": [
+    "auto",
+    "box",
+    "full"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "region_mode_resolved",
+   "type": "string",
+   "value": "box",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 49,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "siglevel",
+   "type": "real",
+   "value": 1.1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "contour",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 52,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 52,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "use_abslevel",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "use_pbc",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "zoom_refine",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "gpu_mapmesh": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "autoupdate",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_molname",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_rng",
+   "type": "real",
+   "value": 5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bufsize",
+   "type": "integer",
+   "value": 100,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 100,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(0,0,0)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "color",
+   "type": "object<AbstractColor>",
+   "value": "#00FF00",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "color_mapname",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "colormode",
+   "type": "enum",
+   "value": "solid",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "solid",
+   "enumdef": [
+    "molecule",
+    "multigrad",
+    "solid"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#00FF00",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "dragupdate",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "extent",
+   "type": "real",
+   "value": 15,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 15,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "level",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lod",
+   "type": "enum",
+   "value": "auto",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "auto",
+   "enumdef": [
+    "auto",
+    "step1",
+    "step2",
+    "step4",
+    "step8"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lod_budget",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "maxExtent",
+   "type": "real",
+   "value": 1,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "maxLevel",
+   "type": "real",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "minLevel",
+   "type": "real",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "multi_grad",
+   "type": "object<MultiGradient>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "multi_grad.size",
+   "type": "integer",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "region_mode",
+   "type": "enum",
+   "value": "auto",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "auto",
+   "enumdef": [
+    "auto",
+    "box",
+    "full"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "region_mode_resolved",
+   "type": "string",
+   "value": "box",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 49,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "siglevel",
+   "type": "real",
+   "value": 1.1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "gpu_mapmesh",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 53,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 53,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "use_abslevel",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "use_pbc",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "zoom_refine",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ],
+ "isosurf": [
+  {
+   "key": "alpha",
+   "type": "real",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "autoupdate",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "binning",
+   "type": "integer",
+   "value": 1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_molname",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_rng",
+   "type": "real",
+   "value": 5,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 5,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "bndry_sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "center",
+   "type": "object<Vector>",
+   "value": "(0,0,0)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "color",
+   "type": "object<AbstractColor>",
+   "value": "#0000FF",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "color_mapname",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "coloring",
+   "type": "object<ColoringScheme>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "colormode",
+   "type": "enum",
+   "value": "solid",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "solid",
+   "enumdef": [
+    "molecule",
+    "multigrad",
+    "solid"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "cullface",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "defaultcolor",
+   "type": "object<AbstractColor>",
+   "value": "#0000FF",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "dragupdate",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "drawmode",
+   "type": "enum",
+   "value": "fill",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "fill",
+   "enumdef": [
+    "fill",
+    "line",
+    "point"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egcolor",
+   "type": "object<AbstractColor>",
+   "value": "#000000",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "eglinew",
+   "type": "real",
+   "value": 0.01,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 0.01,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "egtype",
+   "type": "enum",
+   "value": "none",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "none",
+   "enumdef": [
+    "edges",
+    "none",
+    "silhouette"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "extent",
+   "type": "real",
+   "value": 15,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 15,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "group",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "has_center",
+   "type": "boolean",
+   "value": true,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "level",
+   "type": "real",
+   "value": 0,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "locked",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lod",
+   "type": "enum",
+   "value": "auto",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "auto",
+   "enumdef": [
+    "auto",
+    "step1",
+    "step2",
+    "step4",
+    "step8"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "lod_budget",
+   "type": "integer",
+   "value": 16,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 16,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "material",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "maxExtent",
+   "type": "real",
+   "value": 1,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "maxLevel",
+   "type": "real",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "max_grids",
+   "type": "real",
+   "value": 100,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 100,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "minLevel",
+   "type": "real",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "multi_grad",
+   "type": "object<MultiGradient>",
+   "value": "<node>",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": true,
+   "depth": 0
+  },
+  {
+   "key": "multi_grad.size",
+   "type": "integer",
+   "value": 0,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 1
+  },
+  {
+   "key": "name",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "region_mode",
+   "type": "enum",
+   "value": "auto",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "auto",
+   "enumdef": [
+    "auto",
+    "box",
+    "full"
+   ],
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "region_mode_resolved",
+   "type": "string",
+   "value": "box",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "scene_uid",
+   "type": "integer",
+   "value": 49,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "sel",
+   "type": "object<MolSelection>",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "siglevel",
+   "type": "real",
+   "value": 1.1,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.1,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "style",
+   "type": "string",
+   "value": "",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "target",
+   "type": "string",
+   "value": "",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": "",
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "type_name",
+   "type": "string",
+   "value": "isosurf",
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "ui_order",
+   "type": "integer",
+   "value": 54,
+   "readonly": false,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "uid",
+   "type": "integer",
+   "value": 54,
+   "readonly": true,
+   "hasdefault": false,
+   "isdefault": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "use_abslevel",
+   "type": "boolean",
+   "value": false,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": false,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "use_pbc",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "visible",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "width",
+   "type": "real",
+   "value": 1.2,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": 1.2,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "xformMat",
+   "type": "object<Matrix>",
+   "value": "(identity)",
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "isContainer": false,
+   "depth": 0
+  },
+  {
+   "key": "zoom_refine",
+   "type": "boolean",
+   "value": true,
+   "readonly": false,
+   "hasdefault": true,
+   "isdefault": true,
+   "defaultValue": true,
+   "isContainer": false,
+   "depth": 0
+  }
+ ]
+}

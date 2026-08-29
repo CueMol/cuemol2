@@ -20,7 +20,7 @@ import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
 import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
-import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
@@ -48,8 +48,21 @@ import {
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -117,10 +130,10 @@ describe('Cartoon renderer section registry', () => {
     const sections = getRendererPropSections('cartoon')
     expect(sections.map((s) => s.title)).toEqual(['Cartoon', 'Helix', 'Sheet', 'Coil'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(sections[0].Component).toBe(CartoonMainSection)
-    expect(sections[1].Component).toBe(CartoonHelixSection)
-    expect(sections[2].Component).toBe(CartoonSheetSection)
-    expect(sections[3].Component).toBe(CartoonCoilSection)
+    expect(componentOf(sections[0])).toBe(CartoonMainSection)
+    expect(componentOf(sections[1])).toBe(CartoonHelixSection)
+    expect(componentOf(sections[2])).toBe(CartoonSheetSection)
+    expect(componentOf(sections[3])).toBe(CartoonCoilSection)
     expect(RENDERER_SECTION_REGISTRY.cartoon).toBe(sections)
   })
 })

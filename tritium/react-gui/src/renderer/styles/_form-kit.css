@@ -1084,6 +1084,22 @@
   margin-bottom: 0;
 }
 
+/* ── Gated control (checkbox + control on one field row; see GatedControl.tsx) ──
+ * For a property whose "off" state is a value rather than a separate flag, so
+ * both halves edit the same property and share the row's modified bar and
+ * reset. The checkbox keeps its intrinsic width and the control takes the rest,
+ * which keeps a gated row's control aligned with the ungated rows above it. */
+.h3-form-gated-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.h3-form-gated-control > :last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* ── Radio group ──
  * Laid out with flex rather than Blueprint's `inline` prop so the spacing is a
  * token and the options wrap by themselves in a narrow pane -- a caller never

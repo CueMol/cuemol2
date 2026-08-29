@@ -29,6 +29,10 @@ import type { RendererOptions } from '../../shared/fileOpenTypes';
 import { getDefaultStyleName } from './helpers/getDefaultStyleName';
 import { makeSel } from './helpers/makeSel';
 import { molPostProc } from './helpers/molPostProc';
+import {
+    DISORDER_TARGET_TYPES,
+    listRendererNamesByType,
+} from './helpers/rendererNames';
 import { safeRead } from './helpers/safeRead';
 
 const log = console;
@@ -70,6 +74,22 @@ function recenterIfRequested(mol: any, rend: Renderer, rendOpts: RendererOptions
         }
     } catch (e) {
         log.warn('recenter view failed:', e);
+    }
+}
+
+/**
+ * Point a freshly created disorder overlay at the molecule's first main-chain
+ * renderer (UXP `molPostProc` "setup disorder renderer" branch). Without a
+ * target the overlay has no backbone to follow and draws nothing, so the
+ * renderer would look broken right after creation.
+ */
+function seedDisorderTarget(mol: any, rend: Renderer, rendererType: string): void {
+    if (rendererType !== 'disorder') return;
+    try {
+        const names = listRendererNamesByType(mol, DISORDER_TARGET_TYPES);
+        if (names.length > 0) (rend as unknown as { target: string }).target = names[0];
+    } catch (e) {
+        log.warn('disorder target setup failed:', e);
     }
 }
 
@@ -146,6 +166,7 @@ export function setupRenderer(
         // all, showing every atom.
         const sceneUid = safeRead(() => (mol.getScene() as Scene | null)?.uid) ?? 0;
         molPostProc(ctx, mol, true, sceneUid);
+        seedDisorderTarget(mol, rend, rendOpts.rendererType);
 
         if (rendOpts.selectionEnabled && rendOpts.selection && rendOpts.selection !== '*') {
             const sel = makeSel(ctx, rendOpts.selection, sceneUid);

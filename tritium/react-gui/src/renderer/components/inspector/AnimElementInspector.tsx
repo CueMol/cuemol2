@@ -48,7 +48,7 @@ import type {
   AnimMolOption,
   SetAnimElementPropArgs,
 } from "../../worker/server/services/animDetail.service";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import { SEM_ANIM, SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "../../event";
 import { useCueMolEventListener } from "@renderer/hooks/cuemol/useCueMolEventListener";
 

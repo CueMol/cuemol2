@@ -37,7 +37,7 @@ import {
   RegionLodRows,
   effectiveRegionMode,
 } from "./MapRendererCommon";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 /**
@@ -51,6 +51,7 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
   onSetMany,
   onReset,
   sceneId,
+  molId,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
 
@@ -111,6 +112,7 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
         onSetMany={onSetMany}
         onReset={onReset}
         sceneId={sceneId}
+        molId={molId}
       />
     </>
   );

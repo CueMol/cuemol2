@@ -21,6 +21,7 @@ import {
   SelectField,
   NumericField,
   DragNumericField,
+  GatedControl,
   TimeField,
   VectorField,
   SwitchField,
@@ -48,6 +49,7 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
   const [timeMs, setTimeMs] = useState(1500);
   const [vec, setVec] = useState('(1,2,3)');
   const [sw, setSw] = useState(true);
+  const [gated, setGated] = useState(true);
   const [filter, setFilter] = useState("");
 
   return (
@@ -138,6 +140,26 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
                   label, so the row reads "[x] enables what follows". */}
               <Field label="CheckboxField (inline controlFirst)" inline controlFirst>
                 <CheckboxField checked={sw} onChange={setSw} />
+              </Field>
+              {/* One property whose "off" is a value, not a separate flag:
+                  the box and the field stay on one row so they share the
+                  property's modified bar and reset. */}
+              <Field label="GatedControl (checkbox + control, one property)">
+                <GatedControl
+                  checked={gated}
+                  onCheckedChange={setGated}
+                  ariaLabel="Use this value"
+                >
+                  <DragNumericField
+                    value={drag}
+                    onChange={setDrag}
+                    min={0}
+                    max={10}
+                    step={0.1}
+                    unit="Å"
+                    disabled={!gated}
+                  />
+                </GatedControl>
               </Field>
             </FieldGroup>
 

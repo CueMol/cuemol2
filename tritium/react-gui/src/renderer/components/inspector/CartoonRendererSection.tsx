@@ -54,7 +54,7 @@ import {
   JCT_TYPE_OPTIONS,
 } from "./rowHelpers";
 import { PropertyField, SelectField } from "../../h3-kit/form";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 // --- Local labels -------------------------------------------------------------
@@ -313,6 +313,7 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
   onSet,
   onReset,
   sceneId,
+  molId,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
 
@@ -381,6 +382,7 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
           onSet={onSet}
           onReset={onReset}
           sceneId={sceneId}
+          molId={molId}
         />
       )}
       {anchorWeight && (

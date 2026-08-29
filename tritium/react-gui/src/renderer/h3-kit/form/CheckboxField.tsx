@@ -22,17 +22,25 @@ export interface CheckboxFieldProps {
     checked: boolean;
     onChange: (checked: boolean) => void;
     disabled?: boolean;
+    /**
+     * Accessible name, for the box that sits inside another row rather than
+     * next to its own label (see `GatedControl`). Omit when the surrounding
+     * `Field` already names it.
+     */
+    ariaLabel?: string;
 }
 
 export const CheckboxField: React.FC<CheckboxFieldProps> = ({
     checked,
     onChange,
     disabled,
+    ariaLabel,
 }) => (
     <Checkbox
         className="h3-form-checkbox"
         checked={checked}
         disabled={disabled}
+        aria-label={ariaLabel}
         onChange={(e) => onChange((e.target as HTMLInputElement).checked)}
     />
 );
