@@ -28,7 +28,7 @@
 
 import React from "react";
 import { NumRow, NumInputRow, BoolRow, TextRow } from "./RendererCommonSection";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 /**

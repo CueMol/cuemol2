@@ -23,7 +23,7 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import type { GenericPropEntry, PropTargetType, PropWriteOpts } from '../../worker/server/services/genericProps.service'
+import type { GenericPropEntry, PropTargetType, PropWriteOpts } from '@renderer/worker/shared/genericProps'
 import { useCueMol } from '../../hooks/cuemol/useCueMol'
 import { useCueMolEventListener } from '../../hooks/cuemol/useCueMolEventListener'
 import { useLatestRef } from '../../hooks/react/useLatestRef'

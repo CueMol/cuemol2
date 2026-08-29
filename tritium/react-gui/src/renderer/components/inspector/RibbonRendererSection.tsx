@@ -52,7 +52,7 @@ import {
   JCT_TYPE_LABELS,
   JCT_TYPE_OPTIONS,
 } from "./rowHelpers";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 // --- Labels -------------------------------------------------------------------

@@ -27,7 +27,7 @@ import { PropertyField, SelectField, SwitchField } from "../../h3-kit/form";
 import { objectFilters } from "../../h3-kit/ObjectSelect";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import type { SceneObjectEntry } from "../../worker/server/services/listSceneObjects.service";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSections";
 
 type SetFn = RendererPropSectionProps["onSet"];

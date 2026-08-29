@@ -4,8 +4,13 @@
  *
  * Groups `PropDef` entries into collapsible accordion sections and renders
  * the editor widget appropriate to each property's `type`. The accordion
- * ordering is driven by the supplied `groups` list. Shared by the renderer
- * Properties tab and the Render Settings editor.
+ * ordering is driven by the supplied `groups` list.
+ *
+ * This is the descriptor-driven editor: a `PropDef` carries its own value and
+ * commits on every change. It is not what the renderer Properties tab uses --
+ * that reads live `GenericPropEntry` rows from the C++ property bridge and
+ * commits on release. Its consumers are the Render Settings editor, the image
+ * settings panel and the colour picker.
  */
 
 import React, { useMemo } from "react";

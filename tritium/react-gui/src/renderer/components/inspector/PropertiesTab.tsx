@@ -23,7 +23,7 @@ import {
 import type {
   GenericPropEntry,
   PropWriteOpts,
-} from "../../worker/server/services/genericProps.service";
+} from '@renderer/worker/shared/genericProps';
 
 interface PropertiesTabProps {
   /** Live property list of the inspected node. */

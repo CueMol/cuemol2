@@ -19,7 +19,7 @@ import React from "react";
 import type {
   GenericPropEntry,
   PropWriteOpts,
-} from "../../worker/server/services/genericProps.service";
+} from '@renderer/worker/shared/genericProps';
 import { SimpleRendererSection } from "./SimpleRendererSection";
 import { SplineMainSection } from "./SplineRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";

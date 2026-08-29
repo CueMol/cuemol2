@@ -13,7 +13,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
 import { mountTree } from './helpers/testHarness'
 import { GenericTab } from '../components/inspector/GenericTab'
-import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 

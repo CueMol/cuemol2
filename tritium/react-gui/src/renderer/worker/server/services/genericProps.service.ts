@@ -9,15 +9,26 @@ import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { resolvePropTarget, type PropTargetType } from './helpers/resolvePropTarget';
-import { parseGenericProps, type GenericPropEntry } from './helpers/parseGenericProps';
+import { resolvePropTarget } from './helpers/resolvePropTarget';
+import { parseGenericProps } from './helpers/parseGenericProps';
 import { makeSel } from './helpers/makeSel';
 import { safeRead } from './helpers/safeRead';
 import { listGroupChildRenderers } from './helpers/groupChildren';
 import { checkGroupAssignment } from './helpers/rendGroup';
+import type {
+    GenericPropEntry,
+    PropTargetType,
+    PropWriteMode,
+} from '@renderer/worker/shared/genericProps';
 
-export type { GenericPropEntry } from './helpers/parseGenericProps';
-export type { PropTargetType } from './helpers/resolvePropTarget';
+// The wire DTOs live in worker/shared/genericProps.ts (both threads use
+// them); re-exported here so existing importers of this service keep working.
+export type {
+    GenericPropEntry,
+    PropTargetType,
+    PropWriteMode,
+    PropWriteOpts,
+} from '@renderer/worker/shared/genericProps';
 
 // --- types ---
 
@@ -36,23 +47,6 @@ export interface GetGenericPropsResult {
     typeLabel: string;
 }
 
-/**
- * Drag-write mode for live numeric editing:
- *   - `commit` (default): write inside an undo transaction (one undo step).
- *   - `preview`: write WITHOUT a transaction, so the 3D view redraws but the
- *     change is not recorded for undo (used every frame during a drag).
- *   - `abort`: restore the pre-drag snapshot WITHOUT a transaction (used when a
- *     drag is cancelled); restores the default flag too when `originalWasDefault`.
- */
-export type PropWriteMode = 'preview' | 'commit' | 'abort';
-
-/** Optional per-write drag options threaded through the inspector `onSet`. */
-export interface PropWriteOpts {
-    mode?: PropWriteMode;
-    originalValue?: string | number | boolean;
-    originalWasDefault?: boolean;
-    cascadeGroupVisibility?: boolean;
-}
 
 export interface SetGenericPropArgs {
     sceneId: number;

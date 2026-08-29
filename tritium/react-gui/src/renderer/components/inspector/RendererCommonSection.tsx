@@ -33,7 +33,7 @@ import { MolSelList } from "../../h3-kit/MolSelList/MolSelList";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";
 import { isModified, isResettable, formatDefaultLabel } from "./propModel";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 type SetFn = RendererPropSectionProps["onSet"];

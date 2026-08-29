@@ -64,6 +64,29 @@ describe('useRealtimeDragProp', () => {
     expect(handle.result.value).toBe(0.2)
   })
 
+  it('rolls the draft back without a write when the drag was not realtime', () => {
+    // Nothing was previewed, so the object never left `original`: writing it
+    // back is a worker round trip that changes nothing. Only the field's own
+    // draft has to be restored.
+    const onAbort = vi.fn()
+    const handle = makeRenderHook(() =>
+      useRealtimeDragProp({
+        committed: 0.2,
+        realtime: false,
+        onPreview: vi.fn(),
+        onCommit: vi.fn(),
+        onAbort,
+      }),
+    )
+    act(() => handle.result.onDragStart())
+    act(() => handle.result.onChange(0.4))
+    expect(handle.result.value).toBe(0.4)
+
+    act(() => handle.result.onDragCancel())
+    expect(onAbort).not.toHaveBeenCalled()
+    expect(handle.result.value).toBe(0.2)
+  })
+
   it('anchors a non-drag commit (arrow / text) on the current committed value', () => {
     const onCommit = vi.fn()
     const handle = makeRenderHook(() =>

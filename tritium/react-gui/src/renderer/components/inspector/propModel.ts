@@ -8,7 +8,7 @@
  * are pure (no React, no I/O) and unit-tested in `__test__/propModel.test.ts`.
  */
 
-import type { GenericPropEntry } from '../../worker/server/services/genericProps.service';
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 
 /**
  * Property keys that the inspector never resets, even when they expose a

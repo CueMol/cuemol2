@@ -34,7 +34,7 @@ import {
 } from "./RendererCommonSection";
 import { PropertyField, SelectField } from "../../h3-kit/form";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 /** Sibling renderer types the disorder overlay can target (UXP parity). */

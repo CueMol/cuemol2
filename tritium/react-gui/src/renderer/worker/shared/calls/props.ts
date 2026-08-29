@@ -14,7 +14,7 @@ import type {
   SetGenericPropArgs,
   SetGenericPropResult,
   SetGenericPropsArgs,
-} from '../../server/services/genericProps.service'
+} from '@renderer/worker/server/services/genericProps.service'
 
 export interface PropsCalls {
   getGenericProps:            { args: GetGenericPropsArgs; result: GetGenericPropsResult }

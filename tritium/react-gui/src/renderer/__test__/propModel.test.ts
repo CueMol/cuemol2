@@ -12,7 +12,7 @@ import {
     modifiedKeys,
     formatDefaultLabel,
 } from '../components/inspector/propModel';
-import type { GenericPropEntry } from '../worker/server/services/genericProps.service';
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 
 /** Build a minimal entry; override only the fields a case cares about. */
 function entry(over: Partial<GenericPropEntry> & { key: string }): GenericPropEntry {

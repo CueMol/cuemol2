@@ -42,7 +42,7 @@
 import React from "react";
 import { NumRow, SelRow, MappedEnumRow } from "./RendererCommonSection";
 import { MolTargetRow, useMolObjectNames } from "./MapRendererCommon";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 /** Drawing-mode labels, shared with the dsurface surface section. */

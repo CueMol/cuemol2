@@ -20,36 +20,16 @@
 // object property staying read-only only means the object itself cannot be
 // replaced wholesale; its sub-properties remain editable through the dot-path.
 
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
+
+// The row shape itself is a wire DTO shared with the renderer; see
+// worker/shared/genericProps.ts. Re-exported so existing importers of this
+// helper keep working.
+export type { GenericPropEntry };
+
 /** Placeholder value shown for a non-string-convertible nested object. */
 export const CONTAINER_VALUE = '<node>';
 
-/** A single property row consumed by the generic property inspector. */
-export interface GenericPropEntry {
-    /** Property name; dot-path (`section.width`) for a nested object's child. */
-    key: string;
-    /** C++ type tag: boolean|integer|real|string|enum|object<...>. */
-    type: string;
-    /** Current value; `<node>` for a nested-object container row. */
-    value: string | number | boolean;
-    /** True when the property cannot be written. */
-    readonly: boolean;
-    /** True when the property exposes a resettable default value. */
-    hasdefault: boolean;
-    /** True when the property is currently at its default value. */
-    isdefault: boolean;
-    /**
-     * The value this property would be reset to (style-resolved default for
-     * renderers, else the class default). Present only for scalar / enum
-     * properties that expose a default; absent for object types.
-     */
-    defaultValue?: string | number | boolean;
-    /** Allowed string IDs - present only for `enum` properties. */
-    enumdef?: string[];
-    /** True for a non-string-convertible nested object (the container row). */
-    isContainer: boolean;
-    /** Dot-nesting depth (0 = top-level, 1 = direct child of an object, ...). */
-    depth: number;
-}
 
 /** Raw element shape of the `getPropsJSON()` array. */
 interface RawPropItem {

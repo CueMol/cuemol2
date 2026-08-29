@@ -54,7 +54,7 @@ import {
   JCT_TYPE_OPTIONS,
 } from "./rowHelpers";
 import { PropertyField, SelectField } from "../../h3-kit/form";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 // --- Local labels -------------------------------------------------------------

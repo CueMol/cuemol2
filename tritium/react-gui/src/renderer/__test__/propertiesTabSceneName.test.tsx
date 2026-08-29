@@ -12,7 +12,7 @@ import React, { act } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { mountTree } from './helpers/testHarness'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
