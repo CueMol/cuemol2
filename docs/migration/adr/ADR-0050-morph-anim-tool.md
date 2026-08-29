@@ -26,7 +26,7 @@ tritium では `menu:morph-anim` が `MENU_DISPATCH_UNIMPLEMENTED` の stub で�
 
 ## Notes
 
-- 実装: `worker/server/services/morphMol.service.ts` / `components/dialogs/MorphAnimDialog.tsx` + Provider / `commands/useToolCommands.ts` `UiMorphAnimDialog` / `shared/menuActionMap.ts` (`menu:morph-anim` stub → `ui.morphAnimDialog`) / `WorkerCalls.ts` ServiceMap 5 行
+- 実装: `worker/server/services/morphMol.service.ts` / `components/dialogs/MorphAnimDialog.tsx` + Provider / `commands/useToolCommands.ts` `UiMorphAnimDialog` / `shared/menuActionMap.ts` (`menu:morph-anim` stub → `ui.morphAnimDialog`) / `worker/shared/calls/` ServiceMap 5 行
 - UXP parity: `tools/morphanim-tool.js` (`onMorphAnimSetup` :5-32, `convToMorphMol` :34-63, `addPDBFile` :181-234, `addMolCoord` :236-271, `onDelete` :134-159)、`tools/morphanim-tool-dlg.xul`、メニューは `cuemol2-menus.xul:394`
 - C++ 側の要点: `appendThisFrame()` 必須 (`m_nAtoms<0` だと `update()` が no-op、`MorphMol.cpp:479`)、`insertBefore(mol,-1)` = 末尾 append、`insertBefore`/`removeFrame` は txn 内必須 (`qsys::UndoUtil`)
 - テスト: `__test__/morphMolService.test.ts` (12) + `menuDispatch.test.tsx` に channel→CmdId 行 + `menuPipelineExhaustiveness.test.ts` の UNIMPLEMENTED_ALLOWLIST 3→2

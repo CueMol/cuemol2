@@ -56,7 +56,10 @@ renderer/worker/
 ├── server/   # runs in Web Worker thread
 │   ├── worker_launcher.ts (entry), WorkerService.ts, gfx_manager.ts
 │   └── services/   # *.service.ts auto-registered by import.meta.glob
-└── shared/   # imported from both threads (ObjTuple, gestureAxes)
+└── shared/   # imported from both threads
+    ├── calls/   # the renderer <-> worker contract, one slice per domain
+    │            #   (scene.ts, anim.ts, ...), assembled in calls/index.ts
+    └── ...      # boundary DTOs (result.ts, animTypes.ts, sceneTreeTypes.ts)
 ```
 
 **Rule of thumb**: file location determines execution thread. `client/` code talks to the worker via the typed helpers `transport.invokeService<K>` / `invokeMethod<K>` / `invokeRpc<K>` (or the low-level `invokeWorker` escape hatch). `server/services/*.service.ts` runs synchronously inside the Web Worker.
@@ -136,13 +139,13 @@ A single-action file simply exports `services = { actionOne }`. `services/index.
 
 `WorkerService` has two dispatch tables, intentionally kept separate, plus an RPC handler table:
 
-| Table | Purpose | Map (in `worker/shared/WorkerCalls.ts`) | Dispatch |
+| Table | Purpose | Map (in `worker/shared/calls/`) | Dispatch |
 |---|---|---|---|
 | `_methods` (variadic) | Infrastructure / hot-path events | `MethodMap` (`bindCanvas`, `mouseMove`, …) | `fn.apply(this, args)` (sync) |
 | `_methods` (RPC) | ObjProxy bridge (proxy property access) | `RpcMap` (`createObj`, `getProp`, `invokeMethod`, …) | same as above; conceptually distinct |
 | `_registered` (single-arg) | Business-logic services | `ServiceMap` (`undo`, `loadObject`, `naviClickAtom`, …) | `Promise.resolve().then(() => fn(ctx, args[0]))` |
 
-Don't migrate `_methods` entries into `_registered` without a concrete benefit — the two tables have different invocation semantics on purpose. New business-logic actions go into a `*.service.ts` file under `server/services/` **and** a row in `ServiceMap`. Adding the row drives type-checking through `register<K>` and the renderer-side `invokeService<K>` helper.
+Don't migrate `_methods` entries into `_registered` without a concrete benefit — the two tables have different invocation semantics on purpose. New business-logic actions go into a `*.service.ts` file under `server/services/` **and** a row in the matching `worker/shared/calls/<domain>.ts` slice (plus its key in that file's `*_KEYS` list -- `calls/index.test.ts` checks the slices against the services the worker actually registers). Adding the row drives type-checking through `register<K>` and the renderer-side `invokeService<K>` helper.
 
 ---
 
@@ -394,7 +397,7 @@ The same shape recurs in every renderer↔(other-thread) boundary:
 | Boundary | Map file | Generic dispatcher |
 |---|---|---|
 | renderer ↔ main | `shared/ipcContract.ts` (`InvokeChannels` / `PushChannels`) | `electronAPI.invoke<C>` / `onPush<C>` |
-| renderer ↔ Web Worker | `worker/shared/WorkerCalls.ts` (`ServiceMap` / `MethodMap` / `RpcMap`) | `cm.invokeService<K>` / `invokeMethodTyped<K>` / `invokeRpc<K>` |
+| renderer ↔ Web Worker | `worker/shared/calls/` (`ServiceMap` / `MethodMap` / `RpcMap`) | `cm.invokeService<K>` / `invokeMethodTyped<K>` / `invokeRpc<K>` |
 | renderer-internal command bus | `commands/CommandMap.ts` | `useCommands().dispatch<K>` / `useRegisterCommand<K>` |
 
 Workflow when adding a feature: (1) add a row to the relevant map; (2) implement the producer side (`handleInvoke`, `*.service.ts`, `useRegisterCommand`); (3) call from the consumer side. The compiler walks both sides for you.
@@ -560,7 +563,7 @@ Use this when pinning a cross-layer invariant (e.g. "field X gates whether wrapp
 
 ### AsyncCueMol dispatch summary
 
-Prefer the typed helpers (`invokeService`, `invokeMethodTyped`, `invokeRpc`) — they pin the args/result shape against `WorkerCalls.ts`. The untyped `invokeWorker` is a low-level escape hatch that returns the raw response array tail.
+Prefer the typed helpers (`invokeService`, `invokeMethodTyped`, `invokeRpc`) — they pin the args/result shape against `worker/shared/calls/`. The untyped `invokeWorker` is a low-level escape hatch that returns the raw response array tail.
 
 | Method | Maps to | Awaits | Pending count |
 |--------|---------|--------|---------------|

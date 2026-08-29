@@ -18,7 +18,7 @@ import type {
     ServiceArgs,
     ServiceKey,
     ServiceResult,
-} from '../shared/WorkerCalls';
+} from '../shared/calls';
 import type { RenderUpdate } from '../shared/renderTypes';
 import { RENDER_PROGRESS_CHANNEL } from '../shared/renderTypes';
 import type { ApbsUpdate } from '../shared/apbsTypes';
@@ -385,7 +385,7 @@ export class WorkerTransport {
     // --- Typed call helpers ---
     // Preferred over `invokeWorker` for new code. Each helper wraps the
     // array-tail response into the single-value contract documented by
-    // the corresponding map in `worker/shared/WorkerCalls.ts`.
+    // the corresponding map in `worker/shared/calls/`.
 
     /**
      * Call a worker service (`ServiceMap` entry).

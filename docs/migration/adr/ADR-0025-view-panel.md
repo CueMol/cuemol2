@@ -76,7 +76,7 @@ activity-bar group in place of the PoC `DummyPane4`.
 - Implementation:
   - `tritium/react-gui/src/renderer/worker/server/services/viewXform.service.ts`
     (`getViewXform` / `setViewXform` / `rotateView`); registered in
-    `worker/shared/WorkerCalls.ts` `ServiceMap`.
+    `worker/shared/calls/` `ServiceMap`.
   - `tritium/react-gui/src/renderer/hooks/useViewXform.ts` (fetch + SEM_VIEW
     subscription + optimistic setters + `beginInteraction`/`endInteraction` gate).
   - `tritium/react-gui/src/renderer/components/panes/ViewPane.tsx` (rows via

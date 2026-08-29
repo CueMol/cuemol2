@@ -77,7 +77,7 @@ existing C++ 3D draw object.
 ## Notes
 
 - Worker: `measure.service.ts` (`measurePick` / `measureReset` /
-  `measureListTargets`), contract rows in `worker/shared/WorkerCalls.ts`
+  `measureListTargets`), contract rows in `worker/shared/calls/`
   `ServiceMap`; undo via `worker/server/services/withUndoTxn.ts`.
 - Renderer: `hooks/useMeasureClickHandler.ts`, `components/ViewportToolPalette.tsx`
   (options cap + `Popover`), `components/MeasureOptionsPopover.tsx`,

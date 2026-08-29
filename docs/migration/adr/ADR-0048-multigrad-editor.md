@@ -209,7 +209,7 @@ in-flight 1 本の coalesced preview) を持つ。
 - worker: `coloring/multiGrad.ts` + `colorTargets.ts` の
   `getMultiGradOrNull` / `isMultiGradCapable` probe + `applyColoring.ts` の
   `paint-type-multigrad` case + `deckState.ts` の `multiGradCapable` +
-  `panelList.ts` 拡張。`WorkerCalls.ts` ServiceMap 4 行。
+  `panelList.ts` 拡張。`worker/shared/calls/` ServiceMap 4 行。
 - renderer: `components/multigrad/{GradientStopBar,MultiGradSection}.tsx`、
   `gradientGeometry.ts`、`multiGradPresets.ts`、`hooks/useMultiGradState.ts`
   (SEM_OBJECT|SEM_RENDERER 30ms debounce、propname filter は

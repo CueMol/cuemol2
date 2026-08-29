@@ -94,7 +94,7 @@ clipboard 上の順序を保つ (UXP は `adds.reverse()` してから前挿入�
 
 - 実装: `worker/server/services/coloring/paintClipboard.ts` (5 service)、
   `coloring/types.ts` の args/result 型、`rendererColoring.service.ts` の
-  再エクスポート + `services` 登録、`worker/shared/WorkerCalls.ts` の
+  再エクスポート + `services` 登録、`worker/shared/calls/` の
   `ServiceMap` 5 行。
 - UI: `components/panes/ColorPane.tsx` の `PaintTable` (ボタン 4 つ +
   `canPaste` prop) と本体側ハンドラ、`data/appIcons.ts` の `ui.cut` /

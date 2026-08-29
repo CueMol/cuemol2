@@ -32,7 +32,7 @@ cuemol3 には command/script を流し込みうる実行コンテキストが 3
 
 ### (b) tritium react-gui (Electron + React + Web Worker + node addon)
 - renderer -> `postMessage` -> Web Worker -> `@cuemol/core` node addon (同期 C++ wrapper)
-- サービスは `worker/shared/WorkerCalls.ts` の `ServiceMap`/`MethodMap`/`RpcMap` に型契約として登録し、`server/services/*.service.ts` で実装、renderer から `AsyncCueMol.invokeService<K>()` で呼ぶ
+- サービスは `worker/shared/calls/` の `ServiceMap`/`MethodMap`/`RpcMap` に型契約として登録し、`server/services/*.service.ts` で実装、renderer から `AsyncCueMol.invokeService<K>()` で呼ぶ
 
 ### (c) pymod (外部 pip パッケージ)
 - 外部 Python から `import cuemol`。`pymod/python/cuemol/__init__.py` が初回 import で自動 init
@@ -646,7 +646,7 @@ PyMOL は `isomesh name, mapname, level, sel` で map を参照する独立 mesh
 | フォーマット importers (PSE 含む) | `src/modules/importers/{MmcifMolReader,MOL2MolReader,SDFMolReader,PSEFileReader}.qif` |
 | 構造整列/解析 | `src/modules/molanl/MolAnlManager.qif`, `LsqFit.cpp`, `ssmlib/ssm_align.h`, `ContactMap.cpp` |
 | 画像/レイトレ export | `src/modules/rendering/{PngSceneExporter,PovSceneExporter,LuxRendSceneExporter,LuxCoreSceneExporter}.cpp` |
-| tritium worker 契約 | `tritium/react-gui/src/renderer/worker/shared/WorkerCalls.ts` |
+| tritium worker 契約 | `tritium/react-gui/src/renderer/worker/shared/calls/` |
 | tritium selection 経路 | `tritium/react-gui/src/renderer/worker/server/services/helpers/makeSel.ts`, `validateSelection.service.ts` |
 | tritium pane 登録 | `tritium/react-gui/src/renderer/components/panes/index.ts`, `SidePanel.tsx` |
 

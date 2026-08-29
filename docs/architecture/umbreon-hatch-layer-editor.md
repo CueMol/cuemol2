@@ -48,7 +48,7 @@ Rendering window は別 BrowserWindow で worker を持たないため、`RENDER
 
 | マップ | 行 |
 |---|---|
-| `worker/shared/WorkerCalls.ts` `ServiceMap` | `getHatchStyleSpec: { args: GetHatchStyleSpecArgs; result: GetHatchStyleSpecResult }` |
+| `worker/shared/calls/` `ServiceMap` | `getHatchStyleSpec: { args: GetHatchStyleSpecArgs; result: GetHatchStyleSpecResult }` |
 | `shared/ipcChannels.ts` | `RENDER_HATCH_STYLE_GET` (invoke) / `RENDER_HATCH_STYLE_REQUEST` (push) / `RENDER_HATCH_STYLE_REPLY` (invoke) |
 | `shared/ipcContract.ts` | `InvokeChannels` に GET / REPLY、`PushChannels` に REQUEST |
 | `shared/types/renderWindow.ts` | `HatchStyleSpecReply`、`RenderSettingsSnapshotWire.hatch?` |

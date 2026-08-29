@@ -124,7 +124,7 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - 状態同期は「どの値を source of truth にするか」を先に決める。UI 操作後の menu checked などは、必要がなければ不安定な読み返し値ではなく成功した command の要求値で更新する
 - Electron native menu と React menu は同じ template から作っても挙動が同一とは限らない。radio/checkbox など platform 側が状態を持つ item は、main 側の更新方式と衝突しないか確認する
 - 契約が確認できたら、その契約に従って実装し、不要な正規化や互換コードを足さない。防御コードが必要な場合は、実際に観測された入力差分に限定する
-- 境界 (main↔preload↔renderer / renderer↔worker / コマンド) をまたぐ追加は **型契約マップ** に行追加が起点 — `shared/ipcContract.ts` (`InvokeChannels`/`PushChannels`)、`worker/shared/WorkerCalls.ts` (`ServiceMap`/`MethodMap`/`RpcMap`)、`commands/CommandMap.ts`。マップ行を足すと callsite 側が compile error で誘導される。詳細は `tritium/CLAUDE.md`
+- 境界 (main↔preload↔renderer / renderer↔worker / コマンド) をまたぐ追加は **型契約マップ** に行追加が起点 — `shared/ipcContract.ts` (`InvokeChannels`/`PushChannels`)、`worker/shared/calls/` (`ServiceMap`/`MethodMap`/`RpcMap`)、`commands/CommandMap.ts`。マップ行を足すと callsite 側が compile error で誘導される。詳細は `tritium/CLAUDE.md`
 - LSP の警告 (`Cannot find module '@cuemol/core/...'`、`electronAPI does not exist on Window` など) は project-references 解決の noise が多い。検証は `npx tsc -p tsconfig.<project>.json --noEmit` と production build (`task build_tritium`) を真とする
 
 **検証チェーン (実装 → ユーザー目視確認 → test/lint の順)**
@@ -149,7 +149,7 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - `contexts/DialogContext.tsx` の `composeProviders([...])` 配列に `XxxDialogProvider` を 1 行追加
 - `commands/ids.ts` に `CmdId.UiXxxDialog`、`commands/CommandMap.ts` に対応する `{ args; result }` 行
 - 対応 `commands/useXxxCommands.ts` で `useShowXxxDialog()` を呼んで `useRegisterCommand`
-- C++ データ取得が要れば `worker/server/services/xxx.service.ts` + `worker/shared/WorkerCalls.ts` の `ServiceMap` 行追加
+- C++ データ取得が要れば `worker/server/services/xxx.service.ts` + `worker/shared/calls/` の `ServiceMap` 行追加
 
 ---
 

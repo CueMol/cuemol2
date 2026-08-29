@@ -119,7 +119,7 @@ topology の Browse は従来どおり single、trajectory の Add のみ `multi
 | 層 | ファイル |
 |---|---|
 | worker service | `worker/server/services/loadTrajectory.service.ts`, `getTrajectoryRendererInfo.service.ts` |
-| worker 登録 | `worker/shared/WorkerCalls.ts` (ServiceMap), `worker/client/apis/fileApi.ts`, `worker/client/AsyncCueMol.ts` |
+| worker 登録 | `worker/shared/calls/` (ServiceMap), `worker/client/apis/fileApi.ts`, `worker/client/AsyncCueMol.ts` |
 | main IPC | `shared/ipcContract.ts`, `main/handlers/fileDialogs.ts` |
 | dialog | `components/dialogs/OpenMdTrajDialog.tsx` (+ Provider), `trajPathHistory.ts`, `contexts/DialogContext.tsx` |
 | command / menu | `commands/ids.ts`, `commands/CommandMap.ts`, `commands/useSceneCommands.ts`, `shared/ipcChannels.ts`, `shared/menuTemplate.ts`, `shared/menuActionMap.ts` |

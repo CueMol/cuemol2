@@ -27,7 +27,7 @@ tritium では `shared/naviCtxMenu.ts` に `enabled:false` のプレースホル
 
 ## Notes
 
-- 実装: `worker/server/services/createSymmMol.service.ts` / `hooks/useNaviContextMenu.ts` `case 'createSymmMol'` / `shared/naviCtxMenu.ts` / `shared/types/naviCtxMenu.ts` `NaviCtxAction` / `worker/shared/WorkerCalls.ts` ServiceMap 2 行 / `worker/server/services/helpers/uniqName.ts` (makeMolSurf と共用)
+- 実装: `worker/server/services/createSymmMol.service.ts` / `hooks/useNaviContextMenu.ts` `case 'createSymmMol'` / `shared/naviCtxMenu.ts` / `shared/types/naviCtxMenu.ts` `NaviCtxAction` / `worker/shared/calls/` ServiceMap 2 行 / `worker/server/services/helpers/uniqName.ts` (makeMolSurf と共用)
 - UXP parity: `navi-toolribbon.js` `createSymmObj` (:628-694)、`topbar/cuemol2-ribbon.xul:224` "Create this SYMM mol ..." (`ctxtmenu-symm` 表示制御は tritium 既存の `payload.isSymm` ゲートが相当)
 - テスト: `__test__/createSymmMolService.test.ts` (6 — 呼び出し順 / txn ラベル / rollback / 一意名) + `__test__/NaviContextMenu.test.tsx` に wire 4 ケース (prefetch→dialog→create の payload pin / cancel / symm_id 欠落 / error alert)
 - 関連: [ADR-0046](ADR-0046-preset-renderer.md) (NewRendererDialog / preset)、[ADR-0013](ADR-0013-toolbar-ribbon-port.md) (toolbar ribbon 全体)

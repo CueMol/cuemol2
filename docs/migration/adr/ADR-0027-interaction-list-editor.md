@@ -57,7 +57,7 @@ pick" problem that drove ADR-0024 does not apply.
 
 - Implementation: `worker/server/services/atomIntrEdit.service.ts`
   (`listAtomIntrDefs` / `removeAtomIntrDefs`; `ServiceMap` rows in
-  `worker/shared/WorkerCalls.ts`); `components/dialogs/EditInteractionListDialog.tsx`
+  `worker/shared/calls/`); `components/dialogs/EditInteractionListDialog.tsx`
   (+ Provider, registered in `contexts/DialogContext.tsx`); gating in
   `shared/types/sceneCtxMenu.ts` (`editInteractionList` action + `canEditInteractions`
   payload), `hooks/sceneContextMenu/buildSceneCtxPayload.ts`,

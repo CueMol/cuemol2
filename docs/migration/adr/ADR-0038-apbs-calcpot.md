@@ -88,7 +88,7 @@ from the `unimplemented` stub to `CmdId.UiCalcApbsPotDialog`).
   (grid derivation `computeGrid`, `apbs.in` builder `buildApbsIn`, poll
   `pollJob`, load `loadPotFile`). Types + push channel:
   `worker/shared/apbsTypes.ts` (`APBS_PROGRESS_CHANNEL`). ServiceMap rows in
-  `worker/shared/WorkerCalls.ts`.
+  `worker/shared/calls/`.
 - Progress push: `worker/client/WorkerTransport.ts` (`apbs-progress` branch +
   `subscribeApbsProgress`), forwarded by `AsyncCueMol.ts`; renderer-side driver
   `hooks/useCalcApbsJob.ts` (mirrors `useRenderJob`).

@@ -69,7 +69,7 @@ Electron filter-index constraint above).
 
 - Worker probe: `worker/server/services/exportImage.service.ts`
   `getAvailableSceneExporters` (category `IOH_CAT_RENDTOFILE = 2`);
-  `ServiceMap` row in `worker/shared/WorkerCalls.ts`.
+  `ServiceMap` row in `worker/shared/calls/`.
 - Renderer: `hooks/useSceneExportCaps.ts` (probe + `MENU_UPDATE_STATE` push);
   wired in `App.tsx`, prop passed to `components/MenuBar.tsx`.
 - Shared: `shared/menuTemplate.ts` `SCENE_EXPORT_MENU_EXPORTERS` +

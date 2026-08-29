@@ -15,7 +15,7 @@
  */
 
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import type { ServiceArgs, ServiceKey } from '../worker/shared/WorkerCalls'
+import type { ServiceArgs, ServiceKey } from '../worker/shared/calls'
 
 /**
  * Report a fire-and-forget service failure. Single sink so a future

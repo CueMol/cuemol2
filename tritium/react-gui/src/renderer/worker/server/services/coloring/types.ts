@@ -5,7 +5,7 @@
  *
  * These types are split out of `rendererColoring.service.ts` for locality;
  * the service file re-exports them verbatim, so external importers
- * (`WorkerCalls.ts`, `ColorPane.tsx`, the coloring hooks) are unchanged.
+ * (`worker/shared/calls/`, `ColorPane.tsx`, the coloring hooks) are unchanged.
  */
 import type { Result } from '../../../shared/result';
 import type { RendColoringId } from '@shared/types/sceneCtxMenu';

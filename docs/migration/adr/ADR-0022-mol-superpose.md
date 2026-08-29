@@ -63,7 +63,7 @@ tools, this can be revisited. The checkbox is omitted from the ported dialog.
 ## Notes
 
 - Service: `worker/server/services/superposeMol.service.ts` (`superposeMol`),
-  registered in `worker/shared/WorkerCalls.ts` `ServiceMap`.
+  registered in `worker/shared/calls/` `ServiceMap`.
 - Dialog: `components/dialogs/MolSuperposeDialog.tsx` +
   `MolSuperposeDialogProvider.tsx`; history `components/dialogs/molSuperposeHistory.ts`.
 - Command/menu: `commands/ids.ts` (`UiMolSuperpose`), `commands/CommandMap.ts`,
