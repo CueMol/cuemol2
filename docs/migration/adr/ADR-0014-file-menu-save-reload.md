@@ -138,7 +138,7 @@ rows now use the UXP label format `<name> (<type>, id=<ID>)`.
 
 - `shared/types/uiPrefs.ts` (`UiState.saveWriterName`),
   `worker/server/services/objectSave.service.ts` (`preferredWriter` reorder,
-  `writeMsgLog`, `listSavableObjects`), `worker/shared/WorkerCalls.ts` (1 row),
+  `writeMsgLog`, `listSavableObjects`), `worker/shared/calls/` (1 row),
   `hooks/sceneContextMenu/runObjectSaveFlow.ts`, `dispatchSceneCtxAction.ts`,
   `hooks/useSceneContextMenu.ts`, `commands/useFileCommands.ts`.
 - Tests: `__test__/runObjectSaveFlow.test.ts` (new), plus additions to

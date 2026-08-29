@@ -58,7 +58,7 @@ from the camera context menu, backed by a new worker service
 
 - Implementation: `worker/server/services/cameraVisFlags.service.ts`
   (`getCameraVisFlags` / `setCameraVisFlags`; `ServiceMap` rows in
-  `worker/shared/WorkerCalls.ts`); `components/dialogs/EditCameraVisFlagsDialog.tsx`
+  `worker/shared/calls/`); `components/dialogs/EditCameraVisFlagsDialog.tsx`
   (+ `EditCameraVisFlagsDialogProvider.tsx`, registered in
   `contexts/DialogContext.tsx`); wiring in
   `main/contextMenu/sceneCtxTemplates.ts` (menu item enabled),

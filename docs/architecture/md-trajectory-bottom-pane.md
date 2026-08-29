@@ -98,7 +98,7 @@ SEM_CHANGED=4` と **連番**で、OR したビットマスクにならない。
 - worker: `worker/server/services/trajectory.service.ts`
   (`getTrajectoryState` / `setTrajectoryFrame` (undo txn なし=transient) /
   `appendTrajectoryBlock` (undo txn。`loadTrajectory` の block 追記部を流用))。
-  `WorkerCalls.ts` の `ServiceMap` に 3 行。hooks は `cm.invokeService` を直接呼ぶ
+  `worker/shared/calls/` の `ServiceMap` に 3 行。hooks は `cm.invokeService` を直接呼ぶ
   (anim hooks と同じ。client wrapper 追加なし)。
 - hooks: `hooks/useTrajectory.ts` (nframe/frame/blocks fetch + 構造イベント refetch) /
   `hooks/useTrajPlayback.ts` (JS タイマー再生 + frame カーソル)。

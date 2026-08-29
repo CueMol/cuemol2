@@ -104,7 +104,7 @@ UXP `apply_rend_style.xul` / `rendstyle_create.xul`.
   deliberate action, not a hover.
 - **One worker service per submenu** keeps each unit-testable, at the
   cost of more files in `worker/server/services/`. The aggregated count
-  is documented in `WorkerCalls.ts` (see Tier 4.1 of the refactoring
+  is documented in `worker/shared/calls/` (see Tier 4.1 of the refactoring
   plan for whether to auto-generate that file).
 - **Class-name gates are hard-coded** (`*selection`, `*namelabel`,
   `atomintr`, etc.). This mirrors UXP behaviour but means new renderer

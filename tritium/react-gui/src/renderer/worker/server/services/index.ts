@@ -1,5 +1,5 @@
 import type { WorkerService } from '../WorkerService';
-import type { ServiceFn, ServiceKey } from '../../shared/WorkerCalls';
+import type { ServiceFn, ServiceKey } from '../../shared/calls';
 
 type AnyServiceFn = ServiceFn<ServiceKey>;
 

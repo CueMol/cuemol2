@@ -41,7 +41,7 @@ import type {
     ServiceArgs,
     ServiceKey,
     ServiceResult,
-} from '../shared/WorkerCalls';
+} from '../shared/calls';
 
 const log = console;
 

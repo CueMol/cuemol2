@@ -276,7 +276,7 @@ function setMgrProp(ctx, { sceneId, prop, value }): { ok }         // loop / sta
 
 `classNameToType` helper（`services/helpers/animElementType.ts`）: `AnimObj` に type getter が無いため wrapper の判別。第一に wrapper の class 名（`obj.constructor.name`）、fallback で distinguishing prop probe（`'angle' in r && 'axis' in r` → SimpleSpin、`'endcam' in r` → CamMotion、`'start_tran' in r` → RendXformAnim、`'fade' in r` → ShowHideAnim、`'direction' in r && 'distance' in r` → SlideInOutAnim、`'mol' in r` → MolAnim、`'rend' in r && 'startValue' in r` → RealPropAnim、最後 NoopAnimObj）。1 箇所に集約し fallback lane 色は `'unknown'`。
 
-### 6.2 `ServiceMap` 行（`worker/shared/WorkerCalls.ts`）
+### 6.2 `ServiceMap` 行（`worker/shared/calls/`）
 
 ```ts
 animListTimeline:   { args: { sceneId: number };                                                       result: AnimTimeline }
@@ -352,7 +352,7 @@ animSetMgrProp:     { args: { sceneId: number; prop: 'loop' | 'startcam'; value:
 - **目的**: `getAnimMgr` から実 `AnimObj` を列挙し、strip バーを `absStart/absEnd` で描画。編集・再生はまだ無い。
 - **触るファイル**:
   - 新規 `worker/server/services/animation.service.ts`（`listTimeline`/`getMgrState` のみ）+ `services/helpers/animElementType.ts`。
-  - `worker/shared/WorkerCalls.ts`（`animListTimeline`/`animGetMgrState` 行）。
+  - `worker/shared/calls/`（`animListTimeline`/`animGetMgrState` 行）。
   - `types.ts`（`AnimElement`/`AnimMgrState`/`AnimTimeline`/`AnimElementType` 追加。旧 3 interface は**まだ消さない**、共存）。
   - 新規 `hooks/useAnimTimeline.ts`（fetch + SEM_ANIM 購読）。
   - `components/panels/AnimationPanel.tsx`（strip 描画パスを追加、`animation` prop と並行に `sceneId` 経由の実データを試験表示。feature flag or 条件分岐）。
@@ -363,19 +363,19 @@ animSetMgrProp:     { args: { sceneId: number; prop: 'loop' | 'startcam'; value:
 
 ### Phase 2: transport + scrub + 再生の実配線
 - **目的**: playhead scrub と play/pause/stop を実 `goTime`/`start`/`pause`/`stop` に配線。3D view が実際に動く。mock のローカル rAF カウンタ削除。
-- **触るファイル**: `animation.service.ts`（`goTime`/`play`/`pause`/`stop` 追加）、`WorkerCalls.ts`（行追加）、新規 `hooks/useAnimTransport.ts`（play 中 poll）、`AnimationPanel.tsx` transport を `FormButton`/`ButtonRow`/`SegmentField`/`SwitchField` へ置換、`_animation-panel.css`（`!important` override 除去）。catalog gap があれば form-kit に transport variant を先行追加。
+- **触るファイル**: `animation.service.ts`（`goTime`/`play`/`pause`/`stop` 追加）、`worker/shared/calls/`（行追加）、新規 `hooks/useAnimTransport.ts`（play 中 poll）、`AnimationPanel.tsx` transport を `FormButton`/`ButtonRow`/`SegmentField`/`SwitchField` へ置換、`_animation-panel.css`（`!important` override 除去）。catalog gap があれば form-kit に transport variant を先行追加。
 - **完了判定**: Play で 3D view がアニメート、playhead が `elapsed` を追従、Stop で 0 へ。scrub drag-end で view が jump。`run_tritium` で起動し再生確認。
 - **degrade 検出テスト**: transport contract test（Play ボタン → `invokeService('animPlay',{sceneId,viewId})`、scrub drag-end → `animGoTime` 1 回 commit、ドラッグ中は call しない）。
 
 ### Phase 3: 編集（move/resize/add/delete/reorder）
 - **目的**: strip body drag = move、handle drag = trim、Add メニュー、delete、lane reorder を実 API へ。
-- **触るファイル**: `animation.service.ts`（`setElementTime`/`addElement`/`removeElement`/`reorderElement` 追加、undo-txn）、`WorkerCalls.ts`、`AnimationPanel.tsx`/`AnimStrip.tsx`（gesture handling）、`AnimLabelColumn.tsx`（reorder drag, +/-/^/v）。
+- **触るファイル**: `animation.service.ts`（`setElementTime`/`addElement`/`removeElement`/`reorderElement` 追加、undo-txn）、`worker/shared/calls/`、`AnimationPanel.tsx`/`AnimStrip.tsx`（gesture handling）、`AnimLabelColumn.tsx`（reorder drag, +/-/^/v）。
 - **完了判定**: strip drag/trim が `start/end`（relative）に書き `resolveRelTime` で再描画。add/delete/reorder が SEM_ANIM 経由で UI 更新。undo/redo が効く。
 - **degrade 検出テスト**: service contract test（`setElementTime` が `start<=end` で呼ばれること pre-clamp、`addElement` が `createObj(typeName)`+`append`/`insertBefore`+`timeRefName=prev.name`、`removeElement` が降順 index）。
 
 ### Phase 4: detail inspector（hybrid の編集面）
 - **目的**: 選択要素の name/timing/type props を form-kit `FieldSection` で inline 編集（UXP modal の置換）。
-- **触るファイル**: `animation.service.ts`（`setElementProp`/`setMgrProp`、typeProps 読み）、新規 `components/panels/anim/AnimDetailInspector.tsx` + per-type field groups、`WorkerCalls.ts`。inspector は collapsible drawer。
+- **触るファイル**: `animation.service.ts`（`setElementProp`/`setMgrProp`、typeProps 読み）、新規 `components/panels/anim/AnimDetailInspector.tsx` + per-type field groups、`worker/shared/calls/`。inspector は collapsible drawer。
 - **完了判定**: 各 subtype の固有 prop（angle/axis/endcam/mol/rend/...）が編集でき、start/duration 編集が end=start+dur へ反映。relative-to select で chain 変更。
 - **degrade 検出テスト**: inspector → `setElementProp`/`setElementTime` の wire test、per-type field の条件描画 test。
 
@@ -464,7 +464,7 @@ CueMol の `AnimObj` は **時間範囲オブジェクト**なので、Blender *
 
 - 新規 service: `/Users/user1/proj64/cuemol2_work2/tritium/react-gui/src/renderer/worker/server/services/animation.service.ts` + `helpers/animElementType.ts`
 - 新規 hook: `/Users/user1/proj64/cuemol2_work2/tritium/react-gui/src/renderer/hooks/useAnimTimeline.ts`, `useAnimTransport.ts`
-- ServiceMap: `/Users/user1/proj64/cuemol2_work2/tritium/react-gui/src/renderer/worker/shared/WorkerCalls.ts`（§6.2 行追加）
+- ServiceMap: `/Users/user1/proj64/cuemol2_work2/tritium/react-gui/src/renderer/worker/shared/calls/`（§6.2 行追加）
 - 型: `/Users/user1/proj64/cuemol2_work2/tritium/react-gui/src/renderer/types.ts`（`Keyframe`/`AnimationTrack`/`AnimationData` 削除、`AnimElement`/`AnimMgrState`/`AnimTimeline`/`AnimElementType` 追加）
 - UI: `/Users/user1/proj64/cuemol2_work2/tritium/react-gui/src/renderer/components/panels/AnimationPanel.tsx`（rewrite）+ 新規 `components/panels/anim/`（AnimTransport, AnimLabelColumn, AnimStripArea, AnimTimeRuler, AnimLane, AnimStrip, AnimPlayhead, AnimOverlapLayer, AnimDetailInspector + per-type field groups）
 - CSS/token: `/Users/user1/proj64/cuemol2_work2/tritium/react-gui/src/renderer/styles/_animation-panel.css`（rewrite）, `styles/_variables.css`（`--anim-*` token）

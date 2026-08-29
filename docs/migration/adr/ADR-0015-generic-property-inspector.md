@@ -104,7 +104,7 @@ helix / sheet / coil section shapes (`helix.*` / `sheet.*` / `coil.*` /
 - Implementation: `worker/server/services/genericProps.service.ts`,
   `worker/server/services/helpers/parseGenericProps.ts`,
   `worker/server/services/helpers/resolvePropTarget.ts`,
-  `worker/shared/WorkerCalls.ts` (`getGenericProps` / `setGenericProp` rows),
+  `worker/shared/calls/` (`getGenericProps` / `setGenericProp` rows),
   `components/inspector/GenericTab.tsx`,
   `components/panels/InspectorPanel.tsx`, `hooks/useInspectorState.ts`,
   `App.tsx` (`handleSceneShowProperty` → `handleShowGeneric`).

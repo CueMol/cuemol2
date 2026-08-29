@@ -8,7 +8,7 @@
  * This file is a thin forwarder: the service bodies and DTOs live in
  * concern modules under `services/coloring/`. It keeps the `services`
  * object (and its key names / order) and the re-exported types byte-stable
- * so the `ServiceMap` rows in `worker/shared/WorkerCalls.ts` and the
+ * so the `ServiceMap` rows in `worker/shared/calls/` and the
  * renderer-side importers (`ColorPane`, the coloring hooks) are unchanged.
  *
  * Concern modules:
@@ -64,7 +64,7 @@ import {
 } from './coloring/multiGrad';
 
 // Re-export the public types so existing importers
-// (`WorkerCalls.ts`, `ColorPane.tsx`, the coloring hooks) resolve unchanged.
+// (`worker/shared/calls/`, `ColorPane.tsx`, the coloring hooks) resolve unchanged.
 export type {
     ColoringTargetKind,
     GetPaintColoringStylesArgs,

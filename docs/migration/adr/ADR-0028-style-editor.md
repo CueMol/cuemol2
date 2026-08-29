@@ -58,7 +58,7 @@ Add a worker service `styleSetEdit.service` and a Blueprint `Tabs` modal
 ## Notes
 
 - Implementation: `worker/server/services/styleSetEdit.service.ts` (6 methods;
-  `ServiceMap` rows in `worker/shared/WorkerCalls.ts`);
+  `ServiceMap` rows in `worker/shared/calls/`);
   `components/dialogs/StyleEditorDialog.tsx` (+ Provider, registered in
   `contexts/DialogContext.tsx`); wiring in `shared/types/sceneCtxMenu.ts` (`editStyle`
   action), `main/contextMenu/sceneCtxTemplates.ts` (style "Edit…" item),

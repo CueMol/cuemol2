@@ -31,7 +31,7 @@ import type {
     RpcKey,
     ServiceFn,
     ServiceKey,
-} from '../shared/WorkerCalls';
+} from '../shared/calls';
 
 // import { createLogger } from '@cuemol/core/src/logger';
 // const log = createLogger(import.meta.url);
@@ -104,7 +104,7 @@ export class WorkerService {
     /**
      * Register a business-logic service handler under `name`.
      * Called once per `*.service.ts` entry during worker startup; the key
-     * must exist in `ServiceMap` (WorkerCalls.ts).
+     * must exist in `ServiceMap` (worker/shared/calls/).
      */
     register<K extends ServiceKey>(name: K, fn: ServiceFn<K>): void {
         if (name in this._registered) {

@@ -289,7 +289,7 @@ interface RenderResult {
 
 | 境界 | API 形 | 追加先 |
 |---|---|---|
-| renderer → worker | `renderStart(settings: RenderSettings) => { jobId }` | `ServiceMap`（`worker/shared/WorkerCalls.ts`） |
+| renderer → worker | `renderStart(settings: RenderSettings) => { jobId }` | `ServiceMap`（`worker/shared/calls/`） |
 | renderer → worker | `renderCancel(jobId: string) => { ok: boolean }` | `ServiceMap` |
 | worker → renderer | `onRenderProgress(cb)` — `{ jobId; progress; phase; logChunk? }` | worker→renderer イベント転送機構 |
 | worker → renderer | `onRenderComplete(cb)` — `{ jobId; result: RenderResult } \| { jobId; error: string }` | worker→renderer イベント転送機構 |
@@ -302,7 +302,7 @@ interface RenderResult {
 
 ### 7.4 型契約マップへの追加（CLAUDE.md 準拠）
 
-追加の起点は `worker/shared/WorkerCalls.ts` の `ServiceMap` 行 → `commands/CommandMap.ts` + `commands/ids.ts`。SettingsPane のパス保存に IPC 永続化を使う場合のみ `shared/ipcChannels.ts` + `shared/ipcContract.ts` にも行追加する。
+追加の起点は `worker/shared/calls/` の `ServiceMap` 行 → `commands/CommandMap.ts` + `commands/ids.ts`。SettingsPane のパス保存に IPC 永続化を使う場合のみ `shared/ipcChannels.ts` + `shared/ipcContract.ts` にも行追加する。
 
 ---
 
@@ -424,7 +424,7 @@ interface RenderBackend {
 | `.../components/panels/BottomPanel.tsx` | `BottomTabType`、`TabButton` |
 | `.../components/ContentArea.tsx` / `panes/ContentPane.tsx` / `types.ts` | `TabData` / `TabType` |
 | `.../hooks/useTabManager.ts` / `useLayoutPersistence.ts` | タブ管理・レイアウト永続化 |
-| `.../worker/shared/WorkerCalls.ts` | `ServiceMap` |
+| `.../worker/shared/calls/` | `ServiceMap` |
 | `.../commands/CommandMap.ts` / `commands/ids.ts` | コマンド契約 |
 | `.../worker/server/services/*.service.ts` | service 実装パターン |
 | `src/modules/rendering/` | `PovSceneExporter` ほか |

@@ -78,7 +78,7 @@ the tool-options popover. No new C++ / wrappers.
 
 - Worker service: `worker/server/services/bondEdit.service.ts`
   (`bondEditPick` / `bondEditReset` / `bondEditListBonds` /
-  `bondEditRemoveBond`); contract rows in `worker/shared/WorkerCalls.ts`.
+  `bondEditRemoveBond`); contract rows in `worker/shared/calls/`.
 - Click handler: `hooks/useBondEditClickHandler.ts` (gated on
   `activeTool === 'bondEdit'`; `useNaviClickHandler` is an allowlist of
   `navigate`/`rectSelect`, so the bond tool is auto-isolated).

@@ -102,7 +102,7 @@ Extended the widget from the ColorPane decks to every remaining colour UI.
   `colorMath.ts`); styles in `react-gui/src/renderer/styles/_colorpicker.css`.
 - Worker service: `react-gui/src/renderer/worker/server/services/colorPicker.service.ts`;
   `ServiceMap` rows `compileColor` / `getNamedColors` in
-  `worker/shared/WorkerCalls.ts`.
+  `worker/shared/calls/`.
 - Shared adapter: `h3-kit/colorpicker/ColorPickerContext.tsx`
   (`ColorPickerProvider` / `useColorPickerCtx`) and `CueColorField.tsx`.
 - Integration: `components/panes/ColorPane.tsx` (decks + Paint cell),

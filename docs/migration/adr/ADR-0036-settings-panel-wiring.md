@@ -84,7 +84,7 @@ Wire the two backend-backed mock groups and delete the rest.
   previewed only family/bold/italic at a fixed 20px with no colour.
 - Services: `worker/server/services/labelDefaults.service.ts`,
   `viewInputParams.service.ts`; lifecycle `worker/server/workerLifecycle.ts`
-  (`saveUserStyle`); `ServiceMap`/`MethodMap` rows in `worker/shared/WorkerCalls.ts`.
+  (`saveUserStyle`); `ServiceMap`/`MethodMap` rows in `worker/shared/calls/`.
 - Renderer: `contexts/AppSettingsContext.tsx` (provider mounted in `index.tsx`);
   routing in `SettingsPane.tsx` + key maps `LABEL_DEFAULT_SETTING_KEYS` /
   `VIEW_INPUT_PARAM_SETTING_KEYS` in `settingsConfig.ts`; close hook in
