@@ -51,6 +51,7 @@ export interface PropWriteOpts {
     mode?: PropWriteMode;
     originalValue?: string | number | boolean;
     originalWasDefault?: boolean;
+    cascadeGroupVisibility?: boolean;
 }
 
 export interface SetGenericPropArgs {
@@ -85,6 +86,13 @@ export interface SetGenericPropArgs {
      * default -> non-default transition (and undo reverts the default state).
      */
     originalWasDefault?: boolean;
+    /**
+     * Let a rendGroup's `visible` write carry its member renderers with it.
+     * Set by the surfaces that present the flag as "show / hide this group"
+     * (the structured inspector page); the raw property editor leaves it off
+     * so it writes exactly the property it names.
+     */
+    cascadeGroupVisibility?: boolean;
 }
 
 export interface SetGenericPropResult {
@@ -260,6 +268,20 @@ function setGenericProp(
         };
     }
 
+    // A group's own `visible` flag draws nothing on its own: RendGroup::display()
+    // is empty and the C++ scene loop consults each renderer's own flag. Callers
+    // that present this as "hide the group" therefore ask for the members to
+    // follow, the same cascade the scene tree's eye toggle performs
+    // (setNodeVisible / UXP `toggleVisibleRendGrp`). The raw property editor
+    // does not ask, and writes only the flag it names.
+    const grpVisibility =
+        args.op === 'set' &&
+        args.cascadeGroupVisibility === true &&
+        args.propName === 'visible' &&
+        args.nodeType === 'rendGroup'
+            ? listGroupChildRenderers(scene, target as unknown as Renderer)
+            : null;
+
     // Group membership is an unvalidated name reference, so a `group` write
     // naming no existing group (a typo, or a group deleted meanwhile) drops the
     // renderer out of getGroupedRendListJSON -- it keeps drawing but is gone
@@ -314,6 +336,11 @@ function setGenericProp(
                 target.setProp(args.propName, sel.wrapped);
             } else {
                 target.setProp(args.propName, args.value);
+                if (grpVisibility) {
+                    for (const c of grpVisibility) {
+                        try { c.visible = args.value as boolean; } catch { /* ignore */ }
+                    }
+                }
             }
         });
     } catch (e) {

@@ -142,6 +142,20 @@
   color: var(--accent);
 }
 
+/* A tree row is a flex line, and an inline <svg> shrinks in one like any
+   other item. So a name too long for the pane squeezed the row's glyphs as
+   well as the label, and rows whose names overflowed by different amounts
+   ended up with visibly different icon sizes. The label already gives way on
+   its own (it is `overflow: hidden`, so it ellipsises); pinning the glyphs
+   makes it the only thing that does. Blueprint returns an element icon
+   verbatim, without its class, so the row's type icon is a bare `> svg`. */
+.h3-listbox-tree .bp5-tree-node-content > svg,
+.h3-listbox-tree .bp5-tree-node-caret,
+.h3-listbox-tree .bp5-tree-node-caret-none,
+.h3-listbox-tree .bp5-tree-node-secondary-label {
+  flex: 0 0 auto;
+}
+
 .h3-listbox-tree .bp5-tree-node-label {
   /* icon -> label gap (same token as the flex-row `gap`), since Blueprint
      drops the icon class for element icons -- see note above. The label

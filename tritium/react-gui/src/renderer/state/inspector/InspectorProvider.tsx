@@ -309,6 +309,7 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
               mode: opts?.mode,
               originalValue: opts?.originalValue,
               originalWasDefault: opts?.originalWasDefault,
+              cascadeGroupVisibility: opts?.cascadeGroupVisibility,
             }),
           // A preview / abort write returns no entries (the field drives itself
           // from its local draft during a drag, and an abort's refresh arrives

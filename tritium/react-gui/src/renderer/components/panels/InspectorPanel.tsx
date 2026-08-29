@@ -74,6 +74,19 @@ const InspectorPanelComponent: React.FC = () => {
   const nodeType = header.type;
   const nodeId = target?.kind === "node" ? target.nodeId : undefined;
   const animElement = target?.kind === "animElement" ? { sceneId: target.sceneId, uid: target.uid } : null;
+
+  /**
+   * Writer for the structured page. It presents a renderer group's `visible`
+   * flag as "show / hide this group", so the members follow -- the same thing
+   * the scene tree's eye toggle does. The Generic tab is a raw property
+   * editor and writes only the property it names, so it uses the plain
+   * writer.
+   */
+  const setStructuredProp = useCallback<typeof onGenericSet>(
+    (key, valueType, value, opts) =>
+      onGenericSet(key, valueType, value, { ...opts, cascadeGroupVisibility: true }),
+    [onGenericSet],
+  );
   // Renderer, Object and Scene targets have a migrated structured page, so
   // default to it; other node kinds fall back to the data-backed Generic tab.
   const isRenderer =
@@ -171,7 +184,7 @@ const InspectorPanelComponent: React.FC = () => {
                 entries={genericEntries}
                 rendererType={nodeType}
                 isObject={isObject}
-                onSet={onGenericSet}
+                onSet={setStructuredProp}
                 onSetMany={onGenericSetMany}
                 onReset={onGenericReset}
                 sceneId={sceneId}
