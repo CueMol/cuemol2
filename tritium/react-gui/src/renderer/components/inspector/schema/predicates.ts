@@ -38,6 +38,9 @@ export const isOn = (key: string): Predicate => (ctx) => ctx.value(key) === true
 /** A boolean property is off (an absent property counts as off). */
 export const isOff = (key: string): Predicate => (ctx) => ctx.value(key) !== true
 
+/** The renderer exposes this property (the counterpart of `absent`). */
+export const present = (key: string): Predicate => (ctx) => ctx.get(key) !== undefined
+
 /**
  * The inspected node's renderer type is one of these. A gate on the TYPE
  * rather than on a property value, for a block that a type inherits from the

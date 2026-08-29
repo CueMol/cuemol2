@@ -25,5 +25,7 @@ export { SelRow } from './SelRow';
 export type { SelRowProps } from './SelRow';
 export { AsyncSelectRow, useAsyncNames } from './AsyncSelectRow';
 export type { AsyncSelectRowProps, AsyncNameSource } from './AsyncSelectRow';
+export { DerivedNumRow } from './DerivedNumRow';
+export type { DerivedNumRowProps } from './DerivedNumRow';
 export { OptionalNumRow } from './OptionalNumRow';
 export type { OptionalNumRowProps } from './OptionalNumRow';

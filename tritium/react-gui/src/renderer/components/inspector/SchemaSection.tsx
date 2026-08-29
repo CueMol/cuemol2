@@ -20,6 +20,7 @@ import {
   AsyncSelectRow,
   BoolRow,
   ColorRow,
+  DerivedNumRow,
   EnumRow,
   MappedEnumRow,
   NumInputRow,
@@ -35,6 +36,7 @@ import { DRAFT_KINDS, makePropCtx, type PropCtx, type PropRowDef, type SchemaSec
 
 type SetFn = RendererPropSectionProps['onSet']
 type ResetFn = RendererPropSectionProps['onReset']
+type SetManyFn = RendererPropSectionProps['onSetMany']
 
 export interface SchemaSectionProps {
   section: SchemaSectionDef
@@ -52,6 +54,11 @@ export interface SchemaSectionProps {
    */
   molId?: number
   onSet: SetFn
+  /**
+   * Write several properties in one undo step. Only a `derivedNum` row that
+   * writes more than one needs it; `PropertiesTab` always supplies it.
+   */
+  onSetMany?: SetManyFn
   onReset: ResetFn
 }
 
@@ -61,11 +68,16 @@ function renderRow(
   ctx: PropCtx,
   sectionDisabled: boolean,
   onSet: SetFn,
+  onSetMany: SetManyFn,
   onReset: ResetFn,
 ): React.ReactElement | null {
   if (row.visibleWhen && !row.visibleWhen(ctx)) return null
   const entry = ctx.get(row.key)
   if (!entry) return null
+  // A derived row reads more than its own property and cannot be shown
+  // without them (a tube's minor axis is meaningless with no ratio).
+  if (row.kind === 'derivedNum' && row.needs.some((k) => ctx.get(k) === undefined))
+    return null
   const disabled = sectionDisabled || (row.disabledWhen?.(ctx) ?? false)
   // A control holding a draft has to be remounted when the property changes
   // underneath it, or it keeps showing what the user abandoned typing.
@@ -211,6 +223,29 @@ function renderRow(
         />
       )
 
+    case 'derivedNum':
+      return (
+        <DerivedNumRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          value={row.display(ctx)}
+          computeWrites={(v) => row.commit(ctx, v)}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          fineSnap={row.fineSnap}
+          coarseSnap={row.coarseSnap}
+          unit={row.unit}
+          decimals={row.decimals}
+          multiWrite={row.multiWrite}
+          disabled={disabled}
+        />
+      )
+
     case 'sel':
       return (
         <SelRow
@@ -248,11 +283,12 @@ export function renderRows(
   section: SchemaSectionDef,
   ctx: PropCtx,
   onSet: SetFn,
+  onSetMany: SetManyFn,
   onReset: ResetFn,
 ): React.ReactElement[] {
   const sectionDisabled = section.disabledWhen?.(ctx) ?? false
   return section.rows
-    .map((row) => renderRow(row, ctx, sectionDisabled, onSet, onReset))
+    .map((row) => renderRow(row, ctx, sectionDisabled, onSet, onSetMany, onReset))
     .filter((el): el is React.ReactElement => el !== null)
 }
 
@@ -271,11 +307,12 @@ export const SchemaSection: React.FC<SchemaSectionProps> = ({
   nodeId,
   molId,
   onSet,
+  onSetMany,
   onReset,
 }) => {
   const ctx = makePropCtx(entries, rendererType, sceneId, nodeId, molId)
   if (section.visibleWhen && !section.visibleWhen(ctx)) return null
-  const rows = renderRows(section, ctx, onSet, onReset)
+  const rows = renderRows(section, ctx, onSet, onSetMany, onReset)
   if (section.hideWhenEmpty && rows.length === 0) return null
   return (
     <AccordionSection title={section.title} defaultExpanded={section.defaultExpanded}>

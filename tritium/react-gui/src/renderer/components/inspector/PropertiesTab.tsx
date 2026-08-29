@@ -161,6 +161,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
               nodeId={nodeId}
               molId={molId}
               onSet={onSet}
+              onSetMany={onSetMany}
               onReset={onReset}
             />
           ),

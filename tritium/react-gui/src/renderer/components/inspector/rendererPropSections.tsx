@@ -25,6 +25,8 @@ import { DISORDER_SECTIONS } from "./schema/disorder";
 import { MOLSURF_SECTIONS } from "./schema/molsurf";
 import { SPLINE_SECTIONS } from "./schema/spline";
 import { DSURF2_SECTIONS, DSURFACE_SECTIONS } from "./schema/dsurface";
+import { TUBE_SECTIONS } from "./schema/tube";
+import { NUCL_SECTIONS } from "./schema/nucl";
 import type {
   GenericPropEntry,
   PropWriteOpts,
@@ -49,17 +51,6 @@ import {
 } from "./CartoonRendererSection";
 import { ContourMainSection } from "./ContourRendererSection";
 import { IsosurfMainSection } from "./IsosurfRendererSection";
-import {
-  TubeMainSection,
-  TubeSectionSection,
-  TubePuttySection,
-} from "./TubeRendererSection";
-import {
-  NuclBaseSection,
-  NuclTubeMainSection,
-  NuclSectionSection,
-  NuclPuttySection,
-} from "./NuclRendererSection";
 import {
   RibbonMainSection,
   RibbonHelixSection,
@@ -334,26 +325,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // the "Tube" section; the nested TubeSection shape (edited via dot-path keys
   // section.type / section.width / ...) forms the "Section" section; the putty
   // radius-scaling controls form the "Putty" section.
-  tube: [
-    {
-      key: "tube-main",
-      title: "Tube",
-      defaultExpanded: true,
-      Component: TubeMainSection,
-    },
-    {
-      key: "tube-section",
-      title: "Section",
-      defaultExpanded: true,
-      Component: TubeSectionSection,
-    },
-    {
-      key: "tube-putty",
-      title: "Putty",
-      defaultExpanded: true,
-      Component: TubePuttySection,
-    },
-  ],
+  tube: TUBE_SECTIONS,
   // RibbonRenderer ("ribbon"): UXP ribbon-propdlg Common/Helix/Sheet/Coil tabs.
   // Section shapes (TubeSection) and head/tail junctions (JctTable) are nested,
   // edited by dotted keys.
@@ -387,32 +359,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // "Nucleic acid" tab on top of the shared tube-page (Tube / Section / Putty),
   // which are reused here. The reused tube sections are disabled when
   // "Show tube" is off (UXP gTube.disableAll gate).
-  nucl: [
-    {
-      key: "nucl-base",
-      title: "Nucleic acid",
-      defaultExpanded: true,
-      Component: NuclBaseSection,
-    },
-    {
-      key: "nucl-tube-main",
-      title: "Tube",
-      defaultExpanded: true,
-      Component: NuclTubeMainSection,
-    },
-    {
-      key: "nucl-tube-section",
-      title: "Section",
-      defaultExpanded: true,
-      Component: NuclSectionSection,
-    },
-    {
-      key: "nucl-tube-putty",
-      title: "Putty",
-      defaultExpanded: true,
-      Component: NuclPuttySection,
-    },
-  ],
+  nucl: NUCL_SECTIONS,
 };
 
 /**

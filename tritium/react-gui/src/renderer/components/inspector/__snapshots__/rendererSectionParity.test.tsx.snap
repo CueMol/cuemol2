@@ -1910,13 +1910,13 @@ exports[`renderer Properties page > nucl / default 1`] = `
       "Connect base pair -> set show_basepair=false",
       "Base type -> set base_type="detail1"",
       "Detail -> set base_detail=4",
-      "Base size -> set base_size=0.6",
+      "Base size -> setMany [{"key":"base_size","valueType":"real","value":0.6},{"key":"base_thick","valueType":"real","value":0.6}]",
       "Base thick -> (nothing)",
     ],
   },
   "Putty": {
     "rows": [
-      "Mode [select] {resettable} options=[linear1|none|scale1] selected=none",
+      "Mode [select] {resettable} options=[none|linear1|scale1] selected=none",
       "Target [select] {resettable,disabled} options=[bfac|occ] selected=bfac",
       "Low scale [drag-numeric] {resettable,disabled}",
       "High scale [drag-numeric] {resettable,disabled}",
@@ -2013,13 +2013,13 @@ exports[`renderer Properties page > nucl / tube-off 1`] = `
       "Connect base pair -> set show_basepair=false",
       "Base type -> set base_type="detail1"",
       "Detail -> set base_detail=4",
-      "Base size -> set base_size=0.6",
+      "Base size -> setMany [{"key":"base_size","valueType":"real","value":0.6},{"key":"base_thick","valueType":"real","value":0.6}]",
       "Base thick -> (nothing)",
     ],
   },
   "Putty": {
     "rows": [
-      "Mode [select] {resettable,disabled} options=[linear1|none|scale1] selected=none",
+      "Mode [select] {resettable,disabled} options=[none|linear1|scale1] selected=none",
       "Target [select] {resettable,disabled} options=[bfac|occ] selected=bfac",
       "Low scale [drag-numeric] {resettable,disabled}",
       "High scale [drag-numeric] {resettable,disabled}",
@@ -2642,7 +2642,7 @@ exports[`renderer Properties page > tube / default 1`] = `
   },
   "Putty": {
     "rows": [
-      "Mode [select] {resettable} options=[linear1|none|scale1] selected=none",
+      "Mode [select] {resettable} options=[none|linear1|scale1] selected=none",
       "Target [select] {resettable,disabled} options=[bfac|occ] selected=bfac",
       "Low scale [drag-numeric] {resettable,disabled}",
       "High scale [drag-numeric] {resettable,disabled}",
@@ -2727,7 +2727,7 @@ exports[`renderer Properties page > tube / putty-scaling 1`] = `
   },
   "Putty": {
     "rows": [
-      "Mode [select] {modified,resettable} options=[linear1|none|scale1] selected=linear1",
+      "Mode [select] {modified,resettable} options=[none|linear1|scale1] selected=scale1",
       "Target [select] {modified,resettable} options=[bfac|occ] selected=bfac",
       "Low scale [drag-numeric] {resettable}",
       "High scale [drag-numeric] {resettable}",
@@ -2812,7 +2812,7 @@ exports[`renderer Properties page > tube / section-fancy 1`] = `
   },
   "Putty": {
     "rows": [
-      "Mode [select] {resettable} options=[linear1|none|scale1] selected=none",
+      "Mode [select] {resettable} options=[none|linear1|scale1] selected=none",
       "Target [select] {resettable,disabled} options=[bfac|occ] selected=bfac",
       "Low scale [drag-numeric] {resettable,disabled}",
       "High scale [drag-numeric] {resettable,disabled}",
@@ -2897,7 +2897,7 @@ exports[`renderer Properties page > tube / section-roundsquare 1`] = `
   },
   "Putty": {
     "rows": [
-      "Mode [select] {resettable} options=[linear1|none|scale1] selected=none",
+      "Mode [select] {resettable} options=[none|linear1|scale1] selected=none",
       "Target [select] {resettable,disabled} options=[bfac|occ] selected=bfac",
       "Low scale [drag-numeric] {resettable,disabled}",
       "High scale [drag-numeric] {resettable,disabled}",

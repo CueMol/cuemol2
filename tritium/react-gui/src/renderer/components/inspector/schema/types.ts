@@ -16,6 +16,7 @@
 
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import type { AsyncNameSource } from '../rows/AsyncSelectRow'
+import type { PropMultiWrite } from '../rendererPropSections'
 
 /**
  * What a row can consult while the page renders: the live property list, and
@@ -180,6 +181,44 @@ export interface OptionalNumRowDef extends RowBase {
   gateLabel: string
 }
 
+/**
+ * A numeric row whose displayed value is COMPUTED from more than one property,
+ * and whose commit writes them back.
+ *
+ * C++ sometimes stores a size the user does not think in: a tube's
+ * cross-section is a major axis plus a minor/major ratio, and a nucleic base's
+ * thickness is an absolute the UXP dialog showed as a percentage of the base
+ * size. This row keeps the user's unit and does the arithmetic, so editing one
+ * axis does not move the other.
+ *
+ * `key` names the property the row's modified bar and reset belong to; `needs`
+ * names the others it reads, and the row is dropped unless all of them exist.
+ * `commit` returns the writes, and returning none means "nothing to write"
+ * (the value did not move, or the arithmetic would divide by zero).
+ */
+export interface DerivedNumRowDef extends RowBase {
+  kind: 'derivedNum'
+  /** Other properties this row reads; absent ones drop the row. */
+  needs: string[]
+  /** The value to show, in the user's unit. */
+  display: (ctx: PropCtx) => number
+  /** The writes a committed value turns into; empty means write nothing. */
+  commit: (ctx: PropCtx, value: number) => PropMultiWrite[]
+  /**
+   * This row can write more than one property, so it needs the multi-write
+   * callback and is disabled without it (one write always goes through the
+   * plain single-property one).
+   */
+  multiWrite?: boolean
+  min: number
+  max: number
+  step: number
+  fineSnap?: number
+  coarseSnap?: number
+  unit?: string
+  decimals?: number
+}
+
 /** A molecular-selection property, edited through the selection picker. */
 export interface SelRowDef extends RowBase {
   kind: 'sel'
@@ -202,6 +241,7 @@ export type PropRowDef =
   | ColorRowDef
   | NumInputRowDef
   | OptionalNumRowDef
+  | DerivedNumRowDef
   | TextRowDef
   | SelRowDef
   | AsyncSelectRowDef
