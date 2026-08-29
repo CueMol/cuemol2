@@ -5,7 +5,7 @@
  * creation, type change, and renderer creation on an object.
  */
 
-import { useCallback, type MutableRefObject } from 'react'
+import { useCallback, type MutableRefObject, useMemo} from 'react'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
 import type { ChangeRendSelKind, RendColoringId } from '@shared/types/sceneCtxMenu'
@@ -209,15 +209,26 @@ export function useSceneTreeRendererOps(
         [cm, sceneIdRef],
     )
 
-    return {
-        setRendererColoring,
-        paintRendererSelection,
-        paintObjectSelection,
-        applyRendererStyle,
-        setRendererSelection,
-        generateRendererSurfObj,
-        createRendererGroup,
-        changeRendererType,
-        createRendererOnObject,
-    }
+    /**
+     * Renderer operations, memoized for the same reason as the node ops: the
+     * bundle they are spread into is handed out as context.
+     */
+    return useMemo(
+        () => ({
+            setRendererColoring,
+            paintRendererSelection,
+            paintObjectSelection,
+            applyRendererStyle,
+            setRendererSelection,
+            generateRendererSurfObj,
+            createRendererGroup,
+            changeRendererType,
+            createRendererOnObject,
+        }),
+        [
+        setRendererColoring, paintRendererSelection, paintObjectSelection,
+        applyRendererStyle, setRendererSelection, generateRendererSurfObj,
+        createRendererGroup, changeRendererType, createRendererOnObject,
+        ],
+    )
 }

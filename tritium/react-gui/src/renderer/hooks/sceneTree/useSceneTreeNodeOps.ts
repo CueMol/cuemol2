@@ -5,7 +5,7 @@
  * reorder, and bulk multi-select ops.
  */
 
-import { useCallback, type MutableRefObject } from 'react'
+import { useCallback, type MutableRefObject, useMemo} from 'react'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type {
     SceneNodeType,
@@ -469,19 +469,31 @@ export function useSceneTreeNodeOps(
         [tree],
     )
 
-    return {
-        toggleVisibility,
-        setNodeUiCollapsed,
-        focusNode,
-        deleteNode,
-        renameNode,
-        selectObjectMol,
-        copyNode,
-        pasteNode,
-        moveSceneNode,
-        bulkSetNodeVisible,
-        bulkDeleteNodes,
-        bulkCopyNodes,
-        resolveNodeName,
-    }
+    /**
+     * Scene-tree node operations, memoized: `useSceneTree` spreads this into
+     * the bundle its provider hands out as context, so a fresh object here
+     * would re-render every row on any render.
+     */
+    return useMemo(
+        () => ({
+            toggleVisibility,
+            setNodeUiCollapsed,
+            focusNode,
+            deleteNode,
+            renameNode,
+            selectObjectMol,
+            copyNode,
+            pasteNode,
+            moveSceneNode,
+            bulkSetNodeVisible,
+            bulkDeleteNodes,
+            bulkCopyNodes,
+            resolveNodeName,
+        }),
+        [
+        toggleVisibility, setNodeUiCollapsed, focusNode, deleteNode, renameNode,
+        selectObjectMol, copyNode, pasteNode, moveSceneNode, bulkSetNodeVisible,
+        bulkDeleteNodes, bulkCopyNodes, resolveNodeName,
+        ],
+    )
 }

@@ -62,7 +62,7 @@ interface ActivityBarProps {
   onSelect: (view: ActivityView) => void;
 }
 
-export const ActivityBar: React.FC<ActivityBarProps> = ({
+const ActivityBarComponent: React.FC<ActivityBarProps> = ({
   activeView,
   onSelect,
 }) => {
@@ -97,3 +97,10 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
     </div>
   );
 };
+
+/**
+ * `onSelect` is stable and `activeView` changes only when the user picks
+ * a view, so this re-renders only for its own workspace slice.
+ */
+export const ActivityBar = React.memo(ActivityBarComponent)
+ActivityBar.displayName = 'ActivityBar'

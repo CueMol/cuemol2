@@ -48,7 +48,7 @@ const TabButton: React.FC<TabButtonProps> = (props) => (
 // ---------------------------------------------
 
 
-export const BottomPanel: React.FC = () => {
+const BottomPanelComponent: React.FC = () => {
   const { cm } = useCueMol();
   const { activeSceneId, activeMolViewId } = useActiveScene();
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
@@ -122,3 +122,10 @@ export const BottomPanel: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * Props-free: re-renders for the log buffer and the active scene it
+ * reads, not for anything happening in the sidebar or the inspector.
+ */
+export const BottomPanel = React.memo(BottomPanelComponent)
+BottomPanel.displayName = 'BottomPanel'

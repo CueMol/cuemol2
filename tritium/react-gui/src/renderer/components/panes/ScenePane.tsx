@@ -74,7 +74,7 @@ interface ScenePaneProps {
  * Blueprint `Tree` wiring, the click-pause-click rename schedule, and the
  * drag-drop geometry.
  */
-export const ScenePane: React.FC<ScenePaneProps> = ({
+const ScenePaneComponent: React.FC<ScenePaneProps> = ({
     collapsed,
     onToggleCollapse,
 }) => {
@@ -866,3 +866,11 @@ function nodeLabel(node: SceneTreeNode): string {
             return node.name;
     }
 }
+
+/**
+ * Its two props are the pane-level fold; the tree and the selection come
+ * from the provider. The actions bundle is identity-stable, so a click
+ * re-renders the rows through the state context alone.
+ */
+export const ScenePane = React.memo(ScenePaneComponent)
+ScenePane.displayName = 'ScenePane'

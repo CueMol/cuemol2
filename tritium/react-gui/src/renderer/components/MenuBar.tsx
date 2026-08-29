@@ -30,7 +30,7 @@ import type { MenuBarPick } from './menu/resolveAppMenu'
  * plus the click-away / Escape close handlers, and renders each non-darwin
  * `APP_MENU` group as a `MenuPanel` dropdown.
  */
-export const MenuBar: React.FC = () => {
+const MenuBarComponent: React.FC = () => {
   // Menu state comes from the providers the menu mirrors, not from App.
   const { viewProjection, viewCenterMark, sceneBgColor, exportAvailable } = useActiveViewValues()
   const { hasScene } = useActiveScene()
@@ -154,3 +154,10 @@ export const MenuBar: React.FC = () => {
 function handleRole(role: AppMenuRole): void {
   window.electronAPI?.invoke(IPC.MENU_INVOKE_ROLE, role)
 }
+
+/**
+ * Props-free: re-renders only for the menu state and the workspace
+ * slices it reads, never because the shell re-rendered.
+ */
+export const MenuBar = React.memo(MenuBarComponent)
+MenuBar.displayName = 'MenuBar'

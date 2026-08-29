@@ -5,7 +5,7 @@
  * dispatch directly to the worker without a tree lookup.
  */
 
-import { useCallback, type MutableRefObject } from 'react'
+import { useCallback, type MutableRefObject, useMemo} from 'react'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 
 export interface SceneTreeStyleOps {
@@ -120,13 +120,24 @@ export function useSceneTreeStyleOps(
         [cm, sceneIdRef],
     )
 
-    return {
-        createStyleSet,
-        toggleStyleSetReadOnly,
-        loadStyleSetFromFile,
-        saveStyleSetToFile,
-        saveStyleSetToCurrentSrc,
-        setSceneBackgroundColor,
+    /**
+     * Style-set operations, memoized for the same reason as the node ops: the
+     * bundle they are spread into is handed out as context.
+     */
+    return useMemo(
+        () => ({
+            createStyleSet,
+            toggleStyleSetReadOnly,
+            loadStyleSetFromFile,
+            saveStyleSetToFile,
+            saveStyleSetToCurrentSrc,
+            setSceneBackgroundColor,
+            toggleSceneColorProofing,
+        }),
+        [
+        createStyleSet, toggleStyleSetReadOnly, loadStyleSetFromFile,
+        saveStyleSetToFile, saveStyleSetToCurrentSrc, setSceneBackgroundColor,
         toggleSceneColorProofing,
-    }
+        ],
+    )
 }

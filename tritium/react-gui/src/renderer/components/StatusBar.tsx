@@ -5,7 +5,7 @@ import { useStatusMessage } from '../state/statusMessage';
 import { useCueMolBusy } from '../hooks/useCueMolBusy';
 import { useBusyCursor } from '../hooks/useBusyCursor';
 
-export const StatusBar: React.FC = () => {
+const StatusBarComponent: React.FC = () => {
   // Everything shown here is read from its owner; App passes nothing in.
   const activeDef = useActiveToolDef();
   const statusMessage = useStatusMessage();
@@ -50,3 +50,10 @@ export const StatusBar: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * Props-free: a status message re-renders this alone -- the reason the
+ * message lives in its own provider rather than in App.
+ */
+export const StatusBar = React.memo(StatusBarComponent)
+StatusBar.displayName = 'StatusBar'

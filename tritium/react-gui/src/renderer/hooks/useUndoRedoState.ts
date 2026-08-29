@@ -26,7 +26,7 @@
  * most recent, so picking history entry `i` calls `pickUndo(i)`.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IPC } from '@shared/ipcChannels'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { CmdId } from '../commands/ids'
@@ -160,5 +160,10 @@ export function useUndoRedoState({
     debounceMs: EVENT_BURST_DEBOUNCE_MS,
   })
 
-  return { canUndo, canRedo, undoDescs, redoDescs, pickUndo, pickRedo }
+  // Memoized: UndoRedoProvider hands this straight to its context, and the
+  // toolbar is memo'd against it.
+  return useMemo(
+    () => ({ canUndo, canRedo, undoDescs, redoDescs, pickUndo, pickRedo }),
+    [canUndo, canRedo, undoDescs, redoDescs, pickUndo, pickRedo],
+  )
 }

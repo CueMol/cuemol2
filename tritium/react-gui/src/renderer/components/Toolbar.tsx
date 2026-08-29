@@ -44,7 +44,7 @@ const TOOLBAR_ITEMS: ToolbarItem[] = [
   { kind: "redo", id: "redo" },
 ];
 
-export const Toolbar: React.FC = () => {
+const ToolbarComponent: React.FC = () => {
   const undoRedo = useUndoRedo();
   const { hasScene } = useActiveScene();
   const { dispatch } = useCommands();
@@ -111,3 +111,10 @@ export const Toolbar: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * Props-free: re-renders only for the active tool and the undo/redo
+ * availability it reads, never because the shell re-rendered.
+ */
+export const Toolbar = React.memo(ToolbarComponent)
+Toolbar.displayName = 'Toolbar'

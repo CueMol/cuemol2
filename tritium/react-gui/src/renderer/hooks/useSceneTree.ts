@@ -20,7 +20,7 @@
  * grouped by domain into the `sceneTree/` sub-hooks, composed below.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useMemo } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import {
@@ -215,34 +215,48 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
     const cameraOps = useSceneTreeCameraOps(cm, sceneIdRef)
     const styleOps = useSceneTreeStyleOps(cm, sceneIdRef)
 
-    const selectedNode = selectedId
-        ? findNode(tree, Number(selectedId))
-        : null
+    const selectedNode = useMemo(
+        () => (selectedId ? findNode(tree, Number(selectedId)) : null),
+        [tree, selectedId],
+    )
 
     // Multi-select gates focus/property to single selection only; delete
     // stays enabled (mirrors UXP toolbar behaviour where the multi
     // ctxmenu still offers Delete).
-    const isMulti = selectedIds.size > 1
-    const singleOps = computeOps(selectedNode)
-    const selectedHasOps = isMulti
-        ? { focus: false, delete: singleOps.delete, property: false, add: false }
-        : singleOps
+    //
+    // Memoized because the result is handed out as state: a fresh object
+    // every render would re-render every scene-tree row on any render of
+    // the provider.
+    const selectedHasOps = useMemo(() => {
+        const singleOps = computeOps(selectedNode)
+        if (selectedIds.size <= 1) return singleOps
+        return { focus: false, delete: singleOps.delete, property: false, add: false }
+    }, [selectedNode, selectedIds])
 
-    return {
-        tree,
-        selectedId,
-        selectedIds,
-        selectedNode,
-        selectedHasOps,
-        setSelectedId,
-        toggleInSelection,
-        selectRangeTo,
-        refetch,
-        ...nodeOps,
-        ...rendererOps,
-        ...cameraOps,
-        ...styleOps,
-    }
+    // Memoized: SceneTreeProvider derives both of its contexts from this,
+    // and a fresh object every render would defeat them.
+    return useMemo(
+        () => ({
+            tree,
+            selectedId,
+            selectedIds,
+            selectedNode,
+            selectedHasOps,
+            setSelectedId,
+            toggleInSelection,
+            selectRangeTo,
+            refetch,
+            ...nodeOps,
+            ...rendererOps,
+            ...cameraOps,
+            ...styleOps,
+        }),
+        [
+            tree, selectedId, selectedIds, selectedNode, selectedHasOps,
+            setSelectedId, toggleInSelection, selectRangeTo, refetch,
+            nodeOps, rendererOps, cameraOps, styleOps,
+        ],
+    )
 }
 
 /**

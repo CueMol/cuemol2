@@ -52,7 +52,7 @@ export type InspectorTargetKind = "node" | "animElement";
 // Component
 // ------------------------------------------------------------
 
-export const InspectorPanel: React.FC = () => {
+const InspectorPanelComponent: React.FC = () => {
   // The target and its property data come from the inspector provider; the
   // writers are identity-stable, so a property change re-renders only what
   // reads the entries.
@@ -192,3 +192,10 @@ export const InspectorPanel: React.FC = () => {
     </ColorPickerProvider>
   );
 };
+
+/**
+ * Props-free: re-renders for the inspector target and its property
+ * entries alone.
+ */
+export const InspectorPanel = React.memo(InspectorPanelComponent)
+InspectorPanel.displayName = 'InspectorPanel'

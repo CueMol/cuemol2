@@ -206,7 +206,7 @@ interface SidePanelProps {
  * via the generic `renderView` helper, which builds a vertical Allotment
  * from the view's `PaneConfig[]` and applies collapse / size tracking.
  */
-export const SidePanel: React.FC<SidePanelProps> = ({ activeView }) => {
+const SidePanelComponent: React.FC<SidePanelProps> = ({ activeView }) => {
   const { viewCollapsed, savedSizes } = useLayout();
   const { setViewSizes, setViewCollapsed } = useLayoutDispatch();
   const viewSizes = savedSizes.viewSizes;
@@ -315,3 +315,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({ activeView }) => {
     </div>
   );
 };
+
+/**
+ * Only `activeView` comes from the shell; everything the panes show they
+ * read themselves. A tab rename or a status message re-renders neither
+ * this nor the panes below it.
+ */
+export const SidePanel = React.memo(SidePanelComponent)
+SidePanel.displayName = 'SidePanel'

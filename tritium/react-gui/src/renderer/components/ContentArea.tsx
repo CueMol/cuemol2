@@ -42,7 +42,7 @@ import { ContentPane } from "./panes/ContentPane";
 // Component
 // ------------------------------------------------------------
 
-export const ContentArea: React.FC = () => {
+const ContentAreaComponent: React.FC = () => {
   const { tabs, activeTabId: activeTab, activeTab: active } = useWorkspaceTabs();
   const { activateTab: onSelectTab, closeTab: onCloseTab, reorderTabs } = useWorkspaceDispatch();
 
@@ -68,3 +68,10 @@ export const ContentArea: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * Props-free: re-renders for the tab strip alone. Its ContentPane keeps
+ * the molview mounted, so this must never be remounted.
+ */
+export const ContentArea = React.memo(ContentAreaComponent)
+ContentArea.displayName = 'ContentArea'

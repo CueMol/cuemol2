@@ -15,7 +15,7 @@
  * falling back to the fetched `baseMgr` otherwise.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { AnimMgrState } from "../types";
 
@@ -200,8 +200,16 @@ export function useAnimTransport({
     else play();
   }, [play, pause]);
 
-  return {
-    mgr, isPlaying, canControl, play, pause, togglePlay, stop, seek, setLoop, setStartCam,
-    adoptMgr,
-  };
+  // Memoized: AnimationPanel spreads this into its strip components, which
+  // would otherwise re-render on every unrelated panel render.
+  return useMemo(
+    () => ({
+      mgr, isPlaying, canControl, play, pause, togglePlay, stop, seek, setLoop,
+      setStartCam, adoptMgr,
+    }),
+    [
+      mgr, isPlaying, canControl, play, pause, togglePlay, stop, seek, setLoop,
+      setStartCam, adoptMgr,
+    ],
+  );
 }
