@@ -7,12 +7,13 @@
  *
  * CueMol drives playback in C++: `AnimMgr.start(view)` registers a native timer
  * that advances the animation and updates the view camera every tick, and the
- * worker's existing per-frame redraw loop renders it. The renderer only needs
- * to (1) call the transport ops and (2) POLL `elapsed` while playing, because
- * the C++ side fires no per-frame change event (see `AnimMgrState` in types.ts).
+ * worker's existing per-frame redraw loop renders it. Nothing fires a
+ * per-frame event, so the worker samples the manager on that same loop and
+ * pushes what moved (`anim-progress`); this subscribes to it. The renderer
+ * used to ask ~15 times a second instead, whether or not anything had.
  *
- * `mgr` returned here is the live snapshot (`liveMgr`) once any op/poll has run,
- * falling back to the fetched `baseMgr` otherwise.
+ * `mgr` returned here is the live snapshot (`liveMgr`) once an op or a push
+ * has arrived, falling back to the fetched `baseMgr` otherwise.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,10 +58,6 @@ const EMPTY_MGR: AnimMgrState = {
   startcam: "",
 };
 
-// Poll cadence for elapsed during playback (~15 Hz is smooth enough for a
-// progress indicator and cheap on the worker).
-const POLL_INTERVAL_MS = 66;
-
 /**
  * Transport controller for the active scene's animation.
  *
@@ -91,35 +88,18 @@ export function useAnimTransport({
   const isPlaying = mgr.playState === "play";
   const canControl = !!cm && sceneId !== undefined && viewId !== undefined;
 
-  // Poll elapsed while playing; the effect tears down when isPlaying flips
-  // false (a poll reading 'stop'/'pause' updates liveMgr -> isPlaying false).
+  // Follow playback. The worker pushes only while a scene is playing and
+  // sends one last snapshot when it ends, so this stays subscribed for the
+  // panel's lifetime rather than only while `isPlaying` -- that flag comes
+  // from these very pushes, and a subscription gated on it would have to be
+  // in place before the first one arrives anyway.
   useEffect(() => {
-    if (!isPlaying) return;
-    let raf = 0;
-    let last = 0;
-    let cancelled = false;
-    const tick = (now: number) => {
-      if (cancelled) return;
-      const c = cmRef.current;
-      const sid = sceneIdRef.current;
-      if (c && sid !== undefined && now - last >= POLL_INTERVAL_MS) {
-        last = now;
-        c.invokeService("animGetMgrState", { sceneId: sid })
-          .then((res) => {
-            if (!cancelled && res) setLiveMgr(res);
-          })
-          .catch(() => {
-            /* keep last snapshot */
-          });
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-    };
-  }, [isPlaying]);
+    if (!cm) return;
+    return cm.subscribeAnimProgress((update) => {
+      if (update.sceneId !== sceneIdRef.current) return;
+      setLiveMgr(update.mgr);
+    });
+  }, [cm]);
 
   const play = useCallback(() => {
     const c = cmRef.current;

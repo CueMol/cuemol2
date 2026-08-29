@@ -6,13 +6,14 @@
  *   - play / stop / seek / setLoop route to animPlay / animStop / animGoTime /
  *     animSetLoop with the active scene/view ids;
  *   - with no active view, `canControl` is false and the actions are no-ops;
- *   - `mgr` exposes `baseMgr` until a transport op supersedes it.
- *
- * The rAF elapsed-poll timing is intentionally NOT pinned (it is an internal
- * detail; the wire is what matters).
+ *   - `mgr` exposes `baseMgr` until a transport op supersedes it;
+ *   - playback progress arrives as worker pushes for this scene, and the
+ *     renderer never asks for it -- the poll this replaced was the one
+ *     remaining place the UI questioned the worker on a timer.
  */
 
 import { describe, it, expect, vi } from "vitest";
+import { act } from "react";
 import { makeRenderHook, flushPromises } from "./helpers/testHarness";
 import { useAnimTransport } from "../hooks/useAnimTransport";
 import type { AnimMgrState } from "../types";
@@ -21,8 +22,20 @@ function mgrState(over: Partial<AnimMgrState> = {}): AnimMgrState {
   return { lengthMs: 5000, elapsedMs: 0, playState: "stop", loop: false, startcam: "", ...over };
 }
 
+/** Fake bridge; `push` fires an `anim-progress` message at the subscriber. */
 function makeCm(resultMgr: AnimMgrState) {
-  return { invokeService: vi.fn().mockResolvedValue({ ok: true, mgr: resultMgr }) };
+  let listener: ((u: { sceneId: number; mgr: AnimMgrState }) => void) | null = null;
+  return {
+    invokeService: vi.fn().mockResolvedValue({ ok: true, mgr: resultMgr }),
+    subscribeAnimProgress: vi.fn((cb: (u: { sceneId: number; mgr: AnimMgrState }) => void) => {
+      listener = cb;
+      return () => { listener = null; };
+    }),
+    push(sceneId: number, mgr: AnimMgrState) {
+      listener?.({ sceneId, mgr });
+    },
+    get subscribed() { return listener !== null; },
+  };
 }
 
 describe("useAnimTransport", () => {
@@ -85,6 +98,45 @@ describe("useAnimTransport", () => {
     h.result.setLoop(true);
     await flushPromises();
     expect(h.result.mgr.loop).toBe(true);
+    h.unmount();
+  });
+});
+
+describe("useAnimTransport progress", () => {
+  it("takes the elapsed time from the worker's pushes, asking for nothing", async () => {
+    const cm = makeCm(mgrState());
+    const h = makeRenderHook(() =>
+      useAnimTransport({ cm: cm as never, sceneId: 3, viewId: 7, baseMgr: mgrState() }),
+    );
+    await flushPromises();
+    expect(cm.subscribed).toBe(true);
+    cm.invokeService.mockClear();
+
+    act(() => cm.push(3, mgrState({ playState: "play", elapsedMs: 800 })));
+    expect(h.result.mgr.elapsedMs).toBe(800);
+    expect(h.result.isPlaying).toBe(true);
+
+    act(() => cm.push(3, mgrState({ playState: "play", elapsedMs: 1600 })));
+    expect(h.result.mgr.elapsedMs).toBe(1600);
+
+    // The end of playback is a push like any other.
+    act(() => cm.push(3, mgrState({ playState: "stop", elapsedMs: 0 })));
+    expect(h.result.isPlaying).toBe(false);
+
+    // Nothing was polled for any of it.
+    expect(cm.invokeService).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
+  it("ignores progress for another scene", async () => {
+    const cm = makeCm(mgrState());
+    const h = makeRenderHook(() =>
+      useAnimTransport({ cm: cm as never, sceneId: 3, viewId: 7, baseMgr: mgrState() }),
+    );
+    await flushPromises();
+    act(() => cm.push(9, mgrState({ playState: "play", elapsedMs: 800 })));
+    expect(h.result.mgr.elapsedMs).toBe(0);
+    expect(h.result.isPlaying).toBe(false);
     h.unmount();
   });
 });

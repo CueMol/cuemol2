@@ -5,7 +5,8 @@
  * Owns the per-view rAF callback id map and drives the render loop: each frame
  * pumps the C++ event/timer queue (so AnimMgr playback advances inside the
  * Worker, where the Electron libuv timer that would call performIdleTasks is
- * not driven) and then calls checkAndUpdateScenes. A render-loop fault is
+ * not driven), lets `afterIdle` observe what that pump moved, and then calls
+ * checkAndUpdateScenes. A render-loop fault is
  * forwarded to the renderer as a `__worker_crash__` message and re-thrown so
  * the worker global error handler can capture filename / line.
  *
@@ -20,11 +21,19 @@ import { PERF_MEASURE, maybeFlushPerf, perfCounters } from '../perf';
 type IsBound = (viewId: number) => boolean;
 
 /**
+ * Called each frame after the C++ timer pump, before drawing. This is the
+ * only moment anything can observe what that pump advanced: animation
+ * playback runs on a native timer and fires no event of its own.
+ */
+type AfterIdle = () => void;
+
+/**
  * Drives the requestAnimationFrame render loop for bound views.
  *
  * @param cuemol - the native addon root (for performIdleTasks pumping)
  * @param sceMgr - SceneManager wrapper (for checkAndUpdateScenes)
  * @param isBound - predicate to skip starting a loop for an unbound view
+ * @param afterIdle - runs each frame after the C++ timer pump
  */
 export class ViewLoopController {
     private _afcbid_map: Map<number, number> = new Map();
@@ -33,6 +42,7 @@ export class ViewLoopController {
         private cuemol: any,
         private sceMgr: any,
         private isBound: IsBound,
+        private afterIdle?: AfterIdle,
     ) {}
 
     /** View ids that currently have a scheduled rAF loop. */
@@ -65,6 +75,9 @@ export class ViewLoopController {
                 if (typeof this.cuemol.performIdleTasks === 'function') {
                     this.cuemol.performIdleTasks();
                 }
+                // Report what the pump advanced (animation playback) before
+                // drawing, so a progress readout and the frame agree.
+                this.afterIdle?.();
                 if (PERF_MEASURE) {
                     const t0 = performance.now();
                     this.sceMgr.invokeMethod('checkAndUpdateScenes');

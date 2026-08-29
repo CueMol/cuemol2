@@ -83,12 +83,19 @@ export class GfxManager {
 
     private _context!: WebGL2RenderingContext;
 
-    constructor(cuemol: any) {
+    /**
+     * @param cuemol - the native addon root
+     * @param afterIdle - runs each frame after the C++ timer pump, so work
+     *   that timer advanced (animation playback) can be observed before the
+     *   frame is drawn
+     */
+    constructor(cuemol: any, afterIdle?: () => void) {
         this.cuemol = cuemol;
         this._sceMgr = this.cuemol.getService('SceneManager');
         this.viewLoop = new ViewLoopController(
             this.cuemol, this._sceMgr,
             (vid: number) => this.bound_views.includes(vid),
+            afterIdle,
         );
     }
 

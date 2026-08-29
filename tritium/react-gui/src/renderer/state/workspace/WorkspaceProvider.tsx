@@ -143,15 +143,20 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }): 
     // Re-read after the (possibly slow) prompt: the strip may have shifted.
     const tab = stateRef.current.tabs.find((t) => t.id === id)
     if (!tab) return false
-    dispatch({ type: 'close', id })
-    // The tab record and the worker view go together; this is the only
-    // place a view is removed, so a closed tab never leaves the view loop
+    // Tear the worker side down first -- stop its animation, release its GL
+    // resources, destroy the scene -- and only then drop the tab record. The
+    // record going first would let the UI move on (activate another view,
+    // open a new scene) while the old one was still being dismantled. This is
+    // the only place a view is removed, so a closed tab never leaves anything
     // running behind it.
     if (tab.type === 'molview' && tab.viewId !== undefined) {
-      cmRef.current?.removeView(tab.viewId).catch((err: unknown) => {
+      try {
+        await cmRef.current?.removeView(tab.viewId)
+      } catch (err: unknown) {
         console.warn('removeView failed:', err)
-      })
+      }
     }
+    dispatch({ type: 'close', id })
     return true
   }, [])
 

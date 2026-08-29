@@ -126,6 +126,30 @@ describe('WorkspaceProvider', () => {
     unmount()
   })
 
+  it('drops the tab record only once the worker has torn the view down', async () => {
+    // The worker stops the scene's animation, releases its GL resources and
+    // destroys the scene inside removeView. If the record went first, the
+    // UI would move on (activate another view, open a new scene) while the
+    // old one was still being dismantled.
+    let finishTeardown!: () => void
+    cm.removeView.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => { finishTeardown = () => resolve(true) }),
+    )
+    const { live, unmount } = mount()
+    act(() => live.d.openMolViewTab('A:0', 10, 100))
+
+    let closed: Promise<boolean>
+    act(() => { closed = live.d.closeTab('molview-10') })
+    await act(async () => { await flushPromises() })
+    // Prompt passed, worker still busy: the tab is still there.
+    expect(cm.removeView).toHaveBeenCalledWith(10)
+    expect(live.tabTitles).toEqual(['A:0'])
+
+    await act(async () => { finishTeardown(); await closed; await flushPromises() })
+    expect(live.tabTitles).toEqual([])
+    unmount()
+  })
+
   it('keeps the tab and the view when the prompt is declined', async () => {
     confirm.impl = async () => false
     const { live, unmount } = mount()

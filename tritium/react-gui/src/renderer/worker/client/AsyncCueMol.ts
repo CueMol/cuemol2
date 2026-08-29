@@ -15,6 +15,7 @@ import {
     WorkerTransport,
     type StreamProgressListener,
     type RenderProgressListener,
+    type AnimProgressListener,
     type ApbsProgressListener,
 } from './WorkerTransport';
 import { EventSlots } from './EventSlots';
@@ -82,6 +83,11 @@ export class AsyncCueMol {
     /** Subscribe to `render-progress` push messages from `renderJob`. */
     subscribeRenderProgress(cb: RenderProgressListener): () => void {
         return this._transport.subscribeRenderProgress(cb);
+    }
+
+    /** Subscribe to `anim-progress` push messages during playback. */
+    subscribeAnimProgress(cb: AnimProgressListener): () => void {
+        return this._transport.subscribeAnimProgress(cb);
     }
 
     /** Subscribe to `apbs-progress` push messages from `calcApbsPot`. */
