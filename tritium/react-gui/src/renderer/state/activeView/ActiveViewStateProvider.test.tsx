@@ -14,6 +14,7 @@ import React from 'react'
 import { act } from 'react'
 import { IPC } from '@shared/ipcChannels'
 import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from '../../__test__/helpers/testHarness'
+import { SEM_SCENE, SEM_VIEW } from '../../event'
 import { ActiveViewStateProvider, useActiveViewDispatch, useActiveViewValues, type ActiveViewDispatch, type ActiveViewValues } from './ActiveViewStateProvider'
 
 void React
@@ -31,6 +32,12 @@ const scene = vi.hoisted(() => ({ activeMolViewId: undefined as number | undefin
 
 vi.mock('../../hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cm, cueMolReady: true }) }))
 vi.mock('../../hooks/useSceneExportCaps', () => ({ useSceneExportCaps: () => ['png', 'umbreon'] }))
+// The mirrored values also refresh on a C++ property change; each
+// subscription is captured so a test can fire it.
+const listeners = vi.hoisted(() => ({ all: [] as Record<string, unknown>[] }))
+vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
+  useCueMolEventListener: (opts: Record<string, unknown>) => { listeners.all.push(opts) },
+}))
 vi.mock('../workspace', () => ({
   useActiveScene: () => ({ ...scene, hasScene: scene.activeMolViewId !== undefined }),
 }))
@@ -54,6 +61,7 @@ const menuUpdates = (api: ReturnType<typeof setupElectronAPI>) =>
 
 let api: ReturnType<typeof setupElectronAPI>
 beforeEach(() => {
+  listeners.all = []
   api = setupElectronAPI({ invoke: vi.fn(() => Promise.resolve(undefined)) })
   scene.activeMolViewId = undefined
   scene.activeSceneId = undefined
@@ -121,5 +129,75 @@ describe('ActiveViewStateProvider', () => {
     act(() => live.d.onColorProofingChanged(false))
     expect(menuUpdates(api).at(-1)).toEqual({ sceneColorProof: { enabled: true, checked: false } })
     unmount()
+  })
+})
+
+// The values used to be read only on a tab switch, so a change made anywhere
+// else -- an undo, a script, a .qsc load, the inspector's Scene page -- left
+// the native menu showing the old one until the next switch.
+describe('ActiveViewStateProvider - changes made elsewhere', () => {
+  /** Fire the subscription whose scope mask matches, through its filter. */
+  function fire(srcMask: number, payload: Record<string, unknown>) {
+    const l = listeners.all.find((o) => o.srcMask === srcMask && o.enabled)
+    if (!l) throw new Error(`no enabled subscription for srcMask ${srcMask}`)
+    const args = { obj: payload }
+    const filter = l.filter as ((a: unknown) => boolean) | undefined
+    if (filter && !filter(args)) return false
+    ;(l.handler as (a: unknown) => void)(args)
+    return true
+  }
+
+  it('re-reads the scene when its background or colour proofing changes', async () => {
+    scene.activeMolViewId = 7
+    scene.activeSceneId = 100
+    const h = mount()
+    await flushPromises()
+    await flushPromises()
+    cm.invokeService.mockClear()
+
+    expect(fire(SEM_SCENE, { propname: 'bgcolor' })).toBe(true)
+    await flushPromises()
+    expect(cm.invokeService).toHaveBeenCalledWith('getSceneBgColor', { sceneId: 100 })
+
+    cm.invokeService.mockClear()
+    expect(fire(SEM_SCENE, { propname: 'use_colproof' })).toBe(true)
+    await flushPromises()
+    expect(cm.invokeService).toHaveBeenCalledWith('getSceneColorProofing', { sceneId: 100 })
+    h.unmount()
+  })
+
+  it('ignores scene properties it does not mirror', async () => {
+    scene.activeMolViewId = 7
+    scene.activeSceneId = 100
+    const h = mount()
+    await flushPromises()
+    await flushPromises()
+    cm.invokeService.mockClear()
+
+    expect(fire(SEM_SCENE, { propname: 'name' })).toBe(false)
+    await flushPromises()
+    expect(cm.invokeService).not.toHaveBeenCalled()
+    h.unmount()
+  })
+
+  it('re-reads the view for its own property changes only', async () => {
+    scene.activeMolViewId = 7
+    scene.activeSceneId = 100
+    const h = mount()
+    await flushPromises()
+    await flushPromises()
+    cm.invokeService.mockClear()
+
+    // A view event is sourced by its scene, so it names the view it is about.
+    expect(fire(SEM_VIEW, { propname: 'centerMark', target_uid: 7 })).toBe(true)
+    await flushPromises()
+    expect(cm.invokeService).toHaveBeenCalledWith('getViewCenterMark', { viewId: 7 })
+
+    cm.invokeService.mockClear()
+    // Another view in the same scene is not this tab's.
+    expect(fire(SEM_VIEW, { propname: 'centerMark', target_uid: 9 })).toBe(false)
+    await flushPromises()
+    expect(cm.invokeService).not.toHaveBeenCalled()
+    h.unmount()
   })
 })
