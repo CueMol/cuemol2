@@ -11,7 +11,7 @@
  */
 
 import { promises as fsp } from 'fs'
-import type { RecentFileEntry } from '@shared/ipcTypes'
+import type { RecentFileEntry } from '@shared/types/recent'
 import { addToRecents, MAX_RECENTS } from '@shared/recentFilesLogic'
 import { loadRecentFiles, saveRecentFiles } from './stateStore'
 

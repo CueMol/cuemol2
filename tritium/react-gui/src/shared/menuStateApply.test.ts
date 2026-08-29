@@ -19,7 +19,7 @@
  * pin it here.
  */
 import { describe, it, expect } from 'vitest'
-import type { MenuState } from '@shared/ipcTypes'
+import type { MenuState } from './types/menuState'
 import {
     applyMenuStateTo,
     mergeMenuState,

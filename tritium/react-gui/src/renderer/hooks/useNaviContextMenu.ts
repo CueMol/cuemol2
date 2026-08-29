@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import type { HitTestResult } from '../types';
-import type { NaviCtxAction } from '@shared/ipcTypes';
+import type { NaviCtxAction } from '@shared/types/naviCtxMenu';
 import { IPC } from '@shared/ipcChannels';
 import { buildNaviCtxMenuNodes } from '@shared/naviCtxMenu';
 import { useShowContextMenu } from '../components/menu/ContextMenuProvider';

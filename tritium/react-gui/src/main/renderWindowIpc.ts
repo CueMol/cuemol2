@@ -19,13 +19,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { clipboard, dialog, nativeImage, type BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipcChannels'
-import type {
-  RenderImageRef,
-  RenderViewCamera,
-  HatchStyleSpecReply,
-  RenderWindowMode,
-  ViewSizePx,
-} from '@shared/ipcTypes'
+import type { RenderImageRef, RenderViewCamera, HatchStyleSpecReply, RenderWindowMode, ViewSizePx } from '@shared/types/renderWindow'
 import {
   frameFileRegExp,
   movieFileNames,

@@ -12,12 +12,7 @@
  */
 
 import type { MenuNode } from '../menuNodes'
-import type {
-    RendColoringId,
-    SceneCtxAction,
-    SceneCtxMenuPayload,
-    SceneCtxNodeType,
-} from '../ipcTypes'
+import type { RendColoringId, SceneCtxAction, SceneCtxMenuPayload, SceneCtxNodeType } from '../types/sceneCtxMenu'
 
 export type SceneCtxNode = MenuNode<SceneCtxAction>
 

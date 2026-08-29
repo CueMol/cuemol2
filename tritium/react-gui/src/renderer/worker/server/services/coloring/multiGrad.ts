@@ -17,7 +17,8 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../../types/WorkerContext';
 import { getSceneOrNull } from '../helpers/sceneResolver';
-import { tryUndoTxn, withUndoTxn } from '../withUndoTxn';
+import { undoTxnResult, withUndoTxn } from '../withUndoTxn';
+import { ok, fail, failFrom } from '../../../shared/result';
 import { getMultiGradOrNull } from './colorTargets';
 import type {
     GetMultiGradStateArgs,
@@ -365,11 +366,11 @@ export function setMultiGradNodes(
     args: SetMultiGradNodesArgs,
 ): SetMultiGradNodesResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false };
+    if (!scene) return fail('scene not found', 'not-found');
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
-    if (!rend) return { ok: false };
+    if (!rend) return fail('renderer not found', 'not-found');
     const mg = getMultiGradOrNull(rend);
-    if (!mg) return { ok: false };
+    if (!mg) return fail('renderer has no multi-gradient coloring', 'unsupported');
 
     const mode = args.mode ?? 'commit';
 
@@ -377,19 +378,19 @@ export function setMultiGradNodes(
         try {
             mg.setNodesJSON(nodesToJSON(args.nodes));
         } catch (e) {
-            return { ok: false, error: String(e) };
+            return failFrom(e);
         }
-        return { ok: true };
+        return ok();
     }
 
     if (mode === 'abort') {
-        if (!args.originalNodes) return { ok: false };
+        if (!args.originalNodes) return fail('originalNodes are required to abort', 'invalid-args');
         try {
             mg.setNodesJSON(nodesToJSON(args.originalNodes));
         } catch (e) {
-            return { ok: false, error: String(e) };
+            return failFrom(e);
         }
-        return { ok: true };
+        return ok();
     }
 
     // commit
@@ -397,11 +398,12 @@ export function setMultiGradNodes(
         try {
             mg.setNodesJSON(nodesToJSON(args.originalNodes));
         } catch (e) {
-            return { ok: false, error: String(e) };
+            return failFrom(e);
         }
     }
-    return tryUndoTxn(scene, args.label ?? DEFAULT_LABEL, () => {
+    return undoTxnResult(scene, args.label ?? DEFAULT_LABEL, () => {
         mg.setNodesJSON(nodesToJSON(args.nodes));
+        return ok();
     });
 }
 

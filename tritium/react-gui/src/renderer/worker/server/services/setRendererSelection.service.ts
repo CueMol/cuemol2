@@ -13,7 +13,7 @@ import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { WorkerContext } from '../types/WorkerContext';
-import type { ChangeRendSelKind } from '@shared/ipcTypes';
+import type { ChangeRendSelKind } from '@shared/types/sceneCtxMenu';
 import { makeSel } from './helpers/makeSel';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';

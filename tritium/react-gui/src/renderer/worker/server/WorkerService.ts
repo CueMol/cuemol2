@@ -215,7 +215,14 @@ export class WorkerService {
             Promise.resolve()
                 .then(() => serviceFn(this._buildContext(), args[0]))
                 .then((result) => this._postMessage([method, seqno, true, result]))
-                .catch((e) => this._postMessage([method, seqno, false, String(e)]));
+                .catch((e) => {
+                    // A service returns Result and never throws across the
+                    // boundary (worker/shared/result.ts). Reaching here means a
+                    // bug, not an expected failure; the wire shape is kept so
+                    // the renderer still sees a rejection rather than a hang.
+                    log.error(`Worker> service '${method}' threw instead of returning fail():`, e);
+                    this._postMessage([method, seqno, false, String(e)]);
+                });
         } else {
             log.error(`Worker> unknown method: ${method}`);
             this._postMessage([method, seqno, false]);

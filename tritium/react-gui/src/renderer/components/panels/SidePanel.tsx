@@ -68,7 +68,7 @@ import {
   CatalogPane2,
   CatalogPane3,
 } from "../panes";
-import type { ViewCenterMark } from "@shared/ipcTypes";
+import type { ViewCenterMark } from "@shared/types/menuState";
 
 import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 

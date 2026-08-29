@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { SceneBgColor } from '@shared/ipcTypes';
+import type { SceneBgColor } from '@shared/types/menuState';
 import type { WorkerContext } from '../types/WorkerContext';
 import { makeColor } from './helpers/makeColor';
 import { withUndoTxn } from './withUndoTxn';

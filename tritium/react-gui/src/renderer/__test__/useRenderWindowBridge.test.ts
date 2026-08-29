@@ -16,10 +16,7 @@ import {
 } from './helpers/testHarness';
 import { useRenderWindowBridge } from '../hooks/useRenderWindowBridge';
 import { IPC } from '@shared/ipcChannels';
-import type {
-    RenderTargetViewWire,
-    RenderWindowStateUpdate,
-} from '@shared/ipcTypes';
+import type { RenderTargetViewWire, RenderWindowStateUpdate } from '@shared/types/renderWindow';
 import type { RenderUpdate, RenderStartResult } from '../worker/shared/renderTypes';
 import { DEFAULT_RENDER_BINARIES } from '../worker/shared/renderTypes';
 import type { RenderSettingsSnapshot } from '../data/renderResult';

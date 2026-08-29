@@ -39,7 +39,7 @@ import {
 import { Allotment } from 'allotment'
 import { AppIcon } from '../AppIcon'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { SelectMolKind } from '@shared/ipcTypes'
+import type { SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { useMolSequenceData, type SeqRow } from '../../hooks/useMolSequenceData'
 import { useTheme } from '../../contexts/ThemeContext'
 

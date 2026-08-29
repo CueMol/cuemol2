@@ -21,16 +21,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { IPC } from "@shared/ipcChannels";
-import type {
-  RenderFramePreviewWire,
-  RenderTargetViewWire,
-  RenderWindowCommand,
-  RenderWindowModeRequest,
-  RenderWindowStateUpdate,
-  RenderViewCamera,
-  HatchStyleSpecReply,
-  ViewSizePx,
-} from "@shared/ipcTypes";
+import type { RenderFramePreviewWire, RenderTargetViewWire, RenderWindowCommand, RenderWindowModeRequest, RenderWindowStateUpdate, RenderViewCamera, HatchStyleSpecReply, ViewSizePx } from "@shared/types/renderWindow";
 import type { RenderJob } from "./useRenderJob";
 import type {
   RenderResult,

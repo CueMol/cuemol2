@@ -11,7 +11,7 @@ import type {
     SceneNodeType,
     SceneTreeNode,
 } from '../../worker/shared/sceneTreeTypes'
-import type { SelectMolKind } from '@shared/ipcTypes'
+import type { SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { IPC } from '@shared/ipcChannels'
 import { findNode, findTypedNode } from './sceneTreeNodeUtils'
 

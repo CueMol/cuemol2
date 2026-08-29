@@ -21,15 +21,15 @@ declare const __DEV_UI__: boolean
 
 // Shared IPC types exposed as globals using TypeScript import() type syntax.
 // This works in script-mode .d.ts files without requiring export {} or declare global.
-type PaneCollapseState  = import('../../shared/ipcTypes').PaneCollapseState
-type LayoutState        = import('../../shared/ipcTypes').LayoutState
-type UiState            = import('../../shared/ipcTypes').UiState
-type FileOpenedData     = import('../../shared/ipcTypes').FileOpenedData
-type FileErrorData      = import('../../shared/ipcTypes').FileErrorData
-type AppPathInfo        = import('../../shared/ipcTypes').AppPathInfo
-type ElectronAPI        = import('../../shared/ipcTypes').ElectronAPI
-type ElectronFileFilter = import('../../shared/ipcTypes').ElectronFileFilter
-type FileDialogOptions  = import('../../shared/ipcTypes').FileDialogOptions
+type PaneCollapseState  = import('../../shared/types/layout').PaneCollapseState
+type LayoutState        = import('../../shared/types/layout').LayoutState
+type UiState            = import('../../shared/types/uiPrefs').UiState
+type FileOpenedData     = import('../../shared/types/fileEvents').FileOpenedData
+type FileErrorData      = import('../../shared/types/fileEvents').FileErrorData
+type AppPathInfo        = import('../../shared/types/appPath').AppPathInfo
+type ElectronAPI        = import('../../shared/ipcContract').ElectronAPI
+type ElectronFileFilter = import('../../shared/types/fileDialog').ElectronFileFilter
+type FileDialogOptions  = import('../../shared/types/fileDialog').FileDialogOptions
 
 interface Window {
   electronAPI: ElectronAPI

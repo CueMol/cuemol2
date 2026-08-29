@@ -9,7 +9,7 @@
  * does the work in one round-trip rather than calling many methods here
  * in sequence.
  */
-import type { ElectronFileFilter } from '@shared/ipcTypes';
+import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '../../components/fopen-opt-dlgs/types';
 import {
     WorkerTransport,
@@ -27,7 +27,9 @@ import * as editApi from './apis/editApi';
 import type { GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service';
 import type { GetMtzColumnInfoResult } from '../server/services/getMtzColumnInfo.service';
 import type { GetReaderDefaultOptionsResult } from '../server/services/getReaderDefaultOptions.service';
-import type { LoadTrajectoryArgs } from '../server/services/loadTrajectory.service';
+import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '../server/services/loadTrajectory.service';
+import type { LoadObjectResult } from '../server/services/loadObject.service';
+import type { LoadSceneResult } from '../server/services/loadScene.service';
 import type { GetTrajectoryRendererInfoResult } from '../server/services/getTrajectoryRendererInfo.service';
 import type {
     MethodArgs,
@@ -273,7 +275,7 @@ export class AsyncCueMol {
     }
 
     /** Load a QSC scene file into an existing scene. */
-    loadScene(filePath: string, scene_id: number): Promise<boolean> { return fileApi.loadScene(this._transport, filePath, scene_id); }
+    loadScene(filePath: string, scene_id: number): Promise<LoadSceneResult> { return fileApi.loadScene(this._transport, filePath, scene_id); }
 
     /**
      * Load an object (PDB / map / mesh / ...) into a scene.
@@ -289,7 +291,7 @@ export class AsyncCueMol {
      * (0 / undefined = DEFAULT_SNIFF_CAP, see worker/shared/sniffConfig.ts).
      */
     loadObject(filePath: string, scene_id: number, options: FileOpenOptions,
-               contentFirst = false, maxSniffBytes?: number, readerName?: string): Promise<boolean> {
+               contentFirst = false, maxSniffBytes?: number, readerName?: string): Promise<LoadObjectResult> {
         return fileApi.loadObject(this._transport, filePath, scene_id, options,
                                   contentFirst, maxSniffBytes, readerName);
     }
@@ -299,7 +301,7 @@ export class AsyncCueMol {
      * into a scene as a single Trajectory object. Rejects on failure (e.g.
      * atom-count mismatch) so the caller can surface an error dialog.
      */
-    loadTrajectory(args: LoadTrajectoryArgs): Promise<{ ok: boolean; objId?: number }> {
+    loadTrajectory(args: LoadTrajectoryArgs): Promise<LoadTrajectoryResult> {
         return fileApi.loadTrajectory(this._transport, args);
     }
 

@@ -5,12 +5,12 @@
 
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { DensityMap } from '@cuemol/core/src/wrappers/DensityMap';
 import { setupDensityMapRenderers, type DensityMapType } from './helpers/setupDensityMapRenderers';
-import { withUndoTxn } from './withUndoTxn';
+import { undoTxnResult } from './withUndoTxn';
 import { streamFetchToReader } from './helpers/streamFetchToReader';
+import { fail, failFrom, ok, type Result } from '../../shared/result';
+import { getSceneOrNull, getViewOrNull } from './helpers/sceneResolver';
 
 const log = console;
 
@@ -29,10 +29,8 @@ export interface StreamLoadDensityMapArgs {
     viewId: number;
 }
 
-export interface StreamLoadDensityMapResult {
-    ok: boolean;
-    canceled?: boolean;
-}
+/** `{ objId }` on success; a cancel is `fail(..., 'canceled')`. */
+export type StreamLoadDensityMapResult = Result<{ objId: number }>;
 
 // Shared grid spacing used by UXP for both mmcifmap and mtzmap downloads.
 const DEFAULT_GRID_SIZE = 0.25;
@@ -63,7 +61,7 @@ async function streamLoadDensityMap(
 
     const reader = ctx.strMgr.createHandler(args.readerName, 0) as ObjReader;
     if (!reader) {
-        throw new Error(`createHandler failed for reader "${args.readerName}"`);
+        return fail(`createHandler failed for reader "${args.readerName}"`, 'unsupported');
     }
 
     // Reader configuration (mirrors UXP openMapImpl L334-360).
@@ -76,19 +74,24 @@ async function streamLoadDensityMap(
     }
     (reader as unknown as { gridsize: number }).gridsize = DEFAULT_GRID_SIZE;
 
-    const { obj, canceled } = await streamFetchToReader(ctx, {
-        reqId: args.reqId,
-        url: args.url,
-        reader,
-    });
+    let fetched: Awaited<ReturnType<typeof streamFetchToReader>>;
+    try {
+        fetched = await streamFetchToReader(ctx, { reqId: args.reqId, url: args.url, reader });
+    } catch (e) {
+        return failFrom(e, 'io');
+    }
+    const { obj, canceled } = fetched;
 
-    if (canceled) return { ok: false, canceled: true };
-    if (!obj) return { ok: false };
+    if (canceled) return fail('download canceled', 'canceled');
+    if (!obj) return fail('the reader produced no object', 'io');
 
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
-    const view = ctx.sceMgr.getView(args.viewId) as GUIView;
+    // Both ids are in the args; resolve them independently, as before.
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
+    const view = getViewOrNull(ctx, args.viewId);
+    if (!view) return fail(`view ${args.viewId} not found`, 'not-found');
 
-    return withUndoTxn(scene, 'Get density map', () => {
+    return undoTxnResult(scene, 'Get density map', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (obj as any).name = args.objectName;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -100,7 +103,7 @@ async function streamLoadDensityMap(
         // fitView is on DensityMap; obj is typed as Object so cast.
         (obj as unknown as DensityMap).fitView(view, false);
 
-        return { ok: true };
+        return ok({ objId: (obj as unknown as { uid: number }).uid });
     });
 }
 

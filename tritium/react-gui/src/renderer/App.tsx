@@ -39,7 +39,7 @@ import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
 import { useAppInitialization } from "./hooks/useAppInitialization";
-import { useNewSceneAction } from "./hooks/useNewSceneAction";
+import { useNewSceneAction, useOpenSceneFileAction } from "./hooks/useNewSceneAction";
 import { useMolViewTabTitleSync } from "./hooks/useMolViewTabTitleSync";
 import { useActiveViewState } from "./hooks/useActiveViewState";
 import { useSceneExportCaps } from "./hooks/useSceneExportCaps";
@@ -51,7 +51,7 @@ import { useShellOpenFiles } from "./hooks/useShellOpenFiles";
 import { FileDropOverlay } from "./components/FileDropOverlay";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
-import type { ViewCenterMark } from "@shared/ipcTypes";
+import type { ViewCenterMark } from "@shared/types/menuState";
 import { IPC } from "@shared/ipcChannels";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useBusyCursor } from "./hooks/useBusyCursor";
@@ -290,6 +290,10 @@ const App: React.FC = () => {
   // Shared "create scene + view + register tab" action used by both the
   // launch path and the New Tab dialog (UXP onNewScene equivalent).
   const newScene = useNewSceneAction({ cm, addMolTab, addMolViewTab });
+  // Opening a scene FILE goes through its own action: the worker only creates
+  // the view once the file has been read, so a failed open never leaves an
+  // empty molview tab behind.
+  const openSceneFile = useOpenSceneFileAction({ cm, addMolTab, addMolViewTab });
 
   // First scene/view on launch (StrictMode guarded)
   const { initialSceneSettled } = useAppInitialization({ cueMolReady, newScene });
@@ -416,6 +420,7 @@ const App: React.FC = () => {
     // Scene's tree-node id equals its scene uid; handleShowGeneric resolves it.
     showSceneProperty: (sceneId: number) => handleShowGeneric(String(sceneId)),
     newScene,
+    openSceneFile,
   });
 
   const cueMolBusy = useCueMolBusy();

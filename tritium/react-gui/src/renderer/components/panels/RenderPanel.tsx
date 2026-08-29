@@ -23,7 +23,7 @@ import { useCollapsibleLabels } from "@renderer/hooks/react/useCollapsibleLabels
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
 import type { RenderBackendId, RenderMode } from "../../data/renderSettings";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
-import type { RenderTargetViewWire } from "@shared/ipcTypes";
+import type { RenderTargetViewWire } from "@shared/types/renderWindow";
 
 interface RenderPanelProps {
   /** Current render job, or null when none has run yet. */

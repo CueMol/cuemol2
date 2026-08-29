@@ -19,6 +19,9 @@ vi.mock('../worker/server/services/setupRenderer.service', () => ({
 }))
 vi.mock('../worker/server/services/withUndoTxn', () => ({
     withUndoTxn: vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
+    // The Result-returning variant: commit on ok, roll back otherwise. The
+    // fixture only needs the body to run, so pass it straight through.
+    undoTxnResult: (_s: unknown, _l: string, fn: () => unknown) => fn(),
 }))
 vi.mock('../worker/server/services/helpers/applyReaderOptions', () => ({
     applyReaderOptions: vi.fn(),
@@ -155,7 +158,7 @@ describe('streamLoadFromUrl service', () => {
         expect(env.waitLoadAsync).toHaveBeenCalledWith(42)
         expect(env.scene.addObject).toHaveBeenCalledWith(env.obj)
         expect(setupRenderer).toHaveBeenCalledTimes(1)
-        expect(result).toEqual({ ok: true })
+        expect(result).toEqual(expect.objectContaining({ ok: true }))
     })
 
     it('cancel path: aborts fetch, drains IOThread via waitLoadAsync, does NOT add to scene', async () => {
@@ -207,7 +210,8 @@ describe('streamLoadFromUrl service', () => {
         expect(cancelResult).toEqual({ ok: true })
 
         const result = await promise
-        expect(result).toEqual({ ok: false, canceled: true })
+        // A cancel is an ordinary Fail with a code, not a bespoke flag.
+        expect(result).toEqual(expect.objectContaining({ ok: false, code: 'canceled' }))
 
         // IOThread cleanup MUST run on cancel path (matches UXP forceCancel L107).
         expect(env.waitLoadAsync).toHaveBeenCalledWith(42)
@@ -216,20 +220,25 @@ describe('streamLoadFromUrl service', () => {
         expect(setupRenderer).not.toHaveBeenCalled()
     })
 
-    it('HTTP error: drains IOThread, does NOT add to scene, throws', async () => {
+    it('HTTP error: drains IOThread, does NOT add to scene, returns an io failure', async () => {
         const env = makeEnv()
         globalThis.fetch = vi.fn(async () => ({
             ok: false, status: 404, body: null,
         } as unknown as Response)) as unknown as typeof fetch
 
-        await expect(streamLoadFromUrl(env.ctx, {
+        // The HTTP error used to escape as a rejected promise -- a different
+        // call-site contract from every other failure. It is a Fail now.
+        const result = await streamLoadFromUrl(env.ctx, {
             reqId: 'req-404',
             url: 'https://files.rcsb.org/download/9zzz.cif',
             readerName: 'mmcif',
             objectName: '9zzz',
             sceneId: 7,
             options: makeOptions(),
-        })).rejects.toThrow(/HTTP 404/)
+        })
+        expect(result).toEqual(expect.objectContaining({
+            ok: false, code: 'io', error: expect.stringMatching(/HTTP 404/),
+        }))
 
         // Even on HTTP failure, the IOThread must be drained.
         expect(env.waitLoadAsync).toHaveBeenCalledWith(42)

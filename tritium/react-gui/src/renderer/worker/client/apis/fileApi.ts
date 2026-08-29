@@ -8,12 +8,14 @@
  * a warning on failure.
  */
 import { WorkerTransport } from '../WorkerTransport';
-import type { ElectronFileFilter } from '@shared/ipcTypes';
+import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import type { GetCompatibleRendererNamesResult } from '../../server/services/getCompatibleRendererNames.service';
 import type { GetMtzColumnInfoResult } from '../../server/services/getMtzColumnInfo.service';
 import type { GetReaderDefaultOptionsResult } from '../../server/services/getReaderDefaultOptions.service';
-import type { LoadTrajectoryArgs } from '../../server/services/loadTrajectory.service';
+import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '../../server/services/loadTrajectory.service';
+import type { LoadObjectResult } from '../../server/services/loadObject.service';
+import type { LoadSceneResult } from '../../server/services/loadScene.service';
 import type { GetTrajectoryRendererInfoResult } from '../../server/services/getTrajectoryRendererInfo.service';
 
 const log = console;
@@ -139,15 +141,14 @@ export async function createNewSceneAndView(
  * @param transport - Worker transport.
  * @param filePath - Absolute path to the `.qsc` file.
  * @param scene_id - Target scene uid.
- * @returns `true` on success (also `true` when reply lacks `ok`).
+ * @returns the service result; `error` carries the reason on failure.
  * @remarks Calls `loadScene` worker service.
  */
 export async function loadScene(
     transport: WorkerTransport, filePath: string, scene_id: number,
-): Promise<boolean> {
+): Promise<LoadSceneResult> {
     log.info(`loading QSC scene: ${filePath}`);
-    const result = await transport.invokeService('loadScene', { filePath, sceneId: scene_id });
-    return result?.ok ?? true;
+    return await transport.invokeService('loadScene', { filePath, sceneId: scene_id });
 }
 
 /**
@@ -165,16 +166,15 @@ export async function loadScene(
  *   byte budget used by the worker's pickReaderName (see
  *   worker/shared/sniffConfig.ts). 0 / undefined uses DEFAULT_SNIFF_CAP;
  *   the worker never runs the C++ "no ceiling" mode.
- * @returns `true` on success.
+ * @returns the service result; `error` carries the reason on failure.
  * @remarks Calls `loadObject` worker service.
  */
 export async function loadObject(
     transport: WorkerTransport, filePath: string, scene_id: number, options: FileOpenOptions,
     contentFirst = false, maxSniffBytes?: number, readerName?: string,
-): Promise<boolean> {
+): Promise<LoadObjectResult> {
     log.info(`loading object file: ${filePath}`);
-    const result = await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options, contentFirst, maxSniffBytes, readerName });
-    return result?.ok ?? true;
+    return await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options, contentFirst, maxSniffBytes, readerName });
 }
 
 /**
@@ -184,13 +184,14 @@ export async function loadObject(
  * @param transport - Worker transport.
  * @param args - Topology / trajectory paths, stride, renderer options and the
  *   target scene uid (see {@link LoadTrajectoryArgs}).
- * @returns `{ ok, objId? }`; the new Trajectory's uid on success. Errors
- *   (e.g. atom-count mismatch) reject so the command shows an error dialog.
+ * @returns the service result; `objId` is the new Trajectory's uid. A
+ *   failure (e.g. atom-count mismatch) comes back as `{ ok: false, error }`,
+ *   never as a rejection.
  * @remarks Calls `loadTrajectory` worker service.
  */
 export async function loadTrajectory(
     transport: WorkerTransport, args: LoadTrajectoryArgs,
-): Promise<{ ok: boolean; objId?: number }> {
+): Promise<LoadTrajectoryResult> {
     log.info(`loading MD trajectory: topology=${args.topologyPath}, ${args.trajPaths.length} traj file(s)`);
     return await transport.invokeService('loadTrajectory', args);
 }

@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { parseHatchSpec, type HatchSpec } from "../data/hatchSpec";
-import type { HatchStyleSpecReply } from "@shared/ipcTypes";
+import type { HatchStyleSpecReply } from "@shared/types/renderWindow";
 
 export type HatchTemplateStatus = "idle" | "loading" | "ready" | "error";
 

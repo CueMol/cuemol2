@@ -1,5 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 import type { WorkerContext } from '../types/WorkerContext';
+import { createInitialView } from './helpers/createSceneView';
 
 export interface CreateNewSceneAndViewArgs {
     dpr: number;
@@ -18,8 +19,6 @@ export interface CreateNewSceneAndViewResult {
     view_name: string;
 }
 
-const INITIAL_VIEW_NAME = '0';
-
 function createNewSceneAndView(
     ctx: WorkerContext,
     args: CreateNewSceneAndViewArgs
@@ -29,17 +28,12 @@ function createNewSceneAndView(
         scene.setName(args.name);
     }
     const scene_uid = scene.getUID();
-    const view = scene.createView();
-    view.name = INITIAL_VIEW_NAME;
-    const view_uid = view.getUID();
-    if (args.bindView !== false) {
-        ctx.svc.addView(view_uid, args.dpr);
-    }
+    const { view_uid, view_name } = createInitialView(ctx, scene, args.dpr, args.bindView !== false);
     return {
         scene_uid,
         view_uid,
         scene_name: args.name ?? '',
-        view_name: INITIAL_VIEW_NAME,
+        view_name,
     };
 }
 

@@ -171,8 +171,7 @@ describe('setMultiGradNodes', () => {
         const res = setMultiGradNodes(makeCtx(scene), {
             sceneId: 100, rendId: 1, nodes: NODES,
         })
-        expect(res.ok).toBe(false)
-        expect(String(res.error)).toContain('bad color')
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/bad color/) }))
         expect(scene.rollbackUndoTxn).toHaveBeenCalledTimes(1)
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })

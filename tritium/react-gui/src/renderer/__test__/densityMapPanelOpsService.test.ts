@@ -331,8 +331,7 @@ describe('setMapRendererProp', () => {
         const res = setMapRendererProp(ctx, {
             sceneId: 100, rendId: 11, propName: 'extent', value: 30,
         })
-        expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/rejected/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/rejected/) }))
         // The in-txn write threw: roll back, do NOT commit a bogus undo entry.
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
@@ -499,11 +498,10 @@ describe('redrawMapCenter', () => {
         scene.getRenderer = vi.fn(() => ({}))
         const ctx = makeCtx({ scene, view: null })
         const res = redrawMapCenter(ctx, { sceneId: 100, rendId: 11, viewId: 999 })
-        expect(res.ok).toBe(false)
-        expect(res.error).toMatch(/view/)
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/view/) }))
     })
 
-    it('rolls back without committing when the center setter throws (preserving moved=false)', () => {
+    it('rolls back without committing when the center setter throws (no moved flag)', () => {
         let threw = false
         const rend = {
             get center() {
@@ -524,9 +522,9 @@ describe('redrawMapCenter', () => {
         const ctx = makeCtx({ scene, view, viewId: 7 })
 
         const res = redrawMapCenter(ctx, { sceneId: 100, rendId: 11, viewId: 7 })
-        expect(res.ok).toBe(false)
-        expect(res.moved).toBe(false)
-        expect(res.error).toMatch(/center rejected/)
+        // A Fail carries no payload: `moved` is only ever reported on success.
+        expect(res).toEqual(expect.objectContaining({ ok: false, error: expect.stringMatching(/center rejected/) }))
+        expect(res).not.toHaveProperty('moved')
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
