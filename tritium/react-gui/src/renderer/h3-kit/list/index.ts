@@ -12,3 +12,5 @@ export { Listbox } from './Listbox';
 export type { ListboxProps } from './Listbox';
 export { ListRow } from './ListRow';
 export type { ListRowProps } from './ListRow';
+export { useListKeyNav, scrollRowIntoView } from './useListKeyNav';
+export type { ListKeyNavOptions } from './useListKeyNav';
