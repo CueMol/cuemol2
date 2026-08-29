@@ -452,9 +452,34 @@ vi.spyOn(globalThis, 'setTimeout').mockImplementation((cb: any) => { timerCb = c
 act(() => { timerCb!(); });
 ```
 
-### Worker-service tests with wrapper setter spying
+### Worker-service tests: use the harness (`renderer/worker/testing/`)
 
-Worker services often assign values to C++ wrapper setters (`(rend as MolRenderer).sel = sel`, `mol.name = ...`, `cmd.target_object = mol`). To pin this contract in vitest without a real native addon, mock the wrapper as a plain object literal whose accessor records the assignment:
+`@renderer/worker/testing` (test files only -- ESLint rejects it elsewhere) provides fake wrapper objects and a `WorkerContext` factory, so a service test does not hand-roll `makeCtx` / `makeScene` / accessor spies:
+
+```ts
+import { fakeObject, fakeScene, fakeView, makeWorkerCtx } from '@renderer/worker/testing'
+
+const log: string[] = []                              // ordered mutation log
+const scene = fakeScene({ uid: 100, views: [fakeView({ uid: 7 })], log })
+const mol = fakeObject({ className: 'MolCoord', scene, log })
+const { ctx, cmdMgr } = makeWorkerCtx({ scenes: [scene] })
+
+setupRenderer(ctx, mol as unknown, opts)              // service under test
+
+const rend = mol.renderers[0]                          // what createRenderer attached
+expect(rend.sets.sel).toHaveBeenCalledWith(sel)        // accessor-write spy
+expect(log).toEqual(['mol.createRenderer(simple)', 'rend.name=simple1', 'rend.applyStyles(DefaultStyle)'])
+expect(scene.undo.committed).toEqual(['Label'])       // undo bookkeeping
+expect(cmdMgr.getCmd).not.toHaveBeenCalled()          // manager spies
+```
+
+- `fakeRenderer` / `fakeObject` / `fakeView` / `fakeCamera` / `fakeScene` mirror the wrapper shapes structurally: accessor writes are spied (`fake.sets.<prop>`) and readable back, mutating methods are `vi.fn`s (override with `mol.createRenderer.mockReturnValueOnce(null)`), and `scene.getSceneDataJSON()` / `getCameraInfoJSON()` are synthesised in the C++ shapes below (groups via `childNodes`) so tests never hand-write those documents.
+- `makeWorkerCtx({ scenes, readers, readerInfo, cmds, styleNames, createObj, getService })` resolves the fakes through `sceMgr` / `strMgr` / `cmdMgr` / `styleMgr` / `svc`; unknown commands and `createObj` throw with a hint, so a missing fake fails loudly.
+- Members a service needs that the fakes lack go in `extra` (or add them to the fake when a second test needs them). New service tests use the harness; existing hand-rolled fixtures are migrated when their test is next touched.
+
+### Worker-service tests with wrapper setter spying (one-off shapes)
+
+For a wrapper the harness does not model, mock it as a plain object literal whose accessor records the assignment (this is what the harness does internally):
 
 ```ts
 const setSel = vi.fn()
