@@ -27,7 +27,6 @@ import {
 } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
 import { SectionHeader } from "./SectionHeader";
-import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { useMolStructure } from "../../hooks/useMolStructure";
 import { ObjectSelect, objectFilters } from "../../h3-kit/ObjectSelect";
 import { fireService } from "../../utils/fireService";
@@ -38,6 +37,8 @@ import {
     selStrFromTree,
     type MolTreeId,
 } from "./molStruct/selStrFromTree";
+import { useCueMol } from "../../hooks/cuemol/useCueMol";
+import { useActiveScene } from "../../state/workspace";
 
 /* --- Constants --- */
 
@@ -51,24 +52,16 @@ const BLANK_ICON = <span style={{ display: "inline-block", width: 16 }} aria-hid
 /* --- Props --- */
 
 interface MolStructPaneProps {
-    cm: AsyncCueMol | null;
-    /** Active scene UID, or undefined when no scene is active. */
-    activeSceneId: number | undefined;
-    /** Active mol-view UID -- required for Center / Zoom. */
-    activeMolViewId: number | undefined;
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
 
 /* --- Component --- */
 
-export const MolStructPane: React.FC<MolStructPaneProps> = ({
-    cm,
-    activeSceneId,
-    activeMolViewId,
-    collapsed,
-    onToggleCollapse,
-}) => {
+export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggleCollapse }) => {
+    const { cm } = useCueMol();
+    const { activeSceneId, activeMolViewId } = useActiveScene();
+
     const [selectedMolId, setSelectedMolId] = useState<number | undefined>(undefined);
     const {
         chains,

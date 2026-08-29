@@ -29,6 +29,9 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
+// The pane reads the bridge and the active scene from their providers.
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
 
 vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
     CueColorField: ({
@@ -61,6 +64,7 @@ vi.mock('../components/panes/PaintSelCell', () => ({
 import { ColorPane } from '../components/panes/ColorPane'
 import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
 import { mountTree, flushPromises } from './helpers/testHarness'
+import { withPaneEnv } from './helpers/paneEnv'
 
 // jsdom has no ResizeObserver; the histogram strip observes its parent.
 class ResizeObserverStub {
@@ -155,7 +159,7 @@ async function mountWith(coloringState: Record<string, unknown>) {
     const cm = makeCm({ coloringState })
     const handle = mountTree(
         <ContextMenuProvider>
-            <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+            {withPaneEnv(cm as never, SCENE_ID, undefined, <ColorPane />)}
         </ContextMenuProvider>,
     )
     await flushPromises()
@@ -349,7 +353,7 @@ describe('ColorPane multigrad wire', () => {
         })
         const handle = mountTree(
             <ContextMenuProvider>
-                <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+                {withPaneEnv(cm as never, SCENE_ID, undefined, <ColorPane />)}
             </ContextMenuProvider>,
         )
         await flushPromises()
@@ -384,7 +388,7 @@ describe('ColorPane multigrad wire', () => {
         })
         const handle = mountTree(
             <ContextMenuProvider>
-                <ColorPane cm={cm as never} sceneId={SCENE_ID} />
+                {withPaneEnv(cm as never, SCENE_ID, undefined, <ColorPane />)}
             </ContextMenuProvider>,
         )
         await flushPromises()

@@ -30,6 +30,9 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
+// The pane reads the bridge and the active scene from their providers.
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
 
 // ObjectSelect seam: auto-selects a fixed object uid on mount so the pane's
 // selectedObjId is populated without driving the real listSceneObjects flow.
@@ -53,6 +56,7 @@ vi.mock('../components/dialogs/SymmetryChangeDialogProvider', () => ({
 
 import { SymmetryPane } from '../components/panes/SymmetryPane'
 import { mountTree, flushPromises } from './helpers/testHarness'
+import { withPaneEnv } from './helpers/paneEnv'
 
 const SCENE_ID = 7
 const VIEW_ID = 5
@@ -95,11 +99,7 @@ function makeCm(flags: InfoFlags): MockCm {
 async function mountPane(flags: InfoFlags, opts?: { viewId?: number | undefined }) {
     const cm = makeCm(flags)
     const handle = mountTree(
-        <SymmetryPane
-            cm={cm as never}
-            activeSceneId={SCENE_ID}
-            activeMolViewId={opts && 'viewId' in opts ? opts.viewId : VIEW_ID}
-        />,
+        withPaneEnv(cm as never, SCENE_ID, opts && 'viewId' in opts ? opts.viewId : VIEW_ID, <SymmetryPane />),
     )
     await flushPromises()
     return { cm, ...handle }

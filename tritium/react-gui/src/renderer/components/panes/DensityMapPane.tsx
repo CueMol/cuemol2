@@ -41,7 +41,6 @@ import {
 } from '@blueprintjs/core'
 import { AppIcon } from '../AppIcon'
 import { SectionHeader } from './SectionHeader'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
 import { useRealtimeDragProp } from '@renderer/hooks/react/useRealtimeDragProp'
 import { FieldGrid, FieldGridRow, DragNumericField } from '../../h3-kit/form'
@@ -59,6 +58,8 @@ import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventLis
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { fireService } from '../../utils/fireService'
+import { useCueMol } from '../../hooks/cuemol/useCueMol'
+import { useActiveScene } from '../../state/workspace'
 
 /**
  * Empty icon-column spacer for the unchecked radio rows of the level-mode
@@ -146,9 +147,6 @@ const DragRow: React.FC<{
 }
 
 interface DensityMapPaneProps {
-    cm: AsyncCueMol | null
-    activeSceneId: number | undefined
-    activeMolViewId: number | undefined
     collapsed?: boolean
     onToggleCollapse?: () => void
 }
@@ -164,13 +162,10 @@ function absoluteStep(rangeAbs: number): number {
     return Math.pow(10, x)
 }
 
-export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
-    cm,
-    activeSceneId,
-    activeMolViewId,
-    collapsed = false,
-    onToggleCollapse,
-}) => {
+export const DensityMapPane: React.FC<DensityMapPaneProps> = ({ collapsed, onToggleCollapse }) => {
+    const { cm } = useCueMol()
+    const { activeSceneId, activeMolViewId } = useActiveScene()
+
     // --- Renderer enumeration ---
     const [items, setItems] = useState<MapRendererEntry[]>([])
     const [selectedRendId, setSelectedRendId] = useState<number | undefined>(undefined)

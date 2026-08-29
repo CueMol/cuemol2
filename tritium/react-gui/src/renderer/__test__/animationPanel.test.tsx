@@ -21,6 +21,10 @@ import type { AnimTimeline, AnimElement, AnimMgrState } from "../types";
 void React;
 
 let mockTimeline: AnimTimeline | null = null;
+// The panel drives the inspector through its actions context.
+const inspector = vi.hoisted(() => ({ showAnimElement: vi.fn(), clearAnimElement: vi.fn() }));
+vi.mock("../state/inspector", () => ({ useInspectorActions: () => inspector }));
+
 vi.mock("../hooks/useAnimTimeline", () => ({
   useAnimTimeline: () => ({ timeline: mockTimeline, loading: false, refetch: vi.fn() }),
 }));
@@ -413,15 +417,16 @@ describe("AnimationPanel editing", () => {
   });
 
   it("selects the following element after a delete so the button stays live", () => {
-    const onInspect = vi.fn();
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     const { container, unmount } = mountTree(
-      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
     selectFirst(container); // uid 1 (index 0)
     const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
     act(() => delBtn.click());
     // Selection moves to uid 2 -- delete is still enabled for the next click.
-    expect(onInspect).toHaveBeenLastCalledWith(1, 2);
+    expect(inspector.showAnimElement).toHaveBeenLastCalledWith(1, 2);
     expect(
       (container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement).disabled,
     ).toBe(false);
@@ -429,28 +434,30 @@ describe("AnimationPanel editing", () => {
   });
 
   it("falls back to the preceding element when the last one is deleted", () => {
-    const onInspect = vi.fn();
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     const { container, unmount } = mountTree(
-      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
     act(() => (container.querySelectorAll(".anim-label-row")[1] as HTMLElement).click()); // uid 2
     const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
     act(() => delBtn.click());
     expect(mockEdit.removeElement).toHaveBeenCalledWith(1);
-    expect(onInspect).toHaveBeenLastCalledWith(1, 1);
+    expect(inspector.showAnimElement).toHaveBeenLastCalledWith(1, 1);
     unmount();
   });
 
   it("clears the selection when the only element is deleted", () => {
     mockTimeline = timeline([el({ uid: 1, index: 0 })]);
-    const onInspect = vi.fn();
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     const { container, unmount } = mountTree(
-      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
     selectFirst(container);
     const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
     act(() => delBtn.click());
-    expect(onInspect).toHaveBeenLastCalledWith(1, null);
+    expect(inspector.clearAnimElement).toHaveBeenLastCalledWith(1);
     unmount();
   });
 
@@ -487,51 +494,58 @@ describe("AnimationPanel inspector wiring", () => {
   });
 
   it("emits the selected element uid to the inspector, null on deselect", () => {
-    const onInspect = vi.fn();
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     const { container, unmount } = mountTree(
-      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
-    expect(onInspect).toHaveBeenCalledWith(1, null); // mount: nothing selected
-    onInspect.mockClear();
+    expect(inspector.clearAnimElement).toHaveBeenCalledWith(1); // mount: nothing selected
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     const row = container.querySelector(".anim-label-row") as HTMLElement;
     act(() => row.click()); // select uid 1
-    expect(onInspect).toHaveBeenCalledWith(1, 1);
-    onInspect.mockClear();
+    expect(inspector.showAnimElement).toHaveBeenCalledWith(1, 1);
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     act(() => row.click()); // toggle deselect
-    expect(onInspect).toHaveBeenCalledWith(1, null);
+    expect(inspector.clearAnimElement).toHaveBeenCalledWith(1);
     unmount();
   });
 
   it("clears the selection + inspector when the selected element vanishes", () => {
-    const onInspect = vi.fn();
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     const { container, root, unmount } = mountTree(
-      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
     act(() => (container.querySelector(".anim-label-row") as HTMLElement).click());
-    onInspect.mockClear();
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     mockTimeline = timeline([]); // element removed (e.g. deleted via SEM_ANIM)
     act(() =>
       root.render(
-        <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+        <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
       ),
     );
-    expect(onInspect).toHaveBeenCalledWith(1, null);
+    expect(inspector.clearAnimElement).toHaveBeenCalledWith(1);
     unmount();
   });
 
   it("resets the selection on scene switch", () => {
-    const onInspect = vi.fn();
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     const { container, root, unmount } = mountTree(
-      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
     act(() => (container.querySelector(".anim-label-row") as HTMLElement).click());
-    onInspect.mockClear();
+    inspector.showAnimElement.mockClear();
+    inspector.clearAnimElement.mockClear();
     act(() =>
       root.render(
-        <AnimationPanel cm={cm} activeSceneId={9} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+        <AnimationPanel cm={cm} activeSceneId={9} activeMolViewId={2} />,
       ),
     );
-    expect(onInspect).toHaveBeenCalledWith(9, null);
+    expect(inspector.clearAnimElement).toHaveBeenCalledWith(9);
     unmount();
   });
 });

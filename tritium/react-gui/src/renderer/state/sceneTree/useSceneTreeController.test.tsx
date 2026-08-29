@@ -1,18 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React, { act } from 'react';
-import { makeRenderHook } from './helpers/testHarness';
-import { useSceneTreeController } from '../hooks/useSceneTreeController';
-import type { UseSceneTreeControllerArgs } from '../hooks/useSceneTreeController';
-import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes';
+import { makeRenderHook } from '../../__test__/helpers/testHarness';
+import { useSceneTreeController } from './useSceneTreeController';
+import type { UseSceneTreeControllerArgs } from './useSceneTreeController';
+import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes';
 
 void React;
 
 /**
- * Degrade-detection test for useSceneTreeController -- the extraction
- * of App's scene-tree wiring. Pins:
- *   - the <SidePanel> prop bundle shape + field->source mapping
+ * Degrade-detection test for useSceneTreeController -- the Explorer's
+ * scene-tree behaviour on top of useSceneTree. Pins:
+ *   - the action bundle: field -> useSceneTree source, and that it keeps its
+ *     identity while the selection changes
  *   - inline-rename commit routing (camera->renameCamera / else->renameNode)
- *   - double-click routing (camera->applyCameraToView / else->showGeneric)
+ *   - double-click routing (camera->applyCameraToView / else->showProperty)
  *   - toolbar Add routing (object->New Renderer / camera->New Camera flow)
  *   - that the whole useSceneTree result is forwarded to useSceneContextMenu
  */
@@ -29,7 +30,7 @@ const mocks = vi.hoisted(() => ({
 }));
 // Same reason: the controller now asks for the error-alert dialog so the
 // keyboard Copy can report UXP's multi-copy refusals.
-vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+vi.mock('../../components/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => mocks.showErrorAlert,
 }));
 
@@ -37,7 +38,7 @@ vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
 // keyboard path can be driven without the DOM plumbing (covered separately
 // in editClipboard.test.ts).
 const registered = new Map<string, { cut: () => void; copy: () => void; paste: () => void }>();
-vi.mock('../hooks/useClipboardScope', () => ({
+vi.mock('../../hooks/useClipboardScope', () => ({
   useClipboardScope: (
     id: string,
     handlers: { cut: () => void; copy: () => void; paste: () => void },
@@ -45,7 +46,7 @@ vi.mock('../hooks/useClipboardScope', () => ({
     registered.set(id, handlers);
   },
 }));
-vi.mock('../hooks/useSceneContextMenu', () => ({
+vi.mock('../../hooks/useSceneContextMenu', () => ({
   useSceneContextMenu: (opts: Record<string, unknown>) => {
     mocks.ctxMenuArgs.current = opts;
     return {
@@ -68,6 +69,7 @@ function makeScene(overrides: Record<string, unknown> = {}) {
     selectedHasOps: { focus: false, delete: false, property: false, add: false },
     setSelectedId: vi.fn(),
     toggleInSelection: vi.fn(),
+    selectRangeTo: vi.fn(),
     refetch: vi.fn(),
     toggleVisibility: vi.fn(),
     setNodeUiCollapsed: vi.fn(),
@@ -89,7 +91,7 @@ type Scene = ReturnType<typeof makeScene>;
 
 function renderController(
   scene: Scene,
-  showGeneric: (id: string) => void = vi.fn(),
+  showProperty: (id: string) => void = vi.fn(),
   activeMolViewId: number | undefined = 5,
 ) {
   const args = {
@@ -97,7 +99,7 @@ function renderController(
     cm: null,
     activeSceneId: 7,
     activeMolViewId,
-    showGeneric,
+    showProperty,
   };
   return makeRenderHook(() => useSceneTreeController(args));
 }
@@ -109,21 +111,38 @@ beforeEach(() => {
 });
 
 describe('useSceneTreeController bundle', () => {
-  it('maps useSceneTree fields onto the SidePanel prop names', () => {
+  it('maps the action bundle onto the useSceneTree operations', () => {
     const scene = makeScene({ tree: node({ id: 1, type: 'scene', name: 'S' }) });
-    const showGeneric = vi.fn();
-    const h = renderController(scene, showGeneric);
-    const b = h.result;
-    expect(b.sceneTree).toBe(scene.tree);
-    expect(b.sceneSelected).toBe(scene.selectedId);
-    expect(b.sceneSelectedIds).toBe(scene.selectedIds);
-    expect(b.onSceneSelect).toBe(scene.setSelectedId);
-    expect(b.onSceneToggleSelect).toBe(scene.toggleInSelection);
-    expect(b.onToggleVisibility).toBe(scene.toggleVisibility);
-    expect(b.onMoveSceneNode).toBe(scene.moveSceneNode);
-    expect(b.sceneOpsEnabled).toBe(scene.selectedHasOps);
-    expect(b.onShowProperty).toBe(showGeneric);
-    expect(b.sceneEditingNodeId).toBeNull();
+    const showProperty = vi.fn();
+    const h = renderController(scene, showProperty);
+    const a = h.result.actions;
+    a.select('1');
+    expect(scene.setSelectedId).toHaveBeenCalledWith('1');
+    a.toggleSelect('2');
+    expect(scene.toggleInSelection).toHaveBeenCalledWith('2');
+    a.selectRange('3', ['1', '2', '3'], true);
+    expect(scene.selectRangeTo).toHaveBeenCalledWith('3', ['1', '2', '3'], true);
+    a.toggleVisibility('1');
+    expect(scene.toggleVisibility).toHaveBeenCalledWith('1');
+    const move = { kind: 'object', sourceId: 1, targetId: 2, ori: 1 };
+    a.moveNode(move as never);
+    expect(scene.moveSceneNode).toHaveBeenCalledWith(move);
+    a.showProperty('1');
+    expect(showProperty).toHaveBeenCalledWith('1');
+    expect(h.result.editingNodeId).toBeNull();
+    h.unmount();
+  });
+
+  it('keeps the bundle identity while the selection changes', () => {
+    // The actions context must not re-render every row on a click: the
+    // handlers read the selection through a ref instead of capturing it.
+    const scene = makeScene({ tree: node({ id: 1, type: 'scene', name: 'S' }), selectedId: '' });
+    const h = renderController(scene);
+    const first = h.result.actions;
+    scene.selectedId = '1';
+    scene.selectedIds = new Set(['1']);
+    h.rerender();
+    expect(h.result.actions).toBe(first);
     h.unmount();
   });
 
@@ -150,7 +169,7 @@ describe('useSceneTreeController inline-rename commit', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.onCommitInlineRename(
+      h.result.actions.commitInlineRename(
         node({ id: -3, type: 'camera', name: 'cam1' }),
         'cam-new',
       );
@@ -164,7 +183,7 @@ describe('useSceneTreeController inline-rename commit', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.onCommitInlineRename(
+      h.result.actions.commitInlineRename(
         node({ id: 42, type: 'object', name: 'mol1' }),
         'mol-new',
       );
@@ -181,7 +200,7 @@ describe('useSceneTreeController double-click', () => {
     const showGeneric = vi.fn();
     const h = renderController(scene, showGeneric, 5);
     act(() => {
-      h.result.onSceneNodeDoubleClick(node({ id: -3, type: 'camera', name: 'cam1' }));
+      h.result.actions.nodeDoubleClick(node({ id: -3, type: 'camera', name: 'cam1' }));
     });
     expect(scene.applyCameraToView).toHaveBeenCalledWith(5, 'cam1', true);
     expect(showGeneric).not.toHaveBeenCalled();
@@ -193,7 +212,7 @@ describe('useSceneTreeController double-click', () => {
     const showGeneric = vi.fn();
     const h = renderController(scene, showGeneric, 5);
     act(() => {
-      h.result.onSceneNodeDoubleClick(node({ id: 42, type: 'object', name: 'mol1' }));
+      h.result.actions.nodeDoubleClick(node({ id: 42, type: 'object', name: 'mol1' }));
     });
     expect(showGeneric).toHaveBeenCalledWith('42');
     expect(scene.applyCameraToView).not.toHaveBeenCalled();
@@ -206,13 +225,13 @@ describe('useSceneTreeController expand/collapse persistence', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.onSceneNodeExpandChange(
+      h.result.actions.nodeExpandChange(
         node({ id: 50, type: 'rendGroup', name: 'g1' }), true,
       );
     });
     expect(scene.setNodeUiCollapsed).toHaveBeenCalledWith('50', true);
     act(() => {
-      h.result.onSceneNodeExpandChange(
+      h.result.actions.nodeExpandChange(
         node({ id: 10, type: 'object', name: 'mol1' }), false,
       );
     });
@@ -224,17 +243,17 @@ describe('useSceneTreeController expand/collapse persistence', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.onSceneNodeExpandChange(
+      h.result.actions.nodeExpandChange(
         node({ id: -1, type: 'cameraRoot', name: 'Cameras' }), true,
       );
-      h.result.onSceneNodeExpandChange(
+      h.result.actions.nodeExpandChange(
         node({ id: -2, type: 'styleRoot', name: 'Styles' }), true,
       );
       // Negative-id guard also applies to otherwise-persistable types.
-      h.result.onSceneNodeExpandChange(
+      h.result.actions.nodeExpandChange(
         node({ id: -5, type: 'object', name: 'x' }), true,
       );
-      h.result.onSceneNodeExpandChange(
+      h.result.actions.nodeExpandChange(
         node({ id: 1, type: 'scene', name: 'S' }), true,
       );
     });
@@ -248,7 +267,7 @@ describe('useSceneTreeController toolbar handlers', () => {
     const scene = makeScene();
     const h = renderController(scene, vi.fn(), 9);
     act(() => {
-      h.result.onFocusSelected('42');
+      h.result.actions.focusSelected('42');
     });
     expect(scene.focusNode).toHaveBeenCalledWith(9, '42');
     h.unmount();
@@ -262,7 +281,7 @@ describe('useSceneTreeController toolbar handlers', () => {
     });
     const h = renderController(scene);
     act(() => {
-      h.result.onAddSelected();
+      h.result.actions.addSelected();
     });
     expect(mocks.openNewRendererFlow).toHaveBeenCalledTimes(1);
     expect(mocks.openNewCameraFlow).not.toHaveBeenCalled();
@@ -277,7 +296,7 @@ describe('useSceneTreeController toolbar handlers', () => {
     });
     const h = renderController(scene);
     act(() => {
-      h.result.onAddSelected();
+      h.result.actions.addSelected();
     });
     expect(mocks.openNewCameraFlow).toHaveBeenCalledTimes(1);
     expect(mocks.openNewRendererFlow).not.toHaveBeenCalled();
@@ -374,7 +393,7 @@ describe('useSceneTreeController clipboard scope', () => {
     const scene = makeScene({ tree: treeWith(42), selectedId: '42', selectedIds: ids });
     const showGeneric = vi.fn();
     const h = renderController(scene, showGeneric);
-    act(() => { h.result.onDeleteSelected('42'); });
+    act(() => { h.result.actions.deleteSelected('42'); });
     expect(scene.bulkDeleteNodes).toHaveBeenCalledWith(ids);
     expect(scene.deleteNode).not.toHaveBeenCalled();
     h.unmount();
@@ -386,7 +405,7 @@ describe('useSceneTreeController clipboard scope', () => {
     });
     const showGeneric = vi.fn();
     const h = renderController(scene, showGeneric);
-    act(() => { h.result.onDeleteSelected('42'); });
+    act(() => { h.result.actions.deleteSelected('42'); });
     expect(scene.deleteNode).toHaveBeenCalledWith('42');
     expect(scene.bulkDeleteNodes).not.toHaveBeenCalled();
     h.unmount();

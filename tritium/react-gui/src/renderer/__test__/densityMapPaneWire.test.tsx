@@ -33,6 +33,9 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
+// The pane reads the bridge and the active scene from their providers.
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
 
 // Colour field seam: a button that fires onCommit with a fixed colour and
 // surfaces `disabled` so the colormode gating can be asserted.
@@ -59,6 +62,7 @@ vi.mock('../h3-kit/colorpicker/ColorPickerContext', () => ({
 
 import { DensityMapPane } from '../components/panes/DensityMapPane'
 import { mountTree, flushPromises } from './helpers/testHarness'
+import { withPaneEnv } from './helpers/paneEnv'
 
 // jsdom has no ResizeObserver; the gradient stop bar observes its width.
 class ResizeObserverStub {
@@ -136,11 +140,7 @@ function makeCm(useAbsLevel: boolean, colormode = 'solid'): MockCm {
 async function mountPane(useAbsLevel = false, colormode = 'solid') {
     const cm = makeCm(useAbsLevel, colormode)
     const handle = mountTree(
-        <DensityMapPane
-            cm={cm as never}
-            activeSceneId={SCENE_ID}
-            activeMolViewId={VIEW_ID}
-        />,
+        withPaneEnv(cm as never, SCENE_ID, VIEW_ID, <DensityMapPane />),
     )
     await flushPromises()
     return { cm, ...handle }

@@ -35,11 +35,11 @@ import {
     computeOri,
     type DragSourcePayload,
     type DragOri,
-    type MoveSceneNodeArgs,
 } from "./sceneTreeDnd";
 import { InlineRenameInput } from "./InlineRenameInput";
 import { SectionHeader } from "./SectionHeader";
 import { scrollRowIntoView, useListKeyNav } from "../../h3-kit/list";
+import { useSceneTreeState, useSceneTreeActions } from "../../state/sceneTree";
 
 /* --- Node-type to icon mapping --- */
 
@@ -57,85 +57,7 @@ const TYPE_ICON: Record<SceneNodeType, AppIconKey> = {
 /* --- Props --- */
 
 interface ScenePaneProps {
-    /** Root scene node from `useSceneTree`. Null while loading or when no scene is active. */
-    tree: SceneTreeNode | null;
-    /** Currently selected node ID (string for compatibility with existing inspector wiring). */
-    selectedId: string;
-    /**
-     * Multi-select set. Drives visual selection on multiple rows. When
-     * omitted, falls back to single-select (selectedId only).
-     */
-    selectedIds?: Set<string>;
-    onSelect: (id: string) => void;
-    /**
-     * Cmd/Ctrl+click handler -- toggles membership of `id` in selectedIds.
-     * When omitted, modifier-clicks fall back to single-select.
-     */
-    onToggleSelect?: (id: string) => void;
-    /**
-     * Shift+click range select. Receives the clicked id, the ids of every
-     * currently visible row in display order, and whether the range should
-     * be added to the existing selection (Shift+Cmd) rather than replace it.
-     * When omitted, Shift+click falls back to single-select.
-     */
-    onSelectRange?: (id: string, visibleIds: string[], additive: boolean) => void;
-    onToggleVisibility: (id: string) => void;
-    onAddObject?: () => void;
-    onAddRenderer?: () => void;
-    onDeleteSelected?: (id: string) => void;
-    onFocusSelected?: (id: string) => void;
-    onShowProperty?: (id: string) => void;
-    /**
-     * Double-click handler -- UXP `onTreeItemClick` `aEvent.detail==2`
-     * branch: camera rows run `loadCamImpl(name, true)` (Apply to view
-     * with vis flags); other rows run `onPropCmd` (Properties dialog).
-     */
-    onNodeDoubleClick?: (node: SceneTreeNode) => void;
-    /**
-     * Controlled inline-rename: when non-null, the row with this id shows
-     * an `<InputGroup>` in place of its label. The trigger is owned by
-     * `useSceneTreeController` so both F2 (started via `onBeginInlineRename`)
-     * and the ctxmenu Rename action route through the same controller.
-     */
-    editingNodeId?: string | null;
-    /**
-     * F2 (or other in-tree trigger) requesting that the given row enter
-     * inline-rename mode. ScenePane forwards `selectedId` here on F2;
-     * `useSceneTreeController` decides whether to accept.
-     */
-    onBeginInlineRename?: (id: string) => void;
-    /** Esc / blur-without-commit asks the controller to drop the editor. */
-    onCancelInlineRename?: () => void;
-    /**
-     * Inline-rename commit handler. ScenePane handles the `<InputGroup>`
-     * editor; on Enter (or blur with a non-empty edit that differs from the
-     * original name) it calls back here with the targeted node and the
-     * user-entered name. The caller routes to the appropriate worker
-     * service (renameCamera for camera rows, renameNode otherwise) and
-     * clears `editingNodeId` afterwards.
-     */
-    onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
-    /** Right-click handler -- opens native context menu for the targeted node. */
-    onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
-    /**
-     * Drag-drop reorder callback. Receives a fully-resolved
-     * `MoveSceneNodeArgs`; ScenePane handles the validation and ori math.
-     * The return value is ignored - ScenePane uses event-driven refetch.
-     */
-    onMoveNode?: (args: MoveSceneNodeArgs) => unknown;
-    /**
-     * Per-action enablement for the current selection. When omitted, all
-     * actions are enabled (legacy callers). Defaults to enabled=true so a
-     * caller that does not yet compute this still works.
-     */
-    opsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
-    /**
-     * Row expand/collapse notification (collapsed=true on collapse). The
-     * controller persists object / rendGroup rows into C++ `ui_collapsed`
-     * so the state survives a qsc save/load. Unrelated to the pane-level
-     * `collapsed` / `onToggleCollapse` pair below (SectionHeader folding).
-     */
-    onNodeExpandChange?: (node: SceneTreeNode, collapsed: boolean) => void;
+    /** Pane-level fold (SectionHeader); unrelated to row expand / collapse. */
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -153,29 +75,29 @@ interface ScenePaneProps {
  * drag-drop geometry.
  */
 export const ScenePane: React.FC<ScenePaneProps> = ({
-    tree,
-    selectedId,
-    selectedIds,
-    onSelect,
-    onToggleSelect,
-    onSelectRange,
-    onToggleVisibility,
-    onAddRenderer,
-    onDeleteSelected,
-    onFocusSelected,
-    onShowProperty,
-    onNodeDoubleClick,
-    editingNodeId,
-    onBeginInlineRename,
-    onCancelInlineRename,
-    onCommitInlineRename,
-    onShowContextMenu,
-    onMoveNode,
-    opsEnabled,
-    onNodeExpandChange,
     collapsed,
     onToggleCollapse,
 }) => {
+    // The tree, the selection and the rename editor come from the provider;
+    // the actions are identity-stable, so only the state re-renders the rows.
+    const { tree, selectedId, selectedIds, editingNodeId, selectedHasOps: opsEnabled } = useSceneTreeState();
+    const {
+        select: onSelect,
+        toggleSelect: onToggleSelect,
+        selectRange: onSelectRange,
+        toggleVisibility: onToggleVisibility,
+        addSelected: onAddRenderer,
+        deleteSelected: onDeleteSelected,
+        focusSelected: onFocusSelected,
+        showProperty: onShowProperty,
+        nodeDoubleClick: onNodeDoubleClick,
+        beginInlineRename: onBeginInlineRename,
+        cancelInlineRename: onCancelInlineRename,
+        commitInlineRename: onCommitInlineRename,
+        showContextMenu: onShowContextMenu,
+        moveNode: onMoveNode,
+        nodeExpandChange: onNodeExpandChange,
+    } = useSceneTreeActions();
     const hasSelection = selectedId !== '';
     const canFocus = hasSelection && (opsEnabled?.focus ?? true);
     const canDelete = hasSelection && (opsEnabled?.delete ?? true);

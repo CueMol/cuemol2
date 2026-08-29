@@ -30,6 +30,7 @@ import {
 import { MolSelList } from "../../h3-kit/MolSelList";
 import { AccordionSection } from "../inspector/AccordionSection";
 import { InspectorResetAllButton } from "../inspector/InspectorResetAllButton";
+import { useActiveScene } from '../../state/workspace';
 
 /* --- Sample default values (restored on reset) --- */
 const DEF_LABEL = "chain A";
@@ -43,8 +44,7 @@ const DEF_SEL = "*";
 interface CatalogPane3Props {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
-  /** Active scene uid, forwarded to the MolSelList sample (picker defs). */
-  activeSceneId?: number;
+
 }
 
 /* --- Component --- */
@@ -52,8 +52,8 @@ interface CatalogPane3Props {
 export const CatalogPane3: React.FC<CatalogPane3Props> = ({
   collapsed = false,
   onToggleCollapse,
-  activeSceneId,
 }) => {
+  const { activeSceneId } = useActiveScene();
   // Isolated "Property rows" showcase state. `*Mod` flags mirror the core
   // flag-based default state: edit sets the flag, only reset clears it.
   const [prLabel, setPrLabel] = useState("backbone");

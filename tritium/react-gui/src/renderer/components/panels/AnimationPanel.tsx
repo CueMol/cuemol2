@@ -39,6 +39,7 @@ import type { AnimAddType, AnimElement } from "../../types";
 import { useAnimTimeline } from "../../hooks/useAnimTimeline";
 import { useAnimTransport } from "../../hooks/useAnimTransport";
 import { useAnimEdit } from "../../hooks/useAnimEdit";
+import { useInspectorActions } from "../../state/inspector";
 import { AnimTransport } from "./anim/AnimTransport";
 import { AnimTimeRuler } from "./anim/AnimTimeRuler";
 import { AnimStrip, type AnimStripEditMode } from "./anim/AnimStrip";
@@ -57,8 +58,6 @@ interface AnimationPanelProps {
   activeSceneId: number | undefined;
   /** Active mol-view UID; required for playback / scrub (transport disabled without it). */
   activeMolViewId: number | undefined;
-  /** Show / clear the selected element in the right Inspector (uid null = clear). */
-  onInspectAnimElement?: (sceneId: number, uid: number | null) => void;
 }
 
 /** Step factor for the zoom in / out buttons. */
@@ -103,7 +102,6 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   cm,
   activeSceneId,
   activeMolViewId,
-  onInspectAnimElement,
 }) => {
   const { timeline } = useAnimTimeline({ cm, sceneId: activeSceneId });
   const transport = useAnimTransport({
@@ -315,20 +313,21 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   // Drive the right Inspector from the strip selection. When the selected
   // element is gone (deleted via SEM_ANIM refetch), clear both the local
   // selection and the inspector target.
+  const { showAnimElement, clearAnimElement } = useInspectorActions();
   useEffect(() => {
     if (activeSceneId === undefined) return;
     if (selectedUid === null) {
-      onInspectAnimElement?.(activeSceneId, null);
+      clearAnimElement(activeSceneId);
       return;
     }
     const el = elements.find((e) => e.uid === selectedUid);
     if (el) {
-      onInspectAnimElement?.(activeSceneId, el.uid);
+      showAnimElement(activeSceneId, el.uid);
     } else {
       setSelectedUid(null);
-      onInspectAnimElement?.(activeSceneId, null);
+      clearAnimElement(activeSceneId);
     }
-  }, [selectedUid, activeSceneId, elements, onInspectAnimElement]);
+  }, [selectedUid, activeSceneId, elements, showAnimElement, clearAnimElement]);
 
   // --- Empty (no scene) state ---
 

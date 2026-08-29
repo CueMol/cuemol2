@@ -1,40 +1,72 @@
 /**
- * @file hooks/useSceneTreeController.ts
- * @description Aggregates all scene-tree wiring for the Explorer sidebar.
+ * @file state/sceneTree/useSceneTreeController.ts
+ * @description The Explorer's scene-tree behaviour on top of `useSceneTree`.
  *
- * `App` previously destructured ~40 callbacks out of `useSceneTree` and
- * re-assembled most of them into the `useSceneContextMenu` argument, owned
- * the inline-rename state, and defined ~8 scene-tree action handlers. This
- * hook absorbs that wiring: it takes the `useSceneTree` result whole, owns
- * the inline-rename controller, defines the scene-tree handlers, drives
- * `useSceneContextMenu`, and returns one bundle ready to spread onto
- * `<SidePanel>`. New ctxmenu actions now only touch `useSceneTree` /
- * `useSceneContextMenu` -- they no longer ripple through `App`.
+ * Owns the inline-rename editor state, defines the toolbar / keyboard /
+ * double-click handlers, registers the Edit-menu clipboard scope, and drives
+ * `useSceneContextMenu`. `SceneTreeProvider` hands the result out as the
+ * actions context; `ScenePane` and the ctxmenu reach it from there.
  *
- * `showGeneric` (open the property inspector) is passed in rather than
- * resolved here: it comes from `useInspectorState`, which itself depends
- * on `scene.tree`, so the controller cannot own that hook without a cycle.
+ * Every action reads the selection and the tree through refs, so the bundle
+ * this returns is identity-stable for the provider's lifetime: a selection
+ * change re-renders the rows through the state context, not through a new
+ * set of callbacks.
  */
 
-import { useCallback, useState } from "react";
-import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
-import type { SceneTreeNode } from "../worker/shared/sceneTreeTypes";
-import type { UseSceneTreeResult } from "./useSceneTree";
-import { useSceneContextMenu } from "./useSceneContextMenu";
-import { useClipboardScope } from "./useClipboardScope";
-import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
-import { useShowErrorAlert } from "../components/dialogs/ErrorAlertDialogProvider";
+import { useCallback, useMemo, useState } from "react";
+import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
+import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
+import type { UseSceneTreeResult } from "../../hooks/useSceneTree";
+import type { MoveSceneNodeArgs } from "../../components/panes/sceneTreeDnd";
+import { useSceneContextMenu } from "../../hooks/useSceneContextMenu";
+import { useClipboardScope } from "../../hooks/useClipboardScope";
+import { useLatestRef } from "../../hooks/react/useLatestRef";
+import { findTypedNode } from "../../hooks/sceneTree/sceneTreeNodeUtils";
+import { useShowErrorAlert } from "../../components/dialogs/ErrorAlertDialogProvider";
 
 export interface UseSceneTreeControllerArgs {
-  /** The `useSceneTree` result, owned by `App` and passed in whole. */
+  /** The `useSceneTree` result, passed in whole. */
   scene: UseSceneTreeResult;
   cm: AsyncCueMol | null;
   /** Active scene UID -- drives the ctxmenu pre-fetch. */
   activeSceneId: number | undefined;
   /** Active molview UID -- drives focus / camera-apply / new-camera flows. */
   activeMolViewId: number | undefined;
-  /** Open the generic property inspector for a scene-tree node id. */
-  showGeneric: (id: string) => void;
+  /** Open the property inspector for a scene-tree node id. */
+  showProperty: (id: string) => void;
+}
+
+/** Everything the tree UI can do; identity-stable. */
+export interface SceneTreeActions {
+  select: (id: string) => void;
+  /** Cmd/Ctrl+click: toggle `id` in the multi-selection. */
+  toggleSelect: (id: string) => void;
+  /** Shift+click: range-select up to `id` over the drawn row order. */
+  selectRange: (id: string, visibleIds: string[], additive?: boolean) => void;
+  toggleVisibility: (id: string) => void;
+  /** Open the property inspector for a row. */
+  showProperty: (id: string) => void;
+  /** Toolbar Focus / F key: centre the active view on a row. */
+  focusSelected: (id: string) => void;
+  /** Toolbar Delete / Delete key: the whole multi-selection when there is one. */
+  deleteSelected: (id: string) => void;
+  /** Toolbar Add: New Renderer or New Camera by the selected row's type. */
+  addSelected: () => void;
+  /** Double-click: apply a camera, or open the inspector. */
+  nodeDoubleClick: (node: SceneTreeNode) => void;
+  beginInlineRename: (id: string) => void;
+  cancelInlineRename: () => void;
+  commitInlineRename: (node: SceneTreeNode, newName: string) => void;
+  showContextMenu: (node: SceneTreeNode, x: number, y: number) => void;
+  moveNode: (args: MoveSceneNodeArgs) => unknown;
+  /** Row expand / collapse; persisted into C++ `ui_collapsed`. */
+  nodeExpandChange: (node: SceneTreeNode, collapsed: boolean) => void;
+}
+
+export interface UseSceneTreeControllerResult {
+  /** Row showing the inline-rename editor, or null. */
+  editingNodeId: string | null;
+  actions: SceneTreeActions;
 }
 
 export function useSceneTreeController({
@@ -42,30 +74,8 @@ export function useSceneTreeController({
   cm,
   activeSceneId,
   activeMolViewId,
-  showGeneric,
-}: UseSceneTreeControllerArgs) {
-  const {
-    tree,
-    selectedId,
-    selectedIds,
-    selectedHasOps,
-    setSelectedId,
-    toggleInSelection,
-    selectRangeTo,
-    toggleVisibility,
-    setNodeUiCollapsed,
-    moveSceneNode,
-    focusNode,
-    deleteNode,
-    renameNode,
-    renameCamera,
-    applyCameraToView,
-    copyNode,
-    pasteNode,
-    bulkCopyNodes,
-    bulkDeleteNodes,
-  } = scene;
-
+  showProperty,
+}: UseSceneTreeControllerArgs): UseSceneTreeControllerResult {
   // --- Inline-rename controller ---
   // Owned here so the F2 keypath (started in ScenePane) and the ctxmenu
   // Rename action (started in useSceneContextMenu) route through one piece
@@ -78,82 +88,32 @@ export function useSceneTreeController({
     setEditingNodeId(null);
   }, []);
 
-  // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
+  // --- Context menu + shared New Renderer / New Camera flows ---
 
-  const handleFocus = useCallback(
-    (id: string) => {
-      if (activeMolViewId === undefined) return;
-      focusNode(activeMolViewId, id).catch((err: unknown) => {
-        console.warn("focusSceneNode failed:", err);
-      });
-    },
-    [activeMolViewId, focusNode],
-  );
-
-  /**
-   * Delete from the toolbar button / Delete key.
-   *
-   * Deletes the whole multi-selection under a single undo transaction when
-   * more than one row is selected -- UXP's `onDeleteCmd` drove the same
-   * button through the same multi loop, and `useSceneTree` deliberately
-   * leaves `delete` enabled while multi-selected. Falls back to the
-   * single-node path (which also covers cameras and styles) otherwise.
-   */
-  const handleDelete = useCallback(
-    (id: string) => {
-      if (selectedIds.size > 1) {
-        bulkDeleteNodes(new Set(selectedIds)).catch((err: unknown) => {
-          console.warn("bulkDeleteSceneNodes failed:", err);
-        });
-        return;
-      }
-      deleteNode(id).catch((err: unknown) => {
-        console.warn("deleteSceneNode failed:", err);
-      });
-    },
-    [deleteNode, bulkDeleteNodes, selectedIds],
-  );
-
-  // Inline-rename commit: camera rows go through renameCamera (cameras have
-  // no in-place name setter once registered), everything else through the
-  // generic renameNode worker. Also clears the editor.
-  const handleCommitInlineRename = useCallback(
-    (node: SceneTreeNode, newName: string) => {
-      setEditingNodeId(null);
-      if (node.type === "camera") {
-        void renameCamera(node.name, newName).catch((err: unknown) => {
-          console.warn("inline rename camera failed:", err);
-        });
-      } else {
-        void renameNode(String(node.id), newName).catch((err: unknown) => {
-          console.warn("inline rename failed:", err);
-        });
-      }
-    },
-    [renameCamera, renameNode],
-  );
-
-  // Tree row expand/collapse -- persist into C++ `ui_collapsed` so the
-  // state survives a qsc save/load (UXP onTwistyClick parity). Only real
-  // C++ rows qualify; synthesised rows (cameraRoot / styleRoot, negative
-  // ids) and camera / style rows are no-ops.
-  const handleNodeExpandChange = useCallback(
-    (node: SceneTreeNode, collapsed: boolean) => {
-      if (node.type !== "object" && node.type !== "rendGroup") return;
-      if (node.id < 0) return;
-      setNodeUiCollapsed(String(node.id), collapsed);
-    },
-    [setNodeUiCollapsed],
-  );
-
-  // --- Edit-menu clipboard (Cmd+C / X / V over the scene tree) ---
-  //
-  // The same three operations the context menu offers, reached by keyboard.
-  // `ScenePane` marks its scroll wrapper `data-clipboard-scope="scene-tree"`,
-  // and `utils/editClipboard.ts` routes here only when the tree -- not a text
-  // field -- is where the user is working.
+  const { openContextMenu, openNewRendererFlow, openNewCameraFlow } =
+    useSceneContextMenu({
+      ...scene,
+      cm,
+      sceneId: activeSceneId,
+      showProperty,
+      beginInlineRename,
+      activeViewId: activeMolViewId,
+    });
 
   const showErrorAlert = useShowErrorAlert();
+
+  // Everything an action needs, read at call time. The bundle below closes
+  // over this one ref and is created once, so a selection change or a tree
+  // refetch never hands the rows a new set of callbacks.
+  const live = useLatestRef({
+    scene,
+    activeMolViewId,
+    showProperty,
+    showErrorAlert,
+    openContextMenu,
+    openNewRendererFlow,
+    openNewCameraFlow,
+  });
 
   /**
    * Copy the selection to the OS clipboard.
@@ -165,27 +125,28 @@ export function useSceneTreeController({
    * @returns whether anything reached the clipboard (Cut needs to know).
    */
   const copySelection = useCallback(async (): Promise<boolean> => {
-    if (selectedIds.size > 1) {
-      const res = await bulkCopyNodes(selectedIds);
+    const { scene: s, showErrorAlert: alert } = live.current;
+    if (s.selectedIds.size > 1) {
+      const res = await s.bulkCopyNodes(s.selectedIds);
       if (res.ok) return true;
       if (res.reason === "mixed") {
-        await showErrorAlert({
+        await alert({
           title: "Copy",
           message: "Multiple items with different types selected.",
         });
       } else if (res.reason === "objectUnsupported") {
-        await showErrorAlert({
+        await alert({
           title: "Copy",
           message: "Multiple copy of object: not supported.",
         });
       }
       return false;
     }
-    if (!selectedId) return false;
-    const found = findTypedNode(tree, selectedId);
+    if (!s.selectedId) return false;
+    const found = findTypedNode(s.tree, s.selectedId);
     if (!found) return false;
-    return copyNode(found.node);
-  }, [tree, selectedId, selectedIds, copyNode, bulkCopyNodes, showErrorAlert]);
+    return s.copyNode(found.node);
+  }, [live]);
 
   /**
    * Cut: copy, then delete -- but only once the payload is actually on the
@@ -196,15 +157,16 @@ export function useSceneTreeController({
    * it exists because Cmd+X is expected to work wherever Cmd+C does.
    */
   const cutSelection = useCallback(async (): Promise<void> => {
-    const ids = selectedIds.size > 1 ? new Set(selectedIds) : null;
-    const id = selectedId;
+    const { scene: s } = live.current;
+    const ids = s.selectedIds.size > 1 ? new Set(s.selectedIds) : null;
+    const id = s.selectedId;
     if (!(await copySelection())) return;
     if (ids) {
-      await bulkDeleteNodes(ids);
+      await s.bulkDeleteNodes(ids);
       return;
     }
-    if (id) await deleteNode(id);
-  }, [copySelection, selectedId, selectedIds, deleteNode, bulkDeleteNodes]);
+    if (id) await s.deleteNode(id);
+  }, [live, copySelection]);
 
   /**
    * Paste onto the selected row -- the ctxmenu Paste, by keyboard.
@@ -214,12 +176,19 @@ export function useSceneTreeController({
    * selected would paste into the scene.
    */
   const pasteOntoSelection = useCallback(async (): Promise<void> => {
-    if (!selectedId) return;
-    const found = findTypedNode(tree, selectedId);
+    const { scene: s } = live.current;
+    if (!s.selectedId) return;
+    const found = findTypedNode(s.tree, s.selectedId);
     if (!found) return;
-    await pasteNode(found.node);
-  }, [tree, selectedId, pasteNode]);
+    await s.pasteNode(found.node);
+  }, [live]);
 
+  // --- Edit-menu clipboard (Cmd+C / X / V over the scene tree) ---
+  //
+  // The same three operations the context menu offers, reached by keyboard.
+  // `ScenePane` marks its scroll wrapper `data-clipboard-scope="scene-tree"`,
+  // and `utils/editClipboard.ts` routes here only when the tree -- not a text
+  // field -- is where the user is working.
   useClipboardScope("scene-tree", {
     cut: () => {
       void cutSelection().catch((err: unknown) =>
@@ -238,96 +207,124 @@ export function useSceneTreeController({
     },
   });
 
-  // --- Context menu + shared New Renderer / New Camera flows ---
+  const actions = useMemo<SceneTreeActions>(
+    () => ({
+      select: (id) => live.current.scene.setSelectedId(id),
+      toggleSelect: (id) => live.current.scene.toggleInSelection(id),
+      selectRange: (id, visibleIds, additive) =>
+        live.current.scene.selectRangeTo(id, visibleIds, additive),
+      toggleVisibility: (id) => live.current.scene.toggleVisibility(id),
+      showProperty: (id) => live.current.showProperty(id),
+      moveNode: (args) => live.current.scene.moveSceneNode(args),
 
-  const { openContextMenu, openNewRendererFlow, openNewCameraFlow } =
-    useSceneContextMenu({
-      ...scene,
-      cm,
-      sceneId: activeSceneId,
-      showProperty: showGeneric,
+      // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
+
+      focusSelected: (id) => {
+        const { scene: s, activeMolViewId: viewId } = live.current;
+        if (viewId === undefined) return;
+        s.focusNode(viewId, id).catch((err: unknown) => {
+          console.warn("focusSceneNode failed:", err);
+        });
+      },
+
+      /**
+       * Delete from the toolbar button / Delete key.
+       *
+       * Deletes the whole multi-selection under a single undo transaction
+       * when more than one row is selected -- UXP's `onDeleteCmd` drove the
+       * same button through the same multi loop, and `useSceneTree`
+       * deliberately leaves `delete` enabled while multi-selected. Falls
+       * back to the single-node path (which also covers cameras and styles)
+       * otherwise.
+       */
+      deleteSelected: (id) => {
+        const { scene: s } = live.current;
+        if (s.selectedIds.size > 1) {
+          s.bulkDeleteNodes(new Set(s.selectedIds)).catch((err: unknown) => {
+            console.warn("bulkDeleteSceneNodes failed:", err);
+          });
+          return;
+        }
+        s.deleteNode(id).catch((err: unknown) => {
+          console.warn("deleteSceneNode failed:", err);
+        });
+      },
+
+      // Toolbar Add button -- UXP `onNewCmd` dispatches by selected row type:
+      // object / renderer / rendGroup -> New Renderer flow;
+      // camera / cameraRoot -> New Camera flow. Other selections are no-ops.
+      addSelected: () => {
+        const { scene: s, openNewCameraFlow: newCamera, openNewRendererFlow: newRenderer } = live.current;
+        const found = findTypedNode(s.tree, s.selectedId);
+        if (!found) return;
+        const node = found.node;
+        if (node.type === "camera" || node.type === "cameraRoot") {
+          void newCamera().catch((err: unknown) => {
+            console.warn("new-camera toolbar add failed:", err);
+          });
+          return;
+        }
+        void newRenderer(node).catch((err: unknown) => {
+          console.warn("new-renderer toolbar add failed:", err);
+        });
+      },
+
+      // Tree row double-click -- UXP `onTreeItemClick` detail==2: camera rows
+      // apply the camera to the active view (with vis flags); other rows open
+      // the generic property inspector. cameraRoot / styleRoot are no-ops.
+      nodeDoubleClick: (node) => {
+        const { scene: s, activeMolViewId: viewId, showProperty: show } = live.current;
+        if (node.type === "camera") {
+          if (viewId === undefined) return;
+          void s.applyCameraToView(viewId, node.name, true).catch(
+            (err: unknown) => {
+              console.warn("dblclick applyCameraToView failed:", err);
+            },
+          );
+          return;
+        }
+        if (node.type === "cameraRoot" || node.type === "styleRoot") return;
+        show(String(node.id));
+      },
+
       beginInlineRename,
-      activeViewId: activeMolViewId,
-    });
+      cancelInlineRename,
 
-  const handleShowContextMenu = useCallback(
-    (node: SceneTreeNode, x: number, y: number) => {
-      void openContextMenu(node, x, y).catch((err: unknown) => {
-        console.warn("scene context menu failed:", err);
-      });
-    },
-    [openContextMenu],
+      // Inline-rename commit: camera rows go through renameCamera (cameras
+      // have no in-place name setter once registered), everything else
+      // through the generic renameNode worker. Also clears the editor.
+      commitInlineRename: (node, newName) => {
+        const { scene: s } = live.current;
+        setEditingNodeId(null);
+        if (node.type === "camera") {
+          void s.renameCamera(node.name, newName).catch((err: unknown) => {
+            console.warn("inline rename camera failed:", err);
+          });
+        } else {
+          void s.renameNode(String(node.id), newName).catch((err: unknown) => {
+            console.warn("inline rename failed:", err);
+          });
+        }
+      },
+
+      showContextMenu: (node, x, y) => {
+        void live.current.openContextMenu(node, x, y).catch((err: unknown) => {
+          console.warn("scene context menu failed:", err);
+        });
+      },
+
+      // Tree row expand/collapse -- persist into C++ `ui_collapsed` so the
+      // state survives a qsc save/load (UXP onTwistyClick parity). Only real
+      // C++ rows qualify; synthesised rows (cameraRoot / styleRoot, negative
+      // ids) and camera / style rows are no-ops.
+      nodeExpandChange: (node, collapsed) => {
+        if (node.type !== "object" && node.type !== "rendGroup") return;
+        if (node.id < 0) return;
+        live.current.scene.setNodeUiCollapsed(String(node.id), collapsed);
+      },
+    }),
+    [live, beginInlineRename, cancelInlineRename],
   );
 
-  // Tree row double-click -- UXP `onTreeItemClick` detail==2: camera rows
-  // apply the camera to the active view (with vis flags); other rows open
-  // the generic property inspector. cameraRoot / styleRoot are no-ops.
-  const handleNodeDoubleClick = useCallback(
-    (node: SceneTreeNode) => {
-      if (node.type === "camera") {
-        if (activeMolViewId === undefined) return;
-        void applyCameraToView(activeMolViewId, node.name, true).catch(
-          (err: unknown) => {
-            console.warn("dblclick applyCameraToView failed:", err);
-          },
-        );
-        return;
-      }
-      if (node.type === "cameraRoot" || node.type === "styleRoot") return;
-      showGeneric(String(node.id));
-    },
-    [activeMolViewId, applyCameraToView, showGeneric],
-  );
-
-  // Toolbar Add button -- UXP `onNewCmd` dispatches by selected row type:
-  // object / renderer / rendGroup -> New Renderer flow;
-  // camera / cameraRoot -> New Camera flow. Other selections are no-ops.
-  const handleAdd = useCallback(() => {
-    const numId = Number(selectedId);
-    if (!Number.isFinite(numId)) return;
-    const walk = (n: SceneTreeNode | null): SceneTreeNode | null => {
-      if (!n) return null;
-      if (n.id === numId) return n;
-      for (const c of n.children) {
-        const found = walk(c);
-        if (found) return found;
-      }
-      return null;
-    };
-    const node = walk(tree);
-    if (!node) return;
-    if (node.type === "camera" || node.type === "cameraRoot") {
-      void openNewCameraFlow().catch((err: unknown) => {
-        console.warn("new-camera toolbar add failed:", err);
-      });
-      return;
-    }
-    void openNewRendererFlow(node).catch((err: unknown) => {
-      console.warn("new-renderer toolbar add failed:", err);
-    });
-  }, [selectedId, tree, openNewRendererFlow, openNewCameraFlow]);
-
-  // Single bundle spread onto <SidePanel> by App.
-  return {
-    sceneTree: tree,
-    sceneSelected: selectedId,
-    sceneSelectedIds: selectedIds,
-    onSceneSelect: setSelectedId,
-    onSceneToggleSelect: toggleInSelection,
-    onSceneSelectRange: selectRangeTo,
-    onToggleVisibility: toggleVisibility,
-    onShowProperty: showGeneric,
-    onFocusSelected: handleFocus,
-    onDeleteSelected: handleDelete,
-    onAddSelected: handleAdd,
-    onSceneNodeDoubleClick: handleNodeDoubleClick,
-    sceneEditingNodeId: editingNodeId,
-    onBeginInlineRename: beginInlineRename,
-    onCancelInlineRename: cancelInlineRename,
-    onCommitInlineRename: handleCommitInlineRename,
-    onShowSceneContextMenu: handleShowContextMenu,
-    onMoveSceneNode: moveSceneNode,
-    onSceneNodeExpandChange: handleNodeExpandChange,
-    sceneOpsEnabled: selectedHasOps,
-  };
+  return { editingNodeId, actions };
 }

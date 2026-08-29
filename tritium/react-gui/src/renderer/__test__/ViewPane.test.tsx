@@ -37,10 +37,13 @@ const viewState = vi.hoisted(() => ({
 }))
 const dispatch = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 vi.mock('../state/activeView', () => ({ useActiveViewValues: () => viewState }))
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
 vi.mock('../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }))
 
 import { ViewPane } from '../components/panes/ViewPane'
 import { mountTree, flushPromises, pressStepArrow } from './helpers/testHarness'
+import { withPaneEnv } from './helpers/paneEnv'
 
 const XFORM = {
     ok: true,
@@ -62,14 +65,6 @@ function makeCm() {
     }
 }
 
-function makeProps(cm: ReturnType<typeof makeCm>) {
-    return {
-        cm: cm as never,
-        activeSceneId: 100,
-        activeMolViewId: 7,
-        collapsed: false,
-    }
-}
 
 /** Find a FieldGrid row by its label text. */
 function fieldRow(container: HTMLElement, label: string): HTMLElement {
@@ -88,14 +83,12 @@ function rightArrow(container: HTMLElement, label: string): HTMLElement {
 
 describe('ViewPane', () => {
     let cm: ReturnType<typeof makeCm>
-    let props: ReturnType<typeof makeProps>
     let view: { container: HTMLElement; unmount(): void }
 
     beforeEach(async () => {
         dispatch.mockClear()
         cm = makeCm()
-        props = makeProps(cm)
-        view = mountTree(<ViewPane {...props} />)
+        view = mountTree(withPaneEnv(cm, 100, 7, <ViewPane collapsed={false} />))
         await flushPromises() // resolve getViewXform -> enable controls
     })
 

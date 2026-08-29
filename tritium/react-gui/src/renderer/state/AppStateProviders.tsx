@@ -10,6 +10,8 @@
  *   StatusMessage -- needs ViewInputConfig (mounted above)
  *   ActiveView    -- needs the workspace (active view / scene)
  *   UndoRedo      -- needs the workspace and commands
+ *   Inspector     -- needs the layout (open flag) and the workspace
+ *   SceneTree     -- needs the workspace, the inspector and the dialogs
  */
 
 import React from 'react'
@@ -19,6 +21,8 @@ import { ActiveToolProvider } from '../contexts/ActiveToolContext'
 import { StatusMessageProvider } from './statusMessage'
 import { ActiveViewStateProvider } from './activeView'
 import { UndoRedoProvider } from './undoRedo'
+import { InspectorProvider } from './inspector'
+import { SceneTreeProvider } from './sceneTree'
 
 export function AppStateProviders({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
@@ -27,7 +31,11 @@ export function AppStateProviders({ children }: { children: React.ReactNode }): 
         <ActiveToolProvider>
           <StatusMessageProvider>
             <ActiveViewStateProvider>
-              <UndoRedoProvider>{children}</UndoRedoProvider>
+              <UndoRedoProvider>
+                <InspectorProvider>
+                  <SceneTreeProvider>{children}</SceneTreeProvider>
+                </InspectorProvider>
+              </UndoRedoProvider>
             </ActiveViewStateProvider>
           </StatusMessageProvider>
         </ActiveToolProvider>

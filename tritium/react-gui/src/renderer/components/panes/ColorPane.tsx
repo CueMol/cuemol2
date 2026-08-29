@@ -50,7 +50,6 @@ import {
     SliderField,
     RejectNumberInput,
 } from '../../h3-kit/form'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 import type {
     BfacParams,
@@ -79,6 +78,8 @@ import { useClipboardScope } from '../../hooks/useClipboardScope'
 import { useColumnResize } from '@renderer/hooks/useColumnResize'
 import { useShowContextMenu } from '../menu/ContextMenuProvider'
 import type { MenuNode } from '@shared/menuNodes'
+import { useCueMol } from '../../hooks/cuemol/useCueMol'
+import { useActiveScene } from '../../state/workspace'
 
 // ------------------------------------------------------------
 // Coloring type dropdown items
@@ -153,8 +154,6 @@ const COLORING_MODE_ITEMS: ColoringModeItem[] = [
 // ------------------------------------------------------------
 
 interface ColorPaneProps {
-    cm: AsyncCueMol | null
-    sceneId: number | undefined
     collapsed?: boolean
     onToggleCollapse?: () => void
 }
@@ -875,12 +874,10 @@ const ElepotDeck: React.FC<ElepotDeckProps> = ({ params, objects, onCommit }) =>
 const PAINT_DECK_CLASS = 'PaintColoring'
 const SOLID_DECK_CLASSES = new Set(['', 'SolidColoring'])
 
-export const ColorPane: React.FC<ColorPaneProps> = ({
-    cm,
-    sceneId,
-    collapsed,
-    onToggleCollapse,
-}) => {
+export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollapse }) => {
+    const { cm } = useCueMol()
+    const { activeSceneId: sceneId } = useActiveScene()
+
     const { renderers } = usePaintCapableRenderers({ cm, sceneId })
 
     // Selected row is stored as a key (`<kind>:<uid>`) so a single state

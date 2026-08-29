@@ -14,6 +14,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
 import { mountTree } from './helpers/testHarness'
 import { ScenePane } from '../components/panes/ScenePane'
+import { withSceneTree } from './helpers/sceneTreeEnv'
+
+// ScenePane reads the tree and its actions from the provider; stand it in.
+vi.mock('../state/sceneTree', async () => (await import('./helpers/sceneTreeEnv')).mockSceneTreeModule())
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 
 void React
@@ -80,13 +84,7 @@ describe('ScenePane drag-and-drop', () => {
   it('fires onMoveNode for an object -> object reorder', () => {
     const onMoveNode = vi.fn()
     const { container, unmount } = mountTree(
-      <ScenePane
-        tree={makeTree()}
-        selectedId=""
-        onSelect={() => {}}
-        onToggleVisibility={() => {}}
-        onMoveNode={onMoveNode}
-      />,
+      withSceneTree({ tree: makeTree(), selectedId: "", onSelect: () => {}, onToggleVisibility: () => {}, onMoveNode: onMoveNode }, <ScenePane />),
     )
     const src = container.querySelector('[data-node-id="1"]')!
     const tgt = container.querySelector('[data-node-id="2"]')!
@@ -114,13 +112,7 @@ describe('ScenePane drag-and-drop', () => {
 
   it('renders the label as a full-cell draggable block', () => {
     const { container, unmount } = mountTree(
-      <ScenePane
-        tree={makeTree()}
-        selectedId=""
-        onSelect={() => {}}
-        onToggleVisibility={() => {}}
-        onMoveNode={() => {}}
-      />,
+      withSceneTree({ tree: makeTree(), selectedId: "", onSelect: () => {}, onToggleVisibility: () => {}, onMoveNode: () => {} }, <ScenePane />),
     )
     const span = container.querySelector('[data-node-id="1"]') as HTMLElement
     expect(span.getAttribute('draggable')).toBe('true')

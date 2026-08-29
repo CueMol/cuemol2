@@ -24,7 +24,6 @@
 
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 import { SectionHeader } from './SectionHeader';
 import { AppIcon } from '../AppIcon';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
@@ -44,15 +43,12 @@ import {
 import { loadSnapshot, saveSnapshot } from './selection/selectionPaneStore';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { SEM_ANY, SEM_OBJECT, SEM_RENDERER, SEM_SCENE } from '../../event';
+import { useCueMol } from '../../hooks/cuemol/useCueMol';
+import { useActiveScene } from '../../state/workspace';
 
 /* --- Props --- */
 
 interface SelectionPaneProps {
-    cm: AsyncCueMol | null;
-    /** Active scene UID, or undefined when no scene is active. */
-    activeSceneId: number | undefined;
-    /** Active mol-view UID -- required for the Center action. */
-    activeMolViewId?: number | undefined;
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -66,13 +62,10 @@ const VALIDATE_SKIP = new Set(['', '*', 'none']);
 
 /* --- Component --- */
 
-export const SelectionPane: React.FC<SelectionPaneProps> = ({
-    cm,
-    activeSceneId,
-    activeMolViewId,
-    collapsed,
-    onToggleCollapse,
-}) => {
+export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggleCollapse }) => {
+    const { cm } = useCueMol();
+    const { activeSceneId, activeMolViewId } = useActiveScene();
+
     // Seed persisted UI state, but only when the snapshot belongs to the
     // active scene (a scene change is allowed to reset).
     const seededForScene = (): boolean => {

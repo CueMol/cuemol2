@@ -13,6 +13,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
 import { mountTree } from './helpers/testHarness'
 import { ScenePane } from '../components/panes/ScenePane'
+import { withSceneTree } from './helpers/sceneTreeEnv'
+
+// ScenePane reads the tree and its actions from the provider; stand it in.
+vi.mock('../state/sceneTree', async () => (await import('./helpers/sceneTreeEnv')).mockSceneTreeModule())
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 
 void React
@@ -63,18 +67,7 @@ function mount(selectedId: string, editingNodeId: string | null = null): Mounted
   const onDeleteSelected = vi.fn()
   const onNodeExpandChange = vi.fn()
   const { container, unmount } = mountTree(
-    <ScenePane
-      tree={tree()}
-      selectedId={selectedId}
-      selectedIds={selectedId ? new Set([selectedId]) : new Set()}
-      onSelect={onSelect}
-      onSelectRange={onSelectRange}
-      onToggleVisibility={() => {}}
-      onMoveNode={() => {}}
-      onDeleteSelected={onDeleteSelected}
-      onNodeExpandChange={onNodeExpandChange}
-      editingNodeId={editingNodeId}
-    />,
+    withSceneTree({ tree: tree(), selectedId: selectedId, selectedIds: selectedId ? new Set([selectedId]) : new Set(), onSelect: onSelect, onSelectRange: onSelectRange, onToggleVisibility: () => {}, onMoveNode: () => {}, onDeleteSelected: onDeleteSelected, onNodeExpandChange: onNodeExpandChange, editingNodeId: editingNodeId }, <ScenePane />),
   )
   return { container, unmount, onSelect, onSelectRange, onDeleteSelected, onNodeExpandChange }
 }

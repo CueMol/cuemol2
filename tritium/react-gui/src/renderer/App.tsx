@@ -3,10 +3,12 @@
  *
  * Layout: Toolbar / [ActivityBar | SidePanel | [ContentArea / BottomPanel] | InspectorPanel] / StatusBar
  *
- * Most domain wiring lives in extracted hooks:
+ * Domain state lives in the providers under state/ (workspace, layout,
+ * inspector, scene tree, ...); the panes and panels read it there. What is
+ * left here is the layout itself and the window-level wiring:
  *   - useAppInitialization      -- first scene/view on launch (StrictMode guarded)
- *   - useActiveViewState        -- viewProjection / centerMark / bgColor cache + menu sync
  *   - useCommandRegistrations   -- registers all CmdId handlers + Electron IPC bridge
+ *   - useRenderWindowBridge     -- the modeless Rendering window's job lifecycle
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
@@ -27,16 +29,14 @@ import { installClipboardScopeTracking } from './utils/editClipboard';
 
 import { useTextContextMenu } from "./hooks/useTextContextMenu";
 import { IconContext } from "@phosphor-icons/react";
-import { useSceneTree } from "./hooks/useSceneTree";
-import { useSceneTreeController } from "./hooks/useSceneTreeController";
-import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderWindowBridge } from "./hooks/useRenderWindowBridge";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useActiveScene, useWorkspaceDispatch, useWorkspaceTabs } from "./state/workspace";
 import { useLayout, useLayoutDispatch } from "./state/layout";
-import { useActiveViewDispatch, useActiveViewValues } from "./state/activeView";
+import { useActiveViewValues } from "./state/activeView";
+import { useInspector } from "./state/inspector";
 import { useAppInitialization } from "./hooks/useAppInitialization";
-import { useNewSceneAction, useOpenSceneFileAction } from "./hooks/useNewSceneAction";
+import { useNewSceneAction } from "./hooks/useNewSceneAction";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
 import { useFileDrop } from "./hooks/useFileDrop";
 import { useShellOpenFiles } from "./hooks/useShellOpenFiles";
@@ -51,12 +51,9 @@ const App: React.FC = () => {
   // --- Persistent layout state (state/layout) ---
   // Sizes are read once, as loaded; a drag writes the store without a
   // re-render. Only the flags the UI renders from are reactive.
-  const { loaded, inspectorOpen: persistedInspectorOpen, viewCollapsed, savedSizes } = useLayout();
-  const {
-    setMainSizes, setRightPanelSizes, setCenterSizes,
-    setInspectorOpen: persistInspectorOpen, setViewSizes, setViewCollapsed, flushPendingSaves,
-  } = useLayoutDispatch();
-  const inspectorLayout = useMemo(() => ({ inspectorOpen: persistedInspectorOpen }), [persistedInspectorOpen]);
+  const { loaded, inspectorOpen, savedSizes } = useLayout();
+  const { setMainSizes, setRightPanelSizes, setCenterSizes, setInspectorOpen, flushPendingSaves } =
+    useLayoutDispatch();
 
   // --- Activity-bar state ---
 
@@ -90,81 +87,18 @@ const App: React.FC = () => {
     [setMainSizes],
   );
 
-  // --- CueMol core / tabs (cm needed early for useSceneTree) ---
+  // --- CueMol core / tabs ---
 
   const { cueMolReady, cm } = useCueMol();
   // The tab strip and the active scene it implies come from one provider
   // (state/workspace), so the scene and the view are never a render apart.
-  const {
-    openSettingsTab, activateTab, closeTab, reorderTabs,
-    getActiveSceneInfo, getActiveTabId, tabsRef,
-  } = useWorkspaceDispatch();
-  const { tabs, activeTabId: activeTab, activeTab: activeTabData, molViewEntries } = useWorkspaceTabs();
-  const { activeSceneId, activeMolViewId } = useActiveScene();
-  // Menu-mirrored view attributes and the exporter probe (state/activeView).
+  const { activateTab, closeTab, tabsRef } = useWorkspaceDispatch();
+  const { tabs, activeTabId: activeTab, molViewEntries } = useWorkspaceTabs();
+  const { activeMolViewId } = useActiveScene();
+  // The exporter probe (state/activeView) and whether the inspector has
+  // anything to show (state/inspector).
   const { exportAvailable } = useActiveViewValues();
-  const { onProjectionChanged, onCenterMarkChanged, onBgColorChanged } = useActiveViewDispatch();
-
-  // --- Domain hooks ---
-
-  const scene = useSceneTree({ cm, sceneId: activeSceneId });
-
-  const {
-    inspectorOpen,
-    inspectorTarget,
-    inspectorCategory,
-    genericEntries,
-    genericLoading,
-    inspectorInfo,
-    handleShowGeneric,
-    handleShowViewProps,
-    handleShowAnimElement,
-    handleClearAnimElement,
-    handleCloseInspector,
-    setInspectorOpen,
-    handleGenericSet,
-    handleGenericReset,
-    handleSetMany,
-    handleResetMany,
-  } = useInspectorState({
-    layout: inspectorLayout,
-    loaded,
-    persistInspectorOpen,
-    cm,
-    sceneTree: scene.tree,
-    activeSceneId,
-  });
-
-  // Animation-element inspector header (name/type). App owns it because
-  // tab-switch restore rewrites inspectorTarget without going through the
-  // AnimationPanel, so the inspector's own fetch is the single source.
-  const [animHeader, setAnimHeader] = useState<{ name: string; type: string } | null>(null);
-
-  const handleInspectAnimElement = useCallback(
-    (sceneId: number, uid: number | null) => {
-      if (uid === null) {
-        handleClearAnimElement(sceneId);
-        setAnimHeader(null);
-        return;
-      }
-      handleShowAnimElement(sceneId, uid);
-    },
-    [handleClearAnimElement, handleShowAnimElement],
-  );
-  const handleAnimHeaderChange = useCallback((name: string, type: string) => {
-    setAnimHeader({ name, type });
-  }, []);
-  const handleAnimElementGone = useCallback(
-    (sceneId: number) => {
-      handleClearAnimElement(sceneId);
-      setAnimHeader(null);
-    },
-    [handleClearAnimElement],
-  );
-  const handleCloseInspectorWithAnim = useCallback(() => {
-    handleCloseInspector();
-    setAnimHeader(null);
-  }, [handleCloseInspector]);
+  const inspectorHasTarget = useInspector().target !== null;
 
   /**
    * Same snap-collapse mirroring as the sidebar (see
@@ -223,15 +157,9 @@ const App: React.FC = () => {
     onBeforeProceed: saveUserStyleOnClose,
   });
 
-  // Shared "create scene + view + register tab" action used by both the
-  // launch path and the New Tab dialog (UXP onNewScene equivalent).
+  // First scene/view on launch (StrictMode guarded); the same "create scene
+  // + view + register tab" action the New Tab dialog uses.
   const newScene = useNewSceneAction({ cm });
-  // Opening a scene FILE goes through its own action: the worker only creates
-  // the view once the file has been read, so a failed open never leaves an
-  // empty molview tab behind.
-  const openSceneFile = useOpenSceneFileAction({ cm });
-
-  // First scene/view on launch (StrictMode guarded)
   const { initialSceneSettled } = useAppInitialization({ cueMolReady, newScene });
 
   // --- Render: Rendering-window bridge ---
@@ -269,38 +197,8 @@ const App: React.FC = () => {
     umbreonAvailable,
   });
 
-  // --- Scene-tree wiring (selection, handlers, ctxmenu, inline rename) ---
-  // Aggregated into useSceneTreeController so App no longer destructures
-  // ~40 useSceneTree callbacks and re-assembles them for useSceneContextMenu.
-  const sceneController = useSceneTreeController({
-    scene,
-    cm,
-    activeSceneId,
-    activeMolViewId,
-    showGeneric: handleShowGeneric,
-  });
-
-  // --- View-state cache for the active molview tab ---
-
-
-
   // --- All command handlers + Electron IPC bridge ---
-  useCommandRegistrations({
-    cm,
-    getActiveSceneInfo,
-    getActiveTabId,
-    closeTab,
-    openSettingsTab,
-    activeMolViewId,
-    onProjectionChanged,
-    onCenterMarkChanged,
-    onBgColorChanged,
-    showViewProperty: handleShowViewProps,
-    // Scene's tree-node id equals its scene uid; handleShowGeneric resolves it.
-    showSceneProperty: (sceneId: number) => handleShowGeneric(String(sceneId)),
-    newScene,
-    openSceneFile,
-  });
+  useCommandRegistrations();
 
   // --- OS file drag-and-drop open (window-level, UXP dragdropopen parity) ---
   const { isDragActive } = useFileDrop({ cm });
@@ -335,7 +233,6 @@ const App: React.FC = () => {
   // --- Derived values ---
 
   const sidebarVisible = activeView !== null;
-  const settingsActive = activeTabData?.type === "settings";
 
   // --- Render ---
 
@@ -351,12 +248,7 @@ const App: React.FC = () => {
 
       <div className="main-layout">
         <div className="main-layout-inner">
-          <ActivityBar
-            activeView={activeView}
-            onSelect={handleActivitySelect}
-            onSettingsClick={openSettingsTab}
-            settingsActive={settingsActive}
-          />
+          <ActivityBar activeView={activeView} onSelect={handleActivitySelect} />
 
           <div className="main-content-area">
             {loaded && (
@@ -375,17 +267,7 @@ const App: React.FC = () => {
                   visible={sidebarVisible}
                   snap
                 >
-                  <SidePanel
-                    activeView={activeView ?? "explorer"}
-                    cm={cm}
-                    activeSceneId={activeSceneId}
-                    activeMolViewId={activeMolViewId}
-                    {...sceneController}
-                    viewSizes={savedSizes.viewSizes}
-                    viewCollapsed={viewCollapsed}
-                    onViewSizesChange={setViewSizes}
-                    onViewCollapsedChange={setViewCollapsed}
-                  />
+                  <SidePanel activeView={activeView ?? "explorer"} />
                 </Allotment.Pane>
 
                 {/* Right section: center + inspector */}
@@ -410,21 +292,10 @@ const App: React.FC = () => {
                         }
                       >
                         <Allotment.Pane>
-                          <ContentArea
-                            tabs={tabs}
-                            activeTab={activeTab}
-                            onSelectTab={activateTab}
-                            onCloseTab={closeTab}
-                            onReorderTabs={reorderTabs}
-                          />
+                          <ContentArea />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
-                          <BottomPanel
-                            cm={cm}
-                            activeSceneId={activeSceneId}
-                            activeMolViewId={activeMolViewId}
-                            onInspectAnimElement={handleInspectAnimElement}
-                          />
+                          <BottomPanel />
                         </Allotment.Pane>
                       </Allotment>
                     </Allotment.Pane>
@@ -438,45 +309,10 @@ const App: React.FC = () => {
                     <Allotment.Pane
                       minSize={240}
                       preferredSize={300}
-                      visible={inspectorOpen && inspectorTarget !== null}
+                      visible={inspectorOpen && inspectorHasTarget}
                       snap
                     >
-                      <InspectorPanel
-                        hasTarget={inspectorTarget !== null}
-                        targetKind={inspectorTarget?.kind ?? null}
-                        targetCategory={inspectorCategory}
-                        nodeName={
-                          inspectorTarget?.kind === "animElement"
-                            ? (animHeader?.name ?? "")
-                            : inspectorInfo.name
-                        }
-                        nodeType={
-                          inspectorTarget?.kind === "animElement"
-                            ? (animHeader?.type ?? "")
-                            : inspectorInfo.type
-                        }
-                        genericEntries={genericEntries}
-                        genericLoading={genericLoading}
-                        onGenericSet={handleGenericSet}
-                        onGenericSetMany={handleSetMany}
-                        onGenericReset={handleGenericReset}
-                        onResetMany={handleResetMany}
-                        onClose={handleCloseInspectorWithAnim}
-                        cm={cm}
-                        sceneId={activeSceneId}
-                        nodeId={
-                          inspectorTarget?.kind === "node"
-                            ? inspectorTarget.nodeId
-                            : undefined
-                        }
-                        animElement={
-                          inspectorTarget?.kind === "animElement"
-                            ? { sceneId: inspectorTarget.sceneId, uid: inspectorTarget.uid }
-                            : null
-                        }
-                        onAnimElementGone={handleAnimElementGone}
-                        onAnimHeaderChange={handleAnimHeaderChange}
-                      />
+                      <InspectorPanel />
                     </Allotment.Pane>
                   </Allotment>
                 </Allotment.Pane>

@@ -18,7 +18,8 @@ import { AnimationPanel } from "./AnimationPanel";
 import { TrajectoryPanel } from "./TrajectoryPanel";
 import { useLogActions, useLogContents } from "../../contexts/LogContext";
 import { IPC } from "@shared/ipcChannels";
-import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
+import { useCueMol } from "../../hooks/cuemol/useCueMol";
+import { useActiveScene } from "../../state/workspace";
 
 // ---------------------------------------------
 // Types
@@ -46,22 +47,10 @@ const TabButton: React.FC<TabButtonProps> = (props) => (
 // Main Component
 // ---------------------------------------------
 
-interface BottomPanelProps {
-  cm: AsyncCueMol | null;
-  /** Active scene UID; undefined when no scene is active. */
-  activeSceneId: number | undefined;
-  /** Active mol-view UID; required by SequencePanel "Center here". */
-  activeMolViewId: number | undefined;
-  /** Show / clear the anim-element detail in the Inspector (uid null = clear). */
-  onInspectAnimElement?: (sceneId: number, uid: number | null) => void;
-}
 
-export const BottomPanel: React.FC<BottomPanelProps> = ({
-  cm,
-  activeSceneId,
-  activeMolViewId,
-  onInspectAnimElement,
-}) => {
+export const BottomPanel: React.FC = () => {
+  const { cm } = useCueMol();
+  const { activeSceneId, activeMolViewId } = useActiveScene();
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
 
   // The log buffer lives in LogProvider (so renderer-side code can append via
@@ -114,7 +103,6 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
             cm={cm}
             activeSceneId={activeSceneId}
             activeMolViewId={activeMolViewId}
-            onInspectAnimElement={onInspectAnimElement}
           />
         );
       case "trajectory":

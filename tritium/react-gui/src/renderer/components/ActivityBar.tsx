@@ -16,6 +16,7 @@ import React from "react";
 import { Tooltip } from "@blueprintjs/core";
 import { AppIcon } from "./AppIcon";
 import type { AppIconKey } from "../data/appIcons";
+import { useWorkspaceDispatch, useWorkspaceTabs } from "../state/workspace";
 
 // ------------------------------------------------------------
 // Types
@@ -59,18 +60,16 @@ interface ActivityBarProps {
   activeView: ActivityView | null;
   /** Callback to set the active view (toggle logic handled by parent). */
   onSelect: (view: ActivityView) => void;
-  /** Called when the user clicks the Settings gear icon. */
-  onSettingsClick?: () => void;
-  /** Whether the Settings tab is currently the active tab. */
-  settingsActive?: boolean;
 }
 
 export const ActivityBar: React.FC<ActivityBarProps> = ({
   activeView,
   onSelect,
-  onSettingsClick,
-  settingsActive,
 }) => {
+  // The Settings gear is a workspace tab: open / activate it, and light up
+  // while it is in front.
+  const { openSettingsTab } = useWorkspaceDispatch();
+  const settingsActive = useWorkspaceTabs().activeTab?.type === "settings";
   return (
     <div className="activity-bar">
       <div className="activity-bar-top">
@@ -89,7 +88,7 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
         <Tooltip content="Settings" placement="right" compact>
           <div
             className={`activity-bar-item ${settingsActive ? "active" : ""}`}
-            onClick={onSettingsClick}
+            onClick={openSettingsTab}
           >
             <AppIcon name="activity.settings" size={20} weight="bold" aria-hidden />
           </div>

@@ -45,10 +45,14 @@ vi.mock('../h3-kit/MolSelList/selHistory', () => ({
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
+// The pane reads the bridge and the active scene from their providers.
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
 
 import { SelectionPane } from '../components/panes/SelectionPane'
 import { clearSnapshot } from '../components/panes/selection/selectionPaneStore'
 import { mountTree, flushPromises } from './helpers/testHarness'
+import { withPaneEnv } from './helpers/paneEnv'
 
 interface MockCm {
     invokeService: ReturnType<typeof vi.fn>
@@ -108,7 +112,7 @@ describe('SelectionPane', () => {
     it('populates the molecule selector from listSceneObjects', async () => {
         const cm = makeCm({ mols: [{ uid: 11, name: '1CRN' }, { uid: 22, name: '3J3Q' }] })
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={1} />,
+            withPaneEnv(cm as never, 1, undefined, <SelectionPane />),
         )
         await flushPromises()
         const opts = Array.from(container.querySelectorAll('.h3-object-select select option'))
@@ -120,7 +124,7 @@ describe('SelectionPane', () => {
     it('Apply invokes applyMolSelString with current sceneId/molId/selStr', async () => {
         const cm = makeCm({ applyOk: true })
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={7} />,
+            withPaneEnv(cm as never, 7, undefined, <SelectionPane />),
         )
         await flushPromises()
         await act(async () => { setNativeValue(getInput(container), 'aname CA') })
@@ -138,7 +142,7 @@ describe('SelectionPane', () => {
     it('the Apply arrow enables only when the field diverges from mol.sel', async () => {
         const cm = makeCm({ applyOk: true })
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={7} />,
+            withPaneEnv(cm as never, 7, undefined, <SelectionPane />),
         )
         await flushPromises()
         // Empty field == empty mol.sel -> nothing to apply.
@@ -160,7 +164,7 @@ describe('SelectionPane', () => {
     it('appends to history only when applyMolSelString returns ok:true', async () => {
         const cm = makeCm({ applyOk: true })
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={7} />,
+            withPaneEnv(cm as never, 7, undefined, <SelectionPane />),
         )
         await flushPromises()
         await act(async () => { setNativeValue(getInput(container), 'aname CA') })
@@ -174,7 +178,7 @@ describe('SelectionPane', () => {
     it('does NOT append to history when applyMolSelString returns ok:false', async () => {
         const cm = makeCm({ applyOk: false })
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={7} />,
+            withPaneEnv(cm as never, 7, undefined, <SelectionPane />),
         )
         await flushPromises()
         await act(async () => { setNativeValue(getInput(container), 'bogus') })
@@ -189,7 +193,7 @@ describe('SelectionPane', () => {
     it('Clear empties the field, clears mol.sel, and disables itself', async () => {
         const cm = makeCm()
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={1} />,
+            withPaneEnv(cm as never, 1, undefined, <SelectionPane />),
         )
         await flushPromises()
         await act(async () => { setNativeValue(getInput(container), 'aname CA') })
@@ -205,7 +209,7 @@ describe('SelectionPane', () => {
     it('Center invokes centerMolSelection on the applied selection', async () => {
         const cm = makeCm()
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={7} activeMolViewId={5} />,
+            withPaneEnv(cm as never, 7, 5, <SelectionPane />),
         )
         await flushPromises()
         await act(async () => { setNativeValue(getInput(container), 'aname CA') })
@@ -227,7 +231,7 @@ describe('SelectionPane', () => {
     it('disables Center when no active view is available', async () => {
         const cm = makeCm()
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={1} />,
+            withPaneEnv(cm as never, 1, undefined, <SelectionPane />),
         )
         await flushPromises()
         expect(actionByAria(container, 'Center view on selection').disabled).toBe(true)
@@ -237,7 +241,7 @@ describe('SelectionPane', () => {
     it('disables Apply when no molecule is available', async () => {
         const cm = makeCm({ mols: [] })
         const { container, unmount } = mountTree(
-            <SelectionPane cm={cm as never} activeSceneId={1} />,
+            withPaneEnv(cm as never, 1, undefined, <SelectionPane />),
         )
         await flushPromises()
         expect(actionByAria(container, 'Apply selection').disabled).toBe(true)
@@ -246,20 +250,20 @@ describe('SelectionPane', () => {
 
     it('persists the field across unmount/remount but resets on a scene change', async () => {
         const cm = makeCm()
-        const first = mountTree(<SelectionPane cm={cm as never} activeSceneId={5} />)
+        const first = mountTree(withPaneEnv(cm as never, 5, undefined, <SelectionPane />))
         await flushPromises()
         await act(async () => { setNativeValue(getInput(first.container), 'chain A') })
         await flushPromises()
         first.unmount()
 
         // Remount on the same scene -> the pending field survives the switch.
-        const same = mountTree(<SelectionPane cm={cm as never} activeSceneId={5} />)
+        const same = mountTree(withPaneEnv(cm as never, 5, undefined, <SelectionPane />))
         await flushPromises()
         expect(getInput(same.container).value).toBe('chain A')
         same.unmount()
 
         // Remount on a different scene -> reset.
-        const other = mountTree(<SelectionPane cm={cm as never} activeSceneId={9} />)
+        const other = mountTree(withPaneEnv(cm as never, 9, undefined, <SelectionPane />))
         await flushPromises()
         expect(getInput(other.container).value).toBe('')
         other.unmount()
