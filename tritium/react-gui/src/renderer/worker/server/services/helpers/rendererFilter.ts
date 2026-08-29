@@ -9,12 +9,13 @@
  * renderer type, add-renderer dialog, change-renderer-type menu) filter it
  * with {@link isSelectableRendererType} on top of their own extra gates.
  *
- * Note the create and convert lists are NOT the same set: UXP offers
- * `atomintr` / `disorder` when creating a renderer (`fopen-renderopt-page.js`
- * `setupRendTypeBox` skips only `*`, `ms2test` and `symm`) but hides them in
- * the change-renderer-type menu (`workspace_panel.js`), because neither has a
- * conversion path. The convert-side gate therefore lives in
- * `getRendererChangeTypes` / `changeRendererType`, not here.
+ * The lists are not one set. UXP offers `atomintr` / `disorder` when creating
+ * a renderer (`fopen-renderopt-page.js` `setupRendTypeBox` skips only `*`,
+ * `ms2test` and `symm`) but hides them in the change-renderer-type menu
+ * (`workspace_panel.js`), because neither has a conversion path; that
+ * convert-side gate lives in `getRendererChangeTypes` / `changeRendererType`,
+ * not here. Opening a file is narrower still -- see
+ * {@link isInitialRendererType}.
  */
 
 /**
@@ -50,4 +51,32 @@ export function isSelectableRendererType(typeName: string): boolean {
     if (s.charAt(0) === '*') return false;
     if (RENDERER_TEST_TYPES.has(s)) return false;
     return !isLegacyRendererType(s);
+}
+
+/**
+ * Renderer types that would draw NOTHING on a freshly read object, because
+ * what they draw does not exist yet:
+ * - `disorder` follows a main-chain renderer named by its `target`, and an
+ *   object being loaded has no renderers to follow (see `setupRenderer`,
+ *   which picks one when the overlay is created later);
+ * - `atomintr` draws measurements between atoms, and nobody has made any.
+ *
+ * Both are worth offering once the object is in the scene, so this is not the
+ * same gate as {@link isSelectableRendererType}.
+ */
+export const EMPTY_AT_LOAD_RENDERER_TYPES: ReadonlySet<string> = new Set([
+    'disorder',
+    'atomintr',
+]);
+
+/**
+ * True when `typeName` may be offered as the FIRST renderer of an object being
+ * loaded. Narrower than {@link isSelectableRendererType}: picking one that
+ * comes up empty makes the load look like it failed.
+ */
+export function isInitialRendererType(typeName: string): boolean {
+    return (
+        isSelectableRendererType(typeName) &&
+        !EMPTY_AT_LOAD_RENDERER_TYPES.has(typeName.trim())
+    );
 }

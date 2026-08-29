@@ -2,7 +2,7 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import { pickReaderName, OBJREADER_CATEGORY } from './helpers/pickReaderName';
-import { isSelectableRendererType } from './helpers/rendererFilter';
+import { isInitialRendererType } from './helpers/rendererFilter';
 
 const log = console;
 
@@ -72,7 +72,7 @@ function getCompatibleRendererNames(
     const types = rendTypesStr
         .split(',')
         .map((s: string) => s.trim())
-        .filter(isSelectableRendererType);
+        .filter(isInitialRendererType);
 
     return { types, objType, readerName };
 }

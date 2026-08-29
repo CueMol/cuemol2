@@ -9,7 +9,7 @@
 // Filters the list the same way every other create-side list does, through
 // helpers/rendererFilter.
 import type { WorkerContext } from '../types/WorkerContext';
-import { isSelectableRendererType } from './helpers/rendererFilter';
+import { isInitialRendererType } from './helpers/rendererFilter';
 
 
 export interface GetTrajectoryRendererInfoResult {
@@ -35,7 +35,7 @@ function getTrajectoryRendererInfo(
     const types = (rendTypesStr ?? '')
         .split(',')
         .map((s: string) => s.trim())
-        .filter(isSelectableRendererType);
+        .filter(isInitialRendererType);
 
     return { types, objClassName };
 }
