@@ -37,8 +37,21 @@ import { BallStickRendererSection } from '../components/inspector/BallStickRende
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -88,8 +101,8 @@ describe('AnIsoURenderer section registry', () => {
       'Anisotropic displacement',
     ])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(sections[0].Component).toBe(BallStickRendererSection)
-    expect(sections[1].Component).toBe(AnIsoUDiscSection)
+    expect(componentOf(sections[0])).toBe(BallStickRendererSection)
+    expect(componentOf(sections[1])).toBe(AnIsoUDiscSection)
     expect(RENDERER_SECTION_REGISTRY.anisou).toBe(sections)
   })
 })

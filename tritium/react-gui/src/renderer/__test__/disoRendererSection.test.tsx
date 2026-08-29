@@ -43,9 +43,22 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
 
 import { DisoMainSection } from '../components/inspector/DisoRendererSection'
 import {
+
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -101,7 +114,7 @@ describe('Disorder renderer section registry', () => {
     const sections = getRendererPropSections('disorder')
     expect(sections.map((s) => s.title)).toEqual(['Disorder'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(sections[0].Component).toBe(DisoMainSection)
+    expect(componentOf(sections[0])).toBe(DisoMainSection)
     expect(RENDERER_SECTION_REGISTRY.disorder).toBe(sections)
   })
 })

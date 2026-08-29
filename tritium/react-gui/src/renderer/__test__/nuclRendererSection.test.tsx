@@ -34,8 +34,21 @@ import {
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -110,10 +123,10 @@ describe('NARenderer ("nucl") section registry', () => {
       'Section',
       'Putty',
     ])
-    expect(sections[0].Component).toBe(NuclBaseSection)
-    expect(sections[1].Component).toBe(NuclTubeMainSection)
-    expect(sections[2].Component).toBe(NuclSectionSection)
-    expect(sections[3].Component).toBe(NuclPuttySection)
+    expect(componentOf(sections[0])).toBe(NuclBaseSection)
+    expect(componentOf(sections[1])).toBe(NuclTubeMainSection)
+    expect(componentOf(sections[2])).toBe(NuclSectionSection)
+    expect(componentOf(sections[3])).toBe(NuclPuttySection)
     expect(RENDERER_SECTION_REGISTRY.nucl).toBe(sections)
   })
 })

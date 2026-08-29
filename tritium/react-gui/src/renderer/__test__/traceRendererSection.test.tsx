@@ -3,9 +3,9 @@
  *
  * In UXP the trace renderer has no dedicated dialog: it shares simple-propdlg
  * with the simple renderer (line width only), so the inspector reuses
- * SimpleRendererSection under the "trace" registry key. This test pins:
+ * the Simple page's row under the "trace" registry key. This test pins:
  *   - the registry resolves `type_name === "trace"` to a single expanded
- *     "Trace" section backed by SimpleRendererSection;
+ *     "Trace" section sharing the Simple page's row;
  *   - PropertiesTab shows that "Trace" section (no placeholder) for the trace
  *     renderer, with the "Line width" drag-numeric row in the DOM;
  *   - committing the row emits a realtime single-step
@@ -24,12 +24,25 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import { SimpleRendererSection } from '../components/inspector/SimpleRendererSection'
+import { SIMPLE_SECTIONS, TRACE_SECTIONS } from '../components/inspector/schema/simple'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -61,13 +74,17 @@ function accordionTitles(container: HTMLElement): string[] {
 }
 
 describe('TraceRenderer section registry', () => {
-  it('resolves type_name "trace" to a single expanded "Trace" section reusing SimpleRendererSection', () => {
+  it('resolves type_name "trace" to a single expanded "Trace" section, sharing the Simple row', () => {
     const sections = getRendererPropSections('trace')
     expect(sections).toHaveLength(1)
     expect(sections[0].title).toBe('Trace')
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(sections[0].Component).toBe(SimpleRendererSection)
+    // A migrated page is rows as data, not a component.
+    expect(isComponentSection(sections[0])).toBe(false)
+    expect(componentOf(sections[0])).toBe('schema:trace')
     expect(RENDERER_SECTION_REGISTRY.trace).toBe(sections)
+    // The two types differ only in the accordion's title: the row is shared.
+    expect(TRACE_SECTIONS[0].rows).toEqual(SIMPLE_SECTIONS[0].rows)
   })
 })
 

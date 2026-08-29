@@ -1,0 +1,111 @@
+/**
+ * @file components/inspector/SchemaSection.tsx
+ * @description Renders a Properties-page section from its schema.
+ *
+ * The engine owns no editing behaviour: the draft, the commit timing, the
+ * reset and the realtime drag all stay in the row components the
+ * hand-written sections already used. What it does is decide which rows a
+ * section shows -- dropping the ones the renderer does not expose, applying
+ * the gates -- and hand each one its props.
+ *
+ * A row whose property is absent is dropped, mirroring the `if (!x) return
+ * null` the hand-written sections opened with. That is not a gate: `sharp`
+ * missing means this renderer has no sharpness, while `sharp` present on an
+ * elliptical section means the row shows disabled.
+ */
+
+import React from 'react'
+import { AccordionSection } from './AccordionSection'
+import { NumRow } from './RendererCommonSection'
+import type { RendererPropSectionProps } from './rendererPropSections'
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
+import { makePropCtx, type PropCtx, type PropRowDef, type SchemaSectionDef } from './schema/types'
+
+type SetFn = RendererPropSectionProps['onSet']
+type ResetFn = RendererPropSectionProps['onReset']
+
+export interface SchemaSectionProps {
+  section: SchemaSectionDef
+  entries: GenericPropEntry[]
+  rendererType: string
+  sceneId: number | undefined
+  nodeId: number | undefined
+  onSet: SetFn
+  onReset: ResetFn
+}
+
+/** Render one row, or null when the renderer does not expose its property. */
+function renderRow(
+  row: PropRowDef,
+  ctx: PropCtx,
+  sectionDisabled: boolean,
+  onSet: SetFn,
+  onReset: ResetFn,
+): React.ReactElement | null {
+  if (row.visibleWhen && !row.visibleWhen(ctx)) return null
+  const entry = ctx.get(row.key)
+  if (!entry) return null
+  const disabled = sectionDisabled || (row.disabledWhen?.(ctx) ?? false)
+
+  switch (row.kind) {
+    case 'num':
+      return (
+        <NumRow
+          key={row.key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          fineSnap={row.fineSnap}
+          coarseSnap={row.coarseSnap}
+          unit={row.unit}
+          decimals={row.decimals}
+          realtime={row.realtime}
+          disabled={disabled}
+        />
+      )
+  }
+}
+
+/** The rows of a section that survive absence and gating. */
+export function renderRows(
+  section: SchemaSectionDef,
+  ctx: PropCtx,
+  onSet: SetFn,
+  onReset: ResetFn,
+): React.ReactElement[] {
+  const sectionDisabled = section.disabledWhen?.(ctx) ?? false
+  return section.rows
+    .map((row) => renderRow(row, ctx, sectionDisabled, onSet, onReset))
+    .filter((el): el is React.ReactElement => el !== null)
+}
+
+/**
+ * A section's accordion and its rows.
+ *
+ * Returns null when the section is gated out, or when `hideWhenEmpty` is set
+ * and nothing survived -- a renderer that exposes none of a section's
+ * properties should not show an empty accordion.
+ */
+export const SchemaSection: React.FC<SchemaSectionProps> = ({
+  section,
+  entries,
+  rendererType,
+  sceneId,
+  nodeId,
+  onSet,
+  onReset,
+}) => {
+  const ctx = makePropCtx(entries, rendererType, sceneId, nodeId)
+  if (section.visibleWhen && !section.visibleWhen(ctx)) return null
+  const rows = renderRows(section, ctx, onSet, onReset)
+  if (section.hideWhenEmpty && rows.length === 0) return null
+  return (
+    <AccordionSection title={section.title} defaultExpanded={section.defaultExpanded}>
+      {rows}
+    </AccordionSection>
+  )
+}

@@ -44,9 +44,22 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
 
 import { IsosurfMainSection } from '../components/inspector/IsosurfRendererSection'
 import {
+
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
 
 beforeEach(() => {
   state.cm = null
@@ -130,7 +143,7 @@ describe('Isosurf renderer section registry', () => {
     const sections = getRendererPropSections('isosurf')
     expect(sections.map((s) => s.title)).toEqual(['Isosurf'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(sections[0].Component).toBe(IsosurfMainSection)
+    expect(componentOf(sections[0])).toBe(IsosurfMainSection)
     expect(RENDERER_SECTION_REGISTRY.isosurf).toBe(sections)
   })
 })

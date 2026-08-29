@@ -6,6 +6,11 @@
  * renderer-type-specific sections resolved from `getRendererPropSections`.
  * Both are backed by the live `getGenericProps` / `setGenericProp` bridge.
  *
+ * A type-specific section is either a hand-written component or a schema --
+ * rows as data, rendered by `SchemaSection`. The per-type pages are being
+ * moved to the schema form one type at a time, so both appear here until that
+ * is done.
+ *
  * A renderer type with no registry entry gets a single collapsed placeholder
  * (`DUMMY_SECTION`) after the common page, so the tab is never blank.
  */
@@ -15,9 +20,11 @@ import { AccordionSection, AccordionGroup } from "./AccordionSection";
 import { RendererCommonSection } from "./RendererCommonSection";
 import { ObjectCommonSection } from "./ObjectCommonSection";
 import { RendGroupCommonSection } from "./RendGroupCommonSection";
+import { SchemaSection } from "./SchemaSection";
 import {
   DUMMY_SECTION,
   getRendererPropSections,
+  isComponentSection,
   type PropMultiWrite,
 } from "./rendererPropSections";
 import type {
@@ -137,18 +144,37 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
           sceneId={sceneId}
           nodeId={nodeId}
         />
-        {sections.map(({ key, title, defaultExpanded, Component }) => (
-          <AccordionSection key={key} title={title} defaultExpanded={defaultExpanded}>
-            <Component
+        {sections.map((section) =>
+          isComponentSection(section) ? (
+            <AccordionSection
+              key={section.key}
+              title={section.title}
+              defaultExpanded={section.defaultExpanded}
+            >
+              <section.Component
+                entries={displayEntries}
+                onSet={onSet}
+                onSetMany={onSetMany}
+                onReset={onReset}
+                sceneId={sceneId}
+                nodeId={nodeId}
+              />
+            </AccordionSection>
+          ) : (
+            // A migrated page names its rows as data; the engine owns the
+            // accordion too, since a section can gate itself away entirely.
+            <SchemaSection
+              key={section.key}
+              section={section}
               entries={displayEntries}
-              onSet={onSet}
-              onSetMany={onSetMany}
-              onReset={onReset}
+              rendererType={rendererType}
               sceneId={sceneId}
               nodeId={nodeId}
+              onSet={onSet}
+              onReset={onReset}
             />
-          </AccordionSection>
-        ))}
+          ),
+        )}
       </AccordionGroup>
     </div>
   );

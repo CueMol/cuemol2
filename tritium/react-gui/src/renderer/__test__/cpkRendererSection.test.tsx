@@ -33,8 +33,21 @@ import {
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -87,8 +100,8 @@ describe('CPKRenderer section registry', () => {
     const sections = getRendererPropSections('cpk')
     expect(sections.map((s) => s.title)).toEqual(['Atom radii', 'Detail'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(sections[0].Component).toBe(CPKAtomRadiiSection)
-    expect(sections[1].Component).toBe(CPKDetailSection)
+    expect(componentOf(sections[0])).toBe(CPKAtomRadiiSection)
+    expect(componentOf(sections[1])).toBe(CPKDetailSection)
     expect(RENDERER_SECTION_REGISTRY.cpk).toBe(sections)
   })
 })

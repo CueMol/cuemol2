@@ -1,8 +1,9 @@
 /**
  * SimpleRenderer property-section wiring contract.
  *
- * Pins the observable behaviour of the `simple` renderer's inspector page
- * migrated from the UXP `simple-propdlg` "Simple" tab (line width only):
+ * Pins the observable behaviour of the `simple` renderer's inspector page,
+ * migrated from the UXP `simple-propdlg` "Simple" tab (line width only) and
+ * now described as a schema the engine renders:
  *   - the registry resolves `type_name === "simple"` to a single "Simple"
  *     section (and unknown types to none);
  *   - the section renders a "Line width" drag-numeric row only when the
@@ -11,6 +12,10 @@
  *     'commit', originalValue})` (a single undo step previewed live);
  *   - PropertiesTab shows the Simple section for `simple` and falls back to the
  *     "Not implemented" placeholder for not-yet-ported types.
+ *
+ * What the row does is unchanged by the migration -- the engine hands the same
+ * row component the same props -- so these assertions are the ones that were
+ * here before, driven through the schema instead of a bespoke component.
  */
 
 import React from 'react'
@@ -25,12 +30,26 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import { SimpleRendererSection } from '../components/inspector/SimpleRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { SIMPLE_SECTIONS } from '../components/inspector/schema/simple'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
+  isComponentSection,
+  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
+
+/**
+ * The component a registry entry renders. The registry holds either a
+ * hand-written component or a schema (rows as data) while the per-type pages
+ * are migrated, so a test that expects a component has to say which it is.
+ */
+function componentOf(section: RendererPropSectionDef): unknown {
+  return isComponentSection(section) ? section.Component : `schema:${section.key}`
+}
+
+
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -60,7 +79,9 @@ describe('SimpleRenderer section registry', () => {
     expect(sections).toHaveLength(1)
     expect(sections[0].title).toBe('Simple')
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(sections[0].Component).toBe(SimpleRendererSection)
+    // A migrated page is rows as data, not a component.
+    expect(isComponentSection(sections[0])).toBe(false)
+    expect(componentOf(sections[0])).toBe('schema:simple')
     // Sanity: the registry is keyed by the C++ type_name.
     expect(RENDERER_SECTION_REGISTRY.simple).toBe(sections)
   })
@@ -70,16 +91,29 @@ describe('SimpleRenderer section registry', () => {
   })
 })
 
-describe('SimpleRendererSection', () => {
-  it('renders the Line width row when the width property exists', () => {
-    const { container, unmount } = mountTree(
-      <SimpleRendererSection
-        entries={[entry({ key: 'width', type: 'real', value: 1.2 })]}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
+/** Mount the Simple page's schema with the given property list. */
+function mountSimple(entries: GenericPropEntry[], onSet = vi.fn()) {
+  return {
+    onSet,
+    ...mountTree(
+      <SchemaSection
+        section={SIMPLE_SECTIONS[0]}
+        entries={entries}
+        rendererType="simple"
         sceneId={1}
+        nodeId={100}
+        onSet={onSet}
+        onReset={vi.fn()}
       />,
-    )
+    ),
+  }
+}
+
+describe('the Simple page', () => {
+  it('renders the Line width row when the width property exists', () => {
+    const { container, unmount } = mountSimple([
+      entry({ key: 'width', type: 'real', value: 1.2 }),
+    ])
     const row = rowByLabel(container, 'Line width')
     expect(row).not.toBeNull()
     // UXP px unit + step 0.2 -> 2-decimal display.
@@ -89,27 +123,18 @@ describe('SimpleRendererSection', () => {
   })
 
   it('renders nothing when the width property is absent', () => {
-    const { container, unmount } = mountTree(
-      <SimpleRendererSection
-        entries={[entry({ key: 'valbond', type: 'boolean', value: true })]}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
-        sceneId={1}
-      />,
-    )
+    const { container, unmount } = mountSimple([
+      entry({ key: 'valbond', type: 'boolean', value: true }),
+    ])
     expect(rowByLabel(container, 'Line width')).toBeNull()
     unmount()
   })
 
   it('commits a realtime single-step change of width on the step arrow', () => {
     const onSet = vi.fn()
-    const { container, unmount } = mountTree(
-      <SimpleRendererSection
-        entries={[entry({ key: 'width', type: 'real', value: 1.2 })]}
-        onSet={onSet}
-        onReset={vi.fn()}
-        sceneId={1}
-      />,
+    const { container, unmount } = mountSimple(
+      [entry({ key: 'width', type: 'real', value: 1.2 })],
+      onSet,
     )
     const incr = rowByLabel(container, 'Line width')!.querySelector(
       '.h3-form-drag-arrow-right',

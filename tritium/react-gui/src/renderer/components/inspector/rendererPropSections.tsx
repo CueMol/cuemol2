@@ -16,11 +16,12 @@
  */
 
 import React from "react";
+import type { SchemaSectionDef } from "./schema/types";
+import { SIMPLE_SECTIONS, TRACE_SECTIONS } from "./schema/simple";
 import type {
   GenericPropEntry,
   PropWriteOpts,
 } from '@renderer/worker/shared/genericProps';
-import { SimpleRendererSection } from "./SimpleRendererSection";
 import { SplineMainSection } from "./SplineRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
 import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
@@ -116,8 +117,19 @@ export interface RendererPropSectionProps {
   nodeId?: number;
 }
 
-/** One accordion section in the Properties tab. */
-export interface RendererPropSectionDef {
+/**
+ * One accordion section in the Properties tab.
+ *
+ * A section either names its rows as data (`rows`, rendered by
+ * `SchemaSection`) or supplies a component that renders them itself. The
+ * schema form is where the per-type pages are heading; the component form is
+ * what the types not migrated yet still use, so the registry carries both
+ * while that is true.
+ */
+export type RendererPropSectionDef = SchemaSectionDef | ComponentSectionDef;
+
+/** A section whose body is a hand-written component. */
+export interface ComponentSectionDef {
   /** Stable React key / accordion identity. */
   key: string;
   /** Accordion header title. */
@@ -126,6 +138,13 @@ export interface RendererPropSectionDef {
   defaultExpanded?: boolean;
   /** Section body. */
   Component: React.FC<RendererPropSectionProps>;
+}
+
+/** Narrow a registry entry to the component form. */
+export function isComponentSection(
+  section: RendererPropSectionDef,
+): section is ComponentSectionDef {
+  return 'Component' in section;
 }
 
 // ------------------------------------------------------------
@@ -170,24 +189,10 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
     },
   ],
   // SimpleRenderer ("simple"): UXP simple-propdlg "Simple" tab -- line width only.
-  simple: [
-    {
-      key: "simple",
-      title: "Simple",
-      defaultExpanded: true,
-      Component: SimpleRendererSection,
-    },
-  ],
+  simple: SIMPLE_SECTIONS,
   // TraceRenderer ("trace"): shares the UXP simple-propdlg with SimpleRenderer
   // (line width only), so the same SimpleRendererSection is reused here.
-  trace: [
-    {
-      key: "trace",
-      title: "Trace",
-      defaultExpanded: true,
-      Component: SimpleRendererSection,
-    },
-  ],
+  trace: TRACE_SECTIONS,
   // SplineRenderer ("spline"): no dedicated UXP dialog; curated from the C++
   // SplineRenderer.qif. A single section (no nested cross-section / putty), the
   // tube cap-type props are omitted (non-functional on a line).
