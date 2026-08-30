@@ -117,6 +117,16 @@ bool BrixMapReader::read(qlib::InStream &ins)
 
   LOG_DPRINTLN("BRIX> brix   %d %d %d", xbri, ybri, zbri);
 
+  if (!(m_prod>0.0)) {
+    LOG_DPRINTLN("BRIX> invalid prod value %f", m_prod);
+    return false;
+  }
+  if (m_ncol<=0 || m_nrow<=0 || m_nsect<=0) {
+    LOG_DPRINTLN("BRIX> invalid extent %d %d %d", m_ncol, m_nrow, m_nsect);
+    return false;
+  }
+
+  // byte value b maps to density as rho = (b - plus) / prod
   double rmax = (255.0-m_plus)/m_prod;
   double rmin = -m_plus/m_prod;
 
@@ -165,9 +175,11 @@ bool BrixMapReader::read(qlib::InStream &ins)
             }
       }
 
-  double mean = (sum/double(nadd)) * m_prod + m_plus;
-  double sqmean = (sqsum/double(nadd)) * m_prod + m_plus;
-  double sigma = sqrt(sqmean-mean*mean);
+  // statistics of the byte values, converted with rho = (b - plus) / prod
+  const double bmean = sum/double(nadd);
+  const double bvar = sqsum/double(nadd) - bmean*bmean;
+  double mean = (bmean - m_plus)/m_prod;
+  double sigma = sqrt(qlib::max(0.0, bvar))/m_prod;
   LOG_DPRINTLN("mean density=%f", mean);
   LOG_DPRINTLN("rms density=%f", sigma);
 
@@ -197,13 +209,19 @@ bool BrixMapReader::readHeader(qlib::InStream &in)
 
   const char *delimitor = " ,\t\r\n";
 
-  // check the "smiley" mark
+  // check the "smiley" mark. A DSN6 header is binary and usually starts
+  // with NUL bytes (origin 0), so it must be detected before strtok().
+  {
+    const char *p = sbuf;
+    while (*p!='\0' && strchr(delimitor, *p)!=NULL)
+      ++p;
+    if (strncmp(p, ":-)", 3)!=0)
+      return readDns6Header(sbuf);
+  }
+
   char *tok = strtok(sbuf, delimitor);
   if (tok==NULL)
     return false;
-  if (!LChar::equals(tok, ":-)")) {
-    return readDns6Header(sbuf);
-  }
   
   //
   // read origin
@@ -497,16 +515,24 @@ bool BrixMapReader::readDns6Header(const char *sbuf)
   
   MB_DPRINTLN("DNS6 dmin,dmax = %f+/-%f,%f+/-%f", dmin, dminError, dmax, dmaxError);
 
+  if (!(scalingFactor>0.0) || !(drange>0.0) || !(header16>0.0)) {
+    LOG_DPRINTLN("DSN6> invalid header (scale %f, range %f)", scalingFactor, drange);
+    return false;
+  }
+
   m_cella = a / scalingFactor;
   m_cellb = b / scalingFactor;
   m_cellc = c / scalingFactor;
   m_alpha = alpha / scalingFactor;
   m_beta = beta / scalingFactor;
   m_gamma = gamma / scalingFactor;
-  
-  m_prod = byteFactor;
-  m_plus = dmin;
-  
+
+  // DSN6 stores rho = dmin + b * byteFactor. Express it in the BRIX
+  // convention used by read(), b = prod * rho + plus, so both formats share
+  // the same quantization and statistics code.
+  m_prod = 1.0 / byteFactor;
+  m_plus = -dmin / byteFactor;
+
   return true;
 }
 
