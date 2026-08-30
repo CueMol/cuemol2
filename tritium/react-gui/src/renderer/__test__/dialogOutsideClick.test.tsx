@@ -42,6 +42,8 @@ import { ConfirmCloseTabDialog } from '../components/dialogs/ConfirmCloseTabDial
 import { ConfirmReloadSceneDialog } from '../components/dialogs/ConfirmReloadSceneDialog'
 import { ErrorAlertDialog } from '../components/dialogs/ErrorAlertDialog'
 import { ObjectPickerDialog } from '../components/dialogs/ObjectPickerDialog'
+import { TextPromptDialog } from '../components/dialogs/TextPromptDialog'
+import { EditCameraVisFlagsDialog } from '../components/dialogs/EditCameraVisFlagsDialog'
 import { GetPdbDialog } from '../components/dialogs/GetPdbDialog'
 import { NewTabDialog } from '../components/dialogs/NewTabDialog'
 import { QscWriterOptionDialog } from '../components/dialogs/QscWriterOptionDialog'
@@ -71,48 +73,6 @@ describe('Modal dialog: backdrop click + close button are disabled', () => {
   })
   afterEach(() => {
     vi.restoreAllMocks()
-  })
-
-  it('GetPdbDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(GetPdbDialog, {
-        visible: true,
-        onConfirm: () => {},
-        onCancel: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
-  })
-
-  it('NewTabDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(NewTabDialog, {
-        visible: true,
-        currentSceneName: null,
-        defaultSceneName: 'Scene_1',
-        defaultViewName: 'View_1',
-        onConfirm: () => {},
-        onCancel: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
-  })
-
-  it('QscWriterOptionDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(QscWriterOptionDialog, {
-        visible: true,
-        onConfirm: () => {},
-        onCancel: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
   })
 
   it('FileOpenOptionDialog passes canOutsideClickClose={false}', () => {
@@ -250,6 +210,43 @@ describe('Molecule-edit dialogs: DialogShell frame contract', () => {
       render: () => React.createElement(StreamProgressDialog, {
         visible: true, title: 'Downloading', bytesReceived: 0,
         status: 'downloading' as const, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'GetPdbDialog',
+      title: 'Get PDB',
+      render: () => React.createElement(GetPdbDialog, {
+        visible: true, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'NewTabDialog',
+      title: 'New Tab/Window',
+      render: () => React.createElement(NewTabDialog, {
+        visible: true, currentSceneName: 's', defaultSceneName: 'Scene_1',
+        defaultViewName: 'View_1', onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'TextPromptDialog',
+      title: 'Rename',
+      render: () => React.createElement(TextPromptDialog, {
+        visible: true, title: 'Rename', label: 'Name', defaultValue: 'x',
+        onResult: () => {},
+      }),
+    },
+    {
+      name: 'QscWriterOptionDialog',
+      title: 'Scene options',
+      render: () => React.createElement(QscWriterOptionDialog, {
+        visible: true, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'EditCameraVisFlagsDialog',
+      title: 'Edit visibility flags: cam1',
+      render: () => React.createElement(EditCameraVisFlagsDialog, {
+        visible: true, cameraName: 'cam1', entries: [], onConfirm: () => {}, onCancel: () => {},
       }),
     },
     {

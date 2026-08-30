@@ -1,13 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import {
-    Button,
-    Dialog,
-    DialogBody,
-    DialogFooter,
-    FormGroup,
-    InputGroup,
-} from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { FormGroup, InputGroup } from '@blueprintjs/core'
+import { DialogShell } from './DialogShell';
 
 /**
  * Single-line text input dialog -- replacement for Electron's disabled
@@ -36,8 +29,6 @@ export function TextPromptDialog({
     confirmLabel,
     onResult,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const inputRef = useRef<HTMLInputElement | null>(null)
     const [value, setValue] = useState(defaultValue)
 
@@ -69,40 +60,28 @@ export function TextPromptDialog({
     }
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={() => onResult(null)}
+        <DialogShell
+            visible={visible}
             title={title}
-            style={{ width: 360 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="md"
+            onCancel={() => onResult(null)}
+            onOk={handleOk}
+            okLabel={confirmLabel ?? 'OK'}
+            okDisabled={!canSubmit}
         >
-            <DialogBody>
-                <FormGroup label={label} labelFor="text-prompt-input">
-                    <InputGroup
-                        id="text-prompt-input"
-                        inputRef={(el) => {
-                            inputRef.current = el
-                        }}
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        fill
-                        autoComplete="off"
-                    />
-                </FormGroup>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={() => onResult(null)}>Cancel</Button>
-                        <Button intent="primary" onClick={handleOk} disabled={!canSubmit}>
-                            {confirmLabel ?? 'OK'}
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+            <FormGroup label={label} labelFor="text-prompt-input">
+                <InputGroup
+                    id="text-prompt-input"
+                    inputRef={(el) => {
+                        inputRef.current = el
+                    }}
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    fill
+                    autoComplete="off"
+                />
+            </FormGroup>
+        </DialogShell>
     )
 }

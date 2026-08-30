@@ -8,8 +8,8 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { Dialog, DialogBody, DialogFooter, Button, Checkbox } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { Checkbox } from '@blueprintjs/core'
+import { DialogShell } from './DialogShell';
 import type { VisFlagEntry } from '../../worker/server/services/cameraVisFlags.service'
 
 export interface EditCameraVisFlagsDialogResult {
@@ -31,8 +31,6 @@ export function EditCameraVisFlagsDialog({
     onConfirm,
     onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
 
     // Editable copy, re-seeded from the latest props on each open.
     const [rows, setRows] = useState<VisFlagEntry[]>(() => entries.map((e) => ({ ...e })))
@@ -44,98 +42,84 @@ export function EditCameraVisFlagsDialog({
         setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title={`Edit visibility flags: ${cameraName}`}
-            style={{ width: 420 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="2xl"
+            onCancel={onCancel}
+            onOk={() => onConfirm({ entries: rows })}
         >
-            <DialogBody>
+            <div
+                role="table"
+                aria-label="Visibility flags"
+                style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 3,
+                    maxHeight: 320,
+                    overflowY: 'auto',
+                    background: 'var(--bg-surface)',
+                }}
+            >
                 <div
-                    role="table"
-                    aria-label="Visibility flags"
+                    role="row"
                     style={{
-                        border: '1px solid var(--border)',
-                        borderRadius: 3,
-                        maxHeight: 320,
-                        overflowY: 'auto',
-                        background: 'var(--bg-surface)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px 8px',
+                        borderBottom: '1px solid var(--border)',
+                        color: 'var(--text-secondary)',
+                        fontWeight: 'var(--fw-semibold)',
                     }}
                 >
-                    <div
-                        role="row"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '4px 8px',
-                            borderBottom: '1px solid var(--border)',
-                            color: 'var(--text-secondary)',
-                            fontWeight: 'var(--fw-semibold)',
-                        }}
-                    >
-                        <span style={{ width: 40 }}>Inc</span>
-                        <span style={{ flex: 1 }}>Object / Renderer</span>
-                        <span style={{ width: 48 }}>Vis</span>
-                    </div>
-                    {rows.length === 0 ? (
-                        <div style={{ padding: 8, color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                            (no scene elements)
-                        </div>
-                    ) : (
-                        rows.map((r, i) => (
-                            <div
-                                role="row"
-                                key={r.tgtId}
-                                style={{ display: 'flex', alignItems: 'center', padding: '2px 8px' }}
-                            >
-                                <span style={{ width: 40 }}>
-                                    <Checkbox
-                                        checked={r.included}
-                                        onChange={(e) =>
-                                            setRow(i, { included: (e.target as HTMLInputElement).checked })
-                                        }
-                                        aria-label={`Include ${r.tgtName}`}
-                                        style={{ margin: 0 }}
-                                    />
-                                </span>
-                                <span
-                                    style={{
-                                        flex: 1,
-                                        color: r.isObj ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                    }}
-                                >
-                                    {r.tgtName}
-                                    {r.isObj ? '' : ' (renderer)'}
-                                </span>
-                                <span style={{ width: 48 }}>
-                                    <Checkbox
-                                        checked={r.visible}
-                                        disabled={!r.included}
-                                        onChange={(e) =>
-                                            setRow(i, { visible: (e.target as HTMLInputElement).checked })
-                                        }
-                                        aria-label={`Visible ${r.tgtName}`}
-                                        style={{ margin: 0 }}
-                                    />
-                                </span>
-                            </div>
-                        ))
-                    )}
+                    <span style={{ width: 40 }}>Inc</span>
+                    <span style={{ flex: 1 }}>Object / Renderer</span>
+                    <span style={{ width: 48 }}>Vis</span>
                 </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel}>Cancel</Button>
-                        <Button intent="primary" onClick={() => onConfirm({ entries: rows })}>
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+                {rows.length === 0 ? (
+                    <div style={{ padding: 8, color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                        (no scene elements)
+                    </div>
+                ) : (
+                    rows.map((r, i) => (
+                        <div
+                            role="row"
+                            key={r.tgtId}
+                            style={{ display: 'flex', alignItems: 'center', padding: '2px 8px' }}
+                        >
+                            <span style={{ width: 40 }}>
+                                <Checkbox
+                                    checked={r.included}
+                                    onChange={(e) =>
+                                        setRow(i, { included: (e.target as HTMLInputElement).checked })
+                                    }
+                                    aria-label={`Include ${r.tgtName}`}
+                                    style={{ margin: 0 }}
+                                />
+                            </span>
+                            <span
+                                style={{
+                                    flex: 1,
+                                    color: r.isObj ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                }}
+                            >
+                                {r.tgtName}
+                                {r.isObj ? '' : ' (renderer)'}
+                            </span>
+                            <span style={{ width: 48 }}>
+                                <Checkbox
+                                    checked={r.visible}
+                                    disabled={!r.included}
+                                    onChange={(e) =>
+                                        setRow(i, { visible: (e.target as HTMLInputElement).checked })
+                                    }
+                                    aria-label={`Visible ${r.tgtName}`}
+                                    style={{ margin: 0 }}
+                                />
+                            </span>
+                        </div>
+                    ))
+                )}
+            </div>
+        </DialogShell>
     )
 }
