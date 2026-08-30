@@ -25,7 +25,7 @@ interface SectionHeaderProps {
   titleClassName?: string;
 }
 
-export const SectionHeader: React.FC<SectionHeaderProps> = ({
+export const PaneSectionHeader: React.FC<SectionHeaderProps> = ({
   title,
   icon,
   actions,

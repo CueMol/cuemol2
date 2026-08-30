@@ -12,6 +12,12 @@ instead. If a change ports a UXP surface it belongs there; if it adds
 something UXP never had, or concerns build / packaging / internal
 architecture, it belongs here.
 
+- [react-gui のレイヤと import 規則](react-gui-layering.md) (日本語) --
+  main / renderer / Web Worker の 3 スレッドをまたぐ import 境界、`h3-kit`
+  (デザインシステム) がアプリケーションを import しない規則と barrel 経由の
+  アクセス、`hooks/react` と `hooks/cuemol` の分け方、テストの配置。
+  `eslint.config.mjs` が強制しており、flat config の「後のブロックが rule
+  options を上書きする」落とし穴もここに記録している。
 - [C++ Scripting Bridge](cpp-scripting-bridge.md) -- metaclass macros
   (`MC_DYNCLASS` / `MC_SCRIPTABLE`), the `getClassObj` vs
   `getScrClassObj` contract, and what external script bridges (UXP

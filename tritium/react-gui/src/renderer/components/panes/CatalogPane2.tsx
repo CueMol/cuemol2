@@ -12,7 +12,7 @@
 
 import React, { useState } from "react";
 import { AppIcon } from "@renderer/h3-kit/primitives";
-import { SectionHeader } from "./SectionHeader";
+import { PaneSectionHeader } from "./PaneSectionHeader";
 import {
   Field,
   FieldGroup,
@@ -61,7 +61,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
 
   return (
     <div className="sp-pane">
-      <SectionHeader
+      <PaneSectionHeader
         title="Catalog 2"
         icon="ui.widget"
         collapsed={collapsed}

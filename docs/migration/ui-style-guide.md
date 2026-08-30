@@ -16,6 +16,21 @@ UIスタイルは **デザイントークン** (CSS custom properties) に一元
 
 label+control の UI (フォーム行・テキスト入力・select・numeric・switch・color・compact button・ツールバーのボタン/フィルタ入力) は、**必ず `h3-kit/form/` のカタログコンポーネントで組む**。生の Blueprint `Button`/`InputGroup`/`HTMLSelect` を独自 CSS で並べない。
 
+**import は barrel 経由**: `@renderer/h3-kit/form` のように sub-barrel (またはルートの `@renderer/h3-kit`) から取る。`@renderer/h3-kit/form/TextField` のように中のモジュールを名指しするのは ESLint で error。kit の内部配置は自由に変えられるべきで、名指しはそれを固定するため (実際、同じウィジェットが `SliderField` / `SliderNumericField` の 2 名でカタログに載る事故が起きた)。
+
+**kit の構成** (詳細は [`docs/architecture/react-gui-layering.md`](../architecture/react-gui-layering.md)):
+
+| sub-barrel | 中身 |
+|---|---|
+| `h3-kit/primitives` | `AppIcon` / アイコン登録表 / `Tooltip` / `useDarkPortalClass` |
+| `h3-kit/form` | 下表の label+control カタログ。**サイズの単一ソース** |
+| `h3-kit/list` | `Listbox` / `ListRow` / `useListKeyNav` |
+| `h3-kit/gradient` | `GradientStopBar` + gradient の値/ピクセル幾何 |
+| `h3-kit/colorpicker` | 色ポップオーバーと `CueColorField` |
+| `h3-kit/MolSelList` / `h3-kit/selection` | 分子選択のピッカーと式ビルダ |
+
+Blueprint の portal (popover / dialog) に dark テーマを効かせる `portalClassName` は、`theme === 'dark' ? 'bp5-dark' : ''` を各所で書かず **`useDarkPortalClass()`** (`h3-kit/primitives`) を使う。
+
 **実装前にカタログを探して再利用する (最優先 / まずこれ)**: UI を書き始める前に、下表と **実物カタログ `components/panes/CatalogPane1/2/3`** を一覧し、欲しい見た目 (参照画像があればそれ) に一致する既存 component を特定してから使う。既存パターンを別 component で自作し直さない。よくある取り違え:
 - **ステッパー付き数値ボックス (up/down 矢印)** = `SliderField`。`slider={false}` で slider 無しの「数値+ステッパー」だけになる。`NumericField` は**既定でステッパーを隠す**設計なので、ステッパーを足そうとしない。
 - **drag で増減する数値** = `DragNumericField` (`NumericField` ではない)。

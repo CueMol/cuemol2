@@ -6,7 +6,7 @@ import { mountTree } from './helpers/testHarness'
 void React
 
 /**
- * Degrade-detection test for the shared SectionHeader pane component.
+ * Degrade-detection test for the shared PaneSectionHeader pane component.
  * Pins the observable contract the panes depend on when they migrate their
  * hand-rolled collapsible headers onto it:
  *   - the chevron icon flips between caretRight (collapsed) and caretDown
@@ -26,7 +26,7 @@ vi.mock('@renderer/h3-kit/primitives', () => ({
   ),
 }))
 
-import { SectionHeader } from '../components/panes/SectionHeader'
+import { PaneSectionHeader } from '../components/panes/PaneSectionHeader'
 
 function chevronName(container: HTMLElement): string | null {
   return container
@@ -34,10 +34,10 @@ function chevronName(container: HTMLElement): string | null {
     ?.getAttribute('data-icon') ?? null
 }
 
-describe('SectionHeader', () => {
+describe('PaneSectionHeader', () => {
   it('shows the caretDown chevron when expanded', () => {
     const { container, unmount } = mountTree(
-      <SectionHeader
+      <PaneSectionHeader
         title="Color"
         icon="ui.tint"
         collapsed={false}
@@ -50,7 +50,7 @@ describe('SectionHeader', () => {
 
   it('flips to the caretRight chevron when collapsed', () => {
     const { container, unmount } = mountTree(
-      <SectionHeader
+      <PaneSectionHeader
         title="Color"
         icon="ui.tint"
         collapsed
@@ -64,7 +64,7 @@ describe('SectionHeader', () => {
   it('fires onToggleCollapse when the header is clicked', () => {
     const onToggle = vi.fn()
     const { container, unmount } = mountTree(
-      <SectionHeader title="Color" icon="ui.tint" onToggleCollapse={onToggle} />,
+      <PaneSectionHeader title="Color" icon="ui.tint" onToggleCollapse={onToggle} />,
     )
     const header = container.querySelector('.sp-section-header')!
     act(() => {
@@ -78,7 +78,7 @@ describe('SectionHeader', () => {
     const onToggle = vi.fn()
     const onAction = vi.fn()
     const { container, unmount } = mountTree(
-      <SectionHeader
+      <PaneSectionHeader
         title="Mol Struct"
         icon="ui.git"
         onToggleCollapse={onToggle}
@@ -102,7 +102,7 @@ describe('SectionHeader', () => {
 
   it('omits the chevron when onToggleCollapse is not provided', () => {
     const { container, unmount } = mountTree(
-      <SectionHeader title="Static" icon="ui.tint" />,
+      <PaneSectionHeader title="Static" icon="ui.tint" />,
     )
     expect(container.querySelector('.section-chevron')).toBeNull()
     unmount()

@@ -37,7 +37,7 @@ import {
     type DragOri,
 } from "./sceneTreeDnd";
 import { InlineRenameInput } from "./InlineRenameInput";
-import { SectionHeader } from "./SectionHeader";
+import { PaneSectionHeader } from "./PaneSectionHeader";
 import { scrollRowIntoView, useListKeyNav } from "../../h3-kit/list";
 import { useSceneTreeState, useSceneTreeActions } from "../../state/sceneTree";
 
@@ -57,7 +57,7 @@ const TYPE_ICON: Record<SceneNodeType, AppIconKey> = {
 /* --- Props --- */
 
 interface ScenePaneProps {
-    /** Pane-level fold (SectionHeader); unrelated to row expand / collapse. */
+    /** Pane-level fold (PaneSectionHeader); unrelated to row expand / collapse. */
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -761,7 +761,7 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
 
     return (
         <div className="sp-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="Scene"
                 titleClassName="scene-name-title"
                 alwaysShowChevron

@@ -24,7 +24,7 @@
 
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
-import { SectionHeader } from './SectionHeader';
+import { PaneSectionHeader } from './PaneSectionHeader';
 import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
 import { fireService } from '../../utils/fireService';
@@ -301,7 +301,7 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
 
     return (
         <div className="sp-pane selection-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="Selection"
                 icon="ui.select"
                 collapsed={collapsed}

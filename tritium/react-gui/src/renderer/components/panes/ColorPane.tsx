@@ -39,7 +39,7 @@ import {
     HTMLSelect,
     Tooltip,
 } from '@blueprintjs/core'
-import { SectionHeader } from './SectionHeader'
+import { PaneSectionHeader } from './PaneSectionHeader'
 import { AppIcon } from '@renderer/h3-kit/primitives'
 import {
     Field,
@@ -1439,7 +1439,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
     return (
         <ColorPickerProvider cm={cm} sceneId={sceneId}>
         <div className="sp-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="Color"
                 icon="ui.tint"
                 collapsed={collapsed}
