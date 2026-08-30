@@ -460,10 +460,10 @@ void GLSLMapMeshRenderer2::renderCPU(DisplayContext *pdc)
         m_ivdel[6] = IntVec3D(0, 1, 1);
         m_ivdel[7] = IntVec3D(0, 0, 1);
 
-        m_ivdel[4] = IntVec3D(0, 0, 0);
-        m_ivdel[5] = IntVec3D(0, 0, 1);
-        m_ivdel[6] = IntVec3D(1, 0, 1);
-        m_ivdel[7] = IntVec3D(1, 0, 0);
+        m_ivdel[8] = IntVec3D(0, 0, 0);
+        m_ivdel[9] = IntVec3D(0, 0, 1);
+        m_ivdel[10] = IntVec3D(1, 0, 1);
+        m_ivdel[11] = IntVec3D(1, 0, 0);
     }
 
     quint8 isolev;
