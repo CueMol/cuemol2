@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Dialog, DialogBody, DialogFooter, Radio, RadioGroup } from '@blueprintjs/core';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Radio, RadioGroup } from '@blueprintjs/core';
+import { DialogShell } from './DialogShell';
 
 export interface ObjectPickerEntry {
   id: number;
@@ -19,9 +19,6 @@ interface Props {
  * two or more objects.
  */
 export function ObjectPickerDialog({ visible, objects, onResult }: Props): React.JSX.Element {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   const [selected, setSelected] = useState<number | null>(objects[0]?.id ?? null);
 
   // The provider reuses one component instance across invocations -- re-seed
@@ -31,38 +28,24 @@ export function ObjectPickerDialog({ visible, objects, onResult }: Props): React
   }, [visible, objects]);
 
   return (
-    <Dialog
-      isOpen={visible}
-      onClose={() => onResult(null)}
+    <DialogShell
+      visible={visible}
       title="Save Object As"
-      style={{ width: 400, paddingBottom: 0 }}
-      portalClassName={isDark ? 'bp5-dark' : ''}
+      width="xl"
+      onCancel={() => onResult(null)}
+      onOk={() => onResult(selected)}
+      okLabel={"Save As\u2026"}
+      okDisabled={selected === null}
     >
-      <DialogBody>
-        <RadioGroup
-          label="Select an object to save:"
-          selectedValue={selected ?? undefined}
-          onChange={(e) => setSelected(Number((e.target as HTMLInputElement).value))}
-        >
-          {objects.map((o) => (
-            <Radio key={o.id} label={o.name} value={o.id} />
-          ))}
-        </RadioGroup>
-      </DialogBody>
-      <DialogFooter
-        actions={
-          <>
-            <Button onClick={() => onResult(null)}>Cancel</Button>
-            <Button
-              intent="primary"
-              disabled={selected === null}
-              onClick={() => onResult(selected)}
-            >
-              Save As&hellip;
-            </Button>
-          </>
-        }
-      />
-    </Dialog>
+      <RadioGroup
+        label="Select an object to save:"
+        selectedValue={selected ?? undefined}
+        onChange={(e) => setSelected(Number((e.target as HTMLInputElement).value))}
+      >
+        {objects.map((o) => (
+          <Radio key={o.id} label={o.name} value={o.id} />
+        ))}
+      </RadioGroup>
+    </DialogShell>
   );
 }

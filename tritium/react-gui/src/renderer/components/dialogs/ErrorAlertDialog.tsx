@@ -6,8 +6,8 @@
  */
 
 import React from 'react';
-import { Dialog, DialogBody, DialogFooter, Button } from '@blueprintjs/core';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Button } from '@blueprintjs/core';
+import { DialogShell } from './DialogShell';
 
 export interface ErrorAlertDialogArgs {
     title: string;
@@ -22,26 +22,21 @@ interface Props {
 }
 
 export function ErrorAlertDialog({ visible, title, message, onClose }: Props): React.JSX.Element {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onClose}
+        <DialogShell
+            visible={visible}
             title={title}
-            style={{ width: 420 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
+            width="2xl"
+            onCancel={onClose}
+            // Acknowledge-only: one button, focused so Enter dismisses without
+            // reaching for the mouse.
+            footerActions={
+                <Button intent="primary" onClick={onClose} autoFocus>OK</Button>
+            }
         >
-            <DialogBody>
-                <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>
-                    {message}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={<Button intent="primary" onClick={onClose} autoFocus>OK</Button>}
-            />
-        </Dialog>
+            <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>
+                {message}
+            </div>
+        </DialogShell>
     );
 }
