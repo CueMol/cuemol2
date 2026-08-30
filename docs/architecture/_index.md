@@ -12,6 +12,12 @@ instead. If a change ports a UXP surface it belongs there; if it adds
 something UXP never had, or concerns build / packaging / internal
 architecture, it belongs here.
 
+- [react-gui 大規模リファクタリング (2026-08)](react-gui-refactoring.md)
+  (日本語) -- 移行完了後の構造作り替えの設計記録。動機 (churn が 4 つのハブ
+  ファイルに集中していた) と、採用した判断 (feature ディレクトリ / hook は
+  所有者と同居 / context 3 分割 / `CommandRegistry` 一本化 / Inspector の
+  schema 化 / service フォルダの seam は call graph で決める)、採らなかった
+  案とその理由、分割で分かったこと。
 - [react-gui のレイヤと import 規則](react-gui-layering.md) (日本語) --
   main / renderer / Web Worker の 3 スレッドをまたぐ import 境界、`h3-kit`
   (デザインシステム) がアプリケーションを import しない規則と barrel 経由の
