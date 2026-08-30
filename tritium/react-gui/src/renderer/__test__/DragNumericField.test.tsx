@@ -255,14 +255,56 @@ describe('DragNumericField', () => {
         expect(getEditInput()).toBeNull()
     })
 
-    it('Shift snaps to the fine granularity (step / 10)', () => {
+    // Shift is a precision mode: it divides the rate by 10 AND snaps to the
+    // fine grid. Snapping alone was not enough -- against a rate proportional
+    // to the field's range, one pixel can already cross several fine steps,
+    // so the modifier snapped to values the drag was flying past.
+    it('Shift slows the drag by the snap factor and lands on the fine grid', () => {
         const onChange = vi.fn()
-        // 7px * (0.1 / 8) = +0.0875 -> 1.0875, snapped to 0.01 -> 1.09
-        // (normal 0.1-snap would give 1.1, so this proves the finer grid).
+        // 70px * (0.1 / 8) / 10 = +0.0875 -> 1.0875, snapped to 0.01 -> 1.09.
+        // Ten times the travel of the same result at the normal rate, which is
+        // what makes a fine value reachable rather than skipped over.
         render({ value: 1.0, step: 0.1, onChange })
         mouseDownBody()
-        moveBy(7, { shiftKey: true })
+        moveBy(70, { shiftKey: true })
         expect(onChange).toHaveBeenLastCalledWith(1.09)
+        mouseUp()
+    })
+
+    it('picks the rate up again when Shift is released mid-drag', () => {
+        const onChange = vi.fn()
+        // The rate changes per frame, so the value must not jump when the key
+        // goes up: 40px slow (+0.05) then 40px fast (+0.5) = 1.55 -> snap 0.1.
+        render({ value: 1.0, step: 0.1, onChange })
+        mouseDownBody()
+        moveBy(40, { shiftKey: true })
+        moveBy(40)
+        expect(onChange).toHaveBeenLastCalledWith(1.6)
+        mouseUp()
+    })
+
+    // A field that pins `decimals` coarser than its fine snap would round away
+    // every value Shift can reach, leaving the precision mode slower with
+    // nothing to show for it. While the modifier is held the display opens up
+    // to the fine snap's precision, and closes again on release.
+    it('shows the fine-snap precision while Shift is held, even when decimals is pinned', () => {
+        // step 0.01 -> fine snap 0.001; the field asks for 2 decimals.
+        render({ value: 0.2, step: 0.01, decimals: 2, onChange: () => {} })
+        expect(getValueText()).toBe('0.20')
+
+        mouseDownBody()
+        moveBy(40, { shiftKey: true })
+        expect(getValueText()).toBe('0.200')
+
+        mouseUp()
+        expect(getValueText()).toBe('0.20')
+    })
+
+    it('leaves the display alone for the coarse modifier', () => {
+        render({ value: 0.2, step: 0.01, decimals: 2, onChange: () => {} })
+        mouseDownBody()
+        moveBy(40, { ctrlKey: true })
+        expect(getValueText()).toBe('0.20')
         mouseUp()
     })
 
@@ -279,11 +321,12 @@ describe('DragNumericField', () => {
 
     it('honors an explicit fineSnap (Shift) that is not a 10th of step', () => {
         const onChange = vi.fn()
-        // step 0.05, fineSnap 0.01: 7px * (0.05 / 8) = +0.04375 -> 1.74375,
-        // snapped to 0.01 -> 1.74 (the default fine 0.005 would give 1.745).
+        // step 0.05, fineSnap 0.01: 70px * (0.05 / 8) / 10 = +0.04375 ->
+        // 1.74375, snapped to 0.01 -> 1.74 (the default fine 0.005 would give
+        // 1.745).
         render({ value: 1.7, step: 0.05, fineSnap: 0.01, coarseSnap: 0.5, onChange })
         mouseDownBody()
-        moveBy(7, { shiftKey: true })
+        moveBy(70, { shiftKey: true })
         expect(onChange).toHaveBeenLastCalledWith(1.74)
         mouseUp()
     })
@@ -637,15 +680,32 @@ describe('DragNumericField', () => {
         expect(onRelease).not.toHaveBeenCalled()
     })
 
-    it('commits (onRelease) on pointer-lock loss when realtime is off', () => {
+    // Esc means abandon, in either mode. This used to commit when `realtime`
+    // was off -- there was no preview to roll back, so a cancel looked like a
+    // no-op -- but the draft had still moved, so Esc wrote the very value it
+    // was asked to discard.
+    it('cancels rather than commits on pointer-lock loss when realtime is off', () => {
         const onRelease = vi.fn()
         const onDragCancel = vi.fn()
         render({ value: 1.0, step: 0.1, onRelease, onDragCancel })
         mouseDownBody()
         moveBy(40)
         pointerLockLost()
-        expect(onRelease).toHaveBeenCalledTimes(1)
-        expect(onDragCancel).not.toHaveBeenCalled()
+        expect(onDragCancel).toHaveBeenCalledTimes(1)
+        expect(onRelease).not.toHaveBeenCalled()
+    })
+
+    it('fires onDragCancel if unmounted mid-drag with realtime off', () => {
+        const onDragCancel = vi.fn()
+        const onRelease = vi.fn()
+        render({ value: 1.0, step: 0.1, onDragCancel, onRelease })
+        mouseDownBody()
+        moveBy(40)
+        act(() => root.unmount())
+        expect(onDragCancel).toHaveBeenCalledTimes(1)
+        expect(onRelease).not.toHaveBeenCalled()
+        // The suite's afterEach unmounts; give it a live root to unmount.
+        root = createRoot(container)
     })
 
     it('fires onDragCancel if unmounted mid-drag in realtime mode', () => {

@@ -763,7 +763,7 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
         <div className="sp-pane">
             <PaneSectionHeader
                 title="Scene"
-                titleClassName="scene-name-title"
+                icon="ui.tree"
                 alwaysShowChevron
                 collapsed={collapsed}
                 onToggleCollapse={onToggleCollapse}
