@@ -15,3 +15,8 @@ export { APP_ICONS } from './appIcons';
 export type { AppIconKey, AppIconSpec } from './appIcons';
 export { Tooltip } from './Tooltip';
 export type { TooltipProps } from './Tooltip';
+export {
+    DARK_PORTAL_CLASS,
+    useDarkPortalClass,
+    useIsDarkTheme,
+} from './useDarkPortalClass';

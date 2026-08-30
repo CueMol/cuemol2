@@ -21,7 +21,7 @@
 
 import React, { useState } from 'react';
 import { InputGroup, Intent, Menu, MenuItem, Popover } from '@blueprintjs/core';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useDarkPortalClass } from '../primitives';
 
 export interface ComboBoxFieldProps {
     value: string;
@@ -71,7 +71,7 @@ export const ComboBoxField: React.FC<ComboBoxFieldProps> = ({
     id,
     ...rest
 }) => {
-    const { theme } = useTheme();
+    const portalClassName = useDarkPortalClass();
     const [open, setOpen] = useState(false);
     const hasOptions = options.length > 0;
 
@@ -109,7 +109,7 @@ export const ComboBoxField: React.FC<ComboBoxFieldProps> = ({
                     setOpen(next);
                 }}
                 placement="bottom-end"
-                portalClassName={theme === 'dark' ? 'bp5-dark' : ''}
+                portalClassName={portalClassName}
                 disabled={disabled || !hasOptions}
                 content={
                     <Menu className="h3-form-combobox-menu">

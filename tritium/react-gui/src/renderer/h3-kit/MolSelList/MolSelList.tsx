@@ -30,7 +30,7 @@ import React, { useCallback, useEffect, useReducer, useRef, useState } from 'rea
 import { Button, Popover } from '@blueprintjs/core';
 import { AppIcon } from '../primitives';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useDarkPortalClass } from '../primitives';
 import { TextField } from '../form';
 import {
     SelectionBuilder,
@@ -91,8 +91,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     // reshuffling the public contract.
     void onMolIdChange;
     const { cm } = useCueMol();
-    const { theme } = useTheme();
-    const portalClassName = theme === 'dark' ? 'bp5-dark' : '';
+    const portalClassName = useDarkPortalClass();
 
     const [sceneDefs, setSceneDefs] = useState<string[]>([]);
     const [globalDefs, setGlobalDefs] = useState<string[]>([]);
