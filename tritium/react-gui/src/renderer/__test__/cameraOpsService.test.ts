@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/cameraOps.service'
+import { services } from '@renderer/worker/server/services/camera/camera.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 interface BuildCtxOpts {

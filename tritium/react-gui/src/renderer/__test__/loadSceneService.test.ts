@@ -22,7 +22,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/loadScene.service'
+import { services } from '@renderer/worker/server/services/file/file.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 const { loadScene, openSceneFile } = services

@@ -14,7 +14,7 @@ import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type {
     ColoringTargetKind,
     GetRendererColoringStateResult,
-} from '@renderer/worker/server/services/rendererColoring.service'
+} from '@renderer/worker/server/services/coloring/coloring.service'
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_ANY } from '@renderer/event'
 import { useLiveFetch } from '@renderer/hooks/cuemol/useLiveFetch'
 import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'

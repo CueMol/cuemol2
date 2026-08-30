@@ -12,7 +12,7 @@
  */
 
 import { loadJSON, saveJSON } from '@renderer/utils/localStorageJSON';
-import type { SuperposeAlgo } from '@renderer/worker/server/services/superposeMol.service';
+import type { SuperposeAlgo } from '@renderer/worker/server/services/molops/superposeMol';
 
 export const STORAGE_KEY = 'cuemol2.ui.histories.mol_superpose';
 

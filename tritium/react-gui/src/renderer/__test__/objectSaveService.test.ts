@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { services } from '@renderer/worker/server/services/objectSave.service'
+import { services } from '@renderer/worker/server/services/file/file.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 interface FixtureOpts {

@@ -32,8 +32,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { MolResidueEntry } from '@renderer/worker/server/services/getMolStructure.service'
-import type { SeqPanelRow } from '@renderer/worker/server/services/getSeqPanelData.service'
+import type { MolResidueEntry } from '@renderer/worker/server/services/select/getMolStructure'
+import type { SeqPanelRow } from '@renderer/worker/server/services/select/getSeqPanelData'
 import {
     SEM_OBJECT,
     SEM_SCENE,

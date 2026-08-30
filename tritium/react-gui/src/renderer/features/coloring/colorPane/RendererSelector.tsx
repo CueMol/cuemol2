@@ -9,7 +9,7 @@
 
 import React, { useMemo } from 'react'
 import { HTMLSelect } from '@blueprintjs/core'
-import type { PaintCapableRendererEntry } from '@renderer/worker/server/services/rendererColoring.service'
+import type { PaintCapableRendererEntry } from '@renderer/worker/server/services/coloring/coloring.service'
 import { makeKey, type TargetKey } from './targetKey'
 
 void React // classic JSX runtime (vitest)

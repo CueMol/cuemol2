@@ -17,7 +17,7 @@ import type { RendColoringId } from '@shared/types/sceneCtxMenu';
 import type {
     ColoringTargetKind,
     PaintEntryDto,
-} from '@renderer/worker/server/services/rendererColoring.service';
+} from '@renderer/worker/server/services/coloring/coloring.service';
 import { fireService } from '@renderer/utils/fireService';
 import { IPC } from '@shared/ipcChannels';
 

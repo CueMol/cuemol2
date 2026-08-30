@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/labelDefaults.service'
+import { services } from '@renderer/worker/server/services/view/view.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 const { getLabelDefaults, setLabelDefaults } = services

@@ -7,9 +7,9 @@
  * services the worker actually registers.
  */
 
-import type { AppInfoResult } from '@renderer/worker/server/services/appInfo.service'
-import type { DrainLogMessagesResult } from '@renderer/worker/server/services/drainLogMessages.service'
-import type { CancelAllJobsResult } from '@renderer/worker/server/services/shutdown.service'
+import type { AppInfoResult } from '@renderer/worker/server/services/app/appInfo'
+import type { DrainLogMessagesResult } from '@renderer/worker/server/services/app/drainLogMessages'
+import type { CancelAllJobsResult } from '@renderer/worker/server/services/app/shutdown'
 
 export interface AppCalls {
   appInfo:                    { args: Record<string, never>; result: AppInfoResult }

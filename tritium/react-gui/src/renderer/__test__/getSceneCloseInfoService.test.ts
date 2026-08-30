@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/getSceneCloseInfo.service'
+import { services } from '@renderer/worker/server/services/scene/scene.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 function makeScene(overrides: Partial<{ modified: boolean; viewCount: number; name: string; uid: number }> = {}) {

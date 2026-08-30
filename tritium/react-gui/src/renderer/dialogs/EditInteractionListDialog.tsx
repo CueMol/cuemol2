@@ -10,7 +10,7 @@ import React, { useEffect, useState } from 'react'
 import { Button } from '@blueprintjs/core';
 import { DialogShell } from './DialogShell';
 import { AppIcon } from '@renderer/h3-kit/primitives'
-import type { AtomIntrDefEntry } from '@renderer/worker/server/services/atomIntrEdit.service'
+import type { AtomIntrDefEntry } from '@renderer/worker/server/services/rend/atomIntrEdit'
 
 export interface EditInteractionListDialogResult {
     /** Definition ids the user removed; empty means "no change". */

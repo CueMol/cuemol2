@@ -21,7 +21,7 @@ vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     withUndoTxn: (_scene: unknown, _label: string, fn: () => void) => fn(),
 }))
 
-import { services } from '@renderer/worker/server/services/styleSetEdit.service'
+import { services } from '@renderer/worker/server/services/style/style.service'
 
 const {
     getStyleSetContents,

@@ -19,7 +19,7 @@ import { ObjectSelect, objectFilters } from '@renderer/h3-kit/ObjectSelect';
 import { FormButton } from '@renderer/h3-kit/form';
 import { AppIcon } from '@renderer/h3-kit/primitives';
 import * as event from '@renderer/event';
-import type { BondAtomJSON, BondAtomPair } from '@renderer/worker/server/services/bondEdit.service';
+import type { BondAtomJSON, BondAtomPair } from '@renderer/worker/server/services/navi/bondEdit';
 
 /** Format one bond atom like the UXP tree: "chain resn resid aname[:altc]". */
 function formatAtom(a: BondAtomJSON): string {

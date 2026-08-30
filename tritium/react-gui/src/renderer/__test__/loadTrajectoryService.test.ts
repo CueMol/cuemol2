@@ -19,13 +19,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { RendererOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 
-vi.mock('@renderer/worker/server/services/setupRenderer.service', () => ({
+vi.mock('@renderer/worker/server/services/rend/setupRenderer', () => ({
     setupRenderer: vi.fn(),
 }))
 
-import { services as loadTrajServices } from '@renderer/worker/server/services/loadTrajectory.service'
-import { services as trajRendServices } from '@renderer/worker/server/services/getTrajectoryRendererInfo.service'
-import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { services as loadTrajServices } from '@renderer/worker/server/services/file/file.service'
+import { services as trajRendServices } from '@renderer/worker/server/services/traj/traj.service'
+import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 
 const renderer: RendererOptions = {
     objectName: 'system',

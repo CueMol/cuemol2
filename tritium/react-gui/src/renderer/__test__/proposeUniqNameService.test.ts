@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/proposeUniqName.service'
+import { services } from '@renderer/worker/server/services/scene/scene.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 function makeCtx(options: {

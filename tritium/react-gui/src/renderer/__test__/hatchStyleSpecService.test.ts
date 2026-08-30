@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { services } from '@renderer/worker/server/services/hatchStyleSpec.service';
+import { services } from '@renderer/worker/server/services/renderjob/renderJob.service';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 const ctxWith = (createHandler: (...args: unknown[]) => unknown) =>

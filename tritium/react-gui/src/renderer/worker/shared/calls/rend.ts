@@ -12,47 +12,47 @@ import type {
   ListAtomIntrDefsResult,
   RemoveAtomIntrDefsArgs,
   RemoveAtomIntrDefsResult,
-} from '@renderer/worker/server/services/atomIntrEdit.service'
+} from '@renderer/worker/server/services/rend/atomIntrEdit'
 import type {
   ChangeRendererTypeArgs,
   ChangeRendererTypeResult,
-} from '@renderer/worker/server/services/changeRendererType.service'
+} from '@renderer/worker/server/services/rend/changeRendererType'
 import type {
   CreateRendererGroupArgs,
   CreateRendererGroupResult,
-} from '@renderer/worker/server/services/createRendererGroup.service'
+} from '@renderer/worker/server/services/rend/createRendererGroup'
 import type {
   CreateRendererOnObjectArgs,
   CreateRendererOnObjectResult,
-} from '@renderer/worker/server/services/createRendererOnObject.service'
+} from '@renderer/worker/server/services/rend/createRendererOnObject'
 import type {
   CreateStyleFromRendererArgs,
   CreateStyleFromRendererResult,
   GetCreateRendStyleInfoArgs,
   GetCreateRendStyleInfoResult,
-} from '@renderer/worker/server/services/createStyleFromRenderer.service'
+} from '@renderer/worker/server/services/rend/createStyleFromRenderer'
 import type {
   GenerateRendererSurfObjArgs,
   GenerateRendererSurfObjResult,
-} from '@renderer/worker/server/services/generateRendererSurfObj.service'
+} from '@renderer/worker/server/services/rend/generateRendererSurfObj'
 import type {
   GetMaterialNamesArgs,
   GetMaterialNamesResult,
-} from '@renderer/worker/server/services/getMaterialNames.service'
+} from '@renderer/worker/server/services/rend/getMaterialNames'
 import type {
   GetNewRendererOptionsArgs,
   GetNewRendererOptionsResult,
   GetRendPresetTypesArgs,
   GetRendPresetTypesResult,
-} from '@renderer/worker/server/services/getNewRendererOptions.service'
+} from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import type {
   GetRendererChangeTypesArgs,
   GetRendererChangeTypesResult,
-} from '@renderer/worker/server/services/getRendererChangeTypes.service'
+} from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import type {
   GetSiblingRendererNamesArgs,
   GetSiblingRendererNamesResult,
-} from '@renderer/worker/server/services/getSiblingRendererNames.service'
+} from '@renderer/worker/server/services/rend/getSiblingRendererNames'
 import type {
   ApplyRendererStyleArgs,
   ApplyRendererStyleListArgs,
@@ -62,11 +62,11 @@ import type {
   GetRendererStyleEditInfoResult,
   GetRendererStyleEntriesArgs,
   GetRendererStyleEntriesResult,
-} from '@renderer/worker/server/services/rendererStyle.service'
+} from '@renderer/worker/server/services/rend/rendererStyle'
 import type {
   SetRendererSelectionArgs,
   SetRendererSelectionResult,
-} from '@renderer/worker/server/services/setRendererSelection.service'
+} from '@renderer/worker/server/services/rend/setRendererSelection'
 
 export interface RendCalls {
   getMaterialNames:           { args: GetMaterialNamesArgs; result: GetMaterialNamesResult }

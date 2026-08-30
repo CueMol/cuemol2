@@ -9,7 +9,7 @@
 
 import type {
   GetTrajectoryRendererInfoResult,
-} from '@renderer/worker/server/services/getTrajectoryRendererInfo.service'
+} from '@renderer/worker/server/services/traj/getTrajectoryRendererInfo'
 import type {
   AddMorphFrameFromFileArgs,
   AddMorphFrameFromMolArgs,
@@ -19,7 +19,7 @@ import type {
   GetMorphFramesResult,
   MorphFrameEditResult,
   RemoveMorphFrameArgs,
-} from '@renderer/worker/server/services/morphMol.service'
+} from '@renderer/worker/server/services/traj/morphMol'
 import type {
   AppendTrajectoryBlockArgs,
   AppendTrajectoryBlockResult,
@@ -30,7 +30,7 @@ import type {
   SetTrajectoryFrameResult,
   TrajBlockEditResult,
   TrajectoryState,
-} from '@renderer/worker/server/services/trajectory.service'
+} from '@renderer/worker/server/services/traj/trajectory'
 
 export interface TrajCalls {
   getTrajectoryRendererInfo:  { args: Record<string, never>; result: GetTrajectoryRendererInfoResult }

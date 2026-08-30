@@ -16,7 +16,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { services } from '@renderer/worker/server/services/regenMolSurf.service'
+import { services } from '@renderer/worker/server/services/molops/molops.service'
 
 const { getMolSurfRegenInfo, regenMolSurf } = services
 

@@ -11,7 +11,7 @@
  * transaction label / commit / rollback are exercised against the spied scene.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { services } from '@renderer/worker/server/services/bondEdit.service';
+import { services } from '@renderer/worker/server/services/navi/navi.service';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 function makeHit(objId: number, atomId: number): string {

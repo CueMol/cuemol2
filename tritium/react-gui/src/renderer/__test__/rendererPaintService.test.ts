@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { services } from '@renderer/worker/server/services/rendererColoring.service'
+import { services } from '@renderer/worker/server/services/coloring/coloring.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 interface FixtureOpts {

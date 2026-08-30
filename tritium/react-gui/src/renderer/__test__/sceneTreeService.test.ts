@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/sceneTree.service'
+import { services } from '@renderer/worker/server/services/sceneTree/sceneTree.service'
 import { parseSceneTreeJSON } from '@renderer/worker/shared/sceneTreeTypes'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 

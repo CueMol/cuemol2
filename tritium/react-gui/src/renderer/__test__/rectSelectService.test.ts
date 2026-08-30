@@ -20,7 +20,7 @@ vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     withUndoTxn: vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
 }))
 
-import { services } from '@renderer/worker/server/services/rectSelect.service'
+import { services } from '@renderer/worker/server/services/select/select.service'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { rectSelect } = services

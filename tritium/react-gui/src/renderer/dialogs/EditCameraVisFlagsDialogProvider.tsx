@@ -7,7 +7,7 @@ import {
 // React import is required by the JSX runtime used at test time.
 void React
 import { createDialogHook } from '@renderer/hooks/useDialogFactory'
-import type { VisFlagEntry } from '@renderer/worker/server/services/cameraVisFlags.service'
+import type { VisFlagEntry } from '@renderer/worker/server/services/camera/cameraVisFlags'
 
 export interface EditCameraVisFlagsDialogArgs {
     cameraName: string

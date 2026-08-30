@@ -21,7 +21,7 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn((_ctx: unknown, str: string) => ({ __sel: str })),
 }))
 
-import { services } from '@renderer/worker/server/services/analyzeInteractions.service'
+import { services } from '@renderer/worker/server/services/molops/molops.service'
 
 const { analyzeInteractions } = services
 

@@ -14,8 +14,8 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
 
-import { services as hitServices } from '@renderer/worker/server/services/getSelHitCount.service'
-import { services as saveServices } from '@renderer/worker/server/services/saveSelDef.service'
+import { services as hitServices } from '@renderer/worker/server/services/select/select.service'
+import { services as saveServices } from '@renderer/worker/server/services/select/select.service'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { getSelHitCount } = hitServices

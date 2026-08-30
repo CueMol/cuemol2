@@ -15,7 +15,7 @@ import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import { ColorField } from '@renderer/h3-kit/form'
 import { AppIcon } from '@renderer/h3-kit/primitives'
-import type { GetStyleSetContentsResult } from '@renderer/worker/server/services/styleSetEdit.service'
+import type { GetStyleSetContentsResult } from '@renderer/worker/server/services/style/styleSetEdit'
 
 /** Controlled selection-value input committing on blur / Enter. */
 const SelValueField: React.FC<{

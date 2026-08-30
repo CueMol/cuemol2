@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services as changeServices } from '@renderer/worker/server/services/changeRendererType.service'
-import { services as fetchServices } from '@renderer/worker/server/services/getRendererChangeTypes.service'
+import { services as changeServices } from '@renderer/worker/server/services/rend/rend.service'
+import { services as fetchServices } from '@renderer/worker/server/services/rend/rend.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 interface ChangeFixtureOpts {

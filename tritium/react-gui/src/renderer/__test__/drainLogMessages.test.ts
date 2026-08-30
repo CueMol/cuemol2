@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { services } from '@renderer/worker/server/services/drainLogMessages.service';
+import { services } from '@renderer/worker/server/services/app/app.service';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 function makeCtx(msgLog: unknown) {

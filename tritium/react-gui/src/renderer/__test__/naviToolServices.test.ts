@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { services } from '@renderer/worker/server/services/naviTool.service';
+import { services } from '@renderer/worker/server/services/navi/navi.service';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 const { naviHitTest, naviClickAtom, naviResidSel } = services;

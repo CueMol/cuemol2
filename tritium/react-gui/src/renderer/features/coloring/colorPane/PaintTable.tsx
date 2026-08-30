@@ -16,7 +16,7 @@ import type { MenuNode } from '@shared/menuNodes'
 import { CueColorField } from '@renderer/h3-kit/colorpicker'
 import { scrollRowIntoView, useListKeyNav } from '@renderer/h3-kit/list'
 import { useColumnResize } from '@renderer/hooks/useColumnResize'
-import type { PaintEntryDto } from '@renderer/worker/server/services/rendererColoring.service'
+import type { PaintEntryDto } from '@renderer/worker/server/services/coloring/coloring.service'
 import { PaintSelCell } from '@renderer/features/coloring/PaintSelCell'
 import {
     PAINT_COL_MIN,

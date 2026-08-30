@@ -52,7 +52,7 @@ import type {
   SetRendererElepotPropArgs,
   SetRendererElepotPropResult,
   UpdatePaintEntryArgs,
-} from '@renderer/worker/server/services/rendererColoring.service'
+} from '@renderer/worker/server/services/coloring/coloring.service'
 
 export interface ColoringCalls {
   setRendererColoring:        { args: SetRendererColoringArgs; result: SetRendererColoringResult }

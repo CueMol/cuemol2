@@ -7,7 +7,7 @@ import {
 // React import is required by the JSX runtime used at test time.
 void React
 import { createDialogHook } from '@renderer/hooks/useDialogFactory'
-import type { AtomIntrDefEntry } from '@renderer/worker/server/services/atomIntrEdit.service'
+import type { AtomIntrDefEntry } from '@renderer/worker/server/services/rend/atomIntrEdit'
 
 export interface EditInteractionListDialogArgs {
     rendName: string

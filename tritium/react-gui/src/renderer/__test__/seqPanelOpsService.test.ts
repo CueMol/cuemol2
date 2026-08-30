@@ -19,7 +19,7 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn((_ctx: unknown, str: string) => ({ __sel: str })),
 }))
 
-import { services } from '@renderer/worker/server/services/seqPanelOps.service'
+import { services } from '@renderer/worker/server/services/select/select.service'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { toggleResidueSelection, rangeSelectResidues, centerOnResidue } = services

@@ -257,7 +257,7 @@ describe('streamLoadDensityMap — post-load behavior', () => {
         // map (helpers/streamFetchToReader); cancelStreamLoad service routes
         // through cancelStream(reqId).
         const { services: streamLoadServices } = await import(
-            '@renderer/worker/server/services/streamLoadFromUrl.service'
+            '@renderer/worker/server/services/file/file.service'
         )
         const { cancelStreamLoad } = streamLoadServices
 

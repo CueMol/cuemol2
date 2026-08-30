@@ -23,7 +23,7 @@ import type {
     MolChainEntry,
     MolResidueEntry,
     MolAtomEntry,
-} from '@renderer/worker/server/services/getMolStructure.service';
+} from '@renderer/worker/server/services/select/getMolStructure';
 import { SEM_OBJECT, SEM_ANY } from '@renderer/event';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 

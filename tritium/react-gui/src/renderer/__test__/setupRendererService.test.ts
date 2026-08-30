@@ -29,7 +29,7 @@ vi.mock('@renderer/worker/server/services/helpers/getDefaultStyleName', () => ({
     getDefaultStyleName: vi.fn(() => 'DefaultStyle'),
 }))
 
-import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { molPostProc } from '@renderer/worker/server/services/helpers/molPostProc'
 import { fakeObject, fakeRenderer, fakeScene, fakeView, makeWorkerCtx } from '@renderer/worker/testing'

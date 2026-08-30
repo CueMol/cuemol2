@@ -10,7 +10,7 @@
 import type {
   GetHatchStyleSpecArgs,
   GetHatchStyleSpecResult,
-} from '@renderer/worker/server/services/hatchStyleSpec.service'
+} from '@renderer/worker/server/services/renderjob/hatchStyleSpec'
 import type {
   RenderCancelArgs,
   RenderCancelResult,

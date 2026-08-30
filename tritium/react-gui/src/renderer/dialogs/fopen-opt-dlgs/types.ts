@@ -10,7 +10,7 @@
  * pane), mirroring the MTZ header-driven defaults. The lone exception is the
  * MTZ grid spacing, a deliberate UXP UI preset (see `getDefaultMtzOptions`).
  */
-import type { ReaderDefaultOptions } from '@renderer/worker/server/services/getReaderDefaultOptions.service';
+import type { ReaderDefaultOptions } from '@renderer/worker/server/services/file/getReaderDefaultOptions';
 
 // The option types themselves live on the worker boundary (nine services read
 // them); re-exported here so dialog code can keep taking them from one place.

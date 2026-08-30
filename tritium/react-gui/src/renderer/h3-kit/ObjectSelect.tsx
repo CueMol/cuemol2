@@ -22,7 +22,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Field, SelectField } from './form'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { SceneObjectEntry } from '@renderer/worker/server/services/listSceneObjects.service'
+import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import { SEM_OBJECT, SEM_SCENE, SEM_ANY } from '@renderer/event'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 
