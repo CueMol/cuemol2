@@ -33,7 +33,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Slider } from '@blueprintjs/core';
-import { AppIcon } from '../../components/AppIcon';
+import { AppIcon } from '../primitives';
 import { clampAndQuantize, quantize } from './numericMath';
 
 void React; // classic JSX runtime (vitest)

@@ -25,9 +25,8 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
 import { SectionHeader } from './SectionHeader';
-import { AppIcon } from '../AppIcon';
+import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
-import { Tooltip } from '../../h3-kit/Tooltip';
 import { fireService } from '../../utils/fireService';
 import { FieldSection, FormButton, TextField } from '../../h3-kit/form';
 import { useTheme } from '../../contexts/ThemeContext';

@@ -1,6 +1,6 @@
 import React from "react";
-import { AppIcon } from "../AppIcon";
-import type { AppIconKey } from "../../data/appIcons";
+import { AppIcon } from "@renderer/h3-kit/primitives";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 interface SectionHeaderProps {
   title: string;

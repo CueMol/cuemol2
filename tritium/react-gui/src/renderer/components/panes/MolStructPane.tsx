@@ -25,7 +25,7 @@ import {
     Tree,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { SectionHeader } from "./SectionHeader";
 import { useMolStructure } from "../../hooks/useMolStructure";
 import { ObjectSelect, objectFilters } from "../../h3-kit/ObjectSelect";

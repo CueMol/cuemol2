@@ -30,7 +30,7 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { InputGroup } from '@blueprintjs/core'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useRenderConfig } from '../../contexts/RenderConfigContext'
 import { useApbsConfig } from '../../contexts/ApbsConfigContext'

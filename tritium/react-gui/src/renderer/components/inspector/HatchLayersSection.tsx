@@ -8,7 +8,7 @@
 import React from "react";
 
 import { HatchLayerRow } from "./HatchLayerRow";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { FieldSection, FormButton } from "../../h3-kit/form";
 import type { HatchLayer, HatchLayerKind } from "../../data/hatchSpec";
 

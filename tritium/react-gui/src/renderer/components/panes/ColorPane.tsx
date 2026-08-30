@@ -40,7 +40,7 @@ import {
     Tooltip,
 } from '@blueprintjs/core'
 import { SectionHeader } from './SectionHeader'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import {
     Field,
     FieldGrid,

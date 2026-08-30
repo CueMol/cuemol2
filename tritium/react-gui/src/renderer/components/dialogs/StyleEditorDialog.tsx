@@ -14,7 +14,7 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { ColorField } from '../../h3-kit/form'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import type { GetStyleSetContentsResult } from '../../worker/server/services/styleSetEdit.service'
 
 /** Controlled selection-value input committing on blur / Enter. */

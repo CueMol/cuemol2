@@ -17,7 +17,7 @@
 
 import React from 'react';
 import { Button, Tooltip } from '@blueprintjs/core';
-import { AppIcon } from '../../components/AppIcon';
+import { AppIcon } from '../primitives';
 
 export interface PropertyFieldProps {
     /** Label shown above (stack) or beside (inline) the control. */

@@ -31,7 +31,7 @@ import {
   TimeField,
   VectorField,
 } from "../../h3-kit/form";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import { useColumnResize } from "@renderer/hooks/useColumnResize";
 

@@ -22,8 +22,7 @@
 import React, { useRef, useState, useCallback, useLayoutEffect } from "react";
 import { useWheel } from "@use-gesture/react";
 import { Button, ButtonGroup } from "@blueprintjs/core";
-import { AppIcon } from "../AppIcon";
-import { Tooltip } from "../../h3-kit/Tooltip";
+import { AppIcon, Tooltip } from "@renderer/h3-kit/primitives";
 
 interface RenderImageViewerProps {
   /** Image data URL. */

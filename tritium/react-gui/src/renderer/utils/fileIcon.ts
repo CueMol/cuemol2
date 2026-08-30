@@ -3,7 +3,7 @@
  * @description Maps file extensions to semantic `AppIcon` keys for tab labels.
  */
 
-import type { AppIconKey } from "../data/appIcons";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 /** Subset of `AppIconKey` values used by the tab strip. */
 export type FileIconName = Extract<AppIconKey, `file.${string}`>;

@@ -10,7 +10,7 @@
  */
 
 import React from "react";
-import { AppIcon } from "../../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import type { AnimElement } from "@renderer/types";
 import { msToPx } from "./timelineGeometry";
 import { typeIcon } from "./animElementMeta";

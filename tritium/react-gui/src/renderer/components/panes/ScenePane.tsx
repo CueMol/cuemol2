@@ -25,8 +25,8 @@ import {
     Tooltip,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
-import { AppIcon } from "../AppIcon";
-import type { AppIconKey } from "../../data/appIcons";
+import { AppIcon } from "@renderer/h3-kit/primitives";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 import type { SceneNodeType, SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 import {

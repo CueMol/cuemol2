@@ -9,7 +9,7 @@
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogBody, DialogFooter, Button } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import type { AtomIntrDefEntry } from '../../worker/server/services/atomIntrEdit.service'
 
 export interface EditInteractionListDialogResult {

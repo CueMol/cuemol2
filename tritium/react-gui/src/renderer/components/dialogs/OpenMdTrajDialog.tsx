@@ -15,7 +15,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { DialogShell } from './DialogShell';
-import { AppIcon } from '../AppIcon';
+import { AppIcon } from '@renderer/h3-kit/primitives';
 import { Field } from '../../h3-kit/form/Field';
 import { FieldSection } from '../../h3-kit/form/FieldSection';
 import { ComboBoxField } from '../../h3-kit/form/ComboBoxField';

@@ -10,7 +10,7 @@
  */
 
 import React from "react";
-import { AppIcon } from "../../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { ButtonRow, FormButton } from "@renderer/h3-kit/form/ButtonRow";
 import { SwitchField } from "@renderer/h3-kit/form/SwitchField";
 import { SelectField } from "@renderer/h3-kit/form/SelectField";

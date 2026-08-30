@@ -1,5 +1,5 @@
 /**
- * @file data/appIcons.ts
+ * @file h3-kit/primitives/appIcons.ts
  * @description Central registry mapping semantic icon keys to a concrete icon
  * renderer. This is the single place that decides whether an icon comes from
  * Phosphor (`@phosphor-icons/react`) or Blueprint (`@blueprintjs/icons`), so
@@ -11,7 +11,7 @@
  * Keys are added here as each consumer is migrated (so the bundle only carries
  * icons that are actually used).
  *
- * @module data/appIcons
+ * @module h3-kit/primitives/appIcons
  */
 
 import type { Icon as PhosphorIcon, IconWeight } from "@phosphor-icons/react";

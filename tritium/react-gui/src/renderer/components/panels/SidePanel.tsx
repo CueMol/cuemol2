@@ -48,8 +48,8 @@
 
 import React, { useCallback, useRef } from "react";
 import { Allotment } from "allotment";
-import { AppIcon } from "../AppIcon";
-import type { AppIconKey } from "../../data/appIcons";
+import { AppIcon } from "@renderer/h3-kit/primitives";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 import type { ActivityView } from "../ActivityBar";
 import { useLayout, useLayoutDispatch } from "../../state/layout";

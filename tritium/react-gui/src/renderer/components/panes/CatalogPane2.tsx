@@ -11,7 +11,7 @@
  */
 
 import React, { useState } from "react";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { SectionHeader } from "./SectionHeader";
 import {
   Field,

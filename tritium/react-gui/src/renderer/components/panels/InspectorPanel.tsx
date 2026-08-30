@@ -25,7 +25,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { Button, Tag } from "@blueprintjs/core";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { SegmentField } from "../../h3-kit/form";
 
 import { PropertiesTab } from "../inspector/PropertiesTab";

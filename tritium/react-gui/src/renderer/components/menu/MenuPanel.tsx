@@ -11,7 +11,7 @@
  * Styles live in `styles/_menu-kit.css`.
  */
 import React, { useLayoutEffect, useRef, useState } from 'react'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import { collapseSeparators, isSeparatorNode } from '@shared/menuNodes'
 import type { MenuActionNode, MenuNode } from '@shared/menuNodes'
 import { formatAccelerator } from '@shared/menuAccel'

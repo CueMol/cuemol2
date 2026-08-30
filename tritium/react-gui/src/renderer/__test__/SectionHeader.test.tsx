@@ -20,7 +20,7 @@ void React
  * chevron flip (the real AppIcon resolves to a Phosphor/Blueprint glyph).
  */
 
-vi.mock('../components/AppIcon', () => ({
+vi.mock('@renderer/h3-kit/primitives', () => ({
   AppIcon: ({ name, className }: { name: string; className?: string }) => (
     <span data-icon={name} className={className} />
   ),

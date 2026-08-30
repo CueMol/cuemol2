@@ -103,7 +103,7 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import { AppIcon } from '../../components/AppIcon';
+import { AppIcon } from '../primitives';
 import { clampAndQuantize, decimalsOf, snapTo } from './numericMath';
 
 void React; // classic JSX runtime (vitest)

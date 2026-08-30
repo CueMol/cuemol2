@@ -16,7 +16,7 @@
  * electron-store.
  */
 
-import type { AppIconKey } from '@renderer/data/appIcons'
+import type { AppIconKey } from '@renderer/h3-kit/primitives'
 import type { RenderBinaries } from '@renderer/worker/shared/renderTypes'
 import { DEFAULT_RENDER_BINARIES } from '@renderer/worker/shared/renderTypes'
 import {

@@ -15,10 +15,9 @@ import { useActiveScene } from '../state/workspace';
 import { useCommands } from "../commands/CommandRegistry";
 import { CmdId } from "../commands/ids";
 import { useCollapsibleLabels } from "@renderer/hooks/react/useCollapsibleLabels";
-import { Tooltip } from "../h3-kit/Tooltip";
+import { Tooltip, AppIcon } from "@renderer/h3-kit/primitives";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 import { UndoRedoSplitButton } from "./toolbar/UndoRedoSplitButton";
-import { AppIcon } from "./AppIcon";
-import type { AppIconKey } from "../data/appIcons";
 
 type ToolbarItem =
   | { kind: "cmd"; id: string; icon: AppIconKey; text: string; cmd: CmdId; requiresScene?: boolean }

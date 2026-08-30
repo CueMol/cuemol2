@@ -39,7 +39,7 @@ import {
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import { SectionHeader } from './SectionHeader'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
 import { useRealtimeDragProp } from '@renderer/hooks/react/useRealtimeDragProp'
