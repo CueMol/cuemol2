@@ -15,8 +15,8 @@ import {
     parseGenericProps,
     CONTAINER_VALUE,
 } from '@renderer/worker/server/services/helpers/parseGenericProps';
-import { resolvePropTarget } from '@renderer/worker/server/services/helpers/resolvePropTarget';
-import { services } from '@renderer/worker/server/services/genericProps.service';
+import { resolvePropTarget } from '@renderer/worker/server/services/props/target';
+import { services } from '@renderer/worker/server/services/props/props.service';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 // --- parseGenericProps ---

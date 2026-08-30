@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { fakeObject, fakeRenderer, fakeScene, makeWorkerCtx } from '@renderer/worker/testing'
-import { services } from './genericProps.service'
+import { services } from './props/props.service'
 
 const GROUP_UID = 50
 const CHILD_UIDS = [101, 102]

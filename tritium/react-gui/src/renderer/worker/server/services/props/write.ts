@@ -1,271 +1,30 @@
-// Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-//
-// Backs the generic property inspector (UXP `propeditor-generic-page`).
-// `getGenericProps` dumps every property of a scene-tree node via the
-// C++ `getPropsJSON()` bridge; `setGenericProp` writes one property back
-// inside an undo transaction (UXP `commitPropChange`).
-
-import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
+/**
+ * @file worker/server/services/props/write.ts
+ * @description Writing properties back, each write its own undo step.
+ *
+ * Most properties go straight through. The exceptions are the ones whose
+ * meaning reaches past the object holding them: `group` has to name a group
+ * that exists (a typo used to strand the renderer outside the scene tree),
+ * `visible` on a group can be asked to cascade to its members, and a
+ * selection has to compile against the molecule it belongs to.
+ */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
-import { withUndoTxn } from './withUndoTxn';
-import { resolvePropTarget } from '@renderer/worker/server/services/helpers/resolvePropTarget';
-import { parseGenericProps } from '@renderer/worker/server/services/helpers/parseGenericProps';
+import { withUndoTxn } from '../withUndoTxn';
+import { resolvePropTarget } from './target';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 import { checkGroupAssignment } from '@renderer/worker/server/services/helpers/rendGroup';
+import { collectProps } from './read';
+import { isSceneNameWrite } from './selContext';
 import type {
-    GenericPropEntry,
-    PropTargetType,
-    PropWriteMode,
-} from '@renderer/worker/shared/genericProps';
-
-// The wire DTOs live in worker/shared/genericProps.ts (both threads use
-// them); re-exported here so existing importers of this service keep working.
-export type {
-    GenericPropEntry,
-    PropTargetType,
-    PropWriteMode,
-    PropWriteOpts,
-} from '@renderer/worker/shared/genericProps';
-
-// --- types ---
-
-export interface GetGenericPropsArgs {
-    sceneId: number;
-    nodeId: number;
-    nodeType: PropTargetType;
-}
-
-export interface GetGenericPropsResult {
-    ok: boolean;
-    entries: GenericPropEntry[];
-    /** Node name shown in the inspector header. */
-    displayName: string;
-    /** Type label shown in the inspector header (renderer type / class name). */
-    typeLabel: string;
-    /**
-     * UID of the molecule this node's selection properties are evaluated
-     * against, when there is one. The selection picker counts matched atoms
-     * against it; without it the field still edits the expression but shows no
-     * hit count. See {@link resolveSelContextMol}.
-     */
-    molId?: number;
-}
-
-
-export interface SetGenericPropArgs {
-    sceneId: number;
-    nodeId: number;
-    nodeType: PropTargetType;
-    /** Property name to write. */
-    propName: string;
-    /** `set` writes `value`; `reset` restores the C++ default. */
-    op: 'set' | 'reset';
-    /** C++ type tag of the property (informational; reserved for object types). */
-    valueType: string;
-    /** New value for `op: 'set'`. */
-    value?: string | number | boolean;
-    /**
-     * Write mode (default `commit`). `preview` writes without an undo txn for
-     * live drag feedback; only valid with `op: 'set'` on plain (non-selection)
-     * values.
-     */
-    mode?: PropWriteMode;
-    /**
-     * Pre-drag value, supplied with `mode: 'commit'` at the end of a realtime
-     * drag. The value is restored (without undo) before the committed write so
-     * the single recorded undo step is `originalValue -> value`, not
-     * `lastPreview -> value`.
-     */
-    originalValue?: string | number | boolean;
-    /**
-     * Pre-drag default flag, supplied with `mode: 'commit'` / `'abort'`. When
-     * true, the restore uses `resetProp` (default flag + value) instead of a
-     * bare `setProp`, so the committed undo step re-trips the C++
-     * default -> non-default transition (and undo reverts the default state).
-     */
-    originalWasDefault?: boolean;
-    /**
-     * Let a rendGroup's `visible` write carry its member renderers with it.
-     * Set by the surfaces that present the flag as "show / hide this group"
-     * (the structured inspector page); the raw property editor leaves it off
-     * so it writes exactly the property it names.
-     */
-    cascadeGroupVisibility?: boolean;
-}
-
-export interface SetGenericPropResult {
-    ok: boolean;
-    /** Fresh full property list after the write; empty on failure. */
-    entries: GenericPropEntry[];
-}
-
-export interface ResetGenericPropsArgs {
-    sceneId: number;
-    nodeId: number;
-    nodeType: PropTargetType;
-    /** Property names to reset. Caller filters to the modified keys. */
-    propNames: string[];
-}
-
-/** One property write in a multi-write batch. */
-export interface GenericPropWrite {
-    /** Property name to write. */
-    propName: string;
-    /** `set` writes `value`; `reset` restores the C++ default. */
-    op: 'set' | 'reset';
-    /** C++ type tag of the property (informational). */
-    valueType: string;
-    /** New value for `op: 'set'`. */
-    value?: string | number | boolean;
-}
-
-export interface SetGenericPropsArgs {
-    sceneId: number;
-    nodeId: number;
-    nodeType: PropTargetType;
-    /** Writes applied atomically inside one undo transaction. */
-    writes: GenericPropWrite[];
-}
-
-// --- helpers ---
-
-/** Read + parse a target's full property list. */
-function collectProps(target: BaseWrapper): GenericPropEntry[] {
-    const json = target.getPropsJSON();
-    let raw: unknown;
-    try {
-        raw = JSON.parse(json);
-    } catch {
-        return [];
-    }
-    return parseGenericProps(raw);
-}
-
-/**
- * Scene.name is a read-only property -- its `.qif` declares
- * `redirect(getName, XXX) (readonly)`, so there is no `setProp` setter -- but a
- * scene CAN be renamed via `Scene::setName()`, which also fires the
- * `propChanged("name")` event the scene tree and tab strip rely on. So a scene
- * name write coming from the inspector is routed through `setName()` here. The
- * entries keep their honest `readonly: true`; only the Properties tab presents
- * the Name field as editable (the Generic tab stays read-only).
- */
-function isSceneNameWrite(nodeType: PropTargetType, propName: string): boolean {
-    return nodeType === 'scene' && propName === 'name';
-}
-
-/** Derive the header type label for a node. */
-function typeLabelOf(target: BaseWrapper, nodeType: PropTargetType): string {
-    const rec = target as unknown as Record<string, unknown>;
-    if (nodeType === 'scene') return 'Scene';
-    if (nodeType === 'view') return 'View';
-    if (nodeType === 'renderer' || nodeType === 'rendGroup') {
-        return (safeRead(() => rec.type_name) as string | undefined) ?? 'Renderer';
-    }
-    // object
-    return (safeRead(() => rec.className) as string | undefined) ?? 'Object';
-}
-
-/**
- * Property names that hold the NAME of a molecule a non-molecular renderer
- * evaluates its selection against, in the order they are consulted: the
- * surface renderer's reference molecule, then a map renderer's display-limit
- * boundary molecule.
- */
-const MOL_NAME_PROPS = ['target', 'bndry_molname'];
-
-/** True for MolCoord and the subclasses the object lists treat as molecules. */
-function isMoleculeClass(className: string): boolean {
-    return (
-        className === 'MolCoord' || className === 'Trajectory' || className.endsWith('Mol')
-    );
-}
-
-/** `obj`'s uid when it is a molecule, else undefined. */
-function molUidOf(obj: unknown): number | undefined {
-    if (!obj) return undefined;
-    const rec = obj as { getClassName?: () => string; uid?: number };
-    const className = safeRead(() => rec.getClassName?.() ?? '') ?? '';
-    if (!isMoleculeClass(className)) return undefined;
-    const uid = safeRead(() => rec.uid);
-    return typeof uid === 'number' ? uid : undefined;
-}
-
-/**
- * The molecule a node's selection properties are about.
- *
- * A molecular renderer is attached to its molecule, so its client object is
- * the answer. A surface or map renderer is attached to something else and
- * names its reference molecule in a string property instead, so fall back to
- * resolving that name in the scene. An Object node answers for itself.
- *
- * Returns undefined when the node has no molecule (a density map, a scene, a
- * renderer whose named target has since been deleted); the selection picker
- * then simply has no atom count to show.
- */
-function resolveSelContextMol(
-    scene: Scene | null,
-    target: BaseWrapper,
-    nodeType: PropTargetType,
-): number | undefined {
-    if (nodeType === 'object') return molUidOf(target);
-    if (nodeType !== 'renderer' && nodeType !== 'rendGroup') return undefined;
-
-    const client = safeRead(() => (target as unknown as Renderer).getClientObj());
-    const clientMol = molUidOf(client);
-    if (clientMol !== undefined) return clientMol;
-
-    if (!scene) return undefined;
-    const rec = target as unknown as Record<string, unknown>;
-    for (const propName of MOL_NAME_PROPS) {
-        const name = safeRead(() => rec[propName]);
-        if (typeof name !== 'string' || name === '') continue;
-        const uid = molUidOf(safeRead(() => scene.getObjectByName(name)));
-        if (uid !== undefined) return uid;
-    }
-    return undefined;
-}
-
-// --- getGenericProps ---
-
-function getGenericProps(
-    ctx: WorkerContext,
-    args: GetGenericPropsArgs,
-): GetGenericPropsResult {
-    const empty: GetGenericPropsResult = {
-        ok: false,
-        entries: [],
-        displayName: '',
-        typeLabel: '',
-    };
-    const { scene, target } = resolvePropTarget(ctx, args);
-    if (!target) return empty;
-
-    const entries = safeRead(() => collectProps(target)) ?? [];
-    // A View has no `name` property - label it generically.
-    const displayName =
-        args.nodeType === 'view'
-            ? 'View'
-            : (safeRead(() => (target as unknown as { name: string }).name) as
-                  | string
-                  | undefined) ?? '';
-
-    return {
-        ok: true,
-        entries,
-        displayName,
-        typeLabel: typeLabelOf(target, args.nodeType),
-        molId: resolveSelContextMol(scene, target, args.nodeType),
-    };
-}
-
-// --- setGenericProp ---
-
-function setGenericProp(
+    ResetGenericPropsArgs,
+    SetGenericPropArgs,
+    SetGenericPropResult,
+    SetGenericPropsArgs,
+} from './types';
+export function setGenericProp(
     ctx: WorkerContext,
     args: SetGenericPropArgs,
 ): SetGenericPropResult {
@@ -424,7 +183,7 @@ function setGenericProp(
  * op:'reset' from the renderer would record one undo step per property; this
  * collapses them into one step (one Cmd+Z restores the whole reset).
  */
-function resetGenericProps(
+export function resetGenericProps(
     ctx: WorkerContext,
     args: ResetGenericPropsArgs,
 ): SetGenericPropResult {
@@ -472,7 +231,7 @@ function resetGenericProps(
  * No drag/preview modes: every write is committed. Selection-typed properties
  * follow the same compiled-SelCommand branch as `setGenericProp`.
  */
-function setGenericProps(
+export function setGenericProps(
     ctx: WorkerContext,
     args: SetGenericPropsArgs,
 ): SetGenericPropResult {
@@ -509,10 +268,3 @@ function setGenericProps(
 
     return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
 }
-
-export const services = {
-    getGenericProps,
-    setGenericProp,
-    setGenericProps,
-    resetGenericProps,
-};

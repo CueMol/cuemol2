@@ -1,16 +1,15 @@
-// Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-//
-// Resolves a scene-tree node identity into the C++ wrapper whose properties
-// the generic property inspector edits. Uses the same per-type lookup
-// (object / renderer / style / scene) as the scene-tree node services, but
-// returns the wrapper itself so the caller can invoke
-// `getPropsJSON` / `setProp` / `resetProp` on it.
-
+/**
+ * @file worker/server/services/props/target.ts
+ * @description Which C++ wrapper a scene-tree node identity refers to.
+ *
+ * Uses the same per-type lookup (object / renderer / style / scene) as the
+ * scene-tree node services, but returns the wrapper itself so the caller can
+ * invoke `getPropsJSON` / `setProp` / `resetProp` on it.
+ */
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { PropTargetType } from '@renderer/worker/shared/genericProps';
-
 // The target kind is a wire DTO shared with the renderer; see
 // worker/shared/genericProps.ts.
 export type { PropTargetType };
