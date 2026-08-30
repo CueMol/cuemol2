@@ -21,13 +21,38 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { IPC } from "@shared/ipcChannels";
-import type { RenderFramePreviewWire, RenderTargetViewWire, RenderWindowCommand, RenderWindowModeRequest, RenderWindowStateUpdate, RenderViewCamera, HatchStyleSpecReply, ViewSizePx } from "@shared/types/renderWindow";
+import type { RenderFramePreviewWire, RenderTargetViewWire, RenderWindowCommand, RenderWindowModeRequest, RenderWindowStateUpdate, RenderViewCamera, HatchStyleSpecReply, ViewSizePx, RelayKind, RelayReq, RelayRes } from "@shared/types/renderWindow";
 import type { RenderJob } from "./useRenderJob";
 import type {
   RenderResult,
   RenderSettingsSnapshot,
   RenderSource,
 } from "@renderer/data/renderResult";
+
+/**
+ * Ask the main window one of the relay questions (see RelayKinds).
+ *
+ * The single channel carries every kind, so the response type widens to the
+ * union on the wire; the kind we asked for narrows it back. `fallback` covers
+ * both ways the round trip can fail on this side -- no Electron bridge at all
+ * (no argument) and a rejected invoke (the error). A main window that does
+ * not answer is handled on the main side, which resolves with the kind's own
+ * timeout value.
+ */
+async function relayGet<K extends RelayKind>(
+  kind: K,
+  req: RelayReq<K>,
+  fallback: (e?: unknown) => RelayRes<K>,
+): Promise<RelayRes<K>> {
+  const api = window.electronAPI;
+  if (!api) return fallback();
+  try {
+    return (await api.invoke(IPC.RENDER_RELAY_GET, { kind, req } as never)) as RelayRes<K>;
+  } catch (e: unknown) {
+    return fallback(e);
+  }
+}
+
 
 export interface RenderWindowClientState {
   /** Mirrored render job (progress/log), or null when idle. */
@@ -312,40 +337,25 @@ export function useRenderWindowClient(): {
   }, [shownId]);
 
   const getViewCamera = useCallback(
-    async (viewId: number): Promise<RenderViewCamera | null> => {
-      const api = window.electronAPI;
-      if (!api) return null;
-      try {
-        return await api.invoke(IPC.RENDER_VIEW_CAMERA_GET, { viewId });
-      } catch {
-        return null;
-      }
-    },
+    (viewId: number): Promise<RenderViewCamera | null> =>
+      relayGet("viewCamera", { viewId }, () => null),
     [],
   );
 
   const getHatchStyleSpec = useCallback(
-    async (style: string): Promise<HatchStyleSpecReply> => {
-      const api = window.electronAPI;
-      if (!api) return { ok: false, error: "no electron api" };
-      try {
-        return await api.invoke(IPC.RENDER_HATCH_STYLE_GET, { style });
-      } catch (e: unknown) {
-        return { ok: false, error: e instanceof Error ? e.message : String(e) };
-      }
-    },
+    (style: string): Promise<HatchStyleSpecReply> =>
+      relayGet("hatchStyle", { style }, (e) => ({
+        ok: false,
+        error: e ? (e instanceof Error ? e.message : String(e)) : "no electron api",
+      })),
     [],
   );
 
-  const getViewSize = useCallback(async (): Promise<ViewSizePx | null> => {
-    const api = window.electronAPI;
-    if (!api) return null;
-    try {
-      return await api.invoke(IPC.RENDER_VIEW_SIZE_GET);
-    } catch {
-      return null;
-    }
-  }, []);
+  const getViewSize = useCallback(
+    (): Promise<ViewSizePx | null> =>
+      relayGet("viewSize", undefined, () => null),
+    [],
+  );
 
   return {
     state,

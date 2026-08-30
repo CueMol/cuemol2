@@ -7,7 +7,7 @@
  * RenderResult, executes commands forwarded from the render window
  * (RENDER_WINDOW_EXEC), and pushes job / target-view state back
  * (RENDER_WINDOW_STATE). It also answers the "Current view" canvas-size
- * round trip (RENDER_VIEW_SIZE_REQUEST/REPLY).
+ * round trip (RENDER_RELAY_REQUEST/REPLY).
  *
  * The render window picks its render target from the pushed `views` list
  * (auto-following the main window's active view) and sends it as the start
@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { IPC } from "@shared/ipcChannels";
 import { RENDER_HISTORY_LIMIT } from "@shared/renderHistory";
-import type { RenderJobWire, RenderTargetViewWire, RenderViewCamera, HatchStyleSpecReply, RenderWindowCommand, RenderWindowStateUpdate, ViewSizePx } from "@shared/types/renderWindow";
+import type { RenderJobWire, RenderTargetViewWire, RenderWindowCommand, RenderWindowStateUpdate } from "@shared/types/renderWindow";
 import type { AsyncCueMol } from "@renderer/worker/client/AsyncCueMol";
 import type { RenderBinaries } from "@renderer/worker/shared/renderTypes";
 import type {
@@ -30,6 +30,7 @@ import type {
   RenderSource,
 } from "@renderer/data/renderResult";
 import { useRenderJob, type RenderJob } from "./useRenderJob";
+import { useWindowRelayResponder } from "./useWindowRelayResponder";
 import type { TabData } from "@renderer/types";
 import { MOLVIEW_CANVAS_SELECTOR } from '@renderer/features/molview/molViewCanvas';
 
@@ -221,55 +222,50 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
     const api = window.electronAPI;
     if (!api) return;
     const offExec = api.onPush(IPC.RENDER_WINDOW_EXEC, execCommand);
-    const offSize = api.onPush(IPC.RENDER_VIEW_SIZE_REQUEST, ({ reqId }) => {
-      // Resolve the molview canvas pixel size ("Current view" preset).
-      let size: ViewSizePx | null = null;
+    return offExec;
+  }, [execCommand]);
+
+  // The three questions the render window sends back over the relay. Each
+  // answers with its own "cannot answer" value rather than staying silent, so
+  // the render window learns the outcome without waiting out the timeout.
+  useWindowRelayResponder({
+    // Molview canvas pixel size ("Current view" preset).
+    viewSize: () => {
       const canvas = document.querySelector(MOLVIEW_CANVAS_SELECTOR);
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        const width = Math.round(rect.width * dpr);
-        const height = Math.round(rect.height * dpr);
-        if (width > 0 && height > 0) size = { width, height };
-      }
-      api.invoke(IPC.RENDER_VIEW_SIZE_REPLY, { reqId, size }).catch(() => {});
-    });
+      if (!canvas) return null;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.round(rect.width * dpr);
+      const height = Math.round(rect.height * dpr);
+      return width > 0 && height > 0 ? { width, height } : null;
+    },
     // Camera settings of a render target view: the render window defaults its
     // Camera group to whatever the target view currently shows, and only this
     // window can read the view (the worker lives here).
-    const offCamera = api.onPush(IPC.RENDER_VIEW_CAMERA_REQUEST, ({ reqId, viewId }) => {
-      const reply = (camera: RenderViewCamera | null) =>
-        api.invoke(IPC.RENDER_VIEW_CAMERA_REPLY, { reqId, camera }).catch(() => {});
-      if (!cm) {
-        reply(null);
-        return;
+    viewCamera: async ({ viewId }) => {
+      if (!cm) return null;
+      try {
+        const res = await cm.invokeService("getViewProjection", { viewId });
+        return res?.ok ? { perspective: res.perspective } : null;
+      } catch {
+        return null;
       }
-      cm.invokeService("getViewProjection", { viewId })
-        .then((res) =>
-          reply(res?.ok ? { perspective: res.perspective } : null),
-        )
-        .catch(() => reply(null));
-    });
+    },
     // Hatch style template for the render window's NPR layer editor: resolve
     // the style name through the worker (the C++ umbreon exporter).
-    const offHatch = api.onPush(IPC.RENDER_HATCH_STYLE_REQUEST, ({ reqId, style }) => {
-      const reply = (result: HatchStyleSpecReply) =>
-        api.invoke(IPC.RENDER_HATCH_STYLE_REPLY, { reqId, result }).catch(() => {});
-      if (!cm) {
-        reply({ ok: false, error: "no worker" });
-        return;
-      }
-      cm.invokeService("getHatchStyleSpec", { style })
-        .then((res) => reply(res ?? { ok: false, error: "no reply" }))
-        .catch((e: unknown) =>
-          reply({ ok: false, error: e instanceof Error ? e.message : String(e) }),
+    hatchStyle: async ({ style }) => {
+      if (!cm) return { ok: false, error: "no worker" };
+      try {
+        return (
+          (await cm.invokeService("getHatchStyleSpec", { style })) ?? {
+            ok: false,
+            error: "no reply",
+          }
         );
-    });
-    return () => {
-      offExec();
-      offSize();
-      offCamera();
-      offHatch();
-    };
-  }, [execCommand, cm]);
+      } catch (e: unknown) {
+        return { ok: false, error: e instanceof Error ? e.message : String(e) };
+      }
+    },
+  });
 }
+

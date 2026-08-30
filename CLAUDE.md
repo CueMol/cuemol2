@@ -116,7 +116,7 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - 詳細 (トークン一覧・カタログ component 表・typography role・do/don't・移植チェックリスト) は ui-style-guide.md を見る。
 
 **macOS ネイティブメニュー**
-- macOS アプリメニューは `src/main/menu.ts` の `macOnlyGroups` にハードコードされており、`APP_MENU` の `darwinOnly` グループは無視される。macOS 側の変更は `menu.ts` を直接編集する
+- macOS アプリメニューは `shared/menuTemplate.ts` の `macAppMenuGroup(appName)`。`APP_MENU` と同じ形の data で、native menu builder が macOS のときだけ先頭に足す (`APP_MENU` の group-level `darwinOnly` は使われていない)
 - カスタム動作のメニュー項目には `role` ではなく `ipcChannel: 'menu:xxx'` を使う
 
 **実装時の確認原則**

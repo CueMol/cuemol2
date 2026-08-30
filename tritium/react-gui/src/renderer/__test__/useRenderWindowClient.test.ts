@@ -380,19 +380,22 @@ describe('useRenderWindowClient.getHatchStyleSpec', () => {
 
     it('invokes RENDER_HATCH_STYLE_GET with the style and returns the reply', async () => {
         const { api, h } = mountWithInvoke((channel) =>
-            channel === IPC.RENDER_HATCH_STYLE_GET
+            channel === IPC.RENDER_RELAY_GET
                 ? Promise.resolve({ ok: true, spec: 'layer: kind=dot\n' })
                 : Promise.resolve(undefined),
         );
         const reply = await h.result.getHatchStyleSpec('manga');
-        expect(api.invoke).toHaveBeenCalledWith(IPC.RENDER_HATCH_STYLE_GET, { style: 'manga' });
+        expect(api.invoke).toHaveBeenCalledWith(IPC.RENDER_RELAY_GET, {
+            kind: 'hatchStyle',
+            req: { style: 'manga' },
+        });
         expect(reply).toEqual({ ok: true, spec: 'layer: kind=dot\n' });
         h.unmount();
     });
 
     it('turns a rejected invoke into ok: false', async () => {
         const { h } = mountWithInvoke((channel) =>
-            channel === IPC.RENDER_HATCH_STYLE_GET
+            channel === IPC.RENDER_RELAY_GET
                 ? Promise.reject(new Error('relay down'))
                 : Promise.resolve(undefined),
         );

@@ -229,3 +229,42 @@ export interface ViewSizePx {
   width: number
   height: number
 }
+
+/**
+ * The questions the Rendering window can only answer by asking the main
+ * window. It has no CueMol worker of its own, so anything that needs the
+ * live scene -- the molview canvas size, a target view's camera, a hatch
+ * style resolved by the C++ exporter -- takes a correlation-id round trip
+ * out through the main process and back.
+ *
+ * One entry per question. The three relay channels are generic over this
+ * map, so a fourth question is a row here plus a responder, not another
+ * three channels and another copy of the correlation-id machinery.
+ */
+export interface RelayKinds {
+  /** Pixel size of the main window's molview canvas. */
+  viewSize: { req: void; res: ViewSizePx | null }
+  /** What the given render-target view currently shows. */
+  viewCamera: { req: { viewId: number }; res: RenderViewCamera | null }
+  /** Spec text of a named hatch style, for the NPR layer editor. */
+  hatchStyle: { req: { style: string }; res: HatchStyleSpecReply }
+}
+
+export type RelayKind = keyof RelayKinds
+export type RelayReq<K extends RelayKind> = RelayKinds[K]['req']
+export type RelayRes<K extends RelayKind> = RelayKinds[K]['res']
+
+/** RENDER_RELAY_GET payload: render window -> main. */
+export type RelayGetPayload = {
+  [K in RelayKind]: { kind: K; req: RelayReq<K> }
+}[RelayKind]
+
+/** RENDER_RELAY_REQUEST payload: main -> main window. */
+export type RelayRequestPayload = {
+  [K in RelayKind]: { kind: K; reqId: number; req: RelayReq<K> }
+}[RelayKind]
+
+/** RENDER_RELAY_REPLY payload: main window -> main. */
+export type RelayReplyPayload = {
+  [K in RelayKind]: { kind: K; reqId: number; res: RelayRes<K> }
+}[RelayKind]

@@ -8,22 +8,18 @@
  *  1. The renderer MenuBar (used only on Windows/Linux) never surfaces a
  *     darwinOnly group / item -- it filters them out.
  *  2. APP_MENU carries NO group-level darwinOnly group; the canonical macOS
- *     App menu is the live `macOnlyGroups` constructed in src/main/menu.ts and
- *     still yields About / Preferences (Cmd+,) / Quit items.
+ *     App menu is `macAppMenuGroup(appName)`, and it still yields About /
+ *     Preferences (Cmd+,) / Quit items.
  *
- * The main-process Menu construction in menu.ts is not cleanly unit-testable
- * from vitest (it depends on the electron `app` object and the buildGroup
- * helper), so contract (2) for the live group is pinned structurally by
- * parsing the menu.ts source for the macOnlyGroups item ids / accelerators.
+ * Contract (2) used to be pinned by reading main/menu.ts as text and grepping
+ * for item ids, because the group was a literal buried inside the Menu
+ * builder. It is data now, so the test asserts on the group itself.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { APP_MENU } from '@shared/menuTemplate'
+import { APP_MENU, macAppMenuGroup } from '@shared/menuTemplate'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
@@ -100,17 +96,19 @@ describe('macOS App menu', () => {
     unmount()
   })
 
-  it('live macOnlyGroups in menu.ts yields About / Preferences (Cmd+,) / Quit', () => {
-    const here = dirname(fileURLToPath(import.meta.url))
-    const menuSrc = readFileSync(resolve(here, '../../main/menu.ts'), 'utf8')
-    const macStart = menuSrc.indexOf('macOnlyGroups')
-    expect(macStart).toBeGreaterThan(0)
-    // Restrict to the macOnlyGroups literal block to avoid matching APP_MENU.
-    const macBlock = menuSrc.slice(macStart, macStart + 700)
-    expect(macBlock).toContain("id: 'about-mac'")
-    expect(macBlock).toContain('About ${app.name}')
-    expect(macBlock).toContain("id: 'mac-prefs'")
-    expect(macBlock).toContain("accelerator: 'Cmd+,'")
-    expect(macBlock).toContain("role: 'quit'")
+  it('the macOS App group carries About / Preferences (Cmd+,) / Quit', () => {
+    const group = macAppMenuGroup('CueMol3')
+    expect(group.label).toBe('CueMol3')
+
+    const ids = group.submenu.map((i) => i.id).filter(Boolean)
+    expect(ids).toContain('about-mac')
+    expect(ids).toContain('mac-prefs')
+
+    const about = group.submenu.find((i) => i.id === 'about-mac')
+    expect(about?.label).toBe('About CueMol3')
+    const prefs = group.submenu.find((i) => i.id === 'mac-prefs')
+    expect(prefs?.accelerator).toBe('Cmd+,')
+    // Quit stays a role: the platform owns its label, placement and shortcut.
+    expect(group.submenu.some((i) => i.role === 'quit')).toBe(true)
   })
 })
