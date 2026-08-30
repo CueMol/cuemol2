@@ -669,19 +669,20 @@ void MmcifMolReader::applyLink()
     pAtom1 = m_pMol->getAtom(elem.ch1, elem.resi1, elem.aname1, elem.alt1);
     pAtom2 = m_pMol->getAtom(elem.ch2, elem.resi2, elem.aname2, elem.alt2);
 
+    // an unresolved row (missing atom, dropped altloc) must not stop the
+    // remaining links from being applied
     if (pAtom1.isnull()) {
       warning(LString::format("Apply link failed: atom1 %s.%s.%s is null (%s)",
                               elem.ch1.c_str(), elem.resi1.toString().c_str(), elem.aname1.c_str(),
                               elem.orig_line.c_str()));
-
-      return;
+      continue;
     }
 
     if (pAtom2.isnull()) {
       warning(LString::format("Apply link failed: atom2 %s.%s.%s is null (%s)",
                               elem.ch2.c_str(), elem.resi2.toString().c_str(), elem.aname2.c_str(),
                               elem.orig_line.c_str()));
-      return;
+      continue;
     }
 
     m_pMol->makeBond(pAtom1->getID(), pAtom2->getID(), true);

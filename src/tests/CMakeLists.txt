@@ -262,6 +262,8 @@ add_executable(test_importers
   modules/importers/test_load_object_command_guess.cpp
   modules/importers/test_trajio.cpp
   modules/importers/test_pickle_instream.cpp
+  modules/importers/test_sdfmolwriter.cpp
+  modules/importers/test_mmcif_struct_conn.cpp
 )
 target_include_directories(test_importers PRIVATE
   ${CMAKE_SOURCE_DIR}/src
