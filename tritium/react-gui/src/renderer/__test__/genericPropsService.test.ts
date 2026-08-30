@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
-vi.mock('@renderer/worker/server/services/helpers/resolvePropTarget', () => ({
+vi.mock('@renderer/worker/server/services/props/target', () => ({
   resolvePropTarget: vi.fn(),
 }))
 // Run the mutation body synchronously (no real UndoManager) while exposing a
@@ -28,8 +28,8 @@ vi.mock('@renderer/worker/server/services/helpers/parseGenericProps', () => ({
   parseGenericProps: () => [],
 }))
 
-import { services } from '@renderer/worker/server/services/genericProps.service'
-import { resolvePropTarget } from '@renderer/worker/server/services/helpers/resolvePropTarget'
+import { services } from '@renderer/worker/server/services/props/props.service'
+import { resolvePropTarget } from '@renderer/worker/server/services/props/target'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const setProp = vi.fn()
