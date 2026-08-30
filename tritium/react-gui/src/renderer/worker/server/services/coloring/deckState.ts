@@ -24,6 +24,7 @@ import {
     getColoringClassName,
     hasColoringProp,
     readMolFancTargetOrNull,
+    needsMolFancTarget,
 } from './colorTargets';
 import type {
     GetRendererColoringStateArgs,
@@ -254,9 +255,11 @@ export function getRendererColoringState(
         hasColoring,
     };
 
-    // MOLFANC reference-molecule name; the colormode gate keeps unrelated
-    // `target` properties (e.g. DisoRenderer's target renderer name) out.
-    if (colormode !== '') {
+    // MOLFANC reference-molecule name. Reported only for the renderers whose
+    // colouring actually reads it -- a surface or map with no atoms of its
+    // own. The direct-surface renderers colour from their own client molecule,
+    // so a selector there would offer a choice that changes nothing.
+    if (colormode !== '' && needsMolFancTarget(rend)) {
         const molFancTarget = readMolFancTargetOrNull(rend);
         if (molFancTarget !== null) {
             result.molFancTarget = molFancTarget;

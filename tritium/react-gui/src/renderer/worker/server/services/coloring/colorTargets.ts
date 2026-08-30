@@ -119,6 +119,59 @@ export function readTypeName(rend: Renderer): string {
     }
 }
 
+/**
+ * Renderers whose molecule-mode colouring needs a SECOND object to read atoms
+ * from -- the "Coloring mol" / "Selection mol" target.
+ *
+ * A molsurf renders a MolSurfObj and an isosurf a DensityMap: neither carries
+ * atoms, so colouring by molecule has nothing to read until it is pointed at
+ * the MolCoord the surface was generated from. That is the whole job of the
+ * `target` property.
+ *
+ * The direct-surface renderers are not in that position. They are
+ * MolRenderers attached to a MolCoord and colour from `getClientMol()`, so
+ * their molecule is never in doubt; their `target` is only an event-listening
+ * hook the colouring never reads. Offering a selector for it asks the user to
+ * choose something that cannot matter, and writing it stores a name with no
+ * effect.
+ */
+export function needsMolFancTarget(rend: Renderer): boolean {
+    return isMolSurf(rend) || isMapSurf(rend);
+}
+
+/**
+ * The values this renderer's `colormode` accepts, read off the renderer.
+ *
+ * `colormode` decides which colouring path a surface or map renderer takes,
+ * and the set of paths differs per type -- molsurf offers solid / potential /
+ * molecule / multigrad, the map renderers drop potential, and the two
+ * direct-surface renderers offer only potential / molecule. Restating that
+ * list here is what produced the bug this replaces: a hard-coded
+ * "molsurf or isosurf" gate stopped matching reality when dsurf2 gained a
+ * potential mode, so the renderer could be put into a mode nothing took it
+ * out of, and every later coloring choice was written but ignored.
+ *
+ * Empty for a renderer with no `colormode` at all (most of them).
+ */
+export function readColormodeValues(rend: Renderer): readonly string[] {
+    try {
+        const json = (rend as unknown as { getPropsJSON?: () => string })
+            .getPropsJSON?.();
+        if (!json) return [];
+        const raw: unknown = JSON.parse(json);
+        if (!Array.isArray(raw)) return [];
+        const entry = raw.find(
+            (p): p is { enumdef?: unknown } =>
+                typeof p === 'object' && p !== null &&
+                (p as { name?: unknown }).name === 'colormode',
+        );
+        if (!entry || !Array.isArray(entry.enumdef)) return [];
+        return entry.enumdef.map(String);
+    } catch {
+        return [];
+    }
+}
+
 /** Surface-class renderers eligible for the Elepot deck. */
 export function isElepotCapable(rend: Renderer): boolean {
     const t = readTypeName(rend);

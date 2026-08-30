@@ -20,8 +20,8 @@ import { makeColor } from '../helpers/makeColor';
 import { createDefPaintColoring } from '../helpers/defPaintColoring';
 import {
     resolveColoringTarget,
-    isMolSurf,
-    isMapSurf,
+    readColormodeValues,
+    needsMolFancTarget,
     isElepotCapable,
     isMultiGradCapable,
     getMultiGradOrNull,
@@ -49,29 +49,22 @@ import type {
 } from './types';
 
 /**
- * Renderers whose rendered color is governed by `colormode` on top of the
- * `coloring` scheme: molsurf's MOLFANC and the isosurf map renderer's
- * nearest-atom coloring. Both carry a "solid" entry in their colormode
- * enumdef (rendering the plain `defaultcolor`), so the Coloring panel must
- * move `colormode` alongside `coloring` -- otherwise switching to Solid
- * leaves the MOLFANC / potential / multigrad path overriding the solid
- * color. dsurface is excluded: its colormode has no "solid" entry.
- */
-function isColormodeGoverned(rend: Renderer): boolean {
-    return isMolSurf(rend) || isMapSurf(rend);
-}
-
-/**
- * Force `colormode = "molecule"` on renderers whose coloring only applies
- * in molecule mode (molsurf's MOLFANC, and the isosurf map renderer's
- * nearest-atom coloring). On these renderers the MOLFANC path also needs a
- * reference molecule, so when `target` is still empty the scene's first
- * MolCoord is picked as a sensible default (mirrors the elepot default in
- * `paint-type-elepot`). No-op for every other renderer.
+ * Put a colormode-governed renderer into the mode where the coloring the user
+ * just picked is actually used.
+ *
+ * On these renderers `colormode` selects the colouring path, so assigning a
+ * `coloring` while the renderer sits in potential or multigrad mode writes a
+ * value nothing reads: the surface keeps painting from the scalar map and the
+ * panel looks broken. That was reachable in one click -- pick Electrostatic
+ * potential on a scene with no ElePotMap and the renderer entered potential
+ * mode with an empty target, after which no coloring choice could get it out.
+ *
+ * No-op on the renderers with no molecule mode (nearly all of them).
  */
 function forceMoleculeColormode(scene: Scene, rend: Renderer): void {
-    if (!isColormodeGoverned(rend)) return;
+    if (!readColormodeValues(rend).includes('molecule')) return;
     (rend as unknown as { colormode: string }).colormode = 'molecule';
+    if (!needsMolFancTarget(rend)) return;
     const target = readMolFancTargetOrNull(rend);
     if (target === '') {
         const name = findFirstMolCoordName(scene);
@@ -259,8 +252,19 @@ export function setRendererColoring(
             // reachable from the panel.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
-                if (isColormodeGoverned(rend)) {
-                    (rend as unknown as { colormode: string }).colormode = 'solid';
+                // "solid" where the renderer has it (molsurf, the map
+                // renderers); the direct-surface pair has only potential and
+                // molecule, and leaving them in potential would make this item
+                // do nothing at all -- so take the ordinary molecule path,
+                // which is also their default mode.
+                const modes = readColormodeValues(rend);
+                const next = modes.includes('solid')
+                    ? 'solid'
+                    : modes.includes('molecule')
+                      ? 'molecule'
+                      : null;
+                if (next) {
+                    (rend as unknown as { colormode: string }).colormode = next;
                 }
             });
             return { ok: true };
@@ -270,7 +274,11 @@ export function setRendererColoring(
             // ("solid") so the renderer returns to its true default state.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
-                if (isColormodeGoverned(rend)) {
+                // Back to the renderer's own default mode -- "solid" for
+                // molsurf and the map renderers, "molecule" for the
+                // direct-surface pair. C++ decides which; this only has to
+                // know the renderer has a colormode to reset.
+                if (readColormodeValues(rend).length > 0) {
                     rend.resetProp('colormode');
                 }
             });
@@ -395,7 +403,8 @@ export function setColoringProp(
 /**
  * Write the MOLFANC reference-molecule name (`target` property) on a
  * renderer. Drives the Coloring panel's "Coloring mol" selector shown in
- * molecule colormode. Refuses on renderers without the `target` property.
+ * molecule colormode. Refuses on renderers whose colouring does not read a
+ * second molecule (see `needsMolFancTarget`).
  */
 export function setRendererColoringTarget(
     ctx: WorkerContext,
@@ -405,6 +414,10 @@ export function setRendererColoringTarget(
     if (!scene) return { ok: false };
     const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
     if (!rend) return { ok: false };
+    // Not just "has a `target` property": the direct-surface renderers have
+    // one that their colouring never reads, so writing it would store a name
+    // with no effect.
+    if (!needsMolFancTarget(rend)) return { ok: false };
     if (readMolFancTargetOrNull(rend) === null) return { ok: false };
 
     withUndoTxn(scene, 'Change coloring target', () => {
