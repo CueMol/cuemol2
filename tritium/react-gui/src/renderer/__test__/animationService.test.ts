@@ -1,5 +1,5 @@
 /**
- * Degrade-detection tests for `animation.service` (worker, read-only).
+ * Degrade-detection tests for `anim.service` (worker, read-only).
  *
  * Pins the AnimMgr -> AnimElement[] wire contract the timeline panel depends on:
  *   - `resolveRelTime()` is called once (relative->absolute) before reading,
@@ -13,7 +13,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
-import { services } from "@renderer/worker/server/services/animation.service";
+import { services } from "@renderer/worker/server/services/anim/anim.service";
 
 function tv(ms: number) {
   return { millisec: ms };
@@ -147,7 +147,7 @@ function makeCtx(opts: {
   };
 }
 
-describe("animation.service animListTimeline", () => {
+describe("anim.service animListTimeline", () => {
   it("maps each AnimObj to a strip element (ms), resolving relative times first", () => {
     const objs = [
       makeObj({ uid: 11, name: "Cam0", className: "CamMotion", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
@@ -225,7 +225,7 @@ describe("animation.service animListTimeline", () => {
   });
 });
 
-describe("animation.service animGetMgrState", () => {
+describe("anim.service animGetMgrState", () => {
   it("reads the manager snapshot (string playState passes through)", () => {
     const { ctx } = makeCtx({ playState: "pause", lengthMs: 4000, elapsedMs: 1200, loop: true, startcam: "cam1" });
     const res = services.animGetMgrState(ctx, { sceneId: 1 });
@@ -239,7 +239,7 @@ describe("animation.service animGetMgrState", () => {
   });
 });
 
-describe("animation.service transport", () => {
+describe("anim.service transport", () => {
   it("animPlay resolves the view and calls mgr.start(view), returning the snapshot", () => {
     const { ctx, start, view } = makeCtx({ playState: "play", lengthMs: 5000 });
     const res = services.animPlay(ctx, { sceneId: 1, viewId: 2 });
@@ -308,7 +308,7 @@ describe("animation.service transport", () => {
   });
 });
 
-describe("animation.service editing", () => {
+describe("anim.service editing", () => {
   it("animSetElementTime sets relative start<=end and resolves, in an undo txn", () => {
     const objs = [makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 })];
     const { ctx, resolveRelTime, startUndoTxn, commitUndoTxn, createdTimeValues } = makeCtx({ objs });

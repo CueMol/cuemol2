@@ -34,7 +34,7 @@ import type {
     ServiceFn,
     ServiceKey,
 } from '@renderer/worker/shared/calls';
-import { forgetAnimProgress, pauseInactivePlayback, pumpAnimProgress } from '@renderer/worker/server/services/animation.service';
+import { forgetAnimProgress, pauseInactivePlayback, pumpAnimProgress } from '@renderer/worker/server/services/anim/anim.service';
 import { isSceneBeingRendered } from '@renderer/worker/server/services/renderjob/renderJob.service';
 
 // import { createLogger } from '@cuemol/core/src/logger';

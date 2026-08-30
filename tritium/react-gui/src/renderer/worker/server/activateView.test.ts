@@ -12,7 +12,7 @@ vi.mock('@cuemol/core/src/cuemol', () => ({
     },
 }));
 const pause = vi.hoisted(() => vi.fn(() => [] as number[]));
-vi.mock('@renderer/worker/server/services/animation.service', () => ({
+vi.mock('@renderer/worker/server/services/anim/anim.service', () => ({
     pauseInactivePlayback: pause,
     pumpAnimProgress: vi.fn(),
     forgetAnimProgress: vi.fn(),

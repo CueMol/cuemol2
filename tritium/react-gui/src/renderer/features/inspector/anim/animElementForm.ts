@@ -9,7 +9,7 @@
  * one into the other, and none of them needs React.
  */
 
-import type { AnimElementDetail } from '@renderer/worker/server/services/animDetail.service';
+import type { AnimElementDetail } from '@renderer/worker/server/services/anim/anim.service';
 
 export const TYPE_LABEL: Record<string, string> = {
   SimpleSpin: "Simple spin",

@@ -1,5 +1,5 @@
 /**
- * Degrade-detection tests for `animDetail.service` (anim-element detail inspector).
+ * Degrade-detection tests for `anim.service` (anim-element detail inspector).
  *
  * Pins the load-bearing contracts:
  *   - elements resolve by STABLE uid (linear scan), not by index;
@@ -21,7 +21,7 @@ vi.mock("@renderer/worker/shared/sceneTreeTypes", () => ({
   parseSceneTreeJSON: () => mockTree,
 }));
 
-import { services } from "@renderer/worker/server/services/animDetail.service";
+import { services } from "@renderer/worker/server/services/anim/anim.service";
 
 function tv(ms: number) {
   return { millisec: ms };
@@ -104,7 +104,7 @@ function makeCtx(opts: {
   return { ctx, resolveRelTime, startUndoTxn, commitUndoTxn, createdTV, createdVec, createObj, objs };
 }
 
-describe("animDetail.service getAnimElementDetail", () => {
+describe("anim.service getAnimElementDetail", () => {
   it("resolves by uid (not index) and reads common + type props + siblings", () => {
     const objs = [
       makeObj({ uid: 10, name: "Cam0", className: "CamMotion", props: { endcam: "camA", ignorerotate: true } }),
@@ -125,7 +125,7 @@ describe("animDetail.service getAnimElementDetail", () => {
   });
 });
 
-describe("animDetail.service setAnimElementProp", () => {
+describe("anim.service setAnimElementProp", () => {
   it("timing writes relative start/end (min<=max) + resolveRelTime, in an undo txn", () => {
     const objs = [makeObj({ uid: 5, name: "A", className: "SimpleSpin" })];
     const { ctx, resolveRelTime, startUndoTxn, commitUndoTxn, createdTV } = makeCtx({ objs });
@@ -260,7 +260,7 @@ describe("animDetail.service setAnimElementProp", () => {
   });
 });
 
-describe("animDetail.service generic property tab", () => {
+describe("anim.service generic property tab", () => {
   it("getAnimElementGenericProps parses the AnimObj getPropsJSON into entries", () => {
     const propsJSON = JSON.stringify([
       { name: "name", type: "string", value: "Spin0", readonly: false, hasdefault: false },
@@ -321,7 +321,7 @@ describe("animDetail.service generic property tab", () => {
   });
 });
 
-describe("animDetail.service getAnimTargetOptions", () => {
+describe("anim.service getAnimTargetOptions", () => {
   it("flattens renderers (incl groups), filters MorphMol mols, lists cameras", () => {
     mockTree = {
       type: "scene",

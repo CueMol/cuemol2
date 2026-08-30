@@ -47,7 +47,7 @@ import type {
   AnimCameraOption,
   AnimMolOption,
   SetAnimElementPropArgs,
-} from "@renderer/worker/server/services/animDetail.service";
+} from "@renderer/worker/server/services/anim/anim.service";
 import { SEM_ANIM, SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "@renderer/event";
 import { useCueMolEventListener } from "@renderer/hooks/cuemol/useCueMolEventListener";
 

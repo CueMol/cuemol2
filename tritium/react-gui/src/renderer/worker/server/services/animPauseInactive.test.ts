@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { pauseInactivePlayback } from './animation.service'
+import { pauseInactivePlayback } from './anim/anim.service'
 
 vi.stubGlobal('self', { postMessage: vi.fn() })
 

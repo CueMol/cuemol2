@@ -15,7 +15,7 @@ import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext"
 import type { RenderStartArgs, RenderStartResult } from "@renderer/worker/shared/renderTypes";
 import { type RenderBackend } from "./backends";
 import { type InProcessRender } from "./backends/RenderBackend";
-import { getAnimMgrOrNull } from "@renderer/worker/server/services/helpers/animResolve";
+import { getAnimMgrOrNull } from "@renderer/worker/server/services/anim/resolve";
 import { movieFrameFileName, resolveMovieBaseName } from "@shared/movieFrames";
 import { resolveFfmpeg } from "./encodeSpec";
 import { cleanupDir, purgeMovieArtifacts } from "./fsUtil";

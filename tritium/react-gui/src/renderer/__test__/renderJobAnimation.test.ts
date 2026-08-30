@@ -34,7 +34,7 @@ vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
         },
     })),
 }))
-vi.mock('@renderer/worker/server/services/helpers/animResolve', () => ({
+vi.mock('@renderer/worker/server/services/anim/resolve', () => ({
     getAnimMgrOrNull: hoisted.getAnimMgrOrNull,
 }))
 
