@@ -185,7 +185,10 @@ void PDBFileReader::readContents(qlib::InStream &ins)
   LString buf;
 
   m_helix.clear();
+  m_helix310.clear();
+  m_helixpi.clear();
   m_sheet.clear();
+  m_linkdat.clear();
 
   for ( ;; ) {
     if (!readRecord(lin))
@@ -246,7 +249,7 @@ void PDBFileReader::readContents(qlib::InStream &ins)
     }
     else if (recnam.equals("MODEL")) {
       //buf = readStr(11, 14);
-      buf = m_recbuf.substr(6);
+      buf = (m_recbuf.length()>6) ? m_recbuf.substr(6) : LString();
       if (buf.toInt(&m_nCurrModel)) {
         // valid model record ...
 	// LOG_DPRINTLN("line: %s", readStr(1,70).c_str());

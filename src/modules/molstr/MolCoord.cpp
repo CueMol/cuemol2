@@ -375,6 +375,24 @@ bool MolCoord::removeAtom(int atomid)
   if (pRes.isnull())
     return false;
 
+  // MolResidue::removeAtom(name) without a conf ID also drops the
+  // alternate conformations ("name:X") from the residue map; take those
+  // atoms out of the pool as well, or they stay allocated and unreachable
+  if (cConfID=='\0') {
+    const LString prefix = aname + ":";
+    std::vector<int> altids;
+    for (MolResidue::AtomCursor ai = pRes->atomBegin(); ai != pRes->atomEnd(); ++ai) {
+      if (ai->second != atomid && ai->first.startsWith(prefix))
+        altids.push_back(ai->second);
+    }
+    for (int altid : altids) {
+      MolAtomPtr pAlt = getAtom(altid);
+      m_atomPool.remove(altid);
+      if (!pAlt.isnull())
+        pAlt->setID(-1);
+    }
+  }
+
   // remove atom
   if (!pRes->removeAtom(aname, cConfID))
     return false;

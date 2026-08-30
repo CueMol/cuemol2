@@ -116,6 +116,7 @@ bool CubicSpline::generate()
   for (i = 0; i < intNo; i++) {
     //h[i] = Vec3DiffAbs(invec[i], invec[i + 1]);
     h[i] = (invec[i]-invec[i+1]).length();
+    if (h[i] < F_EPS8) h[i] = F_EPS8;  // coincident pivots: keep 1/h finite
     ih[i] = 1.0 / h[i];
   }
 

@@ -103,7 +103,10 @@ void MolRenderer::objectChanged(qsys::ObjectEvent &ev)
 LString MolRenderer::interpHitAidImpl(MolAtomPtr pAtom)
 {
   LString rval;
-  
+
+  if (pAtom.isnull())
+    return rval;  // the picked atom no longer exists
+
   // Atom ID (for context menu)
   rval += LString::format("\"atom_id\": %d, ", pAtom->getID());
 

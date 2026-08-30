@@ -37,6 +37,8 @@ CPK2Renderer::CPK2Renderer()
 
 CPK2Renderer::~CPK2Renderer()
 {
+  delete m_pCoordTex;
+  m_pCoordTex = nullptr;
 }
 
 const char *CPK2Renderer::getTypeName() const

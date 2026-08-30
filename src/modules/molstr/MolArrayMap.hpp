@@ -7,6 +7,7 @@
 #define MOL_TO_ARRAY_HPP_INCLUDED_
 
 #include "molstr.hpp"
+#include "ResidIndex.hpp"
 #include <qlib/Array.hpp>
 
 #include "MolAtom.hpp"
@@ -17,7 +18,8 @@ namespace molstr {
   struct MOLSTR_API MolArrayMapElem
   {
     LString chain;
-    int resid;
+    // full residue index: "100" and "100A" are different residues
+    ResidIndex resid;
     LString atom;
     MolAtomPtr pA;
 

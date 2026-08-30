@@ -41,6 +41,7 @@ DirectSurfRenderer::DirectSurfRenderer()
 
   m_nMode = DS_MOLFANC;
   m_dRampVal = 1.4;
+  m_nTgtMolID = qlib::invalid_uid;  // the destructor unregisters by this ID
 }
 
 DirectSurfRenderer::~DirectSurfRenderer()

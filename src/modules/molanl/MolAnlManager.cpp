@@ -278,9 +278,11 @@ void *MolAnlManager::superposeSSM_impl(const MolCoordPtr &pmol_ref, const Select
 	const int nen = nst+row_size-1;
 	if (nen<ialn1.size())
 	  ien1 = ialn1[nen];
-	else
+	  else if (!ialn1.empty())
 	  ien1 = ialn1.back();
 	if (nen<ialn2.size())
+	  ien2 = ialn2[nen];
+	  else if (!ialn2.empty())
 	  ien2 = ialn2.back();
 	if (i>0)
 	  LOG_DPRINTLN("");

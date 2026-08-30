@@ -64,6 +64,11 @@ namespace {
 
 void HoleSurfBuilder::doit()
 {
+  if (m_pTgtMol.isnull()) {
+    MB_THROW(qlib::NullPointerException, "HoleSurfBuilder: target molecule is not set");
+    return;
+  }
+
   LString selstr;
   if (!m_pTgtSel.isnull())
     selstr = m_pTgtSel->toString();
@@ -192,7 +197,9 @@ void HoleSurfBuilder::performMCOpt(double start_temp, const Vector4D &start_pos,
       newpos += getRandDir(m_dirnorm).scale(rand_real()*dmax);
 
     int aid = m_pAmap->searchNearestAtom(newpos);
-    MolAtomPtr pAtom = pMol->getAtom(aid);
+    MolAtomPtr pAtom = (aid>=0) ? pMol->getAtom(aid) : MolAtomPtr();
+    if (pAtom.isnull())
+      continue;  // no atom near this trial position
     Vector4D rp = pAtom->getPos() - newpos;
     double vdw = pTM->getVdwRadius(pAtom, false);
     if (vdw<0)

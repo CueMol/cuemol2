@@ -52,6 +52,11 @@ void Prot2ndrySet::create(MolCoordPtr pMol)
     if (pfx.equals("s"))
       pRes1 = pRes;
     else if (pfx.equals("e")) {
+      if (pRes1.isnull()) {
+        LOG_DPRINTLN("Prot2ndry> secondary-structure end without start at %s (ignored)",
+                     pRes->toString().c_str());
+        continue;
+      }
       LString chn1 = pRes1->getChainName();
       ResidIndex resix1 = pRes1->getIndex();
 
@@ -73,6 +78,7 @@ void Prot2ndrySet::create(MolCoordPtr pMol)
       else {
         m_helix.append(chn1, resix1, resix2);
       }
+      pRes1 = MolResiduePtr();  // the segment is closed
     }
   } // for (HELIX)
 
@@ -95,6 +101,21 @@ void Prot2ndrySet::create(MolCoordPtr pMol)
       pRes1 = pRes;
     else if (pfx.equals("e")) {
 
+      if (pRes1.isnull()) {
+        LOG_DPRINTLN("Prot2ndry> secondary-structure end without start at %s (ignored)",
+                     pRes->toString().c_str());
+        continue;
+      }
+      if (pRes1.isnull()) {
+        LOG_DPRINTLN("Prot2ndry> secondary-structure end without start at %s (ignored)",
+                     pRes->toString().c_str());
+        continue;
+      }
+      if (pRes1.isnull()) {
+        LOG_DPRINTLN("Prot2ndry> secondary-structure end without start at %s (ignored)",
+                     pRes->toString().c_str());
+        continue;
+      }
       LString chn1 = pRes1->getChainName().substr(0,1);
       ResidIndex resix1 = pRes1->getIndex();
 
@@ -107,6 +128,7 @@ void Prot2ndrySet::create(MolCoordPtr pMol)
       }
 
       m_sheet.append(chn1, resix1, resix2);
+      pRes1 = MolResiduePtr();  // the segment is closed
     }
   } // for
 
