@@ -5,6 +5,7 @@
 // $Id: ObjWriter.cpp,v 1.4 2011/01/03 16:47:05 rishitani Exp $
 
 #include <common.h>
+#include <memory>
 
 #include "ObjWriter.hpp"
 #include <qlib/ClassRegistry.hpp>
@@ -51,27 +52,27 @@ ObjectPtr ObjWriter::detach()
 void ObjWriter::write2(qlib::OutStream &outs)
 {
   qlib::OutStream *pOut = &outs;
-  qlib::OutStream *pB64O = NULL;
-  qlib::OutStream *pZOut = NULL;
+  std::unique_ptr<qlib::OutStream> pB64O;  // freed on the exception paths of write() too
+  std::unique_ptr<qlib::OutStream> pZOut;
 
   qlib::OutStream *pTOut = pOut;
   
   if (getBase64Flag()) {
-    pB64O = new qlib::Base64OutStream(*pOut);
-    pTOut = pB64O;
+    pB64O.reset(new qlib::Base64OutStream(*pOut));
+    pTOut = pB64O.get();
   }
   
   int ncomp = getCompressMode();
   if (ncomp==COMP_NONE) {
   }
   else if (ncomp==COMP_GZIP) {
-    pZOut = new qlib::GzipOutStream(*pTOut);
-    pTOut = pZOut;
+    pZOut.reset(new qlib::GzipOutStream(*pTOut));
+    pTOut = pZOut.get();
   }
 #ifdef HAVE_LZMA_H
   else if (ncomp==COMP_XZIP) {
-    pZOut = new qlib::XzOutStream(*pTOut);
-    pTOut = pZOut;
+    pZOut.reset(new qlib::XzOutStream(*pTOut));
+    pTOut = pZOut.get();
   }
 #endif
   else {
@@ -86,12 +87,10 @@ void ObjWriter::write2(qlib::OutStream &outs)
   
   if (pZOut) {
     pZOut->close();
-    delete pZOut;
   }
 
   if (pB64O) {
     pB64O->close();
-    delete pB64O;
   }
   
   return;

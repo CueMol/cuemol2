@@ -43,6 +43,7 @@ add_executable(test_qlib
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
   qlib/test_seekable_stream.cpp
+  qlib/test_small_logic.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -74,6 +75,7 @@ add_executable(test_qsys
   qsys/test_editinfo.cpp
   qsys/test_sysconfig.cpp
   qsys/test_undomanager.cpp
+  qsys/test_command_copy.cpp
   qsys/test_multigradient.cpp
   qsys/test_propeditinfo.cpp
   qsys/test_viewinputconfig.cpp

@@ -247,8 +247,9 @@ public:
             }
             if (res == 0) {
                 // nr overwraps with tg
-                if (nr.includes(tg) || nr.equals(tg)) {
-                    // nr includes or equals tg --> remove tg
+                // includes() is strict: [5,10) was not removed by remove(0,10)
+                if (nr.contains(tg)) {
+                    // nr covers tg --> remove tg
                     iter2 = iter;
                     ++iter;
                     m_data.erase(iter2);

@@ -10,6 +10,8 @@
 
 #include "LRegExpr.hpp"
 
+#include <vector>
+
 #define HAVE_POSIX_SPAWN 1
 
 #ifdef HAVE_SPAWN_H
@@ -199,7 +201,8 @@ public:
         const char *prog_path = path.c_str();
         // char *const prog_argv[] = {(char *)prog_path, (char*)"-la", NULL};
         int nargs = vargs.size();
-        const char **prog_argv = new const char *[nargs + 2];
+        std::vector<const char *> argv_buf(nargs + 2);
+        const char **prog_argv = argv_buf.data();
         prog_argv[0] = prog_path;
         for (int i = 0; i < nargs; ++i) {
             prog_argv[i + 1] = vargs[i].c_str();
