@@ -246,6 +246,8 @@ namespace qsys {
       return *this;
     }
 
+    ~Camera() override;
+
     //////////
     
   private:
