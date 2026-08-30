@@ -33,6 +33,11 @@ Camera::Camera()
   resetAllProps();
 }
 
+Camera::~Camera()
+{
+  delete m_pVisSetNodes;
+}
+
 void Camera::copyFrom(const Camera&r)
 {
   if (!r.m_visset.empty()) {
@@ -150,6 +155,7 @@ void Camera::readFrom2(qlib::LDom2Node *pNode)
   qlib::LDom2Node *pVisSet = pNode->findChild("visibilities");
   if (pVisSet!=NULL) {
     MB_DPRINTLN("Camera.readFrom> copy vis nodes");
+    delete m_pVisSetNodes;
     m_pVisSetNodes = MB_NEW qlib::LDom2Node(*pVisSet);
     return;
   }
@@ -395,15 +401,22 @@ bool Camera::visChange(qlib::uid_t tgtid, bool bVis)
 
 void Camera::clearVisSettings()
 {
-  while (getVisSize()>0) {
+  // getVisSize() also counts a pending <visibilities> node, so walk the
+  // map itself and never take begin() of an empty map
+  while (!m_visset.empty()) {
     VisSetting::iterator i = m_visset.begin();
-    visRemove(i->first);
+    const qlib::uid_t tgtid = i->first;
+    const bool bAlive = i->second.bObj
+      ? !SceneManager::getObjectS(tgtid).isnull()
+      : !SceneManager::getRendererS(tgtid).isnull();
+    if (!bAlive || !visRemove(tgtid)) {
+      // target already gone (nothing to notify) or removal failed: drop the entry
+      m_visset.erase(tgtid);
+    }
   }
-  // m_visset.clear();
-  if (m_pVisSetNodes!=NULL) {
-    delete m_pVisSetNodes;
-    m_pVisSetNodes = NULL;
-  }
+
+  delete m_pVisSetNodes;
+  m_pVisSetNodes = NULL;
 }
 
 void Camera::saveVisSettings(ScenePtr pScene)
