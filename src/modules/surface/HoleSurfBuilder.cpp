@@ -15,6 +15,8 @@
 #include <modules/molstr/TopparManager.hpp>
 #include <modules/molstr/AtomPosMap.hpp>
 
+#include <iterator>
+
 using namespace surface;
 using molstr::MolCoordPtr;
 using molstr::MolAtomPtr;
@@ -84,7 +86,7 @@ void HoleSurfBuilder::doit()
   int nslice;
   double score = 0.0, prev_score = -1.0;
   std::vector<Vector4D> cen_ary;
-  for (int i=0; i<sizeof(trytemp); ++i) {
+  for (size_t i=0; i<std::size(trytemp); ++i) {
     std::vector<Vector4D> new_ary;
     findPath(trytemp[i], new_ary, score, nslice);
     if (score < prev_score) {

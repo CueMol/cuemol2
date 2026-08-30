@@ -271,6 +271,7 @@ gtest_discover_tests(test_importers PROPERTIES LABELS "test_importers")
 add_executable(test_molanl
   modules/molanl/test_main.cpp
   modules/molanl/test_ssm_superpose.cpp
+  modules/molanl/test_contactmap.cpp
 )
 target_include_directories(test_molanl PRIVATE
   ${CMAKE_SOURCE_DIR}/src
