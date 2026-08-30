@@ -64,7 +64,13 @@ namespace importers {
 
   private:
 
+    /// Settings table indexed by PyMOL setting ID (owns its entries)
     qlib::LVarList *m_pSet;
+
+    /// Set once an unknown color index has been reported for this read
+    bool m_bColorWarned;
+
+    unsigned int convColor(int ncol);
 
     void procViewSettings(qlib::LVarList *pView);
 

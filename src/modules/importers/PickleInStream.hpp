@@ -66,7 +66,7 @@ namespace importers {
     static const int BININT2 = 77; /* M */
     static const int BINPUT = 113; /* q */
     static const int BINSTRING = 84; /* T */
-    static const int BINUNICODE = 87; /* X */
+    static const int BINUNICODE = 88; /* X */
     static const int BUILD = 98; /* b */
     static const int EMPTY_DICT = 125; /* } */
     static const int EMPTY_LIST = 93; /* ] */
@@ -218,26 +218,28 @@ namespace importers {
     //////////////////////////////////////
     // MEMO
 
-    typedef std::map<int, LVariant*> ValTable;
-    ValTable m_memo; // = new Hashtable<Integer, Object>();
+    /// Memoized values. The memo keeps its own copies, so every stack entry
+    /// stays uniquely owned and BINGET hands out fresh copies.
+    typedef std::map<int, LVariant> ValTable;
+    ValTable m_memo;
     int m_retrieveCount;
-    
+
     void putMemo(int i, bool doCheck)
     {
       LVariant *o = peek();
-      
+
       if (o->isString()) {
         // XXX: handle the inMovie case
         // if (doCheck && markCount >= 6 || markCount == 3 && inMovie)
         //  return;
         if (doCheck && m_markCount >= 6)
           return;
-        m_memo.insert(ValTable::value_type(i, o));
-        //MB_DPRINTLN("caching string");
-        //System.out.println("caching string " + o + " at " + binaryDoc.getPosition());
+        m_memo[i] = *o;
       }
     }
-  
+
+    /// Returns a new copy of the memoized value (owned by the caller),
+    /// or NULL when the memo index is unknown
     LVariant *getMemo(int i)
     {
       ValTable::const_iterator iter = m_memo.find(i);
@@ -245,16 +247,8 @@ namespace importers {
         MB_DPRINTLN("  ERROR!! memo %d not found!!", i);
         return NULL;
       }
-      LVariant *o = iter->second;
-      //Object o = memo.get(Integer.valueOf(i));
-      //if (o == null)
-      //return o;
-      //System.out.println("retrieving string " + o + " at " + binaryDoc.getPosition());
-
-      //MB_DPRINTLN("retrieving string");
       m_retrieveCount++;
-      
-      return o;
+      return MB_NEW LVariant(iter->second);
     }
     
     LVariant *getObjects(int mark)
