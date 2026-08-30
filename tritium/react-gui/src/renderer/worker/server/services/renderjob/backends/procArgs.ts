@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/renderBackends/procArgs.ts
+ * @file worker/server/services/renderjob/backends/procArgs.ts
  * @description Quoting for the single argument string ProcessManager takes.
  *
  * C++ splits that string itself (qlib::PosixProcImpl::parseCmdLine): a token is

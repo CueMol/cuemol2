@@ -16,7 +16,7 @@
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
-import { cancelAllRenderJobs } from './renderJob.service';
+import { cancelAllRenderJobs } from './renderjob/renderJob.service';
 import { cancelAllApbsJobs } from './calcApbsPot.service';
 
 export interface CancelAllJobsResult {

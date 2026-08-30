@@ -17,7 +17,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 const renderCancelled: string[] = []
 const apbsCancelled: string[] = []
 
-vi.mock('./renderJob.service', () => ({
+vi.mock('./renderjob/renderJob.service', () => ({
   cancelAllRenderJobs: vi.fn(() => {
     const n = renderCancelled.length
     return n
@@ -28,7 +28,7 @@ vi.mock('./calcApbsPot.service', () => ({
 }))
 
 import { services } from './shutdown.service'
-import { cancelAllRenderJobs } from './renderJob.service'
+import { cancelAllRenderJobs } from './renderjob/renderJob.service'
 import { cancelAllApbsJobs } from './calcApbsPot.service'
 
 const ctx = {} as WorkerContext

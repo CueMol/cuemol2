@@ -11,7 +11,7 @@ import {
   movieFileName,
   movieOutputPath,
   type FfmpegEncodeOptions,
-} from '@renderer/worker/server/services/ffmpegEncode';
+} from '@renderer/worker/server/services/renderjob/ffmpegEncode';
 
 const base: FfmpegEncodeOptions = {
   outputDir: '/out',

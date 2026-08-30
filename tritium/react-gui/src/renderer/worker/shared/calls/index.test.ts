@@ -32,7 +32,9 @@ const SLICES: Record<string, readonly string[]> = {
 
 /** Service names the worker registers, read exactly as services/index.ts does. */
 function registeredServiceNames(): string[] {
-    const modules = import.meta.glob('../../server/services/*.service.ts', {
+    const modules = import.meta.glob(
+        ['../../server/services/*.service.ts', '../../server/services/*/*.service.ts'],
+        {
         eager: true,
     }) as Record<string, { services?: Record<string, unknown> }>;
     const names: string[] = [];

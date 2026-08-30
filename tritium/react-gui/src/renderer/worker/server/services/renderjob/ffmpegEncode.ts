@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/ffmpegEncode.ts
+ * @file worker/server/services/renderjob/ffmpegEncode.ts
  * @description Build the ffmpeg command that encodes a rendered PNG frame
  * sequence into a movie.
  *

@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/renderBackends/PovrayBackend.ts
+ * @file worker/server/services/renderjob/backends/PovrayBackend.ts
  * @description POV-Ray rendering backend (ports `uxp_gui` povrender.js).
  *
  * The scene is exported to one `.pov`/`.inc` pair. When the exporter

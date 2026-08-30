@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/renderBackends/procArgs.test.ts
+ * @file worker/server/services/renderjob/backends/procArgs.test.ts
  * @description Pins the quoting against the C++ splitter's grammar
  * (qlib::PosixProcImpl::parseCmdLine + replaceEsc).
  */

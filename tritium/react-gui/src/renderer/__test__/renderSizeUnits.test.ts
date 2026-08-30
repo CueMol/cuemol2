@@ -17,7 +17,7 @@ import {
     SIZE_UNIT_FIELD_META,
     type ImageSizeUnit,
 } from '@renderer/data/renderSettings';
-import { pixelImageSize } from '@renderer/worker/server/services/renderBackends/RenderBackend';
+import { pixelImageSize } from '@renderer/worker/server/services/renderjob/backends/RenderBackend';
 import type { PropDef } from '@renderer/data/rendererProperties';
 
 const imageProps = (o: {

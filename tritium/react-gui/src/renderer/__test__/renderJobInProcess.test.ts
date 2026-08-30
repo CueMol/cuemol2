@@ -17,14 +17,14 @@ import type { RenderSettingsSnapshot } from '@renderer/data/renderResult'
 import type { PropDef } from '@renderer/data/rendererProperties'
 
 const hoisted = vi.hoisted(() => ({ getRenderBackend: vi.fn() }))
-vi.mock('@renderer/worker/server/services/renderBackends', () => ({
+vi.mock('@renderer/worker/server/services/renderjob/backends', () => ({
     getRenderBackend: hoisted.getRenderBackend,
 }))
 vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
     getSceneOrNull: vi.fn(() => ({ __scene: true })),
 }))
 
-import { services } from '@renderer/worker/server/services/renderJob.service'
+import { services } from '@renderer/worker/server/services/renderjob/renderJob.service'
 
 const p = (key: string, value: string | number | boolean): PropDef => ({
     key,
@@ -271,7 +271,7 @@ describe('cancelAllRenderJobs', () => {
         const { handle } = startInProcessJob()
         expect(intervalCb).toBeTypeOf('function')
 
-        const { cancelAllRenderJobs } = await import('@renderer/worker/server/services/renderJob.service')
+        const { cancelAllRenderJobs } = await import('@renderer/worker/server/services/renderjob/renderJob.service')
         const ctx = { svc: { pushMessage: vi.fn(), getService: vi.fn() } } as unknown as WorkerContext
 
         expect(cancelAllRenderJobs(ctx)).toBe(1)
@@ -288,7 +288,7 @@ describe('cancelAllRenderJobs', () => {
         const good = startInProcessJob()
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-        const { cancelAllRenderJobs } = await import('@renderer/worker/server/services/renderJob.service')
+        const { cancelAllRenderJobs } = await import('@renderer/worker/server/services/renderjob/renderJob.service')
         const ctx = { svc: { pushMessage: vi.fn(), getService: vi.fn() } } as unknown as WorkerContext
         expect(() => cancelAllRenderJobs(ctx)).not.toThrow()
         warn.mockRestore()
