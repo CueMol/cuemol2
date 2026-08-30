@@ -1,5 +1,5 @@
 import React from "react";
-import { AppIcon } from "./AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { useActiveToolDef } from '../contexts/ActiveToolContext';
 import { useStatusMessage } from '../state/statusMessage';
 import { useCueMolBusy } from '../hooks/useCueMolBusy';

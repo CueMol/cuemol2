@@ -1,5 +1,5 @@
 /**
- * @file components/multigrad/gradientGeometry.ts
+ * @file h3-kit/gradient/gradientGeometry.ts
  * @description Pure geometry / color helpers for the multi-gradient stop bar.
  *
  * All helpers are side-effect free so they can be unit-tested without React.
@@ -39,6 +39,20 @@ export interface ValueDomain {
 }
 
 /** Union of two (possibly null) domains; null when both are null. */
+/** Histogram data for the strip: raw bin counts + normalization max. */
+export interface GradientHistogram {
+    bins: number[]
+    /** Max bin count within the fetched range. */
+    nmax: number
+    /**
+     * Max bin count over the map's full range on the same grid; when
+     * present it fixes the y-scale so panning does not rescale the bars.
+     */
+    globalNmax: number | null
+    /** Value range the bins were fetched over (for view remapping). */
+    domain: ValueDomain
+}
+
 export function unionDomain(
   a: ValueDomain | null,
   b: ValueDomain | null,

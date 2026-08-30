@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback } from 'react'
-import { AppIcon } from '../../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import type { CategoryNode } from './settingsConfig'
 
 export interface ConfigTreeNodeProps {

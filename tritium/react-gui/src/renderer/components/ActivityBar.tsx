@@ -14,8 +14,8 @@
 
 import React from "react";
 import { Tooltip } from "@blueprintjs/core";
-import { AppIcon } from "./AppIcon";
-import type { AppIconKey } from "../data/appIcons";
+import { AppIcon } from "@renderer/h3-kit/primitives";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 import { useWorkspaceDispatch, useWorkspaceTabs } from "../state/workspace";
 
 // ------------------------------------------------------------

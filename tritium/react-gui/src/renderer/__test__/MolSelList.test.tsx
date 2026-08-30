@@ -37,7 +37,7 @@ vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { MolSelList } from '../h3-kit/MolSelList/MolSelList'
+import { MolSelList } from '@renderer/h3-kit/MolSelList'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 function setupCm(opts?: {

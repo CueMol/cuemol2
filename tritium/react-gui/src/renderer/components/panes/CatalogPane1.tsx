@@ -11,8 +11,8 @@
  */
 
 import React, { useState } from "react";
-import { SectionHeader } from "./SectionHeader";
-import { AppIcon } from "../AppIcon";
+import { PaneSectionHeader } from "./PaneSectionHeader";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import {
   Field,
   FieldGroup,
@@ -54,7 +54,7 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
 
   return (
     <div className="sp-pane">
-      <SectionHeader
+      <PaneSectionHeader
         title="Catalog 1"
         icon="ui.widget"
         collapsed={collapsed}

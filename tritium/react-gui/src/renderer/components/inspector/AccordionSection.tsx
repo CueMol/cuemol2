@@ -15,7 +15,7 @@
  */
 
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 
 interface AccordionGroupValue {
   /** Title of the currently open section, or null when all are collapsed. */

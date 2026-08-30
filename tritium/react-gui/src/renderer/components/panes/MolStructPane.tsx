@@ -25,8 +25,8 @@ import {
     Tree,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
-import { AppIcon } from "../AppIcon";
-import { SectionHeader } from "./SectionHeader";
+import { AppIcon } from "@renderer/h3-kit/primitives";
+import { PaneSectionHeader } from "./PaneSectionHeader";
 import { useMolStructure } from "../../hooks/useMolStructure";
 import { ObjectSelect, objectFilters } from "../../h3-kit/ObjectSelect";
 import { fireService } from "../../utils/fireService";
@@ -383,7 +383,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
 
     return (
         <div className="sp-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="Mol Struct"
                 icon="ui.git"
                 collapsed={collapsed}

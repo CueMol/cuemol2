@@ -27,8 +27,7 @@ import { Field, FieldSection, SegmentField, SwitchField } from '../../h3-kit/for
 import { DialogShell } from './DialogShell'
 import { objectFilters } from '../../h3-kit/ObjectSelect'
 import { MolPicker } from './MolPicker'
-import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
-import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
+import { MolSelList, pushHistory } from '@renderer/h3-kit/MolSelList'
 import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service'
 import type { SuperposeAlgo } from '../../worker/server/services/superposeMol.service'
 import {

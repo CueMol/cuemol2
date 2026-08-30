@@ -12,7 +12,7 @@ import {
     quantize,
     clampAndQuantize,
     snapTo,
-} from '../h3-kit/form/numericMath';
+} from '@renderer/h3-kit/form/numericMath';
 
 describe('numericMath', () => {
     describe('decimalsOf', () => {

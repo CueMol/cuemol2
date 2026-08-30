@@ -37,7 +37,7 @@ import {
     showContextMenu,
 } from '@blueprintjs/core'
 import { Allotment } from 'allotment'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { useMolSequenceData, type SeqRow } from '../../hooks/useMolSequenceData'

@@ -45,9 +45,8 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Tooltip } from '../Tooltip';
-import { AppIcon } from '../../components/AppIcon';
-import type { AppIconKey } from '../../data/appIcons';
+import { Tooltip, AppIcon } from '../primitives';
+import type { AppIconKey } from '../primitives';
 import {
     ComboBoxField,
     FormButton,

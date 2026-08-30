@@ -2,8 +2,8 @@
  * @file h3-kit/form/SliderField.tsx
  * @description Canonical "label + Blueprint Slider + numeric input + custom
  * stepper" row, with an optional unit suffix and a stored<->shown `scale`
- * transform. This is the form-kit home for what used to be the standalone
- * `h3-kit/SliderNumericField` (now a thin back-compat re-export of this).
+ * transform. This is the form-kit home for the stepper-numeric widget: use it
+ * with `slider={false}` when only the numeric box and its stepper are wanted.
  *
  * Sizing/spacing/colors come entirely from `.h3-form-sliderfield*` in
  * `styles/_form-kit.css` (driven by the `--field-*` / color tokens); no size
@@ -33,7 +33,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Slider } from '@blueprintjs/core';
-import { AppIcon } from '../../components/AppIcon';
+import { AppIcon } from '../primitives';
 import { clampAndQuantize, quantize } from './numericMath';
 
 void React; // classic JSX runtime (vitest)

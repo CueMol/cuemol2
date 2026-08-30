@@ -16,8 +16,23 @@ UIスタイルは **デザイントークン** (CSS custom properties) に一元
 
 label+control の UI (フォーム行・テキスト入力・select・numeric・switch・color・compact button・ツールバーのボタン/フィルタ入力) は、**必ず `h3-kit/form/` のカタログコンポーネントで組む**。生の Blueprint `Button`/`InputGroup`/`HTMLSelect` を独自 CSS で並べない。
 
+**import は barrel 経由**: `@renderer/h3-kit/form` のように sub-barrel (またはルートの `@renderer/h3-kit`) から取る。`@renderer/h3-kit/form/TextField` のように中のモジュールを名指しするのは ESLint で error。kit の内部配置は自由に変えられるべきで、名指しはそれを固定するため (実際、同じウィジェットが `SliderField` / `SliderNumericField` の 2 名でカタログに載る事故が起きた)。
+
+**kit の構成** (詳細は [`docs/architecture/react-gui-layering.md`](../architecture/react-gui-layering.md)):
+
+| sub-barrel | 中身 |
+|---|---|
+| `h3-kit/primitives` | `AppIcon` / アイコン登録表 / `Tooltip` / `useDarkPortalClass` |
+| `h3-kit/form` | 下表の label+control カタログ。**サイズの単一ソース** |
+| `h3-kit/list` | `Listbox` / `ListRow` / `useListKeyNav` |
+| `h3-kit/gradient` | `GradientStopBar` + gradient の値/ピクセル幾何 |
+| `h3-kit/colorpicker` | 色ポップオーバーと `CueColorField` |
+| `h3-kit/MolSelList` / `h3-kit/selection` | 分子選択のピッカーと式ビルダ |
+
+Blueprint の portal (popover / dialog) に dark テーマを効かせる `portalClassName` は、`theme === 'dark' ? 'bp5-dark' : ''` を各所で書かず **`useDarkPortalClass()`** (`h3-kit/primitives`) を使う。
+
 **実装前にカタログを探して再利用する (最優先 / まずこれ)**: UI を書き始める前に、下表と **実物カタログ `components/panes/CatalogPane1/2/3`** を一覧し、欲しい見た目 (参照画像があればそれ) に一致する既存 component を特定してから使う。既存パターンを別 component で自作し直さない。よくある取り違え:
-- **ステッパー付き数値ボックス (up/down 矢印)** = `SliderField` (`SliderNumericField`)。`slider={false}` で slider 無しの「数値+ステッパー」だけになる。`NumericField` は**既定でステッパーを隠す**設計なので、ステッパーを足そうとしない。
+- **ステッパー付き数値ボックス (up/down 矢印)** = `SliderField`。`slider={false}` で slider 無しの「数値+ステッパー」だけになる。`NumericField` は**既定でステッパーを隠す**設計なので、ステッパーを足そうとしない。
 - **drag で増減する数値** = `DragNumericField` (`NumericField` ではない)。
 - **時間 (ms) の入力** = `TimeField` (`DragNumericField` を直接組まない)。
 - **2 桁の裸 cell** = `NumberCell`。
@@ -35,7 +50,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索) | 高 `--field-h` (22px) |
 | `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
 | `NumericField` | 数値 + 明示 slider (`slider` 既定 true)。**ネイティブ stepper は既定で非表示** (compact 用)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
-| `SliderField` (`SliderNumericField`) | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |
+| `SliderField` | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |
 | `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない)。**ドラッグ感度は `min`/`max` と widget 幅から自動で決まる** (幅の 3/4 を drag すると全レンジを移動)。レンジに対して drag 量が釣り合うので、consumer は `pxPerStep` を指定しない — 指定するのは「レンジを掃くのが目的ではない」場合だけ (無限レンジ、UXP の 1 unit/px を再現する ViewPane 等)。`format`/`parse`/`resolveStep`/`stepper="stacked"` で非10進の値にも転用できる (下記 `TimeField`) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
 | `TimeField` | 時間 (ms) の timecode `M:SS.mmm`。**UXP の timeedit の移植先**。`DragNumericField` プリセットで drag scrub + ▲▼ spin + 打ち込み (`250ms` / `1.5s` / `+2s` の相対も可) | `.h3-form-drag` + `.h3-form-time` (`_form-kit.css`) |
 | `SwitchField` | **値としての真偽トグル** (Visible / Locked など。`inline` Field 内で `Label ...... [switch]` に読ませる) | Blueprint Switch (pill は `--icon-sm` スケール、focus ring 1px/offset 1px) |
@@ -87,7 +102,7 @@ class は padding / 区切り線などの chrome だけを持ち、行やコン�
 | compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
 | segmented control | `.inspector-mode-bar` の直書き override / 各所の生 `SegmentedControl` | `SegmentField` (`--field-btn-h`, `.h3-form-segmented`) |
 
-**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)、file-open オプションペイン (`fopen-opt-dlgs/panes/*`; `.fod-section` は padding/区切り線のみ)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.h3-slider-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
+**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)、file-open オプションペイン (`fopen-opt-dlgs/panes/*`; `.fod-section` は padding/区切り線のみ)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderField` の `.h3-slider-*`、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
 
 ---
 

@@ -22,8 +22,8 @@ void React
 import {
     GradientStopBar,
     type GradientHistogram,
-} from '../components/multigrad/GradientStopBar'
-import type { GradientStop } from '../components/multigrad/gradientGeometry'
+} from '@renderer/h3-kit/gradient'
+import type { GradientStop } from '@renderer/h3-kit/gradient'
 import { mountTree } from './helpers/testHarness'
 
 // jsdom has no ResizeObserver; the histogram strip observes its parent.

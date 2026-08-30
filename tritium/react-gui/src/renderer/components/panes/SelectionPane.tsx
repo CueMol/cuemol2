@@ -24,16 +24,13 @@
 
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
-import { SectionHeader } from './SectionHeader';
-import { AppIcon } from '../AppIcon';
+import { PaneSectionHeader } from './PaneSectionHeader';
+import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
-import { Tooltip } from '../../h3-kit/Tooltip';
 import { fireService } from '../../utils/fireService';
 import { FieldSection, FormButton, TextField } from '../../h3-kit/form';
 import { useTheme } from '../../contexts/ThemeContext';
-import { getHistory, pushHistory } from '../../h3-kit/MolSelList/selHistory';
-import { useSelHitCount, useHitCountResolver } from '../../h3-kit/MolSelList/useSelHitCount';
-import { CountTag } from '../../h3-kit/MolSelList/CountTag';
+import { getHistory, pushHistory, useSelHitCount, useHitCountResolver, CountTag } from '@renderer/h3-kit/MolSelList';
 import {
     SelectionBuilder,
     useSelectionValues,
@@ -304,7 +301,7 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
 
     return (
         <div className="sp-pane selection-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="Selection"
                 icon="ui.select"
                 collapsed={collapsed}

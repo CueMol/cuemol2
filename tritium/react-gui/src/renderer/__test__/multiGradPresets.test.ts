@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MULTIGRAD_PRESETS,
   buildPresetNodes,
-} from '../components/multigrad/multiGradPresets';
+} from '@renderer/worker/shared/multiGradPresets';
 
 const stats = { min: -2, max: 8 }; // span 10
 

@@ -21,7 +21,7 @@
 import React, { useState } from "react";
 
 import { SegmentField } from "../../h3-kit/form";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
 import { HatchLookEditor, type HatchLookEditorProps } from "../inspector/HatchLookEditor";
 import { RenderImageTab } from "./RenderImageTab";

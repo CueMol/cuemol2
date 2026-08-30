@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest'
 
 void React
 
-import { CountTag } from '../h3-kit/MolSelList/CountTag'
+import { CountTag } from '@renderer/h3-kit/MolSelList'
 import { mountTree } from './helpers/testHarness'
 
 function badge(count: Parameters<typeof CountTag>[0]['count']): HTMLElement | null {

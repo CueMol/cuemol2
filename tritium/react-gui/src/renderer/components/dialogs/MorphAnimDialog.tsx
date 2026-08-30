@@ -19,12 +19,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from '@blueprintjs/core';
 import { DialogShell } from './DialogShell';
-import { AppIcon } from '../AppIcon';
-import { Field } from '../../h3-kit/form/Field';
-import { FieldSection } from '../../h3-kit/form/FieldSection';
-import { ButtonRow, FormButton } from '../../h3-kit/form/ButtonRow';
-import { Listbox } from '../../h3-kit/list/Listbox';
-import { ListRow } from '../../h3-kit/list/ListRow';
+import { AppIcon } from '@renderer/h3-kit/primitives';
+import { Field, FieldSection, ButtonRow, FormButton } from '@renderer/h3-kit/form';
+import { Listbox, ListRow } from '@renderer/h3-kit/list';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
 import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service';
 import type { MorphFrameInfo } from '../../worker/server/services/morphMol.service';

@@ -9,7 +9,7 @@
  * @module types
  */
 
-import type { AppIconKey } from "./data/appIcons";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 // --- Scene / File-tree ---
 

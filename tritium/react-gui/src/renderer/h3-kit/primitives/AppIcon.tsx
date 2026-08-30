@@ -1,5 +1,5 @@
 /**
- * @file components/AppIcon.tsx
+ * @file h3-kit/primitives/AppIcon.tsx
  * @description Single entry point for rendering icons. Resolves a semantic key
  * from {@link APP_ICONS} to either a Phosphor or a Blueprint icon, applying a
  * consistent token-based size and inheriting color via `currentColor` (so
@@ -15,7 +15,7 @@
 import React from "react";
 import { Icon as BpIcon } from "@blueprintjs/core";
 import type { IconWeight } from "@phosphor-icons/react";
-import { APP_ICONS, type AppIconKey, type AppIconSpec } from "../data/appIcons";
+import { APP_ICONS, type AppIconKey, type AppIconSpec } from "./appIcons";
 
 /**
  * Size tokens, in px. Mirror the `--icon-sm/md/lg` CSS tokens in

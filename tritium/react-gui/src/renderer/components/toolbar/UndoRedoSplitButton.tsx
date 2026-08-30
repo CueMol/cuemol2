@@ -14,8 +14,7 @@
 
 import React from "react";
 import { Button, ButtonGroup, Menu, MenuItem, Popover } from "@blueprintjs/core";
-import { AppIcon } from "../AppIcon";
-import { Tooltip } from "../../h3-kit/Tooltip";
+import { AppIcon, Tooltip } from "@renderer/h3-kit/primitives";
 import { useCommands } from "../../commands/CommandRegistry";
 import { CmdId } from "../../commands/ids";
 

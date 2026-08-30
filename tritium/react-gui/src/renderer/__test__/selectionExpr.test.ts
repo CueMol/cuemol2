@@ -6,7 +6,7 @@ import {
     canApplyBinary,
     applyBinary,
     applyUnary,
-} from '../h3-kit/selection/selectionExpr'
+} from '@renderer/h3-kit/selection'
 
 describe('parseNameList', () => {
     it('joins trimmed comma tokens', () => {

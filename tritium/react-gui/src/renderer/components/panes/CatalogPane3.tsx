@@ -18,7 +18,7 @@
  */
 
 import React, { useState } from "react";
-import { SectionHeader } from "./SectionHeader";
+import { PaneSectionHeader } from "./PaneSectionHeader";
 import {
   FieldGroup,
   PropertyField,
@@ -79,7 +79,7 @@ export const CatalogPane3: React.FC<CatalogPane3Props> = ({
 
   return (
     <div className="sp-pane">
-      <SectionHeader
+      <PaneSectionHeader
         title="Catalog 3"
         icon="ui.widget"
         collapsed={collapsed}

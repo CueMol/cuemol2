@@ -25,7 +25,7 @@
  */
 
 import React, { useRef, useState, useCallback } from 'react'
-import { SectionHeader } from './SectionHeader'
+import { PaneSectionHeader } from './PaneSectionHeader'
 import { FieldSection, FieldGrid, FieldGridRow, DragNumericField, SwitchField, SelectField } from '../../h3-kit/form'
 import type { DragNumericFieldHandle } from '../../h3-kit/form'
 import type { ViewCenterMark } from '@shared/types/menuState'
@@ -192,7 +192,7 @@ export const ViewPane: React.FC<ViewPaneProps> = ({ collapsed, onToggleCollapse 
 
     return (
         <div className="sp-pane view-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="View"
                 icon="ui.camera"
                 collapsed={collapsed}

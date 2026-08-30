@@ -1,5 +1,5 @@
 /**
- * @file components/multigrad/GradientStopBar.tsx
+ * @file h3-kit/gradient/GradientStopBar.tsx
  * @description Illustrator-style gradient stop bar: an optional histogram
  * strip, a gradient preview bar, a draggable stop-marker lane, and a
  * min/max label row.
@@ -32,6 +32,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     DELETE_DRAG_THRESHOLD_PX,
     DRAG_THRESHOLD_PX,
+    type GradientHistogram,
     type GradientStop,
     type ValueDomain,
     gradientCssStops,
@@ -43,20 +44,6 @@ import {
     valueToX,
     xToValue,
 } from './gradientGeometry'
-
-/** Histogram data for the strip: raw bin counts + normalization max. */
-export interface GradientHistogram {
-    bins: number[]
-    /** Max bin count within the fetched range. */
-    nmax: number
-    /**
-     * Max bin count over the map's full range on the same grid; when
-     * present it fixes the y-scale so panning does not rescale the bars.
-     */
-    globalNmax: number | null
-    /** Value range the bins were fetched over (for view remapping). */
-    domain: ValueDomain
-}
 
 /** Gesture kind reported by onCommit. */
 export type GradientCommitGesture = 'move' | 'add' | 'delete'

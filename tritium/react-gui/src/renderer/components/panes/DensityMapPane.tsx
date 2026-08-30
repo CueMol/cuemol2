@@ -39,8 +39,8 @@ import {
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
-import { AppIcon } from '../AppIcon'
-import { SectionHeader } from './SectionHeader'
+import { AppIcon } from '@renderer/h3-kit/primitives'
+import { PaneSectionHeader } from './PaneSectionHeader'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
 import { useRealtimeDragProp } from '@renderer/hooks/react/useRealtimeDragProp'
 import { FieldGrid, FieldGridRow, DragNumericField } from '../../h3-kit/form'
@@ -55,8 +55,7 @@ import {
     SEM_ANY,
 } from '../../event'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
-import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
-import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
+import { CueColorField, ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import { fireService } from '../../utils/fireService'
 import { useCueMol } from '../../hooks/cuemol/useCueMol'
 import { useActiveScene } from '../../state/workspace'
@@ -380,7 +379,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({ collapsed, onTog
     return (
         <ColorPickerProvider cm={cm} sceneId={activeSceneId}>
         <div className="sp-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="Density map"
                 icon="ui.layers"
                 collapsed={collapsed}

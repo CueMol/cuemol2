@@ -23,7 +23,7 @@ import {
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
-import { SectionHeader } from './SectionHeader'
+import { PaneSectionHeader } from './PaneSectionHeader'
 import { useSymmetryPanel } from '../../hooks/useSymmetryPanel'
 import { useShowSymmetryChangeDialog } from '../dialogs/SymmetryChangeDialogProvider'
 import type { SymmRendererExtent } from '../../worker/server/services/symmetryPanelOps.service'
@@ -143,7 +143,7 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({ collapsed, onToggleC
 
     return (
         <div className="sp-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="Symmetry"
                 icon="ui.cube"
                 collapsed={collapsed}

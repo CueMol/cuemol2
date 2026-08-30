@@ -45,4 +45,4 @@ export { CatalogPane3 } from "./CatalogPane3";
 
 /* --- Shared Components --- */
 
-export { SectionHeader } from "./SectionHeader";
+export { PaneSectionHeader } from "./PaneSectionHeader";

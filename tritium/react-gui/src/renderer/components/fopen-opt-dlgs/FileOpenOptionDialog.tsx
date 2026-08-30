@@ -19,7 +19,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Dialog, DialogBody, DialogFooter, Button, Collapse } from '@blueprintjs/core';
-import { AppIcon } from '../AppIcon';
+import { AppIcon } from '@renderer/h3-kit/primitives';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 

@@ -37,7 +37,7 @@ vi.mock('../contexts/ThemeContext', () => ({
 }))
 
 import { PaintSelCell } from '../components/panes/PaintSelCell'
-import { getHistory } from '../h3-kit/MolSelList/selHistory'
+import { getHistory } from '@renderer/h3-kit/MolSelList'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 function getInput(container: HTMLElement): HTMLInputElement {

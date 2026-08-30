@@ -8,7 +8,7 @@
  * @module data/viewportTools
  */
 
-import type { AppIconKey } from "./appIcons";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 /** Visual grouping category used by the tool palette. */
 export type ToolCategory = "navigate" | "select" | "measure" | "edit";

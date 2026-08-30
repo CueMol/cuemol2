@@ -17,7 +17,7 @@ import { useActiveScene } from '@renderer/state/workspace';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { ObjectSelect, objectFilters } from '../h3-kit/ObjectSelect';
 import { FormButton } from '../h3-kit/form';
-import { AppIcon } from './AppIcon';
+import { AppIcon } from '@renderer/h3-kit/primitives';
 import * as event from '../event';
 import type { BondAtomJSON, BondAtomPair } from '../worker/server/services/bondEdit.service';
 

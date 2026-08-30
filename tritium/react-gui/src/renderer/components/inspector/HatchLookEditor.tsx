@@ -11,7 +11,7 @@ import React from "react";
 
 import { HatchLayersSection } from "./HatchLayersSection";
 import { HatchShadingSection } from "./HatchShadingSection";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { ButtonRow, FormButton } from "../../h3-kit/form";
 import type {
   HatchFieldEnv,

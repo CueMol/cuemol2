@@ -10,7 +10,7 @@
 import React, { useCallback } from "react";
 
 import { AccordionSection } from "./AccordionSection";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { Field, FormButton, SelectField, SliderField, SwitchField } from "../../h3-kit/form";
 import {
   LAYER_FIELDS,

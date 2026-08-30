@@ -19,7 +19,7 @@
  * The two leaf widgets that need picker/popover infra (CueColorField,
  * PaintSelCell) are replaced with tiny test seams that expose their
  * `onCommit` as a plain DOM control, so we drive ColorPane's mutation
- * handlers without coupling to those widgets' internals. SliderNumericField
+ * handlers without coupling to those widgets' internals. SliderField
  * is kept REAL so the value*scale / value/scale transform is pinned
  * end-to-end through to the service payload.
  */
@@ -354,7 +354,7 @@ describe('ColorPane wire', () => {
     })
 
     // --- Scale transform: Brightness shows value*100, commits value/100 ---
-    // params.brightness stored as 0.5 -> SliderNumericField shows 50 (scale=100).
+    // params.brightness stored as 0.5 -> SliderField shows 50 (scale=100).
     // Typing 80 must commit 0.8 (80/100) through setColoringProp('bri', ...).
     it('Rainbow Brightness scale field shows value*100 and commits value/100', async () => {
         const { cm, container, unmount } = await mountWith({

@@ -15,7 +15,7 @@
 import React, { useState } from "react";
 import { Alert, Button, Tooltip } from "@blueprintjs/core";
 import { useTheme } from "../../contexts/ThemeContext";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 
 export interface InspectorResetAllButtonProps {
     /** Whether any property is modified (enables the button). */

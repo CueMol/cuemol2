@@ -14,8 +14,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Button, Popover } from "@blueprintjs/core";
-import { AppIcon } from "../AppIcon";
-import { Tooltip } from "../../h3-kit/Tooltip";
+import { AppIcon, Tooltip } from "@renderer/h3-kit/primitives";
 import { SliderField } from "../../h3-kit/form";
 import { IPC } from "@shared/ipcChannels";
 

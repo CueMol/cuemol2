@@ -10,7 +10,7 @@ import {
   parseTime,
   parseTimeInput,
   stepUnitAt,
-} from "../h3-kit/form/TimeField";
+} from "@renderer/h3-kit/form/TimeField";
 
 describe("TimeField formatMs", () => {
   it("formats ms as M:SS.mmm with zero-padded seconds / millis", () => {

@@ -10,7 +10,7 @@
  */
 
 import React, { useCallback, useState } from "react";
-import type { AppIconKey } from "../../data/appIcons";
+import type { AppIconKey } from "@renderer/h3-kit/primitives";
 import { PanelTabButton } from "./PanelTabButton";
 import { LogPanel } from "./LogPanel";
 import { SequencePanel } from "./SequencePanel";

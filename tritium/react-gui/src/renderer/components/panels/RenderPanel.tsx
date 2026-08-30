@@ -17,7 +17,7 @@
 import React, { useCallback, useRef } from "react";
 import { ProgressBar, type Intent } from "@blueprintjs/core";
 import { SelectField, FormButton } from "../../h3-kit/form";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { PanelTabButton } from "./PanelTabButton";
 import { useCollapsibleLabels } from "@renderer/hooks/react/useCollapsibleLabels";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";

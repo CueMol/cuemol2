@@ -22,7 +22,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, ButtonGroup, InputGroup, Popover, Tooltip } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { useDarkPortalClass } from '../primitives'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { CompileColorResult } from '../../worker/server/services/colorPicker.service'
 import { packToHex, type Rgb } from './colorMath'
@@ -91,8 +91,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     className,
     modes,
 }) => {
-    const { theme } = useTheme()
-    const portalClassName = theme === 'dark' ? 'bp5-dark' : ''
+    const portalClassName = useDarkPortalClass()
 
     // Visible mode segments, honouring the optional `modes` allow-list.
     const segments = useMemo(

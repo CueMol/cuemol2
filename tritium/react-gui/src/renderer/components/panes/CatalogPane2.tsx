@@ -1,7 +1,7 @@
 /**
  * @file CatalogPane2.tsx
  * @description Component catalog (2/3): aligned FieldGrid, shared widgets
- * (MolSelList / SliderNumericField), Listbox rows, the segmented control and
+ * (MolSelList / SliderField), Listbox rows, the segmented control and
  * form buttons.
  *
  * A showcase, not a feature pane. Sizing comes entirely from the catalog
@@ -11,8 +11,8 @@
  */
 
 import React, { useState } from "react";
-import { AppIcon } from "../AppIcon";
-import { SectionHeader } from "./SectionHeader";
+import { AppIcon } from "@renderer/h3-kit/primitives";
+import { PaneSectionHeader } from "./PaneSectionHeader";
 import {
   Field,
   FieldGroup,
@@ -24,10 +24,10 @@ import {
   SegmentField,
   RadioField,
   ColorField,
+  SliderField,
 } from "../../h3-kit/form";
 import { Listbox, ListRow } from "../../h3-kit/list";
 import { MolSelList } from "../../h3-kit/MolSelList";
-import { SliderNumericField } from "../../h3-kit/SliderNumericField";
 import { useActiveScene } from '../../state/workspace';
 
 /** Sample rows for the Listbox showcase. */
@@ -61,7 +61,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
 
   return (
     <div className="sp-pane">
-      <SectionHeader
+      <PaneSectionHeader
         title="Catalog 2"
         icon="ui.widget"
         collapsed={collapsed}
@@ -95,7 +95,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
               <Field label="ColorField">
                 <ColorField value={color} onCommit={setColor} />
               </Field>
-              <SliderNumericField
+              <SliderField
                 label="Opacity"
                 value={opacity}
                 onCommit={setOpacity}
@@ -103,7 +103,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
                 max={100}
                 unit="%"
               />
-              <SliderNumericField
+              <SliderField
                 label="Stride (slider=false)"
                 value={opacity}
                 onCommit={setOpacity}
@@ -114,7 +114,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
               {/* Label-less variant: the Field owns the label, so the stepper
                   can share a row with another control (e.g. a preset select). */}
               <Field label="Angle (hideLabel, in a Field)">
-                <SliderNumericField
+                <SliderField
                   label="Angle"
                   hideLabel
                   slider={false}

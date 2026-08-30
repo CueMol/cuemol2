@@ -11,7 +11,7 @@ import {
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import { useTheme } from '../../contexts/ThemeContext'
 
 /**

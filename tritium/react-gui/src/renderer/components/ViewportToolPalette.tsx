@@ -21,7 +21,7 @@
 
 import React from "react";
 import { Popover, Tooltip } from "@blueprintjs/core";
-import { AppIcon } from "./AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import { MeasureOptionsPopover } from "./MeasureOptionsPopover";
 import { BondEditOptionsPopover } from "./BondEditOptionsPopover";
 import { useTheme } from "../contexts/ThemeContext";

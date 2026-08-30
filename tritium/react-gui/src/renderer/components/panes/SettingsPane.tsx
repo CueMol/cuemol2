@@ -30,14 +30,14 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { InputGroup } from '@blueprintjs/core'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useRenderConfig } from '../../contexts/RenderConfigContext'
 import { useApbsConfig } from '../../contexts/ApbsConfigContext'
 import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
 import { useAppSettings } from '../../contexts/AppSettingsContext'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
-import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
+import { ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import {
   INPUT_DEVICE_LABELS,
   INPUT_DEVICE_PREF_LABELS,

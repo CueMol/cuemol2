@@ -22,7 +22,7 @@ import {
   ComboBoxField,
   FormButton,
 } from "../../h3-kit/form";
-import { AppIcon } from "../AppIcon";
+import { AppIcon } from "@renderer/h3-kit/primitives";
 import {
   MOVIE_FORMAT_IDS,
   MOVIE_FORMAT_LABEL,

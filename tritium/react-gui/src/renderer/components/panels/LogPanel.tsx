@@ -16,7 +16,7 @@
 import React, { useRef, useEffect, useMemo } from 'react'
 import styles from './LogPanel.module.css'
 import { TextField, FormButton } from '../../h3-kit/form'
-import { AppIcon } from '../AppIcon'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import { applyLogFilter } from '../../utils/logFilter'
 
 interface LogPanelProps {

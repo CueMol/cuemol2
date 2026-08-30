@@ -39,8 +39,8 @@ import {
     HTMLSelect,
     Tooltip,
 } from '@blueprintjs/core'
-import { SectionHeader } from './SectionHeader'
-import { AppIcon } from '../AppIcon'
+import { PaneSectionHeader } from './PaneSectionHeader'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import {
     Field,
     FieldGrid,
@@ -62,9 +62,8 @@ import type {
     RainbowParams,
 } from '../../worker/server/services/rendererColoring.service'
 import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service'
-import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
+import { CueColorField, ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import { scrollRowIntoView, useListKeyNav } from '../../h3-kit/list'
-import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { MultiGradSection } from '../multigrad/MultiGradSection'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { usePaintColoringStyles } from '../../hooks/usePaintColoringStyles'
@@ -1440,7 +1439,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
     return (
         <ColorPickerProvider cm={cm} sceneId={sceneId}>
         <div className="sp-pane">
-            <SectionHeader
+            <PaneSectionHeader
                 title="Color"
                 icon="ui.tint"
                 collapsed={collapsed}

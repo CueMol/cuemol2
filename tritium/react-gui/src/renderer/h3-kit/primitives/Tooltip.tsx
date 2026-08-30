@@ -1,5 +1,5 @@
 /**
- * @file h3-kit/Tooltip.tsx
+ * @file h3-kit/primitives/Tooltip.tsx
  * @description Canonical hover tooltip -- a thin wrapper over Blueprint's
  * Tooltip locked to one app-wide shape (compact, bottom placement). Use this
  * everywhere a control needs a tooltip so they all look identical.
