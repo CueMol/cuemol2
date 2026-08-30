@@ -421,11 +421,11 @@ bool SelNamesNode::isAtomSelected(const LString &aName, char altconf) const
   if (matches(aName))
     return true;
 
-  // check prime<->aster conversion
+  // check prime<->aster conversion (old nucleic-acid naming uses '*')
   LString pmnam = aName;
   int nrepl = pmnam.replace('*', '\'');
   if (nrepl!=0) {
-    if (matches(aName))
+    if (matches(pmnam))
       return true;
   }
 

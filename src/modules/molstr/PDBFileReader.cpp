@@ -376,9 +376,13 @@ int PDBFileReader::convFromAname(const LString &atomname)
 
 bool PDBFileReader::readAtom()
 {
+  // Records outside a MODEL block (m_nCurrModel==-1, e.g. HETATM after the
+  // last ENDMDL) belong to the default model.
+  const bool bDefaultModel = (m_nCurrModel==-1 || m_nCurrModel==m_nDefaultModel);
+
   // If LoadMultiModel==false,
   // we ignore ATOM line in the non-default models.
-  if (!m_bLoadMultiModel && m_nDefaultModel!=m_nCurrModel)
+  if (!m_bLoadMultiModel && !bDefaultModel)
     return true;
 
   LString atomname;
@@ -480,10 +484,13 @@ bool PDBFileReader::readAtom()
   if (!checkAtomRecord(chain, resname, atomname))
     return false;
 
-  // process model ID (encode model ID in the chain name)
+  // process model ID (encode model ID in the chain name). The models are
+  // numbered relative to the first one of the file: encodeModelInChain()
+  // leaves model 1 unprefixed, so a file whose models start at 0 would
+  // otherwise merge MODEL 1 into the default model.
   LString schain(chain);
-  if (m_nDefaultModel!=m_nCurrModel)
-    schain = MolCoord::encodeModelInChain(chain, m_nCurrModel);
+  if (!bDefaultModel)
+    schain = MolCoord::encodeModelInChain(chain, m_nCurrModel - m_nDefaultModel + 1);
 
   MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
   pAtom->setParentUID(m_pMol->getUID());

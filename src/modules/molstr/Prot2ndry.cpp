@@ -606,7 +606,7 @@ namespace {
       
       hbe = 0;
       Backbone &WITH = *m_chains[i];
-      if (WITH.resn.equals("pro"))
+      if (WITH.resn.equalsIgnoreCase("PRO"))
 	return hbe;
 
       dho = (WITH.h - m_chains[j]->o).length();
