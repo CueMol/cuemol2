@@ -1,5 +1,4 @@
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
-import { PERF_MEASURE, perfCounters } from './perf';
 
 /**
  * Pointer / wheel / gesture input handling for the Worker thread.
@@ -81,7 +80,6 @@ export function handleMouseUp(view: GUIView, event: any): void {
 
 /** Forward a pointer-move event to `View::onMouseMove`. */
 export function handleMouseMove(view: GUIView, event: any): void {
-    if (PERF_MEASURE) perfCounters.mouseMoveCount++;
     const modif = makeModif(event);
     view.onMouseMove(event.offsetX, event.offsetY, event.screenX, event.screenY, modif);
 }

@@ -11,7 +11,6 @@
  * Console signposts ("create buffer OK") are E2E launch markers and are
  * intentionally preserved.
  */
-import { PERF_MEASURE, RESPECT_ISUPDATED, perfCounters } from '@renderer/worker/server/perf';
 
 type GL = WebGL2RenderingContext;
 
@@ -132,7 +131,7 @@ export class BufferStore {
      * data, then draw with the GL primitive matching `nmode` (4=LINES,
      * 5=TRIANGLE_STRIP, else TRIANGLES), instanced when `ninst>0`.
      *
-     * @remarks Re-upload is gated by `isUpdated` only when `RESPECT_ISUPDATED`
+     * @remarks Re-upload is gated by the C++ side's `isUpdated`
      * is set; otherwise data is re-uploaded every frame.
      */
     drawBuffer(id: number, nmode: number, nelems: number,
@@ -140,26 +139,14 @@ export class BufferStore {
         const gl = this._gl;
         const obj = this._draw_data[id];
 
-        if (PERF_MEASURE) {
-            perfCounters.drawBufferCalls++;
-            if (isUpdated) {
-                perfCounters.drawBufferIsUpdatedRawTrue++;
-                // Track which buffer names C++ marks dirty (to identify the culprit renderer)
-                const name = String(id);
-                perfCounters.dirtyBufferCounts[name] =
-                    (perfCounters.dirtyBufferCounts[name] ?? 0) + 1;
-            }
-        }
-
-        // A/B flag: when RESPECT_ISUPDATED is false, force re-upload every frame
-        // (current behavior). When true, honor the C++ side's isUpdated value.
-        const doUpload = RESPECT_ISUPDATED ? isUpdated : true;
-
         if (!obj) {
             throw `buffer ${id} not found`;
         }
 
-        if (doUpload) {
+        // The C++ side says whether the vertex data actually changed; taking
+        // its word is what keeps a static scene from re-uploading every
+        // buffer, every frame.
+        if (isUpdated) {
             // Transfer VBO to GPU
             const vbo = obj[1];
             const ibo = obj[2];
@@ -167,18 +154,10 @@ export class BufferStore {
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, array_buf);
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-            if (PERF_MEASURE) {
-                perfCounters.drawBufferUploads++;
-                perfCounters.bufferSubDataBytes += array_buf?.byteLength ?? 0;
-            }
-
             if (index_buf !== null && ibo !== null) {
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
                 gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, index_buf);
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-                if (PERF_MEASURE) {
-                    perfCounters.bufferSubDataBytes += index_buf.byteLength ?? 0;
-                }
             }
         }
 

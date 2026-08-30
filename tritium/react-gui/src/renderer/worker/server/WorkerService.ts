@@ -491,7 +491,12 @@ export class WorkerService {
             console.error('resized: scene manager or gfx manager not initialized');
             return;
         }
-        const view = this._sceMgr!.getView(view_id) as GUIView;
+        // Resolve the view BEFORE touching the canvas. Resizing the backing
+        // store clears it, so discovering the view is gone afterwards leaves
+        // a blank canvas and throws on the way out -- one black frame with no
+        // redraw to follow it.
+        const view = this._resolveView(view_id);
+        if (!view) return;
         this._gfx_mgr.canvas.width = w * dpr;
         this._gfx_mgr.canvas.height = h * dpr;
         // Store logical size so that activateView can sync new views to the canvas dimensions
@@ -504,24 +509,46 @@ export class WorkerService {
     //////////
     // Input events -- resolve `view_id -> GUIView` then delegate to inputEvents.
 
+    /**
+     * Resolve `view_id` to a live view, or null.
+     *
+     * Input events keep arriving for a fraction of a second after a view is
+     * destroyed -- the renderer posts them from a pointer stream it does not
+     * stop synchronously -- so "no such view" is an ordinary outcome here, not
+     * an error. Every caller below treats it as "drop this event".
+     */
+    private _resolveView(view_id: number): GUIView | null {
+        if (this._sceMgr === null) return null;
+        try {
+            return (this._sceMgr.getView(view_id) as GUIView | null) ?? null;
+        } catch {
+            return null;
+        }
+    }
+
     mouseDown(view_id: number, event: any): void {
-        handleMouseDown(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleMouseDown(view, event);
     }
 
     mouseUp(view_id: number, event: any): void {
-        handleMouseUp(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleMouseUp(view, event);
     }
 
     mouseMove(view_id: number, event: any): void {
-        handleMouseMove(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleMouseMove(view, event);
     }
 
     gestureEvent(view_id: number, event: any): void {
-        handleGesture(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleGesture(view, event);
     }
 
     wheelEvent(view_id: number, event: any): void {
-        handleWheel(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleWheel(view, event);
     }
 
 }
