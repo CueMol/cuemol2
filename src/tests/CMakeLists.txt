@@ -21,6 +21,7 @@ FetchContent_MakeAvailable(googletest)
 set(CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE PRE_TEST)
 
 add_executable(test_qlib
+  qlib/test_lscrsp_nothrow.cpp
   qlib/test_main.cpp
   qlib/test_vector4d.cpp
   qlib/test_matrix4d.cpp
@@ -129,6 +130,7 @@ target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem GTest::g
 gtest_discover_tests(test_qsys PROPERTIES LABELS "test_qsys")
 
 add_executable(test_molstr
+  modules/molstr/test_molcoord_altconf_remove.cpp
   modules/molstr/test_main.cpp
   modules/molstr/test_molatom.cpp
   modules/molstr/test_molresidue.cpp
@@ -180,6 +182,7 @@ endif()
 gtest_discover_tests(test_molvis PROPERTIES LABELS "test_molvis")
 
 add_executable(test_surface
+  modules/surface/test_crystalinfo_setters.cpp
   modules/surface/test_main.cpp
   modules/surface/test_distfield_surf.cpp
   modules/surface/test_ply_reader.cpp
@@ -204,6 +207,7 @@ endif()
 gtest_discover_tests(test_surface PROPERTIES LABELS "test_surface")
 
 add_executable(test_xtal
+  modules/xtal/test_map_uniform.cpp
   modules/xtal/test_main.cpp
   modules/xtal/test_atomposmap2.cpp
   modules/xtal/test_brix_reader.cpp
@@ -251,6 +255,7 @@ set_tests_properties(test_xtal_mc_serial PROPERTIES
   ENVIRONMENT "CUEMOL_TBB_THREADS=1" LABELS "test_xtal")
 
 add_executable(test_importers
+  modules/importers/test_sdf_short_lines.cpp
   modules/importers/test_main.cpp
   modules/importers/test_sdfmolreader.cpp
   modules/importers/test_mmcifmolreader.cpp
