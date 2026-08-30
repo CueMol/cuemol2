@@ -26,17 +26,17 @@ JctTable::JctTable()
 JctTable::~JctTable()
 {
   if (m_pParTab!=NULL)
-    delete m_pParTab;
+    delete [] m_pParTab;
   if (m_pEsclTab!=NULL)
-    delete m_pEsclTab;
+    delete [] m_pEsclTab;
 }
 
 void JctTable::invalidate()
 {
   if (m_pParTab!=NULL)
-    delete m_pParTab;
+    delete [] m_pParTab;
   if (m_pEsclTab!=NULL)
-    delete m_pEsclTab;
+    delete [] m_pEsclTab;
 
   m_nTabSz = 0;
   m_pParTab = NULL;
@@ -258,6 +258,10 @@ bool JctTable::setup(int ndetail, TubeSection *pts1, TubeSection *pts2, bool fre
     m_fPartition = true;
   else
     m_fPartition = false;
+
+  // setup() runs once per segment on every rebuild: release the previous
+  // tables (and leave an empty table when the setup below fails)
+  invalidate();
 
   switch (m_nType) {
   default:

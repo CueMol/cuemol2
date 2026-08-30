@@ -470,7 +470,7 @@ void AtomIntrRenderer::setAt(int index, const AtomIntrData &dat)
 
 bool AtomIntrRenderer::remove(int nid)
 {
-  if (m_data.size()<=nid)
+  if (nid<0 || int(m_data.size())<=nid)
     return false;
 
   AtomIntrData dat = m_data[nid];

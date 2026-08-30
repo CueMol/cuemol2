@@ -247,7 +247,7 @@ void PaintColoring::insertBefore(int ind, const SelectionPtr &psel, const ColorP
 
 bool PaintColoring::removeAtImpl(int ind)
 {
-  if (ind>=m_coltab.size())
+  if (ind<0 || ind>=int(m_coltab.size()))
     return false;
 
   ColorTab::iterator iter = m_coltab.begin()+ind;
@@ -284,7 +284,7 @@ bool PaintColoring::removeAt(int ind)
 
 bool PaintColoring::changeAt(int ind, const SelectionPtr &psel, const ColorPtr &pcol)
 {
-  if (ind>=m_coltab.size()) return false;
+  if (ind<0 || ind>=int(m_coltab.size())) return false;
   ColorTab::iterator iter = m_coltab.begin()+ind;
 
   SelectionPtr poldsel = iter->first;

@@ -120,7 +120,9 @@ public:
   int getType() const { return m_nSectType; }
 
   void setDetail(int d) {
-    m_nSectDetail = d;
+    // detail is a script property; an empty section table would divide
+    // by zero in getVec()
+    m_nSectDetail = (d < 1) ? 1 : d;
     invalidate();
     //setupSectionTable();
   }

@@ -80,5 +80,9 @@ void DistPickDrawObj::append(qlib::uid_t mol_id, int naid)
     MolCoordPtr pMol = qsys::SceneManager::getObjectS(mol_id);
     if (pMol.isnull()) return;
     molstr::MolAtomPtr pAtom = pMol->getAtom(naid);
+    if (pAtom.isnull()) {
+        LOG_DPRINTLN("DistPickDrawObj> atom %d not found in mol %d", naid, int(mol_id));
+        return;
+    }
     m_data.push_back(pAtom->getPos());
 }
