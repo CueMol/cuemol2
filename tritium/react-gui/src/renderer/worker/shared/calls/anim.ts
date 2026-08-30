@@ -19,7 +19,7 @@ import type {
   SetAnimElementGenericPropArgs,
   SetAnimElementPropArgs,
   SetAnimElementPropResult,
-} from '@renderer/worker/server/services/animDetail.service'
+} from '@renderer/worker/server/services/anim/anim.service'
 import type {
   AnimAddElementArgs,
   AnimAddResult,
@@ -36,7 +36,7 @@ import type {
   AnimSetStartCamArgs,
   AnimStopArgs,
   AnimTransportResult,
-} from '@renderer/worker/server/services/animation.service'
+} from '@renderer/worker/server/services/anim/anim.service'
 
 export interface AnimCalls {
   animListTimeline:           { args: AnimListTimelineArgs; result: AnimTimeline }

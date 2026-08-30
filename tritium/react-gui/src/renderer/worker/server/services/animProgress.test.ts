@@ -31,7 +31,7 @@ function fakeMgr(state: { elapsed: number; playState: string; length?: number })
   }
 }
 
-let mod: typeof import('./animation.service')
+let mod: typeof import('./anim/anim.service')
 let live: { elapsed: number; playState: string }
 let mgr: ReturnType<typeof fakeMgr>
 /** The context the render loop pumps with; a test may close its scene. */
@@ -61,7 +61,7 @@ const pushes = (): AnimMgrState[] =>
 beforeEach(async () => {
   vi.resetModules()
   postMessage.mockClear()
-  mod = await import('./animation.service')
+  mod = await import('./anim/anim.service')
   live = { elapsed: 0, playState: 'play' }
   mgr = fakeMgr(live)
   env = ctxWith(mgr)

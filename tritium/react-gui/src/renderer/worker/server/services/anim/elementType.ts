@@ -1,16 +1,4 @@
-/**
- * @file worker/server/services/helpers/animElementType.ts
- * @description Derive an `AnimElementType` from a wrapped CueMol `AnimObj`.
- *
- * `AnimObj` exposes no `type` property, so the timeline must infer the
- * concrete subtype. The native class name (`getClassName()`, present on every
- * wrapper via `BaseWrapper`) is the primary source; a distinguishing-property
- * probe is the fallback for the rare case where the wrapped object resolves to
- * a base wrapper without the subtype getters.
- */
-
 import type { AnimElementType } from "@renderer/types";
-
 const KNOWN: readonly string[] = [
   "SimpleSpin",
   "CamMotion",

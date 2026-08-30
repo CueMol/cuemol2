@@ -12,7 +12,7 @@ import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { act } from "react";
 import { mountTree, flushPromises } from "@renderer/__test__/helpers/testHarness";
-import type { AnimElementDetail } from "@renderer/worker/server/services/animDetail.service";
+import type { AnimElementDetail } from "@renderer/worker/server/services/anim/anim.service";
 import type { AnimElementType } from "@renderer/types";
 import { SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "@renderer/event";
 

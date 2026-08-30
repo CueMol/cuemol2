@@ -1,27 +1,16 @@
 /**
- * @file worker/server/services/animDetail.service.ts
- * @description Per-element detail read/write for the animation detail inspector
- * (right InspectorPanel, anim-element target).
+ * @file worker/server/services/anim/detail.ts
+ * @description One element, as the inspector shows it.
  *
- * `AnimObj` is owned by `AnimMgr`, not by the scene object table, so the generic
- * property bridge (`genericProps.service`) cannot target it. These services
- * mirror that shape with a dedicated path:
- *   - getAnimElementDetail  -- common + per-type props + sibling names (read)
- *   - setAnimElementProp    -- write one prop (withUndoTxn; timing/axis special)
- *   - getAnimTargetOptions  -- renderer / camera / mol names for the dropdowns
- *
- * Elements are resolved by STABLE `uid` via a linear scan of the manager's
- * current list (`findByUid`): `AnimMgr` exposes no getByUID, and resolving via
- * the global `ObjectManager` would return removed-but-undoable elements (the
- * undo record keeps them alive/registered), breaking the "gone" signal. A scan
- * of `m_data` is the only liveness-correct accessor (element count is small).
+ * Elements are addressed by a stable uid rather than an index, because the
+ * strip can be reordered underneath an open inspector. Time can be stated
+ * relative to another element by name, which is why writing a name has to
+ * cascade into whoever referred to the old one.
  */
-
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
-import type { AnimElementType } from "@renderer/types";
-import { getSceneOrNull } from "@renderer/worker/server/services/helpers/sceneResolver";
+import { classNameToType } from "./elementType";
 import {
   safeNum,
   safeBool,
@@ -30,144 +19,27 @@ import {
   resolveSceneMgr,
   makeTimeValue,
   forEachAnimObj,
-} from "@renderer/worker/server/services/helpers/animResolve";
-import { classNameToType } from "@renderer/worker/server/services/helpers/animElementType";
-import { withUndoTxn } from "./withUndoTxn";
-import { parseSceneTreeJSON, type SceneTreeNode } from "@renderer/worker/shared/sceneTreeTypes";
-import { parseGenericProps, type GenericPropEntry } from "@renderer/worker/server/services/helpers/parseGenericProps";
-import type { BaseWrapper } from "@cuemol/core/src/BaseWrapper";
-
+} from "./resolve";
+import { withUndoTxn } from "../withUndoTxn";
+import type { AnimElementType } from "@renderer/types";
+import type {
+  AnimElementCommon,
+  AnimElementDetail,
+  AnimElementPropKey,
+  AnimElementSibling,
+  AnimElementTypeProps,
+  GetAnimElementDetailArgs,
+  GetAnimElementDetailResult,
+  SetAnimElementPropArgs,
+  SetAnimElementPropResult,
+} from "./types";
 // --- detail shapes ---
-
-/** Common fields shared by every element (volatile index is intentionally omitted). */
-export interface AnimElementCommon {
-  uid: number;
-  name: string;
-  type: AnimElementType;
-  disabled: boolean;
-  timeRefName: string; // '' = (absolute)
-  startMs: number; // RELATIVE
-  endMs: number; // RELATIVE
-  quadric: number; // raw real (renderer maps to/from 0..50%)
-}
-
-/** Only the inspected subtype's props are populated; the rest are undefined. */
-export interface AnimElementTypeProps {
-  angle?: number;
-  axisX?: number;
-  axisY?: number;
-  axisZ?: number; // SimpleSpin
-  endcam?: string;
-  ignorerotate?: boolean;
-  ignorecenter?: boolean;
-  ignorezoom?: boolean;
-  ignoreslab?: boolean; // CamMotion
-  rend?: string; // ShowHideAnim / SlideInOutAnim
-  hide?: boolean;
-  fade?: boolean;
-  tgtAlpha?: number; // ShowHideAnim
-  direction?: number;
-  distance?: number; // SlideInOutAnim
-  mol?: string;
-  startValue?: number;
-  endValue?: number; // MolAnim
-}
-
-/** Other element's name, for the Relative-to dropdown. */
-export interface AnimElementSibling {
-  name: string;
-}
-
-export interface AnimElementDetail {
-  common: AnimElementCommon;
-  typeProps: AnimElementTypeProps;
-  siblings: AnimElementSibling[];
-}
-
-export interface GetAnimElementDetailArgs {
-  sceneId: number;
-  uid: number;
-}
-
-export interface GetAnimElementDetailResult {
-  ok: boolean;
-  /** true = uid no longer in the manager (deleted). The inspector clears on this. */
-  gone?: boolean;
-  detail?: AnimElementDetail;
-}
-
-/** Prop keys the inspector can write. `timing` and `axis` carry object values. */
-export type AnimElementPropKey =
-  | "name"
-  | "disabled"
-  | "quadric"
-  | "timeRefName"
-  | "timing"
-  | "angle"
-  | "axis"
-  | "endcam"
-  | "ignorerotate"
-  | "ignorecenter"
-  | "ignorezoom"
-  | "ignoreslab"
-  | "rend"
-  | "hide"
-  | "fade"
-  | "tgtAlpha"
-  | "direction"
-  | "distance"
-  | "mol"
-  | "startValue"
-  | "endValue";
-
-export interface SetAnimElementPropArgs {
-  sceneId: number;
-  uid: number;
-  prop: AnimElementPropKey;
-  value:
-    | string
-    | number
-    | boolean
-    | { startMs: number; endMs: number } // prop === "timing"
-    | { x: number; y: number; z: number }; // prop === "axis"
-}
-
-export interface SetAnimElementPropResult {
-  ok: boolean;
-  gone?: boolean;
-  detail?: AnimElementDetail;
-}
-
-export interface GetAnimTargetOptionsArgs {
-  sceneId: number;
-}
-
-export interface AnimRendererOption {
-  name: string;
-  objName: string;
-  type: string;
-}
-export interface AnimCameraOption {
-  name: string;
-}
-export interface AnimMolOption {
-  name: string;
-}
-
-export interface GetAnimTargetOptionsResult {
-  ok: boolean;
-  renderers: AnimRendererOption[];
-  cameras: AnimCameraOption[];
-  mols: AnimMolOption[];
-}
-
-// --- helpers ---
 
 /**
  * Resolve a stable uid to its current AnimObj + volatile index by scanning the
  * manager's list. The ONLY liveness-correct accessor (see file header).
  */
-function findByUid(mgr: AnimMgr, uid: number): { obj: AnimObj; index: number } | null {
+export function findByUid(mgr: AnimMgr, uid: number): { obj: AnimObj; index: number } | null {
   return (
     forEachAnimObj(mgr, (obj, i) =>
       safeNum(() => obj.uid) === uid ? { obj, index: i } : undefined,
@@ -270,7 +142,7 @@ function readSiblings(mgr: AnimMgr, uid: number): AnimElementSibling[] {
 }
 
 /** Build the full detail for a uid, or null when the element is gone. */
-function buildDetail(mgr: AnimMgr, uid: number): AnimElementDetail | null {
+export function buildDetail(mgr: AnimMgr, uid: number): AnimElementDetail | null {
   const found = findByUid(mgr, uid);
   if (!found) return null;
   const obj = found.obj;
@@ -386,25 +258,10 @@ function applyProp(
   }
 }
 
-/** Recurse renderer groups, collecting leaf renderers under `objName`. */
-function collectRenderers(
-  node: SceneTreeNode,
-  objName: string,
-  out: AnimRendererOption[],
-): void {
-  for (const child of node.children ?? []) {
-    if (child.type === "renderer") {
-      if (child.name) out.push({ name: child.name, objName, type: child.className ?? "" });
-    } else if (child.type === "rendGroup") {
-      collectRenderers(child, objName, out);
-    }
-  }
-}
-
 // --- services ---
 
 /** Read the full detail for a selected element (resolved by stable uid). */
-function getAnimElementDetail(
+export function getAnimElementDetail(
   ctx: WorkerContext,
   args: GetAnimElementDetailArgs,
 ): GetAnimElementDetailResult {
@@ -436,7 +293,7 @@ function cascadeTimeRefRename(mgr: AnimMgr, uid: number, oldName: string, newNam
 }
 
 /** Write one property of the element (undoable; returns the refreshed detail). */
-function setAnimElementProp(
+export function setAnimElementProp(
   ctx: WorkerContext,
   args: SetAnimElementPropArgs,
 ): SetAnimElementPropResult {
@@ -471,169 +328,3 @@ function setAnimElementProp(
   if (!detail) return { ok: false, gone: true };
   return { ok: true, detail };
 }
-
-/** List renderer / camera / mol names for the target-picker dropdowns. */
-function getAnimTargetOptions(
-  ctx: WorkerContext,
-  args: GetAnimTargetOptionsArgs,
-): GetAnimTargetOptionsResult {
-  const empty: GetAnimTargetOptionsResult = {
-    ok: false,
-    renderers: [],
-    cameras: [],
-    mols: [],
-  };
-  const scene = getSceneOrNull(ctx, args.sceneId);
-  if (!scene) return empty;
-
-  const renderers: AnimRendererOption[] = [];
-  const mols: AnimMolOption[] = [];
-  let tree: SceneTreeNode | null = null;
-  try {
-    tree = parseSceneTreeJSON(scene.getSceneDataJSON());
-  } catch {
-    tree = null;
-  }
-  if (tree) {
-    for (const objNode of tree.children ?? []) {
-      if (objNode.type !== "object") continue;
-      if (objNode.className === "MorphMol") mols.push({ name: objNode.name });
-      collectRenderers(objNode, objNode.name, renderers);
-    }
-  }
-
-  const cameras: AnimCameraOption[] = [];
-  try {
-    const arr = JSON.parse(scene.getCameraInfoJSON()) as Array<{ name?: string }>;
-    for (const c of arr) {
-      if (c?.name) cameras.push({ name: c.name });
-    }
-  } catch {
-    /* no cameras */
-  }
-
-  return { ok: true, renderers, cameras, mols };
-}
-
-// --- generic property tab (mirrors genericProps.service for an AnimObj) ---
-
-export interface GetAnimElementGenericPropsArgs {
-  sceneId: number;
-  uid: number;
-}
-
-export interface SetAnimElementGenericPropArgs {
-  sceneId: number;
-  uid: number;
-  propName: string;
-  op: "set" | "reset";
-  valueType: string;
-  value?: string | number | boolean;
-}
-
-export interface ResetAnimElementGenericPropsArgs {
-  sceneId: number;
-  uid: number;
-  propNames: string[];
-}
-
-export interface AnimGenericPropsResult {
-  ok: boolean;
-  gone?: boolean;
-  entries: GenericPropEntry[];
-}
-
-/** Read + parse the AnimObj's full property list (generic tab). */
-function readAnimGenericEntries(obj: AnimObj): GenericPropEntry[] {
-  try {
-    return parseGenericProps(JSON.parse((obj as unknown as BaseWrapper).getPropsJSON()));
-  } catch {
-    return [];
-  }
-}
-
-/** Dump every property of the element (resolved by stable uid). */
-function getAnimElementGenericProps(
-  ctx: WorkerContext,
-  args: GetAnimElementGenericPropsArgs,
-): AnimGenericPropsResult {
-  const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return { ok: false, entries: [] };
-  const found = findByUid(mgr, args.uid);
-  if (!found) return { ok: false, gone: true, entries: [] };
-  return { ok: true, entries: readAnimGenericEntries(found.obj) };
-}
-
-/** Write or reset one generic property (undoable); returns the fresh list. */
-function setAnimElementGenericProp(
-  ctx: WorkerContext,
-  args: SetAnimElementGenericPropArgs,
-): AnimGenericPropsResult {
-  const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm) return { ok: false, entries: [] };
-  const { scene, mgr } = sm;
-  let gone = false;
-  const label =
-    args.op === "reset"
-      ? `Reset property: ${args.propName}`
-      : `Change property: ${args.propName}`;
-  try {
-    withUndoTxn(scene, label, () => {
-      const found = findByUid(mgr, args.uid);
-      if (!found) {
-        gone = true;
-        return;
-      }
-      const obj = found.obj as unknown as BaseWrapper;
-      if (args.op === "reset") obj.resetProp(args.propName);
-      else obj.setProp(args.propName, args.value);
-    });
-  } catch (e) {
-    console.warn("setAnimElementGenericProp failed:", e);
-    return { ok: false, entries: [] };
-  }
-  if (gone) return { ok: false, gone: true, entries: [] };
-  const found = findByUid(mgr, args.uid);
-  return { ok: true, entries: found ? readAnimGenericEntries(found.obj) : [] };
-}
-
-/** Reset several generic properties to their C++ defaults in one undo step. */
-function resetAnimElementGenericProps(
-  ctx: WorkerContext,
-  args: ResetAnimElementGenericPropsArgs,
-): AnimGenericPropsResult {
-  const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm || args.propNames.length === 0) return { ok: false, entries: [] };
-  const { scene, mgr } = sm;
-  let gone = false;
-  const label =
-    args.propNames.length === 1
-      ? `Reset property: ${args.propNames[0]}`
-      : `Reset ${args.propNames.length} properties`;
-  try {
-    withUndoTxn(scene, label, () => {
-      const found = findByUid(mgr, args.uid);
-      if (!found) {
-        gone = true;
-        return;
-      }
-      const obj = found.obj as unknown as BaseWrapper;
-      for (const name of args.propNames) obj.resetProp(name);
-    });
-  } catch (e) {
-    console.warn("resetAnimElementGenericProps failed:", e);
-    return { ok: false, entries: [] };
-  }
-  if (gone) return { ok: false, gone: true, entries: [] };
-  const found = findByUid(mgr, args.uid);
-  return { ok: true, entries: found ? readAnimGenericEntries(found.obj) : [] };
-}
-
-export const services = {
-  getAnimElementDetail,
-  setAnimElementProp,
-  getAnimTargetOptions,
-  getAnimElementGenericProps,
-  setAnimElementGenericProp,
-  resetAnimElementGenericProps,
-};
