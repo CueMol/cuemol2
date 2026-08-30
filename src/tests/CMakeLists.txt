@@ -148,6 +148,7 @@ gtest_discover_tests(test_molstr PROPERTIES LABELS "test_molstr")
 add_executable(test_molvis
   modules/molvis/test_main.cpp
   modules/molvis/test_cpk2renderer.cpp
+  modules/molvis/test_smoothspline.cpp
 )
 target_include_directories(test_molvis PRIVATE
   ${CMAKE_SOURCE_DIR}/src

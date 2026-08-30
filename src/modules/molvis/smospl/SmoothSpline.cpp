@@ -12,6 +12,7 @@
 using namespace molvis;
 
 SmoothSpline1D::SmoothSpline1D()
+  : m_nPoints(0)
 {
   m_rho = 3.0;
 }
@@ -37,6 +38,9 @@ void SmoothSpline1D::cleanup()
 bool SmoothSpline1D::generate()
 {
   int i;
+  // drop the coefficients of a previous generate() so that a failure
+  // below leaves interpolate() with nothing to read
+  cleanup();
   m_nPoints = m_veclist.size();
 
   if (m_nPoints==0)
@@ -105,6 +109,10 @@ bool SmoothSpline1D::interpolate(double par, double *vec,
                               double *dvec /*= NULL*/,
                               double *ddvec /*= NULL*/)
 {
+  // no coefficients: generate() has not run or rejected the points
+  if (m_vecx.size()<2 || m_coeff0.empty())
+    return false;
+
   int l = 0;
   int r = m_vecx.size()-2+1;
   int m;
