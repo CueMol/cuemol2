@@ -20,7 +20,7 @@ const hoisted = vi.hoisted(() => ({
     /** Cameras the fake scene holds, by name. */
     cameras: new Set<string>(),
 }))
-vi.mock('@renderer/worker/server/services/renderBackends', () => ({
+vi.mock('@renderer/worker/server/services/renderjob/backends', () => ({
     getRenderBackend: hoisted.getRenderBackend,
 }))
 vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
@@ -38,7 +38,7 @@ vi.mock('@renderer/worker/server/services/helpers/animResolve', () => ({
     getAnimMgrOrNull: hoisted.getAnimMgrOrNull,
 }))
 
-import { services } from '@renderer/worker/server/services/renderJob.service'
+import { services } from '@renderer/worker/server/services/renderjob/renderJob.service'
 
 const p = (key: string, value: string | number | boolean): PropDef => ({
     key,

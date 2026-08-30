@@ -9,7 +9,7 @@ interface ServiceModule {
     services?: Record<string, AnyServiceFn>;
 }
 
-const modules = import.meta.glob('./*.service.ts', { eager: true }) as Record<
+const modules = import.meta.glob(['./*.service.ts', './*/*.service.ts'], { eager: true }) as Record<
     string,
     ServiceModule
 >;

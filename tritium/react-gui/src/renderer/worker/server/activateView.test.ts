@@ -18,7 +18,7 @@ vi.mock('@renderer/worker/server/services/animation.service', () => ({
     forgetAnimProgress: vi.fn(),
 }));
 const rendering = vi.hoisted(() => vi.fn(() => false));
-vi.mock('@renderer/worker/server/services/renderJob.service', () => ({ isSceneBeingRendered: rendering }));
+vi.mock('@renderer/worker/server/services/renderjob/renderJob.service', () => ({ isSceneBeingRendered: rendering }));
 
 import { WorkerService } from './WorkerService';
 

@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/renderBackends/UmbreonBackend.ts
+ * @file worker/server/services/renderjob/backends/UmbreonBackend.ts
  * @description Umbreon (Embree) rendering backend -- an IN-PROCESS ray tracer.
  *
  * Unlike POV-Ray (which exports a .pov/.inc pair and spawns povray + blendpng),

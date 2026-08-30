@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/renderBackends/index.ts
+ * @file worker/server/services/renderjob/backends/index.ts
  * @description Registry of worker-side rendering backends.
  *
  * Adding a backend: implement `RenderBackend` and add it here.

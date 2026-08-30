@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/renderBackends/RenderBackend.ts
+ * @file worker/server/services/renderjob/backends/RenderBackend.ts
  * @description Backend-agnostic rendering interface.
  *
  * A `RenderBackend` knows how to write its own input files for a scene and
