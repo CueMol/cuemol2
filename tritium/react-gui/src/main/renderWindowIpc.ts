@@ -34,7 +34,7 @@ import {
   renderImagePath,
   storeRenderImage,
 } from './renderHistory'
-import { handleInvoke } from './ipcHandlers'
+import { handleInvoke } from './ipc/handleInvoke'
 import { withMenuBlocked } from './menu'
 
 /** How long to wait for a main-window reply (view size / view camera). */
