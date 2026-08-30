@@ -195,6 +195,7 @@ export const APP_ICONS = {
   "ui.settings": { lib: "phosphor", Comp: Gear },
   "ui.layers": { lib: "phosphor", Comp: Stack },
   "ui.tag": { lib: "phosphor", Comp: Tag },
+  "ui.tree": { lib: "phosphor", Comp: TreeStructure },
   "ui.document": { lib: "phosphor", Comp: File },
   "ui.lock": { lib: "phosphor", Comp: Lock },
   "ui.unlock": { lib: "phosphor", Comp: LockOpen },

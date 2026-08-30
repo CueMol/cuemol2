@@ -93,12 +93,6 @@
   white-space: nowrap;
 }
 
-.scene-name-title {
-  color: var(--text-primary);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--ls-normal);
-}
-
 .sp-section-header-actions {
   display: flex;
   align-items: center;
