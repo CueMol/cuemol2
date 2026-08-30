@@ -8,13 +8,13 @@
  * app uses.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/sceneClipboard.service'
+import { services } from '@renderer/worker/server/services/clipboard/clipboard.service'
 import type {
     CopyNodeArgs,
     CopyNodeResult,
     PasteNodeArgs,
     PasteNodeResult,
-} from '@renderer/worker/server/services/sceneClipboard.service'
+} from '@renderer/worker/server/services/clipboard/clipboard.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 /**
