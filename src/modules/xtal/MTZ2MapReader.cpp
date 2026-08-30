@@ -126,6 +126,7 @@ bool MTZ2MapReader::read(qlib::InStream &arg)
   mapfft.setTarget(m_pMap);
   mapfft.setParams(m_cella, m_cellb, m_cellc, m_alpha, m_beta,
                    m_gamma, m_nSG, m_grid, m_mapr);
+  mapfft.setChkResGrid(m_bChkResGrid);
   mapfft.setData(m_nrefl, m_ncol, reinterpret_cast<float *>(m_pbuf),
                  m_cind_h, m_cind_k, m_cind_l,
                  m_nfp, m_nphi, m_nwgt);

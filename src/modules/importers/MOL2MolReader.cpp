@@ -256,7 +256,7 @@ bool MOL2MolReader::readMol(qlib::LineStream &lin, bool bskip)
       // protein or nucleic acid
       // strip residue number from res_name
       int ntmp;
-      if (res_name.substr(3).toInt(&ntmp)) {
+      if (res_name.length()>3 && res_name.substr(3).toInt(&ntmp)) {
 	res_name = res_name.substr(0, 3);
 	iresid = ntmp;
       }

@@ -784,6 +784,16 @@ bool PovDisplayContext::writeCyls()
       }
 
       writeColor(p->col);
+      // xform_cyl_noclip: the clipped branch below applies the object
+      // transform; the unclipped one must do the same
+      if (p->pTransf!=NULL) {
+        const Matrix4D &m = *p->pTransf;
+        ips.format(" matrix <");
+        ips.format("%f, %f, %f, ", m.aij(1,1), m.aij(2,1), m.aij(3,1) );
+        ips.format("%f, %f, %f, ", m.aij(1,2), m.aij(2,2), m.aij(3,2) );
+        ips.format("%f, %f, %f, ", m.aij(1,3), m.aij(2,3), m.aij(3,3) );
+        ips.format("%f, %f, %f>" , m.aij(1,4), m.aij(2,4), m.aij(3,4) );
+      }
       ips.format("}\n");
     }
     else {
@@ -1143,12 +1153,17 @@ void PovDisplayContext::writePixData()
 
   PrintStream ips(*m_pIncOut);
 
-  
-  
+
+
   int i = 0, j, k;
   BOOST_FOREACH (PixData &img, m_pixList) {
+    // the .pov refers to the image by this include-relative name; the
+    // file itself is written under the output directory, not the CWD
     LString fname = LString::format("%s_%04d.png", m_incFileName.c_str(), i);
-    
+    LString fpath = fname;
+    if (!m_imgBaseDir.isEmpty() && !qlib::isAbsolutePath(fname))
+      fpath = m_imgBaseDir + "/" + fname;
+
     int nWidth, nHeight, nRow;
     int nBitDepth, nColorType;
     unsigned char **ppImage;
@@ -1167,24 +1182,38 @@ void PovDisplayContext::writePixData()
       for (k=0; k<nRow; ++k)
         ppImage[j][k] = img.m_pData->at((nHeight-1-j)*nRow + k);
 
-    png_structp     png_ptr;
-    png_infop       info_ptr;
-    
-    FILE *fp = fopen(fname.c_str(), "wb");
+    png_structp     png_ptr = NULL;
+    png_infop       info_ptr = NULL;
+    bool bOK = false;
 
-    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    info_ptr = png_create_info_struct(png_ptr);
-    png_init_io(png_ptr, fp);
-
-    png_set_IHDR(png_ptr, info_ptr, nWidth, nHeight,
-                 nBitDepth, nColorType, PNG_INTERLACE_NONE,
-		 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-
-    png_write_info(png_ptr, info_ptr);
-    png_write_image(png_ptr, ppImage);
-    png_write_end(png_ptr, info_ptr);
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    fclose(fp);
+    FILE *fp = fopen(fpath.c_str(), "wb");
+    if (fp == NULL) {
+      LOG_DPRINTLN("PovWriter> cannot open label image file %s", fpath.c_str());
+    }
+    else {
+      png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,
+                                        user_error_fn, user_warning_fn);
+      if (png_ptr != NULL)
+        info_ptr = png_create_info_struct(png_ptr);
+      // libpng reports errors through longjmp; without this it would
+      // abort the process
+      if (png_ptr != NULL && info_ptr != NULL && setjmp(png_jmpbuf(png_ptr)) == 0) {
+        png_init_io(png_ptr, fp);
+        png_set_IHDR(png_ptr, info_ptr, nWidth, nHeight,
+                     nBitDepth, nColorType, PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+        png_write_info(png_ptr, info_ptr);
+        png_write_image(png_ptr, ppImage);
+        png_write_end(png_ptr, info_ptr);
+        bOK = true;
+      }
+      else {
+        LOG_DPRINTLN("PovWriter> cannot write label image file %s", fpath.c_str());
+      }
+      if (png_ptr != NULL)
+        png_destroy_write_struct(&png_ptr, info_ptr ? &info_ptr : NULL);
+      fclose(fp);
+    }
 
     for (j=0; j<nHeight; ++j)
       delete [] ppImage[j];
@@ -1192,9 +1221,14 @@ void PovDisplayContext::writePixData()
 
     delete img.m_pData;
 
+    if (!bOK) {
+      ++i;
+      continue;  // no make_label for an image that was not written
+    }
+
     //////////
 
-    m_imgFileNames.push_back(fname);
+    m_imgFileNames.push_back(fpath);
     fname = fname.escapeQuots();
 
     Vector4D v1 = img.m_pos;

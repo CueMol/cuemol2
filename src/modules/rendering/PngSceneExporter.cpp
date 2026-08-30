@@ -164,7 +164,12 @@ void PngSceneExporter::writeData(const char *pbuf, int nsize)
 #ifdef HAVE_PNG_H
   //m_pfos->write(pbuf, 0, nsize);
   png_structp pPNG = (png_structp) m_pPNG;
-  png_write_row(pPNG, (png_bytep) pbuf);  
+  // the jump buffer set in prepare() is only valid inside that call
+  if (setjmp(png_jmpbuf(pPNG))) {
+    MB_THROW(qlib::IOException, "Cannot write PNG row");
+    return;
+  }
+  png_write_row(pPNG, (png_bytep) pbuf);
 #endif
 }
 
@@ -173,8 +178,17 @@ void PngSceneExporter::completed()
 #ifdef HAVE_PNG_H
   png_structp pPNG = (png_structp) m_pPNG;
   png_infop pInfo = (png_infop) m_pPNGInfo;
+  if (setjmp(png_jmpbuf(pPNG))) {
+    png_destroy_write_struct(&pPNG, &pInfo);
+    m_pPNG = NULL;
+    m_pPNGInfo = NULL;
+    MB_THROW(qlib::IOException, "Cannot finish PNG file");
+    return;
+  }
   png_write_end(pPNG, pInfo);
   png_destroy_write_struct(&pPNG, &pInfo);
+  m_pPNG = NULL;
+  m_pPNGInfo = NULL;
 #endif
 
   super_t::completed();

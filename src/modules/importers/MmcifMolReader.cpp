@@ -148,6 +148,7 @@ void MmcifMolReader::warning(const LString &msg) const
 
 void MmcifMolReader::readDataItem(CifParser &parser)
 {
+  m_lineno = parser.getLineNo();
     if (parser.getCatName().equalsIgnoreCase("_atom_site"))
         readAtomLine(parser);
     else if (m_bLoadAnisoU && parser.getCatName().equalsIgnoreCase("_atom_site_anisotrop"))
@@ -510,8 +511,8 @@ void MmcifMolReader::readHelixLine(CifParser &parser)
   ResidIndex begseq = getResidIndex(parser, m_nAuthSeqID1, m_nLabelSeqID1, m_nInsID1);
   ResidIndex endseq = getResidIndex(parser, m_nAuthSeqID2, m_nLabelSeqID2, m_nInsID2);
 
-  int ntype;
-  if (!parser.getToken(m_nHlxClass).toInt(&ntype)) {
+  int ntype = 1;
+  if (m_nHlxClass >= 0 && !parser.getToken(m_nHlxClass).toInt(&ntype)) {
     ntype = 1;
   }
   
@@ -785,6 +786,9 @@ void MmcifMolReader::readSymmLine(CifParser &parser)
 
   if (!parser.tokenizeLine())
     return;
+
+  if (nSgNameID < 0)
+    return;  // optional item
 
   LString sgname = parser.getToken(nSgNameID);
 

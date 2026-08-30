@@ -25,6 +25,9 @@ public:
                    double gamma, int nSG, double grid /*= 0.33*/,
                    double mapr /*= -1.0*/);
 
+    /// check that the grid spacing suits the resolution (off by default)
+    void setChkResGrid(bool b) { m_bChkResGrid = b; }
+
     void setData(int nrefl, int nincr, const float *pbuf, int ind_h, int ind_k, int ind_l,
                  int ifp, int iphase, int iweight);
 

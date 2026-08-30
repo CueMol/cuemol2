@@ -335,6 +335,16 @@ void Netcdf3InStream::readVarList()
     for (NcVar &v : m_vars) {
         if (v.isRecord) v.relOffset = v.begin - m_recordDataStart;
     }
+
+    // A record variable placed outside the record entry (corrupt or
+    // inconsistent header) would be read past the record buffer.
+    for (const NcVar &v : m_vars) {
+        if (!v.isRecord) continue;
+        if (v.relOffset < 0 || v.relOffset + v.vsize > m_recordSize) {
+            MB_THROW(qlib::FileFormatException,
+                     "NetCDF3: record variable lies outside the record entry");
+        }
+    }
 }
 
 void Netcdf3InStream::parseHeader()

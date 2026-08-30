@@ -70,7 +70,7 @@ static PyTypeObject gWrapperType = {
 qlib::LScriptable *Wrapper::getWrapped(PyObject *pPyObj)
 {
     if (Py_TYPE(pPyObj) != &gWrapperType) {
-        LOG_DPRINTLN("Wrapper::getWrapped> ERROR pPyObj %p is not a wrapper.");
+        LOG_DPRINTLN("Wrapper::getWrapped> ERROR pPyObj %p is not a wrapper.", pPyObj);
         return NULL;
     }
 
@@ -121,6 +121,10 @@ PyObject *Wrapper::getattr(QpyWrapObj *pSelf, const char *name)
     if (pObj->hasMethod(name)) {
         // name is method
         //  --> create and return method object
+        // (the property lookup above left "property not found" set;
+        //  returning a valid object with an error indicator set is a
+        //  SystemError in the interpreter)
+        PyErr_Clear();
         return Wrapper::createMethodObj((PyObject *)pSelf, name);
     }
 
@@ -283,7 +287,7 @@ PyObject *Wrapper::getService(PyObject *self, PyObject *args)
 // static
 PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
 {
-    const char *clsname;
+    const char *clsname = NULL;
     const char *strval = "";
 
     int nargs = PyTuple_GET_SIZE(args);
@@ -292,6 +296,10 @@ PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
     }
     else if (nargs == 2) {
       if (!PyArg_ParseTuple(args, "ss", &clsname, &strval)) return NULL;
+    }
+    else {
+      PyErr_SetString(PyExc_TypeError, "createObj() takes 1 or 2 arguments");
+      return NULL;
     }
 
     LScriptable *pNewObj;
