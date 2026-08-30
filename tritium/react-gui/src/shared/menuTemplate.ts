@@ -46,11 +46,36 @@ export interface AppMenuGroup {
   submenu: AppMenuItem[]
 }
 
-// The canonical macOS Application menu lives in src/main/menu.ts
-// ('macOnlyGroups'); it needs main-process-only role items and app.name, so it
-// is not declared here. The group-level 'darwinOnly?' field and the
-// '.filter(g => !g.darwinOnly)' guards in the two readers remain as harmless
-// no-ops. Item-level darwinOnly / othersOnly are still live.
+/**
+ * The macOS Application menu, which is not part of APP_MENU because it is
+ * titled with the running app's name -- known only in the main process, hence
+ * the parameter. The native menu builder prepends it on macOS; the React menu
+ * bar (Windows / Linux only) never sees it.
+ *
+ * The group-level 'darwinOnly?' field is what would put a group here instead,
+ * and nothing uses it: this menu needs `appName`, so it is a function. The
+ * field and the two readers' guards stay as harmless no-ops. Item-level
+ * darwinOnly / othersOnly are still live.
+ */
+export function macAppMenuGroup(appName: string): AppMenuGroup {
+  return {
+    label: appName,
+    submenu: [
+      { id: 'about-mac', label: `About ${appName}`, ipcChannel: IPC.MENU_ABOUT },
+      { type: 'separator' },
+      { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: IPC.MENU_OPTIONS },
+      { type: 'separator' },
+      { role: 'services' },
+      { type: 'separator' },
+      { role: 'hide' },
+      { role: 'hideOthers' },
+      { role: 'unhide' },
+      { type: 'separator' },
+      { role: 'quit' },
+    ],
+  }
+}
+
 export const APP_MENU: AppMenuGroup[] = [
   // File menu
   {

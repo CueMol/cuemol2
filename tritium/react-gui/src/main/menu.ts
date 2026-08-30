@@ -9,7 +9,7 @@ import { app, Menu, webContents } from 'electron'
 import type { BrowserWindow, MenuItemConstructorOptions, WebContents } from 'electron'
 import path from 'path'
 import { IPC } from '@shared/ipcChannels'
-import { APP_MENU } from '@shared/menuTemplate'
+import { APP_MENU, macAppMenuGroup } from '@shared/menuTemplate'
 import type { AppMenuItem, AppMenuGroup } from '@shared/menuTemplate'
 import {
   DEDICATED_DIRECT_CHANNELS,
@@ -243,37 +243,18 @@ let lastMenuState: MenuState | null = null
 function buildAndSetMenu(mainWindow: BrowserWindow): void {
   const specificHandlers = buildSpecificHandlers(mainWindow)
 
-  // macOS Application menu uses app.name (only available in main process)
-  const macOnlyGroups: AppMenuGroup[] = isMac
-    ? [
-        {
-          label: app.name,
-          submenu: [
-            { id: 'about-mac', label: `About ${app.name}`, ipcChannel: IPC.MENU_ABOUT },
-            { type: 'separator' },
-            { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: IPC.MENU_OPTIONS },
-            { type: 'separator' },
-            { role: 'services' },
-            { type: 'separator' },
-            { role: 'hide' },
-            { role: 'hideOthers' },
-            { role: 'unhide' },
-            { type: 'separator' },
-            { role: 'quit' },
-          ],
-        },
-      ]
-    : []
+  // macOS App menu first (it is titled with app.name, which only the main
+  // process knows), then APP_MENU.
+  const groups: AppMenuGroup[] = [
+    ...(isMac ? [macAppMenuGroup(app.name)] : []),
+    ...APP_MENU.filter((g) => !g.darwinOnly),
+  ]
 
-  // Build groups: macOS App menu first, then APP_MENU excluding the darwinOnly placeholder
-  const appMenuGroups = APP_MENU.filter((g) => !g.darwinOnly)
-
-  const template: MenuItemConstructorOptions[] = [
-    ...macOnlyGroups.map((g) => buildGroup(g, specificHandlers, mainWindow)),
-    ...appMenuGroups.map((g) => buildGroup(g, specificHandlers, mainWindow)),
+  const template: MenuItemConstructorOptions[] = groups
+    .map((g) => buildGroup(g, specificHandlers, mainWindow))
     // Drop groups that build to an empty submenu (e.g. Help on macOS, whose
     // only item -- About -- is othersOnly and lives in the App menu instead).
-  ].filter((g) => !Array.isArray(g.submenu) || g.submenu.length > 0)
+    .filter((g) => !Array.isArray(g.submenu) || g.submenu.length > 0)
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 
