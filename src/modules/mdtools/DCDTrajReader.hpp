@@ -72,7 +72,8 @@ private:
 
 public:
     int getSkipNo() const { return m_nSkip; }
-    void setSkipNo(int n) { m_nSkip = n; }
+    /// nevery < 1 would divide by zero in the frame loop
+    void setSkipNo(int n) { m_nSkip = (n < 1) ? 1 : n; }
 
 private:
     int m_natom;

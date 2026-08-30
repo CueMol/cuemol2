@@ -1506,3 +1506,64 @@ TEST(TrajectoryTest, AmberNetCDFInitialFrameIsTrajFrameZero)
         EXPECT_NEAR(pos.z(), ncCoord(0, i, 2), 1e-4);
     }
 }
+
+// ---- corrupt XTC input ----
+//
+// Offsets inside one compressed frame: 56-byte frame header, then precision,
+// minint[3] and maxint[3] (28 bytes), so smallidx sits at 84, the opaque byte
+// count at 88 and the compressed bytes start at 92.
+
+TEST(TrajectoryTest, XtcTruncatedCompressedBlockThrows)
+{
+    const int natom = 12;
+    TrajectoryPtr pTraj = makeTrajectoryNAtoms(natom);
+    std::string xtc = buildXTCCompressed(natom, 1, 1000.0f);
+    ASSERT_GT(xtc.size(), 96u);
+
+    // keep only 4 bytes of the compressed block; the decoder used to read on
+    // past the end of the vector
+    std::string cut = xtc.substr(0, 96);
+    patchBE32(cut, 88, 4u);
+    EXPECT_THROW(appendXTC(pTraj, cut), qlib::FileFormatException);
+}
+
+TEST(TrajectoryTest, XtcSmallidxOutsideTableThrows)
+{
+    const int natom = 12;
+    TrajectoryPtr pTraj = makeTrajectoryNAtoms(natom);
+    const std::string xtc = buildXTCCompressed(natom, 1, 1000.0f);
+
+    // smallidx 0: MAGICINTS[smallidx - 1] wrapped around as unsigned
+    std::string bad = xtc;
+    patchBE32(bad, 84, 0u);
+    EXPECT_THROW(appendXTC(pTraj, bad), qlib::FileFormatException);
+
+    // smallidx past the end of the table
+    bad = xtc;
+    patchBE32(bad, 84, 1000u);
+    EXPECT_THROW(appendXTC(pTraj, bad), qlib::FileFormatException);
+}
+
+// nevery is a script property; 0 used to divide the frame counter by zero.
+TEST(TrajReaderNevery, BelowOneIsClampedToOne)
+{
+    XtcTrajReader xr;
+    xr.setSkipNo(0);
+    EXPECT_EQ(xr.getSkipNo(), 1);
+    xr.setSkipNo(-3);
+    EXPECT_EQ(xr.getSkipNo(), 1);
+    xr.setSkipNo(4);
+    EXPECT_EQ(xr.getSkipNo(), 4);
+
+    mdtools::DCDTrajReader dr;
+    dr.setSkipNo(0);
+    EXPECT_EQ(dr.getSkipNo(), 1);
+
+    mdtools::TrrTrajReader tr;
+    tr.setSkipNo(0);
+    EXPECT_EQ(tr.getSkipNo(), 1);
+
+    mdtools::AmberNetCDFReader ar;
+    ar.setSkipNo(0);
+    EXPECT_EQ(ar.getSkipNo(), 1);
+}
