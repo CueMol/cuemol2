@@ -1,8 +1,7 @@
 /* File Open Option Dialog styles */
 
-.fod-dialog {
-  width: 480px;
-}
+/* Width comes from the shell's `--dialog-w-*` ladder (the 6xl rung), so it is
+   set in one place for every dialog rather than here for these two. */
 
 .fod-body {
   display: flex;

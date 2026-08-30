@@ -1,6 +1,5 @@
 import React from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { DialogShell } from './DialogShell'
 import { RendererOptionsPane } from '../fopen-opt-dlgs/panes/RendererOptionsPane'
 import { useRendererOptions } from '../fopen-opt-dlgs/useRendererOptions'
 import type { PresetTypeEntry, RendererOptions } from '../fopen-opt-dlgs/types'
@@ -62,8 +61,6 @@ export function NewRendererDialog({
     onConfirm,
     onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
 
     const { options, setOptions, onRendererNameUserEdit, commitHistory } =
         useRendererOptions({
@@ -98,16 +95,17 @@ export function NewRendererDialog({
         : 'New Renderer'
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title={title}
+            width="6xl"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okLabel="Create"
+            okDisabled={!canSubmit}
             className="fod-dialog"
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            bodyClassName="fod-body"
         >
-            <DialogBody className="fod-body">
                 <div className="fod-file-info">
                     <span className="fod-file-name" title={objName}>{objName || '(no object)'}</span>
                     {objClassName && (
@@ -124,17 +122,6 @@ export function NewRendererDialog({
                     isMolFormat={isMol}
                     onRendererNameUserEdit={onRendererNameUserEdit}
                 />
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel}>Cancel</Button>
-                        <Button intent="primary" onClick={handleOk} disabled={!canSubmit}>
-                            Create
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+        </DialogShell>
     )
 }

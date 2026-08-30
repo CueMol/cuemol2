@@ -1,18 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import {
-    Button,
-    ButtonGroup,
-    Dialog,
-    DialogBody,
-    DialogFooter,
-    Divider,
-    Menu,
-    MenuDivider,
-    MenuItem,
-    Popover,
-} from '@blueprintjs/core'
+import { Button, ButtonGroup, Divider, Menu, MenuDivider, MenuItem, Popover } from '@blueprintjs/core'
 import { AppIcon } from '@renderer/h3-kit/primitives'
-import { useTheme } from '../../contexts/ThemeContext'
+import { DialogShell } from './DialogShell';
 
 /**
  * "Edit Renderer Style" dialog -- UXP `apply_rend_style.xul` /
@@ -66,8 +55,6 @@ export function ApplyRendStyleDialog({
     onConfirm,
     onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
 
     const [styles, setStyles] = useState<string[]>(() => [...initialStyles])
     const [selectedIdx, setSelectedIdx] = useState<number>(
@@ -170,135 +157,118 @@ export function ApplyRendStyleDialog({
     )
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Apply Renderer Style"
-            style={{ width: 420 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="2xl"
+            onCancel={onCancel}
+            onOk={() => onConfirm({ styleNames: styles })}
         >
-            <DialogBody>
-                <div style={{ marginBottom: 8 }}>
-                    <strong>Renderer: </strong>
-                    {rendName} ({rendTypeName})
-                </div>
+            <div style={{ marginBottom: 8 }}>
+                <strong>Renderer: </strong>
+                {rendName} ({rendTypeName})
+            </div>
 
-                <div style={{ marginBottom: 4 }}>Styles:</div>
-                <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        fontSize: 'var(--fs-base)',
-                        color: 'var(--text-secondary)',
-                    }}
-                >
-                    (low priority)
-                </div>
-                <div
-                    role="listbox"
-                    aria-label="Applied styles"
-                    style={{
-                        border: '1px solid var(--border)',
-                        borderRadius: 3,
-                        minHeight: 120,
-                        maxHeight: 220,
-                        overflowY: 'auto',
-                        padding: 2,
-                        background: 'var(--bg-surface)',
-                    }}
-                >
-                    {styles.length === 0 ? (
+            <div style={{ marginBottom: 4 }}>Styles:</div>
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    fontSize: 'var(--fs-base)',
+                    color: 'var(--text-secondary)',
+                }}
+            >
+                (low priority)
+            </div>
+            <div
+                role="listbox"
+                aria-label="Applied styles"
+                style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 3,
+                    minHeight: 120,
+                    maxHeight: 220,
+                    overflowY: 'auto',
+                    padding: 2,
+                    background: 'var(--bg-surface)',
+                }}
+            >
+                {styles.length === 0 ? (
+                    <div
+                        style={{
+                            padding: '8px 4px',
+                            color: 'var(--text-secondary)',
+                            fontStyle: 'italic',
+                        }}
+                    >
+                        (no styles applied)
+                    </div>
+                ) : (
+                    styles.map((name, idx) => (
                         <div
+                            key={`${name}-${idx}`}
+                            role="option"
+                            aria-selected={idx === selectedIdx}
+                            onClick={() => setSelectedIdx(idx)}
                             style={{
-                                padding: '8px 4px',
-                                color: 'var(--text-secondary)',
-                                fontStyle: 'italic',
+                                padding: '3px 6px',
+                                cursor: 'pointer',
+                                background:
+                                    idx === selectedIdx
+                                        ? 'var(--accent)'
+                                        : 'transparent',
+                                color:
+                                    idx === selectedIdx
+                                        ? 'white'
+                                        : 'var(--text-primary)',
+                                borderRadius: 2,
                             }}
                         >
-                            (no styles applied)
+                            {name}
                         </div>
-                    ) : (
-                        styles.map((name, idx) => (
-                            <div
-                                key={`${name}-${idx}`}
-                                role="option"
-                                aria-selected={idx === selectedIdx}
-                                onClick={() => setSelectedIdx(idx)}
-                                style={{
-                                    padding: '3px 6px',
-                                    cursor: 'pointer',
-                                    background:
-                                        idx === selectedIdx
-                                            ? 'var(--accent)'
-                                            : 'transparent',
-                                    color:
-                                        idx === selectedIdx
-                                            ? 'white'
-                                            : 'var(--text-primary)',
-                                    borderRadius: 2,
-                                }}
-                            >
-                                {name}
-                            </div>
-                        ))
-                    )}
-                </div>
-                <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        fontSize: 'var(--fs-base)',
-                        color: 'var(--text-secondary)',
-                    }}
-                >
-                    (high priority)
-                </div>
+                    ))
+                )}
+            </div>
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    fontSize: 'var(--fs-base)',
+                    color: 'var(--text-secondary)',
+                }}
+            >
+                (high priority)
+            </div>
 
-                <Divider style={{ margin: '8px 0' }} />
+            <Divider style={{ margin: '8px 0' }} />
 
-                <ButtonGroup>
-                    <Popover content={addMenu} placement="bottom-start">
-                        <Button
-                            icon={<AppIcon name="ui.add" aria-hidden />}
-                            text="Add"
-                            disabled={totalAvailable === 0}
-                        />
-                    </Popover>
+            <ButtonGroup>
+                <Popover content={addMenu} placement="bottom-start">
                     <Button
-                        icon={<AppIcon name="ui.trash" aria-hidden />}
-                        text="Delete"
-                        disabled={!canDelete}
-                        onClick={handleDelete}
+                        icon={<AppIcon name="ui.add" aria-hidden />}
+                        text="Add"
+                        disabled={totalAvailable === 0}
                     />
-                    <Button
-                        icon={<AppIcon name="ui.caretUp" aria-hidden />}
-                        text="Up"
-                        disabled={!canMoveUp}
-                        onClick={() => handleMove(-1)}
-                    />
-                    <Button
-                        icon={<AppIcon name="ui.caretDown" aria-hidden />}
-                        text="Down"
-                        disabled={!canMoveDown}
-                        onClick={() => handleMove(1)}
-                    />
-                </ButtonGroup>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={() => onConfirm({ styleNames: styles })}
-                        >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+                </Popover>
+                <Button
+                    icon={<AppIcon name="ui.trash" aria-hidden />}
+                    text="Delete"
+                    disabled={!canDelete}
+                    onClick={handleDelete}
+                />
+                <Button
+                    icon={<AppIcon name="ui.caretUp" aria-hidden />}
+                    text="Up"
+                    disabled={!canMoveUp}
+                    onClick={() => handleMove(-1)}
+                />
+                <Button
+                    icon={<AppIcon name="ui.caretDown" aria-hidden />}
+                    text="Down"
+                    disabled={!canMoveDown}
+                    onClick={() => handleMove(1)}
+                />
+            </ButtonGroup>
+        </DialogShell>
     )
 }

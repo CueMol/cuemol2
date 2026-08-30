@@ -99,6 +99,13 @@
 /* form-kit dialog body: a vertical stack of FieldSections that shares one
    section gap (the canonical place to own section spacing -- consumers never
    set it per-section). Use for dialogs composed from h3-kit/form widgets. */
+/* Body of a dialog whose content is not a form and lays itself out (the About
+   splash bleeds its image to the frame edge). DialogShell's `bodyClassName`
+   selects this instead of the .h3-dialog-form column. */
+.h3-dialog-plain-body {
+  padding: 0;
+}
+
 .h3-dialog-form {
   display: flex;
   flex-direction: column;

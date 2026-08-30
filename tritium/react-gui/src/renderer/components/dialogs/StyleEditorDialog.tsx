@@ -9,8 +9,8 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { Dialog, DialogBody, DialogFooter, Button, Tabs, Tab, InputGroup } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { Button, Tabs, Tab, InputGroup } from '@blueprintjs/core'
+import { DialogShell } from './DialogShell';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import { ColorField } from '../../h3-kit/form'
@@ -71,8 +71,6 @@ export function StyleEditorDialog({
     styleName,
     onClose,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const { cm } = useCueMol()
 
     const [contents, setContents] = useState<GetStyleSetContentsResult | null>(null)
@@ -230,36 +228,33 @@ export function StyleEditorDialog({
     )
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onClose}
+        <DialogShell
+            visible={visible}
             title={`Style editor: ${styleName}`}
-            style={{ width: 500 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="5xl"
+            onCancel={onClose}
+            // Nothing to commit: the tabs write as they are edited, so the one
+            // button dismisses rather than confirming.
+            footerActions={
+                <Button intent="primary" onClick={onClose}>
+                    Close
+                </Button>
+            }
         >
+            {/* Only the body reads the picker context; the footer does not, so
+                the provider does not have to straddle the frame. */}
             <ColorPickerProvider cm={cm} sceneId={sceneId}>
-                <DialogBody>
-                    {ro && (
-                        <div style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
-                            (read-only style set)
-                        </div>
-                    )}
-                    <Tabs id="style-editor-tabs" selectedTabId={tab} onChange={(t) => setTab(String(t))}>
-                        <Tab id="color" title="Color" panel={colorPanel} />
-                        <Tab id="selection" title="Selection" panel={selPanel} />
-                        <Tab id="styles" title="Styles" panel={stylePanel} />
-                    </Tabs>
-                </DialogBody>
-                <DialogFooter
-                    actions={
-                        <Button intent="primary" onClick={onClose}>
-                            Close
-                        </Button>
-                    }
-                />
+                {ro && (
+                    <div style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
+                        (read-only style set)
+                    </div>
+                )}
+                <Tabs id="style-editor-tabs" selectedTabId={tab} onChange={(t) => setTab(String(t))}>
+                    <Tab id="color" title="Color" panel={colorPanel} />
+                    <Tab id="selection" title="Selection" panel={selPanel} />
+                    <Tab id="styles" title="Styles" panel={stylePanel} />
+                </Tabs>
             </ColorPickerProvider>
-        </Dialog>
+        </DialogShell>
     )
 }

@@ -1,13 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import {
-    Button,
-    Dialog,
-    DialogBody,
-    DialogFooter,
-    FormGroup,
-    InputGroup,
-} from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { FormGroup, InputGroup } from '@blueprintjs/core'
+import { DialogShell } from './DialogShell';
 
 /**
  * "Create Renderer Style" dialog -- UXP `rendstyle_create.xul` /
@@ -51,8 +44,6 @@ export function CreateRendStyleDialog({
     onConfirm,
     onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const inputRef = useRef<HTMLInputElement | null>(null)
     const [selUid, setSelUid] = useState<number>(defaultSelectedUid)
     const [name, setName] = useState<string>('')
@@ -84,111 +75,98 @@ export function CreateRendStyleDialog({
     }
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Create Renderer Style"
-            style={{ width: 380 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="lg"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={!canSubmit}
         >
-            <DialogBody>
-                <div style={{ marginBottom: 8 }}>
-                    <strong>Original rend: </strong>
-                    {rendName} ({rendTypeName})
-                </div>
+            <div style={{ marginBottom: 8 }}>
+                <strong>Original rend: </strong>
+                {rendName} ({rendTypeName})
+            </div>
 
-                <FormGroup label="Target Style set:" labelFor="create-style-set-list">
-                    <div
-                        id="create-style-set-list"
-                        role="listbox"
-                        aria-label="Style sets"
-                        style={{
-                            border: '1px solid var(--border)',
-                            borderRadius: 3,
-                            minHeight: 100,
-                            maxHeight: 180,
-                            overflowY: 'auto',
-                            padding: 2,
-                            background: 'var(--bg-surface)',
-                        }}
-                    >
-                        {styleSets.length === 0 ? (
-                            <div
-                                style={{
-                                    padding: '8px 4px',
-                                    color: 'var(--text-secondary)',
-                                    fontStyle: 'italic',
-                                }}
-                            >
-                                (no writable style sets)
-                            </div>
-                        ) : (
-                            styleSets.map((s) => {
-                                const label = s.name === '' ? '(anonymous)' : s.name
-                                const selected = s.uid === selUid
-                                return (
-                                    <div
-                                        key={s.uid}
-                                        role="option"
-                                        aria-selected={selected}
-                                        onClick={() => setSelUid(s.uid)}
-                                        style={{
-                                            padding: '3px 6px',
-                                            cursor: 'pointer',
-                                            background: selected
-                                                ? 'var(--accent)'
-                                                : 'transparent',
-                                            color: selected
-                                                ? 'white'
-                                                : 'var(--text-primary)',
-                                            borderRadius: 2,
-                                        }}
-                                    >
-                                        {label}
-                                    </div>
-                                )
-                            })
-                        )}
-                    </div>
-                </FormGroup>
-
-                <FormGroup label="Style name:" labelFor="create-style-name">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <InputGroup
-                            id="create-style-name"
-                            inputRef={(el) => {
-                                inputRef.current = el
-                            }}
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            fill
-                            autoComplete="off"
-                            placeholder="base name"
-                        />
-                        <span
+            <FormGroup label="Target Style set:" labelFor="create-style-set-list">
+                <div
+                    id="create-style-set-list"
+                    role="listbox"
+                    aria-label="Style sets"
+                    style={{
+                        border: '1px solid var(--border)',
+                        borderRadius: 3,
+                        minHeight: 100,
+                        maxHeight: 180,
+                        overflowY: 'auto',
+                        padding: 2,
+                        background: 'var(--bg-surface)',
+                    }}
+                >
+                    {styleSets.length === 0 ? (
+                        <div
                             style={{
+                                padding: '8px 4px',
                                 color: 'var(--text-secondary)',
-                                whiteSpace: 'nowrap',
+                                fontStyle: 'italic',
                             }}
                         >
-                            {rendTypeName}
-                        </span>
-                    </div>
-                </FormGroup>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel}>Cancel</Button>
-                        <Button intent="primary" onClick={handleOk} disabled={!canSubmit}>
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+                            (no writable style sets)
+                        </div>
+                    ) : (
+                        styleSets.map((s) => {
+                            const label = s.name === '' ? '(anonymous)' : s.name
+                            const selected = s.uid === selUid
+                            return (
+                                <div
+                                    key={s.uid}
+                                    role="option"
+                                    aria-selected={selected}
+                                    onClick={() => setSelUid(s.uid)}
+                                    style={{
+                                        padding: '3px 6px',
+                                        cursor: 'pointer',
+                                        background: selected
+                                            ? 'var(--accent)'
+                                            : 'transparent',
+                                        color: selected
+                                            ? 'white'
+                                            : 'var(--text-primary)',
+                                        borderRadius: 2,
+                                    }}
+                                >
+                                    {label}
+                                </div>
+                            )
+                        })
+                    )}
+                </div>
+            </FormGroup>
+
+            <FormGroup label="Style name:" labelFor="create-style-name">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <InputGroup
+                        id="create-style-name"
+                        inputRef={(el) => {
+                            inputRef.current = el
+                        }}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        fill
+                        autoComplete="off"
+                        placeholder="base name"
+                    />
+                    <span
+                        style={{
+                            color: 'var(--text-secondary)',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {rendTypeName}
+                    </span>
+                </div>
+            </FormGroup>
+        </DialogShell>
     )
 }

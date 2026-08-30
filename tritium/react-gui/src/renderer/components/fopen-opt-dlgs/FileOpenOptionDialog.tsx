@@ -18,9 +18,9 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Dialog, DialogBody, DialogFooter, Button, Collapse } from '@blueprintjs/core';
+import { Collapse } from '@blueprintjs/core';
+import { DialogShell } from '../dialogs/DialogShell';
 import { AppIcon } from '@renderer/h3-kit/primitives';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 
 import {
@@ -112,7 +112,6 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const { theme } = useTheme();
   const { cm } = useCueMol();
   const formatKind = formatKindForReader(readerName);
   const formatName = formatLabel(formatKind);
@@ -305,16 +304,16 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   const isModified = hasFormatOptions && isFormatOptionsModified(formatOptions, formatDefaults);
 
   return (
-    <Dialog
-      isOpen={visible}
-      onClose={onCancel}
+    <DialogShell
+      visible={visible}
       title="Open File Options"
+      width="6xl"
+      onCancel={onCancel}
+      onOk={handleConfirm}
+      okLabel="Open"
       className="fod-dialog"
-      portalClassName={theme === 'dark' ? 'bp5-dark' : ''}
-      canOutsideClickClose={false}
-      isCloseButtonShown={false}
-    >
-      <DialogBody className="fod-body">
+      bodyClassName="fod-body"
+  >
         {/* File info row */}
         <div className="fod-file-info">
           <AppIcon name="ui.document" size="md" className="fod-file-icon" aria-hidden />
@@ -406,16 +405,6 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
             </Collapse>
           </div>
         )}
-      </DialogBody>
-
-      <DialogFooter
-        actions={
-          <>
-            <Button onClick={onCancel}>Cancel</Button>
-            <Button intent="primary" onClick={handleConfirm}>Open</Button>
-          </>
-        }
-      />
-    </Dialog>
+    </DialogShell>
   );
 };

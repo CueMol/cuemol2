@@ -16,8 +16,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { DialogShell } from './DialogShell';
 import { Field, FieldSection, NumericField, SelectField, SwitchField } from '../../h3-kit/form'
 import {
     DPI_OPTIONS,
@@ -53,8 +52,6 @@ const UNIT_OPTIONS: { value: PngUnit; label: string }[] = [
 export function ExportPngOptionsDialog({
     visible, initialWidth, initialHeight, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
 
     // Pixels are the source of truth.
     const [pxW, setPxW] = useState(initialWidth)
@@ -110,88 +107,69 @@ export function ExportPngOptionsDialog({
     const stepForUnit = unit === 'px' ? 1 : 0.1
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="PNG options"
-            style={{ width: 360 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="md"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={pxW <= 0 || pxH <= 0}
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
-                    <FieldSection title="Image size">
-                        <Field label="Resolution (DPI)">
-                            <SelectField
-                                value={String(dpi)}
-                                onChange={(v) => setDpi(Number(v))}
-                            >
-                                {DPI_OPTIONS.map((d) => (
-                                    <option key={d} value={d}>{d}</option>
-                                ))}
-                            </SelectField>
-                        </Field>
-                        <Field label="Unit">
-                            <SelectField
-                                value={unit}
-                                onChange={(v) => setUnit(v as PngUnit)}
-                            >
-                                {UNIT_OPTIONS.map((u) => (
-                                    <option key={u.value} value={u.value}>{u.label}</option>
-                                ))}
-                            </SelectField>
-                        </Field>
-                        <Field label="Width">
-                            <NumericField
-                                value={widthDisplay}
-                                onChange={handleWidth}
-                                min={0}
-                                max={100000}
-                                step={stepForUnit}
-                                slider={false}
-                            />
-                        </Field>
-                        <Field label="Height">
-                            <NumericField
-                                value={heightDisplay}
-                                onChange={handleHeight}
-                                min={0}
-                                max={100000}
-                                step={stepForUnit}
-                                slider={false}
-                                disabled={retainAspect}
-                            />
-                        </Field>
-                        <Field label="Retain aspect ratio" inline>
-                            <SwitchField checked={retainAspect} onChange={handleRetain} />
-                        </Field>
-                    </FieldSection>
-
-                    <FieldSection title="Output">
-                        <Field label={`Pixel size: ${pxW} x ${pxH}`}>
-                            <span />
-                        </Field>
-                        <Field label="Transparent PNG" inline>
-                            <SwitchField checked={alpha} onChange={setAlpha} />
-                        </Field>
-                    </FieldSection>
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={handleOk}
-                            disabled={pxW <= 0 || pxH <= 0}
+                <FieldSection title="Image size">
+                    <Field label="Resolution (DPI)">
+                        <SelectField
+                            value={String(dpi)}
+                            onChange={(v) => setDpi(Number(v))}
                         >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+                            {DPI_OPTIONS.map((d) => (
+                                <option key={d} value={d}>{d}</option>
+                            ))}
+                        </SelectField>
+                    </Field>
+                    <Field label="Unit">
+                        <SelectField
+                            value={unit}
+                            onChange={(v) => setUnit(v as PngUnit)}
+                        >
+                            {UNIT_OPTIONS.map((u) => (
+                                <option key={u.value} value={u.value}>{u.label}</option>
+                            ))}
+                        </SelectField>
+                    </Field>
+                    <Field label="Width">
+                        <NumericField
+                            value={widthDisplay}
+                            onChange={handleWidth}
+                            min={0}
+                            max={100000}
+                            step={stepForUnit}
+                            slider={false}
+                        />
+                    </Field>
+                    <Field label="Height">
+                        <NumericField
+                            value={heightDisplay}
+                            onChange={handleHeight}
+                            min={0}
+                            max={100000}
+                            step={stepForUnit}
+                            slider={false}
+                            disabled={retainAspect}
+                        />
+                    </Field>
+                    <Field label="Retain aspect ratio" inline>
+                        <SwitchField checked={retainAspect} onChange={handleRetain} />
+                    </Field>
+                </FieldSection>
+
+                <FieldSection title="Output">
+                    <Field label={`Pixel size: ${pxW} x ${pxH}`}>
+                        <span />
+                    </Field>
+                    <Field label="Transparent PNG" inline>
+                        <SwitchField checked={alpha} onChange={setAlpha} />
+                    </Field>
+                </FieldSection>
+        </DialogShell>
     )
 }

@@ -17,7 +17,7 @@
 
 import React, { useCallback, useRef, useState } from 'react'
 import { Alert } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { useDarkPortalClass } from '@renderer/h3-kit/primitives'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { useMolEditCommit } from '@renderer/hooks/cuemol/useMolEditCommit'
 import { Field, FieldSection, SegmentField, SwitchField, TextField } from '../../h3-kit/form'
@@ -47,8 +47,8 @@ const MODE_OPTIONS: { label: string; value: ResIndexMode }[] = [
 export function ChangeResidueIndexDialog({
     visible, sceneId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
+    // The confirm Alert is its own portal, so it needs the theme class too.
+    const portalClassName = useDarkPortalClass()
     const { cm } = useCueMol()
 
     const [objId, setObjId] = useState<number | undefined>(undefined)
@@ -135,7 +135,7 @@ export function ChangeResidueIndexDialog({
                     intent="primary"
                     confirmButtonText="Yes"
                     cancelButtonText="No"
-                    className={isDark ? 'bp5-dark' : undefined}
+                    className={portalClassName}
                     onConfirm={() => {
                         const p = pendingCommit
                         setPendingCommit(null)
