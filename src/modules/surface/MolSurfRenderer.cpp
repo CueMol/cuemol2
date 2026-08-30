@@ -425,7 +425,7 @@ Vector4D MolSurfRenderer::getCenter() const
     v = pSurf->getXformVertAt(i);
     p = v.v3d();
     if (m_pAmap!=NULL) {
-      if (!isShowVert(pos)) {
+      if (!isShowVert(p)) {
         // skip hidden verteces by molsel
         continue;
       }

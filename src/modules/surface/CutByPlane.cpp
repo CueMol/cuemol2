@@ -294,11 +294,11 @@ void CutByPlane::update()
   for (i=0; i<nnfaces; ++i)
     pNFaces[i] = m_faces[i];
 
-  delete m_pTgt->m_pVerts;
+  delete [] m_pTgt->m_pVerts;
   m_pTgt->m_pVerts = pNVerts;
   m_pTgt->m_nVerts = nnverts;
 
-  delete m_pTgt->m_pFaces;
+  delete [] m_pTgt->m_pFaces;
   m_pTgt->m_pFaces = pNFaces;
   m_pTgt->m_nFaces = nnfaces;
   
@@ -640,7 +640,9 @@ void CutByPlane::makeSection(Bndry &outer)
     for (j=0; j<ny; ++j)
       m_segrid.at(i, j) = -1;
 
-    if (yset.size()/2==0)
+    // crossings come in pairs; a boundary vertex exactly on xx produces
+    // an odd count, and walking it in pairs would dereference end()
+    if (yset.size()<2 || yset.size()%2!=0)
       continue;
 
     std::set<double>::const_iterator iys = yset.begin();

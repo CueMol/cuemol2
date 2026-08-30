@@ -211,11 +211,11 @@ void CutByPlane2::update()
   for (i=0; i<nnfaces; ++i)
     pNFaces[i] = m_faces[i];
 
-  delete m_pTgt->m_pVerts;
+  delete [] m_pTgt->m_pVerts;
   m_pTgt->m_pVerts = pNVerts;
   m_pTgt->m_nVerts = nnverts;
 
-  delete m_pTgt->m_pFaces;
+  delete [] m_pTgt->m_pFaces;
   m_pTgt->m_pFaces = pNFaces;
   m_pTgt->m_nFaces = nnfaces;
   

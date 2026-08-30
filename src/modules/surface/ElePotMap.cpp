@@ -42,7 +42,7 @@ bool ElePotMap::setMapFloatArray(const float *array,
                                  const Vector4D &origpos)
 {
   if (m_pMap!=NULL)
-    delete [] m_pMap;
+    delete m_pMap;
 
   m_pMap = MB_NEW FloatMap(ncol, nrow, nsect, array);
   MB_DPRINTLN("OK.");
@@ -79,6 +79,8 @@ bool ElePotMap::setMapFloatArray(const float *array,
 
   // map truncation level
   m_dLevelStep = (double)(rhomax - rhomin)/256.0;
+  if (m_dLevelStep<=0.0)
+    m_dLevelStep = 1.0;  // constant map: every voxel maps to byte 0
   m_dLevelBase = rhomin;
   
   LOG_DPRINTLN("ElePot> Minimum: %f", rhomin);
@@ -200,7 +202,7 @@ void ElePotMap::smooth2(double rad)
     for (iy=0; iy<ny; iy++) {
       for (iz=0; iz<nz; iz++) {
         double sum = 0.0;
-        for (jj=-mx; jj<mx; ++jj) {
+        for (jj=-mx; jj<=mx; ++jj) {
           if (!isInBoundary(ix+jj, iy, iz))
             continue;
           sum += m_pMap->at(ix+jj, iy, iz);
@@ -214,7 +216,7 @@ void ElePotMap::smooth2(double rad)
     for (iy=0; iy<ny; iy++) {
       for (iz=0; iz<nz; iz++) {
         double sum = 0.0;
-        for (jj=-my; jj<my; ++jj) {
+        for (jj=-my; jj<=my; ++jj) {
           if (!isInBoundary(ix, iy+jj, iz))
             continue;
           sum += pMap->at(ix, iy+jj, iz);
@@ -228,7 +230,7 @@ void ElePotMap::smooth2(double rad)
     for (iy=0; iy<ny; iy++) {
       for (iz=0; iz<nz; iz++) {
         double sum = 0.0;
-        for (jj=-mz; jj<mz; ++jj) {
+        for (jj=-mz; jj<=mz; ++jj) {
           if (!isInBoundary(ix, iy, iz+jj))
             continue;
           sum += m_pMap->at(ix, iy, iz+jj);
