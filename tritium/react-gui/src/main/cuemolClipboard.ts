@@ -29,7 +29,7 @@
  */
 import { clipboard } from 'electron'
 import { IPC } from '@shared/ipcChannels'
-import { handleInvoke } from './ipcHandlers'
+import { handleInvoke } from './ipc/handleInvoke'
 import type { CuemolClipPeekRes, CuemolClipReadRes, CuemolClipWriteReq } from '@shared/types/clipboard'
 import {
   LEGACY_PROBE_ORDER,
