@@ -32,6 +32,9 @@ PDBFileReader::PDBFileReader()
   m_bLoadAltConf = true;
   m_bLoadAnisoU = true;
   m_bBuild2ndry = true;
+  // loadsegid defaults to false in the .qif; a reader constructed directly
+  // (tests) read the chain from the empty segment-ID columns on Linux
+  m_bLoadSegID = false;
   m_bAutoTopoGen = true;
 
   m_nErrCount = 0;
