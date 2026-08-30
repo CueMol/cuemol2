@@ -135,7 +135,15 @@ export interface DragNumericFieldHandle {
 /** Transient drag bookkeeping, read by the global mousemove closure. */
 export interface DragState {
     startValue: number;
+    /** Total horizontal travel; only the drag-vs-click threshold reads it. */
     accumPx: number;
+    /**
+     * Value moved so far. Accumulated per frame rather than recomputed from
+     * `accumPx` because the rate is not constant: holding Shift slows it, and
+     * recomputing the whole travel at the new rate would make the value jump
+     * the moment the key goes down.
+     */
+    accumValue: number;
     crossed: boolean;
     /** Fixed for the drag, so a re-layout mid-gesture cannot change the feel. */
     valuePerPx: number;

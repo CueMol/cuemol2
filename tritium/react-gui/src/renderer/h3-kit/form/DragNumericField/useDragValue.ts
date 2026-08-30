@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { clampAndQuantize, snapTo } from '../numericMath';
-import { DRAG_THRESHOLD_PX, dragValuePerPx } from './dragMath';
+import { DRAG_THRESHOLD_PX, SNAP_FACTOR, dragValuePerPx } from './dragMath';
 import type { DragState, FieldCore } from './types';
 
 export interface UseDragValueResult {
@@ -29,7 +29,19 @@ export interface UseDragValueResult {
     onMouseDown: (e: React.MouseEvent) => void;
 }
 
-export function useDragValue(core: FieldCore, value: number): UseDragValueResult {
+export interface UseDragValueOptions {
+    /**
+     * Called as the precision modifier goes down and up during a drag, so the
+     * field can show the extra digits Shift can now reach.
+     */
+    onFineDragChange: (fine: boolean) => void;
+}
+
+export function useDragValue(
+    core: FieldCore,
+    value: number,
+    { onFineDragChange }: UseDragValueOptions,
+): UseDragValueResult {
     const { mode, setMode, setDraft, rootRef, valueRef, formatRef, cbRef, disabled } = core;
     const dragRef = useRef<DragState | null>(null);
 
@@ -38,7 +50,19 @@ export function useDragValue(core: FieldCore, value: number): UseDragValueResult
         if (!d) return;
         const { onChange, min, max, fineStep, coarseStep, step } = cbRef.current;
 
+        // Shift is a precision modifier: it slows the motion as well as
+        // refining the snap. Refining alone used to be enough, back when the
+        // rate was a fixed `step / PX_PER_STEP` and one pixel moved less than
+        // one step -- a snap of `step / 10` was then a real subdivision of a
+        // pixel's travel. Once the rate became proportional to the field's
+        // range, one pixel could cross several fine steps, and the modifier
+        // stopped being perceptible at all: it snapped to values the drag was
+        // already flying past.
+        const fine = e.shiftKey;
         d.accumPx += e.movementX;
+        d.accumValue +=
+            e.movementX * (fine ? d.valuePerPx / SNAP_FACTOR : d.valuePerPx);
+        onFineDragChange(fine);
 
         if (!d.crossed) {
             if (Math.abs(d.accumPx) <= DRAG_THRESHOLD_PX) return;
@@ -54,11 +78,10 @@ export function useDragValue(core: FieldCore, value: number): UseDragValueResult
             if (locked && typeof locked.catch === 'function') locked.catch(() => {});
         }
 
-        // The rate was fixed when the drag started; the modifier only changes
-        // the snap granularity, so the raw value moves at the same rate but is
-        // forced to a finer / coarser multiple.
-        const raw = d.startValue + d.accumPx * d.valuePerPx;
-        const snap = e.shiftKey
+        // Ctrl / Cmd stays a snap-only modifier: coarsening multiplies the
+        // pixels each step costs, so it is visible without touching the rate.
+        const raw = d.startValue + d.accumValue;
+        const snap = fine
             ? fineStep
             : e.ctrlKey || e.metaKey
               ? coarseStep
@@ -70,6 +93,7 @@ export function useDragValue(core: FieldCore, value: number): UseDragValueResult
 
     // Forward declaration so handleMouseUp can remove itself + handleMouseMove.
     const teardown = useCallback(() => {
+        onFineDragChange(false);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
         document.removeEventListener('pointerlockchange', handlePointerLockChange);
@@ -100,22 +124,21 @@ export function useDragValue(core: FieldCore, value: number): UseDragValueResult
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teardown]);
 
-    // If pointer lock is lost mid-drag (e.g. user pressed Esc): in realtime mode
-    // treat it as a cancel (roll back the live preview); otherwise end the drag
-    // cleanly as if released (commit the current value).
+    // Losing pointer lock mid-drag means the user pressed Esc, so abandon the
+    // drag whatever the mode. This used to commit the dragged value when
+    // `realtime` was off, on the reasoning that there was no live preview to
+    // roll back -- but the draft had still moved, so Esc quietly wrote the
+    // value it was asked to discard. Cancelling is also the cheaper path
+    // there: nothing was written, so the receiver only drops the draft.
     const handlePointerLockChange = useCallback(() => {
         if (dragRef.current?.crossed && document.pointerLockElement !== rootRef.current) {
-            if (cbRef.current.realtime) {
-                dragRef.current = null;
-                teardown();
-                setMode('hover');
-                cbRef.current.onDragCancel?.();
-            } else {
-                handleMouseUp();
-            }
+            dragRef.current = null;
+            teardown();
+            setMode('hover');
+            cbRef.current.onDragCancel?.();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [handleMouseUp, teardown]);
+    }, [teardown]);
 
     const onMouseDown = useCallback(
         (e: React.MouseEvent) => {
@@ -128,6 +151,7 @@ export function useDragValue(core: FieldCore, value: number): UseDragValueResult
             dragRef.current = {
                 startValue: value,
                 accumPx: 0,
+                accumValue: 0,
                 crossed: false,
                 valuePerPx: dragValuePerPx(
                     c.min,
@@ -146,9 +170,9 @@ export function useDragValue(core: FieldCore, value: number): UseDragValueResult
         [disabled, mode, value, handleMouseMove, handleMouseUp, handlePointerLockChange],
     );
 
-    // Unmounting mid-drag: drop the listeners and the pointer lock, and in
-    // realtime mode let the parent roll back so the object is not left at an
-    // uncommitted preview value.
+    // Unmounting mid-drag: drop the listeners and the pointer lock, and let
+    // the parent abandon the gesture -- rolling back a realtime preview, or
+    // just dropping the draft when there was nothing to preview.
     useEffect(() => {
         return () => {
             // Read at teardown, not at setup: `cbRef` is a data ref rewritten
@@ -157,7 +181,7 @@ export function useDragValue(core: FieldCore, value: number): UseDragValueResult
             // suggests for node refs -- would freeze a stale one.
             // eslint-disable-next-line react-hooks/exhaustive-deps
             const cb = cbRef.current;
-            if (cb.realtime && dragRef.current?.crossed) cb.onDragCancel?.();
+            if (dragRef.current?.crossed) cb.onDragCancel?.();
             teardown();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

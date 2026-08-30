@@ -29,9 +29,18 @@
  * percentage equally controllable -- with a fixed value-per-pixel rate one of
  * them always ends up either impossible to nudge or impossible to sweep. A
  * field with no finite range, or an explicit `pxPerStep`, keeps the fixed
- * `step / pxPerStep` rate instead. Only the snap granularity
- * changes with a modifier, so Shift gives finer resolution rather than slower
- * motion. The `<` / `>` arrows, by contrast, increment / decrement by `step`
+ * `step / pxPerStep` rate instead.
+ *
+ * Shift is therefore a full precision mode, not only a finer snap: it divides
+ * the rate by the same factor, and while it is held the value is shown to the
+ * fine snap's precision even on a field that pins `decimals` coarser than
+ * that. Snap alone was enough under the old fixed rate, where a pixel moved
+ * less than one step; against a range-proportional rate a pixel can cross
+ * several fine steps, which left the modifier snapping to values the drag was
+ * already flying past. Ctrl / Cmd needs no such treatment -- coarsening
+ * multiplies the pixels a step costs, so it shows up on its own.
+ *
+ * The `<` / `>` arrows, by contrast, increment / decrement by `step`
  * (independent of the drag rate), and auto-repeat while held down (one immediate
  * step, then -- after a short delay -- a steady stream of steps until release).
  * Pressing an arrow while text-editing leaves edit mode and steps relative to
@@ -75,10 +84,15 @@
  * Both a drag and an arrow press drive the same lifecycle, so the realtime hooks
  * below cover holds as well as drags.
  *
+ * Abandoning an interaction (Esc mid-drag, or unmount mid-interaction) emits
+ * `onDragCancel` instead of `onRelease`, in either mode. With `realtime` the
+ * receiver has a live preview to roll back; without it there is only a draft
+ * to drop, which is why Esc must not fall through to a commit -- it would
+ * write the value it was asked to discard.
+ *
  * Realtime mode (`realtime`): for props that benefit from live object feedback,
- * the field also emits `onDragStart` when a drag / arrow press begins and
- * `onDragCancel` if it is aborted (Esc mid-drag, or unmount mid-interaction).
- * This lets a parent run a preview-while-interacting / single-commit-on-release
+ * the field also emits `onDragStart` when a drag / arrow press begins. This
+ * lets a parent run a preview-while-interacting / single-commit-on-release
  * lifecycle (apply the value to the object every `onChange` without undo, then
  * commit one undo step on `onRelease`, or roll back on `onDragCancel`). Without
  * `realtime` (the default), no live preview fires: a hold only updates the
@@ -163,6 +177,11 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
 }, ref) => {
     const [mode, setMode] = useState<Mode>('idle');
     const [draft, setDraft] = useState('');
+    // True while the precision modifier is held during a drag. Only the
+    // display reads it: a field that pins `decimals` coarser than its fine
+    // snap would otherwise round away every value Shift can reach, so the
+    // modifier would slow the drag down to no visible effect.
+    const [fineDrag, setFineDrag] = useState(false);
 
     const rootRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -172,7 +191,8 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     // (Ctrl / Cmd) is the largest. Both default to a 10th / 10x of `step`.
     const fineStep = fineSnap ?? step / SNAP_FACTOR;
     const coarseStep = coarseSnap ?? step * SNAP_FACTOR;
-    const dispDecimals = decimals ?? decimalsOf(fineStep);
+    const dispDecimals =
+        fineDrag ? decimalsOf(fineStep) : (decimals ?? decimalsOf(fineStep));
     const format = useCallback(
         (v: number) => (formatProp ? formatProp(v) : v.toFixed(dispDecimals)),
         [formatProp, dispDecimals],
@@ -219,7 +239,9 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
         parseDraft, format, disabled, min, max, fineStep,
     };
 
-    const { onMouseDown } = useDragValue(core, value);
+    const { onMouseDown } = useDragValue(core, value, {
+        onFineDragChange: setFineDrag,
+    });
     const { onStepButtonDown, isPressing } = useStepRepeat(core, { resolveStep });
     const { commitEdit, onEditKeyDown, endKeyStep } = useNumericEdit(core, {
         step, onChange, onRelease, onCommitNext, onCommitPrev, resolveStep, isPressing,
