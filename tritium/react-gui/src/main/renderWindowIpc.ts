@@ -10,16 +10,17 @@
  * the window re-syncs on mount by sending a 'sync' command, which is the
  * single rehydration path (avoids ordering bugs from partial replays).
  *
- * The "Current view" size preset needs the main window's live canvas size,
- * so RENDER_VIEW_SIZE_GET does a correlation-id round trip to the main
- * window with a timeout fallback.
+ * Questions the render window cannot answer itself -- the "Current view"
+ * size preset, a target view's camera, a hatch style spec -- take a
+ * correlation-id round trip to the main window (RENDER_RELAY_*), with a
+ * per-kind fallback when it does not answer. See ipc/windowRelay.ts.
  */
 
 import * as fs from 'fs'
 import * as path from 'path'
 import { clipboard, dialog, nativeImage, type BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipcChannels'
-import type { RenderImageRef, RenderViewCamera, HatchStyleSpecReply, RenderWindowMode, ViewSizePx } from '@shared/types/renderWindow'
+import type { RenderImageRef, RenderWindowMode } from '@shared/types/renderWindow'
 import {
   frameFileRegExp,
   movieFileNames,
@@ -35,10 +36,8 @@ import {
   storeRenderImage,
 } from './renderHistory'
 import { handleInvoke } from './ipc/handleInvoke'
+import { makeWindowRelay } from './ipc/windowRelay'
 import { withMenuBlocked } from './menu'
-
-/** How long to wait for a main-window reply (view size / view camera). */
-const VIEW_SIZE_TIMEOUT_MS = 2000
 
 export interface RenderWindowIpcDeps {
   mainWindow: BrowserWindow
@@ -117,92 +116,19 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
     }
   })
 
-  // --- "Current view" size round trip ---
-
-  let nextReqId = 1
-  const pending = new Map<number, (size: ViewSizePx | null) => void>()
-
-  handleInvoke(IPC.RENDER_VIEW_SIZE_GET, () => {
-    if (mainWindow.isDestroyed()) return Promise.resolve(null)
-    const reqId = nextReqId++
-    return new Promise<ViewSizePx | null>((resolve) => {
-      const timer = setTimeout(() => {
-        pending.delete(reqId)
-        resolve(null)
-      }, VIEW_SIZE_TIMEOUT_MS)
-      pending.set(reqId, (size) => {
-        clearTimeout(timer)
-        pending.delete(reqId)
-        resolve(size)
-      })
-      mainWindow.webContents.send(IPC.RENDER_VIEW_SIZE_REQUEST, { reqId })
-    })
-  })
-
-  handleInvoke(IPC.RENDER_VIEW_SIZE_REPLY, (_event, { reqId, size }) => {
-    pending.get(reqId)?.(size)
-  })
-
-  // --- Target-view camera round trip ---
+  // --- Questions only the main window can answer ---
   //
-  // Same shape as the size trip above: the view lives in the main window's
-  // worker, so the render window cannot read it directly. Used to default the
-  // Camera settings to what the selected target view currently shows.
+  // The render window has no worker, so the canvas size, a target view's
+  // camera and a hatch style spec all take a round trip through here. One
+  // relay serves every kind (RelayKinds); see ipc/windowRelay.ts.
 
-  let nextCamReqId = 1
-  const pendingCam = new Map<number, (camera: RenderViewCamera | null) => void>()
+  const relay = makeWindowRelay(mainWindow)
 
-  handleInvoke(IPC.RENDER_VIEW_CAMERA_GET, (_event, { viewId }) => {
-    if (mainWindow.isDestroyed()) return Promise.resolve(null)
-    const reqId = nextCamReqId++
-    return new Promise<RenderViewCamera | null>((resolve) => {
-      const timer = setTimeout(() => {
-        pendingCam.delete(reqId)
-        resolve(null)
-      }, VIEW_SIZE_TIMEOUT_MS)
-      pendingCam.set(reqId, (camera) => {
-        clearTimeout(timer)
-        pendingCam.delete(reqId)
-        resolve(camera)
-      })
-      mainWindow.webContents.send(IPC.RENDER_VIEW_CAMERA_REQUEST, { reqId, viewId })
-    })
-  })
+  handleInvoke(IPC.RENDER_RELAY_GET, (_event, { kind, req }) =>
+    relay.request(kind, req as never),
+  )
 
-  handleInvoke(IPC.RENDER_VIEW_CAMERA_REPLY, (_event, { reqId, camera }) => {
-    pendingCam.get(reqId)?.(camera)
-  })
-
-  // --- Hatch style template round trip ---
-  //
-  // Same shape again: the NPR layer editor loads the selected hatch style as
-  // spec text, which only the main window's worker (the C++ side) can
-  // resolve. A timeout reads as a failed load, not as an empty style.
-
-  let nextHatchReqId = 1
-  const pendingHatch = new Map<number, (result: HatchStyleSpecReply) => void>()
-
-  handleInvoke(IPC.RENDER_HATCH_STYLE_GET, (_event, { style }) => {
-    const unavailable: HatchStyleSpecReply = { ok: false, error: 'main window unavailable' }
-    if (mainWindow.isDestroyed()) return Promise.resolve(unavailable)
-    const reqId = nextHatchReqId++
-    return new Promise<HatchStyleSpecReply>((resolve) => {
-      const timer = setTimeout(() => {
-        pendingHatch.delete(reqId)
-        resolve({ ok: false, error: 'timeout' })
-      }, VIEW_SIZE_TIMEOUT_MS)
-      pendingHatch.set(reqId, (result) => {
-        clearTimeout(timer)
-        pendingHatch.delete(reqId)
-        resolve(result)
-      })
-      mainWindow.webContents.send(IPC.RENDER_HATCH_STYLE_REQUEST, { reqId, style })
-    })
-  })
-
-  handleInvoke(IPC.RENDER_HATCH_STYLE_REPLY, (_event, { reqId, result }) => {
-    pendingHatch.get(reqId)?.(result)
-  })
+  handleInvoke(IPC.RENDER_RELAY_REPLY, (_event, payload) => relay.reply(payload))
 
   // --- Render history ---
   //

@@ -24,7 +24,11 @@ import type { TextEditAction, TextCtxShowPayload } from './types/textCtxMenu'
 import type { SceneCtxAction, SceneCtxMenuPayload } from './types/sceneCtxMenu'
 import type { MenuState } from './types/menuState'
 import type { CrashReport } from './types/crash'
-import type { RenderWindowCommand, RenderWindowModeRequest, RenderWindowOpenOptions, RenderWindowStateUpdate, ViewSizePx, RenderImageRef, RenderViewCamera, HatchStyleSpecReply } from './types/renderWindow'
+import type {
+  RenderWindowCommand, RenderWindowModeRequest, RenderWindowOpenOptions,
+  RenderWindowStateUpdate, RenderImageRef,
+  RelayGetPayload, RelayReplyPayload, RelayRequestPayload, RelayKind, RelayRes,
+} from './types/renderWindow'
 import type { CuemolClipWriteReq, CuemolClipReadRes, CuemolClipPeekRes } from './types/clipboard'
 
 export interface InvokeChannels {
@@ -90,18 +94,13 @@ export interface InvokeChannels {
   [IPC.RENDER_WINDOW_OPEN]:    { req: RenderWindowOpenOptions; res: void }
   [IPC.RENDER_WINDOW_COMMAND]: { req: RenderWindowCommand;     res: void }
   [IPC.RENDER_WINDOW_STATE]:   { req: RenderWindowStateUpdate; res: void }
-  [IPC.RENDER_VIEW_SIZE_GET]:  { req: void;                    res: ViewSizePx | null }
-  [IPC.RENDER_VIEW_SIZE_REPLY]: { req: { reqId: number; size: ViewSizePx | null }; res: void }
-  [IPC.RENDER_VIEW_CAMERA_GET]: { req: { viewId: number }; res: RenderViewCamera | null }
-  [IPC.RENDER_VIEW_CAMERA_REPLY]: {
-    req: { reqId: number; camera: RenderViewCamera | null }
-    res: void
-  }
-  [IPC.RENDER_HATCH_STYLE_GET]: { req: { style: string }; res: HatchStyleSpecReply }
-  [IPC.RENDER_HATCH_STYLE_REPLY]: {
-    req: { reqId: number; result: HatchStyleSpecReply }
-    res: void
-  }
+  /**
+   * Ask the main window a question it alone can answer (RelayKinds). The
+   * response is the union of every kind's result; `relayGet` in
+   * useRenderWindowClient narrows it back to the kind that was asked.
+   */
+  [IPC.RENDER_RELAY_GET]:   { req: RelayGetPayload; res: RelayRes<RelayKind> }
+  [IPC.RENDER_RELAY_REPLY]: { req: RelayReplyPayload; res: void }
   /**
    * Archive a finished render's PNG under its result id (main window -> main).
    * `workDir` is the job's temp directory when it is one the app should clean
@@ -191,9 +190,7 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_EXEC]:       RenderWindowCommand
   [IPC.RENDER_WINDOW_STATE_PUSH]: RenderWindowStateUpdate
   [IPC.RENDER_WINDOW_MODE_PUSH]:  RenderWindowModeRequest
-  [IPC.RENDER_VIEW_SIZE_REQUEST]: { reqId: number }
-  [IPC.RENDER_VIEW_CAMERA_REQUEST]: { reqId: number; viewId: number }
-  [IPC.RENDER_HATCH_STYLE_REQUEST]: { reqId: number; style: string }
+  [IPC.RENDER_RELAY_REQUEST]:     RelayRequestPayload
 }
 
 export type InvokeChannel = keyof InvokeChannels

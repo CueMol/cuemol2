@@ -80,9 +80,11 @@ function setupApi() {
         api,
         exec: (cmd: unknown) => pushCbs.get(IPC.RENDER_WINDOW_EXEC)?.(cmd),
         requestViewSize: (reqId: number) =>
-            pushCbs.get(IPC.RENDER_VIEW_SIZE_REQUEST)?.({ reqId }),
+            pushCbs.get(IPC.RENDER_RELAY_REQUEST)?.({ kind: 'viewSize', reqId }),
         requestHatchStyle: (reqId: number, style: string) =>
-            pushCbs.get(IPC.RENDER_HATCH_STYLE_REQUEST)?.({ reqId, style }),
+            pushCbs.get(IPC.RENDER_RELAY_REQUEST)?.({
+                kind: 'hatchStyle', reqId, req: { style },
+            }),
         stateUpdates: () =>
             (api.invoke as ReturnType<typeof vi.fn>).mock.calls
                 .filter((c) => c[0] === IPC.RENDER_WINDOW_STATE)
@@ -299,9 +301,10 @@ describe('useRenderWindowBridge', () => {
             await flushPromises();
         });
 
-        expect(harness.api.invoke).toHaveBeenCalledWith(IPC.RENDER_VIEW_SIZE_REPLY, {
+        expect(harness.api.invoke).toHaveBeenCalledWith(IPC.RENDER_RELAY_REPLY, {
+            kind: 'viewSize',
             reqId: 11,
-            size: { width: 400, height: 300 },
+            res: { width: 400, height: 300 },
         });
         h.unmount();
         document.body.removeChild(canvas);
@@ -331,9 +334,10 @@ describe('useRenderWindowBridge', () => {
             await flushPromises();
         });
 
-        expect(harness.api.invoke).toHaveBeenCalledWith(IPC.RENDER_VIEW_SIZE_REPLY, {
+        expect(harness.api.invoke).toHaveBeenCalledWith(IPC.RENDER_RELAY_REPLY, {
+            kind: 'viewSize',
             reqId: 12,
-            size: { width: 800, height: 600 },
+            res: { width: 800, height: 600 },
         });
         h.unmount();
         document.body.removeChild(decoy);
@@ -358,9 +362,10 @@ describe('useRenderWindowBridge hatch style template', () => {
         act(() => { requestHatchStyle(5, 'ink-cross'); });
         await flushPromises();
         expect(cm.invokeService).toHaveBeenCalledWith('getHatchStyleSpec', { style: 'ink-cross' });
-        expect(api.invoke).toHaveBeenCalledWith(IPC.RENDER_HATCH_STYLE_REPLY, {
+        expect(api.invoke).toHaveBeenCalledWith(IPC.RENDER_RELAY_REPLY, {
+            kind: 'hatchStyle',
             reqId: 5,
-            result: { ok: true, spec: 'layer: kind=line\n' },
+            res: { ok: true, spec: 'layer: kind=line\n' },
         });
         h.unmount();
     });
@@ -371,9 +376,9 @@ describe('useRenderWindowBridge hatch style template', () => {
         act(() => { requestHatchStyle(6, 'manga'); });
         await flushPromises();
         const reply = (api.invoke as ReturnType<typeof vi.fn>).mock.calls
-            .find((c) => c[0] === IPC.RENDER_HATCH_STYLE_REPLY)?.[1] as { reqId: number; result: { ok: boolean } };
+            .find((c) => c[0] === IPC.RENDER_RELAY_REPLY)?.[1] as { reqId: number; res: { ok: boolean } };
         expect(reply.reqId).toBe(6);
-        expect(reply.result.ok).toBe(false);
+        expect(reply.res.ok).toBe(false);
         h.unmount();
     });
 });
