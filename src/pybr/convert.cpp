@@ -138,6 +138,12 @@ PyObject *Wrapper::lvarToPyObj(qlib::LVariant &variant)
             for (int i=0; i<nsize; ++i) {
                 qlib::LVariant &value = pLArray->at(i);
                 PyObject *pObjValue = lvarToPyObj(value);
+                if (pObjValue == NULL) {
+                    // unconvertible element: keep the list well-formed
+                    Py_INCREF(Py_None);
+                    pObjValue = Py_None;
+                }
+                // PyList_SET_ITEM steals the reference
                 PyList_SET_ITEM(pPyList, i, pObjValue);
             }
             return pPyList;
@@ -151,7 +157,10 @@ PyObject *Wrapper::lvarToPyObj(qlib::LVariant &variant)
                 const qlib::LString &key = elem.first;
                 qlib::LVariant &value = elem.second;
                 PyObject *pObjValue = lvarToPyObj(value);
+                if (pObjValue == NULL) continue;
+                // PyDict_SetItemString does not steal the reference
                 PyDict_SetItemString(pPyDict, key.c_str(), pObjValue);
+                Py_DECREF(pObjValue);
             }
             return pPyDict;
         }
@@ -244,8 +253,15 @@ void Wrapper::pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rvar)
             }
             else if (PyUnicode_Check(key)) {
                 PyObject *pUTF8Obj = PyUnicode_AsUTF8String(key);
+                if (pUTF8Obj == NULL) {
+                    PyErr_Clear();
+                    LOG_DPRINTLN("convert: cannot encode dict key");
+                    continue;
+                }
                 const char *s = PyBytes_AsString(pUTF8Obj);
                 strkey = s;
+                // PyUnicode_AsUTF8String returns a new reference
+                Py_DECREF(pUTF8Obj);
             }
             else {
                 LOG_DPRINTLN("convert: unsupported key type");

@@ -95,6 +95,8 @@ static void wr_dealloc(QpyWrapObj *pSelf)
         pSelf->m_pObj->destruct();
         pSelf->m_pObj = NULL;
     }
+    // release the PyObject allocated by PyObject_New()
+    Py_TYPE(pSelf)->tp_free((PyObject *)pSelf);
 }
 
 /// getter (method/property)
