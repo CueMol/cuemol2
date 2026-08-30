@@ -40,10 +40,6 @@ Camera::~Camera()
 
 void Camera::copyFrom(const Camera&r)
 {
-  if (!r.m_visset.empty()) {
-    LOG_DPRINTLN("Warning: copy of non-empty visflags camera <%s>", r.m_name.c_str());
-  }
-  
   m_name = r.m_name;
   m_source = r.m_source;
 
@@ -72,6 +68,14 @@ void Camera::copyFrom(const Camera&r)
   m_nCenterMark = r.m_nCenterMark;
   setDefaultPropFlag("centerMark", false);
 
+  // The visibility settings are part of the camera value: the copies made
+  // by Scene::getCamera(), the undo/redo edit info and the lightweight
+  // viewer must keep them. The pending <visibilities> node is deep-copied
+  // so that two cameras never share (and double-delete) the same tree.
+  m_visset = r.m_visset;
+  delete m_pVisSetNodes;
+  m_pVisSetNodes = (r.m_pVisSetNodes != NULL)
+    ? MB_NEW qlib::LDom2Node(*r.m_pVisSetNodes) : NULL;
 }
 
 bool Camera::equals(const Camera &r)
@@ -415,6 +419,12 @@ void Camera::clearVisSettings()
     }
   }
 
+  resetVisSettings();
+}
+
+void Camera::resetVisSettings()
+{
+  m_visset.clear();
   delete m_pVisSetNodes;
   m_pVisSetNodes = NULL;
 }
