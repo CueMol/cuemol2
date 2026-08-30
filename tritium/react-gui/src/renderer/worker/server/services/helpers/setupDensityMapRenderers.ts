@@ -16,7 +16,7 @@
 // for the full chain). UXP avoids this by calling createRenderer
 // directly; we do the same here.
 
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
 import type { MapRenderer } from '@cuemol/core/src/wrappers/MapRenderer';

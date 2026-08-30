@@ -24,13 +24,13 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { GenericPropEntry, PropTargetType, PropWriteOpts } from '@renderer/worker/shared/genericProps'
-import { useCueMol } from '../../hooks/cuemol/useCueMol'
-import { useCueMolEventListener } from '../../hooks/cuemol/useCueMolEventListener'
-import { useLatestRef } from '../../hooks/react/useLatestRef'
-import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_VIEW, SEM_PROPCHG } from '../../event'
-import { EVENT_BURST_DEBOUNCE_MS } from '../../utils/timing'
-import { useActiveScene } from '../workspace'
-import { useLayout, useLayoutDispatch } from '../layout'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
+import { useLatestRef } from '@renderer/hooks/react/useLatestRef'
+import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_VIEW, SEM_PROPCHG } from '@renderer/event'
+import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
+import { useActiveScene } from '@renderer/state/workspace'
+import { useLayout, useLayoutDispatch } from '@renderer/state/layout'
 
 // --- Types ---
 

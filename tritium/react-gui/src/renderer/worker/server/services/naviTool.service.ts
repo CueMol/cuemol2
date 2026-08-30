@@ -1,5 +1,5 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
@@ -8,8 +8,8 @@ import type { ResidRangeSet } from '@cuemol/core/src/wrappers/ResidRangeSet';
 import type { MolResidue } from '@cuemol/core/src/wrappers/MolResidue';
 import type { HitTestResult } from '@renderer/types';
 import { withUndoTxn } from './withUndoTxn';
-import { makeSel } from './helpers/makeSel';
-import { quoteSelName } from './helpers/selName';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
+import { quoteSelName } from '@renderer/worker/server/services/helpers/selName';
 
 // ---- internal helpers ----
 

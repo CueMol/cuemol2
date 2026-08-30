@@ -9,7 +9,7 @@
 // No undo transaction: this is global app config, not a scene edit -- UXP does
 // not wrap it either.
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 const log = console;
 

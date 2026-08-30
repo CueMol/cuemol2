@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { WorkerContext } from '../types/WorkerContext';
-import { createInitialView } from './helpers/createSceneView';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { createInitialView } from '@renderer/worker/server/services/helpers/createSceneView';
 
 export interface CreateNewSceneAndViewArgs {
     dpr: number;

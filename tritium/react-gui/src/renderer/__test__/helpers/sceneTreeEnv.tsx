@@ -9,8 +9,8 @@
  */
 
 import { vi } from 'vitest'
-import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
-import type { SceneTreeState, SceneTreeActions } from '../../state/sceneTree'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
+import type { SceneTreeState, SceneTreeActions } from '@renderer/state/sceneTree'
 
 export interface SceneTreeEnvProps {
   tree: SceneTreeNode | null

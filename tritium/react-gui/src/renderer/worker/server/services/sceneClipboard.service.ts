@@ -21,11 +21,11 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
 import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { safeRead } from './helpers/safeRead';
-import { listGroupChildRenderers } from './helpers/groupChildren';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
+import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 
 export type ClipboardKind = 'object' | 'renderer' | 'style' | 'camera';
 

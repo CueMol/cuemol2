@@ -7,9 +7,9 @@
 // interaction list..." dialog and fills the gap left by the AtomIntr inspector
 // section (which edits display props, not the entry list).
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 /** The atomintr-renderer methods this service touches (not on the base type). */
 interface AtomIntrRend {

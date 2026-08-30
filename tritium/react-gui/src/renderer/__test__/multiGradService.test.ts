@@ -13,10 +13,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-import { services } from '../worker/server/services/rendererColoring.service'
-import { histogramPercentileRange } from '../worker/server/services/coloring/multiGrad'
+import { services } from '@renderer/worker/server/services/rendererColoring.service'
+import { histogramPercentileRange } from '@renderer/worker/server/services/coloring/multiGrad'
 
 const {
     getMultiGradState,

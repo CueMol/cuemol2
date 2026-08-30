@@ -11,7 +11,7 @@ import {
     isResettable,
     modifiedKeys,
     formatDefaultLabel,
-} from '../components/inspector/propModel';
+} from '@renderer/features/inspector/propModel';
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 
 /** Build a minimal entry; override only the fields a case cares about. */

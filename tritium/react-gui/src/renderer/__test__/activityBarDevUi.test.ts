@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { buildActivityItems } from "../components/ActivityBar";
+import { buildActivityItems } from "@renderer/shell/ActivityBar";
 
 describe("activity-bar dev-only views", () => {
   it("offers the Component Catalog in developer builds", () => {

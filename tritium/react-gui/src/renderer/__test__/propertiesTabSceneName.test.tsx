@@ -10,8 +10,8 @@
 
 import React, { act } from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree } from './helpers/testHarness'
-import { PropertiesTab } from '../components/inspector/PropertiesTab'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import { PropertiesTab } from '@renderer/features/inspector/PropertiesTab'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React

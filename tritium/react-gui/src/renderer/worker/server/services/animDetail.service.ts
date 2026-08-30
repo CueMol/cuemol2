@@ -19,9 +19,9 @@
 
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
-import type { WorkerContext } from "../types/WorkerContext";
+import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import type { AnimElementType } from "@renderer/types";
-import { getSceneOrNull } from "./helpers/sceneResolver";
+import { getSceneOrNull } from "@renderer/worker/server/services/helpers/sceneResolver";
 import {
   safeNum,
   safeBool,
@@ -30,11 +30,11 @@ import {
   resolveSceneMgr,
   makeTimeValue,
   forEachAnimObj,
-} from "./helpers/animResolve";
-import { classNameToType } from "./helpers/animElementType";
+} from "@renderer/worker/server/services/helpers/animResolve";
+import { classNameToType } from "@renderer/worker/server/services/helpers/animElementType";
 import { withUndoTxn } from "./withUndoTxn";
-import { parseSceneTreeJSON, type SceneTreeNode } from "../../shared/sceneTreeTypes";
-import { parseGenericProps, type GenericPropEntry } from "./helpers/parseGenericProps";
+import { parseSceneTreeJSON, type SceneTreeNode } from "@renderer/worker/shared/sceneTreeTypes";
+import { parseGenericProps, type GenericPropEntry } from "@renderer/worker/server/services/helpers/parseGenericProps";
 import type { BaseWrapper } from "@cuemol/core/src/BaseWrapper";
 
 // --- detail shapes ---

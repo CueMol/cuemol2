@@ -6,7 +6,7 @@
  */
 
 import { useCallback, type MutableRefObject, useMemo} from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 export interface SceneTreeCameraOps {
     createCamera: (viewId: number, name: string) => Promise<boolean>

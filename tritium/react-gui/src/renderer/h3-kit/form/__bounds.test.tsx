@@ -18,7 +18,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree } from '../../__test__/helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 import { NumericField } from './NumericField'
 import { VectorField } from './VectorField'
 import { DragNumericField } from './DragNumericField'

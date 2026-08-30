@@ -13,9 +13,9 @@
  */
 
 import { useCallback } from 'react'
-import { useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import type { CommandKey } from '../commands/CommandMap'
+import { useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import type { CommandKey } from '@renderer/commands/CommandMap'
 import type { RecentFileEntry } from '@shared/types/recent'
 import {
   MENU_ACTION_MAP,

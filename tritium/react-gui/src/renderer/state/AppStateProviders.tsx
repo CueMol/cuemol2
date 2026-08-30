@@ -17,7 +17,7 @@
 import React from 'react'
 import { LayoutProvider } from './layout'
 import { WorkspaceProvider } from './workspace'
-import { ActiveToolProvider } from '../contexts/ActiveToolContext'
+import { ActiveToolProvider } from '@renderer/contexts/ActiveToolContext'
 import { StatusMessageProvider } from './statusMessage'
 import { ActiveViewStateProvider } from './activeView'
 import { UndoRedoProvider } from './undoRedo'

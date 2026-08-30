@@ -12,8 +12,8 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolChain } from '@cuemol/core/src/wrappers/MolChain';
 import type { MolResidue } from '@cuemol/core/src/wrappers/MolResidue';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface GetMolChainsArgs {
     sceneId: number;

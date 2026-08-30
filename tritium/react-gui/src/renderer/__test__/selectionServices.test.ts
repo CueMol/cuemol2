@@ -8,15 +8,15 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
 
-import { services as hitServices } from '../worker/server/services/getSelHitCount.service'
-import { services as saveServices } from '../worker/server/services/saveSelDef.service'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
+import { services as hitServices } from '@renderer/worker/server/services/getSelHitCount.service'
+import { services as saveServices } from '@renderer/worker/server/services/saveSelDef.service'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { getSelHitCount } = hitServices
 const { saveSelDef } = saveServices

@@ -3,7 +3,7 @@ import {
     rewriteAround,
     invertSelStr,
     toggleSidechainStr,
-} from '../worker/server/services/helpers/selStrTransforms'
+} from '@renderer/worker/server/services/helpers/selStrTransforms'
 
 describe('selStrTransforms', () => {
     describe('rewriteAround', () => {

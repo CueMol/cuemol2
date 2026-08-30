@@ -14,7 +14,7 @@
  * Runs in the Web Worker thread; C++ wrappers are called synchronously.
  */
 import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { makeSel } from './makeSel';
 import { makeColor } from './makeColor';
 

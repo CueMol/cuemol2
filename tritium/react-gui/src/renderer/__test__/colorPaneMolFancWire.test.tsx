@@ -29,30 +29,30 @@ vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 // The pane reads the bridge and the active scene from their providers.
-vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
-vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockWorkspaceModule())
 
-vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
     CueColorField: ({ value }: { value: string }) => (
         <button type="button" data-testid="color-commit" data-value={value} />
     ),
 }))
 
-vi.mock('../h3-kit/colorpicker/ColorPickerContext', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/ColorPickerContext', () => ({
     ColorPickerProvider: ({ children }: { children: React.ReactNode }) => (
         <>{children}</>
     ),
     useColorPickerCtx: () => ({ cm: null, sceneId: undefined }),
 }))
 
-vi.mock('../components/panes/PaintSelCell', () => ({
+vi.mock('@renderer/features/coloring/PaintSelCell', () => ({
     PaintSelCell: () => <input data-testid="paint-sel-cell" readOnly />,
 }))
 
-import { ColorPane } from '../components/panes/ColorPane'
-import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
-import { mountTree, flushPromises } from './helpers/testHarness'
-import { withPaneEnv } from './helpers/paneEnv'
+import { ColorPane } from '@renderer/features/coloring/ColorPane'
+import { ContextMenuProvider } from '@renderer/shell/menu/ContextMenuProvider'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import { withPaneEnv } from '@renderer/__test__/helpers/paneEnv'
 
 const SCENE_ID = 7
 const REND_ID = 100

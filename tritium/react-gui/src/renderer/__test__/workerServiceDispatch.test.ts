@@ -11,7 +11,7 @@ vi.mock('@cuemol/core/src/cuemol', () => ({
     },
 }));
 
-import { WorkerService } from '../worker/server/WorkerService';
+import { WorkerService } from '@renderer/worker/server/WorkerService';
 
 /**
  * Degrade-detection test for `WorkerService.invoke` -- the worker-side RPC

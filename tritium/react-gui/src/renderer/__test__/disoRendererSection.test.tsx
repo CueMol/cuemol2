@@ -20,7 +20,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -31,7 +31,7 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 }))
 
 // Stub the colour leaf so ColorField renders without the ColorPicker context.
-vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
   CueColorField: ({ value, onCommit, disabled }: any) => (
     <button
       data-testid="color"
@@ -43,13 +43,13 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import { SchemaSection } from '../components/inspector/SchemaSection'
-import { DISORDER_SECTIONS } from '../components/inspector/schema/disorder'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { DISORDER_SECTIONS } from '@renderer/features/inspector/schema/disorder'
 import {
 
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-} from '../components/inspector/rendererPropSections'
+} from '@renderer/features/inspector/rendererPropSections'
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {

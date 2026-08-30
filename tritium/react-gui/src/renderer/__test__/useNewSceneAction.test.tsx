@@ -17,9 +17,9 @@
 
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { useNewSceneAction } from '../hooks/useNewSceneAction'
-import { makeRenderHook, flushPromises } from './helpers/testHarness'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { useNewSceneAction } from '@renderer/hooks/useNewSceneAction'
+import { makeRenderHook, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 void React
 
@@ -27,7 +27,7 @@ vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 const openMolViewTab = vi.hoisted(() => vi.fn())
-vi.mock('../state/workspace', () => ({
+vi.mock('@renderer/state/workspace', () => ({
   useWorkspaceDispatch: () => ({ openMolViewTab }),
 }))
 

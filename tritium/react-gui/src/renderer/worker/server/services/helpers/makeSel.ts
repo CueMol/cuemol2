@@ -1,4 +1,4 @@
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { SelCommand } from '@cuemol/core/src/wrappers/SelCommand';
 
 export function makeSel(ctx: WorkerContext, selstr: string, uid: number = 0): SelCommand | null {

@@ -18,17 +18,17 @@
 //
 // Renderer-side setup (selection / colorscheme / render-style) stays
 // outside the reader path and runs via setupRenderer().
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
-import type { FileOpenOptions } from '../../shared/fileOpenTypes';
+import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer.service';
 import { undoTxnResult } from './withUndoTxn';
-import { pickReaderName, OBJREADER_CATEGORY } from './helpers/pickReaderName';
-import { applyReaderOptions } from './helpers/applyReaderOptions';
-import { applyMapTypeChoice, applyEmMapDefaults, fitViewsToMap } from './helpers/emMapDefaults';
-import { fail, failFrom, ok, type Result } from '../../shared/result';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { pickReaderName, OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
+import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
+import { applyMapTypeChoice, applyEmMapDefaults, fitViewsToMap } from '@renderer/worker/server/services/helpers/emMapDefaults';
+import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 const log = console;
 

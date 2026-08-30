@@ -9,9 +9,9 @@
  */
 
 import React, { createContext, useContext } from 'react';
-import type { ToolId, ToolDef } from '../data/viewportTools';
-import { TOOL_BY_ID } from '../data/viewportTools';
-import { useActiveTool } from '../hooks/useActiveTool';
+import type { ToolId, ToolDef } from '@renderer/data/viewportTools';
+import { TOOL_BY_ID } from '@renderer/data/viewportTools';
+import { useActiveTool } from '@renderer/features/molview/useActiveTool';
 
 const IdContext = createContext<ToolId>('navigate');
 const DefContext = createContext<ToolDef>(TOOL_BY_ID.navigate);

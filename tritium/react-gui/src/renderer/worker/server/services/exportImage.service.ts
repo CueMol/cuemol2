@@ -12,8 +12,8 @@
  * seed the file name and the image-options dialog.
  */
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull, getViewOrNull } from './helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface ExportSceneArgs {
     sceneId: number;

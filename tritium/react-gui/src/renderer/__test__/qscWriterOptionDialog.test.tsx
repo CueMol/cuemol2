@@ -17,12 +17,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { act } from 'react'
 
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
 }))
 
-import { QscWriterOptionDialog, type QscWriterOptions } from '../components/dialogs/QscWriterOptionDialog'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { QscWriterOptionDialog, type QscWriterOptions } from '@renderer/dialogs/QscWriterOptionDialog'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 function findButtonByText(root: ParentNode, text: string): HTMLButtonElement | null {
     const buttons = Array.from(root.querySelectorAll('button')) as HTMLButtonElement[]

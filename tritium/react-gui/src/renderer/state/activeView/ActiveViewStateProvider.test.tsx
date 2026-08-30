@@ -13,8 +13,8 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import React from 'react'
 import { act } from 'react'
 import { IPC } from '@shared/ipcChannels'
-import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from '../../__test__/helpers/testHarness'
-import { SEM_SCENE, SEM_VIEW } from '../../event'
+import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
+import { SEM_SCENE, SEM_VIEW } from '@renderer/event'
 import { ActiveViewStateProvider, useActiveViewDispatch, useActiveViewValues, type ActiveViewDispatch, type ActiveViewValues } from './ActiveViewStateProvider'
 
 void React
@@ -30,15 +30,15 @@ const cm = vi.hoisted(() => ({
 }))
 const scene = vi.hoisted(() => ({ activeMolViewId: undefined as number | undefined, activeSceneId: undefined as number | undefined }))
 
-vi.mock('../../hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cm, cueMolReady: true }) }))
-vi.mock('../../hooks/useSceneExportCaps', () => ({ useSceneExportCaps: () => ['png', 'umbreon'] }))
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cm, cueMolReady: true }) }))
+vi.mock('@renderer/hooks/useSceneExportCaps', () => ({ useSceneExportCaps: () => ['png', 'umbreon'] }))
 // The mirrored values also refresh on a C++ property change; each
 // subscription is captured so a test can fire it.
 const listeners = vi.hoisted(() => ({ all: [] as Record<string, unknown>[] }))
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
   useCueMolEventListener: (opts: Record<string, unknown>) => { listeners.all.push(opts) },
 }))
-vi.mock('../workspace', () => ({
+vi.mock('@renderer/state/workspace', () => ({
   useActiveScene: () => ({ ...scene, hasScene: scene.activeMolViewId !== undefined }),
 }))
 

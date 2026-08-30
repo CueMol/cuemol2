@@ -23,13 +23,13 @@
  * mutations must run inside an undo txn.
  */
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MorphMol } from '@cuemol/core/src/wrappers/MorphMol';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { OBJREADER_CATEGORY } from './helpers/pickReaderName';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 import { withUndoTxn } from './withUndoTxn';
 
 const log = console;

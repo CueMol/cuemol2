@@ -12,14 +12,14 @@
 import { describe, it, expect, vi } from 'vitest'
 import React, { useEffect } from 'react'
 import { act } from 'react'
-import type { TabData } from '../types'
-import { mountTree } from './helpers/testHarness'
+import type { TabData } from '@renderer/types'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 void React
 
 const counters = vi.hoisted(() => ({ mounts: 0, unmounts: 0 }))
 
-vi.mock('../components/panes/MolViewPane', () => ({
+vi.mock('@renderer/features/molview/MolViewPane', () => ({
   MolViewPane: () => {
     useEffect(() => {
       counters.mounts += 1
@@ -28,23 +28,23 @@ vi.mock('../components/panes/MolViewPane', () => ({
     return <div data-testid="molview" />
   },
 }))
-vi.mock('../components/panes/SettingsPane', () => ({ SettingsPane: () => <div data-testid="settings" /> }))
-vi.mock('../components/panes/WelcomePane', () => ({ WelcomePane: () => <div data-testid="welcome" /> }))
-vi.mock('../components/ViewportToolPalette', () => ({ ViewportToolPalette: () => null }))
-vi.mock('../components/RectSelectOverlay', () => ({ RectSelectOverlay: () => null }))
-vi.mock('../hooks/useNaviClickHandler', () => ({ useNaviClickHandler: () => undefined }))
-vi.mock('../hooks/useMeasureClickHandler', () => ({ useMeasureClickHandler: () => undefined }))
-vi.mock('../hooks/useBondEditClickHandler', () => ({ useBondEditClickHandler: () => undefined }))
-vi.mock('../hooks/useNaviContextMenu', () => ({
+vi.mock('@renderer/features/settings/SettingsPane', () => ({ SettingsPane: () => <div data-testid="settings" /> }))
+vi.mock('@renderer/shell/WelcomePane', () => ({ WelcomePane: () => <div data-testid="welcome" /> }))
+vi.mock('@renderer/features/molview/ViewportToolPalette', () => ({ ViewportToolPalette: () => null }))
+vi.mock('@renderer/features/molview/RectSelectOverlay', () => ({ RectSelectOverlay: () => null }))
+vi.mock('@renderer/features/molview/useNaviClickHandler', () => ({ useNaviClickHandler: () => undefined }))
+vi.mock('@renderer/features/molview/useMeasureClickHandler', () => ({ useMeasureClickHandler: () => undefined }))
+vi.mock('@renderer/features/molview/useBondEditClickHandler', () => ({ useBondEditClickHandler: () => undefined }))
+vi.mock('@renderer/features/molview/useNaviContextMenu', () => ({
   useNaviContextMenu: () => ({ openContextMenu: () => undefined }),
 }))
-vi.mock('../contexts/ActiveToolContext', () => ({
+vi.mock('@renderer/contexts/ActiveToolContext', () => ({
   useActiveToolContext: () => 'navigate',
   useSetActiveTool: () => () => undefined,
 }))
-vi.mock('../state/statusMessage', () => ({ useSetStatusMessage: () => () => undefined }))
+vi.mock('@renderer/state/statusMessage', () => ({ useSetStatusMessage: () => () => undefined }))
 
-import { ContentPane } from '../components/panes/ContentPane'
+import { ContentPane } from '@renderer/shell/ContentPane'
 
 const molTab: TabData = { id: 'molview-10', title: 'A:0', icon: 'file.molview', type: 'molview', viewId: 10, sceneId: 100 }
 const settingsTab: TabData = { id: '__settings__', title: 'Settings', icon: 'file.settings', type: 'settings' }

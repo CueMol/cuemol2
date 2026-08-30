@@ -7,7 +7,7 @@
  * `createLruStringHistory` factory.
  */
 
-import { createLruStringHistory } from '../../utils/createLruStringHistory';
+import { createLruStringHistory } from '@renderer/utils/createLruStringHistory';
 
 export const STORAGE_KEY = 'cuemol.molSelList.history';
 export const MAX_ENTRIES = 40;

@@ -10,8 +10,8 @@ import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { ContextMenuProvider, useShowContextMenu } from '../components/menu/ContextMenuProvider'
-import type { ShowContextMenuFn } from '../components/menu/ContextMenuProvider'
+import { ContextMenuProvider, useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider'
+import type { ShowContextMenuFn } from '@renderer/shell/menu/ContextMenuProvider'
 import type { MenuNode } from '@shared/menuNodes'
 
 void React

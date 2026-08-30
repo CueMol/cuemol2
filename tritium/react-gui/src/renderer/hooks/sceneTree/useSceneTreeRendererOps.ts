@@ -6,10 +6,10 @@
  */
 
 import { useCallback, type MutableRefObject, useMemo} from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import type { ChangeRendSelKind, RendColoringId } from '@shared/types/sceneCtxMenu'
-import type { RendererOptions } from '../../components/fopen-opt-dlgs/types'
+import type { RendererOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 import { findTypedNode } from './sceneTreeNodeUtils'
 
 export interface SceneTreeRendererOps {

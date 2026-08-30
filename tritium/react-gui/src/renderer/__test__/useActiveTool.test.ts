@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react";
-import { useActiveTool } from "../hooks/useActiveTool";
+import { useActiveTool } from "@renderer/features/molview/useActiveTool";
 
 // Required for React's act() checks in test environment
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;

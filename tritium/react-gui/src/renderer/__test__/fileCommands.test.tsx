@@ -9,11 +9,11 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
-import { CommandProvider, useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
+import { CommandProvider, useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
 import { IPC } from '@shared/ipcChannels'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 // Dialog provider hooks are mocked so the test controls their resolved value.
 const showObjectPicker = vi.fn<(args: unknown) => Promise<number | null>>()
@@ -21,20 +21,20 @@ const showConfirmReload = vi.fn<(args: unknown) => Promise<boolean>>()
 const showExportPngOptions =
   vi.fn<(args: unknown) => Promise<{ width: number; height: number; alpha: boolean; dpi: number } | null>>()
 const showErrorAlert = vi.fn<(args: unknown) => Promise<void>>()
-vi.mock('../components/dialogs/ObjectPickerDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ObjectPickerDialogProvider', () => ({
   useShowObjectPicker: () => showObjectPicker,
 }))
-vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
 }))
-vi.mock('../components/dialogs/ConfirmReloadSceneDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ConfirmReloadSceneDialogProvider', () => ({
   useShowConfirmReloadSceneDialog: () => showConfirmReload,
 }))
-vi.mock('../components/dialogs/ExportPngOptionsDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ExportPngOptionsDialogProvider', () => ({
   useShowExportPngOptionsDialog: () => showExportPngOptions,
 }))
 
-import { useFileCommands } from '../commands/useFileCommands'
+import { useFileCommands } from '@renderer/commands/useFileCommands'
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   React.createElement(CommandProvider, null, children)

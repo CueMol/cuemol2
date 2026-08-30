@@ -14,7 +14,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 // Render the Blueprint Dialog body inline (no portal/overlay) so the field
 // mounts deterministically for DOM inspection; keep every other export real.
@@ -24,13 +24,13 @@ vi.mock('@blueprintjs/core', async () => {
     React.createElement(React.Fragment, null, props.children)
   return { ...actual, Dialog: InlineDialog }
 })
-vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }))
+vi.mock('@renderer/contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }))
 // Non-empty history so the chevron trigger is enabled.
-vi.mock('../components/dialogs/pdbIdHistory', () => ({
+vi.mock('@renderer/dialogs/pdbIdHistory', () => ({
   getHistory: () => ['1abc', '2xyz'],
 }))
 
-import { GetPdbDialog } from '../components/dialogs/GetPdbDialog'
+import { GetPdbDialog } from '@renderer/dialogs/GetPdbDialog'
 
 void React
 

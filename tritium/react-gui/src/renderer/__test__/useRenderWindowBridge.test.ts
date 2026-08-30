@@ -13,14 +13,14 @@ import {
     setupElectronAPI,
     teardownElectronAPI,
     flushPromises,
-} from './helpers/testHarness';
-import { useRenderWindowBridge } from '../hooks/useRenderWindowBridge';
+} from '@renderer/__test__/helpers/testHarness';
+import { useRenderWindowBridge } from '@renderer/features/render/useRenderWindowBridge';
 import { IPC } from '@shared/ipcChannels';
 import type { RenderTargetViewWire, RenderWindowStateUpdate } from '@shared/types/renderWindow';
-import type { RenderUpdate, RenderStartResult } from '../worker/shared/renderTypes';
-import { DEFAULT_RENDER_BINARIES } from '../worker/shared/renderTypes';
-import type { RenderSettingsSnapshot } from '../data/renderResult';
-import type { TabData } from '../types';
+import type { RenderUpdate, RenderStartResult } from '@renderer/worker/shared/renderTypes';
+import { DEFAULT_RENDER_BINARIES } from '@renderer/worker/shared/renderTypes';
+import type { RenderSettingsSnapshot } from '@renderer/data/renderResult';
+import type { TabData } from '@renderer/types';
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));

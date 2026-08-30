@@ -20,13 +20,13 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { OpenMdTrajDialog } from '../components/dialogs/OpenMdTrajDialog'
+import { OpenMdTrajDialog } from '@renderer/dialogs/OpenMdTrajDialog'
 import { IPC } from '@shared/ipcChannels'
-import { mountTree, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness'
+import { mountTree, setupElectronAPI, teardownElectronAPI, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 function button(label: string): HTMLButtonElement {
     return Array.from(document.body.querySelectorAll('button')).find(

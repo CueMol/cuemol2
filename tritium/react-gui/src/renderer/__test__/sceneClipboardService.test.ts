@@ -8,14 +8,14 @@
  * app uses.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '../worker/server/services/sceneClipboard.service'
+import { services } from '@renderer/worker/server/services/sceneClipboard.service'
 import type {
     CopyNodeArgs,
     CopyNodeResult,
     PasteNodeArgs,
     PasteNodeResult,
-} from '../worker/server/services/sceneClipboard.service'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+} from '@renderer/worker/server/services/sceneClipboard.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 /**
  * Round-trip a copy result into a paste call, as the renderer does via the

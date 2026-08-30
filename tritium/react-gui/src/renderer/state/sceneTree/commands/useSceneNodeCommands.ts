@@ -8,12 +8,12 @@
  * the user got there.
  */
 
-import type { UseSceneTreeResult } from '@renderer/hooks/useSceneTree'
+import type { UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
 import { findTypedNode } from '@renderer/hooks/sceneTree/sceneTreeNodeUtils'
-import { useShowErrorAlert } from '@renderer/components/dialogs/ErrorAlertDialogProvider'
+import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
 import { useRegisterCommand } from '@renderer/commands/CommandRegistry'
 import { CmdId } from '@renderer/commands/ids'
-import { useInspectorActions, resolveNodeTarget } from '../../inspector'
+import { useInspectorActions, resolveNodeTarget } from '@renderer/state/inspector'
 
 export interface SceneNodeCommandsOptions {
   scene: UseSceneTreeResult

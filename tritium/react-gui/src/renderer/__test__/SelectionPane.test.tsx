@@ -26,14 +26,14 @@ void React
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
 const pushHistoryMock = vi.fn()
 const getHistoryMock = vi.fn<() => string[]>(() => [])
 
-vi.mock('../h3-kit/MolSelList/selHistory', () => ({
+vi.mock('@renderer/h3-kit/MolSelList/selHistory', () => ({
     pushHistory: (v: string) => pushHistoryMock(v),
     getHistory: () => getHistoryMock(),
     clearHistory: () => undefined,
@@ -46,13 +46,13 @@ vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 // The pane reads the bridge and the active scene from their providers.
-vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
-vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockWorkspaceModule())
 
-import { SelectionPane } from '../components/panes/SelectionPane'
-import { clearSnapshot } from '../components/panes/selection/selectionPaneStore'
-import { mountTree, flushPromises } from './helpers/testHarness'
-import { withPaneEnv } from './helpers/paneEnv'
+import { SelectionPane } from '@renderer/features/selection/SelectionPane'
+import { clearSnapshot } from '@renderer/features/selection/selection/selectionPaneStore'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import { withPaneEnv } from '@renderer/__test__/helpers/paneEnv'
 
 interface MockCm {
     invokeService: ReturnType<typeof vi.fn>

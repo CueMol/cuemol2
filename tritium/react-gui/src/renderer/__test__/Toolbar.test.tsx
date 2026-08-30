@@ -10,13 +10,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { act } from 'react'
-import { CmdId } from '../commands/ids'
-import { mountTree } from './helpers/testHarness'
+import { CmdId } from '@renderer/commands/ids'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 // Mock the command registry so dispatch calls can be asserted directly.
 // Both Toolbar and UndoRedoSplitButton import this same module.
 const dispatch = vi.fn(() => Promise.resolve())
-vi.mock('../commands/CommandRegistry', () => ({
+vi.mock('@renderer/commands/CommandRegistry', () => ({
   useCommands: () => ({ dispatch, register: vi.fn(), has: vi.fn() }),
 }))
 
@@ -25,13 +25,13 @@ const toolbarState = vi.hoisted(() => ({
   undoRedo: null as unknown,
   hasScene: true,
 }))
-vi.mock('../state/undoRedo', () => ({ useUndoRedo: () => toolbarState.undoRedo }))
-vi.mock('../state/workspace', () => ({
+vi.mock('@renderer/state/undoRedo', () => ({ useUndoRedo: () => toolbarState.undoRedo }))
+vi.mock('@renderer/state/workspace', () => ({
   useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: toolbarState.hasScene }),
 }))
 
-import { Toolbar } from '../components/Toolbar'
-import type { UndoRedoState } from '../hooks/useUndoRedoState'
+import { Toolbar } from '@renderer/shell/Toolbar'
+import type { UndoRedoState } from '@renderer/hooks/useUndoRedoState'
 
 /** Mount the toolbar over the given provider state. */
 function mountToolbar(undoRedo: UndoRedoState, hasScene = true) {

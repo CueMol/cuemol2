@@ -16,11 +16,11 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { enumerateObjectRenderers } from './helpers/groupChildren';
-import { isRendGroup } from './helpers/rendGroup';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { enumerateObjectRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
+import { isRendGroup } from '@renderer/worker/server/services/helpers/rendGroup';
 
 /** -1 = drop BEFORE target; 0 = drop AT target (used for rendGroup INTO); +1 = drop AFTER. */
 export type ReorderOri = -1 | 0 | 1;

@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { clampAndQuantize, snapTo } from '../numericMath';
+import { clampAndQuantize, snapTo } from '@renderer/h3-kit/form/numericMath';
 import { DRAG_THRESHOLD_PX, SNAP_FACTOR, dragValuePerPx } from './dragMath';
 import type { DragState, FieldCore } from './types';
 

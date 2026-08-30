@@ -28,15 +28,15 @@ import { APP_MENU } from '@shared/menuTemplate'
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 // MenuBar reads its state from the providers; stub them at rest.
-vi.mock('../state/activeView', () => ({
+vi.mock('@renderer/state/activeView', () => ({
   useActiveViewValues: () => ({ viewProjection: null, viewCenterMark: null, sceneBgColor: null, exportAvailable: null }),
 }))
-vi.mock('../state/workspace', () => ({ useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: false }) }))
-vi.mock('../hooks/useRecentFiles', () => ({ useRecentFiles: () => [] }))
+vi.mock('@renderer/state/workspace', () => ({ useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: false }) }))
+vi.mock('@renderer/features/file-io/useRecentFiles', () => ({ useRecentFiles: () => [] }))
 
 // Must import after mocks
-const { MenuBar } = await import('../components/MenuBar')
-const { CommandProvider } = await import('../commands/CommandRegistry')
+const { MenuBar } = await import('@renderer/shell/MenuBar')
+const { CommandProvider } = await import('@renderer/commands/CommandRegistry')
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 

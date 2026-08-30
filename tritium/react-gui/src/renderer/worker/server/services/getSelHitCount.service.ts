@@ -5,9 +5,9 @@
 // AtomIterator walk). This does NOT assign mol.sel and is intentionally NOT
 // wrapped in withUndoTxn -- counting must leave no trace in the undo history.
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 
 export interface GetSelHitCountArgs {
     sceneId: number;

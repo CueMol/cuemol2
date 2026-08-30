@@ -8,22 +8,22 @@
  * takes no arguments; App only has to mount it.
  */
 
-import { useCueMol } from './cuemol/useCueMol';
-import { useWorkspaceDispatch } from '../state/workspace';
-import { useActiveViewDispatch } from '../state/activeView';
-import { useInspectorActions } from '../state/inspector';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
+import { useWorkspaceDispatch } from '@renderer/state/workspace';
+import { useActiveViewDispatch } from '@renderer/state/activeView';
+import { useInspectorActions } from '@renderer/state/inspector';
 import { useNewSceneAction, useOpenSceneFileAction } from './useNewSceneAction';
-import { useSceneCommands } from '../commands/useSceneCommands';
-import { useUiDialogCommands } from '../commands/useUiDialogCommands';
-import { useTabCommands } from '../commands/useTabCommands';
-import { useFocusEditCommands } from '../commands/useFocusEditCommands';
-import { useNewTabCommand } from '../commands/useNewTabCommand';
-import { useEditCommands } from '../commands/useEditCommands';
-import { useToolCommands } from '../commands/useToolCommands';
-import { useFileCommands } from '../commands/useFileCommands';
-import { useViewCommands } from '../commands/useViewCommands';
-import { useRenderCommands } from '../commands/useRenderCommands';
-import { useWindowCommands } from '../commands/useWindowCommands';
+import { useSceneCommands } from '@renderer/commands/useSceneCommands';
+import { useUiDialogCommands } from '@renderer/commands/useUiDialogCommands';
+import { useTabCommands } from '@renderer/commands/useTabCommands';
+import { useFocusEditCommands } from '@renderer/commands/useFocusEditCommands';
+import { useNewTabCommand } from '@renderer/commands/useNewTabCommand';
+import { useEditCommands } from '@renderer/commands/useEditCommands';
+import { useToolCommands } from '@renderer/commands/useToolCommands';
+import { useFileCommands } from '@renderer/commands/useFileCommands';
+import { useViewCommands } from '@renderer/commands/useViewCommands';
+import { useRenderCommands } from '@renderer/commands/useRenderCommands';
+import { useWindowCommands } from '@renderer/commands/useWindowCommands';
 import { useElectronIpc } from './useElectronIpc';
 
 export function useCommandRegistrations(): void {

@@ -22,7 +22,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -32,13 +32,13 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import { SchemaSection } from '../components/inspector/SchemaSection'
-import { ANISOU_SECTIONS } from '../components/inspector/schema/anisou'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { ANISOU_SECTIONS } from '@renderer/features/inspector/schema/anisou'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-} from '../components/inspector/rendererPropSections'
-import { PropertiesTab } from '../components/inspector/PropertiesTab'
+} from '@renderer/features/inspector/rendererPropSections'
+import { PropertiesTab } from '@renderer/features/inspector/PropertiesTab'
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {

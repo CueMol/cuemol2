@@ -28,16 +28,16 @@
 
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
-import { AppIcon } from '../primitives';
+import { AppIcon } from '@renderer/h3-kit/primitives';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { useDarkPortalClass } from '../primitives';
-import { TextField } from '../form';
+import { useDarkPortalClass } from '@renderer/h3-kit/primitives';
+import { TextField } from '@renderer/h3-kit/form';
 import {
     SelectionBuilder,
     builderReducer,
     initBuilderState,
     useSelectionValues,
-} from '../selection';
+} from '@renderer/h3-kit/selection';
 import { getHistory } from './selHistory';
 import { useHitCountResolver } from './useSelHitCount';
 

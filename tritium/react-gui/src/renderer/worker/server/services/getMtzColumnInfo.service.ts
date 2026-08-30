@@ -10,9 +10,9 @@
  * the reader only parses the header/footer (no scene mutation), so this is
  * NOT wrapped in an undo txn.
  */
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { MTZ2MapReader } from '@cuemol/core/src/wrappers/MTZ2MapReader';
-import { OBJREADER_CATEGORY } from './helpers/pickReaderName';
+import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 
 const log = console;
 

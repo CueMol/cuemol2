@@ -52,7 +52,7 @@ export * from './methods'
 export type { AppCalls, SceneCalls, UndoCalls, SceneTreeCalls, PropsCalls, FileCalls, RenderCalls, ViewCalls, ColorCalls, ColoringCalls, RendCalls, StyleCalls, CameraCalls, SelectCalls, NaviCalls, MolopsCalls, ApbsCalls, MapCalls, AnimCalls, TrajCalls }
 export { APP_KEYS, SCENE_KEYS, UNDO_KEYS, SCENE_TREE_KEYS, PROPS_KEYS, FILE_KEYS, RENDER_KEYS, VIEW_KEYS, COLOR_KEYS, COLORING_KEYS, REND_KEYS, STYLE_KEYS, CAMERA_KEYS, SELECT_KEYS, NAVI_KEYS, MOLOPS_KEYS, APBS_KEYS, MAP_KEYS, ANIM_KEYS, TRAJ_KEYS }
 
-import type { WorkerContext } from '../../server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 export interface ServiceMap
   extends AppCalls,

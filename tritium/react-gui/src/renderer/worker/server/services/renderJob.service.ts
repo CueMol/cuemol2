@@ -35,7 +35,7 @@ import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { ProcessManager } from "@cuemol/core/src/wrappers/ProcessManager";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
-import type { WorkerContext } from "../types/WorkerContext";
+import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import type {
   RenderStartArgs,
   RenderStartResult,
@@ -43,16 +43,16 @@ import type {
   RenderCancelResult,
   RenderUpdate,
   RenderUpdatePhase,
-} from "../../shared/renderTypes";
-import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
+} from "@renderer/worker/shared/renderTypes";
+import { RENDER_PROGRESS_CHANNEL } from "@renderer/worker/shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
 import {
   pixelImageSize,
   type RenderTaskSpec,
   type InProcessRender,
-} from "./renderBackends/RenderBackend";
-import { getSceneOrNull } from "./helpers/sceneResolver";
-import { getAnimMgrOrNull } from "./helpers/animResolve";
+} from "@renderer/worker/server/services/renderBackends/RenderBackend";
+import { getSceneOrNull } from "@renderer/worker/server/services/helpers/sceneResolver";
+import { getAnimMgrOrNull } from "@renderer/worker/server/services/helpers/animResolve";
 import {
   frameFileRegExp,
   movieFileNames,

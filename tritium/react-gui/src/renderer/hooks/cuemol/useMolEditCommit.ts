@@ -27,7 +27,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 /**
  * One commit attempt produced by the caller's `buildCommit`. The `invoke`

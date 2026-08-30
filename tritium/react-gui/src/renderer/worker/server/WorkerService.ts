@@ -12,7 +12,7 @@ import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager';
 import type { ScrEventManager } from '@cuemol/core/src/wrappers/ScrEventManager';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
-import type { WorkerContext } from './types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import {
     handleMouseDown,
     handleMouseUp,
@@ -32,9 +32,9 @@ import type {
     RpcKey,
     ServiceFn,
     ServiceKey,
-} from '../shared/calls';
-import { forgetAnimProgress, pauseInactivePlayback, pumpAnimProgress } from './services/animation.service';
-import { isSceneBeingRendered } from './services/renderJob.service';
+} from '@renderer/worker/shared/calls';
+import { forgetAnimProgress, pauseInactivePlayback, pumpAnimProgress } from '@renderer/worker/server/services/animation.service';
+import { isSceneBeingRendered } from '@renderer/worker/server/services/renderJob.service';
 
 // import { createLogger } from '@cuemol/core/src/logger';
 // const log = createLogger(import.meta.url);

@@ -9,9 +9,9 @@
 
 import { IPC } from '@shared/ipcChannels'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { UseSceneTreeResult } from '@renderer/hooks/useSceneTree'
-import { useShowTextPromptDialog } from '@renderer/components/dialogs/TextPromptDialogProvider'
-import { useShowStyleEditorDialog } from '@renderer/components/dialogs/StyleEditorDialogProvider'
+import type { UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
+import { useShowTextPromptDialog } from '@renderer/dialogs/TextPromptDialogProvider'
+import { useShowStyleEditorDialog } from '@renderer/dialogs/StyleEditorDialogProvider'
 import { useRegisterCommand } from '@renderer/commands/CommandRegistry'
 import { CmdId } from '@renderer/commands/ids'
 

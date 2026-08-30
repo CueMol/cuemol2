@@ -2,15 +2,15 @@
 // but this service is async because it awaits a streaming HTTP fetch and
 // feeds chunks into the C++ StreamManager via supplyDataAsync. Mirrors the
 // UXP onOpenPDBsite path (uxp_gui/.../tools/netpdbopen.js).
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
-import type { FileOpenOptions } from '../../shared/fileOpenTypes';
+import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer.service';
 import { undoTxnResult } from './withUndoTxn';
-import { streamFetchToReader, cancelStream } from './helpers/streamFetchToReader';
-import { applyReaderOptions } from './helpers/applyReaderOptions';
-import { fail, failFrom, ok, type Result } from '../../shared/result';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { streamFetchToReader, cancelStream } from '@renderer/worker/server/services/helpers/streamFetchToReader';
+import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
+import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 const log = console;
 

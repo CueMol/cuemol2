@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { renderText } from '../worker/server/textRender';
+import { renderText } from '@renderer/worker/server/textRender';
 
 /**
  * Degrade-detection test for renderText -- the OffscreenCanvas text

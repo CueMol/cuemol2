@@ -17,9 +17,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { RectSelectOverlay } from '../components/RectSelectOverlay'
-import { GES_PINCH } from '../worker/shared/gestureAxes'
-import type { ToolId } from '../data/viewportTools'
+import { RectSelectOverlay } from '@renderer/features/molview/RectSelectOverlay'
+import { GES_PINCH } from '@renderer/worker/shared/gestureAxes'
+import type { ToolId } from '@renderer/data/viewportTools'
 
 void React
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -39,11 +39,11 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 }))
 // The active tool is owned by its context; the test sets it per mount.
 const currentTool = vi.hoisted(() => ({ id: 'navigate' as string }))
-vi.mock('../contexts/ActiveToolContext', () => ({
+vi.mock('@renderer/contexts/ActiveToolContext', () => ({
     useActiveToolContext: () => currentTool.id,
     useSetActiveTool: () => () => undefined,
 }))
-vi.mock('../state/workspace', () => ({
+vi.mock('@renderer/state/workspace', () => ({
     // The active view as the workspace reports it (undefined = no molview).
     useActiveScene: () => ({
         activeMolViewId: 7,

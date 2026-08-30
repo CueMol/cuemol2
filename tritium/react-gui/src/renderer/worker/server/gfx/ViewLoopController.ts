@@ -15,7 +15,7 @@
  * forward here. Only one view renders at a time (single shared canvas), so the
  * caller stops the other loops on activation.
  */
-import { PERF_MEASURE, maybeFlushPerf, perfCounters } from '../perf';
+import { PERF_MEASURE, maybeFlushPerf, perfCounters } from '@renderer/worker/server/perf';
 
 /** Predicate: whether a view id is currently bound as a render peer. */
 type IsBound = (viewId: number) => boolean;

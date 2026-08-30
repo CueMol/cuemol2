@@ -25,7 +25,7 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
 }))
 
@@ -40,9 +40,9 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 
-import { MakeMolSurfDialog } from '../components/dialogs/MakeMolSurfDialog'
-import type { MakeMolSurfDialogResult } from '../components/dialogs/MakeMolSurfDialog'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { MakeMolSurfDialog } from '@renderer/dialogs/MakeMolSurfDialog'
+import type { MakeMolSurfDialogResult } from '@renderer/dialogs/MakeMolSurfDialog'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 // jsdom in this runner does not expose globalThis.localStorage; install a
 // minimal in-memory shim so the selection-history side-effect path is testable.

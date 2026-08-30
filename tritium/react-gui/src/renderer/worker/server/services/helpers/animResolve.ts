@@ -12,7 +12,7 @@ import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
-import type { WorkerContext } from "../../types/WorkerContext";
+import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import { getSceneOrNull } from "./sceneResolver";
 
 // --- safe wrapper reads (a getter may throw for missing-on-subclass cases) ---

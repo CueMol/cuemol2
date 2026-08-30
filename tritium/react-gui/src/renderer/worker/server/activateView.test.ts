@@ -12,13 +12,13 @@ vi.mock('@cuemol/core/src/cuemol', () => ({
     },
 }));
 const pause = vi.hoisted(() => vi.fn(() => [] as number[]));
-vi.mock('./services/animation.service', () => ({
+vi.mock('@renderer/worker/server/services/animation.service', () => ({
     pauseInactivePlayback: pause,
     pumpAnimProgress: vi.fn(),
     forgetAnimProgress: vi.fn(),
 }));
 const rendering = vi.hoisted(() => vi.fn(() => false));
-vi.mock('./services/renderJob.service', () => ({ isSceneBeingRendered: rendering }));
+vi.mock('@renderer/worker/server/services/renderJob.service', () => ({ isSceneBeingRendered: rendering }));
 
 import { WorkerService } from './WorkerService';
 

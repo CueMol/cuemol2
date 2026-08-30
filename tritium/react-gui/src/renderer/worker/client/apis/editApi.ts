@@ -4,7 +4,7 @@
  * services. Each call dispatches to the C++ `UndoManager` owned by the
  * scene.
  */
-import { WorkerTransport } from '../WorkerTransport';
+import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 
 /**
  * Undo the last transaction on a scene.

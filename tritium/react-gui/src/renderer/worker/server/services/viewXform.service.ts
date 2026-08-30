@@ -14,7 +14,7 @@
  */
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 /**
  * Transform-related `qsys::View` props this service touches. The generated

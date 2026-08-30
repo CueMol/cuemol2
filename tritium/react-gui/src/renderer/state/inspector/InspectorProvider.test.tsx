@@ -8,9 +8,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React, { act } from 'react'
-import { flushPromises, mountTree } from '../../__test__/helpers/testHarness'
-import { LayoutProvider } from '../layout'
-import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_VIEW, SEM_PROPCHG } from '../../event'
+import { flushPromises, mountTree } from '@renderer/__test__/helpers/testHarness'
+import { LayoutProvider } from '@renderer/state/layout'
+import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_VIEW, SEM_PROPCHG } from '@renderer/event'
 import { InspectorProvider, useInspector, useInspectorActions, type InspectorActions, type InspectorState } from './InspectorProvider'
 
 void React
@@ -18,12 +18,12 @@ void React
 const scene = vi.hoisted(() => ({ activeSceneId: 1 as number | undefined }))
 const env = vi.hoisted(() => ({ cm: null as unknown }))
 
-vi.mock('../../hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cm: env.cm, cueMolReady: true }) }))
-vi.mock('../workspace', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cm: env.cm, cueMolReady: true }) }))
+vi.mock('@renderer/state/workspace', () => ({
   useActiveScene: () => ({ activeSceneId: scene.activeSceneId, activeMolViewId: 5, hasScene: true }),
 }))
 const listener = vi.hoisted(() => ({ opts: null as Record<string, unknown> | null }))
-vi.mock('../../hooks/cuemol/useCueMolEventListener', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
   useCueMolEventListener: (opts: Record<string, unknown>) => { listener.opts = opts },
 }))
 

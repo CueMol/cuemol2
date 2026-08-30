@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 void React
 
@@ -26,7 +26,7 @@ vi.mock('@renderer/h3-kit/primitives', () => ({
   ),
 }))
 
-import { PaneSectionHeader } from '../components/panes/PaneSectionHeader'
+import { PaneSectionHeader } from '@renderer/shell/PaneSectionHeader'
 
 function chevronName(container: HTMLElement): string | null {
   return container

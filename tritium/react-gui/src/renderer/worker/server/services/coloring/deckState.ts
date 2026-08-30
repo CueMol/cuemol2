@@ -14,8 +14,8 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
 import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
-import type { WorkerContext } from '../../types/WorkerContext';
-import { getSceneOrNull } from '../helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import {
     resolveColoringTarget,
     readTypeName,

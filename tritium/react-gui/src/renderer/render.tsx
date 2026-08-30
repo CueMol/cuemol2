@@ -27,10 +27,10 @@ import '@blueprintjs/icons/lib/css/blueprint-icons.css'
 import './index.css'
 import './app.css'
 
-import { ThemeProvider } from './contexts/ThemeContext'
-import { ContextMenuProvider } from './components/menu/ContextMenuProvider'
-import { ErrorBoundary } from './crash/ErrorBoundary'
-import { RenderWindowApp } from './components/renderwindow/RenderWindowApp'
+import { ThemeProvider } from '@renderer/contexts/ThemeContext'
+import { ContextMenuProvider } from '@renderer/shell/menu/ContextMenuProvider'
+import { ErrorBoundary } from '@renderer/crash/ErrorBoundary'
+import { RenderWindowApp } from '@renderer/features/render/renderwindow/RenderWindowApp'
 
 const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(

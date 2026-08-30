@@ -19,8 +19,8 @@ import {
   getCurrentCrash,
   report,
   subscribe,
-} from '../crash/CrashReporter'
-import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+} from '@renderer/crash/CrashReporter'
+import { setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 function makeReport(overrides: Partial<CrashReport> = {}): CrashReport {
   return {

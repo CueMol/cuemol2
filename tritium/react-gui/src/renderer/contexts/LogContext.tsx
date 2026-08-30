@@ -22,7 +22,7 @@
  * switches and is reachable from anywhere under the provider.
  */
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react'
-import { useLogEvent } from '../hooks/useLogEvent'
+import { useLogEvent } from '@renderer/features/log/useLogEvent'
 
 export interface LogActions {
   /** Append raw text (no implicit newline). Used by the C++ log stream. */

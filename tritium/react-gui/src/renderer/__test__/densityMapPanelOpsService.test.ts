@@ -16,16 +16,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/makeColor', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeColor', () => ({
     makeColor: vi.fn((_ctx, value: string, _uid: number) => ({
         __color: value,
     })),
 }))
 
-import { services } from '../worker/server/services/densityMapPanelOps.service'
-import { makeColor } from '../worker/server/services/helpers/makeColor'
+import { services } from '@renderer/worker/server/services/densityMapPanelOps.service'
+import { makeColor } from '@renderer/worker/server/services/helpers/makeColor'
 
 const {
     listMapRenderers,

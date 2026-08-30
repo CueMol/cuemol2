@@ -33,12 +33,12 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
 import { MolSelList } from '@renderer/h3-kit/MolSelList'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 function setupCm(opts?: {
     selDefs?: { scene: string[]; global: string[]; currentSel?: string }

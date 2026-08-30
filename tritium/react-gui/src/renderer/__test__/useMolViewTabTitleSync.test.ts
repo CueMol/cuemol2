@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { useMolViewTabTitleSync } from '../hooks/useMolViewTabTitleSync'
-import { SEM_SCENE, SEM_PROPCHG, SEM_ANY } from '../event'
+import { useMolViewTabTitleSync } from '@renderer/hooks/useMolViewTabTitleSync'
+import { SEM_SCENE, SEM_PROPCHG, SEM_ANY } from '@renderer/event'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 

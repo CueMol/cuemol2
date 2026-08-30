@@ -9,7 +9,7 @@ import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-vi.mock('../contexts/AppSettingsContext', () => ({
+vi.mock('@renderer/contexts/AppSettingsContext', () => ({
   useAppSettings: () => ({
     labelDefaults: {
       fontName: 'Helvetica',
@@ -24,7 +24,7 @@ vi.mock('../contexts/AppSettingsContext', () => ({
   }),
 }))
 
-import { AtomLabelPreview } from '../components/panes/settings/AtomLabelPreview'
+import { AtomLabelPreview } from '@renderer/features/settings/settings/AtomLabelPreview'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 

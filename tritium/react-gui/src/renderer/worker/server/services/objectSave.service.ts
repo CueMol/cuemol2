@@ -17,11 +17,11 @@
 
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
-import type { WorkerContext } from '../types/WorkerContext';
-import { parseSceneTreeJSON } from '../../shared/sceneTreeTypes';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { isHiddenObjWriter } from './helpers/readerFilter';
-import { safeRead } from './helpers/safeRead';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { parseSceneTreeJSON } from '@renderer/worker/shared/sceneTreeTypes';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { isHiddenObjWriter } from '@renderer/worker/server/services/helpers/readerFilter';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 
 // --- helpers ---
 

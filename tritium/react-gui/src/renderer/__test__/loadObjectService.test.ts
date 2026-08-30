@@ -15,23 +15,23 @@
  *   - read() throwing rolls back the undo txn (no commit).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/setupRenderer.service', () => ({
+vi.mock('@renderer/worker/server/services/setupRenderer.service', () => ({
     setupRenderer: vi.fn(),
 }))
-vi.mock('../worker/server/services/helpers/pickReaderName', () => ({
+vi.mock('@renderer/worker/server/services/helpers/pickReaderName', () => ({
     pickReaderName: vi.fn(() => 'pdb'),
     OBJREADER_CATEGORY: 0,
 }))
-vi.mock('../worker/server/services/helpers/applyReaderOptions', () => ({
+vi.mock('@renderer/worker/server/services/helpers/applyReaderOptions', () => ({
     applyReaderOptions: vi.fn(),
 }))
 
-import { services } from '../worker/server/services/loadObject.service'
-import { setupRenderer } from '../worker/server/services/setupRenderer.service'
-import { pickReaderName } from '../worker/server/services/helpers/pickReaderName'
-import { applyReaderOptions } from '../worker/server/services/helpers/applyReaderOptions'
+import { services } from '@renderer/worker/server/services/loadObject.service'
+import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { pickReaderName } from '@renderer/worker/server/services/helpers/pickReaderName'
+import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions'
 
 const { loadObject } = services
 

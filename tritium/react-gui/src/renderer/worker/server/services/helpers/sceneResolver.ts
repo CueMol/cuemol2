@@ -9,7 +9,7 @@
  * the caller decides the failure shape (e.g. `{ ok: false }`).
  */
 
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';

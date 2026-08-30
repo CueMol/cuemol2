@@ -5,7 +5,7 @@ import {
     getHistory,
     pushHistory,
     clearHistory,
-} from '../components/dialogs/pdbIdHistory'
+} from '@renderer/dialogs/pdbIdHistory'
 
 describe('pdbIdHistory', () => {
     beforeEach(() => {

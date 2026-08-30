@@ -4,7 +4,7 @@
  * the fields the worker actually consumes off a DOM event and fires it as
  * a `postMessage` (no await; no reply).
  */
-import { WorkerTransport } from '../WorkerTransport';
+import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 
 /**
  * Forward a mouse event (mousedown / mousemove / mouseup / etc.) to the

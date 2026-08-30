@@ -10,12 +10,12 @@ import { act } from 'react'
 
 // The colour control renders the ColorPicker widget, which reads the theme
 // for its Blueprint dark portal class.
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark' }),
 }))
 
-import { SettingRow } from '../components/panes/settings/SettingRow'
-import type { SettingDef } from '../components/panes/settings/settingsConfig'
+import { SettingRow } from '@renderer/features/settings/settings/SettingRow'
+import type { SettingDef } from '@renderer/features/settings/settings/settingsConfig'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 

@@ -36,14 +36,14 @@ const viewState = vi.hoisted(() => ({
     exportAvailable: [] as string[],
 }))
 const dispatch = vi.hoisted(() => vi.fn(() => Promise.resolve()))
-vi.mock('../state/activeView', () => ({ useActiveViewValues: () => viewState }))
-vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
-vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
-vi.mock('../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }))
+vi.mock('@renderer/state/activeView', () => ({ useActiveViewValues: () => viewState }))
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockWorkspaceModule())
+vi.mock('@renderer/commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }))
 
-import { ViewPane } from '../components/panes/ViewPane'
-import { mountTree, flushPromises, pressStepArrow } from './helpers/testHarness'
-import { withPaneEnv } from './helpers/paneEnv'
+import { ViewPane } from '@renderer/features/molview/ViewPane'
+import { mountTree, flushPromises, pressStepArrow } from '@renderer/__test__/helpers/testHarness'
+import { withPaneEnv } from '@renderer/__test__/helpers/paneEnv'
 
 const XFORM = {
     ok: true,

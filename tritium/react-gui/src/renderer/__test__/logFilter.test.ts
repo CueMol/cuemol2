@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyLogFilter, parseFilter } from '../utils/logFilter'
+import { applyLogFilter, parseFilter } from '@renderer/utils/logFilter'
 
 describe('parseFilter', () => {
   it('splits whitespace and routes tokens into include / exclude', () => {

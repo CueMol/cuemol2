@@ -22,15 +22,15 @@ import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager';
 import type { AtomIntrRenderer } from '@cuemol/core/src/wrappers/AtomIntrRenderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from './withUndoTxn';
 import {
     ATOMINTR_TYPE,
     ATOMINTR_STYLES,
     ATOMINTR_DEFAULT_TARGET_NAME,
-} from './helpers/atomintr';
+} from '@renderer/worker/server/services/helpers/atomintr';
 
 export interface AnalyzeInteractionsArgs {
     sceneId: number;

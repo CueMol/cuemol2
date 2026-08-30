@@ -13,14 +13,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn((_ctx: unknown, str: string) => ({ __sel: str })),
 }))
 
-import { services } from '../worker/server/services/seqPanelOps.service'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
+import { services } from '@renderer/worker/server/services/seqPanelOps.service'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { toggleResidueSelection, rangeSelectResidues, centerOnResidue } = services
 

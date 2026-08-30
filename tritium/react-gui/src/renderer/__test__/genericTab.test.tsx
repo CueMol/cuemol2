@@ -11,8 +11,8 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
-import { GenericTab } from '../components/inspector/GenericTab'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import { GenericTab } from '@renderer/features/inspector/GenericTab'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React

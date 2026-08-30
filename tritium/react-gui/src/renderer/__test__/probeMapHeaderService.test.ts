@@ -8,7 +8,7 @@ import {
     services,
     suggestSubsample,
     LARGE_MAP_VOXELS,
-} from '../worker/server/services/probeMapHeader.service'
+} from '@renderer/worker/server/services/probeMapHeader.service'
 
 function makeCtx(reader: unknown) {
     return {

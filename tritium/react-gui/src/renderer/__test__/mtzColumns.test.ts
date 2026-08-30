@@ -6,8 +6,8 @@
  * checkbox defaults.
  */
 import { describe, it, expect } from 'vitest'
-import { computeMtzDefaults } from '../components/fopen-opt-dlgs/mtzColumns'
-import type { MtzColumn } from '../worker/server/services/getMtzColumnInfo.service'
+import { computeMtzDefaults } from '@renderer/dialogs/fopen-opt-dlgs/mtzColumns'
+import type { MtzColumn } from '@renderer/worker/server/services/getMtzColumnInfo.service'
 
 const col = (name: string, type: string): MtzColumn => ({ name, type })
 

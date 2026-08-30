@@ -15,11 +15,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React, { act } from 'react';
-import { makeRenderHook } from '../../__test__/helpers/testHarness';
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness';
 import { useSceneTreeController } from './useSceneTreeController';
 import type { UseSceneTreeControllerArgs } from './useSceneTreeController';
-import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes';
-import { CmdId } from '../../commands/ids';
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes';
+import { CmdId } from '@renderer/commands/ids';
 
 void React;
 
@@ -27,8 +27,8 @@ const dispatch = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const ctxMenu = vi.hoisted(() => ({ open: vi.fn().mockResolvedValue(undefined), opts: null as any }));
 const scope = new Map<string, { cut: () => void; copy: () => void; paste: () => void }>();
 
-vi.mock('../../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }));
-vi.mock('../../hooks/useSceneContextMenu', () => ({
+vi.mock('@renderer/commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }));
+vi.mock('@renderer/features/scene/useSceneContextMenu', () => ({
   useSceneContextMenu: (opts: unknown) => {
     ctxMenu.opts = opts;
     return { openContextMenu: ctxMenu.open };
@@ -37,7 +37,7 @@ vi.mock('../../hooks/useSceneContextMenu', () => ({
 // Capture what the controller registers as its clipboard scope, so the
 // keyboard path can be driven without the DOM plumbing (covered separately
 // in editClipboard.test.ts).
-vi.mock('../../hooks/useClipboardScope', () => ({
+vi.mock('@renderer/hooks/useClipboardScope', () => ({
   useClipboardScope: (
     id: string,
     handlers: { cut: () => void; copy: () => void; paste: () => void },

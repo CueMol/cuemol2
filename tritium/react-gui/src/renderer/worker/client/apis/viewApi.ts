@@ -6,7 +6,7 @@
  * Each function returns a Promise resolved with the worker reply, except
  * `resized` which is a fire-and-forget `postMessage`.
  */
-import { WorkerTransport } from '../WorkerTransport';
+import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 
 const log = console;
 

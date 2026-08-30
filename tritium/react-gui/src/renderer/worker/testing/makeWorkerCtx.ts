@@ -11,7 +11,7 @@
  */
 
 import { vi, type Mock } from 'vitest';
-import type { WorkerContext } from '../server/types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { FakeObject, FakeRenderer, FakeScene, FakeView } from './fakes';
 
 /** One entry of `StreamManager.getInfoJSON2(category)`. */

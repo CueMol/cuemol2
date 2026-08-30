@@ -19,7 +19,7 @@ import type { CrashReport, CrashSource } from '@shared/types/crash'
 import { IPC } from '@shared/ipcChannels'
 
 const mountFallbackDom = vi.fn()
-vi.mock('../crash/mountFallbackDom', () => ({
+vi.mock('@renderer/crash/mountFallbackDom', () => ({
   mountFallbackDom: (r: CrashReport) => mountFallbackDom(r),
 }))
 
@@ -31,7 +31,7 @@ let invoke: ReturnType<typeof vi.fn>
 
 async function freshReporter() {
   vi.resetModules()
-  return await import('../crash/CrashReporter')
+  return await import('@renderer/crash/CrashReporter')
 }
 
 beforeEach(() => {

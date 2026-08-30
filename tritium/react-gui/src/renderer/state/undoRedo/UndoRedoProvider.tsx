@@ -8,9 +8,9 @@
  */
 
 import React, { createContext, useContext } from 'react'
-import { useCueMol } from '../../hooks/cuemol/useCueMol'
-import { useUndoRedoState, type UndoRedoState } from '../../hooks/useUndoRedoState'
-import { useActiveScene } from '../workspace'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useUndoRedoState, type UndoRedoState } from '@renderer/hooks/useUndoRedoState'
+import { useActiveScene } from '@renderer/state/workspace'
 
 const Context = createContext<UndoRedoState | null>(null)
 

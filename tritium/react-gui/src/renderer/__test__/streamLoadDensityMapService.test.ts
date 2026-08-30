@@ -10,20 +10,20 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/setupDensityMapRenderers', () => ({
+vi.mock('@renderer/worker/server/services/helpers/setupDensityMapRenderers', () => ({
     setupDensityMapRenderers: vi.fn(),
 }))
-vi.mock('../worker/server/services/withUndoTxn', () => ({
+vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     withUndoTxn: vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
     // The Result-returning variant: commit on ok, roll back otherwise. The
     // fixture only needs the body to run, so pass it straight through.
     undoTxnResult: (_s: unknown, _l: string, fn: () => unknown) => fn(),
 }))
 
-import { services } from '../worker/server/services/streamLoadDensityMap.service'
-import { setupDensityMapRenderers } from '../worker/server/services/helpers/setupDensityMapRenderers'
+import { services } from '@renderer/worker/server/services/streamLoadDensityMap.service'
+import { setupDensityMapRenderers } from '@renderer/worker/server/services/helpers/setupDensityMapRenderers'
 
 const { streamLoadDensityMap } = services
 
@@ -257,7 +257,7 @@ describe('streamLoadDensityMap — post-load behavior', () => {
         // map (helpers/streamFetchToReader); cancelStreamLoad service routes
         // through cancelStream(reqId).
         const { services: streamLoadServices } = await import(
-            '../worker/server/services/streamLoadFromUrl.service'
+            '@renderer/worker/server/services/streamLoadFromUrl.service'
         )
         const { cancelStreamLoad } = streamLoadServices
 

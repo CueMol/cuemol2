@@ -17,8 +17,8 @@
  *     transaction before touching the list.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { services } from '../worker/server/services/rendererColoring.service'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/rendererColoring.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 interface FixtureOpts {
     /** Initial rows, as the (sel, color) string pairs C++ would stringify to. */

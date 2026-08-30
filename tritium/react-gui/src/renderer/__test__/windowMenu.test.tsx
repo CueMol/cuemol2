@@ -14,14 +14,14 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import React from 'react'
-import { CommandProvider } from '../commands/CommandRegistry'
+import { CommandProvider } from '@renderer/commands/CommandRegistry'
 import { IPC } from '@shared/ipcChannels'
 import { APP_MENU } from '@shared/menuTemplate'
 import type { AppMenuItem } from '@shared/menuTemplate'
-import { useMenuDispatch } from '../hooks/useMenuDispatch'
-import { useRenderCommands } from '../commands/useRenderCommands'
-import { useWindowCommands } from '../commands/useWindowCommands'
-import { makeRenderHook, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { useMenuDispatch } from '@renderer/hooks/useMenuDispatch'
+import { useRenderCommands } from '@renderer/commands/useRenderCommands'
+import { useWindowCommands } from '@renderer/commands/useWindowCommands'
+import { makeRenderHook, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   React.createElement(CommandProvider, null, children)

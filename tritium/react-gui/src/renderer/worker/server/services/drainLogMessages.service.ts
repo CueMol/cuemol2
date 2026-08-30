@@ -11,7 +11,7 @@
  *
  * Runs in the Web Worker thread; C++ wrappers are synchronous (no await).
  */
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 
 export interface DrainLogMessagesResult {

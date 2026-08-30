@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { RENDER_BACKENDS, RENDER_BACKEND_IDS } from '../data/renderBackends'
-import { RENDER_COMMON_PROPS } from '../data/renderSettings'
+import { RENDER_BACKENDS, RENDER_BACKEND_IDS } from '@renderer/data/renderBackends'
+import { RENDER_COMMON_PROPS } from '@renderer/data/renderSettings'
 
 describe('render backends registry', () => {
     it('registers the povray, umbreon and umbreon NPR backends', () => {

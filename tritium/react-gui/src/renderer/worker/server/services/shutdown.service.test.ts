@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 const renderCancelled: string[] = []
 const apbsCancelled: string[] = []

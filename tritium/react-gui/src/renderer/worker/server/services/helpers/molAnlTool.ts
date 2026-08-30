@@ -19,7 +19,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { getSceneOrNull } from './sceneResolver';
 import { makeSel } from './makeSel';
 

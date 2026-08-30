@@ -20,8 +20,8 @@
 
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 // --- getCreateRendStyleInfo ---
 

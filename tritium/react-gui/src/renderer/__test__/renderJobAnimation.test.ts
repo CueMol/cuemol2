@@ -9,10 +9,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import type { RenderStartArgs } from '../worker/shared/renderTypes'
-import type { PropDef } from '../data/rendererProperties'
-import type { MovieSettings } from '../data/renderSettings'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { RenderStartArgs } from '@renderer/worker/shared/renderTypes'
+import type { PropDef } from '@renderer/data/rendererProperties'
+import type { MovieSettings } from '@renderer/data/renderSettings'
 
 const hoisted = vi.hoisted(() => ({
     getRenderBackend: vi.fn(),
@@ -20,10 +20,10 @@ const hoisted = vi.hoisted(() => ({
     /** Cameras the fake scene holds, by name. */
     cameras: new Set<string>(),
 }))
-vi.mock('../worker/server/services/renderBackends', () => ({
+vi.mock('@renderer/worker/server/services/renderBackends', () => ({
     getRenderBackend: hoisted.getRenderBackend,
 }))
-vi.mock('../worker/server/services/helpers/sceneResolver', () => ({
+vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
     getSceneOrNull: vi.fn(() => ({
         __scene: true,
         hasCamera: (name: string) => hoisted.cameras.has(name),
@@ -34,11 +34,11 @@ vi.mock('../worker/server/services/helpers/sceneResolver', () => ({
         },
     })),
 }))
-vi.mock('../worker/server/services/helpers/animResolve', () => ({
+vi.mock('@renderer/worker/server/services/helpers/animResolve', () => ({
     getAnimMgrOrNull: hoisted.getAnimMgrOrNull,
 }))
 
-import { services } from '../worker/server/services/renderJob.service'
+import { services } from '@renderer/worker/server/services/renderJob.service'
 
 const p = (key: string, value: string | number | boolean): PropDef => ({
     key,

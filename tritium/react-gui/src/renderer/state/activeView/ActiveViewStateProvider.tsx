@@ -12,10 +12,10 @@
 
 import React, { createContext, useContext, useMemo } from 'react'
 import type { SceneBgColor, ViewCenterMark } from '@shared/types/menuState'
-import { useCueMol } from '../../hooks/cuemol/useCueMol'
-import { useActiveViewState } from '../../hooks/useActiveViewState'
-import { useSceneExportCaps } from '../../hooks/useSceneExportCaps'
-import { useActiveScene } from '../workspace'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useActiveViewState } from '@renderer/hooks/useActiveViewState'
+import { useSceneExportCaps } from '@renderer/hooks/useSceneExportCaps'
+import { useActiveScene } from '@renderer/state/workspace'
 
 export interface ActiveViewValues {
   viewProjection: boolean | null

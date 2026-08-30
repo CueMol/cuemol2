@@ -11,8 +11,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { useRendererColoringState } from '../hooks/useRendererColoringState'
-import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_ANY } from '../event'
+import { useRendererColoringState } from '@renderer/features/coloring/useRendererColoringState'
+import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_ANY } from '@renderer/event'
 
 void React
 

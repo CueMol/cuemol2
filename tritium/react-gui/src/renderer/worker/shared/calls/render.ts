@@ -10,13 +10,13 @@
 import type {
   GetHatchStyleSpecArgs,
   GetHatchStyleSpecResult,
-} from '../../server/services/hatchStyleSpec.service'
+} from '@renderer/worker/server/services/hatchStyleSpec.service'
 import type {
   RenderCancelArgs,
   RenderCancelResult,
   RenderStartArgs,
   RenderStartResult,
-} from '../renderTypes'
+} from '@renderer/worker/shared/renderTypes'
 
 export interface RenderCalls {
   renderStart:                { args: RenderStartArgs; result: RenderStartResult }

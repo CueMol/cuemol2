@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { parseSceneTreeJSON } from '../shared/sceneTreeTypes';
+import { parseSceneTreeJSON } from '@renderer/worker/shared/sceneTreeTypes';
 import {
     fakeCamera, fakeObject, fakeRenderer, fakeScene, fakeView, makeWorkerCtx, resetFakeUids,
 } from './index';

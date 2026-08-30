@@ -14,8 +14,8 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import { services } from '../worker/server/services/viewXform.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/viewXform.service'
 
 const { getViewXform, setViewXform, rotateView, translateView } = services
 

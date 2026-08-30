@@ -16,7 +16,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -24,7 +24,7 @@ void React
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
-import { writeMany, MultiNumRow } from '../components/inspector/rows'
+import { writeMany, MultiNumRow } from '@renderer/features/inspector/rows'
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {

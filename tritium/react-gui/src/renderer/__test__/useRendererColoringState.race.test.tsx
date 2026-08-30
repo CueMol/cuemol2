@@ -21,7 +21,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { useRendererColoringState } from '../hooks/useRendererColoringState'
+import { useRendererColoringState } from '@renderer/features/coloring/useRendererColoringState'
 
 void React
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true

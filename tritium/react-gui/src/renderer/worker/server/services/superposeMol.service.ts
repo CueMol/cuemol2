@@ -22,9 +22,9 @@ import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager';
 import type { View } from '@cuemol/core/src/wrappers/View';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull, getViewOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from './withUndoTxn';
 
 /** Superposition algorithm: least-squares fit or secondary-structure matching. */

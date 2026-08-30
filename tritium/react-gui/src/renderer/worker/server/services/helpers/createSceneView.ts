@@ -5,7 +5,7 @@
  */
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 /** Name given to the view a scene starts with (UXP parity). */
 export const INITIAL_VIEW_NAME = '0';

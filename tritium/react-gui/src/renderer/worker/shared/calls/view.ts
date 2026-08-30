@@ -10,17 +10,17 @@
 import type {
   LabelDefaultsResult,
   SetLabelDefaultsArgs,
-} from '../../server/services/labelDefaults.service'
+} from '@renderer/worker/server/services/labelDefaults.service'
 import type {
   SetViewInputParamsArgs,
   ViewInputParamsResult,
-} from '../../server/services/viewInputParams.service'
+} from '@renderer/worker/server/services/viewInputParams.service'
 import type {
   ViewCenterMarkArgs,
   ViewCenterMarkResult,
   ViewProjectionArgs,
   ViewProjectionResult,
-} from '../../server/services/viewProjection.service'
+} from '@renderer/worker/server/services/viewProjection.service'
 import type {
   GetViewXformArgs,
   RotateViewArgs,
@@ -30,7 +30,7 @@ import type {
   TranslateViewArgs,
   TranslateViewResult,
   ViewXformResult,
-} from '../../server/services/viewXform.service'
+} from '@renderer/worker/server/services/viewXform.service'
 
 export interface ViewCalls {
   getLabelDefaults:           { args: Record<string, never>; result: LabelDefaultsResult }

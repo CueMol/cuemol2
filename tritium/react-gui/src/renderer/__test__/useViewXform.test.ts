@@ -12,9 +12,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
-import { useViewXform } from '../hooks/useViewXform'
-import { SEM_VIEW, SEM_ANY } from '../event'
-import { makeRenderHook, flushPromises } from './helpers/testHarness'
+import { useViewXform } from '@renderer/features/molview/useViewXform'
+import { SEM_VIEW, SEM_ANY } from '@renderer/event'
+import { makeRenderHook, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 const XFORM = {
     ok: true,

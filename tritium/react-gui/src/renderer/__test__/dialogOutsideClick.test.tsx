@@ -32,7 +32,7 @@ vi.mock('@blueprintjs/core', async () => {
   }
   return { ...actual, Dialog: SpyDialog }
 })
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
   useTheme: () => ({ theme: 'light' }),
 }))
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
@@ -41,28 +41,28 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cueMolReady: false, cm: null }),
 }))
 
-import { AboutDialog } from '../components/dialogs/AboutDialog'
-import { ConfirmCloseTabDialog } from '../components/dialogs/ConfirmCloseTabDialog'
-import { ConfirmReloadSceneDialog } from '../components/dialogs/ConfirmReloadSceneDialog'
-import { ErrorAlertDialog } from '../components/dialogs/ErrorAlertDialog'
-import { ObjectPickerDialog } from '../components/dialogs/ObjectPickerDialog'
-import { TextPromptDialog } from '../components/dialogs/TextPromptDialog'
-import { EditCameraVisFlagsDialog } from '../components/dialogs/EditCameraVisFlagsDialog'
-import { GetPdbDialog } from '../components/dialogs/GetPdbDialog'
-import { NewTabDialog } from '../components/dialogs/NewTabDialog'
-import { QscWriterOptionDialog } from '../components/dialogs/QscWriterOptionDialog'
-import { StreamProgressDialog } from '../components/dialogs/StreamProgressDialog'
-import { FileOpenOptionDialog } from '../components/fopen-opt-dlgs/FileOpenOptionDialog'
-import { ChangeChainIdDialog } from '../components/dialogs/ChangeChainIdDialog'
-import { ChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialog'
-import { CutSurfByPlaneDialog } from '../components/dialogs/CutSurfByPlaneDialog'
-import { DeleteMolDialog } from '../components/dialogs/DeleteMolDialog'
-import { MakeMolSurfDialog } from '../components/dialogs/MakeMolSurfDialog'
-import { MergeMolDialog } from '../components/dialogs/MergeMolDialog'
-import { MolSuperposeDialog } from '../components/dialogs/MolSuperposeDialog'
-import { ReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialog'
-import { InteractionAnalysisDialog } from '../components/dialogs/InteractionAnalysisDialog'
-import { mountTree } from './helpers/testHarness'
+import { AboutDialog } from '@renderer/dialogs/AboutDialog'
+import { ConfirmCloseTabDialog } from '@renderer/dialogs/ConfirmCloseTabDialog'
+import { ConfirmReloadSceneDialog } from '@renderer/dialogs/ConfirmReloadSceneDialog'
+import { ErrorAlertDialog } from '@renderer/dialogs/ErrorAlertDialog'
+import { ObjectPickerDialog } from '@renderer/dialogs/ObjectPickerDialog'
+import { TextPromptDialog } from '@renderer/dialogs/TextPromptDialog'
+import { EditCameraVisFlagsDialog } from '@renderer/dialogs/EditCameraVisFlagsDialog'
+import { GetPdbDialog } from '@renderer/dialogs/GetPdbDialog'
+import { NewTabDialog } from '@renderer/dialogs/NewTabDialog'
+import { QscWriterOptionDialog } from '@renderer/dialogs/QscWriterOptionDialog'
+import { StreamProgressDialog } from '@renderer/dialogs/StreamProgressDialog'
+import { FileOpenOptionDialog } from '@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialog'
+import { ChangeChainIdDialog } from '@renderer/dialogs/ChangeChainIdDialog'
+import { ChangeResidueIndexDialog } from '@renderer/dialogs/ChangeResidueIndexDialog'
+import { CutSurfByPlaneDialog } from '@renderer/dialogs/CutSurfByPlaneDialog'
+import { DeleteMolDialog } from '@renderer/dialogs/DeleteMolDialog'
+import { MakeMolSurfDialog } from '@renderer/dialogs/MakeMolSurfDialog'
+import { MergeMolDialog } from '@renderer/dialogs/MergeMolDialog'
+import { MolSuperposeDialog } from '@renderer/dialogs/MolSuperposeDialog'
+import { ReassignProt2ndryDialog } from '@renderer/dialogs/ReassignProt2ndryDialog'
+import { InteractionAnalysisDialog } from '@renderer/dialogs/InteractionAnalysisDialog'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 void React
 

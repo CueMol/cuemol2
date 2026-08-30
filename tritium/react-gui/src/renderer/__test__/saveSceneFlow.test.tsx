@@ -20,7 +20,7 @@ import React from 'react'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
     ThemeProvider: ({ children }: { children: React.ReactNode }) =>
         React.createElement(React.Fragment, null, children),
@@ -35,22 +35,22 @@ const QSC_OPTS_DEFAULT = {
     base64: false,
 }
 const showOptionDialogMock = vi.fn()
-vi.mock('../components/dialogs/QscWriterOptionDialogProvider', () => ({
+vi.mock('@renderer/dialogs/QscWriterOptionDialogProvider', () => ({
     QscWriterOptionDialogProvider: ({ children }: { children: React.ReactNode }) =>
         React.createElement(React.Fragment, null, children),
     useShowQscWriterOptionDialog: () => showOptionDialogMock,
 }))
 
-import { CommandProvider, useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import { useEditCommands } from '../commands/useEditCommands'
+import { CommandProvider, useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import { useEditCommands } from '@renderer/commands/useEditCommands'
 import { IPC } from '@shared/ipcChannels'
 import {
     flushPromises,
     mountTree,
     setupElectronAPI,
     teardownElectronAPI,
-} from './helpers/testHarness'
+} from '@renderer/__test__/helpers/testHarness'
 
 interface MockCm {
     invokeService: ReturnType<typeof vi.fn>

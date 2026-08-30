@@ -8,8 +8,8 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { act, useState } from 'react';
-import { makeRenderHook, flushPromises } from './helpers/testHarness';
-import { useHatchTemplate } from '../hooks/useHatchTemplate';
+import { makeRenderHook, flushPromises } from '@renderer/__test__/helpers/testHarness';
+import { useHatchTemplate } from '@renderer/features/render/useHatchTemplate';
 import type { HatchStyleSpecReply } from '@shared/types/renderWindow';
 
 const okReply = (spec: string): HatchStyleSpecReply => ({ ok: true, spec });

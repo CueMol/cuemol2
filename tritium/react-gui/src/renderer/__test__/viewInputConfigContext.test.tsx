@@ -16,7 +16,7 @@ import {
   setupElectronAPI,
   teardownElectronAPI,
   flushPromises,
-} from './helpers/testHarness'
+} from '@renderer/__test__/helpers/testHarness'
 import { IPC } from '@shared/ipcChannels'
 
 void React
@@ -30,7 +30,7 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 import {
   ViewInputConfigProvider,
   useViewInputConfig,
-} from '../contexts/ViewInputConfigContext'
+} from '@renderer/contexts/ViewInputConfigContext'
 
 const TRACKPAD_STYLE = 'TrackpadViewInConf,UserViewConf'
 const MOUSE_STYLE = 'DefaultViewInConf,UserViewConf'

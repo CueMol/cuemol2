@@ -4,13 +4,13 @@
  *   - psfPathHistory: localStorage-backed last-used path round-trip.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { deriveDefaultPsfPath } from '../components/fopen-opt-dlgs/types'
-import { getLastPsfPath, setLastPsfPath, STORAGE_KEY } from '../components/fopen-opt-dlgs/psfPathHistory'
+import { deriveDefaultPsfPath } from '@renderer/dialogs/fopen-opt-dlgs/types'
+import { getLastPsfPath, setLastPsfPath, STORAGE_KEY } from '@renderer/dialogs/fopen-opt-dlgs/psfPathHistory'
 import {
     getLastCoordPath,
     setLastCoordPath,
     STORAGE_KEY as COORD_STORAGE_KEY,
-} from '../components/fopen-opt-dlgs/coordPathHistory'
+} from '@renderer/dialogs/fopen-opt-dlgs/coordPathHistory'
 
 describe('deriveDefaultPsfPath', () => {
     it('replaces a .coor extension with .psf', () => {

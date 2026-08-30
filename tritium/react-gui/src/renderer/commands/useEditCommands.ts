@@ -12,10 +12,10 @@
 
 import { useCallback } from 'react'
 import { IPC } from '@shared/ipcChannels'
-import type { SaveSceneOptions } from '../worker/server/services/saveScene.service'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { SaveSceneOptions } from '@renderer/worker/server/services/saveScene.service'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'
-import { useShowQscWriterOptionDialog } from '../components/dialogs/QscWriterOptionDialogProvider'
+import { useShowQscWriterOptionDialog } from '@renderer/dialogs/QscWriterOptionDialogProvider'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { addRecent } from './addRecent'

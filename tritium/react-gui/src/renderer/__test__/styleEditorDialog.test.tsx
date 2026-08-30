@@ -15,13 +15,13 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
-vi.mock('../h3-kit/colorpicker/ColorPickerContext', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/ColorPickerContext', () => ({
     ColorPickerProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
-vi.mock('../h3-kit/form/ColorField', () => ({
+vi.mock('@renderer/h3-kit/form/ColorField', () => ({
     ColorField: ({ value }: { value: string }) => <span data-testid="color">{value}</span>,
 }))
 
@@ -30,8 +30,8 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cm: cmHolder.cm, cueMolReady: !!cmHolder.cm }),
 }))
 
-import { StyleEditorDialog } from '../components/dialogs/StyleEditorDialog'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { StyleEditorDialog } from '@renderer/dialogs/StyleEditorDialog'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 const CONTENTS = {
     ok: true,

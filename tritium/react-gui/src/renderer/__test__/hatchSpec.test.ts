@@ -19,7 +19,7 @@ import {
     inkFieldEnabled,
     DEFAULT_HATCH_TONE,
     DEFAULT_HATCH_INK,
-} from '../data/hatchSpec';
+} from '@renderer/data/hatchSpec';
 
 const RICHARDSON =
     'layer: kind=line,angle=55,spacing=0.5,subdiv=2,width=0.45,tonehi=0.92,tonelo=0.55,fade=0,opacity=1,inkscale=1,soft=0.55,seed=0,jitter=0.22,wobble=1.2,wobwave=60,wjitter=0.45,slen=50,sgap=5,taper=0.35,anglejitter=5,lenjitter=0.5,tooth=0.15,toothscale=3\n' +

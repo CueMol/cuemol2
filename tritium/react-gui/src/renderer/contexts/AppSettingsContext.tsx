@@ -26,11 +26,11 @@ import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import type {
   LabelDefaults,
   SetLabelDefaultsArgs,
-} from '../worker/server/services/labelDefaults.service'
+} from '@renderer/worker/server/services/labelDefaults.service'
 import type {
   ViewInputParams,
   SetViewInputParamsArgs,
-} from '../worker/server/services/viewInputParams.service'
+} from '@renderer/worker/server/services/viewInputParams.service'
 
 interface AppSettingsContextValue {
   labelDefaults: LabelDefaults

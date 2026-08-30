@@ -11,9 +11,9 @@
  * which each baked one specific filter into the worker.
  */
 
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { parseSceneTreeJSON } from '../../shared/sceneTreeTypes';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { parseSceneTreeJSON } from '@renderer/worker/shared/sceneTreeTypes';
 
 export interface ListSceneObjectsArgs {
     sceneId: number;

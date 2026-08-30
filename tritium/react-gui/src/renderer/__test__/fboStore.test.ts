@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { FboStore } from '../worker/server/gfx/FboStore'
+import { FboStore } from '@renderer/worker/server/gfx/FboStore'
 
 /**
  * Degrade-detection tests for FboStore's depth attachment format and the

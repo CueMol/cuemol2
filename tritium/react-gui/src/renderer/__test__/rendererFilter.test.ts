@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { isLegacyRendererType, LEGACY_RENDERER_TYPES } from '../worker/server/services/helpers/rendererFilter'
+import { isLegacyRendererType, LEGACY_RENDERER_TYPES } from '@renderer/worker/server/services/helpers/rendererFilter'
 
 describe('isLegacyRendererType', () => {
     it('hides gpu_mapmesh (fixed line width, slow) and nothing else', () => {

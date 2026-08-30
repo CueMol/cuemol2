@@ -30,10 +30,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
-import { useLatestRef } from '../react/useLatestRef'
-import { useStaleGuard } from '../react/useStaleGuard'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { useCueMolEventListener } from './useCueMolEventListener'
+import { useLatestRef } from '@renderer/hooks/react/useLatestRef'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 /** Max number of distinct event subscriptions any panel hook needs. */
 const MAX_LISTENERS = 3

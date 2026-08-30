@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { forEachAnimObj, collectAnimObjs } from '../worker/server/services/helpers/animResolve';
+import { forEachAnimObj, collectAnimObjs } from '@renderer/worker/server/services/helpers/animResolve';
 import type { AnimMgr } from '@cuemol/core/src/wrappers/AnimMgr';
 import type { AnimObj } from '@cuemol/core/src/wrappers/AnimObj';
 

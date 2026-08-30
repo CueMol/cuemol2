@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { GfxManager } from '../worker/server/gfx_manager';
+import { GfxManager } from '@renderer/worker/server/gfx_manager';
 
 /**
  * Contract guard for GfxManager's peer API surface.

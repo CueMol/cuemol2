@@ -18,10 +18,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { IPC } from '@shared/ipcChannels';
 import type { SceneBgColor, ViewCenterMark } from '@shared/types/menuState';
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { useLatestRef } from '@renderer/hooks/react/useLatestRef';
-import { SEM_SCENE, SEM_VIEW, SEM_PROPCHG } from '../event';
+import { SEM_SCENE, SEM_VIEW, SEM_PROPCHG } from '@renderer/event';
 import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing';
 
 interface UseActiveViewStateOptions {

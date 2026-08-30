@@ -7,4 +7,4 @@
  * import.
  */
 
-export * from './worker/shared/eventConst';
+export * from '@renderer/worker/shared/eventConst';

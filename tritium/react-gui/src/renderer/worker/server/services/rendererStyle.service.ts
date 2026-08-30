@@ -9,11 +9,11 @@
  * styles, `(Coloring|Paint)$` for coloring styles.
  */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { remove as styleRemove, push as stylePush } from './helpers/styleutil';
-import { fetchStyleEntries, type RawStyleEntry } from './helpers/styleEntries';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { remove as styleRemove, push as stylePush } from '@renderer/worker/server/services/helpers/styleutil';
+import { fetchStyleEntries, type RawStyleEntry } from '@renderer/worker/server/services/helpers/styleEntries';
 
 export interface GetRendererStyleEntriesArgs {
     sceneId: number;

@@ -16,8 +16,8 @@
  */
 
 import { useCallback } from 'react'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { SEM_SCENE, SEM_PROPCHG, SEM_ANY } from '../event'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { SEM_SCENE, SEM_PROPCHG, SEM_ANY } from '@renderer/event'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 
 /** Logical molview tab: scene + view uid pair (from `useMolTabState`). */

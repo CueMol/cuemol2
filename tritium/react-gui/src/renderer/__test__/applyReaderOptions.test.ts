@@ -15,8 +15,8 @@
  */
 import { describe, it, expect, vi } from 'vitest'
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader'
-import type { FormatOptions } from '../components/fopen-opt-dlgs/types'
-import { applyReaderOptions } from '../worker/server/services/helpers/applyReaderOptions'
+import type { FormatOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
+import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions'
 
 function makeReader() {
     const setSubPath = vi.fn()

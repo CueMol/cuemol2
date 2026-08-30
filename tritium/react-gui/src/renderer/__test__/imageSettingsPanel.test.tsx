@@ -11,17 +11,17 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { mountTree } from './helpers/testHarness';
+import { mountTree } from '@renderer/__test__/helpers/testHarness';
 
 void React;
 
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }));
-vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
+vi.mock('@renderer/contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
 
-import { ImageSettingsPanel } from '../components/panels/ImageSettingsPanel';
-import { RENDER_COMMON_PROPS, RENDER_SIZE_PRESETS } from '../data/renderSettings';
+import { ImageSettingsPanel } from '@renderer/features/render/ImageSettingsPanel';
+import { RENDER_COMMON_PROPS, RENDER_SIZE_PRESETS } from '@renderer/data/renderSettings';
 
 /** The still "Size" column: preset + W x H row + unit + DPI. */
 function mountSize() {

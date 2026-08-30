@@ -15,8 +15,8 @@
 
 import React from 'react'
 import { describe, it, expect } from 'vitest'
-import { makeRenderHook, flushPromises } from './helpers/testHarness'
-import { createDialogHook, createConfirmCancelDialog } from '../hooks/useDialogFactory'
+import { makeRenderHook, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import { createDialogHook, createConfirmCancelDialog } from '@renderer/hooks/useDialogFactory'
 
 void React
 

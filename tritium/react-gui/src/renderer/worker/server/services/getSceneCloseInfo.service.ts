@@ -1,7 +1,7 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 export interface GetSceneCloseInfoArgs {
     viewId: number;

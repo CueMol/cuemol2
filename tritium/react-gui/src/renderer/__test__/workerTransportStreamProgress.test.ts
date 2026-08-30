@@ -21,7 +21,7 @@ class MockWorker {
     constructor(_url: any) { capturedWorker = this }
 }
 
-import { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 describe('WorkerTransport — stream-progress push', () => {
     let cm: AsyncCueMol

@@ -1,14 +1,14 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolAtom } from '@cuemol/core/src/wrappers/MolAtom';
 import type { SymmRenderer } from '@cuemol/core/src/wrappers/SymmRenderer';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
-import { makeSel } from './helpers/makeSel';
-import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selStrTransforms';
-import { getViewSceneOrNull, getViewSceneObjOrNull } from './helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
+import { invertSelStr, rewriteAround, toggleSidechainStr } from '@renderer/worker/server/services/helpers/selStrTransforms';
+import { getViewSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
-import { quoteSelName } from './helpers/selName';
+import { quoteSelName } from '@renderer/worker/server/services/helpers/selName';
 
 /**
  * Granularity of an atom context-menu selection. Canonical source for the

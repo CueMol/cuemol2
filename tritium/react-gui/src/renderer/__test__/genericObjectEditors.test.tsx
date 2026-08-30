@@ -12,23 +12,23 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 import {
   GenericTab,
   cppTimeToMs,
   msToCppTime,
-} from '../components/inspector/GenericTab'
-import { parseVector, formatVector } from '../h3-kit/form'
+} from '@renderer/features/inspector/GenericTab'
+import { parseVector, formatVector } from '@renderer/h3-kit/form'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
 // The colour picker reads the theme and the CueMol client from context;
 // the harness mounts without those providers, so stub the hooks it needs.
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
   useTheme: () => ({ theme: 'light' }),
 }))
-vi.mock('../h3-kit/colorpicker/ColorPickerContext', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/ColorPickerContext', () => ({
   ColorPickerProvider: ({ children }: { children: React.ReactNode }) => children,
   useColorPickerCtx: () => ({ cm: null, sceneId: undefined }),
 }))

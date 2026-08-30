@@ -8,9 +8,9 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
     buildSceneCtxPayload,
     nodeMenuLabel,
-} from '../hooks/sceneContextMenu/buildSceneCtxPayload'
+} from '@renderer/hooks/sceneContextMenu/buildSceneCtxPayload'
 import { IPC } from '@shared/ipcChannels'
-import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 /**
  * Stub the OS-clipboard peek. Paste gating no longer asks the worker: the

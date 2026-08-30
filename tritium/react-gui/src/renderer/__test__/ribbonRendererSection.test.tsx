@@ -16,7 +16,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -26,19 +26,19 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 // Stub the colour field's picker (ThemeProvider / popover contexts) in unit tests.
-vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
   CueColorField: ({ value, disabled }: any) => (
     <button data-disabled={String(!!disabled)}>{value}</button>
   ),
 }))
 
-import { SchemaSection } from '../components/inspector/SchemaSection'
-import { RIBBON_SECTIONS } from '../components/inspector/schema/ribbon'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { RIBBON_SECTIONS } from '@renderer/features/inspector/schema/ribbon'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-} from '../components/inspector/rendererPropSections'
-import { PropertiesTab } from '../components/inspector/PropertiesTab'
+} from '@renderer/features/inspector/rendererPropSections'
+import { PropertiesTab } from '@renderer/features/inspector/PropertiesTab'
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {

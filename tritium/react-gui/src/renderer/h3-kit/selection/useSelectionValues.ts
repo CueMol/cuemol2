@@ -23,7 +23,7 @@
  */
 
 import { useCallback, useRef, useEffect } from 'react';
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 
 /** Autocomplete categories (distinct from emitted selection keywords). */
 export type SelValueKind = 'chain' | 'resname' | 'aname' | 'elem';

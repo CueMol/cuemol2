@@ -3,14 +3,14 @@
 // (.mtz / mtzmap reader). Mirrors UXP openMapImpl + netpdbopen.js
 // (uxp_gui/cuemol2/base/content/tools/netpdbopen.js, L329-428).
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import type { DensityMap } from '@cuemol/core/src/wrappers/DensityMap';
-import { setupDensityMapRenderers, type DensityMapType } from './helpers/setupDensityMapRenderers';
+import { setupDensityMapRenderers, type DensityMapType } from '@renderer/worker/server/services/helpers/setupDensityMapRenderers';
 import { undoTxnResult } from './withUndoTxn';
-import { streamFetchToReader } from './helpers/streamFetchToReader';
-import { fail, failFrom, ok, type Result } from '../../shared/result';
-import { getSceneOrNull, getViewOrNull } from './helpers/sceneResolver';
+import { streamFetchToReader } from '@renderer/worker/server/services/helpers/streamFetchToReader';
+import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
+import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 const log = console;
 

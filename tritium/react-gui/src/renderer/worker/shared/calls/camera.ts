@@ -16,7 +16,7 @@ import type {
   SaveCameraToCurrentSrcResult,
   SaveCameraToFileArgs,
   SaveCameraToFileResult,
-} from '../../server/services/cameraFile.service'
+} from '@renderer/worker/server/services/cameraFile.service'
 import type {
   ApplyCameraToViewArgs,
   ApplyCameraToViewResult,
@@ -30,13 +30,13 @@ import type {
   RenameCameraResult,
   SaveViewToCameraArgs,
   SaveViewToCameraResult,
-} from '../../server/services/cameraOps.service'
+} from '@renderer/worker/server/services/cameraOps.service'
 import type {
   GetCameraVisFlagsArgs,
   GetCameraVisFlagsResult,
   SetCameraVisFlagsArgs,
   SetCameraVisFlagsResult,
-} from '../../server/services/cameraVisFlags.service'
+} from '@renderer/worker/server/services/cameraVisFlags.service'
 
 export interface CameraCalls {
   createCamera:               { args: CreateCameraArgs; result: CreateCameraResult }

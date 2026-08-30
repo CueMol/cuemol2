@@ -17,9 +17,9 @@
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { View } from '@cuemol/core/src/wrappers/View';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull, getViewSceneObjOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from './withUndoTxn';
 
 export interface ApplyMolSelStringArgs {

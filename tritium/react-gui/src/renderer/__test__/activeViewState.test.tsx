@@ -19,10 +19,10 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { useActiveViewState } from '../hooks/useActiveViewState'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { useActiveViewState } from '@renderer/hooks/useActiveViewState'
 import { IPC } from '@shared/ipcChannels'
-import { makeRenderHook, flushPromises, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { makeRenderHook, flushPromises, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 interface MockCm {
   invokeService: ReturnType<typeof vi.fn>

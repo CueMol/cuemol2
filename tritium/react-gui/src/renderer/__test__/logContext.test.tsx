@@ -18,7 +18,7 @@ import { act } from 'react'
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cueMolReady: false, cm: null }) }))
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({ useCueMolEventListener: () => {} }))
 
-import { LogProvider, useLogActions, useLogContents } from '../contexts/LogContext'
+import { LogProvider, useLogActions, useLogContents } from '@renderer/contexts/LogContext'
 
 void React
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true

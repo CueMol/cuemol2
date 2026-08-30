@@ -10,9 +10,9 @@
 
 import React from 'react'
 import { IconContext } from '@phosphor-icons/react'
-import { MenuBar } from '../components/MenuBar'
-import { Toolbar } from '../components/Toolbar'
-import { StatusBar } from '../components/StatusBar'
+import { MenuBar } from './MenuBar'
+import { Toolbar } from './Toolbar'
+import { StatusBar } from './StatusBar'
 import { MainLayout } from './MainLayout'
 import { FileDropLayer } from './FileDropLayer'
 

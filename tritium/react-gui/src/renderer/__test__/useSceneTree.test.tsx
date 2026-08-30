@@ -10,19 +10,19 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { IPC } from '@shared/ipcChannels'
-import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { useSceneTree } from '../hooks/useSceneTree'
-import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
+import { useSceneTree } from '@renderer/features/scene/useSceneTree'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import {
     SEM_SCENE,
     SEM_OBJECT,
     SEM_RENDERER,
     SEM_CAMERA,
     SEM_STYLE,
-} from '../event'
+} from '@renderer/event'
 
 void React
 

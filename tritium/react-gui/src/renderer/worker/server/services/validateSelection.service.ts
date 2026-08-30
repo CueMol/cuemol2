@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { WorkerContext } from '../types/WorkerContext';
-import { makeSel } from './helpers/makeSel';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 
 export interface ValidateSelectionArgs {
     selStr: string;

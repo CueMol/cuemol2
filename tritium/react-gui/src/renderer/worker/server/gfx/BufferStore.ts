@@ -11,7 +11,7 @@
  * Console signposts ("create buffer OK") are E2E launch markers and are
  * intentionally preserved.
  */
-import { PERF_MEASURE, RESPECT_ISUPDATED, perfCounters } from '../perf';
+import { PERF_MEASURE, RESPECT_ISUPDATED, perfCounters } from '@renderer/worker/server/perf';
 
 type GL = WebGL2RenderingContext;
 

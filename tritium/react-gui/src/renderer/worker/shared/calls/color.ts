@@ -12,7 +12,7 @@ import type {
   CompileColorResult,
   GetNamedColorsArgs,
   GetNamedColorsResult,
-} from '../../server/services/colorPicker.service'
+} from '@renderer/worker/server/services/colorPicker.service'
 
 export interface ColorCalls {
   compileColor:               { args: CompileColorArgs; result: CompileColorResult }

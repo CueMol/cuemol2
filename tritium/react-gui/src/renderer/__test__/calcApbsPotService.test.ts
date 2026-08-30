@@ -17,8 +17,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import { APBS_PROGRESS_CHANNEL, type CalcApbsStartArgs } from '../worker/shared/apbsTypes'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { APBS_PROGRESS_CHANNEL, type CalcApbsStartArgs } from '@renderer/worker/shared/apbsTypes'
 
 vi.mock('fs', () => ({
     mkdtempSync: vi.fn(() => '/tmp/cuemol-apbs-test'),
@@ -32,12 +32,12 @@ vi.mock('os', () => ({
     tmpdir: vi.fn(() => '/tmp'),
     homedir: vi.fn(() => '/home/user'),
 }))
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
 
 import * as fs from 'fs'
-import { services } from '../worker/server/services/calcApbsPot.service'
+import { services } from '@renderer/worker/server/services/calcApbsPot.service'
 
 const { calcApbsStart, calcApbsCancel } = services
 const POLL_MS = 300

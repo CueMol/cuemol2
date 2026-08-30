@@ -7,8 +7,8 @@
  * slice -> `MenuItem.visible` per `SCENE_EXPORT_MENU_EXPORTERS`.
  */
 import { describe, it, expect, vi } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import { services } from '../worker/server/services/exportImage.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/exportImage.service'
 import {
     applyMenuStateTo,
     type MenuItemLike,

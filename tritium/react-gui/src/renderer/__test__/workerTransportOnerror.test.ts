@@ -17,7 +17,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
-vi.mock('../crash/CrashReporter', () => ({
+vi.mock('@renderer/crash/CrashReporter', () => ({
   report: vi.fn(),
 }))
 
@@ -52,8 +52,8 @@ afterEach(() => {
   }
 })
 
-import { WorkerTransport } from '../worker/client/WorkerTransport'
-import * as CrashReporter from '../crash/CrashReporter'
+import { WorkerTransport } from '@renderer/worker/client/WorkerTransport'
+import * as CrashReporter from '@renderer/crash/CrashReporter'
 
 function makeTransport(): { transport: WorkerTransport; worker: FakeWorker } {
   const transport = new WorkerTransport({ onEventNotify: vi.fn() })

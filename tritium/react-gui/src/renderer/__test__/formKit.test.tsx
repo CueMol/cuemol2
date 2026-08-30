@@ -33,8 +33,8 @@ import {
     NumericField,
     ButtonRow,
     FormButton,
-} from '../h3-kit/form'
-import { mountTree } from './helpers/testHarness'
+} from '@renderer/h3-kit/form'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 /** Assert no element in the subtree carries inline sizing styles. */
 function expectNoInlineSizing(root: HTMLElement): void {

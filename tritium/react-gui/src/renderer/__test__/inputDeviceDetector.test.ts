@@ -9,8 +9,8 @@ import {
   InputDeviceDetector,
   MOUSE_CONFIRM_STREAK,
   TRACKPAD_EVIDENCE_TTL_MS,
-} from '../input/inputDeviceDetector'
-import type { WheelSample } from '../input/wheelDeviceClassifier'
+} from '@renderer/input/inputDeviceDetector'
+import type { WheelSample } from '@renderer/input/wheelDeviceClassifier'
 
 // macOS polarity (detector defaults isMac=true): mouse = fractional dy,
 // trackpad = integer dy.

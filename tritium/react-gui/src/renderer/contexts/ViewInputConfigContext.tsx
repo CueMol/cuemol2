@@ -34,9 +34,9 @@ import {
   normalizeInputDeviceMode,
   normalizeInputDevicePreference,
   viewInputStyleName,
-} from '../viewInputConfig'
-import { InputDeviceDetector } from '../input/inputDeviceDetector'
-import type { WheelSample } from '../input/wheelDeviceClassifier'
+} from '@renderer/viewInputConfig'
+import { InputDeviceDetector } from '@renderer/input/inputDeviceDetector'
+import type { WheelSample } from '@renderer/input/wheelDeviceClassifier'
 
 interface ViewInputConfigContextValue {
   /** Persisted preference (mouse / trackpad / auto). */

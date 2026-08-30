@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import type { TabData } from "../types";
+import type { TabData } from "@renderer/types";
 
 // --- Types ---
 

@@ -5,7 +5,7 @@
 // (renderer-common-page.js): scene-level material defs first, then global
 // defs, de-duplicated. The "(none)" entry is prepended on the UI side.
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 export interface GetMaterialNamesArgs {
     /** Scene scope; 0 (or falsy) limits the query to global defs. */

@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { WorkerContext } from '../types/WorkerContext';
-import { isHiddenObjReader } from './helpers/readerFilter';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { isHiddenObjReader } from '@renderer/worker/server/services/helpers/readerFilter';
 
 export interface GetOpenFiltersArgs {
     catId: number;

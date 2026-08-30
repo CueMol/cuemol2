@@ -13,7 +13,7 @@ import React, { useEffect, useRef } from 'react'
 import { act } from 'react'
 import { IPC } from '@shared/ipcChannels'
 import { PERSIST_DEBOUNCE_MS } from '@renderer/utils/timing'
-import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from '../../__test__/helpers/testHarness'
+import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 import { LayoutProvider, useLayout, useLayoutDispatch, type LayoutDispatch, type LayoutValues } from './LayoutProvider'
 
 void React

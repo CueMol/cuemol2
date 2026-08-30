@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { withUndoTxn } from '../worker/server/services/withUndoTxn'
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 
 function makeMockScene() {

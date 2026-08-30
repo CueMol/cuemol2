@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { buildLabelFontCss } from '../components/panes/settings/labelFont'
+import { buildLabelFontCss } from '@renderer/features/settings/settings/labelFont'
 
 describe('buildLabelFontCss (C++ setupFont parity)', () => {
   it('plain family + size', () => {

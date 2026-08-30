@@ -38,7 +38,7 @@ import type { PQRFileWriter } from '@cuemol/core/src/wrappers/PQRFileWriter';
 import type { PDBFileWriter } from '@cuemol/core/src/wrappers/PDBFileWriter';
 import type { OpenDXPotReader } from '@cuemol/core/src/wrappers/OpenDXPotReader';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import {
   APBS_PROGRESS_CHANNEL,
   type ApbsUpdate,
@@ -49,9 +49,9 @@ import {
   type CalcApbsCancelResult,
   type ProposeElepotNameArgs,
   type ProposeElepotNameResult,
-} from '../../shared/apbsTypes';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
+} from '@renderer/worker/shared/apbsTypes';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from './withUndoTxn';
 
 /** Poll interval for process status / stdout. */

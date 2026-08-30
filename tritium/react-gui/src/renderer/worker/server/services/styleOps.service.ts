@@ -11,10 +11,10 @@
 // Style nodes have no name setter and global styles (`scopeId === 0`) are
 // not editable, matching UXP `onStyToggleRo` early-return.
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { INVALID_UID, isValidUid } from '../../shared/uid';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { INVALID_UID, isValidUid } from '@renderer/worker/shared/uid';
 
 interface StyleManagerLike {
     createStyleSet(name: string, scopeId: number): number;

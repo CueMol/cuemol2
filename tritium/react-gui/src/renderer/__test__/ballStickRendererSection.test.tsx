@@ -18,7 +18,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -29,7 +29,7 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 }))
 
 // Stub the colour leaf so ColorField renders without the ColorPicker context.
-vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
   CueColorField: ({ value, onCommit, disabled }: any) => (
     <button
       data-testid="ringcolor"
@@ -41,13 +41,13 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import { SchemaSection } from '../components/inspector/SchemaSection'
-import { BALLSTICK_SECTIONS } from '../components/inspector/schema/ballstick'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { BALLSTICK_SECTIONS } from '@renderer/features/inspector/schema/ballstick'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-} from '../components/inspector/rendererPropSections'
-import { PropertiesTab } from '../components/inspector/PropertiesTab'
+} from '@renderer/features/inspector/rendererPropSections'
+import { PropertiesTab } from '@renderer/features/inspector/PropertiesTab'
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {

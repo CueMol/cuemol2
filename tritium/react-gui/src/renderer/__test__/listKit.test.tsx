@@ -14,8 +14,8 @@ import { act } from 'react'
 
 void React
 
-import { Listbox, ListRow } from '../h3-kit/list'
-import { mountTree } from './helpers/testHarness'
+import { Listbox, ListRow } from '@renderer/h3-kit/list'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 function expectNoInlineSizing(root: HTMLElement): void {
     const all = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))]

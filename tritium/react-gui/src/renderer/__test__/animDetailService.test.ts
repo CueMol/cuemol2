@@ -13,15 +13,15 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import type { WorkerContext } from "../worker/server/types/WorkerContext";
+import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 
 // Control the scene-tree parse directly (its own parsing is tested elsewhere).
 let mockTree: unknown = null;
-vi.mock("../worker/shared/sceneTreeTypes", () => ({
+vi.mock("@renderer/worker/shared/sceneTreeTypes", () => ({
   parseSceneTreeJSON: () => mockTree,
 }));
 
-import { services } from "../worker/server/services/animDetail.service";
+import { services } from "@renderer/worker/server/services/animDetail.service";
 
 function tv(ms: number) {
   return { millisec: ms };

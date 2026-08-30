@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react'
 import {
     registerClipboardScope,
     type ClipboardScopeHandlers,
-} from '../utils/editClipboard'
+} from '@renderer/utils/editClipboard'
 
 /**
  * Register clipboard handlers for `scopeId` while `enabled`.

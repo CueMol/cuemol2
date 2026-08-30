@@ -10,8 +10,8 @@
  * transaction label / commit / rollback are exercised against the spied scene.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { services } from '../worker/server/services/measure.service';
-import type { WorkerContext } from '../worker/server/types/WorkerContext';
+import { services } from '@renderer/worker/server/services/measure.service';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 type MeasureMode = 'distance' | 'angle' | 'torsion';
 

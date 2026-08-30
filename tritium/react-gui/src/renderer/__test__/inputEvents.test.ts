@@ -6,7 +6,7 @@ import {
     handleMouseMove,
     handleGesture,
     handleWheel,
-} from '../worker/server/inputEvents';
+} from '@renderer/worker/server/inputEvents';
 
 /**
  * Degrade-detection test for the Worker input-event handlers extracted

@@ -14,13 +14,13 @@
  */
 
 import { useEffect } from 'react'
-import { useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
+import { useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
 import { IPC } from '@shared/ipcChannels'
 import { MENU_PASS_THROUGH_CHANNELS } from '@shared/menuActionMap'
 import type { PushChannel } from '@shared/ipcContract'
 import { useMenuDispatch } from './useMenuDispatch'
-import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
+import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
 
 /**
  * Push channels whose only effect is to forward themselves to

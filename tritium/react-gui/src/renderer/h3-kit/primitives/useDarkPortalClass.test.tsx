@@ -12,7 +12,7 @@
 import React from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { act } from 'react';
-import { mountTree } from '../../__test__/helpers/testHarness';
+import { mountTree } from '@renderer/__test__/helpers/testHarness';
 import { useDarkPortalClass, useIsDarkTheme } from './useDarkPortalClass';
 
 function Probe(): React.ReactElement {

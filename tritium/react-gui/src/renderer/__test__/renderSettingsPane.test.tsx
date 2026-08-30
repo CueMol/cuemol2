@@ -14,16 +14,16 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act } from 'react';
-import { mountTree, openAccordion } from './helpers/testHarness';
+import { mountTree, openAccordion } from '@renderer/__test__/helpers/testHarness';
 
 void React;
 
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }));
-vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
+vi.mock('@renderer/contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
 
-import { RenderSettingsPane } from '../components/renderwindow/RenderSettingsPane';
+import { RenderSettingsPane } from '@renderer/features/render/renderwindow/RenderSettingsPane';
 import {
   RENDER_COMMON_PROPS,
   RENDER_SIZE_PRESETS,
@@ -31,10 +31,10 @@ import {
   DEFAULT_MOVIE_SETTINGS,
   type RenderBackendId,
   type RenderMode,
-} from '../data/renderSettings';
-import { RENDER_BACKENDS } from '../data/renderBackends';
-import { parseHatchSpec } from '../data/hatchSpec';
-import type { HatchLookEditorProps } from '../components/inspector/HatchLookEditor';
+} from '@renderer/data/renderSettings';
+import { RENDER_BACKENDS } from '@renderer/data/renderBackends';
+import { parseHatchSpec } from '@renderer/data/hatchSpec';
+import type { HatchLookEditorProps } from '@renderer/features/inspector/HatchLookEditor';
 
 function mountPane(
   opts: {

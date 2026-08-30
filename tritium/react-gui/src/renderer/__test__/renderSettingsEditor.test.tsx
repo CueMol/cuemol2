@@ -12,7 +12,7 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act } from 'react';
-import { mountTree } from './helpers/testHarness';
+import { mountTree } from '@renderer/__test__/helpers/testHarness';
 
 void React;
 
@@ -23,14 +23,14 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 }));
 
 // The DPI ComboBoxField reads the theme; provide it without a ThemeProvider.
-vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
+vi.mock('@renderer/contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
 
-import { RenderSettingsEditor } from '../components/inspector/RenderSettingsEditor';
+import { RenderSettingsEditor } from '@renderer/features/inspector/RenderSettingsEditor';
 import {
   RENDER_COMMON_PROPS,
   type RenderLightingMode,
-} from '../data/renderSettings';
-import { RENDER_BACKENDS } from '../data/renderBackends';
+} from '@renderer/data/renderSettings';
+import { RENDER_BACKENDS } from '@renderer/data/renderBackends';
 
 function mountFor(
   backend: 'povray' | 'umbreon' | 'umbreon_npr',

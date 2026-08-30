@@ -7,7 +7,7 @@
  * (build2ndry = !loadsecstr), which are easy to get wrong silently.
  */
 import { describe, it, expect } from 'vitest'
-import { mapReaderDefaultsToFormatOptions } from '../components/fopen-opt-dlgs/types'
+import { mapReaderDefaultsToFormatOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 
 describe('mapReaderDefaultsToFormatOptions', () => {
     it('maps PDB reader props 1:1 onto dialog fields (autoTopoGen -> autoTopology)', () => {

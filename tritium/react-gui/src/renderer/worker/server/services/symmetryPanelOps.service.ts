@@ -29,10 +29,10 @@ import type { CrystalInfo } from '@cuemol/core/src/wrappers/CrystalInfo';
 import type { SymmOpManager } from '@cuemol/core/src/wrappers/SymmOpManager';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull, getViewSceneOrNull } from './helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull, getViewSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { undoTxnResult } from './withUndoTxn';
-import { ok, fail, type Result } from '../../shared/result';
+import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 const MOL_CLASSES = new Set(['MolCoord', 'PDBMol', 'MmCifMol']);
 

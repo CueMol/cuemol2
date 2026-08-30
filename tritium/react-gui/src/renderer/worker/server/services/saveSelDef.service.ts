@@ -8,11 +8,11 @@
 // StyleMgr.setStrData requires a valid existing style-set UID within the
 // scope; we pick the first writable scene-scoped set, creating one when none
 // exists (mirrors UXP style_editor.js nScopeID/nStyleSetID usage).
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
-import { isValidUid } from '../../shared/uid';
+import { isValidUid } from '@renderer/worker/shared/uid';
 
 export interface SaveSelDefArgs {
     sceneId: number;

@@ -5,7 +5,7 @@
  * Each function returns a Promise resolved with the worker reply and
  * swallows transport errors with a logged warning.
  */
-import { WorkerTransport } from '../WorkerTransport';
+import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 
 const log = console;
 

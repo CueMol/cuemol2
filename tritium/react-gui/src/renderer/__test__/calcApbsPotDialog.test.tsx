@@ -19,7 +19,7 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
 }))
 
@@ -41,13 +41,13 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 const mockApbsConfig = {
     current: { apbsExe: '', pdb2pqrExe: '', pdb2pqrFF: 'charmm' },
 }
-vi.mock('../contexts/ApbsConfigContext', () => ({
+vi.mock('@renderer/contexts/ApbsConfigContext', () => ({
     useApbsConfig: () => ({ config: mockApbsConfig.current, setValue: vi.fn() }),
 }))
 
-import { CalcApbsPotDialog } from '../components/dialogs/CalcApbsPotDialog'
-import type { CalcApbsPotDialogResult } from '../components/dialogs/CalcApbsPotDialog'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { CalcApbsPotDialog } from '@renderer/dialogs/CalcApbsPotDialog'
+import type { CalcApbsPotDialogResult } from '@renderer/dialogs/CalcApbsPotDialog'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 const MOL = { uid: 11, name: 'mol1', className: 'MolCoord' }
 

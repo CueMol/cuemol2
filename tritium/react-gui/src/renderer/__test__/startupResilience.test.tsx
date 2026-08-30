@@ -17,10 +17,10 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import { makeRenderHook, flushPromises, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { makeRenderHook, flushPromises, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 import { IPC } from '@shared/ipcChannels'
-import { LayoutProvider, useLayout, useLayoutDispatch } from '../state/layout'
-import { useAppInitialization } from '../hooks/useAppInitialization'
+import { LayoutProvider, useLayout, useLayoutDispatch } from '@renderer/state/layout'
+import { useAppInitialization } from '@renderer/hooks/useAppInitialization'
 
 void React
 

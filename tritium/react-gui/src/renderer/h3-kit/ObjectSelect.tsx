@@ -21,9 +21,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Field, SelectField } from './form'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import type { SceneObjectEntry } from '../worker/server/services/listSceneObjects.service'
-import { SEM_OBJECT, SEM_SCENE, SEM_ANY } from '../event'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import type { SceneObjectEntry } from '@renderer/worker/server/services/listSceneObjects.service'
+import { SEM_OBJECT, SEM_SCENE, SEM_ANY } from '@renderer/event'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 
 /** Predicate applied to each scene object; only matching items appear. */

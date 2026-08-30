@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { resolveChainNameInput } from '../components/dialogs/chainNameInput'
+import { resolveChainNameInput } from '@renderer/dialogs/chainNameInput'
 
 describe('resolveChainNameInput', () => {
     it('rejects an empty string', () => {

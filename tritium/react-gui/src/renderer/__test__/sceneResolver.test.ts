@@ -4,8 +4,8 @@ import {
     getViewOrNull,
     getViewSceneOrNull,
     getViewSceneObjOrNull,
-} from '../worker/server/services/helpers/sceneResolver'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+} from '@renderer/worker/server/services/helpers/sceneResolver'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 function makeCtx(opts: {
     scenes?: Record<number, unknown>

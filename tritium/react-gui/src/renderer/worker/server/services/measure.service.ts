@@ -13,7 +13,7 @@
  * created on the first pick's molecule via the atomintr renderer, wrapped in an
  * undo transaction, and the pick sequence (and crosshair feedback) is reset.
  */
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 import type { DistPickDrawObj } from '@cuemol/core/src/wrappers/DistPickDrawObj';
@@ -25,7 +25,7 @@ import {
     ATOMINTR_TYPE,
     ATOMINTR_STYLES,
     ATOMINTR_DEFAULT_TARGET_NAME as DEFAULT_TARGET_NAME,
-} from './helpers/atomintr';
+} from '@renderer/worker/server/services/helpers/atomintr';
 
 /**
  * Measure sub-mode. The required number of atom picks is 2 / 3 / 4 for

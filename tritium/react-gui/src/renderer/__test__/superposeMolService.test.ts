@@ -14,22 +14,22 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import type { SuperposeMolArgs } from '../worker/server/services/superposeMol.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { SuperposeMolArgs } from '@renderer/worker/server/services/superposeMol.service'
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     // Distinct object per selection string so we can assert which one flows
     // into fitView2.
     makeSel: vi.fn((_ctx: unknown, selStr: string) => ({ __sel: selStr })),
 }))
-vi.mock('../worker/server/services/helpers/sceneResolver', () => ({
+vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
     getSceneOrNull: vi.fn(),
     getViewOrNull: vi.fn(),
 }))
 
-import { superposeMol } from '../worker/server/services/superposeMol.service'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
-import { getSceneOrNull, getViewOrNull } from '../worker/server/services/helpers/sceneResolver'
+import { superposeMol } from '@renderer/worker/server/services/superposeMol.service'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
+import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 
 const REF_UID = 1
 const MOV_UID = 2

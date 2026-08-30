@@ -17,11 +17,11 @@ import {
   setupElectronAPI,
   teardownElectronAPI,
   flushPromises,
-} from './helpers/testHarness';
+} from '@renderer/__test__/helpers/testHarness';
 import { IPC } from '@shared/ipcChannels';
 import type { MovieRenderPrefs } from '@shared/types/uiPrefs';
-import { useMovieOutputPrefs } from '../hooks/useMovieOutputPrefs';
-import { DEFAULT_MOVIE_SETTINGS, type MovieSettings } from '../data/renderSettings';
+import { useMovieOutputPrefs } from '@renderer/features/render/useMovieOutputPrefs';
+import { DEFAULT_MOVIE_SETTINGS, type MovieSettings } from '@renderer/data/renderSettings';
 
 const TEMP_DIR = '/tmp/cuemol-movies/session-abc';
 

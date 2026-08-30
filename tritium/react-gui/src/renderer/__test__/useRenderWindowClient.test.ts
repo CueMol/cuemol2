@@ -14,11 +14,11 @@ import {
     makeRenderHook,
     setupElectronAPI,
     teardownElectronAPI,
-} from './helpers/testHarness';
-import { useRenderWindowClient } from '../hooks/useRenderWindowClient';
+} from '@renderer/__test__/helpers/testHarness';
+import { useRenderWindowClient } from '@renderer/features/render/useRenderWindowClient';
 import { IPC } from '@shared/ipcChannels';
 import type { RenderTargetViewWire, RenderWindowModeRequest, RenderWindowStateUpdate } from '@shared/types/renderWindow';
-import type { RenderSettingsSnapshot } from '../data/renderResult';
+import type { RenderSettingsSnapshot } from '@renderer/data/renderResult';
 
 const snapshot: RenderSettingsSnapshot = {
     mode: 'still',

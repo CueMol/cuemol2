@@ -14,7 +14,7 @@ import type {
   CalcApbsStartResult,
   ProposeElepotNameArgs,
   ProposeElepotNameResult,
-} from '../apbsTypes'
+} from '@renderer/worker/shared/apbsTypes'
 
 export interface ApbsCalls {
   calcApbsStart:              { args: CalcApbsStartArgs; result: CalcApbsStartResult }

@@ -45,8 +45,8 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Tooltip, AppIcon } from '../primitives';
-import type { AppIconKey } from '../primitives';
+import { Tooltip, AppIcon } from '@renderer/h3-kit/primitives';
+import type { AppIconKey } from '@renderer/h3-kit/primitives';
 import {
     ComboBoxField,
     FormButton,
@@ -54,16 +54,16 @@ import {
     SelectField,
     TextField,
     type SegmentFieldOption,
-} from '../form';
+} from '@renderer/h3-kit/form';
 import type { ResolveValues } from './useSelectionValues';
 import { KEYWORDS, getKeywordDef, type Keyword } from './selectionGrammar';
 import type { BinaryOp, UnaryOp } from './selectionExpr';
 import { applyBinary, applyUnary, canApplyBinary } from './selectionExpr';
 import type { BuilderState, BuilderAction } from './selBuilderReducer';
 import { canApplyUnary, selectTerm } from './selBuilderReducer';
-import { useSelHitCount, type GetHitCount } from '../MolSelList/useSelHitCount';
-import { CountTag } from '../MolSelList/CountTag';
-import { NamedSelMenu, HistoryMenu } from '../MolSelList/SelMenus';
+import { useSelHitCount, type GetHitCount } from '@renderer/h3-kit/MolSelList/useSelHitCount';
+import { CountTag } from '@renderer/h3-kit/MolSelList/CountTag';
+import { NamedSelMenu, HistoryMenu } from '@renderer/h3-kit/MolSelList/SelMenus';
 
 /* --- Props --- */
 

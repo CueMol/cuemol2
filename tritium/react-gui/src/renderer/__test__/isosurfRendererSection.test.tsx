@@ -22,7 +22,7 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -34,7 +34,7 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: state.cm, cueMolReady: !!state.cm }),
 }))
 
-vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
+vi.mock('@renderer/h3-kit/MolSelList/MolSelList', () => ({
   MolSelList: ({ selectedSel, onCommit, disabled }: any) => (
     <button data-testid="sel" data-disabled={String(!!disabled)} onClick={() => onCommit?.('newsel')}>
       {selectedSel}
@@ -42,13 +42,13 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
   ),
 }))
 
-import { SchemaSection } from '../components/inspector/SchemaSection'
-import { ISOSURF_SECTIONS } from '../components/inspector/schema/map'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { ISOSURF_SECTIONS } from '@renderer/features/inspector/schema/map'
 import {
 
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-} from '../components/inspector/rendererPropSections'
+} from '@renderer/features/inspector/rendererPropSections'
 
 
 beforeEach(() => {
