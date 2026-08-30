@@ -13,6 +13,8 @@
 #include "SingletonBase.hpp"
 #include "LUIDObject.hpp"
 
+#include <mutex>
+
 namespace qlib {
 
   using std::map;
@@ -33,6 +35,11 @@ namespace qlib {
 
     /** UID --> object ptr table */
     ObjTable m_objtab;
+
+    /// registerObject() runs on the IOThread worker (loadObjectAsync) while
+    /// the main thread keeps calling getObjectByUID(); std::map must not be
+    /// modified and searched concurrently
+    mutable std::mutex m_mutex;
 
   public:
     
@@ -55,6 +62,7 @@ namespace qlib {
     ///////////////////////
 
     uid_t registerObject(LUIDObject *pObj) {
+      std::lock_guard<std::mutex> lk(m_mutex);
       uid_t uid = createNewUID();
       bool res = m_objtab.insert(ObjTable::value_type(uid, pObj)).second;
       if (res)
@@ -64,12 +72,14 @@ namespace qlib {
     }
 
     LUIDObject *getObjectByUID(uid_t u) const {
+      std::lock_guard<std::mutex> lk(m_mutex);
       ObjTable::const_iterator i = m_objtab.find(u);
       if (i==m_objtab.end()) return NULL;
       return i->second;
     }
 
     bool unregisterObject(uid_t u) {
+      std::lock_guard<std::mutex> lk(m_mutex);
       ObjTable::iterator i = m_objtab.find(u);
       if (i==m_objtab.end()) return false;
       m_objtab.erase(i);

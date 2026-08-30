@@ -51,6 +51,13 @@ SceneManager::SceneManager()
 SceneManager::~SceneManager()
 {
   dump();
+  // m_data.clear() alone let a Renderer/Object destructor call getSceneS()
+  // on the scene being destroyed, which handed out a fresh ScenePtr to a
+  // scene with count 0 (double delete); destroy them in order instead.
+  destroyAllScenes();
+  qlib::EventManager *pEM = qlib::EventManager::getInstance();
+  if (pEM!=NULL)
+    pEM->removeIdleTask(this);
   m_data.clear();
   MB_DPRINTLN("SceneManager(%p) destructed", this);
 }

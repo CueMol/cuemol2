@@ -404,6 +404,19 @@ void QdfInStream::skipRecord()
   case QDF_TYPE_RGBA:
     readColorRGBA(nm);
     break;
+  case QDF_TYPE_BOOL:
+    readBool(nm);
+    break;
+  case QDF_TYPE_INT16:
+  case QDF_TYPE_UINT16:
+  case QDF_TYPE_FLOAT64:
+  case QDF_TYPE_VEC4:
+  case QDF_TYPE_RGB: {
+    // fixed-size fields without a typed reader: skip by size
+    m_pBinIn->skip(QdfDataType::getSize(type, true));
+    m_nRecInd++;
+    break;
+  }
   default: {
     LString msg = LString::format("QdfIn.skipRec> unsupported record type (%d)", type);
     MB_THROW(qlib::FileFormatException, msg);

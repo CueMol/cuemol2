@@ -122,11 +122,21 @@ void OcView::setup()
         LOG_DPRINTLN("OcView> MSAA enabled");
     }
 
-    // Default VAO
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    // Default VAO (a core profile needs one bound); freed in unloading()
+    glGenVertexArrays(1, &m_nDefaultVAO);
+    glBindVertexArray(m_nDefaultVAO);
+}
 
+void OcView::unloading()
+{
+    // The platform view (CglView/WglView) calls this before it tears the
+    // GL context down, so the handle can still be released here.
+    if (m_nDefaultVAO != 0 && safeSetCurrent()) {
+        glBindVertexArray(0);
+        glDeleteVertexArrays(1, &m_nDefaultVAO);
+    }
+    m_nDefaultVAO = 0;
+    super_t::unloading();
 }
 
 /*

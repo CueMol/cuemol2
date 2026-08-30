@@ -131,7 +131,7 @@ void GUIView::setUpProjMat(int cx, int cy)
 
     // MB_DPRINTLN("Zoom=%f", zoom);
     double vw = zoom / 2.0f;
-    double fasp = (double)cx / (double)cy;
+    double fasp = (cy > 0) ? (double)cx / (double)cy : 1.0;
 
     // MB_DPRINTLN("OcView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
     // MB_DPRINTLN("OcView.setUpProjMat> Near=%f, Far=%f", slabnear, slabfar);
@@ -751,7 +751,7 @@ bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool f
     const double vw = zoom / 2.0;
     const double cx = convToBackingX(getWidth());
     const double cy = convToBackingY(getHeight());
-    const double fasp = cx / cy;
+    const double fasp = (cy > 0.0) ? cx / cy : 1.0;
 
     MB_DPRINTLN("HitTestImpl> near=%f, far=%f, vw=%f, fasp=%f", slabnear, slabfar, vw,
                 fasp);
@@ -873,7 +873,7 @@ gfx::AoConstants GUIView::computeAoConstants() const
     // finalValuePower / slice & step counts / fog) are filled by the caller from
     // the Scene properties. Perspective and orthographic projections reconstruct
     // view space differently, so fromCamera branches on the projection mode.
-    const double aspect = double(getWidth()) / double(getHeight());
+    const double aspect = (getHeight() > 0) ? double(getWidth()) / double(getHeight()) : 1.0;
     const int bcx = convToBackingX(getWidth());
     const int bcy = convToBackingY(getHeight());
     return gfx::AoConstants::fromCamera(getViewDist(), double(getZoom()),

@@ -69,6 +69,10 @@ void LoadSceneCommand::run()
 
     auto strMgr = qsys::StreamManager::getInstance();
     qsys::SceneXMLReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
+    if (reader.isnull()) {
+        MB_THROW(qlib::RuntimeException, "no reader for file format " + m_fileFmt);
+        return;
+    }
     reader->setPath(m_filePath);
 
     reader->attach(m_pResScene);

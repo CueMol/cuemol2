@@ -33,8 +33,11 @@ LThread::LThread()
 LThread::~LThread()
 {
   if (m_pimp->m_pthr) {
+    // The worker sets m_finished under the lock and then calls
+    // notify_all() on m_cv; a detach here let the impl (and m_cv) be
+    // freed while that notify_all() was still running.
     if (m_pimp->m_pthr->joinable())
-      m_pimp->m_pthr->detach();
+      m_pimp->m_pthr->join();
     delete m_pimp->m_pthr;
   }
   delete m_pimp;

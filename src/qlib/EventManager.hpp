@@ -195,6 +195,10 @@ namespace qlib {
       return getInstance()->getCurrentTime();
     }
     
+    void removeIdleTask(IdleTask *pTask) {
+      m_idleTasks.remove(pTask);
+    }
+
     void addIdleTask(IdleTask *pTask, bool bLast=false) {
       if (bLast) {
         m_idleTasks.push_back(pTask);

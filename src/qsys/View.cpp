@@ -497,6 +497,7 @@ void View::getTrackRotQuat(double curX, double curY,
 void View::convXYTrans(double adx, double ady, Vector4D &vec) const
 {
   const double h = getHeight();
+  if (!(h > 0.0)) return;  // minimized / not yet sized: nothing to translate
   const double zoom = m_curcam.getZoom();
   const double dx = adx*zoom/h;
   const double dy = -ady*zoom/h;

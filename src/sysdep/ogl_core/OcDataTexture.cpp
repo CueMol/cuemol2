@@ -42,9 +42,13 @@ bool OcDataTexture::init(gfx::DisplayContext *pdc, int w, int h, int ncomp,
     m_nTex = tex;
 
     glBindTexture(GL_TEXTURE_2D, m_nTex);
-    // Tightly packed CPU data (no row alignment padding).
+    // Tightly packed CPU data (no row alignment padding); restore the
+    // previous alignment afterwards so other uploads keep their assumption.
+    GLint prevAlign = 4;
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &prevAlign);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, prevAlign);
     const GLint filt = linear ? GL_LINEAR : GL_NEAREST;
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filt);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filt);

@@ -54,6 +54,9 @@ bool XzInFilterImpl::ready()
 {
   lzma_stream *pstream = (lzma_stream *) m_pdata;
 
+  if (m_bEnd)
+    return false;
+
   if (pstream->avail_in>0) {
     // still stream has non-processed input data
     return true;
@@ -74,6 +77,9 @@ int XzInFilterImpl::read(char *abuf, int off, int alen)
   quint8 *pretbuf = (quint8 *) &abuf[off];
   int nretbuf = alen;
   int i=0, nres=0;
+
+  if (m_bEnd)
+    return -1;
 
   // char input_buf[BUFSZ];
 
@@ -116,6 +122,12 @@ int XzInFilterImpl::read(char *abuf, int off, int alen)
       i += nread;
       pretbuf += nread;
       nretbuf -= nread;
+
+      if (ret == LZMA_STREAM_END) {
+        // the stream is complete; any remaining input is trailing garbage
+        m_bEnd = true;
+        return (i>0) ? i : -1;
+      }
 
       MB_ASSERT(nretbuf>=0);
       if (nretbuf==0) {
