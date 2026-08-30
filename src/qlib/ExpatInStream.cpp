@@ -94,7 +94,8 @@ void ExpatInStream::parse()
   bool done=false;
   do {
     int len = super_t::read(buf, 0, sizeof(buf));
-    done = len < sizeof(buf);
+    if (len < 0) len = 0;  // EOF: feed an empty final chunk
+    done = len < int(sizeof(buf));
     if (XML_Parse(getParser(), buf, len, done) == XML_STATUS_ERROR) {
       LString msg =
         LString::format("%s at line %d\n",
@@ -127,7 +128,8 @@ void ExpatInStream::procExtEntity(const char *fname, const char *szctxt)
     bool done=false;
     do {
       int len = fis.read(buf, 0, sizeof(buf));
-      done = len < sizeof(buf);
+      if (len < 0) len = 0;  // EOF: feed an empty final chunk
+      done = len < int(sizeof(buf));
       if (XML_Parse(expar, buf, len, done) == XML_STATUS_ERROR) {
 	LString msg =
 	  LString::format("%s at line %d\n",

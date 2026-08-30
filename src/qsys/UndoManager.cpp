@@ -101,6 +101,8 @@ bool UndoManager::getUndoDesc(int n, LString &str) const
 {
   if (!isUndoable())
     return false;
+  if (n<0 || n>=int(m_udata.size()))
+    return false;
   // UndoInfo *pui = m_udata.front();
   UndoInfoList::const_iterator iter = m_udata.begin();
   for (int i=0; i<n; ++i)
@@ -115,6 +117,8 @@ bool UndoManager::getUndoDesc(int n, LString &str) const
 bool UndoManager::getRedoDesc(int n, LString &str) const
 {
   if (!isRedoable())
+    return false;
+  if (n<0 || n>=int(m_rdata.size()))
     return false;
   //UndoInfo *pui = m_rdata.front();
   UndoInfoList::const_iterator iter = m_rdata.begin();
