@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/getMtzColumnInfo.service.ts
+ * @file worker/server/services/map/map.service.ts
  * @description Read an MTZ file's column labels and resolution range so the
  * file-open dialog can populate amplitude / phase / weight dropdowns. Mirrors
  * the UXP fopen-mtzopt-page onInit path, which calls
@@ -13,7 +13,6 @@
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { MTZ2MapReader } from '@cuemol/core/src/wrappers/MTZ2MapReader';
 import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
-
 const log = console;
 
 /** A single MTZ column relevant to map synthesis (F=amplitude, P=phase, W=weight). */
@@ -43,7 +42,7 @@ const EMPTY: GetMtzColumnInfoResult = { ok: false, columns: [], minRes: 0, maxRe
 
 const RELEVANT_TYPES = new Set(['F', 'P', 'W']);
 
-function getMtzColumnInfo(ctx: WorkerContext, args: GetMtzColumnInfoArgs): GetMtzColumnInfoResult {
+export function getMtzColumnInfo(ctx: WorkerContext, args: GetMtzColumnInfoArgs): GetMtzColumnInfoResult {
     const reader = ctx.strMgr.createHandler('mtzmap', OBJREADER_CATEGORY) as unknown as MTZ2MapReader | null;
     if (!reader) {
         log.warn('[worker] getMtzColumnInfo: createHandler("mtzmap") failed');
@@ -73,4 +72,3 @@ function getMtzColumnInfo(ctx: WorkerContext, args: GetMtzColumnInfoArgs): GetMt
     }
 }
 
-export const services = { getMtzColumnInfo };

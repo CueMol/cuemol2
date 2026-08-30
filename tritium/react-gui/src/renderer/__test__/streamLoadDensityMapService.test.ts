@@ -12,7 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('@renderer/worker/server/services/helpers/setupDensityMapRenderers', () => ({
+vi.mock('@renderer/worker/server/services/map/setupRenderers', () => ({
     setupDensityMapRenderers: vi.fn(),
 }))
 vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
@@ -22,8 +22,8 @@ vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     undoTxnResult: (_s: unknown, _l: string, fn: () => unknown) => fn(),
 }))
 
-import { services } from '@renderer/worker/server/services/streamLoadDensityMap.service'
-import { setupDensityMapRenderers } from '@renderer/worker/server/services/helpers/setupDensityMapRenderers'
+import { services } from '@renderer/worker/server/services/map/map.service'
+import { setupDensityMapRenderers } from '@renderer/worker/server/services/map/setupRenderers'
 
 const { streamLoadDensityMap } = services
 

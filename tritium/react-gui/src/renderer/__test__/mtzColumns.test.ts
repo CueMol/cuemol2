@@ -7,7 +7,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { computeMtzDefaults } from '@renderer/dialogs/fopen-opt-dlgs/mtzColumns'
-import type { MtzColumn } from '@renderer/worker/server/services/getMtzColumnInfo.service'
+import type { MtzColumn } from '@renderer/worker/server/services/map/map.service'
 
 const col = (name: string, type: string): MtzColumn => ({ name, type })
 

@@ -20,9 +20,8 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
 import type { MapRenderer } from '@cuemol/core/src/wrappers/MapRenderer';
-import { getDefaultStyleName } from './getDefaultStyleName';
-import { makeColor } from './makeColor';
-
+import { getDefaultStyleName } from '../helpers/getDefaultStyleName';
+import { makeColor } from '../helpers/makeColor';
 export type DensityMapType = '2fofc' | 'fofc';
 
 interface ContourSpec {

@@ -26,7 +26,7 @@ import * as inputApi from '@renderer/worker/client/apis/inputApi';
 import * as fileApi from '@renderer/worker/client/apis/fileApi';
 import * as editApi from '@renderer/worker/client/apis/editApi';
 import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/getCompatibleRendererNames.service';
-import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/getMtzColumnInfo.service';
+import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/map/map.service';
 import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/getReaderDefaultOptions.service';
 import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/loadTrajectory.service';
 import type { LoadObjectResult } from '@renderer/worker/server/services/loadObject.service';

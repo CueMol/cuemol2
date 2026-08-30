@@ -18,7 +18,7 @@ import { useRef } from 'react'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type {
     MapRendererState,
-} from '@renderer/worker/server/services/densityMapPanelOps.service'
+} from '@renderer/worker/server/services/map/map.service'
 import {
     SEM_OBJECT,
     SEM_RENDERER,

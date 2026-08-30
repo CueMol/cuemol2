@@ -6,12 +6,11 @@
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import type { DensityMap } from '@cuemol/core/src/wrappers/DensityMap';
-import { setupDensityMapRenderers, type DensityMapType } from '@renderer/worker/server/services/helpers/setupDensityMapRenderers';
-import { undoTxnResult } from './withUndoTxn';
+import { setupDensityMapRenderers, type DensityMapType } from './setupRenderers';
+import { undoTxnResult } from '../withUndoTxn';
 import { streamFetchToReader } from '@renderer/worker/server/services/helpers/streamFetchToReader';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
-
 const log = console;
 
 export type DensityMapReaderName = 'mmcifmap' | 'mtzmap';
@@ -53,7 +52,7 @@ function configureMtzColumns(
     }
 }
 
-async function streamLoadDensityMap(
+export async function streamLoadDensityMap(
     ctx: WorkerContext,
     args: StreamLoadDensityMapArgs,
 ): Promise<StreamLoadDensityMapResult> {
@@ -107,4 +106,3 @@ async function streamLoadDensityMap(
     });
 }
 
-export const services = { streamLoadDensityMap };

@@ -15,7 +15,7 @@ import type {
 import type {
   GetMtzColumnInfoArgs,
   GetMtzColumnInfoResult,
-} from '@renderer/worker/server/services/getMtzColumnInfo.service'
+} from '@renderer/worker/server/services/map/map.service'
 import type { GetOpenFiltersArgs } from '@renderer/worker/server/services/getOpenFilters.service'
 import type {
   GetReaderDefaultOptionsArgs,
@@ -43,11 +43,11 @@ import type {
 import type {
   ProbeMapHeaderArgs,
   ProbeMapHeaderResult,
-} from '@renderer/worker/server/services/probeMapHeader.service'
+} from '@renderer/worker/server/services/map/map.service'
 import type {
   StreamLoadDensityMapArgs,
   StreamLoadDensityMapResult,
-} from '@renderer/worker/server/services/streamLoadDensityMap.service'
+} from '@renderer/worker/server/services/map/map.service'
 import type {
   CancelStreamLoadArgs,
   CancelStreamLoadResult,

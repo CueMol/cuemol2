@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/probeMapHeader.service.ts
+ * @file worker/server/services/map/map.service.ts
  * @description Read only the header of a CCP4/MRC map file
  * (CCP4MapReader.probeHeader) so the file-open dialog can show the map size
  * and warn about a very large map before the whole file is read.
@@ -7,11 +7,8 @@
  * Runs in the Web Worker thread (sync C++ wrappers, no await).
  */
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
-import { LARGE_MAP_VOXELS, suggestSubsample, type MapHeaderInfo } from '@renderer/worker/shared/mapHeader';
-export { LARGE_MAP_VOXELS, suggestSubsample };
-export type { MapHeaderInfo };
+import { type MapHeaderInfo } from '@renderer/worker/shared/mapHeader';
 import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
-
 const log = console;
 
 export interface ProbeMapHeaderArgs {
@@ -23,7 +20,7 @@ export interface ProbeMapHeaderResult {
     info: MapHeaderInfo | null;
 }
 
-function probeMapHeader(ctx: WorkerContext, args: ProbeMapHeaderArgs): ProbeMapHeaderResult {
+export function probeMapHeader(ctx: WorkerContext, args: ProbeMapHeaderArgs): ProbeMapHeaderResult {
     const reader = ctx.strMgr.createHandler('ccp4map', OBJREADER_CATEGORY) as unknown as
         | { probeHeader?: (path: string) => string }
         | null;
@@ -61,4 +58,3 @@ function probeMapHeader(ctx: WorkerContext, args: ProbeMapHeaderArgs): ProbeMapH
     }
 }
 
-export const services = { probeMapHeader };
