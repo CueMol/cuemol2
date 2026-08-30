@@ -228,7 +228,9 @@ export class AsyncCueMol {
      *   may be called only once. Use {@link addView} for additional view
      *   tabs on the already-bound canvas.
      */
-    bindCanvas(canvas: any, view_id: number, dpr: number): Promise<any[]> { return viewApi.bindCanvas(this._transport, canvas, view_id, dpr); }
+    bindCanvas(canvas: any, view_id: number, dpr: number, width: number, height: number): Promise<any[]> {
+        return viewApi.bindCanvas(this._transport, canvas, view_id, dpr, width, height);
+    }
 
     /** Attach a new view to the already-bound OffscreenCanvas. */
     addView(view_id: number, dpr: number): Promise<boolean> { return viewApi.addView(this._transport, view_id, dpr); }

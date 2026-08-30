@@ -342,10 +342,21 @@ export class WorkerService {
      * GfxManager and activate the given view. Calling twice throws (the
      * canvas can only be transferred once); use `addView` for extra views.
      */
-    bindCanvas(canvas: any, view_id: number, dpr: number): boolean {
+    bindCanvas(canvas: any, view_id: number, dpr: number, width: number, height: number): boolean {
         if (this._gfx_mgr) {
-            console.log('bindCanvas:', view_id, dpr);
+            console.log('bindCanvas:', view_id, dpr, width, height);
             this._gfx_mgr.bindCanvas(canvas, view_id, dpr);
+            // Size the backing store before the first frame. The transferred
+            // canvas arrives at its attribute size (300x150 unless set), and a
+            // frame drawn at that size is stretched over the whole pane until
+            // the first `resized` lands -- a huge, blocky centre mark for a
+            // moment at launch. With the size known, activateView syncs the
+            // view and draws the first frame right.
+            if (width > 0 && height > 0) {
+                canvas.width = width * dpr;
+                canvas.height = height * dpr;
+                this._gfx_mgr.setLogicalSize(width, height);
+            }
             this._gfx_mgr.activateView(view_id);
             return true;
         } else {

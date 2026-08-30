@@ -12,6 +12,7 @@ import {
 import { registerTextContextMenu } from '../textContextMenu'
 import { chromeWindowOptions, forwardConsoleMessages, hideMenuBar } from './windowChrome'
 import { isVisibleOnAnyDisplay, trackWindowState } from './windowState'
+import { holdUntilRevealed } from './reveal'
 
 let renderWindow: BrowserWindow | null = null
 
@@ -84,9 +85,10 @@ export function createOrFocusRenderWindow(mainWindow: BrowserWindow): void {
 
   hideMenuBar(win)
 
-  win.on('ready-to-show', () => {
-    if (!win.isDestroyed()) win.show()
-  })
+  // Shown when its page reports the first frame with the main window's
+  // answers in it (reveal.ts), not on Electron's first-paint event, which for
+  // this page is an empty root element.
+  holdUntilRevealed(win, () => win.show())
 
   // Adopt the main window's UI zoom. Zoom level is per-webContents and resets
   // on load, so it is applied after the page is up rather than at creation;

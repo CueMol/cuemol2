@@ -146,6 +146,9 @@ class BrowserWindow {
     l.push(cb)
     this.listeners.set(event, l)
   })
+  // createWindow() holds the window off screen until the renderer signals
+  // (windows/reveal.ts), which subscribes with once().
+  once = this.on
   constructor() {
     constructedWin = this as unknown as FakeWindow
   }

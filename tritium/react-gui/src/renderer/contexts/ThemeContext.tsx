@@ -51,6 +51,11 @@ interface ThemeContextValue {
   toggleTheme: () => void;
   /** Set a specific theme. */
   setTheme: (t: Theme) => void;
+  /**
+   * Whether the persisted choice has been read. Until then `theme` is the
+   * default, and a window shown on it would flip colours a moment later.
+   */
+  loaded: boolean;
 }
 
 // ------------------------------------------------------------
@@ -83,6 +88,7 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>("dark");
+  const [loaded, setLoaded] = useState(false);
 
   // -- Load persisted theme on mount -----------------------
   useEffect(() => {
@@ -98,6 +104,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       } catch {
         // Electron not available (Vite dev server) -- keep default.
       }
+      if (!cancelled) setLoaded(true);
     })();
 
     return () => {
@@ -126,8 +133,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, []);
 
   const value = useMemo<ThemeContextValue>(
-    () => ({ theme, toggleTheme, setTheme }),
-    [theme, toggleTheme, setTheme],
+    () => ({ theme, toggleTheme, setTheme, loaded }),
+    [theme, toggleTheme, setTheme, loaded],
   );
 
   /*

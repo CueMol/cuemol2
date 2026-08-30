@@ -17,6 +17,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useHoldReveal, useRevealWindow } from "@renderer/shell/reveal/useRevealWindow";
 import { Allotment } from "allotment";
 import { Alert } from "@blueprintjs/core";
 import "allotment/dist/style.css";
@@ -231,16 +232,31 @@ export const RenderWindowApp: React.FC = () => {
   // render starts from the projection the user is looking at. Re-read on every
   // target change; a manual edit stands until the target changes again.
   const targetViewId = client.targetViewId;
+  const [cameraPending, setCameraPending] = useState(false);
+  useHoldReveal(cameraPending);
   useEffect(() => {
     if (targetViewId === null) return;
     let cancelled = false;
-    void clientRef.current.getViewCamera(targetViewId).then((camera) => {
-      if (!cancelled && camera) settingsRef.current.applyViewCamera(camera);
-    });
+    setCameraPending(true);
+    void clientRef.current
+      .getViewCamera(targetViewId)
+      .then((camera) => {
+        if (!cancelled && camera) settingsRef.current.applyViewCamera(camera);
+      })
+      .finally(() => {
+        if (!cancelled) setCameraPending(false);
+      });
     return () => {
       cancelled = true;
+      setCameraPending(false);
     };
   }, [targetViewId]);
+
+  // The window is created hidden. It goes on screen once the main window's
+  // context has arrived (target views, mode) and every load that started on
+  // mount -- the camera above, the history image, a hatch template -- is in,
+  // so the first frame the user sees is the furnished one.
+  useRevealWindow(client.state.synced);
 
   // Surface a failed render / encode in a message box (the log is collapsed).
   // Keyed off the job's startedAt so each failure alerts once.

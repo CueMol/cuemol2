@@ -13,6 +13,7 @@ import { app, BrowserWindow } from 'electron';
 import { IPC } from '@shared/ipcChannels';
 import { APP_PRODUCT_NAME } from '@shared/appInfo';
 import { handleInvoke } from '../ipc/handleInvoke';
+import { revealWindow } from '../windows/reveal';
 import {
   setAppQuitting,
   setCloseConfirmed,
@@ -22,6 +23,13 @@ import {
 
 /** Register the window-scoped channels. */
 export function registerWindowHandlers(mainWindow: BrowserWindow): void {
+  // The renderer's first real frame is up: the window it came from was
+  // created hidden and is waiting on exactly this (see windows/reveal.ts).
+  handleInvoke(IPC.WINDOW_REVEAL, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) revealWindow(win);
+  });
+
   handleInvoke(IPC.WINDOW_CLOSE_PROCEED, (_event, { proceed }) => {
     setCloseInFlight(mainWindow, false)
     if (proceed) {

@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useHoldReveal } from "@renderer/shell/reveal/useRevealWindow";
 import { parseHatchSpec, type HatchSpec } from "@renderer/data/hatchSpec";
 import type { HatchStyleSpecReply } from "@shared/types/renderWindow";
 
@@ -45,6 +46,8 @@ export function useHatchTemplate({
   fetchRef.current = fetchSpec;
   const loadedRef = useRef(onLoaded);
   loadedRef.current = onLoaded;
+  // A template loading on open keeps the window off screen until it is in.
+  useHoldReveal(status === "loading");
 
   useEffect(() => {
     if (!enabled || !style) {

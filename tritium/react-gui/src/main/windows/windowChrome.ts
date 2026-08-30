@@ -31,6 +31,11 @@ export function chromeWindowOptions(
 ): BrowserWindowConstructorOptions {
   const icon = getDevIconPath()
   return {
+    // Created off screen; revealed when the renderer says its first real
+    // frame is up (see reveal.ts). Electron shows a window as soon as it is
+    // constructed unless told otherwise, so both windows used to appear empty
+    // and then be furnished in front of the user.
+    show: false,
     backgroundColor: CHROME_BG,
     // Window / taskbar icon for an unpackaged run on Windows and Linux
     // (undefined once packaged, and ignored on macOS -- see appIcon.ts).
