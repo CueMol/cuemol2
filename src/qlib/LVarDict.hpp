@@ -39,7 +39,11 @@ public:
     /// Returns false (and leaves the dict unchanged) when the key already exists.
     bool set(const LString &key, LVariant &&val)
     {
-        return super_t::try_emplace(key, std::move(val)).second;
+        // find + insert(value_type&&) instead of try_emplace: the header is also
+        // compiled by consumers whose build may predate C++17
+        if (super_t::find(key) != super_t::end()) return false;
+        super_t::insert(typename super_t::value_type(key, std::move(val)));
+        return true;
     }
 
     /// Pointer to the stored value, or nullptr when the key is absent.

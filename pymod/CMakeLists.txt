@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15...3.26)
 project(${SKBUILD_PROJECT_NAME} LANGUAGES C CXX)
-set(CMAKE_CXX_STANDARD 14)
+# libcuemol2 is built as C++17 and its public headers may use C++17 library
+# features; the module compiles those headers, so it must use the same standard.
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)  # ref. https://texus.me/2015/09/06/cmake-and-gcov/
 
 ##########
