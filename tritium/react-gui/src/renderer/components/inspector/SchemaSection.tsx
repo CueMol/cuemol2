@@ -17,52 +17,131 @@
 import React from 'react'
 import { AccordionSection } from './AccordionSection'
 import {
+  AsyncSelectRow,
   BoolRow,
+  BoolSelectRow,
   ColorRow,
+  DerivedNumRow,
+  EnumRow,
   MappedEnumRow,
+  MultiEnumRow,
+  MultiNumInputRow,
+  MultiNumRow,
+  NumEnumRow,
   NumInputRow,
   NumRow,
+  OptionalNumRow,
   SelRow,
   SliderRow,
+  StringSelectRow,
   TextRow,
-} from './RendererCommonSection'
-import { AsyncSelectRow } from './rows/AsyncSelectRow'
-import { OptionalNumRow } from './rows/OptionalNumRow'
+} from './rows'
 import type { RendererPropSectionProps } from './rendererPropSections'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
-import { DRAFT_KINDS, makePropCtx, type PropCtx, type PropRowDef, type SchemaSectionDef } from './schema/types'
+import type { PropMultiWrite } from './rendererPropSections'
+import {
+  DRAFT_KINDS,
+  makePropCtx,
+  TESSELLATION_LADDER,
+  type MultiRowDef,
+  type PropCtx,
+  type PropRowDef,
+  type SchemaSectionDef,
+} from './schema/types'
 
 type SetFn = RendererPropSectionProps['onSet']
 type ResetFn = RendererPropSectionProps['onReset']
+type SetManyFn = RendererPropSectionProps['onSetMany']
 
 export interface SchemaSectionProps {
   section: SchemaSectionDef
   entries: GenericPropEntry[]
   rendererType: string
   sceneId: number | undefined
-  nodeId: number | undefined
   /**
-   * Molecule the section's selection rows count their atoms against. Optional
-   * because only a page with a `sel` row needs it; `PropertiesTab` always
-   * supplies it in production.
+   * UID of the inspected node, for a row that has to ask the C++ side about
+   * the node itself (the disorder Target lists its sibling renderers).
+   */
+  nodeId?: number
+  /**
+   * Molecule the section's selection rows count their atoms against. Only a
+   * page with a `sel` row needs it.
    */
   molId?: number
   onSet: SetFn
+  /**
+   * Write several properties in one undo step. Only a `derivedNum` row that
+   * writes more than one needs it; `PropertiesTab` always supplies it.
+   */
+  onSetMany?: SetManyFn
   onReset: ResetFn
 }
 
 /** Render one row, or null when the renderer does not expose its property. */
+/**
+ * Turn a row's own `commit` into the write callback it is handed: one write
+ * goes through `onSet`, several through `onSetMany` so they land in one undo
+ * step.
+ */
+function multiWriter(
+  commit: (ctx: PropCtx, value: boolean) => PropMultiWrite[],
+  ctx: PropCtx,
+  onSet: SetFn,
+  onSetMany: SetManyFn,
+): SetFn {
+  return (_key, _valueType, value) => {
+    const writes = commit(ctx, Boolean(value))
+    if (writes.length === 1) onSet(writes[0].key, writes[0].valueType, writes[0].value)
+    else if (writes.length > 1) onSetMany?.(writes)
+  }
+}
+
+/** A row standing for several properties rather than one. */
+function isMultiRow(row: PropRowDef): row is MultiRowDef {
+  return 'keys' in row
+}
+
 function renderRow(
   row: PropRowDef,
   ctx: PropCtx,
   sectionDisabled: boolean,
   onSet: SetFn,
+  onSetMany: SetManyFn,
   onReset: ResetFn,
-): React.ReactElement | null {
+): React.ReactElement | React.ReactElement[] | null {
   if (row.visibleWhen && !row.visibleWhen(ctx)) return null
+  const disabled = sectionDisabled || (row.disabledWhen?.(ctx) ?? false)
+
+  // A group is not a row: it lends its gate to the rows inside it.
+  if (row.kind === 'group') {
+    return row.rows
+      .map((child) => renderRow(child, ctx, disabled, onSet, onSetMany, onReset))
+      .flat()
+      .filter((el): el is React.ReactElement => el !== null)
+  }
+
+  if (isMultiRow(row)) return renderMultiRow(row, ctx, disabled, onSet, onSetMany, onReset)
+
+  // A block, not a row: it reads the page for itself and decides what to show.
+  if (row.kind === 'custom') {
+    return (
+      <row.Component
+        key={row.key}
+        ctx={ctx}
+        onSet={onSet}
+        onSetMany={onSetMany}
+        onReset={onReset}
+        disabled={disabled}
+      />
+    )
+  }
+
   const entry = ctx.get(row.key)
   if (!entry) return null
-  const disabled = sectionDisabled || (row.disabledWhen?.(ctx) ?? false)
+  // A derived row reads more than its own property and cannot be shown
+  // without them (a tube's minor axis is meaningless with no ratio).
+  if (row.kind === 'derivedNum' && row.needs.some((k) => ctx.get(k) === undefined))
+    return null
   // A control holding a draft has to be remounted when the property changes
   // underneath it, or it keeps showing what the user abandoned typing.
   const key = DRAFT_KINDS.has(row.kind) ? `${row.key}:${String(entry.value)}` : row.key
@@ -81,9 +160,22 @@ function renderRow(
           step={row.step}
           fineSnap={row.fineSnap}
           coarseSnap={row.coarseSnap}
-          unit={row.unit}
+          unit={typeof row.unit === 'function' ? row.unit(ctx) : row.unit}
           decimals={row.decimals}
           realtime={row.realtime}
+          disabled={disabled}
+        />
+      )
+
+    case 'enum':
+      return (
+        <EnumRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          options={row.options}
           disabled={disabled}
         />
       )
@@ -124,7 +216,7 @@ function renderRow(
           key={key}
           entry={entry}
           label={row.label}
-          onSet={onSet}
+          onSet={row.commit ? multiWriter(row.commit, ctx, onSet, onSetMany) : onSet}
           onReset={onReset}
           disabled={disabled}
         />
@@ -194,6 +286,56 @@ function renderRow(
         />
       )
 
+    case 'derivedNum':
+      return (
+        <DerivedNumRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          value={row.display(ctx)}
+          computeWrites={(v) => row.commit(ctx, v)}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          fineSnap={row.fineSnap}
+          coarseSnap={row.coarseSnap}
+          unit={row.unit}
+          decimals={row.decimals}
+          multiWrite={row.multiWrite}
+          disabled={disabled}
+        />
+      )
+
+    case 'boolSelect':
+      return (
+        <BoolSelectRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          offOption={row.offOption}
+          onOption={row.onOption}
+          onSet={onSet}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'stringSelect':
+      return (
+        <StringSelectRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          options={row.options}
+          onSet={onSet}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
     case 'sel':
       return (
         <SelRow
@@ -226,16 +368,108 @@ function renderRow(
   }
 }
 
+/**
+ * One control standing for several properties. The row is dropped only when
+ * none of them exist, and the first one that does drives the display.
+ */
+function renderMultiRow(
+  row: MultiRowDef,
+  ctx: PropCtx,
+  disabled: boolean,
+  onSet: SetFn,
+  onSetMany: SetManyFn,
+  onReset: ResetFn,
+): React.ReactElement | null {
+  const targets = row.keys
+    .map((k) => ctx.get(k))
+    .filter((e): e is GenericPropEntry => e !== undefined)
+  if (targets.length === 0) return null
+  const key = DRAFT_KINDS.has(row.kind)
+    ? `${row.keys[0]}:${String(targets[0].value)}`
+    : row.keys[0]
+
+  switch (row.kind) {
+    case 'multiEnum':
+      return (
+        <MultiEnumRow
+          key={key}
+          label={row.label}
+          targets={targets}
+          labels={row.labels}
+          options={row.options}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'multiNum':
+      return (
+        <MultiNumRow
+          key={key}
+          label={row.label}
+          targets={targets}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          decimals={row.decimals}
+          unit={row.unit}
+          toDisplay={row.toDisplay}
+          toStored={row.toStored}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'numEnum':
+      return (
+        <NumEnumRow
+          key={key}
+          label={row.label}
+          targets={targets}
+          ladder={(row.ladder ?? TESSELLATION_LADDER).filter(
+            (n) => n >= row.min && n <= (row.max ?? Infinity),
+          )}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
+    case 'multiNumInput':
+      return (
+        <MultiNumInputRow
+          key={key}
+          label={row.label}
+          targets={targets}
+          min={row.min}
+          max={row.max}
+          step={row.step}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+  }
+}
+
 /** The rows of a section that survive absence and gating. */
 export function renderRows(
   section: SchemaSectionDef,
   ctx: PropCtx,
   onSet: SetFn,
+  onSetMany: SetManyFn,
   onReset: ResetFn,
 ): React.ReactElement[] {
   const sectionDisabled = section.disabledWhen?.(ctx) ?? false
   return section.rows
-    .map((row) => renderRow(row, ctx, sectionDisabled, onSet, onReset))
+    .map((row) => renderRow(row, ctx, sectionDisabled, onSet, onSetMany, onReset))
+    .flat()
     .filter((el): el is React.ReactElement => el !== null)
 }
 
@@ -254,11 +488,12 @@ export const SchemaSection: React.FC<SchemaSectionProps> = ({
   nodeId,
   molId,
   onSet,
+  onSetMany,
   onReset,
 }) => {
   const ctx = makePropCtx(entries, rendererType, sceneId, nodeId, molId)
   if (section.visibleWhen && !section.visibleWhen(ctx)) return null
-  const rows = renderRows(section, ctx, onSet, onReset)
+  const rows = renderRows(section, ctx, onSet, onSetMany, onReset)
   if (section.hideWhenEmpty && rows.length === 0) return null
   return (
     <AccordionSection title={section.title} defaultExpanded={section.defaultExpanded}>

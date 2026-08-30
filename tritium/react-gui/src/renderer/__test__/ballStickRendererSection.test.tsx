@@ -23,7 +23,7 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// PropertiesTab -> RendererCommonSection -> MaterialRow uses useCueMol.
+// The common page's Material row fetches names through useCueMol.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
@@ -46,20 +46,8 @@ import { BALLSTICK_SECTIONS } from '../components/inspector/schema/ballstick'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -102,9 +90,6 @@ describe('BallStickRenderer section registry', () => {
     expect(sections).toHaveLength(1)
     expect(sections[0].title).toBe('Ball and stick')
     expect(sections[0].defaultExpanded).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(isComponentSection(sections[0])).toBe(false)
-    expect(componentOf(sections[0])).toBe('schema:ballstick')
     expect(RENDERER_SECTION_REGISTRY.ballstick).toBe(sections)
   })
 })
@@ -153,7 +138,7 @@ describe('the ball-and-stick page', () => {
     unmount()
   })
 
-  it('shows detail as an integer and radius / width with the Angstrom unit', () => {
+  it('offers detail as a ladder of levels and shows radius / width in Angstroms', () => {
     const { container, unmount } = mountTree(
       <SchemaSection
         section={BALLSTICK_SECTIONS[0]}
@@ -165,11 +150,12 @@ describe('the ball-and-stick page', () => {
         onReset={vi.fn()}
       />,
     )
-    // detail = 3 -> integer display (decimals 0), no unit.
-    const detail = rowByLabel(container, 'Detail')!
-    expect(detail.querySelector('.h3-form-drag-value')!.textContent).toContain('3')
-    expect(detail.querySelector('.h3-form-drag-value')!.textContent).not.toContain('.')
-    expect(detail.querySelector('.h3-form-drag-unit')).toBeNull()
+    // A tessellation level is picked from a ladder; the C++ default of 3 is
+    // not a power of two, so it has to be in the list or the row could not
+    // show where it started.
+    const detail = rowByLabel(container, 'Detail')!.querySelector('select') as HTMLSelectElement
+    expect(Array.from(detail.options).map((o) => o.value)).toEqual(['2', '3', '4', '8', '16', '32'])
+    expect(detail.value).toBe('3')
     // bondw / sphr / thickness carry the Angstrom unit.
     for (const label of ['Bond width', 'Atom radius', 'Thickness']) {
       expect(

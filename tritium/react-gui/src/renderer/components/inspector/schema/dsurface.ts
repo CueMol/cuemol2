@@ -46,8 +46,9 @@ function sections(prefix: string): SchemaSectionDef[] {
           disabledWhen: eq('drawmode', 'fill'),
         },
         { kind: 'mappedEnum', key: 'surftype', label: 'Surface type', labels: SURFTYPE_LABELS },
-        // A slider so the density range can be swept.
-        { kind: 'slider', key: 'detail', label: 'Detail', min: 1, max: 21, step: 1 },
+        // A direct surface is tessellated over the whole molecule, so it
+        // stops at 16 where the other renderers go on to 32.
+        { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 1, max: 16 },
       ],
     },
     {

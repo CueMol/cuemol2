@@ -14,8 +14,10 @@
  * mirror the C++ property bridge and commit on release.
  */
 
+import type React from 'react'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import type { AsyncNameSource } from '../rows/AsyncSelectRow'
+import type { PropMultiWrite, RendererPropSectionProps } from '../rendererPropSections'
 
 /**
  * What a row can consult while the page renders: the live property list, and
@@ -83,7 +85,12 @@ export interface NumRowDef extends RowBase {
   fineSnap?: number
   /** Coarse drag snap (Ctrl / Cmd). Defaults to `step * 10`. */
   coarseSnap?: number
-  unit?: string
+  /**
+   * A function when the unit follows another property: an atom-interaction
+   * line is measured in Angstroms as a tube and in pixels as a line, and it is
+   * the same property either way.
+   */
+  unit?: string | ((ctx: PropCtx) => string)
   decimals?: number
   realtime?: boolean
 }
@@ -103,6 +110,16 @@ export interface MappedEnumRowDef extends RowBase {
 }
 
 /**
+ * An enum property shown as a dropdown reading as its raw C++ ids. Use
+ * `mappedEnum` when the ids are not what a user should read; `options` still
+ * fixes the order, since the `enumdef` C++ reports is alphabetical.
+ */
+export interface EnumRowDef extends RowBase {
+  kind: 'enum'
+  options?: string[]
+}
+
+/**
  * A numeric property shown as a slider, for a range meant to be swept rather
  * than dialled in (a tessellation density, say).
  */
@@ -117,6 +134,14 @@ export interface SliderRowDef extends RowBase {
 /** A boolean property, shown as a switch. */
 export interface BoolRowDef extends RowBase {
   kind: 'bool'
+  /**
+   * The writes a toggle turns into, when flipping it has to bring something
+   * else with it: enabling colour proofing with no ICC profile named seeds a
+   * default one, or proofing would be on and do nothing. Return the plain
+   * single write for the ordinary case; one write goes through `onSet`,
+   * several through `onSetMany` so they land in one undo step.
+   */
+  commit?: (ctx: PropCtx, value: boolean) => PropMultiWrite[]
 }
 
 /** A colour property, shown as a swatch that opens the picker. */
@@ -170,6 +195,44 @@ export interface OptionalNumRowDef extends RowBase {
   gateLabel: string
 }
 
+/**
+ * A numeric row whose displayed value is COMPUTED from more than one property,
+ * and whose commit writes them back.
+ *
+ * C++ sometimes stores a size the user does not think in: a tube's
+ * cross-section is a major axis plus a minor/major ratio, and a nucleic base's
+ * thickness is an absolute the UXP dialog showed as a percentage of the base
+ * size. This row keeps the user's unit and does the arithmetic, so editing one
+ * axis does not move the other.
+ *
+ * `key` names the property the row's modified bar and reset belong to; `needs`
+ * names the others it reads, and the row is dropped unless all of them exist.
+ * `commit` returns the writes, and returning none means "nothing to write"
+ * (the value did not move, or the arithmetic would divide by zero).
+ */
+export interface DerivedNumRowDef extends RowBase {
+  kind: 'derivedNum'
+  /** Other properties this row reads; absent ones drop the row. */
+  needs: string[]
+  /** The value to show, in the user's unit. */
+  display: (ctx: PropCtx) => number
+  /** The writes a committed value turns into; empty means write nothing. */
+  commit: (ctx: PropCtx, value: number) => PropMultiWrite[]
+  /**
+   * This row can write more than one property, so it needs the multi-write
+   * callback and is disabled without it (one write always goes through the
+   * plain single-property one).
+   */
+  multiWrite?: boolean
+  min: number
+  max: number
+  step: number
+  fineSnap?: number
+  coarseSnap?: number
+  unit?: string
+  decimals?: number
+}
+
 /** A molecular-selection property, edited through the selection picker. */
 export interface SelRowDef extends RowBase {
   kind: 'sel'
@@ -182,15 +245,180 @@ export interface AsyncSelectRowDef extends RowBase {
   emptyOption: 'none' | 'blank'
 }
 
+/**
+ * A boolean shown as a two-choice dropdown rather than a switch, for a flag
+ * that reads as a choice between two things (a cartoon helix is a Cylinder or
+ * a Ribbon) rather than as something being on.
+ */
+export interface BoolSelectRowDef extends RowBase {
+  kind: 'boolSelect'
+  offOption: { value: string; label: string }
+  onOption: { value: string; label: string }
+}
+
+/**
+ * Powers of two, the natural ladder for a subdivision count. It stops at 32:
+ * past that the tessellation costs more than it shows.
+ */
+export const TESSELLATION_LADDER = [1, 2, 4, 8, 16, 32]
+
+/**
+ * What a row standing for SEVERAL properties has in common.
+ *
+ * Some controls in the UXP dialogs set more than one stored property: a
+ * ribbon's section detail sets all three sections, a cartoon helix's cap
+ * controls set head and tail together. `keys` lists them; the first one
+ * present drives the display, and the row is dropped only when none exist.
+ */
+interface MultiRowBase {
+  /** The properties this one control stands for, in write order. */
+  keys: string[]
+  label: string
+  visibleWhen?: Predicate
+  disabledWhen?: Predicate
+}
+
+/** Any row standing for several properties. */
+export type MultiRowDef =
+  | MultiEnumRowDef
+  | MultiNumRowDef
+  | MultiNumInputRowDef
+  | NumEnumRowDef
+
+/** An enum dropdown written to every target (see `MultiRowBase`). */
+export interface MultiEnumRowDef extends MultiRowBase {
+  kind: 'multiEnum'
+  labels: Record<string, string>
+  options?: string[]
+}
+
+/**
+ * A drag-numeric row written to every target, optionally in a unit of its own.
+ *
+ * The transform covers a value the user does not think in: a junction's arrow
+ * height is stored as a base width and shown as a percentage. One target with
+ * a transform is the percentage row; several targets without one is the plain
+ * shared slider.
+ */
+export interface MultiNumRowDef extends MultiRowBase {
+  kind: 'multiNum'
+  min: number
+  max: number
+  step: number
+  decimals?: number
+  unit?: string
+  /** Stored value -> displayed value (default identity). */
+  toDisplay?: (stored: number) => number
+  /** Displayed value -> stored value (default identity). */
+  toStored?: (display: number) => number
+}
+
+/** A stepper written to every target (see `MultiRowBase`). */
+export interface MultiNumInputRowDef extends MultiRowBase {
+  kind: 'multiNumInput'
+  min: number
+  max: number
+  step: number
+}
+
+/**
+ * A tessellation level, chosen from a ladder rather than typed.
+ *
+ * What the eye sees in a subdivision count is the difference between 4 and 8,
+ * not between 8 and 9, so offering every integer asks for a precision the
+ * value does not have and makes changing it a chore. The ladder is the powers
+ * of two inside `min`..`max`; the property's default and its current value are
+ * added to it, since a list that could not express either would show the row
+ * as something it is not.
+ */
+export interface NumEnumRowDef extends MultiRowBase {
+  kind: 'numEnum'
+  /** Lowest level this property accepts; the ladder supplies the rest. */
+  min: number
+  /**
+   * Highest level, for a property whose tessellation gets expensive sooner
+   * than the ladder's own ceiling. Not a typing range: it only decides which
+   * rungs are offered.
+   */
+  max?: number
+  /** Replaces the powers-of-two ladder when a property wants its own. */
+  ladder?: number[]
+}
+
+/**
+ * A set of rows sharing one gate.
+ *
+ * A page sometimes switches whole blocks rather than single rows -- the
+ * cartoon Helix page is a deck showing either the cylinder controls or the
+ * ribbon ones. Writing the same `visibleWhen` on a dozen rows would say the
+ * same thing a dozen times and let one of them drift. The group's gate is
+ * ANDed with each child's own.
+ */
+export interface GroupRowDef {
+  kind: 'group'
+  rows: PropRowDef[]
+  visibleWhen?: Predicate
+  disabledWhen?: Predicate
+}
+
+/**
+ * A dropdown over a fixed option set for a STRING property.
+ *
+ * Not every property with a handful of sensible values is a C++ enum: a
+ * label's font style and weight are CSS strings and carry no `enumdef`, so the
+ * page names the options instead.
+ */
+export interface StringSelectRowDef extends RowBase {
+  kind: 'stringSelect'
+  options: { label: string; value: string }[]
+}
+
+/** What a `custom` block is handed: the page's state and its writers. */
+export interface CustomRowProps {
+  ctx: PropCtx
+  onSet: RendererPropSectionProps['onSet']
+  onSetMany: RendererPropSectionProps['onSetMany']
+  onReset: RendererPropSectionProps['onReset']
+  disabled: boolean
+}
+
+/**
+ * An escape hatch for a block that is not a row.
+ *
+ * A page occasionally needs something the row catalog does not have and only
+ * it wants -- the atom-interaction dash pattern is a synthetic toggle over six
+ * properties plus a strip of compact cells. Describing that as data would mean
+ * inventing a kind for one caller, so the block stays a component and the
+ * schema names it.
+ */
+export interface CustomRowDef {
+  kind: 'custom'
+  /** Stable React key; not a property name. */
+  key: string
+  Component: React.FC<CustomRowProps>
+  visibleWhen?: Predicate
+  disabledWhen?: Predicate
+}
+
 /** A row of a Properties page. */
 export type PropRowDef =
   | NumRowDef
+  | EnumRowDef
   | MappedEnumRowDef
   | SliderRowDef
   | BoolRowDef
   | ColorRowDef
   | NumInputRowDef
   | OptionalNumRowDef
+  | DerivedNumRowDef
+  | BoolSelectRowDef
+  | MultiEnumRowDef
+  | MultiNumRowDef
+  | MultiNumInputRowDef
+  | NumEnumRowDef
+  | StringSelectRowDef
+  | CustomRowDef
+  | GroupRowDef
   | TextRowDef
   | SelRowDef
   | AsyncSelectRowDef
@@ -205,6 +433,7 @@ export type PropRowDef =
  */
 export const DRAFT_KINDS: ReadonlySet<PropRowDef['kind']> = new Set([
   'numInput',
+  'multiNumInput',
   'text',
   'sel',
 ])

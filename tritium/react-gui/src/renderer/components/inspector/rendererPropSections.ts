@@ -4,7 +4,7 @@
  * Properties tab.
  *
  * The Properties tab always shows the renderer-common page first
- * (`RendererCommonSection`), then any renderer-type-specific sections. Those
+ * (`schema/common`), then any renderer-type-specific sections. Those
  * type-specific sections are looked up here by the renderer's `type_name`
  * (e.g. `ribbon`, `cpk`, `tube`), mirroring how each UXP renderer property
  * dialog stacks its own tabs on top of the shared `renderer-common-page`
@@ -15,7 +15,6 @@
  * section appended by PropertiesTab.
  */
 
-import React from "react";
 import type { SchemaSectionDef } from "./schema/types";
 import { SIMPLE_SECTIONS, TRACE_SECTIONS } from "./schema/simple";
 import { ANISOU_SECTIONS } from "./schema/anisou";
@@ -25,47 +24,17 @@ import { DISORDER_SECTIONS } from "./schema/disorder";
 import { MOLSURF_SECTIONS } from "./schema/molsurf";
 import { SPLINE_SECTIONS } from "./schema/spline";
 import { DSURF2_SECTIONS, DSURFACE_SECTIONS } from "./schema/dsurface";
+import { TUBE_SECTIONS } from "./schema/tube";
+import { NUCL_SECTIONS } from "./schema/nucl";
+import { CARTOON_SECTIONS } from "./schema/cartoon";
+import { RIBBON_SECTIONS } from "./schema/ribbon";
+import { ATOMINTR_SECTIONS } from "./schema/atomintr";
+import { CONTOUR_SECTIONS, GPU_MAPMESH_SECTIONS, ISOSURF_SECTIONS } from "./schema/map";
+import { SCENE_SECTIONS } from "./schema/scene";
 import type {
   GenericPropEntry,
   PropWriteOpts,
 } from '@renderer/worker/shared/genericProps';
-import {
-  SceneAmbientOcclusionSection,
-  SceneAntialiasingSection,
-  SceneBackgroundSection,
-  SceneColorProofingSection,
-} from "./SceneRenderingSection";
-import {
-  AtomIntrMainSection,
-  AtomIntrDashedSection,
-  AtomIntrTubeSection,
-  AtomIntrLabelSection,
-} from "./AtomIntrRendererSection";
-import {
-  CartoonMainSection,
-  CartoonHelixSection,
-  CartoonSheetSection,
-  CartoonCoilSection,
-} from "./CartoonRendererSection";
-import { ContourMainSection } from "./ContourRendererSection";
-import { IsosurfMainSection } from "./IsosurfRendererSection";
-import {
-  TubeMainSection,
-  TubeSectionSection,
-  TubePuttySection,
-} from "./TubeRendererSection";
-import {
-  NuclBaseSection,
-  NuclTubeMainSection,
-  NuclSectionSection,
-  NuclPuttySection,
-} from "./NuclRendererSection";
-import {
-  RibbonMainSection,
-  RibbonHelixSection,
-  RibbonSheetSection,
-  RibbonCoilSection,
-} from "./RibbonRendererSection";
 
 // ------------------------------------------------------------
 // Types
@@ -123,32 +92,12 @@ export interface RendererPropSectionProps {
 /**
  * One accordion section in the Properties tab.
  *
- * A section either names its rows as data (`rows`, rendered by
- * `SchemaSection`) or supplies a component that renders them itself. The
- * schema form is where the per-type pages are heading; the component form is
- * what the types not migrated yet still use, so the registry carries both
- * while that is true.
+ * A section names its rows as data; `SchemaSection` renders them. The blocks
+ * that are not rows (a synthetic toggle over six properties, a preset
+ * dropdown backed by no single property) are `custom` rows inside a section,
+ * not sections of their own.
  */
-export type RendererPropSectionDef = SchemaSectionDef | ComponentSectionDef;
-
-/** A section whose body is a hand-written component. */
-export interface ComponentSectionDef {
-  /** Stable React key / accordion identity. */
-  key: string;
-  /** Accordion header title. */
-  title: string;
-  /** Whether the accordion starts expanded. */
-  defaultExpanded?: boolean;
-  /** Section body. */
-  Component: React.FC<RendererPropSectionProps>;
-}
-
-/** Narrow a registry entry to the component form. */
-export function isComponentSection(
-  section: RendererPropSectionDef,
-): section is ComponentSectionDef {
-  return 'Component' in section;
-}
+export type RendererPropSectionDef = SchemaSectionDef;
 
 // ------------------------------------------------------------
 // Registry
@@ -165,32 +114,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // the scene's typeLabel ("Scene") -- the value PropertiesTab receives as
   // `rendererType` (genericProps `typeLabelOf` returns "Scene" for nodeType
   // "scene"), not the lowercase tree node type.
-  Scene: [
-    {
-      key: "scene-ao",
-      title: "Ambient occlusion",
-      defaultExpanded: true,
-      Component: SceneAmbientOcclusionSection,
-    },
-    {
-      key: "scene-aa",
-      title: "Anti-aliasing",
-      defaultExpanded: false,
-      Component: SceneAntialiasingSection,
-    },
-    {
-      key: "scene-bg",
-      title: "Background",
-      defaultExpanded: false,
-      Component: SceneBackgroundSection,
-    },
-    {
-      key: "scene-proof",
-      title: "Color proofing",
-      defaultExpanded: false,
-      Component: SceneColorProofingSection,
-    },
-  ],
+  Scene: SCENE_SECTIONS,
   // SimpleRenderer ("simple"): UXP simple-propdlg "Simple" tab -- line width only.
   simple: SIMPLE_SECTIONS,
   // TraceRenderer ("trace"): shares the UXP simple-propdlg with SimpleRenderer
@@ -213,101 +137,30 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // The line / dashed-pattern / 3D-tube / label-font groupboxes become four
   // accordion sections; the dashed toggle writes all six stipple values in one
   // undo step via `onSetMany`.
-  atomintr: [
-    {
-      key: "atomintr-main",
-      title: "Interaction",
-      defaultExpanded: true,
-      Component: AtomIntrMainSection,
-    },
-    {
-      key: "atomintr-dashed",
-      title: "Dashed line",
-      defaultExpanded: true,
-      Component: AtomIntrDashedSection,
-    },
-    {
-      key: "atomintr-tube",
-      title: "3D tube",
-      defaultExpanded: true,
-      Component: AtomIntrTubeSection,
-    },
-    {
-      key: "atomintr-label",
-      title: "Value label",
-      defaultExpanded: true,
-      Component: AtomIntrLabelSection,
-    },
-  ],
+  atomintr: ATOMINTR_SECTIONS,
   // Ribbon2Renderer ("cartoon"): UXP cartoon-propdlg tabs. Only the flat
   // top-level properties are surfaced here; the per-section shape controls live
   // on nested sub-objects (TubeSection / JctTable) and remain in the Generic tab
   // for now. Those nested props ARE editable (dot-path writes route through
   // setNestedProperty); wiring them onto this page is a follow-up, not a gap.
-  cartoon: [
-    {
-      key: "cartoon-main",
-      title: "Cartoon",
-      defaultExpanded: true,
-      Component: CartoonMainSection,
-    },
-    {
-      key: "cartoon-helix",
-      title: "Helix",
-      defaultExpanded: true,
-      Component: CartoonHelixSection,
-    },
-    {
-      key: "cartoon-sheet",
-      title: "Sheet",
-      defaultExpanded: true,
-      Component: CartoonSheetSection,
-    },
-    {
-      key: "cartoon-coil",
-      title: "Coil",
-      defaultExpanded: true,
-      Component: CartoonCoilSection,
-    },
-  ],
+  cartoon: CARTOON_SECTIONS,
   // MapMeshRenderer ("contour"): UXP contour-propdlg "Map" tab. One section
   // surfacing center-update mode, line width, buffer size, periodic boundary,
   // and the limit-display target / selection / distance. Coloring stays out
   // (not on the UXP Map tab).
-  contour: [
-    {
-      key: "contour-main",
-      title: "Contour",
-      defaultExpanded: true,
-      Component: ContourMainSection,
-    },
-  ],
+  contour: CONTOUR_SECTIONS,
   // GLSLMapMeshRenderer2 ("gpu_mapmesh"): the GPU marching-squares contour.
   // No UXP dialog of its own; it carries the same property set as the
   // contour renderer (both extend MapRenderer, same width / bufsize /
   // autoupdate / dragupdate), so the contour section is reused verbatim.
-  gpu_mapmesh: [
-    {
-      key: "gpu-mapmesh-main",
-      title: "GPU contour",
-      defaultExpanded: true,
-      Component: ContourMainSection,
-    },
-  ],
+  gpu_mapmesh: GPU_MAPMESH_SECTIONS,
   // MapSurfRenderer ("isosurf"): UXP isosurf-propdlg "Map" tab. One section --
   // drawing mode, line/point size (off for fill), max grid size, back-face
   // culling, plus the Center update / Limit display block shared with contour
   // (both extend MapRenderer). Coloring (colormode / target / MOLFANC scheme)
   // is owned by the Coloring panel (ColorPane), same as molsurf; tuning props
   // stay out.
-  isosurf: [
-    {
-      key: "isosurf-main",
-      title: "Isosurf",
-      defaultExpanded: true,
-      Component: IsosurfMainSection,
-    },
-  ],
+  isosurf: ISOSURF_SECTIONS,
   // DisoRenderer ("disorder"): UXP disorder-propdlg "Disorder" tab. One section
   // surfacing the target main-chain renderer, tessellation detail, dot size /
   // separation, the two loop strengths and the default color.
@@ -334,85 +187,16 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // the "Tube" section; the nested TubeSection shape (edited via dot-path keys
   // section.type / section.width / ...) forms the "Section" section; the putty
   // radius-scaling controls form the "Putty" section.
-  tube: [
-    {
-      key: "tube-main",
-      title: "Tube",
-      defaultExpanded: true,
-      Component: TubeMainSection,
-    },
-    {
-      key: "tube-section",
-      title: "Section",
-      defaultExpanded: true,
-      Component: TubeSectionSection,
-    },
-    {
-      key: "tube-putty",
-      title: "Putty",
-      defaultExpanded: true,
-      Component: TubePuttySection,
-    },
-  ],
+  tube: TUBE_SECTIONS,
   // RibbonRenderer ("ribbon"): UXP ribbon-propdlg Common/Helix/Sheet/Coil tabs.
   // Section shapes (TubeSection) and head/tail junctions (JctTable) are nested,
   // edited by dotted keys.
-  ribbon: [
-    {
-      key: "ribbon-main",
-      title: "Ribbon",
-      defaultExpanded: true,
-      Component: RibbonMainSection,
-    },
-    {
-      key: "ribbon-helix",
-      title: "Helix",
-      defaultExpanded: true,
-      Component: RibbonHelixSection,
-    },
-    {
-      key: "ribbon-sheet",
-      title: "Sheet",
-      defaultExpanded: true,
-      Component: RibbonSheetSection,
-    },
-    {
-      key: "ribbon-coil",
-      title: "Coil",
-      defaultExpanded: true,
-      Component: RibbonCoilSection,
-    },
-  ],
+  ribbon: RIBBON_SECTIONS,
   // NARenderer ("nucl"): extends TubeRenderer. UXP nucl-propdlg adds a
   // "Nucleic acid" tab on top of the shared tube-page (Tube / Section / Putty),
   // which are reused here. The reused tube sections are disabled when
   // "Show tube" is off (UXP gTube.disableAll gate).
-  nucl: [
-    {
-      key: "nucl-base",
-      title: "Nucleic acid",
-      defaultExpanded: true,
-      Component: NuclBaseSection,
-    },
-    {
-      key: "nucl-tube-main",
-      title: "Tube",
-      defaultExpanded: true,
-      Component: NuclTubeMainSection,
-    },
-    {
-      key: "nucl-tube-section",
-      title: "Section",
-      defaultExpanded: true,
-      Component: NuclSectionSection,
-    },
-    {
-      key: "nucl-tube-putty",
-      title: "Putty",
-      defaultExpanded: true,
-      Component: NuclPuttySection,
-    },
-  ],
+  nucl: NUCL_SECTIONS,
 };
 
 /**
@@ -423,21 +207,3 @@ export function getRendererPropSections(rendererType: string): RendererPropSecti
   return RENDERER_SECTION_REGISTRY[rendererType] ?? [];
 }
 
-// ------------------------------------------------------------
-// Temporary placeholder
-// ------------------------------------------------------------
-
-/**
- * Placeholder section appended after the common page for every renderer type
- * in this migration step, so the eventual "Common + specific" layout is
- * visible end-to-end. Remove it once `getRendererPropSections` returns real
- * sections for the known types.
- */
-export const DUMMY_SECTION: RendererPropSectionDef = {
-  key: "dummy",
-  title: "Renderer settings",
-  defaultExpanded: false,
-  Component: () => (
-    <div className="insp-prop-readonly">Not implemented yet.</div>
-  ),
-};

@@ -16,13 +16,12 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { act } from 'react'
 import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// PropertiesTab -> RendererCommonSection -> MaterialRow uses useCueMol.
+// The common page's Material row fetches names through useCueMol.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
@@ -33,28 +32,13 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import {
-  RibbonMainSection,
-  RibbonHelixSection,
-  RibbonCoilSection,
-} from '../components/inspector/RibbonRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { RIBBON_SECTIONS } from '../components/inspector/schema/ribbon'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -76,15 +60,6 @@ function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
     (l) => l.textContent === label,
   )
   return lab ? (lab.closest('.h3-form-prop-row') as HTMLElement) : null
-}
-
-function typeInto(input: HTMLInputElement, value: string): void {
-  const setter = Object.getOwnPropertyDescriptor(
-    window.HTMLInputElement.prototype,
-    'value',
-  )!.set!
-  setter.call(input, value)
-  input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
 function changeSelect(select: HTMLSelectElement, value: string): void {
@@ -119,12 +94,12 @@ describe('Ribbon renderer section registry', () => {
     const sections = getRendererPropSections('ribbon')
     expect(sections.map((s) => s.title)).toEqual(['Ribbon', 'Helix', 'Sheet', 'Coil'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(componentOf(sections[0])).toBe(RibbonMainSection)
+    expect(sections).toBe(RIBBON_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.ribbon).toBe(sections)
   })
 })
 
-describe('RibbonMainSection', () => {
+describe('the ribbon main page', () => {
   function mainEntries(): GenericPropEntry[] {
     return [
       entry({ key: 'coil.detail', type: 'integer', value: 16 }),
@@ -141,7 +116,7 @@ describe('RibbonMainSection', () => {
 
   it('renders the common rows with a "(default)" pivot placeholder', () => {
     const { container, unmount } = mountTree(
-      <RibbonMainSection entries={mainEntries()} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[0]} rendererType="ribbon" entries={mainEntries()} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     for (const label of [
       'Section detail',
@@ -162,15 +137,13 @@ describe('RibbonMainSection', () => {
   it('writes coil/helix/sheet detail together when Section detail changes', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <RibbonMainSection entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[0]} rendererType="ribbon" entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
     )
-    const input = rowByLabel(container, 'Section detail')!.querySelector('input') as HTMLInputElement
-    act(() => typeInto(input, '10'))
-    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    changeSelect(selectInRow(container, 'Section detail')!, '8')
     expect(onSetMany).toHaveBeenCalledWith([
-      { key: 'coil.detail', valueType: 'integer', value: 10 },
-      { key: 'helix.detail', valueType: 'integer', value: 10 },
-      { key: 'sheet.detail', valueType: 'integer', value: 10 },
+      { key: 'coil.detail', valueType: 'integer', value: 8 },
+      { key: 'helix.detail', valueType: 'integer', value: 8 },
+      { key: 'sheet.detail', valueType: 'integer', value: 8 },
     ])
     unmount()
   })
@@ -178,7 +151,7 @@ describe('RibbonMainSection', () => {
   it('writes both start and end cap type from the single Cap type control', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <RibbonMainSection entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[0]} rendererType="ribbon" entries={mainEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
     )
     changeSelect(selectInRow(container, 'Cap type')!, 'sphere')
     expect(onSetMany).toHaveBeenCalledWith([
@@ -189,7 +162,7 @@ describe('RibbonMainSection', () => {
   })
 })
 
-describe('RibbonHelixSection', () => {
+describe('the ribbon helix page', () => {
   function helixEntries(opts: { sectType?: string; useBack?: boolean; headType?: string } = {}): GenericPropEntry[] {
     return [
       sectEntry('helix.type', opts.sectType ?? 'elliptical'),
@@ -211,7 +184,7 @@ describe('RibbonHelixSection', () => {
   }
   const render = (opts = {}) =>
     mountTree(
-      <RibbonHelixSection entries={helixEntries(opts)} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[1]} rendererType="ribbon" entries={helixEntries(opts)} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
 
   it('renders the section, head and tail rows (and not the non-UXP base smooth/line width)', () => {
@@ -255,7 +228,7 @@ describe('RibbonHelixSection', () => {
   it('shows the inverted basw percentage for Head arrow height and commits it back', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <RibbonHelixSection entries={helixEntries({ headType: 'arrow' })} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={RIBBON_SECTIONS[1]} rendererType="ribbon" entries={helixEntries({ headType: 'arrow' })} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
     )
     const row = rowByLabel(container, 'Head arrow height')!
     // basw 0.5 -> (1 - 0.5) * 100 = 50 %
@@ -274,10 +247,12 @@ describe('RibbonHelixSection', () => {
   })
 })
 
-describe('RibbonCoilSection', () => {
+describe('the ribbon coil page', () => {
   it('omits fancy1, colour and head/tail', () => {
     const { container, unmount } = mountTree(
-      <RibbonCoilSection
+      <SchemaSection
+        section={RIBBON_SECTIONS[3]}
+        rendererType="ribbon"
         entries={[
           entry({ key: 'coil.type', type: 'enum', value: 'elliptical', enumdef: ['elliptical', 'roundsquare', 'rectangle', 'fancy1'] }),
           entry({ key: 'coil.width', type: 'real', value: 0.25 }),

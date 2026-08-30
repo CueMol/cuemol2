@@ -3,6 +3,10 @@
  *  - explicit readerName branch: bypass getInfoJSON2 and call createHandler(readerName, 0)
  *  - extension-fallback branch: scan getInfoJSON2 by ext, first hit wins
  *
+ * and the renderer-type filtering: the synthetic / test / legacy types are
+ * dropped, and so is one that would come up empty on an object nothing has
+ * been drawn on or measured in yet.
+ *
  * Specifically pins the ".cif ambiguity" case: mmcifmap (structure factor)
  * and mmcif (coord) both register .cif. Without an explicit readerName,
  * extension lookup picks the first JSON entry -- when that entry is mmcifmap,
@@ -100,6 +104,23 @@ describe('getCompatibleRendererNames — explicit readerName branch', () => {
             readerName: 'mmcif',
         })
         expect(result).toEqual({ types: ['simple', 'cartoon'], objType: 'MolCoord', readerName: 'mmcif' })
+    })
+
+    it('does not offer a renderer that would come up empty on a new object', () => {
+        // A disorder overlay follows a main-chain renderer and an atomintr
+        // draws measurements; the object being read has neither yet, so both
+        // would draw nothing. They stay available from the add-renderer
+        // dialog once there is something for them to work with.
+        const env = makeEnv({
+            readerRendTypes: { mmcif: 'simple,disorder,atomintr,cartoon' },
+            readerClassNames: { mmcif: 'MolCoord' },
+            info: [],
+        })
+        const result = getCompatibleRendererNames(env.ctx, {
+            filePath: '1mbn.cif',
+            readerName: 'mmcif',
+        })
+        expect(result.types).toEqual(['simple', 'cartoon'])
     })
 
     it('returns empty objType when tmpObj.getClassName() is undefined', () => {

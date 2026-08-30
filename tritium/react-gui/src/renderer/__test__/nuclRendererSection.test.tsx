@@ -6,7 +6,10 @@
  * sections are reused, gated by the "Show tube" toggle. This test pins:
  *   - the registry resolves `type_name === "nucl"` to four sections
  *     (Nucleic acid / Tube / Section / Putty);
- *   - NuclBaseSection renders the six base-rendering rows;
+ *   - the base page renders the six base-rendering rows;
+ *   - Base size and Base thick are one pair: the thickness is shown as a
+ *     percentage of the size, and resizing rescales it so that percentage
+ *     holds;
  *   - base_thick is shown as a percentage of base_size and committed back as an
  *     absolute value (pct * size / 100);
  *   - the "Show tube" gate disables the reused tube sections when off;
@@ -20,34 +23,18 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// PropertiesTab -> RendererCommonSection -> MaterialRow uses useCueMol.
+// The common page's Material row fetches names through useCueMol.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import {
-  NuclBaseSection,
-  NuclTubeMainSection,
-  NuclSectionSection,
-  NuclPuttySection,
-} from '../components/inspector/NuclRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { NUCL_SECTIONS } from '../components/inspector/schema/nucl'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -123,18 +110,17 @@ describe('NARenderer ("nucl") section registry', () => {
       'Section',
       'Putty',
     ])
-    expect(componentOf(sections[0])).toBe(NuclBaseSection)
-    expect(componentOf(sections[1])).toBe(NuclTubeMainSection)
-    expect(componentOf(sections[2])).toBe(NuclSectionSection)
-    expect(componentOf(sections[3])).toBe(NuclPuttySection)
+    expect(sections).toBe(NUCL_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.nucl).toBe(sections)
   })
 })
 
-describe('NuclBaseSection', () => {
+describe('the nucl base page', () => {
   it('renders the six base-rendering rows', () => {
     const { container, unmount } = mountTree(
-      <NuclBaseSection
+      <SchemaSection
+        section={NUCL_SECTIONS[0]}
+        rendererType="nucl"
         entries={baseEntries()}
         onSet={vi.fn()}
         onReset={vi.fn()}
@@ -156,7 +142,9 @@ describe('NuclBaseSection', () => {
 
   it('shows base_thick as a percentage of base_size', () => {
     const { container, unmount } = mountTree(
-      <NuclBaseSection
+      <SchemaSection
+        section={NUCL_SECTIONS[0]}
+        rendererType="nucl"
         entries={baseEntries({ base_size: 1.0, base_thick: 0.5 })}
         onSet={vi.fn()}
         onReset={vi.fn()}
@@ -170,10 +158,44 @@ describe('NuclBaseSection', () => {
     unmount()
   })
 
+  it('rescales base_thick with base_size so its percentage stays put', () => {
+    // base_thick is an absolute the row shows as a percentage of base_size, so
+    // resizing the base without it would leave a thickness reading as more
+    // than 100 % of a base it no longer fits.
+    const onSetMany = vi.fn()
+    const { container, unmount } = mountTree(
+      <SchemaSection
+        section={NUCL_SECTIONS[0]}
+        rendererType="nucl"
+        entries={baseEntries({ base_size: 1.0, base_thick: 0.5 })}
+        onSet={vi.fn()}
+        onSetMany={onSetMany}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    const incr = rowByLabel(container, 'Base size')!.querySelector(
+      '.h3-form-drag-arrow-right',
+    ) as HTMLButtonElement
+    pressStepArrow(incr)
+    // 1.0 + step 0.1 -> 1.1, so the thickness scales 0.5 -> 0.55 and both
+    // land in one undo step. 0.55 / 1.1 is still the 50 % it displayed.
+    expect(onSetMany).toHaveBeenCalledTimes(1)
+    const writes = onSetMany.mock.calls[0][0]
+    expect(writes[0]).toMatchObject({ key: 'base_size', valueType: 'real' })
+    expect(writes[0].value).toBeCloseTo(1.1, 5)
+    expect(writes[1]).toMatchObject({ key: 'base_thick', valueType: 'real' })
+    expect(writes[1].value).toBeCloseTo(0.55, 5)
+    expect((writes[1].value * 100) / writes[0].value).toBeCloseTo(50, 5)
+    unmount()
+  })
+
   it('commits base_thick back as an absolute value (pct * size / 100)', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <NuclBaseSection
+      <SchemaSection
+        section={NUCL_SECTIONS[0]}
+        rendererType="nucl"
         entries={baseEntries({ base_size: 1.0, base_thick: 0.5 })}
         onSet={onSet}
         onReset={vi.fn()}

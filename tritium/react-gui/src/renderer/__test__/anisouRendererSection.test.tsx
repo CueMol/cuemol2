@@ -27,7 +27,7 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// PropertiesTab -> RendererCommonSection -> MaterialRow uses useCueMol.
+// The common page's Material row fetches names through useCueMol.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
@@ -37,20 +37,8 @@ import { ANISOU_SECTIONS } from '../components/inspector/schema/anisou'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -101,9 +89,6 @@ describe('AnIsoURenderer section registry', () => {
       'Anisotropic displacement',
     ])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
-    expect(sections.map(componentOf)).toEqual(['schema:anisou-ballstick', 'schema:anisou-disc'])
     expect(RENDERER_SECTION_REGISTRY.anisou).toBe(sections)
   })
 })

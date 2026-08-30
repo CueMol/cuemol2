@@ -19,7 +19,7 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// PropertiesTab -> RendererCommonSection -> MaterialRow uses useCueMol.
+// The common page's Material row fetches names through useCueMol.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
@@ -28,20 +28,8 @@ import { SIMPLE_SECTIONS, TRACE_SECTIONS } from '../components/inspector/schema/
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -79,9 +67,6 @@ describe('TraceRenderer section registry', () => {
     expect(sections).toHaveLength(1)
     expect(sections[0].title).toBe('Trace')
     expect(sections[0].defaultExpanded).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(isComponentSection(sections[0])).toBe(false)
-    expect(componentOf(sections[0])).toBe('schema:trace')
     expect(RENDERER_SECTION_REGISTRY.trace).toBe(sections)
     // The two types differ only in the accordion's title: the row is shared.
     expect(TRACE_SECTIONS[0].rows).toEqual(SIMPLE_SECTIONS[0].rows)

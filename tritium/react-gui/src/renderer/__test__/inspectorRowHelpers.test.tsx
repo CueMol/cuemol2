@@ -1,16 +1,17 @@
 /**
- * Shared inspector row-helper contract (components/inspector/rowHelpers.tsx).
+ * Multi-target row contract (components/inspector/rows).
  *
- * These primitives were extracted from the verbatim duplication across the
- * cartoon / ribbon / tube section files (theme T4 Step 1-2). This focused suite
- * pins the multi-target write seam and the percentage round-trip directly on
- * the shared home, independent of any one section:
+ * A control that stands for several properties has to write them in one undo
+ * step, and one that shows a stored value in another unit has to round-trip
+ * it. Both live on the shared rows, so this suite pins them there rather than
+ * through any one page:
  *   - `writeMany`: 1 target -> `onSet`, 2+ targets -> `onSetMany` with the exact
  *     key / valueType / value array.
  *   - `MultiNumRow`: a 2-target drag row commits via `onSetMany`, applying the
  *     `toStored` transform; a 1-target drag row falls back to `onSet`.
- *   - `PctRow`: stored 0.5 shows 50 %, committing 60 % stores 0.4 (inverted
- *     basw transform), and the field is rendered disabled when told.
+ *   - the same row with one target IS the percentage row: stored 0.5 shows
+ *     50 %, committing 60 % stores 0.4 (the inverted basw transform), and the
+ *     field renders disabled when told.
  */
 
 import React from 'react'
@@ -23,11 +24,7 @@ void React
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
-import {
-  writeMany,
-  MultiNumRow,
-  PctRow,
-} from '../components/inspector/rowHelpers'
+import { writeMany, MultiNumRow } from '../components/inspector/rows'
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -146,19 +143,22 @@ describe('MultiNumRow', () => {
   })
 })
 
-describe('PctRow', () => {
+describe('a one-target row with a transform (the percentage row)', () => {
   it('shows the inverted percentage and commits the stored value back', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <PctRow
+      <MultiNumRow
         label="Arrow height"
-        entry={entry({ key: 'helixhead.basw', type: 'real', value: 0.5 })}
+        targets={[entry({ key: 'helixhead.basw', type: 'real', value: 0.5 })]}
         min={0}
         max={100}
         step={10}
-        toDisplay={(s) => (1 - s) * 100}
-        toStored={(d) => (100 - d) / 100}
+        decimals={0}
+        unit="%"
+        toDisplay={(s: number) => (1 - s) * 100}
+        toStored={(d: number) => (100 - d) / 100}
         onSet={onSet}
+        onSetMany={vi.fn()}
         onReset={vi.fn()}
       />,
     )
@@ -171,15 +171,18 @@ describe('PctRow', () => {
 
   it('renders disabled when told', () => {
     const { container, unmount } = mountTree(
-      <PctRow
+      <MultiNumRow
         label="Arrow width"
-        entry={entry({ key: 'helixhead.arrow', type: 'real', value: 1 })}
+        targets={[entry({ key: 'helixhead.arrow', type: 'real', value: 1 })]}
         min={0}
         max={100}
         step={10}
-        toDisplay={(s) => (s - 1) * 50}
-        toStored={(d) => d / 50 + 1}
+        decimals={0}
+        unit="%"
+        toDisplay={(s: number) => (s - 1) * 50}
+        toStored={(d: number) => d / 50 + 1}
         onSet={vi.fn()}
+        onSetMany={vi.fn()}
         onReset={vi.fn()}
         disabled
       />,

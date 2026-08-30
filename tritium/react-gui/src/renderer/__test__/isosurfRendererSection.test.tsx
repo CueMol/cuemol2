@@ -42,23 +42,13 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
   ),
 }))
 
-import { IsosurfMainSection } from '../components/inspector/IsosurfRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { ISOSURF_SECTIONS } from '../components/inspector/schema/map'
 import {
 
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
 
 
 beforeEach(() => {
@@ -143,12 +133,12 @@ describe('Isosurf renderer section registry', () => {
     const sections = getRendererPropSections('isosurf')
     expect(sections.map((s) => s.title)).toEqual(['Isosurf'])
     expect(sections[0].defaultExpanded).toBe(true)
-    expect(componentOf(sections[0])).toBe(IsosurfMainSection)
+    expect(sections).toBe(ISOSURF_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.isosurf).toBe(sections)
   })
 })
 
-describe('IsosurfMainSection', () => {
+describe('the isosurf page', () => {
   it('renders the curated rows and ignores unrelated (coloring) props', () => {
     const entries = [
       ...isosurfEntries(),
@@ -159,7 +149,7 @@ describe('IsosurfMainSection', () => {
       entry({ key: 'siglevel', type: 'real', value: 1.1 }),
     ]
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     for (const label of [
       'Center update',
@@ -188,7 +178,7 @@ describe('IsosurfMainSection', () => {
   it('writes region_mode and lod as raw enum ids with friendly labels', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={isosurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     const region = rowByLabel(container, 'Region')!.querySelector('select') as HTMLSelectElement
     expect(Array.from(region.options).map((o) => o.value)).toEqual(['auto', 'box', 'full'])
@@ -212,7 +202,9 @@ describe('IsosurfMainSection', () => {
     // a cryo-EM map resolves to full).
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <IsosurfMainSection
+      <SchemaSection
+        section={ISOSURF_SECTIONS[0]}
+        rendererType="isosurf"
         entries={isosurfEntries({ regionMode: 'auto', regionResolved: 'full' })}
         onSet={onSet}
         onReset={vi.fn()}
@@ -239,7 +231,7 @@ describe('IsosurfMainSection', () => {
   it('falls back to the raw region_mode when the resolved prop is absent', () => {
     const entries = isosurfEntries({ regionMode: 'full' }).filter((e) => e.key !== 'region_mode_resolved')
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     expect(rowByLabel(container, 'Max grid size')).toBeNull()
     expect(rowByLabel(container, 'LoD budget')).not.toBeNull()
@@ -249,7 +241,7 @@ describe('IsosurfMainSection', () => {
   it('writes drawmode and gates Line/Point size by mode', () => {
     const onSet = vi.fn()
     const fill = mountTree(
-      <IsosurfMainSection entries={isosurfEntries({ drawmode: 'fill' })} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries({ drawmode: 'fill' })} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     // fill -> Line/Point size disabled.
     expect(rowByLabel(fill.container, 'Line/Point size')!.querySelector('.h3-form-drag-disabled')).not.toBeNull()
@@ -259,7 +251,7 @@ describe('IsosurfMainSection', () => {
     fill.unmount()
 
     const line = mountTree(
-      <IsosurfMainSection entries={isosurfEntries({ drawmode: 'line' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries({ drawmode: 'line' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     // line -> Line/Point size enabled.
     expect(rowByLabel(line.container, 'Line/Point size')!.querySelector('.h3-form-drag-disabled')).toBeNull()
@@ -269,7 +261,7 @@ describe('IsosurfMainSection', () => {
   it('commits Max grid size as a single step on Enter', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={isosurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     const input = rowByLabel(container, 'Max grid size')!.querySelector('input') as HTMLInputElement
     act(() => typeInto(input, '120'))
@@ -281,7 +273,7 @@ describe('IsosurfMainSection', () => {
   it('toggles Back-face culling', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={isosurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     act(() => switchIn(rowByLabel(container, 'Back-face culling')!).click())
     expect(onSet).toHaveBeenCalledWith('cullface', 'boolean', true)
@@ -291,7 +283,7 @@ describe('IsosurfMainSection', () => {
   it('writes the autoupdate/dragupdate pair in one step (shared Center update)', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={isosurfEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     const select = rowByLabel(container, 'Center update')!.querySelector('select') as HTMLSelectElement
     selectValue(select, 'drag')
@@ -305,7 +297,7 @@ describe('IsosurfMainSection', () => {
   it('clears target + selection in one step when "Limit display by" is turned off (shared)', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={isosurfEntries({ bndryMol: 'molX' })} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries({ bndryMol: 'molX' })} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     act(() => switchIn(rowByLabel(container, 'Limit display by')!).click())
     expect(onSetMany).toHaveBeenCalledWith([
@@ -319,7 +311,7 @@ describe('IsosurfMainSection', () => {
     // cm is null -> the molecule list is empty; the toggle must still turn on so
     // the Target selector becomes usable once a molecule appears.
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={isosurfEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     const toggle = switchIn(rowByLabel(container, 'Limit display by')!)
     expect(toggle.checked).toBe(false)
@@ -332,7 +324,7 @@ describe('IsosurfMainSection', () => {
 
   it('disables Target / Selection / Distance when limiting is off', () => {
     const { container, unmount } = mountTree(
-      <IsosurfMainSection entries={isosurfEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     expect((rowByLabel(container, 'Target')!.querySelector('select') as HTMLSelectElement).disabled).toBe(true)
     expect(

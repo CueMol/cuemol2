@@ -21,7 +21,7 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// PropertiesTab -> RendererCommonSection -> MaterialRow uses useCueMol.
+// The common page's Material row fetches names through useCueMol.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
@@ -31,20 +31,8 @@ import { CPK_SECTIONS } from '../components/inspector/schema/cpk'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -98,9 +86,6 @@ describe('CPKRenderer section registry', () => {
     const sections = getRendererPropSections('cpk')
     expect(sections.map((s) => s.title)).toEqual(['Atom radii', 'Detail'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(sections.every((s) => !isComponentSection(s))).toBe(true)
-    expect(sections.map(componentOf)).toEqual(['schema:cpk-radii', 'schema:cpk-detail'])
     expect(RENDERER_SECTION_REGISTRY.cpk).toBe(sections)
   })
 })
@@ -220,7 +205,7 @@ describe('the CPK Atom radii section', () => {
 })
 
 describe('the CPK Detail section', () => {
-  it('shows detail as an integer with no unit', () => {
+  it('offers detail as a ladder of levels including the default', () => {
     const { container, unmount } = mountTree(
       <SchemaSection
         section={CPK_SECTIONS[1]}
@@ -232,10 +217,10 @@ describe('the CPK Detail section', () => {
         onReset={vi.fn()}
       />,
     )
-    const detail = rowByLabel(container, 'Detail')!
-    expect(detail.querySelector('.h3-form-drag-value')!.textContent).toContain('3')
-    expect(detail.querySelector('.h3-form-drag-value')!.textContent).not.toContain('.')
-    expect(detail.querySelector('.h3-form-drag-unit')).toBeNull()
+    const detail = rowByLabel(container, 'Detail')!.querySelector('select') as HTMLSelectElement
+    expect(detail.value).toBe('3')
+    // Powers of two from 2 up, plus whatever value the property holds.
+    expect(Array.from(detail.options).map((o) => o.value)).toEqual(['2', '3', '4', '8', '16', '32'])
     unmount()
   })
 

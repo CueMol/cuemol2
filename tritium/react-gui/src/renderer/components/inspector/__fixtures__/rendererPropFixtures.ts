@@ -55,6 +55,18 @@ function withValues(
   if (missing.length > 0) {
     throw new Error(`${type} fixture: no such propert${missing.length > 1 ? 'ies' : 'y'}: ${missing.join(', ')}`)
   }
+  // The same goes for a value an enum does not offer: the row would render
+  // with nothing selected and the variant would silently stop exercising the
+  // state it names (a `scaled1` putty mode did exactly that).
+  for (const e of base[type]) {
+    if (!keys.has(e.key) || !e.enumdef) continue
+    const v = overrides[e.key]
+    if (!e.enumdef.includes(String(v))) {
+      throw new Error(
+        `${type} fixture: ${e.key} has no value ${JSON.stringify(v)} (offers ${e.enumdef.join(', ')})`,
+      )
+    }
+  }
   return out
 }
 
@@ -68,7 +80,7 @@ const VARIANTS: Partial<Record<FixtureRendererType, Record<string, Record<string
   tube: {
     'section-roundsquare': { 'section.type': 'roundsquare' },
     'section-fancy': { 'section.type': 'fancy1' },
-    'putty-scaling': { putty_mode: 'scaled1', putty_tgt: 'bfac' },
+    'putty-scaling': { putty_mode: 'scale1', putty_tgt: 'bfac' },
   },
   // The ribbon-helix block and its junctions are the gated part.
   cartoon: {

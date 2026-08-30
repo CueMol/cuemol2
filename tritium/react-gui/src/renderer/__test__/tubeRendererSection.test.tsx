@@ -8,7 +8,8 @@
  *   - the registry resolves `type_name === "tube"` to the Tube / Section / Putty
  *     sections (all default-expanded);
  *   - each section renders a row only when its property exists;
- *   - `axialdetail` / `section.detail` use the plain stepper NumericField;
+ *   - `axialdetail` / `section.detail` are tessellation levels picked from a
+ *     ladder, not typed;
  *   - the nested `section.*` cross-section props are surfaced (via their dot-path
  *     keys) and committed unchanged through `onSet`;
  *   - "Width2" is derived (`tuber * width`) and writes back `section.tuber`;
@@ -24,33 +25,19 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// RendererCommonSection -> MaterialRow uses useCueMol (pulled in transitively
-// via the rendererPropSections registry import).
+// The common page's Material row fetches names through useCueMol (pulled in
+// transitively via the rendererPropSections registry import).
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import {
-  TubeMainSection,
-  TubeSectionSection,
-  TubePuttySection,
-} from '../components/inspector/TubeRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { TUBE_SECTIONS } from '../components/inspector/schema/tube'
 import {
 
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -89,14 +76,12 @@ describe('Tube renderer section registry', () => {
     const sections = getRendererPropSections('tube')
     expect(sections.map((s) => s.title)).toEqual(['Tube', 'Section', 'Putty'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(componentOf(sections[0])).toBe(TubeMainSection)
-    expect(componentOf(sections[1])).toBe(TubeSectionSection)
-    expect(componentOf(sections[2])).toBe(TubePuttySection)
+    expect(sections).toBe(TUBE_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.tube).toBe(sections)
   })
 })
 
-describe('TubeMainSection', () => {
+describe('the tube page', () => {
   function mainEntries(): GenericPropEntry[] {
     return [
       entry({ key: 'axialdetail', type: 'integer', value: 6 }),
@@ -111,7 +96,7 @@ describe('TubeMainSection', () => {
 
   it('renders the curated rows when present', () => {
     const { container, unmount } = mountTree(
-      <TubeMainSection entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[0]} rendererType="tube" entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(rowByLabel(container, 'Axial detail')).not.toBeNull()
     expect(rowByLabel(container, 'Smoothness')).not.toBeNull()
@@ -123,21 +108,24 @@ describe('TubeMainSection', () => {
     unmount()
   })
 
-  it('renders Axial detail as a stepper (no slider, no drag arrows)', () => {
+  it('offers Axial detail as a ladder of levels, including the current one', () => {
     const { container, unmount } = mountTree(
-      <TubeMainSection entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[0]} rendererType="tube" entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     const detail = rowByLabel(container, 'Axial detail')!
-    expect(detail.querySelector('.h3-form-numeric-row')).not.toBeNull()
-    expect(detail.querySelector('.h3-form-slider')).toBeNull()
     expect(dragArrow(detail)).toBeNull()
+    const sel = selectIn(detail)
+    // 6 is not a power of two, so it is merged into the ladder rather than
+    // leaving the row unable to show its own value.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '6', '8', '16', '32'])
+    expect(sel.value).toBe('6')
     unmount()
   })
 
   it('commits a cap-type enum as its raw C++ string ID', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <TubeMainSection entries={mainEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[0]} rendererType="tube" entries={mainEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
     )
     const sel = selectIn(rowByLabel(container, 'Start cap')!)
     act(() => {
@@ -149,20 +137,20 @@ describe('TubeMainSection', () => {
   })
 })
 
-describe('TubeSectionSection', () => {
+describe('the tube Section page', () => {
   function sectionEntries(type: string): GenericPropEntry[] {
     return [
       entry({ key: 'section.type', type: 'enum', value: type, enumdef: ['elliptical', 'roundsquare', 'rectangle', 'fancy1'], depth: 1 }),
       entry({ key: 'section.detail', type: 'integer', value: 16, depth: 1 }),
       entry({ key: 'section.width', type: 'real', value: 2, depth: 1 }),
-      entry({ key: 'section.tuber', type: 'real', value: 1.5, depth: 1 }),
+      entry({ key: 'section.tuber', type: 'real', value: 0.5, depth: 1 }),
       entry({ key: 'section.sharp', type: 'real', value: 0.4, depth: 1 }),
     ]
   }
 
   it('renders the cross-section rows including the derived Width2', () => {
     const { container, unmount } = mountTree(
-      <TubeSectionSection entries={sectionEntries('roundsquare')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[1]} rendererType="tube" entries={sectionEntries('roundsquare')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(rowByLabel(container, 'Type')).not.toBeNull()
     expect(rowByLabel(container, 'Detail')).not.toBeNull()
@@ -174,13 +162,13 @@ describe('TubeSectionSection', () => {
 
   it('disables Sharpness for elliptical and enables it for roundsquare', () => {
     const ell = mountTree(
-      <TubeSectionSection entries={sectionEntries('elliptical')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[1]} rendererType="tube" entries={sectionEntries('elliptical')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(dragArrow(rowByLabel(ell.container, 'Sharpness')!)!.disabled).toBe(true)
     ell.unmount()
 
     const rsq = mountTree(
-      <TubeSectionSection entries={sectionEntries('roundsquare')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[1]} rendererType="tube" entries={sectionEntries('roundsquare')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(dragArrow(rowByLabel(rsq.container, 'Sharpness')!)!.disabled).toBe(false)
     rsq.unmount()
@@ -189,20 +177,22 @@ describe('TubeSectionSection', () => {
   it('writes section.tuber when Width2 is edited (tuber = Width2 / Width1)', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <TubeSectionSection entries={sectionEntries('roundsquare')} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[1]} rendererType="tube" entries={sectionEntries('roundsquare')} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
     )
-    // committed Width2 = tuber * width = 1.5 * 2 = 3; step 0.01 -> 3.01.
+    // committed Width2 = tuber * width = 0.5 * 2 = 1; step 0.01 -> 1.01.
     const incr = dragArrow(rowByLabel(container, 'Width2')!)!
     pressStepArrow(incr)
-    // tuber = 3.01 / 2 = 1.505.
-    expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(1.505, 5))
+    // tuber = 1.01 / 2 = 0.505.
+    expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(0.505, 5))
     unmount()
   })
 
   it('rewrites width + tuber together on Width1 edit so Width2 stays put', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <TubeSectionSection
+      <SchemaSection
+        section={TUBE_SECTIONS[1]}
+        rendererType="tube"
         entries={sectionEntries('roundsquare')}
         onSet={vi.fn()}
         onSetMany={onSetMany}
@@ -210,7 +200,7 @@ describe('TubeSectionSection', () => {
         sceneId={1}
       />,
     )
-    // width=2, tuber=1.5 -> minor axis (Width2) = 3. Bump Width1 2 -> 2.01.
+    // width=2, tuber=0.5 -> minor axis (Width2) = 1. Bump Width1 2 -> 2.01.
     const incr = dragArrow(rowByLabel(container, 'Width1')!)!
     pressStepArrow(incr)
     expect(onSetMany).toHaveBeenCalledTimes(1)
@@ -218,9 +208,9 @@ describe('TubeSectionSection', () => {
     expect(writes[0]).toMatchObject({ key: 'section.width', valueType: 'real' })
     expect(writes[0].value).toBeCloseTo(2.01, 5)
     expect(writes[1]).toMatchObject({ key: 'section.tuber', valueType: 'real' })
-    // tuber rewritten so width * tuber keeps the original minor axis (3).
-    expect(writes[1].value).toBeCloseTo(3 / 2.01, 5)
-    expect(writes[0].value * writes[1].value).toBeCloseTo(3, 5)
+    // tuber rewritten so width * tuber keeps the original minor axis (1).
+    expect(writes[1].value).toBeCloseTo(1 / 2.01, 5)
+    expect(writes[0].value * writes[1].value).toBeCloseTo(1, 5)
     unmount()
   })
 
@@ -228,7 +218,9 @@ describe('TubeSectionSection', () => {
     const onSet = vi.fn()
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <TubeSectionSection
+      <SchemaSection
+        section={TUBE_SECTIONS[1]}
+        rendererType="tube"
         entries={sectionEntries('roundsquare')}
         onSet={onSet}
         onSetMany={onSetMany}
@@ -239,14 +231,14 @@ describe('TubeSectionSection', () => {
     const incr = dragArrow(rowByLabel(container, 'Width2')!)!
     pressStepArrow(incr)
     // Only the ratio moves; the major axis (Width1) is never written.
-    expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(1.505, 5))
+    expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(0.505, 5))
     expect(onSet).not.toHaveBeenCalledWith('section.width', expect.anything(), expect.anything())
     expect(onSetMany).not.toHaveBeenCalled()
     unmount()
   })
 })
 
-describe('TubePuttySection mode gating', () => {
+describe('the tube Putty page, gated on its mode', () => {
   function puttyEntries(mode: string): GenericPropEntry[] {
     return [
       entry({ key: 'putty_mode', type: 'enum', value: mode, enumdef: ['none', 'linear1', 'scale1'] }),
@@ -258,7 +250,7 @@ describe('TubePuttySection mode gating', () => {
 
   it('disables target / scales when mode is "none"', () => {
     const { container, unmount } = mountTree(
-      <TubePuttySection entries={puttyEntries('none')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[2]} rendererType="tube" entries={puttyEntries('none')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(selectIn(rowByLabel(container, 'Target')!).disabled).toBe(true)
     expect(dragArrow(rowByLabel(container, 'Low scale')!)!.disabled).toBe(true)
@@ -268,7 +260,7 @@ describe('TubePuttySection mode gating', () => {
 
   it('enables target / scales for a non-none mode', () => {
     const { container, unmount } = mountTree(
-      <TubePuttySection entries={puttyEntries('scale1')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={TUBE_SECTIONS[2]} rendererType="tube" entries={puttyEntries('scale1')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(selectIn(rowByLabel(container, 'Target')!).disabled).toBe(false)
     expect(dragArrow(rowByLabel(container, 'Low scale')!)!.disabled).toBe(false)

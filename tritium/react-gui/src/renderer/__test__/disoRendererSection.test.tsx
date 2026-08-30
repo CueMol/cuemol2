@@ -8,8 +8,7 @@
  *   - the registry resolves `type_name === "disorder"` to a single
  *     "Disorder" section (default-expanded);
  *   - each row renders only when its property exists;
- *   - "Detail" uses the plain inline stepper NumericField (no slider, no drag
- *     arrows) and commits a single-step integer `onSet`;
+ *   - "Detail" is a tessellation level picked from a ladder, not typed;
  *   - a drag-numeric row (Dot size) commits a plain single step (no realtime opts);
  *   - the Target selector always offers "(none)" and keeps the current value
  *     selectable even when no sibling-renderer names are available;
@@ -50,18 +49,7 @@ import {
 
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -87,15 +75,6 @@ function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
 }
 
 /** Set a controlled <input> value so React's value tracker fires onChange. */
-function typeInto(input: HTMLInputElement, value: string): void {
-  const setter = Object.getOwnPropertyDescriptor(
-    window.HTMLInputElement.prototype,
-    'value',
-  )!.set!
-  setter.call(input, value)
-  input.dispatchEvent(new Event('input', { bubbles: true }))
-}
-
 /** The right step arrow of a drag-numeric row (present only for DragNumericField). */
 function dragArrow(row: HTMLElement): HTMLButtonElement | null {
   return row.querySelector('.h3-form-drag-arrow-right') as HTMLButtonElement | null
@@ -118,9 +97,6 @@ describe('Disorder renderer section registry', () => {
     const sections = getRendererPropSections('disorder')
     expect(sections.map((s) => s.title)).toEqual(['Disorder'])
     expect(sections[0].defaultExpanded).toBe(true)
-    // A migrated page is rows as data, not a component.
-    expect(isComponentSection(sections[0])).toBe(false)
-    expect(componentOf(sections[0])).toBe(`schema:${sections[0].key}`)
     expect(RENDERER_SECTION_REGISTRY.disorder).toBe(sections)
   })
 })
@@ -166,7 +142,7 @@ describe('the disorder page', () => {
     unmount()
   })
 
-  it('renders Detail as a stepper NumericField (no slider, no drag arrows)', () => {
+  it('offers Detail as a ladder of levels, including the C++ default', () => {
     const { container, unmount } = mountTree(
       <SchemaSection
         section={DISORDER_SECTIONS[0]}
@@ -179,13 +155,15 @@ describe('the disorder page', () => {
       />,
     )
     const detail = rowByLabel(container, 'Detail')!
-    expect(detail.querySelector('.h3-form-numeric-row')).not.toBeNull()
-    expect(detail.querySelector('.h3-form-slider')).toBeNull()
     expect(dragArrow(detail)).toBeNull()
+    const sel = detail.querySelector('select') as HTMLSelectElement
+    // 5 is not a power of two, so it is merged into the ladder.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '5', '8', '16', '32'])
+    expect(sel.value).toBe('5')
     unmount()
   })
 
-  it('commits Detail as a single-step integer on Enter', () => {
+  it('commits the chosen Detail level as an integer', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
       <SchemaSection
@@ -198,11 +176,11 @@ describe('the disorder page', () => {
         onReset={vi.fn()}
       />,
     )
-    const input = rowByLabel(container, 'Detail')!.querySelector('input') as HTMLInputElement
-    act(() => typeInto(input, '8'))
-    act(() =>
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })),
-    )
+    const sel = rowByLabel(container, 'Detail')!.querySelector('select') as HTMLSelectElement
+    act(() => {
+      sel.value = '8'
+      sel.dispatchEvent(new Event('change', { bubbles: true }))
+    })
     expect(onSet).toHaveBeenCalledWith('detail', 'integer', 8)
     unmount()
   })

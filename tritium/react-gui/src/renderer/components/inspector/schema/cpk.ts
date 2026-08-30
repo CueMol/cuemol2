@@ -23,16 +23,7 @@ export const CPK_SECTIONS: SchemaSectionDef[] = [
     title: 'Detail',
     defaultExpanded: true,
     rows: [
-      {
-        kind: 'num',
-        key: 'detail',
-        label: 'Detail',
-        min: 2,
-        max: 20,
-        step: 1,
-        decimals: 0,
-        realtime: true,
-      },
+      { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 2 },
     ],
   },
 ]

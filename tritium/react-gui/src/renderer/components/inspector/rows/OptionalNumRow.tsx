@@ -20,7 +20,7 @@
 import React, { useRef } from 'react'
 import { DragNumericField, GatedControl, PropertyField } from '@renderer/h3-kit/form'
 import { useRealtimeDragProp } from '@renderer/hooks/react/useRealtimeDragProp'
-import { resetProps } from '../RendererCommonSection'
+import { resetProps } from './rowProps'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import type { RendererPropSectionProps } from '../rendererPropSections'
 

@@ -24,7 +24,7 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
 
-// PropertiesTab -> RendererCommonSection -> MaterialRow uses useCueMol.
+// The common page's Material row fetches names through useCueMol.
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
@@ -39,29 +39,13 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
   ),
 }))
 
-import {
-  CartoonMainSection,
-  CartoonHelixSection,
-  CartoonSheetSection,
-  CartoonCoilSection,
-} from '../components/inspector/CartoonRendererSection'
+import { SchemaSection } from '../components/inspector/SchemaSection'
+import { CARTOON_SECTIONS } from '../components/inspector/schema/cartoon'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-  isComponentSection,
-  type RendererPropSectionDef,
 } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
-
-/**
- * The component a registry entry renders. The registry holds either a
- * hand-written component or a schema (rows as data) while the per-type pages
- * are migrated, so a test that expects a component has to say which it is.
- */
-function componentOf(section: RendererPropSectionDef): unknown {
-  return isComponentSection(section) ? section.Component : `schema:${section.key}`
-}
-
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
@@ -87,15 +71,6 @@ function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
 }
 
 /** Set a controlled <input> value so React's value tracker fires onChange. */
-function typeInto(input: HTMLInputElement, value: string): void {
-  const setter = Object.getOwnPropertyDescriptor(
-    window.HTMLInputElement.prototype,
-    'value',
-  )!.set!
-  setter.call(input, value)
-  input.dispatchEvent(new Event('input', { bubbles: true }))
-}
-
 /** Change a controlled <select> so React's value tracker fires onChange. */
 function changeSelect(select: HTMLSelectElement, value: string): void {
   const setter = Object.getOwnPropertyDescriptor(
@@ -130,15 +105,12 @@ describe('Cartoon renderer section registry', () => {
     const sections = getRendererPropSections('cartoon')
     expect(sections.map((s) => s.title)).toEqual(['Cartoon', 'Helix', 'Sheet', 'Coil'])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
-    expect(componentOf(sections[0])).toBe(CartoonMainSection)
-    expect(componentOf(sections[1])).toBe(CartoonHelixSection)
-    expect(componentOf(sections[2])).toBe(CartoonSheetSection)
-    expect(componentOf(sections[3])).toBe(CartoonCoilSection)
+    expect(sections).toBe(CARTOON_SECTIONS)
     expect(RENDERER_SECTION_REGISTRY.cartoon).toBe(sections)
   })
 })
 
-describe('CartoonMainSection', () => {
+describe('the cartoon main page', () => {
   function mainEntries(anchorSelValue = ''): GenericPropEntry[] {
     return [
       entry({ key: 'axialdetail', type: 'integer', value: 8 }),
@@ -153,7 +125,7 @@ describe('CartoonMainSection', () => {
 
   it('renders the UXP rows (incl pivot atom + anchor) and omits the non-UXP segend_fade', () => {
     const { container, unmount } = mountTree(
-      <CartoonMainSection entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[0]} rendererType="cartoon" entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     for (const label of [
       'Axial detail',
@@ -174,43 +146,45 @@ describe('CartoonMainSection', () => {
 
   it('shows a "(default)" placeholder on the empty pivot atom field', () => {
     const { container, unmount } = mountTree(
-      <CartoonMainSection entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[0]} rendererType="cartoon" entries={mainEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     const input = rowByLabel(container, 'Pivot atom name')!.querySelector('input')
     expect(input?.getAttribute('placeholder')).toBe('(default)')
     unmount()
   })
 
-  it('renders Axial detail as a stepper NumericField and commits a single step', () => {
+  it('offers Axial detail as a ladder of levels and commits the chosen one', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <CartoonMainSection entries={mainEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[0]} rendererType="cartoon" entries={mainEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
     )
-    const detail = rowByLabel(container, 'Axial detail')!
-    expect(dragArrow(detail)).toBeNull()
-    const input = detail.querySelector('input') as HTMLInputElement
-    act(() => typeInto(input, '12'))
-    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
-    expect(onSet).toHaveBeenCalledWith('axialdetail', 'integer', 12)
+    const sel = selectInRow(container, 'Axial detail')!
+    // Powers of two from 2 up; the value 8 is already one of them.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['2', '4', '8', '16', '32'])
+    act(() => {
+      sel.value = '16'
+      sel.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(onSet).toHaveBeenCalledWith('axialdetail', 'integer', 16)
     unmount()
   })
 
   it('disables the anchor weight when no anchor selection is set, enables it otherwise', () => {
     const off = mountTree(
-      <CartoonMainSection entries={mainEntries('')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[0]} rendererType="cartoon" entries={mainEntries('')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(dragArrow(rowByLabel(off.container, 'Anchor weight')!)!.disabled).toBe(true)
     off.unmount()
 
     const on = mountTree(
-      <CartoonMainSection entries={mainEntries('A.*')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[0]} rendererType="cartoon" entries={mainEntries('A.*')} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(dragArrow(rowByLabel(on.container, 'Anchor weight')!)!.disabled).toBe(false)
     on.unmount()
   })
 })
 
-describe('CartoonHelixSection (cylinder deck)', () => {
+describe('the cartoon helix page (cylinder deck)', () => {
   function cylEntries(opts: { mode?: string; sectType?: string } = {}): GenericPropEntry[] {
     return [
       entry({ key: 'helix_ribbon', type: 'boolean', value: false }),
@@ -232,7 +206,7 @@ describe('CartoonHelixSection (cylinder deck)', () => {
   }
   const render = (opts = {}) =>
     mountTree(
-      <CartoonHelixSection entries={cylEntries(opts)} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[1]} rendererType="cartoon" entries={cylEntries(opts)} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
 
   it('shows cylinder rows and NOT the non-UXP "Width (const)"', () => {
@@ -277,7 +251,7 @@ describe('CartoonHelixSection (cylinder deck)', () => {
   })
 })
 
-describe('CartoonHelixSection (ribbon deck)', () => {
+describe('the cartoon helix page (ribbon deck)', () => {
   function ribEntries(headType = 'arrow'): GenericPropEntry[] {
     return [
       entry({ key: 'helix_ribbon', type: 'boolean', value: true }),
@@ -299,7 +273,7 @@ describe('CartoonHelixSection (ribbon deck)', () => {
 
   it('shows ribbon section + head/tail rows and hides the cylinder-only rows', () => {
     const { container, unmount } = mountTree(
-      <CartoonHelixSection entries={ribEntries()} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[1]} rendererType="cartoon" entries={ribEntries()} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(rowByLabel(container, 'Section type')).not.toBeNull()
     expect(rowByLabel(container, 'Section width')).not.toBeNull()
@@ -314,7 +288,7 @@ describe('CartoonHelixSection (ribbon deck)', () => {
   it('writes both head and tail in one undo step when the cap type changes', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <CartoonHelixSection entries={ribEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[1]} rendererType="cartoon" entries={ribEntries()} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
     )
     changeSelect(selectInRow(container, 'Cap type')!, 'flat')
     expect(onSetMany).toHaveBeenCalledWith([
@@ -327,7 +301,7 @@ describe('CartoonHelixSection (ribbon deck)', () => {
   it('shows the inverted basw percentage for Arrow height and commits it back (both head+tail)', () => {
     const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <CartoonHelixSection entries={ribEntries('arrow')} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[1]} rendererType="cartoon" entries={ribEntries('arrow')} onSet={vi.fn()} onSetMany={onSetMany} onReset={vi.fn()} sceneId={1} />,
     )
     const row = rowByLabel(container, 'Arrow height')!
     // basw 0.5 -> (1 - 0.5) * 100 = 50 %
@@ -343,7 +317,7 @@ describe('CartoonHelixSection (ribbon deck)', () => {
 
   it('disables Arrow height/width unless the cap type is "arrow"', () => {
     const { container, unmount } = mountTree(
-      <CartoonHelixSection entries={ribEntries('smooth')} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[1]} rendererType="cartoon" entries={ribEntries('smooth')} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     expect(dragArrow(rowByLabel(container, 'Arrow height')!)!.disabled).toBe(true)
     expect(dragArrow(rowByLabel(container, 'Arrow width')!)!.disabled).toBe(true)
@@ -351,7 +325,7 @@ describe('CartoonHelixSection (ribbon deck)', () => {
   })
 })
 
-describe('CartoonSheetSection', () => {
+describe('the cartoon sheet page', () => {
   function sheetEntries(): GenericPropEntry[] {
     return [
       entry({ key: 'sheet_smooth', type: 'real', value: 2 }),
@@ -370,7 +344,7 @@ describe('CartoonSheetSection', () => {
 
   it('renders the spline, section, width-smooth and head rows', () => {
     const { container, unmount } = mountTree(
-      <CartoonSheetSection entries={sheetEntries()} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[2]} rendererType="cartoon" entries={sheetEntries()} onSet={vi.fn()} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     for (const label of [
       'Smoothing',
@@ -389,7 +363,7 @@ describe('CartoonSheetSection', () => {
   it('commits the single sheethead.basw via onSet (not onSetMany)', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
-      <CartoonSheetSection entries={sheetEntries()} onSet={onSet} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
+      <SchemaSection section={CARTOON_SECTIONS[2]} rendererType="cartoon" entries={sheetEntries()} onSet={onSet} onSetMany={vi.fn()} onReset={vi.fn()} sceneId={1} />,
     )
     pressStepArrow(dragArrow(rowByLabel(container, 'Arrow height')!)!)
     // 50 % + 10 -> 60 % -> basw 0.4
@@ -398,10 +372,12 @@ describe('CartoonSheetSection', () => {
   })
 })
 
-describe('CartoonCoilSection', () => {
+describe('the cartoon coil page', () => {
   it('renders the coil spline + section rows (no head, no width-smooth)', () => {
     const { container, unmount } = mountTree(
-      <CartoonCoilSection
+      <SchemaSection
+        section={CARTOON_SECTIONS[3]}
+        rendererType="cartoon"
         entries={[
           entry({ key: 'coil_smooth', type: 'real', value: -1 }),
           sectEntry('coil.type', 'elliptical'),
