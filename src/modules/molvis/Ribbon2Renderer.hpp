@@ -41,6 +41,8 @@ using namespace molstr;
 
       // cylinder data
       SmoothSpline1D m_wspl;
+      /// m_wspl could be generated (needs at least three points)
+      bool m_bWsplValid;
       double m_dWidthAver;
 
       // sheet data

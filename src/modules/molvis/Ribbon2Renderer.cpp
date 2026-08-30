@@ -34,6 +34,8 @@ SecSplDat::SecSplDat(Ribbon2Renderer *pP)
   m_bFixStart = false;
   m_bFixEnd = false;
   m_nStartId = 0;
+  m_bWsplValid = false;
+  m_dWidthAver = 1.0;
 }
 
 bool SecSplDat::generate()
@@ -78,9 +80,10 @@ bool SecSplDat::generateHelix(double wrho)
   else
     m_dWidthAver = 1.0; // XXX
 
-  if (!m_wspl.generate())
-    return false;
-  
+  // The width spline needs at least three points; a shorter helix falls
+  // back to the average width in renderHelix().
+  m_bWsplValid = m_wspl.generate();
+
   return true;
 }
 
@@ -729,11 +732,11 @@ void Ribbon2Renderer::renderHelix(DisplayContext *pdl)
       double t = tstart + double(j)*fdelta; ///double(naxdet);
       pCol = calcColor(t, pC);
       pC->m_spl.interpolate(t, &f1, &vpt);
-      // if (!m_bWidthAver) {
-      if (m_nHelixWidthMode==HWIDTH_WAVY) {
+      if (m_nHelixWidthMode==HWIDTH_WAVY && pC->m_bWsplValid) {
         pC->m_wspl.interpolate(t, &width, &dwidth);
       }
-      else if (m_nHelixWidthMode==HWIDTH_AVER) {
+      else if (m_nHelixWidthMode==HWIDTH_AVER || m_nHelixWidthMode==HWIDTH_WAVY) {
+        // average width (also the fallback for a wavy helix too short for its spline)
         width = pC->m_dWidthAver;
         dwidth = 0.0;
       }
