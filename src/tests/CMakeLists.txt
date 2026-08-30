@@ -110,6 +110,8 @@ add_executable(test_qsys
   qsys/test_guiview.cpp
   qsys/test_shaderobjmgr.cpp
   qsys/test_animmgr.cpp
+  qsys/test_mouseeventhandler.cpp
+  qsys/test_styleeditinfo.cpp
 )
 target_include_directories(test_qsys PRIVATE
   ${CMAKE_SOURCE_DIR}/src

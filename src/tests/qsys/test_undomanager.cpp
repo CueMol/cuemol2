@@ -168,3 +168,35 @@ TEST(UndoManagerTest, IsOKOnlyInsideTxn)
     um.commitTxn();
     EXPECT_FALSE(um.isOK());
 }
+
+// ---- Transaction calls outside a transaction ----------------------------
+// commitTxn()/rollbackTxn() are script-visible; calling them without a
+// matching startTxn() must be a no-op, not a null dereference.
+
+TEST(UndoManagerTest, CommitWithoutTxnIsIgnored)
+{
+    UndoManager um;
+    um.commitTxn();
+    EXPECT_FALSE(um.isInTxn());
+    EXPECT_EQ(um.getUndoSize(), 0);
+}
+
+TEST(UndoManagerTest, RollbackWithoutTxnIsIgnored)
+{
+    UndoManager um;
+    um.rollbackTxn();
+    EXPECT_FALSE(um.isInTxn());
+    EXPECT_EQ(um.getUndoSize(), 0);
+}
+
+TEST(UndoManagerTest, DoubleCommitKeepsSingleEntry)
+{
+    UndoManager um;
+    um.startTxn("op");
+    um.addEditInfo(new CountEditInfo());
+    um.commitTxn();
+    um.commitTxn();
+    EXPECT_FALSE(um.isInTxn());
+    EXPECT_EQ(um.getUndoSize(), 1);
+    EXPECT_TRUE(um.isUndoable());
+}

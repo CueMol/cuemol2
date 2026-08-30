@@ -68,8 +68,8 @@ bool StyleCreateEditInfo::redo()
   StyleMgr *pSM = StyleMgr::getInstance();
 
   if (m_bCreate) {
-    // Redo of creation
-    if (!pSM->registerStyleSet(m_pTgt, 0, m_nSceneID))
+    // Redo of creation: put the set back where it was created
+    if (!pSM->registerStyleSet(m_pTgt, m_nInsBefore, m_nSceneID))
       return false;
   }
   else {

@@ -4,6 +4,7 @@
 
 #include <common.h>
 #include "MouseEventHandler.hpp"
+#include <qlib/LTimeValue.hpp>
 
 using namespace qsys;
 
@@ -173,7 +174,7 @@ void MouseEventHandler::calcVelocity(InDevEvent &ev, qlib::time_value curr)
     iter++;
     const EventEnt &t2 = *iter;
 
-    if (t0.t-t1.t>50) {
+    if (t0.t-t1.t>qlib::timeval::fromMilliSec(VELO_GAP_TIME)) {
       // no velocity
       return;
     }
@@ -189,12 +190,14 @@ void MouseEventHandler::calcVelocity(InDevEvent &ev, qlib::time_value curr)
     return;
   }
 
+  const qlib::time_value aver_win = qlib::timeval::fromMilliSec(AVER_TIME);
+
   {
     EventBuf::const_iterator iter = m_cbuf.begin();
     EventBuf::const_iterator eiter = m_cbuf.end();
     for (; iter!=eiter; ++iter) {
       const EventEnt &elem = *iter;
-      if (elem.t>curr-qlib::time_value(AVER_TIME)) {
+      if (elem.t>curr-aver_win) {
         const qlib::time_value del_t = (elem.t-curr);
         //MB_DPRINT("%d: t=%ld", nave, del_t);
         //MB_DPRINTLN("[%d, %d]", elem.x, elem.y);
@@ -221,7 +224,7 @@ void MouseEventHandler::calcVelocity(InDevEvent &ev, qlib::time_value curr)
     EventBuf::const_iterator eiter = m_cbuf.end();
     for (; iter!=eiter; ++iter) {
       const EventEnt &elem = *iter;
-      if (elem.t>curr-qlib::time_value(AVER_TIME)) {
+      if (elem.t>curr-aver_win) {
         const double dt = (elem.t-curr)-avet;
         tvar += dt*dt;
         xtvar += (elem.x-avex)*dt;
@@ -239,8 +242,10 @@ void MouseEventHandler::calcVelocity(InDevEvent &ev, qlib::time_value curr)
     return;
   }
 
-  double bx = xtvar/tvar*1000.0;
-  double by = ytvar/tvar*1000.0;
+  // slope is pixels per event-clock tick (ns); report pixels per second
+  const double ns_per_sec = 1.0e9;
+  double bx = xtvar/tvar*ns_per_sec;
+  double by = ytvar/tvar*ns_per_sec;
 
   ev.setVeloX(bx);
   ev.setVeloY(by);
