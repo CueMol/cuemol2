@@ -19,8 +19,11 @@ interface SectionHeaderProps {
    */
   alwaysShowChevron?: boolean;
   /**
-   * Extra class appended to the title span (e.g. ScenePane's
-   * `scene-name-title`). The base `section-title` class is always present.
+   * Extra class appended to the title span. The base `section-title` class is
+   * always present, and it carries the eyebrow typography role -- so do not
+   * use this to re-pick a weight or letter-spacing (see the UI style guide);
+   * ScenePane did, which left one header in a column of three reading
+   * differently from its neighbours.
    */
   titleClassName?: string;
 }
