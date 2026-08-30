@@ -29,6 +29,9 @@ MmcifMolReader::MmcifMolReader()
   m_bLoadAltConf = true;
   m_bLoadAnisoU = true;
   m_bLoadSecstr = true;
+  // .qif defaults; a directly constructed reader (tests) must not read garbage
+  m_bLoadMultiModel = false;
+  m_bAutoTopoGen = true;
   m_nReadAtoms = 0;
 }
 
@@ -109,6 +112,9 @@ bool MmcifMolReader::read(qlib::InStream &ins)
   if (m_nReadAtoms>MAX_ATOMS_PROTSEC && !m_bLoadSecstr) {
     LOG_DPRINTLN("mmCIF> Too many atoms are loaded: secstr reassgnment is disabled (--> loaded from the file)!!");
     m_bLoadSecstr = true;
+    // .qif defaults; a directly constructed reader (tests) must not read garbage
+    m_bLoadMultiModel = false;
+    m_bAutoTopoGen = true;
   }
 
   if (m_bLoadSecstr) {

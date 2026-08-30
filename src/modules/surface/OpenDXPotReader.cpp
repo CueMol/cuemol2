@@ -16,7 +16,7 @@ using namespace surface;
 
 // default constructor
 OpenDXPotReader::OpenDXPotReader()
-     : m_pMap(NULL)
+     : m_pMap(NULL), m_dSmooth(-1.0), m_navail(0)  // smooth: .qif default (off)
 {
 }
 
