@@ -285,6 +285,16 @@ bool MSMSFileReader::readFace(qlib::LineStream &ins)
       MB_THROW(qlib::FileFormatException, msg);
       return false;
     }
+    // MSMS vertex IDs are 1-based; the renderer and the cutting code index
+    // the vertex array with them unchecked, so reject out-of-range IDs here
+    const int nverts = m_pSurf->getVertSize();
+    if (id1<1 || id1>nverts || id2<1 || id2>nverts || id3<1 || id3>nverts) {
+      LOG_DPRINTLN("MSMSRead> %s", m_recbuf.c_str());
+      LString msg = LString::format("MSMSRead> FATAL Error: face vertex index out of range at %d.", m_lineno);
+      LOG_DPRINTLN(msg);
+      MB_THROW(qlib::FileFormatException, msg);
+      return false;
+    }
     m_pSurf->setFace(i, id1-1, id2-1, id3-1);
   }
 

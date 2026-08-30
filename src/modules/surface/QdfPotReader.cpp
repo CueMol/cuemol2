@@ -13,6 +13,8 @@
 
 #include "ElePotMap.hpp"
 
+#include <vector>
+
 using namespace surface;
 
 MC_DYNCLASS_IMPL(QdfPotReader, QdfPotReader, qlib::LSpecificClass<QdfPotReader>);
@@ -91,8 +93,17 @@ void QdfPotReader::readData()
   m_nx = getRecValInt32("nx");
   m_ny = getRecValInt32("ny");
   m_nz = getRecValInt32("nz");
-  const int ntotal = m_nx*m_ny*m_nz;
-  LOG_DPRINTLN("QdfPot> map size (%d,%d,%d)=%d", m_nx, m_ny, m_nz, ntotal);
+  if (m_nx<=0 || m_ny<=0 || m_nz<=0) {
+    MB_THROW(qlib::FileFormatException, "invalid map size");
+    return;
+  }
+  // the map is indexed with int arithmetic, so the element count must fit
+  const size_t ntotal = size_t(m_nx)*size_t(m_ny)*size_t(m_nz);
+  if (ntotal > size_t(0x7fffffff)) {
+    MB_THROW(qlib::FileFormatException, "map size too large");
+    return;
+  }
+  LOG_DPRINTLN("QdfPot> map size (%d,%d,%d)=%zu", m_nx, m_ny, m_nz, ntotal);
 
   const double gx = getRecValFloat32("gx");
   const double gy = getRecValFloat32("gy");
@@ -116,7 +127,7 @@ void QdfPotReader::readData()
   ///////////////////
 
   int ndata = readDataDef("data");
-  if (ndata!=ntotal) {
+  if (ndata<0 || size_t(ndata)!=ntotal) {
     MB_THROW(qlib::FileFormatException, "inconsistent data (ndata!=nx*ny*nz)");
     return;
   }
@@ -124,18 +135,15 @@ void QdfPotReader::readData()
   //
   //  allocate memory
   //
-  float *fbuf = MB_NEW float[ntotal];
-  LOG_DPRINTLN("QdfPot> memory allocation %f Mbytes", double(ntotal*4.0)/(1024.0*1024.0));
-  if (fbuf==NULL) {
-    MB_THROW(qlib::OutOfMemoryException, "cannot allocate memory");
-    return;
-  }
+  std::vector<float> fbuf(ntotal);
+  LOG_DPRINTLN("QdfPot> memory allocation %f Mbytes", double(ntotal)*4.0/(1024.0*1024.0));
 
   readRecordDef();
 
-  readDataArray(fbuf);
+  readDataArray(fbuf.data());
 
-  m_pObj->setMapFloatArray(fbuf, m_nx, m_ny, m_nz,
+  // setMapFloatArray() copies the array
+  m_pObj->setMapFloatArray(fbuf.data(), m_nx, m_ny, m_nz,
                            gx, gy, gz, orig);
 
 }

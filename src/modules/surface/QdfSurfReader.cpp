@@ -78,6 +78,8 @@ bool QdfSurfReader::read(qlib::InStream &ins)
     readFaceData2();
   }
   
+  checkFaces();
+
   end();
 
   m_pObj = NULL;
@@ -133,6 +135,13 @@ void QdfSurfReader::readVertData2()
   
   readRecordDef();
 
+  // the records are copied straight into the MSVert array, so the file
+  // layout must be exactly the in-memory one
+  if (getStream().getFxRecordSize() != int(sizeof (MSVert))) {
+    MB_THROW(qlib::FileFormatException, "QdfSurf vert record size mismatch");
+    return;
+  }
+
   MSVert *pv = m_pObj->getVertPtr();
   getStream().readFxRecords(nverts, pv, sizeof (MSVert)*nverts);
 
@@ -164,6 +173,11 @@ void QdfSurfReader::readFaceData2()
   
   readRecordDef();
 
+  if (getStream().getFxRecordSize() != int(sizeof (MSFace))) {
+    MB_THROW(qlib::FileFormatException, "QdfSurf face record size mismatch");
+    return;
+  }
+
   MSFace *pf = m_pObj->getFacePtr();
   getStream().readFxRecords(nfaces, pf, sizeof (MSFace)*nfaces);
   /*
@@ -179,4 +193,21 @@ void QdfSurfReader::readFaceData2()
 */
 }
 
+void QdfSurfReader::checkFaces() const
+{
+  // the renderer and the cutting code index the vertex array with the face
+  // IDs unchecked, so a corrupt file must be rejected here
+  const int nverts = m_pObj->getVertSize();
+  const int nfaces = m_pObj->getFaceSize();
+  for (int i=0; i<nfaces; ++i) {
+    const MSFace &f = m_pObj->getFaceAt(i);
+    if (f.id1<0 || f.id1>=nverts ||
+        f.id2<0 || f.id2>=nverts ||
+        f.id3<0 || f.id3>=nverts) {
+      MB_THROW(qlib::FileFormatException,
+               LString::format("QdfSurf face %d: vertex index out of range", i));
+      return;
+    }
+  }
+}
 

@@ -610,9 +610,17 @@ void QdfInStream::readFxRecords(int nrec, void *pbuf, int nbufsz)
 {
   const int nrecsz = getFxRecordSize();
 
+  if (nrec<0) {
+    MB_THROW(qlib::FileFormatException, "QdfInStream: negative record count");
+    return;
+  }
   const size_t ntotal = size_t(nrecsz) * size_t(nrec);
-  MB_ASSERT(size_t(nbufsz)>=ntotal);
-  MB_ASSERT(ntotal <= size_t(0x7fffffff));
+  // the record definition comes from the file: a layout the caller did not
+  // expect must not overrun its buffer
+  if (ntotal > size_t(nbufsz) || ntotal > size_t(0x7fffffff)) {
+    MB_THROW(qlib::FileFormatException, "QdfInStream: fixed record size mismatch");
+    return;
+  }
 
   m_pBinIn->readFully((char *)pbuf, 0, int(ntotal));
 

@@ -6,6 +6,7 @@
 #include "qsys/RendererFactory.hpp"
 #include "molstr/molstr.hpp"
 #include "surface/surface.hpp"
+#include "symm/symm.hpp"
 
 #ifndef CUEMOL2_SYSCONFIG_PATH
 #define CUEMOL2_SYSCONFIG_PATH ""
@@ -20,8 +21,10 @@ public:
         qsys::RendererFactory::init();
         molstr::init();
         surface::init();
+        symm::init();
     }
     void TearDown() override {
+        symm::fini();
         surface::fini();
         molstr::fini();
         qsys::fini();

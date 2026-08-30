@@ -66,6 +66,9 @@ private:
 
   void readVertData2();
   void readFaceData2();
+
+  /// Reject faces whose vertex indices are outside the vertex array
+  void checkFaces() const;
 };
 
 }
