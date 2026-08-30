@@ -168,3 +168,24 @@ TEST(UndoManagerTest, IsOKOnlyInsideTxn)
     um.commitTxn();
     EXPECT_FALSE(um.isOK());
 }
+
+// getUndoDesc/getRedoDesc are script-visible; an index past the list used to
+// advance the iterator beyond end().
+TEST(UndoManagerTest, DescIndexOutOfRangeReturnsFalse)
+{
+    UndoManager um;
+    um.startTxn("only");
+    um.addEditInfo(new CountEditInfo());
+    um.commitTxn();
+
+    LString desc;
+    EXPECT_TRUE(um.getUndoDesc(0, desc));
+    EXPECT_EQ(desc, LString("only"));
+    EXPECT_FALSE(um.getUndoDesc(1, desc));
+    EXPECT_FALSE(um.getUndoDesc(5, desc));
+    EXPECT_FALSE(um.getUndoDesc(-1, desc));
+
+    ASSERT_TRUE(um.undo());
+    EXPECT_TRUE(um.getRedoDesc(0, desc));
+    EXPECT_FALSE(um.getRedoDesc(3, desc));
+}

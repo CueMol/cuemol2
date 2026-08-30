@@ -101,3 +101,19 @@ TEST(LRegExpr, NamedCapture)
     EXPECT_TRUE(re.getNamedSubstr("month").equals("03"));
     EXPECT_TRUE(re.getNamedSubstr("day").equals("15"));
 }
+
+// pcre reports a group that did not take part in the match with offset -1;
+// substr(size_t(-1)) used to throw std::out_of_range past the LException
+// handlers.
+TEST(LRegExpr, UnmatchedOptionalGroupGivesEmptyString)
+{
+    LRegExpr re;
+    re.setPattern("(a)?(b)");
+    ASSERT_TRUE(re.match("b"));
+    EXPECT_TRUE(re.getSubstr(0).equals("b"));
+    EXPECT_TRUE(re.getSubstr(1).isEmpty());
+    EXPECT_TRUE(re.getSubstr(2).equals("b"));
+
+    ASSERT_TRUE(re.match("ab"));
+    EXPECT_TRUE(re.getSubstr(1).equals("a"));
+}

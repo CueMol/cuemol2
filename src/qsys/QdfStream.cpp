@@ -17,6 +17,23 @@
 #endif
 
 using namespace qsys;
+
+namespace {
+
+// The record definition comes from the file, so reading (or writing) more
+// fields than it defines must fail as a format error, not as a vector
+// overrun.
+inline const qsys::QdfDataType::RecElem &recElemAt(
+    const qsys::QdfDataType::RecElemList &defs, int ind)
+{
+  if (ind < 0 || size_t(ind) >= defs.size()) {
+    MB_THROW(qlib::FileFormatException, "Qdf record index out of range");
+  }
+  return defs[ind];
+}
+
+}  // namespace
+
 using qlib::Vector4D;
 
 //static
@@ -353,7 +370,7 @@ void QdfInStream::endRecord()
 
 void QdfInStream::skipRecord()
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   const LString nm = elem.first;
   const int type = elem.second;
 
@@ -427,7 +444,7 @@ void QdfInStream::skipAllRecordsImpl()
 
 qfloat32 QdfInStream::readFloat32(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_FLOAT32) {
     MB_THROW(qlib::FileFormatException, "setRecValFloat32 inconsistent record order");
     return -0.0f;
@@ -439,7 +456,7 @@ qfloat32 QdfInStream::readFloat32(const LString &name)
 
 qint32 QdfInStream::readInt32(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_INT32) {
     MB_THROW(qlib::FileFormatException, "setRecValInt32 inconsistent record order");
     return 0;
@@ -452,7 +469,7 @@ qint32 QdfInStream::readInt32(const LString &name)
 
 quint32 QdfInStream::readUInt32(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UINT32) {
     MB_THROW(qlib::FileFormatException, "readUInt32 inconsistent record order");
     return 0;
@@ -465,7 +482,7 @@ quint32 QdfInStream::readUInt32(const LString &name)
 
 qint8 QdfInStream::readInt8(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_INT8) {
     MB_THROW(qlib::FileFormatException, "readInt8 inconsistent record order");
     return 0;
@@ -478,7 +495,7 @@ qint8 QdfInStream::readInt8(const LString &name)
 
 quint8 QdfInStream::readUInt8(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UINT8) {
     MB_THROW(qlib::FileFormatException, "readUInt8 inconsistent record order");
     return 0;
@@ -491,7 +508,7 @@ quint8 QdfInStream::readUInt8(const LString &name)
 
 bool QdfInStream::readBool(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_BOOL) {
     MB_THROW(qlib::FileFormatException, "readBool inconsistent record order");
     return 0;
@@ -506,7 +523,7 @@ bool QdfInStream::readBool(const LString &name)
 
 LString QdfInStream::readStr(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name)) {
     MB_THROW(qlib::FileFormatException, "readStr inconsistent record order");
     return LString();
@@ -540,7 +557,7 @@ LString QdfInStream::readStr(const LString &name)
 
 void QdfInStream::readVec3D(const LString &name, qfloat32 *pvec)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_VEC3) {
     MB_THROW(qlib::FileFormatException, "readVec3f inconsistent record order");
     return;
@@ -555,7 +572,7 @@ void QdfInStream::readVec3D(const LString &name, qfloat32 *pvec)
 
 Vector4D QdfInStream::readVec3D(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_VEC3) {
     MB_THROW(qlib::FileFormatException, "readVec3f inconsistent record order");
     return Vector4D();
@@ -572,7 +589,7 @@ Vector4D QdfInStream::readVec3D(const LString &name)
 
 quint32 QdfInStream::readColorRGBA(const LString &name)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_RGBA) {
     MB_THROW(qlib::FileFormatException, "readColorRGBA inconsistent record order");
     return 0;
@@ -590,7 +607,7 @@ quint32 QdfInStream::readColorRGBA(const LString &name)
 
 void QdfInStream::readColorRGBA(const LString &name, qbyte *pvec)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_RGBA) {
     MB_THROW(qlib::FileFormatException, "readColorRGBA inconsistent record order");
     return;
@@ -840,7 +857,7 @@ void QdfOutStream::endRecord()
 
 void QdfOutStream::writeStr(const LString &name, const LString &value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UTF8STR) {
     MB_THROW(qlib::FileFormatException, "writeStr inconsistent record order");
     return;
@@ -852,7 +869,7 @@ void QdfOutStream::writeStr(const LString &name, const LString &value)
 
 void QdfOutStream::writeFixedStr(const LString &name, const LString &value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name)) {
     LString msg = LString::format("writeFixStr(%s,%s) inconsistent record order", name.c_str(), value.c_str());
     MB_THROW(qlib::FileFormatException, msg);
@@ -874,7 +891,7 @@ void QdfOutStream::writeFixedStr(const LString &name, const LString &value)
 
 void QdfOutStream::writeInt32(const LString &name, int value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_INT32) {
     MB_THROW(qlib::FileFormatException, "writeInt inconsistent record order");
     return;
@@ -886,7 +903,7 @@ void QdfOutStream::writeInt32(const LString &name, int value)
 
 void QdfOutStream::writeUInt32(const LString &name, quint32 value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UINT32) {
     MB_THROW(qlib::FileFormatException, "writeInt inconsistent record order");
     return;
@@ -898,7 +915,7 @@ void QdfOutStream::writeUInt32(const LString &name, quint32 value)
 
 void QdfOutStream::writeInt16(const LString &name, qint16 value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_INT16) {
     MB_THROW(qlib::FileFormatException, "writeInt8 inconsistent record order");
     return;
@@ -910,7 +927,7 @@ void QdfOutStream::writeInt16(const LString &name, qint16 value)
 
 void QdfOutStream::writeInt8(const LString &name, qint8 value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_INT8) {
     MB_THROW(qlib::FileFormatException, "writeInt8 inconsistent record order");
     return;
@@ -922,7 +939,7 @@ void QdfOutStream::writeInt8(const LString &name, qint8 value)
 
 void QdfOutStream::writeUInt8(const LString &name, quint8 value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UINT8) {
     MB_THROW(qlib::FileFormatException, "writeInt8 inconsistent record order");
     return;
@@ -934,7 +951,7 @@ void QdfOutStream::writeUInt8(const LString &name, quint8 value)
 
 void QdfOutStream::writeBool(const LString &name, bool value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_BOOL) {
     MB_THROW(qlib::FileFormatException, "writeBool inconsistent record order");
     return;
@@ -947,7 +964,7 @@ void QdfOutStream::writeBool(const LString &name, bool value)
 
 void QdfOutStream::writeFloat32(const LString &name, qfloat32 value)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_FLOAT32) {
     MB_THROW(qlib::FileFormatException, "writeFloat32 inconsistent record order");
     return;
@@ -959,7 +976,7 @@ void QdfOutStream::writeFloat32(const LString &name, qfloat32 value)
 
 void QdfOutStream::writeVec3D(const LString &name, const qlib::Vector4D &vec)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_VEC3) {
     MB_THROW(qlib::FileFormatException, "writeVec3D inconsistent record order");
     return;
@@ -974,7 +991,7 @@ void QdfOutStream::writeVec3D(const LString &name, const qlib::Vector4D &vec)
 
 void QdfOutStream::writeVec3D(const LString &name, const qfloat32 *pvec)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_VEC3) {
     MB_THROW(qlib::FileFormatException, "writeVec3D inconsistent record order");
     return;
@@ -989,7 +1006,7 @@ void QdfOutStream::writeVec3D(const LString &name, const qfloat32 *pvec)
 
 void QdfOutStream::writeColorRGBA(const LString &name, quint32 ccode)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_RGBA) {
     MB_THROW(qlib::FileFormatException, "writeColorRGBA inconsistent record order");
     return;
@@ -1004,7 +1021,7 @@ void QdfOutStream::writeColorRGBA(const LString &name, quint32 ccode)
 
 void QdfOutStream::writeColorRGBA(const LString &name, const qbyte *pvec)
 {
-  const RecElem &elem = m_recdefs[m_nRecInd];
+  const RecElem &elem = recElemAt(m_recdefs, m_nRecInd);
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_RGBA) {
     MB_THROW(qlib::FileFormatException, "writeColorRGBA inconsistent record order");
     return;

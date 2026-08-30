@@ -43,6 +43,8 @@ add_executable(test_qlib
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
   qlib/test_seekable_stream.cpp
+  qlib/test_lbytearray.cpp
+  qlib/test_expat_instream.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src

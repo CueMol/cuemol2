@@ -56,13 +56,17 @@ public:
     typedef std::true_type has_fromString;
     static LScrMatrix4D *fromStringS(const LString &src);
 
+    // row/column indices are 1-based and run to 4 (aij(i,j) maps them to
+    // the 16-element array, so checking against _N_ELEM let 16 write past it)
+    static constexpr int _N_DIM = 4;
+
     static inline void indexCheck(int i, int j) {
-        if (i<=0 || Matrix4D::_N_ELEM <i) {
+        if (i<=0 || _N_DIM <i) {
             auto msg = LString::format("index i=%d out of range", i);
             MB_THROW(IndexOutOfBoundsException, msg);
             return;
         }
-        if (j<=0 || Matrix4D::_N_ELEM <j) {
+        if (j<=0 || _N_DIM <j) {
             auto msg = LString::format("index j=%d out of range", j);
             MB_THROW(IndexOutOfBoundsException, msg);
             return;

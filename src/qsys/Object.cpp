@@ -177,6 +177,9 @@ RendererPtr Object::getRendererByType(const LString &type_name)
 
 RendererPtr Object::getRendererByIndex(int ind)
 {
+  // script argument: advancing past end() is undefined
+  if (ind<0 || ind>=int(m_rendtab.size()))
+    return RendererPtr();
   rendtab_t::const_iterator i = m_rendtab.begin();
   while (ind>0) {
     ++i;
