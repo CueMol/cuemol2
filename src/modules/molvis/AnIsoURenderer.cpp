@@ -65,6 +65,7 @@ void AnIsoURenderer::buildSphrTab()
 
   double thdel = M_PI/2.0/double(ndet);
 
+  delete m_pSphrTab;
   m_pSphrTab = MB_NEW std::valarray<double>((ndet+1)*2);
   
   for (j=0; j<=ndet; ++j) {

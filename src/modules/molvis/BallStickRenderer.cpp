@@ -9,6 +9,8 @@
 
 #include "BallStickRenderer.hpp"
 
+#include <vector>
+
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolChain.hpp>
 #include <modules/molstr/MolResidue.hpp>
@@ -366,7 +368,7 @@ void BallStickRenderer::drawRings(DisplayContext *pdl)
       for (j=0; j<pmembs->size(); j++) {
         LString nm = pmembs->at(j);
         int maid = pres->getAtomID(nm);
-        if (maid<=0) {
+        if (maid<0) {
           fcompl = false;
           break;
         }
@@ -396,7 +398,7 @@ void BallStickRenderer::drawRings(DisplayContext *pdl)
       for (j=0; j<pmembs->size(); j++) {
         LString nm = pmembs->at(j);
         int maid = pres->getAtomID(nm);
-        if (maid<=0)
+        if (maid<0)
           continue;
 
         std::set<int>::iterator miter = m_atoms.find(maid);
@@ -416,13 +418,14 @@ void BallStickRenderer::drawRingImpl(const std::list<int> atoms, DisplayContext 
 
   double len;
   int i, nsize = atoms.size();
-  Vector4D *pvecs = MB_NEW Vector4D[nsize];
+  if (nsize<3) return;
+  std::vector<Vector4D> pvecs(nsize);
   Vector4D cen;
   std::list<int>::const_iterator iter = atoms.begin();
   std::list<int>::const_iterator eiter = atoms.end();
   MolAtomPtr pPivAtom, pAtom;
   for (i=0; iter!=eiter; ++iter, i++) {
-    MolAtomPtr pAtom = pMol->getAtom(*iter);
+    pAtom = pMol->getAtom(*iter);
     if (pAtom.isnull()) return;
     MolResiduePtr pres = pAtom->getParentResidue();
     MolChainPtr pch = pAtom->getParentChain();
@@ -480,9 +483,6 @@ void BallStickRenderer::drawRingImpl(const std::list<int> atoms, DisplayContext 
   }
   pdl->end();
   pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
-
-  delete [] pvecs;
-
 }
 
 void BallStickRenderer::propChanged(qlib::LPropEvent &ev)
