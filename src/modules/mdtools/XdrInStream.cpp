@@ -84,6 +84,17 @@ struct DecodeState
     quint8 lastbyte;
 };
 
+/// Next byte of the compressed block; the block length comes from the file,
+/// so a truncated block must not be read past its end.
+inline quint8 nextByte(const std::vector<char> &buf, DecodeState &state)
+{
+    if (state.count >= buf.size()) {
+        MB_THROW(qlib::FileFormatException, "XTC: compressed block is truncated");
+        return 0;
+    }
+    return static_cast<quint8>(buf[state.count++]);
+}
+
 /// decodebits: extract num_of_bits from the buffer and build an integer.
 template <typename T>
 T decodebits(const std::vector<char> &buf, DecodeState &state, quint32 num_of_bits)
@@ -95,14 +106,14 @@ T decodebits(const std::vector<char> &buf, DecodeState &state, quint32 num_of_bi
 
     quint32 num = 0;
     while (num_of_bits >= CHAR_BIT) {
-        lastbyte = (lastbyte << CHAR_BIT) | static_cast<quint8>(buf[state.count++]);
+        lastbyte = (lastbyte << CHAR_BIT) | nextByte(buf, state);
         num |= (lastbyte >> lastbits) << (num_of_bits - CHAR_BIT);
         num_of_bits -= CHAR_BIT;
     }
     if (num_of_bits > 0) {
         if (lastbits < num_of_bits) {
             lastbits += CHAR_BIT;
-            lastbyte = (lastbyte << CHAR_BIT) | static_cast<quint8>(buf[state.count++]);
+            lastbyte = (lastbyte << CHAR_BIT) | nextByte(buf, state);
         }
         lastbits -= num_of_bits;
         num |= (lastbyte >> lastbits) & (static_cast<quint32>(1 << num_of_bits) - 1);
@@ -334,8 +345,12 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
     const float precision = readF32();
     const int minint[3] = {readI32(), readI32(), readI32()};
     const int maxint[3] = {readI32(), readI32(), readI32()};
-    quint32 smallidx = readU32();
-    if (!(smallidx < LASTIDX)) {
+    // smallidx indexes MAGICINTS and moves up/down while decoding; the
+    // encoder never writes one below FIRSTIDX (MAGICINTS[FIRSTIDX-1] == 0)
+    const int kFirstIdx = static_cast<int>(FIRSTIDX);
+    const int kLastIdx = static_cast<int>(LASTIDX);
+    int smallidx = readI32();
+    if (smallidx < kFirstIdx || smallidx >= kLastIdx) {
         MB_THROW(qlib::FileFormatException, "XTC: internal overflow (smallidx)");
         return precision;
     }
@@ -344,7 +359,7 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
     quint32 bitsizeint[3];
     const quint32 bitsize = calc_sizeint(minint, maxint, sizeint, bitsizeint);
 
-    int smaller = MAGICINTS[std::max(FIRSTIDX, smallidx - 1)] / 2;
+    int smaller = MAGICINTS[std::max(kFirstIdx, smallidx - 1)] / 2;
     int smallnum = MAGICINTS[smallidx] / 2;
     quint32 sizesmall[3];
     sizesmall[0] = sizesmall[1] = sizesmall[2] = static_cast<quint32>(MAGICINTS[smallidx]);
@@ -386,14 +401,15 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
             run -= is_smaller;
             is_smaller--;
         }
-        if (run > 0 && write_idx * 3 + static_cast<size_t>(run) > data.size()) {
+        if (run > 0 && (write_idx + 1) * 3 + static_cast<size_t>(run) > data.size()) {
             MB_THROW(qlib::FileFormatException, "XTC: buffer overrun during decompression");
             return precision;
         }
         if (run > 0) {
             thiscoord = m_intbuf.data() + (read_idx + 1) * 3;
             for (int k = 0; k < run; k += 3) {
-                decodeints(m_compressed, state, smallidx, sizesmall, thiscoord);
+                decodeints(m_compressed, state, static_cast<quint32>(smallidx), sizesmall,
+                           thiscoord);
                 ++read_idx;
                 thiscoord[0] += prevcoord[0] - smallnum;
                 thiscoord[1] += prevcoord[1] - smallnum;
@@ -430,16 +446,21 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
         if (is_smaller < 0) {
             --smallidx;
             smallnum = smaller;
-            if (smallidx > FIRSTIDX) {
+            if (smallidx > kFirstIdx) {
                 smaller = MAGICINTS[smallidx - 1] / 2;
             } else {
                 smaller = 0;
             }
         } else if (is_smaller > 0) {
             ++smallidx;
+            if (smallidx >= kLastIdx) {
+                MB_THROW(qlib::FileFormatException, "XTC: internal overflow (smallidx)");
+                return precision;
+            }
             smaller = smallnum;
             smallnum = MAGICINTS[smallidx] / 2;
         }
+        // MAGICINTS[smallidx] == 0 below FIRSTIDX: caught by the size check
         sizesmall[0] = sizesmall[1] = sizesmall[2] = static_cast<quint32>(MAGICINTS[smallidx]);
         if (sizesmall[0] == 0) {
             MB_THROW(qlib::FileFormatException, "XTC: invalid size during decompression");
