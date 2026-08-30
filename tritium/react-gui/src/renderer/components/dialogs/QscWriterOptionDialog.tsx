@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {
-    Button,
-    Dialog,
-    DialogBody,
-    DialogFooter,
-    FormGroup,
-    HTMLSelect,
-    Switch,
-} from '@blueprintjs/core';
-import { useTheme } from '../../contexts/ThemeContext';
+import { FormGroup, HTMLSelect, Switch } from '@blueprintjs/core';
+import { DialogShell } from './DialogShell';
 
 export type QscVersion = 'QDF0' | 'QDF1';
 export type QscCompress = 'xzip' | 'gzip' | 'none';
@@ -38,8 +30,6 @@ const COMPRESS_OPTIONS: { value: QscCompress; label: string }[] = [
 ];
 
 export function QscWriterOptionDialog({ visible, onConfirm, onCancel }: Props): React.JSX.Element {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
 
     const [embedAll, setEmbedAll] = useState(false);
     const [version, setVersion] = useState<QscVersion>('QDF1');
@@ -79,60 +69,48 @@ export function QscWriterOptionDialog({ visible, onConfirm, onCancel }: Props): 
     };
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Scene options"
-            style={{ width: 360 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="md"
+            onCancel={onCancel}
+            onOk={handleOk}
         >
-            <DialogBody>
-                <Switch
-                    label="Embed possible"
-                    checked={embedAll}
-                    onChange={(e) => setEmbedAll(e.currentTarget.checked)}
-                />
-
-                <fieldset style={{ marginTop: 8, padding: '8px 12px' }}>
-                    <legend style={{ padding: '0 4px' }}>Format</legend>
-
-                    <FormGroup label="Compatibility" inline>
-                        <HTMLSelect
-                            className="h3-form-select"
-                            value={version}
-                            onChange={(e) => setVersion(e.currentTarget.value as QscVersion)}
-                            options={VERSION_OPTIONS}
-                        />
-                    </FormGroup>
-
-                    <FormGroup label="Compression" inline disabled={advancedDisabled}>
-                        <HTMLSelect
-                            className="h3-form-select"
-                            value={compress}
-                            disabled={advancedDisabled}
-                            onChange={(e) => setCompress(e.currentTarget.value as QscCompress)}
-                            options={COMPRESS_OPTIONS}
-                        />
-                    </FormGroup>
-
-                    <Switch
-                        label="Enable text encoding"
-                        checked={base64}
-                        disabled={advancedDisabled}
-                        onChange={(e) => setBase64(e.currentTarget.checked)}
-                    />
-                </fieldset>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel}>Cancel</Button>
-                        <Button intent="primary" onClick={handleOk}>OK</Button>
-                    </>
-                }
+            <Switch
+                label="Embed possible"
+                checked={embedAll}
+                onChange={(e) => setEmbedAll(e.currentTarget.checked)}
             />
-        </Dialog>
+
+            <fieldset style={{ marginTop: 8, padding: '8px 12px' }}>
+                <legend style={{ padding: '0 4px' }}>Format</legend>
+
+                <FormGroup label="Compatibility" inline>
+                    <HTMLSelect
+                        className="h3-form-select"
+                        value={version}
+                        onChange={(e) => setVersion(e.currentTarget.value as QscVersion)}
+                        options={VERSION_OPTIONS}
+                    />
+                </FormGroup>
+
+                <FormGroup label="Compression" inline disabled={advancedDisabled}>
+                    <HTMLSelect
+                        className="h3-form-select"
+                        value={compress}
+                        disabled={advancedDisabled}
+                        onChange={(e) => setCompress(e.currentTarget.value as QscCompress)}
+                        options={COMPRESS_OPTIONS}
+                    />
+                </FormGroup>
+
+                <Switch
+                    label="Enable text encoding"
+                    checked={base64}
+                    disabled={advancedDisabled}
+                    onChange={(e) => setBase64(e.currentTarget.checked)}
+                />
+            </fieldset>
+        </DialogShell>
     );
 }

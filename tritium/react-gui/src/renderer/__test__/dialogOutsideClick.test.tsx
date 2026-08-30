@@ -39,6 +39,11 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 
 import { AboutDialog } from '../components/dialogs/AboutDialog'
 import { ConfirmCloseTabDialog } from '../components/dialogs/ConfirmCloseTabDialog'
+import { ConfirmReloadSceneDialog } from '../components/dialogs/ConfirmReloadSceneDialog'
+import { ErrorAlertDialog } from '../components/dialogs/ErrorAlertDialog'
+import { ObjectPickerDialog } from '../components/dialogs/ObjectPickerDialog'
+import { TextPromptDialog } from '../components/dialogs/TextPromptDialog'
+import { EditCameraVisFlagsDialog } from '../components/dialogs/EditCameraVisFlagsDialog'
 import { GetPdbDialog } from '../components/dialogs/GetPdbDialog'
 import { NewTabDialog } from '../components/dialogs/NewTabDialog'
 import { QscWriterOptionDialog } from '../components/dialogs/QscWriterOptionDialog'
@@ -68,85 +73,6 @@ describe('Modal dialog: backdrop click + close button are disabled', () => {
   })
   afterEach(() => {
     vi.restoreAllMocks()
-  })
-
-  it('AboutDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(AboutDialog, { visible: true, onClose: () => {} }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
-  })
-
-  it('ConfirmCloseTabDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(ConfirmCloseTabDialog, {
-        visible: true,
-        sceneName: 'Scene_1',
-        onResult: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
-  })
-
-  it('GetPdbDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(GetPdbDialog, {
-        visible: true,
-        onConfirm: () => {},
-        onCancel: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
-  })
-
-  it('NewTabDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(NewTabDialog, {
-        visible: true,
-        currentSceneName: null,
-        defaultSceneName: 'Scene_1',
-        defaultViewName: 'View_1',
-        onConfirm: () => {},
-        onCancel: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
-  })
-
-  it('QscWriterOptionDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(QscWriterOptionDialog, {
-        visible: true,
-        onConfirm: () => {},
-        onCancel: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
-  })
-
-  it('StreamProgressDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(StreamProgressDialog, {
-        visible: true,
-        title: 'Loading',
-        bytesReceived: 0,
-        status: 'downloading',
-        onCancel: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
   })
 
   it('FileOpenOptionDialog passes canOutsideClickClose={false}', () => {
@@ -241,6 +167,88 @@ describe('Molecule-edit dialogs: DialogShell frame contract', () => {
         visible: true, sceneId: 0, onConfirm: () => {}, onCancel: () => {},
       }),
     },
+    // Moved onto the shell from a hand-rolled frame. ErrorAlertDialog is the
+    // one that changes behaviour: it was the only dialog in the app still
+    // showing a window-chrome (X) button, which the stylesheet already assumed
+    // was gone everywhere.
+    {
+      name: 'AboutDialog',
+      title: 'About CueMol3',
+      render: () => React.createElement(AboutDialog, { visible: true, onClose: () => {} }),
+    },
+    {
+      name: 'ConfirmCloseTabDialog',
+      title: 'Unsaved Changes',
+      render: () => React.createElement(ConfirmCloseTabDialog, {
+        visible: true, sceneName: 's', onResult: () => {},
+      }),
+    },
+    {
+      name: 'ConfirmReloadSceneDialog',
+      title: 'Reload Scene',
+      render: () => React.createElement(ConfirmReloadSceneDialog, {
+        visible: true, sceneName: 's', onResult: () => {},
+      }),
+    },
+    {
+      name: 'ErrorAlertDialog',
+      title: 'Open failed',
+      render: () => React.createElement(ErrorAlertDialog, {
+        visible: true, title: 'Open failed', message: 'no reader', onClose: () => {},
+      }),
+    },
+    {
+      name: 'ObjectPickerDialog',
+      title: 'Save Object As',
+      render: () => React.createElement(ObjectPickerDialog, {
+        visible: true, objects: [{ id: 1, name: 'mol1' }], onResult: () => {},
+      }),
+    },
+    {
+      name: 'StreamProgressDialog',
+      title: 'Downloading',
+      render: () => React.createElement(StreamProgressDialog, {
+        visible: true, title: 'Downloading', bytesReceived: 0,
+        status: 'downloading' as const, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'GetPdbDialog',
+      title: 'Get PDB',
+      render: () => React.createElement(GetPdbDialog, {
+        visible: true, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'NewTabDialog',
+      title: 'New Tab/Window',
+      render: () => React.createElement(NewTabDialog, {
+        visible: true, currentSceneName: 's', defaultSceneName: 'Scene_1',
+        defaultViewName: 'View_1', onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'TextPromptDialog',
+      title: 'Rename',
+      render: () => React.createElement(TextPromptDialog, {
+        visible: true, title: 'Rename', label: 'Name', defaultValue: 'x',
+        onResult: () => {},
+      }),
+    },
+    {
+      name: 'QscWriterOptionDialog',
+      title: 'Scene options',
+      render: () => React.createElement(QscWriterOptionDialog, {
+        visible: true, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'EditCameraVisFlagsDialog',
+      title: 'Edit visibility flags: cam1',
+      render: () => React.createElement(EditCameraVisFlagsDialog, {
+        visible: true, cameraName: 'cam1', entries: [], onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
     {
       name: 'InteractionAnalysisDialog',
       title: 'Interaction analysis',
@@ -266,4 +274,40 @@ describe('Molecule-edit dialogs: DialogShell frame contract', () => {
       handle.unmount()
     })
   }
+})
+
+/*
+ * The two escape hatches the conversion needed. Both are load-bearing: without
+ * the first, Escape abandons a download while it keeps running; without the
+ * second, the About splash gets the shared form gutter and stops being
+ * full-bleed.
+ */
+describe('DialogShell escape hatches', () => {
+  beforeEach(() => {
+    dialogPropsList.length = 0
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('lets Escape close a dialog by default', () => {
+    const handle = mountTree(
+      React.createElement(ConfirmReloadSceneDialog, {
+        visible: true, sceneName: 's', onResult: () => {},
+      }),
+    )
+    expect(lastDialogProps().canEscapeKeyClose).toBe(true)
+    handle.unmount()
+  })
+
+  it('refuses Escape while a download is in flight', () => {
+    const handle = mountTree(
+      React.createElement(StreamProgressDialog, {
+        visible: true, title: 'Downloading', bytesReceived: 0,
+        status: 'downloading' as const, onCancel: () => {},
+      }),
+    )
+    expect(lastDialogProps().canEscapeKeyClose).toBe(false)
+    handle.unmount()
+  })
 })

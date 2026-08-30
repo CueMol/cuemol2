@@ -21,7 +21,7 @@
 
 import React from 'react'
 import { Button, Dialog, DialogBody, DialogFooter, type Intent } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { useDarkPortalClass } from '@renderer/h3-kit/primitives'
 
 /**
  * Named rungs of the dialog-frame width ladder. Each maps to a
@@ -82,14 +82,29 @@ export interface DialogShellProps {
      * confirm `Alert` for the two Alert-gated molecule-edit dialogs).
      */
     extra?: React.ReactNode
+    /**
+     * Lets Escape close the dialog. Default `true` (Blueprint's own default,
+     * routed through `onCancel`). A dialog whose work must be stopped rather
+     * than dismissed -- a download in flight -- sets this false so the only way
+     * out is its own action.
+     */
+    canEscapeKeyClose?: boolean
+    /**
+     * The body lays itself out: no padding and no `.h3-dialog-form` column.
+     * For content that is not a form -- the About splash is a full-bleed image
+     * -- where the shared gap and gutter would box it in. The frame concerns
+     * (portal class, outside click, close button, width) still apply, which is
+     * the reason to be here at all.
+     */
+    plainBody?: boolean
 }
 
 /**
  * Renders the shared dialog frame around `children`.
  *
- * @remarks `isDark` is derived locally so consumers never thread theme state.
- * `portalClassName` keeps the `''` (not `undefined`) light-theme value the
- * outside-click test pins.
+ * @remarks The theme is read from the document by the kit, so consumers never
+ * thread theme state. `portalClassName` keeps the `''` (not `undefined`)
+ * light-theme value the outside-click test pins.
  */
 export function DialogShell({
     visible,
@@ -105,9 +120,10 @@ export function DialogShell({
     children,
     footerActions,
     extra,
+    canEscapeKeyClose = true,
+    plainBody = false,
 }: DialogShellProps): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
+    const portalClassName = useDarkPortalClass()
 
     return (
         <Dialog
@@ -115,18 +131,23 @@ export function DialogShell({
             onClose={onCancel}
             title={title}
             style={{ width: WIDTH_VAR[width] }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
+            portalClassName={portalClassName}
             canOutsideClickClose={false}
+            canEscapeKeyClose={canEscapeKeyClose}
             isCloseButtonShown={false}
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
-                    {children}
-                    {errorMsg !== null && errorMsg !== undefined && (
-                        <div className="h3-dialog-error">{errorMsg}</div>
-                    )}
-                </div>
-            </DialogBody>
+            {plainBody ? (
+                <DialogBody style={{ padding: 0 }}>{children}</DialogBody>
+            ) : (
+                <DialogBody>
+                    <div className="h3-dialog-form">
+                        {children}
+                        {errorMsg !== null && errorMsg !== undefined && (
+                            <div className="h3-dialog-error">{errorMsg}</div>
+                        )}
+                    </div>
+                </DialogBody>
+            )}
             <DialogFooter
                 actions={
                     footerActions ?? (

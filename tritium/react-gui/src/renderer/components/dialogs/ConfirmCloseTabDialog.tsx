@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Button } from '@blueprintjs/core';
+import { DialogShell } from './DialogShell';
 
 export type ConfirmCloseResult = 'save' | 'discard' | 'cancel';
 
@@ -11,35 +11,27 @@ interface Props {
 }
 
 export function ConfirmCloseTabDialog({ visible, sceneName, onResult }: Props): React.JSX.Element {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   const displayName = sceneName ? `"${sceneName}"` : '(unnamed)';
 
   return (
-    <Dialog
-      isOpen={visible}
-      onClose={() => onResult('cancel')}
+    <DialogShell
+      visible={visible}
       title="Unsaved Changes"
-      style={{ width: 400, paddingBottom: 0 }}
-      portalClassName={isDark ? 'bp5-dark' : ''}
-      canOutsideClickClose={false}
-      isCloseButtonShown={false}
+      width="xl"
+      onCancel={() => onResult('cancel')}
+      // Three outcomes, not two: the shared Cancel / OK pair cannot express
+      // "discard" sitting between them.
+      footerActions={
+        <>
+          <Button onClick={() => onResult('cancel')}>Cancel</Button>
+          <Button intent="danger" onClick={() => onResult('discard')}>Don&apos;t Save</Button>
+          <Button intent="primary" onClick={() => onResult('save')}>Save</Button>
+        </>
+      }
     >
-      <DialogBody>
-        <p style={{ margin: 0 }}>
-          Scene {displayName} is not saved. Save changes?
-        </p>
-      </DialogBody>
-      <DialogFooter
-        actions={
-          <>
-            <Button onClick={() => onResult('cancel')}>Cancel</Button>
-            <Button intent="danger" onClick={() => onResult('discard')}>Don&apos;t Save</Button>
-            <Button intent="primary" onClick={() => onResult('save')}>Save</Button>
-          </>
-        }
-      />
-    </Dialog>
+      <p style={{ margin: 0 }}>
+        Scene {displayName} is not saved. Save changes?
+      </p>
+    </DialogShell>
   );
 }

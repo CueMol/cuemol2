@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-    Button,
-    Dialog,
-    DialogBody,
-    DialogFooter,
-    ProgressBar,
-} from '@blueprintjs/core';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Button, ProgressBar } from '@blueprintjs/core';
+import { DialogShell } from './DialogShell';
 
 export type StreamProgressStatus = 'downloading' | 'canceling';
 
@@ -27,34 +21,27 @@ function formatBytes(n: number): string {
 export function StreamProgressDialog({
     visible, title, bytesReceived, status, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     return (
-        <Dialog
-            isOpen={visible}
+        <DialogShell
+            visible={visible}
             title={title}
-            style={{ width: 320 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
+            width="sm"
+            onCancel={onCancel}
+            // A download in flight has to be stopped, not dismissed: Escape
+            // would leave the transfer running behind a closed dialog.
             canEscapeKeyClose={false}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            footerActions={
+                <Button onClick={onCancel} disabled={status === 'canceling'}>
+                    Cancel
+                </Button>
+            }
         >
-            <DialogBody>
-                <ProgressBar intent="primary" />
-                <div style={{ marginTop: 8, color: 'var(--text-secondary)' }}>
-                    {status === 'canceling'
-                        ? 'Canceling…'
-                        : `Read ${formatBytes(bytesReceived)}`}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <Button onClick={onCancel} disabled={status === 'canceling'}>
-                        Cancel
-                    </Button>
-                }
-            />
-        </Dialog>
+            <ProgressBar intent="primary" />
+            <div style={{ color: 'var(--text-secondary)' }}>
+                {status === 'canceling'
+                    ? 'Canceling\u2026'
+                    : `Read ${formatBytes(bytesReceived)}`}
+            </div>
+        </DialogShell>
     );
 }

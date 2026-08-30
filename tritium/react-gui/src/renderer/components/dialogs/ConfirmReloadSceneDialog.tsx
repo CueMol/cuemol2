@@ -1,6 +1,5 @@
 import React from 'react';
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core';
-import { useTheme } from '../../contexts/ThemeContext';
+import { DialogShell } from './DialogShell';
 
 interface Props {
   visible: boolean;
@@ -13,35 +12,22 @@ interface Props {
  * Mirrors UXP `Qm2Main.onReloadScene`'s modified-scene confirmation.
  */
 export function ConfirmReloadSceneDialog({ visible, sceneName, onResult }: Props): React.JSX.Element {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   const displayName = sceneName ? `"${sceneName}"` : '(unnamed)';
 
   return (
-    <Dialog
-      isOpen={visible}
-      onClose={() => onResult(false)}
+    <DialogShell
+      visible={visible}
       title="Reload Scene"
-      style={{ width: 400, paddingBottom: 0 }}
-      portalClassName={isDark ? 'bp5-dark' : ''}
-      canOutsideClickClose={false}
-      isCloseButtonShown={false}
+      width="xl"
+      onCancel={() => onResult(false)}
+      onOk={() => onResult(true)}
+      okLabel="Reload"
+      okIntent="danger"
     >
-      <DialogBody>
-        <p style={{ margin: 0 }}>
-          Scene {displayName} has unsaved changes. Reload from disk and discard
-          changes?
-        </p>
-      </DialogBody>
-      <DialogFooter
-        actions={
-          <>
-            <Button onClick={() => onResult(false)}>Cancel</Button>
-            <Button intent="danger" onClick={() => onResult(true)}>Reload</Button>
-          </>
-        }
-      />
-    </Dialog>
+      <p style={{ margin: 0 }}>
+        Scene {displayName} has unsaved changes. Reload from disk and discard
+        changes?
+      </p>
+    </DialogShell>
   );
 }

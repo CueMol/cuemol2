@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogBody, DialogFooter, Button } from '@blueprintjs/core';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Button } from '@blueprintjs/core';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
+import { DialogShell } from './DialogShell';
 import aboutPng from '../../assets/about.png';
 import { APP_PRODUCT_NAME } from '@shared/appInfo';
 
@@ -11,7 +11,6 @@ interface Props {
 }
 
 export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
-  const { theme } = useTheme();
   const { cm } = useCueMol();
   const [version, setVersion] = useState('');
   const [build, setBuild] = useState('');
@@ -24,19 +23,18 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
     }).catch(() => {});
   }, [visible, cm]);
 
-  const isDark = theme === 'dark';
-
   return (
-    <Dialog
-      isOpen={visible}
-      onClose={onClose}
+    <DialogShell
+      visible={visible}
       title={`About ${APP_PRODUCT_NAME}`}
-      style={{ width: 300, paddingBottom: 0 }}
-      portalClassName={isDark ? 'bp5-dark' : ''}
-      canOutsideClickClose={false}
-      isCloseButtonShown={false}
+      width="xs"
+      onCancel={onClose}
+      // A splash image bled to the frame edge, not a form: the shared gutter
+      // and section gap would inset it.
+      plainBody
+      footerActions={<Button intent="primary" onClick={onClose}>OK</Button>}
     >
-      <DialogBody style={{ padding: 0 }}>
+      <>
         <img
           src={aboutPng}
           alt="CueMol3"
@@ -82,12 +80,7 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
             ©1998-2026 Contributors. All Rights Reserved.
           </div>
         </div>
-      </DialogBody>
-      <DialogFooter
-        actions={
-          <Button intent="primary" onClick={onClose}>OK</Button>
-        }
-      />
-    </Dialog>
+      </>
+    </DialogShell>
   );
 }
