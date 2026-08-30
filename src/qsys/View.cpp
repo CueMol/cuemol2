@@ -973,6 +973,8 @@ void View::setCameraAnim(CameraPtr rcam, bool bAnim)
   else {
     m_curcam = Camera(*(rcam.get()));
     m_curcam.setSource("");
+    // the view only tracks the geometry; vis flags stay with the named camera
+    m_curcam.resetVisSettings();
 
     // camera changed, so we must update proj matrix
     setProjChange();

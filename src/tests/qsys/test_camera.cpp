@@ -203,3 +203,27 @@ TEST(CameraTest, ReadFrom2ReplacesPendingVisibilities)
     cam.clearVisSettings();
     EXPECT_EQ(cam.getVisSize(), 0);
 }
+
+TEST(CameraTest, CopyKeepsPendingVisibilityNodesWithoutSharingThem)
+{
+    // Scene::getCamera(), the undo/redo edit info and the lightweight viewer
+    // all work on copies; a copy that dropped the vis settings silently lost
+    // them for the user.
+    std::unique_ptr<qlib::LDom2Node> pNode(makeCameraNodeWithVisibilities());
+    Camera orig;
+    orig.readFrom2(pNode.get());
+    ASSERT_EQ(orig.getVisSize(), 1);
+
+    Camera copy(orig);
+    EXPECT_EQ(copy.getVisSize(), 1);
+
+    Camera assigned;
+    assigned = orig;
+    EXPECT_EQ(assigned.getVisSize(), 1);
+
+    // the node tree is deep-copied: clearing one camera leaves the others
+    copy.clearVisSettings();
+    EXPECT_EQ(copy.getVisSize(), 0);
+    EXPECT_EQ(orig.getVisSize(), 1);
+    EXPECT_EQ(assigned.getVisSize(), 1);
+}

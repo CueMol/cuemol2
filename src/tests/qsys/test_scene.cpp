@@ -449,3 +449,75 @@ TEST_F(SceneTest, SmaaThresholdDefaultAndSetGet)
     m_pScene->setAASmaaThreshold(0.12);
     EXPECT_DOUBLE_EQ(m_pScene->getAASmaaThreshold(), 0.12);
 }
+
+// --- camera visibility settings survive copies ---
+
+namespace {
+
+// A camera whose vis flags hide the (only) object of the scene.
+CameraPtr makeCameraHidingObject(qlib::uid_t objUID)
+{
+    CameraPtr pCam(new qsys::Camera());
+    pCam->setName("cam1");
+    pCam->visAppend(objUID, false, true);
+    return pCam;
+}
+
+}  // namespace
+
+TEST_F(SceneTest, GetCameraCopyKeepsVisSettings)
+{
+    ObjectPtr pObj(new ConcreteObject());
+    pObj->setName("mol1");
+    m_pScene->addObject(pObj);
+
+    m_pScene->setCamera("cam1", makeCameraHidingObject(pObj->getUID()));
+
+    // getCamera() hands out a copy (scripts, exporters, lightweight viewer)
+    CameraPtr pCopy = m_pScene->getCamera("cam1");
+    ASSERT_FALSE(pCopy.isnull());
+    EXPECT_EQ(pCopy->getVisSize(), 1);
+    EXPECT_NE(pCopy->getVisSetJSON().indexOf("\"visible\":false"), -1);
+}
+
+TEST_F(SceneTest, UndoOfSetCameraRestoresVisSettings)
+{
+    ObjectPtr pObj(new ConcreteObject());
+    pObj->setName("mol1");
+    m_pScene->addObject(pObj);
+    m_pScene->setCamera("cam1", makeCameraHidingObject(pObj->getUID()));
+    ASSERT_EQ(m_pScene->getCameraRef("cam1")->getVisSize(), 1);
+
+    // overwriting the camera (e.g. "save view to camera" without vis flags)
+    // drops the flags; the edit info holds copies of both cameras
+    m_pScene->startUndoTxn("Change camera cam1");
+    m_pScene->setCamera("cam1", CameraPtr(new qsys::Camera()));
+    m_pScene->commitUndoTxn();
+    EXPECT_EQ(m_pScene->getCameraRef("cam1")->getVisSize(), 0);
+
+    ASSERT_TRUE(m_pScene->getUndoMgr()->undo());
+    EXPECT_EQ(m_pScene->getCameraRef("cam1")->getVisSize(), 1);
+
+    ASSERT_TRUE(m_pScene->getUndoMgr()->redo());
+    EXPECT_EQ(m_pScene->getCameraRef("cam1")->getVisSize(), 0);
+}
+
+TEST_F(SceneTest, ViewCameraDoesNotCarryVisSettings)
+{
+    ObjectPtr pObj(new ConcreteObject());
+    pObj->setName("mol1");
+    m_pScene->addObject(pObj);
+    m_pScene->setCamera("cam1", makeCameraHidingObject(pObj->getUID()));
+
+    ViewPtr pView = m_pScene->createView();
+    ASSERT_FALSE(pView.isnull());
+
+    // loading a named camera into the view only takes its geometry, so saving
+    // the view to another camera must not spread the vis flags around
+    m_pScene->loadViewFromCam(pView->getUID(), "cam1");
+    EXPECT_EQ(pView->getCamera()->getVisSize(), 0);
+
+    m_pScene->saveViewToCam(pView->getUID(), "cam2");
+    EXPECT_EQ(m_pScene->getCameraRef("cam2")->getVisSize(), 0);
+    EXPECT_EQ(m_pScene->getCameraRef("cam1")->getVisSize(), 1);
+}
