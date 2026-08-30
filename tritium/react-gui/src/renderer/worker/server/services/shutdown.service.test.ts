@@ -23,13 +23,13 @@ vi.mock('./renderjob/renderJob.service', () => ({
     return n
   }),
 }))
-vi.mock('./calcApbsPot.service', () => ({
+vi.mock('./apbs/apbs.service', () => ({
   cancelAllApbsJobs: vi.fn(() => apbsCancelled.length),
 }))
 
 import { services } from './shutdown.service'
 import { cancelAllRenderJobs } from './renderjob/renderJob.service'
-import { cancelAllApbsJobs } from './calcApbsPot.service'
+import { cancelAllApbsJobs } from './apbs/apbs.service'
 
 const ctx = {} as WorkerContext
 

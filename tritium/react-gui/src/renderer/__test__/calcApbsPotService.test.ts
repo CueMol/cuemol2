@@ -37,7 +37,7 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
 }))
 
 import * as fs from 'fs'
-import { services } from '@renderer/worker/server/services/calcApbsPot.service'
+import { services } from '@renderer/worker/server/services/apbs/apbs.service'
 
 const { calcApbsStart, calcApbsCancel } = services
 const POLL_MS = 300
