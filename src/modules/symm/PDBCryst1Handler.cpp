@@ -112,7 +112,13 @@ bool PDBCryst1Handler::write(LString &record, MolCoord *pMol)
 
   int nsg = pci->getSG();
   SymOpDB *pdb = SymOpDB::getInstance();
-  LString hmname = pdb->getCName(nsg);
+  const char *pcname = pdb->getCName(nsg);
+  if (pcname==NULL) {
+    // nsg is writable from scripts; an unknown number has no name to write
+    LOG_DPRINTLN("PDBCryst1Handler> unknown space group number %d, CRYST1 not written", nsg);
+    return false;
+  }
+  LString hmname(pcname);
 
   record = LString::format(
     "CRYST1"
