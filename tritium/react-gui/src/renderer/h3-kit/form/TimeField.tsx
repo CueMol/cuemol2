@@ -153,6 +153,15 @@ export function parseTimeInput(text: string, currentMs: number): number | null {
  * `_increaseOrDecrease` (which multiplies the millisecond field's step by 100).
  * With no caret -- nothing selected, or the whole draft selected on click -- it
  * falls back to seconds, the field UXP's spinner defaulted to.
+ *
+ * Known limitation: this only reaches the spin buttons on the FIRST click out
+ * of edit mode. Starting a press leaves editing (so the press, not the draft,
+ * commits), which throws the caret away -- so clicking up repeatedly steps the
+ * caret's segment once and then seconds forever after. Only the Up / Down keys
+ * inside the field keep a segment across repeats. Making the buttons hold a
+ * segment means the field has to carry an active one outside edit mode, which
+ * the single `<span>` the value renders as cannot express; it would need to be
+ * split per segment. Left as is deliberately.
  */
 export function stepUnitAt(text: string, caretPos: number | null): number {
     if (caretPos === null) return 1000;
