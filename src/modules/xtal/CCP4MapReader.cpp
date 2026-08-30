@@ -538,6 +538,36 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     hdrin.fetch_float(origin[2]);
   }
 
+  // The axis order words select the storage axes (rotate() writes r[ax])
+  // and the counts size the chunk arrays, so a corrupt header must be
+  // rejected before either is used. MAPC=MAPR=MAPS=0 exists in the wild.
+  {
+    const int ax[3] = {axcol, axrow, axsect};
+    bool bSeen[3] = {false, false, false};
+    bool bAxesOK = true;
+    for (int i=0; i<3; ++i) {
+      if (ax[i]<1 || ax[i]>3 || bSeen[ax[i]-1]) {
+        bAxesOK = false;
+        break;
+      }
+      bSeen[ax[i]-1] = true;
+    }
+    if (!bAxesOK) {
+      LString msg = LString::format("CCP4MapReader read: invalid axis order (%d,%d,%d)",
+                                    axcol, axrow, axsect);
+      LOG_DPRINTLN(msg);
+      MB_THROW(qlib::FileFormatException, msg);
+      return false;
+    }
+    if (ncol<=0 || nrow<=0 || nsect<=0) {
+      LString msg = LString::format("CCP4MapReader read: invalid map size (%d,%d,%d)",
+                                    ncol, nrow, nsect);
+      LOG_DPRINTLN(msg);
+      MB_THROW(qlib::FileFormatException, msg);
+      return false;
+    }
+  }
+
   LOG_DPRINT("CCP4Map> Header Info:\n");
   LOG_DPRINT("  map size  : (%d,%d,%d)\n", ncol, nrow, nsect);
   LOG_DPRINT("  map start : (%d,%d,%d)\n", stacol, starow, stasect);

@@ -131,6 +131,9 @@ bool MTZ2MapReader::read(qlib::InStream &arg)
                  m_nfp, m_nphi, m_nwgt);
   mapfft.doFFT();
 
+  // the reflection buffer is only needed for the FFT
+  cleanup();
+
   return true;
 }
 
@@ -146,8 +149,16 @@ void MTZ2MapReader::readData(qlib::InStream &arg)
 
   readFooter(ins);
   
-  if (m_ncol<=3 || m_nrefl==0 || m_ncol!=m_columns.size())
+  if (m_ncol<=3 || m_nrefl<=0 || m_ncol!=m_columns.size())
     MB_THROW(qlib::FileFormatException, "No refls in mtzfile");
+
+  // NCOL/NREFL come from the footer: the FFT reads nrefl*ncol floats from
+  // the body, which must actually hold them
+  if (size_t(m_nrefl)*size_t(m_ncol)*sizeof(float) > size_t(m_nrawdat)) {
+    MB_THROW(qlib::FileFormatException,
+             "MTZ body is shorter than NCOL*NREFL reflections");
+    return;
+  }
 
   LOG_DPRINT("MTZ> Unit cell a=%.2fA, b=%.2fA, c=%.2fA,\n", m_cella, m_cellb, m_cellc);
   LOG_DPRINT("MTZ> alpha=%.2f, beta=%.2f, gamma=%.2f,\n", m_alpha, m_beta, m_gamma);
@@ -193,12 +204,14 @@ void MTZ2MapReader::readHeader(qlib::InStream &ins)
 
 void MTZ2MapReader::readBody(qlib::InStream &ins)
 {
-  m_nrawdat = (m_nhdrst-1)*4 - 20*4;
-  m_pbuf = new char[m_nrawdat];
-  if (m_pbuf==NULL) {
-    MB_THROW(qlib::OutOfMemoryException, "MTZ2MapReader> cannot allocate memory");
+  // the header location word must leave room for the 80-byte header
+  if (m_nhdrst < 21) {
+    MB_THROW(qlib::FileFormatException, "MTZ header location is inside the header");
     return;
   }
+  m_nrawdat = (m_nhdrst-1)*4 - 20*4;
+  cleanup();
+  m_pbuf = new char[m_nrawdat];
   MB_DPRINTLN("MTZ2MapReader> alloc %d bytes\n", m_nrawdat);
 
   ins.readFully(m_pbuf, 0, m_nrawdat*sizeof(char));
@@ -206,6 +219,10 @@ void MTZ2MapReader::readBody(qlib::InStream &ins)
 
 void MTZ2MapReader::skipBody(qlib::InStream &ins)
 {
+  if (m_nhdrst < 21) {
+    MB_THROW(qlib::FileFormatException, "MTZ header location is inside the header");
+    return;
+  }
   m_nrawdat = (m_nhdrst-1)*4 - 20*4;
   ins.skip(m_nrawdat*sizeof(char));
 }

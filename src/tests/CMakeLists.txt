@@ -185,6 +185,7 @@ add_executable(test_xtal
   modules/xtal/test_main.cpp
   modules/xtal/test_atomposmap2.cpp
   modules/xtal/test_ccp4_origin.cpp
+  modules/xtal/test_map_reader_validation.cpp
   modules/xtal/test_ccp4map_stream.cpp
   modules/xtal/test_map_block_extract.cpp
   modules/xtal/test_map_histogram.cpp
