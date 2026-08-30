@@ -63,7 +63,8 @@ CmsXform::CmsXform()
 }
 
 CmsXform::CmsXform(const CmsXform &r)
-     : m_pimpl(r.m_pimpl), m_bEnabled(r.m_bEnabled)
+     : m_pimpl(r.m_pimpl), m_bEnabled(r.m_bEnabled), m_nIntent(r.m_nIntent),
+       m_info(r.m_info)
 {
 }
 
@@ -72,6 +73,8 @@ const CmsXform &CmsXform::operator=(const CmsXform &arg)
   if(&arg!=this){
     m_pimpl = arg.m_pimpl;
     m_bEnabled = arg.m_bEnabled;
+    m_nIntent = arg.m_nIntent;
+    m_info = arg.m_info;
   }
   return *this;
 }

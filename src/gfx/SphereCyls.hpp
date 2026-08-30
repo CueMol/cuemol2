@@ -241,7 +241,7 @@ private:
 
         // bottom disk
         if (bcap) {
-            for (i = 0; i <= NDIVR; ++i) {
+            for (i = 0; i < NDIVR; ++i) {
                 const int ii = i % NDIVR;
                 const int jj = (i + 1) % NDIVR;
                 pMesh->addFace(ivbot, ivbot + 1 + jj, ivbot + 1 + ii, nfmode);
@@ -262,7 +262,7 @@ private:
 
         // top disk
         if (bcap) {
-            for (i = 0; i <= NDIVR; ++i) {
+            for (i = 0; i < NDIVR; ++i) {
                 const int ii = i % NDIVR;
                 const int jj = (i + 1) % NDIVR;
                 pMesh->addFace(ivtop, ivtop + 1 + ii, ivtop + 1 + jj, nfmode);

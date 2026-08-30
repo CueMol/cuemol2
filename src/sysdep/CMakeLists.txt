@@ -16,7 +16,6 @@ SET(SYSDEP_SRCS
 
 SET(SYSDEP_HDRS
 OglError.hpp
-OglHitData.hpp
 OglProgramObject.hpp
 OglViewCap.hpp
 sysdep.hpp

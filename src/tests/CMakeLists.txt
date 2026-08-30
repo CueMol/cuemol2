@@ -61,6 +61,7 @@ add_executable(test_gfx
   gfx/test_gpuprim.cpp
   gfx/test_aoconstants.cpp
   gfx/test_color_robustness.cpp
+  gfx/test_copy_and_bounds.cpp
 )
 target_include_directories(test_gfx PRIVATE
   ${CMAKE_SOURCE_DIR}/src

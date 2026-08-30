@@ -40,8 +40,10 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
     if (!bUseCache) {
       MB_DPRINTLN("LabelCache> Not use cache <%s>.", iter->str.c_str());
       gfx::PixelBuffer *pixbuf = MB_NEW gfx::PixelBuffer();
-      if (!pTRM->renderText(iter->str, *pixbuf))
-        return;
+      if (!pTRM->renderText(iter->str, *pixbuf)) {
+        delete pixbuf;
+        continue;
+      }
       pdc->drawPixels(pos, *pixbuf, ColorPtr());
       delete pixbuf;
     }
@@ -52,7 +54,8 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
         MB_DPRINTLN("LabelCache> new pixbuf for <%s> created.", iter->str.c_str());
         if (!pTRM->renderText(iter->str, *pixbuf)) {
             LOG_DPRINTLN("LabelCache> render <%s> failed.", iter->str.c_str());
-            return;
+            delete pixbuf;
+            continue;
         }
         MB_DPRINTLN("LabelCache> render <%s> OK.", iter->str.c_str());
         iter->pPixBuf = pixbuf;
@@ -79,8 +82,10 @@ void LabelCacheImpl::render(double scl)
     if (pixbuf==NULL) {
       MB_DPRINTLN("LabelCache> new pixbuf for <%s> created.", iter->str.c_str());
       pixbuf = MB_NEW gfx::PixelBuffer();
-      if (!pTRM->renderText(iter->str, *pixbuf))
-        return;
+      if (!pTRM->renderText(iter->str, *pixbuf)) {
+        delete pixbuf;
+        continue;
+      }
       iter->pPixBuf = pixbuf;
     }
   }

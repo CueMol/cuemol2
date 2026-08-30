@@ -66,7 +66,7 @@ void Mesh::color(const ColorPtr &c)
 
 bool Mesh::getCol(ColorPtr &rc, int iv) const
 {
-  if (iv>m_nVerts)
+  if (iv<0 || iv>=m_nVerts)
     return false;
 
   rc = m_colptrs[iv];
