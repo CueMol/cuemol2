@@ -29,16 +29,11 @@ import { AppIcon } from "@renderer/h3-kit/primitives";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 import type { SceneNodeType, SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
-import {
-    SCENE_NODE_MIME,
-    planSceneNodeMove,
-    computeOri,
-    type DragSourcePayload,
-    type DragOri,
-} from "./sceneTreeDnd";
 import { InlineRenameInput } from "./InlineRenameInput";
 import { PaneSectionHeader } from "./PaneSectionHeader";
-import { scrollRowIntoView, useListKeyNav } from "../../h3-kit/list";
+import { useTreeDragDrop } from "./sceneTree/useTreeDragDrop";
+import { useVisibilityButton } from "./sceneTree/useVisibilityButton";
+import { useTreeKeyboardNav } from "./sceneTree/useTreeKeyboardNav";
 import { useSceneTreeState, useSceneTreeActions } from "../../state/sceneTree";
 
 /* --- Node-type to icon mapping --- */
@@ -118,15 +113,6 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
     const [expandOverrides, setExpandOverrides] = useState<Map<string, boolean>>(
         () => new Map(),
     );
-
-    // Mid-drag drop indicator: the row id currently hovered plus the
-    // resolved orientation. Only set when planSceneNodeMove accepts the
-    // (source, target, ori) combo, so the line never shows on an invalid
-    // drop position. `dragSourceRef` carries the dragged node across the
-    // dragover phase, where `dataTransfer.getData` is unavailable.
-    const [dropIndicator, setDropIndicator] =
-        useState<{ id: string; ori: DragOri } | null>(null);
-    const dragSourceRef = useRef<SceneTreeNode | null>(null);
 
     // Inline-rename is controlled by the parent (useSceneTreeController).
     // ScenePane only owns the InputGroup focus ref and stashes callback
@@ -343,117 +329,10 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
 
     // id -> parent lookup, used by DnD to resolve same-parent / cross-group
     // moves. Parent is null for the scene root.
-    const parentMap = useMemo<Map<number, SceneTreeNode>>(() => {
-        const map = new Map<number, SceneTreeNode>();
-        if (!tree) return map;
-        const walk = (n: SceneTreeNode): void => {
-            for (const c of n.children) {
-                map.set(c.id, n);
-                walk(c);
-            }
-        };
-        walk(tree);
-        return map;
-    }, [tree]);
-    const parentLookup = useCallback(
-        (id: number): SceneTreeNode | null => parentMap.get(id) ?? null,
-        [parentMap],
-    );
-
-    const handleDragStart = useCallback(
-        (e: React.DragEvent<HTMLSpanElement>, node: SceneTreeNode) => {
-            if (
-                node.type !== "object" &&
-                node.type !== "renderer" &&
-                node.type !== "rendGroup"
-            ) {
-                e.preventDefault();
-                return;
-            }
-            const payload: DragSourcePayload = { id: node.id, type: node.type };
-            dragSourceRef.current = node;
-            e.dataTransfer.setData(SCENE_NODE_MIME, JSON.stringify(payload));
-            e.dataTransfer.effectAllowed = "move";
-        },
-        [],
-    );
-
-    const readDragSource = useCallback(
-        (e: React.DragEvent<HTMLSpanElement>): SceneTreeNode | null => {
-            const raw = e.dataTransfer.getData(SCENE_NODE_MIME);
-            if (!raw) return null;
-            try {
-                const parsed = JSON.parse(raw) as DragSourcePayload;
-                return nodeLookup.get(String(parsed.id)) ?? null;
-            } catch {
-                return null;
-            }
-        },
-        [nodeLookup],
-    );
-
-    const handleDragOver = useCallback(
-        (e: React.DragEvent<HTMLSpanElement>, node: SceneTreeNode) => {
-            if (!onMoveNode) return;
-            const types = e.dataTransfer.types;
-            if (!Array.from(types).includes(SCENE_NODE_MIME)) return;
-            // Allow the drop so the browser displays a "move" cursor.
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-            // Mid-drag indicator: resolve ori + validity so the line is
-            // shown only where a drop would actually be accepted.
-            // dataTransfer.getData is unavailable on dragover, so the
-            // source node comes from the dragstart-stashed ref.
-            const src = dragSourceRef.current;
-            const rect = e.currentTarget.getBoundingClientRect();
-            const ori = computeOri(rect, e.clientY);
-            const plan = src
-                ? planSceneNodeMove(src, node, ori, parentLookup)
-                : null;
-            setDropIndicator((prev) => {
-                if (!plan) return prev === null ? prev : null;
-                const id = String(node.id);
-                // dragover fires continuously; skip the state update
-                // (and re-render) when the target row + ori are unchanged.
-                if (prev && prev.id === id && prev.ori === ori) return prev;
-                return { id, ori };
-            });
-        },
-        [onMoveNode, parentLookup],
-    );
-
-    const handleDrop = useCallback(
-        (e: React.DragEvent<HTMLSpanElement>, target: SceneTreeNode) => {
-            if (!onMoveNode) return;
-            const src = readDragSource(e);
-            setDropIndicator(null);
-            dragSourceRef.current = null;
-            if (!src) return;
-            e.preventDefault();
-            const rect = e.currentTarget.getBoundingClientRect();
-            const ori = computeOri(rect, e.clientY);
-            const plan = planSceneNodeMove(src, target, ori, parentLookup);
-            if (!plan) return;
-            void onMoveNode(plan);
-        },
-        [onMoveNode, parentLookup, readDragSource],
-    );
-
-    // Clear the drag state when the drag ends (drop, Esc, or release
-    // outside any target) and when the pointer leaves the tree entirely.
-    const handleDragEnd = useCallback(() => {
-        dragSourceRef.current = null;
-        setDropIndicator(null);
-    }, []);
-
-    const handleTreeDragLeave = useCallback(
-        (e: React.DragEvent<HTMLDivElement>) => {
-            const related = e.relatedTarget as Node | null;
-            if (related && e.currentTarget.contains(related)) return;
-            setDropIndicator(null);
-        },
-        [],
-    );
+    const {
+        dropIndicator, parentLookup, parentMap,
+        handleDragStart, handleDragOver, handleDrop, handleDragEnd, handleTreeDragLeave,
+    } = useTreeDragDrop({ tree, nodeLookup, onMoveNode });
 
     const handleNodeContextMenu = useCallback(
         (node: TreeNodeInfo, _path: number[], e: React.MouseEvent<HTMLElement>) => {
@@ -490,65 +369,7 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
         [nodeLookup, onNodeDoubleClick, clearRenameTimer],
     );
 
-    const visibilityButton = useCallback(
-        (nodeId: string, node: SceneTreeNode) => {
-            // Only object / renderer / rendGroup carry a real visibility flag.
-            if (
-                node.type !== "object" &&
-                node.type !== "renderer" &&
-                node.type !== "rendGroup"
-            ) {
-                return undefined;
-            }
-            // Gray-out (disabled) states:
-            //  (a) own flag ON but an ancestor hides the row -- the
-            //      object/renderer relationship (C++ display loop gates
-            //      on the object's flag, so the row's own flag survives).
-            //  (b) the row is a member of a hidden group. The group
-            //      hide/show cascade rewrites every member's own flag
-            //      (OFF on hide, ON on show), so while the group is
-            //      hidden each member is "visible once the group is
-            //      shown" regardless of its cascaded-off flag -- render
-            //      it with the same gray open eye as (a) so the group
-            //      relationship reads like the object one.
-            const parent = parentLookup(node.id);
-            const inHiddenGroup =
-                parent?.type === "rendGroup" && !parent.visible;
-            const disabledByAncestor =
-                (node.visible && !node.effectiveVisible) || inHiddenGroup;
-            const eyeIcon =
-                node.visible || inHiddenGroup ? "ui.eyeOpen" : "ui.eyeClosed";
-            const className =
-                "visibility-toggle " +
-                (disabledByAncestor
-                    ? "disabled"
-                    : node.effectiveVisible
-                      ? "visible"
-                      : "hidden");
-            return (
-                <Button
-                    minimal
-                    small
-                    icon={<AppIcon name={eyeIcon} aria-hidden />}
-                    className={className}
-                    aria-disabled={disabledByAncestor || undefined}
-                    onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        // Gray-out rows do not toggle: under a hidden
-                        // ancestor object the flip would visibly do
-                        // nothing, and inside a hidden group it would
-                        // desync the member from the group cascade (the
-                        // C++ display loop has no group gate, so an ON
-                        // member of a hidden group would draw). Deviation
-                        // from UXP, which let the click flip the flag.
-                        if (disabledByAncestor) return;
-                        onToggleVisibility(nodeId);
-                    }}
-                />
-            );
-        },
-        [onToggleVisibility, parentLookup],
-    );
+    const visibilityButton = useVisibilityButton({ onToggleVisibility, parentLookup });
 
     const treeContents: TreeNodeInfo[] = useMemo(() => {
         if (!tree) return [];
@@ -690,74 +511,11 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
      * navigates the rows as displayed -- collapsed children are skipped
      * exactly as they are on screen.
      */
-    const navKeyDown = useListKeyNav({
-        items: visibleRowIds,
-        activeId: selectedId || null,
-        onSelect,
-        onSelectRange: onSelectRange
-            ? (id, items, additive) => onSelectRange(id, [...items], additive)
-            : undefined,
-        // Right opens a closed row, then steps into it; Left closes an open
-        // one, then steps out to the parent -- the usual tree behaviour.
-        onExpand: (id) => {
-            const node = nodeLookup.get(id);
-            if (!node || node.children.length === 0) return;
-            if (!isNodeExpanded(id)) {
-                setNodeExpanded(id, true);
-                return;
-            }
-            onSelect(String(node.children[0].id));
-        },
-        onCollapse: (id) => {
-            const node = nodeLookup.get(id);
-            if (node && node.children.length > 0 && isNodeExpanded(id)) {
-                setNodeExpanded(id, false);
-                return;
-            }
-            const parent = node ? parentMap.get(node.id) : null;
-            if (parent) onSelect(String(parent.id));
-        },
-        // Keep the moved-to row on screen: without this the selection could
-        // walk out of the scroll viewport and leave the user looking at rows
-        // that are no longer selected.
-        onScrollTo: (id) => {
-            scrollRowIntoView(treeScrollRef.current, `[data-node-id="${id}"]`);
-        },
-        // An open inline editor owns the keyboard.
-        enabled: editingNodeId == null,
+    const handleTreeKeyDown = useTreeKeyboardNav({
+        visibleRowIds, selectedId, editingNodeId, nodeLookup, parentMap, treeScrollRef,
+        onSelect, onSelectRange, onDeleteSelected, canDelete, isRenameableType,
+        setNodeExpanded, isNodeExpanded, beginRenameRef,
     });
-
-    // Keys the tree owns beyond navigation: F2 renames, Delete removes. The
-    // listener is bound on the scrolling wrapper (not document) so they only
-    // fire while the user is focused inside the scene tree.
-    const handleTreeKeyDown = useCallback(
-        (e: React.KeyboardEvent<HTMLDivElement>) => {
-            // The inline rename editor is an <input> inside this wrapper, so
-            // everything typed into it bubbles to this handler. While it is
-            // open the tree owns no keys: Backspace there means "delete a
-            // character", not "delete the node".
-            if (editingNodeId != null) return;
-            if (navKeyDown(e)) return;
-            // Delete / Backspace removes the selection. `onDeleteSelected`
-            // is the same handler the toolbar button uses, so it deletes the
-            // whole multi-selection under one undo transaction.
-            if (e.key === "Delete" || e.key === "Backspace") {
-                if (!onDeleteSelected || !canDelete) return;
-                e.preventDefault();
-                onDeleteSelected(selectedId);
-                return;
-            }
-            if (e.key !== "F2") return;
-            if (!beginRenameRef.current) return;
-            if (!selectedId) return;
-            const node = nodeLookup.get(selectedId);
-            if (!node) return;
-            if (!isRenameableType(node.type)) return;
-            e.preventDefault();
-            beginRenameRef.current(selectedId);
-        },
-        [navKeyDown, selectedId, nodeLookup, isRenameableType, onDeleteSelected, canDelete, editingNodeId],
-    );
 
     return (
         <div className="sp-pane">
