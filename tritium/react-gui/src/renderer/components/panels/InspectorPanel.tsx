@@ -33,7 +33,7 @@ import { GenericTab } from "../inspector/GenericTab";
 import { AnimElementInspector } from "../inspector/AnimElementInspector";
 import { InspectorResetAllButton } from "../inspector/InspectorResetAllButton";
 import { modifiedKeys } from "../inspector/propModel";
-import { ColorPickerProvider } from "../../h3-kit/colorpicker/ColorPickerContext";
+import { ColorPickerProvider } from "@renderer/h3-kit/colorpicker";
 import { useInspector, useInspectorActions } from "../../state/inspector";
 import { useCueMol } from "../../hooks/cuemol/useCueMol";
 import { useActiveScene } from "../../state/workspace";

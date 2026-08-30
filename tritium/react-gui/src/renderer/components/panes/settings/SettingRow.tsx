@@ -18,7 +18,7 @@ import {
 } from '@renderer/h3-kit/form'
 import { IPC } from '@shared/ipcChannels'
 import type { SettingDef } from './settingsConfig'
-import type { Mode } from '@renderer/h3-kit/colorpicker/ColorPicker'
+import type { Mode } from '@renderer/h3-kit/colorpicker'
 
 /**
  * App settings colours are scene-independent plain colours, so the picker

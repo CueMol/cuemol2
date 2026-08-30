@@ -33,7 +33,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Popover, Menu, MenuItem } from "@blueprintjs/core";
 import { AppIcon } from "@renderer/h3-kit/primitives";
-import { ButtonRow, FormButton } from "../../h3-kit/form/ButtonRow";
+import { ButtonRow, FormButton } from "@renderer/h3-kit/form";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import type { AnimAddType, AnimElement } from "../../types";
 import { useAnimTimeline } from "../../hooks/useAnimTimeline";

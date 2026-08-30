@@ -17,7 +17,7 @@ import { mountTree } from './helpers/testHarness'
 
 vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'light' }) }))
 
-import { ComboBoxField } from '../h3-kit/form/ComboBoxField'
+import { ComboBoxField } from '@renderer/h3-kit/form'
 
 void React
 

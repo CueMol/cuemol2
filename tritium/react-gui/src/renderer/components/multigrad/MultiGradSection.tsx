@@ -35,7 +35,7 @@ import {
     SelectField,
     SwitchField,
 } from '../../h3-kit/form'
-import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
+import { CueColorField } from '@renderer/h3-kit/colorpicker'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { MultiGradWriteNode } from '../../worker/server/services/rendererColoring.service'
 import { fireService } from '../../utils/fireService'

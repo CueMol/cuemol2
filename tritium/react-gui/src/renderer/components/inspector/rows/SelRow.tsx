@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { PropertyField } from "@renderer/h3-kit/form";
-import { MolSelList } from "@renderer/h3-kit/MolSelList/MolSelList";
+import { MolSelList } from "@renderer/h3-kit/MolSelList";
 import { resetProps, type RowProps } from "./rowProps";
 
 export interface SelRowProps extends RowProps {

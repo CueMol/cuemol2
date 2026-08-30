@@ -11,9 +11,7 @@
 
 import React from "react";
 import { AppIcon } from "@renderer/h3-kit/primitives";
-import { ButtonRow, FormButton } from "@renderer/h3-kit/form/ButtonRow";
-import { SwitchField } from "@renderer/h3-kit/form/SwitchField";
-import { SelectField } from "@renderer/h3-kit/form/SelectField";
+import { ButtonRow, FormButton, SwitchField, SelectField } from "@renderer/h3-kit/form";
 import type { AnimMgrState } from "@renderer/types";
 import { formatClock } from "./timelineGeometry";
 

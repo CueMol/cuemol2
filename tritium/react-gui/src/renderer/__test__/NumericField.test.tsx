@@ -5,8 +5,8 @@
  * is set, so an `onChange` that only fires for a parseable number left
  * `value` unmoved while the field was empty / mid-edit (e.g. "-", "1."), and
  * the field snapped back to the last digit every keystroke -- making it
- * impossible to clear and retype. Same class of bug as SliderNumericField
- * (see SliderNumericField.test.tsx), now fixed at the shared component so
+ * impossible to clear and retype. Same class of bug as SliderField
+ * (see SliderField.test.tsx), now fixed at the shared component so
  * every consumer (MakeMolSurfDialog density, renderer property rows, etc.)
  * gets it once.
  */
@@ -15,7 +15,7 @@ import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
-import { NumericField } from '../h3-kit/form/NumericField'
+import { NumericField } from '@renderer/h3-kit/form'
 
 void React
 

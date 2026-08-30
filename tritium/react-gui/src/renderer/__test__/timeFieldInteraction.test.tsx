@@ -14,7 +14,7 @@ import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
-import { TimeField } from '../h3-kit/form/TimeField'
+import { TimeField } from '@renderer/h3-kit/form'
 
 void React
 

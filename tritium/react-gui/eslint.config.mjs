@@ -68,6 +68,43 @@ const NO_CORE_ALIAS = {
   message: 'The `@/` prefix is @cuemol/core\'s own alias. Use @renderer/ or @shared/.',
 }
 
+/**
+ * `h3-kit/` is the design system: the pieces a pane is assembled from. It may
+ * be read and changed without knowing which pane uses it, which is only true
+ * while it does not import the application back. It did -- five kit modules
+ * reached out to `components/AppIcon`, three to the theme context -- and no
+ * rule caught it, because none covered the kit's own imports.
+ *
+ * The kit is allowed React, the icon libraries, other kit modules, the worker
+ * transport (the colour picker and the selection widgets genuinely read scene
+ * state) and pure helpers under `utils/`. Everything below is application
+ * structure and stays out.
+ */
+const KIT_NO_APP = {
+  group: [
+    '@renderer/components/**', '@renderer/contexts/**', '@renderer/state/**',
+    '@renderer/shell/**', '@renderer/commands/**', '@renderer/dialogs/**',
+    '@renderer/data/**', '@renderer/features/**', '@renderer/crash/**',
+    '@renderer/App', '@renderer/types',
+    '**/components/**', '**/contexts/**', '**/state/**', '**/commands/**',
+    '**/shell/**', '**/dialogs/**', '**/features/**',
+    '@main/**', '**/main/**', 'electron',
+  ],
+  message:
+    'h3-kit is the design system: it must not import application code. Move the shared piece into the kit, or pass it in as a prop.',
+}
+
+/**
+ * From outside, the kit is reached through a barrel. Naming a module inside
+ * one pins a consumer to a file path the kit is free to change, and it is how
+ * the same widget ended up imported under two names.
+ */
+const KIT_BARREL_ONLY = {
+  group: ['@renderer/h3-kit/*/*', '**/h3-kit/*/*'],
+  message:
+    'Import from the kit barrel (@renderer/h3-kit/form, /list, /primitives, /colorpicker, /MolSelList, /selection), not from a module inside it.',
+}
+
 /** Relative specifiers that climb three or more levels. */
 const NO_DEEP_RELATIVE = {
   group: ['../../../**'],
@@ -208,10 +245,19 @@ export default tseslint.config(
     ),
   },
 
+  // --- Layer: the design system does not depend on the application ---
+  {
+    files: ['src/renderer/h3-kit/**/*.{ts,tsx}'],
+    rules: restrict(KIT_NO_APP, NO_DEEP_RELATIVE),
+  },
+
   // --- Layer: UI code reaches the worker only through the client facade ---
   {
     files: ['src/renderer/**/*.{ts,tsx}'],
-    ignores: ['src/renderer/worker/**'],
+    // The kit and hooks/react have their own blocks below and above; a later
+    // block REPLACES a rule's options rather than merging, so they must be
+    // excluded here or their narrower rules are silently dropped.
+    ignores: ['src/renderer/worker/**', 'src/renderer/h3-kit/**'],
     rules: restrict(
       {
         group: ['@renderer/worker/server/**', '**/worker/server/**'],
@@ -223,6 +269,7 @@ export default tseslint.config(
         group: ['@main/**', '**/main/**', 'electron'],
         message: 'The renderer talks to main through window.electronAPI only.',
       },
+      KIT_BARREL_ONLY,
       NO_DEEP_RELATIVE,
     ),
   },

@@ -55,8 +55,7 @@ import {
     SEM_ANY,
 } from '../../event'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
-import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
-import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
+import { CueColorField, ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import { fireService } from '../../utils/fireService'
 import { useCueMol } from '../../hooks/cuemol/useCueMol'
 import { useActiveScene } from '../../state/workspace'

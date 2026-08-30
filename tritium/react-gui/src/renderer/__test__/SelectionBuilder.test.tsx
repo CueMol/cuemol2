@@ -32,12 +32,12 @@ vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { SelectionBuilder } from '../h3-kit/selection/SelectionBuilder'
-import type { SelectionBuilderProps } from '../h3-kit/selection/SelectionBuilder'
+import { SelectionBuilder } from '@renderer/h3-kit/selection'
+import type { SelectionBuilderProps } from '@renderer/h3-kit/selection'
 import {
     builderReducer,
     initBuilderState,
-} from '../h3-kit/selection/selBuilderReducer'
+} from '@renderer/h3-kit/selection'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 type HarnessProps = Partial<

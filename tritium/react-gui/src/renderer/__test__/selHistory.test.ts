@@ -5,7 +5,7 @@ import {
     getHistory,
     pushHistory,
     clearHistory,
-} from '../h3-kit/MolSelList/selHistory'
+} from '@renderer/h3-kit/MolSelList'
 
 describe('selHistory', () => {
     beforeEach(() => {

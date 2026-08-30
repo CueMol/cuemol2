@@ -22,8 +22,7 @@ import { useMolEditCommit } from '@renderer/hooks/cuemol/useMolEditCommit'
 import { FieldSection } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
-import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
-import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
+import { MolSelList, pushHistory } from '@renderer/h3-kit/MolSelList'
 
 export interface DeleteMolDialogResult {
     ok: boolean

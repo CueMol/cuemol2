@@ -25,7 +25,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppIcon } from '@renderer/h3-kit/primitives';
-import { ButtonRow, FormButton } from '../../h3-kit/form/ButtonRow';
+import { ButtonRow, FormButton } from '@renderer/h3-kit/form';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 import { IPC } from '@shared/ipcChannels';

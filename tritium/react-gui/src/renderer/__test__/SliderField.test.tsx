@@ -1,6 +1,6 @@
 /**
- * @file __test__/SliderNumericField.test.tsx
- * @description Unit tests for the SliderNumericField widget. Pins the
+ * @file __test__/SliderField.test.tsx
+ * @description Unit tests for the SliderField widget. Pins the
  * observable contract for the two bugs this widget had:
  *   - Typing into the numeric input must not snap the value to 0 when
  *     the field is momentarily empty (commit the typed number on blur).
@@ -14,7 +14,7 @@ import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
-import { SliderNumericField } from '../h3-kit/SliderNumericField'
+import { SliderField } from '@renderer/h3-kit/form'
 
 void React
 
@@ -61,13 +61,13 @@ const base = {
     onCommit: () => {},
 }
 
-function render(props: Partial<React.ComponentProps<typeof SliderNumericField>> = {}) {
+function render(props: Partial<React.ComponentProps<typeof SliderField>> = {}) {
     act(() => {
-        root.render(<SliderNumericField {...base} {...props} />)
+        root.render(<SliderField {...base} {...props} />)
     })
 }
 
-describe('SliderNumericField', () => {
+describe('SliderField', () => {
     it('shows the step-quantized value', () => {
         render({ value: 2.5 })
         expect(getNumberInput().value).toBe('2.5')

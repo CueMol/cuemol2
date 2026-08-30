@@ -34,8 +34,7 @@ vi.mock('../h3-kit/colorpicker/ColorPicker', () => ({
     },
 }))
 
-import { CueColorField } from '../h3-kit/colorpicker/CueColorField'
-import { ColorPickerProvider } from '../h3-kit/colorpicker/ColorPickerContext'
+import { CueColorField, ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 
 describe('CueColorField', () => {
     it('forwards provider cm / sceneId and the modes allow-list', async () => {

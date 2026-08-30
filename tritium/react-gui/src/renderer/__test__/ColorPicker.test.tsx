@@ -38,7 +38,7 @@ vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark' }),
 }))
 
-import { ColorPicker } from '../h3-kit/colorpicker/ColorPicker'
+import { ColorPicker } from '@renderer/h3-kit/colorpicker'
 
 interface CmStub {
     invokeService: ReturnType<typeof vi.fn>

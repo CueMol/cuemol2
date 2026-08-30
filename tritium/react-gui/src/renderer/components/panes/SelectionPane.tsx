@@ -30,9 +30,7 @@ import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
 import { fireService } from '../../utils/fireService';
 import { FieldSection, FormButton, TextField } from '../../h3-kit/form';
 import { useTheme } from '../../contexts/ThemeContext';
-import { getHistory, pushHistory } from '../../h3-kit/MolSelList/selHistory';
-import { useSelHitCount, useHitCountResolver } from '../../h3-kit/MolSelList/useSelHitCount';
-import { CountTag } from '../../h3-kit/MolSelList/CountTag';
+import { getHistory, pushHistory, useSelHitCount, useHitCountResolver, CountTag } from '@renderer/h3-kit/MolSelList';
 import {
     SelectionBuilder,
     useSelectionValues,

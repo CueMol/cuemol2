@@ -2,7 +2,7 @@
  * @file h3-kit/form/numericMath.ts
  * @description Shared numeric quantize / clamp / snap helpers for the form-kit
  * numeric controls. Both the Blender-style `DragNumericField` and the
- * slider-based `SliderField` (and its back-compat alias `SliderNumericField`)
+ * slider-based `SliderField`
  * derive their display precision and stored value from the same `step`-driven
  * math, so the rounding behaviour is defined here once instead of being
  * re-implemented per widget.
