@@ -70,6 +70,8 @@ export class WorkerService {
     private _strMgr: StreamManager | null = null;
     private _styleMgr: StyleManager | null = null;
     private _evtMgr: ScrEventManager | null = null;
+    /** Listener id from `registerWorkerEventListener`, for teardown. */
+    private _evtListenerId: number | null = null;
 
     constructor(
         postMessage: (data: any[]) => void,
@@ -279,7 +281,9 @@ export class WorkerService {
         this._styleMgr = this._cm.getService('StyleManager') as StyleManager;
         this._evtMgr = this._cm.getService('ScrEventManager') as ScrEventManager;
 
-        registerWorkerEventListener(this._evtMgr, this._cm, this._postMessage);
+        this._evtListenerId = registerWorkerEventListener(
+            this._evtMgr, this._cm, this._postMessage,
+        );
 
         return true;
     }
@@ -302,6 +306,17 @@ export class WorkerService {
     /** Shut the worker down (closes the worker global scope). */
     terminateWorker(): void {
         log.info('Worker> terminateWorker called');
+        // Hand the event-manager subscription back before closing: the C++
+        // side holds this callback, and a re-initialised worker would
+        // otherwise stack a second one on top of it.
+        if (this._evtMgr !== null && this._evtListenerId !== null) {
+            try {
+                this._evtMgr.removeListener(this._evtListenerId);
+            } catch (e) {
+                log.warn('Worker> removeListener failed:', e);
+            }
+            this._evtListenerId = null;
+        }
         this._close();
     }
 

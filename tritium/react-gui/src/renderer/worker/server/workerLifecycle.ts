@@ -96,15 +96,20 @@ export function setViewInputConfigStyle(cm: CueMol, styleName: string): boolean 
  * synchronously in-thread (the native TextRender object cannot cross
  * postMessage); every other event is forwarded to the renderer via
  * `postMessage(['event-notify', ...])`.
+ *
+ * @returns The listener id, so a teardown can hand it back to
+ *   `evtMgr.removeListener`. The id used to be dropped on the floor, which
+ *   left the C++ side holding a callback into a worker that was shutting
+ *   down -- harmless while the worker lives as long as the app, and not
+ *   harmless the moment one is re-initialised.
  */
 export function registerWorkerEventListener(
     evtMgr: ScrEventManager,
     cm: CueMol,
     postMessage: (data: any[]) => void,
-): void {
-    // TODO: removeListener ??
+): number {
     evtMgr.append('renderText', event.SEM_EXTND, event.SEM_OTHER, event.SEM_ANY);
-    evtMgr.addListener((...args: any[]) => {
+    return evtMgr.addListener((...args: any[]) => {
         const category = args[1];
         if (category === 'renderText') {
             // Handle synchronously in the Worker thread using OffscreenCanvas 2D.
