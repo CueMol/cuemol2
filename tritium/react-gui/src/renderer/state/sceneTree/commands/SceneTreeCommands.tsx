@@ -8,7 +8,7 @@
 
 import React from 'react'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { UseSceneTreeResult } from '@renderer/hooks/useSceneTree'
+import type { UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
 import { useSceneNodeCommands } from './useSceneNodeCommands'
 import { useRendererCommands } from './useRendererCommands'
 import { useStyleCommands } from './useStyleCommands'

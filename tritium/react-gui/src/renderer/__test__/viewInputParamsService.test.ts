@@ -9,8 +9,8 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '../worker/server/services/viewInputParams.service'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/viewInputParams.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 const { getViewInputParams, setViewInputParams } = services
 

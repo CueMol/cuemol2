@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import type { RecentFileEntry } from '@shared/types/recent'
 import type { ViewCenterMark } from '@shared/types/menuState'
-import { CmdId } from '../commands/ids'
+import { CmdId } from '@renderer/commands/ids'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
@@ -15,7 +15,7 @@ const menuState = vi.hoisted(() => ({
   recentFiles: [] as unknown[],
   hasScene: false,
 }))
-vi.mock('../state/activeView', () => ({
+vi.mock('@renderer/state/activeView', () => ({
   useActiveViewValues: () => ({
     viewProjection: menuState.viewProjection,
     viewCenterMark: menuState.viewCenterMark,
@@ -23,14 +23,14 @@ vi.mock('../state/activeView', () => ({
     exportAvailable: null,
   }),
 }))
-vi.mock('../state/workspace', () => ({
+vi.mock('@renderer/state/workspace', () => ({
   useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: menuState.hasScene }),
 }))
-vi.mock('../hooks/useRecentFiles', () => ({ useRecentFiles: () => menuState.recentFiles }))
+vi.mock('@renderer/features/file-io/useRecentFiles', () => ({ useRecentFiles: () => menuState.recentFiles }))
 
 // Must import after mocks
-const { MenuBar } = await import('../components/MenuBar')
-const { CommandProvider, useCommands } = await import('../commands/CommandRegistry')
+const { MenuBar } = await import('@renderer/shell/MenuBar')
+const { CommandProvider, useCommands } = await import('@renderer/commands/CommandRegistry')
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 

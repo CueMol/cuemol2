@@ -13,14 +13,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
 
-import { services } from '../worker/server/services/changeChainName.service'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
+import { services } from '@renderer/worker/server/services/changeChainName.service'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { changeChainName } = services
 

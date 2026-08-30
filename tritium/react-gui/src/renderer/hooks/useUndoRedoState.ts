@@ -28,11 +28,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IPC } from '@shared/ipcChannels'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { CmdId } from '../commands/ids'
-import { useRegisterCommand } from '../commands/CommandRegistry'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { CmdId } from '@renderer/commands/ids'
+import { useRegisterCommand } from '@renderer/commands/CommandRegistry'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
-import { SEM_SCENE, SEM_ANY } from '../event'
+import { SEM_SCENE, SEM_ANY } from '@renderer/event'
 import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
 import { useLatestRef } from '@renderer/hooks/react/useLatestRef'
 

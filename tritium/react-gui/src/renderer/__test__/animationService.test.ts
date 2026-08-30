@@ -12,8 +12,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import type { WorkerContext } from "../worker/server/types/WorkerContext";
-import { services } from "../worker/server/services/animation.service";
+import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
+import { services } from "@renderer/worker/server/services/animation.service";
 
 function tv(ms: number) {
   return { millisec: ms };

@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/errorBoundary.test.tsx
+ * @file __test__/errorBoundary.test.tsx
  * @description Pin ErrorBoundary -> CrashReporter wiring.
  *
  * A render-path throw must (1) replace children with the CrashOverlay and
@@ -11,15 +11,15 @@
 import React from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-vi.mock('../crash/CrashReporter', () => ({
+vi.mock('@renderer/crash/CrashReporter', () => ({
   report: vi.fn(),
   subscribe: vi.fn(() => () => undefined),
   getCurrentCrash: vi.fn(() => null),
 }))
 
-import { ErrorBoundary } from '../crash/ErrorBoundary'
-import * as CrashReporter from '../crash/CrashReporter'
-import { mountTree } from './helpers/testHarness'
+import { ErrorBoundary } from '@renderer/crash/ErrorBoundary'
+import * as CrashReporter from '@renderer/crash/CrashReporter'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 void React
 

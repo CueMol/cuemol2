@@ -15,7 +15,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React, { useState } from 'react'
 import { act } from 'react'
-import { mountTree } from '../__test__/helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 void React
 
@@ -23,7 +23,7 @@ const counts = vi.hoisted(() => ({ statusBar: 0, sidePanel: 0 }))
 const statusMessage = vi.hoisted(() => ({ set: null as ((m: string | null) => void) | null }))
 
 // --- StatusBar: props-free, driven by its own providers ---
-vi.mock('../state/statusMessage', async () => {
+vi.mock('@renderer/state/statusMessage', async () => {
   const { useState: useReactState } = await import('react')
   return {
     useStatusMessage: () => {
@@ -34,14 +34,14 @@ vi.mock('../state/statusMessage', async () => {
     },
   }
 })
-vi.mock('../hooks/useCueMolBusy', () => ({ useCueMolBusy: () => false }))
-vi.mock('../hooks/useBusyCursor', () => ({ useBusyCursor: () => undefined }))
-vi.mock('../contexts/ActiveToolContext', () => ({
+vi.mock('@renderer/hooks/useCueMolBusy', () => ({ useCueMolBusy: () => false }))
+vi.mock('@renderer/hooks/useBusyCursor', () => ({ useBusyCursor: () => undefined }))
+vi.mock('@renderer/contexts/ActiveToolContext', () => ({
   useActiveToolDef: () => ({ id: 'navigate', label: 'Navigate', shortcut: 'V', icon: 'tool.navigate' }),
 }))
 
 // --- SidePanel: one prop (which view), panes read their own state ---
-vi.mock('../state/layout', () => ({
+vi.mock('@renderer/state/layout', () => ({
   useLayout: () => {
     counts.sidePanel += 1
     return {
@@ -51,18 +51,23 @@ vi.mock('../state/layout', () => ({
   },
   useLayoutDispatch: () => ({ setViewSizes: vi.fn(), setViewCollapsed: vi.fn() }),
 }))
-vi.mock('../components/panes', () => {
-  const stub = () => null
-  return {
-    ScenePane: stub, ColorPane: stub, ViewPane: stub, MolStructPane: stub,
-    SelectionPane: stub, SymmetryPane: stub, DensityMapPane: stub,
-    CatalogPane1: stub, CatalogPane2: stub, CatalogPane3: stub,
-  }
-})
+// The panes are stubbed one feature at a time now that the barrel that
+// gathered them is gone. What this test measures is the shell's render
+// isolation, so their contents are irrelevant -- only that they mount.
+vi.mock('@renderer/features/scene/ScenePane', () => ({ ScenePane: () => null }))
+vi.mock('@renderer/features/coloring/ColorPane', () => ({ ColorPane: () => null }))
+vi.mock('@renderer/features/molview/ViewPane', () => ({ ViewPane: () => null }))
+vi.mock('@renderer/features/selection/MolStructPane', () => ({ MolStructPane: () => null }))
+vi.mock('@renderer/features/selection/SelectionPane', () => ({ SelectionPane: () => null }))
+vi.mock('@renderer/features/density/SymmetryPane', () => ({ SymmetryPane: () => null }))
+vi.mock('@renderer/features/density/DensityMapPane', () => ({ DensityMapPane: () => null }))
+vi.mock('./CatalogPane1', () => ({ CatalogPane1: () => null }))
+vi.mock('./CatalogPane2', () => ({ CatalogPane2: () => null }))
+vi.mock('./CatalogPane3', () => ({ CatalogPane3: () => null }))
 
-import { StatusBar } from '../components/StatusBar'
-import { SidePanel } from '../components/panels/SidePanel'
-import type { ActivityView } from '../components/ActivityBar'
+import { StatusBar } from './StatusBar'
+import { SidePanel } from './SidePanel'
+import type { ActivityView } from './ActivityBar'
 
 /** Mount `child` under a parent the test can re-render at will. */
 function mountUnderShell(child: React.ReactNode) {

@@ -7,7 +7,7 @@
  * services the worker actually registers.
  */
 
-import type { AnimMgrState, AnimTimeline } from '../animTypes'
+import type { AnimMgrState, AnimTimeline } from '@renderer/worker/shared/animTypes'
 import type {
   AnimGenericPropsResult,
   GetAnimElementDetailArgs,
@@ -19,7 +19,7 @@ import type {
   SetAnimElementGenericPropArgs,
   SetAnimElementPropArgs,
   SetAnimElementPropResult,
-} from '../../server/services/animDetail.service'
+} from '@renderer/worker/server/services/animDetail.service'
 import type {
   AnimAddElementArgs,
   AnimAddResult,
@@ -36,7 +36,7 @@ import type {
   AnimSetStartCamArgs,
   AnimStopArgs,
   AnimTransportResult,
-} from '../../server/services/animation.service'
+} from '@renderer/worker/server/services/animation.service'
 
 export interface AnimCalls {
   animListTimeline:           { args: AnimListTimelineArgs; result: AnimTimeline }

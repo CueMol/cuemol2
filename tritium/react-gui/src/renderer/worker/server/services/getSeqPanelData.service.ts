@@ -1,5 +1,5 @@
 /**
- * @file services/getSeqPanelData.service.ts
+ * @file worker/server/services/getSeqPanelData.service.ts
  * @description Bulk seq panel data fetch -- one IPC round trip for
  * either the entire scene or a single mol.
  *
@@ -16,9 +16,9 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object'
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord'
 import type { MolChain } from '@cuemol/core/src/wrappers/MolChain'
-import type { WorkerContext } from '../types/WorkerContext'
-import { getSceneOrNull } from './helpers/sceneResolver'
-import { parseSceneTreeJSON, type SceneTreeNode } from '../../shared/sceneTreeTypes'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
+import { parseSceneTreeJSON, type SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import type { MolResidueEntry } from './getMolStructure.service'
 
 export interface GetSeqPanelDataArgs {

@@ -11,8 +11,8 @@ import {
     fitViewsToMap,
     isEmDensityMap,
     EM_INITIAL_TOP_FRACTION,
-} from '../worker/server/services/helpers/emMapDefaults'
-import type { FormatOptions } from '../components/fopen-opt-dlgs/types'
+} from '@renderer/worker/server/services/helpers/emMapDefaults'
+import type { FormatOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 
 function ccp4Format(mapType: 'auto' | 'xtal' | 'em'): FormatOptions {
     return {

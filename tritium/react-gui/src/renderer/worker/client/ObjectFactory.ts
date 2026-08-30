@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/ObjectFactory.ts
+ * @file worker/client/ObjectFactory.ts
  * @description Renderer-side class-registry query helper.
  *
  * Used by `AsyncCueMol` as a facade for `hasClass` / `getAllClassNamesJSON`

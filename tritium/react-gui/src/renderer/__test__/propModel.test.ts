@@ -1,7 +1,7 @@
 /**
  * @file __test__/propModel.test.ts
  * @description Unit tests for the inspector per-property reset model helpers
- * (`components/inspector/propModel.ts`): the `isModified` predicate, the reset
+ * (`features/inspector/propModel.ts`): the `isModified` predicate, the reset
  * key-set math, and the default-value annotation formatter.
  */
 
@@ -11,7 +11,7 @@ import {
     isResettable,
     modifiedKeys,
     formatDefaultLabel,
-} from '../components/inspector/propModel';
+} from '@renderer/features/inspector/propModel';
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 
 /** Build a minimal entry; override only the fields a case cares about. */

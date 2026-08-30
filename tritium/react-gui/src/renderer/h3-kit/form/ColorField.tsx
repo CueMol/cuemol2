@@ -7,8 +7,8 @@
  */
 
 import React from 'react';
-import { CueColorField } from '../colorpicker/CueColorField';
-import type { Mode } from '../colorpicker/ColorPicker';
+import { CueColorField } from '@renderer/h3-kit/colorpicker/CueColorField';
+import type { Mode } from '@renderer/h3-kit/colorpicker/ColorPicker';
 
 export interface ColorFieldProps {
     value: string;

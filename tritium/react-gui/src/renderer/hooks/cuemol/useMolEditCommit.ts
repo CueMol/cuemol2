@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMolEditCommit.ts
+ * @file hooks/cuemol/useMolEditCommit.ts
  * @description Shared commit scaffold for the molecule-edit dialogs. It owns
  * the three pieces every such dialog repeated verbatim:
  *   - the `submitting` / `errorMsg` state pair,
@@ -27,7 +27,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 /**
  * One commit attempt produced by the caller's `buildCommit`. The `invoke`

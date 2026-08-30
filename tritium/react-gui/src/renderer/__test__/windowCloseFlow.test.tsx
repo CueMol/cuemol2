@@ -14,14 +14,14 @@
 import React, { useRef } from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { IPC } from '@shared/ipcChannels'
-import type { TabData } from '../types'
-import { useWindowCloseHandler } from '../hooks/useWindowCloseHandler'
+import type { TabData } from '@renderer/types'
+import { useWindowCloseHandler } from '@renderer/hooks/useWindowCloseHandler'
 import {
   makeRenderHook,
   setupElectronAPI,
   teardownElectronAPI,
   flushPromises,
-} from './helpers/testHarness'
+} from '@renderer/__test__/helpers/testHarness'
 
 void React
 

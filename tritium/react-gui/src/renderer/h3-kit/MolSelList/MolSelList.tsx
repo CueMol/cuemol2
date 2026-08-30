@@ -1,5 +1,5 @@
 /**
- * @file MolSelList.tsx
+ * @file h3-kit/MolSelList/MolSelList.tsx
  * @description Atom-selection picker: a free-text Blueprint `InputGroup` with a
  * chevron trigger tucked inside its right edge (like a native `<select>`) that
  * opens a popover holding the shared `SelectionBuilder` (the same Term + Modify
@@ -28,16 +28,16 @@
 
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
-import { AppIcon } from '../primitives';
+import { AppIcon } from '@renderer/h3-kit/primitives';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { useDarkPortalClass } from '../primitives';
-import { TextField } from '../form';
+import { useDarkPortalClass } from '@renderer/h3-kit/primitives';
+import { TextField } from '@renderer/h3-kit/form';
 import {
     SelectionBuilder,
     builderReducer,
     initBuilderState,
     useSelectionValues,
-} from '../selection';
+} from '@renderer/h3-kit/selection';
 import { getHistory } from './selHistory';
 import { useHitCountResolver } from './useSelHitCount';
 

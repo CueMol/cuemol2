@@ -9,13 +9,13 @@
  */
 
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { UseSceneTreeResult } from '@renderer/hooks/useSceneTree'
+import type { UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
 import { findTypedNode } from '@renderer/hooks/sceneTree/sceneTreeNodeUtils'
-import { useShowTextPromptDialog } from '@renderer/components/dialogs/TextPromptDialogProvider'
-import { useShowApplyRendStyleDialog } from '@renderer/components/dialogs/ApplyRendStyleDialogProvider'
-import { useShowCreateRendStyleDialog } from '@renderer/components/dialogs/CreateRendStyleDialogProvider'
-import { useShowEditInteractionListDialog } from '@renderer/components/dialogs/EditInteractionListDialogProvider'
-import { useShowRegenMolSurfDialog } from '@renderer/components/dialogs/RegenMolSurfDialogProvider'
+import { useShowTextPromptDialog } from '@renderer/dialogs/TextPromptDialogProvider'
+import { useShowApplyRendStyleDialog } from '@renderer/dialogs/ApplyRendStyleDialogProvider'
+import { useShowCreateRendStyleDialog } from '@renderer/dialogs/CreateRendStyleDialogProvider'
+import { useShowEditInteractionListDialog } from '@renderer/dialogs/EditInteractionListDialogProvider'
+import { useShowRegenMolSurfDialog } from '@renderer/dialogs/RegenMolSurfDialogProvider'
 import { useRegisterCommand } from '@renderer/commands/CommandRegistry'
 import { CmdId } from '@renderer/commands/ids'
 

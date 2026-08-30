@@ -12,13 +12,13 @@ import React from 'react'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import { IPC } from '@shared/ipcChannels'
-import type { TabData } from '../types'
-import { useWindowTitleSync } from '../hooks/useWindowTitleSync'
+import type { TabData } from '@renderer/types'
+import { useWindowTitleSync } from '@renderer/hooks/useWindowTitleSync'
 import {
   mountTree,
   setupElectronAPI,
   teardownElectronAPI,
-} from './helpers/testHarness'
+} from '@renderer/__test__/helpers/testHarness'
 
 void React
 

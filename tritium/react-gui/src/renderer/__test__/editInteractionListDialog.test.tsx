@@ -14,13 +14,13 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { EditInteractionListDialog } from '../components/dialogs/EditInteractionListDialog'
-import { mountTree } from './helpers/testHarness'
-import type { AtomIntrDefEntry } from '../worker/server/services/atomIntrEdit.service'
+import { EditInteractionListDialog } from '@renderer/dialogs/EditInteractionListDialog'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import type { AtomIntrDefEntry } from '@renderer/worker/server/services/atomIntrEdit.service'
 
 function entries(): AtomIntrDefEntry[] {
     return [

@@ -10,7 +10,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, it, expect, vi } from 'vitest'
 
-import { makeRenderHook } from './helpers/testHarness'
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
 import {
   useRealtimeDragProp,
   type RealtimeDragProps,

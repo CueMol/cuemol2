@@ -29,7 +29,7 @@ import {
     setRendererDefaultColor,
     setColoringProp,
     setRendererColoringTarget,
-} from './coloring/applyColoring';
+} from '@renderer/worker/server/services/coloring/applyColoring';
 import {
     paintRendererSelection,
     paintObjectSelection,
@@ -37,31 +37,31 @@ import {
     removePaintEntry,
     updatePaintEntry,
     movePaintEntry,
-} from './coloring/paintCrud';
+} from '@renderer/worker/server/services/coloring/paintCrud';
 import {
     copyPaintEntries,
     cutPaintEntries,
     pastePaintEntries,
     removePaintEntries,
     clearPaintEntries,
-} from './coloring/paintClipboard';
+} from '@renderer/worker/server/services/coloring/paintClipboard';
 import {
     getPaintColoringStyles,
     getRendererPaintInfo,
     getObjectPaintInfo,
     listPaintCapableRenderers,
-} from './coloring/panelList';
-import { getRendererColoringState } from './coloring/deckState';
+} from '@renderer/worker/server/services/coloring/panelList';
+import { getRendererColoringState } from '@renderer/worker/server/services/coloring/deckState';
 import {
     listElePotMapObjects,
     setRendererElepotProp,
-} from './coloring/elepotWriter';
+} from '@renderer/worker/server/services/coloring/elepotWriter';
 import {
     getMultiGradState,
     getMultiGradHistogram,
     setMultiGradNodes,
     setMultiGradColorMap,
-} from './coloring/multiGrad';
+} from '@renderer/worker/server/services/coloring/multiGrad';
 
 // Re-export the public types so existing importers
 // (`worker/shared/calls/`, `ColorPane.tsx`, the coloring hooks) resolve unchanged.
@@ -125,7 +125,7 @@ export type {
     SetMultiGradNodesResult,
     SetMultiGradColorMapArgs,
     SetMultiGradColorMapResult,
-} from './coloring/types';
+} from '@renderer/worker/server/services/coloring/types';
 
 export const services = {
     setRendererColoring,

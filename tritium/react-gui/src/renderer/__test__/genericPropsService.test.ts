@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
-vi.mock('../worker/server/services/helpers/resolvePropTarget', () => ({
+vi.mock('@renderer/worker/server/services/helpers/resolvePropTarget', () => ({
   resolvePropTarget: vi.fn(),
 }))
 // Run the mutation body synchronously (no real UndoManager) while exposing a
@@ -18,19 +18,19 @@ vi.mock('../worker/server/services/helpers/resolvePropTarget', () => ({
 const withUndoTxnSpy = vi.hoisted(() =>
   vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
 )
-vi.mock('../worker/server/services/withUndoTxn', () => ({
+vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
   withUndoTxn: withUndoTxnSpy,
 }))
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
   makeSel: vi.fn(),
 }))
-vi.mock('../worker/server/services/helpers/parseGenericProps', () => ({
+vi.mock('@renderer/worker/server/services/helpers/parseGenericProps', () => ({
   parseGenericProps: () => [],
 }))
 
-import { services } from '../worker/server/services/genericProps.service'
-import { resolvePropTarget } from '../worker/server/services/helpers/resolvePropTarget'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
+import { services } from '@renderer/worker/server/services/genericProps.service'
+import { resolvePropTarget } from '@renderer/worker/server/services/helpers/resolvePropTarget'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const setProp = vi.fn()
 const resetProp = vi.fn()

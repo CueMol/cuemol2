@@ -17,8 +17,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import { RenderPanel } from '../components/panels/RenderPanel';
-import type { RenderJob } from '../hooks/useRenderJob';
+import { RenderPanel } from '@renderer/features/render/RenderPanel';
+import type { RenderJob } from '@renderer/features/render/useRenderJob';
 
 void React;
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

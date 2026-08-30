@@ -9,13 +9,13 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 import type {
   ApbsUpdate,
   ApbsUpdatePhase,
   CalcApbsStartArgs,
   CalcApbsStartResult,
-} from '../worker/shared/apbsTypes';
+} from '@renderer/worker/shared/apbsTypes';
 
 /** Lifecycle status of an APBS job. */
 export type ApbsJobStatus = 'running' | 'done' | 'error' | 'cancelled';

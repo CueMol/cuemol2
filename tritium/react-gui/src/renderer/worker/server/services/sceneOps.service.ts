@@ -13,12 +13,12 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
-import type { WorkerContext } from '../types/WorkerContext';
-import type { SceneNodeType } from '../../shared/sceneTreeTypes';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import type { SceneNodeType } from '@renderer/worker/shared/sceneTreeTypes';
 import { withUndoTxn } from './withUndoTxn';
-import { safeRead } from './helpers/safeRead';
-import { listGroupChildRenderers } from './helpers/groupChildren';
-import { collectGroupMemberUids } from './helpers/rendGroup';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
+import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
+import { collectGroupMemberUids } from '@renderer/worker/server/services/helpers/rendGroup';
 
 export interface FocusOnNodeArgs {
     sceneId: number;

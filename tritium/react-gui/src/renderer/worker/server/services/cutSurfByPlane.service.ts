@@ -1,5 +1,5 @@
 /**
- * @file services/cutSurfByPlane.service.ts
+ * @file worker/server/services/cutSurfByPlane.service.ts
  * @description Worker service backing the "MolSurf cutting tool" dialog
  * (`dialog.tool.surf-cutbyplane`). Ports UXP `tools/surf-cutbyplane.js`
  * (`onDialogAccept`):
@@ -22,8 +22,8 @@ import type { MolSurfObj } from '@cuemol/core/src/wrappers/MolSurfObj';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull, getViewOrNull } from './helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
 
 /** Cross-section cutting mode (UXP `cuttype-list` values). */

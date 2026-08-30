@@ -9,8 +9,8 @@
  * those.
  */
 
-import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
-import { findTypedNode } from '../../hooks/sceneTree/sceneTreeNodeUtils'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
+import { findTypedNode } from '@renderer/hooks/sceneTree/sceneTreeNodeUtils'
 import type { NodeTarget } from './InspectorProvider'
 
 export function resolveNodeTarget(tree: SceneTreeNode | null, id: string): NodeTarget | null {

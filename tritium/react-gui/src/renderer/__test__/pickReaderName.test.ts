@@ -5,9 +5,9 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import { pickReaderName } from '../worker/server/services/helpers/pickReaderName'
-import { DEFAULT_SNIFF_CAP } from '../worker/shared/sniffConfig'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { pickReaderName } from '@renderer/worker/server/services/helpers/pickReaderName'
+import { DEFAULT_SNIFF_CAP } from '@renderer/worker/shared/sniffConfig'
 
 interface ReaderInfo { name: string; fext: string; category: number }
 

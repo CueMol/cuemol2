@@ -14,9 +14,9 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { act } from "react";
-import { makeRenderHook, flushPromises } from "./helpers/testHarness";
-import { useAnimTransport } from "../hooks/useAnimTransport";
-import type { AnimMgrState } from "../types";
+import { makeRenderHook, flushPromises } from "@renderer/__test__/helpers/testHarness";
+import { useAnimTransport } from "@renderer/features/animation/useAnimTransport";
+import type { AnimMgrState } from "@renderer/types";
 
 function mgrState(over: Partial<AnimMgrState> = {}): AnimMgrState {
   return { lengthMs: 5000, elapsedMs: 0, playState: "stop", loop: false, startcam: "", ...over };

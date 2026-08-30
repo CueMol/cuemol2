@@ -25,7 +25,7 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
 }))
 
@@ -40,9 +40,9 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 
-import { CutSurfByPlaneDialog } from '../components/dialogs/CutSurfByPlaneDialog'
-import type { CutSurfByPlaneDialogResult } from '../components/dialogs/CutSurfByPlaneDialog'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { CutSurfByPlaneDialog } from '@renderer/dialogs/CutSurfByPlaneDialog'
+import type { CutSurfByPlaneDialogResult } from '@renderer/dialogs/CutSurfByPlaneDialog'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 const SURF = { uid: 42, name: 'surf1', className: 'MolSurfObj' }
 

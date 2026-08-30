@@ -2,20 +2,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react";
-import { ViewportToolPalette } from "../components/ViewportToolPalette";
-import { TOOLS } from "../data/viewportTools";
-import type { ToolId } from "../data/viewportTools";
+import { ViewportToolPalette } from "@renderer/features/molview/ViewportToolPalette";
+import { TOOLS } from "@renderer/data/viewportTools";
+import type { ToolId } from "@renderer/data/viewportTools";
 
 // The palette reads the theme (for the options popover portal) and embeds the
 // measure / bond-edit options popovers (which pull in worker hooks). Stub them
 // all: this suite only exercises the tool buttons, not the popover content.
-vi.mock("../contexts/ThemeContext", () => ({
+vi.mock("@renderer/contexts/ThemeContext", () => ({
   useTheme: () => ({ theme: "dark" }),
 }));
-vi.mock("../components/MeasureOptionsPopover", () => ({
+vi.mock("@renderer/features/molview/MeasureOptionsPopover", () => ({
   MeasureOptionsPopover: () => null,
 }));
-vi.mock("../components/BondEditOptionsPopover", () => ({
+vi.mock("@renderer/features/molview/BondEditOptionsPopover", () => ({
   BondEditOptionsPopover: () => null,
 }));
 

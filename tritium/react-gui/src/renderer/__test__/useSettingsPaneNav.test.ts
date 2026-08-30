@@ -8,8 +8,8 @@
 
 import { describe, it, expect } from 'vitest'
 import { act } from 'react'
-import { makeRenderHook } from './helpers/testHarness'
-import { useSettingsPaneNav } from '../components/panes/settings/useSettingsPaneNav'
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
+import { useSettingsPaneNav } from '@renderer/features/settings/settings/useSettingsPaneNav'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 

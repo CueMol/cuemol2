@@ -13,9 +13,9 @@
 
 import React, { act } from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
-vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'light' }) }))
+vi.mock('@renderer/contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'light' }) }))
 
 import { ComboBoxField } from '@renderer/h3-kit/form'
 

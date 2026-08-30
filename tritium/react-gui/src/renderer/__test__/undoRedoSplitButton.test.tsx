@@ -12,14 +12,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 const dispatch = vi.fn(() => Promise.resolve())
-vi.mock('../commands/CommandRegistry', () => ({
+vi.mock('@renderer/commands/CommandRegistry', () => ({
   useCommands: () => ({ dispatch, register: vi.fn(), has: vi.fn() }),
 }))
 
-import { UndoRedoSplitButton } from '../components/toolbar/UndoRedoSplitButton'
+import { UndoRedoSplitButton } from '@renderer/shell/toolbar/UndoRedoSplitButton'
 
 void React
 

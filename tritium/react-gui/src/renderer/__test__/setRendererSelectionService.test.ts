@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn((_ctx: unknown, selStr: string, _uid?: number) =>
         selStr ? { __sel: selStr } : null,
     ),
 }))
 
-import { services } from '../worker/server/services/setRendererSelection.service'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/setRendererSelection.service'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ChangeRendSelKind } from '@shared/types/sceneCtxMenu'
 
 interface FixtureOpts {

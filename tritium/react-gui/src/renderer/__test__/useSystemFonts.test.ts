@@ -6,11 +6,11 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { buildFontList, resolveFonts } from '../hooks/useSystemFonts'
+import { buildFontList, resolveFonts } from '@renderer/features/settings/useSystemFonts'
 import {
   GENERIC_FONT_FAMILIES,
   FALLBACK_FONT_LIST,
-} from '../components/panes/settings/labelFont'
+} from '@renderer/features/settings/settings/labelFont'
 
 describe('buildFontList', () => {
   it('lists generics first, then deduped case-insensitively-sorted system families', () => {

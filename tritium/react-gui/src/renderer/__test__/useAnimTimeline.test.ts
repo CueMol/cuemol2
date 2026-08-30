@@ -12,10 +12,10 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { makeRenderHook, flushPromises } from "./helpers/testHarness";
-import { SEM_ANIM, SEM_CAMERA, SEM_SCENE } from "../event";
-import { useAnimTimeline } from "../hooks/useAnimTimeline";
-import type { AnimTimeline } from "../types";
+import { makeRenderHook, flushPromises } from "@renderer/__test__/helpers/testHarness";
+import { SEM_ANIM, SEM_CAMERA, SEM_SCENE } from "@renderer/event";
+import { useAnimTimeline } from "@renderer/features/animation/useAnimTimeline";
+import type { AnimTimeline } from "@renderer/types";
 
 function fixture(sceneId = 7): AnimTimeline {
   return {

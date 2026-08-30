@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import type { TabData } from '../types'
+import type { TabData } from '@renderer/types'
 import { IPC } from '@shared/ipcChannels'
 
 export function useWindowTitleSync(tabs: TabData[], activeTab: string): void {

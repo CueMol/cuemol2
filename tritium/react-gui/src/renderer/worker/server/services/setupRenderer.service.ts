@@ -20,20 +20,20 @@
 // `mol.createRenderer(type)` directly. This service mirrors that
 // approach so the molecule's parent linkage stays at its scene-graph
 // default and the undo path through coloring/paint sub-objects works.
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { View } from '@cuemol/core/src/wrappers/View';
-import type { RendererOptions } from '../../shared/fileOpenTypes';
-import { getDefaultStyleName } from './helpers/getDefaultStyleName';
-import { makeSel } from './helpers/makeSel';
-import { molPostProc } from './helpers/molPostProc';
+import type { RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
+import { getDefaultStyleName } from '@renderer/worker/server/services/helpers/getDefaultStyleName';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
+import { molPostProc } from '@renderer/worker/server/services/helpers/molPostProc';
 import {
     DISORDER_TARGET_TYPES,
     listRendererNamesByType,
-} from './helpers/rendererNames';
-import { safeRead } from './helpers/safeRead';
+} from '@renderer/worker/server/services/helpers/rendererNames';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 
 const log = console;
 

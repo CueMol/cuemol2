@@ -10,7 +10,7 @@
  * wheels AND no recent trackpad evidence (hysteresis -> no flapping).
  */
 
-import type { InputDeviceMode } from '../viewInputConfig'
+import type { InputDeviceMode } from '@renderer/viewInputConfig'
 import { classifyWheelSample, type WheelSample } from './wheelDeviceClassifier'
 
 /** Consecutive mouse-like wheels needed to switch trackpad -> mouse. */

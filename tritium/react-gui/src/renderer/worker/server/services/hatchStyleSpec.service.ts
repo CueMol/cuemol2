@@ -2,7 +2,7 @@
 //
 // Resolve an NPR hatch style name to umbreon's spec text (the layer editor's
 // template) through the umbreon exporter's getHatchStyleSpec.
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { HatchStyleSpecReply } from '@shared/types/renderWindow';
 
 export interface GetHatchStyleSpecArgs {

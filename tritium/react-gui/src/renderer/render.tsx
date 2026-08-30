@@ -5,7 +5,7 @@
  * This window hosts only pure-UI render components; it has NO CueMol worker
  * (the native addon lives solely in the main window's renderer). All render
  * execution is relayed to the main window over IPC -- see
- * hooks/useRenderWindowClient.ts and main/renderWindowIpc.ts.
+ * features/render/useRenderWindowClient.ts and main/renderWindowIpc.ts.
  *
  * The provider stack is deliberately minimal: no CueMolProvider (would spawn
  * a second native addon), no dialog/command providers, and no
@@ -27,10 +27,10 @@ import '@blueprintjs/icons/lib/css/blueprint-icons.css'
 import './index.css'
 import './app.css'
 
-import { ThemeProvider } from './contexts/ThemeContext'
-import { ContextMenuProvider } from './components/menu/ContextMenuProvider'
-import { ErrorBoundary } from './crash/ErrorBoundary'
-import { RenderWindowApp } from './components/renderwindow/RenderWindowApp'
+import { ThemeProvider } from '@renderer/contexts/ThemeContext'
+import { ContextMenuProvider } from '@renderer/shell/menu/ContextMenuProvider'
+import { ErrorBoundary } from '@renderer/crash/ErrorBoundary'
+import { RenderWindowApp } from '@renderer/features/render/renderwindow/RenderWindowApp'
 
 const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(

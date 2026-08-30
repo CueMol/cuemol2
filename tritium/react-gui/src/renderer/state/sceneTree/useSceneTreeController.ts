@@ -14,15 +14,15 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
-import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
-import type { UseSceneTreeResult } from "../../hooks/useSceneTree";
-import type { MoveSceneNodeArgs } from "../../components/panes/sceneTreeDnd";
-import { useSceneContextMenu } from "../../hooks/useSceneContextMenu";
-import { useClipboardScope } from "../../hooks/useClipboardScope";
-import { useLatestRef } from "../../hooks/react/useLatestRef";
-import { useCommands } from "../../commands/CommandRegistry";
-import { CmdId } from "../../commands/ids";
+import type { AsyncCueMol } from "@renderer/worker/client/AsyncCueMol";
+import type { SceneTreeNode } from "@renderer/worker/shared/sceneTreeTypes";
+import type { UseSceneTreeResult } from "@renderer/features/scene/useSceneTree";
+import type { MoveSceneNodeArgs } from "@renderer/features/scene/sceneTreeDnd";
+import { useSceneContextMenu } from "@renderer/features/scene/useSceneContextMenu";
+import { useClipboardScope } from "@renderer/hooks/useClipboardScope";
+import { useLatestRef } from "@renderer/hooks/react/useLatestRef";
+import { useCommands } from "@renderer/commands/CommandRegistry";
+import { CmdId } from "@renderer/commands/ids";
 
 export interface UseSceneTreeControllerArgs {
   /** The `useSceneTree` result, passed in whole. */

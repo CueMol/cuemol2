@@ -23,8 +23,8 @@
 
 import { useCommands, useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
-import { selectAllInScope } from '../utils/selectAllScope'
-import { dispatchEditClipboard, dispatchEditUndoRedo } from '../utils/editClipboard'
+import { selectAllInScope } from '@renderer/utils/selectAllScope'
+import { dispatchEditClipboard, dispatchEditUndoRedo } from '@renderer/utils/editClipboard'
 
 export function useFocusEditCommands(): void {
     const { dispatch } = useCommands()

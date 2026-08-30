@@ -135,5 +135,5 @@ export type {
   AnimElement,
   AnimMgrState,
   AnimTimeline,
-} from './worker/shared/animTypes';
-export type { HitTestResult } from './worker/shared/hitTest';
+} from '@renderer/worker/shared/animTypes';
+export type { HitTestResult } from '@renderer/worker/shared/hitTest';

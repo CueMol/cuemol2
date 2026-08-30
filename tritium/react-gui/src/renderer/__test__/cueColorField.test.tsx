@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 void React
 
@@ -27,7 +27,7 @@ let captured: {
     onChange?: (value: string, completed: boolean) => void
 } = {}
 
-vi.mock('../h3-kit/colorpicker/ColorPicker', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/ColorPicker', () => ({
     ColorPicker: (props: typeof captured) => {
         captured = props
         return React.createElement('div', { className: 'h3-color-stub' })

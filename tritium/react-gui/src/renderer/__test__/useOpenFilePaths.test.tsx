@@ -1,6 +1,6 @@
 /**
  * Pins the batch-open contract shared by the drag-and-drop and OS-shell open
- * paths (hooks/useOpenFilePaths.ts).
+ * paths (features/file-io/useOpenFilePaths.ts).
  *
  * The load-bearing properties are: files open strictly one at a time (the
  * renderer-option dialog is modal), one failing file does not abort the batch,
@@ -10,16 +10,16 @@
 
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { makeRenderHook, flushPromises } from './helpers/testHarness'
-import { CommandProvider, useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import { resetOpenFilePathsForTests, useOpenFilePaths } from '../hooks/useOpenFilePaths'
-import type { OpenFilePathsApi } from '../hooks/useOpenFilePaths'
+import { makeRenderHook, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import { CommandProvider, useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import { resetOpenFilePathsForTests, useOpenFilePaths } from '@renderer/features/file-io/useOpenFilePaths'
+import type { OpenFilePathsApi } from '@renderer/features/file-io/useOpenFilePaths'
 
 void React
 
 const showErrorAlert = vi.fn((_args: { title: string; message: string }) => Promise.resolve())
-vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
 }))
 

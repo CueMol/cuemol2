@@ -8,11 +8,11 @@
 
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { WorkerContext } from '../types/WorkerContext';
-import type { RendererOptions } from '../../shared/fileOpenTypes';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import type { RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer.service';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface CreateRendererOnObjectArgs {
     sceneId: number;

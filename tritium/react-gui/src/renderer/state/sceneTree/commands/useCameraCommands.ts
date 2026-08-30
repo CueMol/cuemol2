@@ -10,8 +10,8 @@
 
 import { IPC } from '@shared/ipcChannels'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { UseSceneTreeResult } from '@renderer/hooks/useSceneTree'
-import { useShowEditCameraVisFlagsDialog } from '@renderer/components/dialogs/EditCameraVisFlagsDialogProvider'
+import type { UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
+import { useShowEditCameraVisFlagsDialog } from '@renderer/dialogs/EditCameraVisFlagsDialogProvider'
 import { useRegisterCommand } from '@renderer/commands/CommandRegistry'
 import { CmdId } from '@renderer/commands/ids'
 

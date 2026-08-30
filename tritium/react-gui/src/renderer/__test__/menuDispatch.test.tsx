@@ -13,12 +13,12 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
-import { CommandProvider, useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import type { CommandKey } from '../commands/CommandMap'
+import { CommandProvider, useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import type { CommandKey } from '@renderer/commands/CommandMap'
 import { IPC } from '@shared/ipcChannels'
-import { useMenuDispatch } from '../hooks/useMenuDispatch'
-import { makeRenderHook } from './helpers/testHarness'
+import { useMenuDispatch } from '@renderer/hooks/useMenuDispatch'
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   React.createElement(CommandProvider, null, children)

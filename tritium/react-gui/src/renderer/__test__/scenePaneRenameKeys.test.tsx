@@ -13,13 +13,13 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree } from './helpers/testHarness'
-import { ScenePane } from '../components/panes/ScenePane'
-import { withSceneTree } from './helpers/sceneTreeEnv'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import { ScenePane } from '@renderer/features/scene/ScenePane'
+import { withSceneTree } from '@renderer/__test__/helpers/sceneTreeEnv'
 
 // ScenePane reads the tree and its actions from the provider; stand it in.
-vi.mock('../state/sceneTree', async () => (await import('./helpers/sceneTreeEnv')).mockSceneTreeModule())
-import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
+vi.mock('@renderer/state/sceneTree', async () => (await import('@renderer/__test__/helpers/sceneTreeEnv')).mockSceneTreeModule())
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 
 void React
 

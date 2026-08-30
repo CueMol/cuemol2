@@ -9,9 +9,9 @@
 //   stylem.getStrDataDefsJSON("sel", scene_id)  // scene-level
 //   stylem.getStrDataDefsJSON("sel", 0)         // global
 //   obj.sel.toString()                          // current selection
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface GetSelDefsArgs {
     sceneId: number;

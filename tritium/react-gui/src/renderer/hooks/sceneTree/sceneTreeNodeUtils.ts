@@ -12,7 +12,7 @@
 import type {
     SceneNodeType,
     SceneTreeNode,
-} from '../../worker/shared/sceneTreeTypes'
+} from '@renderer/worker/shared/sceneTreeTypes'
 
 /** Depth-first lookup of a node by its C++ uid. */
 export function findNode(

@@ -11,27 +11,27 @@ import type { ElectronFileFilter } from '@shared/types/fileDialog'
 import type {
   GetCompatibleRendererNamesArgs,
   GetCompatibleRendererNamesResult,
-} from '../../server/services/getCompatibleRendererNames.service'
+} from '@renderer/worker/server/services/getCompatibleRendererNames.service'
 import type {
   GetMtzColumnInfoArgs,
   GetMtzColumnInfoResult,
-} from '../../server/services/getMtzColumnInfo.service'
-import type { GetOpenFiltersArgs } from '../../server/services/getOpenFilters.service'
+} from '@renderer/worker/server/services/getMtzColumnInfo.service'
+import type { GetOpenFiltersArgs } from '@renderer/worker/server/services/getOpenFilters.service'
 import type {
   GetReaderDefaultOptionsArgs,
   GetReaderDefaultOptionsResult,
-} from '../../server/services/getReaderDefaultOptions.service'
-import type { LoadObjectArgs, LoadObjectResult } from '../../server/services/loadObject.service'
+} from '@renderer/worker/server/services/getReaderDefaultOptions.service'
+import type { LoadObjectArgs, LoadObjectResult } from '@renderer/worker/server/services/loadObject.service'
 import type {
   LoadSceneArgs,
   LoadSceneResult,
   OpenSceneFileArgs,
   OpenSceneFileResult,
-} from '../../server/services/loadScene.service'
+} from '@renderer/worker/server/services/loadScene.service'
 import type {
   LoadTrajectoryArgs,
   LoadTrajectoryResult,
-} from '../../server/services/loadTrajectory.service'
+} from '@renderer/worker/server/services/loadTrajectory.service'
 import type {
   GetObjectSaveInfoArgs,
   GetObjectSaveInfoResult,
@@ -39,21 +39,21 @@ import type {
   ListSavableObjectsResult,
   SaveObjectToFileArgs,
   SaveObjectToFileResult,
-} from '../../server/services/objectSave.service'
+} from '@renderer/worker/server/services/objectSave.service'
 import type {
   ProbeMapHeaderArgs,
   ProbeMapHeaderResult,
-} from '../../server/services/probeMapHeader.service'
+} from '@renderer/worker/server/services/probeMapHeader.service'
 import type {
   StreamLoadDensityMapArgs,
   StreamLoadDensityMapResult,
-} from '../../server/services/streamLoadDensityMap.service'
+} from '@renderer/worker/server/services/streamLoadDensityMap.service'
 import type {
   CancelStreamLoadArgs,
   CancelStreamLoadResult,
   StreamLoadFromUrlArgs,
   StreamLoadFromUrlResult,
-} from '../../server/services/streamLoadFromUrl.service'
+} from '@renderer/worker/server/services/streamLoadFromUrl.service'
 
 export interface FileCalls {
   getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs; result: GetCompatibleRendererNamesResult }

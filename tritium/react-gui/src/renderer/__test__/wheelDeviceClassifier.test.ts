@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { classifyWheelSample } from '../input/wheelDeviceClassifier'
+import { classifyWheelSample } from '@renderer/input/wheelDeviceClassifier'
 
 describe('classifyWheelSample', () => {
   it('line / page deltaMode is a mouse wheel on any platform', () => {

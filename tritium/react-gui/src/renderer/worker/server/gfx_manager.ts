@@ -20,12 +20,12 @@
  *   - gfx/glState.ts        -- stateless GL global-state toggles
  */
 import { BYPASS_WRAP_GL, PERF_MEASURE, perfCounters } from './perf';
-import { ShaderStore } from './gfx/ShaderStore';
-import { BufferStore } from './gfx/BufferStore';
-import { TextureStore } from './gfx/TextureStore';
-import { FboStore } from './gfx/FboStore';
-import { ViewLoopController } from './gfx/ViewLoopController';
-import * as glState from './gfx/glState';
+import { ShaderStore } from '@renderer/worker/server/gfx/ShaderStore';
+import { BufferStore } from '@renderer/worker/server/gfx/BufferStore';
+import { TextureStore } from '@renderer/worker/server/gfx/TextureStore';
+import { FboStore } from '@renderer/worker/server/gfx/FboStore';
+import { ViewLoopController } from '@renderer/worker/server/gfx/ViewLoopController';
+import * as glState from '@renderer/worker/server/gfx/glState';
 
 /**
  * Wrap a WebGL context in a Proxy that calls `getError()` after every GL

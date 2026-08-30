@@ -7,9 +7,9 @@
 
 import { describe, it, expect } from 'vitest';
 import { act } from 'react';
-import { makeRenderHook } from './helpers/testHarness';
-import { useRenderSettings } from '../hooks/useRenderSettings';
-import { parseHatchSpec } from '../data/hatchSpec';
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness';
+import { useRenderSettings } from '@renderer/features/render/useRenderSettings';
+import { parseHatchSpec } from '@renderer/data/hatchSpec';
 
 const valueOf = (props: { key: string; value: unknown }[], key: string) =>
     props.find((p) => p.key === key)?.value;

@@ -10,37 +10,37 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
-import { CommandProvider, useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness'
+import { CommandProvider, useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 const showFileOpenOptionDialog = vi.fn<(args: unknown) => Promise<unknown>>()
 const showGetPdbDialog = vi.fn<() => Promise<unknown>>()
 const showErrorAlert = vi.fn<(args: unknown) => Promise<void>>()
 
-vi.mock('../components/fopen-opt-dlgs/FileOpenOptionDialogProvider', () => ({
+vi.mock('@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialogProvider', () => ({
   useShowFileOpenOptionDialog: () => showFileOpenOptionDialog,
 }))
-vi.mock('../components/dialogs/GetPdbDialogProvider', () => ({
+vi.mock('@renderer/dialogs/GetPdbDialogProvider', () => ({
   useShowGetPdbDialog: () => showGetPdbDialog,
 }))
-vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
 }))
-vi.mock('../components/dialogs/StreamProgressDialogProvider', () => ({
+vi.mock('@renderer/dialogs/StreamProgressDialogProvider', () => ({
   useStreamProgressDialog: () => ({ show: vi.fn(), hide: vi.fn(), update: vi.fn() }),
 }))
-vi.mock('../components/dialogs/pdbIdHistory', () => ({ pushHistory: vi.fn() }))
-vi.mock('../commands/addRecent', () => ({ addRecent: vi.fn() }))
-vi.mock('../components/dialogs/OpenMdTrajDialogProvider', () => ({
+vi.mock('@renderer/dialogs/pdbIdHistory', () => ({ pushHistory: vi.fn() }))
+vi.mock('@renderer/commands/addRecent', () => ({ addRecent: vi.fn() }))
+vi.mock('@renderer/dialogs/OpenMdTrajDialogProvider', () => ({
   useShowOpenMdTrajDialog: () => vi.fn(),
 }))
-vi.mock('../components/dialogs/NewRendererDialogProvider', () => ({
+vi.mock('@renderer/dialogs/NewRendererDialogProvider', () => ({
   useShowNewRendererDialog: () => vi.fn(),
 }))
 
-import { useSceneCommands } from '../commands/useSceneCommands'
+import { useSceneCommands } from '@renderer/commands/useSceneCommands'
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   React.createElement(CommandProvider, null, children)

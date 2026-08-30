@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/apis/fileApi.ts
+ * @file worker/client/apis/fileApi.ts
  * @description Renderer-thread thin wrappers for worker file-I/O services
  * (renderer-compatibility probe, open-dialog filters, new scene+view,
  * scene / object load).
@@ -7,16 +7,16 @@
  * Each function returns a Promise resolved with the worker reply and logs
  * a warning on failure.
  */
-import { WorkerTransport } from '../WorkerTransport';
+import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
-import type { FileOpenOptions } from '../../shared/fileOpenTypes';
-import type { GetCompatibleRendererNamesResult } from '../../server/services/getCompatibleRendererNames.service';
-import type { GetMtzColumnInfoResult } from '../../server/services/getMtzColumnInfo.service';
-import type { GetReaderDefaultOptionsResult } from '../../server/services/getReaderDefaultOptions.service';
-import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '../../server/services/loadTrajectory.service';
-import type { LoadObjectResult } from '../../server/services/loadObject.service';
-import type { LoadSceneResult } from '../../server/services/loadScene.service';
-import type { GetTrajectoryRendererInfoResult } from '../../server/services/getTrajectoryRendererInfo.service';
+import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
+import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/getCompatibleRendererNames.service';
+import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/getMtzColumnInfo.service';
+import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/getReaderDefaultOptions.service';
+import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/loadTrajectory.service';
+import type { LoadObjectResult } from '@renderer/worker/server/services/loadObject.service';
+import type { LoadSceneResult } from '@renderer/worker/server/services/loadScene.service';
+import type { GetTrajectoryRendererInfoResult } from '@renderer/worker/server/services/getTrajectoryRendererInfo.service';
 
 const log = console;
 

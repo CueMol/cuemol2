@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { clampAndQuantize } from '../numericMath';
+import { clampAndQuantize } from '@renderer/h3-kit/form/numericMath';
 import {
     STEP_REPEAT_DELAY_MS,
     STEP_REPEAT_INTERVAL_MS,

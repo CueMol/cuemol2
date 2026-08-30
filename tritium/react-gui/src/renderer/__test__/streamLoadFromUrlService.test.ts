@@ -11,25 +11,25 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import type { FileOpenOptions } from '../components/fopen-opt-dlgs/types'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { FileOpenOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 
-vi.mock('../worker/server/services/setupRenderer.service', () => ({
+vi.mock('@renderer/worker/server/services/setupRenderer.service', () => ({
     setupRenderer: vi.fn(),
 }))
-vi.mock('../worker/server/services/withUndoTxn', () => ({
+vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     withUndoTxn: vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
     // The Result-returning variant: commit on ok, roll back otherwise. The
     // fixture only needs the body to run, so pass it straight through.
     undoTxnResult: (_s: unknown, _l: string, fn: () => unknown) => fn(),
 }))
-vi.mock('../worker/server/services/helpers/applyReaderOptions', () => ({
+vi.mock('@renderer/worker/server/services/helpers/applyReaderOptions', () => ({
     applyReaderOptions: vi.fn(),
 }))
 
-import { services } from '../worker/server/services/streamLoadFromUrl.service'
-import { setupRenderer } from '../worker/server/services/setupRenderer.service'
-import { applyReaderOptions } from '../worker/server/services/helpers/applyReaderOptions'
+import { services } from '@renderer/worker/server/services/streamLoadFromUrl.service'
+import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions'
 
 const { streamLoadFromUrl, cancelStreamLoad } = services
 

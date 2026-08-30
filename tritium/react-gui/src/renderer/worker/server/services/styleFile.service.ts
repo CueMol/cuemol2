@@ -13,10 +13,10 @@
 // (via DIALOG_STYLE_OPEN / DIALOG_STYLE_SAVE IPCs) and forwarding the
 // resolved absolute path here. The worker does not own the dialog.
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { isValidUid } from '../../shared/uid';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { isValidUid } from '@renderer/worker/shared/uid';
 
 interface StyleManagerLike {
     loadStyleSetFromFile(scopeId: number, path: string, readOnly: boolean): number;

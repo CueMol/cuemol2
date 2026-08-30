@@ -15,7 +15,7 @@ import React from 'react'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
   useTheme: () => ({ theme: 'light' }),
   ThemeProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
@@ -28,14 +28,14 @@ import { IPC } from '@shared/ipcChannels'
 import {
   ModalOpenCounterProvider,
   ModalOpenCounterTestProvider,
-} from '../contexts/ModalOpenCounterContext'
-import { createDialogHook } from '../hooks/useDialogFactory'
+} from '@renderer/contexts/ModalOpenCounterContext'
+import { createDialogHook } from '@renderer/hooks/useDialogFactory'
 import {
   mountTree,
   flushPromises,
   setupElectronAPI,
   teardownElectronAPI,
-} from './helpers/testHarness'
+} from '@renderer/__test__/helpers/testHarness'
 
 void React
 

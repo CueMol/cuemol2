@@ -1,5 +1,5 @@
 import type { ViewCenterMark } from '@shared/types/menuState'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 

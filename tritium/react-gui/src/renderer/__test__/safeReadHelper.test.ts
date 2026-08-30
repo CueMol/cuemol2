@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { safeRead } from '../worker/server/services/helpers/safeRead';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 
 describe('safeRead', () => {
     it('returns the value produced by the read thunk', () => {

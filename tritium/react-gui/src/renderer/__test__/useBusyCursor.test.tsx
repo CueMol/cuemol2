@@ -12,8 +12,8 @@
 import React from 'react'
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
-import { useBusyCursor } from '../hooks/useBusyCursor'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import { useBusyCursor } from '@renderer/hooks/useBusyCursor'
 void React
 
 /** Longer than the hook's rising-edge delay, so the cursor has settled. */

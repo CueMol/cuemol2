@@ -24,8 +24,8 @@ import {
   isEditableFocused,
   registerClipboardScope,
   setClipboardModalOpen,
-} from '../utils/editClipboard'
-import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+} from '@renderer/utils/editClipboard'
+import { setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 let api: ReturnType<typeof setupElectronAPI>
 let uninstall: () => void

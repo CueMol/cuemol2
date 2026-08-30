@@ -12,11 +12,11 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ChangeRendSelKind } from '@shared/types/sceneCtxMenu';
-import { makeSel } from './helpers/makeSel';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface SetRendererSelectionArgs {
     sceneId: number;

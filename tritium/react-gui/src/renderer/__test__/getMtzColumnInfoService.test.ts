@@ -6,9 +6,9 @@
  * resolution off the reader (populated as a side effect of the header parse).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-import { services } from '../worker/server/services/getMtzColumnInfo.service'
+import { services } from '@renderer/worker/server/services/getMtzColumnInfo.service'
 const { getMtzColumnInfo } = services
 
 function makeCtx(opts: {

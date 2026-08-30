@@ -17,10 +17,10 @@
  */
 
 import React, { createContext, useContext, useMemo } from 'react'
-import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
-import { useSceneTree, type SceneTreeSelectionOps } from '../../hooks/useSceneTree'
-import { useCueMol } from '../../hooks/cuemol/useCueMol'
-import { useActiveScene } from '../workspace'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
+import { useSceneTree, type SceneTreeSelectionOps } from '@renderer/features/scene/useSceneTree'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useActiveScene } from '@renderer/state/workspace'
 import { useSceneTreeController, type SceneTreeActions } from './useSceneTreeController'
 import { SceneTreeCommands, useSceneNewFlows } from './commands'
 

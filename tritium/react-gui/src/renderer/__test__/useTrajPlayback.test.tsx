@@ -11,9 +11,9 @@
 
 import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { makeRenderHook } from './helpers/testHarness'
-import { useTrajPlayback } from '../hooks/useTrajPlayback'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
+import { useTrajPlayback } from '@renderer/features/trajectory/useTrajPlayback'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 void React
 

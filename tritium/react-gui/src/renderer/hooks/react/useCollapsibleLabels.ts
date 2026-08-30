@@ -1,5 +1,5 @@
 /**
- * @file hooks/useCollapsibleLabels.ts
+ * @file hooks/react/useCollapsibleLabels.ts
  * @description Two-state, uniform label collapse for an icon+text toolbar.
  *
  * Toolbar button labels are shown in full or hidden entirely -- never truncated

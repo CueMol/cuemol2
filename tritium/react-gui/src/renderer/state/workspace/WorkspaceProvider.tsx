@@ -36,9 +36,9 @@ import React, {
   useReducer,
   useRef,
 } from 'react'
-import type { TabData } from '../../types'
-import { useCueMol } from '../../hooks/cuemol/useCueMol'
-import { useMolViewTabTitleSync } from '../../hooks/useMolViewTabTitleSync'
+import type { TabData } from '@renderer/types'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useMolViewTabTitleSync } from '@renderer/hooks/useMolViewTabTitleSync'
 import { useConfirmCloseTab } from './useConfirmCloseTab'
 import {
   INITIAL_WORKSPACE,

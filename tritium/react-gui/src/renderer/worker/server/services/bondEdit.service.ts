@@ -23,7 +23,7 @@
  * tool uses: the two tools are never active at once (switching tools resets the
  * other's sequence), so sharing the per-view draw object is safe.
  */
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 import type { DistPickDrawObj } from '@cuemol/core/src/wrappers/DistPickDrawObj';
@@ -31,7 +31,7 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager';
 import type { HitTestResult } from '@renderer/types';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 /** One picked atom: the molecule object uid and the atom id within it. */
 interface PickedAtom {

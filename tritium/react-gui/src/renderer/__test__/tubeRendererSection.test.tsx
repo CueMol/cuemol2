@@ -20,7 +20,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -31,13 +31,13 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }))
 
-import { SchemaSection } from '../components/inspector/SchemaSection'
-import { TUBE_SECTIONS } from '../components/inspector/schema/tube'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { TUBE_SECTIONS } from '@renderer/features/inspector/schema/tube'
 import {
 
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-} from '../components/inspector/rendererPropSections'
+} from '@renderer/features/inspector/rendererPropSections'
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {

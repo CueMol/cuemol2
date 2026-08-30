@@ -19,9 +19,9 @@
 // The native objects are driven through `as unknown as` casts, so their
 // surfaces are described by the minimal local interfaces below.
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { OBJREADER_CATEGORY } from './helpers/pickReaderName';
+import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 
 const log = console;
 

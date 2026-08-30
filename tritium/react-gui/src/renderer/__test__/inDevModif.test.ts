@@ -16,7 +16,7 @@ import {
     INDEV_MBTN,
     INDEV_RBTN,
     decodeClick,
-} from '../worker/shared/inDevModif'
+} from '@renderer/worker/shared/inDevModif'
 
 describe('inDevModif bits (mirror of InDevEvent.hpp)', () => {
     it('match the C++ enum values verbatim', () => {

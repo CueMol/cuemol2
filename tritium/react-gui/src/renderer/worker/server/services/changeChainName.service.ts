@@ -1,5 +1,5 @@
 /**
- * @file services/changeChainName.service.ts
+ * @file worker/server/services/changeChainName.service.ts
  * @description Worker service backing the "Change chain ID" tool dialog
  * (`dialog.tool.chg-chname`). Ports UXP `tools/chg_chname.js`
  * (`gChgChnmDlg.onDialogAccept`):
@@ -13,10 +13,10 @@
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
-import type { WorkerContext } from '../types/WorkerContext';
-import { resolveMolTool } from './helpers/molAnlTool';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { resolveMolTool } from '@renderer/worker/server/services/helpers/molAnlTool';
 import { undoTxnResult } from './withUndoTxn';
-import { ok, type Result } from '../../shared/result';
+import { ok, type Result } from '@renderer/worker/shared/result';
 
 export interface ChangeChainNameArgs {
     sceneId: number;

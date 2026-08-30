@@ -10,10 +10,10 @@
 // Cameras are keyed by name at the Scene API level (see cameraOps.service).
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Camera } from '@cuemol/core/src/wrappers/Camera';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { parseSceneTreeJSON, type SceneTreeNode } from '../../shared/sceneTreeTypes';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { parseSceneTreeJSON, type SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes';
 
 /** One scene element (object / renderer) row in the vis-flags editor. */
 export interface VisFlagEntry {

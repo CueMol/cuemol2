@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { loadJSON, saveJSON } from "../utils/localStorageJSON";
+import { loadJSON, saveJSON } from "@renderer/utils/localStorageJSON";
 
 /** Per-column minimum width in px. */
 const MIN_COL_WIDTH = 40;

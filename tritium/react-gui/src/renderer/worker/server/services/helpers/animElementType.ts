@@ -1,5 +1,5 @@
 /**
- * @file services/helpers/animElementType.ts
+ * @file worker/server/services/helpers/animElementType.ts
  * @description Derive an `AnimElementType` from a wrapped CueMol `AnimObj`.
  *
  * `AnimObj` exposes no `type` property, so the timeline must infer the

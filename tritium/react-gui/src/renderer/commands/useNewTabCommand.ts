@@ -6,14 +6,14 @@
  */
 
 import { useCallback } from 'react'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
-import { useShowNewTabDialog } from '../components/dialogs/NewTabDialogProvider'
-import type { NewSceneAction } from '../hooks/useNewSceneAction'
-import { makeTabLabel } from '../worker/shared/tabLabel'
-import { useWorkspaceDispatch } from '../state/workspace'
+import { useShowNewTabDialog } from '@renderer/dialogs/NewTabDialogProvider'
+import type { NewSceneAction } from '@renderer/hooks/useNewSceneAction'
+import { makeTabLabel } from '@renderer/worker/shared/tabLabel'
+import { useWorkspaceDispatch } from '@renderer/state/workspace'
 
 interface UseNewTabCommandOptions {
     cm: AsyncCueMol | null

@@ -10,55 +10,55 @@
 import type {
   CreateNewSceneAndViewArgs,
   CreateNewSceneAndViewResult,
-} from '../../server/services/createNewSceneAndView.service'
+} from '@renderer/worker/server/services/createNewSceneAndView.service'
 import type {
   CreateViewInSceneArgs,
   CreateViewInSceneResult,
-} from '../../server/services/createViewInScene.service'
+} from '@renderer/worker/server/services/createViewInScene.service'
 import type {
   ExportSceneArgs,
   ExportSceneResult,
   GetAvailableSceneExportersResult,
   GetSceneExportInfoArgs,
   GetSceneExportInfoResult,
-} from '../../server/services/exportImage.service'
+} from '@renderer/worker/server/services/exportImage.service'
 import type {
   GetSceneCloseInfoArgs,
   GetSceneCloseInfoResult,
-} from '../../server/services/getSceneCloseInfo.service'
+} from '@renderer/worker/server/services/getSceneCloseInfo.service'
 import type {
   GetViewTabLabelArgs,
   GetViewTabLabelResult,
-} from '../../server/services/getViewTabLabel.service'
+} from '@renderer/worker/server/services/getViewTabLabel.service'
 import type {
   IsSceneJustCreatedArgs,
   IsSceneJustCreatedResult,
-} from '../../server/services/isSceneJustCreated.service'
+} from '@renderer/worker/server/services/isSceneJustCreated.service'
 import type {
   ListSceneObjectsArgs,
   ListSceneObjectsResult,
-} from '../../server/services/listSceneObjects.service'
+} from '@renderer/worker/server/services/listSceneObjects.service'
 import type {
   ProposeNewTabNamesArgs,
   ProposeNewTabNamesResult,
-} from '../../server/services/proposeNewTabNames.service'
+} from '@renderer/worker/server/services/proposeNewTabNames.service'
 import type {
   ProposeUniqNameArgs,
   ProposeUniqNameResult,
-} from '../../server/services/proposeUniqName.service'
+} from '@renderer/worker/server/services/proposeUniqName.service'
 import type {
   GetSceneSaveInfoArgs,
   GetSceneSaveInfoResult,
   SaveSceneArgs,
   SaveSceneResult,
-} from '../../server/services/saveScene.service'
+} from '@renderer/worker/server/services/saveScene.service'
 import type {
   SceneBgColorArgs,
   SceneBgColorResult,
   SceneColorProofingArgs,
   SceneColorProofingResult,
   SetSceneBgColorArgs,
-} from '../../server/services/sceneBgColor.service'
+} from '@renderer/worker/server/services/sceneBgColor.service'
 
 export interface SceneCalls {
   createNewSceneAndView:      { args: CreateNewSceneAndViewArgs; result: CreateNewSceneAndViewResult }

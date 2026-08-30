@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fetchStyleEntries } from '../worker/server/services/helpers/styleEntries';
-import type { WorkerContext } from '../worker/server/types/WorkerContext';
+import { fetchStyleEntries } from '@renderer/worker/server/services/helpers/styleEntries';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 /** Build a minimal WorkerContext whose styleMgr returns `json` for any scope. */
 function makeCtx(json: string | null | undefined): WorkerContext {

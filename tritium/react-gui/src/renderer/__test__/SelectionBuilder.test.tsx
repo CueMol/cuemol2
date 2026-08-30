@@ -28,7 +28,7 @@ import { act } from 'react'
 
 void React
 
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
@@ -38,7 +38,7 @@ import {
     builderReducer,
     initBuilderState,
 } from '@renderer/h3-kit/selection'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 type HarnessProps = Partial<
     Omit<SelectionBuilderProps, 'current' | 'draft' | 'dispatch' | 'onApply'>

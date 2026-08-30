@@ -2,7 +2,7 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import {
     buildCameraRoot,
     buildStyleRoot,
@@ -11,10 +11,10 @@ import {
     type SceneNodeType,
     type SceneTreeNode,
     type StyleRootEntry,
-} from '../../shared/sceneTreeTypes';
+} from '@renderer/worker/shared/sceneTreeTypes';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { listGroupChildRenderers } from './helpers/groupChildren';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 
 export interface GetSceneTreeArgs {
     sceneId: number;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { fireService } from '../utils/fireService'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { fireService } from '@renderer/utils/fireService'
 
 /**
  * Degrade-detection test for fireService -- the fire-and-forget worker-service

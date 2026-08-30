@@ -11,14 +11,14 @@
 // `LoadSceneCommand::run()` directly without going through the command
 // property setters.
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { SceneXMLReader } from '@cuemol/core/src/wrappers/SceneXMLReader';
 import type { View } from '@cuemol/core/src/wrappers/View';
 import { matchExtLength, parseExtList } from '@shared/fileExt';
-import { fail, failFrom, ok, type Result } from '../../shared/result';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { createInitialView } from './helpers/createSceneView';
+import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { createInitialView } from '@renderer/worker/server/services/helpers/createSceneView';
 
 const log = console;
 

@@ -12,7 +12,7 @@
  * no-op dispatch does not re-render subscribers.
  */
 
-import type { TabData } from '../../types'
+import type { TabData } from '@renderer/types'
 
 /** Well-known id of the singleton Settings tab. */
 export const SETTINGS_TAB_ID = '__settings__'

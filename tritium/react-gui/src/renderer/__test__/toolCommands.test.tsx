@@ -10,11 +10,11 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
-import { CommandProvider, useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import { ACTIVE_SCENE_DIALOG_COMMANDS, useToolCommands } from '../commands/useToolCommands'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import { makeRenderHook } from './helpers/testHarness'
+import { CommandProvider, useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import { ACTIVE_SCENE_DIALOG_COMMANDS, useToolCommands } from '@renderer/commands/useToolCommands'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
 
 void React
 
@@ -27,67 +27,67 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
  */
 const shown = vi.hoisted(() => [] as Array<{ dialog: string; args: unknown }>)
 
-vi.mock('../components/dialogs/ChangeChainIdDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ChangeChainIdDialogProvider', () => ({
     useShowChangeChainIdDialog: () => (args: unknown) => {
         shown.push({ dialog: 'changeChainId', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/DeleteMolDialogProvider', () => ({
+vi.mock('@renderer/dialogs/DeleteMolDialogProvider', () => ({
     useShowDeleteMolDialog: () => (args: unknown) => {
         shown.push({ dialog: 'deleteMol', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/ChangeResidueIndexDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ChangeResidueIndexDialogProvider', () => ({
     useShowChangeResidueIndexDialog: () => (args: unknown) => {
         shown.push({ dialog: 'changeResidueIndex', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/MergeMolDialogProvider', () => ({
+vi.mock('@renderer/dialogs/MergeMolDialogProvider', () => ({
     useShowMergeMolDialog: () => (args: unknown) => {
         shown.push({ dialog: 'mergeMol', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/MakeMolSurfDialogProvider', () => ({
+vi.mock('@renderer/dialogs/MakeMolSurfDialogProvider', () => ({
     useShowMakeMolSurfDialog: () => (args: unknown) => {
         shown.push({ dialog: 'makeMolSurf', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/CalcApbsPotDialogProvider', () => ({
+vi.mock('@renderer/dialogs/CalcApbsPotDialogProvider', () => ({
     useShowCalcApbsPotDialog: () => (args: unknown) => {
         shown.push({ dialog: 'calcApbsPot', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/InteractionAnalysisDialogProvider', () => ({
+vi.mock('@renderer/dialogs/InteractionAnalysisDialogProvider', () => ({
     useShowInteractionAnalysisDialog: () => (args: unknown) => {
         shown.push({ dialog: 'interactionAnalysis', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/CutSurfByPlaneDialogProvider', () => ({
+vi.mock('@renderer/dialogs/CutSurfByPlaneDialogProvider', () => ({
     useShowCutSurfByPlaneDialog: () => (args: unknown) => {
         shown.push({ dialog: 'cutSurfByPlane', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/ReassignProt2ndryDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ReassignProt2ndryDialogProvider', () => ({
     useShowReassignProt2ndryDialog: () => (args: unknown) => {
         shown.push({ dialog: 'reassignProt2ndry', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/MolSuperposeDialogProvider', () => ({
+vi.mock('@renderer/dialogs/MolSuperposeDialogProvider', () => ({
     useShowMolSuperposeDialog: () => (args: unknown) => {
         shown.push({ dialog: 'molSuperpose', args })
         return Promise.resolve(undefined)
     },
 }))
-vi.mock('../components/dialogs/MorphAnimDialogProvider', () => ({
+vi.mock('@renderer/dialogs/MorphAnimDialogProvider', () => ({
     useShowMorphAnimDialog: () => (args: unknown) => {
         shown.push({ dialog: 'morphAnim', args })
         return Promise.resolve(undefined)

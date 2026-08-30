@@ -8,10 +8,10 @@
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act } from 'react';
-import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness';
+import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from '@renderer/__test__/helpers/testHarness';
 import { IPC } from '@shared/ipcChannels';
-import { RenderConfigProvider, useRenderConfig } from '../contexts/RenderConfigContext';
-import { DEFAULT_RENDER_BINARIES } from '../worker/shared/renderTypes';
+import { RenderConfigProvider, useRenderConfig } from '@renderer/contexts/RenderConfigContext';
+import { DEFAULT_RENDER_BINARIES } from '@renderer/worker/shared/renderTypes';
 
 void React;
 

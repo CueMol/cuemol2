@@ -1,5 +1,5 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import { failFrom, type Result } from '../../shared/result';
+import { failFrom, type Result } from '@renderer/worker/shared/result';
 
 /**
  * Run `fn` inside an undo transaction, committing on success and

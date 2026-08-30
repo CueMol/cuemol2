@@ -18,10 +18,10 @@
  */
 
 import { useCallback } from 'react';
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
-import { fail, ok, type Result } from '../worker/shared/result';
-import { makeTabLabel } from '../worker/shared/tabLabel';
-import { useWorkspaceDispatch } from '../state/workspace';
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
+import { fail, ok, type Result } from '@renderer/worker/shared/result';
+import { makeTabLabel } from '@renderer/worker/shared/tabLabel';
+import { useWorkspaceDispatch } from '@renderer/state/workspace';
 
 export interface NewSceneActionOptions {
   name?: string;

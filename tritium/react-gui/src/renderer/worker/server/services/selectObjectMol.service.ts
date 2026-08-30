@@ -9,13 +9,13 @@
 // concern from the node lifecycle / query operations that remain there.
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { SelectMolKind } from '@shared/types/sceneCtxMenu';
-import { makeSel } from './helpers/makeSel';
-import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selStrTransforms';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
+import { invertSelStr, rewriteAround, toggleSidechainStr } from '@renderer/worker/server/services/helpers/selStrTransforms';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { safeRead } from './helpers/safeRead';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 
 export interface SelectObjectMolArgs {
     sceneId: number;

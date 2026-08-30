@@ -13,13 +13,13 @@ import React, { useCallback, useState } from 'react'
 import { Allotment } from 'allotment'
 import 'allotment/dist/style.css'
 
-import { ActivityBar, type ActivityView } from '../components/ActivityBar'
-import { SidePanel } from '../components/panels/SidePanel'
-import { ContentArea } from '../components/ContentArea'
-import { BottomPanel } from '../components/panels/BottomPanel'
-import { InspectorPanel } from '../components/panels/InspectorPanel'
-import { useLayout, useLayoutDispatch } from '../state/layout'
-import { useInspector } from '../state/inspector'
+import { ActivityBar, type ActivityView } from './ActivityBar'
+import { SidePanel } from './SidePanel'
+import { ContentArea } from './ContentArea'
+import { BottomPanel } from './BottomPanel'
+import { InspectorPanel } from '@renderer/features/inspector/InspectorPanel'
+import { useLayout, useLayoutDispatch } from '@renderer/state/layout'
+import { useInspector } from '@renderer/state/inspector'
 
 export const MainLayout: React.FC = () => {
   const { loaded, inspectorOpen, savedSizes } = useLayout()

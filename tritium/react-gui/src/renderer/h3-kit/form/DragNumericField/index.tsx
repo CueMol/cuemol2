@@ -121,8 +121,8 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import { AppIcon } from '../../primitives';
-import { decimalsOf } from '../numericMath';
+import { AppIcon } from '@renderer/h3-kit/primitives';
+import { decimalsOf } from '@renderer/h3-kit/form/numericMath';
 import { SNAP_FACTOR } from './dragMath';
 import { useDragValue } from './useDragValue';
 import { useNumericEdit } from './useNumericEdit';

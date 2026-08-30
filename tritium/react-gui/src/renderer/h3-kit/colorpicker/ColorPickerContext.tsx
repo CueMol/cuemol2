@@ -11,7 +11,7 @@
  */
 
 import React, { createContext, useContext, useMemo } from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 export interface ColorPickerCtx {
     cm: AsyncCueMol | null

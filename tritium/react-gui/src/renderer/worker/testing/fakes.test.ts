@@ -1,11 +1,11 @@
 /**
- * @file renderer/worker/testing/fakes.test.ts
+ * @file worker/testing/fakes.test.ts
  * @description Pins the harness contracts other tests lean on: accessor
  * spies, the C++ JSON shapes, undo bookkeeping and manager resolution.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { parseSceneTreeJSON } from '../shared/sceneTreeTypes';
+import { parseSceneTreeJSON } from '@renderer/worker/shared/sceneTreeTypes';
 import {
     fakeCamera, fakeObject, fakeRenderer, fakeScene, fakeView, makeWorkerCtx, resetFakeUids,
 } from './index';

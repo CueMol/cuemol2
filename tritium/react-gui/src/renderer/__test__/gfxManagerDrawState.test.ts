@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { GfxManager } from '../worker/server/gfx_manager'
+import { GfxManager } from '@renderer/worker/server/gfx_manager'
 
 /**
  * Degrade-detection test for GfxManager draw-state methods.

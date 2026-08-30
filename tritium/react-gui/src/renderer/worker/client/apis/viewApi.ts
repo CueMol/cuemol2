@@ -1,12 +1,12 @@
 /**
- * @file renderer/worker/client/apis/viewApi.ts
+ * @file worker/client/apis/viewApi.ts
  * @description Renderer-thread thin wrappers for worker view-lifecycle
  * calls (canvas bind, add / activate / remove view, resize).
  *
  * Each function returns a Promise resolved with the worker reply, except
  * `resized` which is a fire-and-forget `postMessage`.
  */
-import { WorkerTransport } from '../WorkerTransport';
+import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 
 const log = console;
 

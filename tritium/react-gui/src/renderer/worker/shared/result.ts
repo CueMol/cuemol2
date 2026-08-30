@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/shared/result.ts
+ * @file worker/shared/result.ts
  * @description The one result shape a worker service returns.
  *
  * Three failure conventions had grown side by side in the services: 466

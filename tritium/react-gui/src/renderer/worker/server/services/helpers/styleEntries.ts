@@ -8,7 +8,7 @@
  * synchronously. The loose `styleSetEdit` service has its own cousin parser
  * with a different result shape and is intentionally not consolidated here.
  */
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 /** One entry of the `StyleManager.getStyleNamesJSON` array (all fields optional). */
 export interface RawStyleEntry {

@@ -34,12 +34,12 @@ vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 // The pane reads the bridge and the active scene from their providers.
-vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
-vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockWorkspaceModule())
 
 // Colour field seam: a button that fires onCommit with a fixed colour and
 // surfaces `disabled` so the colormode gating can be asserted.
-vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
     CueColorField: ({
         onCommit,
         disabled,
@@ -55,14 +55,14 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
         />
     ),
 }))
-vi.mock('../h3-kit/colorpicker/ColorPickerContext', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/ColorPickerContext', () => ({
     ColorPickerProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     useColorPickerCtx: () => ({ cm: null, sceneId: undefined }),
 }))
 
-import { DensityMapPane } from '../components/panes/DensityMapPane'
-import { mountTree, flushPromises } from './helpers/testHarness'
-import { withPaneEnv } from './helpers/paneEnv'
+import { DensityMapPane } from '@renderer/features/density/DensityMapPane'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import { withPaneEnv } from '@renderer/__test__/helpers/paneEnv'
 
 // jsdom has no ResizeObserver; the gradient stop bar observes its width.
 class ResizeObserverStub {

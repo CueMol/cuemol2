@@ -1,5 +1,5 @@
 /**
- * @file renderer/event.ts
+ * @file event.ts
  * @description CueMol event-manager filter constants, re-exported.
  *
  * The definitions live in `worker/shared/eventConst.ts` because the worker
@@ -7,4 +7,4 @@
  * import.
  */
 
-export * from './worker/shared/eventConst';
+export * from '@renderer/worker/shared/eventConst';

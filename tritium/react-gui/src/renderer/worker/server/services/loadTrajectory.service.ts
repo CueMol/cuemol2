@@ -24,12 +24,12 @@
 // The native objects are driven through raw scriptable methods, so their
 // surfaces are described by the minimal local interfaces below (the generated
 // wrapper types add nothing over these casts).
-import type { WorkerContext } from '../types/WorkerContext';
-import type { RendererOptions } from '../../shared/fileOpenTypes';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import type { RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer.service';
 import { undoTxnResult } from './withUndoTxn';
-import { OBJREADER_CATEGORY } from './helpers/pickReaderName';
-import { fail, ok, type Result } from '../../shared/result';
+import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
+import { fail, ok, type Result } from '@renderer/worker/shared/result';
 
 const log = console;
 

@@ -10,8 +10,8 @@
  * and falls back to the safe default -- the menu degrades gracefully.
  */
 
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import { IPC } from '@shared/ipcChannels'
 
 /**

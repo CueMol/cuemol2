@@ -9,8 +9,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { makeRenderHook, flushPromises } from "./helpers/testHarness";
-import { useAnimEdit } from "../hooks/useAnimEdit";
+import { makeRenderHook, flushPromises } from "@renderer/__test__/helpers/testHarness";
+import { useAnimEdit } from "@renderer/features/animation/useAnimEdit";
 
 function makeCm() {
   return { invokeService: vi.fn().mockResolvedValue({ ok: true }) };

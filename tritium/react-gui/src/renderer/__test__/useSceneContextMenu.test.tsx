@@ -13,8 +13,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { useSceneContextMenu, type UseSceneContextMenuOptions } from '../hooks/useSceneContextMenu'
-import { CmdId } from '../commands/ids'
+import { useSceneContextMenu, type UseSceneContextMenuOptions } from '@renderer/features/scene/useSceneContextMenu'
+import { CmdId } from '@renderer/commands/ids'
 import { IPC } from '@shared/ipcChannels'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
@@ -23,11 +23,11 @@ vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 const dispatch = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
-vi.mock('../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }))
+vi.mock('@renderer/commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch }) }))
 // The hook calls useShowContextMenu() unconditionally; these tests drive the
 // darwin (native IPC) path, so a no-op stub is enough (the React MenuPanel
 // path is covered by contextMenuProvider.test.tsx).
-vi.mock('../components/menu/ContextMenuProvider', () => ({
+vi.mock('@renderer/shell/menu/ContextMenuProvider', () => ({
     useShowContextMenu: () => vi.fn().mockResolvedValue(null),
 }))
 

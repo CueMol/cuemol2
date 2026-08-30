@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/WorkerTransport.ts
+ * @file worker/client/WorkerTransport.ts
  * @description Renderer-side handle for the Web Worker process.
  *
  * Owns the `Worker` instance, allocates per-call sequence numbers, routes
@@ -19,15 +19,15 @@ import type {
     ServiceArgs,
     ServiceKey,
     ServiceResult,
-} from '../shared/calls';
-import type { RenderUpdate } from '../shared/renderTypes';
-import { RENDER_PROGRESS_CHANNEL } from '../shared/renderTypes';
-import type { ApbsUpdate } from '../shared/apbsTypes';
-import { APBS_PROGRESS_CHANNEL } from '../shared/apbsTypes';
-import type { AnimProgressUpdate } from '../shared/animTypes';
-import { ANIM_PROGRESS_CHANNEL } from '../shared/animTypes';
+} from '@renderer/worker/shared/calls';
+import type { RenderUpdate } from '@renderer/worker/shared/renderTypes';
+import { RENDER_PROGRESS_CHANNEL } from '@renderer/worker/shared/renderTypes';
+import type { ApbsUpdate } from '@renderer/worker/shared/apbsTypes';
+import { APBS_PROGRESS_CHANNEL } from '@renderer/worker/shared/apbsTypes';
+import type { AnimProgressUpdate } from '@renderer/worker/shared/animTypes';
+import { ANIM_PROGRESS_CHANNEL } from '@renderer/worker/shared/animTypes';
 import type { CrashSource } from '@shared/types/crash';
-import { report as reportCrash } from '../../crash/CrashReporter';
+import { report as reportCrash } from '@renderer/crash/CrashReporter';
 
 const log = console;
 

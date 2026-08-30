@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/testing/fakes.ts
+ * @file worker/testing/fakes.ts
  * @description In-memory stand-ins for the C++ wrapper objects a worker
  * service touches (Scene / Object / Renderer / View / Camera).
  *

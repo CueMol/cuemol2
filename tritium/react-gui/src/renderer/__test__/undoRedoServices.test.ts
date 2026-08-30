@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { services as undoServices } from '../worker/server/services/undo.service'
-import { services as redoServices } from '../worker/server/services/redo.service'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import { services as undoServices } from '@renderer/worker/server/services/undo.service'
+import { services as redoServices } from '@renderer/worker/server/services/redo.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 const { undo: undoFn, getUndoState: getUndoStateFn, clearUndoData: clearUndoDataFn } = undoServices
 const { redo: redoFn } = redoServices

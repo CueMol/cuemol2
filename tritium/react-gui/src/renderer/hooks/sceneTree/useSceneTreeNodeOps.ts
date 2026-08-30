@@ -6,11 +6,11 @@
  */
 
 import { useCallback, type MutableRefObject, useMemo} from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type {
     SceneNodeType,
     SceneTreeNode,
-} from '../../worker/shared/sceneTreeTypes'
+} from '@renderer/worker/shared/sceneTreeTypes'
 import type { SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { IPC } from '@shared/ipcChannels'
 import { findNode, findParentNode, findTypedNode } from './sceneTreeNodeUtils'

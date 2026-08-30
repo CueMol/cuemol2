@@ -1,6 +1,6 @@
 /**
  * Pins the gating and drain contract for OS-shell / command-line file open
- * (hooks/useShellOpenFiles.ts).
+ * (features/file-io/useShellOpenFiles.ts).
  *
  * The gate is the whole point: dispatching before CueMol is ready, or before
  * the launch scene settles, either loses the file silently or opens it in a
@@ -15,17 +15,17 @@ import {
   makeRenderHook,
   setupElectronAPI,
   teardownElectronAPI,
-} from './helpers/testHarness'
+} from '@renderer/__test__/helpers/testHarness'
 import { IPC } from '@shared/ipcChannels'
-import { useShellOpenFiles } from '../hooks/useShellOpenFiles'
-import { resetOpenFilePathsForTests } from '../hooks/useOpenFilePaths'
+import { useShellOpenFiles } from '@renderer/features/file-io/useShellOpenFiles'
+import { resetOpenFilePathsForTests } from '@renderer/features/file-io/useOpenFilePaths'
 
 void React
 
 const openPaths = vi.fn((_paths: string[], _opts?: unknown) => Promise.resolve())
-vi.mock('../hooks/useOpenFilePaths', async () => {
-  const actual = await vi.importActual<typeof import('../hooks/useOpenFilePaths')>(
-    '../hooks/useOpenFilePaths',
+vi.mock('@renderer/features/file-io/useOpenFilePaths', async () => {
+  const actual = await vi.importActual<typeof import('@renderer/features/file-io/useOpenFilePaths')>(
+    '@renderer/features/file-io/useOpenFilePaths',
   )
   return {
     ...actual,
@@ -34,7 +34,7 @@ vi.mock('../hooks/useOpenFilePaths', async () => {
 })
 
 const showErrorAlert = vi.fn((_args: { title: string; message: string }) => Promise.resolve())
-vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
 }))
 

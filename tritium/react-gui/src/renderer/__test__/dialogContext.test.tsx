@@ -13,7 +13,7 @@ import React from 'react'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
   useTheme: () => ({ theme: 'light' }),
   ThemeProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
@@ -24,21 +24,21 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 // ApbsConfigProvider is mounted above DialogProvider in the app (like
 // CueMolProvider); the composite's CalcApbsPotDialog reads it via useApbsConfig,
 // so stub it here the same way useCueMol is stubbed.
-vi.mock('../contexts/ApbsConfigContext', () => ({
+vi.mock('@renderer/contexts/ApbsConfigContext', () => ({
   useApbsConfig: () => ({
     config: { apbsExe: '', pdb2pqrExe: '', pdb2pqrFF: 'charmm' },
     setValue: () => {},
   }),
 }))
 
-const { DialogProvider } = await import('../contexts/DialogContext')
-const { useShowAboutDialog } = await import('../components/dialogs/AboutDialogProvider')
-const { useShowNewTabDialog } = await import('../components/dialogs/NewTabDialogProvider')
-const { useShowConfirmCloseTabDialog } = await import('../components/dialogs/ConfirmCloseTabDialogProvider')
-const { useShowFileOpenOptionDialog } = await import('../components/fopen-opt-dlgs/FileOpenOptionDialogProvider')
-const { useShowTextPromptDialog } = await import('../components/dialogs/TextPromptDialogProvider')
+const { DialogProvider } = await import('@renderer/contexts/DialogContext')
+const { useShowAboutDialog } = await import('@renderer/dialogs/AboutDialogProvider')
+const { useShowNewTabDialog } = await import('@renderer/dialogs/NewTabDialogProvider')
+const { useShowConfirmCloseTabDialog } = await import('@renderer/dialogs/ConfirmCloseTabDialogProvider')
+const { useShowFileOpenOptionDialog } = await import('@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialogProvider')
+const { useShowTextPromptDialog } = await import('@renderer/dialogs/TextPromptDialogProvider')
 
-import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 function findButtonByText(root: ParentNode, text: string): HTMLButtonElement | null {
   const buttons = Array.from(root.querySelectorAll('button')) as HTMLButtonElement[]

@@ -14,16 +14,16 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
-import { CommandProvider, useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import type { CommandKey } from '../commands/CommandMap'
+import { CommandProvider, useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import type { CommandKey } from '@renderer/commands/CommandMap'
 import { IPC } from '@shared/ipcChannels'
-import { useFocusEditCommands } from '../commands/useFocusEditCommands'
-import { makeRenderHook, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { useFocusEditCommands } from '@renderer/commands/useFocusEditCommands'
+import { makeRenderHook, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 import {
   _resetClipboardScopesForTest,
   registerClipboardScope,
-} from '../utils/editClipboard'
+} from '@renderer/utils/editClipboard'
 
 void React
 

@@ -9,10 +9,10 @@
 
 import { useCallback } from 'react'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { UseSceneTreeResult } from '@renderer/hooks/useSceneTree'
+import type { UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
 import { findTypedNode } from '@renderer/hooks/sceneTree/sceneTreeNodeUtils'
-import { useShowTextPromptDialog } from '@renderer/components/dialogs/TextPromptDialogProvider'
-import { useShowNewRendererDialog } from '@renderer/components/dialogs/NewRendererDialogProvider'
+import { useShowTextPromptDialog } from '@renderer/dialogs/TextPromptDialogProvider'
+import { useShowNewRendererDialog } from '@renderer/dialogs/NewRendererDialogProvider'
 
 export interface SceneNewFlowsOptions {
   cm: AsyncCueMol | null

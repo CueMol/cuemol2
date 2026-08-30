@@ -39,12 +39,12 @@ vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 // The pane reads the bridge and the active scene from their providers.
-vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
-vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockWorkspaceModule())
 
 // Replace the colour field with a seam: a button that fires onCommit with a
 // fixed colour. Pins "this control commits a colour" without the picker JSX.
-vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
     CueColorField: ({
         value,
         onCommit,
@@ -63,13 +63,13 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
 
 // Keep the provider as a passthrough (it only supplies cm/sceneId to the
 // real CueColorField, which we have mocked away).
-vi.mock('../h3-kit/colorpicker/ColorPickerContext', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/ColorPickerContext', () => ({
     ColorPickerProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     useColorPickerCtx: () => ({ cm: null, sceneId: undefined }),
 }))
 
 // Replace the paint selection cell with a seam exposing onCommit.
-vi.mock('../components/panes/PaintSelCell', () => ({
+vi.mock('@renderer/features/coloring/PaintSelCell', () => ({
     PaintSelCell: ({
         value,
         onCommit,
@@ -89,20 +89,20 @@ vi.mock('../components/panes/PaintSelCell', () => ({
     ),
 }))
 
-import { ColorPane } from '../components/panes/ColorPane'
-import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
+import { ColorPane } from '@renderer/features/coloring/ColorPane'
+import { ContextMenuProvider } from '@renderer/shell/menu/ContextMenuProvider'
 import { IPC } from '@shared/ipcChannels'
 import {
     mountTree,
     flushPromises,
     setupElectronAPI,
     teardownElectronAPI,
-} from './helpers/testHarness'
-import { withPaneEnv } from './helpers/paneEnv'
+} from '@renderer/__test__/helpers/testHarness'
+import { withPaneEnv } from '@renderer/__test__/helpers/paneEnv'
 import {
     _resetClipboardScopesForTest,
     getClipboardScopeForTest,
-} from '../utils/editClipboard'
+} from '@renderer/utils/editClipboard'
 
 /** Set a controlled input's value so React's onChange fires (native setter). */
 function setInputValue(el: HTMLInputElement, value: string): void {

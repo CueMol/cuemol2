@@ -13,7 +13,7 @@ import {
   installSelectAllScope,
   selectAllInScope,
   _resetSelectAllScopeForTest,
-} from '../utils/selectAllScope'
+} from '@renderer/utils/selectAllScope'
 
 afterEach(() => {
   _resetSelectAllScopeForTest()

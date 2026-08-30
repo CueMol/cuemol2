@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { clampAndQuantize } from '../numericMath';
+import { clampAndQuantize } from '@renderer/h3-kit/form/numericMath';
 import { caretPosOf } from './dragMath';
 import type { FieldCore } from './types';
 

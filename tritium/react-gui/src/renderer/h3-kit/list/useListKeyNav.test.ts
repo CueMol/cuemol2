@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { useListKeyNav, type ListKeyNavOptions } from './useListKeyNav';
-import { makeRenderHook } from '../../__test__/helpers/testHarness';
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness';
 
 const ITEMS = ['a', 'b', 'c', 'd'];
 

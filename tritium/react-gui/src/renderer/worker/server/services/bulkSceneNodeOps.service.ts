@@ -9,12 +9,12 @@
 
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { WorkerContext } from '../types/WorkerContext';
-import type { SceneNodeType } from '../../shared/sceneTreeTypes';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import type { SceneNodeType } from '@renderer/worker/shared/sceneTreeTypes';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
-import { listGroupChildRenderers } from './helpers/groupChildren';
-import { collectGroupMemberUids } from './helpers/rendGroup';
+import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
+import { collectGroupMemberUids } from '@renderer/worker/server/services/helpers/rendGroup';
 
 export interface BulkSceneNodeItem {
     nodeId: number;

@@ -11,16 +11,16 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/sceneResolver', () => ({
+vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
     getSceneOrNull: (ctx: { __scene?: unknown }) => ctx.__scene ?? null,
 }))
-vi.mock('../worker/server/services/withUndoTxn', () => ({
+vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     withUndoTxn: (_scene: unknown, _label: string, fn: () => void) => fn(),
 }))
 
-import { services } from '../worker/server/services/atomIntrEdit.service'
+import { services } from '@renderer/worker/server/services/atomIntrEdit.service'
 
 const { listAtomIntrDefs, removeAtomIntrDefs } = services
 

@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 
 /** number = count, 'loading' = in flight, null = uncountable, undefined = N/A. */
 export type HitCount = number | 'loading' | null | undefined;

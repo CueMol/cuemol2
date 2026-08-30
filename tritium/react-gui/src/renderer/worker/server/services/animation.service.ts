@@ -1,5 +1,5 @@
 /**
- * @file services/animation.service.ts
+ * @file worker/server/services/animation.service.ts
  * @description Read the per-scene CueMol animation manager (`AnimMgr`) for the
  * Blender-style timeline panel.
  *
@@ -18,10 +18,10 @@ import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
-import type { WorkerContext } from "../types/WorkerContext";
+import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import type { AnimAddType, AnimElement, AnimMgrState, AnimTimeline } from "@renderer/types";
-import { getSceneOrNull, getViewOrNull } from "./helpers/sceneResolver";
-import { classNameToType } from "./helpers/animElementType";
+import { getSceneOrNull, getViewOrNull } from "@renderer/worker/server/services/helpers/sceneResolver";
+import { classNameToType } from "@renderer/worker/server/services/helpers/animElementType";
 import {
   safeNum,
   safeBool,
@@ -31,7 +31,7 @@ import {
   resolveSceneMgr,
   makeTimeValue,
   forEachAnimObj,
-} from "./helpers/animResolve";
+} from "@renderer/worker/server/services/helpers/animResolve";
 import { withUndoTxn } from "./withUndoTxn";
 import {
   ANIM_PROGRESS_CHANNEL,

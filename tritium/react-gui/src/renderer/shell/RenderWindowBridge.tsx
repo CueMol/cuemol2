@@ -10,11 +10,11 @@
  */
 
 import React, { useMemo } from 'react'
-import { useCueMol } from '../hooks/cuemol/useCueMol'
-import { useRenderWindowBridge } from '../hooks/useRenderWindowBridge'
-import { useRenderConfig } from '../contexts/RenderConfigContext'
-import { useActiveScene, useWorkspaceDispatch, useWorkspaceTabs } from '../state/workspace'
-import { useActiveViewValues } from '../state/activeView'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useRenderWindowBridge } from '@renderer/features/render/useRenderWindowBridge'
+import { useRenderConfig } from '@renderer/contexts/RenderConfigContext'
+import { useActiveScene, useWorkspaceDispatch, useWorkspaceTabs } from '@renderer/state/workspace'
+import { useActiveViewValues } from '@renderer/state/activeView'
 
 export const RenderWindowBridge: React.FC = () => {
   const { cm } = useCueMol()

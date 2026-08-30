@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/styleTokens.test.ts
+ * @file __test__/styleTokens.test.ts
  * @description Degrade-detection contract for the design-token layer in
  * `styles/_variables.css`.
  *

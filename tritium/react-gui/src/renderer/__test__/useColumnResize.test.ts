@@ -10,7 +10,7 @@
 import type React from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act } from 'react'
-import { makeRenderHook } from './helpers/testHarness'
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
 import { useColumnResize } from '@renderer/hooks/useColumnResize'
 
 const KEY = 'test.colWidths'

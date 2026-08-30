@@ -9,13 +9,13 @@
 // assignment / undo-txn tail is shared with rectSelect.
 
 import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getViewSceneOrNull } from './helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getViewSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import {
     applySelectionHits,
     parseSelectionHits,
     type SelectionResult,
-} from './helpers/applySelectionHits';
+} from '@renderer/worker/server/services/helpers/applySelectionHits';
 
 export interface LassoPoint {
     x: number;

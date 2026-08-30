@@ -13,8 +13,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React, { useState } from 'react'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
-import { useSceneTree, type UseSceneTreeResult } from '../hooks/useSceneTree'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import { useSceneTree, type UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
 
 void React
 

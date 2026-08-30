@@ -21,7 +21,7 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
 }))
 
@@ -32,9 +32,9 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 
-import { RegenMolSurfDialog } from '../components/dialogs/RegenMolSurfDialog'
-import type { RegenMolSurfDialogResult } from '../components/dialogs/RegenMolSurfDialog'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { RegenMolSurfDialog } from '@renderer/dialogs/RegenMolSurfDialog'
+import type { RegenMolSurfDialogResult } from '@renderer/dialogs/RegenMolSurfDialog'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 const BASE_PROPS = {
     sceneId: 7,

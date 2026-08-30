@@ -11,7 +11,7 @@ import {
     getDefaultRendType,
     setDefaultRendType,
     clearRendTypeHistory,
-} from '../components/fopen-opt-dlgs/rendTypeHistory'
+} from '@renderer/dialogs/fopen-opt-dlgs/rendTypeHistory'
 
 describe('rendTypeHistory', () => {
     beforeEach(() => {

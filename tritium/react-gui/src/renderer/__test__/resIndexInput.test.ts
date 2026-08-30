@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { resolveResIndexInput } from '../components/dialogs/resIndexInput'
+import { resolveResIndexInput } from '@renderer/dialogs/resIndexInput'
 
 describe('resolveResIndexInput', () => {
     it('rejects a non-numeric value in shift mode', () => {

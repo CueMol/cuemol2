@@ -4,7 +4,7 @@
 // usage): compiling colour strings to RGB + gamut info, and listing the
 // named colours defined for a scene plus the global scope.
 import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 // --- compileColor ---
 

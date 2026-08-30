@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React, { useEffect, useRef } from 'react'
 import { act } from 'react'
-import { mountTree, flushPromises } from '../../__test__/helpers/testHarness'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 import { WorkspaceProvider, useActiveScene, useWorkspaceDispatch, useWorkspaceTabs, type WorkspaceDispatch } from './WorkspaceProvider'
 
 void React
@@ -27,7 +27,7 @@ const cm = vi.hoisted(() => ({
 }))
 const confirm = vi.hoisted(() => ({ impl: async (_viewId: number) => true }))
 
-vi.mock('../../hooks/cuemol/useCueMol', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm, cueMolReady: true }),
 }))
 vi.mock('./useConfirmCloseTab', () => ({

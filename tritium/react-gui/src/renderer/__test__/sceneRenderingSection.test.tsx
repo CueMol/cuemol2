@@ -23,7 +23,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -35,7 +35,7 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 
 // Stub the colour leaf so ColorField (background) renders without the
 // ColorPicker / Theme context.
-vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
   CueColorField: ({ value, onCommit }: { value: string; onCommit: (v: string) => void }) => (
     <button data-testid="bgcolor" onClick={() => onCommit('#ffffff')}>
       {value}
@@ -43,16 +43,16 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   ),
 }))
 
-import { SchemaSection } from '../components/inspector/SchemaSection'
-import { SCENE_SECTIONS } from '../components/inspector/schema/scene'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { SCENE_SECTIONS } from '@renderer/features/inspector/schema/scene'
 import {
   SCENE_AO_PRESET_AXIS,
   SCENE_AA_QUALITY_AXIS,
   sceneStepOf,
-} from '../data/sceneQualityPresets'
-import { RENDER_QUALITY_CUSTOM } from '../data/renderSettings'
-import { getRendererPropSections } from '../components/inspector/rendererPropSections'
-import { PropertiesTab } from '../components/inspector/PropertiesTab'
+} from '@renderer/data/sceneQualityPresets'
+import { RENDER_QUALITY_CUSTOM } from '@renderer/data/renderSettings'
+import { getRendererPropSections } from '@renderer/features/inspector/rendererPropSections'
+import { PropertiesTab } from '@renderer/features/inspector/PropertiesTab'
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {

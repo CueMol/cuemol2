@@ -15,17 +15,17 @@
 import React from "react";
 import { act } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { mountTree } from "./helpers/testHarness";
-import type { AnimTimeline, AnimElement, AnimMgrState } from "../types";
+import { mountTree } from "@renderer/__test__/helpers/testHarness";
+import type { AnimTimeline, AnimElement, AnimMgrState } from "@renderer/types";
 
 void React;
 
 let mockTimeline: AnimTimeline | null = null;
 // The panel drives the inspector through its actions context.
 const inspector = vi.hoisted(() => ({ showAnimElement: vi.fn(), clearAnimElement: vi.fn() }));
-vi.mock("../state/inspector", () => ({ useInspectorActions: () => inspector }));
+vi.mock("@renderer/state/inspector", () => ({ useInspectorActions: () => inspector }));
 
-vi.mock("../hooks/useAnimTimeline", () => ({
+vi.mock("@renderer/features/animation/useAnimTimeline", () => ({
   useAnimTimeline: () => ({ timeline: mockTimeline, loading: false, refetch: vi.fn() }),
 }));
 
@@ -43,7 +43,7 @@ interface MockTransport {
   adoptMgr: ReturnType<typeof vi.fn>;
 }
 let mockTransport: MockTransport;
-vi.mock("../hooks/useAnimTransport", () => ({
+vi.mock("@renderer/features/animation/useAnimTransport", () => ({
   useAnimTransport: () => mockTransport,
 }));
 
@@ -54,7 +54,7 @@ interface MockEdit {
   setElementTime: ReturnType<typeof vi.fn>;
 }
 let mockEdit: MockEdit;
-vi.mock("../hooks/useAnimEdit", () => ({
+vi.mock("@renderer/features/animation/useAnimEdit", () => ({
   useAnimEdit: () => mockEdit,
 }));
 
@@ -69,7 +69,7 @@ function defaultEdit(): MockEdit {
   };
 }
 
-import { AnimationPanel } from "../components/panels/AnimationPanel";
+import { AnimationPanel } from "@renderer/features/animation/AnimationPanel";
 
 function el(over: Partial<AnimElement>): AnimElement {
   return {

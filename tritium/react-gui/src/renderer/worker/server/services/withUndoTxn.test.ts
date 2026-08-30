@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import { undoTxnResult, withUndoTxn } from './withUndoTxn'
-import { ok, fail } from '../../shared/result'
+import { ok, fail } from '@renderer/worker/shared/result'
 
 function makeScene() {
     const calls: string[] = []

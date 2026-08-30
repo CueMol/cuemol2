@@ -8,9 +8,9 @@
 
 import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { WorkerContext } from '../types/WorkerContext';
-import { safeRead } from './helpers/safeRead';
-import { listRendererNamesByType } from './helpers/rendererNames';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
+import { listRendererNamesByType } from '@renderer/worker/server/services/helpers/rendererNames';
 
 export interface GetSiblingRendererNamesArgs {
     /** Scene scope. */

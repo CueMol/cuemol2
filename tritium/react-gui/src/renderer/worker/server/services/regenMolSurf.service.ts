@@ -1,5 +1,5 @@
 /**
- * @file services/regenMolSurf.service.ts
+ * @file worker/server/services/regenMolSurf.service.ts
  * @description Worker service backing the scene-tree object context-menu item
  * "Regenerate surface..." (UXP `wspcPanelMolSurfRegen`). Ports
  * `workspace_panel_ctxtmenu.js` `setupMolSurfCtxtMenu` (the menu gate) and
@@ -21,11 +21,11 @@
 
 import type { MolSurfObj } from '@cuemol/core/src/wrappers/MolSurfObj';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { safeRead } from './helpers/safeRead';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { undoTxnResult } from './withUndoTxn';
-import { ok, fail, type Result } from '../../shared/result';
+import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 export interface GetMolSurfRegenInfoArgs {
     sceneId: number;

@@ -18,10 +18,10 @@
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Camera } from '@cuemol/core/src/wrappers/Camera';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { safeRead } from './helpers/safeRead';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 
 function getCameraRef(scene: Scene, name: string): Camera | null {
     return (safeRead(() => scene.getCameraRef(name) as Camera | null)) ?? null;

@@ -1,8 +1,8 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act } from 'react';
-import { mountTree } from './helpers/testHarness';
-import { InlineRenameInput } from '../components/panes/InlineRenameInput';
+import { mountTree } from '@renderer/__test__/helpers/testHarness';
+import { InlineRenameInput } from '@renderer/features/scene/InlineRenameInput';
 
 void React;
 

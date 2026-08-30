@@ -32,13 +32,13 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 }))
 
 // MolSelList reads the theme for its popover portal class.
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { PaintSelCell } from '../components/panes/PaintSelCell'
+import { PaintSelCell } from '@renderer/features/coloring/PaintSelCell'
 import { getHistory } from '@renderer/h3-kit/MolSelList'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 function getInput(container: HTMLElement): HTMLInputElement {
     return container.querySelector('input.bp5-input') as HTMLInputElement

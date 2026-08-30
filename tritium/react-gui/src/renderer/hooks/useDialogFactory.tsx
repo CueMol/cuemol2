@@ -19,7 +19,7 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { useModalOpenCounterIfAny } from '../contexts/ModalOpenCounterContext'
+import { useModalOpenCounterIfAny } from '@renderer/contexts/ModalOpenCounterContext'
 
 interface DialogState<TArgs> {
   visible: boolean

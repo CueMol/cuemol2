@@ -1,5 +1,5 @@
 /**
- * @file services/deleteMolAtoms.service.ts
+ * @file worker/server/services/deleteMolAtoms.service.ts
  * @description Worker service backing the "Delete atoms" tool dialog
  * (`dialog.tool.mol-delete`). Ports UXP `tools/mol_delete.js`
  * (`gMolDelDlg.onDialogAccept`):
@@ -13,10 +13,10 @@
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
-import type { WorkerContext } from '../types/WorkerContext';
-import { resolveMolTool } from './helpers/molAnlTool';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { resolveMolTool } from '@renderer/worker/server/services/helpers/molAnlTool';
 import { undoTxnResult } from './withUndoTxn';
-import { ok, fail, type Result } from '../../shared/result';
+import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 export interface DeleteMolAtomsArgs {
     sceneId: number;

@@ -12,8 +12,8 @@
  */
 
 import { IPC } from '@shared/ipcChannels'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { ExportPngOptionsResult } from '../../components/dialogs/ExportPngOptionsDialog'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import type { ExportPngOptionsResult } from '@renderer/dialogs/ExportPngOptionsDialog'
 
 /** Static descriptor for a supported scene exporter (file type). */
 interface SceneExporterDef {

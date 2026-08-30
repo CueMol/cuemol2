@@ -27,7 +27,7 @@ import { IPC } from "@shared/ipcChannels";
 import {
   type RenderBinaries,
   DEFAULT_RENDER_BINARIES,
-} from "../worker/shared/renderTypes";
+} from "@renderer/worker/shared/renderTypes";
 
 interface RenderConfigContextValue {
   /** Current render binary paths. */

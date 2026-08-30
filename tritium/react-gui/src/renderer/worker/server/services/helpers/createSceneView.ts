@@ -1,11 +1,11 @@
 /**
- * @file renderer/worker/server/services/helpers/createSceneView.ts
+ * @file worker/server/services/helpers/createSceneView.ts
  * @description Create a scene's initial view, shared by the "new scene" and
  * "open scene file" paths so both name and bind it identically.
  */
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 /** Name given to the view a scene starts with (UXP parity). */
 export const INITIAL_VIEW_NAME = '0';

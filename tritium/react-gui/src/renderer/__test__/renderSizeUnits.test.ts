@@ -16,9 +16,9 @@ import {
     pxToSizeUnit,
     SIZE_UNIT_FIELD_META,
     type ImageSizeUnit,
-} from '../data/renderSettings';
-import { pixelImageSize } from '../worker/server/services/renderBackends/RenderBackend';
-import type { PropDef } from '../data/rendererProperties';
+} from '@renderer/data/renderSettings';
+import { pixelImageSize } from '@renderer/worker/server/services/renderBackends/RenderBackend';
+import type { PropDef } from '@renderer/data/rendererProperties';
 
 const imageProps = (o: {
     width: number;

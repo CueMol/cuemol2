@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { loadJSON, saveJSON, removeKey } from '../utils/localStorageJSON'
+import { loadJSON, saveJSON, removeKey } from '@renderer/utils/localStorageJSON'
 
 const KEY = 'test.localStorageJSON.key'
 

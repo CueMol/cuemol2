@@ -6,11 +6,11 @@
  *
  * Runs in the Web Worker thread (sync C++ wrappers, no await).
  */
-import type { WorkerContext } from '../types/WorkerContext';
-import { LARGE_MAP_VOXELS, suggestSubsample, type MapHeaderInfo } from '../../shared/mapHeader';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { LARGE_MAP_VOXELS, suggestSubsample, type MapHeaderInfo } from '@renderer/worker/shared/mapHeader';
 export { LARGE_MAP_VOXELS, suggestSubsample };
 export type { MapHeaderInfo };
-import { OBJREADER_CATEGORY } from './helpers/pickReaderName';
+import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 
 const log = console;
 

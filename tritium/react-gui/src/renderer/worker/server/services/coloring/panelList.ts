@@ -9,9 +9,9 @@
  */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
-import type { WorkerContext } from '../../types/WorkerContext';
-import { getSceneOrNull } from '../helpers/sceneResolver';
-import { fetchStyleEntries } from '../helpers/styleEntries';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { fetchStyleEntries } from '@renderer/worker/server/services/helpers/styleEntries';
 import {
     getMolFromRenderer,
     getMolSel,

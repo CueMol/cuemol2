@@ -7,8 +7,8 @@
  */
 
 import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
-import { useViewInputConfig } from '../contexts/ViewInputConfigContext'
-import { INPUT_DEVICE_LABELS } from '../viewInputConfig'
+import { useViewInputConfig } from '@renderer/contexts/ViewInputConfigContext'
+import { INPUT_DEVICE_LABELS } from '@renderer/viewInputConfig'
 
 /** Milliseconds the switch message stays before auto-clearing. */
 const STATUS_MS = 2500

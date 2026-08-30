@@ -14,10 +14,10 @@ import { describe, it, expect, vi } from 'vitest';
 import {
     parseGenericProps,
     CONTAINER_VALUE,
-} from '../worker/server/services/helpers/parseGenericProps';
-import { resolvePropTarget } from '../worker/server/services/helpers/resolvePropTarget';
-import { services } from '../worker/server/services/genericProps.service';
-import type { WorkerContext } from '../worker/server/types/WorkerContext';
+} from '@renderer/worker/server/services/helpers/parseGenericProps';
+import { resolvePropTarget } from '@renderer/worker/server/services/helpers/resolvePropTarget';
+import { services } from '@renderer/worker/server/services/genericProps.service';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 // --- parseGenericProps ---
 

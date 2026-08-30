@@ -13,13 +13,13 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { EditCameraVisFlagsDialog } from '../components/dialogs/EditCameraVisFlagsDialog'
-import { mountTree } from './helpers/testHarness'
-import type { VisFlagEntry } from '../worker/server/services/cameraVisFlags.service'
+import { EditCameraVisFlagsDialog } from '@renderer/dialogs/EditCameraVisFlagsDialog'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import type { VisFlagEntry } from '@renderer/worker/server/services/cameraVisFlags.service'
 
 function entries(): VisFlagEntry[] {
     return [

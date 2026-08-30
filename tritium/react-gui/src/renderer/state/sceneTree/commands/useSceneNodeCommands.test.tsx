@@ -23,11 +23,11 @@ void React
 const showNode = vi.hoisted(() => vi.fn())
 const showErrorAlert = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 
-vi.mock('../../inspector', async () => ({
-  ...(await import('../../inspector/resolveNodeTarget')),
+vi.mock('@renderer/state/inspector', async () => ({
+  ...(await import('@renderer/state/inspector/resolveNodeTarget')),
   useInspectorActions: () => ({ showNode }),
 }))
-vi.mock('../../../components/dialogs/ErrorAlertDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
 }))
 

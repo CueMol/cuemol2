@@ -16,7 +16,7 @@ import {
     selStrFromTree,
     decodeMolTreeId,
     type MolTreeId,
-} from '../components/panes/molStruct/selStrFromTree'
+} from '@renderer/features/selection/molStruct/selStrFromTree'
 
 function set(...ids: MolTreeId[]): Set<MolTreeId> {
     return new Set(ids)

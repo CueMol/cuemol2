@@ -11,9 +11,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { useSceneTree } from '../hooks/useSceneTree'
-import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
-import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { useSceneTree } from '@renderer/features/scene/useSceneTree'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
+import { setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 void React
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true

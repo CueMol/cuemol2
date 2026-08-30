@@ -1,5 +1,5 @@
 /**
- * @file hooks/useCueMolEventListener.ts
+ * @file hooks/cuemol/useCueMolEventListener.ts
  * @description Single-listener subscription against the CueMol event
  * manager (`cm.addEventListener` / `removeEventListener`). Encapsulates
  * the cancelled-flag race documented in tritium/CLAUDE.md, plus an
@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 export interface UseCueMolEventListenerOptions {
     cm: AsyncCueMol | null

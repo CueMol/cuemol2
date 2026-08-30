@@ -10,7 +10,7 @@
 
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
-import type { WorkerContext } from "../../types/WorkerContext";
+import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import type { PropDef } from "@renderer/data/rendererProperties";
 import type { RenderSettingsSnapshot } from "@renderer/data/renderResult";
 import type { RenderBinaries } from "@renderer/worker/shared/renderTypes";

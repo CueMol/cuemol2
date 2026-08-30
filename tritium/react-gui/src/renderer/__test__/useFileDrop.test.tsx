@@ -1,5 +1,5 @@
 /**
- * Degrade-detection test for OS file drag-and-drop open (hooks/useFileDrop.ts).
+ * Degrade-detection test for OS file drag-and-drop open (features/file-io/useFileDrop.ts).
  *
  * Pins the observable contract rather than the implementation: which drags are
  * intercepted, the exact command + payload each dropped file produces, that a
@@ -10,16 +10,16 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness'
-import { CommandProvider, useCommands } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import { useFileDrop } from '../hooks/useFileDrop'
-import { resetOpenFilePathsForTests } from '../hooks/useOpenFilePaths'
+import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import { CommandProvider, useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import { useFileDrop } from '@renderer/features/file-io/useFileDrop'
+import { resetOpenFilePathsForTests } from '@renderer/features/file-io/useOpenFilePaths'
 
 void React
 
 const showErrorAlert = vi.fn((_args: { title: string; message: string }) => Promise.resolve())
-vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
 }))
 

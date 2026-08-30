@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { toPixels, fromPixels, roundForUnit } from '../components/dialogs/exportPngSize'
+import { toPixels, fromPixels, roundForUnit } from '@renderer/dialogs/exportPngSize'
 
 describe('exportPngSize', () => {
     it('passes pixels through unchanged (DPI-independent)', () => {

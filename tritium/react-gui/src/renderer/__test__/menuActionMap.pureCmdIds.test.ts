@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { CmdId } from '../commands/ids';
+import { CmdId } from '@renderer/commands/ids';
 import {
     MENU_ACTION_MAP,
     MENU_DISPATCH_UNIMPLEMENTED,

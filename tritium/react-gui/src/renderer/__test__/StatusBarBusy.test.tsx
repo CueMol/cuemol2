@@ -17,7 +17,7 @@ const busyState = vi.hoisted(() => ({
     initial: false,
     set: null as ((busy: boolean) => void) | null,
 }));
-vi.mock("../hooks/useCueMolBusy", async () => {
+vi.mock("@renderer/hooks/useCueMolBusy", async () => {
     const { useState } = await import("react");
     return {
         useCueMolBusy: () => {
@@ -27,13 +27,13 @@ vi.mock("../hooks/useCueMolBusy", async () => {
         },
     };
 });
-vi.mock("../hooks/useBusyCursor", () => ({ useBusyCursor: () => undefined }));
-vi.mock("../state/statusMessage", () => ({ useStatusMessage: () => null }));
-vi.mock("../contexts/ActiveToolContext", () => ({
+vi.mock("@renderer/hooks/useBusyCursor", () => ({ useBusyCursor: () => undefined }));
+vi.mock("@renderer/state/statusMessage", () => ({ useStatusMessage: () => null }));
+vi.mock("@renderer/contexts/ActiveToolContext", () => ({
     useActiveToolDef: () => ({ id: "navigate", label: "Navigate", shortcut: "V", icon: "tool.navigate" }),
 }));
 
-import { StatusBar } from "../components/StatusBar";
+import { StatusBar } from "@renderer/shell/StatusBar";
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 

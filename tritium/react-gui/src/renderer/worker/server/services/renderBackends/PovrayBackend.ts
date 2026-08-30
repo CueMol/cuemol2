@@ -16,7 +16,7 @@ import * as path from "path";
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { PovSceneExporter } from "@cuemol/core/src/wrappers/PovSceneExporter";
-import type { WorkerContext } from "../../types/WorkerContext";
+import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import type { RenderSettingsSnapshot } from "@renderer/data/renderResult";
 import type { RenderBinaries } from "@renderer/worker/shared/renderTypes";
 import { quoteProcArg } from "./procArgs";

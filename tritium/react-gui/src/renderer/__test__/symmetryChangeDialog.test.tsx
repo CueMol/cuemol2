@@ -24,7 +24,7 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
 }))
 
@@ -39,9 +39,9 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 
-import { SymmetryChangeDialog } from '../components/dialogs/SymmetryChangeDialog'
-import type { SymmetryChangeDialogResult } from '../components/dialogs/SymmetryChangeDialog'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { SymmetryChangeDialog } from '@renderer/dialogs/SymmetryChangeDialog'
+import type { SymmetryChangeDialogResult } from '@renderer/dialogs/SymmetryChangeDialog'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 // CrystalInfo returned on open. nsg=1 matches the first space-group entry.
 const OPEN_INFO = {

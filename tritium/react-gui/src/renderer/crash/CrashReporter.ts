@@ -1,5 +1,5 @@
 /**
- * @file renderer/crash/CrashReporter.ts
+ * @file crash/CrashReporter.ts
  * @description Renderer-side crash funnel.
  *
  * Every crash source (window.onerror, unhandledrejection, React

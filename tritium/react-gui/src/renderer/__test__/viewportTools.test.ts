@@ -4,7 +4,7 @@ import {
   CATEGORY_ORDER,
   TOOL_BY_ID,
   type ToolCategory,
-} from "../data/viewportTools";
+} from "@renderer/data/viewportTools";
 
 describe("viewportTools data integrity", () => {
   it("all TOOLS entries have unique ids", () => {

@@ -1,5 +1,5 @@
 /**
- * @file services/changeResidueIndex.service.ts
+ * @file worker/server/services/changeResidueIndex.service.ts
  * @description Worker service backing the "Change residue index" tool dialog
  * (`dialog.tool.chg-resindex`). Ports UXP `tools/chg_resindex.js`
  * (`gChgResIndDlg.onDialogAccept`):
@@ -15,10 +15,10 @@
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
-import type { WorkerContext } from '../types/WorkerContext';
-import { resolveMolTool } from './helpers/molAnlTool';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { resolveMolTool } from '@renderer/worker/server/services/helpers/molAnlTool';
 import { undoTxnResult } from './withUndoTxn';
-import { ok, fail, type Result } from '../../shared/result';
+import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 export interface ChangeResidueIndexArgs {
     sceneId: number;

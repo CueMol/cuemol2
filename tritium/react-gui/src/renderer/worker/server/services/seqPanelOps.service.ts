@@ -1,5 +1,5 @@
 /**
- * @file services/seqPanelOps.service.ts
+ * @file worker/server/services/seqPanelOps.service.ts
  * @description Worker services for the bottom Sequence panel
  * (`panel.btmpanel-holder.seq`). Backs single-residue toggle, range
  * select by residue range, and view-centering on a specific residue.
@@ -13,9 +13,9 @@
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolResidue } from '@cuemol/core/src/wrappers/MolResidue';
 import type { ResidRangeSet } from '@cuemol/core/src/wrappers/ResidRangeSet';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull, getViewSceneObjOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from './withUndoTxn';
 
 // --- toggleResidueSelection ---

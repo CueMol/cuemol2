@@ -21,7 +21,7 @@
 
 import React, { useState } from 'react';
 import { InputGroup, Intent, Menu, MenuItem, Popover } from '@blueprintjs/core';
-import { useDarkPortalClass } from '../primitives';
+import { useDarkPortalClass } from '@renderer/h3-kit/primitives';
 
 export interface ComboBoxFieldProps {
     value: string;

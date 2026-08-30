@@ -9,7 +9,7 @@
  */
 
 import React, { createContext, useContext, useState } from 'react'
-import { useInputDeviceStatus } from '../../hooks/useInputDeviceStatus'
+import { useInputDeviceStatus } from '@renderer/hooks/useInputDeviceStatus'
 
 type Setter = React.Dispatch<React.SetStateAction<string | null>>
 

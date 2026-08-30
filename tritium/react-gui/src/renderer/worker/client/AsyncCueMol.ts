@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/AsyncCueMol.ts
+ * @file worker/client/AsyncCueMol.ts
  * @description Renderer-thread facade over `WorkerTransport` + `ObjectFactory`
  * + `EventSlots`. Exposes one async method per worker entry point used by
  * the renderer.
@@ -10,7 +10,7 @@
  * in sequence.
  */
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
-import type { FileOpenOptions } from '../shared/fileOpenTypes';
+import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import {
     WorkerTransport,
     type StreamProgressListener,
@@ -20,18 +20,18 @@ import {
 } from './WorkerTransport';
 import { EventSlots } from './EventSlots';
 import { ObjectFactory } from './ObjectFactory';
-import * as lifecycleApi from './apis/lifecycleApi';
-import * as viewApi from './apis/viewApi';
-import * as inputApi from './apis/inputApi';
-import * as fileApi from './apis/fileApi';
-import * as editApi from './apis/editApi';
-import type { GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service';
-import type { GetMtzColumnInfoResult } from '../server/services/getMtzColumnInfo.service';
-import type { GetReaderDefaultOptionsResult } from '../server/services/getReaderDefaultOptions.service';
-import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '../server/services/loadTrajectory.service';
-import type { LoadObjectResult } from '../server/services/loadObject.service';
-import type { LoadSceneResult } from '../server/services/loadScene.service';
-import type { GetTrajectoryRendererInfoResult } from '../server/services/getTrajectoryRendererInfo.service';
+import * as lifecycleApi from '@renderer/worker/client/apis/lifecycleApi';
+import * as viewApi from '@renderer/worker/client/apis/viewApi';
+import * as inputApi from '@renderer/worker/client/apis/inputApi';
+import * as fileApi from '@renderer/worker/client/apis/fileApi';
+import * as editApi from '@renderer/worker/client/apis/editApi';
+import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/getCompatibleRendererNames.service';
+import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/getMtzColumnInfo.service';
+import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/getReaderDefaultOptions.service';
+import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/loadTrajectory.service';
+import type { LoadObjectResult } from '@renderer/worker/server/services/loadObject.service';
+import type { LoadSceneResult } from '@renderer/worker/server/services/loadScene.service';
+import type { GetTrajectoryRendererInfoResult } from '@renderer/worker/server/services/getTrajectoryRendererInfo.service';
 import type {
     MethodArgs,
     MethodKey,
@@ -42,7 +42,7 @@ import type {
     ServiceArgs,
     ServiceKey,
     ServiceResult,
-} from '../shared/calls';
+} from '@renderer/worker/shared/calls';
 
 const log = console;
 

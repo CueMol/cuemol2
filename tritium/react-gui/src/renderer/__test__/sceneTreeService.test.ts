@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '../worker/server/services/sceneTree.service'
-import { parseSceneTreeJSON } from '../worker/shared/sceneTreeTypes'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/sceneTree.service'
+import { parseSceneTreeJSON } from '@renderer/worker/shared/sceneTreeTypes'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 function makeCtx(
     jsonOrScene: string | null | object,

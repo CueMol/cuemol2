@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { IPC } from '@shared/ipcChannels';
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 
 interface UseSceneExportCapsOptions {
   cm: AsyncCueMol | null;

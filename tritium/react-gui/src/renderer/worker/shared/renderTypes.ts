@@ -5,7 +5,7 @@
  * worker -> renderer `render-progress` push payload.
  */
 
-import type { RenderSettingsSnapshot } from "../../data/renderResult";
+import type { RenderSettingsSnapshot } from "@renderer/data/renderResult";
 
 /** Push-channel name for worker -> renderer render updates. */
 export const RENDER_PROGRESS_CHANNEL = "render-progress";

@@ -3,7 +3,7 @@
 // density maps). Mirrors the UXP `StreamListener` + `forceCancel` flow in
 // uxp_gui/cuemol2/base/content/tools/netpdbopen.js.
 
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
 import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';

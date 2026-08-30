@@ -1,5 +1,5 @@
 /**
- * @file services/makeMolSurf.service.ts
+ * @file worker/server/services/makeMolSurf.service.ts
  * @description Worker service backing the "Mol surface generation" tool dialog
  * (`dialog.tool.makesurf`). Ports UXP `tools/makesurf.js`
  * (`gDlgObj.buildMolSurf`):
@@ -24,10 +24,10 @@ import type { MolSurfObj } from '@cuemol/core/src/wrappers/MolSurfObj';
 import type { MolSurfRenderer } from '@cuemol/core/src/wrappers/MolSurfRenderer';
 import type { ColoringScheme } from '@cuemol/core/src/wrappers/ColoringScheme';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
-import { uniqName } from './helpers/uniqName';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
+import { uniqName } from '@renderer/worker/server/services/helpers/uniqName';
 import { withUndoTxn } from './withUndoTxn';
 
 export interface MakeMolSurfArgs {

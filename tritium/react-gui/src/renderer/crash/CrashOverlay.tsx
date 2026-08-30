@@ -1,5 +1,5 @@
 /**
- * @file renderer/crash/CrashOverlay.tsx
+ * @file crash/CrashOverlay.tsx
  * @description React-side crash UI rendered by `ErrorBoundary`.
  *
  * Used when the React tree is still alive enough to render fallback

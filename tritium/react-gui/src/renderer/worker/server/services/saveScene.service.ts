@@ -1,7 +1,7 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 import type { SceneXMLWriter } from '@cuemol/core/src/wrappers/SceneXMLWriter';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface GetSceneSaveInfoArgs {
     sceneId: number;

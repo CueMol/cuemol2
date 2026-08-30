@@ -13,8 +13,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { services } from '../worker/server/services/drainLogMessages.service';
-import type { WorkerContext } from '../worker/server/types/WorkerContext';
+import { services } from '@renderer/worker/server/services/drainLogMessages.service';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
 function makeCtx(msgLog: unknown) {
     const getService = vi.fn((name: string) => (name === 'MsgLog' ? msgLog : null));
@@ -60,7 +60,7 @@ describe('drainLogMessages service', () => {
 describe('useLogEvent no longer holds an ObjProxy', () => {
     it('does not call cm.getService (the ADR-0033 leak callsite is removed)', () => {
         const src = readFileSync(
-            resolve(process.cwd(), 'src/renderer/hooks/useLogEvent.ts'),
+            resolve(process.cwd(), 'src/renderer/features/log/useLogEvent.ts'),
             'utf8',
         );
         expect(src).not.toMatch(/getService/);

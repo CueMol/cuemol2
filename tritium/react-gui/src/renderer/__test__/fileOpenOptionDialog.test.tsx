@@ -21,7 +21,7 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
 }))
 
@@ -45,14 +45,14 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 
-import { FileOpenOptionDialog } from '../components/fopen-opt-dlgs/FileOpenOptionDialog'
+import { FileOpenOptionDialog } from '@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialog'
 import {
     STORAGE_KEY,
     getDefaultRendType,
     setDefaultRendType,
-} from '../components/fopen-opt-dlgs/rendTypeHistory'
-import type { FileOpenOptions } from '../components/fopen-opt-dlgs/types'
-import { mountTree, flushPromises } from './helpers/testHarness'
+} from '@renderer/dialogs/fopen-opt-dlgs/rendTypeHistory'
+import type { FileOpenOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 function findByText(root: ParentNode, tag: string, text: string): HTMLElement | null {
     const els = Array.from(root.querySelectorAll(tag)) as HTMLElement[]

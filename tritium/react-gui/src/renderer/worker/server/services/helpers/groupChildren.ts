@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/server/services/helpers/groupChildren.ts
+ * @file worker/server/services/helpers/groupChildren.ts
  * @description Renderer-group membership helpers shared by the scene-tree
  * worker services (visibility cascade, group rename, deep copy/paste,
  * DnD reorder).

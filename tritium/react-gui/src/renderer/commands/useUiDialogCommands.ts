@@ -4,10 +4,10 @@
  */
 
 import { useCallback } from 'react'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
-import { useShowAboutDialog } from '../components/dialogs/AboutDialogProvider'
+import { useShowAboutDialog } from '@renderer/dialogs/AboutDialogProvider'
 import { IPC } from '@shared/ipcChannels'
 
 // Category IDs from src/qsys/InOutHandler.hpp (IOH_CAT_*)

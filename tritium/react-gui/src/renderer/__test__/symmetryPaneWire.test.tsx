@@ -31,13 +31,13 @@ vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 // The pane reads the bridge and the active scene from their providers.
-vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('./helpers/paneEnv')).mockCueMolModule())
-vi.mock('@renderer/state/workspace', async () => (await import('./helpers/paneEnv')).mockWorkspaceModule())
+vi.mock('@renderer/hooks/cuemol/useCueMol', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockCueMolModule())
+vi.mock('@renderer/state/workspace', async () => (await import('@renderer/__test__/helpers/paneEnv')).mockWorkspaceModule())
 
 // ObjectSelect seam: auto-selects a fixed object uid on mount so the pane's
 // selectedObjId is populated without driving the real listSceneObjects flow.
 const SELECTED_OBJ_ID = 42
-vi.mock('../h3-kit/ObjectSelect', () => ({
+vi.mock('@renderer/h3-kit/ObjectSelect', () => ({
     objectFilters: { molCoordOrDensityMap: () => true },
     ObjectSelect: ({
         onChange,
@@ -50,13 +50,13 @@ vi.mock('../h3-kit/ObjectSelect', () => ({
 }))
 
 // The Change... dialog is not under test here.
-vi.mock('../components/dialogs/SymmetryChangeDialogProvider', () => ({
+vi.mock('@renderer/dialogs/SymmetryChangeDialogProvider', () => ({
     useShowSymmetryChangeDialog: () => vi.fn(() => Promise.resolve({ ok: false })),
 }))
 
-import { SymmetryPane } from '../components/panes/SymmetryPane'
-import { mountTree, flushPromises } from './helpers/testHarness'
-import { withPaneEnv } from './helpers/paneEnv'
+import { SymmetryPane } from '@renderer/features/density/SymmetryPane'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import { withPaneEnv } from '@renderer/__test__/helpers/paneEnv'
 
 const SCENE_ID = 7
 const VIEW_ID = 5

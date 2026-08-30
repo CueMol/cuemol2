@@ -13,10 +13,10 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
-import type { WorkerContext } from '../types/WorkerContext';
-import { getDefaultStyleName } from './helpers/getDefaultStyleName';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { getDefaultStyleName } from '@renderer/worker/server/services/helpers/getDefaultStyleName';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface ChangeRendererTypeArgs {
     sceneId: number;

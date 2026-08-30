@@ -14,11 +14,11 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
-import type { WorkerContext } from '../../types/WorkerContext';
-import { withUndoTxn } from '../withUndoTxn';
-import { getSceneOrNull } from '../helpers/sceneResolver';
-import { makeColor } from '../helpers/makeColor';
-import { makeSel } from '../helpers/makeSel';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import {
     getMolFromRenderer,
     getMolSel,

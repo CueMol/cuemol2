@@ -8,10 +8,10 @@
  * Runs in the Web Worker thread; C++ wrappers are called synchronously.
  */
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { WorkerContext } from '../../types/WorkerContext';
-import { withUndoTxn } from '../withUndoTxn';
-import { getSceneOrNull } from '../helpers/sceneResolver';
-import { makeColor } from '../helpers/makeColor';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import { resolveColoringTarget, isElepotCapable } from './colorTargets';
 import type {
     ListElePotMapObjectsArgs,

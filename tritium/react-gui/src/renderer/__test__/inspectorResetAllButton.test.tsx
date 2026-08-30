@@ -13,11 +13,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import { InspectorResetAllButton } from '../components/inspector/InspectorResetAllButton';
+import { InspectorResetAllButton } from '@renderer/features/inspector/InspectorResetAllButton';
 
 void React;
 
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light' }),
 }));
 

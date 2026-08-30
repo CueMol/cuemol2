@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '../worker/server/services/getSiblingRendererNames.service'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/getSiblingRendererNames.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 interface RendStub {
   type_name: string

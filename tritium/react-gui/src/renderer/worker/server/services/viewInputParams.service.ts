@@ -10,7 +10,7 @@
 // tbrad / hitprec are properties of the singleton, so they are global -- one
 // setter affects all views. No undo transaction (global app config).
 
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ViewInputConfig } from '@cuemol/core/src/wrappers/ViewInputConfig';
 
 const log = console;

@@ -15,10 +15,10 @@ import { describe, it, expect, vi } from 'vitest'
 import {
     umbreonBackend,
     umbreonNprBackend,
-} from '../worker/server/services/renderBackends/UmbreonBackend'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import type { RenderSettingsSnapshot } from '../data/renderResult'
-import type { PropDef } from '../data/rendererProperties'
+} from '@renderer/worker/server/services/renderBackends/UmbreonBackend'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { RenderSettingsSnapshot } from '@renderer/data/renderResult'
+import type { PropDef } from '@renderer/data/rendererProperties'
 
 /** Minimal PropDef; the value readers only look at key + value. */
 const p = (key: string, value: string | number | boolean): PropDef => ({

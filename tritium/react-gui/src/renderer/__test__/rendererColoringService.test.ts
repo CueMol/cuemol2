@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { services } from '../worker/server/services/rendererColoring.service'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/rendererColoring.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 
 /**
  * `colormode` enum values per renderer type, as the C++ wrappers report them.
  * Captured from the running addon alongside the inspector property fixtures
- * (`components/inspector/__fixtures__/rendererProps.json`).
+ * (`features/inspector/__fixtures__/rendererProps.json`).
  *
  * The service asks the renderer which modes it has rather than keeping its own
  * list, so the fixture has to answer that question the way the addon does.
@@ -325,14 +325,14 @@ describe('setRendererColoring — failure modes', () => {
 // state fetch, Paint CRUD, default-color write.
 // -------------------------------------------------------------
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn((_ctx: unknown, selStr: string, uid: number) => {
         if (!selStr) return null
         return { __sel: selStr, __uid: uid }
     }),
 }))
 
-vi.mock('../worker/server/services/helpers/makeColor', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeColor', () => ({
     makeColor: vi.fn((_ctx: unknown, value: string, uid: number) => ({
         __color: value,
         __uid: uid,

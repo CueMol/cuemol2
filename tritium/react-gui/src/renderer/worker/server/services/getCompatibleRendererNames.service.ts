@@ -1,8 +1,8 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
-import { pickReaderName, OBJREADER_CATEGORY } from './helpers/pickReaderName';
-import { isInitialRendererType } from './helpers/rendererFilter';
+import { pickReaderName, OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
+import { isInitialRendererType } from '@renderer/worker/server/services/helpers/rendererFilter';
 
 const log = console;
 

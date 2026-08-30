@@ -11,11 +11,11 @@ import type {
   BulkDeleteArgs,
   BulkOpResult,
   BulkSetVisibleArgs,
-} from '../../server/services/bulkSceneNodeOps.service'
+} from '@renderer/worker/server/services/bulkSceneNodeOps.service'
 import type {
   ReorderSceneNodeArgs,
   ReorderSceneNodeResult,
-} from '../../server/services/reorderSceneNode.service'
+} from '@renderer/worker/server/services/reorderSceneNode.service'
 import type {
   CopyNodeArgs,
   CopyNodeResult,
@@ -23,7 +23,7 @@ import type {
   CopyNodesResult,
   PasteNodeArgs,
   PasteNodeResult,
-} from '../../server/services/sceneClipboard.service'
+} from '@renderer/worker/server/services/sceneClipboard.service'
 import type {
   DeleteNodeArgs,
   DeleteNodeResult,
@@ -31,7 +31,7 @@ import type {
   FocusOnNodeResult,
   RenameNodeArgs,
   RenameNodeResult,
-} from '../../server/services/sceneOps.service'
+} from '@renderer/worker/server/services/sceneOps.service'
 import type {
   GetSceneTreeArgs,
   GetSceneTreeResult,
@@ -39,7 +39,7 @@ import type {
   SetNodeUiCollapsedResult,
   SetNodeVisibleArgs,
   SetNodeVisibleResult,
-} from '../../server/services/sceneTree.service'
+} from '@renderer/worker/server/services/sceneTree.service'
 
 export interface SceneTreeCalls {
   getSceneTree:               { args: GetSceneTreeArgs; result: GetSceneTreeResult }

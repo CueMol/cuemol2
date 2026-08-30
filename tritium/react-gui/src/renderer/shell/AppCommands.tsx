@@ -7,7 +7,7 @@
  */
 
 import React from 'react'
-import { useCommandRegistrations } from '../hooks/useCommandRegistrations'
+import { useCommandRegistrations } from '@renderer/hooks/useCommandRegistrations'
 
 export const AppCommands: React.FC = () => {
   useCommandRegistrations()

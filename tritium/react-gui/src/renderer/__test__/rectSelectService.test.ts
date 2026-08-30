@@ -11,17 +11,17 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn((_ctx: unknown, selStr: string) => ({ __sel: selStr })),
 }))
-vi.mock('../worker/server/services/withUndoTxn', () => ({
+vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     withUndoTxn: vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
 }))
 
-import { services } from '../worker/server/services/rectSelect.service'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
+import { services } from '@renderer/worker/server/services/rectSelect.service'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { rectSelect } = services
 

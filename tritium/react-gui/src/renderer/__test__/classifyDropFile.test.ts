@@ -13,7 +13,7 @@ import {
   classifyDropFile,
   dragItemsMayContainOpenable,
   isDeniedMime,
-} from '../utils/classifyDropFile'
+} from '@renderer/utils/classifyDropFile'
 import type { ElectronFileFilter } from '@shared/types/fileDialog'
 
 /** Shape getOpenFilters returns: All Supported + concrete rows + All Files. */

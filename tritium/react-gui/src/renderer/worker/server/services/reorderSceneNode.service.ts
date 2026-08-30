@@ -16,11 +16,11 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { enumerateObjectRenderers } from './helpers/groupChildren';
-import { isRendGroup } from './helpers/rendGroup';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { enumerateObjectRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
+import { isRendGroup } from '@renderer/worker/server/services/helpers/rendGroup';
 
 /** -1 = drop BEFORE target; 0 = drop AT target (used for rendGroup INTO); +1 = drop AFTER. */
 export type ReorderOri = -1 | 0 | 1;
@@ -183,7 +183,7 @@ function reorderSceneNode(
     // Nesting one renderer group inside another drops the inner group's members
     // out of the scene tree for good: getGroupedRendListJSON is only one level
     // deep, so they match no filter. The renderer-side DnD planner already
-    // refuses this (components/panes/sceneTreeDnd.ts); refuse it here too, since
+    // refuses this (features/scene/sceneTreeDnd.ts); refuse it here too, since
     // the service is reachable without it.
     //
     // The existence of `destGroupName` is NOT checked here: every caller derives

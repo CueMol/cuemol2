@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import { useNaviContextMenu } from '../hooks/useNaviContextMenu';
-import { ContextMenuProvider } from '../components/menu/ContextMenuProvider';
+import { useNaviContextMenu } from '@renderer/features/molview/useNaviContextMenu';
+import { ContextMenuProvider } from '@renderer/shell/menu/ContextMenuProvider';
 import { IPC } from '@shared/ipcChannels';
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
@@ -32,10 +32,10 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 // the provider modules so the hook can mount with ContextMenuProvider only.
 const mockShowNewRenderer = vi.fn();
 const mockShowErrorAlert = vi.fn();
-vi.mock('../components/dialogs/NewRendererDialogProvider', () => ({
+vi.mock('@renderer/dialogs/NewRendererDialogProvider', () => ({
     useShowNewRendererDialog: () => mockShowNewRenderer,
 }));
-vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
     useShowErrorAlert: () => mockShowErrorAlert,
 }));
 

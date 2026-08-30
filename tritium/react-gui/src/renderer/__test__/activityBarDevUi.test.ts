@@ -1,5 +1,5 @@
 /**
- * @file activityBarDevUi.test.ts
+ * @file __test__/activityBarDevUi.test.ts
  * @description Degrade-detection test for the developer-only gating of the
  * Component Catalog activity-bar view.
  *
@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { buildActivityItems } from "../components/ActivityBar";
+import { buildActivityItems } from "@renderer/shell/ActivityBar";
 
 describe("activity-bar dev-only views", () => {
   it("offers the Component Catalog in developer builds", () => {

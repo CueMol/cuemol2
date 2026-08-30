@@ -10,9 +10,9 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import React from 'react'
-import { CommandProvider, useCommands, useRegisterCommand } from '../commands/CommandRegistry'
-import { CmdId } from '../commands/ids'
-import { makeRenderHook, flushPromises } from './helpers/testHarness'
+import { CommandProvider, useCommands, useRegisterCommand } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
+import { makeRenderHook, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   React.createElement(CommandProvider, null, children)

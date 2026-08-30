@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { saveUserStyle } from '../worker/server/workerLifecycle'
+import { saveUserStyle } from '@renderer/worker/server/workerLifecycle'
 import type { CueMol } from '@cuemol/core/src/cuemol'
 
 function makeCm(opts: { uid?: number; saveResult?: boolean; noStyleMgr?: boolean } = {}) {

@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import * as event from '../event';
+import * as event from '@renderer/event';
 
 void React;
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -34,7 +34,7 @@ let injectedTool = 'navigate';
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: injectedCm != null, cm: injectedCm }),
 }));
-vi.mock('../state/workspace', () => ({
+vi.mock('@renderer/state/workspace', () => ({
     // The active view as the workspace reports it (undefined = no molview).
     useActiveScene: () => ({
         activeMolViewId: injectedViewId ?? undefined,
@@ -42,11 +42,11 @@ vi.mock('../state/workspace', () => ({
         hasScene: injectedViewId != null,
     }),
 }));
-vi.mock('../contexts/ActiveToolContext', () => ({
+vi.mock('@renderer/contexts/ActiveToolContext', () => ({
     useActiveToolContext: () => injectedTool,
 }));
 
-import { useNaviClickHandler } from '../hooks/useNaviClickHandler';
+import { useNaviClickHandler } from '@renderer/features/molview/useNaviClickHandler';
 
 interface Subscription {
     category: string;

@@ -9,11 +9,11 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { WorkerContext } from '../types/WorkerContext';
-import type { PresetTypeEntry } from '../../shared/fileOpenTypes';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { fetchStyleEntries } from './helpers/styleEntries';
-import { isSelectableRendererType } from './helpers/rendererFilter';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import type { PresetTypeEntry } from '@renderer/worker/shared/fileOpenTypes';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { fetchStyleEntries } from '@renderer/worker/server/services/helpers/styleEntries';
+import { isSelectableRendererType } from '@renderer/worker/server/services/helpers/rendererFilter';
 
 const NON_MOL_CLASSES = new Set(['ElePotMap', 'MolSurfObj', 'DensityMap']);
 

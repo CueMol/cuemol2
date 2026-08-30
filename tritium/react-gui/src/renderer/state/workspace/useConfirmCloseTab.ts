@@ -10,10 +10,10 @@
  */
 
 import { useCallback } from 'react'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import { useShowConfirmCloseTabDialog } from '../../components/dialogs/ConfirmCloseTabDialogProvider'
-import { useCommands } from '../../commands/CommandRegistry'
-import { CmdId } from '../../commands/ids'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import { useShowConfirmCloseTabDialog } from '@renderer/dialogs/ConfirmCloseTabDialogProvider'
+import { useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
 
 /** @returns `(viewId) => proceed` -- true lets the tab close. */
 export function useConfirmCloseTab(cm: AsyncCueMol | null): (viewId: number) => Promise<boolean> {

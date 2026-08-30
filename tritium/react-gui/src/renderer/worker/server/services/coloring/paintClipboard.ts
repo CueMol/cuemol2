@@ -21,10 +21,10 @@ import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
 import type { SelCommand } from '@cuemol/core/src/wrappers/SelCommand';
 import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
-import type { WorkerContext } from '../../types/WorkerContext';
-import { withUndoTxn } from '../withUndoTxn';
-import { makeSel } from '../helpers/makeSel';
-import { makeColor } from '../helpers/makeColor';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
+import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import type { PaintTarget } from './colorTargets';
 import { materializeColoringIfDefault, resolvePaintTarget } from './colorTargets';
 import type {

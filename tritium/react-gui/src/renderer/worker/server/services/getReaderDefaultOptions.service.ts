@@ -15,8 +15,8 @@
  * handler is created but never `read()`s a file (the constructor already set
  * the defaults), so there is no scene mutation and no undo txn.
  */
-import type { WorkerContext } from '../types/WorkerContext';
-import { OBJREADER_CATEGORY } from './helpers/pickReaderName';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 
 const log = console;
 

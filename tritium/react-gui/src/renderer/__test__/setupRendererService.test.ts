@@ -17,21 +17,21 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { RendererOptions } from '../components/fopen-opt-dlgs/types'
+import type { RendererOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
-vi.mock('../worker/server/services/helpers/molPostProc', () => ({
+vi.mock('@renderer/worker/server/services/helpers/molPostProc', () => ({
     molPostProc: vi.fn(),
 }))
-vi.mock('../worker/server/services/helpers/getDefaultStyleName', () => ({
+vi.mock('@renderer/worker/server/services/helpers/getDefaultStyleName', () => ({
     getDefaultStyleName: vi.fn(() => 'DefaultStyle'),
 }))
 
-import { setupRenderer } from '../worker/server/services/setupRenderer.service'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
-import { molPostProc } from '../worker/server/services/helpers/molPostProc'
+import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
+import { molPostProc } from '@renderer/worker/server/services/helpers/molPostProc'
 import { fakeObject, fakeRenderer, fakeScene, fakeView, makeWorkerCtx } from '@renderer/worker/testing'
 
 /**

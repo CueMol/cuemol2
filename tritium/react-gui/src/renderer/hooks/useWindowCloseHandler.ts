@@ -15,7 +15,7 @@
 import { useEffect, useRef } from "react";
 import type React from "react";
 import { IPC } from "@shared/ipcChannels";
-import type { TabData } from "../types";
+import type { TabData } from "@renderer/types";
 
 interface UseWindowCloseHandlerOptions {
   tabsRef: React.RefObject<TabData[]>;

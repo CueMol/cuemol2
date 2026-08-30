@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 void React
 
@@ -34,7 +34,7 @@ function setInputValue(input: HTMLInputElement, value: string): void {
  * compileColor / getNamedColors results.
  */
 
-vi.mock('../contexts/ThemeContext', () => ({
+vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark' }),
 }))
 

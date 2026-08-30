@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/testing/makeWorkerCtx.ts
+ * @file worker/testing/makeWorkerCtx.ts
  * @description Build a `WorkerContext` over fake managers for a worker
  * service test.
  *
@@ -11,7 +11,7 @@
  */
 
 import { vi, type Mock } from 'vitest';
-import type { WorkerContext } from '../server/types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { FakeObject, FakeRenderer, FakeScene, FakeView } from './fakes';
 
 /** One entry of `StreamManager.getInfoJSON2(category)`. */

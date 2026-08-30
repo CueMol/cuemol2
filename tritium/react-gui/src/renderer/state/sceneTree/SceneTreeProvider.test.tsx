@@ -10,8 +10,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React, { act } from 'react'
-import { mountTree } from '../../__test__/helpers/testHarness'
-import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import { SceneTreeProvider, useSceneTreeActions, useSceneTreeState, type SceneTreeState } from './SceneTreeProvider'
 import type { SceneTreeActions } from './useSceneTreeController'
 
@@ -23,11 +23,11 @@ const node = (partial: Partial<SceneTreeNode>): SceneTreeNode =>
 const fake = vi.hoisted(() => ({ tree: null as unknown, selectedId: '' }))
 const mounted = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }))
 
-vi.mock('../../hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cm: null, cueMolReady: false }) }))
-vi.mock('../workspace', () => ({
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({ useCueMol: () => ({ cm: null, cueMolReady: false }) }))
+vi.mock('@renderer/state/workspace', () => ({
   useActiveScene: () => ({ activeSceneId: 1, activeMolViewId: 5, hasScene: true }),
 }))
-vi.mock('../../hooks/useSceneTree', () => ({
+vi.mock('@renderer/features/scene/useSceneTree', () => ({
   useSceneTree: () => ({
     tree: fake.tree,
     selectedId: fake.selectedId,
@@ -39,11 +39,11 @@ vi.mock('../../hooks/useSceneTree', () => ({
     renameNode: vi.fn(), renameCamera: vi.fn(),
   }),
 }))
-vi.mock('../../hooks/useSceneContextMenu', () => ({
+vi.mock('@renderer/features/scene/useSceneContextMenu', () => ({
   useSceneContextMenu: () => ({ openContextMenu: vi.fn() }),
 }))
-vi.mock('../../hooks/useClipboardScope', () => ({ useClipboardScope: () => undefined }))
-vi.mock('../../commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch: vi.fn() }) }))
+vi.mock('@renderer/hooks/useClipboardScope', () => ({ useClipboardScope: () => undefined }))
+vi.mock('@renderer/commands/CommandRegistry', () => ({ useCommands: () => ({ dispatch: vi.fn() }) }))
 // The handlers themselves are covered by their own tests; here only that
 // they are mounted, with the tree and the scene they need.
 vi.mock('./commands', () => ({

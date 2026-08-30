@@ -8,8 +8,8 @@
 //
 // Filters the list the same way every other create-side list does, through
 // helpers/rendererFilter.
-import type { WorkerContext } from '../types/WorkerContext';
-import { isInitialRendererType } from './helpers/rendererFilter';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { isInitialRendererType } from '@renderer/worker/server/services/helpers/rendererFilter';
 
 
 export interface GetTrajectoryRendererInfoResult {

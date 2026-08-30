@@ -7,15 +7,15 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { act } from 'react';
-import { makeRenderHook } from './helpers/testHarness';
-import { useRenderJob, isRenderJobActive } from '../hooks/useRenderJob';
-import type { RenderUpdate, RenderStartResult } from '../worker/shared/renderTypes';
-import { DEFAULT_RENDER_BINARIES } from '../worker/shared/renderTypes';
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness';
+import { useRenderJob, isRenderJobActive } from '@renderer/features/render/useRenderJob';
+import type { RenderUpdate, RenderStartResult } from '@renderer/worker/shared/renderTypes';
+import { DEFAULT_RENDER_BINARIES } from '@renderer/worker/shared/renderTypes';
 import type {
     RenderResult,
     RenderSettingsSnapshot,
     RenderSource,
-} from '../data/renderResult';
+} from '@renderer/data/renderResult';
 
 const snapshot: RenderSettingsSnapshot = {
     mode: 'still',

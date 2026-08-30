@@ -1,5 +1,5 @@
 /**
- * @file services/createSymmMol.service.ts
+ * @file worker/server/services/createSymmMol.service.ts
  * @description Worker services backing the 3D-view "Create SYMM mol..."
  * context-menu action. Ports UXP `navi-toolribbon.js` `createSymmObj`:
  * materialize the clicked symmetry image of a molecule as a new MolCoord
@@ -25,13 +25,13 @@ import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { Matrix } from '@cuemol/core/src/wrappers/Matrix';
 import type { SymmRenderer } from '@cuemol/core/src/wrappers/SymmRenderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
-import type { WorkerContext } from '../types/WorkerContext';
-import type { PresetTypeEntry, RendererOptions } from '../../shared/fileOpenTypes';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import type { PresetTypeEntry, RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { getNewRendererOptions } from './getNewRendererOptions.service';
 import { setupRenderer } from './setupRenderer.service';
-import { getViewSceneObjOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
-import { uniqName } from './helpers/uniqName';
+import { getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
+import { uniqName } from '@renderer/worker/server/services/helpers/uniqName';
 import { withUndoTxn } from './withUndoTxn';
 
 export interface GetCreateSymmMolOptionsArgs {

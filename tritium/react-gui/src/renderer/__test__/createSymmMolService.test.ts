@@ -11,22 +11,22 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/makeSel', () => ({
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
-vi.mock('../worker/server/services/setupRenderer.service', () => ({
+vi.mock('@renderer/worker/server/services/setupRenderer.service', () => ({
     setupRenderer: vi.fn(() => ({ uid: 500 })),
 }))
-vi.mock('../worker/server/services/getNewRendererOptions.service', () => ({
+vi.mock('@renderer/worker/server/services/getNewRendererOptions.service', () => ({
     getNewRendererOptions: vi.fn(),
 }))
 
-import { services } from '../worker/server/services/createSymmMol.service'
-import { setupRenderer } from '../worker/server/services/setupRenderer.service'
-import { makeSel } from '../worker/server/services/helpers/makeSel'
-import { getNewRendererOptions } from '../worker/server/services/getNewRendererOptions.service'
+import { services } from '@renderer/worker/server/services/createSymmMol.service'
+import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
+import { getNewRendererOptions } from '@renderer/worker/server/services/getNewRendererOptions.service'
 
 const { getCreateSymmMolOptions, createSymmMol } = services
 

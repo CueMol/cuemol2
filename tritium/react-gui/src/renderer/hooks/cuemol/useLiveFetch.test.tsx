@@ -1,5 +1,5 @@
 /**
- * @file renderer/hooks/cuemol/useLiveFetch.test.tsx
+ * @file hooks/cuemol/useLiveFetch.test.tsx
  * @description Pins the engine contracts the panel hooks depend on: the
  * stale-fetch guard, fallback + onError on a rejected current fetch, and
  * the listener `filter` running before the debounce.
@@ -9,7 +9,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import React from 'react'
 import { act } from 'react'
 import { useLiveFetch } from './useLiveFetch'
-import { makeRenderHook } from '../../__test__/helpers/testHarness'
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
 
 void React
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true

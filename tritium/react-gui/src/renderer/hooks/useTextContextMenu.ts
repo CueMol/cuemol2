@@ -13,8 +13,8 @@
 import { useEffect } from 'react'
 import { IPC } from '@shared/ipcChannels'
 import { buildTextCtxMenuNodes } from '@shared/textCtxMenu'
-import { selectAllInScope } from '../utils/selectAllScope'
-import { useShowContextMenu } from '../components/menu/ContextMenuProvider'
+import { selectAllInScope } from '@renderer/utils/selectAllScope'
+import { useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider'
 
 export function useTextContextMenu(): void {
   const showContextMenu = useShowContextMenu()

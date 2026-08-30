@@ -1,4 +1,4 @@
-import type { WorkerService } from '../WorkerService';
+import type { WorkerService } from '@renderer/worker/server/WorkerService';
 import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager';
 import type { CmdMgr } from '@cuemol/core/src/wrappers/CmdMgr';
 import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager';

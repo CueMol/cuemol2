@@ -8,14 +8,14 @@
 import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { resolvePropTarget } from './helpers/resolvePropTarget';
-import { parseGenericProps } from './helpers/parseGenericProps';
-import { makeSel } from './helpers/makeSel';
-import { safeRead } from './helpers/safeRead';
-import { listGroupChildRenderers } from './helpers/groupChildren';
-import { checkGroupAssignment } from './helpers/rendGroup';
+import { resolvePropTarget } from '@renderer/worker/server/services/helpers/resolvePropTarget';
+import { parseGenericProps } from '@renderer/worker/server/services/helpers/parseGenericProps';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
+import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
+import { checkGroupAssignment } from '@renderer/worker/server/services/helpers/rendGroup';
 import type {
     GenericPropEntry,
     PropTargetType,

@@ -11,20 +11,20 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { act } from "react";
-import { mountTree, flushPromises } from "./helpers/testHarness";
-import type { AnimElementDetail } from "../worker/server/services/animDetail.service";
-import type { AnimElementType } from "../types";
-import { SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "../event";
+import { mountTree, flushPromises } from "@renderer/__test__/helpers/testHarness";
+import type { AnimElementDetail } from "@renderer/worker/server/services/animDetail.service";
+import type { AnimElementType } from "@renderer/types";
+import { SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "@renderer/event";
 
 void React;
 
 // The mode bar's Reset-all button reads the theme for its confirm Alert; the
 // harness mounts without a ThemeProvider, so stub the hook.
-vi.mock("../contexts/ThemeContext", () => ({
+vi.mock("@renderer/contexts/ThemeContext", () => ({
   useTheme: () => ({ theme: "light" }),
 }));
 
-import { AnimElementInspector } from "../components/inspector/AnimElementInspector";
+import { AnimElementInspector } from "@renderer/features/inspector/AnimElementInspector";
 
 function detail(over: {
   type?: AnimElementType;

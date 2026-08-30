@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/workerLauncherCrash.test.ts
+ * @file __test__/workerLauncherCrash.test.ts
  * @description Pin the worker_launcher global crash handlers.
  *
  * Verifies that when `self.dispatchEvent(new ErrorEvent('error', ...))` or
@@ -17,13 +17,13 @@
 
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../worker/server/WorkerService', () => ({
+vi.mock('@renderer/worker/server/WorkerService', () => ({
   WorkerService: vi.fn().mockImplementation(() => ({
     invoke: vi.fn(),
   })),
 }))
 
-vi.mock('../worker/server/services', () => ({
+vi.mock('@renderer/worker/server/services', () => ({
   registerAllServices: vi.fn(),
 }))
 
@@ -42,14 +42,14 @@ beforeEach(() => {
 
 describe('worker_launcher global crash handlers', () => {
   it('registers error and unhandledrejection listeners on self', async () => {
-    await import('../worker/server/worker_launcher')
+    await import('@renderer/worker/server/worker_launcher')
     const channels = addEventListenerSpy.mock.calls.map((c) => c[0])
     expect(channels).toContain('error')
     expect(channels).toContain('unhandledrejection')
   })
 
   it('posts a __worker_crash__ message when an error event fires', async () => {
-    await import('../worker/server/worker_launcher')
+    await import('@renderer/worker/server/worker_launcher')
     const evt = new Event('error') as ErrorEvent
     Object.defineProperty(evt, 'message', { value: 'sync throw' })
     Object.defineProperty(evt, 'error', { value: new Error('sync throw') })
@@ -72,7 +72,7 @@ describe('worker_launcher global crash handlers', () => {
   })
 
   it('posts a __worker_crash__ message when an unhandledrejection fires', async () => {
-    await import('../worker/server/worker_launcher')
+    await import('@renderer/worker/server/worker_launcher')
     const reason = new Error('promise rejected')
     const evt = new Event('unhandledrejection') as PromiseRejectionEvent
     Object.defineProperty(evt, 'reason', { value: reason })

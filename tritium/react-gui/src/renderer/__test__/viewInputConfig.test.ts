@@ -19,7 +19,7 @@ import {
   INPUT_DEVICE_PREF_LABELS,
   INPUT_DEVICE_PREF_OPTIONS,
   DEFAULT_INPUT_DEVICE_PREFERENCE,
-} from '../viewInputConfig'
+} from '@renderer/viewInputConfig'
 
 describe('viewInputConfig', () => {
   it('maps each device mode to its style preset + UserViewConf layer', () => {

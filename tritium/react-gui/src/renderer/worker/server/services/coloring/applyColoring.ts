@@ -12,12 +12,12 @@ import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { ColoringScheme } from '@cuemol/core/src/wrappers/ColoringScheme';
 import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
-import type { WorkerContext } from '../../types/WorkerContext';
-import { withUndoTxn } from '../withUndoTxn';
-import { getSceneOrNull } from '../helpers/sceneResolver';
-import { remove as styleRemove, push as stylePush } from '../helpers/styleutil';
-import { makeColor } from '../helpers/makeColor';
-import { createDefPaintColoring } from '../helpers/defPaintColoring';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { remove as styleRemove, push as stylePush } from '@renderer/worker/server/services/helpers/styleutil';
+import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
+import { createDefPaintColoring } from '@renderer/worker/server/services/helpers/defPaintColoring';
 import {
     resolveColoringTarget,
     readColormodeValues,

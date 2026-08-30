@@ -11,10 +11,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import React from 'react'
 import { act } from 'react'
-import { makeRenderHook } from './helpers/testHarness'
-import { CommandProvider } from '../commands/CommandRegistry'
-import { useUndoRedoState } from '../hooks/useUndoRedoState'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
+import { CommandProvider } from '@renderer/commands/CommandRegistry'
+import { useUndoRedoState } from '@renderer/hooks/useUndoRedoState'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 void React
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true

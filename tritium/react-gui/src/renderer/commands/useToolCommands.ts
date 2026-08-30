@@ -19,21 +19,21 @@
  * (Change residue index, Merge molecule, ...) register here too.
  */
 
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
-import { useShowChangeChainIdDialog } from '../components/dialogs/ChangeChainIdDialogProvider'
-import { useShowDeleteMolDialog } from '../components/dialogs/DeleteMolDialogProvider'
-import { useShowChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialogProvider'
-import { useShowMergeMolDialog } from '../components/dialogs/MergeMolDialogProvider'
-import { useShowMakeMolSurfDialog } from '../components/dialogs/MakeMolSurfDialogProvider'
-import { useShowCalcApbsPotDialog } from '../components/dialogs/CalcApbsPotDialogProvider'
-import { useShowInteractionAnalysisDialog } from '../components/dialogs/InteractionAnalysisDialogProvider'
-import { useShowCutSurfByPlaneDialog } from '../components/dialogs/CutSurfByPlaneDialogProvider'
-import { useShowReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialogProvider'
-import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDialogProvider'
-import { useShowMorphAnimDialog } from '../components/dialogs/MorphAnimDialogProvider'
+import { useShowChangeChainIdDialog } from '@renderer/dialogs/ChangeChainIdDialogProvider'
+import { useShowDeleteMolDialog } from '@renderer/dialogs/DeleteMolDialogProvider'
+import { useShowChangeResidueIndexDialog } from '@renderer/dialogs/ChangeResidueIndexDialogProvider'
+import { useShowMergeMolDialog } from '@renderer/dialogs/MergeMolDialogProvider'
+import { useShowMakeMolSurfDialog } from '@renderer/dialogs/MakeMolSurfDialogProvider'
+import { useShowCalcApbsPotDialog } from '@renderer/dialogs/CalcApbsPotDialogProvider'
+import { useShowInteractionAnalysisDialog } from '@renderer/dialogs/InteractionAnalysisDialogProvider'
+import { useShowCutSurfByPlaneDialog } from '@renderer/dialogs/CutSurfByPlaneDialogProvider'
+import { useShowReassignProt2ndryDialog } from '@renderer/dialogs/ReassignProt2ndryDialogProvider'
+import { useShowMolSuperposeDialog } from '@renderer/dialogs/MolSuperposeDialogProvider'
+import { useShowMorphAnimDialog } from '@renderer/dialogs/MorphAnimDialogProvider'
 
 interface UseToolCommandsOptions {
     cm: AsyncCueMol | null

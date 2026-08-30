@@ -17,22 +17,22 @@ import {
   setupElectronAPI,
   teardownElectronAPI,
   flushPromises,
-} from './helpers/testHarness';
+} from '@renderer/__test__/helpers/testHarness';
 
 void React;
 
 vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }));
-vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
+vi.mock('@renderer/contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
 
 import {
   RenderResultPane,
   exportFileName,
   exportImageRef,
-} from '../components/panes/RenderResultPane';
+} from '@renderer/features/render/RenderResultPane';
 import { IPC } from '@shared/ipcChannels';
-import type { RenderResult } from '../data/renderResult';
+import type { RenderResult } from '@renderer/data/renderResult';
 
 const RESULT: RenderResult = {
   id: 'render-result-1',

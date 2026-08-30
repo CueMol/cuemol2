@@ -13,15 +13,15 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('../worker/server/services/helpers/sceneResolver', () => ({
+vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
     getSceneOrNull: (ctx: { __scene?: unknown }) => ctx.__scene ?? null,
 }))
-vi.mock('../worker/server/services/withUndoTxn', () => ({
+vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     withUndoTxn: (_scene: unknown, _label: string, fn: () => void) => fn(),
 }))
-vi.mock('../worker/shared/sceneTreeTypes', async (importOriginal) => {
+vi.mock('@renderer/worker/shared/sceneTreeTypes', async (importOriginal) => {
     const actual = await importOriginal<Record<string, unknown>>()
     // One object (uid 11) with one child renderer (uid 21).
     const tree = {
@@ -38,7 +38,7 @@ vi.mock('../worker/shared/sceneTreeTypes', async (importOriginal) => {
     return { ...actual, parseSceneTreeJSON: () => tree }
 })
 
-import { services } from '../worker/server/services/cameraVisFlags.service'
+import { services } from '@renderer/worker/server/services/cameraVisFlags.service'
 
 const { getCameraVisFlags, setCameraVisFlags } = services
 

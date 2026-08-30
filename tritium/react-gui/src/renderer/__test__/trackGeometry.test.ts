@@ -16,7 +16,7 @@ import {
     BLOCK_COLOR_COUNT,
     MIN_PX_PER_FRAME,
     MAX_PX_PER_FRAME,
-} from '../components/panels/mdtraj/trackGeometry'
+} from '@renderer/features/trajectory/mdtraj/trackGeometry'
 
 describe('trackGeometry', () => {
     it('frameToPx / pxToFrame round-trip to the nearest frame', () => {

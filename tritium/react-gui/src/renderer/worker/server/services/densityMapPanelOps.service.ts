@@ -1,5 +1,5 @@
 /**
- * @file services/densityMapPanelOps.service.ts
+ * @file worker/server/services/densityMapPanelOps.service.ts
  * @description Worker services backing the Density-map side panel
  * (`panel.densitymap`). Mirrors UXP `densitymap-panel.js`
  * (`cuemolui.panels.denmap.*`):
@@ -20,16 +20,16 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import {
     getSceneOrNull,
     getViewSceneOrNull,
-} from './helpers/sceneResolver';
+} from '@renderer/worker/server/services/helpers/sceneResolver';
 import { undoTxnResult } from './withUndoTxn';
-import { ok, fail, failFrom, type Result } from '../../shared/result';
-import { makeColor } from './helpers/makeColor';
-import { parseGenericProps } from './helpers/parseGenericProps';
-import { parseSceneTreeJSON } from '../../shared/sceneTreeTypes';
+import { ok, fail, failFrom, type Result } from '@renderer/worker/shared/result';
+import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
+import { parseGenericProps } from '@renderer/worker/server/services/helpers/parseGenericProps';
+import { parseSceneTreeJSON } from '@renderer/worker/shared/sceneTreeTypes';
 
 /** Renderer type names the panel exposes (UXP ObjMenuList filter). */
 const MAP_RENDERER_TYPES = new Set<string>([

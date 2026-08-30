@@ -10,17 +10,17 @@
 
 import React, { useCallback, useEffect } from 'react'
 import { IPC } from '@shared/ipcChannels'
-import { useCueMol } from '../hooks/cuemol/useCueMol'
-import { useWorkspaceDispatch, useWorkspaceTabs } from '../state/workspace'
-import { useLayoutDispatch } from '../state/layout'
-import { useAppInitialization } from '../hooks/useAppInitialization'
-import { useNewSceneAction } from '../hooks/useNewSceneAction'
-import { useShellOpenFiles } from '../hooks/useShellOpenFiles'
-import { useWindowCloseHandler } from '../hooks/useWindowCloseHandler'
-import { useWindowTitleSync } from '../hooks/useWindowTitleSync'
-import { useTextContextMenu } from '../hooks/useTextContextMenu'
-import { installSelectAllScope } from '../utils/selectAllScope'
-import { installClipboardScopeTracking } from '../utils/editClipboard'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useWorkspaceDispatch, useWorkspaceTabs } from '@renderer/state/workspace'
+import { useLayoutDispatch } from '@renderer/state/layout'
+import { useAppInitialization } from '@renderer/hooks/useAppInitialization'
+import { useNewSceneAction } from '@renderer/hooks/useNewSceneAction'
+import { useShellOpenFiles } from '@renderer/features/file-io/useShellOpenFiles'
+import { useWindowCloseHandler } from '@renderer/hooks/useWindowCloseHandler'
+import { useWindowTitleSync } from '@renderer/hooks/useWindowTitleSync'
+import { useTextContextMenu } from '@renderer/hooks/useTextContextMenu'
+import { installSelectAllScope } from '@renderer/utils/selectAllScope'
+import { installClipboardScopeTracking } from '@renderer/utils/editClipboard'
 
 export const AppBoot: React.FC = () => {
   const { cueMolReady, cm } = useCueMol()

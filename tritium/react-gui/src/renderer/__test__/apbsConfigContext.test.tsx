@@ -10,10 +10,10 @@
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act } from 'react';
-import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from './helpers/testHarness';
+import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from '@renderer/__test__/helpers/testHarness';
 import { IPC } from '@shared/ipcChannels';
-import { ApbsConfigProvider, useApbsConfig } from '../contexts/ApbsConfigContext';
-import { DEFAULT_APBS_BINARIES } from '../worker/shared/apbsTypes';
+import { ApbsConfigProvider, useApbsConfig } from '@renderer/contexts/ApbsConfigContext';
+import { DEFAULT_APBS_BINARIES } from '@renderer/worker/shared/apbsTypes';
 
 void React;
 

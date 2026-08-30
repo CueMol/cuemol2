@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/server/services/helpers/selName.ts
+ * @file worker/server/services/helpers/selName.ts
  * @description Quoting for chain / residue names embedded in selection strings.
  *
  * Selection strings are compiled by the C++ parser, whose scanner

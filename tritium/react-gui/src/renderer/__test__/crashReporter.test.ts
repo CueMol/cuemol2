@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/crashReporter.test.ts
+ * @file __test__/crashReporter.test.ts
  * @description Pin the CrashReporter wire contract.
  *
  * These tests are degrade-detectors for the FATAL path: a worker or React
@@ -19,8 +19,8 @@ import {
   getCurrentCrash,
   report,
   subscribe,
-} from '../crash/CrashReporter'
-import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+} from '@renderer/crash/CrashReporter'
+import { setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 function makeReport(overrides: Partial<CrashReport> = {}): CrashReport {
   return {

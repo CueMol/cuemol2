@@ -15,14 +15,14 @@
  */
 
 import { IPC } from '@shared/ipcChannels'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'
-import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
-import { useShowObjectPicker } from '../components/dialogs/ObjectPickerDialogProvider'
-import { useShowConfirmReloadSceneDialog } from '../components/dialogs/ConfirmReloadSceneDialogProvider'
-import { useShowExportPngOptionsDialog } from '../components/dialogs/ExportPngOptionsDialogProvider'
-import { runObjectSaveFlow } from '../hooks/sceneContextMenu/runObjectSaveFlow'
-import { runSceneExportFlow } from '../hooks/sceneContextMenu/runSceneExportFlow'
+import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
+import { useShowObjectPicker } from '@renderer/dialogs/ObjectPickerDialogProvider'
+import { useShowConfirmReloadSceneDialog } from '@renderer/dialogs/ConfirmReloadSceneDialogProvider'
+import { useShowExportPngOptionsDialog } from '@renderer/dialogs/ExportPngOptionsDialogProvider'
+import { runObjectSaveFlow } from '@renderer/hooks/sceneContextMenu/runObjectSaveFlow'
+import { runSceneExportFlow } from '@renderer/hooks/sceneContextMenu/runSceneExportFlow'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 

@@ -19,7 +19,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -31,7 +31,7 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 
 // Stub MolSelList (used by the anchor SelRow) to avoid the real picker's
 // ThemeProvider / popover contexts in these unit tests.
-vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
+vi.mock('@renderer/h3-kit/MolSelList/MolSelList', () => ({
   MolSelList: ({ selectedSel, onCommit, disabled }: any) => (
     <button data-disabled={String(!!disabled)} onClick={() => onCommit?.('newsel')}>
       {selectedSel}
@@ -39,13 +39,13 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
   ),
 }))
 
-import { SchemaSection } from '../components/inspector/SchemaSection'
-import { CARTOON_SECTIONS } from '../components/inspector/schema/cartoon'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { CARTOON_SECTIONS } from '@renderer/features/inspector/schema/cartoon'
 import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
-} from '../components/inspector/rendererPropSections'
-import { PropertiesTab } from '../components/inspector/PropertiesTab'
+} from '@renderer/features/inspector/rendererPropSections'
+import { PropertiesTab } from '@renderer/features/inspector/PropertiesTab'
 
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {

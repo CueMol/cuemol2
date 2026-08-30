@@ -22,9 +22,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, ButtonGroup, InputGroup, Popover, Tooltip } from '@blueprintjs/core'
-import { useDarkPortalClass } from '../primitives'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { CompileColorResult } from '../../worker/server/services/colorPicker.service'
+import { useDarkPortalClass } from '@renderer/h3-kit/primitives'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import type { CompileColorResult } from '@renderer/worker/server/services/colorPicker.service'
 import { packToHex, type Rgb } from './colorMath'
 import { RgbHsbPanel } from './RgbHsbPanel'
 import { NamedListPanel } from './NamedListPanel'

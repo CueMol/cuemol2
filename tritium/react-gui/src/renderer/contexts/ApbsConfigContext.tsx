@@ -32,7 +32,7 @@ import {
   type ApbsBinaries,
   DEFAULT_APBS_BINARIES,
   DEFAULT_PDB2PQR_FF,
-} from '../worker/shared/apbsTypes';
+} from '@renderer/worker/shared/apbsTypes';
 
 /** Persistent APBS config: the two exe paths plus the default force field. */
 export interface ApbsConfig extends ApbsBinaries {

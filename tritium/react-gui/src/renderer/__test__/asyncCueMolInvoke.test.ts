@@ -24,7 +24,7 @@ class MockWorker {
   }
 }
 
-import { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 function lastSent(): { method: string; seqno: number; args: unknown[] } {
   const calls = capturedWorker!.postMessage.mock.calls

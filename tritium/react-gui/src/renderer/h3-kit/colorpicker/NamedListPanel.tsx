@@ -10,8 +10,8 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@blueprintjs/core'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
-import type { NamedColorEntry } from '../../worker/server/services/colorPicker.service'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import type { NamedColorEntry } from '@renderer/worker/server/services/colorPicker.service'
 
 interface NamedListPanelProps {
     cm: AsyncCueMol | null

@@ -13,7 +13,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 
 void React
@@ -25,7 +25,7 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 
 // Stub MolSelList: expose its onCommit via a click so we can assert the
 // selection commit path without rendering the real picker (popover/contexts).
-vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
+vi.mock('@renderer/h3-kit/MolSelList/MolSelList', () => ({
   MolSelList: ({ selectedSel, onCommit, disabled }: any) => (
     <button
       data-testid="molsel"
@@ -38,7 +38,7 @@ vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
 }))
 
 // Stub the colour leaf so ColorField renders without the ColorPicker context.
-vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
   CueColorField: ({ value, onCommit, disabled }: any) => (
     <button
       data-testid="egcolor"
@@ -51,8 +51,8 @@ vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
 }))
 
 // Imported after the mocks so they take effect.
-import { SchemaSection } from '@renderer/components/inspector/SchemaSection'
-import { RENDERER_COMMON_SECTIONS } from '@renderer/components/inspector/schema/common'
+import { SchemaSection } from '@renderer/features/inspector/SchemaSection'
+import { RENDERER_COMMON_SECTIONS } from '@renderer/features/inspector/schema/common'
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {

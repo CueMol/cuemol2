@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { IPC } from '@shared/ipcChannels'
-import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+import { setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
-import { runObjectSaveFlow } from '../hooks/sceneContextMenu/runObjectSaveFlow'
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import { runObjectSaveFlow } from '@renderer/hooks/sceneContextMenu/runObjectSaveFlow'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 interface FixtureOpts {
     /** Persisted UiState returned by IPC.UI_LOAD. */

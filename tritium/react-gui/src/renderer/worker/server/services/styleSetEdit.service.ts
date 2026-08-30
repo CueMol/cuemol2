@@ -4,9 +4,9 @@
 // CRUD for the three editor tabs: named colors, named selections (MolSel defs,
 // the "sel" str-data category), and style entries. Edits are live-applied (one
 // undo step each) like the ColorPane decks; the dialog refetches after each.
-import type { WorkerContext } from '../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
-import { getSceneOrNull } from './helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 /** "sel" str-data category = named MolSel definitions (UXP Selection tab). */
 const SEL_CAT = 'sel';

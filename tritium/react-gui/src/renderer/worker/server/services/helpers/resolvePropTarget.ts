@@ -8,7 +8,7 @@
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { PropTargetType } from '@renderer/worker/shared/genericProps';
 
 // The target kind is a wire DTO shared with the renderer; see

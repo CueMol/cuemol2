@@ -1,5 +1,5 @@
 /**
- * @file renderer/crash/mountFallbackDom.ts
+ * @file crash/mountFallbackDom.ts
  * @description Last-resort DOM-direct fallback UI.
  *
  * Mounted by `CrashReporter` on the first crash so the user is not stuck

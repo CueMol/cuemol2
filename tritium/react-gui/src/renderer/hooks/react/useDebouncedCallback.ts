@@ -1,5 +1,5 @@
 /**
- * @file renderer/hooks/react/useDebouncedCallback.ts
+ * @file hooks/react/useDebouncedCallback.ts
  * @description Stable debounced wrapper around a callback.
  *
  * Two modes:

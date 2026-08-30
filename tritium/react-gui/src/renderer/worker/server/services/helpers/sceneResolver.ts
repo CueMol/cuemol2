@@ -1,5 +1,5 @@
 /**
- * @file services/helpers/sceneResolver.ts
+ * @file worker/server/services/helpers/sceneResolver.ts
  * @description Resolve worker-side scene / view / object handles with a
  * uniform null-check pattern. Replaces the inline
  * `ctx.sceMgr.getScene(id) as Scene | null; if (!scene) return ...`
@@ -9,7 +9,7 @@
  * the caller decides the failure shape (e.g. `{ ok: false }`).
  */
 
-import type { WorkerContext } from '../../types/WorkerContext';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';

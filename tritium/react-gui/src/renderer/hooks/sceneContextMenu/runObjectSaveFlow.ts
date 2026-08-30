@@ -14,7 +14,7 @@
  */
 
 import { IPC } from '@shared/ipcChannels'
-import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 /** UXP default for the `save_writer_name` pref. */
 const DEFAULT_WRITER = 'pdb'

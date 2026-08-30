@@ -14,8 +14,8 @@
  * with no edits at the ~19 call sites.
  */
 
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import type { ServiceArgs, ServiceKey } from '../worker/shared/calls'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import type { ServiceArgs, ServiceKey } from '@renderer/worker/shared/calls'
 
 /**
  * Report a fire-and-forget service failure. Single sink so a future

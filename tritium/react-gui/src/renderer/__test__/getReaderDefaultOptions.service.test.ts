@@ -9,8 +9,8 @@
  * `autoTopoGen` topology regression) is caught.
  */
 import { describe, it, expect, vi } from 'vitest'
-import type { WorkerContext } from '../worker/server/types/WorkerContext'
-import { services } from '../worker/server/services/getReaderDefaultOptions.service'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { services } from '@renderer/worker/server/services/getReaderDefaultOptions.service'
 
 const { getReaderDefaultOptions } = services
 

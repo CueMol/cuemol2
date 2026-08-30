@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import { resolveNodeTarget } from './resolveNodeTarget'
 
 const node = (partial: Partial<SceneTreeNode>): SceneTreeNode =>

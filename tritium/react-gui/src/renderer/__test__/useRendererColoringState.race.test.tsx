@@ -1,7 +1,7 @@
 /**
  * @file __test__/useRendererColoringState.race.test.tsx
  * @description Race-pin (degrade-detection) test for the stale-fetch race in
- * hooks/useRendererColoringState.ts.
+ * features/coloring/useRendererColoringState.ts.
  *
  * THE RACE: when the selected renderer switches (ColorPane changes `rendId`
  * from A to B), an in-flight `getRendererColoringState` fetch for the OLD
@@ -21,7 +21,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { useRendererColoringState } from '../hooks/useRendererColoringState'
+import { useRendererColoringState } from '@renderer/features/coloring/useRendererColoringState'
 
 void React
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true

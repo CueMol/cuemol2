@@ -8,9 +8,9 @@
  */
 
 import React from 'react'
-import { useCueMol } from '../hooks/cuemol/useCueMol'
-import { useFileDrop } from '../hooks/useFileDrop'
-import { FileDropOverlay } from '../components/FileDropOverlay'
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useFileDrop } from '@renderer/features/file-io/useFileDrop'
+import { FileDropOverlay } from '@renderer/features/file-io/FileDropOverlay'
 
 export const FileDropLayer: React.FC = () => {
   const { cm } = useCueMol()

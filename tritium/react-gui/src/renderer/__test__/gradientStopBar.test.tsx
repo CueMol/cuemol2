@@ -24,7 +24,7 @@ import {
     type GradientHistogram,
 } from '@renderer/h3-kit/gradient'
 import type { GradientStop } from '@renderer/h3-kit/gradient'
-import { mountTree } from './helpers/testHarness'
+import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
 // jsdom has no ResizeObserver; the histogram strip observes its parent.
 class ResizeObserverStub {
