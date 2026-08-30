@@ -75,9 +75,23 @@ message(STATUS "OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
 SET(GLEW_USE_STATIC_LIBS YES)
 find_package(GLEW)
 message(STATUS "GLEW_FOUND: ${GLEW_FOUND} ${GLEW_LIBRARIES}")
+# The X11 backend (sysdep/Xgl*) still targets the removed OglView /
+# OglDisplayContext API and does not compile. Until it is ported to the
+# ogl_core (Oc*) classes, Linux builds the CLI configuration instead of
+# stopping in sysdep. Configure with -DENABLE_X11_SYSDEP=ON to build it
+# anyway (for that porting work).
+option(ENABLE_X11_SYSDEP "Build the unported X11 OpenGL sysdep backend" OFF)
+
 if (OPENGL_FOUND AND GLEW_FOUND)
-   SET(BUILD_OPENGL_SYSDEP "TRUE")
-   SET(USE_OPENGL "1")
+  if (WIN32 OR APPLE OR ENABLE_X11_SYSDEP)
+    SET(BUILD_OPENGL_SYSDEP "TRUE")
+    SET(USE_OPENGL "1")
+  else ()
+    SET(BUILD_OPENGL_SYSDEP "FALSE")
+    message(STATUS
+      "OpenGL found, but the X11 sysdep backend is not ported "
+      "(see ENABLE_X11_SYSDEP): building the CLI configuration")
+  endif ()
 else ()
    SET(BUILD_OPENGL_SYSDEP "FALSE")
 endif ()

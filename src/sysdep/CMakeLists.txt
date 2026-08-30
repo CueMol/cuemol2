@@ -44,7 +44,10 @@ elseif(APPLE)
     CglDisplayContext.hpp
   )
 else()
-  # Linux/X11
+  # Linux/X11: reached only with -DENABLE_X11_SYSDEP=ON. These sources do
+  # not compile against the current ogl_core (Oc*) API; see src/CMakeLists.txt.
+  message(WARNING
+    "Building the unported X11 sysdep backend (ENABLE_X11_SYSDEP=ON)")
   list(APPEND SYSDEP_SRCS
     XglView.cpp
     XglDisplayContext.cpp
