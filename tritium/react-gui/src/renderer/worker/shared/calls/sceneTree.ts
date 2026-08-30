@@ -23,7 +23,7 @@ import type {
   CopyNodesResult,
   PasteNodeArgs,
   PasteNodeResult,
-} from '@renderer/worker/server/services/sceneClipboard.service'
+} from '@renderer/worker/server/services/clipboard/clipboard.service'
 import type {
   DeleteNodeArgs,
   DeleteNodeResult,
