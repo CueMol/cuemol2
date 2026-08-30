@@ -42,10 +42,14 @@ int LString::replace(char c, char to)
 
 int LString::replace(const LString &c, const LString &to)
 {
-    int i = 0, cnt = 0;
-    int nlen = c.length();
+    size_t i = 0;
+    int cnt = 0;
+    const size_t nlen = c.length();
+    if (nlen == 0) return 0;  // an empty pattern would match forever
     while ((i = m_data.find(c, i)) != std::string::npos) {
         m_data.replace(i, nlen, to);
+        // continue after the replacement, or "a" -> "aa" never terminates
+        i += to.length();
         ++cnt;
     }
     return cnt;
@@ -288,6 +292,7 @@ QLIB_API LString LString::fromReal(LReal value, int nMaxDigit /*=6*/)
     LString rval = LString::format(sbuf, value);
 
     // Remove trailing 0 after the decimal point
+    if (rval.indexOf('.') < 0) return rval;  // "100" with nMaxDigit==0
     char c;
     int nlen = rval.length();
     int i = nlen - 1;

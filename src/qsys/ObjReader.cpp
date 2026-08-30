@@ -5,6 +5,7 @@
 // $Id: ObjReader.cpp,v 1.6 2011/01/03 16:47:05 rishitani Exp $
 
 #include <common.h>
+#include <memory>
 
 #include "ObjReader.hpp"
 #include <qlib/FileStream.hpp>
@@ -65,27 +66,27 @@ void ObjReader::read2(qlib::InStream &ins)
 {
   qlib::InStream *pIn = &ins;
   qlib::InStream *pTIn = pIn;
-  qlib::InStream *pB64In = NULL;
-  qlib::InStream *pZIn = NULL;
+  std::unique_ptr<qlib::InStream> pB64In;  // freed on the exception paths of read() too
+  std::unique_ptr<qlib::InStream> pZIn;
 
   bool bb64 = getBase64Flag();
   int ncomp = getCompressMode();
 
   if (bb64) {
-    pB64In = new qlib::Base64InStream(*pTIn);
-    pTIn = pB64In;
+    pB64In.reset(new qlib::Base64InStream(*pTIn));
+    pTIn = pB64In.get();
   }
   
   if (ncomp==COMP_NONE) {
   }
   else if (ncomp==COMP_GZIP) {
-    pZIn = new qlib::GzipInStream(*pTIn);
-    pTIn = pZIn;
+    pZIn.reset(new qlib::GzipInStream(*pTIn));
+    pTIn = pZIn.get();
   }
 #ifdef HAVE_LZMA_H
   else if (ncomp==COMP_XZIP) {
-    pZIn = new qlib::XzInStream(*pTIn);
-    pTIn = pZIn;
+    pZIn.reset(new qlib::XzInStream(*pTIn));
+    pTIn = pZIn.get();
   }
 #endif
   else {
@@ -100,12 +101,10 @@ void ObjReader::read2(qlib::InStream &ins)
 
   if (pZIn) {
     pZIn->close();
-    delete pZIn;
   }
 
   if (pB64In) {
     pB64In->close();
-    delete pB64In;
   }
   
 }
