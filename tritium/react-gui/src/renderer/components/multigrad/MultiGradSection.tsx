@@ -40,60 +40,22 @@ import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { MultiGradWriteNode } from '../../worker/server/services/rendererColoring.service'
 import { fireService } from '../../utils/fireService'
 import { useMultiGradState } from '../../hooks/useMultiGradState'
-import { useMultiGradHistogram } from '../../hooks/useMultiGradHistogram'
+import { useGradientViewDomain } from './section/useGradientViewDomain'
+import {
+    PENDING_SAFETY_MS,
+    ZOOM_STEP,
+    resolveDisplayHex,
+    toWriteNodes,
+    type MultiGradStop,
+} from './section/gradientStops'
 import { GradientStopBar, type GradientCommitGesture } from '@renderer/h3-kit/gradient'
 import {
     type GradientStop,
-    type ValueDomain,
     MIN_STOP_SPACING,
     keepRatioRescale,
-    minHistogramBinWidth,
     moveStopFree,
-    zoomDomain,
 } from '@renderer/h3-kit/gradient'
 import { MULTIGRAD_PRESETS, buildPresetNodes } from '@renderer/worker/shared/multiGradPresets'
-
-/** Stop displayed by this section: bar geometry + the CueMol color string. */
-interface MultiGradStop extends GradientStop {
-    /** CueMol color string (may be a named color); hex is display-only. */
-    color?: string
-}
-
-/** Convert display stops back to the service write shape. */
-function toWriteNodes(stops: readonly MultiGradStop[]): MultiGradWriteNode[] {
-    return stops.map((s) => ({ value: s.value, color: s.color ?? s.hex }))
-}
-
-/** Basic named colors for optimistic swatch display (preset colors etc.). */
-const NAMED_HEX: Record<string, string> = {
-    red: '#FF0000', yellow: '#FFFF00', white: '#FFFFFF',
-    green: '#00FF00', blue: '#0000FF', black: '#000000',
-    cyan: '#00FFFF', magenta: '#FF00FF', orange: '#FFA500',
-}
-
-/**
- * Best-effort display hex for a CueMol color string, used only for the
- * optimistic override; the canonical hex from C++ replaces it on refetch.
- */
-function resolveDisplayHex(color: string, fallback: string): string {
-    const c = color.trim()
-    if (/^#[0-9a-fA-F]{6}$/.test(c)) return c.toUpperCase()
-    if (/^#[0-9a-fA-F]{3}$/.test(c)) {
-        return (
-            '#' + c.slice(1).split('').map((ch) => ch + ch).join('')
-        ).toUpperCase()
-    }
-    return NAMED_HEX[c.toLowerCase()] ?? fallback
-}
-
-/** Span factor per - / + click. */
-const ZOOM_STEP = 1.5
-/** Fraction of the current span shifted per < / > click. */
-const PAN_STEP = 0.25
-
-/** Drop a stuck optimistic override after this long without a refetch. */
-const PENDING_SAFETY_MS = 1500
-
 interface MultiGradSectionProps {
     cm: AsyncCueMol | null
     sceneId: number | undefined
@@ -114,7 +76,6 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
     const [keepRatio, setKeepRatio] = useState(false)
     /** Explicit view domain from zoom/pan; null = follow the fit domain. */
-    const [viewOverride, setViewOverride] = useState<ValueDomain | null>(null)
     /** Measured stop-bar width (px) for histogram bin sizing. */
     const [stripWidth, setStripWidth] = useState(0)
     /** Local override while a drag preview / pending commit is live. */
@@ -168,83 +129,11 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
     }, [canonicalStops.length, selectedIndex])
 
     const displayStops = previewStops ?? canonicalStops
-
-    // --- display domain (independent of the stop range) ---
-
-    // Fit domain (the -/+/Fit baseline): the stop range when nodes exist;
-    // otherwise the central-95% histogram range (raw map min/max is
-    // usually blown up by outliers), then the raw map range, then a
-    // synthetic fallback.
-    const fitDomain = useMemo<ValueDomain>(() => {
-        if (canonicalStops.length >= 2) {
-            const min = canonicalStops[0].value
-            const max = canonicalStops[canonicalStops.length - 1].value
-            if (max > min) return { min, max }
-        }
-        const p = state?.mapPercentiles
-        if (p && p.hi > p.lo) return { min: p.lo, max: p.hi }
-        const stats = state?.mapStats
-        if (stats && stats.max > stats.min) {
-            return { min: stats.min, max: stats.max }
-        }
-        if (canonicalStops.length === 1) {
-            const v = canonicalStops[0].value
-            return { min: v - 0.5, max: v + 0.5 }
-        }
-        return { min: 0, max: 1 }
-    }, [canonicalStops, state?.mapPercentiles, state?.mapStats])
-
-    const activeDomain = viewOverride ?? fitDomain
-
-    // Freeze the domain while an override is live so a mid-drag canonical
-    // refetch (whose values follow the drag) cannot rescale the bar.
-    const frozenDomainRef = useRef(activeDomain)
-    if (previewStops === null) frozenDomainRef.current = activeDomain
-    const viewDomain = previewStops !== null
-        ? frozenDomainRef.current
-        : activeDomain
-
-    const handleZoom = useCallback((factor: number) => {
-        setViewOverride((prev) => zoomDomain(prev ?? frozenDomainRef.current, factor))
-    }, [])
-
-    const handlePan = useCallback((direction: -1 | 1) => {
-        setViewOverride((prev) => {
-            const base = prev ?? frozenDomainRef.current
-            // Derive max from min + span (rather than shifting both ends)
-            // so repeated pans cannot drift the span through floating-
-            // point accumulation, which would silently change the zoom.
-            const span = base.max - base.min
-            const min = base.min + span * PAN_STEP * direction
-            return { min, max: min + span }
-        })
-    }, [])
-
-    // Floor on the bin width, from the map's own statistics: zooming in
-    // past it cannot reveal more structure, so the bars widen instead of
-    // splitting into empty comb teeth.
-    const minBinWidth = useMemo(() => {
-        const s = state?.mapStats
-        if (!s) return 0
-        return minHistogramBinWidth({
-            sigma: s.sigma,
-            min: s.min,
-            max: s.max,
-            voxelCount: state?.mapVoxelCount ?? null,
-            peakCount: state?.mapPeakCount ?? null,
-            quantStep: s.quantStep,
-        })
-    }, [state?.mapStats, state?.mapVoxelCount, state?.mapPeakCount])
-
-    const histogram = useMultiGradHistogram({
-        cm,
-        sceneId,
-        rendId,
-        domain: viewDomain,
-        widthPx: stripWidth,
-        minBinWidth,
-        paused: previewStops !== null,
-        enabled: state?.capable === true,
+    const {
+        viewDomain, histogram,
+        handleZoom, handlePan, setViewOverride, isViewOverridden, frozenDomainRef,
+    } = useGradientViewDomain({
+        cm, sceneId, rendId, state, canonicalStops, previewStops, stripWidth,
     })
 
     // --- write paths ---
@@ -352,7 +241,7 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
                 : 'Change multi gradient color'
             commitNodes(stops as MultiGradStop[], label, original)
         },
-        [commitNodes],
+        [commitNodes, frozenDomainRef, setViewOverride],
     )
 
     const handleAbort = useCallback(() => {
@@ -579,7 +468,7 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
                     text="Fit"
                     aria-label="Fit view range"
                     title="Fit the gradient range (or the map's central 95%)"
-                    disabled={viewOverride === null}
+                    disabled={!isViewOverridden}
                     onClick={() => setViewOverride(null)}
                 />
             </div>

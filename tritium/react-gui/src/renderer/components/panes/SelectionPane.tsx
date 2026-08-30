@@ -25,6 +25,7 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
 import { PaneSectionHeader } from './PaneSectionHeader';
+import { useSelectionValidation } from './selection/useSelectionValidation';
 import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
 import { fireService } from '../../utils/fireService';
@@ -52,10 +53,8 @@ interface SelectionPaneProps {
 
 /* --- Constants --- */
 
-const VALIDATE_DEBOUNCE_MS = 500;
 // Mirror MolSelList/selHistory.SKIP: values that pushHistory ignores.
 // Skipping the validate round-trip for these as well matches MolSelList.
-const VALIDATE_SKIP = new Set(['', '*', 'none']);
 
 /* --- Component --- */
 
@@ -82,7 +81,6 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
     // not clobber a persisted pending edit (only a genuine mol.sel change does).
     const syncedSelRef = useRef<string>(seededForScene() ? loadSnapshot()!.syncedSel : '');
 
-    const [isValid, setIsValid] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
 
@@ -232,35 +230,7 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
         () => applySelection(textDraft, true),
         [applySelection, textDraft],
     );
-
-    // ---- Live validation (debounced) of the text field ----
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    useEffect(() => {
-        if (!cm || activeSceneId === undefined) {
-            setIsValid(true);
-            return;
-        }
-        if (debounceRef.current !== null) clearTimeout(debounceRef.current);
-        const trimmed = textDraft.trim();
-        if (VALIDATE_SKIP.has(trimmed)) {
-            setIsValid(true);
-            return;
-        }
-        let cancelled = false;
-        debounceRef.current = setTimeout(() => {
-            cm.invokeService('validateSelection', { selStr: trimmed, sceneId: activeSceneId })
-                .then((res) => {
-                    if (!cancelled) setIsValid(res.ok);
-                })
-                .catch(() => {
-                    if (!cancelled) setIsValid(true);
-                });
-        }, VALIDATE_DEBOUNCE_MS);
-        return () => {
-            cancelled = true;
-            if (debounceRef.current !== null) clearTimeout(debounceRef.current);
-        };
-    }, [cm, textDraft, activeSceneId]);
+    const isValid = useSelectionValidation({ cm, sceneId: activeSceneId, text: textDraft });
 
     // Center the active view on the applied selection.
     const canCenter = canApply && activeMolViewId !== undefined;
