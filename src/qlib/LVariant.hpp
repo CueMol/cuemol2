@@ -61,11 +61,23 @@ public:
     /// Default ctor (initialize null value)
     LVariant() : type(LT_NULL), m_bOwned(true) {}
 
-    /// Copy ctor
+    /// Copy ctor (deep copy of the value)
     LVariant(const LVariant &src)
     {
         LVariant::copyFrom(src);
     }
+
+    /// Move ctor: takes over the value, src becomes null
+    LVariant(LVariant &&src) noexcept
+        : type(src.type), value(src.value), m_bOwned(src.m_bOwned)
+    {
+        src.type = LT_NULL;
+        src.m_bOwned = true;
+    }
+
+    /// A pointer to a variant is never a value. Without this overload a
+    /// LVariant* argument silently converts to LVariant(bool).
+    LVariant(const LVariant *) = delete;
 
     /// Destructor
     ~LVariant()
@@ -81,7 +93,9 @@ public:
     {
         value.realValue = v;
     }
-    LVariant(bool v) : type(LT_BOOLEAN), m_bOwned(true)
+    // explicit: an implicit pointer-to-bool conversion would otherwise turn
+    // any stray pointer argument into a boolean true
+    explicit LVariant(bool v) : type(LT_BOOLEAN), m_bOwned(true)
     {
         value.boolValue = v;
     }
@@ -137,6 +151,20 @@ public:
         if (&arg != this) {
             cleanup();
             copyFrom(arg);
+        }
+        return *this;
+    }
+
+    /// Move assignment: takes over the value, src becomes null
+    LVariant &operator=(LVariant &&src) noexcept
+    {
+        if (&src != this) {
+            cleanup();
+            type = src.type;
+            value = src.value;
+            m_bOwned = src.m_bOwned;
+            src.type = LT_NULL;
+            src.m_bOwned = true;
         }
         return *this;
     }

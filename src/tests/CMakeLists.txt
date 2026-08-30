@@ -43,6 +43,7 @@ add_executable(test_qlib
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
   qlib/test_seekable_stream.cpp
+  qlib/test_lvardict.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -246,6 +247,7 @@ add_executable(test_importers
   modules/importers/test_amber_reader.cpp
   modules/importers/test_load_object_command_guess.cpp
   modules/importers/test_trajio.cpp
+  modules/importers/test_pickle_instream.cpp
 )
 target_include_directories(test_importers PRIVATE
   ${CMAKE_SOURCE_DIR}/src

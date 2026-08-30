@@ -33,21 +33,44 @@ namespace qlib {
     {
     }
 
+    /// Deep copy: the elements are owned, so each one is cloned
     LVarList(const LVarList &a)
-         : super_t(a)
+         : super_t()
     {
+      copyElems(a);
+    }
+
+    LVarList &operator=(const LVarList &a)
+    {
+      if (this!=&a) {
+        clearAndDelete();
+        copyElems(a);
+      }
+      return *this;
     }
 
     ~LVarList()
     {
-      super_t::iterator i = super_t::begin();
-      super_t::iterator e = super_t::end();
-      for (; i!=e; ++i) {
-        if (*i!=NULL)
-          delete *i;
-      }
+      clearAndDelete();
     }
 
+    /// Delete all owned elements and empty the list
+    /// (clear() alone drops the pointers without deleting them)
+    void clearAndDelete()
+    {
+      for (LVariant *p : *this)
+        delete p;
+      super_t::clear();
+    }
+
+  private:
+    void copyElems(const LVarList &a)
+    {
+      for (const LVariant *p : a)
+        super_t::push_back(p!=nullptr ? MB_NEW LVariant(*p) : nullptr);
+    }
+
+  public:
     //////
 
     LVariant *front_pop_front()
