@@ -1,0 +1,137 @@
+/**
+ * @file components/inspector/anim/useAnimGenericProps.ts
+ * @description The animation inspector's Generic tab: the element's raw
+ * properties, read and written by name.
+ *
+ * It is fetched in BOTH modes, not only while the Generic tab is showing: the
+ * mode bar's Reset-all button derives its enabled state from these entries, so
+ * the Properties tab needs them live too.
+ *
+ * The element identity arrives as refs rather than values because every
+ * callback here has to stay reference-stable -- they are handed to rows that
+ * would otherwise re-render on each keystroke -- while still addressing the
+ * currently inspected element.
+ */
+
+import { useCallback, useRef, useState } from 'react';
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
+import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
+import { modifiedKeys } from '../propModel';
+
+export interface UseAnimGenericPropsOptions {
+    cmRef: React.MutableRefObject<AsyncCueMol | null>;
+    sceneIdRef: React.MutableRefObject<number>;
+    uidRef: React.MutableRefObject<number>;
+    /** Called when the element turns out to be gone (deleted). */
+    onGoneRef: React.MutableRefObject<(sceneId: number) => void>;
+}
+
+export function useAnimGenericProps({
+    cmRef, sceneIdRef, uidRef, onGoneRef,
+}: UseAnimGenericPropsOptions) {
+    const [genericEntries, setGenericEntries] = useState<GenericPropEntry[]>([]);
+    const [genericLoading, setGenericLoading] = useState(false);
+    // Stale-response guard: every request takes the next number and a reply
+    // is dropped unless it is still the latest.
+    const genericToken = useRef(0);
+    const genericEntriesRef = useRef(genericEntries);
+    genericEntriesRef.current = genericEntries;
+
+  const refetchGeneric = useCallback(() => {
+    const c = cmRef.current;
+    const sid = sceneIdRef.current;
+    const u = uidRef.current;
+    if (!c) return;
+    setGenericLoading(true);
+    const token = ++genericToken.current;
+    c.invokeService("getAnimElementGenericProps", { sceneId: sid, uid: u })
+      .then((res) => {
+        if (token !== genericToken.current) return;
+        setGenericLoading(false);
+        if (!res || res.gone) {
+          onGoneRef.current(sid);
+          return;
+        }
+        setGenericEntries(res.entries ?? []);
+      })
+      .catch((e: unknown) => {
+        setGenericLoading(false);
+        console.warn("getAnimElementGenericProps failed:", e);
+      });
+  }, [cmRef, sceneIdRef, uidRef, onGoneRef]);
+
+  const adoptGeneric = useCallback(
+    (
+      res: { ok: boolean; gone?: boolean; entries?: GenericPropEntry[] } | undefined,
+      token: number,
+    ) => {
+      if (token !== genericToken.current) return;
+      if (!res || res.gone) {
+        onGoneRef.current(sceneIdRef.current);
+        return;
+      }
+      setGenericEntries(res.entries ?? []);
+    },
+    [onGoneRef, sceneIdRef],
+  );
+  const handleGenericSet = useCallback(
+    (key: string, valueType: string, value: string | number | boolean) => {
+      const c = cmRef.current;
+      if (!c) return;
+      const token = ++genericToken.current;
+      c.invokeService("setAnimElementGenericProp", {
+        sceneId: sceneIdRef.current,
+        uid: uidRef.current,
+        propName: key,
+        op: "set",
+        valueType,
+        value,
+      })
+        .then((res) => adoptGeneric(res, token))
+        .catch((e: unknown) => console.warn("setAnimElementGenericProp failed:", e));
+    },
+    [adoptGeneric, cmRef, sceneIdRef, uidRef],
+  );
+  const handleGenericReset = useCallback(
+    (key: string) => {
+      const c = cmRef.current;
+      if (!c) return;
+      const token = ++genericToken.current;
+      c.invokeService("setAnimElementGenericProp", {
+        sceneId: sceneIdRef.current,
+        uid: uidRef.current,
+        propName: key,
+        op: "reset",
+        valueType: "",
+      })
+        .then((res) => adoptGeneric(res, token))
+        .catch((e: unknown) => console.warn("setAnimElementGenericProp (reset) failed:", e));
+    },
+    [adoptGeneric, cmRef, sceneIdRef, uidRef],
+  );
+  const handleResetAll = useCallback(() => {
+    const c = cmRef.current;
+    if (!c) return;
+    const keys = modifiedKeys(genericEntriesRef.current);
+    if (keys.length === 0) return;
+    const token = ++genericToken.current;
+    c.invokeService("resetAnimElementGenericProps", {
+      sceneId: sceneIdRef.current,
+      uid: uidRef.current,
+      propNames: keys,
+    })
+      .then((res) => adoptGeneric(res, token))
+      .catch((e: unknown) => console.warn("resetAnimElementGenericProps failed:", e));
+  }, [adoptGeneric, cmRef, sceneIdRef, uidRef]);
+
+    return {
+        genericEntries,
+        genericLoading,
+        refetchGeneric,
+        handleGenericSet,
+        handleGenericReset,
+        handleResetAll,
+        /** True while any property differs from its default. */
+        canResetAll: modifiedKeys(genericEntries).length > 0,
+    };
+}

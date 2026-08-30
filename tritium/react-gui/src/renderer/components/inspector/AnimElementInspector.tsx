@@ -38,7 +38,7 @@ import {
 } from "../../h3-kit/form";
 import { GenericTab } from "./GenericTab";
 import { InspectorResetAllButton } from "./InspectorResetAllButton";
-import { modifiedKeys } from "./propModel";
+import { useAnimGenericProps } from "./anim/useAnimGenericProps";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import type {
   AnimElementDetail,
@@ -48,7 +48,6 @@ import type {
   AnimMolOption,
   SetAnimElementPropArgs,
 } from "../../worker/server/services/animDetail.service";
-import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 import { SEM_ANIM, SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "../../event";
 import { useCueMolEventListener } from "@renderer/hooks/cuemol/useCueMolEventListener";
 
@@ -61,68 +60,14 @@ interface AnimElementInspectorProps {
   /** Report the element name/type so the inspector header can show them. */
   onHeaderChange: (name: string, type: string) => void;
 }
-
-const TYPE_LABEL: Record<string, string> = {
-  SimpleSpin: "Simple spin",
-  CamMotion: "Camera motion",
-  ShowHideAnim: "Show / Hide",
-  SlideInOutAnim: "Slide",
-  MolAnim: "Mol morphing",
-  NoopAnimObj: "No operation",
-  unknown: "Animation element",
-};
-
-/** Draft of the numeric / text fields (controlled while editing). */
-interface FormState {
-  name: string;
-  quadricPct: number;
-  startMs: number;
-  durationMs: number;
-  angle: number;
-  tgtAlpha: number;
-  direction: number;
-  distance: number;
-  startValue: number;
-  endValue: number;
-}
-
-function detailToForm(d: AnimElementDetail): FormState {
-  const c = d.common;
-  const t = d.typeProps;
-  return {
-    name: c.name,
-    quadricPct: c.quadric * 100,
-    startMs: c.startMs,
-    durationMs: c.endMs - c.startMs,
-    angle: t.angle ?? 0,
-    tgtAlpha: t.tgtAlpha ?? 1,
-    direction: t.direction ?? 0,
-    distance: t.distance ?? 1,
-    startValue: t.startValue ?? 0,
-    endValue: t.endValue ?? 1,
-  };
-}
-
-/** Normalize an angle into [0, 360] by wrapping (UXP parity, not clamping). */
-function wrapAngle(a: number): number {
-  let v = a;
-  while (v < 0) v += 360;
-  while (v > 360) v -= 360;
-  return v;
-}
-
-/** Which axis preset (if any) the current vector matches. */
-function axisPreset(x: number, y: number, z: number): string {
-  if (x === 1 && y === 0 && z === 0) return "x";
-  if (x === 0 && y === 1 && z === 0) return "y";
-  if (x === 0 && y === 0 && z === 1) return "z";
-  return "cart";
-}
-
-/** Compact axis-component display: round to 4 dp and drop trailing zeros. */
-function fmtAxis(n: number): string {
-  return String(Math.round(n * 1e4) / 1e4);
-}
+import {
+  TYPE_LABEL,
+  axisPreset,
+  detailToForm,
+  fmtAxis,
+  wrapAngle,
+  type FormState,
+} from "./anim/animElementForm";
 
 /**
  * Per-element detail editor (right InspectorPanel `animElement` branch).
@@ -148,8 +93,6 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   // Active tab: the bespoke per-type editor ("properties") or the full generic
   // property table ("generic"), mirroring the renderer node inspector.
   const [mode, setMode] = useState<"properties" | "generic">("properties");
-  const [genericEntries, setGenericEntries] = useState<GenericPropEntry[]>([]);
-  const [genericLoading, setGenericLoading] = useState(false);
 
   const cmRef = useRef(cm);
   cmRef.current = cm;
@@ -161,16 +104,18 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   onGoneRef.current = onGone;
   const onHeaderRef = useRef(onHeaderChange);
   onHeaderRef.current = onHeaderChange;
+
+  const {
+    genericEntries, genericLoading, refetchGeneric,
+    handleGenericSet, handleGenericReset, handleResetAll, canResetAll,
+  } = useAnimGenericProps({ cmRef, sceneIdRef, uidRef, onGoneRef });
+
   // Drop a stale response that resolves after a newer fetch/commit.
   const fetchToken = useRef(0);
   // Drop a stale target-options response (rapid scene / scene-tree changes).
   const optionsToken = useRef(0);
   // True while a draft (numeric/text) field is mid-edit -- blocks re-seed.
   const editingRef = useRef(false);
-  // Generic-tab fetch token + live mirrors read inside event handlers.
-  const genericToken = useRef(0);
-  const genericEntriesRef = useRef(genericEntries);
-  genericEntriesRef.current = genericEntries;
 
   const adopt = useCallback((d: AnimElementDetail) => {
     setDetail(d);
@@ -196,29 +141,6 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   }, [adopt]);
 
   /** Refetch the full generic property list (generic tab). */
-  const refetchGeneric = useCallback(() => {
-    const c = cmRef.current;
-    const sid = sceneIdRef.current;
-    const u = uidRef.current;
-    if (!c) return;
-    setGenericLoading(true);
-    const token = ++genericToken.current;
-    c.invokeService("getAnimElementGenericProps", { sceneId: sid, uid: u })
-      .then((res) => {
-        if (token !== genericToken.current) return;
-        setGenericLoading(false);
-        if (!res || res.gone) {
-          onGoneRef.current(sid);
-          return;
-        }
-        setGenericEntries(res.entries ?? []);
-      })
-      .catch((e: unknown) => {
-        setGenericLoading(false);
-        console.warn("getAnimElementGenericProps failed:", e);
-      });
-  }, []);
-
   // SEM_ANIM keeps both views in sync. The generic table is refetched in both
   // modes: the mode bar's Reset-all button derives its enabled state from
   // genericEntries, so they must stay live on the Properties tab too.
@@ -327,70 +249,6 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   }, []);
 
   /** Adopt the fresh generic list returned by a write (token-gated). */
-  const adoptGeneric = useCallback(
-    (
-      res: { ok: boolean; gone?: boolean; entries?: GenericPropEntry[] } | undefined,
-      token: number,
-    ) => {
-      if (token !== genericToken.current) return;
-      if (!res || res.gone) {
-        onGoneRef.current(sceneIdRef.current);
-        return;
-      }
-      setGenericEntries(res.entries ?? []);
-    },
-    [],
-  );
-  const handleGenericSet = useCallback(
-    (key: string, valueType: string, value: string | number | boolean) => {
-      const c = cmRef.current;
-      if (!c) return;
-      const token = ++genericToken.current;
-      c.invokeService("setAnimElementGenericProp", {
-        sceneId: sceneIdRef.current,
-        uid: uidRef.current,
-        propName: key,
-        op: "set",
-        valueType,
-        value,
-      })
-        .then((res) => adoptGeneric(res, token))
-        .catch((e: unknown) => console.warn("setAnimElementGenericProp failed:", e));
-    },
-    [adoptGeneric],
-  );
-  const handleGenericReset = useCallback(
-    (key: string) => {
-      const c = cmRef.current;
-      if (!c) return;
-      const token = ++genericToken.current;
-      c.invokeService("setAnimElementGenericProp", {
-        sceneId: sceneIdRef.current,
-        uid: uidRef.current,
-        propName: key,
-        op: "reset",
-        valueType: "",
-      })
-        .then((res) => adoptGeneric(res, token))
-        .catch((e: unknown) => console.warn("setAnimElementGenericProp (reset) failed:", e));
-    },
-    [adoptGeneric],
-  );
-  const handleResetAll = useCallback(() => {
-    const c = cmRef.current;
-    if (!c) return;
-    const keys = modifiedKeys(genericEntriesRef.current);
-    if (keys.length === 0) return;
-    const token = ++genericToken.current;
-    c.invokeService("resetAnimElementGenericProps", {
-      sceneId: sceneIdRef.current,
-      uid: uidRef.current,
-      propNames: keys,
-    })
-      .then((res) => adoptGeneric(res, token))
-      .catch((e: unknown) => console.warn("resetAnimElementGenericProps failed:", e));
-  }, [adoptGeneric]);
-
   // Properties / Generic switcher, shown above the body in both modes.
   const modeBar = (
     <div className="inspector-mode-bar mode-bar">
@@ -405,7 +263,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       {/* Available in both modes (they edit the same properties), matching
           InspectorPanel's mode bar. */}
       <InspectorResetAllButton
-        canResetAll={modifiedKeys(genericEntries).length > 0}
+        canResetAll={canResetAll}
         onResetAll={handleResetAll}
       />
     </div>
