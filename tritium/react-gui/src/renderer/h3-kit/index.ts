@@ -7,6 +7,7 @@
  *   primitives/  icons and the tooltip -- React and the icon libraries only
  *   form/        the label+control catalog; owns every control size
  *   list/        selectable-list rows and their keyboard navigation
+ *   gradient/    the gradient stop strip and its value/pixel geometry
  *   colorpicker/ the colour popover and the field that opens it
  *   MolSelList/  the molecular-selection picker
  *   selection/   the selection-expression builder shared by the pane and the picker
@@ -24,6 +25,7 @@
 export * from './primitives';
 export * from './form';
 export * from './list';
+export * from './gradient';
 export * from './colorpicker';
 export * from './MolSelList';
 export * from './selection';

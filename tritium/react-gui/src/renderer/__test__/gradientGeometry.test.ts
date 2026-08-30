@@ -24,7 +24,7 @@ import {
   valueToX,
   xToValue,
   zoomDomain,
-} from '../components/multigrad/gradientGeometry';
+} from '@renderer/h3-kit/gradient';
 
 describe('valueToX / xToValue', () => {
   it('maps value linearly into the lane and clamps', () => {

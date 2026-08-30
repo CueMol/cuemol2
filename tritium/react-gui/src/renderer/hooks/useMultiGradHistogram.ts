@@ -20,12 +20,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import type { GradientHistogram } from '../components/multigrad/GradientStopBar'
 import {
     alignedBinRange,
     histogramTargetBins,
     niceBinWidth,
-} from '../components/multigrad/gradientGeometry'
+} from '@renderer/h3-kit/gradient'
+import type { GradientHistogram } from '@renderer/h3-kit/gradient'
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 const DOMAIN_DEBOUNCE_MS = 100

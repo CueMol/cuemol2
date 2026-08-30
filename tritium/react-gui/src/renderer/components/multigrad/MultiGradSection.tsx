@@ -41,7 +41,7 @@ import type { MultiGradWriteNode } from '../../worker/server/services/rendererCo
 import { fireService } from '../../utils/fireService'
 import { useMultiGradState } from '../../hooks/useMultiGradState'
 import { useMultiGradHistogram } from '../../hooks/useMultiGradHistogram'
-import { GradientStopBar, type GradientCommitGesture } from './GradientStopBar'
+import { GradientStopBar, type GradientCommitGesture } from '@renderer/h3-kit/gradient'
 import {
     type GradientStop,
     type ValueDomain,
@@ -50,8 +50,8 @@ import {
     minHistogramBinWidth,
     moveStopFree,
     zoomDomain,
-} from './gradientGeometry'
-import { MULTIGRAD_PRESETS, buildPresetNodes } from './multiGradPresets'
+} from '@renderer/h3-kit/gradient'
+import { MULTIGRAD_PRESETS, buildPresetNodes } from '@renderer/worker/shared/multiGradPresets'
 
 /** Stop displayed by this section: bar geometry + the CueMol color string. */
 interface MultiGradStop extends GradientStop {
