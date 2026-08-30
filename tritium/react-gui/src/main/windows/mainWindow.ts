@@ -20,6 +20,7 @@ import { setAppQuitting, setCloseConfirmed, setForceQuit } from '../quitState'
 import { chromeWindowOptions, forwardConsoleMessages, hideMenuBar } from './windowChrome'
 import { isVisibleOnAnyDisplay, trackWindowState } from './windowState'
 import { handleWindowClose } from './closeFunnel'
+import { holdUntilRevealed } from './reveal'
 import { createOrFocusRenderWindow, getRenderWindow } from './renderWindow'
 
 let mainWindow: BrowserWindow | null = null
@@ -112,11 +113,11 @@ export function createWindow(): void {
 
   hideMenuBar(win)
 
-  if (saved?.isMaximized) {
-    win.maximize()
-  }
-
-  win.on('ready-to-show', () => {
+  // Shown when the renderer reports its first real frame (reveal.ts).
+  // Restoring the maximized state waits for the same moment: `maximize()`
+  // shows a window that is being held back.
+  holdUntilRevealed(win, () => {
+    if (saved?.isMaximized) win.maximize()
     win.show()
     win.focus()
   })

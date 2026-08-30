@@ -122,6 +122,9 @@ export const IPC = {
   // Main-window title: the renderer owns the active scene/view, so it pushes
   // the subtitle and main composes '<product> - <subtitle>'.
   WINDOW_SET_TITLE: 'window:set-title',        // invoke: renderer -> main
+  // The renderer's first real frame is up; the window that sent it was
+  // created hidden and is waiting on exactly this (main/windows/reveal.ts).
+  WINDOW_REVEAL: 'window:reveal',              // invoke: renderer -> main
 
   // Renderer/Worker crash reporting + fallback UI's Quit button
   CRASH_REPORT: 'app:crash-report',

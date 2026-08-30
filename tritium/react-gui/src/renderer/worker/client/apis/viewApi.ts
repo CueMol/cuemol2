@@ -29,10 +29,11 @@ const log = console;
  */
 export async function bindCanvas(
     transport: WorkerTransport, canvas: any, view_id: number, dpr: number,
+    width: number, height: number,
 ): Promise<any[]> {
     const offscreen = canvas.transferControlToOffscreen();
     return await transport.invokeWorkerWithTransfer(
-        'bindCanvas', offscreen, offscreen, view_id, dpr,
+        'bindCanvas', offscreen, offscreen, view_id, dpr, width, height,
     );
 }
 

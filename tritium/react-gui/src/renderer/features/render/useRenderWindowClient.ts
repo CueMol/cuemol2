@@ -23,6 +23,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { IPC } from "@shared/ipcChannels";
 import type { RenderFramePreviewWire, RenderTargetViewWire, RenderWindowCommand, RenderWindowModeRequest, RenderWindowStateUpdate, RenderViewCamera, HatchStyleSpecReply, ViewSizePx, RelayKind, RelayReq, RelayRes } from "@shared/types/renderWindow";
 import type { RenderJob } from "./useRenderJob";
+import { useHoldReveal } from "@renderer/shell/reveal/useRevealWindow";
 import type {
   RenderResult,
   RenderSettingsSnapshot,
@@ -55,6 +56,8 @@ async function relayGet<K extends RelayKind>(
 
 
 export interface RenderWindowClientState {
+  /** Whether the first context push from the main window has arrived. */
+  synced: boolean;
   /** Mirrored render job (progress/log), or null when idle. */
   job: RenderJob | null;
   /**
@@ -86,6 +89,7 @@ const INITIAL_STATE: RenderWindowClientState = {
   history: [],
   historyIndex: -1,
   preview: null,
+  synced: false,
   views: [],
   activeViewId: null,
   umbreonAvailable: false,
@@ -176,6 +180,7 @@ export function useRenderWindowClient(): {
             ...prev,
             // Wire types are structural mirrors of the renderer types; cast
             // once at this boundary.
+            synced: true,
             job: update.job as RenderJob | null,
             views: update.views,
             activeViewId: update.activeViewId,
@@ -316,6 +321,10 @@ export function useRenderWindowClient(): {
   const shownResult = state.history[state.historyIndex] ?? null;
   const shownId = shownResult?.id ?? null;
   const [shownImage, setShownImage] = useState<string | null>(null);
+  // The window stays hidden while the image is on its way (the history's
+  // newest render is shown on open, and it is the largest thing on screen).
+  const [imagePending, setImagePending] = useState(false);
+  useHoldReveal(imagePending);
   useEffect(() => {
     if (shownId === null) {
       setShownImage(null);
@@ -323,6 +332,7 @@ export function useRenderWindowClient(): {
     }
     let cancelled = false;
     setShownImage(null);
+    setImagePending(true);
     void window.electronAPI
       ?.invoke(IPC.RENDER_HISTORY_READ, { resultId: shownId })
       .then((res) => {
@@ -330,9 +340,13 @@ export function useRenderWindowClient(): {
       })
       .catch(() => {
         if (!cancelled) setShownImage(null);
+      })
+      .finally(() => {
+        if (!cancelled) setImagePending(false);
       });
     return () => {
       cancelled = true;
+      setImagePending(false);
     };
   }, [shownId]);
 

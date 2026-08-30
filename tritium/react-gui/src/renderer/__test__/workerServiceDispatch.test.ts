@@ -209,3 +209,47 @@ describe('WorkerService.invoke no-reply contract', () => {
         expect(posted).toEqual([]);
     });
 });
+
+/*
+ * The canvas size travels with the bind. The transferred canvas arrives at
+ * its attribute size, and a first frame drawn at that size was stretched
+ * over the whole pane until the first `resized` message landed -- a huge,
+ * blocky centre mark for a moment at launch.
+ */
+describe('WorkerService.bindCanvas sizing', () => {
+    function makeGfx() {
+        const calls: string[] = [];
+        return {
+            calls,
+            bindCanvas: vi.fn(() => { calls.push('bind'); }),
+            setLogicalSize: vi.fn(() => { calls.push('size'); }),
+            activateView: vi.fn(() => { calls.push('activate'); }),
+        };
+    }
+
+    it('sizes the backing store and the logical size before activating the view', () => {
+        const { svc } = makeSvc();
+        const gfx = makeGfx();
+        (svc as unknown as { _gfx_mgr: unknown })._gfx_mgr = gfx;
+        const canvas = { width: 300, height: 150 };
+
+        expect(svc.bindCanvas(canvas, 7, 2, 400, 300)).toBe(true);
+
+        expect(canvas).toEqual({ width: 800, height: 600 });
+        expect(gfx.setLogicalSize).toHaveBeenCalledWith(400, 300);
+        expect(gfx.calls).toEqual(['bind', 'size', 'activate']);
+    });
+
+    it('leaves the canvas alone when it had no size yet', () => {
+        const { svc } = makeSvc();
+        const gfx = makeGfx();
+        (svc as unknown as { _gfx_mgr: unknown })._gfx_mgr = gfx;
+        const canvas = { width: 300, height: 150 };
+
+        svc.bindCanvas(canvas, 7, 2, 0, 0);
+
+        expect(canvas).toEqual({ width: 300, height: 150 });
+        expect(gfx.setLogicalSize).not.toHaveBeenCalled();
+        expect(gfx.calls).toEqual(['bind', 'activate']);
+    });
+});

@@ -30,6 +30,8 @@ vi.mock('../ipc/handleInvoke', () => ({
     },
 }));
 
+vi.mock('../windows/reveal', () => ({ revealWindow: vi.fn() }));
+
 vi.mock('../quitState', () => ({
     setAppQuitting: vi.fn(),
     setCloseConfirmed: vi.fn(),
@@ -39,6 +41,7 @@ vi.mock('../quitState', () => ({
 
 import { app, BrowserWindow } from 'electron';
 import { IPC } from '@shared/ipcChannels';
+import { revealWindow } from '../windows/reveal';
 import { registerWindowHandlers } from './windowActions';
 
 /** A window stub with just the surface these handlers touch. */
@@ -104,5 +107,29 @@ describe('MENU_INVOKE_ROLE', () => {
         invokeRole({ sender: {} }, 'quit');
 
         expect(app.quit).not.toHaveBeenCalled();
+    });
+});
+
+describe('WINDOW_REVEAL', () => {
+    it('reveals the window the signal came from', () => {
+        handlers.clear();
+        vi.clearAllMocks();
+        registerWindowHandlers(makeWindow() as never);
+        const sender = makeWindow();
+        vi.mocked(BrowserWindow.fromWebContents).mockReturnValueOnce(sender as never);
+
+        handlers.get(IPC.WINDOW_REVEAL)!({ sender: {} });
+
+        expect(revealWindow).toHaveBeenCalledWith(sender);
+    });
+
+    it('does nothing for a sender with no window', () => {
+        handlers.clear();
+        vi.clearAllMocks();
+        registerWindowHandlers(makeWindow() as never);
+
+        handlers.get(IPC.WINDOW_REVEAL)!({ sender: {} });
+
+        expect(revealWindow).not.toHaveBeenCalled();
     });
 });

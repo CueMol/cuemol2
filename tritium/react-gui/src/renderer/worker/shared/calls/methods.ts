@@ -49,7 +49,7 @@ export interface MethodMap {
   terminateWorker:         { args: [];                                                                      result: void }
   addEventListener:        { args: [aCatStr: string, aSrcType: number, aEvtType: number, aSrcID: number]; result: number }
   removeEventListener:     { args: [nID: number];                                                           result: unknown }
-  bindCanvas:              { args: [canvas: OffscreenCanvas, view_id: number, dpr: number];               result: boolean }
+  bindCanvas:              { args: [canvas: OffscreenCanvas, view_id: number, dpr: number, width: number, height: number]; result: boolean }
   addView:                 { args: [view_id: number, dpr: number];                                          result: boolean }
   activateView:            { args: [view_id: number];                                                       result: void }
   removeView:              { args: [view_id: number];                                                       result: boolean }

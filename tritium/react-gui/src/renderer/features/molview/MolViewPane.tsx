@@ -57,17 +57,16 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
 
   /**
    * One-time initialization effect: binds the canvas to the OffscreenCanvas
-   * in the Web Worker using the view that was already created in App.tsx,
-   * then triggers an explicit initial resize.
+   * in the Web Worker using the view that was already created in App.tsx.
    *
-   * Why the explicit resize?
-   *   `transferControlToOffscreen()` captures the canvas at whatever pixel size
-   *   it has at call time (often 0×0 due to `height: 0px` in CSS + flex).
-   *   The ResizeObserver may have already fired once at that point, but
-   *   `getActiveViewId()` was null so the event was ignored.
-   *   After this effect completes, the size no longer changes and the
-   *   ResizeObserver will not re-fire -- so we must push the correct
-   *   dimensions to the worker explicitly here.
+   * The canvas's laid-out size goes with the bind, so the worker sizes the
+   * backing store before it draws the first frame. `transferControlToOffscreen()`
+   * hands over the canvas at its attribute size, and a frame drawn at that
+   * size is stretched over the pane until a resize arrives. The ResizeObserver
+   * below cannot supply one: it may already have fired (and been ignored,
+   * `getActiveViewId()` being null then) and will not fire again for a size
+   * that has not changed. The explicit resize after the bind remains for the
+   * case where the canvas had no size yet when it was bound.
    */
   useEffect(() => {
     if (!cueMolReady || !cm || !canvasRef.current) return
@@ -80,8 +79,10 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     ;(async () => {
       if (cancelled || !canvasRef.current) return
       const dpr = window.devicePixelRatio || 1
+      const bound = canvasRef.current.getBoundingClientRect()
+      const sizeAtBind = bound.width > 0 && bound.height > 0
       try {
-        await cm.bindCanvas(canvasRef.current, view_uid, dpr)
+        await cm.bindCanvas(canvasRef.current, view_uid, dpr, bound.width, bound.height)
       } catch (err) {
         // transferControlToOffscreen() throws InvalidStateError if this
         // element was ever transferred, and the worker call can reject.
@@ -92,21 +93,21 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
         return
       }
 
-      // Send initial resize with actual layout dimensions.
-      // The ResizeObserver may have already fired (and been ignored because
-      // getActiveViewId() returned undefined), so we must explicitly sync.
-      if (canvasRef.current) {
-        const { width, height } = canvasRef.current.getBoundingClientRect()
-        if (width > 0 && height > 0) {
-          cm.resized(view_uid, width, height, dpr)
-          // Startup diagnostic (Output panel): the backing store is CSS x dpr,
-          // so a higher dpr acts as supersampling. Helps explain edge crispness
-          // differences across displays / platforms.
-          appendLogRef.current(
-            `[view] devicePixelRatio=${dpr}, css=${Math.round(width)}x${Math.round(height)}, ` +
-            `backing=${Math.round(width * dpr)}x${Math.round(height * dpr)} px`,
-          )
-        }
+      // The canvas had no size when it was bound: send it now. (Sending it
+      // again when it did have one would clear the freshly drawn frame.)
+      let { width, height } = bound
+      if (!sizeAtBind && canvasRef.current) {
+        ;({ width, height } = canvasRef.current.getBoundingClientRect())
+        if (width > 0 && height > 0) cm.resized(view_uid, width, height, dpr)
+      }
+      // Startup diagnostic (Output panel): the backing store is CSS x dpr,
+      // so a higher dpr acts as supersampling. Helps explain edge crispness
+      // differences across displays / platforms.
+      if (width > 0 && height > 0) {
+        appendLogRef.current(
+          `[view] devicePixelRatio=${dpr}, css=${Math.round(width)}x${Math.round(height)}, ` +
+          `backing=${Math.round(width * dpr)}x${Math.round(height * dpr)} px`,
+        )
       }
     })()
     return () => { cancelled = true }

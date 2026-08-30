@@ -12,7 +12,9 @@ import React, { useCallback, useEffect } from 'react'
 import { IPC } from '@shared/ipcChannels'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { useWorkspaceDispatch, useWorkspaceTabs } from '@renderer/state/workspace'
-import { useLayoutDispatch } from '@renderer/state/layout'
+import { useLayout, useLayoutDispatch } from '@renderer/state/layout'
+import { useTheme } from '@renderer/contexts/ThemeContext'
+import { useRevealWindow } from '@renderer/shell/reveal/useRevealWindow'
 import { useAppInitialization } from '@renderer/hooks/useAppInitialization'
 import { useNewSceneAction } from '@renderer/hooks/useNewSceneAction'
 import { useShellOpenFiles } from '@renderer/features/file-io/useShellOpenFiles'
@@ -27,6 +29,8 @@ export const AppBoot: React.FC = () => {
   const { activateTab, closeTab, tabsRef } = useWorkspaceDispatch()
   const { tabs, activeTabId } = useWorkspaceTabs()
   const { flushPendingSaves } = useLayoutDispatch()
+  const { loaded: layoutLoaded } = useLayout()
+  const { loaded: themeLoaded } = useTheme()
 
   // Persist user-defined style defaults (atom labels, view-input scalars) to
   // the user style file when the window closes -- UXP `Qm2Main.onUnLoad`
@@ -68,6 +72,12 @@ export const AppBoot: React.FC = () => {
   // + view + register tab" action the New Tab dialog uses.
   const newScene = useNewSceneAction({ cm })
   const { initialSceneSettled } = useAppInitialization({ cueMolReady, newScene })
+
+  // The window is created hidden. It goes on screen once the persisted
+  // layout and theme are applied and the first scene's tab is in -- before
+  // that the user watched the splitters appear, the colours flip and the
+  // welcome pane give way to the molview.
+  useRevealWindow(layoutLoaded && themeLoaded && initialSceneSettled)
 
   // OS shell / command-line file open (UXP openFromShell parity).
   useShellOpenFiles({ cm, cueMolReady, initialSceneSettled })
