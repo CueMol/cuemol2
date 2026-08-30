@@ -1,5 +1,5 @@
 /**
- * @file hooks/useAnimTransport.ts
+ * @file features/animation/useAnimTransport.ts
  * @description Playback transport + live elapsed state for `AnimationPanel`.
  *
  * Wires the transport actions (play / pause / stop / seek / loop) to the worker

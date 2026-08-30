@@ -1,5 +1,5 @@
 /**
- * @file panes/PdbOptionsPane.tsx
+ * @file dialogs/fopen-opt-dlgs/panes/PdbOptionsPane.tsx
  * @description Option pane for PDB and mmCIF file formats.
  *
  * Built from the h3-kit form catalog (`Field` + `SwitchField`): every toggle

@@ -1,5 +1,5 @@
 /**
- * @file ColorPane.tsx
+ * @file features/coloring/ColorPane.tsx
  * @description Colour-scheme editor pane for renderers.
  *
  * Mirrors the UXP coloring panel (`coloring-panel.xul`) at the per-deck

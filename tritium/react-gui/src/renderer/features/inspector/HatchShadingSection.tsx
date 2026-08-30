@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/HatchShadingSection.tsx
+ * @file features/inspector/HatchShadingSection.tsx
  * @description The "Shading" section of the NPR hatch layer editor: how the
  * lighting tone becomes an ink amount. Strength and Curve stay visible (the
  * two knobs that matter day to day); the rest of the tone recipe and the

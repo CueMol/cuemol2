@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/apis/viewApi.ts
+ * @file worker/client/apis/viewApi.ts
  * @description Renderer-thread thin wrappers for worker view-lifecycle
  * calls (canvas bind, add / activate / remove view, resize).
  *

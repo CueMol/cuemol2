@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/CutSurfByPlaneDialog.tsx
+ * @file dialogs/CutSurfByPlaneDialog.tsx
  * @description Modal that cuts a molecular surface (`MolSurfObj`) by the
  * current view's clipping plane. Ports the UXP `tools/surf-cutbyplane.xul` +
  * `surf-cutbyplane.js` dialog:

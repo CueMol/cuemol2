@@ -1,5 +1,5 @@
 /**
- * @file SidePanel.tsx
+ * @file shell/SidePanel.tsx
  * @description Sidebar container that renders different pane sets depending
  * on the currently active Activity Bar view.
  *

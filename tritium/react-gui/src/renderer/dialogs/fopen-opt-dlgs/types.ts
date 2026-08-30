@@ -1,5 +1,5 @@
 /**
- * @file components/fopen-opt-dlgs/types.ts
+ * @file dialogs/fopen-opt-dlgs/types.ts
  * @description Type definitions and default values for the file open option dialog.
  *
  * Reader-option defaults are NOT hardcoded here: they come from the C++ reader

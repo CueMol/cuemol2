@@ -1,5 +1,5 @@
 /**
- * @file hooks/useRealtimeDragProp.ts
+ * @file hooks/react/useRealtimeDragProp.ts
  * @description Wiring helper that connects a `DragNumericField` to an object
  * property, with an optional realtime (live-while-dragging) feedback mode.
  *

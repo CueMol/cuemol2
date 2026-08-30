@@ -1,5 +1,5 @@
 /**
- * @file sceneTreeDnd.ts
+ * @file features/scene/sceneTreeDnd.ts
  * @description Pure drag-drop reorder logic for the scene tree.
  *
  * Extracted from `ScenePane.tsx`: `planSceneNodeMove` is a ~110-line pure

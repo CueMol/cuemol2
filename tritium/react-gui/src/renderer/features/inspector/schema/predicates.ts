@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/predicates.ts
+ * @file features/inspector/schema/predicates.ts
  * @description The conditions a row can be gated on.
  *
  * Named combinators rather than free functions: a schema stays readable, and

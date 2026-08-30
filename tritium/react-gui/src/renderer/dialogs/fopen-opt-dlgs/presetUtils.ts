@@ -1,5 +1,5 @@
 /**
- * @file components/fopen-opt-dlgs/presetUtils.ts
+ * @file dialogs/fopen-opt-dlgs/presetUtils.ts
  * @description Naming helpers for renderer presets.
  *
  * A preset style id conventionally ends with 'RendPreset'

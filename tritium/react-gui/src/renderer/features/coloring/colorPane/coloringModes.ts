@@ -1,5 +1,5 @@
 /**
- * @file components/panes/colorPane/coloringModes.ts
+ * @file features/coloring/colorPane/coloringModes.ts
  * @description The coloring-type dropdown's contents, and the class names the
  * pane routes a deck by.
  *

@@ -1,5 +1,5 @@
 /**
- * @file renderer/hooks/useBusyCursor.ts
+ * @file hooks/useBusyCursor.ts
  * @description Reflects the CueMol busy state onto the document root as a
  * `data-busy` attribute, which `styles/_base.css` turns into a global wait
  * cursor.

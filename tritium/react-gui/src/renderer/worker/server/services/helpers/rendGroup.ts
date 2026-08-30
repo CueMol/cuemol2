@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/server/services/helpers/rendGroup.ts
+ * @file worker/server/services/helpers/rendGroup.ts
  * @description Guards for renderer-group membership writes.
  *
  * Group membership is a loose name reference: a renderer belongs to the group
@@ -18,7 +18,7 @@
  *   - a group placed inside another group disappears the same way: the C++
  *     JSON is one level deep, so the inner group's own members match no
  *     filter. The renderer-side DnD planner already refuses this
- *     (components/panes/sceneTreeDnd.ts); the Inspector bypassed it.
+ *     (features/scene/sceneTreeDnd.ts); the Inspector bypassed it.
  *
  * Both are rejected here instead, so a bad value fails the service call and
  * leaves the scene untouched.

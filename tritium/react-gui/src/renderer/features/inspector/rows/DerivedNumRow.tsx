@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/DerivedNumRow.tsx
+ * @file features/inspector/rows/DerivedNumRow.tsx
  * @description A numeric row whose value is computed from several properties.
  *
  * C++ sometimes stores a size in units the user does not think in. A tube's

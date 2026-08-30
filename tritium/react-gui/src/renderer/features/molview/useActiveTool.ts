@@ -1,5 +1,5 @@
 /**
- * @file hooks/useActiveTool.ts
+ * @file features/molview/useActiveTool.ts
  * @description Global active-tool state for the 3D viewport.
  *
  * This hook is the single source of truth for which interaction mode
@@ -19,7 +19,7 @@
  *   3. Any modifier key (ctrl / meta / alt) is pressed -- avoids
  *      clobbering reload, devtools, and OS-level accelerators.
  *
- * @module hooks/useActiveTool
+ * @module features/molview/useActiveTool
  */
 
 import { useCallback, useEffect, useState } from "react";

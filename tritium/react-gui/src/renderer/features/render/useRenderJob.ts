@@ -1,5 +1,5 @@
 /**
- * @file hooks/useRenderJob.ts
+ * @file features/render/useRenderJob.ts
  * @description Drives a render job from the renderer side.
  *
  * `start()` calls the `renderStart` worker service and then tracks the job

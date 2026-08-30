@@ -1,5 +1,5 @@
 /**
- * @file hooks/useFileDrop.ts
+ * @file features/file-io/useFileDrop.ts
  * @description Opens files dragged in from the OS (Finder/Explorer) onto the
  * app window. Parity port of UXP dragdropopen.js onDragOver/onDrop: the whole
  * window is the drop target, and the dropped paths are handed to

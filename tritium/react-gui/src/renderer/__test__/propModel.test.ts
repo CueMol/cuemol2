@@ -1,7 +1,7 @@
 /**
  * @file __test__/propModel.test.ts
  * @description Unit tests for the inspector per-property reset model helpers
- * (`components/inspector/propModel.ts`): the `isModified` predicate, the reset
+ * (`features/inspector/propModel.ts`): the `isModified` predicate, the reset
  * key-set math, and the default-value annotation formatter.
  */
 

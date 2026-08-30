@@ -1,5 +1,5 @@
 /**
- * @file components/panels/mdtraj/TrajBlockStrip.tsx
+ * @file features/trajectory/mdtraj/TrajBlockStrip.tsx
  * @description One track segment = one trajectory block (a TrajBlock file).
  *
  * Positioned from the block's `startIndex` (left) and `nframe` (width) on the

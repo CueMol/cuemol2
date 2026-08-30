@@ -1,5 +1,5 @@
 /**
- * @file components/panes/colorPane/targetKey.ts
+ * @file features/coloring/colorPane/targetKey.ts
  * @description Encoding for the coloring pane's target selector.
  *
  * The pane's `<select>` carries one string per row, but a target is a pair --

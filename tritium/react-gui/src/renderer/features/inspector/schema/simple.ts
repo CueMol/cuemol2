@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/simple.ts
+ * @file features/inspector/schema/simple.ts
  * @description The `simple` and `trace` renderer pages.
  *
  * Both are a single line-width row -- UXP's `simple-propdlg.xul` "Simple" tab

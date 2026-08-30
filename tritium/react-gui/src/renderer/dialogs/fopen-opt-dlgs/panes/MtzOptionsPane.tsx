@@ -1,5 +1,5 @@
 /**
- * @file panes/MtzOptionsPane.tsx
+ * @file dialogs/fopen-opt-dlgs/panes/MtzOptionsPane.tsx
  * @description Option pane for MTZ reflection files: which columns feed the
  * FFT (amplitude / phase / weight) and the map parameters.
  *

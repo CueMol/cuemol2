@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/NumRow.tsx
+ * @file features/inspector/rows/NumRow.tsx
  * @description Numeric property row dialled by dragging (the workhorse row).
  */
 

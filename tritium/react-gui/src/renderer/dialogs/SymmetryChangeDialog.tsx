@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/SymmetryChangeDialog.tsx
+ * @file dialogs/SymmetryChangeDialog.tsx
  * @description Modal that edits an object's CrystalInfo. Ports the
  * UXP `tools/symm-chg-dlg.xul` + `symm-chg-dlg.js` dialog:
  *   - Crystal system dropdown -> populates space-group dropdown via

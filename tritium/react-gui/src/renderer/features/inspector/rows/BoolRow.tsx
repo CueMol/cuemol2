@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/BoolRow.tsx
+ * @file features/inspector/rows/BoolRow.tsx
  * @description Boolean property row, shown as a switch (Visible / Locked).
  */
 

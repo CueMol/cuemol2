@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/SchemaSection.tsx
+ * @file features/inspector/SchemaSection.tsx
  * @description Renders a Properties-page section from its schema.
  *
  * The engine owns no editing behaviour: the draft, the commit timing, the

@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMovieOutputPrefs.ts
+ * @file features/render/useMovieOutputPrefs.ts
  * @description Resolve and persist the Rendering window's movie output
  * settings.
  *

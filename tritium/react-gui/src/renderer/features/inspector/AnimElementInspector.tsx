@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/AnimElementInspector.tsx
+ * @file features/inspector/AnimElementInspector.tsx
  * @description Detail editor for a selected animation element, shown in the
  * right InspectorPanel (the `animElement` target). The bespoke-branch peer of
  * `RenderSettingsEditor`: it self-fetches its data via the `animDetail`

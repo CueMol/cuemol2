@@ -1,5 +1,5 @@
 /**
- * @file SequencePanel.tsx
+ * @file features/sequence/SequencePanel.tsx
  * @description Bottom-panel Sequence tab, mirrors UXP
  * `bottom-panels/seqpanel.{xul,js}` (`panel.btmpanel-holder.seq`).
  *

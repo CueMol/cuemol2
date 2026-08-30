@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/SliderRow.tsx
+ * @file features/inspector/rows/SliderRow.tsx
  * @description Numeric property row swept on a slider (a tessellation density).
  */
 

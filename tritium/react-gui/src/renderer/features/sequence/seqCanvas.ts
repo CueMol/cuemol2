@@ -1,5 +1,5 @@
 /**
- * @file components/panels/sequence/seqCanvas.ts
+ * @file features/sequence/seqCanvas.ts
  * @description Everything the sequence panel draws and measures, with no React
  * in it.
  *

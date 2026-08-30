@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMultiGradHistogram.ts
+ * @file features/coloring/useMultiGradHistogram.ts
  * @description Histogram strip data for the Multi-gradient deck.
  *
  * Bins follow the d3/Vega convention: the bin width is snapped to the

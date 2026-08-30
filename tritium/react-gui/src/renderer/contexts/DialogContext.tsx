@@ -2,7 +2,7 @@
  * @file contexts/DialogContext.tsx
  * @description Composite Provider that mounts every per-dialog Provider in
  * one place. Each individual dialog ships its own `<XxxDialogProvider>` and
- * `useShowXxxDialog()` hook (see `components/dialogs/*Provider.tsx`).
+ * `useShowXxxDialog()` hook (see `dialogs/*Provider.tsx`).
  *
  * Adding a new dialog: append its provider component to the array below.
  * The outer-to-inner mount order matches the array order (first entry is

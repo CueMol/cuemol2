@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/OpenMdTrajDialog.tsx
+ * @file dialogs/OpenMdTrajDialog.tsx
  * @description "Open MD Trajectory" dialog -- step 1 of the two-step trajectory
  * open flow. It COLLECTS a topology file (GROMACS .gro) plus an ordered list of
  * trajectory files (.dcd/.xtc/.trr); it does NOT load anything. The command

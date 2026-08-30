@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/ChangeResidueIndexDialog.tsx
+ * @file dialogs/ChangeResidueIndexDialog.tsx
  * @description Modal that shifts or renumbers the residue index of a selected
  * set of residues. Ports the UXP `tools/chg_resindex.xul` + `chg_resindex.js`
  * dialog:

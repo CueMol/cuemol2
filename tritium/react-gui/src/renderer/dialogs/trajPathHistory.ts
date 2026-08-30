@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/trajPathHistory.ts
+ * @file dialogs/trajPathHistory.ts
  * @description localStorage-backed "last used path" for the MD trajectory
  * open dialog -- one entry for the topology file and one for the trajectory
  * files. Mirrors the psfPathHistory / coordPathHistory pattern so reopening

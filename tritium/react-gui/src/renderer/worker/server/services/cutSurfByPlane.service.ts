@@ -1,5 +1,5 @@
 /**
- * @file services/cutSurfByPlane.service.ts
+ * @file worker/server/services/cutSurfByPlane.service.ts
  * @description Worker service backing the "MolSurf cutting tool" dialog
  * (`dialog.tool.surf-cutbyplane`). Ports UXP `tools/surf-cutbyplane.js`
  * (`onDialogAccept`):

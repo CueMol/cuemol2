@@ -1,5 +1,5 @@
 /**
- * @file components/panes/settings/SettingRow.tsx
+ * @file features/settings/settings/SettingRow.tsx
  * @description Renders one setting row, picking the control widget from the
  * SettingDef's `control` discriminant. All controls are h3-kit form widgets
  * (`SelectField` / `NumericField` / `SwitchField` / `ColorField` / `TextField`

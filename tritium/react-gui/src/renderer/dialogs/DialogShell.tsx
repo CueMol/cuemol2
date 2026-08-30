@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/DialogShell.tsx
+ * @file dialogs/DialogShell.tsx
  * @description Shared frame for the app's modal dialogs. It owns the
  * dialog-FRAME concerns that every dialog repeats verbatim:
  *   - theme-derived `portalClassName` (`'bp5-dark'` when dark, else `''` --

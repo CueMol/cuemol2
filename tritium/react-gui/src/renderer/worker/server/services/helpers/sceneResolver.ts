@@ -1,5 +1,5 @@
 /**
- * @file services/helpers/sceneResolver.ts
+ * @file worker/server/services/helpers/sceneResolver.ts
  * @description Resolve worker-side scene / view / object handles with a
  * uniform null-check pattern. Replaces the inline
  * `ctx.sceMgr.getScene(id) as Scene | null; if (!scene) return ...`

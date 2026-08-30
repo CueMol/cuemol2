@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/NumEnumRow.tsx
+ * @file features/inspector/rows/NumEnumRow.tsx
  * @description An integer property chosen from a ladder rather than typed.
  *
  * For a tessellation level. What the eye sees is the difference between 4 and

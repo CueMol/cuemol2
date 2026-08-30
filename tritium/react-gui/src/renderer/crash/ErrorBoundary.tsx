@@ -1,5 +1,5 @@
 /**
- * @file renderer/crash/ErrorBoundary.tsx
+ * @file crash/ErrorBoundary.tsx
  * @description Top-level React error boundary.
  *
  * Wraps the entire renderer root inside `index.tsx`. Catches any synchronous

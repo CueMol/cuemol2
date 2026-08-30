@@ -1,5 +1,5 @@
 /**
- * @file activityBarDevUi.test.ts
+ * @file __test__/activityBarDevUi.test.ts
  * @description Degrade-detection test for the developer-only gating of the
  * Component Catalog activity-bar view.
  *

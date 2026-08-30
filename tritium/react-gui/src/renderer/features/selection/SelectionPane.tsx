@@ -1,5 +1,5 @@
 /**
- * @file SelectionPane.tsx
+ * @file features/selection/SelectionPane.tsx
  * @description Side-panel surface for composing and applying CueMol atom
  * selections. Mirrors the Command tab of UXP `panel.selection`
  * (`uxp_gui/cuemol2/base/content/selection-panel.{xul,js}`).

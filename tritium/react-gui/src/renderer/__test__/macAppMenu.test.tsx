@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/macAppMenu.test.tsx
+ * @file __test__/macAppMenu.test.tsx
  * @description Degrade test pinning the observable macOS App-menu behavior so
  * the removal of the dead group-level darwinOnly placeholder in
  * shared/menuTemplate.ts stays provably safe.

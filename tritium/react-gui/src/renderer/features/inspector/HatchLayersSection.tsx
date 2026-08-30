@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/HatchLayersSection.tsx
+ * @file features/inspector/HatchLayersSection.tsx
  * @description The "Layers" section of the NPR hatch layer editor: the mark
  * layers of the selected style, each editable, with add buttons in the
  * section title.

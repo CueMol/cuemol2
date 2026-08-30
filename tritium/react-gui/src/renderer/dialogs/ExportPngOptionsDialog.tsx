@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/ExportPngOptionsDialog.tsx
+ * @file dialogs/ExportPngOptionsDialog.tsx
  * @description Modal that collects PNG export options (output resolution and
  * transparency). Ports the UXP `exportpng-opt-dlg.xul` + `exportpng-opt-dlg.js`
  * dialog:

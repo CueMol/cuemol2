@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/EnumRow.tsx
+ * @file features/inspector/rows/EnumRow.tsx
  * @description Enum property row whose options read as their raw C++ ids.
  */
 

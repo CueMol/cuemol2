@@ -1,5 +1,5 @@
 /**
- * @file components/panes/DensityMapPane.tsx
+ * @file features/density/DensityMapPane.tsx
  * @description Side-panel surface that ports UXP `panel.densitymap`
  * (`uxp_gui/cuemol2/base/content/densitymap-panel.{xul,js}`).
  *

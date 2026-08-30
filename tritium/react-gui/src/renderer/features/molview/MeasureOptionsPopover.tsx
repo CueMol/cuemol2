@@ -1,5 +1,5 @@
 /**
- * @file components/MeasureOptionsPopover.tsx
+ * @file features/molview/MeasureOptionsPopover.tsx
  * @description Popover content for the measure tool's "options cap". Lets the
  * user choose the target atomintr renderer (label set) that new distance /
  * angle / torsion labels are appended to: either an existing named set or a new

@@ -1,5 +1,5 @@
 /**
- * Degrade-detection test for OS file drag-and-drop open (hooks/useFileDrop.ts).
+ * Degrade-detection test for OS file drag-and-drop open (features/file-io/useFileDrop.ts).
  *
  * Pins the observable contract rather than the implementation: which drags are
  * intercepted, the exact command + payload each dropped file produces, that a

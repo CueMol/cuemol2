@@ -1,6 +1,6 @@
 /**
  * Pins the batch-open contract shared by the drag-and-drop and OS-shell open
- * paths (hooks/useOpenFilePaths.ts).
+ * paths (features/file-io/useOpenFilePaths.ts).
  *
  * The load-bearing properties are: files open strictly one at a time (the
  * renderer-option dialog is modal), one failing file does not abort the batch,

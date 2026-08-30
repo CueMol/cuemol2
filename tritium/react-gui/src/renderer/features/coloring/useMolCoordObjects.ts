@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMolCoordObjects.ts
+ * @file features/coloring/useMolCoordObjects.ts
  * @description Live list of molecule (MolCoord) objects in the active scene,
  * used by the Coloring panel's "Coloring mol" selector shown in molecule
  * colormode (MOLFANC nearest-atom coloring).

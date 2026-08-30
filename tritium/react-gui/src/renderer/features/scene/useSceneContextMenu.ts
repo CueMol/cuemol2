@@ -1,5 +1,5 @@
 /**
- * @file hooks/useSceneContextMenu.ts
+ * @file features/scene/useSceneContextMenu.ts
  * @description Opens the scene-tree context menu and runs what the user
  * picked.
  *

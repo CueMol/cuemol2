@@ -1,5 +1,5 @@
 /**
- * @file components/panes/sceneTree/useTreeDragDrop.ts
+ * @file features/scene/sceneTree/useTreeDragDrop.ts
  * @description Dragging a scene-tree row onto another one.
  *
  * The drop indicator is only set once `planSceneNodeMove` has accepted the

@@ -1,5 +1,5 @@
 /**
- * Multi-target row contract (components/inspector/rows).
+ * Multi-target row contract (features/inspector/rows).
  *
  * A control that stands for several properties has to write them in one undo
  * step, and one that shows a stored value in another unit has to round-trip

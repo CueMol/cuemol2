@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/index.ts
+ * @file features/inspector/rows/index.ts
  * @description The Properties tab's row catalog.
  *
  * One component per kind of property control. The schema engine

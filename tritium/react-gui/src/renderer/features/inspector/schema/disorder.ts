@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/disorder.ts
+ * @file features/inspector/schema/disorder.ts
  * @description The `disorder` renderer page.
  *
  * The disorder overlay draws dotted loops along a main chain someone else is

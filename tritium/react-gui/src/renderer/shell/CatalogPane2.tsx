@@ -1,5 +1,5 @@
 /**
- * @file CatalogPane2.tsx
+ * @file shell/CatalogPane2.tsx
  * @description Component catalog (2/3): aligned FieldGrid, shared widgets
  * (MolSelList / SliderField), Listbox rows, the segmented control and
  * form buttons.

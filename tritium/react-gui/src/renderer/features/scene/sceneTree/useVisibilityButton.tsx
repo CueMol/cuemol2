@@ -1,5 +1,5 @@
 /**
- * @file components/panes/sceneTree/useVisibilityButton.tsx
+ * @file features/scene/sceneTree/useVisibilityButton.tsx
  * @description The eye button on a scene-tree row.
  *
  * Only object / renderer / rendGroup rows carry a real visibility flag, and

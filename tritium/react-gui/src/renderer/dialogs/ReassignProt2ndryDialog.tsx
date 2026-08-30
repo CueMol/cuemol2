@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/ReassignProt2ndryDialog.tsx
+ * @file dialogs/ReassignProt2ndryDialog.tsx
  * @description Modal that recomputes or manually assigns protein secondary
  * structure. Ports the UXP `tools/prot2ndry-tool` dialog:
  *   - Molecule picker (`ObjectSelect`, MolCoord filter).

@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/ErrorAlertDialog.tsx
+ * @file dialogs/ErrorAlertDialog.tsx
  * @description Single-button modal for surfacing user-actionable errors
  * (e.g. "no compatible reader for this file") in a way the user must
  * acknowledge. Use `useShowErrorAlert({ title, message })` to display.

@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/RenderSettingsEditor.tsx
+ * @file features/inspector/RenderSettingsEditor.tsx
  * @description "Render" tab of the Rendering window's settings pane
  * (RenderSettingsPane).
  *

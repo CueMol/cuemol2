@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/ChangeChainIdDialog.tsx
+ * @file dialogs/ChangeChainIdDialog.tsx
  * @description Modal that reassigns the chain ID of a selected set of
  * residues. Ports the UXP `tools/chg_chname.xul` + `chg_chname.js` dialog:
  *   - Molecule picker (`ObjectSelect`, MolCoord filter).

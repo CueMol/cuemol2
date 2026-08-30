@@ -1,5 +1,5 @@
 /**
- * @file services/changeChainName.service.ts
+ * @file worker/server/services/changeChainName.service.ts
  * @description Worker service backing the "Change chain ID" tool dialog
  * (`dialog.tool.chg-chname`). Ports UXP `tools/chg_chname.js`
  * (`gChgChnmDlg.onDialogAccept`):

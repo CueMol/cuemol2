@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/apis/fileApi.ts
+ * @file worker/client/apis/fileApi.ts
  * @description Renderer-thread thin wrappers for worker file-I/O services
  * (renderer-compatibility probe, open-dialog filters, new scene+view,
  * scene / object load).

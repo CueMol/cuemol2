@@ -1,5 +1,5 @@
 /**
- * @file hooks/renderSettings/useHatchSpecEditor.ts
+ * @file features/render/useHatchSpecEditor.ts
  * @description The NPR hatch look being edited.
  *
  * The selected style (the umbreon_npr `hatchStyle` prop) is a template: the

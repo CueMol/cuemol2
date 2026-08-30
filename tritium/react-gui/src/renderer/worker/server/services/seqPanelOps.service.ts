@@ -1,5 +1,5 @@
 /**
- * @file services/seqPanelOps.service.ts
+ * @file worker/server/services/seqPanelOps.service.ts
  * @description Worker services for the bottom Sequence panel
  * (`panel.btmpanel-holder.seq`). Backs single-residue toggle, range
  * select by residue range, and view-centering on a specific residue.

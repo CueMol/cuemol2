@@ -1,5 +1,5 @@
 /**
- * @file components/panels/RenderPanel.tsx
+ * @file features/render/RenderPanel.tsx
  * @description Render execution controls, progress and log (hosted in the
  * Rendering window's bottom pane).
  *

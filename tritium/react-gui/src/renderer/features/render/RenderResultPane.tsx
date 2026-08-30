@@ -1,5 +1,5 @@
 /**
- * @file components/panes/RenderResultPane.tsx
+ * @file features/render/RenderResultPane.tsx
  * @description Rendering-window image area for a completed render.
  *
  * The viewer's toolbar carries the result actions -- history Back / Forward,

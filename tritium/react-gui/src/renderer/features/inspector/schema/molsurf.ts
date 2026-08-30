@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/molsurf.ts
+ * @file features/inspector/schema/molsurf.ts
  * @description The `molsurf` renderer page.
  *
  * A precomputed surface object, so its page shares the drawing-mode block

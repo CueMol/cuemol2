@@ -1,5 +1,5 @@
 /**
- * @file components/panes/PaintSelCell.tsx
+ * @file features/coloring/PaintSelCell.tsx
  * @description Inline-edit wrapper around `MolSelList` for the Paint
  * coloring table.
  *

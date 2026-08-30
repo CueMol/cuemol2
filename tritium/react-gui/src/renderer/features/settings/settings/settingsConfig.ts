@@ -1,5 +1,5 @@
 /**
- * @file components/panes/settings/settingsConfig.ts
+ * @file features/settings/settings/settingsConfig.ts
  * @description Declarative catalogue for the SettingsPane: the category
  * tree, the setting definitions, and their default values.
  *

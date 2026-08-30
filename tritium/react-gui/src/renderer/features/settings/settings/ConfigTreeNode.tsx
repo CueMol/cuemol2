@@ -1,5 +1,5 @@
 /**
- * @file components/panes/settings/ConfigTreeNode.tsx
+ * @file features/settings/settings/ConfigTreeNode.tsx
  * @description Recursive category-tree row for the SettingsPane left rail.
  * Parent rows expand/collapse; leaf rows select a category and show a
  * settings-count badge.

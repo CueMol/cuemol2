@@ -1,5 +1,5 @@
 /**
- * @file hooks/usePaintColoringStyles.ts
+ * @file features/coloring/usePaintColoringStyles.ts
  * @description Live list of the "Paint" coloring style presets -- the styles
  * whose name matches `/Paint$/` in the global (styleset 0) and scene-local
  * style sets. They back the Coloring panel's "Paint coloring" submenu, the

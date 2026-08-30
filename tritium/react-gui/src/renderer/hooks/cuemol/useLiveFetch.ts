@@ -1,5 +1,5 @@
 /**
- * @file renderer/hooks/cuemol/useLiveFetch.ts
+ * @file hooks/cuemol/useLiveFetch.ts
  * @description Shared "fetch + auto-refresh + race-guard" engine for the
  * panel data hooks (scene tree, coloring deck, density-map panel, symmetry
  * panel, elepot object list, paint-capable renderer list, animation

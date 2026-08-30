@@ -1,5 +1,5 @@
 /**
- * @file services/animDetail.service.ts
+ * @file worker/server/services/animDetail.service.ts
  * @description Per-element detail read/write for the animation detail inspector
  * (right InspectorPanel, anim-element target).
  *

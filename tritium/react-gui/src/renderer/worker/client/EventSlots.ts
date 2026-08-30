@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/EventSlots.ts
+ * @file worker/client/EventSlots.ts
  * @description Renderer-side slot table for worker `event-notify` messages.
  *
  * `WorkerTransport` receives `event-notify` messages from the Web Worker

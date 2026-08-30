@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/MultiNumRow.tsx
+ * @file features/inspector/rows/MultiNumRow.tsx
  * @description A drag-numeric row standing for several properties at once,
  * optionally in a unit of its own.
  *

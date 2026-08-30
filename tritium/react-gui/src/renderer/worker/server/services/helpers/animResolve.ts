@@ -1,5 +1,5 @@
 /**
- * @file services/helpers/animResolve.ts
+ * @file worker/server/services/helpers/animResolve.ts
  * @description Shared worker-side helpers for the animation services
  * (`animation.service.ts`, `animDetail.service.ts`): scene/AnimMgr resolution,
  * TimeValue construction, and safe wrapper reads.

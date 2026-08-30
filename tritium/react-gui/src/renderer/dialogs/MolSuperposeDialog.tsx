@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/MolSuperposeDialog.tsx
+ * @file dialogs/MolSuperposeDialog.tsx
  * @description Modal that superposes one molecule (moving) onto another
  * (reference). Ports the UXP `tools/ssm_sup.xul` + `ssm_sup.js` dialog:
  *   - Algorithm switch: Least-Square Fitting (LSQ) / Secondary Structure

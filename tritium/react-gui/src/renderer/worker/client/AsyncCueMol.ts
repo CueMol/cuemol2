@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/AsyncCueMol.ts
+ * @file worker/client/AsyncCueMol.ts
  * @description Renderer-thread facade over `WorkerTransport` + `ObjectFactory`
  * + `EventSlots`. Exposes one async method per worker entry point used by
  * the renderer.

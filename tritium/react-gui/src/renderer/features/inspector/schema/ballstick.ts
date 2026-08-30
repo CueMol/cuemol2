@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/ballstick.ts
+ * @file features/inspector/schema/ballstick.ts
  * @description The `ballstick` renderer page, and the rows `anisou` reuses.
  *
  * UXP's `ballstick-propdlg`: sphere subdivision, bond width and atom radius,

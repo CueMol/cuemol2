@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/DeleteMolDialog.tsx
+ * @file dialogs/DeleteMolDialog.tsx
  * @description Modal that deletes the selected atoms of a molecule. Ports the
  * UXP `tools/mol_delete.xul` + `mol_delete.js` dialog:
  *   - Molecule picker (`ObjectSelect`, MolCoord filter).

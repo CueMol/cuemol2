@@ -1,5 +1,5 @@
 /**
- * @file components/panes/colorPane/useColorPaneActions.ts
+ * @file features/coloring/colorPane/useColorPaneActions.ts
  * @description Every write the coloring pane makes.
  *
  * All of them share one shape -- resolve the current target, then fire one

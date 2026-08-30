@@ -1,5 +1,5 @@
 /**
- * @file services/morphMol.service.ts
+ * @file worker/server/services/morphMol.service.ts
  * @description Worker services backing the Tools > "Mol morphing animation..."
  * dialog. Ports UXP `tools/morphanim-tool.js`:
  *   - convertToMorphMol: replace a MolCoord with a MorphMol carrying the same

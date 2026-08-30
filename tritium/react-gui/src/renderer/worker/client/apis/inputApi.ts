@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/apis/inputApi.ts
+ * @file worker/client/apis/inputApi.ts
  * @description Renderer-thread input-event forwarders. Each function picks
  * the fields the worker actually consumes off a DOM event and fires it as
  * a `postMessage` (no await; no reply).

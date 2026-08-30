@@ -1,5 +1,5 @@
 /**
- * Degrade-detection test for hooks/useSceneTree.ts.
+ * Degrade-detection test for features/scene/useSceneTree.ts.
  *
  * Refactor target: the 1000-line hook is being split into per-domain
  * sub-hooks under hooks/sceneTree/. These tests pin the *observable wire

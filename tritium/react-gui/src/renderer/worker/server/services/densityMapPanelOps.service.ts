@@ -1,5 +1,5 @@
 /**
- * @file services/densityMapPanelOps.service.ts
+ * @file worker/server/services/densityMapPanelOps.service.ts
  * @description Worker services backing the Density-map side panel
  * (`panel.densitymap`). Mirrors UXP `densitymap-panel.js`
  * (`cuemolui.panels.denmap.*`):

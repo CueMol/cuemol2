@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/server/services/shutdown.service.ts
+ * @file worker/server/services/shutdown.service.ts
  * @description Worker-side cleanup the renderer runs before the window closes.
  *
  * Long-running jobs (POV-Ray renders, the ffmpeg encode of a movie, apbs /

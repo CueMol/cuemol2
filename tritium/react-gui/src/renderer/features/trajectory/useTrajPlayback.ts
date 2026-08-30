@@ -1,5 +1,5 @@
 /**
- * @file hooks/useTrajPlayback.ts
+ * @file features/trajectory/useTrajPlayback.ts
  * @description Playback transport + live frame cursor for the MD Trajectory
  * pane.
  *

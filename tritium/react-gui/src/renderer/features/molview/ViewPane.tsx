@@ -1,5 +1,5 @@
 /**
- * @file ViewPane.tsx
+ * @file features/molview/ViewPane.tsx
  * @description View / camera-transform pane (UXP `panel.fakedial` port).
  *
  * Three transform sections -- Rotation, Translation, Zoom/Slab -- plus a

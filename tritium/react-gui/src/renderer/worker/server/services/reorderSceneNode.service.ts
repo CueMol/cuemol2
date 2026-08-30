@@ -183,7 +183,7 @@ function reorderSceneNode(
     // Nesting one renderer group inside another drops the inner group's members
     // out of the scene tree for good: getGroupedRendListJSON is only one level
     // deep, so they match no filter. The renderer-side DnD planner already
-    // refuses this (components/panes/sceneTreeDnd.ts); refuse it here too, since
+    // refuses this (features/scene/sceneTreeDnd.ts); refuse it here too, since
     // the service is reachable without it.
     //
     // The existence of `destGroupName` is NOT checked here: every caller derives

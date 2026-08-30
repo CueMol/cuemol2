@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/anim/animElementForm.test.ts
+ * @file features/inspector/anim/animElementForm.test.ts
  * @description Contract for the animation inspector's conversions.
  *
  * These decide what the fields show and which axis preset the dropdown lands

@@ -1,5 +1,5 @@
 /**
- * @file components/panes/sceneTree/useTreeKeyboardNav.ts
+ * @file features/scene/sceneTree/useTreeKeyboardNav.ts
  * @description Keyboard handling for the scene tree.
  *
  * Two layers. `useListKeyNav` walks the visible rows; on top of it the tree

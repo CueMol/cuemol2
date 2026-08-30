@@ -1,5 +1,5 @@
 /**
- * @file services/reassignProt2ndry.service.ts
+ * @file worker/server/services/reassignProt2ndry.service.ts
  * @description Worker service backing the "Reassign secondary structure" tool
  * dialog (`dialog.tool.prot2ndry-tool`). Ports UXP `tools/prot2ndry-tool.js`
  * (`doRecalc` / `doAssign`):

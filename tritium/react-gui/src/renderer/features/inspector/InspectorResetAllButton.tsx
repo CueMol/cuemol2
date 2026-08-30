@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/InspectorResetAllButton.tsx
+ * @file features/inspector/InspectorResetAllButton.tsx
  * @description Icon-only "Reset all to default" button placed next to the
  * Properties/Generic mode switcher in the inspector mode bar.
  *

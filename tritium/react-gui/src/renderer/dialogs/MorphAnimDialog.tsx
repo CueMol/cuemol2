@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/MorphAnimDialog.tsx
+ * @file dialogs/MorphAnimDialog.tsx
  * @description "Morph animation tool" dialog (Tools > Mol morphing
  * animation...). Ports UXP `tools/morphanim-tool-dlg.xul` + the
  * `onMorphAnimSetup` entry flow:

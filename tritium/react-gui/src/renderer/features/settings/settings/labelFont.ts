@@ -1,5 +1,5 @@
 /**
- * @file components/panes/settings/labelFont.ts
+ * @file features/settings/settings/labelFont.ts
  * @description Shared helpers for the atom-label font settings: building the
  * CSS font shorthand (byte-for-byte matching the C++ label renderer so the
  * settings preview is true WYSIWYG) and the generic / fallback font families.

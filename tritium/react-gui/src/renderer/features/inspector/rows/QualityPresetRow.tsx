@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/QualityPresetRow.tsx
+ * @file features/inspector/rows/QualityPresetRow.tsx
  * @description A preset dropdown over a whole set of tuning properties.
  *
  * A block rather than a row because no single property backs it. The scene's

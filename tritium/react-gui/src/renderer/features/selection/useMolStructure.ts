@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMolStructure.ts
+ * @file features/selection/useMolStructure.ts
  * @description Live data source for `MolStructPane`'s chain / residue
  * / atom tree.
  *

@@ -1,5 +1,5 @@
 /**
- * @file components/panels/PanelTabButton.tsx
+ * @file shell/PanelTabButton.tsx
  * @description Tab button for a panel tab strip.
  *
  * Shared by every panel that has one (the main window's BottomPanel, the

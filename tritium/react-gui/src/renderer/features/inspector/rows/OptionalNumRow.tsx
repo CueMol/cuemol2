@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/OptionalNumRow.tsx
+ * @file features/inspector/rows/OptionalNumRow.tsx
  * @description A drag-numeric row whose property can also be "not set".
  *
  * Some C++ properties encode "unset" as a negative number rather than as a

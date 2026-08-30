@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/MergeMolDialog.tsx
+ * @file dialogs/MergeMolDialog.tsx
  * @description Modal that merges (copies or moves) the selected atoms of one
  * molecule into another. Ports the UXP `tools/mol_merge.xul` + `mol_merge.js`
  * dialog:

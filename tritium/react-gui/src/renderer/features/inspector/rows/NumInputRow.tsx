@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/NumInputRow.tsx
+ * @file features/inspector/rows/NumInputRow.tsx
  * @description Integer property row typed into a stepper (a subdivision count).
  */
 

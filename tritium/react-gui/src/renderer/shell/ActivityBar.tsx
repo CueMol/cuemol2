@@ -1,5 +1,5 @@
 /**
- * @file ActivityBar.tsx
+ * @file shell/ActivityBar.tsx
  * @description VS Code-style vertical activity bar that sits at the far left
  * of the application window.  Each icon toggles a different sidebar view.
  *

@@ -1,5 +1,5 @@
 /**
- * @file components/RectSelectOverlay.tsx
+ * @file features/molview/RectSelectOverlay.tsx
  * @description Transparent overlay layered over the 3D viewport that handles
  * the drag-selection tools: `rectSelect` (rubber-band rectangle) and
  * `lassoSelect` (freeform polygon).

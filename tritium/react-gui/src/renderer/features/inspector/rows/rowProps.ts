@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/rowProps.ts
+ * @file features/inspector/rows/rowProps.ts
  * @description What every property row of the Properties tab has in common.
  *
  * A row edits ONE property of the inspected node: it is handed that property's

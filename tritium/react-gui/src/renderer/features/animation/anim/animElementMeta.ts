@@ -1,5 +1,5 @@
 /**
- * @file components/panels/anim/animElementMeta.ts
+ * @file features/animation/anim/animElementMeta.ts
  * @description UI metadata (icon) for each animation element subtype.
  */
 

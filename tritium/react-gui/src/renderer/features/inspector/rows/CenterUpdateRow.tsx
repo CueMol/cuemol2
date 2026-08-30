@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/CenterUpdateRow.tsx
+ * @file features/inspector/rows/CenterUpdateRow.tsx
  * @description The map renderers' tri-state "Center update" selector.
  *
  * A block rather than a row because the three choices the UXP menulist offered

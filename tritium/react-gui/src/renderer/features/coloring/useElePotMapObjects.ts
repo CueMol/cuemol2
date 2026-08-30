@@ -1,5 +1,5 @@
 /**
- * @file hooks/useElePotMapObjects.ts
+ * @file features/coloring/useElePotMapObjects.ts
  * @description Live list of ElePotMap objects in the active scene, used by
  * the Coloring panel's Elepot deck to populate its potential-object selector.
  *

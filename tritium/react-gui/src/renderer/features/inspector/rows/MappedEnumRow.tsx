@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/MappedEnumRow.tsx
+ * @file features/inspector/rows/MappedEnumRow.tsx
  * @description Enum property row that shows friendly text per raw C++ id.
  */
 

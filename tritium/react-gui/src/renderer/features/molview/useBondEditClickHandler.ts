@@ -1,5 +1,5 @@
 /**
- * @file hooks/useBondEditClickHandler.ts
+ * @file features/molview/useBondEditClickHandler.ts
  * @description Click handler for the bond-editor (Add Bond) tool. Subscribes to
  * the C++ `mouseClicked` event while the tool is active and forwards each
  * left-click to the `bondEditPick` worker service, which resolves the click to

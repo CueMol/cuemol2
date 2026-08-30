@@ -1,5 +1,5 @@
 /**
- * @file components/panes/RenderImageViewer.tsx
+ * @file features/render/RenderImageViewer.tsx
  * @description Zoomable / pannable image viewer for the Render Result tab.
  *
  * The image is laid out at `width x height x scale` inside a scrollable

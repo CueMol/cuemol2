@@ -1,5 +1,5 @@
 /**
- * @file components/panes/molStruct/selStrFromTree.ts
+ * @file features/selection/molStruct/selStrFromTree.ts
  * @description Compose a UXP-syntax selection string from the set of
  * tree-node ids currently selected in `MolStructPane`.
  *

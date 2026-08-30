@@ -1,5 +1,5 @@
 /**
- * @file components/panes/colorPane/decks.tsx
+ * @file features/coloring/colorPane/decks.tsx
  * @description The coloring pane's per-mode decks: the body it swaps in once a
  * renderer's coloring class is known.
  *

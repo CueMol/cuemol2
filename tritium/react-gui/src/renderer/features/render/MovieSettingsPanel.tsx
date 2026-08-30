@@ -1,5 +1,5 @@
 /**
- * @file components/panels/MovieSettingsPanel.tsx
+ * @file features/render/MovieSettingsPanel.tsx
  * @description Movie output settings -- the "Movie" section of the Rendering
  * window's Image tab (RenderImageTab), shown while the render mode is "movie".
  *

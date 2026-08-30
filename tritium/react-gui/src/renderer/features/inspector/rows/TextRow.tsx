@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/TextRow.tsx
+ * @file features/inspector/rows/TextRow.tsx
  * @description Free-text property row (a renderer's Name, a label's font).
  */
 

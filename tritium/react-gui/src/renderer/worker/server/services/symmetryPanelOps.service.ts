@@ -1,5 +1,5 @@
 /**
- * @file services/symmetryPanelOps.service.ts
+ * @file worker/server/services/symmetryPanelOps.service.ts
  * @description Worker services backing the Symmetry side panel
  * (`panel.symmetry`). Mirrors UXP `symmetry-panel.js`
  * (`cuemolui.panels.symm.*`) and the Change-symminfo modal

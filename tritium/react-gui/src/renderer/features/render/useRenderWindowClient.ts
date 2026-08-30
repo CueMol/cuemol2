@@ -1,5 +1,5 @@
 /**
- * @file hooks/useRenderWindowClient.ts
+ * @file features/render/useRenderWindowClient.ts
  * @description Rendering-window side of the relay.
  *
  * Mirrors the render job / latest result / target-view list pushed by the

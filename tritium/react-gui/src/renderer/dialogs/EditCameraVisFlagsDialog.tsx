@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/EditCameraVisFlagsDialog.tsx
+ * @file dialogs/EditCameraVisFlagsDialog.tsx
  * @description Editor for a camera's captured visibility-flag set (UXP
  * `tools/visflagset-edit-dlg`). One row per scene element: an Inc checkbox
  * (whether the camera captures it) + the Object / Renderer name + a Vis

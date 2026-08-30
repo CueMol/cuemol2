@@ -1,5 +1,5 @@
 /**
- * @file services/animation.service.ts
+ * @file worker/server/services/animation.service.ts
  * @description Read the per-scene CueMol animation manager (`AnimMgr`) for the
  * Blender-style timeline panel.
  *

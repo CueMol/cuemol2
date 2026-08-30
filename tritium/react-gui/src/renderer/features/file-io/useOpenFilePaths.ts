@@ -1,5 +1,5 @@
 /**
- * @file hooks/useOpenFilePaths.ts
+ * @file features/file-io/useOpenFilePaths.ts
  * @description Opens a batch of file paths through the same commands as
  * File > Open / File > Open Scene, one file at a time.
  *

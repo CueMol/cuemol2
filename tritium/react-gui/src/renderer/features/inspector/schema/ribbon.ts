@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/ribbon.ts
+ * @file features/inspector/schema/ribbon.ts
  * @description The `ribbon` renderer's pages (C++ `molvis::RibbonRenderer`).
  *
  * It draws a classic secondary-structure ribbon (helix / sheet / coil) along

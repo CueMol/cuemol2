@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/scene.ts
+ * @file features/inspector/schema/scene.ts
  * @description The Scene's pages (C++ `qsys::Scene`, node type "scene").
  *
  * The Scene has no dedicated UXP property dialog -- its rendering settings

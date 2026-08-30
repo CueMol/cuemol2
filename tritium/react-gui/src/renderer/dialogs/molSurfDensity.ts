@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/molSurfDensity.ts
+ * @file dialogs/molSurfDensity.ts
  * @description Shared point-density input range for the two molecular-surface
  * dialogs (`MakeMolSurfDialog` creates a surface, `RegenMolSurfDialog` rebuilds
  * one). Both present the density as a `SliderField` (slider + number box +

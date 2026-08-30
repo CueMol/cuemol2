@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/BoolSelectRow.tsx
+ * @file features/inspector/rows/BoolSelectRow.tsx
  * @description A boolean shown as a two-choice dropdown rather than a switch.
  *
  * For a flag that reads as a choice between two things rather than as

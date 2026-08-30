@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/nucl.ts
+ * @file features/inspector/schema/nucl.ts
  * @description The `nucl` renderer's page (C++ `molvis::NARenderer`).
  *
  * It draws a backbone tube plus base sticks / cylinders along nucleic-acid

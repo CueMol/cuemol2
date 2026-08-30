@@ -1,5 +1,5 @@
 /**
- * @file panes/Ccp4MapOptionsPane.tsx
+ * @file dialogs/fopen-opt-dlgs/panes/Ccp4MapOptionsPane.tsx
  * @description Option pane for CCP4/MRC electron density map files.
  *
  * Besides the UXP-era normalize / truncation options it carries the cryo-EM

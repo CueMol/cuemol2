@@ -5,7 +5,7 @@
  * The dialog builds these and nine services read them, so they are a boundary
  * DTO rather than dialog internals -- `worker/server/` must not reach up into
  * `components/`. The dialog-side helpers that PRODUCE them (defaults, format
- * detection, reader mapping) stay in `components/fopen-opt-dlgs/types.ts`,
+ * detection, reader mapping) stay in `dialogs/fopen-opt-dlgs/types.ts`,
  * which re-exports these for the UI code that has always taken them together.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/common.ts
+ * @file features/inspector/schema/common.ts
  * @description The pages every node gets, before its type-specific ones.
  *
  * Three variants, because the three kinds of node the inspector opens have

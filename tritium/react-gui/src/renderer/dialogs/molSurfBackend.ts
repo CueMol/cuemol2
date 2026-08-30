@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/molSurfBackend.ts
+ * @file dialogs/molSurfBackend.ts
  * @description Shared SES-generation backend choice for the two molecular-
  * surface dialogs (`MakeMolSurfDialog` creates a surface, `RegenMolSurfDialog`
  * rebuilds one). Both present it as a `SegmentField`, so the option list and

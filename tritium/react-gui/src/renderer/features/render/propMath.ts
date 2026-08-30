@@ -1,5 +1,5 @@
 /**
- * @file hooks/renderSettings/propMath.ts
+ * @file features/render/propMath.ts
  * @description The render settings' arithmetic on `PropDef` lists.
  *
  * The settings are a flat list of `{ key, value }` rows rather than a typed

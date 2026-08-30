@@ -6,7 +6,7 @@ import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 /**
  * `colormode` enum values per renderer type, as the C++ wrappers report them.
  * Captured from the running addon alongside the inspector property fixtures
- * (`components/inspector/__fixtures__/rendererProps.json`).
+ * (`features/inspector/__fixtures__/rendererProps.json`).
  *
  * The service asks the renderer which modes it has rather than keeping its own
  * list, so the fixture has to answer that question the way the addon does.

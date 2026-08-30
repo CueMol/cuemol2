@@ -1,5 +1,5 @@
 /**
- * @file hooks/useCueMolEventListener.ts
+ * @file hooks/cuemol/useCueMolEventListener.ts
  * @description Single-listener subscription against the CueMol event
  * manager (`cm.addEventListener` / `removeEventListener`). Encapsulates
  * the cancelled-flag race documented in tritium/CLAUDE.md, plus an

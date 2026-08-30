@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/resIndexInput.ts
+ * @file dialogs/resIndexInput.ts
  * @description Pure validation of the numeric field for the Change residue
  * index dialog. Mirrors UXP `tools/chg_resindex.js` (onDialogAccept, lines
  * 157-181):

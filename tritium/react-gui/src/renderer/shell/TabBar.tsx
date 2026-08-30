@@ -1,5 +1,5 @@
 /**
- * @file components/TabBar.tsx
+ * @file shell/TabBar.tsx
  * @description Draggable tab strip rendered inside `TabPanel`.
  *
  * This is a **pure presentational component**.  All drag-and-drop state

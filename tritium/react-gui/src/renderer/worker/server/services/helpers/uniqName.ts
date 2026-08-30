@@ -1,5 +1,5 @@
 /**
- * @file services/helpers/uniqName.ts
+ * @file worker/server/services/helpers/uniqName.ts
  * @description Unique-name picker shared by services that create new scene
  * objects (mol surface, symm-mol copy, ...).
  */

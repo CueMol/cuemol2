@@ -1,5 +1,5 @@
 /**
- * @file renderer/crash/installGlobalCrashHandlers.ts
+ * @file crash/installGlobalCrashHandlers.ts
  * @description Wire window.onerror / unhandledrejection into CrashReporter.
  *
  * Called once from `renderer/index.tsx` before the React tree is rendered

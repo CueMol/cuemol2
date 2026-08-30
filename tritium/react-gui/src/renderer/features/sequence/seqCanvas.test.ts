@@ -1,5 +1,5 @@
 /**
- * @file components/panels/sequence/seqCanvas.test.ts
+ * @file features/sequence/seqCanvas.test.ts
  * @description Contract for the sequence panel's geometry.
  *
  * The panel paints residues onto a canvas, so nothing in the DOM says which

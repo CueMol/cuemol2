@@ -1,5 +1,5 @@
 /**
- * @file MolSelList.tsx
+ * @file h3-kit/MolSelList/MolSelList.tsx
  * @description Atom-selection picker: a free-text Blueprint `InputGroup` with a
  * chevron trigger tucked inside its right edge (like a native `<select>`) that
  * opens a popover holding the shared `SelectionBuilder` (the same Term + Modify

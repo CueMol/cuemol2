@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/SelRow.tsx
+ * @file features/inspector/rows/SelRow.tsx
  * @description Atom-selection property row, edited through the selection picker.
  */
 

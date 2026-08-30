@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/MultiEnumRow.tsx
+ * @file features/inspector/rows/MultiEnumRow.tsx
  * @description An enum dropdown standing for several properties at once.
  *
  * The first target drives what the row displays and what its modified bar and

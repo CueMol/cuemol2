@@ -1,5 +1,5 @@
 /**
- * @file hooks/useRenderWindowBridge.ts
+ * @file features/render/useRenderWindowBridge.ts
  * @description Main-window side of the Rendering-window relay.
  *
  * The modeless Rendering window has no CueMol worker, so this hook -- mounted

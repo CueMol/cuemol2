@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/shared/vdwRadii.ts
+ * @file features/inspector/schema/shared/vdwRadii.ts
  * @description The per-element van der Waals radius rows.
  *
  * UXP's `propeditor-radii-common` "Atom radii" groupbox, shared by every

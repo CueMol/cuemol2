@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/CalcApbsPotDialog.tsx
+ * @file dialogs/CalcApbsPotDialog.tsx
  * @description Modal that computes an electrostatic-potential map (`ElePotMap`)
  * by running pdb2pqr + APBS as external processes. Ports the UXP
  * `tools/apbs-calcpot.{xul,js}` dialog:

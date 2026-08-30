@@ -1,5 +1,5 @@
 /**
- * @file components/panels/anim/timelineGeometry.ts
+ * @file features/animation/anim/timelineGeometry.ts
  * @description Pure geometry / formatting helpers for the animation timeline.
  *
  * Time is in milliseconds throughout; `pxPerMs` is the horizontal scale. These

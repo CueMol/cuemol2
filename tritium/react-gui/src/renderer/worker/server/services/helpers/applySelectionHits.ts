@@ -1,5 +1,5 @@
 /**
- * @file services/helpers/applySelectionHits.ts
+ * @file worker/server/services/helpers/applySelectionHits.ts
  * @description Shared tail for the rectangle / lasso selection services.
  *
  * Both `rectSelect` (View.hitTestRect) and `lassoSelect` (View.hitTestPolygon)

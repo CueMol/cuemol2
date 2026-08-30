@@ -1,5 +1,5 @@
 /**
- * @file hooks/useAnimTimeline.ts
+ * @file features/animation/useAnimTimeline.ts
  * @description Live animation-timeline state for `AnimationPanel`.
  *
  * Fetches the timeline (`AnimMgr` element list + manager snapshot) from the

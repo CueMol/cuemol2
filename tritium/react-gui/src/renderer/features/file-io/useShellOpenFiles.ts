@@ -1,5 +1,5 @@
 /**
- * @file hooks/useShellOpenFiles.ts
+ * @file features/file-io/useShellOpenFiles.ts
  * @description Opens files the OS handed to the app: command-line arguments, a
  * macOS 'open-file' Apple Event (Finder double-click, Open With, Dock drop,
  * Dock recent document) or a second launch. Parity port of UXP

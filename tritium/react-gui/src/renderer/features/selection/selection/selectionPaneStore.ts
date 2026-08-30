@@ -1,5 +1,5 @@
 /**
- * @file components/panes/selection/selectionPaneStore.ts
+ * @file features/selection/selection/selectionPaneStore.ts
  * @description Module-level snapshot that lets the Selection pane's UI state
  * survive unmount/remount when the user switches side-panel activity groups.
  *

@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/StyleEditorDialog.tsx
+ * @file dialogs/StyleEditorDialog.tsx
  * @description Style-set editor (UXP `style/style_editor.xul`). Three tabs for
  * a selected style set: Color (named colours), Selection (named MolSel defs),
  * and Styles (style entries). Edits are live-applied through

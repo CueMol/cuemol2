@@ -1,5 +1,5 @@
 /**
- * @file components/panels/TrajectoryPanel.tsx
+ * @file features/trajectory/TrajectoryPanel.tsx
  * @description MD Trajectory bottom pane -- a frame timeline for a loaded
  * `mdtools::Trajectory`, in the spirit of the Animation panel.
  *

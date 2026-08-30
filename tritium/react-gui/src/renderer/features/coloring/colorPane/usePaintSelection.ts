@@ -1,5 +1,5 @@
 /**
- * @file components/panes/colorPane/usePaintSelection.ts
+ * @file features/coloring/colorPane/usePaintSelection.ts
  * @description Row selection for the Paint table.
  *
  * Two pieces of state, because the operations split in two. `selectedRow` is

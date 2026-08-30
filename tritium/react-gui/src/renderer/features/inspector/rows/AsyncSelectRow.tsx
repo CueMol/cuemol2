@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/AsyncSelectRow.tsx
+ * @file features/inspector/rows/AsyncSelectRow.tsx
  * @description A dropdown whose choices come from the worker.
  *
  * Three rows wanted the same thing and each grew its own copy: the material

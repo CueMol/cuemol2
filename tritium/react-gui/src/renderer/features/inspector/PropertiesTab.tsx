@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/PropertiesTab.tsx
+ * @file features/inspector/PropertiesTab.tsx
  * @description Structured Properties tab for the inspector panel.
  *
  * A page is the common sections for the kind of node in front of us, followed

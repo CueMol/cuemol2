@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/InteractionAnalysisDialog.tsx
+ * @file dialogs/InteractionAnalysisDialog.tsx
  * @description Modal that finds atom-atom interactions (contacts / hydrogen
  * bonds) within a distance range and labels them with an `atomintr` renderer.
  * Ports the UXP `tools/intr-tool-dlg.xul` + `intr-tool.js` dialog:

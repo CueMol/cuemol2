@@ -1,5 +1,5 @@
 /**
- * @file components/panels/mdtraj/TrajTrack.tsx
+ * @file features/trajectory/mdtraj/TrajTrack.tsx
  * @description The trajectory track: a frame ruler, one lane of block segments,
  * and the seek playhead.
  *

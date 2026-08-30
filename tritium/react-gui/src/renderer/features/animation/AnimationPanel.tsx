@@ -1,5 +1,5 @@
 /**
- * @file components/panels/AnimationPanel.tsx
+ * @file features/animation/AnimationPanel.tsx
  * @description Blender-style animation timeline panel (strip model).
  *
  * Renders the active scene's `AnimMgr` elements as time-ranged strips: one lane

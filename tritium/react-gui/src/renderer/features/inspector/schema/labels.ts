@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/labels.ts
+ * @file features/inspector/schema/labels.ts
  * @description Enum labels shared by more than one renderer page.
  *
  * A label table belongs to the page that uses it; these are the ones the

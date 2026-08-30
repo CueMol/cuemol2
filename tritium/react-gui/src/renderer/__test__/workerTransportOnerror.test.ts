@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/workerTransportOnerror.test.ts
+ * @file __test__/workerTransportOnerror.test.ts
  * @description Pin WorkerTransport crash funnel.
  *
  * Three signals must all be routed to CrashReporter.report:

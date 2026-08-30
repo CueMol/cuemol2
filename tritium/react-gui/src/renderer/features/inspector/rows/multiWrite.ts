@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/multiWrite.ts
+ * @file features/inspector/rows/multiWrite.ts
  * @description Writing one value to several properties at once.
  *
  * Some controls stand for more than one stored property: a ribbon's "Section

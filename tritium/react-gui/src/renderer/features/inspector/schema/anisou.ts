@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/anisou.ts
+ * @file features/inspector/schema/anisou.ts
  * @description The `anisou` renderer page.
  *
  * The anisotropic-displacement renderer draws ball-and-stick atoms with an

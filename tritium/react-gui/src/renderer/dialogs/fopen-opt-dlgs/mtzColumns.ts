@@ -1,5 +1,5 @@
 /**
- * @file fopen-opt-dlgs/mtzColumns.ts
+ * @file dialogs/fopen-opt-dlgs/mtzColumns.ts
  * @description Default amplitude / phase / weight column selection for an MTZ
  * file, ported from the UXP fopen-mtzopt-page selectDefaultColumns() logic
  * (uxp_gui/cuemol2/base/content/fopen-mtzopt-page.js). Recognises the common

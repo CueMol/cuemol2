@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/workerLauncherCrash.test.ts
+ * @file __test__/workerLauncherCrash.test.ts
  * @description Pin the worker_launcher global crash handlers.
  *
  * Verifies that when `self.dispatchEvent(new ErrorEvent('error', ...))` or

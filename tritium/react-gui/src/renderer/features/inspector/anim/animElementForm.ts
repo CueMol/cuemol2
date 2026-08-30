@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/anim/animElementForm.ts
+ * @file features/inspector/anim/animElementForm.ts
  * @description The animation element inspector's form shape and the
  * conversions around it.
  *

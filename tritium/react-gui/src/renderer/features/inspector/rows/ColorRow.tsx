@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/ColorRow.tsx
+ * @file features/inspector/rows/ColorRow.tsx
  * @description Colour property row: a swatch that opens the picker.
  */
 

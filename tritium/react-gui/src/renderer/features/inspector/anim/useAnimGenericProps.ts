@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/anim/useAnimGenericProps.ts
+ * @file features/inspector/anim/useAnimGenericProps.ts
  * @description The animation inspector's Generic tab: the element's raw
  * properties, read and written by name.
  *

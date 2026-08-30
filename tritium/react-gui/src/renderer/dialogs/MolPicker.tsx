@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/MolPicker.tsx
+ * @file dialogs/MolPicker.tsx
  * @description Thin preset over `ObjectSelect` for the recurring "pick a
  * MolCoord" dropdown used by the molecule-edit dialogs. It hard-wires the
  * `objectFilters.molCoord` filter plus the shared empty-text / fallback-name /

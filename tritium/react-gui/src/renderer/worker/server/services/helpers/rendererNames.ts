@@ -15,7 +15,7 @@ import { safeRead } from './safeRead';
 /**
  * Renderer types a disorder overlay can follow (UXP `molPostProc`). The
  * inspector's Target dropdown offers the same list from the UI side
- * (`components/inspector/schema/disorder.ts`).
+ * (`features/inspector/schema/disorder.ts`).
  */
 export const DISORDER_TARGET_TYPES = ['tube', 'ribbon', 'cartoon', 'nucl'];
 

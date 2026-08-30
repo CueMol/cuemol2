@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rendererSectionParity.test.tsx
+ * @file features/inspector/rendererSectionParity.test.tsx
  * @description What every renderer's Properties page looks like, frozen.
  *
  * The per-type sections are being replaced by a schema the engine renders

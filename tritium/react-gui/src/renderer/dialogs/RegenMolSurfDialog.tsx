@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/RegenMolSurfDialog.tsx
+ * @file dialogs/RegenMolSurfDialog.tsx
  * @description Modal that rebuilds an existing `MolSurfObj` from the molecule
  * it was originally generated from. Ports the "regeneration mode" of the UXP
  * `tools/makesurf.xul` dialog (opened from the workspace-panel object context

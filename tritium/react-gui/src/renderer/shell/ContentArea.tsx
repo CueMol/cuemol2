@@ -1,5 +1,5 @@
 /**
- * @file components/ContentArea.tsx
+ * @file shell/ContentArea.tsx
  * @description Central editor panel with a draggable tab bar and content pane.
  *
  * ## Architecture

@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/EditInteractionListDialog.tsx
+ * @file dialogs/EditInteractionListDialog.tsx
  * @description Editor for an atom-interaction renderer's definition list (UXP
  * `tools/aintr-edit-dlg`). Lists each distance / angle / torsion entry with a
  * per-row Delete; OK returns the ids removed during the session (the caller

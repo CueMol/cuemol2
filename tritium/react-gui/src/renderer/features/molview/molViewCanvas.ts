@@ -1,5 +1,5 @@
 /**
- * @file components/panes/molViewCanvas.ts
+ * @file features/molview/molViewCanvas.ts
  * @description How to find the 3D view canvas from outside MolViewPane.
  *
  * Several components render a `<canvas>` -- the sequence panel and the

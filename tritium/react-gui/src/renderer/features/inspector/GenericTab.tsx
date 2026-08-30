@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/GenericTab.tsx
+ * @file features/inspector/GenericTab.tsx
  * @description Generic (power-user) tab that displays every property of the
  * inspected node in a flat key-value table with resizable columns.
  *

@@ -1,5 +1,5 @@
 /**
- * @file hooks/useRenderSettings.ts
+ * @file features/render/useRenderSettings.ts
  * @description Holds the (non-persistent) render-settings editing state
  * shown in the Inspector `renderSettings` target.
  *

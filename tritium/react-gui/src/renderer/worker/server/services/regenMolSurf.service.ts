@@ -1,5 +1,5 @@
 /**
- * @file services/regenMolSurf.service.ts
+ * @file worker/server/services/regenMolSurf.service.ts
  * @description Worker service backing the scene-tree object context-menu item
  * "Regenerate surface..." (UXP `wspcPanelMolSurfRegen`). Ports
  * `workspace_panel_ctxtmenu.js` `setupMolSurfCtxtMenu` (the menu gate) and

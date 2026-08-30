@@ -1,5 +1,5 @@
 /**
- * @file services/listSceneObjects.service.ts
+ * @file worker/server/services/listSceneObjects.service.ts
  * @description Unified scene-object enumeration for the `ObjectSelect`
  * widget. Returns every top-level object node (`type === 'object'`) in
  * the scene with its uid / name / className; the widget filters

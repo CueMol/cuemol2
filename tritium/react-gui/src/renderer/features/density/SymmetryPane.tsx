@@ -1,5 +1,5 @@
 /**
- * @file components/panes/SymmetryPane.tsx
+ * @file features/density/SymmetryPane.tsx
  * @description Side-panel surface that ports UXP `panel.symmetry`
  * (`uxp_gui/cuemol2/base/content/symmetry-panel.{xul,js}`).
  *

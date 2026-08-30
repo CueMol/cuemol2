@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/LimitDisplayRows.tsx
+ * @file features/inspector/rows/LimitDisplayRows.tsx
  * @description The map renderers' "Limit display by" block.
  *
  * A block rather than rows because its toggle is not a property: the UXP

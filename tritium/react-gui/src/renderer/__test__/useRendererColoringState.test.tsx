@@ -1,5 +1,5 @@
 /**
- * Degrade-detection test for hooks/useRendererColoringState.ts.
+ * Degrade-detection test for features/coloring/useRendererColoringState.ts.
  *
  * Pins the observable wire contract: mount -> invokeService fetch, event
  * subscription with the right filter/mask, refetch on coloring /

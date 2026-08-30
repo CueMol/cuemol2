@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/molSuperposeHistory.ts
+ * @file dialogs/molSuperposeHistory.ts
  * @description localStorage-backed history for the Molecular superposition
  * dialog. Mirrors UXP `ssm_sup.js` preference persistence
  * (`cuemol2.ui.histories.mol_superpose_*`): the last-used reference / moving

@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/exportPngSize.ts
+ * @file dialogs/exportPngSize.ts
  * @description Pure helpers for the PNG export options dialog
  * (`dialog.exportpng-opt`). Convert between an output pixel size and a physical
  * size at a chosen resolution (DPI), mirroring UXP `exportpng-opt-dlg.js`

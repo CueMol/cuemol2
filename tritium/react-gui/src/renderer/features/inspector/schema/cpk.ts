@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/cpk.ts
+ * @file features/inspector/schema/cpk.ts
  * @description The `cpk` renderer page.
  *
  * UXP's `cpk-propdlg`: an "Atom radii" groupbox over the shared per-element

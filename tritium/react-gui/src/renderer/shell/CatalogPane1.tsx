@@ -1,5 +1,5 @@
 /**
- * @file CatalogPane1.tsx
+ * @file shell/CatalogPane1.tsx
  * @description Component catalog (1/3): label hierarchy and the basic
  * label+control roles -- Field/FieldSection, Text & Select, Numeric/Switch/Color.
  *

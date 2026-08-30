@@ -1,5 +1,5 @@
 /**
- * @file services/deleteMolAtoms.service.ts
+ * @file worker/server/services/deleteMolAtoms.service.ts
  * @description Worker service backing the "Delete atoms" tool dialog
  * (`dialog.tool.mol-delete`). Ports UXP `tools/mol_delete.js`
  * (`gMolDelDlg.onDialogAccept`):

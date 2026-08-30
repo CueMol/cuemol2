@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/crashReporter.test.ts
+ * @file __test__/crashReporter.test.ts
  * @description Pin the CrashReporter wire contract.
  *
  * These tests are degrade-detectors for the FATAL path: a worker or React

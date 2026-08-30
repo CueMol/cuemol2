@@ -1,5 +1,5 @@
 /**
- * @file hooks/useTrajectory.ts
+ * @file features/trajectory/useTrajectory.ts
  * @description Live trajectory state (frame count + current frame + block
  * segmentation) for the MD Trajectory bottom pane.
  *

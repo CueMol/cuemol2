@@ -1,5 +1,5 @@
 /**
- * @file renderer/hooks/cuemol/useLiveFetch.test.tsx
+ * @file hooks/cuemol/useLiveFetch.test.tsx
  * @description Pins the engine contracts the panel hooks depend on: the
  * stale-fetch guard, fallback + onError on a rejected current fetch, and
  * the listener `filter` running before the debounce.

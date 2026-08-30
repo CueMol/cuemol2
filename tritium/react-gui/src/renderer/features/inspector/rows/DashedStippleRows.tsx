@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/DashedStippleRows.tsx
+ * @file features/inspector/rows/DashedStippleRows.tsx
  * @description The atom-interaction renderer's dash-pattern block.
  *
  * This is not a property row, which is why it is a block: there is no "dashed"

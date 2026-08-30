@@ -1,5 +1,5 @@
 /**
- * @file components/multigrad/section/gradientStops.ts
+ * @file features/coloring/section/gradientStops.ts
  * @description The section's stop shape and the colour it shows for one.
  *
  * A stop carries two colours for one reason: `color` is the CueMol string the

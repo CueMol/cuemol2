@@ -1,5 +1,5 @@
 /**
- * @file services/getSeqPanelData.service.ts
+ * @file worker/server/services/getSeqPanelData.service.ts
  * @description Bulk seq panel data fetch -- one IPC round trip for
  * either the entire scene or a single mol.
  *

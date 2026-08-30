@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMolEditCommit.ts
+ * @file hooks/cuemol/useMolEditCommit.ts
  * @description Shared commit scaffold for the molecule-edit dialogs. It owns
  * the three pieces every such dialog repeated verbatim:
  *   - the `submitting` / `errorMsg` state pair,

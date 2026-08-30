@@ -1,5 +1,5 @@
 /**
- * @file hooks/usePaintCapableRenderers.ts
+ * @file features/coloring/usePaintCapableRenderers.ts
  * @description Live list of paint-capable renderers for the Coloring panel's
  * renderer selector.
  *

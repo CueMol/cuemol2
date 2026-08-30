@@ -1,5 +1,5 @@
 /**
- * @file components/menu/resolveAppMenu.ts
+ * @file shell/menu/resolveAppMenu.ts
  * @description Pure resolution of the shared `APP_MENU` template into
  * platform-neutral `MenuNode` trees for the Windows/Linux menu bar.
  *

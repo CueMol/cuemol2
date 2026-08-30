@@ -1,5 +1,5 @@
 /**
- * @file CatalogPane3.tsx
+ * @file shell/CatalogPane3.tsx
  * @description Component catalog (3/3): the per-property reset UI -- the
  * `PropertyField` row (modified bar + hover reset + default annotation) and an
  * assembled "Inspector property pane" mock (mode bar + Reset all + accordion

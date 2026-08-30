@@ -1,5 +1,5 @@
 /**
- * @file components/toolbar/UndoRedoSplitButton.tsx
+ * @file shell/toolbar/UndoRedoSplitButton.tsx
  * @description Undo / Redo split-button for the top Toolbar.
  *
  * The main button performs a single-step undo/redo via the command registry

@@ -1,5 +1,5 @@
 /**
- * @file components/panels/InspectorPanel.tsx
+ * @file features/inspector/InspectorPanel.tsx
  * @description Right-side inspector panel -- the property editor for whatever
  * context currently has focus.
  *

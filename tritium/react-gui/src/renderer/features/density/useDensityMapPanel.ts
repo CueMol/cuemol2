@@ -1,5 +1,5 @@
 /**
- * @file hooks/useDensityMapPanel.ts
+ * @file features/density/useDensityMapPanel.ts
  * @description Live data source for `DensityMapPane`'s widget readout.
  *
  * Scoped to a single map renderer (`rendId`) chosen externally

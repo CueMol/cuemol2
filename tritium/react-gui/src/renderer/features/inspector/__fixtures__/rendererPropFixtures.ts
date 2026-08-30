@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/__fixtures__/rendererPropFixtures.ts
+ * @file features/inspector/__fixtures__/rendererPropFixtures.ts
  * @description Property lists for the inspector's parity snapshots.
  *
  * `rendererProps.json` holds what the real C++ reports: one renderer of each

@@ -1,5 +1,5 @@
 /**
- * @file components/panels/LogPanel.tsx
+ * @file features/log/LogPanel.tsx
  * @description BottomPanel "Output" tab -- presentation-only viewer that
  * renders the cuemol3 core log stream as a scrollable `<pre>` block,
  * topped with a toolbar (filter input + clear / lock / save buttons)

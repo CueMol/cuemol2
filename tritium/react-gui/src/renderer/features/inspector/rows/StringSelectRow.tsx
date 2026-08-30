@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/StringSelectRow.tsx
+ * @file features/inspector/rows/StringSelectRow.tsx
  * @description A dropdown over a fixed option set for a STRING property.
  *
  * Not every property with a handful of sensible values is a C++ enum: a

@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/tube.ts
+ * @file features/inspector/schema/tube.ts
  * @description The `tube` renderer's pages, and the same pages for `nucl`.
  *
  * Migrated from the UXP `tube-propdlg` "Tube" tab, which the `nucl-propdlg`

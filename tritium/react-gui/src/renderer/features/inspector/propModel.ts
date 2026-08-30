@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/propModel.ts
+ * @file features/inspector/propModel.ts
  * @description Pure model helpers for the inspector's per-property reset UI.
  *
  * These functions centralize the "is this property modified?" predicate and the

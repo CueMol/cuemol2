@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/testing/index.ts
+ * @file worker/testing/index.ts
  * @description Worker-service test harness: fake wrapper objects plus a
  * `WorkerContext` factory. Import from '@renderer/worker/testing' in
  * `*.test.ts` only -- ESLint rejects it anywhere else.

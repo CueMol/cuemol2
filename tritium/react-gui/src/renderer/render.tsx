@@ -5,7 +5,7 @@
  * This window hosts only pure-UI render components; it has NO CueMol worker
  * (the native addon lives solely in the main window's renderer). All render
  * execution is relayed to the main window over IPC -- see
- * hooks/useRenderWindowClient.ts and main/renderWindowIpc.ts.
+ * features/render/useRenderWindowClient.ts and main/renderWindowIpc.ts.
  *
  * The provider stack is deliberately minimal: no CueMolProvider (would spawn
  * a second native addon), no dialog/command providers, and no

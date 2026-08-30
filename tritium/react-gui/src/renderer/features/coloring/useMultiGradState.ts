@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMultiGradState.ts
+ * @file features/coloring/useMultiGradState.ts
  * @description Live multi-gradient state (nodes / colormode / color-map
  * binding / map list / map stats) for the Multi-gradient deck.
  *

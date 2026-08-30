@@ -1,5 +1,5 @@
 /**
- * @file hooks/useViewXform.ts
+ * @file features/molview/useViewXform.ts
  * @description Live data source for `ViewPane`'s camera-transform controls
  * (zoom, slab, view distance, view center) and incremental rotation. Mirrors
  * the UXP `fakedial-panel` data flow.

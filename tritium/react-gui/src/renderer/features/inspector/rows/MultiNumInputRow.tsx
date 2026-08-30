@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rows/MultiNumInputRow.tsx
+ * @file features/inspector/rows/MultiNumInputRow.tsx
  * @description A stepper standing for several integer properties at once
  * (a ribbon's "Section detail", which sets all three sections).
  *

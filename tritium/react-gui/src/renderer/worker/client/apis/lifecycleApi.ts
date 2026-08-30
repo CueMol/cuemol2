@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/apis/lifecycleApi.ts
+ * @file worker/client/apis/lifecycleApi.ts
  * @description Renderer-thread thin wrappers for worker lifecycle calls
  * (init / user-style load / view-input style / terminate / app info).
  * Each function returns a Promise resolved with the worker reply and

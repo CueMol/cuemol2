@@ -1,5 +1,5 @@
 /**
- * @file services/analyzeInteractions.service.ts
+ * @file worker/server/services/analyzeInteractions.service.ts
  * @description Worker service backing the "Interaction analysis" tool dialog
  * (`dialog.tool.intr-tool`). Ports UXP `tools/intr-tool.js`
  * (`IntrTool.onDialogAccept`):

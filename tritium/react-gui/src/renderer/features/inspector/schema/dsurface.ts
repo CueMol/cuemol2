@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/dsurface.ts
+ * @file features/inspector/schema/dsurface.ts
  * @description The `dsurface` and `dsurf2` renderer pages.
  *
  * UXP's `dsurf-propdlg`: a "Draw" groupbox (mode, line / point size, surface

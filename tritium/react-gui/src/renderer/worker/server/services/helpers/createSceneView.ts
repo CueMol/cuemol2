@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/server/services/helpers/createSceneView.ts
+ * @file worker/server/services/helpers/createSceneView.ts
  * @description Create a scene's initial view, shared by the "new scene" and
  * "open scene file" paths so both name and bind it identically.
  */

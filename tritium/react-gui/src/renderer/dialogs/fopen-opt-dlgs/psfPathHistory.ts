@@ -1,5 +1,5 @@
 /**
- * @file psfPathHistory.ts
+ * @file dialogs/fopen-opt-dlgs/psfPathHistory.ts
  * @description localStorage-backed "last used PSF topology path" for the NAMD
  * coordinate file-open dialog. Mirrors UXP semantics of
  *   pref.get/set("cuemol2.ui.histories.namdcoor.psfpath")

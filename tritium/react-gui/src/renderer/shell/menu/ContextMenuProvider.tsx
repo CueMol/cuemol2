@@ -1,5 +1,5 @@
 /**
- * @file components/menu/ContextMenuProvider.tsx
+ * @file shell/menu/ContextMenuProvider.tsx
  * @description React-rendered context menu host for Windows / Linux.
  *
  * `useShowContextMenu()` returns `show(nodes, {x, y})`, which displays a

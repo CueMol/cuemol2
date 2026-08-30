@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMeasureClickHandler.ts
+ * @file features/molview/useMeasureClickHandler.ts
  * @description Click handler for the measure (distance / angle / torsion)
  * tool. Subscribes to the C++ `mouseClicked` event while a measure tool is
  * active and forwards each left-click to the `measurePick` worker service,

@@ -1,5 +1,5 @@
 /**
- * @file hooks/useRendererColoringState.ts
+ * @file features/coloring/useRendererColoringState.ts
  * @description Live coloring state (class + Paint entries / defaultcolor)
  * for the Coloring panel's deck content.
  *

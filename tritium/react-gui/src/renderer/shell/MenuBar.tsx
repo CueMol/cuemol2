@@ -1,5 +1,5 @@
 /**
- * @file components/MenuBar.tsx
+ * @file shell/MenuBar.tsx
  * @description Custom HTML menu bar for Windows / Linux.
  *
  * Renders the shared `APP_MENU` template as VS Code-style dropdowns. macOS

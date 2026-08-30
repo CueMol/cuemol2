@@ -1,5 +1,5 @@
 /**
- * @file panes/MsmsOptionsPane.tsx
+ * @file dialogs/fopen-opt-dlgs/panes/MsmsOptionsPane.tsx
  * @description Option pane for MSMS molecular surface files.
  */
 

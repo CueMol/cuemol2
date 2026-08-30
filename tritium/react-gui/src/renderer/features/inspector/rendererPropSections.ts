@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/rendererPropSections.tsx
+ * @file features/inspector/rendererPropSections.ts
  * @description Renderer-type -> property-section dispatch for the inspector
  * Properties tab.
  *

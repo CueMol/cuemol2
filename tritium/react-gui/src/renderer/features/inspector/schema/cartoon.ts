@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/cartoon.ts
+ * @file features/inspector/schema/cartoon.ts
  * @description The `cartoon` renderer's pages (C++ `Ribbon2Renderer`).
  *
  * It draws ribbon / tube secondary-structure cartoons (helix / sheet / coil)

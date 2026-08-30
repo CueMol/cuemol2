@@ -1,5 +1,5 @@
 /**
- * @file components/panes/settings/AtomLabelPreview.tsx
+ * @file features/settings/settings/AtomLabelPreview.tsx
  * @description Live WYSIWYG preview of the atom-label typography, shown in the
  * SettingsPane "Atom Labels" section. Renders sample text with the exact CSS
  * font shorthand the C++ label renderer uses (family, size, weight, style) plus

@@ -1,5 +1,5 @@
 /**
- * @file components/panels/anim/AnimTimeRuler.tsx
+ * @file features/animation/anim/AnimTimeRuler.tsx
  * @description Horizontal time ruler for the animation timeline.
  *
  * Draws "nice"-spaced millisecond tick marks with labels. The ruler is sticky

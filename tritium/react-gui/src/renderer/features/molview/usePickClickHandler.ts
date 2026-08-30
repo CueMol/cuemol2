@@ -1,5 +1,5 @@
 /**
- * @file hooks/usePickClickHandler.ts
+ * @file features/molview/usePickClickHandler.ts
  * @description Shared scaffold for the single-button "pick on left-click"
  * tools (measure distance/angle/torsion, bond editor). Both tools have a
  * near-identical handler:

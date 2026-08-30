@@ -1,5 +1,5 @@
 /**
- * @file services/changeResidueIndex.service.ts
+ * @file worker/server/services/changeResidueIndex.service.ts
  * @description Worker service backing the "Change residue index" tool dialog
  * (`dialog.tool.chg-resindex`). Ports UXP `tools/chg_resindex.js`
  * (`gChgResIndDlg.onDialogAccept`):

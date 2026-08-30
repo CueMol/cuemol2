@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/map.ts
+ * @file features/inspector/schema/map.ts
  * @description The map renderers' pages: `contour` (MapMeshRenderer),
  * `isosurf` (MapSurfRenderer) and the legacy `gpu_mapmesh`
  * (GLSLMapMeshRenderer2).

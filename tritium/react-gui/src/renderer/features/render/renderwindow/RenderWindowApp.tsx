@@ -1,5 +1,5 @@
 /**
- * @file components/renderwindow/RenderWindowApp.tsx
+ * @file features/render/renderwindow/RenderWindowApp.tsx
  * @description Root component of the modeless Rendering window.
  *
  * Layout (Allotment splits):
@@ -88,7 +88,7 @@ export const RenderWindowApp: React.FC = () => {
       }
     : undefined;
   // Default the movie output to the app-managed folder and remember the
-  // settings across window closes (see hooks/useMovieOutputPrefs.ts).
+  // settings across window closes (see features/render/useMovieOutputPrefs.ts).
   const movieOutput = useMovieOutputPrefs(settings.movie, settings.updateMovie);
   // Both umbreon-based backends (plain and NPR) ride the same in-process
   // exporter, so one availability flag gates them together.

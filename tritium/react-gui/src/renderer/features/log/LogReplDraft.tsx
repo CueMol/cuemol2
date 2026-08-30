@@ -1,5 +1,5 @@
 /**
- * @file components/panels/LogReplDraft.tsx
+ * @file features/log/LogReplDraft.tsx
  * @description Draft (unused) of a scrollable output log with an embedded
  * REPL prompt. Kept as a starting point for a future REPL-enabled Output
  * tab; the active bottom Output panel is `LogPanel`.

@@ -1,5 +1,5 @@
 /**
- * @file services/createSymmMol.service.ts
+ * @file worker/server/services/createSymmMol.service.ts
  * @description Worker services backing the 3D-view "Create SYMM mol..."
  * context-menu action. Ports UXP `navi-toolribbon.js` `createSymmObj`:
  * materialize the clicked symmetry image of a molecule as a new MolCoord

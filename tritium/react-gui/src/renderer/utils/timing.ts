@@ -1,5 +1,5 @@
 /**
- * @file renderer/utils/timing.ts
+ * @file utils/timing.ts
  * @description The two debounce windows the renderer uses, named once.
  */
 

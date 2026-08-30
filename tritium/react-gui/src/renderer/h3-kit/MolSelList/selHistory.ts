@@ -1,5 +1,5 @@
 /**
- * @file selHistory.ts
+ * @file h3-kit/MolSelList/selHistory.ts
  * @description localStorage-backed atom-selection history shared by MolSelList instances.
  *
  * Mirrors UXP `util.selHistory` semantics: a single global LRU list, deduplicated,

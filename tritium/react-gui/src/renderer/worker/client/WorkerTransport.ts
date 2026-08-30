@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/WorkerTransport.ts
+ * @file worker/client/WorkerTransport.ts
  * @description Renderer-side handle for the Web Worker process.
  *
  * Owns the `Worker` instance, allocates per-call sequence numbers, routes

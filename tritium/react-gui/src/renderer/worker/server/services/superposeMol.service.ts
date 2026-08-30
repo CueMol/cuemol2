@@ -1,5 +1,5 @@
 /**
- * @file services/superposeMol.service.ts
+ * @file worker/server/services/superposeMol.service.ts
  * @description Worker service backing the "Molecular superposition" tool
  * dialog. Ports UXP `tools/ssm_sup.js` (`gSSMSupDlg.onDialogAccept`):
  *   - Compile the reference / moving atom-selection strings.

@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/spline.ts
+ * @file features/inspector/schema/spline.ts
  * @description The `spline` renderer page.
  *
  * No UXP dialog to port: curated from the C++ `SplineRenderer.qif`. A single

@@ -1,5 +1,5 @@
 /**
- * @file components/panes/settings/useSettingsPaneNav.ts
+ * @file features/settings/settings/useSettingsPaneNav.ts
  * @description In-session (non-persistent) memory for the SettingsPane's
  * navigation state -- the selected category, search filter, and expanded
  * groups -- so switching away from the Settings tab and back does not reset

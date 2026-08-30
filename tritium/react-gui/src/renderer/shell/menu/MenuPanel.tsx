@@ -1,5 +1,5 @@
 /**
- * @file components/menu/MenuPanel.tsx
+ * @file shell/menu/MenuPanel.tsx
  * @description Generic VS Code-style menu panel shared by the Windows/Linux
  * menu bar dropdowns and the React context menus.
  *

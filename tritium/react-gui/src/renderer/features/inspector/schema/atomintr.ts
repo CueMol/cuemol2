@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/atomintr.ts
+ * @file features/inspector/schema/atomintr.ts
  * @description The `atomintr` renderer's pages (C++ `AtomIntrRenderer`).
  *
  * It draws the distance / angle / torsion measurement lines (and optional

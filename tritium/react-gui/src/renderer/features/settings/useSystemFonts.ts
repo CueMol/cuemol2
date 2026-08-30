@@ -1,5 +1,5 @@
 /**
- * @file hooks/useSystemFonts.ts
+ * @file features/settings/useSystemFonts.ts
  * @description Enumerate installed font families via the Local Font Access API
  * (`window.queryLocalFonts()`, available in Electron/Chromium) for the settings
  * font picker. Mirrors the UXP behaviour of listing system fonts (UXP used

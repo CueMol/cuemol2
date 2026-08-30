@@ -1,5 +1,5 @@
 /**
- * @file renderer/hooks/react/useStaleGuard.test.ts
+ * @file hooks/react/useStaleGuard.test.ts
  * @description Pins the token semantics the fetch hooks rely on.
  */
 

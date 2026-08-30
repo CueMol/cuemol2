@@ -1,5 +1,5 @@
 /**
- * @file components/BondEditOptionsPopover.tsx
+ * @file features/molview/BondEditOptionsPopover.tsx
  * @description Popover content for the bond-editor tool's "options cap". Lists
  * the selected molecule's non-standard (persistent) bonds and lets the user
  * remove them. Bond *creation* is the in-viewport two-pick gesture (see

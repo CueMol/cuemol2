@@ -1,5 +1,5 @@
 /**
- * @file components/renderwindow/RenderSettingsPane.tsx
+ * @file features/render/renderwindow/RenderSettingsPane.tsx
  * @description Right pane of the Rendering window: the render settings, split
  * into tabs behind one header.
  *

@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/client/apis/editApi.ts
+ * @file worker/client/apis/editApi.ts
  * @description Renderer-thread thin wrappers for worker undo / redo
  * services. Each call dispatches to the C++ `UndoManager` owned by the
  * scene.

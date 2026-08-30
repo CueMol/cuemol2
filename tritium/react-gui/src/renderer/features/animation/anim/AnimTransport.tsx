@@ -1,5 +1,5 @@
 /**
- * @file components/panels/anim/AnimTransport.tsx
+ * @file features/animation/anim/AnimTransport.tsx
  * @description Timeline header: playback transport, time readout, start camera,
  * loop, and zoom.
  *

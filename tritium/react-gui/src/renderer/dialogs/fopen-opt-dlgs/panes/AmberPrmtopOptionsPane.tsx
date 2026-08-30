@@ -1,5 +1,5 @@
 /**
- * @file panes/AmberPrmtopOptionsPane.tsx
+ * @file dialogs/fopen-opt-dlgs/panes/AmberPrmtopOptionsPane.tsx
  * @description Option pane for AMBER prmtop topology files. Analogous to the
  * NAMD coordinate pane: the prmtop is the main stream (topology) and an
  * optional coordinate file (inpcrd / rst7 / restrt) is attached as the

@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/PropEditors.tsx
+ * @file features/inspector/PropEditors.tsx
  * @description Individual editor widgets for each property type.
  *
  * Each editor maps a single `PropDef` onto a form-kit catalog component

@@ -1,5 +1,5 @@
 /**
- * @file services/mergeMol.service.ts
+ * @file worker/server/services/mergeMol.service.ts
  * @description Worker service backing the "Merge molecule" tool dialog
  * (`dialog.tool.mol-merge`). Ports UXP `tools/mol_merge.js`
  * (`gMolMrgDlg.onDialogAccept`):

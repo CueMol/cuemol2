@@ -1,5 +1,5 @@
 /**
- * @file components/panels/ImageSettingsPanel.tsx
+ * @file features/render/ImageSettingsPanel.tsx
  * @description One section of image settings in the Rendering window's
  * Render Settings pane (Image tab).
  *

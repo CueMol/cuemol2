@@ -1,5 +1,5 @@
 /**
- * @file components/Toolbar.tsx
+ * @file shell/Toolbar.tsx
  * @description Top window toolbar (Navbar). Ports the non-tool buttons of the
  * UXP ribbon Home tab into a single, tab-less Navbar.
  *

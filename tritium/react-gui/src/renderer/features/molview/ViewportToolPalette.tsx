@@ -1,5 +1,5 @@
 /**
- * @file ViewportToolPalette.tsx
+ * @file features/molview/ViewportToolPalette.tsx
  * @description Floating vertical tool palette anchored to the left edge of
  * the 3D viewport area. Each button activates a different interaction
  * mode (navigate, select, measure, ...).

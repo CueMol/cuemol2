@@ -1,5 +1,5 @@
 /**
- * @file components/renderwindow/RenderImageTab.tsx
+ * @file features/render/renderwindow/RenderImageTab.tsx
  * @description "Image" tab of the Rendering window's settings pane -- every
  * setting describing the file a render produces.
  *

@@ -1,5 +1,5 @@
 /**
- * @file hooks/useAnimEdit.ts
+ * @file features/animation/useAnimEdit.ts
  * @description Strip-editing actions for `AnimationPanel` (move / resize / add /
  * remove / reorder).
  *

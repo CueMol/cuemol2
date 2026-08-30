@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/testing/makeWorkerCtx.ts
+ * @file worker/testing/makeWorkerCtx.ts
  * @description Build a `WorkerContext` over fake managers for a worker
  * service test.
  *

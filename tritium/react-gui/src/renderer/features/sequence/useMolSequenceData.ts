@@ -1,5 +1,5 @@
 /**
- * @file hooks/useMolSequenceData.ts
+ * @file features/sequence/useMolSequenceData.ts
  * @description Live data source for `SequencePanel`.
  *
  * Enumerates every MolCoord-like object in the active scene and bulk-

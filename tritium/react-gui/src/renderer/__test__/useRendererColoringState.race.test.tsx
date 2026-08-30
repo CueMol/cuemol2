@@ -1,7 +1,7 @@
 /**
  * @file __test__/useRendererColoringState.race.test.tsx
  * @description Race-pin (degrade-detection) test for the stale-fetch race in
- * hooks/useRendererColoringState.ts.
+ * features/coloring/useRendererColoringState.ts.
  *
  * THE RACE: when the selected renderer switches (ColorPane changes `rendId`
  * from A to B), an in-flight `getRendererColoringState` fetch for the OLD

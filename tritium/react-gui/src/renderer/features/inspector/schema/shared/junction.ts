@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/shared/junction.ts
+ * @file features/inspector/schema/shared/junction.ts
  * @description The rows of a `JctTable` junction, shared by cartoon and ribbon.
  *
  * A junction is how a secondary-structure element ends: rounded, flat, or an

@@ -1,5 +1,5 @@
 /**
- * @file hooks/useHatchTemplate.ts
+ * @file features/render/useHatchTemplate.ts
  * @description Loads the NPR hatch style selected in the render settings as
  * an editable template: whenever the style changes (and its template is not
  * loaded yet), the resolved style is fetched from the C++ side as spec text,

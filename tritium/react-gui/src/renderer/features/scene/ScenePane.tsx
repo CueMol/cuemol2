@@ -1,5 +1,5 @@
 /**
- * @file ScenePane.tsx
+ * @file features/scene/ScenePane.tsx
  * @description Hierarchical scene tree pane mirroring the UXP
  * `panel.workspace` layout.
  *

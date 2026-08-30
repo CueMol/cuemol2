@@ -1,5 +1,5 @@
 /**
- * @file renderer/__test__/errorBoundary.test.tsx
+ * @file __test__/errorBoundary.test.tsx
  * @description Pin ErrorBoundary -> CrashReporter wiring.
  *
  * A render-path throw must (1) replace children with the CrashOverlay and

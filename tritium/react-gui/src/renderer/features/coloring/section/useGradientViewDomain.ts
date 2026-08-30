@@ -1,5 +1,5 @@
 /**
- * @file components/multigrad/section/useGradientViewDomain.ts
+ * @file features/coloring/section/useGradientViewDomain.ts
  * @description The value range the gradient strip is looking at, and the
  * zoom / pan that moves it.
  *

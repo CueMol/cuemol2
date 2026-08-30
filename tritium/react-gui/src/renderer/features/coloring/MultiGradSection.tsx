@@ -1,5 +1,5 @@
 /**
- * @file components/multigrad/MultiGradSection.tsx
+ * @file features/coloring/MultiGradSection.tsx
  * @description Multi-gradient editor section shared by ColorPane's
  * multigrad deck and DensityMapPane's inline embed.
  *

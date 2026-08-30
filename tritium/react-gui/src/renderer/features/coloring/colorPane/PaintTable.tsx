@@ -1,5 +1,5 @@
 /**
- * @file components/panes/colorPane/PaintTable.tsx
+ * @file features/coloring/colorPane/PaintTable.tsx
  * @description The Paint deck's editable table: one row per paint entry, with
  * a selection expression and a colour.
  *

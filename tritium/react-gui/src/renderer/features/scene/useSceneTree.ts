@@ -1,5 +1,5 @@
 /**
- * @file hooks/useSceneTree.ts
+ * @file features/scene/useSceneTree.ts
  * @description Live scene-tree state for `ScenePane`.
  *
  * Fetches the tree from the worker via `cm.invokeService('getSceneTree', ...)`

@@ -1,5 +1,5 @@
 /**
- * @file FileOpenOptionDialog.tsx
+ * @file dialogs/fopen-opt-dlgs/FileOpenOptionDialog.tsx
  * @description Modal dialog for configuring file-open options before loading a file.
  *
  * Layout (top to bottom):

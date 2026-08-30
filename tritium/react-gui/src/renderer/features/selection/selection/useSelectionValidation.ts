@@ -1,5 +1,5 @@
 /**
- * @file components/panes/selection/useSelectionValidation.ts
+ * @file features/selection/selection/useSelectionValidation.ts
  * @description Live validity of the selection expression being typed.
  *
  * The field shows an invalid state, so the answer has to be current -- but a

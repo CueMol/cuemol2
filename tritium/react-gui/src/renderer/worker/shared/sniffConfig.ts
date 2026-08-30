@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/shared/sniffConfig.ts
+ * @file worker/shared/sniffConfig.ts
  * @description Worker-side constants for content-sniff routing.
  */
 

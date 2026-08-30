@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/MakeMolSurfDialog.tsx
+ * @file dialogs/MakeMolSurfDialog.tsx
  * @description Modal that builds a solvent-excluded molecular surface
  * (`MolSurfObj`) from a molecule. Ports the UXP `tools/makesurf.xul` +
  * `makesurf.js` dialog (built-in surface algorithm, not external MSMS):

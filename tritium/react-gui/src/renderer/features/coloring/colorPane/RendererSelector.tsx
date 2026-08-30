@@ -1,5 +1,5 @@
 /**
- * @file components/panes/colorPane/RendererSelector.tsx
+ * @file features/coloring/colorPane/RendererSelector.tsx
  * @description The pane's target dropdown: which renderer (or object) the
  * coloring below applies to.
  *

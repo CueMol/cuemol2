@@ -1,5 +1,5 @@
 /**
- * @file services/makeMolSurf.service.ts
+ * @file worker/server/services/makeMolSurf.service.ts
  * @description Worker service backing the "Mol surface generation" tool dialog
  * (`dialog.tool.makesurf`). Ports UXP `tools/makesurf.js`
  * (`gDlgObj.buildMolSurf`):

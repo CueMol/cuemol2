@@ -1,5 +1,5 @@
 /**
- * @file useRendererOptions.ts
+ * @file dialogs/fopen-opt-dlgs/useRendererOptions.ts
  * @description Shared renderer-options behaviour for the dialogs that embed
  * `RendererOptionsPane` (the file-open option dialog and the "New Renderer"
  * dialog).

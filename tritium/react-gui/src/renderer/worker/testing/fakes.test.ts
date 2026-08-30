@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/testing/fakes.test.ts
+ * @file worker/testing/fakes.test.ts
  * @description Pins the harness contracts other tests lean on: accessor
  * spies, the C++ JSON shapes, undo bookkeeping and manager resolution.
  */

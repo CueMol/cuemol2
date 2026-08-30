@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/PropGroupedEditor.tsx
+ * @file features/inspector/PropGroupedEditor.tsx
  * @description Reusable grouped property editor.
  *
  * Groups `PropDef` entries into collapsible accordion sections and renders

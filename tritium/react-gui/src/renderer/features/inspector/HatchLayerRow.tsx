@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/HatchLayerRow.tsx
+ * @file features/inspector/HatchLayerRow.tsx
  * @description One mark layer of the NPR hatch layer editor: a header row
  * (name, duplicate, remove), the kind selector, the primary numeric fields
  * and a collapsed "Randomness / Advanced" area with the rest. Which fields

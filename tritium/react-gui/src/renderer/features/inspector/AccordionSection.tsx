@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/AccordionSection.tsx
+ * @file features/inspector/AccordionSection.tsx
  * @description Collapsible accordion section for the inspector panel.
  *
  * Renders a clickable header with a chevron indicator and a collapsible body.

@@ -1,5 +1,5 @@
 /**
- * @file MolStructPane.tsx
+ * @file features/selection/MolStructPane.tsx
  * @description Side-panel surface that mirrors UXP `panel.molstruct`
  * (`uxp_gui/cuemol2/base/content/molstruct-panel.{xul,js}`).
  *

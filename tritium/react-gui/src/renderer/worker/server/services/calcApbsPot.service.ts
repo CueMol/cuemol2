@@ -1,5 +1,5 @@
 /**
- * @file services/calcApbsPot.service.ts
+ * @file worker/server/services/calcApbsPot.service.ts
  * @description Worker service backing the APBS electrostatic-potential tool
  * dialog (`dialog.tool.apbs-calcpot`). Ports UXP `tools/apbs-calcpot.js`:
  *

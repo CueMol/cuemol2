@@ -1,5 +1,5 @@
 /**
- * @file renderer/worker/shared/uid.ts
+ * @file worker/shared/uid.ts
  * @description The C++ uid sentinel.
  *
  * `qlib::invalid_uid` is **0**, not a negative number (src/qlib/qlib.hpp).

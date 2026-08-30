@@ -1,5 +1,5 @@
 /**
- * @file hooks/useSymmetryPanel.ts
+ * @file features/density/useSymmetryPanel.ts
  * @description Live data source for `SymmetryPane`'s crystal info
  * readout.
  *

@@ -1,5 +1,5 @@
 /**
- * @file components/dialogs/chainNameInput.ts
+ * @file dialogs/chainNameInput.ts
  * @description Pure normalization of the "New chain ID" text field for the
  * Change chain ID dialog. Mirrors UXP `tools/chg_chname.js` (onDialogAccept,
  * lines 127-144):

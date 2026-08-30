@@ -1,5 +1,5 @@
 /**
- * @file components/panes/densityMap/DragRow.tsx
+ * @file features/density/densityMap/DragRow.tsx
  * @description A labelled drag-number row for a map renderer property.
  *
  * The map panel writes properties by name rather than through the inspector's

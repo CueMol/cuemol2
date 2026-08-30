@@ -1,5 +1,5 @@
 /**
- * @file rendTypeHistory.ts
+ * @file dialogs/fopen-opt-dlgs/rendTypeHistory.ts
  * @description localStorage-backed per-objType "last used renderer type" for
  * the file open dialog. Mirrors UXP semantics of
  *   pref.get/set("cuemol2.ui.histories.new_renderer_type" + obj_type)

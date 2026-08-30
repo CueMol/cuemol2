@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/SchemaSection.test.tsx
+ * @file features/inspector/SchemaSection.test.tsx
  * @description What the schema engine decides.
  *
  * The engine owns no editing behaviour -- the draft, the commit timing and

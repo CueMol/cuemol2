@@ -1,5 +1,5 @@
 /**
- * @file pdbIdHistory.ts
+ * @file dialogs/pdbIdHistory.ts
  * @description localStorage-backed PDB ID input history for the Get PDB
  * dialog. Mirrors UXP `util.History` semantics (LRU, deduplicated, capped),
  * and patterns selHistory.ts in h3-kit/MolSelList/.

@@ -1,5 +1,5 @@
 /**
- * @file components/inspector/schema/types.ts
+ * @file features/inspector/schema/types.ts
  * @description What a renderer's Properties page is, as data.
  *
  * A page is sections of rows, and a row names a property, a label and the

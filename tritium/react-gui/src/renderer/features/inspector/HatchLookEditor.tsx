@@ -1,10 +1,10 @@
 /**
- * @file components/inspector/HatchLookEditor.tsx
+ * @file features/inspector/HatchLookEditor.tsx
  * @description The NPR hatch layer editor: the Rendering window's "Hatching"
  * settings tab. The style picked in the Render tab is a TEMPLATE: its layers
  * and shading are loaded from the C++ side and edited here; an edited look is
  * sent with the render as spec text, and "Reset to style" reloads the
- * template. Template loading itself lives in hooks/useHatchTemplate.ts.
+ * template. Template loading itself lives in features/render/useHatchTemplate.ts.
  */
 
 import React from "react";

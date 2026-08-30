@@ -1,5 +1,5 @@
 /**
- * @file components/panels/anim/AnimStrip.tsx
+ * @file features/animation/anim/AnimStrip.tsx
  * @description One timeline strip = one CueMol `AnimObj`.
  *
  * Drawn from the element's resolved `absStart`..`absEnd` span; the bar width is

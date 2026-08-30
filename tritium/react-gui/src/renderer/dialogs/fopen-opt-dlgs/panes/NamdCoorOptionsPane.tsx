@@ -1,5 +1,5 @@
 /**
- * @file panes/NamdCoorOptionsPane.tsx
+ * @file dialogs/fopen-opt-dlgs/panes/NamdCoorOptionsPane.tsx
  * @description Option pane for NAMD binary coordinate files. Mirrors the UXP
  * fopen-namdcooropt page: a PSF topology path text box plus a "Change..."
  * button that opens a native file picker filtered to *.psf. The default path
