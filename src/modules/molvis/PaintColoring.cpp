@@ -407,6 +407,10 @@ void PaintColoring::readFrom2(qlib::LDom2Node *pNode)
       continue;
     }
     ColorPtr pCol(gfx::AbstractColor::fromNode(pColNode));
+    if (pCol.isnull()) {
+      LOG_DPRINTLN("PaintColoring.readFrom> invalid color in paint tag (ignored)");
+      continue;
+    }
 
     append(pSel, pCol);
     //m_coltab.push_back(PaintTuple(pSel, pCol));

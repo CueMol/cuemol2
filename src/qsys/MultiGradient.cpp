@@ -203,6 +203,10 @@ void MultiGradient::readFrom2(qlib::LDom2Node *pNode)
       continue;
     }
     gfx::ColorPtr pCol(gfx::AbstractColor::fromNode(pColNode));
+    if (pCol.isnull()) {
+      LOG_DPRINTLN("MultiGradient.readFrom> invalid color in gradnode tag (ignored)");
+      continue;
+    }
 
     insert(val, pCol);
   }
