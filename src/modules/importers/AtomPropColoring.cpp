@@ -24,7 +24,9 @@ AtomPropColoring::AtomPropColoring()
 }
 
 AtomPropColoring::AtomPropColoring(const AtomPropColoring &r)
+     : m_propname(r.m_propname)
 {
+  // the copy (clone()) used to lose the property name and color grey
   MB_DPRINTLN("AtomPropColoring: copy obj(%p) of %p is created.", this, &r);
 }
 

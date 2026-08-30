@@ -899,7 +899,7 @@ void RendIntData::convCyl(Cyl *pCyl)
 
   // bottom disk
   if (bcap) {
-    for (i=0; i<=NDIVR; ++i) {
+    for (i=0; i<NDIVR; ++i) {
       const int ii = i%NDIVR;
       const int jj = (i+1)%NDIVR;
       m_mesh.addFace(ivbot,
@@ -930,7 +930,7 @@ void RendIntData::convCyl(Cyl *pCyl)
 
   // top disk
   if (bcap) {
-    for (i=0; i<=NDIVR; ++i) {
+    for (i=0; i<NDIVR; ++i) {
       const int ii = i%NDIVR;
       const int jj = (i+1)%NDIVR;
       

@@ -281,9 +281,10 @@ void RendIntData::calcEdgeIntrsec()
         pv2 = m_vertvec[elem.iv2];
 
         int nmode = MFMOD_MESH;
-        if (elem.if1 > 0)
+        // SEEdge marks a missing face with -1; face 0 is a valid face
+        if (elem.if1 >= 0)
             nmode = m_facevec[elem.if1].nmode;
-        else if (elem.if2 > 0)
+        else if (elem.if2 >= 0)
             nmode = m_facevec[elem.if2].nmode;
 
         if (nmode != MFMOD_SPHERE) {

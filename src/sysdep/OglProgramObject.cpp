@@ -6,6 +6,8 @@
 #include <common.h>
 
 #include "OglProgramObject.hpp"
+
+#include <memory>
 #include "OglError.hpp"
 
 #include <qlib/FileStream.hpp>
@@ -189,15 +191,16 @@ bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, G
   if (i!=m_shaders.end())
     return false;
   
-  OglShObjImpl *pVS = new OglShObjImpl(shader_type);
-  if (pVS==NULL)
-    return false;
+  // loadFile()/compile() throw on a missing file or a compile error; the
+  // shader object (and its GL handle) is owned by the table only once the
+  // load succeeded
+  std::unique_ptr<OglShObjImpl> pVS(new OglShObjImpl(shader_type));
 
   LOG_DPRINTLN("PO> Loading shader: %s", srcpath.c_str());
   pVS->loadFile(srcpath);
   pVS->compile();
-  attach(pVS);
-  m_shaders.insert(ShaderTab::value_type(name, pVS));
+  attach(pVS.get());
+  m_shaders.insert(ShaderTab::value_type(name, pVS.release()));
 
   LOG_DPRINTLN("PO> Loading shader OK");
   return true;

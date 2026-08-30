@@ -18,14 +18,25 @@ PixelBuffer::~PixelBuffer()
 PixelBuffer::PixelBuffer(const PixelBuffer &src)
     : m_nWidth(src.m_nWidth), m_nHeight(src.m_nHeight), m_nDepth(src.m_nDepth)
 {
-    size_t n = src.m_pData->size();
-    m_pData = new data_t(n);
-    for (int i = 0; i < n; ++i) {
-        m_pData->operator[](i) = src.m_pData->operator[](i);
-    }
+    // an unallocated source (TextImgBuf::clone() before any text) has no data
+    m_pData = (src.m_pData != nullptr) ? new data_t(*src.m_pData) : nullptr;
 
+    // the GPU representation belongs to the source
     m_pPixRep = nullptr;
     MB_DPRINTLN("PixelBuffer::PixelBuffer(copy)");
+}
+
+PixelBuffer &PixelBuffer::operator=(const PixelBuffer &src)
+{
+    if (&src == this) return *this;
+    // the implicit assignment shared m_pData and m_pPixRep: double delete
+    clear();
+    m_nWidth = src.m_nWidth;
+    m_nHeight = src.m_nHeight;
+    m_nDepth = src.m_nDepth;
+    m_pData = (src.m_pData != nullptr) ? new data_t(*src.m_pData) : nullptr;
+    m_pPixRep = nullptr;
+    return *this;
 }
 
 void PixelBuffer::resize(size_t n)
