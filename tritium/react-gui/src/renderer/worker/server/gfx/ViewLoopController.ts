@@ -15,7 +15,6 @@
  * forward here. Only one view renders at a time (single shared canvas), so the
  * caller stops the other loops on activation.
  */
-import { PERF_MEASURE, maybeFlushPerf, perfCounters } from '@renderer/worker/server/perf';
 
 /** Predicate: whether a view id is currently bound as a render peer. */
 type IsBound = (viewId: number) => boolean;
@@ -78,19 +77,7 @@ export class ViewLoopController {
                 // Report what the pump advanced (animation playback) before
                 // drawing, so a progress readout and the frame agree.
                 this.afterIdle?.();
-                if (PERF_MEASURE) {
-                    const t0 = performance.now();
-                    this.sceMgr.invokeMethod('checkAndUpdateScenes');
-                    const elapsed = performance.now() - t0;
-                    perfCounters.frameCount++;
-                    perfCounters.frameTimeMs += elapsed;
-                    if (elapsed > perfCounters.frameTimeMaxMs) {
-                        perfCounters.frameTimeMaxMs = elapsed;
-                    }
-                    maybeFlushPerf();
-                } else {
-                    this.sceMgr.invokeMethod('checkAndUpdateScenes');
-                }
+                this.sceMgr.invokeMethod('checkAndUpdateScenes');
                 this._afcbid_map.set(view_id, requestAnimationFrame(render));
             } catch (err) {
                 // A render-loop fault is fatal -- do not reschedule the rAF.

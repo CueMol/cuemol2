@@ -1,6 +1,7 @@
 // NOTE: @cuemol/core is externalized in the Vite worker build (see
 // react-gui/electron.vite.config.ts) so that the native addon is loaded
 // via require() at runtime rather than bundled by Vite.
+import { NO_REPLY_SEQ } from '../shared/protocol';
 import { getModule } from '@cuemol/core';
 import { CueMol } from '@cuemol/core/src/cuemol';
 import type { CueMolInternal } from '@cuemol/core/src/interfaces';
@@ -69,6 +70,8 @@ export class WorkerService {
     private _strMgr: StreamManager | null = null;
     private _styleMgr: StyleManager | null = null;
     private _evtMgr: ScrEventManager | null = null;
+    /** Listener id from `registerWorkerEventListener`, for teardown. */
+    private _evtListenerId: number | null = null;
 
     constructor(
         postMessage: (data: any[]) => void,
@@ -195,15 +198,21 @@ export class WorkerService {
      */
     invoke(method: string, seqno: number, args: any[]): void {
         // log.info(`Worker> invoke called: ${method} seqno: ${seqno} args:`, args);
+        // A fire-and-forget call: nothing on the renderer side is waiting, so
+        // a reply would be posted, structured-cloned and dropped. At pointer
+        // rates that is a second message per frame for no one.
+        const reply = seqno === NO_REPLY_SEQ
+            ? () => undefined
+            : (data: any[]) => this._postMessage(data);
         const methodFn = (this._methods as Record<string, AnyMethodFn>)[method];
         const serviceFn = (this._registered as Record<string, AnyServiceFn | undefined>)[method];
         if (methodFn) {
             try {
                 const result = methodFn.apply(this, args);
                 if (Array.isArray(result)) {
-                    this._postMessage([method, seqno, true, ...result]);
+                    reply([method, seqno, true, ...result]);
                 } else {
-                    this._postMessage([method, seqno, true, result]);
+                    reply([method, seqno, true, result]);
                 }
             } catch (e) {
                 log.error(`Worker> call method failed: ${method},`, e);
@@ -212,23 +221,23 @@ export class WorkerService {
                 // DataCloneError raised inside this catch would escape
                 // self.onmessage and be funnelled as __worker_crash__ --
                 // tearing down the whole worker over one failed call.
-                this._postMessage([method, seqno, false, String(e)]);
+                reply([method, seqno, false, String(e)]);
             }
         } else if (serviceFn) {
             Promise.resolve()
                 .then(() => serviceFn(this._buildContext(), args[0]))
-                .then((result) => this._postMessage([method, seqno, true, result]))
+                .then((result) => reply([method, seqno, true, result]))
                 .catch((e) => {
                     // A service returns Result and never throws across the
                     // boundary (worker/shared/result.ts). Reaching here means a
                     // bug, not an expected failure; the wire shape is kept so
                     // the renderer still sees a rejection rather than a hang.
                     log.error(`Worker> service '${method}' threw instead of returning fail():`, e);
-                    this._postMessage([method, seqno, false, String(e)]);
+                    reply([method, seqno, false, String(e)]);
                 });
         } else {
             log.error(`Worker> unknown method: ${method}`);
-            this._postMessage([method, seqno, false]);
+            reply([method, seqno, false]);
         }
     }
 
@@ -272,7 +281,9 @@ export class WorkerService {
         this._styleMgr = this._cm.getService('StyleManager') as StyleManager;
         this._evtMgr = this._cm.getService('ScrEventManager') as ScrEventManager;
 
-        registerWorkerEventListener(this._evtMgr, this._cm, this._postMessage);
+        this._evtListenerId = registerWorkerEventListener(
+            this._evtMgr, this._cm, this._postMessage,
+        );
 
         return true;
     }
@@ -295,6 +306,17 @@ export class WorkerService {
     /** Shut the worker down (closes the worker global scope). */
     terminateWorker(): void {
         log.info('Worker> terminateWorker called');
+        // Hand the event-manager subscription back before closing: the C++
+        // side holds this callback, and a re-initialised worker would
+        // otherwise stack a second one on top of it.
+        if (this._evtMgr !== null && this._evtListenerId !== null) {
+            try {
+                this._evtMgr.removeListener(this._evtListenerId);
+            } catch (e) {
+                log.warn('Worker> removeListener failed:', e);
+            }
+            this._evtListenerId = null;
+        }
         this._close();
     }
 
@@ -469,7 +491,12 @@ export class WorkerService {
             console.error('resized: scene manager or gfx manager not initialized');
             return;
         }
-        const view = this._sceMgr!.getView(view_id) as GUIView;
+        // Resolve the view BEFORE touching the canvas. Resizing the backing
+        // store clears it, so discovering the view is gone afterwards leaves
+        // a blank canvas and throws on the way out -- one black frame with no
+        // redraw to follow it.
+        const view = this._resolveView(view_id);
+        if (!view) return;
         this._gfx_mgr.canvas.width = w * dpr;
         this._gfx_mgr.canvas.height = h * dpr;
         // Store logical size so that activateView can sync new views to the canvas dimensions
@@ -482,24 +509,46 @@ export class WorkerService {
     //////////
     // Input events -- resolve `view_id -> GUIView` then delegate to inputEvents.
 
+    /**
+     * Resolve `view_id` to a live view, or null.
+     *
+     * Input events keep arriving for a fraction of a second after a view is
+     * destroyed -- the renderer posts them from a pointer stream it does not
+     * stop synchronously -- so "no such view" is an ordinary outcome here, not
+     * an error. Every caller below treats it as "drop this event".
+     */
+    private _resolveView(view_id: number): GUIView | null {
+        if (this._sceMgr === null) return null;
+        try {
+            return (this._sceMgr.getView(view_id) as GUIView | null) ?? null;
+        } catch {
+            return null;
+        }
+    }
+
     mouseDown(view_id: number, event: any): void {
-        handleMouseDown(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleMouseDown(view, event);
     }
 
     mouseUp(view_id: number, event: any): void {
-        handleMouseUp(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleMouseUp(view, event);
     }
 
     mouseMove(view_id: number, event: any): void {
-        handleMouseMove(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleMouseMove(view, event);
     }
 
     gestureEvent(view_id: number, event: any): void {
-        handleGesture(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleGesture(view, event);
     }
 
     wheelEvent(view_id: number, event: any): void {
-        handleWheel(this._sceMgr!.getView(view_id) as GUIView, event);
+        const view = this._resolveView(view_id);
+        if (view) handleWheel(view, event);
     }
 
 }

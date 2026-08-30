@@ -19,7 +19,6 @@
  *   - gfx/ViewLoopController -- the per-view rAF loop + idle pump + crash fwd
  *   - gfx/glState.ts        -- stateless GL global-state toggles
  */
-import { BYPASS_WRAP_GL, PERF_MEASURE, perfCounters } from './perf';
 import { ShaderStore } from '@renderer/worker/server/gfx/ShaderStore';
 import { BufferStore } from '@renderer/worker/server/gfx/BufferStore';
 import { TextureStore } from '@renderer/worker/server/gfx/TextureStore';
@@ -27,31 +26,6 @@ import { FboStore } from '@renderer/worker/server/gfx/FboStore';
 import { ViewLoopController } from '@renderer/worker/server/gfx/ViewLoopController';
 import * as glState from '@renderer/worker/server/gfx/glState';
 
-/**
- * Wrap a WebGL context in a Proxy that calls `getError()` after every GL
- * call and logs any error with the offending method and arguments. A debug
- * aid; bypassed (returns the raw context) when `BYPASS_WRAP_GL` is set.
- */
-function wrapGL(gl: any) {
-  if (BYPASS_WRAP_GL) return gl;
-  return new Proxy(gl, {
-    get(target, prop) {
-      const orig = target[prop];
-      if (typeof orig === 'function') {
-        return function (...args: unknown[]) {
-          if (PERF_MEASURE) perfCounters.wrappedGlCalls++;
-          const result = orig.apply(target, args);
-          const err = target.getError();
-          if (err !== 0) {
-            console.error(`GL error 0x${err.toString(16)} in ${String(prop)}(`, ...args, ')');
-          }
-          return result;
-        };
-      }
-      return orig;
-    }
-  });
-}
 
 /**
  * WebGL2 renderer peer bound to a single shared OffscreenCanvas.
@@ -123,7 +97,7 @@ export class GfxManager {
         // aa_method, so the legacy direct path (AO / aa_method / jitter all
         // off) is left without any geometry AA -- pick a post-AA method
         // instead of relying on MSAA.
-        this._context = wrapGL(canvas.getContext('webgl2', { antialias: false }));
+        this._context = canvas.getContext('webgl2', { antialias: false });
         const gl = this._context;
         // Required for rendering to RGBA16F color/normal attachments (GTAO MRT
         // normal buffer, float jitter accumulator). Acquire once; without it the
@@ -403,7 +377,7 @@ export class GfxManager {
      * vertex/index data, then draw with the GL primitive matching `nmode`
      * (4=LINES, 5=TRIANGLE_STRIP, else TRIANGLES), instanced when `ninst>0`.
      *
-     * @remarks Re-upload is gated by `isUpdated` only when `RESPECT_ISUPDATED`
+     * @remarks Re-upload is gated by the C++ side's `isUpdated`
      * is set; otherwise data is re-uploaded every frame.
      */
     /// API

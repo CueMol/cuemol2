@@ -6,6 +6,7 @@
  * Each function returns a Promise resolved with the worker reply, except
  * `resized` which is a fire-and-forget `postMessage`.
  */
+import { NO_REPLY_SEQ } from '@renderer/worker/shared/protocol';
 import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 
 const log = console;
@@ -91,6 +92,6 @@ export async function removeView(transport: WorkerTransport, view_id: number): P
 export function resized(
     transport: WorkerTransport, view_id: number, w: number, h: number, dpr: number,
 ): void {
-    const cur_seq = transport.getSeqNo();
-    transport.postMessage('resized', cur_seq, [view_id, w, h, dpr]);
+    // Fire-and-forget: a resize has no result to wait for.
+    transport.postMessage('resized', NO_REPLY_SEQ, [view_id, w, h, dpr]);
 }

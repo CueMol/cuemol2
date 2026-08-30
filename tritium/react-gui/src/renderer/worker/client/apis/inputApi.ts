@@ -3,8 +3,13 @@
  * @description Renderer-thread input-event forwarders. Each function picks
  * the fields the worker actually consumes off a DOM event and fires it as
  * a `postMessage` (no await; no reply).
+ *
+ * They post with `NO_REPLY_SEQ`, so the worker does not answer. Nothing here
+ * awaits a result, and at pointer rates the answer was a second message per
+ * frame that the transport had already forgotten how to route.
  */
 import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
+import { NO_REPLY_SEQ } from '@renderer/worker/shared/protocol';
 
 /**
  * Forward a mouse event (mousedown / mousemove / mouseup / etc.) to the
@@ -24,8 +29,7 @@ export function onMouseEvent(
             buttons, button, ctrlKey, shiftKey } = event;
     const ev = { clientX, clientY, screenX, screenY, offsetX, offsetY,
                  buttons, button, ctrlKey, shiftKey };
-    const cur_seq = transport.getSeqNo();
-    transport.postMessage(method, cur_seq, [view_id, ev]);
+    transport.postMessage(method, NO_REPLY_SEQ, [view_id, ev]);
 }
 
 /**
@@ -40,8 +44,7 @@ export function onWheelEvent(transport: WorkerTransport, view_id: number, event:
             ctrlKey, shiftKey, altKey } = event;
     const ev = { offsetX, offsetY, screenX, screenY, deltaX, deltaY,
                  ctrlKey, shiftKey, altKey };
-    const cur_seq = transport.getSeqNo();
-    transport.postMessage('wheel', cur_seq, [view_id, ev]);
+    transport.postMessage('wheel', NO_REPLY_SEQ, [view_id, ev]);
 }
 
 /**
@@ -60,6 +63,5 @@ export function onGestureEvent(
     const { offsetX = 0, offsetY = 0, screenX = 0, screenY = 0,
             ctrlKey = false, shiftKey = false, altKey = false } = event ?? {};
     const ev = { offsetX, offsetY, screenX, screenY, ctrlKey, shiftKey, altKey, axisID, delta };
-    const cur_seq = transport.getSeqNo();
-    transport.postMessage('gesture', cur_seq, [view_id, ev]);
+    transport.postMessage('gesture', NO_REPLY_SEQ, [view_id, ev]);
 }
