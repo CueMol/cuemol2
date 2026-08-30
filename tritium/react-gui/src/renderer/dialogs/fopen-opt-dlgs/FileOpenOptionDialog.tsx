@@ -37,12 +37,12 @@ import { useRendererOptions } from './useRendererOptions';
 import { computeMtzDefaults } from './mtzColumns';
 import { getLastPsfPath, setLastPsfPath } from './psfPathHistory';
 import { getLastCoordPath, setLastCoordPath } from './coordPathHistory';
-import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/getMtzColumnInfo.service';
+import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/map/map.service';
 
 import { PdbOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/PdbOptionsPane';
 import { MtzOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/MtzOptionsPane';
 import { Ccp4MapOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/Ccp4MapOptionsPane';
-import type { MapHeaderInfo } from '@renderer/worker/server/services/probeMapHeader.service';
+import type { MapHeaderInfo } from '@renderer/worker/server/services/map/map.service';
 import { MsmsOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/MsmsOptionsPane';
 import { NamdCoorOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/NamdCoorOptionsPane';
 import { AmberPrmtopOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/AmberPrmtopOptionsPane';

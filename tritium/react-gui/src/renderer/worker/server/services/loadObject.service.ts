@@ -26,7 +26,7 @@ import { setupRenderer } from './setupRenderer.service';
 import { undoTxnResult } from './withUndoTxn';
 import { pickReaderName, OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
-import { applyMapTypeChoice, applyEmMapDefaults, fitViewsToMap } from '@renderer/worker/server/services/helpers/emMapDefaults';
+import { applyMapTypeChoice, applyEmMapDefaults, fitViewsToMap } from '@renderer/worker/server/services/map/emDefaults';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 

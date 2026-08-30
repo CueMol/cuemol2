@@ -16,7 +16,7 @@ import type {
   RedrawMapCenterResult,
   SetMapRendererPropArgs,
   SetMapRendererPropResult,
-} from '@renderer/worker/server/services/densityMapPanelOps.service'
+} from '@renderer/worker/server/services/map/map.service'
 
 export interface MapCalls {
   listMapRenderers:           { args: ListMapRenderersArgs; result: ListMapRenderersResult }

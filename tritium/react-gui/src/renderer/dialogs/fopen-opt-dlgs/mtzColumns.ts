@@ -6,7 +6,7 @@
  * refinement-program column conventions and falls back to the first column of
  * each type otherwise.
  */
-import type { MtzColumn } from '@renderer/worker/server/services/getMtzColumnInfo.service';
+import type { MtzColumn } from '@renderer/worker/server/services/map/map.service';
 import type { MtzOptions } from './types';
 
 export type MtzColumnDefaults = Pick<

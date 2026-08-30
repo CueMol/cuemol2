@@ -47,7 +47,7 @@ import { FieldGrid } from '@renderer/h3-kit/form'
 import type {
     MapRendererEntry,
     MapRendererPropName,
-} from '@renderer/worker/server/services/densityMapPanelOps.service'
+} from '@renderer/worker/server/services/map/map.service'
 import {
     SEM_OBJECT,
     SEM_RENDERER,

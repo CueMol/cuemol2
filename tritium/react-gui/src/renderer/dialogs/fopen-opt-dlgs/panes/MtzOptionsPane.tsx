@@ -21,7 +21,7 @@ import {
   SelectField,
 } from '@renderer/h3-kit/form';
 import type { MtzOptions } from '@renderer/dialogs/fopen-opt-dlgs/types';
-import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/getMtzColumnInfo.service';
+import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/map/map.service';
 
 interface MtzOptionsPaneProps {
   options: MtzOptions;

@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/helpers/emMapDefaults.ts
+ * @file worker/server/services/map/emDefaults.ts
  * @description Post-load adjustments for density maps opened through the
  * file-open dialog: the dialog's map-kind override (DensityMap `map_type`)
  * and the cryo-EM renderer defaults (absolute contour level enclosing the
@@ -15,7 +15,6 @@
 import type { FormatOptions } from '@renderer/worker/shared/fileOpenTypes';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { View } from '@cuemol/core/src/wrappers/View';
-
 const log = console;
 
 /** Fraction of the grid points the initial cryo-EM contour encloses. */

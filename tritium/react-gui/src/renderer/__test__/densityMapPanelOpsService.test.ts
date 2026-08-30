@@ -24,7 +24,7 @@ vi.mock('@renderer/worker/server/services/helpers/makeColor', () => ({
     })),
 }))
 
-import { services } from '@renderer/worker/server/services/densityMapPanelOps.service'
+import { services } from '@renderer/worker/server/services/map/map.service'
 import { makeColor } from '@renderer/worker/server/services/helpers/makeColor'
 
 const {

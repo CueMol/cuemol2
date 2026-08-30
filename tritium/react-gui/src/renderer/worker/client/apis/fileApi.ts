@@ -11,7 +11,7 @@ import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/getCompatibleRendererNames.service';
-import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/getMtzColumnInfo.service';
+import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/map/map.service';
 import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/getReaderDefaultOptions.service';
 import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/loadTrajectory.service';
 import type { LoadObjectResult } from '@renderer/worker/server/services/loadObject.service';
