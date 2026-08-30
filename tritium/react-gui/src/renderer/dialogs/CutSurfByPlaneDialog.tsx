@@ -20,7 +20,7 @@ import { useMolEditCommit } from '@renderer/hooks/cuemol/useMolEditCommit'
 import { Field, FieldSection, NumericField, SelectField } from '@renderer/h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { ObjectSelect, objectFilters } from '@renderer/h3-kit/ObjectSelect'
-import type { CutSurfMode } from '@renderer/worker/server/services/cutSurfByPlane.service'
+import type { CutSurfMode } from '@renderer/worker/server/services/molops/cutSurfByPlane'
 
 export interface CutSurfByPlaneDialogResult {
     ok: boolean

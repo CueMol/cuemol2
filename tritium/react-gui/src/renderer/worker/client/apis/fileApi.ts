@@ -10,13 +10,13 @@
 import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
-import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/getCompatibleRendererNames.service';
+import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/file/getCompatibleRendererNames';
 import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/map/map.service';
-import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/getReaderDefaultOptions.service';
-import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/loadTrajectory.service';
-import type { LoadObjectResult } from '@renderer/worker/server/services/loadObject.service';
-import type { LoadSceneResult } from '@renderer/worker/server/services/loadScene.service';
-import type { GetTrajectoryRendererInfoResult } from '@renderer/worker/server/services/getTrajectoryRendererInfo.service';
+import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/file/getReaderDefaultOptions';
+import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/file/loadTrajectory';
+import type { LoadObjectResult } from '@renderer/worker/server/services/file/loadObject';
+import type { LoadSceneResult } from '@renderer/worker/server/services/file/loadScene';
+import type { GetTrajectoryRendererInfoResult } from '@renderer/worker/server/services/traj/getTrajectoryRendererInfo';
 
 const log = console;
 

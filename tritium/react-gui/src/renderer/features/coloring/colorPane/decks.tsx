@@ -28,7 +28,7 @@ import type {
     ElePotMapObjectEntry,
     ElepotParams,
     RainbowParams,
-} from '@renderer/worker/server/services/rendererColoring.service'
+} from '@renderer/worker/server/services/coloring/coloring.service'
 
 void React // classic JSX runtime (vitest)
 

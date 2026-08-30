@@ -19,7 +19,7 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
 
-import { services } from '@renderer/worker/server/services/changeChainName.service'
+import { services } from '@renderer/worker/server/services/molops/molops.service'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { changeChainName } = services

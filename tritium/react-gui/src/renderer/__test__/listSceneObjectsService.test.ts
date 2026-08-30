@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { services } from '@renderer/worker/server/services/listSceneObjects.service'
+import { services } from '@renderer/worker/server/services/scene/scene.service'
 
 const { listSceneObjects } = services
 

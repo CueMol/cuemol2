@@ -15,7 +15,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-import { services } from '@renderer/worker/server/services/rendererColoring.service'
+import { services } from '@renderer/worker/server/services/coloring/coloring.service'
 import { histogramPercentileRange } from '@renderer/worker/server/services/coloring/multiGrad'
 
 const {

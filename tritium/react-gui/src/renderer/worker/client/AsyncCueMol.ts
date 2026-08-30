@@ -25,13 +25,13 @@ import * as viewApi from '@renderer/worker/client/apis/viewApi';
 import * as inputApi from '@renderer/worker/client/apis/inputApi';
 import * as fileApi from '@renderer/worker/client/apis/fileApi';
 import * as editApi from '@renderer/worker/client/apis/editApi';
-import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/getCompatibleRendererNames.service';
+import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/file/getCompatibleRendererNames';
 import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/map/map.service';
-import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/getReaderDefaultOptions.service';
-import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/loadTrajectory.service';
-import type { LoadObjectResult } from '@renderer/worker/server/services/loadObject.service';
-import type { LoadSceneResult } from '@renderer/worker/server/services/loadScene.service';
-import type { GetTrajectoryRendererInfoResult } from '@renderer/worker/server/services/getTrajectoryRendererInfo.service';
+import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/file/getReaderDefaultOptions';
+import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/file/loadTrajectory';
+import type { LoadObjectResult } from '@renderer/worker/server/services/file/loadObject';
+import type { LoadSceneResult } from '@renderer/worker/server/services/file/loadScene';
+import type { GetTrajectoryRendererInfoResult } from '@renderer/worker/server/services/traj/getTrajectoryRendererInfo';
 import type {
     MethodArgs,
     MethodKey,

@@ -16,17 +16,17 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
-vi.mock('@renderer/worker/server/services/setupRenderer.service', () => ({
+vi.mock('@renderer/worker/server/services/rend/setupRenderer', () => ({
     setupRenderer: vi.fn(() => ({ uid: 500 })),
 }))
-vi.mock('@renderer/worker/server/services/getNewRendererOptions.service', () => ({
+vi.mock('@renderer/worker/server/services/rend/getNewRendererOptions', () => ({
     getNewRendererOptions: vi.fn(),
 }))
 
-import { services } from '@renderer/worker/server/services/createSymmMol.service'
-import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { services } from '@renderer/worker/server/services/molops/molops.service'
+import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
-import { getNewRendererOptions } from '@renderer/worker/server/services/getNewRendererOptions.service'
+import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 
 const { getCreateSymmMolOptions, createSymmMol } = services
 

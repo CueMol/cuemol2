@@ -20,7 +20,7 @@ import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import type {
     SpaceGroupEntry,
     SymmetryInfo,
-} from '@renderer/worker/server/services/symmetryPanelOps.service'
+} from '@renderer/worker/server/services/molops/symmetryPanelOps'
 
 export type CrystalSystem =
     | 'TRICLINIC'

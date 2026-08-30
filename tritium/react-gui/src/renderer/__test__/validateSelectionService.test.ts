@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/validateSelection.service'
+import { services } from '@renderer/worker/server/services/select/select.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 function makeCtx(compileResult: boolean | null) {

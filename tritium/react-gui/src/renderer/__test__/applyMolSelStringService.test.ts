@@ -16,7 +16,7 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
 
-import { services } from '@renderer/worker/server/services/applyMolSelString.service'
+import { services } from '@renderer/worker/server/services/select/select.service'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 
 const { applyMolSelString, centerMolSelection, zoomMolSelection } = services

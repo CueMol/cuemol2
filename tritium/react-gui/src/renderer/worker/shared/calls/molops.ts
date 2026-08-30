@@ -10,50 +10,50 @@
 import type {
   AnalyzeInteractionsArgs,
   AnalyzeInteractionsResult,
-} from '@renderer/worker/server/services/analyzeInteractions.service'
+} from '@renderer/worker/server/services/molops/analyzeInteractions'
 import type {
   ChangeChainNameArgs,
   ChangeChainNameResult,
-} from '@renderer/worker/server/services/changeChainName.service'
+} from '@renderer/worker/server/services/molops/changeChainName'
 import type {
   ChangeResidueIndexArgs,
   ChangeResidueIndexResult,
-} from '@renderer/worker/server/services/changeResidueIndex.service'
+} from '@renderer/worker/server/services/molops/changeResidueIndex'
 import type {
   CreateSymmMolArgs,
   CreateSymmMolResult,
   GetCreateSymmMolOptionsArgs,
   GetCreateSymmMolOptionsResult,
-} from '@renderer/worker/server/services/createSymmMol.service'
+} from '@renderer/worker/server/services/molops/createSymmMol'
 import type {
   CutSurfByPlaneArgs,
   CutSurfByPlaneResult,
-} from '@renderer/worker/server/services/cutSurfByPlane.service'
+} from '@renderer/worker/server/services/molops/cutSurfByPlane'
 import type {
   DeleteMolAtomsArgs,
   DeleteMolAtomsResult,
-} from '@renderer/worker/server/services/deleteMolAtoms.service'
+} from '@renderer/worker/server/services/molops/deleteMolAtoms'
 import type {
   MakeMolSurfArgs,
   MakeMolSurfResult,
   ProposeMolSurfNameArgs,
   ProposeMolSurfNameResult,
-} from '@renderer/worker/server/services/makeMolSurf.service'
-import type { MergeMolArgs, MergeMolResult } from '@renderer/worker/server/services/mergeMol.service'
+} from '@renderer/worker/server/services/molops/makeMolSurf'
+import type { MergeMolArgs, MergeMolResult } from '@renderer/worker/server/services/molops/mergeMol'
 import type {
   ReassignProt2ndryArgs,
   ReassignProt2ndryResult,
-} from '@renderer/worker/server/services/reassignProt2ndry.service'
+} from '@renderer/worker/server/services/molops/reassignProt2ndry'
 import type {
   GetMolSurfRegenInfoArgs,
   GetMolSurfRegenInfoResult,
   RegenMolSurfArgs,
   RegenMolSurfResult,
-} from '@renderer/worker/server/services/regenMolSurf.service'
+} from '@renderer/worker/server/services/molops/regenMolSurf'
 import type {
   SuperposeMolArgs,
   SuperposeMolResult,
-} from '@renderer/worker/server/services/superposeMol.service'
+} from '@renderer/worker/server/services/molops/superposeMol'
 import type {
   ChangeSymmetryInfoArgs,
   ChangeSymmetryInfoResult,
@@ -65,7 +65,7 @@ import type {
   ShowSymmRendererResult,
   ShowUnitCellRendererArgs,
   ShowUnitCellRendererResult,
-} from '@renderer/worker/server/services/symmetryPanelOps.service'
+} from '@renderer/worker/server/services/molops/symmetryPanelOps'
 
 export interface MolopsCalls {
   getCreateSymmMolOptions:    { args: GetCreateSymmMolOptionsArgs; result: GetCreateSymmMolOptionsResult }

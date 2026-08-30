@@ -15,7 +15,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import type { SuperposeMolArgs } from '@renderer/worker/server/services/superposeMol.service'
+import type { SuperposeMolArgs } from '@renderer/worker/server/services/molops/superposeMol'
 
 vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     // Distinct object per selection string so we can assert which one flows
@@ -27,7 +27,7 @@ vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
     getViewOrNull: vi.fn(),
 }))
 
-import { superposeMol } from '@renderer/worker/server/services/superposeMol.service'
+import { superposeMol } from '@renderer/worker/server/services/molops/superposeMol'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 

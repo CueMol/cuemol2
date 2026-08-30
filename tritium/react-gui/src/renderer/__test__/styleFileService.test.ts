@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '@renderer/worker/server/services/styleFile.service'
+import { services } from '@renderer/worker/server/services/style/style.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 function buildCtx(opts: {

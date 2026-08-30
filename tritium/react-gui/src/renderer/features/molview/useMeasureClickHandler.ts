@@ -17,7 +17,7 @@ import { useActiveScene } from '@renderer/state/workspace';
 import { useActiveToolContext } from '@renderer/contexts/ActiveToolContext';
 import { usePickClickHandler } from './usePickClickHandler';
 import type { ToolId } from '@renderer/data/viewportTools';
-import type { MeasureMode } from '@renderer/worker/server/services/measure.service';
+import type { MeasureMode } from '@renderer/worker/server/services/navi/measure';
 
 export interface UseMeasureClickHandlerArgs {
     setStatusMessage: (msg: string | null) => void;

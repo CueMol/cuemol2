@@ -219,8 +219,11 @@ export function cancelAllRenderJobs(ctx: WorkerContext): number {
   return ids.length;
 }
 
-export const services = { renderStart, renderCancel };
+import { getHatchStyleSpec } from './hatchStyleSpec';
+
+export const services = { renderStart, renderCancel, getHatchStyleSpec };
 
 // Read by WorkerService (playback pause) and the shutdown service; both want
 // the job registry, not a service call.
 export { isSceneBeingRendered } from "./jobRegistry";
+export type * from './hatchStyleSpec';

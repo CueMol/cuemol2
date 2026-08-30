@@ -5,12 +5,12 @@ import type { RendererOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 // Mock setupRenderer so the test isolates createRendererOnObject's
 // resolution + undo-txn wiring from the actual renderer-creation code
 // (which exercises C++ command objects out of scope for this unit).
-vi.mock('@renderer/worker/server/services/setupRenderer.service', () => ({
+vi.mock('@renderer/worker/server/services/rend/setupRenderer', () => ({
     setupRenderer: vi.fn(),
 }))
 
-import { services } from '@renderer/worker/server/services/createRendererOnObject.service'
-import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { services } from '@renderer/worker/server/services/rend/rend.service'
+import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 const setupMock = setupRenderer as unknown as ReturnType<typeof vi.fn>
 
 interface FixtureOpts {

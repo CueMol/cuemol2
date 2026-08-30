@@ -6,7 +6,7 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     ),
 }))
 
-import { services } from '@renderer/worker/server/services/setRendererSelection.service'
+import { services } from '@renderer/worker/server/services/rend/rend.service'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ChangeRendSelKind } from '@shared/types/sceneCtxMenu'

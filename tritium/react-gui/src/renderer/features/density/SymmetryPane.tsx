@@ -26,7 +26,7 @@ import {
 import { PaneSectionHeader } from '@renderer/shell/PaneSectionHeader'
 import { useSymmetryPanel } from './useSymmetryPanel'
 import { useShowSymmetryChangeDialog } from '@renderer/dialogs/SymmetryChangeDialogProvider'
-import type { SymmRendererExtent } from '@renderer/worker/server/services/symmetryPanelOps.service'
+import type { SymmRendererExtent } from '@renderer/worker/server/services/molops/symmetryPanelOps'
 import { ObjectSelect, objectFilters } from '@renderer/h3-kit/ObjectSelect'
 import { fireService } from '@renderer/utils/fireService'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'

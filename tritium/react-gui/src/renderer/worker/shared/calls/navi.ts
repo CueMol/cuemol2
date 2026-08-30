@@ -16,7 +16,7 @@ import type {
   BondEditRemoveBondResult,
   BondEditResetArgs,
   BondEditResetResult,
-} from '@renderer/worker/server/services/bondEdit.service'
+} from '@renderer/worker/server/services/navi/bondEdit'
 import type {
   MeasureListTargetsArgs,
   MeasureListTargetsResult,
@@ -24,14 +24,14 @@ import type {
   MeasurePickResult,
   MeasureResetArgs,
   MeasureResetResult,
-} from '@renderer/worker/server/services/measure.service'
+} from '@renderer/worker/server/services/navi/measure'
 import type {
   NaviCenterAtArgs,
   NaviCenterAtSymmArgs,
   NaviCtxAroundArgs,
   NaviCtxObjArgs,
   NaviCtxSelectArgs,
-} from '@renderer/worker/server/services/naviCtxtMenu.service'
+} from '@renderer/worker/server/services/navi/naviCtxtMenu'
 import type {
   NaviClickAtomArgs,
   NaviClickAtomResult,
@@ -39,7 +39,7 @@ import type {
   NaviHitTestResult,
   NaviResidSelArgs,
   NaviResidSelResult,
-} from '@renderer/worker/server/services/naviTool.service'
+} from '@renderer/worker/server/services/navi/naviTool'
 
 export interface NaviCalls {
   naviHitTest:                { args: NaviHitTestArgs; result: NaviHitTestResult }

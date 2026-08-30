@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { SetViewXformArgs } from '@renderer/worker/server/services/viewXform.service'
+import type { SetViewXformArgs } from '@renderer/worker/server/services/view/viewXform'
 import { SEM_VIEW, SEM_ANY } from '@renderer/event'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 

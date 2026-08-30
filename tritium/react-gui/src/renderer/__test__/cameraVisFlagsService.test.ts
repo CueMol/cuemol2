@@ -38,7 +38,7 @@ vi.mock('@renderer/worker/shared/sceneTreeTypes', async (importOriginal) => {
     return { ...actual, parseSceneTreeJSON: () => tree }
 })
 
-import { services } from '@renderer/worker/server/services/cameraVisFlags.service'
+import { services } from '@renderer/worker/server/services/camera/camera.service'
 
 const { getCameraVisFlags, setCameraVisFlags } = services
 

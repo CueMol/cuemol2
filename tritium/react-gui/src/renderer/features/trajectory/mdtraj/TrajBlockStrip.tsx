@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import type { TrajBlockInfo } from '@renderer/worker/server/services/trajectory.service';
+import type { TrajBlockInfo } from '@renderer/worker/server/services/traj/trajectory';
 import { Tooltip } from '@renderer/h3-kit/primitives';
 import { frameToPx, blockColorIndex, basename } from './trackGeometry';
 

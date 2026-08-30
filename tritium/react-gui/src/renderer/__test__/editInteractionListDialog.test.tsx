@@ -20,7 +20,7 @@ vi.mock('@renderer/contexts/ThemeContext', () => ({
 
 import { EditInteractionListDialog } from '@renderer/dialogs/EditInteractionListDialog'
 import { mountTree } from '@renderer/__test__/helpers/testHarness'
-import type { AtomIntrDefEntry } from '@renderer/worker/server/services/atomIntrEdit.service'
+import type { AtomIntrDefEntry } from '@renderer/worker/server/services/rend/atomIntrEdit'
 
 function entries(): AtomIntrDefEntry[] {
     return [

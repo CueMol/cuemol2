@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { FileOpenOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 
-vi.mock('@renderer/worker/server/services/setupRenderer.service', () => ({
+vi.mock('@renderer/worker/server/services/rend/setupRenderer', () => ({
     setupRenderer: vi.fn(),
 }))
 vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
@@ -27,8 +27,8 @@ vi.mock('@renderer/worker/server/services/helpers/applyReaderOptions', () => ({
     applyReaderOptions: vi.fn(),
 }))
 
-import { services } from '@renderer/worker/server/services/streamLoadFromUrl.service'
-import { setupRenderer } from '@renderer/worker/server/services/setupRenderer.service'
+import { services } from '@renderer/worker/server/services/file/file.service'
+import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions'
 
 const { streamLoadFromUrl, cancelStreamLoad } = services

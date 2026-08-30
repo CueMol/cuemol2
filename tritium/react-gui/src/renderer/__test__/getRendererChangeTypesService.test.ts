@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { services } from '@renderer/worker/server/services/getRendererChangeTypes.service'
+import { services } from '@renderer/worker/server/services/rend/rend.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 const { getRendererChangeTypes } = services

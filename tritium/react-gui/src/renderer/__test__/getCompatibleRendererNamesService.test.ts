@@ -16,7 +16,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { services } from '@renderer/worker/server/services/getCompatibleRendererNames.service'
+import { services } from '@renderer/worker/server/services/file/file.service'
 import { DEFAULT_SNIFF_CAP } from '@renderer/worker/shared/sniffConfig'
 
 const { getCompatibleRendererNames } = services

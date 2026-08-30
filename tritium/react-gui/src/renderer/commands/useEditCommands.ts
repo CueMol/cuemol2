@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { IPC } from '@shared/ipcChannels'
-import type { SaveSceneOptions } from '@renderer/worker/server/services/saveScene.service'
+import type { SaveSceneOptions } from '@renderer/worker/server/services/scene/saveScene'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useShowQscWriterOptionDialog } from '@renderer/dialogs/QscWriterOptionDialogProvider'

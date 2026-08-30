@@ -16,7 +16,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-import { services } from '@renderer/worker/server/services/getSeqPanelData.service'
+import { services } from '@renderer/worker/server/services/select/select.service'
 
 const { getSeqPanelData } = services
 

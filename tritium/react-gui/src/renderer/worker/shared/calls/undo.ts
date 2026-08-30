@@ -7,13 +7,13 @@
  * services the worker actually registers.
  */
 
-import type { RedoArgs } from '@renderer/worker/server/services/redo.service'
+import type { RedoArgs } from '@renderer/worker/server/services/undo/redo'
 import type {
   ClearUndoDataArgs,
   GetUndoStateArgs,
   UndoArgs,
   UndoState,
-} from '@renderer/worker/server/services/undo.service'
+} from '@renderer/worker/server/services/undo/undo'
 
 export interface UndoCalls {
   redo:                       { args: RedoArgs; result: { ok: boolean } }

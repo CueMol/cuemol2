@@ -8,7 +8,7 @@
  * can be read and tested without mounting anything.
  */
 
-import type { ColoringTargetKind } from '@renderer/worker/server/services/rendererColoring.service';
+import type { ColoringTargetKind } from '@renderer/worker/server/services/coloring/coloring.service';
 
 export type TargetKey = string
 export const makeKey = (kind: ColoringTargetKind, id: number): TargetKey =>

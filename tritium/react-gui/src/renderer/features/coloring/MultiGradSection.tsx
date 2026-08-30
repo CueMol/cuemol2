@@ -37,7 +37,7 @@ import {
 } from '@renderer/h3-kit/form'
 import { CueColorField } from '@renderer/h3-kit/colorpicker'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { MultiGradWriteNode } from '@renderer/worker/server/services/rendererColoring.service'
+import type { MultiGradWriteNode } from '@renderer/worker/server/services/coloring/coloring.service'
 import { fireService } from '@renderer/utils/fireService'
 import { useMultiGradState } from './useMultiGradState'
 import { useGradientViewDomain } from '@renderer/features/coloring/section/useGradientViewDomain'

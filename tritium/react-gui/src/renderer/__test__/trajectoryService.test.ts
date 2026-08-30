@@ -14,7 +14,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { services as trajServices } from '@renderer/worker/server/services/trajectory.service'
+import { services as trajServices } from '@renderer/worker/server/services/traj/traj.service'
 
 interface BlockSpec {
     uid: number

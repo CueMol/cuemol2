@@ -10,7 +10,7 @@
  */
 
 import type { GradientStop } from '@renderer/h3-kit/gradient';
-import type { MultiGradWriteNode } from '@renderer/worker/server/services/rendererColoring.service';
+import type { MultiGradWriteNode } from '@renderer/worker/server/services/coloring/coloring.service';
 
 /** Stop displayed by this section: bar geometry + the CueMol color string. */
 export interface MultiGradStop extends GradientStop {

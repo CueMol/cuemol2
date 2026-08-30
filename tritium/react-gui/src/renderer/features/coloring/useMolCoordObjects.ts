@@ -11,7 +11,7 @@
 
 import { useRef } from 'react'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { SceneObjectEntry } from '@renderer/worker/server/services/listSceneObjects.service'
+import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import { objectFilters } from '@renderer/h3-kit/ObjectSelect'
 import { SEM_OBJECT, SEM_ANY } from '@renderer/event'
 import { useLiveFetch } from '@renderer/hooks/cuemol/useLiveFetch'

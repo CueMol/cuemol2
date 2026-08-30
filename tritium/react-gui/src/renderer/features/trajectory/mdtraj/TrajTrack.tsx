@@ -12,7 +12,7 @@
  */
 
 import React, { useCallback, useRef, useState } from 'react';
-import type { TrajBlockInfo } from '@renderer/worker/server/services/trajectory.service';
+import type { TrajBlockInfo } from '@renderer/worker/server/services/traj/trajectory';
 import { TrajBlockStrip } from './TrajBlockStrip';
 import {
     frameToPx,

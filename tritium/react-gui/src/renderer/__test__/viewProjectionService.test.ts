@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { services } from '@renderer/worker/server/services/viewProjection.service'
+import { services } from '@renderer/worker/server/services/view/view.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 function makeCtx(initialPerspective = false) {

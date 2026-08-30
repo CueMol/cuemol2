@@ -11,27 +11,27 @@ import type { ElectronFileFilter } from '@shared/types/fileDialog'
 import type {
   GetCompatibleRendererNamesArgs,
   GetCompatibleRendererNamesResult,
-} from '@renderer/worker/server/services/getCompatibleRendererNames.service'
+} from '@renderer/worker/server/services/file/getCompatibleRendererNames'
 import type {
   GetMtzColumnInfoArgs,
   GetMtzColumnInfoResult,
 } from '@renderer/worker/server/services/map/map.service'
-import type { GetOpenFiltersArgs } from '@renderer/worker/server/services/getOpenFilters.service'
+import type { GetOpenFiltersArgs } from '@renderer/worker/server/services/file/getOpenFilters'
 import type {
   GetReaderDefaultOptionsArgs,
   GetReaderDefaultOptionsResult,
-} from '@renderer/worker/server/services/getReaderDefaultOptions.service'
-import type { LoadObjectArgs, LoadObjectResult } from '@renderer/worker/server/services/loadObject.service'
+} from '@renderer/worker/server/services/file/getReaderDefaultOptions'
+import type { LoadObjectArgs, LoadObjectResult } from '@renderer/worker/server/services/file/loadObject'
 import type {
   LoadSceneArgs,
   LoadSceneResult,
   OpenSceneFileArgs,
   OpenSceneFileResult,
-} from '@renderer/worker/server/services/loadScene.service'
+} from '@renderer/worker/server/services/file/loadScene'
 import type {
   LoadTrajectoryArgs,
   LoadTrajectoryResult,
-} from '@renderer/worker/server/services/loadTrajectory.service'
+} from '@renderer/worker/server/services/file/loadTrajectory'
 import type {
   GetObjectSaveInfoArgs,
   GetObjectSaveInfoResult,
@@ -39,7 +39,7 @@ import type {
   ListSavableObjectsResult,
   SaveObjectToFileArgs,
   SaveObjectToFileResult,
-} from '@renderer/worker/server/services/objectSave.service'
+} from '@renderer/worker/server/services/file/objectSave'
 import type {
   ProbeMapHeaderArgs,
   ProbeMapHeaderResult,
@@ -53,7 +53,7 @@ import type {
   CancelStreamLoadResult,
   StreamLoadFromUrlArgs,
   StreamLoadFromUrlResult,
-} from '@renderer/worker/server/services/streamLoadFromUrl.service'
+} from '@renderer/worker/server/services/file/streamLoadFromUrl'
 
 export interface FileCalls {
   getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs; result: GetCompatibleRendererNamesResult }

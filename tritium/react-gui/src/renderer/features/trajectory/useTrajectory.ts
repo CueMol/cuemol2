@@ -16,7 +16,7 @@ import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 import type {
     TrajectoryState,
     TrajBlockInfo,
-} from '@renderer/worker/server/services/trajectory.service';
+} from '@renderer/worker/server/services/traj/trajectory';
 import { SEM_OBJECT, SEM_ANY, SEM_CHANGED } from '@renderer/event';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';

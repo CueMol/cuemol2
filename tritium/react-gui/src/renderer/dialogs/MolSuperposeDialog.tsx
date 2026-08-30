@@ -28,8 +28,8 @@ import { DialogShell } from './DialogShell'
 import { objectFilters } from '@renderer/h3-kit/ObjectSelect'
 import { MolPicker } from './MolPicker'
 import { MolSelList, pushHistory } from '@renderer/h3-kit/MolSelList'
-import type { SceneObjectEntry } from '@renderer/worker/server/services/listSceneObjects.service'
-import type { SuperposeAlgo } from '@renderer/worker/server/services/superposeMol.service'
+import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
+import type { SuperposeAlgo } from '@renderer/worker/server/services/molops/superposeMol'
 import {
     loadMolSuperposeHistory,
     saveMolSuperposeHistory,

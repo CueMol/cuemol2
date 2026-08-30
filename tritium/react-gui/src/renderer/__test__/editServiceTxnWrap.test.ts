@@ -10,12 +10,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-vi.mock('@renderer/worker/server/services/setupRenderer.service', () => ({
+vi.mock('@renderer/worker/server/services/rend/setupRenderer', () => ({
     setupRenderer: vi.fn(),
 }))
 
-import { services as loadObjectServices } from '@renderer/worker/server/services/loadObject.service'
-import { services as loadSceneServices } from '@renderer/worker/server/services/loadScene.service'
+import { services as loadObjectServices } from '@renderer/worker/server/services/file/file.service'
+import { services as loadSceneServices } from '@renderer/worker/server/services/file/file.service'
 const { loadObject } = loadObjectServices
 const { loadScene } = loadSceneServices
 

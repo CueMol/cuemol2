@@ -20,7 +20,7 @@ import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type {
     SymmetryInfo,
     GetSymmetryPanelInfoResult,
-} from '@renderer/worker/server/services/symmetryPanelOps.service'
+} from '@renderer/worker/server/services/molops/symmetryPanelOps'
 import {
     SEM_OBJECT,
     SEM_SCENE,

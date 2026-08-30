@@ -26,8 +26,8 @@ import {
 } from '@renderer/worker/shared/apbsTypes'
 import type { ApbsConfigKey } from '@renderer/contexts/ApbsConfigContext'
 import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '@renderer/viewInputConfig'
-import type { LabelDefaults } from '@renderer/worker/server/services/labelDefaults.service'
-import type { ViewInputParams } from '@renderer/worker/server/services/viewInputParams.service'
+import type { LabelDefaults } from '@renderer/worker/server/services/view/labelDefaults'
+import type { ViewInputParams } from '@renderer/worker/server/services/view/viewInputParams'
 import { FALLBACK_FONT_LIST } from './labelFont'
 
 // --- Category tree ---

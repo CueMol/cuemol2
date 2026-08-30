@@ -23,7 +23,7 @@ import {
     type ValueDomain,
 } from '@renderer/h3-kit/gradient';
 import { useMultiGradHistogram } from '@renderer/features/coloring/useMultiGradHistogram';
-import type { GetMultiGradStateResult } from '@renderer/worker/server/services/rendererColoring.service';
+import type { GetMultiGradStateResult } from '@renderer/worker/server/services/coloring/coloring.service';
 import { PAN_STEP, type MultiGradStop } from './gradientStops';
 
 export interface UseGradientViewDomainOptions {

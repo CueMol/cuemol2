@@ -20,7 +20,7 @@ vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     withUndoTxn: (_scene: unknown, _label: string, fn: () => void) => fn(),
 }))
 
-import { services } from '@renderer/worker/server/services/atomIntrEdit.service'
+import { services } from '@renderer/worker/server/services/rend/rend.service'
 
 const { listAtomIntrDefs, removeAtomIntrDefs } = services
 

@@ -10,7 +10,7 @@
 import React, { useEffect, useState } from 'react'
 import { Checkbox } from '@blueprintjs/core'
 import { DialogShell } from './DialogShell';
-import type { VisFlagEntry } from '@renderer/worker/server/services/cameraVisFlags.service'
+import type { VisFlagEntry } from '@renderer/worker/server/services/camera/cameraVisFlags'
 
 export interface EditCameraVisFlagsDialogResult {
     entries: VisFlagEntry[]

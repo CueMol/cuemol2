@@ -14,7 +14,7 @@ import type {
   SaveStyleSetToCurrentSrcResult,
   SaveStyleSetToFileArgs,
   SaveStyleSetToFileResult,
-} from '@renderer/worker/server/services/styleFile.service'
+} from '@renderer/worker/server/services/style/styleFile'
 import type {
   CreateStyleSetArgs,
   CreateStyleSetResult,
@@ -22,7 +22,7 @@ import type {
   DestroyStyleSetResult,
   ToggleStyleSetReadOnlyArgs,
   ToggleStyleSetReadOnlyResult,
-} from '@renderer/worker/server/services/styleOps.service'
+} from '@renderer/worker/server/services/style/styleOps'
 import type {
   GetStyleSetContentsArgs,
   GetStyleSetContentsResult,
@@ -30,7 +30,7 @@ import type {
   SetStyleSetColorArgs,
   SetStyleSetSelectionArgs,
   StyleSetEditResult,
-} from '@renderer/worker/server/services/styleSetEdit.service'
+} from '@renderer/worker/server/services/style/styleSetEdit'
 
 export interface StyleCalls {
   createStyleSet:             { args: CreateStyleSetArgs; result: CreateStyleSetResult }

@@ -19,7 +19,7 @@ vi.mock('@renderer/contexts/ThemeContext', () => ({
 
 import { EditCameraVisFlagsDialog } from '@renderer/dialogs/EditCameraVisFlagsDialog'
 import { mountTree } from '@renderer/__test__/helpers/testHarness'
-import type { VisFlagEntry } from '@renderer/worker/server/services/cameraVisFlags.service'
+import type { VisFlagEntry } from '@renderer/worker/server/services/camera/cameraVisFlags'
 
 function entries(): VisFlagEntry[] {
     return [

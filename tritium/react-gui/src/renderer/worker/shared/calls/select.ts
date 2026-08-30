@@ -14,7 +14,7 @@ import type {
   CenterMolSelectionResult,
   ZoomMolSelectionArgs,
   ZoomMolSelectionResult,
-} from '@renderer/worker/server/services/applyMolSelString.service'
+} from '@renderer/worker/server/services/select/applyMolSelString'
 import type {
   GetMolAtomsArgs,
   GetMolAtomsResult,
@@ -22,23 +22,23 @@ import type {
   GetMolChainsResult,
   GetMolResiduesArgs,
   GetMolResiduesResult,
-} from '@renderer/worker/server/services/getMolStructure.service'
-import type { GetSelDefsArgs, GetSelDefsResult } from '@renderer/worker/server/services/getSelDefs.service'
+} from '@renderer/worker/server/services/select/getMolStructure'
+import type { GetSelDefsArgs, GetSelDefsResult } from '@renderer/worker/server/services/select/getSelDefs'
 import type {
   GetSelHitCountArgs,
   GetSelHitCountResult,
-} from '@renderer/worker/server/services/getSelHitCount.service'
+} from '@renderer/worker/server/services/select/getSelHitCount'
 import type {
   GetSeqPanelDataArgs,
   GetSeqPanelDataResult,
-} from '@renderer/worker/server/services/getSeqPanelData.service'
-import type { LassoSelectArgs, LassoSelectResult } from '@renderer/worker/server/services/lassoSelect.service'
-import type { RectSelectArgs, RectSelectResult } from '@renderer/worker/server/services/rectSelect.service'
-import type { SaveSelDefArgs, SaveSelDefResult } from '@renderer/worker/server/services/saveSelDef.service'
+} from '@renderer/worker/server/services/select/getSeqPanelData'
+import type { LassoSelectArgs, LassoSelectResult } from '@renderer/worker/server/services/select/lassoSelect'
+import type { RectSelectArgs, RectSelectResult } from '@renderer/worker/server/services/select/rectSelect'
+import type { SaveSelDefArgs, SaveSelDefResult } from '@renderer/worker/server/services/select/saveSelDef'
 import type {
   SelectObjectMolArgs,
   SelectObjectMolResult,
-} from '@renderer/worker/server/services/selectObjectMol.service'
+} from '@renderer/worker/server/services/select/selectObjectMol'
 import type {
   CenterOnResidueArgs,
   CenterOnResidueResult,
@@ -46,11 +46,11 @@ import type {
   RangeSelectResiduesResult,
   ToggleResidueSelectionArgs,
   ToggleResidueSelectionResult,
-} from '@renderer/worker/server/services/seqPanelOps.service'
+} from '@renderer/worker/server/services/select/seqPanelOps'
 import type {
   ValidateSelectionArgs,
   ValidateSelectionResult,
-} from '@renderer/worker/server/services/validateSelection.service'
+} from '@renderer/worker/server/services/select/validateSelection'
 
 export interface SelectCalls {
   getSelDefs:                 { args: GetSelDefsArgs; result: GetSelDefsResult }
