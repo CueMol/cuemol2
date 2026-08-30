@@ -158,6 +158,7 @@ add_executable(test_molvis
   modules/molvis/test_main.cpp
   modules/molvis/test_cpk2renderer.cpp
   modules/molvis/test_smoothspline.cpp
+  modules/molvis/test_script_index_checks.cpp
 )
 target_include_directories(test_molvis PRIVATE
   ${CMAKE_SOURCE_DIR}/src

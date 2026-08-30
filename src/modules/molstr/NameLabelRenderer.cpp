@@ -197,8 +197,10 @@ void NameLabelRenderer::render(DisplayContext *pdc)
     for (; iter!=eiter; iter++) {
       NameLabel &nlab = *iter;
       if (nlab.m_nCacheID<0) {
-        makeLabelStr(nlab, strlab, pos);
-        nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
+        // a label whose atom is gone keeps m_nCacheID<0 instead of
+        // reusing the string/position of the previous label
+        if (makeLabelStr(nlab, strlab, pos))
+          nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
       }
     }
   }
@@ -270,6 +272,10 @@ bool NameLabelRenderer::addLabelByID(int aid, const LString &label /*= LString()
   MB_ASSERT(!pobj.isnull());
   
   MolAtomPtr pAtom = pobj->getAtom(aid);
+  if (pAtom.isnull()) {
+    LOG_DPRINTLN("NameLabelRenderer> atom %d not found", aid);
+    return false;
+  }
   return addLabel(pAtom, label);
 }
 

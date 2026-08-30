@@ -129,8 +129,7 @@ public:
 
   /** get axial param & scaling coeff */
   bool get(int index, double &par, double &e1scl, double &e2scl) const {
-    MB_ASSERT(index>=0 && index<m_nTabSz);
-    if (index<0 && index>=m_nTabSz) return false;
+    if (index<0 || index>=m_nTabSz) return false;
     par = m_pParTab[index];
     e1scl = m_pEsclTab[index].sclx;
     e2scl = m_pEsclTab[index].scly;
@@ -139,8 +138,7 @@ public:
 
   /// Get axial param & scaling coeff
   bool get(int index, double &par, Vector4D &vv) const {
-    MB_ASSERT(index>=0 && index<m_nTabSz);
-    if (index<0 && index>=m_nTabSz) return false;
+    if (index<0 || index>=m_nTabSz) return false;
     par = m_pParTab[index];
     vv.x() = m_pEsclTab[index].sclx;
     vv.y() = m_pEsclTab[index].scly;
@@ -151,8 +149,7 @@ public:
 
   /// Get axial param only
   bool get(int index, double &par) const {
-    MB_ASSERT(index>=0 && index<m_nTabSz);
-    if (index<0 && index>=m_nTabSz) return false;
+    if (index<0 || index>=m_nTabSz) return false;
     par = m_pParTab[index];
     return true;
   }
