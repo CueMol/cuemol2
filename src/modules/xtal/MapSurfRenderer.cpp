@@ -439,9 +439,11 @@ void MapSurfRenderer::makerange()
     vmax.z() = floor(qlib::min<double>(vmax.z(), pMap->getStartSec()+pMap->getSecNo()));
   }
 
-  m_nActCol = int(vmax.x() - vmin.x());
-  m_nActRow = int(vmax.y() - vmin.y());
-  m_nActSec = int(vmax.z() - vmin.z());
+  // the box can lie entirely outside the map (non-PBC): clamp to an empty
+  // range instead of a negative size
+  m_nActCol = qlib::max(0, int(vmax.x() - vmin.x()));
+  m_nActRow = qlib::max(0, int(vmax.y() - vmin.y()));
+  m_nActSec = qlib::max(0, int(vmax.z() - vmin.z()));
 
   m_nStCol = int(vmin.x());
   m_nStRow = int(vmin.y());
@@ -622,13 +624,16 @@ void MapSurfRenderer::runMarchingCubes(bool bGenSurf,
   const int nrow = m_nActRow;
   const int nsec = m_nActSec;
 
+  slabs.clear();
+  if (ncol<=0 || nrow<=0 || nsec<=0)
+    return; // empty region (box outside the map): nothing to march
+
   // Phase 1: run the per-cell marching-cubes kernel over the grid, slab by
   // slab along the col axis, recording the emissions into per-slab buffers.
   // The kernel only reads shared state, so the slabs run concurrently on
   // oneTBB; consuming the buffers in slab order reproduces the serial
   // emission order exactly, independent of the thread count.
   const int nslabs = (ncol + m_nStep - 1) / m_nStep;
-  slabs.clear();
   slabs.resize(nslabs);
 
   qlib::parallel_for(0, (size_t) nslabs, [&](size_t si) {
@@ -1319,12 +1324,16 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
   renderImpl(NULL);
   int nverts = m_msverts.size();
   int nfaces = nverts/3;
-  pSurfObj->setVertSize(nverts);
-  for (int i=0; i<nverts; ++i)
-    pSurfObj->setVertex(i, m_msverts[i]);
-  pSurfObj->setFaceSize(nfaces);
-  for (int i=0; i<nfaces; ++i)
-    pSurfObj->setFace(i, i*3, i*3+1, i*3+2);
+  // an empty region (box outside the map, no crossing) gives an empty
+  // surface object; MolSurfObj rejects a zero-sized allocation
+  if (nverts>0) {
+    pSurfObj->setVertSize(nverts);
+    for (int i=0; i<nverts; ++i)
+      pSurfObj->setVertex(i, m_msverts[i]);
+    pSurfObj->setFaceSize(nfaces);
+    for (int i=0; i<nfaces; ++i)
+      pSurfObj->setFace(i, i*3, i*3+1, i*3+2);
+  }
   m_msverts.clear();
 
   m_bGenSurfMode = false;
