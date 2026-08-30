@@ -2,6 +2,7 @@
 #include <common.h>
 #include "qsys/MultiGradient.hpp"
 #include <gfx/SolidColor.hpp>
+#include <limits>
 
 using qsys::MultiGradient;
 using qsys::MultiGradientPtr;
@@ -241,4 +242,15 @@ TEST(MultiGradientJSONTest, NamedColorRoundTrip)
     mg2.setNodesJSON(json);
     ASSERT_EQ(mg2.getSize(), 1);
     EXPECT_DOUBLE_EQ(mg2.getValueAt(0), 0.5);
+}
+
+// A NaN density matched no interval and the lookup walked past end() before
+// hitting the "should not be reached" assert.
+TEST(MultiGradientTest, GetColorWithNaNReturnsAColor)
+{
+    MultiGradient mg;
+    mg.insert(0.0, makeColor(1, 0, 0));
+    mg.insert(1.0, makeColor(0, 1, 0));
+    gfx::ColorPtr col = mg.getColor(std::numeric_limits<double>::quiet_NaN());
+    EXPECT_FALSE(col.isnull());
 }
