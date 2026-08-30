@@ -1421,7 +1421,7 @@ exports[`renderer Properties page > dsurf2 / default 1`] = `
       "Drawing mode [select] {resettable} options=[fill|line|point] selected=fill",
       "Line/Point size [drag-numeric] {resettable,disabled}",
       "Surface type [select] {resettable} options=[sas|ses|vdw] selected=ses",
-      "Detail [select] {resettable} options=[1|2|4|6|8|16|32] selected=6",
+      "Detail [select] {resettable} options=[1|2|4|6|8|16] selected=6",
     ],
     "writes": [
       "Drawing mode -> set drawmode="line"",
@@ -1490,7 +1490,7 @@ exports[`renderer Properties page > dsurface / default 1`] = `
       "Drawing mode [select] {resettable} options=[fill|line|point] selected=fill",
       "Line/Point size [drag-numeric] {resettable,disabled}",
       "Surface type [select] {resettable} options=[sas|ses|vdw] selected=ses",
-      "Detail [select] {resettable} options=[1|2|4|6|8|16|32] selected=6",
+      "Detail [select] {resettable} options=[1|2|4|6|8|16] selected=6",
     ],
     "writes": [
       "Drawing mode -> set drawmode="line"",

@@ -335,6 +335,12 @@ export interface NumEnumRowDef extends MultiRowBase {
   kind: 'numEnum'
   /** Lowest level this property accepts; the ladder supplies the rest. */
   min: number
+  /**
+   * Highest level, for a property whose tessellation gets expensive sooner
+   * than the ladder's own ceiling. Not a typing range: it only decides which
+   * rungs are offered.
+   */
+  max?: number
   /** Replaces the powers-of-two ladder when a property wants its own. */
   ladder?: number[]
 }
