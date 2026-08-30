@@ -1,6 +1,7 @@
 // NOTE: @cuemol/core is externalized in the Vite worker build (see
 // react-gui/electron.vite.config.ts) so that the native addon is loaded
 // via require() at runtime rather than bundled by Vite.
+import { NO_REPLY_SEQ } from '../shared/protocol';
 import { getModule } from '@cuemol/core';
 import { CueMol } from '@cuemol/core/src/cuemol';
 import type { CueMolInternal } from '@cuemol/core/src/interfaces';
@@ -195,15 +196,21 @@ export class WorkerService {
      */
     invoke(method: string, seqno: number, args: any[]): void {
         // log.info(`Worker> invoke called: ${method} seqno: ${seqno} args:`, args);
+        // A fire-and-forget call: nothing on the renderer side is waiting, so
+        // a reply would be posted, structured-cloned and dropped. At pointer
+        // rates that is a second message per frame for no one.
+        const reply = seqno === NO_REPLY_SEQ
+            ? () => undefined
+            : (data: any[]) => this._postMessage(data);
         const methodFn = (this._methods as Record<string, AnyMethodFn>)[method];
         const serviceFn = (this._registered as Record<string, AnyServiceFn | undefined>)[method];
         if (methodFn) {
             try {
                 const result = methodFn.apply(this, args);
                 if (Array.isArray(result)) {
-                    this._postMessage([method, seqno, true, ...result]);
+                    reply([method, seqno, true, ...result]);
                 } else {
-                    this._postMessage([method, seqno, true, result]);
+                    reply([method, seqno, true, result]);
                 }
             } catch (e) {
                 log.error(`Worker> call method failed: ${method},`, e);
@@ -212,23 +219,23 @@ export class WorkerService {
                 // DataCloneError raised inside this catch would escape
                 // self.onmessage and be funnelled as __worker_crash__ --
                 // tearing down the whole worker over one failed call.
-                this._postMessage([method, seqno, false, String(e)]);
+                reply([method, seqno, false, String(e)]);
             }
         } else if (serviceFn) {
             Promise.resolve()
                 .then(() => serviceFn(this._buildContext(), args[0]))
-                .then((result) => this._postMessage([method, seqno, true, result]))
+                .then((result) => reply([method, seqno, true, result]))
                 .catch((e) => {
                     // A service returns Result and never throws across the
                     // boundary (worker/shared/result.ts). Reaching here means a
                     // bug, not an expected failure; the wire shape is kept so
                     // the renderer still sees a rejection rather than a hang.
                     log.error(`Worker> service '${method}' threw instead of returning fail():`, e);
-                    this._postMessage([method, seqno, false, String(e)]);
+                    reply([method, seqno, false, String(e)]);
                 });
         } else {
             log.error(`Worker> unknown method: ${method}`);
-            this._postMessage([method, seqno, false]);
+            reply([method, seqno, false]);
         }
     }
 

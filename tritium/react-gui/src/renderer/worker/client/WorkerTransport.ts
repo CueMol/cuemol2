@@ -59,6 +59,39 @@ export type RenderProgressListener = (update: RenderUpdate) => void;
 /** Listener for `apbs-progress` push messages from `calcApbsPot`. */
 export type ApbsProgressListener = (update: ApbsUpdate) => void;
 
+/**
+ * A call waiting for its reply.
+ *
+ * Held in a Map rather than a plain object so the whole set can be walked and
+ * settled when the worker goes away: an object literal was easy to leak from,
+ * and a call whose reply never arrives is a promise nobody ever settles.
+ */
+interface PendingCall {
+    /** Reply handler, called as `(ok, ...result)`. */
+    handler: (...args: unknown[]) => void;
+    /** Method name, for the diagnostic when a call is settled by force. */
+    method: string;
+}
+
+/**
+ * Cheap integer counters, for measuring the transport rather than guessing
+ * at it. Dev builds expose them as `window.__cuemolTransportStats`.
+ *
+ * `orphanReplies` is the interesting one: a reply the transport can no longer
+ * route means either a fire-and-forget call that should not have been given a
+ * sequence number, or a bug. It should sit at zero.
+ */
+export interface TransportStats {
+    /** Messages posted to the worker. */
+    posted: number;
+    /** Replies received and routed to a waiting caller. */
+    replies: number;
+    /** Replies that matched no pending call and were dropped. */
+    orphanReplies: number;
+    /** `event-notify` pushes received from the worker. */
+    eventNotifies: number;
+}
+
 /** Construction options for {@link WorkerTransport}. */
 export interface WorkerTransportOptions {
     /** Forwarder for `event-notify` payloads (typically routes to `EventSlots.notify`). */
@@ -74,7 +107,10 @@ export class WorkerTransport {
     private _crashed: boolean = false;
     private _seqno: number = 0;
     private _worker: Worker;
-    private _worker_onmessage_dict: { [key: string]: any } = {};
+    private _pending = new Map<string, PendingCall>();
+    private _stats: TransportStats = {
+        posted: 0, replies: 0, orphanReplies: 0, eventNotifies: 0,
+    };
     private _pendingCount: number = 0;
     private _busyListeners: Set<(busy: boolean) => void> = new Set();
     private _onEventNotify: (args: EventNotifyArgs) => void;
@@ -143,6 +179,7 @@ export class WorkerTransport {
             const [method, seqno, ...args] = event.data;
 
             if (method === 'event-notify') {
+                this._stats.eventNotifies++;
                 const evtargs = event.data.slice(1) as EventNotifyArgs;
                 try {
                     this._onEventNotify(evtargs);
@@ -189,9 +226,17 @@ export class WorkerTransport {
             }
 
             const method_seq = makeMethodSeq(method, seqno);
-            if (method_seq in this._worker_onmessage_dict) {
-                this._worker_onmessage_dict[method_seq].apply(this, args);
-                delete this._worker_onmessage_dict[method_seq];
+            const pending = this._pending.get(method_seq);
+            if (pending) {
+                this._pending.delete(method_seq);
+                this._stats.replies++;
+                pending.handler.apply(this, args);
+            } else {
+                // No caller is waiting. Either the worker replied to a
+                // fire-and-forget call (which should have used NO_REPLY_SEQ),
+                // or a reply arrived twice. Dropping it is right; counting it
+                // is how the first case gets noticed.
+                this._stats.orphanReplies++;
             }
         };
 
@@ -275,12 +320,7 @@ export class WorkerTransport {
         });
         // Reject every pending call so callers do not hang waiting on a
         // dead worker.
-        const err = new Error('Worker crashed: ' + payload.message);
-        const pending = this._worker_onmessage_dict;
-        this._worker_onmessage_dict = {};
-        for (const key in pending) {
-            try { pending[key].call(this, false, err); } catch { /* ignore */ }
-        }
+        this._settleAllPending(new Error('Worker crashed: ' + payload.message));
         try { this._worker.terminate(); } catch { /* worker may already be dead */ }
     }
 
@@ -294,6 +334,7 @@ export class WorkerTransport {
      * @param xfer - Optional `Transferable` (used by `bindCanvas`).
      */
     postMessage(method: string, seq: number, args: any[], xfer: any = null): void {
+        this._stats.posted++;
         if (xfer === null)
             this._worker.postMessage([method, seq, ...args]);
         else
@@ -311,9 +352,28 @@ export class WorkerTransport {
      * by `onmessage` when the worker replies, then deleted.
      */
     addListener(method: string, seqno: number, handler: any): void {
-        const method_seq = makeMethodSeq(method, seqno);
-        this._worker_onmessage_dict[method_seq] = handler;
+        this._pending.set(makeMethodSeq(method, seqno), { handler, method });
     }
+
+    /**
+     * Fail every in-flight call with `err`.
+     *
+     * Called when the worker goes away -- crash or deliberate terminate. Every
+     * pending call is a promise waiting on a reply that is never coming, so
+     * leaving them unsettled hangs the callers forever.
+     */
+    private _settleAllPending(err: Error): void {
+        const pending = this._pending;
+        this._pending = new Map();
+        for (const call of pending.values()) {
+            try { call.handler.call(this, false, err); } catch { /* ignore */ }
+        }
+    }
+
+    /**
+     * Cheap message counters (dev builds only; see {@link TransportStats}).
+     */
+    getStats(): Readonly<TransportStats> { return this._stats; }
 
     /** Increment the pending-call counter, firing `busy=true` on rising edge. */
     private _incPending(): void {
@@ -455,5 +515,9 @@ export class WorkerTransport {
     terminate(): void {
         this._worker.terminate();
         this._ready = false;
+        // A deliberate terminate used to leave in-flight calls unsettled --
+        // only the crash path rejected them -- so a caller awaiting one hung
+        // for the life of the session.
+        this._settleAllPending(new Error('Worker terminated'));
     }
 }

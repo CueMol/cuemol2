@@ -12,6 +12,7 @@ vi.mock('@cuemol/core/src/cuemol', () => ({
 }));
 
 import { WorkerService } from '@renderer/worker/server/WorkerService';
+import { NO_REPLY_SEQ } from '@renderer/worker/shared/protocol';
 
 /**
  * Degrade-detection test for `WorkerService.invoke` -- the worker-side RPC
@@ -159,5 +160,52 @@ describe('WorkerService.invoke dispatch contract', () => {
             expect(typeof methods[key]).toBe('function');
         }
         expect(Object.keys(methods).sort()).toEqual([...expected].sort());
+    });
+});
+
+/*
+ * Fire-and-forget calls. The input forwarders have no result and nothing
+ * awaits one, so they post with NO_REPLY_SEQ and the worker must stay silent.
+ * Before this, every pointer event cost a reply that was posted,
+ * structured-cloned, and dropped by a transport that had already forgotten
+ * how to route it -- a second message per frame across a drag.
+ */
+describe('WorkerService.invoke no-reply contract', () => {
+    it('says nothing back for a method called with NO_REPLY_SEQ', () => {
+        const { svc, posted } = makeSvc();
+        injectMethod(svc, 'mouseMove', () => undefined);
+        svc.invoke('mouseMove', NO_REPLY_SEQ, [1, {}]);
+        expect(posted).toEqual([]);
+    });
+
+    it('still replies to the same method when given a real sequence number', () => {
+        const { svc, posted } = makeSvc();
+        injectMethod(svc, 'mouseMove', () => undefined);
+        svc.invoke('mouseMove', 5, [1, {}]);
+        expect(posted).toHaveLength(1);
+        expect(posted[0][1]).toBe(5);
+    });
+
+    it('stays silent even when the method throws', () => {
+        // The caller is not listening, so an error has nowhere to go but the
+        // worker log -- posting it would be the same wasted message.
+        const { svc, posted } = makeSvc();
+        injectMethod(svc, 'mouseMove', () => { throw new Error('boom'); });
+        svc.invoke('mouseMove', NO_REPLY_SEQ, [1, {}]);
+        expect(posted).toEqual([]);
+    });
+
+    it('stays silent for an unknown method', () => {
+        const { svc, posted } = makeSvc();
+        svc.invoke('neverRegistered', NO_REPLY_SEQ, []);
+        expect(posted).toEqual([]);
+    });
+
+    it('stays silent for a registered service too', async () => {
+        const { svc, posted } = makeSvc();
+        registerService(svc, 'testNoReply', () => ({ ok: true }));
+        svc.invoke('testNoReply', NO_REPLY_SEQ, [{}]);
+        await flush();
+        expect(posted).toEqual([]);
     });
 });
