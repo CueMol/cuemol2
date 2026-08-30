@@ -125,6 +125,7 @@ add_executable(test_molstr
   modules/molstr/test_molchain.cpp
   modules/molstr/test_molbond.cpp
   modules/molstr/test_molcoord_bond.cpp
+  modules/molstr/test_selstate_ranges.cpp
   modules/molstr/test_selcommand.cpp
   modules/molstr/test_simplerenderer.cpp
   modules/molstr/test_tracerenderer.cpp

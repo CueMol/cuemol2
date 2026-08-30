@@ -49,6 +49,18 @@ void ResidRangeSet::append(MolCoordPtr pMol, SelectionPtr pSel)
   MB_DPRINTLN("ResidRngSet.append> result=%s", toString().c_str());
 }
 
+namespace {
+
+// Exclusive end of the one-residue range [resid, next).
+inline ResidIndex nextResidIndex(const ResidIndex &resid)
+{
+  if (resid.second=='\0')
+    return ResidIndex(resid.first+1);
+  return ResidIndex(resid.first, resid.second+1);
+}
+
+}  // namespace
+
 void ResidRangeSet::append(MolResiduePtr pRes)
 {
   LString chname = pRes->getChainName();
@@ -59,10 +71,7 @@ void ResidRangeSet::append(MolResiduePtr pRes)
     m_data.set(chname, pRng);
   }
 
-  // XXX:
-  ResidIndex resid_plus1;
-  resid_plus1.first = resid.first+1;
-  resid_plus1.second = resid.second;
+  const ResidIndex resid_plus1 = nextResidIndex(resid);
   
   pRng->append(resid, resid_plus1);
 }
@@ -85,10 +94,10 @@ void ResidRangeSet::remove(MolCoordPtr pMol, SelectionPtr pSel)
       m_data.set(chname, pRng);
     }
 
-    // XXX:
-    ResidIndex resid_plus1;
-    resid_plus1.first = resid.first+1;
-    resid_plus1.second = resid.second;
+    // The range end is the next index. A residue without insertion code
+    // keeps (n+1, 0) so that consecutive residues merge into "n-m";
+    // (10,'A') used (11,'A') and thereby also covered 10B, 10C and 11.
+    const ResidIndex resid_plus1 = nextResidIndex(resid);
 
     pRng->remove(resid, resid_plus1);
   }

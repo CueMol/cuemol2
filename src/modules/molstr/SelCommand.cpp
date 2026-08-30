@@ -175,18 +175,21 @@ int SelCommand::isSelectedMol(MolCoordPtr pmol)
   //return SEL_NONE;
   //MolCoord *pmol = (MolCoord *)pobj;
   
-  int nsel=0, nchs=0;
+  int nsel=0, npart=0, nchs=0;
   MolCoord::ChainIter iter = pmol->begin();
   for (; iter!=pmol->end(); ++iter) {
     MolChainPtr pCh = iter->second;
-    if (isSelectedChain(pCh))
+    const int nst = isSelectedChain(pCh);
+    if (nst==SEL_ALL)
       nsel++;
+    else if (nst==SEL_PART)
+      npart++;
     nchs ++;
   }
 
   if (nsel==nchs)
     return SEL_ALL;
-  else if (nsel==0)
+  else if (nsel==0 && npart==0)
     return SEL_NONE;
   else
     return SEL_PART;
@@ -198,20 +201,24 @@ int SelCommand::isSelectedChain(MolChainPtr pCh)
     return true;
 
   MolChain::ResidCursor riter = pCh->begin();
-  int nsel=0, nresid=0;
+  int nsel=0, npart=0, nresid=0;
   for ( ; riter!=pCh->end(); riter++) {
     MolResiduePtr pRes = *riter;
     if (pRes.isnull())
       continue;
       
-    if (isSelectedResid(pRes))
+    // SEL_PART is non-zero: it used to count as fully selected
+    const int nst = isSelectedResid(pRes);
+    if (nst==SEL_ALL)
       nsel++;
+    else if (nst==SEL_PART)
+      npart++;
     nresid++;
   }
 
   if (nsel==nresid)
     return SEL_ALL;
-  else if (nsel==0)
+  else if (nsel==0 && npart==0)
     return SEL_NONE;
   else
     return SEL_PART;
