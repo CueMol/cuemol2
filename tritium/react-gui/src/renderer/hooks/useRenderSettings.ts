@@ -21,40 +21,26 @@ import {
   DEFAULT_STILL_PRESET,
   DEFAULT_MOVIE_PRESET,
   DEFAULT_MOVIE_SETTINGS,
-  SIZE_UNIT_FIELD_META,
   sizePresetsForMode,
-  sizeUnitToPx,
-  pxToSizeUnit,
   lightingPatch,
   lightingOf,
   qualityStepsOf,
   stepPatch,
-  defaultQualitySteps,
   RENDER_QUALITY_CUSTOM,
   type RenderBackendId,
   type RenderMode,
   type MovieSettings,
   type RenderSizePreset,
   type RenderLightingMode,
-  type RenderQualityConfig,
   type RenderQualitySteps,
   type RenderPropPatch,
 } from "../data/renderSettings";
-import { RENDER_BACKENDS, DEFAULT_RENDER_BACKEND } from "../data/renderBackends";
+import { DEFAULT_RENDER_BACKEND } from "../data/renderBackends";
 import type { RenderSettingsSnapshot } from "../data/renderResult";
 import {
-  cloneHatchSpec,
   formatHatchLayersSpec,
   formatHatchToneSpec,
-  isSameHatchSpec,
-  newHatchLayer,
-  nextHatchLayerId,
   parseHatchSpec,
-  type HatchInk,
-  type HatchLayer,
-  type HatchLayerKind,
-  type HatchSpec,
-  type HatchTone,
 } from "../data/hatchSpec";
 
 /**
@@ -62,96 +48,20 @@ import {
  * "hatchStyle") is a template: `template` is what the C++ side resolved it
  * to, `spec` the editable copy. Both are null until the template arrives (or
  * while the backend is not umbreon_npr).
- */
-export interface HatchEditState {
-  /** Style name the template / spec belong to ("" = none loaded). */
-  style: string;
-  template: HatchSpec | null;
-  spec: HatchSpec | null;
-}
-
-const INITIAL_HATCH: HatchEditState = { style: "", template: null, spec: null };
-
-/** Deep-copy a PropDef list so edits never mutate the shared defaults. */
-const cloneProps = (props: PropDef[]): PropDef[] => props.map((p) => ({ ...p }));
-
-/** Read a prop value by key (typed via the caller). */
-const readVal = (props: PropDef[], key: string): string | number | boolean | undefined =>
-  props.find((p) => p.key === key)?.value;
-
-/** Apply a value change to whichever list owns `key` (returns a new list). */
-const applyChange = (
-  props: PropDef[],
-  key: string,
-  value: string | number | boolean,
-): PropDef[] => {
-  if (!props.some((p) => p.key === key)) return props;
-  return props.map((p) => (p.key === key ? { ...p, value } : p));
-};
-
-/** Apply several values at once (used by the quality axes). */
-const applyPatch = (props: PropDef[], patch: RenderPropPatch): PropDef[] => {
-  if (!props.some((p) => p.key in patch)) return props;
-  return props.map((p) => (p.key in patch ? { ...p, value: patch[p.key] } : p));
-};
-
-/** A backend's quality axes, or undefined when it declares none (POV-Ray). */
-const qualityOf = (id: RenderBackendId): RenderQualityConfig | undefined =>
-  RENDER_BACKENDS[id].quality;
-
-/** Axis steps of a backend that declares none. */
-const NO_QUALITY_STEPS: RenderQualitySteps = {};
-
-/**
- * A backend's declared props with its default method and default step of every
- * axis already applied, so the dropdowns describe the values from the start.
- */
-const backendPropsWithDefaults = (id: RenderBackendId): PropDef[] => {
-  const cfg = qualityOf(id);
-  const props = RENDER_BACKENDS[id].props;
-  if (!cfg) return props;
-  const steps = defaultQualitySteps(cfg);
-  return applyPatch(
-    props,
-    lightingPatch(cfg, cfg.defaultLighting, steps, { includeShared: true }),
-  );
-};
-
-/** Round to a number of decimal places. */
-const roundTo = (v: number, decimals: number): number => {
-  const f = Math.pow(10, decimals);
-  return Math.round(v * f) / f;
-};
-
-/**
- * Set a width / height prop to `value` in `unit`, swapping in that unit's
- * editor metadata (type / range / step / decimals) and the unit suffix so the
- * control tracks the unit.
- */
-const setSizeProp = (prop: PropDef, value: number, unit: string): PropDef => {
-  const m = SIZE_UNIT_FIELD_META[unit as keyof typeof SIZE_UNIT_FIELD_META] ?? SIZE_UNIT_FIELD_META.px;
-  return { ...prop, value, type: m.type, min: m.min, max: m.max, step: m.step, unit, decimals: m.decimals };
-};
-
-/**
- * Reproject the width / height values into `newUnit` and switch the unit prop.
- * Each value is converted old-unit -> px -> new-unit using the current DPI,
- * mirroring UXP `render-pov-dlg.js` `onImgSzUnitSel`.
- */
-const convertSizeUnit = (props: PropDef[], newUnit: string): PropDef[] => {
-  const oldUnit = String(readVal(props, "unit") ?? "px");
-  if (newUnit === oldUnit) return props;
-  const dpi = Number(readVal(props, "dpi") ?? 600);
-  const m = SIZE_UNIT_FIELD_META[newUnit as keyof typeof SIZE_UNIT_FIELD_META] ?? SIZE_UNIT_FIELD_META.px;
-  return props.map((p) => {
-    if (p.key === "unit") return { ...p, value: newUnit };
-    if (p.key === "width" || p.key === "height") {
-      const px = sizeUnitToPx(Number(p.value), dpi, oldUnit);
-      return setSizeProp(p, roundTo(pxToSizeUnit(px, dpi, newUnit), m.decimals), newUnit);
-    }
-    return p;
-  });
-};
+ */import {
+  INITIAL_HATCH,
+  NO_QUALITY_STEPS,
+  applyChange,
+  applyPatch,
+  backendPropsWithDefaults,
+  cloneProps,
+  convertSizeUnit,
+  qualityOf,
+  readVal,
+  setSizeProp,
+} from "./renderSettings/propMath";
+export type { HatchEditState } from "./renderSettings/propMath";
+import { useHatchSpecEditor } from "./renderSettings/useHatchSpecEditor";
 
 export function useRenderSettings(
   { umbreonAvailable = false }: { umbreonAvailable?: boolean } = {},
@@ -170,16 +80,25 @@ export function useRenderSettings(
   const [movie, setMovie] = useState<MovieSettings>(DEFAULT_MOVIE_SETTINGS);
   // Once the user (or a restore) picks a backend, stop auto-defaulting to umbreon.
   const userPickedRef = useRef(false);
-  const [hatch, setHatch] = useState<HatchEditState>(INITIAL_HATCH);
 
   /** Switch the active backend, keeping common settings, resetting backend ones. */
+  // --- NPR hatch look (layer editor) ---
+
+  /** The selected hatch style (umbreon_npr backend prop). */
+  const hatchStyle = String(readVal(backendProps, "hatchStyle") ?? "");
+  const {
+    hatch, hatchLoaded, hatchDirty, applyHatchTemplate, updateHatchLayer,
+    addHatchLayer, removeHatchLayer, duplicateHatchLayer, updateHatchTone,
+    updateHatchInk, resetHatchToTemplate, setHatch,
+  } = useHatchSpecEditor({ hatchStyle });
+
   const applyBackend = useCallback((id: RenderBackendId) => {
     setBackendState(id);
     // Start the new backend on its default method + default step of every
     // axis, so the quality dropdowns and the prop values agree from the start.
     setBackendProps(cloneProps(backendPropsWithDefaults(id)));
     setHatch(INITIAL_HATCH);
-  }, []);
+  }, [setHatch]);
 
   /** User-initiated backend switch (sticks against the umbreon auto-default). */
   const setBackend = useCallback(
@@ -280,7 +199,7 @@ export function useRenderSettings(
       // An edit needs no bookkeeping: each axis' dropdown reads back from the
       // values, so it drops to Custom -- or lands on another step -- by itself.
     },
-    [],
+    [setHatch],
   );
 
   /** Write a preset's pixel size (and DPI) into the width / height fields. */
@@ -343,93 +262,7 @@ export function useRenderSettings(
     }
   }, [applyPresetSize]);
 
-  // --- NPR hatch look (layer editor) ---
 
-  /** The selected hatch style (umbreon_npr backend prop). */
-  const hatchStyle = String(readVal(backendProps, "hatchStyle") ?? "");
-  /** True once the template of the selected style is held. */
-  const hatchLoaded = hatch.template !== null && hatch.style === hatchStyle;
-  /** True while the edited look differs from the style's template. */
-  const hatchDirty =
-    hatch.spec !== null &&
-    hatch.template !== null &&
-    !isSameHatchSpec(hatch.spec, hatch.template);
-
-  /**
-   * Take the template the C++ side resolved `style` to. A reply for a style
-   * that is no longer selected is dropped; a look restored from a snapshot is
-   * kept and only the template is filled in behind it.
-   */
-  const applyHatchTemplate = useCallback(
-    (style: string, spec: HatchSpec) => {
-      if (style !== hatchStyle) return;
-      setHatch((prev) => ({
-        style,
-        template: spec,
-        spec: prev.spec ?? cloneHatchSpec(spec),
-      }));
-    },
-    [hatchStyle],
-  );
-
-  const updateHatchSpec = useCallback((fn: (spec: HatchSpec) => HatchSpec) => {
-    setHatch((prev) => (prev.spec ? { ...prev, spec: fn(prev.spec) } : prev));
-  }, []);
-
-  /** Patch one layer; the other layers keep their identity (memoised rows). */
-  const updateHatchLayer = useCallback(
-    (id: string, patch: Partial<HatchLayer>) =>
-      updateHatchSpec((spec) => ({
-        ...spec,
-        layers: spec.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)),
-      })),
-    [updateHatchSpec],
-  );
-
-  const addHatchLayer = useCallback(
-    (kind: HatchLayerKind) =>
-      updateHatchSpec((spec) => ({ ...spec, layers: [...spec.layers, newHatchLayer(kind)] })),
-    [updateHatchSpec],
-  );
-
-  const removeHatchLayer = useCallback(
-    (id: string) =>
-      updateHatchSpec((spec) => ({ ...spec, layers: spec.layers.filter((l) => l.id !== id) })),
-    [updateHatchSpec],
-  );
-
-  /** Insert a copy right after the layer. */
-  const duplicateHatchLayer = useCallback(
-    (id: string) =>
-      updateHatchSpec((spec) => {
-        const i = spec.layers.findIndex((l) => l.id === id);
-        if (i < 0) return spec;
-        const copy: HatchLayer = { ...spec.layers[i], id: nextHatchLayerId(), extra: { ...spec.layers[i].extra } };
-        const layers = [...spec.layers];
-        layers.splice(i + 1, 0, copy);
-        return { ...spec, layers };
-      }),
-    [updateHatchSpec],
-  );
-
-  const updateHatchTone = useCallback(
-    (patch: Partial<HatchTone>) =>
-      updateHatchSpec((spec) => ({ ...spec, tone: { ...spec.tone, ...patch } })),
-    [updateHatchSpec],
-  );
-
-  const updateHatchInk = useCallback(
-    (patch: Partial<HatchInk>) =>
-      updateHatchSpec((spec) => ({ ...spec, ink: { ...spec.ink, ...patch } })),
-    [updateHatchSpec],
-  );
-
-  /** Back to the style's own look. */
-  const resetHatchToTemplate = useCallback(() => {
-    setHatch((prev) => (prev.template ? { ...prev, spec: cloneHatchSpec(prev.template) } : prev));
-  }, []);
-
-  /** Frozen copy of the current settings, used for a render result. */
   const getSnapshot = useCallback(
     (): RenderSettingsSnapshot => ({
       mode,
@@ -475,7 +308,7 @@ export function useRenderSettings(
           }
         : INITIAL_HATCH,
     );
-  }, []);
+  }, [setHatch]);
 
   /**
    * Default the Camera settings to what the render target view shows. Called
