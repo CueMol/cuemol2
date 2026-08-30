@@ -46,11 +46,17 @@ SelCacheData *SelCacheMgr::createCacheEntry()
 
   MB_DPRINTLN("SelCacheMgr> molsel cache entry is created (%d); curr cache size=%d",id, (int)m_data.size());
 
-  while (m_data.size()>m_nCacheMax) {
-    CacheEntTab::iterator i = m_data.begin();
-    //MB_DPRINTLN("discard cache data ID=%d", i->first);
+  // Trim the cache to its limit, oldest first. Skip the entries that
+  // makeCache() is still filling (a nested around/byres selection creates
+  // entries from inside that loop) and the entry just created.
+  CacheEntTab::iterator i = m_data.begin();
+  while (m_data.size()>m_nCacheMax && i!=m_data.end()) {
+    if (i->second->m_bBuilding || i->second==pNewData) {
+      ++i;
+      continue;
+    }
     delete i->second;
-    m_data.erase(i);
+    i = m_data.erase(i);
   }
 
   return pNewData;
@@ -115,17 +121,29 @@ const SelCacheData *SelCacheMgr::makeCache(MolCoordPtr pMol, SelectionPtr pSel)
   MolCoord::AtomIter eiter = pMol->endAtom();
   Vector4D pos, cen(0,0,0);
   int nsel = 0;
-  for (; iter!=eiter; ++iter) {
-    MolAtomPtr pAtom = iter->second;
-    MB_ASSERT(!pAtom.isnull());
-    if (!pSel->isSelected(pAtom))
-      continue;
-    pos = pAtom->getPos();
-    pEnt->m_atomIdSet.insert(iter->first);
-    pEnt->m_bbox.merge(pos);
-    cen += pos;
-    nsel ++;
+
+  // Evaluating pSel may create further cache entries (nested around/byres);
+  // keep this entry from being evicted until it is complete.
+  pEnt->m_bBuilding = true;
+  try {
+    for (; iter!=eiter; ++iter) {
+      MolAtomPtr pAtom = iter->second;
+      MB_ASSERT(!pAtom.isnull());
+      if (!pSel->isSelected(pAtom))
+        continue;
+      pos = pAtom->getPos();
+      pEnt->m_atomIdSet.insert(iter->first);
+      pEnt->m_bbox.merge(pos);
+      cen += pos;
+      nsel ++;
+    }
   }
+  catch (...) {
+    // do not leave a half-built entry behind
+    invalidateCache(ncid);
+    throw;
+  }
+  pEnt->m_bBuilding = false;
   pEnt->m_nSel = nsel;
   if (nsel>0)
     pEnt->m_vCenter = cen.divide(nsel);
