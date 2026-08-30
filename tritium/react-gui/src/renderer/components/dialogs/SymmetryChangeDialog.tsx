@@ -14,18 +14,8 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
-import {
-    Button,
-    Checkbox,
-    Dialog,
-    DialogBody,
-    DialogFooter,
-    FormGroup,
-    HTMLSelect,
-    InputGroup,
-    NumericInput,
-} from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { Checkbox, FormGroup, HTMLSelect, InputGroup, NumericInput } from '@blueprintjs/core'
+import { DialogShell } from './DialogShell';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import type {
     SpaceGroupEntry,
@@ -163,8 +153,6 @@ const DEFAULT_INFO: SymmetryInfo = {
 export function SymmetryChangeDialog({
     visible, sceneId, objId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const { cm } = useCueMol()
 
     const [lattice, setLattice] = useState<CrystalSystem>('TRICLINIC')
@@ -332,96 +320,79 @@ export function SymmetryChangeDialog({
     const ready = loaded && sgItems.length > 0
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Symmetry"
-            style={{ width: 440 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="3xl"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={!ready}
+            submitting={submitting}
         >
-            <DialogBody>
-                <fieldset style={{ padding: '8px 12px', marginBottom: 12 }}>
-                    <legend style={{ padding: '0 4px' }}>Symmetry</legend>
+            <fieldset style={{ padding: '8px 12px', marginBottom: 12 }}>
+                <legend style={{ padding: '0 4px' }}>Symmetry</legend>
 
-                    <FormGroup label="Crystal system:" inline>
-                        <HTMLSelect
-                            className="h3-form-select"
-                            value={lattice}
-                            disabled={submitting}
-                            onChange={(e) => setLattice(e.currentTarget.value as CrystalSystem)}
-                            options={LATTICE_OPTIONS}
-                        />
-                    </FormGroup>
-
-                    <FormGroup label="Space Group:" inline>
-                        <HTMLSelect
-                            className="h3-form-select"
-                            value={nsg}
-                            disabled={submitting || sgItems.length === 0}
-                            onChange={(e) => setNsg(Number(e.currentTarget.value))}
-                            options={sgItems.map((i) => ({ value: i.id, label: i.cname }))}
-                        />
-                    </FormGroup>
-
-                    <Checkbox
-                        label="Biomolecules only"
-                        checked={false}
-                        disabled
-                    />
-
-                    <FormGroup label="Space Group Number:" inline>
-                        <InputGroup
-                            value={String(nsg)}
-                            readOnly
-                            style={{ width: 80 }}
-                        />
-                    </FormGroup>
-                </fieldset>
-
-                <fieldset style={{ padding: '8px 12px' }}>
-                    <legend style={{ padding: '0 4px' }}>Cell dimension</legend>
-
-                    <Checkbox
-                        label="Restrict by symmetry"
-                        checked={restrict}
+                <FormGroup label="Crystal system:" inline>
+                    <HTMLSelect
+                        className="h3-form-select"
+                        value={lattice}
                         disabled={submitting}
-                        onChange={(e) => setRestrict(e.currentTarget.checked)}
-                        style={{ marginBottom: 8 }}
+                        onChange={(e) => setLattice(e.currentTarget.value as CrystalSystem)}
+                        options={LATTICE_OPTIONS}
                     />
+                </FormGroup>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16 }}>
-                        {numericFor('a', 'a=')}
-                        {numericFor('alpha', String.fromCharCode(0x03b1) + '=')}
-                        {numericFor('b', 'b=')}
-                        {numericFor('beta', String.fromCharCode(0x03b2) + '=')}
-                        {numericFor('c', 'c=')}
-                        {numericFor('gamma', String.fromCharCode(0x03b3) + '=')}
-                    </div>
-                </fieldset>
+                <FormGroup label="Space Group:" inline>
+                    <HTMLSelect
+                        className="h3-form-select"
+                        value={nsg}
+                        disabled={submitting || sgItems.length === 0}
+                        onChange={(e) => setNsg(Number(e.currentTarget.value))}
+                        options={sgItems.map((i) => ({ value: i.id, label: i.cname }))}
+                    />
+                </FormGroup>
 
-                {errorMsg !== null && (
-                    <div style={{ color: 'var(--accent-red)', marginTop: 8 }}>
-                        {errorMsg}
-                    </div>
-                )}
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={handleOk}
-                            disabled={!ready || submitting}
-                            loading={submitting}
-                        >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+                <Checkbox
+                    label="Biomolecules only"
+                    checked={false}
+                    disabled
+                />
+
+                <FormGroup label="Space Group Number:" inline>
+                    <InputGroup
+                        value={String(nsg)}
+                        readOnly
+                        style={{ width: 80 }}
+                    />
+                </FormGroup>
+            </fieldset>
+
+            <fieldset style={{ padding: '8px 12px' }}>
+                <legend style={{ padding: '0 4px' }}>Cell dimension</legend>
+
+                <Checkbox
+                    label="Restrict by symmetry"
+                    checked={restrict}
+                    disabled={submitting}
+                    onChange={(e) => setRestrict(e.currentTarget.checked)}
+                    style={{ marginBottom: 8 }}
+                />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16 }}>
+                    {numericFor('a', 'a=')}
+                    {numericFor('alpha', String.fromCharCode(0x03b1) + '=')}
+                    {numericFor('b', 'b=')}
+                    {numericFor('beta', String.fromCharCode(0x03b2) + '=')}
+                    {numericFor('c', 'c=')}
+                    {numericFor('gamma', String.fromCharCode(0x03b3) + '=')}
+                </div>
+            </fieldset>
+
+            {errorMsg !== null && (
+                <div style={{ color: 'var(--accent-red)', marginTop: 8 }}>
+                    {errorMsg}
+                </div>
+            )}
+        </DialogShell>
     )
 }

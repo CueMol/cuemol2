@@ -13,6 +13,10 @@
  * dialog's outer JSX is exercised (its hooks/state run) but the body
  * children never mount. We assert the captured props on the recorded
  * call.
+ *
+ * Every dialog in the app now renders its frame through DialogShell, so
+ * there is one block: if the shell stops forwarding any of these, all of
+ * them regress here at once.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -67,42 +71,12 @@ function lastDialogProps(): Record<string, unknown> {
   return dialogPropsList[dialogPropsList.length - 1]
 }
 
-describe('Modal dialog: backdrop click + close button are disabled', () => {
-  beforeEach(() => {
-    dialogPropsList.length = 0
-  })
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('FileOpenOptionDialog passes canOutsideClickClose={false}', () => {
-    const handle = mountTree(
-      React.createElement(FileOpenOptionDialog, {
-        visible: true,
-        filePath: '/tmp/foo.pdb',
-        sceneId: 0,
-        rendererTypes: ['*default'],
-        objType: '',
-        readerName: 'pdb',
-        onConfirm: () => {},
-        onCancel: () => {},
-      }),
-    )
-    expect(lastDialogProps().canOutsideClickClose).toBe(false)
-    expect(lastDialogProps().isCloseButtonShown).toBe(false)
-    handle.unmount()
-  })
-})
-
 /**
- * The 9 molecule-edit dialogs render their frame through the shared
- * `DialogShell`. This block pins the DialogShell-owned frame contract on
- * each of them (not just the two boolean props above, but also the
- * light-theme `portalClassName === ''` value -- NOT `undefined` -- the
- * title, and a token-driven `style.width`). It guards the shell extraction:
- * if DialogShell stops forwarding any of these, every dialog regresses here.
+ * Pins the DialogShell-owned frame contract on every dialog: the two boolean
+ * props, the light-theme `portalClassName === ''` value (NOT `undefined`), the
+ * title, and a `style.width` that is a token rung rather than a number.
  */
-describe('Molecule-edit dialogs: DialogShell frame contract', () => {
+describe('DialogShell frame contract', () => {
   beforeEach(() => {
     dialogPropsList.length = 0
   })
@@ -247,6 +221,15 @@ describe('Molecule-edit dialogs: DialogShell frame contract', () => {
       title: 'Edit visibility flags: cam1',
       render: () => React.createElement(EditCameraVisFlagsDialog, {
         visible: true, cameraName: 'cam1', entries: [], onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'FileOpenOptionDialog',
+      title: 'Open File Options',
+      render: () => React.createElement(FileOpenOptionDialog, {
+        visible: true, filePath: '/tmp/foo.pdb', sceneId: 0,
+        rendererTypes: ['*default'], objType: '', readerName: 'pdb',
+        onConfirm: () => {}, onCancel: () => {},
       }),
     },
     {

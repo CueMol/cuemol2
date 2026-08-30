@@ -7,8 +7,8 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { Dialog, DialogBody, DialogFooter, Button } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import { Button } from '@blueprintjs/core';
+import { DialogShell } from './DialogShell';
 import { AppIcon } from '@renderer/h3-kit/primitives'
 import type { AtomIntrDefEntry } from '../../worker/server/services/atomIntrEdit.service'
 
@@ -34,8 +34,6 @@ export function EditInteractionListDialog({
     onConfirm,
     onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
 
     // Working copy of remaining rows, re-seeded on each open.
     const [rows, setRows] = useState<AtomIntrDefEntry[]>(() => entries.map((e) => ({ ...e })))
@@ -52,66 +50,52 @@ export function EditInteractionListDialog({
     }
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title={`Edit interaction list: ${rendName}`}
-            style={{ width: 460 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="4xl"
+            onCancel={onCancel}
+            onOk={handleOk}
         >
-            <DialogBody>
-                <div
-                    role="table"
-                    aria-label="Interaction definitions"
-                    style={{
-                        border: '1px solid var(--border)',
-                        borderRadius: 3,
-                        maxHeight: 320,
-                        overflowY: 'auto',
-                        background: 'var(--bg-surface)',
-                    }}
-                >
-                    {rows.length === 0 ? (
-                        <div style={{ padding: 8, color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                            (no interactions)
+            <div
+                role="table"
+                aria-label="Interaction definitions"
+                style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 3,
+                    maxHeight: 320,
+                    overflowY: 'auto',
+                    background: 'var(--bg-surface)',
+                }}
+            >
+                {rows.length === 0 ? (
+                    <div style={{ padding: 8, color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                        (no interactions)
+                    </div>
+                ) : (
+                    rows.map((r) => (
+                        <div
+                            role="row"
+                            key={r.id}
+                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 8px' }}
+                        >
+                            <span style={{ width: 64, color: 'var(--text-secondary)' }}>
+                                {MODE_LABEL[r.mode] ?? '?'}
+                            </span>
+                            <span style={{ flex: 1, fontFamily: 'var(--font-mono)' }}>
+                                {r.atoms.join('  -  ')}
+                            </span>
+                            <Button
+                                minimal
+                                small
+                                aria-label={`Delete interaction ${r.id}`}
+                                icon={<AppIcon name="ui.remove" size="md" aria-hidden />}
+                                onClick={() => removeRow(r.id)}
+                            />
                         </div>
-                    ) : (
-                        rows.map((r) => (
-                            <div
-                                role="row"
-                                key={r.id}
-                                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 8px' }}
-                            >
-                                <span style={{ width: 64, color: 'var(--text-secondary)' }}>
-                                    {MODE_LABEL[r.mode] ?? '?'}
-                                </span>
-                                <span style={{ flex: 1, fontFamily: 'var(--font-mono)' }}>
-                                    {r.atoms.join('  -  ')}
-                                </span>
-                                <Button
-                                    minimal
-                                    small
-                                    aria-label={`Delete interaction ${r.id}`}
-                                    icon={<AppIcon name="ui.remove" size="md" aria-hidden />}
-                                    onClick={() => removeRow(r.id)}
-                                />
-                            </div>
-                        ))
-                    )}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel}>Cancel</Button>
-                        <Button intent="primary" onClick={handleOk}>
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+                    ))
+                )}
+            </div>
+        </DialogShell>
     )
 }

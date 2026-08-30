@@ -280,6 +280,7 @@
   --dialog-w-3xl: 440px;  /* symmetry editor */
   --dialog-w-4xl: 460px;  /* interaction list editor */
   --dialog-w-5xl: 500px;  /* style editor */
+  --dialog-w-6xl: 480px;  /* file-open option dialogs */
 
   /* ── Listbox / list-tree rows (single source for styles/_list-kit.css) ──
      Row height reuses --row-h (22px). hover/selected reuse --bg-hover /

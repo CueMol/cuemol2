@@ -31,7 +31,7 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
       onCancel={onClose}
       // A splash image bled to the frame edge, not a form: the shared gutter
       // and section gap would inset it.
-      plainBody
+      bodyClassName="h3-dialog-plain-body"
       footerActions={<Button intent="primary" onClick={onClose}>OK</Button>}
     >
       <>

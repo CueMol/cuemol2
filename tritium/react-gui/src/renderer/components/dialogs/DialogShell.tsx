@@ -30,7 +30,7 @@ import { useDarkPortalClass } from '@renderer/h3-kit/primitives'
  */
 export type DialogWidth =
     | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-    | '2xl' | '3xl' | '4xl' | '5xl'
+    | '2xl' | '3xl' | '4xl' | '5xl' | '6xl'
 
 const WIDTH_VAR: Record<DialogWidth, string> = {
     xs: 'var(--dialog-w-xs)',
@@ -42,6 +42,7 @@ const WIDTH_VAR: Record<DialogWidth, string> = {
     '3xl': 'var(--dialog-w-3xl)',
     '4xl': 'var(--dialog-w-4xl)',
     '5xl': 'var(--dialog-w-5xl)',
+    '6xl': 'var(--dialog-w-6xl)',
 }
 
 export interface DialogShellProps {
@@ -89,14 +90,20 @@ export interface DialogShellProps {
      * out is its own action.
      */
     canEscapeKeyClose?: boolean
+    /** Extra class on the dialog frame, for a dialog with chrome of its own. */
+    className?: string
     /**
-     * The body lays itself out: no padding and no `.h3-dialog-form` column.
-     * For content that is not a form -- the About splash is a full-bleed image
-     * -- where the shared gap and gutter would box it in. The frame concerns
-     * (portal class, outside click, close button, width) still apply, which is
-     * the reason to be here at all.
+     * Replaces the shared body wrapper: the dialog lays its own body out, and
+     * this class says how. For content that is not a form -- the About splash
+     * bleeds an image to the frame edge, the file-open dialogs draw their own
+     * banded sections -- where the `.h3-dialog-form` column's gutter and gap
+     * would box it in. The frame concerns (portal class, outside click, close
+     * button, width) still apply, which is the reason to be here at all.
+     *
+     * `errorMsg` renders only inside the shared wrapper, so a dialog using this
+     * owns its own error line too.
      */
-    plainBody?: boolean
+    bodyClassName?: string
 }
 
 /**
@@ -121,7 +128,8 @@ export function DialogShell({
     footerActions,
     extra,
     canEscapeKeyClose = true,
-    plainBody = false,
+    className,
+    bodyClassName,
 }: DialogShellProps): React.JSX.Element {
     const portalClassName = useDarkPortalClass()
 
@@ -130,14 +138,15 @@ export function DialogShell({
             isOpen={visible}
             onClose={onCancel}
             title={title}
+            className={className}
             style={{ width: WIDTH_VAR[width] }}
             portalClassName={portalClassName}
             canOutsideClickClose={false}
             canEscapeKeyClose={canEscapeKeyClose}
             isCloseButtonShown={false}
         >
-            {plainBody ? (
-                <DialogBody style={{ padding: 0 }}>{children}</DialogBody>
+            {bodyClassName !== undefined ? (
+                <DialogBody className={bodyClassName}>{children}</DialogBody>
             ) : (
                 <DialogBody>
                     <div className="h3-dialog-form">
