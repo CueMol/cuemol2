@@ -439,6 +439,19 @@ MolBond *MolCoord::makeBond(int aaid1, int aaid2, bool bPersist /*=false*/)
   return pB;
 }
 
+namespace {
+  /// Drop pBond from the bond lists of its atoms (either atom may be gone)
+  void detachBond(MolCoord *pMol, MolBond *pBond)
+  {
+    MolAtomPtr pA1 = pMol->getAtom(pBond->getAtom1());
+    if (!pA1.isnull())
+      pA1->removeBond(pBond);
+    MolAtomPtr pA2 = pMol->getAtom(pBond->getAtom2());
+    if (!pA2.isnull())
+      pA2->removeBond(pBond);
+  }
+}
+
 bool MolCoord::removeBond(int aaid1, int aaid2)
 {
   BondPool::iterator iter = m_bondPool.begin();
@@ -455,7 +468,11 @@ bool MolCoord::removeBond(int aaid1, int aaid2)
   if (iter==iend)
     return false;
 
-  delete iter->second;
+  // the atoms must not keep a pointer to the deleted bond
+  // (makeBond() looks bonds up through MolAtom::getBond())
+  MolBond *pBond = iter->second;
+  detachBond(this, pBond);
+  delete pBond;
   m_bondPool.erase(iter);
   return true;
 }
@@ -472,20 +489,19 @@ void MolCoord::removeNonpersBonds()
     MolAtomPtr pA1 = getAtom(aid1);
     MolAtomPtr pA2 = getAtom(aid2);
 
-    if (pBond->isPersist()){
-      if (!pA1.isnull() && !pA2.isnull())
-        pers.push_back(pBond); // reserve presistent & valid bond
-      else
-        delete pBond; // remove persistent but orphan bond
+    // keep persistent bonds whose atoms both still exist
+    if (pBond->isPersist() && !pA1.isnull() && !pA2.isnull()) {
+      pers.push_back(pBond);
+      continue;
     }
-    else {
-      // remove non-persistent bond
-      if (!pA1.isnull())
-        pA1->removeBond(pBond);
-      if (!pA2.isnull())
-        pA2->removeBond(pBond);
-      delete pBond;
-    }
+
+    // non-persistent, or persistent but orphaned by removeAtom():
+    // the surviving atoms must not keep a pointer to the deleted bond
+    if (!pA1.isnull())
+      pA1->removeBond(pBond);
+    if (!pA2.isnull())
+      pA2->removeBond(pBond);
+    delete pBond;
   }
 
   m_bondPool.clear();

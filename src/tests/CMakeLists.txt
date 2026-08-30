@@ -124,6 +124,7 @@ add_executable(test_molstr
   modules/molstr/test_molresidue.cpp
   modules/molstr/test_molchain.cpp
   modules/molstr/test_molbond.cpp
+  modules/molstr/test_molcoord_bond.cpp
   modules/molstr/test_selcommand.cpp
   modules/molstr/test_simplerenderer.cpp
   modules/molstr/test_tracerenderer.cpp
@@ -133,6 +134,9 @@ target_include_directories(test_molstr PRIVATE
   ${CMAKE_SOURCE_DIR}/src/modules
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
+)
+target_compile_definitions(test_molstr PRIVATE
+  CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
 )
 target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
