@@ -57,6 +57,7 @@ add_executable(test_gfx
   gfx/test_solid_color.cpp
   gfx/test_gpuprim.cpp
   gfx/test_aoconstants.cpp
+  gfx/test_color_robustness.cpp
 )
 target_include_directories(test_gfx PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -109,6 +110,7 @@ add_executable(test_qsys
   qsys/test_guiview.cpp
   qsys/test_shaderobjmgr.cpp
   qsys/test_animmgr.cpp
+  qsys/test_colcompiler.cpp
 )
 target_include_directories(test_qsys PRIVATE
   ${CMAKE_SOURCE_DIR}/src
