@@ -72,6 +72,10 @@ runtime_class MapRenderer extends Renderer
   /// Effective region policy ("box" or "full")
   property string region_mode_resolved => redirect(getRegionModeResolvedStr, XXX) (readonly);
 
+  /// Effective map kind of the displayed object ("xtal" or "em"; empty when
+  /// the scalar object is not a DensityMap)
+  property string map_type_resolved => redirect(getMapTypeResolvedStr, XXX) (readonly);
+
   /// Level of detail: auto (the historical stride in box mode, the
   /// budget-derived stride of the displayed region in full mode) or an
   /// explicit grid stride

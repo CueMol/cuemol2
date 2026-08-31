@@ -11,6 +11,7 @@
 export { resetProps } from './rowProps';
 export type { RowProps, SetFn, ResetFn } from './rowProps';
 export { TextRow } from './TextRow';
+export { ReadonlyTextRow } from './ReadonlyTextRow';
 export { BoolRow } from './BoolRow';
 export { NumRow } from './NumRow';
 export { NumInputRow } from './NumInputRow';

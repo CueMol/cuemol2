@@ -171,16 +171,35 @@ boundary で切り取った region を budget 由来の stride で** 表示し�
   "Buffer size" / "Use periodic boundary" を隠す。`gpu_mapmesh` は contour と同じプロパティ集合なので
   `rendererPropSections` の registry で `ContourMainSection` を再利用する (title "GPU contour")
 - `DensityMapPane`: `MapRendererState.regionResolved` / `mapType` を追加し、full では Extent スライダを無効化
-- `DensityMap.map_type` は enum なので generic Properties タブで編集できる
+- **map kind の表示 (2026-09)**: 「auto が何に解決したか」が GUI に出ていなかったので 2 箇所に足した。
+  - **object 側 (編集可)**: `schema/densitymap.ts` の "Density map" section (Map type = `map_type`、
+    Effective kind = `map_type_resolved`)。`RENDERER_SECTION_REGISTRY` に **object の C++ class 名**
+    (`DensityMap`) をキーに登録し、`PropertiesTab.typeSectionsFor` の「object は type page を持たない」
+    早期 return を外して registry lookup に通す (`Scene` が既に typeLabel で引かれている前例と同じ形。
+    renderer の `type_name` は小文字なので衝突しない)。map kind は data の性質なので object 側が本籍で、
+    generic タブの生表からしか触れない状態を解消する
+  - **renderer 側 (readonly)**: `MapRenderer` に `map_type_resolved` (readonly string; DensityMap 以外の
+    ScalarObject では空文字) を足し、`schema/map.ts` の `MAP_HEAD_ROWS` 先頭に "Map kind" 行を置く。
+    Region / LoD 行は map kind が決まってはじめて意味が読めるので、その手前に出す
+  - 表示用に row kind `readonlyText` (`rows/ReadonlyTextRow.tsx`) を新設。「解決済みの値」は答えであって
+    フィールドではないので、disabled な control ではなく静的テキスト (`.insp-prop-readonly`) にし、
+    modified バーも reset も持たせない。空文字なら行ごと落とす (`hideWhenEmpty`)
+- **isosurf の既定色 (2026-09)**: `MapSurfRenderer.qif` で `color` の default を `MapRenderer` の青から
+  白灰 (0.85) に上書きする (`GLSLMapMeshRenderer` と同じサブクラス上書き pattern)。塗り潰し等値面が飽和した
+  青だと形が読めないため。contour (メッシュ) は 2Fo-Fc 慣習の青のまま
+- **isosurf の Cap mode (2026-09)**: `cap_mode` (auto/on/off) を `ISOSURF_SECTIONS` に `mappedEnum` 行として
+  露出。C++ の enumdef はアルファベット順 (auto/off/on) なので `options` で Auto/On/Off の順に固定する
 - file-open ダイアログ (`fopen-opt-dlgs/panes/Ccp4MapOptionsPane.tsx`): "Map type" (auto / crystallographic /
   cryo-EM; reader property ではなく読込後に `obj.map_type` へ書く `applyMapTypeChoice`) と "Subsample"
   (reader の `subsample`)。ダイアログは `probeMapHeader` service (`CCP4MapReader.probeHeader`) でヘッダを
   読み、grid サイズと格納メモリを表示、256 Mvoxel (ChimeraX `voxel_limit_for_open`) を超えると警告と
   推奨 subsample (`suggestSubsample`) を出す
-- 読込後 (`loadObject.service.ts` → `helpers/emMapDefaults.ts`): map が `em` に解決されたら renderer に
+- 読込後 (`loadObject.service.ts` → `services/map/emDefaults.ts`): map が `em` に解決されたら renderer に
   `level = getLevelAtTopFraction(0.01)` (上位 1% を囲む絶対 level、ChimeraX の初期 contour 規則) と
-  `use_abslevel = true` を設定し、ダイアログの "recenter view" が有効なら `DensityMap.fitView` で全 view を
-  map 全体に合わせる (map renderer の `center` 既定 (0,0,0) は ORIGIN 配置の EM map の外にあるため)
+  `use_abslevel = true` を設定する。**view をどうするかは別判断**で、`applyMapCenterPolicy` が
+  ダイアログの 3 択 (`auto` / `setMapCenter` / `moveViewCenter`) を解決する (ADR-0057)。
+  `auto` は em → `moveViewCenter` (= `DensityMap.fitView`; map renderer の `center` 既定 (0,0,0) は
+  ORIGIN 配置の EM map の外にあるため)、それ以外 → `setMapCenter` (= `rend.center = view.getViewCenter()`)
 
 ## 既知の非互換 (リリースノート記載事項)
 

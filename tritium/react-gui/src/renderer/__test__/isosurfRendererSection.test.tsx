@@ -7,10 +7,14 @@
  * The pins:
  *   - the registry resolves `type_name === "isosurf"` to a single "Isosurf"
  *     section (default-expanded);
- *   - the curated rows render (Center update / Drawing mode / Line-Point size /
- *     Max grid size / Back-face culling / Use periodic boundary / Limit display
- *     by / Target / Selection / Distance) and unrelated props (colormode /
- *     target / sel -- owned by the Coloring panel -- and siglevel) are ignored;
+ *   - the curated rows render (Map kind / Center update / Drawing mode /
+ *     Line-Point size / Max grid size / Cap mode / Back-face culling / Use
+ *     periodic boundary / Limit display by / Target / Selection / Distance) and
+ *     unrelated props (colormode / target / sel -- owned by the Coloring panel
+ *     -- and siglevel) are ignored;
+ *   - "Map kind" is the read-only kind forwarded from the DensityMap: static
+ *     text, and dropped entirely when it resolves to nothing;
+ *   - "Cap mode" writes the tri-state `cap_mode` as raw enum ids;
  *   - "Drawing mode" writes `drawmode`; Line/Point size is disabled while the
  *     mode is "fill" and enabled for line / point (UXP updateDisabledState);
  *   - "Max grid size" commits a single-step `max_grids`; "Back-face culling"
@@ -108,8 +112,11 @@ function isosurfEntries(over?: {
   bndryMol?: string
   regionMode?: string
   regionResolved?: string
+  mapKind?: string
+  capMode?: string
 }): GenericPropEntry[] {
   return [
+    entry({ key: 'map_type_resolved', type: 'string', value: over?.mapKind ?? 'xtal', readonly: true }),
     entry({ key: 'autoupdate', type: 'boolean', value: true }),
     entry({ key: 'dragupdate', type: 'boolean', value: false }),
     entry({ key: 'region_mode', type: 'enum', value: over?.regionMode ?? 'auto', enumdef: ['auto', 'box', 'full'] }),
@@ -120,6 +127,7 @@ function isosurfEntries(over?: {
     entry({ key: 'drawmode', type: 'enum', value: over?.drawmode ?? 'fill', enumdef: ['fill', 'line', 'point'] }),
     entry({ key: 'width', type: 'real', value: 1.2 }),
     entry({ key: 'max_grids', type: 'real', value: 100 }),
+    entry({ key: 'cap_mode', type: 'enum', value: over?.capMode ?? 'auto', enumdef: ['auto', 'off', 'on'] }),
     entry({ key: 'cullface', type: 'boolean', value: false }),
     entry({ key: 'use_pbc', type: 'boolean', value: true }),
     entry({ key: 'bndry_molname', type: 'string', value: over?.bndryMol ?? '' }),
@@ -152,12 +160,14 @@ describe('the isosurf page', () => {
       <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     for (const label of [
+      'Map kind',
       'Center update',
       'Region',
       'Level of detail',
       'Drawing mode',
       'Line/Point size',
       'Max grid size',
+      'Cap mode',
       'Back-face culling',
       'Use periodic boundary',
       'Limit display by',
@@ -171,7 +181,7 @@ describe('the isosurf page', () => {
     // stay hidden in box.
     expect(rowByLabel(container, 'LoD budget')).toBeNull()
     expect(rowByLabel(container, 'Refine on zoom')).toBeNull()
-    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(12)
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(14)
     unmount()
   })
 
@@ -267,6 +277,48 @@ describe('the isosurf page', () => {
     act(() => typeInto(input, '120'))
     act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
     expect(onSet).toHaveBeenCalledWith('max_grids', 'real', 120)
+    unmount()
+  })
+
+  // The cap faces close the surface at the edge of the displayed region.
+  // Auto keeps the historical coupling to the region policy (full closes, box
+  // does not); On is the useful one for figures in the box region, where an
+  // open edge shows the surface's back face through the hole.
+  it('writes cap_mode as raw enum ids in Auto / On / Off order', () => {
+    const onSet = vi.fn()
+    const { container, unmount } = mountTree(
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    const sel = rowByLabel(container, 'Cap mode')!.querySelector('select') as HTMLSelectElement
+    // The C++ enumdef is alphabetical (auto/off/on); the row fixes the order.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['auto', 'on', 'off'])
+    expect(Array.from(sel.options).map((o) => o.textContent)).toEqual(['Auto', 'On', 'Off'])
+    expect(sel.value).toBe('auto')
+
+    selectValue(sel, 'on')
+    expect(onSet).toHaveBeenCalledWith('cap_mode', 'enum', 'on')
+    unmount()
+  })
+
+  // The map kind comes from the parent DensityMap and is only ever read, so
+  // it is static text rather than a disabled control.
+  it('shows the resolved map kind as static text with no control', () => {
+    const { container, unmount } = mountTree(
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries({ mapKind: 'em' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    const row = rowByLabel(container, 'Map kind')!
+    expect(row.querySelector('.insp-prop-readonly')?.textContent).toBe('Cryo-EM')
+    expect(row.querySelector('input, select, button')).toBeNull()
+    unmount()
+  })
+
+  // A scalar object that is not a DensityMap (an ElePotMap) has no map kind
+  // and reports an empty string; an empty row would read as a failed load.
+  it('drops the Map kind row when nothing resolved', () => {
+    const { container, unmount } = mountTree(
+      <SchemaSection section={ISOSURF_SECTIONS[0]} rendererType="isosurf" entries={isosurfEntries({ mapKind: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    expect(rowByLabel(container, 'Map kind')).toBeNull()
     unmount()
   })
 

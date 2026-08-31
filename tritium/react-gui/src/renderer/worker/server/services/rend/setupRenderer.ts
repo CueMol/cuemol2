@@ -34,10 +34,9 @@ import {
     listRendererNamesByType,
 } from '@renderer/worker/server/services/helpers/rendererNames';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
+import { NON_MOL_CLASSES, isScalarMapClass } from '@renderer/worker/shared/objectClasses';
 
 const log = console;
-
-const NON_MOL_CLASSES = ['ElePotMap', 'MolSurfObj', 'DensityMap'];
 
 /**
  * Recenter every view in `scene` on `pos`. Mirrors the `if (m_bRecenView)`
@@ -63,9 +62,16 @@ function recenterAllViews(scene: Scene, pos: unknown): void {
  * Recenter the views on the new renderer when the dialog asked for it.
  * Works for both plain renderers and preset groups (RendGroup.getCenter
  * averages its members' centers).
+ *
+ * A volume object is excluded: `MapRenderer::getCenter()` returns the map's
+ * DISPLAY center, which a fresh renderer has at the origin, so recentering
+ * there threw the view off the structure and left the map drawing a box around
+ * (0,0,0). What the view should do for a map is a policy of its own
+ * (`applyMapCenterPolicy`, run by the caller once the map kind is known).
  */
 function recenterIfRequested(mol: any, rend: Renderer, rendOpts: RendererOptions): void {
     if (!rendOpts.centerView) return;
+    if (isScalarMapClass(safeRead(() => mol.getClassName() as string) ?? '')) return;
     try {
         const scene = mol.getScene() as Scene | null;
         if (scene && typeof (rend as unknown as { getCenter?: () => unknown }).getCenter === 'function') {

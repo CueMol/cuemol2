@@ -26,7 +26,7 @@ import { setupRenderer } from '../rend/setupRenderer';
 import { undoTxnResult } from '../withUndoTxn';
 import { pickReaderName, OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
-import { applyMapTypeChoice, applyEmMapDefaults, fitViewsToMap } from '@renderer/worker/server/services/map/emDefaults';
+import { applyMapTypeChoice, applyEmMapDefaults, applyMapCenterPolicy } from '@renderer/worker/server/services/map/emDefaults';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
@@ -127,11 +127,15 @@ export function loadObject(ctx: WorkerContext, args: LoadObjectArgs): LoadObject
         (scene as unknown as { addObject: (o: CObject) => void }).addObject(obj);
 
         const rend = setupRenderer(ctx, obj, args.options.renderer);
-        // Cryo-EM map: absolute level enclosing the top 1% of the grid and
-        // the whole map in view (the renderer's center default is the
-        // origin, which is not in the map for an MRC ORIGIN placement).
-        if (rend && applyEmMapDefaults(obj, rend) && args.options.renderer.centerView) {
-            fitViewsToMap(scene, obj);
+        if (rend) {
+            // Cryo-EM map: an absolute level enclosing the top 1% of the grid
+            // (a sigma level means little on a masked EM map). Independent of
+            // what the view does, so it is not gated on the view policy.
+            applyEmMapDefaults(obj, rend);
+            // What the view does for a volume object (UXP's scalar-object
+            // deck). Runs here rather than in setupRenderer because `auto`
+            // reads the map kind, which only exists once the reader has run.
+            applyMapCenterPolicy(scene, obj, rend, args.options.renderer.mapCenterPolicy);
         }
         return ok({ objId: (obj as unknown as { uid: number }).uid });
     });

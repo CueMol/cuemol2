@@ -14,8 +14,7 @@ import type { PresetTypeEntry } from '@renderer/worker/shared/fileOpenTypes';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { fetchStyleEntries } from '@renderer/worker/server/services/helpers/styleEntries';
 import { isSelectableRendererType } from '@renderer/worker/server/services/helpers/rendererFilter';
-
-const NON_MOL_CLASSES = new Set(['ElePotMap', 'MolSurfObj', 'DensityMap']);
+import { isMolObjectClass } from '@renderer/worker/shared/objectClasses';
 
 export interface GetNewRendererOptionsArgs {
     sceneId: number;
@@ -153,7 +152,7 @@ export function getNewRendererOptions(
         targetObjId = (obj as unknown as { uid: number }).uid ?? -1;
     } catch { /* ignore */ }
 
-    const isMol = !NON_MOL_CLASSES.has(objClassName);
+    const isMol = isMolObjectClass(objClassName);
 
     // The mol's current selection (mol.sel). When non-empty the dialog starts
     // with the Selection checkbox on, targeting that selection. Read defensively

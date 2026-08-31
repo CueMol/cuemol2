@@ -42,6 +42,7 @@ const baseOpts: RendererOptions = {
     selectionEnabled: false,
     selection: '*',
     centerView: true,
+    mapCenterPolicy: 'auto' as const,
 }
 
 function defaultMockRend(opts: RendererOptions) {

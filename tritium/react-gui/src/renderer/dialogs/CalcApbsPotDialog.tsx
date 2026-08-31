@@ -6,7 +6,7 @@
  *   - Target molecule (`MolPicker`) + optional atom selection (`MolSelList`).
  *   - Elepot object name (`TextField`; prefilled with a unique `pot_<molname>`
  *     via `proposeElepotName`, like UXP `makeSugName`).
- *   - Charge method (`SegmentField` PDB2PQR / Internal): pdb2pqr exposes a force
+ *   - Charge method (`SelectField` PDB2PQR / Internal): pdb2pqr exposes a force
  *     field select; internal exposes a "Use hydrogen atoms" switch.
  *   - APBS options: non-linear PBE switch, temperature, grid spacing, and the
  *     water / protein dielectrics.
@@ -29,7 +29,6 @@ import {
     Field,
     FieldSection,
     NumericField,
-    SegmentField,
     SelectField,
     CheckboxField,
     SwitchField,
@@ -227,14 +226,16 @@ export function CalcApbsPotDialog({
                     </FieldSection>
 
                     <FieldSection title="Charge method">
-                        <SegmentField<ApbsChargeMethod>
-                            value={chargeMethod}
-                            onValueChange={setChargeMethod}
-                            options={[
-                                { label: 'Use PDB2PQR', value: 'pdb2pqr' },
-                                { label: 'Use internal', value: 'internal' },
-                            ]}
-                        />
+                        <Field label="Method">
+                            <SelectField
+                                value={chargeMethod}
+                                onChange={(v) => setChargeMethod(v as ApbsChargeMethod)}
+                                disabled={controlsDisabled}
+                            >
+                                <option value="pdb2pqr">Use PDB2PQR</option>
+                                <option value="internal">Use internal</option>
+                            </SelectField>
+                        </Field>
                         {chargeMethod === 'pdb2pqr' ? (
                             <Field label="Force field">
                                 <SelectField

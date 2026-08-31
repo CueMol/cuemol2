@@ -161,6 +161,28 @@ export interface NumInputRowDef extends RowBase {
   unit?: string
 }
 
+/**
+ * A property shown as static text: a value the C++ side resolved and the user
+ * only reads.
+ *
+ * A page has two kinds of read-only value. `src` (an object's source path) is
+ * data the user could in principle own, so it stays a (read-only) input. A
+ * RESOLVED value -- what `map_type: auto` settled on, say -- is an answer, not
+ * a field, and a disabled control would invite an edit that will never be
+ * possible. It gets plain text instead, with no modified bar and no reset.
+ */
+export interface ReadonlyTextRowDef extends RowBase {
+  kind: 'readonlyText'
+  /** Display text per raw value; a value not listed is shown as-is. */
+  labels?: Record<string, string>
+  /**
+   * Drop the row when the value is empty. A resolved property reports "" when
+   * it does not apply (a map renderer on an ElePotMap has no map kind), and an
+   * empty row would read as a value that failed to load.
+   */
+  hideWhenEmpty?: boolean
+}
+
 /** A free-text property. */
 export interface TextRowDef extends RowBase {
   kind: 'text'
@@ -420,6 +442,7 @@ export type PropRowDef =
   | CustomRowDef
   | GroupRowDef
   | TextRowDef
+  | ReadonlyTextRowDef
   | SelRowDef
   | AsyncSelectRowDef
 

@@ -193,6 +193,12 @@ namespace xtal {
     /// Effective region policy as a string ("box" or "full")
     LString getRegionModeResolvedStr() const;
 
+    /// Effective map kind of the displayed object as a string ("xtal" or
+    /// "em"), forwarded from the DensityMap. Empty for a scalar object that
+    /// is not a DensityMap (an ElePotMap has no map kind), so the GUI can
+    /// tell "not applicable" from a resolved value.
+    LString getMapTypeResolvedStr() const;
+
     /// Periodic-boundary eligibility of the current display: pMap must be a
     /// periodic (crystallographic) DensityMap whose stored block spans the
     /// whole cell (bSpansCell, computed by the caller from the grid size),

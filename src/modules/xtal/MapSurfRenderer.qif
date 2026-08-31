@@ -13,10 +13,16 @@ runtime_class MapSurfRenderer extends MapRenderer
 {
   client_hdr "MapSurfRenderer.hpp";
   client_name xtal::MapSurfRenderer;
+  using Color;
 
   scriptable;
   smartptr;
   cloneable;
+
+  /// Solid color. Overrides the MapRenderer blue: a filled isosurface reads
+  /// better as a neutral light gray than as a saturated blue.
+  property object<AbstractColor$> color => redirect(getColor, setColor);
+  default color = gfx::SolidColor::createRGB(0.85, 0.85, 0.85);
 
   /// Automatically update the map center as view center (only in mouseUp event)
   property boolean autoupdate => m_bAutoUpdate;
