@@ -105,20 +105,19 @@ namespace symm {
 
     ////////////////////////////////////////////////
 
+    /// drop the cached orth/frac matrices (any cell change must call this)
+    void invalidateMatrices()
+    {
+      delete m_pOrthMat;
+      m_pOrthMat = NULL;
+      delete m_pFracMat;
+      m_pFracMat = NULL;
+    }
+
     void setCellDimension(double a, double b, double c,
                           double alpha, double beta, double gamma)
     {
-      if (m_pOrthMat) {
-        delete m_pOrthMat;
-        m_pOrthMat = NULL;
-      }
-
-      if (m_pFracMat) {
-        delete m_pFracMat;
-        m_pFracMat = NULL;
-      }
-
-      m_pFracMat = NULL;
+      invalidateMatrices();
       m_cella = a; m_cellb = b; m_cellc = c;
       m_alpha = alpha; m_beta = beta; m_gamma = gamma;
     }
@@ -127,17 +126,17 @@ namespace symm {
     double b() const { return m_cellb; }
     double c() const { return m_cellc; }
 
-    void setA(double arg) { m_cella = arg; }
-    void setB(double arg) { m_cellb = arg; }
-    void setC(double arg) { m_cellc = arg; }
+    void setA(double arg) { m_cella = arg; invalidateMatrices(); }
+    void setB(double arg) { m_cellb = arg; invalidateMatrices(); }
+    void setC(double arg) { m_cellc = arg; invalidateMatrices(); }
 
     double alpha() const { return m_alpha; }
     double beta() const { return m_beta; }
     double gamma() const { return m_gamma; }
 
-    void setAlpha(double arg) { m_alpha = arg; }
-    void setBeta(double arg) { m_beta = arg; }
-    void setGamma(double arg) { m_gamma = arg; }
+    void setAlpha(double arg) { m_alpha = arg; invalidateMatrices(); }
+    void setBeta(double arg) { m_beta = arg; invalidateMatrices(); }
+    void setGamma(double arg) { m_gamma = arg; invalidateMatrices(); }
 
     int getSG() const { return m_nSG; }
     void setSG(int nsg) { m_nSG = nsg; }

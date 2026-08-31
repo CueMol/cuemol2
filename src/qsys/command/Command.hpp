@@ -20,6 +20,8 @@ private:
 
 public:
     Command();
+    Command(const Command &r);
+    Command &operator=(const Command &r);
     ~Command() override;
 
     /// Execute the command

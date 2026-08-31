@@ -29,6 +29,9 @@ MmcifMolReader::MmcifMolReader()
   m_bLoadAltConf = true;
   m_bLoadAnisoU = true;
   m_bLoadSecstr = true;
+  // .qif defaults; a directly constructed reader (tests) must not read garbage
+  m_bLoadMultiModel = false;
+  m_bAutoTopoGen = true;
   m_nReadAtoms = 0;
 }
 
@@ -109,6 +112,9 @@ bool MmcifMolReader::read(qlib::InStream &ins)
   if (m_nReadAtoms>MAX_ATOMS_PROTSEC && !m_bLoadSecstr) {
     LOG_DPRINTLN("mmCIF> Too many atoms are loaded: secstr reassgnment is disabled (--> loaded from the file)!!");
     m_bLoadSecstr = true;
+    // .qif defaults; a directly constructed reader (tests) must not read garbage
+    m_bLoadMultiModel = false;
+    m_bAutoTopoGen = true;
   }
 
   if (m_bLoadSecstr) {
@@ -142,6 +148,7 @@ void MmcifMolReader::warning(const LString &msg) const
 
 void MmcifMolReader::readDataItem(CifParser &parser)
 {
+  m_lineno = parser.getLineNo();
     if (parser.getCatName().equalsIgnoreCase("_atom_site"))
         readAtomLine(parser);
     else if (m_bLoadAnisoU && parser.getCatName().equalsIgnoreCase("_atom_site_anisotrop"))
@@ -504,8 +511,8 @@ void MmcifMolReader::readHelixLine(CifParser &parser)
   ResidIndex begseq = getResidIndex(parser, m_nAuthSeqID1, m_nLabelSeqID1, m_nInsID1);
   ResidIndex endseq = getResidIndex(parser, m_nAuthSeqID2, m_nLabelSeqID2, m_nInsID2);
 
-  int ntype;
-  if (!parser.getToken(m_nHlxClass).toInt(&ntype)) {
+  int ntype = 1;
+  if (m_nHlxClass >= 0 && !parser.getToken(m_nHlxClass).toInt(&ntype)) {
     ntype = 1;
   }
   
@@ -669,19 +676,20 @@ void MmcifMolReader::applyLink()
     pAtom1 = m_pMol->getAtom(elem.ch1, elem.resi1, elem.aname1, elem.alt1);
     pAtom2 = m_pMol->getAtom(elem.ch2, elem.resi2, elem.aname2, elem.alt2);
 
+    // an unresolved row (missing atom, dropped altloc) must not stop the
+    // remaining links from being applied
     if (pAtom1.isnull()) {
       warning(LString::format("Apply link failed: atom1 %s.%s.%s is null (%s)",
                               elem.ch1.c_str(), elem.resi1.toString().c_str(), elem.aname1.c_str(),
                               elem.orig_line.c_str()));
-
-      return;
+      continue;
     }
 
     if (pAtom2.isnull()) {
       warning(LString::format("Apply link failed: atom2 %s.%s.%s is null (%s)",
                               elem.ch2.c_str(), elem.resi2.toString().c_str(), elem.aname2.c_str(),
                               elem.orig_line.c_str()));
-      return;
+      continue;
     }
 
     m_pMol->makeBond(pAtom1->getID(), pAtom2->getID(), true);
@@ -778,6 +786,9 @@ void MmcifMolReader::readSymmLine(CifParser &parser)
 
   if (!parser.tokenizeLine())
     return;
+
+  if (nSgNameID < 0)
+    return;  // optional item
 
   LString sgname = parser.getToken(nSgNameID);
 

@@ -66,6 +66,7 @@ void PovSceneExporter::write()
 #endif
       }
       fs::path base_path = povpath.parent_path();
+      ppovdc->setImageBaseDir(LString(base_path.string().c_str()));
       // Check and modify the inc file path
       fs::path incpath(str_incpath.c_str());
       if (!incpath.is_absolute()) {
@@ -91,6 +92,10 @@ void PovSceneExporter::write()
   }
   else {
     ppovdc->setIncFileName(str_incpath);
+    // label images go next to the include file
+    fs::path incpath(str_incpath.c_str());
+    if (incpath.is_absolute())
+      ppovdc->setImageBaseDir(LString(incpath.parent_path().string().c_str()));
   }
 
   // Main stream

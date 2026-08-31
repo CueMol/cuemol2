@@ -338,7 +338,10 @@ bool Scene::destroyObject(qlib::uid_t uid)
   //
   while (pObj->getRendCount()>0) {
     Object::RendIter ri = pObj->beginRend();
-    pObj->destroyRenderer(ri->first);
+    if (!pObj->destroyRenderer(ri->first)) {
+      LOG_DPRINTLN("Scene> cannot destroy renderer %d of object %d", int(ri->first), int(pObj->getUID()));
+      break;  // would loop forever
+    }
   }
 
   //

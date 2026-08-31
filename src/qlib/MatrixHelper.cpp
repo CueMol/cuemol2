@@ -17,7 +17,8 @@ namespace {
                           double &t, double &s, double &c)
   {
     if (isNear8(a_pq, 0.0)) {
-      t = a_pq/(a_qq - a_pp);
+      // nothing to rotate; a_pq/(a_qq-a_pp) was 0/0 for equal diagonals
+      t = 0.0;
     }
     else {
       double th = (a_qq - a_pp)/(2.0*a_pq);

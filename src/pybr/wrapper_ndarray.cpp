@@ -295,6 +295,13 @@ PyObject *copyFromNDArray(PyObject *self, PyObject *args)
     }
 
     PyArrayObject *pArr = reinterpret_cast<PyArrayObject *>(pPyObj);
+    // the element loop below assumes a C-contiguous, native-order buffer
+    // (fromNDArray() checks this; copyFromNDArray() did not)
+    if (!PyArray_ISCARRAY(pArr)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "array is not C-contiguous/native byte order");
+        return nullptr;
+    }
     int ndim = PyArray_NDIM(pArr);
     npy_intp *dims = PyArray_DIMS(pArr);
     int typenum = PyArray_TYPE(pArr);

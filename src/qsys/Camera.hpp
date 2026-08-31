@@ -246,6 +246,8 @@ namespace qsys {
       return *this;
     }
 
+    ~Camera() override;
+
     //////////
     
   private:
@@ -294,6 +296,10 @@ namespace qsys {
 
     /// Clear visibility settings
     void clearVisSettings();
+
+    /// Drop the visibility settings without undo/redo bookkeeping
+    /// (used where the camera is a plain value, e.g. the view's current camera)
+    void resetVisSettings();
 
     LString getVisSetJSON() const;
 

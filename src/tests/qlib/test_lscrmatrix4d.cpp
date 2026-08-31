@@ -95,3 +95,17 @@ TEST(LScrMatrix4D, FromStringMissingParentheses)
     LString s("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16");
     EXPECT_THROW(LScrMatrix4D::fromStringS(s), qlib::RuntimeException);
 }
+
+// setAt/getAt/addAt are script-visible with 1-based row/column indices;
+// the check used to accept anything up to 16 and wrote past the array.
+TEST(LScrMatrix4D, IndicesAboveFourAreRejected)
+{
+    LScrMatrix4D m;
+    m.setAt(4, 4, 2.5);
+    EXPECT_DOUBLE_EQ(m.getAt(4, 4), 2.5);
+
+    EXPECT_THROW(m.setAt(5, 1, 1.0), qlib::IndexOutOfBoundsException);
+    EXPECT_THROW(m.setAt(16, 16, 1.0), qlib::IndexOutOfBoundsException);
+    EXPECT_THROW(m.getAt(1, 5), qlib::IndexOutOfBoundsException);
+    EXPECT_THROW(m.addAt(0, 1, 1.0), qlib::IndexOutOfBoundsException);
+}

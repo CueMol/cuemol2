@@ -48,6 +48,7 @@ MapFFT::MapFFT()
     m_bUsePhases = true;
     m_grid = 1.0/3.0;
     m_mapr = -1.0;
+    m_bChkResGrid = false;
 }
 
 MapFFT::~MapFFT() {}

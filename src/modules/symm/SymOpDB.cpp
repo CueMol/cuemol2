@@ -378,7 +378,11 @@ void SymOpDB::loadSymLibFile()
         continue;
 
       if (m_psgtab->find(nsg)!=m_psgtab->end()) {
+        // keep the first definition; the duplicate's lines are skipped
+        // through pCurSg==NULL below (a second Group would never be
+        // inserted and leak)
         MB_DPRINTLN("SymOpLib Loader: sg %d already exists (ignored)", nsg);
+        continue;
       }
       // m_nMaxSgID = qlib::max<int>(m_nMaxSgID, nsg);
 
@@ -389,7 +393,7 @@ void SymOpDB::loadSymLibFile()
       pCurSg->cname = cname;
     }
     else if (!sline.isEmpty()){
-      if (pCurSg==NULL || ii>pCurSg->nasym) {
+      if (pCurSg==NULL || ii>=pCurSg->nasym) {
         MB_DPRINTLN("SymOpLib Loader: invalid input line: %s", sline.c_str());
         continue;
       }

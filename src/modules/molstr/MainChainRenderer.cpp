@@ -244,6 +244,8 @@ LString MainChainRenderer::interpHit(const gfx::RawHitData &rhit)
 
     // add common atom results
     MolAtomPtr pAtom = pCliMol->getAtom(aid);
+    if (pAtom.isnull())
+      return rval;  // the picked atom no longer exists
     rval += interpHitAidImpl(pAtom);
 
     // Selection str (residue)

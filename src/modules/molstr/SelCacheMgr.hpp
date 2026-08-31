@@ -50,10 +50,13 @@ private:
   /// Kd-tree data (for around op impl ver2)
   void *m_pExtData;
 
+  /// set while makeCache() is still filling this entry
+  bool m_bBuilding;
+
 public:
   SelCacheData()
        : m_nCacheID(-1), m_nMolID(qlib::invalid_uid), m_bAsetValid(false),
-         m_nSel(0), m_bBboxValid(false), m_pExtData(NULL)
+         m_nSel(0), m_bBboxValid(false), m_pExtData(NULL), m_bBuilding(false)
     {
     }
   

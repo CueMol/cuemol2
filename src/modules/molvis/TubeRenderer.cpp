@@ -287,19 +287,23 @@ qlib::Vector2D TubeRenderer::getEScl(double par, SplineCoeff *pCoeff)
   // convert val to scaling factor
   if (m_nPuttyMode==TBR_PUTTY_LINEAR1) {
     // linear conversion
-    val = (val-m_dParLo)/(m_dParHi-m_dParLo);
+    // a uniform parameter (hi==lo) would give 0/0 -> NaN width
+    const double rng = m_dParHi-m_dParLo;
+    val = (rng > F_EPS8) ? (val-m_dParLo)/rng : 0.5;
     val = (m_dPuttyScl-1.0/m_dPuttyLoScl)*val + 1.0/m_dPuttyLoScl;
   }
   else if (m_nPuttyMode==TBR_PUTTY_SCALE1) {
     // multiplication conversion 1
     // scale val to (1/Nlo -- 1.0 -- Nhi) for (min -- aver -- max)
     if (val<m_dParAver) {
-      val = (val-m_dParLo)/(m_dParAver-m_dParLo);
+      const double rng = m_dParAver-m_dParLo;
+      val = (rng > F_EPS8) ? (val-m_dParLo)/rng : 1.0;
       // val = ::pow(m_dPuttyLoScl, val-1.0);
       val = ((m_dPuttyLoScl-1)*val+1.0)/m_dPuttyLoScl;
     }
     else {
-      val = (val-m_dParAver)/(m_dParHi-m_dParAver);
+      const double rng = m_dParHi-m_dParAver;
+      val = (rng > F_EPS8) ? (val-m_dParAver)/rng : 0.0;
       // val = ::pow(m_dPuttyScl, val);
       val = (m_dPuttyScl-1.0)*val + 1.0;
     }

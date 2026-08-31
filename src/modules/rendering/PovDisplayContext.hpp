@@ -34,6 +34,8 @@ namespace render {
     /// output inc filename
     LString m_incFileName;
 
+    LString m_imgBaseDir;
+
     /// Generate files for post-blending mode
     bool m_bPostBlend;
 
@@ -94,6 +96,10 @@ namespace render {
     void init(qlib::OutStream *pPovOut, qlib::OutStream *pIncOut);
 
     void setIncFileName(const LString &name) { m_incFileName = name; }
+
+    /// directory the label PNG files are written to (the .pov refers to
+    /// them by the include-relative name)
+    void setImageBaseDir(const LString &dir) { m_imgBaseDir = dir; }
 
     void setPostBlend(bool b) { m_bPostBlend = b; }
 

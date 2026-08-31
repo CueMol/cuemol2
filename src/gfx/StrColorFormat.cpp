@@ -27,6 +27,12 @@ AbstractColor *AbstractColor::fromNode(qlib::LDom2Node *pNode)
   LString value = pNode->getValue();
   AbstractColor *pCol = AbstractColor::fromStringS(value);
 
+  // the color string did not compile: nothing to apply the modifiers to
+  if (pCol==NULL) {
+    LOG_DPRINTLN("AbstractColor.fromNode> invalid color \"%s\"", value.c_str());
+    return NULL;
+  }
+
   if (pNode->getChildCount()==0) {
     // pChNode has no child nodes ==> no modifications
     return pCol;

@@ -77,7 +77,14 @@ namespace {
     LString rval = chnam;
     if (chnam.equals("none") || chnam.equals("_"))
       rval = " ";
-    // rval = rval.toUpperCase();
+    // multi-model chains are stored as "<model>_<chain>": write the chain
+    // part, not the first digit of the model number
+    LString base;
+    int nModel = 1;
+    if (MolCoord::decodeModelFromChain(chnam, base, nModel) && !base.isEmpty())
+      rval = base;
+    if (rval.isEmpty())
+      return ' ';
     return rval.getAt(0);
   }
 }
@@ -516,6 +523,11 @@ void PDBFileWriter::writeSecstr(qlib::PrintStream &prs)
     if (pfx.equals("s"))
       pRes1 = pRes;
     else if (pfx.equals("e")) {
+      if (pRes1.isnull()) {
+        LOG_DPRINTLN("PDBWriter> secondary-structure end without start at %s (ignored)",
+                     pRes->toString().c_str());
+        continue;
+      }
       LString resn1 = pRes1->getName().substr(0,3);
       LString chn1 = pRes1->getChainName().substr(0,1);
       ResidIndex resix1 = pRes1->getIndex();
@@ -556,6 +568,7 @@ void PDBFileWriter::writeSecstr(qlib::PrintStream &prs)
       
       prs.println("");
       ++nhx;
+      pRes1 = MolResiduePtr();  // the segment is closed
     }
   }
 
@@ -578,7 +591,11 @@ void PDBFileWriter::writeSecstr(qlib::PrintStream &prs)
     if (pfx.equals("s"))
       pRes1 = pRes;
     else if (pfx.equals("e")) {
-      
+      if (pRes1.isnull()) {
+        LOG_DPRINTLN("PDBWriter> secondary-structure end without start at %s (ignored)",
+                     pRes->toString().c_str());
+        continue;
+      }
       LString resn1 = pRes1->getName().substr(0,3);
       LString chn1 = pRes1->getChainName().substr(0,1);
       ResidIndex resix1 = pRes1->getIndex();
@@ -616,6 +633,7 @@ void PDBFileWriter::writeSecstr(qlib::PrintStream &prs)
 
       prs.println("");
       ++nsh;
+      pRes1 = MolResiduePtr();  // the segment is closed
     }
   } // for
 

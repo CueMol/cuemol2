@@ -103,11 +103,12 @@ const NamedColor &NamedColor::operator=(const NamedColor &r)
   if(&r!=this){
     m_name = r.m_name;
     m_nCtxtID = r.m_nCtxtID;
+    m_material = r.m_material;
 
     m_pRef = ColorPtr();
 
-    // release old cache ID
-    if (m_nCacheID!=qlib::invalid_uid)
+    // release old cache ID (the resolver is gone after StyleMgr::fini())
+    if (m_nCacheID!=qlib::invalid_uid && m_pResolver!=NULL)
       m_pResolver->setCached(m_nCacheID, false);
     m_nCacheID = qlib::invalid_uid;
 

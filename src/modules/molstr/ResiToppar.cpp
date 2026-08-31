@@ -182,8 +182,11 @@ int ResiToppar::getRingCount() const
 
 void ResiToppar::addSideCh(const std::list<LString> &rmembs)
 {
-  if (m_pSideChAtoms==NULL)
+  // a second definition (or a re-read) replaces the previous list
+  if (m_pSideChAtoms==NULL || m_pSideChAtoms->size()!=rmembs.size()) {
+    delete m_pSideChAtoms;
     m_pSideChAtoms = MB_NEW std::vector<LString>(rmembs.size());
+  }
 
   std::list<LString>::const_iterator iter = rmembs.begin();
   std::list<LString>::const_iterator end = rmembs.end();
@@ -194,8 +197,10 @@ void ResiToppar::addSideCh(const std::list<LString> &rmembs)
 
 void ResiToppar::addMainCh(const std::list<LString> &rmembs)
 {
-  if (m_pMainChAtoms==NULL)
+  if (m_pMainChAtoms==NULL || m_pMainChAtoms->size()!=rmembs.size()) {
+    delete m_pMainChAtoms;
     m_pMainChAtoms = MB_NEW std::vector<LString>(rmembs.size());
+  }
 
   std::list<LString>::const_iterator iter = rmembs.begin();
   std::list<LString>::const_iterator end = rmembs.end();

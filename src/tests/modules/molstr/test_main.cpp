@@ -2,25 +2,23 @@
 #include <common.h>
 #include "qlib/qlib.hpp"
 #include "qsys/qsys.hpp"
-#include "qsys/style/StyleMgr.hpp"
-#include "qsys/RendererFactory.hpp"
-#include "qsys/StreamManager.hpp"
-#include "molstr/ElemSym.hpp"
-#include "molstr/SelCompiler.hpp"
 
+namespace molstr {
+extern bool init();
+extern void fini();
+}
+
+// Same setup as the molvis/molanl suites: molstr::init() registers the
+// scriptable classes (MolCoord etc.), so objects can be constructed in tests.
 class MolstrEnvironment : public ::testing::Environment {
 public:
     void SetUp() override {
         qlib::init();
-        qsys::init("");
-        qsys::StyleMgr::init();
-        qsys::RendererFactory::init();
-        molstr::ElemSym::init();
-        molstr::SelCompiler::init();
+        qsys::init(CUEMOL2_SYSCONFIG_PATH);
+        molstr::init();
     }
     void TearDown() override {
-        molstr::SelCompiler::fini();
-        molstr::ElemSym::fini();
+        molstr::fini();
         qsys::fini();
         qlib::fini();
     }

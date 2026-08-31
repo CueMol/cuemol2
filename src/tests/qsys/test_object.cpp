@@ -133,3 +133,13 @@ TEST(ObjectTest, ForceEmbedSetsDataChunkSource)
     EXPECT_TRUE(obj.getSource().startsWith("datachunk:"));
     EXPECT_TRUE(obj.getAltSource().isEmpty());
 }
+
+// getRendererByIndex is script-visible; an index past the table used to
+// advance the iterator beyond end().
+TEST(ObjectTest, GetRendererByIndexOutOfRangeReturnsNull)
+{
+    ConcreteObject obj;
+    EXPECT_TRUE(obj.getRendererByIndex(0).isnull());
+    EXPECT_TRUE(obj.getRendererByIndex(3).isnull());
+    EXPECT_TRUE(obj.getRendererByIndex(-1).isnull());
+}

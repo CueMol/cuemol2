@@ -303,8 +303,9 @@ void Trajectory::removeBlock(int index)
         // Back to the pre-append state; a later append/insert re-primes frame 0.
         m_bInit = false;
         m_nCurFrm = 0;
-        m_nBlkInd = 0;
-        m_nFrmInd = 0;
+        // -1 is the "no block" value getTrajBlkImpl() checks for
+        m_nBlkInd = -1;
+        m_nFrmInd = -1;
     }
     else {
         // Keep the current frame in range and refresh the atom coordinates.
@@ -487,6 +488,24 @@ void Trajectory::ensureInit()
 
 void Trajectory::updateTrajBlockDataImpl()
 {
+    // Blocks restored from a scene file were never checked against the
+    // topology (append() does this for interactive loads); a block whose
+    // frame size does not match the atom count, or that holds no frame,
+    // would be read out of bounds by update(). Drop such blocks.
+    const int nCrds = getAtomSize() * 3;
+    if (nCrds > 0) {
+        for (auto it = m_blocks.begin(); it != m_blocks.end();) {
+            const TrajBlockPtr &pBlk = *it;
+            if (pBlk->getSize() <= 0 || pBlk->getCrdSize() != nCrds) {
+                LOG_DPRINTLN("Trajectory> block with %d frames of %d coords does not fit %d atoms (dropped)",
+                             pBlk->getSize(), pBlk->getCrdSize(), getAtomSize());
+                it = m_blocks.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
     // Assign contiguous start indices and total frame count.
     int nnext = 0;
     for (const TrajBlockPtr &pBlk : m_blocks) {
@@ -495,6 +514,15 @@ void Trajectory::updateTrajBlockDataImpl()
         nnext += pBlk->getSize();
     }
     m_nTotalFrms = nnext;
+
+    if (m_blocks.empty()) {
+        // nothing left to prime; a later append() starts over
+        m_bInit = false;
+        m_nCurFrm = 0;
+        m_nBlkInd = -1;
+        m_nFrmInd = -1;
+        return;
+    }
 
     // Mark initialized before priming so the ensureInit() in setFrame() /
     // getFrameSize() does not re-enter.

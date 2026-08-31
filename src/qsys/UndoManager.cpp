@@ -101,6 +101,8 @@ bool UndoManager::getUndoDesc(int n, LString &str) const
 {
   if (!isUndoable())
     return false;
+  if (n<0 || n>=int(m_udata.size()))
+    return false;
   // UndoInfo *pui = m_udata.front();
   UndoInfoList::const_iterator iter = m_udata.begin();
   for (int i=0; i<n; ++i)
@@ -115,6 +117,8 @@ bool UndoManager::getUndoDesc(int n, LString &str) const
 bool UndoManager::getRedoDesc(int n, LString &str) const
 {
   if (!isRedoable())
+    return false;
+  if (n<0 || n>=int(m_rdata.size()))
     return false;
   //UndoInfo *pui = m_rdata.front();
   UndoInfoList::const_iterator iter = m_rdata.begin();
@@ -207,7 +211,12 @@ void UndoManager::rollbackTxn()
     return;
   }
   
-  MB_ASSERT(m_pPendInfo!=NULL);
+  if (m_pPendInfo==NULL) {
+    // script-visible: rollbackTxn() without a matching startTxn()
+    LOG_DPRINTLN("UndoManager> rollbackTxn() called outside a transaction (ignored)");
+    return;
+  }
+
   // undo pending operation
   m_pPendInfo->undo();
   delete m_pPendInfo;
@@ -225,7 +234,11 @@ void UndoManager::commitTxn()
     return;
   }
 
-  MB_ASSERT(m_pPendInfo!=NULL);
+  if (m_pPendInfo==NULL) {
+    // script-visible: commitTxn() without a matching startTxn()
+    LOG_DPRINTLN("UndoManager> commitTxn() called outside a transaction (ignored)");
+    return;
+  }
 
   if (m_pPendInfo->size()>0) {
     m_udata.push_front(m_pPendInfo);

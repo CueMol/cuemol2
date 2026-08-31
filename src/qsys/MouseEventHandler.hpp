@@ -40,7 +40,11 @@ namespace qsys {
     EventBuf  m_cbuf;
 
     static const int EVENTBUF_SIZE = 16;
+    /// velocity averaging window (milliseconds; the event clock is in ns)
     static const int AVER_TIME = 500;
+    /// longest move-to-release gap that still yields a velocity (milliseconds)
+    static const int VELO_GAP_TIME = 50;
+    /// double click interval (nanoseconds)
     static const int DBLCLICK_TIME = 500*1000*1000;
 
     InDevEvent m_lastEvent;

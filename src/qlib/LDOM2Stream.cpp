@@ -440,7 +440,7 @@ void LDom2InStream::closeChunkStream(qlib::InStream *pin)
   FilterInStream<ChunkFilterImpl> *pcf =
     dynamic_cast<FilterInStream<ChunkFilterImpl> *>(pin);
 
-  if (pin==NULL) {
+  if (pcf==NULL) {
     MB_THROW(InvalidCastException, "LDom2InStream::closeChunkStream");
     return;
   }

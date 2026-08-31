@@ -140,9 +140,9 @@ void qlib::UCS16toUTF8(const U16Char *ucs16, int nwclen, LString &utf8)
     unsigned int c = (unsigned int) ucs16[i];
     if (c==0)
       break;
-    else if (c<0x7F)
+    else if (c<=0x7F)
       utf8 += (char)c;
-    else if (c<0x7FF) {
+    else if (c<=0x7FF) {
       unsigned int c1 = c >> 6;
       unsigned int c2 = c & 0x3F;
       utf8 += char(c1 + 0xC0);

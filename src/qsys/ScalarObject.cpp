@@ -104,6 +104,8 @@ void ScalarObject::calcBaseHistogram()
 
   m_dBaseMin = m_dHisMin;
   m_dBinSz = (m_dHisMax-m_dHisMin)/double(nbins);
+  if (!(m_dBinSz > 0.0))
+    m_dBinSz = 1.0;  // uniform map: everything lands in bin 0 (was 0/0 -> NaN index)
   m_bashist.assign(nbins, 0);
 
   const int ni = getColNo();

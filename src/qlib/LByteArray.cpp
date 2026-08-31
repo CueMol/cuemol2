@@ -138,10 +138,10 @@ int LByteArray::getAt(int ind) const
                  LString::format("Element type %d mismatch", m_nElemType));
 
     int nElemSize = getElemSize(m_nElemType);
-    int addr = ind * nElemSize;
     const int nsize = getSize();
-    // MB_ASSERT(0<=ind && ind*nElemSize<nsize);
-    if (ind < 0 || nsize <= addr)
+    // size_t: ind * nElemSize wrapped around in int and passed the check
+    const size_t addr = size_t(ind) * size_t(nElemSize);
+    if (ind < 0 || size_t(nsize) <= addr)
         MB_THROW(IndexOutOfBoundsException,
                  LString::format("LByteArray getAt() out of index %d", ind));
 
@@ -183,10 +183,10 @@ void LByteArray::setAt(int ind, int value)
                  LString::format("Element type %d mismatch", m_nElemType));
 
     int nElemSize = getElemSize(m_nElemType);
-    int addr = ind * nElemSize;
     const int nsize = getSize();
-    // MB_ASSERT(0<=ind && ind*nElemSize<nsize);
-    if (ind < 0 || nsize <= addr)
+    // size_t: ind * nElemSize wrapped around in int and passed the check
+    const size_t addr = size_t(ind) * size_t(nElemSize);
+    if (ind < 0 || size_t(nsize) <= addr)
         MB_THROW(IndexOutOfBoundsException,
                  LString::format("LByteArray setAt() out of index %d", ind));
 
@@ -228,10 +228,10 @@ double LByteArray::getAtF(int ind) const
                  LString::format("Element type %d mismatch", m_nElemType));
 
     int nElemSize = getElemSize(m_nElemType);
-    int addr = ind * nElemSize;
     const int nsize = getSize();
-    // MB_ASSERT(0<=ind && ind*nElemSize<nsize);
-    if (ind < 0 || nsize <= addr)
+    // size_t: ind * nElemSize wrapped around in int and passed the check
+    const size_t addr = size_t(ind) * size_t(nElemSize);
+    if (ind < 0 || size_t(nsize) <= addr)
         MB_THROW(IndexOutOfBoundsException,
                  LString::format("LByteArray getAtF() out of index %d", ind));
 
@@ -256,10 +256,10 @@ void LByteArray::setAtF(int ind, double value)
                  LString::format("Element type %d mismatch", m_nElemType));
 
     int nElemSize = getElemSize(m_nElemType);
-    int addr = ind * nElemSize;
     const int nsize = getSize();
-    // MB_ASSERT(0<=ind && ind*nElemSize<nsize);
-    if (ind < 0 || nsize <= addr)
+    // size_t: ind * nElemSize wrapped around in int and passed the check
+    const size_t addr = size_t(ind) * size_t(nElemSize);
+    if (ind < 0 || size_t(nsize) <= addr)
         MB_THROW(IndexOutOfBoundsException,
                  LString::format("LByteArray setAtF() out of index %d", ind));
 

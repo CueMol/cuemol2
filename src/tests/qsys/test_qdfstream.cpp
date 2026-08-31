@@ -197,3 +197,35 @@ TEST(QdfStreamTest, RoundTripFloat32)
         EXPECT_NEAR(fval, 3.14f, 1e-5f);
     }
 }
+
+// The record definition comes from the file: reading one more field than it
+// defines used to index past m_recdefs.
+TEST(QdfStreamTest, ReadingPastRecordDefinitionThrows)
+{
+    qlib::StrOutStream sos;
+    {
+        QdfOutStream qos(sos);
+        qos.setVersion(0);
+        qos.start();
+        qos.writeFileType("TEST");
+        qos.defData("data", 1);
+        qos.defInt32("ival");
+        qos.startData();
+        qos.startRecord();
+        qos.writeInt32("ival", 42);
+        qos.endRecord();
+        qos.endData();
+        qos.end();
+    }
+
+    int nsize;
+    char *buf = sos.getData(nsize);
+    qlib::StrInStream sis(buf, nsize);
+    QdfInStream qis(sis);
+    qis.start();
+    EXPECT_EQ(qis.readDataDef("data"), 1);
+    qis.readRecordDef();
+    qis.startRecord();
+    EXPECT_EQ(qis.readInt32("ival"), 42);
+    EXPECT_THROW(qis.readInt32("other"), qlib::FileFormatException);
+}

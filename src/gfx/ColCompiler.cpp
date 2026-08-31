@@ -48,6 +48,8 @@ AbstractColor *ColCompiler::compile(const LString &cmd)
   resetParserState();
   m_alpha = 1.0;
   m_material = LString();
+  // modifiers left over from a failed compilation must not apply here
+  m_defs.clear();
 
   char *porig = m_sbuf = LChar::dup(cmd.c_str());
   m_nsize = LChar::length(porig);

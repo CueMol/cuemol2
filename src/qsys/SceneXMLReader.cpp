@@ -164,6 +164,24 @@ void SceneXMLReader::read()
   }
 }
 
+namespace {
+  /// After a failed chunk read, skip to the end of the chunk so that the
+  /// next chunk starts at its marker; otherwise every following chunk
+  /// fails to parse and its object stays empty.
+  template <class _Stream>
+  void skipFailedChunk(_Stream &ois, qlib::InStream *pin)
+  {
+    if (pin==NULL)
+      return;
+    try {
+      ois.closeChunkStream(pin);
+    }
+    catch (...) {
+      // the stream is beyond repair; the caller reports the original error
+    }
+  }
+}
+
 #ifdef USE_OBJSTR3
 void SceneXMLReader::procDataChunks(qlib::LDom2InStream &ois, LDom2Node *pNode) {}
 void SceneXMLReader::procDataChunks(qlib::LObjInStream3 &ois, LDom2Node *pNode)
@@ -173,6 +191,7 @@ void SceneXMLReader::procDataChunks(qlib::LDom2InStream &ois, LDom2Node *pNode)
 #endif
 {
   for (;;) {
+    qlib::InStream *pin = NULL;
     try {
       LString chunkid = ois.getNextDataChunkID();
       if (chunkid.isEmpty())
@@ -185,18 +204,22 @@ void SceneXMLReader::procDataChunks(qlib::LDom2InStream &ois, LDom2Node *pNode)
         return;
       }
 
-      qlib::InStream *pin = ois.getNextChunkStream();
+      pin = ois.getNextChunkStream();
+      if (pin==NULL)
+        return;
       pCnt->readFromStream(*pin);
       ois.closeChunkStream(pin);
-      
+      pin = NULL;
     }
     catch (qlib::LException &e) {
       pNode->appendErrMsg("SceneXML> Load object error (ignored).");
       pNode->appendErrMsg("SceneXML> Reason: %s", e.getMsg().c_str());
+      skipFailedChunk(ois, pin);
     }
     catch (...) {
       pNode->appendErrMsg("SceneXML> Load object error (ignored).");
       pNode->appendErrMsg("SceneXML> Reason: unknown");
+      skipFailedChunk(ois, pin);
     }
   }
 }

@@ -33,12 +33,13 @@ Camera::Camera()
   resetAllProps();
 }
 
+Camera::~Camera()
+{
+  delete m_pVisSetNodes;
+}
+
 void Camera::copyFrom(const Camera&r)
 {
-  if (!r.m_visset.empty()) {
-    LOG_DPRINTLN("Warning: copy of non-empty visflags camera <%s>", r.m_name.c_str());
-  }
-  
   m_name = r.m_name;
   m_source = r.m_source;
 
@@ -67,6 +68,14 @@ void Camera::copyFrom(const Camera&r)
   m_nCenterMark = r.m_nCenterMark;
   setDefaultPropFlag("centerMark", false);
 
+  // The visibility settings are part of the camera value: the copies made
+  // by Scene::getCamera(), the undo/redo edit info and the lightweight
+  // viewer must keep them. The pending <visibilities> node is deep-copied
+  // so that two cameras never share (and double-delete) the same tree.
+  m_visset = r.m_visset;
+  delete m_pVisSetNodes;
+  m_pVisSetNodes = (r.m_pVisSetNodes != NULL)
+    ? MB_NEW qlib::LDom2Node(*r.m_pVisSetNodes) : NULL;
 }
 
 bool Camera::equals(const Camera &r)
@@ -150,6 +159,7 @@ void Camera::readFrom2(qlib::LDom2Node *pNode)
   qlib::LDom2Node *pVisSet = pNode->findChild("visibilities");
   if (pVisSet!=NULL) {
     MB_DPRINTLN("Camera.readFrom> copy vis nodes");
+    delete m_pVisSetNodes;
     m_pVisSetNodes = MB_NEW qlib::LDom2Node(*pVisSet);
     return;
   }
@@ -395,15 +405,28 @@ bool Camera::visChange(qlib::uid_t tgtid, bool bVis)
 
 void Camera::clearVisSettings()
 {
-  while (getVisSize()>0) {
+  // getVisSize() also counts a pending <visibilities> node, so walk the
+  // map itself and never take begin() of an empty map
+  while (!m_visset.empty()) {
     VisSetting::iterator i = m_visset.begin();
-    visRemove(i->first);
+    const qlib::uid_t tgtid = i->first;
+    const bool bAlive = i->second.bObj
+      ? !SceneManager::getObjectS(tgtid).isnull()
+      : !SceneManager::getRendererS(tgtid).isnull();
+    if (!bAlive || !visRemove(tgtid)) {
+      // target already gone (nothing to notify) or removal failed: drop the entry
+      m_visset.erase(tgtid);
+    }
   }
-  // m_visset.clear();
-  if (m_pVisSetNodes!=NULL) {
-    delete m_pVisSetNodes;
-    m_pVisSetNodes = NULL;
-  }
+
+  resetVisSettings();
+}
+
+void Camera::resetVisSettings()
+{
+  m_visset.clear();
+  delete m_pVisSetNodes;
+  m_pVisSetNodes = NULL;
 }
 
 void Camera::saveVisSettings(ScenePtr pScene)

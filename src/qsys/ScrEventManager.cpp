@@ -5,6 +5,8 @@
 
 #include <common.h>
 
+#include <vector>
+
 #include "ScrEventManager.hpp"
 #include "ViewEvent.hpp"
 #include "ObjectEvent.hpp"
@@ -56,43 +58,48 @@ bool ScrEventManager::fireEventScript(const LString &aCatStr,
 {
   if (m_pCb.isnull()) return false;
 
-  SlotTab::const_iterator iter = m_slot.begin();
-  SlotTab::const_iterator eiter = m_slot.end();
+  // a callback may add or remove slots (one-shot listeners): iterate over
+  // a snapshot of the slot IDs and look each one up again
+  std::vector<int> slot_ids;
+  for (SlotTab::const_iterator it = m_slot.begin(); it != m_slot.end(); ++it)
+    slot_ids.push_back(it->first);
 
-  for (; iter!=eiter; ++iter) {
+  for (int nCurSlotID : slot_ids) {
+    Entry *pEnt = m_slot.get(nCurSlotID);
+    if (pEnt == NULL) continue;
     bool bCat = false, bSrc = false, bEvt = false, bUID = false;
     // source UID
-    if (iter->second->nSrcUID==qlib::invalid_uid)
+    if (pEnt->nSrcUID==qlib::invalid_uid)
       bUID = true;
-    else if (aSrcID==iter->second->nSrcUID)
+    else if (aSrcID==pEnt->nSrcUID)
       bUID = true;
     if (!bUID) continue;
 
     // category name
-    if (iter->second->cat.isEmpty())
+    if (pEnt->cat.isEmpty())
       bCat = true;
-    else if (aCatStr.equals(iter->second->cat))
+    else if (aCatStr.equals(pEnt->cat))
       bCat = true;
     if (!bCat) continue;
 
     // target type
-    if (iter->second->nTgtType<0)
+    if (pEnt->nTgtType<0)
       bSrc = true; // SEM_ANY
-    else if (aTgtType & iter->second->nTgtType) //(aTgtType==iter->second->nTgtType)
+    else if (aTgtType & pEnt->nTgtType) //(aTgtType==pEnt->nTgtType)
       bSrc = true;
     if (!bSrc) continue;
 
     // event type
-    if (iter->second->nEvtType<0)
+    if (pEnt->nEvtType<0)
       bEvt = true;
-    else if (aEvtType==iter->second->nEvtType)
+    else if (aEvtType==pEnt->nEvtType)
       bEvt = true;
     if (!bEvt) continue;
 
     //if (bCat&&bSrc&&bEvt&&bUID)
-    //return iter->first;
+    //return nCurSlotID;
     {
-      const int nSlotID = iter->first;
+      const int nSlotID = nCurSlotID;
       //MB_DPRINTLN("ScrEvent> fire event Slot=%d Cat=%s Tgt=%d Evt=%d", nSlotID, aCatStr.c_str(), aTgtType, aEvtType);
 
       qlib::LVarArgs args(6);

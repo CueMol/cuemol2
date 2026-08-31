@@ -224,7 +224,11 @@ namespace qlib {
       }
       m_pCached = dynamic_cast<_Type *>(pscr);
       if (m_pCached==NULL) {
-        super_t::m_ptr = NULL;
+        // Not that type: become an empty pointer. The base ctor already
+        // took a reference on r's object; just nulling m_ptr kept that
+        // reference (leak) and shared r's counter (dangling later).
+        LScrSp<_Type> empty;
+        super_t::swap(empty);
         return;
       }
     }

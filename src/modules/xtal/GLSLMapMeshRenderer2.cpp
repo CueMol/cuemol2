@@ -233,9 +233,19 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
     int strow = m_nStRow - pMap->getStartRow();
     int stsec = m_nStSec - pMap->getStartSec();
 
-    int ncol = int(vmax.x() - vmin.x());
-    int nrow = int(vmax.y() - vmin.y());
-    int nsec = int(vmax.z() - vmin.z());
+    // the box can lie entirely outside the map (non-PBC): an empty region
+    // means there is nothing to upload
+    int ncol = qlib::max(0, int(vmax.x() - vmin.x()));
+    int nrow = qlib::max(0, int(vmax.y() - vmin.y()));
+    int nsec = qlib::max(0, int(vmax.z() - vmin.z()));
+
+    m_nActCol = ncol;
+    m_nActRow = nrow;
+    m_nActSec = nsec;
+    if (ncol <= 0 || nrow <= 0 || nsec <= 0) {
+        m_bMapTexOK = false;
+        return;
+    }
 
     MapBufTex::DataArray &maptmp = m_mapBufTex.m_data;
     if (int(maptmp.cols()) != ncol || int(maptmp.rows()) != nrow ||
@@ -450,10 +460,10 @@ void GLSLMapMeshRenderer2::renderCPU(DisplayContext *pdc)
         m_ivdel[6] = IntVec3D(0, 1, 1);
         m_ivdel[7] = IntVec3D(0, 0, 1);
 
-        m_ivdel[4] = IntVec3D(0, 0, 0);
-        m_ivdel[5] = IntVec3D(0, 0, 1);
-        m_ivdel[6] = IntVec3D(1, 0, 1);
-        m_ivdel[7] = IntVec3D(1, 0, 0);
+        m_ivdel[8] = IntVec3D(0, 0, 0);
+        m_ivdel[9] = IntVec3D(0, 0, 1);
+        m_ivdel[10] = IntVec3D(1, 0, 1);
+        m_ivdel[11] = IntVec3D(1, 0, 0);
     }
 
     quint8 isolev;

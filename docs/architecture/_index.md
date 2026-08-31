@@ -33,6 +33,11 @@ architecture, it belongs here.
   mechanism (64 KiB, x8 for readers the budget cut off, up to a
   ceiling), and the text / binary implementation patterns shared by
   every reader.
+- [Linux (X11) sysdep and the CLI build configuration](x11-sysdep-build.md) --
+  why the `Xgl*` backend no longer compiles, and why Linux now builds the
+  CLI configuration (`BUILD_OPENGL_SYSDEP=FALSE`, `TTYView` factory) instead
+  of stopping in `sysdep`; the `ENABLE_X11_SYSDEP` escape hatch for the port,
+  and why tritium (which brings its own `ElecView`) is unaffected.
 - [GTAO Screen-Space AO](gtao-screen-space-ao.md) (日本語) -- リアルタイム
   GTAO のパイプライン、projection 由来の view-space 復元と GL 座標系、MRT
   geometry 法線、Apple Metal-GL の MRT/ブレンドのハマりどころ、tritium

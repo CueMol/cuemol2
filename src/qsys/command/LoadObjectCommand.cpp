@@ -85,6 +85,10 @@ void LoadObjectCommand::run()
 
     auto strMgr = qsys::StreamManager::getInstance();
     qsys::ObjReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
+    if (reader.isnull()) {
+        MB_THROW(qlib::RuntimeException, "no reader for file format " + m_fileFmt);
+        return;
+    }
     reader->setPath(m_filePath);
 
     // check compression
@@ -113,6 +117,10 @@ qlib::LStringList LoadObjectCommand::searchCompatibleRendNames() const
     // TO DO: reuse reader obj
     auto strMgr = qsys::StreamManager::getInstance();
     qsys::ObjReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
+    if (reader.isnull()) {
+        MB_THROW(qlib::RuntimeException, "no reader for file format " + m_fileFmt);
+        return {};
+    }
     auto pTmpObj = reader->createDefaultObj();
     LString str = pTmpObj->searchCompatibleRendererNames();
     qlib::LStringList strlist1;

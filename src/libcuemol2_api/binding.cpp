@@ -43,10 +43,12 @@ namespace cuemol2 {
       errmsg = LString::format("Caught exception <%s> Reason: %s",
                                typeid(e).name(),
                                e.getMsg().c_str());
+      return false;
     }
     catch (...) {
       LOG_DPRINTLN("HasClass> Caught unknown exception for class name %s", clsname.c_str());
       errmsg = LString::format("Caught unknown exception for class name %s", clsname.c_str());
+      return false;
     }
 
     return false;
@@ -101,12 +103,14 @@ namespace cuemol2 {
                                e.getFmtMsg().c_str());
       LOG_DPRINTLN("GetService> Caught exception <%s>", typeid(e).name());
       LOG_DPRINTLN("GetService> Reason: %s", e.getMsg().c_str());
+      return false;
     }
     catch (...) {
       errmsg = 
         LString::format("Unknown Exception occured in getProp for %s",
                         svcname.c_str());
       LOG_DPRINTLN("Caught unknown exception");
+      return false;
     }
     
     return false;
@@ -174,11 +178,13 @@ namespace cuemol2 {
         LString::format("Exception occured in getProp for %s: %s",
                         propname.c_str(),
                         e.getFmtMsg().c_str());
+      return false;
     }
     catch (...) {
       errmsg = 
         LString::format("Unknown Exception occured in getProp for %s",
                         propname.c_str());
+      return false;
     }
 
     errmsg = "Unexpected condition in getProp()";
@@ -201,11 +207,13 @@ namespace cuemol2 {
         LString::format("Exception occured in hasProp for %s: %s",
                         propname.c_str(),
                         e.getFmtMsg().c_str());
+      return false;
     }
     catch (...) {
       errmsg = 
         LString::format("Unknown Exception occured in hasProp for %s",
                         propname.c_str());
+      return false;
     }
 
     errmsg = "Unexpected condition in hasProp()";
@@ -323,13 +331,13 @@ namespace cuemol2 {
       return true;
     }
     catch (qlib::LException &e) {
-      LString errmsg = 
+      errmsg = 
         LString::format("Exception occured in getPropsJSON: %s",
                         e.getFmtMsg().c_str());
       return false;
     }
     catch (...) {
-      LString errmsg = 
+      errmsg = 
         LString::format("Unknown Exception occured in getPropsJSON");
       return false;
     }

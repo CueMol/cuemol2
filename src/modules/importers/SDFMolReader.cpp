@@ -193,6 +193,9 @@ void SDFMolReader::readMol(qlib::LineStream &lin, bool bskip)
         LOG_DPRINTLN("SDFMolReader> reading compound <%s>", cmpd_name.c_str());
 
     LString str_ct = lin.readLine();
+    // substr() throws std::out_of_range on a short line; pad to the counts line width
+    while (str_ct.length() < 39)
+      str_ct += " ";
 
     LString str_natom = str_ct.substr(0, 3);
     LString str_nbond = str_ct.substr(3, 3);
@@ -230,6 +233,8 @@ void SDFMolReader::readMol(qlib::LineStream &lin, bool bskip)
     for (i = 0; i < natom; ++i) {
         str = lin.readLine();
         if (str.trim().isEmpty()) MB_THROW(SDFFormatException, "Atom lines too short");
+        while (str.length() < 34)
+          str += " ";
 
         sx = str.substr(0, 10);
         sy = str.substr(10, 10);

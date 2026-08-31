@@ -48,6 +48,9 @@ void AtomPosMap::generate(SelectionPtr pSel)
 {
   MB_ASSERT(!m_pMol.isnull());
   if (m_pMap!=NULL) {
+    const int nsize = m_pMap->size();
+    for (int i=0; i<nsize; ++i)
+      delete (*m_pMap)[i];
     delete m_pMap;
     m_pMap = NULL;
   }

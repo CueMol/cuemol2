@@ -32,6 +32,9 @@ PDBFileReader::PDBFileReader()
   m_bLoadAltConf = true;
   m_bLoadAnisoU = true;
   m_bBuild2ndry = true;
+  // loadsegid defaults to false in the .qif; a reader constructed directly
+  // (tests) read the chain from the empty segment-ID columns on Linux
+  m_bLoadSegID = false;
   m_bAutoTopoGen = true;
 
   m_nErrCount = 0;
@@ -182,7 +185,10 @@ void PDBFileReader::readContents(qlib::InStream &ins)
   LString buf;
 
   m_helix.clear();
+  m_helix310.clear();
+  m_helixpi.clear();
   m_sheet.clear();
+  m_linkdat.clear();
 
   for ( ;; ) {
     if (!readRecord(lin))
@@ -243,7 +249,7 @@ void PDBFileReader::readContents(qlib::InStream &ins)
     }
     else if (recnam.equals("MODEL")) {
       //buf = readStr(11, 14);
-      buf = m_recbuf.substr(6);
+      buf = (m_recbuf.length()>6) ? m_recbuf.substr(6) : LString();
       if (buf.toInt(&m_nCurrModel)) {
         // valid model record ...
 	// LOG_DPRINTLN("line: %s", readStr(1,70).c_str());
@@ -376,9 +382,13 @@ int PDBFileReader::convFromAname(const LString &atomname)
 
 bool PDBFileReader::readAtom()
 {
+  // Records outside a MODEL block (m_nCurrModel==-1, e.g. HETATM after the
+  // last ENDMDL) belong to the default model.
+  const bool bDefaultModel = (m_nCurrModel==-1 || m_nCurrModel==m_nDefaultModel);
+
   // If LoadMultiModel==false,
   // we ignore ATOM line in the non-default models.
-  if (!m_bLoadMultiModel && m_nDefaultModel!=m_nCurrModel)
+  if (!m_bLoadMultiModel && !bDefaultModel)
     return true;
 
   LString atomname;
@@ -480,10 +490,13 @@ bool PDBFileReader::readAtom()
   if (!checkAtomRecord(chain, resname, atomname))
     return false;
 
-  // process model ID (encode model ID in the chain name)
+  // process model ID (encode model ID in the chain name). The models are
+  // numbered relative to the first one of the file: encodeModelInChain()
+  // leaves model 1 unprefixed, so a file whose models start at 0 would
+  // otherwise merge MODEL 1 into the default model.
   LString schain(chain);
-  if (m_nDefaultModel!=m_nCurrModel)
-    schain = MolCoord::encodeModelInChain(chain, m_nCurrModel);
+  if (!bDefaultModel)
+    schain = MolCoord::encodeModelInChain(chain, m_nCurrModel - m_nDefaultModel + 1);
 
   MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
   pAtom->setParentUID(m_pMol->getUID());

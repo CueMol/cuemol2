@@ -465,6 +465,8 @@ void MorphMol::update(double dframe)
 {
   int i;
   const int nframes = m_frames.size();
+  if (nframes<=0)
+    return;  // nothing to interpolate (nframes-1 would index frame -1)
 
   // check data loaded
   for (i=0; i<nframes; ++i) {
@@ -516,6 +518,7 @@ void MorphMol::update(double dframe)
     MolAtomPtr pAtom = getAtom(aid);
     if (pAtom.isnull()) {
       LOG_DPRINTLN("MorphMol::update mol mismatch at ID=%d (ignored)", i);
+      continue;
     }
     qlib::Vector4D pos(curtmp[i*3],
                        curtmp[i*3+1],

@@ -23,7 +23,7 @@ bool MolArrayMapElem::less_fcn::operator() (const MolArrayMapElem &x, const MolA
   
   if (x.resid<y.resid)
     return true;
-  else if (x.resid>y.resid)
+  else if (y.resid<x.resid)
     return false;
         
   return ::strcmp(x.atom.c_str(), y.atom.c_str())<0;
@@ -38,7 +38,7 @@ void MolArrayMap::setup(MolCoordPtr pRefMol, SelectionPtr pRefSel)
     MolAtomPtr pa = iter.get();
     MolArrayMapElem a;
     a.chain = pa->getChainName().c_str();
-    a.resid = pa->getResIndex().toInt();
+    a.resid = pa->getResIndex();
     a.atom = pa->getName().c_str();
     a.pA = pa;
     m_data.insert(data_t::value_type(a, -1));
@@ -57,7 +57,7 @@ void MolArrayMap::setup(MolCoordPtr pRefMol)
     MolAtomPtr pa = iter.get();
     MolArrayMapElem a;
     a.chain = pa->getChainName().c_str();
-    a.resid = pa->getResIndex().toInt();
+    a.resid = pa->getResIndex();
     a.atom = pa->getName().c_str();
     a.pA = pa;
     m_data.insert(data_t::value_type(a, -1));

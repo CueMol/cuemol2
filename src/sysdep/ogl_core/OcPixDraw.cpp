@@ -26,9 +26,16 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
     CHK_GLERROR("glActiveTexture");
     glBindTexture(GL_TEXTURE_2D, texid);
     CHK_GLERROR("glBindTexture");
+    // PixelBuffer rows are tightly packed; the default GL_UNPACK_ALIGNMENT
+    // of 4 made GL read past the buffer for widths that are not a multiple
+    // of 4
+    GLint prevAlign = 4;
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &prevAlign);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ow, oh, 0, GL_RED, GL_UNSIGNED_BYTE,
                  pixbuf.data());
     CHK_GLERROR("glTexImage2D");
+    glPixelStorei(GL_UNPACK_ALIGNMENT, prevAlign);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

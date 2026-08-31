@@ -79,8 +79,11 @@ bool CnsParFile::readRecord()
         ('a'<=ch && ch<='z') ||
         ('A'<=ch && ch<='Z') ||
         ch=='.' || ch=='-' || ch=='+' || ch=='\'') {
-      sbuf[idx] = ch;
-      idx++;
+      if (idx < int(sizeof(sbuf))-1) {
+        sbuf[idx] = ch;
+        idx++;
+      }
+      // else: token longer than the buffer, extra characters are dropped
       continue;
     }
 

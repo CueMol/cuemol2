@@ -123,6 +123,10 @@ quint32 GradientColor::getCode() const
 
 LString GradientColor::getMaterial() const
 {
+  // a gradient without component colors (freshly created from a script)
+  // has no material; this is a readonly property, so do not throw
+  if (m_pColor1.isnull())
+    return LString();
   return m_pColor1->getMaterial();
 }
     

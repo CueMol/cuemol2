@@ -27,6 +27,9 @@
 
 #include <boost/foreach.hpp>
 
+#include <iterator>
+#include <memory>
+
 #include "PickleInStream.hpp"
 #include "AtomPropColoring.hpp"
 #include "PSEConsts.hpp"
@@ -46,12 +49,13 @@ using molstr::MolAtomPtr;
 using molstr::ResidIndex;
 
 PSEFileReader::PSEFileReader()
+  : m_pSet(NULL), m_bColorWarned(false)
 {
-  m_pSet = NULL;
 }
 
 PSEFileReader::~PSEFileReader()
 {
+  delete m_pSet;
 }
 
 int PSEFileReader::getCatID() const
@@ -100,7 +104,7 @@ void PSEFileReader::setupSettingList(qlib::LVarList *pSet)
   if (m_pSet==NULL)
     m_pSet = new LVarList;
   else
-    m_pSet->clear();
+    m_pSet->clearAndDelete();
   
   LVarList::iterator iter = pSet->begin();
   LVarList::iterator eiter = pSet->end();
@@ -120,10 +124,31 @@ void PSEFileReader::setupSettingList(qlib::LVarList *pSet)
   for (; iter!=eiter; ++iter) {
     qlib::LVarList *pTuple = (*iter)->getListPtr();
     int id = pTuple->getInt(0);
-    m_pSet->at(id) = pTuple->at(2);
+    // m_pSet owns its entries, so keep a copy of the setting value
+    const LVariant *pval = pTuple->at(2);
+    delete m_pSet->at(id);
+    m_pSet->at(id) = (pval!=NULL) ? MB_NEW LVariant(*pval) : NULL;
   }
-  
+
   m_pSet->dump();
+}
+
+/// Convert a PyMOL color index to the 0xAARRGGBB value of the "col" atom prop
+unsigned int PSEFileReader::convColor(int ncol)
+{
+  // PyMOL encodes a direct RGB color as 0x40000000 | 0xRRGGBB. Negative
+  // indices are PyMOL-internal (ramps, defaults) and have no table entry.
+  if (ncol>=0 && (ncol & 0x40000000))
+    return 0xFF000000u | (static_cast<unsigned int>(ncol) & 0x00FFFFFFu);
+
+  if (ncol>=0 && ncol<int(std::size(PSE_colors)))
+    return PSE_colors[ncol];
+
+  if (!m_bColorWarned) {
+    LOG_DPRINTLN("PSEFileReader> unknown color index %d, using white", ncol);
+    m_bColorWarned = true;
+  }
+  return PSE_colors[0];
 }
 
 void PSEFileReader::read()
@@ -145,12 +170,11 @@ void PSEFileReader::read()
   fis.open(localfile);
   PickleInStream ois(fis);
 
-  LVariant *pTop = ois.getMap();
+  m_bColorWarned = false;
+  std::unique_ptr<LVariant> pTop(ois.getMap());
 
-  if (!pTop->isDict()) {
-    delete pTop;
+  if (!pTop->isDict())
     return;
-  }
 
   LVarDict *pDict = pTop->getDictPtr();
 
@@ -166,9 +190,7 @@ void PSEFileReader::read()
 
   LVarList *pNames = pDict->getList("names");
   procNames(pNames);
-  
-  delete pTop;
-  
+
   //////////
   // fire the scene-loaded event
   {
@@ -476,8 +498,7 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
     pAtom->setPos(Vector4D(x,y,z));
 
     int ncol = pAtmDat->getInt(AT_COLOR);
-    // MB_DPRINTLN("color for %d = %d", i, ncol);
-    pAtom->setAtomPropInt("col", PSE_colors[ncol]);
+    pAtom->setAtomPropInt("col", convColor(ncol));
 
     int res = pMol->appendAtom(pAtom);
     if (res<0) {

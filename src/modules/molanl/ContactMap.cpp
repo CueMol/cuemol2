@@ -257,9 +257,9 @@ public:
     }
 
     {
-      // For mol2
+      // For mol2: its atoms follow mol1's entries
       AtomIterator aiter(pMol2, pSel2);
-      for (i=0,aiter.first(); aiter.hasMore()&&i<natoms; aiter.next(),++i) {
+      for (i=natoms1,aiter.first(); aiter.hasMore()&&i<natoms; aiter.next(),++i) {
 	MolAtomPtr pAtom = aiter.get();
 	m_data[i].pos = pAtom->getPos();
 	m_data[i].patm = pAtom;
@@ -334,7 +334,7 @@ public:
       LOG_DPRINTLN("Mol[%s] Atom contacts in %.2f -- %.2f Angstroms:", pMol->getName().c_str(), m_rmin, m_rmax);
       BOOST_FOREACH (const IntrSet::value_type &elem, intrset) {
         MolAtomPtr pA1 = pMol->getAtom(elem.first);
-        MolAtomPtr pA2 = pMol->getAtom(elem.second);
+        MolAtomPtr pA2 = pMol2->getAtom(elem.second);
         double dist = (pA1->getPos() - pA2->getPos()).length();
 
         if (!pSel1.isnull() && !pSel1->isSelected(pA2))

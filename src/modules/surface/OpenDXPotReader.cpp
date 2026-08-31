@@ -12,11 +12,13 @@
 #include "OpenDXPotReader.hpp"
 #include "ElePotMap.hpp"
 
+#include <vector>
+
 using namespace surface;
 
 // default constructor
 OpenDXPotReader::OpenDXPotReader()
-     : m_pMap(NULL)
+     : m_pMap(NULL), m_dSmooth(-1.0), m_navail(0)  // smooth: .qif default (off)
 {
 }
 
@@ -232,14 +234,18 @@ bool OpenDXPotReader::read(qlib::InStream &arg)
   //
   //  allocate memory
   //
-  float *fbuf;
-  int ntotal = m_nx*m_ny*m_nz;
-  fbuf = MB_NEW float[ntotal];
-  LOG_DPRINT("memory allocation %d bytes\n", ntotal*4);
-  if (fbuf==NULL) {
-    MB_THROW(qlib::OutOfMemoryException, "OpenDX PotFile read: cannot allocate memory");
+  if (m_nx<=0 || m_ny<=0 || m_nz<=0) {
+    MB_THROW(qlib::FileFormatException, "OpenDX PotFile read: invalid map size");
     return false;
   }
+  // the map is indexed with int arithmetic, so the element count must fit
+  const size_t ntotal = size_t(m_nx)*size_t(m_ny)*size_t(m_nz);
+  if (ntotal > size_t(0x7fffffff)) {
+    MB_THROW(qlib::FileFormatException, "OpenDX PotFile read: map size too large");
+    return false;
+  }
+  std::vector<float> fbuf(ntotal);
+  LOG_DPRINT("memory allocation %zu bytes\n", ntotal*sizeof(float));
 
   //int ii=0;
   for (int ix=0; ix<m_nx; ix++) {
@@ -265,7 +271,8 @@ bool OpenDXPotReader::read(qlib::InStream &arg)
   LOG_DPRINTLN("OpenDXPotReader> Map origin: (%f, %f, %f)", orig.x(), orig.y(), orig.z());
   const double scale = 1.0/m_hx;
 
-  m_pMap->setMapFloatArray(fbuf, m_nx, m_ny, m_nz,
+  // setMapFloatArray() copies the array
+  m_pMap->setMapFloatArray(fbuf.data(), m_nx, m_ny, m_nz,
                            m_hx, m_hy, m_hz, orig);
 
   if (m_dSmooth>0.0) {

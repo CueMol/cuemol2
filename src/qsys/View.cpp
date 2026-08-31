@@ -497,6 +497,7 @@ void View::getTrackRotQuat(double curX, double curY,
 void View::convXYTrans(double adx, double ady, Vector4D &vec) const
 {
   const double h = getHeight();
+  if (!(h > 0.0)) return;  // minimized / not yet sized: nothing to translate
   const double zoom = m_curcam.getZoom();
   const double dx = adx*zoom/h;
   const double dy = -ady*zoom/h;
@@ -973,6 +974,8 @@ void View::setCameraAnim(CameraPtr rcam, bool bAnim)
   else {
     m_curcam = Camera(*(rcam.get()));
     m_curcam.setSource("");
+    // the view only tracks the geometry; vis flags stay with the named camera
+    m_curcam.resetVisSettings();
 
     // camera changed, so we must update proj matrix
     setProjChange();

@@ -49,6 +49,10 @@ gfx::ColorPtr MultiGradient::getColor(double rho) const
   if (m_data.size()==1)
     return iter->pColor;
 
+  // NaN matches no interval below and walked the loop off the end
+  if (rho!=rho)
+    return iter->pColor;
+
   // check lower bound
   if (iter->value>rho) {
     return iter->pColor;
@@ -66,6 +70,8 @@ gfx::ColorPtr MultiGradient::getColor(double rho) const
   for (; iter!=eiter; ++iter) {
     iter2 = iter;
     iter2++;
+    if (iter2==eiter)
+      break;
 
     double v1 = iter->value;
     double v2 = iter2->value;
@@ -203,6 +209,10 @@ void MultiGradient::readFrom2(qlib::LDom2Node *pNode)
       continue;
     }
     gfx::ColorPtr pCol(gfx::AbstractColor::fromNode(pColNode));
+    if (pCol.isnull()) {
+      LOG_DPRINTLN("MultiGradient.readFrom> invalid color in gradnode tag (ignored)");
+      continue;
+    }
 
     insert(val, pCol);
   }

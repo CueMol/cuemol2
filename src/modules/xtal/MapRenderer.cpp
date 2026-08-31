@@ -80,8 +80,8 @@ double MapRenderer::getMaxLevel() const
   ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   double sig = pMap->getRmsdDensity();
-  //if (qlib::isNear4(sig, 0.0))
-  //return 0.0;
+  if (!(sig > 0.0))
+    return 0.0;  // uniform map: no sigma scale
   return pMap->getMaxDensity()/sig;
 }
 
@@ -90,8 +90,8 @@ double MapRenderer::getMinLevel() const
   ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   double sig = pMap->getRmsdDensity();
-  //if (qlib::isNear4(sig, 0.0))
-  //return 0.0;
+  if (!(sig > 0.0))
+    return 0.0;  // uniform map: no sigma scale
   return pMap->getMinDensity()/sig;
 }
 
@@ -108,6 +108,10 @@ void MapRenderer::setLevel(double value)
   ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   double sig = pMap->getRmsdDensity();
+  if (!(sig > 0.0)) {
+    setSigLevel(0.0);  // uniform map: no sigma scale
+    return;
+  }
   setSigLevel(value/sig);
 }
 

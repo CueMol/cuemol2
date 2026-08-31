@@ -69,14 +69,16 @@ namespace qlib {
     {
       int nlen;
       nlen = readInt32();
-      MB_ASSERT(nlen>=0);
-      if (nlen<=0) return LString();
-      char *sbuf = MB_NEW char[nlen+1];
-      readFully(sbuf, 0, nlen);
-      sbuf[nlen] = '\0';
-      LString ret(sbuf);
-      delete [] sbuf;
-      return ret;
+      // the length comes from the file: a negative or absurd value must not
+      // reach new[], and the buffer must not leak when readFully() throws
+      if (nlen<0 || nlen>0x10000000) {
+        MB_THROW(FileFormatException, "BinInStream::readStr: invalid string length");
+        return LString();
+      }
+      if (nlen==0) return LString();
+      std::string sbuf(size_t(nlen), '\0');
+      readFully(&sbuf[0], 0, nlen);
+      return LString(sbuf);
     }
 
     qint8 readInt8()

@@ -60,8 +60,10 @@ public:
     {
     }
 
-    /// copy ctor
+    /// copy ctor (deep copy of the pixels; the GPU rep is not shared)
     PixelBuffer(const PixelBuffer &src);
+
+    PixelBuffer &operator=(const PixelBuffer &src);
 
     ~PixelBuffer();
 

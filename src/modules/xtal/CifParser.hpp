@@ -72,6 +72,8 @@ public:
 
     bool tokenizeLine(bool bChk = true);
 
+    int getLineNo() const { return m_lineno; }
+
     LString getToken(int n) const
     {
         LString tok = getRawToken(n);

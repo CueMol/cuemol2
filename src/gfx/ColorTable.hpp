@@ -25,11 +25,12 @@ public:
   /// Internal color data structure (supporting gradient color between two clut entries)
   class IntColor {
   public:
-    /// Index for the internal CLUT
-    short cid1;
+    /// Index for the internal CLUT (int: an export can need more than
+    /// 32768 entries)
+    int cid1;
 
     /// Index for the internal CLUT. Valid only for gradient color.
-    short cid2;
+    int cid2;
     
     /// gradient param.
     unsigned char rho;

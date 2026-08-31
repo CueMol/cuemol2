@@ -34,9 +34,16 @@ const Matrix3D &CrystalInfo::getOrthMat() const
   double gamma = m_gamma*M_PI/180;
   double coaster, siaster;
 
-  coaster =
-    (cos(beta)*cos(gamma) - cos(alpha))/
-    (sin(beta)*sin(gamma));
+  // degenerate angles (0 or 180) make the denominator 0 and the cosine
+  // leave [-1, 1]; keep the matrix finite instead of NaN
+  double denom = sin(beta)*sin(gamma);
+  if (fabs(denom) < 1.0e-12) {
+    LOG_DPRINTLN("CrystalInfo> degenerate cell angles (beta=%f, gamma=%f)", m_beta, m_gamma);
+    denom = 1.0e-12;
+  }
+  coaster = (cos(beta)*cos(gamma) - cos(alpha))/denom;
+  if (coaster > 1.0) coaster = 1.0;
+  if (coaster < -1.0) coaster = -1.0;
 
   siaster = sqrt(1-coaster*coaster);
 

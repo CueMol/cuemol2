@@ -115,6 +115,10 @@ LString LRegExpr::getSubstr(int index)
     int nstart = m_ovector[2 * index];
     int nsize = m_ovector[2 * index + 1] - m_ovector[2 * index];
 
+    // pcre marks a group that did not take part in the match with -1
+    if (nstart < 0 || nsize < 0)
+        return LString();
+
     return m_subj.substr(nstart, nsize);
 }
 

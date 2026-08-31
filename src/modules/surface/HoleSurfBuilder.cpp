@@ -15,6 +15,8 @@
 #include <modules/molstr/TopparManager.hpp>
 #include <modules/molstr/AtomPosMap.hpp>
 
+#include <iterator>
+
 using namespace surface;
 using molstr::MolCoordPtr;
 using molstr::MolAtomPtr;
@@ -62,6 +64,11 @@ namespace {
 
 void HoleSurfBuilder::doit()
 {
+  if (m_pTgtMol.isnull()) {
+    MB_THROW(qlib::NullPointerException, "HoleSurfBuilder: target molecule is not set");
+    return;
+  }
+
   LString selstr;
   if (!m_pTgtSel.isnull())
     selstr = m_pTgtSel->toString();
@@ -84,7 +91,7 @@ void HoleSurfBuilder::doit()
   int nslice;
   double score = 0.0, prev_score = -1.0;
   std::vector<Vector4D> cen_ary;
-  for (int i=0; i<sizeof(trytemp); ++i) {
+  for (size_t i=0; i<std::size(trytemp); ++i) {
     std::vector<Vector4D> new_ary;
     findPath(trytemp[i], new_ary, score, nslice);
     if (score < prev_score) {
@@ -190,7 +197,9 @@ void HoleSurfBuilder::performMCOpt(double start_temp, const Vector4D &start_pos,
       newpos += getRandDir(m_dirnorm).scale(rand_real()*dmax);
 
     int aid = m_pAmap->searchNearestAtom(newpos);
-    MolAtomPtr pAtom = pMol->getAtom(aid);
+    MolAtomPtr pAtom = (aid>=0) ? pMol->getAtom(aid) : MolAtomPtr();
+    if (pAtom.isnull())
+      continue;  // no atom near this trial position
     Vector4D rp = pAtom->getPos() - newpos;
     double vdw = pTM->getVdwRadius(pAtom, false);
     if (vdw<0)

@@ -82,6 +82,8 @@ void DensityMap::setMapFloatArray(const float *array,
   // map truncation
   MapQuant q;
   q.step = (double)(rhomax - rhomin)/256.0;
+  if (!(q.step > 0.0))
+    q.step = 1.0;  // uniform map: (rho-base)/step must stay finite
   q.base = rhomin;
 
   MB_DPRINT("truncating to 8bit map base: %f, step: %f\n", q.base, q.step);
@@ -122,6 +124,8 @@ void DensityMap::setMapByteArray(const unsigned char*array,
   // calc map trunc params
   MapQuant q;
   q.step = (double)(rhomax - rhomin)/256.0;
+  if (!(q.step > 0.0))
+    q.step = 1.0;  // uniform map: (rho-base)/step must stay finite
   q.base = rhomin;
 
   beginByteMap(ncol, nrow, nsect, q);

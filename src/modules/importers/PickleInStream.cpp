@@ -7,6 +7,10 @@
 
 #include "PickleInStream.hpp"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 using namespace importers;
 
 PickleInStream::~PickleInStream()
@@ -179,26 +183,18 @@ LVariant *PickleInStream::getMap()
       break;
     }
       
-    case BINSTRING: {
-      int i = readIntLE();
-      char *a = new char[i+1];
-      read(a, 0, i);
-      a[i]='\0';
-      LString s = a;
-      push(createString(s));
-      delete [] a;
-      //MB_DPRINTLN("BINSTRING len=%d %s", i, s.c_str());
-      break;
-    }
-      
+    case BINSTRING:
     case BINUNICODE: {
+      // BINUNICODE carries UTF-8; both are stored as-is
       int i = readIntLE();
-      char *a = new char[i];
-      read(a, 0, i);
-      LString s = a;
-      push(createString(s));
-      delete [] a;
-      // MB_DPRINTLN("BINUNICODE len=%d, %s", i, s.c_str());
+      if (i<0) {
+        MB_THROW(qlib::FileFormatException, "Invalid pickle format (negative string length)");
+        return NULL;
+      }
+      std::string s(size_t(i), '\0');
+      if (i>0)
+        readFully(&s[0], 0, i);
+      push(createString(LString(s)));
       break;
     }
       
@@ -246,49 +242,53 @@ LVariant *PickleInStream::getMap()
     }
 
     case SETITEM: {
-      LVariant *o = pop();
-      LVariant *pkey = pop();
+      std::unique_ptr<LVariant> o(pop());
+      std::unique_ptr<LVariant> pkey(pop());
       if (!pkey->isString()) {
         MB_THROW(qlib::FileFormatException, "Invalid pickle format (SETITEM op mismatch)");
         return NULL;
       }
-      LString key = pkey->getStringValue();
-      delete pkey;
-      peek()->getDictPtr()->set(key, o);
-      // MB_DPRINTLN("SETITEM %s", key.c_str());
+      LVariant *phead = peek();
+      if (!phead->isDict()) {
+        MB_THROW(qlib::FileFormatException, "Invalid pickle format (SETITEM on non-dict)");
+        return NULL;
+      }
+      // the dict owns the value from here on
+      phead->getDictPtr()->set(pkey->getStringValue(), std::move(*o));
       break;
     }
-      
+
     case SETITEMS: {
       int mark = getMark();
-      LVariant *pobjs = getObjects(mark);
+      std::unique_ptr<LVariant> pobjs(getObjects(mark));
+      LVarList *pItems = pobjs->getListPtr();
       LVariant *phead = peek();
-      int nput = 0;
       if (phead->isList()) {
-        while (!pobjs->getListPtr()->empty()) {
-          LVariant *o3 = pobjs->getListPtr()->front_pop_front();
+        while (!pItems->empty()) {
+          LVariant *o3 = pItems->front_pop_front();
           phead->getListPtr()->push_back(o3);
-          ++nput;
         }
       }
       else if (phead->isDict()) {
-        while (!pobjs->getListPtr()->empty()) {
-          LVariant *pvalue = pobjs->getListPtr()->back_pop_back();
-          LVariant *pkey = pobjs->getListPtr()->back_pop_back();
-          LString key = pkey->getStringValue();
-          delete pkey;
-          phead->getDictPtr()->set(key, pvalue);
-          // MB_DPRINTLN("SETITEMS %d %s", i, key->m_strValue.c_str());
-          ++nput;
+        // the items are key/value pairs
+        if (pItems->size()%2!=0) {
+          MB_THROW(qlib::FileFormatException, "Invalid pickle format (SETITEMS odd item count)");
+          return NULL;
+        }
+        while (!pItems->empty()) {
+          std::unique_ptr<LVariant> pvalue(pItems->back_pop_back());
+          std::unique_ptr<LVariant> pkey(pItems->back_pop_back());
+          if (!pkey->isString()) {
+            MB_THROW(qlib::FileFormatException, "Invalid pickle format (SETITEMS key is not a string)");
+            return NULL;
+          }
+          phead->getDictPtr()->set(pkey->getStringValue(), std::move(*pvalue));
         }
       }
       else {
-        delete pobjs;
         MB_THROW(qlib::FileFormatException, "Invalid pickle format (SETITEMS op mismatch)");
         return NULL;
       }
-      delete pobjs;
-      // MB_DPRINTLN("SETITEMS (%d)", nput);
       break;
     }
 
@@ -333,17 +333,13 @@ LVariant *PickleInStream::getMap()
   //memo = null;
 
   MB_DPRINTLN("====================");
-  LVariant *pMap = m_stack.front_pop_front();
-
-  if (pMap->getDictPtr()->size()==0) {
-  //   for (i = stack.size(); --i >= 0;) {
-  //     o = stack.get(i--);
-  //     s = (String) stack.get(i);
-  //     map.put(s, o);
+  if (m_stack.empty()) {
+    MB_THROW(qlib::FileFormatException, "Invalid pickle format (no object on the stack at STOP)");
+    return NULL;
   }
-    
-  return pMap;
-  
+
+  // the caller checks the type of the top-level object
+  return m_stack.front_pop_front();
 }
 
 

@@ -21,6 +21,7 @@ FetchContent_MakeAvailable(googletest)
 set(CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE PRE_TEST)
 
 add_executable(test_qlib
+  qlib/test_lscrsp_nothrow.cpp
   qlib/test_main.cpp
   qlib/test_vector4d.cpp
   qlib/test_matrix4d.cpp
@@ -43,6 +44,10 @@ add_executable(test_qlib
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
   qlib/test_seekable_stream.cpp
+  qlib/test_lvardict.cpp
+  qlib/test_lbytearray.cpp
+  qlib/test_expat_instream.cpp
+  qlib/test_small_logic.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -57,6 +62,8 @@ add_executable(test_gfx
   gfx/test_solid_color.cpp
   gfx/test_gpuprim.cpp
   gfx/test_aoconstants.cpp
+  gfx/test_color_robustness.cpp
+  gfx/test_copy_and_bounds.cpp
 )
 target_include_directories(test_gfx PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -74,6 +81,7 @@ add_executable(test_qsys
   qsys/test_editinfo.cpp
   qsys/test_sysconfig.cpp
   qsys/test_undomanager.cpp
+  qsys/test_command_copy.cpp
   qsys/test_multigradient.cpp
   qsys/test_propeditinfo.cpp
   qsys/test_viewinputconfig.cpp
@@ -109,6 +117,9 @@ add_executable(test_qsys
   qsys/test_guiview.cpp
   qsys/test_shaderobjmgr.cpp
   qsys/test_animmgr.cpp
+  qsys/test_mouseeventhandler.cpp
+  qsys/test_styleeditinfo.cpp
+  qsys/test_colcompiler.cpp
 )
 target_include_directories(test_qsys PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -119,11 +130,17 @@ target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem GTest::g
 gtest_discover_tests(test_qsys PROPERTIES LABELS "test_qsys")
 
 add_executable(test_molstr
+  modules/molstr/test_molcoord_altconf_remove.cpp
   modules/molstr/test_main.cpp
   modules/molstr/test_molatom.cpp
   modules/molstr/test_molresidue.cpp
   modules/molstr/test_molchain.cpp
   modules/molstr/test_molbond.cpp
+  modules/molstr/test_molcoord_bond.cpp
+  modules/molstr/test_selcachemgr.cpp
+  modules/molstr/test_pdb_multimodel.cpp
+  modules/molstr/test_selnames_prime.cpp
+  modules/molstr/test_selstate_ranges.cpp
   modules/molstr/test_selcommand.cpp
   modules/molstr/test_simplerenderer.cpp
   modules/molstr/test_tracerenderer.cpp
@@ -134,6 +151,9 @@ target_include_directories(test_molstr PRIVATE
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
 )
+target_compile_definitions(test_molstr PRIVATE
+  CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+)
 target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_molstr PRIVATE sysdep)
@@ -143,6 +163,8 @@ gtest_discover_tests(test_molstr PROPERTIES LABELS "test_molstr")
 add_executable(test_molvis
   modules/molvis/test_main.cpp
   modules/molvis/test_cpk2renderer.cpp
+  modules/molvis/test_smoothspline.cpp
+  modules/molvis/test_script_index_checks.cpp
 )
 target_include_directories(test_molvis PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -160,11 +182,14 @@ endif()
 gtest_discover_tests(test_molvis PROPERTIES LABELS "test_molvis")
 
 add_executable(test_surface
+  modules/surface/test_crystalinfo_setters.cpp
   modules/surface/test_main.cpp
   modules/surface/test_distfield_surf.cpp
   modules/surface/test_ply_reader.cpp
   modules/surface/test_molsurf_serialize.cpp
   modules/surface/test_ses_from_array.cpp
+  modules/surface/test_reader_validation.cpp
+  modules/surface/test_elepot_symop_fixes.cpp
 )
 target_include_directories(test_surface PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -182,9 +207,12 @@ endif()
 gtest_discover_tests(test_surface PROPERTIES LABELS "test_surface")
 
 add_executable(test_xtal
+  modules/xtal/test_map_uniform.cpp
   modules/xtal/test_main.cpp
   modules/xtal/test_atomposmap2.cpp
+  modules/xtal/test_brix_reader.cpp
   modules/xtal/test_ccp4_origin.cpp
+  modules/xtal/test_map_reader_validation.cpp
   modules/xtal/test_ccp4map_stream.cpp
   modules/xtal/test_map_block_extract.cpp
   modules/xtal/test_map_histogram.cpp
@@ -192,6 +220,7 @@ add_executable(test_xtal
   modules/xtal/test_maplod.cpp
   modules/xtal/test_mapmesh_full.cpp
   modules/xtal/test_mapmesh_viewregion.cpp
+  modules/xtal/test_mapsurf_box_outside.cpp
   modules/xtal/test_maprenderer_color.cpp
   modules/xtal/test_maprenderer_region.cpp
   modules/xtal/test_mapsurf_molfanc.cpp
@@ -226,6 +255,7 @@ set_tests_properties(test_xtal_mc_serial PROPERTIES
   ENVIRONMENT "CUEMOL_TBB_THREADS=1" LABELS "test_xtal")
 
 add_executable(test_importers
+  modules/importers/test_sdf_short_lines.cpp
   modules/importers/test_main.cpp
   modules/importers/test_sdfmolreader.cpp
   modules/importers/test_mmcifmolreader.cpp
@@ -246,6 +276,9 @@ add_executable(test_importers
   modules/importers/test_amber_reader.cpp
   modules/importers/test_load_object_command_guess.cpp
   modules/importers/test_trajio.cpp
+  modules/importers/test_pickle_instream.cpp
+  modules/importers/test_sdfmolwriter.cpp
+  modules/importers/test_mmcif_struct_conn.cpp
 )
 target_include_directories(test_importers PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -265,6 +298,7 @@ gtest_discover_tests(test_importers PROPERTIES LABELS "test_importers")
 add_executable(test_molanl
   modules/molanl/test_main.cpp
   modules/molanl/test_ssm_superpose.cpp
+  modules/molanl/test_contactmap.cpp
 )
 target_include_directories(test_molanl PRIVATE
   ${CMAKE_SOURCE_DIR}/src

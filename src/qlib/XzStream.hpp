@@ -27,6 +27,9 @@ namespace qlib {
 
       /// Input buffer data
       std::vector<quint8> m_buffer;
+      /// LZMA_STREAM_END was seen: further reads report EOF instead of
+      /// spinning on the leftover input
+      bool m_bEnd = false;
 
     public:
       typedef InFilterImpl super_t;

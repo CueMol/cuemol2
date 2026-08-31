@@ -247,7 +247,7 @@ void PaintColoring::insertBefore(int ind, const SelectionPtr &psel, const ColorP
 
 bool PaintColoring::removeAtImpl(int ind)
 {
-  if (ind>=m_coltab.size())
+  if (ind<0 || ind>=int(m_coltab.size()))
     return false;
 
   ColorTab::iterator iter = m_coltab.begin()+ind;
@@ -284,7 +284,7 @@ bool PaintColoring::removeAt(int ind)
 
 bool PaintColoring::changeAt(int ind, const SelectionPtr &psel, const ColorPtr &pcol)
 {
-  if (ind>=m_coltab.size()) return false;
+  if (ind<0 || ind>=int(m_coltab.size())) return false;
   ColorTab::iterator iter = m_coltab.begin()+ind;
 
   SelectionPtr poldsel = iter->first;
@@ -407,6 +407,10 @@ void PaintColoring::readFrom2(qlib::LDom2Node *pNode)
       continue;
     }
     ColorPtr pCol(gfx::AbstractColor::fromNode(pColNode));
+    if (pCol.isnull()) {
+      LOG_DPRINTLN("PaintColoring.readFrom> invalid color in paint tag (ignored)");
+      continue;
+    }
 
     append(pSel, pCol);
     //m_coltab.push_back(PaintTuple(pSel, pCol));

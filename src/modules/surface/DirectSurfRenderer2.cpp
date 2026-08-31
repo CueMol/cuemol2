@@ -34,6 +34,7 @@ using qsys::SceneManager;
 
 DirectSurfRenderer2::DirectSurfRenderer2()
 {
+  m_nTgtMolID = qlib::invalid_uid;  // the destructor unregisters by this ID
   m_vdwr_H = 1.2;
   m_vdwr_C = 1.7;
   m_vdwr_N = 1.55;
