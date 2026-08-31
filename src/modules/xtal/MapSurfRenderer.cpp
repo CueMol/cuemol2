@@ -56,6 +56,7 @@ MapSurfRenderer::MapSurfRenderer()
   m_nMaxGrid = 100;
   m_nStep = 1;
   m_bCapDisplay = false;
+  m_nCapMode = CAP_AUTO;
 
   m_bGenSurfMode = false;
 
@@ -848,6 +849,18 @@ Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz) const
   return rval;
 }
 
+/// True when all four cube corners of border face iBorder are inside the
+/// molecule boundary (bdr_verts[iBorder][0..3] hold the corner indices;
+/// [4..7] hold the edge indices, offset by 8).
+inline bool isBorderFaceInBndry(const bool bary[8], int iBorder)
+{
+  const int *iverts = bdr_verts[iBorder];
+  for (int i=0; i<4; ++i)
+    if (!bary[iverts[i]])
+      return false;
+  return true;
+}
+
 inline int getVertFlag4(int iVertFlag, const int *iv)
 {
   int ires = 0;
@@ -899,10 +912,10 @@ void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
   if (m_nActSec<=fz+m_nStep)
     border_flag |= 1<<5;
 
-  // Border caps close the surface at the range boundary: always for the
-  // generated surface object, and in the display path in full region
-  // mode (m_bCapDisplay).
-  const bool bCap = bGenSurf || m_bCapDisplay;
+  // Border caps close the surface at the range boundary. The policy is
+  // the cap_mode property; CAP_AUTO keeps the historical coupling to the
+  // region mode and the gen-surf path.
+  const bool bCap = isCapEnabled(bGenSurf);
 
   if(iFlagIndex == 0 && bCap) {
     // Fill the border of the extent
@@ -912,6 +925,12 @@ void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
     for (int i=0; i<6; ++i) {
       int mask = 1<<i;
       if (border_flag & mask) {
+
+        // The surface is clipped at the molecule boundary (an edge with
+        // an outside endpoint is dropped below), so a cap face outside the
+        // boundary would stick out where the surface was removed.
+        if (!isBorderFaceInBndry(bary, i))
+          continue;
 
         nx = border_normal[i][0];
         ny = border_normal[i][1];
@@ -1045,6 +1064,14 @@ void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
     for (int iBorder=0; iBorder<6; ++iBorder) {
       int mask = 1<<iBorder;
       if (border_flag & mask) {
+
+        // Same clipping as above. This face also refers to the edge
+        // vertices v[8..19]: an edge dropped at the molecule boundary
+        // never had asEdgeVertex[] computed, and using it put a cap
+        // corner at the grid origin (a spike). All four corners being
+        // inside guarantees every edge of the face was computed.
+        if (!isBorderFaceInBndry(bary, iBorder))
+          continue;
         
         Vector4D norm(border_normal[iBorder][0], border_normal[iBorder][1], border_normal[iBorder][2]);
         

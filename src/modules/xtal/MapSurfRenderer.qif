@@ -42,6 +42,18 @@ runtime_class MapSurfRenderer extends MapRenderer
   property real width => redirect(getLineWidth, setLineWidth);
   default width = 1.2;
 
+  /// Border cap policy, independent of region_mode: auto (generated
+  /// surface objects and the full region mode close the surface at the
+  /// region boundary, the box region mode leaves it open), on (always
+  /// close it) or off (never close it)
+  enumdef cap_mode {
+    auto = xtal::MapSurfRenderer::CAP_AUTO;
+    on = xtal::MapSurfRenderer::CAP_ON;
+    off = xtal::MapSurfRenderer::CAP_OFF;
+  }
+  property enum cap_mode => redirect(getCapMode, setCapMode);
+  default cap_mode = "auto";
+
   /// Binning factor (marching stride in box region mode; superseded by the
   /// lod property of MapRenderer)
   property integer binning => redirect(getBinFac, setBinFac);

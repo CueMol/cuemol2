@@ -194,8 +194,45 @@ namespace xtal {
     int m_nStep;
 
     /// Close the surface at the range boundary in the display path too
-    /// (full region mode; the gen-surf path always caps)
+    /// (full region mode; the gen-surf path always caps). This is the
+    /// value CAP_AUTO resolves to; cap_mode can override it.
     bool m_bCapDisplay;
+
+  public:
+    /// Border cap policy (cap_mode property values)
+    enum {
+      CAP_AUTO = 0,
+      CAP_ON = 1,
+      CAP_OFF = 2,
+    };
+
+  private:
+    /// Border cap policy (CAP_*). Independent of the region policy: AUTO
+    /// keeps the historical coupling (generated surface objects and the
+    /// full region mode close the surface, the box region mode does not),
+    /// ON and OFF decide it regardless of the region mode.
+    int m_nCapMode;
+
+  public:
+    int getCapMode() const { return m_nCapMode; }
+    void setCapMode(int n) {
+      if (m_nCapMode == n)
+        return;
+      m_nCapMode = n;
+      // the cap faces are part of the mesh
+      invalidateGeomCache();
+    }
+
+    /// Resolved cap policy of the current build (bGenSurf: the surface
+    /// object path, which caps by default)
+    bool isCapEnabled(bool bGenSurf) const
+    {
+      if (m_nCapMode == CAP_ON) return true;
+      if (m_nCapMode == CAP_OFF) return false;
+      return bGenSurf || m_bCapDisplay;
+    }
+
+  private:
 
     /// for debug
     std::deque<Vector4D> m_tmpv;
