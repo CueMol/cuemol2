@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Checkbox, FormGroup, HTMLSelect, InputGroup, NumericInput } from '@blueprintjs/core'
 import { DialogShell } from './DialogShell';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import type {
     SpaceGroupEntry,
     SymmetryInfo,
@@ -170,10 +171,15 @@ export function SymmetryChangeDialog({
      *  "unchanged" short-circuit (UXP). */
     const [openInfo, setOpenInfo] = useState<SymmetryInfo | null>(null)
 
+    // Two independent fetches, so two guards: a space-group reload must not
+    // make the crystal-info fetch look stale, or the reverse.
+    const infoGuard = useStaleGuard()
+    const sgGuard = useStaleGuard()
+
     // Fetch the initial CrystalInfo when the dialog opens.
     useEffect(() => {
         if (!visible || !cm) return
-        let cancelled = false
+        const token = infoGuard.next()
         ;(async () => {
             // Reset transient flags from the previous open -- the dialog
             // component stays mounted across show/hide cycles (the Dialog
@@ -185,7 +191,7 @@ export function SymmetryChangeDialog({
             setErrorMsg(null)
             try {
                 const res = await cm.invokeService('getSymmetryPanelInfo', { sceneId, objId })
-                if (cancelled) return
+                if (!infoGuard.isCurrent(token)) return
                 const info = res?.info ?? DEFAULT_INFO
                 setOpenInfo(res?.hasInfo ? info : null)
                 setLattice((info.lattice as CrystalSystem) ?? 'TRICLINIC')
@@ -196,7 +202,7 @@ export function SymmetryChangeDialog({
                 })
                 setRestrict(false)
             } catch (err) {
-                if (cancelled) return
+                if (!infoGuard.isCurrent(token)) return
                 console.warn('getSymmetryPanelInfo failed:', err)
                 setOpenInfo(null)
                 setLattice('TRICLINIC')
@@ -204,20 +210,20 @@ export function SymmetryChangeDialog({
                 setCell({ a: 1, b: 1, c: 1, alpha: 90, beta: 90, gamma: 90 })
                 setRestrict(false)
             } finally {
-                if (!cancelled) setLoaded(true)
+                if (infoGuard.isCurrent(token)) setLoaded(true)
             }
         })()
-        return () => { cancelled = true }
-    }, [visible, cm, sceneId, objId])
+        return () => infoGuard.invalidate()
+    }, [visible, cm, sceneId, objId, infoGuard])
 
     // Populate space-group dropdown whenever lattice changes (or on open).
     useEffect(() => {
         if (!visible || !cm) return
-        let cancelled = false
+        const token = sgGuard.next()
         ;(async () => {
             try {
                 const res = await cm.invokeService('getSpaceGroupNames', { lattice })
-                if (cancelled) return
+                if (!sgGuard.isCurrent(token)) return
                 const items = res?.items ?? []
                 setSgItems(items)
                 // Preserve nsg if still in the list; otherwise pick first.
@@ -226,13 +232,13 @@ export function SymmetryChangeDialog({
                     return items.length > 0 ? items[0].id : 1
                 })
             } catch (err) {
-                if (cancelled) return
+                if (!sgGuard.isCurrent(token)) return
                 console.warn('getSpaceGroupNames failed:', err)
                 setSgItems([])
             }
         })()
-        return () => { cancelled = true }
-    }, [visible, cm, lattice])
+        return () => sgGuard.invalidate()
+    }, [visible, cm, lattice, sgGuard])
 
     // Apply lattice restriction after sgItems / restrict / lattice / cell-source change.
     const sgLabel = sgItems.find((i) => i.id === nsg)?.cname ?? ''

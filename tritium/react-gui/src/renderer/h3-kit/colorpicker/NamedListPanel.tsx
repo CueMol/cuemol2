@@ -12,6 +12,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@blueprintjs/core'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { NamedColorEntry } from '@renderer/worker/server/services/colorPicker.service'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 interface NamedListPanelProps {
     cm: AsyncCueMol | null
@@ -45,8 +46,9 @@ export const NamedListPanel: React.FC<NamedListPanelProps> = ({
     const [entries, setEntries] = useState<NamedColorEntry[] | null>(null)
     const selectedRef = useRef<HTMLButtonElement | null>(null)
 
+    const guard = useStaleGuard()
     useEffect(() => {
-        let cancelled = false
+        const token = guard.next()
         if (!cm) {
             setEntries([])
             return
@@ -55,14 +57,12 @@ export const NamedListPanel: React.FC<NamedListPanelProps> = ({
             const res = await cm.invokeService('getNamedColors', {
                 sceneId: sceneId ?? 0,
             })
-            if (cancelled) return
+            if (!guard.isCurrent(token)) return
             // Scene definitions first (UXP order), then global.
             setEntries([...res.scene, ...res.global])
         })()
-        return () => {
-            cancelled = true
-        }
-    }, [cm, sceneId])
+        return () => guard.invalidate()
+    }, [cm, sceneId, guard])
 
     const selectedKey = selectedName !== undefined ? normalizeName(selectedName) : undefined
 

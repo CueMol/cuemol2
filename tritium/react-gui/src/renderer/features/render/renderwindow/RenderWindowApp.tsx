@@ -37,6 +37,7 @@ import { useRenderWindowClient } from "@renderer/features/render/useRenderWindow
 import { RENDER_BACKEND_IDS } from "@renderer/data/renderBackends";
 import { sizePresetsForMode } from "@renderer/data/renderSettings";
 import { IPC } from "@shared/ipcChannels";
+import { useStaleGuard } from "@renderer/hooks/react/useStaleGuard";
 
 export const RenderWindowApp: React.FC = () => {
   // Main registers the text context menu on this window too; on Windows /
@@ -234,23 +235,24 @@ export const RenderWindowApp: React.FC = () => {
   const targetViewId = client.targetViewId;
   const [cameraPending, setCameraPending] = useState(false);
   useHoldReveal(cameraPending);
+  const guard = useStaleGuard();
   useEffect(() => {
     if (targetViewId === null) return;
-    let cancelled = false;
+    const token = guard.next();
     setCameraPending(true);
     void clientRef.current
       .getViewCamera(targetViewId)
       .then((camera) => {
-        if (!cancelled && camera) settingsRef.current.applyViewCamera(camera);
+        if (guard.isCurrent(token) && camera) settingsRef.current.applyViewCamera(camera);
       })
       .finally(() => {
-        if (!cancelled) setCameraPending(false);
+        if (guard.isCurrent(token)) setCameraPending(false);
       });
     return () => {
-      cancelled = true;
+      guard.invalidate();
       setCameraPending(false);
     };
-  }, [targetViewId]);
+  }, [targetViewId, guard]);
 
   // The window is created hidden. It goes on screen once the main window's
   // context has arrived (target views, mode) and every load that started on

@@ -12,6 +12,7 @@ import React, { useEffect, useState } from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useActiveScene } from '@renderer/state/workspace';
 import { TextField } from '@renderer/h3-kit/form';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 interface Props {
     /** Current target label-set name (defaults to "measure"). */
@@ -27,16 +28,15 @@ export const MeasureOptionsPopover: React.FC<Props> = ({ target, onTargetChange 
 
     // Fetch existing atomintr renderer names when the popover mounts (it mounts
     // on open). The list is advisory -- typing a new name creates a new set.
+    const guard = useStaleGuard();
     useEffect(() => {
         if (!cm || activeViewID == null) return;
-        let cancelled = false;
+        const token = guard.next();
         void cm.invokeService('measureListTargets', { viewId: activeViewID }).then((r) => {
-            if (!cancelled && r) setNames(r.names);
+            if (guard.isCurrent(token) && r) setNames(r.names);
         });
-        return () => {
-            cancelled = true;
-        };
-    }, [cm, activeViewID]);
+        return () => guard.invalidate();
+    }, [cm, activeViewID, guard]);
 
     return (
         <div className="measure-options-popover">

@@ -23,6 +23,7 @@ import React, {
   useMemo,
 } from 'react'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import type {
   LabelDefaults,
   SetLabelDefaultsArgs,
@@ -61,26 +62,25 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Read the live C++ values on mount (reflects the user style file loaded at
   // startup). Falls back to defaults when the core is not ready yet.
+  const guard = useStaleGuard()
   useEffect(() => {
     if (!cm) return
-    let cancelled = false
+    const token = guard.next()
     ;(async () => {
       try {
         const [labels, view] = await Promise.all([
           cm.invokeService('getLabelDefaults', {}),
           cm.invokeService('getViewInputParams', {}),
         ])
-        if (cancelled) return
+        if (!guard.isCurrent(token)) return
         if (labels?.ok) setLabelDefaults(labels.defaults)
         if (view?.ok) setViewInputParams(view.params)
       } catch {
         // core unavailable -- keep defaults
       }
     })()
-    return () => {
-      cancelled = true
-    }
-  }, [cm])
+    return () => guard.invalidate()
+  }, [cm, guard])
 
   const setLabelDefault = useCallback(
     (key: keyof LabelDefaults, value: string | number | boolean) => {

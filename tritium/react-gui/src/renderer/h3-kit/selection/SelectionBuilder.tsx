@@ -64,6 +64,7 @@ import { canApplyUnary, selectTerm } from './selBuilderReducer';
 import { useSelHitCount, type GetHitCount } from '@renderer/h3-kit/MolSelList/useSelHitCount';
 import { CountTag } from '@renderer/h3-kit/MolSelList/CountTag';
 import { NamedSelMenu, HistoryMenu } from '@renderer/h3-kit/MolSelList/SelMenus';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 /* --- Props --- */
 
@@ -187,24 +188,23 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
 
     // --- Autocomplete values for the active keyword ---
     const [suggestItems, setSuggestItems] = useState<string[]>(VALUE_LIST_EMPTY);
+    const guard = useStaleGuard();
     useEffect(() => {
         const kind = keywordDef.autocomplete;
         if (!kind || !resolveValues) {
             setSuggestItems(VALUE_LIST_EMPTY);
             return;
         }
-        let cancelled = false;
+        const token = guard.next();
         resolveValues(kind)
             .then((vals) => {
-                if (!cancelled) setSuggestItems(vals);
+                if (guard.isCurrent(token)) setSuggestItems(vals);
             })
             .catch(() => {
-                if (!cancelled) setSuggestItems(VALUE_LIST_EMPTY);
+                if (guard.isCurrent(token)) setSuggestItems(VALUE_LIST_EMPTY);
             });
-        return () => {
-            cancelled = true;
-        };
-    }, [keywordDef.autocomplete, resolveValues]);
+        return () => guard.invalidate();
+    }, [keywordDef.autocomplete, resolveValues, guard]);
 
     const setField = (name: string, v: string): void =>
         dispatch({ type: 'SET_FIELD', name, value: v });

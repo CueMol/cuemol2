@@ -5,7 +5,7 @@
  * The field shows an invalid state, so the answer has to be current -- but a
  * selection compiles in C++, and asking on every keystroke would compile a
  * dozen half-written expressions per word. Hence the debounce, and the
- * cancelled flag: a reply that arrives after the text moved on would mark the
+ * !guard.isCurrent(token) flag: a reply that arrives after the text moved on would mark the
  * wrong expression.
  *
  * The empty string, `*` and `none` are answered without asking. They are
@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 /** Wait this long after the last keystroke before compiling. */
 export const VALIDATE_DEBOUNCE_MS = 500;
@@ -39,6 +40,7 @@ export function useSelectionValidation({
     const [isValid, setIsValid] = useState(true);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const guard = useStaleGuard();
     useEffect(() => {
         if (!cm || sceneId === undefined) {
             setIsValid(true);
@@ -50,21 +52,21 @@ export function useSelectionValidation({
             setIsValid(true);
             return;
         }
-        let cancelled = false;
+        const token = guard.next();
         debounceRef.current = setTimeout(() => {
             cm.invokeService('validateSelection', { selStr: trimmed, sceneId })
                 .then((res) => {
-                    if (!cancelled) setIsValid(res.ok);
+                    if (guard.isCurrent(token)) setIsValid(res.ok);
                 })
                 .catch(() => {
-                    if (!cancelled) setIsValid(true);
+                    if (guard.isCurrent(token)) setIsValid(true);
                 });
         }, VALIDATE_DEBOUNCE_MS);
         return () => {
-            cancelled = true;
+            guard.invalidate();
             if (debounceRef.current !== null) clearTimeout(debounceRef.current);
         };
-    }, [cm, text, sceneId]);
+    }, [cm, text, sceneId, guard]);
 
     return isValid;
 }

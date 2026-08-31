@@ -30,14 +30,16 @@ const DEFAULT_PAINT_ENTRIES: { sel: string; color: string }[] = [
  * Build a `PaintColoring` carrying the default painting.
  *
  * @param ctx - worker context.
- * @param sceneUid - scene scope for compiling the selections / named colours;
- *   omit (0) for the global scope.
+ * @param sceneUid - scene scope for compiling the selections and named
+ *   colours. Required: a scene-local name compiled in the global scope
+ *   (uid 0) silently fails to resolve, and every caller has a scene in hand,
+ *   so a default here would only make that mistake reachable.
  * @returns the coloring, or null when the object or any selection could not be
  *   built (the caller then leaves the renderer's coloring alone).
  */
 export function createDefPaintColoring(
     ctx: WorkerContext,
-    sceneUid = 0,
+    sceneUid: number,
 ): PaintColoring | null {
     const coloring = ctx.svc.createObj('PaintColoring') as PaintColoring;
     if (!coloring) return null;

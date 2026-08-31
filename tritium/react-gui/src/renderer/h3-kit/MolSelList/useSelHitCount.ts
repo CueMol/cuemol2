@@ -11,6 +11,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 /** number = count, 'loading' = in flight, null = uncountable, undefined = N/A. */
 export type HitCount = number | 'loading' | null | undefined;
@@ -63,6 +64,7 @@ export function useSelHitCount(
     const [count, setCount] = useState<HitCount>(undefined);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const guard = useStaleGuard();
     useEffect(() => {
         if (timerRef.current !== null) clearTimeout(timerRef.current);
         const trimmed = (expr ?? '').trim();
@@ -70,22 +72,22 @@ export function useSelHitCount(
             setCount(undefined);
             return;
         }
-        let cancelled = false;
+        const token = guard.next();
         setCount('loading');
         timerRef.current = setTimeout(() => {
             getHitCount(trimmed)
                 .then((n) => {
-                    if (!cancelled) setCount(n);
+                    if (guard.isCurrent(token)) setCount(n);
                 })
                 .catch(() => {
-                    if (!cancelled) setCount(null);
+                    if (guard.isCurrent(token)) setCount(null);
                 });
         }, DEBOUNCE_MS);
         return () => {
-            cancelled = true;
+            guard.invalidate();
             if (timerRef.current !== null) clearTimeout(timerRef.current);
         };
-    }, [getHitCount, expr, enabled]);
+    }, [getHitCount, expr, enabled, guard]);
 
     return count;
 }

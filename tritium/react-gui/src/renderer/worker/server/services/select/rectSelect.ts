@@ -4,7 +4,7 @@
 // `navi-toolribbon.js` rectSel(): hit-test the dragged rectangle, group the
 // hits by molecule object, and replace each molecule's selection with the
 // union of the matched atoms. The grouping / assignment / undo-txn tail is
-// shared with lassoSelect (see helpers/applySelectionHits).
+// shared with lassoSelect (see ./applySelectionHits).
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { getViewSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
@@ -12,7 +12,7 @@ import {
     applySelectionHits,
     parseSelectionHits,
     type SelectionResult,
-} from '@renderer/worker/server/services/helpers/applySelectionHits';
+} from '@renderer/worker/server/services/select/applySelectionHits';
 
 export interface RectSelectArgs {
     viewId: number;

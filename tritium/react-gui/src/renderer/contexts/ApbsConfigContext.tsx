@@ -28,6 +28,7 @@ import React, {
   useMemo,
 } from 'react';
 import { IPC } from '@shared/ipcChannels';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 import {
   type ApbsBinaries,
   DEFAULT_APBS_BINARIES,
@@ -71,15 +72,16 @@ export const ApbsConfigProvider: React.FC<ApbsConfigProviderProps> = ({
   // default (APP_PATH: bundled apbs in a packaged build / BUNDLE_APPS in dev)
   // -> compiled-in default. Do not early-return when UI_LOAD is empty: a fresh
   // profile with no persisted paths is exactly when the bundled default applies.
+  const guard = useStaleGuard();
   useEffect(() => {
-    let cancelled = false;
+    const token = guard.next();
     (async () => {
       try {
         const [ui, appInfo] = await Promise.all([
           window.electronAPI?.invoke(IPC.UI_LOAD),
           window.electronAPI?.invoke(IPC.APP_PATH),
         ]);
-        if (cancelled) return;
+        if (!guard.isCurrent(token)) return;
         const def = appInfo?.defaultApbsBinaries;
         setConfig({
           apbsExe: ui?.apbsExe || def?.apbsExe || DEFAULT_APBS_CONFIG.apbsExe,
@@ -90,10 +92,8 @@ export const ApbsConfigProvider: React.FC<ApbsConfigProviderProps> = ({
         // Electron not available (Vite dev server) -- keep defaults.
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => guard.invalidate();
+  }, [guard]);
 
   const setValue = useCallback((key: ApbsConfigKey, value: string) => {
     setConfig((prev) => ({ ...prev, [key]: value }));

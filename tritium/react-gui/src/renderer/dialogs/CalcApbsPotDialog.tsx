@@ -38,6 +38,7 @@ import {
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
 import { MolSelList, pushHistory } from '@renderer/h3-kit/MolSelList'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import {
     PDB2PQR_FORCE_FIELDS,
     type ApbsChargeMethod,
@@ -112,21 +113,20 @@ export function CalcApbsPotDialog({
 
     // Prefill the elepot name with a unique `pot_<molname>` on open / molecule
     // change (UXP `makeSugName` / `onObjBoxChanged`).
+    const guard = useStaleGuard()
     useEffect(() => {
         if (!visible || !cm || objId === undefined) return
-        let cancelled = false
+        const token = guard.next()
         void (async () => {
             try {
                 const res = await cm.invokeService('proposeElepotName', { sceneId, objId })
-                if (!cancelled && res?.name) setElepotName(res.name)
+                if (guard.isCurrent(token) && res?.name) setElepotName(res.name)
             } catch {
                 // Best-effort prefill; leave the field as-is on failure.
             }
         })()
-        return () => {
-            cancelled = true
-        }
-    }, [visible, cm, sceneId, objId])
+        return () => guard.invalidate()
+    }, [visible, cm, sceneId, objId, guard])
 
     // --- Not-configured gate (exe paths live in Settings) ---
     const apbsExe = apbsConfig.apbsExe.trim()

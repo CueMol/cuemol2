@@ -40,6 +40,7 @@ import {
 } from '@renderer/h3-kit/selection';
 import { getHistory } from './selHistory';
 import { useHitCountResolver } from './useSelHitCount';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 const VALIDATE_DEBOUNCE_MS = 500;
 
@@ -101,6 +102,11 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
     const [isValid, setIsValid] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
+    // Two independent fetches: the definition list and the live validation of
+    // what the user typed. One guard for both would let either make the
+    // other's answer look stale.
+    const defsGuard = useStaleGuard();
+    const validateGuard = useStaleGuard();
 
     // Operand draft for the builder (kept for the widget's lifetime so the last
     // keyword / value survives reopening the popover).
@@ -116,25 +122,23 @@ export const MolSelList: React.FC<MolSelListProps> = ({
             setMolCurrentSel(undefined);
             return;
         }
-        let cancelled = false;
+        const token = defsGuard.next();
         const args = molID !== undefined ? { sceneId: sceneID, molId: molID } : { sceneId: sceneID };
         cm.invokeService('getSelDefs', args)
             .then((res) => {
-                if (cancelled) return;
+                if (!defsGuard.isCurrent(token)) return;
                 setSceneDefs(res.scene);
                 setGlobalDefs(res.global);
                 setMolCurrentSel(res.currentSel);
             })
             .catch(() => {
-                if (cancelled) return;
+                if (!defsGuard.isCurrent(token)) return;
                 setSceneDefs([]);
                 setGlobalDefs([]);
                 setMolCurrentSel(undefined);
             });
-        return () => {
-            cancelled = true;
-        };
-    }, [cm, sceneID, molID, refreshKey]);
+        return () => defsGuard.invalidate();
+    }, [cm, sceneID, molID, refreshKey, defsGuard]);
 
     // ---- Live validation (debounced) ----
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -150,21 +154,21 @@ export const MolSelList: React.FC<MolSelListProps> = ({
             setIsValid(true);
             return;
         }
-        let cancelled = false;
+        const token = validateGuard.next();
         debounceRef.current = setTimeout(() => {
             cm.invokeService('validateSelection', { selStr: trimmed, sceneId: sceneID })
                 .then((res) => {
-                    if (!cancelled) setIsValid(res.ok);
+                    if (validateGuard.isCurrent(token)) setIsValid(res.ok);
                 })
                 .catch(() => {
-                    if (!cancelled) setIsValid(true); // don't flag on transport error
+                    if (validateGuard.isCurrent(token)) setIsValid(true); // don't flag on transport error
                 });
         }, VALIDATE_DEBOUNCE_MS);
         return () => {
-            cancelled = true;
+            validateGuard.invalidate();
             if (debounceRef.current !== null) clearTimeout(debounceRef.current);
         };
-    }, [cm, selectedSel, sceneID]);
+    }, [cm, selectedSel, sceneID, validateGuard]);
 
     // On open, refresh history (another pane may have appended while we were
     // idle). On close, commit the composed value once -- builder ops only

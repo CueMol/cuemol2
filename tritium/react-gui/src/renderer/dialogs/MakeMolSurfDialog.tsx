@@ -28,6 +28,7 @@ import { MolPicker } from './MolPicker'
 import { MolSelList, pushHistory } from '@renderer/h3-kit/MolSelList'
 import { DEFAULT_DENSITY, DENSITY_MAX, DENSITY_MIN } from './molSurfDensity'
 import { asBackend, BACKEND_OPTIONS, DEFAULT_BACKEND, MolSurfBackend } from './molSurfBackend'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 export interface MakeMolSurfDialogResult {
     ok: boolean
@@ -100,24 +101,23 @@ export function MakeMolSurfDialog({
     // dialog opens or the target molecule changes (UXP `makeSugName` /
     // `onObjBoxChanged`). User edits made afterwards are not clobbered because
     // this effect only re-runs on open / molecule change, not on keystrokes.
+    const guard = useStaleGuard()
     useEffect(() => {
         if (!visible || !cm || objId === undefined) return
-        let cancelled = false
+        const token = guard.next()
         void (async () => {
             try {
                 const res = await cm.invokeService('proposeMolSurfName', {
                     sceneId,
                     objId,
                 })
-                if (!cancelled && res?.name) setSurfName(res.name)
+                if (guard.isCurrent(token) && res?.name) setSurfName(res.name)
             } catch {
                 // Best-effort prefill; leave the field as-is on failure.
             }
         })()
-        return () => {
-            cancelled = true
-        }
-    }, [visible, cm, sceneId, objId])
+        return () => guard.invalidate()
+    }, [visible, cm, sceneId, objId, guard])
 
     return (
         <DialogShell

@@ -37,6 +37,7 @@ import {
 } from '@renderer/viewInputConfig'
 import { InputDeviceDetector } from '@renderer/input/inputDeviceDetector'
 import type { WheelSample } from '@renderer/input/wheelDeviceClassifier'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 interface ViewInputConfigContextValue {
   /** Persisted preference (mouse / trackpad / auto). */
@@ -100,12 +101,13 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
 
   // Load persisted preference + detected seed on mount. Does NOT re-apply the
   // style (createAndInitCueMol already applied the same seed).
+  const guard = useStaleGuard()
   useEffect(() => {
-    let cancelled = false
+    const token = guard.next()
     ;(async () => {
       try {
         const ui = await window.electronAPI?.invoke(IPC.UI_LOAD)
-        if (cancelled || !ui) return
+        if (!guard.isCurrent(token) || !ui) return
         const pref = normalizeInputDevicePreference(ui.inputDeviceMode)
         const seed =
           pref === 'auto' ? normalizeInputDeviceMode(ui.inputDeviceDetected) : pref
@@ -117,10 +119,8 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
         // Electron not available (Vite dev server) -- keep the defaults.
       }
     })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    return () => guard.invalidate()
+  }, [guard])
 
   const setInputDevicePreference = useCallback(
     (p: InputDevicePreference) => {

@@ -29,6 +29,7 @@ import {
   type MovieSettings,
 } from "@renderer/data/renderSettings";
 import { PERSIST_DEBOUNCE_MS } from "@renderer/utils/timing";
+import { useStaleGuard } from "@renderer/hooks/react/useStaleGuard";
 
 /** How long an edit rests before it is written back (base name is typed). */
 
@@ -108,8 +109,9 @@ export function useMovieOutputPrefs(
   updateRef.current = updateMovie;
 
   // Load once: persisted preferences, plus the folder main manages for this run.
+  const guard = useStaleGuard();
   useEffect(() => {
-    let cancelled = false;
+    const token = guard.next();
     void (async () => {
       let prefs: MovieRenderPrefs | undefined;
       let dir = "";
@@ -123,7 +125,7 @@ export function useMovieOutputPrefs(
       } catch {
         // Electron not available (Vite dev server) -- keep the defaults.
       }
-      if (cancelled) return;
+      if (!guard.isCurrent(token)) return;
       setTempDir(dir);
       const patch = patchFromPrefs(prefs);
       if (patch.outputDir) lastCustomRef.current = patch.outputDir;
@@ -137,10 +139,8 @@ export function useMovieOutputPrefs(
       updateRef.current(patch);
       loadedRef.current = true;
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => guard.invalidate();
+  }, [guard]);
 
   // Write back after the edits settle. Skipped until the load has landed, so
   // the defaults cannot overwrite what was stored.

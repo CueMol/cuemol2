@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { IPC } from '@shared/ipcChannels';
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 interface UseSceneExportCapsOptions {
   cm: AsyncCueMol | null;
@@ -30,12 +31,13 @@ export function useSceneExportCaps({
 }: UseSceneExportCapsOptions): string[] | null {
   const [available, setAvailable] = useState<string[] | null>(null);
 
+  const guard = useStaleGuard();
   useEffect(() => {
     if (!cm || !cueMolReady) return;
-    let cancelled = false;
+    const token = guard.next();
     cm.invokeService('getAvailableSceneExporters', undefined)
       .then((res) => {
-        if (cancelled || !res?.ok) return;
+        if (!guard.isCurrent(token) || !res?.ok) return;
         setAvailable(res.names);
         window.electronAPI
           ?.invoke(IPC.MENU_UPDATE_STATE, { exportCaps: { available: res.names } })
@@ -46,10 +48,8 @@ export function useSceneExportCaps({
       .catch((err: unknown) => {
         console.warn('probe scene exporters failed:', err);
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [cm, cueMolReady]);
+    return () => guard.invalidate();
+  }, [cm, cueMolReady, guard]);
 
   return available;
 }

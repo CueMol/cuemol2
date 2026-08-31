@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import {
   GENERIC_FONT_FAMILIES,
   FALLBACK_FONT_LIST,
@@ -71,19 +72,18 @@ async function loadSystemFonts(): Promise<string[]> {
 export function useSystemFonts(): string[] {
   const [fonts, setFonts] = useState<string[]>(cachedFonts ?? FALLBACK_FONT_LIST)
 
+  const guard = useStaleGuard()
   useEffect(() => {
     if (cachedFonts) {
       setFonts(cachedFonts)
       return
     }
-    let cancelled = false
+    const token = guard.next()
     loadSystemFonts().then((list) => {
-      if (!cancelled) setFonts(list)
+      if (guard.isCurrent(token)) setFonts(list)
     })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    return () => guard.invalidate()
+  }, [guard])
 
   return fonts
 }
