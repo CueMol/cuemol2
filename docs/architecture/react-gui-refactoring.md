@@ -223,6 +223,60 @@ driver が使える)。各ツリー 3 回、全て同値。
 なった。** Phase 5-B の `NO_REPLY_SEQ` が設計どおり効いていることの確認。
 `mouseDown` / `mouseMove` / `mouseUp` の返信は 1 件も来ない。
 
+### splitter drag (React commit) -- 追加計測
+
+React の `Profiler` は **production ビルドでは no-op** なので、計測時だけ
+`node_modules/react-dom/index.js` を profiling ビルドに差し替えた
+(`electron.vite.config.ts` の alias では駄目 -- ベースラインには alias ブロック
+自体が無く、置換が無言で空振りする)。sash は `[class*="sash"]` の中から
+container を除き、縦・高さ 100px 超のものを選ぶ。**駆動は +100px -> -100px の
+往復**にして、run 後にレイアウトが開始位置へ戻るようにする。
+
+| (往復 200 step) | before (`c80fb39a`) | after |
+|---|---|---|
+| commit 数 | 2 / 2 | **0 / 0 / 0** |
+| render 時間 | 4.6 / 6.0 ms | **0 ms** |
+| 起動時 | 24 commits / 48-52 ms | 26 commits / 37-46 ms |
+
+現ツリーで commit がゼロなのは、splitter のサイズを購読する React state が
+無いため (Phase 2-3 で ref + debounce 保存に変更)。ベースラインは `setLayout`
+が走って 2 commit / 約 5 ms。
+
+**計測手順で 4 回間違えた。すべて「ゼロが出たとき、それが結果なのか計測失敗
+なのか」を確かめる話だった**ので、手順として残す:
+
+1. **sash を掴めていなかった** (`[class*="sash"]` が container にマッチ)。
+   pane 幅の前後を測って発覚 -- 幅が動いていない状態の commit 0 は無意味。
+2. **Profiler が無効だった** (production ビルド)。**起動時の commit 数**という
+   「必ず非ゼロになるはずの値」を見て発覚。
+3. **ベースラインだけ Profiler が無効だった**。instrumentation スクリプトの
+   `.replace` に `assert` を付けておらず、ベースラインに存在しないコードへの
+   置換が無言で失敗していた。**生成系の置換には必ず `assert` を付ける**。
+4. **開始位置が run ごとに違った**。片道 +100px の drag が
+   `app-state.json` に永続化され、229 -> 1229 px まで累積していた。
+   before/after で splitter の位置が違えば再レンダーする木の大きさも違う。
+   往復にして解決 (レイアウトを壊さない副次効果もある)。
+
+### T2-1(a): 実装しない (実測による判断)
+
+`EventSlots` のカウンタを露出して測ると **`skipped: 0`** -- 到着したイベントは
+すべて observer が見つかる。slot 登録は renderer / worker 両側で対称なので
+normal operation に「dead slot」が存在せず、**このフィルタは何も skip しない**。
+計画の前提が誤りだった。
+
+代わりに実在する無駄が測れた: drag 中に C++ が発火する view イベントは 117 件
+だが renderer には **234 件**届く。`SEM_VIEW` の購読が 2 つあり、C++ の
+`ScrEventManager` は**登録フィルタごとに配送する**ため:
+
+| 購読元 | category | evtMask |
+|---|---|---|
+| `useViewXform` | `''` | `SEM_ANY` |
+| `useActiveViewState` | `viewPropChanged` | `SEM_PROPCHG` |
+
+後者は前者に完全に含まれるが、マスクが異なるので単純な dedupe では統合できない
+(包含関係の判定か、propname のサーバ側フィルタ = 契約変更が要る)。実測値を
+記録し、対処は別途判断とする。
+
 ### 比較できなかったもの
 
 同じ drag で `viewPropChanged` イベントの受信数が **before 0 / after 234**
@@ -263,7 +317,9 @@ IPC 数も、アニメーションを持つ scene を headless で用意する�
   値を渡しているので実害はないが、型で再発防止するなら既定を外す
 - **`cancelled` flag の one-shot fetch** 13 箇所と component 内 fetch guard
   16 箇所を `useStaleGuard` / `useLiveFetch` へ (Phase 2-1 から外した分)
-- **T2-1(a) の実装**: 購読者のいない slot への `event-notify` post を skip
-  する worker 側フィルタ (上記「計測して分かった実装漏れ」)
-- **React commit 数の計測**: `<React.Profiler>` を両ツリーに入れて
-  タブ切替 / splitter drag を測る (上記「測っていないもの」)
+- **view イベントの二重配送**: `SEM_VIEW` を購読する 2 つの hook に C++ が
+  それぞれ配送するため drag 中の受信が 2 倍になる (上記「T2-1(a)」)。統合には
+  購読の包含判定か propname のサーバ側フィルタが要る
+- **タブ切替の commit 数**: 2 つ目の molview タブを headless で作る手段が
+  無く未計測 (tab bar に新規タブのボタンが無く、accelerator は native menu が
+  消費する)
