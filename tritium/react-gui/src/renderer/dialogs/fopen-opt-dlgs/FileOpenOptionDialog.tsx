@@ -12,6 +12,10 @@
  *     manually edits it (`rendererNameIsDefault` flag).
  *   - Renderer type defaults to the last used value for the same C++ object
  *     class (`objType`), persisted in localStorage via `rendTypeHistory`.
+ *   - The atom-selection rows and the view-after-loading control follow the
+ *     object's C++ class (`objType`), as UXP's `implIface` checks did, not the
+ *     reader nickname: the map readers outside `ccp4map` / `mtzmap` have no
+ *     `FormatKind` of their own and were being offered an atom selection.
  *   - Object name and renderer name are scene-wide unique via the worker
  *     `proposeUniqName` service (resp. `kind: 'object'+tryBare+parens`,
  *     `kind: 'sceneRenderer'`).
@@ -47,6 +51,7 @@ import { MsmsOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/MsmsOpti
 import { NamdCoorOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/NamdCoorOptionsPane';
 import { AmberPrmtopOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/AmberPrmtopOptionsPane';
 import { RendererOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/RendererOptionsPane';
+import { isMolObjectClass, isScalarMapClass } from '@renderer/worker/shared/objectClasses';
 import { pushHistory } from '@renderer/h3-kit/MolSelList';
 
 import type { PdbOptions, MtzOptions, Ccp4MapOptions, MsmsOptions, NamdCoorOptions, AmberPrmtopOptions, PresetTypeEntry } from './types';
@@ -330,7 +335,8 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
           rendererTypes={rendererTypes}
           presetTypes={presetTypes}
           sceneId={sceneId}
-          isMolFormat={isMolFormat(formatKind)}
+          isMolFormat={objType ? isMolObjectClass(objType) : isMolFormat(formatKind)}
+          isMapObject={isScalarMapClass(objType)}
           onRendererNameUserEdit={onRendererNameUserEdit}
         />
 

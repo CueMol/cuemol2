@@ -109,6 +109,7 @@ export function useRendererOptions(
             selectionEnabled: seedSel !== '',
             selection: seedSel !== '' ? seedSel : '*',
             centerView: true,
+            mapCenterPolicy: 'auto',
             presetName: pName,
         };
     }, [objectName, initialPick, initialRendererName, initialSelection]);

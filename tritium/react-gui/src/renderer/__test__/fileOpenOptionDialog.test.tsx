@@ -8,6 +8,10 @@
  *   6. Open (confirm) writes the chosen renderer type back to history.
  *   7. Initial object-name fetch uses { kind: 'object', tryBare: true, suffix: 'parens' }.
  *   8. Stale proposeUniqName response (older type-change) is discarded by request-seq guard.
+ *   9. The atom-selection rows and the view-after-loading control follow the
+ *      object's C++ CLASS (objType), not the reader nickname: a density map
+ *      whose reader has no FormatKind ('brix' -> 'unknown') must still be
+ *      recognised as a map.
  *
  * All against the pdb file path so isMolFormat=true exercises the same code
  * path as the real OpenObjByPath flow. MolSelList children are isolated via
@@ -421,6 +425,76 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         expect(select.querySelectorAll('optgroup').length).toBe(0)
         expect(select.querySelectorAll('option').length).toBe(3)
+        handle.unmount()
+    })
+
+    // --- Object-class gating (UXP `implIface` parity) ---
+
+    /** True when a form-kit Field row with this label is mounted. */
+    function hasRow(label: string): boolean {
+        return Array.from(document.body.querySelectorAll('.h3-form-field-label'))
+            .some((l) => (l.textContent ?? '').trim() === label)
+    }
+
+    // 'brix' has no FormatKind of its own, so the old reader-nickname test
+    // fell through to 'unknown' and offered an atom selection for a map.
+    it('hides the atom selection for a map whose reader has no FormatKind', async () => {
+        const handle = mount({
+            filePath: '/path/map.omap',
+            readerName: 'brix',
+            objType: 'DensityMap',
+            rendererTypes: ['isosurf', 'contour'],
+        })
+        await flushPromises()
+        expect(hasRow('Selection')).toBe(false)
+        expect(hasRow('Atoms')).toBe(false)
+        handle.unmount()
+    })
+
+    it('keeps the atom selection for a molecule', async () => {
+        const handle = mount()
+        await flushPromises()
+        expect(hasRow('Selection')).toBe(true)
+        expect(hasRow('Atoms')).toBe(true)
+        handle.unmount()
+    })
+
+    // UXP's scalar-object deck: a map gets the two center choices instead of
+    // the molecule recenter switch (`fopen-renderopt-page.xul`).
+    it('offers the map view policy instead of the molecule recenter switch', async () => {
+        const handle = mount({
+            filePath: '/path/map.ccp4',
+            readerName: 'ccp4map',
+            objType: 'DensityMap',
+            rendererTypes: ['isosurf', 'contour'],
+        })
+        await flushPromises()
+        expect(hasRow('Center view on molecule after loading')).toBe(false)
+
+        const select = controlByLabel<HTMLSelectElement>('View after loading', 'select')
+        expect(Array.from(select.options).map((o) => o.value))
+            .toEqual(['auto', 'setMapCenter', 'moveViewCenter'])
+        expect(select.value).toBe('auto')
+
+        await act(async () => { setSelectValue(select, 'moveViewCenter') })
+        const openBtn = findByText(document.body, 'button', 'Open') as HTMLButtonElement
+        await act(async () => { openBtn.click() })
+        await flushPromises()
+        expect(handle.captured?.renderer.mapCenterPolicy).toBe('moveViewCenter')
+        handle.unmount()
+    })
+
+    it('keeps the recenter switch for a molecule and defaults the policy to auto', async () => {
+        const handle = mount()
+        await flushPromises()
+        expect(hasRow('View after loading')).toBe(false)
+        expect(hasRow('Center view on molecule after loading')).toBe(true)
+
+        const openBtn = findByText(document.body, 'button', 'Open') as HTMLButtonElement
+        await act(async () => { openBtn.click() })
+        await flushPromises()
+        expect(handle.captured?.renderer.centerView).toBe(true)
+        expect(handle.captured?.renderer.mapCenterPolicy).toBe('auto')
         handle.unmount()
     })
 })

@@ -37,6 +37,7 @@ const RENDER_OPTS = {
     selectionEnabled: false,
     selection: '*',
     centerView: true,
+    mapCenterPolicy: 'auto' as const,
 }
 
 function makeScene(uid = 100) {

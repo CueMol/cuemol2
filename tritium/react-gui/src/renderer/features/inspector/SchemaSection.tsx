@@ -31,6 +31,7 @@ import {
   NumInputRow,
   NumRow,
   OptionalNumRow,
+  ReadonlyTextRow,
   SelRow,
   SliderRow,
   StringSelectRow,
@@ -260,6 +261,18 @@ function renderRow(
           onReset={onReset}
           placeholder={row.placeholder}
           disabled={disabled}
+        />
+      )
+
+    case 'readonlyText':
+      // A resolved property that reports "" does not apply to this node.
+      if (row.hideWhenEmpty && String(entry.value ?? '') === '') return null
+      return (
+        <ReadonlyTextRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          labels={row.labels}
         />
       )
 

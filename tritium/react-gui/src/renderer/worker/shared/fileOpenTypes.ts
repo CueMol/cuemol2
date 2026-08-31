@@ -70,13 +70,36 @@ export interface AmberPrmtopOptions {
   coordFilePath: string;
 }
 
+/**
+ * What the view does when a VOLUME object is loaded (UXP's scalar-object deck
+ * in `fopen-renderopt-page.xul`).
+ *
+ * A map has two sensible answers and the crystallographic one is not "look at
+ * the map": a 2Fo-Fc map is read around the model you are already looking at,
+ * so the map's display box moves to the view rather than the other way round.
+ * A cryo-EM map is the whole subject, and its ORIGIN often puts it nowhere
+ * near where the camera is, so it wants the opposite.
+ *
+ *   setMapCenter    - keep the view; set the renderer's `center` to the view
+ *                     center (UXP "Set map center")
+ *   moveViewCenter  - fit the view to the whole map, `DensityMap.fitView`
+ *                     (UXP "Move view center")
+ *   auto            - resolved after loading from the map kind: em ->
+ *                     moveViewCenter, otherwise setMapCenter. UXP had no map
+ *                     kind and always defaulted to setMapCenter.
+ */
+export type MapCenterPolicy = 'auto' | 'setMapCenter' | 'moveViewCenter';
+
 export interface RendererOptions {
   objectName: string;
   rendererType: string;
   rendererName: string;
   selectionEnabled: boolean;
   selection: string;
+  /** Recenter the view on the new renderer. Molecule-like objects only. */
   centerView: boolean;
+  /** What the view does for a volume object; `centerView` does not apply. */
+  mapCenterPolicy: MapCenterPolicy;
   /**
    * Set when the user picked a renderer preset (a `<objtype>-rendpreset`
    * style name, e.g. 'Default1RendPreset'). When set, the worker creates a

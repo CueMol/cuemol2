@@ -75,15 +75,18 @@ function commonSectionsFor(
 }
 
 /**
- * The type-specific sections, or none for the node kinds that have none: an
- * Object has no type page in UXP, and a renderer group's inherited renderer
- * properties are dead knobs (RendGroup::display draws nothing).
+ * The type-specific sections, looked up by the node's type label.
+ *
+ * An object goes through the same registry as a renderer: the label is its C++
+ * class name (`DensityMap`), which cannot collide with a renderer `type_name`
+ * (those are lowercase). Most object classes have no entry and fall through to
+ * the empty list, which is what UXP did for every object -- but a DensityMap's
+ * map kind is a property of the data that the renderers only read, so it has a
+ * page of its own. A renderer group is excluded outright: its inherited
+ * renderer properties are dead knobs (RendGroup::display draws nothing).
  */
-function typeSectionsFor(
-  rendererType: string,
-  isObject: boolean | undefined,
-): RendererPropSectionDef[] {
-  if (isObject || rendererType === "*group") return [];
+function typeSectionsFor(rendererType: string): RendererPropSectionDef[] {
+  if (rendererType === "*group") return [];
   return getRendererPropSections(rendererType);
 }
 
@@ -112,7 +115,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
 
   const sections = [
     ...commonSectionsFor(rendererType, isObject),
-    ...typeSectionsFor(rendererType, isObject),
+    ...typeSectionsFor(rendererType),
   ];
 
   // All accordions in the Properties tab form one exclusive group: only one is

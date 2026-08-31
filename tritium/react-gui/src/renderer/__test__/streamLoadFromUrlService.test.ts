@@ -86,6 +86,7 @@ function makeOptions(): FileOpenOptions {
             selectionEnabled: false,
             selection: '*',
             centerView: true,
+            mapCenterPolicy: 'auto' as const,
         },
     }
 }

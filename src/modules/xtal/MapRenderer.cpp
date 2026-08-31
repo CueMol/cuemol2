@@ -137,6 +137,15 @@ LString MapRenderer::getRegionModeResolvedStr() const
                                                    : LString("box");
 }
 
+LString MapRenderer::getMapTypeResolvedStr() const
+{
+  const DensityMap *pXtal = dynamic_cast<const DensityMap *>(getScalarObj());
+  if (pXtal == NULL)
+    return LString();
+
+  return pXtal->getMapTypeResolvedStr();
+}
+
 bool MapRenderer::isPBCEligible(const ScalarObject *pMap, bool bSpansCell) const
 {
   const DensityMap *pXtal = dynamic_cast<const DensityMap *>(pMap);

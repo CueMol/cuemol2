@@ -1,6 +1,7 @@
 import React from 'react'
 import { DialogShell } from './DialogShell'
 import { RendererOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/RendererOptionsPane'
+import { isScalarMapClass } from '@renderer/worker/shared/objectClasses'
 import { useRendererOptions } from '@renderer/dialogs/fopen-opt-dlgs/useRendererOptions'
 import type { PresetTypeEntry, RendererOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 
@@ -120,6 +121,7 @@ export function NewRendererDialog({
                     sceneId={sceneId}
                     molID={molID}
                     isMolFormat={isMol}
+                    isMapObject={isScalarMapClass(objClassName)}
                     onRendererNameUserEdit={onRendererNameUserEdit}
                 />
         </DialogShell>

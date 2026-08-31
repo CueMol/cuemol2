@@ -34,6 +34,7 @@ const renderer: RendererOptions = {
     selectionEnabled: false,
     selection: '*',
     centerView: false,
+    mapCenterPolicy: 'auto' as const,
 }
 
 function makeFixture() {

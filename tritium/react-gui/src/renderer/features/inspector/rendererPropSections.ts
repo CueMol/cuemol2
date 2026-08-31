@@ -31,6 +31,7 @@ import { RIBBON_SECTIONS } from "@renderer/features/inspector/schema/ribbon";
 import { ATOMINTR_SECTIONS } from "@renderer/features/inspector/schema/atomintr";
 import { CONTOUR_SECTIONS, GPU_MAPMESH_SECTIONS, ISOSURF_SECTIONS } from "@renderer/features/inspector/schema/map";
 import { SCENE_SECTIONS } from "@renderer/features/inspector/schema/scene";
+import { DENSITY_MAP_SECTIONS } from "@renderer/features/inspector/schema/densitymap";
 import type {
   GenericPropEntry,
   PropWriteOpts,
@@ -104,9 +105,14 @@ export type RendererPropSectionDef = SchemaSectionDef;
 // ------------------------------------------------------------
 
 /**
- * Renderer-type-specific sections, keyed by renderer `type_name`. Add an entry
- * here when porting a per-type page (ribbon / cpk / tube / ...). Unknown types
+ * Type-specific sections, keyed by the node's type label. Add an entry here
+ * when porting a per-type page (ribbon / cpk / tube / ...). Unknown types
  * resolve to an empty list (common page only).
+ *
+ * The key is what `PropertiesTab` receives as `rendererType`, which the worker
+ * (`genericProps` `typeLabelOf`) resolves per node kind: a renderer's
+ * `type_name` (lowercase, `isosurf`), an object's C++ class name (`DensityMap`),
+ * or the literal "Scene". The two casings do not collide.
  */
 export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]> = {
   // Scene: no dedicated UXP dialog (scene props were generic-tree only). Curated
@@ -115,6 +121,10 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // `rendererType` (genericProps `typeLabelOf` returns "Scene" for nodeType
   // "scene"), not the lowercase tree node type.
   Scene: SCENE_SECTIONS,
+  // DensityMap OBJECT (not a renderer): the cryo-EM map kind, which decides
+  // periodicity and how every map renderer's `region_mode: auto` resolves.
+  // See schema/densitymap.ts.
+  DensityMap: DENSITY_MAP_SECTIONS,
   // SimpleRenderer ("simple"): UXP simple-propdlg "Simple" tab -- line width only.
   simple: SIMPLE_SECTIONS,
   // TraceRenderer ("trace"): shares the UXP simple-propdlg with SimpleRenderer

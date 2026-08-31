@@ -101,6 +101,20 @@ TEST_F(MapRegionTest, MapTypeOverridesDetection)
     EXPECT_EQ(m_pMSR->getEffectiveRegionMode(), MapRenderer::REGION_FULL);
 }
 
+// The renderer forwards the object's effective map kind so the GUI can show
+// it without reaching for the parent object, and follows both the reader's
+// detection and an explicit override.
+TEST_F(MapRegionTest, RendererForwardsTheResolvedMapKind)
+{
+    EXPECT_EQ(std::string(m_pMSR->getMapTypeResolvedStr().c_str()), "xtal");
+
+    m_pMap->setDetectedMapType(DensityMap::MAPTYPE_EM);
+    EXPECT_EQ(std::string(m_pMSR->getMapTypeResolvedStr().c_str()), "em");
+
+    m_pMap->setMapType(DensityMap::MAPTYPE_XTAL);
+    EXPECT_EQ(std::string(m_pMSR->getMapTypeResolvedStr().c_str()), "xtal");
+}
+
 // An explicit region_mode overrides the map kind on the renderer side, so
 // a crystallographic map can be shown in full and an EM map in a box.
 TEST_F(MapRegionTest, RegionModeOverridesMapKind)

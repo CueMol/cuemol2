@@ -157,12 +157,19 @@ export function getDefaultRendererOptions(filePath: string, defaultRendType?: st
     selectionEnabled: false,
     selection: '*',
     centerView: true,
+    mapCenterPolicy: 'auto',
   };
 }
 
 // Returns true for formats that produce MolCoord-like objects, where atom
 // selection is meaningful. False for scalar/surface objects (mtz, ccp4map,
-// msms) -- see NON_MOL_CLASSES in setupRenderer.service.ts.
+// msms).
+//
+// A weak fallback: it only knows the reader nickname, and the map readers it
+// does not list (brix / mmcifmap / qdfmap / xplormap) come through as
+// 'unknown' and count as molecules. Prefer `isMolObjectClass(objType)`
+// (worker/shared/objectClasses) wherever the object's C++ class is known; this
+// is what the dialog falls back to when it is not.
 export function isMolFormat(kind: FormatKind): boolean {
   switch (kind) {
     case 'mtz':

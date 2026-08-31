@@ -57,6 +57,7 @@ const baseOpts: RendererOptions = {
     selectionEnabled: false,
     selection: 'protein',
     centerView: false,
+    mapCenterPolicy: 'auto' as const,
 }
 
 describe('setupRenderer — direct API (no NewRendererCommand)', () => {
@@ -108,6 +109,19 @@ describe('setupRenderer — direct API (no NewRendererCommand)', () => {
         setupRenderer(ctx, mol as unknown, { ...baseOpts, centerView: false })
         expect(rend().getCenter).not.toHaveBeenCalled()
         expect(scene.views[0].setViewCenter).not.toHaveBeenCalled()
+    })
+
+    // MapRenderer::getCenter() is the map's DISPLAY center, at the origin on a
+    // fresh renderer -- recentering there threw the view off the structure and
+    // left the map drawing an empty box. What the view does for a volume
+    // object is decided later, by applyMapCenterPolicy.
+    it('never recenters on a volume object, even with centerView=true', () => {
+        for (const className of ['DensityMap', 'ElePotMap']) {
+            const { ctx, mol, scene, rend } = makeFixture({ className, viewIds: [10] })
+            setupRenderer(ctx, mol as unknown, { ...baseOpts, centerView: true })
+            expect(rend().getCenter, className).not.toHaveBeenCalled()
+            expect(scene.views[0].setViewCenter, className).not.toHaveBeenCalled()
+        }
     })
 
     it('centerView=true but renderer lacks getCenter() -> skips silently', () => {

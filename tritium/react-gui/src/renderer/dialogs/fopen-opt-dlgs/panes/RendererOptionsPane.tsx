@@ -9,7 +9,19 @@ import {
   TextField,
 } from '@renderer/h3-kit/form';
 import type { PresetTypeEntry, RendererOptions } from '@renderer/dialogs/fopen-opt-dlgs/types';
+import type { MapCenterPolicy } from '@renderer/worker/shared/fileOpenTypes';
 import { MolSelList } from '@renderer/h3-kit/MolSelList';
+
+/**
+ * The view options for a volume object (UXP's scalar-object deck). A dropdown
+ * rather than UXP's radio group: the labels are long enough that a radio row
+ * wraps, and every other choice in this pane is a `SelectField`.
+ */
+const MAP_CENTER_CHOICES: { value: MapCenterPolicy; label: string }[] = [
+  { value: 'auto', label: 'Auto (by map kind)' },
+  { value: 'setMapCenter', label: 'Set map center (keep the view)' },
+  { value: 'moveViewCenter', label: 'Move view center (fit the map)' },
+];
 
 interface RendererOptionsPaneProps {
   options: RendererOptions;
@@ -22,6 +34,11 @@ interface RendererOptionsPaneProps {
   presetTypes?: PresetTypeEntry[];
   sceneId: number;
   isMolFormat: boolean;
+  /**
+   * The object is a volume (DensityMap / ElePotMap), so the view options are
+   * the map ones (`mapCenterPolicy`) rather than the molecule recenter switch.
+   */
+  isMapObject?: boolean;
   /**
    * Target molecule uid. Forwarded to MolSelList so the picker can show
    * `current (<sel>)`. Set only when the dialog is attached to an existing
@@ -38,7 +55,7 @@ interface RendererOptionsPaneProps {
   onRendererNameUserEdit?: (newValue: string) => void;
 }
 
-export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, presetTypes, sceneId, isMolFormat, molID, onRendererNameUserEdit }) => {
+export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, presetTypes, sceneId, isMolFormat, isMapObject, molID, onRendererNameUserEdit }) => {
   const set = <K extends keyof RendererOptions>(key: K) =>
     (value: RendererOptions[K]) => onChange({ ...options, [key]: value });
 
@@ -126,9 +143,22 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
         )}
       </FieldSection>
       <Divider />
-      <Field label="Center view on molecule after loading" inline>
-        <SwitchField checked={options.centerView} onChange={set('centerView')} />
-      </Field>
+      {isMapObject ? (
+        <Field label="View after loading">
+          <SelectField
+            value={options.mapCenterPolicy}
+            onChange={(v) => set('mapCenterPolicy')(v as MapCenterPolicy)}
+          >
+            {MAP_CENTER_CHOICES.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </SelectField>
+        </Field>
+      ) : (
+        <Field label="Center view on molecule after loading" inline>
+          <SwitchField checked={options.centerView} onChange={set('centerView')} />
+        </Field>
+      )}
     </div>
   );
 };

@@ -1,13 +1,16 @@
 /**
  * Cryo-EM post-load helpers (worker side): the dialog's map-kind override
  * lands on the DensityMap, the EM renderer defaults are applied only when
- * the map resolves to cryo-EM and the renderer has a contour level, and the
- * view fit runs DensityMap.fitView on every view of the scene.
+ * the map resolves to cryo-EM and the renderer has a contour level, the view
+ * fit runs DensityMap.fitView on every view of the scene, and the dialog's
+ * view policy picks between that fit and moving the map's display box to the
+ * view the user is already on.
  */
 import { describe, it, expect, vi } from 'vitest'
 import {
     applyMapTypeChoice,
     applyEmMapDefaults,
+    applyMapCenterPolicy,
     fitViewsToMap,
     isEmDensityMap,
     EM_INITIAL_TOP_FRACTION,
@@ -89,5 +92,71 @@ describe('fitViewsToMap', () => {
         fitViewsToMap(scene as never, {})
         fitViewsToMap(scene as never, { fitView: vi.fn() })
         expect(scene.getView).not.toHaveBeenCalled()
+    })
+})
+
+describe('applyMapCenterPolicy', () => {
+    /** A scene with two views, each reporting its own center. */
+    function makeScene() {
+        const fitView = vi.fn()
+        const views: Record<number, unknown> = {
+            3: { getViewCenter: () => 'center-of-3' },
+            7: { getViewCenter: () => 'center-of-7' },
+        }
+        const scene = {
+            view_uids: '3, 7',
+            getView: vi.fn((uid: number) => views[uid] ?? null),
+        }
+        return { scene, views, fitView }
+    }
+
+    // A cryo-EM map is the whole subject and its ORIGIN can put it far from
+    // the camera, so `auto` takes the view to the map.
+    it('auto fits the view to a cryo-EM map', () => {
+        const { scene, fitView } = makeScene()
+        const obj = { map_type_resolved: 'em', fitView }
+        const rend: Record<string, unknown> = { center: 'origin' }
+
+        expect(applyMapCenterPolicy(scene as never, obj, rend, 'auto')).toBe('moveViewCenter')
+        expect(fitView).toHaveBeenCalledTimes(2)
+        expect(rend.center).toBe('origin')
+    })
+
+    // A 2Fo-Fc map is read around a model already on screen, so `auto` moves
+    // the map's display box instead of the camera (UXP "Set map center").
+    it('auto brings a crystallographic map to the view, without moving it', () => {
+        const { scene, fitView } = makeScene()
+        const obj = { map_type_resolved: 'xtal', fitView }
+        const rend: Record<string, unknown> = { center: 'origin' }
+
+        expect(applyMapCenterPolicy(scene as never, obj, rend, 'auto')).toBe('setMapCenter')
+        expect(fitView).not.toHaveBeenCalled()
+        // The first view stands in for UXP's "current view".
+        expect(rend.center).toBe('center-of-3')
+    })
+
+    it('an explicit choice overrides the map kind in both directions', () => {
+        const em = makeScene()
+        const emObj = { map_type_resolved: 'em', fitView: em.fitView }
+        const emRend: Record<string, unknown> = { center: 'origin' }
+        expect(applyMapCenterPolicy(em.scene as never, emObj, emRend, 'setMapCenter')).toBe('setMapCenter')
+        expect(em.fitView).not.toHaveBeenCalled()
+        expect(emRend.center).toBe('center-of-3')
+
+        const xtal = makeScene()
+        const xtalObj = { map_type_resolved: 'xtal', fitView: xtal.fitView }
+        const xtalRend: Record<string, unknown> = { center: 'origin' }
+        expect(applyMapCenterPolicy(xtal.scene as never, xtalObj, xtalRend, 'moveViewCenter')).toBe('moveViewCenter')
+        expect(xtal.fitView).toHaveBeenCalledTimes(2)
+        expect(xtalRend.center).toBe('origin')
+    })
+
+    // An ElePotMap has no map kind; leave the view alone rather than guessing.
+    it('is a no-op for a scalar object that is not a DensityMap', () => {
+        const { scene, fitView } = makeScene()
+        const rend: Record<string, unknown> = { center: 'origin' }
+        expect(applyMapCenterPolicy(scene as never, { fitView }, rend, 'auto')).toBeNull()
+        expect(fitView).not.toHaveBeenCalled()
+        expect(rend.center).toBe('origin')
     })
 })

@@ -22,6 +22,12 @@ import { eq } from './predicates'
 import { CenterUpdateRow, LimitDisplayRows } from '@renderer/features/inspector/rows'
 import type { Predicate, PropRowDef, SchemaSectionDef } from './types'
 
+/** Display labels of the read-only `map_type_resolved` string. */
+const MAP_KIND_LABELS: Record<string, string> = {
+  xtal: 'Crystallographic',
+  em: 'Cryo-EM',
+}
+
 /** Display labels of the `region_mode` enum (raw C++ ids stay the values). */
 const REGION_MODE_LABELS: Record<string, string> = {
   auto: 'Auto',
@@ -39,6 +45,20 @@ const LOD_LABELS: Record<string, string> = {
   step8: '8',
 }
 const LOD_ORDER = ['auto', 'step1', 'step2', 'step4', 'step8']
+
+/**
+ * Display labels of the isosurf `cap_mode` enum.
+ *
+ * Auto keeps the historical coupling to the region policy (a full region and
+ * the generated surface object close the surface, a box region leaves it
+ * open); On and Off decide it regardless.
+ */
+const CAP_MODE_LABELS: Record<string, string> = {
+  auto: 'Auto',
+  on: 'On',
+  off: 'Off',
+}
+const CAP_MODE_ORDER = ['auto', 'on', 'off']
 
 /**
  * The renderer generates the whole map rather than a box around the centre.
@@ -59,6 +79,17 @@ const isBoxRegion: Predicate = (ctx) => !isFullRegion(ctx)
 
 /** Centre update, then region / level of detail: the head of every map page. */
 const MAP_HEAD_ROWS: PropRowDef[] = [
+  // What the map is, before what to do with it: the region / level-of-detail
+  // rows below only make sense once you know whether "auto" saw a
+  // crystallographic map or a cryo-EM one. Forwarded from the DensityMap, and
+  // empty (so the row is dropped) for a scalar object that has no map kind.
+  {
+    kind: 'readonlyText',
+    key: 'map_type_resolved',
+    label: 'Map kind',
+    labels: MAP_KIND_LABELS,
+    hideWhenEmpty: true,
+  },
   { kind: 'custom', key: 'center-update', Component: CenterUpdateRow },
   {
     kind: 'mappedEnum',
@@ -147,6 +178,13 @@ export const ISOSURF_SECTIONS: SchemaSectionDef[] = [
         min: 50,
         max: 1000,
         step: 10,
+      },
+      {
+        kind: 'mappedEnum',
+        key: 'cap_mode',
+        label: 'Cap mode',
+        labels: CAP_MODE_LABELS,
+        options: CAP_MODE_ORDER,
       },
       { kind: 'bool', key: 'cullface', label: 'Back-face culling' },
       { kind: 'bool', key: 'use_pbc', label: 'Use periodic boundary', visibleWhen: isBoxRegion },
