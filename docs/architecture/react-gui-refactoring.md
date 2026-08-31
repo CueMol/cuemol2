@@ -202,6 +202,59 @@ dead ではなく、pin テストを書いてから畳んだ。
 **UXP parity は正しさの保証ではない。** coloring の potential 出口欠落は
 UXP にも同じバグがあり、移植で継承していた。C++ の実際の enum を確認する。
 
+## 計測 (2026-08-31)
+
+ベースラインは Phase 0 で取り損ねたが、**リファクタ開始前の commit
+(`c80fb39a`) を checkout して同じ instrumentation を当て、両方ビルドして
+比べれば後から取れる** (ウィンドウ表示の調査で使ったのと同じ手口)。
+GUI 操作を人手に頼らず済むよう、drag は main から
+`webContents.executeJavaScript` で canvas に `MouseEvent` を dispatch して
+駆動した (両ツリーとも canvas に素の DOM listener を張っているので同じ
+driver が使える)。各ツリー 3 回、全て同値。
+
+### mouse drag (mousemove 120 回)
+
+| | before (`c80fb39a`) | after |
+|---|---|---|
+| 送信 (postMessage) | 122 | 122 |
+| **入力イベントへの返信** | **122** | **0** |
+
+**pointer event 1 件あたりのメッセージが 2 (要求 + 返信) から 1 (要求のみ) に
+なった。** Phase 5-B の `NO_REPLY_SEQ` が設計どおり効いていることの確認。
+`mouseDown` / `mouseMove` / `mouseUp` の返信は 1 件も来ない。
+
+### 比較できなかったもの
+
+同じ drag で `viewPropChanged` イベントの受信数が **before 0 / after 234**
+と大きく違ったが、**これはツリーの差ではなく購読の差**なので比較として
+成立しない。C++ の `ScrEventManager` は登録されたフィルタに一致する
+イベントだけを配送するので、受信数は「その瞬間どの pane が mount されていて
+何を購読しているか」で決まる。2 つのビルドで pane の状態を揃える手段が
+無かった (揃えるには GUI 操作が要る)。
+
+したがって **drag 中の総メッセージ数については何も主張できない**。計画の
+Phase 5 ゲート「mouse drag 中の postMessage 数が半減」は、送信のみを見れば
+122 -> 122 で**変わっておらず**、往復回数で見れば 2 -> 1 で半減している。
+どちらの意味で書かれたゲートなのかが曖昧だったので、ここに実測を残す。
+
+### 計測して分かった実装漏れ
+
+worker 側にカウンタを入れて測ると `cb=240 posted=240` で、**C++ からの
+コールバック 240 回に対して post も 240 回**。Phase 5-B の T2-1(a)
+「`WorkerService` が `_liveSlots` を持ち、購読者のいない slot への post を
+skip する」は**実装されていない** (`registerWorkerEventListener` に
+`isLive` 引数が無い)。5-B で実際に入ったのは (b) の lazy parse と
+`NO_REPLY_SEQ` だけだった。
+
+### 測っていないもの
+
+タブ切替と splitter drag の React commit 数は、どちらのツリーにも
+`<React.Profiler>` が入っておらず (Phase 2-5 の `RenderProfiler` は結局
+実装しなかった)、駆動にも DOM 操作が要るため未計測。animation 再生の
+IPC 数も、アニメーションを持つ scene を headless で用意する必要があり未計測。
+これらは代わりに性質を test で固定してある (`renderIsolation` /
+`LayoutProvider` の drag / `sceneTreeStability`)。
+
 ## 残課題
 
 - **Phase 5-A Tier 2**: 残り ~85 の flat service を calls slice と 1:1 の
@@ -210,6 +263,7 @@ UXP にも同じバグがあり、移植で継承していた。C++ の実際の
   値を渡しているので実害はないが、型で再発防止するなら既定を外す
 - **`cancelled` flag の one-shot fetch** 13 箇所と component 内 fetch guard
   16 箇所を `useStaleGuard` / `useLiveFetch` へ (Phase 2-1 から外した分)
-- **perf ベースライン**: Phase 0-3 で決めた DevTools Profiler のプロトコルは
-  未実施。代わりに再現可能な性質を test で pin してある
-  (`renderIsolation` / `LayoutProvider` の drag / `sceneTreeStability`)
+- **T2-1(a) の実装**: 購読者のいない slot への `event-notify` post を skip
+  する worker 側フィルタ (上記「計測して分かった実装漏れ」)
+- **React commit 数の計測**: `<React.Profiler>` を両ツリーに入れて
+  タブ切替 / splitter drag を測る (上記「測っていないもの」)
