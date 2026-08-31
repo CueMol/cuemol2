@@ -358,6 +358,44 @@ describe("anim.service editing", () => {
     expect(res.ok).toBe(true);
   });
 
+  /*
+   * Deleting an element that others chain their start time to.
+   *
+   * A relative start is an offset from another element's end, named by
+   * `timeRefName`. Removing the named element left the dependents pointing at
+   * a name nothing carries, and C++ `resolveRelTime` throws on that -- so
+   * every later resolve failed, the strip stayed where it was drawn while the
+   * inspector showed the raw offset as if it were an absolute time, and no
+   * further edit to those elements could land. Renaming already re-points the
+   * dependents (`cascadeTimeRefRename`); deleting had no counterpart.
+   *
+   * A deleted reference cannot be re-pointed, so the dependents are cut loose
+   * where they currently sit: absolute, at the position they were resolved to.
+   */
+  it("animRemoveElement cuts loose the elements that chained to it", () => {
+    const objs = [
+      makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+      makeObj({ uid: 2, name: "B", className: "SimpleSpin", timeRefName: "A",
+                start: 0, end: 500, absStart: 1000, absEnd: 1500 }),
+      makeObj({ uid: 3, name: "C", className: "SimpleSpin", timeRefName: "other",
+                start: 0, end: 500, absStart: 4000, absEnd: 4500 }),
+    ];
+    const { ctx, removeAt, startUndoTxn } = makeCtx({ objs });
+
+    const res = services.animRemoveElement(ctx, { sceneId: 1, index: 0 });
+
+    expect(res.ok).toBe(true);
+    expect(startUndoTxn).toHaveBeenCalledWith("Delete animation element");
+    expect(removeAt).toHaveBeenCalledWith(0);
+    // B kept its place on the timeline and no longer names a missing element.
+    expect(objs[1].timeRefName).toBe("");
+    expect(objs[1].start.millisec).toBe(1000);
+    expect(objs[1].end.millisec).toBe(1500);
+    // C chained to something else and is left alone.
+    expect(objs[2].timeRefName).toBe("other");
+    expect(objs[2].start.millisec).toBe(0);
+  });
+
   it("animMoveElement removes then re-inserts at the target index", () => {
     const objs = [
       makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
