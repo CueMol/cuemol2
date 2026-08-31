@@ -15,7 +15,7 @@ import {
     applySelectionHits,
     parseSelectionHits,
     type SelectionResult,
-} from '@renderer/worker/server/services/helpers/applySelectionHits';
+} from '@renderer/worker/server/services/select/applySelectionHits';
 
 export interface LassoPoint {
     x: number;

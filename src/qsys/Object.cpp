@@ -515,7 +515,11 @@ RendererPtr Object::createPresetRenderer(const LString &preset_name,
   RendererFactory *pRF = RendererFactory::getInstance();
 
   RendererPtr pRendGrp = pRF->create("*group");
-  pRendGrp->setName(grp_name);
+  // Through the property system, not setName(): a direct setter leaves the
+  // prop marked as default, and default-valued props are skipped when the
+  // object is serialized -- the group came back from XML with no name, and
+  // its members pointed at a name nothing carried.
+  pRendGrp->setPropStr("name", grp_name);
 
   for (pNode->firstChild(); pNode->hasMoreChild(); pNode->nextChild()) {
     qlib::LDom2Node *pChNode = pNode->getCurChild();

@@ -24,6 +24,7 @@ import { IPC } from "@shared/ipcChannels";
 import type { RenderFramePreviewWire, RenderTargetViewWire, RenderWindowCommand, RenderWindowModeRequest, RenderWindowStateUpdate, RenderViewCamera, HatchStyleSpecReply, ViewSizePx, RelayKind, RelayReq, RelayRes } from "@shared/types/renderWindow";
 import type { RenderJob } from "./useRenderJob";
 import { useHoldReveal } from "@renderer/shell/reveal/useRevealWindow";
+import { useStaleGuard } from "@renderer/hooks/react/useStaleGuard";
 import type {
   RenderResult,
   RenderSettingsSnapshot,
@@ -325,30 +326,31 @@ export function useRenderWindowClient(): {
   // newest render is shown on open, and it is the largest thing on screen).
   const [imagePending, setImagePending] = useState(false);
   useHoldReveal(imagePending);
+  const guard = useStaleGuard();
   useEffect(() => {
     if (shownId === null) {
       setShownImage(null);
       return;
     }
-    let cancelled = false;
+    const token = guard.next();
     setShownImage(null);
     setImagePending(true);
     void window.electronAPI
       ?.invoke(IPC.RENDER_HISTORY_READ, { resultId: shownId })
       .then((res) => {
-        if (!cancelled) setShownImage(res?.dataUrl ?? null);
+        if (guard.isCurrent(token)) setShownImage(res?.dataUrl ?? null);
       })
       .catch(() => {
-        if (!cancelled) setShownImage(null);
+        if (guard.isCurrent(token)) setShownImage(null);
       })
       .finally(() => {
-        if (!cancelled) setImagePending(false);
+        if (guard.isCurrent(token)) setImagePending(false);
       });
     return () => {
-      cancelled = true;
+      guard.invalidate();
       setImagePending(false);
     };
-  }, [shownId]);
+  }, [shownId, guard]);
 
   const getViewCamera = useCallback(
     (viewId: number): Promise<RenderViewCamera | null> =>

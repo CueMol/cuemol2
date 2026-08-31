@@ -30,6 +30,7 @@ import { MolPicker } from './MolPicker'
 import { MolSelList, pushHistory } from '@renderer/h3-kit/MolSelList'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SuperposeAlgo } from '@renderer/worker/server/services/molops/superposeMol'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import {
     loadMolSuperposeHistory,
     saveMolSuperposeHistory,
@@ -71,9 +72,10 @@ export function MolSuperposeDialog({
     // initial molecule selection -- last-used uids when still present, else
     // ref=first / mov=second (UXP `onLoad` default). Selection strings start
     // empty; the user picks from the MolSelList history dropdown. This effect
-    // owns its own field resets (and the async cancelled-flag fetch), so the
+    // owns its own field resets (and the async !guard.isCurrent(token)-flag fetch), so the
     // commit hook below is given no onReset -- it only clears submitting /
     // errorMsg on open.
+    const guard = useStaleGuard()
     useEffect(() => {
         if (!visible) return
         setRefSel('')
@@ -89,10 +91,10 @@ export function MolSuperposeDialog({
             setMovObjId(hist.movObjId)
             return
         }
-        let cancelled = false
+        const token = guard.next()
         cm.invokeService('listSceneObjects', { sceneId })
             .then((res) => {
-                if (cancelled) return
+                if (!guard.isCurrent(token)) return
                 const mols = (res?.objects ?? []).filter(objectFilters.molCoord)
                 const uids = mols.map((m: SceneObjectEntry) => m.uid)
                 const has = (id: number | undefined): boolean =>
@@ -107,14 +109,12 @@ export function MolSuperposeDialog({
                 )
             })
             .catch(() => {
-                if (cancelled) return
+                if (!guard.isCurrent(token)) return
                 setRefObjId(hist.refObjId)
                 setMovObjId(hist.movObjId)
             })
-        return () => {
-            cancelled = true
-        }
-    }, [visible, cm, sceneId])
+        return () => guard.invalidate()
+    }, [visible, cm, sceneId, guard])
 
     const { submitting, errorMsg, run: handleOk } =
         useMolEditCommit({

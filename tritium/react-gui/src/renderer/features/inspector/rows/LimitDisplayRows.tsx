@@ -23,33 +23,33 @@ import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/li
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import type { PropMultiWrite } from '@renderer/features/inspector/rendererPropSections'
 import type { CustomRowProps } from '@renderer/features/inspector/schema/types'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 /** The scene's molecule (MolCoord) object names, for the target selector. */
 export function useMolObjectNames(sceneId: number | undefined): string[] {
   const { cm } = useCueMol()
   const [names, setNames] = useState<string[]>([])
 
+  const guard = useStaleGuard()
   useEffect(() => {
     if (!cm || sceneId === undefined) {
       setNames([])
       return
     }
-    let cancelled = false
+    const token = guard.next()
     cm.invokeService('listSceneObjects', { sceneId })
       .then((r) => {
-        if (cancelled) return
+        if (!guard.isCurrent(token)) return
         const mols = (r?.objects ?? []).filter((o: SceneObjectEntry) =>
           objectFilters.molCoord(o),
         )
         setNames(mols.map((o: SceneObjectEntry) => o.name).filter(Boolean))
       })
       .catch(() => {
-        if (!cancelled) setNames([])
+        if (guard.isCurrent(token)) setNames([])
       })
-    return () => {
-      cancelled = true
-    }
-  }, [cm, sceneId])
+    return () => guard.invalidate()
+  }, [cm, sceneId, guard])
 
   return names
 }

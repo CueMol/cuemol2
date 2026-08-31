@@ -26,6 +26,7 @@ import type {
 } from '@renderer/worker/server/services/select/getMolStructure';
 import { SEM_OBJECT, SEM_ANY } from '@renderer/event';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 export interface UseMolStructureOptions {
     cm: AsyncCueMol | null;
@@ -86,6 +87,7 @@ export function useMolStructure(
         inflightAtomsRef.current.clear();
     }, []);
 
+    const guard = useStaleGuard();
     const fetchChains = useCallback(() => {
         const sid = sceneIdRef.current;
         const mid = molIdRef.current;
@@ -94,24 +96,22 @@ export function useMolStructure(
             return;
         }
         setChainsLoading(true);
-        let cancelled = false;
+        const token = guard.next();
         cm.invokeService('getMolChains', { sceneId: sid, molId: mid })
             .then((res) => {
-                if (cancelled) return;
+                if (!guard.isCurrent(token)) return;
                 setChains(res?.chains ?? []);
             })
             .catch((err: unknown) => {
-                if (cancelled) return;
+                if (!guard.isCurrent(token)) return;
                 console.warn('getMolChains failed:', err);
                 setChains([]);
             })
             .finally(() => {
-                if (!cancelled) setChainsLoading(false);
+                if (guard.isCurrent(token)) setChainsLoading(false);
             });
-        return () => {
-            cancelled = true;
-        };
-    }, [cm]);
+        return () => guard.invalidate();
+    }, [cm, guard]);
 
     const refetch = useCallback(() => {
         clearLazyCaches();

@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHoldReveal } from "@renderer/shell/reveal/useRevealWindow";
 import { parseHatchSpec, type HatchSpec } from "@renderer/data/hatchSpec";
 import type { HatchStyleSpecReply } from "@shared/types/renderWindow";
+import { useStaleGuard } from "@renderer/hooks/react/useStaleGuard";
 
 export type HatchTemplateStatus = "idle" | "loading" | "ready" | "error";
 
@@ -49,6 +50,7 @@ export function useHatchTemplate({
   // A template loading on open keeps the window off screen until it is in.
   useHoldReveal(status === "loading");
 
+  const guard = useStaleGuard();
   useEffect(() => {
     if (!enabled || !style) {
       setStatus("idle");
@@ -60,13 +62,13 @@ export function useHatchTemplate({
       setError(null);
       return;
     }
-    let cancelled = false;
+    const token = guard.next();
     setStatus("loading");
     setError(null);
     fetchRef
       .current(style)
       .then((reply) => {
-        if (cancelled) return;
+        if (!guard.isCurrent(token)) return;
         if (reply.ok) {
           loadedRef.current(style, parseHatchSpec(reply.spec));
           setStatus("ready");
@@ -76,14 +78,12 @@ export function useHatchTemplate({
         }
       })
       .catch((e: unknown) => {
-        if (cancelled) return;
+        if (!guard.isCurrent(token)) return;
         setStatus("error");
         setError(e instanceof Error ? e.message : String(e));
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, style, loaded]);
+    return () => guard.invalidate();
+  }, [enabled, style, loaded, guard]);
 
   return { status, error };
 }

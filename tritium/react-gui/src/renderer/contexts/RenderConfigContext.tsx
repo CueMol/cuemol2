@@ -24,6 +24,7 @@ import React, {
   useMemo,
 } from "react";
 import { IPC } from "@shared/ipcChannels";
+import { useStaleGuard } from "@renderer/hooks/react/useStaleGuard";
 import {
   type RenderBinaries,
   DEFAULT_RENDER_BINARIES,
@@ -53,15 +54,16 @@ export const RenderConfigProvider: React.FC<RenderConfigProviderProps> = ({
   //       -> compiled-in DEFAULT_RENDER_BINARIES.
   // Do not early-return when UI_LOAD is empty: a fresh profile with no persisted
   // paths is exactly when the Main-resolved default must take effect.
+  const guard = useStaleGuard();
   useEffect(() => {
-    let cancelled = false;
+    const token = guard.next();
     (async () => {
       try {
         const [ui, appInfo] = await Promise.all([
           window.electronAPI?.invoke(IPC.UI_LOAD),
           window.electronAPI?.invoke(IPC.APP_PATH),
         ]);
-        if (cancelled) return;
+        if (!guard.isCurrent(token)) return;
         const def = appInfo?.defaultRenderBinaries;
         setBinaries({
           povrayExe: ui?.povrayExe || def?.povrayExe || DEFAULT_RENDER_BINARIES.povrayExe,
@@ -73,10 +75,8 @@ export const RenderConfigProvider: React.FC<RenderConfigProviderProps> = ({
         // Electron not available (Vite dev server) -- keep defaults.
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => guard.invalidate();
+  }, [guard]);
 
   const setBinary = useCallback((key: keyof RenderBinaries, value: string) => {
     setBinaries((prev) => ({ ...prev, [key]: value }));

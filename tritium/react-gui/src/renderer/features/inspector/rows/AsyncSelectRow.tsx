@@ -20,6 +20,7 @@ import { objectFilters } from '@renderer/h3-kit/ObjectSelect'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import type { RendererPropSectionProps } from '@renderer/features/inspector/rendererPropSections'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 type SetFn = RendererPropSectionProps['onSet']
 type ResetFn = RendererPropSectionProps['onReset']
@@ -44,6 +45,7 @@ export function useAsyncNames(
   // Serialised so a new object literal per render does not refetch.
   const sourceKey = JSON.stringify(source)
 
+  const guard = useStaleGuard()
   useEffect(() => {
     const src = JSON.parse(sourceKey) as AsyncNameSource
     const needsNode = src.kind === 'siblingRenderers'
@@ -51,7 +53,7 @@ export function useAsyncNames(
       setNames([])
       return
     }
-    let cancelled = false
+    const token = guard.next()
     const fetched =
       src.kind === 'materials'
         ? cm.invokeService('getMaterialNames', { sceneId }).then((r) => r.names)
@@ -71,15 +73,13 @@ export function useAsyncNames(
               .then((r) => r.names)
     fetched
       .then((n) => {
-        if (!cancelled) setNames(n)
+        if (guard.isCurrent(token)) setNames(n)
       })
       .catch(() => {
-        if (!cancelled) setNames([])
+        if (guard.isCurrent(token)) setNames([])
       })
-    return () => {
-      cancelled = true
-    }
-  }, [cm, sceneId, nodeId, sourceKey])
+    return () => guard.invalidate()
+  }, [cm, sceneId, nodeId, sourceKey, guard])
 
   return names
 }

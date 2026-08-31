@@ -29,6 +29,7 @@ import { packToHex, type Rgb } from './colorMath'
 import { RgbHsbPanel } from './RgbHsbPanel'
 import { NamedListPanel } from './NamedListPanel'
 import { PalettePanel } from './PalettePanel'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 const MOL_COLOR = '$molcol'
 
@@ -120,10 +121,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     const liveValueRef = useRef(value)
 
     // Resolve the authoritative colour whenever the parent value changes.
+    const guard = useStaleGuard()
     useEffect(() => {
         setDraft(value)
         liveValueRef.current = value
-        let cancelled = false
+        const token = guard.next()
         if (!cm) {
             setResolved(null)
             setLiveRgb(null)
@@ -135,20 +137,18 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                     colorStr: value,
                     sceneId: sceneId ?? 0,
                 })
-                if (cancelled) return
+                if (!guard.isCurrent(token)) return
                 setResolved(res ?? null)
                 setLiveRgb(res?.ok && res.r !== undefined ? [res.r, res.g!, res.b!] : null)
             } catch (err: unknown) {
-                if (cancelled) return
+                if (!guard.isCurrent(token)) return
                 console.warn('compileColor failed:', err)
                 setResolved(null)
                 setLiveRgb(null)
             }
         })()
-        return () => {
-            cancelled = true
-        }
-    }, [value, sceneId, cm])
+        return () => guard.invalidate()
+    }, [value, sceneId, cm, guard])
 
     const isMol = value === MOL_COLOR
     const swatchColor = liveRgb ? packToHex(liveRgb) : 'transparent'

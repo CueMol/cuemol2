@@ -58,6 +58,7 @@ import { RendererSelector } from '@renderer/features/coloring/colorPane/Renderer
 import { usePaintSelection } from '@renderer/features/coloring/colorPane/usePaintSelection'
 import { useColorPaneActions } from '@renderer/features/coloring/colorPane/useColorPaneActions'
 import { PaintTable } from '@renderer/features/coloring/colorPane/PaintTable'
+import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import {
     BfacDeck,
     CpkDeck,
@@ -121,13 +122,14 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
     // and on every window focus -- which is exactly the moment the user
     // comes back from copying rows in CueMol2 or another CueMol3 window.
     const [canPastePaint, setCanPastePaint] = useState(false)
+    const guard = useStaleGuard()
     useEffect(() => {
-        let cancelled = false
+        const token = guard.next()
         const refresh = (): void => {
             window.electronAPI
                 ?.invoke(IPC.CLIPBOARD_CUEMOL_PEEK)
                 .then((res) => {
-                    if (!cancelled) setCanPastePaint(res?.kind === 'paint')
+                    if (guard.isCurrent(token)) setCanPastePaint(res?.kind === 'paint')
                 })
                 .catch((err: unknown) =>
                     console.warn('clipboard peek failed:', err),
@@ -136,10 +138,10 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
         refresh()
         window.addEventListener('focus', refresh)
         return () => {
-            cancelled = true
+            guard.invalidate()
             window.removeEventListener('focus', refresh)
         }
-    }, [])
+    }, [guard])
 
     const target = selectedKey ? parseTargetKey(selectedKey) : null
 

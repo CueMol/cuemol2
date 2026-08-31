@@ -10,7 +10,13 @@ import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import type { AnimAddType } from "@renderer/types";
-import { safeStr, resolveSceneMgr, makeTimeValue } from "./resolve";
+import {
+  forEachAnimObj,
+  makeTimeValue,
+  resolveSceneMgr,
+  safeNum,
+  safeStr,
+} from "./resolve";
 import { withUndoTxn } from "../withUndoTxn";
 import { readMgrState } from "./read";
 import type {
@@ -188,6 +194,45 @@ export function addElement(ctx: WorkerContext, args: AnimAddElementArgs): AnimAd
 }
 
 /** Remove the element at `index`. */
+/**
+ * Cut loose the elements whose start time chains to the one at `index`.
+ *
+ * A relative start is an offset from another element's end, named by
+ * `timeRefName`. Once that element is gone the name resolves to nothing, and
+ * C++ `resolveRelTime` throws for the whole manager -- so every later resolve
+ * fails, the strip keeps whatever absolute times it was last drawn with, and
+ * no further edit to any element can land.
+ *
+ * A deleted reference cannot be re-pointed the way a renamed one is
+ * (`cascadeTimeRefRename`), so each dependent is made absolute at the position
+ * it currently occupies: the timeline looks unchanged, and the chain is gone
+ * rather than dangling.
+ */
+function detachDependents(ctx: WorkerContext, mgr: AnimMgr, index: number): void {
+  const target = mgr.getAt(index) as AnimObj | null;
+  if (!target) return;
+  const name = safeStr(() => target.name);
+  if (!name) return;
+  // Absolute times have to be current before they are copied. A resolve that
+  // already fails leaves nothing worth preserving, so the offsets stand.
+  try {
+    mgr.resolveRelTime();
+  } catch {
+    /* already dangling elsewhere */
+  }
+  forEachAnimObj(mgr, (obj) => {
+    if (safeStr(() => obj.timeRefName) !== name) return undefined;
+    const tvS = makeTimeValue(ctx, safeNum(() => obj.absStart.millisec) ?? 0);
+    const tvE = makeTimeValue(ctx, safeNum(() => obj.absEnd.millisec) ?? 0);
+    if (tvS && tvE) {
+      obj.start = tvS;
+      obj.end = tvE;
+    }
+    (obj as unknown as Record<string, unknown>).timeRefName = "";
+    return undefined;
+  });
+}
+
 export function removeElement(
   ctx: WorkerContext,
   args: AnimRemoveElementArgs,
@@ -197,7 +242,9 @@ export function removeElement(
   const { scene, mgr } = sm;
   try {
     withUndoTxn(scene, "Delete animation element", () => {
+      detachDependents(ctx, mgr, args.index);
       mgr.removeAt(args.index);
+      mgr.resolveRelTime();
     });
   } catch {
     return { ok: false };

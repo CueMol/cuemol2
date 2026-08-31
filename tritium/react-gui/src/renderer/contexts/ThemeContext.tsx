@@ -36,6 +36,7 @@ import React, {
   useMemo,
 } from "react";
 import { IPC } from "@shared/ipcChannels";
+import { useStaleGuard } from "@renderer/hooks/react/useStaleGuard";
 
 // ------------------------------------------------------------
 // Types
@@ -91,26 +92,25 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [loaded, setLoaded] = useState(false);
 
   // -- Load persisted theme on mount -----------------------
+  const guard = useStaleGuard();
   useEffect(() => {
-    let cancelled = false;
+    const token = guard.next();
 
     (async () => {
       try {
         const ui = await window.electronAPI?.invoke(IPC.UI_LOAD);
-        if (!cancelled && ui?.theme) {
+        if (guard.isCurrent(token) && ui?.theme) {
           setThemeState(ui.theme);
           applyThemeToDOM(ui.theme);
         }
       } catch {
         // Electron not available (Vite dev server) -- keep default.
       }
-      if (!cancelled) setLoaded(true);
+      if (guard.isCurrent(token)) setLoaded(true);
     })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => guard.invalidate();
+  }, [guard]);
 
   // -- Keep DOM in sync whenever theme changes -------------
   useEffect(() => {

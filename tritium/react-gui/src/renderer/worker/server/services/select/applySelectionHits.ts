@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/helpers/applySelectionHits.ts
+ * @file worker/server/services/select/applySelectionHits.ts
  * @description Shared tail for the rectangle / lasso selection services.
  *
  * Both `rectSelect` (View.hitTestRect) and `lassoSelect` (View.hitTestPolygon)
@@ -16,7 +16,7 @@
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
-import { makeSel } from './makeSel';
+import { makeSel } from '../helpers/makeSel';
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
 
 /** One element of a hit-test JSON array (View.hitTestRect / hitTestPolygon). */

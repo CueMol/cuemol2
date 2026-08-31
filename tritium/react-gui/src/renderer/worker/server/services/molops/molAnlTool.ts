@@ -1,5 +1,5 @@
 /**
- * @file worker/server/services/helpers/molAnlTool.ts
+ * @file worker/server/services/molops/molAnlTool.ts
  * @description Shared preamble for the single-object MolAnlManager tool
  * services (Change chain ID / Delete atoms / Change residue index).
  *
@@ -20,8 +20,8 @@ import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
-import { getSceneOrNull } from './sceneResolver';
-import { makeSel } from './makeSel';
+import { getSceneOrNull } from '../helpers/sceneResolver';
+import { makeSel } from '../helpers/makeSel';
 
 /**
  * Resolve the global `MolAnlManager` service, or `null` when unavailable.

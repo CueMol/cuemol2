@@ -14,7 +14,7 @@
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
-import { resolveMolTool } from '@renderer/worker/server/services/helpers/molAnlTool';
+import { resolveMolTool } from '@renderer/worker/server/services/molops/molAnlTool';
 import { undoTxnResult } from '../withUndoTxn';
 import { ok, type Result } from '@renderer/worker/shared/result';
 
