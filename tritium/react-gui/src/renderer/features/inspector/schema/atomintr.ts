@@ -114,7 +114,7 @@ export const ATOMINTR_SECTIONS: SchemaSectionDef[] = [
     disabledWhen: eq('showlabel', false),
     rows: [
       { kind: 'num', key: 'font_size', label: 'Font size', min: 1, max: 72, step: 1, decimals: 0, unit: 'pt' },
-      { kind: 'text', key: 'font_name', label: 'Font name' },
+      { kind: 'fontSelect', key: 'font_name', label: 'Font name' },
       { kind: 'stringSelect', key: 'font_style', label: 'Font style', options: FONT_STYLE_OPTIONS },
       { kind: 'stringSelect', key: 'font_weight', label: 'Font weight', options: FONT_WEIGHT_OPTIONS },
     ],

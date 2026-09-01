@@ -27,6 +27,8 @@ export type { SelRowProps } from './SelRow';
 export { BoolSelectRow } from './BoolSelectRow';
 export { StringSelectRow } from './StringSelectRow';
 export type { StringSelectRowProps, StringSelectOption } from './StringSelectRow';
+export { FontSelectRow } from './FontSelectRow';
+export type { FontSelectRowProps } from './FontSelectRow';
 export { DashedStippleRows } from './DashedStippleRows';
 export { CenterUpdateRow } from './CenterUpdateRow';
 export { qualityPresetRow } from './QualityPresetRow';
