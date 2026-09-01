@@ -12,6 +12,11 @@
  * expanded at a time (used by the Properties tab, whose per-renderer pages can
  * be very long). Sections are identified within a group by their `title`, which
  * is unique per tab.
+ *
+ * `FlatSection` is the non-collapsible counterpart: the same header and body
+ * chrome, minus the chevron and the toggle. A page short enough that hiding
+ * anything costs more than it saves (the Scene page) uses it, so its
+ * categories stay visible as headings without the extra click.
  */
 
 import React, { createContext, useContext, useMemo, useState } from "react";
@@ -91,3 +96,26 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
     </div>
   );
 };
+
+interface FlatSectionProps {
+  /** Section title displayed in the header. */
+  title: string;
+  /** Child elements rendered inside the always-visible body. */
+  children: React.ReactNode;
+}
+
+/**
+ * A section heading with its rows always visible.
+ *
+ * Shares the accordion's header/body chrome so a flat page reads as the same
+ * panel, and keeps `.insp-accordion-title` so the title is addressable the
+ * same way in both forms.
+ */
+export const FlatSection: React.FC<FlatSectionProps> = ({ title, children }) => (
+  <div className="insp-accordion insp-accordion-flat expanded">
+    <div className="insp-accordion-header insp-accordion-header-static">
+      <span className="insp-accordion-title">{title}</span>
+    </div>
+    <div className="insp-accordion-body">{children}</div>
+  </div>
+);

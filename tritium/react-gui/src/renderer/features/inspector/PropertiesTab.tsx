@@ -118,33 +118,35 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
     ...typeSectionsFor(rendererType),
   ];
 
+  // The Scene page is short enough (a name plus four small categories) that
+  // collapsing costs more than it saves, so its sections show as headings with
+  // everything visible. Every other page keeps the accordions.
+  const flat = rendererType === "Scene";
+
   // All accordions in the Properties tab form one exclusive group: only one is
   // open at a time, since the per-renderer pages can be long. "Basic settings"
-  // (the first common section) is open on first render -- except for the Scene,
-  // whose Basic settings holds only the name, so its first real section
-  // (Ambient occlusion) opens instead.
-  const initialOpen =
-    rendererType === "Scene" ? "Ambient occlusion" : "Basic settings";
+  // (the first common section) is open on first render.
+  const body = sections.map((section) => (
+    // The engine owns the section chrome too, since a section can gate itself
+    // away entirely.
+    <SchemaSection
+      key={section.key}
+      section={section}
+      entries={displayEntries}
+      rendererType={rendererType}
+      sceneId={sceneId}
+      nodeId={nodeId}
+      molId={molId}
+      onSet={onSet}
+      onSetMany={onSetMany}
+      onReset={onReset}
+      flat={flat}
+    />
+  ));
+
   return (
     <div className="insp-properties-tab">
-      <AccordionGroup initialOpen={initialOpen}>
-        {sections.map((section) => (
-          // The engine owns the accordion too, since a section can gate itself
-          // away entirely.
-          <SchemaSection
-            key={section.key}
-            section={section}
-            entries={displayEntries}
-            rendererType={rendererType}
-            sceneId={sceneId}
-            nodeId={nodeId}
-            molId={molId}
-            onSet={onSet}
-            onSetMany={onSetMany}
-            onReset={onReset}
-          />
-        ))}
-      </AccordionGroup>
+      {flat ? body : <AccordionGroup initialOpen="Basic settings">{body}</AccordionGroup>}
     </div>
   );
 };
