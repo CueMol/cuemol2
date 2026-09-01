@@ -16,7 +16,6 @@ import {
   ColorField,
   Field,
   FieldSection,
-  SegmentField,
   SelectField,
   SwitchField,
 } from '@renderer/h3-kit/form'
@@ -29,6 +28,15 @@ import {
 
 /** Modes that need a scene to resolve against, and so cannot be offered here. */
 const SCENE_FREE_COLOR_MODES = ['rgb', 'hsb', 'palette'] as const
+
+/**
+ * Ambient occlusion reads as one four-way choice -- off, then the three
+ * presets -- rather than a switch plus a preset the switch greys out. The
+ * scene keeps the two properties (`aoEnabled` and the preset patch) apart, so
+ * turning it off here leaves the chosen preset remembered for turning it back
+ * on.
+ */
+const AO_OFF = 'off'
 
 export interface NewSceneSettingsFieldsProps {
   value: NewSceneDefaults
@@ -60,21 +68,21 @@ export const NewSceneSettingsFields: React.FC<NewSceneSettingsFieldsProps> = ({
         </SelectField>
       </Field>
 
-      <Field label="Ambient occlusion" inline>
-        <SwitchField
-          checked={value.aoEnabled}
+      <Field label="Ambient occlusion">
+        <SelectField
+          value={value.aoEnabled ? value.aoPreset : AO_OFF}
           disabled={disabled}
-          onChange={(checked) => patch({ aoEnabled: checked })}
-        />
-      </Field>
-
-      <Field label="AO quality">
-        <SegmentField
-          value={value.aoPreset}
-          disabled={disabled || !value.aoEnabled}
-          options={SCENE_AO_PRESET_AXIS.steps.map((s) => ({ label: s.label, value: s.id }))}
-          onValueChange={(v) => patch({ aoPreset: v })}
-        />
+          onChange={(v) =>
+            patch(v === AO_OFF ? { aoEnabled: false } : { aoEnabled: true, aoPreset: v })
+          }
+        >
+          <option value={AO_OFF}>Off</option>
+          {SCENE_AO_PRESET_AXIS.steps.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </SelectField>
       </Field>
 
       <Field label="Background">
