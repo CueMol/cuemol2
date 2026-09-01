@@ -86,6 +86,14 @@ const EMPTY_STATE: GetRendererColoringStateResult = {
  * propname), and the Elepot ramp props pass; other PROPCHG events are
  * ignored to avoid spurious refreshes (e.g. visibility toggles).
  *
+ * Passed as the listener's PRE-debounce filter, not as `eventFilter`. The
+ * debounce is leading-edge: the first event of a burst opens the window and
+ * is the one the handler is given, and the rest are dropped. Filtering after
+ * it therefore loses the coloring event whenever anything else in the same
+ * burst arrives first -- which is what left the deck showing Solid after a
+ * switch to Paint until the target was changed and changed back. Rejecting
+ * here instead means an unrelated event neither opens nor consumes a window.
+ *
  * For CPK / Rainbow / Bfac decks the C++ side fires the PROPCHG on the
  * parent renderer with `propname === "coloring"` because the change
  * happens to the renderer's coloring sub-object. For the Elepot deck the
@@ -145,7 +153,6 @@ export function useRendererColoringState({
                 })
         },
         fetchDeps: [sceneId, rendId, targetKind],
-        eventFilter: shouldRefetchColoring,
         listeners: [
             {
                 enabled: sceneId !== undefined && rendId !== null,
@@ -153,6 +160,7 @@ export function useRendererColoringState({
                 evtMask: SEM_ANY,
                 scopeId: sceneId ?? -1,
                 debounceMs: EVENT_BURST_DEBOUNCE_MS,
+                filter: shouldRefetchColoring,
             },
         ],
     })

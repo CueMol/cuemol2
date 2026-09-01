@@ -43,6 +43,10 @@ const MULTIGRAD_REFETCH_PROPS = new Set<string>([
  * propname (ADDED / REMOVING / unknown-shape MultiGradEvent). The
  * `multi_grad` prefix match also covers nested-prop event names
  * (e.g. "multi_grad.<child>") should the C++ side qualify them.
+ *
+ * Passed as the listener's PRE-debounce filter: the debounce is leading-edge,
+ * so filtering after it loses a whitelisted event whenever an unrelated one
+ * opens the same window (see `useRendererColoringState`).
  */
 function shouldRefetchMultiGrad(args: unknown): boolean {
     const payload = args as { obj?: { propname?: string } } | undefined
@@ -103,7 +107,6 @@ export function useMultiGradState({
                 })
         },
         fetchDeps: [sceneId, rendId, enabled],
-        eventFilter: shouldRefetchMultiGrad,
         listeners: [
             {
                 enabled: enabled && sceneId !== undefined && rendId !== null,
@@ -111,6 +114,7 @@ export function useMultiGradState({
                 evtMask: SEM_ANY,
                 scopeId: sceneId ?? -1,
                 debounceMs: EVENT_BURST_DEBOUNCE_MS,
+                filter: shouldRefetchMultiGrad,
             },
         ],
     })
