@@ -222,7 +222,7 @@ export const GradientStopBar: React.FC<GradientStopBarProps> = ({
         const fspan = fetched.max - fetched.min
         const vspan = domain.max - domain.min
         if (!(fspan > 0) || !(vspan > 0)) return
-        ctx.fillStyle = readCssVar('--text-muted', '#565e6c')
+        ctx.fillStyle = readCssVar('--text-muted', '#939ba6')
         // Bars are mapped from the domain they were FETCHED for onto the
         // CURRENT view domain, so pan/zoom gestures move the existing bars
         // immediately; the debounced refetch then replaces the data.

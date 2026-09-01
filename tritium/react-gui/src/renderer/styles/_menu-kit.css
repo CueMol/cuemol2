@@ -36,7 +36,7 @@
 }
 
 .menu-item--disabled {
-  color: var(--text-muted);
+  color: var(--text-disabled);
   pointer-events: none;
 }
 

@@ -33,7 +33,9 @@
   width: 44px;
   height: 44px;
   cursor: pointer;
-  color: var(--text-muted);
+  /* Every item is a live target, so an unselected one steps down one tone from
+     the selected one rather than to the muted tone. */
+  color: var(--text-secondary);
   position: relative;
   transition: color 0.15s;
 }

@@ -226,8 +226,9 @@
   background: var(--bg-hover);
 }
 
+/* Carries the expand state on its own, so it reads at the body-text tone. */
 .insp-accordion-chevron {
-  color: var(--text-muted);
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 

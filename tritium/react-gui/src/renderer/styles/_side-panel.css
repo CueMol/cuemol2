@@ -77,8 +77,10 @@
   overflow: hidden;
 }
 
+/* An interactive glyph, not decoration: it carries the expand state on its
+   own, so it takes the body-text tone rather than a muted one. */
 .sp-section-header-left .section-chevron {
-  color: var(--text-muted);
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
@@ -110,8 +112,10 @@
   border-radius: var(--radius-md);
 }
 
+/* Enabled buttons: the icon is the whole affordance, so it reads at the
+   body-text tone rather than a muted one. */
 .section-action-btn.bp5-button .bp5-icon {
-  color: var(--text-muted);
+  color: var(--text-primary);
 }
 
 .section-action-btn.bp5-button:hover {
@@ -119,7 +123,7 @@
 }
 
 .section-action-btn.bp5-button:hover .bp5-icon {
-  color: var(--text-secondary);
+  color: var(--text-strong);
 }
 
 /* Suppress the click-focus outline ring: with the small button height its
@@ -250,8 +254,9 @@
    own flag is ON but an ancestor object / group is hidden, so it does
    not draw (open-eye glyph in muted gray). */
 .visibility-toggle.disabled.bp5-button {
-  color: var(--text-muted);
-  opacity: 0.5;
+  /* The token alone carries the dimming; the extra opacity it used to stack on
+     top pushed the glyph back under the muted tone it was meant to sit at. */
+  color: var(--text-disabled);
   /* Click is a no-op in this state (see ScenePane visibilityButton). */
   cursor: default;
 }

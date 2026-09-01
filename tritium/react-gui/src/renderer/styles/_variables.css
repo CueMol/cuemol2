@@ -25,10 +25,18 @@
   --border: #333746;
   --border-subtle: #2a2d38;
 
-  /* Text */
+  /* Text.
+     Four steps of one ladder, each a WCAG contrast ratio against --bg-surface:
+     primary 9.25 > secondary 6.36 > muted 5.25 > disabled 3.23. The floors are
+     pinned by textContrast.test.ts. Muted is the dimmest tone an ENABLED
+     control may use; anything a user can click or that carries meaning on its
+     own (a tree caret, an icon button) takes primary -- the dark muted used to
+     sit at 2.26, below even Blueprint's disabled tone, which is what made the
+     scene-tree carets and the pane-header icons hard to see. */
   --text-primary: #c9cdd6;
-  --text-secondary: #8b949e;
-  --text-muted: #565e6c;
+  --text-secondary: #a3abb6;
+  --text-muted: #939ba6;
+  --text-disabled: #6f7684;
   --text-strong: #f6f7f9;
   /* Fixed dark text drawn on top of an arbitrary colour swatch (color cells).
      Theme-independent: the swatch background is user data, not the theme, so
@@ -351,6 +359,9 @@
   --text-primary: #1e1e1e;
   --text-secondary: #5a5d65;
   --text-muted: #9a9da5;
+  /* The tone the light theme already used for both muted and disabled; kept
+     as-is here so splitting the two changes nothing in this theme. */
+  --text-disabled: #9a9da5;
   --text-strong: #1c2127;
 
   /* Accent — slightly deeper for contrast on light backgrounds */
