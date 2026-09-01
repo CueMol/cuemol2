@@ -79,7 +79,14 @@ const ActivityBarComponent: React.FC<ActivityBarProps> = ({
               className={`activity-bar-item ${activeView === item.id ? "active" : ""}`}
               onClick={() => onSelect(item.id)}
             >
-              <AppIcon name={item.icon} size={22} weight="bold" aria-hidden />
+              {/* The active view's icon gains weight on top of the colour and
+                  the accent bar; the rest stay at the regular outline. */}
+              <AppIcon
+                name={item.icon}
+                size={22}
+                weight={activeView === item.id ? "bold" : "regular"}
+                aria-hidden
+              />
             </div>
           </Tooltip>
         ))}
@@ -90,7 +97,12 @@ const ActivityBarComponent: React.FC<ActivityBarProps> = ({
             className={`activity-bar-item ${settingsActive ? "active" : ""}`}
             onClick={openSettingsTab}
           >
-            <AppIcon name="activity.settings" size={20} weight="bold" aria-hidden />
+            <AppIcon
+              name="activity.settings"
+              size={20}
+              weight={settingsActive ? "bold" : "regular"}
+              aria-hidden
+            />
           </div>
         </Tooltip>
       </div>
