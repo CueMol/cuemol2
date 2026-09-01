@@ -78,12 +78,21 @@ const ISOSURF_MOLECULE_PAINT = {
     molFancTarget: 'mol1',
 }
 
-/** `*Paint` style presets, as `getPaintColoringStyles` returns them. */
+/**
+ * `*Paint` style presets, as `getPaintColoringStyles` returns them.
+ *
+ * `DefaultHSCPaint` comes back as "Molecule color", not "Default": it is
+ * solid + `$molcol` rather than a PaintColoring, and the submenu's "Default"
+ * is the real PaintColoring below.
+ */
 const PAINT_STYLES = [
-    { name: 'DefaultHSCPaint', label: 'Default' },
+    { name: 'DefaultHSCPaint', label: 'Molecule color' },
     { name: 'WoodyHSCPaint', label: 'Woody' },
     { name: 'RedHSCPaint', label: 'Red' },
 ]
+
+/** The submenu as the pane builds it: the coloring first, then the styles. */
+const PAINT_SUBMENU_LABELS = ['Default', ...PAINT_STYLES.map((s) => s.label)]
 
 interface MockCm {
     invokeService: ReturnType<typeof vi.fn>
@@ -184,7 +193,7 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
         unmount()
     })
 
-    it('"Paint coloring" is a submenu of style presets applying style-<name>', async () => {
+    it('"Paint coloring" offers the real PaintColoring first, then the style presets', async () => {
         const { cm, container, unmount } = await mountWith(ISOSURF_SOLID)
         expect(cm.invokeService).toHaveBeenCalledWith('getPaintColoringStyles', {
             sceneId: SCENE_ID,
@@ -209,12 +218,12 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
             await new Promise((resolve) => setTimeout(resolve, 250))
         })
         await flushPromises()
-        const labels = PAINT_STYLES.map((s) => s.label)
         const sub = Array.from(document.querySelectorAll('.bp5-menu-item')).filter(
-            (i) => labels.includes(menuText(i)),
+            (i) => PAINT_SUBMENU_LABELS.includes(menuText(i)),
         )
-        expect(sub.map(menuText)).toEqual(labels)
+        expect(sub.map(menuText)).toEqual(PAINT_SUBMENU_LABELS)
 
+        // A style preset still applies as a style.
         await act(async () => {
             (sub.find((i) => menuText(i) === 'Woody') as HTMLElement).click()
         })
@@ -224,6 +233,43 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
             rendId: REND_ID,
             targetKind: 'renderer',
             coloringId: 'style-WoodyHSCPaint',
+        })
+        unmount()
+    })
+
+    it('"Paint coloring > Default" builds a PaintColoring ON THE RENDERER', async () => {
+        // The regression this pins: "Default" used to be the DefaultHSCPaint
+        // STYLE, which is solid + $molcol and is already the default style of
+        // the ribbon / cartoon / tube renderers -- so picking it left the
+        // renderer exactly as it was and the colour on screen went on coming
+        // from the object's own coloring.
+        const { cm, container, unmount } = await mountWith(ISOSURF_SOLID)
+        const trigger = Array.from(
+            container.querySelectorAll('button'),
+        ).find((b) => b.textContent?.includes('Coloring')) as HTMLButtonElement
+        await act(async () => { trigger.click() })
+        await flushPromises()
+        const paint = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
+            (i) => menuText(i) === 'Paint coloring',
+        )!
+        await act(async () => {
+            paint.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+        })
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 250))
+        })
+        await flushPromises()
+
+        const item = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
+            (i) => menuText(i) === 'Default',
+        ) as HTMLElement
+        await act(async () => { item.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('setRendererColoring', {
+            sceneId: SCENE_ID,
+            rendId: REND_ID,
+            targetKind: 'renderer',
+            coloringId: 'paint-type-paint',
         })
         unmount()
     })

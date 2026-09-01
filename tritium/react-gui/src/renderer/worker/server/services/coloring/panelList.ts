@@ -36,6 +36,18 @@ import type {
 const PAINT_RE = /Paint$/;
 
 /**
+ * Style whose name ends in `Paint` but whose coloring is not a PaintColoring:
+ * it is `SolidColoring` + `defaultcolor="$molcol"`, i.e. "take the colour from
+ * the molecule". Its `desc` is "Default", which read in the Paint submenu as
+ * the plain PaintColoring the object branch offers -- and since it is also the
+ * default style of the ribbon / cartoon / tube renderers, picking it there was
+ * a no-op. The submenu offers the real PaintColoring under "Default" instead,
+ * so this one is listed under what it actually does.
+ */
+const MOLCOL_STYLE_NAME = 'DefaultHSCPaint';
+const MOLCOL_STYLE_LABEL = 'Molecule color';
+
+/**
  * Collect style names ending in `Paint` for the renderer Coloring submenu's
  * "Paint (Secondary str.)" sub-submenu. Merges the global style set
  * (sceneId 0) with the scene-local set so the active scene's user styles
@@ -54,7 +66,8 @@ export function getPaintColoringStyles(
         const name = typeof raw?.name === 'string' ? raw.name : '';
         if (!name || !PAINT_RE.test(name)) continue;
         const desc = typeof raw?.desc === 'string' ? raw.desc : '';
-        entries.push({ name, label: desc || name });
+        const label = name === MOLCOL_STYLE_NAME ? MOLCOL_STYLE_LABEL : desc || name;
+        entries.push({ name, label });
     }
     return { ok: true, entries };
 }
