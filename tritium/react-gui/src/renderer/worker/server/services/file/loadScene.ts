@@ -18,6 +18,7 @@ import type { View } from '@cuemol/core/src/wrappers/View';
 import { matchExtLength, parseExtList } from '@shared/fileExt';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { resetInitialSceneProps } from '@renderer/worker/server/services/scene/createNewSceneAndView';
 import { createInitialView } from '@renderer/worker/server/services/helpers/createSceneView';
 
 const log = console;
@@ -162,6 +163,11 @@ export function loadScene(ctx: WorkerContext, args: LoadSceneArgs): LoadSceneRes
     if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
 
     scene.clearAllData();
+    // `clearAllData` drops the contents but not the scene's own appearance
+    // properties, and a scene created with the New Scene defaults carries
+    // non-default ones. A file saved with a property at its default writes no
+    // entry for it, so without this reset that property would survive the load.
+    resetInitialSceneProps(scene);
     const res = readSceneFile(ctx, scene, args.filePath);
     if (!res.ok) {
         try {

@@ -61,7 +61,8 @@ export interface SceneColorProofingResult {
     enabled: boolean;
 }
 
-const DEFAULT_ICC_PROFILE = 'GenericCMYK.icm';
+/** Profile seeded when proofing is enabled with none configured. */
+export const DEFAULT_ICC_PROFILE = 'GenericCMYK.icm';
 
 function isColorProofingActive(scene: Scene): boolean {
     return scene.use_colproof === true && scene.icc_filename !== '';

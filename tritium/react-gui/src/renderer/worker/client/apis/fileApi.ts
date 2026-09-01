@@ -8,6 +8,7 @@
  * a warning on failure.
  */
 import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
+import type { NewSceneInitialProps } from '@renderer/worker/shared/newSceneTypes';
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/file/getCompatibleRendererNames';
@@ -120,15 +121,18 @@ export async function getOpenFilters(
  *   omitted.
  * @param bindView - When `true`, immediately bind the new view; defaults
  *   to deferred binding so `MolViewPane` can call `bindCanvas` later.
+ * @param initialProps - Scene properties the new scene starts with, in place
+ *   of the C++ defaults.
  * @returns `{ scene_uid, view_uid, scene_name, view_name }`, or `null` on
  *   failure.
  * @remarks Calls `createNewSceneAndView` worker service.
  */
 export async function createNewSceneAndView(
     transport: WorkerTransport, dpr: number, name?: string, bindView?: boolean,
+    initialProps?: NewSceneInitialProps,
 ): Promise<{ scene_uid: number; view_uid: number; scene_name: string; view_name: string } | null> {
     try {
-        return await transport.invokeService('createNewSceneAndView', { dpr, name, bindView });
+        return await transport.invokeService('createNewSceneAndView', { dpr, name, bindView, initialProps });
     } catch (e) {
         log.error('createNewSceneAndView failed:', e);
         return null;

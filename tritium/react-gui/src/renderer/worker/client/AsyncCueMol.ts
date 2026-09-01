@@ -11,6 +11,7 @@
  */
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
+import type { NewSceneInitialProps } from '@renderer/worker/shared/newSceneTypes';
 import {
     WorkerTransport,
     type StreamProgressListener,
@@ -278,8 +279,8 @@ export class AsyncCueMol {
     getOpenFilters(catId: number): Promise<ElectronFileFilter[]> { return fileApi.getOpenFilters(this._transport, catId); }
 
     /** Create a new scene + default view on the worker side. */
-    createNewSceneAndView(dpr: number, name?: string, bindView?: boolean): Promise<{ scene_uid: number; view_uid: number; scene_name: string; view_name: string } | null> {
-        return fileApi.createNewSceneAndView(this._transport, dpr, name, bindView);
+    createNewSceneAndView(dpr: number, name?: string, bindView?: boolean, initialProps?: NewSceneInitialProps): Promise<{ scene_uid: number; view_uid: number; scene_name: string; view_name: string } | null> {
+        return fileApi.createNewSceneAndView(this._transport, dpr, name, bindView, initialProps);
     }
 
     /** Load a QSC scene file into an existing scene. */
