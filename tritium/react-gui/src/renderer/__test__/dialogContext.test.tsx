@@ -39,6 +39,8 @@ const { useShowFileOpenOptionDialog } = await import('@renderer/dialogs/fopen-op
 const { useShowTextPromptDialog } = await import('@renderer/dialogs/TextPromptDialogProvider')
 
 import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
+import { FACTORY_NEW_SCENE_DEFAULTS } from '@renderer/data/newSceneDefaults'
+import type { NewTabDialogArgs } from '@renderer/dialogs/NewTabDialogProvider'
 
 function findButtonByText(root: ParentNode, text: string): HTMLButtonElement | null {
   const buttons = Array.from(root.querySelectorAll('button')) as HTMLButtonElement[]
@@ -46,7 +48,7 @@ function findButtonByText(root: ParentNode, text: string): HTMLButtonElement | n
 }
 
 let showAbout: () => Promise<void>
-let showNewTab: (args: { currentSceneName: string | null; defaultSceneName: string; defaultViewName: string }) => Promise<unknown>
+let showNewTab: (args: NewTabDialogArgs) => Promise<unknown>
 let showConfirmClose: (args: { sceneName: string }) => Promise<unknown>
 let showFileOpenOption: (args: { filePath: string; sceneId: number; rendererTypes?: string[] }) => Promise<unknown>
 let showTextPrompt: (args: { title: string; label: string; defaultValue?: string; confirmLabel?: string }) => Promise<string | null>
@@ -137,12 +139,14 @@ describe('DialogProvider (per-dialog factory)', () => {
     handle.unmount()
   })
 
-  it('useShowNewTabDialog: OK resolves with { mode: new-scene, name, inheritViewProps }', async () => {
+  it('useShowNewTabDialog: OK resolves with { mode: new-scene, name, inheritViewProps, sceneDefaults }', async () => {
     const handle = mount()
+    const sceneDefaults = { ...FACTORY_NEW_SCENE_DEFAULTS, bgcolor: '#ffffff' }
     const p = showNewTab({
       currentSceneName: null,
       defaultSceneName: 'Scene_1',
       defaultViewName: 'View_1',
+      sceneDefaults,
     })
     await flushPromises()
 
@@ -151,7 +155,14 @@ describe('DialogProvider (per-dialog factory)', () => {
     okBtn!.click()
 
     const result = await p
-    expect(result).toEqual({ mode: 'new-scene', name: 'Scene_1', inheritViewProps: true })
+    // The scene settings round-trip untouched: what the dialog opened with is
+    // what it hands back, which is what the caller then persists.
+    expect(result).toEqual({
+      mode: 'new-scene',
+      name: 'Scene_1',
+      inheritViewProps: true,
+      sceneDefaults,
+    })
     handle.unmount()
   })
 

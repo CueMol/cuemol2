@@ -1632,20 +1632,21 @@ void Ribbon2Renderer::propChanged(qlib::LPropEvent &ev)
 void Ribbon2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
   int ntyp = ev.getType();
+
+  // Drop the cached spline coeffs when the atom positions move.
+  // Fall through to the super class so that the display and the hittest
+  // caches are invalidated as well (the hittest cache holds a copy of the
+  // atom world coords, so a stale one picks atoms at their old positions).
   if (ntyp==qsys::ObjectEvent::OBE_CHANGED) {
     invalidateSplineCoeffs();
-    invalidateDisplayCache();
-    return;
   }
-  if (ntyp==qsys::ObjectEvent::OBE_PROPCHG) {
+  else if (ntyp==qsys::ObjectEvent::OBE_PROPCHG) {
     qlib::LPropEvent *pPE = ev.getPropEvent();
     if (pPE && pPE->getName().equals("xformMat")) {
       invalidateSplineCoeffs();
-      invalidateDisplayCache();
-      return;
     }
   }
-  
+
   super_t::objectChanged(ev);
 }
 

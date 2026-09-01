@@ -32,6 +32,29 @@ export interface MovieRenderPrefs {
   bitrateKbps?: number
 }
 
+/**
+ * What a new scene starts out looking like, as last confirmed in the New Tab
+ * dialog.
+ *
+ * The two presets are stored by step ID (of `renderer/data/sceneQualityPresets`
+ * axes) rather than as the properties behind them, so a later retune of a
+ * preset reaches scenes made from an older preference. Declared structurally
+ * (plain strings, every field optional) so shared and main can read it without
+ * importing renderer types; the renderer validates it through
+ * `sanitizeNewSceneDefaults`.
+ */
+export interface NewSceneDefaultsPrefs {
+  /** Anti-aliasing quality step: 'off' | 'standard' | 'high' | 'ultra'. */
+  aaPreset?: string
+  aoEnabled?: boolean
+  /** Ambient-occlusion preset step: 'low' | 'medium' | 'high'. */
+  aoPreset?: string
+  /** Background colour, as a CueMol colour string. */
+  bgcolor?: string
+  /** CMYK colour proofing. */
+  useColproof?: boolean
+}
+
 /** Miscellaneous UI preferences exchanged with the main process. */
 export interface UiState {
   sidebarActiveView?: string
@@ -72,4 +95,6 @@ export interface UiState {
    * list instead -- see `getObjectSaveInfo`'s `preferredWriter`.
    */
   saveWriterName?: string
+  /** Scene settings the New Tab dialog starts from (its last confirmed values). */
+  newSceneDefaults?: NewSceneDefaultsPrefs
 }

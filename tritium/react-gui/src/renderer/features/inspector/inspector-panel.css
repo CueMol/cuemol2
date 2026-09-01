@@ -231,6 +231,14 @@
   flex-shrink: 0;
 }
 
+/* A flat (non-collapsible) section: same header chrome, but nothing to click.
+ * Declared after the base rules so the hover fill is cancelled. */
+.insp-accordion-header-static,
+.insp-accordion-header-static:hover {
+  cursor: default;
+  background: transparent;
+}
+
 .insp-accordion-title {
   overflow: hidden;
   text-overflow: ellipsis;

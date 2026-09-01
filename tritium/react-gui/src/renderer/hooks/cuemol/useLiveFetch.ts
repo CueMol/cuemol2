@@ -83,9 +83,14 @@ export interface UseLiveFetchOptions<S> {
     listeners: ReadonlyArray<LiveFetchListener>
     /**
      * Optional predicate run on each event payload AFTER the debounce; when
-     * it returns false the refetch is skipped (e.g. coloring's propname
-     * whitelist). Prefer a listener `filter` when the rejected events are
-     * frequent enough to eat debounce windows.
+     * it returns false the refetch is skipped.
+     *
+     * Only correct for listeners with `debounceMs: 0`. The debounce is
+     * leading-edge, so with a window the handler is given the FIRST event of
+     * a burst and the rest are dropped -- a predicate here then rejects the
+     * whole burst whenever an event it does not want happens to arrive first.
+     * Both hooks that used it were fixed by moving the predicate to the
+     * listener's `filter`, which runs before the window opens. Prefer that.
      */
     eventFilter?: (args: unknown) => boolean
     /** Called when the current fetch rejects (a stale rejection is ignored). */

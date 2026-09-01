@@ -14,6 +14,8 @@ import { useShowNewTabDialog } from '@renderer/dialogs/NewTabDialogProvider'
 import type { NewSceneAction } from '@renderer/hooks/useNewSceneAction'
 import { makeTabLabel } from '@renderer/worker/shared/tabLabel'
 import { useWorkspaceDispatch } from '@renderer/state/workspace'
+import { useNewSceneDefaults } from '@renderer/contexts/NewSceneDefaultsContext'
+import { toInitialProps } from '@renderer/data/newSceneDefaults'
 
 interface UseNewTabCommandOptions {
     cm: AsyncCueMol | null
@@ -28,6 +30,7 @@ export function useNewTabCommand({
 }: UseNewTabCommandOptions): void {
     const showNewTabDialog = useShowNewTabDialog()
     const { openMolViewTab } = useWorkspaceDispatch()
+    const { defaults: sceneDefaults, setDefaults } = useNewSceneDefaults()
 
     const openNewTab = useCallback(async (): Promise<void> => {
         if (!cm) return
@@ -42,12 +45,23 @@ export function useNewTabCommand({
             currentSceneName: names.currentSceneName,
             defaultSceneName: names.defaultSceneName,
             defaultViewName: names.defaultViewName,
+            sceneDefaults,
         })
         if (!result) return
 
         if (result.mode === 'new-scene') {
-            // Same path as app launch (UXP onNewScene).
-            await newScene({ name: result.name })
+            // What was just confirmed becomes what the next new scene starts
+            // from, here and on the next app launch.
+            if (result.sceneDefaults) setDefaults(result.sceneDefaults)
+            // Same path as app launch (UXP onNewScene). The settings are passed
+            // explicitly rather than read back through the context, which has
+            // not re-rendered yet at this point.
+            await newScene({
+                name: result.name,
+                initialProps: result.sceneDefaults
+                    ? toInitialProps(result.sceneDefaults)
+                    : undefined,
+            })
         } else {
             // new-view: add view to existing scene
             if (!active) return
@@ -62,7 +76,7 @@ export function useNewTabCommand({
             const title = makeTabLabel(names.currentSceneName ?? '', result.name)
             openMolViewTab(title, res.view_uid, active.scene_uid)
         }
-    }, [cm, openMolViewTab, getActiveSceneInfo, showNewTabDialog, newScene])
+    }, [cm, openMolViewTab, getActiveSceneInfo, showNewTabDialog, newScene, sceneDefaults, setDefaults])
 
     useRegisterCommand(CmdId.TabNew, () => {
         openNewTab().catch((e: unknown) => console.error('TabNew failed:', e))

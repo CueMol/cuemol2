@@ -50,6 +50,18 @@ export function useSceneTreeActions(): SceneTreeActions {
   return v
 }
 
+/**
+ * The selected tree node, or null when there is none -- including when the
+ * caller is mounted outside the provider.
+ *
+ * For a pane that follows the selection as a convenience rather than depending
+ * on it (the Coloring pane points itself at whatever is selected, but works
+ * fine on its own selector).
+ */
+export function useSceneTreeSelectionIfAny(): SceneTreeNode | null {
+  return useContext(StateContext)?.selectedNode ?? null
+}
+
 export function SceneTreeProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
   const { cm } = useCueMol()
   const { activeSceneId, activeMolViewId } = useActiveScene()

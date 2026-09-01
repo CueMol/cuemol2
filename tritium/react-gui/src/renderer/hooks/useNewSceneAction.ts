@@ -22,10 +22,19 @@ import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 import { fail, ok, type Result } from '@renderer/worker/shared/result';
 import { makeTabLabel } from '@renderer/worker/shared/tabLabel';
 import { useWorkspaceDispatch } from '@renderer/state/workspace';
+import { useNewSceneDefaults } from '@renderer/contexts/NewSceneDefaultsContext';
+import { toInitialProps } from '@renderer/data/newSceneDefaults';
+import type { NewSceneInitialProps } from '@renderer/worker/shared/newSceneTypes';
 
 export interface NewSceneActionOptions {
   name?: string;
   bindView?: boolean;
+  /**
+   * Scene properties the new scene starts with. Omit to use the remembered
+   * New Scene defaults; the New Tab dialog passes what the user just chose,
+   * which is not yet the remembered value at the moment it creates the scene.
+   */
+  initialProps?: NewSceneInitialProps;
 }
 
 export interface NewSceneActionResult {
@@ -78,6 +87,7 @@ export function useOpenSceneFileAction({ cm }: UseNewSceneActionOptions): OpenSc
 
 export function useNewSceneAction({ cm }: UseNewSceneActionOptions): NewSceneAction {
   const { openMolViewTab } = useWorkspaceDispatch();
+  const { getDefaults } = useNewSceneDefaults();
   return useCallback(async (opts?: NewSceneActionOptions): Promise<NewSceneActionResult | null> => {
     if (!cm) return null;
 
@@ -88,8 +98,15 @@ export function useNewSceneAction({ cm }: UseNewSceneActionOptions): NewSceneAct
       resolvedName = names.defaultSceneName;
     }
 
+    // Every scene created without the dialog -- app launch, and the implicit
+    // one a file drop makes -- goes through here, so resolving the remembered
+    // defaults at this single point is what makes them all look alike.
+    // `getDefaults` awaits the preference read, which app launch would
+    // otherwise race.
+    const initialProps = opts?.initialProps ?? toInitialProps(await getDefaults());
+
     const dpr = window.devicePixelRatio || 1;
-    const ids = await cm.createNewSceneAndView(dpr, resolvedName, opts?.bindView);
+    const ids = await cm.createNewSceneAndView(dpr, resolvedName, opts?.bindView, initialProps);
     if (!ids) return null;
 
     const { scene_uid, view_uid, scene_name, view_name } = ids;
@@ -98,5 +115,5 @@ export function useNewSceneAction({ cm }: UseNewSceneActionOptions): NewSceneAct
     openMolViewTab(tab_title, view_uid, scene_uid);
 
     return { scene_uid, view_uid, scene_name, view_name, tab_title };
-  }, [cm, openMolViewTab]);
+  }, [cm, openMolViewTab, getDefaults]);
 }

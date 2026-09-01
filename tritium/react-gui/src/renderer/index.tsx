@@ -17,6 +17,7 @@ import { DialogProvider } from '@renderer/contexts/DialogContext'
 import { ModalOpenCounterProvider } from '@renderer/contexts/ModalOpenCounterContext'
 import { RenderConfigProvider } from '@renderer/contexts/RenderConfigContext'
 import { ApbsConfigProvider } from '@renderer/contexts/ApbsConfigContext'
+import { NewSceneDefaultsProvider } from '@renderer/contexts/NewSceneDefaultsContext'
 import { ViewInputConfigProvider } from '@renderer/contexts/ViewInputConfigContext'
 import { AppSettingsProvider } from '@renderer/contexts/AppSettingsContext'
 import { ErrorBoundary } from '@renderer/crash/ErrorBoundary'
@@ -37,26 +38,29 @@ createRoot(container).render(
         <ThemeProvider>
           <CommandProvider>
             <ModalOpenCounterProvider>
-              {/* ApbsConfigProvider sits ABOVE DialogProvider so the
-                  APBS tool dialog (rendered by DialogProvider) can read the
-                  persisted exe paths live; SettingsPane (in <App/>) is below
-                  it too. Other config providers stay below DialogProvider
+              {/* These two sit ABOVE DialogProvider because a dialog it
+                  renders reads them: the APBS tool dialog needs the persisted
+                  exe paths, and the New Tab dialog needs the scene settings a
+                  new scene starts from. SettingsPane (in <App/>) is below them
+                  too. The remaining config providers stay below DialogProvider
                   because no dialog consumes them. */}
               <ApbsConfigProvider>
-                <DialogProvider>
-                  <RenderConfigProvider>
-                    <ViewInputConfigProvider>
-                      <AppSettingsProvider>
-                        {/* App-level state, below the dialog and command
-                            providers (closing a tab runs the save prompt and
-                            the FileSave command from inside the workspace). */}
-                        <AppStateProviders>
-                          <App />
-                        </AppStateProviders>
-                      </AppSettingsProvider>
-                    </ViewInputConfigProvider>
-                  </RenderConfigProvider>
-                </DialogProvider>
+                <NewSceneDefaultsProvider>
+                  <DialogProvider>
+                    <RenderConfigProvider>
+                      <ViewInputConfigProvider>
+                        <AppSettingsProvider>
+                          {/* App-level state, below the dialog and command
+                              providers (closing a tab runs the save prompt and
+                              the FileSave command from inside the workspace). */}
+                          <AppStateProviders>
+                            <App />
+                          </AppStateProviders>
+                        </AppSettingsProvider>
+                      </ViewInputConfigProvider>
+                    </RenderConfigProvider>
+                  </DialogProvider>
+                </NewSceneDefaultsProvider>
               </ApbsConfigProvider>
             </ModalOpenCounterProvider>
           </CommandProvider>

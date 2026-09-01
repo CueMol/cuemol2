@@ -132,13 +132,13 @@ exports[`renderer Properties page > atomintr / caps-arrow 1`] = `
   "Value label": {
     "rows": [
       "Font size [drag-numeric] {resettable,disabled}",
-      "Font name [text] {resettable,disabled} value="sans-serif"",
+      "Font name [select] {resettable,disabled} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
       "Font style [select] {resettable,disabled} options=[normal|italic] selected=normal",
       "Font weight [select] {resettable,disabled} options=[normal|bold] selected=normal",
     ],
     "writes": [
       "Font size -> (nothing)",
-      "Font name -> set font_name="sans-serifx"",
+      "Font name -> set font_name="serif"",
       "Font style -> set font_style="italic"",
       "Font weight -> set font_weight="bold"",
     ],
@@ -213,13 +213,13 @@ exports[`renderer Properties page > atomintr / default 1`] = `
   "Value label": {
     "rows": [
       "Font size [drag-numeric] {resettable,disabled}",
-      "Font name [text] {resettable,disabled} value="sans-serif"",
+      "Font name [select] {resettable,disabled} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
       "Font style [select] {resettable,disabled} options=[normal|italic] selected=normal",
       "Font weight [select] {resettable,disabled} options=[normal|bold] selected=normal",
     ],
     "writes": [
       "Font size -> (nothing)",
-      "Font name -> set font_name="sans-serifx"",
+      "Font name -> set font_name="serif"",
       "Font style -> set font_style="italic"",
       "Font weight -> set font_weight="bold"",
     ],
@@ -294,13 +294,13 @@ exports[`renderer Properties page > atomintr / labels-on 1`] = `
   "Value label": {
     "rows": [
       "Font size [drag-numeric] {resettable}",
-      "Font name [text] {resettable} value="sans-serif"",
+      "Font name [select] {resettable} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
       "Font style [select] {resettable} options=[normal|italic] selected=normal",
       "Font weight [select] {resettable} options=[normal|bold] selected=normal",
     ],
     "writes": [
       "Font size -> set font_size=13",
-      "Font name -> set font_name="sans-serifx"",
+      "Font name -> set font_name="serif"",
       "Font style -> set font_style="italic"",
       "Font weight -> set font_weight="bold"",
     ],
@@ -375,13 +375,13 @@ exports[`renderer Properties page > atomintr / mode-simple 1`] = `
   "Value label": {
     "rows": [
       "Font size [drag-numeric] {resettable,disabled}",
-      "Font name [text] {resettable,disabled} value="sans-serif"",
+      "Font name [select] {resettable,disabled} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
       "Font style [select] {resettable,disabled} options=[normal|italic] selected=normal",
       "Font weight [select] {resettable,disabled} options=[normal|bold] selected=normal",
     ],
     "writes": [
       "Font size -> (nothing)",
-      "Font name -> set font_name="sans-serifx"",
+      "Font name -> set font_name="serif"",
       "Font style -> set font_style="italic"",
       "Font weight -> set font_weight="bold"",
     ],

@@ -47,6 +47,7 @@ import { IPC } from '@shared/ipcChannels'
 import { useClipboardScope } from '@renderer/hooks/useClipboardScope'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { useActiveScene } from '@renderer/state/workspace'
+import { useSceneTreeSelectionIfAny } from '@renderer/state/sceneTree'
 import {
     COLORING_MODE_ITEMS,
     PAINT_DECK_CLASS,
@@ -95,6 +96,25 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
         selectedRow, selectedRows, setSelectedRow, toggleSelectedRow, selectRowRange,
     } = usePaintSelection()
 
+    // Follow the scene tree: colouring the thing you just clicked is what the
+    // selector would otherwise have to be set to by hand, and the two
+    // disagreeing is how a renderer's colouring ended up written to its object.
+    // Only object / renderer nodes map to a row; anything else leaves the
+    // current target alone.
+    const treeSelection = useSceneTreeSelectionIfAny()
+    const treeTargetKey = useMemo((): TargetKey | null => {
+        if (!treeSelection) return null
+        if (treeSelection.type !== 'object' && treeSelection.type !== 'renderer') return null
+        const key = makeKey(treeSelection.type, treeSelection.id)
+        return renderers.some(
+            (r) => makeKey(r.targetKind, r.rendId) === key,
+        ) ? key : null
+    }, [treeSelection, renderers])
+
+    useEffect(() => {
+        if (treeTargetKey) setSelectedKey(treeTargetKey)
+    }, [treeTargetKey])
+
     // Auto-select the first row when the list changes, and clear when the
     // active row disappears.
     useEffect(() => {
@@ -108,9 +128,9 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
             )) {
                 return prev
             }
-            return makeKey(renderers[0].targetKind, renderers[0].rendId)
+            return treeTargetKey ?? makeKey(renderers[0].targetKind, renderers[0].rendId)
         })
-    }, [renderers])
+    }, [renderers, treeTargetKey])
 
     // Reset paint-row selection when the active target changes.
     useEffect(() => {
@@ -201,24 +221,33 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
         enabled: isMolFancActive,
     })
 
-    // "Paint coloring" submenu entries (UXP `onPaintColShowing`): a renderer
-    // gets the scene's `*Paint` style presets (Default / Woody / Red / ...),
-    // applied as a style; an object has no `style` property so it only gets
-    // the plain "Default" PaintColoring.
+    // "Paint coloring" submenu entries (UXP `onPaintColShowing`): "Default"
+    // builds a plain PaintColoring on the target itself, and a renderer -- which
+    // has a `style` property, unlike an object -- additionally gets the scene's
+    // `*Paint` style presets (Woody / Red / ...) applied as a style.
+    //
+    // "Default" has to be the coloring rather than a style for a renderer too:
+    // the one `*Paint` style that reads as "default" is `DefaultHSCPaint`, which
+    // is solid + `$molcol` and is already the default style of the ribbon /
+    // cartoon / tube renderers, so applying it left them exactly as they were.
     const { styles: paintStyles } = usePaintColoringStyles({ cm, sceneId })
     const paintSubmenuItems = useMemo((): {
         key: string
         label: string
         coloringId: RendColoringId
     }[] => {
-        if (target?.targetKind === 'object') {
-            return [{ key: 'default', label: 'Default', coloringId: 'paint-type-paint' }]
-        }
-        return paintStyles.map((s) => ({
-            key: s.name,
-            label: s.label,
-            coloringId: `style-${s.name}` as RendColoringId,
-        }))
+        const items = [
+            { key: 'default', label: 'Default', coloringId: 'paint-type-paint' as RendColoringId },
+        ]
+        if (target?.targetKind === 'object') return items
+        return [
+            ...items,
+            ...paintStyles.map((s) => ({
+                key: s.name,
+                label: s.label,
+                coloringId: `style-${s.name}` as RendColoringId,
+            })),
+        ]
     }, [target?.targetKind, paintStyles])
 
     // -- Mutation handlers --

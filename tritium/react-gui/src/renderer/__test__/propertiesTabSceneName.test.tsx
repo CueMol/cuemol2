@@ -17,9 +17,9 @@ import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 void React
 
 /**
- * Expand the named accordion section if it is currently collapsed. The Scene
- * Properties tab opens "Ambient occlusion" first, so "Basic settings" (which
- * holds Name) starts collapsed and its body is unmounted until expanded.
+ * Expand the named section if it is currently collapsed, so its body is
+ * mounted. A no-op on the Scene page, whose sections are flat and always
+ * expanded; the renderer pages still collapse all but the open one.
  */
 function ensureExpanded(container: HTMLElement, title: string): void {
   const section = Array.from(container.querySelectorAll('.insp-accordion')).find(

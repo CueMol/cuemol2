@@ -50,6 +50,7 @@ import { TextPromptDialog } from '@renderer/dialogs/TextPromptDialog'
 import { EditCameraVisFlagsDialog } from '@renderer/dialogs/EditCameraVisFlagsDialog'
 import { GetPdbDialog } from '@renderer/dialogs/GetPdbDialog'
 import { NewTabDialog } from '@renderer/dialogs/NewTabDialog'
+import { FACTORY_NEW_SCENE_DEFAULTS } from '@renderer/data/newSceneDefaults'
 import { QscWriterOptionDialog } from '@renderer/dialogs/QscWriterOptionDialog'
 import { StreamProgressDialog } from '@renderer/dialogs/StreamProgressDialog'
 import { FileOpenOptionDialog } from '@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialog'
@@ -198,7 +199,8 @@ describe('DialogShell frame contract', () => {
       title: 'New Tab/Window',
       render: () => React.createElement(NewTabDialog, {
         visible: true, currentSceneName: 's', defaultSceneName: 'Scene_1',
-        defaultViewName: 'View_1', onConfirm: () => {}, onCancel: () => {},
+        defaultViewName: 'View_1', sceneDefaults: FACTORY_NEW_SCENE_DEFAULTS,
+        onConfirm: () => {}, onCancel: () => {},
       }),
     },
     {

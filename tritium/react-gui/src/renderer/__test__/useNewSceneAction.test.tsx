@@ -10,6 +10,9 @@
  *      directly.
  *   3. The bindView option flows through to createNewSceneAndView so the
  *      launch path can opt out (canvas not yet bound).
+ *   4. Every scene created here starts from the remembered New Scene defaults
+ *      unless the caller passes its own -- which is what makes the launch
+ *      scene, the implicit one and the dialog's agree.
  *
  * The tab is registered through the workspace in one call (title, view,
  * scene) -- what the old addMolTab + addMolViewTab pair collapsed into.
@@ -19,7 +22,17 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import { useNewSceneAction } from '@renderer/hooks/useNewSceneAction'
+import {
+  FACTORY_NEW_SCENE_DEFAULTS,
+  toInitialProps,
+} from '@renderer/data/newSceneDefaults'
 import { makeRenderHook, flushPromises } from '@renderer/__test__/helpers/testHarness'
+
+/**
+ * What the hook sends when the caller names no properties. Mounted without
+ * `NewSceneDefaultsProvider`, the context yields the factory values.
+ */
+const FACTORY_PROPS = toInitialProps(FACTORY_NEW_SCENE_DEFAULTS)
 
 void React
 
@@ -77,7 +90,7 @@ describe('useNewSceneAction', () => {
     const result = await h.result()
 
     expect(callsFor(cm, 'proposeNewTabNames')).toContainEqual({})
-    expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'Untitled 1', undefined)
+    expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'Untitled 1', undefined, FACTORY_PROPS)
     expect(openMolViewTab).toHaveBeenCalledWith('Untitled 1:0', 20, 10)
     expect(result).toEqual({
       scene_uid: 10,
@@ -97,7 +110,7 @@ describe('useNewSceneAction', () => {
     await h.result({ name: 'MyScene' })
 
     expect(callsFor(cm, 'proposeNewTabNames')).toHaveLength(0)
-    expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'MyScene', undefined)
+    expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'MyScene', undefined, FACTORY_PROPS)
     expect(openMolViewTab).toHaveBeenCalledWith('MyScene:0', 20, 10)
     h.unmount()
   })
@@ -109,7 +122,24 @@ describe('useNewSceneAction', () => {
     await flushPromises()
     await h.result({ bindView: false })
 
-    expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'Untitled 1', false)
+    expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'Untitled 1', false, FACTORY_PROPS)
+    h.unmount()
+  })
+
+  it('forwards the caller\'s initialProps instead of the remembered defaults', async () => {
+    // The New Tab dialog passes what the user just chose: the preference has
+    // been written but the context has not re-rendered yet, so reading it back
+    // here would create the scene with the PREVIOUS settings.
+    const cm = makeMockCm()
+    const h = makeRenderHook(() => useNewSceneAction({ cm: cm as unknown as AsyncCueMol }))
+
+    await flushPromises()
+    const initialProps = { ...FACTORY_PROPS, bgcolor: '#ffffff', aoEnabled: true }
+    await h.result({ name: 'MyScene', initialProps })
+
+    expect(cm.createNewSceneAndView).toHaveBeenCalledWith(
+      expect.any(Number), 'MyScene', undefined, initialProps,
+    )
     h.unmount()
   })
 

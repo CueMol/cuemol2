@@ -395,6 +395,16 @@ export interface StringSelectRowDef extends RowBase {
   options: { label: string; value: string }[]
 }
 
+/**
+ * A font-family picker for a STRING property.
+ *
+ * The options are the installed families rather than a set the page names, so
+ * unlike `stringSelect` the row carries none: it reads them at render time.
+ */
+export interface FontSelectRowDef extends RowBase {
+  kind: 'fontSelect'
+}
+
 /** What a `custom` block is handed: the page's state and its writers. */
 export interface CustomRowProps {
   ctx: PropCtx
@@ -439,6 +449,7 @@ export type PropRowDef =
   | MultiNumInputRowDef
   | NumEnumRowDef
   | StringSelectRowDef
+  | FontSelectRowDef
   | CustomRowDef
   | GroupRowDef
   | TextRowDef

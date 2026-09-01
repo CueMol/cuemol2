@@ -15,7 +15,7 @@
  */
 
 import React from 'react'
-import { AccordionSection } from './AccordionSection'
+import { AccordionSection, FlatSection } from './AccordionSection'
 import {
   AsyncSelectRow,
   BoolRow,
@@ -23,6 +23,7 @@ import {
   ColorRow,
   DerivedNumRow,
   EnumRow,
+  FontSelectRow,
   MappedEnumRow,
   MultiEnumRow,
   MultiNumInputRow,
@@ -76,6 +77,12 @@ export interface SchemaSectionProps {
    */
   onSetMany?: SetManyFn
   onReset: ResetFn
+  /**
+   * Show the section as a heading with its rows always visible, instead of a
+   * collapsible accordion. For a page short enough that collapsing costs more
+   * than it saves (the Scene page).
+   */
+  flat?: boolean
 }
 
 /** Render one row, or null when the renderer does not expose its property. */
@@ -336,6 +343,18 @@ function renderRow(
         />
       )
 
+    case 'fontSelect':
+      return (
+        <FontSelectRow
+          key={key}
+          entry={entry}
+          label={row.label}
+          onSet={onSet}
+          onReset={onReset}
+          disabled={disabled}
+        />
+      )
+
     case 'stringSelect':
       return (
         <StringSelectRow
@@ -487,11 +506,11 @@ export function renderRows(
 }
 
 /**
- * A section's accordion and its rows.
+ * A section's accordion (or flat heading) and its rows.
  *
  * Returns null when the section is gated out, or when `hideWhenEmpty` is set
  * and nothing survived -- a renderer that exposes none of a section's
- * properties should not show an empty accordion.
+ * properties should not show an empty section.
  */
 export const SchemaSection: React.FC<SchemaSectionProps> = ({
   section,
@@ -503,11 +522,13 @@ export const SchemaSection: React.FC<SchemaSectionProps> = ({
   onSet,
   onSetMany,
   onReset,
+  flat,
 }) => {
   const ctx = makePropCtx(entries, rendererType, sceneId, nodeId, molId)
   if (section.visibleWhen && !section.visibleWhen(ctx)) return null
   const rows = renderRows(section, ctx, onSet, onSetMany, onReset)
   if (section.hideWhenEmpty && rows.length === 0) return null
+  if (flat) return <FlatSection title={section.title}>{rows}</FlatSection>
   return (
     <AccordionSection title={section.title} defaultExpanded={section.defaultExpanded}>
       {rows}
