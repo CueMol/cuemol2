@@ -53,7 +53,7 @@ const MUST_PAIR = [
   '--bg-base', '--bg-surface', '--bg-elevated', '--bg-panel-header', '--bg-input',
   '--bg-hover', '--bg-active', '--bg-tab-active', '--bg-tab-inactive',
   '--border', '--border-subtle',
-  '--text-primary', '--text-secondary', '--text-muted', '--text-strong',
+  '--text-primary', '--text-secondary', '--text-muted', '--text-disabled', '--text-strong',
   '--accent', '--accent-green', '--accent-red',
   '--toolbar-bg', '--statusbar-bg', '--statusbar-text',
 ]
