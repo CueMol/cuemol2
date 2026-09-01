@@ -155,7 +155,9 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 - **サイズはトークン**: `sm=12 / md=14 / lg=18`(`AppIcon` の `SIZE_PX`、CSS の `--icon-sm/md/lg` と一致)。
   consumer は `size="sm|md|lg"` を渡す(px 直書き禁止、必要時のみ明示 px)。
 - **色は currentColor 継承**(dark/light 自動)。アイコンに固定色を当てない。Phosphor の既定 weight は
-  `regular`(一般ボタン)。activity bar など目立たせる領域は consumer 側で `weight="bold"` を渡す。個別の太さは
+  `regular`。強調は基本的に色の階梯 (`--text-*`) と選択インジケータで行い、weight は選択状態の追加強調に
+  限る (activity bar は非選択 `regular` / 選択中のみ `bold`。全 item を bold にすると、コントラスト改善で
+  色が明るくなった際に太すぎて見えた)。個別の太さは
   `<AppIcon weight=...>` か `appIcons.ts` の spec の `weight` で上書き可。色は root の `IconContext`(`App.tsx`)で
   `currentColor`。
 - **データ駆動アイコンはキー(`AppIconKey`)を持たせる**: tree node / tab / settings カテゴリ / animation track
@@ -177,12 +179,31 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 |---|---|
 | 背景 | `--bg-base` `--bg-surface` `--bg-elevated` `--bg-panel-header` `--bg-input` `--bg-hover` `--bg-active` `--bg-tab-active` `--bg-tab-inactive` |
 | 境界線 | `--border` `--border-subtle` |
-| 文字 | `--text-primary` `--text-secondary` `--text-muted` `--text-strong` |
+| 文字 | `--text-strong` `--text-primary` `--text-secondary` `--text-muted` `--text-disabled` (この順に暗くなる階梯。詳細は下記) |
 | アクセント | `--accent` `--accent-hover` `--accent-green` `--accent-red` `--accent-yellow` `--accent-glow` `--accent-selected` `--accent-selected-glow` |
 | クローム | `--toolbar-bg` `--statusbar-bg` `--statusbar-text` `--scrollbar-thumb` `--scrollbar-thumb-hover` |
 | オーバーレイ | `--overlay-hover` `--overlay-subtle` `--overlay-focus` `--overlay-border-top` |
 | スライダー | `--slider-handle` `--slider-handle-hover` `--slider-handle-shadow` |
 | ログ | `--log-warn` `--log-error` |
+
+#### 文字色の階梯と使い分け (MUST)
+
+`--text-strong` > `--text-primary` > `--text-secondary` > `--text-muted` > `--text-disabled`
+の順に暗くなる 1 本の階梯。dark では対 `--bg-surface` の WCAG コントラスト比の
+下限を `__test__/textContrast.test.ts` が pin している (順序も検査)。
+
+- **インタラクティブな記号・アイコンに `--text-muted` を当てない**。ツリーの
+  開閉 caret、アイコンだけのボタン、ドロップダウンの caret のように「それ自体が
+  操作対象/状態表示」であるものは `--text-primary` (hover は `--text-strong`)。
+  一段控えたい場合でも `--text-secondary` まで。
+- `--text-muted` は **enabled な補助情報**用 (タイムスタンプ、単位、
+  プレースホルダ、説明文)。**disabled には使わない**。
+- **disabled は必ず `--text-disabled`**。`opacity` を重ねて更に暗くしない
+  (トークンだけで階梯が成立している)。
+
+過去に `--text-muted` が dark で比 2.26 (Blueprint の disabled より暗い) まで
+落ちており、ツリー caret やアイコンボタンが読めなくなっていた。個別 CSS で
+`--text-secondary` に上げる対症療法が各所に入っていたのが兆候。
 
 ### 色 (theme-independent — 固定値)
 
@@ -332,7 +353,7 @@ UXP機能を tritium に起こす / 新規コンポーネントを追加する�
 
 > **lint の限界 (現状) と今後**: `declaration-strict-value` は「`var()` を使っているか」しか見ず、**「role を選んだか / 生 `--fs-*` を px 逆算で使ったか」「`line-height` が生値か」は検出できない** (= 原則2 は lint で守れない。レビューと本ガイドで担保する)。`line-height` を検査対象に追加し、component CSS での生 `--fs-*` 直参照を warn する強化は、未移行ファイル (現状 `font-size: var(--fs-*)` が約 118 箇所、生 `line-height` が数箇所) を role へ一掃した後にまとめて入れる予定 (今入れると警告が殺到しベースライン方針と矛盾するため保留)。
 
-### 既知の残存ベースライン (約21件)
+### 既知の残存ベースライン (14件)
 
 スケールに押し込むのが過剰な**正当な単発/文脈値**。新規追加でこの件数を増やさないこと:
 - スライダー stepper の意図的オーバーラップ `margin: -7px`
