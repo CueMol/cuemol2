@@ -94,8 +94,10 @@
 
 /* ─── Tab Content Elements ─── */
 
+/* An inactive tab still has to be readable at a glance, so it steps down one
+   tone from the active tab rather than to the muted one. */
 .tab-icon {
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .tab.active .tab-icon {
@@ -117,7 +119,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  color: var(--text-muted);
+  color: var(--text-secondary);
   transition: all 0.15s;
   flex-shrink: 0;
   opacity: 0;

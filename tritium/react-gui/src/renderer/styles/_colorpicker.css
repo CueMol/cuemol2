@@ -77,7 +77,7 @@ button.h3-color-swatch:disabled {
 
 .h3-color-textbox.bp5-input-group .bp5-input:disabled,
 .h3-color-textbox.bp5-input-group input:disabled {
-  color: var(--text-muted) !important;
+  color: var(--text-disabled) !important;
 }
 
 /* In-box dropdown chevron: position the input-action slot so the chevron sits

@@ -97,7 +97,8 @@
   justify-content: center;
   width: 16px;
   flex-shrink: 0;
-  color: var(--text-muted);
+  /* Carries the expand state on its own, so it reads at the body-text tone. */
+  color: var(--text-primary);
 }
 
 .cfg-tree-icon {

@@ -258,14 +258,16 @@
 }
 
 /* Disabled controls dim their text clearly below the enabled --text-primary so
-   the two states are distinguishable. The enabled `color` rules use
-   `!important` (Blueprint specificity), which otherwise keeps disabled text at
-   full brightness, so the disabled override must also be `!important`. */
+   the two states are distinguishable. --text-disabled exists for exactly this:
+   sharing --text-muted with enabled-but-secondary text made the two states
+   indistinguishable. The enabled `color` rules use `!important` (Blueprint
+   specificity), which otherwise keeps disabled text at full brightness, so the
+   disabled override must also be `!important`. */
 .h3-form-input.bp5-input-group .bp5-input:disabled,
 .h3-form-input.bp5-input-group input:disabled,
 .h3-form-select.bp5-html-select select:disabled,
 .h3-form-numeric:disabled {
-  color: var(--text-muted) !important;
+  color: var(--text-disabled) !important;
 }
 
 /* ── Dropdown chevron (single source) ──
@@ -278,7 +280,9 @@
   display: inline-block;
   width: var(--icon-sm);
   height: var(--icon-sm);
-  background-color: var(--text-muted);
+  /* A mask, so this IS the glyph colour: the caret is the dropdown's whole
+     affordance and reads at the body-text tone. */
+  background-color: var(--text-primary);
   -webkit-mask: var(--chevron-down-mask) center / contain no-repeat;
   mask: var(--chevron-down-mask) center / contain no-repeat;
   pointer-events: none;
@@ -333,7 +337,9 @@
   transform: translateY(-50%);
   width: var(--icon-sm);
   height: var(--icon-sm);
-  background-color: var(--text-muted);
+  /* A mask, so this IS the glyph colour: the caret is the dropdown's whole
+     affordance and reads at the body-text tone. */
+  background-color: var(--text-primary);
   -webkit-mask: var(--chevron-down-mask) center / contain no-repeat;
   mask: var(--chevron-down-mask) center / contain no-repeat;
   pointer-events: none;
@@ -739,7 +745,7 @@
 }
 
 .h3-form-drag.h3-form-drag-disabled {
-  color: var(--text-muted);
+  color: var(--text-disabled);
   cursor: default;
 }
 

@@ -101,7 +101,7 @@ export function readThemeColors(): ThemeColors {
         selection: readCssVar('--accent-glow', 'rgba(95,175,215,0.5)'),
         marker: readCssVar('--accent-red', '#e06c75'),
         track: readCssVar('--accent-green', '#87c38a'),
-        ruler: readCssVar('--text-muted', '#888'),
+        ruler: readCssVar('--text-muted', '#939ba6'),
     }
 }
 

@@ -116,13 +116,16 @@
   color: var(--accent);
 }
 
+/* An interactive glyph, not decoration: the caret carries the expand state on
+   its own, so it takes the body-text tone rather than a muted one (Blueprint's
+   own dark caret is #abb3bf; the muted override used to land well below it). */
 .h3-listbox-tree .bp5-tree-node-caret {
-  color: var(--text-muted) !important;
+  color: var(--text-primary) !important;
   min-width: 20px;
 }
 
 .h3-listbox-tree .bp5-tree-node-caret:hover {
-  color: var(--text-secondary) !important;
+  color: var(--text-strong) !important;
 }
 
 .h3-listbox-tree .bp5-tree-node-caret-none {
