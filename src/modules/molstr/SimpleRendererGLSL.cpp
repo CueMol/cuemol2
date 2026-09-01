@@ -507,12 +507,14 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
                 m_bCoordDirty = true;
                 qsys::ScenePtr pScene = getScene();
                 if (!pScene.isnull()) pScene->setUpdateFlag();
+                invalidateHittestCache();
                 return;
             }
             if (m_bUseShader) {
                 // Fallback path: invalidate shader cache so it is rebuilt on
                 // the next display().
                 m_lineGpuPrim.invalidate();
+                invalidateHittestCache();
                 return;
             }
         }

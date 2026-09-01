@@ -74,13 +74,15 @@ void DispCacheRenderer::objectChanged(ObjectEvent &ev)
     // atom pos etc. changed
     //  --> update both display and hittest
     invalidateDisplayCache();
-    MB_DPRINTLN("XXX DispCacheRenderer::objectChanged> CALL invalidateHittestCache()");
     invalidateHittestCache();
   }
   else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
     qlib::LPropEvent *pPE = ev.getPropEvent();
     if (pPE && pPE->getName().equals("xformMat")) {
+      // The hittest cache stores world coords of the atoms, so it also
+      // becomes stale when the object xform matrix changes.
       invalidateDisplayCache();
+      invalidateHittestCache();
     }
   }
 }
