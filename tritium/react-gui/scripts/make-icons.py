@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-"""Regenerate the app icons in build/ from a master artwork PNG.
+"""Regenerate the app icons in build/ from the master artwork PNGs.
 
-The master (1024x1024 RGBA, transparent background) is deliberately NOT kept
-in the repository -- only the generated files below are tracked. Pass its path
-explicitly; it normally lives outside the repo tree:
+There are two masters, both deliberately NOT kept in the repository -- only
+the generated files below are tracked. Pass their paths explicitly; they
+normally live outside the repo tree:
 
   cd tritium/react-gui
-  python3 scripts/make-icons.py ~/path/to/cuemol3-app-icon-master.png
+  python3 scripts/make-icons.py ~/path/to/cuemol3-app-icon-master.png \\
+      --macos ~/path/to/cuemol3-icon-macos.png
 
-Generated into build/, which is electron-builder's buildResources directory,
-so every target picks its file up by name with no electron-builder.yml entry:
+Either may be given on its own; each regenerates only its own outputs, so
+refreshing one platform's artwork never rewrites the other's.
 
-  icon.icns  macOS    .app bundle icon
+MASTER (positional; 1024x1024 RGBA, the glyph on a transparent background
+with a margin around it) feeds the Windows and Linux outputs:
+
   icon.ico   Windows  installer + .exe icon
   icon.png   Linux    electron-builder derives the icon set from it, and
-                      main/helpers/appIcon.ts uses it as the dev-run window /
-                      dock icon (Electron's nativeImage reads PNG only, so a
-                      PNG has to be tracked for that path to work)
+                      main/helpers/appIcon.ts uses it as the dev-run window
+                      icon (Electron's nativeImage reads PNG only, so a PNG
+                      has to be tracked for that path to work)
 
 Plus one renderer-side asset, which is bundled by Vite rather than read from
 build/ (nothing outside src/ is importable from the renderer):
@@ -26,19 +29,28 @@ build/ (nothing outside src/ is importable from the renderer):
                         in-app menu bar -- what reads as the title-bar icon on
                         Windows, where the app owns its own title bar
 
-Regenerating all four from one master is the point: the menu-bar asset is a
-separate file from build/icon.png and silently kept the previous artwork when
-only the build/ icons were refreshed.
+--macos MAC_MASTER feeds the macOS outputs and nothing else. The macOS icon is
+a different design from the glyph: a rounded-square tile with its own
+background, drawn to Apple's icon grid -- an 824x824 tile centered on a
+1024x1024 canvas, leaving a transparent 100px margin on each side. Pass either
+the bare 824x824 tile (it is placed on the canvas here) or a finished
+1024x1024 canvas:
 
-The master's transparent border is sized for macOS, which wants that margin
-around a .icns. icon.icns and icon.png keep it: those are the two the OS shows
-large -- the bundle icon, the Linux launcher entry, and the dev-run dock icon,
-which sits alongside real .icns icons and has to be padded like them.
+  icon.icns      macOS  .app bundle icon
+  icon-mac.png   macOS  the dev-run dock icon (main/helpers/appIcon.ts): the
+                        same artwork at 512px, tracked separately from
+                        icon.png so Linux keeps the glyph
 
-The other two are only ever drawn small -- app-icon.png at 18px in the menu
-bar, icon.ico at 16px in the Windows title bar and taskbar -- where the margin
-costs more visibility than it buys, so they come from a tightened copy of the
-artwork. See `tightened()`.
+Regenerating every output of a master from that one file is the point: the
+menu-bar asset is a separate file from build/icon.png and silently kept the
+previous artwork when only the build/ icons were refreshed.
+
+icon.png keeps MASTER's transparent border: it is shown large (the Linux
+launcher entry, the dev-run window icon) alongside real platform icons and
+has to be padded like them. icon.ico and app-icon.png are only ever drawn
+small -- 16px in the Windows title bar and taskbar, 18px in the menu bar --
+where the margin costs more visibility than it buys, so they come from a
+tightened copy of the artwork. See `tightened()`.
 
 Requires Pillow, plus macOS iconutil for the .icns (the other outputs are
 produced on any platform).
@@ -71,6 +83,12 @@ ICNS_ENTRIES = [
     (512, 1), (512, 2),
 ]
 
+# Apple's macOS icon grid: the rounded tile is 824pt on a 1024pt canvas, with
+# the remaining 100pt on each side transparent. Every .icns member is
+# downscaled from this canvas.
+MAC_CANVAS = 1024
+MAC_TILE = 824
+
 # Windows .ico members. 256 is the largest an .ico can carry; 24 and 48 are
 # what Explorer picks for its medium list views.
 ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
@@ -98,6 +116,33 @@ def load_master(path: Path) -> Image.Image:
     if img.width < 1024:
         sys.exit(f"master artwork must be at least 1024x1024, got {img.width}")
     return img
+
+
+def load_mac_master(path: Path) -> Image.Image:
+    """Load the macOS artwork as a 1024x1024 icon-grid canvas.
+
+    A bare 824x824 tile is centered on a transparent canvas; a 1024x1024 image
+    is taken as an already-composed canvas. Anything else is rejected rather
+    than scaled: the .icns is downscaled from master-resolution pixels, and a
+    tile off Apple's grid would sit visibly larger or smaller than its
+    neighbours in the Dock.
+    """
+    if not path.exists():
+        sys.exit(f"macOS master artwork not found: {path}")
+    img = Image.open(path).convert("RGBA")
+    if img.width != img.height:
+        sys.exit(f"macOS master artwork must be square, got {img.width}x{img.height}")
+    if img.width == MAC_CANVAS:
+        return img
+    if img.width != MAC_TILE:
+        sys.exit(
+            f"macOS master artwork must be the {MAC_TILE}x{MAC_TILE} tile or a "
+            f"finished {MAC_CANVAS}x{MAC_CANVAS} canvas, got {img.width}x{img.width}"
+        )
+    canvas = Image.new("RGBA", (MAC_CANVAS, MAC_CANVAS), (0, 0, 0, 0))
+    offset = (MAC_CANVAS - MAC_TILE) // 2
+    canvas.paste(img, (offset, offset))
+    return canvas
 
 
 def tightened(img: Image.Image) -> Image.Image:
@@ -147,6 +192,12 @@ def make_icns(img: Image.Image) -> None:
         report(out)
 
 
+def make_mac_png(img: Image.Image) -> None:
+    out = BUILD_DIR / "icon-mac.png"
+    resized(img, PNG_SIZE).save(out, "PNG", optimize=True)
+    report(out)
+
+
 def make_ico(img: Image.Image) -> None:
     # Every member is pre-resized and handed over through append_images, so
     # each one is downscaled with LANCZOS rather than by the ICO writer.
@@ -180,19 +231,35 @@ def make_menubar_png(img: Image.Image) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("master", type=Path, help="path to the 1024x1024 master PNG")
+    parser.add_argument(
+        "master", type=Path, nargs="?",
+        help="1024x1024 glyph PNG for the Windows / Linux outputs",
+    )
+    parser.add_argument(
+        "--macos", type=Path, metavar="MAC_MASTER",
+        help=f"{MAC_TILE}x{MAC_TILE} tile (or {MAC_CANVAS}x{MAC_CANVAS} canvas) "
+             "PNG for the macOS outputs",
+    )
     args = parser.parse_args()
+    if args.master is None and args.macos is None:
+        parser.error("pass the master PNG, --macos MAC_MASTER, or both")
 
-    img = load_master(args.master)
-    print(f"master: {args.master} ({img.width}x{img.height})")
-    # The large-icon outputs keep the master's border; only the two that are
-    # always drawn small are tightened.
-    make_icns(img)
-    make_png(img)
-    tight = tightened(img)
-    print(f"tightened for the small-icon outputs: {tight.width}x{tight.width}")
-    make_ico(tight)
-    make_menubar_png(tight)
+    if args.macos is not None:
+        mac = load_mac_master(args.macos)
+        print(f"macOS master: {args.macos} -> {mac.width}x{mac.height} canvas")
+        make_icns(mac)
+        make_mac_png(mac)
+
+    if args.master is not None:
+        img = load_master(args.master)
+        print(f"master: {args.master} ({img.width}x{img.height})")
+        # icon.png keeps the master's border; the two outputs that are always
+        # drawn small are tightened.
+        make_png(img)
+        tight = tightened(img)
+        print(f"tightened for the small-icon outputs: {tight.width}x{tight.width}")
+        make_ico(tight)
+        make_menubar_png(tight)
 
 
 if __name__ == "__main__":
