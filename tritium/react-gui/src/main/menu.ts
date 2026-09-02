@@ -105,6 +105,10 @@ function buildSpecificHandlers(
   // window -- the Rendering window, a devtools pane -- has no such routing and
   // only ever wants the native edit. Cut/Copy/Paste used to be Electron roles,
   // which did this implicitly; keeping it explicit here preserves that.
+  // Keystrokes reach these handlers on macOS only (the menu owns the key
+  // equivalents there); on Windows / Linux the renderer dispatches the same
+  // channels itself from its keydown listener, and this path serves mouse
+  // picks on the (hidden) native menu alone.
   const focusRouted: [string, NativeEditAction][] = [
     [IPC.MENU_EDIT_CUT, 'cut'],
     [IPC.MENU_EDIT_COPY, 'copy'],
@@ -175,8 +179,17 @@ function buildItem(
 
   if (item.role) result.role = item.role as MenuItemConstructorOptions['role']
 
-  const acc = isMac ? (item.acceleratorMac ?? item.accelerator) : item.accelerator
-  if (acc) result.accelerator = acc
+  // Accelerators are registered with the native menu on macOS only, where
+  // the menu's key equivalent is what receives the keystroke. On Windows /
+  // Linux the menu bar is hidden and Blink consumes Ctrl+X/C/V/A before a
+  // menu accelerator could fire, so the renderer owns every ipcChannel
+  // shortcut there (renderer/shell/keybindings/useMenuKeyBindings.ts) and the
+  // menu must not compete for the same keys. The React menu bar prints the
+  // template's accelerator text itself, so nothing is lost on display.
+  if (isMac) {
+    const acc = item.acceleratorMac ?? item.accelerator
+    if (acc) result.accelerator = acc
+  }
 
   if (item.ipcChannel) {
     if (specificHandlers[item.ipcChannel]) {

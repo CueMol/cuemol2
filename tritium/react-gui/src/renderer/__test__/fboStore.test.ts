@@ -48,9 +48,12 @@ const GL = {
     DEPTH_BUFFER_BIT: 0x100,
     COLOR_BUFFER_BIT: 0x4000,
     TEXTURE0: 0x84c0,
+    COLOR: 0x1800,
+    DEPTH: 0x1801,
 }
 
 const RT_DEPTH_TEX = 0x02
+const RT_NORMAL_RGBA16F = 0x08
 
 function makeGl() {
     let texSeq = 0
@@ -69,6 +72,9 @@ function makeGl() {
         viewport: vi.fn(),
         deleteTexture: vi.fn(),
         deleteFramebuffer: vi.fn(),
+        clearColor: vi.fn(),
+        clear: vi.fn(),
+        clearBufferfv: vi.fn(),
     }
 }
 
@@ -150,5 +156,57 @@ describe('FboStore.blitDepthToDefault', () => {
         const store = makeStore(false)
         store.blitDepthToDefault('nope')
         expect(gl.blitFramebuffer).not.toHaveBeenCalled()
+    })
+})
+
+/**
+ * The GTAO pass reads the MRT normal attachment and treats dot(n,n) > 0.5 as a
+ * stored normal, (0,0,0) as "no normal, exclude". Pixels no geometry covers
+ * keep whatever the clear wrote, so the normal attachment must be cleared to
+ * the sentinel and not to the background color (OcRenderTarget::clear parity).
+ * These pin the per-attachment clear and that the plain path is untouched.
+ */
+describe('FboStore.clearRenderTarget', () => {
+    let gl: ReturnType<typeof makeGl>
+    let store: FboStore
+
+    beforeEach(() => {
+        gl = makeGl()
+        store = new FboStore()
+        store.setContext(gl as never, { width: 800, height: 600 }, true, false)
+    })
+
+    it('clears the normal attachment to the sentinel, not the clear color', () => {
+        store.createFramebuffer('scene', 320, 240, RT_DEPTH_TEX | RT_NORMAL_RGBA16F)
+        store.bindFramebuffer('scene')
+        store.clearRenderTarget(0.2, 0.4, 0.6, 1.0)
+
+        expect(gl.clearBufferfv.mock.calls).toEqual([
+            [GL.COLOR, 0, [0.2, 0.4, 0.6, 1.0]],
+            [GL.COLOR, 1, [0.0, 0.0, 0.0, 0.0]],
+            [GL.DEPTH, 0, [1.0]],
+        ])
+        // gl.clear would paint the clear color into draw buffer 1 as well.
+        expect(gl.clear).not.toHaveBeenCalled()
+    })
+
+    it('uses the plain clear when the bound fbo has no normal attachment', () => {
+        store.createFramebuffer('plain', 320, 240, RT_DEPTH_TEX)
+        store.bindFramebuffer('plain')
+        store.clearRenderTarget(0.2, 0.4, 0.6, 1.0)
+
+        expect(gl.clearColor).toHaveBeenCalledWith(0.2, 0.4, 0.6, 1.0)
+        expect(gl.clear).toHaveBeenCalledWith(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT)
+        expect(gl.clearBufferfv).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the plain clear once the default framebuffer is bound', () => {
+        store.createFramebuffer('scene', 320, 240, RT_DEPTH_TEX | RT_NORMAL_RGBA16F)
+        store.bindFramebuffer('scene')
+        store.bindDefaultFramebuffer()
+        store.clearRenderTarget(0, 0, 0, 1)
+
+        expect(gl.clearBufferfv).not.toHaveBeenCalled()
+        expect(gl.clear).toHaveBeenCalledTimes(1)
     })
 })

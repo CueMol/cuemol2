@@ -79,11 +79,6 @@
 
 /* An interactive glyph, not decoration: it carries the expand state on its
    own, so it takes the body-text tone rather than a muted one. */
-.sp-section-header-left .section-chevron {
-  color: var(--text-primary);
-  flex-shrink: 0;
-}
-
 .sp-section-header .section-icon {
   color: var(--accent);
   flex-shrink: 0;

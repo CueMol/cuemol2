@@ -91,16 +91,6 @@
   color: var(--text-primary);
 }
 
-.cfg-tree-chevron {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  flex-shrink: 0;
-  /* Carries the expand state on its own, so it reads at the body-text tone. */
-  color: var(--text-primary);
-}
-
 .cfg-tree-icon {
   color: var(--text-secondary);
   flex-shrink: 0;

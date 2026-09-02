@@ -22,9 +22,9 @@ import {
     Button,
     ButtonGroup,
     Tooltip,
-    Tree,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
+import { ListboxTree } from "@renderer/h3-kit/list";
 import { AppIcon } from "@renderer/h3-kit/primitives";
 import { PaneSectionHeader } from "@renderer/shell/PaneSectionHeader";
 import { useMolStructure } from "./useMolStructure";
@@ -445,12 +445,12 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
                         fallbackName={(m) => `Mol ${m.uid}`}
                     />
                     <div className="sp-pane-scroll mol-tree-scroll">
-                        <Tree
+                        <ListboxTree
                             contents={treeContents}
                             onNodeClick={handleNodeClick}
                             onNodeExpand={handleNodeExpand}
                             onNodeCollapse={handleNodeCollapse}
-                            className="mol-tree h3-listbox-tree"
+                            className="mol-tree"
                         />
                     </div>
                 </div>

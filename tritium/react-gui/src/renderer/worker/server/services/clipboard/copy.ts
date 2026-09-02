@@ -39,14 +39,12 @@ export function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult
     if (!scene) return { ok: false, kind: null };
 
     let target: LScrObject | null = null;
-    let sourceName = '';
     let kind: ClipboardKind;
 
     if (args.nodeType === 'object') {
         const obj = scene.getObject(args.nodeId) as CueMolObject | null;
         if (!obj) return { ok: false, kind: null };
         target = obj as unknown as LScrObject;
-        sourceName = safeRead(() => obj.name) ?? '';
         kind = 'object';
     } else if (args.nodeType === 'camera') {
         if (!args.cameraName) return { ok: false, kind: null };
@@ -55,7 +53,6 @@ export function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult
         ) as unknown as LScrObject | null) ?? null;
         if (!cam) return { ok: false, kind: null };
         target = cam;
-        sourceName = args.cameraName;
         kind = 'camera';
     } else if (args.nodeType === 'style') {
         // UXP `onCopyStyle` rejects global (scope==0) styles before
@@ -71,7 +68,6 @@ export function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult
         const set = styleMgr.getStyleSet(args.nodeId);
         if (!set) return { ok: false, kind: null };
         target = set;
-        sourceName = safeRead(() => (set as unknown as { name: string }).name) ?? '';
         kind = 'style';
     } else if (args.nodeType === 'rendGroup') {
         // Deep-copy the group: serialize its member renderers (not the
@@ -90,19 +86,12 @@ export function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult
         if (!xml) return { ok: false, kind: null };
         const bytes = xmlToBytes(ctx, xml);
         if (!bytes) return { ok: false, kind: null };
-        return {
-            ok: true,
-            kind: 'renderer',
-            form: 'rendArray',
-            name: grpName,
-            bytes,
-        };
+        return { ok: true, kind: 'renderer', form: 'rendArray', bytes };
     } else {
         // single renderer
         const rend = scene.getRenderer(args.nodeId) as Renderer | null;
         if (!rend) return { ok: false, kind: null };
         target = rend as unknown as LScrObject;
-        sourceName = safeRead(() => rend.name) ?? '';
         kind = 'renderer';
     }
 
@@ -111,7 +100,7 @@ export function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult
     const bytes = xmlToBytes(ctx, xml);
     if (!bytes) return { ok: false, kind: null };
 
-    return { ok: true, kind, form: 'single', name: sourceName, bytes };
+    return { ok: true, kind, form: 'single', bytes };
 }
 
 /** UXP `convElemNodeTypes`: a group counts as a renderer for type checking. */
@@ -186,5 +175,5 @@ export function copyNodes(ctx: WorkerContext, args: CopyNodesArgs): CopyNodesRes
     const bytes = xmlToBytes(ctx, xml);
     if (!bytes) return { ok: false, kind: null };
 
-    return { ok: true, kind: 'renderer', form: 'rendArray', name: '', bytes };
+    return { ok: true, kind: 'renderer', form: 'rendArray', bytes };
 }

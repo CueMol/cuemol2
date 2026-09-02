@@ -112,8 +112,6 @@
 
 /* Carries the expand state on its own, so it reads at the body-text tone. */
 .fod-collapsible-chevron {
-  flex-shrink: 0;
-  color: var(--text-primary);
   transition: color 0.1s;
 }
 

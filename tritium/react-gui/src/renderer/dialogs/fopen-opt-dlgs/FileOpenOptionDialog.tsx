@@ -24,7 +24,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Collapse } from '@blueprintjs/core';
 import { DialogShell } from '@renderer/dialogs/DialogShell';
-import { AppIcon } from '@renderer/h3-kit/primitives';
+import { AppIcon, DisclosureCaret } from '@renderer/h3-kit/primitives';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 
 import {
@@ -348,12 +348,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
               className="fod-collapsible-header"
               onClick={() => setIsFormatExpanded((v) => !v)}
             >
-              <AppIcon
-                name={isFormatExpanded ? 'ui.caretDown' : 'ui.caretRight'}
-                size="sm"
-                className="fod-collapsible-chevron"
-                aria-hidden
-              />
+              <DisclosureCaret expanded={isFormatExpanded} className="fod-collapsible-chevron" />
               <span className="fod-collapsible-label">
                 {formatName}-specific options
               </span>

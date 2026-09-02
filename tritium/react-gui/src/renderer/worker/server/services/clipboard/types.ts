@@ -40,12 +40,15 @@ export interface CopyNodeResult {
     kind: ClipboardKind | null;
     /** Payload shape; 'single' for everything but a group copy. */
     form?: ClipboardForm;
-    /** Source node name, carried as a display hint only. */
-    name?: string;
     /** Serialized XML bytes, for the caller to put on the clipboard. */
     bytes?: Uint8Array;
 }
 
+/**
+ * The pasted node's name comes from the XML itself (the restored object's
+ * `name`), never from the caller: the legacy Windows clipboard format has
+ * nowhere to carry a name, and the same code has to serve both formats.
+ */
 export interface PasteNodeArgs {
     sceneId: number;
     /** What the payload holds, from the clipboard read. */
@@ -54,12 +57,6 @@ export interface PasteNodeArgs {
     bytes: Uint8Array;
     /** Payload shape; defaults to 'single'. */
     form?: ClipboardForm;
-    /**
-     * Source node name, used only as the fallback when the restored XML
-     * carries no usable name. A payload copied in another app supplies no
-     * name, which is why every branch prefers the restored object's own.
-     */
-    name?: string;
     /** When pasting a renderer onto an object row, the object's uid. */
     targetObjId?: number;
     /**
@@ -92,8 +89,6 @@ export interface CopyNodesResult {
     kind: ClipboardKind | null;
     /** Always 'rendArray' when ok -- a multi copy is a renderer array. */
     form?: ClipboardForm;
-    /** Empty: a multi copy has no single source name. */
-    name?: string;
     /** Serialized XML bytes, for the caller to put on the clipboard. */
     bytes?: Uint8Array;
     /**

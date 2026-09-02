@@ -76,6 +76,24 @@ export function macAppMenuGroup(appName: string): AppMenuGroup {
   }
 }
 
+/**
+ * Ids of the Edit-menu items whose keys the user expects to work inside a
+ * text field even while a modal dialog is up. Two readers share this set:
+ *   - main/menuBlock.ts spares them when it disables the menu for a modal
+ *     (on macOS the menu owns the Cmd+X/C/V/A/Z key equivalents outright, so
+ *     disabling them would leave a dialog's fields unable to paste);
+ *   - renderer/shell/keybindings lets only these through while a modal is
+ *     open on Windows / Linux, where the renderer owns the keys instead.
+ */
+export const TEXT_EDIT_MENU_IDS: ReadonlySet<string> = new Set([
+  'cut',
+  'copy',
+  'paste',
+  'select-all',
+  'undo',
+  'redo',
+])
+
 export const APP_MENU: AppMenuGroup[] = [
   // File menu
   {
@@ -124,7 +142,10 @@ export const APP_MENU: AppMenuGroup[] = [
       // macOS the menu's key equivalent wins over the web content -- so the
       // routing has to start here. `utils/editClipboard.ts` resolves the
       // target; the accelerators must be declared explicitly now that Electron
-      // no longer supplies them.
+      // no longer supplies them. Who owns the key differs per OS: on macOS the
+      // native menu, on Windows / Linux the renderer (Blink consumes
+      // Ctrl+X/C/V/A itself there, so a menu accelerator never fires) -- see
+      // TEXT_EDIT_MENU_IDS below and renderer/shell/keybindings.
       { id: 'cut',   label: 'Cut',   accelerator: 'CmdOrCtrl+X', ipcChannel: IPC.MENU_EDIT_CUT },
       { id: 'copy',  label: 'Copy',  accelerator: 'CmdOrCtrl+C', ipcChannel: IPC.MENU_EDIT_COPY },
       { id: 'paste', label: 'Paste', accelerator: 'CmdOrCtrl+V', ipcChannel: IPC.MENU_EDIT_PASTE },

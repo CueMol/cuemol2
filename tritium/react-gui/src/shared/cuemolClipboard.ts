@@ -62,7 +62,11 @@ export interface ClipMeta {
     kind: ClipKind;
     /** Defaults to 'single' when absent. */
     form?: ClipForm;
-    /** Display hint only -- paste never depends on it (the XML carries the name). */
+    /**
+     * Optional on the wire, kept so an envelope that carries one still
+     * parses. tritium neither writes nor reads it: the payload's XML carries
+     * the node's name and paste takes it from the restored object.
+     */
     name?: string;
 }
 

@@ -104,6 +104,12 @@ architecture, it belongs here.
   Electron の clipboard role では表現できない理由 (macOS はメニューの key equivalent が
   web content より先にキーを取る)、Win/Linux の React メニューが DOM フォーカスを奪う問題、
   および「テキスト欄で Cmd+Z が scene undo を走らせる」既存バグの修正。
+- [メニューショートカットの所有者を OS ごとに 1 つにする](keyboard-shortcuts.md) (日本語) --
+  Windows で scene tree の Ctrl+C/V が効かなかった原因 (Blink が Ctrl+X/C/V/A を消費し、
+  Win/Linux ではメニュー accelerator まで届かない) と、macOS は native menu、Win/Linux は
+  renderer の keydown dispatcher (`shell/keybindings`) がショートカットを所有し両者が
+  `dispatchMenuChannel` に合流する構成。隠しメニューから accelerator を外す判断、
+  enabled / modal ゲートの再現、採らなかった案 (`before-input-event`、全 OS renderer 所有)。
 - [ObjProxyBridge `_objSlot` ownership and lifetime](objslot-ownership.md) --
   the worker-side object bridge's slot ownership rules and when a slot may be
   released, from the renderer/worker refactoring work.
