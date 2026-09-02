@@ -307,13 +307,17 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   // from its reference's end, so a negative start (it overlaps the element it
   // chains after) is legal. Clamping it here used to move such an element to
   // its reference's end as a side effect of editing the duration.
+  // `onRelease` fires at the end of every interaction, changed or not; only a
+  // changed value is written, so a no-op release pushes no undo step.
   const commitStart = (ms: number) => {
     setField({ startMs: ms });
+    if (ms === detail.common.startMs) return;
     const dur = Math.max(0, form.durationMs);
     commit("timing", { startMs: ms, endMs: ms + dur });
   };
   const commitDuration = (ms: number) => {
     setField({ durationMs: ms });
+    if (ms === detail.common.endMs - detail.common.startMs) return;
     const start = form.startMs;
     commit("timing", { startMs: start, endMs: start + Math.max(0, ms) });
   };
@@ -377,10 +381,24 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
           </SelectField>
         </Field>
         <Field label="Start time">
-          <TimeField value={form.startMs} min={0} onCommit={commitStart} />
+          <TimeField
+            value={form.startMs}
+            min={0}
+            onChange={(v) => setField({ startMs: v })}
+            onRelease={commitStart}
+            onDragCancel={() => setField({ startMs: detail.common.startMs })}
+          />
         </Field>
         <Field label="Duration">
-          <TimeField value={form.durationMs} min={0} onCommit={commitDuration} />
+          <TimeField
+            value={form.durationMs}
+            min={0}
+            onChange={(v) => setField({ durationMs: v })}
+            onRelease={commitDuration}
+            onDragCancel={() =>
+              setField({ durationMs: detail.common.endMs - detail.common.startMs })
+            }
+          />
         </Field>
         <Field label="Quadric">
           <DragNumericField

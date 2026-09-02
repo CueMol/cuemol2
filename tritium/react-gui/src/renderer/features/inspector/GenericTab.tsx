@@ -19,7 +19,7 @@
  * row's hover button.
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   CheckboxField,
   ColorField,
@@ -135,6 +135,34 @@ interface DetailEditorProps {
  * Editor for one property. Mounted via `DetailPanel`'s `key` so its draft
  * state resets whenever the selected row changes.
  */
+
+/**
+ * `object<TimeValue>` editor: a `TimeField` over the C++ timecode string. Owns
+ * the live draft so the field can move while the committed value is unchanged,
+ * and writes once per interaction when the value actually changed.
+ */
+const TimeValueEditor: React.FC<{
+  ms: number;
+  disabled: boolean;
+  onCommit: (ms: number) => void;
+}> = ({ ms, disabled, onCommit }) => {
+  const [draft, setDraft] = useState(ms);
+  useEffect(() => {
+    setDraft(ms);
+  }, [ms]);
+  return (
+    <TimeField
+      value={draft}
+      onChange={setDraft}
+      onRelease={(v) => {
+        if (v !== ms) onCommit(v);
+      }}
+      onDragCancel={() => setDraft(ms)}
+      disabled={disabled}
+    />
+  );
+};
+
 const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValue }) => {
   // Value widgets are disabled for read-only props and while a resettable
   // property is sitting at its default. Clearing the "default" checkbox
@@ -235,10 +263,10 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
     const ms = cppTimeToMs(String(entry.value));
     if (ms !== null) {
       return (
-        <TimeField
-          value={ms}
-          onCommit={(v) => onSetValue(entry.key, entry.type, msToCppTime(v))}
+        <TimeValueEditor
+          ms={ms}
           disabled={disabled}
+          onCommit={(v) => onSetValue(entry.key, entry.type, msToCppTime(v))}
         />
       );
     }

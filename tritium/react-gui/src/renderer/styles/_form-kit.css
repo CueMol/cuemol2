@@ -546,24 +546,149 @@
   font-size: var(--fs-md);
 }
 
-/* -- Time field (M:SS.mmm text editor; UXP timeedit) -- */
-/* TimeField = a DragNumericField preset (drag-scrub / spin buttons / typed
-   timecode); this rule only pins its canonical width and digit alignment. */
-.h3-form-drag.h3-form-time {
+/* -- Time field (segmented M:SS.mmm editor; UXP timeedit) -- */
+/* An independent widget (see TimeField/index.tsx): one span per segment, an
+   active segment highlighted while the field has focus, a hover-only spinner
+   at the right edge, and a text input that replaces the segments in expression
+   mode. Width fits `10:00:00.000` plus the spinner. */
+.h3-form-time {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--field-h-sm);
   width: calc(var(--field-cell-w) * 3);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
   font-size: var(--fs-md);
   font-variant-numeric: tabular-nums;
+  user-select: none;
+  overflow: hidden;
 }
 
-.h3-form-time .h3-form-drag-value,
-.h3-form-time .h3-form-drag-input {
-  font-variant-numeric: tabular-nums;
+/* Focus lives on the widget as a whole, never on its parts. */
+.h3-form-time:focus {
+  outline: none;
 }
 
-/* The value keeps the field's centre; the spinner sits in the right gutter. */
-.h3-form-time .h3-form-drag-value {
+.h3-form-time:focus-visible,
+.h3-form-time.is-editing,
+.h3-form-time.is-dragging {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* The segments keep the field's centre; the spinner sits in the right gutter. */
+.h3-form-time-segs {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
   padding-left: var(--space-3);
-  padding-right: 0;
+  cursor: col-resize;
+}
+
+.h3-form-time-seg {
+  position: relative;
+  padding: 0 1px;
+  border-radius: var(--radius-sm);
+}
+
+.h3-form-time-seg:hover {
+  background: var(--overlay-hover);
+}
+
+/* The active segment shows only while the field is engaged, like a native
+   time input's selected part. */
+.h3-form-time:focus-within .h3-form-time-seg.is-active,
+.h3-form-time.is-dragging .h3-form-time-seg.is-active {
+  background: var(--accent-track);
+}
+
+.h3-form-time-sep {
+  color: var(--text-secondary);
+}
+
+/* Expression editor: replaces the segments, centred like them. */
+.h3-form-time-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  background: var(--bg-input);
+  border: none;
+  color: var(--text-primary);
+  font-size: var(--fs-md);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  padding: 0 var(--space-2);
+  caret-color: var(--accent);
+}
+
+.h3-form-time-input:focus {
+  outline: none;
+}
+
+/* Stacked spin buttons at the right edge, hover / focus only (Blender's
+   number-field arrows). Same shape as the SliderField stepper. */
+.h3-form-time-spinner {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding-right: var(--space-1);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.h3-form-time:hover .h3-form-time-spinner,
+.h3-form-time:focus-within .h3-form-time-spinner {
+  opacity: 1;
+}
+
+.h3-form-time-spin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 9px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.h3-form-time-spin:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.h3-form-time-spin:active:not(:disabled) {
+  color: var(--accent);
+}
+
+.h3-form-time-spin:focus,
+.h3-form-time-spin:focus-visible {
+  outline: none;
+}
+
+.h3-form-time-spin:disabled {
+  cursor: default;
+  opacity: 0;
+}
+
+.h3-form-time.is-disabled {
+  color: var(--text-disabled);
+}
+
+.h3-form-time.is-disabled .h3-form-time-segs {
+  cursor: default;
+}
+
+.h3-form-time.is-disabled .h3-form-time-seg:hover {
+  background: transparent;
 }
 
 /* ── Drag numeric (Blender number button) ── */

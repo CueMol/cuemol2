@@ -134,12 +134,12 @@ describe("AnimElementInspector", () => {
       <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
     );
     await flushPromises();
-    // Start / Duration use the TimeField (ms -> M:SS.mmm), which renders the
-    // value as text until clicked (DragNumericField preset); the timing write
-    // contract is pinned in animDetailService.test.ts.
+    // Start / Duration use the segmented TimeField (ms -> M:SS.mmm); the
+    // segments concatenate to the timecode. The timing write contract is
+    // pinned in animDetailService.test.ts.
     const timeText = (label: string) =>
       fieldByLabel(container, label)!.querySelector(
-        ".h3-form-time .h3-form-drag-value",
+        ".h3-form-time .h3-form-time-segs",
       )?.textContent;
     expect(timeText("Start time")).toBe("0:00.200"); // 200 ms
     expect(timeText("Duration")).toBe("0:01.000"); // 1200 - 200 = 1000 ms
@@ -160,9 +160,8 @@ describe("AnimElementInspector", () => {
     const durField = fieldByLabel(container, "Duration")!.querySelector(
       ".h3-form-time",
     ) as HTMLElement;
-    // Click into the duration field, type 2s, commit.
-    act(() => durField.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
-    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    // Enter opens the duration field's expression editor; type 2s, commit.
+    act(() => durField.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     const input = durField.querySelector("input") as HTMLInputElement;
     const setter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype, "value",
