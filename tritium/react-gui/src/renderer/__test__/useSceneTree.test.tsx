@@ -151,7 +151,7 @@ function stubClipboardApi(): void {
             if (ch === IPC.CLIPBOARD_CUEMOL_WRITE) return Promise.resolve({ ok: true })
             if (ch === IPC.CLIPBOARD_CUEMOL_READ) {
                 return Promise.resolve({
-                    kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
+                    kind: 'renderer', form: 'single', bytes: CLIP_BYTES,
                 })
             }
             return Promise.resolve(undefined)
@@ -275,7 +275,7 @@ const WIRE_CASES: WireCase[] = [
         channel: 'pasteNode',
         payload: {
             sceneId: SCENE_ID, targetObjId: 42,
-            kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
+            kind: 'renderer', form: 'single', bytes: CLIP_BYTES,
         },
     },
     {
@@ -287,7 +287,7 @@ const WIRE_CASES: WireCase[] = [
         channel: 'pasteNode',
         payload: {
             sceneId: SCENE_ID, targetObjId: 42,
-            kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
+            kind: 'renderer', form: 'single', bytes: CLIP_BYTES,
         },
     },
     {
@@ -298,7 +298,7 @@ const WIRE_CASES: WireCase[] = [
         channel: 'pasteNode',
         payload: {
             sceneId: SCENE_ID, targetGroupId: 200,
-            kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
+            kind: 'renderer', form: 'single', bytes: CLIP_BYTES,
         },
     },
     {

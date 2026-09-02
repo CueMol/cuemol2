@@ -23,6 +23,7 @@ import { useWindowTitleSync } from '@renderer/hooks/useWindowTitleSync'
 import { useTextContextMenu } from '@renderer/hooks/useTextContextMenu'
 import { installSelectAllScope } from '@renderer/utils/selectAllScope'
 import { installClipboardScopeTracking } from '@renderer/utils/editClipboard'
+import { useMenuKeyBindings } from '@renderer/shell/keybindings/useMenuKeyBindings'
 
 export const AppBoot: React.FC = () => {
   const { cueMolReady, cm } = useCueMol()
@@ -96,6 +97,11 @@ export const AppBoot: React.FC = () => {
   // Remember which panel the user last worked in, so Edit > Cut/Copy/Paste
   // reaches it even when the click moved focus into the menu itself.
   useEffect(() => installClipboardScopeTracking(), [])
+
+  // Windows / Linux: the renderer owns the menu shortcuts (Ctrl+V and the
+  // rest), since the hidden native menu cannot receive the keys Blink
+  // consumes. No-op on macOS, where the native menu owns them.
+  useMenuKeyBindings()
 
   // macOS traffic-light inset.
   useEffect(() => {

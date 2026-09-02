@@ -17,7 +17,7 @@ import { setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helper
  * clipboard lives in the main process so a copy made in another app (or
  * another CueMol window) is visible here.
  */
-function stubClipboardPeek(res: { kind: string; name: string } | null): void {
+function stubClipboardPeek(res: { kind: string } | null): void {
     setupElectronAPI({
         invoke: vi.fn((ch: string) =>
             Promise.resolve(ch === IPC.CLIPBOARD_CUEMOL_PEEK ? res : undefined),
@@ -168,7 +168,7 @@ describe('buildSceneCtxPayload — regenerate surface gate', () => {
 
 describe('buildSceneCtxPayload — pre-fetch dispatch', () => {
     it('renderer node fans out the four parallel pre-fetches, plus clipboardKind', async () => {
-        stubClipboardPeek({ kind: 'object', name: 'mol1' })
+        stubClipboardPeek({ kind: 'object' })
         const cm = makeCm({
             getPaintColoringStyles: { entries: [{ name: 'a', label: 'A' }] },
             getRendererPaintInfo: { canPaint: true },
@@ -233,7 +233,7 @@ describe('buildSceneCtxPayload — pre-fetch dispatch', () => {
     it('reports no pasteable node when the clipboard holds paint rows', async () => {
         // Paint rows share the OS clipboard with scene nodes, so the scene
         // ctxmenu has to reject them rather than offer a Paste that fails.
-        stubClipboardPeek({ kind: 'paint', name: '' })
+        stubClipboardPeek({ kind: 'paint' })
         const p = await buildSceneCtxPayload(makeCm(), 7, rendererNode())
         expect(p.clipboardKind).toBeNull()
     })

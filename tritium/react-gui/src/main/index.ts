@@ -11,7 +11,7 @@ import { loadUi } from './stateStore'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
 import { clearRenderHistory, sweepStaleRenderHistory } from './renderHistory'
 import { sweepMovieOutputs } from './movieOutput'
-import { APP_PRODUCT_NAME } from '@shared/appInfo'
+import { APP_ID, APP_PRODUCT_NAME } from '@shared/appInfo'
 import { installMainCrashHandlers } from './installMainCrashHandlers'
 
 // Before anything else, so a throw during the setup below is still reported
@@ -19,6 +19,15 @@ import { installMainCrashHandlers } from './installMainCrashHandlers'
 installMainCrashHandlers()
 
 app.setName(APP_PRODUCT_NAME)
+
+// Windows groups taskbar buttons by Application User Model ID. Left unset,
+// Electron derives a default of its own, which is not the id electron-builder
+// stamps on the installed shortcut, and the main and Rendering windows showed
+// up as separate taskbar entries. Set the installer's id on the process before
+// any window exists, so every window (and a pinned shortcut) collapses into one
+// button, the way a multi-window browser does. Windows-only API; a no-op
+// elsewhere but skipped for clarity.
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
 
 // Dev-only clean-profile launch: when CUEMOL_FRESH_PREFS is set, point userData
 // at a throwaway dir (wiped first) so no previously persisted preference

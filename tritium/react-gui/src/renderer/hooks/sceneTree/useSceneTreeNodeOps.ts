@@ -20,7 +20,6 @@ interface SceneClipPayload {
     ok: boolean
     kind: 'object' | 'renderer' | 'style' | 'camera' | null
     form?: 'single' | 'rendArray'
-    name?: string
     bytes?: Uint8Array
 }
 
@@ -38,7 +37,6 @@ async function writeSceneClip(res: SceneClipPayload | undefined): Promise<boolea
         const w = await api.invoke(IPC.CLIPBOARD_CUEMOL_WRITE, {
             kind: res.kind,
             form: res.form,
-            name: res.name,
             bytes: res.bytes,
         })
         return w?.ok === true
@@ -53,7 +51,7 @@ async function writeSceneClip(res: SceneClipPayload | undefined): Promise<boolea
  * same clipboard but are not a scene node, so they are refused here.
  */
 async function readSceneClip(): Promise<
-    { kind: 'object' | 'renderer' | 'style' | 'camera'; form: 'single' | 'rendArray'; name: string; bytes: Uint8Array } | null
+    { kind: 'object' | 'renderer' | 'style' | 'camera'; form: 'single' | 'rendArray'; bytes: Uint8Array } | null
 > {
     const api = window.electronAPI
     if (!api) return null

@@ -8,11 +8,13 @@
  * accelerators.
  *
  * The block deliberately spares the text-edit items (see `TEXT_EDIT_MENU_IDS`
- * in `main/menuBlock.ts`): on macOS the menu owns the Cmd+X/C/V/A/Z key
+ * in `shared/menuTemplate.ts`): on macOS the menu owns the Cmd+X/C/V/A/Z key
  * equivalents, so disabling them would leave a dialog's text fields with no
  * way to paste at all. The same edges therefore also tell the renderer-side
  * clipboard router that a modal is up, so those keystrokes stay confined to
- * the focused field instead of reaching a panel behind the dialog.
+ * the focused field instead of reaching a panel behind the dialog -- and, on
+ * Windows / Linux, tell the keybinding dispatcher (`shell/keybindings`) to
+ * let only those same items through while the modal is up.
  */
 
 import React, { createContext, useCallback, useContext, useRef } from 'react'

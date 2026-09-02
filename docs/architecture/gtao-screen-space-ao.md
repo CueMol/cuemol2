@@ -311,6 +311,25 @@ upsample ハイブリッド** (NVIDIA 系の定番) で防ぐ:
 - **非回帰**: `aoHalfRes=false` で `aoTexelSize == viewportPixelSize`、`aocAO == aoc`、
   `u_upsample=0` となり従来と完全同一。既定 false (opt-in)。
 
+## 4.8 テッセレーション由来の格子模様 (バグではない)
+
+tube / cartoon に AO を掛けると、facet 単位の格子状の暗部とざらつきが出ることがある
+(AO off では Gouraud 補間で滑らかに見える面)。GL / WebGL2 で同一に出る (同一シェーダ)。
+調査の結論 (2026-09): **バグではなく、粗いメッシュの実際の遮蔽を screen-space AO が
+そのまま描いている**。
+
+- receiver 側: MRT 法線 (§4) で smooth な法線を使うので、facet と法線のずれ (≤ 半二面角) に
+  よる自己遮蔽は 2 次 (弧積分は接平面で ∂iarc/∂h = 0)。pow 2.2 後でも数 % に留まる。
+- occluder 側 (主因): 隣の巻きや tube 自身の曲がりが水平線を 30〜45° に上げている領域では
+  ∂iarc/∂h ≈ 0.5 (1 次)。遮蔽側の facet 稜線が「最高点」として切り替わるたびに AO が 5〜15%
+  ステップし、稜線の間隔で格子になる。cartoon の helix は半径 ~2.5 Å のシリンダーなので
+  `detail=16` で facet 幅 ~1.0 Å となり目立つ。ざらつきは `aoSteps=3` の疎な max-over-samples。
+- denoiser の edge 判定 (閾値 cZ×0.011) は通常ズームでは facet 稜線に反応せず、無関係。
+- 回避策 (既定値は据え置き): renderer の `detail` / `axialdetail` を上げる (16→32 でセルが半分、
+  コントラスト約半減、頂点数 ~2.8 倍)、Scene の `aoSteps` を上げる (ざらつきのみ)、`aoRadius` を
+  下げる (遮蔽物を範囲外に)。シェーダ側の対処 (深度の bilinear 化、denoise 拡大) は稜線の位置を
+  動かせないので採らない。
+
 ---
 
 ## 5. 移植で必ず踏むハマりどころ (最重要)

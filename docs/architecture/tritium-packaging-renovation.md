@@ -188,8 +188,11 @@ Electron 流レイアウトに合わせる (Windows は `povray/bin/povray.exe`,
 実装点: `collect-cuemol2-runtime.sh` の section (1b) が blendpng (必須) と extpkgs
 (best-effort ; 未取得は警告 skip) を `packaging/cuemol2-runtime/{bin,bundle_apps}` へ
 staging し、`electron-builder.yml` の extraResources 2 エントリが `cuemol2/bin` /
-`bundle_apps` へマップ。ローカルは `Taskfile.yml` の `package_tritium:darwin` が
-`BUNDLE_APPS` を渡す。CI は `build2.yml` の macOS / Windows 両 job で `download_extpkgs` を
+`bundle_apps` へマップ。ローカルは `Taskfile.yml` の `package_tritium:darwin` /
+`package_tritium:windows` が `BUNDLE_APPS` を渡す（Windows の extpkgs 取得は
+`download_extpkgs:windows` -> `download_extpkgs/run_win.sh`。macOS と違い 3 パッケージが
+1 つの bundle asset で配布されているため別スクリプトになっている）。CI は `build2.yml` の
+macOS / Windows 両 job で `download_extpkgs` を
 tritium package の前へ移動し、package step に `BUNDLE_APPS=<workspace>/target` を export
 (同 download は後続の UXP build も兼ねる) して配布物に同梱する。extpkgs のコピーは package
 ディレクトリ単位 (`cp -R`) なので OS ごとの実行ファイル名差 (povray vs povray.exe 等) を

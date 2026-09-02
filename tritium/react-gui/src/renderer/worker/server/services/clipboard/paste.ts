@@ -48,7 +48,6 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
     const entry = {
         kind: args.kind,
         xml,
-        sourceName: args.name ?? '',
         form: args.form ?? 'single',
     };
 
@@ -67,7 +66,7 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
                 name: string;
                 notifyLoaded?: (s: Scene) => void;
             };
-            const wanted = camView.name || entry.sourceName || 'camera';
+            const wanted = camView.name || 'camera';
             const finalName = uniqueCameraNameViaScene(scene, wanted);
             try { (scene as unknown as {
                 setCamera: (n: string, c: LScrObject) => void;
@@ -106,7 +105,7 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
                 | null;
             if (!restored) return;
             const setView = restored as unknown as { name: string; uid?: number };
-            const wanted = (entry.sourceName || setView.name) || 'style';
+            const wanted = setView.name || 'style';
             // UXP prompts to replace on name conflict; we auto-rename to
             // a unique name to match the object/renderer paste pattern
             // and avoid an extra confirm round-trip.
@@ -131,8 +130,8 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
                 | null;
             if (!restored) return;
             const obj = restored as unknown as CueMolObject;
-            // Uniquify name against the destination scene.
-            const wanted = entry.sourceName || 'obj';
+            // The restored XML carries the name; uniquify it against the scene.
+            const wanted = (safeRead(() => obj.name) ?? '') || 'obj';
             const finalName = uniqueObjectName(scene, wanted);
             try { obj.name = finalName; } catch { /* not all classes have writable name */ }
             newId = scene.addObject(obj as unknown as CueMolObject);
@@ -228,7 +227,9 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
             | null;
         if (!restored) return;
         const rend = restored as unknown as Renderer;
-        const wanted = entry.sourceName || 'rend';
+        // Same as the array path above and UXP pasteRendImpl: the restored
+        // renderer's own name, uniquified against the destination object.
+        const wanted = (safeRead(() => rend.name) ?? '') || 'rend';
         const finalName = uniqueRendererName(target!, wanted);
         try { rend.name = finalName; } catch { /* ignore */ }
         // Set the group string before attaching so the parent mol places

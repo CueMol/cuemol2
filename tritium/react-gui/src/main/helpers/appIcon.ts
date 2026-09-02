@@ -14,6 +14,11 @@
  * build/icon.png is tracked alongside the two platform icons rather than being
  * left as a build-time intermediate.
  *
+ * macOS has its own PNG, build/icon-mac.png: the macOS icon is a different
+ * design (a rounded tile with a background) from the glyph the other
+ * platforms use, so the dock cannot share icon.png without showing the wrong
+ * artwork. Both PNGs come from scripts/make-icons.py.
+ *
  * build/ is not shipped inside the app, so the lookup is deliberately
  * dev-only and returns undefined once packaged.
  */
@@ -24,6 +29,8 @@ import { join } from 'path'
 
 /** build/icon.png (512x512, tracked) relative to the compiled main bundle. */
 const DEV_ICON_PATH = join(__dirname, '../../build/icon.png')
+/** build/icon-mac.png: the macOS artwork at the same 512px, for the dock. */
+const DEV_ICON_MAC_PATH = join(__dirname, '../../build/icon-mac.png')
 
 /**
  * Path to the dev-run icon, or undefined when packaged (or when the file is
@@ -44,8 +51,10 @@ export function getDevIconPath(): string | undefined {
  * No-op off macOS and in a packaged build.
  */
 export function applyDevDockIcon(): void {
-  if (process.platform !== 'darwin' || !app.dock) return
-  const iconPath = getDevIconPath()
+  if (process.platform !== 'darwin' || !app.dock || app.isPackaged) return
+  // The dock shows the macOS artwork; the glyph is only the fallback so a
+  // checkout without icon-mac.png still gets an icon rather than Electron's.
+  const iconPath = existsSync(DEV_ICON_MAC_PATH) ? DEV_ICON_MAC_PATH : getDevIconPath()
   if (!iconPath) return
   const image = nativeImage.createFromPath(iconPath)
   if (!image.isEmpty()) app.dock.setIcon(image)

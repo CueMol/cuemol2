@@ -65,37 +65,16 @@ importers:
 
   react-gui:
     dependencies:
+      electron-store:
+        specifier: ^8.2.0
+        version: 8.2.0
+    devDependencies:
       '@blueprintjs/core':
         specifier: ^5.13.0
         version: 5.19.1(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@blueprintjs/icons':
         specifier: ^5.13.0
         version: 5.23.0(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@phosphor-icons/react':
-        specifier: ^2.1.10
-        version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@use-gesture/react':
-        specifier: ^10.3.1
-        version: 10.3.1(react@18.3.1)
-      allotment:
-        specifier: ^1.20.2
-        version: 1.20.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      electron-store:
-        specifier: ^8.2.0
-        version: 8.2.0
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
-      react-complex-tree:
-        specifier: ^2.3.3
-        version: 2.6.1(react@18.3.1)
-      react-dom:
-        specifier: ^18.3.1
-        version: 18.3.1(react@18.3.1)
-      react-tabs:
-        specifier: ^6.0.2
-        version: 6.1.1(react@18.3.1)
-    devDependencies:
       '@cuemol/core':
         specifier: workspace:*
         version: link:../core
@@ -105,6 +84,9 @@ importers:
       '@eslint/js':
         specifier: ^9.39.3
         version: 9.39.3
+      '@phosphor-icons/react':
+        specifier: ^2.1.10
+        version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@types/node':
         specifier: ^20.17.6
         version: 20.19.37
@@ -114,9 +96,15 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.1
         version: 18.3.7(@types/react@18.3.28)
+      '@use-gesture/react':
+        specifier: ^10.3.1
+        version: 10.3.1(react@18.3.1)
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.3(@types/node@20.19.37)(tsx@4.21.0))
+      allotment:
+        specifier: ^1.20.2
+        version: 1.20.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       electron:
         specifier: ^42.4.0
         version: 42.4.0
@@ -135,6 +123,18 @@ importers:
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-complex-tree:
+        specifier: ^2.3.3
+        version: 2.6.1(react@18.3.1)
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      react-tabs:
+        specifier: ^6.0.2
+        version: 6.1.1(react@18.3.1)
       stylelint:
         specifier: ^17.12.0
         version: 17.12.0(typescript@5.9.3)

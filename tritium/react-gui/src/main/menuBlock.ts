@@ -14,7 +14,10 @@
  * renderer input by itself. Disabling them therefore left every dialog's text
  * field unable to cut, copy, paste, select-all or undo. They stay enabled
  * through a block; the renderer keeps them confined to the focused field for
- * the duration (see `contexts/ModalOpenCounterContext.tsx`).
+ * the duration (see `contexts/ModalOpenCounterContext.tsx`). On Windows /
+ * Linux the native menu carries no accelerators at all (the renderer owns
+ * them, see `renderer/shell/keybindings`), so this block only affects mouse
+ * picks there; the renderer applies the same exemption to its key dispatch.
  *
  * Multiple block sources are reference-counted via `blockReasons`. The
  * snapshot captures each item's `enabled` value at the moment we enter the
@@ -31,19 +34,12 @@
 
 import { Menu } from 'electron'
 import type { MenuItem } from 'electron'
+import { TEXT_EDIT_MENU_IDS } from '@shared/menuTemplate'
 
-/**
- * Menu item ids spared by a block, so text editing keeps working inside a
- * modal dialog. Keep in sync with the ids in `shared/menuTemplate.ts`.
- */
-export const TEXT_EDIT_MENU_IDS: ReadonlySet<string> = new Set([
-  'cut',
-  'copy',
-  'paste',
-  'select-all',
-  'undo',
-  'redo',
-])
+// The spared set lives with the template (the renderer keybinding dispatcher
+// applies the same exemption on Windows / Linux); re-exported so existing
+// importers keep reading it from here.
+export { TEXT_EDIT_MENU_IDS }
 
 /** Distinct block sources, each ref-counted independently. */
 export type MenuBlockReason = 'blueprint' | 'native'

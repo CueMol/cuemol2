@@ -49,8 +49,21 @@ tasks:
   #####
 
   download_extpkgs:
+    desc: "Download the bundled external apps (POV-Ray / apbs-pdb2pqr / ffmpeg) into WORKDIR"
+    deps:
+      - task: download_extpkgs:{{OS}}
+
+  download_extpkgs:darwin:
+    platforms: [darwin]
     cmds:
       - bash download_extpkgs/run.sh "{{.WORKDIR}}" macOS ARM64
+
+  download_extpkgs:windows:
+    platforms: [windows]
+    # Windows fetches one combined bundle rather than the three per-package
+    # downloads run.sh does; run_win.sh cygpath-normalizes the native WORKDIR.
+    cmds:
+      - bash download_extpkgs/run_win.sh "{{.WORKDIR}}" X64
 
   install_umbreon:
     desc: "Build+install umbreon into the deplibs prefix (override source dir with UMBREON_SRC=...)"
@@ -284,7 +297,7 @@ tasks:
       - pnpm run start
 
   package_tritium:
-    desc: "Package the tritium app into a distributable (macOS arm64 DMG)"
+    desc: "Package the tritium app into a distributable (macOS arm64 DMG / Windows x64 NSIS installer)"
     deps:
       - task: package_tritium:{{OS}}
 
@@ -304,15 +317,40 @@ tasks:
     cmds:
       - pnpm run package:mac
 
-  make_tritium_icons:
-    desc: "Regenerate the react-gui app icons (build/ icns+ico+png and the menu-bar asset) from a master PNG: MASTER=<path to 1024x1024 PNG>"
+  package_tritium:windows:
+    platforms: [windows]
     dir: "{{.ROOT_DIR}}/../tritium/react-gui"
-    requires:
-      vars: [MASTER]
+    env:
+      # Same env contract as the darwin task above; both run the same
+      # packaging/package.sh, only with different electron-builder flags. The
+      # values are native Windows paths here (WORKDIR is a c: path,
+      # LIBCUEMOL2_INSTDIR is derived from ROOT_DIR) and
+      # collect-cuemol2-runtime.sh cygpath-normalizes them, so they are passed
+      # through as-is. WORKDIR holds no $HOME on Windows, so the `sh: echo`
+      # indirection the darwin task needs is unnecessary.
+      LIBCUEMOL2_ROOT: "{{.LIBCUEMOL2_INSTDIR}}"
+      BUNDLE_APPS: "{{.WORKDIR}}"
     cmds:
-      # The master artwork is deliberately untracked (see scripts/make-icons.py),
-      # so its path has to come in from the caller rather than a default.
-      - python3 scripts/make-icons.py "{{.MASTER}}"
+      # Call the packaging script directly rather than via `pnpm run package:win`
+      # (the npm script the darwin task uses): under `pnpm run`, pnpm puts its own
+      # .tools shim dir first on PATH, and that shim cannot exec its Windows binary
+      # from Git Bash ("This: command not found"), which kills the `pnpm exec
+      # electron-vite` call inside package.sh. CI's Windows job runs the same
+      # direct-bash form for the same reason.
+      - bash ../packaging/package.sh --win --x64
+
+  make_tritium_icons:
+    desc: "Regenerate the react-gui app icons from the untracked master PNGs: MASTER=<1024x1024 glyph> -> icon.ico / icon.png / menu-bar asset; MAC_MASTER=<824x824 tile> -> icon.icns / icon-mac.png (either or both)"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    preconditions:
+      - sh: '[ -n "{{.MASTER}}{{.MAC_MASTER}}" ]'
+        msg: "pass MASTER=<png>, MAC_MASTER=<png>, or both (see scripts/make-icons.py)"
+    cmds:
+      # Both masters are deliberately untracked (see scripts/make-icons.py), so
+      # their paths come from the caller rather than a default. The macOS icon
+      # has its own master because it is a different design (a rounded tile,
+      # not the glyph), which is why MASTER alone never touches icon.icns.
+      - python3 scripts/make-icons.py {{if .MASTER}}"{{.MASTER}}"{{end}} {{if .MAC_MASTER}}--macos "{{.MAC_MASTER}}"{{end}}
 
   lint_tritium:
     desc: "Lint react-gui TypeScript with ESLint (layering + floating-promise rules; warn-only baseline)"

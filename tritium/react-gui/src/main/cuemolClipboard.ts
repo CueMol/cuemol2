@@ -68,7 +68,6 @@ function hasFormat(format: string): boolean {
 interface ClipEntry {
   kind: ClipKind
   form: ClipForm
-  name: string
   bytes: Uint8Array
 }
 
@@ -83,22 +82,20 @@ function readEntry(): ClipEntry | null {
       continue
     }
     if (buf.length === 0) continue
-    // The legacy format carries no source name; the ctxmenu only uses the
-    // kind, and the envelope path supplies a name when there is one.
     return {
       kind: probe.kind,
       form: probe.form,
-      name: '',
       bytes: decodeLegacyPayload(probe.kind, buf),
     }
   }
 
+  // An envelope's optional `name` meta is ignored: the payload's XML is the
+  // source of the pasted node's name on both formats.
   const env = decodeEnvelope(readTextSafe())
   if (!env) return null
   return {
     kind: env.meta.kind,
     form: env.meta.form ?? 'single',
-    name: env.meta.name ?? '',
     bytes: env.bytes,
   }
 }
@@ -122,10 +119,9 @@ export function writeCuemolClipboard(
         : req.bytes
     const form: ClipForm =
       req.kind === 'renderer' ? (req.form ?? 'single') : 'single'
-    const name = req.kind === 'paint' ? '' : (req.name ?? '')
 
     if (process.platform === 'darwin') {
-      clipboard.writeText(encodeEnvelope({ kind: req.kind, form, name }, bytes))
+      clipboard.writeText(encodeEnvelope({ kind: req.kind, form }, bytes))
     } else {
       clipboard.writeBuffer(
         legacyFormatFor(req.kind, form),
@@ -150,7 +146,6 @@ export function readCuemolClipboard(): CuemolClipReadRes {
   return {
     kind: entry.kind,
     form: entry.form,
-    name: entry.name,
     bytes: entry.bytes,
   }
 }
@@ -164,11 +159,11 @@ export function readCuemolClipboard(): CuemolClipReadRes {
  */
 export function peekCuemolClipboard(): CuemolClipPeekRes {
   for (const probe of LEGACY_PROBE_ORDER) {
-    if (hasFormat(probe.format)) return { kind: probe.kind, name: '' }
+    if (hasFormat(probe.format)) return { kind: probe.kind }
   }
   const meta = decodeEnvelopeHeader(readTextSafe())
   if (!meta) return null
-  return { kind: meta.kind, name: meta.name ?? '' }
+  return { kind: meta.kind }
 }
 
 /** Register the three clipboard channels. Called once per main window. */

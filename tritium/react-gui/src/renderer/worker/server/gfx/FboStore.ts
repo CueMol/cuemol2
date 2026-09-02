@@ -56,6 +56,11 @@ export class FboStore {
     private _gl!: GL;
     private _canvas: any = null;
 
+    // The entry currently bound as the draw framebuffer (null = default
+    // framebuffer). clearRenderTarget needs it to know whether an MRT normal
+    // attachment is present, since the C++ side only ever says "clear".
+    private _bound: FboEntry | null = null;
+
     // True when EXT_color_buffer_float is available; required to render to
     // RGBA16F color/normal attachments (GTAO MRT normal, float jitter
     // accumulator). When false, float framebuffers fail FBO completeness and
@@ -176,6 +181,7 @@ export class FboStore {
 
         const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        this._bound = null;
         gl.bindTexture(gl.TEXTURE_2D, null);
 
         if (status !== gl.FRAMEBUFFER_COMPLETE) {
@@ -200,6 +206,7 @@ export class FboStore {
         const info = this._fbo_data[name];
         if (!info) throw `framebuffer ${name} not found`;
         gl.bindFramebuffer(gl.FRAMEBUFFER, info.fbo);
+        this._bound = info;
         gl.viewport(0, 0, info.w, info.h);
     }
 
@@ -207,12 +214,32 @@ export class FboStore {
     bindDefaultFramebuffer(): void {
         const gl = this._gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        this._bound = null;
         gl.viewport(0, 0, this._canvas.width, this._canvas.height);
     }
 
-    /** Clear the currently bound framebuffer's color + depth. */
+    /**
+     * Clear the currently bound framebuffer's color + depth.
+     *
+     * With an MRT normal attachment present, color attachment 0 is cleared to
+     * the requested color but attachment 1 to the (0,0,0) sentinel, mirroring
+     * OcRenderTarget::clear. A plain gl.clear paints the clear color into every
+     * draw buffer, so on a non-black background every pixel no geometry covers
+     * would carry the background color as a "normal": the GTAO pass reads
+     * dot(n,n) > 0.5 as a real normal, so such pixels would stop being excluded
+     * and could shade or occlude. With the sentinel they are treated as having
+     * no stored normal, which also keeps a shader that forgets to write
+     * location 1 on the benign side (excluded rather than mis-shaded).
+     */
     clearRenderTarget(r: number, g: number, b: number, a: number): void {
         const gl = this._gl;
+        const bound = this._bound;
+        if (bound && bound.normalTex) {
+            gl.clearBufferfv(gl.COLOR, 0, [r, g, b, a]);
+            gl.clearBufferfv(gl.COLOR, 1, [0.0, 0.0, 0.0, 0.0]);
+            if (bound.depthTex) gl.clearBufferfv(gl.DEPTH, 0, [1.0]);
+            return;
+        }
         gl.clearColor(r, g, b, a);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
@@ -253,6 +280,7 @@ export class FboStore {
             gl.DEPTH_BUFFER_BIT, gl.NEAREST);
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        this._bound = null;
     }
 
     /**

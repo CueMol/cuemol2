@@ -9,6 +9,10 @@
 #     needed because electron-builder will not pack files whose real path is
 #     outside react-gui/.
 #
+# Native binaries are filtered while staging, for distribution size only: the
+# unused libpython copy is dropped and the staged copies are stripped of their
+# local symbol tables (see stage_native_lib / strip_staged below).
+#
 # Per-OS native library layout (matches tritium/core/CMakeLists.txt):
 #   macOS : *.dylib -> @cuemol/core/build/lib/      (found via @loader_path/../lib rpath)
 #   Linux : *.so*   -> @cuemol/core/build/lib/      (found via $ORIGIN/../lib rpath)
@@ -36,6 +40,13 @@ echo "Staging platform: $PLATFORM"
 if [ -z "${LIBCUEMOL2_ROOT:-}" ]; then
   LIBCUEMOL2_ROOT="$(cd "$REPO_ROOT/.." && pwd)/.build_out/cuemol2"
   echo "LIBCUEMOL2_ROOT not set; defaulting to $LIBCUEMOL2_ROOT"
+fi
+
+# On Windows the caller may hand over a native (drive-letter) path -- the
+# Taskfile package_tritium task does -- so normalize it here and let the plain
+# cp/ls/test calls below see a well-formed MSYS path.
+if [ "$PLATFORM" = "win" ]; then
+  LIBCUEMOL2_ROOT="$(cygpath -u "$LIBCUEMOL2_ROOT" 2>/dev/null || echo "$LIBCUEMOL2_ROOT")"
 fi
 
 if [ ! -d "$LIBCUEMOL2_ROOT" ]; then
@@ -157,6 +168,10 @@ echo "  blendpng: $BLENDPNG_SRC"
 if [ -z "${BUNDLE_APPS:-}" ]; then
   BUNDLE_APPS="$HOME/tmp/proj64_deplibs"
   echo "  BUNDLE_APPS not set; defaulting to $BUNDLE_APPS"
+elif [ "$PLATFORM" = "win" ]; then
+  # Native "c:\..." path from the Taskfile / a Windows shell (same as
+  # LIBCUEMOL2_ROOT above).
+  BUNDLE_APPS="$(cygpath -u "$BUNDLE_APPS" 2>/dev/null || echo "$BUNDLE_APPS")"
 fi
 
 # Copy each package as a whole tree so the per-OS executable names (povray vs
@@ -200,6 +215,64 @@ mkdir -p "$STAGING_DEST/@cuemol/core/src"
 mkdir -p "$STAGING_DEST/@cuemol/core/build/Release"
 mkdir -p "$STAGING_DEST/@cuemol/core/build/lib"
 
+# strip_staged FILE -- drop the local symbol table from a staged native binary.
+#
+# Only the staged copy is touched, never the build tree. What goes is the local
+# symbol table (static functions, internal-linkage template instantiations),
+# which nothing outside the binary can reference; every exported symbol the
+# addon links against is kept, and C++ exception handling / RTTI live in
+# __unwind_info / __eh_frame rather than in the symbol table. The cost is local
+# function names in native backtraces -- set CUEMOL_NO_STRIP=1 to keep them.
+#
+# macOS: strip invalidates the linker's per-binary ad-hoc signature, which is
+# fine here because build/afterPack.js re-signs the assembled bundle
+# (codesign --force --deep --sign -) and then verifies it.
+# Windows: MSVC keeps symbols in separate .pdb files, so there is nothing to do.
+STRIP_WARNED=0
+strip_staged() {
+  if [ "${CUEMOL_NO_STRIP:-}" = "1" ]; then
+    return 0
+  fi
+  case "$PLATFORM" in
+    mac|linux) ;;
+    *) return 0 ;;
+  esac
+  if ! command -v strip >/dev/null 2>&1; then
+    if [ "$STRIP_WARNED" = "0" ]; then
+      echo "  Warning: strip not found -- staging unstripped binaries." >&2
+      STRIP_WARNED=1
+    fi
+    return 0
+  fi
+  case "$PLATFORM" in
+    mac)   strip -x "$1" ;;
+    linux) strip --strip-unneeded "$1" ;;
+  esac
+}
+
+# stage_native_lib SRC DESTDIR -- copy one shared library, then strip the copy.
+#
+# libpython is skipped. tritium/core/CMakeLists.txt copies it into build/lib/
+# whenever the libcuemol2 prefix has a lib/python dir, and that dir survives a
+# rebuild with ENABLE_PYTHON_EMBED=OFF (the guard above says the same about the
+# rpath). An embed build never reaches this point -- the guard exits -- so here
+# libcuemol2 provably does not link libpython and the copy is dead weight.
+stage_native_lib() {
+  local base
+  base="$(basename "$1")"
+  case "$base" in
+    libpython*)
+      echo "  skipped (not linked by libcuemol2): $base"
+      return 0
+      ;;
+  esac
+  cp -P "$1" "$2/$base"
+  # A *.so -> *.so.N symlink carries no symbol table of its own.
+  if [ ! -L "$2/$base" ]; then
+    strip_staged "$2/$base"
+  fi
+}
+
 # @cuemol/core: only the files needed at runtime by the CJS entry.
 cp "$CORE_DIR/package.json" "$STAGING_DEST/@cuemol/core/package.json"
 cp "$CORE_DIR/src/index.cjs" "$STAGING_DEST/@cuemol/core/src/index.cjs"
@@ -230,16 +303,23 @@ if [ "$CORE_CONFIG" != "Release" ]; then
 fi
 echo "  cuemol_internal.node: $NODE_SRC ($CORE_CONFIG)"
 cp "$NODE_SRC" "$STAGING_DEST/@cuemol/core/build/Release/cuemol_internal.node"
+strip_staged "$STAGING_DEST/@cuemol/core/build/Release/cuemol_internal.node"
 
 # Native shared libraries, staged per-OS (see header). cmake post-build placed
 # them in build/lib/ (mac/linux) or next to the .node in build/<config>/ (win).
 case "$PLATFORM" in
   mac)
-    cp "$CORE_DIR/build/lib/"*.dylib "$STAGING_DEST/@cuemol/core/build/lib/"
+    for lib in "$CORE_DIR/build/lib/"*.dylib; do
+      [ -e "$lib" ] || [ -L "$lib" ] || continue
+      stage_native_lib "$lib" "$STAGING_DEST/@cuemol/core/build/lib"
+    done
     echo "  dylibs staged: $(ls "$STAGING_DEST/@cuemol/core/build/lib/"*.dylib 2>/dev/null | wc -l | tr -d ' ') files"
     ;;
   linux)
-    cp -P "$CORE_DIR/build/lib/"*.so* "$STAGING_DEST/@cuemol/core/build/lib/"
+    for lib in "$CORE_DIR/build/lib/"*.so*; do
+      [ -e "$lib" ] || [ -L "$lib" ] || continue
+      stage_native_lib "$lib" "$STAGING_DEST/@cuemol/core/build/lib"
+    done
     echo "  shared libs staged: $(ls "$STAGING_DEST/@cuemol/core/build/lib/" 2>/dev/null | wc -l | tr -d ' ') entries"
     ;;
   win)
@@ -312,4 +392,4 @@ case "$PLATFORM" in
     ;;
 esac
 
-echo "Staging done."
+echo "Staging done (staged tree: $(du -sh "$STAGING_DEST" 2>/dev/null | cut -f1 | tr -d ' '))."

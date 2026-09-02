@@ -130,7 +130,7 @@ function stubClipboard(hasPaint: boolean): ReturnType<typeof setupElectronAPI> {
     return setupElectronAPI({
         invoke: vi.fn((ch: string) => {
             if (ch === IPC.CLIPBOARD_CUEMOL_PEEK) {
-                return Promise.resolve(hasPaint ? { kind: 'paint', name: '' } : null)
+                return Promise.resolve(hasPaint ? { kind: 'paint' } : null)
             }
             if (ch === IPC.CLIPBOARD_CUEMOL_READ) {
                 return Promise.resolve(

@@ -116,7 +116,9 @@ cairo が要り、これはアプリのビルドにもパッケージングに�
   判明した。`~/proj64/cuemol3-app-icon-master.png` から `make-icons.py` を回すとアプリ
   アイコンが実際に変わる (512px で最大チャンネル差 255)。今回アイコンは触っていないので
   影響しないが、**次に `task make_tritium_icons` を回す人はアプリアイコンごと変わることを
-  承知しておく必要がある**
+  承知しておく必要がある**。なお macOS アイコン (`icon.icns` / `icon-mac.png`) はその後
+  別 master (824x824 のタイル) に分離され、`MASTER=` だけでは書き換わらない
+  (`MAC_MASTER=` を渡したときのみ)
 - DMG ウィンドウの住み分け (`dmg.contents` によるアイコン配置・背景画像) は今回やっていない。
   electron-builder の既定で Applications シンボリックリンクと背景は既に入っており
   (実ビルドで確認)、旧 CueMol2 相当の作り込みは別作業

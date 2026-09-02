@@ -11,3 +11,12 @@
 
 /** User-facing product name (matches electron-builder.yml productName). */
 export const APP_PRODUCT_NAME = 'CueMol3'
+
+/**
+ * Application id (matches electron-builder.yml appId; `appInfo.test.ts` pins
+ * the two together). electron-builder stamps it on the NSIS shortcut as the
+ * Windows Application User Model ID, and main sets the same id on the running
+ * process so the shortcut, the main window and the Rendering window all group
+ * under one taskbar button.
+ */
+export const APP_ID = 'org.cuemol.cuemol3'
