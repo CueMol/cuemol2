@@ -187,7 +187,7 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 |---|---|
 | 背景 | `--bg-base` `--bg-surface` `--bg-elevated` `--bg-panel-header` `--bg-input` `--bg-hover` `--bg-active` `--bg-tab-active` `--bg-tab-inactive` |
 | 境界線 | `--border` `--border-subtle` |
-| 文字 | `--text-strong` `--text-primary` `--text-secondary` `--text-muted` `--text-disabled` (この順に暗くなる階梯。詳細は下記) |
+| 文字 | `--text-strong` `--text-primary` `--text-secondary` `--text-muted` `--text-disabled` (この順に暗くなる階梯。詳細は下記)。状態を伝えるインライン文 (field 下の注記、panel の警告行) は `--text-warning` / `--text-error` (`--log-warn` / `--accent-red` の alias) |
 | アクセント | `--accent` `--accent-hover` `--accent-green` `--accent-red` `--accent-yellow` `--accent-glow` `--accent-selected` `--accent-selected-glow` |
 | クローム | `--toolbar-bg` `--statusbar-bg` `--statusbar-text` `--scrollbar-thumb` `--scrollbar-thumb-hover` |
 | オーバーレイ | `--overlay-hover` `--overlay-subtle` `--overlay-focus` `--overlay-border-top` |

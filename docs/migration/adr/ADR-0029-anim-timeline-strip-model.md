@@ -336,12 +336,97 @@ were missed when strip dragging landed:
   Duration commit, so a legacy scene or a Generic-tab write that still holds a
   negative start is not silently moved by an unrelated edit.
 
+### Addendum -- unresolved chains, refused writes, and the Relative-to select
+
+An audit of the timing edits found the corner cases around relative time
+unguarded on every layer. C++ `AnimMgr::resolveTimeImpl` validates nothing up
+front: a `timeRefName` that names nothing, or that closes a loop, makes it
+throw half-way, and every later resolve fails the same way. The worker wrote
+such a name anyway (and committed the transaction), offered the elements that
+chain back in the Relative-to list, let the Generic tab write the chain fields
+raw, and called `resolveRelTime` unguarded from the strip edits -- so one
+broken element rolled back every move, add, delete and reorder while the
+inspector kept accepting writes. The renderer showed a dangling reference as
+"(absolute)", closed the inspector on any failed write as if the element had
+been deleted, drew a broken strip at a stale position with no mark, and let
+Play fail silently.
+
+**Resolution in TS, before any write.** `worker/server/services/anim/timeRefGraph.ts`
+mirrors the C++ rules (exact-name first match in list order, the element itself
+included, recursion so list order is irrelevant) over plain name / offset
+records. Every element gets a state -- `ok`, `missing` (its own reference
+names nothing), `cycle` (it sits on a loop; a self-reference is a loop of one),
+`upstream` (it chains to one of those) -- and the ok ones a TS-resolved
+absolute span. `checkTimeRef` / `checkName` are the validation table:
+ambiguous name (carried twice), no such name, the element itself, a reference
+that chains back (named as a path), a reference whose own timing does not
+resolve; an empty or duplicate name. `elementWrites.ts` plans each write so the
+checks, rounding and TimeValue allocation happen before the undo transaction
+opens and only wrapper assignments run inside it; a refused write returns a
+`Fail` with the reason and opens no transaction (an empty commit clears the
+redo stack). The structured inspector path and the Generic tab share the plans;
+the Generic tab reports `start` / `end` read-only (one span, edited as Start /
+Duration). Rename rejects empty and duplicate names and cascades to dependents
+only from the name's first carrier. `detachDependents` uses the graph too: a
+dependent whose chain already fails keeps its offsets, and deleting a later
+duplicate detaches nothing.
+
+**One resolve policy.** No service calls `resolveRelTime` as a check any more
+(C++ `update()` resolves after every write, append and removal); the timeline
+listing keeps one guarded refresh for a freshly loaded file. `play` / `goTime`
+refuse an unresolved chain with the reason before C++ `start()` can throw after
+writing its timing fields.
+
+**On the wire.** Anim results follow the shared `Result` contract (`error`
+required on failure) with `gone: true` as the one failure the inspector closes
+on. `AnimElement.timeRefState` / `resolveError` and `AnimTimeline.resolveError`
+carry the state; an `ok` element's `absStartMs` / `absEndMs` come from the
+graph, a broken one keeps the last position C++ held. `siblings[]` carries
+`usable` plus a short reason. Strip edits are addressed by uid, not by the
+volatile index, and rounded to whole milliseconds.
+
+**Inspector.** Relative-to lists every candidate, disabling the unusable ones
+with the reason in the label (hiding them would look like elements were
+missing), and shows a dangling reference as a selected, disabled
+`(missing: NAME)` entry plus a warning, so one pick repairs it. A refused
+Relative-to write is explained under the field; a refused timing commit
+re-mirrors Start / Duration (`useRealtimeDragProp.resyncKey`) and raises the
+standard error alert; any other refused write re-seeds the form and alerts.
+A legacy negative start is still displayed floored at zero (the display
+grammar is unchanged; a leading minus is the relative-entry sign), but the
+Start field's floor follows the stored value so a no-change interaction cannot
+lift it, and a note states the stored offset.
+
+**Timeline.** A strip whose chain does not resolve is hatched with a warning
+ring and explains itself in its tooltip; a span before zero is drawn clamped
+to the axis and flagged rather than off-canvas where it could not be selected.
+While the chain is broken a warning line under the transport row states the
+reason and Play / skip / seek and the current-time field are disabled with it
+as their tooltip (Stop, Loop, the start camera and zoom stay live). A held
+strip preview ends when a fetched timeline carries the span that was written
+or the element vanishes (an unrelated refetch used to snap the strip back),
+with a timed fallback for a span C++ took differently. Refused edits and
+transport ops reach the user through the standard error alert, one at a time.
+
+**C++.** `AnimMgr::resolveRelTime` is all-or-nothing: on a throw every element
+keeps the absolute times it had before the call (`AnimMgrResolveTest`), so
+`update()` derives the length from a consistent state and a script user sees
+the last good position, never a mixture. `AnimObj` now initialises its resolve
+flags.
+
+Follow-ups, deliberately out of scope: strip-drag snapping; C++ `goTime` not
+running the final `onTimerImpl` when the target is at or past the end;
+disabled elements stretching `length`; `update()` stopping playback on any
+edit; Generic-tab detail drafts not re-mirroring after a refused write (all node
+kinds); a `fakeAnimMgr` for the worker testing harness.
+
 ### Known issues / scope
 - `AnimMgr.length` auto = `max(absEnd)`; `start>end` silent clamp; no per-frame
   position event (poll); `classNameToType` heuristic for element type; uid reuse
-  window minimised by a mount-time gone-check; `resolveRelTime()` can throw on a
-  cyclic/missing ref (swallowed per-field so it cannot roll back an unrelated
-  edit). Offline movie render is a separate workstream (see `dialog.anim-render`).
+  window minimised by a mount-time gone-check. An unresolvable chain (only
+  reachable from a legacy file or a script now) is reported per element on the
+  wire and blocks playback until repaired -- see the addendum above. Offline
+  movie render is a separate workstream (see `dialog.anim-render`).
 
 ### References
 - UXP: `uxp_gui/cuemol2/base/content/anim/` (`anim-panel.*`,
