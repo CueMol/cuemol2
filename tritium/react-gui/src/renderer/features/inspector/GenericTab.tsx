@@ -32,7 +32,8 @@ import {
   VectorField,
 } from "@renderer/h3-kit/form";
 import { AppIcon } from "@renderer/h3-kit/primitives";
-import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
+import type { GenericPropEntry, PropWriteOpts } from '@renderer/worker/shared/genericProps';
+import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";
 import { useColumnResize } from "@renderer/hooks/useColumnResize";
 
 // ------------------------------------------------------------
@@ -52,7 +53,12 @@ const GENERIC_COL_WIDTHS_KEY = "cuemol.inspector.genericTab.colWidths";
 interface GenericTabProps {
   entries: GenericPropEntry[];
   /** Write a property value (live-apply). */
-  onSetValue: (key: string, valueType: string, value: string | number | boolean) => void;
+  onSetValue: (
+    key: string,
+    valueType: string,
+    value: string | number | boolean,
+    opts?: PropWriteOpts,
+  ) => void;
   /** Restore a property to its C++ default. */
   onResetValue: (key: string) => void;
   /** True while the property list is being (re)fetched. */
@@ -128,41 +134,50 @@ interface DetailEditorProps {
   entry: GenericPropEntry;
   /** True while the property is sitting at its (not yet cleared) C++ default. */
   atDefault: boolean;
-  onSetValue: (key: string, valueType: string, value: string | number | boolean) => void;
+  onSetValue: (
+    key: string,
+    valueType: string,
+    value: string | number | boolean,
+    opts?: PropWriteOpts,
+  ) => void;
 }
 
 /**
- * Editor for one property. Mounted via `DetailPanel`'s `key` so its draft
- * state resets whenever the selected row changes.
- */
-
-/**
- * `object<TimeValue>` editor: a `TimeField` over the C++ timecode string. Owns
- * the live draft so the field can move while the committed value is unchanged,
- * and writes once per interaction when the value actually changed.
+ * `object<TimeValue>` editor: a `TimeField` over the C++ timecode string,
+ * realtime like `NumRow`: a gesture previews the property without undo, its
+ * release commits one undo step from where the gesture began, and a cancel
+ * restores that. The ms <-> string conversion happens at this boundary.
  */
 const TimeValueEditor: React.FC<{
   ms: number;
+  atDefault: boolean;
   disabled: boolean;
-  onCommit: (ms: number) => void;
-}> = ({ ms, disabled, onCommit }) => {
-  const [draft, setDraft] = useState(ms);
-  useEffect(() => {
-    setDraft(ms);
-  }, [ms]);
-  return (
-    <TimeField
-      value={draft}
-      onChange={setDraft}
-      onRelease={(v) => {
-        if (v !== ms) onCommit(v);
-      }}
-      onDragCancel={() => setDraft(ms)}
-      disabled={disabled}
-    />
-  );
+  onSet: (value: string, opts?: PropWriteOpts) => void;
+}> = ({ ms, atDefault, disabled, onSet }) => {
+  const dragProps = useRealtimeDragProp({
+    committed: ms,
+    committedIsDefault: atDefault,
+    realtime: true,
+    onPreview: (v) => onSet(msToCppTime(v), { mode: "preview" }),
+    onCommit: (original, v, wasDefault) => {
+      if (v === original) return;
+      onSet(msToCppTime(v), {
+        mode: "commit",
+        originalValue: msToCppTime(original),
+        originalWasDefault: wasDefault,
+      });
+    },
+    onAbort: (original, wasDefault) =>
+      onSet(msToCppTime(original), { mode: "abort", originalWasDefault: wasDefault }),
+  });
+  return <TimeField {...dragProps} disabled={disabled} />;
 };
 
+/**
+ * Editor for one property. Remounted (via `DetailPanel`'s `key`) when the
+ * selected row changes; a value change on the same row re-seeds the drafts in
+ * place, so a live preview refetch cannot unmount a field mid-gesture.
+ */
 const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValue }) => {
   // Value widgets are disabled for read-only props and while a resettable
   // property is sitting at its default. Clearing the "default" checkbox
@@ -174,6 +189,10 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
   // the numeric draft is a number.
   const [draft, setDraft] = useState<string>(String(entry.value));
   const [numDraft, setNumDraft] = useState<number>(Number(entry.value));
+  useEffect(() => {
+    setDraft(String(entry.value));
+    setNumDraft(Number(entry.value));
+  }, [entry.value]);
 
   const commitText = () => {
     if (draft !== String(entry.value)) {
@@ -265,8 +284,9 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
       return (
         <TimeValueEditor
           ms={ms}
+          atDefault={atDefault}
           disabled={disabled}
-          onCommit={(v) => onSetValue(entry.key, entry.type, msToCppTime(v))}
+          onSet={(v, opts) => onSetValue(entry.key, entry.type, v, opts)}
         />
       );
     }
@@ -294,20 +314,29 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
 
 interface DetailPanelProps {
   entry: GenericPropEntry;
-  onSetValue: (key: string, valueType: string, value: string | number | boolean) => void;
+  onSetValue: (
+    key: string,
+    valueType: string,
+    value: string | number | boolean,
+    opts?: PropWriteOpts,
+  ) => void;
   onResetValue: (key: string) => void;
 }
 
 /**
- * Bottom detail area for the selected property. Mounted with a `key` that
- * encodes the entry's value / default flag, so that `defaultCleared` resets
- * whenever the row changes or the property list is refetched after a write.
+ * Bottom detail area for the selected property. Keyed by the entry's key
+ * only: a refetch that changes the value or the default flag re-seeds the
+ * state below instead of remounting the panel, because a realtime drag
+ * refetches while the field is still held and a remount would cancel it.
  */
 const DetailPanel: React.FC<DetailPanelProps> = ({ entry, onSetValue, onResetValue }) => {
   // Local override mirroring UXP's `defaultToggleCheck`: unchecking "default"
   // re-enables the editor without changing the value. There is no immutable
   // `entry.isdefault` to mutate, so the cleared state lives here instead.
   const [defaultCleared, setDefaultCleared] = useState(false);
+  useEffect(() => {
+    setDefaultCleared(false);
+  }, [entry.value, entry.isdefault]);
 
   const atDefault = entry.hasdefault && entry.isdefault && !defaultCleared;
 
@@ -445,7 +474,7 @@ export const GenericTab: React.FC<GenericTabProps> = ({
       <div className="insp-generic-detail">
         {selectedEntry ? (
           <DetailPanel
-            key={`${selectedEntry.key}:${String(selectedEntry.value)}:${selectedEntry.isdefault}`}
+            key={selectedEntry.key}
             entry={selectedEntry}
             onSetValue={onSetValue}
             onResetValue={onResetValue}

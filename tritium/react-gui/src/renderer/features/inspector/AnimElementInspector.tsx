@@ -39,6 +39,7 @@ import {
 import { GenericTab } from "./GenericTab";
 import { InspectorResetAllButton } from "./InspectorResetAllButton";
 import { useAnimGenericProps } from "@renderer/features/inspector/anim/useAnimGenericProps";
+import { useAnimTimingDrag, type TimingWriteOpts } from "@renderer/features/inspector/anim/useAnimTimingDrag";
 import type { AsyncCueMol } from "@renderer/worker/client/AsyncCueMol";
 import type {
   AnimElementDetail,
@@ -46,6 +47,7 @@ import type {
   AnimRendererOption,
   AnimCameraOption,
   AnimMolOption,
+  AnimTimingMs,
   SetAnimElementPropArgs,
 } from "@renderer/worker/server/services/anim/anim.service";
 import { SEM_ANIM, SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "@renderer/event";
@@ -243,6 +245,52 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     [adopt],
   );
 
+  /**
+   * Write the `timing` pair in one of the drag modes. A preview neither
+   * advances the fetch token nor adopts anything: its response carries no
+   * detail (that is not "gone"), and it must not invalidate a refetch that a
+   * SEM_ANIM event started meanwhile. Commit / abort adopt the returned
+   * detail like any other write.
+   */
+  const writeTiming = useCallback(
+    (value: AnimTimingMs, opts: TimingWriteOpts) => {
+      const c = cmRef.current;
+      const sid = sceneIdRef.current;
+      const u = uidRef.current;
+      if (!c) return;
+      const preview = opts.mode === "preview";
+      const token = preview ? 0 : ++fetchToken.current;
+      return c
+        .invokeService("setAnimElementProp", {
+          sceneId: sid,
+          uid: u,
+          prop: "timing",
+          value,
+          mode: opts.mode,
+          original: opts.original,
+        })
+        .then((res) => {
+          if (preview) {
+            if (res?.gone) onGoneRef.current(sid);
+            return;
+          }
+          if (token !== fetchToken.current) return;
+          if (!res || res.gone || !res.detail) {
+            onGoneRef.current(sid);
+            return;
+          }
+          adopt(res.detail);
+        })
+        .catch((e: unknown) => console.warn("setAnimElementProp (timing) failed:", e));
+    },
+    [adopt],
+  );
+
+  const timing = useAnimTimingDrag({
+    committed: detail ? { startMs: detail.common.startMs, endMs: detail.common.endMs } : null,
+    write: writeTiming,
+  });
+
   const setField = useCallback((patch: Partial<FormState>) => {
     editingRef.current = true;
     setForm((f) => (f ? { ...f, ...patch } : f));
@@ -300,27 +348,6 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   // UXP parity: the x/y/z boxes are editable only in Cartesian mode.
   const axisSel = axisMode ?? axisPreset(axis.x, axis.y, axis.z);
   const axisEditable = axisSel === "cart";
-
-  // Start / Duration each commit one TimeValue; end = start + duration. The
-  // committed ms is explicit (the other field is read from the current form).
-  // Only the DURATION is floored at 0: a relative element's start is measured
-  // from its reference's end, so a negative start (it overlaps the element it
-  // chains after) is legal. Clamping it here used to move such an element to
-  // its reference's end as a side effect of editing the duration.
-  // `onRelease` fires at the end of every interaction, changed or not; only a
-  // changed value is written, so a no-op release pushes no undo step.
-  const commitStart = (ms: number) => {
-    setField({ startMs: ms });
-    if (ms === detail.common.startMs) return;
-    const dur = Math.max(0, form.durationMs);
-    commit("timing", { startMs: ms, endMs: ms + dur });
-  };
-  const commitDuration = (ms: number) => {
-    setField({ durationMs: ms });
-    if (ms === detail.common.endMs - detail.common.startMs) return;
-    const start = form.startMs;
-    commit("timing", { startMs: start, endMs: start + Math.max(0, ms) });
-  };
 
   /** Write one axis component, keeping the other two; near-zero keeps the old vector. */
   const commitAxisComp = (key: "x" | "y" | "z", s: string) => {
@@ -380,25 +407,13 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             ))}
           </SelectField>
         </Field>
+        {/* Start / Duration preview live (the strip follows) and commit one
+            undo step on release; see useAnimTimingDrag. */}
         <Field label="Start time">
-          <TimeField
-            value={form.startMs}
-            min={0}
-            onChange={(v) => setField({ startMs: v })}
-            onRelease={commitStart}
-            onDragCancel={() => setField({ startMs: detail.common.startMs })}
-          />
+          <TimeField {...timing.start} min={0} />
         </Field>
         <Field label="Duration">
-          <TimeField
-            value={form.durationMs}
-            min={0}
-            onChange={(v) => setField({ durationMs: v })}
-            onRelease={commitDuration}
-            onDragCancel={() =>
-              setField({ durationMs: detail.common.endMs - detail.common.startMs })
-            }
-          />
+          <TimeField {...timing.duration} min={0} />
         </Field>
         <Field label="Quadric">
           <DragNumericField

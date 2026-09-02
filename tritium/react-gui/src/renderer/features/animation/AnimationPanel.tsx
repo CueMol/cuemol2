@@ -173,10 +173,21 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
     }
   }, []);
 
+  /** End a playhead scrub: drop the local preview and seek once. */
+  const commitScrub = useCallback(
+    (ms: number) => {
+      setScrubMs(null);
+      seek(ms);
+    },
+    [seek],
+  );
+  const cancelScrub = useCallback(() => setScrubMs(null), []);
+
   /**
    * Begin a playhead scrub on the ruler. Tracks the position locally during
    * the drag (no service calls) and commits a single seek on mouse-up. A bare
-   * click (no movement) also commits one seek at the click position.
+   * click (no movement) also commits one seek at the click position. The
+   * transport's current-time field shares this contract (`commitScrub`).
    */
   const handleRulerMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -194,14 +205,12 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
       const onUp = (ev: MouseEvent) => {
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
-        const ms = toMs(ev.clientX);
-        setScrubMs(null);
-        seek(ms);
+        commitScrub(toMs(ev.clientX));
       };
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
     },
-    [canControl, contentMs, pxPerMs, seek],
+    [canControl, contentMs, pxPerMs, commitScrub],
   );
 
   /**
@@ -352,6 +361,10 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
         canControl={canControl}
         loop={tmgr.loop}
         cameras={timeline?.cameras ?? []}
+        playheadMs={playheadMs}
+        onScrubPreview={setScrubMs}
+        onScrubCommit={commitScrub}
+        onScrubCancel={cancelScrub}
         onPlayPause={transport.togglePlay}
         onStop={transport.stop}
         onSkipStart={() => seek(0)}

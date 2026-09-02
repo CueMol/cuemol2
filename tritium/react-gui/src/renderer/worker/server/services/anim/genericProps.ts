@@ -41,37 +41,63 @@ export function getAnimElementGenericProps(
   return { ok: true, entries: readAnimGenericEntries(found.obj) };
 }
 
-/** Write or reset one generic property (undoable); returns the fresh list. */
+/**
+ * Write or reset one generic property and return the fresh list.
+ *
+ * A plain write is one undo transaction. A `set` also takes the realtime drag
+ * protocol of `setGenericProp` (`args.mode`): a `preview` writes without a
+ * transaction and returns no entries (the parent drives the field from its
+ * own draft), an `abort` restores the pre-drag value carried in `value` -- or
+ * the default flag, when `originalWasDefault` -- without one, and a `commit`
+ * carrying `originalValue` restores that first, outside the transaction, so
+ * the single recorded step spans the whole drag and undo reverts the default
+ * state too. The uid is resolved before any transaction opens: a vanished
+ * element must not commit an empty transaction, which clears redo.
+ */
 export function setAnimElementGenericProp(
   ctx: WorkerContext,
   args: SetAnimElementGenericPropArgs,
 ): AnimGenericPropsResult {
+  const fail: AnimGenericPropsResult = { ok: false, entries: [] };
   const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm) return { ok: false, entries: [] };
+  if (!sm) return fail;
   const { scene, mgr } = sm;
-  let gone = false;
+  const found = findByUid(mgr, args.uid);
+  if (!found) return { ok: false, gone: true, entries: [] };
+  const obj = found.obj as unknown as BaseWrapper;
+  const mode = args.mode ?? "commit";
+
+  if (mode !== "commit") {
+    if (args.op !== "set") return fail;
+    try {
+      if (mode === "preview") obj.setProp(args.propName, args.value);
+      else if (args.originalWasDefault) obj.resetProp(args.propName);
+      else obj.setProp(args.propName, args.value);
+    } catch (e) {
+      console.warn(`setAnimElementGenericProp (${mode}) failed:`, e);
+      return fail;
+    }
+    return { ok: true, entries: [] };
+  }
+
   const label =
     args.op === "reset"
       ? `Reset property: ${args.propName}`
       : `Change property: ${args.propName}`;
   try {
+    if (args.op === "set" && args.originalValue !== undefined) {
+      if (args.originalWasDefault) obj.resetProp(args.propName);
+      else obj.setProp(args.propName, args.originalValue);
+    }
     withUndoTxn(scene, label, () => {
-      const found = findByUid(mgr, args.uid);
-      if (!found) {
-        gone = true;
-        return;
-      }
-      const obj = found.obj as unknown as BaseWrapper;
       if (args.op === "reset") obj.resetProp(args.propName);
       else obj.setProp(args.propName, args.value);
     });
   } catch (e) {
     console.warn("setAnimElementGenericProp failed:", e);
-    return { ok: false, entries: [] };
+    return fail;
   }
-  if (gone) return { ok: false, gone: true, entries: [] };
-  const found = findByUid(mgr, args.uid);
-  return { ok: true, entries: found ? readAnimGenericEntries(found.obj) : [] };
+  return { ok: true, entries: readAnimGenericEntries(found.obj) };
 }
 
 /** Reset several generic properties to their C++ defaults in one undo step. */

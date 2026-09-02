@@ -144,14 +144,18 @@ export function useRealtimeDragProp(
     }, [])
 
     const onDragCancel = useCallback(() => {
+        const wasDrag = draggingRef.current
         const wasRealtime = realtimeRef.current
         draggingRef.current = false
         pendingRef.current = null
-        const original = originalRef.current
+        // A run that was never announced (a single-shot step abandoned by an
+        // unmount) previewed nothing, so the object is still at the committed
+        // value and `originalRef` belongs to an earlier gesture.
+        const original = wasDrag ? originalRef.current : committedRef.current
         setDraft(original)
-        // Only a realtime drag moved the object; a plain one never left
-        // `original`, so there is nothing to restore.
-        if (wasRealtime) cbRef.current.onAbort?.(original, originalIsDefaultRef.current)
+        // Only an announced realtime drag moved the object; anything else never
+        // left `original`, so there is nothing to restore.
+        if (wasRealtime && wasDrag) cbRef.current.onAbort?.(original, originalIsDefaultRef.current)
     }, [])
 
     return { value: draft, realtime, onChange, onDragStart, onRelease, onDragCancel }

@@ -8,6 +8,7 @@
 import type { AnimAddType, AnimMgrState } from "@renderer/types";
 import type { AnimElementType } from "@renderer/types";
 import { type GenericPropEntry } from "@renderer/worker/server/services/helpers/parseGenericProps";
+import type { PropWriteMode } from "@renderer/worker/shared/genericProps";
 // --- detail shapes ---
 
 /** Renderer-side default fps for the ms<->frame ruler readout. */
@@ -188,6 +189,12 @@ export type AnimElementPropKey =
   | "startValue"
   | "endValue";
 
+/** An element's RELATIVE start / end in ms -- what the `timing` prop writes. */
+export interface AnimTimingMs {
+  startMs: number;
+  endMs: number;
+}
+
 export interface SetAnimElementPropArgs {
   sceneId: number;
   uid: number;
@@ -196,13 +203,25 @@ export interface SetAnimElementPropArgs {
     | string
     | number
     | boolean
-    | { startMs: number; endMs: number } // prop === "timing"
+    | AnimTimingMs // prop === "timing"
     | { x: number; y: number; z: number }; // prop === "axis"
+  /**
+   * How the write is recorded (`commit` when omitted). `preview` and `abort`
+   * are the realtime-drag modes of `PropWriteMode` and are accepted for
+   * `timing` only: a preview writes without an undo transaction, an abort
+   * restores `original` without one. A commit that carries `original`
+   * restores it first, outside the transaction, so the recorded step is
+   * `original -> value` and not `last preview -> value`.
+   */
+  mode?: PropWriteMode;
+  /** Pre-drag timing: required by `abort`, optional for `commit`. */
+  original?: AnimTimingMs;
 }
 
 export interface SetAnimElementPropResult {
   ok: boolean;
   gone?: boolean;
+  /** The refreshed detail; omitted by a `preview` write. */
   detail?: AnimElementDetail;
 }
 
@@ -241,6 +260,16 @@ export interface SetAnimElementGenericPropArgs {
   op: "set" | "reset";
   valueType: string;
   value?: string | number | boolean;
+  /**
+   * Realtime-drag protocol, as on `setGenericProp`: `preview` writes without
+   * an undo transaction, `abort` restores the pre-drag value (or the default
+   * flag when `originalWasDefault`) without one, and a `commit` (default)
+   * carrying `originalValue` restores it first so the recorded step spans
+   * the whole drag. `set` only; a reset never previews.
+   */
+  mode?: PropWriteMode;
+  originalValue?: string | number | boolean;
+  originalWasDefault?: boolean;
 }
 
 export interface ResetAnimElementGenericPropsArgs {

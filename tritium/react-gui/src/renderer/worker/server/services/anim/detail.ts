@@ -23,6 +23,7 @@ import {
 import { withUndoTxn } from "../withUndoTxn";
 import type { AnimElementType } from "@renderer/types";
 import type {
+  AnimTimingMs,
   AnimElementCommon,
   AnimElementDetail,
   AnimElementPropKey,
@@ -292,7 +293,26 @@ function cascadeTimeRefRename(mgr: AnimMgr, uid: number, oldName: string, newNam
   });
 }
 
-/** Write one property of the element (undoable; returns the refreshed detail). */
+function sameTiming(a: AnimTimingMs, b: AnimTimingMs): boolean {
+  return a.startMs === b.startMs && a.endMs === b.endMs;
+}
+
+/**
+ * Write one property of the element and return the refreshed detail.
+ *
+ * A plain write is one undo transaction. `timing` also takes the realtime
+ * drag protocol (`args.mode`, see `SetAnimElementPropArgs`): a `preview`
+ * writes without a transaction -- the change still reaches the timeline
+ * through the prop-change event, which `AnimMgr::propChanged` fires whether
+ * or not a transaction is open -- and returns no detail; an `abort` restores
+ * `original` without one; a `commit` carrying `original` restores it outside
+ * the transaction and writes `value` inside it, so undo goes back to where
+ * the drag began. When `original` equals `value` only the restore happens: an
+ * empty transaction would still clear the redo stack.
+ *
+ * The uid is resolved before any transaction opens for the same reason -- a
+ * vanished element used to commit an empty transaction and lose redo.
+ */
 export function setAnimElementProp(
   ctx: WorkerContext,
   args: SetAnimElementPropArgs,
@@ -300,30 +320,48 @@ export function setAnimElementProp(
   const sm = resolveSceneMgr(ctx, args.sceneId);
   if (!sm) return { ok: false };
   const { scene, mgr } = sm;
-  let gone = false;
+  const found = findByUid(mgr, args.uid);
+  if (!found) return { ok: false, gone: true };
+  const mode = args.mode ?? "commit";
+
+  if (mode !== "commit") {
+    if (args.prop !== "timing") return { ok: false };
+    const target = mode === "preview" ? (args.value as AnimTimingMs) : args.original;
+    if (!target) return { ok: false };
+    try {
+      applyProp(ctx, mgr, found.obj, "timing", target);
+    } catch {
+      return { ok: false };
+    }
+    if (mode === "preview") return { ok: true };
+    const detail = buildDetail(mgr, args.uid);
+    return detail ? { ok: true, detail } : { ok: false, gone: true };
+  }
+
   try {
-    withUndoTxn(scene, `Change animation: ${args.prop}`, () => {
-      const found = findByUid(mgr, args.uid);
-      if (!found) {
-        gone = true;
-        return;
-      }
-      // Capture the old name before writing so a rename can cascade to the
-      // siblings that reference it by timeRefName.
-      const oldName = args.prop === "name" ? safeStr(() => found.obj.name) : "";
-      applyProp(ctx, mgr, found.obj, args.prop, args.value);
-      if (args.prop === "name") {
-        const newName = String(args.value);
-        if (oldName && newName !== oldName) {
-          cascadeTimeRefRename(mgr, args.uid, oldName, newName);
-          tryResolveRel(mgr);
+    let record = true;
+    if (args.prop === "timing" && args.original) {
+      applyProp(ctx, mgr, found.obj, "timing", args.original);
+      record = !sameTiming(args.original, args.value as AnimTimingMs);
+    }
+    if (record) {
+      withUndoTxn(scene, `Change animation: ${args.prop}`, () => {
+        // Capture the old name before writing so a rename can cascade to the
+        // siblings that reference it by timeRefName.
+        const oldName = args.prop === "name" ? safeStr(() => found.obj.name) : "";
+        applyProp(ctx, mgr, found.obj, args.prop, args.value);
+        if (args.prop === "name") {
+          const newName = String(args.value);
+          if (oldName && newName !== oldName) {
+            cascadeTimeRefRename(mgr, args.uid, oldName, newName);
+            tryResolveRel(mgr);
+          }
         }
-      }
-    });
+      });
+    }
   } catch {
     return { ok: false };
   }
-  if (gone) return { ok: false, gone: true };
   const detail = buildDetail(mgr, args.uid);
   if (!detail) return { ok: false, gone: true };
   return { ok: true, detail };

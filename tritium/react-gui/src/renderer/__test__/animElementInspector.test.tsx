@@ -172,11 +172,15 @@ describe("AnimElementInspector", () => {
     });
     act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     await flushPromises();
+    // A typed commit is not a drag: it commits against the committed span,
+    // which the worker restores (a no-op here) before the transaction.
     expect(cm.invokeService).toHaveBeenCalledWith("setAnimElementProp", {
       sceneId: 1,
       uid: 7,
       prop: "timing",
       value: { startMs: -500, endMs: 1500 },
+      mode: "commit",
+      original: { startMs: -500, endMs: 500 },
     });
     unmount();
   });
@@ -370,6 +374,52 @@ describe("AnimElementInspector", () => {
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
     expect(cellX().disabled).toBe(false);
+    unmount();
+  });
+});
+
+describe("AnimElementInspector realtime timing", () => {
+  it("a Start drag previews each frame and commits once from the pre-drag span", async () => {
+    const cm = makeCm(detail({ type: "NoopAnimObj", startMs: 1000, endMs: 3000 }));
+    const { container, unmount } = mountTree(
+      <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
+    );
+    await flushPromises();
+    const field = fieldByLabel(container, "Start time")!.querySelector(".h3-form-time") as HTMLElement;
+    const seg = field.querySelector('[data-unit="s"]') as HTMLElement;
+    act(() => seg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    act(() => {
+      const ev = new MouseEvent("mousemove");
+      Object.defineProperty(ev, "movementX", { value: 20, configurable: true }); // +5 s
+      document.dispatchEvent(ev);
+    });
+    await flushPromises();
+    expect(cm.invokeService).toHaveBeenCalledWith("setAnimElementProp", {
+      sceneId: 1,
+      uid: 7,
+      prop: "timing",
+      value: { startMs: 6000, endMs: 8000 },
+      mode: "preview",
+      original: { startMs: 1000, endMs: 3000 },
+    });
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    await flushPromises();
+    const commits = (cm.invokeService.mock.calls as unknown as [string, { mode?: string }][]).filter(
+      (c) => c[0] === "setAnimElementProp" && c[1].mode === "commit",
+    );
+    expect(commits).toEqual([
+      [
+        "setAnimElementProp",
+        {
+          sceneId: 1,
+          uid: 7,
+          prop: "timing",
+          value: { startMs: 6000, endMs: 8000 },
+          mode: "commit",
+          original: { startMs: 1000, endMs: 3000 },
+        },
+      ],
+    ]);
     unmount();
   });
 });

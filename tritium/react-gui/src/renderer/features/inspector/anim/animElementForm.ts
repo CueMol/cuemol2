@@ -6,7 +6,8 @@
  * The editor keeps its own `FormState` rather than editing the fetched detail
  * in place, because the fields are text while the element stores numbers: a
  * half-typed value has to survive on screen without being written. These turn
- * one into the other, and none of them needs React.
+ * one into the other, and none of them needs React. Start / Duration are not
+ * in it: they are realtime drag fields owned by `useAnimTimingDrag`.
  */
 
 import type { AnimElementDetail } from '@renderer/worker/server/services/anim/anim.service';
@@ -25,8 +26,6 @@ export const TYPE_LABEL: Record<string, string> = {
 export interface FormState {
   name: string;
   quadricPct: number;
-  startMs: number;
-  durationMs: number;
   angle: number;
   tgtAlpha: number;
   direction: number;
@@ -41,8 +40,6 @@ export function detailToForm(d: AnimElementDetail): FormState {
   return {
     name: c.name,
     quadricPct: c.quadric * 100,
-    startMs: c.startMs,
-    durationMs: c.endMs - c.startMs,
     angle: t.angle ?? 0,
     tgtAlpha: t.tgtAlpha ?? 1,
     direction: t.direction ?? 0,

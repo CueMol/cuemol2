@@ -549,3 +549,78 @@ describe("AnimationPanel inspector wiring", () => {
     unmount();
   });
 });
+
+describe("AnimationPanel current-time field", () => {
+  beforeEach(() => {
+    mockTimeline = timeline([el({ uid: 1 })]);
+    mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
+  });
+
+  const timeField = (container: HTMLElement) =>
+    container.querySelector(".anim-readout .h3-form-time") as HTMLElement;
+  const fieldText = (container: HTMLElement) =>
+    timeField(container).querySelector(".h3-form-time-segs")?.textContent;
+  const moveBy = (dx: number) => {
+    const ev = new MouseEvent("mousemove");
+    Object.defineProperty(ev, "movementX", { value: dx, configurable: true });
+    act(() => document.dispatchEvent(ev));
+  };
+
+  it("seeks once to a typed time on Enter", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const field = timeField(container);
+    act(() => field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    const input = field.querySelector("input") as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    act(() => {
+      setter?.call(input, "0:02.000");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    expect(mockTransport.seek).toHaveBeenCalledTimes(1);
+    expect(mockTransport.seek).toHaveBeenCalledWith(2000);
+    unmount();
+  });
+
+  it("previews the playhead locally while dragging and seeks once on release", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const seg = timeField(container).querySelector('[data-unit="s"]') as HTMLElement;
+    act(() => seg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    moveBy(20); // 4 px per second -> +5 s
+    expect(fieldText(container)).toBe("0:05.000");
+    expect(mockTransport.seek).not.toHaveBeenCalled();
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    expect(mockTransport.seek).toHaveBeenCalledTimes(1);
+    expect(mockTransport.seek).toHaveBeenCalledWith(5000);
+    unmount();
+  });
+
+  it("drops the preview and does not seek when the drag is abandoned", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const seg = timeField(container).querySelector('[data-unit="s"]') as HTMLElement;
+    act(() => seg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    moveBy(20);
+    act(() => document.dispatchEvent(new Event("pointerlockchange"))); // Esc
+    expect(fieldText(container)).toBe("0:00.000");
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    expect(mockTransport.seek).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it("is disabled without an active view", () => {
+    mockTransport.canControl = false;
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={undefined} />,
+    );
+    expect(timeField(container).classList.contains("is-disabled")).toBe(true);
+    expect(timeField(container).tabIndex).toBe(-1);
+    unmount();
+  });
+});

@@ -162,10 +162,11 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   debounce), so an Explorer add / delete / rename keeps the checklist and the
   camera / mol selects current (they previously fetched only on scene change).
 - **timeedit:** Start / Duration use the reusable h3-kit `TimeField`
-  (`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm` / `H:MM:SS.mmm`;
+  (`h3-kit/form/TimeField/`: ms <-> `M:SS.mmm` / `H:MM:SS.mmm`;
   `formatMs` / `parseTime` exported) instead of raw-ms DragNumericFields,
   mirroring the UXP `timeedit` widget. end = start + duration commits one
-  `timing` write; no worker change. Its interaction model is covered below.
+  `timing` write. Its interaction model is covered below (first as the
+  `DragNumericField` preset, then the segmented v2 that replaced it).
 
 ### TimeField interaction (why not UXP's segmented spinner)
 
@@ -210,6 +211,61 @@ a key step after the click's select-all parked the caret at offset 0, so repeats
 drifted from seconds to minutes (the widget now restores "whole draft selected"
 instead); and a pending key-step hold also fired on the keyup after Enter,
 committing the same value twice.
+
+### TimeField v2 -- segmented editor, realtime timing preview, transport time entry
+
+The `DragNumericField` preset above was replaced by an independent widget
+(`h3-kit/form/TimeField/`; its file header carries the full interaction table).
+The preset's single value span could not hold an active segment outside edit
+mode, so the spin buttons and Up / Down could only use the caret's segment
+while the text editor was open, and the `format` / `parse` / `stepper` /
+`resolveStep` hatches it needed on `DragNumericField` had no other user (they
+are removed again).
+
+Model (Blender / After Effects style): `H:MM:SS.mmm` split into segments, one
+always active (seconds by default, UXP's `_fieldSecond`). A click selects; a
+drag on a segment scrubs by its unit, with the delta snapped rather than the
+value so the other segments survive; Up / Down step the active segment, a held
+key being one run and so one undo step; Left / Right / Home / End move it;
+digits overwrite it and carry (`75` s -> 1:15); Backspace zeroes it; the
+stepper shows on hover and auto-repeats on the active segment; Ctrl / Cmd +
+wheel steps the hovered segment; double-click / Enter / F2 / `+` `-` open the
+expression editor, whose typed grammar is unchanged. Shift is the precision
+modifier on every channel (a tenth of the unit and of the drag rate) and
+Ctrl / Cmd is x10 -- the kit's `DragNumericField` and Blender's convention,
+deliberately not Figma's Shift = x10; the larger nudge is one segment to the
+left. The active segment is tracked by unit, not index, so it survives the
+hours segment appearing. The lifecycle is the `DragNumericField` contract
+(`onChange` per step, `onRelease` exactly once per interaction -- also when
+nothing changed -- `onDragStart` for a run that will preview, `onDragCancel`
+for an abandoned run in either mode), enforced by one run object, so
+`useRealtimeDragProp` plugs in unchanged.
+
+Realtime timing preview (the inspector's Start / Duration and the Generic tab's
+`TimeValue` rows): `setAnimElementProp` (for `timing`) and
+`setAnimElementGenericProp` take the `preview` / `commit` / `abort` modes of
+`setGenericProp`. A preview is a transaction-free write; `AnimMgr::propChanged`
+fires `SEM_ANIM` regardless, so the strip and the ruler follow through the
+existing refetch. A commit carries the pre-drag pair as `original`: the worker
+restores it outside the transaction and writes the value inside, so undo is one
+`original -> value` step; when the two are equal only the restore happens, since
+an empty transaction still clears the redo stack. `useAnimTimingDrag` derives
+the un-dragged half of the pair from a snapshot taken at drag start rather than
+from the committed detail, which the preview refetch moves. Two latent bugs
+were fixed on the way: both anim write services opened their transaction before
+resolving the uid, so a vanished element committed an empty transaction and lost
+redo; and the Generic tab keyed its detail panel by value, so the mid-drag
+refetch remounted -- and thereby cancelled -- the field. The 3D view is not
+re-seeked per frame or on release: an `AnimObj` prop write is not replayed into
+the view until the next `goTime`, and a property edit should not carry a
+non-undoable transport side effect. Follow-up: a seek per coalesced preview.
+
+Transport: the current-time readout is the same `TimeField`, on the ruler's
+scrub contract -- a gesture previews the playhead locally and seeks once
+(`animGoTime`, not undoable) when it ends, so a long timeline is not re-seeked
+per mouse move, and a typed timecode seeks on Enter. The length beside it stays
+read-only (the manager derives it). Editing while playing ends in a pause, as
+`goTime` does.
 
 ### Phase 8 -- start camera (`AnimMgr.startcam`)
 

@@ -358,3 +358,215 @@ describe("anim.service getAnimTargetOptions", () => {
     expect(res.cameras).toEqual([{ name: "camA" }, { name: "camB" }]);
   });
 });
+
+describe("anim.service setAnimElementProp realtime timing", () => {
+  // An AnimObj whose start / end setters log, so the order of a restore, the
+  // transaction, and the write can be pinned.
+  function spiedObj(uid: number, log: string[]) {
+    const o = makeObj({ uid, name: "A", className: "SimpleSpin" });
+    let start = o.start;
+    let end = o.end;
+    Object.defineProperty(o, "start", {
+      get: () => start,
+      set: (v: { millisec: number }) => {
+        start = v;
+        log.push(`start=${v.millisec}`);
+      },
+    });
+    Object.defineProperty(o, "end", {
+      get: () => end,
+      set: (v: { millisec: number }) => {
+        end = v;
+        log.push(`end=${v.millisec}`);
+      },
+    });
+    return o;
+  }
+
+  function loggedCtx(log: string[], opts: { resolveThrows?: boolean } = {}) {
+    const h = makeCtx({ objs: [spiedObj(5, log)], ...opts });
+    h.startUndoTxn.mockImplementation(() => {
+      log.push("startTxn");
+    });
+    h.commitUndoTxn.mockImplementation(() => {
+      log.push("commitTxn");
+    });
+    return h;
+  }
+
+  it("preview writes the times without a transaction and returns no detail", () => {
+    const log: string[] = [];
+    const { ctx, startUndoTxn, resolveRelTime } = loggedCtx(log);
+    const res = services.setAnimElementProp(ctx, {
+      sceneId: 1, uid: 5, prop: "timing", value: { startMs: 300, endMs: 1300 }, mode: "preview",
+    });
+    expect(res).toEqual({ ok: true });
+    expect(log).toEqual(["start=300", "end=1300"]);
+    expect(startUndoTxn).not.toHaveBeenCalled();
+    expect(resolveRelTime).toHaveBeenCalled();
+  });
+
+  it("commit with original restores it outside the transaction, then writes inside it", () => {
+    const log: string[] = [];
+    const { ctx, startUndoTxn } = loggedCtx(log);
+    const res = services.setAnimElementProp(ctx, {
+      sceneId: 1, uid: 5, prop: "timing", value: { startMs: 900, endMs: 1900 },
+      mode: "commit", original: { startMs: 0, endMs: 1000 },
+    });
+    expect(log).toEqual(["start=0", "end=1000", "startTxn", "start=900", "end=1900", "commitTxn"]);
+    expect(startUndoTxn).toHaveBeenCalledTimes(1);
+    expect(res.ok).toBe(true);
+    expect(res.detail).toBeDefined();
+  });
+
+  it("commit back to the original only restores: no empty transaction, so redo survives", () => {
+    const log: string[] = [];
+    const { ctx, startUndoTxn } = loggedCtx(log);
+    const res = services.setAnimElementProp(ctx, {
+      sceneId: 1, uid: 5, prop: "timing", value: { startMs: 0, endMs: 1000 },
+      mode: "commit", original: { startMs: 0, endMs: 1000 },
+    });
+    expect(log).toEqual(["start=0", "end=1000"]);
+    expect(startUndoTxn).not.toHaveBeenCalled();
+    expect(res.ok).toBe(true);
+    expect(res.detail).toBeDefined();
+  });
+
+  it("abort restores the original without a transaction", () => {
+    const log: string[] = [];
+    const { ctx, startUndoTxn } = loggedCtx(log);
+    const res = services.setAnimElementProp(ctx, {
+      sceneId: 1, uid: 5, prop: "timing", value: { startMs: 900, endMs: 1900 },
+      mode: "abort", original: { startMs: 0, endMs: 1000 },
+    });
+    expect(log).toEqual(["start=0", "end=1000"]);
+    expect(startUndoTxn).not.toHaveBeenCalled();
+    expect(res.ok).toBe(true);
+    expect(res.detail).toBeDefined();
+  });
+
+  it("abort without an original writes nothing", () => {
+    const log: string[] = [];
+    const { ctx } = loggedCtx(log);
+    const res = services.setAnimElementProp(ctx, {
+      sceneId: 1, uid: 5, prop: "timing", value: { startMs: 900, endMs: 1900 }, mode: "abort",
+    });
+    expect(res).toEqual({ ok: false });
+    expect(log).toEqual([]);
+  });
+
+  it("preview / abort are accepted for timing only", () => {
+    const objs = [makeObj({ uid: 5, name: "A", className: "SimpleSpin", props: { angle: 10 } })];
+    const { ctx, startUndoTxn } = makeCtx({ objs });
+    const res = services.setAnimElementProp(ctx, {
+      sceneId: 1, uid: 5, prop: "angle", value: 45, mode: "preview",
+    });
+    expect(res).toEqual({ ok: false });
+    expect(objs[0].angle).toBe(10);
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("a vanished uid opens no transaction (an empty commit would clear redo)", () => {
+    const objs = [makeObj({ uid: 5, name: "A", className: "SimpleSpin" })];
+    const { ctx, startUndoTxn, commitUndoTxn } = makeCtx({ objs });
+    const res = services.setAnimElementProp(ctx, {
+      sceneId: 1, uid: 999, prop: "timing", value: { startMs: 0, endMs: 1 },
+    });
+    expect(res).toEqual({ ok: false, gone: true });
+    expect(startUndoTxn).not.toHaveBeenCalled();
+    expect(commitUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("a resolveRelTime throw during a preview is swallowed", () => {
+    const log: string[] = [];
+    const { ctx } = loggedCtx(log, { resolveThrows: true });
+    const res = services.setAnimElementProp(ctx, {
+      sceneId: 1, uid: 5, prop: "timing", value: { startMs: 300, endMs: 1300 }, mode: "preview",
+    });
+    expect(res).toEqual({ ok: true });
+    expect(log).toEqual(["start=300", "end=1300"]);
+  });
+});
+
+describe("anim.service setAnimElementGenericProp realtime", () => {
+  function genericObj(uid: number, log: string[]) {
+    return {
+      uid,
+      setProp: vi.fn((k: string, v: unknown) => {
+        log.push(`set ${k}=${String(v)}`);
+      }),
+      resetProp: vi.fn((k: string) => {
+        log.push(`reset ${k}`);
+      }),
+      getPropsJSON: () => "[]",
+    } as unknown as Record<string, unknown>;
+  }
+
+  function loggedCtx(log: string[]) {
+    const h = makeCtx({ objs: [genericObj(5, log)] });
+    h.startUndoTxn.mockImplementation(() => {
+      log.push("startTxn");
+    });
+    h.commitUndoTxn.mockImplementation(() => {
+      log.push("commitTxn");
+    });
+    return h;
+  }
+
+  const base = { sceneId: 1, uid: 5, propName: "angle", op: "set" as const, valueType: "real" };
+
+  it("preview writes via setProp without a transaction and returns no entries", () => {
+    const log: string[] = [];
+    const { ctx, startUndoTxn } = loggedCtx(log);
+    const res = services.setAnimElementGenericProp(ctx, { ...base, value: 45, mode: "preview" });
+    expect(res).toEqual({ ok: true, entries: [] });
+    expect(log).toEqual(["set angle=45"]);
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("commit with originalValue restores it first, then writes in one transaction", () => {
+    const log: string[] = [];
+    const { ctx, startUndoTxn } = loggedCtx(log);
+    const res = services.setAnimElementGenericProp(ctx, {
+      ...base, value: 45, mode: "commit", originalValue: 10,
+    });
+    expect(log).toEqual(["set angle=10", "startTxn", "set angle=45", "commitTxn"]);
+    expect(startUndoTxn).toHaveBeenCalledTimes(1);
+    expect(res.ok).toBe(true);
+  });
+
+  it("commit from a default prop restores via resetProp so undo reverts the default flag", () => {
+    const log: string[] = [];
+    const { ctx } = loggedCtx(log);
+    services.setAnimElementGenericProp(ctx, {
+      ...base, value: 45, mode: "commit", originalValue: 10, originalWasDefault: true,
+    });
+    expect(log).toEqual(["reset angle", "startTxn", "set angle=45", "commitTxn"]);
+  });
+
+  it("abort restores the value it carries, or the default flag, without a transaction", () => {
+    const log: string[] = [];
+    const { ctx, startUndoTxn } = loggedCtx(log);
+    expect(services.setAnimElementGenericProp(ctx, { ...base, value: 10, mode: "abort" }))
+      .toEqual({ ok: true, entries: [] });
+    services.setAnimElementGenericProp(ctx, { ...base, value: 10, mode: "abort", originalWasDefault: true });
+    expect(log).toEqual(["set angle=10", "reset angle"]);
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("a reset never previews", () => {
+    const log: string[] = [];
+    const { ctx } = loggedCtx(log);
+    const res = services.setAnimElementGenericProp(ctx, { ...base, op: "reset", mode: "preview" });
+    expect(res.ok).toBe(false);
+    expect(log).toEqual([]);
+  });
+
+  it("a vanished uid opens no transaction", () => {
+    const log: string[] = [];
+    const { ctx, startUndoTxn } = loggedCtx(log);
+    const res = services.setAnimElementGenericProp(ctx, { ...base, uid: 999, value: 45 });
+    expect(res).toEqual({ ok: false, gone: true, entries: [] });
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+});
