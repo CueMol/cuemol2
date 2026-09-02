@@ -17,12 +17,10 @@ import { APP_MENU } from '@shared/menuTemplate'
 import type { AppMenuRole } from '@shared/menuTemplate'
 import { IPC } from '@shared/ipcChannels'
 import { useMenuDispatch } from '@renderer/hooks/useMenuDispatch'
-import { useRecentFiles } from '@renderer/features/file-io/useRecentFiles'
-import { useActiveViewValues } from '@renderer/state/activeView'
-import { useActiveScene } from '@renderer/state/workspace'
 import { MenuPanel } from '@renderer/shell/menu/MenuPanel'
 import { resolveAppMenuNodes } from '@renderer/shell/menu/resolveAppMenu'
 import type { MenuBarPick } from '@renderer/shell/menu/resolveAppMenu'
+import { useMenuBarState } from '@renderer/shell/menu/useMenuBarState'
 
 
 /**
@@ -31,10 +29,10 @@ import type { MenuBarPick } from '@renderer/shell/menu/resolveAppMenu'
  * `APP_MENU` group as a `MenuPanel` dropdown.
  */
 const MenuBarComponent: React.FC = () => {
-  // Menu state comes from the providers the menu mirrors, not from App.
-  const { viewProjection, viewCenterMark, sceneBgColor, exportAvailable } = useActiveViewValues()
-  const { hasScene } = useActiveScene()
-  const recentFiles = useRecentFiles()
+  // Menu state comes from the providers the menu mirrors, not from App. The
+  // same hook feeds the keybinding dispatcher, so a shortcut and its menu row
+  // always agree on whether the item is enabled.
+  const menuState = useMenuBarState()
   const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
@@ -124,14 +122,7 @@ const MenuBarComponent: React.FC = () => {
             {isOpen && (
               <div className="menubar__dropdown" style={{ left: dropdownPos.left }}>
                 <MenuPanel
-                  nodes={resolveAppMenuNodes(group.submenu, {
-                    viewProjection,
-                    viewCenterMark,
-                    sceneBgColor,
-                    hasScene,
-                    exportAvailable,
-                    recentFiles,
-                  })}
+                  nodes={resolveAppMenuNodes(group.submenu, menuState)}
                   onPick={handlePick}
                 />
               </div>

@@ -8,7 +8,10 @@
  * node, in the paint deck copies the selected row. Electron's clipboard
  * roles cannot express that -- a role runs natively before the renderer sees
  * the key -- so `shared/menuTemplate.ts` declares the items as custom
- * channels and they land here.
+ * channels and they land here. How the keystroke arrives differs per OS (the
+ * native menu on macOS, the renderer keybinding dispatcher on Windows /
+ * Linux -- see `shell/keybindings`); both enter through `dispatchMenuChannel`,
+ * so this router never needs to know.
  *
  * Resolution order for a clipboard action:
  *   1. text context -> the native edit, run by main against the focused
@@ -63,6 +66,15 @@ let modalOpen = false
  */
 export function setClipboardModalOpen(open: boolean): void {
   modalOpen = open
+}
+
+/**
+ * Whether a modal dialog is up, for the one other reader of that fact: the
+ * Windows / Linux keybinding dispatcher, which mirrors main's menu block by
+ * letting only the text-edit shortcuts through while a modal is open.
+ */
+export function isEditModalOpen(): boolean {
+  return modalOpen
 }
 
 /**

@@ -114,3 +114,17 @@ main 側では 5 チャネル (EDIT_CUT/COPY/PASTE + MENU_UNDO/REDO) に
 - UXP 参照 (いずれも「無い」ことの根拠): `cuemol2-menus.xul:100-168` (keyset 全量)、
   `:263-300` (Edit メニュー)、`workspace_panel.xul` / `coloring-deck-paint.xul` の
   context menu 定義、`shortcut-manager.js` (動的キー登録は view 移動 2 件のみ)
+
+## 追記 (2026-09-02): Windows / Linux ではキーが届いていなかった
+
+Context の「アクセラレータは全 OS でネイティブメニュー経由」という前提は Windows / Linux では
+成立していなかった。これらの OS ではキーがまず renderer (Blink) に渡り、Blink は Ctrl+X/C/V/A を
+editing command として (編集不可要素にフォーカスがあっても) 消費するため、メニューの accelerator は
+一度も fire せず、scene tree での Ctrl+C / V は最初から動いていなかった (macOS は NSMenu が先取り
+するので動いていた)。
+
+対処として、Windows / Linux では renderer の keydown dispatcher
+(`renderer/shell/keybindings/useMenuKeyBindings.ts`) が `ipcChannel` 項目の全ショートカットを所有し、
+隠し native menu からは accelerator を外した。本 doc の振り分け (`editClipboard.ts`) は
+`dispatchMenuChannel` より下流なので無変更で、mac と同じ経路を通る。詳細は
+[keyboard shortcuts](keyboard-shortcuts.md)。
