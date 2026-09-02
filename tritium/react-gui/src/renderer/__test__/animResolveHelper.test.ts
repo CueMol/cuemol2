@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { forEachAnimObj, collectAnimObjs } from '@renderer/worker/server/services/anim/resolve';
+import {
+    forEachAnimObj,
+    collectAnimObjs,
+    makeTimeValue,
+    readTimeRefInputs,
+    tryResolveRel,
+} from '@renderer/worker/server/services/anim/resolve';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { AnimMgr } from '@cuemol/core/src/wrappers/AnimMgr';
 import type { AnimObj } from '@cuemol/core/src/wrappers/AnimObj';
 
@@ -88,5 +95,58 @@ describe('collectAnimObjs', () => {
         const c = obj(3);
         const out = collectAnimObjs(makeMgr([a, 'throw', null, c]));
         expect(out.map((o) => (o as unknown as { uid: number }).uid)).toEqual([1, 3]);
+    });
+});
+
+describe('makeTimeValue', () => {
+    const ctxWith = (created: { millisec: number }[]) =>
+        ({
+            svc: {
+                createObj: (cls: string) => {
+                    if (cls !== 'TimeValue') return null;
+                    const t = { millisec: 0 };
+                    created.push(t);
+                    return t;
+                },
+            },
+        }) as unknown as WorkerContext;
+
+    it('rounds to whole milliseconds', () => {
+        const created: { millisec: number }[] = [];
+        expect(makeTimeValue(ctxWith(created), 1234.6)).toBe(created[0]);
+        expect(created[0].millisec).toBe(1235);
+    });
+
+    it('returns null when the TimeValue cannot be created', () => {
+        const ctx = { svc: { createObj: () => null } } as unknown as WorkerContext;
+        expect(makeTimeValue(ctx, 1)).toBeNull();
+    });
+});
+
+describe('tryResolveRel', () => {
+    it('returns null on success and the message on a throw', () => {
+        const okMgr = { resolveRelTime: () => undefined } as unknown as AnimMgr;
+        expect(tryResolveRel(okMgr)).toBeNull();
+        const badMgr = {
+            resolveRelTime: () => {
+                throw new Error('AnimMgr.resolve failed: AnimObj B cyclic ref');
+            },
+        } as unknown as AnimMgr;
+        expect(tryResolveRel(badMgr)).toBe('AnimMgr.resolve failed: AnimObj B cyclic ref');
+    });
+});
+
+describe('readTimeRefInputs', () => {
+    it('reads names and relative spans in index order, skipping broken entries', () => {
+        const a = {
+            uid: 1, name: 'A', timeRefName: '', start: { millisec: 0 }, end: { millisec: 1000 },
+        } as unknown as AnimObj;
+        const b = {
+            uid: 2, name: 'B', timeRefName: 'A', start: { millisec: 100 }, end: { millisec: 600 },
+        } as unknown as AnimObj;
+        expect(readTimeRefInputs(makeMgr([a, 'throw', null, b]))).toEqual([
+            { uid: 1, name: 'A', timeRefName: '', startMs: 0, endMs: 1000 },
+            { uid: 2, name: 'B', timeRefName: 'A', startMs: 100, endMs: 600 },
+        ]);
     });
 });

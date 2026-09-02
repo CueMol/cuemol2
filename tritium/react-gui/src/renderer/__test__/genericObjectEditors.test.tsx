@@ -11,7 +11,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { act } from 'react'
+import { act, useState } from 'react'
 import { mountTree } from '@renderer/__test__/helpers/testHarness'
 import {
   GenericTab,
@@ -147,6 +147,58 @@ describe('GenericTab object-property editors', () => {
     expect(
       view.container.querySelector('.insp-generic-detail-editor .h3-form-input'),
     ).not.toBeNull()
+    view.unmount()
+  })
+})
+
+describe('TimeValue editor realtime protocol', () => {
+  const timeEntry = (value: string) =>
+    entryOf({ key: 'start', type: 'object<TimeValue>', value })
+  const moveBy = (dx: number) => {
+    const ev = new MouseEvent('mousemove')
+    Object.defineProperty(ev, 'movementX', { value: dx, configurable: true })
+    act(() => document.dispatchEvent(ev))
+  }
+
+  it('previews as the C++ time string with mode preview, then commits once with the original', () => {
+    const onSetValue = vi.fn()
+    const view = mountTree(
+      <GenericTab entries={[timeEntry('1.50')]} onSetValue={onSetValue} onResetValue={vi.fn()} />,
+    )
+    act(() => (view.container.querySelector('tr.insp-gt-row') as HTMLElement).click())
+    const seg = view.container.querySelector(
+      '.insp-generic-detail-editor [data-unit="s"]',
+    ) as HTMLElement
+    act(() => seg.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })))
+    moveBy(20) // +5 s: 1050 ms -> 6050 ms, which LScrTime writes as "6.50"
+    expect(onSetValue).toHaveBeenCalledWith('start', 'object<TimeValue>', '6.50', { mode: 'preview' })
+    act(() => document.dispatchEvent(new MouseEvent('mouseup')))
+    expect(onSetValue).toHaveBeenLastCalledWith('start', 'object<TimeValue>', '6.50', {
+      mode: 'commit',
+      originalValue: '1.50',
+      originalWasDefault: false,
+    })
+    expect(onSetValue).toHaveBeenCalledTimes(2)
+    view.unmount()
+  })
+
+  it('keeps the detail editor mounted when the selected entry value changes', () => {
+    // A live preview refetches the list mid-gesture; a remount here would
+    // unmount the held field and cancel the gesture.
+    let setEntries!: (e: GenericPropEntry[]) => void
+    const Host: React.FC = () => {
+      const [entries, set] = useState<GenericPropEntry[]>([timeEntry('1.50')])
+      setEntries = set
+      return <GenericTab entries={entries} onSetValue={vi.fn()} onResetValue={vi.fn()} />
+    }
+    const view = mountTree(<Host />)
+    act(() => (view.container.querySelector('tr.insp-gt-row') as HTMLElement).click())
+    const before = view.container.querySelector('.insp-generic-detail-editor .h3-form-time')
+    expect(before).not.toBeNull()
+    act(() => setEntries([timeEntry('2.50')]))
+    const after = view.container.querySelector('.insp-generic-detail-editor .h3-form-time')
+    expect(after).toBe(before)
+    expect(after?.querySelector('.h3-form-time-segs')?.textContent).toBe('0:02.050')
     view.unmount()
   })
 })

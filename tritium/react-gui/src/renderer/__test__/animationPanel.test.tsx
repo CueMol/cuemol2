@@ -25,6 +25,13 @@ let mockTimeline: AnimTimeline | null = null;
 const inspector = vi.hoisted(() => ({ showAnimElement: vi.fn(), clearAnimElement: vi.fn() }));
 vi.mock("@renderer/state/inspector", () => ({ useInspectorActions: () => inspector }));
 
+// Refused edits / transport ops go through the app's error alert; the harness
+// mounts without its provider.
+const showErrorAlert = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+vi.mock("@renderer/dialogs/ErrorAlertDialogProvider", () => ({
+  useShowErrorAlert: () => showErrorAlert,
+}));
+
 vi.mock("@renderer/features/animation/useAnimTimeline", () => ({
   useAnimTimeline: () => ({ timeline: mockTimeline, loading: false, refetch: vi.fn() }),
 }));
@@ -43,8 +50,14 @@ interface MockTransport {
   adoptMgr: ReturnType<typeof vi.fn>;
 }
 let mockTransport: MockTransport;
+// The options the panel hands the hooks, to drive their onError from a test.
+let transportOpts: { onError?: (message: string) => void } = {};
+let editOpts: { onError?: (message: string) => void } = {};
 vi.mock("@renderer/features/animation/useAnimTransport", () => ({
-  useAnimTransport: () => mockTransport,
+  useAnimTransport: (opts: { onError?: (message: string) => void }) => {
+    transportOpts = opts;
+    return mockTransport;
+  },
 }));
 
 interface MockEdit {
@@ -55,7 +68,10 @@ interface MockEdit {
 }
 let mockEdit: MockEdit;
 vi.mock("@renderer/features/animation/useAnimEdit", () => ({
-  useAnimEdit: () => mockEdit,
+  useAnimEdit: (opts: { onError?: (message: string) => void }) => {
+    editOpts = opts;
+    return mockEdit;
+  },
 }));
 
 function defaultEdit(): MockEdit {
@@ -84,6 +100,7 @@ function el(over: Partial<AnimElement>): AnimElement {
     absStartMs: 0,
     absEndMs: 1000,
     quadric: 0,
+    timeRefState: "ok",
     ...over,
   };
 }
@@ -92,10 +109,12 @@ function timeline(
   elements: AnimElement[],
   lengthMs = 5000,
   cameras: string[] = [],
+  resolveError?: string,
 ): AnimTimeline {
   return {
     sceneId: 1,
     elements,
+    ...(resolveError !== undefined ? { resolveError } : {}),
     mgr: { lengthMs, elapsedMs: 0, playState: "stop", loop: false, startcam: "" },
     cameras,
     fps: 30,
@@ -326,7 +345,7 @@ describe("AnimationPanel editing", () => {
     expect(mockEdit.setElementTime).not.toHaveBeenCalled();
     act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 200 })));
     expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
-    expect(mockEdit.setElementTime.mock.calls[0][0]).toBe(0); // element index
+    expect(mockEdit.setElementTime.mock.calls[0][0]).toBe(1); // element uid
     unmount();
   });
 
@@ -384,8 +403,8 @@ describe("AnimationPanel editing", () => {
     act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 0 })));
     act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 0 })));
     expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
-    const [index, startMs, endMs] = mockEdit.setElementTime.mock.calls[0];
-    expect(index).toBe(1);
+    const [uid, startMs, endMs] = mockEdit.setElementTime.mock.calls[0];
+    expect(uid).toBe(2); // the chained element (index 1)
     expect(startMs).toBe(0); // floored at the reference's end
     expect(endMs).toBe(1000); // duration preserved
     unmount();
@@ -400,8 +419,8 @@ describe("AnimationPanel editing", () => {
     act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 160 })));
     act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 160 })));
     expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
-    const [index, startMs] = mockEdit.setElementTime.mock.calls[0];
-    expect(index).toBe(0);
+    const [uid, startMs] = mockEdit.setElementTime.mock.calls[0];
+    expect(uid).toBe(1);
     expect(startMs).toBe(0);
     unmount();
   });
@@ -412,7 +431,7 @@ describe("AnimationPanel editing", () => {
     const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
     expect(delBtn.disabled).toBe(false);
     act(() => delBtn.click());
-    expect(mockEdit.removeElement).toHaveBeenCalledWith(0);
+    expect(mockEdit.removeElement).toHaveBeenCalledWith(1); // uid, not index
     unmount();
   });
 
@@ -442,7 +461,7 @@ describe("AnimationPanel editing", () => {
     act(() => (container.querySelectorAll(".anim-label-row")[1] as HTMLElement).click()); // uid 2
     const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
     act(() => delBtn.click());
-    expect(mockEdit.removeElement).toHaveBeenCalledWith(1);
+    expect(mockEdit.removeElement).toHaveBeenCalledWith(2); // uid of the last element
     expect(inspector.showAnimElement).toHaveBeenLastCalledWith(1, 1);
     unmount();
   });
@@ -467,7 +486,7 @@ describe("AnimationPanel editing", () => {
     const downBtn = container.querySelectorAll(".anim-label-toolbar button")[3] as HTMLButtonElement;
     expect(downBtn.disabled).toBe(false);
     act(() => downBtn.click());
-    expect(mockEdit.moveElement).toHaveBeenCalledWith(0, 1);
+    expect(mockEdit.moveElement).toHaveBeenCalledWith(1, 1); // (uid, raw target index)
     unmount();
   });
 
@@ -546,6 +565,247 @@ describe("AnimationPanel inspector wiring", () => {
       ),
     );
     expect(inspector.clearAnimElement).toHaveBeenCalledWith(9);
+    unmount();
+  });
+});
+
+describe("AnimationPanel current-time field", () => {
+  beforeEach(() => {
+    mockTimeline = timeline([el({ uid: 1 })]);
+    mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
+  });
+
+  const timeField = (container: HTMLElement) =>
+    container.querySelector(".anim-readout .h3-form-time") as HTMLElement;
+  const fieldText = (container: HTMLElement) =>
+    timeField(container).querySelector(".h3-form-time-segs")?.textContent;
+  const moveBy = (dx: number) => {
+    const ev = new MouseEvent("mousemove");
+    Object.defineProperty(ev, "movementX", { value: dx, configurable: true });
+    act(() => document.dispatchEvent(ev));
+  };
+
+  it("seeks once to a typed time on Enter", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const field = timeField(container);
+    act(() => field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    const input = field.querySelector("input") as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    act(() => {
+      setter?.call(input, "0:02.000");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    expect(mockTransport.seek).toHaveBeenCalledTimes(1);
+    expect(mockTransport.seek).toHaveBeenCalledWith(2000);
+    unmount();
+  });
+
+  it("previews the playhead locally while dragging and seeks once on release", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const seg = timeField(container).querySelector('[data-unit="s"]') as HTMLElement;
+    act(() => seg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    moveBy(20); // 4 px per second -> +5 s
+    expect(fieldText(container)).toBe("0:05.000");
+    expect(mockTransport.seek).not.toHaveBeenCalled();
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    expect(mockTransport.seek).toHaveBeenCalledTimes(1);
+    expect(mockTransport.seek).toHaveBeenCalledWith(5000);
+    unmount();
+  });
+
+  it("drops the preview and does not seek when the drag is abandoned", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const seg = timeField(container).querySelector('[data-unit="s"]') as HTMLElement;
+    act(() => seg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    moveBy(20);
+    act(() => document.dispatchEvent(new Event("pointerlockchange"))); // Esc
+    expect(fieldText(container)).toBe("0:00.000");
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    expect(mockTransport.seek).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it("is disabled without an active view", () => {
+    mockTransport.canControl = false;
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={undefined} />,
+    );
+    expect(timeField(container).classList.contains("is-disabled")).toBe(true);
+    expect(timeField(container).tabIndex).toBe(-1);
+    unmount();
+  });
+});
+
+describe("AnimationPanel chain state and failures", () => {
+  beforeEach(() => {
+    mockTimeline = timeline([
+      el({ uid: 1, name: "A", index: 0, startMs: 0, endMs: 1000, absStartMs: 0, absEndMs: 1000 }),
+      el({ uid: 2, name: "B", index: 1, startMs: 0, endMs: 1000, absStartMs: 1000, absEndMs: 2000 }),
+    ]);
+    mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
+    showErrorAlert.mockClear();
+  });
+
+  const mount = () => mountTree(<AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />);
+  const rerender = (root: { render: (n: React.ReactNode) => void }) =>
+    act(() => {
+      root.render(<AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />);
+    });
+  const dragStrip = (container: HTMLElement, uid: number, fromX: number, toX: number) => {
+    const strip = container.querySelector(`.anim-strip[data-uid="${uid}"]`) as HTMLElement;
+    act(() => strip.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: fromX })));
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: toX })));
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: toX })));
+  };
+
+  it("holds the dropped span across an unrelated refetch and hands over when the edit shows", () => {
+    const { container, root, unmount } = mount();
+    const strip = () => container.querySelector('.anim-strip[data-uid="1"]') as HTMLElement;
+    dragStrip(container, 1, 100, 200); // +1000 ms -> committed {1000, 2000}
+    expect(strip().style.left).toBe("100px");
+
+    // Some other event refetched first: identity-new, same old spans. Held.
+    mockTimeline = timeline([...mockTimeline!.elements]);
+    rerender(root);
+    expect(strip().style.left).toBe("100px");
+
+    // The refetch that carries the edit ends the hold...
+    mockTimeline = timeline([
+      el({ uid: 1, name: "A", index: 0, startMs: 1000, endMs: 2000, absStartMs: 1000, absEndMs: 2000 }),
+      el({ uid: 2, name: "B", index: 1, startMs: 0, endMs: 1000, absStartMs: 2000, absEndMs: 3000 }),
+    ]);
+    rerender(root);
+    expect(strip().style.left).toBe("100px");
+    // ...so a later fetched position is drawn, not the stale preview.
+    mockTimeline = timeline([
+      el({ uid: 1, name: "A", index: 0, startMs: 500, endMs: 1500, absStartMs: 500, absEndMs: 1500 }),
+    ]);
+    rerender(root);
+    expect(strip().style.left).toBe("50px");
+    unmount();
+  });
+
+  it("drops the held span when the dragged element vanishes", () => {
+    const { container, root, unmount } = mount();
+    dragStrip(container, 1, 100, 200);
+    mockTimeline = timeline([
+      el({ uid: 2, name: "B", index: 0, startMs: 0, endMs: 1000, absStartMs: 1000, absEndMs: 2000 }),
+    ]);
+    rerender(root);
+    expect(container.querySelector('.anim-strip[data-uid="1"]')).toBeNull();
+    expect((container.querySelector('.anim-strip[data-uid="2"]') as HTMLElement).style.left).toBe("100px");
+    unmount();
+  });
+
+  it("commits whole milliseconds", () => {
+    const { container, unmount } = mount();
+    // Zoom in once: 0.1 * 1.4 px/ms, so 100 px is 714.28... ms.
+    const zoomIn = Array.from(container.querySelectorAll(".anim-zoom button")).find((b) =>
+      b.getAttribute("title")?.startsWith("Zoom in"),
+    ) as HTMLButtonElement;
+    act(() => zoomIn.click());
+    dragStrip(container, 1, 100, 200);
+    expect(mockEdit.setElementTime).toHaveBeenCalledWith(1, 714, 1714);
+    unmount();
+  });
+
+  it("resize-left stops at the axis and never crosses the end", () => {
+    const { container, unmount } = mount();
+    const grip = () =>
+      container.querySelector('.anim-strip[data-uid="1"] .anim-strip-grip-left') as HTMLElement;
+    act(() => grip().dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })));
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 0 })));
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 0 })));
+    expect(mockEdit.setElementTime).toHaveBeenLastCalledWith(1, 0, 1000);
+    act(() => grip().dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })));
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 300 })));
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 300 })));
+    expect(mockEdit.setElementTime).toHaveBeenLastCalledWith(1, 1000, 1000);
+    unmount();
+  });
+
+  it("marks an unresolved strip and draws a negative span clamped to the axis", () => {
+    mockTimeline = timeline([
+      el({
+        uid: 3, name: "C", index: 0, timeRefName: "ghost", timeRefState: "missing",
+        resolveError: '"C" is relative to "ghost", which does not exist',
+        startMs: -500, endMs: 500, absStartMs: -500, absEndMs: 500,
+      }),
+    ]);
+    const { container, unmount } = mount();
+    const strip = container.querySelector('.anim-strip[data-uid="3"]') as HTMLElement;
+    expect(strip.classList.contains("is-unresolved")).toBe(true);
+    expect(strip.classList.contains("is-clamped")).toBe(true);
+    expect(strip.dataset.refState).toBe("missing");
+    expect(strip.style.left).toBe("0px");
+    expect(strip.getAttribute("title")).toContain('"C" is relative to "ghost", which does not exist');
+    unmount();
+  });
+
+  it("says why the chain does not resolve and refuses playback until it does", () => {
+    const reason = "Cyclic reference: A -> B -> A";
+    mockTimeline = timeline(mockTimeline!.elements, 5000, [], reason);
+    const { container, unmount } = mount();
+    const warning = container.querySelector(".anim-warning");
+    expect(warning?.getAttribute("role")).toBe("status");
+    expect(warning?.textContent).toContain(reason);
+    const [skipBack, play, stop] = Array.from(
+      container.querySelectorAll(".anim-transport-playback button"),
+    ) as HTMLButtonElement[];
+    expect(play.disabled).toBe(true);
+    expect(play.getAttribute("title")).toBe(`Cannot play: ${reason}`);
+    expect(skipBack.disabled).toBe(true);
+    expect(stop.disabled).toBe(false);
+    expect(
+      (container.querySelector(".anim-readout .h3-form-time") as HTMLElement).classList.contains("is-disabled"),
+    ).toBe(true);
+    const ruler = container.querySelector(".anim-ruler") as HTMLElement;
+    act(() => ruler.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })));
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 100 })));
+    expect(mockTransport.seek).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it("shows no warning and keeps playback live when every element resolves", () => {
+    const { container, unmount } = mount();
+    expect(container.querySelector(".anim-warning")).toBeNull();
+    const play = container.querySelectorAll(".anim-transport-playback button")[1] as HTMLButtonElement;
+    expect(play.disabled).toBe(false);
+    unmount();
+  });
+
+  it("routes a refused edit or transport op to the error alert, one at a time", async () => {
+    let settle: () => void = () => undefined;
+    showErrorAlert.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          settle = resolve;
+        }),
+    );
+    const { unmount } = mount();
+    act(() => editOpts.onError?.("no such element"));
+    act(() => editOpts.onError?.("again"));
+    expect(showErrorAlert).toHaveBeenCalledTimes(1);
+    expect(showErrorAlert).toHaveBeenCalledWith({ title: "Animation timeline", message: "no such element" });
+    settle();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => transportOpts.onError?.("Cannot play: Cyclic reference: A -> A"));
+    expect(showErrorAlert).toHaveBeenCalledTimes(2);
+    expect(showErrorAlert).toHaveBeenLastCalledWith({
+      title: "Animation playback",
+      message: "Cannot play: Cyclic reference: A -> A",
+    });
     unmount();
   });
 });

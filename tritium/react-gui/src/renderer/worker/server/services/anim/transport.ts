@@ -12,13 +12,17 @@
  * closed, or falls behind an inactive tab -- `pauseInactivePlayback`, which a
  * view activation calls, except for a scene that is being rendered.
  */
+import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import type { AnimMgrState } from "@renderer/types";
 import { getViewOrNull } from "@renderer/worker/server/services/helpers/sceneResolver";
-import { resolveMgr } from "./resolve";
+import { fail, failFrom, ok } from "@renderer/worker/shared/result";
+import { readAnimGraph, resolveMgr } from "./resolve";
 import { ANIM_PROGRESS_CHANNEL, type AnimProgressUpdate } from "@renderer/worker/shared/animTypes";
-import { EMPTY_MGR_STATE, readMgrState, readPlayState } from "./read";
+import { readMgrState, readPlayState } from "./read";
+import { describeResolveFailure } from "./timeRefGraph";
+import { noMgrFail } from "./types";
 import type {
   AnimGoTimeArgs,
   AnimPauseArgs,
@@ -164,79 +168,89 @@ export function pauseInactivePlayback(
   return paused;
 }
 
-function fail(): AnimTransportResult {
-  return { ok: false, mgr: EMPTY_MGR_STATE };
+/**
+ * Refuse an op that needs the chain to resolve. C++ `start()` / `goTime()`
+ * would throw on a cyclic or missing reference -- after `start()` has already
+ * written its timing fields -- so the check runs first, with a reason.
+ */
+function unresolvedChain(mgr: AnimMgr, verb: string): string | null {
+  const reason = describeResolveFailure(readAnimGraph(mgr).graph);
+  return reason === null ? null : `Cannot ${verb}: ${reason}`;
 }
 
 /** Start (or resume) playback on the target view. */
 export function play(ctx: WorkerContext, args: AnimPlayArgs): AnimTransportResult {
   const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return fail();
+  if (!mgr) return noMgrFail();
   const view = getViewOrNull(ctx, args.viewId);
-  if (!view) return { ok: false, mgr: readMgrState(mgr) };
+  if (!view) return fail("view not found", "not-found");
+  const blocked = unresolvedChain(mgr, "play");
+  if (blocked !== null) return fail(blocked, "invalid-args");
   try {
     mgr.start(view);
-  } catch {
-    return { ok: false, mgr: readMgrState(mgr) };
+  } catch (e) {
+    return failFrom(e, "native");
   }
   const state = readMgrState(mgr);
   if (state.playState === 'play') watchPlayback(args.sceneId);
-  return { ok: true, mgr: state };
+  return ok({ mgr: state });
 }
 
 /** Pause playback (keeps elapsed; resumable via play). */
 export function pause(ctx: WorkerContext, args: AnimPauseArgs): AnimTransportResult {
   const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return fail();
+  if (!mgr) return noMgrFail();
   try {
     mgr.pause();
-  } catch {
-    return { ok: false, mgr: readMgrState(mgr) };
+  } catch (e) {
+    return failFrom(e, "native");
   }
   unwatchPlayback(args.sceneId);
-  return { ok: true, mgr: readMgrState(mgr) };
+  return ok({ mgr: readMgrState(mgr) });
 }
 
 /** Stop playback and rewind to 0. */
 export function stop(ctx: WorkerContext, args: AnimStopArgs): AnimTransportResult {
   const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return fail();
+  if (!mgr) return noMgrFail();
   try {
     mgr.stop();
-  } catch {
-    return { ok: false, mgr: readMgrState(mgr) };
+  } catch (e) {
+    return failFrom(e, "native");
   }
   unwatchPlayback(args.sceneId);
-  return { ok: true, mgr: readMgrState(mgr) };
+  return ok({ mgr: readMgrState(mgr) });
 }
 
 /** Seek to a time (ms) and pause there; updates the view camera. */
 export function goTime(ctx: WorkerContext, args: AnimGoTimeArgs): AnimTransportResult {
   const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return fail();
+  if (!mgr) return noMgrFail();
   const view = getViewOrNull(ctx, args.viewId);
-  if (!view) return { ok: false, mgr: readMgrState(mgr) };
+  if (!view) return fail("view not found", "not-found");
+  const blocked = unresolvedChain(mgr, "seek");
+  if (blocked !== null) return fail(blocked, "invalid-args");
   const tv = ctx.svc.createObj("TimeValue") as TimeValue | null;
-  if (!tv) return { ok: false, mgr: readMgrState(mgr) };
+  if (!tv) return fail("TimeValue create failed", "native");
   tv.millisec = Math.max(0, args.ms);
   try {
     mgr.goTime(tv, view);
-  } catch {
-    return { ok: false, mgr: readMgrState(mgr) };
+  } catch (e) {
+    return failFrom(e, "native");
   }
-  return { ok: true, mgr: readMgrState(mgr) };
+  return ok({ mgr: readMgrState(mgr) });
 }
 
 /** Toggle loop mode. */
 export function setLoop(ctx: WorkerContext, args: AnimSetLoopArgs): AnimTransportResult {
   const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return fail();
+  if (!mgr) return noMgrFail();
   try {
     mgr.loop = args.loop;
-  } catch {
-    return { ok: false, mgr: readMgrState(mgr) };
+  } catch (e) {
+    return failFrom(e, "native");
   }
-  return { ok: true, mgr: readMgrState(mgr) };
+  return ok({ mgr: readMgrState(mgr) });
 }
 
 /**
@@ -251,11 +265,11 @@ export function setLoop(ctx: WorkerContext, args: AnimSetLoopArgs): AnimTranspor
  */
 export function setStartCam(ctx: WorkerContext, args: AnimSetStartCamArgs): AnimTransportResult {
   const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return fail();
+  if (!mgr) return noMgrFail();
   try {
     mgr.startcam = args.startcam;
-  } catch {
-    return { ok: false, mgr: readMgrState(mgr) };
+  } catch (e) {
+    return failFrom(e, "native");
   }
-  return { ok: true, mgr: readMgrState(mgr) };
+  return ok({ mgr: readMgrState(mgr) });
 }

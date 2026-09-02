@@ -33,6 +33,7 @@ import {
     NumericField,
     ButtonRow,
     FormButton,
+    TimeField,
 } from '@renderer/h3-kit/form'
 import { mountTree } from '@renderer/__test__/helpers/testHarness'
 
@@ -235,6 +236,15 @@ describe('form-kit catalog', () => {
         expect(btn).not.toBeNull()
         act(() => { btn.click() })
         expect(onClick).toHaveBeenCalled()
+        expectNoInlineSizing(container)
+        unmount()
+    })
+
+    it('TimeField emits .h3-form-time with one span per segment, no inline sizing', () => {
+        const { container, unmount } = mountTree(<TimeField value={90500} onChange={() => {}} />)
+        expect(container.querySelector('.h3-form-time')).not.toBeNull()
+        expect(container.querySelectorAll('.h3-form-time-seg')).toHaveLength(3)
+        expect(container.querySelectorAll('.h3-form-time-spin')).toHaveLength(2)
         expectNoInlineSizing(container)
         unmount()
     })

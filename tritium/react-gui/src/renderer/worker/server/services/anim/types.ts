@@ -8,10 +8,33 @@
 import type { AnimAddType, AnimMgrState } from "@renderer/types";
 import type { AnimElementType } from "@renderer/types";
 import { type GenericPropEntry } from "@renderer/worker/server/services/helpers/parseGenericProps";
+import type { PropWriteMode } from "@renderer/worker/shared/genericProps";
+import type { Fail, Ok, Result } from "@renderer/worker/shared/result";
 // --- detail shapes ---
 
 /** Renderer-side default fps for the ms<->frame ruler readout. */
 export const DEFAULT_FPS = 30;
+
+/**
+ * Failure of an element-addressed call. `gone` marks the one failure the
+ * inspector closes on -- the uid has left the manager; every other failure
+ * keeps the element on screen and reports `error`.
+ */
+export type AnimElementFail = Fail & { gone?: true };
+
+export function goneFail(): AnimElementFail {
+  return {
+    ok: false,
+    error: "animation element no longer exists",
+    code: "not-found",
+    gone: true,
+  };
+}
+
+/** The scene or its animation manager did not resolve. */
+export function noMgrFail(): Fail {
+  return { ok: false, error: "scene or animation manager not found", code: "not-found" };
+}
 
 export interface AnimListTimelineArgs {
   sceneId: number;
@@ -53,15 +76,16 @@ export interface AnimSetStartCamArgs {
   startcam: string;
 }
 
-/** Result of a transport op: the post-mutation manager snapshot. */
-export interface AnimTransportResult {
-  ok: boolean;
-  mgr: AnimMgrState;
-}
+/**
+ * Result of a transport op: the post-mutation manager snapshot. A refused
+ * op (no view, an unresolved chain, a C++ throw) carries the reason instead.
+ */
+export type AnimTransportResult = Result<{ mgr: AnimMgrState }>;
 
 export interface AnimSetElementTimeArgs {
   sceneId: number;
-  index: number;
+  /** Stable element identity (a strip index is stale after any edit). */
+  uid: number;
   /** RELATIVE start/end in ms (what AnimObj stores; abs is derived). */
   startMs: number;
   endMs: number;
@@ -81,31 +105,29 @@ export interface AnimAddElementArgs {
 
 export interface AnimRemoveElementArgs {
   sceneId: number;
-  index: number;
+  uid: number;
 }
 
 export interface AnimMoveElementArgs {
   sceneId: number;
-  from: number;
-  /** Raw target index (UXP convention: i-1 to move up, i+1 to move down). */
+  uid: number;
+  /**
+   * Raw target index (UXP convention: i-1 to move up, i+1 to move down),
+   * clamped to the list; a move onto its own position is a no-op.
+   */
   to: number;
 }
 
-export interface AnimEditResult {
-  ok: boolean;
-}
+export type AnimEditResult = Ok | AnimElementFail;
 
-export interface AnimAddResult {
-  ok: boolean;
-  uid?: number;
-  index?: number;
-  /**
-   * Post-add manager snapshot. An add can adopt the `__current` start camera
-   * (see `ensureStartCam`), and that change fires no event the renderer could
-   * listen for, so it is handed back the way the transport ops do.
-   */
-  mgr?: AnimMgrState;
-}
+/**
+ * Add result. The manager snapshot is present on failure too when the add
+ * got as far as seeding the `__current` start camera (`ensureStartCam` runs
+ * outside the undo transaction and fires no event the renderer could hear).
+ */
+export type AnimAddResult =
+  | Ok<{ uid: number; index: number; mgr: AnimMgrState }>
+  | (Fail & { mgr?: AnimMgrState });
 
 /** Common fields shared by every element (volatile index is intentionally omitted). */
 export interface AnimElementCommon {
@@ -141,9 +163,16 @@ export interface AnimElementTypeProps {
   endValue?: number; // MolAnim
 }
 
-/** Other element's name, for the Relative-to dropdown. */
+/**
+ * A candidate for the Relative-to dropdown. One entry per distinct name
+ * other than the element's own; `usable` is `checkTimeRef` for it (false for
+ * a name that would close a cycle, is carried twice, or does not resolve),
+ * with `reason` in the words the inspector shows.
+ */
 export interface AnimElementSibling {
   name: string;
+  usable: boolean;
+  reason?: string;
 }
 
 export interface AnimElementDetail {
@@ -157,12 +186,7 @@ export interface GetAnimElementDetailArgs {
   uid: number;
 }
 
-export interface GetAnimElementDetailResult {
-  ok: boolean;
-  /** true = uid no longer in the manager (deleted). The inspector clears on this. */
-  gone?: boolean;
-  detail?: AnimElementDetail;
-}
+export type GetAnimElementDetailResult = Ok<{ detail: AnimElementDetail }> | AnimElementFail;
 
 /** Prop keys the inspector can write. `timing` and `axis` carry object values. */
 export type AnimElementPropKey =
@@ -188,6 +212,12 @@ export type AnimElementPropKey =
   | "startValue"
   | "endValue";
 
+/** An element's RELATIVE start / end in ms -- what the `timing` prop writes. */
+export interface AnimTimingMs {
+  startMs: number;
+  endMs: number;
+}
+
 export interface SetAnimElementPropArgs {
   sceneId: number;
   uid: number;
@@ -196,15 +226,23 @@ export interface SetAnimElementPropArgs {
     | string
     | number
     | boolean
-    | { startMs: number; endMs: number } // prop === "timing"
+    | AnimTimingMs // prop === "timing"
     | { x: number; y: number; z: number }; // prop === "axis"
+  /**
+   * How the write is recorded (`commit` when omitted). `preview` and `abort`
+   * are the realtime-drag modes of `PropWriteMode` and are accepted for
+   * `timing` only: a preview writes without an undo transaction, an abort
+   * restores `original` without one. A commit that carries `original`
+   * restores it first, outside the transaction, so the recorded step is
+   * `original -> value` and not `last preview -> value`.
+   */
+  mode?: PropWriteMode;
+  /** Pre-drag timing: required by `abort`, optional for `commit`. */
+  original?: AnimTimingMs;
 }
 
-export interface SetAnimElementPropResult {
-  ok: boolean;
-  gone?: boolean;
-  detail?: AnimElementDetail;
-}
+/** The refreshed detail rides on success; a `preview` write omits it. */
+export type SetAnimElementPropResult = Ok<{ detail?: AnimElementDetail }> | AnimElementFail;
 
 export interface GetAnimTargetOptionsArgs {
   sceneId: number;
@@ -222,12 +260,9 @@ export interface AnimMolOption {
   name: string;
 }
 
-export interface GetAnimTargetOptionsResult {
-  ok: boolean;
-  renderers: AnimRendererOption[];
-  cameras: AnimCameraOption[];
-  mols: AnimMolOption[];
-}
+export type GetAnimTargetOptionsResult =
+  | Ok<{ renderers: AnimRendererOption[]; cameras: AnimCameraOption[]; mols: AnimMolOption[] }>
+  | Fail;
 
 export interface GetAnimElementGenericPropsArgs {
   sceneId: number;
@@ -241,6 +276,16 @@ export interface SetAnimElementGenericPropArgs {
   op: "set" | "reset";
   valueType: string;
   value?: string | number | boolean;
+  /**
+   * Realtime-drag protocol, as on `setGenericProp`: `preview` writes without
+   * an undo transaction, `abort` restores the pre-drag value (or the default
+   * flag when `originalWasDefault`) without one, and a `commit` (default)
+   * carrying `originalValue` restores it first so the recorded step spans
+   * the whole drag. `set` only; a reset never previews.
+   */
+  mode?: PropWriteMode;
+  originalValue?: string | number | boolean;
+  originalWasDefault?: boolean;
 }
 
 export interface ResetAnimElementGenericPropsArgs {
@@ -249,8 +294,5 @@ export interface ResetAnimElementGenericPropsArgs {
   propNames: string[];
 }
 
-export interface AnimGenericPropsResult {
-  ok: boolean;
-  gone?: boolean;
-  entries: GenericPropEntry[];
-}
+/** `entries` is the refreshed list; a preview / abort answers with none. */
+export type AnimGenericPropsResult = Ok<{ entries: GenericPropEntry[] }> | AnimElementFail;

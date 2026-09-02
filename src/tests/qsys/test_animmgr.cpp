@@ -424,3 +424,120 @@ TEST_F(AnimMgrRestoreTest, BeginFrameStopsAtEndOfSequence)
 
     m_pMgr->stop();
 }
+
+// --- resolveRelTime: all-or-nothing ---
+//
+// An element's start / end are offsets from the END of the element named by
+// its timeRefName ('' = absolute). The fixture numbers are shared with the
+// tritium mirror of this resolution (timeRefGraph.test.ts): A 0-1000 absolute,
+// B rel(A) 0-500 -> 1000-1500, C rel(B) 100-300 -> 1600-1800.
+class AnimMgrResolveTest : public ::testing::Test
+{
+protected:
+    ScenePtr m_pScene;
+    AnimMgr *m_pMgr;
+
+    void SetUp() override
+    {
+        m_pScene = SceneManager::getInstance()->createScene();
+        m_pMgr = m_pScene->getAnimMgr().get();
+    }
+
+    void TearDown() override
+    {
+        if (!m_pScene.isnull()) {
+            const qlib::uid_t uid = m_pScene->getUID();
+            m_pMgr = nullptr;
+            m_pScene = ScenePtr();
+            SceneManager::getInstance()->destroyScene(uid);
+        }
+    }
+
+    /// Append a named element chained to `ref` ('' = absolute) with the
+    /// given RELATIVE span. The name goes through the property system (the
+    /// only C++ setter) before the manager can hear the change.
+    TestPropAnim *add(const char *name, const char *ref,
+                      qlib::time_value relStart, qlib::time_value relEnd)
+    {
+        TestPropAnim *p = MB_NEW TestPropAnim(qlib::invalid_uid);
+        p->setPropStr("name", LString(name));
+        p->setTimeRefName(LString(ref));
+        p->setRelStart(relStart);
+        p->setRelEnd(relEnd);
+        m_pMgr->append(AnimObjPtr(p));
+        return p;
+    }
+};
+
+TEST_F(AnimMgrResolveTest, OffsetsChainedElementsFromTheReferenceEnd)
+{
+    TestPropAnim *a = add("A", "", 0, 1000);
+    TestPropAnim *b = add("B", "A", 0, 500);
+    TestPropAnim *c = add("C", "B", 100, 300);
+
+    ASSERT_NO_THROW(m_pMgr->resolveRelTime());
+
+    EXPECT_EQ(a->getAbsStart(), 0);
+    EXPECT_EQ(a->getAbsEnd(), 1000);
+    EXPECT_EQ(b->getAbsStart(), 1000);
+    EXPECT_EQ(b->getAbsEnd(), 1500);
+    EXPECT_EQ(c->getAbsStart(), 1600);
+    EXPECT_EQ(c->getAbsEnd(), 1800);
+}
+
+TEST_F(AnimMgrResolveTest, ResolutionIsOrderIndependent)
+{
+    TestPropAnim *c = add("C", "B", 100, 300);
+    TestPropAnim *b = add("B", "A", 0, 500);
+    TestPropAnim *a = add("A", "", 0, 1000);
+
+    ASSERT_NO_THROW(m_pMgr->resolveRelTime());
+
+    EXPECT_EQ(a->getAbsEnd(), 1000);
+    EXPECT_EQ(b->getAbsStart(), 1000);
+    EXPECT_EQ(c->getAbsStart(), 1600);
+    EXPECT_EQ(c->getAbsEnd(), 1800);
+}
+
+TEST_F(AnimMgrResolveTest, MissingRefThrowsAndLeavesAbsTimesUntouched)
+{
+    TestPropAnim *a = add("A", "", 0, 1000);
+    TestPropAnim *b = add("B", "A", 0, 500);
+    ASSERT_NO_THROW(m_pMgr->resolveRelTime());
+
+    // Break the chain and move A directly (no property event, so no resolve
+    // runs in between): a resolve that throws must not leave A half-updated.
+    b->setTimeRefName(LString("ghost"));
+    a->setRelEnd(2000);
+
+    EXPECT_THROW(m_pMgr->resolveRelTime(), qlib::RuntimeException);
+
+    EXPECT_EQ(a->getAbsStart(), 0);
+    EXPECT_EQ(a->getAbsEnd(), 1000);
+    EXPECT_EQ(b->getAbsStart(), 1000);
+    EXPECT_EQ(b->getAbsEnd(), 1500);
+
+    // Repairing the reference resolves the moved span.
+    b->setTimeRefName(LString("A"));
+    ASSERT_NO_THROW(m_pMgr->resolveRelTime());
+    EXPECT_EQ(a->getAbsEnd(), 2000);
+    EXPECT_EQ(b->getAbsStart(), 2000);
+}
+
+TEST_F(AnimMgrResolveTest, CycleThrowsNamingTheLoop)
+{
+    add("A", "B", 0, 1000);
+    add("B", "A", 0, 500);
+
+    bool thrown = false;
+    try {
+        m_pMgr->resolveRelTime();
+    }
+    catch (qlib::RuntimeException &e) {
+        thrown = true;
+        const std::string msg(e.getMsg().c_str());
+        EXPECT_NE(msg.find("cyclic ref"), std::string::npos) << msg;
+    }
+    EXPECT_TRUE(thrown);
+}
+

@@ -40,6 +40,7 @@ import { useAnimTimeline } from "./useAnimTimeline";
 import { useAnimTransport } from "./useAnimTransport";
 import { useAnimEdit } from "./useAnimEdit";
 import { useInspectorActions } from "@renderer/state/inspector";
+import { useShowErrorAlert } from "@renderer/dialogs/ErrorAlertDialogProvider";
 import { AnimTransport } from "@renderer/features/animation/anim/AnimTransport";
 import { AnimTimeRuler } from "@renderer/features/animation/anim/AnimTimeRuler";
 import { AnimStrip, type AnimStripEditMode } from "@renderer/features/animation/anim/AnimStrip";
@@ -64,6 +65,12 @@ interface AnimationPanelProps {
 const ZOOM_FACTOR = 1.4;
 /** Min pixel travel before a strip mousedown counts as a drag (vs a click). */
 const DRAG_THRESHOLD_PX = 3;
+/**
+ * How long a committed strip preview is held after its write when no refetch
+ * carries the very span that was written (C++ clamped it differently). The
+ * refetch is one debounce plus one round trip, so this is generous.
+ */
+const HOLD_MAX_MS = 1000;
 
 /** Add-menu entries (UXP parity). Maps to AnimObj subclasses worker-side. */
 const ADD_TYPES: { id: AnimAddType; label: string }[] = [
@@ -89,8 +96,10 @@ interface DragPreview {
   uid: number;
   absStartMs: number;
   absEndMs: number;
-  /** The edit is in flight; drop this the moment fresh data arrives. */
+  /** The edit is in flight; drop this once fresh data carries it. */
   committed?: boolean;
+  /** The RELATIVE span that was written; the refetch that shows it ends the hold. */
+  committedRel?: { startMs: number; endMs: number };
 }
 
 /**
@@ -103,12 +112,35 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   activeSceneId,
   activeMolViewId,
 }) => {
+  // A refused edit or transport op goes through the app's standard error
+  // alert, one at a time: a scrub burst must not stack dialogs.
+  const showErrorAlert = useShowErrorAlert();
+  const showErrorAlertRef = useRef(showErrorAlert);
+  showErrorAlertRef.current = showErrorAlert;
+  const alertPendingRef = useRef(false);
+  const reportError = useCallback((title: string, message: string) => {
+    if (alertPendingRef.current) return;
+    alertPendingRef.current = true;
+    void showErrorAlertRef.current({ title, message }).finally(() => {
+      alertPendingRef.current = false;
+    });
+  }, []);
+  const onTransportError = useCallback(
+    (message: string) => reportError("Animation playback", message),
+    [reportError],
+  );
+  const onEditError = useCallback(
+    (message: string) => reportError("Animation timeline", message),
+    [reportError],
+  );
+
   const { timeline } = useAnimTimeline({ cm, sceneId: activeSceneId });
   const transport = useAnimTransport({
     cm,
     sceneId: activeSceneId,
     viewId: activeMolViewId,
     baseMgr: timeline?.mgr ?? null,
+    onError: onTransportError,
   });
   const { addElement, removeElement, moveElement, setElementTime } = useAnimEdit({
     cm,
@@ -117,6 +149,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
     // An add can seed the start camera (UXP parity); that fires no event, so
     // the returned snapshot is what keeps the header select current.
     onMgrState: transport.adoptMgr,
+    onError: onEditError,
   });
 
   const [pxPerMs, setPxPerMs] = useState(DEFAULT_PX_PER_MS);
@@ -145,6 +178,11 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   const playheadLeft = msToPx(playheadMs, pxPerMs);
 
   const { seek, canControl } = transport;
+  // While the time-reference chain does not resolve, playback would be
+  // refused by the worker; say so up front instead of on every attempt.
+  const blockedReason =
+    timeline?.resolveError !== undefined ? `Cannot play: ${timeline.resolveError}` : undefined;
+  const scrubBlocked = blockedReason !== undefined;
 
   // Index of the selected element (for the edit toolbar); null when none.
   const selectedIndex = useMemo(() => {
@@ -173,14 +211,25 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
     }
   }, []);
 
+  /** End a playhead scrub: drop the local preview and seek once. */
+  const commitScrub = useCallback(
+    (ms: number) => {
+      setScrubMs(null);
+      seek(ms);
+    },
+    [seek],
+  );
+  const cancelScrub = useCallback(() => setScrubMs(null), []);
+
   /**
    * Begin a playhead scrub on the ruler. Tracks the position locally during
    * the drag (no service calls) and commits a single seek on mouse-up. A bare
-   * click (no movement) also commits one seek at the click position.
+   * click (no movement) also commits one seek at the click position. The
+   * transport's current-time field shares this contract (`commitScrub`).
    */
   const handleRulerMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0 || !canControl) return;
+      if (e.button !== 0 || !canControl || scrubBlocked) return;
       e.preventDefault();
       const toMs = (clientX: number): number => {
         const sc = timelineScrollRef.current;
@@ -194,14 +243,12 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
       const onUp = (ev: MouseEvent) => {
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
-        const ms = toMs(ev.clientX);
-        setScrubMs(null);
-        seek(ms);
+        commitScrub(toMs(ev.clientX));
       };
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
     },
-    [canControl, contentMs, pxPerMs, seek],
+    [canControl, scrubBlocked, contentMs, pxPerMs, commitScrub],
   );
 
   /**
@@ -265,14 +312,30 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
         } else {
           newEnd = relEnd + d;
         }
-        // Keep drawing the dropped span until the refetch reflects it (see
-        // DragPreview); the effect below drops it when fresh data arrives.
-        setDragPreview((p) => (p ? { ...p, committed: true } : p));
-        setElementTime(el.index, newStart, newEnd).then((ok) => {
+        // Whole milliseconds: the bounds were applied above, so a floored
+        // relative start rounds to exactly 0, and the refetch can be matched
+        // against what was written.
+        newStart = Math.round(newStart);
+        newEnd = Math.round(newEnd);
+        // Keep drawing the dropped span until a refetch carries this very
+        // edit (see DragPreview); the effect below ends the hold.
+        const committedRel = { startMs: newStart, endMs: newEnd };
+        setDragPreview((p) => (p ? { ...p, committed: true, committedRel } : p));
+        setElementTime(el.uid, newStart, newEnd).then((ok) => {
           // The write failed, so no SEM_ANIM event and no refetch is coming --
           // release the preview or the strip would be stuck at a span the C++
           // side never took.
-          if (!ok) setDragPreview(null);
+          if (!ok) {
+            setDragPreview(null);
+            return;
+          }
+          // A span C++ took differently (it collapses start > end) never
+          // matches; do not hold the strip forever waiting for it.
+          if (holdTimerRef.current !== null) clearTimeout(holdTimerRef.current);
+          holdTimerRef.current = setTimeout(() => {
+            holdTimerRef.current = null;
+            setDragPreview((p) => (p?.committed && p.uid === el.uid ? null : p));
+          }, HOLD_MAX_MS);
         });
       };
 
@@ -291,23 +354,40 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
    * clearing a timeline means re-selecting between each click.
    */
   const handleDelete = useCallback(() => {
-    if (selectedIndex === null) return;
+    if (selectedIndex === null || selectedUid === null) return;
     const next = elements[selectedIndex + 1] ?? elements[selectedIndex - 1] ?? null;
-    removeElement(selectedIndex);
+    removeElement(selectedUid);
     setSelectedUid(next?.uid ?? null);
-  }, [selectedIndex, elements, removeElement]);
+  }, [selectedIndex, selectedUid, elements, removeElement]);
 
   // Reset the selection on scene switch so a stale uid from the previous scene
   // is never emitted against the new scene's inspector.
   useEffect(() => {
     setSelectedUid(null);
+    setDragPreview(null);
   }, [activeSceneId]);
 
-  // Release a held (committed) drag preview as soon as a fresh timeline lands:
-  // the fetched strip now carries the edit, so the two agree and the handover is
-  // invisible. `elements` identity changes once per fetch.
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (holdTimerRef.current !== null) clearTimeout(holdTimerRef.current);
+    },
+    [],
+  );
+
+  // Release a held (committed) drag preview once a fetched timeline carries
+  // the span that was written -- then the two agree and the handover is
+  // invisible. A refetch that some unrelated event triggered first still
+  // shows the old span, and dropping the hold on it snapped the strip back.
   useEffect(() => {
-    setDragPreview((p) => (p?.committed ? null : p));
+    setDragPreview((p) => {
+      if (!p?.committed) return p;
+      const el = elements.find((e) => e.uid === p.uid);
+      if (!el || !p.committedRel) return null;
+      const carried =
+        el.startMs === p.committedRel.startMs && el.endMs === p.committedRel.endMs;
+      return carried ? null : p;
+    });
   }, [elements]);
 
   // Drive the right Inspector from the strip selection. When the selected
@@ -350,8 +430,13 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
         elementCount={elements.length}
         isPlaying={transport.isPlaying}
         canControl={canControl}
+        blockedReason={blockedReason}
         loop={tmgr.loop}
         cameras={timeline?.cameras ?? []}
+        playheadMs={playheadMs}
+        onScrubPreview={setScrubMs}
+        onScrubCommit={commitScrub}
+        onScrubCancel={cancelScrub}
         onPlayPause={transport.togglePlay}
         onStop={transport.stop}
         onSkipStart={() => seek(0)}
@@ -362,6 +447,12 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
       />
+      {timeline?.resolveError !== undefined && (
+        <div className="anim-warning type-caption" role="status">
+          Time references could not be resolved: {timeline.resolveError}. Marked strips are
+          drawn at their last known position.
+        </div>
+      )}
 
       <div className="anim-body">
         {/* Channel list + edit toolbar (left) */}
@@ -412,8 +503,8 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
               icon={<AppIcon name="ui.caretUp" aria-hidden />}
               disabled={selectedIndex === null || selectedIndex === 0}
               onClick={() =>
-                selectedIndex !== null && selectedIndex > 0 &&
-                moveElement(selectedIndex, selectedIndex - 1)
+                selectedIndex !== null && selectedUid !== null && selectedIndex > 0 &&
+                moveElement(selectedUid, selectedIndex - 1)
               }
               title="Move up"
             />
@@ -421,8 +512,9 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
               icon={<AppIcon name="ui.caretDown" aria-hidden />}
               disabled={selectedIndex === null || selectedIndex >= elements.length - 1}
               onClick={() =>
-                selectedIndex !== null && selectedIndex < elements.length - 1 &&
-                moveElement(selectedIndex, selectedIndex + 1)
+                selectedIndex !== null && selectedUid !== null &&
+                selectedIndex < elements.length - 1 &&
+                moveElement(selectedUid, selectedIndex + 1)
               }
               title="Move down"
             />

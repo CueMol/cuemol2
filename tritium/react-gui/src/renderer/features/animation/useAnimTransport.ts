@@ -27,6 +27,8 @@ interface UseAnimTransportOptions {
   viewId: number | undefined;
   /** Fetched manager snapshot (source until a transport op/poll supersedes it). */
   baseMgr: AnimMgrState | null;
+  /** Called with the reason when a transport op is refused (no view, an unresolved chain, a C++ throw). */
+  onError?: (message: string) => void;
 }
 
 export interface UseAnimTransportResult {
@@ -69,8 +71,11 @@ export function useAnimTransport({
   sceneId,
   viewId,
   baseMgr,
+  onError,
 }: UseAnimTransportOptions): UseAnimTransportResult {
   const [liveMgr, setLiveMgr] = useState<AnimMgrState | null>(null);
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   const cmRef = useRef(cm);
   cmRef.current = cm;
@@ -108,7 +113,8 @@ export function useAnimTransport({
     if (!c || sid === undefined || vid === undefined) return;
     c.invokeService("animPlay", { sceneId: sid, viewId: vid })
       .then((res) => {
-        if (res?.mgr) setLiveMgr(res.mgr);
+        if (res.ok) setLiveMgr(res.mgr);
+        else onErrorRef.current?.(res.error);
       })
       .catch((err: unknown) => console.warn("animPlay failed:", err));
   }, []);
@@ -119,7 +125,8 @@ export function useAnimTransport({
     if (!c || sid === undefined) return;
     c.invokeService("animPause", { sceneId: sid })
       .then((res) => {
-        if (res?.mgr) setLiveMgr(res.mgr);
+        if (res.ok) setLiveMgr(res.mgr);
+        else onErrorRef.current?.(res.error);
       })
       .catch((err: unknown) => console.warn("animPause failed:", err));
   }, []);
@@ -130,7 +137,8 @@ export function useAnimTransport({
     if (!c || sid === undefined) return;
     c.invokeService("animStop", { sceneId: sid })
       .then((res) => {
-        if (res?.mgr) setLiveMgr(res.mgr);
+        if (res.ok) setLiveMgr(res.mgr);
+        else onErrorRef.current?.(res.error);
       })
       .catch((err: unknown) => console.warn("animStop failed:", err));
   }, []);
@@ -142,7 +150,8 @@ export function useAnimTransport({
     if (!c || sid === undefined || vid === undefined) return;
     c.invokeService("animGoTime", { sceneId: sid, viewId: vid, ms })
       .then((res) => {
-        if (res?.mgr) setLiveMgr(res.mgr);
+        if (res.ok) setLiveMgr(res.mgr);
+        else onErrorRef.current?.(res.error);
       })
       .catch((err: unknown) => console.warn("animGoTime failed:", err));
   }, []);
@@ -153,7 +162,8 @@ export function useAnimTransport({
     if (!c || sid === undefined) return;
     c.invokeService("animSetLoop", { sceneId: sid, loop })
       .then((res) => {
-        if (res?.mgr) setLiveMgr(res.mgr);
+        if (res.ok) setLiveMgr(res.mgr);
+        else onErrorRef.current?.(res.error);
       })
       .catch((err: unknown) => console.warn("animSetLoop failed:", err));
   }, []);
@@ -166,7 +176,8 @@ export function useAnimTransport({
     if (!c || sid === undefined) return;
     c.invokeService("animSetStartCam", { sceneId: sid, startcam: name })
       .then((res) => {
-        if (res?.mgr) setLiveMgr(res.mgr);
+        if (res.ok) setLiveMgr(res.mgr);
+        else onErrorRef.current?.(res.error);
       })
       .catch((err: unknown) => console.warn("animSetStartCam failed:", err));
   }, []);

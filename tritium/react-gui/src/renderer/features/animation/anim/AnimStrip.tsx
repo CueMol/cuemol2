@@ -56,14 +56,28 @@ export const AnimStrip: React.FC<AnimStripProps> = ({
   onSelect,
   onEditMouseDown,
 }) => {
-  const absStart = previewAbsStartMs ?? el.absStartMs;
-  const absEnd = previewAbsEndMs ?? el.absEndMs;
+  // A span that falls before zero or runs backwards (a legacy negative
+  // offset, a stale position behind an unresolved chain) is drawn clamped to
+  // the axis rather than off-canvas: an invisible strip cannot be selected,
+  // and so cannot be repaired.
+  const rawStart = previewAbsStartMs ?? el.absStartMs;
+  const rawEnd = previewAbsEndMs ?? el.absEndMs;
+  const absStart = Math.max(0, rawStart);
+  const absEnd = Math.max(absStart, rawEnd);
+  const clamped = rawStart < 0 || rawEnd < rawStart;
+  const unresolved = el.timeRefState !== "ok";
   const left = msToPx(absStart, pxPerMs);
   const width = Math.max(MIN_STRIP_PX, msToPx(absEnd - absStart, pxPerMs));
   const className =
     `anim-strip anim-strip--${el.type}` +
     (selected ? " is-selected" : "") +
-    (el.disabled ? " is-disabled" : "");
+    (el.disabled ? " is-disabled" : "") +
+    (unresolved ? " is-unresolved" : "") +
+    (clamped ? " is-clamped" : "");
+  const title =
+    `${el.name} (${el.type})` +
+    (el.resolveError ? ` -- ${el.resolveError}` : "") +
+    (clamped ? " -- starts before 0:00 (drawn clamped)" : "");
 
   return (
     <div
@@ -71,7 +85,8 @@ export const AnimStrip: React.FC<AnimStripProps> = ({
       style={{ left, width }}
       data-uid={el.uid}
       data-type={el.type}
-      title={`${el.name} (${el.type})`}
+      data-ref-state={el.timeRefState}
+      title={title}
       onMouseDown={(e) => onEditMouseDown(el, "move", e)}
       onClick={(e) => {
         // Don't let the click bubble to the lane's deselect handler.

@@ -51,8 +51,8 @@ Blueprint の portal (popover / dialog) に dark テーマを効かせる `porta
 | `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
 | `NumericField` | 数値 + 明示 slider (`slider` 既定 true)。**ネイティブ stepper は既定で非表示** (compact 用)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
 | `SliderField` | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |
-| `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない)。**ドラッグ感度は `min`/`max` と widget 幅から自動で決まる** (幅の 3/4 を drag すると全レンジを移動)。レンジに対して drag 量が釣り合うので、consumer は `pxPerStep` を指定しない — 指定するのは「レンジを掃くのが目的ではない」場合だけ (無限レンジ、UXP の 1 unit/px を再現する ViewPane 等)。`format`/`parse`/`resolveStep`/`stepper="stacked"` で非10進の値にも転用できる (下記 `TimeField`) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
-| `TimeField` | 時間 (ms) の timecode `M:SS.mmm`。**UXP の timeedit の移植先**。`DragNumericField` プリセットで drag scrub + ▲▼ spin + 打ち込み (`250ms` / `1.5s` / `+2s` の相対も可) | `.h3-form-drag` + `.h3-form-time` (`_form-kit.css`) |
+| `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない)。**ドラッグ感度は `min`/`max` と widget 幅から自動で決まる** (幅の 3/4 を drag すると全レンジを移動)。レンジに対して drag 量が釣り合うので、consumer は `pxPerStep` を指定しない — 指定するのは「レンジを掃くのが目的ではない」場合だけ (無限レンジ、UXP の 1 unit/px を再現する ViewPane 等) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
+| `TimeField` | 時間 (ms) のセグメント化 timecode `H:MM:SS.mmm` (Blender / After Effects 流)。**UXP の timeedit の移植先**。独立 widget (`h3-kit/form/TimeField/`): クリックでセグメント選択、セグメント上の drag scrub (Shift = 精密, Ctrl/Cmd = ×10)、↑↓ で active segment を step (押しっぱなしは 1 interaction)、数字で上書き (carry あり)、hover で ▲▼、Ctrl+wheel、Enter / ダブルクリック / `+` `-` で打ち込み (`250ms` / `1.5s` / `+2s` の相対も可)。lifecycle は `DragNumericField` と同一なので `useRealtimeDragProp` をそのまま spread できる | `.h3-form-time*` (`_form-kit.css`) |
 | `SwitchField` | **値としての真偽トグル** (Visible / Locked など。`inline` Field 内で `Label ...... [switch]` に読ませる) | Blueprint Switch (pill は `--icon-sm` スケール、focus ring 1px/offset 1px) |
 | `CheckboxField` | **opt-in ゲート** (「以下のグループを有効にする」トグル。`inline controlFirst` の Field 内で使い `[x] Label ......` に読ませる) | Blueprint Checkbox (box は `--icon-md` スケール、focus ring 1px/offset 1px) |
 | `GatedControl` | **1 つの property の「off」が別フラグではなく値** のとき (負なら未設定、等) に、checkbox と control を **同じ行**に置く。両者が同じ property を書くので、行の modified バーと reset を共有する。下のブロック全体を有効化する用途は `CheckboxField` 単体 | `.h3-form-gated-control` (`_form-kit.css`) |
@@ -187,7 +187,7 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 |---|---|
 | 背景 | `--bg-base` `--bg-surface` `--bg-elevated` `--bg-panel-header` `--bg-input` `--bg-hover` `--bg-active` `--bg-tab-active` `--bg-tab-inactive` |
 | 境界線 | `--border` `--border-subtle` |
-| 文字 | `--text-strong` `--text-primary` `--text-secondary` `--text-muted` `--text-disabled` (この順に暗くなる階梯。詳細は下記) |
+| 文字 | `--text-strong` `--text-primary` `--text-secondary` `--text-muted` `--text-disabled` (この順に暗くなる階梯。詳細は下記)。状態を伝えるインライン文 (field 下の注記、panel の警告行) は `--text-warning` / `--text-error` (`--log-warn` / `--accent-red` の alias) |
 | アクセント | `--accent` `--accent-hover` `--accent-green` `--accent-red` `--accent-yellow` `--accent-glow` `--accent-selected` `--accent-selected-glow` |
 | クローム | `--toolbar-bg` `--statusbar-bg` `--statusbar-text` `--scrollbar-thumb` `--scrollbar-thumb-hover` |
 | オーバーレイ | `--overlay-hover` `--overlay-subtle` `--overlay-focus` `--overlay-border-top` |

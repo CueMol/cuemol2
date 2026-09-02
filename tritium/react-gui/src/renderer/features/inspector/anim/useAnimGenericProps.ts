@@ -15,7 +15,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
-import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
+import type { GenericPropEntry, PropWriteOpts } from '@renderer/worker/shared/genericProps';
+import type { AnimGenericPropsResult } from '@renderer/worker/server/services/anim/anim.service';
 import { modifiedKeys } from '@renderer/features/inspector/propModel';
 
 export interface UseAnimGenericPropsOptions {
@@ -24,10 +25,12 @@ export interface UseAnimGenericPropsOptions {
     uidRef: React.MutableRefObject<number>;
     /** Called when the element turns out to be gone (deleted). */
     onGoneRef: React.MutableRefObject<(sceneId: number) => void>;
+    /** Called with the reason when a write is refused (the element is still there). */
+    onErrorRef?: React.MutableRefObject<(message: string) => void>;
 }
 
 export function useAnimGenericProps({
-    cmRef, sceneIdRef, uidRef, onGoneRef,
+    cmRef, sceneIdRef, uidRef, onGoneRef, onErrorRef,
 }: UseAnimGenericPropsOptions) {
     const [genericEntries, setGenericEntries] = useState<GenericPropEntry[]>([]);
     const [genericLoading, setGenericLoading] = useState(false);
@@ -48,11 +51,11 @@ export function useAnimGenericProps({
       .then((res) => {
         if (token !== genericToken.current) return;
         setGenericLoading(false);
-        if (!res || res.gone) {
-          onGoneRef.current(sid);
+        if (!res.ok) {
+          if (res.gone) onGoneRef.current(sid);
           return;
         }
-        setGenericEntries(res.entries ?? []);
+        setGenericEntries(res.entries);
       })
       .catch((e: unknown) => {
         setGenericLoading(false);
@@ -61,36 +64,50 @@ export function useAnimGenericProps({
   }, [cmRef, sceneIdRef, uidRef, onGoneRef]);
 
   const adoptGeneric = useCallback(
-    (
-      res: { ok: boolean; gone?: boolean; entries?: GenericPropEntry[] } | undefined,
-      token: number,
-    ) => {
+    (res: AnimGenericPropsResult, token: number) => {
       if (token !== genericToken.current) return;
-      if (!res || res.gone) {
-        onGoneRef.current(sceneIdRef.current);
+      if (!res.ok) {
+        // A refused write keeps the table as it was; only a vanished
+        // element clears the inspector.
+        if (res.gone) onGoneRef.current(sceneIdRef.current);
+        else onErrorRef?.current(res.error);
         return;
       }
-      setGenericEntries(res.entries ?? []);
+      setGenericEntries(res.entries);
     },
-    [onGoneRef, sceneIdRef],
+    [onGoneRef, onErrorRef, sceneIdRef],
   );
+  // A realtime drag passes `opts` (preview / commit / abort, see
+  // `PropWriteOpts`). Only a commit's reply carries entries to adopt; a
+  // preview or abort answers with none, and the list follows through the
+  // SEM_ANIM refetch -- which a token bump here would make it drop.
   const handleGenericSet = useCallback(
-    (key: string, valueType: string, value: string | number | boolean) => {
+    (key: string, valueType: string, value: string | number | boolean, opts?: PropWriteOpts) => {
       const c = cmRef.current;
       if (!c) return;
-      const token = ++genericToken.current;
-      c.invokeService("setAnimElementGenericProp", {
+      const mode = opts?.mode ?? "commit";
+      const token = mode === "commit" ? ++genericToken.current : 0;
+      return c.invokeService("setAnimElementGenericProp", {
         sceneId: sceneIdRef.current,
         uid: uidRef.current,
         propName: key,
         op: "set",
         valueType,
         value,
+        mode: opts?.mode,
+        originalValue: opts?.originalValue,
+        originalWasDefault: opts?.originalWasDefault,
       })
-        .then((res) => adoptGeneric(res, token))
+        .then((res) => {
+          if (mode !== "commit") {
+            if (!res.ok && res.gone) onGoneRef.current(sceneIdRef.current);
+            return;
+          }
+          adoptGeneric(res, token);
+        })
         .catch((e: unknown) => console.warn("setAnimElementGenericProp failed:", e));
     },
-    [adoptGeneric, cmRef, sceneIdRef, uidRef],
+    [adoptGeneric, cmRef, sceneIdRef, uidRef, onGoneRef],
   );
   const handleGenericReset = useCallback(
     (key: string) => {
