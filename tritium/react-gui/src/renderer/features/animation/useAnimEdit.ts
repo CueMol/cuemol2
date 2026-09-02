@@ -24,6 +24,8 @@ interface UseAnimEditOptions {
   viewId: number | undefined;
   /** Receives the post-add manager snapshot (start-camera seeding). */
   onMgrState?: (mgr: AnimMgrState) => void;
+  /** Called with the reason when the worker refuses an edit. */
+  onError?: (message: string) => void;
 }
 
 export interface UseAnimEditResult {
@@ -52,6 +54,7 @@ export function useAnimEdit({
   sceneId,
   viewId,
   onMgrState,
+  onError,
 }: UseAnimEditOptions): UseAnimEditResult {
   const cmRef = useRef(cm);
   cmRef.current = cm;
@@ -61,6 +64,14 @@ export function useAnimEdit({
   viewIdRef.current = viewId;
   const onMgrStateRef = useRef(onMgrState);
   onMgrStateRef.current = onMgrState;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  // A rejected promise is a contract violation (services return Fail), but
+  // the user still deserves to hear that nothing happened.
+  const failed = (what: string) => (e: unknown) => {
+    console.warn(`${what} failed:`, e);
+    onErrorRef.current?.(String(e));
+  };
 
   const addElement = useCallback((type: AnimAddType, insertIndex?: number) => {
     const c = cmRef.current;
@@ -73,27 +84,34 @@ export function useAnimEdit({
       viewId: viewIdRef.current,
     })
       .then((res) => {
-        if (res?.mgr) onMgrStateRef.current?.(res.mgr);
+        // The snapshot rides on a failure too: the start camera may have been
+        // seeded before the add itself was refused.
+        if (res.mgr) onMgrStateRef.current?.(res.mgr);
+        if (!res.ok) onErrorRef.current?.(res.error);
       })
-      .catch((e: unknown) => console.warn("animAddElement failed:", e));
+      .catch(failed("animAddElement"));
   }, []);
 
   const removeElement = useCallback((uid: number) => {
     const c = cmRef.current;
     const sid = sceneIdRef.current;
     if (!c || sid === undefined) return;
-    c.invokeService("animRemoveElement", { sceneId: sid, uid }).catch(
-      (e: unknown) => console.warn("animRemoveElement failed:", e),
-    );
+    c.invokeService("animRemoveElement", { sceneId: sid, uid })
+      .then((res) => {
+        if (!res.ok) onErrorRef.current?.(res.error);
+      })
+      .catch(failed("animRemoveElement"));
   }, []);
 
   const moveElement = useCallback((uid: number, to: number) => {
     const c = cmRef.current;
     const sid = sceneIdRef.current;
     if (!c || sid === undefined) return;
-    c.invokeService("animMoveElement", { sceneId: sid, uid, to }).catch(
-      (e: unknown) => console.warn("animMoveElement failed:", e),
-    );
+    c.invokeService("animMoveElement", { sceneId: sid, uid, to })
+      .then((res) => {
+        if (!res.ok) onErrorRef.current?.(res.error);
+      })
+      .catch(failed("animMoveElement"));
   }, []);
 
   const setElementTime = useCallback(
@@ -103,9 +121,12 @@ export function useAnimEdit({
       if (!c || sid === undefined) return Promise.resolve(false);
       return c
         .invokeService("animSetElementTime", { sceneId: sid, uid, startMs, endMs })
-        .then((res) => res.ok)
+        .then((res) => {
+          if (!res.ok) onErrorRef.current?.(res.error);
+          return res.ok;
+        })
         .catch((e: unknown) => {
-          console.warn("animSetElementTime failed:", e);
+          failed("animSetElementTime")(e);
           return false;
         });
     },

@@ -29,6 +29,13 @@ interface AnimTransportProps {
   isPlaying: boolean;
   /** Whether transport can act (cm + scene + active view present). */
   canControl: boolean;
+  /**
+   * Why playback is refused right now (the time-reference chain does not
+   * resolve). Disables Play / skip / seek and the current-time field with
+   * the reason as their tooltip; Stop, Loop, the start camera and zoom stay
+   * live.
+   */
+  blockedReason?: string;
   loop: boolean;
   /** Scene camera names offered by the start-camera select. */
   cameras: string[];
@@ -59,6 +66,7 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
   elementCount,
   isPlaying,
   canControl,
+  blockedReason,
   loop,
   cameras,
   playheadMs,
@@ -74,22 +82,25 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
   onFit,
   onZoomIn,
   onZoomOut,
-}) => (
+}) => {
+  const seekOff = !canControl || blockedReason !== undefined;
+  const seekTitle = (title: string) => blockedReason ?? title;
+  return (
   <div className="anim-transport">
     <ButtonRow className="anim-transport-playback">
       <FormButton
         icon={<AppIcon name="media.skipBack" aria-hidden />}
         onClick={onSkipStart}
-        disabled={!canControl}
-        title="Skip to start"
+        disabled={seekOff}
+        title={seekTitle("Skip to start")}
       />
       <FormButton
         icon={<AppIcon name={isPlaying ? "media.pause" : "media.play"} aria-hidden />}
         onClick={onPlayPause}
         active={isPlaying}
         intent={isPlaying ? "warning" : "success"}
-        disabled={!canControl}
-        title={isPlaying ? "Pause" : "Play"}
+        disabled={seekOff}
+        title={seekTitle(isPlaying ? "Pause" : "Play")}
       />
       <FormButton
         icon={<AppIcon name="media.stop" aria-hidden />}
@@ -100,8 +111,8 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
       <FormButton
         icon={<AppIcon name="media.skipForward" aria-hidden />}
         onClick={onSkipEnd}
-        disabled={!canControl}
-        title="Skip to end"
+        disabled={seekOff}
+        title={seekTitle("Skip to end")}
       />
     </ButtonRow>
 
@@ -113,7 +124,8 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
         onChange={onScrubPreview}
         onRelease={onScrubCommit}
         onDragCancel={onScrubCancel}
-        disabled={!canControl}
+        disabled={seekOff}
+        title={blockedReason}
         aria-label="Current time"
       />
       <span className="anim-readout-sep">/</span>
@@ -159,4 +171,5 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
       />
     </ButtonRow>
   </div>
-);
+  );
+};

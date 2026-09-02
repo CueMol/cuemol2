@@ -77,4 +77,38 @@ describe("useAnimEdit", () => {
     expect(cm.invokeService).not.toHaveBeenCalled();
     h.unmount();
   });
+
+  it("reports a refused edit through onError and resolves false", async () => {
+    const cm = {
+      invokeService: vi.fn().mockResolvedValue({ ok: false, error: "no such element", code: "not-found" }),
+    };
+    const onError = vi.fn();
+    const h = makeRenderHook(() =>
+      useAnimEdit({ cm: cm as never, sceneId: 5, viewId: 9, onError }),
+    );
+    const accepted = h.result.setElementTime(10, 0, 100);
+    h.result.removeElement(10);
+    await flushPromises();
+    expect(await accepted).toBe(false);
+    expect(onError).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenCalledWith("no such element");
+    h.unmount();
+  });
+
+  it("still adopts the manager snapshot a refused add carries (start-camera seeding ran)", async () => {
+    const mgr = { lengthMs: 0, elapsedMs: 0, playState: "stop", loop: false, startcam: "__current" };
+    const cm = {
+      invokeService: vi.fn().mockResolvedValue({ ok: false, error: "createObj failed", code: "native", mgr }),
+    };
+    const onMgrState = vi.fn();
+    const onError = vi.fn();
+    const h = makeRenderHook(() =>
+      useAnimEdit({ cm: cm as never, sceneId: 5, viewId: 9, onMgrState, onError }),
+    );
+    h.result.addElement("SimpleSpin");
+    await flushPromises();
+    expect(onMgrState).toHaveBeenCalledWith(mgr);
+    expect(onError).toHaveBeenCalledWith("createObj failed");
+    h.unmount();
+  });
 });
