@@ -5,6 +5,9 @@
 
 #include <common.h>
 
+#include <utility>
+#include <vector>
+
 #include "AnimMgr.hpp"
 #include "PropAnim.hpp"
 #include "AnimObjEvent.hpp"
@@ -754,19 +757,40 @@ void AnimMgr::propChanged(qlib::LPropEvent &aEvent)
 
 }
 
-/// Resolve relative start/end times
+/// Resolve relative start/end times.
+///
+/// All or nothing: a cyclic or missing reference throws, and on that path
+/// every element keeps the absolute times it had before the call. Without
+/// the rollback the elements visited before the failure carried new values
+/// and the rest old ones (or 0/0 for an element that had never resolved),
+/// and update() went on to derive the length from that mixture.
 void AnimMgr::resolveRelTime()
 {
-  // set resolution flag
+  std::vector<std::pair<time_value, time_value> > saved;
+  saved.reserve(m_data.size());
   BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+    saved.push_back(std::make_pair(pObj->getAbsStart(), pObj->getAbsEnd()));
     pObj->setTimeResolved(false);
   }
 
-  BOOST_FOREACH (AnimObjPtr pObj, m_data) {
-    BOOST_FOREACH (AnimObjPtr pObj2, m_data) {
-      pObj2->setMarked(false);
+  try {
+    BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+      BOOST_FOREACH (AnimObjPtr pObj2, m_data) {
+        pObj2->setMarked(false);
+      }
+      resolveTimeImpl(pObj);
     }
-    resolveTimeImpl(pObj);
+  }
+  catch (...) {
+    size_t i = 0;
+    BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+      pObj->setAbsStart(saved[i].first);
+      pObj->setAbsEnd(saved[i].second);
+      pObj->setTimeResolved(false);
+      pObj->setMarked(false);
+      ++i;
+    }
+    throw;
   }
 }
 
