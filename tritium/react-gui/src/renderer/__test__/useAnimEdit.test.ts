@@ -51,15 +51,15 @@ describe("useAnimEdit", () => {
     const h = makeRenderHook(() =>
       useAnimEdit({ cm: cm as never, sceneId: 5, viewId: 9 }),
     );
-    h.result.removeElement(3);
-    h.result.moveElement(3, 2);
-    h.result.setElementTime(1, 100, 900);
+    h.result.removeElement(30);
+    h.result.moveElement(30, 2);
+    h.result.setElementTime(10, 100, 900);
     await flushPromises();
-    expect(cm.invokeService).toHaveBeenCalledWith("animRemoveElement", { sceneId: 5, index: 3 });
-    expect(cm.invokeService).toHaveBeenCalledWith("animMoveElement", { sceneId: 5, from: 3, to: 2 });
+    expect(cm.invokeService).toHaveBeenCalledWith("animRemoveElement", { sceneId: 5, uid: 30 });
+    expect(cm.invokeService).toHaveBeenCalledWith("animMoveElement", { sceneId: 5, uid: 30, to: 2 });
     expect(cm.invokeService).toHaveBeenCalledWith("animSetElementTime", {
       sceneId: 5,
-      index: 1,
+      uid: 10,
       startMs: 100,
       endMs: 900,
     });

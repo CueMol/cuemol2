@@ -101,7 +101,7 @@ function makeCtx(opts: {
     sceMgr: { getScene: () => (opts.noScene ? null : scene) },
     svc: { createObj },
   } as unknown as WorkerContext;
-  return { ctx, resolveRelTime, startUndoTxn, commitUndoTxn, createdTV, createdVec, createObj, objs };
+  return { ctx, resolveRelTime, startUndoTxn, commitUndoTxn, rollbackUndoTxn, createdTV, createdVec, createObj, objs };
 }
 
 describe("anim.service getAnimElementDetail", () => {
@@ -112,21 +112,21 @@ describe("anim.service getAnimElementDetail", () => {
     ];
     const { ctx } = makeCtx({ objs });
     const res = services.getAnimElementDetail(ctx, { sceneId: 1, uid: 20 });
-    expect(res.ok).toBe(true);
-    expect(res.detail!.common).toMatchObject({ uid: 20, name: "Spin1", type: "SimpleSpin", startMs: 100, endMs: 1100, quadric: 0.2 });
-    expect(res.detail!.typeProps).toMatchObject({ angle: 270, axisX: 0, axisY: 1, axisZ: 0 });
-    expect(res.detail!.siblings).toEqual([{ name: "Cam0" }]);
+    if (!res.ok) throw new Error(res.error);
+    expect(res.detail.common).toMatchObject({ uid: 20, name: "Spin1", type: "SimpleSpin", startMs: 100, endMs: 1100, quadric: 0.2 });
+    expect(res.detail.typeProps).toMatchObject({ angle: 270, axisX: 0, axisY: 1, axisZ: 0 });
+    expect(res.detail.siblings).toEqual([{ name: "Cam0", usable: true }]);
   });
 
   it("returns gone:true when the uid is not in the manager", () => {
     const objs = [makeObj({ uid: 10, name: "A", className: "NoopAnimObj" })];
     const { ctx } = makeCtx({ objs });
-    expect(services.getAnimElementDetail(ctx, { sceneId: 1, uid: 999 })).toEqual({ ok: false, gone: true });
+    expect(services.getAnimElementDetail(ctx, { sceneId: 1, uid: 999 })).toMatchObject({ ok: false, gone: true, code: "not-found" });
   });
 });
 
 describe("anim.service setAnimElementProp", () => {
-  it("timing writes relative start/end (min<=max) + resolveRelTime, in an undo txn", () => {
+  it("timing writes relative start/end (min<=max) in an undo txn; C++ update() resolves", () => {
     const objs = [makeObj({ uid: 5, name: "A", className: "SimpleSpin" })];
     const { ctx, resolveRelTime, startUndoTxn, commitUndoTxn, createdTV } = makeCtx({ objs });
     const res = services.setAnimElementProp(ctx, { sceneId: 1, uid: 5, prop: "timing", value: { startMs: 2000, endMs: 500 } });
@@ -136,9 +136,8 @@ describe("anim.service setAnimElementProp", () => {
     expect(createdTV[1].millisec).toBe(2000);
     expect(objs[0].start).toBe(createdTV[0]);
     expect(objs[0].end).toBe(createdTV[1]);
-    expect(resolveRelTime).toHaveBeenCalled();
-    expect(res.ok).toBe(true);
-    expect(res.detail).toBeDefined();
+    expect(resolveRelTime).not.toHaveBeenCalled();
+    expect(res.ok && res.detail).toBeTruthy();
   });
 
   it("axis builds a Vector via createObj('Vector') and assigns it", () => {
@@ -170,10 +169,10 @@ describe("anim.service setAnimElementProp", () => {
   // reference has to re-base `rel` or the element jumps to a different time.
   it("re-bases relative -> absolute so the element keeps its place", () => {
     const objs = [
-      makeObj({ uid: 10, name: "A", className: "CamMotion", absStartMs: 0, absEndMs: 3000 }),
+      makeObj({ uid: 10, name: "A", className: "CamMotion", startMs: 0, endMs: 3000 }),
       makeObj({
         uid: 20, name: "B", className: "SimpleSpin", timeRefName: "A",
-        startMs: 1000, endMs: 2000, absStartMs: 4000, absEndMs: 5000,
+        startMs: 1000, endMs: 2000,
       }),
     ];
     const { ctx, createdTV } = makeCtx({ objs });
@@ -188,10 +187,10 @@ describe("anim.service setAnimElementProp", () => {
 
   it("re-bases absolute -> relative against the new reference's absEnd", () => {
     const objs = [
-      makeObj({ uid: 10, name: "A", className: "CamMotion", absStartMs: 0, absEndMs: 3000 }),
+      makeObj({ uid: 10, name: "A", className: "CamMotion", startMs: 0, endMs: 3000 }),
       makeObj({
         uid: 20, name: "B", className: "SimpleSpin",
-        startMs: 4000, endMs: 5000, absStartMs: 4000, absEndMs: 5000,
+        startMs: 4000, endMs: 5000,
       }),
     ];
     const { ctx, createdTV } = makeCtx({ objs });
@@ -205,10 +204,10 @@ describe("anim.service setAnimElementProp", () => {
     // B sits BEFORE A ends, so expressing it relative to A would need a
     // negative start -- an unsupported state. B is pulled to A's end.
     const objs = [
-      makeObj({ uid: 10, name: "A", className: "CamMotion", absStartMs: 0, absEndMs: 3000 }),
+      makeObj({ uid: 10, name: "A", className: "CamMotion", startMs: 0, endMs: 3000 }),
       makeObj({
         uid: 20, name: "B", className: "SimpleSpin",
-        startMs: 2500, endMs: 3500, absStartMs: 2500, absEndMs: 3500,
+        startMs: 2500, endMs: 3500,
       }),
     ];
     const { ctx, createdTV } = makeCtx({ objs });
@@ -217,30 +216,39 @@ describe("anim.service setAnimElementProp", () => {
     expect(createdTV[1].millisec).toBe(1000); // duration preserved
   });
 
-  it("leaves the times alone when the new reference name does not exist", () => {
+  it("refuses a reference that does not exist: nothing written, no transaction", () => {
+    // Writing the name anyway used to leave the whole manager unresolvable.
     const objs = [
       makeObj({ uid: 20, name: "B", className: "SimpleSpin", startMs: 0, endMs: 1000 }),
     ];
-    const { ctx, createdTV } = makeCtx({ objs });
-    services.setAnimElementProp(ctx, { sceneId: 1, uid: 20, prop: "timeRefName", value: "ghost" });
-    expect(objs[0].timeRefName).toBe("ghost");
-    expect(createdTV).toHaveLength(0); // no re-base attempted
+    const { ctx, createdTV, startUndoTxn } = makeCtx({ objs });
+    const res = services.setAnimElementProp(ctx, { sceneId: 1, uid: 20, prop: "timeRefName", value: "ghost" });
+    expect(res).toMatchObject({ ok: false, code: "not-found", error: 'No element is named "ghost"' });
+    expect(objs[0].timeRefName).toBe("");
+    expect(createdTV).toHaveLength(0);
+    expect(startUndoTxn).not.toHaveBeenCalled();
   });
 
-  it("swallows a resolveRelTime throw so the field edit still commits", () => {
+  it("rolls back and reports a wrapper throw inside the write as native", () => {
     const objs = [makeObj({ uid: 5, name: "A", className: "SimpleSpin" })];
-    const { ctx, commitUndoTxn } = makeCtx({ objs, resolveThrows: true });
-    const res = services.setAnimElementProp(ctx, { sceneId: 1, uid: 5, prop: "timeRefName", value: "B" });
-    expect(objs[0].timeRefName).toBe("B");
-    expect(commitUndoTxn).toHaveBeenCalled();
-    expect(res.ok).toBe(true);
+    Object.defineProperty(objs[0], "quadric", {
+      get: () => 0,
+      set: () => {
+        throw new Error("read only");
+      },
+    });
+    const { ctx, commitUndoTxn, rollbackUndoTxn } = makeCtx({ objs });
+    const res = services.setAnimElementProp(ctx, { sceneId: 1, uid: 5, prop: "quadric", value: 0.5 });
+    expect(res).toMatchObject({ ok: false, code: "native", error: "read only" });
+    expect(rollbackUndoTxn).toHaveBeenCalled();
+    expect(commitUndoTxn).not.toHaveBeenCalled();
   });
 
   it("returns gone:true when the uid vanished", () => {
     const objs = [makeObj({ uid: 5, name: "A", className: "SimpleSpin" })];
     const { ctx } = makeCtx({ objs });
     const res = services.setAnimElementProp(ctx, { sceneId: 1, uid: 999, prop: "name", value: "X" });
-    expect(res).toMatchObject({ ok: false, gone: true });
+    expect(res).toMatchObject({ ok: false, gone: true, code: "not-found" });
   });
 
   it("rename cascades to siblings referencing the old name by timeRefName (one txn)", () => {
@@ -269,7 +277,7 @@ describe("anim.service generic property tab", () => {
     const obj = { uid: 5, getPropsJSON: () => propsJSON } as unknown as Record<string, unknown>;
     const { ctx } = makeCtx({ objs: [obj] });
     const res = services.getAnimElementGenericProps(ctx, { sceneId: 1, uid: 5 });
-    expect(res.ok).toBe(true);
+    if (!res.ok) throw new Error(res.error);
     expect(res.entries.map((e) => e.key)).toEqual(["name", "angle"]);
     expect(res.entries[1]).toMatchObject({ key: "angle", type: "real", value: 90 });
   });
@@ -349,7 +357,7 @@ describe("anim.service getAnimTargetOptions", () => {
     };
     const { ctx } = makeCtx({ cameraInfoJSON: JSON.stringify([{ name: "camA" }, { name: "" }, { name: "camB" }]) });
     const res = services.getAnimTargetOptions(ctx, { sceneId: 1 });
-    expect(res.ok).toBe(true);
+    if (!res.ok) throw new Error(res.error);
     expect(res.mols).toEqual([{ name: "Mol1" }]);
     expect(res.renderers).toEqual([
       { name: "rend1", objName: "Mol1", type: "cartoon" },
@@ -396,14 +404,13 @@ describe("anim.service setAnimElementProp realtime timing", () => {
 
   it("preview writes the times without a transaction and returns no detail", () => {
     const log: string[] = [];
-    const { ctx, startUndoTxn, resolveRelTime } = loggedCtx(log);
+    const { ctx, startUndoTxn } = loggedCtx(log);
     const res = services.setAnimElementProp(ctx, {
       sceneId: 1, uid: 5, prop: "timing", value: { startMs: 300, endMs: 1300 }, mode: "preview",
     });
     expect(res).toEqual({ ok: true });
     expect(log).toEqual(["start=300", "end=1300"]);
     expect(startUndoTxn).not.toHaveBeenCalled();
-    expect(resolveRelTime).toHaveBeenCalled();
   });
 
   it("commit with original restores it outside the transaction, then writes inside it", () => {
@@ -416,7 +423,7 @@ describe("anim.service setAnimElementProp realtime timing", () => {
     expect(log).toEqual(["start=0", "end=1000", "startTxn", "start=900", "end=1900", "commitTxn"]);
     expect(startUndoTxn).toHaveBeenCalledTimes(1);
     expect(res.ok).toBe(true);
-    expect(res.detail).toBeDefined();
+    expect(res.ok && res.detail).toBeTruthy();
   });
 
   it("commit back to the original only restores: no empty transaction, so redo survives", () => {
@@ -429,7 +436,7 @@ describe("anim.service setAnimElementProp realtime timing", () => {
     expect(log).toEqual(["start=0", "end=1000"]);
     expect(startUndoTxn).not.toHaveBeenCalled();
     expect(res.ok).toBe(true);
-    expect(res.detail).toBeDefined();
+    expect(res.ok && res.detail).toBeTruthy();
   });
 
   it("abort restores the original without a transaction", () => {
@@ -442,7 +449,7 @@ describe("anim.service setAnimElementProp realtime timing", () => {
     expect(log).toEqual(["start=0", "end=1000"]);
     expect(startUndoTxn).not.toHaveBeenCalled();
     expect(res.ok).toBe(true);
-    expect(res.detail).toBeDefined();
+    expect(res.ok && res.detail).toBeTruthy();
   });
 
   it("abort without an original writes nothing", () => {
@@ -451,7 +458,7 @@ describe("anim.service setAnimElementProp realtime timing", () => {
     const res = services.setAnimElementProp(ctx, {
       sceneId: 1, uid: 5, prop: "timing", value: { startMs: 900, endMs: 1900 }, mode: "abort",
     });
-    expect(res).toEqual({ ok: false });
+    expect(res).toMatchObject({ ok: false, code: "invalid-args" });
     expect(log).toEqual([]);
   });
 
@@ -461,7 +468,7 @@ describe("anim.service setAnimElementProp realtime timing", () => {
     const res = services.setAnimElementProp(ctx, {
       sceneId: 1, uid: 5, prop: "angle", value: 45, mode: "preview",
     });
-    expect(res).toEqual({ ok: false });
+    expect(res).toMatchObject({ ok: false, code: "unsupported" });
     expect(objs[0].angle).toBe(10);
     expect(startUndoTxn).not.toHaveBeenCalled();
   });
@@ -472,19 +479,25 @@ describe("anim.service setAnimElementProp realtime timing", () => {
     const res = services.setAnimElementProp(ctx, {
       sceneId: 1, uid: 999, prop: "timing", value: { startMs: 0, endMs: 1 },
     });
-    expect(res).toEqual({ ok: false, gone: true });
+    expect(res).toMatchObject({ ok: false, gone: true, code: "not-found" });
     expect(startUndoTxn).not.toHaveBeenCalled();
     expect(commitUndoTxn).not.toHaveBeenCalled();
   });
 
-  it("a resolveRelTime throw during a preview is swallowed", () => {
-    const log: string[] = [];
-    const { ctx } = loggedCtx(log, { resolveThrows: true });
+  it("a setter throw during a preview fails as native and opens no transaction", () => {
+    const objs = [makeObj({ uid: 5, name: "A", className: "SimpleSpin" })];
+    Object.defineProperty(objs[0], "start", {
+      get: () => ({ millisec: 0 }),
+      set: () => {
+        throw new Error("locked");
+      },
+    });
+    const { ctx, startUndoTxn } = makeCtx({ objs });
     const res = services.setAnimElementProp(ctx, {
       sceneId: 1, uid: 5, prop: "timing", value: { startMs: 300, endMs: 1300 }, mode: "preview",
     });
-    expect(res).toEqual({ ok: true });
-    expect(log).toEqual(["start=300", "end=1300"]);
+    expect(res).toMatchObject({ ok: false, code: "native", error: "locked" });
+    expect(startUndoTxn).not.toHaveBeenCalled();
   });
 });
 
@@ -566,7 +579,269 @@ describe("anim.service setAnimElementGenericProp realtime", () => {
     const log: string[] = [];
     const { ctx, startUndoTxn } = loggedCtx(log);
     const res = services.setAnimElementGenericProp(ctx, { ...base, uid: 999, value: 45 });
-    expect(res).toEqual({ ok: false, gone: true, entries: [] });
+    expect(res).toMatchObject({ ok: false, gone: true, code: "not-found" });
     expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+});
+
+describe("anim.service setAnimElementProp time-reference guards", () => {
+  // A 0-1000 absolute, B rel(A) 0-500, C rel(B) 100-300 (the timeRefGraph fixture).
+  const chain = () => [
+    makeObj({ uid: 10, name: "A", className: "SimpleSpin", startMs: 0, endMs: 1000 }),
+    makeObj({ uid: 20, name: "B", className: "SimpleSpin", timeRefName: "A", startMs: 0, endMs: 500 }),
+    makeObj({ uid: 30, name: "C", className: "SimpleSpin", timeRefName: "B", startMs: 100, endMs: 300 }),
+  ];
+  const setRef = (objs: Record<string, unknown>[], uid: number, value: string) => {
+    const h = makeCtx({ objs });
+    const res = services.setAnimElementProp(h.ctx, { sceneId: 1, uid, prop: "timeRefName", value });
+    return { res, ...h };
+  };
+
+  it("refuses a self-reference", () => {
+    const objs = chain();
+    const { res, startUndoTxn } = setRef(objs, 20, "B");
+    expect(res).toMatchObject({ ok: false, code: "invalid-args", error: "An element cannot be relative to itself" });
+    expect(objs[1].timeRefName).toBe("A");
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("refuses a reference that would close a cycle, naming the loop", () => {
+    const objs = chain();
+    const { res } = setRef(objs, 10, "C");
+    expect(res).toMatchObject({
+      ok: false,
+      code: "invalid-args",
+      error: 'Relative to "C" would create a cycle: A -> C -> B -> A',
+    });
+    expect(objs[0].timeRefName).toBe("");
+  });
+
+  it("refuses a name carried by two elements", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 11, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 20, name: "B", className: "SimpleSpin" }),
+    ];
+    const { res } = setRef(objs, 20, "A");
+    expect(res).toMatchObject({ ok: false, error: '"A" is carried by 2 elements; rename one first' });
+  });
+
+  it("refuses a reference whose own chain does not resolve", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 20, name: "B", className: "SimpleSpin", timeRefName: "ghost" }),
+      makeObj({ uid: 30, name: "C", className: "SimpleSpin" }),
+    ];
+    const { res } = setRef(objs, 30, "B");
+    expect(res).toMatchObject({
+      ok: false,
+      error: '"B" cannot be used as a reference: "B" is relative to "ghost", which does not exist',
+    });
+  });
+
+  it("treats the current reference as a no-op: fresh detail, no transaction", () => {
+    const objs = chain();
+    const { res, startUndoTxn, createdTV } = setRef(objs, 20, "A");
+    expect(res.ok && res.detail).toBeTruthy();
+    expect(startUndoTxn).not.toHaveBeenCalled();
+    expect(createdTV).toHaveLength(0);
+  });
+
+  it("re-points a broken element without touching its offsets", () => {
+    // There is no absolute position to preserve, so the typed offsets stand.
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "SimpleSpin", startMs: 0, endMs: 1000 }),
+      makeObj({ uid: 20, name: "B", className: "SimpleSpin", timeRefName: "ghost", startMs: 100, endMs: 600 }),
+    ];
+    const { res, createdTV, commitUndoTxn } = setRef(objs, 20, "A");
+    expect(res.ok).toBe(true);
+    expect(objs[1].timeRefName).toBe("A");
+    expect((objs[1].start as { millisec: number }).millisec).toBe(100);
+    expect(createdTV).toHaveLength(0);
+    expect(commitUndoTxn).toHaveBeenCalled();
+  });
+
+  it("fails before writing the name when a TimeValue cannot be created", () => {
+    const objs = chain();
+    const h = makeCtx({ objs });
+    h.createObj.mockImplementation(() => null);
+    const res = services.setAnimElementProp(h.ctx, { sceneId: 1, uid: 30, prop: "timeRefName", value: "" });
+    expect(res).toMatchObject({ ok: false, code: "native", error: "TimeValue create failed" });
+    expect(objs[2].timeRefName).toBe("B");
+    expect(h.startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("writes the name first, then start, then end, inside one transaction", () => {
+    const log: string[] = [];
+    const a = makeObj({ uid: 10, name: "A", className: "SimpleSpin", startMs: 0, endMs: 1000 });
+    const b = makeObj({ uid: 20, name: "B", className: "SimpleSpin", startMs: 4000, endMs: 5000 });
+    const logged = (key: string, initial: unknown) => {
+      let v = initial;
+      Object.defineProperty(b, key, {
+        get: () => v,
+        set: (next: { millisec?: number } | string) => {
+          v = next;
+          log.push(`${key}=${typeof next === "string" ? next : next.millisec}`);
+        },
+      });
+    };
+    logged("timeRefName", "");
+    logged("start", { millisec: 4000 });
+    logged("end", { millisec: 5000 });
+    const h = makeCtx({ objs: [a, b] });
+    h.startUndoTxn.mockImplementation(() => {
+      log.push("startTxn");
+    });
+    h.commitUndoTxn.mockImplementation(() => {
+      log.push("commitTxn");
+    });
+    const res = services.setAnimElementProp(h.ctx, { sceneId: 1, uid: 20, prop: "timeRefName", value: "A" });
+    expect(res.ok).toBe(true);
+    expect(log).toEqual(["startTxn", "timeRefName=A", "start=3000", "end=4000", "commitTxn"]);
+  });
+});
+
+describe("anim.service setAnimElementProp name guards", () => {
+  const rename = (objs: Record<string, unknown>[], uid: number, value: string) => {
+    const h = makeCtx({ objs });
+    const res = services.setAnimElementProp(h.ctx, { sceneId: 1, uid, prop: "name", value });
+    return { res, ...h };
+  };
+
+  it("refuses an empty name without a transaction", () => {
+    const objs = [makeObj({ uid: 10, name: "A", className: "SimpleSpin" })];
+    const { res, startUndoTxn } = rename(objs, 10, "   ");
+    expect(res).toMatchObject({ ok: false, code: "invalid-args", error: "Name cannot be empty" });
+    expect(objs[0].name).toBe("A");
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("refuses a name another element carries", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 20, name: "B", className: "SimpleSpin" }),
+    ];
+    const { res } = rename(objs, 20, "A");
+    expect(res).toMatchObject({ ok: false, error: 'Another element is already named "A"' });
+    expect(objs[1].name).toBe("B");
+  });
+
+  it("treats the current name as a no-op", () => {
+    const objs = [makeObj({ uid: 10, name: "A", className: "SimpleSpin" })];
+    const { res, startUndoTxn } = rename(objs, 10, "A");
+    expect(res.ok).toBe(true);
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("renaming a later duplicate does not re-point the dependents bound to the first", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 11, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 20, name: "B", className: "SimpleSpin", timeRefName: "A" }),
+    ];
+    const { res } = rename(objs, 11, "A2");
+    expect(res.ok).toBe(true);
+    expect(objs[1].name).toBe("A2");
+    expect(objs[2].timeRefName).toBe("A");
+  });
+
+  it("rolls back when a dependent refuses the cascade", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 20, name: "B", className: "SimpleSpin", timeRefName: "A" }),
+    ];
+    Object.defineProperty(objs[1], "timeRefName", {
+      get: () => "A",
+      set: () => {
+        throw new Error("locked");
+      },
+    });
+    const { res, rollbackUndoTxn, commitUndoTxn } = rename(objs, 10, "A2");
+    expect(res).toMatchObject({ ok: false, code: "native", error: "locked" });
+    expect(rollbackUndoTxn).toHaveBeenCalled();
+    expect(commitUndoTxn).not.toHaveBeenCalled();
+  });
+});
+
+describe("anim.service getAnimElementDetail siblings", () => {
+  it("flags the candidates a reference cannot legally bind to, once per name", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 20, name: "B", className: "SimpleSpin", timeRefName: "A" }),
+      makeObj({ uid: 30, name: "C", className: "SimpleSpin" }),
+      makeObj({ uid: 31, name: "C", className: "SimpleSpin" }),
+      makeObj({ uid: 40, name: "D", className: "SimpleSpin", timeRefName: "ghost" }),
+      makeObj({ uid: 50, name: "", className: "SimpleSpin" }),
+    ];
+    const { ctx } = makeCtx({ objs });
+    const res = services.getAnimElementDetail(ctx, { sceneId: 1, uid: 10 });
+    if (!res.ok) throw new Error(res.error);
+    expect(res.detail.siblings).toEqual([
+      { name: "B", usable: false, reason: 'Relative to "B" would create a cycle: A -> B -> A' },
+      { name: "C", usable: false, reason: '"C" is carried by 2 elements; rename one first' },
+      { name: "D", usable: false, reason: '"D" cannot be used as a reference: "D" is relative to "ghost", which does not exist' },
+    ]);
+  });
+});
+
+describe("anim.service generic tab chain guards", () => {
+  const withProps = (o: Record<string, unknown>) =>
+    ({
+      ...o,
+      setProp: vi.fn(),
+      resetProp: vi.fn(),
+      getPropsJSON: () => "[]",
+    }) as Record<string, unknown> & { setProp: ReturnType<typeof vi.fn> };
+  const base = { sceneId: 1, op: "set" as const, valueType: "string" };
+
+  it("routes timeRefName through the chain check: a cycle is refused, setProp untouched", () => {
+    const a = withProps(makeObj({ uid: 10, name: "A", className: "SimpleSpin" }));
+    const b = withProps(makeObj({ uid: 20, name: "B", className: "SimpleSpin", timeRefName: "A" }));
+    const { ctx, startUndoTxn } = makeCtx({ objs: [a, b] });
+    const res = services.setAnimElementGenericProp(ctx, { ...base, uid: 10, propName: "timeRefName", value: "B" });
+    expect(res).toMatchObject({ ok: false, code: "invalid-args" });
+    expect(a.setProp).not.toHaveBeenCalled();
+    expect(a.timeRefName).toBe("");
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("writes a legal timeRefName with the re-based span in one transaction", () => {
+    const a = withProps(makeObj({ uid: 10, name: "A", className: "SimpleSpin", startMs: 0, endMs: 1000 }));
+    const b = withProps(makeObj({ uid: 20, name: "B", className: "SimpleSpin", startMs: 4000, endMs: 5000 }));
+    const { ctx, startUndoTxn, createdTV } = makeCtx({ objs: [a, b] });
+    const res = services.setAnimElementGenericProp(ctx, { ...base, uid: 20, propName: "timeRefName", value: "A" });
+    expect(res.ok).toBe(true);
+    expect(b.timeRefName).toBe("A");
+    expect(createdTV.map((t) => t.millisec)).toEqual([3000, 4000]);
+    expect(startUndoTxn).toHaveBeenCalledWith("Change property: timeRefName");
+  });
+
+  it("refuses an empty or duplicate name, and never previews name / timeRefName", () => {
+    const a = withProps(makeObj({ uid: 10, name: "A", className: "SimpleSpin" }));
+    const b = withProps(makeObj({ uid: 20, name: "B", className: "SimpleSpin" }));
+    const { ctx } = makeCtx({ objs: [a, b] });
+    expect(services.setAnimElementGenericProp(ctx, { ...base, uid: 20, propName: "name", value: "" }))
+      .toMatchObject({ ok: false, code: "invalid-args" });
+    expect(services.setAnimElementGenericProp(ctx, { ...base, uid: 20, propName: "name", value: "A" }))
+      .toMatchObject({ ok: false, code: "invalid-args" });
+    expect(services.setAnimElementGenericProp(ctx, { ...base, uid: 20, propName: "name", value: "B2", mode: "preview" }))
+      .toMatchObject({ ok: false, code: "unsupported" });
+    expect(b.name).toBe("B");
+  });
+
+  it("reports start / end read-only and refuses to write them", () => {
+    const propsJSON = JSON.stringify([
+      { name: "start", type: "object<TimeValue>", value: "0", readonly: false, hasdefault: false },
+      { name: "end", type: "object<TimeValue>", value: "1", readonly: false, hasdefault: false },
+      { name: "angle", type: "real", value: 90, readonly: false, hasdefault: true, isdefault: false },
+    ]);
+    const obj = { ...makeObj({ uid: 5, name: "A", className: "SimpleSpin" }), setProp: vi.fn(), getPropsJSON: () => propsJSON };
+    const { ctx } = makeCtx({ objs: [obj] });
+    const listed = services.getAnimElementGenericProps(ctx, { sceneId: 1, uid: 5 });
+    if (!listed.ok) throw new Error(listed.error);
+    expect(listed.entries.map((e) => [e.key, e.readonly])).toEqual([["start", true], ["end", true], ["angle", false]]);
+    expect(services.setAnimElementGenericProp(ctx, { ...base, uid: 5, propName: "start", value: "2" }))
+      .toMatchObject({ ok: false, code: "unsupported" });
+    expect(obj.setProp).not.toHaveBeenCalled();
   });
 });

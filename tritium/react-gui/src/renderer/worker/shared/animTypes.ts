@@ -95,14 +95,24 @@ export interface AnimElement {
   /** Relative end. */
   endMs: number;
 
-  /** Resolved absolute start -> strip left edge (read-only in C++). */
+  /**
+   * Resolved absolute start -> strip left edge. Resolved worker-side from the
+   * chain when `timeRefState` is `ok`; otherwise the last position C++ held
+   * (0 for an element that never resolved), so the strip has somewhere to be.
+   */
   absStartMs: number;
 
-  /** Resolved absolute end -> strip right edge (read-only in C++). */
+  /** Resolved absolute end -> strip right edge (same source as `absStartMs`). */
   absEndMs: number;
 
   /** `AnimObj.quadric` easing factor (0 = linear). */
   quadric: number;
+
+  /** Whether the element's time reference chain resolves. */
+  timeRefState: AnimTimeRefState;
+
+  /** Why it does not, in the words the inspector shows; set when not `ok`. */
+  resolveError?: string;
 }
 
 /**
@@ -135,6 +145,13 @@ export interface AnimTimeline {
 
   /** Index-ordered elements; lane order follows this order. */
   elements: AnimElement[];
+
+  /**
+   * Why the chain does not resolve (the first root cause in list order), or
+   * absent when every element is `ok`. While set, playback is refused and
+   * the panel shows the reason.
+   */
+  resolveError?: string;
 
   /** Manager-level state. */
   mgr: AnimMgrState;

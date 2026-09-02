@@ -277,7 +277,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
         // Keep drawing the dropped span until the refetch reflects it (see
         // DragPreview); the effect below drops it when fresh data arrives.
         setDragPreview((p) => (p ? { ...p, committed: true } : p));
-        setElementTime(el.index, newStart, newEnd).then((ok) => {
+        setElementTime(el.uid, newStart, newEnd).then((ok) => {
           // The write failed, so no SEM_ANIM event and no refetch is coming --
           // release the preview or the strip would be stuck at a span the C++
           // side never took.
@@ -300,11 +300,11 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
    * clearing a timeline means re-selecting between each click.
    */
   const handleDelete = useCallback(() => {
-    if (selectedIndex === null) return;
+    if (selectedIndex === null || selectedUid === null) return;
     const next = elements[selectedIndex + 1] ?? elements[selectedIndex - 1] ?? null;
-    removeElement(selectedIndex);
+    removeElement(selectedUid);
     setSelectedUid(next?.uid ?? null);
-  }, [selectedIndex, elements, removeElement]);
+  }, [selectedIndex, selectedUid, elements, removeElement]);
 
   // Reset the selection on scene switch so a stale uid from the previous scene
   // is never emitted against the new scene's inspector.
@@ -425,8 +425,8 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
               icon={<AppIcon name="ui.caretUp" aria-hidden />}
               disabled={selectedIndex === null || selectedIndex === 0}
               onClick={() =>
-                selectedIndex !== null && selectedIndex > 0 &&
-                moveElement(selectedIndex, selectedIndex - 1)
+                selectedIndex !== null && selectedUid !== null && selectedIndex > 0 &&
+                moveElement(selectedUid, selectedIndex - 1)
               }
               title="Move up"
             />
@@ -434,8 +434,9 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
               icon={<AppIcon name="ui.caretDown" aria-hidden />}
               disabled={selectedIndex === null || selectedIndex >= elements.length - 1}
               onClick={() =>
-                selectedIndex !== null && selectedIndex < elements.length - 1 &&
-                moveElement(selectedIndex, selectedIndex + 1)
+                selectedIndex !== null && selectedUid !== null &&
+                selectedIndex < elements.length - 1 &&
+                moveElement(selectedUid, selectedIndex + 1)
               }
               title="Move down"
             />

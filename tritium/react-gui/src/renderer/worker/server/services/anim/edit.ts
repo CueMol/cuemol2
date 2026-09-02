@@ -3,22 +3,37 @@
  * @description Changing the strip: add, remove, reorder, retime.
  *
  * Every one of these is a scene edit, so it goes through an undo transaction
- * and the panel refetches the timeline afterwards.
+ * and the panel refetches the timeline afterwards. Elements are addressed by
+ * their stable uid: the strip index the panel drew from is stale as soon as
+ * anything is added, removed or reordered underneath it.
+ *
+ * None of these calls `resolveRelTime` itself. C++ `AnimMgr::update()` runs
+ * after every property write, append and removal (and swallows a resolve
+ * failure), and the chain is validated before a reference is ever written
+ * (`elementWrites.ts`); a pre-existing broken chain elsewhere in the list must
+ * not roll back an unrelated edit.
  */
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import type { AnimAddType } from "@renderer/types";
+import { fail, ok } from "@renderer/worker/shared/result";
 import {
-  forEachAnimObj,
+  isFiniteMs,
   makeTimeValue,
+  readAnimGraph,
   resolveSceneMgr,
   safeNum,
   safeStr,
+  type AnimGraphRead,
 } from "./resolve";
-import { withUndoTxn } from "../withUndoTxn";
+import { undoTxnResult } from "../withUndoTxn";
+import { findByUid } from "./detail";
+import { applyTiming } from "./elementWrites";
 import { readMgrState } from "./read";
+import type { TimeRefNode } from "./timeRefGraph";
+import { goneFail, noMgrFail } from "./types";
 import type {
   AnimAddElementArgs,
   AnimAddResult,
@@ -87,32 +102,23 @@ function applyAddTypeDefaults(obj: AnimObj, type: AnimAddType): void {
   }
 }
 
-/** Set an element's relative start/end (ms) and re-resolve absolute times. */
+/** Set an element's relative start/end (ms); C++ re-resolves on the write. */
 export function setElementTime(
   ctx: WorkerContext,
   args: AnimSetElementTimeArgs,
 ): AnimEditResult {
   const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm) return { ok: false };
+  if (!sm) return noMgrFail();
   const { scene, mgr } = sm;
-  // Keep start <= end defensively (the renderer also pre-clamps).
-  const s = Math.min(args.startMs, args.endMs);
-  const e = Math.max(args.startMs, args.endMs);
-  try {
-    withUndoTxn(scene, "Move animation element", () => {
-      const obj = mgr.getAt(args.index) as AnimObj | null;
-      if (!obj) throw new Error("bad index");
-      const tvS = makeTimeValue(ctx, s);
-      const tvE = makeTimeValue(ctx, e);
-      if (!tvS || !tvE) throw new Error("TimeValue create failed");
-      obj.start = tvS;
-      obj.end = tvE;
-      mgr.resolveRelTime();
-    });
-  } catch {
-    return { ok: false };
+  const found = findByUid(mgr, args.uid);
+  if (!found) return goneFail();
+  if (!isFiniteMs(args.startMs) || !isFiniteMs(args.endMs)) {
+    return fail("start/end must be finite milliseconds", "invalid-args");
   }
-  return { ok: true };
+  return undoTxnResult(scene, "Move animation element", () => {
+    applyTiming(ctx, found.obj, { startMs: args.startMs, endMs: args.endMs });
+    return ok();
+  });
 }
 
 /**
@@ -146,135 +152,140 @@ function ensureStartCam(scene: Scene, mgr: AnimMgr, viewId: number | undefined):
   }
 }
 
+/**
+ * The name a new element chains to: the element before the insertion point
+ * (UXP parity), but only when a reference can legally bind to it -- it has a
+ * name, that name is carried once, and its own timing resolves. Otherwise the
+ * new element is absolute rather than born broken.
+ */
+function autoChainName(mgr: AnimMgr, read: AnimGraphRead, insertAt: number): string {
+  const refIdx = insertAt - 1;
+  if (refIdx < 0) return "";
+  let ref: AnimObj | null = null;
+  try {
+    ref = mgr.getAt(refIdx) as AnimObj | null;
+  } catch {
+    ref = null;
+  }
+  if (!ref) return "";
+  const node = read.graph.byUid.get(safeNum(() => ref.uid));
+  if (!node || node.state !== "ok" || node.name === "" || read.graph.duplicateNames.has(node.name)) {
+    return "";
+  }
+  return node.name;
+}
+
 /** Create a new element, auto-chained to the preceding one, and insert it. */
 export function addElement(ctx: WorkerContext, args: AnimAddElementArgs): AnimAddResult {
   const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm) return { ok: false };
+  if (!sm) return noMgrFail();
   const { scene, mgr } = sm;
   const className = classForAddType(args.type);
   ensureStartCam(scene, mgr, args.viewId);
-  let uid: number | undefined;
-  let index: number | undefined;
-  try {
-    withUndoTxn(scene, "Add animation element", () => {
-      const obj = ctx.svc.createObj(className) as AnimObj | null;
-      if (!obj) throw new Error("createObj failed");
-      obj.name = uniqueElementName(mgr, className);
+  const read = readAnimGraph(mgr);
+  const r = undoTxnResult(scene, "Add animation element", () => {
+    const obj = ctx.svc.createObj(className) as AnimObj | null;
+    if (!obj) return fail("createObj failed", "native");
+    obj.name = uniqueElementName(mgr, className);
 
-      const size = mgr.size;
-      const insertAt =
-        args.insertIndex !== undefined && args.insertIndex < size
-          ? args.insertIndex
-          : size;
+    const size = mgr.size;
+    const insertAt =
+      args.insertIndex !== undefined && args.insertIndex < size ? args.insertIndex : size;
 
-      // Auto-chain to the element preceding the insertion point (UXP parity).
-      const refIdx = insertAt - 1;
-      if (refIdx >= 0) {
-        const ref = mgr.getAt(refIdx) as AnimObj | null;
-        if (ref) obj.timeRefName = ref.name;
-      }
+    const chain = autoChainName(mgr, read, insertAt);
+    if (chain !== "") obj.timeRefName = chain;
 
-      const tvS = makeTimeValue(ctx, 0);
-      const tvE = makeTimeValue(ctx, 1000);
-      if (!tvS || !tvE) throw new Error("TimeValue create failed");
-      obj.start = tvS;
-      obj.end = tvE;
-      applyAddTypeDefaults(obj, args.type);
+    const tvS = makeTimeValue(ctx, 0);
+    const tvE = makeTimeValue(ctx, 1000);
+    if (!tvS || !tvE) return fail("TimeValue create failed", "native");
+    obj.start = tvS;
+    obj.end = tvE;
+    applyAddTypeDefaults(obj, args.type);
 
-      if (insertAt < size) mgr.insertBefore(insertAt, obj);
-      else mgr.append(obj);
-      mgr.resolveRelTime();
-      uid = obj.uid;
-      index = insertAt;
-    });
-  } catch {
-    return { ok: false, mgr: readMgrState(mgr) };
-  }
-  return { ok: true, uid, index, mgr: readMgrState(mgr) };
+    if (insertAt < size) mgr.insertBefore(insertAt, obj);
+    else mgr.append(obj);
+    return ok({ uid: obj.uid, index: insertAt });
+  });
+  if (!r.ok) return { ...r, mgr: readMgrState(mgr) };
+  return ok({ uid: r.uid, index: r.index, mgr: readMgrState(mgr) });
 }
 
-/** Remove the element at `index`. */
 /**
- * Cut loose the elements whose start time chains to the one at `index`.
+ * Cut loose the elements whose start time chains to `target`.
  *
  * A relative start is an offset from another element's end, named by
- * `timeRefName`. Once that element is gone the name resolves to nothing, and
+ * `timeRefName`. Once that element is gone the name resolves to nothing and
  * C++ `resolveRelTime` throws for the whole manager -- so every later resolve
- * fails, the strip keeps whatever absolute times it was last drawn with, and
- * no further edit to any element can land.
+ * fails and playback is refused.
  *
- * A deleted reference cannot be re-pointed the way a renamed one is
- * (`cascadeTimeRefRename`), so each dependent is made absolute at the position
- * it currently occupies: the timeline looks unchanged, and the chain is gone
- * rather than dangling.
+ * A deleted reference cannot be re-pointed the way a renamed one is, so each
+ * dependent is made absolute: at the position it currently occupies when its
+ * chain resolves (the timeline looks unchanged), or keeping its offsets as
+ * absolute times when it does not (there is no position to preserve). Only
+ * the elements bound to the target count -- a name carried twice binds to its
+ * first carrier, so deleting a later duplicate detaches nothing.
  */
-function detachDependents(ctx: WorkerContext, mgr: AnimMgr, index: number): void {
-  const target = mgr.getAt(index) as AnimObj | null;
-  if (!target) return;
-  const name = safeStr(() => target.name);
-  if (!name) return;
-  // Absolute times have to be current before they are copied. A resolve that
-  // already fails leaves nothing worth preserving, so the offsets stand.
-  try {
-    mgr.resolveRelTime();
-  } catch {
-    /* already dangling elsewhere */
-  }
-  forEachAnimObj(mgr, (obj) => {
-    if (safeStr(() => obj.timeRefName) !== name) return undefined;
-    const tvS = makeTimeValue(ctx, safeNum(() => obj.absStart.millisec) ?? 0);
-    const tvE = makeTimeValue(ctx, safeNum(() => obj.absEnd.millisec) ?? 0);
-    if (tvS && tvE) {
-      obj.start = tvS;
-      obj.end = tvE;
+function detachDependents(
+  ctx: WorkerContext,
+  read: AnimGraphRead,
+  target: TimeRefNode | undefined,
+): void {
+  if (!target || target.name === "") return;
+  if (read.graph.firstIndexByName.get(target.name) !== target.index) return;
+  for (const n of read.graph.nodes) {
+    if (n.uid === target.uid || n.timeRefName !== target.name) continue;
+    const w = read.objs[n.index] as unknown as Record<string, unknown>;
+    if (n.state === "ok") {
+      const tvS = makeTimeValue(ctx, n.absStartMs as number);
+      const tvE = makeTimeValue(ctx, n.absEndMs as number);
+      if (!tvS || !tvE) throw new Error("TimeValue create failed");
+      w.start = tvS;
+      w.end = tvE;
     }
-    (obj as unknown as Record<string, unknown>).timeRefName = "";
-    return undefined;
-  });
+    w.timeRefName = "";
+  }
 }
 
+/** Remove an element, cutting loose whatever chained to it. */
 export function removeElement(
   ctx: WorkerContext,
   args: AnimRemoveElementArgs,
 ): AnimEditResult {
   const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm) return { ok: false };
+  if (!sm) return noMgrFail();
   const { scene, mgr } = sm;
-  try {
-    withUndoTxn(scene, "Delete animation element", () => {
-      detachDependents(ctx, mgr, args.index);
-      mgr.removeAt(args.index);
-      mgr.resolveRelTime();
-    });
-  } catch {
-    return { ok: false };
-  }
-  return { ok: true };
+  const found = findByUid(mgr, args.uid);
+  if (!found) return goneFail();
+  const read = readAnimGraph(mgr);
+  return undoTxnResult(scene, "Delete animation element", () => {
+    detachDependents(ctx, read, read.graph.byUid.get(args.uid));
+    if ((mgr.removeAt(found.index) as unknown) === false) return fail("removeAt failed", "native");
+    return ok();
+  });
 }
 
 /**
- * Reorder: remove the element at `from`, then re-insert at the raw `to` index
- * (UXP convention: removeAt(from) + insertBefore(to), append when to >= size).
+ * Reorder: remove the element, then re-insert at the raw `to` index (UXP
+ * convention: removeAt(from) + insertBefore(to), append when to >= size).
+ * The chain is untouched -- resolution is by name and order-independent.
  */
 export function moveElement(
   ctx: WorkerContext,
   args: AnimMoveElementArgs,
 ): AnimEditResult {
-  if (args.from === args.to) return { ok: true };
   const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm) return { ok: false };
+  if (!sm) return noMgrFail();
   const { scene, mgr } = sm;
-  try {
-    withUndoTxn(scene, "Reorder animation element", () => {
-      const obj = mgr.getAt(args.from) as AnimObj | null;
-      if (!obj) throw new Error("bad index");
-      mgr.removeAt(args.from);
-      if (args.to < mgr.size) mgr.insertBefore(args.to, obj);
-      else mgr.append(obj);
-      mgr.resolveRelTime();
-    });
-  } catch {
-    return { ok: false };
-  }
-  return { ok: true };
+  const found = findByUid(mgr, args.uid);
+  if (!found) return goneFail();
+  const from = found.index;
+  const size = safeNum(() => mgr.size);
+  const to = Math.max(0, Math.min(size - 1, args.to));
+  if (to === from) return ok();
+  return undoTxnResult(scene, "Reorder animation element", () => {
+    mgr.removeAt(from);
+    if (to < mgr.size) mgr.insertBefore(to, found.obj);
+    else mgr.append(found.obj);
+    return ok();
+  });
 }

@@ -16,6 +16,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 import type { GenericPropEntry, PropWriteOpts } from '@renderer/worker/shared/genericProps';
+import type { AnimGenericPropsResult } from '@renderer/worker/server/services/anim/anim.service';
 import { modifiedKeys } from '@renderer/features/inspector/propModel';
 
 export interface UseAnimGenericPropsOptions {
@@ -48,11 +49,11 @@ export function useAnimGenericProps({
       .then((res) => {
         if (token !== genericToken.current) return;
         setGenericLoading(false);
-        if (!res || res.gone) {
-          onGoneRef.current(sid);
+        if (!res.ok) {
+          if (res.gone) onGoneRef.current(sid);
           return;
         }
-        setGenericEntries(res.entries ?? []);
+        setGenericEntries(res.entries);
       })
       .catch((e: unknown) => {
         setGenericLoading(false);
@@ -61,16 +62,13 @@ export function useAnimGenericProps({
   }, [cmRef, sceneIdRef, uidRef, onGoneRef]);
 
   const adoptGeneric = useCallback(
-    (
-      res: { ok: boolean; gone?: boolean; entries?: GenericPropEntry[] } | undefined,
-      token: number,
-    ) => {
+    (res: AnimGenericPropsResult, token: number) => {
       if (token !== genericToken.current) return;
-      if (!res || res.gone) {
-        onGoneRef.current(sceneIdRef.current);
+      if (!res.ok) {
+        if (res.gone) onGoneRef.current(sceneIdRef.current);
         return;
       }
-      setGenericEntries(res.entries ?? []);
+      setGenericEntries(res.entries);
     },
     [onGoneRef, sceneIdRef],
   );
@@ -97,7 +95,7 @@ export function useAnimGenericProps({
       })
         .then((res) => {
           if (mode !== "commit") {
-            if (res?.gone) onGoneRef.current(sceneIdRef.current);
+            if (!res.ok && res.gone) onGoneRef.current(sceneIdRef.current);
             return;
           }
           adoptGeneric(res, token);

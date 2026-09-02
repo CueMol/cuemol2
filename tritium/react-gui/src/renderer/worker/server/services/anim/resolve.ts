@@ -4,7 +4,7 @@ import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import { getSceneOrNull } from "../helpers/sceneResolver";
-import type { TimeRefInput } from "./timeRefGraph";
+import { buildTimeRefGraph, type TimeRefGraph, type TimeRefInput } from "./timeRefGraph";
 // --- safe wrapper reads (a getter may throw for missing-on-subclass cases) ---
 
 export function safeNum(read: () => number): number {
@@ -144,18 +144,49 @@ export function tryResolveRel(mgr: AnimMgr): string | null {
   }
 }
 
+function toTimeRefInput(obj: AnimObj): TimeRefInput {
+  return {
+    uid: safeNum(() => obj.uid),
+    name: safeStr(() => obj.name),
+    timeRefName: safeStr(() => obj.timeRefName),
+    startMs: safeNum(() => obj.start.millisec),
+    endMs: safeNum(() => obj.end.millisec),
+  };
+}
+
 /** The names and RELATIVE spans `buildTimeRefGraph` resolves, in index order. */
 export function readTimeRefInputs(mgr: AnimMgr): TimeRefInput[] {
   const out: TimeRefInput[] = [];
   forEachAnimObj(mgr, (obj) => {
-    out.push({
-      uid: safeNum(() => obj.uid),
-      name: safeStr(() => obj.name),
-      timeRefName: safeStr(() => obj.timeRefName),
-      startMs: safeNum(() => obj.start.millisec),
-      endMs: safeNum(() => obj.end.millisec),
-    });
+    out.push(toTimeRefInput(obj));
     return undefined;
   });
   return out;
+}
+
+/** The chain graph plus the wrappers and manager indices its nodes stand for. */
+export interface AnimGraphRead {
+  graph: TimeRefGraph;
+  /** `objs[k]` is the wrapper behind `graph.nodes[k]`. */
+  objs: AnimObj[];
+  /** `indices[k]` is the manager (`getAt`) index of `graph.nodes[k]`. */
+  indices: number[];
+}
+
+/**
+ * Read the manager once and resolve its chain. Node positions are compact
+ * (an entry `getAt` refuses is skipped), so a service that needs the manager
+ * index uses `indices`, not the node's position.
+ */
+export function readAnimGraph(mgr: AnimMgr): AnimGraphRead {
+  const objs: AnimObj[] = [];
+  const indices: number[] = [];
+  const inputs: TimeRefInput[] = [];
+  forEachAnimObj(mgr, (obj, i) => {
+    objs.push(obj);
+    indices.push(i);
+    inputs.push(toTimeRefInput(obj));
+    return undefined;
+  });
+  return { graph: buildTimeRefGraph(inputs), objs, indices };
 }

@@ -3,13 +3,21 @@
  * @description The raw property tab for one animation element.
  *
  * Mirrors what genericProps.service does for scene nodes, against an AnimObj:
- * the inspector's Generic tab is the same table either side.
+ * the inspector's Generic tab is the same table either side. Two rows are
+ * not raw here. `name` and `timeRefName` are the chain -- written through the
+ * same validated plans as the structured tab, so the Generic tab cannot
+ * dangle, loop or duplicate a reference. `start` and `end` are reported
+ * read-only: they are one span, edited as Start / Duration on the Properties
+ * tab, and writing one of them alone makes C++ collapse the other onto it.
  */
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
-import { resolveMgr, resolveSceneMgr } from "./resolve";
-import { withUndoTxn } from "../withUndoTxn";
+import { fail, failFrom, ok } from "@renderer/worker/shared/result";
+import { readAnimGraph, resolveMgr, resolveSceneMgr } from "./resolve";
+import { undoTxnResult } from "../withUndoTxn";
 import { findByUid } from "./detail";
+import { planNameWrite, planTimeRefWrite } from "./elementWrites";
+import { goneFail, noMgrFail } from "./types";
 import type {
   AnimGenericPropsResult,
   GetAnimElementGenericPropsArgs,
@@ -20,10 +28,16 @@ import { parseGenericProps, type GenericPropEntry } from "@renderer/worker/serve
 import type { BaseWrapper } from "@cuemol/core/src/BaseWrapper";
 // --- detail shapes ---
 
+/** Rows written through the validated chain plans, not raw `setProp`. */
+const GUARDED = new Set(["name", "timeRefName"]);
+/** Rows the Generic tab shows but does not write (one span, two fields). */
+const TIMING_ROWS = new Set(["start", "end"]);
+
 /** Read + parse the AnimObj's full property list (generic tab). */
 function readAnimGenericEntries(obj: AnimObj): GenericPropEntry[] {
   try {
-    return parseGenericProps(JSON.parse((obj as unknown as BaseWrapper).getPropsJSON()));
+    const entries = parseGenericProps(JSON.parse((obj as unknown as BaseWrapper).getPropsJSON()));
+    return entries.map((e) => (TIMING_ROWS.has(e.key) ? { ...e, readonly: true } : e));
   } catch {
     return [];
   }
@@ -35,10 +49,10 @@ export function getAnimElementGenericProps(
   args: GetAnimElementGenericPropsArgs,
 ): AnimGenericPropsResult {
   const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return { ok: false, entries: [] };
+  if (!mgr) return noMgrFail();
   const found = findByUid(mgr, args.uid);
-  if (!found) return { ok: false, gone: true, entries: [] };
-  return { ok: true, entries: readAnimGenericEntries(found.obj) };
+  if (!found) return goneFail();
+  return ok({ entries: readAnimGenericEntries(found.obj) });
 }
 
 /**
@@ -58,46 +72,73 @@ export function setAnimElementGenericProp(
   ctx: WorkerContext,
   args: SetAnimElementGenericPropArgs,
 ): AnimGenericPropsResult {
-  const fail: AnimGenericPropsResult = { ok: false, entries: [] };
   const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm) return fail;
+  if (!sm) return noMgrFail();
   const { scene, mgr } = sm;
   const found = findByUid(mgr, args.uid);
-  if (!found) return { ok: false, gone: true, entries: [] };
+  if (!found) return goneFail();
   const obj = found.obj as unknown as BaseWrapper;
   const mode = args.mode ?? "commit";
+  const key = args.propName;
+
+  if (GUARDED.has(key)) {
+    if (args.op !== "set") return fail(`"${key}" has no default`, "unsupported");
+    if (mode !== "commit") return fail(`"${key}" does not support realtime preview`, "unsupported");
+    const { graph, objs } = readAnimGraph(mgr);
+    const plan =
+      key === "timeRefName"
+        ? planTimeRefWrite(ctx, graph, found.obj, args.uid, args.value)
+        : planNameWrite(graph, objs, found.obj, args.uid, args.value);
+    if (!plan.ok) return plan;
+    if (!plan.noop) {
+      const r = undoTxnResult(scene, `Change property: ${key}`, () => {
+        plan.apply();
+        return ok();
+      });
+      if (!r.ok) return r;
+    }
+    return ok({ entries: readAnimGenericEntries(found.obj) });
+  }
+  if (TIMING_ROWS.has(key)) {
+    return fail(`"${key}" is edited as Start / Duration on the Properties tab`, "unsupported");
+  }
 
   if (mode !== "commit") {
-    if (args.op !== "set") return fail;
+    if (args.op !== "set") return fail("a reset never previews", "unsupported");
     try {
-      if (mode === "preview") obj.setProp(args.propName, args.value);
-      else if (args.originalWasDefault) obj.resetProp(args.propName);
-      else obj.setProp(args.propName, args.value);
+      if (mode === "preview") obj.setProp(key, args.value);
+      else if (args.originalWasDefault) obj.resetProp(key);
+      else obj.setProp(key, args.value);
     } catch (e) {
       console.warn(`setAnimElementGenericProp (${mode}) failed:`, e);
-      return fail;
+      return failFrom(e, "native");
     }
-    return { ok: true, entries: [] };
+    return ok({ entries: [] });
   }
 
-  const label =
-    args.op === "reset"
-      ? `Reset property: ${args.propName}`
-      : `Change property: ${args.propName}`;
-  try {
-    if (args.op === "set" && args.originalValue !== undefined) {
-      if (args.originalWasDefault) obj.resetProp(args.propName);
-      else obj.setProp(args.propName, args.originalValue);
+  // A commit after a realtime drag: put the object back where the drag began
+  // (outside the transaction) so the recorded step is original -> value
+  // rather than last preview -> value.
+  if (args.op === "set" && args.originalValue !== undefined) {
+    try {
+      if (args.originalWasDefault) obj.resetProp(key);
+      else obj.setProp(key, args.originalValue);
+    } catch (e) {
+      console.warn("setAnimElementGenericProp (restore) failed:", e);
+      return failFrom(e, "native");
     }
-    withUndoTxn(scene, label, () => {
-      if (args.op === "reset") obj.resetProp(args.propName);
-      else obj.setProp(args.propName, args.value);
-    });
-  } catch (e) {
-    console.warn("setAnimElementGenericProp failed:", e);
-    return fail;
   }
-  return { ok: true, entries: readAnimGenericEntries(found.obj) };
+  const label = args.op === "reset" ? `Reset property: ${key}` : `Change property: ${key}`;
+  const r = undoTxnResult(scene, label, () => {
+    if (args.op === "reset") obj.resetProp(key);
+    else obj.setProp(key, args.value);
+    return ok();
+  });
+  if (!r.ok) {
+    console.warn("setAnimElementGenericProp failed:", r.error);
+    return r;
+  }
+  return ok({ entries: readAnimGenericEntries(found.obj) });
 }
 
 /** Reset several generic properties to their C++ defaults in one undo step. */
@@ -105,29 +146,24 @@ export function resetAnimElementGenericProps(
   ctx: WorkerContext,
   args: ResetAnimElementGenericPropsArgs,
 ): AnimGenericPropsResult {
+  if (args.propNames.length === 0) return fail("no properties to reset", "invalid-args");
   const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm || args.propNames.length === 0) return { ok: false, entries: [] };
+  if (!sm) return noMgrFail();
   const { scene, mgr } = sm;
-  let gone = false;
+  const found = findByUid(mgr, args.uid);
+  if (!found) return goneFail();
+  const obj = found.obj as unknown as BaseWrapper;
   const label =
     args.propNames.length === 1
       ? `Reset property: ${args.propNames[0]}`
       : `Reset ${args.propNames.length} properties`;
-  try {
-    withUndoTxn(scene, label, () => {
-      const found = findByUid(mgr, args.uid);
-      if (!found) {
-        gone = true;
-        return;
-      }
-      const obj = found.obj as unknown as BaseWrapper;
-      for (const name of args.propNames) obj.resetProp(name);
-    });
-  } catch (e) {
-    console.warn("resetAnimElementGenericProps failed:", e);
-    return { ok: false, entries: [] };
+  const r = undoTxnResult(scene, label, () => {
+    for (const name of args.propNames) obj.resetProp(name);
+    return ok();
+  });
+  if (!r.ok) {
+    console.warn("resetAnimElementGenericProps failed:", r.error);
+    return r;
   }
-  if (gone) return { ok: false, gone: true, entries: [] };
-  const found = findByUid(mgr, args.uid);
-  return { ok: true, entries: found ? readAnimGenericEntries(found.obj) : [] };
+  return ok({ entries: readAnimGenericEntries(found.obj) });
 }

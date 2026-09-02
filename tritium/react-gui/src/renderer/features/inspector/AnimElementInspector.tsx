@@ -133,8 +133,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     c.invokeService("getAnimElementDetail", { sceneId: sid, uid: u })
       .then((res) => {
         if (token !== fetchToken.current) return;
-        if (!res || res.gone || !res.detail) {
-          onGoneRef.current(sid);
+        if (!res.ok) {
+          if (res.gone) onGoneRef.current(sid);
           return;
         }
         adopt(res.detail);
@@ -234,11 +234,11 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       c.invokeService("setAnimElementProp", { sceneId: sid, uid: u, prop, value })
         .then((res) => {
           if (token !== fetchToken.current) return;
-          if (!res || res.gone || !res.detail) {
-            onGoneRef.current(sid);
+          if (!res.ok) {
+            if (res.gone) onGoneRef.current(sid);
             return;
           }
-          adopt(res.detail);
+          if (res.detail) adopt(res.detail);
         })
         .catch((e: unknown) => console.warn("setAnimElementProp failed:", e));
     },
@@ -271,15 +271,15 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
         })
         .then((res) => {
           if (preview) {
-            if (res?.gone) onGoneRef.current(sid);
+            if (!res.ok && res.gone) onGoneRef.current(sid);
             return;
           }
           if (token !== fetchToken.current) return;
-          if (!res || res.gone || !res.detail) {
-            onGoneRef.current(sid);
+          if (!res.ok) {
+            if (res.gone) onGoneRef.current(sid);
             return;
           }
-          adopt(res.detail);
+          if (res.detail) adopt(res.detail);
         })
         .catch((e: unknown) => console.warn("setAnimElementProp (timing) failed:", e));
     },

@@ -29,16 +29,16 @@ interface UseAnimEditOptions {
 export interface UseAnimEditResult {
   /** Add a new element; `insertIndex` inserts before it (append when omitted). */
   addElement: (type: AnimAddType, insertIndex?: number) => void;
-  /** Remove the element at `index`. */
-  removeElement: (index: number) => void;
-  /** Reorder: raw target index (i-1 to move up, i+1 to move down). */
-  moveElement: (from: number, to: number) => void;
+  /** Remove the element `uid`. */
+  removeElement: (uid: number) => void;
+  /** Reorder `uid` to the raw target index (i-1 to move up, i+1 to move down). */
+  moveElement: (uid: number, to: number) => void;
   /**
    * Set an element's RELATIVE start/end (ms). Resolves true once the worker
    * accepted the write, so a caller holding an optimistic preview knows whether
    * a refetch is actually coming.
    */
-  setElementTime: (index: number, startMs: number, endMs: number) => Promise<boolean>;
+  setElementTime: (uid: number, startMs: number, endMs: number) => Promise<boolean>;
 }
 
 /**
@@ -78,32 +78,32 @@ export function useAnimEdit({
       .catch((e: unknown) => console.warn("animAddElement failed:", e));
   }, []);
 
-  const removeElement = useCallback((index: number) => {
+  const removeElement = useCallback((uid: number) => {
     const c = cmRef.current;
     const sid = sceneIdRef.current;
     if (!c || sid === undefined) return;
-    c.invokeService("animRemoveElement", { sceneId: sid, index }).catch(
+    c.invokeService("animRemoveElement", { sceneId: sid, uid }).catch(
       (e: unknown) => console.warn("animRemoveElement failed:", e),
     );
   }, []);
 
-  const moveElement = useCallback((from: number, to: number) => {
+  const moveElement = useCallback((uid: number, to: number) => {
     const c = cmRef.current;
     const sid = sceneIdRef.current;
     if (!c || sid === undefined) return;
-    c.invokeService("animMoveElement", { sceneId: sid, from, to }).catch(
+    c.invokeService("animMoveElement", { sceneId: sid, uid, to }).catch(
       (e: unknown) => console.warn("animMoveElement failed:", e),
     );
   }, []);
 
   const setElementTime = useCallback(
-    (index: number, startMs: number, endMs: number): Promise<boolean> => {
+    (uid: number, startMs: number, endMs: number): Promise<boolean> => {
       const c = cmRef.current;
       const sid = sceneIdRef.current;
       if (!c || sid === undefined) return Promise.resolve(false);
       return c
-        .invokeService("animSetElementTime", { sceneId: sid, index, startMs, endMs })
-        .then((res) => !!res?.ok)
+        .invokeService("animSetElementTime", { sceneId: sid, uid, startMs, endMs })
+        .then((res) => res.ok)
         .catch((e: unknown) => {
           console.warn("animSetElementTime failed:", e);
           return false;

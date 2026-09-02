@@ -84,6 +84,7 @@ function el(over: Partial<AnimElement>): AnimElement {
     absStartMs: 0,
     absEndMs: 1000,
     quadric: 0,
+    timeRefState: "ok",
     ...over,
   };
 }
@@ -326,7 +327,7 @@ describe("AnimationPanel editing", () => {
     expect(mockEdit.setElementTime).not.toHaveBeenCalled();
     act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 200 })));
     expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
-    expect(mockEdit.setElementTime.mock.calls[0][0]).toBe(0); // element index
+    expect(mockEdit.setElementTime.mock.calls[0][0]).toBe(1); // element uid
     unmount();
   });
 
@@ -384,8 +385,8 @@ describe("AnimationPanel editing", () => {
     act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 0 })));
     act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 0 })));
     expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
-    const [index, startMs, endMs] = mockEdit.setElementTime.mock.calls[0];
-    expect(index).toBe(1);
+    const [uid, startMs, endMs] = mockEdit.setElementTime.mock.calls[0];
+    expect(uid).toBe(2); // the chained element (index 1)
     expect(startMs).toBe(0); // floored at the reference's end
     expect(endMs).toBe(1000); // duration preserved
     unmount();
@@ -400,8 +401,8 @@ describe("AnimationPanel editing", () => {
     act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 160 })));
     act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 160 })));
     expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
-    const [index, startMs] = mockEdit.setElementTime.mock.calls[0];
-    expect(index).toBe(0);
+    const [uid, startMs] = mockEdit.setElementTime.mock.calls[0];
+    expect(uid).toBe(1);
     expect(startMs).toBe(0);
     unmount();
   });
@@ -412,7 +413,7 @@ describe("AnimationPanel editing", () => {
     const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
     expect(delBtn.disabled).toBe(false);
     act(() => delBtn.click());
-    expect(mockEdit.removeElement).toHaveBeenCalledWith(0);
+    expect(mockEdit.removeElement).toHaveBeenCalledWith(1); // uid, not index
     unmount();
   });
 
@@ -442,7 +443,7 @@ describe("AnimationPanel editing", () => {
     act(() => (container.querySelectorAll(".anim-label-row")[1] as HTMLElement).click()); // uid 2
     const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
     act(() => delBtn.click());
-    expect(mockEdit.removeElement).toHaveBeenCalledWith(1);
+    expect(mockEdit.removeElement).toHaveBeenCalledWith(2); // uid of the last element
     expect(inspector.showAnimElement).toHaveBeenLastCalledWith(1, 1);
     unmount();
   });
@@ -467,7 +468,7 @@ describe("AnimationPanel editing", () => {
     const downBtn = container.querySelectorAll(".anim-label-toolbar button")[3] as HTMLButtonElement;
     expect(downBtn.disabled).toBe(false);
     act(() => downBtn.click());
-    expect(mockEdit.moveElement).toHaveBeenCalledWith(0, 1);
+    expect(mockEdit.moveElement).toHaveBeenCalledWith(1, 1); // (uid, raw target index)
     unmount();
   });
 

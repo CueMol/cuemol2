@@ -4,12 +4,16 @@
  *
  * Elements are addressed by a stable uid rather than an index, because the
  * strip can be reordered underneath an open inspector. Time can be stated
- * relative to another element by name, which is why writing a name has to
- * cascade into whoever referred to the old one.
+ * relative to another element by name; the name and time-reference writes
+ * are validated against the whole chain before they land (`elementWrites.ts`
+ * over `timeRefGraph.ts`), so a write that would dangle, loop or collide is
+ * refused with a reason instead of leaving the manager unresolvable, and a
+ * rename carries the elements chained to the old name along with it.
  */
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
+import { fail, failFrom, ok } from "@renderer/worker/shared/result";
 import { classNameToType } from "./elementType";
 import {
   safeNum,
@@ -17,11 +21,14 @@ import {
   safeStr,
   resolveMgr,
   resolveSceneMgr,
-  makeTimeValue,
   forEachAnimObj,
+  readAnimGraph,
 } from "./resolve";
-import { withUndoTxn } from "../withUndoTxn";
+import { undoTxnResult } from "../withUndoTxn";
+import { checkTimeRef, type TimeRefGraph } from "./timeRefGraph";
+import { applyTiming, isTiming, planNameWrite, planTimeRefWrite } from "./elementWrites";
 import type { AnimElementType } from "@renderer/types";
+import { goneFail, noMgrFail } from "./types";
 import type {
   AnimTimingMs,
   AnimElementCommon,
@@ -46,41 +53,6 @@ export function findByUid(mgr: AnimMgr, uid: number): { obj: AnimObj; index: num
       safeNum(() => obj.uid) === uid ? { obj, index: i } : undefined,
     ) ?? null
   );
-}
-
-/** Resolve relative->absolute, swallowing a cyclic/missing-ref throw so a bad
- *  sibling reference cannot roll back an unrelated field edit. */
-function tryResolveRel(mgr: AnimMgr): void {
-  try {
-    mgr.resolveRelTime();
-  } catch {
-    /* bad sibling ref must not abort the edit */
-  }
-}
-
-/**
- * Hold a re-based span at or after its base, keeping its duration.
- *
- * A relative start is an offset from the reference's END, so a negative one
- * would mean "starts before the element it chains after finishes" -- a state
- * the timeline was never designed for (it resolves to an absolute time that can
- * fall before zero). Rather than let a conversion produce one, the element is
- * pulled to the reference's end and keeps its length.
- */
-function clampRelSpan(start: number, end: number): { start: number; end: number } {
-  if (start >= 0) return { start, end };
-  return { start: 0, end: Math.max(0, end - start) };
-}
-
-/**
- * Absolute end (ms) of the sibling named `name` -- the base a relative time is
- * measured from -- or null when no element carries that name.
- */
-function refAbsEndMs(mgr: AnimMgr, name: string): number | null {
-  const ref = forEachAnimObj(mgr, (obj) =>
-    safeStr(() => obj.name) === name ? obj : undefined,
-  );
-  return ref ? safeNum(() => ref.absEnd.millisec) : null;
 }
 
 /** Read the subtype-specific props for the element's type. */
@@ -131,14 +103,20 @@ function readTypeProps(obj: AnimObj, type: AnimElementType): AnimElementTypeProp
   return tp;
 }
 
-/** Collect other elements' names for the Relative-to dropdown. */
-function readSiblings(mgr: AnimMgr, uid: number): AnimElementSibling[] {
+/**
+ * The Relative-to candidates: every other distinct, non-empty name, each
+ * judged by `checkTimeRef` so the dropdown can disable the ones that would
+ * close a cycle, are ambiguous, or do not resolve.
+ */
+function readSiblings(graph: TimeRefGraph, uid: number): AnimElementSibling[] {
   const out: AnimElementSibling[] = [];
-  forEachAnimObj(mgr, (obj) => {
-    if (safeNum(() => obj.uid) === uid) return undefined;
-    out.push({ name: safeStr(() => obj.name) });
-    return undefined;
-  });
+  const seen = new Set<string>();
+  for (const n of graph.nodes) {
+    if (n.uid === uid || n.name === "" || seen.has(n.name)) continue;
+    seen.add(n.name);
+    const check = checkTimeRef(graph, uid, n.name);
+    out.push(check.ok ? { name: n.name, usable: true } : { name: n.name, usable: false, reason: check.error });
+  }
   return out;
 }
 
@@ -158,69 +136,29 @@ export function buildDetail(mgr: AnimMgr, uid: number): AnimElementDetail | null
     endMs: safeNum(() => obj.end.millisec),
     quadric: safeNum(() => obj.quadric),
   };
-  return { common, typeProps: readTypeProps(obj, type), siblings: readSiblings(mgr, uid) };
+  const { graph } = readAnimGraph(mgr);
+  return { common, typeProps: readTypeProps(obj, type), siblings: readSiblings(graph, uid) };
 }
 
-/** Apply a single prop write to the wrapped AnimObj (coercing by prop type). */
+/**
+ * Apply a plain prop write to the wrapped AnimObj (coercing by prop type).
+ * `name`, `timeRefName` and `timing` are not plain: they go through
+ * `elementWrites.ts` and are handled by `setAnimElementProp` itself.
+ */
 function applyProp(
   ctx: WorkerContext,
-  mgr: AnimMgr,
   obj: AnimObj,
   prop: AnimElementPropKey,
   value: SetAnimElementPropArgs["value"],
 ): void {
   const w = obj as unknown as Record<string, unknown>;
   switch (prop) {
-    case "name":
-      w.name = String(value);
-      break;
     case "disabled":
       w.disabled = Boolean(value);
       break;
     case "quadric":
       w.quadric = Number(value);
       break;
-    case "timeRefName": {
-      // Re-base the stored relative times so the element keeps its place on the
-      // timeline. C++ resolves `abs = base + rel`, where `base` is 0 when the
-      // element is absolute and the reference's absEnd otherwise
-      // (`AnimMgr::resolveTimeImpl`), so writing the name alone reinterprets the
-      // SAME rel against a different base and teleports the element.
-      //
-      // A negative relative time is not a supported state (see `clampRelSpan`);
-      // when the element sat before the new reference's end, it is pulled to
-      // that end -- position is preserved only where it can be.
-      const nextRef = String(value);
-      tryResolveRel(mgr); // read the current abs position, not a stale one
-      const absStart = safeNum(() => obj.absStart.millisec);
-      const absEnd = safeNum(() => obj.absEnd.millisec);
-      // Read the new base BEFORE the write: the reference's own position does
-      // not depend on this element (a chain back to it would be a cycle, which
-      // `resolveRelTime` rejects and `tryResolveRel` swallows).
-      const base = nextRef === "" ? 0 : refAbsEndMs(mgr, nextRef);
-      w.timeRefName = nextRef;
-      if (base !== null) {
-        const span = clampRelSpan(absStart - base, absEnd - base);
-        const tvS = makeTimeValue(ctx, span.start);
-        const tvE = makeTimeValue(ctx, span.end);
-        if (tvS && tvE) {
-          w.start = tvS;
-          w.end = tvE;
-        }
-      }
-      tryResolveRel(mgr);
-      break;
-    }
-    case "timing": {
-      const v = value as { startMs: number; endMs: number };
-      const tvS = makeTimeValue(ctx, Math.min(v.startMs, v.endMs));
-      const tvE = makeTimeValue(ctx, Math.max(v.startMs, v.endMs));
-      if (!tvS || !tvE) throw new Error("TimeValue create failed");
-      w.start = tvS;
-      w.end = tvE;
-      tryResolveRel(mgr);
-      break;
-    }
     case "axis": {
       const v = value as { x: number; y: number; z: number };
       const vec = ctx.svc.createObj("Vector") as unknown as Record<string, unknown> | null;
@@ -255,7 +193,7 @@ function applyProp(
       w[prop] = Boolean(value); // never raw assign: Boolean("false") === true
       break;
     default:
-      break;
+      throw new Error(`unsupported property: ${String(prop)}`);
   }
 }
 
@@ -267,102 +205,108 @@ export function getAnimElementDetail(
   args: GetAnimElementDetailArgs,
 ): GetAnimElementDetailResult {
   const mgr = resolveMgr(ctx, args.sceneId);
-  if (!mgr) return { ok: false };
+  if (!mgr) return noMgrFail();
   const detail = buildDetail(mgr, args.uid);
-  if (!detail) return { ok: false, gone: true };
-  return { ok: true, detail };
-}
-
-/**
- * After an element is renamed, retarget every sibling that referenced the old
- * name via `timeRefName` so the relative-time chain is not orphaned (UXP parity).
- * Runs inside the rename's undo txn so undo reverts the rename + the retargets
- * together.
- */
-function cascadeTimeRefRename(mgr: AnimMgr, uid: number, oldName: string, newName: string): void {
-  forEachAnimObj(mgr, (obj) => {
-    if (safeNum(() => obj.uid) === uid) return undefined; // skip the renamed element itself
-    if (safeStr(() => obj.timeRefName) === oldName) {
-      try {
-        (obj as unknown as Record<string, unknown>).timeRefName = newName;
-      } catch {
-        /* ignore a sibling that rejects the write */
-      }
-    }
-    return undefined;
-  });
+  if (!detail) return goneFail();
+  return ok({ detail });
 }
 
 function sameTiming(a: AnimTimingMs, b: AnimTimingMs): boolean {
   return a.startMs === b.startMs && a.endMs === b.endMs;
 }
 
+const BAD_TIMING = "start/end must be finite milliseconds";
+
 /**
  * Write one property of the element and return the refreshed detail.
  *
- * A plain write is one undo transaction. `timing` also takes the realtime
- * drag protocol (`args.mode`, see `SetAnimElementPropArgs`): a `preview`
- * writes without a transaction -- the change still reaches the timeline
- * through the prop-change event, which `AnimMgr::propChanged` fires whether
- * or not a transaction is open -- and returns no detail; an `abort` restores
- * `original` without one; a `commit` carrying `original` restores it outside
- * the transaction and writes `value` inside it, so undo goes back to where
- * the drag began. When `original` equals `value` only the restore happens: an
- * empty transaction would still clear the redo stack.
+ * Nothing is written and no undo transaction is opened until the write is
+ * known to be legal: the uid is resolved first (a vanished element used to
+ * commit an empty transaction and lose redo), and `name` / `timeRefName` are
+ * validated against the whole chain (`planNameWrite` / `planTimeRefWrite`).
+ * A refused write comes back as a `Fail` with the reason; `gone` marks the
+ * one failure the inspector closes on.
  *
- * The uid is resolved before any transaction opens for the same reason -- a
- * vanished element used to commit an empty transaction and lose redo.
+ * `timing` also takes the realtime drag protocol (`args.mode`, see
+ * `SetAnimElementPropArgs`): a `preview` writes without a transaction -- the
+ * change still reaches the timeline through the prop-change event, which
+ * `AnimMgr::propChanged` fires whether or not a transaction is open -- and
+ * returns no detail; an `abort` restores `original` without one; a `commit`
+ * carrying `original` restores it outside the transaction and writes `value`
+ * inside it, so undo goes back to where the drag began. When `original`
+ * equals `value` only the restore happens: an empty transaction would still
+ * clear the redo stack.
  */
 export function setAnimElementProp(
   ctx: WorkerContext,
   args: SetAnimElementPropArgs,
 ): SetAnimElementPropResult {
   const sm = resolveSceneMgr(ctx, args.sceneId);
-  if (!sm) return { ok: false };
+  if (!sm) return noMgrFail();
   const { scene, mgr } = sm;
   const found = findByUid(mgr, args.uid);
-  if (!found) return { ok: false, gone: true };
+  if (!found) return goneFail();
   const mode = args.mode ?? "commit";
-
-  if (mode !== "commit") {
-    if (args.prop !== "timing") return { ok: false };
-    const target = mode === "preview" ? (args.value as AnimTimingMs) : args.original;
-    if (!target) return { ok: false };
-    try {
-      applyProp(ctx, mgr, found.obj, "timing", target);
-    } catch {
-      return { ok: false };
-    }
-    if (mode === "preview") return { ok: true };
+  const finish = (): SetAnimElementPropResult => {
     const detail = buildDetail(mgr, args.uid);
-    return detail ? { ok: true, detail } : { ok: false, gone: true };
-  }
+    return detail ? ok({ detail }) : goneFail();
+  };
 
-  try {
+  if (args.prop === "timing") {
+    const value = args.value;
+    if (!isTiming(value)) return fail(BAD_TIMING, "invalid-args");
+    if (mode !== "commit") {
+      const target = mode === "preview" ? value : args.original;
+      if (!isTiming(target)) return fail(BAD_TIMING, "invalid-args");
+      try {
+        applyTiming(ctx, found.obj, target);
+      } catch (e) {
+        return failFrom(e, "native");
+      }
+      return mode === "preview" ? ok({}) : finish();
+    }
     let record = true;
-    if (args.prop === "timing" && args.original) {
-      applyProp(ctx, mgr, found.obj, "timing", args.original);
-      record = !sameTiming(args.original, args.value as AnimTimingMs);
+    if (args.original !== undefined) {
+      if (!isTiming(args.original)) return fail(BAD_TIMING, "invalid-args");
+      try {
+        applyTiming(ctx, found.obj, args.original);
+      } catch (e) {
+        return failFrom(e, "native");
+      }
+      record = !sameTiming(args.original, value);
     }
     if (record) {
-      withUndoTxn(scene, `Change animation: ${args.prop}`, () => {
-        // Capture the old name before writing so a rename can cascade to the
-        // siblings that reference it by timeRefName.
-        const oldName = args.prop === "name" ? safeStr(() => found.obj.name) : "";
-        applyProp(ctx, mgr, found.obj, args.prop, args.value);
-        if (args.prop === "name") {
-          const newName = String(args.value);
-          if (oldName && newName !== oldName) {
-            cascadeTimeRefRename(mgr, args.uid, oldName, newName);
-            tryResolveRel(mgr);
-          }
-        }
+      const r = undoTxnResult(scene, "Change animation: timing", () => {
+        applyTiming(ctx, found.obj, value);
+        return ok();
       });
+      if (!r.ok) return r;
     }
-  } catch {
-    return { ok: false };
+    return finish();
   }
-  const detail = buildDetail(mgr, args.uid);
-  if (!detail) return { ok: false, gone: true };
-  return { ok: true, detail };
+
+  if (mode !== "commit") return fail("only timing supports preview/abort", "unsupported");
+
+  if (args.prop === "timeRefName" || args.prop === "name") {
+    const { graph, objs } = readAnimGraph(mgr);
+    const plan =
+      args.prop === "timeRefName"
+        ? planTimeRefWrite(ctx, graph, found.obj, args.uid, args.value)
+        : planNameWrite(graph, objs, found.obj, args.uid, args.value);
+    if (!plan.ok) return plan;
+    if (plan.noop) return finish();
+    const r = undoTxnResult(scene, `Change animation: ${args.prop}`, () => {
+      plan.apply();
+      return ok();
+    });
+    if (!r.ok) return r;
+    return finish();
+  }
+
+  const r = undoTxnResult(scene, `Change animation: ${args.prop}`, () => {
+    applyProp(ctx, found.obj, args.prop, args.value);
+    return ok();
+  });
+  if (!r.ok) return r;
+  return finish();
 }
