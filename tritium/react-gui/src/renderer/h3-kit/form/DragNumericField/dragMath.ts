@@ -1,10 +1,9 @@
 /**
  * @file h3-kit/form/DragNumericField/dragMath.ts
- * @description Interaction constants and the two pure functions the drag field
- * needs before it has any state: how far a pixel of travel moves the value, and
- * where the caret is sitting in a partially-selected draft.
+ * @description Interaction constants and the one pure function the drag field
+ * needs before it has any state: how far a pixel of travel moves the value.
  *
- * Kept out of the hooks so both can be reasoned about (and tested) without a
+ * Kept out of the hooks so it can be reasoned about (and tested) without a
  * React tree.
  */
 
@@ -54,14 +53,3 @@ export const SNAP_FACTOR = 10;
 export const STEP_REPEAT_DELAY_MS = 400;
 /** Interval between auto-repeat steps while an arrow is held. */
 export const STEP_REPEAT_INTERVAL_MS = 60;
-/**
- * Caret offset inside the edit input, or null when the whole draft is selected
- * (click-to-edit selects everything, so there is no segment to act on).
- */
-export function caretPosOf(input: HTMLInputElement | null, draft: string): number | null {
-    if (!input) return null;
-    const start = input.selectionStart;
-    if (start === null) return null;
-    if (start === 0 && input.selectionEnd === draft.length) return null;
-    return start;
-}

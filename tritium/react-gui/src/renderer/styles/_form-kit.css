@@ -824,51 +824,6 @@
   opacity: 0;
 }
 
-/* Stacked spin buttons (`stepper="stacked"`): an up / down pair at the right
-   edge instead of the `<` `>` side arrows. Same shape as the SliderField
-   stepper, so a unit-segmented value (time) reads as "increase / decrease". */
-.h3-form-drag-spinner {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  padding-right: var(--space-1);
-  position: relative;
-  z-index: 1;
-}
-
-.h3-form-drag-spin {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 9px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.h3-form-drag-spin:hover:not(:disabled) {
-  color: var(--text-primary);
-}
-
-.h3-form-drag-spin:active:not(:disabled) {
-  color: var(--accent);
-}
-
-.h3-form-drag-spin:focus,
-.h3-form-drag-spin:focus-visible {
-  outline: none;
-}
-
-.h3-form-drag-spin:disabled {
-  cursor: default;
-  opacity: 0;
-}
-
 .h3-form-drag.h3-form-drag-disabled {
   color: var(--text-disabled);
   cursor: default;
