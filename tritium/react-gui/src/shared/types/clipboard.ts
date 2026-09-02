@@ -22,22 +22,24 @@ export type CuemolClipWriteReq =
       kind: 'object' | 'renderer' | 'camera' | 'style'
       /** Renderer payload shape; 'rendArray' for a group / multi copy. */
       form?: ClipForm
-      /** Display hint carried in the text envelope only. */
-      name?: string
       bytes: Uint8Array
     }
   | { kind: 'paint'; entries: PaintClipEntry[] }
 
-/** What was found on the clipboard, in the same split as the write request. */
+/**
+ * What was found on the clipboard, in the same split as the write request.
+ * No source name travels with the payload: the XML itself carries the node's
+ * name, and paste reads it from the restored object (the legacy Windows
+ * format has nowhere to put a name anyway).
+ */
 export type CuemolClipReadRes =
   | {
       kind: 'object' | 'renderer' | 'camera' | 'style'
       form: ClipForm
-      name: string
       bytes: Uint8Array
     }
   | { kind: 'paint'; entries: PaintClipEntry[] }
   | null
 
 /** Identity of the clipboard content, for gating Paste affordances. */
-export type CuemolClipPeekRes = { kind: ClipKind; name: string } | null
+export type CuemolClipPeekRes = { kind: ClipKind } | null

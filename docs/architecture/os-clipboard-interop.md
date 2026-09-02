@@ -114,6 +114,16 @@ paste 側は既に meta に依存しない構造だった: camera paste は
 `{kind, form?, name?}` で足り、**meta を持たない legacy A と B の paste コードパスが完全に
 共通**になる (`name` は表示ヒントのみ)。
 
+追記 (2026-09-02): object と renderer の**単体** paste だけはこの契約を破って
+`entry.sourceName || 'obj'` / `entry.sourceName || 'rend'` と meta の名前だけを見ていた。
+名前そのものは A でも B でもペイロード (XML の `name` プロパティ) に入って届いているが、
+meta の `name` を持たない A を使う Windows ではフォールバックが選ばれ、貼り付けた object /
+renderer が常に "obj" / "rend" になっていた (B を使う macOS では meta に名前があるので見えなかった)。
+paste は全 kind で復元 XML 内の名前だけを使う形に直し (`paste.ts`)、UXP `pasteRendImpl` と同じく
+元の名前が残る。あわせて、worker singleton 時代の持ち越しだった **meta `name` の配管を tritium から
+撤去**した (copy 結果 / `CLIPBOARD_CUEMOL_WRITE` / envelope 書き込み / read・peek 結果 / paste 引数)。
+`ClipMeta.name?` は wire 互換のため読み手側の型に残るが、tritium は書かず読まない。
+
 ## Consequences
 
 - **Windows / Linux では CueMol2 を一切更新せずに相互運用が成立する。** macOS は
