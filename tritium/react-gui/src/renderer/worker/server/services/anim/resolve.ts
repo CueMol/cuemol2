@@ -4,6 +4,7 @@ import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
 import { getSceneOrNull } from "../helpers/sceneResolver";
+import type { TimeRefInput } from "./timeRefGraph";
 // --- safe wrapper reads (a getter may throw for missing-on-subclass cases) ---
 
 export function safeNum(read: () => number): number {
@@ -111,10 +112,50 @@ export function collectAnimObjs(mgr: AnimMgr): AnimObj[] {
   return out;
 }
 
-/** Build a fresh TimeValue with the given millisec, or null on failure. */
+/** True for a finite number of milliseconds (what every time write accepts). */
+export function isFiniteMs(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v);
+}
+
+/**
+ * Build a fresh TimeValue with the given millisec, or null on failure. The
+ * value is rounded to whole milliseconds: a strip drag produces fractional
+ * pixels-per-ms, and the timeline compares spans for equality.
+ */
 export function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue | null {
   const tv = ctx.svc.createObj("TimeValue") as TimeValue | null;
   if (!tv) return null;
-  tv.millisec = ms;
+  tv.millisec = Math.round(ms);
   return tv;
+}
+
+/**
+ * Ask C++ to resolve relative -> absolute times; null on success, else the
+ * reason (`AnimMgr::resolveRelTime` throws on a cyclic or missing reference).
+ * The services validate with `timeRefGraph` before writing, so this is only
+ * the refresh the timeline listing runs (a loaded file has never resolved).
+ */
+export function tryResolveRel(mgr: AnimMgr): string | null {
+  try {
+    mgr.resolveRelTime();
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
+}
+
+/** The names and RELATIVE spans `buildTimeRefGraph` resolves, in index order. */
+export function readTimeRefInputs(mgr: AnimMgr): TimeRefInput[] {
+  const out: TimeRefInput[] = [];
+  forEachAnimObj(mgr, (obj) => {
+    out.push({
+      uid: safeNum(() => obj.uid),
+      name: safeStr(() => obj.name),
+      timeRefName: safeStr(() => obj.timeRefName),
+      startMs: safeNum(() => obj.start.millisec),
+      endMs: safeNum(() => obj.end.millisec),
+    });
+    return undefined;
+  });
+  return out;
 }

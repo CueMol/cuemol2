@@ -53,6 +53,16 @@ export type AnimAddType =
 export type AnimPlayState = "stop" | "play" | "pause";
 
 /**
+ * Whether an element's time reference chain resolves.
+ *
+ *   - `ok`: absolute times are known;
+ *   - `missing`: its own `timeRefName` names no element;
+ *   - `cycle`: it sits on a reference loop (a self-reference is a loop of one);
+ *   - `upstream`: it chains to an element in one of the two states above.
+ */
+export type AnimTimeRefState = "ok" | "missing" | "cycle" | "upstream";
+
+/**
  * One CueMol `AnimObj` rendered as a single timeline strip.
  *
  * All time fields are milliseconds (`TimeValue.millisec`). The strip is
