@@ -10,7 +10,12 @@
  * in it: they are realtime drag fields owned by `useAnimTimingDrag`.
  */
 
-import type { AnimElementDetail } from '@renderer/worker/server/services/anim/anim.service';
+import type {
+  AnimElementCommon,
+  AnimElementDetail,
+  AnimElementSibling,
+} from '@renderer/worker/server/services/anim/anim.service';
+import { formatMs } from '@renderer/h3-kit/form';
 
 export const TYPE_LABEL: Record<string, string> = {
   SimpleSpin: "Simple spin",
@@ -68,4 +73,59 @@ export function axisPreset(x: number, y: number, z: number): string {
 /** Compact axis-component display: round to 4 dp and drop trailing zeros. */
 export function fmtAxis(n: number): string {
   return String(Math.round(n * 1e4) / 1e4);
+}
+
+/** One `<option>` of the Relative-to select. */
+export interface TimeRefOption {
+  key: string;
+  value: string;
+  label: string;
+  disabled: boolean;
+}
+
+/**
+ * The Relative-to options for an element: every candidate the worker listed,
+ * the unusable ones disabled with the reason in their label rather than
+ * hidden (a shorter list would look like the element is missing), plus --
+ * when the element's current reference names nothing -- a selected, disabled
+ * `(missing: NAME)` entry so the select tells the truth instead of falling
+ * back to "(absolute)". Duplicates and empty names are dropped defensively.
+ */
+export function buildTimeRefOptions(
+  common: Pick<AnimElementCommon, "timeRefName">,
+  siblings: readonly AnimElementSibling[],
+): { options: TimeRefOption[]; dangling: string | null } {
+  const options: TimeRefOption[] = [];
+  const seen = new Set<string>();
+  siblings.forEach((s, i) => {
+    if (s.name === "" || seen.has(s.name)) return;
+    seen.add(s.name);
+    options.push({
+      key: `${s.name}#${i}`,
+      value: s.name,
+      label: s.usable ? s.name : `${s.name} (${s.reason ?? "unavailable"})`,
+      disabled: !s.usable,
+    });
+  });
+  const current = common.timeRefName;
+  const dangling = current !== "" && !seen.has(current) ? current : null;
+  if (dangling !== null) {
+    options.unshift({
+      key: `${dangling}#missing`,
+      value: dangling,
+      label: `(missing: ${dangling})`,
+      disabled: true,
+    });
+  }
+  return { options, dangling };
+}
+
+/**
+ * The note under the Start field for a legacy negative offset. The field
+ * shows such a start as 0:00.000 (the display floors at zero, and a leading
+ * minus is the relative-entry sign), so the stored value is stated here.
+ */
+export function legacyStartNote(startMs: number): string | null {
+  if (startMs >= 0) return null;
+  return `Stored start is -${formatMs(-startMs)} (legacy negative offset); it is kept until you set a new start.`;
 }

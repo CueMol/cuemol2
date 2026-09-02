@@ -463,6 +463,21 @@
   color: var(--accent-red);
 }
 
+/* A line under a form field: the stored value the field cannot show, a
+   reference that no longer exists, or why a write was refused. */
+.anim-field-note {
+  padding-top: var(--space-1);
+  color: var(--text-muted);
+}
+
+.anim-field-note.is-warning {
+  color: var(--text-warning);
+}
+
+.anim-field-note.is-error {
+  color: var(--text-error);
+}
+
 .hatch-look-edited {
   color: var(--text-muted);
 }

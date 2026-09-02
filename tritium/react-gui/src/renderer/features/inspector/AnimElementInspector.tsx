@@ -43,6 +43,7 @@ import { useAnimTimingDrag, type TimingWriteOpts } from "@renderer/features/insp
 import type { AsyncCueMol } from "@renderer/worker/client/AsyncCueMol";
 import type {
   AnimElementDetail,
+  AnimElementFail,
   AnimElementPropKey,
   AnimRendererOption,
   AnimCameraOption,
@@ -52,6 +53,8 @@ import type {
 } from "@renderer/worker/server/services/anim/anim.service";
 import { SEM_ANIM, SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "@renderer/event";
 import { useCueMolEventListener } from "@renderer/hooks/cuemol/useCueMolEventListener";
+import { useShowErrorAlert } from "@renderer/dialogs/ErrorAlertDialogProvider";
+import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/utils/timing";
 
 interface AnimElementInspectorProps {
   cm: AsyncCueMol | null;
@@ -65,8 +68,10 @@ interface AnimElementInspectorProps {
 import {
   TYPE_LABEL,
   axisPreset,
+  buildTimeRefOptions,
   detailToForm,
   fmtAxis,
+  legacyStartNote,
   wrapAngle,
   type FormState,
 } from "@renderer/features/inspector/anim/animElementForm";
@@ -95,6 +100,13 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   // Active tab: the bespoke per-type editor ("properties") or the full generic
   // property table ("generic"), mirroring the renderer node inspector.
   const [mode, setMode] = useState<"properties" | "generic">("properties");
+  // Why the last Relative-to write was refused (shown under the field).
+  const [refError, setRefError] = useState<string | null>(null);
+  // Why the element could not be loaded at all (shown instead of "Loading...").
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Bumped after a rejected timing commit so Start / Duration re-mirror the
+  // committed span, which such a failure leaves numerically unchanged.
+  const [timingEpoch, setTimingEpoch] = useState(0);
 
   const cmRef = useRef(cm);
   cmRef.current = cm;
@@ -107,10 +119,21 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   const onHeaderRef = useRef(onHeaderChange);
   onHeaderRef.current = onHeaderChange;
 
+  // A refused write that is not a validation message under a field goes
+  // through the app's standard error alert.
+  const showErrorAlert = useShowErrorAlert();
+  const showErrorAlertRef = useRef(showErrorAlert);
+  showErrorAlertRef.current = showErrorAlert;
+  const reportError = useCallback((message: string) => {
+    void showErrorAlertRef.current({ title: "Animation element", message });
+  }, []);
+  const onErrorRef = useRef(reportError);
+  onErrorRef.current = reportError;
+
   const {
     genericEntries, genericLoading, refetchGeneric,
     handleGenericSet, handleGenericReset, handleResetAll, canResetAll,
-  } = useAnimGenericProps({ cmRef, sceneIdRef, uidRef, onGoneRef });
+  } = useAnimGenericProps({ cmRef, sceneIdRef, uidRef, onGoneRef, onErrorRef });
 
   // Drop a stale response that resolves after a newer fetch/commit.
   const fetchToken = useRef(0);
@@ -119,10 +142,51 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   // True while a draft (numeric/text) field is mid-edit -- blocks re-seed.
   const editingRef = useRef(false);
 
+  // The last adopted detail, for re-seeding the form after a refused write.
+  const detailRef = useRef<AnimElementDetail | null>(null);
+
   const adopt = useCallback((d: AnimElementDetail) => {
+    detailRef.current = d;
     setDetail(d);
+    setRefError(null);
+    setLoadError(null);
     onHeaderRef.current(d.common.name, TYPE_LABEL[d.common.type] ?? "Animation element");
   }, []);
+
+  /**
+   * One failure policy. Only `gone` closes the inspector: the element left
+   * the manager. Anything else keeps it open -- a refused Relative-to write
+   * is shown under that field, a refused timing write re-mirrors the fields
+   * and alerts, any other refused write re-seeds the form from the last
+   * detail and alerts, and a failed load says so in place of "Loading...".
+   */
+  const handleFailure = useCallback(
+    (res: AnimElementFail, ctx: "refetch" | "commit" | "timing", prop?: AnimElementPropKey) => {
+      const sid = sceneIdRef.current;
+      if (res.gone) {
+        onGoneRef.current(sid);
+        return;
+      }
+      if (ctx === "refetch") {
+        if (!detailRef.current) setLoadError(res.error);
+        else console.warn("getAnimElementDetail failed:", res.error);
+        return;
+      }
+      if (prop === "timeRefName") {
+        setRefError(res.error);
+        return;
+      }
+      if (ctx === "timing") {
+        setTimingEpoch((e) => e + 1);
+        reportError(res.error);
+        return;
+      }
+      const d = detailRef.current;
+      if (d) setForm(detailToForm(d));
+      reportError(res.error);
+    },
+    [reportError],
+  );
 
   const refetch = useCallback(() => {
     const c = cmRef.current;
@@ -134,13 +198,13 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       .then((res) => {
         if (token !== fetchToken.current) return;
         if (!res.ok) {
-          if (res.gone) onGoneRef.current(sid);
+          handleFailure(res, "refetch");
           return;
         }
         adopt(res.detail);
       })
       .catch((e: unknown) => console.warn("getAnimElementDetail failed:", e));
-  }, [adopt]);
+  }, [adopt, handleFailure]);
 
   /** Refetch the full generic property list (generic tab). */
   // SEM_ANIM keeps both views in sync. The generic table is refetched in both
@@ -159,8 +223,11 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     // newly selected element on "Loading..." forever.
     editingRef.current = false;
     setAxisMode(null);
+    detailRef.current = null;
     setDetail(null);
     setForm(null);
+    setRefError(null);
+    setLoadError(null);
     refetch();
   }, [sceneId, uid, refetch]);
 
@@ -173,7 +240,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     evtMask: SEM_ANY,
     scopeId: sceneId,
     handler: handleAnimEvent,
-    debounceMs: 30,
+    debounceMs: EVENT_BURST_DEBOUNCE_MS,
   });
 
   // Re-seed the draft when detail changes, unless a field is mid-edit.
@@ -213,7 +280,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     evtMask: SEM_ANY,
     scopeId: sceneId,
     handler: refetchOptions,
-    debounceMs: 50,
+    debounceMs: EVENT_BURST_DEBOUNCE_MS,
   });
 
   // (Re)fetch the generic list on element change -- in both modes, since the
@@ -235,14 +302,14 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
         .then((res) => {
           if (token !== fetchToken.current) return;
           if (!res.ok) {
-            if (res.gone) onGoneRef.current(sid);
+            handleFailure(res, "commit", prop);
             return;
           }
           if (res.detail) adopt(res.detail);
         })
         .catch((e: unknown) => console.warn("setAnimElementProp failed:", e));
     },
-    [adopt],
+    [adopt, handleFailure],
   );
 
   /**
@@ -276,19 +343,20 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
           }
           if (token !== fetchToken.current) return;
           if (!res.ok) {
-            if (res.gone) onGoneRef.current(sid);
+            handleFailure(res, "timing");
             return;
           }
           if (res.detail) adopt(res.detail);
         })
         .catch((e: unknown) => console.warn("setAnimElementProp (timing) failed:", e));
     },
-    [adopt],
+    [adopt, handleFailure],
   );
 
   const timing = useAnimTimingDrag({
     committed: detail ? { startMs: detail.common.startMs, endMs: detail.common.endMs } : null,
     write: writeTiming,
+    resyncKey: timingEpoch,
   });
 
   const setField = useCallback((patch: Partial<FormState>) => {
@@ -337,7 +405,9 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     return (
       <>
         {modeBar}
-        <div className="inspector-empty">Loading...</div>
+        <div className="inspector-empty">
+          {loadError ? `Could not load element: ${loadError}` : "Loading..."}
+        </div>
       </>
     );
   }
@@ -376,6 +446,9 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     commit("rend", [...next].join(","));
   };
 
+  const timeRef = buildTimeRefOptions(detail.common, detail.siblings);
+  const startNote = legacyStartNote(detail.common.startMs);
+
   return (
     <>
       {modeBar}
@@ -394,23 +467,43 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             onChange={(c) => commit("disabled", c)}
           />
         </Field>
+        {/* Candidates that cannot be chosen (they would close a cycle, carry
+            a duplicate name, or do not resolve) stay listed but disabled, and
+            a reference that no longer exists is shown as such rather than as
+            "(absolute)". A refused write is explained under the field. */}
         <Field label="Relative to">
           <SelectField
             value={detail.common.timeRefName}
             onChange={(v) => commit("timeRefName", v)}
           >
             <option value="">(absolute)</option>
-            {detail.siblings.map((s) => (
-              <option key={s.name} value={s.name}>
-                {s.name}
+            {timeRef.options.map((o) => (
+              <option key={o.key} value={o.value} disabled={o.disabled}>
+                {o.label}
               </option>
             ))}
           </SelectField>
+          {timeRef.dangling !== null && (
+            <div className="anim-field-note is-warning type-caption">
+              Reference "{timeRef.dangling}" no longer exists; choose (absolute) or another element.
+            </div>
+          )}
+          {refError !== null && (
+            <div className="anim-field-note is-error type-caption" role="alert">
+              {refError}
+            </div>
+          )}
         </Field>
         {/* Start / Duration preview live (the strip follows) and commit one
-            undo step on release; see useAnimTimingDrag. */}
+            undo step on release; see useAnimTimingDrag. The Start field's
+            floor follows a legacy negative offset so an interaction that
+            changes nothing cannot lift it to zero (the display floors at 0;
+            the note states the stored value). */}
         <Field label="Start time">
-          <TimeField {...timing.start} min={0} />
+          <TimeField {...timing.start} min={Math.min(0, detail.common.startMs)} />
+          {startNote !== null && (
+            <div className="anim-field-note is-warning type-caption">{startNote}</div>
+          )}
         </Field>
         <Field label="Duration">
           <TimeField {...timing.duration} min={0} />

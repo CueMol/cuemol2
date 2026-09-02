@@ -106,7 +106,9 @@ function readTypeProps(obj: AnimObj, type: AnimElementType): AnimElementTypeProp
 /**
  * The Relative-to candidates: every other distinct, non-empty name, each
  * judged by `checkTimeRef` so the dropdown can disable the ones that would
- * close a cycle, are ambiguous, or do not resolve.
+ * close a cycle, are ambiguous, or do not resolve. The reason is the short
+ * form an option label can carry; the full sentence comes back from the
+ * write itself should one be attempted anyway.
  */
 function readSiblings(graph: TimeRefGraph, uid: number): AnimElementSibling[] {
   const out: AnimElementSibling[] = [];
@@ -114,8 +116,16 @@ function readSiblings(graph: TimeRefGraph, uid: number): AnimElementSibling[] {
   for (const n of graph.nodes) {
     if (n.uid === uid || n.name === "" || seen.has(n.name)) continue;
     seen.add(n.name);
-    const check = checkTimeRef(graph, uid, n.name);
-    out.push(check.ok ? { name: n.name, usable: true } : { name: n.name, usable: false, reason: check.error });
+    if (checkTimeRef(graph, uid, n.name).ok) {
+      out.push({ name: n.name, usable: true });
+      continue;
+    }
+    const reason = graph.duplicateNames.has(n.name)
+      ? "duplicate name"
+      : n.state !== "ok"
+        ? "does not resolve"
+        : "would create a cycle";
+    out.push({ name: n.name, usable: false, reason });
   }
   return out;
 }

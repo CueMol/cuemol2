@@ -9,7 +9,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { axisPreset, fmtAxis, wrapAngle } from './animElementForm';
+import {
+    axisPreset,
+    buildTimeRefOptions,
+    fmtAxis,
+    legacyStartNote,
+    wrapAngle,
+} from './animElementForm';
 
 describe('wrapAngle', () => {
     it('leaves an angle already in range alone', () => {
@@ -60,5 +66,55 @@ describe('fmtAxis', () => {
         expect(fmtAxis(0.123456)).toBe('0.1235');
         // The IEEE-754 noise a drag produces must not reach the field.
         expect(fmtAxis(0.30000000000000004)).toBe('0.3');
+    });
+});
+
+describe('buildTimeRefOptions', () => {
+    const sib = (name: string, usable = true, reason?: string) =>
+        reason === undefined ? { name, usable } : { name, usable, reason };
+
+    it('lists usable candidates plainly and disables the rest with the reason in the label', () => {
+        const { options, dangling } = buildTimeRefOptions({ timeRefName: 'A' }, [
+            sib('A'),
+            sib('B', false, 'would create a cycle'),
+            sib('C', false, 'duplicate name'),
+        ]);
+        expect(dangling).toBeNull();
+        expect(options.map((o) => [o.value, o.label, o.disabled])).toEqual([
+            ['A', 'A', false],
+            ['B', 'B (would create a cycle)', true],
+            ['C', 'C (duplicate name)', true],
+        ]);
+    });
+
+    it('represents a reference that no longer exists as a selected, disabled entry', () => {
+        const { options, dangling } = buildTimeRefOptions({ timeRefName: 'Gone' }, [sib('A')]);
+        expect(dangling).toBe('Gone');
+        expect(options[0]).toMatchObject({ value: 'Gone', label: '(missing: Gone)', disabled: true });
+        expect(options.map((o) => o.value)).toEqual(['Gone', 'A']);
+    });
+
+    it('drops empty and repeated names, and never calls the absolute state dangling', () => {
+        const { options, dangling } = buildTimeRefOptions({ timeRefName: '' }, [
+            sib(''),
+            sib('A'),
+            sib('A'),
+        ]);
+        expect(dangling).toBeNull();
+        expect(options.map((o) => o.value)).toEqual(['A']);
+        expect(new Set(options.map((o) => o.key)).size).toBe(options.length);
+    });
+});
+
+describe('legacyStartNote', () => {
+    it('is null for a non-negative start', () => {
+        expect(legacyStartNote(0)).toBeNull();
+        expect(legacyStartNote(1500)).toBeNull();
+    });
+
+    it('states a negative stored start as a signed timecode', () => {
+        expect(legacyStartNote(-500)).toBe(
+            'Stored start is -0:00.500 (legacy negative offset); it is kept until you set a new start.',
+        );
     });
 });

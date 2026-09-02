@@ -16,13 +16,18 @@ import type { AnimTimingMs } from '@renderer/worker/server/services/anim/anim.se
 
 function setup(initial: AnimTimingMs | null) {
   let committed = initial
+  let resyncKey = 0
   const write = vi.fn(() => Promise.resolve())
-  const handle = makeRenderHook(() => useAnimTimingDrag({ committed, write }))
+  const handle = makeRenderHook(() => useAnimTimingDrag({ committed, write, resyncKey }))
   return {
     handle,
     write,
     setCommitted(c: AnimTimingMs | null) {
       committed = c
+      handle.rerender()
+    },
+    resync() {
+      resyncKey += 1
       handle.rerender()
     },
   }
@@ -109,6 +114,20 @@ describe('useAnimTimingDrag', () => {
       { startMs: 2500, endMs: 4500 },
       { mode: 'commit', original: { startMs: 1000, endMs: 3000 } },
     )
+    handle.unmount()
+  })
+
+  it('a resyncKey change re-seeds both fields from the committed pair after a rejected commit', () => {
+    const { handle, resync } = setup({ startMs: 1000, endMs: 3000 })
+    act(() => handle.result.start.onChange(2500))
+    act(() => handle.result.start.onRelease(2500))
+    act(() => handle.result.duration.onChange(100))
+    act(() => handle.result.duration.onRelease(100))
+    expect(handle.result.start.value).toBe(2500)
+    expect(handle.result.duration.value).toBe(100)
+    resync()
+    expect(handle.result.start.value).toBe(1000)
+    expect(handle.result.duration.value).toBe(2000)
     handle.unmount()
   })
 })

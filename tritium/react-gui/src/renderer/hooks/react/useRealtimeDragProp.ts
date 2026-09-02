@@ -43,6 +43,12 @@ export interface UseRealtimeDragPropOptions {
     committedIsDefault?: boolean
     /** Enable live preview during a drag (still one undo step on release). */
     realtime?: boolean
+    /**
+     * Bump to re-mirror `committed` into the field while idle. A rejected
+     * commit leaves `committed` numerically unchanged, so without this the
+     * field would keep showing the value the object never took.
+     */
+    resyncKey?: unknown
     /** Live-apply a value to the object without undo (called every drag frame). */
     onPreview: (value: number) => void | Promise<unknown>
     /**
@@ -70,7 +76,7 @@ export interface RealtimeDragProps {
 export function useRealtimeDragProp(
     opts: UseRealtimeDragPropOptions,
 ): RealtimeDragProps {
-    const { committed, realtime = false } = opts
+    const { committed, realtime = false, resyncKey } = opts
 
     const [draft, setDraft] = useState(committed)
 
@@ -116,7 +122,7 @@ export function useRealtimeDragProp(
     // leave the draft alone (a debounced refetch may reflect a preview).
     useEffect(() => {
         if (!draggingRef.current) setDraft(committed)
-    }, [committed])
+    }, [committed, resyncKey])
 
     const onChange = useCallback((v: number) => {
         setDraft(v)

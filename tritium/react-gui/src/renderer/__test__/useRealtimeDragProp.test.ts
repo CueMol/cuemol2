@@ -162,4 +162,27 @@ describe('useRealtimeDragProp', () => {
 
     act(() => root.unmount())
   })
+
+  it('re-mirrors the committed value on a resyncKey change while idle, not mid-drag', () => {
+    let committed = 0.2
+    let resyncKey = 0
+    const handle = makeRenderHook(() =>
+      useRealtimeDragProp({ committed, resyncKey, realtime: true, onPreview: vi.fn(), onCommit: vi.fn() }),
+    )
+    // A rejected commit: the field moved, the object did not, `committed` is unchanged.
+    act(() => handle.result.onChange(0.5))
+    act(() => handle.result.onRelease(0.5))
+    expect(handle.result.value).toBe(0.5)
+    resyncKey = 1
+    handle.rerender()
+    expect(handle.result.value).toBe(0.2)
+
+    act(() => handle.result.onDragStart())
+    act(() => handle.result.onChange(0.7))
+    resyncKey = 2
+    handle.rerender()
+    expect(handle.result.value).toBe(0.7) // a drag in flight keeps its draft
+    committed = 0.2
+    handle.unmount()
+  })
 })

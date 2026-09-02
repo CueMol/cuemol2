@@ -25,10 +25,12 @@ export interface UseAnimGenericPropsOptions {
     uidRef: React.MutableRefObject<number>;
     /** Called when the element turns out to be gone (deleted). */
     onGoneRef: React.MutableRefObject<(sceneId: number) => void>;
+    /** Called with the reason when a write is refused (the element is still there). */
+    onErrorRef?: React.MutableRefObject<(message: string) => void>;
 }
 
 export function useAnimGenericProps({
-    cmRef, sceneIdRef, uidRef, onGoneRef,
+    cmRef, sceneIdRef, uidRef, onGoneRef, onErrorRef,
 }: UseAnimGenericPropsOptions) {
     const [genericEntries, setGenericEntries] = useState<GenericPropEntry[]>([]);
     const [genericLoading, setGenericLoading] = useState(false);
@@ -65,12 +67,15 @@ export function useAnimGenericProps({
     (res: AnimGenericPropsResult, token: number) => {
       if (token !== genericToken.current) return;
       if (!res.ok) {
+        // A refused write keeps the table as it was; only a vanished
+        // element clears the inspector.
         if (res.gone) onGoneRef.current(sceneIdRef.current);
+        else onErrorRef?.current(res.error);
         return;
       }
       setGenericEntries(res.entries);
     },
-    [onGoneRef, sceneIdRef],
+    [onGoneRef, onErrorRef, sceneIdRef],
   );
   // A realtime drag passes `opts` (preview / commit / abort, see
   // `PropWriteOpts`). Only a commit's reply carries entries to adopt; a

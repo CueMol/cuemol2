@@ -777,9 +777,9 @@ describe("anim.service getAnimElementDetail siblings", () => {
     const res = services.getAnimElementDetail(ctx, { sceneId: 1, uid: 10 });
     if (!res.ok) throw new Error(res.error);
     expect(res.detail.siblings).toEqual([
-      { name: "B", usable: false, reason: 'Relative to "B" would create a cycle: A -> B -> A' },
-      { name: "C", usable: false, reason: '"C" is carried by 2 elements; rename one first' },
-      { name: "D", usable: false, reason: '"D" cannot be used as a reference: "D" is relative to "ghost", which does not exist' },
+      { name: "B", usable: false, reason: "would create a cycle" },
+      { name: "C", usable: false, reason: "duplicate name" },
+      { name: "D", usable: false, reason: "does not resolve" },
     ]);
   });
 });

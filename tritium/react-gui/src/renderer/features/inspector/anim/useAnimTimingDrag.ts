@@ -34,6 +34,8 @@ export interface UseAnimTimingDragOptions {
     committed: AnimTimingMs | null;
     /** Write the `timing` prop. A returned promise lets previews coalesce. */
     write: (value: AnimTimingMs, opts: TimingWriteOpts) => void | Promise<unknown>;
+    /** Bump after a rejected commit so both fields re-mirror `committed`. */
+    resyncKey?: unknown;
 }
 
 export interface AnimTimingDragProps {
@@ -56,7 +58,11 @@ function fromDuration(durationMs: number, base: AnimTimingMs): AnimTimingMs {
     return { startMs: base.startMs, endMs: base.startMs + Math.max(0, durationMs) };
 }
 
-export function useAnimTimingDrag({ committed, write }: UseAnimTimingDragOptions): AnimTimingDragProps {
+export function useAnimTimingDrag({
+    committed,
+    write,
+    resyncKey,
+}: UseAnimTimingDragOptions): AnimTimingDragProps {
     const committedRef = useRef(committed);
     committedRef.current = committed;
     const writeRef = useRef(write);
@@ -70,6 +76,7 @@ export function useAnimTimingDrag({ committed, write }: UseAnimTimingDragOptions
         const props = useRealtimeDragProp({
             committed: value,
             realtime: true,
+            resyncKey,
             onPreview: (v) => writeRef.current(toPair(v, base()), { mode: 'preview', original: base() }),
             onCommit: (_original, v) => {
                 const b = base();
