@@ -42,6 +42,13 @@ if [ -z "${LIBCUEMOL2_ROOT:-}" ]; then
   echo "LIBCUEMOL2_ROOT not set; defaulting to $LIBCUEMOL2_ROOT"
 fi
 
+# On Windows the caller may hand over a native (drive-letter) path -- the
+# Taskfile package_tritium task does -- so normalize it here and let the plain
+# cp/ls/test calls below see a well-formed MSYS path.
+if [ "$PLATFORM" = "win" ]; then
+  LIBCUEMOL2_ROOT="$(cygpath -u "$LIBCUEMOL2_ROOT" 2>/dev/null || echo "$LIBCUEMOL2_ROOT")"
+fi
+
 if [ ! -d "$LIBCUEMOL2_ROOT" ]; then
   echo "Error: LIBCUEMOL2_ROOT does not exist: $LIBCUEMOL2_ROOT" >&2
   echo "  Build libcuemol2 first (build_scripts: task build_libcuemol2)," >&2
@@ -161,6 +168,10 @@ echo "  blendpng: $BLENDPNG_SRC"
 if [ -z "${BUNDLE_APPS:-}" ]; then
   BUNDLE_APPS="$HOME/tmp/proj64_deplibs"
   echo "  BUNDLE_APPS not set; defaulting to $BUNDLE_APPS"
+elif [ "$PLATFORM" = "win" ]; then
+  # Native "c:\..." path from the Taskfile / a Windows shell (same as
+  # LIBCUEMOL2_ROOT above).
+  BUNDLE_APPS="$(cygpath -u "$BUNDLE_APPS" 2>/dev/null || echo "$BUNDLE_APPS")"
 fi
 
 # Copy each package as a whole tree so the per-OS executable names (povray vs

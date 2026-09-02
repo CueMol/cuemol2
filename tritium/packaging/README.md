@@ -9,7 +9,8 @@ electron-vite + electron-builder による配布物のビルド手順と、**未
   `LIBCUEMOL2_ROOT`（既定: `<repo>/.build_out/cuemol2`）に install しておくこと。
 - （macOS / Windows, 任意）外部 bundle ソフト（POV-Ray / ffmpeg / apbs-pdb2pqr）を
   配布物に同梱するには、`cd build_scripts && task download_extpkgs` を先に実行して
-  `BUNDLE_APPS`（既定: `$HOME/tmp/proj64_deplibs`）に配置しておくこと。未配置でも
+  `BUNDLE_APPS`（既定: posix は `$HOME/tmp/proj64_deplibs`、Windows は
+  `c:\tmp\proj64_deplibs`）に配置しておくこと。未配置でも
   パッケージングは通るが、警告が出て当該バイナリは同梱されない（POV-Ray レンダリングは
   Settings でパスを手入力すれば動く）。CI（`build2.yml`）は macOS/Windows とも package
   前に `download_extpkgs` を実行し `BUNDLE_APPS` を渡すので自動で同梱される。
@@ -20,9 +21,17 @@ electron-vite + electron-builder による配布物のビルド手順と、**未
 
 | OS | コマンド | 成果物 (`tritium/react-gui/release/`) |
 |----|----------|----------------------------------------|
-| macOS (arm64) | `cd tritium/react-gui && pnpm run package:mac` | `CueMol3-<version>-macOS-arm64-Installer.dmg` |
-| Windows (x64) | `cd tritium/react-gui && pnpm run package:win` | `CueMol3-<version>-Windows-x64-Setup.exe`（NSIS インストーラー） |
+| macOS (arm64) | `cd build_scripts && task package_tritium`（= `cd tritium/react-gui && pnpm run package:mac`） | `CueMol3-<version>-macOS-arm64-Installer.dmg` |
+| Windows (x64) | `cd build_scripts && task package_tritium`（= `bash tritium/packaging/package.sh --win --x64`） | `CueMol3-<version>-Windows-x64-Setup.exe`（NSIS インストーラー） |
 | Linux (x64) | `bash tritium/packaging/package.sh --linux --x64` | `CueMol3-<version>-Linux-x64.AppImage` / `.deb` |
+
+`task package_tritium` は OS を見て上表のコマンドへ分岐し、`LIBCUEMOL2_ROOT` /
+`BUNDLE_APPS`（既定値は上記「前提」と同じ）を渡す。Windows だけ npm script
+（`pnpm run package:win`）ではなく `package.sh` を直接呼ぶのは、`pnpm run` 配下では
+pnpm 自身の shim ディレクトリが PATH の先頭に入り、その shim が Git Bash から
+Windows バイナリを exec できず（`This: command not found`）`package.sh` 内の
+`pnpm exec electron-vite` が失敗する環境があるため。CI（`build2.yml`）の Windows job も
+同じ直接呼び出しを使う。
 
 `<version>` は `src/_version.h` の `QM_VERSION` そのまま（4 桁、例 `2.3.9.498`）。
 ファイル名は OS・arch・役割（インストーラか本体か）が読み取れる形に統一してある
