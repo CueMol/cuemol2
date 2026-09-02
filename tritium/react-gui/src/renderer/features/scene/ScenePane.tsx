@@ -19,12 +19,12 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
-    Tree,
     Button,
     ButtonGroup,
     Tooltip,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
+import { ListboxTree } from "@renderer/h3-kit/list";
 import { AppIcon } from "@renderer/h3-kit/primitives";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
@@ -591,14 +591,14 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
                     onDragLeave={handleTreeDragLeave}
                     style={{ outline: 'none' }}
                 >
-                    <Tree
+                    <ListboxTree
                         contents={treeContents}
                         onNodeClick={handleNodeClick}
                         onNodeDoubleClick={handleNodeDoubleClick}
                         onNodeExpand={handleNodeExpand}
                         onNodeCollapse={handleNodeCollapse}
                         onNodeContextMenu={handleNodeContextMenu}
-                        className="scene-tree h3-listbox-tree"
+                        className="scene-tree"
                     />
                 </div>
             )}

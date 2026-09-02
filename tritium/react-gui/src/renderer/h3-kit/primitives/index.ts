@@ -12,6 +12,8 @@
 
 export { AppIcon } from './AppIcon';
 export { APP_ICONS } from './appIcons';
+export { DisclosureCaret, CARET_PX } from './DisclosureCaret';
+export type { DisclosureCaretProps } from './DisclosureCaret';
 export type { AppIconKey, AppIconSpec } from './appIcons';
 export { Tooltip } from './Tooltip';
 export type { TooltipProps } from './Tooltip';

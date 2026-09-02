@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback } from 'react'
-import { AppIcon } from '@renderer/h3-kit/primitives'
+import { AppIcon, DisclosureCaret } from '@renderer/h3-kit/primitives'
 import type { CategoryNode } from './settingsConfig'
 
 export interface ConfigTreeNodeProps {
@@ -50,13 +50,7 @@ export const ConfigTreeNode: React.FC<ConfigTreeNodeProps> = ({
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
       >
-        <span className="cfg-tree-chevron">
-          {hasChildren ? (
-            <AppIcon name={isExpanded ? 'ui.caretDown' : 'ui.caretRight'} size="sm" />
-          ) : (
-            <span style={{ width: 12 }} />
-          )}
-        </span>
+        <DisclosureCaret expanded={isExpanded} leaf={!hasChildren} className="cfg-tree-chevron" />
         <AppIcon name={node.icon} size="md" className="cfg-tree-icon" aria-hidden />
         <span className="cfg-tree-label">{node.label}</span>
         {!hasChildren && count > 0 && (

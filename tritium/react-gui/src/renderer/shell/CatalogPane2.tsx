@@ -11,7 +11,7 @@
  */
 
 import React, { useState } from "react";
-import { AppIcon } from "@renderer/h3-kit/primitives";
+import { AppIcon, DisclosureCaret } from "@renderer/h3-kit/primitives";
 import { PaneSectionHeader } from "./PaneSectionHeader";
 import {
   Field,
@@ -26,7 +26,7 @@ import {
   ColorField,
   SliderField,
 } from "@renderer/h3-kit/form";
-import { Listbox, ListRow } from "@renderer/h3-kit/list";
+import { Listbox, ListRow, ListboxTree } from "@renderer/h3-kit/list";
 import { MolSelList } from "@renderer/h3-kit/MolSelList";
 import { useActiveScene } from '@renderer/state/workspace';
 
@@ -55,6 +55,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
   const [opacity, setOpacity] = useState(80);
   const [angle, setAngle] = useState(90);
   const [listSel, setListSel] = useState("3J3Q");
+  const [treeOpen, setTreeOpen] = useState(true);
   const [seg, setSeg] = useState("all");
   const [radio, setRadio] = useState("temp");
   const [color, setColor] = useState("#3b82f6");
@@ -140,6 +141,34 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
                   </ListRow>
                 ))}
               </Listbox>
+            </FieldGroup>
+
+            {/* The kit's Blueprint Tree: the caret is the same DisclosureCaret
+                the pane section headers draw (thin Phosphor glyph), not
+                Blueprint's heavier built-in chevron. */}
+            <FieldGroup title="Tree (ListboxTree) / disclosure caret">
+              <ListboxTree
+                contents={[
+                  {
+                    id: "mol",
+                    label: "1ggg (MolCoord)",
+                    icon: <AppIcon name="ui.cube" aria-hidden />,
+                    isExpanded: treeOpen,
+                    childNodes: [
+                      { id: "r1", label: "ribbon1 (ribbon)", icon: <AppIcon name="ui.cube" aria-hidden /> },
+                      { id: "r2", label: "simple1 (simple)", icon: <AppIcon name="ui.cube" aria-hidden /> },
+                    ],
+                  },
+                ]}
+                onNodeExpand={() => setTreeOpen(true)}
+                onNodeCollapse={() => setTreeOpen(false)}
+              />
+              <ButtonRow>
+                <DisclosureCaret expanded />
+                <DisclosureCaret expanded={false} />
+                <DisclosureCaret expanded leaf />
+                <span className="type-label">expanded / collapsed / leaf</span>
+              </ButtonRow>
             </FieldGroup>
 
             <FieldGroup title="Segmented control">

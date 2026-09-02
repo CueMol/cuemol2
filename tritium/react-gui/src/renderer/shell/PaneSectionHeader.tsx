@@ -1,5 +1,5 @@
 import React from "react";
-import { AppIcon } from "@renderer/h3-kit/primitives";
+import { AppIcon, DisclosureCaret } from "@renderer/h3-kit/primitives";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 interface SectionHeaderProps {
@@ -45,12 +45,7 @@ export const PaneSectionHeader: React.FC<SectionHeaderProps> = ({
     >
       <div className="sp-section-header-left">
         {showChevron && (
-          <AppIcon
-            name={collapsed ? "ui.caretRight" : "ui.caretDown"}
-            size="sm"
-            className="section-chevron"
-            aria-hidden
-          />
+          <DisclosureCaret expanded={!collapsed} className="section-chevron" />
         )}
         {icon != null && (
           <AppIcon name={icon} size="md" className="section-icon" aria-hidden />

@@ -229,6 +229,10 @@
   --icon-sm: 12px;
   --icon-md: 14px;
   --icon-lg: 18px;
+  /* Disclosure caret (tree twisty / section chevron): Blueprint's standard
+     icon size, deliberately off the sm/md/lg ladder. DisclosureCaret owns it
+     (CARET_PX mirrors this); consumers never pick it. */
+  --icon-caret: 16px;
   /* App icon drawn as the hero element on the welcome screen. Scales with the
      UI like the type around it; the asset is 256px so this downscales. */
   --icon-hero: calc(64px * var(--ui-scale));

@@ -20,7 +20,7 @@
  */
 
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { AppIcon } from "@renderer/h3-kit/primitives";
+import { DisclosureCaret } from "@renderer/h3-kit/primitives";
 
 interface AccordionGroupValue {
   /** Title of the currently open section, or null when all are collapsed. */
@@ -85,11 +85,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
   return (
     <div className={`insp-accordion ${expanded ? "expanded" : ""}`}>
       <div className="insp-accordion-header" onClick={onToggle}>
-        <AppIcon
-          name={expanded ? "ui.caretDown" : "ui.caretRight"}
-          size="sm"
-          className="insp-accordion-chevron"
-        />
+        <DisclosureCaret expanded={expanded} className="insp-accordion-chevron" />
         <span className="insp-accordion-title">{title}</span>
       </div>
       {expanded && <div className="insp-accordion-body">{children}</div>}

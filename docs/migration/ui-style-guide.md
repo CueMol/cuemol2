@@ -22,9 +22,9 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 
 | sub-barrel | 中身 |
 |---|---|
-| `h3-kit/primitives` | `AppIcon` / アイコン登録表 / `Tooltip` / `useDarkPortalClass` |
+| `h3-kit/primitives` | `AppIcon` / アイコン登録表 / `DisclosureCaret` (開閉 caret) / `Tooltip` / `useDarkPortalClass` |
 | `h3-kit/form` | 下表の label+control カタログ。**サイズの単一ソース** |
-| `h3-kit/list` | `Listbox` / `ListRow` / `useListKeyNav` |
+| `h3-kit/list` | `Listbox` / `ListRow` / `ListboxTree` (Blueprint `Tree` の kit 版) / `useListKeyNav` |
 | `h3-kit/gradient` | `GradientStopBar` + gradient の値/ピクセル幾何 |
 | `h3-kit/colorpicker` | 色ポップオーバーと `CueColorField` |
 | `h3-kit/MolSelList` / `h3-kit/selection` | 分子選択のピッカーと式ビルダ |
@@ -166,6 +166,14 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
   Blueprint の `Tree` の `TreeNodeInfo.icon` や `MenuItem` の `icon` は JSX 要素(MaybeElement)を受けるので、
   `icon: <AppIcon name="..." aria-hidden />` をそのまま渡せる。アイコン列の空きスペーサが要る箇所(placeholder
   行・未チェックの radio)は 16px の空 `<span>` を使う。
+- **開閉 (expand/collapse) の caret は `DisclosureCaret`** (`h3-kit/primitives`) で描く。pane section header /
+  tree 行 / inspector accordion / settings tree / dialog の折り畳みセクションが全て同じ glyph・太さ・サイズ・色に
+  なるための単一部品で、サイズ (`--icon-caret` = 16px、Blueprint 標準アイコン寸) は部品が持ち consumer は
+  選ばない。`leaf` で同寸の空箱 (子の無い行の整列用)。`<AppIcon name="ui.caretDown|Right">` を consumer で
+  直接組んで開閉 caret を作らない。
+- **Blueprint `Tree` は `ListboxTree`** (`h3-kit/list`) 経由で描く。Blueprint 内蔵の caret は差し替え不可の
+  塗りパス (`chevron-right`) で pane header の Phosphor caret より太く見えるため、`ListboxTree` が全ノードに
+  `hasCaret: false` を渡して `DisclosureCaret` を icon スロットに描く。props は Blueprint `TreeProps` そのまま。
 - Blueprint コンポーネント内蔵アイコン(input clear 等、CSS フォント由来)はそのまま。段階移行のため、まだ
   `AppIcon` 化していない箇所で `<Icon>` 直書きが残るのは許容(移行時にキーを足して寄せる)。
 

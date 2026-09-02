@@ -227,11 +227,6 @@
 }
 
 /* Carries the expand state on its own, so it reads at the body-text tone. */
-.insp-accordion-chevron {
-  color: var(--text-primary);
-  flex-shrink: 0;
-}
-
 /* A flat (non-collapsible) section: same header chrome, but nothing to click.
  * Declared after the base rules so the hover fill is cancelled. */
 .insp-accordion-header-static,

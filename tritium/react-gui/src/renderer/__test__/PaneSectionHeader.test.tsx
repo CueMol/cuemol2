@@ -15,23 +15,17 @@ void React
  *   - optional `actions` render, and clicking inside them stops propagation
  *     so the header toggle is NOT triggered.
  *
- * AppIcon is mocked to surface its semantic `name` as a `data-icon`
- * attribute, giving a stable, library-agnostic assertion target for the
- * chevron flip (the real AppIcon resolves to a Phosphor/Blueprint glyph).
+ * The chevron is the kit's DisclosureCaret, which exposes its state as a
+ * `data-expanded` attribute -- a stable, library-agnostic assertion target
+ * for the flip (the glyph itself is whatever the icon registry resolves).
  */
-
-vi.mock('@renderer/h3-kit/primitives', () => ({
-  AppIcon: ({ name, className }: { name: string; className?: string }) => (
-    <span data-icon={name} className={className} />
-  ),
-}))
 
 import { PaneSectionHeader } from '@renderer/shell/PaneSectionHeader'
 
-function chevronName(container: HTMLElement): string | null {
+function chevronExpanded(container: HTMLElement): string | null {
   return container
     .querySelector('.section-chevron')
-    ?.getAttribute('data-icon') ?? null
+    ?.getAttribute('data-expanded') ?? null
 }
 
 describe('PaneSectionHeader', () => {
@@ -44,7 +38,7 @@ describe('PaneSectionHeader', () => {
         onToggleCollapse={vi.fn()}
       />,
     )
-    expect(chevronName(container)).toBe('ui.caretDown')
+    expect(chevronExpanded(container)).toBe('true')
     unmount()
   })
 
@@ -57,7 +51,7 @@ describe('PaneSectionHeader', () => {
         onToggleCollapse={vi.fn()}
       />,
     )
-    expect(chevronName(container)).toBe('ui.caretRight')
+    expect(chevronExpanded(container)).toBe('false')
     unmount()
   })
 
