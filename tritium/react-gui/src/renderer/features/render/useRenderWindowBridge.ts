@@ -6,8 +6,11 @@
  * once in App -- owns the render job lifecycle (useRenderJob) and the latest
  * RenderResult, executes commands forwarded from the render window
  * (RENDER_WINDOW_EXEC), and pushes job / target-view state back
- * (RENDER_WINDOW_STATE). It also answers the "Current view" canvas-size
- * round trip (RENDER_RELAY_REQUEST/REPLY).
+ * (RENDER_WINDOW_STATE). It also answers the relay questions -- the "Current
+ * view" canvas size, a target view's camera, a hatch style spec, a scene's
+ * stored render settings (RENDER_RELAY_REQUEST/REPLY) -- stores the render
+ * window's settings on a scene ('write-settings'), and forwards the scene's
+ * render-settings change events so the window follows an undo / redo.
  *
  * The render window picks its render target from the pushed `views` list
  * (auto-following the main window's active view) and sends it as the start
@@ -22,6 +25,9 @@ import { useCallback, useEffect, useRef } from "react";
 import { IPC } from "@shared/ipcChannels";
 import { RENDER_HISTORY_LIMIT } from "@shared/renderHistory";
 import type { RenderJobWire, RenderTargetViewWire, RenderWindowCommand, RenderWindowStateUpdate } from "@shared/types/renderWindow";
+import { useCueMolEventListener } from "@renderer/hooks/cuemol/useCueMolEventListener";
+import { SEM_ANY, SEM_CHANGED, SEM_SCENE } from "@renderer/event";
+import { EVENT_BURST_DEBOUNCE_MS } from "@renderer/utils/timing";
 import type { AsyncCueMol } from "@renderer/worker/client/AsyncCueMol";
 import type { RenderBinaries } from "@renderer/worker/shared/renderTypes";
 import type {
@@ -61,11 +67,26 @@ interface UseRenderWindowBridgeArgs {
   binaries: RenderBinaries;
   /** Whether the umbreon backend is compiled in (forwarded to the render window). */
   umbreonAvailable: boolean;
+  /**
+   * Undo / redo a scene's last edit on the render window's behalf (its Cmd+Z).
+   * Owned by the caller so the active scene goes through the main window's
+   * own Undo command and its toolbar / menu state stays in step.
+   */
+  onEditScene?: (action: "undo" | "redo", sceneId: number) => void;
 }
 
 /** Push a state update toward the render window (dropped if it is closed). */
 function pushState(update: RenderWindowStateUpdate): void {
   window.electronAPI?.invoke(IPC.RENDER_WINDOW_STATE, update).catch(() => {});
+}
+
+/** Scene app-data id of the stored render settings (see the worker service). */
+const RENDER_APP_DATA_ID = "render";
+
+/** The subset of the CueMol event payload the app-data listener reads. */
+interface CueMolEventArgs {
+  srcUID?: number;
+  obj?: { descr?: string; target_uid?: number };
 }
 
 export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
@@ -190,6 +211,21 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
       case "cancel":
         void rj.cancel();
         break;
+      case "write-settings": {
+        // No push back: the scene's own change event (below) tells the render
+        // window what the scene now holds, the same way it learns of an undo.
+        if (!a.cm) return;
+        void a.cm
+          .invokeService("setSceneRenderSettings", { sceneId: cmd.sceneId, values: cmd.values })
+          .then((res) => {
+            if (!res?.ok) console.warn("setSceneRenderSettings failed:", res?.error);
+          })
+          .catch((e: unknown) => console.warn("setSceneRenderSettings failed:", e));
+        break;
+      }
+      case "edit":
+        a.onEditScene?.(cmd.action, cmd.sceneId);
+        break;
       case "clear-history":
         historyRef.current = [];
         pushState({ kind: "history", entries: [] });
@@ -225,6 +261,41 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
     return offExec;
   }, [execCommand]);
 
+  // A scene's stored render settings changed: by the render window's own
+  // write, an undo / redo here, or a script. Re-read and push; the render
+  // window decides whether its editor has to follow. Any scene, not only the
+  // active one -- the render target is the window's pick. C++ fires one event
+  // per property, hence the burst debounce.
+  useCueMolEventListener({
+    cm,
+    enabled: cm !== null,
+    category: "sceneAppDataChanged",
+    srcMask: SEM_SCENE,
+    evtMask: SEM_CHANGED,
+    scopeId: SEM_ANY,
+    filter: (raw) => (raw as CueMolEventArgs).obj?.descr === RENDER_APP_DATA_ID,
+    debounceMs: EVENT_BURST_DEBOUNCE_MS,
+    handler: (raw) => {
+      const a = raw as CueMolEventArgs;
+      const sceneId = a.obj?.target_uid ?? a.srcUID;
+      if (typeof sceneId !== "number" || !cm) return;
+      void cm
+        .invokeService("getSceneRenderSettings", { sceneId })
+        .then((res) => {
+          if (res?.ok) {
+            pushState({
+              kind: "sceneSettings",
+              sceneId,
+              exists: res.exists,
+              values: res.values,
+              defaults: res.defaults,
+            });
+          }
+        })
+        .catch(() => {});
+    },
+  });
+
   // The three questions the render window sends back over the relay. Each
   // answers with its own "cannot answer" value rather than staying silent, so
   // the render window learns the outcome without waiting out the timeout.
@@ -258,6 +329,21 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
       try {
         return (
           (await cm.invokeService("getHatchStyleSpec", { style })) ?? {
+            ok: false,
+            error: "no reply",
+          }
+        );
+      } catch (e: unknown) {
+        return { ok: false, error: e instanceof Error ? e.message : String(e) };
+      }
+    },
+    // The render settings a scene stores, for the editor to show when the
+    // render target changes.
+    sceneRenderSettings: async ({ sceneId }) => {
+      if (!cm) return { ok: false, error: "no worker" };
+      try {
+        return (
+          (await cm.invokeService("getSceneRenderSettings", { sceneId })) ?? {
             ok: false,
             error: "no reply",
           }

@@ -11,6 +11,16 @@
 import { DEFAULT_MOVIE_BASE_NAME } from "@shared/movieFrames";
 import type { PropDef } from "./rendererProperties";
 
+/**
+ * A render-setting row as the catalogs declare it: everything the editor
+ * needs to show and validate a setting, but no value. The values -- the
+ * defaults included -- come from the scene's C++ RenderSettings object
+ * (src/modules/rendering/RenderSettings.qif is the single source of the
+ * defaults); features/render/sceneRenderSettings.ts turns a spec list plus
+ * those values into the `PropDef[]` the editor works on.
+ */
+export type RenderPropSpec = Omit<PropDef, "value">;
+
 /** Identifier of a rendering backend. Extended as backends are added. */
 export type RenderBackendId = "povray" | "umbreon" | "umbreon_npr";
 
@@ -431,32 +441,32 @@ export const MOVIE_FPS_PRESETS = [24, 30, 60];
 /** Bit-rate choices in kbps (UXP `ffmpeg-bitrate`). */
 export const MOVIE_BITRATE_PRESETS = [256, 1024, 10240];
 
-/** Backend-independent render-setting definitions (mock defaults). */
-export const RENDER_COMMON_PROPS: PropDef[] = [
+/** Backend-independent render-setting rows (values come from the scene, see RenderPropSpec). */
+export const RENDER_COMMON_PROPS: RenderPropSpec[] = [
   // --- Image (width/height carry the active unit as a field suffix; the px
   //     min/max/step mirror SIZE_UNIT_FIELD_META.px. `inline` renders them as
   //     compact single-row plain number boxes, not two-row drag fields.) ---
-  { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
-  { key: "height", label: "Height",    type: "integer", value: 1200, group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
-  { key: "unit",   label: "Size unit", type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
+  { key: "width",  label: "Width",     type: "integer", group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
+  { key: "height", label: "Height",    type: "integer", group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
+  { key: "unit",   label: "Size unit", type: "enum",  group: "Image", options: ["px", "in", "mm", "cm"] },
   // Editable combobox with the UXP render-pov-dlg DPI presets (plus high-DPI
   // options); custom values allowed.
-  { key: "dpi",    label: "DPI",       type: "combo",   value: 600,   group: "Image", options: ["72", "150", "300", "600", "1200", "2400"] },
-  { key: "transparentBg", label: "Transparent background",     type: "boolean", value: false, group: "Image" },
-  { key: "postBlend",     label: "Post-render alpha blending", type: "boolean", value: true,  group: "Image" },
-  { key: "pixelLabels",   label: "Pixel labels",               type: "boolean", value: false, group: "Image" },
+  { key: "dpi",    label: "DPI",       type: "combo",   group: "Image", options: ["72", "150", "300", "600", "1200", "2400"] },
+  { key: "transparentBg", label: "Transparent background",     type: "boolean", group: "Image" },
+  { key: "postBlend",     label: "Post-render alpha blending", type: "boolean",  group: "Image" },
+  { key: "pixelLabels",   label: "Pixel labels",               type: "boolean", group: "Image" },
 
   // --- Camera ---
-  { key: "projection",  label: "Projection",   type: "enum", value: "perspective", group: "Camera",
+  { key: "projection",  label: "Projection",   type: "enum", group: "Camera",
     options: ["perspective", "orthographic"] },
-  { key: "stereoMode",  label: "Stereo mode",  type: "enum", value: "none", group: "Camera",
+  { key: "stereoMode",  label: "Stereo mode",  type: "enum", group: "Camera",
     options: ["none", "left", "right"] },
-  { key: "stereoDepth", label: "Stereo depth", type: "real", value: 0.03, group: "Camera", min: 0, max: 1, step: 0.01 },
-  { key: "clipPlane",   label: "Enable clip plane", type: "boolean", value: true, group: "Camera" },
+  { key: "stereoDepth", label: "Stereo depth", type: "real", group: "Camera", min: 0, max: 1, step: 0.01 },
+  { key: "clipPlane",   label: "Enable clip plane", type: "boolean", group: "Camera" },
 
   // --- Quality ---
-  { key: "numThreads", label: "CPU threads", type: "integer", value: 2,    group: "Quality", min: 1, max: 32, step: 1 },
+  { key: "numThreads", label: "CPU threads", type: "integer",    group: "Quality", min: 1, max: 32, step: 1 },
 
   // --- Edges (toon outline lines; backends may add crease/rise detail here) ---
-  { key: "edgeLines",  label: "Edge lines",  type: "boolean", value: true, group: "Edges" },
+  { key: "edgeLines",  label: "Edge lines",  type: "boolean", group: "Edges" },
 ];

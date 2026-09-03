@@ -21,7 +21,21 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { IPC } from "@shared/ipcChannels";
-import type { RenderFramePreviewWire, RenderTargetViewWire, RenderWindowCommand, RenderWindowModeRequest, RenderWindowStateUpdate, RenderViewCamera, HatchStyleSpecReply, ViewSizePx, RelayKind, RelayReq, RelayRes } from "@shared/types/renderWindow";
+import type {
+  RenderFramePreviewWire,
+  RenderSettingsValues,
+  RenderTargetViewWire,
+  RenderWindowCommand,
+  RenderWindowModeRequest,
+  RenderWindowStateUpdate,
+  RenderViewCamera,
+  HatchStyleSpecReply,
+  SceneRenderSettingsReply,
+  ViewSizePx,
+  RelayKind,
+  RelayReq,
+  RelayRes,
+} from "@shared/types/renderWindow";
 import type { RenderJob } from "./useRenderJob";
 import { useHoldReveal } from "@renderer/shell/reveal/useRevealWindow";
 import { useStaleGuard } from "@renderer/hooks/react/useStaleGuard";
@@ -83,6 +97,21 @@ export interface RenderWindowClientState {
    * re-picking the mode the window is already in still registers.
    */
   modeRequest: RenderWindowModeRequest | null;
+  /**
+   * The latest "a scene's stored render settings changed" push, or null
+   * before the first one. `seq` counts the pushes so an identical re-push
+   * still reaches the consumer effect.
+   */
+  sceneSettings: SceneSettingsPush | null;
+}
+
+/** A scene's stored render settings as pushed by the main window. */
+export interface SceneSettingsPush {
+  sceneId: number;
+  exists: boolean;
+  values: RenderSettingsValues;
+  defaults: RenderSettingsValues;
+  seq: number;
 }
 
 const INITIAL_STATE: RenderWindowClientState = {
@@ -95,6 +124,7 @@ const INITIAL_STATE: RenderWindowClientState = {
   activeViewId: null,
   umbreonAvailable: false,
   modeRequest: null,
+  sceneSettings: null,
 };
 
 /** Send a command toward the main window's bridge. */
@@ -126,6 +156,12 @@ export function useRenderWindowClient(): {
   getViewCamera: (viewId: number) => Promise<RenderViewCamera | null>;
   /** A hatch style resolved to its spec text (the NPR layer editor's template). */
   getHatchStyleSpec: (style: string) => Promise<HatchStyleSpecReply>;
+  /** The render settings a scene stores (`exists: false` = none yet). */
+  getSceneRenderSettings: (sceneId: number) => Promise<SceneRenderSettingsReply>;
+  /** Store settings on a scene as one undoable edit (fire and forget). */
+  writeSceneRenderSettings: (sceneId: number, values: RenderSettingsValues) => void;
+  /** Undo / redo the scene's last edit (the window's Cmd+Z). */
+  editScene: (action: "undo" | "redo", sceneId: number) => void;
   /** The result currently on screen (a history entry), or null. */
   shownResult: RenderResult | null;
   /**
@@ -207,8 +243,19 @@ export function useRenderWindowClient(): {
               preview: null,
             };
           });
-        } else {
+        } else if (update.kind === "framePreview") {
           setState((prev) => ({ ...prev, preview: update.preview }));
+        } else if (update.kind === "sceneSettings") {
+          setState((prev) => ({
+            ...prev,
+            sceneSettings: {
+              sceneId: update.sceneId,
+              exists: update.exists,
+              values: update.values,
+              defaults: update.defaults,
+              seq: (prev.sceneSettings?.seq ?? 0) + 1,
+            },
+          }));
         }
       },
     );
@@ -373,6 +420,27 @@ export function useRenderWindowClient(): {
     [],
   );
 
+  const getSceneRenderSettings = useCallback(
+    (sceneId: number): Promise<SceneRenderSettingsReply> =>
+      relayGet("sceneRenderSettings", { sceneId }, (e) => ({
+        ok: false,
+        error: e ? (e instanceof Error ? e.message : String(e)) : "no electron api",
+      })),
+    [],
+  );
+
+  const writeSceneRenderSettings = useCallback(
+    (sceneId: number, values: RenderSettingsValues): void =>
+      sendCommand({ type: "write-settings", sceneId, values }),
+    [],
+  );
+
+  const editScene = useCallback(
+    (action: "undo" | "redo", sceneId: number): void =>
+      sendCommand({ type: "edit", action, sceneId }),
+    [],
+  );
+
   return {
     state,
     targetViewId,
@@ -388,6 +456,9 @@ export function useRenderWindowClient(): {
     getViewSize,
     getViewCamera,
     getHatchStyleSpec,
+    getSceneRenderSettings,
+    writeSceneRenderSettings,
+    editScene,
     shownResult,
     shownImage,
     goBack,

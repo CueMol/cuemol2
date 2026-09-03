@@ -139,6 +139,7 @@ export const IPC = {
   RENDER_WINDOW_EXEC:       'render-window:exec',              // push:   main -> main window
   RENDER_WINDOW_STATE:      'render-window:state',             // invoke: main window -> main
   RENDER_WINDOW_STATE_PUSH: 'render-window:state-push',        // push:   main -> render window
+  RENDER_WINDOW_EDIT_PUSH:  'render-window:edit-push',         // push:   main -> render window
   // One round trip for every question the render window can only answer by
   // asking the main window; the `kind` in the payload says which (RelayKinds).
   RENDER_RELAY_GET:     'render-window:relay-get',     // invoke: render window -> main
