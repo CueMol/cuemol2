@@ -82,6 +82,29 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   property real lightRadius => m_dLightRadius;
 
   //////////
+  // lighting energy balance. Same meaning as the POV exporter's
+  // _light_inten / _flash_frac / _amb_frac declares:
+  //   key light (SpecLighting)  = lightIntensity * (1 - ambientFraction) * (1 - flashFraction)
+  //   headlight (FlashLighting) = lightIntensity * (1 - ambientFraction) * flashFraction
+  //   GI ambient energy         = lightIntensity * ambientFraction  (useGI only;
+  //                               without GI the ambient stays POV's unit
+  //                               ambient_light and the fraction only dims the
+  //                               direct lights, as in POV without radiosity)
+  // A negative value means auto: the GI-off defaults (1.3 / 0.6 / 0) or, with
+  // GI on, the rebalanced defaults documented in
+  // docs/architecture/umbreon-gi-lighting-balance.md. The tritium render
+  // window always sends explicit values (UmbreonBackend.ts LIGHT_BALANCE).
+
+  /// total light energy (<0 = auto)
+  property real lightIntensity => m_dLightIntensity;
+
+  /// share of the direct light given to the headlight (<0 = auto)
+  property real flashFraction => m_dFlashFraction;
+
+  /// share of the total energy moved into the GI-gathered ambient (<0 = auto)
+  property real ambientFraction => m_dAmbientFraction;
+
+  //////////
   // edge / silhouette outline lines (CueMol toon edges)
 
   property boolean showEdgeLines => m_bEnableEdgeLines;

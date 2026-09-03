@@ -873,6 +873,37 @@ TEST(UmbreonExport, AoRecipeFlagsReachTheRenderer)
 // Smoke test for the pt1 path-traced GI integrator + Intel OIDN denoiser:
 // enabling GI must run without crashing, produce a lit frame, and (via the
 // radiosity lighting rebalance) differ from the local-shading render.
+// The lighting balance properties (POV _light_inten / _flash_frac / _amb_frac)
+// must reach the lights umbreon renders with: each one, changed on its own,
+// changes the picture. Compared one at a time so a single unwired property
+// cannot hide behind the other two. ambientFraction is checked under GI, the
+// only mode where it feeds the gathered ambient energy rather than merely
+// dimming the direct lights (which lightIntensity already covers).
+TEST(UmbreonExport, LightBalancePropertiesChangeTheOutput)
+{
+    UmbreonRenderParams base;
+    base.supersample = 1;
+    const std::vector<unsigned char> ref = renderAoRecipe(base);
+    ASSERT_EQ(ref.size(), static_cast<std::size_t>(64 * 64 * 3));
+
+    UmbreonRenderParams dim = base;
+    dim.lightIntensity = 0.65;
+    EXPECT_NE(ref, renderAoRecipe(dim));
+
+    UmbreonRenderParams keyOnly = base;
+    keyOnly.flashFraction = 0.0;
+    EXPECT_NE(ref, renderAoRecipe(keyOnly));
+
+    UmbreonRenderParams gi = base;
+    gi.giEnabled = true;
+    gi.giSamples = 16;
+    gi.giDenoise = false;
+    const std::vector<unsigned char> giRef = renderAoRecipe(gi);
+    UmbreonRenderParams giNoAmbient = gi;
+    giNoAmbient.ambientFraction = 0.0;
+    EXPECT_NE(giRef, renderAoRecipe(giNoAmbient));
+}
+
 TEST(UmbreonExport, GlobalIlluminationAffectsOutput)
 {
     auto renderBox = [](bool useGi) {

@@ -120,6 +120,10 @@ describe('umbreonBackend.beginInProcess', () => {
         // denoise "A-trous" -> pt1Denoise off + full-frame a-trous.
         expect(exporter.giDenoise).toBe(false)
         expect(exporter.denoiser).toBe(1)
+        // GI on -> the GI lighting balance (the backend's table, not a prop).
+        expect(exporter.lightIntensity).toBe(1.55)
+        expect(exporter.flashFraction).toBe(0.6)
+        expect(exporter.ambientFraction).toBe(0.16)
 
         // Start sequence: attach -> setPath -> beginRender (non-blocking start).
         expect(exporter.attach).toHaveBeenCalledWith(scene)
@@ -258,6 +262,10 @@ describe('umbreonBackend.beginInProcess', () => {
         // Cross-renderer contact contours stay off, so an unset prop renders
         // the same picture umbreon and the GL view draw.
         expect(exporter.contactEdges).toBe(false)
+        // No GI -> the plain direct-lighting balance (CueMol's POV defaults).
+        expect(exporter.lightIntensity).toBe(1.3)
+        expect(exporter.flashFraction).toBe(0.6)
+        expect(exporter.ambientFraction).toBe(0)
     })
 
     // AO and GI are alternatives (the Lighting selector enforces it), so an AO

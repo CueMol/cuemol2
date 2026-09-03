@@ -171,8 +171,10 @@ libcuemol2 gained the properties these axes need:
 - Upstream source of the values: umbreon `docs/quality_presets.md` sections
   1 (axis A), 2a (AO), 2b (GI), 3 (shadows) and 6 (the composite bundle).
 - Known gaps, deliberately out of scope here:
-  - GI's ambient energy split (`scene.ambientColor`) is fixed in
-    `UmbreonDisplayContext`; the guide treats it as a client-tuned balance.
+  - GI's lighting energy split (key / headlight / gathered ambient) is a
+    look setting outside the ladders; its values and the exporter
+    properties that carry them are decided in
+    [umbreon-gi-lighting-balance](../../architecture/umbreon-gi-lighting-balance.md).
   - Adaptive AA is reachable only from a script (`aaMode` / `aaDepth` on the
     exporter). Offering it in the UI needs a per-method answer to "what does
     this step mean under GI"; `aaThreshold` stays unexposed either way.

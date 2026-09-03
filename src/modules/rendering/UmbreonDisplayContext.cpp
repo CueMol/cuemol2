@@ -838,15 +838,44 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // frame to the background color; skip fog entirely in that case.
   scene.fog.enabled = (fogEnd > fogStart);
 
-  // Default lighting matching CueMol's POV output (the scene the umbreon CLI
-  // builds from a .pov). Without GI the POV defaults are _light_inten=1.3,
-  // _amb_frac=0, _flash_frac=0.6, giving SpecLighting=0.52 / FlashLighting=0.78.
-  // With GI on, adopt the POV radiosity balance (_light_inten=1.6, _amb_frac=0.5,
-  // _flash_frac=0.5): move half the energy into the ambient the GI gathers and
-  // dim the direct lights, matching the umbreon CLI's scene_setup.
-  const double li = prm.giEnabled ? 1.6 : 1.3;
-  const double af = prm.giEnabled ? 0.5 : 0.0;
-  const double ff = prm.giEnabled ? 0.5 : 0.6;
+  // Lighting energy balance, in the POV exporter's terms (_light_inten /
+  // _amb_frac / _flash_frac). The caller normally supplies all three (the
+  // tritium render window sends UmbreonBackend.ts LIGHT_BALANCE); a negative
+  // value falls back to the auto defaults below, so a scripted caller that
+  // only flips useGI still gets a sensible balance.
+  //
+  // Without GI: the POV defaults _light_inten=1.3, _amb_frac=0, _flash_frac=0.6
+  // (SpecLighting=0.52 / FlashLighting=0.78) plus POV's unit ambient_light,
+  // which the material ambient term (default finish: ambient 0.2) multiplies.
+  //
+  // With GI: umbreon drops that flat ambient term and instead gathers the
+  // ambient energy li*af occlusion-aware, receiving it through the material
+  // DIFFUSE weight (default finish: 0.8), i.e. 4x the coefficient of the flat
+  // term. The POV radiosity split (1.6 / 0.5 / 0.5) taken literally therefore
+  // gives an open surface 3.2x the fill of the non-GI render while cutting
+  // the direct lights, which is a brighter and flatter picture. The auto
+  // defaults instead keep the key light at its non-GI value and hold an open
+  // camera-facing surface at the non-GI brightness:
+  //   0.8*(0.577*key + flash) + 0.8*amb == 0.8*(0.577*0.52 + 0.78) + 0.2
+  //   => flash + amb = 1.03, li = 0.52 + flash + amb = 1.55 (for any amb)
+  // so the only free choice is how much headlight (flat, view-aligned) is
+  // traded for gathered ambient (the term that carries occlusion). amb=0.25
+  // keeps the direct lights identical to the non-GI ones and makes the sky
+  // fill (0.20*pigment through the diffuse weight) equal to the non-GI flat
+  // ambient: a white tube then keeps its headlight shading, whereas a higher
+  // sky fill (0.40 was tried) lifted its sides into a clipped white blob. GI
+  // adds only occlusion and bounce on top. Retune along that line: keep
+  // li=1.55 and move af / ff together. Derivation and trade-offs:
+  // docs/architecture/umbreon-gi-lighting-balance.md
+  const double li = (prm.lightIntensity >= 0.0)
+                        ? prm.lightIntensity
+                        : (prm.giEnabled ? 1.55 : 1.3);
+  const double af = (prm.ambientFraction >= 0.0)
+                        ? prm.ambientFraction
+                        : (prm.giEnabled ? 0.16 : 0.0);
+  const double ff = (prm.flashFraction >= 0.0)
+                        ? prm.flashFraction
+                        : (prm.giEnabled ? 0.6 : 0.6);
   if (scene.lights.empty()) {
     // SpecLighting: directional key light from the upper-front-right
     // (positioned at normalize(1,1,1), pointing at the origin). CueMol calls it

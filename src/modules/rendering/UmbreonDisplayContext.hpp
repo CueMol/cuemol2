@@ -58,9 +58,18 @@ namespace render {
     bool shadows = false;
     int shadowSamples = 1;
     double lightRadius = 0.0;
+    /// Lighting energy balance, the POV exporter's _light_inten / _flash_frac
+    /// / _amb_frac: key light = li*(1-af)*(1-ff), headlight = li*(1-af)*ff,
+    /// and with GI on the gathered ambient energy = li*af (without GI the
+    /// ambient stays POV's unit ambient_light and af only dims the direct
+    /// lights). Negative = auto: resolved per GI state in
+    /// buildSceneAndOptions(); see docs/architecture/umbreon-gi-lighting-balance.md.
+    double lightIntensity = -1.0;
+    double flashFraction = -1.0;
+    double ambientFraction = -1.0;
     /// diffuse global illumination (umbreon pt2 path-traced integrator). When
-    /// on, the lighting is rebalanced to the POV radiosity split (energy moved
-    /// into the GI-gathered ambient). giSamples = gather rays per pixel;
+    /// on, the flat material ambient is replaced by the occlusion-aware gather
+    /// of the ambient energy above (li*af). giSamples = gather rays per pixel;
     /// giIntensity = indirect gain; giEnvIntensity = environment (sky)
     /// multiplier; giDenoise runs Intel OIDN on the indirect irradiance.
     bool giEnabled = false;

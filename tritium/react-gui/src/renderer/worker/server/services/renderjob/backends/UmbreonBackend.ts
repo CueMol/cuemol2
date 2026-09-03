@@ -68,6 +68,35 @@ const HATCH_COLORING: Record<string, { base: string; ink: string }> = {
   "Colored ink on color fill": { base: "albedo", ink: "albedo" },
 };
 
+// Lighting energy balance, in the POV exporter's terms (_light_inten /
+// _flash_frac / _amb_frac; the exporter's lightIntensity / flashFraction /
+// ambientFraction). This table is the app's single source for these values;
+// the C++ side only carries an "auto" fallback for scripted callers.
+//
+// `direct` is CueMol's POV default (key light 0.52, headlight 0.78, flat
+// material ambient) and is used whenever the flat ambient term is in play:
+// plain raytracing, AO and the NPR backend.
+//
+// `gi` replaces that flat ambient with the occlusion-aware GI gather, which
+// umbreon receives through the material diffuse weight (0.8) rather than the
+// ambient one (0.2). Taking the POV radiosity split literally therefore
+// over-fills the picture; these values instead keep the key light at its
+// non-GI value and hold an open camera-facing surface at the non-GI
+// brightness. That constraint fixes lightIntensity at 1.55 and ties the two
+// fractions together (headlight + ambient energy = 1.03), so retuning means
+// moving ambientFraction and flashFraction along that line: more ambient
+// deepens pockets but brightens side-facing surfaces, less does the reverse.
+// The chosen point keeps the direct lights identical to `direct` (key 0.52,
+// headlight 0.78) and puts 0.25 into the gathered ambient, which through the
+// diffuse weight equals the flat ambient of the non-GI render: a white tube
+// keeps its headlight shading (a higher sky fill flattened it to a clipped
+// white blob), and GI adds only occlusion and bounce on top.
+// Derivation: docs/architecture/umbreon-gi-lighting-balance.md
+const LIGHT_BALANCE = {
+  direct: { lightIntensity: 1.3, flashFraction: 0.6, ambientFraction: 0.0 },
+  gi: { lightIntensity: 1.55, flashFraction: 0.6, ambientFraction: 0.16 },
+} as const;
+
 
 /**
  * Create the umbreon exporter and apply every setting from `snapshot`.
@@ -138,6 +167,13 @@ function makeExporter(
   exporter.shadows = boolVal(ub, "shadows", false);
   exporter.shadowSamples = numVal(ub, "shadowSamples", 1);
   exporter.lightRadius = numVal(ub, "lightRadius", 0.0);
+  // Energy balance: the GI table only while GI actually renders (the NPR
+  // backend never enables it, see below).
+  const useGI = !npr && boolVal(ub, "useGI", false);
+  const balance = useGI ? LIGHT_BALANCE.gi : LIGHT_BALANCE.direct;
+  exporter.lightIntensity = balance.lightIntensity;
+  exporter.flashFraction = balance.flashFraction;
+  exporter.ambientFraction = balance.ambientFraction;
   exporter.creaseLimit = numVal(ub, "creaseLimit", -1.0);
   exporter.edgeRise = numVal(ub, "edgeRise", 0.5);
   // Contact contours between DIFFERENT renderers (umbreon strokeEdges.contact).
@@ -175,7 +211,7 @@ function makeExporter(
     }
   } else {
     // Diffuse global illumination (pt1 path-traced integrator).
-    exporter.useGI = boolVal(ub, "useGI", false);
+    exporter.useGI = useGI;
     exporter.giSamples = numVal(ub, "giSamples", 32);
     exporter.giIntensity = numVal(ub, "giIntensity", 1.0);
     exporter.giEnvIntensity = numVal(ub, "giEnvIntensity", 1.0);

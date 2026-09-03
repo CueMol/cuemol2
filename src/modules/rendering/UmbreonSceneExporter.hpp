@@ -86,6 +86,12 @@ namespace render {
     /// light angular radius in degrees (>0 = soft shadows)
     double m_dLightRadius;
 
+    /// lighting energy balance (POV _light_inten / _flash_frac / _amb_frac);
+    /// negative = auto (resolved per GI state in UmbreonDisplayContext)
+    double m_dLightIntensity;
+    double m_dFlashFraction;
+    double m_dAmbientFraction;
+
     /// draw silhouette/edge outline lines (CueMol toon edges)
     bool m_bEnableEdgeLines;
 

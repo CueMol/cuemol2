@@ -75,6 +75,9 @@ GI オフ (`UmbreonSceneExporter::m_bGI = false`)。GI を有効にしたとき�
     `spec_metal` パネルの鏡面方向 (-X) に、視錐台外かつカメラから edge-on の赤い `matte` パネルを置き、
     metal 中心画素の R-B を見る。実測値: **pt2 = 119 / pt1 = 2** (閾値 40)。
     切替を pt1 に戻すと確実に fail することを確認済み
+  - `LightBalancePropertiesChangeTheOutput` — 照明配分 property
+    (`lightIntensity` / `flashFraction` / `ambientFraction`) が light に届くことの配線確認。
+    配分の決定は [umbreon-gi-lighting-balance](umbreon-gi-lighting-balance.md)
 
   > 反射させる面に `nolighting` を使うと機能しない。`diffuse = 0` のため `diffuseWeight()` が 0 になり、
   > gather に一切ラディアンスを供給しない (ambient-only の見た目はカメラから見える自己照明限定)。
@@ -131,5 +134,8 @@ gather core を共有しているため)。cuemol2 の `giSamples` / `giDenoise`
   見た目軸 (`giBounces` / `giIntensity`) を分離し `giBounces` は段間で固定すべき、という設計指針を含む
 - **`aoDistance` の既定値**: C++ は `1e20` (実質無限)、UI は `100`。docs は bbox 対角の 0.5-0.85 倍を
   client が計算することを要求している
+- **GI 時の照明エネルギー配分**: POV radiosity の配分をそのまま使うと白く平坦になる問題は
+  [umbreon-gi-lighting-balance](umbreon-gi-lighting-balance.md) で解決済み
+  (配分は exporter property 化し、既定値は `UmbreonBackend.ts` が持つ)
 - **`DistantLight::angularRadius` のパリティ**: umbreon の POV reader は SpecLighting に
   `atan(spread/40)` を設定するが、cuemol2 の in-process 経路は 0 のまま。pt2 のみが読む per-light soft shadow
