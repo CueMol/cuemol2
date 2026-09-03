@@ -70,6 +70,7 @@ namespace surface {
     enum {
       DS_SCAPOT = 1,
       DS_MOLFANC = 3,
+      DS_MULTIGRAD = 4,
     };
 
     int getColorMode() const { return m_nMode; }
@@ -83,10 +84,14 @@ namespace surface {
     /// The scalar colouring the current colormode selects.
     ScalarMode scaMode() const {
       if (m_nMode==DS_SCAPOT) return SCM_RAMP;
+      if (m_nMode==DS_MULTIGRAD) return SCM_MULTIGRAD;
       return SCM_NONE;
     }
 
     bool isScalarColorMode() const { return scaMode()!=SCM_NONE; }
+
+    /// get color-map object (valid in multigrad mode)
+    qsys::ObjectPtr getColorMapObj() const;
 
   private:
     /// Reference molecule name from old scene files. Kept so the property

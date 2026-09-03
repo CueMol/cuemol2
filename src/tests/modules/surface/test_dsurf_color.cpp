@@ -263,6 +263,138 @@ TEST_P(DsurfColorFixture, LegacyPotentialQscLoads)
     });
 }
 
+// Multi-gradient: stops at -1 (red) and 1 (blue) on the x field.
+TEST_P(DsurfColorFixture, MultigradModeColorsBySignOfTheField)
+{
+    m_pRend->setPropStr("colormode", "multigrad");
+    m_pRend->setPropStr("color_mapname", "pot");
+    visit([&](auto &r) {
+        r.getMultiGrad()->insert(-1.0, gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+        r.getMultiGrad()->insert(1.0, gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    });
+
+    CaptureDC dc;
+    renderInto(dc);
+    ASSERT_GT(dc.m_verts.size(), 0u);
+
+    int nlow = 0, nhigh = 0;
+    for (const auto &v : dc.m_verts) {
+        const double x = v.first.x();
+        ASSERT_FALSE(v.second.isnull());
+        if (x < -1.0) {
+            EXPECT_GT(v.second->fr(), v.second->fb()) << "x=" << x;
+            ++nlow;
+        }
+        else if (x > 1.0) {
+            EXPECT_GT(v.second->fb(), v.second->fr()) << "x=" << x;
+            ++nhigh;
+        }
+    }
+    EXPECT_GT(nlow, 0);
+    EXPECT_GT(nhigh, 0);
+}
+
+// An empty color_mapname resolves nothing: every vertex keeps defaultcolor.
+TEST_P(DsurfColorFixture, MultigradModeWithoutAMapFallsBackToDefaultColor)
+{
+    ColorPtr defcol = gfx::SolidColor::createRGB(0.2, 0.4, 0.6);
+    m_pRend->setPropStr("colormode", "multigrad");
+    m_pRend->setPropStr("color_mapname", "");
+    visit([&](auto &r) { r.setDefaultColor(defcol); });
+
+    CaptureDC dc;
+    renderInto(dc);
+    ASSERT_GT(dc.m_verts.size(), 0u);
+    for (const auto &v : dc.m_verts)
+        EXPECT_EQ(v.second.get(), defcol.get());
+}
+
+// ramp_above moves the sample point ramp_value along the normal: the colours
+// change with a non-zero offset and are unchanged with a zero one. (Where
+// the offset points is pinned on ScalarColorSupport::samplePos.)
+TEST_P(DsurfColorFixture, RampAboveSamplesAlongTheNormal)
+{
+    m_pRend->setPropStr("colormode", "potential");
+    m_pRend->setPropStr("elepot", "pot");
+    m_pRend->setPropReal("lowpar", -1.0);
+    m_pRend->setPropReal("midpar", 0.0);
+    m_pRend->setPropReal("highpar", 1.0);
+
+    const qlib::uid_t sid = m_pScene->getUID();
+    auto devCodes = [&]() {
+        CaptureDC dc;
+        renderInto(dc);
+        std::vector<quint32> codes;
+        for (const auto &v : dc.m_verts) codes.push_back(v.second->getDevCode(sid));
+        return codes;
+    };
+    auto countDiff = [](const std::vector<quint32> &a, const std::vector<quint32> &b) {
+        int n = 0;
+        for (size_t i = 0; i < a.size(); ++i)
+            if (a[i] != b[i]) ++n;
+        return n;
+    };
+
+    const std::vector<quint32> off = devCodes();
+    ASSERT_GT(off.size(), 0u);
+
+    m_pRend->setPropBool("ramp_above", true);
+    m_pRend->setPropReal("ramp_value", 2.0);
+    const std::vector<quint32> on = devCodes();
+    ASSERT_EQ(on.size(), off.size()) << "same mesh, only colours change";
+    EXPECT_GT(countDiff(off, on), 0);
+
+    m_pRend->setPropReal("ramp_value", 0.0);
+    const std::vector<quint32> zero = devCodes();
+    ASSERT_EQ(zero.size(), off.size());
+    EXPECT_EQ(countDiff(off, zero), 0);
+}
+
+// The multigrad target survives write -> read -> reapplyStyle and stays
+// independent from the (unset) elepot storage.
+TEST_P(DsurfColorFixture, ColorMapNameRoundTrip)
+{
+    qsys::RendererFactory *pRF = qsys::RendererFactory::getInstance();
+    qsys::RendererPtr pSrc = pRF->create(GetParam());
+    ASSERT_FALSE(pSrc.isnull());
+    pSrc->setPropStr("colormode", "multigrad");
+    pSrc->setPropStr("color_mapname", "my_map.cif");
+
+    qsys::RendererPtr pOut = surftest::roundTrip(pRF, GetParam(), pSrc);
+    visitDsurf(pOut, [](auto &r) {
+        EXPECT_EQ(r.getColorMode(), (int)r.DS_MULTIGRAD);
+        EXPECT_TRUE(r.getColorMapName().equals("my_map.cif")) << r.getColorMapName().c_str();
+        EXPECT_TRUE(r.getTgtElePotName().isEmpty()) << r.getTgtElePotName().c_str();
+    });
+}
+
+// A multigrad qsc in the molsurf shape (color_mapname + nested multi_grad)
+// loads with its target and stops intact.
+TEST_P(DsurfColorFixture, LegacyMultiGradQscLoads)
+{
+    const LString xml = LString::format(
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+        "<renderer type=\"%s\" color_mapname=\"my_map.cif\" "
+        "colormode=\"multigrad\" group=\"\" name=\"surf1\" sel=\"*\" "
+        "target=\"my_mol.pdb\">\n"
+        "<coloring type=\"CPKColoring\"/>\n"
+        "<multi_grad>\n"
+        "<gradnode par=\"-1.000000\" col=\"#0000FF\"/>\n"
+        "<gradnode par=\"0.000000\" col=\"#FF0000\"/>\n"
+        "<gradnode par=\"0.500000\" col=\"hsb(63.058824,1,1)\"/>\n"
+        "</multi_grad>\n"
+        "</renderer>\n",
+        GetParam());
+    qsys::RendererFactory *pRF = qsys::RendererFactory::getInstance();
+    qsys::RendererPtr pOut = surftest::loadFromXML(pRF, GetParam(), xml.c_str());
+    visitDsurf(pOut, [](auto &r) {
+        EXPECT_EQ(r.getColorMode(), (int)r.DS_MULTIGRAD);
+        EXPECT_TRUE(r.getColorMapName().equals("my_map.cif")) << r.getColorMapName().c_str();
+        ASSERT_FALSE(r.getMultiGrad().isnull());
+        EXPECT_EQ(r.getMultiGrad()->getSize(), 3);
+    });
+}
+
 // `target` is a plain persisted string: it survives the round trip without
 // a scene and never needs an object behind it.
 TEST_P(DsurfColorFixture, TargetIsAPersistedString)
@@ -417,4 +549,46 @@ TEST(DsurfRampSetters, DsurfaceInvalidatesOnlyInPotentialMode)
 TEST(DsurfRampSetters, Dsurf2InvalidatesOnlyInPotentialMode)
 {
     expectRampSettersInvalidateOnlyInPotentialMode<DirectSurfRenderer2>();
+}
+
+// --- multigrad mode: the same setters redraw, plus the map name and the stops ---
+
+namespace {
+
+template <class R>
+void expectMultigradSettersInvalidate()
+{
+    Counting<R> r;
+    r.setColorMode(R::DS_MULTIGRAD);
+    r.m_nInvalidates = 0;
+    runRampSetters(r);
+    EXPECT_EQ(r.m_nInvalidates, 8) << "ramp_above / ramp_value apply in multigrad mode too";
+
+    r.m_nInvalidates = 0;
+    r.setColorMapName("map1");
+    EXPECT_EQ(r.m_nInvalidates, 1);
+
+    // editing the gradient stops is a nested property change
+    r.m_nInvalidates = 0;
+    r.getMultiGrad()->setNodesJSON(
+        "[{\"value\":0.0,\"color\":\"#FF0000\"},{\"value\":1.0,\"color\":\"#0000FF\"}]");
+    EXPECT_GE(r.m_nInvalidates, 1) << "multi_grad edits recolour in multigrad mode";
+
+    r.setColorMode(R::DS_MOLFANC);
+    r.m_nInvalidates = 0;
+    r.setColorMapName("map2");
+    r.getMultiGrad()->setNodesJSON("[{\"value\":0.5,\"color\":\"#00FF00\"}]");
+    EXPECT_EQ(r.m_nInvalidates, 0) << "nothing to recolour in molecule mode";
+}
+
+}  // namespace
+
+TEST(DsurfRampSetters, DsurfaceMultigradSettersInvalidate)
+{
+    expectMultigradSettersInvalidate<DirectSurfRenderer>();
+}
+
+TEST(DsurfRampSetters, Dsurf2MultigradSettersInvalidate)
+{
+    expectMultigradSettersInvalidate<DirectSurfRenderer2>();
 }

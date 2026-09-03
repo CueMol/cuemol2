@@ -40,6 +40,10 @@ DirectSurfRendererBase::DirectSurfRendererBase()
   m_vdwr_S = 1.8;
   m_vdwr_P = 1.8;
   m_vdwr_X = 1.7;
+
+  // multi_grad is a nested property; its changes reach propChanged() with
+  // parent name "multi_grad" only after this registration.
+  super_t::setupParentData("multi_grad");
 }
 
 DirectSurfRendererBase::~DirectSurfRendererBase()
@@ -67,6 +71,11 @@ void DirectSurfRendererBase::scalarColorPropChanged()
 {
   if (isScalarColorMode())
     invalidateDisplayCache();
+}
+
+qsys::ObjectPtr DirectSurfRendererBase::getColorMapObj() const
+{
+  return getColorMapObjImpl(getScene());
 }
 
 void DirectSurfRendererBase::preRender(DisplayContext *pdc)
@@ -238,6 +247,11 @@ void DirectSurfRendererBase::propChanged(qlib::LPropEvent &ev)
       ev.getName().startsWith("vdwr_")) {
     invalidateDisplayCache();
     invalidateMeshCache();
+  }
+  else if (ev.getParentName().equals("multi_grad") &&
+           m_nMode==DS_MULTIGRAD) {
+    // gradient stop edited (nested property): recolour
+    invalidateDisplayCache();
   }
 
   super_t::propChanged(ev);
