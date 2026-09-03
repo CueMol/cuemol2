@@ -123,3 +123,19 @@ architecture, it belongs here.
   `MapRenderer.region_mode` (box / full) の 2 層モデル、PBC 適格条件の一本化、MRC2014 ORIGIN、
   full モードの budget 由来 stride (ChimeraX `limit_voxels` 流) とノード整列、却下案とロードマップ
   (chunk メモリ、reader streaming、zoom 連動 refine)。
+- [Renderer identity: the `name` default and name-based group membership](renderer-group-identity.md) --
+  why `name` carries a declared default that a bare `setName()` never clears
+  (a locked "default" name in the inspector; the name dropped on save), why
+  group membership keyed on the group's name orphans members on any rename
+  path without a cascade and makes a nameless group scan every ungrouped
+  renderer, and the compatible direction (run-time UID resolution, names kept
+  on the wire). Records what the tritium guard covers and what it does not.
+- [Surface scalar colouring: `ScalarColorSupport` and `DirectSurfRendererBase`](surface-scalar-coloring.md) --
+  the potential ramp and multi-gradient colouring shared by `molsurf`,
+  `dsurface` and `dsurf2`: the non-scriptable mixin that owns the scalar
+  colouring properties and their evaluation, the abstract scriptable base
+  the direct surface pair now derives from (one display-list path, one
+  per-vertex resolver that also feeds dsurf2's GPU primitive), the
+  contracts (unresolved vertex = `defaultcolor`, separate per-mode target
+  names, `setupParentData("multi_grad")` placement, `target` kept as an
+  inert string) and the test map.

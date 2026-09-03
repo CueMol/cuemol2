@@ -9,6 +9,7 @@
 #include "ElePotMap.qif"
 #include "OpenDXPotReader.qif"
 //#include "MS2TestRenderer.qif"
+#include "DirectSurfRendererBase.qif"
 #include "DirectSurfRenderer.qif"
 #include "DirectSurfRenderer2.qif"
 #include "XYZRFileWriter.qif"
@@ -27,6 +28,7 @@ module surface
   ElePotMap;
   OpenDXPotReader;
   // MS2TestRenderer;
+  DirectSurfRendererBase;
   DirectSurfRenderer;
   DirectSurfRenderer2;
   XYZRFileWriter;

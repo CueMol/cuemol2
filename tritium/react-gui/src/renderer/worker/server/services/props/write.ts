@@ -12,6 +12,7 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { resolvePropTarget } from './target';
+import { NON_RESETTABLE_KEYS } from '@renderer/worker/shared/genericProps';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
@@ -52,6 +53,7 @@ export function setGenericProp(
     // default before the drag; otherwise restore the original value. This undoes
     // the one-way default-flag flip a preview frame leaves behind.
     if (args.mode === 'abort' && args.op === 'set') {
+        if (args.originalWasDefault && NON_RESETTABLE_KEYS.has(args.propName)) return fail;
         try {
             if (args.originalWasDefault) target.resetProp(args.propName);
             else target.setProp(args.propName, args.value);
@@ -60,6 +62,16 @@ export function setGenericProp(
             return fail;
         }
         return { ok: true, entries: [] };
+    }
+
+    // A renderer's `name` and `sel` have no default to go back to (see
+    // NON_RESETTABLE_KEYS). Refused before the transaction opens: C++ would
+    // happily write the registered "" default -- a nameless renderer group
+    // orphans its members and matches every ungrouped renderer -- and an
+    // empty committed transaction clears the redo stack.
+    if (args.op === 'reset' && NON_RESETTABLE_KEYS.has(args.propName)) {
+        console.warn(`setGenericProp: refusing reset of non-resettable "${args.propName}"`);
+        return fail;
     }
 
     const label =
@@ -191,14 +203,21 @@ export function resetGenericProps(
     const { scene, target } = resolvePropTarget(ctx, args);
     if (!scene || !target || args.propNames.length === 0) return fail;
 
+    // `name` / `sel` are never reset (UXP resetAllToDefault skips them too).
+    const propNames = args.propNames.filter((n) => !NON_RESETTABLE_KEYS.has(n));
+    if (propNames.length !== args.propNames.length) {
+        console.warn('resetGenericProps: skipping non-resettable name / sel');
+    }
+    if (propNames.length === 0) return fail;
+
     const label =
-        args.propNames.length === 1
-            ? `Reset property: ${args.propNames[0]}`
-            : `Reset ${args.propNames.length} properties`;
+        propNames.length === 1
+            ? `Reset property: ${propNames[0]}`
+            : `Reset ${propNames.length} properties`;
 
     try {
         withUndoTxn(scene, label, () => {
-            for (const name of args.propNames) {
+            for (const name of propNames) {
                 // Skip props that vanished because a parent object property
                 // was swapped earlier in this very loop (e.g. resetting
                 // `coloring` before `coloring.xxx`) -- UXP resetAllToDefault's
@@ -238,6 +257,10 @@ export function setGenericProps(
     const fail: SetGenericPropResult = { ok: false, entries: [] };
     const { scene, target } = resolvePropTarget(ctx, args);
     if (!scene || !target || args.writes.length === 0) return fail;
+    if (args.writes.some((w) => w.op === 'reset' && NON_RESETTABLE_KEYS.has(w.propName))) {
+        console.warn('setGenericProps: refusing a reset of non-resettable name / sel');
+        return fail;
+    }
 
     const label =
         args.writes.length === 1

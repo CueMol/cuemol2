@@ -19,7 +19,7 @@ void React
 
 function makeEntry(over: Partial<GenericPropEntry> = {}): GenericPropEntry {
   return {
-    key: 'name',
+    key: 'label',
     type: 'string',
     value: 'hello',
     readonly: false,
@@ -140,7 +140,7 @@ describe('GenericTab', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     })
 
-    expect(onSetValue).toHaveBeenCalledWith('name', 'string', 'world')
+    expect(onSetValue).toHaveBeenCalledWith('label', 'string', 'world')
     unmount()
   })
 
@@ -159,7 +159,38 @@ describe('GenericTab', () => {
     expect(check.checked).toBe(false)
     act(() => check.click())
 
-    expect(onResetValue).toHaveBeenCalledWith('name')
+    expect(onResetValue).toHaveBeenCalledWith('label')
+    unmount()
+  })
+
+  it('never offers a reset for name, and keeps its editor live whatever the dump says', () => {
+    // C++ declares "" as the name's default and reports a name set through a
+    // bare setter as sitting at it; a reset used to leave a renderer group
+    // nameless (its members orphaned, every ungrouped renderer scanned for
+    // its center). The key is on NON_RESETTABLE_KEYS, so the checkbox stays
+    // disabled and unchecked and the value is editable from the start.
+    const onResetValue = vi.fn()
+    const onSetValue = vi.fn()
+    const { container, unmount } = mountTree(
+      <GenericTab
+        entries={[makeEntry({ key: 'name', hasdefault: true, isdefault: true, value: 'grp1' })]}
+        onSetValue={onSetValue}
+        onResetValue={onResetValue}
+      />,
+    )
+    selectFirstRow(container)
+    const check = defaultCheckbox(container)
+    expect(check.disabled).toBe(true)
+    expect(check.checked).toBe(false)
+    const input = editorInput(container)
+    expect(input.disabled).toBe(false)
+    act(() => check.click())
+    expect(onResetValue).not.toHaveBeenCalled()
+    act(() => typeInto(input, 'grp2'))
+    act(() => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+    expect(onSetValue).toHaveBeenCalledWith('name', 'string', 'grp2')
     unmount()
   })
 })

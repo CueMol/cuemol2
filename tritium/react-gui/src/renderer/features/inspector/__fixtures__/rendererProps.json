@@ -5343,6 +5343,7 @@
    "defaultValue": "molecule",
    "enumdef": [
     "molecule",
+    "multigrad",
     "potential"
    ],
    "isContainer": false,
@@ -5857,6 +5858,7 @@
    "defaultValue": "molecule",
    "enumdef": [
     "molecule",
+    "multigrad",
     "potential"
    ],
    "isContainer": false,

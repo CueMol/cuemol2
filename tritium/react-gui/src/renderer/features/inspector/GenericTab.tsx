@@ -34,6 +34,7 @@ import {
 import { AppIcon } from "@renderer/h3-kit/primitives";
 import type { GenericPropEntry, PropWriteOpts } from '@renderer/worker/shared/genericProps';
 import { useRealtimeDragProp } from "@renderer/hooks/react/useRealtimeDragProp";
+import { isResettable } from "./propModel";
 import { useColumnResize } from "@renderer/hooks/useColumnResize";
 
 // ------------------------------------------------------------
@@ -338,7 +339,12 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ entry, onSetValue, onResetVal
     setDefaultCleared(false);
   }, [entry.value, entry.isdefault]);
 
-  const atDefault = entry.hasdefault && entry.isdefault && !defaultCleared;
+  // `name` / `sel` never reset (NON_RESETTABLE_KEYS), whatever the dump says:
+  // the C++ table declares "" as the name's default, and a name set through a
+  // bare setter is reported as sitting at it, which used to lock the editor
+  // and offer a reset that left a renderer group nameless.
+  const resettable = isResettable(entry);
+  const atDefault = resettable && entry.isdefault && !defaultCleared;
 
   return (
     <>
@@ -350,7 +356,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ entry, onSetValue, onResetVal
         <Field label="default" inline controlFirst className="insp-generic-default-check">
           <CheckboxField
             checked={atDefault}
-            disabled={entry.readonly || !entry.hasdefault}
+            disabled={entry.readonly || !resettable}
             onChange={(checked) => {
               // Checking restores the C++ default; unchecking only re-enables
               // the widget so the next edit can set a non-default value.
