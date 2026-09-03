@@ -15,55 +15,14 @@
 
 #include <qsys/RendererFactory.hpp>
 #include <qlib/LDOM2Tree.hpp>
-#include <qlib/LDOM2Stream.hpp>
-#include <qlib/PipeStream.hpp>
-
-#include <string>
+#include "qsc_roundtrip_util.hpp"
 
 using qlib::LString;
 using qlib::LDom2Tree;
-using qlib::LDom2OutStream;
-using qlib::LDom2InStream;
-using qlib::PipeStreamImpl;
-using qlib::PipeInStream;
-using qlib::PipeOutStream;
 using surface::MolSurfRenderer;
+using surftest::parseRawXML;
 
 namespace {
-
-std::string drainPipe(PipeStreamImpl &impl)
-{
-    std::string result;
-    char buf[256];
-    while (impl.ready()) {
-        int n = impl.read(buf, 0, sizeof buf);
-        if (n <= 0) break;
-        result.append(buf, static_cast<size_t>(n));
-    }
-    return result;
-}
-
-std::string writeTree(LDom2Tree &tree)
-{
-    auto impl = qlib::sp<PipeStreamImpl>(new PipeStreamImpl());
-    PipeOutStream raw_out;
-    raw_out.setImpl(impl);
-    LDom2OutStream out(raw_out);
-    out.write(&tree);
-    impl->o_close();
-    return drainPipe(*impl);
-}
-
-void parseRawXML(const std::string &xml, LDom2Tree &tree)
-{
-    auto impl = qlib::sp<PipeStreamImpl>(new PipeStreamImpl());
-    impl->write(xml.c_str(), 0, static_cast<int>(xml.size()));
-    impl->o_close();
-    PipeInStream raw_in;
-    raw_in.setImpl(impl);
-    LDom2InStream in(raw_in);
-    in.read(tree);
-}
 
 MolSurfRenderer *asMolSurf(const qsys::RendererPtr &p)
 {
@@ -74,18 +33,7 @@ MolSurfRenderer *asMolSurf(const qsys::RendererPtr &p)
 // run the same post-load steps as a real scene load (readFrom2 + reapplyStyle).
 qsys::RendererPtr roundTrip(qsys::RendererFactory *pRF, const qsys::RendererPtr &pSrc)
 {
-    LDom2Tree tree("renderer");
-    pSrc->writeTo2(tree.top());
-    std::string xml = writeTree(tree);
-
-    LDom2Tree rtree;
-    parseRawXML(xml, rtree);
-
-    qsys::RendererPtr pDst = pRF->create("molsurf");
-    pDst->readFrom2(rtree.top());
-    // scene-load step that previously reset (wiped) the shared target storage
-    pDst->reapplyStyle();
-    return pDst;
+    return surftest::roundTrip(pRF, "molsurf", pSrc);
 }
 
 }  // namespace

@@ -187,6 +187,7 @@ add_executable(test_surface
   modules/surface/test_distfield_surf.cpp
   modules/surface/test_ply_reader.cpp
   modules/surface/test_molsurf_serialize.cpp
+  modules/surface/test_dsurf_color.cpp
   modules/surface/test_ses_from_array.cpp
   modules/surface/test_reader_validation.cpp
   modules/surface/test_elepot_symop_fixes.cpp
