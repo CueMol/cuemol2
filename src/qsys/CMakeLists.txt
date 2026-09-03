@@ -22,6 +22,7 @@ MouseEventHandler.cpp
 ObjectEvent.cpp
 RendererEvent.cpp
 SceneEvent.cpp
+SceneAppData.cpp
 ViewEvent.cpp
 ScalarObject.cpp
 ScrEventManager.cpp
@@ -97,6 +98,7 @@ RendererFactory.hpp
 ScalarObject.hpp
 Scene.hpp
 SceneEvent.hpp
+SceneAppData.hpp
 SceneEventCaster.hpp
 SceneExporter.hpp
 SceneManager.hpp

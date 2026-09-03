@@ -99,6 +99,7 @@ add_executable(test_qsys
   qsys/test_rendererfactory.cpp
   qsys/test_scenemanager.cpp
   qsys/test_scene.cpp
+  qsys/test_scene_appdata.cpp
   qsys/test_streammanager.cpp
   qsys/test_stream_manager_search.cpp
   qsys/test_stream_manager_sniff_escalation.cpp
@@ -318,6 +319,22 @@ if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_molanl PRIVATE sysdep)
 endif()
 gtest_discover_tests(test_molanl PROPERTIES LABELS "test_molanl")
+
+# render module (always built): scene app data of class RenderSettings.
+add_executable(test_render
+  modules/rendering/test_main.cpp
+  modules/rendering/test_render_settings.cpp
+)
+target_include_directories(test_render PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_compile_definitions(test_render PRIVATE
+  CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+)
+target_link_libraries(test_render PRIVATE render qsys gfx qlib Boost::filesystem GTest::gtest)
+gtest_discover_tests(test_render PROPERTIES LABELS "test_render")
 
 # umbreon (Embree) backend integration. Only built when ENABLE_UMBREON is on;
 # exercises the render module's umbreon DisplayContext / SceneExporter, which

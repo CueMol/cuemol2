@@ -479,3 +479,28 @@ TEST(LDom2Stream, RoundTripMultipleChildren)
         EXPECT_TRUE(c->getValue().equals(LString::format("%d", i * 10)));
     }
 }
+
+// Attribute values holding LF / CR / TAB must come back bit-identical: the
+// writer emits them as character references, since an XML parser normalizes
+// literal whitespace control chars inside an attribute value to spaces.
+TEST(LDom2OutStream, EscapeNewlineInAttrValueRoundTrip)
+{
+    LDom2Tree orig("root");
+    const LString text("a\nb\tc\r\nd");
+    orig.top()->setStrAttr("spec", text);
+
+    std::string xml = writeTree(orig);
+    EXPECT_NE(xml.find("&#10;"), std::string::npos);
+    EXPECT_NE(xml.find("&#9;"), std::string::npos);
+    EXPECT_NE(xml.find("&#13;"), std::string::npos);
+    // no raw newline may appear inside the quoted attribute value
+    const size_t attr = xml.find("spec=\"");
+    ASSERT_NE(attr, std::string::npos);
+    const size_t close = xml.find('"', attr + 6);
+    ASSERT_NE(close, std::string::npos);
+    EXPECT_EQ(xml.substr(attr, close - attr).find('\n'), std::string::npos);
+
+    LDom2Tree result;
+    parseRawXML(xml, result);
+    EXPECT_TRUE(result.top()->getStrAttr("spec").equals(text));
+}

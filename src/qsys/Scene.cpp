@@ -17,7 +17,9 @@
 #include "style/AutoStyleCtxt.hpp"
 #include "CameraEditInfo.hpp"
 #include "SceneManager.hpp"
+#include "SceneAppData.hpp"
 
+#include <qlib/ClassRegistry.hpp>
 #include <qlib/FileStream.hpp>
 #include <qlib/StringStream.hpp>
 #include <qlib/LVarArgs.hpp>
@@ -208,6 +210,7 @@ void Scene::clearAllData()
   m_rendtab.clear();
   m_data.clear();
   m_camtab.clear();
+  m_appdata.clear();
   m_pStyleMgr->destroyContext(m_nUID);
 
   if (m_pQscOpts!=NULL)
@@ -1514,6 +1517,8 @@ void Scene::writeTo2(qlib::LDom2Node *pNode) const
     m_pAnimMgr->writeTo2(pChNode);
   }
 
+  // Write application data of the scene
+  appDataWriteTo(pNode);
 }
 
 /// WriteTo2() impl for style settings
@@ -1762,6 +1767,15 @@ void Scene::readFrom2(qlib::LDom2Node *pNode)
       else if (tag.equals("animation")) {
         m_pAnimMgr->readFrom2(pChNode);
       }
+      else if (tag.equals("appdata")) {
+        try {
+          appDataReadFrom(pChNode);
+        }
+        catch (qlib::LException &e) {
+          pNode->appendErrMsg("Scene> Load appdata ERROR!! (ignored)");
+          pNode->appendErrMsg("Scene> Reason: %s", e.getMsg().c_str());
+        }
+      }
       else {
         // Ignore unknown tags (for backward compatibility)
         continue;
@@ -2001,3 +2015,141 @@ LString Scene::toString() const
   return LString::format("Scene(name=%s, UID=%d)",m_name.c_str(), getUID());
 }
 
+
+////////////////////////////////////////////////////////////
+// Application data store
+
+SceneAppDataPtr Scene::getAppData(const LString &id) const
+{
+  appdatatab_t::const_iterator it = m_appdata.find(id);
+  if (it == m_appdata.end()) return SceneAppDataPtr();
+  return it->second.pObj;
+}
+
+bool Scene::hasAppData(const LString &id) const
+{
+  appdatatab_t::const_iterator it = m_appdata.find(id);
+  return it != m_appdata.end() && !it->second.pObj.isnull();
+}
+
+SceneAppDataPtr Scene::getCreateAppData(const LString &id, const LString &clsname)
+{
+  appdatatab_t::iterator it = m_appdata.find(id);
+  if (it != m_appdata.end() && !it->second.pObj.isnull()) return it->second.pObj;
+
+  qlib::LClass *pCls = qlib::ClassRegistry::getInstance()->getClassObjNx(clsname);
+  if (pCls == NULL) {
+    LOG_DPRINTLN("Scene> appdata class %s is not registered", clsname.c_str());
+    return SceneAppDataPtr();
+  }
+
+  qlib::LDynamic *pNew = pCls->createObj();
+  SceneAppData *pRaw = dynamic_cast<SceneAppData *>(pNew);
+  if (pRaw == NULL) {
+    delete pNew;
+    MB_THROW(qlib::IllegalArgumentException,
+             LString::format("class %s is not a SceneAppData", clsname.c_str()));
+    return SceneAppDataPtr();
+  }
+
+  SceneAppDataPtr pObj(pRaw);
+  pObj->setSceneID(getUID());
+  pObj->setAppDataID(id);
+
+  // A raw (unknown-class) entry of the same id is replaced by the live object
+  AppDataEntry &ent = m_appdata[id];
+  ent.pObj = pObj;
+  ent.pRawNode.reset();
+  return pObj;
+}
+
+bool Scene::removeAppData(const LString &id)
+{
+  appdatatab_t::iterator it = m_appdata.find(id);
+  if (it == m_appdata.end()) return false;
+  m_appdata.erase(it);
+  return true;
+}
+
+void Scene::appDataWriteTo(qlib::LDom2Node *pNode) const
+{
+  for (const appdatatab_t::value_type &elem : m_appdata) {
+    const AppDataEntry &ent = elem.second;
+    if (!ent.pObj.isnull()) {
+      qlib::LDom2Node *pChNode = pNode->appendChild();
+      pChNode->setTagName("appdata");
+      pChNode->setStrAttr("id", elem.first);
+      pChNode->setTypeNameByObj(ent.pObj.get());
+      // No class defaults are declared for app data, so every property is
+      // written; the properties are the schema of the element.
+      ent.pObj->writeTo2(pChNode);
+    }
+    else if (ent.pRawNode) {
+      // class unknown in this build: re-emit the element verbatim
+      pNode->appendChild(MB_NEW qlib::LDom2Node(*ent.pRawNode));
+    }
+  }
+}
+
+namespace {
+
+/// Warn about every leaf of an <appdata> subtree that readFrom2 did not
+/// consume (an unknown or invalid property), naming nested ones by their
+/// dotted path. A child object's element is itself never marked consumed
+/// (it is read through the read-only object branch), so containers are
+/// descended, not reported.
+void appDataReportUnconsumed(qlib::LDom2Node *pNode, const LString &id,
+                             const LString &prefix)
+{
+  for (qlib::LDom2Node::NodeList::const_iterator it = pNode->childBegin();
+       it != pNode->childEnd(); ++it) {
+    qlib::LDom2Node *pCh = *it;
+    if (pCh == NULL || pCh->isConsumed()) continue;
+    const LString tag = pCh->getTagName();
+    // the element attributes owned by the store, not properties
+    if (prefix.isEmpty() && (tag.equals("id") || tag.equals("type"))) continue;
+    if (pCh->getChildCount() > 0) {
+      appDataReportUnconsumed(pCh, id, prefix + tag + ".");
+      continue;
+    }
+    pNode->appendErrMsg("Scene> appdata '%s': property '%s%s' ignored (unknown or invalid)",
+                        id.c_str(), prefix.c_str(), tag.c_str());
+  }
+}
+
+}  // namespace
+
+void Scene::appDataReadFrom(qlib::LDom2Node *pNode)
+{
+  const LString id = pNode->getStrAttr("id");
+  const LString type = pNode->getTypeName();
+  if (id.isEmpty() || type.isEmpty()) {
+    pNode->appendErrMsg("Scene> appdata element without id/type attribute is ignored");
+    return;
+  }
+
+  qlib::ClassRegistry *pCR = qlib::ClassRegistry::getInstance();
+  if (pCR->getClassObjNx(type) == NULL) {
+    // Keep the element as-is so the data survives a re-save by this build
+    pNode->appendErrMsg("Scene> appdata '%s': class '%s' is not available in this build (kept as-is)",
+                        id.c_str(), type.c_str());
+    AppDataEntry &ent = m_appdata[id];
+    ent.pObj = SceneAppDataPtr();
+    ent.pRawNode.reset(MB_NEW qlib::LDom2Node(*pNode));
+    return;
+  }
+
+  // throws FileFormatException when the class is not a SceneAppData
+  SceneAppDataPtr pObj = pNode->createObjByTypeNameT<SceneAppData>();
+  pObj->setSceneID(getUID());
+  pObj->setAppDataID(id);
+
+  // Tolerant read: unknown properties are ignored and invalid values are
+  // skipped by LScrObjBase::readFrom2; report them as warnings here.
+  pObj->readFrom2(pNode);
+  appDataReportUnconsumed(pNode, id, LString());
+
+  AppDataEntry &ent = m_appdata[id];
+  ent.pObj = pObj;
+  ent.pRawNode.reset();
+}

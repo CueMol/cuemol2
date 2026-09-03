@@ -53,6 +53,19 @@ LString escapeIntEntity(const LString &src)
     else if (c=='\'') {
       rval += "&apos;";
     }
+    else if (c=='\n') {
+      // Whitespace control chars must be written as character references:
+      // an XML parser normalizes a literal LF/CR/TAB inside an attribute
+      // value to a space, so multi-line string properties would not
+      // survive a round trip otherwise.
+      rval += "&#10;";
+    }
+    else if (c=='\r') {
+      rval += "&#13;";
+    }
+    else if (c=='\t') {
+      rval += "&#9;";
+    }
     else {
       rval += c;
     }

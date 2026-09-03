@@ -16,6 +16,7 @@ PngSceneExporter.cpp
 PovDisplayContext.cpp
 PovSceneExporter.cpp
 PovSilBuilder.cpp
+RenderSettings.cpp
 RendIntData.cpp
 RendIntData_AABBTree.cpp
 WbpSceneExporter.cpp
@@ -37,6 +38,10 @@ ImgSceneExporter.qif
 MqoSceneExporter.qif
 PngSceneExporter.qif
 PovSceneExporter.qif
+PovRenderSettings.qif
+UmbreonRenderSettings.qif
+UmbreonNprRenderSettings.qif
+RenderSettings.qif
 WbpSceneExporter.qif
 StlSceneExporter.qif
 LuxRendSceneExporter.qif

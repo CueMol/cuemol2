@@ -27,6 +27,8 @@ namespace qsys {
       SCE_SCENE_UNDOINFO = 3,
       SCE_SCENE_ONLOADED = 4,
       SCE_SCENE_CLEARALL = 5,
+      /// A scene app-data object (see SceneAppData) changed a property
+      SCE_SCENE_APPDATA_CHG = 6,
 
       SCE_OBJ_ADDED = 11,
       SCE_OBJ_REMOVING = 12,
