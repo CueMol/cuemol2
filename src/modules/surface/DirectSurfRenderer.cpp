@@ -88,6 +88,9 @@ void DirectSurfRenderer::buildMeshCache()
   pps.rasrad[4] = m_vdwr_S;
   pps.rasrad[5] = m_vdwr_P;
   pps.rasrad[6] = m_vdwr_X;
+  // getRadiusIndex() only yields 0..6; give the remaining slots a real value
+  for (i=7; i<edtsurf::ProteinSurface::NO_RAD_TYPES; ++i)
+    pps.rasrad[i] = m_vdwr_X;
 
   pps.proberadius = m_probeRadius;
   pps.fixsf = 1.0 + qlib::trunc<int>(m_nDetail-1, 0, 99)*0.2;
