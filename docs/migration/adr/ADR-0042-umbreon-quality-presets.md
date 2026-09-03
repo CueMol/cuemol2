@@ -193,3 +193,12 @@ libcuemol2 gained the properties these axes need:
     this step mean under GI"; `aaThreshold` stays unexposed either way.
   - The axes are not persisted: like every render setting they reset when the
     Rendering window closes (see ADR-0035).
+
+## 追記 (2026-09): 既定値の原典は qif
+
+render 設定が scene に保存されるようになり ([scene-app-data](../../architecture/scene-app-data.md))、
+初期値は `src/modules/rendering/UmbreonRenderSettings.qif` などの `default` 文が原典になった。
+TS カタログ (`renderBackends.ts`) の行は値を持たない (`RenderPropSpec`)。各 axis の default step /
+`defaultLighting` は「lighting 切替時に step の無い axis をどこに置くか」の UI ヒューリスティックであり、
+既定値の原典ではない。fresh object の値が axis の step に一致しなければ dropdown が Custom を示すので、
+qif と axis のずれは UI で見える。

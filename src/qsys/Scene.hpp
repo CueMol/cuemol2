@@ -22,6 +22,12 @@
 #include "View.hpp"
 #include "Camera.hpp"
 #include "UndoManager.hpp"
+#include "SceneAppData.hpp"
+
+#include <qlib/LDOM2Tree.hpp>
+
+#include <map>
+#include <memory>
 
 class Scene_wrap;
 
@@ -567,6 +573,43 @@ namespace qsys {
     qlib::LScrSp<AnimMgr> m_pAnimMgr;
   public:
     qlib::LScrSp<AnimMgr> getAnimMgr() const { return m_pAnimMgr; }
+
+    ////////////////////////////////////////////////
+    // Application data store
+    //  (serialized as <appdata id=... type=...> children of <scene>;
+    //   see SceneAppData)
+  private:
+    struct AppDataEntry {
+      /// live object (its class is registered in this build)
+      SceneAppDataPtr pObj;
+      /// element kept verbatim when the class is not available
+      std::unique_ptr<qlib::LDom2Node> pRawNode;
+    };
+    typedef std::map<LString, AppDataEntry> appdatatab_t;
+    appdatatab_t m_appdata;
+
+    /// WriteTo2() impl for the app-data store
+    void appDataWriteTo(qlib::LDom2Node *pNode) const;
+    /// readFrom2() impl for one <appdata> element
+    void appDataReadFrom(qlib::LDom2Node *pNode);
+
+  public:
+    /// Get the live app-data object (null when absent or its class is unknown)
+    SceneAppDataPtr getAppData(const LString &id) const;
+
+    /// Get the live app-data object, creating an instance of clsname if absent.
+    /// Creating the holder is not an edit (no undo info, no event); the first
+    /// property write is. Returns null when clsname is not registered.
+    SceneAppDataPtr getCreateAppData(const LString &id, const LString &clsname);
+
+    /// True when a live app-data object exists for id
+    bool hasAppData(const LString &id) const;
+
+    /// Remove an app-data entry (not undoable, fires no event)
+    bool removeAppData(const LString &id);
+
+    /// True while the scene is being deserialized
+    bool isLoading() const { return m_bLoading; }
 
     ////////////////////////////////////////////////
     // Event related operations

@@ -79,6 +79,22 @@ src/
 - Migrate Boost -> `std` **only when `std` has standardized the equivalent** (e.g. `boost::filesystem`->`std::filesystem`, `boost::optional`->`std::optional`). Where `std` has no equivalent (e.g. Boost.Process, Boost.Interprocess), Boost is the right tool -- do not hand-roll or avoid it
 - Headers in `src/qsys/` must use `""` not `<>` for intra-module includes
 - gtest: write tests before refactoring; `SetUp()` must call `qsys::init(...)` with `sysconfig.xml` path (pre-install: `<topdir>/data/sysconfig.xml`)
+- テストは**必要最低限**にする (下記「テスト方針」)。1 機能に 10 件以上並べる前に、どの仕様が壊れたら気付けないかで絞る
+
+---
+
+## テスト方針 (C++ / tritium 共通、最重要)
+
+テストは開発コストである。既に大量にあり、増やすほど将来の変更が重くなる。追加するのは
+**「仕様が壊れたときに検知できる最小の集合」** だけにする:
+
+- 1 テスト = 1 つの仕様 (契約)。同じ経路を別の値で繰り返さない。類似ケースは 1 件に畳む
+- 目安: 新機能 1 つにつき数件 (C++ 数件 + tritium 数件)。10 件を超えるなら、まず削る候補を探す
+- 書かないもの: 単純な forwarding (command -> service 呼び出し)、getter/setter、型で保証されるもの、
+  目視確認で確定した UI の見た目、既存テストが間接的に通る経路、「あれば安心」程度のケース
+- 書くもの: wire 形式 / channel 名 / payload の契約、tolerant な読み込みの fallback、undo txn の粒度、
+  ラウンドトリップ (保存 -> 読込)、境界をまたぐ状態同期のループ防止、過去に実際に壊れた挙動
+- 実装計画に「テスト一覧」を書くときも同じ基準で絞る。網羅性ではなく検知力で選ぶ
 
 ---
 
@@ -139,13 +155,14 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 2. `cd build_scripts && task run_tritium` で起動し、`launch worker OK` → `CueMol2 nodejs add-on : INITIALIZED` → `bindCanvas` → `shader program created OK` まで進むか確認
 3. **ユーザーによる目視確認 (E2E) を依頼し、フィードバックを反映する。挙動が確定するまで 1-3 を繰り返す**
 4. 確定後に: `cd tritium/react-gui && npm test` (Vitest) — 既存テストの追随修正と新規テストの追加
+   (新規は上記「テスト方針」の最小集合に絞る)
 5. `cd tritium/react-gui && npx tsc -p tsconfig.web.json --noEmit` (renderer 型) と `tsconfig.node.json` (main + preload 型)、`task lint_tritium_style`
 
 `npm test` は worker や main を mock するので、実 IPC 経路や bundle 整合性は捕捉できない。ビルドと起動の確認だけを先に行い、テスト整備は目視確認後にまとめて行う。
 
 **Refactoring 前の degrade 検出テスト**
 
-大きな構造変更 (ファイル分割・型システム入れ替え・状態同期パターン変更) の前に、**touch する境界の観測契約** を pin するテストを `__test__/` に先に書く。例: 「`invoke(IPC.X, payload)` は `ipcRenderer.invoke(channel, payload)` に流れる」「`useActiveViewState` は activeMolViewId 変化時に 3 getter を呼んで `MENU_UPDATE_STATE` を発火する」など。実装の中身ではなく **wire 形式 / IPC channel 名 / payload shape / 観測される call 順序** を pin することで、内部を入れ替えても同じテストが pass し続ける形にする
+大きな構造変更 (ファイル分割・型システム入れ替え・状態同期パターン変更) の前に、**touch する境界の観測契約** を pin するテストを `__test__/` に先に書く (これも境界ごとに 1 件程度。網羅ではない)。例: 「`invoke(IPC.X, payload)` は `ipcRenderer.invoke(channel, payload)` に流れる」「`useActiveViewState` は activeMolViewId 変化時に 3 getter を呼んで `MENU_UPDATE_STATE` を発火する」など。実装の中身ではなく **wire 形式 / IPC channel 名 / payload shape / 観測される call 順序** を pin することで、内部を入れ替えても同じテストが pass し続ける形にする
 
 **新規ダイアログの追加パターン**
 - `components/.../XxxDialog.tsx` — Blueprint `Dialog` 本体 (props: `visible`, `onConfirm`/`onCancel` 等の既存パターン)

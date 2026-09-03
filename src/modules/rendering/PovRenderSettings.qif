@@ -1,0 +1,39 @@
+// -*-Mode: C++;-*-
+//
+// POV-Ray backend block of the scene render settings (RenderSettings.povray)
+//
+// Property defaults are the single source of the defaults: the GUI starts
+// from a fresh object, and only values that differ from them are stored.
+//
+
+#ifndef POV_RENDER_SETTINGS_QIF_INCLUDED
+#define POV_RENDER_SETTINGS_QIF_INCLUDED
+
+runtime_class PovRenderSettings
+{
+  client_hdr "RenderSettings.hpp";
+  client_name render::PovRenderSettings;
+  dllexport RENDER_API;
+
+  scriptable;
+  smartptr;
+
+  property string radiosityMode => m_radiosityMode;
+  default radiosityMode = "Disable";
+  property boolean shadow => m_shadow;
+  default shadow = false;
+  property boolean lightDefault => m_lightDefault;
+  default lightDefault = true;
+  property integer lightSpread => m_lightSpread;
+  default lightSpread = 1;
+
+  /// Lighting energy balance (the POV exporter's light_inten / flash_frac / amb_frac)
+  property real lightIntensity => m_lightIntensity;
+  default lightIntensity = 1.3;
+  property real flashFraction => m_flashFraction;
+  default flashFraction = 0.6;
+  property real ambientFraction => m_ambientFraction;
+  default ambientFraction = 0.0;
+};
+
+#endif

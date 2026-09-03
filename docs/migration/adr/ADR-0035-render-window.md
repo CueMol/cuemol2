@@ -66,6 +66,12 @@ Key constraints and choices:
   previous attempt and reverted to it -- the earlier behaviour replaced the
   single latest result outright.
 
+  *Superseded (2026-09):* since the settings belong to the target scene
+  ([scene-app-data](../../architecture/scene-app-data.md)), stepping changes
+  only the shown image. The explicit "Use settings" action restores the
+  entry's snapshot into the editor and stores it on the scene as one undo
+  entry, so browsing the pictures never changes the scene by itself.
+
   The depth is affordable because the images never sit in memory. A finished
   render is already a PNG in the worker's work dir, so the worker reports its
   *path* (`imagePath`) instead of a data URL, the main window has the main
@@ -161,6 +167,9 @@ Key constraints and choices:
   render UI can sit on a second display (UXP parity).
 - Settings edits are window-local and reset when the window closes
   (matches the UXP dialog); persisting the snapshot is a possible follow-up.
+  *Superseded (2026-09):* the settings are stored per scene in the `.qsc`
+  and restored per render target; see
+  [scene-app-data](../../architecture/scene-app-data.md).
 - Result history is a single latest render; Save exports before it is
   overwritten.
 - electron-vite renderer build becomes multi-page (`index.html` +

@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { fixtureBackendProps, fixtureProps } from '@renderer/__test__/fixtures/renderSettingsValues';
 import { act } from 'react';
 import { mountTree } from '@renderer/__test__/helpers/testHarness';
 
@@ -30,7 +31,6 @@ import {
   RENDER_COMMON_PROPS,
   type RenderLightingMode,
 } from '@renderer/data/renderSettings';
-import { RENDER_BACKENDS } from '@renderer/data/renderBackends';
 
 function mountFor(
   backend: 'povray' | 'umbreon' | 'umbreon_npr',
@@ -39,8 +39,8 @@ function mountFor(
   return mountTree(
     <RenderSettingsEditor
       backend={backend}
-      commonProps={RENDER_COMMON_PROPS}
-      backendProps={RENDER_BACKENDS[backend].props}
+      commonProps={fixtureProps(RENDER_COMMON_PROPS)}
+      backendProps={fixtureBackendProps(backend)}
       onChange={vi.fn()}
       lighting={opts.lighting ?? 'none'}
       qualitySteps={{}}
@@ -143,8 +143,8 @@ describe('RenderSettingsEditor quality section', () => {
     const { container, unmount } = mountTree(
       <RenderSettingsEditor
         backend="umbreon"
-        commonProps={RENDER_COMMON_PROPS}
-        backendProps={RENDER_BACKENDS.umbreon.props}
+        commonProps={fixtureProps(RENDER_COMMON_PROPS)}
+        backendProps={fixtureBackendProps('umbreon')}
         onChange={vi.fn()}
         lighting="gi"
         // What useRenderSettings reports once a prop was edited off-ladder.
@@ -185,8 +185,8 @@ describe('RenderSettingsEditor quality section', () => {
     const { container, unmount } = mountTree(
       <RenderSettingsEditor
         backend="umbreon"
-        commonProps={RENDER_COMMON_PROPS}
-        backendProps={RENDER_BACKENDS.umbreon.props}
+        commonProps={fixtureProps(RENDER_COMMON_PROPS)}
+        backendProps={fixtureBackendProps('umbreon')}
         onChange={vi.fn()}
         lighting="gi"
         qualitySteps={{ aa: 'medium', giLighting: '0', shadows: 'off' }}

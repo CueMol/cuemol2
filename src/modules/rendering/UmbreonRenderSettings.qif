@@ -1,0 +1,82 @@
+// -*-Mode: C++;-*-
+//
+// umbreon backend block of the scene render settings (RenderSettings.umbreon)
+//
+// Property defaults are the single source of the defaults (the GUI's
+// "GI" lighting method at its default step); only values that differ from
+// them are stored.
+//
+
+#ifndef UMBREON_RENDER_SETTINGS_QIF_INCLUDED
+#define UMBREON_RENDER_SETTINGS_QIF_INCLUDED
+
+runtime_class UmbreonRenderSettings
+{
+  client_hdr "RenderSettings.hpp";
+  client_name render::UmbreonRenderSettings;
+  dllexport RENDER_API;
+
+  scriptable;
+  smartptr;
+
+  property integer supersample => m_supersample;
+  default supersample = 3;
+
+  property boolean aoEnabled => m_aoEnabled;
+  default aoEnabled = false;
+  property integer aoSamples => m_aoSamples;
+  default aoSamples = 64;
+  property real aoDistance => m_aoDistance;
+  default aoDistance = 0.0;
+  property real aoIntensity => m_aoIntensity;
+  default aoIntensity = 1.0;
+  property real aoDiffuseFactor => m_aoDiffuseFactor;
+  default aoDiffuseFactor = 1.0;
+  property boolean aoMultiScale => m_aoMultiScale;
+  default aoMultiScale = true;
+  property boolean aoBentNormal => m_aoBentNormal;
+  default aoBentNormal = true;
+  property boolean aoLowDiscrepancy => m_aoLowDiscrepancy;
+  default aoLowDiscrepancy = true;
+  /// "Per output pixel" | "Per shading hit"
+  property string aoGather => m_aoGather;
+  default aoGather = "Per output pixel";
+
+  property boolean shadows => m_shadows;
+  default shadows = false;
+  property integer shadowSamples => m_shadowSamples;
+  default shadowSamples = 1;
+  property real lightRadius => m_lightRadius;
+  default lightRadius = 0.0;
+
+  property real creaseLimit => m_creaseLimit;
+  default creaseLimit = -1.0;
+  property real edgeRise => m_edgeRise;
+  default edgeRise = 0.5;
+  property boolean contactEdges => m_contactEdges;
+  default contactEdges = false;
+
+  property boolean useGI => m_useGI;
+  default useGI = true;
+  /// Gather samples per pixel as the GUI option string ("8" | "32" | ...)
+  property string giSamples => m_giSamples;
+  default giSamples = "32";
+  /// "OIDN" | "A-trous" | "None"
+  property string denoise => m_denoise;
+  default denoise = "OIDN";
+  property boolean giSkyGradient => m_giSkyGradient;
+  default giSkyGradient = true;
+  /// "#rrggbb"
+  property string giGroundColor => m_giGroundColor;
+  default giGroundColor = "#666666";
+
+  /// Lighting energy balance (shared with the POV-Ray block, own defaults)
+  property real lightIntensity => m_lightIntensity;
+  default lightIntensity = 1.2;
+  property real flashFraction => m_flashFraction;
+  default flashFraction = 0.05;
+  property real ambientFraction => m_ambientFraction;
+  default ambientFraction = 0.4;
+};
+
+#endif

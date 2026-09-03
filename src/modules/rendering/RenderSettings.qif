@@ -1,0 +1,82 @@
+// -*-Mode: C++;-*-
+//
+// Render settings stored in the scene (Scene app data "render")
+//
+// The backend-independent settings are properties of this object; each
+// render backend's own settings are a child object named by the backend id
+// (povray / umbreon / umbreon_npr), serialized as a child element of the
+// <appdata> element. Every property declares its default, and only values
+// that differ from the defaults are written to the scene file, so a scene
+// never carries a value nobody chose and a better default in a later build
+// applies to it.
+//
+
+#ifndef RENDER_SETTINGS_QIF_INCLUDED
+#define RENDER_SETTINGS_QIF_INCLUDED
+
+#include "PovRenderSettings.qif"
+#include "UmbreonRenderSettings.qif"
+#include "UmbreonNprRenderSettings.qif"
+
+runtime_class RenderSettings
+{
+  client_hdr "RenderSettings.hpp";
+  client_name render::RenderSettings;
+  dllexport RENDER_API;
+
+  scriptable;
+  smartptr;
+
+  /// UID of this object (undo/redo target)
+  integer getUID();
+
+  ////////////////////
+  // Common settings (backend independent)
+
+  /// Render backend id: "povray" | "umbreon" | "umbreon_npr"; "" = not chosen
+  /// (the GUI's build-dependent default applies)
+  property string backend => m_backend;
+  default backend = "";
+
+  /// Image width / height in `unit`
+  property real width => m_width;
+  default width = 1200.0;
+  property real height => m_height;
+  default height = 1200.0;
+  /// Size unit: "px" | "in" | "mm" | "cm"
+  property string unit => m_unit;
+  default unit = "px";
+  property real dpi => m_dpi;
+  default dpi = 600.0;
+  property boolean transparentBg => m_transparentBg;
+  default transparentBg = false;
+  property boolean postBlend => m_postBlend;
+  default postBlend = true;
+  property boolean pixelLabels => m_pixelLabels;
+  default pixelLabels = false;
+
+  /// "perspective" | "orthographic"
+  property string projection => m_projection;
+  default projection = "perspective";
+  /// "none" | "left" | "right"
+  property string stereoMode => m_stereoMode;
+  default stereoMode = "none";
+  property real stereoDepth => m_stereoDepth;
+  default stereoDepth = 0.03;
+  property boolean clipPlane => m_clipPlane;
+  default clipPlane = true;
+
+  property integer numThreads => m_numThreads;
+  default numThreads = 2;
+  property boolean edgeLines => m_edgeLines;
+  default edgeLines = true;
+
+  ////////////////////
+  // Backend blocks (child elements; omitted from the file while untouched)
+
+  property object<PovRenderSettings$> povray => redirect(getPovray, xxx) (readonly);
+  property object<UmbreonRenderSettings$> umbreon => redirect(getUmbreon, xxx) (readonly);
+  property object<UmbreonNprRenderSettings$> umbreon_npr => redirect(getUmbreonNpr, xxx) (readonly);
+};
+
+#endif
