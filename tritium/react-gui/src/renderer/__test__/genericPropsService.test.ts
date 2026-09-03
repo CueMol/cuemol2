@@ -350,3 +350,69 @@ describe('getGenericProps - selection-context molecule', () => {
     expect(read('scene').molId).toBeUndefined()
   })
 })
+
+describe('non-resettable name / sel', () => {
+  it('refuses to reset a rendGroup name: no resetProp, no transaction', () => {
+    const res = call({ nodeType: 'rendGroup', propName: 'name', op: 'reset', valueType: '' })
+    expect(res.ok).toBe(false)
+    expect(resetProp).not.toHaveBeenCalled()
+    expect(withUndoTxnSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses to reset an object selection', () => {
+    const res = call({ nodeType: 'object', propName: 'sel', op: 'reset', valueType: '' })
+    expect(res.ok).toBe(false)
+    expect(resetProp).not.toHaveBeenCalled()
+  })
+
+  it('refuses an abort that would reset the name to its "default"', () => {
+    const res = call({
+      propName: 'name', op: 'set', value: 'r1', mode: 'abort', originalWasDefault: true,
+    })
+    expect(res.ok).toBe(false)
+    expect(resetProp).not.toHaveBeenCalled()
+    expect(setProp).not.toHaveBeenCalled()
+  })
+
+  it('resetGenericProps skips name / sel and resets the rest in one transaction', () => {
+    ;(resolvePropTarget as Mock).mockReturnValue({
+      scene,
+      target: { ...target, hasProp: () => true },
+    })
+    const res = services.resetGenericProps(ctx, {
+      sceneId: 1, nodeId: 2, nodeType: 'renderer', propNames: ['name', 'alpha', 'sel', 'width'],
+    })
+    expect(res.ok).toBe(true)
+    expect(withUndoTxnSpy).toHaveBeenCalledTimes(1)
+    expect(withUndoTxnSpy.mock.calls[0][1]).toBe('Reset 2 properties')
+    expect(resetProp.mock.calls.map((c) => c[0])).toEqual(['alpha', 'width'])
+  })
+
+  it('resetGenericProps with nothing but name / sel opens no transaction', () => {
+    ;(resolvePropTarget as Mock).mockReturnValue({
+      scene,
+      target: { ...target, hasProp: () => true },
+    })
+    const res = services.resetGenericProps(ctx, {
+      sceneId: 1, nodeId: 2, nodeType: 'renderer', propNames: ['name'],
+    })
+    expect(res.ok).toBe(false)
+    expect(withUndoTxnSpy).not.toHaveBeenCalled()
+    expect(resetProp).not.toHaveBeenCalled()
+  })
+
+  it('setGenericProps fails before the transaction when a write resets the name', () => {
+    const res = services.setGenericProps(ctx, {
+      sceneId: 1,
+      nodeId: 2,
+      nodeType: 'renderer',
+      writes: [
+        { propName: 'alpha', op: 'set', valueType: 'real', value: 0.5 },
+        { propName: 'name', op: 'reset', valueType: '' },
+      ],
+    })
+    expect(res.ok).toBe(false)
+    expect(withUndoTxnSpy).not.toHaveBeenCalled()
+    expect(setProp).not.toHaveBeenCalled()
+  })
+})

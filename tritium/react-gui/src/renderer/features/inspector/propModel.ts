@@ -10,14 +10,11 @@
 
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
 
-/**
- * Property keys that the inspector never resets, even when they expose a
- * default. Resetting a renderer's name or its selection is meaningless /
- * destructive, so neither shows a per-property reset nor is touched by
- * "Reset all to default" (UXP parity: `propeditor-generic-page.resetAllToDefault`
- * skips `name` and `sel`).
- */
-export const NON_RESETTABLE_KEYS: ReadonlySet<string> = new Set(['name', 'sel']);
+// The never-reset key set lives on the thread boundary so the worker (which
+// refuses the write) and the inspector (which hides the affordance) read the
+// same list; re-exported here for the row components.
+import { NON_RESETTABLE_KEYS } from '@renderer/worker/shared/genericProps';
+export { NON_RESETTABLE_KEYS };
 
 /**
  * A property is "modified" iff it exposes a resettable default and is not

@@ -19,6 +19,17 @@ import type { SceneNodeType } from './sceneTreeTypes'
  */
 export type PropTargetType = SceneNodeType | 'view'
 
+/**
+ * Top-level property keys that are never reset to a default, whatever the
+ * C++ property table declares. A renderer's `name` is its identity (group
+ * membership and lookups key on it) and its `sel` is the edit the user made;
+ * resetting either is meaningless or destructive. UXP parity:
+ * `propeditor-generic-page.resetAllToDefault` skips both. The worker refuses
+ * the write and reports them as having no default; the inspector offers no
+ * reset for them.
+ */
+export const NON_RESETTABLE_KEYS: ReadonlySet<string> = new Set(['name', 'sel'])
+
 /** A single property row consumed by the generic property inspector. */
 export interface GenericPropEntry {
     /** Property name; dot-path (`section.width`) for a nested object's child. */
