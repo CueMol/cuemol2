@@ -43,6 +43,10 @@ Releases are cut by pushing a `v*` tag, which is the only trigger for the releas
 build; see `docs/release_notes/README.md` for the procedure and the release-note
 convention.
 
+PR merge policy: merge pull requests with a merge commit (`gh pr merge --merge`).
+Never squash-merge or rebase-merge; the branch's individual commits must stay on
+`develop`.
+
 ---
 
 ## libcuemol2 Build
