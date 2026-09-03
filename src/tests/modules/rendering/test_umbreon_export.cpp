@@ -902,6 +902,14 @@ TEST(UmbreonExport, LightBalancePropertiesChangeTheOutput)
     UmbreonRenderParams giNoAmbient = gi;
     giNoAmbient.ambientFraction = 0.0;
     EXPECT_NE(giRef, renderAoRecipe(giNoAmbient));
+
+    // The gradient sky is GI-only as well: the ground tint must reach the gather.
+    UmbreonRenderParams giGradient = gi;
+    giGradient.giSkyGradient = true;
+    giGradient.giGroundColorSet = true;
+    giGradient.giGroundColor[0] = giGradient.giGroundColor[1] =
+        giGradient.giGroundColor[2] = 0.2f;
+    EXPECT_NE(giRef, renderAoRecipe(giGradient));
 }
 
 TEST(UmbreonExport, GlobalIlluminationAffectsOutput)

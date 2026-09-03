@@ -73,9 +73,15 @@ method.
   so a scripted caller cannot hit umbreon's warning-and-fallback path. The
   step also governs edge-line quality, which resolves at the supersample
   factor regardless of any AA refinement -- hence 3x as the default.
-- **Look knobs stay out of the ladders.** GI intensity / environment, AO
-  distance / intensity and the edge settings are in no patch, so a step only
-  trades noise and edge quality for time.
+- **Look knobs stay out of the quality ladders.** AO distance / intensity,
+  the Lights group and the edge settings are in no quality patch, so a step
+  only trades noise and edge quality for time. The one axis that changes
+  the picture on purpose is "GI lighting" (added later, see
+  [umbreon-gi-lighting-balance](../../architecture/umbreon-gi-lighting-balance.md)):
+  its five steps move light energy from the headlight into the GI gather at
+  constant brightness, and it is labelled as a look axis rather than a
+  quality one. GI intensity / environment were dropped from the UI at the
+  same time (the energy balance covers them).
 - **Lighting is derived, never stored.** `lightingOf()` reads the method from
   `aoEnabled` / `useGI`, so the selector cannot disagree with the props it
   represents. Switching method writes the exclusive pair and re-applies that
@@ -170,6 +176,13 @@ libcuemol2 gained the properties these axes need:
     `AoRecipeFlagsReachTheRenderer`.
 - Upstream source of the values: umbreon `docs/quality_presets.md` sections
   1 (axis A), 2a (AO), 2b (GI), 3 (shadows) and 6 (the composite bundle).
+- Later amendment (2026-09): the GI quality axis (Low / Medium / High /
+  Reference = 8 / 32 / 64 / 256 samples, denoiser on throughout) was
+  dropped. With OIDN on, its steps render near-identical pictures -- they
+  differ only in residual pocket detail and animation stability -- so a
+  ladder promised more than it showed. The sample count is now a plain
+  dropdown of those four counts in the Global Illumination group, and the
+  GI method carries the "GI lighting" look axis instead.
 - Known gaps, deliberately out of scope here:
   - GI's lighting energy split (key / headlight / gathered ambient) is a
     look setting outside the ladders; its values and the exporter

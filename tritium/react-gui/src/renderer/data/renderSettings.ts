@@ -50,6 +50,12 @@ export interface RenderLightingOption {
   label: string;
   /** Props that switch this method on -- and the competing one off. */
   enable: RenderPropPatch;
+  /**
+   * Look defaults written when this method is picked, before its axes are
+   * re-applied (so an axis step still wins). Unlike `enable` these take no
+   * part in identifying the method, so the user may edit them freely.
+   */
+  defaults?: RenderPropPatch;
   /** Accordion group shown only while this method is selected. */
   group?: string;
 }
@@ -157,13 +163,17 @@ export function lightingPatch(
   opts: { includeShared?: boolean } = {},
 ): RenderPropPatch {
   const patch: RenderPropPatch = {};
+  const option = cfg.lightings.find((l) => l.id === lighting);
+  // The method's look defaults go first so that an axis owning the same prop
+  // (re-applied below at its selected step) overrides them.
+  Object.assign(patch, option?.defaults ?? {});
   for (const axis of axesFor(cfg, lighting)) {
     // A method switch only re-applies that method's own axes; the shared ones
     // (image quality, shadows) are unrelated to the method and stay put.
     if (!axis.lightings && !opts.includeShared) continue;
     Object.assign(patch, stepPatch(axis, steps[axis.key] ?? axis.defaultStep));
   }
-  Object.assign(patch, cfg.lightings.find((l) => l.id === lighting)?.enable ?? {});
+  Object.assign(patch, option?.enable ?? {});
   return patch;
 }
 

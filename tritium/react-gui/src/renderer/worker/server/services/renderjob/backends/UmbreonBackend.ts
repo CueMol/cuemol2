@@ -70,31 +70,35 @@ const HATCH_COLORING: Record<string, { base: string; ink: string }> = {
 
 // Lighting energy balance, in the POV exporter's terms (_light_inten /
 // _flash_frac / _amb_frac; the exporter's lightIntensity / flashFraction /
-// ambientFraction). This table is the app's single source for these values;
-// the C++ side only carries an "auto" fallback for scripted callers.
+// ambientFraction). lightIntensity and flashFraction come from the Lights
+// group and apply to every lighting method; ambientFraction is the GI-only
+// share of the energy the gather receives occlusion-aware. Under GI all
+// three are owned by the "GI lighting" axis (renderBackends.ts).
 //
-// `direct` is CueMol's POV default (key light 0.52, headlight 0.78, flat
-// material ambient) and is used whenever the flat ambient term is in play:
-// plain raytracing, AO and the NPR backend.
+// DIRECT_LIGHT is that axis' step 0: the direct lights of CueMol's POV
+// default (key 0.52, headlight 0.78) plus a gathered ambient (1.55 * 0.16 =
+// 0.25) that, through umbreon's diffuse weight (0.8), equals the flat
+// material ambient (0.2) of the non-GI render, so GI at step 0 reproduces
+// the raytraced picture. Without GI the ambient fraction only dims the
+// direct lights (POV without radiosity keeps the unit ambient_light), so it
+// is pinned to this value there: the direct lights then stay identical to
+// GI step 0 whatever the GI axis was last set to, instead of a hidden value
+// darkening the raytrace.
 //
-// `gi` replaces that flat ambient with the occlusion-aware GI gather, which
-// umbreon receives through the material diffuse weight (0.8) rather than the
-// ambient one (0.2). Taking the POV radiosity split literally therefore
-// over-fills the picture; these values instead keep the key light at its
-// non-GI value and hold an open camera-facing surface at the non-GI
-// brightness. That constraint fixes lightIntensity at 1.55 and ties the two
-// fractions together (headlight + ambient energy = 1.03), so retuning means
-// moving ambientFraction and flashFraction along that line: more ambient
-// deepens pockets but brightens side-facing surfaces, less does the reverse.
-// The chosen point keeps the direct lights identical to `direct` (key 0.52,
-// headlight 0.78) and puts 0.25 into the gathered ambient, which through the
-// diffuse weight equals the flat ambient of the non-GI render: a white tube
-// keeps its headlight shading (a higher sky fill flattened it to a clipped
-// white blob), and GI adds only occlusion and bounce on top.
+// GI_LIGHT is the axis' default step (4): almost no headlight, the energy
+// moved into the key light and the gather. It is only the fallback for a
+// snapshot that carries no lighting props; the C++ side carries the same
+// values as its "auto" for scripts.
 // Derivation: docs/architecture/umbreon-gi-lighting-balance.md
-const LIGHT_BALANCE = {
-  direct: { lightIntensity: 1.3, flashFraction: 0.6, ambientFraction: 0.0 },
-  gi: { lightIntensity: 1.55, flashFraction: 0.6, ambientFraction: 0.16 },
+const DIRECT_LIGHT = {
+  lightIntensity: 1.55,
+  flashFraction: 0.6,
+  ambientFraction: 0.16,
+} as const;
+const GI_LIGHT = {
+  lightIntensity: 1.2,
+  flashFraction: 0.05,
+  ambientFraction: 0.4,
 } as const;
 
 
@@ -167,13 +171,16 @@ function makeExporter(
   exporter.shadows = boolVal(ub, "shadows", false);
   exporter.shadowSamples = numVal(ub, "shadowSamples", 1);
   exporter.lightRadius = numVal(ub, "lightRadius", 0.0);
-  // Energy balance: the GI table only while GI actually renders (the NPR
-  // backend never enables it, see below).
+  // Energy balance (see DIRECT_LIGHT / GI_LIGHT). The ambient fraction is
+  // read only while GI actually renders (the NPR backend never enables it,
+  // see below).
   const useGI = !npr && boolVal(ub, "useGI", false);
-  const balance = useGI ? LIGHT_BALANCE.gi : LIGHT_BALANCE.direct;
-  exporter.lightIntensity = balance.lightIntensity;
-  exporter.flashFraction = balance.flashFraction;
-  exporter.ambientFraction = balance.ambientFraction;
+  const fallback = useGI ? GI_LIGHT : DIRECT_LIGHT;
+  exporter.lightIntensity = numVal(ub, "lightIntensity", fallback.lightIntensity);
+  exporter.flashFraction = numVal(ub, "flashFraction", fallback.flashFraction);
+  exporter.ambientFraction = useGI
+    ? numVal(ub, "ambientFraction", fallback.ambientFraction)
+    : DIRECT_LIGHT.ambientFraction;
   exporter.creaseLimit = numVal(ub, "creaseLimit", -1.0);
   exporter.edgeRise = numVal(ub, "edgeRise", 0.5);
   // Contact contours between DIFFERENT renderers (umbreon strokeEdges.contact).
@@ -212,12 +219,18 @@ function makeExporter(
   } else {
     // Diffuse global illumination (pt1 path-traced integrator).
     exporter.useGI = useGI;
-    exporter.giSamples = numVal(ub, "giSamples", 32);
-    exporter.giIntensity = numVal(ub, "giIntensity", 1.0);
-    exporter.giEnvIntensity = numVal(ub, "giEnvIntensity", 1.0);
+    // The sample count is an enum prop (a dropdown of counts), so it arrives
+    // as a string.
+    exporter.giSamples = Number(strVal(ub, "giSamples", "32")) || 32;
+    // giIntensity / giEnvIntensity are not offered in the UI and stay at the
+    // exporter's neutral 1.0 (the energy balance above covers that ground).
     const denoise = DENOISE_MODE[strVal(ub, "denoise", "OIDN")] ?? DENOISE_MODE.OIDN;
     exporter.giDenoise = denoise.giDenoise; // pt1Denoise: OIDN on the indirect buffer
     exporter.denoiser = denoise.denoiser; // full-frame post-pass (0 = None, 1 = a-trous)
+    // Gather sky model: uniform white or a camera-up gradient down to the
+    // ground color (libcuemol2 keeps the overall brightness constant).
+    exporter.giSkyGradient = boolVal(ub, "giSkyGradient", true);
+    exporter.giGroundColor = strVal(ub, "giGroundColor", "#666666");
   }
 
   return exporter;

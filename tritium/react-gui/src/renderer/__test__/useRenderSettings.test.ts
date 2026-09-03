@@ -228,13 +228,14 @@ describe('useRenderSettings quality axes', () => {
         expect(h.result.qualitySteps).toEqual({
             aa: 'high',
             ao: 'medium',
-            gi: 'medium',
+            giLighting: '4',
             shadows: 'off',
         });
         // Those defaults are already written into the props.
         expect(valueOf(h.result.backendProps, 'useGI')).toBe(true);
         expect(valueOf(h.result.backendProps, 'supersample')).toBe(3);
-        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(32);
+        // GI samples is a plain dropdown (no ladder), so its own default holds.
+        expect(valueOf(h.result.backendProps, 'giSamples')).toBe('32');
         expect(valueOf(h.result.backendProps, 'shadows')).toBe(false);
         h.unmount();
     });
@@ -298,21 +299,12 @@ describe('useRenderSettings quality axes', () => {
         h.unmount();
     });
 
-    it('the GI ladder follows the umbreon guide steps', () => {
-        const h = umbreonHook();
-        act(() => h.result.setQualityStep('gi', 'low'));
-        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(8);
-        act(() => h.result.setQualityStep('gi', 'reference'));
-        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(256);
-        h.unmount();
-    });
-
     it('editing a prop off the ladder drops only that axis to Custom', () => {
         const h = umbreonHook();
         act(() => h.result.handleChange('supersample', 6));
         expect(h.result.qualitySteps.aa).toBe('custom');
         // The other axes still describe their own props correctly.
-        expect(h.result.qualitySteps.gi).toBe('medium');
+        expect(h.result.qualitySteps.giLighting).toBe('4');
         expect(h.result.qualitySteps.shadows).toBe('off');
         h.unmount();
     });
@@ -350,7 +342,7 @@ describe('useRenderSettings quality axes', () => {
     it('restoring a snapshot reports the steps its values match', () => {
         const h = umbreonHook();
         act(() => h.result.setQualityStep('aa', 'low'));
-        act(() => h.result.setQualityStep('gi', 'high'));
+        act(() => h.result.setQualityStep('giLighting', '3'));
         const snapshot = h.result.getSnapshot();
 
         act(() => h.result.setQualityStep('aa', 'ultra'));
@@ -358,16 +350,51 @@ describe('useRenderSettings quality axes', () => {
         // Re-rendering a past result must not leave every dropdown on Custom
         // over values that plainly match a step.
         expect(h.result.qualitySteps.aa).toBe('low');
-        expect(h.result.qualitySteps.gi).toBe('high');
+        expect(h.result.qualitySteps.giLighting).toBe('3');
         h.unmount();
     });
 
     it('editing a look setting no axis owns keeps every axis', () => {
         const h = umbreonHook();
-        // GI intensity is a look knob, deliberately outside the quality ladders.
-        act(() => h.result.handleChange('giIntensity', 1.5));
-        expect(h.result.qualitySteps.gi).toBe('medium');
+        // The GI ground color is a look knob outside every ladder.
+        act(() => h.result.handleChange('giGroundColor', '#444444'));
+        expect(h.result.qualitySteps.giLighting).toBe('4');
         expect(h.result.qualitySteps.aa).toBe('high');
+        h.unmount();
+    });
+
+    it('the GI lighting axis trades headlight for key light and gathered ambient', () => {
+        const h = umbreonHook();
+        // The default step is the top one; its values are already in the props.
+        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.2);
+        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.05);
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.4);
+        act(() => h.result.setQualityStep('giLighting', '2'));
+        expect(h.result.qualitySteps.giLighting).toBe('2');
+        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.38);
+        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.32);
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.3);
+        // A hand edit of an owned prop drops the axis to Custom.
+        act(() => h.result.handleChange('lightIntensity', 1.3));
+        expect(h.result.qualitySteps.giLighting).toBe('custom');
+        h.unmount();
+    });
+
+    it('picking a direct method writes the Lights defaults back', () => {
+        const h = umbreonHook();
+        expect(h.result.qualitySteps.giLighting).toBe('4');
+        // The Lights group is shared, so without this a GI step with almost
+        // no headlight would carry over into the raytrace.
+        act(() => h.result.setLighting('none'));
+        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.55);
+        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.6);
+        // The step is derived from those shared values, so leaving GI resets
+        // its lighting to step 0 (the defaults equal it, ambient included);
+        // coming back starts from the raytrace match rather than Custom.
+        expect(h.result.qualitySteps.giLighting).toBe('0');
+        act(() => h.result.setLighting('gi'));
+        expect(h.result.qualitySteps.giLighting).toBe('0');
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.16);
         h.unmount();
     });
 

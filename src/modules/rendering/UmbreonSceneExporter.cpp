@@ -147,6 +147,7 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_bTransparentBackground(false),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
        m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
+       m_bGiSkyGradient(true), m_sGiGroundColor("#666666"),
        m_bHatchEnable(false), m_sHatchStyle("richardson"),
        m_dHatchDensity(1.0), m_dHatchWidthScale(1.0),
        m_sHatchLayersSpec(""), m_sHatchToneSpec(""),
@@ -245,6 +246,8 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.giEnvIntensity = m_dGiEnvIntensity;
   prm.giDenoise = m_bGiDenoise;
   prm.denoiser = m_nDenoiser;
+  prm.giSkyGradient = m_bGiSkyGradient;
+  prm.giGroundColorSet = parseHexColor(m_sGiGroundColor, prm.giGroundColor);
   prm.hatchEnable = m_bHatchEnable;
   prm.hatchStyle = m_sHatchStyle;
   prm.hatchDensity = m_dHatchDensity;

@@ -63,8 +63,9 @@ architecture, it belongs here.
   GI 有効時に POV radiosity の配分をそのまま使うと白く平坦になる原因 (umbreon は
   ambient を材質の diffuse 係数で受ける) と、開放面の輝度を GI off に揃える parity 制約から
   決めた配分。`lightIntensity` / `flashFraction` / `ambientFraction` を POV backend と同じ
-  意味の exporter property として露出し、既定値は `UmbreonBackend.ts` の `LIGHT_BALANCE`
-  を SSOT とする (C++ は auto フォールバックのみ)。render window には knob を出さない。
+  意味の exporter property として露出し、render window では Lights グループ (全方式共通の
+  Light intensity / Flash fraction) と GI lighting axis (raytrace 一致から headlight をほぼ
+  無くすまでの 5 段、明るさ一定) と勾配 sky で操作する。C++ は auto フォールバックのみ。
 - [umbreon group-alpha blend](umbreon-group-alpha-blend.md) -- section 透過
   (group alpha) を多重パスで合成する際の不変条件: パスの重みは単位分割
   (合計ちょうど 1) でなければならず、合計が 1 を超えたときに背景係数が**負に

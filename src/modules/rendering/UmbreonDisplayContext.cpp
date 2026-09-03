@@ -840,9 +840,9 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
 
   // Lighting energy balance, in the POV exporter's terms (_light_inten /
   // _amb_frac / _flash_frac). The caller normally supplies all three (the
-  // tritium render window sends UmbreonBackend.ts LIGHT_BALANCE); a negative
-  // value falls back to the auto defaults below, so a scripted caller that
-  // only flips useGI still gets a sensible balance.
+  // tritium render window sends its Lights group / GI lighting step); a
+  // negative value falls back to the auto defaults below, so a scripted
+  // caller that only flips useGI still gets the app's default balance.
   //
   // Without GI: the POV defaults _light_inten=1.3, _amb_frac=0, _flash_frac=0.6
   // (SpecLighting=0.52 / FlashLighting=0.78) plus POV's unit ambient_light,
@@ -853,29 +853,27 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // DIFFUSE weight (default finish: 0.8), i.e. 4x the coefficient of the flat
   // term. The POV radiosity split (1.6 / 0.5 / 0.5) taken literally therefore
   // gives an open surface 3.2x the fill of the non-GI render while cutting
-  // the direct lights, which is a brighter and flatter picture. The auto
-  // defaults instead keep the key light at its non-GI value and hold an open
-  // camera-facing surface at the non-GI brightness:
-  //   0.8*(0.577*key + flash) + 0.8*amb == 0.8*(0.577*0.52 + 0.78) + 0.2
-  //   => flash + amb = 1.03, li = 0.52 + flash + amb = 1.55 (for any amb)
-  // so the only free choice is how much headlight (flat, view-aligned) is
-  // traded for gathered ambient (the term that carries occlusion). amb=0.25
-  // keeps the direct lights identical to the non-GI ones and makes the sky
-  // fill (0.20*pigment through the diffuse weight) equal to the non-GI flat
-  // ambient: a white tube then keeps its headlight shading, whereas a higher
-  // sky fill (0.40 was tried) lifted its sides into a clipped white blob. GI
-  // adds only occlusion and bounce on top. Retune along that line: keep
-  // li=1.55 and move af / ff together. Derivation and trade-offs:
+  // the direct lights, which is a brighter and flatter picture.
+  //
+  // The GI auto defaults are the render window's default "GI lighting" step
+  // (the top of its five): the flat, view-aligned headlight is all but gone
+  // (flash 0.04), its energy moved into the directional key light (0.68)
+  // and the gathered ambient (0.48), and the total is lowered to 1.2 so the
+  // key-lit side of a white surface does not clip. The step ladder's other
+  // end, li 1.55 / af 0.16 / ff 0.6, reproduces the non-GI picture exactly
+  // (same key 0.52 / headlight 0.78, and a gathered ambient of 0.25 that
+  // through the diffuse weight equals the 0.2 flat ambient). Derivation of
+  // the ladder and its trade-offs:
   // docs/architecture/umbreon-gi-lighting-balance.md
   const double li = (prm.lightIntensity >= 0.0)
                         ? prm.lightIntensity
-                        : (prm.giEnabled ? 1.55 : 1.3);
+                        : (prm.giEnabled ? 1.2 : 1.3);
   const double af = (prm.ambientFraction >= 0.0)
                         ? prm.ambientFraction
-                        : (prm.giEnabled ? 0.16 : 0.0);
+                        : (prm.giEnabled ? 0.4 : 0.0);
   const double ff = (prm.flashFraction >= 0.0)
                         ? prm.flashFraction
-                        : (prm.giEnabled ? 0.6 : 0.6);
+                        : (prm.giEnabled ? 0.05 : 0.6);
   if (scene.lights.empty()) {
     // SpecLighting: directional key light from the upper-front-right
     // (positioned at normalize(1,1,1), pointing at the origin). CueMol calls it
@@ -899,7 +897,19 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   scene.ambientIntensity = 1.0f;
   // The GI gathers this ambient occlusion-aware; carry the ambient light energy
   // (light_inten * amb_frac) when GI is on, else a flat white ambient.
-  const float amb = prm.giEnabled ? float(li * af) : 1.0f;
+  float amb = prm.giEnabled ? float(li * af) : 1.0f;
+  // Gradient sky (zenith white, ground = giGroundColor): a camera-facing
+  // surface sees half sky and half ground, so its gathered ambient drops to
+  // (1 + ground) / 2 of the uniform-sky value. Scale the ambient energy back
+  // up by the inverse so the gradient changes only how the ambient shades by
+  // orientation (up-facing brighter, down-facing darker), not the overall
+  // brightness of the picture.
+  if (prm.giEnabled && prm.giSkyGradient && prm.giGroundColorSet) {
+    const float lum = 0.2126f * prm.giGroundColor[0] +
+                      0.7152f * prm.giGroundColor[1] +
+                      0.0722f * prm.giGroundColor[2];
+    amb *= 2.0f / (1.0f + lum);
+  }
   scene.ambientColor = umbreon::Vec3(amb, amb, amb);
 
   // No assumed_gamma: keep umbreon's framebuffer linear (assumedGamma = 1.0 is
@@ -974,6 +984,15 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.giIntensity = float(prm.giIntensity);
     opt.giEnvIntensity = float(prm.giEnvIntensity);
     opt.pt1Denoise = prm.giDenoise;
+    // Gather sky: uniform white (umbreon default) or a zenith-white /
+    // ground-tinted gradient along the camera up axis (aoUseCameraUp stays at
+    // umbreon's default), so the ambient itself shades by orientation.
+    // aoGroundColor is shared with the AO bent-normal gradient, but AO and GI
+    // are alternatives, so it is only ever written here while GI renders.
+    opt.pt1SkyMode = prm.giSkyGradient ? 1 : 0;
+    if (prm.giSkyGradient && prm.giGroundColorSet) {
+      for (int k = 0; k < 3; ++k) opt.aoGroundColor[k] = prm.giGroundColor[k];
+    }
   }
 
   // Full-frame post-pass denoiser on the final HDR color (0 = None, 1 =

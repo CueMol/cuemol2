@@ -128,6 +128,13 @@ namespace render {
     /// full-frame post-pass denoiser (0 = None, 1 = AtrousBilateral, 2 = OIDN)
     int m_nDenoiser;
 
+    /// GI sky model: gradient (zenith white / ground = m_sGiGroundColor along
+    /// the camera up axis) instead of the uniform white sky
+    bool m_bGiSkyGradient;
+
+    /// ground hemisphere color of the gradient sky ("#rrggbb")
+    LString m_sGiGroundColor;
+
     /// NPR tone-hatching pass (ink drawing); default off
     bool m_bHatchEnable;
 

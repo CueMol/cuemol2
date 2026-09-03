@@ -48,7 +48,7 @@ describe('render backends registry', () => {
             if (!backend.quality) continue
             const propKeys = new Set(backend.props.map((p) => p.key))
             for (const lighting of backend.quality.lightings) {
-                for (const key of Object.keys(lighting.enable)) {
+                for (const key of Object.keys({ ...lighting.enable, ...lighting.defaults })) {
                     expect(
                         propKeys.has(key),
                         `${id}: lighting "${lighting.id}" patches unknown prop "${key}"`,

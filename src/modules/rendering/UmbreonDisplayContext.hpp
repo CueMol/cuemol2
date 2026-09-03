@@ -77,6 +77,13 @@ namespace render {
     double giIntensity = 1.0;
     double giEnvIntensity = 1.0;
     bool giDenoise = true;
+    /// GI sky model: gradient sky (zenith white, ground = giGroundColor along
+    /// the camera up axis) instead of umbreon's uniform white sky, so the
+    /// gathered ambient carries a shape cue independent of occlusion.
+    /// giGroundColor applies only when giGroundColorSet (parsed "#rrggbb").
+    bool giSkyGradient = false;
+    bool giGroundColorSet = false;
+    float giGroundColor[3] = {0.4f, 0.4f, 0.4f};
     /// Full-frame post-pass denoiser on the final HDR color (umbreon
     /// RenderOptions::denoiser): 0 = None, 1 = AtrousBilateral, 2 = OIDN. This
     /// is independent of giDenoise, which denoises only the GI indirect buffer.
