@@ -229,6 +229,23 @@ if (typeof (obj as unknown as Record<string, unknown>).fitView === 'function') {
 
 Wrap property reads that may throw in a small `safeRead` helper rather than letting the service crash — getters can throw `"Property X is read only"` or `"Method not found"` for missing-on-subclass cases.
 
+### Nested (dot-path) properties: read through them, never write through them
+
+`getProp('a.b')` / `setProp('a.b', v)` reach C++ `LPropSupport::getNestedProperty` /
+`setNestedProperty`, whose `NestedPropHandler` has two non-obvious limits:
+
+- When a segment of the path does not resolve (unknown property, not an object, null) it
+  **falls back to the root object silently** with the full dotted name, so a typo becomes a
+  write to an unknown root property that fails quietly instead of loudly.
+- A by-value `object<Foo>` property (no `$`) is returned as a copy: a nested write lands on
+  the copy, not on the object.
+
+Rule: to write into a child object, get it once (`const child = parent.getProp('block')`,
+a smart-pointer property, so the same C++ object) and call plain `setProp` / `resetProp` /
+`getProp` / `getPropsJSON` on it. Keep dotted keys as TS-side map keys only. The generic
+property inspector's dot-path writes are the one accepted exception (its rows come from
+`getPropsJSON`, so every path exists). See `docs/architecture/scene-app-data.md`.
+
 ### Scene-content JSON schemas (C++ source of truth)
 
 The worker side typically reads scene contents via JSON-returning methods. Their shapes are stable and worth knowing:
@@ -457,6 +474,10 @@ Also note the "runs synchronously inside the Web Worker" wording under *Worker d
 ```bash
 cd tritium/react-gui && npm test    # vitest run
 ```
+
+**必要最低限にする** (root `CLAUDE.md` の「テスト方針」)。既に 390 ファイル / 3700 件以上あり、
+これ以上の増加は開発コストに直結する。1 機能につき数件、契約 (wire 形式・fallback・txn 粒度・
+ループ防止) を pin するものだけを書き、forwarding や見た目のテストは書かない。
 
 Tests use **Vitest + jsdom**. Files go in `src/renderer/__test__/*.test.{ts,tsx}`. No `@testing-library/react` — use `createRoot` + `act()` directly, following the pattern in `useActiveTool.test.ts`. Common helpers (`makeRenderHook`, `mountTree`, `setupElectronAPI`, `flushPromises`) live in `__test__/helpers/testHarness.tsx`.
 

@@ -128,3 +128,12 @@ editing command として (編集不可要素にフォーカスがあっても) 
 隠し native menu からは accelerator を外した。本 doc の振り分け (`editClipboard.ts`) は
 `dispatchMenuChannel` より下流なので無変更で、mac と同じ経路を通る。詳細は
 [keyboard shortcuts](keyboard-shortcuts.md)。
+
+## 追記 (2026-09): Rendering window の undo/redo
+
+render 設定が scene に保存され undo 対象になったため
+([scene-app-data](scene-app-data.md))、`MENU_UNDO/REDO` の「main window 以外は native 実行」
+ガードに例外を設けた。フォーカスが Rendering window のときは `RENDER_WINDOW_EDIT_PUSH` を
+その window に push し、window 側 (`useRenderWindowEditKeys`) が `dispatchEditUndoRedo` で
+テキスト欄かどうかを振り分ける。Cut/Copy/Paste/Select All と devtools は従来通り native 実行。
+Windows / Linux では同 hook の keydown listener が Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z を受ける。

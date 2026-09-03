@@ -146,3 +146,11 @@ architecture, it belongs here.
   contracts (unresolved vertex = `defaultcolor`, separate per-mode target
   names, `setupParentData("multi_grad")` placement, `target` kept as an
   inert string) and the test map.
+- [Scene app data と render 設定の scene 保存](scene-app-data.md) (日本語) --
+  Rendering window の設定を `.qsc` に保存する仕組み。`Scene` の汎用 typed app-data store
+  (`<appdata id= type=>`、class 未登録なら verbatim 温存) と QIF class `RenderSettings`
+  (common + backend ごとの子ブロック) をスキーマにした tolerant な読み込み、qif の `default` を既定値の
+  唯一の原典にして明示的に変えた値だけを保存する方針、property 変更を undo/redo と scene event
+  (`sceneAppDataChanged`) に載せる `SceneAppData` 基底、入れ子 property の落とし穴と「子 wrapper 経由で
+  書く」規約、属性値の改行エスケープ修正、tritium 側の書き込みトリガー (編集 / レンダー開始 /
+  「Use settings」のみ) と loop guard、別の app data を足す手順。
