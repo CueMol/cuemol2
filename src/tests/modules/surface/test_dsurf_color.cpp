@@ -263,8 +263,105 @@ TEST_P(DsurfColorFixture, LegacyPotentialQscLoads)
     });
 }
 
+// `target` is a plain persisted string: it survives the round trip without
+// a scene and never needs an object behind it.
+TEST_P(DsurfColorFixture, TargetIsAPersistedString)
+{
+    qsys::RendererFactory *pRF = qsys::RendererFactory::getInstance();
+    qsys::RendererPtr pSrc = pRF->create(GetParam());
+    ASSERT_FALSE(pSrc.isnull());
+    pSrc->setPropStr("target", "some_mol");
+    visitDsurf(pSrc, [](auto &r) { EXPECT_TRUE(r.getTgtObjName().equals("some_mol")); });
+
+    qsys::RendererPtr pOut = surftest::roundTrip(pRF, GetParam(), pSrc);
+    visitDsurf(pOut, [](auto &r) {
+        EXPECT_TRUE(r.getTgtObjName().equals("some_mol")) << r.getTgtObjName().c_str();
+    });
+}
+
 INSTANTIATE_TEST_SUITE_P(DirectSurfTypes, DsurfColorFixture,
                          ::testing::Values("dsurface", "dsurf2"));
+
+// --- dsurf2: the GPU colour pass and the display-list pass agree ---
+
+namespace {
+
+class ProbeDsurf2 : public DirectSurfRenderer2
+{
+public:
+    using DirectSurfRenderer2::computeShownColors;
+};
+
+class Dsurf2PathsFixture : public ::testing::Test
+{
+protected:
+    qsys::ScenePtr m_pScene;
+    molstr::MolCoordPtr m_pMol;
+    qsys::RendererPtr m_pRend;
+    ProbeDsurf2 *m_pProbe = nullptr;
+
+    void SetUp() override
+    {
+        m_pScene = qsys::SceneManager::getInstance()->createScene();
+        m_pScene->addObject(makeXField());
+        m_pMol = makeMol();
+        m_pMol->setName("mol");
+        m_pScene->addObject(m_pMol);
+        m_pProbe = MB_NEW ProbeDsurf2();
+        m_pRend = qsys::RendererPtr(m_pProbe);
+        m_pProbe->resetAllProps();
+        m_pMol->attachRenderer(m_pRend);
+        m_pProbe->setDetail(2);
+    }
+
+    void TearDown() override
+    {
+        if (!m_pScene.isnull()) {
+            const qlib::uid_t uid = m_pScene->getUID();
+            m_pRend = qsys::RendererPtr();
+            m_pMol = molstr::MolCoordPtr();
+            m_pScene = qsys::ScenePtr();
+            qsys::SceneManager::getInstance()->destroyScene(uid);
+        }
+    }
+
+    /// Every shown vertex gets the same device colour from both passes.
+    void expectPathsAgree(const char *what)
+    {
+        CaptureDC dc;
+        m_pProbe->render(&dc);
+
+        std::vector<int> vidmap;
+        std::vector<quint32> vcol;
+        const int nshown = m_pProbe->computeShownColors(vidmap, vcol);
+        ASSERT_GT(nshown, 0) << what;
+        ASSERT_EQ((size_t)nshown, dc.m_verts.size()) << what;
+
+        const qlib::uid_t sid = m_pScene->getUID();
+        for (size_t i = 0; i < vidmap.size(); ++i) {
+            if (vidmap[i] < 0) continue;
+            EXPECT_EQ(dc.m_verts[vidmap[i]].second->getDevCode(sid), vcol[i])
+                << what << ", vertex " << i;
+        }
+    }
+};
+
+}  // namespace
+
+TEST_F(Dsurf2PathsFixture, GpuAndDisplayListColorsAgree)
+{
+    expectPathsAgree("molecule");
+
+    m_pProbe->setColorMode(DirectSurfRenderer2::DS_SCAPOT);
+    m_pProbe->setTgtElePotName("pot");
+    m_pProbe->setLowPar(-1.0);
+    m_pProbe->setMidPar(0.0);
+    m_pProbe->setHighPar(1.0);
+    expectPathsAgree("potential");
+
+    m_pProbe->setTgtElePotName("");
+    expectPathsAgree("potential without a map");
+}
 
 // --- cache invalidation of the potential-ramp setters ---
 
