@@ -17,6 +17,7 @@ ElePotMap.cpp
 MSMSFileReader.cpp
 PLYFileReader.cpp
 MolSurfObj.cpp
+ScalarColorSupport.cpp
 MolSurfRenderer.cpp
 OpenDXPotReader.cpp
 MolSurfBuilder.cpp
