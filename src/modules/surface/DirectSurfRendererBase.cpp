@@ -165,7 +165,15 @@ bool DirectSurfRendererBase::resolveVertexColor(VertexColorEnv &env, const MSVer
   if (m_nMode==DS_MOLFANC) {
     if (pAtom.isnull())
       return false;
+    // A surface has many vertices per atom; the scheme's answer for an atom
+    // does not change within one pass, so ask it once per atom.
+    auto memo = env.atomMemo.find(v.info);
+    if (memo!=env.atomMemo.end()) {
+      rcol = memo->second;
+      return !rcol.isnull();
+    }
     rcol = ColSchmHolder::getColor(pAtom);
+    env.atomMemo.emplace(v.info, rcol);
     return !rcol.isnull();
   }
 

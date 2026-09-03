@@ -17,6 +17,8 @@
 
 #include <modules/molstr/MolRenderer.hpp>
 
+#include <unordered_map>
+
 class DirectSurfRendererBase_wrap;
 
 namespace qsys { class ScalarObject; }
@@ -257,6 +259,8 @@ namespace surface {
       MolCoordPtr pMol;
       qsys::ScalarObject *pSca = NULL;
       ScalarMode scaMode = SCM_NONE;
+      /// molecule mode: colour per atom id, shared by every vertex of the atom
+      std::unordered_map<int, ColorPtr> atomMemo;
     };
 
     /// Start the colouring schemes and resolve the scalar object for a pass.
