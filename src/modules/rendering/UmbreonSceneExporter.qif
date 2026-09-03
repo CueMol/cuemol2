@@ -82,6 +82,29 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   property real lightRadius => m_dLightRadius;
 
   //////////
+  // lighting energy balance. Same meaning as the POV exporter's
+  // _light_inten / _flash_frac / _amb_frac declares:
+  //   key light (SpecLighting)  = lightIntensity * (1 - ambientFraction) * (1 - flashFraction)
+  //   headlight (FlashLighting) = lightIntensity * (1 - ambientFraction) * flashFraction
+  //   GI ambient energy         = lightIntensity * ambientFraction  (useGI only;
+  //                               without GI the ambient stays POV's unit
+  //                               ambient_light and the fraction only dims the
+  //                               direct lights, as in POV without radiosity)
+  // A negative value means auto: the GI-off defaults (1.3 / 0.6 / 0) or, with
+  // GI on, the rebalanced defaults documented in
+  // docs/architecture/umbreon-gi-lighting-balance.md. The tritium render
+  // window always sends explicit values (UmbreonBackend.ts LIGHT_BALANCE).
+
+  /// total light energy (<0 = auto)
+  property real lightIntensity => m_dLightIntensity;
+
+  /// share of the direct light given to the headlight (<0 = auto)
+  property real flashFraction => m_dFlashFraction;
+
+  /// share of the total energy moved into the GI-gathered ambient (<0 = auto)
+  property real ambientFraction => m_dAmbientFraction;
+
+  //////////
   // edge / silhouette outline lines (CueMol toon edges)
 
   property boolean showEdgeLines => m_bEnableEdgeLines;
@@ -123,6 +146,18 @@ runtime_class UmbreonSceneExporter extends SceneExporter
 
   /// full-frame post-pass denoiser (0 = None, 1 = AtrousBilateral, 2 = OIDN)
   property integer denoiser => m_nDenoiser;
+
+  /// GI sky model: false = uniform white sky (umbreon default), true (the
+  /// default here) = gradient (zenith white, ground = giGroundColor along the
+  /// camera up axis), which makes the gathered ambient depend on the surface
+  /// orientation and so adds a shape cue that is independent of occlusion
+  /// (umbreon --sky gradient). The ambient energy is rescaled so a
+  /// camera-facing surface keeps the uniform-sky brightness.
+  property boolean giSkyGradient => m_bGiSkyGradient;
+
+  /// ground hemisphere color of the gradient sky, "#rrggbb" (umbreon
+  /// --ao-ground); ignored unless giSkyGradient is on
+  property string giGroundColor => m_sGiGroundColor;
 
   //////////
   // NPR tone-hatching pass (umbreon --hatch): the image becomes an ink

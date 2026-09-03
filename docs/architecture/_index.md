@@ -59,6 +59,13 @@ architecture, it belongs here.
   昇格した時点で絵が黙って変わる。UI/`.qif` には露出しない理由、GI オン時に metal 材質の
   反射が背景色から実ジオメトリに変わる影響、principled BSDF material 採用を見送った理由、
   umbreon 側 API doc が古くヘッダを SSOT とすべき点。
+- [Umbreon GI 時の照明エネルギー配分](umbreon-gi-lighting-balance.md) (日本語) --
+  GI 有効時に POV radiosity の配分をそのまま使うと白く平坦になる原因 (umbreon は
+  ambient を材質の diffuse 係数で受ける) と、開放面の輝度を GI off に揃える parity 制約から
+  決めた配分。`lightIntensity` / `flashFraction` / `ambientFraction` を POV backend と同じ
+  意味の exporter property として露出し、render window では Lights グループ (全方式共通の
+  Light intensity / Flash fraction) と GI lighting axis (raytrace 一致から headlight をほぼ
+  無くすまでの 5 段、明るさ一定) と勾配 sky で操作する。C++ は auto フォールバックのみ。
 - [umbreon group-alpha blend](umbreon-group-alpha-blend.md) -- section 透過
   (group alpha) を多重パスで合成する際の不変条件: パスの重みは単位分割
   (合計ちょうど 1) でなければならず、合計が 1 を超えたときに背景係数が**負に

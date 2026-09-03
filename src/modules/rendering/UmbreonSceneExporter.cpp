@@ -140,11 +140,14 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_dAoDiffuseFactor(0.0), m_bAoMultiScale(false), m_bAoBentNormal(false),
        m_bAoLowDiscrepancy(false), m_nAoResDiv(0),
        m_bShadows(false), m_nShadowSamples(1), m_dLightRadius(0.0),
+       m_dLightIntensity(-1.0), m_dFlashFraction(-1.0),
+       m_dAmbientFraction(-1.0),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
        m_bContactEdges(false),
        m_bTransparentBackground(false),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
        m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
+       m_bGiSkyGradient(true), m_sGiGroundColor("#666666"),
        m_bHatchEnable(false), m_sHatchStyle("richardson"),
        m_dHatchDensity(1.0), m_dHatchWidthScale(1.0),
        m_sHatchLayersSpec(""), m_sHatchToneSpec(""),
@@ -232,6 +235,9 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.shadows = m_bShadows;
   prm.shadowSamples = m_nShadowSamples;
   prm.lightRadius = m_dLightRadius;
+  prm.lightIntensity = m_dLightIntensity;
+  prm.flashFraction = m_dFlashFraction;
+  prm.ambientFraction = m_dAmbientFraction;
   prm.contactEdges = m_bContactEdges;
   prm.transparentBackground = m_bTransparentBackground;
   prm.giEnabled = m_bGI;
@@ -240,6 +246,8 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.giEnvIntensity = m_dGiEnvIntensity;
   prm.giDenoise = m_bGiDenoise;
   prm.denoiser = m_nDenoiser;
+  prm.giSkyGradient = m_bGiSkyGradient;
+  prm.giGroundColorSet = parseHexColor(m_sGiGroundColor, prm.giGroundColor);
   prm.hatchEnable = m_bHatchEnable;
   prm.hatchStyle = m_sHatchStyle;
   prm.hatchDensity = m_dHatchDensity;

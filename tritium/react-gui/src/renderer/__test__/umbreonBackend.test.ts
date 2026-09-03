@@ -81,9 +81,12 @@ describe('umbreonBackend.beginInProcess', () => {
                 p('edgeRise', 1),
                 p('contactEdges', true),
                 p('useGI', true),
-                p('giSamples', 64),
-                p('giIntensity', 1.5),
-                p('giEnvIntensity', 0.5),
+                p('giSamples', '64'),
+                p('lightIntensity', 1.4),
+                p('flashFraction', 0.5),
+                p('ambientFraction', 0.3),
+                p('giSkyGradient', true),
+                p('giGroundColor', '#333333'),
                 p('denoise', 'A-trous'),
             ],
         }
@@ -115,11 +118,19 @@ describe('umbreonBackend.beginInProcess', () => {
         // GI (pt1) props.
         expect(exporter.useGI).toBe(true)
         expect(exporter.giSamples).toBe(64)
-        expect(exporter.giIntensity).toBe(1.5)
-        expect(exporter.giEnvIntensity).toBe(0.5)
+        // giIntensity / giEnvIntensity are not offered: the exporter keeps 1.0.
+        expect(exporter.giIntensity).toBeUndefined()
+        expect(exporter.giEnvIntensity).toBeUndefined()
         // denoise "A-trous" -> pt1Denoise off + full-frame a-trous.
         expect(exporter.giDenoise).toBe(false)
         expect(exporter.denoiser).toBe(1)
+        // Lighting energy balance and the GI sky model travel from the props
+        // (the ambient fraction only because GI is on).
+        expect(exporter.lightIntensity).toBe(1.4)
+        expect(exporter.flashFraction).toBe(0.5)
+        expect(exporter.ambientFraction).toBe(0.3)
+        expect(exporter.giSkyGradient).toBe(true)
+        expect(exporter.giGroundColor).toBe('#333333')
 
         // Start sequence: attach -> setPath -> beginRender (non-blocking start).
         expect(exporter.attach).toHaveBeenCalledWith(scene)
@@ -258,6 +269,13 @@ describe('umbreonBackend.beginInProcess', () => {
         // Cross-renderer contact contours stay off, so an unset prop renders
         // the same picture umbreon and the GL view draw.
         expect(exporter.contactEdges).toBe(false)
+        // Direct lighting balance (GI lighting step 0); the ambient fraction
+        // is pinned there without GI, where it would only dim the lights.
+        expect(exporter.lightIntensity).toBe(1.55)
+        expect(exporter.flashFraction).toBe(0.6)
+        expect(exporter.ambientFraction).toBe(0.16)
+        // The gradient sky is the default (it only matters under GI).
+        expect(exporter.giSkyGradient).toBe(true)
     })
 
     // AO and GI are alternatives (the Lighting selector enforces it), so an AO
@@ -467,6 +485,12 @@ describe('umbreonNprBackend.beginInProcess', () => {
         expect(exporter.useGI).toBeUndefined()
         expect(exporter.giSamples).toBeUndefined()
         expect(exporter.denoiser).toBeUndefined()
+        expect(exporter.giSkyGradient).toBeUndefined()
+        // The Lights group still applies; the GI-only ambient fraction is
+        // pinned to its step-0 value so the direct lights match raytracing.
+        expect(exporter.lightIntensity).toBe(1.55)
+        expect(exporter.flashFraction).toBe(0.6)
+        expect(exporter.ambientFraction).toBe(0.16)
     })
 
     it('sends a color only while its Custom switch is on', () => {

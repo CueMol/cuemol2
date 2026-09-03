@@ -118,7 +118,7 @@ describe('RenderSettingsEditor quality section', () => {
     expect(qualityLabels(container)).toEqual([
       'Lighting',
       'Supersampling',
-      'GI quality',
+      'GI lighting',
       'Shadows',
     ]);
     const [lightingSel, aaSel] = qualitySelects(container);
@@ -164,7 +164,7 @@ describe('RenderSettingsEditor quality section', () => {
   it('swaps the depth-cue axis with the method', () => {
     const { container, unmount } = mountFor('umbreon', { lighting: 'ao' });
     expect(qualityLabels(container)).toContain('AO quality');
-    expect(qualityLabels(container)).not.toContain('GI quality');
+    expect(qualityLabels(container)).not.toContain('GI lighting');
     unmount();
   });
 
@@ -189,11 +189,12 @@ describe('RenderSettingsEditor quality section', () => {
         backendProps={RENDER_BACKENDS.umbreon.props}
         onChange={vi.fn()}
         lighting="gi"
-        qualitySteps={{ aa: 'medium', gi: 'medium', shadows: 'off' }}
+        qualitySteps={{ aa: 'medium', giLighting: '0', shadows: 'off' }}
         onLightingChange={onLightingChange}
         onQualityStepChange={onQualityStepChange}
       />,
     );
+    // Lighting, Supersampling, GI lighting, Shadows.
     const [lightingSel, aaSel, , shadowSel] = qualitySelects(container);
     act(() => {
       lightingSel.value = 'ao';
