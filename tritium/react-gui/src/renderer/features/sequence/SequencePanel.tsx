@@ -38,6 +38,7 @@ import {
 } from '@blueprintjs/core'
 import { Allotment } from 'allotment'
 import { AppIcon } from '@renderer/h3-kit/primitives'
+import { recordAppliedSel, recordIncrementalSel } from '@renderer/h3-kit/MolSelList'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { useMolSequenceData, type SeqRow } from './useMolSequenceData'
@@ -145,6 +146,12 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
 
     // --- Click handlers ---
 
+    // A residue click / drag applies the whole mol.sel; a run of them keeps
+    // one history entry (see recordIncrementalSel).
+    const recordPick = (res: { ok: boolean; selStr?: string }): void => {
+        if (res.ok && res.selStr !== undefined) recordIncrementalSel(res.selStr)
+    }
+
     const handleToggle = useCallback(
         async (row: SeqRow, residueIndex: string) => {
             if (!cm || activeSceneId === undefined) return
@@ -155,6 +162,7 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
                     chainName: row.chainName,
                     residueIndex,
                 })
+                .then(recordPick)
                 .catch((err: unknown) => {
                     console.warn('toggleResidueSelection failed:', err)
                 })
@@ -197,6 +205,7 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
                     toIndex,
                     toggle,
                 })
+                .then(recordPick)
                 .catch((err: unknown) => {
                     console.warn('rangeSelectResidues failed:', err)
                 })
@@ -219,6 +228,7 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
                     objId: row.molUid,
                     kind,
                 })
+                .then(recordAppliedSel)
                 .catch((err: unknown) => {
                     console.warn(`selectObjectMol(${kind}) failed:`, err)
                 })

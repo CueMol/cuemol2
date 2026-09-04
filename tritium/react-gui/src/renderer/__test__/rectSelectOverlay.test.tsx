@@ -106,6 +106,8 @@ function fireWheel(
 
 beforeEach(() => {
     invokeService.mockReset()
+    // The real bridge always returns a promise; the overlay chains on it.
+    invokeService.mockResolvedValue(undefined)
     onMouseEvent.mockReset()
     onWheelEvent.mockReset()
     onGestureEvent.mockReset()

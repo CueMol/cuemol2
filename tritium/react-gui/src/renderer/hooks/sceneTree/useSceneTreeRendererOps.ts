@@ -11,6 +11,7 @@ import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import type { ChangeRendSelKind, RendColoringId } from '@shared/types/sceneCtxMenu'
 import type { RendererOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 import { findTypedNode } from './sceneTreeNodeUtils'
+import { recordAppliedSel } from '@renderer/h3-kit/MolSelList'
 
 export interface SceneTreeRendererOps {
     /** Apply a static coloring submenu choice to a renderer. */
@@ -138,6 +139,7 @@ export function useSceneTreeRendererOps(
                 rendId: found.numId,
                 selKind,
             })
+            recordAppliedSel(res)
             return res?.ok === true
         },
         [cm, sceneIdRef, tree],
