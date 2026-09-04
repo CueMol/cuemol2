@@ -148,3 +148,31 @@ TEST(MapHistogram, LevelAtTopFraction)
     EXPECT_NEAR(pMap->getLevelAtTopFraction(0.0), pMap->getMaxDensity(), 1e-9);
     EXPECT_NEAR(pMap->getLevelAtTopFraction(1.0), pMap->getMinDensity(), 1e-9);
 }
+
+// getTopFractionAtLevel() is the inverse at bin resolution: a level produced
+// by getLevelAtTopFraction() maps back to a fraction that reproduces the
+// same level, and out-of-range levels clamp to 0 / 1.
+TEST(MapHistogram, TopFractionAtLevel)
+{
+    qsys::ObjectPtr pObj(makeMap(10, 0.5f));
+    DensityMap *pMap = static_cast<DensityMap *>(pObj.get());
+
+    const double lv = pMap->getLevelAtTopFraction(0.01);
+    const double frac = pMap->getTopFractionAtLevel(lv);
+    EXPECT_GE(frac, 0.01);
+    EXPECT_NEAR(pMap->getLevelAtTopFraction(frac), lv, 1e-9);
+
+    // the fraction is the direct count of samples at or above the level
+    size_t nabove = 0, ntotal = 0;
+    for (int k = 0; k < 10; ++k)
+        for (int j = 0; j < 10; ++j)
+            for (int i = 0; i < 10; ++i) {
+                ++ntotal;
+                if (pMap->atFloat(i, j, k) >= lv - 1e-9)
+                    ++nabove;
+            }
+    EXPECT_NEAR(frac, double(nabove) / double(ntotal), 1e-12);
+
+    EXPECT_NEAR(pMap->getTopFractionAtLevel(pMap->getMaxDensity() + 1.0), 0.0, 1e-12);
+    EXPECT_NEAR(pMap->getTopFractionAtLevel(pMap->getMinDensity() - 1.0), 1.0, 1e-12);
+}

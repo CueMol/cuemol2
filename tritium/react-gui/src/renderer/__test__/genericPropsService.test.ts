@@ -85,6 +85,26 @@ describe('setGenericProp', () => {
     expect(setProp).not.toHaveBeenCalled()
   })
 
+  it('re-derives the map renderers\' mode style in the same txn as a map_type write', () => {
+    // A DensityMap's kind picks its renderers' default style (Default* vs
+    // CryoEM*); the swap must ride the map_type txn so one undo reverts both.
+    const applyStyles = vi.fn()
+    const rend = { type_name: 'contour', style: 'DefaultContour,EgLineThin', applyStyles }
+    const map = {
+      setProp, resetProp, getPropsJSON: () => '[]',
+      map_type_resolved: 'em',
+      getRendCount: () => 1,
+      getRendererByIndex: () => rend,
+    }
+    ;(resolvePropTarget as Mock).mockReturnValue({ scene, target: map })
+    const res = call({ nodeType: 'object', propName: 'map_type', valueType: 'enum', value: 'em' })
+    expect(res.ok).toBe(true)
+    expect(setProp).toHaveBeenCalledWith('map_type', 'em')
+    expect(applyStyles).toHaveBeenCalledWith('CryoEMContour,EgLineThin')
+    expect(withUndoTxnSpy).toHaveBeenCalledTimes(1)
+    expect(applyStyles.mock.invocationCallOrder[0]).toBeGreaterThan(setProp.mock.invocationCallOrder[0])
+  })
+
   it('routes a scene name write through Scene.setName(), not setProp', () => {
     // Scene.name is a readonly C++ property; renaming goes via setName() so the
     // propChanged("name") event fires (tree + tab strip stay in sync).

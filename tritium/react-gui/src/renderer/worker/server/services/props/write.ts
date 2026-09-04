@@ -5,8 +5,9 @@
  * Most properties go straight through. The exceptions are the ones whose
  * meaning reaches past the object holding them: `group` has to name a group
  * that exists (a typo used to strand the renderer outside the scene tree),
- * `visible` on a group can be asked to cascade to its members, and a
- * selection has to compile against the molecule it belongs to.
+ * `visible` on a group can be asked to cascade to its members, a
+ * selection has to compile against the molecule it belongs to, and a map's
+ * `map_type` decides which default style its renderers carry.
  */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
@@ -17,6 +18,8 @@ import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 import { checkGroupAssignment } from '@renderer/worker/server/services/helpers/rendGroup';
+import { syncMapRendererStyles } from '@renderer/worker/server/services/helpers/mapRendererStyles';
+import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import { collectProps } from './read';
 import { isSceneNameWrite } from './selContext';
 import type {
@@ -175,6 +178,12 @@ export function setGenericProp(
                         try { c.visible = args.value as boolean; } catch { /* ignore */ }
                     }
                 }
+            }
+            // A map's kind picks the default style of its renderers (see
+            // helpers/mapRendererStyles.ts); re-derive it in the same txn so
+            // one undo reverts the kind and the styles together.
+            if (args.nodeType === 'object' && args.propName === 'map_type') {
+                syncMapRendererStyles(target as unknown as CueObject);
             }
         });
     } catch (e) {

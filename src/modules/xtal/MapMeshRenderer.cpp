@@ -165,7 +165,6 @@ unsigned char MapMeshRenderer::getContSec(unsigned int s0,
 bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
 {
   Vector4D cent = getCenter();
-  const double siglevel = getSigLevel();
   const double extent = getExtent();
 
   if (pMap==NULL)
@@ -175,7 +174,7 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
   setupMolBndry();
 
   // calculate the contour level
-  const double level = pMap->getRmsdDensity() * siglevel;
+  const double level = resolveLevel(pMap);
   double lvtmp = floor( (level-pMap->getLevelBase()) / pMap->getLevelStep() * SCALE );
   unsigned int lv = (unsigned int)lvtmp;
   if (lvtmp<0) lv = 0;

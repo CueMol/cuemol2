@@ -499,8 +499,7 @@ void MapSurfRenderer::setupColorEnv()
   /////////////////////
   // setup workarea
 
-  const double siglevel = getSigLevel();
-  m_dLevel = pMap->getRmsdDensity() * siglevel;
+  m_dLevel = resolveLevel(pMap);
 
   m_nMapColNo = pMap->getColNo();
   m_nMapRowNo = pMap->getRowNo();

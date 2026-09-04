@@ -53,6 +53,10 @@ protected:
         ASSERT_NE(m_pMSR, nullptr);
         m_pMSR->setRegionMode(MapRenderer::REGION_BOX);
         m_pMSR->setExtent(5.0);
+        // On an EM map siglevel is the top percent of grid points. The seven
+        // values here are equally populated, so the default (top 1.1%) sits
+        // at the maximum and yields no surface; top 20% cuts at value 2.
+        m_pMSR->setSigLevel(20.0);
     }
 
     void TearDown() override

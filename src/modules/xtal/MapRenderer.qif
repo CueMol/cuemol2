@@ -40,7 +40,8 @@ runtime_class MapRenderer extends Renderer
   /// synonim of color for compatibility with other renderers
   property object<AbstractColor$> defaultcolor => redirect(getColor, setColor) (nopersist);
 
-  /// Contour leve (in sigma unit)
+  /// Contour level in the map's native unit: sigma for a crystallographic
+  /// map, top percent of grid points for a cryo-EM map (ChimeraX rule)
   property real siglevel => redirect(getSigLevel, setSigLevel);
   default siglevel = 1.1;
 
@@ -52,7 +53,8 @@ runtime_class MapRenderer extends Renderer
   property object<Vector> center => redirect(getCenter, setCenter);
   default center = qlib::Vector4D();
 
-  /// contour level in the absolute unit
+  /// Contour level in absolute density units: a view of siglevel resolved
+  /// through the map kind (writing it marks siglevel modified)
   property real level => redirect(getLevel, setLevel) (nopersist);
 
   /// Use PBC if possible
@@ -98,10 +100,10 @@ runtime_class MapRenderer extends Renderer
   property boolean zoom_refine => redirect(isZoomRefine, setZoomRefine);
   default zoom_refine = true;
 
-  /// Contour level mode
+  /// UI flag: show the level in absolute density units instead of the
+  /// native unit (sigma / top percent). No effect on rendering.
   property boolean use_abslevel => redirect(isUseAbsLev, setUseAbsLev);
   default use_abslevel = false;
-  //default use_abslevel = true;
 
   ///////////////
   // mol boundary
