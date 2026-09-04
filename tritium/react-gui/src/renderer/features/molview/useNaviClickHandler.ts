@@ -6,6 +6,7 @@ import { useActiveToolContext } from '@renderer/contexts/ActiveToolContext';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { decodeClick, INDEV_LBTN, INDEV_RBTN, INDEV_SHIFT } from '@renderer/worker/shared/inDevModif';
 import type { HitTestResult } from '@renderer/types';
+import { recordIncrementalSel } from '@renderer/h3-kit/MolSelList';
 
 export interface UseNaviClickHandlerArgs {
     setStatusMessage: (msg: string | null) => void;
@@ -83,6 +84,9 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
                 prevObjIdRef.current = result.objId;
                 prevAtomIdRef.current = result.atomId;
             }
+            // A double-click applies the whole mol.sel; a run of them keeps
+            // one history entry (see recordIncrementalSel).
+            if (result?.selStr !== undefined) recordIncrementalSel(result.selStr);
         },
     });
 }

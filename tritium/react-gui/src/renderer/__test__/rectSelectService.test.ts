@@ -92,7 +92,7 @@ describe('rectSelect — UXP rectSel parity', () => {
         expect(makeSel).toHaveBeenCalledWith(ctx, 'C', 99)
         expect(m1.setSel).toHaveBeenCalledWith({ __sel: 'A|B' })
         expect(m2.setSel).toHaveBeenCalledWith({ __sel: 'C' })
-        expect(result).toEqual({ ok: true, selectedObjIds: [1, 2] })
+        expect(result).toEqual({ ok: true, selectedObjIds: [1, 2], selStrs: ['A|B', 'C'] })
     })
 
     it('auto-creates the *selection renderer only when missing', () => {
@@ -115,7 +115,7 @@ describe('rectSelect — UXP rectSel parity', () => {
         const { ctx } = makeCtx('[]', { 1: m1.mol })
         const result = rectSelect(ctx, ARGS)
         expect(m1.setSel).not.toHaveBeenCalled()
-        expect(result).toEqual({ ok: false, selectedObjIds: [] })
+        expect(result).toEqual({ ok: false, selectedObjIds: [], selStrs: [] })
     })
 
     it('returns ok=false on unparsable hit JSON', () => {
@@ -123,7 +123,7 @@ describe('rectSelect — UXP rectSel parity', () => {
         const { ctx } = makeCtx('not-json', { 1: m1.mol })
         const result = rectSelect(ctx, ARGS)
         expect(m1.setSel).not.toHaveBeenCalled()
-        expect(result).toEqual({ ok: false, selectedObjIds: [] })
+        expect(result).toEqual({ ok: false, selectedObjIds: [], selStrs: [] })
     })
 
     it('mode=add ORs the rectangle hits with the existing selection', () => {

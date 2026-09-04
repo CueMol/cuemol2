@@ -36,6 +36,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useActiveToolContext } from '@renderer/contexts/ActiveToolContext'
 import { useActiveScene } from '@renderer/state/workspace'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
+import { recordAppliedSel } from '@renderer/h3-kit/MolSelList'
 import { GES_PINCH } from '@renderer/worker/shared/gestureAxes'
 import type { ToolId } from '@renderer/data/viewportTools'
 
@@ -225,14 +226,18 @@ export const RectSelectOverlay: React.FC = () => {
                 const { x, y } = localCoords(e)
                 const r = normalizeRect(L.x0, L.y0, x, y)
                 if (r.width > 0 && r.height > 0) {
-                    void cm.invokeService('rectSelect', { viewId: activeViewID, ...r, mode })
+                    cm.invokeService('rectSelect', { viewId: activeViewID, ...r, mode })
+                        .then(recordAppliedSel)
+                        .catch((err: unknown) => console.warn('rectSelect failed:', err))
                 }
             } else if (L.points.length >= 3) {
-                void cm.invokeService('lassoSelect', {
+                cm.invokeService('lassoSelect', {
                     viewId: activeViewID,
                     points: L.points,
                     mode,
                 })
+                    .then(recordAppliedSel)
+                    .catch((err: unknown) => console.warn('lassoSelect failed:', err))
             }
             return
         }

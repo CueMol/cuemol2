@@ -14,6 +14,7 @@ import type {
 import type { SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { IPC } from '@shared/ipcChannels'
 import { findNode, findParentNode, findTypedNode } from './sceneTreeNodeUtils'
+import { recordAppliedSel } from '@renderer/h3-kit/MolSelList'
 
 /** What a copy service returns for the caller to put on the clipboard. */
 interface SceneClipPayload {
@@ -249,6 +250,7 @@ export function useSceneTreeNodeOps(
                 objId: found.numId,
                 kind,
             })
+            recordAppliedSel(res)
             return res?.ok === true
         },
         [cm, sceneIdRef, tree],

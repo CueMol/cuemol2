@@ -125,6 +125,8 @@ export interface NaviResidSelResult {
     handled: boolean;
     objId?: number;
     atomId?: number;
+    /** The whole `mol.sel` after the toggle / extend (for the selection history). */
+    selStr?: string;
 }
 
 export function naviResidSel(ctx: WorkerContext, args: NaviResidSelArgs): NaviResidSelResult {
@@ -144,6 +146,7 @@ export function naviResidSel(ctx: WorkerContext, args: NaviResidSelArgs): NaviRe
     const chain = quoteSelName(chainName);
     if (!chain) return { handled: false };
 
+    let selStr: string | undefined;
     withUndoTxn(scene, 'Toggle select atom(s)', () => {
         const rrs = ctx.svc.createObj('ResidRangeSet') as ResidRangeSet;
         rrs.fromSel(mol, mol.sel);
@@ -173,10 +176,12 @@ export function naviResidSel(ctx: WorkerContext, args: NaviResidSelArgs): NaviRe
             }
         }
 
-        mol.sel = rrs.toSel(mol);
+        const sel = rrs.toSel(mol);
+        mol.sel = sel;
+        selStr = String(sel.toString());
     });
 
-    return { handled: true, objId: raw.obj_id, atomId: raw.atom_id };
+    return { handled: true, objId: raw.obj_id, atomId: raw.atom_id, selStr };
 }
 
 // ---- registration ----
