@@ -25,6 +25,8 @@ export interface SelectObjectMolArgs {
 
 export interface SelectObjectMolResult {
     ok: boolean;
+    /** The expression applied to `mol.sel` (for the selection history). */
+    selStr?: string;
 }
 
 
@@ -119,5 +121,5 @@ export function selectObjectMol(
     withUndoTxn(scene, resolved.label, () => {
         applyMolSelStr(ctx, mol, resolved.selStr, scene.uid);
     });
-    return { ok: true };
+    return { ok: true, selStr: resolved.selStr };
 }

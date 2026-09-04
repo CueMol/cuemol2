@@ -37,13 +37,13 @@ export type RectSelectResult = SelectionResult;
  */
 export function rectSelect(ctx: WorkerContext, args: RectSelectArgs): RectSelectResult {
     const vs = getViewSceneOrNull(ctx, args.viewId);
-    if (!vs) return { ok: false, selectedObjIds: [] };
+    if (!vs) return { ok: false, selectedObjIds: [], selStrs: [] };
     const { view, scene } = vs;
 
     const hits = parseSelectionHits(
         view.hitTestRect(args.left, args.top, args.width, args.height, false),
     );
-    if (hits.length === 0) return { ok: false, selectedObjIds: [] };
+    if (hits.length === 0) return { ok: false, selectedObjIds: [], selStrs: [] };
 
     return applySelectionHits(ctx, scene, hits, args.mode);
 }

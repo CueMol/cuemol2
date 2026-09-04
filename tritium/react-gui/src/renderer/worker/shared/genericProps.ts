@@ -30,6 +30,18 @@ export type PropTargetType = SceneNodeType | 'view'
  */
 export const NON_RESETTABLE_KEYS: ReadonlySet<string> = new Set(['name', 'sel'])
 
+/**
+ * True when a property's C++ type tag is a selection (`object<MolSelection>`,
+ * with or without the `$` smart-pointer suffix). Such a write carries a
+ * selection string that the worker compiles to a SelCommand, and that the
+ * inspector records in the selection history.
+ *
+ * @param valueType - the `type` field of a GenericPropEntry
+ */
+export function isMolSelectionType(valueType: string): boolean {
+  return valueType.startsWith('object<MolSelection>')
+}
+
 /** A single property row consumed by the generic property inspector. */
 export interface GenericPropEntry {
     /** Property name; dot-path (`section.width`) for a nested object's child. */

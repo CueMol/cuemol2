@@ -62,6 +62,7 @@ describe('selectObjectMol service', () => {
             sceneId: 1, objId: 10, kind,
         })
         expect(res.ok).toBe(true)
+        expect(res.selStr).toBe(expectedSel)
         expect(startUndoTxn).toHaveBeenCalledWith(expectedLabel)
         expect(setSel).toHaveBeenCalledWith({ __sel: expectedSel })
     })

@@ -84,11 +84,12 @@ describe('setRendererSelection — "current" branch', () => {
 
     it("'current' assigns mol.sel directly (no makeSel call)", () => {
         const { ctx, setRendSel } = makeFixture({
-            molCurrentSel: { __sel: '__mol_current__' },
+            molCurrentSel: { __sel: '__mol_current__', toString: () => "c;'A'" },
         })
         const res = services.setRendererSelection(ctx, baseArgs('current'))
-        expect(res).toEqual({ ok: true })
-        expect(setRendSel).toHaveBeenCalledWith({ __sel: '__mol_current__' })
+        // selStr is the mol selection's string form, for the selection history.
+        expect(res).toEqual({ ok: true, selStr: "c;'A'" })
+        expect(setRendSel).toHaveBeenCalledWith(expect.objectContaining({ __sel: '__mol_current__' }))
         expect(makeSel).not.toHaveBeenCalled()
     })
 
@@ -116,7 +117,7 @@ describe('setRendererSelection — canned predicates', () => {
         it(`'${kind}' compiles via makeSel with "${expected}"`, () => {
             const { ctx, setRendSel } = makeFixture()
             const res = services.setRendererSelection(ctx, baseArgs(kind))
-            expect(res).toEqual({ ok: true })
+            expect(res).toEqual({ ok: true, selStr: expected })
             expect(makeSel).toHaveBeenCalledWith(ctx, expected, 7)
             expect(setRendSel).toHaveBeenCalledWith({ __sel: expected })
         })

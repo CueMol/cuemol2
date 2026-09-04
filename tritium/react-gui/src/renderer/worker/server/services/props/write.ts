@@ -13,7 +13,7 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { resolvePropTarget } from './target';
-import { NON_RESETTABLE_KEYS } from '@renderer/worker/shared/genericProps';
+import { NON_RESETTABLE_KEYS, isMolSelectionType } from '@renderer/worker/shared/genericProps';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
@@ -164,7 +164,7 @@ export function setGenericProp(
                 for (const c of grpRename.children) {
                     try { c.group = grpRename.newName; } catch { /* ignore */ }
                 }
-            } else if (args.valueType.startsWith('object<MolSelection>')) {
+            } else if (isMolSelectionType(args.valueType)) {
                 // Selection properties need a compiled SelCommand, not a raw
                 // string (UXP `commitPropChange` MolSelection branch). An empty
                 // string compiles to "select all".
@@ -284,7 +284,7 @@ export function setGenericProps(
                 } else if (isSceneNameWrite(args.nodeType, w.propName)) {
                     // Scene.name has no property setter; rename via setName().
                     scene.setName(String(w.value ?? ''));
-                } else if (w.valueType.startsWith('object<MolSelection>')) {
+                } else if (isMolSelectionType(w.valueType)) {
                     const sel = makeSel(ctx, String(w.value ?? ''), scene.uid);
                     if (!sel) throw new Error(`bad selection: ${String(w.value)}`);
                     target.setProp(w.propName, sel.wrapped);

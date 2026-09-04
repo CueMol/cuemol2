@@ -29,6 +29,8 @@ export interface SelectionResult {
     ok: boolean;
     /** Object ids whose selection was updated. */
     selectedObjIds: number[];
+    /** The expression applied to each of `selectedObjIds`, in the same order. */
+    selStrs: string[];
 }
 
 /**
@@ -80,15 +82,16 @@ export function applySelectionHits(
         list.push(hit.sel);
         selByObj.set(hit.obj_id, list);
     }
-    if (selByObj.size === 0) return { ok: false, selectedObjIds: [] };
+    if (selByObj.size === 0) return { ok: false, selectedObjIds: [], selStrs: [] };
 
     const addMode = mode === 'add';
     const selectedObjIds: number[] = [];
+    const selStrs: string[] = [];
     withUndoTxn(scene, addMode ? 'Add select atom(s)' : 'Select atom(s)', () => {
-        for (const [objId, selStrs] of selByObj) {
+        for (const [objId, hitSels] of selByObj) {
             const mol = scene.getObject(objId) as MolCoord | null;
             if (!mol) continue;
-            const newSelStr = selStrs.join('|');
+            const newSelStr = hitSels.join('|');
             let selStr = newSelStr;
             if (addMode) {
                 // OR the new hits with the molecule's current selection.
@@ -97,9 +100,10 @@ export function applySelectionHits(
             }
             if (assignMolSel(ctx, mol, selStr, scene.uid)) {
                 selectedObjIds.push(objId);
+                selStrs.push(selStr);
             }
         }
     });
 
-    return { ok: selectedObjIds.length > 0, selectedObjIds };
+    return { ok: selectedObjIds.length > 0, selectedObjIds, selStrs };
 }
