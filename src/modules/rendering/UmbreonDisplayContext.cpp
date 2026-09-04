@@ -724,7 +724,15 @@ void UmbreonDisplayContext::appendIntData()
     const int cmatIdx = materialIndexFor(cmat);
     c.material = m_pImpl->matTable[cmatIdx];
     c.group = group;
-    c.open = !p->bcap;
+    // Closed (flat-capped), as the POV exporter writes every stick bond
+    // (PovDisplayContext::writeCyls never emits `open`): RendIntData::Cyl::
+    // bcap only decides whether the MESH conversion adds cap discs. An `open`
+    // umbreon cylinder is a round-capped capsule, and a bond capsule's
+    // hemispherical end cap coincides exactly with the atom sphere it starts
+    // from -- two surfaces z-fighting across the whole atom, which the edge
+    // pass classified as a field of one-pixel depth steps at high zoom
+    // (blobs of ink inside the atom). A flat cap lies inside the sphere.
+    c.open = false;
     scene.cylinders.push_back(c);
   }
 #endif  // HAVE_UMBREON
