@@ -46,6 +46,7 @@ export function setupDensityMapRenderers(
     mapType: DensityMapType,
 ): void {
     const specs = mapType === '2fofc' ? SPEC_2FOFC : SPEC_FOFC;
+    // EDS maps are crystallographic: the xtal default style, sigma levels.
     const styleName = getDefaultStyleName('contour');
     for (const spec of specs) {
         const rend = (obj as unknown as {
