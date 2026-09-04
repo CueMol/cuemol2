@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { services } from '@renderer/worker/server/services/navi/navi.service';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 
-const { naviHitTest, naviClickAtom, naviResidSel } = services;
+const { naviHitTest, naviClickAtom, naviResidSel, naviCtxSelect } = services;
 
 function makeHitResult(overrides: Record<string, any> = {}) {
     return JSON.stringify({
@@ -36,7 +36,7 @@ function makeCtx(hitStr: string | null = null): WorkerContext {
         contains: vi.fn(() => false),
         append: vi.fn(),
         remove: vi.fn(),
-        toSel: vi.fn(() => ({})),
+        toSel: vi.fn(() => ({ toString: () => "'A'.10.*" })),
     };
     const mockSel = { compile: vi.fn(() => true) };
     const mockRenderer = {
@@ -48,8 +48,9 @@ function makeCtx(hitStr: string | null = null): WorkerContext {
         getAtomByID: vi.fn(() => mockAtom),
         getResidue: vi.fn(() => mockResidue),
         getRendererByNameType: vi.fn(() => null),
+        getRendererByType: vi.fn(() => null),
         createRenderer: vi.fn(() => mockRenderer),
-        sel: {},
+        sel: { toString: () => '' },
     };
     const mockScene = {
         getObject: vi.fn(() => mockMol),
@@ -161,12 +162,14 @@ describe('naviResidSel', () => {
         expect(r.handled).toBe(false);
     });
 
-    it('returns { handled: true, objId, atomId } on toggle for MolCoord', () => {
+    it('returns { handled: true, objId, atomId, selStr } on toggle for MolCoord', () => {
         const ctx = makeCtx(makeHitResult());
         const r = naviResidSel(ctx, { viewId: 1, x: 0, y: 0, mode: 'toggle' });
         expect(r.handled).toBe(true);
         expect(r.objId).toBe(1);
         expect(r.atomId).toBe(42);
+        // The whole mol.sel after the toggle, for the selection history.
+        expect(r.selStr).toBe("'A'.10.*");
     });
 
     it('calls withUndoTxn with correct label', () => {
@@ -197,5 +200,13 @@ describe('naviResidSel', () => {
         // extend should bail out because prevObjId !== obj_id
         // withUndoTxn is still called but the inner code returns early
         expect(r.handled).toBe(true); // handled returns true even if extend no-ops
+    });
+});
+
+describe('naviCtxSelect', () => {
+    it('applies the residue expression and returns it as selStr', () => {
+        const ctx = makeCtx(makeHitResult());
+        const r = naviCtxSelect(ctx, { viewId: 1, objId: 1, atomId: 42, mode: 'residue' });
+        expect(r).toEqual({ ok: true, selStr: "'A'.10.*" });
     });
 });

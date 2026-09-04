@@ -31,6 +31,7 @@ import {
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import type { PresetTypeEntry, RendererOptions } from './types';
 import { getDefaultRendType, setDefaultRendType } from './rendTypeHistory';
+import { pushHistory } from '@renderer/h3-kit/MolSelList';
 import { presetNamePrefix } from './presetUtils';
 
 export interface UseRendererOptionsArgs {
@@ -183,7 +184,16 @@ export function useRendererOptions(
         // removed later) simply fails the membership check on the next open
         // and falls back to the first plain type.
         setDefaultRendType(objClassName, options.presetName ?? options.rendererType);
-    }, [objClassName, options.presetName, options.rendererType]);
+        // The selection the new renderer targets is a used selection; both
+        // hosts (file open and New Renderer) record it through this one path.
+        if (options.selectionEnabled && options.selection) pushHistory(options.selection);
+    }, [
+        objClassName,
+        options.presetName,
+        options.rendererType,
+        options.selectionEnabled,
+        options.selection,
+    ]);
 
     return { options, setOptions, onRendererNameUserEdit, commitHistory };
 }

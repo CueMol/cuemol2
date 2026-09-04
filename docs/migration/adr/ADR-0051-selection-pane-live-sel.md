@@ -78,3 +78,5 @@ builder (commit `3790dc5d`, refined by `edbd0313` / `73bca235` / `f6573640`):
   the mapping row still described the 2026-05-24 Command-tab-only port while
   the 2026-08-07 redesign was already merged (docs drift, not a new
   decision).
+- Which surfaces record selection history app-wide (and why the builder ops
+  still do not) is [ADR-0058](ADR-0058-selection-history-coverage.md).
