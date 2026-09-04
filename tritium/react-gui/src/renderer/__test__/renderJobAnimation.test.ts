@@ -568,6 +568,7 @@ describe('renderStart animation branch', () => {
                 beginInProcessAnimFrame: vi.fn(
                     (
                         _ctx: unknown,
+                        _scene: unknown,
                         _mgr: unknown,
                         _snap: unknown,
                         outputPath: string,

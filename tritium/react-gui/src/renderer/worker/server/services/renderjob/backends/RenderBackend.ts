@@ -110,10 +110,12 @@ export interface RenderBackend {
    * which is what keeps the frame's state applied to the scene for the whole
    * (asynchronous) render. The pipeline then sees the same poll -> finish
    * cycle as a still in-process render and moves the finished frame into the
-   * output folder. See UmbreonBackend.
+   * output folder. `scene` is the animation's scene, the source of the render
+   * settings (the frame itself comes from `animMgr`). See UmbreonBackend.
    */
   beginInProcessAnimFrame?(
     ctx: WorkerContext,
+    scene: Scene,
     animMgr: AnimMgr,
     snapshot: RenderSettingsSnapshot,
     outputPath: string,

@@ -10,17 +10,18 @@
 
 namespace cuetty {
 
-/// Options for a headless scene render. Everything not listed here is left
-/// at the UmbreonSceneExporter constructor defaults (supersample 3, clip-Z
-/// and edge lines on, AO / shadows / GI off); the projection comes from the
-/// scene's camera.
+/// Options for a headless scene render. Everything not listed here comes from
+/// the render settings stored in the scene file (Scene app data "render",
+/// what the tritium Rendering window keeps per scene), or from the class
+/// defaults of RenderSettings when the scene holds none; see
+/// renderSceneToPng.
 struct RenderOpts
 {
-    /// image width in pixels; matches the exporter's own fallback
-    int width = 640;
+    /// image width in pixels; 0 = the scene's render settings
+    int width = 0;
 
-    /// image height in pixels; matches the exporter's own fallback
-    int height = 480;
+    /// image height in pixels; 0 = the scene's render settings
+    int height = 0;
 
     /// camera name to render from. The GUI saves the current view under this
     /// name when writing a .qsc, so a GUI-authored scene always has it.
@@ -28,6 +29,15 @@ struct RenderOpts
 };
 
 /// Load a CueMol scene file and render it into a PNG image with umbreon.
+///
+/// The exporter is configured from the scene's render settings through
+/// UmbreonSceneExporter::applyRenderSettings (the one mapping shared with the
+/// GUI and the Python module): the stored settings when the scene has them,
+/// else the RenderSettings class defaults, with the projection then taken
+/// from the scene's camera as the GUI does for such a scene. The backend
+/// block is the scene's choice (umbreon_npr renders with hatching; anything
+/// else, including POV-Ray, renders with plain umbreon). `opts` overrides
+/// the image size and names the camera.
 ///
 /// Needs neither a qsys::View nor an OpenGL context: the exporter walks the
 /// scene through a file DisplayContext. Text labels are not drawn (the file

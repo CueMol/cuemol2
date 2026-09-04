@@ -2,9 +2,10 @@
 
 These pin the observable contract of cuemol.umbreon_render, not image
 quality: that a scene file renders to a PNG of the requested size without a
-View or a GL context, that the projection comes from the scene's camera
-rather than the exporter default, and that an unknown camera fails with a
-clear error instead of a null-pointer throw from the C++ side.
+View or a GL context, that the exporter is configured from the scene's
+stored render settings (or the class defaults plus the camera's projection
+when it has none), and that an unknown camera fails with a clear error
+instead of a null-pointer throw from the C++ side.
 
 Skipped when libcuemol2 was built with ENABLE_UMBREON=OFF (the default), in
 which case StreamManager has no "umbreon" writer registered.
@@ -59,36 +60,55 @@ def test_render_file_writes_png_of_requested_size(scene_path, tmp_path):
     assert _png_size(out) == (120, 80)
 
 
+def _load_scene(qsc_path):
+    result = cuemol.svc("CmdMgr").runCmdArgs("load_scene", {"file_path": str(qsc_path)})
+    return result["result_scene"]
+
+
 @umbreon_required
-def test_projection_follows_scene_camera(scene_path, tmp_path):
-    # The scene's camera is orthographic while UmbreonSceneExporter defaults
-    # to perspective, so "follows the camera" is observable: the rendered
-    # bytes must match an explicit orthographic render and differ from an
-    # explicit perspective one. Both renders are deterministic because AO and
-    # GI (the only stochastic parts) are off by default.
-    auto = tmp_path / "auto.png"
-    scene = umbreon_render.render_file(scene_path, auto, width=120, height=80)
+def test_scene_without_settings_uses_class_defaults_and_camera_projection(scene_path):
+    # The fixture stores no render settings, so the exporter starts from the
+    # RenderSettings class defaults (the Rendering window's starting point)
+    # and, as the window does for such a scene, takes the projection from the
+    # scene's camera: it is orthographic while the class default is
+    # perspective, so "follows the camera" is observable. Configuring only:
+    # nothing is rendered, and the scene is not given a settings holder.
+    scene = _load_scene(scene_path)
+    assert scene.getAppData("render") is None
     assert not scene.getCamera("__current").perspec, "scene camera must be ortho"
 
-    def render_with(perspective, out):
-        exporter = cuemol.strMgr().createHandler("umbreon", 2)
-        exporter.width, exporter.height = 120, 80
-        exporter.camera = "__current"
-        exporter.perspective = perspective
-        exporter.attach(scene)
-        try:
-            exporter.setPath(str(out))
-            exporter.write()
-        finally:
-            exporter.detach()
+    exporter = cuemol.strMgr().createHandler("umbreon", 2)
+    assert umbreon_render.apply_scene_settings(scene, exporter) == "umbreon"
 
-    ortho = tmp_path / "ortho.png"
-    persp = tmp_path / "persp.png"
-    render_with(False, ortho)
-    render_with(True, persp)
+    assert not exporter.perspective
+    assert exporter.useGI  # the umbreon block's default lighting
+    assert (exporter.width, exporter.height) == (1200, 1200)
+    assert scene.getAppData("render") is None
 
-    assert auto.read_bytes() == ortho.read_bytes()
-    assert auto.read_bytes() != persp.read_bytes()
+
+@umbreon_required
+def test_stored_scene_settings_drive_the_render(scene_path, tmp_path):
+    # Settings stored in the scene win over the camera and the defaults, and
+    # an explicit size wins over the stored one.
+    scene = _load_scene(scene_path)
+    settings = scene.getCreateAppData("render", "RenderSettings")
+    settings.width = 96
+    settings.height = 64
+    settings.projection = "perspective"
+    settings.umbreon.useGI = False
+
+    exporter = cuemol.strMgr().createHandler("umbreon", 2)
+    umbreon_render.apply_scene_settings(scene, exporter)
+    assert exporter.perspective
+    assert not exporter.useGI
+
+    out = tmp_path / "stored.png"
+    umbreon_render.render(scene, out)
+    assert _png_size(out) == (96, 64)
+
+    wide = tmp_path / "wide.png"
+    umbreon_render.render(scene, wide, width=50)
+    assert _png_size(wide) == (50, 64)
 
 
 @umbreon_required

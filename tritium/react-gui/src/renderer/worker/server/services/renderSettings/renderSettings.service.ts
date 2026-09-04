@@ -147,6 +147,23 @@ function existingRenderSettings(s: AppDataScene): BaseWrapper | null {
     return s.getAppData!(RENDER_APP_DATA_ID) ?? null;
 }
 
+/**
+ * The settings object a render of `scene` is configured from (the umbreon
+ * exporter's applyRenderSettings): the settings the scene stores, or a fresh
+ * RenderSettings at the class defaults -- what the Rendering window shows
+ * for a scene without settings of its own, and so what its editor holds when
+ * it had nothing to write before the render. Never creates the holder in the
+ * scene: a render is not an edit.
+ */
+export function renderSettingsForRender(ctx: WorkerContext, scene: Scene): BaseWrapper {
+    const s = appDataApi(scene);
+    const existing = s ? existingRenderSettings(s) : null;
+    if (existing) return existing;
+    const fresh = ctx.svc.createObj(RENDER_APP_DATA_CLASS) as BaseWrapper | null;
+    if (!fresh) throw new Error(`cannot create ${RENDER_APP_DATA_CLASS}`);
+    return fresh;
+}
+
 // A fresh RenderSettings, read once: what a scene without settings of its
 // own shows, so the editor always starts from the C++ defaults.
 let freshCache: { values: RenderSettingsValues; defaults: RenderSettingsValues } | null = null;

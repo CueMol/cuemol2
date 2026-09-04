@@ -5,6 +5,7 @@
 #define UMBREON_SCENE_EXPORTER_QIF_INCLUDED
 
 #include <qsys/SceneExporter.qif>
+#include "RenderSettings.qif"
 
 runtime_class UmbreonSceneExporter extends SceneExporter
 {
@@ -92,8 +93,9 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   //                               direct lights, as in POV without radiosity)
   // A negative value means auto: the GI-off defaults (1.3 / 0.6 / 0) or, with
   // GI on, the rebalanced defaults documented in
-  // docs/architecture/umbreon-gi-lighting-balance.md. The tritium render
-  // window always sends explicit values (UmbreonBackend.ts LIGHT_BALANCE).
+  // docs/architecture/umbreon-gi-lighting-balance.md. applyRenderSettings()
+  // always sets explicit values (the scene's, with the GI-off ambient
+  // fraction pinned), so auto only applies to scripts that set useGI alone.
 
   /// total light energy (<0 = auto)
   property real lightIntensity => m_dLightIntensity;
@@ -229,6 +231,24 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// template behind hatchLayersSpec / hatchToneSpec; "" for an unknown
   /// name or without umbreon
   string getHatchStyleSpec(string name);
+
+  ////////////////////
+  // Scene render settings (Scene app data "render", RenderSettings.qif)
+
+  /// Apply the render settings stored in a scene to this exporter: the
+  /// backend-independent settings (projection, clip plane, edge lines,
+  /// transparent background, image size in its unit at its DPI) and one
+  /// backend block. `backend` names the block: "umbreon" (GI lighting) or
+  /// "umbreon_npr" (hatching); "" resolves it from settings.backend, taking
+  /// "umbreon" for any other value (including "" and "povray"). Returns the
+  /// block id applied. Any other explicit backend is an error.
+  ///
+  /// This is the single mapping the tritium Rendering window, cuetty and the
+  /// Python module share: the AO knobs are written only while AO is enabled
+  /// (aoSamples is 0 otherwise), GI is off under hatching, and without GI the
+  /// ambient fraction is pinned to the direct-lighting value so a GI-side
+  /// setting never darkens a raytraced image. The camera is not touched.
+  string applyRenderSettings(object<RenderSettings$> settings, string backend);
 
   ////////////////////
   // Asynchronous render (non-blocking, with progress + cancel).

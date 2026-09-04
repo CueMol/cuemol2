@@ -136,6 +136,7 @@ gather core を共有しているため)。cuemol2 の `giSamples` / `giDenoise`
   client が計算することを要求している
 - **GI 時の照明エネルギー配分**: POV radiosity の配分をそのまま使うと白く平坦になる問題は
   [umbreon-gi-lighting-balance](umbreon-gi-lighting-balance.md) で解決済み
-  (配分は exporter property 化し、既定値は `UmbreonBackend.ts` が持つ)
+  (配分は exporter property 化し、値は scene の RenderSettings から C++ `applyRenderSettings` が写す。
+  既定値は qif の `default`)
 - **`DistantLight::angularRadius` のパリティ**: umbreon の POV reader は SpecLighting に
   `atan(spread/40)` を設定するが、cuemol2 の in-process 経路は 0 のまま。pt2 のみが読む per-light soft shadow
