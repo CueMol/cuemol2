@@ -9,6 +9,7 @@
 #include "render.hpp"
 
 #include <qsys/SceneExporter.hpp>
+#include <qlib/LScrSmartPtr.hpp>
 #include <qlib/mcutils.hpp>
 
 #include <memory>
@@ -19,6 +20,7 @@ namespace render {
 
   class UmbreonDisplayContext;
   struct UmbreonRenderParams;
+  class RenderSettings;
 
   /// Scene exporter that renders the scene with umbreon (the Embree ray
   /// tracer) and writes the result as a PNG image. Parallel to
@@ -195,6 +197,14 @@ namespace render {
     /// Resolve a hatch style name and return it as umbreon spec text (the
     /// layer editor's template); "" for an unknown name or without umbreon.
     LString getHatchStyleSpec(const LString &name) const;
+
+    /// Apply the scene render settings (Scene app data "render") to this
+    /// exporter. `backend` is "umbreon", "umbreon_npr" or "" (resolve from
+    /// settings.backend, "umbreon" unless it says "umbreon_npr"); returns
+    /// the block id applied. See the .qif for the mapping rules. Throws
+    /// IllegalArgumentException for any other backend id.
+    LString applyRenderSettings(qlib::LScrSp<RenderSettings> pSettings,
+                                const LString &backend);
 
     /////////////////////////////////
     // Asynchronous render: drive with beginRender() -> poll -> endRender().

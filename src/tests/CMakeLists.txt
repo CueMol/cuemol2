@@ -325,6 +325,7 @@ gtest_discover_tests(test_molanl PROPERTIES LABELS "test_molanl")
 add_executable(test_render
   modules/rendering/test_main.cpp
   modules/rendering/test_render_settings.cpp
+  modules/rendering/test_umbreon_apply_settings.cpp
 )
 target_include_directories(test_render PRIVATE
   ${CMAKE_SOURCE_DIR}/src

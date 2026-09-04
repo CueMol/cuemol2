@@ -7,6 +7,10 @@
 
 #include "UmbreonSceneExporter.hpp"
 #include "UmbreonDisplayContext.hpp"
+#include "RenderSettings.hpp"
+
+#include <algorithm>
+#include <cmath>
 
 #include <qlib/LStream.hpp>
 #include <qsys/qsys.hpp>
@@ -267,6 +271,230 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
 LString UmbreonSceneExporter::getHatchStyleSpec(const LString &name) const
 {
   return UmbreonDisplayContext::hatchStyleSpec(name);
+}
+
+/////////////////////////////////
+// Scene render settings -> exporter properties
+
+namespace {
+
+  /// Typed reads of a settings object's properties. The RenderSettings
+  /// classes declare a default for every property, so a read fails only for
+  /// a property the class does not have; the fallback (the exporter's own
+  /// value) then stands.
+  struct SettingsReader
+  {
+    const qlib::LPropSupport *p;
+
+    bool b(const char *name, bool fallback) const
+    {
+      bool v = fallback;
+      return p->getPropBool(name, v) ? v : fallback;
+    }
+    int i(const char *name, int fallback) const
+    {
+      int v = fallback;
+      return p->getPropInt(name, v) ? v : fallback;
+    }
+    double r(const char *name, double fallback) const
+    {
+      double v = fallback;
+      return p->getPropReal(name, v) ? v : fallback;
+    }
+    LString s(const char *name, const LString &fallback) const
+    {
+      LString v;
+      return p->getPropStr(name, v) ? v : fallback;
+    }
+  };
+
+  /// Image size in `unit` at `dpi` -> pixels (1in = 25.4mm = 2.54cm; px
+  /// passes through). Same conversion as the tritium size fields
+  /// (sizeUnitToPx) so the stored value means the same pixels everywhere.
+  double sizeUnitToPx(double value, double dpi, const LString &unit)
+  {
+    if (unit.equals("in")) return value * dpi;
+    if (unit.equals("mm")) return (value / 25.4) * dpi;
+    if (unit.equals("cm")) return (value / 2.54) * dpi;
+    return value;
+  }
+
+  int toPixels(double value, double dpi, const LString &unit)
+  {
+    const double px = sizeUnitToPx(value, dpi, unit);
+    if (!std::isfinite(px)) return 1;
+    return std::max(1, int(std::lround(px)));
+  }
+
+  /// Ambient fraction used while GI is off: the direct-lighting balance
+  /// (1.55 / 0.6 / 0.16, the GI lighting ladder's step 0). Without GI the
+  /// fraction only dims the direct lights, so the value chosen for GI must
+  /// not leak into a raytraced image; pinned here, the direct lights equal
+  /// the GI-off auto lights (1.3 * 0.4 / 1.3 * 0.6). Derivation:
+  /// docs/architecture/umbreon-gi-lighting-balance.md
+  const double DIRECT_AMBIENT_FRACTION = 0.16;
+
+  /// GI denoise method (the settings' "denoise" string) -> the two exporter
+  /// knobs: OIDN denoises the indirect buffer (giDenoise), A-trous runs the
+  /// full-frame post pass (denoiser 1), None turns both off. Unknown = OIDN.
+  void denoiseMode(const LString &name, bool &giDenoise, int &denoiser)
+  {
+    if (name.equals("A-trous")) {
+      giDenoise = false;
+      denoiser = 1;
+    } else if (name.equals("None")) {
+      giDenoise = false;
+      denoiser = 0;
+    } else {
+      giDenoise = true;
+      denoiser = 0;
+    }
+  }
+
+  /// NPR coloring pattern (the settings' "hatchColoring" string) -> the
+  /// exporter's hatchBase / hatchInk model overrides; empty strings keep the
+  /// style's own model. Unknown = "Style default".
+  void hatchColoring(const LString &name, LString &base, LString &ink)
+  {
+    if (name.equals("Ink on paper")) {
+      base = "paper";
+      ink = "fixed";
+    } else if (name.equals("Colored ink on paper")) {
+      base = "paper";
+      ink = "albedo";
+    } else if (name.equals("Ink on color fill")) {
+      base = "albedo";
+      ink = "fixed";
+    } else if (name.equals("Colored ink on color fill")) {
+      base = "albedo";
+      ink = "albedo";
+    } else {
+      base = "";
+      ink = "";
+    }
+  }
+
+}  // anonymous namespace
+
+LString UmbreonSceneExporter::applyRenderSettings(
+    qlib::LScrSp<RenderSettings> pSettings, const LString &backend)
+{
+  if (pSettings.isnull()) {
+    MB_THROW(qlib::NullPointerException,
+             "applyRenderSettings: render settings object is null");
+  }
+  const SettingsReader rs{pSettings.get()};
+
+  LString id = backend;
+  if (id.isEmpty()) {
+    // Resolve from the settings: only the NPR choice changes the block, any
+    // other value (unchosen "", "povray") renders with the plain umbreon block.
+    id = rs.s("backend", "").equals("umbreon_npr") ? "umbreon_npr" : "umbreon";
+  } else if (!id.equals("umbreon") && !id.equals("umbreon_npr")) {
+    MB_THROW(qlib::IllegalArgumentException,
+             LString::format("applyRenderSettings: unknown backend '%s'",
+                             backend.c_str()));
+  }
+  const bool npr = id.equals("umbreon_npr");
+
+  // The block objects are owned by the settings object, which outlives this
+  // call (the caller holds the smart pointer).
+  const UmbreonRenderSettings *pBlock =
+      npr ? static_cast<const UmbreonRenderSettings *>(pSettings->getUmbreonNpr().get())
+          : pSettings->getUmbreon().get();
+  qlib::ensureNotNull(pBlock);
+  const SettingsReader ub{pBlock};
+
+  //////////
+  // Backend-independent settings
+
+  m_bPerspective = rs.s("projection", "perspective").equals("perspective");
+  m_bUseClipZ = rs.b("clipPlane", m_bUseClipZ);
+  m_bEnableEdgeLines = rs.b("edgeLines", m_bEnableEdgeLines);
+  m_bTransparentBackground = rs.b("transparentBg", m_bTransparentBackground);
+  {
+    const LString unit = rs.s("unit", "px");
+    const double dpi = rs.r("dpi", 600.0);
+    setWidth(toPixels(rs.r("width", 640.0), dpi, unit));
+    setHeight(toPixels(rs.r("height", 480.0), dpi, unit));
+  }
+
+  //////////
+  // umbreon block (shared by both backends)
+
+  // Supersampling only: adaptive AA is unsupported alongside GI and not offered.
+  m_nSupersample = ub.i("supersample", m_nSupersample);
+
+  // AO on/off is a dedicated switch; off maps to aoSamples 0 (umbreon gates
+  // every AO computation on aoSamples > 0). The AO recipe is written only
+  // while AO is on: aoResDiv is read before that gate, and an out-resolution
+  // gather sent alongside GI makes umbreon warn on every GI render. Left
+  // alone the knobs keep the neutral ctor values.
+  const bool aoEnabled = ub.b("aoEnabled", false);
+  m_nAoSamples = aoEnabled ? ub.i("aoSamples", m_nAoSamples) : 0;
+  if (aoEnabled) {
+    m_dAoDistance = ub.r("aoDistance", m_dAoDistance);
+    m_dAoIntensity = ub.r("aoIntensity", m_dAoIntensity);
+    m_dAoDiffuseFactor = ub.r("aoDiffuseFactor", m_dAoDiffuseFactor);
+    m_bAoMultiScale = ub.b("aoMultiScale", m_bAoMultiScale);
+    m_bAoBentNormal = ub.b("aoBentNormal", m_bAoBentNormal);
+    m_bAoLowDiscrepancy = ub.b("aoLowDiscrepancy", m_bAoLowDiscrepancy);
+    // "Per output pixel" (-1, interpolated; the fast path) or "Per shading
+    // hit" (0); unknown = per output pixel
+    m_nAoResDiv = ub.s("aoGather", "Per output pixel").equals("Per shading hit") ? 0 : -1;
+  }
+
+  m_bShadows = ub.b("shadows", m_bShadows);
+  m_nShadowSamples = ub.i("shadowSamples", m_nShadowSamples);
+  m_dLightRadius = ub.r("lightRadius", m_dLightRadius);
+
+  // Energy balance: hatch ink mode discards the shaded color, so GI is never
+  // used with the NPR block. The ambient fraction is the block's value only
+  // while GI actually renders.
+  const bool useGI = !npr && ub.b("useGI", false);
+  m_dLightIntensity = ub.r("lightIntensity", m_dLightIntensity);
+  m_dFlashFraction = ub.r("flashFraction", m_dFlashFraction);
+  m_dAmbientFraction =
+      useGI ? ub.r("ambientFraction", m_dAmbientFraction) : DIRECT_AMBIENT_FRACTION;
+
+  m_dCreaseLimit = ub.r("creaseLimit", m_dCreaseLimit);
+  m_dEdgeRise = ub.r("edgeRise", m_dEdgeRise);
+  m_bContactEdges = ub.b("contactEdges", m_bContactEdges);
+
+  m_bGI = useGI;
+  m_bHatchEnable = npr;
+
+  if (npr) {
+    //////////
+    // NPR tone hatching. Colors are sent only while their Custom switch is
+    // on; an empty string keeps the style's own colors.
+    m_sHatchStyle = ub.s("hatchStyle", m_sHatchStyle);
+    m_dHatchDensity = ub.r("hatchDensity", m_dHatchDensity);
+    m_dHatchWidthScale = ub.r("hatchWidthScale", m_dHatchWidthScale);
+    hatchColoring(ub.s("hatchColoring", "Style default"), m_sHatchBase, m_sHatchInk);
+    m_sHatchInkColor =
+        ub.b("hatchCustomInk", false) ? ub.s("hatchInkColor", "#000000") : LString();
+    m_sHatchPaperColor =
+        ub.b("hatchCustomPaper", false) ? ub.s("hatchPaperColor", "#ffffff") : LString();
+    m_bHatchDefaultEdges = ub.b("hatchDefaultEdges", m_bHatchDefaultEdges);
+    // A hand-edited look as spec text; "" (the stored value of an untouched
+    // look) keeps the style's own layers and tone, like the ctor default.
+    m_sHatchLayersSpec = ub.s("hatchLayersSpec", "");
+    m_sHatchToneSpec = ub.s("hatchToneSpec", "");
+  } else {
+    //////////
+    // Diffuse global illumination. The sample count is stored as the GUI's
+    // option string; giIntensity / giEnvIntensity are not stored and stay
+    // at the exporter's neutral 1.0 (the energy balance covers that ground).
+    int nSamples = 32;
+    if (!ub.s("giSamples", "32").toInt(&nSamples) || nSamples <= 0) nSamples = 32;
+    m_nGiSamples = nSamples;
+    denoiseMode(ub.s("denoise", "OIDN"), m_bGiDenoise, m_nDenoiser);
+    m_bGiSkyGradient = ub.b("giSkyGradient", m_bGiSkyGradient);
+    m_sGiGroundColor = ub.s("giGroundColor", m_sGiGroundColor);
+  }
+
+  return id;
 }
 
 void UmbreonSceneExporter::write()
