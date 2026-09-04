@@ -164,7 +164,8 @@ libcuemol2 gained the properties these axes need:
   - UI: `components/inspector/RenderSettingsEditor.tsx` (Quality section,
     per-axis dropdowns, inactive-method group filtering).
   - Mapping to the renderer: `renderBackends/UmbreonBackend.ts` (`AO_GATHER`,
-    `AA_MODE`).
+    `AA_MODE`). Superseded: the mapping now lives in C++
+    (`UmbreonSceneExporter::applyRenderSettings`), see the 2026-09 note below.
   - libcuemol2: `src/modules/rendering/UmbreonSceneExporter.{qif,hpp,cpp}`,
     `UmbreonDisplayContext.{hpp,cpp}` (`UmbreonRenderParams` ->
     `RenderOptions`, `sceneDiagonal`).
@@ -202,3 +203,11 @@ TS カタログ (`renderBackends.ts`) の行は値を持たない (`RenderPropSp
 `defaultLighting` は「lighting 切替時に step の無い axis をどこに置くか」の UI ヒューリスティックであり、
 既定値の原典ではない。fresh object の値が axis の step に一致しなければ dropdown が Custom を示すので、
 qif と axis のずれは UI で見える。
+
+## 追記 (2026-09): 写像は C++ へ
+
+設定 -> exporter property の写像 (`AO_GATHER` / `DENOISE_MODE` / `HATCH_COLORING` の表、AO off 時の
+gating、GI off 時の ambient fraction 固定) は `UmbreonBackend.ts` から C++ の
+`UmbreonSceneExporter::applyRenderSettings` に移り、tritium / cuetty / Python が共有する
+([scene-app-data](../../architecture/scene-app-data.md) 「レンダー時の適用」)。TS 側は scene の
+`RenderSettings` (無ければ fresh object) を渡すだけで、写像の copy を持たない。

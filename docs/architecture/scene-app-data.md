@@ -50,13 +50,13 @@ RenderSettings.qif (+ Pov/Umbreon/UmbreonNpr の qif) の default
   -> worker getSceneRenderSettings: scene に無ければ fresh object の values / defaults を返す
   -> TS snapshotFromRenderSettings(values, { defaults }) -> editor (PropDef[])
   -> ユーザー編集 -> worker setSceneRenderSettings: 現在値と違う key だけ setProp、default と同値なら resetProp
+  -> レンダー: scene の object (無ければ fresh object) -> C++ UmbreonSceneExporter::applyRenderSettings
 ```
 
-TS 側に残る既定値のコピーは 2 つだけ: `UmbreonBackend.ts` の `DIRECT_LIGHT` / `GI_LIGHT` (snapshot に
-lighting key が無いときの fallback と「非 GI 時は ambientFraction を固定」という exporter への写像ルール。
-画像に影響する backend ロジックで、`umbreon-gi-lighting-balance.md` に根拠) と、テスト fixture
-`react-gui/src/renderer/__test__/fixtures/renderSettingsValues.ts` (qif の default の写し。drift しても
-テストにしか影響しない)。
+TS 側に残る既定値のコピーはテスト fixture `react-gui/src/renderer/__test__/fixtures/renderSettingsValues.ts`
+(qif の default の写し。drift してもテストにしか影響しない) だけ。設定 -> exporter の写像とその中の定数
+(GI off 時の ambientFraction 0.16 固定、`umbreon-gi-lighting-balance.md` に根拠) は C++ の
+`applyRenderSettings` にあり、TS には無い (下記「レンダー時の適用」)。
 
 ## 読み込みの寛容性 (warning, not error)
 
@@ -127,6 +127,43 @@ Scene や直列化の変更は不要:
 
 id は小文字の名詞 (`render`)、アプリ固有なら接頭辞付き (`tritium.layout`) を推奨。
 
+## レンダー時の適用 (C++ `applyRenderSettings`)
+
+設定 -> umbreon exporter property の写像は C++ に 1 つだけ置き、tritium / cuetty / Python が共有する
+(POV-Ray は blendpng 起動など TS 依存が強いので対象外。`PovrayBackend.ts` は従来どおり snapshot から写す):
+
+```
+string UmbreonSceneExporter::applyRenderSettings(object<RenderSettings$> settings, string backend)
+```
+
+- `backend`: `"umbreon"` | `"umbreon_npr"` | `""` (auto: `settings.backend` が `umbreon_npr` ならそれ、
+  それ以外 (`""` / `povray`) は `umbreon`)。他の明示値は `IllegalArgumentException`。戻り値は適用した block id。
+- common: `projection` -> `perspective`、`clipPlane` -> `useClipZ`、`edgeLines` -> `showEdgeLines`、
+  `transparentBg` -> `transparentBackground`、`width` / `height` は `unit` + `dpi` を px に換算
+  (`max(1, round(v))`; TS `sizeUnitToPx` と同じ式)。camera は触らない (呼び出し側)。
+- block: `aoEnabled` false -> `aoSamples` 0 で AO の他 knob は書かない (exporter の ctor 値のまま。GI と
+  `aoResDiv` -1 の組み合わせ警告を避ける)、`aoGather` -> `aoResDiv` (-1 / 0)、`useGI = !npr && block.useGI`、
+  `ambientFraction` は GI on のときだけ block 値で GI off では 0.16 固定、plain: `giSamples` (文字列 -> int、
+  不正は 32) / `denoise` (OIDN / A-trous / None -> `giDenoise` + `denoiser`) / sky、npr: `hatchEnable`、
+  `hatchColoring` -> `hatchBase` + `hatchInk`、custom スイッチ off の色は `""`、`hatchLayersSpec` /
+  `hatchToneSpec` はそのまま転送 (`""` = style 自身)。
+- POV 専用の common (`numThreads` / `postBlend` / `stereo*` / `pixelLabels`) は読まない。
+
+### 消費者
+
+| 消費者 | 設定 object | block |
+|---|---|---|
+| tritium `worker/.../backends/UmbreonBackend.ts` (`makeExporter`) | `renderSettingsForRender(ctx, scene)`: scene の app data、無ければ `createObj("RenderSettings")` の transient (fresh) object。**holder は作らない** (render は edit ではない)。`flushBeforeStart` が editor の状態を scene に書いてからレンダーが始まる (同じ IPC channel -> 同じ worker queue で FIFO)。editor が fresh 既定と同値で書かなかった scene は fresh object と一致する | window が選んだ backend id を明示 (`backend` は未選択だと `""`) |
+| `cli/render_scene.cpp` (cuetty) | `getAppData("render")`、無ければ `cuemol2::createObj("RenderSettings")` の transient object。`invokeMethod("applyRenderSettings")` 経由 (rendering module のヘッダは install されない) | `""` (scene の選択) |
+| `pymod/python/cuemol/umbreon_render.py` (`apply_scene_settings`) | 同上 (`cm.createObj`) | `""` |
+
+scene に設定が無い場合、cuetty / Python は GUI の `applyViewCamera` と同じく projection だけ camera の
+`perspec` に従う (class default の perspective で ortho scene を描かないため)。設定がある scene は
+保存された `projection` が camera に勝つ (GUI と同じ)。
+
+TS 側から呼ぶときは method の存在を probe し、無ければ throw する (古い addon)。TS に fallback の写像を
+残さない (二重実装に戻る)。
+
 ## tritium 側
 
 ### データフロー
@@ -156,6 +193,10 @@ size preset / hatch 編集、`PERSIST_DEBOUNCE_MS` で 1 burst = 1 undo entry)�
 書かない: 履歴の `<` `>` (画像のみ切替。ADR-0035 の挙動を変更)、scene からの読み込み、target view の
 カメラ既定 (`applyViewCamera`; scene に保存済み設定があれば呼ばれない)、起動時の umbreon auto-default、
 mode 切替 (mode は保存対象外。サイズ副作用は次の編集かレンダーで書かれる)、movie 出力設定 (ADR-0043)。
+
+umbreon のレンダーは snapshot ではなく scene の object から設定を読む (上記「レンダー時の適用」) ので、
+`flushBeforeStart` がレンダー前の書き込みを担う。snapshot は mode / movie 出力設定 / POV backend のために
+残っている。
 
 ### Rendering window の Cmd+Z
 
@@ -216,6 +257,10 @@ block key (+ `umbreon_npr` の hatch 2 key) を C++ 型に強制して返す。`
 | `main/ipc/windowRelay.ts` | `FALLBACKS.sceneRenderSettings` |
 | `shared/ipcContract.ts` | 変更なし (union を型名で参照) |
 | `.qif` (`Scene` / `RenderSettings`) | `getAppData` / `getCreateAppData` / `hasAppData` / `removeAppData`、event `sceneAppDataChanged` (`descr: "render"`) |
+| `.qif` (`UmbreonSceneExporter`) | `applyRenderSettings(settings, backend)` (設定 -> exporter の唯一の写像) |
+| `worker/server/services/renderSettings/renderSettings.service.ts` | `renderSettingsForRender(ctx, scene)` (scene の object か transient な fresh object。holder を作らない) |
+| `worker/server/services/renderjob/backends/RenderBackend.ts` | `beginInProcessAnimFrame(ctx, scene, animMgr, snapshot, outputPath)` (frame の scene = 設定の出所) |
+| `cli/render_scene.cpp` / `pymod/python/cuemol/umbreon_render.py` | 同じ method を呼ぶ CLI / Python の消費者 (`--width/--height`, `-W/-H` は上書き) |
 
 ## 採らなかった案
 
@@ -244,6 +289,9 @@ block key (+ `umbreon_npr` の hatch 2 key) を C++ 型に強制して返す。`
 | load は書かない、編集 burst は 1 write、echo push は無視・差分 push は反映 | `react-gui/src/renderer/__test__/useSceneSettingsSync.test.ts` |
 | `userEditSeq` は編集のみ、読み込みサイズの preset 表示 | `react-gui/src/renderer/__test__/useRenderSettings.test.ts` |
 | `sceneAppDataChanged` -> 再取得 -> `sceneSettings` push | `react-gui/src/renderer/__test__/useRenderWindowBridge.test.ts` |
+| `applyRenderSettings` の写像 (common + block、単位換算、AO / ambient / hatch の gating、backend 解決と未知 id の throw) | `src/tests/modules/rendering/test_umbreon_apply_settings.cpp` (`test_render`、umbreon 不要) |
+| umbreon backend は scene の object (無ければ fresh、holder 非作成) を `applyRenderSettings(obj, id)` で attach / beginFrame の前に渡す、method 不在は throw、start 順序と handle の転送 | `react-gui/src/renderer/__test__/umbreonBackend.test.ts` |
+| 設定の無い scene は class 既定 + camera の projection (holder 非作成)、保存設定がレンダーを決め明示サイズが勝つ | `tests/rendering_tests/test_umbreon_render.py` (umbreon 必須) |
 
 ## 既知の制約と今後
 
@@ -251,3 +299,7 @@ block key (+ `umbreon_npr` の hatch 2 key) を C++ 型に強制して返す。`
   既定値として読むだけなので破綻はしない。
 - 複数 render window は非対応 (open-or-focus)。
 - `removeAppData` は undo 不可のまま (GUI から未使用)。
+- movie は frame ごとに scene の object を読み直すので、レンダー中に設定を編集すると後続 frame に反映される
+  (以前は開始時の snapshot で全 frame を描いた)。
+- ロード直後 (hatch template 未到着) の umbreon_npr レンダーは、scene に保存された hatch spec をそのまま
+  描く (以前の snapshot 経路は template と比較できず style 自身の look で描いていた)。

@@ -83,11 +83,12 @@ POV backend では同じ 3 値が `_light_inten / _flash_frac / _amb_frac` と�
 - `UmbreonDisplayContext.cpp`: auto は GI off で `1.3 / 0.6 / 0` (従来どおり)、GI on で
   app の既定 (GI lighting step 4 = `1.2 / 0.05 / 0.4`、勾配 sky on)。スクリプトから `useGI`
   だけを立てても app と同じ絵になるための写し。
-- `tritium/react-gui/.../UmbreonBackend.ts` は 3 値を常に明示的に送る。`lightIntensity` /
-  `flashFraction` は Lights グループの値、`ambientFraction` は GI on のときだけ GI グループの
-  値で、GI off では `LIGHT_DEFAULTS` の 0.16 に固定する (GI off では直接光を減らすだけの
-  knob なので、GI 側で動かした値が隠れたまま raytrace を暗くしないため)。
-  `LIGHT_DEFAULTS` (1.55 / 0.6 / 0.16) は GI lighting axis の step 0 と同じ値。
+- `UmbreonSceneExporter::applyRenderSettings` (scene の RenderSettings -> exporter の写像。tritium /
+  cuetty / Python が共有) は 3 値を常に明示的に書く。`lightIntensity` / `flashFraction` は block の値
+  (Lights グループ)、`ambientFraction` は GI on のときだけ block の値 (GI グループ) で、GI off では
+  `DIRECT_AMBIENT_FRACTION` の 0.16 に固定する (GI off では直接光を減らすだけの knob なので、GI 側で
+  動かした値が隠れたまま raytrace を暗くしないため)。1.55 / 0.6 / 0.16 は GI lighting axis の step 0
+  と同じ値で、直接光は auto の GI off (1.3 / 0.6 / 0) と一致する。
 - `giSkyGradient` / `giGroundColor` (`pt1SkyMode` 1 と `aoGroundColor`): 天頂白・地面色の
   勾配 sky。カメラ正面の面は sky と地面を半分ずつ見るので gather する ambient が
   `(1 + 地面輝度) / 2` 倍に落ちる。C++ 側で ambientColor を `2 / (1 + 地面輝度)` 倍して
@@ -159,8 +160,9 @@ POV backend では同じ 3 値が `_light_inten / _flash_frac / _amb_frac` と�
   バウンスの最大値と sky が釣り合う点で、ポケットは最も暗くなるが平坦になる。
 - ambientColor は scene で 1 値なので default 材質基準で合わせている。matte (ambient 0.3) や
   diff_metal (ambient 0.35 / diffuse 0.30) は GI on で GI off よりやや暗くなる。
-- 既定値が C++ (auto) と TS (`LIGHT_DEFAULTS` = GI lighting axis の step 0) の 2 か所にある。
-  アプリは常に TS の値を送るので実害はないが、step 0 を変えたら C++ の auto も揃えること。
+- 既定値が C++ の 2 か所にある: `UmbreonDisplayContext` の auto (負値のとき) と `applyRenderSettings`
+  の 0.16 固定 (+ qif の block default)。アプリ / cuetty / Python は常に applyRenderSettings 経由で明示値を
+  書くので実害はないが、GI lighting axis の step 0 を変えたら C++ の auto も揃えること。
 - 勾配 sky は上を向いた面を明るく、下を向いた面を暗くする。輝度補正で正面の明るさは保つが、
   下向きの面は一様 sky より暗くなる。
 
@@ -170,8 +172,8 @@ POV backend では同じ 3 値が `_light_inten / _flash_frac / _amb_frac` と�
   調整のたびに追随が要る):
   - `UmbreonExport.LightBalancePropertiesChangeTheOutput` — 3 つの property と勾配 sky を
     それぞれ単独で変えると出力が変わる (`ambientFraction` / 勾配 sky は GI on で確認)
-  - `umbreonBackend.test.ts` — Lights の 2 値と GI の ambient fraction / sky が exporter に
-    書かれ、GI off では ambient fraction が 0.16 に固定される
+  - `UmbreonApplySettings` (`test_umbreon_apply_settings.cpp`) — Lights の 2 値と GI の ambient
+    fraction / sky が exporter に書かれ、GI off では ambient fraction が 0.16 に固定される
   - `useRenderSettings.test.ts` — GI lighting axis が ff / af を書き、`lightIntensity` の編集は
     axis を Custom にしない
 - GI off 側の `ff=0.6` と POV exporter の `0.8/1.3 = 0.615` のずれ、`DistantLight::angularRadius`

@@ -153,4 +153,6 @@ architecture, it belongs here.
   唯一の原典にして明示的に変えた値だけを保存する方針、property 変更を undo/redo と scene event
   (`sceneAppDataChanged`) に載せる `SceneAppData` 基底、入れ子 property の落とし穴と「子 wrapper 経由で
   書く」規約、属性値の改行エスケープ修正、tritium 側の書き込みトリガー (編集 / レンダー開始 /
-  「Use settings」のみ) と loop guard、別の app data を足す手順。
+  「Use settings」のみ) と loop guard、別の app data を足す手順。レンダー時の設定 -> umbreon exporter の
+  写像は C++ `UmbreonSceneExporter::applyRenderSettings` に一本化し、tritium / cuetty / Python が共有する
+  (設定の無い scene は class 既定 + camera の projection)。
