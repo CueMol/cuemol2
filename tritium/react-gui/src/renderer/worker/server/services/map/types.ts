@@ -41,9 +41,10 @@ export interface GetMapRendererStateArgs {
 }
 
 /**
- * Snapshot of the props the panel drives. Server-side units only:
- * `siglevel`, `maxLevel`, `minLevel` are in sigma; the panel multiplies
- * by `denSigma` for the absolute-mode display.
+ * Snapshot of the props the panel drives. `siglevel` is in the map's native
+ * unit (`levelUnit`), `level` is the same contour in absolute density units;
+ * `maxLevel` / `minLevel` are the density range in sigma multiples, so times
+ * `denSigma` they bound the absolute-mode slider.
  */
 export interface MapRendererState {
     alpha: number;
@@ -58,6 +59,17 @@ export interface MapRendererState {
     extent: number;
     siglevel: number;
     useAbsLevel: boolean;
+    /**
+     * The contour level in absolute density units (`rend.level`, the view of
+     * `siglevel` resolved through the map kind). The absolute-mode slider
+     * shows and writes this.
+     */
+    level: number;
+    /**
+     * Native unit of `siglevel`: sigma multiples on a crystallographic map,
+     * top percent of grid points on a cryo-EM map.
+     */
+    levelUnit: 'sigma' | 'percent';
     maxLevel: number;
     minLevel: number;
     maxExtent: number;
@@ -101,6 +113,8 @@ export type MapRendererPropName =
     | 'alpha'
     | 'extent'
     | 'siglevel'
+    /** Absolute-unit write of the level; C++ converts and marks `siglevel` modified. */
+    | 'level'
     | 'use_abslevel'
     | 'colormode'
     | 'color';

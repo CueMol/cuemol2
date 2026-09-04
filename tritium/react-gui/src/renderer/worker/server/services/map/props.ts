@@ -31,6 +31,11 @@ export function setMapRendererProp(
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return fail('renderer not found', 'not-found');
 
+    // `level` is the absolute-unit view of `siglevel` (nopersist, no default
+    // of its own): the default flag that a restore has to put back is
+    // siglevel's.
+    const flagProp = args.propName === 'level' ? 'siglevel' : args.propName;
+
     // Live preview during a drag: numeric write without an undo txn (the view
     // still redraws via the prop-change event). `color` never previews.
     if (args.mode === 'preview' && args.propName !== 'color') {
@@ -47,7 +52,7 @@ export function setMapRendererProp(
     // drag, undoing the one-way flag flip a preview frame leaves behind.
     if (args.mode === 'abort' && args.propName !== 'color') {
         try {
-            if (args.originalWasDefault) rend.resetProp(args.propName);
+            if (args.originalWasDefault) rend.resetProp(flagProp);
             else rend.setProp(args.propName, args.value);
         } catch (e) {
             return failFrom(e);
@@ -62,7 +67,7 @@ export function setMapRendererProp(
     // the default state too.
     if (args.originalValue !== undefined && args.propName !== 'color') {
         try {
-            if (args.originalWasDefault) rend.resetProp(args.propName);
+            if (args.originalWasDefault) rend.resetProp(flagProp);
             else rend.setProp(args.propName, args.originalValue);
         } catch (e) {
             return failFrom(e);

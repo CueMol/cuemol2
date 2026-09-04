@@ -40,6 +40,8 @@ export const DragRow: React.FC<{
     step: number
     unit?: string
     scale?: number
+    /** Caption under the field (e.g. the same value in the other unit). */
+    hint?: string
     disabled?: boolean
     realtime?: boolean
     /** The prop's default flag (flag-based), frozen at drag start for restore. */
@@ -53,6 +55,7 @@ export const DragRow: React.FC<{
     step,
     unit,
     scale = 1,
+    hint,
     disabled,
     realtime,
     committedIsDefault,
@@ -89,6 +92,7 @@ export const DragRow: React.FC<{
                 unit={unit}
                 disabled={disabled}
             />
+            {hint ? <span className="type-caption">{hint}</span> : null}
         </FieldGridRow>
     )
 }
