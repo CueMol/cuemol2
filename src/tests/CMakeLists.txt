@@ -242,6 +242,7 @@ target_include_directories(test_xtal PRIVATE
 )
 target_compile_definitions(test_xtal PRIVATE
   CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+  CUEMOL2_DEFAULT_STYLE_PATH="${CMAKE_SOURCE_DIR}/data/default_style.xml"
 )
 target_link_libraries(test_xtal PRIVATE surface symm xtal molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)

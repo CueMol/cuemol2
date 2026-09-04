@@ -95,24 +95,48 @@ double MapRenderer::getMinLevel() const
   return pMap->getMinDensity()/sig;
 }
 
+bool MapRenderer::isPercentLevel(const ScalarObject *pMap) const
+{
+  const DensityMap *pXtal = dynamic_cast<const DensityMap *>(pMap);
+  return (pXtal != NULL &&
+          pXtal->getEffectiveMapType() == DensityMap::MAPTYPE_EM);
+}
+
+double MapRenderer::resolveLevel(const ScalarObject *pMap) const
+{
+  if (isPercentLevel(pMap)) {
+    const DensityMap *pXtal = static_cast<const DensityMap *>(pMap);
+    return pXtal->getLevelAtTopFraction(m_dSigLevel / 100.0);
+  }
+  return pMap->getRmsdDensity() * m_dSigLevel;
+}
+
 double MapRenderer::getLevel() const
 {
   ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
-
-  double sig = pMap->getRmsdDensity();
-  return m_dSigLevel * sig;
+  return resolveLevel(pMap);
 }
 
 void MapRenderer::setLevel(double value)
 {
   ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
-  double sig = pMap->getRmsdDensity();
-  if (!(sig > 0.0)) {
-    setSigLevel(0.0);  // uniform map: no sigma scale
-    return;
+  double native;
+  if (isPercentLevel(pMap)) {
+    const DensityMap *pXtal = static_cast<const DensityMap *>(pMap);
+    native = pXtal->getTopFractionAtLevel(value) * 100.0;
   }
-  setSigLevel(value/sig);
+  else {
+    double sig = pMap->getRmsdDensity();
+    if (!(sig > 0.0))
+      native = 0.0;  // uniform map: no sigma scale
+    else
+      native = value / sig;
+  }
+  setSigLevel(native);
+  // The absolute view is a nopersist alias of siglevel: writing it has to
+  // leave siglevel modified so the level is saved and a reset undoes it.
+  setDefaultPropFlag("siglevel", false);
 }
 
 ///////////////////////////////////////////////////

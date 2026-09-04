@@ -293,6 +293,31 @@ double DensityMap::getLevelAtTopFraction(double frac) const
   return m_dMinMap;
 }
 
+double DensityMap::getTopFractionAtLevel(double level) const
+{
+  if (m_map.empty())
+    return 0.0;
+  ensureByteHistogram();
+
+  const qint64 ntotal = (qint64) m_map.size();
+  if (ntotal<=0)
+    return 0.0;
+  if (!(m_dLevelStep>0.0))
+    return (level<=m_dLevelBase) ? 1.0 : 0.0;
+
+  // snap down to the bin; the epsilon keeps a level produced by
+  // getLevelAtTopFraction() (b*step+base) in bin b despite rounding
+  const double lvtmp = floor((level - m_dLevelBase) / m_dLevelStep + 1e-6);
+  if (lvtmp>255.0)
+    return 0.0;
+  const int b0 = (lvtmp<0.0) ? 0 : int(lvtmp);
+
+  qint64 acc = 0;
+  for (int b=255; b>=b0; --b)
+    acc += m_byteHist[b];
+  return double(acc) / double(ntotal);
+}
+
 
 // setup column, row, section params
 void DensityMap::setMapParams(int stacol, int starow, int stasect,

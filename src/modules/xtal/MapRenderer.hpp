@@ -83,7 +83,11 @@ namespace xtal {
     }
 
   private:
-    /// contour level in sigma scale
+    /// Contour level in the map's native unit: sigma (rmsd multiples) for a
+    /// crystallographic map, the top percent of grid points enclosed for a
+    /// cryo-EM map (the ChimeraX initial-contour rule). The absolute density
+    /// level is resolved at draw time by resolveLevel(), so the stored value
+    /// and its default do not depend on the data.
     double m_dSigLevel;
 
   public:
@@ -94,6 +98,14 @@ namespace xtal {
       m_dSigLevel = value;
       invalidateGeomCache();
     }
+
+    /// True when pMap is a cryo-EM map, i.e. siglevel is a top percent
+    /// rather than a sigma multiple.
+    bool isPercentLevel(const ScalarObject *pMap) const;
+
+    /// Absolute density level of the contour for pMap (siglevel interpreted
+    /// by the map kind, see m_dSigLevel).
+    double resolveLevel(const ScalarObject *pMap) const;
 
     /////////
 
@@ -402,6 +414,8 @@ namespace xtal {
 
     ///////////////////////////////////////////
 
+    /// Absolute-unit view of siglevel (the nopersist `level` property);
+    /// setLevel() converts through the map kind and marks siglevel modified.
     double getLevel() const;
     void setLevel(double value);
 
