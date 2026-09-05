@@ -91,13 +91,15 @@ namespace render {
     /// Ink the depth-CONTINUOUS contact/intersection contour between DIFFERENT
     /// renderer sections (umbreon strokeEdges.contact): the circle where one
     /// section's primitive plunges into another section's surface, e.g. a
-    /// stick entering another renderer's ribbon mesh. Such a boundary is
-    /// surface contact rather than occlusion, so umbreon vetoes it by default
-    /// and so does the GL view (its inverted hull is buried inside the other
-    /// surface there); a silhouette-mode section is therefore left with an
-    /// OPEN outer contour wherever it meets another renderer. Turning this on
-    /// closes it. Same-section contact stays seamless whatever this says.
-    bool contactEdges = false;
+    /// stick entering the ribbon mesh of another EDGE GROUP (renderers are
+    /// grouped by their egroup property, unnamed ones per object). Inside an
+    /// edge group a contact never inks: such a boundary is surface contact
+    /// rather than occlusion, and the GL view draws no line there either
+    /// (its inverted hull is buried inside the other surface). Between edge
+    /// groups the contact contour inks by default, closing a silhouette-mode
+    /// group's outer contour where it meets another group; false suppresses
+    /// every contact line.
+    bool contactEdges = true;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").
@@ -246,6 +248,14 @@ namespace render {
     void enableEdgeLines(bool b) { m_bEnableEdgeLines = b; }
     void setCreaseLimit(double d) { m_dCreaseLimit = d; }
     void setEdgeRise(double d) { m_dEdgeRise = d; }
+    /// Edge group of the next section (Scene::displayRendImpl calls this
+    /// before startSection): renderers of one edge group are ONE section for
+    /// umbreon's edge pass. A non-empty `name` (the renderer's egroup
+    /// property) groups by name across the scene; an empty name groups the
+    /// renderer with every other renderer that draws the SAME edge lines
+    /// (type/mode, width, color) -- the only grouping consistent with one
+    /// style per group.
+    void setEdgeGroup(const LString &name) override;
 
   private:
     struct Impl;
@@ -257,6 +267,9 @@ namespace render {
     double m_dCreaseLimit;
     /// Edge line rise from the surface (along the vertex normal)
     double m_dEdgeRise;
+    /// Edge group name of the section being displayed (setEdgeGroup); empty
+    /// means "group by the edge settings themselves".
+    LString m_edgeGroupName;
 
     /// Build the umbreon camera from the seeded view state (eye-space:
     /// camera at (0,0,viewDist) looking down -Z).

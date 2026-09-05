@@ -22,6 +22,7 @@
 #  include <cstdint>
 #  include <map>
 #  include <mutex>
+#  include <string>
 #  include <vector>
 #endif
 
@@ -331,10 +332,20 @@ struct UmbreonDisplayContext::Impl
   int curGroup = 0;
   std::vector<umbreon::GroupBlend> groupBlend;
 
-  /// Per-section (per group) native stroke-edge style for umbreon's screen-space
-  /// edge pass (RenderOptions::strokeEdges + Scene::groupEdgeStyle). Indexed by
-  /// group id; a section without edge lines gets an all-disabled EdgeStyle.
+  /// EDGE GROUPS: renderers of one edge group are ONE section for umbreon's
+  /// edge pass (no contact line inside the group, one style). edgeGroupOf maps
+  /// every transparency group (renderer) to its edge group id; edgeGroupIds
+  /// assigns the ids by key ("n:<egroup>" for a named group, else
+  /// "c:<edge settings>" so renderers drawing the same lines are one group).
+  std::vector<std::uint16_t> edgeGroupOf;
+  std::map<LString, int> edgeGroupIds;
+  /// Native stroke-edge style per EDGE GROUP (RenderOptions::strokeEdges +
+  /// Scene::groupEdgeStyle, indexed by edge group id). Set by the first
+  /// renderer of the group that enables edge lines (edgeGroupStyled); a later
+  /// member with different settings is reported and ignored. A group without
+  /// edge lines keeps an all-disabled EdgeStyle.
   std::vector<umbreon::EdgeStyle> groupEdgeStyle;
+  std::vector<char> edgeGroupStyled;
   /// Whether any section enabled edge lines (gates strokeEdges.enable) and
   /// whether any section requested creases (gates the global crease extraction).
   bool anyEdges = false;
@@ -401,7 +412,44 @@ void ensureLogSink()
 }
 #endif
 
+#ifdef HAVE_UMBREON
+/// Signature of a per-section edge style: which natures are enabled, their
+/// color/width/opacity, the silhouette mode and the alignment -- everything
+/// that decides which lines the section draws. Two renderers with the same
+/// signature draw the same lines, which is what the DEFAULT edge grouping
+/// keys on (one group, one style).
+LString edgeStyleKey(const umbreon::EdgeStyle &es)
+{
+  std::string s =
+      LString::format("m%d|a%d", int(es.silhouetteMode), int(es.align)).c_str();
+  for (int k = 0; k < int(umbreon::EdgeClass::Count); ++k) {
+    const umbreon::EdgeClassStyle &cs = es.cls[k];
+    if (!cs.enabled) {
+      s += "|-";
+      continue;
+    }
+    s += LString::format("|%.4f,%.4f,%.4f,%.4f,%.4f", double(cs.width),
+                         double(cs.opacity), double(cs.color[0]),
+                         double(cs.color[1]), double(cs.color[2]))
+             .c_str();
+  }
+  return LString(s.c_str());
+}
+
+/// Whether two per-section edge styles draw the same lines: the edge-group
+/// check that a later member of a NAMED group matches its first.
+bool sameEdgeStyle(const umbreon::EdgeStyle &a, const umbreon::EdgeStyle &b)
+{
+  return edgeStyleKey(a).equals(edgeStyleKey(b));
+}
+#endif
+
 }  // anonymous namespace
+
+void UmbreonDisplayContext::setEdgeGroup(const LString &name)
+{
+  m_edgeGroupName = name;
+}
 
 UmbreonDisplayContext::UmbreonDisplayContext()
      : super_t(), m_pImpl(new Impl()),
@@ -454,6 +502,9 @@ void UmbreonDisplayContext::startRender()
   m_pImpl->curGroup = 0;
   m_pImpl->groupBlend.clear();
   m_pImpl->groupEdgeStyle.clear();
+  m_pImpl->edgeGroupOf.clear();
+  m_pImpl->edgeGroupIds.clear();
+  m_pImpl->edgeGroupStyled.clear();
   m_pImpl->anyEdges = false;
   m_pImpl->anyCrease = false;
   m_pImpl->edgeThicknessPx = float(EDGE_THICKNESS_PX);
@@ -643,9 +694,58 @@ void UmbreonDisplayContext::appendIntData()
                                           : "edges(full)",
                   double(widthPx));
     }
-    if (m_pImpl->groupEdgeStyle.size() <= group)
-      m_pImpl->groupEdgeStyle.resize(std::size_t(group) + 1);
-    m_pImpl->groupEdgeStyle[group] = es;
+    // EDGE GROUP of this section (see Impl::edgeGroupOf). Renderers of one
+    // edge group are ONE section for umbreon's edge pass: no contact contour
+    // inside the group, its depth steps are self-occlusion, an Outline-mode
+    // group unions, and the group carries one style. The transparency group
+    // above stays per renderer.
+    //
+    // By DEFAULT the key is the renderer's own edge settings (type/mode,
+    // width, color), so renderers that draw the same lines are one group
+    // wherever they sit in the scene and renderers that draw different lines
+    // are separate -- which is the only grouping consistent with "one group,
+    // one style". A non-empty `egroup` property overrides it and groups by
+    // name (its first member's settings then style the whole group).
+    // (a section that draws no edge line at all has an all-disabled style,
+    // so every such section shares one key)
+    const LString egKey = m_edgeGroupName.isEmpty()
+                              ? "c:" + edgeStyleKey(es)
+                              : "n:" + m_edgeGroupName;
+    int egid;
+    {
+      auto it = m_pImpl->edgeGroupIds.find(egKey);
+      if (it == m_pImpl->edgeGroupIds.end()) {
+        egid = int(m_pImpl->edgeGroupIds.size());
+        m_pImpl->edgeGroupIds.insert(std::make_pair(egKey, egid));
+        m_pImpl->groupEdgeStyle.push_back(umbreon::EdgeStyle());
+        m_pImpl->edgeGroupStyled.push_back(0);
+      } else {
+        egid = it->second;
+      }
+    }
+    if (m_pImpl->edgeGroupOf.size() <= group)
+      m_pImpl->edgeGroupOf.resize(std::size_t(group) + 1, 0);
+    m_pImpl->edgeGroupOf[group] = static_cast<std::uint16_t>(egid);
+    MB_DPRINTLN("UmbreonDC> section %s: edge group %d (%s)",
+                getSecName().c_str(), egid, egKey.c_str());
+
+    // The edge group's style comes from its FIRST renderer with edge lines;
+    // a later member with different settings is reported and ignored (one
+    // group = one section = one style). Under the default keying the members
+    // agree by construction, so this only reports a named group whose
+    // members were given different settings. Members without edge lines
+    // leave the group's style alone.
+    if (bSil || bBorder || bCrease) {
+      umbreon::EdgeStyle &gs = m_pImpl->groupEdgeStyle[std::size_t(egid)];
+      if (!m_pImpl->edgeGroupStyled[std::size_t(egid)]) {
+        gs = es;
+        m_pImpl->edgeGroupStyled[std::size_t(egid)] = 1;
+      } else if (!sameEdgeStyle(gs, es)) {
+        LOG_DPRINTLN("Umbreon> section %s: edge settings differ from edge "
+                     "group '%s' first renderer; the group's settings are used",
+                     getSecName().c_str(), m_edgeGroupName.c_str());
+      }
+    }
   }
 
   // --- triangle mesh (de-indexed: 3 corners per triangle) ---
@@ -1160,10 +1260,16 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     // chained silhouette is cut into visible runs.
     opt.strokeEdges.roundCap = true;
     opt.strokeEdges.roundJoin = true;
-    // Cover every group id; sections with no edge lines keep an all-disabled
-    // EdgeStyle, so the stroke pass draws nothing for them.
-    if (m_pImpl->groupEdgeStyle.size() < std::size_t(m_pImpl->nextGroup))
-      m_pImpl->groupEdgeStyle.resize(std::size_t(m_pImpl->nextGroup));
+    // One style per EDGE GROUP (groupEdgeStyle is indexed by edge group id;
+    // groups with no edge lines keep an all-disabled EdgeStyle, so the
+    // stroke pass draws nothing for them) and the renderer -> edge group map
+    // the pass keys its sections on. Every section went through
+    // appendIntData, so edgeGroupOf covers every transparency group.
+    if (m_pImpl->edgeGroupOf.size() < std::size_t(m_pImpl->nextGroup))
+      m_pImpl->edgeGroupOf.resize(std::size_t(m_pImpl->nextGroup), 0);
+    if (m_pImpl->groupEdgeStyle.size() < m_pImpl->edgeGroupIds.size())
+      m_pImpl->groupEdgeStyle.resize(m_pImpl->edgeGroupIds.size());
+    scene.edgeGroupOfGroup = m_pImpl->edgeGroupOf;
     scene.groupEdgeStyle = m_pImpl->groupEdgeStyle;
 
     // NPR default contours: give each section whose renderer requested no

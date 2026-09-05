@@ -1546,14 +1546,19 @@ void renderTwoSectionContact(bool contactEdges, std::size_t &outInk,
 
     ctx.startRender();
 
-    // One sphere per section, so the boundary between them is a CROSS-section
-    // one (same-section contact is seamless whatever contactEdges says).
+    // One sphere per section, in DIFFERENT edge groups (the two renderers
+    // have identical edge settings, which the default keying would put in one
+    // group), so the boundary between them is a cross-group one -- what
+    // contactEdges controls. A contact inside one group is seamless whatever
+    // the flag says.
+    ctx.setEdgeGroup("left");
     ctx.startSection("left");
     ctx.setMaterial("nolighting");
     ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
     ctx.sphere(1.5, Vector4D(-0.9, 0.0, 0.0));
     ctx.endSection();
 
+    ctx.setEdgeGroup("right");
     ctx.startSection("right");
     ctx.setMaterial("nolighting");
     ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
@@ -1634,6 +1639,135 @@ TEST(UmbreonExport, ContactEdgesInkTheCrossSectionIntersection)
     EXPECT_EQ(runsOff, 2);
     EXPECT_EQ(runsOn, 3);
     EXPECT_GT(inkOn, inkOff + 30);
+}
+
+namespace {
+
+/// The two intersecting spheres of renderTwoSectionContact, each section
+/// given an edge group NAME through setEdgeGroup (the renderer's egroup
+/// property, as Scene::displayRendImpl does; empty = group by the edge
+/// settings). `widthMulB` and `colorB` change the right section's edge
+/// SETTINGS (its width / its color), which the default keying separates on;
+/// the color also makes its ink invisible to countEdgeInk, so the width is
+/// what the contact-run counts vary.
+/// Returns the center-row ink count/runs and the frame.
+void renderTwoSectionGroups(const char *egA, const char *egB, double widthMulB,
+                            bool colorB, std::size_t &outInk, int &outRuns,
+                            std::vector<unsigned char> &outPix)
+{
+    const double kViewH = 6.0;
+    const double kLineScale = kViewH / kEdgeModeDim;
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_SILHOUETTE);
+    ctx.setEdgeLineWidth(2.0 * kLineScale);  // a 2 px band
+
+    ctx.startRender();
+
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    ctx.setEdgeGroup(egA);
+    ctx.startSection("left");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(-0.9, 0.0, 0.0));
+    ctx.endSection();
+
+    ctx.setEdgeLineColor(colorB ? gfx::SolidColor::createRGB(1.0, 0.0, 0.0)
+                                : gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    ctx.setEdgeLineWidth(widthMulB * 2.0 * kLineScale);
+    ctx.setEdgeGroup(egB);
+    ctx.startSection("right");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(0.9, 0.0, 0.0));
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kEdgeModeDim;
+    prm.height = kEdgeModeDim;
+    prm.supersample = 2;
+    prm.contactEdges = true;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    ctx.render(prm, ow, oh, ncomp, outPix);
+    ASSERT_EQ(outPix.size(),
+              static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
+
+    countEdgeInk(outPix, outInk, outRuns);
+}
+
+/// Red pixels (the right section's own edge color) in an RGB frame.
+std::size_t countRedInk(const std::vector<unsigned char> &pix)
+{
+    std::size_t n = 0;
+    for (std::size_t i = 0; i + 2 < pix.size(); i += 3)
+        if (pix[i] > 180 && pix[i + 1] < 60 && pix[i + 2] < 60) ++n;
+    return n;
+}
+
+}  // namespace
+
+// Pins the EDGE GROUPS (Renderer egroup -> DisplayContext::setEdgeGroup ->
+// Scene::edgeGroupOfGroup): renderers of one edge group are ONE section for
+// umbreon's edge pass, so the depth-continuous contact contour between them
+// never inks, while renderers of different groups get it (contactEdges is on
+// by default).
+//
+// By DEFAULT the grouping is by the edge SETTINGS themselves -- the only
+// grouping consistent with "one group, one style": renderers drawing the same
+// lines are one section wherever they sit, renderers drawing different lines
+// are separate. A non-empty egroup name overrides that either way.
+TEST(UmbreonExport, EdgeGroupsDecideWhereContactContoursInk)
+{
+    std::size_t ink = 0;
+    int runs = 0;
+    std::vector<unsigned char> pix;
+
+    // Same settings, no names: one edge group -> no contact line (2 runs).
+    renderTwoSectionGroups("", "", 1.0, false, ink, runs, pix);
+    EXPECT_EQ(runs, 2);
+
+    // Different settings (the right sphere's edge is twice as wide): two
+    // groups -> the contact line inks (3 runs).
+    renderTwoSectionGroups("", "", 2.0, false, ink, runs, pix);
+    EXPECT_EQ(runs, 3);
+
+    // Different settings but the same egroup name: one group again.
+    renderTwoSectionGroups("grp", "grp", 2.0, false, ink, runs, pix);
+    EXPECT_EQ(runs, 2);
+
+    // Same settings, different names: two groups.
+    renderTwoSectionGroups("a", "b", 1.0, false, ink, runs, pix);
+    EXPECT_EQ(runs, 3);
+}
+
+// One edge group has ONE edge style: the first member renderer with edge
+// lines defines it and a later member's own settings are ignored. The right
+// sphere asks for a red edge color: by default that is a different setting,
+// so it is its own group and its outer contour is red; forced into the (black)
+// left sphere's group by name, it is black.
+TEST(UmbreonExport, EdgeGroupUsesTheFirstMembersEdgeStyle)
+{
+    std::size_t ink = 0;
+    int runs = 0;
+    std::vector<unsigned char> pixOwn, pixShared;
+
+    renderTwoSectionGroups("", "", 1.0, true, ink, runs, pixOwn);
+    EXPECT_GT(countRedInk(pixOwn), 20u);
+
+    renderTwoSectionGroups("grp", "grp", 1.0, true, ink, runs, pixShared);
+    EXPECT_EQ(countRedInk(pixShared), 0u);
+    EXPECT_EQ(runs, 2);
 }
 
 namespace {

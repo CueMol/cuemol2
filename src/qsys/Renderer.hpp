@@ -275,7 +275,20 @@ namespace qsys {
     /// Color of edge lines
     gfx::ColorPtr m_pEgLineCol;
 
+    /// Edge group name (umbreon rendering): renderers sharing a non-empty
+    /// name form one edge/silhouette group (no contact line inside the
+    /// group, one edge style); an empty name groups the renderer with the
+    /// other unnamed renderers of its object.
+    LString m_edgeGroupName;
+
   public:
+    const LString &getEdgeGroupName() const {
+      return m_edgeGroupName;
+    }
+    void setEdgeGroupName(const LString &n) {
+      m_edgeGroupName = n;
+    }
+
     double getEdgeLineWidth() const {
       return m_dEdgeLineWidth;
     }

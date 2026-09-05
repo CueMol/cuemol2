@@ -731,6 +731,7 @@ void Scene::displayRendImpl(DisplayContext *pdc, ObjectPtr pObj, RendererPtr pRe
   pdc->setEdgeLineType(nelt);
   pdc->setEdgeLineWidth(pRend->getEdgeLineWidth());
   pdc->setEdgeLineColor(pRend->getEdgeLineColor());
+  pdc->setEdgeGroup(pRend->getEdgeGroupName());
   
   bool bmat = false;
   Matrix4D xform = pRend->getXformMatrix();
