@@ -10,6 +10,8 @@
 #include <qlib/Vector4D.hpp>
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
+#include <qsys/style/StyleFile.hpp>
+#include <qsys/style/StyleMgr.hpp>
 #include <vector>
 #include "xtal/DensityMap.hpp"
 #include "xtal/MapRenderer.hpp"
@@ -190,4 +192,60 @@ TEST_F(MapRegionTest, OriginShiftsConversions)
     EXPECT_FALSE(m_pMap->isInRange(Vector4D(1.5, 2.5, 3.5)));
     EXPECT_NEAR(m_pMap->getValueAt(Vector4D(11.5, 22.5, 33.5)),
                 m_pMap->atFloat(1, 2, 3), 1e-9);
+}
+
+// siglevel is a sigma multiple on a crystallographic map and the top percent
+// of grid points on a cryo-EM map. The absolute view converts both ways and
+// leaves siglevel modified so the level is persisted.
+TEST_F(MapRegionTest, SigLevelResolvesByMapKind)
+{
+    const double rmsd = m_pMap->getRmsdDensity();
+    EXPECT_NEAR(m_pMSR->getSigLevel(), 1.1, 1e-9);
+    EXPECT_FALSE(m_pMSR->isPercentLevel(m_pMap));
+    EXPECT_NEAR(m_pMSR->getLevel(), 1.1 * rmsd, 1e-9);
+    EXPECT_TRUE(m_pRend->isPropDefault("siglevel"));
+
+    m_pMap->setDetectedMapType(DensityMap::MAPTYPE_EM);
+    EXPECT_TRUE(m_pMSR->isPercentLevel(m_pMap));
+    EXPECT_NEAR(m_pMSR->getLevel(), m_pMap->getLevelAtTopFraction(0.011), 1e-9);
+
+    // absolute write: converted through the histogram, flagged modified
+    const double abslv = m_pMap->getLevelAtTopFraction(0.25);
+    m_pMSR->setLevel(abslv);
+    EXPECT_NEAR(m_pMSR->getSigLevel(),
+                m_pMap->getTopFractionAtLevel(abslv) * 100.0, 1e-9);
+    EXPECT_NEAR(m_pMSR->getLevel(), abslv, 1e-9);
+    EXPECT_FALSE(m_pRend->isPropDefault("siglevel"));
+}
+
+// The cryo-EM style is where the EM level default lives: applying it writes
+// siglevel as a default-flagged value, a reset restores the style value rather
+// than the class default, and the crystallographic style falls back to the
+// class default.
+TEST_F(MapRegionTest, CryoEMStyleIsResetTarget)
+{
+    qsys::StyleMgr *pSM = qsys::StyleMgr::getInstance();
+    if (pSM->getStyleNode("CryoEMIsoSurf", qlib::invalid_uid) == nullptr) {
+        // qsys::init() resolves the style dir as %%CONFDIR%%/data/, which
+        // does not exist in the source tree, so load the file explicitly
+        qsys::StyleFile sfile;
+        sfile.loadFile(CUEMOL2_DEFAULT_STYLE_PATH, qlib::invalid_uid);
+    }
+    ASSERT_NE(pSM->getStyleNode("CryoEMIsoSurf", qlib::invalid_uid), nullptr);
+
+    m_pRend->applyStyles("CryoEMIsoSurf");
+    EXPECT_NEAR(m_pMSR->getSigLevel(), 1.0, 1e-9);
+    EXPECT_TRUE(m_pRend->isPropDefault("siglevel"));
+    EXPECT_TRUE(m_pMSR->isUseAbsLev());
+    EXPECT_TRUE(m_pRend->isPropDefault("use_abslevel"));
+
+    m_pRend->setPropReal("siglevel", 5.0);
+    EXPECT_FALSE(m_pRend->isPropDefault("siglevel"));
+    EXPECT_TRUE(m_pRend->resetProperty("siglevel"));
+    EXPECT_NEAR(m_pMSR->getSigLevel(), 1.0, 1e-9);
+    EXPECT_TRUE(m_pRend->isPropDefault("siglevel"));
+
+    m_pRend->applyStyles("DefaultIsoSurf");
+    EXPECT_NEAR(m_pMSR->getSigLevel(), 1.1, 1e-9);
+    EXPECT_FALSE(m_pMSR->isUseAbsLev());
 }

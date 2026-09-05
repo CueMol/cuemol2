@@ -163,6 +163,7 @@ describe('getMapRendererState', () => {
             colormode: 'multigrad',
             extent: 25,
             siglevel: 1.5,
+            level: 0.63,
             use_abslevel: false,
             maxLevel: 5,
             minLevel: -5,
@@ -188,6 +189,9 @@ describe('getMapRendererState', () => {
             extent: 25,
             siglevel: 1.5,
             useAbsLevel: false,
+            level: 0.63,
+            // no map kind exposed -> the native unit falls back to sigma
+            levelUnit: 'sigma',
             maxLevel: 5,
             minLevel: -5,
             maxExtent: 60,
@@ -413,6 +417,25 @@ describe('setMapRendererProp', () => {
         })
         expect(res).toEqual({ ok: true })
         expect(resetProp).toHaveBeenCalledWith('alpha')
+        expect(setProp).not.toHaveBeenCalled()
+        expect(scene.startUndoTxn).not.toHaveBeenCalled()
+    })
+
+    // `level` is the absolute-unit view of siglevel (no default of its own):
+    // the flag a restore puts back is siglevel's.
+    it('restores a default `level` write through resetProp("siglevel")', () => {
+        const scene = makeUndoScene(100)
+        const setProp = vi.fn()
+        const resetProp = vi.fn()
+        const rend = { setProp, resetProp }
+        scene.getRenderer = vi.fn(() => rend)
+        const ctx = makeCtx({ scene })
+        const res = setMapRendererProp(ctx, {
+            sceneId: 100, rendId: 11, propName: 'level', value: 0.02,
+            mode: 'abort', originalWasDefault: true,
+        })
+        expect(res.ok).toBe(true)
+        expect(resetProp).toHaveBeenCalledWith('siglevel')
         expect(setProp).not.toHaveBeenCalled()
         expect(scene.startUndoTxn).not.toHaveBeenCalled()
     })

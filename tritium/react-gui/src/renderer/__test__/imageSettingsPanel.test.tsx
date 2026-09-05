@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { fixtureProps } from '@renderer/__test__/fixtures/renderSettingsValues';
 import { mountTree } from '@renderer/__test__/helpers/testHarness';
 
 void React;
@@ -28,7 +29,7 @@ function mountSize() {
   return mountTree(
     <ImageSettingsPanel
       title="Size"
-      commonProps={RENDER_COMMON_PROPS}
+      commonProps={fixtureProps(RENDER_COMMON_PROPS)}
       onChange={vi.fn()}
       fields={['width', 'height', 'unit', 'dpi']}
       showPreset
@@ -44,7 +45,7 @@ function mountMovieImage() {
   return mountTree(
     <ImageSettingsPanel
       title="Image"
-      commonProps={RENDER_COMMON_PROPS}
+      commonProps={fixtureProps(RENDER_COMMON_PROPS)}
       onChange={vi.fn()}
       fields={['width', 'height', 'transparentBg', 'postBlend', 'pixelLabels']}
       showPreset

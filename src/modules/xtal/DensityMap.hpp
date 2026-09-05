@@ -199,6 +199,12 @@ namespace xtal {
     /// the lossless 8-bit histogram.
     double getLevelAtTopFraction(double frac) const;
 
+    /// Fraction of the samples lying at or above the given density level:
+    /// the inverse of getLevelAtTopFraction() at the resolution of the 8-bit
+    /// histogram (the level is snapped down to its bin, so the two round-trip
+    /// within one quantization step).
+    double getTopFractionAtLevel(double level) const;
+
   protected:
     /// ScalarObject histogram hook: the 256-bin byte histogram is a
     /// lossless base histogram of the quantized samples

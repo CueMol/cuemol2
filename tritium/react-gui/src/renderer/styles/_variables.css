@@ -92,6 +92,10 @@
   /* Log level colours */
   --log-warn: #e5c07b;
   --log-error: var(--accent-red);
+  /* Inline status text (a field note, a panel warning line): why-based
+     aliases so a surface never picks a raw accent. */
+  --text-warning: var(--log-warn);
+  --text-error: var(--accent-red);
 
   /* Typography */
   --font-ui:   "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
@@ -405,4 +409,6 @@
   /* Log level colours */
   --log-warn: #b8860b;
   --log-error: var(--accent-red);
+  --text-warning: var(--log-warn);
+  --text-error: var(--accent-red);
 }

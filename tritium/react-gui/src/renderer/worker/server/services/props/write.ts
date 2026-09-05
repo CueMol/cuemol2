@@ -5,17 +5,21 @@
  * Most properties go straight through. The exceptions are the ones whose
  * meaning reaches past the object holding them: `group` has to name a group
  * that exists (a typo used to strand the renderer outside the scene tree),
- * `visible` on a group can be asked to cascade to its members, and a
- * selection has to compile against the molecule it belongs to.
+ * `visible` on a group can be asked to cascade to its members, a
+ * selection has to compile against the molecule it belongs to, and a map's
+ * `map_type` decides which default style its renderers carry.
  */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { resolvePropTarget } from './target';
+import { NON_RESETTABLE_KEYS, isMolSelectionType } from '@renderer/worker/shared/genericProps';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 import { checkGroupAssignment } from '@renderer/worker/server/services/helpers/rendGroup';
+import { syncMapRendererStyles } from '@renderer/worker/server/services/helpers/mapRendererStyles';
+import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import { collectProps } from './read';
 import { isSceneNameWrite } from './selContext';
 import type {
@@ -52,6 +56,7 @@ export function setGenericProp(
     // default before the drag; otherwise restore the original value. This undoes
     // the one-way default-flag flip a preview frame leaves behind.
     if (args.mode === 'abort' && args.op === 'set') {
+        if (args.originalWasDefault && NON_RESETTABLE_KEYS.has(args.propName)) return fail;
         try {
             if (args.originalWasDefault) target.resetProp(args.propName);
             else target.setProp(args.propName, args.value);
@@ -60,6 +65,16 @@ export function setGenericProp(
             return fail;
         }
         return { ok: true, entries: [] };
+    }
+
+    // A renderer's `name` and `sel` have no default to go back to (see
+    // NON_RESETTABLE_KEYS). Refused before the transaction opens: C++ would
+    // happily write the registered "" default -- a nameless renderer group
+    // orphans its members and matches every ungrouped renderer -- and an
+    // empty committed transaction clears the redo stack.
+    if (args.op === 'reset' && NON_RESETTABLE_KEYS.has(args.propName)) {
+        console.warn(`setGenericProp: refusing reset of non-resettable "${args.propName}"`);
+        return fail;
     }
 
     const label =
@@ -149,7 +164,7 @@ export function setGenericProp(
                 for (const c of grpRename.children) {
                     try { c.group = grpRename.newName; } catch { /* ignore */ }
                 }
-            } else if (args.valueType.startsWith('object<MolSelection>')) {
+            } else if (isMolSelectionType(args.valueType)) {
                 // Selection properties need a compiled SelCommand, not a raw
                 // string (UXP `commitPropChange` MolSelection branch). An empty
                 // string compiles to "select all".
@@ -163,6 +178,12 @@ export function setGenericProp(
                         try { c.visible = args.value as boolean; } catch { /* ignore */ }
                     }
                 }
+            }
+            // A map's kind picks the default style of its renderers (see
+            // helpers/mapRendererStyles.ts); re-derive it in the same txn so
+            // one undo reverts the kind and the styles together.
+            if (args.nodeType === 'object' && args.propName === 'map_type') {
+                syncMapRendererStyles(target as unknown as CueObject);
             }
         });
     } catch (e) {
@@ -191,14 +212,21 @@ export function resetGenericProps(
     const { scene, target } = resolvePropTarget(ctx, args);
     if (!scene || !target || args.propNames.length === 0) return fail;
 
+    // `name` / `sel` are never reset (UXP resetAllToDefault skips them too).
+    const propNames = args.propNames.filter((n) => !NON_RESETTABLE_KEYS.has(n));
+    if (propNames.length !== args.propNames.length) {
+        console.warn('resetGenericProps: skipping non-resettable name / sel');
+    }
+    if (propNames.length === 0) return fail;
+
     const label =
-        args.propNames.length === 1
-            ? `Reset property: ${args.propNames[0]}`
-            : `Reset ${args.propNames.length} properties`;
+        propNames.length === 1
+            ? `Reset property: ${propNames[0]}`
+            : `Reset ${propNames.length} properties`;
 
     try {
         withUndoTxn(scene, label, () => {
-            for (const name of args.propNames) {
+            for (const name of propNames) {
                 // Skip props that vanished because a parent object property
                 // was swapped earlier in this very loop (e.g. resetting
                 // `coloring` before `coloring.xxx`) -- UXP resetAllToDefault's
@@ -238,6 +266,10 @@ export function setGenericProps(
     const fail: SetGenericPropResult = { ok: false, entries: [] };
     const { scene, target } = resolvePropTarget(ctx, args);
     if (!scene || !target || args.writes.length === 0) return fail;
+    if (args.writes.some((w) => w.op === 'reset' && NON_RESETTABLE_KEYS.has(w.propName))) {
+        console.warn('setGenericProps: refusing a reset of non-resettable name / sel');
+        return fail;
+    }
 
     const label =
         args.writes.length === 1
@@ -252,7 +284,7 @@ export function setGenericProps(
                 } else if (isSceneNameWrite(args.nodeType, w.propName)) {
                     // Scene.name has no property setter; rename via setName().
                     scene.setName(String(w.value ?? ''));
-                } else if (w.valueType.startsWith('object<MolSelection>')) {
+                } else if (isMolSelectionType(w.valueType)) {
                     const sel = makeSel(ctx, String(w.value ?? ''), scene.uid);
                     if (!sel) throw new Error(`bad selection: ${String(w.value)}`);
                     target.setProp(w.propName, sel.wrapped);

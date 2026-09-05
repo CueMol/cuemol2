@@ -52,7 +52,6 @@ import { NamdCoorOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/Namd
 import { AmberPrmtopOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/AmberPrmtopOptionsPane';
 import { RendererOptionsPane } from '@renderer/dialogs/fopen-opt-dlgs/panes/RendererOptionsPane';
 import { isMolObjectClass, isScalarMapClass } from '@renderer/worker/shared/objectClasses';
-import { pushHistory } from '@renderer/h3-kit/MolSelList';
 
 import type { PdbOptions, MtzOptions, Ccp4MapOptions, MsmsOptions, NamdCoorOptions, AmberPrmtopOptions, PresetTypeEntry } from './types';
 
@@ -290,9 +289,8 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   }, [visible, filePath, formatKind]);
 
   const handleConfirm = useCallback(() => {
-    if (rendererOptions.selectionEnabled && rendererOptions.selection) {
-      pushHistory(rendererOptions.selection);
-    }
+    // commitHistory also records the renderer selection in the shared
+    // selection history (see useRendererOptions).
     commitHistory();
     // Remember the chosen PSF path for the next NAMD coordinate load (UXP
     // pref "cuemol2.ui.histories.namdcoor.psfpath").

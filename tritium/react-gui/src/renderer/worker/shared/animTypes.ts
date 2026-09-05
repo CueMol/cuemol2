@@ -53,6 +53,16 @@ export type AnimAddType =
 export type AnimPlayState = "stop" | "play" | "pause";
 
 /**
+ * Whether an element's time reference chain resolves.
+ *
+ *   - `ok`: absolute times are known;
+ *   - `missing`: its own `timeRefName` names no element;
+ *   - `cycle`: it sits on a reference loop (a self-reference is a loop of one);
+ *   - `upstream`: it chains to an element in one of the two states above.
+ */
+export type AnimTimeRefState = "ok" | "missing" | "cycle" | "upstream";
+
+/**
  * One CueMol `AnimObj` rendered as a single timeline strip.
  *
  * All time fields are milliseconds (`TimeValue.millisec`). The strip is
@@ -85,14 +95,24 @@ export interface AnimElement {
   /** Relative end. */
   endMs: number;
 
-  /** Resolved absolute start -> strip left edge (read-only in C++). */
+  /**
+   * Resolved absolute start -> strip left edge. Resolved worker-side from the
+   * chain when `timeRefState` is `ok`; otherwise the last position C++ held
+   * (0 for an element that never resolved), so the strip has somewhere to be.
+   */
   absStartMs: number;
 
-  /** Resolved absolute end -> strip right edge (read-only in C++). */
+  /** Resolved absolute end -> strip right edge (same source as `absStartMs`). */
   absEndMs: number;
 
   /** `AnimObj.quadric` easing factor (0 = linear). */
   quadric: number;
+
+  /** Whether the element's time reference chain resolves. */
+  timeRefState: AnimTimeRefState;
+
+  /** Why it does not, in the words the inspector shows; set when not `ok`. */
+  resolveError?: string;
 }
 
 /**
@@ -125,6 +145,13 @@ export interface AnimTimeline {
 
   /** Index-ordered elements; lane order follows this order. */
   elements: AnimElement[];
+
+  /**
+   * Why the chain does not resolve (the first root cause in list order), or
+   * absent when every element is `ok`. While set, playback is refused and
+   * the panel shows the reason.
+   */
+  resolveError?: string;
 
   /** Manager-level state. */
   mgr: AnimMgrState;

@@ -132,6 +132,7 @@ export type {
   AnimElementType,
   AnimAddType,
   AnimPlayState,
+  AnimTimeRefState,
   AnimElement,
   AnimMgrState,
   AnimTimeline,

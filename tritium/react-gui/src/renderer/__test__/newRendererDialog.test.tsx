@@ -50,6 +50,7 @@ import {
     setDefaultRendType,
 } from '@renderer/dialogs/fopen-opt-dlgs/rendTypeHistory'
 import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import { getHistory } from '@renderer/h3-kit/MolSelList'
 
 function findByText(root: ParentNode, tag: string, text: string): HTMLElement | null {
     const els = Array.from(root.querySelectorAll(tag)) as HTMLElement[]
@@ -327,5 +328,29 @@ describe('NewRendererDialog presets', () => {
         await flushPromises()
         expect(controlByLabel<HTMLSelectElement>('Renderer type', 'select').value).toBe('simple')
         withoutPresets.unmount()
+    })
+})
+
+describe('NewRendererDialog -- selection history', () => {
+    beforeEach(() => {
+        globalThis.localStorage.clear()
+        mockCm.invokeService.mockReset()
+        mockCm.invokeService.mockImplementation((name: string, args: { prefix: string }) =>
+            name === 'proposeUniqName'
+                ? Promise.resolve({ name: args.prefix + '1' })
+                : Promise.resolve(null),
+        )
+    })
+
+    it('Create records the targeted selection (same path as the file-open dialog)', async () => {
+        const handle = mount({ isMol: true, currentSel: "c;'A'" })
+        await flushPromises()
+        const createBtn = findByText(document.body, 'button', 'Create') as HTMLButtonElement
+        expect(createBtn).toBeTruthy()
+        await act(async () => { createBtn.click() })
+        await flushPromises()
+        expect(handle.captured?.rendOpts.selection).toBe("c;'A'")
+        expect(getHistory()).toEqual(["c;'A'"])
+        handle.unmount()
     })
 })

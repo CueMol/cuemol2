@@ -33,13 +33,17 @@ function makeUndoScene(uid: number) {
     }
 }
 
+// The compiled selection the fake ResidRangeSet hands back; its string form
+// is what the services return as `selStr` (the selection-history entry).
+const TO_SEL = { __toSel: true, toString: () => "'A'.10:12.*" }
+
 function makeRrs(opts: { contains?: boolean } = {}) {
     return {
         fromSel: vi.fn(),
         contains: vi.fn(() => opts.contains ?? false),
         append: vi.fn(),
         remove: vi.fn(),
-        toSel: vi.fn(() => ({ __toSel: true })),
+        toSel: vi.fn(() => TO_SEL),
     }
 }
 
@@ -94,14 +98,14 @@ describe('toggleResidueSelection', () => {
             sceneId: 100, molId: 11, chainName: 'A', residueIndex: '10',
         })
 
-        expect(result).toEqual({ ok: true })
+        expect(result).toEqual({ ok: true, selStr: "'A'.10:12.*" })
         expect(scene.startUndoTxn).toHaveBeenCalledWith('Toggle select atom(s)')
         expect(createRenderer).toHaveBeenCalledWith('*selection')
         expect(rrs.fromSel).toHaveBeenCalled()
         expect(makeSel).toHaveBeenCalledWith(ctx, "'A'.10.*", 100)
         expect(rrs.append).toHaveBeenCalledWith(mol, { __sel: "'A'.10.*" })
         expect(rrs.remove).not.toHaveBeenCalled()
-        expect(setSel).toHaveBeenCalledWith({ __toSel: true })
+        expect(setSel).toHaveBeenCalledWith(TO_SEL)
         expect(scene.commitUndoTxn).toHaveBeenCalled()
     })
 
@@ -114,11 +118,11 @@ describe('toggleResidueSelection', () => {
             sceneId: 100, molId: 11, chainName: 'B', residueIndex: '42A',
         })
 
-        expect(result).toEqual({ ok: true })
+        expect(result).toEqual({ ok: true, selStr: "'A'.10:12.*" })
         expect(makeSel).toHaveBeenCalledWith(ctx, "'B'.42A.*", 100)
         expect(rrs.remove).toHaveBeenCalledWith(mol, { __sel: "'B'.42A.*" })
         expect(rrs.append).not.toHaveBeenCalled()
-        expect(setSel).toHaveBeenCalledWith({ __toSel: true })
+        expect(setSel).toHaveBeenCalledWith(TO_SEL)
     })
 
     it('skips auto-create when *selection renderer already exists', () => {
@@ -192,11 +196,11 @@ describe('rangeSelectResidues', () => {
             fromIndex: '10', toIndex: '20', toggle: false,
         })
 
-        expect(result).toEqual({ ok: true })
+        expect(result).toEqual({ ok: true, selStr: "'A'.10:12.*" })
         expect(makeSel).toHaveBeenCalledWith(ctx, "'A'.20:10.*", 100)
         expect(rrs.append).toHaveBeenCalledWith(mol, { __sel: "'A'.20:10.*" })
         expect(rrs.remove).not.toHaveBeenCalled()
-        expect(setSel).toHaveBeenCalledWith({ __toSel: true })
+        expect(setSel).toHaveBeenCalledWith(TO_SEL)
         expect(scene.startUndoTxn).toHaveBeenCalledWith('Toggle select atom(s)')
     })
 
@@ -212,7 +216,7 @@ describe('rangeSelectResidues', () => {
 
         expect(rrs.remove).toHaveBeenCalledWith(mol, { __sel: "'C'.8:5.*" })
         expect(rrs.append).not.toHaveBeenCalled()
-        expect(setSel).toHaveBeenCalledWith({ __toSel: true })
+        expect(setSel).toHaveBeenCalledWith(TO_SEL)
     })
 
     it('returns ok:false when from-residue cannot be resolved', () => {

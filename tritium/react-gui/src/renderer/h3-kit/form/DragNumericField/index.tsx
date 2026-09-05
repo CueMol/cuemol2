@@ -49,20 +49,9 @@
  * The widget is focusable as a single unit (`tabIndex=0` on the root); its
  * parts (arrows, edit input) never take a separate focus ring. Keyboard
  * interaction on the focused widget is intentionally not implemented (Blender's
- * number button has no key-input focus); the edit input handles Enter / Escape,
- * plus Up / Down when `resolveStep` opts the field into keyboard stepping.
- *
- * Non-decimal values (`format` / `parse` / `resolveStep`): the display string,
- * the text-edit parser and the step granularity are all overridable, so the same
- * interaction model can drive a non-plain-number field -- e.g. the `TimeField`
- * preset, which shows `M:SS.mmm` and steps the segment under the caret. When
- * `parse` is given the edit input switches from `type="number"` to `type="text"`
- * (a timecode is not a valid number-input value).
- *
- * The step affordance is laid out either at the field's sides (`stepper="sides"`,
- * the default `<` / `>`) or stacked at its right edge (`stepper="stacked"`, an
- * up / down pair -- the spin-button shape used by time and other unit-segmented
- * values).
+ * number button has no key-input focus); the edit input handles Enter / Escape.
+ * A value that is not a plain decimal (a timecode) is not this widget's job:
+ * `TimeField` is its own, segmented editor.
  *
  * Sizing/spacing/colors come entirely from `.h3-form-drag*` in `styles/_form-kit.css`
  * (driven by the `--field-*` / `--space-*` / color tokens); no size prop is
@@ -108,8 +97,8 @@
  *
  * The interaction lives in three hooks beside this file -- `useDragValue`
  * (body drag), `useStepRepeat` (arrow auto-repeat) and `useNumericEdit` (text
- * entry and keyboard stepping) -- over the shared mode / draft / refs declared
- * in `types.ts`. This file owns that shared core and the render.
+ * entry) -- over the shared mode / draft / refs declared in `types.ts`. This
+ * file owns that shared core and the render.
  *
  * @module form/DragNumericField
  */
@@ -167,10 +156,6 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     onDragCancel,
     onCommitNext,
     onCommitPrev,
-    format: formatProp,
-    parse,
-    stepper = 'sides',
-    resolveStep,
     'aria-label': ariaLabel,
     title,
     className,
@@ -193,20 +178,13 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     const coarseStep = coarseSnap ?? step * SNAP_FACTOR;
     const dispDecimals =
         fineDrag ? decimalsOf(fineStep) : (decimals ?? decimalsOf(fineStep));
-    const format = useCallback(
-        (v: number) => (formatProp ? formatProp(v) : v.toFixed(dispDecimals)),
-        [formatProp, dispDecimals],
-    );
+    const format = useCallback((v: number) => v.toFixed(dispDecimals), [dispDecimals]);
 
     /** Read a typed draft, or null when it is empty / malformed. */
-    const parseDraft = useCallback(
-        (text: string): number | null => {
-            if (parse) return parse(text);
-            const n = Number(text);
-            return text.trim() !== '' && Number.isFinite(n) ? n : null;
-        },
-        [parse],
-    );
+    const parseDraft = useCallback((text: string): number | null => {
+        const n = Number(text);
+        return text.trim() !== '' && Number.isFinite(n) ? n : null;
+    }, []);
 
     // The global mousemove closure must see the latest committed value (for the
     // onRelease commit) without re-subscribing the listener.
@@ -214,7 +192,7 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     valueRef.current = value;
 
     // The global mouseup closure reads the formatter through a ref so that a
-    // changing `format` (e.g. when the active unit's decimal places change)
+    // changing `format` (the display precision changes while Shift is held)
     // does NOT recreate the mouseup handler. If it did, the reference-stable
     // teardown would keep removing a stale handler and leak the document
     // mouseup listener -- a later stray mouseup would then re-enter edit mode
@@ -242,9 +220,9 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     const { onMouseDown } = useDragValue(core, value, {
         onFineDragChange: setFineDrag,
     });
-    const { onStepButtonDown, isPressing } = useStepRepeat(core, { resolveStep });
-    const { commitEdit, onEditKeyDown, endKeyStep } = useNumericEdit(core, {
-        step, onChange, onRelease, onCommitNext, onCommitPrev, resolveStep, isPressing,
+    const { onStepButtonDown, isPressing } = useStepRepeat(core);
+    const { commitEdit, onEditKeyDown } = useNumericEdit(core, {
+        onChange, onRelease, onCommitNext, onCommitPrev, isPressing,
     });
 
     // Imperative handle: a parent can drop a sibling field straight into edit
@@ -279,35 +257,17 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
             ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
             : null;
 
-    const stacked = stepper === 'stacked';
-
-    /** One step affordance; `stacked` only changes the glyph and its class. */
+    /** One step affordance at the field's edge. */
     const stepButton = (sign: 1 | -1) => (
         <button
             type="button"
-            className={
-                stacked
-                    ? `h3-form-drag-spin h3-form-drag-spin-${sign > 0 ? 'up' : 'down'}`
-                    : `h3-form-drag-arrow h3-form-drag-arrow-${sign > 0 ? 'right' : 'left'}`
-            }
+            className={`h3-form-drag-arrow h3-form-drag-arrow-${sign > 0 ? 'right' : 'left'}`}
             tabIndex={-1}
             disabled={disabled || (sign > 0 ? value >= max : value <= min)}
             aria-label={sign > 0 ? 'Increment' : 'Decrement'}
             onMouseDown={(e) => onStepButtonDown(e, sign)}
         >
-            <AppIcon
-                name={
-                    stacked
-                        ? sign > 0
-                            ? 'ui.caretUp'
-                            : 'ui.caretDown'
-                        : sign > 0
-                          ? 'ui.caretRight'
-                          : 'ui.caretLeft'
-                }
-                size={10}
-                aria-hidden
-            />
+            <AppIcon name={sign > 0 ? 'ui.caretRight' : 'ui.caretLeft'} size={10} aria-hidden />
         </button>
     );
 
@@ -329,19 +289,18 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
                     aria-hidden="true"
                 />
             )}
-            {!stacked && stepButton(-1)}
+            {stepButton(-1)}
 
             {mode === 'editing' ? (
                 <input
                     ref={inputRef}
-                    type={parse ? 'text' : 'number'}
+                    type="number"
                     inputMode="numeric"
                     className="h3-form-drag-input"
                     value={draft}
-                    step={parse ? undefined : fineStep}
+                    step={fineStep}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={onEditKeyDown}
-                    onKeyUp={endKeyStep}
                     onBlur={commitEdit}
                 />
             ) : (
@@ -351,14 +310,7 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
                 </span>
             )}
 
-            {stacked ? (
-                <div className="h3-form-drag-spinner">
-                    {stepButton(1)}
-                    {stepButton(-1)}
-                </div>
-            ) : (
-                stepButton(1)
-            )}
+            {stepButton(1)}
         </div>
     );
 });

@@ -7,14 +7,17 @@
  *   - Renderer dropdown listing every map renderer in the active scene
  *     (UXP filter: contour | isosurf | gpu_mapmesh | gpu_mapvol),
  *     labelled `<objName>/<rendName>`.
- *   - Dropdown menu (toolbar button) with "Use sigma contour level" vs
- *     "Use absolute contour level" radio pair -- toggles `use_abslevel`.
+ *   - Dropdown menu (toolbar button) with a native-unit vs "Use absolute
+ *     contour level" radio pair -- toggles `use_abslevel`. The native unit
+ *     is sigma on a crystallographic map and the top percent of grid points
+ *     on a cryo-EM map (`levelUnit`).
  *   - Redraw button (`redrawMapCenter`) and Cell button (reuses
  *     `showUnitCellRenderer` from the symmetry panel).
  *   - Solid color swatch + a "Solid color" item in the dropdown menu.
- *   - Transparency / Level / Extent sliders, with sigma-to-absolute
- *     unit conversion handled inline (UXP `updateWidget` /
- *     `validateWidget` parity).
+ *   - Transparency / Level / Extent sliders. The Level slider writes
+ *     `siglevel` in the native unit, or `level` in absolute mode (C++
+ *     converts through the map kind), instead of UXP's inline
+ *     sigma-to-absolute scaling.
  *
  * @remarks Coloring here is deliberately the *simple* half only: the solid
  * color. Everything richer -- switching to multi-gradient, editing the
@@ -43,6 +46,7 @@ import { AppIcon } from '@renderer/h3-kit/primitives'
 import { PaneSectionHeader } from '@renderer/shell/PaneSectionHeader'
 import { DragRow, type MapPropWriteOpts } from '@renderer/features/density/densityMap/DragRow'
 import { useDensityMapPanel } from './useDensityMapPanel'
+import { levelControlFor } from './levelControl'
 import { FieldGrid } from '@renderer/h3-kit/form'
 import type {
     MapRendererEntry,
@@ -69,17 +73,6 @@ const CHECK_SPACER = <span style={{ display: 'inline-block', width: 16 }} aria-h
 /** Stored-value write options threaded to `setMapRendererProp`. */interface DensityMapPaneProps {
     collapsed?: boolean
     onToggleCollapse?: () => void
-}
-
-/**
- * Compute the absolute-mode slider step from the displayed range.
- * Mirrors UXP `updateWidget` (lines 241-248): `10^floor(log10(rng/100))`.
- * Falls back to a sensible minimum when `rng <= 0`.
- */
-function absoluteStep(rangeAbs: number): number {
-    if (!Number.isFinite(rangeAbs) || rangeAbs <= 0) return 0.01
-    const x = Math.floor(Math.log10(rangeAbs / 100))
-    return Math.pow(10, x)
 }
 
 export const DensityMapPane: React.FC<DensityMapPaneProps> = ({ collapsed, onToggleCollapse }) => {
@@ -227,36 +220,9 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({ collapsed, onTog
     }, [state, isSolid, setProp])
 
     const disabled = state == null
-    const sigma = String.fromCharCode(0x03c3)
 
-    // --- Level slider parameters (sigma vs absolute mode) ---
-    const levelProps = useMemo(() => {
-        if (!state) {
-            return {
-                value: 0, min: -10, max: 10, step: 0.1,
-                unit: sigma, scale: 1,
-            }
-        }
-        if (state.useAbsLevel) {
-            const rng = (state.maxLevel - state.minLevel) * state.denSigma
-            return {
-                value: state.siglevel,
-                min: state.minLevel * state.denSigma,
-                max: state.maxLevel * state.denSigma,
-                step: absoluteStep(rng),
-                unit: '',
-                scale: state.denSigma,
-            }
-        }
-        return {
-            value: state.siglevel,
-            min: state.minLevel,
-            max: state.maxLevel,
-            step: 0.1,
-            unit: sigma,
-            scale: 1,
-        }
-    }, [state, sigma])
+    // --- Level field: prop / unit / range / caption by mode ---
+    const levelCtl = useMemo(() => levelControlFor(state), [state])
 
     const modeMenu = (
         <Menu>
@@ -268,7 +234,11 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({ collapsed, onTog
                         CHECK_SPACER
                     )
                 }
-                text="Use sigma contour level"
+                text={
+                    state?.levelUnit === 'percent'
+                        ? 'Use top-percent contour level'
+                        : 'Use sigma contour level'
+                }
                 onClick={() => onPickLevelMode(false)}
             />
             <MenuItem
@@ -379,14 +349,14 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({ collapsed, onTog
                         />
                         <DragRow
                             label="Level"
-                            value={levelProps.value}
-                            min={levelProps.min}
-                            max={levelProps.max}
-                            step={levelProps.step}
-                            unit={levelProps.unit || undefined}
-                            scale={levelProps.scale}
+                            value={levelCtl.value}
+                            min={levelCtl.min}
+                            max={levelCtl.max}
+                            step={levelCtl.step}
+                            unit={levelCtl.unit || undefined}
+                            hint={levelCtl.hint || undefined}
                             committedIsDefault={state?.defaults.siglevel}
-                            onWrite={(v, opts) => setProp('siglevel', v, opts)}
+                            onWrite={(v, opts) => setProp(levelCtl.prop, v, opts)}
                             disabled={disabled}
                         />
                         {/* Extent only shapes the box region; in the full

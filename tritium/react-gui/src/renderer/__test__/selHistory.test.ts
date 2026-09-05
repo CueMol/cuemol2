@@ -5,11 +5,14 @@ import {
     getHistory,
     pushHistory,
     clearHistory,
+    recordAppliedSel,
+    recordIncrementalSel,
 } from '@renderer/h3-kit/MolSelList'
 
 describe('selHistory', () => {
     beforeEach(() => {
-        globalThis.localStorage.clear()
+        // Also forgets the incremental-run state kept by recordIncrementalSel.
+        clearHistory()
     })
 
     it('returns [] when storage is empty', () => {
@@ -65,5 +68,27 @@ describe('selHistory', () => {
         pushHistory('chain.A')
         clearHistory()
         expect(getHistory()).toEqual([])
+    })
+
+    it('recordAppliedSel records selStr / selStrs of an ok result only', () => {
+        recordAppliedSel(undefined)
+        recordAppliedSel({ ok: false, selStr: 'nope' })
+        recordAppliedSel({ ok: true })
+        recordAppliedSel({ ok: true, selStr: 'protein' })
+        recordAppliedSel({ ok: true, selStrs: ['aid 1:3', 'aid 7'] })
+        expect(getHistory()).toEqual(['aid 7', 'aid 1:3', 'protein'])
+    })
+
+    it('recordIncrementalSel keeps only the latest state of a run of picks', () => {
+        recordIncrementalSel("'A'.10.*")
+        recordIncrementalSel("'A'.10:11.*")
+        expect(getHistory()).toEqual(["'A'.10:11.*"])
+        // Another surface records in between: the run ends, both entries stay.
+        pushHistory('protein')
+        recordIncrementalSel("'A'.10:12.*")
+        expect(getHistory()).toEqual(["'A'.10:12.*", 'protein', "'A'.10:11.*"])
+        // Clearing the selection records nothing and keeps the last state.
+        recordIncrementalSel('')
+        expect(getHistory()).toEqual(["'A'.10:12.*", 'protein', "'A'.10:11.*"])
     })
 })

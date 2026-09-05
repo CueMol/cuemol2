@@ -15,7 +15,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Button, Popover } from "@blueprintjs/core";
 import { AppIcon, Tooltip } from "@renderer/h3-kit/primitives";
-import { SliderField } from "@renderer/h3-kit/form";
+import { FormButton, SliderField } from "@renderer/h3-kit/form";
 import { IPC } from "@shared/ipcChannels";
 
 import { RenderImageViewer } from "./RenderImageViewer";
@@ -39,7 +39,7 @@ interface RenderResultPaneProps {
    * Omit to hide the control.
    */
   onClearHistory?: () => void;
-  /** Show the previous render (and its settings). Omit to hide the control. */
+  /** Show the previous render. Omit to hide the control. */
   onBack?: () => void;
   /** Show the next render. Omit to hide the control. */
   onForward?: () => void;
@@ -48,6 +48,13 @@ interface RenderResultPaneProps {
   canForward?: boolean;
   /** Position in the history, e.g. "2 / 5"; shown beside the arrows. */
   historyLabel?: string;
+  /**
+   * Load the shown render's settings into the editor (and store them on the
+   * target scene). Omit to hide the control.
+   */
+  onUseSettings?: () => void;
+  /** Whether the shown render's settings differ from the editor's. */
+  canUseSettings?: boolean;
 }
 
 /** Read-only list of a snapshot's property values, shown in the popover. */
@@ -101,6 +108,8 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
   imageSrc,
   onClearHistory,
   onBack,
+  onUseSettings,
+  canUseSettings,
   onForward,
   canBack = false,
   canForward = false,
@@ -205,12 +214,14 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
   // open / reveal for an encoded movie.
   const actions = (
     <>
-      {/* Render history: each step restores that render's image AND the
-          settings that produced it, so a parameter change can be compared
-          against -- and reverted to -- the previous attempt. */}
+      {/* Render history: the arrows step through the images only. "Use
+          settings" brings the shown render's settings back into the editor
+          (an edit of the target scene, undoable), so a parameter change can
+          be compared against -- and reverted to -- the previous attempt
+          without the browsing itself touching the scene. */}
       {(onBack || onForward) && (
         <>
-          <Tooltip content="Previous render (restores its settings)">
+          <Tooltip content="Previous render">
             <Button
               small
               icon={<AppIcon name="ui.caretLeft" aria-hidden />}
@@ -219,7 +230,7 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
               disabled={!canBack}
             />
           </Tooltip>
-          <Tooltip content="Next render (restores its settings)">
+          <Tooltip content="Next render">
             <Button
               small
               icon={<AppIcon name="ui.caretRight" aria-hidden />}
@@ -230,6 +241,17 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
           </Tooltip>
           {historyLabel && (
             <span className="rr-history-pos type-label">{historyLabel}</span>
+          )}
+          {onUseSettings && (
+            <Tooltip content="Load this render's settings into the editor and store them in the scene">
+              <FormButton
+                text="Use settings"
+                icon={<AppIcon name="ui.properties" aria-hidden />}
+                aria-label="Use this render's settings"
+                onClick={onUseSettings}
+                disabled={!canUseSettings}
+              />
+            </Tooltip>
           )}
         </>
       )}

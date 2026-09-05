@@ -7,11 +7,17 @@
  * They are disabled when there is no active view (`canControl` false). The
  * start-camera select is a manager property (no view needed) and the zoom / fit
  * controls are pure view state, so both stay functional regardless.
+ *
+ * The current time is an editable `TimeField` on the ruler's scrub contract:
+ * a gesture (drag, keys, stepper, Ctrl+wheel, a typed timecode) previews the
+ * playhead locally and seeks once when it ends, so a long timeline is not
+ * re-seeked per mouse move. The length beside it stays read-only: it is a
+ * value the manager derives from its elements.
  */
 
 import React from "react";
 import { AppIcon } from "@renderer/h3-kit/primitives";
-import { ButtonRow, FormButton, SwitchField, SelectField } from "@renderer/h3-kit/form";
+import { ButtonRow, FormButton, SwitchField, SelectField, TimeField } from "@renderer/h3-kit/form";
 import type { AnimMgrState } from "@renderer/types";
 import { formatClock } from "./timelineGeometry";
 
@@ -23,9 +29,22 @@ interface AnimTransportProps {
   isPlaying: boolean;
   /** Whether transport can act (cm + scene + active view present). */
   canControl: boolean;
+  /**
+   * Why playback is refused right now (the time-reference chain does not
+   * resolve). Disables Play / skip / seek and the current-time field with
+   * the reason as their tooltip; Stop, Loop, the start camera and zoom stay
+   * live.
+   */
+  blockedReason?: string;
   loop: boolean;
   /** Scene camera names offered by the start-camera select. */
   cameras: string[];
+  /** Time shown in the current-time field: the scrub preview, else `mgr.elapsedMs`. */
+  playheadMs: number;
+  /** Current-time field gesture: preview locally, seek once on release, drop on cancel. */
+  onScrubPreview: (ms: number) => void;
+  onScrubCommit: (ms: number) => void;
+  onScrubCancel: () => void;
   onPlayPause: () => void;
   onStop: () => void;
   onSkipStart: () => void;
@@ -47,8 +66,13 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
   elementCount,
   isPlaying,
   canControl,
+  blockedReason,
   loop,
   cameras,
+  playheadMs,
+  onScrubPreview,
+  onScrubCommit,
+  onScrubCancel,
   onPlayPause,
   onStop,
   onSkipStart,
@@ -58,22 +82,25 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
   onFit,
   onZoomIn,
   onZoomOut,
-}) => (
+}) => {
+  const seekOff = !canControl || blockedReason !== undefined;
+  const seekTitle = (title: string) => blockedReason ?? title;
+  return (
   <div className="anim-transport">
     <ButtonRow className="anim-transport-playback">
       <FormButton
         icon={<AppIcon name="media.skipBack" aria-hidden />}
         onClick={onSkipStart}
-        disabled={!canControl}
-        title="Skip to start"
+        disabled={seekOff}
+        title={seekTitle("Skip to start")}
       />
       <FormButton
         icon={<AppIcon name={isPlaying ? "media.pause" : "media.play"} aria-hidden />}
         onClick={onPlayPause}
         active={isPlaying}
         intent={isPlaying ? "warning" : "success"}
-        disabled={!canControl}
-        title={isPlaying ? "Pause" : "Play"}
+        disabled={seekOff}
+        title={seekTitle(isPlaying ? "Pause" : "Play")}
       />
       <FormButton
         icon={<AppIcon name="media.stop" aria-hidden />}
@@ -84,13 +111,23 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
       <FormButton
         icon={<AppIcon name="media.skipForward" aria-hidden />}
         onClick={onSkipEnd}
-        disabled={!canControl}
-        title="Skip to end"
+        disabled={seekOff}
+        title={seekTitle("Skip to end")}
       />
     </ButtonRow>
 
     <div className="anim-readout">
-      <span className="anim-readout-value type-mono">{formatClock(mgr.elapsedMs)}</span>
+      <TimeField
+        value={playheadMs}
+        min={0}
+        max={mgr.lengthMs}
+        onChange={onScrubPreview}
+        onRelease={onScrubCommit}
+        onDragCancel={onScrubCancel}
+        disabled={seekOff}
+        title={blockedReason}
+        aria-label="Current time"
+      />
       <span className="anim-readout-sep">/</span>
       <span className="anim-readout-value type-mono">{formatClock(mgr.lengthMs)}</span>
     </div>
@@ -134,4 +171,5 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
       />
     </ButtonRow>
   </div>
-);
+  );
+};

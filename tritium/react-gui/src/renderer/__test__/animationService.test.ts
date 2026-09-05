@@ -169,6 +169,7 @@ describe("anim.service animListTimeline", () => {
       absStartMs: 0,
       absEndMs: 1000,
       timeRefName: "",
+      timeRefState: "ok",
     });
     expect(res.elements[1]).toMatchObject({
       index: 1,
@@ -178,9 +179,11 @@ describe("anim.service animListTimeline", () => {
       absStartMs: 1000,
       absEndMs: 3000,
       timeRefName: "Cam0",
+      timeRefState: "ok",
     });
     expect(res.mgr.lengthMs).toBe(3000);
     expect(res.fps).toBe(30);
+    expect(res.resolveError).toBeUndefined();
   });
 
   it("derives the element type from getClassName()", () => {
@@ -196,6 +199,29 @@ describe("anim.service animListTimeline", () => {
     expect(() => services.animListTimeline(ctx, { sceneId: 1 })).not.toThrow();
     const res = services.animListTimeline(ctx, { sceneId: 1 });
     expect(res.elements).toHaveLength(1);
+  });
+
+  it("marks an unresolved chain per element, resolving the rest in TS, and names the cause", () => {
+    // C++ threw half-way, so its absStart/absEnd are a mix of fresh and stale
+    // numbers (A's 999 is stale). Elements that resolve take the TS span; the
+    // broken ones keep the last position C++ held, flagged.
+    const objs = [
+      makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 999 }),
+      makeObj({ uid: 2, name: "B", className: "SimpleSpin", timeRefName: "ghost",
+                start: 100, end: 600, absStart: 7000, absEnd: 7500 }),
+      makeObj({ uid: 3, name: "C", className: "SimpleSpin", timeRefName: "B",
+                start: 0, end: 500, absStart: 0, absEnd: 0 }),
+    ];
+    const { ctx } = makeCtx({ objs, resolveThrows: true });
+    const res = services.animListTimeline(ctx, { sceneId: 1 });
+    expect(res.resolveError).toBe('"B" is relative to "ghost", which does not exist');
+    expect(res.elements.map((e) => [e.name, e.timeRefState, e.absStartMs, e.absEndMs])).toEqual([
+      ["A", "ok", 0, 1000],
+      ["B", "missing", 7000, 7500],
+      ["C", "upstream", 0, 0],
+    ]);
+    expect(res.elements[0].resolveError).toBeUndefined();
+    expect(res.elements[2].resolveError).toBe('"C" chains to "B", whose timing does not resolve');
   });
 
   it("returns an empty timeline when the scene is missing", () => {
@@ -244,15 +270,45 @@ describe("anim.service transport", () => {
     const { ctx, start, view } = makeCtx({ playState: "play", lengthMs: 5000 });
     const res = services.animPlay(ctx, { sceneId: 1, viewId: 2 });
     expect(start).toHaveBeenCalledWith(view);
-    expect(res.ok).toBe(true);
-    expect(res.mgr.playState).toBe("play");
+    expect(res).toMatchObject({ ok: true, mgr: { playState: "play" } });
   });
 
   it("animPlay fails (ok:false) without an active view, never calling start", () => {
     const { ctx, start } = makeCtx({ noView: true });
     const res = services.animPlay(ctx, { sceneId: 1, viewId: 999 });
     expect(start).not.toHaveBeenCalled();
-    expect(res.ok).toBe(false);
+    expect(res).toMatchObject({ ok: false, code: "not-found" });
+  });
+
+  it("animPlay / animGoTime refuse an unresolved chain before touching the manager", () => {
+    // C++ start() writes its timing fields before its own resolve throws, so
+    // the refusal has to come first -- and it says why.
+    const objs = [
+      makeObj({ uid: 1, name: "A", className: "SimpleSpin", timeRefName: "A", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+    ];
+    const { ctx, start, goTime } = makeCtx({ objs });
+    const played = services.animPlay(ctx, { sceneId: 1, viewId: 2 });
+    expect(played).toMatchObject({
+      ok: false,
+      code: "invalid-args",
+      error: "Cannot play: Cyclic reference: A -> A",
+    });
+    expect(start).not.toHaveBeenCalled();
+    const sought = services.animGoTime(ctx, { sceneId: 1, viewId: 2, ms: 100 });
+    expect(sought).toMatchObject({ ok: false, error: "Cannot seek: Cyclic reference: A -> A" });
+    expect(goTime).not.toHaveBeenCalled();
+  });
+
+  it("reports a C++ throw from start() as a native failure with its message", () => {
+    const { ctx, start } = makeCtx({});
+    start.mockImplementation(() => {
+      throw new Error("AnimMgr.start failed");
+    });
+    expect(services.animPlay(ctx, { sceneId: 1, viewId: 2 })).toMatchObject({
+      ok: false,
+      code: "native",
+      error: "AnimMgr.start failed",
+    });
   });
 
   it("animPause / animStop call the matching AnimMgr method", () => {
@@ -283,14 +339,14 @@ describe("anim.service transport", () => {
     const { ctx, mgr } = makeCtx({ loop: false });
     const res = services.animSetLoop(ctx, { sceneId: 1, loop: true });
     expect(mgr.loop).toBe(true);
-    expect(res.mgr.loop).toBe(true);
+    expect(res).toMatchObject({ ok: true, mgr: { loop: true } });
   });
 
   it("animSetStartCam writes mgr.startcam and returns it, outside any undo txn", () => {
     const { ctx, mgr, startUndoTxn } = makeCtx({ startcam: "" });
     const res = services.animSetStartCam(ctx, { sceneId: 1, startcam: "front" });
     expect(mgr.startcam).toBe("front");
-    expect(res.mgr.startcam).toBe("front");
+    expect(res).toMatchObject({ ok: true, mgr: { startcam: "front" } });
     // setStartCamName records nothing undoable; a txn would only be discarded.
     expect(startUndoTxn).not.toHaveBeenCalled();
   });
@@ -309,18 +365,41 @@ describe("anim.service transport", () => {
 });
 
 describe("anim.service editing", () => {
-  it("animSetElementTime sets relative start<=end and resolves, in an undo txn", () => {
+  it("animSetElementTime sets relative start<=end by uid, in an undo txn", () => {
     const objs = [makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 })];
     const { ctx, resolveRelTime, startUndoTxn, commitUndoTxn, createdTimeValues } = makeCtx({ objs });
-    const res = services.animSetElementTime(ctx, { sceneId: 1, index: 0, startMs: 2000, endMs: 500 });
+    const res = services.animSetElementTime(ctx, { sceneId: 1, uid: 1, startMs: 2000, endMs: 500 });
     expect(startUndoTxn).toHaveBeenCalledWith("Move animation element");
     expect(commitUndoTxn).toHaveBeenCalled();
     expect(createdTimeValues[0].millisec).toBe(500); // start = min
     expect(createdTimeValues[1].millisec).toBe(2000); // end = max
     expect(objs[0].start).toBe(createdTimeValues[0]);
     expect(objs[0].end).toBe(createdTimeValues[1]);
-    expect(resolveRelTime).toHaveBeenCalled();
+    // C++ update() resolves on the write; an explicit resolve would let a
+    // broken chain elsewhere roll this edit back.
+    expect(resolveRelTime).not.toHaveBeenCalled();
     expect(res.ok).toBe(true);
+  });
+
+  it("animSetElementTime rounds to whole milliseconds", () => {
+    const objs = [makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 })];
+    const { ctx, createdTimeValues } = makeCtx({ objs });
+    services.animSetElementTime(ctx, { sceneId: 1, uid: 1, startMs: 100.4, endMs: 900.6 });
+    expect(createdTimeValues.map((t) => t.millisec)).toEqual([100, 901]);
+  });
+
+  it("animSetElementTime refuses a vanished uid and a non-finite time without a transaction", () => {
+    const objs = [makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 })];
+    const { ctx, startUndoTxn } = makeCtx({ objs });
+    expect(services.animSetElementTime(ctx, { sceneId: 1, uid: 999, startMs: 0, endMs: 1 })).toMatchObject({
+      ok: false,
+      gone: true,
+    });
+    expect(services.animSetElementTime(ctx, { sceneId: 1, uid: 1, startMs: NaN, endMs: 1 })).toMatchObject({
+      ok: false,
+      code: "invalid-args",
+    });
+    expect(startUndoTxn).not.toHaveBeenCalled();
   });
 
   it("animAddElement creates the class, auto-chains to prev, appends, in an undo txn", () => {
@@ -333,8 +412,26 @@ describe("anim.service editing", () => {
     expect(createdObj.timeRefName).toBe("Cam0"); // auto-chain to previous
     expect(createdObj.angle).toBe(360); // SimpleSpin default
     expect(append).toHaveBeenCalledWith(createdObj);
-    expect(res.ok).toBe(true);
-    expect(res.uid).toBe(4242);
+    expect(res).toMatchObject({ ok: true, uid: 4242 });
+  });
+
+  it("animAddElement is born absolute when the preceding element's chain is broken", () => {
+    const objs = [
+      makeObj({ uid: 1, name: "Cam0", className: "CamMotion", timeRefName: "ghost", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+    ];
+    const { ctx, createdObj } = makeCtx({ objs });
+    expect(services.animAddElement(ctx, { sceneId: 1, type: "SimpleSpin" }).ok).toBe(true);
+    expect(createdObj.timeRefName).toBe("");
+  });
+
+  it("animAddElement failure still carries the manager snapshot", () => {
+    const { ctx, createObj, startUndoTxn, rollbackUndoTxn } = makeCtx({ startcam: "" });
+    createObj.mockImplementation(() => null as unknown as Record<string, unknown>);
+    const res = services.animAddElement(ctx, { sceneId: 1, type: "SimpleSpin" });
+    expect(res).toMatchObject({ ok: false, code: "native" });
+    expect(res.mgr).toBeDefined();
+    expect(startUndoTxn).toHaveBeenCalled();
+    expect(rollbackUndoTxn).toHaveBeenCalled();
   });
 
   it("animAddElement maps Hide -> ShowHideAnim(hide=true) and inserts at insertIndex", () => {
@@ -352,7 +449,7 @@ describe("anim.service editing", () => {
   it("animRemoveElement calls removeAt in an undo txn", () => {
     const objs = [makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 })];
     const { ctx, removeAt, startUndoTxn } = makeCtx({ objs });
-    const res = services.animRemoveElement(ctx, { sceneId: 1, index: 0 });
+    const res = services.animRemoveElement(ctx, { sceneId: 1, uid: 1 });
     expect(startUndoTxn).toHaveBeenCalledWith("Delete animation element");
     expect(removeAt).toHaveBeenCalledWith(0);
     expect(res.ok).toBe(true);
@@ -382,7 +479,7 @@ describe("anim.service editing", () => {
     ];
     const { ctx, removeAt, startUndoTxn } = makeCtx({ objs });
 
-    const res = services.animRemoveElement(ctx, { sceneId: 1, index: 0 });
+    const res = services.animRemoveElement(ctx, { sceneId: 1, uid: 1 });
 
     expect(res.ok).toBe(true);
     expect(startUndoTxn).toHaveBeenCalledWith("Delete animation element");
@@ -396,16 +493,56 @@ describe("anim.service editing", () => {
     expect(objs[2].start.millisec).toBe(0);
   });
 
+  it("animRemoveElement keeps a broken dependent's offsets: nothing to preserve, so no TimeValue", () => {
+    const objs = [
+      makeObj({ uid: 1, name: "A", className: "SimpleSpin", timeRefName: "ghost", start: 0, end: 1000, absStart: 5, absEnd: 6 }),
+      makeObj({ uid: 2, name: "B", className: "SimpleSpin", timeRefName: "A", start: 100, end: 600, absStart: 7, absEnd: 8 }),
+    ];
+    const { ctx, createdTimeValues } = makeCtx({ objs });
+    expect(services.animRemoveElement(ctx, { sceneId: 1, uid: 1 }).ok).toBe(true);
+    expect(objs[1].timeRefName).toBe("");
+    expect(objs[1].start.millisec).toBe(100);
+    expect(createdTimeValues).toHaveLength(0);
+  });
+
+  it("animRemoveElement of a later duplicate detaches nothing: references bind to the first carrier", () => {
+    const objs = [
+      makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+      makeObj({ uid: 2, name: "A", className: "SimpleSpin", start: 0, end: 5000, absStart: 0, absEnd: 5000 }),
+      makeObj({ uid: 3, name: "B", className: "SimpleSpin", timeRefName: "A", start: 0, end: 500, absStart: 1000, absEnd: 1500 }),
+    ];
+    const { ctx, removeAt } = makeCtx({ objs });
+    expect(services.animRemoveElement(ctx, { sceneId: 1, uid: 2 }).ok).toBe(true);
+    expect(removeAt).toHaveBeenCalledWith(1);
+    expect(objs[2].timeRefName).toBe("A");
+  });
+
   it("animMoveElement removes then re-inserts at the target index", () => {
     const objs = [
       makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
       makeObj({ uid: 2, name: "B", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
     ];
     const { ctx, removeAt, insertBefore } = makeCtx({ objs });
-    const res = services.animMoveElement(ctx, { sceneId: 1, from: 1, to: 0 });
+    const res = services.animMoveElement(ctx, { sceneId: 1, uid: 2, to: 0 });
     expect(removeAt).toHaveBeenCalledWith(1);
     expect(insertBefore).toHaveBeenCalledWith(0, objs[1]);
     expect(res.ok).toBe(true);
+  });
+
+  it("animMoveElement clamps the target and treats a move onto itself as a no-op", () => {
+    const objs = [
+      makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+      makeObj({ uid: 2, name: "B", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+    ];
+    const { ctx, removeAt, insertBefore, startUndoTxn } = makeCtx({ objs });
+    // Last element moved "down" past the end: clamped onto itself, nothing happens.
+    expect(services.animMoveElement(ctx, { sceneId: 1, uid: 2, to: 5 }).ok).toBe(true);
+    expect(startUndoTxn).not.toHaveBeenCalled();
+    // First element moved far down: clamped to the last slot.
+    expect(services.animMoveElement(ctx, { sceneId: 1, uid: 1, to: 9 }).ok).toBe(true);
+    expect(removeAt).toHaveBeenCalledWith(0);
+    expect(insertBefore).toHaveBeenCalledWith(1, objs[0]);
+    expect(services.animMoveElement(ctx, { sceneId: 1, uid: 99, to: 0 })).toMatchObject({ ok: false, gone: true });
   });
 
   it("animAddElement seeds __current from the view and adopts it as startcam", () => {
@@ -450,7 +587,7 @@ describe("anim.service editing", () => {
 
   it("editing ops fail safely when the scene is missing", () => {
     const { ctx } = makeCtx({ noScene: true });
-    expect(services.animRemoveElement(ctx, { sceneId: 9, index: 0 }).ok).toBe(false);
-    expect(services.animAddElement(ctx, { sceneId: 9, type: "NoopAnimObj" }).ok).toBe(false);
+    expect(services.animRemoveElement(ctx, { sceneId: 9, uid: 1 })).toMatchObject({ ok: false, code: "not-found" });
+    expect(services.animAddElement(ctx, { sceneId: 9, type: "NoopAnimObj" })).toMatchObject({ ok: false, code: "not-found" });
   });
 });

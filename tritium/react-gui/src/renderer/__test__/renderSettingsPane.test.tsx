@@ -13,6 +13,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { fixtureBackendProps, fixtureProps } from '@renderer/__test__/fixtures/renderSettingsValues';
 import { act } from 'react';
 import { mountTree, openAccordion } from '@renderer/__test__/helpers/testHarness';
 
@@ -32,7 +33,6 @@ import {
   type RenderBackendId,
   type RenderMode,
 } from '@renderer/data/renderSettings';
-import { RENDER_BACKENDS } from '@renderer/data/renderBackends';
 import { parseHatchSpec } from '@renderer/data/hatchSpec';
 import type { HatchLookEditorProps } from '@renderer/features/inspector/HatchLookEditor';
 
@@ -51,8 +51,8 @@ function mountPane(
   return mountTree(
     <RenderSettingsPane
       backend={backend}
-      commonProps={RENDER_COMMON_PROPS}
-      backendProps={RENDER_BACKENDS[backend].props}
+      commonProps={fixtureProps(RENDER_COMMON_PROPS)}
+      backendProps={fixtureBackendProps(backend)}
       onChange={vi.fn()}
       lighting="none"
       qualitySteps={{}}

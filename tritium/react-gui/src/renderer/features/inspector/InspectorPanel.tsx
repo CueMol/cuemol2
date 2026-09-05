@@ -109,10 +109,18 @@ const InspectorPanelComponent: React.FC = () => {
     setMode(value as InspectorMode);
   }, []);
 
-  // A freshly selected node should land on its default tab.
+  // A freshly selected target lands on its default tab. Keyed by identity,
+  // not by name: a rename committed from the Generic tab used to bounce the
+  // panel back to Properties and unmount the field being edited.
+  const targetKey =
+    target === null
+      ? null
+      : target.kind === "node"
+        ? `node:${target.sceneId}:${target.nodeType}:${target.nodeId}`
+        : `anim:${target.sceneId}:${target.uid}`;
   useEffect(() => {
-    if (hasTarget) setMode(defaultMode);
-  }, [hasTarget, nodeName, defaultMode]);
+    if (targetKey !== null) setMode(defaultMode);
+  }, [targetKey, defaultMode]);
 
   const isAnimElement = targetKind === "animElement";
 

@@ -59,6 +59,13 @@ architecture, it belongs here.
   昇格した時点で絵が黙って変わる。UI/`.qif` には露出しない理由、GI オン時に metal 材質の
   反射が背景色から実ジオメトリに変わる影響、principled BSDF material 採用を見送った理由、
   umbreon 側 API doc が古くヘッダを SSOT とすべき点。
+- [Umbreon GI 時の照明エネルギー配分](umbreon-gi-lighting-balance.md) (日本語) --
+  GI 有効時に POV radiosity の配分をそのまま使うと白く平坦になる原因 (umbreon は
+  ambient を材質の diffuse 係数で受ける) と、開放面の輝度を GI off に揃える parity 制約から
+  決めた配分。`lightIntensity` / `flashFraction` / `ambientFraction` を POV backend と同じ
+  意味の exporter property として露出し、render window では Lights グループ (全方式共通の
+  Light intensity / Flash fraction) と GI lighting axis (raytrace 一致から headlight をほぼ
+  無くすまでの 5 段、明るさ一定) と勾配 sky で操作する。C++ は auto フォールバックのみ。
 - [umbreon group-alpha blend](umbreon-group-alpha-blend.md) -- section 透過
   (group alpha) を多重パスで合成する際の不変条件: パスの重みは単位分割
   (合計ちょうど 1) でなければならず、合計が 1 を超えたときに背景係数が**負に
@@ -123,3 +130,29 @@ architecture, it belongs here.
   `MapRenderer.region_mode` (box / full) の 2 層モデル、PBC 適格条件の一本化、MRC2014 ORIGIN、
   full モードの budget 由来 stride (ChimeraX `limit_voxels` 流) とノード整列、却下案とロードマップ
   (chunk メモリ、reader streaming、zoom 連動 refine)。
+- [Renderer identity: the `name` default and name-based group membership](renderer-group-identity.md) --
+  why `name` carries a declared default that a bare `setName()` never clears
+  (a locked "default" name in the inspector; the name dropped on save), why
+  group membership keyed on the group's name orphans members on any rename
+  path without a cascade and makes a nameless group scan every ungrouped
+  renderer, and the compatible direction (run-time UID resolution, names kept
+  on the wire). Records what the tritium guard covers and what it does not.
+- [Surface scalar colouring: `ScalarColorSupport` and `DirectSurfRendererBase`](surface-scalar-coloring.md) --
+  the potential ramp and multi-gradient colouring shared by `molsurf`,
+  `dsurface` and `dsurf2`: the non-scriptable mixin that owns the scalar
+  colouring properties and their evaluation, the abstract scriptable base
+  the direct surface pair now derives from (one display-list path, one
+  per-vertex resolver that also feeds dsurf2's GPU primitive), the
+  contracts (unresolved vertex = `defaultcolor`, separate per-mode target
+  names, `setupParentData("multi_grad")` placement, `target` kept as an
+  inert string) and the test map.
+- [Scene app data と render 設定の scene 保存](scene-app-data.md) (日本語) --
+  Rendering window の設定を `.qsc` に保存する仕組み。`Scene` の汎用 typed app-data store
+  (`<appdata id= type=>`、class 未登録なら verbatim 温存) と QIF class `RenderSettings`
+  (common + backend ごとの子ブロック) をスキーマにした tolerant な読み込み、qif の `default` を既定値の
+  唯一の原典にして明示的に変えた値だけを保存する方針、property 変更を undo/redo と scene event
+  (`sceneAppDataChanged`) に載せる `SceneAppData` 基底、入れ子 property の落とし穴と「子 wrapper 経由で
+  書く」規約、属性値の改行エスケープ修正、tritium 側の書き込みトリガー (編集 / レンダー開始 /
+  「Use settings」のみ) と loop guard、別の app data を足す手順。レンダー時の設定 -> umbreon exporter の
+  写像は C++ `UmbreonSceneExporter::applyRenderSettings` に一本化し、tritium / cuetty / Python が共有する
+  (設定の無い scene は class 既定 + camera の projection)。

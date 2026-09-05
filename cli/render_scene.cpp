@@ -6,10 +6,13 @@
 
 #include "render_scene.hpp"
 
+#include <libcuemol2_api/binding.hpp>
+#include <qlib/LVarArgs.hpp>
 #include <qlib/LVariant.hpp>
 #include <qsys/Camera.hpp>
 #include <qsys/InOutHandler.hpp>
 #include <qsys/Scene.hpp>
+#include <qsys/SceneAppData.hpp>
 #include <qsys/SceneExporter.hpp>
 #include <qsys/StreamManager.hpp>
 #include <qsys/command/LoadSceneCommand.hpp>
@@ -55,17 +58,60 @@ int renderSceneToPng(const std::string &qscPath, const std::string &outPng,
         return 1;
     }
 
-    pExporter->setWidth(opts.width);
-    pExporter->setHeight(opts.height);
+    // Configure the exporter from the scene's render settings (Scene app data
+    // "render", what the tritium Rendering window stores per scene), or from
+    // the RenderSettings class defaults -- the window's starting point for a
+    // scene without settings of its own -- so the image is what the GUI would
+    // render. The mapping is UmbreonSceneExporter::applyRenderSettings, shared
+    // with the GUI and the Python module; it is reached through the scriptable
+    // interface because the render module's headers are not installed.
+    if (!pExporter->hasMethod("applyRenderSettings")) {
+        LOG_DPRINTLN("render> this build has no applyRenderSettings API");
+        return 1;
+    }
+    qsys::SceneAppDataPtr pStored = pScene->getAppData("render");
+    const bool bStored = !pStored.isnull();
+    LString backend;
+    {
+        qlib::LVarArgs args(2);
+        if (bStored) {
+            // the scene keeps the object alive across the call
+            args.at(0).shareObjectPtr(&pStored);
+        } else {
+            // A transient object at the class defaults. A render is not an
+            // edit, so no settings holder is created in the scene.
+            qlib::LScriptable *pFresh = nullptr;
+            LString errmsg;
+            if (!cuemol2::createObj("RenderSettings", "", &pFresh, errmsg)) {
+                LOG_DPRINTLN("render> cannot create RenderSettings: %s",
+                             errmsg.c_str());
+                return 1;
+            }
+            args.at(0).setObjectPtr(pFresh);  // owned by the variant
+        }
+        args.at(1).setStringValue("");  // backend block: the scene's choice
+        pExporter->invokeMethod("applyRenderSettings", args);
+        backend = args.retval().getStringValue();
+    }
+
+    if (!bStored) {
+        // No settings of its own: as the Rendering window does for such a
+        // scene, follow the projection the scene's camera was saved with.
+        // View::setCameraAnim copies the whole Camera (perspec included) into
+        // the view's current camera, so the saved camera records what the GL
+        // view showed.
+        pExporter->setProperty("perspective", qlib::LVariant(pCam->isPerspec()));
+    }
+
+    // Command-line overrides
+    if (opts.width > 0) pExporter->setWidth(opts.width);
+    if (opts.height > 0) pExporter->setHeight(opts.height);
     pExporter->setCameraName(camName);
 
-    // Follow the projection the scene was saved with. View::setCameraAnim
-    // copies the whole Camera (perspec included) into the view's current
-    // camera, so this is what the GL view showed; the exporter's own
-    // perspective property defaults to true regardless. Set through the
-    // scriptable interface because it belongs to UmbreonSceneExporter, whose
-    // header the render module does not install.
-    pExporter->setProperty("perspective", qlib::LVariant(pCam->isPerspec()));
+    LOG_DPRINTLN("render> %s render settings, backend '%s', %dx%d, camera '%s'",
+                 bStored ? "scene" : "default", backend.c_str(),
+                 pExporter->getWidth(), pExporter->getHeight(),
+                 opts.camera.c_str());
 
     pExporter->attach(pScene);
     try {
@@ -77,8 +123,8 @@ int renderSceneToPng(const std::string &qscPath, const std::string &outPng,
     }
     pExporter->detach();
 
-    LOG_DPRINTLN("render> wrote %s (%dx%d, camera '%s')", outPng.c_str(),
-                 opts.width, opts.height, opts.camera.c_str());
+    LOG_DPRINTLN("render> wrote %s (%dx%d)", outPng.c_str(), pExporter->getWidth(),
+                 pExporter->getHeight());
     return 0;
 }
 

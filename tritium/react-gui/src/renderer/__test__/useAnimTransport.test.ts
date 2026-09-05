@@ -139,4 +139,26 @@ describe("useAnimTransport progress", () => {
     expect(h.result.isPlaying).toBe(false);
     h.unmount();
   });
+
+  it("reports a refused play / seek through onError and keeps the manager state", async () => {
+    const cm = makeCm(mgrState());
+    cm.invokeService.mockResolvedValue({
+      ok: false,
+      error: "Cannot play: Cyclic reference: A -> A",
+      code: "invalid-args",
+    });
+    const onError = vi.fn();
+    const h = makeRenderHook(() =>
+      useAnimTransport({
+        cm: cm as never, sceneId: 3, viewId: 7, baseMgr: mgrState({ lengthMs: 8000 }), onError,
+      }),
+    );
+    act(() => h.result.play());
+    act(() => h.result.seek(500));
+    await flushPromises();
+    expect(onError).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenCalledWith("Cannot play: Cyclic reference: A -> A");
+    expect(h.result.mgr.lengthMs).toBe(8000);
+    h.unmount();
+  });
 });

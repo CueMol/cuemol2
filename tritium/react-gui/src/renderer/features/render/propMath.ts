@@ -16,13 +16,15 @@ import {
   RENDER_BACKENDS,
 } from '@renderer/data/renderBackends';
 import {
+  DEFAULT_RENDER_PRESET,
   SIZE_UNIT_FIELD_META,
-  defaultQualitySteps,
-  lightingPatch,
+  sizePresetsForMode,
   sizeUnitToPx,
   pxToSizeUnit,
   type RenderBackendId,
+  type RenderMode,
   type RenderPropPatch,
+  type RenderPropSpec,
   type RenderQualityConfig,
   type RenderQualitySteps,
 } from '@renderer/data/renderSettings';
@@ -67,20 +69,34 @@ export const qualityOf = (id: RenderBackendId): RenderQualityConfig | undefined 
 /** Axis steps of a backend that declares none. */
 export const NO_QUALITY_STEPS: RenderQualitySteps = {};
 
+/** A backend's setting rows (no values: those come from the scene). */
+export const backendSpecs = (id: RenderBackendId): RenderPropSpec[] => RENDER_BACKENDS[id].props;
+
 /**
- * A backend's declared props with its default method and default step of every
- * axis already applied, so the dropdowns describe the values from the start.
+ * A value the editor can hold for a row before the scene's values arrive.
+ * Not a default -- the defaults live in the C++ RenderSettings -- just a
+ * well-typed stand-in for the frames the window spends hidden while loading.
  */
-export const backendPropsWithDefaults = (id: RenderBackendId): PropDef[] => {
-  const cfg = qualityOf(id);
-  const props = RENDER_BACKENDS[id].props;
-  if (!cfg) return props;
-  const steps = defaultQualitySteps(cfg);
-  return applyPatch(
-    props,
-    lightingPatch(cfg, cfg.defaultLighting, steps, { includeShared: true }),
-  );
+export const placeholderValue = (spec: RenderPropSpec): string | number | boolean => {
+  switch (spec.type) {
+    case "boolean":
+      return false;
+    case "integer":
+    case "real":
+    case "combo":
+      return spec.min ?? 0;
+    case "enum":
+      return spec.options?.[0] ?? "";
+    case "color":
+      return "#000000";
+    default:
+      return "";
+  }
 };
+
+/** Rows with placeholder values (see placeholderValue). */
+export const placeholderProps = (specs: RenderPropSpec[]): PropDef[] =>
+  specs.map((spec) => ({ ...spec, value: placeholderValue(spec) }));
 
 /** Round to a number of decimal places. */
 export const roundTo = (v: number, decimals: number): number => {
@@ -116,4 +132,26 @@ export const convertSizeUnit = (props: PropDef[], newUnit: string): PropDef[] =>
     }
     return p;
   });
+};
+
+/**
+ * The size preset the width / height / DPI props currently equal, or the
+ * neutral "Custom" label. Only a pixel size can match (the presets are in
+ * px), and a preset that fixes the DPI must match it too; the dynamic
+ * "Current view" entry never matches.
+ */
+export const sizePresetOf = (props: PropDef[], mode: RenderMode): string => {
+  if (String(readVal(props, "unit") ?? "px") !== "px") return DEFAULT_RENDER_PRESET;
+  const width = Number(readVal(props, "width"));
+  const height = Number(readVal(props, "height"));
+  const dpi = Number(readVal(props, "dpi"));
+  const hit = sizePresetsForMode(mode).find(
+    (p) =>
+      !p.dynamic &&
+      p.width > 0 &&
+      p.width === width &&
+      p.height === height &&
+      (p.dpi === undefined || p.dpi === dpi),
+  );
+  return hit?.label ?? DEFAULT_RENDER_PRESET;
 };

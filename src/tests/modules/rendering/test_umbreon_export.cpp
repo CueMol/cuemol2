@@ -873,6 +873,45 @@ TEST(UmbreonExport, AoRecipeFlagsReachTheRenderer)
 // Smoke test for the pt1 path-traced GI integrator + Intel OIDN denoiser:
 // enabling GI must run without crashing, produce a lit frame, and (via the
 // radiosity lighting rebalance) differ from the local-shading render.
+// The lighting balance properties (POV _light_inten / _flash_frac / _amb_frac)
+// must reach the lights umbreon renders with: each one, changed on its own,
+// changes the picture. Compared one at a time so a single unwired property
+// cannot hide behind the other two. ambientFraction is checked under GI, the
+// only mode where it feeds the gathered ambient energy rather than merely
+// dimming the direct lights (which lightIntensity already covers).
+TEST(UmbreonExport, LightBalancePropertiesChangeTheOutput)
+{
+    UmbreonRenderParams base;
+    base.supersample = 1;
+    const std::vector<unsigned char> ref = renderAoRecipe(base);
+    ASSERT_EQ(ref.size(), static_cast<std::size_t>(64 * 64 * 3));
+
+    UmbreonRenderParams dim = base;
+    dim.lightIntensity = 0.65;
+    EXPECT_NE(ref, renderAoRecipe(dim));
+
+    UmbreonRenderParams keyOnly = base;
+    keyOnly.flashFraction = 0.0;
+    EXPECT_NE(ref, renderAoRecipe(keyOnly));
+
+    UmbreonRenderParams gi = base;
+    gi.giEnabled = true;
+    gi.giSamples = 16;
+    gi.giDenoise = false;
+    const std::vector<unsigned char> giRef = renderAoRecipe(gi);
+    UmbreonRenderParams giNoAmbient = gi;
+    giNoAmbient.ambientFraction = 0.0;
+    EXPECT_NE(giRef, renderAoRecipe(giNoAmbient));
+
+    // The gradient sky is GI-only as well: the ground tint must reach the gather.
+    UmbreonRenderParams giGradient = gi;
+    giGradient.giSkyGradient = true;
+    giGradient.giGroundColorSet = true;
+    giGradient.giGroundColor[0] = giGradient.giGroundColor[1] =
+        giGradient.giGroundColor[2] = 0.2f;
+    EXPECT_NE(giRef, renderAoRecipe(giGradient));
+}
+
 TEST(UmbreonExport, GlobalIlluminationAffectsOutput)
 {
     auto renderBox = [](bool useGi) {
@@ -1507,14 +1546,19 @@ void renderTwoSectionContact(bool contactEdges, std::size_t &outInk,
 
     ctx.startRender();
 
-    // One sphere per section, so the boundary between them is a CROSS-section
-    // one (same-section contact is seamless whatever contactEdges says).
+    // One sphere per section, in DIFFERENT edge groups (the two renderers
+    // have identical edge settings, which the default keying would put in one
+    // group), so the boundary between them is a cross-group one -- what
+    // contactEdges controls. A contact inside one group is seamless whatever
+    // the flag says.
+    ctx.setEdgeGroup("left");
     ctx.startSection("left");
     ctx.setMaterial("nolighting");
     ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
     ctx.sphere(1.5, Vector4D(-0.9, 0.0, 0.0));
     ctx.endSection();
 
+    ctx.setEdgeGroup("right");
     ctx.startSection("right");
     ctx.setMaterial("nolighting");
     ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
@@ -1595,6 +1639,135 @@ TEST(UmbreonExport, ContactEdgesInkTheCrossSectionIntersection)
     EXPECT_EQ(runsOff, 2);
     EXPECT_EQ(runsOn, 3);
     EXPECT_GT(inkOn, inkOff + 30);
+}
+
+namespace {
+
+/// The two intersecting spheres of renderTwoSectionContact, each section
+/// given an edge group NAME through setEdgeGroup (the renderer's egroup
+/// property, as Scene::displayRendImpl does; empty = group by the edge
+/// settings). `widthMulB` and `colorB` change the right section's edge
+/// SETTINGS (its width / its color), which the default keying separates on;
+/// the color also makes its ink invisible to countEdgeInk, so the width is
+/// what the contact-run counts vary.
+/// Returns the center-row ink count/runs and the frame.
+void renderTwoSectionGroups(const char *egA, const char *egB, double widthMulB,
+                            bool colorB, std::size_t &outInk, int &outRuns,
+                            std::vector<unsigned char> &outPix)
+{
+    const double kViewH = 6.0;
+    const double kLineScale = kViewH / kEdgeModeDim;
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_SILHOUETTE);
+    ctx.setEdgeLineWidth(2.0 * kLineScale);  // a 2 px band
+
+    ctx.startRender();
+
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    ctx.setEdgeGroup(egA);
+    ctx.startSection("left");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(-0.9, 0.0, 0.0));
+    ctx.endSection();
+
+    ctx.setEdgeLineColor(colorB ? gfx::SolidColor::createRGB(1.0, 0.0, 0.0)
+                                : gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    ctx.setEdgeLineWidth(widthMulB * 2.0 * kLineScale);
+    ctx.setEdgeGroup(egB);
+    ctx.startSection("right");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(0.9, 0.0, 0.0));
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kEdgeModeDim;
+    prm.height = kEdgeModeDim;
+    prm.supersample = 2;
+    prm.contactEdges = true;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    ctx.render(prm, ow, oh, ncomp, outPix);
+    ASSERT_EQ(outPix.size(),
+              static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
+
+    countEdgeInk(outPix, outInk, outRuns);
+}
+
+/// Red pixels (the right section's own edge color) in an RGB frame.
+std::size_t countRedInk(const std::vector<unsigned char> &pix)
+{
+    std::size_t n = 0;
+    for (std::size_t i = 0; i + 2 < pix.size(); i += 3)
+        if (pix[i] > 180 && pix[i + 1] < 60 && pix[i + 2] < 60) ++n;
+    return n;
+}
+
+}  // namespace
+
+// Pins the EDGE GROUPS (Renderer egroup -> DisplayContext::setEdgeGroup ->
+// Scene::edgeGroupOfGroup): renderers of one edge group are ONE section for
+// umbreon's edge pass, so the depth-continuous contact contour between them
+// never inks, while renderers of different groups get it (contactEdges is on
+// by default).
+//
+// By DEFAULT the grouping is by the edge SETTINGS themselves -- the only
+// grouping consistent with "one group, one style": renderers drawing the same
+// lines are one section wherever they sit, renderers drawing different lines
+// are separate. A non-empty egroup name overrides that either way.
+TEST(UmbreonExport, EdgeGroupsDecideWhereContactContoursInk)
+{
+    std::size_t ink = 0;
+    int runs = 0;
+    std::vector<unsigned char> pix;
+
+    // Same settings, no names: one edge group -> no contact line (2 runs).
+    renderTwoSectionGroups("", "", 1.0, false, ink, runs, pix);
+    EXPECT_EQ(runs, 2);
+
+    // Different settings (the right sphere's edge is twice as wide): two
+    // groups -> the contact line inks (3 runs).
+    renderTwoSectionGroups("", "", 2.0, false, ink, runs, pix);
+    EXPECT_EQ(runs, 3);
+
+    // Different settings but the same egroup name: one group again.
+    renderTwoSectionGroups("grp", "grp", 2.0, false, ink, runs, pix);
+    EXPECT_EQ(runs, 2);
+
+    // Same settings, different names: two groups.
+    renderTwoSectionGroups("a", "b", 1.0, false, ink, runs, pix);
+    EXPECT_EQ(runs, 3);
+}
+
+// One edge group has ONE edge style: the first member renderer with edge
+// lines defines it and a later member's own settings are ignored. The right
+// sphere asks for a red edge color: by default that is a different setting,
+// so it is its own group and its outer contour is red; forced into the (black)
+// left sphere's group by name, it is black.
+TEST(UmbreonExport, EdgeGroupUsesTheFirstMembersEdgeStyle)
+{
+    std::size_t ink = 0;
+    int runs = 0;
+    std::vector<unsigned char> pixOwn, pixShared;
+
+    renderTwoSectionGroups("", "", 1.0, true, ink, runs, pixOwn);
+    EXPECT_GT(countRedInk(pixOwn), 20u);
+
+    renderTwoSectionGroups("grp", "grp", 1.0, true, ink, runs, pixShared);
+    EXPECT_EQ(countRedInk(pixShared), 0u);
+    EXPECT_EQ(runs, 2);
 }
 
 namespace {
@@ -1850,4 +2023,243 @@ TEST(UmbreonExport, HatchToneStrengthScalesTheInk)
                         [](UmbreonRenderParams &p) { p.hatchToneStrength = 2.0; });
     EXPECT_GT(meanLevel(pixHalf), meanLevel(pixOne));
     EXPECT_GT(meanLevel(pixOne), meanLevel(pixTwo));
+}
+
+namespace {
+
+/// One ELT_SILHOUETTE section with a NEAR sphere (eye z 0 = view-z 100,
+/// unfogged) whose left contour lies on a FAR sphere (eye z -4; its surface
+/// under that contour sits at view-z ~102.5). Slab 40 puts the fog at
+/// 100..120, so the far sphere is at f ~0.87 and its own rim still counts as
+/// ink. outlineFarDepth maps the fog range: 0.1 -> d = 102, the far surface
+/// lies beyond it and the near sphere's contour inks (3 center-row runs);
+/// 0.95 -> d = 119, within, the contour stays a suppressed self-occlusion (2
+/// runs: the two outer rims).
+void renderOutlineFarDepth(double depth, std::size_t &outInk, int &outRuns)
+{
+    const double kViewH = 6.0;
+    const double kLineScale = kViewH / kEdgeModeDim;
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setSlabDepth(40.0);  // fog 100..120, far clip at 120
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_SILHOUETTE);
+    ctx.setEdgeLineWidth(2.0 * kLineScale);  // a 2 px band
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+
+    ctx.startRender();
+    ctx.startSection("fogsph");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(-0.9, 0.0, -4.0));  // far, into the fog
+    ctx.sphere(1.5, Vector4D(0.9, 0.0, 0.0));    // near, unfogged
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kEdgeModeDim;
+    prm.height = kEdgeModeDim;
+    prm.supersample = 2;
+    prm.outlineFarDepth = depth;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    ASSERT_EQ(pix.size(),
+              static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
+
+    countEdgeInk(pix, outInk, outRuns);
+}
+
+/// A translucent BLUE front (section alpha 0.5, eye z 0 = view-z 100) over an
+/// opaque RED back at eye z `zBack`, black background, slab 2: fog 100..101
+/// and the far clip plane at 102 (view center + slab, as in the GL view).
+std::vector<unsigned char> renderTranslucentOverBack(double zBack)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.setSlabDepth(2.0);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    ctx.loadIdent();
+
+    ctx.startRender();
+
+    ctx.startSection("back");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, zBack));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, zBack));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, zBack));
+    ctx.end();
+    ctx.endSection();
+
+    ctx.setAlpha(0.5);
+    ctx.startSection("front");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    return pix;
+}
+
+}  // namespace
+
+// The outline far depth: in the silhouette edge mode a nearer object's contour
+// over a surface of its own group is normally suppressed (only the group's
+// outer contour draws), but once that surface lies deeper in the fog than
+// outlineFarDepth the contour draws as in the edges mode.
+TEST(UmbreonExport, OutlineFarDepthInksContoursOverFoggedSurfaces)
+{
+    std::size_t inkBeyond = 0, inkWithin = 0, inkOff = 0;
+    int runsBeyond = 0, runsWithin = 0, runsOff = 0;
+
+    renderOutlineFarDepth(0.1, inkBeyond, runsBeyond);   // d = 102 < 102.5
+    renderOutlineFarDepth(0.95, inkWithin, runsWithin);  // d = 119
+    renderOutlineFarDepth(1.0, inkOff, runsOff);         // d = fog end
+
+    EXPECT_EQ(runsBeyond, 3);
+    EXPECT_EQ(runsWithin, 2);
+    EXPECT_EQ(runsOff, 2);
+    EXPECT_GT(inkBeyond, inkWithin + 30);
+}
+
+// The far clip plane at the GL view's far plane (view center + slab depth):
+// geometry beyond it is not rendered at all. Visible only through a
+// translucent surface in front of it -- the fog is applied at the first hit's
+// depth, so an opaque back beyond the plane used to blend through an unfogged
+// translucent front.
+TEST(UmbreonExport, FarClipRemovesGeometryBeyondTheSlab)
+{
+    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+
+    // Back at eye z -3 = view-z 103, beyond the far plane (102): clipped away.
+    const std::vector<unsigned char> beyond = renderTranslucentOverBack(-3.0);
+    ASSERT_EQ(beyond.size(), static_cast<std::size_t>(64 * 64 * 3));
+    EXPECT_LT(beyond[c + 0], 30);  // no red blends through
+    EXPECT_GT(beyond[c + 2], 30);  // the translucent front still shows
+
+    // Control: back at eye z -0.2 = view-z 100.2, inside the fog range.
+    const std::vector<unsigned char> inside = renderTranslucentOverBack(-0.2);
+    ASSERT_EQ(inside.size(), static_cast<std::size_t>(64 * 64 * 3));
+    EXPECT_GT(inside[c + 0], 30);  // red blends through
+}
+
+namespace {
+
+/// A roof-shaped sheet in one ELT_EDGES section: two faces meeting along the
+/// y axis at x = 0 (the ridge, nearest the camera), each receding by 25 deg,
+/// so the shading normals fold by 50 deg across the ridge. The center row
+/// crosses the sheet's two outer silhouettes (x = -+2) and, when the crease
+/// limit lies below 50 deg, the ridge crease as a third run.
+void renderFoldedSheet(double creaseLimit, std::size_t &outInk, int &outRuns)
+{
+    const double kViewH = 6.0;
+    const double kLineScale = kViewH / kEdgeModeDim;
+    const double t = std::tan(25.0 * M_PI / 180.0);
+    const double nl = std::sqrt(1.0 + t * t);
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_EDGES);
+    ctx.setEdgeLineWidth(2.0 * kLineScale);  // a 2 px band
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    ctx.setCreaseLimit(creaseLimit);
+
+    ctx.startRender();
+    ctx.startSection("roof");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.startTriangles();
+    // left face z = x * t (x < 0): normal (-t, 0, 1) / |.|
+    const Vector4D nL(-t / nl, 0.0, 1.0 / nl);
+    ctx.normal(nL); ctx.vertex(Vector4D(-2.0, -2.0, -2.0 * t));
+    ctx.normal(nL); ctx.vertex(Vector4D(0.0, -2.0, 0.0));
+    ctx.normal(nL); ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.normal(nL); ctx.vertex(Vector4D(-2.0, -2.0, -2.0 * t));
+    ctx.normal(nL); ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.normal(nL); ctx.vertex(Vector4D(-2.0, 2.0, -2.0 * t));
+    // right face z = -x * t (x > 0): normal (t, 0, 1) / |.|
+    const Vector4D nR(t / nl, 0.0, 1.0 / nl);
+    ctx.normal(nR); ctx.vertex(Vector4D(0.0, -2.0, 0.0));
+    ctx.normal(nR); ctx.vertex(Vector4D(2.0, -2.0, -2.0 * t));
+    ctx.normal(nR); ctx.vertex(Vector4D(2.0, 2.0, -2.0 * t));
+    ctx.normal(nR); ctx.vertex(Vector4D(0.0, -2.0, 0.0));
+    ctx.normal(nR); ctx.vertex(Vector4D(2.0, 2.0, -2.0 * t));
+    ctx.normal(nR); ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kEdgeModeDim;
+    prm.height = kEdgeModeDim;
+    prm.supersample = 2;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    ASSERT_EQ(pix.size(),
+              static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
+
+    countEdgeInk(pix, outInk, outRuns);
+}
+
+}  // namespace
+
+// The crease limit is the fold angle in degrees: a 50 deg ridge inks under a
+// 30 deg limit and not under a 70 deg one (the limit used to be an on/off
+// gate only, umbreon's own 30 deg threshold applying whatever it said).
+TEST(UmbreonExport, CreaseLimitIsTheFoldAngle)
+{
+    std::size_t ink30 = 0, ink70 = 0, inkOff = 0;
+    int runs30 = 0, runs70 = 0, runsOff = 0;
+
+    renderFoldedSheet(30.0, ink30, runs30);
+    renderFoldedSheet(70.0, ink70, runs70);
+    renderFoldedSheet(-1.0, inkOff, runsOff);
+
+    EXPECT_EQ(runs30, 3);   // two outer silhouettes + the ridge crease
+    EXPECT_EQ(runs70, 2);   // the 50 deg fold is below the limit
+    EXPECT_EQ(runsOff, 2);  // no crease lines at all
+    EXPECT_GT(ink30, ink70 + 30);
 }

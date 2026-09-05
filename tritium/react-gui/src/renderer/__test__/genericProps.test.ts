@@ -347,3 +347,31 @@ describe('genericProps services', () => {
         expect(res.entries).toEqual([]);
     });
 });
+
+describe('parseGenericProps - non-resettable name / sel', () => {
+    it('reports a top-level name / sel as having no default, whatever the dump says', () => {
+        // The C++ table declares "" as the name's default, and a name set
+        // through a bare setter is reported as sitting at it.
+        const raw = [
+            { name: 'name', readonly: false, hasdefault: true, isdefault: true, default: '', type: 'string', value: 'grp1' },
+            { name: 'sel', readonly: false, hasdefault: true, isdefault: false, default: '', type: 'object<MolSelection>', value: '*' },
+            { name: 'alpha', readonly: false, hasdefault: true, isdefault: true, default: 1, type: 'real', value: 1 },
+        ];
+        const [name, sel, alpha] = parseGenericProps(raw);
+        expect(name).toMatchObject({ key: 'name', hasdefault: false, isdefault: false });
+        expect(name.defaultValue).toBeUndefined();
+        expect(sel).toMatchObject({ key: 'sel', hasdefault: false, isdefault: false });
+        expect(alpha).toMatchObject({ key: 'alpha', hasdefault: true, isdefault: true, defaultValue: 1 });
+    });
+
+    it('leaves a nested `name` child untouched (only top-level keys are identities)', () => {
+        const raw = [
+            {
+                name: 'section', readonly: false, hasdefault: false, type: 'object<TubeSection>',
+                value: [{ name: 'name', readonly: false, hasdefault: true, isdefault: true, default: 'x', type: 'string', value: 'x' }],
+            },
+        ];
+        const nested = parseGenericProps(raw).find((e) => e.key === 'section.name');
+        expect(nested).toMatchObject({ hasdefault: true, isdefault: true, defaultValue: 'x' });
+    });
+});

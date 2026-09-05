@@ -20,7 +20,7 @@
 // object property staying read-only only means the object itself cannot be
 // replaced wholesale; its sub-properties remain editable through the dot-path.
 
-import type { GenericPropEntry } from '@renderer/worker/shared/genericProps';
+import { NON_RESETTABLE_KEYS, type GenericPropEntry } from '@renderer/worker/shared/genericProps';
 
 // The row shape itself is a wire DTO shared with the renderer; see
 // worker/shared/genericProps.ts. Re-exported so existing importers of this
@@ -80,7 +80,12 @@ function walk(
               ? item.value
               : '';
 
-        const defaultValue = isScalar(item.default) ? item.default : undefined;
+        // A top-level `name` / `sel` never has a default, whatever C++
+        // declares: the class table registers "" for `name`, and a name set
+        // through a bare C++ setter is even reported as sitting at it.
+        const hasdefault =
+            Boolean(item.hasdefault) && !(depth === 0 && NON_RESETTABLE_KEYS.has(key));
+        const defaultValue = hasdefault && isScalar(item.default) ? item.default : undefined;
 
         out.push({
             key,
@@ -89,8 +94,8 @@ function walk(
             // A container object cannot be replaced wholesale (its children are
             // still editable via dot-path); other rows honour their own flag.
             readonly: Boolean(item.readonly) || nested,
-            hasdefault: Boolean(item.hasdefault),
-            isdefault: item.hasdefault ? Boolean(item.isdefault) : false,
+            hasdefault,
+            isdefault: hasdefault ? Boolean(item.isdefault) : false,
             defaultValue,
             enumdef:
                 item.type === 'enum' && Array.isArray(item.enumdef)

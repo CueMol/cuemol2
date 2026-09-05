@@ -184,7 +184,19 @@
   <style id="ThickTrace" desc="Thick" type="renderer" width="3.0" />
   <style id="ExThickTrace" desc="ExThick" type="renderer" width="6.0" />
 
+  <!--
+    Density map renderers. The map kind (DensityMap.map_type) picks the
+    style when a renderer is created and "reset to default" restores the
+    style value. siglevel is sigma on a crystallographic map and the top
+    percent of grid points on a cryo-EM map (the ChimeraX initial-contour
+    rule). The cryo-EM styles start at the top 1 percent and show the level
+    in absolute density units (use_abslevel), as ChimeraX does.
+    -->
   <style id="DefaultContour" desc="Default" type="renderer" material="nolighting" width="1.0" />
+  <style id="CryoEMContour" desc="Cryo-EM" type="renderer" material="nolighting" width="1.0"
+    siglevel="1.0" use_abslevel="true" />
+  <style id="DefaultIsoSurf" desc="Default" type="renderer" />
+  <style id="CryoEMIsoSurf" desc="Cryo-EM" type="renderer" siglevel="1.0" use_abslevel="true" />
 
   <!--
     ===== Edge Styles =====

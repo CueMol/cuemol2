@@ -90,7 +90,7 @@ describe('lassoSelect — polygon hit test wiring', () => {
         const result = lassoSelect(ctx, ARGS)
         expect(makeSel).toHaveBeenCalledWith(ctx, 'aid 1,3', 7)
         expect(m1.setSel).toHaveBeenCalledWith({ __sel: 'aid 1,3' })
-        expect(result).toEqual({ ok: true, selectedObjIds: [1] })
+        expect(result).toEqual({ ok: true, selectedObjIds: [1], selStrs: ['aid 1,3'] })
     })
 
     it('auto-creates the *selection renderer when missing', () => {
@@ -115,7 +115,7 @@ describe('lassoSelect — polygon hit test wiring', () => {
         const result = lassoSelect(ctx, { viewId: 1, points: [{ x: 0, y: 0 }, { x: 5, y: 5 }] })
         expect(fromTypedArray).not.toHaveBeenCalled()
         expect(view.hitTestPolygon).not.toHaveBeenCalled()
-        expect(result).toEqual({ ok: false, selectedObjIds: [] })
+        expect(result).toEqual({ ok: false, selectedObjIds: [], selStrs: [] })
     })
 
     it('returns ok=false on empty hit results', () => {
@@ -123,7 +123,7 @@ describe('lassoSelect — polygon hit test wiring', () => {
         const { ctx } = makeCtx('[]', { 1: mol })
         const result = lassoSelect(ctx, ARGS)
         expect(setSel).not.toHaveBeenCalled()
-        expect(result).toEqual({ ok: false, selectedObjIds: [] })
+        expect(result).toEqual({ ok: false, selectedObjIds: [], selStrs: [] })
     })
 
     it('returns ok=false on unparsable hit JSON', () => {
@@ -131,6 +131,6 @@ describe('lassoSelect — polygon hit test wiring', () => {
         const { ctx } = makeCtx('not-json', { 1: mol })
         const result = lassoSelect(ctx, ARGS)
         expect(setSel).not.toHaveBeenCalled()
-        expect(result).toEqual({ ok: false, selectedObjIds: [] })
+        expect(result).toEqual({ ok: false, selectedObjIds: [], selStrs: [] })
     })
 })

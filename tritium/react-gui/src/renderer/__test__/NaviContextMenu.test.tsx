@@ -5,6 +5,7 @@ import { act } from 'react';
 import { useNaviContextMenu } from '@renderer/features/molview/useNaviContextMenu';
 import { ContextMenuProvider } from '@renderer/shell/menu/ContextMenuProvider';
 import { IPC } from '@shared/ipcChannels';
+import { clearHistory, getHistory } from '@renderer/h3-kit/MolSelList';
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));
@@ -333,5 +334,20 @@ describe('useNaviContextMenu', () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
         expect(callsFor('naviCtxAround')).toContainEqual({ viewId: 1, objId: hit.obj_id, distance, byres });
+    });
+});
+
+describe('useNaviContextMenu -- selection history', () => {
+    it('records the expression a selection service reports as applied', async () => {
+        clearHistory();
+        mockShowMenu.mockResolvedValue('selectResid');
+        mockCm.invokeService.mockImplementation((name: string) =>
+            Promise.resolve(name === 'naviCtxSelect' ? { ok: true, selStr: "'A'.10.*" } : { ok: true }),
+        );
+        await act(async () => {
+            await hookHandle.result.openContextMenu(makeHit(), 1, 0, 0);
+        });
+        expect(getHistory()).toEqual(["'A'.10.*"]);
+        mockCm.invokeService.mockResolvedValue({ ok: true });
     });
 });

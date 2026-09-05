@@ -4,10 +4,11 @@
  * manager state the transport controls read.
  */
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
-import type { AnimElement, AnimMgrState, AnimTimeline } from "@renderer/types";
+import type { AnimMgrState, AnimTimeline } from "@renderer/types";
 import { getSceneOrNull } from "@renderer/worker/server/services/helpers/sceneResolver";
-import { getAnimMgrOrNull, forEachAnimObj } from "./resolve";
+import { getAnimMgrOrNull, readAnimGraph, tryResolveRel } from "./resolve";
 import { EMPTY_MGR_STATE, readCameraNames, readElement, readMgrState } from "./read";
+import { describeResolveFailure } from "./timeRefGraph";
 import { DEFAULT_FPS } from "./types";
 import type { AnimGetMgrStateArgs, AnimListTimelineArgs } from "./types";
 // --- detail shapes ---
@@ -15,10 +16,13 @@ import type { AnimGetMgrStateArgs, AnimListTimelineArgs } from "./types";
 /**
  * List every `AnimObj` in the scene's `AnimMgr` as timeline strips.
  *
- * Resolves relative->absolute times first (a cyclic/missing `timeRefName`
- * makes `resolveRelTime()` throw; that is swallowed so one bad element cannot
- * blank the whole panel). Returns an empty timeline when the scene or manager
- * is unavailable.
+ * The chain is resolved twice, on purpose. C++ `resolveRelTime()` refreshes
+ * the manager's own absolute times (a file that was just loaded has never
+ * resolved); it throws on a cyclic or missing reference, which is caught.
+ * The TS graph then supplies the absolute span of every element that
+ * resolves and the state / reason of every element that does not, so one
+ * broken element neither blanks the panel nor hides behind stale numbers.
+ * Returns an empty timeline when the scene or manager is unavailable.
  */
 export function listTimeline(ctx: WorkerContext, args: AnimListTimelineArgs): AnimTimeline {
   const empty: AnimTimeline = {
@@ -34,22 +38,15 @@ export function listTimeline(ctx: WorkerContext, args: AnimListTimelineArgs): An
   const mgr = getAnimMgrOrNull(scene);
   if (!mgr) return empty;
 
-  // Resolve before reading absStart/absEnd. Leave prior abs values on throw.
-  try {
-    mgr.resolveRelTime();
-  } catch {
-    /* keep previously-resolved absolute times */
-  }
-
-  const elements: AnimElement[] = [];
-  forEachAnimObj(mgr, (obj, i) => {
-    elements.push(readElement(obj, i));
-    return undefined;
-  });
+  tryResolveRel(mgr);
+  const { graph, objs, indices } = readAnimGraph(mgr);
+  const elements = objs.map((obj, k) => readElement(obj, indices[k], graph.nodes[k]));
+  const resolveError = describeResolveFailure(graph);
 
   return {
     sceneId: args.sceneId,
     elements,
+    ...(resolveError !== null ? { resolveError } : {}),
     mgr: readMgrState(mgr),
     cameras: readCameraNames(scene),
     fps: DEFAULT_FPS,

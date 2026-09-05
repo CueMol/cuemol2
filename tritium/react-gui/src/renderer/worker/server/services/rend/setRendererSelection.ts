@@ -26,6 +26,8 @@ export interface SetRendererSelectionArgs {
 
 export interface SetRendererSelectionResult {
     ok: boolean;
+    /** The expression bound to `rend.sel` (for the selection history). */
+    selStr?: string;
 }
 
 // Selection strings for the non-'current' kinds. 'ligand' is the inverse
@@ -62,14 +64,17 @@ export function setRendererSelection(
     if (!mol || !hasSelProp(mol)) return { ok: false };
 
     let sel: MolSelection | null;
+    let selStr: string;
     if (args.selKind === 'current') {
         try {
             sel = mol.sel ?? null;
+            selStr = sel ? String(sel.toString()) : '';
         } catch {
             sel = null;
+            selStr = '';
         }
     } else {
-        const selStr = SEL_STRINGS[args.selKind];
+        selStr = SEL_STRINGS[args.selKind];
         sel = makeSel(ctx, selStr, scene.uid) as unknown as MolSelection | null;
     }
     if (!sel) return { ok: false };
@@ -77,5 +82,5 @@ export function setRendererSelection(
     withUndoTxn(scene, 'Set renderer sel', () => {
         (rend as unknown as MolRenderer).sel = sel as MolSelection;
     });
-    return { ok: true };
+    return { ok: true, selStr };
 }

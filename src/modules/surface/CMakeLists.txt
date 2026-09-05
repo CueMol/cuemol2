@@ -17,9 +17,11 @@ ElePotMap.cpp
 MSMSFileReader.cpp
 PLYFileReader.cpp
 MolSurfObj.cpp
+ScalarColorSupport.cpp
 MolSurfRenderer.cpp
 OpenDXPotReader.cpp
 MolSurfBuilder.cpp
+DirectSurfRendererBase.cpp
 DirectSurfRenderer.cpp
 DirectSurfRenderer2.cpp
 DistMapMarchingCubes.cpp
@@ -77,6 +79,7 @@ SET(SURFACE_MCWG_QIFS
   PLYFileReader.qif
   ElePotMap.qif
   OpenDXPotReader.qif
+  DirectSurfRendererBase.qif
   DirectSurfRenderer.qif
   DirectSurfRenderer2.qif
   XYZRFileWriter.qif

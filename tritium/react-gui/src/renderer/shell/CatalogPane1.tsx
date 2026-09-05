@@ -127,8 +127,8 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
                   unit="Å"
                 />
               </Field>
-              <Field label="TimeField (drag / spin / typed timecode)">
-                <TimeField value={timeMs} onCommit={setTimeMs} />
+              <Field label="TimeField (segments / drag / Ctrl+wheel / Enter to type)">
+                <TimeField value={timeMs} onChange={setTimeMs} />
               </Field>
               <Field label="VectorField (x/y/z cells; qlib::Vector4D text)">
                 <VectorField value={vec} onCommit={setVec} />

@@ -27,6 +27,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { View } from '@cuemol/core/src/wrappers/View';
 import type { RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { getDefaultStyleName } from '@renderer/worker/server/services/helpers/getDefaultStyleName';
+import { resolveMapKind } from '@renderer/worker/server/services/helpers/mapRendererStyles';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { molPostProc } from '@renderer/worker/server/services/helpers/molPostProc';
 import {
@@ -154,7 +155,9 @@ export function setupRenderer(
         (rend as unknown as { name: string }).name = rendOpts.rendererName;
     }
 
-    const styleName = getDefaultStyleName(rendOpts.rendererType);
+    // A map renderer takes the style of its map's kind (the file-open path
+    // writes the dialog's map_type before creating the renderer).
+    const styleName = getDefaultStyleName(rendOpts.rendererType, resolveMapKind(mol) ?? 'xtal');
     if (styleName) {
         rend.applyStyles(styleName);
     }

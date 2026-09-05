@@ -13,7 +13,7 @@
 using namespace qsys;
 
 AnimObj::AnimObj()
-     : m_start(0), m_end(0)
+     : m_start(0), m_end(0), m_bTimeResolved(false), m_bMark(false)
 {
   m_uid = qlib::ObjectManager::sRegObj(this);
 
@@ -26,7 +26,8 @@ AnimObj::AnimObj()
 }
 
 AnimObj::AnimObj(const AnimObj &arg)
-     : m_name(arg.m_name), m_start(arg.m_start), m_end(arg.m_end)
+     : m_name(arg.m_name), m_start(arg.m_start), m_end(arg.m_end),
+       m_bTimeResolved(false), m_bMark(false)
 {
   m_uid = qlib::ObjectManager::sRegObj(this);
 

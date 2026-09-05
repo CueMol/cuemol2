@@ -271,8 +271,7 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
     if (!m_mapBufTex.create(pdc)) return;
 
     {
-        const double siglevel = getSigLevel();
-        const double level = pMap->getRmsdDensity() * siglevel;
+        const double level = resolveLevel(pMap);
         double lvtmp = floor((level - pMap->getLevelBase()) / pMap->getLevelStep());
         unsigned int lv = (unsigned int)lvtmp;
         if (lvtmp < 0) lv = 0;
@@ -341,8 +340,7 @@ void GLSLMapMeshRenderer2::make3DTexMapFull(DisplayContext *pdc, ScalarObject *p
     if (!m_mapBufTex.create(pdc)) return;
 
     {
-        const double siglevel = getSigLevel();
-        const double level = pMap->getRmsdDensity() * siglevel;
+        const double level = resolveLevel(pMap);
         double lvtmp = floor((level - pMap->getLevelBase()) / pMap->getLevelStep());
         unsigned int lv = (unsigned int)lvtmp;
         if (lvtmp < 0) lv = 0;
@@ -468,8 +466,7 @@ void GLSLMapMeshRenderer2::renderCPU(DisplayContext *pdc)
 
     quint8 isolev;
     {
-        const double siglevel = getSigLevel();
-        const double level = pMap->getRmsdDensity() * siglevel;
+        const double level = resolveLevel(pMap);
         double lvtmp = floor((level - pMap->getLevelBase()) / pMap->getLevelStep());
         unsigned int lv = (unsigned int)lvtmp;
         if (lvtmp < 0) lv = 0;

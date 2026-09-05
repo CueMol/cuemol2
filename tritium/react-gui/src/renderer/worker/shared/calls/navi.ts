@@ -31,6 +31,7 @@ import type {
   NaviCtxAroundArgs,
   NaviCtxObjArgs,
   NaviCtxSelectArgs,
+  NaviCtxSelResult,
 } from '@renderer/worker/server/services/navi/naviCtxtMenu'
 import type {
   NaviClickAtomArgs,
@@ -54,12 +55,12 @@ export interface NaviCalls {
   bondEditRemoveBond:         { args: BondEditRemoveBondArgs; result: BondEditRemoveBondResult }
   naviCenterAt:               { args: NaviCenterAtArgs; result: { ok: boolean } }
   naviCenterAtSymm:           { args: NaviCenterAtSymmArgs; result: { ok: boolean } }
-  naviCtxSelect:              { args: NaviCtxSelectArgs; result: { ok: boolean } }
-  naviCtxAddSelect:           { args: NaviCtxSelectArgs; result: { ok: boolean } }
+  naviCtxSelect:              { args: NaviCtxSelectArgs; result: NaviCtxSelResult }
+  naviCtxAddSelect:           { args: NaviCtxSelectArgs; result: NaviCtxSelResult }
   naviCtxUnselect:            { args: NaviCtxObjArgs; result: { ok: boolean } }
-  naviCtxInvertSel:           { args: NaviCtxObjArgs; result: { ok: boolean } }
-  naviCtxToggleSidechain:     { args: NaviCtxObjArgs; result: { ok: boolean } }
-  naviCtxAround:              { args: NaviCtxAroundArgs; result: { ok: boolean } }
+  naviCtxInvertSel:           { args: NaviCtxObjArgs; result: NaviCtxSelResult }
+  naviCtxToggleSidechain:     { args: NaviCtxObjArgs; result: NaviCtxSelResult }
+  naviCtxAround:              { args: NaviCtxAroundArgs; result: NaviCtxSelResult }
 }
 
 export const NAVI_KEYS = [

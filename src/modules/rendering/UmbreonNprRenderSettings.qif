@@ -1,0 +1,57 @@
+// -*-Mode: C++;-*-
+//
+// umbreon NPR (hatching) block of the scene render settings
+// (RenderSettings.umbreon_npr): the umbreon block's properties with the
+// direct-lighting defaults, plus the hatching properties.
+//
+
+#ifndef UMBREON_NPR_RENDER_SETTINGS_QIF_INCLUDED
+#define UMBREON_NPR_RENDER_SETTINGS_QIF_INCLUDED
+
+#include "UmbreonRenderSettings.qif"
+
+runtime_class UmbreonNprRenderSettings extends UmbreonRenderSettings
+{
+  client_hdr "RenderSettings.hpp";
+  client_name render::UmbreonNprRenderSettings;
+  dllexport RENDER_API;
+
+  scriptable;
+  smartptr;
+
+  // Inherited properties whose defaults differ: hatching discards the shaded
+  // color, so GI is off and the lights are the direct-lighting balance.
+  property boolean useGI => m_useGI;
+  default useGI = false;
+  property real lightIntensity => m_lightIntensity;
+  default lightIntensity = 1.55;
+  property real flashFraction => m_flashFraction;
+  default flashFraction = 0.6;
+
+  property string hatchStyle => m_hatchStyle;
+  default hatchStyle = "richardson";
+  property string hatchColoring => m_hatchColoring;
+  default hatchColoring = "Style default";
+  property real hatchDensity => m_hatchDensity;
+  default hatchDensity = 1.0;
+  property real hatchWidthScale => m_hatchWidthScale;
+  default hatchWidthScale = 1.0;
+  property boolean hatchCustomInk => m_hatchCustomInk;
+  default hatchCustomInk = false;
+  property string hatchInkColor => m_hatchInkColor;
+  default hatchInkColor = "#000000";
+  property boolean hatchCustomPaper => m_hatchCustomPaper;
+  default hatchCustomPaper = false;
+  property string hatchPaperColor => m_hatchPaperColor;
+  default hatchPaperColor = "#ffffff";
+  property boolean hatchDefaultEdges => m_hatchDefaultEdges;
+  default hatchDefaultEdges = true;
+
+  /// Edited hatch look as spec text (multi-line; "" = the look of the style itself)
+  property string hatchLayersSpec => m_hatchLayersSpec;
+  default hatchLayersSpec = "";
+  property string hatchToneSpec => m_hatchToneSpec;
+  default hatchToneSpec = "";
+};
+
+#endif

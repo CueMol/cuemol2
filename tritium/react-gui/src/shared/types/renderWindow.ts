@@ -50,6 +50,31 @@ export interface RenderSettingsSnapshotWire {
   }
 }
 
+/**
+ * Flat render settings as the scene stores them (Scene app data "render", a
+ * C++ `RenderSettings` object): one entry per setting key, typed as C++ holds
+ * it -- boolean, number (integer / real) or string (every option-typed
+ * setting). Produced and consumed by renderer/features/render/sceneRenderSettings.ts.
+ */
+export type RenderSettingsValues = Record<string, string | number | boolean>
+
+/**
+ * Reply of the scene-settings round trip and result of the worker's
+ * `getSceneRenderSettings`: `exists: false` means the scene holds no
+ * RenderSettings yet (the editor shows its defaults).
+ */
+export type SceneRenderSettingsReply =
+  | {
+      ok: true
+      /** Whether the scene holds a RenderSettings of its own (false: `values` are a fresh object's). */
+      exists: boolean
+      /** Every stored key, from the C++ object (the class defaults where nothing was set). */
+      values: RenderSettingsValues
+      /** The class defaults in the same shape, the fallback of a value the editor cannot show. */
+      defaults: RenderSettingsValues
+    }
+  | { ok: false; error: string }
+
 /** Scene/view a render was started from (mirrors RenderSource). */
 export interface RenderSourceWire {
   sceneId: number
@@ -170,6 +195,17 @@ export interface RenderWindowModeRequest {
   seq: number
 }
 
+/**
+ * Payload of RENDER_WINDOW_EDIT_PUSH: an Edit-menu action whose key the
+ * native menu received while the Rendering window was focused (macOS; on
+ * Windows / Linux the window's own keydown listener produces the same
+ * action). The window routes it by focus: a text field gets the native edit,
+ * otherwise the target scene's undo / redo.
+ */
+export interface RenderWindowEditAction {
+  action: 'undo' | 'redo'
+}
+
 /** Command sent by the render window; forwarded verbatim to the main window. */
 export type RenderWindowCommand =
   /** Start a render. `source` set = the render window's selected target (or
@@ -182,6 +218,14 @@ export type RenderWindowCommand =
       encodeOnly?: { frameCount: number }
     }
   | { type: 'cancel' }
+  /**
+   * Store the editor's settings on a scene (one undoable edit; fire and
+   * forget). The scene's change event, not a reply, tells the window what
+   * the scene now holds.
+   */
+  | { type: 'write-settings'; sceneId: number; values: RenderSettingsValues }
+  /** Undo / redo the target scene's last edit (Cmd+Z in the render window). */
+  | { type: 'edit'; action: 'undo' | 'redo'; sceneId: number }
   /** Switch the main window to the latest result's source molview tab. */
   | { type: 'show-source' }
   /** Request a full state re-push (sent by the render window on mount). */
@@ -219,6 +263,18 @@ export type RenderWindowStateUpdate =
    */
   | { kind: 'history'; entries: RenderResultWire[] }
   /**
+   * A scene's stored render settings changed -- by this window's own write,
+   * an undo / redo in the main window, or any other writer. The render
+   * window decides whether its editor has to follow.
+   */
+  | {
+      kind: 'sceneSettings'
+      sceneId: number
+      exists: boolean
+      values: RenderSettingsValues
+      defaults: RenderSettingsValues
+    }
+  /**
    * Most recently finished movie frame. Its own variant so the image never
    * rides along with the context pushes, which fire on every progress tick.
    */
@@ -248,6 +304,8 @@ export interface RelayKinds {
   viewCamera: { req: { viewId: number }; res: RenderViewCamera | null }
   /** Spec text of a named hatch style, for the NPR layer editor. */
   hatchStyle: { req: { style: string }; res: HatchStyleSpecReply }
+  /** A scene's stored render settings, for the editor to show. */
+  sceneRenderSettings: { req: { sceneId: number }; res: SceneRenderSettingsReply }
 }
 
 export type RelayKind = keyof RelayKinds

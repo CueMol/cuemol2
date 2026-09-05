@@ -3,7 +3,7 @@
  * @description Free-text property row (a renderer's Name, a label's font).
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PropertyField, TextField } from "@renderer/h3-kit/form";
 import { resetProps, type RowProps } from "./rowProps";
 
@@ -27,6 +27,12 @@ export const TextRow: React.FC<TextRowProps> = ({
   placeholder,
 }) => {
   const [draft, setDraft] = useState(String(entry.value));
+  // Follow the committed value: after a rename from the scene tree, or a
+  // switch to another node of the same kind (the row is not remounted), the
+  // next blur must not write the previous text back.
+  useEffect(() => {
+    setDraft(String(entry.value));
+  }, [entry.value]);
   const commit = () => {
     if (draft !== String(entry.value)) onSet(entry.key, entry.type, draft);
   };

@@ -24,6 +24,8 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { GenericPropEntry, PropTargetType, PropWriteOpts } from '@renderer/worker/shared/genericProps'
+import { isMolSelectionType } from '@renderer/worker/shared/genericProps'
+import { pushHistory } from '@renderer/h3-kit/MolSelList'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 import { useLatestRef } from '@renderer/hooks/react/useLatestRef'
@@ -31,6 +33,15 @@ import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_VIEW, SEM_PROPCHG } from '@ren
 import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
 import { useActiveScene } from '@renderer/state/workspace'
 import { useLayout, useLayoutDispatch } from '@renderer/state/layout'
+
+/**
+ * Record a committed selection-typed property write in the shared selection
+ * history (every `object<MolSelection>` row: `sel`, `anchor_sel`, `showsel`,
+ * `bndry_sel`, ...). Other types are ignored.
+ */
+function recordSelWrite(valueType: string, value: unknown): void {
+  if (isMolSelectionType(valueType)) pushHistory(String(value))
+}
 
 // --- Types ---
 
@@ -308,8 +319,8 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
       setProp: (key, valueType, value, opts) =>
         writeNode(
           'setGenericProp (set)',
-          (t) =>
-            cm!.invokeService('setGenericProp', {
+          async (t) => {
+            const res = await cm!.invokeService('setGenericProp', {
               sceneId: t.sceneId,
               nodeId: t.nodeId,
               nodeType: t.nodeType,
@@ -321,7 +332,14 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
               originalValue: opts?.originalValue,
               originalWasDefault: opts?.originalWasDefault,
               cascadeGroupVisibility: opts?.cascadeGroupVisibility,
-            }),
+            })
+            // A committed selection write is a selection the user applied;
+            // the worker compiled it, so only a successful write is recorded.
+            if (res?.ok && (opts?.mode === undefined || opts.mode === 'commit')) {
+              recordSelWrite(valueType, value)
+            }
+            return res
+          },
           // A preview / abort write returns no entries (the field drives itself
           // from its local draft during a drag, and an abort's refresh arrives
           // through the PROPCHG listener); only refresh on a real commit.
@@ -345,8 +363,8 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
         if (writes.length === 0) return
         await writeNode(
           'setGenericProps',
-          (t) =>
-            cm!.invokeService('setGenericProps', {
+          async (t) => {
+            const res = await cm!.invokeService('setGenericProps', {
               sceneId: t.sceneId,
               nodeId: t.nodeId,
               nodeType: t.nodeType,
@@ -356,7 +374,10 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
                 valueType: w.valueType,
                 value: w.value,
               })),
-            }),
+            })
+            if (res?.ok) for (const w of writes) recordSelWrite(w.valueType, w.value)
+            return res
+          },
           true,
         )
       },

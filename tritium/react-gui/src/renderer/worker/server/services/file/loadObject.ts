@@ -26,7 +26,7 @@ import { setupRenderer } from '../rend/setupRenderer';
 import { undoTxnResult } from '../withUndoTxn';
 import { pickReaderName, OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
-import { applyMapTypeChoice, applyEmMapDefaults, applyMapCenterPolicy } from '@renderer/worker/server/services/map/emDefaults';
+import { applyMapTypeChoice, applyMapCenterPolicy } from '@renderer/worker/server/services/map/emDefaults';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
@@ -126,12 +126,10 @@ export function loadObject(ctx: WorkerContext, args: LoadObjectArgs): LoadObject
         applyMapTypeChoice(obj, args.options.format);
         (scene as unknown as { addObject: (o: CObject) => void }).addObject(obj);
 
+        // The map kind also picks the renderer's default style (and with it
+        // the cryo-EM contour level), see setupRenderer.
         const rend = setupRenderer(ctx, obj, args.options.renderer);
         if (rend) {
-            // Cryo-EM map: an absolute level enclosing the top 1% of the grid
-            // (a sigma level means little on a masked EM map). Independent of
-            // what the view does, so it is not gated on the view policy.
-            applyEmMapDefaults(obj, rend);
             // What the view does for a volume object (UXP's scalar-object
             // deck). Runs here rather than in setupRenderer because `auto`
             // reads the map kind, which only exists once the reader has run.

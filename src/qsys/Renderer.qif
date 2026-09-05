@@ -80,6 +80,13 @@ runtime_class Renderer
   property object<AbstractColor$> egcolor => redirect(getEdgeLineColor, setEdgeLineColor);
   default egcolor = gfx::SolidColor::createRGB(.0, .0, .0);
 
+  /// Edge group (umbreon rendering): renderers with the same non-empty
+  /// name form one edge/silhouette group -- no contact line between them and
+  /// one edge style (the first member's) for the whole group. Empty: grouped
+  /// with the other unnamed renderers of the same object.
+  property string egroup => redirect(getEdgeGroupName, setEdgeGroupName);
+  default egroup = "";
+
   //////////
 
   string toString();

@@ -182,6 +182,21 @@ runtime_class Scene
   object<Camera$> loadCamera(string filename);
 
   ////////////////////
+  // Application data store (<appdata> elements of the scene file)
+
+  /// Get the app-data object for id (null when absent)
+  object<LScrObject$> getAppData(string id);
+
+  /// Get the app-data object for id, creating an instance of className if absent
+  /// (holder creation is not an undoable edit; null when the class is unknown)
+  object<LScrObject$> getCreateAppData(string id, string className);
+
+  boolean hasAppData(string id);
+
+  /// Remove the app-data entry (not undoable)
+  boolean removeAppData(string id);
+
+  ////////////////////
   // Undo manager
 
   boolean isUndoable();

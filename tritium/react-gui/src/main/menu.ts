@@ -20,6 +20,7 @@ import type { RecentFileEntry } from '@shared/types/recent'
 import type { MenuState } from '@shared/types/menuState'
 import { applyMenuStateTo, mergeMenuState } from '@shared/menuStateApply'
 import { getExistingRecents, refreshRecentsExistence } from './recentFiles'
+import { getRenderWindow } from './windows/renderWindow'
 import { menuSwatch } from './menuSwatches'
 import {
   isBlocked,
@@ -109,6 +110,11 @@ function buildSpecificHandlers(
   // equivalents there); on Windows / Linux the renderer dispatches the same
   // channels itself from its keydown listener, and this path serves mouse
   // picks on the (hidden) native menu alone.
+  //
+  // Undo / Redo are the exception for the Rendering window: its settings are
+  // edits of the target scene, so Cmd+Z there means the scene's undo unless a
+  // text field has focus -- which only that window can tell. The action is
+  // pushed to it and routed by focus on its side (useRenderWindowEditKeys).
   const focusRouted: [string, NativeEditAction][] = [
     [IPC.MENU_EDIT_CUT, 'cut'],
     [IPC.MENU_EDIT_COPY, 'copy'],
@@ -125,6 +131,14 @@ function buildSpecificHandlers(
     handlers[ch] = () => {
       const focused = webContents.getFocusedWebContents()
       if (focused && focused.id !== mainWindow.webContents.id) {
+        const rw = getRenderWindow()
+        if (
+          (native === 'undo' || native === 'redo') &&
+          rw && !rw.isDestroyed() && focused.id === rw.webContents.id
+        ) {
+          focused.send(IPC.RENDER_WINDOW_EDIT_PUSH, { action: native })
+          return
+        }
         runNativeEdit(focused, native)
         return
       }

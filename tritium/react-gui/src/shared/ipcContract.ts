@@ -27,7 +27,7 @@ import type { CrashReport } from './types/crash'
 import type {
   RenderWindowCommand, RenderWindowModeRequest, RenderWindowOpenOptions,
   RenderWindowStateUpdate, RenderImageRef,
-  RelayGetPayload, RelayReplyPayload, RelayRequestPayload, RelayKind, RelayRes,
+  RelayGetPayload, RelayReplyPayload, RelayRequestPayload, RelayKind, RelayRes, RenderWindowEditAction,
 } from './types/renderWindow'
 import type { CuemolClipWriteReq, CuemolClipReadRes, CuemolClipPeekRes } from './types/clipboard'
 
@@ -191,6 +191,7 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_EXEC]:       RenderWindowCommand
   [IPC.RENDER_WINDOW_STATE_PUSH]: RenderWindowStateUpdate
   [IPC.RENDER_WINDOW_MODE_PUSH]:  RenderWindowModeRequest
+  [IPC.RENDER_WINDOW_EDIT_PUSH]:  RenderWindowEditAction
   [IPC.RENDER_RELAY_REQUEST]:     RelayRequestPayload
 }
 

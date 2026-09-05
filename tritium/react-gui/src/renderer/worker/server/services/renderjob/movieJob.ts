@@ -171,6 +171,7 @@ export function submitInProcessAnimFrame(
   entry.lastPhaseAt = 0;
   entry.inProcess = backend.beginInProcessAnimFrame!(
     ctx,
+    anim.scene!,
     anim.animMgr!,
     args.snapshot,
     entry.outputPath,

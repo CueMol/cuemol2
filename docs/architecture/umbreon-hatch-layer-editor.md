@@ -38,7 +38,8 @@ Render window (renderer)                      main                      Main win
 useHatchTemplate --RENDER_HATCH_STYLE_GET--> renderWindowIpc --REQUEST(push)--> useRenderWindowBridge --invokeService--> hatchStyleSpec.service
    <-- HatchStyleSpecReply <-- (reqId) <-------- REPLY(invoke) <----------------------------------- getHatchStyleSpec(name)
 parseHatchSpec -> useRenderSettings.applyHatchTemplate (stale style は無視)
-編集 -> getSnapshot().hatch -> RENDER_WINDOW_COMMAND -> UmbreonBackend.makeExporter -> exporter.hatchLayersSpec / hatchToneSpec
+編集 -> useSceneSettingsSync が scene の umbreon_npr.hatchLayersSpec / hatchToneSpec に書く ("" = style 自身)
+レンダー -> UmbreonBackend.makeExporter -> C++ applyRenderSettings が scene の spec を exporter.hatchLayersSpec / hatchToneSpec へ転送
 ```
 
 Rendering window は別 BrowserWindow で worker を持たないため、`RENDER_VIEW_CAMERA_*` と同型の

@@ -10,6 +10,12 @@ import { act } from 'react';
 import { makeRenderHook } from '@renderer/__test__/helpers/testHarness';
 import { useRenderSettings } from '@renderer/features/render/useRenderSettings';
 import { parseHatchSpec } from '@renderer/data/hatchSpec';
+import type { RenderBackendId } from '@renderer/data/renderSettings';
+import type { RenderSettingsValues } from '@renderer/worker/shared/renderSettingsValues';
+import {
+    fixtureBackendProps,
+    fixtureLoaded,
+} from '@renderer/__test__/fixtures/renderSettingsValues';
 
 const valueOf = (props: { key: string; value: unknown }[], key: string) =>
     props.find((p) => p.key === key)?.value;
@@ -17,9 +23,23 @@ const valueOf = (props: { key: string; value: unknown }[], key: string) =>
 const propOf = (props: { key: string; type?: unknown }[], key: string) =>
     props.find((p) => p.key === key);
 
+/**
+ * The hook as the window uses it: mounted, then loaded with what the target
+ * scene holds (here the fixture defaults, optionally overridden).
+ */
+const mountSettings = (overrides: RenderSettingsValues = {}, umbreonAvailable = false) => {
+    const h = makeRenderHook(() => useRenderSettings());
+    act(() => h.result.loadFromScene(fixtureLoaded(overrides, umbreonAvailable)));
+    return h;
+};
+
+/** The user's backend pick, with that backend's rows as the scene holds them. */
+const pickBackend = (h: ReturnType<typeof mountSettings>, id: RenderBackendId) =>
+    act(() => h.result.setBackend(id, fixtureBackendProps(id)));
+
 describe('useRenderSettings', () => {
     it('starts on the default backend with common + backend props', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         expect(h.result.backend).toBe('povray');
         expect(valueOf(h.result.commonProps, 'width')).toBe(1200);
         expect(valueOf(h.result.backendProps, 'shadow')).toBe(false);
@@ -27,46 +47,43 @@ describe('useRenderSettings', () => {
     });
 
     it('defaults to umbreon when the build supports it', () => {
-        const h = makeRenderHook(() => useRenderSettings({ umbreonAvailable: true }));
+        const h = mountSettings({}, true);
         expect(h.result.backend).toBe('umbreon');
         // Backend props swapped to umbreon's (POV-Ray-only "shadow" is gone).
         expect(valueOf(h.result.backendProps, 'shadow')).toBeUndefined();
         expect(valueOf(h.result.backendProps, 'aoEnabled')).toBe(false);
+        // A backend nobody chose is not stored as chosen.
+        expect(h.result.backendExplicit).toBe(false);
         h.unmount();
     });
 
-    it('a manual backend pick wins over a later umbreon auto-default', () => {
-        let avail = false;
-        const h = makeRenderHook(() => useRenderSettings({ umbreonAvailable: avail }));
-        // User explicitly stays on POV-Ray before umbreon availability is known.
-        act(() => h.result.setBackend('povray'));
-        // Umbreon becomes available afterwards -> must NOT override the manual pick.
-        avail = true;
-        h.rerender();
+    it('a backend the scene names is kept and counts as chosen', () => {
+        const h = mountSettings({ backend: 'povray' }, true);
         expect(h.result.backend).toBe('povray');
+        expect(h.result.backendExplicit).toBe(true);
         h.unmount();
     });
 
     it('handleChange updates a common setting value', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.handleChange('width', 800));
         expect(valueOf(h.result.commonProps, 'width')).toBe(800);
         h.unmount();
     });
 
     it('handleChange updates a backend-specific setting value', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.handleChange('shadow', true));
         expect(valueOf(h.result.backendProps, 'shadow')).toBe(true);
         h.unmount();
     });
 
     it('setBackend keeps common settings but resets backend-specific ones', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.handleChange('width', 800));
         act(() => h.result.handleChange('shadow', true));
 
-        act(() => h.result.setBackend('povray'));
+        pickBackend(h, 'povray');
 
         // Common edit survives; backend-specific edit is reset to default.
         expect(valueOf(h.result.commonProps, 'width')).toBe(800);
@@ -75,7 +92,7 @@ describe('useRenderSettings', () => {
     });
 
     it('getSnapshot returns the current settings', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.handleChange('width', 333));
         const snap = h.result.getSnapshot();
         expect(snap.backend).toBe('povray');
@@ -84,7 +101,7 @@ describe('useRenderSettings', () => {
     });
 
     it('restore loads settings from a snapshot', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() =>
             h.result.restore({
                 mode: 'still',
@@ -103,7 +120,7 @@ describe('useRenderSettings', () => {
     });
 
     it('applyPreset sets the preset label, image size and dpi', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.applyPreset('600×600 (300dpi)'));
         expect(h.result.preset).toBe('600×600 (300dpi)');
         expect(valueOf(h.result.commonProps, 'width')).toBe(600);
@@ -113,7 +130,7 @@ describe('useRenderSettings', () => {
     });
 
     it('the "Current view" preset uses the supplied dynamic size', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.applyPreset('Current view', { width: 1024, height: 768 }));
         expect(h.result.preset).toBe('Current view');
         expect(valueOf(h.result.commonProps, 'width')).toBe(1024);
@@ -122,7 +139,7 @@ describe('useRenderSettings', () => {
     });
 
     it('a manual size edit resets the preset to Custom', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.applyPreset('600×600 (300dpi)'));
         act(() => h.result.handleChange('width', 1024));
         expect(h.result.preset).toBe('Custom');
@@ -130,7 +147,7 @@ describe('useRenderSettings', () => {
     });
 
     it('applies a movie video-resolution preset (exact pixels, no DPI change)', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.setMode('movie'));
         act(() => h.result.applyPreset('HD1080 (1920×1080)'));
         expect(valueOf(h.result.commonProps, 'width')).toBe(1920);
@@ -140,7 +157,7 @@ describe('useRenderSettings', () => {
     });
 
     it('movie mode starts on the QVGA preset', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.applyPreset('600×600 (300dpi)'));
         // Switching to movie replaces the still preset with QVGA and its size.
         act(() => h.result.setMode('movie'));
@@ -151,7 +168,7 @@ describe('useRenderSettings', () => {
     });
 
     it('still mode returns to its default preset (1200x1200)', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.setMode('movie'));
         act(() => h.result.setMode('still'));
         expect(h.result.preset).toBe('1200×1200 (600dpi)');
@@ -163,7 +180,7 @@ describe('useRenderSettings', () => {
     // --- Size-unit conversion (UXP render-pov-dlg onImgSzUnitSel parity) ---
 
     it('changing the unit reprojects width/height via DPI and switches the control to real', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         // defaults: 1200 x 1200 px at 600 DPI.
         act(() => h.result.handleChange('unit', 'in'));
         expect(valueOf(h.result.commonProps, 'unit')).toBe('in');
@@ -180,7 +197,7 @@ describe('useRenderSettings', () => {
     });
 
     it('switching the unit back to px restores the original pixel size and integer control', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.handleChange('unit', 'in'));
         act(() => h.result.handleChange('unit', 'px'));
         expect(valueOf(h.result.commonProps, 'width')).toBe(1200);
@@ -192,7 +209,7 @@ describe('useRenderSettings', () => {
     });
 
     it('unit conversion uses the current DPI', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.handleChange('dpi', 300));
         act(() => h.result.handleChange('unit', 'in'));
         // 1200px / 300dpi = 4 in.
@@ -201,7 +218,7 @@ describe('useRenderSettings', () => {
     });
 
     it('applyPreset resets the unit to px (presets are pixel sizes)', () => {
-        const h = makeRenderHook(() => useRenderSettings());
+        const h = mountSettings();
         act(() => h.result.handleChange('unit', 'in'));
         act(() => h.result.applyPreset('600×600 (300dpi)'));
         expect(valueOf(h.result.commonProps, 'unit')).toBe('px');
@@ -217,8 +234,8 @@ describe('useRenderSettings', () => {
 describe('useRenderSettings quality axes', () => {
     /** Hook on the umbreon backend (the only one with quality axes). */
     const umbreonHook = () => {
-        const h = makeRenderHook(() => useRenderSettings());
-        act(() => h.result.setBackend('umbreon'));
+        const h = mountSettings();
+        pickBackend(h, 'umbreon');
         return h;
     };
 
@@ -228,13 +245,14 @@ describe('useRenderSettings quality axes', () => {
         expect(h.result.qualitySteps).toEqual({
             aa: 'high',
             ao: 'medium',
-            gi: 'medium',
+            giLighting: '4',
             shadows: 'off',
         });
         // Those defaults are already written into the props.
         expect(valueOf(h.result.backendProps, 'useGI')).toBe(true);
         expect(valueOf(h.result.backendProps, 'supersample')).toBe(3);
-        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(32);
+        // GI samples is a plain dropdown (no ladder), so its own default holds.
+        expect(valueOf(h.result.backendProps, 'giSamples')).toBe('32');
         expect(valueOf(h.result.backendProps, 'shadows')).toBe(false);
         h.unmount();
     });
@@ -298,21 +316,12 @@ describe('useRenderSettings quality axes', () => {
         h.unmount();
     });
 
-    it('the GI ladder follows the umbreon guide steps', () => {
-        const h = umbreonHook();
-        act(() => h.result.setQualityStep('gi', 'low'));
-        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(8);
-        act(() => h.result.setQualityStep('gi', 'reference'));
-        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(256);
-        h.unmount();
-    });
-
     it('editing a prop off the ladder drops only that axis to Custom', () => {
         const h = umbreonHook();
         act(() => h.result.handleChange('supersample', 6));
         expect(h.result.qualitySteps.aa).toBe('custom');
         // The other axes still describe their own props correctly.
-        expect(h.result.qualitySteps.gi).toBe('medium');
+        expect(h.result.qualitySteps.giLighting).toBe('4');
         expect(h.result.qualitySteps.shadows).toBe('off');
         h.unmount();
     });
@@ -350,7 +359,7 @@ describe('useRenderSettings quality axes', () => {
     it('restoring a snapshot reports the steps its values match', () => {
         const h = umbreonHook();
         act(() => h.result.setQualityStep('aa', 'low'));
-        act(() => h.result.setQualityStep('gi', 'high'));
+        act(() => h.result.setQualityStep('giLighting', '3'));
         const snapshot = h.result.getSnapshot();
 
         act(() => h.result.setQualityStep('aa', 'ultra'));
@@ -358,23 +367,58 @@ describe('useRenderSettings quality axes', () => {
         // Re-rendering a past result must not leave every dropdown on Custom
         // over values that plainly match a step.
         expect(h.result.qualitySteps.aa).toBe('low');
-        expect(h.result.qualitySteps.gi).toBe('high');
+        expect(h.result.qualitySteps.giLighting).toBe('3');
         h.unmount();
     });
 
     it('editing a look setting no axis owns keeps every axis', () => {
         const h = umbreonHook();
-        // GI intensity is a look knob, deliberately outside the quality ladders.
-        act(() => h.result.handleChange('giIntensity', 1.5));
-        expect(h.result.qualitySteps.gi).toBe('medium');
+        // The GI ground color is a look knob outside every ladder.
+        act(() => h.result.handleChange('giGroundColor', '#444444'));
+        expect(h.result.qualitySteps.giLighting).toBe('4');
         expect(h.result.qualitySteps.aa).toBe('high');
+        h.unmount();
+    });
+
+    it('the GI lighting axis trades headlight for key light and gathered ambient', () => {
+        const h = umbreonHook();
+        // The default step is the top one; its values are already in the props.
+        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.2);
+        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.05);
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.4);
+        act(() => h.result.setQualityStep('giLighting', '2'));
+        expect(h.result.qualitySteps.giLighting).toBe('2');
+        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.38);
+        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.32);
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.3);
+        // A hand edit of an owned prop drops the axis to Custom.
+        act(() => h.result.handleChange('lightIntensity', 1.3));
+        expect(h.result.qualitySteps.giLighting).toBe('custom');
+        h.unmount();
+    });
+
+    it('picking a direct method writes the Lights defaults back', () => {
+        const h = umbreonHook();
+        expect(h.result.qualitySteps.giLighting).toBe('4');
+        // The Lights group is shared, so without this a GI step with almost
+        // no headlight would carry over into the raytrace.
+        act(() => h.result.setLighting('none'));
+        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.55);
+        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.6);
+        // The step is derived from those shared values, so leaving GI resets
+        // its lighting to step 0 (the defaults equal it, ambient included);
+        // coming back starts from the raytrace match rather than Custom.
+        expect(h.result.qualitySteps.giLighting).toBe('0');
+        act(() => h.result.setLighting('gi'));
+        expect(h.result.qualitySteps.giLighting).toBe('0');
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.16);
         h.unmount();
     });
 
     it('switching backend resets the axes (POV-Ray declares none)', () => {
         const h = umbreonHook();
         act(() => h.result.setQualityStep('aa', 'low'));
-        act(() => h.result.setBackend('povray'));
+        pickBackend(h, 'povray');
         expect(h.result.qualitySteps).toEqual({});
         h.unmount();
     });
@@ -385,8 +429,8 @@ describe('useRenderSettings quality axes', () => {
 // AO only and starts on plain raytracing.
 describe('useRenderSettings NPR backend', () => {
     const nprHook = () => {
-        const h = makeRenderHook(() => useRenderSettings());
-        act(() => h.result.setBackend('umbreon_npr'));
+        const h = mountSettings();
+        pickBackend(h, 'umbreon_npr');
         return h;
     };
 
@@ -426,8 +470,8 @@ describe('useRenderSettings hatch look', () => {
     const template = () => parseHatchSpec(TEMPLATE);
 
     const mountNpr = () => {
-        const h = makeRenderHook(() => useRenderSettings({ umbreonAvailable: true }));
-        act(() => h.result.setBackend('umbreon_npr'));
+        const h = mountSettings({}, true);
+        pickBackend(h, 'umbreon_npr');
         return h;
     };
 
@@ -495,7 +539,7 @@ describe('useRenderSettings hatch look', () => {
         expect(h.result.hatch.spec).toBeNull();
         expect(h.result.hatchLoaded).toBe(false);
         act(() => h.result.applyHatchTemplate('manga', template()));
-        act(() => h.result.setBackend('umbreon'));
+        pickBackend(h, 'umbreon');
         expect(h.result.hatch.spec).toBeNull();
         h.unmount();
     });
@@ -516,6 +560,26 @@ describe('useRenderSettings hatch look', () => {
         // A snapshot without a look restores none.
         act(() => h.result.restore({ ...snap, hatch: undefined }));
         expect(h.result.hatch.spec).toBeNull();
+        h.unmount();
+    });
+});
+
+describe('useRenderSettings scene sync', () => {
+    it('counts user edits only, and shows the preset a loaded size equals', () => {
+        const h = mountSettings({}, true);
+        expect(h.result.userEditSeq).toBe(0);
+        act(() => h.result.handleChange('width', 800));
+        act(() => h.result.setLighting('ao'));
+        expect(h.result.userEditSeq).toBe(2);
+        expect(h.result.preset).toBe('Custom');
+
+        // A load and the target view's camera default are not edits, and a
+        // loaded size equal to a preset shows that preset, not Custom.
+        act(() => h.result.loadFromScene(fixtureLoaded({ backend: 'umbreon' })));
+        act(() => h.result.applyViewCamera({ perspective: false }));
+        expect(h.result.userEditSeq).toBe(2);
+        expect(valueOf(h.result.commonProps, 'width')).toBe(1200);
+        expect(h.result.preset).toBe('1200\u00d71200 (600dpi)');
         h.unmount();
     });
 });

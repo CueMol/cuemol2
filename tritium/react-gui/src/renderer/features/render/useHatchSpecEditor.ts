@@ -12,7 +12,7 @@
  * ways for them to disagree.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   cloneHatchSpec,
   isSameHatchSpec,
@@ -29,9 +29,15 @@ import { INITIAL_HATCH, type HatchEditState } from './propMath';
 export interface UseHatchSpecEditorOptions {
   /** The selected style name, from the backend props. */
   hatchStyle: string;
+  /**
+   * Called on every user edit of the look (a layer / tone / ink change, a
+   * reset to the template). Not called when a template arrives or when a
+   * snapshot is restored: those are not edits.
+   */
+  onEdit?: () => void;
 }
 
-export function useHatchSpecEditor({ hatchStyle }: UseHatchSpecEditorOptions) {
+export function useHatchSpecEditor({ hatchStyle, onEdit }: UseHatchSpecEditorOptions) {
   const [hatch, setHatch] = useState<HatchEditState>(INITIAL_HATCH);
 
   /** True once the template of the selected style is held. */
@@ -59,8 +65,12 @@ export function useHatchSpecEditor({ hatchStyle }: UseHatchSpecEditorOptions) {
     [hatchStyle],
   );
 
+  const onEditRef = useRef(onEdit);
+  onEditRef.current = onEdit;
+
   const updateHatchSpec = useCallback((fn: (spec: HatchSpec) => HatchSpec) => {
     setHatch((prev) => (prev.spec ? { ...prev, spec: fn(prev.spec) } : prev));
+    onEditRef.current?.();
   }, []);
 
   /** Patch one layer; the other layers keep their identity (memoised rows). */
@@ -114,6 +124,7 @@ export function useHatchSpecEditor({ hatchStyle }: UseHatchSpecEditorOptions) {
   /** Back to the style's own look. */
   const resetHatchToTemplate = useCallback(() => {
     setHatch((prev) => (prev.template ? { ...prev, spec: cloneHatchSpec(prev.template) } : prev));
+    onEditRef.current?.();
   }, []);
 
   /** Frozen copy of the current settings, used for a render result. */

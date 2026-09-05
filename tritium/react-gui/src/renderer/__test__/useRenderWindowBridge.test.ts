@@ -57,6 +57,9 @@ function makeCm(startResult: RenderStartResult = { ok: true, jobId: 'job-1' }) {
             if (name === 'renderCancel') return Promise.resolve({ ok: true });
             return Promise.resolve(undefined);
         }),
+        // The bridge subscribes to the scene's render-settings change event.
+        addEventListener: vi.fn(async () => 1),
+        removeEventListener: vi.fn(async () => {}),
     };
     return { cm, emit: (u: RenderUpdate) => listener?.(u) };
 }
@@ -353,6 +356,8 @@ describe('useRenderWindowBridge hatch style template', () => {
         invokeService: vi.fn((name: string) =>
             name === 'getHatchStyleSpec' ? Promise.resolve(result) : Promise.resolve({ ok: true }),
         ),
+        addEventListener: vi.fn(async () => 1),
+        removeEventListener: vi.fn(async () => {}),
     });
 
     it('resolves the style through the worker and replies with the spec', async () => {
@@ -425,6 +430,39 @@ describe('useRenderWindowBridge history store failure', () => {
             .map((c) => c[1] as { kind: string })
             .filter((u) => u.kind === 'history');
         expect(historyPushes).toHaveLength(0);
+        h.unmount();
+    });
+});
+
+// The scene is the store of the render settings: when it reports a change
+// (the window's own write, an undo here), the bridge re-reads and pushes.
+describe('useRenderWindowBridge scene render settings', () => {
+    it('re-reads a scene whose render settings changed and pushes them to the render window', async () => {
+        const { api } = harness;
+        const { cm } = makeCm();
+        cm.invokeService = vi.fn((name: string) =>
+            name === 'getSceneRenderSettings'
+                ? Promise.resolve({ ok: true, exists: true, values: { width: 800 }, defaults: { width: 1200 } })
+                : Promise.resolve(undefined),
+        );
+        const h = mountBridge(cm);
+        await flushPromises();
+        const [category, , , , fire] = cm.addEventListener.mock.calls[0] as unknown as [
+            string, number, number, number, (args: unknown) => void,
+        ];
+        expect(category).toBe('sceneAppDataChanged');
+
+        // Another app-data id is not ours.
+        act(() => { fire({ obj: { descr: 'other', target_uid: 1 } }); });
+        act(() => { fire({ obj: { descr: 'render', target_uid: 1 } }); });
+        // The listener coalesces the event burst on a short real timer.
+        await new Promise((r) => setTimeout(r, 60));
+        await flushPromises();
+        expect(cm.invokeService).toHaveBeenCalledWith('getSceneRenderSettings', { sceneId: 1 });
+        expect(cm.invokeService).toHaveBeenCalledTimes(1);
+        expect(api.invoke).toHaveBeenCalledWith(IPC.RENDER_WINDOW_STATE, {
+            kind: 'sceneSettings', sceneId: 1, exists: true, values: { width: 800 }, defaults: { width: 1200 },
+        });
         h.unmount();
     });
 });

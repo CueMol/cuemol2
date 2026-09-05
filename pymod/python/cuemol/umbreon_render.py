@@ -10,11 +10,14 @@ View::createOffScreenView().
 Requires libcuemol2 built with ENABLE_UMBREON=ON. Without it StreamManager
 has no "umbreon" writer registered and createHandler() returns None.
 
-Everything except the image size, the camera and the projection is left at
-the C++ ctor defaults of UmbreonSceneExporter (supersample 3, clip-Z and
-edge lines on, AO / shadows / GI off). The projection is taken from the
-camera the scene was saved with rather than the exporter default, so the
-image matches the saved view.
+The exporter is configured from the render settings the scene stores (Scene
+app data "render": what the tritium Rendering window keeps per scene, with a
+backend block for plain umbreon or umbreon NPR hatching), through the C++
+UmbreonSceneExporter.applyRenderSettings that the GUI and cuetty use too, so
+the image is what the GUI would render. A scene without settings of its own
+renders with the RenderSettings class defaults (the window's starting point:
+GI lighting, 1200x1200 px) and, as in the GUI, the projection of the camera
+it was saved with. An explicit width / height overrides the stored size.
 
 Text labels are not drawn: the file DisplayContext inherits the no-op
 gfx::DisplayContext::drawString.
@@ -27,7 +30,7 @@ import sys
 
 import cuemol as cm
 
-__all__ = ["render", "render_file"]
+__all__ = ["apply_scene_settings", "render", "render_file"]
 
 # StreamManager category ID for scene exporters.
 EXPORTER_CATEGORY = 2
@@ -36,19 +39,50 @@ EXPORTER_CATEGORY = 2
 # (see uxp qsc-io.js saveViewToCam), so a GUI-authored scene always has it.
 DEFAULT_CAMERA = "__current"
 
-# Image size fallback, matching UmbreonSceneExporter::setupContext when no
-# size and no view are available. Kept identical so an unspecified size means
-# the same thing at every layer.
-DEFAULT_WIDTH = 640
-DEFAULT_HEIGHT = 480
+# Scene app data holding the render settings (RenderSettings.qif).
+RENDER_APP_DATA_ID = "render"
+RENDER_APP_DATA_CLASS = "RenderSettings"
 
 
-def render(scene, out_png, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-           camera=DEFAULT_CAMERA):
+def apply_scene_settings(scene, exporter, camera=DEFAULT_CAMERA):
+    """Configure an umbreon exporter from the scene's render settings.
+
+    Applies the settings stored in the scene (Scene app data "render") or,
+    when the scene holds none, the RenderSettings class defaults; in that
+    case the projection then follows the named camera, as the Rendering
+    window does for such a scene. The backend block is the scene's choice
+    (umbreon NPR when it says so, plain umbreon otherwise, POV-Ray included).
+    Neither the image size override nor the camera name is set here.
+
+    Returns the backend block applied ("umbreon" or "umbreon_npr"). A render
+    is not an edit: no settings holder is created in the scene.
+    """
+    sc = cm.scene(scene)
+    if sc is None:
+        raise RuntimeError("scene ({}) does not exist".format(scene))
+
+    settings = sc.getAppData(RENDER_APP_DATA_ID)
+    stored = settings is not None
+    if not stored:
+        settings = cm.createObj(RENDER_APP_DATA_CLASS)
+    backend = exporter.applyRenderSettings(settings, "")
+
+    if not stored:
+        # View::setCameraAnim copies the whole Camera (including perspec)
+        # into the view's current camera, so cam.perspec is what the GL view
+        # showed; the class default (perspective) would render an
+        # orthographic scene in perspective.
+        exporter.perspective = sc.getCamera(camera).perspec
+    return backend
+
+
+def render(scene, out_png, width=None, height=None, camera=DEFAULT_CAMERA):
     """Render a scene into a PNG file with umbreon.
 
     scene may be a Scene wrapper or anything cuemol.scene() accepts. The
-    render is synchronous: write() blocks until the ray trace finishes.
+    image size comes from the scene's render settings unless width / height
+    are given. The render is synchronous: write() blocks until the ray trace
+    finishes.
     """
     sc = cm.scene(scene)
     if sc is None:
@@ -59,7 +93,6 @@ def render(scene, out_png, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
             "scene has no camera named '{}'; "
             "pass an existing camera name".format(camera)
         )
-    cam = sc.getCamera(camera)
 
     exporter = cm.strMgr().createHandler("umbreon", EXPORTER_CATEGORY)
     if exporter is None:
@@ -68,15 +101,12 @@ def render(scene, out_png, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
             "libcuemol2 must be built with ENABLE_UMBREON=ON"
         )
 
-    # Follow the projection the scene was saved with. View::setCameraAnim
-    # copies the whole Camera (including perspec) into the view's current
-    # camera, so cam.perspec is what the GL view showed. The exporter's own
-    # perspective property defaults to true regardless, so without this the
-    # render would differ from the saved view for orthographic scenes.
-    exporter.perspective = cam.perspec
+    apply_scene_settings(sc, exporter, camera)
 
-    exporter.width = width
-    exporter.height = height
+    if width is not None:
+        exporter.width = width
+    if height is not None:
+        exporter.height = height
     exporter.camera = camera
 
     exporter.attach(sc)
@@ -87,7 +117,7 @@ def render(scene, out_png, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
         exporter.detach()
 
 
-def render_file(qsc_path, out_png, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+def render_file(qsc_path, out_png, width=None, height=None,
                 camera=DEFAULT_CAMERA):
     """Load a .qsc scene file and render it into a PNG file.
 
@@ -114,15 +144,18 @@ def main(argv=None):
     )
     parser.add_argument("qsc", help="input scene file (.qsc)")
     parser.add_argument("png", help="output image file (.png)")
-    parser.add_argument("-W", "--width", type=int, default=DEFAULT_WIDTH,
-                        help="image width in pixels (default: %(default)s)")
-    parser.add_argument("-H", "--height", type=int, default=DEFAULT_HEIGHT,
-                        help="image height in pixels (default: %(default)s)")
+    parser.add_argument("-W", "--width", type=int, default=None,
+                        help="image width in pixels "
+                             "(default: the scene's render settings)")
+    parser.add_argument("-H", "--height", type=int, default=None,
+                        help="image height in pixels "
+                             "(default: the scene's render settings)")
     parser.add_argument("-c", "--camera", default=DEFAULT_CAMERA,
                         help="camera name in the scene (default: %(default)s)")
     args = parser.parse_args(argv)
 
-    if args.width <= 0 or args.height <= 0:
+    if (args.width is not None and args.width <= 0) or \
+            (args.height is not None and args.height <= 0):
         parser.error("width and height must be positive")
 
     render_file(args.qsc, args.png, args.width, args.height, args.camera)

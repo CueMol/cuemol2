@@ -15,8 +15,8 @@ const COLORMODE_ENUMDEF: Record<string, string[]> = {
     molsurf: ['molecule', 'multigrad', 'potential', 'solid'],
     isosurf: ['molecule', 'multigrad', 'solid'],
     contour: ['molecule', 'multigrad', 'solid'],
-    dsurface: ['molecule', 'potential'],
-    dsurf2: ['molecule', 'potential'],
+    dsurface: ['molecule', 'multigrad', 'potential'],
+    dsurf2: ['molecule', 'multigrad', 'potential'],
 }
 
 interface MakeFixtureOpts {

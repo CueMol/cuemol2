@@ -12,7 +12,10 @@ import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { act } from "react";
 import { mountTree, flushPromises } from "@renderer/__test__/helpers/testHarness";
-import type { AnimElementDetail } from "@renderer/worker/server/services/anim/anim.service";
+import type {
+  AnimElementDetail,
+  AnimElementSibling,
+} from "@renderer/worker/server/services/anim/anim.service";
 import type { AnimElementType } from "@renderer/types";
 import { SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "@renderer/event";
 
@@ -24,17 +27,25 @@ vi.mock("@renderer/contexts/ThemeContext", () => ({
   useTheme: () => ({ theme: "light" }),
 }));
 
+// A refused write (not a validation message under a field) goes through the
+// app's error alert; the harness mounts without its provider.
+const showErrorAlert = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+vi.mock("@renderer/dialogs/ErrorAlertDialogProvider", () => ({
+  useShowErrorAlert: () => showErrorAlert,
+}));
+
 import { AnimElementInspector } from "@renderer/features/inspector/AnimElementInspector";
 
 function detail(over: {
   type?: AnimElementType;
   name?: string;
   disabled?: boolean;
+  timeRefName?: string;
   startMs?: number;
   endMs?: number;
   quadric?: number;
   typeProps?: Record<string, unknown>;
-  siblings?: { name: string }[];
+  siblings?: AnimElementSibling[];
 }): AnimElementDetail {
   return {
     common: {
@@ -42,7 +53,7 @@ function detail(over: {
       name: over.name ?? "El0",
       type: over.type ?? "SimpleSpin",
       disabled: over.disabled ?? false,
-      timeRefName: "",
+      timeRefName: over.timeRefName ?? "",
       startMs: over.startMs ?? 0,
       endMs: over.endMs ?? 1000,
       quadric: over.quadric ?? 0,
@@ -52,7 +63,11 @@ function detail(over: {
   };
 }
 
-function makeCm(detailOrGone: AnimElementDetail | { gone: true }) {
+/**
+ * `setResult` replaces every setAnimElementProp answer (a refused write, a
+ * vanished element); by default a write echoes the fixture detail back.
+ */
+function makeCm(detailOrGone: AnimElementDetail | { gone: true }, setResult?: unknown) {
   const invokeService = vi.fn((name: string) => {
     if (name === "getAnimElementDetail") {
       if ("gone" in detailOrGone) return Promise.resolve({ ok: false, gone: true });
@@ -62,6 +77,7 @@ function makeCm(detailOrGone: AnimElementDetail | { gone: true }) {
       return Promise.resolve({ ok: true, renderers: [], cameras: [], mols: [] });
     }
     if (name === "setAnimElementProp") {
+      if (setResult !== undefined) return Promise.resolve(setResult);
       const d = "gone" in detailOrGone ? null : detailOrGone;
       return Promise.resolve({ ok: true, detail: d });
     }
@@ -134,12 +150,12 @@ describe("AnimElementInspector", () => {
       <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
     );
     await flushPromises();
-    // Start / Duration use the TimeField (ms -> M:SS.mmm), which renders the
-    // value as text until clicked (DragNumericField preset); the timing write
-    // contract is pinned in animDetailService.test.ts.
+    // Start / Duration use the segmented TimeField (ms -> M:SS.mmm); the
+    // segments concatenate to the timecode. The timing write contract is
+    // pinned in animDetailService.test.ts.
     const timeText = (label: string) =>
       fieldByLabel(container, label)!.querySelector(
-        ".h3-form-time .h3-form-drag-value",
+        ".h3-form-time .h3-form-time-segs",
       )?.textContent;
     expect(timeText("Start time")).toBe("0:00.200"); // 200 ms
     expect(timeText("Duration")).toBe("0:01.000"); // 1200 - 200 = 1000 ms
@@ -160,9 +176,8 @@ describe("AnimElementInspector", () => {
     const durField = fieldByLabel(container, "Duration")!.querySelector(
       ".h3-form-time",
     ) as HTMLElement;
-    // Click into the duration field, type 2s, commit.
-    act(() => durField.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
-    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    // Enter opens the duration field's expression editor; type 2s, commit.
+    act(() => durField.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     const input = durField.querySelector("input") as HTMLInputElement;
     const setter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype, "value",
@@ -173,11 +188,15 @@ describe("AnimElementInspector", () => {
     });
     act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     await flushPromises();
+    // A typed commit is not a drag: it commits against the committed span,
+    // which the worker restores (a no-op here) before the transaction.
     expect(cm.invokeService).toHaveBeenCalledWith("setAnimElementProp", {
       sceneId: 1,
       uid: 7,
       prop: "timing",
       value: { startMs: -500, endMs: 1500 },
+      mode: "commit",
+      original: { startMs: -500, endMs: 500 },
     });
     unmount();
   });
@@ -371,6 +390,214 @@ describe("AnimElementInspector", () => {
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
     expect(cellX().disabled).toBe(false);
+    unmount();
+  });
+});
+
+describe("AnimElementInspector realtime timing", () => {
+  it("a Start drag previews each frame and commits once from the pre-drag span", async () => {
+    const cm = makeCm(detail({ type: "NoopAnimObj", startMs: 1000, endMs: 3000 }));
+    const { container, unmount } = mountTree(
+      <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
+    );
+    await flushPromises();
+    const field = fieldByLabel(container, "Start time")!.querySelector(".h3-form-time") as HTMLElement;
+    const seg = field.querySelector('[data-unit="s"]') as HTMLElement;
+    act(() => seg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    act(() => {
+      const ev = new MouseEvent("mousemove");
+      Object.defineProperty(ev, "movementX", { value: 20, configurable: true }); // +5 s
+      document.dispatchEvent(ev);
+    });
+    await flushPromises();
+    expect(cm.invokeService).toHaveBeenCalledWith("setAnimElementProp", {
+      sceneId: 1,
+      uid: 7,
+      prop: "timing",
+      value: { startMs: 6000, endMs: 8000 },
+      mode: "preview",
+      original: { startMs: 1000, endMs: 3000 },
+    });
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    await flushPromises();
+    const commits = (cm.invokeService.mock.calls as unknown as [string, { mode?: string }][]).filter(
+      (c) => c[0] === "setAnimElementProp" && c[1].mode === "commit",
+    );
+    expect(commits).toEqual([
+      [
+        "setAnimElementProp",
+        {
+          sceneId: 1,
+          uid: 7,
+          prop: "timing",
+          value: { startMs: 6000, endMs: 8000 },
+          mode: "commit",
+          original: { startMs: 1000, endMs: 3000 },
+        },
+      ],
+    ]);
+    unmount();
+  });
+});
+
+describe("AnimElementInspector failure policy and Relative-to", () => {
+  const mountEl = (cm: ReturnType<typeof makeCm>, onGone = vi.fn()) =>
+    mountTree(
+      <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={onGone} onHeaderChange={vi.fn()} />,
+    );
+  const setInput = (input: HTMLInputElement, value: string) => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    act(() => {
+      setter?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  };
+  const pickOption = (select: HTMLSelectElement, value: string) => {
+    act(() => {
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  };
+  const refSelect = (container: HTMLElement) =>
+    fieldByLabel(container, "Relative to")!.querySelector("select") as HTMLSelectElement;
+
+  it("lists every candidate, disabling the ones that cannot be chosen", async () => {
+    const cm = makeCm(detail({
+      siblings: [
+        { name: "A", usable: true },
+        { name: "B", usable: false, reason: "would create a cycle" },
+      ],
+    }));
+    const { container, unmount } = mountEl(cm);
+    await flushPromises();
+    const opts = Array.from(refSelect(container).options);
+    expect(opts.map((o) => [o.textContent, o.disabled])).toEqual([
+      ["(absolute)", false],
+      ["A", false],
+      ["B (would create a cycle)", true],
+    ]);
+    unmount();
+  });
+
+  it("shows a reference that no longer exists as such, and (absolute) repairs it", async () => {
+    const cm = makeCm(detail({ timeRefName: "Gone", siblings: [{ name: "A", usable: true }] }));
+    const { container, unmount } = mountEl(cm);
+    await flushPromises();
+    const select = refSelect(container);
+    expect(select.value).toBe("Gone");
+    expect(select.selectedOptions[0].textContent).toBe("(missing: Gone)");
+    expect(select.selectedOptions[0].disabled).toBe(true);
+    expect(fieldByLabel(container, "Relative to")!.querySelector(".anim-field-note.is-warning")).not.toBeNull();
+    pickOption(select, "");
+    await flushPromises();
+    expect(cm.invokeService).toHaveBeenCalledWith("setAnimElementProp", {
+      sceneId: 1, uid: 7, prop: "timeRefName", value: "",
+    });
+    unmount();
+  });
+
+  it("explains a refused Relative-to write under the field, without an alert or closing", async () => {
+    showErrorAlert.mockClear();
+    const cm = makeCm(
+      detail({ siblings: [{ name: "A", usable: true }] }),
+      { ok: false, error: 'Relative to "A" would create a cycle: El0 -> A -> El0', code: "invalid-args" },
+    );
+    const onGone = vi.fn();
+    const { container, unmount } = mountEl(cm, onGone);
+    await flushPromises();
+    pickOption(refSelect(container), "A");
+    await flushPromises();
+    const note = fieldByLabel(container, "Relative to")!.querySelector(".anim-field-note.is-error");
+    expect(note?.getAttribute("role")).toBe("alert");
+    expect(note?.textContent).toBe('Relative to "A" would create a cycle: El0 -> A -> El0');
+    expect(showErrorAlert).not.toHaveBeenCalled();
+    expect(onGone).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it("keeps the element, restores the field and alerts when a name write is refused", async () => {
+    showErrorAlert.mockClear();
+    const cm = makeCm(detail({ name: "El0" }), {
+      ok: false, error: 'Another element is already named "A"', code: "invalid-args",
+    });
+    const onGone = vi.fn();
+    const { container, unmount } = mountEl(cm, onGone);
+    await flushPromises();
+    const input = fieldByLabel(container, "Name")!.querySelector("input") as HTMLInputElement;
+    setInput(input, "A");
+    // React's onBlur listens to the bubbling focusout.
+    act(() => input.dispatchEvent(new FocusEvent("focusout", { bubbles: true })));
+    await flushPromises();
+    expect(onGone).not.toHaveBeenCalled();
+    expect(showErrorAlert).toHaveBeenCalledWith({
+      title: "Animation element",
+      message: 'Another element is already named "A"',
+    });
+    expect((fieldByLabel(container, "Name")!.querySelector("input") as HTMLInputElement).value).toBe("El0");
+    unmount();
+  });
+
+  it("re-mirrors Start after a refused timing commit and alerts", async () => {
+    showErrorAlert.mockClear();
+    const cm = makeCm(detail({ type: "NoopAnimObj", startMs: 1000, endMs: 3000 }), {
+      ok: false, error: "TimeValue create failed", code: "native",
+    });
+    const onGone = vi.fn();
+    const { container, unmount } = mountEl(cm, onGone);
+    await flushPromises();
+    const field = fieldByLabel(container, "Start time")!.querySelector(".h3-form-time") as HTMLElement;
+    const seg = field.querySelector('[data-unit="s"]') as HTMLElement;
+    act(() => seg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    act(() => {
+      const ev = new MouseEvent("mousemove");
+      Object.defineProperty(ev, "movementX", { value: 20, configurable: true });
+      document.dispatchEvent(ev);
+    });
+    expect(field.querySelector(".h3-form-time-segs")?.textContent).toBe("0:06.000");
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    await flushPromises();
+    expect(field.querySelector(".h3-form-time-segs")?.textContent).toBe("0:01.000");
+    expect(showErrorAlert).toHaveBeenCalledWith({ title: "Animation element", message: "TimeValue create failed" });
+    expect(onGone).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it("closes only when a write reports the element gone", async () => {
+    const cm = makeCm(detail({ type: "NoopAnimObj" }), {
+      ok: false, error: "animation element no longer exists", code: "not-found", gone: true,
+    });
+    const onGone = vi.fn();
+    const { container, unmount } = mountEl(cm, onGone);
+    await flushPromises();
+    const checkbox = fieldByLabel(container, "Disabled")!.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    act(() => checkbox.click());
+    await flushPromises();
+    expect(onGone).toHaveBeenCalledWith(1);
+    unmount();
+  });
+
+  it("a legacy negative start survives an interaction that changes nothing, and is stated", async () => {
+    const cm = makeCm(detail({ type: "NoopAnimObj", startMs: -500, endMs: 500 }));
+    const { container, unmount } = mountEl(cm);
+    await flushPromises();
+    const startField = fieldByLabel(container, "Start time")!;
+    expect(startField.querySelector(".anim-field-note")?.textContent).toContain("-0:00.500");
+    const seg = startField.querySelector('[data-unit="s"]') as HTMLElement;
+    const move = (dx: number) =>
+      act(() => {
+        const ev = new MouseEvent("mousemove");
+        Object.defineProperty(ev, "movementX", { value: dx, configurable: true });
+        document.dispatchEvent(ev);
+      });
+    act(() => seg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    move(20);
+    move(-20);
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    await flushPromises();
+    const commits = (cm.invokeService.mock.calls as unknown as [string, { prop?: string; mode?: string; value?: unknown }][])
+      .filter((c) => c[0] === "setAnimElementProp" && c[1].prop === "timing" && c[1].mode === "commit");
+    expect(commits).toHaveLength(1);
+    expect(commits[0][1].value).toEqual({ startMs: -500, endMs: 500 });
     unmount();
   });
 });

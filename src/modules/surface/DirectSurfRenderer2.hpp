@@ -6,42 +6,32 @@
 #ifndef DIRECT_SURF_RENDERER2_HPP_INCLUDED
 #define DIRECT_SURF_RENDERER2_HPP_INCLUDED
 
-#include "surface.hpp"
-#include "MSGeomTypes.hpp"
+#include "DirectSurfRendererBase.hpp"
 
 #include <gfx/TrigGpuPrim.hpp>
-#include <modules/molstr/MolRenderer.hpp>
 
 #include <vector>
 
 class DirectSurfRenderer2_wrap;
 
-namespace qsys { class ScalarObject; }
-
 namespace surface {
-
-  using qlib::Vector4D;
-  using gfx::ColorPtr;
-  using gfx::DisplayContext;
-  using molstr::MolCoordPtr;
-  using molstr::MolAtomPtr;
-  using molstr::SelectionPtr;
 
   /////////////////////////////////
   // Direct molecular surface renderer v2
   //
   // Generates VDW / SAS / SES surfaces from a signed distance field contoured
   // by marching cubes (see DistFieldSurfBuilder). Replaces the EDTSurf-based
-  // DirectSurfRenderer for higher mesh quality.
+  // DirectSurfRenderer for higher mesh quality, and draws through a GPU
+  // triangle primitive coloured by the resolver shared with the DL path.
 
-  class DirectSurfRenderer2 : public molstr::MolRenderer
+  class DirectSurfRenderer2 : public DirectSurfRendererBase
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
     friend class ::DirectSurfRenderer2_wrap;
 
-    typedef molstr::MolRenderer super_t;
+    typedef DirectSurfRendererBase super_t;
 
   public:
 
@@ -52,37 +42,32 @@ namespace surface {
 
     ///////////////////////////////////////////
 
-    void preRender(DisplayContext *pdc) override;
-
-    void postRender(DisplayContext *pdc) override;
-
-    void render(DisplayContext *pdl) override;
-
     void display(DisplayContext *pdc) override;
 
     void invalidateDisplayCache() override;
 
     void unloading() override;
 
-    void propChanged(qlib::LPropEvent &ev) override;
+    /// Geometry changed: drop the GPU primitive and the CPU mesh cache.
+    void invalidateMeshCache() override;
 
-    ///////////////////////////////////////////
-
-    void invalidateMeshCache();
-
-  private:
+  protected:
     /// Build the cached surface mesh using the distance-field builder.
-    void buildMeshCache();
+    void buildMeshCache() override;
 
-    /// Build and upload the GPU triangle primitive directly from the mesh
-    /// cache (bypasses the gfx::Mesh / display-list intermediates).
-    void buildGpuMesh(DisplayContext *pdc);
+    /// Visibility changed: rebuild the GPU primitive, keep the geometry cache.
+    void onShowSelChanged() override;
 
     /// Compute per-vertex device colours and the showsel visibility mask.
     /// Fills vidmap (compacted index, or -1 if hidden) and vcol (device
-    /// colour), and returns the number of shown vertices. Shared by
-    /// buildGpuMesh and updateGpuColors so the vertex order stays identical.
+    /// colour), and returns the number of shown vertices. Colours come from
+    /// the resolver the display-list path uses, so both paths agree.
     int computeShownColors(std::vector<int> &vidmap, std::vector<quint32> &vcol);
+
+  private:
+    /// Build and upload the GPU triangle primitive directly from the mesh
+    /// cache (bypasses the gfx::Mesh / display-list intermediates).
+    void buildGpuMesh(DisplayContext *pdc);
 
     /// Rewrite only the colours of the existing GPU primitive in place.
     /// Returns false when a full rebuild is required (e.g. visibility changed).
@@ -97,172 +82,6 @@ namespace surface {
     /// Map the integer detail level to a grid spacing (Angstrom).
     double detailToSpacing(int detail) const;
 
-    ///////////////////////////////////////////
-    // Properties
-
-  private:
-    /// Coloring mode
-    int m_nMode;
-
-  public:
-    static const int DS_SCAPOT = 1;
-    static const int DS_MOLFANC = 3;
-
-    int getColorMode() const { return m_nMode; }
-    void setColorMode(int n) {
-      if (m_nMode!=n) {
-        m_nMode = n;
-        invalidateDisplayCache();
-      }
-    }
-
-  private:
-    /// Molecule object ID by which painting color is determined.
-    qlib::uid_t m_nTgtMolID;
-
-    /// Molecule object name by which painting color is determined.
-    LString m_sTgtMolName;
-
-  public:
-    LString getTgtObjName() const;
-    void setTgtObjName(const LString &n);
-
-    ///////////////
-    // cull face
-
-  private:
-    bool m_bCullFace;
-
-  public:
-    bool isCullFace() const { return m_bCullFace; }
-    void setCullFace(bool b) {
-      if (b!=m_bCullFace) {
-        m_bCullFace = b;
-        invalidateDisplayCache();
-      }
-    }
-
-    ///////////////
-    // probe radius
-
-  private:
-    double m_probeRadius;
-
-  public:
-    void setProbeRadius(double r) {
-      if (qlib::isNear4(r, m_probeRadius))
-        return;
-      m_probeRadius = r;
-      invalidateDisplayCache();
-      invalidateMeshCache();
-    }
-    double getProbeRadius() const { return m_probeRadius; }
-
-    // detail level
-  private:
-    int m_nDetail;
-
-  public:
-    void setDetail(int n) {
-      if (n==m_nDetail)
-        return;
-      m_nDetail = n;
-      invalidateDisplayCache();
-      invalidateMeshCache();
-    }
-    int getDetail() const { return m_nDetail; }
-
-    ///////////////
-    // surface type
-
-  private:
-    int m_nSurfType;
-
-  public:
-    enum {
-      DS_VDW,
-      DS_SAS,
-      DS_SES
-    };
-
-    void setSurfType(int n) {
-      if (n==m_nSurfType)
-        return;
-      m_nSurfType = n;
-      invalidateDisplayCache();
-      invalidateMeshCache();
-    }
-    int getSurfType() const { return m_nSurfType; }
-
-    ////////////////////////////////
-    // drawing mode (point/line/solid)
-  private:
-    int m_nDrawMode;
-
-  public:
-    enum {
-      SFDRAW_FILL = 0,
-      SFDRAW_LINE = 1,
-      SFDRAW_POINT = 2,
-    };
-
-    void setDrawMode(int n) {
-      if (n==m_nDrawMode)
-        return;
-      m_nDrawMode = n;
-      invalidateDisplayCache();
-    }
-    int getDrawMode() const { return m_nDrawMode; }
-
-    ////////////////////////////////
-
-  private:
-    /// Line/Dot size in wireframe/dot mode
-    double m_lw;
-
-  public:
-    void setLineWidth(double f) {
-      if (qlib::isNear4(m_lw,f))
-        return;
-      m_lw = f;
-      super_t::invalidateDisplayCache();
-    }
-    double getLineWidth() const { return m_lw; }
-
-    ////////////////////////////////
-
-  private:
-    /// Selection for display
-    SelectionPtr m_pShowSel;
-
-  public:
-    SelectionPtr getShowSel() const { return m_pShowSel; }
-    void setShowSel(SelectionPtr pNewSel) {
-      m_pShowSel = pNewSel;
-      // Visibility (drawn subset) changes -> rebuild the GPU primitive, but
-      // keep the surface geometry cache (no distance-field recompute).
-      invalidateGpuMesh();
-      super_t::invalidateDisplayCache();
-    }
-
-    ////////////////////////////////
-    // atom vdw radii
-
-  private:
-    double m_vdwr_H;
-    double m_vdwr_C;
-    double m_vdwr_N;
-    double m_vdwr_O;
-    double m_vdwr_S;
-    double m_vdwr_P;
-    double m_vdwr_X;
-
-  private:
-    ////////////////////////////////
-    // cached surface mesh data
-    MSVertArray m_verts;
-    MSFaceArray m_faces;
-
     ////////////////////////////////
     // GPU triangle primitive (direct draw path, bypasses display-list cache)
     gfx::TrigGpuPrim m_trigGpuPrim;
@@ -270,92 +89,6 @@ namespace surface {
     bool m_bUseShader;
     /// True when only colours changed: refresh GPU colours in place, keep geom.
     bool m_bColorDirty;
-
-  private:
-    MolCoordPtr resolveMolIDImpl(const LString &name);
-
-  public:
-    void objectChanged(qsys::ObjectEvent &ev) override;
-    void sceneChanged(qsys::SceneEvent &ev) override;
-
-    ////////////////////////////////
-    // for "potential" mode
-  private:
-    LString m_sTgtElePot;
-  public:
-    LString getTgtElePotName() const { return m_sTgtElePot; }
-    void setTgtElePotName(const LString &n) {
-      m_sTgtElePot = n;
-      invalidateDisplayCache();
-    }
-
-  private:
-    double m_dParLow;
-    double m_dParMid;
-    double m_dParHigh;
-
-    ColorPtr m_colHigh;
-    ColorPtr m_colMid;
-    ColorPtr m_colLow;
-
-    /// Ramp_above mode
-    bool m_bRampAbove;
-
-  public:
-    double getLowPar() const { return m_dParLow; }
-    void setLowPar(double d) {
-      m_dParLow = d;
-      if (m_nMode==DS_SCAPOT) invalidateDisplayCache();
-    }
-
-    double getMidPar() const { return m_dParMid; }
-    void setMidPar(double d) {
-      m_dParMid = d;
-      if (m_nMode==DS_SCAPOT) invalidateDisplayCache();
-    }
-
-    double getHighPar() const { return m_dParHigh; }
-    void setHighPar(double d) {
-      m_dParHigh = d;
-      if (m_nMode==DS_SCAPOT) invalidateDisplayCache();
-    }
-
-    ColorPtr getLowCol() const { return m_colLow; }
-    void setLowCol(const ColorPtr &rc) {
-      m_colLow = rc;
-      if (m_nMode==DS_SCAPOT) invalidateDisplayCache();
-    }
-
-    ColorPtr getHighCol() const { return m_colHigh; }
-    void setHighCol(const ColorPtr &rc) {
-      m_colHigh = rc;
-      if (m_nMode==DS_SCAPOT) invalidateDisplayCache();
-    }
-
-    ColorPtr getMidCol() const { return m_colMid; }
-    void setMidCol(const ColorPtr &rc) {
-      m_colMid = rc;
-      if (m_nMode==DS_SCAPOT) invalidateDisplayCache();
-    }
-
-    bool isRampAbove() const { return m_bRampAbove; }
-    void setRampAbove(bool val) {
-      m_bRampAbove = val;
-      if (m_nMode==DS_SCAPOT) invalidateDisplayCache();
-    }
-
-  private:
-    double m_dRampVal;
-
-  public:
-    double getRampValue() const { return m_dRampVal; }
-    void setRampValue(double d) {
-      m_dRampVal = d;
-      if (m_nMode==DS_SCAPOT) invalidateDisplayCache();
-    }
-
-  private:
-    bool getColorSca(qsys::ScalarObject *pScaObj, const Vector4D &v, ColorPtr &rcol);
 
   };
 

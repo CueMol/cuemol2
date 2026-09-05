@@ -1,19 +1,16 @@
 /**
  * Cryo-EM post-load helpers (worker side): the dialog's map-kind override
- * lands on the DensityMap, the EM renderer defaults are applied only when
- * the map resolves to cryo-EM and the renderer has a contour level, the view
- * fit runs DensityMap.fitView on every view of the scene, and the dialog's
- * view policy picks between that fit and moving the map's display box to the
- * view the user is already on.
+ * lands on the DensityMap, the view fit runs DensityMap.fitView on every view
+ * of the scene, and the dialog's view policy picks between that fit and
+ * moving the map's display box to the view the user is already on. (The EM
+ * contour level is no longer written here: it comes from the CryoEM style
+ * and the map-kind resolution of siglevel, see mapRendererStyles.test.ts.)
  */
 import { describe, it, expect, vi } from 'vitest'
 import {
     applyMapTypeChoice,
-    applyEmMapDefaults,
     applyMapCenterPolicy,
     fitViewsToMap,
-    isEmDensityMap,
-    EM_INITIAL_TOP_FRACTION,
 } from '@renderer/worker/server/services/map/emDefaults'
 import type { FormatOptions } from '@renderer/dialogs/fopen-opt-dlgs/types'
 
@@ -43,32 +40,6 @@ describe('applyMapTypeChoice', () => {
         expect(applyMapTypeChoice(mol, { kind: 'unknown', options: {} } as FormatOptions)).toBe(false)
         expect(applyMapTypeChoice(mol, ccp4Format('em'))).toBe(false)
         expect('map_type' in mol).toBe(false)
-    })
-})
-
-describe('applyEmMapDefaults', () => {
-    it('sets the absolute level enclosing the top fraction on a cryo-EM map', () => {
-        const getLevelAtTopFraction = vi.fn(() => 0.123)
-        const obj = { map_type_resolved: 'em', getLevelAtTopFraction }
-        const rend: Record<string, unknown> = { siglevel: 1.1, use_abslevel: false }
-        expect(isEmDensityMap(obj)).toBe(true)
-        expect(applyEmMapDefaults(obj, rend)).toBe(true)
-        expect(getLevelAtTopFraction).toHaveBeenCalledWith(EM_INITIAL_TOP_FRACTION)
-        expect(rend.level).toBe(0.123)
-        expect(rend.use_abslevel).toBe(true)
-    })
-
-    it('leaves crystallographic maps and non-map renderers untouched', () => {
-        const xtal = { map_type_resolved: 'xtal', getLevelAtTopFraction: vi.fn(() => 1) }
-        const rend: Record<string, unknown> = { siglevel: 1.1, use_abslevel: false }
-        expect(applyEmMapDefaults(xtal, rend)).toBe(false)
-        expect(rend.use_abslevel).toBe(false)
-        expect('level' in rend).toBe(false)
-
-        const em = { map_type_resolved: 'em', getLevelAtTopFraction: vi.fn(() => 1) }
-        const molRend: Record<string, unknown> = { name: 'simple' }
-        expect(applyEmMapDefaults(em, molRend)).toBe(false)
-        expect(em.getLevelAtTopFraction).not.toHaveBeenCalled()
     })
 })
 

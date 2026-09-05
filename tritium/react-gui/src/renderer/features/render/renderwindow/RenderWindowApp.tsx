@@ -10,8 +10,10 @@
  * tabs); the bottom pane is the run controls (including the Backend and Target
  * dropdowns) plus the log.
  *
- * Render settings state (useRenderSettings) lives locally in this window;
- * a Start sends the frozen snapshot to the main window over IPC
+ * Render settings state (useRenderSettings) lives in this window and belongs
+ * to the render target's scene: useSceneSettingsSync loads what the scene
+ * stores when the target changes and writes the user's edits back as undoable
+ * scene edits. A Start sends the frozen snapshot to the main window over IPC
  * (useRenderWindowClient), which owns the job lifecycle and pushes job /
  * result state back.
  */
@@ -34,8 +36,10 @@ import type { HatchLookEditorProps } from "@renderer/features/inspector/HatchLoo
 import { useMovieOutputPrefs } from "@renderer/features/render/useMovieOutputPrefs";
 import { isRenderJobActive } from "@renderer/features/render/useRenderJob";
 import { useRenderWindowClient } from "@renderer/features/render/useRenderWindowClient";
+import { useSceneSettingsSync } from "./useSceneSettingsSync";
+import { useRenderWindowEditKeys } from "./useRenderWindowEditKeys";
 import { RENDER_BACKEND_IDS } from "@renderer/data/renderBackends";
-import { sizePresetsForMode } from "@renderer/data/renderSettings";
+import { sizePresetsForMode, type RenderBackendId } from "@renderer/data/renderSettings";
 import { IPC } from "@shared/ipcChannels";
 import { useStaleGuard } from "@renderer/hooks/react/useStaleGuard";
 
@@ -48,7 +52,18 @@ export const RenderWindowApp: React.FC = () => {
   // Umbreon is the default backend when the build supports it (forwarded from
   // the main window); otherwise fall back to the static default (POV-Ray).
   const umbreonAvailable = client.state.umbreonAvailable;
-  const settings = useRenderSettings({ umbreonAvailable });
+  const settings = useRenderSettings();
+  // The settings shown are the render target scene's own.
+  const targetSceneId = client.target?.sceneId ?? null;
+  const sync = useSceneSettingsSync({ client, settings, targetSceneId, umbreonAvailable });
+  // Cmd+Z / Shift+Cmd+Z: the target scene's undo / redo (a settings edit is
+  // one of its entries); the editor follows through the scene's change event.
+  const targetSceneRef = useRef(targetSceneId);
+  targetSceneRef.current = targetSceneId;
+  useRenderWindowEditKeys((action) => {
+    const sceneId = targetSceneRef.current;
+    if (sceneId !== null) client.editScene(action, sceneId);
+  });
   // NPR hatch layer editor: the selected style is loaded from the C++ side as
   // an editable template (through the main window's worker).
   const isNpr = settings.backend === "umbreon_npr";
@@ -102,13 +117,19 @@ export const RenderWindowApp: React.FC = () => {
   // output mode. The request is a state object with a seq, so re-picking the
   // mode the window is already in still re-runs this (and re-applies that
   // mode's default size preset). setMode is read through a ref to keep the
-  // effect keyed on the request alone.
+  // effect keyed on the request alone. Applied once the target scene's
+  // settings are in, since the load would otherwise overwrite the size the
+  // mode switch applies.
   const { modeRequest } = client.state;
   const setModeRef = useRef(settings.setMode);
   setModeRef.current = settings.setMode;
+  const appliedModeSeqRef = useRef(0);
   useEffect(() => {
-    if (modeRequest) setModeRef.current(modeRequest.mode);
-  }, [modeRequest]);
+    if (!modeRequest || !sync.loaded) return;
+    if (modeRequest.seq === appliedModeSeqRef.current) return;
+    appliedModeSeqRef.current = modeRequest.seq;
+    setModeRef.current(modeRequest.mode);
+  }, [modeRequest, sync.loaded]);
 
   // macOS traffic-light inset for the custom title bar (hiddenInset frame),
   // mirroring App.tsx. Windows/Linux reserve overlay space in CSS instead.
@@ -118,10 +139,11 @@ export const RenderWindowApp: React.FC = () => {
     }
   }, []);
 
-  /** Start a render of the main window's active scene. */
+  /** Start a render of the selected target; the scene stores what is rendered. */
   const startRender = useCallback(() => {
+    sync.flushBeforeStart();
     client.start(settings.getSnapshot());
-  }, [client, settings]);
+  }, [client, settings, sync]);
 
   // Re-encode gate: how many contiguous frames sit in the movie output folder.
   // Re-checked when the movie output settings change and after a job settles
@@ -213,31 +235,46 @@ export const RenderWindowApp: React.FC = () => {
   // compared against the previous attempt instead of replacing it.
   const result = client.shownResult;
 
-  // Step through the render history, restoring the settings that produced the
-  // entry now shown -- the point of going back is to get that render's
-  // parameters back, not just its picture.
+  // Step through the render history: the image only. The settings that
+  // produced the shown entry come back through "Use settings", which is an
+  // edit of the target scene (one undo entry), so browsing the pictures never
+  // changes the scene by itself.
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const clientRef = useRef(client);
   clientRef.current = client;
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
   const handleBack = useCallback(() => {
-    const shown = clientRef.current.goBack();
-    if (shown) settingsRef.current.restore(shown.settingsSnapshot);
+    clientRef.current.goBack();
   }, []);
   const handleForward = useCallback(() => {
-    const shown = clientRef.current.goForward();
-    if (shown) settingsRef.current.restore(shown.settingsSnapshot);
+    clientRef.current.goForward();
   }, []);
+  const handleUseSettings = useCallback(() => {
+    const shown = clientRef.current.shownResult;
+    if (shown) syncRef.current.restoreFromHistory(shown);
+  }, []);
+  // A backend switch shows that backend's rows as the target scene holds them
+  // (its stored block, else the C++ defaults), not a catalog copy.
+  const handleBackendChange = useCallback((id: RenderBackendId) => {
+    settingsRef.current.setBackend(id, syncRef.current.backendPropsFor(id));
+  }, []);
+  const canUseSettings = result !== null && canRender && sync.differsFromEditor(result);
 
   // Default the Camera settings to what the selected target view shows, so a
   // render starts from the projection the user is looking at. Re-read on every
-  // target change; a manual edit stands until the target changes again.
+  // target change; a manual edit stands until the target changes again. A
+  // scene that stores its own settings keeps its projection instead: what it
+  // saved is the user's choice, and the load must have landed before this
+  // runs so the two cannot race.
   const targetViewId = client.targetViewId;
   const [cameraPending, setCameraPending] = useState(false);
   useHoldReveal(cameraPending);
   const guard = useStaleGuard();
+  const { loaded: sceneLoaded, sceneHasSettings } = sync;
   useEffect(() => {
-    if (targetViewId === null) return;
+    if (targetViewId === null || !sceneLoaded || sceneHasSettings) return;
     const token = guard.next();
     setCameraPending(true);
     void clientRef.current
@@ -252,7 +289,7 @@ export const RenderWindowApp: React.FC = () => {
       guard.invalidate();
       setCameraPending(false);
     };
-  }, [targetViewId, guard]);
+  }, [targetViewId, guard, sceneLoaded, sceneHasSettings]);
 
   // The window is created hidden. It goes on screen once the main window's
   // context has arrived (target views, mode) and every load that started on
@@ -307,6 +344,8 @@ export const RenderWindowApp: React.FC = () => {
                     onForward={handleForward}
                     canBack={historyIndex > 0}
                     canForward={historyIndex < history.length - 1}
+                    onUseSettings={handleUseSettings}
+                    canUseSettings={canUseSettings}
                     historyLabel={
                       history.length > 1
                         ? `${historyIndex + 1} / ${history.length}`
@@ -338,7 +377,7 @@ export const RenderWindowApp: React.FC = () => {
                 canCleanup={availFrames > 0}
                 backend={settings.backend}
                 backendIds={backendIds}
-                onBackendChange={settings.setBackend}
+                onBackendChange={handleBackendChange}
                 targetViews={views}
                 targetViewId={client.targetViewId}
                 onTargetChange={client.setTargetViewId}

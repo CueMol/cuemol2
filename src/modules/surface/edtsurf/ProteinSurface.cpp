@@ -601,8 +601,17 @@ ProteinSurface::ProteinSurface()
   flagradius=false;
   scalefactor=1;
   proberadius=1.4;
-  for(i=0;i<13;i++)
+  // EDTSurf's original radius table; callers override the slots they use.
+  // Every slot must hold a real radius: boundingatom() allocates depty[i]
+  // from rasrad[i] for all NO_RAD_TYPES, so an unset slot is undefined
+  // behaviour (a stack-garbage radius crashed the allocation).
+  static const double defrad[NO_RAD_TYPES] = {
+    1.90, 1.88, 1.63, 1.48, 1.78, 1.2, 1.87, 1.96, 1.63, 0.74, 1.8, 1.48, 1.2
+  };
+  for(i=0;i<NO_RAD_TYPES;i++) {
+    rasrad[i]=defrad[i];
     depty[i]=NULL;
+  }
   vp=NULL;
   pheight=0;
   pwidth=0;

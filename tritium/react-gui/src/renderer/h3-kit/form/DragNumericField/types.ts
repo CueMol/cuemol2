@@ -95,29 +95,6 @@ export interface DragNumericFieldProps {
      * move focus to the previous field in a column. No-op when unset.
      */
     onCommitPrev?: () => void;
-    /**
-     * Display formatter. Defaults to `value.toFixed(decimals)`. Override for a
-     * non-decimal presentation (e.g. a timecode); `parse` must then read the
-     * same shape back.
-     */
-    format?: (value: number) => string;
-    /**
-     * Text-edit parser; return null for malformed input (the edit is then
-     * discarded). Defaults to `Number()` with a finite check. Providing it also
-     * switches the edit input to `type="text"`.
-     */
-    parse?: (text: string) => number | null;
-    /** Step-affordance layout. Default `sides` (`<` / `>` at the field edges). */
-    stepper?: 'sides' | 'stacked';
-    /**
-     * Step granularity for the arrows and (opt-in) the Up / Down keys, which
-     * would otherwise both use `step`. Receives the live text edit -- with
-     * `caretPos` null when the whole draft is selected, i.e. there is no
-     * meaningful caret -- or null when the field is not being edited, so a
-     * unit-segmented field can step the segment under the caret. Supplying it
-     * also enables Up / Down stepping while editing.
-     */
-    resolveStep?: (edit: { text: string; caretPos: number | null } | null) => number;
     /** Accessible name for the widget as a whole. */
     'aria-label'?: string;
     /** Native tooltip on the widget as a whole. */
@@ -152,10 +129,8 @@ export interface DragState {
 /** Transient arrow-press bookkeeping for the auto-repeat hold. */
 export interface PressState {
     sign: 1 | -1;
-    /** Accumulated value during the hold; advanced one `stepSize` per tick. */
+    /** Accumulated value during the hold; advanced one `step` per tick. */
     held: number;
-    /** Increment per tick -- `step`, or what `resolveStep` returned. */
-    stepSize: number;
     /** Initial-delay timeout, then the repeat interval (cleared on release). */
     delayTimer: ReturnType<typeof setTimeout> | null;
     repeatTimer: ReturnType<typeof setInterval> | null;
@@ -202,7 +177,10 @@ export interface FieldCore {
     inputRef: React.RefObject<HTMLInputElement | null>;
     /** Latest committed value, for closures that must not re-subscribe. */
     valueRef: React.MutableRefObject<number>;
-    /** Latest formatter, read the same way and for the same reason. */
+    /**
+     * Latest formatter, read the same way and for the same reason (it changes
+     * with the display precision while Shift is held).
+     */
     formatRef: React.MutableRefObject<(v: number) => string>;
     cbRef: React.MutableRefObject<DragCallbacks>;
     /** Read a typed draft, or null when it is empty / malformed. */

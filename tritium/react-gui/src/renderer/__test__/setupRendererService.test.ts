@@ -32,6 +32,7 @@ vi.mock('@renderer/worker/server/services/helpers/getDefaultStyleName', () => ({
 import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { molPostProc } from '@renderer/worker/server/services/helpers/molPostProc'
+import { getDefaultStyleName } from '@renderer/worker/server/services/helpers/getDefaultStyleName'
 import { fakeObject, fakeRenderer, fakeScene, fakeView, makeWorkerCtx } from '@renderer/worker/testing'
 
 /**
@@ -90,6 +91,15 @@ describe('setupRenderer — direct API (no NewRendererCommand)', () => {
             'rend.applyStyles(DefaultStyle)',
         ])
         expect(molPostProc).toHaveBeenCalledTimes(1)
+    })
+
+    // The default style of a map renderer depends on the map kind (the
+    // CryoEM styles carry the EM level default), so the lookup must see it.
+    it('passes the map kind of a DensityMap to the default-style lookup', () => {
+        const { ctx, mol } = makeFixture({ className: 'DensityMap' })
+        mol.map_type_resolved = 'em'
+        setupRenderer(ctx, mol as unknown, { ...baseOpts, rendererType: 'isosurf', rendererName: 'iso1' })
+        expect(getDefaultStyleName).toHaveBeenCalledWith('isosurf', 'em')
     })
 
     it('centerView=true recenters all views via scene.view_uids -> scene.getView -> setViewCenter', () => {

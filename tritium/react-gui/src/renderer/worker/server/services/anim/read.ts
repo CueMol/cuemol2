@@ -12,6 +12,7 @@ import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { AnimElement, AnimMgrState } from "@renderer/types";
 import { classNameToType } from "./elementType";
 import { safeNum, safeBool, safeStr } from "./resolve";
+import type { TimeRefNode } from "./timeRefGraph";
 // --- detail shapes ---
 
 /**
@@ -46,9 +47,17 @@ export function readMgrState(mgr: AnimMgr): AnimMgrState {
   };
 }
 
-/** Read one `AnimObj` into an `AnimElement` (all times in ms). */
-export function readElement(obj: AnimObj, index: number): AnimElement {
-  return {
+/**
+ * Read one `AnimObj` into an `AnimElement` (all times in ms).
+ *
+ * The absolute span comes from the TS-resolved `node` when the element's
+ * chain resolves; otherwise the manager's own numbers are kept -- the last
+ * position C++ resolved -- so a broken strip still has somewhere to be drawn,
+ * marked by `timeRefState`.
+ */
+export function readElement(obj: AnimObj, index: number, node?: TimeRefNode): AnimElement {
+  const resolved = node !== undefined && node.state === "ok";
+  const el: AnimElement = {
     index,
     uid: safeNum(() => obj.uid),
     name: safeStr(() => obj.name),
@@ -57,10 +66,13 @@ export function readElement(obj: AnimObj, index: number): AnimElement {
     timeRefName: safeStr(() => obj.timeRefName),
     startMs: safeNum(() => obj.start.millisec),
     endMs: safeNum(() => obj.end.millisec),
-    absStartMs: safeNum(() => obj.absStart.millisec),
-    absEndMs: safeNum(() => obj.absEnd.millisec),
+    absStartMs: resolved ? (node.absStartMs as number) : safeNum(() => obj.absStart.millisec),
+    absEndMs: resolved ? (node.absEndMs as number) : safeNum(() => obj.absEnd.millisec),
     quadric: safeNum(() => obj.quadric),
+    timeRefState: node?.state ?? "ok",
   };
+  if (node?.error !== undefined) el.resolveError = node.error;
+  return el;
 }
 
 export const EMPTY_MGR_STATE: AnimMgrState = {

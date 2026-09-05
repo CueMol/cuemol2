@@ -13,11 +13,6 @@
 #include <chrono>
 
 #include <gfx/DisplayContext.hpp>
-#include <gfx/Mesh.hpp>
-#include <gfx/GradientColor.hpp>
-
-#include <qsys/SceneManager.hpp>
-#include <qsys/ScalarObject.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolAtom.hpp>
@@ -29,23 +24,8 @@ using molstr::MolCoordPtr;
 using molstr::MolAtomPtr;
 using molstr::AtomIterator;
 
-using qsys::ObjectPtr;
-using qsys::SceneManager;
-
 DirectSurfRenderer2::DirectSurfRenderer2()
 {
-  m_nTgtMolID = qlib::invalid_uid;  // the destructor unregisters by this ID
-  m_vdwr_H = 1.2;
-  m_vdwr_C = 1.7;
-  m_vdwr_N = 1.55;
-  m_vdwr_O = 1.52;
-  m_vdwr_S = 1.8;
-  m_vdwr_P = 1.8;
-  m_vdwr_X = 1.7;
-
-  m_nMode = DS_MOLFANC;
-  m_dRampVal = 1.4;
-
   m_bCheckShaderOK = false;
   m_bUseShader = false;
   m_bColorDirty = false;
@@ -53,13 +33,6 @@ DirectSurfRenderer2::DirectSurfRenderer2()
 
 DirectSurfRenderer2::~DirectSurfRenderer2()
 {
-  if (m_nTgtMolID!=qlib::invalid_uid) {
-    ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
-    if (!pObj.isnull()) {
-      pObj->removeListener(this);
-    }
-    m_nTgtMolID=qlib::invalid_uid;
-  }
 }
 
 const char *DirectSurfRenderer2::getTypeName() const
@@ -72,8 +45,15 @@ void DirectSurfRenderer2::invalidateMeshCache()
   // Geometry changed: drop the GPU primitive and the CPU mesh cache so the
   // surface is fully recomputed.
   invalidateGpuMesh();
-  m_verts.destroy();
-  m_faces.destroy();
+  super_t::invalidateMeshCache();
+}
+
+void DirectSurfRenderer2::onShowSelChanged()
+{
+  // Visibility (drawn subset) changes -> rebuild the GPU primitive, but
+  // keep the surface geometry cache (no distance-field recompute).
+  invalidateGpuMesh();
+  super_t::invalidateDisplayCache();
 }
 
 void DirectSurfRenderer2::invalidateGpuMesh()
@@ -179,7 +159,7 @@ void DirectSurfRenderer2::display(DisplayContext *pdc)
 {
   // File (non-GL) export and non-fill draw modes (line/point) use the legacy
   // display-list path (render() -> drawMesh).
-  if (pdc->isFile() || m_nDrawMode!=SFDRAW_FILL) {
+  if (pdc->isFile() || getDrawMode()!=SFDRAW_FILL) {
     super_t::display(pdc);
     return;
   }
@@ -237,74 +217,36 @@ void DirectSurfRenderer2::unloading()
 int DirectSurfRenderer2::computeShownColors(std::vector<int> &vidmap,
                                             std::vector<quint32> &vcol)
 {
-  MolCoordPtr pmol = getClientMol();
   const int nverts = m_verts.size();
   vidmap.resize(nverts);
   vcol.resize(nverts);
 
   const qlib::uid_t nSceneID = getSceneID();
 
-  // initialize the coloring scheme
-  getColSchm()->start(pmol, this);
-  pmol->getColSchm()->start(pmol, this);
+  VertexColorEnv env;
+  beginVertexColors(env);
 
-  // potential coloring mode: resolve scalar object (same as render())
-  qsys::ScalarObject *pScaObj = NULL;
-  if (m_nMode==DS_SCAPOT) {
-    if (!m_sTgtElePot.isEmpty()) {
-      qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtElePot);
-      pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
-    }
-    if (pScaObj==NULL)
-      LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.", m_sTgtElePot.c_str());
-  }
+  const quint32 defDev = getDefaultColor()->getDevCode(nSceneID);
+  ColorPtr pcol;
 
   // Decide shown vertices (showsel mask), assign compact indices and resolve
-  // per-vertex device colors. Same logic/order as render().
-  gfx::ColorPtr pcol = getDefaultColor();
-  quint32 curDev = pcol->getDevCode(nSceneID);
-
+  // per-vertex device colors through the resolver shared with render().
   int j = 0;
   for (int i=0; i<nverts; ++i) {
-    MolAtomPtr pAtom;
-    int ind = m_verts[i].info;
-    if (ind>=0) {
-      pAtom = pmol->getAtom(ind);
-      if (!m_pShowSel->isEmpty() &&
-          !m_pShowSel->isSelected(pAtom)) {
-        vidmap[i] = -1;
-        continue; // not shown
-      }
-    }
+    const MSVert &v = m_verts[i];
 
-    if (m_nMode==DS_MOLFANC) {
-      if (!pAtom.isnull()) {
-        pcol = ColSchmHolder::getColor(pAtom);
-        curDev = pcol->getDevCode(nSceneID);
-      }
-    }
-    else if (m_nMode==DS_SCAPOT) {
-      bool res=false;
-      if (pScaObj!=NULL) {
-        Vector4D pos = m_verts[i].v3d();
-        Vector4D norm = m_verts[i].n3d();
-        if (m_bRampAbove)
-          res = getColorSca(pScaObj, pos + norm.scale(m_dRampVal), pcol);
-        else
-          res = getColorSca(pScaObj, pos, pcol);
-      }
-      if (res)
-        curDev = pcol->getDevCode(nSceneID);
+    MolAtomPtr pAtom;
+    if (!isVertexShown(env, v, pAtom)) {
+      vidmap[i] = -1;
+      continue; // not shown
     }
 
     vidmap[i] = j;
-    vcol[i] = curDev;
+    vcol[i] = resolveVertexColor(env, v, pAtom, pcol) ? pcol->getDevCode(nSceneID) : defDev;
     ++j;
   }
 
-  // finalize the coloring scheme
-  getColSchm()->end();
-  pmol->getColSchm()->end();
+  endVertexColors(env);
 
   return j;
 }
@@ -382,303 +324,5 @@ bool DirectSurfRenderer2::updateGpuColors()
     m_trigGpuPrim.setColor(vj, vcol[i]);
   }
   m_trigGpuPrim.setUpdated(true);
-  return true;
-}
-
-void DirectSurfRenderer2::preRender(DisplayContext *pdc)
-{
-  if (getEdgeLineType()==gfx::DisplayContext::ELT_NONE) {
-    pdc->setCullFace(m_bCullFace);
-  }
-  else {
-    // edge/silhouette line is ON --> always cull backface
-    pdc->setCullFace(true);
-  }
-
-  if (m_nDrawMode==SFDRAW_POINT) {
-    pdc->setLighting(false);
-    pdc->setPolygonMode(gfx::DisplayContext::POLY_POINT);
-    pdc->setPointSize(m_lw);
-  }
-  else if (m_nDrawMode==SFDRAW_LINE) {
-    pdc->setLighting(false);
-    pdc->setPolygonMode(gfx::DisplayContext::POLY_LINE);
-    pdc->setLineWidth(m_lw);
-  }
-  else {
-    pdc->setLighting(true);
-    pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
-  }
-}
-
-void DirectSurfRenderer2::postRender(DisplayContext *pdc)
-{
-  // reset to default drawing options
-  pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
-  pdc->setPointSize(1.0);
-  pdc->setLineWidth(1.0);
-  pdc->setCullFace(true);
-  pdc->setLighting(false);
-}
-
-void DirectSurfRenderer2::render(DisplayContext *pdl)
-{
-  MolCoordPtr pmol = getClientMol();
-
-  // initialize the coloring scheme
-  getColSchm()->start(pmol, this);
-  pmol->getColSchm()->start(pmol, this);
-
-  int i, j;
-  int nverts = m_verts.size();
-  int nfaces = m_faces.size();
-
-  if (nverts==0||nfaces==0) {
-    buildMeshCache();
-    nverts = m_verts.size();
-    nfaces = m_faces.size();
-  }
-
-  gfx::Mesh mesh;
-
-  mesh.init(nverts, nfaces);
-
-  std::vector<int> vidmap(nverts);
-
-  mesh.color(getDefaultColor());
-
-  // setup
-  qsys::ScalarObject *pScaObj = NULL;
-  if (m_nMode==DS_MOLFANC) {
-  }
-  else if (m_nMode==DS_SCAPOT) {
-    // ELEPOT mode --> resolve target name
-    qsys::ObjectPtr pobj;
-    if (!m_sTgtElePot.isEmpty()) {
-      pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtElePot);
-      pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
-    }
-
-    if (pScaObj==NULL) {
-      LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.", m_sTgtElePot.c_str());
-    }
-  }
-
-  // setup vertex/normal/color
-  gfx::ColorPtr pcol;
-  for (i=0, j=0; i<nverts; ++i) {
-    vidmap[i] = j;
-
-    Vector4D pos = m_verts[i].v3d();
-    Vector4D norm = m_verts[i].n3d();
-
-    MolAtomPtr pAtom;
-    int ind = m_verts[i].info;
-    if (ind>=0) {
-      pAtom = pmol->getAtom(ind);
-      if (!m_pShowSel->isEmpty() &&
-          !m_pShowSel->isSelected(pAtom)) {
-        vidmap[i] = -1;
-        continue; // not shown --> skip coloring
-      }
-    }
-
-    if (m_nMode==DS_MOLFANC) {
-      if (!pAtom.isnull()) {
-        pcol = ColSchmHolder::getColor(pAtom);
-        mesh.color(pcol);
-      }
-    }
-    else if (m_nMode==DS_SCAPOT) {
-      bool res=false;
-      if (pScaObj!=NULL) {
-        if (m_bRampAbove)
-          res = getColorSca(pScaObj, pos + norm.scale(m_dRampVal), pcol);
-        else
-          res = getColorSca(pScaObj, pos, pcol);
-      }
-      if (res)
-        mesh.color(pcol);
-    }
-
-    mesh.normal(norm);
-    mesh.setVertex(j, pos);
-    ++j;
-  }
-
-  int nvlast = j;
-  int id[3];
-
-  for (i=0, j=0; i<nfaces; ++i) {
-    id[0] = vidmap[m_faces[i].id1];
-    id[1] = vidmap[m_faces[i].id2];
-    id[2] = vidmap[m_faces[i].id3];
-
-    if (id[0]<0||id[0]>nvlast||
-        id[1]<0||id[1]>nvlast||
-        id[2]<0||id[2]>nvlast) {
-      continue;
-    }
-
-    mesh.setFace(j, id[0], id[1], id[2]);
-    ++j;
-  }
-  int nflast = j;
-
-  if (nvlast<nverts || nflast<nfaces)
-    mesh.reduce(nvlast, nflast);
-
-  // draw it!!
-  pdl->drawMesh(mesh);
-
-  // finalize the coloring scheme
-  getColSchm()->end();
-  pmol->getColSchm()->end();
-}
-
-void DirectSurfRenderer2::propChanged(qlib::LPropEvent &ev)
-{
-  if (ev.getName().equals("sel")) {
-    invalidateDisplayCache();
-    invalidateMeshCache();
-  }
-  else if (ev.getName().startsWith("vdwr_")) {
-    invalidateDisplayCache();
-    invalidateMeshCache();
-  }
-
-  super_t::propChanged(ev);
-}
-
-/// Resolve mol name, set m_nTgtMolID, listen the MolCoord events, and returns MolCoord object
-MolCoordPtr DirectSurfRenderer2::resolveMolIDImpl(const LString &name)
-{
-  qsys::ScenePtr pScene = getScene();
-  if (pScene.isnull())
-    return MolCoordPtr();
-
-  qsys::ObjectPtr pobj = pScene->getObjectByName(name);
-  MolCoordPtr pMol= MolCoordPtr(pobj, qlib::no_throw_tag());
-  if (pMol.isnull()) {
-    return pMol;
-  }
-
-  m_nTgtMolID = pMol->getUID();
-
-  // event handling: attach to the new object
-  pMol->addListener(this);
-
-  MB_DPRINTLN("DirectSurfRend2.resolveMolID> resolved (%s), OK.", name.c_str());
-  return pMol;
-}
-
-void DirectSurfRenderer2::setTgtObjName(const LString &name)
-{
-  // detach from oldobj
-  if (m_nTgtMolID!=qlib::invalid_uid) {
-    ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
-    if (!pObj.isnull()) {
-      pObj->removeListener(this);
-    }
-    m_nTgtMolID = qlib::invalid_uid;
-  }
-
-  // get object by name
-  if (name.isEmpty())
-    return;
-
-  m_sTgtMolName = name;
-
-  if (getScene().isnull())
-    return; // Scene is not loaded (when called in the scene-file loading)
-
-  MolCoordPtr pMol = resolveMolIDImpl(name);
-  if (pMol.isnull()) {
-    LOG_DPRINTLN("MolSurfRend> \"%s\" is not a MolCoord object.", name.c_str());
-    return;
-  }
-
-  invalidateDisplayCache();
-}
-
-LString DirectSurfRenderer2::getTgtObjName() const
-{
-  if (m_nTgtMolID==qlib::invalid_uid)
-    return LString();
-  ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
-  if (pObj.isnull())
-    return LString();
-  return pObj->getName();
-}
-
-void DirectSurfRenderer2::objectChanged(qsys::ObjectEvent &ev)
-{
-  if (m_nMode==DS_MOLFANC &&
-      ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
-    qlib::LPropEvent *pPE = ev.getPropEvent();
-    if (pPE) {
-      if (pPE->getName().equals("defaultcolor")||
-          pPE->getName().equals("coloring")||
-          pPE->getParentName().equals("coloring")||
-          pPE->getParentName().startsWith("coloring.")) {
-        invalidateDisplayCache();
-      }
-    }
-  }
-
-  super_t::objectChanged(ev);
-}
-
-void DirectSurfRenderer2::sceneChanged(qsys::SceneEvent &ev)
-{
-  if (ev.getType()==qsys::SceneEvent::SCE_SCENE_ONLOADED) {
-    if (!m_sTgtMolName.isEmpty())
-      resolveMolIDImpl(m_sTgtMolName);
-  }
-  else if (ev.getType()==qsys::SceneEvent::SCE_OBJ_ADDED &&
-	   ev.getTarget()==getClientObjID()) {
-    if (!m_sTgtMolName.isEmpty())
-      resolveMolIDImpl(m_sTgtMolName);
-  }
-  else if (ev.getType()==qsys::SceneEvent::SCE_REND_ADDED &&
-	   ev.getTarget()==getUID()) {
-    if (!m_sTgtMolName.isEmpty())
-      resolveMolIDImpl(m_sTgtMolName);
-  }
-
-  super_t::sceneChanged(ev);
-}
-
-bool DirectSurfRenderer2::getColorSca(qsys::ScalarObject *pScaObj, const Vector4D &v, ColorPtr &rcol)
-{
-  double par = pScaObj->getValueAt(v);
-
-  if (par<m_dParLow) {
-    rcol = m_colLow;
-  }
-  else if (par>m_dParHigh) {
-    rcol = m_colHigh;
-  }
-  else if (par>m_dParMid) {
-    // high<-->mid
-    double ratio;
-    if (qlib::Util::isNear(m_dParHigh, m_dParMid))
-      ratio = 1.0;
-    else
-      ratio = (par-m_dParMid)/(m_dParHigh-m_dParMid);
-
-    rcol = ColorPtr(new gfx::GradientColor(m_colHigh, m_colMid, ratio));
-  }
-  else {
-    // mid<-->low
-    double ratio;
-    if (qlib::Util::isNear(m_dParMid, m_dParLow))
-      ratio = 1.0;
-    else
-      ratio = (par-m_dParLow)/(m_dParMid-m_dParLow);
-
-    rcol = ColorPtr(new gfx::GradientColor(m_colMid, m_colLow, ratio));
-  }
-
   return true;
 }

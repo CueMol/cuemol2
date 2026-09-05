@@ -2,23 +2,24 @@
  * @file worker/server/services/map/emDefaults.ts
  * @description Post-load adjustments for density maps opened through the
  * file-open dialog: the dialog's map-kind override (DensityMap `map_type`)
- * and the cryo-EM renderer defaults (absolute contour level enclosing the
- * top 1% of the grid points, the ChimeraX initial-contour rule; sigma-scaled
- * levels are meaningless on a masked EM map whose rmsd is dominated by
- * solvent), plus fitting the views to the whole map.
+ * and the view policy (fit the views to the whole map, or bring the map's
+ * display box to the view).
+ *
+ * The cryo-EM renderer defaults themselves are not written here: the map kind
+ * picks the renderer's default style (`helpers/mapRendererStyles.ts`) and
+ * `siglevel` is resolved by the map kind at draw time (top percent of grid
+ * points on an EM map, the ChimeraX initial-contour rule), so a fresh EM
+ * renderer starts at, and resets to, the top 1% level without any write.
  *
  * Runs in the Web Worker thread (sync C++ wrappers, no await). Every wrapper
  * access is duck-typed: the DensityMap-only members (`map_type_resolved`,
- * `getLevelAtTopFraction`, `fitView`) are probed before use so the helpers
- * are no-ops for other scalar objects and renderer types.
+ * `fitView`) are probed before use so the helpers are no-ops for other
+ * scalar objects.
  */
 import type { FormatOptions, MapCenterPolicy } from '@renderer/worker/shared/fileOpenTypes';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { View } from '@cuemol/core/src/wrappers/View';
 const log = console;
-
-/** Fraction of the grid points the initial cryo-EM contour encloses. */
-export const EM_INITIAL_TOP_FRACTION = 0.01;
 
 type Bag = Record<string, unknown>;
 
@@ -53,33 +54,6 @@ export function isEmDensityMap(obj: unknown): boolean {
     try {
         return typeof o.map_type_resolved === 'string' && o.map_type_resolved === 'em';
     } catch {
-        return false;
-    }
-}
-
-/**
- * Give a map renderer on a cryo-EM map its EM defaults: absolute level
- * mode with the level enclosing the top 1% of the grid points.
- *
- * @returns true when the defaults were applied (the map is cryo-EM and the
- * renderer has a contour level)
- */
-export function applyEmMapDefaults(obj: unknown, rend: unknown): boolean {
-    if (!isEmDensityMap(obj)) return false;
-    const o = obj as Bag & { getLevelAtTopFraction?: (frac: number) => number };
-    const r = rend as Bag;
-    if (typeof o.getLevelAtTopFraction !== 'function') return false;
-    if (typeof r.siglevel !== 'number') return false;
-    try {
-        const level = o.getLevelAtTopFraction(EM_INITIAL_TOP_FRACTION);
-        if (Number.isFinite(level)) {
-            // `level` is the absolute-unit view of siglevel (nopersist)
-            r.level = level;
-        }
-        r.use_abslevel = true;
-        return true;
-    } catch (e) {
-        log.warn('[worker] applyEmMapDefaults failed:', e);
         return false;
     }
 }

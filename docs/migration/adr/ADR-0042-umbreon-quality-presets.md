@@ -73,9 +73,15 @@ method.
   so a scripted caller cannot hit umbreon's warning-and-fallback path. The
   step also governs edge-line quality, which resolves at the supersample
   factor regardless of any AA refinement -- hence 3x as the default.
-- **Look knobs stay out of the ladders.** GI intensity / environment, AO
-  distance / intensity and the edge settings are in no patch, so a step only
-  trades noise and edge quality for time.
+- **Look knobs stay out of the quality ladders.** AO distance / intensity,
+  the Lights group and the edge settings are in no quality patch, so a step
+  only trades noise and edge quality for time. The one axis that changes
+  the picture on purpose is "GI lighting" (added later, see
+  [umbreon-gi-lighting-balance](../../architecture/umbreon-gi-lighting-balance.md)):
+  its five steps move light energy from the headlight into the GI gather at
+  constant brightness, and it is labelled as a look axis rather than a
+  quality one. GI intensity / environment were dropped from the UI at the
+  same time (the energy balance covers them).
 - **Lighting is derived, never stored.** `lightingOf()` reads the method from
   `aoEnabled` / `useGI`, so the selector cannot disagree with the props it
   represents. Switching method writes the exclusive pair and re-applies that
@@ -158,7 +164,8 @@ libcuemol2 gained the properties these axes need:
   - UI: `components/inspector/RenderSettingsEditor.tsx` (Quality section,
     per-axis dropdowns, inactive-method group filtering).
   - Mapping to the renderer: `renderBackends/UmbreonBackend.ts` (`AO_GATHER`,
-    `AA_MODE`).
+    `AA_MODE`). Superseded: the mapping now lives in C++
+    (`UmbreonSceneExporter::applyRenderSettings`), see the 2026-09 note below.
   - libcuemol2: `src/modules/rendering/UmbreonSceneExporter.{qif,hpp,cpp}`,
     `UmbreonDisplayContext.{hpp,cpp}` (`UmbreonRenderParams` ->
     `RenderOptions`, `sceneDiagonal`).
@@ -170,11 +177,37 @@ libcuemol2 gained the properties these axes need:
     `AoRecipeFlagsReachTheRenderer`.
 - Upstream source of the values: umbreon `docs/quality_presets.md` sections
   1 (axis A), 2a (AO), 2b (GI), 3 (shadows) and 6 (the composite bundle).
+- Later amendment (2026-09): the GI quality axis (Low / Medium / High /
+  Reference = 8 / 32 / 64 / 256 samples, denoiser on throughout) was
+  dropped. With OIDN on, its steps render near-identical pictures -- they
+  differ only in residual pocket detail and animation stability -- so a
+  ladder promised more than it showed. The sample count is now a plain
+  dropdown of those four counts in the Global Illumination group, and the
+  GI method carries the "GI lighting" look axis instead.
 - Known gaps, deliberately out of scope here:
-  - GI's ambient energy split (`scene.ambientColor`) is fixed in
-    `UmbreonDisplayContext`; the guide treats it as a client-tuned balance.
+  - GI's lighting energy split (key / headlight / gathered ambient) is a
+    look setting outside the ladders; its values and the exporter
+    properties that carry them are decided in
+    [umbreon-gi-lighting-balance](../../architecture/umbreon-gi-lighting-balance.md).
   - Adaptive AA is reachable only from a script (`aaMode` / `aaDepth` on the
     exporter). Offering it in the UI needs a per-method answer to "what does
     this step mean under GI"; `aaThreshold` stays unexposed either way.
   - The axes are not persisted: like every render setting they reset when the
     Rendering window closes (see ADR-0035).
+
+## 追記 (2026-09): 既定値の原典は qif
+
+render 設定が scene に保存されるようになり ([scene-app-data](../../architecture/scene-app-data.md))、
+初期値は `src/modules/rendering/UmbreonRenderSettings.qif` などの `default` 文が原典になった。
+TS カタログ (`renderBackends.ts`) の行は値を持たない (`RenderPropSpec`)。各 axis の default step /
+`defaultLighting` は「lighting 切替時に step の無い axis をどこに置くか」の UI ヒューリスティックであり、
+既定値の原典ではない。fresh object の値が axis の step に一致しなければ dropdown が Custom を示すので、
+qif と axis のずれは UI で見える。
+
+## 追記 (2026-09): 写像は C++ へ
+
+設定 -> exporter property の写像 (`AO_GATHER` / `DENOISE_MODE` / `HATCH_COLORING` の表、AO off 時の
+gating、GI off 時の ambient fraction 固定) は `UmbreonBackend.ts` から C++ の
+`UmbreonSceneExporter::applyRenderSettings` に移り、tritium / cuetty / Python が共有する
+([scene-app-data](../../architecture/scene-app-data.md) 「レンダー時の適用」)。TS 側は scene の
+`RenderSettings` (無ければ fresh object) を渡すだけで、写像の copy を持たない。

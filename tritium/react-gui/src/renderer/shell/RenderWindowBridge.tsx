@@ -9,9 +9,11 @@
  * the chrome.
  */
 
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { useRenderWindowBridge } from '@renderer/features/render/useRenderWindowBridge'
+import { useCommands } from '@renderer/commands/CommandRegistry'
+import { CmdId } from '@renderer/commands/ids'
 import { useRenderConfig } from '@renderer/contexts/RenderConfigContext'
 import { useActiveScene, useWorkspaceDispatch, useWorkspaceTabs } from '@renderer/state/workspace'
 import { useActiveViewValues } from '@renderer/state/activeView'
@@ -20,7 +22,8 @@ export const RenderWindowBridge: React.FC = () => {
   const { cm } = useCueMol()
   const { activateTab } = useWorkspaceDispatch()
   const { tabs, molViewEntries } = useWorkspaceTabs()
-  const { activeMolViewId } = useActiveScene()
+  const { activeMolViewId, activeSceneId } = useActiveScene()
+  const { dispatch } = useCommands()
   const { exportAvailable } = useActiveViewValues()
   // Persistent render binary paths (POV-Ray / blendpng) from SettingsPane.
   const { binaries } = useRenderConfig()
@@ -39,6 +42,23 @@ export const RenderWindowBridge: React.FC = () => {
     [molViewEntries],
   )
 
+  // The render window's Cmd+Z. The active scene goes through the Undo / Redo
+  // commands so the toolbar history and the Edit menu refresh as they do for
+  // a main-window undo; any other target scene is undone directly (nothing
+  // here shows its stack).
+  const onEditScene = useCallback(
+    (action: 'undo' | 'redo', sceneId: number) => {
+      const logErr = (e: unknown) => console.error(`render window ${action} failed:`, e)
+      if (sceneId === activeSceneId) {
+        dispatch(action === 'undo' ? CmdId.Undo : CmdId.Redo).catch(logErr)
+        return
+      }
+      if (!cm) return
+      void (action === 'undo' ? cm.undo(sceneId) : cm.redo(sceneId)).catch(logErr)
+    },
+    [cm, dispatch, activeSceneId],
+  )
+
   useRenderWindowBridge({
     cm,
     views,
@@ -46,6 +66,7 @@ export const RenderWindowBridge: React.FC = () => {
     tabs,
     setActiveTab: activateTab,
     binaries,
+    onEditScene,
     // Scene-exporter availability is probed by ActiveViewStateProvider; the
     // umbreon capability is forwarded to the modeless render window.
     umbreonAvailable: exportAvailable?.includes('umbreon') ?? false,

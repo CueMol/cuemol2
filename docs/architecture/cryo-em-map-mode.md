@@ -28,7 +28,22 @@ UXP には無かった機能なので migration ADR ではなくここに置く�
 | `MapRenderer` | `use_pbc` (既存) | bool | 意味不変 |
 | `MapSurfRenderer` | `lod` (enum) | `auto` / `step1` / `step2` / `step4` / `step8` | MC の stride。`auto`: box では `binning`、full では budget から決定 |
 | `MapSurfRenderer` | `lod_budget` (integer) | 既定 16 (Mcell) | full モードの MC セル数上限 (ChimeraX `voxel_limit` 相当) |
+| `MapRenderer` | `siglevel` (real, 永続化) | 既定 1.1 (class) / 1.0 (`CryoEM*` style) | contour level の **native 単位の値**: `xtal` では σ 倍数、`em` では「グリッド点の上位 N% を囲む level」の N (ChimeraX の初期 contour 規則)。絶対 level は描画時に `MapRenderer::resolveLevel()` が map kind で解決する |
+| `MapRenderer` | `level` (real, nopersist) | | `siglevel` の絶対密度単位 view。書くと map kind で逆変換 (EM は `DensityMap::getTopFractionAtLevel()`) して `siglevel` を **modified** にする (以前は default flag を落とさず、EM の初期 level が `.qsc` に保存されなかった) |
+| `MapRenderer` | `use_abslevel` (bool) | 既定 false (class) / true (`CryoEM*` style) | UI の表示単位フラグ: native (σ / %) か絶対値か。描画には影響しない。EM は ChimeraX と同じく絶対値表示が既定 |
 
+- **contour level も data 非依存の値を持ち描画時に解決する**: `siglevel` の既定 (class 1.1 / CryoEM style 1.0) は
+  map に依らず静的なので、`.qsc` に書かれず、reset で戻り、map を差し替えても相対的に同じ見え方になる。
+  EM map の初期表示は style の 1.0 = top 1% で ChimeraX の初期規則と同一。以前は読込後に
+  `getLevelAtTopFraction(0.01)` を `level` に直書きしていたため reset で 1.1σ (xtal の値) に戻っていた
+- **mode 別の既定値は style で持つ**: `data/default_style.xml` の `DefaultContour` / `DefaultIsoSurf` (xtal、
+  class 既定のまま) と `CryoEMContour` / `CryoEMIsoSurf` (`siglevel="1.0"`)。renderer 生成時に object の
+  `map_type_resolved` で選び (`helpers/getDefaultStyleName.ts` + `helpers/mapRendererStyles.ts`)、
+  `Renderer::resetProperty` / `getPropDefault` は style 値を class 既定より優先するので reset が mode の値に戻る。
+  `map_type` を後から変えたときは generic prop 書込 (`props/write.ts`) が同じ undo txn 内で
+  `Default*` ↔ `CryoEM*` を入れ替える (`syncMapRendererStyles`; ユーザーが別 style にした renderer は触らない)。
+  mode の source of truth は object の `map_type_resolved` 1 つで、style は数値を供給するだけ
+  (style と data の kind が食い違っても、解釈は data に従う)
 - **PBC 適格** = `use_pbc && map.isPeriodic() && 格納ブロックが全セル被覆 && region != full`
   (`MapRenderer::isPBCEligible()`)。3 renderer に重複していた判定を 1 箇所にまとめた
   (`gpu_mapmesh` は `use_pbc` 項を落としていたが、これで揃う)
@@ -49,6 +64,11 @@ UXP には無かった機能なので migration ADR ではなくここに置く�
 - `use_pbc` の再解釈 — 部分 map の結晶ユーザーが `false` を既に使っている
 - `region_mode` を object 側に置く — 同一 map で contour=box / isosurf=full の使い分けを塞ぐ
 - 統計量による EM 判定 — solvent-flatten 済み結晶 map で誤判定。ヘッダ証拠に限定
+- renderer に style 由来の mode プロパティを置く (style が値を入れ、UI は readonly) — qif の `(readonly)` は
+  `StyleSheet::applyStyleHelper` が skip するので書込可能にせざるを得ず、`map_type_resolved` と乖離し得る
+  2 つ目の mode になる。「どの mode の style か」は style 名から導く (`styleMapKind`) だけで足りる
+- EM の初期 level を読込後の直書きで与える (旧実装) — modified になり reset で xtal の値に戻る。data 依存の
+  level を既定値にはできないので、値の意味 (σ / top %) を map kind で切り替えて既定値を静的にした
 
 ## 自動判定 (`MapKindDetect.cpp`)
 
@@ -194,16 +214,29 @@ boundary で切り取った region を budget 由来の stride で** 表示し�
   (reader の `subsample`)。ダイアログは `probeMapHeader` service (`CCP4MapReader.probeHeader`) でヘッダを
   読み、grid サイズと格納メモリを表示、256 Mvoxel (ChimeraX `voxel_limit_for_open`) を超えると警告と
   推奨 subsample (`suggestSubsample`) を出す
-- 読込後 (`loadObject.service.ts` → `services/map/emDefaults.ts`): map が `em` に解決されたら renderer に
-  `level = getLevelAtTopFraction(0.01)` (上位 1% を囲む絶対 level、ChimeraX の初期 contour 規則) と
-  `use_abslevel = true` を設定する。**view をどうするかは別判断**で、`applyMapCenterPolicy` が
+- 読込後 (`file/loadObject.ts`): `applyMapTypeChoice` でダイアログの map kind を object に書いてから
+  `setupRenderer` が map kind の default style を apply する (EM なら `CryoEM*` = top 1%)。level の直書きは無い。
+  **view をどうするかは別判断**で、`applyMapCenterPolicy` (`services/map/emDefaults.ts`) が
   ダイアログの 3 択 (`auto` / `setMapCenter` / `moveViewCenter`) を解決する (ADR-0057)。
   `auto` は em → `moveViewCenter` (= `DensityMap.fitView`; map renderer の `center` 既定 (0,0,0) は
   ORIGIN 配置の EM map の外にあるため)、それ以外 → `setMapCenter` (= `rend.center = view.getViewCenter()`)
+- **Density map pane の level 単位 (2026-09)**: `MapRendererState.levelUnit` (`sigma` / `percent`、map kind から) と
+  `level` (絶対値) を追加。native 表示では `siglevel` を σ または % で書き、`use_abslevel` (メニュー
+  "Use absolute contour level") では `level` を絶対値で書く (C++ が map kind で逆変換し `siglevel` を
+  modified にする。以前の pane 側 `× denSigma` 換算は廃止)。EM は `CryoEM*` style の `use_abslevel=true`
+  で既定が絶対値表示。% 表示のドラッグ範囲は 0–10% (step 0.01): `DragNumericField` の感度は範囲比例
+  (幅の 3/4 で min→max) なので 0–100 では 1 px ≈ 1% になり実用域 (0.1–5%) を操作できない。Level 行の下に
+  反対単位の値を caption で出す (`DragRow.hint`)。abort / realtime commit の default flag 復元は `level`
+  書込でも `siglevel` の flag を使う (`map/props.ts`)。renderer の Style サブメニューには "Default" /
+  "Cryo-EM" が並び、手動でも切り替えられる
 
 ## 既知の非互換 (リリースノート記載事項)
 
 - 外部 CCP4/MRC を参照する旧シーンで EM と判定される map は、box 表示から全域 LoD 表示に変わる
+- EM map の `siglevel` は σ ではなく top % として解釈される。v2.3.11〜v2.3.13 で保存した EM シーンのうち
+  `siglevel` が modified のもの (pane で level を動かしたもの) は数値が % として読まれ見た目が変わる
+  (level を調整すれば復帰)。未 modified のものは class 既定 1.1 → top 1.1% になる (旧 `setLevel` は
+  default flag を落とさなかったので、読込時の初期 level はそもそも保存されていなかった)。結晶 map は不変
 - `binning > 1` の isosurf は末尾キューブ判定と法線 stride の修正で見た目が僅かに変わる
   (pin テスト P2 / P8 の checksum を再取得; 頂点位置は不変)
 - `DensityMap::getCenter()` の修正で、`NXSTART != 0` の結晶 map の「object center」が正しい位置になる
@@ -304,12 +337,15 @@ signature 不一致で明示的に拒否する。`QdfDenMapWriter::setChunkLimit
 
 - `src/tests/modules/xtal/test_mapkind_detect.cpp` — 判定表
 - `test_maplod.cpp` — `lodStepForBudget` / `lodAlignRange`
-- `test_maprenderer_region.cpp` — map_type / region_mode の解決、PBC 適格、`getCenter()`、origin の座標変換
+- `test_maprenderer_region.cpp` — map_type / region_mode の解決、PBC 適格、`getCenter()`、origin の座標変換、
+  `siglevel` の map kind 解決 (σ / top %) と `setLevel` の逆変換 + modified 化、`CryoEMIsoSurf` style が
+  reset 先になること (gtest 環境では `%%CONFDIR%%/data/` が解決できず style file が読めないので
+  `CUEMOL2_DEFAULT_STYLE_PATH` から明示的に読む)
 - `test_ccp4_origin.cpp` — 合成 MRC (1024 byte header + float) で ORIGIN / 判定 / label 読込
 - `src/tests/qlib/test_chunked_array3d.cpp` — Layout の 64bit 計算、複数 chunk での `at/row/slice/chunkData` が
   `Array3D` と一致、copy/move/resize
 - `test_map_histogram.cpp` — `getHistogramJSON` が直接 rebinning と一致、再ロードで cache 破棄、
-  `getLevelAtTopFraction`
+  `getLevelAtTopFraction` と逆関数 `getTopFractionAtLevel` の bin 解像度での往復
 - `src/tests/qlib/test_seekable_stream.cpp` — 文字列 / file / 二進 adaptor の seek、gzip は非 seekable
 - `test_ccp4map_stream.cpp` — 合成 MRC で全軸順・BE・mode 0/1/6・header stats 無効 (2 pass)・嘘 header
   (seek 再読込)・gzip (buffered)・truncate/normalize・subsample・max_voxels・probeHeader を
@@ -324,7 +360,11 @@ signature 不一致で明示的に拒否する。`QdfDenMapWriter::setChunkLimit
   切り取られ stride 1 になる、ヒステリシス、box モードは無視)、3 renderer が `lod` / `lod_budget` /
   `zoom_refine` を持ち contour の既定 budget が 2 であること
 - `test_mapsurf_pin.cpp` — P5 (PBC)、P7 (非零 start)、P8 (奇数サイズ stride 2)、P9 (full == P1)、
-  P10 (full step 2 == P2)、P11 (view box で切り取った full region、cap 有り)。step 1 の pin (P1/P3/P4/P5/P7) は無変更
+  P10 (full step 2 == P2)、P11 (view box で切り取った full region、cap 有り)。step 1 の pin (P1/P3/P4/P5/P7) は無変更。
+  P9–P11 は結晶 map に `region_mode=full` を明示して full 経路に入れる (EM 判定経由だと level が top % に
+  なり P1/P2 と一致しない)
 - tritium: `isosurfRendererSection.test.tsx`、`densityMapPanelOpsService.test.ts`、`densityMapPaneWire.test.tsx`、
   `emMapDefaults.test.ts`、`probeMapHeaderService.test.ts`、`applyReaderOptions.test.ts`、
-  `mapReaderDefaultsToFormatOptions.test.ts`
+  `mapReaderDefaultsToFormatOptions.test.ts`、`mapRendererStyles.test.ts` (mode style の判定 / 入替と
+  `getDefaultStyleName` の map kind 分岐)、`setupRendererService.test.ts` (map kind が style 選択に渡る)、
+  `genericPropsService.test.ts` (`map_type` 書込で renderer style を同 txn 内で入替)

@@ -24,7 +24,8 @@ qlib::LCloneableObject *SceneEvent::clone() const
 LString SceneEvent::getJSON() const
 {
   LString json = "{";
-  if (getType()==SCE_SCENE_PROPCHG) {
+  if (getType()==SCE_SCENE_PROPCHG ||
+      getType()==SCE_SCENE_APPDATA_CHG) {
     qlib::LPropEvent *pev = getPropEvent();
     if (pev!=NULL) {
       json += "\"propname\": \"" + pev->getName().escapeQuots() + "\", ";
@@ -64,6 +65,11 @@ bool SceneEvent::getCategory(LString &category, int &nSrcType, int &nEvtType) co
     nEvtType = ScrEventManager::SEM_CHANGED;
     nSrcType = ScrEventManager::SEM_SCENE;
     category = "sceneAllCleared";
+    break;
+  case SceneEvent::SCE_SCENE_APPDATA_CHG:
+    nEvtType = ScrEventManager::SEM_CHANGED;
+    nSrcType = ScrEventManager::SEM_SCENE;
+    category = "sceneAppDataChanged";
     break;
   
   case SceneEvent::SCE_OBJ_ADDED:

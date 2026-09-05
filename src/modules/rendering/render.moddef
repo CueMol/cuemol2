@@ -5,6 +5,10 @@
 #include "MqoSceneExporter.qif"
 #include "PngSceneExporter.qif"
 #include "PovSceneExporter.qif"
+#include "PovRenderSettings.qif"
+#include "UmbreonRenderSettings.qif"
+#include "UmbreonNprRenderSettings.qif"
+#include "RenderSettings.qif"
 #include "WbpSceneExporter.qif"
 #include "StlSceneExporter.qif"
 #include "LuxRendSceneExporter.qif"
@@ -20,6 +24,10 @@ module render
   MqoSceneExporter;
   PngSceneExporter;
   PovSceneExporter;
+  PovRenderSettings;
+  UmbreonRenderSettings;
+  UmbreonNprRenderSettings;
+  RenderSettings;
   WbpSceneExporter;
   StlSceneExporter;
   LuxRendSceneExporter;

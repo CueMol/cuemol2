@@ -37,11 +37,11 @@ MolSurfRenderer::MolSurfRenderer()
   m_nDrawMode = SFDRAW_FILL;
   m_nMode = SFREND_SIMPLE;
   m_lw = 1.2;
-  m_dRampVal = 1.4;
 
   m_nTgtMolID = qlib::invalid_uid;
 
-  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
+  // multi_grad is a nested property; its changes reach propChanged() with
+  // parent name "multi_grad" only after this registration.
   super_t::setupParentData("multi_grad");
 }
 
@@ -123,52 +123,6 @@ bool MolSurfRenderer::isShowVert(const Vector4D &v) const
   return false;
 }
 
-bool MolSurfRenderer::getColorSca(const Vector4D &v, ColorPtr &rcol)
-{
-  if (m_pScaObj==NULL)
-    return false;
-
-  double par = m_pScaObj->getValueAt(v);
-
-  if (m_nMode==SFREND_SCAPOT) {
-    if (par<m_dParLow) {
-      rcol = m_colLow;
-    }
-    else if (par>m_dParHigh) {
-      rcol = m_colHigh;
-    }
-    else if (par>m_dParMid) {
-      // high<-->mid
-      double ratio;
-      if (qlib::Util::isNear(m_dParHigh, m_dParMid))
-        ratio = 1.0;
-      else
-        ratio = (par-m_dParMid)/(m_dParHigh-m_dParMid);
-
-      rcol = ColorPtr(new gfx::GradientColor(m_colHigh, m_colMid, ratio));
-      // rcol = LColor(m_colHigh, m_colMid, ratio);
-    }
-    else {
-      // mid<-->low
-      double ratio;
-      if (qlib::Util::isNear(m_dParMid, m_dParLow))
-        ratio = 1.0;
-      else
-        ratio = (par-m_dParLow)/(m_dParMid-m_dParLow);
-
-      rcol = ColorPtr(new gfx::GradientColor(m_colMid, m_colLow, ratio));
-      // rcol = LColor(m_colMid, m_colLow, ratio);
-    }
-  }
-  else {
-    //if (m_pGrad.isnull())
-    //return false;
-    rcol = m_pGrad->getColor(par);
-  }
-  
-  return true;
-}
-
 void MolSurfRenderer::preRender(DisplayContext *pdc)
 {
   if (getEdgeLineType()==gfx::DisplayContext::ELT_NONE) {
@@ -244,30 +198,19 @@ void MolSurfRenderer::render(DisplayContext *pdl)
   else if (m_nMode==SFREND_SCAPOT||
            m_nMode==SFREND_MULTIGRAD) {
     //
-    // ELEPOT/MULTIGRAD mode --> resolve target scalar object name.
-    // The target name is stored separately per mode:
-    //   SCAPOT (potential) --> elepot (m_sTgtElePot)
-    //   MULTIGRAD          --> color_mapname (m_sColorMap)
+    // ELEPOT/MULTIGRAD mode --> resolve the mode's scalar object
+    // (elepot for potential, color_mapname for multigrad)
     //
-    LString tgtName = (m_nMode==SFREND_MULTIGRAD) ? getColorMapName() : m_sTgtElePot;
-
-    qsys::ObjectPtr pobj;
-    m_pScaObj = NULL;
-    if (!tgtName.isEmpty()) {
-      pobj = ensureNotNull(getScene())->getObjectByName(tgtName);
+    m_pScaObj = resolveScalarObj(getScene(), scaMode());
+    if (m_pScaObj==NULL && m_nTgtMolID!=qlib::invalid_uid) {
+      // try "target" property (for old version compat)
+      qsys::ObjectPtr pobj = SceneManager::getObjectS(m_nTgtMolID);
       m_pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
     }
-    if (m_pScaObj==NULL) {
-      // try "target" property (for old version compat)
-      if (m_nTgtMolID!=qlib::invalid_uid) {
-        //pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtObj);
-        pobj = SceneManager::getObjectS(m_nTgtMolID);
-        m_pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
-      }
-    }
 
     if (m_pScaObj==NULL) {
-      LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.", tgtName.c_str());
+      LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.",
+                   getScalarTargetName(scaMode()).c_str());
     }
   }
   else if (m_nMode==SFREND_MOLFANC) {
@@ -309,14 +252,7 @@ void MolSurfRenderer::render(DisplayContext *pdl)
 
     if (m_nMode==SFREND_SCAPOT ||
         m_nMode==SFREND_MULTIGRAD) {
-      bool res;
-      if (m_bRampAbove) {
-        res = getColorSca(pos + norm.scale(m_dRampVal), col);
-      }
-      else {
-        res = getColorSca(pos, col);
-      }
-      if (res) {
+      if (getScalarColor(m_pScaObj, pos, norm, scaMode(), col)) {
         mesh.color(col);
       }
     }
@@ -613,7 +549,12 @@ void MolSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
 
 qsys::ObjectPtr MolSurfRenderer::getColorMapObj() const
 {
-  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(getColorMapName());
-  return pobj;
+  return getColorMapObjImpl(getScene());
+}
+
+void MolSurfRenderer::scalarColorPropChanged()
+{
+  if (isScalarColorMode())
+    invalidateDisplayCache();
 }
 

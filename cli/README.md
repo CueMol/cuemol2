@@ -64,8 +64,8 @@ scene and a camera, and walks the scene through a file `DisplayContext`. No
 |---|---|---|
 | `--input <path>` | -- | Input scene file (`.qsc`). Required with `--render`. |
 | `-r`, `--render <path>` | -- | Output PNG path. Supplying it selects render mode: the image is written and cuetty exits. |
-| `--width <px>` | `640` | Image width. Must be positive. |
-| `--height <px>` | `480` | Image height. Must be positive. |
+| `--width <px>` | scene settings | Image width override. Must be positive. |
+| `--height <px>` | scene settings | Image height override. Must be positive. |
 | `--camera <name>` | `__current` | Camera to render from. Must exist in the scene. |
 | `-c`, `--config <path>` | build-time default | `sysconfig.xml` to initialise from. |
 | `-h`, `--help` | -- | Print the option list. |
@@ -105,26 +105,40 @@ if ! $CUETTY --input scene.qsc --render out.png --width 1200 --height 900; then
 fi
 ```
 
-### What is configurable, and what is not
+### Render settings come from the scene
 
-Only the image size and the camera are exposed. Every other render setting
-stays at the `UmbreonSceneExporter` constructor default:
+The exporter is configured from the render settings the scene file stores:
+the `<appdata id="render" type="RenderSettings">` element the tritium
+Rendering window writes per scene (see
+`docs/architecture/scene-app-data.md`). A `.qsc` therefore renders the way
+the GUI would render it -- ambient occlusion, shadows, global illumination
+and its denoiser, the lighting balance, edge lines, the transparent
+background, the image size in its unit at its DPI and, for the umbreon NPR
+backend, the hatch look. The mapping onto the exporter is the C++
+`UmbreonSceneExporter::applyRenderSettings`, shared with the GUI and the
+Python module; cuetty has no settings logic of its own.
 
-| Setting | Value |
-|---|---|
-| supersampling | 3 |
-| clip-Z (camera slab near plane) | on |
-| edge / silhouette lines | on |
-| ambient occlusion | off |
-| shadows | off |
-| global illumination, denoiser | off |
-| transparent background | off |
+Which block of the settings is used follows the scene's `backend` choice:
+`umbreon_npr` renders with hatching; anything else (`umbreon`, the unchosen
+`""`, and `povray`, which cuetty cannot run) renders with plain umbreon.
 
-**Projection is the one exception**: it is taken from the scene's camera
-rather than the exporter default. `View::setCameraAnim` copies the whole
-`Camera` (including `perspec`) into the view's current camera, so the camera
-saved in the `.qsc` records the projection the GL view was showing. Using the
-exporter default instead would render an orthographic scene in perspective.
+A scene that stores no settings (never touched in the Rendering window)
+renders with the `RenderSettings` class defaults -- the window's own starting
+point: GI lighting with the OIDN denoiser, supersampling 3, 1200x1200 px --
+and, as the window does for such a scene, with the projection of the camera
+it was saved with (`View::setCameraAnim` copies the whole `Camera`, `perspec`
+included, into the view's current camera, so the saved camera records what
+the GL view was showing; the class default would render an orthographic
+scene in perspective). A scene with stored settings keeps its own
+`projection`.
+
+Only the image size and the camera can be overridden from the command line:
+`--width` / `--height` replace the stored (or default) size. The log says
+which settings were used and what they resolved to:
+
+```
+render> scene render settings, backend 'umbreon_npr', 160x120, camera '__current'
+```
 
 ### Text labels are not rendered
 
@@ -155,20 +169,26 @@ prints `interactive shell is not available in this build` and exits normally.
 ## Rendering from Python instead
 
 The same render is available from the `cuemol` Python module, driving the
-identical C++ path (`load_scene` command, then the umbreon exporter) and
-producing byte-identical images:
+identical C++ path (`load_scene` command, then the umbreon exporter
+configured by `applyRenderSettings`) and producing byte-identical images:
 
 ```sh
-python -m cuemol.umbreon_render scene.qsc out.png -W 1920 -H 1080 [-c CAMERA]
+python -m cuemol.umbreon_render scene.qsc out.png [-W 1920 -H 1080] [-c CAMERA]
 ```
 
 ```python
 from cuemol import umbreon_render
 
 # render_file returns the loaded scene, so further images (e.g. other
-# cameras) can be rendered without reloading it
-scene = umbreon_render.render_file("scene.qsc", "front.png", 1920, 1080)
+# cameras) can be rendered without reloading it. The size comes from the
+# scene's settings unless given.
+scene = umbreon_render.render_file("scene.qsc", "front.png")
 umbreon_render.render(scene, "side.png", 1920, 1080, camera="side_view")
+
+# To tweak a setting for one render, configure an exporter yourself
+exporter = cuemol.strMgr().createHandler("umbreon", 2)
+umbreon_render.apply_scene_settings(scene, exporter)
+exporter.supersample = 1
 ```
 
 Prefer the Python entry point for batch work -- several cameras, a sweep over
@@ -210,7 +230,11 @@ DYLD_LIBRARY_PATH=$HOME/tmp/proj64_deplibs/python/lib \
 - `cli/render_scene.{hpp,cpp}` -- the render implementation, kept in its own
   translation unit so it can be reused from another entry point.
 - `src/modules/rendering/UmbreonSceneExporter.qif` -- the full exporter
-  property set, including the AO / shadow / GI knobs this CLI does not expose.
+  property set and `applyRenderSettings`, the settings-to-exporter mapping;
+  `RenderSettings.qif` (+ `Umbreon*RenderSettings.qif`) is the schema of the
+  stored settings.
+- `docs/architecture/scene-app-data.md` -- how the settings are stored in the
+  scene and applied at render time by the GUI, cuetty and Python alike.
 - `docs/architecture/umbreon-process-isolation.md` -- why umbreon renders
   in-process, and the Electron-specific memory limits that do **not** apply to
   a plain CLI process.

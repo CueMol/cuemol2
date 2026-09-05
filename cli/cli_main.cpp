@@ -41,6 +41,7 @@ struct Config
 
     /// Output PNG path; non-empty selects headless render mode.
     std::string render_file;
+    /// Image size overrides in pixels; 0 = not given (the scene's settings)
     int width;
     int height;
     std::string camera;
@@ -57,11 +58,12 @@ std::optional<Config> parse_arguments(int argc, const char *argv[])
         "config,c", po::value<std::string>()->default_value(""), "Config file")(
         "render,r", po::value<std::string>()->default_value(""),
         "Render the input scene into this PNG file and exit (headless)")(
-        "width", po::value<int>()->default_value(defs.width), "Render width in pixels")(
-        "height", po::value<int>()->default_value(defs.height),
-        "Render height in pixels")("camera",
-                                   po::value<std::string>()->default_value(defs.camera),
-                                   "Camera name to render from");
+        "width", po::value<int>(),
+        "Render width in pixels (default: the scene's render settings)")(
+        "height", po::value<int>(),
+        "Render height in pixels (default: the scene's render settings)")(
+        "camera", po::value<std::string>()->default_value(defs.camera),
+        "Camera name to render from");
 
     po::variables_map vm;
 
@@ -86,8 +88,8 @@ std::optional<Config> parse_arguments(int argc, const char *argv[])
                   vm["input"].as<std::string>(),
                   vm["config"].as<std::string>(),
                   vm["render"].as<std::string>(),
-                  vm["width"].as<int>(),
-                  vm["height"].as<int>(),
+                  vm.count("width") ? vm["width"].as<int>() : 0,
+                  vm.count("height") ? vm["height"].as<int>() : 0,
                   vm["camera"].as<std::string>()};
 
     if (!config.render_file.empty()) {
@@ -95,7 +97,8 @@ std::optional<Config> parse_arguments(int argc, const char *argv[])
             std::cerr << "Error: --render requires --input <scene file>" << std::endl;
             return std::nullopt;
         }
-        if (config.width <= 0 || config.height <= 0) {
+        if ((vm.count("width") && config.width <= 0) ||
+            (vm.count("height") && config.height <= 0)) {
             std::cerr << "Error: --width and --height must be positive" << std::endl;
             return std::nullopt;
         }
@@ -186,6 +189,7 @@ int main(int argc, const char *argv[])
     } catch (...) {
         LOG_DPRINTLN("Caught unknown exception");
     }
+    return 1;
 }
 
 namespace fs = boost::filesystem;

@@ -153,3 +153,30 @@ editable through their dot-path children, which is the nested-object path the
 - Tests: `__test__/genericObjectEditors.test.tsx` pins both string-form
   converters (including the integer-milliseconds trap and the malformed-input
   fallback) and which control each type gets.
+
+## Update (2026-09-03) -- `name` / `sel` are never reset
+
+Turning the Generic tab's "default" checkbox on for a renderer group's `name`
+froze the app. The C++ property table declares `""` as the name's default, so
+the dump said `hasdefault: true` and the checkbox was live; the reset wrote
+the empty name, the group's members were orphaned (their `group` still held
+the old name) and the nameless group matched every ungrouped renderer in its
+`center` / `has_center` scan. The same table quirk made a name set through a
+bare C++ setter show as "default", locking the editor.
+
+- One key set on the thread boundary, `worker/shared/genericProps.ts`
+  `NON_RESETTABLE_KEYS` (`name`, `sel`; UXP `resetAllToDefault` parity),
+  re-exported by `propModel.ts`. `parseGenericProps` reports those top-level
+  keys without a default; `setGenericProp` / `resetGenericProps` /
+  `setGenericProps` refuse a reset of them before opening a transaction (an
+  empty commit clears redo); the Generic tab's checkbox is gated on
+  `isResettable`, so the two tabs agree.
+- The inspector resets its tab on a new target, not on a rename (a rename
+  committed from the Generic tab used to bounce the panel back to Properties),
+  and the Properties-tab text row re-seeds its draft from the committed value.
+- This is a guard, not the fix. The qif default, the bare setter's default
+  flag (which also drops the name on save) and the name-based group membership
+  are recorded, with the compatible direction, in
+  [`docs/architecture/renderer-group-identity.md`](../../architecture/renderer-group-identity.md).
+- Tests: `__test__/genericProps.test.ts`, `genericPropsService.test.ts`,
+  `genericTab.test.tsx`, `inspectorPanelMode.test.tsx`, `textRow.test.tsx`.

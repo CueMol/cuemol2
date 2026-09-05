@@ -7,6 +7,7 @@ import { buildNaviCtxMenuNodes } from '@shared/naviCtxMenu';
 import { useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider';
 import { useShowNewRendererDialog } from '@renderer/dialogs/NewRendererDialogProvider';
 import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider';
+import { recordAppliedSel, type AppliedSelResult } from '@renderer/h3-kit/MolSelList';
 
 export function useNaviContextMenu(): {
     openContextMenu: (hit: HitTestResult, viewId: number, x: number, y: number) => Promise<void>;
@@ -41,6 +42,9 @@ export function useNaviContextMenu(): {
         const objId = hit.obj_id;
         const atomId = hit.atom_id;
 
+        // The selection services return the expression they applied; it is
+        // recorded once after the dispatch (nothing for the other actions).
+        let applied: AppliedSelResult | undefined;
         switch (action) {
             case 'centerAt':
                 await cm.invokeService('naviCenterAt', { viewId, x: hit.x, y: hit.y, z: hit.z });
@@ -84,60 +88,61 @@ export function useNaviContextMenu(): {
                 break;
             }
             case 'selectAtom':
-                await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'atom' });
+                applied = await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'atom' });
                 break;
             case 'selectResid':
-                await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'residue' });
+                applied = await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'residue' });
                 break;
             case 'selectChain':
-                await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'chain' });
+                applied = await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'chain' });
                 break;
             case 'selectMol':
-                await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'mol' });
+                applied = await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'mol' });
                 break;
             case 'addSelectAtom':
-                await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'atom' });
+                applied = await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'atom' });
                 break;
             case 'addSelectResid':
-                await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'residue' });
+                applied = await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'residue' });
                 break;
             case 'addSelectChain':
-                await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'chain' });
+                applied = await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'chain' });
                 break;
             case 'unselect':
                 await cm.invokeService('naviCtxUnselect', { viewId, objId });
                 break;
             case 'invertSel':
-                await cm.invokeService('naviCtxInvertSel', { viewId, objId });
+                applied = await cm.invokeService('naviCtxInvertSel', { viewId, objId });
                 break;
             case 'toggleSidechain':
-                await cm.invokeService('naviCtxToggleSidechain', { viewId, objId });
+                applied = await cm.invokeService('naviCtxToggleSidechain', { viewId, objId });
                 break;
             case 'arByres3':
-                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 3, byres: true });
+                applied = await cm.invokeService('naviCtxAround', { viewId, objId, distance: 3, byres: true });
                 break;
             case 'arByres5':
-                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 5, byres: true });
+                applied = await cm.invokeService('naviCtxAround', { viewId, objId, distance: 5, byres: true });
                 break;
             case 'arByres7':
-                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 7, byres: true });
+                applied = await cm.invokeService('naviCtxAround', { viewId, objId, distance: 7, byres: true });
                 break;
             case 'arByres10':
-                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 10, byres: true });
+                applied = await cm.invokeService('naviCtxAround', { viewId, objId, distance: 10, byres: true });
                 break;
             case 'around3':
-                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 3, byres: false });
+                applied = await cm.invokeService('naviCtxAround', { viewId, objId, distance: 3, byres: false });
                 break;
             case 'around5':
-                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 5, byres: false });
+                applied = await cm.invokeService('naviCtxAround', { viewId, objId, distance: 5, byres: false });
                 break;
             case 'around7':
-                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 7, byres: false });
+                applied = await cm.invokeService('naviCtxAround', { viewId, objId, distance: 7, byres: false });
                 break;
             case 'around10':
-                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 10, byres: false });
+                applied = await cm.invokeService('naviCtxAround', { viewId, objId, distance: 10, byres: false });
                 break;
         }
+        recordAppliedSel(applied);
     }, [cm, showContextMenu, showNewRenderer, showErrorAlert]);
 
     return { openContextMenu };

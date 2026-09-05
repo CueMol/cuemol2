@@ -7,6 +7,7 @@
  * list cannot go stale behind an open inspector.
  */
 import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext";
+import { fail } from "@renderer/worker/shared/result";
 import { getSceneOrNull } from "@renderer/worker/server/services/helpers/sceneResolver";
 import type {
   AnimCameraOption,
@@ -38,12 +39,7 @@ export function getAnimTargetOptions(
   ctx: WorkerContext,
   args: GetAnimTargetOptionsArgs,
 ): GetAnimTargetOptionsResult {
-  const empty: GetAnimTargetOptionsResult = {
-    ok: false,
-    renderers: [],
-    cameras: [],
-    mols: [],
-  };
+  const empty: GetAnimTargetOptionsResult = fail("scene not found", "not-found");
   const scene = getSceneOrNull(ctx, args.sceneId);
   if (!scene) return empty;
 

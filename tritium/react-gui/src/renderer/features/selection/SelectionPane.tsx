@@ -51,11 +51,6 @@ interface SelectionPaneProps {
     onToggleCollapse?: () => void;
 }
 
-/* --- Constants --- */
-
-// Mirror MolSelList/selHistory.SKIP: values that pushHistory ignores.
-// Skipping the validate round-trip for these as well matches MolSelList.
-
 /* --- Component --- */
 
 export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggleCollapse }) => {
@@ -251,7 +246,11 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
         void cm
             .invokeService('saveSelDef', { sceneId: activeSceneId, name, expr: textDraft })
             .then((res) => {
-                if (res.ok) setSaveBump((n) => n + 1);
+                if (!res.ok) return;
+                // Naming an expression is a deliberate use of it.
+                pushHistory(textDraft);
+                setHistoryItems(getHistory());
+                setSaveBump((n) => n + 1);
             });
         setDefining(false);
         setDefName('');

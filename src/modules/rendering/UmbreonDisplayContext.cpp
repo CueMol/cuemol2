@@ -18,10 +18,13 @@
 #  include <umbreon/umbreon.hpp>
 #  include <umbreon/log.hpp>
 #  include <umbreon/npr/hatch_shade.hpp>
+#  include <algorithm>
 #  include <cmath>
 #  include <cstdint>
+#  include <limits>
 #  include <map>
 #  include <mutex>
+#  include <string>
 #  include <vector>
 #endif
 
@@ -331,10 +334,20 @@ struct UmbreonDisplayContext::Impl
   int curGroup = 0;
   std::vector<umbreon::GroupBlend> groupBlend;
 
-  /// Per-section (per group) native stroke-edge style for umbreon's screen-space
-  /// edge pass (RenderOptions::strokeEdges + Scene::groupEdgeStyle). Indexed by
-  /// group id; a section without edge lines gets an all-disabled EdgeStyle.
+  /// EDGE GROUPS: renderers of one edge group are ONE section for umbreon's
+  /// edge pass (no contact line inside the group, one style). edgeGroupOf maps
+  /// every transparency group (renderer) to its edge group id; edgeGroupIds
+  /// assigns the ids by key ("n:<egroup>" for a named group, else
+  /// "c:<edge settings>" so renderers drawing the same lines are one group).
+  std::vector<std::uint16_t> edgeGroupOf;
+  std::map<LString, int> edgeGroupIds;
+  /// Native stroke-edge style per EDGE GROUP (RenderOptions::strokeEdges +
+  /// Scene::groupEdgeStyle, indexed by edge group id). Set by the first
+  /// renderer of the group that enables edge lines (edgeGroupStyled); a later
+  /// member with different settings is reported and ignored. A group without
+  /// edge lines keeps an all-disabled EdgeStyle.
   std::vector<umbreon::EdgeStyle> groupEdgeStyle;
+  std::vector<char> edgeGroupStyled;
   /// Whether any section enabled edge lines (gates strokeEdges.enable) and
   /// whether any section requested creases (gates the global crease extraction).
   bool anyEdges = false;
@@ -401,7 +414,44 @@ void ensureLogSink()
 }
 #endif
 
+#ifdef HAVE_UMBREON
+/// Signature of a per-section edge style: which natures are enabled, their
+/// color/width/opacity, the silhouette mode and the alignment -- everything
+/// that decides which lines the section draws. Two renderers with the same
+/// signature draw the same lines, which is what the DEFAULT edge grouping
+/// keys on (one group, one style).
+LString edgeStyleKey(const umbreon::EdgeStyle &es)
+{
+  std::string s =
+      LString::format("m%d|a%d", int(es.silhouetteMode), int(es.align)).c_str();
+  for (int k = 0; k < int(umbreon::EdgeClass::Count); ++k) {
+    const umbreon::EdgeClassStyle &cs = es.cls[k];
+    if (!cs.enabled) {
+      s += "|-";
+      continue;
+    }
+    s += LString::format("|%.4f,%.4f,%.4f,%.4f,%.4f", double(cs.width),
+                         double(cs.opacity), double(cs.color[0]),
+                         double(cs.color[1]), double(cs.color[2]))
+             .c_str();
+  }
+  return LString(s.c_str());
+}
+
+/// Whether two per-section edge styles draw the same lines: the edge-group
+/// check that a later member of a NAMED group matches its first.
+bool sameEdgeStyle(const umbreon::EdgeStyle &a, const umbreon::EdgeStyle &b)
+{
+  return edgeStyleKey(a).equals(edgeStyleKey(b));
+}
+#endif
+
 }  // anonymous namespace
+
+void UmbreonDisplayContext::setEdgeGroup(const LString &name)
+{
+  m_edgeGroupName = name;
+}
 
 UmbreonDisplayContext::UmbreonDisplayContext()
      : super_t(), m_pImpl(new Impl()),
@@ -454,6 +504,9 @@ void UmbreonDisplayContext::startRender()
   m_pImpl->curGroup = 0;
   m_pImpl->groupBlend.clear();
   m_pImpl->groupEdgeStyle.clear();
+  m_pImpl->edgeGroupOf.clear();
+  m_pImpl->edgeGroupIds.clear();
+  m_pImpl->edgeGroupStyled.clear();
   m_pImpl->anyEdges = false;
   m_pImpl->anyCrease = false;
   m_pImpl->edgeThicknessPx = float(EDGE_THICKNESS_PX);
@@ -643,9 +696,58 @@ void UmbreonDisplayContext::appendIntData()
                                           : "edges(full)",
                   double(widthPx));
     }
-    if (m_pImpl->groupEdgeStyle.size() <= group)
-      m_pImpl->groupEdgeStyle.resize(std::size_t(group) + 1);
-    m_pImpl->groupEdgeStyle[group] = es;
+    // EDGE GROUP of this section (see Impl::edgeGroupOf). Renderers of one
+    // edge group are ONE section for umbreon's edge pass: no contact contour
+    // inside the group, its depth steps are self-occlusion, an Outline-mode
+    // group unions, and the group carries one style. The transparency group
+    // above stays per renderer.
+    //
+    // By DEFAULT the key is the renderer's own edge settings (type/mode,
+    // width, color), so renderers that draw the same lines are one group
+    // wherever they sit in the scene and renderers that draw different lines
+    // are separate -- which is the only grouping consistent with "one group,
+    // one style". A non-empty `egroup` property overrides it and groups by
+    // name (its first member's settings then style the whole group).
+    // (a section that draws no edge line at all has an all-disabled style,
+    // so every such section shares one key)
+    const LString egKey = m_edgeGroupName.isEmpty()
+                              ? "c:" + edgeStyleKey(es)
+                              : "n:" + m_edgeGroupName;
+    int egid;
+    {
+      auto it = m_pImpl->edgeGroupIds.find(egKey);
+      if (it == m_pImpl->edgeGroupIds.end()) {
+        egid = int(m_pImpl->edgeGroupIds.size());
+        m_pImpl->edgeGroupIds.insert(std::make_pair(egKey, egid));
+        m_pImpl->groupEdgeStyle.push_back(umbreon::EdgeStyle());
+        m_pImpl->edgeGroupStyled.push_back(0);
+      } else {
+        egid = it->second;
+      }
+    }
+    if (m_pImpl->edgeGroupOf.size() <= group)
+      m_pImpl->edgeGroupOf.resize(std::size_t(group) + 1, 0);
+    m_pImpl->edgeGroupOf[group] = static_cast<std::uint16_t>(egid);
+    MB_DPRINTLN("UmbreonDC> section %s: edge group %d (%s)",
+                getSecName().c_str(), egid, egKey.c_str());
+
+    // The edge group's style comes from its FIRST renderer with edge lines;
+    // a later member with different settings is reported and ignored (one
+    // group = one section = one style). Under the default keying the members
+    // agree by construction, so this only reports a named group whose
+    // members were given different settings. Members without edge lines
+    // leave the group's style alone.
+    if (bSil || bBorder || bCrease) {
+      umbreon::EdgeStyle &gs = m_pImpl->groupEdgeStyle[std::size_t(egid)];
+      if (!m_pImpl->edgeGroupStyled[std::size_t(egid)]) {
+        gs = es;
+        m_pImpl->edgeGroupStyled[std::size_t(egid)] = 1;
+      } else if (!sameEdgeStyle(gs, es)) {
+        LOG_DPRINTLN("Umbreon> section %s: edge settings differ from edge "
+                     "group '%s' first renderer; the group's settings are used",
+                     getSecName().c_str(), m_edgeGroupName.c_str());
+      }
+    }
   }
 
   // --- triangle mesh (de-indexed: 3 corners per triangle) ---
@@ -724,7 +826,15 @@ void UmbreonDisplayContext::appendIntData()
     const int cmatIdx = materialIndexFor(cmat);
     c.material = m_pImpl->matTable[cmatIdx];
     c.group = group;
-    c.open = !p->bcap;
+    // Closed (flat-capped), as the POV exporter writes every stick bond
+    // (PovDisplayContext::writeCyls never emits `open`): RendIntData::Cyl::
+    // bcap only decides whether the MESH conversion adds cap discs. An `open`
+    // umbreon cylinder is a round-capped capsule, and a bond capsule's
+    // hemispherical end cap coincides exactly with the atom sphere it starts
+    // from -- two surfaces z-fighting across the whole atom, which the edge
+    // pass classified as a field of one-pixel depth steps at high zoom
+    // (blobs of ink inside the atom). A flat cap lies inside the sphere.
+    c.open = false;
     scene.cylinders.push_back(c);
   }
 #endif  // HAVE_UMBREON
@@ -807,12 +917,10 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // mesh at (m_dClipZ = slab/2 in eye z, the GL view's dist - slab/2) becomes
   // clipNear directly.
   //
-  // Only the near plane is set. The GL view's far plane (dist + slabDepth) has
-  // no observable effect here: the depth fog below ends at dist + slabDepth/2,
-  // in FRONT of it, so anything the far plane could remove is already blended
-  // fully into the background -- down to alpha 0 on the transparent-background
-  // path. Secondary rays (shadow / AO / GI) stay unclipped in umbreon, matching
-  // the interactive view where the slab is a display device, not scene geometry.
+  // The near plane follows the slab switch; the far plane is set below, where
+  // the GL projection puts it. Secondary rays (shadow / AO / GI) stay
+  // unclipped in umbreon, matching the interactive view where the slab is a
+  // display device, not scene geometry.
   if (m_bUseClipZ) {
     const double clipNear = m_dViewDist - m_dSlabDepth * 0.5;
     // A near plane at or behind the camera clips nothing; leaving it at -inf
@@ -838,15 +946,59 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // frame to the background color; skip fog entirely in that case.
   scene.fog.enabled = (fogEnd > fogStart);
 
-  // Default lighting matching CueMol's POV output (the scene the umbreon CLI
-  // builds from a .pov). Without GI the POV defaults are _light_inten=1.3,
-  // _amb_frac=0, _flash_frac=0.6, giving SpecLighting=0.52 / FlashLighting=0.78.
-  // With GI on, adopt the POV radiosity balance (_light_inten=1.6, _amb_frac=0.5,
-  // _flash_frac=0.5): move half the energy into the ambient the GI gathers and
-  // dim the direct lights, matching the umbreon CLI's scene_setup.
-  const double li = prm.giEnabled ? 1.6 : 1.3;
-  const double af = prm.giEnabled ? 0.5 : 0.0;
-  const double ff = prm.giEnabled ? 0.5 : 0.6;
+  // FAR clip plane where the GL view's projection puts it: dist + slabDepth
+  // (GUIView::setUpProjMat's slabfar), half a slab behind the fog end. The
+  // fog reaches the background color at the fog end, so everything between
+  // the two planes is drawn fully fogged (invisible) and everything beyond
+  // the far plane is not drawn at all, as in the interactive view. For the
+  // edge pass a surface removed by the far plane is no longer a surface of
+  // its edge group; the outline far depth below handles the fully fogged
+  // zone in front of it. Like the GL far plane, independent of the slab
+  // switch (which only cuts the near side).
+  {
+    const double clipFar = m_dViewDist + m_dSlabDepth;
+    if (clipFar > 0.0) {
+      scene.clipFar = float(clipFar);
+      MB_DPRINTLN("Umbreon> far clip plane: view-z %f", clipFar);
+    }
+  }
+
+  // Lighting energy balance, in the POV exporter's terms (_light_inten /
+  // _amb_frac / _flash_frac). The caller normally supplies all three (the
+  // tritium render window sends its Lights group / GI lighting step); a
+  // negative value falls back to the auto defaults below, so a scripted
+  // caller that only flips useGI still gets the app's default balance.
+  //
+  // Without GI: the POV defaults _light_inten=1.3, _amb_frac=0, _flash_frac=0.6
+  // (SpecLighting=0.52 / FlashLighting=0.78) plus POV's unit ambient_light,
+  // which the material ambient term (default finish: ambient 0.2) multiplies.
+  //
+  // With GI: umbreon drops that flat ambient term and instead gathers the
+  // ambient energy li*af occlusion-aware, receiving it through the material
+  // DIFFUSE weight (default finish: 0.8), i.e. 4x the coefficient of the flat
+  // term. The POV radiosity split (1.6 / 0.5 / 0.5) taken literally therefore
+  // gives an open surface 3.2x the fill of the non-GI render while cutting
+  // the direct lights, which is a brighter and flatter picture.
+  //
+  // The GI auto defaults are the render window's default "GI lighting" step
+  // (the top of its five): the flat, view-aligned headlight is all but gone
+  // (flash 0.04), its energy moved into the directional key light (0.68)
+  // and the gathered ambient (0.48), and the total is lowered to 1.2 so the
+  // key-lit side of a white surface does not clip. The step ladder's other
+  // end, li 1.55 / af 0.16 / ff 0.6, reproduces the non-GI picture exactly
+  // (same key 0.52 / headlight 0.78, and a gathered ambient of 0.25 that
+  // through the diffuse weight equals the 0.2 flat ambient). Derivation of
+  // the ladder and its trade-offs:
+  // docs/architecture/umbreon-gi-lighting-balance.md
+  const double li = (prm.lightIntensity >= 0.0)
+                        ? prm.lightIntensity
+                        : (prm.giEnabled ? 1.2 : 1.3);
+  const double af = (prm.ambientFraction >= 0.0)
+                        ? prm.ambientFraction
+                        : (prm.giEnabled ? 0.4 : 0.0);
+  const double ff = (prm.flashFraction >= 0.0)
+                        ? prm.flashFraction
+                        : (prm.giEnabled ? 0.05 : 0.6);
   if (scene.lights.empty()) {
     // SpecLighting: directional key light from the upper-front-right
     // (positioned at normalize(1,1,1), pointing at the origin). CueMol calls it
@@ -870,7 +1022,19 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   scene.ambientIntensity = 1.0f;
   // The GI gathers this ambient occlusion-aware; carry the ambient light energy
   // (light_inten * amb_frac) when GI is on, else a flat white ambient.
-  const float amb = prm.giEnabled ? float(li * af) : 1.0f;
+  float amb = prm.giEnabled ? float(li * af) : 1.0f;
+  // Gradient sky (zenith white, ground = giGroundColor): a camera-facing
+  // surface sees half sky and half ground, so its gathered ambient drops to
+  // (1 + ground) / 2 of the uniform-sky value. Scale the ambient energy back
+  // up by the inverse so the gradient changes only how the ambient shades by
+  // orientation (up-facing brighter, down-facing darker), not the overall
+  // brightness of the picture.
+  if (prm.giEnabled && prm.giSkyGradient && prm.giGroundColorSet) {
+    const float lum = 0.2126f * prm.giGroundColor[0] +
+                      0.7152f * prm.giGroundColor[1] +
+                      0.0722f * prm.giGroundColor[2];
+    amb *= 2.0f / (1.0f + lum);
+  }
   scene.ambientColor = umbreon::Vec3(amb, amb, amb);
 
   // No assumed_gamma: keep umbreon's framebuffer linear (assumedGamma = 1.0 is
@@ -945,6 +1109,15 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.giIntensity = float(prm.giIntensity);
     opt.giEnvIntensity = float(prm.giEnvIntensity);
     opt.pt1Denoise = prm.giDenoise;
+    // Gather sky: uniform white (umbreon default) or a zenith-white /
+    // ground-tinted gradient along the camera up axis (aoUseCameraUp stays at
+    // umbreon's default), so the ambient itself shades by orientation.
+    // aoGroundColor is shared with the AO bent-normal gradient, but AO and GI
+    // are alternatives, so it is only ever written here while GI renders.
+    opt.pt1SkyMode = prm.giSkyGradient ? 1 : 0;
+    if (prm.giSkyGradient && prm.giGroundColorSet) {
+      for (int k = 0; k < 3; ++k) opt.aoGroundColor[k] = prm.giGroundColor[k];
+    }
   }
 
   // Full-frame post-pass denoiser on the final HDR color (0 = None, 1 =
@@ -1072,6 +1245,12 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.strokeEdges.silhouette = true;
     opt.strokeEdges.border = true;
     opt.strokeEdges.crease = m_pImpl->anyCrease;
+    // The crease limit is the fold angle in DEGREES (the GUI catalog ranges
+    // it 0..180): a boundary where the shading normals fold by more than it
+    // inks as a crease. Forward it; umbreon's own default (30) applied
+    // whatever the setting said before.
+    if (m_pImpl->anyCrease && m_dCreaseLimit > 0.0)
+      opt.strokeEdges.creaseAngleDeg = float(m_dCreaseLimit);
     // Cross-section CONTACT contours (depth-continuous intersections, e.g. a
     // stick plunging into another renderer's ribbon). Off by default in both
     // umbreon and the GL view: the border/silhouette classes ink only across a
@@ -1082,6 +1261,18 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     // deterministic owner section for each contact run and styles it from
     // there, since the near side is numerical noise at a contact).
     opt.strokeEdges.contact = prm.contactEdges;
+    // Outline far-side depth (UmbreonRenderParams::outlineFarDepth): a
+    // fraction of the fog range mapped to linear view-z. At 1 it is the fog
+    // end: only the fully fogged zone up to the far clip plane lies beyond
+    // it. Without fog it stays off.
+    opt.strokeEdges.outlineFarVz = std::numeric_limits<float>::infinity();
+    if (scene.fog.enabled) {
+      const double t = std::min(1.0, std::max(0.0, prm.outlineFarDepth));
+      opt.strokeEdges.outlineFarVz =
+          float(scene.fog.start + t * (scene.fog.end - scene.fog.start));
+      MB_DPRINTLN("Umbreon> outline far depth %f -> view-z %f", t,
+                  double(opt.strokeEdges.outlineFarVz));
+    }
     opt.strokeEdges.thickness = int(m_pImpl->edgeThicknessPx + 0.5f);
     if (opt.strokeEdges.thickness < 1)
       opt.strokeEdges.thickness = 1;
@@ -1104,10 +1295,16 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     // chained silhouette is cut into visible runs.
     opt.strokeEdges.roundCap = true;
     opt.strokeEdges.roundJoin = true;
-    // Cover every group id; sections with no edge lines keep an all-disabled
-    // EdgeStyle, so the stroke pass draws nothing for them.
-    if (m_pImpl->groupEdgeStyle.size() < std::size_t(m_pImpl->nextGroup))
-      m_pImpl->groupEdgeStyle.resize(std::size_t(m_pImpl->nextGroup));
+    // One style per EDGE GROUP (groupEdgeStyle is indexed by edge group id;
+    // groups with no edge lines keep an all-disabled EdgeStyle, so the
+    // stroke pass draws nothing for them) and the renderer -> edge group map
+    // the pass keys its sections on. Every section went through
+    // appendIntData, so edgeGroupOf covers every transparency group.
+    if (m_pImpl->edgeGroupOf.size() < std::size_t(m_pImpl->nextGroup))
+      m_pImpl->edgeGroupOf.resize(std::size_t(m_pImpl->nextGroup), 0);
+    if (m_pImpl->groupEdgeStyle.size() < m_pImpl->edgeGroupIds.size())
+      m_pImpl->groupEdgeStyle.resize(m_pImpl->edgeGroupIds.size());
+    scene.edgeGroupOfGroup = m_pImpl->edgeGroupOf;
     scene.groupEdgeStyle = m_pImpl->groupEdgeStyle;
 
     // NPR default contours: give each section whose renderer requested no

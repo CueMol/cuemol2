@@ -3,6 +3,7 @@
 - Status: accepted (host E2E verified; 実機 CCP4 map で zoom 挙動を owner 確認済み)
 - Date: 2026-08-11
 - Mapping rows: [`dialog.tool.multigrad-editor`](../mapping/tool_dlgs.md#dialogtoolmultigrad-editor), [`panel.coloring.deck.multigrad`](../mapping/panels.md#panelcoloringdeckmultigrad), [`panel.coloring.shell`](../mapping/panels.md#panelcoloringshell), [`panel.densitymap`](../mapping/panels.md#paneldensitymap)
+- Related: [Surface scalar colouring](../../architecture/surface-scalar-coloring.md) (2026-09-03) -- `dsurface` / `dsurf2` も `multi_grad` / `color_mapname` / `colormode=multigrad` を持つようになり、この editor が direct surface でもそのまま使える (libcuemol2 側のみの変更、UI 変更なし)
 
 ## Context
 

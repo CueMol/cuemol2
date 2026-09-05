@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { fixtureBackendProps, fixtureProps } from '@renderer/__test__/fixtures/renderSettingsValues';
 import { act } from 'react';
 import { mountTree } from '@renderer/__test__/helpers/testHarness';
 
@@ -30,7 +31,6 @@ import {
   RENDER_COMMON_PROPS,
   type RenderLightingMode,
 } from '@renderer/data/renderSettings';
-import { RENDER_BACKENDS } from '@renderer/data/renderBackends';
 
 function mountFor(
   backend: 'povray' | 'umbreon' | 'umbreon_npr',
@@ -39,8 +39,8 @@ function mountFor(
   return mountTree(
     <RenderSettingsEditor
       backend={backend}
-      commonProps={RENDER_COMMON_PROPS}
-      backendProps={RENDER_BACKENDS[backend].props}
+      commonProps={fixtureProps(RENDER_COMMON_PROPS)}
+      backendProps={fixtureBackendProps(backend)}
       onChange={vi.fn()}
       lighting={opts.lighting ?? 'none'}
       qualitySteps={{}}
@@ -118,7 +118,7 @@ describe('RenderSettingsEditor quality section', () => {
     expect(qualityLabels(container)).toEqual([
       'Lighting',
       'Supersampling',
-      'GI quality',
+      'GI lighting',
       'Shadows',
     ]);
     const [lightingSel, aaSel] = qualitySelects(container);
@@ -143,8 +143,8 @@ describe('RenderSettingsEditor quality section', () => {
     const { container, unmount } = mountTree(
       <RenderSettingsEditor
         backend="umbreon"
-        commonProps={RENDER_COMMON_PROPS}
-        backendProps={RENDER_BACKENDS.umbreon.props}
+        commonProps={fixtureProps(RENDER_COMMON_PROPS)}
+        backendProps={fixtureBackendProps('umbreon')}
         onChange={vi.fn()}
         lighting="gi"
         // What useRenderSettings reports once a prop was edited off-ladder.
@@ -164,7 +164,7 @@ describe('RenderSettingsEditor quality section', () => {
   it('swaps the depth-cue axis with the method', () => {
     const { container, unmount } = mountFor('umbreon', { lighting: 'ao' });
     expect(qualityLabels(container)).toContain('AO quality');
-    expect(qualityLabels(container)).not.toContain('GI quality');
+    expect(qualityLabels(container)).not.toContain('GI lighting');
     unmount();
   });
 
@@ -185,15 +185,16 @@ describe('RenderSettingsEditor quality section', () => {
     const { container, unmount } = mountTree(
       <RenderSettingsEditor
         backend="umbreon"
-        commonProps={RENDER_COMMON_PROPS}
-        backendProps={RENDER_BACKENDS.umbreon.props}
+        commonProps={fixtureProps(RENDER_COMMON_PROPS)}
+        backendProps={fixtureBackendProps('umbreon')}
         onChange={vi.fn()}
         lighting="gi"
-        qualitySteps={{ aa: 'medium', gi: 'medium', shadows: 'off' }}
+        qualitySteps={{ aa: 'medium', giLighting: '0', shadows: 'off' }}
         onLightingChange={onLightingChange}
         onQualityStepChange={onQualityStepChange}
       />,
     );
+    // Lighting, Supersampling, GI lighting, Shadows.
     const [lightingSel, aaSel, , shadowSel] = qualitySelects(container);
     act(() => {
       lightingSel.value = 'ao';

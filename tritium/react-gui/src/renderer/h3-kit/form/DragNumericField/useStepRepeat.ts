@@ -17,31 +17,19 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { clampAndQuantize } from '@renderer/h3-kit/form/numericMath';
-import {
-    STEP_REPEAT_DELAY_MS,
-    STEP_REPEAT_INTERVAL_MS,
-    caretPosOf,
-} from './dragMath';
+import { STEP_REPEAT_DELAY_MS, STEP_REPEAT_INTERVAL_MS } from './dragMath';
 import type { FieldCore, PressState } from './types';
 
 export interface UseStepRepeatResult {
-    /** Mousedown on a step arrow (either affordance shape). */
+    /** Mousedown on a step arrow. */
     onStepButtonDown: (e: React.MouseEvent, sign: 1 | -1) => void;
     /** True while an arrow press is running; the editor must not commit then. */
     isPressing: () => boolean;
 }
 
-export interface UseStepRepeatOptions {
-    /** Step granularity for the current caret position, when the field opts in. */
-    resolveStep?: (ctx: { text: string; caretPos: number | null } | null) => number;
-}
-
-export function useStepRepeat(
-    core: FieldCore,
-    { resolveStep }: UseStepRepeatOptions,
-): UseStepRepeatResult {
+export function useStepRepeat(core: FieldCore): UseStepRepeatResult {
     const {
-        mode, setMode, draft, rootRef, inputRef, valueRef, cbRef,
+        mode, setMode, draft, rootRef, valueRef, cbRef,
         parseDraft, disabled, min, max, fineStep,
     } = core;
     const pressRef = useRef<PressState | null>(null);
@@ -52,8 +40,8 @@ export function useStepRepeat(
     const pressStep = useCallback(() => {
         const p = pressRef.current;
         if (!p) return;
-        const { min: lo, max: hi, fineStep: fine, onChange } = cbRef.current;
-        const next = clampAndQuantize(p.held + p.sign * p.stepSize, lo, hi, fine);
+        const { min: lo, max: hi, step, fineStep: fine, onChange } = cbRef.current;
+        const next = clampAndQuantize(p.held + p.sign * step, lo, hi, fine);
         if (next === p.held) {
             if (p.repeatTimer !== null) {
                 clearInterval(p.repeatTimer);
@@ -88,12 +76,11 @@ export function useStepRepeat(
     // `baseValue` overrides the starting value (used when stepping out of
     // text-edit mode, where the step is relative to the typed draft).
     const startPress = useCallback(
-        (sign: 1 | -1, baseValue?: number, stepSize?: number) => {
+        (sign: 1 | -1, baseValue?: number) => {
             if (disabled) return;
             const p: PressState = {
                 sign,
                 held: baseValue ?? valueRef.current,
-                stepSize: stepSize ?? cbRef.current.step,
                 delayTimer: null,
                 repeatTimer: null,
             };
@@ -132,22 +119,16 @@ export function useStepRepeat(
             e.preventDefault();
             e.stopPropagation();
             if (mode === 'editing') {
-                // Read the caret BEFORE leaving edit mode -- a segmented field
-                // steps whatever segment the caret sits in (UXP timeedit parity).
-                const stepSize = resolveStep?.({
-                    text: draft,
-                    caretPos: caretPosOf(inputRef.current, draft),
-                });
                 const parsed = parseDraft(draft);
                 const base =
                     parsed !== null ? clampAndQuantize(parsed, min, max, fineStep) : valueRef.current;
-                startPress(sign, base, stepSize);
+                startPress(sign, base);
             } else {
-                startPress(sign, undefined, resolveStep?.(null));
+                startPress(sign);
             }
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [mode, draft, min, max, fineStep, startPress, parseDraft, resolveStep],
+        [mode, draft, min, max, fineStep, startPress, parseDraft],
     );
 
     // Unmounting mid-press: clear the timers and the global listener, and in

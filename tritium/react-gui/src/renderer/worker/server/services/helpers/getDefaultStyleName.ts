@@ -1,4 +1,13 @@
-export function getDefaultStyleName(rendererType: string): string {
+import { MAP_MODE_STYLES, type MapKind } from './mapRendererStyles';
+
+/**
+ * Default style list applied to a freshly created renderer of `rendererType`
+ * (UXP `setDefaultStyles`). A density map renderer takes the style of the
+ * kind of map it draws (`mapKind`, see `mapRendererStyles.ts`).
+ */
+export function getDefaultStyleName(rendererType: string, mapKind: MapKind = 'xtal'): string {
+    const mapStyle = MAP_MODE_STYLES[rendererType];
+    if (mapStyle) return mapStyle[mapKind];
     switch (rendererType) {
         case 'tube':
         case 'spline':
@@ -15,10 +24,6 @@ export function getDefaultStyleName(rendererType: string): string {
             return 'DefaultBallStick,DefaultCPKColoring';
         case 'cpk':
             return 'DefaultCPK,DefaultCPKColoring';
-        case 'contour':
-            return 'DefaultContour';
-        case 'isosurf':
-            return 'DefaultIsoSurf';
         default:
             return 'DefaultCPKColoring';
     }

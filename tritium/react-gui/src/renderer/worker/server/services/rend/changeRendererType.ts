@@ -15,6 +15,7 @@ import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { getDefaultStyleName } from '@renderer/worker/server/services/helpers/getDefaultStyleName';
+import { resolveMapKind } from '@renderer/worker/server/services/helpers/mapRendererStyles';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
@@ -101,7 +102,7 @@ export function changeRendererType(
     // `setDefaultStyles`). This runs before attach so the initial
     // attach lands with the right look.
     try {
-        newRend.applyStyles(getDefaultStyleName(args.newType));
+        newRend.applyStyles(getDefaultStyleName(args.newType, resolveMapKind(obj) ?? 'xtal'));
     } catch (e) {
         console.warn('applyStyles for new renderer type failed:', e);
     }

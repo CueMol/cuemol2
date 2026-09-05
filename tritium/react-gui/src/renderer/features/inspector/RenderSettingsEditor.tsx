@@ -42,6 +42,7 @@ const GROUP_ORDER = [
   "Hatching",
   "Antialiasing",
   "Quality",
+  "Lights",
   "Edges",
   "Shadows",
   "Ambient Occlusion",

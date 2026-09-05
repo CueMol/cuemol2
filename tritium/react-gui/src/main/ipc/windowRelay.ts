@@ -42,6 +42,10 @@ const FALLBACKS: { [K in RelayKind]: Fallbacks<K> } = {
     unavailable: () => ({ ok: false, error: 'main window unavailable' }),
     timeout: () => ({ ok: false, error: 'timeout' }),
   },
+  sceneRenderSettings: {
+    unavailable: () => ({ ok: false, error: 'main window unavailable' }),
+    timeout: () => ({ ok: false, error: 'timeout' }),
+  },
 }
 
 export interface WindowRelay {

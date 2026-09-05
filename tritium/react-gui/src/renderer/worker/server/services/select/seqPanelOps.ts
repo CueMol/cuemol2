@@ -30,6 +30,8 @@ export interface ToggleResidueSelectionArgs {
 
 export interface ToggleResidueSelectionResult {
     ok: boolean;
+    /** The whole `mol.sel` after the toggle (for the selection history). */
+    selStr?: string;
 }
 
 function autoCreateSelRend(mol: MolCoord): void {
@@ -51,6 +53,7 @@ export function toggleResidueSelection(
     if (!residue) return { ok: false };
 
     let ok = false;
+    let selStr: string | undefined;
     withUndoTxn(scene, 'Toggle select atom(s)', () => {
         autoCreateSelRend(mol);
         const rrs = ctx.svc.createObj('ResidRangeSet') as ResidRangeSet;
@@ -64,10 +67,12 @@ export function toggleResidueSelection(
         } else {
             rrs.append(mol, addSel);
         }
-        mol.sel = rrs.toSel(mol);
+        const sel = rrs.toSel(mol);
+        mol.sel = sel;
+        selStr = String(sel.toString());
         ok = true;
     });
-    return { ok };
+    return ok ? { ok, selStr } : { ok };
 }
 
 // --- rangeSelectResidues ---
@@ -90,6 +95,8 @@ export interface RangeSelectResiduesArgs {
 
 export interface RangeSelectResiduesResult {
     ok: boolean;
+    /** The whole `mol.sel` after the range edit (for the selection history). */
+    selStr?: string;
 }
 
 export function rangeSelectResidues(
@@ -105,6 +112,7 @@ export function rangeSelectResidues(
     if (!fromResidue) return { ok: false };
 
     let ok = false;
+    let selStr: string | undefined;
     withUndoTxn(scene, 'Toggle select atom(s)', () => {
         autoCreateSelRend(mol);
         const rrs = ctx.svc.createObj('ResidRangeSet') as ResidRangeSet;
@@ -122,10 +130,12 @@ export function rangeSelectResidues(
         } else {
             rrs.append(mol, addSel);
         }
-        mol.sel = rrs.toSel(mol);
+        const sel = rrs.toSel(mol);
+        mol.sel = sel;
+        selStr = String(sel.toString());
         ok = true;
     });
-    return { ok };
+    return ok ? { ok, selStr } : { ok };
 }
 
 // --- centerOnResidue ---

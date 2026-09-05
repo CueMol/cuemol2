@@ -29,7 +29,9 @@ import { AppIcon } from "@renderer/h3-kit/primitives";
 import { PaneSectionHeader } from "@renderer/shell/PaneSectionHeader";
 import { useMolStructure } from "./useMolStructure";
 import { ObjectSelect, objectFilters } from "@renderer/h3-kit/ObjectSelect";
-import { fireService } from "@renderer/utils/fireService";
+import type { AsyncCueMol } from "@renderer/worker/client/AsyncCueMol";
+import type { ServiceArgs } from "@renderer/worker/shared/calls";
+import { pushHistory } from "@renderer/h3-kit/MolSelList";
 import {
     encodeChainId,
     encodeResidueId,
@@ -39,6 +41,25 @@ import {
 } from "@renderer/features/selection/molStruct/selStrFromTree";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useActiveScene } from "@renderer/state/workspace";
+
+type SelApplyService = "applyMolSelString" | "centerMolSelection" | "zoomMolSelection";
+
+/**
+ * Apply a tree-derived expression through one of the mol-selection services
+ * and record it in the selection history once the worker applied it. A
+ * rejected call is logged, like the fire-and-forget helper it replaces.
+ */
+function applyAndRecord<K extends SelApplyService>(
+    cm: AsyncCueMol,
+    name: K,
+    args: ServiceArgs<K> & { selStr: string },
+): void {
+    cm.invokeService(name, args)
+        .then((res) => {
+            if (res.ok) pushHistory(args.selStr);
+        })
+        .catch((err: unknown) => console.warn(`${name} failed:`, err));
+}
 
 /* --- Constants --- */
 
@@ -350,7 +371,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
         if (!cm || !canApply) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        fireService(cm, "applyMolSelString", {
+        applyAndRecord(cm, "applyMolSelString", {
             sceneId: activeSceneId!,
             molId: selectedMolId!,
             selStr,
@@ -361,7 +382,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
         if (!cm || !canApply || !hasView) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        fireService(cm, "centerMolSelection", {
+        applyAndRecord(cm, "centerMolSelection", {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
@@ -373,7 +394,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
         if (!cm || !canApply || !hasView) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        fireService(cm, "zoomMolSelection", {
+        applyAndRecord(cm, "zoomMolSelection", {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,

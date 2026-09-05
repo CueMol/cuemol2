@@ -362,15 +362,15 @@ TEST_F(MapSurfPin, OddSizeBinFac2)
                   /*area*/ 56.548720, /*checksum*/ 285869.518535);
 }
 
-// P9: full region mode (the map is flagged cryo-EM): the whole block is
-// marched at stride 1 with the surface closed at the block boundary. The
-// field never reaches the block boundary above the level, so no caps are
-// emitted and the result must equal P1 (box mode covering the same block).
+// P9: full region mode (region_mode=full on the crystallographic map, so
+// the level stays 1.1 sigma; a cryo-EM map would resolve siglevel as a top
+// percent instead): the whole block is marched at stride 1 with the surface
+// closed at the block boundary. The field never reaches the block boundary
+// above the level, so no caps are emitted and the result must equal P1 (box
+// mode covering the same block).
 TEST_F(MapSurfPin, FullRegion)
 {
-    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
-    ASSERT_NE(pMap, nullptr);
-    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    m_pMSR->setRegionMode(xtal::MapRenderer::REGION_FULL);
     ASSERT_EQ(m_pMSR->getEffectiveRegionMode(), xtal::MapRenderer::REGION_FULL);
 
     const SurfSummary s = summarize();
@@ -389,9 +389,7 @@ TEST_F(MapSurfPin, FullRegion)
 // the result must equal P2.
 TEST_F(MapSurfPin, FullRegionStep2)
 {
-    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
-    ASSERT_NE(pMap, nullptr);
-    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    m_pMSR->setRegionMode(xtal::MapRenderer::REGION_FULL);
     m_pMSR->setLod(2);
 
     const SurfSummary s = summarize();
@@ -410,9 +408,7 @@ TEST_F(MapSurfPin, FullRegionStep2)
 // region box), unlike the box-mode P1 which leaves it open.
 TEST_F(MapSurfPin, FullRegionViewCrop)
 {
-    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
-    ASSERT_NE(pMap, nullptr);
-    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    m_pMSR->setRegionMode(xtal::MapRenderer::REGION_FULL);
     m_pMSR->setViewBox(Vector4D(6.0, 6.0, 6.0), 2.0);
 
     const SurfSummary s = summarize();

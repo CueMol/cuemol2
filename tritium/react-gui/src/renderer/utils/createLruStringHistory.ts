@@ -42,6 +42,8 @@ export interface LruStringHistoryOptions {
 export interface LruStringHistory {
     getHistory(): string[];
     pushHistory(value: string): void;
+    /** Drop one entry (normalized match); a no-op when it is absent. */
+    removeHistory(value: string): void;
     clearHistory(): void;
 }
 
@@ -75,9 +77,16 @@ export function createLruStringHistory(options: LruStringHistoryOptions): LruStr
         saveJSON(key, current);
     }
 
+    function removeHistory(value: string): void {
+        const normalized = normalize(value);
+        const current = getHistory();
+        const next = current.filter((v) => v !== normalized);
+        if (next.length !== current.length) saveJSON(key, next);
+    }
+
     function clearHistory(): void {
         removeKey(key);
     }
 
-    return { getHistory, pushHistory, clearHistory };
+    return { getHistory, pushHistory, removeHistory, clearHistory };
 }

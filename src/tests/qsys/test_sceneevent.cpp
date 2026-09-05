@@ -137,3 +137,14 @@ TEST(SceneEventTest, GetJSONContainsTargetUid)
     EXPECT_NE(json.indexOf("target_uid"), -1);
     EXPECT_NE(json.indexOf("descr"), -1);
 }
+
+TEST(SceneEventTest, GetCategorySceneAppDataChanged)
+{
+    SceneEvent ev;
+    ev.setType(SceneEvent::SCE_SCENE_APPDATA_CHG);
+    LString cat; int src = 0, evt = 0;
+    EXPECT_TRUE(ev.getCategory(cat, src, evt));
+    EXPECT_EQ(cat, "sceneAppDataChanged");
+    EXPECT_EQ(src, ScrEventManager::SEM_SCENE);
+    EXPECT_EQ(evt, ScrEventManager::SEM_CHANGED);
+}

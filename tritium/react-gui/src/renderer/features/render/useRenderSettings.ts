@@ -1,17 +1,22 @@
 /**
  * @file features/render/useRenderSettings.ts
- * @description Holds the (non-persistent) render-settings editing state
- * shown in the Inspector `renderSettings` target.
+ * @description Holds the render-settings editing state of the Rendering
+ * window.
  *
  * Settings are split into a backend-independent set and the active
  * backend's own set. Switching backend keeps the common settings and
  * swaps in the new backend's defaults. A separate `preset` selection (used
  * by the BottomPanel Render tab) drives width / height; editing the size
- * directly resets the preset to "Custom". A single in-memory set is shared by
- * every scene; per-scene render settings are not implemented.
+ * directly resets the preset to "Custom".
+ *
+ * The settings belong to the render target's scene: `loadFromScene` swaps in
+ * what a scene stores (see sceneRenderSettings.ts) and `userEditSeq` counts
+ * the user's edits, so the owner (useSceneSettingsSync) can write them back
+ * without mistaking a load, a restore or the target view's camera default
+ * for an edit. This hook itself does no IPC.
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import type { PropDef } from "@renderer/data/rendererProperties";
 import {
   RENDER_COMMON_PROPS,
@@ -42,6 +47,7 @@ import {
   formatHatchToneSpec,
   parseHatchSpec,
 } from "@renderer/data/hatchSpec";
+import type { LoadedRenderSettings, StoredRenderSettings } from "./sceneRenderSettings";
 
 /**
  * The NPR hatch look being edited. The selected style (backend prop
@@ -53,35 +59,42 @@ import {
   NO_QUALITY_STEPS,
   applyChange,
   applyPatch,
-  backendPropsWithDefaults,
+  backendSpecs,
   cloneProps,
   convertSizeUnit,
+  placeholderProps,
   qualityOf,
   readVal,
   setSizeProp,
+  sizePresetOf,
 } from "./propMath";
 export type { HatchEditState } from "./propMath";
 import { useHatchSpecEditor } from "./useHatchSpecEditor";
 
-export function useRenderSettings(
-  { umbreonAvailable = false }: { umbreonAvailable?: boolean } = {},
-) {
+export function useRenderSettings() {
+  // Every value comes from the target scene (loadFromScene); until the first
+  // load lands the rows hold placeholders and the window stays hidden.
   const [backend, setBackendState] = useState<RenderBackendId>(DEFAULT_RENDER_BACKEND);
+  const [backendExplicit, setBackendExplicit] = useState(false);
   const [commonProps, setCommonProps] = useState<PropDef[]>(() =>
-    cloneProps(RENDER_COMMON_PROPS),
+    placeholderProps(RENDER_COMMON_PROPS),
   );
   const [backendProps, setBackendProps] = useState<PropDef[]>(() =>
-    cloneProps(backendPropsWithDefaults(DEFAULT_RENDER_BACKEND)),
+    placeholderProps(backendSpecs(DEFAULT_RENDER_BACKEND)),
   );
-  // Still mode starts on its default preset; the common-prop defaults above
-  // (1200 x 1200 px at 600 DPI) already match it, so no apply is needed here.
-  const [preset, setPreset] = useState<string>(DEFAULT_STILL_PRESET);
+  const [preset, setPreset] = useState<string>(DEFAULT_RENDER_PRESET);
   const [mode, setMode] = useState<RenderMode>("still");
   const [movie, setMovie] = useState<MovieSettings>(DEFAULT_MOVIE_SETTINGS);
-  // Once the user (or a restore) picks a backend, stop auto-defaulting to umbreon.
-  const userPickedRef = useRef(false);
 
-  /** Switch the active backend, keeping common settings, resetting backend ones. */
+  /**
+   * Counts the user's edits. Bumped only by the edit paths (a value change,
+   * a backend / lighting / quality / preset pick, a hatch edit), never by a
+   * load, a restore or a camera default -- the owner writes the settings to
+   * the scene when this moves.
+   */
+  const [userEditSeq, setUserEditSeq] = useState(0);
+  const markUserEdit = useCallback(() => setUserEditSeq((s) => s + 1), []);
+
   // --- NPR hatch look (layer editor) ---
 
   /** The selected hatch style (umbreon_npr backend prop). */
@@ -90,33 +103,23 @@ export function useRenderSettings(
     hatch, hatchLoaded, hatchDirty, applyHatchTemplate, updateHatchLayer,
     addHatchLayer, removeHatchLayer, duplicateHatchLayer, updateHatchTone,
     updateHatchInk, resetHatchToTemplate, setHatch,
-  } = useHatchSpecEditor({ hatchStyle });
+  } = useHatchSpecEditor({ hatchStyle, onEdit: markUserEdit });
 
-  const applyBackend = useCallback((id: RenderBackendId) => {
-    setBackendState(id);
-    // Start the new backend on its default method + default step of every
-    // axis, so the quality dropdowns and the prop values agree from the start.
-    setBackendProps(cloneProps(backendPropsWithDefaults(id)));
-    setHatch(INITIAL_HATCH);
-  }, [setHatch]);
-
-  /** User-initiated backend switch (sticks against the umbreon auto-default). */
+  /**
+   * User-initiated backend switch. The new backend's rows come from the
+   * caller (the scene's block for that backend, defaults included -- see
+   * useSceneSettingsSync.backendPropsFor); the common settings stay.
+   */
   const setBackend = useCallback(
-    (id: RenderBackendId) => {
-      userPickedRef.current = true;
-      applyBackend(id);
+    (id: RenderBackendId, blockProps: PropDef[]) => {
+      setBackendState(id);
+      setBackendExplicit(true);
+      setBackendProps(cloneProps(blockProps));
+      setHatch(INITIAL_HATCH);
+      markUserEdit();
     },
-    [applyBackend],
+    [setHatch, markUserEdit],
   );
-
-  // Prefer umbreon as the initial default once we learn it is available -- but a
-  // manual pick or a restored snapshot wins. `umbreonAvailable` is a static
-  // build capability that only flips false -> true once, so this runs at most once.
-  useEffect(() => {
-    if (umbreonAvailable && !userPickedRef.current) {
-      applyBackend("umbreon");
-    }
-  }, [umbreonAvailable, applyBackend]);
 
   // --- Quality axes (backend-provided; absent for POV-Ray) ---
 
@@ -157,9 +160,11 @@ export function useRenderSettings(
       // Custom is what an axis reads as, not something to apply.
       if (!quality || stepId === RENDER_QUALITY_CUSTOM) return;
       const axis = quality.axes.find((a) => a.key === axisKey);
-      if (axis) applyQualityPatch(stepPatch(axis, stepId));
+      if (!axis) return;
+      applyQualityPatch(stepPatch(axis, stepId));
+      markUserEdit();
     },
-    [quality, applyQualityPatch],
+    [quality, applyQualityPatch, markUserEdit],
   );
 
   /**
@@ -171,8 +176,9 @@ export function useRenderSettings(
     (mode: RenderLightingMode) => {
       if (!quality) return;
       applyQualityPatch(lightingPatch(quality, mode, qualitySteps));
+      markUserEdit();
     },
-    [quality, qualitySteps, applyQualityPatch],
+    [quality, qualitySteps, applyQualityPatch, markUserEdit],
   );
 
   /** Update a single setting value by key (common or backend-specific). */
@@ -180,6 +186,7 @@ export function useRenderSettings(
     (key: string, value: string | number | boolean) => {
       // Changing the unit reprojects the width / height values (and swaps in
       // the new unit's control metadata); it never matches a px-based preset.
+      markUserEdit();
       if (key === "unit") {
         setCommonProps((prev) => convertSizeUnit(prev, String(value)));
         return;
@@ -199,7 +206,7 @@ export function useRenderSettings(
       // An edit needs no bookkeeping: each axis' dropdown reads back from the
       // values, so it drops to Custom -- or lands on another step -- by itself.
     },
-    [setHatch],
+    [setHatch, markUserEdit],
   );
 
   /** Write a preset's pixel size (and DPI) into the width / height fields. */
@@ -239,15 +246,22 @@ export function useRenderSettings(
       } else if (sized.width > 0) {
         size = { width: sized.width, height: sized.height };
       }
-      if (size) applyPresetSize(sized, size);
+      if (size) {
+        applyPresetSize(sized, size);
+        markUserEdit();
+      }
     },
-    [mode, applyPresetSize],
+    [mode, applyPresetSize, markUserEdit],
   );
 
   /**
    * Switch the render mode. Each mode jumps to its own default size preset
    * (still: high-res square; movie: QVGA) -- a preset from the other mode has
    * no match in this mode's list, and this also reprojects the size to px.
+   *
+   * Not counted as a user edit: the mode is not scene data, and the Rendering
+   * menu switches it when it opens the window. The size it applies reaches
+   * the scene with the next edit or render.
    */
   const changeMode = useCallback((next: RenderMode) => {
     setMode(next);
@@ -263,52 +277,87 @@ export function useRenderSettings(
   }, [applyPresetSize]);
 
 
+  /**
+   * Frozen copy of the settings.
+   *
+   * 'render' (default) carries the edited hatch look only while it differs
+   * from the template, so an untouched style renders through the C++ side's
+   * own configuration. 'store' -- what the scene keeps -- also carries it
+   * while the template is not known yet (right after a load), so a write in
+   * that window does not erase the look the scene holds.
+   */
   const getSnapshot = useCallback(
-    (): RenderSettingsSnapshot => ({
-      mode,
-      backend,
-      commonProps: cloneProps(commonProps),
-      backendProps: cloneProps(backendProps),
-      ...(mode === "movie" ? { movie: { ...movie } } : {}),
-      // The edited look travels only while it differs from the template, so
-      // an untouched style renders through the C++ side's own configuration.
-      ...(backend === "umbreon_npr" && hatchDirty && hatch.spec
-        ? {
-            hatch: {
-              layersSpec: formatHatchLayersSpec(hatch.spec.layers),
-              toneSpec: formatHatchToneSpec(hatch.spec.tone, hatch.spec.ink),
-            },
-          }
-        : {}),
-    }),
-    [mode, backend, commonProps, backendProps, movie, hatch.spec, hatchDirty],
+    (purpose: "render" | "store" = "render"): RenderSettingsSnapshot => {
+      const keepHatch =
+        backend === "umbreon_npr" &&
+        hatch.spec !== null &&
+        (hatchDirty || (purpose === "store" && hatch.template === null));
+      return {
+        mode,
+        backend,
+        commonProps: cloneProps(commonProps),
+        backendProps: cloneProps(backendProps),
+        ...(mode === "movie" ? { movie: { ...movie } } : {}),
+        ...(keepHatch && hatch.spec
+          ? {
+              hatch: {
+                layersSpec: formatHatchLayersSpec(hatch.spec.layers),
+                toneSpec: formatHatchToneSpec(hatch.spec.tone, hatch.spec.ink),
+              },
+            }
+          : {}),
+      };
+    },
+    [mode, backend, commonProps, backendProps, movie, hatch.spec, hatch.template, hatchDirty],
   );
 
-  /** Load settings from a snapshot (used by "Re-render"). */
-  const restore = useCallback((snapshot: RenderSettingsSnapshot) => {
-    // A restored snapshot carries its own backend; do not let the umbreon
-    // auto-default override it afterwards.
-    userPickedRef.current = true;
-    setBackendState(snapshot.backend);
-    setCommonProps(cloneProps(snapshot.commonProps));
-    setBackendProps(cloneProps(snapshot.backendProps));
-    setMode(snapshot.mode);
-    if (snapshot.movie) setMovie({ ...snapshot.movie });
-    // Restored sizes are explicit, so no size preset is active. The quality
-    // dropdowns need no reset: they read the restored values back.
-    setPreset(DEFAULT_RENDER_PRESET);
+  /**
+   * Replace the backend, its props, the common props and the hatch look.
+   * `presetMode` is the mode whose size presets the loaded size is matched
+   * against (the preset dropdown shows the entry the size equals, else Custom).
+   */
+  const applySettings = useCallback((s: StoredRenderSettings, presetMode: RenderMode, explicit: boolean) => {
+    setBackendState(s.backend);
+    setBackendExplicit(explicit);
+    setCommonProps(cloneProps(s.commonProps));
+    setBackendProps(cloneProps(s.backendProps));
+    // The quality dropdowns need no reset: they read the values back.
+    setPreset(sizePresetOf(s.commonProps, presetMode));
     // An edited look comes back as the spec; its template is fetched again
     // (applyHatchTemplate keeps the spec and only fills the template in).
     setHatch(
-      snapshot.hatch
+      s.hatch
         ? {
-            style: String(readVal(snapshot.backendProps, "hatchStyle") ?? ""),
+            style: String(readVal(s.backendProps, "hatchStyle") ?? ""),
             template: null,
-            spec: parseHatchSpec(snapshot.hatch.layersSpec + "\n" + snapshot.hatch.toneSpec),
+            spec: parseHatchSpec(s.hatch.layersSpec + "\n" + s.hatch.toneSpec),
           }
         : INITIAL_HATCH,
     );
   }, [setHatch]);
+
+  /**
+   * Load settings from a render's snapshot ("Use settings" on a history
+   * entry). The snapshot's backend is what rendered that image, so it counts
+   * as chosen.
+   */
+  const restore = useCallback((snapshot: RenderSettingsSnapshot) => {
+    applySettings(snapshot, snapshot.mode, true);
+    setMode(snapshot.mode);
+    if (snapshot.movie) setMovie({ ...snapshot.movie });
+  }, [applySettings]);
+
+  /**
+   * Show what the target scene stores (its own values, or a fresh object's
+   * defaults). Not an edit: nothing is written back until the user changes
+   * something.
+   */
+  const loadFromScene = useCallback(
+    (loaded: LoadedRenderSettings) => {
+      applySettings(loaded, mode, loaded.backendExplicit);
+    },
+    [applySettings, mode],
+  );
 
   /**
    * Default the Camera settings to what the render target view shows. Called
@@ -351,6 +400,9 @@ export function useRenderSettings(
     applyViewCamera,
     getSnapshot,
     restore,
+    loadFromScene,
+    userEditSeq,
+    backendExplicit,
     hatch,
     hatchStyle,
     hatchLoaded,

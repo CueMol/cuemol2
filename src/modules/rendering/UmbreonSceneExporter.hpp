@@ -9,6 +9,7 @@
 #include "render.hpp"
 
 #include <qsys/SceneExporter.hpp>
+#include <qlib/LScrSmartPtr.hpp>
 #include <qlib/mcutils.hpp>
 
 #include <memory>
@@ -19,6 +20,7 @@ namespace render {
 
   class UmbreonDisplayContext;
   struct UmbreonRenderParams;
+  class RenderSettings;
 
   /// Scene exporter that renders the scene with umbreon (the Embree ray
   /// tracer) and writes the result as a PNG image. Parallel to
@@ -86,6 +88,12 @@ namespace render {
     /// light angular radius in degrees (>0 = soft shadows)
     double m_dLightRadius;
 
+    /// lighting energy balance (POV _light_inten / _flash_frac / _amb_frac);
+    /// negative = auto (resolved per GI state in UmbreonDisplayContext)
+    double m_dLightIntensity;
+    double m_dFlashFraction;
+    double m_dAmbientFraction;
+
     /// draw silhouette/edge outline lines (CueMol toon edges)
     bool m_bEnableEdgeLines;
 
@@ -98,6 +106,11 @@ namespace render {
     /// ink the depth-continuous contact/intersection contour between DIFFERENT
     /// renderer sections (umbreon strokeEdges.contact); default off
     bool m_bContactEdges;
+
+    /// silhouette (outline) edge mode: depth, as a fraction of the fog range
+    /// (0 = view center, 1 = fog end), beyond which a same-group surface no
+    /// longer hides a nearer object's contour (umbreon outlineFarVz)
+    double m_dOutlineFarDepth;
 
     /// Transparent background: emit an RGBA PNG with alpha = coverage (0 where
     /// no geometry is hit) so it can be composited over another image (POV
@@ -121,6 +134,13 @@ namespace render {
 
     /// full-frame post-pass denoiser (0 = None, 1 = AtrousBilateral, 2 = OIDN)
     int m_nDenoiser;
+
+    /// GI sky model: gradient (zenith white / ground = m_sGiGroundColor along
+    /// the camera up axis) instead of the uniform white sky
+    bool m_bGiSkyGradient;
+
+    /// ground hemisphere color of the gradient sky ("#rrggbb")
+    LString m_sGiGroundColor;
 
     /// NPR tone-hatching pass (ink drawing); default off
     bool m_bHatchEnable;
@@ -182,6 +202,14 @@ namespace render {
     /// Resolve a hatch style name and return it as umbreon spec text (the
     /// layer editor's template); "" for an unknown name or without umbreon.
     LString getHatchStyleSpec(const LString &name) const;
+
+    /// Apply the scene render settings (Scene app data "render") to this
+    /// exporter. `backend` is "umbreon", "umbreon_npr" or "" (resolve from
+    /// settings.backend, "umbreon" unless it says "umbreon_npr"); returns
+    /// the block id applied. See the .qif for the mapping rules. Throws
+    /// IllegalArgumentException for any other backend id.
+    LString applyRenderSettings(qlib::LScrSp<RenderSettings> pSettings,
+                                const LString &backend);
 
     /////////////////////////////////
     // Asynchronous render: drive with beginRender() -> poll -> endRender().

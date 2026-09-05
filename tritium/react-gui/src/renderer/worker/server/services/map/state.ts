@@ -39,6 +39,7 @@ export function getMapRendererState(
         colormode: string;
         extent: number;
         siglevel: number;
+        level: number;
         use_abslevel: boolean;
         maxLevel: number;
         minLevel: number;
@@ -82,6 +83,8 @@ export function getMapRendererState(
             extent: safeRead(() => r.extent, 0),
             siglevel: safeRead(() => r.siglevel, 0),
             useAbsLevel: safeRead(() => r.use_abslevel, false),
+            level: safeRead(() => r.level, 0),
+            levelUnit: mapType === 'em' ? 'percent' : 'sigma',
             maxLevel: safeRead(() => r.maxLevel, 10),
             minLevel: safeRead(() => r.minLevel, -10),
             maxExtent: safeRead(() => r.maxExtent, 100),

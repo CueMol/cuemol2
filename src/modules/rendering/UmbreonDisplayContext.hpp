@@ -58,9 +58,18 @@ namespace render {
     bool shadows = false;
     int shadowSamples = 1;
     double lightRadius = 0.0;
+    /// Lighting energy balance, the POV exporter's _light_inten / _flash_frac
+    /// / _amb_frac: key light = li*(1-af)*(1-ff), headlight = li*(1-af)*ff,
+    /// and with GI on the gathered ambient energy = li*af (without GI the
+    /// ambient stays POV's unit ambient_light and af only dims the direct
+    /// lights). Negative = auto: resolved per GI state in
+    /// buildSceneAndOptions(); see docs/architecture/umbreon-gi-lighting-balance.md.
+    double lightIntensity = -1.0;
+    double flashFraction = -1.0;
+    double ambientFraction = -1.0;
     /// diffuse global illumination (umbreon pt2 path-traced integrator). When
-    /// on, the lighting is rebalanced to the POV radiosity split (energy moved
-    /// into the GI-gathered ambient). giSamples = gather rays per pixel;
+    /// on, the flat material ambient is replaced by the occlusion-aware gather
+    /// of the ambient energy above (li*af). giSamples = gather rays per pixel;
     /// giIntensity = indirect gain; giEnvIntensity = environment (sky)
     /// multiplier; giDenoise runs Intel OIDN on the indirect irradiance.
     bool giEnabled = false;
@@ -68,6 +77,13 @@ namespace render {
     double giIntensity = 1.0;
     double giEnvIntensity = 1.0;
     bool giDenoise = true;
+    /// GI sky model: gradient sky (zenith white, ground = giGroundColor along
+    /// the camera up axis) instead of umbreon's uniform white sky, so the
+    /// gathered ambient carries a shape cue independent of occlusion.
+    /// giGroundColor applies only when giGroundColorSet (parsed "#rrggbb").
+    bool giSkyGradient = false;
+    bool giGroundColorSet = false;
+    float giGroundColor[3] = {0.4f, 0.4f, 0.4f};
     /// Full-frame post-pass denoiser on the final HDR color (umbreon
     /// RenderOptions::denoiser): 0 = None, 1 = AtrousBilateral, 2 = OIDN. This
     /// is independent of giDenoise, which denoises only the GI indirect buffer.
@@ -75,13 +91,24 @@ namespace render {
     /// Ink the depth-CONTINUOUS contact/intersection contour between DIFFERENT
     /// renderer sections (umbreon strokeEdges.contact): the circle where one
     /// section's primitive plunges into another section's surface, e.g. a
-    /// stick entering another renderer's ribbon mesh. Such a boundary is
-    /// surface contact rather than occlusion, so umbreon vetoes it by default
-    /// and so does the GL view (its inverted hull is buried inside the other
-    /// surface there); a silhouette-mode section is therefore left with an
-    /// OPEN outer contour wherever it meets another renderer. Turning this on
-    /// closes it. Same-section contact stays seamless whatever this says.
-    bool contactEdges = false;
+    /// stick entering the ribbon mesh of another EDGE GROUP (renderers are
+    /// grouped by their egroup property, unnamed ones per object). Inside an
+    /// edge group a contact never inks: such a boundary is surface contact
+    /// rather than occlusion, and the GL view draws no line there either
+    /// (its inverted hull is buried inside the other surface). Between edge
+    /// groups the contact contour inks by default, closing a silhouette-mode
+    /// group's outer contour where it meets another group; false suppresses
+    /// every contact line.
+    bool contactEdges = true;
+    /// Silhouette (outline) edge mode: depth, as a fraction of the fog range
+    /// (0 = the view center where the fog starts, 1 = the fog end), beyond
+    /// which a surface of the same edge group no longer hides the contour of
+    /// a nearer object: the contour is then drawn as in the edges mode
+    /// (umbreon strokeEdges.outlineFarVz). 0.2 = surfaces more than 20% of
+    /// the way into the fog no longer hide contours; at 1 only the fully
+    /// fogged zone between the fog end and the far clip plane (dist + slab)
+    /// lies beyond.
+    double outlineFarDepth = 0.2;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").
@@ -228,8 +255,18 @@ namespace render {
     // appendIntData / render() -- no CueMol-side outline geometry is built.
 
     void enableEdgeLines(bool b) { m_bEnableEdgeLines = b; }
+    /// Crease fold angle in degrees (edges edge mode only); <= 0 = no crease
+    /// lines. Forwarded to umbreon strokeEdges.creaseAngleDeg.
     void setCreaseLimit(double d) { m_dCreaseLimit = d; }
     void setEdgeRise(double d) { m_dEdgeRise = d; }
+    /// Edge group of the next section (Scene::displayRendImpl calls this
+    /// before startSection): renderers of one edge group are ONE section for
+    /// umbreon's edge pass. A non-empty `name` (the renderer's egroup
+    /// property) groups by name across the scene; an empty name groups the
+    /// renderer with every other renderer that draws the SAME edge lines
+    /// (type/mode, width, color) -- the only grouping consistent with one
+    /// style per group.
+    void setEdgeGroup(const LString &name) override;
 
   private:
     struct Impl;
@@ -241,6 +278,9 @@ namespace render {
     double m_dCreaseLimit;
     /// Edge line rise from the surface (along the vertex normal)
     double m_dEdgeRise;
+    /// Edge group name of the section being displayed (setEdgeGroup); empty
+    /// means "group by the edge settings themselves".
+    LString m_edgeGroupName;
 
     /// Build the umbreon camera from the seeded view state (eye-space:
     /// camera at (0,0,viewDist) looking down -Z).

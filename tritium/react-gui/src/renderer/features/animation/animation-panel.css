@@ -239,6 +239,36 @@
   outline-offset: -1px;
 }
 
+/* The time-reference chain does not resolve: said once, under the transport
+   row and above the lanes, so it stays visible however far the canvas is
+   scrolled and costs no space when absent. */
+.anim-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-warning);
+  flex-shrink: 0;
+}
+
+/* A strip whose time reference does not resolve: drawn at its last known
+   position, hatched, with a warning ring inside the selection outline. */
+.anim-strip.is-unresolved {
+  box-shadow: inset 0 0 0 1px var(--text-warning);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 var(--space-1),
+    var(--overlay-hover) var(--space-1) var(--space-2)
+  );
+}
+
+/* A strip whose absolute start fell before zero: drawn at zero, flagged. */
+.anim-strip.is-clamped {
+  border-left: var(--anim-playhead-w) solid var(--text-error);
+}
+
 .anim-strip.is-disabled {
   opacity: 0.45;
 }

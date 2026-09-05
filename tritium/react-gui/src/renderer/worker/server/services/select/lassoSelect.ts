@@ -34,10 +34,10 @@ export type LassoSelectResult = SelectionResult;
 
 export function lassoSelect(ctx: WorkerContext, args: LassoSelectArgs): LassoSelectResult {
     const pts = args.points;
-    if (!pts || pts.length < 3) return { ok: false, selectedObjIds: [] };
+    if (!pts || pts.length < 3) return { ok: false, selectedObjIds: [], selStrs: [] };
 
     const vs = getViewSceneOrNull(ctx, args.viewId);
-    if (!vs) return { ok: false, selectedObjIds: [] };
+    if (!vs) return { ok: false, selectedObjIds: [], selStrs: [] };
     const { view, scene } = vs;
 
     // Interleave the vertices into a FLOAT32 array and hand it to C++ as a
@@ -48,10 +48,10 @@ export function lassoSelect(ctx: WorkerContext, args: LassoSelectArgs): LassoSel
         coords[i * 2 + 1] = pts[i].y;
     }
     const ba = ctx.svc.fromTypedArray(coords) as ByteArray | null;
-    if (!ba) return { ok: false, selectedObjIds: [] };
+    if (!ba) return { ok: false, selectedObjIds: [], selStrs: [] };
 
     const hits = parseSelectionHits(view.hitTestPolygon(ba, false));
-    if (hits.length === 0) return { ok: false, selectedObjIds: [] };
+    if (hits.length === 0) return { ok: false, selectedObjIds: [], selStrs: [] };
 
     return applySelectionHits(ctx, scene, hits, args.mode);
 }
