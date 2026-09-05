@@ -458,7 +458,20 @@ LString UmbreonSceneExporter::applyRenderSettings(
   m_dAmbientFraction =
       useGI ? ub.r("ambientFraction", m_dAmbientFraction) : DIRECT_AMBIENT_FRACTION;
 
-  m_dCreaseLimit = ub.r("creaseLimit", m_dCreaseLimit);
+  // Crease angle (the settings' "creaseLimit" string): "Off" -- or any
+  // non-positive number, which is what a scene saved by the older real-typed
+  // setting holds -- disables crease lines; otherwise the fold angle in
+  // degrees. An empty/absent value leaves the exporter's own setting alone.
+  {
+    const LString ca = ub.s("creaseLimit", LString());
+    if (!ca.isEmpty()) {
+      double deg = -1.0;
+      if (ca.equalsIgnoreCase("Off") || !ca.toDouble(&deg) || deg <= 0.0)
+        m_dCreaseLimit = -1.0;
+      else
+        m_dCreaseLimit = deg;
+    }
+  }
   m_dEdgeRise = ub.r("edgeRise", m_dEdgeRise);
   m_bContactEdges = ub.b("contactEdges", m_bContactEdges);
   m_dOutlineFarDepth = ub.r("outlineFarDepth", m_dOutlineFarDepth);
