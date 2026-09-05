@@ -2024,3 +2024,153 @@ TEST(UmbreonExport, HatchToneStrengthScalesTheInk)
     EXPECT_GT(meanLevel(pixHalf), meanLevel(pixOne));
     EXPECT_GT(meanLevel(pixOne), meanLevel(pixTwo));
 }
+
+namespace {
+
+/// One ELT_SILHOUETTE section with a NEAR sphere (eye z 0 = view-z 100,
+/// unfogged) whose left contour lies on a FAR sphere (eye z -4; its surface
+/// under that contour sits at view-z ~102.5). Slab 40 puts the fog at
+/// 100..120, so the far sphere is at f ~0.87 and its own rim still counts as
+/// ink. outlineFarDepth maps the fog range: 0.1 -> d = 102, the far surface
+/// lies beyond it and the near sphere's contour inks (3 center-row runs);
+/// 0.95 -> d = 119, within, the contour stays a suppressed self-occlusion (2
+/// runs: the two outer rims).
+void renderOutlineFarDepth(double depth, std::size_t &outInk, int &outRuns)
+{
+    const double kViewH = 6.0;
+    const double kLineScale = kViewH / kEdgeModeDim;
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setSlabDepth(40.0);  // fog 100..120, far clip at 120
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_SILHOUETTE);
+    ctx.setEdgeLineWidth(2.0 * kLineScale);  // a 2 px band
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+
+    ctx.startRender();
+    ctx.startSection("fogsph");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(-0.9, 0.0, -4.0));  // far, into the fog
+    ctx.sphere(1.5, Vector4D(0.9, 0.0, 0.0));    // near, unfogged
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kEdgeModeDim;
+    prm.height = kEdgeModeDim;
+    prm.supersample = 2;
+    prm.outlineFarDepth = depth;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    ASSERT_EQ(pix.size(),
+              static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
+
+    countEdgeInk(pix, outInk, outRuns);
+}
+
+/// A translucent BLUE front (section alpha 0.5, eye z 0 = view-z 100) over an
+/// opaque RED back at eye z `zBack`, black background, slab 2: fog 100..101
+/// and the far clip plane at 101.
+std::vector<unsigned char> renderTranslucentOverBack(double zBack)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.setSlabDepth(2.0);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    ctx.loadIdent();
+
+    ctx.startRender();
+
+    ctx.startSection("back");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, zBack));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, zBack));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, zBack));
+    ctx.end();
+    ctx.endSection();
+
+    ctx.setAlpha(0.5);
+    ctx.startSection("front");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    return pix;
+}
+
+}  // namespace
+
+// The outline far depth: in the silhouette edge mode a nearer object's contour
+// over a surface of its own group is normally suppressed (only the group's
+// outer contour draws), but once that surface lies deeper in the fog than
+// outlineFarDepth the contour draws as in the edges mode.
+TEST(UmbreonExport, OutlineFarDepthInksContoursOverFoggedSurfaces)
+{
+    std::size_t inkBeyond = 0, inkWithin = 0, inkOff = 0;
+    int runsBeyond = 0, runsWithin = 0, runsOff = 0;
+
+    renderOutlineFarDepth(0.1, inkBeyond, runsBeyond);   // d = 102 < 102.5
+    renderOutlineFarDepth(0.95, inkWithin, runsWithin);  // d = 119
+    renderOutlineFarDepth(1.0, inkOff, runsOff);         // d = fog end
+
+    EXPECT_EQ(runsBeyond, 3);
+    EXPECT_EQ(runsWithin, 2);
+    EXPECT_EQ(runsOff, 2);
+    EXPECT_GT(inkBeyond, inkWithin + 30);
+}
+
+// The far clip plane at the fog end: geometry beyond it is not rendered at
+// all. Visible only through a translucent surface in front of it -- the fog
+// is applied at the first hit's depth, so a fully fogged back used to blend
+// through an unfogged translucent front.
+TEST(UmbreonExport, FarClipRemovesFullyFoggedGeometry)
+{
+    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+
+    // Back at eye z -3 = view-z 103, beyond the fog end (101): clipped away.
+    const std::vector<unsigned char> beyond = renderTranslucentOverBack(-3.0);
+    ASSERT_EQ(beyond.size(), static_cast<std::size_t>(64 * 64 * 3));
+    EXPECT_LT(beyond[c + 0], 30);  // no red blends through
+    EXPECT_GT(beyond[c + 2], 30);  // the translucent front still shows
+
+    // Control: back at eye z -0.2 = view-z 100.2, inside the fog range.
+    const std::vector<unsigned char> inside = renderTranslucentOverBack(-0.2);
+    ASSERT_EQ(inside.size(), static_cast<std::size_t>(64 * 64 * 3));
+    EXPECT_GT(inside[c + 0], 30);  // red blends through
+}

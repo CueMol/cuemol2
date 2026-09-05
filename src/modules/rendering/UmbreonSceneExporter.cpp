@@ -147,7 +147,7 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_dLightIntensity(-1.0), m_dFlashFraction(-1.0),
        m_dAmbientFraction(-1.0),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
-       m_bContactEdges(true),
+       m_bContactEdges(true), m_dOutlineFarDepth(0.95),
        m_bTransparentBackground(false),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
        m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
@@ -243,6 +243,7 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.flashFraction = m_dFlashFraction;
   prm.ambientFraction = m_dAmbientFraction;
   prm.contactEdges = m_bContactEdges;
+  prm.outlineFarDepth = m_dOutlineFarDepth;
   prm.transparentBackground = m_bTransparentBackground;
   prm.giEnabled = m_bGI;
   prm.giSamples = m_nGiSamples;
@@ -460,6 +461,7 @@ LString UmbreonSceneExporter::applyRenderSettings(
   m_dCreaseLimit = ub.r("creaseLimit", m_dCreaseLimit);
   m_dEdgeRise = ub.r("edgeRise", m_dEdgeRise);
   m_bContactEdges = ub.b("contactEdges", m_bContactEdges);
+  m_dOutlineFarDepth = ub.r("outlineFarDepth", m_dOutlineFarDepth);
 
   m_bGI = useGI;
   m_bHatchEnable = npr;

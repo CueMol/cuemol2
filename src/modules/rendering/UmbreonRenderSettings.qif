@@ -58,6 +58,14 @@ runtime_class UmbreonRenderSettings
   /// an edge group a contact never inks. False suppresses every contact line.
   property boolean contactEdges => m_contactEdges;
   default contactEdges = true;
+  /// Silhouette (outline) edge mode: how deep into the fog a surface may lie
+  /// and still hide the contour of a nearer object of the same edge group,
+  /// as a fraction of the fog range (0 = the view center, 1 = the fog end,
+  /// where the far clip plane removes everything). A contour over a surface
+  /// beyond this depth is drawn as in the edges mode. 0.95 = surfaces more
+  /// than 95% sunk into the fog no longer hide contours.
+  property real outlineFarDepth => m_outlineFarDepth;
+  default outlineFarDepth = 0.95;
 
   property boolean useGI => m_useGI;
   default useGI = true;

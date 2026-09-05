@@ -43,6 +43,7 @@ UmbreonRenderSettings::UmbreonRenderSettings()
       m_creaseLimit(0.0),
       m_edgeRise(0.0),
       m_contactEdges(true),
+      m_outlineFarDepth(0.95),
       m_useGI(false),
       m_giSkyGradient(false),
       m_lightIntensity(0.0),

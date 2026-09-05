@@ -67,6 +67,7 @@ namespace render {
     double m_creaseLimit;
     double m_edgeRise;
     bool m_contactEdges;
+    double m_outlineFarDepth;
     bool m_useGI;
     LString m_giSamples;
     LString m_denoise;

@@ -72,6 +72,7 @@ TEST(UmbreonApplySettings, AppliesCommonAndUmbreonBlock)
     EXPECT_TRUE(ub->setPropBool("giSkyGradient", false));
     EXPECT_TRUE(ub->setPropStr("giGroundColor", "#123456"));
     EXPECT_TRUE(ub->setPropReal("creaseLimit", 0.7));
+    EXPECT_TRUE(ub->setPropReal("outlineFarDepth", 0.3));
 
     UmbreonSceneExporter ex;
     EXPECT_STREQ(ex.applyRenderSettings(p, "umbreon").c_str(), "umbreon");
@@ -93,6 +94,7 @@ TEST(UmbreonApplySettings, AppliesCommonAndUmbreonBlock)
     EXPECT_TRUE(propBool(ex, "shadows"));
     EXPECT_EQ(propInt(ex, "shadowSamples"), 4);
     EXPECT_DOUBLE_EQ(propReal(ex, "creaseLimit"), 0.7);
+    EXPECT_DOUBLE_EQ(propReal(ex, "outlineFarDepth"), 0.3);
 
     // GI (the block default is GI on)
     EXPECT_TRUE(propBool(ex, "useGI"));
