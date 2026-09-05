@@ -18,8 +18,10 @@
 #  include <umbreon/umbreon.hpp>
 #  include <umbreon/log.hpp>
 #  include <umbreon/npr/hatch_shade.hpp>
+#  include <algorithm>
 #  include <cmath>
 #  include <cstdint>
+#  include <limits>
 #  include <map>
 #  include <mutex>
 #  include <string>
@@ -915,12 +917,10 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // mesh at (m_dClipZ = slab/2 in eye z, the GL view's dist - slab/2) becomes
   // clipNear directly.
   //
-  // Only the near plane is set. The GL view's far plane (dist + slabDepth) has
-  // no observable effect here: the depth fog below ends at dist + slabDepth/2,
-  // in FRONT of it, so anything the far plane could remove is already blended
-  // fully into the background -- down to alpha 0 on the transparent-background
-  // path. Secondary rays (shadow / AO / GI) stay unclipped in umbreon, matching
-  // the interactive view where the slab is a display device, not scene geometry.
+  // The near plane follows the slab switch; the far plane is set below, where
+  // the GL projection puts it. Secondary rays (shadow / AO / GI) stay
+  // unclipped in umbreon, matching the interactive view where the slab is a
+  // display device, not scene geometry.
   if (m_bUseClipZ) {
     const double clipNear = m_dViewDist - m_dSlabDepth * 0.5;
     // A near plane at or behind the camera clips nothing; leaving it at -inf
@@ -945,6 +945,23 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // A degenerate slab (end <= start) would make the fog factor blow the whole
   // frame to the background color; skip fog entirely in that case.
   scene.fog.enabled = (fogEnd > fogStart);
+
+  // FAR clip plane where the GL view's projection puts it: dist + slabDepth
+  // (GUIView::setUpProjMat's slabfar), half a slab behind the fog end. The
+  // fog reaches the background color at the fog end, so everything between
+  // the two planes is drawn fully fogged (invisible) and everything beyond
+  // the far plane is not drawn at all, as in the interactive view. For the
+  // edge pass a surface removed by the far plane is no longer a surface of
+  // its edge group; the outline far depth below handles the fully fogged
+  // zone in front of it. Like the GL far plane, independent of the slab
+  // switch (which only cuts the near side).
+  {
+    const double clipFar = m_dViewDist + m_dSlabDepth;
+    if (clipFar > 0.0) {
+      scene.clipFar = float(clipFar);
+      MB_DPRINTLN("Umbreon> far clip plane: view-z %f", clipFar);
+    }
+  }
 
   // Lighting energy balance, in the POV exporter's terms (_light_inten /
   // _amb_frac / _flash_frac). The caller normally supplies all three (the
@@ -1228,6 +1245,12 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.strokeEdges.silhouette = true;
     opt.strokeEdges.border = true;
     opt.strokeEdges.crease = m_pImpl->anyCrease;
+    // The crease limit is the fold angle in DEGREES (the GUI catalog ranges
+    // it 0..180): a boundary where the shading normals fold by more than it
+    // inks as a crease. Forward it; umbreon's own default (30) applied
+    // whatever the setting said before.
+    if (m_pImpl->anyCrease && m_dCreaseLimit > 0.0)
+      opt.strokeEdges.creaseAngleDeg = float(m_dCreaseLimit);
     // Cross-section CONTACT contours (depth-continuous intersections, e.g. a
     // stick plunging into another renderer's ribbon). Off by default in both
     // umbreon and the GL view: the border/silhouette classes ink only across a
@@ -1238,6 +1261,18 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     // deterministic owner section for each contact run and styles it from
     // there, since the near side is numerical noise at a contact).
     opt.strokeEdges.contact = prm.contactEdges;
+    // Outline far-side depth (UmbreonRenderParams::outlineFarDepth): a
+    // fraction of the fog range mapped to linear view-z. At 1 it is the fog
+    // end: only the fully fogged zone up to the far clip plane lies beyond
+    // it. Without fog it stays off.
+    opt.strokeEdges.outlineFarVz = std::numeric_limits<float>::infinity();
+    if (scene.fog.enabled) {
+      const double t = std::min(1.0, std::max(0.0, prm.outlineFarDepth));
+      opt.strokeEdges.outlineFarVz =
+          float(scene.fog.start + t * (scene.fog.end - scene.fog.start));
+      MB_DPRINTLN("Umbreon> outline far depth %f -> view-z %f", t,
+                  double(opt.strokeEdges.outlineFarVz));
+    }
     opt.strokeEdges.thickness = int(m_pImpl->edgeThicknessPx + 0.5f);
     if (opt.strokeEdges.thickness < 1)
       opt.strokeEdges.thickness = 1;

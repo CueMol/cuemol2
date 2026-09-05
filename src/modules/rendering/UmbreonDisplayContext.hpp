@@ -100,6 +100,15 @@ namespace render {
     /// group's outer contour where it meets another group; false suppresses
     /// every contact line.
     bool contactEdges = true;
+    /// Silhouette (outline) edge mode: depth, as a fraction of the fog range
+    /// (0 = the view center where the fog starts, 1 = the fog end), beyond
+    /// which a surface of the same edge group no longer hides the contour of
+    /// a nearer object: the contour is then drawn as in the edges mode
+    /// (umbreon strokeEdges.outlineFarVz). 0.2 = surfaces more than 20% of
+    /// the way into the fog no longer hide contours; at 1 only the fully
+    /// fogged zone between the fog end and the far clip plane (dist + slab)
+    /// lies beyond.
+    double outlineFarDepth = 0.2;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").
@@ -246,6 +255,8 @@ namespace render {
     // appendIntData / render() -- no CueMol-side outline geometry is built.
 
     void enableEdgeLines(bool b) { m_bEnableEdgeLines = b; }
+    /// Crease fold angle in degrees (edges edge mode only); <= 0 = no crease
+    /// lines. Forwarded to umbreon strokeEdges.creaseAngleDeg.
     void setCreaseLimit(double d) { m_dCreaseLimit = d; }
     void setEdgeRise(double d) { m_dEdgeRise = d; }
     /// Edge group of the next section (Scene::displayRendImpl calls this

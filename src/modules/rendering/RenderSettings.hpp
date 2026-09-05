@@ -64,9 +64,10 @@ namespace render {
     bool m_shadows;
     int m_shadowSamples;
     double m_lightRadius;
-    double m_creaseLimit;
+    LString m_creaseLimit;  // "Off" or the crease fold angle in degrees
     double m_edgeRise;
     bool m_contactEdges;
+    double m_outlineFarDepth;
     bool m_useGI;
     LString m_giSamples;
     LString m_denoise;

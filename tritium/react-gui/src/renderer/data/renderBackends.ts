@@ -96,15 +96,25 @@ const UMBREON_PROPS: RenderPropSpec[] = [
   { key: "shadows",       label: "Cast shadows",       type: "boolean", group: "Shadows" },
   { key: "shadowSamples", label: "Shadow samples",     type: "integer",    group: "Shadows", min: 1, max: 64, step: 1 },
   { key: "lightRadius",   label: "Light radius (deg)", type: "real",  group: "Shadows", min: 0, max: 30, step: 0.5 },
-  // --- Edges (creaseLimit -1 = disabled/auto sentinel) ---
-  { key: "creaseLimit",   label: "Crease limit",       type: "real", group: "Edges", min: -1, max: 180, step: 1 },
-  { key: "edgeRise",      label: "Edge rise",          type: "real",  group: "Edges", min: 0, max: 5, step: 0.1 },
+  // --- Edges ---
+  // Crease lines (edges edge mode only): folds of the surface normal sharper
+  // than this angle ink as edge lines; a larger angle inks fewer, sharper
+  // folds. The C++ side parses the string ("Off" = no crease lines).
+  // The POV-Ray-only `edgeRise` (how far its 3D edge geometry is lifted off
+  // the surface) is not listed: umbreon's screen-space strokes never use it.
+  { key: "creaseLimit",   label: "Crease angle (deg)", type: "enum", group: "Edges",
+    options: ["Off", "15", "30", "45", "60", "90", "120"] },
   // Contact contours BETWEEN renderers: the intersection circle where one
   // renderer's geometry plunges into another's surface (a stick entering a
   // ribbon). It is surface contact, not occlusion, so neither umbreon nor the
   // GL view inks it -- which leaves a silhouette-mode renderer's outer contour
   // open wherever it meets another renderer. Off by default to match that look.
   { key: "contactEdges",  label: "Contact edges",      type: "boolean", group: "Edges" },
+  // Silhouette mode: fraction of the fog range (0 = view center, 1 = fog end)
+  // beyond which a fogged surface of the same edge group no longer hides a
+  // nearer object's contour (drawn as in the edges mode there). The far clip
+  // plane sits half a slab behind the fog end, as in the GL view.
+  { key: "outlineFarDepth", label: "Outline far depth", type: "real", group: "Edges", min: 0, max: 1, step: 0.01 },
   // --- Global Illumination (pt1 path-traced integrator; off by default) ---
   { key: "useGI",         label: "Enable GI",          type: "boolean", group: "Global Illumination" },
   // Gather samples per pixel, as a short list rather than a ladder: with the

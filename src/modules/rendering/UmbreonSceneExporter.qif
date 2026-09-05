@@ -111,6 +111,8 @@ runtime_class UmbreonSceneExporter extends SceneExporter
 
   property boolean showEdgeLines => m_bEnableEdgeLines;
 
+  /// crease lines (edges edge mode only): fold angle in degrees above which a
+  /// surface fold inks as an edge line; -1 = off
   property real creaseLimit => m_dCreaseLimit;
 
   property real edgeRise => m_dEdgeRise;
@@ -121,6 +123,12 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// per object); inside a group a contact never inks whatever this says.
   /// On by default; false suppresses every contact line.
   property boolean contactEdges => m_bContactEdges;
+
+  /// silhouette (outline) edge mode: how deep into the fog a surface may lie
+  /// and still hide the contour of a nearer object of the same edge group, as
+  /// a fraction of the fog range (0 = view center, 1 = fog end). A contour
+  /// over a surface beyond this depth draws as in the edges mode.
+  property real outlineFarDepth => m_dOutlineFarDepth;
 
   //////////
   // transparent background: emit an RGBA PNG with alpha = coverage (POV

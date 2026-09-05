@@ -147,7 +147,7 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_dLightIntensity(-1.0), m_dFlashFraction(-1.0),
        m_dAmbientFraction(-1.0),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
-       m_bContactEdges(true),
+       m_bContactEdges(true), m_dOutlineFarDepth(0.2),
        m_bTransparentBackground(false),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
        m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
@@ -243,6 +243,7 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.flashFraction = m_dFlashFraction;
   prm.ambientFraction = m_dAmbientFraction;
   prm.contactEdges = m_bContactEdges;
+  prm.outlineFarDepth = m_dOutlineFarDepth;
   prm.transparentBackground = m_bTransparentBackground;
   prm.giEnabled = m_bGI;
   prm.giSamples = m_nGiSamples;
@@ -457,9 +458,23 @@ LString UmbreonSceneExporter::applyRenderSettings(
   m_dAmbientFraction =
       useGI ? ub.r("ambientFraction", m_dAmbientFraction) : DIRECT_AMBIENT_FRACTION;
 
-  m_dCreaseLimit = ub.r("creaseLimit", m_dCreaseLimit);
+  // Crease angle (the settings' "creaseLimit" string): "Off" -- or any
+  // non-positive number, which is what a scene saved by the older real-typed
+  // setting holds -- disables crease lines; otherwise the fold angle in
+  // degrees. An empty/absent value leaves the exporter's own setting alone.
+  {
+    const LString ca = ub.s("creaseLimit", LString());
+    if (!ca.isEmpty()) {
+      double deg = -1.0;
+      if (ca.equalsIgnoreCase("Off") || !ca.toDouble(&deg) || deg <= 0.0)
+        m_dCreaseLimit = -1.0;
+      else
+        m_dCreaseLimit = deg;
+    }
+  }
   m_dEdgeRise = ub.r("edgeRise", m_dEdgeRise);
   m_bContactEdges = ub.b("contactEdges", m_bContactEdges);
+  m_dOutlineFarDepth = ub.r("outlineFarDepth", m_dOutlineFarDepth);
 
   m_bGI = useGI;
   m_bHatchEnable = npr;

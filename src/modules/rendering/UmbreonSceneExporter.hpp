@@ -107,6 +107,11 @@ namespace render {
     /// renderer sections (umbreon strokeEdges.contact); default off
     bool m_bContactEdges;
 
+    /// silhouette (outline) edge mode: depth, as a fraction of the fog range
+    /// (0 = view center, 1 = fog end), beyond which a same-group surface no
+    /// longer hides a nearer object's contour (umbreon outlineFarVz)
+    double m_dOutlineFarDepth;
+
     /// Transparent background: emit an RGBA PNG with alpha = coverage (0 where
     /// no geometry is hit) so it can be composited over another image (POV
     /// "_transpbg"). Default false (opaque RGB over the scene background color).

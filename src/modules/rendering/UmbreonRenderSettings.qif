@@ -49,8 +49,13 @@ runtime_class UmbreonRenderSettings
   property real lightRadius => m_lightRadius;
   default lightRadius = 0.0;
 
-  property real creaseLimit => m_creaseLimit;
-  default creaseLimit = -1.0;
+  /// Crease lines (edges edge mode only): a boundary where the surface normal
+  /// folds by more than this angle inks as an edge line, in the renderer's
+  /// edge color and width. "Off" = no crease lines; otherwise the angle in
+  /// degrees ("15", "30", "45", "60", "90", "120" in the GUI; any positive
+  /// number parses). A larger angle inks fewer, sharper folds.
+  property string creaseLimit => m_creaseLimit;
+  default creaseLimit = "Off";
   property real edgeRise => m_edgeRise;
   default edgeRise = 0.5;
   /// Draw the depth-continuous contact contour between different edge groups
@@ -58,6 +63,16 @@ runtime_class UmbreonRenderSettings
   /// an edge group a contact never inks. False suppresses every contact line.
   property boolean contactEdges => m_contactEdges;
   default contactEdges = true;
+  /// Silhouette (outline) edge mode: how deep into the fog a surface may lie
+  /// and still hide the contour of a nearer object of the same edge group,
+  /// as a fraction of the fog range (0 = the view center, 1 = the fog end).
+  /// A contour over a surface beyond this depth is drawn as in the edges
+  /// mode. 0.2 = surfaces more than 20% of the way into the fog no longer
+  /// hide contours (deeper settings leave contours whose fog fade differs
+  /// too much from the lines around them); at 1 only fully fogged surfaces
+  /// (up to the far clip plane at the view center + slab depth) lie beyond.
+  property real outlineFarDepth => m_outlineFarDepth;
+  default outlineFarDepth = 0.2;
 
   property boolean useGI => m_useGI;
   default useGI = true;
