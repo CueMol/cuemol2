@@ -62,11 +62,12 @@ runtime_class UmbreonRenderSettings
   /// and still hide the contour of a nearer object of the same edge group,
   /// as a fraction of the fog range (0 = the view center, 1 = the fog end).
   /// A contour over a surface beyond this depth is drawn as in the edges
-  /// mode. 0.95 = surfaces more than 95% sunk into the fog no longer hide
-  /// contours; at 1 only fully fogged surfaces (up to the far clip plane at
-  /// the view center + slab depth) lie beyond.
+  /// mode. 0.2 = surfaces more than 20% of the way into the fog no longer
+  /// hide contours (deeper settings leave contours whose fog fade differs
+  /// too much from the lines around them); at 1 only fully fogged surfaces
+  /// (up to the far clip plane at the view center + slab depth) lie beyond.
   property real outlineFarDepth => m_outlineFarDepth;
-  default outlineFarDepth = 0.95;
+  default outlineFarDepth = 0.2;
 
   property boolean useGI => m_useGI;
   default useGI = true;

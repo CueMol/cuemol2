@@ -104,10 +104,11 @@ namespace render {
     /// (0 = the view center where the fog starts, 1 = the fog end), beyond
     /// which a surface of the same edge group no longer hides the contour of
     /// a nearer object: the contour is then drawn as in the edges mode
-    /// (umbreon strokeEdges.outlineFarVz). 0.95 = surfaces more than 95% sunk
-    /// into the fog no longer hide contours; at 1 only the fully fogged zone
-    /// between the fog end and the far clip plane (dist + slab) lies beyond.
-    double outlineFarDepth = 0.95;
+    /// (umbreon strokeEdges.outlineFarVz). 0.2 = surfaces more than 20% of
+    /// the way into the fog no longer hide contours; at 1 only the fully
+    /// fogged zone between the fog end and the far clip plane (dist + slab)
+    /// lies beyond.
+    double outlineFarDepth = 0.2;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").

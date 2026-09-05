@@ -147,7 +147,7 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_dLightIntensity(-1.0), m_dFlashFraction(-1.0),
        m_dAmbientFraction(-1.0),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
-       m_bContactEdges(true), m_dOutlineFarDepth(0.95),
+       m_bContactEdges(true), m_dOutlineFarDepth(0.2),
        m_bTransparentBackground(false),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
        m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
