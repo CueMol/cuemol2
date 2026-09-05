@@ -65,7 +65,7 @@ TEST(UmbreonApplySettings, AppliesCommonAndUmbreonBlock)
     EXPECT_TRUE(ub->setPropReal("aoDiffuseFactor", 0.5));
     EXPECT_TRUE(ub->setPropBool("shadows", true));
     EXPECT_TRUE(ub->setPropInt("shadowSamples", 4));
-    EXPECT_TRUE(ub->setPropStr("giSamples", "64"));
+    EXPECT_TRUE(ub->setPropInt("giSamples", 64));
     EXPECT_TRUE(ub->setPropStr("denoise", "A-trous"));
     EXPECT_TRUE(ub->setPropReal("lightIntensity", 1.0));
     EXPECT_TRUE(ub->setPropReal("ambientFraction", 0.3));
