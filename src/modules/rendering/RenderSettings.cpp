@@ -40,7 +40,7 @@ UmbreonRenderSettings::UmbreonRenderSettings()
       m_shadows(false),
       m_shadowSamples(1),
       m_lightRadius(0.0),
-      m_creaseLimit("Off"),
+      m_creaseLimit(0.0),
       m_edgeRise(0.0),
       m_contactEdges(true),
       m_outlineFarDepth(0.2),

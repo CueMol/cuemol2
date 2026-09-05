@@ -93,4 +93,26 @@ describe('sceneRenderSettings', () => {
         expect(valuesFromSnapshot(fresh, { backendExplicit: false }).backend).toBe('');
         warn.mockRestore();
     });
+
+    it('shows a numeric enum (the crease angle) as its label and stores the number', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const key = blockKey('umbreon', 'creaseLimit');
+        // The C++ real -1 (off) and 30 show as their labels...
+        const off = snapshotFromRenderSettings(fixtureValues({ backend: 'umbreon', [key]: -1 }), { defaults, umbreonAvailable: true, mode: 'strict' });
+        expect(valueOf(off.backendProps, 'creaseLimit')).toBe('Off');
+        const deg = snapshotFromRenderSettings(fixtureValues({ backend: 'umbreon', [key]: 30 }), { defaults, umbreonAvailable: true, mode: 'strict' });
+        expect(valueOf(deg.backendProps, 'creaseLimit')).toBe('30');
+        // ...and go back to the scene as numbers, whatever the editor holds.
+        expect(valuesFromSnapshot(deg)[key]).toBe(30);
+        const edited = { ...deg, backendProps: deg.backendProps.map((p) => (p.key === 'creaseLimit' ? { ...p, value: '45' } : p)) };
+        expect(valuesFromSnapshot(edited)[key]).toBe(45);
+        expect(valuesFromSnapshot(off)[key]).toBe(-1);
+        // A number that is not one of the options (an older scene's slider
+        // value) falls back to the default's label with a warning.
+        const odd = snapshotFromRenderSettings(fixtureValues({ backend: 'umbreon', [key]: 33 }), { defaults, umbreonAvailable: true });
+        expect(valueOf(odd.backendProps, 'creaseLimit')).toBe('Off');
+        expect(odd.warnings.map((w) => w.split(':')[0])).toEqual([key]);
+        expect(SCENE_VALUE_TYPES[key]).toBe('real');
+        warn.mockRestore();
+    });
 });
