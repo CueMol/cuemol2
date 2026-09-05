@@ -63,7 +63,7 @@ const UMBREON: Record<string, Value> = {
     shadows: false,
     shadowSamples: 1,
     lightRadius: 0,
-    creaseLimit: "Off",
+    creaseLimit: -1,
     contactEdges: false,
     outlineFarDepth: 0.2,
     useGI: true,

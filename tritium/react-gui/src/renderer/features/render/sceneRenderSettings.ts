@@ -69,6 +69,19 @@ const HATCH_SPEC_KEYS = ["hatchLayersSpec", "hatchToneSpec"] as const;
 /** The stored key of a backend row. */
 export const blockKey = (backend: RenderBackendId, key: string): string => `${backend}.${key}`;
 
+/** An enum row stored as a number (PropDef.enumValues): label <-> value by index. */
+const isNumericEnum = (p: RenderPropSpec): boolean => p.type === "enum" && p.enumValues !== undefined;
+
+function enumLabelOf(p: RenderPropSpec, v: number): string | undefined {
+  const i = (p.enumValues ?? []).indexOf(v);
+  return i >= 0 ? p.options?.[i] : undefined;
+}
+
+function enumValueOf(p: RenderPropSpec, label: string): number | undefined {
+  const i = (p.options ?? []).indexOf(label);
+  return i >= 0 ? p.enumValues?.[i] : undefined;
+}
+
 function catalogType(p: RenderPropSpec): SceneValueType {
   switch (p.type) {
     case "boolean":
@@ -77,6 +90,8 @@ function catalogType(p: RenderPropSpec): SceneValueType {
       return "integer";
     case "real":
       return "real";
+    case "enum":
+      return isNumericEnum(p) ? "real" : "string";
     default:
       return "string";
   }
@@ -127,6 +142,7 @@ function accepts(p: RenderPropSpec, v: unknown): boolean {
       return true;
     }
     case "enum":
+      if (isNumericEnum(p)) return typeof v === "number" && (p.enumValues ?? []).includes(v);
       return typeof v === "string" && (p.options ?? []).includes(v);
     case "combo":
       // Presets only suggest: a typed value (450 DPI) is as valid as a preset.
@@ -170,18 +186,22 @@ export function withValues(
       return placeholderValue(row);
     };
 
+    // A numeric enum row shows its option label; the scene holds the number.
+    const shown = (v: string | number | boolean): string | number | boolean =>
+      isNumericEnum(row) && typeof v === "number" ? (enumLabelOf(row, v) ?? v) : v;
+
     const v = values[path];
     if (v === undefined) {
       const fb = fallback();
       warnings.push(`${path}: missing, using ${JSON.stringify(fb)}`);
-      return { ...row, value: fb };
+      return { ...row, value: shown(fb) };
     }
     if (!accepts(row, v)) {
       const fb = fallback();
       warnings.push(`${path}: unacceptable value ${JSON.stringify(v)}, using ${JSON.stringify(fb)}`);
-      return { ...row, value: fb };
+      return { ...row, value: shown(fb) };
     }
-    return { ...row, value: v };
+    return { ...row, value: shown(v) };
   });
 }
 
@@ -298,13 +318,16 @@ export function valuesFromSnapshot(
   opts: { backendExplicit: boolean } = { backendExplicit: true },
 ): RenderSettingsValues {
   const out: RenderSettingsValues = { backend: opts.backendExplicit ? s.backend : "" };
-  const put = (path: string, value: string | number | boolean): void => {
+  const put = (path: string, value: string | number | boolean, row?: PropDef): void => {
     const type = SCENE_VALUE_TYPES[path];
     if (!type) return;
-    out[path] = coerce(type, value);
+    // A numeric enum row holds its option label; the scene gets the number.
+    const stored =
+      row && isNumericEnum(row) && typeof value === "string" ? (enumValueOf(row, value) ?? value) : value;
+    out[path] = coerce(type, stored);
   };
-  for (const p of s.commonProps) put(p.key, p.value);
-  for (const p of s.backendProps) put(blockKey(s.backend, p.key), p.value);
+  for (const p of s.commonProps) put(p.key, p.value, p);
+  for (const p of s.backendProps) put(blockKey(s.backend, p.key), p.value, p);
   if (s.backend === "umbreon_npr") {
     put(blockKey("umbreon_npr", "hatchLayersSpec"), s.hatch?.layersSpec ?? "");
     put(blockKey("umbreon_npr", "hatchToneSpec"), s.hatch?.toneSpec ?? "");

@@ -99,11 +99,13 @@ const UMBREON_PROPS: RenderPropSpec[] = [
   // --- Edges ---
   // Crease lines (edges edge mode only): folds of the surface normal sharper
   // than this angle ink as edge lines; a larger angle inks fewer, sharper
-  // folds. The C++ side parses the string ("Off" = no crease lines).
+  // folds. A dropdown over the C++ real property (-1 = no crease lines), so
+  // an older libcuemol2 and an older scene keep reading and writing numbers.
   // The POV-Ray-only `edgeRise` (how far its 3D edge geometry is lifted off
   // the surface) is not listed: umbreon's screen-space strokes never use it.
   { key: "creaseLimit",   label: "Crease angle (deg)", type: "enum", group: "Edges",
-    options: ["Off", "15", "30", "45", "60", "90", "120"] },
+    options: ["Off", "15", "30", "45", "60", "90", "120"],
+    enumValues: [-1, 15, 30, 45, 60, 90, 120] },
   // Contact contours BETWEEN renderers: the intersection circle where one
   // renderer's geometry plunges into another's surface (a stick entering a
   // ribbon). It is surface contact, not occlusion, so neither umbreon nor the

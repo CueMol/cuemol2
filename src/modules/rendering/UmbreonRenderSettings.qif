@@ -50,12 +50,12 @@ runtime_class UmbreonRenderSettings
   default lightRadius = 0.0;
 
   /// Crease lines (edges edge mode only): a boundary where the surface normal
-  /// folds by more than this angle inks as an edge line, in the renderer's
-  /// edge color and width. "Off" = no crease lines; otherwise the angle in
-  /// degrees ("15", "30", "45", "60", "90", "120" in the GUI; any positive
-  /// number parses). A larger angle inks fewer, sharper folds.
-  property string creaseLimit => m_creaseLimit;
-  default creaseLimit = "Off";
+  /// folds by more than this angle (degrees) inks as an edge line, in the
+  /// renderer's edge color and width. -1 (or 0) = no crease lines. A larger
+  /// angle inks fewer, sharper folds. The GUI offers a fixed set (Off, 15,
+  /// 30, 45, 60, 90, 120); the property itself stays a real.
+  property real creaseLimit => m_creaseLimit;
+  default creaseLimit = -1.0;
   property real edgeRise => m_edgeRise;
   default edgeRise = 0.5;
   /// Draw the depth-continuous contact contour between different edge groups

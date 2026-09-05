@@ -43,6 +43,12 @@ export interface PropDef {
   decimals?: number;
   /** For enum types: valid options. For combo types: preset suggestions. */
   options?: string[];
+  /**
+   * For enum types whose C++ property is a NUMBER: the stored value of each
+   * option, by index. The editor shows the option label; the scene holds the
+   * number (a crease angle dropdown over a real property, say).
+   */
+  enumValues?: number[];
   /** Accordion group this property belongs to in the editor. */
   group: string;
   /**
