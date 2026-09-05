@@ -49,6 +49,9 @@ runtime_class UmbreonRenderSettings
   property real lightRadius => m_lightRadius;
   default lightRadius = 0.0;
 
+  /// Crease lines (edges edge mode only): a boundary where the surface normal
+  /// folds by more than this angle (degrees) inks as an edge line, in the
+  /// renderer's edge color and width. -1 (or 0) = no crease lines.
   property real creaseLimit => m_creaseLimit;
   default creaseLimit = -1.0;
   property real edgeRise => m_edgeRise;

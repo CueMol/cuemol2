@@ -1245,6 +1245,12 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.strokeEdges.silhouette = true;
     opt.strokeEdges.border = true;
     opt.strokeEdges.crease = m_pImpl->anyCrease;
+    // The crease limit is the fold angle in DEGREES (the GUI catalog ranges
+    // it 0..180): a boundary where the shading normals fold by more than it
+    // inks as a crease. Forward it; umbreon's own default (30) applied
+    // whatever the setting said before.
+    if (m_pImpl->anyCrease && m_dCreaseLimit > 0.0)
+      opt.strokeEdges.creaseAngleDeg = float(m_dCreaseLimit);
     // Cross-section CONTACT contours (depth-continuous intersections, e.g. a
     // stick plunging into another renderer's ribbon). Off by default in both
     // umbreon and the GL view: the border/silhouette classes ink only across a

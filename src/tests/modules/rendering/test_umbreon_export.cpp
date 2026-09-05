@@ -2175,3 +2175,91 @@ TEST(UmbreonExport, FarClipRemovesGeometryBeyondTheSlab)
     ASSERT_EQ(inside.size(), static_cast<std::size_t>(64 * 64 * 3));
     EXPECT_GT(inside[c + 0], 30);  // red blends through
 }
+
+namespace {
+
+/// A roof-shaped sheet in one ELT_EDGES section: two faces meeting along the
+/// y axis at x = 0 (the ridge, nearest the camera), each receding by 25 deg,
+/// so the shading normals fold by 50 deg across the ridge. The center row
+/// crosses the sheet's two outer silhouettes (x = -+2) and, when the crease
+/// limit lies below 50 deg, the ridge crease as a third run.
+void renderFoldedSheet(double creaseLimit, std::size_t &outInk, int &outRuns)
+{
+    const double kViewH = 6.0;
+    const double kLineScale = kViewH / kEdgeModeDim;
+    const double t = std::tan(25.0 * M_PI / 180.0);
+    const double nl = std::sqrt(1.0 + t * t);
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_EDGES);
+    ctx.setEdgeLineWidth(2.0 * kLineScale);  // a 2 px band
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    ctx.setCreaseLimit(creaseLimit);
+
+    ctx.startRender();
+    ctx.startSection("roof");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.startTriangles();
+    // left face z = x * t (x < 0): normal (-t, 0, 1) / |.|
+    const Vector4D nL(-t / nl, 0.0, 1.0 / nl);
+    ctx.normal(nL); ctx.vertex(Vector4D(-2.0, -2.0, -2.0 * t));
+    ctx.normal(nL); ctx.vertex(Vector4D(0.0, -2.0, 0.0));
+    ctx.normal(nL); ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.normal(nL); ctx.vertex(Vector4D(-2.0, -2.0, -2.0 * t));
+    ctx.normal(nL); ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.normal(nL); ctx.vertex(Vector4D(-2.0, 2.0, -2.0 * t));
+    // right face z = -x * t (x > 0): normal (t, 0, 1) / |.|
+    const Vector4D nR(t / nl, 0.0, 1.0 / nl);
+    ctx.normal(nR); ctx.vertex(Vector4D(0.0, -2.0, 0.0));
+    ctx.normal(nR); ctx.vertex(Vector4D(2.0, -2.0, -2.0 * t));
+    ctx.normal(nR); ctx.vertex(Vector4D(2.0, 2.0, -2.0 * t));
+    ctx.normal(nR); ctx.vertex(Vector4D(0.0, -2.0, 0.0));
+    ctx.normal(nR); ctx.vertex(Vector4D(2.0, 2.0, -2.0 * t));
+    ctx.normal(nR); ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kEdgeModeDim;
+    prm.height = kEdgeModeDim;
+    prm.supersample = 2;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    ASSERT_EQ(pix.size(),
+              static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
+
+    countEdgeInk(pix, outInk, outRuns);
+}
+
+}  // namespace
+
+// The crease limit is the fold angle in degrees: a 50 deg ridge inks under a
+// 30 deg limit and not under a 70 deg one (the limit used to be an on/off
+// gate only, umbreon's own 30 deg threshold applying whatever it said).
+TEST(UmbreonExport, CreaseLimitIsTheFoldAngle)
+{
+    std::size_t ink30 = 0, ink70 = 0, inkOff = 0;
+    int runs30 = 0, runs70 = 0, runsOff = 0;
+
+    renderFoldedSheet(30.0, ink30, runs30);
+    renderFoldedSheet(70.0, ink70, runs70);
+    renderFoldedSheet(-1.0, inkOff, runsOff);
+
+    EXPECT_EQ(runs30, 3);   // two outer silhouettes + the ridge crease
+    EXPECT_EQ(runs70, 2);   // the 50 deg fold is below the limit
+    EXPECT_EQ(runsOff, 2);  // no crease lines at all
+    EXPECT_GT(ink30, ink70 + 30);
+}

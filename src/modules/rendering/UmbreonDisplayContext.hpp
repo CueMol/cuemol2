@@ -255,6 +255,8 @@ namespace render {
     // appendIntData / render() -- no CueMol-side outline geometry is built.
 
     void enableEdgeLines(bool b) { m_bEnableEdgeLines = b; }
+    /// Crease fold angle in degrees (edges edge mode only); <= 0 = no crease
+    /// lines. Forwarded to umbreon strokeEdges.creaseAngleDeg.
     void setCreaseLimit(double d) { m_dCreaseLimit = d; }
     void setEdgeRise(double d) { m_dEdgeRise = d; }
     /// Edge group of the next section (Scene::displayRendImpl calls this
