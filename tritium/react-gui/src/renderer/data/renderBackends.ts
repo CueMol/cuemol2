@@ -123,9 +123,10 @@ const UMBREON_PROPS: RenderPropSpec[] = [
   // OIDN denoiser on, the umbreon guide's low / medium / high / reference
   // steps (8 / 32 / 64 / 256) converge to the same picture and differ only
   // in residual detail and animation stability, so a dropdown of those
-  // counts is all the choice that is worth offering.
+  // counts is all the choice that is worth offering. The C++ property is an
+  // integer (any count); the dropdown is this catalog's restriction only.
   { key: "giSamples",     label: "GI samples",         type: "enum", group: "Global Illumination",
-    options: ["8", "32", "64", "256"] },
+    options: ["8", "32", "64", "256"], enumValues: [8, 32, 64, 256] },
   // giIntensity / giEnvIntensity (umbreon's indirect gain and sky multiplier)
   // are deliberately NOT offered: the energy balance below covers the same
   // ground more directly, and they stay at their neutral 1.0 on the exporter.

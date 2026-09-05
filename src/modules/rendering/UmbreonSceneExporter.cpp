@@ -485,12 +485,11 @@ LString UmbreonSceneExporter::applyRenderSettings(
     m_sHatchToneSpec = ub.s("hatchToneSpec", "");
   } else {
     //////////
-    // Diffuse global illumination. The sample count is stored as the GUI's
-    // option string; giIntensity / giEnvIntensity are not stored and stay
-    // at the exporter's neutral 1.0 (the energy balance covers that ground).
-    int nSamples = 32;
-    if (!ub.s("giSamples", "32").toInt(&nSamples) || nSamples <= 0) nSamples = 32;
-    m_nGiSamples = nSamples;
+    // Diffuse global illumination. giIntensity / giEnvIntensity are not
+    // stored and stay at the exporter's neutral 1.0 (the energy balance
+    // covers that ground).
+    m_nGiSamples = ub.i("giSamples", m_nGiSamples);
+    if (m_nGiSamples <= 0) m_nGiSamples = 32;
     denoiseMode(ub.s("denoise", "OIDN"), m_bGiDenoise, m_nDenoiser);
     m_bGiSkyGradient = ub.b("giSkyGradient", m_bGiSkyGradient);
     m_sGiGroundColor = ub.s("giGroundColor", m_sGiGroundColor);

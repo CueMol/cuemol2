@@ -76,9 +76,10 @@ runtime_class UmbreonRenderSettings
 
   property boolean useGI => m_useGI;
   default useGI = true;
-  /// Gather samples per pixel as the GUI option string ("8" | "32" | ...)
-  property string giSamples => m_giSamples;
-  default giSamples = "32";
+  /// GI gather samples per pixel. Any positive count; the GUI offers a
+  /// fixed set (8, 32, 64, 256).
+  property integer giSamples => m_giSamples;
+  default giSamples = 32;
   /// "OIDN" | "A-trous" | "None"
   property string denoise => m_denoise;
   default denoise = "OIDN";

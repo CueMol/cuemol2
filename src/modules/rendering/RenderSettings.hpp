@@ -69,7 +69,7 @@ namespace render {
     bool m_contactEdges;
     double m_outlineFarDepth;
     bool m_useGI;
-    LString m_giSamples;
+    int m_giSamples;
     LString m_denoise;
     bool m_giSkyGradient;
     LString m_giGroundColor;
