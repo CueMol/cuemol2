@@ -101,12 +101,12 @@ namespace render {
     /// every contact line.
     bool contactEdges = true;
     /// Silhouette (outline) edge mode: depth, as a fraction of the fog range
-    /// (0 = the view center where the fog starts, 1 = the fog end, which is
-    /// also the far clip plane), beyond which a surface of the same edge
-    /// group no longer hides the contour of a nearer object: the contour is
-    /// then drawn as in the edges mode (umbreon strokeEdges.outlineFarVz).
-    /// 0.95 = surfaces more than 95% sunk into the fog no longer hide
-    /// contours; 1 disables the rule.
+    /// (0 = the view center where the fog starts, 1 = the fog end), beyond
+    /// which a surface of the same edge group no longer hides the contour of
+    /// a nearer object: the contour is then drawn as in the edges mode
+    /// (umbreon strokeEdges.outlineFarVz). 0.95 = surfaces more than 95% sunk
+    /// into the fog no longer hide contours; at 1 only the fully fogged zone
+    /// between the fog end and the far clip plane (dist + slab) lies beyond.
     double outlineFarDepth = 0.95;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the

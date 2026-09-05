@@ -2081,7 +2081,7 @@ void renderOutlineFarDepth(double depth, std::size_t &outInk, int &outRuns)
 
 /// A translucent BLUE front (section alpha 0.5, eye z 0 = view-z 100) over an
 /// opaque RED back at eye z `zBack`, black background, slab 2: fog 100..101
-/// and the far clip plane at 101.
+/// and the far clip plane at 102 (view center + slab, as in the GL view).
 std::vector<unsigned char> renderTranslucentOverBack(double zBack)
 {
     UmbreonDisplayContext ctx;
@@ -2155,15 +2155,16 @@ TEST(UmbreonExport, OutlineFarDepthInksContoursOverFoggedSurfaces)
     EXPECT_GT(inkBeyond, inkWithin + 30);
 }
 
-// The far clip plane at the fog end: geometry beyond it is not rendered at
-// all. Visible only through a translucent surface in front of it -- the fog
-// is applied at the first hit's depth, so a fully fogged back used to blend
-// through an unfogged translucent front.
-TEST(UmbreonExport, FarClipRemovesFullyFoggedGeometry)
+// The far clip plane at the GL view's far plane (view center + slab depth):
+// geometry beyond it is not rendered at all. Visible only through a
+// translucent surface in front of it -- the fog is applied at the first hit's
+// depth, so an opaque back beyond the plane used to blend through an unfogged
+// translucent front.
+TEST(UmbreonExport, FarClipRemovesGeometryBeyondTheSlab)
 {
     const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
 
-    // Back at eye z -3 = view-z 103, beyond the fog end (101): clipped away.
+    // Back at eye z -3 = view-z 103, beyond the far plane (102): clipped away.
     const std::vector<unsigned char> beyond = renderTranslucentOverBack(-3.0);
     ASSERT_EQ(beyond.size(), static_cast<std::size_t>(64 * 64 * 3));
     EXPECT_LT(beyond[c + 0], 30);  // no red blends through

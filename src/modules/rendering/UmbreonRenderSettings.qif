@@ -60,10 +60,11 @@ runtime_class UmbreonRenderSettings
   default contactEdges = true;
   /// Silhouette (outline) edge mode: how deep into the fog a surface may lie
   /// and still hide the contour of a nearer object of the same edge group,
-  /// as a fraction of the fog range (0 = the view center, 1 = the fog end,
-  /// where the far clip plane removes everything). A contour over a surface
-  /// beyond this depth is drawn as in the edges mode. 0.95 = surfaces more
-  /// than 95% sunk into the fog no longer hide contours.
+  /// as a fraction of the fog range (0 = the view center, 1 = the fog end).
+  /// A contour over a surface beyond this depth is drawn as in the edges
+  /// mode. 0.95 = surfaces more than 95% sunk into the fog no longer hide
+  /// contours; at 1 only fully fogged surfaces (up to the far clip plane at
+  /// the view center + slab depth) lie beyond.
   property real outlineFarDepth => m_outlineFarDepth;
   default outlineFarDepth = 0.95;
 

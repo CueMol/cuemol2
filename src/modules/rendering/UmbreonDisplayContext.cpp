@@ -917,10 +917,10 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // mesh at (m_dClipZ = slab/2 in eye z, the GL view's dist - slab/2) becomes
   // clipNear directly.
   //
-  // The near plane follows the slab switch; the far plane is set below, at the
-  // fog end. Secondary rays (shadow / AO / GI) stay unclipped in umbreon,
-  // matching the interactive view where the slab is a display device, not
-  // scene geometry.
+  // The near plane follows the slab switch; the far plane is set below, where
+  // the GL projection puts it. Secondary rays (shadow / AO / GI) stay
+  // unclipped in umbreon, matching the interactive view where the slab is a
+  // display device, not scene geometry.
   if (m_bUseClipZ) {
     const double clipNear = m_dViewDist - m_dSlabDepth * 0.5;
     // A near plane at or behind the camera clips nothing; leaving it at -inf
@@ -946,19 +946,21 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // frame to the background color; skip fog entirely in that case.
   scene.fog.enabled = (fogEnd > fogStart);
 
-  // FAR clip plane at the fog end. Beyond it every surface is fully fogged:
-  // its color is the fog color, which is the background color (alpha 0 on
-  // the transparent-background path), so removing that geometry changes
-  // nothing visible -- the GL view's own far plane sits farther out, at
-  // dist + slabDepth, behind the same fully fogged zone. What it does change
-  // is the edge pass: a fully fogged surface behind a nearer object of the
-  // same edge group is no longer a surface of the group that a silhouette-
-  // mode section treats as its own interior; the nearer object's contour
-  // over it becomes a true silhouette against the background. Independent of
-  // the slab switch, since the fog is.
-  if (scene.fog.enabled) {
-    scene.clipFar = float(fogEnd);
-    MB_DPRINTLN("Umbreon> far clip plane at the fog end: view-z %f", fogEnd);
+  // FAR clip plane where the GL view's projection puts it: dist + slabDepth
+  // (GUIView::setUpProjMat's slabfar), half a slab behind the fog end. The
+  // fog reaches the background color at the fog end, so everything between
+  // the two planes is drawn fully fogged (invisible) and everything beyond
+  // the far plane is not drawn at all, as in the interactive view. For the
+  // edge pass a surface removed by the far plane is no longer a surface of
+  // its edge group; the outline far depth below handles the fully fogged
+  // zone in front of it. Like the GL far plane, independent of the slab
+  // switch (which only cuts the near side).
+  {
+    const double clipFar = m_dViewDist + m_dSlabDepth;
+    if (clipFar > 0.0) {
+      scene.clipFar = float(clipFar);
+      MB_DPRINTLN("Umbreon> far clip plane: view-z %f", clipFar);
+    }
   }
 
   // Lighting energy balance, in the POV exporter's terms (_light_inten /
@@ -1255,8 +1257,8 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.strokeEdges.contact = prm.contactEdges;
     // Outline far-side depth (UmbreonRenderParams::outlineFarDepth): a
     // fraction of the fog range mapped to linear view-z. At 1 it is the fog
-    // end, where the far clip plane already removed everything, so the rule
-    // never fires; without fog it stays off.
+    // end: only the fully fogged zone up to the far clip plane lies beyond
+    // it. Without fog it stays off.
     opt.strokeEdges.outlineFarVz = std::numeric_limits<float>::infinity();
     if (scene.fog.enabled) {
       const double t = std::min(1.0, std::max(0.0, prm.outlineFarDepth));

@@ -107,7 +107,8 @@ const UMBREON_PROPS: RenderPropSpec[] = [
   { key: "contactEdges",  label: "Contact edges",      type: "boolean", group: "Edges" },
   // Silhouette mode: fraction of the fog range (0 = view center, 1 = fog end)
   // beyond which a fogged surface of the same edge group no longer hides a
-  // nearer object's contour (drawn as in the edges mode there).
+  // nearer object's contour (drawn as in the edges mode there). The far clip
+  // plane sits half a slab behind the fog end, as in the GL view.
   { key: "outlineFarDepth", label: "Outline far depth", type: "real", group: "Edges", min: 0, max: 1, step: 0.01 },
   // --- Global Illumination (pt1 path-traced integrator; off by default) ---
   { key: "useGI",         label: "Enable GI",          type: "boolean", group: "Global Illumination" },
