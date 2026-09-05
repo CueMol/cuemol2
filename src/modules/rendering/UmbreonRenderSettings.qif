@@ -53,8 +53,11 @@ runtime_class UmbreonRenderSettings
   default creaseLimit = -1.0;
   property real edgeRise => m_edgeRise;
   default edgeRise = 0.5;
+  /// Draw the depth-continuous contact contour between different edge groups
+  /// (renderer property egroup; unnamed renderers group per object). Inside
+  /// an edge group a contact never inks. False suppresses every contact line.
   property boolean contactEdges => m_contactEdges;
-  default contactEdges = false;
+  default contactEdges = true;
 
   property boolean useGI => m_useGI;
   default useGI = true;

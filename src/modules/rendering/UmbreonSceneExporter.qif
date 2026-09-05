@@ -116,10 +116,10 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   property real edgeRise => m_dEdgeRise;
 
   /// ink the depth-CONTINUOUS contact/intersection contour between DIFFERENT
-  /// renderer sections (the circle where a stick plunges into another
-  /// renderer's ribbon surface). Off by default: such a boundary is surface
-  /// contact rather than occlusion, and the interactive GL view draws no line
-  /// there either. Same-section contact never inks whatever this says.
+  /// edge groups (the circle where a stick plunges into the ribbon of another
+  /// object). Renderers are grouped by their egroup property (unnamed ones
+  /// per object); inside a group a contact never inks whatever this says.
+  /// On by default; false suppresses every contact line.
   property boolean contactEdges => m_bContactEdges;
 
   //////////

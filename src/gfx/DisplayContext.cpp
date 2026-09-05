@@ -435,6 +435,11 @@ void DisplayContext::setEdgeLineWidth(double w)
   m_dEdgeLineWidth = w;
 }
 
+void DisplayContext::setEdgeGroup(const LString &)
+{
+  // Only the umbreon backend groups renderers for its edge pass.
+}
+
 double DisplayContext::getEdgeLineWidth() const
 {
   return m_dEdgeLineWidth;

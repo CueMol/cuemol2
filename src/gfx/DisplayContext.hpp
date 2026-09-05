@@ -210,6 +210,12 @@ public:
     virtual ColorPtr getEdgeLineColor() const;
     virtual void setEdgeLineColor(const ColorPtr &c);
 
+    /// Edge group of the renderer about to be displayed (umbreon
+    /// rendering): `name` is the renderer's egroup property; empty means
+    /// "group by the edge settings themselves". The base implementation
+    /// ignores it.
+    virtual void setEdgeGroup(const LString &name);
+
     // Fog
     virtual void enableFog(bool b);
     bool isFogEnabled() const
