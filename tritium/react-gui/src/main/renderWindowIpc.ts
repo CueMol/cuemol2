@@ -37,12 +37,15 @@ import {
 } from './renderHistory'
 import { handleInvoke } from './ipc/handleInvoke'
 import { makeWindowRelay } from './ipc/windowRelay'
+import type { RenderActivityGuard } from './renderActivity'
 import { withMenuBlocked } from './menu'
 
 export interface RenderWindowIpcDeps {
   mainWindow: BrowserWindow
   getRenderWindow: () => BrowserWindow | null
   openRenderWindow: () => void
+  /** Sees every job-state update the main window pushes (see renderActivity.ts). */
+  renderActivity: RenderActivityGuard
 }
 
 /**
@@ -88,7 +91,7 @@ function makeModeRelay(getRenderWindow: () => BrowserWindow | null) {
  * they only hold the getter.
  */
 export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
-  const { mainWindow, getRenderWindow, openRenderWindow } = deps
+  const { mainWindow, getRenderWindow, openRenderWindow, renderActivity } = deps
 
   const modeRelay = makeModeRelay(getRenderWindow)
 
@@ -110,6 +113,9 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
 
   // Main window -> render window (state forward; silent drop when closed)
   handleInvoke(IPC.RENDER_WINDOW_STATE, (_event, update) => {
+    // Before the forward: the guard must see every job change, and the
+    // forward below is dropped while the render window is closed.
+    renderActivity.observe(update)
     const rw = getRenderWindow()
     if (rw && !rw.isDestroyed()) {
       rw.webContents.send(IPC.RENDER_WINDOW_STATE_PUSH, update)

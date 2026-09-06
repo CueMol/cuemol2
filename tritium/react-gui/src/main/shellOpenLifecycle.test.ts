@@ -25,6 +25,7 @@ let whenReadyCb: (() => void) | null = null
 
 const app = {
   setName: vi.fn(),
+  commandLine: { appendSwitch: vi.fn() },
   whenReady: vi.fn(() => ({
     then: vi.fn((cb: () => void) => {
       whenReadyCb = cb

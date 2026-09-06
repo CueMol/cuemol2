@@ -22,15 +22,7 @@ import {
   type RenderResult,
   buildRenderResult,
 } from "@renderer/data/renderResult";
-
-/** Lifecycle status of a render job. */
-export type RenderJobStatus =
-  | "exporting"
-  | "running"
-  | "blending"
-  | "done"
-  | "error"
-  | "cancelled";
+import { type RenderJobStatus, isActiveRenderJobStatus } from "@shared/renderJobStatus";
 
 /** State of a single render job. */
 export interface RenderJob {
@@ -70,11 +62,9 @@ export interface RenderStartParams {
   encodeOnly?: { frameCount: number };
 }
 
-const ACTIVE_STATUSES: RenderJobStatus[] = ["exporting", "running", "blending"];
-
 /** True (and narrows) while the job is still progressing. */
 export function isRenderJobActive(job: RenderJob | null): job is RenderJob {
-  return job !== null && ACTIVE_STATUSES.includes(job.status);
+  return job !== null && isActiveRenderJobStatus(job.status);
 }
 
 /** Cap on retained log lines. */
