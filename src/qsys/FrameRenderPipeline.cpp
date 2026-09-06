@@ -25,6 +25,13 @@ void FrameRenderPipeline::setSize(gfx::DisplayContext *pdc, int w, int h, bool h
 {
     if (pdc == nullptr) return;
 
+    // A change of the target set or size leaves the intermediate targets stale
+    // for presentLast(); the next render() records a fresh final stage.
+    if (m_pAOSceneRT == nullptr || m_pAOSceneRT->getWidth() != w ||
+        m_pAOSceneRT->getHeight() != h || m_pAOSceneRT->hasNormal() != aoEnabled) {
+        m_lastStage.kind = StageRecord::NONE;
+    }
+
     // The normal attachment (MRT) lets the GTAO pass use real geometry
     // normals instead of depth-reconstructed ones; it exists only for the AO
     // passes. Attachment flags are fixed at creation, so recreate the scene
@@ -48,6 +55,12 @@ void FrameRenderPipeline::setSize(gfx::DisplayContext *pdc, int w, int h, bool h
     if (aoEnabled) {
         const int aoW = halfRes ? (w + 1) / 2 : w;
         const int aoH = halfRes ? (h + 1) / 2 : h;
+        // A resized AO term (half-res toggle) no longer matches the recorded
+        // composite constants.
+        if (m_pAoDenRT != nullptr &&
+            (m_pAoDenRT->getWidth() != aoW || m_pAoDenRT->getHeight() != aoH)) {
+            m_lastStage.kind = StageRecord::NONE;
+        }
 
         // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
         const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
@@ -160,6 +173,7 @@ void FrameRenderPipeline::dispose()
         m_pAOSceneRT = nullptr;
     }
     m_jitterSupported = false;
+    m_lastStage.kind = StageRecord::NONE;
 }
 
 bool FrameRenderPipeline::isReady() const
@@ -176,6 +190,71 @@ gfx::RenderTarget *FrameRenderPipeline::selectOutRT(const FrameRenderParams &par
     // (nullptr = default framebuffer).
     return (params.jitterActive && m_jitterSupported) ? m_pJitterSampleRT
                                                       : params.outRT;
+}
+
+int FrameRenderPipeline::getWidth() const
+{
+    return (m_pAOSceneRT != nullptr) ? m_pAOSceneRT->getWidth() : 0;
+}
+
+int FrameRenderPipeline::getHeight() const
+{
+    return (m_pAOSceneRT != nullptr) ? m_pAOSceneRT->getHeight() : 0;
+}
+
+bool FrameRenderPipeline::hasCachedStage() const
+{
+    if (!isReady()) return false;
+    if (m_lastStage.aoActive && m_pAoDenRT == nullptr) return false;
+    switch (m_lastStage.kind) {
+        case StageRecord::COMPOSITE:
+            return true;
+        case StageRecord::FXAA:
+            return m_pCompRT != nullptr;
+        case StageRecord::SMAA:
+            return m_pCompRT != nullptr && m_pSmaaWeightRT != nullptr;
+        case StageRecord::JITTER:
+            return m_pJitterAccumRT != nullptr && m_jitterSupported;
+        default:
+            return false;
+    }
+}
+
+void FrameRenderPipeline::presentStage(gfx::DisplayContext *pdc, const StageRecord &st)
+{
+    gfx::RenderTarget *pAoDen = st.aoActive ? m_pAoDenRT : nullptr;
+    switch (st.kind) {
+        case StageRecord::COMPOSITE:
+            m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, pAoDen, st.aoc);
+            break;
+        case StageRecord::FXAA:
+            m_pAOPostProc->drawFxaa(pdc, m_pCompRT, st.aoc);
+            break;
+        case StageRecord::SMAA:
+            m_pAOPostProc->drawSmaaBlend(pdc, m_pCompRT, m_pSmaaWeightRT, st.aoc);
+            break;
+        case StageRecord::JITTER:
+            m_pAOPostProc->drawJitterCompose(pdc, m_pJitterAccumRT, st.dispWeight);
+            break;
+        default:
+            break;
+    }
+}
+
+bool FrameRenderPipeline::presentLast(gfx::DisplayContext *pdc)
+{
+    if (pdc == nullptr || !hasCachedStage()) return false;
+
+    // Same state as the live path's final stage: the fullscreen pass replaces
+    // the pixels of the bound (default) framebuffer.
+    pdc->setDepthTestEnabled(false);
+    pdc->setBlendEnabled(false);
+    presentStage(pdc, m_lastStage);
+    pdc->setBlendEnabled(true);
+    pdc->setDepthTestEnabled(true);
+
+    if (m_lastStage.blitDepth) m_pAOSceneRT->blitDepthToDefault();
+    return true;
 }
 
 bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScene,
@@ -259,18 +338,24 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
 
     if (params.enablePostAA) {
         // ---- Live path: composite scene color * denoised AO, then the selected
-        // post-process AA, then optional temporal-jitter accumulate/display. ----
+        // post-process AA, then optional temporal-jitter accumulate/display. The
+        // final stage goes through presentStage() and is recorded, so
+        // presentLast() can replay it for a present-only frame. ----
         const int aaMethod = pScene->getAAMethod();
         const bool postAA = (aaMethod == Scene::AA_FXAA ||
                              aaMethod == Scene::AA_SMAA) &&
                             m_pCompRT != nullptr;
-        pdc->setDepthTestEnabled(false);
-        if (postAA) {
-            // The post-AA passes write data (SMAA edges have alpha 0, the
-            // weights' alpha carries data); with GL_BLEND on their output would be
-            // discarded. Disable it for the off-screen AA passes.
-            pdc->setBlendEnabled(false);
+        StageRecord st;
+        st.aoc = aoc;
+        st.aoActive = aoActive;
+        st.blitDepth = params.blitDepthToDefault;
 
+        // The fullscreen passes replace pixels. The post-AA passes write data
+        // (SMAA edges have alpha 0, the weights' alpha carries data); with
+        // GL_BLEND on their output would be discarded.
+        pdc->setDepthTestEnabled(false);
+        pdc->setBlendEnabled(false);
+        if (postAA) {
             m_pCompRT->bind();
             m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, pAoDen, aoc);
             m_pCompRT->unbind();
@@ -287,22 +372,20 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
                 m_pSmaaWeightRT->clear(0.0f, 0.0f, 0.0f, 0.0f);
                 m_pAOPostProc->drawSmaaWeights(pdc, m_pSmaaEdgeRT, aoc);
                 m_pSmaaWeightRT->unbind();
-                // 3. Neighborhood blending -> outRT (sample) or default fb.
-                if (outRT != nullptr) outRT->bind();
-                m_pAOPostProc->drawSmaaBlend(pdc, m_pCompRT, m_pSmaaWeightRT, aoc);
-                if (outRT != nullptr) outRT->unbind();
+                // 3. Neighborhood blending is the final stage.
+                st.kind = StageRecord::SMAA;
             } else {
-                if (outRT != nullptr) outRT->bind();
-                m_pAOPostProc->drawFxaa(pdc, m_pCompRT, aoc);
-                if (outRT != nullptr) outRT->unbind();
+                st.kind = StageRecord::FXAA;
             }
-
-            pdc->setBlendEnabled(true);
         } else {
-            if (outRT != nullptr) outRT->bind();
-            m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, pAoDen, aoc);
-            if (outRT != nullptr) outRT->unbind();
+            st.kind = StageRecord::COMPOSITE;
         }
+
+        // Final stage of this sample -> outRT (jitter sample target / caller
+        // target) or the default framebuffer.
+        if (outRT != nullptr) outRT->bind();
+        presentStage(pdc, st);
+        if (outRT != nullptr) outRT->unbind();
 
         // Temporal-jitter accumulate + display. The final color of this sample is
         // in m_pJitterSampleRT.
@@ -320,19 +403,21 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
             pdc->setBlendEnabled(false);
             m_pJitterAccumRT->unbind();
 
-            // Display the normalized partial average to the default framebuffer.
-            const float disp =
-                float(params.jitterCount) / float(params.jitterIndex + 1);
-            m_pAOPostProc->drawJitterCompose(pdc, m_pJitterAccumRT, disp);
-
-            // Restore over-blend for the UI overlay drawn afterwards.
-            pdc->setBlendEnabled(true);
+            // Display the normalized partial average to the default framebuffer;
+            // this display is the stage a present-only frame replays.
+            st.kind = StageRecord::JITTER;
+            st.dispWeight = float(params.jitterCount) / float(params.jitterIndex + 1);
+            presentStage(pdc, st);
         }
+        // Restore over-blend / depth test for the UI overlay drawn afterwards.
+        pdc->setBlendEnabled(true);
         pdc->setDepthTestEnabled(true);
 
         // Restore the scene depth into the default framebuffer so the UI overlays
         // depth-test against the scene as usual.
         if (params.blitDepthToDefault) m_pAOSceneRT->blitDepthToDefault();
+
+        m_lastStage = st;
     } else {
         // ---- Exporter path: composite only (color * AO, edge-aware upsampled
         // when half res) -> outRT. No spatial post-AA. Blend off so the

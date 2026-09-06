@@ -100,8 +100,9 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   `loadName(atom2)`。
 - 主鎖系: `MainChainRenderer::calcHitName(rho, pRes1, pRes2)` (= `rendHitResid` と同じ pivot 原子)。
   `SplineRenderer::calcHitName(par, pCoeff)`、`Ribbon2Renderer::calcHitName / calcCoilHitName` を `calcColor`
-  の隣で呼ぶ。`TubeSection::doTess` と `RibbonRenderer` / `TubeRenderer` の strip ループは前リングの name を
-  保持し (`m_prevName`)、残基境界がリング間に落ちる (provoking vertex = LAST で三角形ごとにどちらかの残基)。
+  の隣で呼ぶ。`TubeSection::doTess` は前リングと現在リングの間の strip 全体に **現在の name (区間単位)** を
+  付けるので、残基境界はリングの上にぴったり乗る。リングごとに name を変えると provoking vertex (LAST) により
+  三角形が交互に前後の残基に属し、境界がノコギリ状になる (hover highlight で目立った)。
 - GpuPrim 直描き (CPK2 / BallStick / Simple / Trace): `displayPick()` は `display()` を呼ぶだけ。coord-texture
   経路の prim は pick program で描き、DL fallback 経路は名前付き DL がそのまま描かれる。pick program を持たない
   `SphereGpuPrim` / `CylinderGpuPrim` (座標属性版) は `isPickDraw()` で何も描かない (この経路は pick 不可)。
@@ -153,6 +154,10 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 
 ## 5. 契約行
 - `worker/shared/calls/navi.ts`: `naviHover: { args: NaviHoverArgs; result: NaviHoverResult }` + `NAVI_KEYS`。
+  `NaviHoverArgs.highlight` (view の hover highlight を同じ往復で更新) と `naviHoverClear: { args: { viewId };
+  result: { ok } }` (§10)。
+- `View.qif`: `setHoverHit(rend_id, atom_id, symm_id)` / `clearHoverHit()` (§10)。`ViewInputConfig.qif`:
+  `hover_hl_color`。`UiState.hoverHighlight` / `PickingPrefs.hoverHighlight` / 設定行 `picking.hoverHighlight`。
 - `worker/client/WorkerTransport.ts`: `InvokeOptions.quiet`。`tritium/CLAUDE.md` の dispatch 表に 1 行。
 - `worker/server/services/navi/naviTool.ts`: `HoverLabel` (hover チップの表示契約)。
 - `worker/shared/calls/view.ts`: `setGpuPickEnabled: { args: { enabled }; result: { ok } }`。
@@ -187,6 +192,11 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 - tritium: hover controller の呼び出し列 (`useHoverInfoHandler.test.tsx`)、`naviHover` の `HoverLabel` 契約
   (残基レベル / 原子レベル / 非分子 / miss、`naviHoverService.test.ts`)、`{ quiet: true }` が busy に乗らない
   こと (`AsyncCueMolBusy.test.ts`)。
+- hover highlight (§10): フレーム計画 `GUIView::planFrame` の表 (present 専用 / 通常 / jitter 再開)、
+  `setHoverHit` が GPU pick 有効時だけ present 専用フレームを予約すること、hover 要素 -> pick texel ID の変換
+  `hoverIdToPickId` (`test_guiview.cpp`)、`hover_hl_color` の既定 (`test_viewinputconfig.cpp`)。tritium:
+  `naviHover` の `highlight` 引数が `setHoverHit` / `clearHoverHit` に写ること (`naviHoverService.test.ts`)、
+  hover 終了時に `naviHoverClear` が 1 回だけ送られること (`useHoverInfoHandler.test.tsx`)。
 
 ## 8. ビルドの注意
 - tritium の addon は `.build_out` の dylib ではなく `tritium/core/build/lib/libcuemol2.dylib` (core の install 時に
@@ -201,6 +211,94 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 - 座標属性版 GpuPrim (`SphereGpuPrim` / `CylinderGpuPrim` / 名前無しの `LineGpuPrim`) は pick 不可
   (tritium では float data texture が常に使えるので通常この経路は通らない)。
 - readback は同期 `readPixels`。async (PBO + fence) は未実装。
-- hover ハイライト描画とカーソル変更は次 iteration。頂点の name から「ある要素の描画幾何」が引けるので、
-  ハイライトはこの対応を使って実装できる。
-- stereo (CSM_PARA / CROSS) では GPU pick を使わず CPU 経路。
+- hover ハイライトは §10 (pick buffer からの screen-space overlay)。カーソル変更は未実装。
+- stereo (CSM_PARA / CROSS) では GPU pick を使わず CPU 経路 (hover highlight も出ない)。
+
+## 10. hover highlight (pick ID buffer からの screen-space overlay)
+
+hover 中の要素 (chip と同じ単位: cartoon 系は残基の帯、atom 系はその原子) を 3D view 上で
+半透明の塗り + 輪郭で示す。**3D シーンは再描画しない**。
+
+### 10.1 方式
+
+pick ID buffer (§3.2) には「どの画素にどの renderer のどの要素が描かれたか」が既にあるので、highlight は
+それを入力にした小さな pass 3 回で描ける (`PostProcGpuPrim::drawHoverMask / drawHoverMaskBlur /
+drawHoverHighlight`):
+
+```
+pass 1 (pick 解像度, hover_mask_frag.glsl):  mask(p) = texelFetch(u_pickTex, p).xyz == uvec3(u_hlId)
+                                             を横方向に Gaussian blur (sigma, +-radius)   -> maskRT[0]
+pass 2 (pick 解像度, hover_blur_frag.glsl):  maskRT[0] を縦方向に同じ kernel で blur          -> maskRT[1]
+pass 3 (画面解像度, hover_hl_frag.glsl):     s = texture(maskRT[1], uv).r  (RGBA8 LINEAR、1 sample)
+    band = smoothstep(BAND_LO, ..) * (1 - smoothstep(BAND_HI, ..))   // s が Phi(-1)..Phi(+1) = 境界の +-sigma
+    edge = mix(u_edgeDark, u_edgeLight, smoothstep(0.42, 0.58, s)) * band   // 外側は暗く内側は明るい二色
+    fill = u_fillColor.a * smoothstep(0.45, 0.55, s)                        // s > 0.5 = 要素の内側
+    out  = edge over fill (通常の alpha ブレンド)
+```
+
+二値 mask を sigma = 輪郭 1 色分の幅 (CSS 約 1.5 px を dpr と `PICK_SCALE` で pick texel に換算) で blur すると、
+値 s は境界からの符号付き距離 d の `Phi(d / sigma)` になるので、閾値だけで「内側 / 輪郭帯 / 外側」が滑らかに
+分かれる。pick 格子 (backing 2 px) の階段は 2 次元の blur と bilinear 参照で消える。
+pass 1-2 は **pick buffer が描き直されたか (`m_pickSerial`)、hover 要素か、sigma が変わったフレームだけ** 走る
+(`GUIView::drawHoverOverlay` のキャッシュ判定)。jitter の progressive フレームでは overlay の 1 sample だけ。
+maskRT は RGBA8 × 2 (pick 解像度 = backing の 1/4 画素、dpr 2 の 4K 相当で約 5 MB)。
+`ShaderObject` に unsigned の setter が無いので ID は `ivec3` で渡し、shader 側で `uvec3` に変換する。
+
+**二色の輪郭**: 内側が明るい灰色 (0.95)、外側が暗い灰色 (0.1) の 2 本 (alpha 0.9) で、UI の選択枠と同じく
+どんな下地の色でも片方の線がコントラストを持つ (赤い帯の上でも見える)。塗りは `ViewInputConfig::hover_hl_color`
+(既定 Mol* の highlightColor 相当 (1.0, 0.4, 0.6)) を alpha 0.35 で重ねる (`GUIView.cpp` の定数)。
+下の色を読んで色を変える方式 (反転 ROP) は試したが、反転色の見た目が不自然だったので採っていない。
+
+### 10.2 present 専用フレーム (シーン再描画も jitter リセットもしない)
+
+Mol* は marker が変わるとシーン全体と post-process を再描画し temporal multi-sample もリセットする
+(`canvas3d.ts` の `markingUpdated`)。CueMol では pick buffer が既にあるので、hover 対象が変わったときは
+pipeline の **最終段だけ** を保持済みの中間 RT から再実行して画面を作り直し、その上に overlay を重ねる:
+
+```
+通常フレーム (scene / camera 変更、jitter progressive):
+  scene -> FrameRenderPipeline::render (最終段 = composite / FXAA / SMAA blend / jitter 表示 を StageRecord に記録)
+  -> [highlight 中: sceneChanged なら pick pass] -> overlay pass -> UI DrawObj -> swap
+
+present 専用フレーム (setHoverHit / clearHoverHit だけが起きた):
+  FrameRenderPipeline::presentLast (記録した最終段 1 回 + depth blit) -> overlay pass -> UI DrawObj -> swap
+```
+
+- `GUIView::setHoverHit(rend_id, atom_id, symm_id)` / `clearHoverHit()` (View.qif) は値が変わったときだけ
+  `m_bPresentDirty` を立てる。update flag は立てないので jitter 累積は続く。`needsContinuousRedraw()` が
+  これを返し、rAF loop (`Scene::checkAndUpdate`) が `drawScene` を呼ぶ。
+- `drawScene` 先頭の `GUIView::planFrame` (純関数) が判定する: `sceneChanged = updateFlag || jitterReset`、
+  `presentOnly = presentDirty && !sceneChanged && !jitterMore && !aoHalfPending && frameCached`、
+  `restartJitter = presentDirty && !presentOnly && !sceneChanged && !jitterMore` (収束済みの累積に最後の
+  サンプルを二重に足さないための再開)。一回限りの要求 flag (`m_bPresentDirty` / `m_jitterResetRequested`) は
+  ここで消費する (以前は `m_jitterResetRequested` が jitter 無効時に消費されず true のままだった)。
+- pick buffer の dirty 規則は「scene / camera が変わったフレームだけ」に絞った (`if (plan.sceneChanged)
+  m_bPickDirty = true`)。jitter の progressive フレームや AO の full-res 追従フレームでは pick pass は走らない。
+- highlight 表示中は plain モード (AO / AA 無し) も pipeline を通す (AA-only composite = plain copy) ので、最終段が
+  再実行できる。highlight が無いときの描画経路は従来と完全に同一。
+- `FrameRenderPipeline::presentLast` は `setSize` (サイズ / AO target の変更) と `dispose` で無効になる。
+  exporter (`OffScreenView`) は自前の pipeline を持ち `enablePostAA = false` なので記録しない。
+
+コスト: hover 変更 1 回 = fullscreen pass 2 回 (最終段 + overlay)。highlight 中の通常フレームは overlay pass
+1 回の追加、pick pass は scene が変わったフレームだけ (drag 中は UI 側が hover を消す)。新しい RT は無い。
+
+### 10.3 tritium 側
+
+- `naviHover` の引数 `highlight` (Settings の `picking.hoverHighlight`、既定 on、electron-store に永続化) が true
+  なら、worker は hitTest と同じ往復で `view.setHoverHit(raw.rend_id, raw.atom_id, raw.symm_id ?? -1)` (MolCoord の
+  hit) または `view.clearHoverHit()` (miss / 非分子 / 例外) を呼ぶ。`atom_id` は pick の name そのもの
+  (cartoon 系でも残基 pivot 原子の ID) なので、C++ は `hoverIdToPickId` で pick texel の ID に戻す。
+- hover の終了 (pane 外 / drag 開始 / view 切替 / pref off) で `useHoverInfoHandler` が `naviHoverClear` を
+  1 回だけ (`{ quiet: true }`) 送る。worker はメッセージを順に処理するので、in-flight の hover 要求の後に届く。
+- highlight の同値判定は C++ (`setHoverHit`) 側。chip の dedupe (`hoverLabelKey`) とは独立。
+
+### 10.4 制約
+
+- overlay の解像度は pick buffer (backing の 0.5) のまま。dpr 1 では縁がやや粗い。`PICK_SCALE` を上げれば
+  改善するが pick pass コストと RGBA32UI メモリが 4 倍になるので上げていない。
+- overlay に AA (FXAA / SMAA / jitter) はかからない (最終段の後に重ねる)。縁の滑らかさは blur した mask の
+  bilinear 参照によるもので、pick 解像度より細かい形状 (細い線の太さの差など) は再現しない。
+- alpha < 0.5 の renderer、CPU fallback の renderer (`*symm` 等)、stereo では highlight されない
+  (pick buffer に無い)。
+- highlight の単位は hit 要素のみ。残基単位で同一分子の全 renderer を光らせるには Mol* の marker texture
+  相当 (原子 ID -> mark の lookup と rend -> 分子の対応) が要る (未実装)。

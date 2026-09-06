@@ -245,6 +245,15 @@ export const SETTINGS: SettingDef[] = [
     category: 'input.mouse',
     control: { kind: 'toggle' },
   },
+  {
+    key: 'picking.hoverHighlight',
+    label: 'Hover Highlight',
+    description:
+      'Highlight the element under the pointer in the 3D view (a translucent fill and ' +
+      'outline drawn from the GPU pick buffer, no scene redraw). Needs GPU Picking and Hover Info.',
+    category: 'input.mouse',
+    control: { kind: 'toggle' },
+  },
 ]
 
 // --- Default values ---
@@ -271,6 +280,7 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'mouse.pickPrecision': 10.0,
   'picking.gpuPicking': true,
   'picking.hoverInfo': true,
+  'picking.hoverHighlight': true,
 }
 
 // --- Label lookup: maps leaf category ids to their display titles ---
@@ -343,4 +353,5 @@ export const VIEW_INPUT_PARAM_SETTING_KEYS: Record<string, keyof ViewInputParams
 export const PICKING_PREF_SETTING_KEYS: Record<string, keyof PickingPrefs> = {
   'picking.gpuPicking': 'gpuPicking',
   'picking.hoverInfo': 'hoverInfo',
+  'picking.hoverHighlight': 'hoverHighlight',
 }

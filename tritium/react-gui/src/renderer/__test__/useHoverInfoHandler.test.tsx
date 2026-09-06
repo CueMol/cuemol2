@@ -21,7 +21,7 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 vi.mock('@renderer/state/workspace', () => ({
     useActiveScene: () => ({ activeMolViewId: 7, activeSceneId: 100 }),
 }))
-const pickingPrefs = { gpuPicking: true, hoverInfo: true, setPickingPref: () => undefined }
+const pickingPrefs = { gpuPicking: true, hoverInfo: true, hoverHighlight: true, setPickingPref: () => undefined }
 vi.mock('@renderer/contexts/PickingPrefsContext', () => ({
     usePickingPrefs: () => pickingPrefs,
 }))
@@ -71,10 +71,10 @@ describe('useHoverInfoHandler', () => {
                 canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: x, clientY: y, buttons, bubbles: true }))
             })
 
-        // First move issues immediately.
+        // First move issues immediately; the highlight preference rides on the request.
         await move(10, 10)
         expect(invokeService).toHaveBeenCalledTimes(1)
-        expect(invokeService).toHaveBeenLastCalledWith('naviHover', { viewId: 7, x: 10, y: 10 }, { quiet: true })
+        expect(invokeService).toHaveBeenLastCalledWith('naviHover', { viewId: 7, x: 10, y: 10, highlight: true }, { quiet: true })
 
         // Moves while a request is pending do not issue; the latest is remembered.
         await move(20, 20)
@@ -90,20 +90,24 @@ describe('useHoverInfoHandler', () => {
         expect(timerCb).not.toBeNull()
         await act(async () => { timerCb!() })
         expect(invokeService).toHaveBeenCalledTimes(2)
-        expect(invokeService).toHaveBeenLastCalledWith('naviHover', { viewId: 7, x: 30, y: 30 }, { quiet: true })
+        expect(invokeService).toHaveBeenLastCalledWith('naviHover', { viewId: 7, x: 30, y: 30, highlight: true }, { quiet: true })
 
-        // A move with a button held clears the line and issues nothing.
+        // A move with a button held clears the line: no hover request, and one
+        // highlight clear for the hit shown (the worker handles it after the
+        // hover request still in flight).
         await move(40, 40, 1)
-        expect(invokeService).toHaveBeenCalledTimes(2)
+        expect(invokeService).toHaveBeenCalledTimes(3)
+        expect(invokeService).toHaveBeenLastCalledWith('naviHoverClear', { viewId: 7 }, { quiet: true })
         expect(setter).toHaveBeenLastCalledWith(null)
 
         // The reply of the second (now stale) request is dropped.
         await act(async () => { pending[1].resolve({ hit: true, label: { ...LABEL_M, resIndex: '11' } }); await flushPromises() })
         expect(setter).toHaveBeenCalledTimes(2)
 
-        // Leaving the pane does not repeat an identical null.
+        // Leaving the pane repeats neither the null nor the highlight clear.
         await act(() => { container.firstElementChild!.dispatchEvent(new MouseEvent('mouseleave')) })
         expect(setter).toHaveBeenCalledTimes(2)
+        expect(invokeService).toHaveBeenCalledTimes(3)
 
         expect(setter.mock.calls).toEqual([[LABEL_M], [null]])
         unmount()

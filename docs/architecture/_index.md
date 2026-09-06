@@ -12,7 +12,7 @@ instead. If a change ports a UXP surface it belongs there; if it adds
 something UXP never had, or concerns build / packaging / internal
 architecture, it belongs here.
 
-- [GPU ID-buffer picking と 3D view の hover 情報](gpu-id-picking.md) (日本語) --
+- [GPU ID-buffer picking と 3D view の hover 情報 / hover highlight](gpu-id-picking.md) (日本語) --
   tritium の 3D view で、renderer が描いた幾何そのものに対する hittest (整数 render target に
   renderer/要素 ID を描画して読み戻す、Mol* の pick pass 方式) と、マウス hover で左下ステータスに対象を
   出す機能の設計。新しい ID 型は作らず、GL selection 由来の name stack (`loadName` / `startHit`) と

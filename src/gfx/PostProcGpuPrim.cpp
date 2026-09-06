@@ -432,6 +432,108 @@ void PostProcGpuPrim::drawJitterCompose(DisplayContext *pDC, RenderTarget *srcRT
     srcRT->unbindTextures();
 }
 
+void PostProcGpuPrim::drawHoverMask(DisplayContext *pDC, RenderTarget *pickRT,
+                                    const int id[3], float sigma, int radius)
+{
+    if (pickRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pHoverMaskPO == nullptr) {
+        m_pHoverMaskPO =
+            pDC->loadShaderObject("hover_mask",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/hover_mask_frag.glsl");
+        if (m_pHoverMaskPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load hover_mask shader.");
+            return;
+        }
+    }
+
+    // The integer pick texture is bound on its own unit (usampler2D); the IDs
+    // are passed as ivec3 (the shader converts) since ShaderObject has no
+    // unsigned setters.
+    pickRT->bindColorTex(0, RT_TU_NOISE);
+
+    m_pHoverMaskPO->enable();
+    m_pHoverMaskPO->setUniform("u_pickTex", RT_TU_NOISE);
+    m_pHoverMaskPO->setUniform("u_hlId", id[0], id[1], id[2]);
+    m_pHoverMaskPO->setUniform("u_size", pickRT->getWidth(), pickRT->getHeight());
+    m_pHoverMaskPO->setUniformF("u_sigma", sigma);
+    m_pHoverMaskPO->setUniform("u_radius", radius);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pHoverMaskPO->disable();
+    pickRT->unbindTextures();
+}
+
+void PostProcGpuPrim::drawHoverMaskBlur(DisplayContext *pDC, RenderTarget *maskRT,
+                                        float sigma, int radius)
+{
+    if (maskRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pHoverBlurPO == nullptr) {
+        m_pHoverBlurPO =
+            pDC->loadShaderObject("hover_blur",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/hover_blur_frag.glsl");
+        if (m_pHoverBlurPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load hover_blur shader.");
+            return;
+        }
+    }
+
+    maskRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pHoverBlurPO->enable();
+    m_pHoverBlurPO->setUniform("u_maskTex", RT_TU_COLOR);
+    m_pHoverBlurPO->setUniform("u_size", maskRT->getWidth(), maskRT->getHeight());
+    m_pHoverBlurPO->setUniformF("u_sigma", sigma);
+    m_pHoverBlurPO->setUniform("u_radius", radius);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pHoverBlurPO->disable();
+    maskRT->unbindTextures();
+}
+
+void PostProcGpuPrim::drawHoverHighlight(DisplayContext *pDC, RenderTarget *maskRT,
+                                         const float fillRGBA[4],
+                                         const float edgeLightRGBA[4],
+                                         const float edgeDarkRGBA[4])
+{
+    if (maskRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pHoverPO == nullptr) {
+        m_pHoverPO =
+            pDC->loadShaderObject("hover_hl",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/hover_hl_frag.glsl");
+        if (m_pHoverPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load hover_hl shader.");
+            return;
+        }
+    }
+
+    maskRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pHoverPO->enable();
+    m_pHoverPO->setUniform("u_maskTex", RT_TU_COLOR);
+    m_pHoverPO->setUniformF("u_fillColor", fillRGBA[0], fillRGBA[1], fillRGBA[2],
+                            fillRGBA[3]);
+    m_pHoverPO->setUniformF("u_edgeLight", edgeLightRGBA[0], edgeLightRGBA[1],
+                            edgeLightRGBA[2], edgeLightRGBA[3]);
+    m_pHoverPO->setUniformF("u_edgeDark", edgeDarkRGBA[0], edgeDarkRGBA[1],
+                            edgeDarkRGBA[2], edgeDarkRGBA[3]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pHoverPO->disable();
+    maskRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
@@ -444,6 +546,9 @@ void PostProcGpuPrim::invalidate()
     m_pCompPO = nullptr;
     m_pGtaoPO = nullptr;
     m_pDenoisePO = nullptr;
+    m_pHoverMaskPO = nullptr;
+    m_pHoverBlurPO = nullptr;
+    m_pHoverPO = nullptr;
     m_pFxaaPO = nullptr;
     m_pSmaaEdgePO = nullptr;
     m_pSmaaWeightPO = nullptr;

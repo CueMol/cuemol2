@@ -14,6 +14,7 @@
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/SingletonBase.hpp>
 #include <qlib/mcutils.hpp>
+#include <gfx/gfx.hpp>
 
 #include "style/StyleSupports.hpp"
 
@@ -89,6 +90,9 @@ namespace qsys {
     /// Use the GPU ID-buffer pick pass when the backend supports it
     bool m_bGpuPick;
 
+    /// Hover highlight colour (3D view overlay of the element under the pointer)
+    gfx::ColorPtr m_pHoverHlColor;
+
   public:
     ViewInputConfig();
     ~ViewInputConfig() override;
@@ -153,6 +157,9 @@ namespace qsys {
 
     void setGpuPick(bool b) { m_bGpuPick = b; }
     bool isGpuPick() const { return m_bGpuPick; }
+
+    void setHoverHlColor(const gfx::ColorPtr &c) { m_pHoverHlColor = c; }
+    const gfx::ColorPtr &getHoverHlColor() const { return m_pHoverHlColor; }
 
     ////////////////////////////////////////
     // Style supports

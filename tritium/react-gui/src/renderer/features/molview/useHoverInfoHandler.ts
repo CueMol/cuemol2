@@ -53,8 +53,10 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
     const { cueMolReady, cm } = useCueMol();
     const { activeMolViewId } = useActiveScene();
     // Settings > Mouse & Navigation > "Hover info": off stops the sampling
-    // (no hit test requests at all), not just the label.
-    const { hoverInfo } = usePickingPrefs();
+    // (no hit test requests at all), not just the label. "Hover highlight"
+    // rides on the same request: the worker updates the view's highlight from
+    // the hit result, and a clear is sent when the hover ends.
+    const { hoverInfo, hoverHighlight } = usePickingPrefs();
     const guard = useStaleGuard();
     const setterRef = useRef(setHoverLabel);
     setterRef.current = setHoverLabel;
@@ -73,6 +75,8 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
         let lastSent: Pos | null = null;
         let lastIssuedAt = -Infinity;
         let lastKey: string | null = null;
+        // The view currently shows a highlight set by our last reply.
+        let highlighted = false;
         let disposed = false;
 
         const apply = (label: HoverLabel | null): void => {
@@ -91,6 +95,14 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
                 timer = null;
             }
             apply(null);
+            // The worker handles messages in order, so this lands after any
+            // hover request still in flight (whose reply is now stale).
+            if (highlighted) {
+                highlighted = false;
+                cm.invokeService('naviHoverClear', { viewId }, { quiet: true }).catch(() => {
+                    // worker gone: nothing to clear
+                });
+            }
         };
 
         const findCanvas = (): Element | null => {
@@ -132,9 +144,10 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
             lastIssuedAt = Date.now();
             inFlight = true;
             const token = guard.next();
-            cm.invokeService('naviHover', { viewId, x: p.x, y: p.y }, { quiet: true })
+            cm.invokeService('naviHover', { viewId, x: p.x, y: p.y, highlight: hoverHighlight }, { quiet: true })
                 .then((res) => {
                     if (disposed || !guard.isCurrent(token)) return;
+                    if (hoverHighlight) highlighted = res.hit;
                     apply(res.hit && res.label ? res.label : null);
                 })
                 .catch(() => {
@@ -177,5 +190,5 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
             container.removeEventListener('mouseleave', onMouseLeave);
             clear();
         };
-    }, [cm, enabled, viewId, containerRef, guard]);
+    }, [cm, enabled, viewId, containerRef, guard, hoverHighlight]);
 }

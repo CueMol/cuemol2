@@ -303,3 +303,103 @@ TEST(GUIViewTest, GpuPickActiveFollowsViewCapAndUserSwitch)
     qsys::View::setViewCap(pPrevCap);
     pVIC->setGpuPick(bPrev);
 }
+
+// --- Hover highlight: frame planning and the hovered element's pick ID ---
+
+// The per-frame decision: only a hover-highlight change with a cached frame
+// and no pending progressive work is served by a present-only frame; a
+// scene/camera change is a regular frame that also invalidates the pick
+// buffer; a progressive jitter sample keeps the pick buffer valid; a
+// present request that cannot be served restarts a converged jitter
+// accumulation but not one in progress.
+TEST(GUIViewTest, PlanFramePresentOnlyVsRegularFrame)
+{
+    using Flags = qsys::GUIView::FrameFlags;
+    struct Case
+    {
+        const char *name;
+        Flags f;
+        bool presentOnly, sceneChanged, restartJitter;
+    };
+    auto flags = [](bool present, bool update, bool reset, bool more, bool half,
+                    bool cached) {
+        Flags f;
+        f.presentDirty = present;
+        f.updateFlag = update;
+        f.jitterReset = reset;
+        f.jitterMore = more;
+        f.aoHalfPending = half;
+        f.frameCached = cached;
+        return f;
+    };
+    const Case cases[] = {
+        {"hover only", flags(true, false, false, false, false, true), true, false, false},
+        {"camera", flags(false, true, false, false, false, true), false, true, false},
+        {"hover + scene", flags(true, false, true, false, false, true), false, true, false},
+        {"jitter sample", flags(false, false, false, true, false, true), false, false, false},
+        {"hover while accumulating", flags(true, false, false, true, false, true), false, false, false},
+        {"hover, no cache", flags(true, false, false, false, false, false), false, false, true},
+        {"hover, AO follow-up", flags(true, false, false, false, true, true), false, false, true},
+        {"idle", flags(false, false, false, false, false, true), false, false, false},
+    };
+    for (const Case &c : cases) {
+        const auto p = qsys::GUIView::planFrame(c.f);
+        EXPECT_EQ(p.presentOnly, c.presentOnly) << c.name;
+        EXPECT_EQ(p.sceneChanged, c.sceneChanged) << c.name;
+        EXPECT_EQ(p.restartJitter, c.restartJitter) << c.name;
+    }
+}
+
+// setHoverHit schedules a present-only frame (needsContinuousRedraw) only when
+// the value changes and the GPU pick pass is active; the same value again is
+// a no-op and clearHoverHit schedules the frame that removes the overlay.
+TEST(GUIViewTest, SetHoverHitSchedulesPresentOnlyFrame)
+{
+    TestGUIView v;
+    qsys::ViewCap *pPrevCap = qsys::View::getViewCap();
+
+    // No GPU pick (desktop): the state is kept but no frame is requested.
+    qsys::View::setViewCap(nullptr);
+    v.setHoverHit(1001, 42, -1);
+    EXPECT_FALSE(v.needsContinuousRedraw());
+
+    GpuPickViewCap cap;
+    qsys::View::setViewCap(&cap);
+    v.setHoverHit(1001, 42, -1);  // unchanged value: no frame
+    EXPECT_FALSE(v.needsContinuousRedraw());
+    v.setHoverHit(1001, 43, -1);
+    EXPECT_TRUE(v.needsContinuousRedraw());
+
+    // A frame consumes the request (drawScene is stubbed here; the flag is
+    // private, so re-check through a fresh view).
+    TestGUIView v2;
+    v2.clearHoverHit();  // nothing set: no frame
+    EXPECT_FALSE(v2.needsContinuousRedraw());
+    v2.setHoverHit(1001, 42, -1);
+    EXPECT_TRUE(v2.needsContinuousRedraw());
+
+    qsys::View::setViewCap(pPrevCap);
+}
+
+// The hovered element (renderer uid, atom id, symm id) maps to the pick texel
+// it was drawn with: 1-based index of the renderer in the pick table and the
+// encoded names (-1 -> 0). Renderers absent from the last pick pass (CPU-only,
+// hidden, deleted) and hits without an atom have no texel.
+TEST(GUIViewTest, HoverIdToPickId)
+{
+    const std::vector<qlib::uid_t> rendTab = {1001, 1002};
+    int id[3] = {0, 0, 0};
+
+    ASSERT_TRUE(qsys::GUIView::hoverIdToPickId(1002, 42, -1, rendTab, id));
+    EXPECT_EQ(id[0], 2);
+    EXPECT_EQ(id[1], int(gfx::encodeHitName(42)));
+    EXPECT_EQ(id[2], 0);
+
+    ASSERT_TRUE(qsys::GUIView::hoverIdToPickId(1001, 0, 5, rendTab, id));
+    EXPECT_EQ(id[0], 1);
+    EXPECT_EQ(id[1], int(gfx::encodeHitName(0)));
+    EXPECT_EQ(id[2], int(gfx::encodeHitName(5)));
+
+    EXPECT_FALSE(qsys::GUIView::hoverIdToPickId(1003, 42, -1, rendTab, id));
+    EXPECT_FALSE(qsys::GUIView::hoverIdToPickId(1001, -1, -1, rendTab, id));
+}
