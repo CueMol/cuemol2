@@ -127,6 +127,16 @@ export interface NaviHoverArgs {
     /** Logical canvas pixels, the same space as a click. */
     x: number;
     y: number;
+    /**
+     * Also set / clear the view's hover highlight (GUIView.setHoverHit) from
+     * the result, in the same worker round trip. Off leaves the highlight
+     * state untouched.
+     */
+    highlight?: boolean;
+}
+
+export interface NaviHoverClearArgs {
+    viewId: number;
 }
 
 /**
@@ -205,10 +215,43 @@ export function naviHover(ctx: WorkerContext, args: NaviHoverArgs): NaviHoverRes
     try {
         raw = runHitTest(ctx, args.viewId, args.x, args.y);
     } catch {
-        return { hit: false };
+        raw = null;
     }
+    if (args.highlight) applyHoverHighlight(ctx, args.viewId, raw);
     if (!raw) return { hit: false };
     return { hit: true, label: buildHoverLabel(ctx, args.viewId, raw), raw };
+}
+
+/**
+ * Push the hover result to the view's highlight state: a molecule hit
+ * highlights that element (the view decides whether it can, e.g. only
+ * GPU-picked renderers), anything else clears it. The view schedules its own
+ * present-only frame; no redraw request here.
+ */
+function applyHoverHighlight(ctx: WorkerContext, viewId: number, raw: HitTestResult | null): void {
+    const view = ctx.sceMgr.getView(viewId) as GUIView | null;
+    if (!view) return;
+    try {
+        if (raw && raw.objtype === 'MolCoord') {
+            view.setHoverHit(raw.rend_id, raw.atom_id, raw.symm_id ?? -1);
+        } else {
+            view.clearHoverHit();
+        }
+    } catch {
+        // lost GL context / view being torn down: nothing to highlight
+    }
+}
+
+/** Remove the hover highlight (pointer left the view, drag started, ...). */
+export function naviHoverClear(ctx: WorkerContext, args: NaviHoverClearArgs): { ok: boolean } {
+    const view = ctx.sceMgr.getView(args.viewId) as GUIView | null;
+    if (!view) return { ok: false };
+    try {
+        view.clearHoverHit();
+        return { ok: true };
+    } catch {
+        return { ok: false };
+    }
 }
 
 // ---- service: naviResidSel (double click -- residue selection toggle/extend) ----

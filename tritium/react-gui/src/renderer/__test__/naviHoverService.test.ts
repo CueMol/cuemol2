@@ -9,7 +9,7 @@ vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 import { fakeObject, fakeScene, fakeView, makeWorkerCtx } from '@renderer/worker/testing'
-import { naviHover } from '@renderer/worker/server/services/navi/naviTool'
+import { naviHover, naviHoverClear } from '@renderer/worker/server/services/navi/naviTool'
 
 const MOL_HIT = {
     objtype: 'MolCoord', obj_id: 3, obj_name: '1CRN', rend_id: 10, rend_name: 'cartoon1',
@@ -64,5 +64,50 @@ describe('naviHover', () => {
         // Read-only: no undo transaction was opened, no service (MsgLog) fetched.
         expect(scene.undo.started).toEqual([])
         expect(ctx.svc.getService).not.toHaveBeenCalled()
+    })
+
+    it('updates the view hover highlight in the same round trip when asked', () => {
+        const hitTest = vi.fn()
+        const setHoverHit = vi.fn()
+        const clearHoverHit = vi.fn()
+        const atom = { chainName: 'A', residName: 'ALA', residIndex: '10', name: 'CA' }
+        const mol = fakeObject({ uid: 3, className: 'MolCoord', extra: { getAtomByID: vi.fn(() => atom) } })
+        const scene = fakeScene({ uid: 100, objects: [mol] })
+        const view = fakeView({ uid: 7, scene, extra: { hitTest, setHoverHit, clearHoverHit } })
+        scene.views.push(view)
+        const { ctx } = makeWorkerCtx({ scenes: [scene] })
+
+        // Without the flag the highlight state is untouched.
+        hitTest.mockReturnValueOnce(JSON.stringify(MOL_HIT))
+        naviHover(ctx, { viewId: 7, x: 1, y: 1 })
+        expect(setHoverHit).not.toHaveBeenCalled()
+        expect(clearHoverHit).not.toHaveBeenCalled()
+
+        // A molecule hit sets (rend uid, atom id, symm id: -1 unless through *symm) ...
+        hitTest.mockReturnValueOnce(JSON.stringify(MOL_HIT))
+        naviHover(ctx, { viewId: 7, x: 1, y: 1, highlight: true })
+        expect(setHoverHit).toHaveBeenLastCalledWith(10, 42, -1)
+        hitTest.mockReturnValueOnce(JSON.stringify({ ...MOL_HIT, rendtype: '*symm', symm_id: 2, symm_name: 'x,y,z' }))
+        naviHover(ctx, { viewId: 7, x: 1, y: 1, highlight: true })
+        expect(setHoverHit).toHaveBeenLastCalledWith(10, 42, 2)
+
+        // ... a miss, a throwing hit test and a non-molecule hit clear it.
+        hitTest.mockReturnValueOnce('')
+        naviHover(ctx, { viewId: 7, x: 1, y: 1, highlight: true })
+        expect(clearHoverHit).toHaveBeenCalledTimes(1)
+        hitTest.mockImplementationOnce(() => { throw new Error('context lost') })
+        expect(naviHover(ctx, { viewId: 7, x: 1, y: 1, highlight: true })).toEqual({ hit: false })
+        expect(clearHoverHit).toHaveBeenCalledTimes(2)
+        hitTest.mockReturnValueOnce(JSON.stringify({
+            objtype: 'LWObject', obj_id: 4, obj_name: 'surf', rend_id: 11, rend_name: 'l1',
+            rendtype: 'lwrend', atom_id: 0, sel: '', message: 'vertex 5', x: 0, y: 0, z: 0, occ: 0, bfac: 0,
+        }))
+        naviHover(ctx, { viewId: 7, x: 1, y: 1, highlight: true })
+        expect(clearHoverHit).toHaveBeenCalledTimes(3)
+
+        // The explicit clear (pointer left the view / drag started).
+        expect(naviHoverClear(ctx, { viewId: 7 })).toEqual({ ok: true })
+        expect(clearHoverHit).toHaveBeenCalledTimes(4)
+        expect(naviHoverClear(ctx, { viewId: 99 })).toEqual({ ok: false })
     })
 })

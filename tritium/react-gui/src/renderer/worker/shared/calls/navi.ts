@@ -39,6 +39,7 @@ import type {
   NaviHitTestArgs,
   NaviHitTestResult,
   NaviHoverArgs,
+  NaviHoverClearArgs,
   NaviHoverResult,
   NaviResidSelArgs,
   NaviResidSelResult,
@@ -47,6 +48,7 @@ import type {
 export interface NaviCalls {
   naviHitTest:                { args: NaviHitTestArgs; result: NaviHitTestResult }
   naviHover:                  { args: NaviHoverArgs; result: NaviHoverResult }
+  naviHoverClear:             { args: NaviHoverClearArgs; result: { ok: boolean } }
   naviClickAtom:              { args: NaviClickAtomArgs; result: NaviClickAtomResult }
   naviResidSel:               { args: NaviResidSelArgs; result: NaviResidSelResult }
   measurePick:                { args: MeasurePickArgs; result: MeasurePickResult }
@@ -69,6 +71,7 @@ export interface NaviCalls {
 export const NAVI_KEYS = [
   'naviHitTest',
   'naviHover',
+  'naviHoverClear',
   'naviClickAtom',
   'naviResidSel',
   'measurePick',

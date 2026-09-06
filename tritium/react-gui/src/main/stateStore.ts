@@ -58,6 +58,7 @@ const DEFAULTS: StoreSchema = {
     inputDeviceMode: 'auto',
     gpuPicking: true,
     hoverInfo: true,
+    hoverHighlight: true,
   },
   recentFiles: [],
 }

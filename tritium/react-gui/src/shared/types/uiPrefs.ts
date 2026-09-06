@@ -105,4 +105,6 @@ export interface UiState {
   gpuPicking?: boolean
   /** Show what is under the pointer (the 3D view hover label). Defaults to true. */
   hoverInfo?: boolean
+  /** Highlight the element under the pointer in the 3D view. Defaults to true. */
+  hoverHighlight?: boolean
 }

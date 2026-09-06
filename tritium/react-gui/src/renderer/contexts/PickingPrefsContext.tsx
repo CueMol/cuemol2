@@ -9,7 +9,8 @@
  * device, not in the scene file. `gpuPicking` is also pushed to the C++
  * singleton (ViewInputConfig.gpu_pick) on load and on change; the switch takes
  * effect on the next hit test, no restart. `hoverInfo` is renderer-only: it
- * gates the hover controller (useHoverInfoHandler).
+ * gates the hover controller (useHoverInfoHandler). `hoverHighlight` is
+ * passed with every hover request, so the worker needs no copy of it.
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react'
@@ -20,9 +21,15 @@ import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 export interface PickingPrefs {
   gpuPicking: boolean
   hoverInfo: boolean
+  /** Highlight the element under the pointer in the 3D view (GPU pick overlay). */
+  hoverHighlight: boolean
 }
 
-export const DEFAULT_PICKING_PREFS: PickingPrefs = { gpuPicking: true, hoverInfo: true }
+export const DEFAULT_PICKING_PREFS: PickingPrefs = {
+  gpuPicking: true,
+  hoverInfo: true,
+  hoverHighlight: true,
+}
 
 interface PickingPrefsContextValue extends PickingPrefs {
   setPickingPref: (key: keyof PickingPrefs, value: boolean) => void
@@ -46,6 +53,7 @@ export const PickingPrefsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const next: PickingPrefs = {
           gpuPicking: ui.gpuPicking ?? true,
           hoverInfo: ui.hoverInfo ?? true,
+          hoverHighlight: ui.hoverHighlight ?? true,
         }
         setPrefs(next)
         if (!next.gpuPicking) {

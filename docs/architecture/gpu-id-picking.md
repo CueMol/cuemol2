@@ -153,6 +153,10 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 
 ## 5. 契約行
 - `worker/shared/calls/navi.ts`: `naviHover: { args: NaviHoverArgs; result: NaviHoverResult }` + `NAVI_KEYS`。
+  `NaviHoverArgs.highlight` (view の hover highlight を同じ往復で更新) と `naviHoverClear: { args: { viewId };
+  result: { ok } }` (§10)。
+- `View.qif`: `setHoverHit(rend_id, atom_id, symm_id)` / `clearHoverHit()` (§10)。`ViewInputConfig.qif`:
+  `hover_hl_color`。`UiState.hoverHighlight` / `PickingPrefs.hoverHighlight` / 設定行 `picking.hoverHighlight`。
 - `worker/client/WorkerTransport.ts`: `InvokeOptions.quiet`。`tritium/CLAUDE.md` の dispatch 表に 1 行。
 - `worker/server/services/navi/naviTool.ts`: `HoverLabel` (hover チップの表示契約)。
 - `worker/shared/calls/view.ts`: `setGpuPickEnabled: { args: { enabled }; result: { ok } }`。
@@ -187,6 +191,11 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 - tritium: hover controller の呼び出し列 (`useHoverInfoHandler.test.tsx`)、`naviHover` の `HoverLabel` 契約
   (残基レベル / 原子レベル / 非分子 / miss、`naviHoverService.test.ts`)、`{ quiet: true }` が busy に乗らない
   こと (`AsyncCueMolBusy.test.ts`)。
+- hover highlight (§10): フレーム計画 `GUIView::planFrame` の表 (present 専用 / 通常 / jitter 再開)、
+  `setHoverHit` が GPU pick 有効時だけ present 専用フレームを予約すること、hover 要素 -> pick texel ID の変換
+  `hoverIdToPickId` (`test_guiview.cpp`)、`hover_hl_color` の既定 (`test_viewinputconfig.cpp`)。tritium:
+  `naviHover` の `highlight` 引数が `setHoverHit` / `clearHoverHit` に写ること (`naviHoverService.test.ts`)、
+  hover 終了時に `naviHoverClear` が 1 回だけ送られること (`useHoverInfoHandler.test.tsx`)。
 
 ## 8. ビルドの注意
 - tritium の addon は `.build_out` の dylib ではなく `tritium/core/build/lib/libcuemol2.dylib` (core の install 時に
@@ -201,6 +210,81 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 - 座標属性版 GpuPrim (`SphereGpuPrim` / `CylinderGpuPrim` / 名前無しの `LineGpuPrim`) は pick 不可
   (tritium では float data texture が常に使えるので通常この経路は通らない)。
 - readback は同期 `readPixels`。async (PBO + fence) は未実装。
-- hover ハイライト描画とカーソル変更は次 iteration。頂点の name から「ある要素の描画幾何」が引けるので、
-  ハイライトはこの対応を使って実装できる。
-- stereo (CSM_PARA / CROSS) では GPU pick を使わず CPU 経路。
+- hover ハイライトは §10 (pick buffer からの screen-space overlay)。カーソル変更は未実装。
+- stereo (CSM_PARA / CROSS) では GPU pick を使わず CPU 経路 (hover highlight も出ない)。
+
+## 10. hover highlight (pick ID buffer からの screen-space overlay)
+
+hover 中の要素 (chip と同じ単位: cartoon 系は残基の帯、atom 系はその原子) を 3D view 上で
+半透明の塗り + 輪郭で示す。**3D シーンは再描画しない**。
+
+### 10.1 方式
+
+pick ID buffer (§3.2) には「どの画素にどの renderer のどの要素が描かれたか」が既にあるので、highlight は
+それを入力にした fullscreen pass 1 回で描ける (`hover_hl_frag.glsl`、`PostProcGpuPrim::drawHoverHighlight`):
+
+```
+uniform highp usampler2D u_pickTex;   // RGBA32UI の pick RT (0.5 scale、NEAREST)
+uniform ivec3 u_hlId;                 // (rendIdx, encodeHitName(atom_id), encodeHitName(symm_id))
+mask(p) = texelFetch(u_pickTex, p).xyz == uvec3(u_hlId)
+c       = 4 texel の mask を bilinear 補間した coverage (0..1)
+fill    = u_fillColor.a * c, edge = u_edgeColor.a * 4c(1-c)   // 境界 (c = 0.5) に集中する輪郭帯
+```
+
+近傍探索なしの texelFetch 4 回で、塗りの縁と輪郭帯 (幅 ≈ pick 1 texel = backing 2 px) が得られる。
+`ShaderObject` に unsigned の setter が無いので ID は `ivec3` で渡し、shader 側で `uvec3` に変換する。
+色は `ViewInputConfig::hover_hl_color` (既定 Mol* の highlightColor 相当 (1.0, 0.4, 0.6))、塗り alpha 0.35、
+輪郭は同色 × 0.5 を alpha 0.9 (`GUIView.cpp` の定数)。
+
+### 10.2 present 専用フレーム (シーン再描画も jitter リセットもしない)
+
+Mol* は marker が変わるとシーン全体と post-process を再描画し temporal multi-sample もリセットする
+(`canvas3d.ts` の `markingUpdated`)。CueMol では pick buffer が既にあるので、hover 対象が変わったときは
+pipeline の **最終段だけ** を保持済みの中間 RT から再実行して画面を作り直し、その上に overlay を重ねる:
+
+```
+通常フレーム (scene / camera 変更、jitter progressive):
+  scene -> FrameRenderPipeline::render (最終段 = composite / FXAA / SMAA blend / jitter 表示 を StageRecord に記録)
+  -> [highlight 中: sceneChanged なら pick pass] -> overlay pass -> UI DrawObj -> swap
+
+present 専用フレーム (setHoverHit / clearHoverHit だけが起きた):
+  FrameRenderPipeline::presentLast (記録した最終段 1 回 + depth blit) -> overlay pass -> UI DrawObj -> swap
+```
+
+- `GUIView::setHoverHit(rend_id, atom_id, symm_id)` / `clearHoverHit()` (View.qif) は値が変わったときだけ
+  `m_bPresentDirty` を立てる。update flag は立てないので jitter 累積は続く。`needsContinuousRedraw()` が
+  これを返し、rAF loop (`Scene::checkAndUpdate`) が `drawScene` を呼ぶ。
+- `drawScene` 先頭の `GUIView::planFrame` (純関数) が判定する: `sceneChanged = updateFlag || jitterReset`、
+  `presentOnly = presentDirty && !sceneChanged && !jitterMore && !aoHalfPending && frameCached`、
+  `restartJitter = presentDirty && !presentOnly && !sceneChanged && !jitterMore` (収束済みの累積に最後の
+  サンプルを二重に足さないための再開)。一回限りの要求 flag (`m_bPresentDirty` / `m_jitterResetRequested`) は
+  ここで消費する (以前は `m_jitterResetRequested` が jitter 無効時に消費されず true のままだった)。
+- pick buffer の dirty 規則は「scene / camera が変わったフレームだけ」に絞った (`if (plan.sceneChanged)
+  m_bPickDirty = true`)。jitter の progressive フレームや AO の full-res 追従フレームでは pick pass は走らない。
+- highlight 表示中は plain モード (AO / AA 無し) も pipeline を通す (AA-only composite = plain copy) ので、最終段が
+  再実行できる。highlight が無いときの描画経路は従来と完全に同一。
+- `FrameRenderPipeline::presentLast` は `setSize` (サイズ / AO target の変更) と `dispose` で無効になる。
+  exporter (`OffScreenView`) は自前の pipeline を持ち `enablePostAA = false` なので記録しない。
+
+コスト: hover 変更 1 回 = fullscreen pass 2 回 (最終段 + overlay)。highlight 中の通常フレームは overlay pass
+1 回の追加、pick pass は scene が変わったフレームだけ (drag 中は UI 側が hover を消す)。新しい RT は無い。
+
+### 10.3 tritium 側
+
+- `naviHover` の引数 `highlight` (Settings の `picking.hoverHighlight`、既定 on、electron-store に永続化) が true
+  なら、worker は hitTest と同じ往復で `view.setHoverHit(raw.rend_id, raw.atom_id, raw.symm_id ?? -1)` (MolCoord の
+  hit) または `view.clearHoverHit()` (miss / 非分子 / 例外) を呼ぶ。`atom_id` は pick の name そのもの
+  (cartoon 系でも残基 pivot 原子の ID) なので、C++ は `hoverIdToPickId` で pick texel の ID に戻す。
+- hover の終了 (pane 外 / drag 開始 / view 切替 / pref off) で `useHoverInfoHandler` が `naviHoverClear` を
+  1 回だけ (`{ quiet: true }`) 送る。worker はメッセージを順に処理するので、in-flight の hover 要求の後に届く。
+- highlight の同値判定は C++ (`setHoverHit`) 側。chip の dedupe (`hoverLabelKey`) とは独立。
+
+### 10.4 制約
+
+- overlay の解像度は pick buffer (backing の 0.5) のまま。dpr 1 では縁がやや粗い。`PICK_SCALE` を上げれば
+  改善するが pick pass コストと RGBA32UI メモリが 4 倍になるので上げていない。
+- overlay に AA (FXAA / SMAA / jitter) はかからない (最終段の後に重ねる)。縁は shader の coverage 補間のみ。
+- alpha < 0.5 の renderer、CPU fallback の renderer (`*symm` 等)、stereo では highlight されない
+  (pick buffer に無い)。
+- highlight の単位は hit 要素のみ。残基単位で同一分子の全 renderer を光らせるには Mol* の marker texture
+  相当 (原子 ID -> mark の lookup と rend -> 分子の対応) が要る (未実装)。
