@@ -1,0 +1,179 @@
+# GPU ID-buffer picking と 3D view の hover 情報
+
+tritium の 3D view で、描画結果に即した hittest (renderer が実際に描いた幾何に対する当たり判定) と、
+マウス hover で左下ステータス領域に対象を表示する機能の設計記録。libcuemol2 (C++) の pick pass と
+tritium react-gui の hover UI の 2 層からなる。uxp_gui は従来の CPU hittest のまま動く。
+
+- Status: implemented (2026-09)
+- Related: [GTAO](gtao-screen-space-ao.md) (offscreen パイプラインと WebGL2 の制約),
+  mapping `widget.mainview` (UXP `tabmolview` の hover tooltip は JS-only で動作していなかった)
+
+---
+
+## 1. 動機
+
+従来の `View::hitTest` は CPU 側の「点 in 視錐台」判定である。各 renderer は `renderHit()` で pickable な
+要素につき **原子座標 1 点** を `gfx::HittestList` に登録し、`HittestContext::callDisplayList` が pick matrix で
+射影して 10px の箱に入る点を拾う。ribbon / cartoon / tube 系は `MainChainRenderer::rendHitResid` が残基の
+pivot 原子 (CA) だけを登録するため、帯の上をクリックしても CA から離れていると当たらなかった。hover 経路も
+無かった (C++ `MouseEventHandler::move` はボタン非押下の move を破棄する)。
+
+Mol* の pick pass (`mol-canvas3d/passes/pick.ts`) と同じく、renderer/要素 ID を offscreen framebuffer に
+描画してカーソル下の texel を読み戻す方式に切り替えた。Mol* は 24bit ID を RGBA8 に pack するが、
+本実装は整数 render target (RGBA32UI) を使う。
+
+## 2. ID のデータ構造: 既存の name stack と HitData を GPU 経路に昇格
+
+新しい ID 型は作らず、GL selection 由来の既存 API を正式なデータ経路にした。
+
+| 既存の構造 | 役割 (CPU hittest) | GPU 経路での役割 |
+|---|---|---|
+| `DisplayContext::loadName / pushName / popName` | `HittestContext` が name stack として実装 (基底は no-op だった) | 基底 `DisplayContext` が状態として実装。renderer は `render()` 内で `pdl->loadName(aid)` と呼ぶ |
+| `DisplayContext::startHit(uid) / endHit()` | `HittestContext` が現在 renderer を記録 | 基底が pass 内の renderer uid テーブルを積み、1-based index を保持 |
+| `gfx::HitData::HitEntry{rend_id, index, data}` | 1 hit = name list (外側の名前 ... + 要素 id) | `HitData::addHit(uid, names)` で同じ形に積む |
+| `Renderer::interpHit(RawHitData)` | name の意味付け (atom / residue / symop) | 無変更。GPU 経路もこれで JSON を組み立てる |
+
+- 要素 id の意味は renderer が決める (`MolAtomRenderer` = aid、`MainChainRenderer` = pivot 原子の aid を残基として
+  解釈、`SymmRenderer` = [symop, aid])。データに kind は持たせない。
+- 頂点属性 / texel への符号化は `gfx::encodeHitName` / `decodeHitName` の 1 対のみ (`-1` (no name) -> 0、`n` -> `n+1`)。
+- 制約: display list 内での `pushName` の入れ子は属性 1 本では表現できない。「DL 記録中は top のみ記録、
+  外側 1 段は描画時 (callDisplayList 時) の drawing context の name stack から」と定義した。現行の 2 段利用は
+  `SymmRenderer` の [symop, aid] だけで、これで足りる (Phase 3、未実装)。
+
+## 3. 経路
+
+```
+renderer::render(pdl)              pdl->loadName(aid); ... vertex() ...      (色・法線と同格の描画状態)
+  -> gfx::DisplayList               頂点ごとに encodeHitName(getCurrentName()) を記録
+       LineDrawAttr / TrigVertBuf / GrowMesh 頂点 / SphereList / CylinderList (name フィールド)
+  -> TrigGpuPrim / LineGpuPrim      頂点構造体に uint hitName (整数属性: glVertexAttribIPointer /
+                                    gl.vertexAttribIPointer)。表示用 shader はこの location を宣言しないだけ
+GpuPrim 直描き renderer             SphereIdx / CylinderIdx / LineIdx / LineValIdx の頂点に hitName を追加、
+                                    setData(...) で encodeHitName(aid) を直接渡す (index -> aid の逆引き不要)
+
+pick pass (GUIView::renderPickBuffer)
+  pick RT (RGBA32UI + depth, backing size * PICK_SCALE=0.5, NEAREST) を bind / clear(0)
+  pdc: PICK_DRAW, blend off, viewport = pick size, jitter 無しの projection, model matrix
+  Scene::displayPick(pdc): 可視 / 非UIロック / isPickSupported / alpha >= 0.5 の renderer ごとに
+      pdc->resetNames(); pdc->startHit(uid); pRend->displayPick(pdc); pdc->endHit()
+      DispListRenderer: 表示用の同じ display list を callDisplayList (pick 用の複製は無い)
+      GpuPrim: draw() が isPickDraw() を見て pick program (*_pick_*.glsl) に切り替える
+  texel = uvec4(R = renderer index, G = 要素 name, B = 外側 name, 0)
+
+GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
+  1. dirty なら renderPickBuffer()   (dirty = drawScene() 末尾 / sizeChanged / unloading で true)
+  2. カーソル位置 (backing px * scale, bottom-left 原点) の (2r+1)^2 窓を readColorUInt で読み、
+     gfx::findNearestPickTexel が中心から外側へ (Chebyshev ring、ring 内は距離順) 走査
+  3. pickTexelToHitData: (R, G, B) -> rend uid (テーブル), names = [decode(B)?, decode(G)] -> HitData::addHit
+  4. 既存の interpHit + JSON 組み立て (formatHitResult)。JSON 形式は不変
+  5. miss かつ Scene::hasCpuOnlyHitRenderers() のときだけ、それらに限定して従来 CPU hittest
+     (processHit(pdc, bCpuOnly=true))
+```
+
+### 3.1 pick shader
+- `src/sysdep/ogl_core/pick_inc.glsl`: DrawParamsBlock の pick tail (`u_rend_idx`, `u_outer_name`) 用マクロ。
+- `trig_pick_vert/frag.glsl`, `linew2_pick_vert.glsl`, `linew2idx_pick_vert.glsl`, `linevalidx_pick_vert.glsl`,
+  `linew_pick_frag.glsl` (line 系共用)。line は両端点の name と補間パラメータ `v_pickT` を持ち、fragment で
+  近い側の端点を選ぶ (二色 bond の各半分が自分の原子を返す)。
+- impostor: `sphere_body_frag.glsl` / `cylinder_body_frag.glsl` を include-only の body に切り出し、
+  `PICK_MODE` で `uvec4 o_Pick` 出力 / edge ring discard に分岐。`sphere2idx_pick_vertex.glsl` /
+  `cylinder_idx_pick_vertex.glsl` は `USE_COORD_TEX` + `PICK_MODE` で body を include。cylinder は
+  `v_impos.y` (ta 端 = -1, tb 端 = +1) で A/B の name を選ぶので、単色 bond は中点で分かれ、二色の半分は
+  両端に同じ name を持つ。
+- 整数 varying は `flat`、`uint` 演算は `u` リテラル。`#version` は従来通り実行時に前置 (desktop `410` /
+  WebGL2 `300 es`)。
+- UBO は既存の DrawParamsBlock の末尾に 16 byte の tail を足した `PickDrawParams` (各 GpuPrim に定義)。
+
+### 3.2 render target と読み戻し
+- `gfx::RT_COLOR_RGBA32UI` (`RenderTarget.hpp`): attachment 0 を RGBA32UI (常に NEAREST)、`clear()` は
+  `glClearBufferuiv` で (0,0,0,0)。`readColorUInt(idx, x, y, w, h, quint32*)` を追加。
+- desktop: `OcRenderTarget` (`GL_RGBA_INTEGER` / `GL_UNSIGNED_INT`)。WebGL2: `EcRenderTarget::readColorUInt`
+  -> peer `readPixelsUInt` (`FboStore.readPixelsUInt`: `readPixels(RGBA_INTEGER, UNSIGNED_INT, Uint32Array)`)。
+  `FboStore.createFramebuffer` は `RT_COLOR_RGBA32UI` で `texImage2D(RGBA32UI, RGBA_INTEGER, UNSIGNED_INT)`、
+  `clearRenderTarget` は整数 target なら `clearBufferuiv` (`gl.clear` は整数 draw buffer に INVALID_OPERATION)。
+- 整数頂点属性: `AbstDrawAttrs::setAttrInteger(ind, true)` -> `OcBufferRep` は `glVertexAttribIPointer`、
+  `EcBufferRep` は elem_info JSON に `"integer"`、`BufferStore` は `gl.vertexAttribIPointer`。
+
+### 3.3 renderer 側の name 供給 (Phase 1 / Phase 2)
+- `MolAtomRenderer::render` の基底ループ: `rendBond` の前に atom1、`rendAtom` の前にその原子。二色 bond を
+  半分ずつ描く subclass (BallStick DL 経路 / Simple DL 経路 / NARenderer) は 2 本目の色切替の隣で
+  `loadName(atom2)`。
+- 主鎖系: `MainChainRenderer::calcHitName(rho, pRes1, pRes2)` (= `rendHitResid` と同じ pivot 原子)。
+  `SplineRenderer::calcHitName(par, pCoeff)`、`Ribbon2Renderer::calcHitName / calcCoilHitName` を `calcColor`
+  の隣で呼ぶ。`TubeSection::doTess` と `RibbonRenderer` / `TubeRenderer` の strip ループは前リングの name を
+  保持し (`m_prevName`)、残基境界がリング間に落ちる (provoking vertex = LAST で三角形ごとにどちらかの残基)。
+- GpuPrim 直描き (CPK2 / BallStick / Simple / Trace): `displayPick()` は `display()` を呼ぶだけ。coord-texture
+  経路の prim は pick program で描き、DL fallback 経路は名前付き DL がそのまま描かれる。pick program を持たない
+  `SphereGpuPrim` / `CylinderGpuPrim` (座標属性版) は `isPickDraw()` で何も描かない (この経路は pick 不可)。
+- `isPickSupported()`: `MolAtomRenderer` / `MainChainRenderer` で `isHitTestSupported()`。name を付けない
+  renderer (AtomIntr / MolSurf / NameLabel / Selection / Symm / LW / UnitCell) は false のまま。
+
+### 3.4 uxp_gui 非適用の gating
+- `ViewCap::hasGpuPick()` (既定 false)。`ElecViewCap` のみ true。`OcViewCap` は override しないので desktop /
+  uxp_gui では `GUIView::hitTest` の呼び出し列は従来と同一 (`hitTestImpl` -> `Scene::processHit(pdc, false)`)。
+- 基底 `DisplayContext` の name stack は状態を持つだけで GL 呼び出しは増えない。`HittestContext` の override、
+  `renderHit()` / `HittestList` / `HitData::createNearest|createAll` は無変更。
+- renderer が `render()` で呼ぶ `loadName` は desktop でも実行されるが、DisplayList に 4 byte/頂点 が
+  記録されるだけで表示用 shader は属性を読まない。
+
+## 4. tritium の hover UI
+
+- `naviHover` service (`worker/server/services/navi/naviTool.ts`): `view.hitTest(x, y)` のみ (MsgLog / undo
+  txn なし)。結果 `{ hit, message?, raw? }`、message は `Molecule [name], A ALA 10 CA` (+ ` (symop: ..)`)。
+  `hitHeadline` / `symopSuffix` を `naviClickAtom` と共有し、click の文字列は不変。
+- `useHoverInfoHandler` (`features/molview/`): `.content-pane` に listener を委譲 (rectSelect / lasso 中は
+  `RectSelectOverlay` が canvas を覆うため)。33ms throttle、in-flight 1 件、latest-wins、`buttons !== 0` で抑止、
+  `mousedown` / `mouseleave` / view 切替で clear、`useStaleGuard` で遅延応答を破棄、同一文字列では setter を
+  呼ばない。全ツールで有効。
+- status bar: `StatusMessageProvider` に hover スロット (`useHoverMessage` / `useSetHoverMessage`) を追加し、
+  `StatusBar` は `hoverMessage ?? statusMessage` を表示。click の完全メッセージは hover が消えると再び見える。
+- transport: `invokeService(name, args, { quiet: true })` は busy counter に乗らない (`WorkerTransport._call`
+  に統合、`invokeWorkerWithTransfer` と同じ非計上経路)。hover の 30Hz 呼び出しで Busy 表示 / wait cursor が
+  瞬かないため。
+- click / context menu / measure / bond edit は既存の `view.hitTest` 経由なので、判定だけが renderer 準拠になる。
+  `hitTestRect` / `hitTestPolygon` (矩形・lasso) は CPU 判定のまま。
+
+## 5. 契約行
+- `worker/shared/calls/navi.ts`: `naviHover: { args: NaviHoverArgs; result: NaviHoverResult }` + `NAVI_KEYS`。
+- `worker/client/WorkerTransport.ts`: `InvokeOptions.quiet`。`tritium/CLAUDE.md` の dispatch 表に 1 行。
+- `state/statusMessage`: `useHoverMessage` / `useSetHoverMessage`。
+- GfxManager peer API (`gfxManagerContract.test.ts`): `readPixelsUInt` を追加。
+- C++: `ViewCap::hasGpuPick`、`View::hasGpuPick`、`Renderer::isPickSupported / displayPick`、
+  `Scene::displayPick / processHit(bCpuOnly) / hasCpuOnlyHitRenderers`、`HitData::addHit`、
+  `RenderTarget::readColorUInt`、`AbstDrawAttrs::setAttrInteger`。`View.qif` / JSON 形式は無変更。
+
+## 6. 採らなかった案
+- **色に ID を埋め込む**: pick build 中だけ `ColSchmHolder::getColor` が ID 色を返し、pick 用 DL を別途
+  キャッシュする案。renderer コードは触らずに済むが、色 hook / smooth color 抑止 / 色 proofing bypass / DL 複製が
+  散らばる負債になるため却下 (owner 判断)。
+- **新規 ID 型 (kind + index)**: renderer が `interpHit` で name を解釈する既存設計と責務が重複するため却下し、
+  name stack に統合した。
+- **C++ に hover event を追加**: `MouseEventHandler` が plain move を捨てる設計を崩し、UXP / python も同じ
+  event category を listen するため見送り。hover は renderer thread の DOM mousemove だけで実装した。
+- **RGBA8 pack (Mol* 方式)**: 整数 RT が WebGL2 core で使えるので、丸め誤差の無い RGBA32UI を選んだ。
+- tooltip popup (UXP 形式) ではなく status bar の 1 行にした (owner 指定)。
+
+## 7. テスト
+- C++ (test_gfx / test_qsys): 基底 name stack と符号化 (`test_displaycontext_names.cpp`)、DisplayList が頂点に
+  name を記録し recordStart で戻ること (`test_gpuprim.cpp`)、読み戻し窓の最近傍探索 (`test_pickbuffer.cpp`)、
+  texel -> HitData 変換 (`test_guiview.cpp`)、`Scene::displayPick` の選別と `processHit(bCpuOnly)` の skip
+  (`test_scene_pick.cpp`)。
+- tritium: hover controller の呼び出し列 (`useHoverInfoHandler.test.tsx`)、`naviHover` の wire 契約
+  (`naviHoverService.test.ts`)、`{ quiet: true }` が busy に乗らないこと (`AsyncCueMolBusy.test.ts`)。
+
+## 8. ビルドの注意
+- tritium の addon は `.build_out` の dylib ではなく `tritium/core/build/lib/libcuemol2.dylib` (core の install 時に
+  コピーされる staging 版) を `@rpath` で読む。libcuemol2 側 (gfx / qsys / renderer / shader) を変えたら
+  `task build_libcuemol2` だけでは反映されず、`task build_tritium` が必要。
+
+## 9. 既知の制約と今後
+- SymmRenderer の GPU pick (外側 name = symop、Phase 3) は未実装で CPU fallback。GPU hit は CPU-only renderer
+  より優先されるため、cartoon の手前にある symm コピーは報告されない。
+- `hitTestRect` / `hitTestPolygon` は CPU の点リスト (cartoon の矩形選択は CA 位置基準)。ID buffer 化すれば
+  `renderHit()` の点リストは GPU 対応 renderer で不要になる。
+- 座標属性版 GpuPrim (`SphereGpuPrim` / `CylinderGpuPrim` / 名前無しの `LineGpuPrim`) は pick 不可
+  (tritium では float data texture が常に使えるので通常この経路は通らない)。
+- readback は同期 `readPixels`。async (PBO + fence) は未実装。
+- hover ハイライト描画とカーソル変更は次 iteration。頂点の name から「ある要素の描画幾何」が引けるので、
+  ハイライトはこの対応を使って実装できる。
+- stereo (CSM_PARA / CROSS) では GPU pick を使わず CPU 経路。

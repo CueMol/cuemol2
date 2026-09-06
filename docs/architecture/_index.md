@@ -12,6 +12,13 @@ instead. If a change ports a UXP surface it belongs there; if it adds
 something UXP never had, or concerns build / packaging / internal
 architecture, it belongs here.
 
+- [GPU ID-buffer picking と 3D view の hover 情報](gpu-id-picking.md) (日本語) --
+  tritium の 3D view で、renderer が描いた幾何そのものに対する hittest (整数 render target に
+  renderer/要素 ID を描画して読み戻す、Mol* の pick pass 方式) と、マウス hover で左下ステータスに対象を
+  出す機能の設計。新しい ID 型は作らず、GL selection 由来の name stack (`loadName` / `startHit`) と
+  `HitData` を GPU 経路の正式なデータ経路に昇格させた判断、頂点整数属性 / pick shader / CPU fallback 規則、
+  uxp_gui を従来経路のまま保つ gating、hover UI (`naviHover` / throttle / busy 非計上)、採らなかった案
+  (色に ID を埋め込む方式)。
 - [react-gui 大規模リファクタリング (2026-08)](react-gui-refactoring.md)
   (日本語) -- 移行完了後の構造作り替えの設計記録。動機 (churn が 4 つのハブ
   ファイルに集中していた) と、採用した判断 (feature ディレクトリ / hook は
