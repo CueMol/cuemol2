@@ -93,6 +93,12 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   `clearRenderTarget` は整数 target なら `clearBufferuiv` (`gl.clear` は整数 draw buffer に INVALID_OPERATION)。
 - 整数頂点属性: `AbstDrawAttrs::setAttrInteger(ind, true)` -> `OcBufferRep` は `glVertexAttribIPointer`、
   `EcBufferRep` は elem_info JSON に `"integer"`、`BufferStore` は `gl.vertexAttribIPointer`。
+- pick pass の far clip は **fog end (center + slab/2)** (`GUIView::computeSlabPlanes(bPickProj = true)`、
+  `renderPickBuffer` が `m_bPickProj` を立てて `setUpProjMat` を呼ぶ)。表示の far clip は center + slab だが、
+  fog は fog end で 100% になり (全 GL renderer が無条件に fog を受ける、pick shader には fog が無い)、
+  その先は見えないのに pick できてしまうため。GPU pick と併走する CPU fallback (`hitTestImpl`) も
+  `far_factor = PICK_FAR_FACTOR (0.5)` で同じ可視範囲にする。純 CPU 経路 (uxp_gui) と `hitTestRect` /
+  `hitTestPolygon` は従来の far のまま。
 
 ### 3.3 renderer 側の name 供給 (Phase 1 / Phase 2)
 - `MolAtomRenderer::render` の基底ループ: `rendBond` の前に atom1、`rendAtom` の前にその原子。二色 bond を
@@ -100,9 +106,10 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   `loadName(atom2)`。
 - 主鎖系: `MainChainRenderer::calcHitName(rho, pRes1, pRes2)` (= `rendHitResid` と同じ pivot 原子)。
   `SplineRenderer::calcHitName(par, pCoeff)`、`Ribbon2Renderer::calcHitName / calcCoilHitName` を `calcColor`
-  の隣で呼ぶ。`TubeSection::doTess` は前リングと現在リングの間の strip 全体に **現在の name (区間単位)** を
-  付けるので、残基境界はリングの上にぴったり乗る。リングごとに name を変えると provoking vertex (LAST) により
-  三角形が交互に前後の残基に属し、境界がノコギリ状になる (hover highlight で目立った)。
+  の隣で呼ぶ。`TubeSection::doTess` (cartoon) と `TubeRenderer` / `RibbonRenderer` の strip ループは、前リングと
+  現在リングの間の strip 全体に **現在の name (区間単位)** を付けるので、残基境界はリングの上にぴったり乗る。
+  リングごとに name を変えると provoking vertex (LAST) により三角形が交互に前後の残基に属し、境界がノコギリ状に
+  なる (hover highlight で目立った)。
 - GpuPrim 直描き (CPK2 / BallStick / Simple / Trace): `displayPick()` は `display()` を呼ぶだけ。coord-texture
   経路の prim は pick program で描き、DL fallback 経路は名前付き DL がそのまま描かれる。pick program を持たない
   `SphereGpuPrim` / `CylinderGpuPrim` (座標属性版) は `isPickDraw()` で何も描かない (この経路は pick 不可)。

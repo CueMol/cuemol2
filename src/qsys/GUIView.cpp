@@ -30,6 +30,13 @@
 
 namespace qsys {
 
+namespace {
+/// Far slab factor of the CPU hit test run alongside the GPU pick pass: the
+/// pick pass clips at the fog end (dist + slab/2, see computeSlabPlanes), so
+/// the CPU-only renderers get the same visible range.
+constexpr double PICK_FAR_FACTOR = 0.5;
+}  // namespace
+
 GUIView::GUIView() : View()
 {
     auto pMark = DrawObjPtr(new CenterMarkDrawObj());
@@ -116,6 +123,27 @@ void GUIView::setUpModelMat(int nid)
 
 void GUIView::setUpLightColor() {}
 
+void GUIView::computeSlabPlanes(double dist, double slabdepth, bool bPickProj,
+                                double &slabnear, double &slabfar, double &fognear,
+                                double &fogfar)
+{
+    if (slabdepth <= 0.1) slabdepth = 0.1;
+
+    slabnear = dist - slabdepth / 2.0;
+    // truncate near slab by camera distance
+    if (slabnear < 0.1) slabnear = 0.1;
+
+    fognear = dist;
+    fogfar = dist + slabdepth / 2.0;
+    if (fognear < 1.0) fognear = 1.0;
+
+    // Visible range: for display the far clip stays one slab depth behind the
+    // centre (fully fogged geometry still occludes), but the pick pass clips at
+    // the fog end (centre + slab/2), where the fog is 100% and nothing can be
+    // seen, so invisible geometry is not picked (hover chip / highlight).
+    slabfar = bPickProj ? std::max(fogfar, slabnear + 0.1) : dist + slabdepth;
+}
+
 // setup the projection matrix
 void GUIView::setUpProjMat(int cx, int cy)
 {
@@ -128,17 +156,9 @@ void GUIView::setUpProjMat(int cx, int cy)
     }
 
     double zoom = (double)getZoom(), dist = (double)getViewDist();
-    double slabdepth = (double)getSlabDepth();
-    if (slabdepth <= 0.1) slabdepth = 0.1;
-
-    double slabnear = dist - slabdepth / 2.0;
-    double slabfar = dist + slabdepth;
-    // truncate near slab by camera distance
-    if (slabnear < 0.1) slabnear = 0.1;
-
-    double fognear = dist;
-    double fogfar = dist + slabdepth / 2.0;
-    if (fognear < 1.0) fognear = 1.0;
+    double slabnear, slabfar, fognear, fogfar;
+    computeSlabPlanes(dist, (double)getSlabDepth(), m_bPickProj, slabnear, slabfar,
+                      fognear, fogfar);
 
     pdc->setFogStart(fognear);
     pdc->setFogEnd(fogfar);
@@ -716,8 +736,12 @@ LString GUIView::hitTest(int ax, int ay)
             double dHitPrec =
                 convToBackingX(qsys::ViewInputConfig::getInstance()->getHitPrec());
 
-            // Perform hittest (single hit)
-            if (!hitTestImpl(&hc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0, bGpu))
+            // Perform hittest (single hit). Alongside the GPU pick pass the
+            // CPU-only renderers use the pick pass's visible range (far clip
+            // at the fog end); the pure CPU path keeps the display far slab.
+            const double farFactor = bGpu ? PICK_FAR_FACTOR : 1.0;
+            if (!hitTestImpl(&hc, Vector4D(x, y, dHitPrec, dHitPrec), false, farFactor,
+                             bGpu))
                 return LString();
 
             m_hitdata.createNearest(&hc);
@@ -1197,13 +1221,16 @@ bool GUIView::renderPickBuffer()
             pdc->bindDefaultFramebuffer();
             pdc->setViewport(savedVp);
             pdc->setProjMat(savedProj);
-            // The next frame recomputes its own (possibly jittered) projection.
+            // The next frame recomputes its own (possibly jittered) projection
+            // with the display far clip.
+            pView->m_bPickProj = false;
             pView->setProjChange();
         }
     } guard{this, pdc, m_pPickRT, pdc->getViewport(), pdc->getProjMat()};
 
     // Un-jittered projection of the current camera (same aspect as the pick
-    // target); only the viewport is scaled.
+    // target) with the far clip at the fog end; only the viewport is scaled.
+    m_bPickProj = true;
     setJitterOffsetPx(0.0, 0.0);
     setUpProjMat(-1, -1);
     pdc->setViewport(Vector4D(0, 0, pw, ph));
