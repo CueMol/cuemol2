@@ -78,6 +78,7 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
         if (nBondType == MolBond::DOUBLE) {
             // double bond
             if (pcol1->equals(*pcol2.get())) {
+                pdl->loadName(pAtom1->getID());
                 pdl->color(pcol1);
                 pdl->vertex(pos1 + dvd.scale(m_dCvScl1));
                 pdl->vertex(pos2 + dvd.scale(m_dCvScl1));
@@ -86,12 +87,14 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
             } else {
                 const Vector4D minpos = (pos1 + pos2).divide(2.0);
 
+                pdl->loadName(pAtom1->getID());
                 pdl->color(pcol1);
                 pdl->vertex(pos1 + dvd.scale(m_dCvScl1));
                 pdl->vertex(minpos + dvd.scale(m_dCvScl1));
                 pdl->vertex(pos1 + dvd.scale(m_dCvScl2));
                 pdl->vertex(minpos + dvd.scale(m_dCvScl2));
 
+                pdl->loadName(pAtom2->getID());
                 pdl->color(pcol2);
                 pdl->vertex(pos2 + dvd.scale(m_dCvScl1));
                 pdl->vertex(minpos + dvd.scale(m_dCvScl1));
@@ -101,6 +104,7 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
         } else {
             // triple bond
             if (pcol1->equals(*pcol2.get())) {
+                pdl->loadName(pAtom1->getID());
                 pdl->color(pcol1);
                 pdl->vertex(pos1);
                 pdl->vertex(pos2);
@@ -111,6 +115,7 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
             } else {
                 const Vector4D minpos = (pos1 + pos2).divide(2.0);
 
+                pdl->loadName(pAtom1->getID());
                 pdl->color(pcol1);
                 pdl->vertex(pos1);
                 pdl->vertex(minpos);
@@ -119,6 +124,7 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
                 pdl->vertex(pos1 + dvd.scale(-m_dCvScl1));
                 pdl->vertex(minpos + dvd.scale(-m_dCvScl1));
 
+                pdl->loadName(pAtom2->getID());
                 pdl->color(pcol2);
                 pdl->vertex(pos2);
                 pdl->vertex(minpos);
@@ -134,17 +140,20 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
     }
 
     if (pcol1->equals(*pcol2.get())) {
-        pdl->color(pcol1);
+        pdl->loadName(pAtom1->getID());
+                pdl->color(pcol1);
         pdl->vertex(pos1);
         pdl->vertex(pos2);
     } else {
         const Vector4D minpos = (pos1 + pos2).divide(2.0);
 
-        pdl->color(pcol1);
+        pdl->loadName(pAtom1->getID());
+                pdl->color(pcol1);
         pdl->vertex(pos1);
         pdl->vertex(minpos);
 
-        pdl->color(pcol2);
+        pdl->loadName(pAtom2->getID());
+                pdl->color(pcol2);
         pdl->vertex(pos2);
         pdl->vertex(minpos);
     }

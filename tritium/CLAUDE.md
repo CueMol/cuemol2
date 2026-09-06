@@ -601,6 +601,7 @@ Prefer the typed helpers (`invokeService`, `invokeMethodTyped`, `invokeRpc`) —
 | Method | Maps to | Awaits | Pending count |
 |--------|---------|--------|---------------|
 | `invokeService<K>(name, args)` | `ServiceMap[K]` | Yes | Yes |
+| `invokeService<K>(name, args, { quiet: true })` | `ServiceMap[K]` | Yes | **No** — pointer-rate streams (viewport hover) only |
 | `invokeMethodTyped<K>(name, ...args)` | `MethodMap[K]` | Yes | Yes |
 | `invokeRpc<K>(name, ...args)` | `RpcMap[K]` (used by `ObjProxy`) | Yes | Yes |
 | `invokeWorker(method, ...args)` | none — raw transport | Yes | Yes — `isBusy()` / `subscribeBusy()` |

@@ -50,6 +50,9 @@ public:
     void readColor(int idx, int x, int y, int w, int h, int ncomp,
                    void *pbuf) override;
 
+    bool readColorUInt(int idx, int x, int y, int w, int h,
+                       quint32 *pbuf) override;
+
     bool hasNormal() const override
     {
         return (m_nFlags & gfx::RT_NORMAL_RGBA16F) != 0;

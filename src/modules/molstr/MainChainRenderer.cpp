@@ -447,6 +447,20 @@ gfx::ColorPtr MainChainRenderer::calcColor(double rho, bool bSmoCol,
 }
 
 
+int MainChainRenderer::calcHitName(double rho, MolResiduePtr pRes1,
+                                   MolResiduePtr pRes2) const
+{
+  MolResiduePtr pRes = (rho > 0.5) ? pRes2 : pRes1;
+  if (pRes.isnull())
+    pRes = (rho > 0.5) ? pRes1 : pRes2;
+  if (pRes.isnull())
+    return -1;
+  MolAtomPtr pAtom = getPivotAtom(pRes);
+  if (pAtom.isnull())
+    return -1;
+  return pAtom->getID();
+}
+
 bool MainChainRenderer::getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec)
 {
   return false;

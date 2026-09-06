@@ -61,7 +61,8 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
         json_str += LString::format("\"nelems\": \"%d\",", data.getAttrElemSize(i));
         json_str += LString::format("\"itype\": \"%d\",", data.getAttrTypeID(i));
         json_str += LString::format("\"npos\": \"%d\",", data.getAttrPos(i));
-        json_str += LString::format("\"idiv\": \"%d\"", data.getAttrDivisor(i));
+        json_str += LString::format("\"idiv\": \"%d\",", data.getAttrDivisor(i));
+        json_str += LString::format("\"integer\": \"%d\"", data.isAttrInteger(i) ? 1 : 0);
         json_str += "}";
     }
     json_str += "]";

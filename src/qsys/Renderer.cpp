@@ -338,6 +338,15 @@ bool Renderer::isHitTestSupported() const
   return false;
 }
 
+bool Renderer::isPickSupported() const
+{
+  return false;
+}
+
+void Renderer::displayPick(DisplayContext *pdc)
+{
+}
+
 LString Renderer::interpHit(const gfx::RawHitData &)
 {
   return NULL;

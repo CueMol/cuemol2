@@ -360,6 +360,13 @@ using namespace molstr;
 
     gfx::ColorPtr calcColor(double t, detail::SecSplDat *pCyl);
 
+    /// Hit name (pivot atom ID of the owning residue) at spline parameter t
+    /// of a helix/sheet segment (same residue selection as calcColor).
+    int calcHitName(double t, detail::SecSplDat *pCyl) const;
+
+    /// Hit name at parameter at of a coil segment (see calcCoilColor).
+    int calcCoilHitName(double at, detail::SecSplDat *pCyl);
+
     TubeSectionPtr getHelixSection() const { return m_ptsHelix; }
     TubeSectionPtr getSheetSection() const { return m_ptsSheet; }
     TubeSectionPtr getCoilSection() const { return m_ptsCoil; }

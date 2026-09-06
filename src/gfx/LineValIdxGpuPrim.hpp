@@ -47,7 +47,10 @@ public:
         qfloat32 t1, t2, dispScale, idxd;  ///< a_val: params, disp scale, ref idx
         qbyte r1, g1, b1, a1;          ///< Start point RGBA colour
         qbyte r2, g2, b2, a2;          ///< End point RGBA colour
+        quint32 hitName1;              ///< Encoded hit name of endpoint 1 (pick pass)
+        quint32 hitName2;              ///< Encoded hit name of endpoint 2 (pick pass)
     };
+
 
     /**
      * std140 DrawParamsBlock layout (binding=2, 48 bytes).
@@ -64,6 +67,19 @@ public:
         qint32   use_u_color;       // offset 24
         qfloat32 _pad;              // offset 28
         qfloat32 u_color[4];        // offset 32
+    };
+    /**
+     * std140 DrawParamsBlock for the pick program (binding=2, 64 bytes):
+     * DrawParams followed by the pick tail (linevalidx_pick_vert.glsl /
+     * linew_pick_frag.glsl).
+     */
+    struct PickDrawParams
+    {
+        DrawParams base;            // offset 0..47
+        quint32  u_rend_idx;        // R channel (1-based renderer index)
+        quint32  u_outer_name;      // B channel (encoded outer name)
+        quint32  _pp0;
+        quint32  _pp1;
     };
 
     using LineValArray = gfx::DrawAttrElems<quint32, LineValElem>;
@@ -88,7 +104,7 @@ public:
      *        two halves of a bicolour bond.
      */
     void setLine(int i, int idx1, int idx2, float t1, float t2, quint32 dc1,
-                 quint32 dc2);
+                 quint32 dc2, quint32 hitName1 = 0, quint32 hitName2 = 0);
 
     /**
      * Displaced (double/triple bond parallel) line between two atoms.
@@ -98,14 +114,15 @@ public:
      *        fallback (isolated double bonds / collinear triple bonds).
      */
     void setValLine(int i, int idx1, int idx2, float t1, float t2,
-                    float dispScale, int idxd, quint32 dc1, quint32 dc2);
+                    float dispScale, int idxd, quint32 dc1, quint32 dc2,
+                    quint32 hitName1 = 0, quint32 hitName2 = 0);
 
     /**
      * Isolated-atom aster arm: both endpoints reference the same atom, with
      * static model-space offsets (e.g. -axis .. +axis).
      */
     void setAster(int i, int idx, const qlib::Vector4D &off1,
-                  const qlib::Vector4D &off2, quint32 dc);
+                  const qlib::Vector4D &off2, quint32 dc, quint32 hitName = 0);
 
     /** Bind the coordinate texture to this unit before draw(). Non-owning. */
     void setCoordTex(FloatDataTexture *pTex, int texUnit);
@@ -149,9 +166,13 @@ private:
     static constexpr int ATTRLOC_VAL    = 2;
     static constexpr int ATTRLOC_COLOR1 = 3;
     static constexpr int ATTRLOC_COLOR2 = 4;
+    // Integer attributes read by the pick program only
+    static constexpr int ATTRLOC_HITNAME1 = 5;
+    static constexpr int ATTRLOC_HITNAME2 = 6;
     static constexpr int COORD_TEX_UNIT = 0;
 
     gfx::ShaderObject *m_pPO;
+    gfx::ShaderObject *m_pPickPO;   ///< ID-buffer pick program (lazy)
     LineValArray *m_pDrawAry;
     FloatDataTexture *m_pCoordTex;   ///< non-owning
     int m_nCoordTexUnit;
@@ -161,6 +182,9 @@ private:
     bool m_bNoDepth;
 
     void setupAttrs();
+
+    bool initPick(DisplayContext *pDC);
+    void drawPick(DisplayContext *pDC);
 };
 
 }  // namespace gfx

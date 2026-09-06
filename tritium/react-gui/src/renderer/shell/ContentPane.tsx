@@ -24,6 +24,7 @@ import { RectSelectOverlay } from "@renderer/features/molview/RectSelectOverlay"
 import { useNaviClickHandler } from "@renderer/features/molview/useNaviClickHandler";
 import { useMeasureClickHandler } from "@renderer/features/molview/useMeasureClickHandler";
 import { useBondEditClickHandler } from "@renderer/features/molview/useBondEditClickHandler";
+import { MolViewHoverLabel } from "@renderer/features/molview/MolViewHoverLabel";
 import { useNaviContextMenu } from "@renderer/features/molview/useNaviContextMenu";
 import { useActiveToolContext, useSetActiveTool } from "@renderer/contexts/ActiveToolContext";
 import { useSetStatusMessage } from "@renderer/state/statusMessage";
@@ -63,6 +64,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   const activeTool = useActiveToolContext();
   const onSelectTool = useSetActiveTool();
   const onStatusMessage = useSetStatusMessage();
+  const paneRef = useRef<HTMLDivElement>(null);
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
   // The molview canvas is visible -- and thus the viewport tools apply -- only
   // when a molview tab is active, never on Settings or the empty state.
@@ -99,7 +101,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   useBondEditClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}) });
 
   return (
-    <div className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
+    <div ref={paneRef} className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
       {/* MolViewPane is always mounted once the tab exists; hidden when inactive.
           Using display:none rather than unmounting to preserve WebGL context
           and the OffscreenCanvas transferred to the Web Worker. */}
@@ -112,6 +114,8 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
       {/* Rubber-band selection layer -- click-through unless a select tool
           is active. Mounted only while the canvas is visible. */}
       {molViewVisible && <RectSelectOverlay />}
+      {/* What is under the pointer -- bottom-left chip, owns the hover state. */}
+      {molViewVisible && <MolViewHoverLabel containerRef={paneRef} />}
       {molViewVisible && (
         <ViewportToolPalette
           activeTool={activeTool}

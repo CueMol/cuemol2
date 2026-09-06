@@ -374,6 +374,10 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
 
             const int idx1 = it1->second;
             const int idx2 = it2->second;
+            // Hit names (pick pass): a half bond belongs to its own atom, a
+            // full single-colour bond is split at the midpoint in the shader.
+            const quint32 n1 = gfx::encodeHitName(pMB->getAtom1());
+            const quint32 n2 = gfx::encodeHitName(pMB->getAtom2());
             ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
             ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
             quint32 cc1 = pcol1->getDevCode(getSceneID());
@@ -396,36 +400,36 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
 
                 if (nBondType == MolBond::DOUBLE) {
                     if (bSameCol) {
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 1.0f, s1, idxd, cc1, cc1);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 1.0f, s2, idxd, cc1, cc1);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 1.0f, s1, idxd, cc1, cc1, n1, n2);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 1.0f, s2, idxd, cc1, cc1, n1, n2);
                     } else {
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 0.5f, s1, idxd, cc1, cc1);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 0.5f, s2, idxd, cc1, cc1);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 1.0f, 0.5f, s1, idxd, cc2, cc2);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 1.0f, 0.5f, s2, idxd, cc2, cc2);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 0.5f, s1, idxd, cc1, cc1, n1, n1);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 0.5f, s2, idxd, cc1, cc1, n1, n1);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 1.0f, 0.5f, s1, idxd, cc2, cc2, n2, n2);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 1.0f, 0.5f, s2, idxd, cc2, cc2, n2, n2);
                     }
                 } else {
                     // TRIPLE bond: central line + two displaced (+-s1).
                     if (bSameCol) {
-                        m_lineValGpuPrim.setLine(iline++, idx1, idx2, 0.0f, 1.0f, cc1, cc1);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 1.0f, s1, idxd, cc1, cc1);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 1.0f, -s1, idxd, cc1, cc1);
+                        m_lineValGpuPrim.setLine(iline++, idx1, idx2, 0.0f, 1.0f, cc1, cc1, n1, n2);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 1.0f, s1, idxd, cc1, cc1, n1, n2);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 1.0f, -s1, idxd, cc1, cc1, n1, n2);
                     } else {
-                        m_lineValGpuPrim.setLine(iline++, idx1, idx2, 0.0f, 0.5f, cc1, cc1);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 0.5f, s1, idxd, cc1, cc1);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 0.5f, -s1, idxd, cc1, cc1);
-                        m_lineValGpuPrim.setLine(iline++, idx1, idx2, 1.0f, 0.5f, cc2, cc2);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 1.0f, 0.5f, s1, idxd, cc2, cc2);
-                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 1.0f, 0.5f, -s1, idxd, cc2, cc2);
+                        m_lineValGpuPrim.setLine(iline++, idx1, idx2, 0.0f, 0.5f, cc1, cc1, n1, n1);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 0.5f, s1, idxd, cc1, cc1, n1, n1);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 0.0f, 0.5f, -s1, idxd, cc1, cc1, n1, n1);
+                        m_lineValGpuPrim.setLine(iline++, idx1, idx2, 1.0f, 0.5f, cc2, cc2, n2, n2);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 1.0f, 0.5f, s1, idxd, cc2, cc2, n2, n2);
+                        m_lineValGpuPrim.setValLine(iline++, idx1, idx2, 1.0f, 0.5f, -s1, idxd, cc2, cc2, n2, n2);
                     }
                 }
             } else {
                 // Single bond (or valence bond disabled)
                 if (bSameCol) {
-                    m_lineValGpuPrim.setLine(iline++, idx1, idx2, 0.0f, 1.0f, cc1, cc1);
+                    m_lineValGpuPrim.setLine(iline++, idx1, idx2, 0.0f, 1.0f, cc1, cc1, n1, n2);
                 } else {
-                    m_lineValGpuPrim.setLine(iline++, idx1, idx2, 0.0f, 0.5f, cc1, cc1);
-                    m_lineValGpuPrim.setLine(iline++, idx1, idx2, 1.0f, 0.5f, cc2, cc2);
+                    m_lineValGpuPrim.setLine(iline++, idx1, idx2, 0.0f, 0.5f, cc1, cc1, n1, n1);
+                    m_lineValGpuPrim.setLine(iline++, idx1, idx2, 1.0f, 0.5f, cc2, cc2, n2, n2);
                 }
             }
         }
@@ -443,9 +447,10 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
         MolAtomPtr pAtom = pMol->getAtom(aid);
         if (pAtom.isnull()) continue;
         quint32 cc = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
-        m_lineValGpuPrim.setAster(iline++, idx, nxdel, xdel, cc);
-        m_lineValGpuPrim.setAster(iline++, idx, nydel, ydel, cc);
-        m_lineValGpuPrim.setAster(iline++, idx, nzdel, zdel, cc);
+        const quint32 nm = gfx::encodeHitName(aid);
+        m_lineValGpuPrim.setAster(iline++, idx, nxdel, xdel, cc, nm);
+        m_lineValGpuPrim.setAster(iline++, idx, nydel, ydel, cc, nm);
+        m_lineValGpuPrim.setAster(iline++, idx, nzdel, zdel, cc, nm);
     }
 
     m_pCoordTex->update(&m_coordbuf[0]);

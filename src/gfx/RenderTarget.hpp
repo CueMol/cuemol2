@@ -7,6 +7,8 @@
 
 #include "gfx.hpp"
 
+#include <qlib/LTypes.hpp>
+
 namespace gfx {
 
 /// Attachment configuration flags for RenderTarget (bitmask).
@@ -28,6 +30,10 @@ enum RTFlags
     /// temporal-jitter accumulation target to avoid 8-bit banding when summing
     /// many samples.
     RT_COLOR_RGBA16F = 0x10,
+    /// Make color attachment 0 an unsigned-integer RGBA32UI texture (always
+    /// NEAREST; clear() writes (0,0,0,0) regardless of its arguments). Used by
+    /// the GPU ID-buffer pick pass; read back with readColorUInt().
+    RT_COLOR_RGBA32UI = 0x20,
 };
 
 /// Conventional texture-unit assignments shared by post-processing passes.
@@ -80,6 +86,15 @@ public:
     /// (RGB) or 4 (RGBA). pbuf must hold at least the platform row-aligned size.
     virtual void readColor(int idx, int x, int y, int w, int h, int ncomp,
                            void *pbuf) = 0;
+
+    /// Read back a sub-rectangle of an unsigned-integer color attachment
+    /// (RT_COLOR_RGBA32UI) as tightly packed RGBA uint32 texels (4 per pixel,
+    /// bottom-left origin). Returns false if unsupported by the backend.
+    virtual bool readColorUInt(int /*idx*/, int /*x*/, int /*y*/, int /*w*/, int /*h*/,
+                               qlib::quint32 * /*pbuf*/)
+    {
+        return false;
+    }
 
     /// Copy this target's depth attachment (1:1) into the default framebuffer's
     /// depth buffer. Used by the live AO path so the UI overlays drawn into the

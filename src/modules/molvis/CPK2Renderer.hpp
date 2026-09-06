@@ -77,6 +77,12 @@ namespace molvis {
     bool m_bCoordDirty;
 
   public:
+    /// The pick pass reuses display(): every draw path (coordinate-texture
+    /// primitives, the display-list fallback) switches to its pick program
+    /// while DisplayContext::isPickDraw() is set.
+    void displayPick(DisplayContext *pdc) override { display(pdc); }
+
+
     CPK2Renderer();
     ~CPK2Renderer() override;
 

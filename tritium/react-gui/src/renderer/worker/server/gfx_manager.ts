@@ -501,6 +501,13 @@ export class GfxManager {
         return this.fbos.readPixels(name, x, y, w, h);
     }
 
+    /// API: read back an RGBA32UI sub-rectangle of the named FBO's color
+    /// attachment 0 (bottom-left origin) as w*h*4 uint32 values (GPU ID-buffer
+    /// pick readback).
+    readPixelsUInt(name: string, x: number, y: number, w: number, h: number): Uint32Array {
+        return this.fbos.readPixelsUInt(name, x, y, w, h);
+    }
+
     /// API: delete the named FBO and its attachments.
     deleteFramebuffer(name: string): boolean {
         return this.fbos.deleteFramebuffer(name);

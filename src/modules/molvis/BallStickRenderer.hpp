@@ -51,6 +51,12 @@ namespace molvis {
     gfx::ColorPtr m_ringcol;
 
   public:
+    /// The pick pass reuses display(): every draw path (coordinate-texture
+    /// primitives, the display-list fallback) switches to its pick program
+    /// while DisplayContext::isPickDraw() is set.
+    void displayPick(DisplayContext *pdc) override { display(pdc); }
+
+
     double getSphr() const { return m_sphr; }
     void setSphr(double s) { m_sphr = s; }
 

@@ -496,7 +496,25 @@ namespace qsys {
     bool removeRendCache(RendererPtr rrend);
 
     void display(DisplayContext *);
-    void processHit(DisplayContext *);
+
+    /// CPU point hit test (HittestContext). When bCpuOnly is true, renderers
+    /// covered by the GPU pick pass (isPickSupported()) are skipped.
+    void processHit(DisplayContext *, bool bCpuOnly = false);
+
+    /// Draw the renderer/element IDs into the bound pick target (pdc in
+    /// PICK_DRAW mode). Participants: visible, not UI-locked, isPickSupported()
+    /// and default alpha >= PICK_ALPHA_THRESHOLD (see-through objects are
+    /// skipped so what is behind them can be picked). Each renderer is drawn
+    /// inside pdc->startHit(uid)/endHit(), which fills the renderer table read
+    /// back by the View.
+    void displayPick(DisplayContext *);
+
+    /// True if a visible, unlocked renderer needs the CPU hit test after a GPU
+    /// miss (isHitTestSupported() but not isPickSupported()).
+    bool hasCpuOnlyHitRenderers() const;
+
+    /// Minimum default alpha for a renderer to take part in the pick pass.
+    static constexpr double PICK_ALPHA_THRESHOLD = 0.5;
 
     RendererPtr getRenderer(qlib::uid_t uid) const;
     RendererPtr getRendByName(const LString &nm) const;

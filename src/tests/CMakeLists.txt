@@ -61,6 +61,8 @@ gtest_discover_tests(test_qlib PROPERTIES LABELS "test_qlib")
 add_executable(test_gfx
   gfx/test_solid_color.cpp
   gfx/test_gpuprim.cpp
+  gfx/test_displaycontext_names.cpp
+  gfx/test_pickbuffer.cpp
   gfx/test_aoconstants.cpp
   gfx/test_color_robustness.cpp
   gfx/test_copy_and_bounds.cpp
@@ -99,6 +101,7 @@ add_executable(test_qsys
   qsys/test_rendererfactory.cpp
   qsys/test_scenemanager.cpp
   qsys/test_scene.cpp
+  qsys/test_scene_pick.cpp
   qsys/test_scene_appdata.cpp
   qsys/test_streammanager.cpp
   qsys/test_stream_manager_search.cpp

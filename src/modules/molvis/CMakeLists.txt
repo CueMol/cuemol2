@@ -97,14 +97,21 @@ IF (BUILD_OPENGL_SYSDEP)
     cylinder_vertex.glsl
     cylinder_idx_vertex.glsl
     cylinder_frag.glsl
+    sphere2idx_pick_vertex.glsl
+    sphere_pick_frag.glsl
+    cylinder_idx_pick_vertex.glsl
+    cylinder_pick_frag.glsl
   )
   SET(SHADER_DEPS
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/lighting_inc.glsl
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/fog_inc.glsl
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/matrices_inc.glsl
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/lib_atoms.glsl
+    ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/pick_inc.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/sphere2_body_vert.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/cylinder_body_vert.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/sphere_body_frag.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/cylinder_body_frag.glsl
   )
   SET(SHADER_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core

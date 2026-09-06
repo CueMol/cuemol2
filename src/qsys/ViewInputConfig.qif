@@ -49,6 +49,11 @@ runtime_class ViewInputConfig
   property real hitprec => redirect(getHitPrec, setHitPrec);
   default hitprec = 10.0;
 
+  // GPU ID-buffer picking (renderer-accurate hit test) when the backend
+  // supports it; false forces the CPU point hit test (slow hosts).
+  property boolean gpu_pick => redirect(isGpuPick, setGpuPick);
+  default gpu_pick = true;
+
   /////////////
   // Style supports
 

@@ -102,6 +102,17 @@ export interface WorkerTransportOptions {
  * Web Worker transport. One instance per renderer process; owned by
  * `AsyncCueMol`.
  */
+/** Per-call options for the typed service helper. */
+export interface InvokeOptions {
+    /**
+     * Do not count this call toward `isBusy()` / `subscribeBusy()`. For
+     * pointer-rate streams (viewport hover) whose reply nobody waits on as
+     * "work"; a tracked call would flicker the status-bar Busy pill and the
+     * wait cursor.
+     */
+    quiet?: boolean;
+}
+
 export class WorkerTransport {
     private _ready: boolean = false;
     private _crashed: boolean = false;
@@ -423,22 +434,38 @@ export class WorkerTransport {
      *   for any new call site.
      */
     async invokeWorker(method: string, ...args: any[]): Promise<any[]> {
+        return this._call(method, args, { tracked: true });
+    }
+
+    /**
+     * Send one worker call and wait for its reply.
+     *
+     * @param method - Worker-side handler name.
+     * @param args - Positional arguments.
+     * @param opts.tracked - Count the call toward `isBusy()`.
+     * @param opts.transfer - Optional `Transferable` for the message.
+     */
+    private _call(
+        method: string,
+        args: any[],
+        opts: { tracked: boolean; transfer?: any },
+    ): Promise<any[]> {
         if (this._crashed) {
-            throw new Error('Worker has crashed; ' + method + ' call rejected');
+            return Promise.reject(new Error('Worker has crashed; ' + method + ' call rejected'));
         }
         const cur_seq = this.getSeqNo();
-        this._incPending();
+        if (opts.tracked) this._incPending();
         const promise = new Promise<any[]>((resolve, reject) => {
             this.addListener(method, cur_seq, (result: boolean, ...msgargs: any[]): void => {
                 try {
                     if (result) resolve(msgargs);
                     else reject(msgargs[0]);
                 } finally {
-                    this._decPending();
+                    if (opts.tracked) this._decPending();
                 }
             });
         });
-        this.postMessage(method, cur_seq, args);
+        this.postMessage(method, cur_seq, args, opts.transfer ?? null);
         return promise;
     }
 
@@ -454,18 +481,7 @@ export class WorkerTransport {
      * @remarks **Not** tracked by the busy counter (one-shot init only).
      */
     async invokeWorkerWithTransfer(method: string, transfer: any, ...args: any[]): Promise<any[]> {
-        if (this._crashed) {
-            throw new Error('Worker has crashed; ' + method + ' call rejected');
-        }
-        const cur_seq = this.getSeqNo();
-        const promise = new Promise<any[]>((resolve, reject) => {
-            this.addListener(method, cur_seq, (result: boolean, ...msgargs: any[]): void => {
-                if (result) resolve(msgargs);
-                else reject(msgargs[0]);
-            });
-        });
-        this.postMessage(method, cur_seq, args, transfer);
-        return promise;
+        return this._call(method, args, { tracked: false, transfer });
     }
 
     // --- Typed call helpers ---
@@ -478,9 +494,16 @@ export class WorkerTransport {
      *
      * @param name - Service key (compile-checked against `ServiceMap`).
      * @param args - Service request payload.
+     * @param opts - `quiet: true` leaves the call out of the busy counter
+     *   (pointer-rate streams such as the viewport hover, whose replies are
+     *   not work the user waits on and would only flicker the Busy pill).
      */
-    async invokeService<K extends ServiceKey>(name: K, args: ServiceArgs<K>): Promise<ServiceResult<K>> {
-        const result = await this.invokeWorker(name, args);
+    async invokeService<K extends ServiceKey>(
+        name: K,
+        args: ServiceArgs<K>,
+        opts?: InvokeOptions,
+    ): Promise<ServiceResult<K>> {
+        const result = await this._call(name, [args], { tracked: !opts?.quiet });
         return result[0] as ServiceResult<K>;
     }
 

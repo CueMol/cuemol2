@@ -37,6 +37,11 @@ namespace molstr {
     // Hittest implementation
 
     bool isHitTestSupported() const override;
+
+    /// Atom renderers drawn through the display list attach atom names in
+    /// render(), so they take part in the GPU ID-buffer pick pass. Subclasses
+    /// with a GPU-primitive (non display list) path override this.
+    bool isPickSupported() const override { return isHitTestSupported(); }
     void renderHit(DisplayContext *phl) override;
 
     // hittest data is interpreted by the same routine in MolRenderer

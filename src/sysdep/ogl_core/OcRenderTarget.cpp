@@ -92,12 +92,18 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
 
 void OcRenderTarget::allocAttachments(int w, int h)
 {
-    // Color attachment 0 (RGBA8, or RGBA16F float when RT_COLOR_RGBA16F).
+    // Color attachment 0 (RGBA8, RGBA16F float when RT_COLOR_RGBA16F, or
+    // RGBA32UI integer when RT_COLOR_RGBA32UI; integer textures are not
+    // filterable, so they are always NEAREST).
+    const bool colorInt = isIntegerColor();
     const GLint colorFilter =
-        (m_nFlags & gfx::RT_COLOR_NEAREST) ? GL_NEAREST : GL_LINEAR;
+        ((m_nFlags & gfx::RT_COLOR_NEAREST) || colorInt) ? GL_NEAREST : GL_LINEAR;
     const bool colorFloat = (m_nFlags & gfx::RT_COLOR_RGBA16F) != 0;
     glBindTexture(GL_TEXTURE_2D, m_nColorTex);
-    if (colorFloat) {
+    if (colorInt) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, w, h, 0, GL_RGBA_INTEGER,
+                     GL_UNSIGNED_INT, nullptr);
+    } else if (colorFloat) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_FLOAT,
                      nullptr);
     } else {
@@ -188,6 +194,15 @@ void OcRenderTarget::unbind()
 
 void OcRenderTarget::clear(float r, float g, float b, float a)
 {
+    if (isIntegerColor()) {
+        // Integer attachments are cleared with clearBufferuiv; glClear with a
+        // float clear color does not apply to them. 0 = "nothing drawn".
+        const GLuint zero[4] = {0u, 0u, 0u, 0u};
+        const GLfloat depth1 = 1.0f;
+        glClearBufferuiv(GL_COLOR, 0, zero);
+        if (m_nDepthTex != 0) glClearBufferfv(GL_DEPTH, 0, &depth1);
+        return;
+    }
     if (m_nNormalTex != 0) {
         // With the MRT normal attachment present, clear color attachment 0 to
         // the requested color but the normal attachment 1 to the sentinel
@@ -240,6 +255,18 @@ void OcRenderTarget::readColor(int idx, int x, int y, int w, int h, int ncomp,
     glReadPixels(x, y, w, h, fmt, GL_UNSIGNED_BYTE, pbuf);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     CHK_GLERROR("OcRenderTarget::readColor");
+}
+
+bool OcRenderTarget::readColorUInt(int idx, int x, int y, int w, int h, quint32 *pbuf)
+{
+    if (!isIntegerColor()) return false;
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_nFBO);
+    glReadBuffer(GL_COLOR_ATTACHMENT0 + idx);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glReadPixels(x, y, w, h, GL_RGBA_INTEGER, GL_UNSIGNED_INT, pbuf);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    CHK_GLERROR("OcRenderTarget::readColorUInt");
+    return true;
 }
 
 void OcRenderTarget::blitDepthToDefault()

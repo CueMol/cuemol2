@@ -66,6 +66,10 @@ void MolAtomRenderer::render(DisplayContext *pdl)
       if (pA1.isnull() || pA2.isnull())
         continue; // skip invalid bonds
 
+      // Hit name for the pick pass: atom1 owns the bond geometry unless the
+      // subclass switches the name for the atom2 half (bicolor bonds).
+      pdl->loadName(aid1);
+
       // TO DO: check the bond length ??
       rendBond(pdl, pA1, pA2, pMB);
 
@@ -92,6 +96,9 @@ void MolAtomRenderer::render(DisplayContext *pdl)
       // bbonded is true, if aid is found in bonded_atom
       bbonded = bonded_atoms.find(aid)!=bonded_atoms.end();
     }
+
+    // Hit name for the pick pass
+    pdl->loadName(aid);
 
     rendAtom(pdl, pAtom, bbonded);
   }

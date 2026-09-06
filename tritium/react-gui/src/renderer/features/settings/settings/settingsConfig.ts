@@ -28,6 +28,7 @@ import type { ApbsConfigKey } from '@renderer/contexts/ApbsConfigContext'
 import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '@renderer/viewInputConfig'
 import type { LabelDefaults } from '@renderer/worker/server/services/view/labelDefaults'
 import type { ViewInputParams } from '@renderer/worker/server/services/view/viewInputParams'
+import type { PickingPrefs } from '@renderer/contexts/PickingPrefsContext'
 import { FALLBACK_FONT_LIST } from './labelFont'
 
 // --- Category tree ---
@@ -225,6 +226,25 @@ export const SETTINGS: SettingDef[] = [
     category: 'input.mouse',
     control: { kind: 'number', min: 1, max: 50, step: 1, unit: 'px' },
   },
+  {
+    key: 'picking.gpuPicking',
+    label: 'GPU Picking',
+    description:
+      'Pick what is actually drawn (cartoon ribbons, sticks, spheres) by rendering ' +
+      'object IDs on the GPU. Off falls back to picking atom centres only; ' +
+      'turn it off on slow hosts. Takes effect on the next click / hover.',
+    category: 'input.mouse',
+    control: { kind: 'toggle' },
+  },
+  {
+    key: 'picking.hoverInfo',
+    label: 'Hover Info',
+    description:
+      'Show what is under the pointer in the corner of the 3D view while moving the mouse. ' +
+      'Off stops the hover hit tests entirely.',
+    category: 'input.mouse',
+    control: { kind: 'toggle' },
+  },
 ]
 
 // --- Default values ---
@@ -249,6 +269,8 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'input.device': INPUT_DEVICE_PREF_LABELS.auto,
   'mouse.xyRotSensitivity': 0.8,
   'mouse.pickPrecision': 10.0,
+  'picking.gpuPicking': true,
+  'picking.hoverInfo': true,
 }
 
 // --- Label lookup: maps leaf category ids to their display titles ---
@@ -312,4 +334,13 @@ export const LABEL_DEFAULT_SETTING_KEYS: Record<string, keyof LabelDefaults> = {
 export const VIEW_INPUT_PARAM_SETTING_KEYS: Record<string, keyof ViewInputParams> = {
   'mouse.xyRotSensitivity': 'tbrad',
   'mouse.pickPrecision': 'hitprec',
+}
+
+// --- 3D view picking preferences ---
+// Backed by PickingPrefsContext (electron-store; gpuPicking also pushed to
+// ViewInputConfig.gpu_pick).
+
+export const PICKING_PREF_SETTING_KEYS: Record<string, keyof PickingPrefs> = {
+  'picking.gpuPicking': 'gpuPicking',
+  'picking.hoverInfo': 'hoverInfo',
 }

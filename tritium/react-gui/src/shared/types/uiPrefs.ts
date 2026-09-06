@@ -97,4 +97,12 @@ export interface UiState {
   saveWriterName?: string
   /** Scene settings the New Tab dialog starts from (its last confirmed values). */
   newSceneDefaults?: NewSceneDefaultsPrefs
+  /**
+   * 3D view picking: use the GPU ID-buffer pick pass (renderer-accurate hit
+   * test) when the backend supports it. Off forces the CPU point hit test --
+   * for slow hosts. Defaults to true.
+   */
+  gpuPicking?: boolean
+  /** Show what is under the pointer (the 3D view hover label). Defaults to true. */
+  hoverInfo?: boolean
 }

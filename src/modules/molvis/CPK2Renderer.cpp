@@ -329,7 +329,8 @@ void CPK2Renderer::renderCoordTexImpl(DisplayContext *pdc)
 
       quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
       // The texel index is the enumeration order i itself (see plan section 3.4).
-      m_sphIdxGpuPrim.setData(i, i, static_cast<float>(getVdWRadius(pAtom)), devcode);
+      m_sphIdxGpuPrim.setData(i, i, static_cast<float>(getVdWRadius(pAtom)), devcode,
+                              gfx::encodeHitName(aid));
       ++i;
     }
   }

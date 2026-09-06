@@ -29,6 +29,24 @@ public:
         qfloat32 x, y, z;      ///< Position
         qfloat32 nx, ny, nz;   ///< Normal
         qbyte r, g, b, a;      ///< RGBA colour
+        quint32 hitName;       ///< Encoded hit name (pick pass only)
+    };
+
+    /**
+     * std140 DrawParamsBlock for the pick program (binding=2, 32 bytes):
+     * the DrawParams fields followed by the pick tail. Must match
+     * trig_pick_vert.glsl / trig_pick_frag.glsl.
+     */
+    struct PickDrawParams
+    {
+        qfloat32 frag_alpha;        // offset 0  (unused)
+        qint32   enable_lighting;   // offset 4  (always 0)
+        qint32   u_nodepth;         // offset 8
+        qfloat32 _pad;              // offset 12
+        quint32  u_rend_idx;        // offset 16 -- R channel (1-based renderer index)
+        quint32  u_outer_name;      // offset 20 -- B channel (encoded outer name)
+        quint32  _pp0;              // offset 24
+        quint32  _pp1;              // offset 28
     };
 
     /**
@@ -85,6 +103,15 @@ public:
      * @param devcode Pre-resolved device RGBA colour code.
      */
     void setColor(int idx, quint32 devcode);
+
+    /** Set the encoded hit name (gfx::encodeHitName) of vertex idx. */
+    void setHitName(int idx, quint32 name);
+
+    /** Encoded hit name of vertex idx (exposed for inspection/testing). */
+    quint32 getHitName(int idx) const
+    {
+        return m_pDrawElems->at(idx).hitName;
+    }
 
     /** Set triangle face idx with vertex indices v1, v2, v3. */
     void setFace(int idx, int v1, int v2, int v3);
@@ -158,6 +185,8 @@ private:
     static constexpr int ATTRLOC_VERTEX = 0;
     static constexpr int ATTRLOC_NORM   = 1;
     static constexpr int ATTRLOC_COLOR  = 2;
+    // Integer attribute read by trig_pick_vert.glsl only
+    static constexpr int ATTRLOC_HITNAME = 3;
 
     // Edge shader uses the same locations (trigedge_vert.glsl: aVertex=0, aNormal=1)
     static constexpr int ATTRLOC_EVERT  = 0;
@@ -165,6 +194,7 @@ private:
 
     gfx::ShaderObject *m_pPO;       ///< Main shading program
     gfx::ShaderObject *m_pEdgePO;   ///< Edge/silhouette program
+    gfx::ShaderObject *m_pPickPO;   ///< ID-buffer pick program (lazy)
     TrigMesh *m_pDrawElems;
     int m_nEdgeLineType;
     int m_nPolygonMode;
@@ -172,6 +202,11 @@ private:
 
     void setupAttrs();
     void drawEdges(DisplayContext *pDC);
+
+    /** Load the pick program (once). Returns false if unavailable. */
+    bool initPick(DisplayContext *pDC);
+    /** Draw the mesh into the integer pick target (DisplayContext::isPickDraw). */
+    void drawPick(DisplayContext *pDC);
 };
 
 }  // namespace gfx

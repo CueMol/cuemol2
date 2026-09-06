@@ -34,6 +34,10 @@ export interface SetViewInputParamsArgs {
     hitprec?: number;
 }
 
+export interface SetGpuPickEnabledArgs {
+    enabled: boolean;
+}
+
 const FALLBACK: ViewInputParams = { tbrad: 0.8, hitprec: 10.0 };
 
 function getVic(ctx: WorkerContext): ViewInputConfig | null {
@@ -51,6 +55,27 @@ export function getViewInputParams(ctx: WorkerContext, _args: Record<string, nev
     } catch (e) {
         log.warn('getViewInputParams read failed:', e);
         return { ok: false, params: FALLBACK };
+    }
+}
+
+/**
+ * Switch the GPU ID-buffer pick pass on / off (ViewInputConfig.gpu_pick).
+ * Takes effect on the next hit test; the pick target is released when off.
+ * Persisted by the renderer in electron-store (UiState.gpuPicking), not in
+ * the user style file, so only the live singleton is written here.
+ */
+export function setGpuPickEnabled(ctx: WorkerContext, args: SetGpuPickEnabledArgs): { ok: boolean } {
+    const vic = getVic(ctx);
+    if (!vic) {
+        log.error('setGpuPickEnabled: ViewInputConfig unavailable');
+        return { ok: false };
+    }
+    try {
+        vic.gpu_pick = Boolean(args.enabled);
+        return { ok: true };
+    } catch (e) {
+        log.error('setGpuPickEnabled failed:', e);
+        return { ok: false };
     }
 }
 

@@ -50,6 +50,10 @@ namespace molvis {
 
     void display(DisplayContext *pdc) override;
 
+    /// Drawn through the display list (MolAtomRenderer::display): the atom
+    /// names attached in render() make it pickable like any DL renderer.
+    bool isPickSupported() const override { return isHitTestSupported(); }
+
     //////////////////////////////////////////////////////
 
     void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded) override;

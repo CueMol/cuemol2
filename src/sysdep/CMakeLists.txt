@@ -90,6 +90,12 @@ SET(SHADER_SOURCES
   ogl_core/linew2idx_vert.glsl
   ogl_core/linevalidx_vert.glsl
   ogl_core/linew_frag.glsl
+  ogl_core/trig_pick_vert.glsl
+  ogl_core/trig_pick_frag.glsl
+  ogl_core/linew2_pick_vert.glsl
+  ogl_core/linew_pick_frag.glsl
+  ogl_core/linew2idx_pick_vert.glsl
+  ogl_core/linevalidx_pick_vert.glsl
   ogl_core/postproc_vert.glsl
   ogl_core/depthvis_frag.glsl
   ogl_core/ao_composite_frag.glsl
@@ -107,6 +113,7 @@ SET(SHADER_DEPS
   ogl_core/matrices_inc.glsl
   ogl_core/linew_inc.glsl
   ogl_core/lib_atoms.glsl
+  ogl_core/pick_inc.glsl
 )
 set_target_properties(sysdep PROPERTIES SHADER_SOURCES "${SHADER_SOURCES}")
 GLSL_PREPROC(sysdep "${SHADER_DEPS}")

@@ -35,6 +35,8 @@ private:
     {
         qlib::Vector4D pos;
         quint32 cc;
+        /// encoded hit name (gfx::encodeHitName)
+        quint32 name;
     };
 
     gfx::LineGpuPrim *m_pLineObj;
@@ -52,6 +54,8 @@ private:
         qfloat32 x, y, z;
         qfloat32 nx, ny, nz;
         quint32 cc;
+        /// encoded hit name (gfx::encodeHitName)
+        quint32 name;
     };
 
     int m_nPolyMode;
@@ -90,6 +94,7 @@ private:
 
     qlib::Vector4D m_prevPos;
     qlib::quint32 m_prevCol;
+    qlib::quint32 m_prevName;
     qlib::Vector4D m_prevNorm;
 
     static const int DRAWMODE_NONE = 0;
@@ -100,11 +105,11 @@ private:
     static const int DRAWMODE_TRIGSTRIP = 6;
     static const int DRAWMODE_TRIGFAN = 7;
 
-    void drawLine(const qlib::Vector4D &v1, qlib::quint32 c1,
-                  const qlib::Vector4D &v2, qlib::quint32 c2);
+    void drawLine(const qlib::Vector4D &v1, qlib::quint32 c1, qlib::quint32 n1,
+                  const qlib::Vector4D &v2, qlib::quint32 c2, qlib::quint32 n2);
 
     void addTrigVert(const qlib::Vector4D &v, const qlib::Vector4D &n,
-                     qlib::quint32 c);
+                     qlib::quint32 c, qlib::quint32 name);
 
     // Create GpuPrim objects lazily (requires active OpenGL context)
     void createLineObj(DisplayContext *pdc);
@@ -199,6 +204,10 @@ public:
     /// were recorded / it has not been built yet. Exposed for inspection/testing
     /// (e.g. verifying per-vertex vs uniform line color selection).
     const gfx::LineGpuPrim *getLineObj() const { return m_pLineObj; }
+
+    /// Triangle GpuPrim built from startTriangles() vertices (or null); exposed
+    /// for inspection/testing (e.g. verifying recorded hit names).
+    const gfx::TrigGpuPrim *getTrigObj() const { return m_pTrigObj; }
 };
 
 }  // namespace gfx

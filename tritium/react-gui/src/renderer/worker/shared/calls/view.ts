@@ -12,6 +12,7 @@ import type {
   SetLabelDefaultsArgs,
 } from '@renderer/worker/server/services/view/labelDefaults'
 import type {
+  SetGpuPickEnabledArgs,
   SetViewInputParamsArgs,
   ViewInputParamsResult,
 } from '@renderer/worker/server/services/view/viewInputParams'
@@ -37,6 +38,7 @@ export interface ViewCalls {
   setLabelDefaults:           { args: SetLabelDefaultsArgs; result: { ok: boolean } }
   getViewInputParams:         { args: Record<string, never>; result: ViewInputParamsResult }
   setViewInputParams:         { args: SetViewInputParamsArgs; result: { ok: boolean } }
+  setGpuPickEnabled:          { args: SetGpuPickEnabledArgs; result: { ok: boolean } }
   getViewProjection:          { args: ViewProjectionArgs; result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs; result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs; result: ViewCenterMarkResult }
@@ -52,6 +54,7 @@ export const VIEW_KEYS = [
   'setLabelDefaults',
   'getViewInputParams',
   'setViewInputParams',
+  'setGpuPickEnabled',
   'getViewProjection',
   'setViewProjection',
   'getViewCenterMark',

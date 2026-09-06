@@ -12,6 +12,8 @@
 #include "AbstractColor.hpp"
 #include <qlib/LTypes.hpp>
 
+#include <algorithm>
+
 using namespace gfx;
 
 //////////////////////////////////////////////////////////////////////////
@@ -19,6 +21,7 @@ using namespace gfx;
 
 LineIdxGpuPrim::LineIdxGpuPrim()
     : m_pPO(nullptr),
+      m_pPickPO(nullptr),
       m_pDrawAry(nullptr),
       m_pCoordTex(nullptr),
       m_nCoordTexUnit(COORD_TEX_UNIT),
@@ -70,7 +73,7 @@ void LineIdxGpuPrim::setupAttrs()
 
     if (data.getAttrSize() > 0) return;  // already set up
 
-    data.setAttrSize(4);
+    data.setAttrSize(6);
     data.setAttrInfo(0, ATTRLOC_P1, 4, qlib::type_consts::QTC_FLOAT32,
                      offsetof(LineIdxElem, ox1));
     data.setAttrInfo(1, ATTRLOC_P2, 4, qlib::type_consts::QTC_FLOAT32,
@@ -79,17 +82,22 @@ void LineIdxGpuPrim::setupAttrs()
                      offsetof(LineIdxElem, r1));
     data.setAttrInfo(3, ATTRLOC_COLOR2, 4, qlib::type_consts::QTC_UINT8,
                      offsetof(LineIdxElem, r2));
+    // Hit names: integer attributes consumed by the pick program only.
+    data.setAttrInfo(4, ATTRLOC_HITNAME1, 1, qlib::type_consts::QTC_UINT32,
+                     offsetof(LineIdxElem, hitName1));
+    data.setAttrInteger(4, true);
+    data.setAttrInfo(5, ATTRLOC_HITNAME2, 1, qlib::type_consts::QTC_UINT32,
+                     offsetof(LineIdxElem, hitName2));
+    data.setAttrInteger(5, true);
 
     const int ndiv = 1;
-    data.setAttrDivisor(0, ndiv);
-    data.setAttrDivisor(1, ndiv);
-    data.setAttrDivisor(2, ndiv);
-    data.setAttrDivisor(3, ndiv);
+    for (int i = 0; i < 6; ++i) data.setAttrDivisor(i, ndiv);
 }
 
 void LineIdxGpuPrim::setData(int i, int idx1, const qlib::Vector4D &off1,
                              quint32 devcode1, int idx2,
-                             const qlib::Vector4D &off2, quint32 devcode2)
+                             const qlib::Vector4D &off2, quint32 devcode2,
+                             quint32 hitName1, quint32 hitName2)
 {
     LineIdxElem &elem = m_pDrawAry->at(i);
 
@@ -110,6 +118,9 @@ void LineIdxGpuPrim::setData(int i, int idx1, const qlib::Vector4D &off1,
     elem.g2 = getGCode(devcode2);
     elem.b2 = getBCode(devcode2);
     elem.a2 = getACode(devcode2);
+
+    elem.hitName1 = hitName1;
+    elem.hitName2 = hitName2;
 }
 
 void LineIdxGpuPrim::setCoordTex(FloatDataTexture *pTex, int texUnit)
@@ -124,6 +135,11 @@ void LineIdxGpuPrim::draw(DisplayContext *pDC)
     if (m_pCoordTex == nullptr) return;
 
     setupAttrs();
+
+    if (pDC->isPickDraw()) {
+        drawPick(pDC);
+        return;
+    }
 
     qlib::Vector4D vp = pDC->getViewport();
     float w = (float)vp.z();
@@ -152,6 +168,50 @@ void LineIdxGpuPrim::draw(DisplayContext *pDC)
 
     m_pCoordTex->unbind();
     m_pPO->disable();
+}
+
+bool LineIdxGpuPrim::initPick(DisplayContext *pDC)
+{
+    if (m_pPickPO != nullptr) return true;
+
+    m_pPickPO = pDC->loadShaderObject("gpu_line_idx_pick",
+                                      "%%CONFDIR%%/data/shaders/linew2idx_pick_vert.glsl",
+                                      "%%CONFDIR%%/data/shaders/linew_pick_frag.glsl");
+    if (m_pPickPO == nullptr) {
+        LOG_DPRINTLN("LineIdxGpuPrim> ERROR: cannot load pick shader.");
+        return false;
+    }
+    m_pPickPO->initDrawParamsUBO(sizeof(PickDrawParams));
+    return true;
+}
+
+void LineIdxGpuPrim::drawPick(DisplayContext *pDC)
+{
+    if (!initPick(pDC)) return;
+
+    qlib::Vector4D vp = pDC->getViewport();
+    float linew = (m_linew < 0.0f) ? 1.0f : m_linew;
+    linew = std::max(linew * float(pDC->getPickScale()), 1.5f);
+
+    PickDrawParams ubo = {};
+    ubo.base.lineWidth     = linew;
+    ubo.base.u_nodepth     = m_bNoDepth ? 1 : 0;
+    ubo.base.screenSize[0] = (float)vp.z();
+    ubo.base.screenSize[1] = (float)vp.w();
+    ubo.u_rend_idx         = pDC->getHitRendIndex();
+    ubo.u_outer_name       = encodeHitName(pDC->getOuterName());
+
+    m_pPickPO->enable();
+    m_pPickPO->setupMat(pDC);
+    m_pPickPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
+
+    m_pCoordTex->bind(m_nCoordTexUnit);
+    m_pPickPO->setUniform("u_coordTex", m_nCoordTexUnit);
+
+    pDC->drawElem(*m_pDrawAry);
+
+    m_pCoordTex->unbind();
+    m_pPickPO->disable();
 }
 
 void LineIdxGpuPrim::invalidate()

@@ -11,6 +11,8 @@
 #include "AbstractColor.hpp"
 #include <qlib/LTypes.hpp>
 
+#include <algorithm>
+
 using namespace gfx;
 
 //////////////////////////////////////////////////////////////////////////
@@ -18,6 +20,7 @@ using namespace gfx;
 
 LineGpuPrim::LineGpuPrim()
     : m_pPO(nullptr),
+      m_pPickPO(nullptr),
       m_pDrawAry(nullptr),
       m_linew(1.0f),
       m_bStipple(false),
@@ -69,7 +72,7 @@ void LineGpuPrim::setupAttrs()
 
     if (data.getAttrSize() > 0) return;  // already set up
 
-    data.setAttrSize(4);
+    data.setAttrSize(6);
     data.setAttrInfo(0, ATTRLOC_VERTEX1, 3, qlib::type_consts::QTC_FLOAT32,
                      offsetof(LineElem, x1));
     data.setAttrInfo(1, ATTRLOC_VERTEX2, 3, qlib::type_consts::QTC_FLOAT32,
@@ -78,16 +81,27 @@ void LineGpuPrim::setupAttrs()
                      offsetof(LineElem, r1));
     data.setAttrInfo(3, ATTRLOC_COLOR2, 4, qlib::type_consts::QTC_UINT8,
                      offsetof(LineElem, r2));
+    // Hit names: integer attributes consumed by the pick program only.
+    data.setAttrInfo(4, ATTRLOC_HITNAME1, 1, qlib::type_consts::QTC_UINT32,
+                     offsetof(LineElem, hitName1));
+    data.setAttrInteger(4, true);
+    data.setAttrInfo(5, ATTRLOC_HITNAME2, 1, qlib::type_consts::QTC_UINT32,
+                     offsetof(LineElem, hitName2));
+    data.setAttrInteger(5, true);
 
     const int ndiv = 1;
-    data.setAttrDivisor(0, ndiv);
-    data.setAttrDivisor(1, ndiv);
-    data.setAttrDivisor(2, ndiv);
-    data.setAttrDivisor(3, ndiv);
+    for (int i = 0; i < 6; ++i) data.setAttrDivisor(i, ndiv);
 }
 
 void LineGpuPrim::setLine(int idx, const qlib::Vector4D &v1, quint32 devcode1,
                            const qlib::Vector4D &v2, quint32 devcode2)
+{
+    setLine(idx, v1, devcode1, v2, devcode2, 0u, 0u);
+}
+
+void LineGpuPrim::setLine(int idx, const qlib::Vector4D &v1, quint32 devcode1,
+                           const qlib::Vector4D &v2, quint32 devcode2,
+                           quint32 hitName1, quint32 hitName2)
 {
     LineElem &elem = m_pDrawAry->at(idx);
 
@@ -106,6 +120,9 @@ void LineGpuPrim::setLine(int idx, const qlib::Vector4D &v1, quint32 devcode1,
     elem.g2 = getGCode(devcode2);
     elem.b2 = getBCode(devcode2);
     elem.a2 = getACode(devcode2);
+
+    elem.hitName1 = hitName1;
+    elem.hitName2 = hitName2;
 }
 
 void LineGpuPrim::draw(DisplayContext *pDC)
@@ -113,6 +130,11 @@ void LineGpuPrim::draw(DisplayContext *pDC)
     if (m_pDrawAry == nullptr || m_pPO == nullptr) return;
 
     setupAttrs();
+
+    if (pDC->isPickDraw()) {
+        drawPick(pDC);
+        return;
+    }
 
     // Get screen size from viewport
     qlib::Vector4D vp = pDC->getViewport();
@@ -150,6 +172,50 @@ void LineGpuPrim::draw(DisplayContext *pDC)
     m_pPO->disable();
 
     MB_DPRINTLN("LineGpuPrim> linew: %f", linew);
+}
+
+bool LineGpuPrim::initPick(DisplayContext *pDC)
+{
+    if (m_pPickPO != nullptr) return true;
+
+    m_pPickPO = pDC->loadShaderObject("gpu_line_pick",
+                                      "%%CONFDIR%%/data/shaders/linew2_pick_vert.glsl",
+                                      "%%CONFDIR%%/data/shaders/linew_pick_frag.glsl");
+    if (m_pPickPO == nullptr) {
+        LOG_DPRINTLN("LineGpuPrim> ERROR: cannot load pick shader.");
+        return false;
+    }
+    m_pPickPO->initDrawParamsUBO(sizeof(PickDrawParams));
+    return true;
+}
+
+void LineGpuPrim::drawPick(DisplayContext *pDC)
+{
+    if (!initPick(pDC)) return;
+
+    // The viewport is the (downscaled) pick target while picking.
+    qlib::Vector4D vp = pDC->getViewport();
+
+    float linew = (m_linew < 0.0f) ? 1.0f : m_linew;
+    // Scale to pick texels; keep at least 1.5 texels so a thin line still
+    // covers texel centres in the downscaled target.
+    linew = std::max(linew * float(pDC->getPickScale()), 1.5f);
+
+    PickDrawParams ubo = {};
+    ubo.base.lineWidth     = linew;
+    ubo.base.stippleLen    = 0.0f;
+    ubo.base.u_nodepth     = m_bNoDepth ? 1 : 0;
+    ubo.base.screenSize[0] = (float)vp.z();
+    ubo.base.screenSize[1] = (float)vp.w();
+    ubo.u_rend_idx         = pDC->getHitRendIndex();
+    ubo.u_outer_name       = encodeHitName(pDC->getOuterName());
+
+    m_pPickPO->enable();
+    m_pPickPO->setupMat(pDC);
+    m_pPickPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
+
+    pDC->drawElem(*m_pDrawAry);
+    m_pPickPO->disable();
 }
 
 void LineGpuPrim::invalidate()

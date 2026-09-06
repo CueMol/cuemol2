@@ -22,7 +22,8 @@ DisplayList::DisplayList()
       m_nDrawMode(DRAWMODE_NONE),
       m_pColor(gfx::SolidColor::createRGB(0.5, 0.5, 0.5)),
       m_fPrevPosValid(false),
-      m_prevCol(0)
+      m_prevCol(0),
+      m_prevName(0)
 {
     pushMatrix();
     loadIdent();
@@ -52,6 +53,7 @@ void DisplayList::vertex(const qlib::Vector4D &aV)
 #endif
 
     auto color_value = m_pColor->getDevCode(getSceneID());
+    const quint32 name_value = encodeHitName(getCurrentName());
     switch (m_nDrawMode) {
         default:
         case DRAWMODE_NONE:
@@ -62,9 +64,10 @@ void DisplayList::vertex(const qlib::Vector4D &aV)
             if (!m_fPrevPosValid) {
                 m_prevPos = v;
                 m_prevCol = color_value;
+                m_prevName = name_value;
                 m_fPrevPosValid = true;
             } else {
-                drawLine(v, color_value, m_prevPos, m_prevCol);
+                drawLine(v, color_value, name_value, m_prevPos, m_prevCol, m_prevName);
                 m_fPrevPosValid = false;
             }
             m_vertLineWidth = getLineWidth();
@@ -78,11 +81,13 @@ void DisplayList::vertex(const qlib::Vector4D &aV)
             if (!m_fPrevPosValid) {
                 m_prevPos = v;
                 m_prevCol = color_value;
+                m_prevName = name_value;
                 m_fPrevPosValid = true;
             } else {
-                drawLine(v, color_value, m_prevPos, m_prevCol);
+                drawLine(v, color_value, name_value, m_prevPos, m_prevCol, m_prevName);
                 m_prevPos = v;
                 m_prevCol = color_value;
+                m_prevName = name_value;
             }
             m_vertLineWidth = getLineWidth();
             if (getLineStipple() == 0xFFFF)
@@ -92,15 +97,15 @@ void DisplayList::vertex(const qlib::Vector4D &aV)
             break;
 
         case DRAWMODE_TRIGS:
-            addTrigVert(v, m_norm, color_value);
+            addTrigVert(v, m_norm, color_value, name_value);
             break;
 
         case DRAWMODE_TRIGSTRIP:
-            m_mesh.addVertex(v, m_norm, color_value);
+            m_mesh.addVertex(v, m_norm, color_value, name_value);
             break;
 
         case DRAWMODE_TRIGFAN:
-            m_mesh.addVertex(v, m_norm, color_value);
+            m_mesh.addVertex(v, m_norm, color_value, name_value);
             break;
     }
 }
@@ -228,15 +233,15 @@ void DisplayList::end()
     m_nDrawMode = DRAWMODE_NONE;
 }
 
-void DisplayList::drawLine(const qlib::Vector4D &v1, qlib::quint32 c1,
-                           const qlib::Vector4D &v2, qlib::quint32 c2)
+void DisplayList::drawLine(const qlib::Vector4D &v1, qlib::quint32 c1, qlib::quint32 n1,
+                           const qlib::Vector4D &v2, qlib::quint32 c2, qlib::quint32 n2)
 {
-    m_lineBuf.push_back(LineDrawAttr{v1, c1});
-    m_lineBuf.push_back(LineDrawAttr{v2, c2});
+    m_lineBuf.push_back(LineDrawAttr{v1, c1, n1});
+    m_lineBuf.push_back(LineDrawAttr{v2, c2, n2});
 }
 
 void DisplayList::addTrigVert(const qlib::Vector4D &v1, const qlib::Vector4D &n1,
-                              qlib::quint32 c1)
+                              qlib::quint32 c1, qlib::quint32 name)
 {
     m_trigBuf.push_back(TrigVertBuf{
         qfloat32(v1.x()),
@@ -246,6 +251,7 @@ void DisplayList::addTrigVert(const qlib::Vector4D &v1, const qlib::Vector4D &n1
         qfloat32(n1.y()),
         qfloat32(n1.z()),
         c1,
+        name,
     });
 }
 
@@ -271,6 +277,9 @@ bool DisplayList::recordStart()
     // DisplayContext uniform color unless render() calls color() (see
     // createLineObj / m_bSetColor).
     m_bSetColor = false;
+    // Hit names are per recording as well: a renderer that never calls
+    // loadName() records "no name" (not pickable) geometry.
+    resetNames();
 
     clearMatStack();
 
@@ -306,7 +315,8 @@ void DisplayList::createLineObj(DisplayContext *pdc)
     for (size_t i = 0; i < nelems; i += 2) {
         m_pLineObj->setLine(i / 2,
                             m_lineBuf[i].pos, m_lineBuf[i].cc,
-                            m_lineBuf[i + 1].pos, m_lineBuf[i + 1].cc);
+                            m_lineBuf[i + 1].pos, m_lineBuf[i + 1].cc,
+                            m_lineBuf[i].name, m_lineBuf[i + 1].name);
     }
     auto lw = m_vertLineWidth;
     if (lw < 0) {
@@ -343,6 +353,7 @@ void DisplayList::createTrigObj(DisplayContext *pdc)
         m_pTrigObj->setVertex(i, qlib::Vector4D(e.x, e.y, e.z));
         m_pTrigObj->setNormal(i, qlib::Vector4D(e.nx, e.ny, e.nz));
         m_pTrigObj->setColor(i, e.cc);
+        m_pTrigObj->setHitName(i, e.name);
     }
     for (size_t i = 0; i < n / 3; ++i) {
         m_pTrigObj->setFace(i, i * 3, i * 3 + 1, i * 3 + 2);
@@ -375,6 +386,7 @@ void DisplayList::createTrigMeshObj(DisplayContext *pdc)
         m_pTrigMeshObj->setVertex(i, v1);
         m_pTrigMeshObj->setNormal(i, n1);
         m_pTrigMeshObj->setColor(i, c1);
+        m_pTrigMeshObj->setHitName(i, pelem->name);
         ++i;
     }
     i = 0;
@@ -424,11 +436,13 @@ void DisplayList::drawMesh(const gfx::Mesh &mesh)
     MB_DPRINTLN("DisplayList.drawMesh> Verts=%zu, Faces=%zu", nMeshVerts, nMeshFaces);
 
     qlib::uid_t nSceneID = getSceneID();
+    // A Mesh carries no per-vertex names: the whole mesh gets the current one.
+    const quint32 name_value = encodeHitName(getCurrentName());
     gfx::ColorPtr pcol;
     for (size_t i = 0; i < nMeshVerts; ++i) {
         mesh.getCol(pcol, i);
         auto c1 = pcol->getDevCode(nSceneID);
-        m_mesh.addVertex(mesh.getVertex(i), mesh.getNormal(i), c1);
+        m_mesh.addVertex(mesh.getVertex(i), mesh.getNormal(i), c1, name_value);
     }
 
     auto faces = mesh.getFaces();
@@ -445,11 +459,12 @@ void DisplayList::sphere()
     xform_vec(v);
 
     auto color = m_pColor->getDevCode(getSceneID());
+    const quint32 name_value = encodeHitName(getCurrentName());
     const qlib::Matrix4D &mtop = getModelViewMat();
     if (mtop.isIdentAffine(F_EPS4)) {
-        m_spheres.add(v, 1.0, color, m_nDetail);
+        m_spheres.add(v, 1.0, color, m_nDetail, nullptr, name_value);
     } else {
-        m_spheres.add(qlib::Vector4D(0, 0, 0), 1.0, color, m_nDetail, &mtop);
+        m_spheres.add(qlib::Vector4D(0, 0, 0), 1.0, color, m_nDetail, &mtop, name_value);
     }
 }
 
@@ -470,14 +485,15 @@ void DisplayList::cone(double r1, double r2, const qlib::Vector4D &pos1,
     }
 
     auto color = m_pColor->getDevCode(getSceneID());
+    const quint32 name_value = encodeHitName(getCurrentName());
     if (bUnitary) {
         qlib::Vector4D p1 = pos1;
         qlib::Vector4D p2 = pos2;
         xform_vec(p1);
         xform_vec(p2);
-        m_cylinders.add(p1, p2, r1, r2, color, m_nDetail, bCap, NULL);
+        m_cylinders.add(p1, p2, r1, r2, color, m_nDetail, bCap, NULL, name_value);
     } else {
-        m_cylinders.add(pos1, pos2, r1, r2, color, m_nDetail, bCap, &xm);
+        m_cylinders.add(pos1, pos2, r1, r2, color, m_nDetail, bCap, &xm, name_value);
     }
 }
 

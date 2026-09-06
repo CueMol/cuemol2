@@ -30,8 +30,12 @@ DisplayContext::DisplayContext()
   m_lineStipple = 0xFFFF;
   m_bLighting = false;
   m_bAOEnabled = false;
+  m_nHitRendIdx = 0;
+  m_nPickMode = PICK_OFF;
+  m_dPickScale = 1.0;
 
   m_matstack.push_front(Matrix4D());
+  m_nameStack.push_back(-1);
 }
 
 DisplayContext::~DisplayContext()
@@ -392,12 +396,48 @@ void DisplayContext::recordEnd()
 
 //////////////////////////////////////////////////////////////////
 
-void DisplayContext::startHit(qlib::uid_t rend_uid) {}
-void DisplayContext::endHit() {}
+// Name stack / renderer table. These are plain state in the base class so a
+// renderer's render() can attach hit names to the geometry it records (used by
+// the GPU ID-buffer pick pass); HittestContext overrides them for the CPU
+// point hit test.
 
-void DisplayContext::loadName(int nameid) {}
-void DisplayContext::pushName(int nameid) {}
-void DisplayContext::popName() {}
+void DisplayContext::startHit(qlib::uid_t rend_uid)
+{
+    m_hitRendTab.push_back(rend_uid);
+    m_nHitRendIdx = quint32(m_hitRendTab.size());
+}
+
+void DisplayContext::endHit()
+{
+    m_nHitRendIdx = 0;
+}
+
+void DisplayContext::resetHitRendTable()
+{
+    m_hitRendTab.clear();
+    m_nHitRendIdx = 0;
+}
+
+void DisplayContext::loadName(int nameid)
+{
+    m_nameStack.back() = (nameid < 0) ? -1 : nameid;
+}
+
+void DisplayContext::pushName(int nameid)
+{
+    m_nameStack.push_back((nameid < 0) ? -1 : nameid);
+}
+
+void DisplayContext::popName()
+{
+    if (m_nameStack.size() > 1) m_nameStack.pop_back();
+}
+
+void DisplayContext::resetNames()
+{
+    m_nameStack.assign(1, -1);
+}
+
 void DisplayContext::drawPointHit(int nid, const Vector4D &pos) {}
 
 void DisplayContext::startRender() {}

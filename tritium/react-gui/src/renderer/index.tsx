@@ -20,6 +20,7 @@ import { ApbsConfigProvider } from '@renderer/contexts/ApbsConfigContext'
 import { NewSceneDefaultsProvider } from '@renderer/contexts/NewSceneDefaultsContext'
 import { ViewInputConfigProvider } from '@renderer/contexts/ViewInputConfigContext'
 import { AppSettingsProvider } from '@renderer/contexts/AppSettingsContext'
+import { PickingPrefsProvider } from '@renderer/contexts/PickingPrefsContext'
 import { ErrorBoundary } from '@renderer/crash/ErrorBoundary'
 import { installGlobalCrashHandlers } from '@renderer/crash/installGlobalCrashHandlers'
 
@@ -49,6 +50,7 @@ createRoot(container).render(
                   <DialogProvider>
                     <RenderConfigProvider>
                       <ViewInputConfigProvider>
+                       <PickingPrefsProvider>
                         <AppSettingsProvider>
                           {/* App-level state, below the dialog and command
                               providers (closing a tab runs the save prompt and
@@ -57,6 +59,7 @@ createRoot(container).render(
                             <App />
                           </AppStateProviders>
                         </AppSettingsProvider>
+                       </PickingPrefsProvider>
                       </ViewInputConfigProvider>
                     </RenderConfigProvider>
                   </DialogProvider>
