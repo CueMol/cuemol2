@@ -29,6 +29,22 @@ app.setName(APP_PRODUCT_NAME)
 // elsewhere but skipped for clarity.
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
 
+// Chromium drops the priority of a renderer with no visible clients (macOS:
+// task suppression policy -> every thread at MAXPRI_THROTTLE; Windows:
+// IDLE_PRIORITY_CLASS + EcoQoS). The umbreon ray tracer runs inside the main
+// window's renderer, so an occluded / minimized window made a render several
+// times slower and it did not always recover
+// (docs/architecture/umbreon-render-qos-throttling.md). The switch makes
+// UpdateProcessPriority treat every renderer as visible; page-visibility
+// throttling of timers / rAF is unaffected. CUEMOL_RENDERER_BACKGROUNDING=1
+// restores the Chromium default for an A/B check with `ps -M -p <pid>`.
+// Must run before the app is ready.
+if (process.env.CUEMOL_RENDERER_BACKGROUNDING && process.env.CUEMOL_RENDERER_BACKGROUNDING !== '0') {
+  console.log('[Main] CUEMOL_RENDERER_BACKGROUNDING set -- renderer backgrounding left enabled')
+} else {
+  app.commandLine.appendSwitch('disable-renderer-backgrounding')
+}
+
 // Dev-only clean-profile launch: when CUEMOL_FRESH_PREFS is set, point userData
 // at a throwaway dir (wiped first) so no previously persisted preference
 // (electron-store app-state.json) or localStorage carries over. The real user

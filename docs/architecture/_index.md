@@ -92,13 +92,15 @@ architecture, it belongs here.
   恒久対策 (umbreon を別プロセス化し Scene を mmap file で zero-copy 渡し /
   Boost.Interprocess `managed_mapped_file` + Boost.Process) の設計方針と次ステップ。
   macOS の shm 上限が低いため mapped file 必須。renderer worker 内の大確保一般に共通する制約。
-- [umbreon レンダリングが renderer プロセスの darwinbg 降格で数倍遅くなる](umbreon-render-qos-throttling.md)
-  (日本語) -- 「一旦遅くなると設定を変えても遅いまま、再起動で直る」報告の原因調査。
-  macOS の task policy 実験で、renderer プロセスが darwinbg (background task
-  policy) に落ちたまま解除されないケースが 6 倍級の遅化を再現・維持できると特定
-  (umbreon 側のスレッド/TBB バグではない)。renderer プロセス内からの自己修復は
-  原理的に不可能なため、対策は Electron main プロセス側 (renderer backgrounding
-  の無効化、powerSaveBlocker、外部からの taskpolicy 解除) に限られる。
+- [umbreon レンダリングが renderer プロセスの降格で数倍遅くなる](umbreon-render-qos-throttling.md)
+  (日本語) -- 「一旦遅くなると設定を変えても遅いまま、再起動で直る」報告の原因と対策。
+  Chromium が occluded / 最小化ウィンドウの renderer に `SetPriority(kBestEffort)`
+  (macOS: task suppression policy で全スレッド PRI 4、Windows: IDLE class + EcoQoS、
+  Linux: 通常 no-op) を掛け、復帰の再適用が失敗すると固着する (umbreon 側の
+  スレッド/TBB バグではない)。対策は main 側の `disable-renderer-backgrounding`
+  (全 OS) と、render job 中の powerSaveBlocker (システムスリープ抑止) + renderer pid
+  ログ。`taskpolicy -B` は external darwinbg しか消せないため不採用。VS Code 方式
+  (job 中だけ `setBackgroundThrottling(false)`) との比較と OSS アプリの実態調査も記載。
 - [tritium packaging / release-build renovation](tritium-packaging-renovation.md)
   (日本語) -- tritium を配布可能な形にするまでの設計記録。electron-builder による
   3 OS パッケージング、libcuemol2 ランタイムの staging、release-cadence gating、

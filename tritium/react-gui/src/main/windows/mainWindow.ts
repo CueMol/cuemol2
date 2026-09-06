@@ -11,6 +11,7 @@ import { join } from 'path'
 import { loadWindowBounds, saveWindowBounds } from '../stateStore'
 import { registerIpcHandlers } from '../ipcHandlers'
 import { registerRenderWindowIpc } from '../renderWindowIpc'
+import { createPowerSaveRenderGuard, type RenderActivityGuard } from '../renderActivity'
 import { resetMenuBlockReason, createMenu } from '../menu'
 import { registerTextContextMenu } from '../textContextMenu'
 import { registerCuemolClipboardIpc } from '../cuemolClipboard'
@@ -49,9 +50,10 @@ export function focusMainWindow(): void {
  *
  * A crash and a reload both leave main holding state the renderer owed it:
  * a crash leaves the close funnel waiting for a confirm that will never
- * come, and a reload discards every component that owed a menu-unblock.
+ * come, and a reload discards every component that owed a menu-unblock or a
+ * render-job "still running" report.
  */
-function watchRendererProcess(win: BrowserWindow): void {
+function watchRendererProcess(win: BrowserWindow, renderActivity: RenderActivityGuard): void {
   // Renderer process crashed (segfault, OOM, or process.crash). The confirm
   // funnel cannot complete because the renderer is dead -- mark every closure
   // path satisfied and exit immediately.
@@ -72,8 +74,13 @@ function watchRendererProcess(win: BrowserWindow): void {
   // dialog open left the count stuck above zero and every menu item except the
   // text-edit ones disabled for the rest of the run -- Cmd+Q included, with no
   // way to recover. Main sees the navigation, so it clears the reason here.
+  // The render-activity hold is the same kind of debt (the worker that ran
+  // the job dies with the page), so it is released here too.
   win.webContents.on('did-start-navigation', (_event, _url, _isInPlace, isMainFrame) => {
-    if (isMainFrame) resetMenuBlockReason('blueprint')
+    if (isMainFrame) {
+      resetMenuBlockReason('blueprint')
+      renderActivity.reset()
+    }
   })
 
   // Renderer is hung (e.g. infinite loop in JS or blocked on a sync call).
@@ -122,8 +129,11 @@ export function createWindow(): void {
     win.focus()
   })
 
+  // Power-save hold + renderer pid log while a render job runs (renderActivity.ts).
+  const renderActivity = createPowerSaveRenderGuard(win)
+
   forwardConsoleMessages(win, '[Renderer]')
-  watchRendererProcess(win)
+  watchRendererProcess(win, renderActivity)
 
   trackWindowState(win, loadWindowBounds, saveWindowBounds)
   registerTextContextMenu(win)
@@ -133,6 +143,7 @@ export function createWindow(): void {
     mainWindow: win,
     getRenderWindow,
     openRenderWindow: () => createOrFocusRenderWindow(win),
+    renderActivity,
   })
   createMenu(win)
 
@@ -144,6 +155,7 @@ export function createWindow(): void {
   // createOrFocusRenderWindow), so it does not auto-close with it. Close it
   // here so all windows are gone -> 'window-all-closed' fires -> the app quits.
   win.on('closed', () => {
+    renderActivity.reset()
     if (mainWindow === win) mainWindow = null
     const rw = getRenderWindow()
     if (rw && !rw.isDestroyed()) rw.close()
