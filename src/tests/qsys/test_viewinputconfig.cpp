@@ -37,6 +37,8 @@ TEST(ViewInputConfigTest, GpuPickDefaultsOnAndToggles)
     EXPECT_FALSE(pVIC->isGpuPick());
     pVIC->setGpuPick(true);
     EXPECT_TRUE(pVIC->isGpuPick());
+    // The hover highlight colour has a default (the overlay never reads null).
+    EXPECT_FALSE(pVIC->getHoverHlColor().isnull());
 }
 
 TEST(ViewInputConfigTest, SetBindingAndGetBinding)

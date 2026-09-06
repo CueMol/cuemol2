@@ -121,6 +121,8 @@ private:
     DataTexture *m_pSmaaSearchTex = nullptr;
     /// Temporal-jitter compose program (sample*weight; accumulate + display).
     ShaderObject *m_pJitterComposePO = nullptr;
+    /// Hover highlight overlay program (reads the integer pick ID buffer).
+    ShaderObject *m_pHoverPO = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
 public:
@@ -193,6 +195,16 @@ public:
     /// step (weight 1/N, with additive blend enabled by the caller) and the
     /// normalized display step (weight N/count, no blend).
     void drawJitterCompose(DisplayContext *pDC, RenderTarget *srcRT, float weight);
+
+    /// Hover highlight overlay: read pickRT's integer color attachment (the
+    /// pick ID buffer, any size) and paint the element whose texel ID equals
+    /// id = (renderer index, encoded element name, encoded outer name): a
+    /// translucent fill (fillRGBA, alpha = strength) plus an edge band on the
+    /// element boundary (edgeRGBA). Fragments outside the element are
+    /// discarded, so the caller draws it over the finished frame with alpha
+    /// blending enabled and the depth test disabled.
+    void drawHoverHighlight(DisplayContext *pDC, RenderTarget *pickRT, const int id[3],
+                            const float fillRGBA[4], const float edgeRGBA[4]);
 
 private:
     void alloc(DisplayContext *pDC);

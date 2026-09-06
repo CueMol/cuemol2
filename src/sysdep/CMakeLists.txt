@@ -106,6 +106,7 @@ SET(SHADER_SOURCES
   ogl_core/smaa_weights_frag.glsl
   ogl_core/smaa_blend_frag.glsl
   ogl_core/jitter_compose_frag.glsl
+  ogl_core/hover_hl_frag.glsl
 )
 SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl

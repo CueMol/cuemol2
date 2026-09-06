@@ -468,6 +468,13 @@ namespace qsys {
     /// @param bNearest only returns the result for the nearest renderer.
     virtual LString hitTestPolygon(qlib::LByteArrayPtr pts, bool bNearest);
 
+    /// Hover highlight: remember the element under the pointer (a hitTest
+    /// result's rend_id / atom_id / symm_id; symm_id = -1 when not through a
+    /// *symm renderer) so the view can overlay its highlight, or clear it. The
+    /// base view draws no highlight (no-op); see GUIView.
+    virtual void setHoverHit(int rend_id, int atom_id, int symm_id) {}
+    virtual void clearHoverHit() {}
+
     ////////////////////////////////////////////////
     // Framebuffer operations
     

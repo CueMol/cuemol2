@@ -112,10 +112,53 @@ public:
                 const FrameRenderParams &params,
                 const std::function<void()> &sceneRenderFn);
 
+    /// Re-present the last live frame (render() with enablePostAA) into the
+    /// currently bound default framebuffer by replaying only its final stage
+    /// (composite / FXAA / SMAA blend / jitter average display) from the
+    /// intermediate targets, which are untouched until the next render(), then
+    /// restore the scene depth like render() does. Serves a frame whose 3D
+    /// content is unchanged (only the hover highlight overlay changed) without
+    /// re-rendering the scene or disturbing the jitter accumulation. Returns
+    /// false when no live frame is cached (never rendered, or setSize /
+    /// dispose since).
+    bool presentLast(gfx::DisplayContext *pdc);
+
+    /// True while presentLast() can replay the last live frame.
+    bool hasCachedStage() const;
+
+    /// Backing-pixel size of the scene target (0 before setSize).
+    int getWidth() const;
+    int getHeight() const;
+
+    /// The fullscreen post-process primitive (nullptr before setSize). Lets the
+    /// view draw its own screen-space overlays with the same primitive.
+    gfx::PostProcGpuPrim *getPostProc() const
+    {
+        return m_pAOPostProc;
+    }
+
 private:
     /// Final blend output target: the internal jitter sample target while
     /// jittering, otherwise the caller-supplied target (nullptr = default fb).
     gfx::RenderTarget *selectOutRT(const FrameRenderParams &params) const;
+
+    /// The final stage of the last live frame: what to draw, with the exact
+    /// constants it was drawn with, so presentLast() reproduces the frame.
+    struct StageRecord
+    {
+        enum Kind { NONE, COMPOSITE, FXAA, SMAA, JITTER };
+        Kind kind = NONE;
+        gfx::AoConstants aoc;
+        bool aoActive = false;
+        /// JITTER: normalization weight of the displayed partial average.
+        float dispWeight = 1.0f;
+        bool blitDepth = false;
+    };
+    StageRecord m_lastStage;
+
+    /// Draw the given final stage into the currently bound framebuffer. The
+    /// caller sets depth test / blend off around it.
+    void presentStage(gfx::DisplayContext *pdc, const StageRecord &st);
 
     /// Off-screen scene target (color + depth + MRT normal).
     gfx::RenderTarget *m_pAOSceneRT = nullptr;

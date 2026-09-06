@@ -432,6 +432,45 @@ void PostProcGpuPrim::drawJitterCompose(DisplayContext *pDC, RenderTarget *srcRT
     srcRT->unbindTextures();
 }
 
+void PostProcGpuPrim::drawHoverHighlight(DisplayContext *pDC, RenderTarget *pickRT,
+                                         const int id[3], const float fillRGBA[4],
+                                         const float edgeRGBA[4])
+{
+    if (pickRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pHoverPO == nullptr) {
+        m_pHoverPO =
+            pDC->loadShaderObject("hover_hl",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/hover_hl_frag.glsl");
+        if (m_pHoverPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load hover_hl shader.");
+            return;
+        }
+    }
+
+    // The integer pick texture is bound on its own unit (usampler2D); the IDs
+    // are passed as ivec3 (the shader converts) since ShaderObject has no
+    // unsigned setters.
+    pickRT->bindColorTex(0, RT_TU_NOISE);
+
+    m_pHoverPO->enable();
+    m_pHoverPO->setUniform("u_pickTex", RT_TU_NOISE);
+    m_pHoverPO->setUniform("u_hlId", id[0], id[1], id[2]);
+    m_pHoverPO->setUniformF("u_pickTexSize", float(pickRT->getWidth()),
+                            float(pickRT->getHeight()));
+    m_pHoverPO->setUniformF("u_fillColor", fillRGBA[0], fillRGBA[1], fillRGBA[2],
+                            fillRGBA[3]);
+    m_pHoverPO->setUniformF("u_edgeColor", edgeRGBA[0], edgeRGBA[1], edgeRGBA[2],
+                            edgeRGBA[3]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pHoverPO->disable();
+    pickRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
@@ -444,6 +483,7 @@ void PostProcGpuPrim::invalidate()
     m_pCompPO = nullptr;
     m_pGtaoPO = nullptr;
     m_pDenoisePO = nullptr;
+    m_pHoverPO = nullptr;
     m_pFxaaPO = nullptr;
     m_pSmaaEdgePO = nullptr;
     m_pSmaaWeightPO = nullptr;

@@ -143,6 +143,12 @@ runtime_class View
   // the same JSON shape as hitTestRect, restricted to the polygon interior.
   string hitTestPolygon(object<ByteArray$> pts, boolean bNr);
 
+  // Hover highlight: remember the element under the pointer (a hitTest
+  // result's rend_id / atom_id / symm_id; symm_id = -1 when not through a
+  // *symm renderer) so the view overlays its highlight; clear removes it.
+  void setHoverHit(integer rend_id, integer atom_id, integer symm_id);
+  void clearHoverHit();
+
   // get parent scene
   object<Scene$> getScene();
 

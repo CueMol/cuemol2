@@ -58,6 +58,9 @@ void GUIView::unloading()
         m_pPipeline = nullptr;
     }
     releasePickBuffer();
+    m_bHoverSet = false;
+    m_bPresentDirty = false;
+    m_bFrameCached = false;
     super_t::unloading();
 }
 
@@ -65,6 +68,9 @@ void GUIView::sizeChanged(int cx, int cy)
 {
     super_t::sizeChanged(cx, cy);
     m_bPickDirty = true;
+    // The pipeline targets are resized on the next regular frame; nothing to
+    // re-present until then.
+    m_bFrameCached = false;
 }
 
 void GUIView::setCenterMark(int nMode)
@@ -198,6 +204,160 @@ void GUIView::forceRedraw()
     clearUpdateFlag();
 }
 
+GUIView::FramePlan GUIView::planFrame(const FrameFlags &f)
+{
+    FramePlan p;
+    p.sceneChanged = f.updateFlag || f.jitterReset;
+    // A present-only frame re-presents the cached frame with the overlay: only
+    // when nothing else changed, no progressive work (jitter samples, AO
+    // follow-up) is pending and the pipeline still holds the frame.
+    p.presentOnly = f.presentDirty && !p.sceneChanged && !f.jitterMore &&
+                    !f.aoHalfPending && f.frameCached;
+    // Otherwise the request costs a regular frame of an unchanged scene. A
+    // converged jitter accumulation would add its last sample once more, so
+    // restart it; an accumulation still in progress just continues.
+    p.restartJitter =
+        f.presentDirty && !p.presentOnly && !p.sceneChanged && !f.jitterMore;
+    return p;
+}
+
+bool GUIView::hoverIdToPickId(qlib::uid_t rendUid, int atomId, int symmId,
+                              const std::vector<qlib::uid_t> &rendTab, int out[3])
+{
+    if (atomId < 0) return false;
+    auto it = std::find(rendTab.begin(), rendTab.end(), rendUid);
+    if (it == rendTab.end()) return false;
+    out[0] = int(it - rendTab.begin()) + 1;
+    out[1] = int(gfx::encodeHitName(atomId));
+    out[2] = int(gfx::encodeHitName(symmId));
+    return true;
+}
+
+void GUIView::setHoverHit(int rend_id, int atom_id, int symm_id)
+{
+    if (atom_id < 0) {
+        clearHoverHit();
+        return;
+    }
+    const auto uid = qlib::uid_t(rend_id);
+    if (m_bHoverSet && m_hoverRendUid == uid && m_hoverAtomId == atom_id &&
+        m_hoverSymmId == symm_id)
+        return;
+    m_hoverRendUid = uid;
+    m_hoverAtomId = atom_id;
+    m_hoverSymmId = symm_id;
+    m_bHoverSet = true;
+    // The present-only frame is picked up by the idle loop
+    // (needsContinuousRedraw); the update flag stays clear so the temporal
+    // jitter accumulation is not restarted.
+    if (isGpuPickActive()) m_bPresentDirty = true;
+}
+
+void GUIView::clearHoverHit()
+{
+    if (!m_bHoverSet) return;
+    m_bHoverSet = false;
+    if (isGpuPickActive()) m_bPresentDirty = true;
+}
+
+bool GUIView::isHoverHighlightActive() const
+{
+    return m_bHoverSet && isGpuPickActive();
+}
+
+namespace {
+// Hover highlight look; the colour itself is ViewInputConfig::hover_hl_color.
+constexpr float HOVER_HL_FILL_ALPHA = 0.35f;
+constexpr float HOVER_HL_EDGE_ALPHA = 0.9f;
+constexpr float HOVER_HL_EDGE_DARKEN = 0.5f;
+}  // namespace
+
+void GUIView::drawHoverOverlay(DisplayContext *pdc)
+{
+    if (m_pPipeline == nullptr || !m_pPipeline->isReady()) return;
+    gfx::PostProcGpuPrim *pPP = m_pPipeline->getPostProc();
+    if (pPP == nullptr) return;
+
+    // The pick pass runs only when the buffer is stale (scene / camera changed
+    // since it was last rendered); its guard restores the GL / context state.
+    if (!renderPickBuffer() || m_pPickRT == nullptr) return;
+
+    int id[3];
+    if (!hoverIdToPickId(m_hoverRendUid, m_hoverAtomId, m_hoverSymmId, m_pickRendTab, id))
+        return;
+
+    float r = 1.0f, g = 0.4f, b = 0.6f;
+    const gfx::ColorPtr &pCol = ViewInputConfig::getInstance()->getHoverHlColor();
+    if (!pCol.isnull()) {
+        r = float(pCol->fr());
+        g = float(pCol->fg());
+        b = float(pCol->fb());
+    }
+    const float fill[4] = {r, g, b, HOVER_HL_FILL_ALPHA};
+    const float edge[4] = {r * HOVER_HL_EDGE_DARKEN, g * HOVER_HL_EDGE_DARKEN,
+                           b * HOVER_HL_EDGE_DARKEN, HOVER_HL_EDGE_ALPHA};
+
+    // Alpha-blend the overlay over the finished frame, ignoring depth.
+    pdc->setDepthTestEnabled(false);
+    pdc->setBlendEnabled(true);
+    pdc->setBlendModeAdd(false);
+    pPP->drawHoverHighlight(pdc, m_pPickRT, id, fill, edge);
+    pdc->setDepthTestEnabled(true);
+}
+
+void GUIView::drawUiOverlays(DisplayContext *pdc)
+{
+    // Display UI drawing objects (+center mark)
+    {
+        super_t::showDrawObj(pdc);
+    }
+
+    // Display 2D-UI drawing objects
+    {
+        const double cx = getWidth();
+        const double cy = getHeight();
+        // const float dist = float(getViewDist());
+
+        pdc->pushMatrix();
+        pdc->loadIdent();
+        auto projMat = pdc->getProjMat();
+        pdc->setProjMat(DisplayContext::makeOrthoProjMat(0, cx, cy, 0, 1.0, -1.0));
+
+        super_t::showDrawObj2D(pdc);
+
+        pdc->setProjMat(projMat);
+        pdc->popMatrix();
+    }
+}
+
+bool GUIView::presentFrame(DisplayContext *pdc)
+{
+    if (m_pPipeline == nullptr) return false;
+
+    const int bw = convToBackingX(getWidth());
+    const int bh = convToBackingY(getHeight());
+    if (bw <= 0 || bh <= 0) return false;
+
+    pdc->bindDefaultFramebuffer();
+    pdc->setViewport(Vector4D(0, 0, bw, bh));
+    pdc->setLighting(false);
+
+    if (!m_pPipeline->presentLast(pdc)) return false;
+
+    if (isHoverHighlightActive()) drawHoverOverlay(pdc);
+
+    // The UI overlays use the un-jittered projection / model matrices of the
+    // current camera (the pick pass or the off-screen exporter may have left
+    // other matrices in the context).
+    m_jitterPxX = m_jitterPxY = 0.0;
+    setUpProjMat(-1, -1);
+    setUpModelMat(MM_NORMAL);
+    drawUiOverlays(pdc);
+
+    swapBuffers();
+    return true;
+}
+
 void GUIView::drawScene()
 {
     // MB_DPRINTLN("GUIView::drawScene called");
@@ -216,6 +376,32 @@ void GUIView::drawScene()
     DisplayContext *pdc = getDisplayContext();
     pdc->setCurrent();
 
+    // Decide the frame kind and consume the one-shot request flags here, so an
+    // early return below cannot leave them armed (m_bPresentDirty keeps the
+    // idle loop alive through needsContinuousRedraw).
+    FrameFlags ff;
+    ff.presentDirty = m_bPresentDirty;
+    ff.updateFlag = getUpdateFlag();
+    ff.jitterReset = m_jitterResetRequested;
+    ff.jitterMore = m_jitterMoreSamples;
+    ff.aoHalfPending = m_aoHalfPending;
+    ff.frameCached = m_bFrameCached && m_pPipeline != nullptr &&
+                     m_pPipeline->hasCachedStage() &&
+                     m_pPipeline->getWidth() == convToBackingX(getWidth()) &&
+                     m_pPipeline->getHeight() == convToBackingY(getHeight());
+    FramePlan plan = planFrame(ff);
+    m_bPresentDirty = false;
+    m_jitterResetRequested = false;
+
+    if (plan.presentOnly) {
+        // Only the hover highlight changed: re-present the cached frame with
+        // the overlay (no scene pass, no pick pass, jitter state untouched).
+        if (presentFrame(pdc)) return;
+        // The cached frame could not be served after all: render a regular
+        // frame of the unchanged scene (see planFrame for the jitter restart).
+        plan.restartJitter = true;
+    }
+
     // gfx::ColorPtr pBgCol = pScene->getBgColor();
     // glClearColor(float(pBgCol->fr()), float(pBgCol->fg()),
     // float(pBgCol->fb()), 1.0f);
@@ -232,8 +418,11 @@ void GUIView::drawScene()
     m_jitterMoreSamples = false;
     m_jitterPxX = m_jitterPxY = 0.0;
     m_aoHalfPending = false;
+    m_bFrameCached = false;
 
     if (isProjChange()) setUpProjMat(-1, -1);
+
+    const bool hlActive = isHoverHighlightActive();
 
     switch (getStereoMode()) {
         default:
@@ -244,11 +433,14 @@ void GUIView::drawScene()
             // passes, then composited onto the default framebuffer. AO and AA
             // are independent: any of them routes the frame through the
             // pipeline; none of them = legacy direct rendering (hardware MSAA
-            // on the default framebuffer).
+            // on the default framebuffer). The hover highlight overlay needs a
+            // re-presentable frame (its present-only frames replay the
+            // pipeline's final stage), so while it is shown the plain mode goes
+            // through the pipeline as well (AA-only composite = plain copy).
             const bool pipeAvail = hasFBO();
             const bool aoOn = pScene->isAOEnabled() && pipeAvail;
             const bool usePipeline =
-                pipeAvail && pScene->requiresFramePipeline();
+                pipeAvail && (pScene->requiresFramePipeline() || hlActive);
 
             // Adaptive half-resolution AO: when aoHalfRes is enabled, the GTAO
             // term is computed at half resolution only while the camera is
@@ -283,16 +475,16 @@ void GUIView::drawScene()
                 const bool jitterActive = jitterLevel > 0;
                 const int jitterN = gfx::jitterSampleCount(jitterLevel);
                 if (jitterActive) {
-                    // Restart accumulation on any externally-requested redraw:
-                    // camera changes set the view update flag; scene-content
-                    // changes arrive via forceRedraw (-> m_jitterResetRequested).
-                    if (getUpdateFlag() || m_jitterResetRequested ||
+                    // Restart accumulation when the scene or camera changed
+                    // (planFrame: view update flag / forceRedraw), when a
+                    // present-only request fell back to this frame, or after
+                    // convergence.
+                    if (plan.sceneChanged || plan.restartJitter ||
                         m_jitterSampleIndex >= jitterN) {
                         m_jitterSampleIndex = 0;
                         MB_DPRINTLN("GUIView> jitter SS start (level=%d, %d samples)",
                                     jitterLevel, jitterN);
                     }
-                    m_jitterResetRequested = false;
                     gfx::jitterOffset(jitterLevel, m_jitterSampleIndex, m_jitterPxX,
                                       m_jitterPxY);
                     setUpProjMat(-1, -1);  // apply this sample's jittered frustum
@@ -321,6 +513,7 @@ void GUIView::drawScene()
                     setUpModelMat(MM_NORMAL);
                     pScene->display(pdc);
                 });
+                m_bFrameCached = true;
 
                 // Advance / converge the jitter accumulation. The pipeline ran
                 // this sample; the View owns the sample index and the idle redraw
@@ -378,30 +571,15 @@ void GUIView::drawScene()
 
     ////////////////////////////////////////////////
 
-    // Display UI drawing objects (+center mark)
-    {
-        super_t::showDrawObj(pdc);
-    }
+    // The scene or camera changed: the pick ID buffer no longer matches the
+    // frame. Progressive jitter samples and the AO follow-up re-render the same
+    // scene, so they keep it valid (no pick pass while the highlight is shown).
+    if (plan.sceneChanged) m_bPickDirty = true;
 
-    // Display 2D-UI drawing objects
-    {
-        const double cx = getWidth();
-        const double cy = getHeight();
-        // const float dist = float(getViewDist());
+    // Hover highlight overlay (renders the pick buffer first when stale).
+    if (hlActive) drawHoverOverlay(pdc);
 
-        pdc->pushMatrix();
-        pdc->loadIdent();
-        auto projMat = pdc->getProjMat();
-        pdc->setProjMat(DisplayContext::makeOrthoProjMat(0, cx, cy, 0, 1.0, -1.0));
-
-        super_t::showDrawObj2D(pdc);
-
-        pdc->setProjMat(projMat);
-        pdc->popMatrix();
-    }
-
-    // Whatever was drawn, the pick ID buffer no longer matches the frame.
-    m_bPickDirty = true;
+    drawUiOverlays(pdc);
 
     swapBuffers();
 

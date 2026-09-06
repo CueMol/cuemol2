@@ -6,8 +6,11 @@
 #ifndef VIEW_INPUT_CONFIG_QIF_INCLUDED
 #define VIEW_INPUT_CONFIG_QIF_INCLUDED
 
+#include <gfx/Color.qif>
+
 runtime_class ViewInputConfig
 {
+  using Color; // <-- gfx::SolidColor
   client_hdr "ViewInputConfig.hpp";
   client_name qsys::ViewInputConfig;
 
@@ -53,6 +56,11 @@ runtime_class ViewInputConfig
   // supports it; false forces the CPU point hit test (slow hosts).
   property boolean gpu_pick => redirect(isGpuPick, setGpuPick);
   default gpu_pick = true;
+
+  // Colour of the 3D view hover highlight (the element under the pointer,
+  // overlaid from the GPU pick buffer). The fill / edge strengths are fixed.
+  property object<AbstractColor$> hover_hl_color => redirect(getHoverHlColor, setHoverHlColor);
+  default hover_hl_color = gfx::SolidColor::createRGB(1.0, 0.4, 0.6);
 
   /////////////
   // Style supports

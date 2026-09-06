@@ -14,6 +14,8 @@
 #include "style/StyleMgr.hpp"
 #include "style/StyleEditInfo.hpp"
 
+#include <gfx/SolidColor.hpp>
+
 using namespace qsys;
 
 SINGLETON_BASE_IMPL(ViewInputConfig);
@@ -23,6 +25,7 @@ ViewInputConfig::ViewInputConfig()
   m_tbrad = 0.8;
   m_dHitPrec = 10.0;
   m_bGpuPick = true;
+  m_pHoverHlColor = gfx::SolidColor::createRGB(1.0, 0.4, 0.6);
   m_pStyles = MB_NEW StyleSheet();
   m_pStyles->setScopeID(0);
 }
