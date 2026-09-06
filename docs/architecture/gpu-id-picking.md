@@ -138,10 +138,26 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 - click / context menu / measure / bond edit は既存の `view.hitTest` 経由なので、判定だけが renderer 準拠になる。
   `hitTestRect` / `hitTestPolygon` (矩形・lasso) は CPU 判定のまま。
 
+### 4.1 設定 (on / off)
+- Settings tab > Mouse & Navigation に **GPU Picking** と **Hover Info** の 2 スイッチ。どちらもホストの都合
+  (遅いマシンでは常に off) なので scene ではなく electron-store (`UiState.gpuPicking` / `hoverInfo`、既定 true)
+  に永続化し、`PickingPrefsContext` が起動時に読み込む。一度 off にすれば on に戻すまで残る。
+- **GPU Picking** は C++ の `ViewInputConfig.gpu_pick` (`.qif` boolean、既定 true) に `setGpuPickEnabled` service で
+  即時反映される。`GUIView::isGpuPickActive()` (= `hasGpuPick() && gpu_pick && stereo == NONE`) を `hitTest` が毎回
+  評価するので再起動不要。off のときは pick target を解放して VRAM を戻し、click / hover は従来の CPU hittest
+  (原子中心の 10px 箱) で動く。`ViewInputConfig` の他のプロパティ (`hitprec`) と違い user style file には書かない
+  (persistence は electron-store 側の 1 箇所)。
+- **Hover Info** は renderer だけの設定で、off にすると `useHoverInfoHandler` が mousemove を購読しない
+  (30Hz の hittest 要求自体が止まる)。CPU hittest でも大きな分子では全原子射影が走るので、GPU Picking とは
+  独立に切れるようにした。
+
 ## 5. 契約行
 - `worker/shared/calls/navi.ts`: `naviHover: { args: NaviHoverArgs; result: NaviHoverResult }` + `NAVI_KEYS`。
 - `worker/client/WorkerTransport.ts`: `InvokeOptions.quiet`。`tritium/CLAUDE.md` の dispatch 表に 1 行。
 - `worker/server/services/navi/naviTool.ts`: `HoverLabel` (hover チップの表示契約)。
+- `worker/shared/calls/view.ts`: `setGpuPickEnabled: { args: { enabled }; result: { ok } }`。
+- `shared/types/uiPrefs.ts`: `UiState.gpuPicking` / `hoverInfo`。`contexts/PickingPrefsContext.tsx`:
+  `usePickingPrefs()` (provider 外では既定値を返す)。`ViewInputConfig.qif`: `gpu_pick`。
 - GfxManager peer API (`gfxManagerContract.test.ts`): `readPixelsUInt` を追加。
 - C++: `ViewCap::hasGpuPick`、`View::hasGpuPick`、`Renderer::isPickSupported / displayPick`、
   `Scene::displayPick / processHit(bCpuOnly) / hasCpuOnlyHitRenderers`、`HitData::addHit`、
@@ -161,6 +177,9 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   離れるため mol view 内へ移した。
 
 ## 7. テスト
+- C++ (test_qsys): `gpu_pick` の既定と `GUIView::isGpuPickActive` の gating (`test_viewinputconfig.cpp` /
+  `test_guiview.cpp`)。tritium: `setGpuPickEnabled` の live-only 書き込み (`viewInputParamsService.test.ts`)、
+  Hover Info off で mousemove を購読しないこと (`useHoverInfoHandler.test.tsx`)。
 - C++ (test_gfx / test_qsys): 基底 name stack と符号化 (`test_displaycontext_names.cpp`)、DisplayList が頂点に
   name を記録し recordStart で戻ること (`test_gpuprim.cpp`)、読み戻し窓の最近傍探索 (`test_pickbuffer.cpp`)、
   texel -> HitData 変換 (`test_guiview.cpp`)、`Scene::displayPick` の選別と `processHit(bCpuOnly)` の skip

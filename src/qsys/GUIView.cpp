@@ -433,10 +433,16 @@ LString GUIView::hitTest(int ax, int ay)
     qlib::uid_t rend_id = qlib::invalid_uid;
 
     // GPU ID-buffer pick (renderer-accurate, occlusion-aware) when the backend
-    // supports it. The CPU point hit test remains the path for backends
-    // without the capability (uxp_gui) and, after a GPU miss, for renderers
-    // that do not take part in the pick pass.
-    bool bGpu = hasGpuPick() && getStereoMode() == Camera::CSM_NONE;
+    // supports it and the user has not switched it off. The CPU point hit
+    // test remains the path for backends without the capability (uxp_gui),
+    // for the switched-off state and, after a GPU miss, for renderers that
+    // do not take part in the pick pass.
+    bool bGpu = isGpuPickActive();
+    if (!bGpu && m_pPickRT != nullptr) {
+        // Switched off (or stereo): give the pick target's VRAM back; it is
+        // recreated lazily when the GPU path is used again.
+        releasePickBuffer();
+    }
     if (bGpu && !hitTestGpu(ax, ay, rend_id)) {
         bGpu = false;  // GPU path unavailable at runtime: full CPU path
     }
@@ -855,6 +861,13 @@ bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool f
 
 //////////
 // GPU ID-buffer picking
+
+bool GUIView::isGpuPickActive() const
+{
+    if (!hasGpuPick()) return false;
+    if (!qsys::ViewInputConfig::getInstance()->isGpuPick()) return false;
+    return getStereoMode() == Camera::CSM_NONE;
+}
 
 bool GUIView::ensurePickTarget(int pw, int ph)
 {

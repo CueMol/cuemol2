@@ -8,7 +8,7 @@
  */
 
 import { getLabelDefaults, setLabelDefaults } from './labelDefaults';
-import { getViewInputParams, setViewInputParams } from './viewInputParams';
+import { getViewInputParams, setGpuPickEnabled, setViewInputParams } from './viewInputParams';
 import { getViewCenterMark, getViewProjection, setViewCenterMark, setViewProjection } from './viewProjection';
 import { getViewXform, rotateView, setViewXform, translateView } from './viewXform';
 
@@ -17,6 +17,7 @@ export const services = {
     setLabelDefaults,
     getViewInputParams,
     setViewInputParams,
+    setGpuPickEnabled,
     getViewProjection,
     setViewProjection,
     getViewCenterMark,

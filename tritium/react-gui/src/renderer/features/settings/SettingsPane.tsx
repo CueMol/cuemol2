@@ -36,6 +36,7 @@ import { useRenderConfig } from '@renderer/contexts/RenderConfigContext'
 import { useApbsConfig } from '@renderer/contexts/ApbsConfigContext'
 import { useViewInputConfig } from '@renderer/contexts/ViewInputConfigContext'
 import { useAppSettings } from '@renderer/contexts/AppSettingsContext'
+import { usePickingPrefs } from '@renderer/contexts/PickingPrefsContext'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import {
@@ -54,6 +55,7 @@ import {
   INPUT_DEVICE_SETTING_KEY,
   LABEL_DEFAULT_SETTING_KEYS,
   VIEW_INPUT_PARAM_SETTING_KEYS,
+  PICKING_PREF_SETTING_KEYS,
 } from '@renderer/features/settings/settings/settingsConfig'
 import { ConfigTreeNode } from '@renderer/features/settings/settings/ConfigTreeNode'
 import { SettingRow } from '@renderer/features/settings/settings/SettingRow'
@@ -77,6 +79,9 @@ export const SettingsPane: React.FC = () => {
   // are user-defined style values applied live to C++ and persisted on close.
   const { labelDefaults, setLabelDefault, viewInputParams, setViewInputParam } =
     useAppSettings()
+  // 3D view picking preferences (GPU picking / hover info): electron-store,
+  // gpuPicking applied live to C++.
+  const pickingPrefs = usePickingPrefs()
   // Installed system fonts for the atom-label font picker (falls back to a
   // curated list until `queryLocalFonts` resolves). Ensure the current value is
   // always selectable even if that family is not installed / not enumerated.
@@ -147,6 +152,13 @@ export const SettingsPane: React.FC = () => {
         return
       }
 
+      // 3D view picking preferences persist via PickingPrefsContext.
+      const pickingKey = PICKING_PREF_SETTING_KEYS[key]
+      if (pickingKey) {
+        pickingPrefs.setPickingPref(pickingKey, Boolean(value))
+        return
+      }
+
       setValues((prev) => ({ ...prev, [key]: value }))
 
       // Sync theme toggle with the ThemeContext.
@@ -154,7 +166,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam],
+    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam, pickingPrefs],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -318,11 +330,14 @@ export const SettingsPane: React.FC = () => {
                   } else {
                     const labelKey = LABEL_DEFAULT_SETTING_KEYS[s.key]
                     const viewParamKey = VIEW_INPUT_PARAM_SETTING_KEYS[s.key]
+                    const pickingKey = PICKING_PREF_SETTING_KEYS[s.key]
                     value = labelKey
                       ? labelDefaults[labelKey]
                       : viewParamKey
                         ? viewInputParams[viewParamKey]
-                        : binaryKey
+                        : pickingKey
+                          ? pickingPrefs[pickingKey]
+                          : binaryKey
                           ? binaries[binaryKey]
                           : apbsKey
                             ? apbsConfig[apbsKey]

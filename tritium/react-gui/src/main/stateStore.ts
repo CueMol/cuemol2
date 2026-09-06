@@ -56,6 +56,8 @@ const DEFAULTS: StoreSchema = {
     sidebarActiveView: 'explorer',
     theme: 'dark',
     inputDeviceMode: 'auto',
+    gpuPicking: true,
+    hoverInfo: true,
   },
   recentFiles: [],
 }

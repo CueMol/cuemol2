@@ -17,6 +17,7 @@ import type React from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useActiveScene } from '@renderer/state/workspace';
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
+import { usePickingPrefs } from '@renderer/contexts/PickingPrefsContext';
 import type { HoverLabel } from '@renderer/worker/server/services/navi/naviTool';
 import { MOLVIEW_CANVAS_SELECTOR } from './molViewCanvas';
 
@@ -51,11 +52,14 @@ interface Pos {
 export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInfoHandlerArgs): void {
     const { cueMolReady, cm } = useCueMol();
     const { activeMolViewId } = useActiveScene();
+    // Settings > Mouse & Navigation > "Hover info": off stops the sampling
+    // (no hit test requests at all), not just the label.
+    const { hoverInfo } = usePickingPrefs();
     const guard = useStaleGuard();
     const setterRef = useRef(setHoverLabel);
     setterRef.current = setHoverLabel;
 
-    const enabled = cueMolReady && cm !== null && activeMolViewId != null;
+    const enabled = cueMolReady && cm !== null && activeMolViewId != null && hoverInfo;
     const viewId = activeMolViewId ?? -1;
 
     useEffect(() => {

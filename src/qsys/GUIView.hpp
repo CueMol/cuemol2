@@ -114,6 +114,11 @@ public:
 
     LString hitTestPolygon(qlib::LByteArrayPtr pts, bool bNearest) override;
 
+    /// True when hitTest() uses the GPU ID-buffer pick pass: the backend
+    /// supports it (View::hasGpuPick), the user has not switched it off
+    /// (ViewInputConfig::gpu_pick) and the view is not in a stereo mode.
+    bool isGpuPickActive() const;
+
     /// Convert one non-empty pick texel (R = 1-based index into rendTab,
     /// G = encoded element name, B = encoded outer name) into a HitData entry
     /// (name list = [outer,] element). Returns false if the texel is invalid.

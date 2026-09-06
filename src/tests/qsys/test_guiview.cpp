@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 #include <common.h>
 #include "qsys/GUIView.hpp"
+#include "qsys/ViewCap.hpp"
+#include "qsys/ViewInputConfig.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <gfx/PickBuffer.hpp>
 #include <qlib/LByteArray.hpp>
@@ -263,4 +265,41 @@ TEST(GUIViewTest, PickTexelToHitData)
     t.name = 0;
     EXPECT_FALSE(qsys::GUIView::pickTexelToHitData(hd3, rendTab, t));
     EXPECT_EQ(hd3.getNearestRendID(), qlib::invalid_uid);
+}
+
+// --- GPU ID-buffer pick: the user switch gates the GPU path ---
+
+namespace {
+class GpuPickViewCap : public qsys::ViewCap
+{
+public:
+    bool hasGpuPick() const override { return true; }
+};
+}  // namespace
+
+// The GPU pass runs only when the backend supports it AND ViewInputConfig's
+// gpu_pick is on; switching it off routes hitTest to the CPU point hit test
+// without a restart.
+TEST(GUIViewTest, GpuPickActiveFollowsViewCapAndUserSwitch)
+{
+    TestGUIView v;
+    qsys::ViewCap *pPrevCap = qsys::View::getViewCap();
+    qsys::ViewInputConfig *pVIC = qsys::ViewInputConfig::getInstance();
+    const bool bPrev = pVIC->isGpuPick();
+
+    // No capability (desktop / uxp_gui, tests): never active.
+    qsys::View::setViewCap(nullptr);
+    pVIC->setGpuPick(true);
+    EXPECT_FALSE(v.isGpuPickActive());
+
+    GpuPickViewCap cap;
+    qsys::View::setViewCap(&cap);
+    EXPECT_TRUE(v.isGpuPickActive());
+    pVIC->setGpuPick(false);
+    EXPECT_FALSE(v.isGpuPickActive());
+    pVIC->setGpuPick(true);
+    EXPECT_TRUE(v.isGpuPickActive());
+
+    qsys::View::setViewCap(pPrevCap);
+    pVIC->setGpuPick(bPrev);
 }

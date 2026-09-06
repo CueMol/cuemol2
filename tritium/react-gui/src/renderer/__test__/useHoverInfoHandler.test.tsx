@@ -21,6 +21,10 @@ vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
 vi.mock('@renderer/state/workspace', () => ({
     useActiveScene: () => ({ activeMolViewId: 7, activeSceneId: 100 }),
 }))
+const pickingPrefs = { gpuPicking: true, hoverInfo: true, setPickingPref: () => undefined }
+vi.mock('@renderer/contexts/PickingPrefsContext', () => ({
+    usePickingPrefs: () => pickingPrefs,
+}))
 
 import { useHoverInfoHandler } from '@renderer/features/molview/useHoverInfoHandler'
 import type { HoverLabel } from '@renderer/features/molview/useHoverInfoHandler'
@@ -103,5 +107,24 @@ describe('useHoverInfoHandler', () => {
 
         expect(setter.mock.calls).toEqual([[LABEL_M], [null]])
         unmount()
+    })
+
+    it('does not sample the pointer at all while the Hover Info preference is off', async () => {
+        pickingPrefs.hoverInfo = false
+        try {
+            const setter = vi.fn()
+            const { container, unmount } = mountTree(<Probe setter={setter} />)
+            const canvas = container.querySelector('canvas') as HTMLCanvasElement
+            canvas.getBoundingClientRect = () =>
+                ({ left: 0, top: 0, width: 400, height: 300, right: 400, bottom: 300, x: 0, y: 0, toJSON() {} }) as DOMRect
+            await act(() => {
+                canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 10, clientY: 10, buttons: 0, bubbles: true }))
+            })
+            expect(invokeService).not.toHaveBeenCalled()
+            expect(setter).not.toHaveBeenCalled()
+            unmount()
+        } finally {
+            pickingPrefs.hoverInfo = true
+        }
     })
 })
