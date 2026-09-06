@@ -100,8 +100,9 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   `loadName(atom2)`。
 - 主鎖系: `MainChainRenderer::calcHitName(rho, pRes1, pRes2)` (= `rendHitResid` と同じ pivot 原子)。
   `SplineRenderer::calcHitName(par, pCoeff)`、`Ribbon2Renderer::calcHitName / calcCoilHitName` を `calcColor`
-  の隣で呼ぶ。`TubeSection::doTess` と `RibbonRenderer` / `TubeRenderer` の strip ループは前リングの name を
-  保持し (`m_prevName`)、残基境界がリング間に落ちる (provoking vertex = LAST で三角形ごとにどちらかの残基)。
+  の隣で呼ぶ。`TubeSection::doTess` は前リングと現在リングの間の strip 全体に **現在の name (区間単位)** を
+  付けるので、残基境界はリングの上にぴったり乗る。リングごとに name を変えると provoking vertex (LAST) により
+  三角形が交互に前後の残基に属し、境界がノコギリ状になる (hover highlight で目立った)。
 - GpuPrim 直描き (CPK2 / BallStick / Simple / Trace): `displayPick()` は `display()` を呼ぶだけ。coord-texture
   経路の prim は pick program で描き、DL fallback 経路は名前付き DL がそのまま描かれる。pick program を持たない
   `SphereGpuPrim` / `CylinderGpuPrim` (座標属性版) は `isPickDraw()` で何も描かない (この経路は pick 不可)。

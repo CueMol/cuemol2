@@ -230,7 +230,6 @@ private:
   bool m_bTessEmpty;
 
   /// Hit name of the previous ring (pick pass), see doTess()
-  int m_prevName = -1;
   std::vector<Vector4D> m_vtess;
   std::vector<Vector4D> m_ntess;
   gfx::ColorPtr m_pPrevCol;
