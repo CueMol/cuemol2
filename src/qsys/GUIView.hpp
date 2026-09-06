@@ -168,6 +168,14 @@ public:
     };
     static FramePlan planFrame(const FrameFlags &f);
 
+    /// Slab planes of a camera (near / far clip and the fog range) as
+    /// setUpProjMat derives them. bPickProj selects the pick-pass far clip,
+    /// the fog end (centre + slab/2, beyond which nothing is visible), instead
+    /// of the display one (centre + slab depth). GL-free, unit-tested.
+    static void computeSlabPlanes(double dist, double slabdepth, bool bPickProj,
+                                  double &slabnear, double &slabfar, double &fognear,
+                                  double &fogfar);
+
     /// Map a hovered element to the pick texel it was drawn with: (1-based
     /// index of rendUid in rendTab, encodeHitName(atomId), encodeHitName(symmId)).
     /// Returns false when the element cannot be in the pick buffer (no atom, or
@@ -204,6 +212,10 @@ private:
 
     /// True when the pick target does not reflect the last drawn frame.
     bool m_bPickDirty = true;
+
+    /// True while setUpProjMat builds the pick-pass projection (far clip at
+    /// the fog end, see computeSlabPlanes); set and restored by renderPickBuffer.
+    bool m_bPickProj = false;
 
     /// Renderer uid table of the last pick pass (R channel is 1-based index).
     std::vector<qlib::uid_t> m_pickRendTab;

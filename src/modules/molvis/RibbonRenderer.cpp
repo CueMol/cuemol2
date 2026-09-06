@@ -443,6 +443,9 @@ void RibbonRenderer::renderTube(DisplayContext *pdl,
 
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
+    // Hit names (pick pass): one name for the whole segment strip, so the
+    // residue boundary lies on a ring (see TubeSection::doTess).
+    pdl->loadName(m_nHitName);
     pdl->startTriangleStrip();
     
     for (j=0; j<=pCurTs->getSize(); j++) {
@@ -461,19 +464,15 @@ void RibbonRenderer::renderTube(DisplayContext *pdl,
       g2 = pCurTs->getVec(j, m_e21, m_e22);
       dg1 = pCurTs->getNormVec(j, m_e11, m_e12);
       dg2 = pCurTs->getNormVec(j, m_e21, m_e22);
-      pdl->loadName(m_nHitName);
       pdl->normal(dg1);
       pdl->vertex(m_f1+g1);
       
       if (bb && isSmoothColor())
         pdl->color(m_pPrevCol);
 
-      pdl->loadName(m_nPrevHitName);
       pdl->normal(dg2);
       pdl->vertex(m_f2+g2);
     }
-    pdl->loadName(m_nHitName);
-    
     pdl->end();
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     // pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
@@ -556,6 +555,9 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+    // Hit names (pick pass): one name for the whole segment strip, so the
+    // residue boundary lies on a ring (see TubeSection::doTess).
+    pdl->loadName(m_nHitName);
     pdl->startTriangleStrip();
     
     const Vector4D xe11 = m_e11.scale(escl.x());
@@ -587,19 +589,15 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
       dg2 = pCurTs->getNormVec(j, te21, te22) +
         calcDnorm(pCurTs->getSectTab(j), m_prev_escl, m_prev_vpt);
 
-      pdl->loadName(m_nHitName);
       pdl->normal(dg1);
       pdl->vertex(m_f1+g1);
       
       if (bb && isSmoothColor())
         pdl->color(m_pPrevCol);
 
-      pdl->loadName(m_nPrevHitName);
       pdl->normal(dg2);
       pdl->vertex(m_f2+g2);
     }
-    pdl->loadName(m_nHitName);
-    
     pdl->end();
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);

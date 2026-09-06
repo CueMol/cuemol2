@@ -403,3 +403,33 @@ TEST(GUIViewTest, HoverIdToPickId)
     EXPECT_FALSE(qsys::GUIView::hoverIdToPickId(1003, 42, -1, rendTab, id));
     EXPECT_FALSE(qsys::GUIView::hoverIdToPickId(1001, -1, -1, rendTab, id));
 }
+
+// --- Slab planes: the pick pass clips at the fog end ---
+
+// The display projection keeps the far clip one slab depth behind the centre
+// (fully fogged geometry still occludes), the pick-pass projection clips at
+// the fog end (centre + slab/2, beyond which nothing is visible) so invisible
+// geometry is not picked; near clip and fog range are the same in both, and
+// the near clamp applies.
+TEST(GUIViewTest, ComputeSlabPlanesPickClipsAtFogEnd)
+{
+    double n, f, fn, ff;
+    qsys::GUIView::computeSlabPlanes(100.0, 40.0, /*bPickProj=*/false, n, f, fn, ff);
+    EXPECT_DOUBLE_EQ(n, 80.0);
+    EXPECT_DOUBLE_EQ(f, 140.0);
+    EXPECT_DOUBLE_EQ(fn, 100.0);
+    EXPECT_DOUBLE_EQ(ff, 120.0);
+
+    double pn, pf, pfn, pff;
+    qsys::GUIView::computeSlabPlanes(100.0, 40.0, /*bPickProj=*/true, pn, pf, pfn, pff);
+    EXPECT_DOUBLE_EQ(pn, n);
+    EXPECT_DOUBLE_EQ(pfn, fn);
+    EXPECT_DOUBLE_EQ(pff, ff);
+    EXPECT_DOUBLE_EQ(pf, ff);  // far clip = fog end
+
+    // Camera close to the centre: near is clamped to 0.1 and the pick far
+    // clip stays in front of it.
+    qsys::GUIView::computeSlabPlanes(0.05, 0.1, /*bPickProj=*/true, pn, pf, pfn, pff);
+    EXPECT_DOUBLE_EQ(pn, 0.1);
+    EXPECT_GT(pf, pn);
+}
