@@ -7,6 +7,11 @@
 #include "gfx/GpuPrim.hpp"
 #include "gfx/DisplayContext.hpp"
 #include "gfx/DisplayList.hpp"
+#include "gfx/SphereIdxGpuPrim.hpp"
+#include "gfx/CylinderIdxGpuPrim.hpp"
+#include "gfx/LineIdxGpuPrim.hpp"
+#include "gfx/LineValIdxGpuPrim.hpp"
+#include "gfx/FloatDataTexture.hpp"
 #include "gfx/ShaderObject.hpp"
 #include "gfx/SolidColor.hpp"
 #include "gfx/AbstDrawAttrs.hpp"
@@ -80,6 +85,120 @@ public:
     // drawElem is a no-op
     void drawElem(const gfx::AbstDrawElem &) override {}
 };
+
+// ---- DisplayList hit names (GPU ID-buffer pick) ----
+
+// render() attaches names with loadName(); the display list records the
+// current name per vertex and TrigGpuPrim carries it as the integer
+// attribute read by the pick program.
+TEST(DisplayListHitNames, RecordedPerVertexAndResetPerRecording)
+{
+    MockDisplayContext dc;
+    gfx::DisplayList dl;
+
+    dl.recordStart();
+    dl.startTriangles();
+    dl.loadName(7);
+    dl.normal(Vector4D(0, 0, 1));
+    dl.vertex(Vector4D(0, 0, 0));
+    dl.vertex(Vector4D(1, 0, 0));
+    dl.loadName(-1);  // no name -> not pickable
+    dl.vertex(Vector4D(0, 1, 0));
+    dl.end();
+    dl.recordEnd();
+
+    dl.callDisplayListImpl(&dc);
+    const gfx::TrigGpuPrim *pTrig = dl.getTrigObj();
+    ASSERT_NE(pTrig, nullptr);
+    ASSERT_EQ(pTrig->getVertexSize(), 3);
+    EXPECT_EQ(pTrig->getHitName(0), gfx::encodeHitName(7));
+    EXPECT_EQ(pTrig->getHitName(1), gfx::encodeHitName(7));
+    EXPECT_EQ(pTrig->getHitName(2), 0u);
+
+    // A new recording starts without a name (renderers that never call
+    // loadName() produce unpickable geometry).
+    dl.recordStart();
+    EXPECT_EQ(dl.getCurrentName(), -1);
+}
+
+// ---- Pick pass: every GpuPrim draws with its pick program ----
+
+// The coordinate-texture primitives take a FloatDataTexture; a no-op one is
+// enough to reach setupAttrs()/draw() without GL.
+class MockFloatDataTexture : public gfx::FloatDataTexture
+{
+public:
+    bool create(int, int, int) override { return true; }
+    void update(const void *) override {}
+    void bind(int) override {}
+    void unbind() override {}
+    int getWidth() const override { return 1; }
+    int getHeight() const override { return 1; }
+};
+
+// Regression: the hit-name attributes were added to the primitives' vertex
+// layouts, and the attribute table must be sized for all of them
+// (setAttrSize before setAttrInfo). A too-small table asserted inside
+// setupAttrs() the first time a SimpleRenderer was drawn. Draws each
+// primitive in both the shading and the pick pass.
+TEST(GpuPrimPickPass, EveryPrimitiveDrawsInShadingAndPickMode)
+{
+    MockDisplayContext dc;
+    MockFloatDataTexture tex;
+
+    gfx::TrigGpuPrim trig;
+    trig.init(&dc);
+    trig.alloc(&dc, 3, 1);
+    trig.setHitName(0, gfx::encodeHitName(1));
+
+    gfx::LineGpuPrim line;
+    line.init(&dc);
+    line.alloc(&dc, 1);
+    line.setLine(0, Vector4D(0, 0, 0), 0xFF0000FFu, Vector4D(1, 0, 0), 0xFF00FF00u,
+                 gfx::encodeHitName(1), gfx::encodeHitName(2));
+
+    gfx::SphereIdxGpuPrim sph;
+    sph.init(&dc);
+    sph.alloc(&dc, 1);
+    sph.setData(0, 0, 1.0f, 0xFF0000FFu, gfx::encodeHitName(1));
+    sph.setCoordTex(&tex, 0);
+
+    gfx::CylinderIdxGpuPrim cyl;
+    cyl.init(&dc);
+    cyl.alloc(&dc, 1);
+    cyl.setData(0, 0, 1, 0.0f, 1.0f, 0.2f, 0xFF0000FFu, gfx::encodeHitName(1),
+                gfx::encodeHitName(2));
+    cyl.setCoordTex(&tex, 0);
+
+    gfx::LineIdxGpuPrim lidx;
+    lidx.init(&dc);
+    lidx.alloc(&dc, 1);
+    lidx.setData(0, 0, Vector4D(), 0xFF0000FFu, 1, Vector4D(), 0xFF00FF00u,
+                 gfx::encodeHitName(1), gfx::encodeHitName(2));
+    lidx.setCoordTex(&tex, 0);
+
+    gfx::LineValIdxGpuPrim lval;
+    lval.init(&dc);
+    lval.alloc(&dc, 2);
+    lval.setLine(0, 0, 1, 0.0f, 1.0f, 0xFF0000FFu, 0xFF00FF00u, gfx::encodeHitName(1),
+                 gfx::encodeHitName(2));
+    lval.setAster(1, 0, Vector4D(-1, 0, 0), Vector4D(1, 0, 0), 0xFF0000FFu,
+                  gfx::encodeHitName(1));
+    lval.setCoordTex(&tex, 0);
+
+    for (int mode : {gfx::DisplayContext::PICK_OFF, gfx::DisplayContext::PICK_DRAW}) {
+        dc.setPickMode(mode);
+        dc.startHit(42);
+        trig.draw(&dc);
+        line.draw(&dc);
+        sph.draw(&dc);
+        cyl.draw(&dc);
+        lidx.draw(&dc);
+        lval.draw(&dc);
+        dc.endHit();
+    }
+    SUCCEED();
+}
 
 // ---- SphereGpuPrim tests ----
 

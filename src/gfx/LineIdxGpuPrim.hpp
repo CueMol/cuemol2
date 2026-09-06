@@ -40,6 +40,8 @@ public:
         qfloat32 ox2, oy2, oz2, idx2;  ///< a_p2: xyz = model-space offset, w = index
         qbyte r1, g1, b1, a1;          ///< Start point RGBA colour
         qbyte r2, g2, b2, a2;          ///< End point RGBA colour
+        quint32 hitName1;              ///< Encoded hit name of endpoint 1 (pick pass)
+        quint32 hitName2;              ///< Encoded hit name of endpoint 2 (pick pass)
     };
 
     /**
@@ -81,7 +83,22 @@ public:
      * @param devcode1,devcode2 pre-resolved device RGBA colours.
      */
     void setData(int i, int idx1, const qlib::Vector4D &off1, quint32 devcode1,
-                 int idx2, const qlib::Vector4D &off2, quint32 devcode2);
+                 int idx2, const qlib::Vector4D &off2, quint32 devcode2,
+                 quint32 hitName1 = 0, quint32 hitName2 = 0);
+
+    /**
+     * std140 DrawParamsBlock for the pick program (binding=2, 64 bytes):
+     * DrawParams followed by the pick tail (linew2idx_pick_vert.glsl /
+     * linew_pick_frag.glsl).
+     */
+    struct PickDrawParams
+    {
+        DrawParams base;            // offset 0..47
+        quint32  u_rend_idx;        // R channel (1-based renderer index)
+        quint32  u_outer_name;      // B channel (encoded outer name)
+        quint32  _pp0;
+        quint32  _pp1;
+    };
 
     /** Bind the coordinate texture to this unit before draw(). Non-owning. */
     void setCoordTex(FloatDataTexture *pTex, int texUnit);
@@ -124,9 +141,13 @@ private:
     static constexpr int ATTRLOC_P2     = 1;
     static constexpr int ATTRLOC_COLOR1 = 2;
     static constexpr int ATTRLOC_COLOR2 = 3;
+    // Integer attributes read by the pick program only
+    static constexpr int ATTRLOC_HITNAME1 = 4;
+    static constexpr int ATTRLOC_HITNAME2 = 5;
     static constexpr int COORD_TEX_UNIT = 0;
 
     gfx::ShaderObject *m_pPO;
+    gfx::ShaderObject *m_pPickPO;   ///< ID-buffer pick program (lazy)
     LineIdxArray *m_pDrawAry;
     FloatDataTexture *m_pCoordTex;   ///< non-owning
     int m_nCoordTexUnit;
@@ -136,6 +157,9 @@ private:
     bool m_bNoDepth;
 
     void setupAttrs();
+
+    bool initPick(DisplayContext *pDC);
+    void drawPick(DisplayContext *pDC);
 };
 
 }  // namespace gfx

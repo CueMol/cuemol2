@@ -130,6 +130,8 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
 
   // Color objects used in the loop
   ColorPtr pCol, pPrevCol;
+  // Hit names (pick pass) of the current and previous drawing points
+  int hitName = -1, prevName = -1;
 
   // Main loop for each drawing point
   //  i: drawing point index from 0 to ndelta
@@ -140,6 +142,8 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     double par = fstart + double(i)*fdelta; ///double( naxdet );
 
     pCol = calcColor(par, pCoeff);
+    hitName = calcHitName(par, pCoeff);
+    pdl->loadName(hitName);
 
     Vector2D escl = getEScl(par, pCoeff); //Vector2D(1.0, 1.0);
 
@@ -170,6 +174,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
       prev_e2 = e12;
       prev_f = f1;
       pPrevCol = pCol;
+      prevName = hitName;
 
       if (!isSegEndFade() || !isSegEnd(par, pCoeff)) {
         // make the tube cap.
@@ -202,10 +207,12 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
       g2 = m_pts->getVec(j, e21, e22);
       dg1 = m_pts->getNormVec(j, e11, e12);
       dg2 = m_pts->getNormVec(j, e21, e22);
+      pdl->loadName(hitName);
       pdl->normal(dg1);
       pdl->color(pCol);
       pdl->vertex(f1+g1);
 
+      pdl->loadName(prevName);
       pdl->normal(dg2);
       if (isSmoothColor())
         pdl->color(pPrevCol);
@@ -216,6 +223,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     }
 
     pdl->end();
+    pdl->loadName(hitName);
 
     //pdl->startLines();
     //BOOST_FOREACH (const Vector4D &elem, tmpv) {
@@ -236,6 +244,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     prev_e2 = e12;
     prev_f = f1;
     pPrevCol = pCol;
+    prevName = hitName;
   }
   
   pdl->setLighting(false);

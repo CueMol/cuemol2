@@ -187,13 +187,16 @@ void NARenderer::rendResidBasePair(DisplayContext *pdl, MolResiduePtr pRes)
     Vector4D pos1 = pA1->getPos();
     Vector4D pos2 = pA3->getPos();
     if ( pcol1->equals(*pcol2.get()) ) {
+      pdl->loadName(pA1->getID());
       pdl->color(pcol1);
       pdl->cylinder(m_bondw, pos1, pos2);
     }
     else {
       const Vector4D mpos = (pos1 + pos2).divide(2.0);
+      pdl->loadName(pA1->getID());
       pdl->color(pcol1);
       pdl->cylinder(m_bondw, pos1, mpos);
+      pdl->loadName(pA3->getID());
       pdl->color(pcol2);
       pdl->cylinder(m_bondw, pos2, mpos);
     }
@@ -223,6 +226,7 @@ void NARenderer::rendResidBasePair(DisplayContext *pdl, MolResiduePtr pRes)
     // Get the pivot atom's color --> pA1 is pivot atom
     ColorPtr col = ColSchmHolder::getColor(pA1);
     pdl->setLighting(true);
+    pdl->loadName(pA1->getID());
     pdl->color(col);
     pdl->cylinder(m_bondw, pA1->getPos(), pA3->getPos());
     pdl->sphere(m_bondw, pA3->getPos());
@@ -297,6 +301,7 @@ void NARenderer::rendResidSimple1(DisplayContext *pdl, MolResiduePtr pRes)
     Vector4D pos2 = pA2_2->getPos();
     
     if ( col1->equals(*col2.get()) ) {
+      pdl->loadName(pA1->getID());
       pdl->color(col1);
       pdl->cylinder(m_bondw, pA1->getPos(), pos1);
       pdl->cylinder(m_bondw, pos1, pos2);
@@ -307,11 +312,13 @@ void NARenderer::rendResidSimple1(DisplayContext *pdl, MolResiduePtr pRes)
     else {
       Vector4D mpos = (pos1 + pos2).divide(2.0);
       
+      pdl->loadName(pA1->getID());
       pdl->color(col1);
       pdl->cylinder(m_bondw, pA1->getPos(), pos1);
       pdl->cylinder(m_bondw, pos1, mpos);
       pdl->sphere(m_bondw, pos1);
       
+      pdl->loadName(pA2_1->getID());
       pdl->color(col2);
       pdl->cylinder(m_bondw, mpos, pos2);
       pdl->cylinder(m_bondw, pos2, pA2_1->getPos());
@@ -332,6 +339,7 @@ void NARenderer::rendResidSimple1(DisplayContext *pdl, MolResiduePtr pRes)
   //ColorPtr col = ColSchmHolder::getColor(pRes);
   ColorPtr col = ColSchmHolder::getColor(pA1);
   pdl->setLighting(true);
+  pdl->loadName(pA1->getID());
   pdl->color(col);
   pdl->cylinder(m_bondw, pA1->getPos(), pA2->getPos());
   pdl->cylinder(m_bondw, pA2->getPos(), pA3->getPos());
@@ -380,6 +388,9 @@ void NARenderer::rendResidDetail1(DisplayContext *pdl, MolResiduePtr pRes)
 
   MolAtomPtr pPivAtom = getPivotAtom(pRes);
   ColorPtr col = ColSchmHolder::getColor(pPivAtom);
+  // The base ring is drawn by the helper renderer outside the atom loop:
+  // name it after the pivot atom (residue-level pick).
+  pdl->loadName(pPivAtom->getID());
   m_pBSRend->setDefaultColor(col);
   m_pBSRend->setRingColor(col);
   atoms.insert(std::pair<LString, MolAtomPtr>(pPivAtom->getName(), pPivAtom));

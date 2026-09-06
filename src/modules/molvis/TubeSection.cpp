@@ -621,6 +621,7 @@ void TubeSection::startTess()
   m_vtess.resize(nsize+1);
   m_ntess.resize(nsize+1);
   m_bTessEmpty = true;
+  m_prevName = -1;
 }
 
 void TubeSection::doTess(DisplayContext *pdl,
@@ -653,19 +654,26 @@ void TubeSection::doTess(DisplayContext *pdl,
 
   }*/
 
+  // Hit names (pick pass): the current ring carries the caller's current
+  // name, the previous ring the name it was drawn with.
+  const int curName = pdl->getCurrentName();
+
   if (!m_bTessEmpty) {
     pdl->startTriangleStrip();
     for (int k=0; k<=nsize; k++) {
+      pdl->loadName(curName);
       pdl->normal(nts[k]);
       pdl->color(pCol);
       pdl->vertex(vts[k]);
 
+      pdl->loadName(m_prevName);
       pdl->normal(m_ntess[k]);
       if (bSmoothCol)
         pdl->color(m_pPrevCol);
       pdl->vertex(m_vtess[k]);
     }
     pdl->end();
+    pdl->loadName(curName);
 
   }
 
@@ -674,6 +682,7 @@ void TubeSection::doTess(DisplayContext *pdl,
     m_ntess[k] = nts[k];
   }
   m_pPrevCol = pCol;
+  m_prevName = curName;
   m_bTessEmpty = false;
 
 
@@ -699,19 +708,26 @@ void TubeSection::doTess(DisplayContext *pdl,
     //nts[k] = ( getNormVec(k, e11, e12) ).normalize();
   }
 
+  // Hit names (pick pass): the current ring carries the caller's current
+  // name, the previous ring the name it was drawn with.
+  const int curName = pdl->getCurrentName();
+
   if (!m_bTessEmpty) {
     pdl->startTriangleStrip();
     for (int k=0; k<=nsize; k++) {
+      pdl->loadName(curName);
       pdl->normal(nts[k]);
       pdl->color(pCol);
       pdl->vertex(vts[k]);
 
+      pdl->loadName(m_prevName);
       pdl->normal(m_ntess[k]);
       if (bSmoothCol)
         pdl->color(m_pPrevCol);
       pdl->vertex(m_vtess[k]);
     }
     pdl->end();
+    pdl->loadName(curName);
   }
 
 #ifdef DEBUG_SHOW_NORMAL
@@ -730,6 +746,7 @@ void TubeSection::doTess(DisplayContext *pdl,
     m_ntess[k] = nts[k];
   }
   m_pPrevCol = pCol;
+  m_prevName = curName;
   m_bTessEmpty = false;
 
 }

@@ -115,6 +115,9 @@ void SphereGpuPrim::setData(int idx, const qlib::Vector4D &pos, float rad,
 void SphereGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
+    // No pick program for this (position-attribute) variant: never draw the
+    // vec4-output shading program into the integer pick target.
+    if (pDC->isPickDraw()) return;
 
     DrawParams ubo = {};
     ubo.frag_alpha = (float)pDC->getAlpha();

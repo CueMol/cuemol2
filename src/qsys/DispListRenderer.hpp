@@ -54,6 +54,9 @@ namespace qsys {
 
     void invalidateHittestCache() override;
 
+    /// Draw the cached display list into the pick ID buffer.
+    void displayPick(DisplayContext *pdc) override;
+
   };
 }
 

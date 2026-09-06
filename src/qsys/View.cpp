@@ -1329,6 +1329,13 @@ bool View::hasVBO()
   return m_spViewCap->hasVBO();
 }
 
+//static
+bool View::hasGpuPick()
+{
+  if (m_spViewCap==NULL) return false;
+  return m_spViewCap->hasGpuPick();
+}
+
 //////////////////////////////////
 // view factory methods
 

@@ -35,6 +35,26 @@ public:
         qfloat32 dspx, dspy;    ///< Billboard corner displacement (+-1)
         qfloat32 rad;           ///< Cylinder radius
         qbyte r, g, b, a;       ///< RGBA colour
+        quint32 hitNameA;       ///< Encoded hit name of the ta end (pick pass)
+        quint32 hitNameB;       ///< Encoded hit name of the tb end (pick pass)
+    };
+
+    /**
+     * std140 DrawParamsBlock for the pick program (binding=2, 48 bytes):
+     * DrawParams followed by the pick tail (cylinder_idx_pick_vertex.glsl /
+     * cylinder_pick_frag.glsl).
+     */
+    struct PickDrawParams
+    {
+        qfloat32 frag_alpha;        // offset 0
+        qfloat32 u_edge;            // offset 4  (0 in the pick pass)
+        qint32   u_bsilh;           // offset 8
+        qfloat32 _pad;              // offset 12
+        qfloat32 u_edgecolor[4];    // offset 16
+        quint32  u_rend_idx;        // R channel (1-based renderer index)
+        quint32  u_outer_name;      // B channel (encoded outer name)
+        quint32  _pp0;
+        quint32  _pp1;
     };
 
     /**
@@ -75,7 +95,7 @@ public:
      * @param devcode Pre-resolved device RGBA colour code.
      */
     void setData(int i, int idx1, int idx2, float ta, float tb, float rad,
-                 quint32 devcode);
+                 quint32 devcode, quint32 hitNameA = 0, quint32 hitNameB = 0);
 
     /** Bind the coordinate texture to this unit before draw(). Non-owning. */
     void setCoordTex(FloatDataTexture *pTex, int texUnit);
@@ -108,14 +128,21 @@ private:
     static constexpr int ATTRLOC_IMPOS  = 2;
     static constexpr int ATTRLOC_RAD    = 3;
     static constexpr int ATTRLOC_COLOR  = 4;
+    // Integer attributes read by the pick program only
+    static constexpr int ATTRLOC_HITNAME_A = 5;
+    static constexpr int ATTRLOC_HITNAME_B = 6;
     static constexpr int COORD_TEX_UNIT = 0;
 
     gfx::ShaderObject *m_pPO;
+    gfx::ShaderObject *m_pPickPO;   ///< ID-buffer pick program (lazy)
     CylIdxElemAry32 *m_pDrawElem;
     FloatDataTexture *m_pCoordTex;   ///< non-owning
     int m_nCoordTexUnit;
 
     qfloat32 m_dsps[4][2];  ///< Billboard corner displacements (+-1, +-1)
+
+    bool initPick(DisplayContext *pDC);
+    void drawPick(DisplayContext *pDC);
 };
 
 }  // namespace gfx

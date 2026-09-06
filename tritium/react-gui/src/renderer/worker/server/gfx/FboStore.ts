@@ -28,6 +28,7 @@ const RT_DEPTH_TEX = 0x02;
 const RT_COLOR_NEAREST = 0x04;
 const RT_NORMAL_RGBA16F = 0x08;
 const RT_COLOR_RGBA16F = 0x10;
+const RT_COLOR_RGBA32UI = 0x20;
 
 type GL = WebGL2RenderingContext;
 
@@ -36,6 +37,8 @@ interface FboEntry {
     colorTex: WebGLTexture;
     depthTex: WebGLTexture | null;
     normalTex: WebGLTexture | null;
+    /** Color attachment 0 is RGBA32UI (GPU ID-buffer pick target). */
+    integer: boolean;
     w: number;
     h: number;
 }
@@ -103,9 +106,11 @@ export class FboStore {
         }
 
         const colorFloat = (flags & RT_COLOR_RGBA16F) !== 0;
-        const nearest = (flags & RT_COLOR_NEAREST) !== 0;
+        const colorInt = (flags & RT_COLOR_RGBA32UI) !== 0;
+        const nearest = (flags & RT_COLOR_NEAREST) !== 0 || colorInt;
         const wantDepth = (flags & RT_DEPTH_TEX) !== 0;
         const wantNormal = (flags & RT_NORMAL_RGBA16F) !== 0;
+        // Integer textures are not filterable: always NEAREST.
         const colorFilter = nearest ? gl.NEAREST : gl.LINEAR;
 
         if ((colorFloat || wantNormal) && !this._floatColorAvailable) {
@@ -118,10 +123,14 @@ export class FboStore {
         const fbo = gl.createFramebuffer()!;
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
-        // Color attachment 0 (RGBA8 or RGBA16F).
+        // Color attachment 0 (RGBA8, RGBA16F or RGBA32UI).
         const colorTex = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, colorTex);
-        if (colorFloat) {
+        if (colorInt) {
+            // Unsigned-integer ID target; core WebGL2 color-renderable.
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32UI, width, height, 0,
+                          gl.RGBA_INTEGER, gl.UNSIGNED_INT, null);
+        } else if (colorFloat) {
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0,
                           gl.RGBA, gl.FLOAT, null);
         } else {
@@ -193,9 +202,11 @@ export class FboStore {
             return false;
         }
 
-        this._fbo_data[name] = { fbo, colorTex, depthTex, normalTex, w: width, h: height };
+        this._fbo_data[name] = {
+            fbo, colorTex, depthTex, normalTex, integer: colorInt, w: width, h: height,
+        };
         console.log(`createFramebuffer OK: ${name} ${width}x${height} ` +
-                    `color=${colorFloat ? 'RGBA16F' : 'RGBA8'} ` +
+                    `color=${colorInt ? 'RGBA32UI' : colorFloat ? 'RGBA16F' : 'RGBA8'} ` +
                     `depth=${depthTex !== null} normal=${normalTex !== null}`);
         return true;
     }
@@ -234,6 +245,13 @@ export class FboStore {
     clearRenderTarget(r: number, g: number, b: number, a: number): void {
         const gl = this._gl;
         const bound = this._bound;
+        if (bound && bound.integer) {
+            // gl.clear() does not apply to integer draw buffers (INVALID_OPERATION
+            // in WebGL2): clear the ID target to 0 = "nothing drawn".
+            gl.clearBufferuiv(gl.COLOR, 0, new Uint32Array([0, 0, 0, 0]));
+            if (bound.depthTex) gl.clearBufferfv(gl.DEPTH, 0, [1.0]);
+            return;
+        }
         if (bound && bound.normalTex) {
             gl.clearBufferfv(gl.COLOR, 0, [r, g, b, a]);
             gl.clearBufferfv(gl.COLOR, 1, [0.0, 0.0, 0.0, 0.0]);
@@ -295,6 +313,23 @@ export class FboStore {
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, info.fbo);
         gl.readBuffer(gl.COLOR_ATTACHMENT0);
         gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+        return buf;
+    }
+
+    /**
+     * Read back an RGBA32UI sub-rectangle of the named FBO's color attachment
+     * 0 (bottom-left origin) as w*h*4 uint32 values. Returns an empty array
+     * for an unknown or non-integer target.
+     */
+    readPixelsUInt(name: string, x: number, y: number, w: number, h: number): Uint32Array {
+        const gl = this._gl;
+        const info = this._fbo_data[name];
+        if (!info || !info.integer) return new Uint32Array(0);
+        const buf = new Uint32Array(w * h * 4);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, info.fbo);
+        gl.readBuffer(gl.COLOR_ATTACHMENT0);
+        gl.readPixels(x, y, w, h, gl.RGBA_INTEGER, gl.UNSIGNED_INT, buf);
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
         return buf;
     }

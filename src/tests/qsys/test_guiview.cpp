@@ -7,6 +7,7 @@
 #include <common.h>
 #include "qsys/GUIView.hpp"
 #include <gfx/DisplayContext.hpp>
+#include <gfx/PickBuffer.hpp>
 #include <qlib/LByteArray.hpp>
 
 #include <initializer_list>
@@ -220,4 +221,46 @@ TEST(GUIViewTest, RepeatedHitTestsReturnEmpty)
     for (int i = 0; i < 5; ++i) {
         EXPECT_TRUE(v.hitTest(i * 10, i * 10).isEmpty());
     }
+}
+
+// --- GPU ID-buffer pick: texel -> HitData conversion ---
+
+// A pick texel (R = 1-based renderer index, G = encoded element name,
+// B = encoded outer name) becomes a HitData entry with the same name-list
+// layout HittestContext produces ([outer,] element), so interpHit() reads
+// GPU and CPU hits identically.
+TEST(GUIViewTest, PickTexelToHitData)
+{
+    const std::vector<qlib::uid_t> rendTab = {1001, 1002};
+    gfx::HitData hd;
+
+    gfx::PickTexel t;
+    t.rend = 2;
+    t.name = gfx::encodeHitName(3);
+    t.outer = gfx::encodeHitName(5);
+    t.dx = t.dy = 0;
+    ASSERT_TRUE(qsys::GUIView::pickTexelToHitData(hd, rendTab, t));
+    EXPECT_EQ(hd.getNearestRendID(), 1002u);
+    ASSERT_EQ(hd.getDataSize(1002), 1);
+    EXPECT_EQ(hd.getDataAt(1002, 0, 0), 5);  // outer name (e.g. symop)
+    EXPECT_EQ(hd.getDataAt(1002, 0, 1), 3);  // element name (e.g. atom id)
+
+    // No outer name: the list is just [element].
+    gfx::HitData hd2;
+    t.rend = 1;
+    t.outer = 0;
+    ASSERT_TRUE(qsys::GUIView::pickTexelToHitData(hd2, rendTab, t));
+    EXPECT_EQ(hd2.getNearestRendID(), 1001u);
+    ASSERT_EQ(hd2.getDataSize(1001), 1);
+    EXPECT_EQ(hd2.getDataAt(1001, 0, 0), 3);
+    EXPECT_EQ(hd2.getDataAt(1001, 0, 1), -1);
+
+    // Invalid texels are rejected: renderer index out of range, or no name.
+    gfx::HitData hd3;
+    t.rend = 3;
+    EXPECT_FALSE(qsys::GUIView::pickTexelToHitData(hd3, rendTab, t));
+    t.rend = 1;
+    t.name = 0;
+    EXPECT_FALSE(qsys::GUIView::pickTexelToHitData(hd3, rendTab, t));
+    EXPECT_EQ(hd3.getNearestRendID(), qlib::invalid_uid);
 }

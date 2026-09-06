@@ -112,6 +112,11 @@ namespace qsys {
     /// Invalidate only the hittest display list
     void invalidateHit();
 
+    /// Draw the display list into the pick ID buffer (pdc in PICK_DRAW mode).
+    /// The same display list as display() is used: the hit names recorded
+    /// by render() are per-vertex attributes, so no separate cache is needed.
+    void displayPick(DisplayContext *pdc, DispCacheRenderer *pOuter);
+
   };
 
   

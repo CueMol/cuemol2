@@ -234,3 +234,20 @@ void DispListCacheImpl::invalidateHit()
   m_phl = NULL;
 }
 
+void DispListCacheImpl::displayPick(DisplayContext *pdc, DispCacheRenderer *pOuter)
+{
+  if (m_pdl==NULL) {
+    if (!pdc->canCreateDL())
+      return;
+    // Build the (shared) display list exactly as display() does.
+    m_pdl = pdc->createDisplayList();
+    m_pdl->recordStart();
+    pOuter->render(m_pdl);
+    m_pdl->recordEnd();
+  }
+
+  // Lighting/material do not matter for the ID pass (no pre/postRender).
+  if (pdc->isCompatibleDL(m_pdl))
+    pdc->callDisplayList(m_pdl);
+}
+

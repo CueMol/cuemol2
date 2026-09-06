@@ -149,6 +149,19 @@ namespace qsys {
                                  std::vector<qlib::Vector4D> &poss) const;
 
     //////////
+    // GPU ID-buffer picking
+
+    /// True if displayPick() draws this renderer into the pick ID buffer,
+    /// i.e. its render() attaches hit names (DisplayContext::loadName) to
+    /// the geometry. Default: not supported (CPU hit test only).
+    virtual bool isPickSupported() const;
+
+    /// Draw the renderer into the bound pick target. pdc is in PICK_DRAW mode
+    /// with startHit(getUID()) already issued by Scene::displayPick. Default
+    /// no-op.
+    virtual void displayPick(DisplayContext *pdc);
+
+    //////////
 
     virtual void setSceneID(qlib::uid_t nid);
 

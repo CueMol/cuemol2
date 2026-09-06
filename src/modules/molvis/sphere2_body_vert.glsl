@@ -14,6 +14,10 @@
 #include <lib_atoms.glsl>
 #endif
 
+#ifdef PICK_MODE
+#include <pick_inc.glsl>
+#endif
+
 ////////////////////
 // DrawParamsBlock UBO: binding point 2
 
@@ -23,6 +27,9 @@ layout(std140) uniform DrawParamsBlock {
     int   u_bsilh;      // offset 8
     float _pad;         // offset 12
     vec4  u_edgecolor;  // offset 16
+#ifdef PICK_MODE
+    PICK_DRAWPARAMS_TAIL  // offset 32
+#endif
 };
 
 ////////////////////
@@ -46,6 +53,11 @@ layout(location = 2) in float a_radius;
 // color
 layout(location = 3) in vec4 a_color;
 
+#ifdef PICK_MODE
+// encoded hit name (integer attribute, pick pass only)
+layout(location = 4) in uint a_hitName;
+#endif
+
 ////////////////////
 // Varying variables
 
@@ -54,6 +66,9 @@ varying vec2 v_impos;
 varying vec4 v_ecpos;
 varying float v_radius;
 varying float v_edgeratio;
+#ifdef PICK_MODE
+flat varying uint v_hitName;
+#endif
 
 ////////////////////
 // Program
@@ -79,4 +94,7 @@ void main()
     v_impos = a_impos * v_edgeratio;
     v_radius = a_radius;
     v_color = a_color;
+#ifdef PICK_MODE
+    v_hitName = a_hitName;
+#endif
 }

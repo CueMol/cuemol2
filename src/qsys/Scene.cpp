@@ -760,7 +760,7 @@ void Scene::displayRendImpl(DisplayContext *pdc, ObjectPtr pObj, RendererPtr pRe
     pdc->popMatrix();
 }
 
-void Scene::processHit(DisplayContext *pdc)
+void Scene::processHit(DisplayContext *pdc, bool bCpuOnly /*= false*/)
 {
   // Scoped push, matching display(): keep the StyleMgr context stack balanced
   // on every exit path.
@@ -770,6 +770,8 @@ void Scene::processHit(DisplayContext *pdc)
   rendtab_t::const_iterator i = m_rendtab.begin();
   for (; i!=m_rendtab.end(); ++i) {
     RendererPtr prend = i->second;
+    if (bCpuOnly && prend->isPickSupported())
+      continue;
     ObjectPtr pobj = prend->getClientObj();
     if (pobj.isnull() || (pobj->isVisible() && !pobj->isUILocked())) {
       if (prend->isVisible() && !prend->isUILocked()) {
@@ -779,6 +781,71 @@ void Scene::processHit(DisplayContext *pdc)
   }
 
   pdc->endRender();
+}
+
+void Scene::displayPick(DisplayContext *pdc)
+{
+  AutoStyleCtxt style_ctxt(getUID());
+  pdc->startRender();
+
+  auto drawOne = [&](const RendererPtr &pRend) {
+    ObjectPtr pObj = pRend->getClientObj();
+    if (pObj.isnull() || !pObj->isVisible() || pObj->isUILocked())
+      return;
+    if (!pRend->isVisible() || pRend->isUILocked())
+      return;
+    if (!pRend->isPickSupported())
+      return;
+    if (pRend->getDefaultAlpha() < PICK_ALPHA_THRESHOLD)
+      return;
+
+    // A renderer that never calls loadName() records "no name" geometry.
+    pdc->resetNames();
+    pdc->setAlpha(pRend->getDefaultAlpha());
+    pdc->setEdgeLineType(DisplayContext::ELT_NONE);
+
+    bool bmat = false;
+    Matrix4D xform = pRend->getXformMatrix();
+    if (!xform.isIdent()) {
+      pdc->pushMatrix();
+      pdc->multMatrix(xform);
+      bmat = true;
+    }
+
+    pdc->startHit(pRend->getUID());
+    pRend->displayPick(pdc);
+    pdc->endHit();
+
+    if (bmat)
+      pdc->popMatrix();
+  };
+
+  // Same order as display(): regular renderers, then display-later ones.
+  for (const auto &e : m_rendtab) {
+    if (!e.second->isDispLater())
+      drawOne(e.second);
+  }
+  for (const auto &e : m_rendtab) {
+    if (e.second->isDispLater())
+      drawOne(e.second);
+  }
+
+  pdc->endRender();
+}
+
+bool Scene::hasCpuOnlyHitRenderers() const
+{
+  for (const auto &e : m_rendtab) {
+    const RendererPtr &prend = e.second;
+    ObjectPtr pobj = prend->getClientObj();
+    if (!pobj.isnull() && (!pobj->isVisible() || pobj->isUILocked()))
+      continue;
+    if (!prend->isVisible() || prend->isUILocked())
+      continue;
+    if (prend->isHitTestSupported() && !prend->isPickSupported())
+      return true;
+  }
+  return false;
 }
 
 //////////////////////////////

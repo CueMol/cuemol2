@@ -112,6 +112,9 @@ namespace molvis {
 
     ColorPtr calcColor(double par, SplineCoeff *pCoeff);
 
+    /// Hit name (pivot atom ID of the owning residue) at spline parameter par.
+    int calcHitName(double par, SplineCoeff *pCoeff) const;
+
     void invalidateSplineCoeffs();
 
   private:

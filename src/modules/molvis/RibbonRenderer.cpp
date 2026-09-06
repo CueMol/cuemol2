@@ -289,6 +289,7 @@ void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
       }
       else {
         // Close the previous tube section
+        pdl->loadName(m_nPrevHitName);
         pdl->color(m_pPrevCol);
         pPrevTs->makeFlatCap(pdl, false, 
                            m_prev_f1, m_prev_vpt,
@@ -312,6 +313,7 @@ void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
 
   // postprocessing
   if (!isSegEndFade() || !isSegEnd(m_prev_par, pCoeff)) {
+    pdl->loadName(m_nPrevHitName);
     pdl->color(m_pPrevCol);
     if (ccurr==RB_COIL)
       pCurTs->makeCap(pdl, false, getEndCapType(), m_prev_f1, m_prev_vpt,
@@ -325,6 +327,8 @@ void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   
   m_pPrevCol = ColorPtr();
   m_pCol = ColorPtr();
+  m_nHitName = -1;
+  m_nPrevHitName = -1;
 
   return;
 }
@@ -339,6 +343,8 @@ bool RibbonRenderer::setupHelper(DisplayContext *pdl,
   m_bNextBnormInv = pCoeff->getBnormDirFlag(nnext);
 
   m_pCol = calcColor(par, pCoeff);
+  m_nHitName = calcHitName(par, pCoeff);
+  pdl->loadName(m_nHitName);
 
   if (m_bHelixBackCol)
     m_pCurHBCol = evalMolColor(m_pHelixBackCol, m_pCol);
@@ -455,15 +461,18 @@ void RibbonRenderer::renderTube(DisplayContext *pdl,
       g2 = pCurTs->getVec(j, m_e21, m_e22);
       dg1 = pCurTs->getNormVec(j, m_e11, m_e12);
       dg2 = pCurTs->getNormVec(j, m_e21, m_e22);
+      pdl->loadName(m_nHitName);
       pdl->normal(dg1);
       pdl->vertex(m_f1+g1);
       
       if (bb && isSmoothColor())
         pdl->color(m_pPrevCol);
 
+      pdl->loadName(m_nPrevHitName);
       pdl->normal(dg2);
       pdl->vertex(m_f2+g2);
     }
+    pdl->loadName(m_nHitName);
     
     pdl->end();
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
@@ -578,15 +587,18 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
       dg2 = pCurTs->getNormVec(j, te21, te22) +
         calcDnorm(pCurTs->getSectTab(j), m_prev_escl, m_prev_vpt);
 
+      pdl->loadName(m_nHitName);
       pdl->normal(dg1);
       pdl->vertex(m_f1+g1);
       
       if (bb && isSmoothColor())
         pdl->color(m_pPrevCol);
 
+      pdl->loadName(m_nPrevHitName);
       pdl->normal(dg2);
       pdl->vertex(m_f2+g2);
     }
+    pdl->loadName(m_nHitName);
     
     pdl->end();
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);

@@ -273,10 +273,13 @@ void BallStickRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
   }
   else {
     const Vector4D mpos = (pos1 + pos2).divide(2.0);
+    pdl->loadName(pAtom1->getID());
     pdl->color(pcol1);
     pdl->cylinder(m_bondw, pos1, mpos);
+    pdl->loadName(pAtom2->getID());
     pdl->color(pcol2);
     pdl->cylinder(m_bondw, pos2, mpos);
+    pdl->loadName(pAtom1->getID());
   }
 }
 
@@ -322,15 +325,18 @@ void BallStickRenderer::drawVBondType1(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
     // double-color bond
     const Vector4D mpos = (pos1 + pos2).divide(2.0);
     const Vector4D mpos2 = mpos+ dvd.scale(vbscl1);
+    pdl->loadName(pAtom1->getID());
     pdl->color(pcol1);
     pdl->cylinder(m_bondw, pos1, mpos);
     pdl->cylinder(m_bondw, pos1+del1, mpos2);
     pdl->sphere(m_bondw, pos1+del1);
 
+    pdl->loadName(pAtom2->getID());
     pdl->color(pcol2);
     pdl->cylinder(m_bondw, pos2, mpos);
     pdl->cylinder(m_bondw, pos2+del2, mpos2);
     pdl->sphere(m_bondw, pos2+del2);
+    pdl->loadName(pAtom1->getID());
   }
 }
 
@@ -713,7 +719,8 @@ void BallStickRenderer::renderCoordTexImpl(DisplayContext *pdc)
   for (int i = 0; i < natoms; ++i) {
     MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
     quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(nSceneID);
-    m_sphIdxGpuPrim.setData(i, i, static_cast<float>(m_sphr), devcode);
+    m_sphIdxGpuPrim.setData(i, i, static_cast<float>(m_sphr), devcode,
+                            gfx::encodeHitName(m_aidcache[i]));
   }
   m_sphIdxGpuPrim.setCoordTex(m_pCoordTex, 0);
 
@@ -737,12 +744,15 @@ void BallStickRenderer::renderCoordTexImpl(DisplayContext *pdc)
       const quint32 dc2 = c2->getDevCode(nSceneID);
       const int i1 = it1->second, i2 = it2->second;
       const float bw = static_cast<float>(m_bondw);
+      const quint32 n1 = gfx::encodeHitName(pMB->getAtom1());
+      const quint32 n2 = gfx::encodeHitName(pMB->getAtom2());
 
       if (c1->equals(*c2.get())) {
-        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.0f, 1.0f, bw, dc1);
+        // Full bond: the pick pass splits it at the midpoint (n1 | n2).
+        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.0f, 1.0f, bw, dc1, n1, n2);
       } else {
-        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.0f, 0.5f, bw, dc1);
-        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.5f, 1.0f, bw, dc2);
+        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.0f, 0.5f, bw, dc1, n1, n1);
+        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.5f, 1.0f, bw, dc2, n2, n2);
       }
     }
     m_cylIdxGpuPrim.setCoordTex(m_pCoordTex, 0);

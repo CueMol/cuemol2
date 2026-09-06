@@ -15,6 +15,7 @@
 namespace gfx {
 class RenderTarget;
 struct AoConstants;
+struct PickTexel;
 }  // namespace gfx
 
 namespace qsys {
@@ -91,6 +92,9 @@ public:
     /// the scene content changes via the scene-level update flag).
     void forceRedraw() override;
 
+    /// View size changed: the pick ID buffer must be re-rendered.
+    void sizeChanged(int cx, int cy) override;
+
     /// Release GPU resources (incl. AO render targets) while the GL context is
     /// still alive, before the display context is torn down.
     void unloading() override;
@@ -110,6 +114,14 @@ public:
 
     LString hitTestPolygon(qlib::LByteArrayPtr pts, bool bNearest) override;
 
+    /// Convert one non-empty pick texel (R = 1-based index into rendTab,
+    /// G = encoded element name, B = encoded outer name) into a HitData entry
+    /// (name list = [outer,] element). Returns false if the texel is invalid.
+    /// Static and GL-free so it can be unit-tested.
+    static bool pickTexelToHitData(gfx::HitData &hd,
+                                   const std::vector<qlib::uid_t> &rendTab,
+                                   const gfx::PickTexel &texel);
+
 protected:
     MouseEventHandler m_meh;
 
@@ -123,8 +135,40 @@ private:
     /// @fGetAll If true, all of the hit elements are returned.
     ///   Otherwise, only the nearest hit is returned.
     /// @far_factor factor of far slab limitation (1.0 for the same as display)
+    /// @bCpuOnly skip renderers covered by the GPU pick pass
     bool hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll,
-                     double far_factor);
+                     double far_factor, bool bCpuOnly = false);
+
+    /// Build the JSON hit result for the nearest renderer in m_hitdata.
+    LString formatHitResult(qlib::uid_t rend_id);
+
+    ////////////////////////////////////////////////
+    // GPU ID-buffer picking (View::hasGpuPick())
+
+    /// Integer pick target (RGBA32UI + depth) at PICK_SCALE of the backing
+    /// size. Created lazily on the first hit test; released in unloading().
+    gfx::RenderTarget *m_pPickRT = nullptr;
+
+    /// True when the pick target does not reflect the last drawn frame.
+    bool m_bPickDirty = true;
+
+    /// Renderer uid table of the last pick pass (R channel is 1-based index).
+    std::vector<qlib::uid_t> m_pickRendTab;
+
+    /// Pick target size relative to the backing (device pixel) size.
+    static constexpr double PICK_SCALE = 0.5;
+
+    bool ensurePickTarget(int pw, int ph);
+    void releasePickBuffer();
+
+    /// Re-render the pick target if dirty. Returns false when the GPU path is
+    /// unavailable (no target / no context); the caller falls back to CPU.
+    bool renderPickBuffer();
+
+    /// GPU pick at logical pixel (ax, ay). Returns false when the GPU path is
+    /// unavailable; on success rend_id is the hit renderer (invalid_uid = miss)
+    /// and m_hitdata holds the hit.
+    bool hitTestGpu(int ax, int ay, qlib::uid_t &rend_id);
 
     ////////////////////////////////////////////////
     // Framebuffer operations

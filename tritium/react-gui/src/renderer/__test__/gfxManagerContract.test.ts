@@ -57,6 +57,7 @@ const EXPECTED_PEER_API = [
     'enableShader',
     'initDrawParamsUBO',
     'readPixels',
+    'readPixelsUInt',
     'setBlendEnabled',
     'setBlendModeAdd',
     'setCullFace',

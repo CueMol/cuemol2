@@ -32,11 +32,14 @@ public:
     /// transformation matrix
     _TXform *pTransf;
 
+    /// encoded hit name (gfx::encodeHitName; 0 = no name)
+    qlib::quint32 name;
+
     ///
     ///  default ctor
     /// @note default width is 1.0
     ///
-    Cylinder() : w1(1.0), w2(1.0), bcap(false), ndetail(1), pTransf(nullptr) {}
+    Cylinder() : w1(1.0), w2(1.0), bcap(false), ndetail(1), pTransf(nullptr), name(0) {}
 
     /**
        dtor
@@ -70,9 +73,10 @@ public:
        @param ndet detail level for tesselation
        @param bcap if true, terminal caps are generated
        @param ptrf pointer to the transformation matrix (can be NULL)
+       @param name encoded hit name attached to the generated vertices
     */
     void add(const Vector4D &v1, const Vector4D &v2, double w1, double w2, _TColor col,
-             int ndet, bool bcap, const _TXform *ptrf)
+             int ndet, bool bcap, const _TXform *ptrf, qlib::quint32 name = 0)
     {
         auto p = MB_NEW cylinder_t();
         p->v1 = v1;
@@ -82,6 +86,7 @@ public:
         p->w2 = w2;
         p->ndetail = ndet;
         p->bcap = bcap;
+        p->name = name;
 
         if (ptrf == nullptr)
             p->pTransf = nullptr;
@@ -126,6 +131,7 @@ private:
     {
         _TVector cylv1(pCyl->v1), cylv2(pCyl->v2);
         _TColor col = pCyl->col;
+        const int ivstart = pMesh->getVertexSize();
 
         MB_DPRINTLN("=== Cyls::makeMeshImpl ===");
 
@@ -268,6 +274,8 @@ private:
                 pMesh->addFace(ivtop, ivtop + 1 + ii, ivtop + 1 + jj, nfmode);
             }
         }
+
+        pMesh->setNameFrom(ivstart, pCyl->name);
     }
 };
 
@@ -295,9 +303,12 @@ public:
     /// transformation matrix
     _TXform *pTransf;
 
+    /// encoded hit name (gfx::encodeHitName; 0 = no name)
+    qlib::quint32 name;
+
     /// default ctor
     Sphere(const _TVector &v, _TColor c, double radius, int nDet)
-        : v1(v), col(c), r(radius), ndetail(nDet), pTransf(nullptr)
+        : v1(v), col(c), r(radius), ndetail(nDet), pTransf(nullptr), name(0)
     {
     }
 
@@ -329,9 +340,10 @@ public:
     /// @param color color
     /// @param nDetail detail level for tesselation
     void add(const _TVector &v, double radius, _TColor color, int nDetail,
-             const _TXform *ptrf = nullptr)
+             const _TXform *ptrf = nullptr, qlib::quint32 name = 0)
     {
         auto *p = MB_NEW sphere_t(v, color, radius, nDetail);
+        p->name = name;
 
         if (ptrf == nullptr)
             p->pTransf = nullptr;
@@ -504,6 +516,8 @@ private:
 
         for (i = 0; i <= nLat; ++i) delete[] ppindx[i];
         delete[] ppindx;
+
+        pMesh->setNameFrom(ivstart, pSph->name);
     }
 
     static int selectTrig(int j, int k, int j1, int k1, _TMesh *pMesh)

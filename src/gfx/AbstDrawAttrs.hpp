@@ -27,6 +27,9 @@ namespace gfx {
       int iAttrType;
       int nStartPos;
       int nDivisor;
+      /// True for integer attributes (glVertexAttribIPointer: no
+      /// normalization, read as int/uint in the shader).
+      bool bInteger;
     };
 
     std::vector<AttrInfo> m_attrs;
@@ -70,11 +73,20 @@ namespace gfx {
         m_attrs[ind].iAttrType = at;
         m_attrs[ind].nStartPos = pos;
         m_attrs[ind].nDivisor = 0;
+        m_attrs[ind].bInteger = false;
     }
 
     inline void setAttrDivisor(int ind, int div) {
         MB_ASSERT(ind>=0 && ind<m_attrs.size());
         m_attrs[ind].nDivisor = div;
+    }
+
+    inline void setAttrInteger(int ind, bool b) {
+        MB_ASSERT(ind>=0 && ind<m_attrs.size());
+        m_attrs[ind].bInteger = b;
+    }
+    inline bool isAttrInteger(int ind) const {
+        return m_attrs[ind].bInteger;
     }
 
     inline int getAttrLoc(int ind) const {

@@ -8,6 +8,8 @@
 
 #include "gfx.hpp"
 
+#include <vector>
+
 #include <qlib/Vector4D.hpp>
 #include <qlib/Matrix4D.hpp>
 #include <qlib/LQuat.hpp>
@@ -98,6 +100,24 @@ private:
 
     /// UID of the target scene
     qlib::uid_t m_nSceneID;
+
+    /// Name stack (GL selection style; back() is the top). The top entry is
+    /// the hit name attached to geometry recorded or drawn from now on;
+    /// -1 means "no name" (not pickable).
+    std::vector<int> m_nameStack;
+
+    /// Renderer uid table of the current pick pass, in startHit() order.
+    std::vector<qlib::uid_t> m_hitRendTab;
+
+    /// 1-based index (into m_hitRendTab) of the renderer under startHit();
+    /// 0 outside startHit/endHit.
+    quint32 m_nHitRendIdx;
+
+    /// Pick pass mode (PICK_OFF / PICK_DRAW).
+    int m_nPickMode;
+
+    /// Pick texels per backing pixel while in PICK_DRAW (line width scale).
+    double m_dPickScale;
 
 protected:
     /// Polygon rendering mode (POLY_FILL/POLY_LINE/...)
@@ -400,6 +420,63 @@ public:
     virtual void popName();
     virtual void drawPointHit(int nid, const Vector4D &pos);
 
+    /// Top of the name stack (-1 = no name).
+    int getCurrentName() const
+    {
+        return m_nameStack.back();
+    }
+    /// Name just below the top (-1 when the stack has a single entry).
+    int getOuterName() const
+    {
+        const size_t n = m_nameStack.size();
+        return (n >= 2) ? m_nameStack[n - 2] : -1;
+    }
+    /// Reset the name stack to its initial single (-1) entry.
+    void resetNames();
+
+    ////////////////
+    // GPU ID-buffer pick pass state
+
+    enum {
+        PICK_OFF = 0,
+        PICK_DRAW = 1,
+    };
+
+    void setPickMode(int n)
+    {
+        m_nPickMode = n;
+    }
+    int getPickMode() const
+    {
+        return m_nPickMode;
+    }
+    /// True while the scene is drawn into the integer pick target.
+    bool isPickDraw() const
+    {
+        return m_nPickMode == PICK_DRAW;
+    }
+
+    void setPickScale(double d)
+    {
+        m_dPickScale = d;
+    }
+    double getPickScale() const
+    {
+        return m_dPickScale;
+    }
+
+    /// Clear the renderer table filled by startHit().
+    void resetHitRendTable();
+    const std::vector<qlib::uid_t> &getHitRendTable() const
+    {
+        return m_hitRendTab;
+    }
+    /// 1-based renderer index of the current startHit() scope (0 = none).
+    quint32 getHitRendIndex() const
+    {
+        return m_nHitRendIdx;
+    }
+
     virtual void startRender();
     virtual void endRender();
     virtual void startSection(const LString &section_name);
@@ -616,5 +693,18 @@ public:
 protected:
     PixGpuPrim *m_pPixGpuPrim = nullptr;
 };
+
+/// Encode a hit name (name stack entry) for the integer vertex attribute and
+/// the pick target: -1 (no name) -> 0, n >= 0 -> n + 1.
+inline quint32 encodeHitName(int name)
+{
+    return (name < 0) ? 0u : quint32(name) + 1u;
+}
+
+/// Inverse of encodeHitName (0 -> -1).
+inline int decodeHitName(quint32 v)
+{
+    return (v == 0u) ? -1 : int(v - 1u);
+}
 
 }  // namespace gfx

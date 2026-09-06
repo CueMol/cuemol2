@@ -49,6 +49,10 @@ namespace molstr {
     //
 
     bool isHitTestSupported() const override;
+
+    /// Main-chain renderers attach residue names in render() (see
+    /// calcHitName), so they take part in the GPU ID-buffer pick pass.
+    bool isPickSupported() const override { return isHitTestSupported(); }
     void renderHit(DisplayContext *phl) override;
 
     // hittest data is interpreted by the same routine in MolRenderer
@@ -88,6 +92,12 @@ namespace molstr {
     gfx::ColorPtr calcColor(double rho, bool bSmoCol,
                             MolResiduePtr pRes1, MolResiduePtr pRes2,
                             bool bRes1Transp=false, bool bRes2Transp=false);
+
+    /// Hit name (pivot atom ID) of the residue owning the spline point at
+    /// rho between pRes1 and pRes2: the same residue rendHitResid() reports,
+    /// so the GPU pick result is interpreted by interpHit() unchanged.
+    /// Returns -1 (no name) when the residue or its pivot atom is missing.
+    int calcHitName(double rho, MolResiduePtr pRes1, MolResiduePtr pRes2) const;
 
     virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
 

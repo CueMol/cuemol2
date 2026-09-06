@@ -55,7 +55,16 @@ public:
     void readColor(int idx, int x, int y, int w, int h, int ncomp,
                    void *pbuf) override;
 
+    bool readColorUInt(int idx, int x, int y, int w, int h,
+                       quint32 *pbuf) override;
+
     void blitDepthToDefault() override;
+
+    /// True if color attachment 0 is an unsigned-integer texture.
+    bool isIntegerColor() const
+    {
+        return (m_nFlags & gfx::RT_COLOR_RGBA32UI) != 0;
+    }
 
     bool hasNormal() const override
     {

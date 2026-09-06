@@ -14,7 +14,9 @@
 #include <gfx/RenderTarget.hpp>
 #include <gfx/PostProcGpuPrim.hpp>
 #include <gfx/JitterSamples.hpp>
+#include <gfx/PickBuffer.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 #include <qlib/LPerfMeas.hpp>
@@ -42,6 +44,7 @@ GUIView::~GUIView()
         delete m_pPipeline;
         m_pPipeline = nullptr;
     }
+    releasePickBuffer();
 }
 
 void GUIView::unloading()
@@ -54,7 +57,14 @@ void GUIView::unloading()
         delete m_pPipeline;
         m_pPipeline = nullptr;
     }
+    releasePickBuffer();
     super_t::unloading();
+}
+
+void GUIView::sizeChanged(int cx, int cy)
+{
+    super_t::sizeChanged(cx, cy);
+    m_bPickDirty = true;
 }
 
 void GUIView::setCenterMark(int nMode)
@@ -390,6 +400,9 @@ void GUIView::drawScene()
         pdc->popMatrix();
     }
 
+    // Whatever was drawn, the pick ID buffer no longer matches the frame.
+    m_bPickDirty = true;
+
     swapBuffers();
 
     return;
@@ -417,27 +430,51 @@ LString GUIView::hitTest(int ax, int ay)
 {
     m_hitdata.clear();
 
-    int x = convToBackingX(ax);
-    int y = convToBackingY(ay);
+    qlib::uid_t rend_id = qlib::invalid_uid;
 
-    // HittestContext *phc = MB_NEW HittestContext();
-    HittestContext hc;
+    // GPU ID-buffer pick (renderer-accurate, occlusion-aware) when the backend
+    // supports it. The CPU point hit test remains the path for backends
+    // without the capability (uxp_gui) and, after a GPU miss, for renderers
+    // that do not take part in the pick pass.
+    bool bGpu = hasGpuPick() && getStereoMode() == Camera::CSM_NONE;
+    if (bGpu && !hitTestGpu(ax, ay, rend_id)) {
+        bGpu = false;  // GPU path unavailable at runtime: full CPU path
+    }
 
-    double dHitPrec =
-        convToBackingX(qsys::ViewInputConfig::getInstance()->getHitPrec());
+    if (rend_id == qlib::invalid_uid) {
+        bool bRunCpu = !bGpu;
+        if (bGpu) {
+            qsys::ScenePtr pScene = getScene();
+            bRunCpu = !pScene.isnull() && pScene->hasCpuOnlyHitRenderers();
+        }
+        if (bRunCpu) {
+            int x = convToBackingX(ax);
+            int y = convToBackingY(ay);
 
-    // Perform hittest (single hit)
-    if (!hitTestImpl(&hc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0))
-        return LString();
+            HittestContext hc;
 
-    m_hitdata.createNearest(&hc);
+            double dHitPrec =
+                convToBackingX(qsys::ViewInputConfig::getInstance()->getHitPrec());
 
-    qlib::uid_t rend_id = m_hitdata.getNearestRendID();
+            // Perform hittest (single hit)
+            if (!hitTestImpl(&hc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0, bGpu))
+                return LString();
+
+            m_hitdata.createNearest(&hc);
+            rend_id = m_hitdata.getNearestRendID();
+        }
+    }
+
     if (rend_id == qlib::invalid_uid) {
         // hit nothing
         return LString();
     }
 
+    return formatHitResult(rend_id);
+}
+
+LString GUIView::formatHitResult(qlib::uid_t rend_id)
+{
     qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
     if (pRend.isnull()) {
         LOG_DPRINTLN("FATAL ERROR: Unknown renderer id %d", rend_id);
@@ -729,7 +766,7 @@ qlib::LScrVector4D GUIView::projToScreen(const qlib::Vector4D &wpos)
 }
 
 bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll,
-                          double far_factor)
+                          double far_factor, bool bCpuOnly /*= false*/)
 {
     qsys::ScenePtr pScene = getScene();
     if (pScene.isnull()) {
@@ -809,10 +846,187 @@ bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool f
     // MB_DPRINTLN("*** ModelMat:");
     // phc->getModelViewMat().dump();
 
-    pScene->processHit(phc);
+    pScene->processHit(phc, bCpuOnly);
 
     // phc->dump();
 
+    return true;
+}
+
+//////////
+// GPU ID-buffer picking
+
+bool GUIView::ensurePickTarget(int pw, int ph)
+{
+    DisplayContext *pdc = getDisplayContext();
+    if (pdc == nullptr) return false;
+
+    if (m_pPickRT != nullptr) {
+        if (m_pPickRT->getWidth() != pw || m_pPickRT->getHeight() != ph) {
+            m_pPickRT->resize(pw, ph);
+            m_bPickDirty = true;
+        }
+        return true;
+    }
+
+    m_pPickRT = pdc->createRenderTarget(
+        pw, ph, gfx::RT_COLOR_RGBA32UI | gfx::RT_DEPTH_TEX | gfx::RT_COLOR_NEAREST);
+    if (m_pPickRT == nullptr) {
+        LOG_DPRINTLN("GUIView> cannot create the pick target (%dx%d)", pw, ph);
+        return false;
+    }
+    m_bPickDirty = true;
+    return true;
+}
+
+void GUIView::releasePickBuffer()
+{
+    if (m_pPickRT != nullptr) {
+        delete m_pPickRT;
+        m_pPickRT = nullptr;
+    }
+    m_pickRendTab.clear();
+    m_bPickDirty = true;
+}
+
+bool GUIView::renderPickBuffer()
+{
+    if (!m_bPickDirty && m_pPickRT != nullptr) return true;
+
+    qsys::ScenePtr pScene = getScene();
+    if (pScene.isnull()) return false;
+    if (!safeSetCurrent()) return false;
+
+    DisplayContext *pdc = getDisplayContext();
+    if (pdc == nullptr) return false;
+    pdc->setCurrent();
+
+    const int bw = convToBackingX(getWidth());
+    const int bh = convToBackingY(getHeight());
+    if (bw <= 0 || bh <= 0) return false;
+    const int pw = std::max(1, int(std::ceil(double(bw) * PICK_SCALE)));
+    const int ph = std::max(1, int(std::ceil(double(bh) * PICK_SCALE)));
+    if (!ensurePickTarget(pw, ph)) return false;
+
+    // Everything the pass touches is restored on scope exit, also when a
+    // renderer throws: the next rAF frame must find neutral GL/context state.
+    struct PassGuard
+    {
+        GUIView *pView;
+        DisplayContext *pdc;
+        gfx::RenderTarget *prt;
+        Vector4D savedVp;
+        Matrix4D savedProj;
+        bool bound = false;
+        ~PassGuard()
+        {
+            if (bound) prt->unbind();
+            pdc->setPickMode(DisplayContext::PICK_OFF);
+            pdc->setPickScale(1.0);
+            pdc->resetNames();
+            pdc->resetHitRendTable();
+            pdc->setBlendEnabled(true);
+            pdc->bindDefaultFramebuffer();
+            pdc->setViewport(savedVp);
+            pdc->setProjMat(savedProj);
+            // The next frame recomputes its own (possibly jittered) projection.
+            pView->setProjChange();
+        }
+    } guard{this, pdc, m_pPickRT, pdc->getViewport(), pdc->getProjMat()};
+
+    // Un-jittered projection of the current camera (same aspect as the pick
+    // target); only the viewport is scaled.
+    setJitterOffsetPx(0.0, 0.0);
+    setUpProjMat(-1, -1);
+    pdc->setViewport(Vector4D(0, 0, pw, ph));
+
+    pdc->setPickMode(DisplayContext::PICK_DRAW);
+    pdc->setPickScale(double(pw) / double(bw));
+    // Integer draw buffers reject blending (and blending would corrupt IDs).
+    pdc->setBlendEnabled(false);
+    pdc->setDepthTestEnabled(true);
+    pdc->enableDepthTest(true);
+    pdc->setLighting(false);
+
+    m_pPickRT->bind();
+    guard.bound = true;
+    m_pPickRT->clear(0.0f, 0.0f, 0.0f, 0.0f);
+
+    setUpModelMat(MM_NORMAL);
+    pdc->resetHitRendTable();
+    pScene->displayPick(pdc);
+    m_pickRendTab = pdc->getHitRendTable();
+
+    m_bPickDirty = false;
+    return true;
+}
+
+bool GUIView::hitTestGpu(int ax, int ay, qlib::uid_t &rend_id)
+{
+    rend_id = qlib::invalid_uid;
+
+    if (!renderPickBuffer()) return false;
+    if (m_pPickRT == nullptr) return false;
+
+    const int pw = m_pPickRT->getWidth();
+    const int ph = m_pPickRT->getHeight();
+    const int bw = convToBackingX(getWidth());
+    const int bh = convToBackingY(getHeight());
+    if (pw <= 0 || ph <= 0 || bw <= 0 || bh <= 0) return false;
+    const double sx = double(pw) / double(bw);
+    const double sy = double(ph) / double(bh);
+
+    // Cursor position in pick texels, bottom-left origin (as hitTestImpl's
+    // picky = cy - y).
+    int px = int(std::floor(double(convToBackingX(ax)) * sx));
+    int py = ph - 1 - int(std::floor(double(convToBackingY(ay)) * sy));
+    px = std::clamp(px, 0, pw - 1);
+    py = std::clamp(py, 0, ph - 1);
+
+    // Search radius: half of the hit precision box, in pick texels.
+    const double hitPrec =
+        convToBackingX(qsys::ViewInputConfig::getInstance()->getHitPrec());
+    int radius = int(std::ceil(hitPrec * 0.5 * sx));
+    if (radius < 1) radius = 1;
+
+    const int x0 = std::max(0, px - radius);
+    const int y0 = std::max(0, py - radius);
+    const int x1 = std::min(pw - 1, px + radius);
+    const int y1 = std::min(ph - 1, py + radius);
+    const int w = x1 - x0 + 1;
+    const int h = y1 - y0 + 1;
+
+    std::vector<quint32> buf(size_t(w) * size_t(h) * 4u);
+    if (!m_pPickRT->readColorUInt(0, x0, y0, w, h, buf.data())) return false;
+
+    gfx::PickTexel texel;
+    if (!gfx::findNearestPickTexel(buf.data(), w, h, px - x0, py - y0, radius, texel)) {
+        return true;  // the GPU pass ran; nothing under the cursor
+    }
+
+    if (!pickTexelToHitData(m_hitdata, m_pickRendTab, texel)) return true;
+    rend_id = m_hitdata.getNearestRendID();
+    return true;
+}
+
+// static
+bool GUIView::pickTexelToHitData(gfx::HitData &hd,
+                                 const std::vector<qlib::uid_t> &rendTab,
+                                 const gfx::PickTexel &texel)
+{
+    if (texel.rend == 0u || size_t(texel.rend) > rendTab.size()) return false;
+
+    const int name = gfx::decodeHitName(texel.name);
+    if (name < 0) return false;
+
+    // Name list layout matches HittestContext::callDisplayList: outer names
+    // first, the element name last.
+    std::vector<int> names;
+    const int outer = gfx::decodeHitName(texel.outer);
+    if (outer >= 0) names.push_back(outer);
+    names.push_back(name);
+
+    hd.addHit(rendTab[texel.rend - 1], names);
     return true;
 }
 
