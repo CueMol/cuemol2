@@ -46,6 +46,18 @@ function writeMsgLog(ctx: WorkerContext, message: string): void {
     msgLog.writeln(message);
 }
 
+/** `Molecule [name], msg` for a MolCoord hit, `LWObject [name], msg` otherwise. */
+function hitHeadline(raw: HitTestResult): string {
+    const kind = raw.objtype === 'MolCoord' ? 'Molecule' : 'LWObject';
+    return `${kind} [${raw.obj_name}], ${raw.message}`;
+}
+
+/** ` (symop: name)` for a hit through a `*symm` renderer, '' otherwise. */
+function symopSuffix(raw: HitTestResult): string {
+    if (raw.rendtype === '*symm' && raw.symm_name) return ` (symop: ${raw.symm_name})`;
+    return '';
+}
+
 // ---- service: naviHitTest (read-only) ----
 
 export interface NaviHitTestArgs {
@@ -84,17 +96,15 @@ export function naviClickAtom(ctx: WorkerContext, args: NaviClickAtomArgs): Navi
     if (!raw) return { handled: false };
 
     if (raw.objtype !== 'MolCoord') {
-        const msg = `LWObject [${raw.obj_name}], ${raw.message}`;
+        const msg = hitHeadline(raw);
         writeMsgLog(ctx, msg);
         return { handled: true, statusMessage: msg, hitres: raw };
     }
 
-    let statusMessage = `Molecule [${raw.obj_name}], ${raw.message}`;
+    let statusMessage = hitHeadline(raw);
     statusMessage += `, O: ${raw.occ.toFixed(2)} B: ${raw.bfac.toFixed(2)}`;
     statusMessage += ` Pos: (${raw.x.toFixed(3)}, ${raw.y.toFixed(3)}, ${raw.z.toFixed(3)})`;
-    if (raw.rendtype === '*symm' && raw.symm_name) {
-        statusMessage += ` (symop: ${raw.symm_name})`;
-    }
+    statusMessage += symopSuffix(raw);
 
     writeMsgLog(ctx, statusMessage);
 
@@ -108,6 +118,38 @@ export function naviClickAtom(ctx: WorkerContext, args: NaviClickAtomArgs): Navi
     }
 
     return { handled: true, statusMessage, hitres: raw };
+}
+
+// ---- service: naviHover (pointer hover -- hit test only, no log, no txn) ----
+
+export interface NaviHoverArgs {
+    viewId: number;
+    /** Logical canvas pixels, the same space as a click. */
+    x: number;
+    y: number;
+}
+
+export interface NaviHoverResult {
+    hit: boolean;
+    /** Short status line: `Molecule [name], A ALA 10 CA` (+ symop suffix). */
+    message?: string;
+    raw?: HitTestResult;
+}
+
+/**
+ * Hit test under the pointer for the status-bar hover line. Read-only: no
+ * MsgLog entry and no undo transaction, unlike naviClickAtom. A native throw
+ * (e.g. a lost GL context) is reported as a miss, never as a rejection.
+ */
+export function naviHover(ctx: WorkerContext, args: NaviHoverArgs): NaviHoverResult {
+    let raw: HitTestResult | null;
+    try {
+        raw = runHitTest(ctx, args.viewId, args.x, args.y);
+    } catch {
+        return { hit: false };
+    }
+    if (!raw) return { hit: false };
+    return { hit: true, message: hitHeadline(raw) + symopSuffix(raw), raw };
 }
 
 // ---- service: naviResidSel (double click -- residue selection toggle/extend) ----

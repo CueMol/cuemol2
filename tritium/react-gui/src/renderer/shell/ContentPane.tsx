@@ -24,9 +24,10 @@ import { RectSelectOverlay } from "@renderer/features/molview/RectSelectOverlay"
 import { useNaviClickHandler } from "@renderer/features/molview/useNaviClickHandler";
 import { useMeasureClickHandler } from "@renderer/features/molview/useMeasureClickHandler";
 import { useBondEditClickHandler } from "@renderer/features/molview/useBondEditClickHandler";
+import { useHoverInfoHandler } from "@renderer/features/molview/useHoverInfoHandler";
 import { useNaviContextMenu } from "@renderer/features/molview/useNaviContextMenu";
 import { useActiveToolContext, useSetActiveTool } from "@renderer/contexts/ActiveToolContext";
-import { useSetStatusMessage } from "@renderer/state/statusMessage";
+import { useSetStatusMessage, useSetHoverMessage } from "@renderer/state/statusMessage";
 import type { HitTestResult } from "@renderer/types";
 
 // ---------------------------------------------
@@ -63,6 +64,8 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   const activeTool = useActiveToolContext();
   const onSelectTool = useSetActiveTool();
   const onStatusMessage = useSetStatusMessage();
+  const onHoverMessage = useSetHoverMessage();
+  const paneRef = useRef<HTMLDivElement>(null);
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
   // The molview canvas is visible -- and thus the viewport tools apply -- only
   // when a molview tab is active, never on Settings or the empty state.
@@ -97,9 +100,10 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   useNaviClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), openContextMenu });
   useMeasureClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), target: measureTarget });
   useBondEditClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}) });
+  useHoverInfoHandler({ containerRef: paneRef, setHoverMessage: onHoverMessage });
 
   return (
-    <div className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
+    <div ref={paneRef} className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
       {/* MolViewPane is always mounted once the tab exists; hidden when inactive.
           Using display:none rather than unmounting to preserve WebGL context
           and the OffscreenCanvas transferred to the Web Worker. */}

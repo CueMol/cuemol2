@@ -28,7 +28,7 @@ vi.mock("@renderer/hooks/useCueMolBusy", async () => {
     };
 });
 vi.mock("@renderer/hooks/useBusyCursor", () => ({ useBusyCursor: () => undefined }));
-vi.mock("@renderer/state/statusMessage", () => ({ useStatusMessage: () => null }));
+vi.mock("@renderer/state/statusMessage", () => ({ useStatusMessage: () => null, useHoverMessage: () => null }));
 vi.mock("@renderer/contexts/ActiveToolContext", () => ({
     useActiveToolDef: () => ({ id: "navigate", label: "Navigate", shortcut: "V", icon: "tool.navigate" }),
 }));

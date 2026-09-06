@@ -1,7 +1,7 @@
 import React from "react";
 import { AppIcon } from "@renderer/h3-kit/primitives";
 import { useActiveToolDef } from '@renderer/contexts/ActiveToolContext';
-import { useStatusMessage } from '@renderer/state/statusMessage';
+import { useStatusMessage, useHoverMessage } from '@renderer/state/statusMessage';
 import { useCueMolBusy } from '@renderer/hooks/useCueMolBusy';
 import { useBusyCursor } from '@renderer/hooks/useBusyCursor';
 
@@ -9,6 +9,9 @@ const StatusBarComponent: React.FC = () => {
   // Everything shown here is read from its owner; App passes nothing in.
   const activeDef = useActiveToolDef();
   const statusMessage = useStatusMessage();
+  const hoverMessage = useHoverMessage();
+  // The hover line wins while present; the click message survives underneath.
+  const leftText = hoverMessage ?? statusMessage;
   const busy = useCueMolBusy();
   // The same flag drives a global wait cursor, so the busy state is visible
   // wherever the pointer is -- not only here.
@@ -17,9 +20,9 @@ const StatusBarComponent: React.FC = () => {
   return (
     <div className="status-bar">
       <div className="status-left">
-        {statusMessage && (
+        {leftText && (
           <span className="status-item">
-            {statusMessage}
+            {leftText}
           </span>
         )}
       </div>

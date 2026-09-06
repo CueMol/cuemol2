@@ -47,6 +47,16 @@ describe("AsyncCueMol - busy tracking", () => {
         expect(cm.isBusy()).toBe(false);
     });
 
+    it("invokeService with { quiet: true } is not counted as busy and still resolves", async () => {
+        const promise = cm.invokeService("naviHover" as any, { viewId: 1, x: 0, y: 0 } as any, { quiet: true });
+        expect(cm.isBusy()).toBe(false);
+        const [method, seqno] = getSentSeq();
+        expect(method).toBe("naviHover");
+        capturedWorker!.respond(method, seqno, true, { hit: true, message: "M" });
+        await expect(promise).resolves.toEqual({ hit: true, message: "M" });
+        expect(cm.isBusy()).toBe(false);
+    });
+
     it("isBusy() returns true while invokeWorker is pending", () => {
         cm.invokeWorker("testMethod");
         expect(cm.isBusy()).toBe(true);
