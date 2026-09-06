@@ -239,6 +239,21 @@ private:
     /// (plain) frame.
     bool m_bFrameCached = false;
 
+    /// Soft (Gaussian-blurred) mask of the hovered element at pick resolution:
+    /// [0] after the horizontal pass, [1] final. RGBA8 LINEAR so the overlay
+    /// upsamples it bilinearly. Rebuilt only when the pick buffer (serial), the
+    /// hovered element or the blur size changed.
+    gfx::RenderTarget *m_pHoverMaskRT[2] = {nullptr, nullptr};
+    bool m_bHoverMaskValid = false;
+    /// Incremented by every pick pass; the mask remembers the one it used.
+    unsigned int m_pickSerial = 0;
+    unsigned int m_hoverMaskSerial = 0;
+    int m_hoverMaskId[3] = {0, 0, 0};
+    float m_hoverMaskSigma = 0.0f;
+
+    bool ensureHoverMaskTargets(int pw, int ph);
+    void releaseHoverMaskTargets();
+
     /// A hovered element is set and the GPU pick pass (its ID source) is active.
     bool isHoverHighlightActive() const;
 

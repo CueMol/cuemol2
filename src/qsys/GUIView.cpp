@@ -266,11 +266,54 @@ bool GUIView::isHoverHighlightActive() const
 }
 
 namespace {
-// Hover highlight look; the colour itself is ViewInputConfig::hover_hl_color.
+// Hover highlight look: a translucent fill in ViewInputConfig::hover_hl_color
+// and a two-tone outline (light inside, dark outside) so that one of the two
+// lines contrasts with any background colour.
 constexpr float HOVER_HL_FILL_ALPHA = 0.35f;
+constexpr float HOVER_HL_EDGE_LIGHT = 0.95f;
+constexpr float HOVER_HL_EDGE_DARK = 0.1f;
 constexpr float HOVER_HL_EDGE_ALPHA = 0.9f;
-constexpr float HOVER_HL_EDGE_DARKEN = 0.5f;
+/// Width of each outline tone in CSS pixels. It is the sigma of the Gaussian
+/// that blurs the element mask; the outline spans one sigma on each side of
+/// the element boundary in the blurred mask.
+constexpr double HOVER_HL_EDGE_CSS_PX = 1.5;
 }  // namespace
+
+bool GUIView::ensureHoverMaskTargets(int pw, int ph)
+{
+    DisplayContext *pdc = getDisplayContext();
+    if (pdc == nullptr) return false;
+
+    for (auto &prt : m_pHoverMaskRT) {
+        if (prt != nullptr) {
+            if (prt->getWidth() != pw || prt->getHeight() != ph) {
+                prt->resize(pw, ph);
+                m_bHoverMaskValid = false;
+            }
+            continue;
+        }
+        // LINEAR filtering (no RT_COLOR_NEAREST): the overlay upsamples the
+        // pick-resolution mask with the hardware bilinear filter.
+        prt = pdc->createRenderTarget(pw, ph, gfx::RT_COLOR_RGBA8);
+        if (prt == nullptr) {
+            LOG_DPRINTLN("GUIView> cannot create the hover mask target (%dx%d)", pw, ph);
+            return false;
+        }
+        m_bHoverMaskValid = false;
+    }
+    return true;
+}
+
+void GUIView::releaseHoverMaskTargets()
+{
+    for (auto &prt : m_pHoverMaskRT) {
+        if (prt != nullptr) {
+            delete prt;
+            prt = nullptr;
+        }
+    }
+    m_bHoverMaskValid = false;
+}
 
 void GUIView::drawHoverOverlay(DisplayContext *pdc)
 {
@@ -286,6 +329,38 @@ void GUIView::drawHoverOverlay(DisplayContext *pdc)
     if (!hoverIdToPickId(m_hoverRendUid, m_hoverAtomId, m_hoverSymmId, m_pickRendTab, id))
         return;
 
+    if (!ensureHoverMaskTargets(m_pPickRT->getWidth(), m_pPickRT->getHeight())) return;
+
+    // Outline tone width: CSS px -> backing px (device pixel ratio) -> pick
+    // texels (PICK_SCALE) = the blur sigma; the kernel reaches two sigma.
+    const double dpr =
+        (getWidth() > 0) ? double(convToBackingX(getWidth())) / double(getWidth()) : 1.0;
+    const float sigma = float(std::max(0.5, HOVER_HL_EDGE_CSS_PX * dpr * PICK_SCALE));
+    const int radius = std::max(1, int(std::ceil(2.0 * sigma)));
+
+    pdc->setDepthTestEnabled(false);
+
+    // Rebuild the soft mask only when its inputs changed: the pick buffer
+    // (serial), the hovered element or the blur size. Progressive jitter
+    // frames with a still highlight skip both passes. Both run at pick
+    // resolution and replace every texel (blend off).
+    const bool maskStale = !m_bHoverMaskValid || m_hoverMaskSerial != m_pickSerial ||
+                           m_hoverMaskId[0] != id[0] || m_hoverMaskId[1] != id[1] ||
+                           m_hoverMaskId[2] != id[2] || m_hoverMaskSigma != sigma;
+    if (maskStale) {
+        pdc->setBlendEnabled(false);
+        m_pHoverMaskRT[0]->bind();
+        pPP->drawHoverMask(pdc, m_pPickRT, id, sigma, radius);
+        m_pHoverMaskRT[0]->unbind();
+        m_pHoverMaskRT[1]->bind();
+        pPP->drawHoverMaskBlur(pdc, m_pHoverMaskRT[0], sigma, radius);
+        m_pHoverMaskRT[1]->unbind();
+        m_hoverMaskSerial = m_pickSerial;
+        std::copy(id, id + 3, m_hoverMaskId);
+        m_hoverMaskSigma = sigma;
+        m_bHoverMaskValid = true;
+    }
+
     float r = 1.0f, g = 0.4f, b = 0.6f;
     const gfx::ColorPtr &pCol = ViewInputConfig::getInstance()->getHoverHlColor();
     if (!pCol.isnull()) {
@@ -294,14 +369,15 @@ void GUIView::drawHoverOverlay(DisplayContext *pdc)
         b = float(pCol->fb());
     }
     const float fill[4] = {r, g, b, HOVER_HL_FILL_ALPHA};
-    const float edge[4] = {r * HOVER_HL_EDGE_DARKEN, g * HOVER_HL_EDGE_DARKEN,
-                           b * HOVER_HL_EDGE_DARKEN, HOVER_HL_EDGE_ALPHA};
+    const float edgeLight[4] = {HOVER_HL_EDGE_LIGHT, HOVER_HL_EDGE_LIGHT,
+                                HOVER_HL_EDGE_LIGHT, HOVER_HL_EDGE_ALPHA};
+    const float edgeDark[4] = {HOVER_HL_EDGE_DARK, HOVER_HL_EDGE_DARK, HOVER_HL_EDGE_DARK,
+                               HOVER_HL_EDGE_ALPHA};
 
     // Alpha-blend the overlay over the finished frame, ignoring depth.
-    pdc->setDepthTestEnabled(false);
     pdc->setBlendEnabled(true);
     pdc->setBlendModeAdd(false);
-    pPP->drawHoverHighlight(pdc, m_pPickRT, id, fill, edge);
+    pPP->drawHoverHighlight(pdc, m_pHoverMaskRT[1], fill, edgeLight, edgeDark);
     pdc->setDepthTestEnabled(true);
 }
 
@@ -1072,6 +1148,7 @@ bool GUIView::ensurePickTarget(int pw, int ph)
 
 void GUIView::releasePickBuffer()
 {
+    releaseHoverMaskTargets();
     if (m_pPickRT != nullptr) {
         delete m_pPickRT;
         m_pPickRT = nullptr;
@@ -1149,6 +1226,7 @@ bool GUIView::renderPickBuffer()
     m_pickRendTab = pdc->getHitRendTable();
 
     m_bPickDirty = false;
+    ++m_pickSerial;  // the hover mask built from the old buffer is stale
     return true;
 }
 

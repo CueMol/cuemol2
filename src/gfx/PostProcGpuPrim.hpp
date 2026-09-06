@@ -121,7 +121,10 @@ private:
     DataTexture *m_pSmaaSearchTex = nullptr;
     /// Temporal-jitter compose program (sample*weight; accumulate + display).
     ShaderObject *m_pJitterComposePO = nullptr;
-    /// Hover highlight overlay program (reads the integer pick ID buffer).
+    /// Hover highlight programs: mask from the integer pick ID buffer (+
+    /// horizontal blur), vertical blur, and the overlay.
+    ShaderObject *m_pHoverMaskPO = nullptr;
+    ShaderObject *m_pHoverBlurPO = nullptr;
     ShaderObject *m_pHoverPO = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
@@ -196,15 +199,28 @@ public:
     /// normalized display step (weight N/count, no blend).
     void drawJitterCompose(DisplayContext *pDC, RenderTarget *srcRT, float weight);
 
-    /// Hover highlight overlay: read pickRT's integer color attachment (the
-    /// pick ID buffer, any size) and paint the element whose texel ID equals
-    /// id = (renderer index, encoded element name, encoded outer name): a
-    /// translucent fill (fillRGBA, alpha = strength) plus an edge band on the
-    /// element boundary (edgeRGBA). Fragments outside the element are
-    /// discarded, so the caller draws it over the finished frame with alpha
-    /// blending enabled and the depth test disabled.
-    void drawHoverHighlight(DisplayContext *pDC, RenderTarget *pickRT, const int id[3],
-                            const float fillRGBA[4], const float edgeRGBA[4]);
+    /// Hover highlight, pass 1: match pickRT's integer ID texels (the pick ID
+    /// buffer) against id = (renderer index, encoded element name, encoded
+    /// outer name) and Gaussian-blur the binary mask horizontally (sigma in
+    /// texels, kernel +-radius) into the currently bound target, which has
+    /// pickRT's size. Blend must be off.
+    void drawHoverMask(DisplayContext *pDC, RenderTarget *pickRT, const int id[3],
+                       float sigma, int radius);
+
+    /// Hover highlight, pass 2: blur maskRT's red channel vertically with the
+    /// same kernel into the currently bound target (same size). Blend off.
+    void drawHoverMaskBlur(DisplayContext *pDC, RenderTarget *maskRT, float sigma,
+                           int radius);
+
+    /// Hover highlight, pass 3: sample the soft mask (maskRT, LINEAR, any size)
+    /// and paint a translucent fill (fillRGBA, alpha = strength) plus a
+    /// two-tone outline one sigma wide on each side of the element boundary
+    /// (edgeLightRGBA inside, edgeDarkRGBA outside). Fragments outside the
+    /// outline are discarded, so the caller draws it over the finished frame
+    /// with the standard alpha blend enabled and the depth test disabled.
+    void drawHoverHighlight(DisplayContext *pDC, RenderTarget *maskRT,
+                            const float fillRGBA[4], const float edgeLightRGBA[4],
+                            const float edgeDarkRGBA[4]);
 
 private:
     void alloc(DisplayContext *pDC);

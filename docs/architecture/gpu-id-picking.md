@@ -221,20 +221,32 @@ hover 中の要素 (chip と同じ単位: cartoon 系は残基の帯、atom 系�
 ### 10.1 方式
 
 pick ID buffer (§3.2) には「どの画素にどの renderer のどの要素が描かれたか」が既にあるので、highlight は
-それを入力にした fullscreen pass 1 回で描ける (`hover_hl_frag.glsl`、`PostProcGpuPrim::drawHoverHighlight`):
+それを入力にした小さな pass 3 回で描ける (`PostProcGpuPrim::drawHoverMask / drawHoverMaskBlur /
+drawHoverHighlight`):
 
 ```
-uniform highp usampler2D u_pickTex;   // RGBA32UI の pick RT (0.5 scale、NEAREST)
-uniform ivec3 u_hlId;                 // (rendIdx, encodeHitName(atom_id), encodeHitName(symm_id))
-mask(p) = texelFetch(u_pickTex, p).xyz == uvec3(u_hlId)
-c       = 4 texel の mask を bilinear 補間した coverage (0..1)
-fill    = u_fillColor.a * c, edge = u_edgeColor.a * 4c(1-c)   // 境界 (c = 0.5) に集中する輪郭帯
+pass 1 (pick 解像度, hover_mask_frag.glsl):  mask(p) = texelFetch(u_pickTex, p).xyz == uvec3(u_hlId)
+                                             を横方向に Gaussian blur (sigma, +-radius)   -> maskRT[0]
+pass 2 (pick 解像度, hover_blur_frag.glsl):  maskRT[0] を縦方向に同じ kernel で blur          -> maskRT[1]
+pass 3 (画面解像度, hover_hl_frag.glsl):     s = texture(maskRT[1], uv).r  (RGBA8 LINEAR、1 sample)
+    band = smoothstep(BAND_LO, ..) * (1 - smoothstep(BAND_HI, ..))   // s が Phi(-1)..Phi(+1) = 境界の +-sigma
+    edge = mix(u_edgeDark, u_edgeLight, smoothstep(0.42, 0.58, s)) * band   // 外側は暗く内側は明るい二色
+    fill = u_fillColor.a * smoothstep(0.45, 0.55, s)                        // s > 0.5 = 要素の内側
+    out  = edge over fill (通常の alpha ブレンド)
 ```
 
-近傍探索なしの texelFetch 4 回で、塗りの縁と輪郭帯 (幅 ≈ pick 1 texel = backing 2 px) が得られる。
+二値 mask を sigma = 輪郭 1 色分の幅 (CSS 約 1.5 px を dpr と `PICK_SCALE` で pick texel に換算) で blur すると、
+値 s は境界からの符号付き距離 d の `Phi(d / sigma)` になるので、閾値だけで「内側 / 輪郭帯 / 外側」が滑らかに
+分かれる。pick 格子 (backing 2 px) の階段は 2 次元の blur と bilinear 参照で消える。
+pass 1-2 は **pick buffer が描き直されたか (`m_pickSerial`)、hover 要素か、sigma が変わったフレームだけ** 走る
+(`GUIView::drawHoverOverlay` のキャッシュ判定)。jitter の progressive フレームでは overlay の 1 sample だけ。
+maskRT は RGBA8 × 2 (pick 解像度 = backing の 1/4 画素、dpr 2 の 4K 相当で約 5 MB)。
 `ShaderObject` に unsigned の setter が無いので ID は `ivec3` で渡し、shader 側で `uvec3` に変換する。
-色は `ViewInputConfig::hover_hl_color` (既定 Mol* の highlightColor 相当 (1.0, 0.4, 0.6))、塗り alpha 0.35、
-輪郭は同色 × 0.5 を alpha 0.9 (`GUIView.cpp` の定数)。
+
+**二色の輪郭**: 内側が明るい灰色 (0.95)、外側が暗い灰色 (0.1) の 2 本 (alpha 0.9) で、UI の選択枠と同じく
+どんな下地の色でも片方の線がコントラストを持つ (赤い帯の上でも見える)。塗りは `ViewInputConfig::hover_hl_color`
+(既定 Mol* の highlightColor 相当 (1.0, 0.4, 0.6)) を alpha 0.35 で重ねる (`GUIView.cpp` の定数)。
+下の色を読んで色を変える方式 (反転 ROP) は試したが、反転色の見た目が不自然だったので採っていない。
 
 ### 10.2 present 専用フレーム (シーン再描画も jitter リセットもしない)
 
@@ -283,7 +295,8 @@ present 専用フレーム (setHoverHit / clearHoverHit だけが起きた):
 
 - overlay の解像度は pick buffer (backing の 0.5) のまま。dpr 1 では縁がやや粗い。`PICK_SCALE` を上げれば
   改善するが pick pass コストと RGBA32UI メモリが 4 倍になるので上げていない。
-- overlay に AA (FXAA / SMAA / jitter) はかからない (最終段の後に重ねる)。縁は shader の coverage 補間のみ。
+- overlay に AA (FXAA / SMAA / jitter) はかからない (最終段の後に重ねる)。縁の滑らかさは blur した mask の
+  bilinear 参照によるもので、pick 解像度より細かい形状 (細い線の太さの差など) は再現しない。
 - alpha < 0.5 の renderer、CPU fallback の renderer (`*symm` 等)、stereo では highlight されない
   (pick buffer に無い)。
 - highlight の単位は hit 要素のみ。残基単位で同一分子の全 renderer を光らせるには Mol* の marker texture
