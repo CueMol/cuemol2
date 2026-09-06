@@ -32,7 +32,6 @@ vi.mock('@renderer/state/statusMessage', async () => {
       statusMessage.set = setMsg
       return msg
     },
-    useHoverMessage: () => null,
   }
 })
 vi.mock('@renderer/hooks/useCueMolBusy', () => ({ useCueMolBusy: () => false }))

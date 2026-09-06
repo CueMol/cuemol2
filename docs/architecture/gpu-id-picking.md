@@ -119,14 +119,19 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 ## 4. tritium の hover UI
 
 - `naviHover` service (`worker/server/services/navi/naviTool.ts`): `view.hitTest(x, y)` のみ (MsgLog / undo
-  txn なし)。結果 `{ hit, message?, raw? }`、message は `Molecule [name], A ALA 10 CA` (+ ` (symop: ..)`)。
-  `hitHeadline` / `symopSuffix` を `naviClickAtom` と共有し、click の文字列は不変。
+  txn なし)。結果 `{ hit, label?, raw? }`。`label` (`HoverLabel`) は worker が `mol.getAtomByID` で解決した
+  構造化データ (`objName` / `rendName` / `rendType` / `chain` / `resName` / `resIndex` / `atomName` / `symop`)。
+  cartoon / ribbon / tube / spline / nucl / trace の hit は `residueLevel = true` で atom 名を持たない
+  (帯は残基のものなので原子名を出さない)。MolCoord 以外は `text` (C++ の message) だけ。
 - `useHoverInfoHandler` (`features/molview/`): `.content-pane` に listener を委譲 (rectSelect / lasso 中は
   `RectSelectOverlay` が canvas を覆うため)。33ms throttle、in-flight 1 件、latest-wins、`buttons !== 0` で抑止、
   `mousedown` / `mouseleave` / view 切替で clear、`useStaleGuard` で遅延応答を破棄、同一文字列では setter を
   呼ばない。全ツールで有効。
-- status bar: `StatusMessageProvider` に hover スロット (`useHoverMessage` / `useSetHoverMessage`) を追加し、
-  `StatusBar` は `hoverMessage ?? statusMessage` を表示。click の完全メッセージは hover が消えると再び見える。
+- 表示: `MolViewHoverLabel` (`features/molview/`) が content pane の**左下**に click-through のチップ
+  (tool palette と同じ `--bg-elevated` 面、z-index は select overlay (5) と palette (10) の間) を出す。
+  1 行目 = chain バッジ + `ALA 10` (+ 原子レベルなら ` CA`)、2 行目 = `1CRN | cartoon1` (+ symop)。
+  hover 状態はこの component が持つので、ポインタ移動で再描画されるのはチップだけ (pane / canvas は
+  再描画されない)。status bar は click メッセージ専用のまま (hover は status bar に出さない: owner 指定)。
 - transport: `invokeService(name, args, { quiet: true })` は busy counter に乗らない (`WorkerTransport._call`
   に統合、`invokeWorkerWithTransfer` と同じ非計上経路)。hover の 30Hz 呼び出しで Busy 表示 / wait cursor が
   瞬かないため。
@@ -136,7 +141,7 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 ## 5. 契約行
 - `worker/shared/calls/navi.ts`: `naviHover: { args: NaviHoverArgs; result: NaviHoverResult }` + `NAVI_KEYS`。
 - `worker/client/WorkerTransport.ts`: `InvokeOptions.quiet`。`tritium/CLAUDE.md` の dispatch 表に 1 行。
-- `state/statusMessage`: `useHoverMessage` / `useSetHoverMessage`。
+- `worker/server/services/navi/naviTool.ts`: `HoverLabel` (hover チップの表示契約)。
 - GfxManager peer API (`gfxManagerContract.test.ts`): `readPixelsUInt` を追加。
 - C++: `ViewCap::hasGpuPick`、`View::hasGpuPick`、`Renderer::isPickSupported / displayPick`、
   `Scene::displayPick / processHit(bCpuOnly) / hasCpuOnlyHitRenderers`、`HitData::addHit`、
@@ -151,15 +156,18 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 - **C++ に hover event を追加**: `MouseEventHandler` が plain move を捨てる設計を崩し、UXP / python も同じ
   event category を listen するため見送り。hover は renderer thread の DOM mousemove だけで実装した。
 - **RGBA8 pack (Mol* 方式)**: 整数 RT が WebGL2 core で使えるので、丸め誤差の無い RGBA32UI を選んだ。
-- tooltip popup (UXP 形式) ではなく status bar の 1 行にした (owner 指定)。
+- tooltip popup (UXP 形式: ポインタ追従) ではなく、位置固定の左下チップにした (owner 指定。ポインタ追従は
+  視線が動き、canvas 上の hover を横取りしやすい)。当初 status bar の 1 行だったが、視線が 3D view から
+  離れるため mol view 内へ移した。
 
 ## 7. テスト
 - C++ (test_gfx / test_qsys): 基底 name stack と符号化 (`test_displaycontext_names.cpp`)、DisplayList が頂点に
   name を記録し recordStart で戻ること (`test_gpuprim.cpp`)、読み戻し窓の最近傍探索 (`test_pickbuffer.cpp`)、
   texel -> HitData 変換 (`test_guiview.cpp`)、`Scene::displayPick` の選別と `processHit(bCpuOnly)` の skip
   (`test_scene_pick.cpp`)。
-- tritium: hover controller の呼び出し列 (`useHoverInfoHandler.test.tsx`)、`naviHover` の wire 契約
-  (`naviHoverService.test.ts`)、`{ quiet: true }` が busy に乗らないこと (`AsyncCueMolBusy.test.ts`)。
+- tritium: hover controller の呼び出し列 (`useHoverInfoHandler.test.tsx`)、`naviHover` の `HoverLabel` 契約
+  (残基レベル / 原子レベル / 非分子 / miss、`naviHoverService.test.ts`)、`{ quiet: true }` が busy に乗らない
+  こと (`AsyncCueMolBusy.test.ts`)。
 
 ## 8. ビルドの注意
 - tritium の addon は `.build_out` の dylib ではなく `tritium/core/build/lib/libcuemol2.dylib` (core の install 時に

@@ -24,10 +24,10 @@ import { RectSelectOverlay } from "@renderer/features/molview/RectSelectOverlay"
 import { useNaviClickHandler } from "@renderer/features/molview/useNaviClickHandler";
 import { useMeasureClickHandler } from "@renderer/features/molview/useMeasureClickHandler";
 import { useBondEditClickHandler } from "@renderer/features/molview/useBondEditClickHandler";
-import { useHoverInfoHandler } from "@renderer/features/molview/useHoverInfoHandler";
+import { MolViewHoverLabel } from "@renderer/features/molview/MolViewHoverLabel";
 import { useNaviContextMenu } from "@renderer/features/molview/useNaviContextMenu";
 import { useActiveToolContext, useSetActiveTool } from "@renderer/contexts/ActiveToolContext";
-import { useSetStatusMessage, useSetHoverMessage } from "@renderer/state/statusMessage";
+import { useSetStatusMessage } from "@renderer/state/statusMessage";
 import type { HitTestResult } from "@renderer/types";
 
 // ---------------------------------------------
@@ -64,7 +64,6 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   const activeTool = useActiveToolContext();
   const onSelectTool = useSetActiveTool();
   const onStatusMessage = useSetStatusMessage();
-  const onHoverMessage = useSetHoverMessage();
   const paneRef = useRef<HTMLDivElement>(null);
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
   // The molview canvas is visible -- and thus the viewport tools apply -- only
@@ -100,7 +99,6 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   useNaviClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), openContextMenu });
   useMeasureClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), target: measureTarget });
   useBondEditClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}) });
-  useHoverInfoHandler({ containerRef: paneRef, setHoverMessage: onHoverMessage });
 
   return (
     <div ref={paneRef} className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
@@ -116,6 +114,8 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
       {/* Rubber-band selection layer -- click-through unless a select tool
           is active. Mounted only while the canvas is visible. */}
       {molViewVisible && <RectSelectOverlay />}
+      {/* What is under the pointer -- bottom-left chip, owns the hover state. */}
+      {molViewVisible && <MolViewHoverLabel containerRef={paneRef} />}
       {molViewVisible && (
         <ViewportToolPalette
           activeTool={activeTool}

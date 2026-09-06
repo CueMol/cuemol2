@@ -35,7 +35,7 @@ vi.mock('@renderer/features/molview/RectSelectOverlay', () => ({ RectSelectOverl
 vi.mock('@renderer/features/molview/useNaviClickHandler', () => ({ useNaviClickHandler: () => undefined }))
 vi.mock('@renderer/features/molview/useMeasureClickHandler', () => ({ useMeasureClickHandler: () => undefined }))
 vi.mock('@renderer/features/molview/useBondEditClickHandler', () => ({ useBondEditClickHandler: () => undefined }))
-vi.mock('@renderer/features/molview/useHoverInfoHandler', () => ({ useHoverInfoHandler: () => undefined }))
+vi.mock('@renderer/features/molview/MolViewHoverLabel', () => ({ MolViewHoverLabel: () => null }))
 vi.mock('@renderer/features/molview/useNaviContextMenu', () => ({
   useNaviContextMenu: () => ({ openContextMenu: () => undefined }),
 }))
@@ -43,10 +43,7 @@ vi.mock('@renderer/contexts/ActiveToolContext', () => ({
   useActiveToolContext: () => 'navigate',
   useSetActiveTool: () => () => undefined,
 }))
-vi.mock('@renderer/state/statusMessage', () => ({
-  useSetStatusMessage: () => () => undefined,
-  useSetHoverMessage: () => () => undefined,
-}))
+vi.mock('@renderer/state/statusMessage', () => ({ useSetStatusMessage: () => () => undefined }))
 
 import { ContentPane } from '@renderer/shell/ContentPane'
 

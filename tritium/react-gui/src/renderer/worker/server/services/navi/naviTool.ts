@@ -129,15 +129,74 @@ export interface NaviHoverArgs {
     y: number;
 }
 
+/**
+ * What is under the pointer, structured for the 3D view hover label.
+ * Molecule hits carry the atom / residue identity; other objects only `text`.
+ */
+export interface HoverLabel {
+    /** Object (molecule) name. */
+    objName: string;
+    /** Renderer name and type name (e.g. `cartoon`). */
+    rendName: string;
+    rendType: string;
+    /** True when the hit renderer draws residues, not atoms (cartoon, tube,
+     *  ...): the label then names the residue and omits the atom. */
+    residueLevel: boolean;
+    chain?: string;
+    resName?: string;
+    resIndex?: string;
+    atomName?: string;
+    /** Symmetry operator name for a hit through a `*symm` renderer. */
+    symop?: string;
+    /** Plain text for non-molecule hits (LWObject): the C++ hit message. */
+    text?: string;
+}
+
 export interface NaviHoverResult {
     hit: boolean;
-    /** Short status line: `Molecule [name], A ALA 10 CA` (+ symop suffix). */
-    message?: string;
+    label?: HoverLabel;
     raw?: HitTestResult;
 }
 
+/** Renderer types whose geometry belongs to residues rather than atoms. */
+const RESIDUE_LEVEL_RENDTYPES: ReadonlySet<string> = new Set([
+    'cartoon', 'ribbon', 'tube', 'spline', 'nucl', 'trace',
+]);
+
+function buildHoverLabel(ctx: WorkerContext, viewId: number, raw: HitTestResult): HoverLabel {
+    const base: HoverLabel = {
+        objName: raw.obj_name,
+        rendName: raw.rend_name,
+        rendType: raw.rendtype,
+        residueLevel: RESIDUE_LEVEL_RENDTYPES.has(raw.rendtype),
+    };
+    if (raw.rendtype === '*symm' && raw.symm_name) base.symop = raw.symm_name;
+    if (raw.objtype !== 'MolCoord') {
+        base.text = raw.message;
+        return base;
+    }
+    // Atom identity from the wrapper (chain / residue / atom names); fall back
+    // to the C++ message text if the atom cannot be resolved.
+    try {
+        const view = ctx.sceMgr.getView(viewId) as GUIView;
+        const mol = view.getScene().getObject(raw.obj_id) as MolCoord | null;
+        const atom = mol ? mol.getAtomByID(raw.atom_id) : null;
+        if (atom) {
+            base.chain = String(atom.chainName);
+            base.resName = String(atom.residName);
+            base.resIndex = String(atom.residIndex);
+            if (!base.residueLevel) base.atomName = String(atom.name);
+            return base;
+        }
+    } catch {
+        // fall through to the text form
+    }
+    base.text = raw.message;
+    return base;
+}
+
 /**
- * Hit test under the pointer for the status-bar hover line. Read-only: no
+ * Hit test under the pointer for the 3D view hover label. Read-only: no
  * MsgLog entry and no undo transaction, unlike naviClickAtom. A native throw
  * (e.g. a lost GL context) is reported as a miss, never as a rejection.
  */
@@ -149,7 +208,7 @@ export function naviHover(ctx: WorkerContext, args: NaviHoverArgs): NaviHoverRes
         return { hit: false };
     }
     if (!raw) return { hit: false };
-    return { hit: true, message: hitHeadline(raw) + symopSuffix(raw), raw };
+    return { hit: true, label: buildHoverLabel(ctx, args.viewId, raw), raw };
 }
 
 // ---- service: naviResidSel (double click -- residue selection toggle/extend) ----

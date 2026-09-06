@@ -23,12 +23,15 @@ vi.mock('@renderer/state/workspace', () => ({
 }))
 
 import { useHoverInfoHandler } from '@renderer/features/molview/useHoverInfoHandler'
+import type { HoverLabel } from '@renderer/features/molview/useHoverInfoHandler'
+
+const LABEL_M: HoverLabel = { objName: '1CRN', rendName: 'cartoon1', rendType: 'cartoon', residueLevel: true, chain: 'A', resName: 'ALA', resIndex: '10' }
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 
-function Probe({ setter }: { setter: (m: string | null) => void }) {
+function Probe({ setter }: { setter: (m: HoverLabel | null) => void }) {
     const ref = useRef<HTMLDivElement>(null)
-    useHoverInfoHandler({ containerRef: ref, setHoverMessage: setter })
+    useHoverInfoHandler({ containerRef: ref, setHoverLabel: setter })
     return (
         <div ref={ref}>
             <canvas data-molview-canvas="" />
@@ -74,9 +77,9 @@ describe('useHoverInfoHandler', () => {
         await move(30, 30)
         expect(invokeService).toHaveBeenCalledTimes(1)
 
-        await act(async () => { pending[0].resolve({ hit: true, message: 'M' }); await flushPromises() })
+        await act(async () => { pending[0].resolve({ hit: true, label: LABEL_M }); await flushPromises() })
         expect(setter).toHaveBeenCalledTimes(1)
-        expect(setter).toHaveBeenLastCalledWith('M')
+        expect(setter).toHaveBeenLastCalledWith(LABEL_M)
 
         // The follow-up is throttled onto the timer and carries only the latest position.
         expect(invokeService).toHaveBeenCalledTimes(1)
@@ -91,14 +94,14 @@ describe('useHoverInfoHandler', () => {
         expect(setter).toHaveBeenLastCalledWith(null)
 
         // The reply of the second (now stale) request is dropped.
-        await act(async () => { pending[1].resolve({ hit: true, message: 'LATE' }); await flushPromises() })
+        await act(async () => { pending[1].resolve({ hit: true, label: { ...LABEL_M, resIndex: '11' } }); await flushPromises() })
         expect(setter).toHaveBeenCalledTimes(2)
 
         // Leaving the pane does not repeat an identical null.
         await act(() => { container.firstElementChild!.dispatchEvent(new MouseEvent('mouseleave')) })
         expect(setter).toHaveBeenCalledTimes(2)
 
-        expect(setter.mock.calls).toEqual([['M'], [null]])
+        expect(setter.mock.calls).toEqual([[LABEL_M], [null]])
         unmount()
     })
 })

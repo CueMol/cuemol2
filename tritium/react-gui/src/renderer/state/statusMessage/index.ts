@@ -1,11 +1,5 @@
 /**
  * @file state/statusMessage/index.ts
- * @description The status-bar message lines (click / hover) and their setters.
+ * @description The status-bar message and its setter.
  */
-export {
-  StatusMessageProvider,
-  useStatusMessage,
-  useSetStatusMessage,
-  useHoverMessage,
-  useSetHoverMessage,
-} from './StatusMessageProvider'
+export { StatusMessageProvider, useStatusMessage, useSetStatusMessage } from './StatusMessageProvider'

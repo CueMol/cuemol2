@@ -1,7 +1,7 @@
 /**
  * @file features/molview/useHoverInfoHandler.ts
  * @description Pointer hover over the 3D view -> `naviHover` worker service ->
- * status-bar hover line.
+ * the hover label overlay (MolViewHoverLabel).
  *
  * Renderer thread only. C++ emits no hover event (it drops plain moves), so
  * this hook samples DOM mousemove itself: throttled to HOVER_INTERVAL_MS, one
@@ -17,7 +17,17 @@ import type React from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useActiveScene } from '@renderer/state/workspace';
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
+import type { HoverLabel } from '@renderer/worker/server/services/navi/naviTool';
 import { MOLVIEW_CANVAS_SELECTOR } from './molViewCanvas';
+
+export type { HoverLabel };
+
+/** Identity of a label: two labels with the same key describe the same hit. */
+export function hoverLabelKey(l: HoverLabel): string {
+    return [l.objName, l.rendName, l.chain, l.resIndex, l.resName, l.atomName, l.symop, l.text]
+        .map((v) => v ?? '')
+        .join('\u0001');
+}
 
 /** Minimum spacing between two hover hit tests (about 30 Hz). */
 export const HOVER_INTERVAL_MS = 33;
@@ -25,8 +35,8 @@ export const HOVER_INTERVAL_MS = 33;
 export interface UseHoverInfoHandlerArgs {
     /** The `.content-pane` element: canvas AND select-overlay events bubble here. */
     containerRef: React.RefObject<HTMLElement | null>;
-    /** Hover-line setter (`useSetHoverMessage()`); called only when the text changes. */
-    setHoverMessage: (msg: string | null) => void;
+    /** Label setter; called only when the hit (hoverLabelKey) changes. */
+    setHoverLabel: (label: HoverLabel | null) => void;
 }
 
 interface Pos {
@@ -35,15 +45,15 @@ interface Pos {
 }
 
 /**
- * Drive the status-bar hover line from pointer movement over the 3D view.
+ * Drive the hover label from pointer movement over the 3D view.
  * Active for every viewport tool; suppressed while any button is pressed.
  */
-export function useHoverInfoHandler({ containerRef, setHoverMessage }: UseHoverInfoHandlerArgs): void {
+export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInfoHandlerArgs): void {
     const { cueMolReady, cm } = useCueMol();
     const { activeMolViewId } = useActiveScene();
     const guard = useStaleGuard();
-    const setterRef = useRef(setHoverMessage);
-    setterRef.current = setHoverMessage;
+    const setterRef = useRef(setHoverLabel);
+    setterRef.current = setHoverLabel;
 
     const enabled = cueMolReady && cm !== null && activeMolViewId != null;
     const viewId = activeMolViewId ?? -1;
@@ -58,13 +68,14 @@ export function useHoverInfoHandler({ containerRef, setHoverMessage }: UseHoverI
         let timer: ReturnType<typeof setTimeout> | null = null;
         let lastSent: Pos | null = null;
         let lastIssuedAt = -Infinity;
-        let lastText: string | null = null;
+        let lastKey: string | null = null;
         let disposed = false;
 
-        const apply = (text: string | null): void => {
-            if (text === lastText) return;
-            lastText = text;
-            setterRef.current(text);
+        const apply = (label: HoverLabel | null): void => {
+            const key = label ? hoverLabelKey(label) : null;
+            if (key === lastKey) return;
+            lastKey = key;
+            setterRef.current(label);
         };
 
         const clear = (): void => {
@@ -120,7 +131,7 @@ export function useHoverInfoHandler({ containerRef, setHoverMessage }: UseHoverI
             cm.invokeService('naviHover', { viewId, x: p.x, y: p.y }, { quiet: true })
                 .then((res) => {
                     if (disposed || !guard.isCurrent(token)) return;
-                    apply(res.hit && res.message ? res.message : null);
+                    apply(res.hit && res.label ? res.label : null);
                 })
                 .catch(() => {
                     // worker gone / crashed: nothing to show
