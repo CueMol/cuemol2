@@ -44,6 +44,7 @@ const appExit = vi.fn()
 
 const app = {
   setName: vi.fn(),
+  commandLine: { appendSwitch: vi.fn() },
   whenReady: vi.fn(() => ({ then: vi.fn() })),
   on: vi.fn((event: string, cb: Listener) => {
     const list = appListeners.get(event) ?? []
