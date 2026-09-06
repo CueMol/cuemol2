@@ -35,6 +35,7 @@ vi.mock('@renderer/features/molview/RectSelectOverlay', () => ({ RectSelectOverl
 vi.mock('@renderer/features/molview/useNaviClickHandler', () => ({ useNaviClickHandler: () => undefined }))
 vi.mock('@renderer/features/molview/useMeasureClickHandler', () => ({ useMeasureClickHandler: () => undefined }))
 vi.mock('@renderer/features/molview/useBondEditClickHandler', () => ({ useBondEditClickHandler: () => undefined }))
+vi.mock('@renderer/features/molview/MolViewHoverLabel', () => ({ MolViewHoverLabel: () => null }))
 vi.mock('@renderer/features/molview/useNaviContextMenu', () => ({
   useNaviContextMenu: () => ({ openContextMenu: () => undefined }),
 }))

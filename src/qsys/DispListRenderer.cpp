@@ -49,6 +49,11 @@ void DispListRenderer::displayHit(DisplayContext *pdc)
   m_dlcache.displayHit(pdc, this);
 }
 
+void DispListRenderer::displayPick(DisplayContext *pdc)
+{
+  m_dlcache.displayPick(pdc, this);
+}
+
 void DispListRenderer::invalidateHittestCache()
 {
   m_dlcache.invalidateHit();

@@ -214,6 +214,8 @@ private:
   bool m_bStart;
   bool m_bMakePartition;
   ColorPtr m_pCol, m_pPrevCol;
+  /// Hit names (pick pass) of the current / previous drawing point
+  int m_nHitName = -1, m_nPrevHitName = -1;
   Vector4D m_e11, m_e12, m_e21, m_e22;
   Vector4D m_f1, m_f2, m_bnorm, m_vpt;
   Vector4D m_prev_e1, m_prev_e2, m_prev_f1, m_prev_vpt;
@@ -232,6 +234,7 @@ private:
     m_prev_f1 = m_f1;
     m_prev_vpt = m_vpt;
     m_pPrevCol = m_pCol;
+    m_nPrevHitName = m_nHitName;
   }
 
   // ColorPtr calcColor(double par, SplineCoeff *pCoeff);

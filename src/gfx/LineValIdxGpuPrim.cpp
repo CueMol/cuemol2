@@ -12,6 +12,8 @@
 #include "AbstractColor.hpp"
 #include <qlib/LTypes.hpp>
 
+#include <algorithm>
+
 using namespace gfx;
 
 //////////////////////////////////////////////////////////////////////////
@@ -19,6 +21,7 @@ using namespace gfx;
 
 LineValIdxGpuPrim::LineValIdxGpuPrim()
     : m_pPO(nullptr),
+      m_pPickPO(nullptr),
       m_pDrawAry(nullptr),
       m_pCoordTex(nullptr),
       m_nCoordTexUnit(COORD_TEX_UNIT),
@@ -70,7 +73,7 @@ void LineValIdxGpuPrim::setupAttrs()
 
     if (data.getAttrSize() > 0) return;  // already set up
 
-    data.setAttrSize(5);
+    data.setAttrSize(7);
     data.setAttrInfo(0, ATTRLOC_P1, 4, qlib::type_consts::QTC_FLOAT32,
                      offsetof(LineValElem, ox1));
     data.setAttrInfo(1, ATTRLOC_P2, 4, qlib::type_consts::QTC_FLOAT32,
@@ -81,20 +84,25 @@ void LineValIdxGpuPrim::setupAttrs()
                      offsetof(LineValElem, r1));
     data.setAttrInfo(4, ATTRLOC_COLOR2, 4, qlib::type_consts::QTC_UINT8,
                      offsetof(LineValElem, r2));
+    // Hit names: integer attributes consumed by the pick program only.
+    data.setAttrInfo(5, ATTRLOC_HITNAME1, 1, qlib::type_consts::QTC_UINT32,
+                     offsetof(LineValElem, hitName1));
+    data.setAttrInteger(5, true);
+    data.setAttrInfo(6, ATTRLOC_HITNAME2, 1, qlib::type_consts::QTC_UINT32,
+                     offsetof(LineValElem, hitName2));
+    data.setAttrInteger(6, true);
 
     const int ndiv = 1;
-    data.setAttrDivisor(0, ndiv);
-    data.setAttrDivisor(1, ndiv);
-    data.setAttrDivisor(2, ndiv);
-    data.setAttrDivisor(3, ndiv);
-    data.setAttrDivisor(4, ndiv);
+    for (int i = 0; i < 7; ++i) data.setAttrDivisor(i, ndiv);
 }
 
 void LineValIdxGpuPrim::setValLine(int i, int idx1, int idx2, float t1, float t2,
                                    float dispScale, int idxd, quint32 dc1,
-                                   quint32 dc2)
+                                   quint32 dc2, quint32 hitName1, quint32 hitName2)
 {
     LineValElem &elem = m_pDrawAry->at(i);
+    elem.hitName1 = hitName1;
+    elem.hitName2 = hitName2;
 
     elem.ox1 = 0.0f;
     elem.oy1 = 0.0f;
@@ -121,15 +129,19 @@ void LineValIdxGpuPrim::setValLine(int i, int idx1, int idx2, float t1, float t2
 }
 
 void LineValIdxGpuPrim::setLine(int i, int idx1, int idx2, float t1, float t2,
-                                quint32 dc1, quint32 dc2)
+                                quint32 dc1, quint32 dc2, quint32 hitName1,
+                                quint32 hitName2)
 {
-    setValLine(i, idx1, idx2, t1, t2, 0.0f, -1, dc1, dc2);
+    setValLine(i, idx1, idx2, t1, t2, 0.0f, -1, dc1, dc2, hitName1, hitName2);
 }
 
 void LineValIdxGpuPrim::setAster(int i, int idx, const qlib::Vector4D &off1,
-                                 const qlib::Vector4D &off2, quint32 dc)
+                                 const qlib::Vector4D &off2, quint32 dc,
+                                 quint32 hitName)
 {
     LineValElem &elem = m_pDrawAry->at(i);
+    elem.hitName1 = hitName;
+    elem.hitName2 = hitName;
 
     elem.ox1 = (qfloat32)off1.x();
     elem.oy1 = (qfloat32)off1.y();
@@ -168,6 +180,11 @@ void LineValIdxGpuPrim::draw(DisplayContext *pDC)
 
     setupAttrs();
 
+    if (pDC->isPickDraw()) {
+        drawPick(pDC);
+        return;
+    }
+
     qlib::Vector4D vp = pDC->getViewport();
     float w = (float)vp.z();
     float h = (float)vp.w();
@@ -195,6 +212,50 @@ void LineValIdxGpuPrim::draw(DisplayContext *pDC)
 
     m_pCoordTex->unbind();
     m_pPO->disable();
+}
+
+bool LineValIdxGpuPrim::initPick(DisplayContext *pDC)
+{
+    if (m_pPickPO != nullptr) return true;
+
+    m_pPickPO = pDC->loadShaderObject("gpu_lineval_idx_pick",
+                                      "%%CONFDIR%%/data/shaders/linevalidx_pick_vert.glsl",
+                                      "%%CONFDIR%%/data/shaders/linew_pick_frag.glsl");
+    if (m_pPickPO == nullptr) {
+        LOG_DPRINTLN("LineValIdxGpuPrim> ERROR: cannot load pick shader.");
+        return false;
+    }
+    m_pPickPO->initDrawParamsUBO(sizeof(PickDrawParams));
+    return true;
+}
+
+void LineValIdxGpuPrim::drawPick(DisplayContext *pDC)
+{
+    if (!initPick(pDC)) return;
+
+    qlib::Vector4D vp = pDC->getViewport();
+    float linew = (m_linew < 0.0f) ? 1.0f : m_linew;
+    linew = std::max(linew * float(pDC->getPickScale()), 1.5f);
+
+    PickDrawParams ubo = {};
+    ubo.base.lineWidth     = linew;
+    ubo.base.u_nodepth     = m_bNoDepth ? 1 : 0;
+    ubo.base.screenSize[0] = (float)vp.z();
+    ubo.base.screenSize[1] = (float)vp.w();
+    ubo.u_rend_idx         = pDC->getHitRendIndex();
+    ubo.u_outer_name       = encodeHitName(pDC->getOuterName());
+
+    m_pPickPO->enable();
+    m_pPickPO->setupMat(pDC);
+    m_pPickPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
+
+    m_pCoordTex->bind(m_nCoordTexUnit);
+    m_pPickPO->setUniform("u_coordTex", m_nCoordTexUnit);
+
+    pDC->drawElem(*m_pDrawAry);
+
+    m_pCoordTex->unbind();
+    m_pPickPO->disable();
 }
 
 void LineValIdxGpuPrim::invalidate()

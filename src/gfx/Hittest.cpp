@@ -112,6 +112,22 @@ void HitData::createAll(HittestContext *phc)
   m_nNrRendID = rend_id;
 }
 
+void HitData::addHit(qlib::uid_t rend_id, const std::vector<int> &names)
+{
+  gfx::HitData::HitEntry *pEnt = getOrCreateEntry(rend_id);
+
+  // make index
+  unsigned int ind = pEnt->data.size();
+  pEnt->index.push_back(ind);
+
+  // copy to data array
+  for (int j : names) {
+    pEnt->data.push_back(j);
+  }
+
+  m_nNrRendID = rend_id;
+}
+
 int HitData::getRendArray(qlib::uid_t *pBuf, int nBufSize) const
 {
   data_t::const_iterator biter = m_data.begin();

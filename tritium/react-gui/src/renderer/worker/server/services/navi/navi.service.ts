@@ -10,7 +10,7 @@
 import { bondEditListBonds, bondEditPick, bondEditRemoveBond, bondEditReset } from './bondEdit';
 import { measureListTargets, measurePick, measureReset } from './measure';
 import { naviCenterAt, naviCenterAtSymm, naviCtxAddSelect, naviCtxAround, naviCtxInvertSel, naviCtxSelect, naviCtxToggleSidechain, naviCtxUnselect } from './naviCtxtMenu';
-import { naviClickAtom, naviHitTest, naviResidSel } from './naviTool';
+import { naviClickAtom, naviHitTest, naviHover, naviResidSel } from './naviTool';
 
 export const services = {
     bondEditPick,
@@ -29,6 +29,7 @@ export const services = {
     naviCtxToggleSidechain,
     naviCtxAround,
     naviHitTest,
+    naviHover,
     naviClickAtom,
     naviResidSel,
 };

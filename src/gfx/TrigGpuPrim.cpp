@@ -19,6 +19,7 @@ using namespace gfx;
 TrigGpuPrim::TrigGpuPrim()
     : m_pPO(nullptr),
       m_pEdgePO(nullptr),
+      m_pPickPO(nullptr),
       m_pDrawElems(nullptr),
       m_nEdgeLineType(DisplayContext::ELT_NONE),
       m_nPolygonMode(DisplayContext::POLY_FILL),
@@ -85,13 +86,18 @@ void TrigGpuPrim::setupAttrs()
 
     if (data.getAttrSize() > 0) return;  // already set up
 
-    data.setAttrSize(3);
+    data.setAttrSize(4);
     data.setAttrInfo(0, ATTRLOC_VERTEX, 3, qlib::type_consts::QTC_FLOAT32,
                      offsetof(TrigVertAttr, x));
     data.setAttrInfo(1, ATTRLOC_NORM, 3, qlib::type_consts::QTC_FLOAT32,
                      offsetof(TrigVertAttr, nx));
     data.setAttrInfo(2, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8,
                      offsetof(TrigVertAttr, r));
+    // Hit name: integer attribute, consumed by the pick program only (the
+    // shading/edge programs do not declare location 3).
+    data.setAttrInfo(3, ATTRLOC_HITNAME, 1, qlib::type_consts::QTC_UINT32,
+                     offsetof(TrigVertAttr, hitName));
+    data.setAttrInteger(3, true);
 }
 
 void TrigGpuPrim::setVertex(int idx, const qlib::Vector4D &v)
@@ -119,6 +125,12 @@ void TrigGpuPrim::setColor(int idx, quint32 devcode)
     data.at(idx).a = getACode(devcode);
 }
 
+void TrigGpuPrim::setHitName(int idx, quint32 name)
+{
+    auto &data = *m_pDrawElems;
+    data.at(idx).hitName = name;
+}
+
 void TrigGpuPrim::setFace(int idx, int v1, int v2, int v3)
 {
     auto &data = *m_pDrawElems;
@@ -142,6 +154,11 @@ void TrigGpuPrim::draw(DisplayContext *pDC)
     if (m_pDrawElems == nullptr || m_pPO == nullptr) return;
 
     setupAttrs();
+
+    if (pDC->isPickDraw()) {
+        drawPick(pDC);
+        return;
+    }
 
     // Edge/silhouette pass is meaningful only for filled triangles; skip it
     // when the mesh is drawn as wireframe lines.
@@ -194,6 +211,40 @@ void TrigGpuPrim::drawEdges(DisplayContext *pDC)
         pDC->setFrontFace(true);   // GL_CCW (restore)
         pDC->setCullFace(false);
     }
+}
+
+bool TrigGpuPrim::initPick(DisplayContext *pDC)
+{
+    if (m_pPickPO != nullptr) return true;
+
+    m_pPickPO = pDC->loadShaderObject("gpu_trig_pick",
+                                      "%%CONFDIR%%/data/shaders/trig_pick_vert.glsl",
+                                      "%%CONFDIR%%/data/shaders/trig_pick_frag.glsl");
+    if (m_pPickPO == nullptr) {
+        LOG_DPRINTLN("TrigGpuPrim> ERROR: cannot load pick shader.");
+        return false;
+    }
+    m_pPickPO->initDrawParamsUBO(sizeof(PickDrawParams));
+    return true;
+}
+
+void TrigGpuPrim::drawPick(DisplayContext *pDC)
+{
+    // Never draw the vec4-output shading program into the integer pick
+    // target (type mismatch is an invalid draw); skip when unavailable.
+    if (!initPick(pDC)) return;
+
+    PickDrawParams ubo = {};
+    ubo.u_nodepth    = m_bNoDepth ? 1 : 0;
+    ubo.u_rend_idx   = pDC->getHitRendIndex();
+    ubo.u_outer_name = encodeHitName(pDC->getOuterName());
+
+    m_pPickPO->enable();
+    m_pPickPO->setupMat(pDC);
+    m_pPickPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
+
+    pDC->drawElem(*m_pDrawElems);
+    m_pPickPO->disable();
 }
 
 void TrigGpuPrim::invalidate()

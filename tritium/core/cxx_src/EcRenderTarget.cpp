@@ -253,4 +253,34 @@ void EcRenderTarget::readColor(int idx, int x, int y, int w, int h, int ncomp,
     }
 }
 
+bool EcRenderTarget::readColorUInt(int idx, int x, int y, int w, int h, quint32 *pbuf)
+{
+    if ((m_nFlags & gfx::RT_COLOR_RGBA32UI) == 0 || idx != 0) return false;
+
+    auto pView = getView();
+    if (pView == nullptr) return false;
+    auto peer = pView->getPeerObj();
+    auto env = peer.Env();
+
+    Napi::Value rval;
+    try {
+        rval = peer.Get("readPixelsUInt")
+                   .As<Napi::Function>()
+                   .Call(peer, {Napi::String::New(env, m_fboName.c_str()),
+                                Napi::Number::New(env, x), Napi::Number::New(env, y),
+                                Napi::Number::New(env, w), Napi::Number::New(env, h)});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("readPixelsUInt failed: %s", e.Message().c_str());
+        return false;
+    }
+
+    if (!rval.IsTypedArray()) return false;
+    Napi::Uint32Array arr = rval.As<Napi::Uint32Array>();
+    const size_t npix = static_cast<size_t>(w) * static_cast<size_t>(h);
+    if (arr.ByteLength() < npix * 16) return false;
+
+    memcpy(pbuf, arr.Data(), npix * 16);
+    return true;
+}
+
 }  // namespace node_jsbr

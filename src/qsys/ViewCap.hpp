@@ -28,6 +28,12 @@ namespace qsys {
     /// geoetry shader
     virtual bool hasGeomShader() const { return false; }
 
+    /// GPU ID-buffer picking: unsigned-integer color render targets
+    /// (gfx::RT_COLOR_RGBA32UI) with readColorUInt(), integer vertex
+    /// attributes and the *_pick_* shader programs. When false the View
+    /// uses the CPU point hit test (uxp_gui / desktop OpenGL).
+    virtual bool hasGpuPick() const { return false; }
+
   };
 }
 

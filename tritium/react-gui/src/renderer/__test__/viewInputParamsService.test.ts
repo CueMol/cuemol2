@@ -12,7 +12,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { services } from '@renderer/worker/server/services/view/view.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
-const { getViewInputParams, setViewInputParams } = services
+const { getViewInputParams, setViewInputParams, setGpuPickEnabled } = services
 
 function makeCtx(
     initial: { tbrad: number; hitprec: number } = { tbrad: 0.8, hitprec: 10.0 },
@@ -22,11 +22,15 @@ function makeCtx(
     const setHitprec = vi.fn()
     let tbrad = initial.tbrad
     let hitprec = initial.hitprec
+    const setGpuPick = vi.fn()
+    let gpuPick = true
     const vic = {
         get tbrad() { return tbrad },
         set tbrad(v: number) { tbrad = v; setTbrad(v) },
         get hitprec() { return hitprec },
         set hitprec(v: number) { hitprec = v; setHitprec(v) },
+        get gpu_pick() { return gpuPick },
+        set gpu_pick(v: boolean) { gpuPick = v; setGpuPick(v) },
     }
     const getService = vi.fn((name: string) =>
         opts.vicMissing ? null : name === 'ViewInputConfig' ? vic : null,
@@ -36,8 +40,26 @@ function makeCtx(
         svc: { getService },
         styleMgr: { setStyleValue },
     } as unknown as WorkerContext
-    return { ctx, vic, setTbrad, setHitprec, setStyleValue, getService }
+    return { ctx, vic, setTbrad, setHitprec, setGpuPick, setStyleValue, getService }
 }
+
+describe('setGpuPickEnabled', () => {
+    // The GPU pick switch is a live-only write (persisted by the renderer in
+    // electron-store, not in the user style file): the singleton flips, the
+    // style set is untouched, and a missing singleton reports ok:false.
+    it('flips ViewInputConfig.gpu_pick without touching the style set', () => {
+        const { ctx, vic, setGpuPick, setStyleValue } = makeCtx()
+        expect(setGpuPickEnabled(ctx, { enabled: false })).toEqual({ ok: true })
+        expect(vic.gpu_pick).toBe(false)
+        expect(setGpuPick).toHaveBeenCalledWith(false)
+        expect(setStyleValue).not.toHaveBeenCalled()
+        expect(setGpuPickEnabled(ctx, { enabled: true })).toEqual({ ok: true })
+        expect(vic.gpu_pick).toBe(true)
+
+        const missing = makeCtx(undefined, { vicMissing: true })
+        expect(setGpuPickEnabled(missing.ctx, { enabled: false })).toEqual({ ok: false })
+    })
+})
 
 describe('viewInputParams service', () => {
     describe('getViewInputParams', () => {

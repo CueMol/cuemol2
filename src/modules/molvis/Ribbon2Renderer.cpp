@@ -689,6 +689,29 @@ gfx::ColorPtr Ribbon2Renderer::calcColor(double at, SecSplDat *pCyl)
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext);
 }
 
+int Ribbon2Renderer::calcHitName(double at, SecSplDat *pCyl) const
+{
+  double t = at;
+  const double tend = pCyl->m_spl.getPoints()-1.0;
+
+  if (pCyl->m_bStartExtend && at<1.0)
+    t = 1.0;
+  else if (pCyl->m_bEndExtend && at>tend-1.0)
+    t = tend-1.0;
+
+  int nprev = int(::floor(t));
+  int nnext = int(::ceil(t));
+  double rho = t - double(nprev);
+
+  nprev += pCyl->m_nResDelta;
+  nnext += pCyl->m_nResDelta;
+
+  MolResiduePtr pPrev = getResByIndex(nprev);
+  MolResiduePtr pNext = getResByIndex(nnext);
+
+  return super_t::calcHitName(rho, pPrev, pNext);
+}
+
 void Ribbon2Renderer::renderHelix(DisplayContext *pdl)
 {
   // std::deque<Vector4D> vtmp;
@@ -731,6 +754,7 @@ void Ribbon2Renderer::renderHelix(DisplayContext *pdl)
     for (int j=0; j<=ndelta; ++j) {
       double t = tstart + double(j)*fdelta; ///double(naxdet);
       pCol = calcColor(t, pC);
+    pdl->loadName(calcHitName(t, pC));
       pC->m_spl.interpolate(t, &f1, &vpt);
       if (m_nHelixWidthMode==HWIDTH_WAVY && pC->m_bWsplValid) {
         pC->m_wspl.interpolate(t, &width, &dwidth);
@@ -922,6 +946,7 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
   for (int j=0; j<=ndelta; ++j) {
     const double t = tstart + double(j)*fdelta; // /double(naxdet);
     pCol = calcColor(t, pC);
+    pdl->loadName(calcHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     vpt = vpt.normalize();
     
@@ -969,6 +994,7 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
     const double t = tstart + dpar;
 
     pCol = calcColor(t, pC);
+    pdl->loadName(calcHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     const Vector4D ev = vpt.normalize();
     
@@ -1058,6 +1084,15 @@ gfx::ColorPtr Ribbon2Renderer::calcCoilColor(double at, SecSplDat *pCyl)
   MolResiduePtr pNext;
   getCoilResids(at, pCyl, pPrev, pNext, rho);
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext);
+}
+
+int Ribbon2Renderer::calcCoilHitName(double at, SecSplDat *pCyl)
+{
+  double rho;
+  MolResiduePtr pPrev;
+  MolResiduePtr pNext;
+  getCoilResids(at, pCyl, pPrev, pNext, rho);
+  return super_t::calcHitName(rho, pPrev, pNext);
 }
 
 void Ribbon2Renderer::clearCoilData()
@@ -1244,6 +1279,7 @@ void Ribbon2Renderer::renderCoil(DisplayContext *pdl, detail::SecSplDat *pC)
     double t = tstart + double(j) * fdelta; // /double(naxdet);
     //double col_t = t;
     pCol = calcCoilColor(t, pC);
+    pdl->loadName(calcCoilHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     //vpt = vpt.normalize();
     
@@ -1461,6 +1497,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         MB_DPRINTLN("%s j=%d, t=%f", tp.c_str(), j, t);
 
         pCol = calcCoilColor(t, pC);
+    pdl->loadName(calcCoilHitName(t, pC));
         pC->m_spl.interpolate(t, &f1, &vpt);
         vpt = vpt.normalize();
         
@@ -1528,6 +1565,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         MB_DPRINTLN("%s i=%d, t=%f", tp.c_str(), i, t);
         
         pCol = calcCoilColor(t, pC);
+    pdl->loadName(calcCoilHitName(t, pC));
         pC->m_spl.interpolate(t, &f1, &vpt);
         const Vector4D ev = vpt.normalize();
         

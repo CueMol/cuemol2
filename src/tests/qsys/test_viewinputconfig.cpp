@@ -26,6 +26,19 @@ TEST(ViewInputConfigTest, SetGetHitPrec)
     EXPECT_DOUBLE_EQ(pVIC->getHitPrec(), 0.05);
 }
 
+// gpu_pick is the user switch for the GPU ID-buffer pick pass: on by default
+// (renderer-accurate picking wherever the backend supports it), and a plain
+// flag so the Settings toggle takes effect on the next hit test.
+TEST(ViewInputConfigTest, GpuPickDefaultsOnAndToggles)
+{
+    ViewInputConfig *pVIC = ViewInputConfig::getInstance();
+    EXPECT_TRUE(pVIC->isGpuPick());
+    pVIC->setGpuPick(false);
+    EXPECT_FALSE(pVIC->isGpuPick());
+    pVIC->setGpuPick(true);
+    EXPECT_TRUE(pVIC->isGpuPick());
+}
+
 TEST(ViewInputConfigTest, SetBindingAndGetBinding)
 {
     ViewInputConfig *pVIC = ViewInputConfig::getInstance();

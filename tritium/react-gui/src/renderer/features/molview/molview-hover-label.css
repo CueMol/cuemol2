@@ -1,0 +1,47 @@
+/* 3D view hover label: a chip in the bottom-left corner of the content pane
+   naming what is under the pointer. Same elevated surface as the tool
+   palette; click-through so it never takes the hover it describes. */
+.molview-hover-label {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  /* Above the select overlay (5), below the tool palette (10). */
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 60%;
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  color: var(--text-primary);
+  pointer-events: none;
+  user-select: none;
+}
+
+.molview-hover-primary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chain badge: a small pill in front of the residue. */
+.molview-hover-chain {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--overlay-hover);
+  color: var(--text-primary);
+}
+
+.molview-hover-secondary {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

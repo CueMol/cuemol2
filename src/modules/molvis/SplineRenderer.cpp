@@ -159,6 +159,7 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
 
   pdl->setLighting(false);
   ColorPtr pPrevCol;
+  int prevName = -1;
 
   pdl->startLineStrip();
   // pdl->startLines();
@@ -167,6 +168,7 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     double par = fstart + double(i)/double(m_nAxialDetail);
 
     ColorPtr pCol = calcColor(par, pCoeff);
+    const int hitName = calcHitName(par, pCoeff);
 
     Vector4D f1, vpt;
     Vector4D bnorm, vnorm;
@@ -191,9 +193,11 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     Vector4D e11 = e12.cross(e10);
 
     if (!isSmoothColor() && i!=0) {
+      pdl->loadName(prevName);
       pdl->color(pPrevCol);
       pdl->vertex(f1);
     }
+    pdl->loadName(hitName);
     pdl->color(pCol);
     pdl->vertex(f1);
     /*if (i%m_nAxialDetail==0) {
@@ -215,6 +219,7 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     }
   */
     pPrevCol = pCol;
+    prevName = hitName;
   }
   pdl->end();
   
@@ -312,6 +317,18 @@ void SplineRenderer::getSegEndImpl(int nprev, MolResiduePtr pPrev,
     
     // LOG_DPRINTLN("CalcCol prev,next,nn=%d(%d):%d(%d):%d(%d)", nprev, bSel1, nnext, bSel2, nnext_next, bSel3);
   }
+}
+
+int SplineRenderer::calcHitName(double par, SplineCoeff *pCoeff) const
+{
+  int nprev = int(::floor(par));
+  int nnext = int(::ceil(par));
+  double rho = par - double(nprev);
+
+  MolResiduePtr pNext(pCoeff->getResidue(nnext));
+  MolResiduePtr pPrev(pCoeff->getResidue(nprev));
+
+  return super_t::calcHitName(rho, pPrev, pNext);
 }
 
 ColorPtr SplineRenderer::calcColor(double par, SplineCoeff *pCoeff)

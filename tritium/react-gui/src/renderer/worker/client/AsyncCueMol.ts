@@ -12,7 +12,7 @@
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import type { NewSceneInitialProps } from '@renderer/worker/shared/newSceneTypes';
-import {
+import { type InvokeOptions,
     WorkerTransport,
     type StreamProgressListener,
     type RenderProgressListener,
@@ -112,8 +112,12 @@ export class AsyncCueMol {
     }
 
     /** Call a worker service (`ServiceMap` entry). */
-    invokeService<K extends ServiceKey>(name: K, args: ServiceArgs<K>): Promise<ServiceResult<K>> {
-        return this._transport.invokeService(name, args);
+    invokeService<K extends ServiceKey>(
+        name: K,
+        args: ServiceArgs<K>,
+        opts?: InvokeOptions,
+    ): Promise<ServiceResult<K>> {
+        return this._transport.invokeService(name, args, opts);
     }
 
     /** Call a worker variadic method (`MethodMap` entry). */

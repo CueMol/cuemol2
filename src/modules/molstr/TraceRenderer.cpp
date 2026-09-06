@@ -201,7 +201,8 @@ void TraceRenderer::renderCoordTexImpl(DisplayContext *pdc)
     auto it2 = m_aid2idx.find(b.second);
     if (it1 == m_aid2idx.end() || it2 == m_aid2idx.end()) continue;
     m_lineIdxGpuPrim.setData(iline++, it1->second, zero, m_aidColor[b.first],
-                             it2->second, zero, m_aidColor[b.second]);
+                             it2->second, zero, m_aidColor[b.second],
+                             gfx::encodeHitName(b.first), gfx::encodeHitName(b.second));
   }
 
   // Isolated residues: 3-axis aster (same index, +-axis offset, model space).
@@ -214,9 +215,10 @@ void TraceRenderer::renderCoordTexImpl(DisplayContext *pdc)
     if (it == m_aid2idx.end()) continue;
     const int idx = it->second;
     const quint32 cc = m_aidColor[aid];
-    m_lineIdxGpuPrim.setData(iline++, idx, nxdel, cc, idx, xdel, cc);
-    m_lineIdxGpuPrim.setData(iline++, idx, nydel, cc, idx, ydel, cc);
-    m_lineIdxGpuPrim.setData(iline++, idx, nzdel, cc, idx, zdel, cc);
+    const quint32 nm = gfx::encodeHitName(aid);
+    m_lineIdxGpuPrim.setData(iline++, idx, nxdel, cc, idx, xdel, cc, nm, nm);
+    m_lineIdxGpuPrim.setData(iline++, idx, nydel, cc, idx, ydel, cc, nm, nm);
+    m_lineIdxGpuPrim.setData(iline++, idx, nzdel, cc, idx, zdel, cc, nm, nm);
   }
 
   m_pCoordTex->update(&m_coordbuf[0]);
@@ -348,6 +350,7 @@ void TraceRenderer::rendResid(DisplayContext *pdl, MolResiduePtr pRes)
 
   if (!m_bUseVBO) {
     Vector4D curpt = pAtom1->getPos();
+    pdl->loadName(pAtom1->getID());
     pdl->color(ColSchmHolder::getColor(pRes));
     pdl->vertex(curpt);
     return;

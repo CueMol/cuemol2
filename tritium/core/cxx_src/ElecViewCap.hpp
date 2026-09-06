@@ -30,6 +30,13 @@ public:
     {
         return true;
     }
+
+    /// GPU ID-buffer picking: WebGL2 guarantees RGBA32UI color-renderable
+    /// textures, integer readPixels and vertexAttribIPointer.
+    virtual bool hasGpuPick() const override
+    {
+        return true;
+    }
 };
 
 }  // namespace node_jsbr

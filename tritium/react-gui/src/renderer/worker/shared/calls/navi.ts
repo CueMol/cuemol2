@@ -38,12 +38,15 @@ import type {
   NaviClickAtomResult,
   NaviHitTestArgs,
   NaviHitTestResult,
+  NaviHoverArgs,
+  NaviHoverResult,
   NaviResidSelArgs,
   NaviResidSelResult,
 } from '@renderer/worker/server/services/navi/naviTool'
 
 export interface NaviCalls {
   naviHitTest:                { args: NaviHitTestArgs; result: NaviHitTestResult }
+  naviHover:                  { args: NaviHoverArgs; result: NaviHoverResult }
   naviClickAtom:              { args: NaviClickAtomArgs; result: NaviClickAtomResult }
   naviResidSel:               { args: NaviResidSelArgs; result: NaviResidSelResult }
   measurePick:                { args: MeasurePickArgs; result: MeasurePickResult }
@@ -65,6 +68,7 @@ export interface NaviCalls {
 
 export const NAVI_KEYS = [
   'naviHitTest',
+  'naviHover',
   'naviClickAtom',
   'naviResidSel',
   'measurePick',

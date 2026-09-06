@@ -9,6 +9,8 @@
 
 #include "gfx.hpp"
 
+#include <vector>
+
 namespace gfx {
 
   ///
@@ -66,6 +68,11 @@ namespace gfx {
     
     void createNearest(HittestContext *phc);
     void createAll(HittestContext *phc);
+
+    /// Append one hit (its name list, outermost first) for rend_id and make
+    /// rend_id the nearest renderer. Used by the GPU ID-buffer pick path;
+    /// the resulting entry has the same layout as createNearest() builds.
+    void addHit(qlib::uid_t rend_id, const std::vector<int> &names);
 
     //////////////////////////////////
     

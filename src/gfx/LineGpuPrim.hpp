@@ -31,6 +31,8 @@ public:
         qfloat32 x2, y2, z2;       ///< End point position
         qbyte r1, g1, b1, a1;      ///< Start point RGBA colour
         qbyte r2, g2, b2, a2;      ///< End point RGBA colour
+        quint32 hitName1;          ///< Encoded hit name of the start point (pick pass)
+        quint32 hitName2;          ///< Encoded hit name of the end point (pick pass)
     };
 
     /**
@@ -47,6 +49,20 @@ public:
         qint32   use_u_color;       // offset 24 — 1 = use u_color, 0 = use per-vertex colour
         qfloat32 _pad;              // offset 28 — padding
         qfloat32 u_color[4];        // offset 32 — uniform RGBA colour (when use_u_color=1)
+    };
+
+    /**
+     * std140 DrawParamsBlock for the pick program (binding=2, 64 bytes):
+     * DrawParams followed by the pick tail. Must match linew2_pick_vert.glsl /
+     * linew_pick_frag.glsl.
+     */
+    struct PickDrawParams
+    {
+        DrawParams base;            // offset 0..47
+        quint32  u_rend_idx;        // offset 48 -- R channel (1-based renderer index)
+        quint32  u_outer_name;      // offset 52 -- B channel (encoded outer name)
+        quint32  _pp0;              // offset 56
+        quint32  _pp1;              // offset 60
     };
 
     using LineArray = gfx::DrawAttrElems<quint32, LineElem>;
@@ -74,6 +90,14 @@ public:
      */
     void setLine(int idx, const qlib::Vector4D &v1, quint32 devcode1,
                  const qlib::Vector4D &v2, quint32 devcode2);
+
+    /**
+     * Set line segment data with per-endpoint encoded hit names
+     * (gfx::encodeHitName; 0 = not pickable).
+     */
+    void setLine(int idx, const qlib::Vector4D &v1, quint32 devcode1,
+                 const qlib::Vector4D &v2, quint32 devcode2,
+                 quint32 hitName1, quint32 hitName2);
 
     // ─── Properties ───────────────────────────────────────────────────────────
 
@@ -137,8 +161,12 @@ private:
     static constexpr int ATTRLOC_VERTEX2 = 1;
     static constexpr int ATTRLOC_COLOR1  = 2;
     static constexpr int ATTRLOC_COLOR2  = 3;
+    // Integer attributes read by linew2_pick_vert.glsl only
+    static constexpr int ATTRLOC_HITNAME1 = 4;
+    static constexpr int ATTRLOC_HITNAME2 = 5;
 
     gfx::ShaderObject *m_pPO;
+    gfx::ShaderObject *m_pPickPO;   ///< ID-buffer pick program (lazy)
     LineArray *m_pDrawAry;
 
     float m_linew;          ///< Line width in pixels
@@ -147,6 +175,11 @@ private:
     bool m_bUseVertColor;   ///< Use per-vertex colour (true) or uniform colour (false)
 
     void setupAttrs();
+
+    /** Load the pick program (once). Returns false if unavailable. */
+    bool initPick(DisplayContext *pDC);
+    /** Draw the lines into the integer pick target (DisplayContext::isPickDraw). */
+    void drawPick(DisplayContext *pDC);
 };
 
 }  // namespace gfx

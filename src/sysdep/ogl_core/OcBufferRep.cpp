@@ -153,8 +153,15 @@ void OcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada)
         int az = ada.getAttrElemSize(i);
         int at = ada.getAttrTypeID(i);
         int ap = ada.getAttrPos(i);
-        glVertexAttribPointer(al, az, convGLConsts(at), convGLNorm(at),
-                              ada.getElemSize(), (void *)ap);
+        if (ada.isAttrInteger(i)) {
+            // Integer attribute (e.g. hit names): no normalization, read as
+            // int/uint in the shader.
+            glVertexAttribIPointer(al, az, convGLConsts(at), ada.getElemSize(),
+                                   (void *)ap);
+        } else {
+            glVertexAttribPointer(al, az, convGLConsts(at), convGLNorm(at),
+                                  ada.getElemSize(), (void *)ap);
+        }
         glVertexAttribDivisor(al, ada.getAttrDivisor(i));
         glEnableVertexAttribArray(al);
         CHK_GLERROR("glEnableVertexAttribArray(al)");

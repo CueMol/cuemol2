@@ -22,6 +22,7 @@ SphereSet.cpp
 CmsXform.cpp
 ColProfMgr.cpp
 Hittest.cpp
+PickBuffer.cpp
 SphereGpuPrim.cpp
 SphereIdxGpuPrim.cpp
 CylinderGpuPrim.cpp
@@ -67,6 +68,7 @@ PixGpuPrim.hpp
 PostProcGpuPrim.hpp
 Hittest.hpp
 HittestContext.hpp
+PickBuffer.hpp
 LabelCacheImpl.hpp
 Material.hpp
 Mesh.hpp

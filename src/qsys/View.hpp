@@ -658,6 +658,7 @@ namespace qsys {
     static bool hasGS();
     static bool hasFBO();
     static bool hasVBO();
+    static bool hasGpuPick();
 
   };
 

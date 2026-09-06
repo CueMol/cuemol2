@@ -26,10 +26,19 @@ public:
 
     _TColor c;
 
-    MeshVert() {}
+    /// Encoded hit name (gfx::encodeHitName; 0 = no name).
+    qlib::quint32 name;
+
+    MeshVert() : name(0) {}
 
     MeshVert(const _TVector &av, const _TVector &an, const _TColor &ac)
-        : v(av), n(an), c(ac)
+        : v(av), n(an), c(ac), name(0)
+    {
+    }
+
+    MeshVert(const _TVector &av, const _TVector &an, const _TColor &ac,
+             qlib::quint32 aname)
+        : v(av), n(an), c(ac), name(aname)
     {
     }
 
@@ -120,6 +129,22 @@ public:
         return rval;
     }
 
+    /// Add a vertex carrying an encoded hit name (see gfx::encodeHitName).
+    int addVertex(const vector_t &v, const vector_t &n, const color_t &c,
+                  qlib::quint32 name)
+    {
+        int rval = m_verts.size();
+        m_verts.push_back(MB_NEW vertex_t(v, n, c, name));
+        return rval;
+    }
+
+    /// Assign the encoded hit name to every vertex added since ivstart.
+    void setNameFrom(int ivstart, qlib::quint32 name)
+    {
+        const int nv = int(m_verts.size());
+        for (int i = ivstart; i < nv; ++i) m_verts[i]->name = name;
+    }
+
     int addVertex(const vector_t &v, const vector_t &n, const color_t &c,
                   const xform_t &xfm)
     {
@@ -143,7 +168,7 @@ public:
 
     int copyVertex(vertex_t *pOrig)
     {
-        return addVertex(pOrig->v, pOrig->n, pOrig->c);
+        return addVertex(pOrig->v, pOrig->n, pOrig->c, pOrig->name);
     }
 
     void addFace(int iv0, int iv1, int iv2, int nmode = 0)

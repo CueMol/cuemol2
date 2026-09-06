@@ -18,6 +18,7 @@ type GL = WebGL2RenderingContext;
 const convertType = (gl: GL, itype: string): number => {
     switch (itype) {
         case "1": return gl.UNSIGNED_BYTE;
+        case "3": return gl.UNSIGNED_INT;
         case "21": return gl.FLOAT;
         default:
             console.error(`unknown type ${itype}`);
@@ -29,6 +30,7 @@ const convertType = (gl: GL, itype: string): number => {
 const convGLNorm = (itype: string): boolean => {
     switch (itype) {
         case "1": return true;
+        case "3": return false;
         case "21": return false;
         default:
             console.error(`unknown type ${itype}`);
@@ -88,14 +90,20 @@ export class BufferStore {
             const bnorm = convGLNorm(atype);
             // console.log(`elem_info: nloc=${aloc}, atype=${atype}, gltype=${gltype}`);
             gl.enableVertexAttribArray(aloc);
-            gl.vertexAttribPointer(
-                aloc,
-                value['nelems'],
-                gltype,
-                bnorm,
-                stride,
-                value['npos']
-            );
+            if (value['integer'] === '1') {
+                // Integer attribute (hit names for the ID-buffer pick pass):
+                // no normalization, read as uint in the shader.
+                gl.vertexAttribIPointer(aloc, value['nelems'], gltype, stride, value['npos']);
+            } else {
+                gl.vertexAttribPointer(
+                    aloc,
+                    value['nelems'],
+                    gltype,
+                    bnorm,
+                    stride,
+                    value['npos']
+                );
+            }
             gl.vertexAttribDivisor(aloc, value['idiv']);
         });
 
