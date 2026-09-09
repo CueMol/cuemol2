@@ -81,8 +81,8 @@ runtime_class UmbreonRenderSettings
   /// legacy blendpng-equivalent blend, which sums the finished frames with
   /// global weights: where veils whose alphas sum above 1 overlap, the
   /// background coefficient goes negative and inverts what they cover (dark
-  /// edge lines read bright). Per-pixel also mixes in linear light rather than
-  /// in the display-encoded domain, so a lone veil differs slightly too.
+  /// edge lines read bright). Both blend in the same domain, so a pixel under a
+  /// single veil renders identically either way; only overlaps differ.
   property boolean perPixelBlend => m_perPixelBlend;
   default perPixelBlend = true;
 

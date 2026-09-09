@@ -117,9 +117,9 @@ force the sum under 1 would change the transparency the user asked for.
 
 umbreon therefore has a second mode (`RenderOptions::groupBlendMode`, exposed as
 the `perPixelBlend` render setting and the Rendering window's *Per-pixel
-transparency* switch). It composites at the stage where coverage still exists -- the supersampled, linear frame, before the box-downsample that
-turns per-sample coverage into partial pixels -- with weights built per sample
-from the veils covering it:
+transparency* switch). It composites at the stage where coverage still exists --
+the supersampled frame, before the box-downsample that turns per-sample coverage
+into partial pixels -- with weights built per sample from the veils covering it:
 
 ```
 T   = prod_{i in K} (1 - a_i)              the background's weight
@@ -130,11 +130,11 @@ Properties: non-negative and summing to 1 for any alphas and any `K`, so nothing
 inverts; `T > 0` always (an alpha-1 section is not a veil), so what lies behind a
 veil is never lost; and a sample covered by a SINGLE veil reproduces that veil's
 alpha exactly (`T = 1 - a`, `w = a`) -- the alphas are never approximated. The
-difference from the layer mode is confined to overlaps, where the background
-keeps its physical transmittance (0.6 and 0.5 leave 0.2) instead of going
-negative. Note the mode also mixes in **linear light**, so even a single veil is
-numerically a little different from the layer mode, which mixes the
-display-encoded finished frames as blendpng did.
+blend runs in the same display-encoded domain the layer mode uses, so a sample
+under one veil is **identical** to the layer blend: the difference is confined to
+samples under two or more veils, where the background keeps its physical
+transmittance (0.6 and 0.5 leave 0.2) instead of going negative. umbreon's `P2`
+renders a no-overlap scene in both modes and requires every pixel to match.
 
 Cost is unchanged (one pass per veil plus one), and only three extra hi-res
 buffers are needed -- the veils' weighted color, the alpha sum and the

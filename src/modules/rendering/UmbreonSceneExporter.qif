@@ -135,7 +135,8 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// (where veils whose alphas sum above 1 overlap, the background weight is
   /// negative and inverts what they cover); true = composite per pixel at the
   /// supersampled stage from the veils that cover each sample, which never
-  /// inverts and keeps a lone veil's alpha exact. Differs only over overlaps.
+  /// inverts and keeps a lone veil's alpha exact. A pixel under a single veil
+  /// renders identically either way; only overlaps differ.
   property boolean perPixelBlend => m_bPerPixelBlend;
 
   //////////
