@@ -1102,6 +1102,14 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   opt.shadowSamples = (prm.shadowSamples > 0) ? prm.shadowSamples : 1;
   opt.lightRadius = float(prm.lightRadius);
   opt.transparentBackground = prm.transparentBackground;
+  // Group-alpha compositing: sections sharing an alpha are one veil either
+  // way (umbreon buckets them); this only chooses whether the veils are
+  // combined with global weights over the finished frames or per sample at
+  // the supersampled stage. Per-pixel is the one that cannot go negative
+  // where veils overlap (docs/architecture/umbreon-group-alpha-blend.md).
+  opt.groupBlendMode =
+      static_cast<int>(prm.perPixelBlend ? umbreon::GroupBlendMode::PerPixel
+                                         : umbreon::GroupBlendMode::LayerWeights);
 
   // Diffuse global illumination (pt2 path-traced integrator). Enabling GI sets
   // gi + giIntegrator=2. pt2 is a superset of pt1 built on the same gather core,

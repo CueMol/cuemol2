@@ -107,6 +107,53 @@ only which sections are translucent and at what alpha, and umbreon logs the
 veil/weight table (`group-alpha: 2 blend group(s) -> 1 veil(s), sum 0.600, bg
 weight 0.400`) plus a warning whenever the background weight is still negative.
 
+## Per-pixel compositing (the overlap case)
+
+Merging equal alphas removes the reported defect but not its cause: the weights
+are global while the coverage set is per pixel, so two **distinct** alphas that
+sum above 1 (0.6 + 0.5) still give an overlapped pixel a negative background
+coefficient. No choice of global weights fixes that, and rescaling the alphas to
+force the sum under 1 would change the transparency the user asked for.
+
+umbreon therefore has a second mode (`RenderOptions::groupBlendMode`, exposed as
+the `perPixelBlend` render setting and the Rendering window's *Per-pixel
+transparency* switch, default **off**). It composites at the stage where coverage
+still exists -- the supersampled, linear frame, before the box-downsample that
+turns per-sample coverage into partial pixels -- with weights built per sample
+from the veils covering it:
+
+```
+T   = prod_{i in K} (1 - a_i)              the background's weight
+w_i = a_i * (1 - T) / sum_{j in K} a_j
+```
+
+Properties: non-negative and summing to 1 for any alphas and any `K`, so nothing
+inverts; `T > 0` always (an alpha-1 section is not a veil), so what lies behind a
+veil is never lost; and a sample covered by a SINGLE veil reproduces that veil's
+alpha exactly (`T = 1 - a`, `w = a`) -- the alphas are never approximated. The
+difference from the layer mode is confined to overlaps, where the background
+keeps its physical transmittance (0.6 and 0.5 leave 0.2) instead of going
+negative. Note the mode also mixes in **linear light**, so even a single veil is
+numerically a little different from the layer mode, which mixes the
+display-encoded finished frames as blendpng did.
+
+Cost is unchanged (one pass per veil plus one), and only three extra hi-res
+buffers are needed -- the veils' weighted color, the alpha sum and the
+transmittance product -- so no pass's color has to be kept and nothing is
+rendered twice. Coverage comes from the pass depths: both passes trace the same
+opaque geometry, so a veil covers a sample exactly when that pass's frontmost hit
+is nearer than the background pass's.
+
+What it does not do: the weights are order-free, so within an overlap the veils
+do not attenuate each other by depth (a true front-to-back `over` would need a
+depth buffer per veil). Shadow / GI interaction between veils stays the
+per-pass approximation it always was.
+
+Pinned by `UmbreonExport.PerPixelBlendKeepsDarkFeatureUnderDistinctAlphas`
+(host, 0.6 + 0.5 over a dark feature) and umbreon's `P1` / `P2` / `P3` in
+`tests/test_render_transparency.cpp` (overlap weights, a lone veil's exact
+alpha, and edge groups staying independent of the veils).
+
 ## Consequences and limits
 
 - Scenes with several nearly-opaque renderers render correctly. libcuemol2
@@ -120,9 +167,9 @@ weight 0.400`) plus a warning whenever the background weight is still negative.
   more **distinct** alphas: 0.6 + 0.5 in one pixel yields
   `-0.1*B + 0.6*G1 + 0.5*G2`, which inverts `B` there exactly as the same-alpha
   case did. This is inherent to a model that weights whole frames; blendpng
-  behaves the same way. umbreon now warns when the background weight goes
-  negative, so the case is announced instead of silent. A real fix needs
-  per-pixel weights (the coverage set is per pixel, the weights are not).
+  behaves the same way. umbreon warns when the background weight goes negative,
+  so the case is announced instead of silent, and the per-pixel mode above is
+  the fix for it (opt-in).
 - One extra full render pass per **veil** is the cost of the model, so equal
   alphas are also cheaper: the log lines make both visible (host: which sections
   are translucent; umbreon: groups -> veils and the weights).

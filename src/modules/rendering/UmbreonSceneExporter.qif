@@ -130,6 +130,14 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// over a surface beyond this depth draws as in the edges mode.
   property real outlineFarDepth => m_dOutlineFarDepth;
 
+  /// group-alpha (section transparency) compositing: false = the legacy
+  /// blendpng-equivalent blend of the finished frames with global weights
+  /// (where veils whose alphas sum above 1 overlap, the background weight is
+  /// negative and inverts what they cover); true = composite per pixel at the
+  /// supersampled stage from the veils that cover each sample, which never
+  /// inverts and keeps a lone veil's alpha exact. Differs only over overlaps.
+  property boolean perPixelBlend => m_bPerPixelBlend;
+
   //////////
   // transparent background: emit an RGBA PNG with alpha = coverage (POV
   // "_transpbg") so it can be composited over another image

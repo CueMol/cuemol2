@@ -66,6 +66,7 @@ const UMBREON: Record<string, Value> = {
     creaseLimit: -1,
     contactEdges: false,
     outlineFarDepth: 0.2,
+    perPixelBlend: false,
     useGI: true,
     giSamples: 32,
     denoise: 'OIDN',

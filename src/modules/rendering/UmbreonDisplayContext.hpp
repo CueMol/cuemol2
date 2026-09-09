@@ -109,6 +109,13 @@ namespace render {
     /// fogged zone between the fog end and the far clip plane (dist + slab)
     /// lies beyond.
     double outlineFarDepth = 0.2;
+    /// Group-alpha (section transparency) compositing. False = umbreon's
+    /// legacy LayerWeights blend (global weights over the finished frames, the
+    /// blendpng closed form); true = its PerPixel mode, which composites at
+    /// the supersampled stage from the veils covering each sample, so an
+    /// overlap of veils whose alphas sum above 1 no longer inverts what they
+    /// cover. See docs/architecture/umbreon-group-alpha-blend.md.
+    bool perPixelBlend = false;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").

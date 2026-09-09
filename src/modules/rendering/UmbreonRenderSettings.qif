@@ -74,6 +74,17 @@ runtime_class UmbreonRenderSettings
   property real outlineFarDepth => m_outlineFarDepth;
   default outlineFarDepth = 0.2;
 
+  /// Group-alpha (section transparency) compositing. False = the legacy
+  /// blendpng-equivalent blend: the finished frames are summed with global
+  /// weights, and where veils whose alphas sum above 1 overlap, the background
+  /// coefficient is negative and inverts what they cover (dark edge lines read
+  /// bright). True = composite per pixel at the supersampled stage, weighting
+  /// each sample by the veils that actually cover it, so nothing inverts and a
+  /// single veil keeps its exact alpha. The two differ only where veils
+  /// overlap (and per-pixel mixes in linear light).
+  property boolean perPixelBlend => m_perPixelBlend;
+  default perPixelBlend = false;
+
   property boolean useGI => m_useGI;
   default useGI = true;
   /// GI gather samples per pixel. Any positive count; the GUI offers a
