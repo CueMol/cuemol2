@@ -1,4 +1,9 @@
-# umbreon の Electron renderer メモリ制約と process 分離設計
+# umbreon の Electron renderer メモリ制約と process 分離設計 (プラン)
+
+状態: **未実装 / 当面着手しない** (2026-09-08 時点)。§2 の crash 原因究明は確定した
+調査結果だが、その恒久対策として本書が提案する process 分離は着手していない。着手の
+条件は「配布サイズ」ではなく「§2 の crash が実害になったとき」。
+`docs/architecture/` から移設 (実装済みの仕様のみを architecture に置く方針のため)。
 
 tritium から umbreon backend で **GI (OIDN denoiser) を有効にして大きめ解像度を
 render すると crash する**問題の調査記録と、その恒久対策として検討している

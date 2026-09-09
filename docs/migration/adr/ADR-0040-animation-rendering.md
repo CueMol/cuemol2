@@ -120,7 +120,7 @@ for seconds per frame, with no progress and no cancellation.
 then `detach` + advance — with `writeFrame()` rewritten as their composition so
 the synchronous API (UXP, scripts) is unchanged. umbreon's backend runs the
 already-async still cycle (`beginRender()` -> poll -> `endRender()`,
-ADR-0039 / `docs/architecture/umbreon-process-isolation.md`) *between* the two
+ADR-0039 / `docs/plans/umbreon-process-isolation-plan.md`) *between* the two
 calls, one frame at a time. `endFrame()` runs from the poll handle's
 `finish()`, so the frame's state stays applied to the scene for exactly as long
 as the ray trace needs it.
@@ -168,7 +168,7 @@ because its progress advances continuously within a frame.
   must keep ticking after `renderCancel` so `finish()` can join the C++ render
   thread. The current frame therefore runs to its next cancellation boundary
   instead of dying at once (an external-process render is killed outright).
-- umbreon's memory ceiling in the Electron renderer (`umbreon-process-isolation.md`)
+- umbreon's memory ceiling in the Electron renderer (`../../plans/umbreon-process-isolation-plan.md`)
   now applies per movie frame as well: a GI + OIDN movie at a resolution that
   crashes a still will crash the same way on its first frame.
 

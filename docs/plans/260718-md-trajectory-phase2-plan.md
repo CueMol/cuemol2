@@ -216,7 +216,7 @@ MVP = 2a→2b→2c→2d。2e は性能が問題になった段階で。
 4. **AnimMol に GL 無し**: テクスチャ生成/更新には `DisplayContext` が要る。共有テクスチャ化(2e)は「最初に draw したレンダラが lazy 生成」で回避する。MVP はレンダラ所有のまま。
 5. **`TrajBlockReader` の結合**: `TrajBlock.hpp` 同居の reader 基底が `Trajectory`+`SceneManager` に依存。gtest 容易化のため容器と reader の分離を検討可(まず参照どおり同居)。
 6. **PsfReader の形**: develop の `PsfReader` は `ObjReader` でない素のヘルパ。薄い `PsfTrajReader` で包む(§9.4)。`readsel`(部分読み)は最初省略。
-7. **worker 内大確保**: `docs/architecture/umbreon-process-isolation.md` の PartitionAlloc OOM。トラジェクトリ全体を worker 内に置く場合は要検討(遅延ロードで緩和)。
+7. **worker 内大確保**: `docs/plans/umbreon-process-isolation-plan.md` の PartitionAlloc OOM。トラジェクトリ全体を worker 内に置く場合は要検討(遅延ロードで緩和)。
 8. **登録方式**: develop 慣習の `registReader<>()` を使う(参照の all-`registWriter` を踏襲しない)。
 
 ---

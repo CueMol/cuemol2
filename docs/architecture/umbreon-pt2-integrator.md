@@ -5,7 +5,7 @@ umbreon の indirect GI integrator を libcuemol2 側から明示的に pin す�
 防ぐのが目的。
 
 Related: [umbreon group-alpha blend](umbreon-group-alpha-blend.md),
-[umbreon の Electron メモリ制約と process 分離設計](umbreon-process-isolation.md)。
+[umbreon の Electron メモリ制約と process 分離設計](../plans/umbreon-process-isolation-plan.md)。
 
 ## Context
 
