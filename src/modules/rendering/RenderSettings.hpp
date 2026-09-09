@@ -68,6 +68,8 @@ namespace render {
     double m_edgeRise;
     bool m_contactEdges;
     double m_outlineFarDepth;
+    /// Group-alpha compositing: per-pixel instead of global layer weights.
+    bool m_perPixelBlend;
     bool m_useGI;
     int m_giSamples;
     LString m_denoise;

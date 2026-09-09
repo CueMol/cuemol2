@@ -28,6 +28,7 @@ vi.mock('@renderer/contexts/PickingPrefsContext', () => ({
 
 import { useHoverInfoHandler } from '@renderer/features/molview/useHoverInfoHandler'
 import type { HoverLabel } from '@renderer/features/molview/useHoverInfoHandler'
+import { withHoverHold } from '@renderer/features/molview/hoverHold'
 
 const LABEL_M: HoverLabel = { objName: '1CRN', rendName: 'cartoon1', rendType: 'cartoon', residueLevel: true, chain: 'A', resName: 'ALA', resIndex: '10' }
 
@@ -110,6 +111,65 @@ describe('useHoverInfoHandler', () => {
         expect(invokeService).toHaveBeenCalledTimes(3)
 
         expect(setter.mock.calls).toEqual([[LABEL_M], [null]])
+        unmount()
+    })
+
+    it('a right press and the context menu hold keep the hit; the release resyncs', async () => {
+        invokeService.mockImplementation((method: string) =>
+            Promise.resolve(method === 'naviHover' ? { hit: true, label: LABEL_M } : { ok: true }),
+        )
+        const setter = vi.fn()
+
+        const { container, unmount } = mountTree(<Probe setter={setter} />)
+        const canvas = container.querySelector('canvas') as HTMLCanvasElement
+        canvas.getBoundingClientRect = () =>
+            ({ left: 0, top: 0, width: 400, height: 300, right: 400, bottom: 300, x: 0, y: 0, toJSON() {} }) as DOMRect
+
+        let timerCb: (() => void) | null = null
+        vi.spyOn(globalThis, 'setTimeout').mockImplementation(((cb: () => void) => { timerCb = cb; return 0 }) as any)
+        vi.spyOn(Date, 'now').mockReturnValue(1000)
+
+        const move = (x: number, y: number) =>
+            act(async () => {
+                canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: x, clientY: y, buttons: 0, bubbles: true }))
+                await flushPromises()
+            })
+        const press = (button: number) =>
+            act(async () => {
+                canvas.dispatchEvent(new MouseEvent('mousedown', { button, buttons: button === 2 ? 2 : 1, bubbles: true }))
+                await flushPromises()
+            })
+
+        await move(10, 10)
+        expect(setter).toHaveBeenLastCalledWith(LABEL_M)
+        invokeService.mockClear()
+
+        // The right press is the context-menu gesture, not a drag: no clear.
+        await press(2)
+        expect(invokeService).not.toHaveBeenCalled()
+
+        // While the menu is up the pointer is recorded but neither sampled nor
+        // cleared, so the label and the view highlight stay as the menu found them.
+        let closeMenu: () => void = () => undefined
+        const held = withHoverHold(() => new Promise<void>((resolve) => { closeMenu = resolve }))
+        await move(12, 12)
+        expect(invokeService).not.toHaveBeenCalled()
+        expect(setter).toHaveBeenCalledTimes(1)
+
+        // Menu resolved (item picked or dismissed): resample where the pointer is.
+        await act(async () => { closeMenu(); await held; await flushPromises() })
+        expect(timerCb).not.toBeNull()
+        await act(async () => { timerCb!(); await flushPromises() })
+        expect(invokeService).toHaveBeenCalledTimes(1)
+        expect(invokeService).toHaveBeenLastCalledWith('naviHover', { viewId: 7, x: 12, y: 12, highlight: true }, { quiet: true })
+
+        // A left press still ends the hover (a navigation drag follows).
+        invokeService.mockClear()
+        await press(0)
+        expect(invokeService).toHaveBeenCalledTimes(1)
+        expect(invokeService).toHaveBeenLastCalledWith('naviHoverClear', { viewId: 7 }, { quiet: true })
+        expect(setter).toHaveBeenLastCalledWith(null)
+
         unmount()
     })
 

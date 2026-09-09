@@ -1132,9 +1132,12 @@ TEST(UmbreonExport, PostBlendsTranslucentSectionWithoutDoubleBlend)
 // sum(a) = 1.9; anything above ~0.24 linear then clips to pure white.
 TEST(UmbreonExport, OpaqueSectionSurvivesTwoTranslucentSections)
 {
-    // A bright opaque triangle, plus `nTrans` translucent sections placed well
-    // away from it (off to the sides), so they never cover the triangle.
-    auto renderWith = [](int nTrans, double transAlpha) {
+    // A bright opaque triangle, plus one translucent section per entry of
+    // `transAlphas`, placed well away from it (off to the sides), so they never
+    // cover the triangle. The alphas must DIFFER to sum above 1: umbreon counts
+    // sections sharing an alpha as one veil (see
+    // DarkFeatureStaysDarkUnderTwoSameAlphaSections).
+    auto renderWith = [](const std::vector<double> &transAlphas) {
         UmbreonDisplayContext ctx;
         ctx.init();
         ctx.setPerspective(false);
@@ -1157,9 +1160,9 @@ TEST(UmbreonExport, OpaqueSectionSurvivesTwoTranslucentSections)
         ctx.end();
         ctx.endSection();
 
-        for (int i = 0; i < nTrans; ++i) {
-            ctx.setAlpha(transAlpha);
-            ctx.startSection(LString::format("trans%d", i));
+        for (std::size_t i = 0; i < transAlphas.size(); ++i) {
+            ctx.setAlpha(transAlphas[i]);
+            ctx.startSection(LString::format("trans%d", int(i)));
             ctx.color(gfx::SolidColor::createRGB(0.2, 0.4, 1.0));
             ctx.sphere(0.4, Vector4D((i == 0) ? -2.5 : 2.5, 2.0, 0.0));
             ctx.endSection();
@@ -1169,6 +1172,10 @@ TEST(UmbreonExport, OpaqueSectionSurvivesTwoTranslucentSections)
         prm.width = 64;
         prm.height = 64;
         prm.supersample = 1;
+        // The property under test is the LayerWeights partition of unity, so
+        // pin that mode: per-pixel (the default) reproduces the uncovered
+        // triangle exactly and would not exercise the negative weight at all.
+        prm.perPixelBlend = false;
 
         int ow = 0, oh = 0, ncomp = 0;
         std::vector<unsigned char> pix;
@@ -1180,7 +1187,7 @@ TEST(UmbreonExport, OpaqueSectionSurvivesTwoTranslucentSections)
     // the triangle spans y = -1 .. 1 with its wide edge at the bottom).
     const std::size_t c = (static_cast<std::size_t>(38) * 64 + 32) * 3;
 
-    const std::vector<unsigned char> none = renderWith(0, 1.0);
+    const std::vector<unsigned char> none = renderWith({});
     ASSERT_EQ(none.size(), static_cast<std::size_t>(64 * 64 * 3));
     // Baseline: lit grey, not saturated.
     ASSERT_GT(none[c], 8);
@@ -1188,14 +1195,139 @@ TEST(UmbreonExport, OpaqueSectionSurvivesTwoTranslucentSections)
 
     // One translucent section: sum(a) = 0.95 <= 1, so the opaque triangle is
     // unaffected.
-    const std::vector<unsigned char> one = renderWith(1, 0.95);
+    const std::vector<unsigned char> one = renderWith({0.95});
     EXPECT_NEAR(one[c], none[c], 2);
 
-    // Two translucent sections: sum(a) = 1.9. The opaque triangle must still
-    // match the baseline -- it is in no blend group and nothing occludes it.
-    const std::vector<unsigned char> two = renderWith(2, 0.95);
+    // Two translucent sections at DIFFERENT alphas: sum(a) = 1.85. The opaque
+    // triangle must still match the baseline -- it is in no blend group and
+    // nothing occludes it.
+    const std::vector<unsigned char> two = renderWith({0.95, 0.9});
     EXPECT_NEAR(two[c], none[c], 2)
         << "opaque geometry was scaled by the group-alpha weight sum";
+}
+
+namespace {
+
+/// Render a dark feature on an OPAQUE section under two translucent sections,
+/// both covering it: a lit grey plane with a black patch over its left half,
+/// then two veils (alpha `a1` / `a2`) spanning the frame at different depths.
+/// `perPixelBlend` selects umbreon's group-blend mode. Fills `dark` / `lit`
+/// with the offsets of a pixel over the black patch and one over the grey.
+std::vector<unsigned char> renderVeiledDarkFeature(double a1, double a2,
+                                                   bool perPixelBlend,
+                                                   std::size_t &dark,
+                                                   std::size_t &lit)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.loadIdent();
+
+    ctx.startRender();
+
+    // A flat quad facing the camera, spanning x0..x1 over the full height.
+    auto quad = [&ctx](double x0, double x1, double z) {
+        ctx.startTriangles();
+        const Vector4D n(0.0, 0.0, 1.0);
+        const Vector4D v[6] = {
+            Vector4D(x0, -2.5, z), Vector4D(x1, -2.5, z), Vector4D(x1, 2.5, z),
+            Vector4D(x0, -2.5, z), Vector4D(x1, 2.5, z),  Vector4D(x0, 2.5, z),
+        };
+        for (int i = 0; i < 6; ++i) {
+            ctx.normal(n);
+            ctx.vertex(v[i]);
+        }
+        ctx.end();
+    };
+
+    // Opaque section: a lit grey plane with a black patch over its left half.
+    ctx.setAlpha(1.0);
+    ctx.startSection("opaque");
+    ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+    quad(-2.5, 2.5, 0.0);
+    ctx.color(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+    quad(-2.5, 0.0, 0.5);
+    ctx.endSection();
+
+    // Two translucent sections, both covering everything.
+    ctx.setAlpha(a1);
+    ctx.startSection("veil1");
+    ctx.color(gfx::SolidColor::createRGB(0.2, 0.3, 0.4));
+    quad(-2.5, 2.5, 1.0);
+    ctx.endSection();
+
+    ctx.setAlpha(a2);
+    ctx.startSection("veil2");
+    ctx.color(gfx::SolidColor::createRGB(0.3, 0.2, 0.4));
+    quad(-2.5, 2.5, 1.5);
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+    prm.perPixelBlend = perPixelBlend;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+
+    // Row 32 crosses both halves: column 16 is over the black patch, column 48
+    // over the lit grey. The same veils cover both.
+    dark = (static_cast<std::size_t>(32) * 64 + 16) * 3;
+    lit = (static_cast<std::size_t>(32) * 64 + 48) * 3;
+    return pix;
+}
+
+/// The dark feature must read darker than the lit surface beside it, in every
+/// channel. Both samples sit under the same veils, so the veil contribution
+/// cancels and only the background weight is compared -- a negative one
+/// inverts the pair.
+void expectDarkStaysDark(const std::vector<unsigned char> &pix,
+                         std::size_t dark, std::size_t lit)
+{
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(64 * 64 * 3));
+    // Neither sample may be a clipped extreme, or the comparison is vacuous.
+    ASSERT_GT(pix[lit], 8);
+    ASSERT_LT(pix[lit], 250);
+    for (int c = 0; c < 3; ++c) {
+        EXPECT_LT(pix[dark + c] + 8, pix[lit + c])
+            << "channel " << c
+            << ": the dark feature is not darker than the lit surface under the"
+               " veils (negative background weight inverted it)";
+    }
+}
+
+}  // namespace
+
+// The reported transp_test1 defect, at the host level: two translucent sections
+// of the SAME alpha used to reach the blend table as two veils summing to 1.2,
+// leaving the background pass at -0.2, and a negative background weight INVERTS
+// whatever the veils cover -- the dark feature came out brighter than its
+// surroundings (which is how black edge lines read as white). umbreon now counts
+// equal alphas as one veil, so the sum is 0.6 and the background keeps 0.4.
+// Plain geometry, no stroke edges: the ink is only the most visible instance.
+TEST(UmbreonExport, DarkFeatureStaysDarkUnderTwoSameAlphaSections)
+{
+    std::size_t dark = 0, lit = 0;
+    const std::vector<unsigned char> pix =
+        renderVeiledDarkFeature(0.6, 0.6, false, dark, lit);
+    expectDarkStaysDark(pix, dark, lit);
+}
+
+// DISTINCT alphas can still sum above 1 (0.6 + 0.5 = 1.1), which no choice of
+// global weights survives: the background coefficient of an overlapped pixel is
+// 1 minus the alphas covering it. The per-pixel group blend computes exactly
+// that coefficient per sample -- prod(1 - a_i) = 0.2 here -- so the dark feature
+// stays dark. This is what the perPixelBlend render parameter is for.
+TEST(UmbreonExport, PerPixelBlendKeepsDarkFeatureUnderDistinctAlphas)
+{
+    std::size_t dark = 0, lit = 0;
+    const std::vector<unsigned char> pix =
+        renderVeiledDarkFeature(0.6, 0.5, true, dark, lit);
+    expectDarkStaysDark(pix, dark, lit);
 }
 
 // Pins the asynchronous render path (startAsyncRender -> finishAsyncRender)
