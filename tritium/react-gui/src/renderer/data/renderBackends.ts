@@ -120,12 +120,13 @@ const UMBREON_PROPS: RenderPropSpec[] = [
   // --- Transparency ---
   // Group-alpha (section transparency) is a multi-pass blend: each translucent
   // renderer is rendered opaque in its own pass and the passes are combined.
-  // Off (the default) combines the finished frames with GLOBAL weights, the
-  // legacy blendpng behaviour: where veils whose alphas sum above 1 overlap,
-  // the background weight is negative and inverts what they cover (black edge
-  // lines read white). On composites per pixel from the veils that actually
-  // cover each sample, which cannot go negative and keeps a lone veil's alpha
-  // exact; the two differ only over overlaps. Same render cost either way.
+  // On (the default) composites per pixel from the veils that actually cover
+  // each sample: the background weight cannot go negative and a lone veil keeps
+  // its alpha exact. Off is the legacy blendpng behaviour, which combines the
+  // finished frames with GLOBAL weights -- where veils whose alphas sum above 1
+  // overlap, the background weight is negative and inverts what they cover
+  // (black edge lines read white). Same render cost either way; per-pixel also
+  // mixes in linear light, so a lone veil differs slightly from the legacy.
   { key: "perPixelBlend", label: "Per-pixel transparency", type: "boolean", group: "Transparency" },
   // --- Global Illumination (pt1 path-traced integrator; off by default) ---
   { key: "useGI",         label: "Enable GI",          type: "boolean", group: "Global Illumination" },

@@ -117,8 +117,7 @@ force the sum under 1 would change the transparency the user asked for.
 
 umbreon therefore has a second mode (`RenderOptions::groupBlendMode`, exposed as
 the `perPixelBlend` render setting and the Rendering window's *Per-pixel
-transparency* switch, default **off**). It composites at the stage where coverage
-still exists -- the supersampled, linear frame, before the box-downsample that
+transparency* switch). It composites at the stage where coverage still exists -- the supersampled, linear frame, before the box-downsample that
 turns per-sample coverage into partial pixels -- with weights built per sample
 from the veils covering it:
 
@@ -148,6 +147,26 @@ What it does not do: the weights are order-free, so within an overlap the veils
 do not attenuate each other by depth (a true front-to-back `over` would need a
 depth buffer per veil). Shadow / GI interaction between veils stays the
 per-pass approximation it always was.
+
+**This mode is the default** (`perPixelBlend = true`), host-verified on the
+transp test scenes. The layer weights remain selectable, and stay the reference
+for blendpng / POV-Ray parity -- the regression test for the negative background
+weight pins that mode explicitly.
+
+Measured on `data/1ab0_scene2.pov` with two veils (0.6 + 0.5), Apple Silicon:
+
+| | layer weights | per-pixel |
+|---|---|---|
+| 900 px, ss 3 | 0.71 s, 553 MB peak | 0.69 s, 819 MB peak |
+| 1600 px, ss 3, edges | 2.56 s, 2.31 GB peak | 2.40 s, 3.15 GB peak |
+
+Time is a wash and slightly favours per-pixel: the pass count is the same, and
+per-pixel runs the finishing stage (downsample, denoise, gamma) once instead of
+once per pass -- the saving grows with OIDN on. It holds ~36 B per supersampled
+sample more (the three accumulators plus the background pass's frame, kept alive
+as the coverage reference), in allocations of the same size class the frame
+buffers already use, so the per-allocation ceiling that the Electron renderer
+trips on (see the process-isolation plan) is not moved by the mode.
 
 Pinned by `UmbreonExport.PerPixelBlendKeepsDarkFeatureUnderDistinctAlphas`
 (host, 0.6 + 0.5 over a dark feature) and umbreon's `P1` / `P2` / `P3` in

@@ -1172,6 +1172,10 @@ TEST(UmbreonExport, OpaqueSectionSurvivesTwoTranslucentSections)
         prm.width = 64;
         prm.height = 64;
         prm.supersample = 1;
+        // The property under test is the LayerWeights partition of unity, so
+        // pin that mode: per-pixel (the default) reproduces the uncovered
+        // triangle exactly and would not exercise the negative weight at all.
+        prm.perPixelBlend = false;
 
         int ow = 0, oh = 0, ncomp = 0;
         std::vector<unsigned char> pix;
