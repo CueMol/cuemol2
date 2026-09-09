@@ -10,6 +10,11 @@
  * is dropped. Listeners are delegated on the content pane rather than the
  * canvas because the rubber-band overlay covers the canvas while a select
  * tool is active; both the canvas and the overlay bubble to the pane.
+ *
+ * The hover ends on a left / middle press (a navigation drag follows), but not
+ * on a right press: that opens the navi context menu, which holds the hover
+ * (see hoverHold.ts) so the hit the menu is about stays visible and
+ * highlighted until the menu resolves.
  */
 
 import { useEffect, useRef } from 'react';
@@ -20,6 +25,7 @@ import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 import { usePickingPrefs } from '@renderer/contexts/PickingPrefsContext';
 import type { HoverLabel } from '@renderer/worker/server/services/navi/naviTool';
 import { MOLVIEW_CANVAS_SELECTOR } from './molViewCanvas';
+import { isHoverHeld, onHoverHoldRelease } from './hoverHold';
 
 export type { HoverLabel };
 
@@ -75,6 +81,10 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
         let lastSent: Pos | null = null;
         let lastIssuedAt = -Infinity;
         let lastKey: string | null = null;
+        // Where the pointer last was, hoverable or not (null off the canvas /
+        // during a drag). Tracked even while held, so the resync on release
+        // knows where to resample.
+        let lastPos: Pos | null = null;
         // The view currently shows a highlight set by our last reply.
         let highlighted = false;
         let disposed = false;
@@ -159,16 +169,19 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
                 });
         };
 
+        /** The hoverable position of an event: null while dragging / off the view. */
+        const readPos = (e: MouseEvent): Pos | null => {
+            if (e.buttons !== 0) return null;  // any button held: no hover during a drag
+            if (!overCanvas(e)) return null;
+            return toLocal(e);
+        };
+
         const onMouseMove = (e: MouseEvent): void => {
-            if (e.buttons !== 0) {
-                clear();  // any button held: no hover during a drag
-                return;
-            }
-            if (!overCanvas(e)) {
-                clear();
-                return;
-            }
-            const p = toLocal(e);
+            lastPos = readPos(e);
+            // A context menu owns the pointer: keep the frozen hit and send
+            // nothing, but the position above is still recorded.
+            if (isHoverHeld()) return;
+            const p = lastPos;
             if (p === null) {
                 clear();
                 return;
@@ -177,17 +190,40 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
             pending = p;
             schedule();
         };
-        const onMouseDown = (): void => clear();
-        const onMouseLeave = (): void => clear();
+        // Right press: the navi context menu it opens is about the element
+        // under the pointer, so the hit survives until the menu resolves.
+        const onMouseDown = (e: MouseEvent): void => {
+            if (e.button === 2) return;
+            clear();
+        };
+        const onMouseLeave = (): void => {
+            lastPos = null;
+            if (isHoverHeld()) return;
+            clear();
+        };
+        // Menu resolved: pick up where the pointer actually is. Resampling
+        // rather than keeping the frozen hit is what makes the highlight right
+        // after an action that moved the view (e.g. Center at).
+        const onHoldRelease = (): void => {
+            if (disposed) return;
+            if (lastPos === null) {
+                clear();
+                return;
+            }
+            pending = lastPos;
+            schedule();
+        };
 
         container.addEventListener('mousemove', onMouseMove);
         container.addEventListener('mousedown', onMouseDown);
         container.addEventListener('mouseleave', onMouseLeave);
+        const unsubscribeHold = onHoverHoldRelease(onHoldRelease);
         return () => {
             disposed = true;
             container.removeEventListener('mousemove', onMouseMove);
             container.removeEventListener('mousedown', onMouseDown);
             container.removeEventListener('mouseleave', onMouseLeave);
+            unsubscribeHold();
             clear();
         };
     }, [cm, enabled, viewId, containerRef, guard, hoverHighlight]);
