@@ -6,6 +6,15 @@ multiple modules and that are not obvious from any single header, plus
 the design records for features and infrastructure that are **not** part
 of the UXP -> tritium migration.
 
+**This directory describes what is implemented.** A document lands here
+once the behaviour it describes is in the tree, so a reader may treat
+every page as a spec of the current code. Design work for something not
+yet built -- an implementation plan, a proposed redesign, a "we should do
+this later" note -- lives in [`../plans/`](../plans/) instead and moves
+here (or is written up fresh here) when it ships. A page may still record
+a known issue or a pending phase of work that is implemented around,
+provided the page's subject itself exists.
+
 Migration decisions live in [`../migration/adr/`](../migration/adr/_index.md)
 and are numbered `ADR-NNNN`; documents here are named after their topic
 instead. If a change ports a UXP surface it belongs there; if it adds
@@ -86,12 +95,6 @@ architecture, it belongs here.
   構成 (太さ・密度・randomness) と shading (Strength / Curve) を編集してレンダーする設計。
   Rendering window は worker を持たないため main 経由の 3 チャンネルリレー、dirty のときだけ
   spec テキストを snapshot に載せる判断、form-kit による UI 構成、契約行一覧、制約と今後。
-- [umbreon の Electron メモリ制約と process 分離設計](umbreon-process-isolation.md)
-  (日本語) -- tritium で umbreon GI(OIDN) が大解像度で crash する既知問題の根本原因
-  (Chromium PartitionAlloc の OOM crash, OS 制限ではない)、検討した各対策と却下理由、
-  恒久対策 (umbreon を別プロセス化し Scene を mmap file で zero-copy 渡し /
-  Boost.Interprocess `managed_mapped_file` + Boost.Process) の設計方針と次ステップ。
-  macOS の shm 上限が低いため mapped file 必須。renderer worker 内の大確保一般に共通する制約。
 - [umbreon レンダリングが renderer プロセスの降格で数倍遅くなる](umbreon-render-qos-throttling.md)
   (日本語) -- 「一旦遅くなると設定を変えても遅いまま、再起動で直る」報告の原因と対策。
   Chromium が occluded / 最小化ウィンドウの renderer に `SetPriority(kBestEffort)`

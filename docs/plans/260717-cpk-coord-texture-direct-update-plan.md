@@ -1278,7 +1278,7 @@ Phase 1 完了時点で残る制限。ドキュメントに残し、必要にな
 2. **色の動的更新は非対応**: 色が変わる場合は `OBE_PROPCHG` 経由で全再構築される (従来どおり)。座標テクスチャ方式では色は VBO の不変データなので、色だけ更新したい場合は別途対応が要る
 3. **`gl.RGB32F` の実装差**: 問題が出たら `RGBA32F` + 4 コンポーネント (16 バイト/原子) に切り替える。上限や設計の議論は変わらない
 4. **`MAX_TEXTURE_SIZE` を照会していない**: tritium は `getParameter` を 1 件も呼んでおらず、`ElecViewCap` (`tritium/core/cxx_src/ElecViewCap.hpp:22-33`) も GL を触らない静的スタブ。幅 1024 固定なら実用上安全だが、`natoms > 1024 * MAX_TEXTURE_SIZE` のガードは無い。必要なら `getParameter(gl.MAX_TEXTURE_SIZE)` の plumbing を追加する
-5. **大きな確保のリスク**: `docs/architecture/umbreon-process-isolation.md` が renderer worker 内の大確保が Chromium の PartitionAlloc で OOM crash する件を扱っている。座標テクスチャは 10 万原子で 1.2MB (RGB32F) なので問題にならない規模だが、Phase 2 でトラジェクトリ全体を worker 内に置く場合は要検討
+5. **大きな確保のリスク**: `docs/plans/umbreon-process-isolation-plan.md` が renderer worker 内の大確保が Chromium の PartitionAlloc で OOM crash する件を扱っている。座標テクスチャは 10 万原子で 1.2MB (RGB32F) なので問題にならない規模だが、Phase 2 でトラジェクトリ全体を worker 内に置く場合は要検討
 
 ---
 
@@ -1288,7 +1288,7 @@ Phase 1 完了時点で残る制限。ドキュメントに残し、必要にな
 
 - `tritium/docs/architecture/buffer-alloc-routing.md` — V8 cage へのゼロコピー routing。frame 0 の実測内訳 (ジオメトリ生成が 82%)
 - `docs/architecture/gtao-screen-space-ao.md` — `gfx::DataTexture` / `OcDataTexture` 新設の経緯。WebGL2 の制約 (`sampler2DMS` 非対応等) の記述あり
-- `docs/architecture/umbreon-process-isolation.md` — renderer worker 内の大確保と PartitionAlloc OOM
+- `docs/plans/umbreon-process-isolation-plan.md` — renderer worker 内の大確保と PartitionAlloc OOM
 - `tritium/CLAUDE.md` — worker ディレクトリ構成、IPC パターン、OffscreenCanvas / WebGL ライフサイクル制約
 - `docs/plans/gro_reader_planning_brief.md` — `.xtc` / `.trr` は将来課題で vendored xdrfile か chemfiles を想定 (`:80-81`)
 

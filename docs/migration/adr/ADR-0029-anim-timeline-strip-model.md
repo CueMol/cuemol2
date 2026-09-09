@@ -433,7 +433,7 @@ kinds); a `fakeAnimMgr` for the worker testing harness.
   `animobj-common-proppage.*`, `animobj-propdlg.xul`, `anim-slider-bindings.xml`),
   `uxp_gui/cuemol2/base/content/camerasel-binding.xml` (start-cam menulist).
 - C++: `src/qsys/anim/AnimMgr.{qif,cpp}`, `src/qsys/anim/AnimObj.{qif,cpp,hpp}`.
-- Plan: `docs/migration/anim-panel-timeline-plan.md` (Phase 0-5 roadmap).
+- Plan: `docs/plans/anim-panel-timeline-plan.md` (Phase 0-5 roadmap).
 - Related: ADR-0015 (generic property inspector — the reused getPropsJSON bridge).
 - Implementation: `worker/server/services/animation.service.ts`,
   `animDetail.service.ts`, `helpers/animResolve.ts`, `helpers/animElementType.ts`;

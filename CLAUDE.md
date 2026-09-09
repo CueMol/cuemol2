@@ -214,6 +214,14 @@ UXP に無かった機能の追加、build / packaging、内部アーキテク�
 mapping 行に関連していても、**主題が新規機能なら architecture 側**に置き、mapping の Notes
 からリンクする。
 
+**実装済みか未実装かで architecture / plans を分ける**: `docs/architecture/` は
+**実装済みの仕様だけ**を置く (どのページも現在のコードの spec として読める状態を保つ)。
+まだ実装していないもの — 実装計画、提案中の再設計、「後でやる」設計メモ、計画作成の
+依頼書 — は `docs/plans/<YYMMDD>-<slug>-plan.md` に置き、`docs/plans/_index.md` の表に
+1 行追加する。実装が済んだらプランは履歴として plans に残したまま状態を「実装済み」に
+更新し、仕様の説明が要るなら architecture 側に書き起こす。architecture のページが
+既知の問題や未着手フェーズに触れるのは構わない (そのページの主題自体が実装済みなら可)。
+
 以下は `docs/migration/adr/` (移植判断) についての運用:
 - 設計判断・UXP parity 戦略・既知バグの詳細は `docs/migration/adr/ADR-NNNN-<slug>.md` に切り出す
 - mapping の Notes 列は **1–2 文の要約 + ADR リンク** に留める。次のいずれかに当たる場合は ADR を作る:

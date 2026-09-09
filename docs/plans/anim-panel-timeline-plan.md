@@ -448,7 +448,7 @@ ADR に記載すべき内容:
 - **スコープ外**（offline render）の明記。
 
 **mapping 更新（`docs/migration/mapping/panels.md`）:**
-- AnimationPanel の該当行を更新: `Mapping: split`（timeline UI + worker service + detail inspector に分割）、`Status: todo → wip`（Phase 1 着手時）、`ADR: [ADR-0029](../adr/ADR-0029-anim-timeline-strip-model.md)`、`Notes:` は 1–2 文要約 + ADR リンク（"keyframe mock を time-ranged strip timeline へ全面再構築。worker service 新規。詳細 ADR-0029"）。
+- AnimationPanel の該当行を更新: `Mapping: split`（timeline UI + worker service + detail inspector に分割）、`Status: todo → wip`（Phase 1 着手時）、`ADR: [ADR-0029](../migration/adr/ADR-0029-anim-timeline-strip-model.md)`、`Notes:` は 1–2 文要約 + ADR リンク（"keyframe mock を time-ranged strip timeline へ全面再構築。worker service 新規。詳細 ADR-0029"）。
 - phase 単位の細かい進捗が要る場合は inventory ではなく **mapping 側に補助セクション/詳細表**を追加（§ Phase 表）。
 - `docs/migration/adr/_index.md` に ADR-0029 行を 1 行追加。
 - `docs/migration/mapping/_index.md` の category counts と In Progress リストを status 変更のたびに更新。
