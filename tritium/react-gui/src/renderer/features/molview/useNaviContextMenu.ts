@@ -8,6 +8,7 @@ import { useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider';
 import { useShowNewRendererDialog } from '@renderer/dialogs/NewRendererDialogProvider';
 import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider';
 import { recordAppliedSel, type AppliedSelResult } from '@renderer/h3-kit/MolSelList';
+import { withHoverHold } from './hoverHold';
 
 export function useNaviContextMenu(): {
     openContextMenu: (hit: HitTestResult, viewId: number, x: number, y: number) => Promise<void>;
@@ -31,11 +32,17 @@ export function useNaviContextMenu(): {
         // macOS shows the native menu (main process); Windows / Linux render
         // the same shared template with the React MenuPanel for a look that
         // matches the menu bar dropdowns.
+        //
+        // The hover hold spans the menu only: the hit stays labelled and
+        // highlighted while the user reads it, and is released as soon as an
+        // item is picked or the menu is dismissed -- not for the whole action,
+        // which may open a dialog of its own (createSymmMol).
         const api = window.electronAPI;
-        const action: NaviCtxAction | null =
+        const action: NaviCtxAction | null = await withHoverHold(async () =>
             api?.platform === 'darwin'
                 ? await api.invoke(IPC.NAVI_CTX_SHOW, { x, y, ...payload })
-                : await showContextMenu(buildNaviCtxMenuNodes(payload), { x, y });
+                : await showContextMenu(buildNaviCtxMenuNodes(payload), { x, y }),
+        );
 
         if (!action || !cm) return;
 

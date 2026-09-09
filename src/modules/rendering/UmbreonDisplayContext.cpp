@@ -329,7 +329,10 @@ struct UmbreonDisplayContext::Impl
   /// blendpng-equivalent multi-pass group alpha), instead of blending each
   /// overlapping sphere/triangle over the next (which double-darkens overlaps).
   /// The alpha is the renderer's getAlpha(), matching CueMol's per-section
-  /// transparency (PovDisplayContext::startSection / blendTab beta).
+  /// transparency (PovDisplayContext::startSection / blendTab beta). The group
+  /// id is a per-section IDENTITY, not a grouping: umbreon buckets the entries
+  /// by alpha into veils (one pass per distinct alpha), and the same ids are
+  /// partitioned independently by edgeGroupOf below.
   int nextGroup = 0;
   int curGroup = 0;
   std::vector<umbreon::GroupBlend> groupBlend;
@@ -574,9 +577,18 @@ void UmbreonDisplayContext::appendIntData()
 
   // Assign this section (= one CueMol renderer) a transparency group. A
   // semi-transparent section is registered as a groupBlend {group, alpha} entry
-  // so umbreon post-blends the whole section (one extra render pass per group)
+  // so umbreon post-blends the whole section (one extra render pass per veil)
   // instead of blending each overlapping sphere/triangle over the next (which
   // double-darkens the overlaps). This matches CueMol's per-section transparency.
+  //
+  // Sections that share an alpha must end up in ONE veil (otherwise that veil's
+  // weight is counted twice and the background weight goes negative), but that
+  // merge belongs to umbreon, not here: this group id is ALSO the key of the
+  // edge group table (edgeGroupOf below -> Scene::edgeGroupOfGroup), of
+  // Scene::groupHatchStyle and of the objectId AOV. Two sections sharing one id
+  // could not sit in different edge groups at all, so the id stays a per-section
+  // identity and umbreon buckets the alphas (docs/architecture/
+  // umbreon-group-alpha-blend.md).
   m_pImpl->curGroup = m_pImpl->nextGroup++;
   const std::uint16_t group = static_cast<std::uint16_t>(m_pImpl->curGroup);
   if (defAlpha < 1.0f - 1.0e-4f)
@@ -886,19 +898,30 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
 
   // Semi-transparent sections (one per renderer) are post-blended per group so
   // overlapping primitives within a renderer do not double-blend (umbreon's
-  // blendpng-equivalent multi-pass group alpha).
+  // blendpng-equivalent multi-pass group alpha). Sections sharing an alpha are
+  // ONE veil sharing one pass, and umbreon decides that -- see the group
+  // assignment in appendIntData for why it cannot be decided here.
   scene.groupBlend = m_pImpl->groupBlend;
 
-  // Report the blend table umbreon receives. Each entry costs a full extra
-  // render pass, and the background pass weight (1 - sum) goes negative once
-  // several sections are nearly opaque -- both are worth seeing in a render
-  // log when an image comes out unexpectedly bright or slow.
+  // Report what this side knows: which sections are translucent and at what
+  // alpha. The veil / weight table (how many passes, and the background
+  // weight) is umbreon's decision and umbreon logs it -- restating it here
+  // would duplicate the rule and disagree with it, since equal alphas count
+  // once there.
   if (!scene.groupBlend.empty()) {
-    double sumA = 0.0;
-    for (const umbreon::GroupBlend &gb : scene.groupBlend) sumA += gb.alpha;
-    LOG_DPRINTLN("Umbreon> group alpha: %d of %d sections, sum=%f, bg weight=%f",
-                 int(scene.groupBlend.size()), m_pImpl->nextGroup, sumA,
-                 1.0 - sumA);
+    LString alphas;
+    const std::size_t kMaxListed = 8;
+    for (std::size_t i = 0; i < scene.groupBlend.size(); ++i) {
+      if (i >= kMaxListed) {
+        alphas += ", ...";
+        break;
+      }
+      if (i > 0) alphas += ", ";
+      alphas += LString::format("%.3f", double(scene.groupBlend[i].alpha));
+    }
+    LOG_DPRINTLN("Umbreon> group alpha: %d of %d sections translucent (alpha %s)",
+                 int(scene.groupBlend.size()), m_pImpl->nextGroup,
+                 alphas.c_str());
   }
 
   // background color (passed through as the linear working color); default black
@@ -1079,6 +1102,14 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   opt.shadowSamples = (prm.shadowSamples > 0) ? prm.shadowSamples : 1;
   opt.lightRadius = float(prm.lightRadius);
   opt.transparentBackground = prm.transparentBackground;
+  // Group-alpha compositing: sections sharing an alpha are one veil either
+  // way (umbreon buckets them); this only chooses whether the veils are
+  // combined with global weights over the finished frames or per sample at
+  // the supersampled stage. Per-pixel is the one that cannot go negative
+  // where veils overlap (docs/architecture/umbreon-group-alpha-blend.md).
+  opt.groupBlendMode =
+      static_cast<int>(prm.perPixelBlend ? umbreon::GroupBlendMode::PerPixel
+                                         : umbreon::GroupBlendMode::LayerWeights);
 
   // Diffuse global illumination (pt2 path-traced integrator). Enabling GI sets
   // gi + giIntegrator=2. pt2 is a superset of pt1 built on the same gather core,

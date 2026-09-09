@@ -203,7 +203,8 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   `setHoverHit` が GPU pick 有効時だけ present 専用フレームを予約すること、hover 要素 -> pick texel ID の変換
   `hoverIdToPickId` (`test_guiview.cpp`)、`hover_hl_color` の既定 (`test_viewinputconfig.cpp`)。tritium:
   `naviHover` の `highlight` 引数が `setHoverHit` / `clearHoverHit` に写ること (`naviHoverService.test.ts`)、
-  hover 終了時に `naviHoverClear` が 1 回だけ送られること (`useHoverInfoHandler.test.tsx`)。
+  hover 終了時に `naviHoverClear` が 1 回だけ送られること、右押下と context menu の hold では clear せず解除で
+  再サンプルすること (`useHoverInfoHandler.test.tsx`)。
 
 ## 8. ビルドの注意
 - tritium の addon は `.build_out` の dylib ではなく `tritium/core/build/lib/libcuemol2.dylib` (core の install 時に
@@ -297,6 +298,15 @@ present 専用フレーム (setHoverHit / clearHoverHit だけが起きた):
   (cartoon 系でも残基 pivot 原子の ID) なので、C++ は `hoverIdToPickId` で pick texel の ID に戻す。
 - hover の終了 (pane 外 / drag 開始 / view 切替 / pref off) で `useHoverInfoHandler` が `naviHoverClear` を
   1 回だけ (`{ quiet: true }`) 送る。worker はメッセージを順に処理するので、in-flight の hover 要求の後に届く。
+- **context menu 中は hold**: 右押下 (`e.button === 2`) は navigation drag ではなく context menu のジェスチャなので
+  hover を終了させない (左 / 中ボタンは従来どおり clear)。`useNaviContextMenu` はメニューの `await` (macOS の
+  `NAVI_CTX_SHOW` / Windows・Linux の `showContextMenu`) だけを `withHoverHold`
+  (`features/molview/hoverHold.ts`) で包み、hold 中の `useHoverInfoHandler` は mousemove / mouseleave で clear も
+  再サンプルもせず、ポインタ位置だけ記録する。メニューが実行 / キャンセルで解決したら記録した位置で hit test を
+  1 回出し直す (canvas 外に出ていれば clear)。凍結した hit を残すのではなく再サンプルするのは、`centerAt` の
+  ようにビューを動かすアクションの後でもポインタ下の要素が光るようにするため。hold は context ではなく module
+  state — holder (`useNaviContextMenu`) と controller (`MolViewHoverLabel` 内) は兄弟で、hold でどちらも
+  再描画させない。メニュー実行後のダイアログ (`createSymmMol`) には hold を伸ばさない。
 - highlight の同値判定は C++ (`setHoverHit`) 側。chip の dedupe (`hoverLabelKey`) とは独立。
 
 ### 10.4 制約

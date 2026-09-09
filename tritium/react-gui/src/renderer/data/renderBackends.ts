@@ -117,6 +117,17 @@ const UMBREON_PROPS: RenderPropSpec[] = [
   // nearer object's contour (drawn as in the edges mode there). The far clip
   // plane sits half a slab behind the fog end, as in the GL view.
   { key: "outlineFarDepth", label: "Outline far depth", type: "real", group: "Edges", min: 0, max: 1, step: 0.01 },
+  // --- Transparency ---
+  // Group-alpha (section transparency) is a multi-pass blend: each translucent
+  // renderer is rendered opaque in its own pass and the passes are combined.
+  // On (the default) composites per pixel from the veils that actually cover
+  // each sample: the background weight cannot go negative and a lone veil keeps
+  // its alpha exact. Off is the legacy blendpng behaviour, which combines the
+  // finished frames with GLOBAL weights -- where veils whose alphas sum above 1
+  // overlap, the background weight is negative and inverts what they cover
+  // (black edge lines read white). Same render cost either way, and a pixel
+  // under a single veil renders identically in both -- only overlaps differ.
+  { key: "perPixelBlend", label: "Per-pixel transparency", type: "boolean", group: "Transparency" },
   // --- Global Illumination (pt1 path-traced integrator; off by default) ---
   { key: "useGI",         label: "Enable GI",          type: "boolean", group: "Global Illumination" },
   // Gather samples per pixel, as a short list rather than a ladder: with the
@@ -429,6 +440,7 @@ export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> =
       { key: "Ambient Occlusion", defaultExpanded: false },
       { key: "Shadows", defaultExpanded: false },
       { key: "Edges", defaultExpanded: false },
+      { key: "Transparency", defaultExpanded: false },
       { key: "Global Illumination", defaultExpanded: false },
     ],
     props: UMBREON_PROPS,
@@ -447,6 +459,7 @@ export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> =
       { key: "Ambient Occlusion", defaultExpanded: false },
       { key: "Shadows", defaultExpanded: false },
       { key: "Edges", defaultExpanded: false },
+      { key: "Transparency", defaultExpanded: false },
     ],
     props: UMBREON_NPR_PROPS,
     quality: UMBREON_NPR_QUALITY,
