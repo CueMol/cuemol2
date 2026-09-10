@@ -82,8 +82,21 @@ clipboard 上の順序を保つ (UXP は `adds.reverse()` してから前挿入�
   当初はこの ADR の判断どおり `.color-actions` にボタンとして置いたが、8 個は
   パネルを狭めると 2 行に折り返してしまう。UXP の配置 (`paintPanelCtxtMenu`)
   に戻し、toolbar は Add / Delete / Move up / Move down の 4 つだけにして
-  `flex-wrap: nowrap` を保証した。キーボードの Cmd+X/C/V は `paint-deck` の
-  clipboard scope 経由で変わらず効く。
+  `flex-wrap: nowrap` を保証した。~~キーボードの Cmd+X/C/V は `paint-deck` の
+  clipboard scope 経由で変わらず効く。~~ **[2026-09-10 訂正]** これは誤りで、
+  wrapper (`tabIndex=-1`) にフォーカスがある場合しか効いていなかった。行は
+  Selection 入力 + Color 入力で埋まっているため、行をクリックした後のフォーカスは
+  常にセルの `<input>` にあり、`dispatchEditClipboard` の「テキスト欄が勝つ」規則で
+  native のテキスト編集に吸われていた (Cmd+V は「何も貼られない」、Cmd+C は
+  clipboard 据え置き)。scope が `claimsEditable` を宣言できるようにして解消
+  ([focus-aware-edit-shortcuts](../../architecture/focus-aware-edit-shortcuts.md))。
+- **[2026-09-10] 右クリックが複数選択を 1 行に潰していた。** 右ボタンの mousedown は
+  default でセルの `<input>` にフォーカスを移し、`PaintSelCell.onFocus` →
+  `onSelect(idx)` が選択を単一行に置換する。React はこれを `contextmenu` より先に
+  flush するため、複数行を選んで右クリック → Copy は 1 行しかコピーされなかった
+  (既にフォーカスのある行を右クリックしたときだけ全行 = 「1 つのみ / 全部」が揺れる)。
+  `PaintTable.onRowMouseDown` で `e.button === 2` も `preventDefault` する。行の
+  `contextmenu` は元々独自メニューを出すので、失われる native 動作は無い。
 - clipboard は worker の生存期間だけ持続する。アプリ再起動で失われるが、
   scene ノード clipboard と同じ寿命なので挙動は一貫している。
 - paste 時に compile できなかった行 (名前付き選択が貼り付け先の scene に無い等)

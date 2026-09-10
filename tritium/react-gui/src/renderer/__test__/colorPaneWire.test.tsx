@@ -659,6 +659,41 @@ describe('ColorPane wire', () => {
         unmount()
     })
 
+    // Nearly the whole row is input, so a right-click whose default runs
+    // focuses one -- and PaintSelCell reports that focus as a single-row
+    // select, collapsing a multi-row selection before the menu even opens.
+    // That is why bulk Copy came out as one row (or as all of them, when the
+    // clicked row already had focus). jsdom does not move focus on mousedown,
+    // so the contract pinned here is the cancelled default.
+    it('right-click does not steal focus, so a multi-row selection survives', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const rows = container.querySelectorAll('.color-row')
+        await act(async () => { (rows[0] as HTMLElement).click() })
+        await act(async () => {
+            ;(rows[1] as HTMLElement).dispatchEvent(
+                new MouseEvent('click', { bubbles: true, metaKey: true }),
+            )
+        })
+        await flushPromises()
+
+        const down = new MouseEvent('mousedown', {
+            bubbles: true, cancelable: true, button: 2,
+        })
+        await act(async () => { (rows[1] as HTMLElement).dispatchEvent(down) })
+        expect(down.defaultPrevented).toBe(true)
+
+        await runCtxItem(container, 1, 'Copy')
+        expect(cm.invokeService).toHaveBeenCalledWith('copyPaintEntries', {
+            ...TARGET,
+            idxs: [0, 1],
+        })
+        unmount()
+    })
+
     // Move up / down act on one row: a multi-row move would have to compact a
     // disjoint selection into a contiguous block (what UXP did), which loses
     // the user's arrangement. They stay single-target and gate off instead.

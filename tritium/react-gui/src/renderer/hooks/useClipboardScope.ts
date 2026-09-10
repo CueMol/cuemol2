@@ -36,6 +36,12 @@ export function useClipboardScope(
             cut: () => ref.current.cut(),
             copy: () => ref.current.copy(),
             paste: () => ref.current.paste(),
+            // Forwarded through the ref like the handlers, so a panel may
+            // decide per render (e.g. on whether the clipboard holds its kind
+            // of payload). Absent on the panel means absent here, which is
+            // what keeps "a text field wins" the default.
+            claimsEditable: (action) =>
+                ref.current.claimsEditable?.(action) ?? false,
         })
     }, [scopeId, enabled])
 }

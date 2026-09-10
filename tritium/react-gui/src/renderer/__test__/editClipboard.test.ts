@@ -180,6 +180,37 @@ describe('dispatchEditClipboard', () => {
     expect(scope.paste).toHaveBeenCalledTimes(1)
   })
 
+  // A panel whose rows ARE text fields (the paint deck: a selection input
+  // plus a colour input, edge to edge) needs the keystroke even though focus
+  // is inside a field -- otherwise Cmd+C there can only ever mean "this
+  // field", and bulk row copy is unreachable from the keyboard. Selected text
+  // still wins, so typing in the cell keeps working.
+  it.each([
+    ['a claimed scope takes a bare caret', false, true, 'scope'],
+    ['selected text keeps the native edit', true, true, 'native'],
+    ['an unclaimed scope never takes it', false, false, 'native'],
+  ])('editable inside a scope -- %s', (_label, selectText, claimed, expected) => {
+    const scope = { ...makeScope(), claimsEditable: () => claimed }
+    registerClipboardScope('paint-deck', scope)
+
+    const host = mountScope('paint-deck')
+    const input = document.createElement('input')
+    input.value = 'protein'
+    host.appendChild(input)
+    input.focus()
+    if (selectText) input.setSelectionRange(0, 7)
+    else input.setSelectionRange(3, 3)
+
+    dispatchEditClipboard('copy')
+    if (expected === 'scope') {
+      expect(scope.copy).toHaveBeenCalledTimes(1)
+      expect(nativeCalls()).toEqual([])
+    } else {
+      expect(scope.copy).not.toHaveBeenCalled()
+      expect(nativeCalls()).toEqual(['copy'])
+    }
+  })
+
   it('falls back to the native edit when no scope is registered', () => {
     pointerDown(mountScope('scene-tree')) // tagged, but nothing registered
     dispatchEditClipboard('paste')

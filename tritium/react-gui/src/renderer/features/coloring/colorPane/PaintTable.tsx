@@ -126,9 +126,22 @@ export const PaintTable: React.FC<PaintTableProps> = ({
      * selection from the last caret, which painted every row between the
      * anchor and the click as selected text. Cancelling the default here
      * leaves the click itself (and `onRowClick` below) intact.
+     *
+     * A right-click is a menu gesture, and it needs the same treatment for a
+     * different reason. Nearly the whole row is input (the selection field and
+     * the colour field), so the default focuses one -- and `PaintSelCell`
+     * reports that focus as `onSelect(idx)`, which REPLACES the selection.
+     * React flushes that before the `contextmenu` event, so right-clicking a
+     * multi-row selection opened a menu that acted on the one row clicked;
+     * right-clicking the row that already had focus acted on all of them,
+     * which is why bulk Copy came out as "sometimes one row, sometimes all".
+     * Nothing is lost by cancelling: `onRowContextMenu` preventDefaults anyway
+     * and shows our own menu, so no native text menu was reachable here.
      */
     const onRowMouseDown = useCallback((e: React.MouseEvent) => {
-        if (e.shiftKey || e.metaKey || e.ctrlKey) e.preventDefault()
+        if (e.shiftKey || e.metaKey || e.ctrlKey || e.button === 2) {
+            e.preventDefault()
+        }
     }, [])
 
     /**

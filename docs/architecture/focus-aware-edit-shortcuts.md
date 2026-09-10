@@ -48,7 +48,10 @@ stack が空のときだけメニュー項目が disabled になり Chromium ネ
 
 1. **テキスト文脈** → main が focused element に対してネイティブ実行
    (`IPC.TEXT_CTX_ACTION`)。cut/paste/undo/redo は `activeElement` が編集可能要素のとき、
-   copy は加えて**非空の document selection があるとき** (log パネルの選択コピー)
+   copy は加えて**非空の document selection があるとき** (log パネルの選択コピー)。
+   ただし focused element が `claimsEditable(action)` を宣言した scope の内側で、
+   **その入力欄がテキストを選択していない (caret のみ)** ときは手順 2 の scope が取る
+   (下記「行そのものが入力欄のパネル」)
 2. focused element の `[data-clipboard-scope]` 祖先に登録されたハンドラ
 3. **直近に操作した scope**
 4. どれにも当たらなければネイティブへフォールバック (テキスト欄外では実質 no-op)
@@ -92,8 +95,10 @@ main 側では 5 チャネル (EDIT_CUT/COPY/PASTE + MENU_UNDO/REDO) に
   paste になってしまう
 - クリップボードの**内容自体は undo 対象外**。Cut を undo すると行/ノードは戻るが、
   クリップボードは cut したものを保持し続ける (一般的なアプリと同じ)
-- 残る制約: paint deck の行選択は単一行のままなので Cmd+C も 1 行のみ
-  ([ADR-0053](../migration/adr/ADR-0053-paint-deck-clipboard.md) の parity gap は未解消)
+- ~~残る制約: paint deck の行選択は単一行のままなので Cmd+C も 1 行のみ~~
+  **[2026-08-27 解消]** paint deck が複数行選択に対応
+  ([ADR-0053](../migration/adr/ADR-0053-paint-deck-clipboard.md))。ただしキーボード経由が
+  実際に行へ届くようになったのは 2026-09-10 の `claimsEditable` から (下記追記)
 
 ## Notes
 
@@ -137,3 +142,35 @@ render 設定が scene に保存され undo 対象になったため
 その window に push し、window 側 (`useRenderWindowEditKeys`) が `dispatchEditUndoRedo` で
 テキスト欄かどうかを振り分ける。Cut/Copy/Paste/Select All と devtools は従来通り native 実行。
 Windows / Linux では同 hook の keydown listener が Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z を受ける。
+
+## 追記 (2026-09-10): 行そのものが入力欄のパネル (`claimsEditable`)
+
+Coloring panel の Paint deck は 1 行が Selection 入力 + Color 入力で埋まっており、行を
+クリックすればフォーカスは必ずどちらかの `<input>` に入る。手順 1 をそのまま適用すると
+**Cmd+C / Cmd+V は常に「そのセルのテキスト」**を意味し、行のコピー & ペーストはキーボードから
+到達できなかった (ADR-0053 が「キーボードも clipboard scope 経由で効く」と書いていたのは、
+実際には wrapper `tabIndex=-1` にフォーカスがある場合だけだった)。実害として、複数行を選んで
+Cmd+C → Cmd+V しても何も貼られない (macOS では envelope 文字列がセルに貼られることもない —
+native paste 先が別の入力欄であるため)。
+
+`ClipboardScopeHandlers.claimsEditable?: (action) => boolean` を opt-in で追加し、宣言した
+scope に限り手順 1 を追い越せるようにした。ガードは 2 つ:
+
+- **テキスト選択があれば必ず native**。選択は「このテキストを操作しろ」という曖昧さの無い
+  指示なので、scope には渡さない。判定は `<input>`/`<textarea>` では
+  `selectionStart !== selectionEnd` (Chromium の `window.getSelection()` は
+  text control 内の選択を返さないため、document 単位の判定では全て caret に見える)。
+- **modal 中は無効**。modal 判定を編集可能判定より前に移し、`claimsEditable` がダイアログ
+  越しに反応しないようにした。
+
+ColorPane 側の宣言は `action === 'paste' ? canPastePaint : true`。cut/copy は caret のみなら
+native が no-op なので行を取る。paste は OS clipboard が paint 行を持つときだけ行として貼り、
+プレーンテキストならセルへの native paste のまま (選択式をテキストで貼る操作を壊さない)。
+
+同時に、Paint deck の**右クリックがフォーカスを奪って複数選択を潰す**バグも直した。
+右ボタンの mousedown は default で入力欄にフォーカスを移し、`PaintSelCell.onFocus` →
+`onSelect(idx)` が選択を 1 行に置換する。React はこれを `contextmenu` より先に flush するため、
+複数行を選んで右クリック → Copy は 1 行しかコピーされなかった (既にフォーカスのある行を
+右クリックした場合だけ全行コピーされ、「1 つだけ / 全部」が揺れて見えた)。`PaintTable` の
+`onRowMouseDown` で `e.button === 2` も `preventDefault` する。行の `contextmenu` は元々
+独自メニューを出すため、失われる native 動作は無い。
