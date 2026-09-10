@@ -1,6 +1,6 @@
 # ADR-0059: Solid coloring は分子経路を通す ($molcol を Paint と一致させる)
 
-- Status: accepted
+- Status: accepted (host E2E verified)
 - Date: 2026-09-10
 - Mapping rows: [`panel.coloring.shell`](../mapping/panels.md#panelcoloringshell),
   [`panel.coloring.deck.solid`](../mapping/panels.md#panelcoloringdecksolid)
