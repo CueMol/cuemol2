@@ -44,6 +44,57 @@ import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 const VALIDATE_DEBOUNCE_MS = 500;
 
+/**
+ * Slack between the popover and the window edge: Blueprint's own offset from
+ * the field, plus enough that the list does not sit flush against the frame.
+ */
+const POPOVER_EDGE_GAP = 16;
+
+/**
+ * The shape this modifier reads out of Popper's state. Written structurally
+ * rather than imported: `@popperjs/core` reaches us through Blueprint, and
+ * pnpm does not put a transitive dependency where our own imports can find it.
+ */
+interface PopperStateSlice {
+    placement: string;
+    elements: {
+        reference: { getBoundingClientRect: () => { top: number; bottom: number } };
+        popper: HTMLElement;
+    };
+}
+
+/**
+ * Publish the room the popover actually has, as a CSS custom property the
+ * stylesheet caps the list with.
+ *
+ * A fixed height cannot be right for a field that appears anywhere: in a
+ * dialog whose rows sit near the bottom of the screen, a list tall enough to
+ * be useful in the side panel has nowhere to go and lands on top of
+ * everything above it. Popper already picks the roomier side; this measures
+ * that side after it has chosen (`beforeWrite` runs after `flip`) and hands
+ * the number to CSS, so the list grows into a tall window and shrinks near an
+ * edge. Popper re-runs its modifiers on scroll and resize, so the value
+ * follows the field.
+ */
+export const availHeightModifier = {
+    name: 'h3AvailHeight',
+    enabled: true,
+    phase: 'beforeWrite' as const,
+    requires: ['computeStyles'],
+    fn: ({ state }: { state: PopperStateSlice }) => {
+        const side = state.placement.split('-')[0];
+        const rect = state.elements.reference.getBoundingClientRect();
+        const room =
+            side === 'top'
+                ? rect.top
+                : document.documentElement.clientHeight - rect.bottom;
+        state.elements.popper.style.setProperty(
+            '--h3-popover-avail',
+            `${Math.max(0, room - POPOVER_EDGE_GAP)}px`,
+        );
+    },
+};
+
 export interface MolSelListProps {
     sceneID: number;
     /** Current selection-string value (controlled). */
@@ -259,6 +310,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
             className="h3-mol-sel-list-trigger"
             disabled={disabled}
             content={pickerContent}
+            modifiersCustom={[availHeightModifier]}
             // A mouse-driven dropdown needs no focus trap. Leaving Blueprint's
             // default focus management on makes the overlay's focus-trap
             // sentinel (a fixed, full-width div) take focus, which -- with no

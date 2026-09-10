@@ -80,13 +80,74 @@
   min-width: 0;
 }
 
-/* Named/History popover menu, used by the MolSelList picker. */
+/* Named / History list. Its height belongs to the host, not to the list: the
+   two hosts want opposite things, so the base is only a floor for any third
+   one that appears. */
 .selbuilder-menu {
   max-height: 160px;
   overflow-y: auto;
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
+}
+
+/* MolSelList picker: the popover itself is capped to the room Popper found
+   (see _mol-sel-list.css); the list takes what is left of that after the tabs.
+   160px showed about five rows, which meant scrolling past a scene's named
+   selections to find one. */
+.h3-mol-sel-list-popover .selbuilder {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.h3-mol-sel-list-popover .selbuilder-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* Selection pane: the list is the pane's main content, so it takes whatever
+   height is left rather than a fixed box with the pane empty below it.
+
+   `flex-basis: auto` + `min-height: 0` is the whole trick, and the reason it
+   is not `flex: 1`: with a zero basis and a min-height floor the list claimed
+   space the pane did not have, pushed the rows above it off the top, and
+   changed height again on every tab switch. Growing from the natural height
+   and being allowed to shrink to nothing keeps it inside the pane whatever
+   the tab and whatever the window height; the list's own overflow scrolls
+   when there is genuinely no room. */
+.selection-text-row .selbuilder {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.selection-text-row .selbuilder-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* Embedded in a pane, this is a listbox and must read like every other list
+   (ui-style-guide, "listbox"): Blueprint paints .bp5-menu with the popover
+   palette, which is right in the MolSelList popover and wrong here -- the
+   rows looked like a floating menu dropped into the panel. Only the colours
+   and the row shape change; metrics stay with the menu rules above. */
+.selection-text-row .selbuilder-menu {
+  background: var(--bg-input);
+}
+
+.selection-text-row .selbuilder-menu .bp5-menu-item {
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.selection-text-row .selbuilder-menu .bp5-menu-item:hover {
+  background: var(--bg-hover);
+}
+
+.selection-text-row .selbuilder-menu .bp5-menu-item.bp5-active {
+  background: var(--bg-active);
+  color: var(--accent);
 }
 
 .selbuilder-menu .bp5-menu-item {

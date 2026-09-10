@@ -120,6 +120,10 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 
 **例外**: color swatch テーブル (`_color-panel.css`) は、色見本セル上で背景ハイライトが読めないため hover/selected を **outline 方式**で残す (SoT 公認の例外)。
 
+**popup menu の色を pane に持ち込まない**: Blueprint の `<Menu>` を pane に埋め込むと popover 用パレットで塗られ、周りのリストから浮く。同じ component を popover と pane の両方で使う場合 (`SelMenus` の Named / History) は、**pane 文脈だけ** listbox のトークン (`--bg-input` / `--bg-hover` / `--bg-active` + `--accent`) に上書きする。popover 側は menu の色のままでよい。
+
+**リストの高さは host が決める**: リスト component 自身に `max-height` を固定で持たせない。同じリストでも host によって正解が違う (pane 埋め込み = 残り高さいっぱい `flex: 1 1 auto` + `min-height: 0`、popover = 画面の空きスペース)。**popover は `flex: 1` (basis 0) にしない** — 自然な高さを無視して領域を要求し、狭いときに親をはみ出す。画面下寄りに出る widget (dialog 内の field 等) では固定 px も上へはみ出すので、Popper の custom modifier で flip 後の空き高さを測って CSS custom property に渡す (`h3-kit/MolSelList` の `availHeightModifier` が実例)。
+
 `_list-kit.css` は lint `ignoreFiles` (トークン/role primitive の置き場)。行の見栄え統一は list-kit が担保する。
 
 ### 行の編集モード (MUST)
