@@ -122,6 +122,34 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 
 `_list-kit.css` は lint `ignoreFiles` (トークン/role primitive の置き場)。行の見栄え統一は list-kit が担保する。
 
+### 行の編集モード (MUST)
+
+**行の単クリックは選択のみ。編集モード (text edit / rename) には決して入らない。** 行の中身が
+編集可能な値であっても、表示状態では**テキストと swatch を描き、`<input>` を置かない**。
+
+編集の入口は明示的な操作に限る (使えるものを全て用意する — どれか 1 つを知っていれば届く):
+
+| 入口 | 備考 |
+|---|---|
+| **double-click** (そのセル) | マウス派の主経路。行内の他の double-click 動作と衝突する場合は使わない |
+| **Enter / F2** (行選択中) | キーボード派の主経路。編集対象は行の主セル |
+| **右クリックメニュー** | 上記はいずれも不可視の操作なので、発見性の担保として必須 |
+| **専用 affordance** | 値そのものが押せる場合のみ (例: color swatch = macOS の color well) |
+
+出口は **Enter / blur = commit、Esc = 破棄**。編集中はエディタがキーを所有し
+(行側の F2 / Delete / 矢印は動かさない)、**終了時は行コンテナに focus を戻す**。
+
+これは見た目の統一ではなく **focus の意味を一意にする**ための規約である。行に `<input>` が
+敷き詰められていると、クリックしただけで focus がテキスト欄に入り、Cmd+C / Cmd+V / Cmd+Z が
+「行の操作」ではなく「テキスト編集」に吸われる。しかもユーザーからは今どちらのモードか
+判別できない (`utils/editClipboard.ts` の解決順は「テキスト欄が勝つ」が第 1 規則)。
+表示モードでは focus が行にあり、編集モードでは input にある、という二択にすることで、
+ショートカットの行き先が見て分かる状態になる。
+
+適用例: **scene tree** (F2 / 右クリック Rename。単クリックは選択のみ —
+[ADR-0002](adr/ADR-0002-scene-tree-inline-rename.md) の click-pause-click は廃止)、
+**Paint deck** (double-click / Enter / F2 / 右クリック `Edit selection...` / color swatch)。
+
 ---
 
 ## 0.6. メニュー — menu-kit / MenuPanel (MUST)

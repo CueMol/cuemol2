@@ -214,4 +214,48 @@ describe('PaintSelCell', () => {
         expect(mockCm.invokeService).toHaveBeenCalledWith('getSelDefs', { sceneId: 7, molId: 42 })
         unmount()
     })
+
+    // The cell is mounted only for the edit the user asked for, so it has to
+    // say when that edit is over. Enter confirms, Escape abandons -- the pair
+    // the scene tree's rename editor uses, so leaving an editor means the
+    // same thing everywhere. Escape must also restore the draft, or the blur
+    // that follows would commit the text the user just discarded.
+    it.each([
+        ['Enter', true],
+        ['Escape', false],
+    ])('%s ends the edit; committed: %s', async (key, commits) => {
+        const onCommit = vi.fn()
+        const onDone = vi.fn()
+        const onCancel = vi.fn()
+        const { container, unmount } = mountTree(
+            <PaintSelCell
+                sceneID={1}
+                value="chain A"
+                onCommit={onCommit}
+                onDone={onDone}
+                onCancel={onCancel}
+            />,
+        )
+        await flushPromises()
+        const input = getInput(container)
+        await act(async () => { typeInto(input, 'chain B') })
+        await act(async () => {
+            input.dispatchEvent(
+                new KeyboardEvent('keydown', { key, bubbles: true }),
+            )
+        })
+
+        if (commits) {
+            expect(onCommit).toHaveBeenCalledWith('chain B')
+            expect(onDone).toHaveBeenCalledTimes(1)
+            expect(onCancel).not.toHaveBeenCalled()
+        } else {
+            expect(onCommit).not.toHaveBeenCalled()
+            expect(onCancel).toHaveBeenCalledTimes(1)
+            // The draft is back to the committed value, so the blur that
+            // follows the unmount has nothing to write.
+            expect(input.value).toBe('chain A')
+        }
+        unmount()
+    })
 })

@@ -15,20 +15,18 @@
  *
  * Resolution order for a clipboard action:
  *   1. text context -> the native edit, run by main against the focused
- *      element (`IPC.TEXT_CTX_ACTION`) -- unless the field sits inside a scope
- *      that declares `claimsEditable` for this action and holds no selected
- *      text, which routes to that scope instead (see below);
+ *      element (`IPC.TEXT_CTX_ACTION`);
  *   2. the `[data-clipboard-scope]` ancestor of the focused element;
  *   3. the last such scope the user interacted with;
  *   4. nothing to route to -> fall back to the native edit, which is a no-op
  *      outside a field.
  *
- * The exception in step 1 exists for a panel whose rows ARE text fields. The
- * paint deck's row is a selection input plus a colour input, edge to edge, so
- * a click always parks focus in one of them -- and the plain rule made Cmd+C
- * and Cmd+V there mean "this field", never "the selected rows". Requiring a
- * bare caret keeps the field's own copy/paste working whenever the user has
- * actually selected text in it.
+ * Step 1 is unconditional, and it can be because a panel never leaves focus in
+ * a text field the user did not ask to edit. A list row shows text and becomes
+ * editable on an explicit gesture (ui-style-guide, "listbox: 行の編集モード"),
+ * so "focus is in a field" and "the user is editing text" are the same fact.
+ * The paint deck briefly needed an exception here, back when its rows were
+ * inputs edge to edge; separating its display and edit modes removed the need.
  *
  * Step 3 is not a nicety. On Windows / Linux the Edit menu is a React
  * component, so clicking Copy moves DOM focus into the menu and step 2 would
@@ -55,21 +53,6 @@ export interface ClipboardScopeHandlers {
   cut: () => void
   copy: () => void
   paste: () => void
-  /**
-   * Whether this scope should answer `action` even though the focused element
-   * is an editable inside it.
-   *
-   * The default is no -- step 1 of the routing gives a text field its native
-   * edit, which is right almost everywhere. It is wrong for a panel whose rows
-   * ARE text fields: the paint deck's row is a selection input plus a colour
-   * input edge to edge, so after any click focus is in one of them and Cmd+C /
-   * Cmd+V could never mean "the selected rows".
-   *
-   * Only consulted when the editable holds no text selection. Selected text is
-   * an unambiguous request to act on that text, so it always keeps the native
-   * edit and a scope never sees it.
-   */
-  claimsEditable?: (action: ClipboardAction) => boolean
 }
 
 export type ClipboardAction = 'cut' | 'copy' | 'paste'
@@ -185,31 +168,6 @@ function hasTextSelection(): boolean {
   return !!sel && !sel.isCollapsed && sel.toString().length > 0
 }
 
-/**
- * Whether the focused editable holds selected text (as opposed to a bare
- * caret).
- *
- * `<input>` and `<textarea>` are asked for their own selection range:
- * Chromium's `window.getSelection()` does not report a selection inside a
- * text control, so the document-level check above would call every input a
- * caret. contentEditable has no range of its own and does show up there.
- */
-function editableHasSelection(el: HTMLElement | null): boolean {
-  if (!el) return false
-  const tag = el.tagName
-  if (tag === 'INPUT' || tag === 'TEXTAREA') {
-    const f = el as HTMLInputElement | HTMLTextAreaElement
-    try {
-      return f.selectionStart !== null && f.selectionStart !== f.selectionEnd
-    } catch {
-      // selectionStart throws on input types that do not support it
-      // (color, checkbox...); those carry no text to act on.
-      return false
-    }
-  }
-  return hasTextSelection()
-}
-
 /** Ask main to run a native edit against the focused element. */
 function runNativeEdit(action: TextEditAction): void {
   window.electronAPI
@@ -242,17 +200,6 @@ export function dispatchEditClipboard(action: ClipboardAction): void {
     return
   }
   if (isEditableFocused()) {
-    const active = document.activeElement as HTMLElement | null
-    // A panel whose rows are themselves text fields can claim the keystroke,
-    // but only for a bare caret -- selected text always means the text.
-    const owner = scopes.get(scopeIdOf(active) ?? '')
-    if (
-      owner?.claimsEditable?.(action) &&
-      !editableHasSelection(active)
-    ) {
-      owner[action]()
-      return
-    }
     runNativeEdit(action)
     return
   }

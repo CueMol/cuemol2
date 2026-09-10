@@ -29,7 +29,7 @@ import { packToHex, type Rgb } from './colorMath'
 import { RgbHsbPanel } from './RgbHsbPanel'
 import { NamedListPanel } from './NamedListPanel'
 import { PalettePanel } from './PalettePanel'
-import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
+import { useCompiledColor } from './useCompiledColor'
 
 const MOL_COLOR = '$molcol'
 
@@ -77,6 +77,20 @@ interface ColorPickerProps {
      * where "Named" / "Mol" make no sense (app settings).
      */
     modes?: Mode[]
+    /**
+     * Open the popover on mount. For a host that puts the picker on screen in
+     * response to the gesture that means "edit this colour" -- a paint row's
+     * swatch, say -- so the user does not have to click a second time.
+     */
+    autoOpen?: boolean
+    /** Focus the text box on mount, for the same kind of host. */
+    autoFocus?: boolean
+    /**
+     * The user is done with this colour: the popover closed, or Escape was
+     * pressed in the text box. A host that mounted the picker for one edit
+     * uses this to put itself back into its display state.
+     */
+    onClose?: () => void
 }
 
 /**
@@ -91,6 +105,9 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     disabled,
     className,
     modes,
+    autoOpen,
+    autoFocus,
+    onClose,
 }) => {
     const portalClassName = useDarkPortalClass()
 
@@ -112,43 +129,21 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     )
 
     const [draft, setDraft] = useState(value)
-    const [resolved, setResolved] = useState<CompileColorResult | null>(null)
-    const [liveRgb, setLiveRgb] = useState<Rgb | null>(null)
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(autoOpen === true)
     const [mode, setMode] = useState<Mode>(() => modeForValue(value))
 
     // Latest live value, so the popover-close commit reports the final colour.
     const liveValueRef = useRef(value)
 
-    // Resolve the authoritative colour whenever the parent value changes.
-    const guard = useStaleGuard()
+    // The authoritative colour behind the swatch (shared with ColorSwatch).
+    const { resolved, liveRgb, setLiveRgb } = useCompiledColor(cm, value, sceneId)
+
+    // Follow the parent's value. Same deps as the resolution above, so the
+    // text box and the swatch never show two different colours.
     useEffect(() => {
         setDraft(value)
         liveValueRef.current = value
-        const token = guard.next()
-        if (!cm) {
-            setResolved(null)
-            setLiveRgb(null)
-            return
-        }
-        ;(async () => {
-            try {
-                const res = await cm.invokeService('compileColor', {
-                    colorStr: value,
-                    sceneId: sceneId ?? 0,
-                })
-                if (!guard.isCurrent(token)) return
-                setResolved(res ?? null)
-                setLiveRgb(res?.ok && res.r !== undefined ? [res.r, res.g!, res.b!] : null)
-            } catch (err: unknown) {
-                if (!guard.isCurrent(token)) return
-                console.warn('compileColor failed:', err)
-                setResolved(null)
-                setLiveRgb(null)
-            }
-        })()
-        return () => guard.invalidate()
-    }, [value, sceneId, cm, guard])
+    }, [value, sceneId, cm])
 
     const isMol = value === MOL_COLOR
     const swatchColor = liveRgb ? packToHex(liveRgb) : 'transparent'
@@ -223,6 +218,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
         if (liveValueRef.current !== value) {
             onChange(liveValueRef.current, true)
         }
+        onClose?.()
     }
 
     const panelBody = (() => {
@@ -326,11 +322,24 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                         fill
                         className="h3-color-textbox"
                         value={draft}
+                        autoFocus={autoFocus}
                         disabled={disabled}
                         onChange={(e) => setDraft(e.target.value)}
                         onBlur={() => void commitText()}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') e.currentTarget.blur()
+                            if (e.key === 'Enter') {
+                                e.currentTarget.blur()
+                                return
+                            }
+                            if (e.key === 'Escape') {
+                                // Drop the edit and hand the host back its
+                                // display state; blur must not then commit
+                                // the discarded draft.
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setDraft(value)
+                                onClose?.()
+                            }
                         }}
                         spellCheck={false}
                         rightElement={

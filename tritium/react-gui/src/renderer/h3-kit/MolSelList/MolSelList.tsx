@@ -72,6 +72,19 @@ export interface MolSelListProps {
      * forces a refresh (e.g. when the parent knows the scene's defs changed).
      */
     refreshKey?: number;
+    /** Focus the text input on mount (e.g. a cell entering edit mode). */
+    autoFocus?: boolean;
+    /**
+     * Open the builder popover on mount, for a host that mounts the field in
+     * response to the gesture that means "open the picker" -- a table cell's
+     * chevron, say, where the field itself was not on screen a moment ago.
+     */
+    autoOpen?: boolean;
+    /**
+     * Keys the host wants first (e.g. Enter to confirm a cell edit, Escape to
+     * abandon it). Runs before the field's own handling.
+     */
+    onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 }
 
 export const MolSelList: React.FC<MolSelListProps> = ({
@@ -86,6 +99,9 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     fill = true,
     showSelectionIcon = true,
     refreshKey = 0,
+    autoFocus,
+    autoOpen,
+    onKeyDown,
 }) => {
     // `onMolIdChange` is part of the UXP-compatible API surface but is not
     // yet wired -- referencing it silences the unused-locals diagnostic without
@@ -101,7 +117,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     const [molCurrentSel, setMolCurrentSel] = useState<string | undefined>(undefined);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
     const [isValid, setIsValid] = useState(true);
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(autoOpen === true);
     // Two independent fetches: the definition list and the live validation of
     // what the user typed. One guard for both would let either make the
     // other's answer look stale.
@@ -267,6 +283,8 @@ export const MolSelList: React.FC<MolSelListProps> = ({
             value={selectedSel}
             onChange={onSelectedSelChange}
             onBlur={() => onCommit?.(selectedSel)}
+            autoFocus={autoFocus}
+            onKeyDown={onKeyDown}
             placeholder={placeholder}
             disabled={disabled}
             invalid={!isValid}

@@ -428,18 +428,6 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
             cut: () => onClipboardTake('cut'),
             copy: () => onClipboardTake('copy'),
             paste: onPasteRows,
-            // A paint row is two text fields wide, so focus is essentially
-            // always inside one of them and the default routing would send
-            // every Cmd+C / Cmd+V to that field. Claim the keystroke instead
-            // (the router only offers it when the field holds a bare caret):
-            //
-            //   - cut / copy: with nothing selected the native edit is a
-            //     no-op, so the rows are the only sensible reading.
-            //   - paste: only when the clipboard actually holds paint rows.
-            //     Otherwise the user is pasting text into the cell, which is
-            //     how a selection expression gets typed in the first place.
-            claimsEditable: (action) =>
-                action === 'paste' ? canPastePaint : true,
         },
         className === PAINT_DECK_CLASS,
     )

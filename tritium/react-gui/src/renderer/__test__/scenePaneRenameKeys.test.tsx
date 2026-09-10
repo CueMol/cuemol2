@@ -109,3 +109,27 @@ describe('ScenePane keyboard handling vs the inline rename editor', () => {
     m.unmount()
   })
 })
+
+/**
+ * Clicking is only ever selection. The tree used to open the rename editor
+ * 500ms after a click on the already-selected row (the Finder gesture), which
+ * fired on all the ordinary reasons to click a selected row -- returning to
+ * the pane, confirming what is selected, an abandoned drag. Renaming has F2
+ * and the context menu; a click must not reach it however long the user waits.
+ */
+describe('ScenePane click never enters rename', () => {
+  it('does not begin a rename when the selected row is clicked again', () => {
+    vi.useFakeTimers()
+    try {
+      const m = mount(null)
+      const row = m.container.querySelector('[data-node-id="1"]') as HTMLElement
+      // Row 1 is the selection (see `mount`), so this is the second click.
+      row.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      vi.advanceTimersByTime(2000)
+      expect(m.onBeginInlineRename).not.toHaveBeenCalled()
+      m.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

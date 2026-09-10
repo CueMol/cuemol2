@@ -15,8 +15,11 @@
 export { ColorPicker } from './ColorPicker';
 export type { Mode } from './ColorPicker';
 export { CueColorField } from './CueColorField';
+export { ColorSwatch } from './ColorSwatch';
+export type { ColorSwatchProps } from './ColorSwatch';
 export { ColorPickerProvider, useColorPickerCtx } from './ColorPickerContext';
 export type { ColorPickerCtx } from './ColorPickerContext';
+export { useCompiledColor } from './useCompiledColor';
 export { ColorSlider } from './ColorSlider';
 export { NamedListPanel } from './NamedListPanel';
 export { PalettePanel } from './PalettePanel';

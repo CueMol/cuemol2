@@ -154,47 +154,16 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
         );
     }, []);
 
-    // Click-pause-click rename schedule (Finder / Explorer parity).
-    // When the user clicks an already-selected single-selected renameable
-    // row, we set a small timer to enter rename mode. The timer is
-    // canceled by: a double-click on the same row (treated as a real
-    // double-click), a click on a different row, the editor opening from
-    // another path (F2 / ctxmenu Rename), or unmount.
-    //
-    // The delay must be at least the browser double-click threshold so a
-    // real dblclick has time to cancel the schedule. 500ms is the macOS
-    // / Windows default; we use the same.
-    const RENAME_CLICK_DELAY_MS = 500;
-    const renameTimerRef = useRef<number | null>(null);
-    const clearRenameTimer = useCallback(() => {
-        if (renameTimerRef.current !== null) {
-            window.clearTimeout(renameTimerRef.current);
-            renameTimerRef.current = null;
-        }
-    }, []);
-    // Latest selectedId in a ref so the timeout closure can re-check
-    // whether the targeted row is still selected when the delay elapses.
-    const selectedIdAtScheduleRef = useRef<string | null>(null);
-    const scheduleRename = useCallback((id: string) => {
-        clearRenameTimer();
-        selectedIdAtScheduleRef.current = id;
-        renameTimerRef.current = window.setTimeout(() => {
-            renameTimerRef.current = null;
-            // Defensive: only fire when the targeted row is still the
-            // single selection (the user may have clicked away inside
-            // the click-pause window).
-            if (selectedIdAtScheduleRef.current === id) {
-                beginRenameRef.current?.(id);
-            }
-        }, RENAME_CLICK_DELAY_MS);
-    }, [clearRenameTimer]);
-
-    // Cancel any pending click-pause schedule when an editor opens from
-    // another path (F2 / ctxmenu Rename), and on unmount.
-    useEffect(() => {
-        if (editingNodeId != null) clearRenameTimer();
-    }, [editingNodeId, clearRenameTimer]);
-    useEffect(() => clearRenameTimer, [clearRenameTimer]);
+    // Rename is entered by F2 or the right-click menu, and by nothing a
+    // plain click can do. There used to be a third trigger -- clicking an
+    // already-selected row started a 500ms timer to open the editor, the
+    // Finder gesture ADR-0002 adopted -- and it went off constantly: coming
+    // back to the pane from the 3D view, clicking a row to confirm what is
+    // selected, and starting a drag then thinking better of it all re-click
+    // the selected row. Renaming is a rare operation and does not deserve a
+    // gesture the common ones collide with; VS Code, Xcode and Blender all
+    // leave it to F2 / the menu for the same reason. See ui-style-guide
+    // "listbox: 行の編集モード", which the paint deck follows too.
 
     // Notify the controller of expand/collapse so object / rendGroup rows
     // persist `ui_collapsed` (held in a ref like the rename callbacks so
@@ -254,7 +223,6 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
                 // `treeContents`, which is declared after this handler.
                 const visible = visibleRowIdsRef.current;
                 if (visible.includes(selectedId) && visible.includes(idStr)) {
-                    clearRenameTimer();
                     onSelectRange(idStr, visible, e.metaKey || e.ctrlKey);
                     return;
                 }
@@ -262,32 +230,14 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
             // Cmd (macOS) or Ctrl (other) toggles the node in the multi-
             // select set.
             if ((e.metaKey || e.ctrlKey) && onToggleSelect) {
-                clearRenameTimer();
                 onToggleSelect(idStr);
                 return;
             }
-            // Click-pause-click rename (Finder / Explorer parity).
-            // Triggered when the same single-selected, renameable row is
-            // clicked a second time without modifiers and not as part of
-            // a dblclick (handleNodeDoubleClick cancels the timer).
-            const isAlreadySelected = selectedId === idStr;
-            const isSingleSelected = !selectedIds || selectedIds.size <= 1;
-            if (isAlreadySelected && isSingleSelected) {
-                const sceneNode = nodeLookup.get(idStr);
-                if (sceneNode && isRenameableType(sceneNode.type)) {
-                    scheduleRename(idStr);
-                    return;
-                }
-            }
-            // Selecting a different row (or a non-renameable row): cancel
-            // any pending schedule before the selection state mutates.
-            clearRenameTimer();
+            // A plain click only ever selects -- re-clicking the selected row
+            // included. See the rename note above.
             onSelect(idStr);
         },
-        [
-            onSelect, onToggleSelect, onSelectRange, selectedId, selectedIds,
-            nodeLookup, isRenameableType, scheduleRename, clearRenameTimer,
-        ],
+        [onSelect, onToggleSelect, onSelectRange, selectedId],
     );
 
 
@@ -357,16 +307,13 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
     // Blueprint Tree's `onNodeDoubleClick` fires after the second mouse-up
     // of a click pair. Resolve back to the typed SceneTreeNode and forward
     // to the caller -- UXP `onTreeItemClick` `aEvent.detail==2` path.
-    // Also cancel any click-pause rename schedule the second click would
-    // have armed: a real double-click takes precedence over rename.
     const handleNodeDoubleClick = useCallback(
         (info: TreeNodeInfo) => {
-            clearRenameTimer();
             if (!onNodeDoubleClick) return;
             const node = nodeLookup.get(String(info.id));
             if (node) onNodeDoubleClick(node);
         },
-        [nodeLookup, onNodeDoubleClick, clearRenameTimer],
+        [nodeLookup, onNodeDoubleClick],
     );
 
     const visibilityButton = useVisibilityButton({ onToggleVisibility, parentLookup });

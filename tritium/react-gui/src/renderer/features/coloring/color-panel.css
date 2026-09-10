@@ -162,6 +162,44 @@
   width: 100%;
 }
 
+/* Display mode: a row shows its values as text until the user asks to edit
+   one (ui-style-guide, "listbox: 行の編集モード"). The cell keeps the height
+   the editor had so entering edit mode does not reflow the table, and keeps
+   the field's chevron so the picker popovers stay one click away. */
+.color-cell-view {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--field-h);
+}
+
+.color-cell-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Same bare chevron trigger the MolSelList / colour fields use: no chrome, so
+   the display row reads as a row and not as a control. */
+.color-cell-caret {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.color-cell-color .h3-color-view {
+  min-height: var(--field-h);
+  width: 100%;
+}
+
 /* Bottom action buttons */
 /* One group of list edits (Add / Remove / Move up / Move down). Cut, Copy,
    Paste and Delete all live in the row context menu, so the row stays on a

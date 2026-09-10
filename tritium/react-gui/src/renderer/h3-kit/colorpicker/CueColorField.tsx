@@ -23,6 +23,15 @@ interface CueColorFieldProps {
     modes?: Mode[]
     disabled?: boolean
     className?: string
+    /** Open the popover on mount (see `ColorPicker.autoOpen`). */
+    autoOpen?: boolean
+    /** Focus the text box on mount. */
+    autoFocus?: boolean
+    /**
+     * The user finished with this colour (popover closed, or Escape). A host
+     * that mounted the field for one edit returns to its display state here.
+     */
+    onDone?: () => void
 }
 
 /** ColorPicker bound to a parent-owned value with commit-on-completed. */
@@ -32,6 +41,9 @@ export const CueColorField: React.FC<CueColorFieldProps> = ({
     modes,
     disabled,
     className,
+    autoOpen,
+    autoFocus,
+    onDone,
 }) => {
     const { cm, sceneId } = useColorPickerCtx()
 
@@ -50,6 +62,9 @@ export const CueColorField: React.FC<CueColorFieldProps> = ({
             modes={modes}
             disabled={disabled}
             className={className}
+            autoOpen={autoOpen}
+            autoFocus={autoFocus}
+            onClose={onDone}
             onChange={handleChange}
         />
     )

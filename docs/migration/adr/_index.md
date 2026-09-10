@@ -36,7 +36,7 @@ Architecture Decision Records for the UXP → tritium migration.
 | ADR | Title | Status | Date | Mapping rows |
 |-----|-------|--------|------|--------------|
 | [ADR-0001](ADR-0001-scene-tree-dnd.md) | Scene-tree drag-and-drop detection strategy | accepted (in-app verification pending) | 2026-05-12 | `panel.workspace.tree` |
-| [ADR-0002](ADR-0002-scene-tree-inline-rename.md) | Scene-tree inline rename — three triggers, single controller | accepted | 2026-05-13 | `panel.workspace.tree` |
+| [ADR-0002](ADR-0002-scene-tree-inline-rename.md) | Scene-tree inline rename — three triggers, single controller (click-pause-click は 2026-09-10 に廃止し F2 / ctxmenu の 2 つへ) | accepted (partly superseded) | 2026-05-13 | `panel.workspace.tree` |
 | [ADR-0003](ADR-0003-object-ctxmenu-phases.md) | Object context menu — phase decomposition and per-phase choices | accepted | 2026-05-12 | `panel.workspace.ctxmenu.object` |
 | [ADR-0004](ADR-0004-renderer-ctxmenu.md) | Renderer context menu — Coloring, Paint, Style, Change-type | accepted (Edit / Create style dialogs verified in-app 2026-08-22) | 2026-05-13 | `panel.workspace.ctxmenu.renderer` |
 | [ADR-0005](ADR-0005-camera-name-keyed.md) | Camera operations are name-keyed at the worker boundary | accepted | 2026-05-13 | `panel.workspace.ctxmenu.camera` |

@@ -52,7 +52,8 @@ export const PAINT_MIN_COLOR_COL = 90
 export const PAINT_COL_MIN = 40
 
 /** Actions the paint row context menu can return. */
-export type PaintCtxAction = 'cut' | 'copy' | 'paste' | 'delete' | 'deleteAll'
+export type PaintCtxAction =
+    | 'edit' | 'cut' | 'copy' | 'paste' | 'delete' | 'deleteAll'
 
 export const COLORING_MODE_ITEMS: ColoringModeItem[] = [
     { label: 'Paint coloring',          coloringId: 'paint-type-paint',    enabled: true  },
