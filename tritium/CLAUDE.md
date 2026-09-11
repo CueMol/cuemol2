@@ -163,6 +163,34 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit â
 
 ---
 
+## Built-in plugins (`react-gui/src/plugins/`)
+
+Some features are packaged as **built-in plugins**: one directory each, declaring what they
+contribute in a manifest, switchable in Settings > Plugins. Currently `catalog` (dev-only
+component gallery), `getpdb` and `sequence`.
+
+Full spec: [`docs/architecture/tritium-plugin-host.md`](../docs/architecture/tritium-plugin-host.md).
+The rules that bite while editing core code:
+
+- **Core must not import a plugin's internals.** ESLint (`NO_PLUGIN_INTERNALS`) rejects
+  `@plugins/*/**` from `src/renderer/**`; only `plugin-host/PluginProvider.tsx` imports the
+  `@plugins/index` registry. A plugin reaches core through `@renderer/plugin-host/api`.
+- **The typed maps stay closed.** `CmdId` / `CommandMap` / `ServiceMap` are for built-ins only.
+  A plugin uses the string lane instead: `registerAny` / `dispatchAny` for commands, and worker
+  services registered under `plugin.<id>.<name>` (the prefix is applied by the plugin glob in
+  `worker/server/services/index.ts`, so `calls/index.test.ts` still checks built-ins one-for-one).
+- **A contributed menu row carries its command in the channel** (`menu:plugin:<commandId>`),
+  because main builds the native menu and cannot see the renderer's plugin registry. Both menu
+  surfaces build from `buildAppMenu()` in `shared/pluginMenu.ts`.
+- **`definePlugin(...)` needs a pure annotation** at the call site, or a `devOnly` plugin is not
+  tree-shaken out of a release build.
+
+When adding a contribution point to the shell, extend the manifest type in
+`renderer/plugin-host/types.ts` and resolve it in `pluginSelect.ts`; do not special-case a
+plugin id anywhere in core.
+
+---
+
 ## Common service patterns
 
 ### Service results: return `Result`, never throw across the boundary

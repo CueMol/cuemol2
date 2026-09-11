@@ -1,6 +1,6 @@
 /**
  * @file worker/shared/calls/select.ts
- * @description ServiceMap slice: atom selection: compile, apply, structure browsing, sequence panel.
+ * @description ServiceMap slice: atom selection: compile, apply, structure browsing.
  *
  * One row per registered worker service. `SELECT_KEYS` lists the same keys
  * as a value, so `calls/index.test.ts` can check the slices against the
@@ -28,10 +28,6 @@ import type {
   GetSelHitCountArgs,
   GetSelHitCountResult,
 } from '@renderer/worker/server/services/select/getSelHitCount'
-import type {
-  GetSeqPanelDataArgs,
-  GetSeqPanelDataResult,
-} from '@renderer/worker/server/services/select/getSeqPanelData'
 import type { LassoSelectArgs, LassoSelectResult } from '@renderer/worker/server/services/select/lassoSelect'
 import type { RectSelectArgs, RectSelectResult } from '@renderer/worker/server/services/select/rectSelect'
 import type { SaveSelDefArgs, SaveSelDefResult } from '@renderer/worker/server/services/select/saveSelDef'
@@ -39,14 +35,6 @@ import type {
   SelectObjectMolArgs,
   SelectObjectMolResult,
 } from '@renderer/worker/server/services/select/selectObjectMol'
-import type {
-  CenterOnResidueArgs,
-  CenterOnResidueResult,
-  RangeSelectResiduesArgs,
-  RangeSelectResiduesResult,
-  ToggleResidueSelectionArgs,
-  ToggleResidueSelectionResult,
-} from '@renderer/worker/server/services/select/seqPanelOps'
 import type {
   ValidateSelectionArgs,
   ValidateSelectionResult,
@@ -64,10 +52,6 @@ export interface SelectCalls {
   applyMolSelString:          { args: ApplyMolSelStringArgs; result: ApplyMolSelStringResult }
   centerMolSelection:         { args: CenterMolSelectionArgs; result: CenterMolSelectionResult }
   zoomMolSelection:           { args: ZoomMolSelectionArgs; result: ZoomMolSelectionResult }
-  toggleResidueSelection:     { args: ToggleResidueSelectionArgs; result: ToggleResidueSelectionResult }
-  rangeSelectResidues:        { args: RangeSelectResiduesArgs; result: RangeSelectResiduesResult }
-  centerOnResidue:            { args: CenterOnResidueArgs; result: CenterOnResidueResult }
-  getSeqPanelData:            { args: GetSeqPanelDataArgs; result: GetSeqPanelDataResult }
   rectSelect:                 { args: RectSelectArgs; result: RectSelectResult }
   lassoSelect:                { args: LassoSelectArgs; result: LassoSelectResult }
 }
@@ -84,10 +68,6 @@ export const SELECT_KEYS = [
   'applyMolSelString',
   'centerMolSelection',
   'zoomMolSelection',
-  'toggleResidueSelection',
-  'rangeSelectResidues',
-  'centerOnResidue',
-  'getSeqPanelData',
   'rectSelect',
   'lassoSelect',
 ] as const satisfies readonly (keyof SelectCalls)[]

@@ -133,6 +133,29 @@ describe('CommandRegistry', () => {
     h.unmount()
   })
 
+  it('carries plugin commands on the same bus, keyed by string', async () => {
+    // The plugin lane and the built-in lane share one map: a plugin id has to
+    // dispatch through `dispatchAny`, and an id nothing registered has to
+    // reject rather than resolve to undefined.
+    const calls: unknown[] = []
+    const h = makeRenderHook(() => {
+      const cmds = useCommands()
+      React.useEffect(
+        () => cmds.registerAny('plugin.demo.run', (args) => { calls.push(args) }),
+        [cmds],
+      )
+      return cmds
+    }, Wrapper)
+    await flushPromises()
+
+    await h.result.dispatchAny('plugin.demo.run', { id: 7 })
+    expect(calls).toEqual([{ id: 7 }])
+    expect(h.result.has('plugin.demo.run')).toBe(true)
+
+    await expect(h.result.dispatchAny('plugin.demo.missing')).rejects.toThrow(/unknown command/)
+    h.unmount()
+  })
+
   it('useCommands throws when used outside provider', () => {
     expect(() => makeRenderHook(() => useCommands())).toThrow(/inside <CommandProvider>/)
   })

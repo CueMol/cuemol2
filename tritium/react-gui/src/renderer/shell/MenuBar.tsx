@@ -4,17 +4,22 @@
  *
  * Renders the shared `APP_MENU` template as VS Code-style dropdowns. macOS
  * uses the native application menu instead, so `darwinOnly` groups / items
- * are excluded here. Each open group's items are resolved to platform-neutral
+ * are excluded here. Rows contributed by the enabled plugins are merged into
+ * the template first, by the same `buildAppMenu` the native menu builds from,
+ * so both surfaces show the same menu.
+ *
+ * Each open group's items are resolved to platform-neutral
  * `MenuNode`s by `resolveAppMenuNodes` (deriving live View-menu radio state,
  * scene-op gating and the recent-files submenu from props) and rendered by
  * the shared `MenuPanel`, so dropdowns and the React context menus share one
  * look. Item picks dispatch either an `ipcChannel` (custom action), a `role`
  * (standard edit role), or a recent-file open.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import appIcon from '@renderer/assets/app-icon.png'
-import { APP_MENU } from '@shared/menuTemplate'
 import type { AppMenuRole } from '@shared/menuTemplate'
+import { buildAppMenu } from '@shared/pluginMenu'
+import { usePluginContributions } from '@renderer/plugin-host'
 import { IPC } from '@shared/ipcChannels'
 import { useMenuDispatch } from '@renderer/hooks/useMenuDispatch'
 import { MenuPanel } from '@renderer/shell/menu/MenuPanel'
@@ -33,6 +38,7 @@ const MenuBarComponent: React.FC = () => {
   // same hook feeds the keybinding dispatcher, so a shortcut and its menu row
   // always agree on whether the item is enabled.
   const menuState = useMenuBarState()
+  const { menus } = usePluginContributions()
   const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
@@ -91,7 +97,10 @@ const MenuBarComponent: React.FC = () => {
   )
 
   // MenuBar is only used on Windows/Linux: exclude darwinOnly groups
-  const visibleGroups = APP_MENU.filter((g) => !g.darwinOnly)
+  const visibleGroups = useMemo(
+    () => buildAppMenu(menus).filter((g) => !g.darwinOnly),
+    [menus],
+  )
 
   return (
     // data-keep-clipboard-scope: clicking the menu must not clear which panel

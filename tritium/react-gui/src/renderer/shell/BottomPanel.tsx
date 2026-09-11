@@ -1,21 +1,25 @@
 /**
- * Bottom panel with VSCode-style tabbed switching between Output,
- * Sequence alignment and Animation timeline views. (Render execution
+ * Bottom panel with VSCode-style tabbed switching between the Output log,
+ * the Animation timeline and the MD trajectory transport. (Render execution
  * lives in the modeless Rendering window -- see RenderWindowApp.)
  *
  * The Output tab renders `LogPanel` (pre-element based). The log
  * subscription (`useLogEvent`) and accumulated buffer live here, not
  * inside `LogPanel`, so that switching to another tab does not unmount
  * the buffer or drop incoming messages from the cuemol3 core.
+ *
+ * Plugins contribute tabs of their own; the Sequence panel is one. A
+ * contributed tab gets the same scene / view props a built-in one does.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
 import { PanelTabButton } from "./PanelTabButton";
 import { LogPanel } from "@renderer/features/log/LogPanel";
-import { SequencePanel } from "@renderer/features/sequence/SequencePanel";
 import { AnimationPanel } from "@renderer/features/animation/AnimationPanel";
 import { TrajectoryPanel } from "@renderer/features/trajectory/TrajectoryPanel";
+import { insertAfterId, usePluginContributions } from "@renderer/plugin-host";
+import type { ResolvedPluginBottomTab } from "@renderer/plugin-host";
 import { useLogActions, useLogContents } from "@renderer/contexts/LogContext";
 import { IPC } from "@shared/ipcChannels";
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
@@ -25,7 +29,34 @@ import { useActiveScene } from "@renderer/state/workspace";
 // Types
 // ---------------------------------------------
 
-type BottomTabType = "output" | "sequence" | "animation" | "trajectory";
+/**
+ * Tab identifier. A plain string rather than a union of the built-ins,
+ * because a plugin names its own tab.
+ */
+type BottomTabType = string;
+
+/** One entry in the tab strip. */
+interface BottomTabDef {
+  id: BottomTabType;
+  label: string;
+  icon: AppIconKey;
+}
+
+/** The tabs the application itself owns, in left-to-right order. */
+const BUILTIN_BOTTOM_TABS: readonly BottomTabDef[] = [
+  { id: "output", label: "Output", icon: "panel.output" },
+  { id: "animation", label: "Animation", icon: "panel.animation" },
+  { id: "trajectory", label: "Trajectory", icon: "panel.trajectory" },
+];
+
+/** The tab strip for the enabled plugins: built-ins with the contributions spliced in. */
+function buildBottomTabs(contributed: readonly ResolvedPluginBottomTab[]): BottomTabDef[] {
+  let tabs: BottomTabDef[] = [...BUILTIN_BOTTOM_TABS];
+  for (const tab of contributed) {
+    tabs = insertAfterId(tabs, [tab], tab.after, (t) => t.id);
+  }
+  return tabs;
+}
 
 interface TabButtonProps {
   tab: BottomTabType;
@@ -52,6 +83,14 @@ const BottomPanelComponent: React.FC = () => {
   const { cm } = useCueMol();
   const { activeSceneId, activeMolViewId } = useActiveScene();
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
+  const { bottomTabs: contributedTabs } = usePluginContributions();
+  const tabs = useMemo(() => buildBottomTabs(contributedTabs), [contributedTabs]);
+
+  // Switching a plugin off while its tab is in front would leave the panel
+  // showing nothing; fall back to the Output tab, which always exists.
+  useEffect(() => {
+    if (!tabs.some((t) => t.id === activeTab)) setActiveTab("output");
+  }, [tabs, activeTab]);
 
   // The log buffer lives in LogProvider (so renderer-side code can append via
   // useLogPanel() and it survives tab switches); the Output-tab UI state stays
@@ -89,14 +128,6 @@ const BottomPanelComponent: React.FC = () => {
             onSaveAs={handleSaveLogAs}
           />
         );
-      case "sequence":
-        return (
-          <SequencePanel
-            cm={cm}
-            activeSceneId={activeSceneId}
-            activeMolViewId={activeMolViewId}
-          />
-        );
       case "animation":
         return (
           <AnimationPanel
@@ -107,16 +138,34 @@ const BottomPanelComponent: React.FC = () => {
         );
       case "trajectory":
         return <TrajectoryPanel cm={cm} activeSceneId={activeSceneId} />;
+      default: {
+        const contributed = contributedTabs.find((t) => t.id === activeTab);
+        if (!contributed) return null;
+        const Panel = contributed.Component;
+        return (
+          <Panel
+            cm={cm}
+            activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
+          />
+        );
+      }
     }
   };
 
   return (
     <div className="bottom-panel">
       <div className="bottom-panel-tabs">
-        <TabButton tab="output" activeTab={activeTab} icon="panel.output" label="Output" onClick={setActiveTab} />
-        <TabButton tab="sequence" activeTab={activeTab} icon="panel.sequence" label="Sequence" onClick={setActiveTab} />
-        <TabButton tab="animation" activeTab={activeTab} icon="panel.animation" label="Animation" onClick={setActiveTab} />
-        <TabButton tab="trajectory" activeTab={activeTab} icon="panel.trajectory" label="Trajectory" onClick={setActiveTab} />
+        {tabs.map((tab) => (
+          <TabButton
+            key={tab.id}
+            tab={tab.id}
+            activeTab={activeTab}
+            icon={tab.icon}
+            label={tab.label}
+            onClick={setActiveTab}
+          />
+        ))}
       </div>
       <div className="bottom-panel-content">{renderContent()}</div>
     </div>

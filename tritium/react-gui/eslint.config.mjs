@@ -105,6 +105,17 @@ const KIT_BARREL_ONLY = {
     'Import from the kit barrel (@renderer/h3-kit/form, /list, /primitives, /colorpicker, /MolSelList, /selection), not from a module inside it.',
 }
 
+/**
+ * Core code may mount the plugin registry, but never reach inside a plugin.
+ * A plugin is reachable only through its manifest -- that is what makes
+ * disabling one, or dropping it from a build, a local change.
+ */
+const NO_PLUGIN_INTERNALS = {
+  group: ['@plugins/*/**'],
+  message:
+    'Core code must not import a plugin\'s internals. Contribute through the manifest, or move the shared piece into the core.',
+}
+
 /** Relative specifiers that climb three or more levels. */
 const NO_DEEP_RELATIVE = {
   group: ['../../../**'],
@@ -264,6 +275,50 @@ export default tseslint.config(
         allowTypeImports: true,
         message:
           'Import the DTO with `import type`, or go through cm.invokeService(); a value import pulls worker code into the renderer bundle.',
+      },
+      {
+        group: ['@main/**', '**/main/**', 'electron'],
+        message: 'The renderer talks to main through window.electronAPI only.',
+      },
+      KIT_BARREL_ONLY,
+      NO_DEEP_RELATIVE,
+      NO_PLUGIN_INTERNALS,
+    ),
+  },
+
+  // --- Layer: a plugin's worker half runs in the Web Worker ---
+  // Same thread as src/renderer/worker/server, so the same rules: a plugin
+  // service that pulled in React or a pane would break the worker bundle in
+  // exactly the way the core rule exists to prevent.
+  {
+    files: ['src/plugins/*/worker/**/*.ts'],
+    rules: restrict(
+      {
+        group: [
+          '@renderer/components/**', '@renderer/hooks/**', '@renderer/contexts/**',
+          '@renderer/commands/**', '@renderer/h3-kit/**', '@renderer/plugin-host/**',
+          '@plugins/*/renderer/**',
+          '**/components/**', '**/hooks/**', '**/contexts/**', '**/h3-kit/**',
+        ],
+        message: 'A plugin worker service runs in the Web Worker: import DTOs from worker/shared, never from the UI tree.',
+      },
+      {
+        group: ['react', 'react-dom', '@blueprintjs/**', '@renderer/worker/client/**', '**/worker/client/**'],
+        message: 'Wrong thread: a plugin worker service may not reach the renderer thread or React.',
+      },
+    ),
+  },
+
+  // --- Layer: a plugin's renderer half is renderer code ---
+  {
+    files: ['src/plugins/**/*.{ts,tsx}'],
+    ignores: ['src/plugins/*/worker/**'],
+    rules: restrict(
+      {
+        group: ['@renderer/worker/server/**', '**/worker/server/**', '@plugins/*/worker/**'],
+        allowTypeImports: true,
+        message:
+          'Import the DTO with `import type`, or go through the plugin service client; a value import pulls worker code into the renderer bundle.',
       },
       {
         group: ['@main/**', '**/main/**', 'electron'],

@@ -23,6 +23,8 @@ import type { NaviCtxAction, NaviCtxMenuPayload } from './types/naviCtxMenu'
 import type { TextEditAction, TextCtxShowPayload } from './types/textCtxMenu'
 import type { SceneCtxAction, SceneCtxMenuPayload } from './types/sceneCtxMenu'
 import type { MenuState } from './types/menuState'
+import type { PluginMenuContributionsReq } from './types/pluginContrib'
+import type { PluginMenuChannel } from './pluginMenu'
 import type { CrashReport } from './types/crash'
 import type {
   RenderWindowCommand, RenderWindowModeRequest, RenderWindowOpenOptions,
@@ -83,6 +85,7 @@ export interface InvokeChannels {
   [IPC.UI_SAVE]:           { req: Partial<UiState>;      res: void }
   [IPC.MENU_UPDATE_STATE]: { req: MenuState;             res: void }
   [IPC.MENU_SET_MODAL_BLOCKED]: { req: boolean;          res: void }
+  [IPC.MENU_SET_PLUGIN_CONTRIBUTIONS]: { req: PluginMenuContributionsReq; res: void }
   [IPC.RECENT_LOAD]:       { req: void;                  res: RecentFileEntry[] }
   [IPC.RECENT_ADD]:        { req: RecentFileEntry;       res: void }
   [IPC.RECENT_CLEAR]:      { req: void;                  res: void }
@@ -181,7 +184,10 @@ export interface PushChannels {
   [IPC.MENU_REDO]:         void
   // Payload is a known menu-action channel key (typed against menuActionMap)
   // so a typo'd channel becomes a compile error at every send / receive site.
-  [IPC.MENU_GENERIC]:      MenuActionChannel
+  // A plugin-contributed row carries the `menu:plugin:<commandId>` form
+  // instead: main cannot see the renderer's plugin registry, so the command
+  // id travels inside the channel and useMenuDispatch decodes it.
+  [IPC.MENU_GENERIC]:      MenuActionChannel | PluginMenuChannel
   [IPC.ROTATE_GESTURE]:    number
   [IPC.WINDOW_CLOSE_REQUEST]: void
   [IPC.MENU_OPEN_RECENT]:  RecentFileEntry

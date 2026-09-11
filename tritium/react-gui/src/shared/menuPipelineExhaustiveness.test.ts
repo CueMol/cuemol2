@@ -75,7 +75,6 @@ const DISPATCH_HANDLED: ReadonlySet<string> = new Set<string>([
   IPC.MENU_COLOR_PROOF,
   IPC.MENU_SCENE_PROPS,
   IPC.MENU_ABOUT,
-  IPC.MENU_GET_PDB,
   'menu:clear-undo',
   'menu:change-chain-id',
   'menu:delete-mol-atoms',

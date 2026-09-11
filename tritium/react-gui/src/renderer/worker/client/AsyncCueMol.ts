@@ -120,6 +120,21 @@ export class AsyncCueMol {
         return this._transport.invokeService(name, args, opts);
     }
 
+    /**
+     * Call a plugin-contributed worker service.
+     *
+     * Prefer the plugin's own `definePluginServices` client, which types the
+     * args and result against that plugin's call contract.
+     */
+    invokePluginService(
+        pluginId: string,
+        name: string,
+        args: unknown,
+        opts?: InvokeOptions,
+    ): Promise<unknown> {
+        return this._transport.invokePluginService(pluginId, name, args, opts);
+    }
+
     /** Call a worker variadic method (`MethodMap` entry). */
     invokeMethodTyped<K extends MethodKey>(name: K, ...args: MethodArgs<K>): Promise<MethodResult<K>> {
         return this._transport.invokeMethod(name, ...args);

@@ -37,6 +37,9 @@
  */
 import { useEffect, useMemo } from 'react'
 import { APP_MENU, TEXT_EDIT_MENU_IDS } from '@shared/menuTemplate'
+import type { AppMenuGroup } from '@shared/menuTemplate'
+import { buildAppMenu } from '@shared/pluginMenu'
+import { usePluginContributions } from '@renderer/plugin-host'
 import { acceleratorMatchesKey, parseAccelerator } from '@shared/menuAccel'
 import type { ParsedAccelerator } from '@shared/menuAccel'
 import type { MenuNode } from '@shared/menuNodes'
@@ -78,12 +81,20 @@ function collectFromNodes(nodes: MenuNode<MenuBarPick>[], out: MenuKeyBinding[])
 }
 
 /**
- * Resolve `APP_MENU` against the live state and list every shortcut the
+ * Resolve the menu against the live state and list every shortcut the
  * renderer owns, with its current enabled flag. Pure; exported for tests.
+ *
+ * @param ctx - the live state the template's enabled / checked flags derive from.
+ * @param groups - the menu to walk. Defaults to the built-in template; the
+ *   hook passes the one with the enabled plugins' rows merged in, so a
+ *   contributed accelerator works exactly like a built-in one.
  */
-export function collectMenuKeyBindings(ctx: MenuBarStateContext): MenuKeyBinding[] {
+export function collectMenuKeyBindings(
+  ctx: MenuBarStateContext,
+  groups: readonly AppMenuGroup[] = APP_MENU,
+): MenuKeyBinding[] {
   const out: MenuKeyBinding[] = []
-  for (const group of APP_MENU) {
+  for (const group of groups) {
     if (group.darwinOnly) continue
     collectFromNodes(resolveAppMenuNodes(group.submenu, ctx), out)
   }
@@ -97,9 +108,13 @@ export function collectMenuKeyBindings(ctx: MenuBarStateContext): MenuKeyBinding
 export function useMenuKeyBindings(): void {
   const isMac = window.electronAPI?.platform === 'darwin'
   const ctx = useMenuBarState()
+  const { menus } = usePluginContributions()
   const { dispatchMenuChannel } = useMenuDispatch()
 
-  const bindings = useMemo(() => (isMac ? [] : collectMenuKeyBindings(ctx)), [ctx, isMac])
+  const bindings = useMemo(
+    () => (isMac ? [] : collectMenuKeyBindings(ctx, buildAppMenu(menus))),
+    [ctx, isMac, menus],
+  )
 
   useEffect(() => {
     if (isMac) return

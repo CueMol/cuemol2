@@ -98,6 +98,7 @@ import {
   Intersect,
   Key,
   Palette,
+  PuzzlePiece,
   Shield,
   TextAa,
 } from "@phosphor-icons/react";
@@ -245,6 +246,7 @@ export const APP_ICONS = {
   "settings.language": { lib: "phosphor", Comp: Globe },
   "settings.updates": { lib: "phosphor", Comp: CloudArrowDown },
   "settings.privacy": { lib: "phosphor", Comp: Shield },
+  "settings.plugins": { lib: "phosphor", Comp: PuzzlePiece },
 
   // Animation track labels.
   "track.camera": { lib: "phosphor", Comp: Camera },

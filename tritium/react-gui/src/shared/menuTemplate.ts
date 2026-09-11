@@ -106,7 +106,6 @@ export const APP_MENU: AppMenuGroup[] = [
       { type: 'separator' },
       { id: 'open-file',   label: 'Open File...',      accelerator: 'CmdOrCtrl+O',       ipcChannel: IPC.MENU_OPEN_FILE },
       { id: 'open-traj',   label: 'Open MD Trajectory...', ipcChannel: IPC.MENU_OPEN_TRAJ },
-      { id: 'get-pdb',     label: 'Get PDB...',        ipcChannel: IPC.MENU_GET_PDB },
       {
         id: 'open-recent', label: 'Open Recent',
         submenu: [

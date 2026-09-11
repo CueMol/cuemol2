@@ -107,4 +107,12 @@ export interface UiState {
   hoverInfo?: boolean
   /** Highlight the element under the pointer in the 3D view. Defaults to true. */
   hoverHighlight?: boolean
+  /**
+   * Built-in plugins the user has switched off, by plugin id.
+   *
+   * Stored as the exception rather than the enabled set so a plugin added in
+   * a later version starts out on, the way it would if the field did not
+   * exist. An id that no longer matches any plugin is ignored.
+   */
+  disabledPlugins?: string[]
 }

@@ -20,7 +20,6 @@
 @import "./styles/_content-area.css";
 @import "./features/log/log-panel.css";
 @import "./features/render/render-window.css";
-@import "./features/sequence/sequence-panel.css";
 @import "./features/animation/animation-panel.css";
 @import "./features/trajectory/md-traj-panel.css";
 @import "./styles/_status-bar.css";

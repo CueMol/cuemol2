@@ -40,6 +40,17 @@ architecture, it belongs here.
   アクセス、`hooks/react` と `hooks/cuemol` の分け方、テストの配置。
   `eslint.config.mjs` が強制しており、flat config の「後のブロックが rule
   options を上書きする」落とし穴もここに記録している。
+- [tritium の plugin host (built-in plugin)](tritium-plugin-host.md) (日本語) --
+  react-gui の機能を plugin 単位で足し外しできるようにした仕組み (プラン Phase 0、
+  JS/TS レーンのみ・ビルド時同梱)。manifest が宣言する寄与点 (command / menu /
+  toolbar / activity view + side pane / bottom tab / dialog / worker service) と
+  core 側の受け口、`CmdId` と `ServiceMap` を閉じたまま残して plugin だけ
+  `plugin.<id>.<name>` の文字列レーンに分けた理由、native menu を持つ main へ
+  channel に command id を載せて渡す経路、`UiState.disabledPlugins` による
+  有効/無効と dev-only plugin の二重 gate (pure annotation が要る理由)、
+  `src/plugins/` の ESLint レイヤ規則と「core は plugin の中身を import しない」、
+  plugin の足しかたと最小テスト集合。現状の 3 つ (catalog / getpdb / sequence) は
+  その機能専用の C++ クラスを持たないことを基準に選んでいる。
 - [C++ Scripting Bridge](cpp-scripting-bridge.md) -- metaclass macros
   (`MC_DYNCLASS` / `MC_SCRIPTABLE`), the `getClassObj` vs
   `getScrClassObj` contract, and what external script bridges (UXP
