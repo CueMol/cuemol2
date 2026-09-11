@@ -77,4 +77,9 @@
   gap: var(--space-3);
   padding: var(--space-3);
   width: 15rem;
+  /* `--h3-popover-avail` is measured per open/reposition by the
+     `h3AvailHeight` Popper modifier in MolSelList; the fallback covers the
+     first paint. The px cap stops the list becoming a full-height column on a
+     tall window -- past a few dozen rows the Term tab is the better tool. */
+  max-height: min(400px, var(--h3-popover-avail, 45vh));
 }

@@ -332,12 +332,27 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     }),
 }))
 
-vi.mock('@renderer/worker/server/services/helpers/makeColor', () => ({
-    makeColor: vi.fn((_ctx: unknown, value: string, uid: number) => ({
-        __color: value,
-        __uid: uid,
-    })),
-}))
+vi.mock('@renderer/worker/server/services/helpers/makeColor', () => {
+    // `getClassName` sits on the prototype, not as an own property, so the
+    // `toEqual({ __color, __uid })` assertions below still match. It answers
+    // "MolColorRef" for `$molcol` the way C++ `ColCompiler` does -- that class
+    // name is what `setRendererDefaultColor` keys its colormode switch off.
+    class FakeColor {
+        __color: string
+        __uid: number
+        constructor(color: string, uid: number) {
+            this.__color = color
+            this.__uid = uid
+        }
+        getClassName(): string {
+            return this.__color === '$molcol' ? 'MolColorRef' : 'SolidColor'
+        }
+    }
+    return {
+        makeColor: vi.fn((_ctx: unknown, value: string, uid: number) =>
+            new FakeColor(value, uid)),
+    }
+})
 
 describe('setRendererColoring — Phase 1 new cases', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -362,13 +377,18 @@ describe('setRendererColoring — Phase 1 new cases', () => {
         )
     })
 
-    it('paint-type-solid calls resetProp("coloring") without instantiating', () => {
+    // Solid assigns a fresh SolidColoring rather than resetting to the style's
+    // (UXP `setRendColoring`). A reset restores whatever the style says, and
+    // the stock styles say CPKColoring (`DefaultCPKColoring`) or PaintColoring
+    // (the `*Paint` presets) -- so "Solid coloring" used to land on a CPK or
+    // Paint deck instead of the Solid one.
+    it('paint-type-solid assigns a fresh SolidColoring, not the style default', () => {
         const { ctx, createObj, resetProp, setColoring } = makeFixture()
         const res = services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
         expect(res).toEqual({ ok: true })
-        expect(resetProp).toHaveBeenCalledWith('coloring')
-        expect(createObj).not.toHaveBeenCalled()
-        expect(setColoring).not.toHaveBeenCalled()
+        expect(createObj).toHaveBeenCalledWith('SolidColoring')
+        expect(setColoring).toHaveBeenCalledWith({ __coloring: 'SolidColoring' })
+        expect(resetProp).not.toHaveBeenCalled()
     })
 
     it('paint-type-resetdef also routes through resetProp("coloring")', () => {
@@ -385,7 +405,7 @@ describe('setRendererColoring — Phase 1 new cases', () => {
 
         const f2 = makeFixture()
         services.setRendererColoring(f2.ctx, baseArgs('paint-type-solid'))
-        expect(f2.startUndoTxn).toHaveBeenCalledWith('Reset coloring')
+        expect(f2.startUndoTxn).toHaveBeenCalledWith('Change coloring')
 
         const f3 = makeFixture()
         services.setRendererColoring(f3.ctx, baseArgs('paint-type-resetdef'))
@@ -423,27 +443,26 @@ describe('setRendererColoring — isosurf (MOLFANC) cases', () => {
         expect(setTarget).not.toHaveBeenCalled()
     })
 
-    it('paint-type-solid resets coloring and switches colormode back to "solid"', () => {
-        const { ctx, resetProp, setColormode } = makeFixture({
-            typeName: 'isosurf',
-            initialTarget: '',
-        })
-        const res = services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
-        expect(res).toEqual({ ok: true })
-        expect(resetProp).toHaveBeenCalledWith('coloring')
-        expect(setColormode).toHaveBeenCalledWith('solid')
-    })
-
-    // molsurf is colormode-governed like isosurf: the Coloring panel is the
-    // only UI that can move its colormode (the Inspector row was dropped), so
-    // Solid / Reset must take it back to "solid" -- otherwise the MOLFANC /
-    // potential / multigrad path keeps overriding the solid defaultcolor.
-    it('paint-type-solid on molsurf also switches colormode back to "solid"', () => {
-        const { ctx, resetProp, setColormode } = makeFixture({ typeName: 'molsurf' })
-        services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
-        expect(resetProp).toHaveBeenCalledWith('coloring')
-        expect(setColormode).toHaveBeenCalledWith('solid')
-    })
+    // Solid goes through the molecule colormode like every other scheme: the
+    // renderer's own "solid" mode paints `defaultcolor` flat, with no atom in
+    // hand, so a SolidColoring assigned there would be ignored and a `$molcol`
+    // default would fall back to the MolColorRef gray. Molecule mode is what
+    // makes SolidColoring + $molcol identical to a Paint ("*", $molcol) row.
+    // Reset to default style is the way back to the flat mode.
+    it.each(['molsurf', 'isosurf', 'dsurface'])(
+        'paint-type-solid on %s takes the molecule colormode with a fresh SolidColoring',
+        (typeName) => {
+            const { ctx, setColormode, setColoring } = makeFixture({
+                typeName,
+                initialTarget: '',
+                sceneObjects: [{ type: 'MolCoord', name: 'mol1' }],
+            })
+            const res = services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
+            expect(res).toEqual({ ok: true })
+            expect(setColormode).toHaveBeenCalledWith('molecule')
+            expect(setColoring).toHaveBeenCalledWith({ __coloring: 'SolidColoring' })
+        },
+    )
 
     it('paint-type-resetdef on molsurf resets both coloring and colormode', () => {
         const { ctx, resetProp } = makeFixture({ typeName: 'molsurf' })
@@ -452,20 +471,10 @@ describe('setRendererColoring — isosurf (MOLFANC) cases', () => {
         expect(resetProp).toHaveBeenCalledWith('colormode')
     })
 
-    // dsurface / dsurf2 have no "solid" entry, so Solid takes the only other
-    // mode they have. Leaving colormode alone (what this used to do) meant the
-    // item did nothing at all while the renderer sat in potential mode.
-    it('paint-type-solid on dsurface falls back to "molecule"', () => {
-        const { ctx, resetProp, setColormode } = makeFixture({ typeName: 'dsurface' })
-        services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
-        expect(resetProp).toHaveBeenCalledWith('coloring')
-        expect(setColormode).toHaveBeenCalledWith('molecule')
-    })
-
     it('paint-type-solid leaves colormode alone on a renderer that has none', () => {
-        const { ctx, resetProp, setColormode } = makeFixture({ typeName: 'cartoon' })
+        const { ctx, setColormode, setColoring } = makeFixture({ typeName: 'cartoon' })
         services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
-        expect(resetProp).toHaveBeenCalledWith('coloring')
+        expect(setColoring).toHaveBeenCalledWith({ __coloring: 'SolidColoring' })
         expect(setColormode).not.toHaveBeenCalled()
     })
 
@@ -668,7 +677,25 @@ function makeRichFixture(opts: MakeRichOpts) {
         }
         // Optional renderer-level props (MOLFANC / multigrad probes).
         const rspec = spec as RendSpec
-        if (rspec.colormode !== undefined) rend.colormode = rspec.colormode
+        const setColormode = vi.fn()
+        if (rspec.colormode !== undefined) {
+            // Read/write accessor rather than a data property: services that
+            // move the renderer between colormodes have to be observable, and
+            // read back the value they wrote.
+            let colormodeValue = rspec.colormode
+            Object.defineProperty(rend, 'colormode', {
+                get: () => colormodeValue,
+                set: (v: string) => { colormodeValue = v; setColormode(v) },
+            })
+            // How a service learns which colormodes the renderer accepts.
+            rend.getPropsJSON = () =>
+                JSON.stringify(
+                    COLORMODE_ENUMDEF[typeName]
+                        ? [{ name: 'colormode', type: 'enum', value: colormodeValue,
+                             enumdef: COLORMODE_ENUMDEF[typeName] }]
+                        : [],
+                )
+        }
         if (rspec.target !== undefined) rend.target = rspec.target
         if (rspec.multiGrad) rend.multi_grad = { __mg: true }
 
@@ -677,7 +704,7 @@ function makeRichFixture(opts: MakeRichOpts) {
             spies: {
                 append, insertBefore, removeAt, changeAt,
                 getSelAt, getColorAt, setDefaultColor, resetProp,
-                setColoring, hasPropDefault, setProp,
+                setColoring, hasPropDefault, setProp, setColormode,
             },
             getEntries: () => paintEntries,
             getProps: () => props,
@@ -1113,6 +1140,39 @@ describe('setRendererDefaultColor', () => {
             expect.objectContaining({ __color: '#FF00FF' }),
         )
         expect(startUndoTxn).toHaveBeenCalledWith('Change default color')
+    })
+
+    // `$molcol` compiles to a MolColorRef, which carries no colour of its own
+    // -- it says "ask the molecule". A surface in its flat "solid" colormode
+    // has no atom to ask and paints the MolColorRef gray fallback instead, so
+    // the swatch said "molecule colour" while the surface turned gray. Any
+    // other colour is a real colour and must leave the colormode alone.
+    it.each([
+        ['$molcol', true],
+        ['#FF00FF', false],
+    ])('%s on a solid-mode molsurf switches to molecule: %s', (colorValue, switches) => {
+        const { ctx, rendWrappers } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'surf', typeName: 'molsurf',
+                    coloringClass: 'SolidColoring', defaultColor: '#C0C0FF',
+                    colormode: 'solid',
+                }],
+            }],
+        })
+        const res = services.setRendererDefaultColor(ctx, {
+            sceneId: 1, rendId: 100, colorValue,
+        })
+        expect(res).toEqual({ ok: true })
+        const spies = rendWrappers.get(100)!.spies
+        expect(spies.setDefaultColor).toHaveBeenCalledWith(
+            expect.objectContaining({ __color: colorValue }),
+        )
+        if (switches) {
+            expect(spies.setColormode).toHaveBeenCalledWith('molecule')
+        } else {
+            expect(spies.setColormode).not.toHaveBeenCalled()
+        }
     })
 })
 

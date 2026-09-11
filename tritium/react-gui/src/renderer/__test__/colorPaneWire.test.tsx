@@ -48,15 +48,20 @@ vi.mock('@renderer/h3-kit/colorpicker/CueColorField', () => ({
     CueColorField: ({
         value,
         onCommit,
+        onDone,
     }: {
         value: string
         onCommit: (v: string) => void
+        onDone?: () => void
     }) => (
         <button
             type="button"
             data-testid="color-commit"
             data-value={value}
             onClick={() => onCommit('#112233')}
+            // Second seam: "the user closed the picker", which is what
+            // returns the cell to display mode.
+            onBlur={() => onDone?.()}
         />
     ),
 }))
@@ -68,23 +73,26 @@ vi.mock('@renderer/h3-kit/colorpicker/ColorPickerContext', () => ({
     useColorPickerCtx: () => ({ cm: null, sceneId: undefined }),
 }))
 
-// Replace the paint selection cell with a seam exposing onCommit.
+// Replace the paint selection cell with a seam exposing its edit-mode
+// contract: commit on blur, and the two ways the edit ends.
 vi.mock('@renderer/features/coloring/PaintSelCell', () => ({
     PaintSelCell: ({
         value,
         onCommit,
-        onFocus,
+        onDone,
+        onCancel,
     }: {
         value: string
         onCommit: (v: string) => void
-        onFocus?: () => void
+        onDone?: () => void
+        onCancel?: () => void
     }) => (
         <input
             data-testid="paint-sel-cell"
             value={value}
-            onFocus={onFocus}
             onChange={() => {}}
-            onBlur={() => onCommit('aname CA')}
+            onBlur={() => { onCommit('aname CA'); onDone?.() }}
+            onKeyDown={(e) => { if (e.key === 'Escape') onCancel?.() }}
         />
     ),
 }))
@@ -659,6 +667,45 @@ describe('ColorPane wire', () => {
         unmount()
     })
 
+    // A row shows text until the user asks to edit it. This is what keeps a
+    // click on a row meaning "select this row": while every cell was a live
+    // input, a click landed in one and the deck was editing text before the
+    // user asked, taking Cmd+C / Cmd+V / Cmd+Z with it.
+    it('rows are not editors until a cell is double-clicked, and Escape closes', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const cell = () =>
+            container.querySelector('.color-cell-selection') as HTMLElement
+        const editor = () =>
+            container.querySelector('[data-testid="paint-sel-cell"]')
+
+        expect(editor()).toBeNull()
+        expect(cell().textContent).toContain(PAINT_ROWS[0].selStr)
+
+        await act(async () => {
+            cell().dispatchEvent(
+                new MouseEvent('dblclick', { bubbles: true }),
+            )
+        })
+        expect(editor()).not.toBeNull()
+
+        await act(async () => {
+            editor()!.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+            )
+        })
+        await flushPromises()
+        expect(editor()).toBeNull()
+        // Escape abandons the edit; nothing reaches the worker.
+        expect(cm.invokeService).not.toHaveBeenCalledWith(
+            'updatePaintEntry', expect.anything(),
+        )
+        unmount()
+    })
+
     // Move up / down act on one row: a multi-row move would have to compact a
     // disjoint selection into a contiguous block (what UXP did), which loses
     // the user's arrangement. They stay single-target and gate off instead.
@@ -806,6 +853,13 @@ describe('ColorPane wire', () => {
             className: 'PaintColoring',
             paintEntries: [{ idx: 0, selStr: 'aname N', colorValue: '#ff0000' }],
         })
+        // The cell shows a swatch until it is asked to edit, and keeps the
+        // chevron that opens the picker -- that popover is not text editing
+        // and stays one click away.
+        const caret = container.querySelector(
+            '.color-cell-color .h3-color-caret-btn',
+        ) as HTMLElement
+        await act(async () => { caret.click() })
         const swatch = container.querySelector(
             '[data-testid="color-commit"]',
         ) as HTMLElement

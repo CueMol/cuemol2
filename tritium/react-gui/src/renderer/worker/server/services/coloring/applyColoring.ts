@@ -5,6 +5,11 @@
  * deck's default color (`setRendererDefaultColor`), and the generic
  * CPK/Rainbow/Bfac scheme-property writer (`setColoringProp`).
  *
+ * Every scheme a user can pick here is read through the molecule, so each
+ * write also makes sure the renderer is in the colormode that reads one
+ * (`forceMoleculeColormode`). The modes that bypass a scheme entirely --
+ * "solid", potential, multigrad -- are selected by their own menu items.
+ *
  * Runs in the Web Worker thread; C++ wrappers are called synchronously.
  */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
@@ -21,6 +26,8 @@ import { createDefPaintColoring } from '@renderer/worker/server/services/helpers
 import {
     resolveColoringTarget,
     readColormodeValues,
+    readColormodeOrEmpty,
+    isMolColorRef,
     needsMolFancTarget,
     isElepotCapable,
     isMultiGradCapable,
@@ -58,6 +65,11 @@ import type {
  * panel looks broken. That was reachable in one click -- pick Electrostatic
  * potential on a scene with no ElePotMap and the renderer entered potential
  * mode with an empty target, after which no coloring choice could get it out.
+ *
+ * "solid" is one of those modes: it paints `defaultcolor` flat, without an
+ * atom, so every ColoringScheme is ignored there -- Solid coloring included,
+ * whose scheme defers to `defaultcolor` but through the molecule so that
+ * `$molcol` resolves. Hence every coloring choice routes through here.
  *
  * No-op on the renderers with no molecule mode (nearly all of them).
  */
@@ -97,9 +109,9 @@ function applyStyleColoring(scene: Scene, rend: Renderer, styleName: string): vo
 
 /**
  * Apply a `paint-type-XXX` coloring by instantiating a fresh coloring object
- * and assigning it. On molsurf / isosurf, also force colormode = "molecule".
- * `init` runs on the fresh object before it is assigned (the CPK variants use
- * it to pin the carbon colour).
+ * and assigning it. On a renderer with a molecule colormode, also switch into
+ * it (see `forceMoleculeColormode`). `init` runs on the fresh object before it
+ * is assigned (the CPK variants use it to pin the carbon colour).
  */
 function applyObjColoring(
     ctx: WorkerContext,
@@ -241,31 +253,27 @@ export function setRendererColoring(
             return { ok: true };
         }
         case 'paint-type-solid':
-            // UXP `setRendColoring`: Solid routes through
-            // `resetProp("coloring")`; the unknown deck then shows the
-            // renderer's defaultcolor picker. On the colormode-governed
-            // surfaces (molsurf / isosurf) the rendered color is picked by
-            // colormode, so also switch it back to "solid" -- otherwise the
-            // MOLFANC / potential / multigrad path keeps overriding the solid
-            // color and the deck's picker looks dead. This is also the only
-            // route back to "solid" for those renderers, so it must stay
-            // reachable from the panel.
-            withUndoTxn(scene, 'Reset coloring', () => {
-                rend.resetProp('coloring');
-                // "solid" where the renderer has it (molsurf, the map
-                // renderers); the direct-surface pair has only potential and
-                // molecule, and leaving them in potential would make this item
-                // do nothing at all -- so take the ordinary molecule path,
-                // which is also their default mode.
-                const modes = readColormodeValues(rend);
-                const next = modes.includes('solid')
-                    ? 'solid'
-                    : modes.includes('molecule')
-                      ? 'molecule'
-                      : null;
-                if (next) {
-                    (rend as unknown as { colormode: string }).colormode = next;
-                }
+            // UXP `setRendColoring`: a FRESH SolidColoring, plus the molecule
+            // colormode on the renderers governed by one. Two reasons it is an
+            // assignment and not `resetProp("coloring")`:
+            //
+            //   - a reset restores the STYLE's coloring, and the styles say
+            //     CPKColoring (`DefaultCPKColoring`, the default style of the
+            //     direct surfaces) or PaintColoring (the `*Paint` presets).
+            //     Picking "Solid coloring" then landed on a CPK or Paint deck.
+            //   - the molecule path is what makes the deck's colour mean
+            //     anything richer than one flat colour: `ColSchmHolder::
+            //     getColor` runs SolidColoring's (always-false) lookup, falls
+            //     back to `defaultcolor`, then resolves it through
+            //     `evalMolColor`. So `$molcol` here reaches the MolCoord's own
+            //     coloring, exactly as a Paint row of ("*", $molcol) does --
+            //     the two are the same picture, which is the point.
+            //
+            // The renderer's own "solid" colormode (a single flat colour, no
+            // molecule) stays reachable through "Reset to default style", and
+            // for isosurf also through the Density map panel.
+            withUndoTxn(scene, 'Change coloring', () => {
+                applyObjColoring(ctx, scene, rend, 'SolidColoring');
             });
             return { ok: true };
         case 'paint-type-resetdef':
@@ -333,6 +341,15 @@ export function setRendererColoring(
 
 /**
  * Solid-deck color picker: write the renderer's `defaultcolor` property.
+ *
+ * Picking `$molcol` additionally takes a surface out of its "solid" colormode.
+ * That mode paints the default colour without an atom in hand, and a
+ * MolColorRef with no molecule to ask resolves to its half-transparent gray
+ * fallback -- so the swatch said "molecule colour" while the surface turned
+ * gray. Molecule mode is where the reference resolves, and it is the mode the
+ * Solid item itself selects, so this only closes the gap left by a renderer
+ * that was already sitting in "solid" (fresh, loaded from a qsc, or just
+ * reset to its default style).
  */
 export function setRendererDefaultColor(
     ctx: WorkerContext,
@@ -345,6 +362,9 @@ export function setRendererDefaultColor(
 
     const color = makeColor(ctx, args.colorValue, scene.uid);
     withUndoTxn(scene, 'Change default color', () => {
+        if (isMolColorRef(color) && readColormodeOrEmpty(rend) === 'solid') {
+            forceMoleculeColormode(scene, rend);
+        }
         (rend as unknown as { defaultcolor: AbstractColor }).defaultcolor = color;
     });
     return { ok: true };

@@ -67,6 +67,11 @@ export function buildTemplate(payload: SceneCtxMenuPayload): SceneCtxNode[] {
                 bgColorSubmenu(payload),
                 colorProofingItem(payload),
                 { type: 'separator' },
+                // A scene row renames like every other renameable row (the
+                // controller routes it to `renameNode`, which calls
+                // `scene.setName`), but this item was missing, so the only way
+                // in was F2.
+                renameItem(),
                 ...pasteItem(payload, 'object'),
                 { type: 'separator' },
                 propertyItem(),

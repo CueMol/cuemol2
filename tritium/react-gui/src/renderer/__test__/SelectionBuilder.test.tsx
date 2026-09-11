@@ -137,6 +137,22 @@ describe('SelectionBuilder', () => {
         unmount()
     })
 
+    // "all (*)" is the one Named entry whose label is not its value: it is
+    // syntax, not a definition, so no scene or global def supplies it and
+    // nothing else would catch the two drifting apart. Applying the label
+    // would hand CueMol an expression it cannot compile.
+    it('Named tab: "all (*)" applies the expression *, not its label', async () => {
+        const onQuickApply = vi.fn()
+        const { container, unmount } = mountTree(
+            <Harness onQuickApply={onQuickApply} />,
+        )
+        await flushPromises()
+        await act(async () => { quickItem(container, 'all (*)')!.click() })
+        await flushPromises()
+        expect(onQuickApply).toHaveBeenCalledWith('*')
+        unmount()
+    })
+
     it('Named tab: a click applies immediately via onQuickApply, bypassing onApply', async () => {
         const onQuickApply = vi.fn()
         const { container, unmount } = mountTree(

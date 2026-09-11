@@ -180,6 +180,24 @@ describe('dispatchEditClipboard', () => {
     expect(scope.paste).toHaveBeenCalledTimes(1)
   })
 
+  // Focus inside a field means the user is editing text, wherever that field
+  // sits: a panel that keeps a live input under every row would break this
+  // rule, so panels show text and open an editor only when asked (see
+  // ui-style-guide, the listbox row-edit-mode rule).
+  it('gives a field inside a scope the native edit, not the scope', () => {
+    const scope = makeScope()
+    registerClipboardScope('paint-deck', scope)
+
+    const host = mountScope('paint-deck')
+    const input = document.createElement('input')
+    host.appendChild(input)
+    input.focus()
+
+    dispatchEditClipboard('copy')
+    expect(scope.copy).not.toHaveBeenCalled()
+    expect(nativeCalls()).toEqual(['copy'])
+  })
+
   it('falls back to the native edit when no scope is registered', () => {
     pointerDown(mountScope('scene-tree')) // tagged, but nothing registered
     dispatchEditClipboard('paste')

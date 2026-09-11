@@ -38,6 +38,7 @@ vi.mock('@renderer/contexts/ThemeContext', () => ({
 }))
 
 import { MolSelList } from '@renderer/h3-kit/MolSelList'
+import { availHeightModifier } from '@renderer/h3-kit/MolSelList/MolSelList'
 import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 function setupCm(opts?: {
@@ -303,5 +304,53 @@ describe('MolSelList', () => {
         await openPicker()
         expect(quickItem('resid 10:20')).toBeTruthy()
         unmount()
+    })
+})
+
+/**
+ * The picker's height comes from this, not from a constant: a field near the
+ * bottom of a dialog has no room for the height that suits the side panel, and
+ * a fixed one put the list on top of everything above the field. Popper picks
+ * the side; this measures it.
+ */
+describe('availHeightModifier', () => {
+    // jsdom does no layout, so the viewport it reports is 0 tall; stand in a
+    // real one, since the height is the whole point of this modifier.
+    const VIEWPORT_H = 768
+
+    beforeEach(() => {
+        Object.defineProperty(document.documentElement, 'clientHeight', {
+            value: VIEWPORT_H,
+            configurable: true,
+        })
+    })
+    afterEach(() => {
+        // Hand the property back to jsdom's own getter.
+        delete (document.documentElement as unknown as Record<string, unknown>)
+            .clientHeight
+    })
+
+    /** Drive the modifier and read back what it published. */
+    function run(placement: string, top: number, bottom: number): string {
+        const popper = document.createElement('div')
+        availHeightModifier.fn({
+            state: {
+                placement,
+                elements: {
+                    reference: { getBoundingClientRect: () => ({ top, bottom }) },
+                    popper,
+                },
+            },
+        })
+        return popper.style.getPropertyValue('--h3-popover-avail')
+    }
+
+    it('measures the side Popper landed on, and never reports negative room', () => {
+        // Opening downward: the room below the field, less the edge gap.
+        expect(run('bottom-end', 100, 120)).toBe(`${VIEWPORT_H - 120 - 16}px`)
+        // Flipped up: the room above it instead.
+        expect(run('top-end', 600, 620)).toBe(`${600 - 16}px`)
+        // Flush against the bottom edge: clamped, not a negative max-height.
+        expect(run('bottom-end', 760, VIEWPORT_H)).toBe('0px')
     })
 })

@@ -3,12 +3,12 @@
  * @description Presentational Blueprint menus that list ready-made selection
  * expressions, used by the MolSelList picker popover.
  *
- * `NamedSelMenu` groups the active molecule's current selection ("Selected"),
- * scene-level named defs, and global named defs (built-in macros like
- * `protein` / `water` surface under "Global" automatically). `HistoryMenu`
- * lists recently used expressions. Both are dumb: they render a list and call
- * `onPick(value)` -- the parent decides whether that re-seeds builder state or
- * commits a controlled value.
+ * `NamedSelMenu` offers "all (*)" first, then groups the active molecule's
+ * current selection ("Selected"), scene-level named defs, and global named
+ * defs (built-in macros like `protein` / `water` surface under "Global"
+ * automatically). `HistoryMenu` lists recently used expressions. Both are
+ * dumb: they render a list and call `onPick(value)` -- the parent decides
+ * whether that re-seeds builder state or commits a controlled value.
  *
  * @module SelMenus
  */
@@ -16,7 +16,11 @@
 import React from 'react';
 import { Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
 
-/* --- Named selections (Selected / Scene / Global) --- */
+/* --- Named selections (All / Selected / Scene / Global) --- */
+
+/** Every atom. The expression CueMol compiles, and how it is labelled. */
+const ALL_SEL = '*';
+const ALL_LABEL = 'all (*)';
 
 export interface NamedSelMenuProps {
     /** Target molecule's current selection (shown under "Selected"). */
@@ -38,11 +42,12 @@ export interface NamedSelMenuProps {
 }
 
 /**
- * Menu of named selection expressions, grouped by scope.
+ * Menu of named selection expressions, grouped by scope, with "all (*)" on top.
  *
  * Built-in macros (protein, water, ...) are global named selections loaded
  * from data/default_style.xml into scope 0, so they already surface under
- * "Global" -- no separate hardcoded list.
+ * "Global" -- no separate hardcoded list. `*` is not among them (it is syntax,
+ * not a definition), which is why it is spelled out here.
  */
 export const NamedSelMenu: React.FC<NamedSelMenuProps> = ({
     currentSel,
@@ -52,10 +57,19 @@ export const NamedSelMenu: React.FC<NamedSelMenuProps> = ({
     onPick,
     dismissOnPick = false,
 }) => {
-    const hasNamed = currentSel !== undefined || sceneDefs.length > 0 || globalDefs.length > 0;
     return (
         <Menu className="selbuilder-menu">
-            {!hasNamed && <MenuItem disabled text="No named selections" />}
+            {/* Not a named definition, but the expression this menu is reached
+                for most often, and one nobody should have to remember the
+                spelling of. It sits above the groups because it belongs to
+                none of them. */}
+            <MenuItem
+                text={ALL_LABEL}
+                htmlTitle={ALL_SEL}
+                active={activeValue === ALL_SEL}
+                shouldDismissPopover={dismissOnPick}
+                onClick={() => onPick(ALL_SEL)}
+            />
             {currentSel !== undefined && (
                 <>
                     <MenuDivider title="Selected" />

@@ -92,8 +92,10 @@ main 側では 5 チャネル (EDIT_CUT/COPY/PASTE + MENU_UNDO/REDO) に
   paste になってしまう
 - クリップボードの**内容自体は undo 対象外**。Cut を undo すると行/ノードは戻るが、
   クリップボードは cut したものを保持し続ける (一般的なアプリと同じ)
-- 残る制約: paint deck の行選択は単一行のままなので Cmd+C も 1 行のみ
-  ([ADR-0053](../migration/adr/ADR-0053-paint-deck-clipboard.md) の parity gap は未解消)
+- ~~残る制約: paint deck の行選択は単一行のままなので Cmd+C も 1 行のみ~~
+  **[2026-08-27 解消]** paint deck が複数行選択に対応
+  ([ADR-0053](../migration/adr/ADR-0053-paint-deck-clipboard.md))。ただしキーボード経由が
+  実際に行へ届くようになったのは 2026-09-10 に deck を表示/編集モードへ分けてから (下記追記)
 
 ## Notes
 
@@ -137,3 +139,35 @@ render 設定が scene に保存され undo 対象になったため
 その window に push し、window 側 (`useRenderWindowEditKeys`) が `dispatchEditUndoRedo` で
 テキスト欄かどうかを振り分ける。Cut/Copy/Paste/Select All と devtools は従来通り native 実行。
 Windows / Linux では同 hook の keydown listener が Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z を受ける。
+
+## 追記 (2026-09-10): 行そのものが入力欄のパネル → モード分離で解決
+
+Coloring panel の Paint deck は 1 行が Selection 入力 + Color 入力で埋まっており、行を
+クリックすればフォーカスは必ずどちらかの `<input>` に入る。手順 1 をそのまま適用すると
+**Cmd+C / Cmd+V は常に「そのセルのテキスト」**を意味し、行のコピー & ペーストはキーボードから
+到達できなかった (ADR-0053 が「キーボードも clipboard scope 経由で効く」と書いていたのは、
+実際には wrapper `tabIndex=-1` にフォーカスがある場合だけだった)。実害として、複数行を選んで
+Cmd+C → Cmd+V しても何も貼られない (macOS では envelope 文字列がセルに貼られることもない —
+native paste 先が別の入力欄であるため)。
+
+**最初は router に例外を作った** (`ClipboardScopeHandlers.claimsEditable`: 宣言した scope は、
+入力欄がテキストを選択していないとき手順 1 を追い越せる)。これは**対症療法で、同日中に撤去した**
+— Cmd+Z が直らないからである。undo は clipboard router を通らず `MENU_UNDO` →
+`dispatchEditUndoRedo` へ行き、そちらは独自に「編集可能要素に focus があれば native」と判定する。
+`claimsEditable` を足しても、paste 直後の Cmd+Z は入力欄の native undo のままだった。
+
+**根治は入力欄を置かないこと**だった。[ui-style-guide](../migration/ui-style-guide.md) に
+「listbox: 行の編集モード」規約を置き、行は表示状態ではテキストと swatch (と popover を開く
+chevron) を描き、テキスト編集は double-click / Enter / F2 / 右クリックメニューでのみ入る形に
+した (paint deck と scene tree の両方に適用)。これで **focus は「行」か「明示的に開いた
+エディタ」の二択**になり、手順 1 の「テキスト欄が勝つ」は例外なしで正しくなる —
+Cmd+X/C/V も Cmd+Z も、ユーザーから見て今どちらのモードかが分かる状態で行き先が決まる。
+
+router 側に残した変更は 1 つだけ: **modal 判定を編集可能判定より前に移した** (害が無く、
+「modal がキーストロークを所有する」という意図をそのまま順序で表せるため)。
+
+同じ入れ替えで、Paint deck の**右クリックが複数選択を 1 行に潰す**バグも消えた。右ボタンの
+mousedown が default で入力欄にフォーカスを移し、`PaintSelCell.onFocus` → `onSelect(idx)` が
+選択を 1 行に置換していたもので (React はこれを `contextmenu` より先に flush する)、一時は
+`onRowMouseDown` で `e.button === 2` を `preventDefault` して塞いでいた。表示状態の行には
+入力欄が無く、focus と行選択を結ぶ `onFocus` も無くなったので、その抑止ごと不要になった。

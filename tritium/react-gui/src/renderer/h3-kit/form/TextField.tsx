@@ -26,6 +26,8 @@ export interface TextFieldProps {
     /** Trailing element rendered inside the input's right edge (e.g. a clear or dropdown-trigger button). */
     rightElement?: React.ReactNode;
     onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+    /** Focus the input on mount (e.g. a cell that just entered edit mode). */
+    autoFocus?: boolean;
     /** Fired on blur -- used to commit a draft value (e.g. live-apply on focus loss). */
     onBlur?: React.FocusEventHandler<HTMLInputElement>;
 }
@@ -43,6 +45,7 @@ export const TextField: React.FC<TextFieldProps> = ({
     rightElement,
     onKeyDown,
     onBlur,
+    autoFocus,
 }) => (
     <InputGroup
         small
@@ -59,5 +62,6 @@ export const TextField: React.FC<TextFieldProps> = ({
         aria-invalid={invalid || undefined}
         onKeyDown={onKeyDown}
         onBlur={onBlur}
+        autoFocus={autoFocus}
     />
 );

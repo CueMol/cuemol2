@@ -172,6 +172,40 @@ export function readColormodeValues(rend: Renderer): readonly string[] {
     }
 }
 
+/**
+ * The renderer's current `colormode` as a string, or "" when it has none.
+ *
+ * Companion to {@link readColormodeValues}, which reports the modes the
+ * renderer accepts; this reports the one it is in.
+ */
+export function readColormodeOrEmpty(rend: Renderer): string {
+    try {
+        const v = (rend as unknown as { colormode?: unknown }).colormode;
+        return typeof v === 'string' ? v : '';
+    } catch {
+        return '';
+    }
+}
+
+/**
+ * Whether a compiled colour is the `$molcol` reference (C++ `gfx::MolColorRef`)
+ * rather than a concrete colour.
+ *
+ * A MolColorRef carries no colour of its own -- it says "ask the molecule" --
+ * so it only means something on a code path that has an atom in hand. Where
+ * one does not, C++ falls back to `MolColorRef::getCode()`, a half-transparent
+ * gray (0x7F7F7F7F). Callers use this to route the write somewhere the
+ * reference resolves.
+ */
+export function isMolColorRef(color: unknown): boolean {
+    try {
+        const cls = (color as { getClassName?: () => string })?.getClassName?.();
+        return cls === 'MolColorRef';
+    } catch {
+        return false;
+    }
+}
+
 /** Surface-class renderers eligible for the Elepot deck. */
 export function isElepotCapable(rend: Renderer): boolean {
     const t = readTypeName(rend);

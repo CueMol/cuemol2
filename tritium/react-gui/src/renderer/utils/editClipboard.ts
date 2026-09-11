@@ -21,6 +21,14 @@
  *   4. nothing to route to -> fall back to the native edit, which is a no-op
  *      outside a field.
  *
+ * Step 1 is unconditional, and it can be because a panel never leaves focus in
+ * a text field the user did not ask to edit. A list row shows text and becomes
+ * editable on an explicit gesture (ui-style-guide, the listbox row-edit-mode
+ * rule), so "focus is in a field" and "the user is editing text" are the same
+ * fact.
+ * The paint deck briefly needed an exception here, back when its rows were
+ * inputs edge to edge; separating its display and edit modes removed the need.
+ *
  * Step 3 is not a nicety. On Windows / Linux the Edit menu is a React
  * component, so clicking Copy moves DOM focus into the menu and step 2 would
  * find nothing. Tracking the last scope keeps the menu and the keyboard
@@ -185,12 +193,18 @@ function resolveScope(): ClipboardScopeHandlers | null {
  * target, and a selection alone is not one.
  */
 export function dispatchEditClipboard(action: ClipboardAction): void {
-  if (isEditableFocused() || (action === 'copy' && hasTextSelection())) {
+  // A modal owns the keystroke: never let a panel behind the dialog answer.
+  // Checked before the editable branch so the order says what is meant: the
+  // dialog wins over everything, including a field inside it.
+  if (modalOpen) {
     runNativeEdit(action)
     return
   }
-  // A modal owns the keystroke: never let a panel behind the dialog answer.
-  if (modalOpen) {
+  if (isEditableFocused()) {
+    runNativeEdit(action)
+    return
+  }
+  if (action === 'copy' && hasTextSelection()) {
     runNativeEdit(action)
     return
   }

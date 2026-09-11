@@ -93,6 +93,7 @@ bulk services and unit tests continue to pin the dispatch semantics.
 
 - [ADR-0001](ADR-0001-scene-tree-dnd.md) — DnD on the same Blueprint
   Tree (event handling is the shared concern)
-- [ADR-0002](ADR-0002-scene-tree-inline-rename.md) — Inline rename
-  click-pause-click trigger requires a single-selected-row check, which
-  reads the same `selectedIds` state
+- [ADR-0002](ADR-0002-scene-tree-inline-rename.md) — Inline rename.
+  ~~click-pause-click trigger requires a single-selected-row check, which
+  reads the same `selectedIds` state~~ **[2026-09-10]** そのトリガが廃止され、
+  この結合は無くなった (rename は F2 / ctxmenu のみ)

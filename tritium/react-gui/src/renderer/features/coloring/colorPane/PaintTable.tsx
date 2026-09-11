@@ -13,7 +13,7 @@ import { Button, ButtonGroup, Tooltip } from '@blueprintjs/core'
 import { AppIcon } from '@renderer/h3-kit/primitives'
 import { useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider'
 import type { MenuNode } from '@shared/menuNodes'
-import { CueColorField } from '@renderer/h3-kit/colorpicker'
+import { ColorSwatch, CueColorField } from '@renderer/h3-kit/colorpicker'
 import { scrollRowIntoView, useListKeyNav } from '@renderer/h3-kit/list'
 import { useColumnResize } from '@renderer/hooks/useColumnResize'
 import type { PaintEntryDto } from '@renderer/worker/server/services/coloring/coloring.service'
@@ -27,6 +27,9 @@ import {
 } from './coloringModes'
 
 void React // classic JSX runtime (vitest)
+
+/** Which of a row's two cells an editor is open on. */
+type EditCol = 'sel' | 'color'
 
 interface PaintTableProps {
     entries: PaintEntryDto[]
@@ -120,6 +123,63 @@ export const PaintTable: React.FC<PaintTableProps> = ({
               )
             : widths.selection
 
+    // --- Display mode vs edit mode ---
+    //
+    // At most one cell is an editor at a time; every other cell is text, a
+    // swatch and a chevron. This is what makes a click on a row mean "select
+    // this row" -- when both cells were live inputs, a click landed in one of
+    // them and the deck was in text-editing mode before the user asked for it,
+    // which took Cmd+C / Cmd+V / Cmd+Z with it. Editing is entered
+    // deliberately (double-click, Enter, F2, the context menu) and left with
+    // Enter / Escape / selecting another row. See ui-style-guide,
+    // the listbox row-edit-mode rule.
+    //
+    // `openPicker` separates the two gestures. A chevron opens the field's
+    // popover -- the selection builder, the colour picker -- which the row
+    // could always do and which is not text editing, so it stays one click
+    // away in display mode. Double-click / Enter / F2 open the same editor
+    // with the popover shut, for typing.
+    const [editing, setEditing] = useState<
+        { idx: number; col: EditCol; openPicker: boolean } | null
+    >(null)
+
+    // Drop the editor when the row it belongs to is gone (deleted, or the
+    // whole list replaced by a target switch) so it cannot edit whatever row
+    // slid into that index.
+    useEffect(() => {
+        setEditing((cur) =>
+            cur && entries.some((e) => e.idx === cur.idx) ? cur : null,
+        )
+    }, [entries])
+
+    // Moving to another row ends the edit. The editor cannot close itself on
+    // blur -- focus leaves it for its own chevron and popover -- so this is
+    // what "click another row and the editor goes away" is made of.
+    useEffect(() => {
+        setEditing((cur) => (cur && cur.idx === selectedIdx ? cur : null))
+    }, [selectedIdx])
+
+    const beginEdit = useCallback(
+        (idx: number, col: EditCol, openPicker = false) => {
+            onSelect(idx)
+            setEditing({ idx, col, openPicker })
+        },
+        [onSelect],
+    )
+
+    /**
+     * Leave edit mode and put focus back on the table, so the next keystroke
+     * is a table keystroke: an arrow moves rows, Cmd+Z undoes the edit against
+     * the scene rather than against a text field that no longer exists.
+     */
+    const endEdit = useCallback(() => {
+        setEditing(null)
+        wrapRef.current?.focus()
+    }, [])
+
+    const isEditing = (idx: number, col: EditCol): boolean =>
+        editing?.idx === idx && editing.col === col
+
     /**
      * A modifier-click is a row-selection gesture, not a text gesture: the
      * browser's default for Shift+mousedown is to extend the DOM text
@@ -168,6 +228,11 @@ export const PaintTable: React.FC<PaintTableProps> = ({
             if (idx !== null && !selectedIdxs.has(idx)) onSelect(idx)
             const rows = idx !== null || isRowSelected
             const nodes: MenuNode<PaintCtxAction>[] = [
+                // The editing gestures (double-click, Enter, F2) are all
+                // invisible; this is where a user finds out the row can be
+                // edited at all.
+                { label: 'Edit selection...', enabled: idx !== null, action: 'edit' },
+                { type: 'separator' },
                 { label: 'Cut', accelerator: 'CmdOrCtrl+X', enabled: rows, action: 'cut' },
                 { label: 'Copy', accelerator: 'CmdOrCtrl+C', enabled: rows, action: 'copy' },
                 { label: 'Paste', accelerator: 'CmdOrCtrl+V', enabled: canPaste, action: 'paste' },
@@ -178,6 +243,9 @@ export const PaintTable: React.FC<PaintTableProps> = ({
             void showContextMenu(nodes, { x: e.clientX, y: e.clientY }).then(
                 (action) => {
                     switch (action) {
+                        case 'edit':
+                            if (idx !== null) beginEdit(idx, 'sel')
+                            break
                         case 'cut': onCut(); break
                         case 'copy': onCopy(); break
                         case 'paste': onPaste(); break
@@ -190,7 +258,7 @@ export const PaintTable: React.FC<PaintTableProps> = ({
         },
         [
             showContextMenu, selectedIdxs, isRowSelected, onSelect, entries.length,
-            onCut, onCopy, onPaste, onRemove, onRemoveAll, canPaste,
+            onCut, onCopy, onPaste, onRemove, onRemoveAll, canPaste, beginEdit,
         ],
     )
 
@@ -209,6 +277,25 @@ export const PaintTable: React.FC<PaintTableProps> = ({
         },
     })
 
+    /**
+     * Table keys: navigation, then Enter / F2 to edit the selected row.
+     *
+     * An open editor owns the keyboard entirely -- everything typed into it
+     * bubbles here, and Enter there means "confirm", not "open an editor".
+     * The scene tree guards its F2 / Delete bindings the same way.
+     */
+    const onTableKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLDivElement>) => {
+            if (editing !== null) return
+            if (navKeyDown(e)) return
+            if (e.key !== 'Enter' && e.key !== 'F2') return
+            if (selectedIdx === null) return
+            e.preventDefault()
+            beginEdit(selectedIdx, 'sel')
+        },
+        [editing, navKeyDown, selectedIdx, beginEdit],
+    )
+
     return (
         <>
             <div className="color-section-label">Paint coloring:</div>
@@ -221,7 +308,7 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                 className="color-table-wrap"
                 tabIndex={-1}
                 data-clipboard-scope="paint-deck"
-                onKeyDown={navKeyDown}
+                onKeyDown={onTableKeyDown}
                 style={{ outline: 'none' }}
             >
                 <table className="color-table">
@@ -261,24 +348,77 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                                         onRowContextMenu(entry.idx, e)
                                     }
                                 >
-                                    <td className="color-cell-selection">
-                                        <PaintSelCell
-                                            sceneID={sceneId}
-                                            molID={molId}
-                                            value={entry.selStr}
-                                            onFocus={() => onSelect(entry.idx)}
-                                            onCommit={(v) =>
-                                                onUpdate(entry.idx, 'selStr', v)
-                                            }
-                                        />
+                                    <td
+                                        className="color-cell-selection"
+                                        onDoubleClick={() =>
+                                            beginEdit(entry.idx, 'sel')
+                                        }
+                                    >
+                                        {isEditing(entry.idx, 'sel') ? (
+                                            <PaintSelCell
+                                                sceneID={sceneId}
+                                                molID={molId}
+                                                value={entry.selStr}
+                                                // Only the typing gestures put
+                                                // a caret in the field; the
+                                                // chevron just opens the
+                                                // picker (as the colour cell
+                                                // does).
+                                                autoFocus={!editing?.openPicker}
+                                                autoOpenPicker={
+                                                    editing?.openPicker
+                                                }
+                                                onCommit={(v) =>
+                                                    onUpdate(entry.idx, 'selStr', v)
+                                                }
+                                                onDone={endEdit}
+                                                onCancel={endEdit}
+                                            />
+                                        ) : (
+                                            <span className="color-cell-view">
+                                                <span className="color-cell-text type-row">
+                                                    {entry.selStr}
+                                                </span>
+                                                {/* The builder chevron the
+                                                    field carries; opening the
+                                                    picker is not editing. */}
+                                                <button
+                                                    type="button"
+                                                    className="color-cell-caret"
+                                                    aria-label="Build selection"
+                                                    onClick={() =>
+                                                        beginEdit(entry.idx, 'sel', true)
+                                                    }
+                                                >
+                                                    <span className="h3-form-caret" aria-hidden />
+                                                </button>
+                                            </span>
+                                        )}
                                     </td>
-                                    <td className="color-cell-color">
-                                        <CueColorField
-                                            value={entry.colorValue ?? ''}
-                                            onCommit={(v) =>
-                                                onUpdate(entry.idx, 'colorValue', v)
-                                            }
-                                        />
+                                    <td
+                                        className="color-cell-color"
+                                        onDoubleClick={() =>
+                                            beginEdit(entry.idx, 'color')
+                                        }
+                                    >
+                                        {isEditing(entry.idx, 'color') ? (
+                                            <CueColorField
+                                                value={entry.colorValue ?? ''}
+                                                autoOpen={editing?.openPicker}
+                                                autoFocus={!editing?.openPicker}
+                                                onCommit={(v) =>
+                                                    onUpdate(entry.idx, 'colorValue', v)
+                                                }
+                                                onDone={endEdit}
+                                            />
+                                        ) : (
+                                            <ColorSwatch
+                                                value={entry.colorValue ?? ''}
+                                                onOpenPicker={() =>
+                                                    beginEdit(entry.idx, 'color', true)
+                                                }
+                                            />
+                                        )}
                                     </td>
                                 </tr>
                             ))

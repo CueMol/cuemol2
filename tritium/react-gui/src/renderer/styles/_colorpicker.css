@@ -424,3 +424,25 @@ button.h3-color-swatch:disabled {
     inset 0 0 0 1px var(--text-primary),
     inset 0 0 0 2px var(--accent);
 }
+
+/* ─── Read-only view (ColorSwatch) ───
+   The display half of the widget, for a cell that only becomes an editor on an
+   explicit gesture. Same swatch, no text box: the colour string is plain text
+   so the row reads as a row and not as a form. */
+.h3-color-view {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* The colour string takes the slack so the chevron stays pinned at the right
+   edge, where the editable field puts it. */
+.h3-color-view-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
