@@ -1,22 +1,33 @@
 /**
  * @file features/render/RenderImageViewer.tsx
- * @description Zoomable / pannable image viewer for the Render Result tab.
+ * @description Zoomable / pannable image viewer for the rendering window.
  *
  * The image is laid out at `width x height x scale` inside a scrollable
  * container; panning is drag-to-scroll, and a two-finger swipe pans it as
  * ordinary scrolling. Zoom is the toolbar buttons plus a trackpad pinch --
  * which every browser encodes as a wheel event with a synthetic `ctrlKey`, the
- * only way to read a pinch on an element -- anchored at the pointer so the
- * spot under the cursor stays put. Fit-to-view and 100% are explicit
- * actions. The initial fit is applied in a layout effect -- before the browser
- * paints -- so switching to the tab never flashes the image at 100% before it
- * shrinks to fit. The fit needs only the container size and the image
- * dimensions (props), so it does not wait for the <img> to load.
+ * only way to read a pinch on an element. A pinch (and cmd/ctrl + wheel) is
+ * anchored at the pointer, so the spot under the cursor stays put; the toolbar
+ * buttons are anchored at the centre of the viewport, which is what the user
+ * is looking at when reaching for them.
  *
- * The viewer owns the single toolbar for the Render Result tab: the parent's
- * result actions are passed in via `actions` and rendered alongside the zoom
- * controls, and the info text (scene name / size / zoom) sits at the end. This
- * keeps the tab to one toolbar row rather than stacking a separate action bar.
+ * A new image keeps the framing instead of re-fitting. A render is usually the
+ * same scene again with one setting changed, so re-fitting made the user zoom
+ * back in on every iteration of the loop the render history exists for. When
+ * the new image has a different pixel size, the zoom is rescaled by the ratio
+ * of the two fit scales and the viewport is re-centred on the same relative
+ * point, so the same part of the picture stays on screen. Fit-to-view and 100%
+ * are explicit actions.
+ *
+ * The initial fit is applied in a layout effect -- before the browser paints --
+ * so opening the window never flashes the image at 100% before it shrinks to
+ * fit. The fit needs only the container size and the image dimensions (props),
+ * so it does not wait for the <img> to load.
+ *
+ * The viewer owns the single toolbar for the image area: the parent's result
+ * actions are passed in via `actions` and rendered alongside the zoom controls,
+ * and the info text (scene name / size / zoom) sits at the end. This keeps the
+ * pane to one toolbar row rather than stacking a separate action bar.
  */
 
 import React, { useRef, useState, useCallback, useLayoutEffect } from "react";
@@ -35,15 +46,6 @@ interface RenderImageViewerProps {
   name: string;
   /** Result action buttons, rendered at the start of the single toolbar. */
   actions?: React.ReactNode;
-  /**
-   * Identity of the image being shown. When it changes the viewer re-fits: a
-   * newly rendered image is a new thing to look at, and the zoom that suited
-   * the previous one is not a property of it. Frame scrubbing within one movie
-   * result keeps the same key, so a zoomed-in look survives it.
-   *
-   * Omit to fit only once, on mount.
-   */
-  fitKey?: string | number;
 }
 
 const MIN_SCALE = 0.05;
@@ -68,40 +70,114 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
   imgHeight,
   name,
   actions,
-  fitKey,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
+  /** Whether an initial fit has been applied (it needs a measurable container). */
   const fittedRef = useRef(false);
-  const fitKeyRef = useRef(fitKey);
-
-  // Arm the fit for a new image. Done during render rather than in an effect so
-  // the layout effect below already sees it disarmed and re-fits BEFORE the
-  // browser paints -- the whole point of fitting in a layout effect.
-  if (fitKey !== fitKeyRef.current) {
-    fitKeyRef.current = fitKey;
-    fittedRef.current = false;
-  }
+  /** Image size the current framing was computed for. */
+  const sizeRef = useRef({ w: imgWidth, h: imgHeight });
 
   /**
-   * Scale that fits the whole image within the viewport, or null when the
+   * Scale that fits a `w x h` image within the viewport, or null when the
    * container is not measurable yet (zero-sized). Uses only the container size
-   * and the known image dimensions, so it does not need a loaded <img>.
+   * and the given dimensions, so it does not need a loaded <img>.
    */
-  const computeFit = useCallback((): number | null => {
+  const fitFor = useCallback((w: number, h: number): number | null => {
     const el = scrollRef.current;
-    if (!el || el.clientWidth <= 0 || el.clientHeight <= 0 || imgWidth <= 0 || imgHeight <= 0) {
+    if (!el || el.clientWidth <= 0 || el.clientHeight <= 0 || w <= 0 || h <= 0) {
       return null;
     }
-    return clamp(
-      Math.min(el.clientWidth / imgWidth, el.clientHeight / imgHeight),
-      MIN_SCALE,
-      MAX_SCALE,
-    );
+    return clamp(Math.min(el.clientWidth / w, el.clientHeight / h), MIN_SCALE, MAX_SCALE);
+  }, []);
+  const computeFit = useCallback(
+    (): number | null => fitFor(imgWidth, imgHeight),
+    [fitFor, imgWidth, imgHeight],
+  );
+
+  // --- Anchored zoom ---
+  //
+  // The scroll offset that keeps the anchored spot in place can only be set
+  // once the stage has been re-laid out at the new scale, so the caller records
+  // what to line up and a layout effect applies it after the resize.
+  const anchorRef = useRef<{
+    /** Image-space point to pin. */
+    cx: number;
+    cy: number;
+    /** Where that point should sit in the viewport. */
+    px: number;
+    py: number;
+  } | null>(null);
+
+  /**
+   * Viewport centre in normalized image coordinates (0..1), kept current as the
+   * container scrolls. It has to be tracked rather than computed on demand: by
+   * the time a new image size is in the DOM the old scroll offset is already
+   * gone, clamped to the new content size.
+   */
+  const centerRef = useRef({ nx: 0.5, ny: 0.5 });
+  const updateCenter = useCallback(() => {
+    const el = scrollRef.current;
+    const stage = stageRef.current;
+    if (!el || !stage) return;
+    const s = scaleRef.current;
+    if (s <= 0 || imgWidth <= 0 || imgHeight <= 0) return;
+    const elRect = el.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+    centerRef.current = {
+      nx: clamp(
+        (elRect.left + el.clientWidth / 2 - stageRect.left) / (imgWidth * s),
+        0,
+        1,
+      ),
+      ny: clamp(
+        (elRect.top + el.clientHeight / 2 - stageRect.top) / (imgHeight * s),
+        0,
+        1,
+      ),
+    };
   }, [imgWidth, imgHeight]);
 
-  // Fit before the browser paints, so switching to this tab never flashes the
-  // image at 100% before it shrinks to fit.
+  /**
+   * Scroll the pending anchor's image point back to the viewport spot it was
+   * pinned to. Must run against the layout the given scale produced.
+   */
+  const applyAnchor = useCallback(
+    (scaleNow: number) => {
+      const anchor = anchorRef.current;
+      const el = scrollRef.current;
+      const stage = stageRef.current;
+      if (!anchor || !el || !stage) return;
+      anchorRef.current = null;
+      // Measured, not derived from offsetLeft/offsetTop: .riv-scroll is not a
+      // positioned element, so those are relative to the nearest positioned
+      // ancestor (the Allotment pane) and carry the toolbar's height in the
+      // vertical direction -- which used to send every zoom to the bottom of
+      // the image. Both rects are read before either write, since scrolling
+      // the container moves the stage.
+      const elRect = el.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      el.scrollLeft += stageRect.left + anchor.cx * scaleNow - elRect.left - anchor.px;
+      el.scrollTop += stageRect.top + anchor.cy * scaleNow - elRect.top - anchor.py;
+      // A zoom can change the visible region without moving the scroll offset
+      // (the stage grows around a pinned edge), so no scroll event would fire.
+      updateCenter();
+    },
+    [updateCenter],
+  );
+
+  // Declared before the effects that set an anchor, so that within a commit the
+  // anchor is always applied against the layout its scale was chosen for.
+  useLayoutEffect(() => {
+    applyAnchor(scale);
+  }, [scale, imgWidth, imgHeight, applyAnchor]);
+
+  // Fit before the browser paints, so opening the window never flashes the
+  // image at 100% before it shrinks to fit. Only the first image is fitted;
+  // later ones keep the framing (below).
   useLayoutEffect(() => {
     if (fittedRef.current) return;
     const f = computeFit();
@@ -109,69 +185,81 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
       fittedRef.current = true;
       setScale(f);
     }
-    // fitKey is a dependency, not just a guard: a re-render at the SAME size
-    // leaves computeFit's identity untouched, so without it the effect would
-    // never re-run for the new image.
-  }, [computeFit, fitKey]);
-
-  const fit = useCallback(() => {
-    const f = computeFit();
-    if (f !== null) setScale(f);
   }, [computeFit]);
-  const zoom = useCallback(
-    (factor: number) => setScale((s) => clamp(s * factor, MIN_SCALE, MAX_SCALE)),
-    [],
-  );
 
-  // --- Pointer-anchored zoom (trackpad pinch / ctrl+wheel) ---
-  //
-  // The scroll offset that keeps the pointed-at spot in place can only be set
-  // once the stage has been re-laid out at the new scale, so the wheel handler
-  // records what to line up and a layout effect applies it after the resize.
-  const scaleRef = useRef(scale);
-  scaleRef.current = scale;
-  const stageRef = useRef<HTMLDivElement>(null);
-  const anchorRef = useRef<{
-    /** Image-space point under the pointer. */
-    cx: number;
-    cy: number;
-    /** Where that point sat in the viewport. */
-    px: number;
-    py: number;
-  } | null>(null);
+  // Keep the framing when the image is replaced by one of a different size:
+  // rescale by the ratio of the two fit scales and re-centre on the same
+  // relative point, so the same part of the picture stays on screen. An image
+  // of the SAME size needs nothing -- the stage keeps its layout, so the
+  // browser keeps the scroll offset.
+  useLayoutEffect(() => {
+    const prev = sizeRef.current;
+    if (prev.w === imgWidth && prev.h === imgHeight) return;
+    sizeRef.current = { w: imgWidth, h: imgHeight };
+    // The first image belongs to the fit effect above.
+    if (!fittedRef.current) return;
+    const el = scrollRef.current;
+    const before = fitFor(prev.w, prev.h);
+    const after = fitFor(imgWidth, imgHeight);
+    if (!el || before === null || after === null) return;
+    const { nx, ny } = centerRef.current;
+    anchorRef.current = {
+      cx: nx * imgWidth,
+      cy: ny * imgHeight,
+      px: el.clientWidth / 2,
+      py: el.clientHeight / 2,
+    };
+    // Both fits use the current container size, so a container resize cancels
+    // out of the ratio and only the image's own change scales the zoom.
+    const current = scaleRef.current;
+    const next = clamp((current * after) / before, MIN_SCALE, MAX_SCALE);
+    // An unchanged scale re-renders nothing, so the anchor would never be
+    // applied -- do it here, against the layout that is already final.
+    if (next === current) applyAnchor(next);
+    else setScale(next);
+  }, [imgWidth, imgHeight, fitFor, applyAnchor]);
 
-  const zoomAt = useCallback(
-    (factor: number, clientX: number, clientY: number) => {
+  /** Zoom to an absolute scale, pinning an image point to a viewport spot. */
+  const zoomTo = useCallback(
+    (next: number, clientX: number, clientY: number) => {
       const el = scrollRef.current;
       const stage = stageRef.current;
       if (!el || !stage) return;
       const current = scaleRef.current;
-      const next = clamp(current * factor, MIN_SCALE, MAX_SCALE);
-      if (next === current) return;
-      const rect = el.getBoundingClientRect();
+      const target = clamp(next, MIN_SCALE, MAX_SCALE);
+      if (target === current) return;
+      const elRect = el.getBoundingClientRect();
       const stageRect = stage.getBoundingClientRect();
       anchorRef.current = {
         cx: (clientX - stageRect.left) / current,
         cy: (clientY - stageRect.top) / current,
-        px: clientX - rect.left,
-        py: clientY - rect.top,
+        px: clientX - elRect.left,
+        py: clientY - elRect.top,
       };
-      setScale(next);
+      setScale(target);
     },
     [],
   );
 
-  useLayoutEffect(() => {
-    const anchor = anchorRef.current;
-    const el = scrollRef.current;
-    const stage = stageRef.current;
-    if (!anchor || !el || !stage) return;
-    anchorRef.current = null;
-    // offsetLeft/Top carry the centring margin the stage gets while it is
-    // smaller than the viewport, which the image-space point knows nothing of.
-    el.scrollLeft = anchor.cx * scale + stage.offsetLeft - anchor.px;
-    el.scrollTop = anchor.cy * scale + stage.offsetTop - anchor.py;
-  }, [scale]);
+  /** Zoom to an absolute scale about the centre of the viewport. */
+  const zoomCentered = useCallback(
+    (next: number) => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      zoomTo(next, rect.left + el.clientWidth / 2, rect.top + el.clientHeight / 2);
+    },
+    [zoomTo],
+  );
+  /** The toolbar's zoom steps: centred, since that is where the user is looking. */
+  const zoomBy = useCallback(
+    (factor: number) => zoomCentered(scaleRef.current * factor),
+    [zoomCentered],
+  );
+  const fit = useCallback(() => {
+    const f = computeFit();
+    if (f !== null) zoomCentered(f);
+  }, [computeFit, zoomCentered]);
 
   // Registered on the element with passive:false, because React's own onWheel
   // is passive at the root and could not suppress the browser's page zoom.
@@ -183,7 +271,11 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
       event.preventDefault();
       const delta =
         event.deltaMode === 1 ? event.deltaY * LINE_HEIGHT_PX : event.deltaY;
-      zoomAt(Math.exp(-delta * ZOOM_RATE), event.clientX, event.clientY);
+      zoomTo(
+        scaleRef.current * Math.exp(-delta * ZOOM_RATE),
+        event.clientX,
+        event.clientY,
+      );
     },
     { target: scrollRef, eventOptions: { passive: false } },
   );
@@ -225,17 +317,17 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
         {actions}
         <ButtonGroup>
           <Tooltip content="Zoom out">
-            <Button small icon={<AppIcon name="ui.zoomOut" aria-hidden />} aria-label="Zoom out" onClick={() => zoom(0.8)} />
+            <Button small icon={<AppIcon name="ui.zoomOut" aria-hidden />} aria-label="Zoom out" onClick={() => zoomBy(0.8)} />
           </Tooltip>
           <Tooltip content="Zoom in">
-            <Button small icon={<AppIcon name="ui.zoomIn" aria-hidden />} aria-label="Zoom in" onClick={() => zoom(1.25)} />
+            <Button small icon={<AppIcon name="ui.zoomIn" aria-hidden />} aria-label="Zoom in" onClick={() => zoomBy(1.25)} />
           </Tooltip>
         </ButtonGroup>
         <Tooltip content="Fit to window">
           <Button small icon={<AppIcon name="ui.zoomToFit" aria-hidden />} text="Fit" onClick={fit} />
         </Tooltip>
         <Tooltip content="Actual size (100%)">
-          <Button small text="100%" onClick={() => setScale(1)} />
+          <Button small text="100%" onClick={() => zoomCentered(1)} />
         </Tooltip>
         <span className="riv-info">
           {name} · {imgWidth}×{imgHeight} · {Math.round(scale * 100)}%
@@ -244,6 +336,7 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
       <div
         className="riv-scroll"
         ref={scrollRef}
+        onScroll={updateCenter}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={endDrag}
