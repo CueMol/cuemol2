@@ -5,9 +5,9 @@
  *
  * The display half of `ColorPicker`, for a surface that shows a colour without
  * being an editor -- a table cell that only becomes editable on an explicit
- * gesture (see ui-style-guide, "listbox: 行の編集モード"). It resolves through
- * the same `useCompiledColor` the picker does, so the two never disagree about
- * what `$molcol` or a named colour looks like.
+ * gesture (see ui-style-guide, the listbox row-edit-mode rule). It resolves
+ * through the same `useCompiledColor` the picker does, so the two never
+ * disagree about what `$molcol` or a named colour looks like.
  */
 
 import React from 'react'

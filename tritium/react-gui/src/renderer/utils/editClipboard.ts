@@ -23,8 +23,9 @@
  *
  * Step 1 is unconditional, and it can be because a panel never leaves focus in
  * a text field the user did not ask to edit. A list row shows text and becomes
- * editable on an explicit gesture (ui-style-guide, "listbox: 行の編集モード"),
- * so "focus is in a field" and "the user is editing text" are the same fact.
+ * editable on an explicit gesture (ui-style-guide, the listbox row-edit-mode
+ * rule), so "focus is in a field" and "the user is editing text" are the same
+ * fact.
  * The paint deck briefly needed an exception here, back when its rows were
  * inputs edge to edge; separating its display and edit modes removed the need.
  *
@@ -193,8 +194,8 @@ function resolveScope(): ClipboardScopeHandlers | null {
  */
 export function dispatchEditClipboard(action: ClipboardAction): void {
   // A modal owns the keystroke: never let a panel behind the dialog answer.
-  // Checked before the editable branch so a scope's `claimsEditable` cannot
-  // reach past an open dialog either.
+  // Checked before the editable branch so the order says what is meant: the
+  // dialog wins over everything, including a field inside it.
   if (modalOpen) {
     runNativeEdit(action)
     return

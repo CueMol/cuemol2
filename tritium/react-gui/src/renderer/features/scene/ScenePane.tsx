@@ -163,7 +163,7 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
     // the selected row. Renaming is a rare operation and does not deserve a
     // gesture the common ones collide with; VS Code, Xcode and Blender all
     // leave it to F2 / the menu for the same reason. See ui-style-guide
-    // "listbox: 行の編集モード", which the paint deck follows too.
+    // the listbox row-edit-mode rule, which the paint deck follows too.
 
     // Notify the controller of expand/collapse so object / rendGroup rows
     // persist `ui_collapsed` (held in a ref like the rename callbacks so

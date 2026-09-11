@@ -132,7 +132,7 @@ export const PaintTable: React.FC<PaintTableProps> = ({
     // which took Cmd+C / Cmd+V / Cmd+Z with it. Editing is entered
     // deliberately (double-click, Enter, F2, the context menu) and left with
     // Enter / Escape / selecting another row. See ui-style-guide,
-    // "listbox: 行の編集モード".
+    // the listbox row-edit-mode rule.
     //
     // `openPicker` separates the two gestures. A chevron opens the field's
     // popover -- the selection builder, the colour picker -- which the row

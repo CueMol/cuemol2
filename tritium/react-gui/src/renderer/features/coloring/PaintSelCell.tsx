@@ -8,7 +8,7 @@
  * picker popover).
  *
  * The table mounts this only for the cell being edited (ui-style-guide,
- * "listbox: 行の編集モード"), so it opens focused and reports when the user
+ * the listbox row-edit-mode rule), so it opens focused and reports when the user
  * deliberately finishes -- `onDone` on Enter, `onCancel` on Escape -- and the
  * table goes back to showing plain text. A commit is NOT a finish: the field
  * commits on blur, and blur is also what happens when the user reaches for

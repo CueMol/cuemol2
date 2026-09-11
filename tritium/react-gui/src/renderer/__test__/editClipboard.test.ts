@@ -183,7 +183,7 @@ describe('dispatchEditClipboard', () => {
   // Focus inside a field means the user is editing text, wherever that field
   // sits: a panel that keeps a live input under every row would break this
   // rule, so panels show text and open an editor only when asked (see
-  // ui-style-guide, "listbox: 行の編集モード").
+  // ui-style-guide, the listbox row-edit-mode rule).
   it('gives a field inside a scope the native edit, not the scope', () => {
     const scope = makeScope()
     registerClipboardScope('paint-deck', scope)
