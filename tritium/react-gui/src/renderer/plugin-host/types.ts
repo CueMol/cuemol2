@@ -94,6 +94,20 @@ export interface PluginManifest {
    * branch in `plugins/index.ts` that lets the bundler tree-shake it.
    */
   devOnly?: boolean
+  /**
+   * Not switchable: always on, and absent from Settings > Plugins.
+   *
+   * For a feature that is packaged as a plugin to keep it in one directory,
+   * rather than because anyone would want it gone. Turning such a plugin off
+   * would only take a working menu item away with nothing gained.
+   */
+  alwaysEnabled?: boolean
+  /**
+   * Whether the plugin is on before the user has said anything. Defaults to
+   * true; set it false for something the user opts into. Ignored when
+   * `alwaysEnabled` is set.
+   */
+  defaultEnabled?: boolean
   contributes?: PluginContributes
 }
 

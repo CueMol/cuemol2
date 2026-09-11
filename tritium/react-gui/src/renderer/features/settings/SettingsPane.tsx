@@ -58,6 +58,7 @@ import {
   PICKING_PREF_SETTING_KEYS,
 } from '@renderer/features/settings/settings/settingsConfig'
 import {
+  PLUGINS_CATEGORY,
   pluginIdFromSettingKey,
   pluginSettingDefs,
 } from '@renderer/features/settings/settings/pluginSettings'
@@ -101,12 +102,22 @@ export const SettingsPane: React.FC = () => {
   // App settings colours are scene-independent; `sceneId` is left undefined
   // so the colour picker resolves against the global StyleManager scope.
   const { cm } = useCueMol()
-  // The Plugins page: one row per built-in plugin, generated from the
+  // The Plugins page: one row per switchable plugin, generated from the
   // registry, which also owns their on / off state.
-  const { available: availablePlugins, isEnabled, setEnabled } = usePlugins()
+  const { switchable: switchablePlugins, isEnabled, setEnabled } = usePlugins()
   const allSettings = useMemo(
-    () => [...SETTINGS, ...pluginSettingDefs(availablePlugins)],
-    [availablePlugins],
+    () => [...SETTINGS, ...pluginSettingDefs(switchablePlugins)],
+    [switchablePlugins],
+  )
+  // Every other category always has rows; the Plugins one has none when
+  // nothing is switchable (a release build), and a tree node that opens an
+  // empty page reads as a bug.
+  const categoryTree = useMemo(
+    () =>
+      switchablePlugins.length > 0
+        ? CATEGORY_TREE
+        : CATEGORY_TREE.filter((node) => node.id !== PLUGINS_CATEGORY),
+    [switchablePlugins],
   )
 
   // Navigation state (selected category / filter / expanded groups) is kept in
@@ -270,7 +281,7 @@ export const SettingsPane: React.FC = () => {
           <span className="config-tree-header-title">Settings</span>
         </div>
         <div className="config-tree-scroll">
-          {CATEGORY_TREE.map((node) => (
+          {categoryTree.map((node) => (
             <ConfigTreeNode
               key={node.id}
               node={node}

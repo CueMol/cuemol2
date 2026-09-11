@@ -28,14 +28,35 @@ export function selectAvailablePlugins(
   return plugins.filter((p) => devUi || !p.manifest.devOnly)
 }
 
-/** The available plugins the user has not switched off. */
+/**
+ * The user's explicit on / off choices, by plugin id.
+ *
+ * Only what the user actually changed: an id absent from the record has never
+ * been touched, and falls back to the manifest's default. Storing the choice
+ * rather than the resulting state is what lets a plugin ship default-off and
+ * a later version change its own default.
+ */
+export type PluginChoices = Readonly<Record<string, boolean>>
+
+/** Whether `plugin` is on, given the user's choices. */
+export function isPluginEnabled(plugin: RendererPlugin, choices: PluginChoices): boolean {
+  const { manifest } = plugin
+  if (manifest.alwaysEnabled) return true
+  return choices[manifest.id] ?? manifest.defaultEnabled ?? true
+}
+
+/** Whether the user is offered a switch for `plugin` at all. */
+export function isPluginSwitchable(plugin: RendererPlugin): boolean {
+  return !plugin.manifest.alwaysEnabled
+}
+
+/** The available plugins that are currently on. */
 export function selectActivePlugins(
   plugins: readonly RendererPlugin[],
-  disabled: readonly string[],
+  choices: PluginChoices,
   devUi: boolean,
 ): RendererPlugin[] {
-  const off = new Set(disabled)
-  return selectAvailablePlugins(plugins, devUi).filter((p) => !off.has(p.manifest.id))
+  return selectAvailablePlugins(plugins, devUi).filter((p) => isPluginEnabled(p, choices))
 }
 
 /** No contributions at all. A shared constant so identity stays stable. */

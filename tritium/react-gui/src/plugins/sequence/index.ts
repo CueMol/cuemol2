@@ -22,6 +22,8 @@ export const sequencePlugin = /* @__PURE__ */ definePlugin({
     name: 'Sequence Panel',
     version: '1.0.0',
     description: 'Residue grid of every molecule in the scene, with two-way selection sync.',
+    // One of the bottom panel's standard tabs; nobody gains from losing it.
+    alwaysEnabled: true,
     contributes: {
       bottomTabs: [
         {

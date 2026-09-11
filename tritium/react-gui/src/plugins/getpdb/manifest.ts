@@ -17,6 +17,10 @@ export const getPdbManifest: PluginManifest = {
   version: '1.0.0',
   description:
     'Download a structure and its density maps from RCSB or PDBe straight into the scene.',
+  // A File menu item and a toolbar button, not an optional extra: switching
+  // it off would take a working entry point away and give nothing back. It is
+  // a plugin to keep the flow in one directory, not to make it removable.
+  alwaysEnabled: true,
   contributes: {
     commands: [{ id: GET_PDB_COMMAND, title: 'Get PDB...' }],
     menus: [

@@ -8,9 +8,11 @@
  * and the keybinding dispatcher -- resolves through this one value, so a
  * plugin appears and disappears everywhere at once.
  *
- * The enabled set lives in electron-store (`UiState.disabledPlugins`), like
+ * What the user chose lives in electron-store (`UiState.pluginEnabled`), like
  * the other host preferences: it says something about this installation, not
- * about the scene.
+ * about the scene. Only explicit choices are stored -- a plugin nobody has
+ * touched takes its manifest default, and one marked `alwaysEnabled` is never
+ * consulted at all.
  *
  * Menu rows are the one contribution the renderer cannot draw itself on
  * macOS, where the native menu belongs to main. The provider therefore pushes
@@ -31,25 +33,31 @@ import { BUILTIN_PLUGINS } from '@plugins/index'
 import {
   EMPTY_CONTRIBUTIONS,
   collectContributions,
+  isPluginEnabled,
+  isPluginSwitchable,
   selectAvailablePlugins,
 } from './pluginSelect'
+import type { PluginChoices } from './pluginSelect'
 import type { PluginContributions, RendererPlugin } from './types'
 
 interface PluginContextValue {
-  /** Every plugin this build ships, switched on or not. Settings lists these. */
+  /** Every plugin this build ships, switched on or not. */
   available: readonly RendererPlugin[]
+  /** The ones the user can switch. Settings lists exactly these. */
+  switchable: readonly RendererPlugin[]
   /** The plugins that are switched on right now. */
   active: readonly RendererPlugin[]
   /** The active plugins' contributions, joined with their components. */
   contributions: PluginContributions
   isEnabled: (id: string) => boolean
+  /** No-op for a plugin that is not switchable. */
   setEnabled: (id: string, enabled: boolean) => void
 }
 
 const NO_PLUGINS: readonly RendererPlugin[] = []
 
-/** Stable empty list so the initial state does not change identity per render. */
-const NO_DISABLED: readonly string[] = []
+/** Stable empty record so the initial state does not change identity per render. */
+const NO_CHOICES: PluginChoices = {}
 
 /**
  * What a consumer outside a provider sees: no plugins and no way to change
@@ -58,6 +66,7 @@ const NO_DISABLED: readonly string[] = []
  */
 const EMPTY_VALUE: PluginContextValue = {
   available: NO_PLUGINS,
+  switchable: NO_PLUGINS,
   active: NO_PLUGINS,
   contributions: EMPTY_CONTRIBUTIONS,
   isEnabled: () => true,
@@ -76,11 +85,11 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
   children,
   plugins = BUILTIN_PLUGINS,
 }) => {
-  const [disabled, setDisabled] = useState<readonly string[]>(NO_DISABLED)
+  const [choices, setChoices] = useState<PluginChoices>(NO_CHOICES)
   const [loaded, setLoaded] = useState(false)
 
-  // Load the persisted enabled set once. Until it arrives every plugin is on,
-  // which is what a fresh profile means anyway.
+  // Load the persisted choices once. Until they arrive every plugin sits at
+  // its own default, which is what a fresh profile means anyway.
   const guard = useStaleGuard()
   useEffect(() => {
     const token = guard.next()
@@ -90,9 +99,9 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
       try {
         const ui = await window.electronAPI?.invoke(IPC.UI_LOAD)
         if (!guard.isCurrent(token)) return
-        if (ui?.disabledPlugins) setDisabled(ui.disabledPlugins)
+        if (ui?.pluginEnabled) setChoices(ui.pluginEnabled)
       } catch {
-        // Electron not available (Vite dev server) -- keep every plugin on.
+        // Electron not available (Vite dev server) -- keep the defaults.
       }
       if (guard.isCurrent(token)) setLoaded(true)
     })()
@@ -103,9 +112,10 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
     () => selectAvailablePlugins(plugins, __DEV_UI__),
     [plugins],
   )
+  const switchable = useMemo(() => available.filter(isPluginSwitchable), [available])
   const active = useMemo(
-    () => available.filter((p) => !disabled.includes(p.manifest.id)),
-    [available, disabled],
+    () => available.filter((p) => isPluginEnabled(p, choices)),
+    [available, choices],
   )
   const contributions = useMemo(() => collectContributions(active), [active])
 
@@ -120,27 +130,33 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
       .catch((e: unknown) => console.error('menu:set-plugin-contributions:', e))
   }, [loaded, contributions])
 
-  const setEnabled = useCallback((id: string, enabled: boolean) => {
-    setDisabled((prev) => {
-      const isOff = prev.includes(id)
-      if (enabled === !isOff) return prev
-      const next = enabled ? prev.filter((x) => x !== id) : [...prev, id]
-      window.electronAPI
-        ?.invoke(IPC.UI_SAVE, { disabledPlugins: [...next] })
-        .catch((e: unknown) => console.error('ui:save disabledPlugins:', e))
-      return next
-    })
-  }, [])
+  const setEnabled = useCallback(
+    (id: string, enabled: boolean) => {
+      // A plugin the user is not offered a switch for must not acquire one
+      // through a stale settings row or a stored choice.
+      if (!switchable.some((p) => p.manifest.id === id)) return
+      setChoices((prev) => {
+        if (prev[id] === enabled) return prev
+        const next = { ...prev, [id]: enabled }
+        window.electronAPI
+          ?.invoke(IPC.UI_SAVE, { pluginEnabled: next })
+          .catch((e: unknown) => console.error('ui:save pluginEnabled:', e))
+        return next
+      })
+    },
+    [switchable],
+  )
 
   const value = useMemo<PluginContextValue>(
     () => ({
       available,
+      switchable,
       active,
       contributions,
-      isEnabled: (id: string) => !disabled.includes(id),
+      isEnabled: (id: string) => active.some((p) => p.manifest.id === id),
       setEnabled,
     }),
-    [available, active, contributions, disabled, setEnabled],
+    [available, switchable, active, contributions, setEnabled],
   )
 
   return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>

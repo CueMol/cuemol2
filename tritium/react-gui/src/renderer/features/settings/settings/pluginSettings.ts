@@ -3,11 +3,17 @@
  * @description The Plugins page of the Settings pane: one switch per
  * built-in plugin.
  *
- * Generated from the registry rather than listed by hand, so a new plugin
- * shows up here by existing. The rows are `SettingDef`s like every other
- * setting, but their value does not live in `UiState` under their own key --
- * `SettingsPane` routes a `plugins.` key to the plugin registry, which owns
- * the enabled set.
+ * Generated from the registry rather than listed by hand, so a switchable
+ * plugin shows up here by existing. The rows are `SettingDef`s like every
+ * other setting, but their value does not live in `UiState` under their own
+ * key -- `SettingsPane` routes a `plugins.` key to the plugin registry, which
+ * owns the enabled state.
+ *
+ * Only switchable plugins get a row. One marked `alwaysEnabled` is not
+ * optional, and a switch that cannot move is worse than no switch. When
+ * nothing is switchable the category disappears, because `SettingsPane` only
+ * shows a category that has at least one row -- which is the case in a
+ * release build today.
  */
 
 import type { RendererPlugin } from '@renderer/plugin-host'
@@ -26,7 +32,11 @@ export function pluginIdFromSettingKey(key: string): string | null {
     : null
 }
 
-/** One toggle row per plugin, in registry order. */
+/**
+ * One toggle row per plugin, in registry order.
+ *
+ * @param plugins - the switchable plugins (`usePlugins().switchable`).
+ */
 export function pluginSettingDefs(plugins: readonly RendererPlugin[]): SettingDef[] {
   return plugins.map((plugin) => ({
     key: `${PLUGIN_SETTING_PREFIX}${plugin.manifest.id}`,

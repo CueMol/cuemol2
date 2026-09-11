@@ -166,8 +166,9 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit â
 ## Built-in plugins (`react-gui/src/plugins/`)
 
 Some features are packaged as **built-in plugins**: one directory each, declaring what they
-contribute in a manifest, switchable in Settings > Plugins. Currently `catalog` (dev-only
-component gallery), `getpdb` and `sequence`.
+contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
+this way to keep the feature in one directory, not to make it removable) and `catalog` (the
+dev-only component gallery, `defaultEnabled: false`, switched on in Settings > Plugins).
 
 Full spec: [`docs/architecture/tritium-plugin-host.md`](../docs/architecture/tritium-plugin-host.md).
 The rules that bite while editing core code:
@@ -184,6 +185,10 @@ The rules that bite while editing core code:
   surfaces build from `buildAppMenu()` in `shared/pluginMenu.ts`.
 - **`definePlugin(...)` needs a pure annotation** at the call site, or a `devOnly` plugin is not
   tree-shaken out of a release build.
+- **Switchability is a manifest decision**: `alwaysEnabled: true` for a feature nobody would
+  want gone (no Settings row, stored choices ignored), `defaultEnabled: false` for something
+  the user opts into, neither for the ordinary default-on case. `UiState.pluginEnabled` stores
+  only explicit choices, so an untouched plugin follows its own default.
 
 When adding a contribution point to the shell, extend the manifest type in
 `renderer/plugin-host/types.ts` and resolve it in `pluginSelect.ts`; do not special-case a

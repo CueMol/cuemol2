@@ -11,6 +11,10 @@
  * is added and reviewed, so shipping it would put an internal tool in front
  * of users; `docs/migration/ui-style-guide.md` states the same rule from the
  * UI side.
+ *
+ * Off until asked for (`defaultEnabled: false`), so even a developer build
+ * opens on the three real views and the gallery is one switch away in
+ * Settings > Plugins.
  */
 
 import { definePlugin } from '@renderer/plugin-host/api'
@@ -25,6 +29,7 @@ export const catalogPlugin = /* @__PURE__ */ definePlugin({
     version: '1.0.0',
     description: 'Live gallery of the h3-kit form, list and property components.',
     devOnly: true,
+    defaultEnabled: false,
     contributes: {
       views: [
         {
