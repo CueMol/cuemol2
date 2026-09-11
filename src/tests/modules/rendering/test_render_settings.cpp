@@ -172,7 +172,7 @@ TEST_F(RenderSettingsTest, FreshObjectMatchesDeclaredDefaults)
     EXPECT_TRUE(getStr(p.get(), "backend").isEmpty());
     EXPECT_DOUBLE_EQ(getReal(p.get(), "width"), 1200.0);
     EXPECT_DOUBLE_EQ(getReal(p.get(), "povray.lightIntensity"), 1.3);
-    EXPECT_DOUBLE_EQ(getReal(p.get(), "umbreon.lightIntensity"), 1.2);
+    EXPECT_DOUBLE_EQ(getReal(p.get(), "umbreon.lightIntensity"), 1.3);
     EXPECT_TRUE(getBool(p.get(), "umbreon.useGI"));
     EXPECT_DOUBLE_EQ(getReal(p.get(), "umbreon_npr.lightIntensity"), 1.55);
     EXPECT_FALSE(getBool(p.get(), "umbreon_npr.useGI"));

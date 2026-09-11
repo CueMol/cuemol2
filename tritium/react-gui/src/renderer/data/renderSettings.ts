@@ -90,6 +90,15 @@ export interface RenderQualityAxis {
   defaultStep: string;
   /** Shown only while one of these methods is active (omit = always). */
   lightings?: RenderLightingMode[];
+  /**
+   * Enter the method at `defaultStep` rather than at the step the props
+   * currently derive to. Set it on an axis whose props the OTHER methods
+   * overwrite with their own look defaults: once those have been written, the
+   * derived step is an artifact of them (it lands on whichever step happens to
+   * coincide) rather than a pick the user made, and feeding it back would
+   * enter the method at that step instead of its default.
+   */
+  enterAtDefault?: boolean;
 }
 
 /** A backend's quality axes plus the depth-cue methods they can apply to. */
@@ -181,7 +190,8 @@ export function lightingPatch(
     // A method switch only re-applies that method's own axes; the shared ones
     // (image quality, shadows) are unrelated to the method and stay put.
     if (!axis.lightings && !opts.includeShared) continue;
-    Object.assign(patch, stepPatch(axis, steps[axis.key] ?? axis.defaultStep));
+    const step = axis.enterAtDefault ? axis.defaultStep : steps[axis.key];
+    Object.assign(patch, stepPatch(axis, step ?? axis.defaultStep));
   }
   Object.assign(patch, option?.enable ?? {});
   return patch;

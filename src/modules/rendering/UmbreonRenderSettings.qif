@@ -101,13 +101,17 @@ runtime_class UmbreonRenderSettings
   property string giGroundColor => m_giGroundColor;
   default giGroundColor = "#666666";
 
-  /// Lighting energy balance (shared with the POV-Ray block, own defaults)
+  /// Lighting energy balance (shared with the POV-Ray block, own defaults).
+  /// These are the GI lighting ladder's top step, since useGI defaults on --
+  /// no headlight, its energy gathered as ambient instead. Keep them in step
+  /// with the ladder in tritium data/renderBackends.ts and with the auto
+  /// fallback in UmbreonDisplayContext.cpp.
   property real lightIntensity => m_lightIntensity;
-  default lightIntensity = 1.2;
+  default lightIntensity = 1.3;
   property real flashFraction => m_flashFraction;
-  default flashFraction = 0.05;
+  default flashFraction = 0.0;
   property real ambientFraction => m_ambientFraction;
-  default ambientFraction = 0.4;
+  default ambientFraction = 0.6;
 };
 
 #endif

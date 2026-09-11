@@ -81,8 +81,9 @@ POV backend では同じ 3 値が `_light_inten / _flash_frac / _amb_frac` と�
   GI on では `ambientColor = li*af`、GI off では ambientColor は 1.0 のままで af は直接光を
   減らすだけ (POV 非 radiosity と同じ)。**負値 = auto**。
 - `UmbreonDisplayContext.cpp`: auto は GI off で `1.3 / 0.6 / 0` (従来どおり)、GI on で
-  app の既定 (GI lighting step 4 = `1.2 / 0.05 / 0.4`、勾配 sky on)。スクリプトから `useGI`
-  だけを立てても app と同じ絵になるための写し。
+  app の既定 (GI lighting step 4 = `1.3 / 0 / 0.6`、勾配 sky on)。スクリプトから `useGI`
+  だけを立てても app と同じ絵になるための写し。`UmbreonRenderSettings.qif` の block default
+  も同じ 3 値。
 - `UmbreonSceneExporter::applyRenderSettings` (scene の RenderSettings -> exporter の写像。tritium /
   cuetty / Python が共有) は 3 値を常に明示的に書く。`lightIntensity` / `flashFraction` は block の値
   (Lights グループ)、`ambientFraction` は GI on のときだけ block の値 (GI グループ) で、GI off では
@@ -107,32 +108,48 @@ POV backend では同じ 3 値が `_light_inten / _flash_frac / _amb_frac` と�
   sky だとその fill が向きに無関係になるため。勾配は ladder には入れず独立の knob のままにする
   (軸がカメラの上方向なので構図に依存するスタイルであり、配分の段とは性質が違う)。
 - **GI lighting axis** (5 段、GI 選択時のみ): 他の quality axis と違い**絵を変えるための axis**。
-  headlight (ff) を 0.60 → 0.05 まで等間隔に減らし、そのエネルギーを key light と GI の
-  ambient に配りつつ、総光量 (li) を 1.55 → 1.2 まで線形に下げる。axis は 3 値すべてを
-  持つので、どれかを手で編集すると Custom になる。
+  headlight (ff) を 0.60 → 0 まで等間隔に減らし、そのエネルギーを GI の ambient に渡す。
+  axis は 3 値すべてを持つので、どれかを手で編集すると Custom になる。
 
 | step | li | ff | af | key | headlight | ambient | 位置づけ |
 |---|---|---|---|---|---|---|---|
 | 0 | 1.55 | 0.60 | 0.16 | 0.52 | 0.78 | 0.25 | raytrace 一致 |
-| 1 | 1.46 | 0.46 | 0.23 | 0.61 | 0.52 | 0.34 | |
-| 2 | 1.38 | 0.32 | 0.30 | 0.66 | 0.31 | 0.41 | |
-| 3 | 1.29 | 0.18 | 0.35 | 0.69 | 0.15 | 0.45 | |
-| 4 | 1.20 | 0.05 | 0.40 | 0.68 | 0.04 | 0.48 | headlight ほぼ無し (**既定**) |
+| 1 | 1.43 | 0.45 | 0.34 | 0.52 | 0.42 | 0.49 | |
+| 2 | 1.37 | 0.30 | 0.46 | 0.52 | 0.22 | 0.63 | |
+| 3 | 1.32 | 0.15 | 0.54 | 0.52 | 0.09 | 0.71 | |
+| 4 | 1.30 | 0.00 | 0.60 | 0.52 | 0.00 | 0.78 | headlight 無し (**既定**) |
 
   既定は step 4。GI が既定の depth cue である理由がこの見た目なので、step 0 は raytrace の絵に
   戻すための逃げ道と位置づける。
 
-  **li を下げる理由**: li 1.55 のままだと step 4 で key light が 0.88 になり、白い材質の
-  key 側 (右上) が `0.8*0.88 + 0.8*0.62 = 1.2` で clip する。目視で 1.1〜1.2 が最も立体感が
-  出たので、端点を 1.2 にして線形に刻んだ。結果として段を上げるほど絵は少し暗くなるが、
-  key light は 0.6〜0.7 でほぼ一定に保たれ、headlight の flat な fill が GI の遮蔽付き
-  ambient に置き換わっていく。
+  **更新 (2026-09-11)**: 端点を `1.2 / 0.05 / 0.4` から `1.3 / 0 / 0.6` に変更 (目視で決定)。
+  旧 ladder は headlight のエネルギーを key light と ambient に配っていたため key light が
+  0.52 → 0.68 と育ち、段を上げるほど方向性の陰影も強くなっていた。新しい端点は key light が
+  ちょうど step 0 と同じ 0.52 に戻る点で、段が動かすのは「headlight ↔ 遮蔽付き ambient」
+  だけになる。下の 2 制約を全段に課して 1〜3 を引き直した (端点も同じ式が出す値)。
+
+  **段の決め方 (2 つの不変量)**: ff だけを 0.60 → 0 に等間隔で刻み、残る li / af は次の
+  2 式で決まる。
+
+  - **key light 一定**: `li*(1-af)*(1-ff) = 0.52` (raytrace の key light)。
+  - **平均輝度一定**: カメラから見える球の平均輝度が step 0 と同じ。可視円板上の平均は
+    headlight が強度の 2/3、key light (1,1,1 方向) が 0.44、sky が 1 なので
+    `0.44*key + 0.667*flash + amb = 1.0`。
+
+  前者から `D = li*(1-af) = 0.52/(1-ff)`、`flash = D*ff`、後者から
+  `amb = 0.7712 - 0.667*flash`、`li = D + amb`、`af = amb/li`。ff=0.60 を入れると
+  `1.551 / 0.16` (= step 0)、ff=0 で `1.291 / 0.597` (= 採用した端点 `1.3 / 0.6`) となり、
+  両端が独立に決めた値と一致する。li が段を上げるほど少し下がるのは、headlight が正面側に
+  集中していたエネルギーを球全体に広がる ambient に移すため。
 - **照明方式切り替え時の Lights の既定**: Lights グループは全方式で共有なので、GI の段で
   下げた li / ff が raytrace / AO に持ち越されないよう、`RenderLightingOption.defaults`
   (方式の判定には使わない look 既定) に raytrace / AO の `1.55 / 0.6 / 0.16` を持たせ、方式を
   選んだときに書き戻す。この値は GI lighting の step 0 と同じなので、GI を離れると GI lighting
-  は step 0 に戻る (段は共有 prop の値から導出されるため、書き戻しをまたいで残せない)。
-  GI は axis が段を書き戻すので defaults を持たない。
+  は step 0 と読める (段は共有 prop の値から導出されるため、書き戻しをまたいで残せない)。
+  ただしその "0" は raytrace の既定が言っているだけでユーザーの選択ではないので、GI に戻る
+  ときは**既定 step を書き戻す** (axis の `enterAtDefault`)。これが無いと direct な方式を
+  一度経由するだけで GI が raytrace 一致の段に落ちる。GI は axis が段を書き戻すので
+  defaults を持たない。
 
   **af の決め方 (平均輝度一定)**: 最初は「カメラ正面の開放面の輝度一定」(key 0.52 固定、
   `flash + amb = 1.03`) で af を出したが、ff 0.05 で af 0.65 となり全体が明るすぎた。
@@ -145,7 +162,7 @@ POV backend では同じ 3 値が `_light_inten / _flash_frac / _amb_frac` と�
   少し多め)。端点は観察値 0.40 を採り、中間は同じ曲線の形で刻んでいる。余った
   エネルギーは key light に行くので、段を上げると方向性の陰影も強くなる。
 
-  照明方式を GI に切り替えると axis が選択中の step を書き戻すので、GI の既定配分は
+  照明方式を GI に切り替えると axis が**既定 step (4)** を書き戻すので、GI の既定配分は
   自動的に揃う。手で fraction を編集すると Custom になる (他の axis と同じ)。
 
 ## Consequences
@@ -162,7 +179,9 @@ POV backend では同じ 3 値が `_light_inten / _flash_frac / _amb_frac` と�
   diff_metal (ambient 0.35 / diffuse 0.30) は GI on で GI off よりやや暗くなる。
 - 既定値が C++ の 2 か所にある: `UmbreonDisplayContext` の auto (負値のとき) と `applyRenderSettings`
   の 0.16 固定 (+ qif の block default)。アプリ / cuetty / Python は常に applyRenderSettings 経由で明示値を
-  書くので実害はないが、GI lighting axis の step 0 を変えたら C++ の auto も揃えること。
+  書くので実害はないが、GI lighting axis の端点を変えたら C++ も揃えること
+  (step 0 → `applyRenderSettings` の `DIRECT_AMBIENT_FRACTION`、step 4 → auto の GI 分岐と
+  `UmbreonRenderSettings.qif` の block default)。
 - 勾配 sky は上を向いた面を明るく、下を向いた面を暗くする。輝度補正で正面の明るさは保つが、
   下向きの面は一様 sky より暗くなる。
 

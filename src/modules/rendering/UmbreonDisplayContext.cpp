@@ -1004,24 +1004,26 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // the direct lights, which is a brighter and flatter picture.
   //
   // The GI auto defaults are the render window's default "GI lighting" step
-  // (the top of its five): the flat, view-aligned headlight is all but gone
-  // (flash 0.04), its energy moved into the directional key light (0.68)
-  // and the gathered ambient (0.48), and the total is lowered to 1.2 so the
-  // key-lit side of a white surface does not clip. The step ladder's other
-  // end, li 1.55 / af 0.16 / ff 0.6, reproduces the non-GI picture exactly
-  // (same key 0.52 / headlight 0.78, and a gathered ambient of 0.25 that
-  // through the diffuse weight equals the 0.2 flat ambient). Derivation of
-  // the ladder and its trade-offs:
+  // (the top of its five): the flat, view-aligned headlight is gone entirely
+  // and all of its energy has moved into the gathered ambient (0.78), while
+  // the directional key light stays at the non-GI 0.52. The step ladder's
+  // other end, li 1.55 / af 0.16 / ff 0.6, reproduces the non-GI picture
+  // exactly (same key 0.52 / headlight 0.78, and a gathered ambient of 0.25
+  // that through the diffuse weight equals the 0.2 flat ambient); every step
+  // holds that key light and the mean brightness of a camera-facing sphere.
+  // Derivation of the ladder and its trade-offs:
   // docs/architecture/umbreon-gi-lighting-balance.md
-  const double li = (prm.lightIntensity >= 0.0)
-                        ? prm.lightIntensity
-                        : (prm.giEnabled ? 1.2 : 1.3);
+  //
+  // The two branches happen to share a total of 1.3: without GI all of it is
+  // direct light (key 0.52 / headlight 0.78), with GI 0.52 stays on the key
+  // light and the other 0.78 is gathered as ambient.
+  const double li = (prm.lightIntensity >= 0.0) ? prm.lightIntensity : 1.3;
   const double af = (prm.ambientFraction >= 0.0)
                         ? prm.ambientFraction
-                        : (prm.giEnabled ? 0.4 : 0.0);
+                        : (prm.giEnabled ? 0.6 : 0.0);
   const double ff = (prm.flashFraction >= 0.0)
                         ? prm.flashFraction
-                        : (prm.giEnabled ? 0.05 : 0.6);
+                        : (prm.giEnabled ? 0.0 : 0.6);
   if (scene.lights.empty()) {
     // SpecLighting: directional key light from the upper-front-right
     // (positioned at normalize(1,1,1), pointing at the origin). CueMol calls it

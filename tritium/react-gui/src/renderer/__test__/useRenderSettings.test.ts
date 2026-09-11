@@ -380,19 +380,19 @@ describe('useRenderSettings quality axes', () => {
         h.unmount();
     });
 
-    it('the GI lighting axis trades headlight for key light and gathered ambient', () => {
+    it('the GI lighting axis trades the headlight for gathered ambient', () => {
         const h = umbreonHook();
         // The default step is the top one; its values are already in the props.
-        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.2);
-        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.05);
-        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.4);
+        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.3);
+        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0);
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.6);
         act(() => h.result.setQualityStep('giLighting', '2'));
         expect(h.result.qualitySteps.giLighting).toBe('2');
-        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.38);
-        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.32);
-        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.3);
+        expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.37);
+        expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.3);
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.46);
         // A hand edit of an owned prop drops the axis to Custom.
-        act(() => h.result.handleChange('lightIntensity', 1.3));
+        act(() => h.result.handleChange('lightIntensity', 1.1));
         expect(h.result.qualitySteps.giLighting).toBe('custom');
         h.unmount();
     });
@@ -405,13 +405,16 @@ describe('useRenderSettings quality axes', () => {
         act(() => h.result.setLighting('none'));
         expect(valueOf(h.result.backendProps, 'lightIntensity')).toBe(1.55);
         expect(valueOf(h.result.backendProps, 'flashFraction')).toBe(0.6);
-        // The step is derived from those shared values, so leaving GI resets
-        // its lighting to step 0 (the defaults equal it, ambient included);
-        // coming back starts from the raytrace match rather than Custom.
+        // The step is derived from those shared values, so leaving GI reads
+        // back as step 0 (the defaults equal it, ambient included). That "0"
+        // is the raytrace defaults talking, not a pick, so coming back to GI
+        // must enter at the axis' default step -- otherwise every round trip
+        // through a direct method would silently land GI on the raytrace
+        // match.
         expect(h.result.qualitySteps.giLighting).toBe('0');
         act(() => h.result.setLighting('gi'));
-        expect(h.result.qualitySteps.giLighting).toBe('0');
-        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.16);
+        expect(h.result.qualitySteps.giLighting).toBe('4');
+        expect(valueOf(h.result.backendProps, 'ambientFraction')).toBe(0.6);
         h.unmount();
     });
 
