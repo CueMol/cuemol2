@@ -6,9 +6,10 @@
  * plugin nobody has touched keeps its own default -- getting that wrong makes
  * a default-off plugin appear on upgrade, or silently overrides a default the
  * plugin changes later. An `alwaysEnabled` plugin is on and has no switch,
- * including through a stale stored choice. And the `devOnly` gate is what
- * keeps the Component Catalog out of a shipped build, which the compile-time
- * `__DEV_UI__` branch alone cannot be tested for.
+ * including through a stale stored choice. And `devOnly` keeps a plugin out
+ * of a shipped build, which the compile-time `__DEV_UI__` branch alone cannot
+ * be tested for. Nothing declares `devOnly` today, so the gate is exercised
+ * here against a plugin made up for the purpose.
  */
 
 import React, { act } from 'react'
@@ -63,11 +64,11 @@ describe('plugin enabled state', () => {
   })
 
   it('drops a devOnly plugin from a release build', () => {
-    const all = [plugin('alpha'), plugin('catalog', { devOnly: true })]
-    expect(ids(selectAvailablePlugins(all, true))).toEqual(['alpha', 'catalog'])
+    const all = [plugin('alpha'), plugin('devtool', { devOnly: true })]
+    expect(ids(selectAvailablePlugins(all, true))).toEqual(['alpha', 'devtool'])
     expect(ids(selectAvailablePlugins(all, false))).toEqual(['alpha'])
     // A stored choice cannot resurrect one either.
-    expect(ids(selectActivePlugins(all, { catalog: true }, false))).toEqual(['alpha'])
+    expect(ids(selectActivePlugins(all, { devtool: true }, false))).toEqual(['alpha'])
   })
 })
 

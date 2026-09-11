@@ -7,10 +7,13 @@
  * layout a runtime-loaded plugin would have, so the move to Phase A of the
  * plugin plan is a packaging change rather than a rewrite.
  *
- * `__DEV_UI__` is referenced inline rather than through a constant so the
- * bundler can fold the branch away and tree-shake a developer-only plugin out
- * of a release build entirely. `selectAvailablePlugins` applies the same gate
- * at runtime, which is the half a test can reach.
+ * Every plugin listed here ships in every build; what a user sees is decided
+ * by the manifest (`defaultEnabled`) and their own choice, not by the build.
+ *
+ * A plugin that must not ship at all declares `devOnly` and is listed inside
+ * an inline `__DEV_UI__` branch, so the bundler can fold the branch away and
+ * tree-shake the module out (`selectAvailablePlugins` is the runtime half of
+ * the same gate). Nothing needs that today.
  */
 
 import type { RendererPlugin } from '@renderer/plugin-host/api'
@@ -21,5 +24,5 @@ import { sequencePlugin } from './sequence'
 export const BUILTIN_PLUGINS: readonly RendererPlugin[] = [
   getPdbPlugin,
   sequencePlugin,
-  ...(__DEV_UI__ ? [catalogPlugin] : []),
+  catalogPlugin,
 ]

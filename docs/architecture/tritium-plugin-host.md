@@ -143,6 +143,10 @@ plugin が取りうる切り替え方は manifest の 2 フィールドで決ま
 | `defaultEnabled: false` | 既定オフ。ユーザが opt-in する | `catalog` |
 | (どちらも無し) | 既定オン、ユーザがオフにできる | 今のところ無し |
 
+「build に入れるか」と「入った上でオンか」は別。Component Catalog は内部ツールだが
+**全ビルドに入れて既定オフ**にしてある。既定オフなら普段は目に触れないので、build から
+落とす理由が無く、落とさなければ製品ビルドに対してデザインの確認ができる。
+
 `getpdb` / `sequence` を `alwaysEnabled` にしているのは、**「1 ディレクトリに閉じる」ために
 plugin にしたのであって「外せるようにする」ためではない**から。File メニュー項目と
 bottom tab を消しても得るものが無く、動かない switch を見せるほうが害になる。
@@ -154,28 +158,28 @@ plugin 機構そのものはこの 2 つで検証できている (寄与の登�
   plugin 側が後から既定を変えても未選択のユーザにはそれが届く
 - UI は Settings > Plugins。行は `features/settings/settings/pluginSettings.ts` が
   **switchable な plugin から**生成するので、`alwaysEnabled` のものは出ない。
-  switchable が 0 件のとき (release build がそう) はカテゴリごと消える
+  switchable が 0 件ならカテゴリごと消える (現状は catalog があるので出る)
 - 切り替えは即時。`PluginRoots` が Root を unmount し、command と dialog が一緒に消え、
   menu / toolbar / view / bottom tab も同じ render で消える
 - **既知の割り切り**: 無効化は進行中の処理を中断する。switchable な plugin が長い処理を
   持つなら、そこは考慮が要る
 
-### dev-only plugin
+### dev-only plugin (現状は該当なし)
 
-`devOnly` は「この build に入るか」で、`defaultEnabled` は「入った上でオンか」。
-`catalog` は両方使っていて、release build には入らず、dev build では入るが既定オフ。
+**そもそも build に入れたくない** plugin のための `manifest.devOnly` もある。ゲートは二重:
 
-`manifest.devOnly` が立っている plugin は release build に入らない。ゲートは二重:
-
-1. `plugins/index.ts` の `...(__DEV_UI__ ? [catalogPlugin] : [])` -- bundler が枝を畳み、
-   モジュールごと tree-shake する
+1. `plugins/index.ts` で `...(__DEV_UI__ ? [thePlugin] : [])` として列挙する --
+   bundler が枝を畳み、モジュールごと tree-shake する
 2. `selectAvailablePlugins()` -- 実行時の同じ判定。テストが届くのはこちら
 
-**`definePlugin(...)` の呼び出しには pure annotation が要る。** 無いと bundler は
-呼び出しに副作用がある前提で plugin モジュールを残すので、(1) の枝を畳んでも本体が
-bundle に残る。3 つの built-in plugin が書き方の見本。検証は
-`CUEMOL_RELEASE=1 pnpm exec electron-vite build` して bundle に `Component Catalog` が
-出ないこと。
+このとき **`definePlugin(...)` の呼び出しに pure annotation が要る**。無いと bundler は
+呼び出しに副作用がある前提でモジュールを残すので、(1) の枝を畳んでも本体が bundle に
+残る。built-in plugin は 3 つとも annotation を付けてある (現状どれも `devOnly` では
+ないので実効は無いが、書き方を揃えておく)。
+
+`devOnly` を使っている plugin は今は無い。Component Catalog も **入れた上で既定オフ**に
+してある。「見せたくない」だけなら `defaultEnabled: false` で足り、build から落とすのは
+「配ってはいけない」ときだけ。
 
 ---
 
@@ -204,7 +208,7 @@ plugin が使う core の API は `@renderer/plugin-host/api` に集めてある
 
 | id | 何を寄与するか | 切り替え | 選んだ理由 |
 |---|---|---|---|
-| `catalog` | activity view 1 + side pane 3 | dev build のみ・既定オフ | 依存ゼロ・worker 通信ゼロ。view/pane レーンだけを検証する |
+| `catalog` | activity view 1 + side pane 3 | 既定オフ (opt-in) | 依存ゼロ・worker 通信ゼロ。view/pane レーンだけを検証する |
 | `getpdb` | command 1 + menu 1 + toolbar 1 + dialog | 常時有効 | command / menu / toolbar / dialog の 4 レーン。C++ は generic な `streamLoadFromUrl` / `streamLoadDensityMap` 経由のみ |
 | `sequence` | bottom tab 1 + worker service 4 | 常時有効 | worker service レーン。C++ は `MolCoord` の chain/residue 走査、`ResidRangeSet`、`mol.sel`、`view.setViewCenter` という generic API のみ |
 
@@ -220,7 +224,7 @@ plugin が使う core の API は `@renderer/plugin-host/api` に集めてある
 1. `src/plugins/<id>/index.ts` に `definePlugin({ manifest, ... })` を書く
    (pure annotation を付ける)。id は `[a-z][a-z0-9-]*`。切り替え方を決める:
    外す意味が無いなら `alwaysEnabled: true`、opt-in なら `defaultEnabled: false`、
-   既定オンで外せるならどちらも書かない
+   既定オンで外せるならどちらも書かない。配ってはいけないものだけ `devOnly`
 2. 寄与するものを manifest の `contributes` に宣言し、実体を用意する
    - command: `Root` の中で `useRegisterPluginCommand('plugin.<id>.<name>', handler)`
    - pane / bottom tab: `panes` / `bottomTabs` に component を並べる

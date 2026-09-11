@@ -17,9 +17,11 @@ import type {
 /**
  * The plugins this build ships.
  *
- * `devOnly` plugins are dropped from a release build. `plugins/index.ts`
- * already keeps them out of the bundle through an inline `__DEV_UI__` branch;
- * this is the second half of the same gate, and the half a test can reach.
+ * A `devOnly` plugin is dropped from a release build. It is meant to be
+ * listed inside an inline `__DEV_UI__` branch in `plugins/index.ts` too, so
+ * the bundler drops the module as well; this is the second half of that gate,
+ * and the half a test can reach. Nothing declares `devOnly` today -- the
+ * Component Catalog ships everywhere and is simply off by default.
  */
 export function selectAvailablePlugins(
   plugins: readonly RendererPlugin[],

@@ -7,14 +7,11 @@
  * no worker, which also makes it the smallest possible exercise of the pane
  * contribution lane.
  *
- * Developer builds only (`devOnly`). The catalog is where a new kit component
- * is added and reviewed, so shipping it would put an internal tool in front
- * of users; `docs/migration/ui-style-guide.md` states the same rule from the
- * UI side.
- *
- * Off until asked for (`defaultEnabled: false`), so even a developer build
- * opens on the three real views and the gallery is one switch away in
- * Settings > Plugins.
+ * Off until asked for (`defaultEnabled: false`). The catalog is an internal
+ * tool -- where a new kit component is added and reviewed -- so it stays out
+ * of the way until someone switches it on in Settings > Plugins. That is
+ * enough: it does not also need keeping out of the build, and shipping it
+ * means a design question can be answered against a release build.
  */
 
 import { definePlugin } from '@renderer/plugin-host/api'
@@ -28,7 +25,6 @@ export const catalogPlugin = /* @__PURE__ */ definePlugin({
     name: 'Component Catalog',
     version: '1.0.0',
     description: 'Live gallery of the h3-kit form, list and property components.',
-    devOnly: true,
     defaultEnabled: false,
     contributes: {
       views: [

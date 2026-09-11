@@ -39,7 +39,7 @@ Blueprint の portal (popover / dialog) に dark テーマを効かせる `porta
 - **ベクトル (x/y/z)** = `VectorField` (`NumberCell` を自前で並べない)。
 真にカタログに無い時のみ、`_form-kit.css` にサイズを 1 定義して**先にカタログへ追加**する。カタログ調査を飛ばして Blueprint 直叩き/独自 CSS で作ると、既存の verified 実装とサイズ・デザインが食い違い手戻りする (このガイドが防ぎたい再発そのもの)。
 
-> **Component Catalog は開発ビルド専用**: activity bar の "Component Catalog" view は `__DEV_UI__` (compile-time flag) で gate されており、`electron-vite dev` / 通常の `electron-vite build` (= `task build_tritium` + `task run_tritium`) でのみ表示される。release packaging (`tritium/packaging/package.sh`) は `CUEMOL_RELEASE=1` を立てるので、CatalogPane1-3 は tree-shaking で bundle ごと落ちる。カタログに component を追加しても製品ビルドには入らない。
+> **Component Catalog は built-in plugin で、既定オフ**: activity bar の "Component Catalog" view は plugin `catalog` (`react-gui/src/plugins/catalog/`) が寄与する。全ビルドに入るが `defaultEnabled: false` なので、**Settings > Plugins でオンにするまで表示されない**。開発・デザインレビュー時はここでオンにする。カタログに component を追加すると製品ビルドにも入るが、ユーザが自分でオンにしない限り目に触れない。仕組みは [tritium-plugin-host.md](../architecture/tritium-plugin-host.md)。
 
 | コンポーネント | 用途 | canonical サイズ (source) |
 |---|---|---|

@@ -168,7 +168,8 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit â
 Some features are packaged as **built-in plugins**: one directory each, declaring what they
 contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
 this way to keep the feature in one directory, not to make it removable) and `catalog` (the
-dev-only component gallery, `defaultEnabled: false`, switched on in Settings > Plugins).
+component gallery: it ships in every build but is `defaultEnabled: false`, so it appears only
+once someone switches it on in Settings > Plugins).
 
 Full spec: [`docs/architecture/tritium-plugin-host.md`](../docs/architecture/tritium-plugin-host.md).
 The rules that bite while editing core code:
@@ -183,8 +184,9 @@ The rules that bite while editing core code:
 - **A contributed menu row carries its command in the channel** (`menu:plugin:<commandId>`),
   because main builds the native menu and cannot see the renderer's plugin registry. Both menu
   surfaces build from `buildAppMenu()` in `shared/pluginMenu.ts`.
-- **`definePlugin(...)` needs a pure annotation** at the call site, or a `devOnly` plugin is not
-  tree-shaken out of a release build.
+- **`definePlugin(...)` takes a pure annotation** at the call site. It only matters for a
+  `devOnly` plugin (nothing declares one today), which without it is not tree-shaken out of a
+  release build even though the `__DEV_UI__` branch folds away.
 - **Switchability is a manifest decision**: `alwaysEnabled: true` for a feature nobody would
   want gone (no Settings row, stored choices ignored), `defaultEnabled: false` for something
   the user opts into, neither for the ordinary default-on case. `UiState.pluginEnabled` stores

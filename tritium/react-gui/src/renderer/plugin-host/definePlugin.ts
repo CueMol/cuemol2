@@ -77,11 +77,11 @@ export function validatePlugin(plugin: RendererPlugin): string[] {
  * returns the plugin unchanged: a broken contribution is better shown as an
  * error the author can read than hidden by dropping it silently.
  *
- * Put a pure annotation on the call at the definition site (the three
- * built-in plugins show the form). Without it the bundler has to assume the
- * call matters and keeps the whole plugin -- which for a `devOnly` plugin
- * means shipping it, since the `__DEV_UI__` branch in `plugins/index.ts` can
- * then fold away the reference but not the module behind it.
+ * Put a pure annotation on the call at the definition site (the built-in
+ * plugins show the form). It only bites for a `devOnly` plugin: without it
+ * the bundler has to assume the call matters and keeps the module, so the
+ * `__DEV_UI__` branch in `plugins/index.ts` folds away the reference but
+ * ships the plugin anyway.
  */
 export function definePlugin(plugin: RendererPlugin): RendererPlugin {
   for (const message of validatePlugin(plugin)) {

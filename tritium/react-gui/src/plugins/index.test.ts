@@ -53,12 +53,14 @@ describe('built-in plugins', () => {
   it('let the user switch only what is optional', () => {
     // Get PDB and the Sequence panel are entry points, not extras: a switch
     // would only take a working menu item or tab away. The Component Catalog
-    // is an internal tool, so it is there but off until asked for.
+    // is an internal tool, so it ships in every build but stays off until
+    // someone asks for it.
     const byId = Object.fromEntries(BUILTIN_PLUGINS.map((p) => [p.manifest.id, p.manifest]))
     expect(byId.getpdb?.alwaysEnabled).toBe(true)
     expect(byId.sequence?.alwaysEnabled).toBe(true)
     expect(byId.catalog?.alwaysEnabled).toBeUndefined()
     expect(byId.catalog?.defaultEnabled).toBe(false)
+    expect(byId.catalog?.devOnly).toBeUndefined()
   })
 
   it('use an id at most once', () => {
