@@ -129,7 +129,7 @@ TEST(UmbreonApplySettings, GatesAoAmbientAndHatchByBlock)
     EXPECT_DOUBLE_EQ(propReal(ex, "aoDistance"), 1.0e20);  // ctor value, untouched
     EXPECT_FALSE(propBool(ex, "useGI"));
     EXPECT_DOUBLE_EQ(propReal(ex, "ambientFraction"), 0.16);
-    EXPECT_DOUBLE_EQ(propReal(ex, "lightIntensity"), 1.2);  // the block's default
+    EXPECT_DOUBLE_EQ(propReal(ex, "lightIntensity"), 1.3);  // the block's default
 
     // NPR block: hatching on, GI never, colors only behind their Custom switch
     render::UmbreonNprRenderSettings *np = p->getUmbreonNpr().get();

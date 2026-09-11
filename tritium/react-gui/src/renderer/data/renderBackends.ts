@@ -197,9 +197,10 @@ const UMBREON_PROPS: RenderPropSpec[] = [
  * props, so picking a direct method writes these back -- otherwise a GI step
  * with almost no headlight would carry over into the raytrace. They equal the
  * axis' step 0 (the ambient fraction included, although the direct methods
- * never read it), so the axis reads "0" again afterwards: leaving GI resets
- * its lighting to the raytrace match, since the step is derived from these
- * shared values and cannot survive their reset.
+ * never read it), so the axis reads "0" again afterwards: the step is derived
+ * from these shared values and cannot survive their reset. Coming back to GI
+ * therefore enters at the axis' default step rather than at what it reads
+ * (`enterAtDefault`), since that "0" is these defaults talking, not a pick.
  */
 const DIRECT_LIGHT_DEFAULTS = { lightIntensity: 1.55, flashFraction: 0.6 };
 /** The umbreon backend has the GI-only ambient fraction prop as well. */
@@ -287,34 +288,40 @@ const UMBREON_QUALITY: RenderQualityConfig = {
     // dropdown in the Global Illumination group instead of a ladder.
     //
     // Axis B-GI look. Unlike every other axis this one changes the picture on
-    // purpose: it takes the flat, view-aligned headlight away in equal
-    // strides (flashFraction 0.60 -> 0.05) and gives its energy to the two
-    // terms that carry shape -- the directional key light and the GI gather
-    // (the only term that carries occlusion). The ambient fraction at each
-    // step follows the curve that keeps the MEAN brightness of a sphere seen
-    // by the camera constant (headlight averages 2/3 of its intensity over
-    // the visible disk, the key light 0.44, the sky a flat 1; the endpoint
-    // trimmed to what looked right). The total energy then comes down with
-    // the steps (1.55 -> 1.2): with the key light grown from 0.52 to 0.88,
-    // the key-lit side of a white surface clips at the raytrace level, and
-    // the lower level is where the relief reads best. Step 0 reproduces the
+    // purpose: it takes the flat, view-aligned headlight away in equal strides
+    // (flashFraction 0.60 -> 0) and hands its energy to the GI gather, the
+    // only term that carries occlusion. Two invariants fix the other two props
+    // at every step, so the ladder changes exactly one thing:
+    //   key light  li*(1-af)*(1-ff) = 0.52, the raytrace key light
+    //   mean brightness of a camera-facing sphere = the raytrace one, i.e.
+    //     0.44*key + 0.667*flash + amb = 1.0 (the headlight averages 2/3 of
+    //     its intensity over the visible disk, the key light 0.44, the sky 1)
+    // Solving them for each headlight fraction gives li and af below; the two
+    // ends land on the raytrace values (1.55 / 0.6 / 0.16) and on the
+    // headlight-free 1.3 / 0 / 0.6. The total energy comes down as the steps
+    // rise only because ambient is spread over the whole sphere while the
+    // headlight was concentrated on the facing side. Step 0 reproduces the
     // raytraced picture (the gathered ambient equals the flat material
     // ambient). The axis owns all three props, so a hand edit of any of them
     // reads back as Custom. Derivation:
     // docs/architecture/umbreon-gi-lighting-balance.md
     // The default is the top step: GI is the default depth cue precisely for
     // this look, and step 0 is the escape hatch back to the raytraced picture.
+    // enterAtDefault because the direct methods reset the props this axis owns
+    // to values that read back as step 0 -- without it, picking GI after a
+    // raytrace would enter at the raytrace match instead of the default.
     {
       key: "giLighting",
       label: "GI lighting",
       defaultStep: "4",
       lightings: ["gi"],
+      enterAtDefault: true,
       steps: [
         { id: "0", label: "0 (raytrace match)", patch: { lightIntensity: 1.55, flashFraction: 0.6, ambientFraction: 0.16 } },
-        { id: "1", label: "1", patch: { lightIntensity: 1.46, flashFraction: 0.46, ambientFraction: 0.23 } },
-        { id: "2", label: "2", patch: { lightIntensity: 1.38, flashFraction: 0.32, ambientFraction: 0.3 } },
-        { id: "3", label: "3", patch: { lightIntensity: 1.29, flashFraction: 0.18, ambientFraction: 0.35 } },
-        { id: "4", label: "4 (max GI)", patch: { lightIntensity: 1.2, flashFraction: 0.05, ambientFraction: 0.4 } },
+        { id: "1", label: "1", patch: { lightIntensity: 1.43, flashFraction: 0.45, ambientFraction: 0.34 } },
+        { id: "2", label: "2", patch: { lightIntensity: 1.37, flashFraction: 0.3, ambientFraction: 0.46 } },
+        { id: "3", label: "3", patch: { lightIntensity: 1.32, flashFraction: 0.15, ambientFraction: 0.54 } },
+        { id: "4", label: "4 (max GI)", patch: { lightIntensity: 1.3, flashFraction: 0, ambientFraction: 0.6 } },
       ],
     },
     // Axis C. Shadows fall on meshes only and are independent of the depth
