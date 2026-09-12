@@ -438,10 +438,12 @@ void DisplayList::drawMesh(const gfx::Mesh &mesh)
     qlib::uid_t nSceneID = getSceneID();
     // A Mesh carries no per-vertex names: the whole mesh gets the current one.
     const quint32 name_value = encodeHitName(getCurrentName());
+    // A vertex the renderer never coloured takes the current colour (opaque
+    // white when there is none) rather than dereferencing a null ColorPtr.
+    const quint32 defcode = m_pColor.isnull() ? 0xFFFFFFFFu : m_pColor->getDevCode(nSceneID);
     gfx::ColorPtr pcol;
     for (size_t i = 0; i < nMeshVerts; ++i) {
-        mesh.getCol(pcol, i);
-        auto c1 = pcol->getDevCode(nSceneID);
+        const quint32 c1 = mesh.getCol(pcol, i) ? pcol->getDevCode(nSceneID) : defcode;
         m_mesh.addVertex(mesh.getVertex(i), mesh.getNormal(i), c1, name_value);
     }
 

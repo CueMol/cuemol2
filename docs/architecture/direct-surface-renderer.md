@@ -171,7 +171,7 @@ Electron がリンクするアロケータ (PartitionAlloc) は、約 2 GB を�
 | 配列 | バイト/頂点 |
 |---|---|
 | `m_verts` (`MSVert[]`) | 28 |
-| `gfx::Mesh::m_colptrs` (`ColorPtr`) | 32 |
+| `gfx::Mesh::m_vcols` (`VertCol`、display-list 経路のみ) | 16 |
 | `m_faces` (`MSFace[]`、面は頂点の約 2 倍) | 24 |
 | MeshMS `verts` / `vnormals` (`array<double,3>`) | 24 ずつ |
 
@@ -197,13 +197,42 @@ detail 32 では約 6.7 万原子、detail 16 では約 22 万原子を超える
 万一予測が外れた場合の保険として、MeshMS が返したメッシュが `MESHMS_HARD_MAX_VERTS`
 (4800 万頂点) を超えていたら格納せずに例外を投げ、distfield にフォールバックする。
 
-### 付随修正: `gfx::Mesh` の色配列の過剰確保
+### `gfx::Mesh` の頂点色: palette + 16 B/頂点
 
-`Mesh::init()` は `m_colptrs` を `nverts*3` 要素確保していたが、全アクセスが頂点番号
-(`i < m_nVerts`) なので 2/3 が未使用だった。`ColorPtr` は 32 バイトの smart pointer
-なので、これがメッシュ中で突出して大きい確保になっていた (頂点あたり 96 バイト)。
-`nverts` に修正した。全レンダラ共通の経路で、ファイル書き出しと非 fill 描画モードが
-通る display-list 経路で効く。
+display-list 経路 (ファイル書き出し、line / point 描画、shader 無し) の中間表現
+`gfx::Mesh` は、頂点色を `std::vector<ColorPtr>` (頂点ごとに smart pointer 1 個) で
+持っていた。PR #616 で `nverts*3` の過剰確保を直した際に「ColorPtr は 32 バイト」と
+書いたが、プロジェクトのコンパイルフラグで実測すると **72 B** (scriptable な smart
+pointer で vptr 5 本 + ポインタ 4 本) で、位置 + 法線 (24 B) の 3 倍だった。さらに
+potential / multigrad 着色では `ScalarColorSupport::rampColor()` と
+`MultiGradient::getColor()` が頂点ごとに新しい `GradientColor` (**256 B**) を作り、Mesh が
+それを保持するので、頂点あたり ~350 B を色に使っていた。1600 万頂点なら pointer 配列だけで
+1.15 GB の単一確保 (2 GB 上限の半分超)、gradient オブジェクトが別に ~4 GB。
+
+今は **`ColorPtr` の palette (CLUT) を 1 本持ち、頂点にはその index だけを持たせる**。
+`color()` に渡された `GradientColor` は 2 成分の palette index + `double rho` に分解して
+格納し、`getCol()` が同じ成分・rho から再構成して返す (`ColorTable::getColor()` と同じ
+手法)。base 色 (成分色や solid 色) は renderer が共有オブジェクトを使い回すので palette は
+数個〜原子色の種類数で済む。
+
+- 頂点レコード `VertCol{cid1, cid2, double rho}` = **16 B**。`rho` を float にすると
+  整数境界近傍で 1 LSB ずれ、「exporter 出力バイト同一」が崩れるので double。
+- palette の dedupe は「ポインタ同一 → 値 (getCode(), getMaterial())」の 2 段。値 dedupe が
+  要るのは `MolSurfRenderer::getColorMol` のように頂点ごとに新しい同値オブジェクトが返る
+  経路のため。ポインタ比較は **Mesh が保持しているオブジェクトに対してのみ**行う
+  (頂点ごとに作られて即解放される GradientColor をポインタでキャッシュすると malloc の
+  アドレス再利用で誤着色する)。
+- `getCol(ColorPtr&, int)` のシグネチャは不変。solid 頂点は登録されたオブジェクトそのもの、
+  gradient 頂点は再構成した一時オブジェクトを返す。未書き込み頂点は false
+  (以前は null を true で返し `DisplayList::drawMesh` が deref していた)。
+- 消費側 `RendIntData::mesh` (POV / LuxRender / Mqo / Umbreon の入口) は無変更で、
+  再構成された `GradientColor` を今までどおり `ColorTable::newColor` が分解するので
+  CLUT の番号順・`convRho` の丸め・gradient 登録まで同一。`DisplayList::drawMesh` は
+  `getCol` false のときに現在色を使う 2 行だけ。
+
+保持メモリは 1600 万頂点で ~5.6 GB → ~256 MB。生産側 (`rampColor` 等) が頂点ごとに
+一時 `GradientColor` を作る CPU コストは残る (follow-up 参照)。テストは
+`src/tests/gfx/test_mesh_colors.cpp`。
 
 ### detail の選択肢
 

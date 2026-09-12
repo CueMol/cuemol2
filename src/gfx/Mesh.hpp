@@ -8,15 +8,44 @@
 #define GFX_MESH_HPP_INCLUDED
 
 #include "AbstractColor.hpp"
-#include "ColorTable.hpp"
 #include <qlib/Vector4D.hpp>
+#include <qlib/LString.hpp>
+
+#include <unordered_map>
+#include <vector>
 
 namespace gfx {
 
   using qlib::Vector4D;
 
+  /// Triangle mesh handed to DisplayContext::drawMesh().
+  ///
+  /// Vertex colours are stored as indices into a per-mesh palette of the
+  /// distinct colour objects the renderer passed to color(), not as one
+  /// ColorPtr per vertex: a ColorPtr is a 72-byte scriptable smart pointer,
+  /// three times the position and normal together, and a surface coloured
+  /// by a potential ramp hands in a fresh 256-byte GradientColor for every
+  /// vertex. Such a GradientColor is decomposed into its two component
+  /// colours and its parameter here, so the palette holds only the handful
+  /// of base colours and each vertex costs 16 bytes whatever the colouring.
+  /// getCol() reconstructs the same colour on demand.
   class GFX_API Mesh
   {
+  public:
+    /// Palette index meaning "no colour": cid2 of a plain-coloured vertex,
+    /// cid1 of a vertex that was never coloured.
+    static constexpr quint32 NO_COLOR = 0xFFFFFFFFu;
+
+    /// Colour of one vertex: a palette entry, or a GradientColor as the two
+    /// palette entries of its components and its parameter. rho stays a
+    /// double so the reconstructed colour blends exactly as the original.
+    struct VertCol
+    {
+      quint32 cid1;
+      quint32 cid2;
+      double rho;
+    };
+
   private:
 
     int m_nVerts;
@@ -24,22 +53,44 @@ namespace gfx {
 
     std::vector<float> m_verts;
     std::vector<float> m_norms;
-    std::vector<ColorPtr> m_colptrs;
+    std::vector<VertCol> m_vcols;
     std::vector<int> m_faces;
 
     /////
+    // palette of distinct base colours
+
+    std::vector<ColorPtr> m_palette;
+
+    /// Material names referenced by the palette; [0] is the empty name.
+    std::vector<LString> m_palMats;
+
+    /// (material index << 32 | colour code) -> palette index
+    std::unordered_map<quint64, quint32> m_palIndex;
+
+    /// colour object -> palette index, for the objects the palette retains
+    std::unordered_map<const AbstractColor *, quint32> m_palPtrIndex;
+
+    /////
+    // current vertex attributes
 
     Vector4D m_curNorm;
 
+    VertCol m_curCol;
+
+    /// The object color() was last called with (identity shortcut).
     ColorPtr m_pCurCol;
+
+    /// The components of the last GradientColor seen: a ramp reuses its stop
+    /// colours, so most gradient vertices resolve with two pointer compares.
+    ColorPtr m_pLastC1;
+    ColorPtr m_pLastC2;
+    quint32 m_lastCid1;
+    quint32 m_lastCid2;
 
     /////
 
   public:
-    Mesh()
-         : m_nVerts(0), m_nFaces(0)
-    {
-    }
+    Mesh();
 
     virtual ~Mesh();
 
@@ -58,12 +109,12 @@ namespace gfx {
       m_verts[i*3+0] = x;
       m_verts[i*3+1] = y;
       m_verts[i*3+2] = z;
-      
+
       m_norms[i*3+0] = (float) m_curNorm.x();
       m_norms[i*3+1] = (float) m_curNorm.y();
       m_norms[i*3+2] = (float) m_curNorm.z();
-  
-      m_colptrs[i] = m_pCurCol;
+
+      m_vcols[i] = m_curCol;
     }
 
     inline void setVertex(int i, float x, float y, float z, float nx, float ny, float nz)
@@ -71,12 +122,12 @@ namespace gfx {
       m_verts[i*3+0] = x;
       m_verts[i*3+1] = y;
       m_verts[i*3+2] = z;
-      
+
       m_norms[i*3+0] = nx;
       m_norms[i*3+1] = ny;
       m_norms[i*3+2] = nz;
-  
-      m_colptrs[i] = m_pCurCol;
+
+      m_vcols[i] = m_curCol;
     }
 
     Vector4D getVertex(int i) const {
@@ -94,11 +145,11 @@ namespace gfx {
                        m_norms[i*3+2]);
     }
 
+    /// Set the colour of the vertices that follow. A GradientColor is stored
+    /// as its components and parameter; any other colour as a palette entry.
     void color(const ColorPtr &c);
-    //void color(const ColorPtr &c, const LString &mtr);
 
     void setFace(int fid, int vid1, int vid2, int vid3) {
-      //MB_ASSERT(m_pFaces!=NULL);
       MB_ASSERT(fid<m_nFaces);
       m_faces[fid*3+0] = vid1;
       m_faces[fid*3+1] = vid2;
@@ -115,35 +166,27 @@ namespace gfx {
       return m_nFaces;
     }
 
-    const float *getFloatVerts() const {
-      return &m_verts[0];
-    }
-
-    const float *getFloatNorms() const {
-      return &m_norms[0];
-    }
-
     const int *getFaces() const {
       return &m_faces[0];
     }
 
-    //bool getRGBAFloatCol(float &r, float &g, float &b, float &a, int iv) const;
+    /// Colour of vertex iv. A plain colour is the object passed to color();
+    /// a gradient is rebuilt from its components. False when iv is out of
+    /// range or the vertex was never coloured.
     bool getCol(ColorPtr &c, int iv) const;
 
-    bool convRGBAByteCols(quint8 *pcols, int nsize, int defalpha=255, qlib::uid_t nSceneID=qlib::invalid_uid) const;
+    /// Number of distinct base colours the mesh refers to.
+    int getPaletteSize() const {
+      return (int) m_palette.size();
+    }
 
-    /*
-private:
-  int clutNewColor(unsigned int ccode);
+  private:
+    /// Palette index of a base colour, adding it when new.
+    quint32 palIndex(const ColorPtr &pc);
 
-  unsigned char convRho(double rho) const {
-    double tr = qlib::trunc(rho, 0.0, 1.0);
-    return (unsigned char) (tr*255.0+0.5);
-  }*/
   };
 
 }
 
 #endif //
-
 
