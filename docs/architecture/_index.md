@@ -61,7 +61,7 @@ architecture, it belongs here.
   LLM が既存の worker service を呼んでシーンを組み立てるチャット panel (built-in
   plugin、既定オフ)。worker 内で回す agent loop と「1 指示 = 1 undo txn、変更したら
   cancel でも必ず commit」という判断 (C++ の rollback は pending 編集を revert するため)、
-  手書きのツールカタログ 19 本と 3 方言ある service 結果の正規化、静的な system prompt と
+  手書きのツールカタログ 20 本と 3 方言ある service 結果の正規化、静的な system prompt と
   毎 turn の scene snapshot を分ける prompt cache の都合、Root と pane が別 subtree である
   ことから来る module store、API キーを `safeStorage` に置く経路。この機能のために host へ
   足した汎用の受け皿 (push channel レーン / plugin prefs / settings 寄与点 / 汎用 secrets

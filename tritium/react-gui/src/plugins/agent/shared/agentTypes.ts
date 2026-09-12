@@ -4,8 +4,9 @@
  * a turn for it.
  *
  * Loaded by both halves of the plugin, so it holds wire shapes and constants
- * only -- no React, no C++ wrappers. The OpenAI types it re-uses are type
- * imports, which the SDK ships with no runtime cost.
+ * only -- no React, no C++ wrappers. The conversation type it re-uses is the
+ * AI SDK's provider-neutral `ModelMessage`, imported as a type, so nothing of
+ * the SDK reaches the renderer bundle through this file.
  */
 
 import type { ModelMessage } from 'ai'

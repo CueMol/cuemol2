@@ -36,7 +36,7 @@ describe('the per-provider request options', () => {
 
   it('asks for schema enforcement only where a catalogue this size fits', () => {
     // Anthropic compiles every strict schema into one grammar and rejects
-    // the request once it is too big, which nineteen tools is.
+    // the request once it is too big, which a catalogue this size is.
     expect(usesStrictTools({ provider: 'openai', modelId: 'gpt-5.6' })).toBe(true)
     expect(usesStrictTools({ provider: 'anthropic', modelId: 'claude-opus-5' })).toBe(false)
   })

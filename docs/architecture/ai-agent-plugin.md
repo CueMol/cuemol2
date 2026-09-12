@@ -161,14 +161,14 @@ system prompt で「`ok:false` は失敗」と教える。
 **strict (スキーマをサンプリング時に強制させるか) は provider ごとの判断**
 (`usesStrictTools`)。OpenAI は本数に関係なく効くが、Anthropic は strict な schema を 1 つの
 grammar にコンパイルし、大きすぎると "The compiled grammar is too large" で拒否する --
-この 19 本がそれに当たる。調整できるサイズの余地は無いので all-or-nothing。
+この 20 本がそれに当たる。調整できるサイズの余地は無いので all-or-nothing。
 strict を切った側で失うのは「引数が schema に従う保証」だけで、tool は受け取った値を
 coerce し、おかしければモデルが読める理由を返すので、往復 1 回のコストで済む。
 
 **スキーマは全 provider の strict モードが受ける共通部分だけを使う** (`type` / `description` /
 `properties` / `required` / `additionalProperties` / `items` / `enum`)。Anthropic の strict は
 数値・文字列の制約を受け付けず、配列は `minItems: 0 | 1` しか許さない。しかも tool 定義は
-**毎リクエストに 19 本すべて載る**ので、1 本のスキーマが不正だとモデルが何を呼ぶつもりでも
+**毎リクエストに 20 本すべて載る**ので、1 本のスキーマが不正だとモデルが何を呼ぶつもりでも
 リクエスト全体が 400 になる (実際 `measure_geometry` の `minItems: 2` が、測定と無関係な
 プロンプトまで Anthropic で止めた。OpenAI は通っていた)。`tools/index.test.ts` が
 キーワード集合を pin している。件数のような制約は description に書き、`run` で検証する。
@@ -336,7 +336,7 @@ description に必ず書いている曖昧点:
 
 ## 6. 設定と API キー
 
-Settings > Plugins > AI Agent に 4 行:
+Settings > Plugins > AI Agent に 5 行:
 
 | 設定 | kind | 既定 | 保存先 |
 |---|---|---|---|

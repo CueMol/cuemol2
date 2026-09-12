@@ -90,9 +90,8 @@ export function providerOptionsFor(spec: ModelSpec): ProviderOptions {
  *
  * OpenAI does it for any number of tools. Anthropic compiles every strict
  * schema into one grammar and refuses the request when that grows too large
- * ("The compiled grammar is too large") -- which this catalogue of nineteen
- * tools does. There is no size to tune, so it is all or nothing per
- * provider.
+ * ("The compiled grammar is too large") -- which a catalogue this size
+ * does. There is no size to tune, so it is all or nothing per provider.
  *
  * What is lost where it is off: arguments are no longer guaranteed to match
  * the schema. The tools coerce what they are given and answer with a reason

@@ -31,7 +31,10 @@ export const fooPlugin = /* @__PURE__ */ definePlugin({
 空)。`plugins/index.test.ts` が「全 plugin で空であること」を検査している。
 
 検査する内容: id の形式、command id の prefix、command の重複宣言、menu / toolbar が
-指す command が宣言されているか、view の pane と bottom tab に component があるか。
+指す command が宣言されているか、view の pane と bottom tab に component があるか、
+settings の key の形式と重複、および `default` の有無 (`secret` は OS キーチェーンに
+値があるので `default` を持てず、それ以外の kind は `default` 必須 -- 保存値も既定も
+無い行は空欄で描画されるため)。
 
 ### 型
 

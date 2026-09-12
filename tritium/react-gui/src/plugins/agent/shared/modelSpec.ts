@@ -54,11 +54,6 @@ function isProvider(value: string): value is Provider {
   return (PROVIDERS as readonly string[]).includes(value)
 }
 
-/** The spec written back as a settings value. */
-export function formatModelSpec(spec: ModelSpec): string {
-  return `${spec.provider}:${spec.modelId}`
-}
-
 /**
  * The conversation with the other provider's reasoning removed.
  *
