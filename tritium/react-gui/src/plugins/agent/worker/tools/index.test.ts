@@ -2,7 +2,7 @@
  * @file plugins/agent/worker/tools/index.test.ts
  * @description What the catalogue promises the API and the model.
  *
- * The schemas go out with `strict: true`, which the API rejects outright
+ * The schemas go out with `strict: true`, which the provider rejects outright
  * unless every property is required and no extras are allowed -- a whole turn
  * fails on one malformed schema, so this checks all of them at once. The
  * order is pinned because the tool list is part of the cached prompt prefix.
@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { AGENT_TOOLS, OPENAI_TOOLS } from './index'
+import { AGENT_TOOLS, buildAiSdkTools } from './index'
 import type { StrictObjectSchema } from './types'
 import { SYSTEM_PROMPT } from '../prompt/systemPrompt'
 import {
@@ -21,7 +21,7 @@ import {
   CHEAT_SHEET_NAMED_SELECTIONS,
 } from '../prompt/selectionCheatSheet'
 
-/** OpenAI's own guidance: keep a turn under twenty functions. */
+/** OpenAI's guidance, and a reasonable bound for any provider: under twenty. */
 const MAX_TOOLS = 20
 
 /**
@@ -59,11 +59,13 @@ describe('the tool catalogue', () => {
     }
   })
 
-  it('sends them to the API as strict function tools', () => {
-    expect(OPENAI_TOOLS).toHaveLength(AGENT_TOOLS.length)
-    for (const tool of OPENAI_TOOLS) {
-      expect(tool.type).toBe('function')
-      expect(tool.strict).toBe(true)
+  it('hands the whole catalogue to the model, in strict mode', () => {
+    // The adapter is where a tool could silently go missing between the
+    // catalogue and what the provider is offered.
+    const built = buildAiSdkTools(AGENT_TOOLS, {} as never, {} as never)
+    expect(Object.keys(built).sort()).toEqual(AGENT_TOOLS.map((t) => t.name).sort())
+    for (const [name, tool] of Object.entries(built)) {
+      expect((tool as { strict?: boolean }).strict, name).toBe(true)
     }
   })
 })

@@ -7,41 +7,43 @@
  * the existing services rather than a round trip through the renderer, and so
  * that every mutation of one turn can sit inside a single undo transaction.
  *
- * Two things govern the shape of this file.
+ * The loop itself is the AI SDK's (`streamText` + `stopWhen`); this file owns
+ * the undo transaction around it, the progress it streams to the panel, and
+ * cancellation. Nothing here names a provider -- `modelProvider.ts` turns the
+ * user's model setting into a model and a bag of options, and the same code
+ * drives OpenAI and Anthropic.
  *
- * An unhandled rejection in the worker is fatal: `worker_launcher` posts
- * `__worker_crash__` and the transport tears the worker down. So every await
- * is inside the try, and the stream is either consumed to its end or aborted
- * -- never abandoned mid-iteration.
- *
- * And the undo transaction is committed, not rolled back, as soon as any
- * mutating tool has succeeded -- even when the turn is then cancelled or
- * fails. C++ `rollbackTxn` actually reverts the pending edits, so rolling
- * back a half-finished turn would undo changes the user has already watched
- * appear. A turn that only read is rolled back instead, because committing an
- * empty transaction clears the redo stack.
+ * The undo transaction is committed, not rolled back, as soon as any mutating
+ * tool has succeeded -- even when the turn is then cancelled or fails. C++
+ * `rollbackTxn` actually reverts the pending edits, so rolling back a
+ * half-finished turn would undo changes the user has already watched appear.
+ * A turn that only read is rolled back instead, because committing an empty
+ * transaction clears the redo stack.
  */
 
+import { isStepCount, streamText } from 'ai'
+import type { ModelMessage } from 'ai'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import { fail, ok } from '@renderer/worker/shared/result'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { cancelStream } from '@renderer/worker/server/services/helpers/streamFetchToReader'
 import type {
-  AgentInputItem,
   AgentProgressUpdate,
   AgentRunTurnArgs,
   AgentRunTurnResult,
   AgentUsage,
 } from '../shared/agentTypes'
 import { AGENT_PROGRESS_CHANNEL } from '../shared/agentTypes'
-import { createOpenAIClient } from './openaiClient'
-import type { AgentOpenAIClient, AgentStreamEvent, CreateClient } from './openaiClient'
+import { parseModelSpec, sanitizeHistory } from '../shared/modelSpec'
+import type { ModelSpec } from '../shared/modelSpec'
+import { createModel, describeApiError, providerOptionsFor } from './modelProvider'
+import type { CreateModel } from './modelProvider'
 import { buildSceneSnapshot, formatSceneSnapshot } from './sceneSnapshot'
 import { SYSTEM_PROMPT } from './prompt/systemPrompt'
-import { findTool, OPENAI_TOOLS } from './tools/index'
-import type { ToolOutcome, TurnContext } from './tools/types'
-import { normalizeServiceResult, serializeToolOutput, summarizeOutcome } from './toolOutput'
+import { AGENT_TOOLS, buildAiSdkTools } from './tools/index'
+import type { AgentTool, TurnContext } from './tools/types'
+import { summarizeOutcome } from './toolOutput'
 
 /**
  * How many model-then-tools rounds one turn may take.
@@ -61,12 +63,14 @@ const activeTurns = new Map<string, AbortController>()
  */
 const turnStreams = new Map<string, Set<string>>()
 
-/** Overridable so a test can drive a whole turn against a fake client. */
+/** Overridable so a test can drive a whole turn against a mock model. */
 export interface TurnDeps {
-  createClient: CreateClient
+  createModel: CreateModel
+  /** The catalogue to offer. Tests pass their own; production uses all of it. */
+  tools?: readonly AgentTool[]
 }
 
-const DEFAULT_DEPS: TurnDeps = { createClient: createOpenAIClient }
+const DEFAULT_DEPS: TurnDeps = { createModel }
 
 function push(ctx: WorkerContext, update: AgentProgressUpdate): void {
   ctx.svc.pushMessage(AGENT_PROGRESS_CHANNEL, update)
@@ -79,89 +83,58 @@ function undoLabel(userText: string): string {
 }
 
 /** The user's message, with the scene described ahead of it. */
-function buildUserItem(ctx: WorkerContext, args: AgentRunTurnArgs): AgentInputItem {
+function buildUserItem(ctx: WorkerContext, args: AgentRunTurnArgs): ModelMessage {
   const snapshot = buildSceneSnapshot(ctx, { sceneId: args.sceneId, viewId: args.viewId })
   return {
     role: 'user',
     content: `${formatSceneSnapshot(snapshot)}\n\n${args.userText}`,
-  } as AgentInputItem
-}
-
-/** Run one function call and turn its outcome into an input item. */
-async function runToolCall(
-  ctx: WorkerContext,
-  turn: TurnContext,
-  call: { name: string; arguments: string; call_id: string },
-): Promise<{ item: AgentInputItem; outcome: ToolOutcome; mutates: boolean }> {
-  push(ctx, {
-    kind: 'tool_call',
-    turnId: turn.turnId,
-    callId: call.call_id,
-    name: call.name,
-    input: call.arguments,
-  })
-
-  const tool = findTool(call.name)
-  let outcome: ToolOutcome
-  let mutates = false
-
-  if (!tool) {
-    outcome = { ok: false, error: `There is no tool called "${call.name}".` }
-  } else {
-    mutates = tool.mutates
-    try {
-      // `strict: true` means the API validated the shape already; what can
-      // still fail here is the scene, not the JSON.
-      const input = JSON.parse(call.arguments || '{}') as Record<string, unknown>
-      outcome = await tool.run(ctx, input, { ...turn, callId: call.call_id })
-    } catch (e) {
-      outcome = normalizeServiceResult(
-        null,
-        e instanceof Error ? e.message : `${call.name} failed.`,
-      )
-    }
-  }
-
-  push(ctx, {
-    kind: 'tool_result',
-    turnId: turn.turnId,
-    callId: call.call_id,
-    name: call.name,
-    ok: outcome.ok,
-    summary: summarizeOutcome(outcome),
-  })
-
-  return {
-    item: {
-      type: 'function_call_output',
-      call_id: call.call_id,
-      output: serializeToolOutput(outcome),
-    } as AgentInputItem,
-    outcome,
-    mutates,
   }
 }
 
-/** An APIError turned into something worth showing the user. */
-function describeApiError(e: unknown): string {
-  const status = (e as { status?: number })?.status
-  const message = e instanceof Error ? e.message : String(e)
-  if (status === 401) return 'Invalid API key (401). Check Settings > Plugins > AI Agent.'
-  if (status === 404) return `Unknown model (404). Check the model name in Settings. ${message}`
-  if (status === 429) return 'Rate limited by the API (429). Wait a moment and try again.'
-  return message
+/**
+ * The messages to send, with a cache breakpoint on the last one.
+ *
+ * Anthropic caches the whole prefix up to a breakpoint -- tools, then the
+ * instructions, then the history -- and the next turn finds that same message
+ * still in its history, so the prefix matches and the read is cheap. The
+ * breakpoint has to go on the message rather than on a tool, because tools
+ * are rendered before the instructions and a breakpoint there would cache
+ * only the tool list.
+ *
+ * The copy is made here, at send time: what goes into the conversation the
+ * renderer keeps is the plain message, so the OpenAI history stays
+ * byte-identical to what it would have been.
+ */
+function withCacheBreakpoint(spec: ModelSpec, messages: ModelMessage[]): ModelMessage[] {
+  if (spec.provider !== 'anthropic' || messages.length === 0) return messages
+  const last = messages[messages.length - 1]
+  return [
+    ...messages.slice(0, -1),
+    {
+      ...last,
+      providerOptions: {
+        ...last.providerOptions,
+        anthropic: { ...last.providerOptions?.anthropic, cacheControl: { type: 'ephemeral' } },
+      },
+    } as ModelMessage,
+  ]
 }
 
-/** Zeroed usage, for a turn that failed before the API answered. */
+/** Zeroed usage, for a turn that failed before the model answered. */
 const NO_USAGE: AgentUsage = { inputTokens: 0, outputTokens: 0, cachedTokens: 0 }
+
+/** One line about a failure, for a transcript row. */
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
 
 /**
  * Run one turn to completion.
  *
  * @param deps - injected in tests; production passes nothing.
- * @returns Every item to append to the conversation, or a failure. A cancelled
- *   turn comes back with code `canceled` and no items: the next turn's scene
- *   snapshot describes whatever actually happened.
+ * @returns Every message to append to the conversation, or a failure. A
+ *   cancelled turn comes back with code `canceled` and no messages: the next
+ *   turn's scene snapshot describes whatever actually happened.
  */
 export async function runTurn(
   ctx: WorkerContext,
@@ -171,6 +144,10 @@ export async function runTurn(
   const scene: Scene | null = getSceneOrNull(ctx, args.sceneId)
   if (!scene) return fail('scene not found', 'not-found')
   if (args.apiKey === '') return fail('No API key is set.', 'invalid-args')
+
+  const parsed = parseModelSpec(args.model)
+  if ('error' in parsed) return fail(parsed.error, 'invalid-args')
+  const spec: ModelSpec = parsed
 
   const controller = new AbortController()
   activeTurns.set(args.turnId, controller)
@@ -182,105 +159,143 @@ export async function runTurn(
     mutated: false,
     callId: '',
     noteStream: (reqId: string) => { noteStream(args.turnId, reqId) },
+    outcomes: new Map(),
+    inflight: new Set(),
+    queue: Promise.resolve(),
   }
 
   const userItem = buildUserItem(ctx, args)
-  const input: AgentInputItem[] = [...args.history, userItem]
-  const appended: AgentInputItem[] = [userItem]
+  const messages = withCacheBreakpoint(spec, [
+    ...sanitizeHistory(args.history, spec.provider),
+    userItem,
+  ])
 
   let finalText = ''
   let toolCalls = 0
-  let roundLimitHit = false
-  const usage: AgentUsage = { ...NO_USAGE }
+  let finishReason = ''
+  let failure: unknown = null
+  let canceled = false
 
   scene.startUndoTxn(undoLabel(args.userText))
   try {
-    const client: AgentOpenAIClient = deps.createClient(args.apiKey)
+    const result = streamText({
+      model: deps.createModel(spec, args.apiKey),
+      instructions: SYSTEM_PROMPT,
+      messages,
+      tools: buildAiSdkTools(deps.tools ?? AGENT_TOOLS, ctx, turn),
+      stopWhen: isStepCount(MAX_ROUNDS),
+      abortSignal: controller.signal,
+      ...(args.reasoningEffort === 'default' ? {} : { reasoning: args.reasoningEffort }),
+      providerOptions: providerOptionsFor(spec),
+      // Recoverable errors arrive as `error` parts below; without this the
+      // SDK also logs them, which in the worker means a console line the
+      // user cannot see and cannot act on.
+      onError: () => undefined,
+    })
 
-    for (let round = 0; round < MAX_ROUNDS; round++) {
-      push(ctx, { kind: 'status', turnId: args.turnId, phase: 'thinking' })
-
-      const stream = await client.responses.create(
-        {
-          model: args.model,
-          instructions: SYSTEM_PROMPT,
-          input,
-          tools: OPENAI_TOOLS,
-          store: false,
-          parallel_tool_calls: true,
-          stream: true,
-          ...(args.reasoningEffort === 'default'
-            ? {}
-            : { reasoning: { effort: args.reasoningEffort } }),
-        },
-        { signal: controller.signal },
-      )
-
-      let response: AgentStreamEvent['response'] | null = null
-      let failure: string | null = null
-
-      // Consumed to the end on every path: breaking out of a `for await`
-      // leaves the underlying response body open.
-      for await (const event of stream) {
-        if (event.type === 'response.output_text.delta') {
-          const delta = event.delta ?? ''
-          finalText += delta
-          push(ctx, { kind: 'text_delta', turnId: args.turnId, delta })
-        } else if (
-          event.type === 'response.completed' ||
-          event.type === 'response.incomplete'
-        ) {
-          response = event.response ?? null
-        } else if (event.type === 'response.failed' || event.type === 'error') {
-          failure =
-            event.response?.error?.message ??
-            event.message ??
-            'The model failed to answer.'
+    // Consumed to the end on every path: breaking out leaves the response
+    // body open. An abort closes the stream rather than throwing, so it
+    // arrives here too.
+    for await (const part of result.stream) {
+      switch (part.type) {
+        case 'start-step':
+          push(ctx, { kind: 'status', turnId: args.turnId, phase: 'thinking' })
+          break
+        case 'text-start':
+          // A step may answer, call a tool, then answer again. Without a
+          // break the two run together as one sentence.
+          if (finalText !== '') {
+            finalText += '\n\n'
+            push(ctx, { kind: 'text_delta', turnId: args.turnId, delta: '\n\n' })
+          }
+          break
+        case 'text-delta':
+          finalText += part.text
+          push(ctx, { kind: 'text_delta', turnId: args.turnId, delta: part.text })
+          break
+        case 'tool-call':
+          toolCalls++
+          push(ctx, { kind: 'status', turnId: args.turnId, phase: 'calling-tools' })
+          push(ctx, {
+            kind: 'tool_call',
+            turnId: args.turnId,
+            callId: part.toolCallId,
+            name: part.toolName,
+            input: JSON.stringify(part.input),
+          })
+          break
+        case 'tool-result': {
+          const outcome = turn.outcomes.get(part.toolCallId)
+          push(ctx, {
+            kind: 'tool_result',
+            turnId: args.turnId,
+            callId: part.toolCallId,
+            name: part.toolName,
+            ok: outcome?.ok ?? true,
+            summary: outcome ? summarizeOutcome(outcome) : String(part.output),
+          })
+          break
         }
+        case 'tool-error':
+          // Only the SDK's own refusals reach here -- an unknown tool name or
+          // arguments that failed the schema. A tool that fails reports it
+          // inside its result instead.
+          push(ctx, {
+            kind: 'tool_result',
+            turnId: args.turnId,
+            callId: part.toolCallId,
+            name: part.toolName,
+            ok: false,
+            summary: errorText(part.error),
+          })
+          break
+        case 'error':
+          failure ??= part.error
+          break
+        case 'abort':
+          canceled = true
+          break
+        case 'finish':
+          finishReason = part.finishReason
+          break
+        default:
+          break
       }
-
-      if (failure !== null) return fail(failure, 'io')
-      if (!response) return fail('The model returned no response.', 'io')
-
-      usage.inputTokens += response.usage?.input_tokens ?? 0
-      usage.outputTokens += response.usage?.output_tokens ?? 0
-      usage.cachedTokens += response.usage?.input_tokens_details?.cached_tokens ?? 0
-
-      // The whole output goes back verbatim, reasoning items included: the
-      // API needs them to continue the chain of thought across a tool call.
-      const output = (response.output ?? []) as AgentInputItem[]
-      input.push(...output)
-      appended.push(...output)
-
-      const calls = output.filter(
-        (item): item is AgentInputItem & { name: string; arguments: string; call_id: string } =>
-          (item as { type?: string }).type === 'function_call',
-      )
-      if (calls.length === 0 || response.status === 'incomplete') break
-
-      push(ctx, { kind: 'status', turnId: args.turnId, phase: 'calling-tools' })
-      for (const call of calls) {
-        const { item, outcome, mutates } = await runToolCall(ctx, turn, call)
-        toolCalls++
-        if (mutates && outcome.ok) turn.mutated = true
-        input.push(item)
-        appended.push(item)
-      }
-
-      if (round === MAX_ROUNDS - 1) roundLimitHit = true
     }
 
+    // A cancelled stream does not wait for a tool that is still running, and
+    // one still writing to the scene after the transaction closed would put
+    // an edit outside it.
+    await Promise.allSettled(turn.inflight)
+
+    if (canceled || controller.signal.aborted) return fail('canceled', 'canceled')
+    if (failure !== null) return fail(describeApiError(failure, spec), 'io')
+
+    // Only on the success path: after an abort or an error these settle late
+    // or reject, and an unhandled rejection in the worker is fatal.
+    const [responseMessages, usage] = await Promise.all([
+      result.responseMessages,
+      result.usage,
+    ])
+
     return ok({
-      appended,
+      appended: [userItem, ...responseMessages],
       finalText,
-      usage,
+      usage: {
+        inputTokens: usage.inputTokens ?? NO_USAGE.inputTokens,
+        outputTokens: usage.outputTokens ?? NO_USAGE.outputTokens,
+        cachedTokens: usage.inputTokenDetails?.cacheReadTokens ?? NO_USAGE.cachedTokens,
+      },
       mutated: turn.mutated,
       toolCalls,
-      roundLimitHit,
+      // Still asking for tools when the step limit ran out.
+      roundLimitHit: finishReason === 'tool-calls',
     })
   } catch (e) {
+    // The signal is authoritative: this controller is aborted only by
+    // `cancelTurn`, so a raised abort can only be ours.
     if (controller.signal.aborted) return fail('canceled', 'canceled')
-    return fail(describeApiError(e), 'io')
+    return fail(describeApiError(e, spec), 'io')
   } finally {
     // Commit whenever the scene was actually changed, including on a cancel:
     // rolling back would revert edits the user has already seen.

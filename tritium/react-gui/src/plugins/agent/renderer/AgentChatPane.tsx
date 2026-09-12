@@ -7,7 +7,7 @@
  * in the session store, and the handlers come from the plugin's Root.
  */
 
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   PaneSectionHeader,
   useCommands,
@@ -15,11 +15,13 @@ import {
   usePluginPrefs,
 } from '@renderer/plugin-host/api'
 import type { PaneComponent } from '@renderer/plugin-host/api'
-import { FormButton, TextAreaField } from '@renderer/h3-kit/form'
+import { FormButton, TextAreaField, isImeKey } from '@renderer/h3-kit/form'
 import type { SubmitKey } from '@renderer/h3-kit/form'
 import { CmdId } from '@renderer/commands/ids'
 import { AgentTranscript } from './AgentTranscript'
 import { useAgentSession } from './agentSessionStore'
+import { IDLE, getHistory, pushHistory, recallDown, recallUp } from './promptHistory'
+import type { RecallState } from './promptHistory'
 import {
   AGENT_PLUGIN_ID,
   AGENT_PREF_KEYS,
@@ -35,12 +37,19 @@ function sendHint(submitKey: SubmitKey): string {
 
 void React
 
+/** Kept as a constant so the escape survives every editing pass. */
+const NEWLINE = String.fromCharCode(10)
+
 export const AgentChatPane: PaneComponent = ({ collapsed, onToggleCollapse }) => {
   const { cm } = useCueMol()
   const { transcript, running, runner } = useAgentSession()
   const { dispatch } = useCommands()
   const { prefs } = usePluginPrefs(AGENT_PLUGIN_ID)
   const [draft, setDraft] = useState('')
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Where the arrow keys currently are in the sent prompts. Not state: it
+  // changes together with the draft, and a re-render for it alone is noise.
+  const recallRef = useRef<RecallState>(IDLE)
 
   const submitKey: SubmitKey = useMemo(
     () => (prefs[AGENT_PREF_KEYS.enterKey] === ENTER_KEY_OPTIONS.send ? 'enter' : 'modifier-enter'),
@@ -49,11 +58,68 @@ export const AgentChatPane: PaneComponent = ({ collapsed, onToggleCollapse }) =>
 
   const canSend = cm !== null && runner !== null && !running && draft.trim() !== ''
 
+  /** Replace the composer and leave the caret where typing continues. */
+  const showRecalled = useCallback((text: string) => {
+    setDraft(text)
+    requestAnimationFrame(() => {
+      const el = inputRef.current
+      if (el) el.setSelectionRange(text.length, text.length)
+    })
+  }, [])
+
   const submit = useCallback(() => {
     if (!canSend || !runner) return
-    runner.send(draft.trim())
+    const text = draft.trim()
+    // Recorded even though the turn may fail: a prompt that did not work is
+    // exactly the one worth getting back to reword.
+    pushHistory(text)
+    recallRef.current = IDLE
+    runner.send(text)
     setDraft('')
   }, [canSend, runner, draft])
+
+  /**
+   * Shell-style recall on the arrow keys.
+   *
+   * Only when the caret is on the first or last line, so the arrows keep
+   * moving the caret inside a draft that spans several lines. A key an input
+   * method is using is left alone: during conversion the arrows pick a
+   * candidate.
+   */
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      if (isImeKey(e.nativeEvent)) return
+
+      const el = e.currentTarget
+      const caret = el.selectionStart ?? 0
+      const end = el.selectionEnd ?? caret
+      const onFirstLine = !el.value.slice(0, caret).includes(NEWLINE)
+      const onLastLine = !el.value.slice(end).includes(NEWLINE)
+
+      const step =
+        e.key === 'ArrowUp'
+          ? onFirstLine
+            ? recallUp(recallRef.current, el.value, getHistory())
+            : null
+          : onLastLine
+            ? recallDown(recallRef.current, getHistory())
+            : null
+      if (!step) return
+
+      e.preventDefault()
+      recallRef.current = step.state
+      showRecalled(step.draft)
+    },
+    [showRecalled],
+  )
+
+  /** Typing ends the walk through history; what is in the box is now a draft. */
+  const handleChange = useCallback((value: string) => {
+    recallRef.current = IDLE
+    setDraft(value)
+  }, [])
 
   const openSettings = useCallback(() => {
     void dispatch(CmdId.UiSettingsTab)
@@ -72,15 +138,19 @@ export const AgentChatPane: PaneComponent = ({ collapsed, onToggleCollapse }) =>
           <AgentTranscript entries={transcript} onOpenSettings={openSettings} />
           <div className="agent-composer">
             <TextAreaField
+              ref={inputRef}
               value={draft}
-              onChange={setDraft}
-              placeholder={running ? 'Working...' : 'Ask for what you want to see'}
+              onChange={handleChange}
+              placeholder={
+                running ? 'Working...' : 'Ask for what you want to see. Up arrow for earlier prompts'
+              }
               disabled={running}
               ariaLabel="Message the AI agent"
               minRows={1}
               maxRows={6}
               onSubmit={submit}
               submitKey={submitKey}
+              onKeyDown={handleKeyDown}
             />
             <div className="agent-composer-actions">
               {/* The shortcut is not discoverable from a field that takes a

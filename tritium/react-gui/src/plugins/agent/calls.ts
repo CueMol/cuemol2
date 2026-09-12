@@ -5,7 +5,7 @@
  * The three lanes this plugin owns, declared in one place:
  *   - two worker services, on the wire as `plugin.agent.<name>`;
  *   - one push channel the running turn streams progress on;
- *   - one credential, kept in the OS keychain by the host.
+ *   - one credential per provider, kept in the OS keychain by the host.
  *
  * The call contract is a `type`, not an `interface`: only a type alias of an
  * object literal gets the implicit index signature `definePluginServices`
@@ -18,16 +18,15 @@ import {
   definePluginServices,
 } from '@renderer/plugin-host/api'
 import type { Result } from '@renderer/worker/shared/result'
-import {
-  AGENT_API_KEY_ENV,
-  AGENT_PLUGIN_ID,
-  AGENT_SECRET_KEY,
-} from './shared/agentTypes'
+import { AGENT_PLUGIN_ID, AGENT_SECRETS } from './shared/agentTypes'
 import type {
   AgentProgressUpdate,
   AgentRunTurnArgs,
   AgentRunTurnResult,
 } from './shared/agentTypes'
+import { PROVIDERS } from './shared/modelSpec'
+import type { Provider } from './shared/modelSpec'
+import type { PluginSecret } from '@renderer/plugin-host/api'
 
 export type AgentCalls = {
   runTurn: { args: AgentRunTurnArgs; result: AgentRunTurnResult }
@@ -45,7 +44,17 @@ export const agentServices = definePluginServices<AgentCalls>(AGENT_PLUGIN_ID)
  */
 export const agentProgress = definePluginChannel<AgentProgressUpdate>(AGENT_PLUGIN_ID, 'progress')
 
-/** The OpenAI key: stored encrypted, or taken from the environment. */
-export const agentApiKey = definePluginSecret(AGENT_PLUGIN_ID, AGENT_SECRET_KEY, {
-  envVar: AGENT_API_KEY_ENV,
-})
+/**
+ * One API key per provider: stored encrypted, or taken from the environment.
+ *
+ * A turn reads only the key for the provider its model names, so an
+ * installation that uses one provider never has to fill in the other.
+ */
+export const agentApiKeys: Record<Provider, PluginSecret> = Object.fromEntries(
+  PROVIDERS.map((provider) => [
+    provider,
+    definePluginSecret(AGENT_PLUGIN_ID, AGENT_SECRETS[provider].key, {
+      envVar: AGENT_SECRETS[provider].envVar,
+    }),
+  ]),
+) as Record<Provider, PluginSecret>

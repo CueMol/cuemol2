@@ -14,13 +14,16 @@ import {
   usePluginPrefs,
   useSuppressUndoRedo,
 } from '@renderer/plugin-host/api'
-import { agentApiKey, agentProgress, agentServices } from '../calls'
+import { agentApiKeys, agentProgress, agentServices } from '../calls'
 import {
   AGENT_PLUGIN_ID,
   AGENT_PREF_KEYS,
+  AGENT_SECRETS,
   DEFAULT_AGENT_MODEL,
 } from '../shared/agentTypes'
 import type { ReasoningEffort } from '../shared/agentTypes'
+import { parseModelSpec } from '../shared/modelSpec'
+import type { Provider } from '../shared/modelSpec'
 import { agentSession, getAgentSession, useAgentSession } from './agentSessionStore'
 
 /** A fresh turn id. `crypto.randomUUID` is missing on some older hosts. */
@@ -34,6 +37,12 @@ const EFFORTS: ReasoningEffort[] = ['default', 'low', 'medium', 'high']
 /** Read the stored effort, falling back when the value is not one we know. */
 function toEffort(value: unknown): ReasoningEffort {
   return EFFORTS.includes(value as ReasoningEffort) ? (value as ReasoningEffort) : 'low'
+}
+
+/** Human-readable provider name, for a message that says which key to set. */
+const PROVIDER_LABEL: Record<Provider, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
 }
 
 export function useAgentTurnRunner(): void {
@@ -65,10 +74,20 @@ export function useAgentTurnRunner(): void {
             agentSession.failTurn('There is no scene to work on.')
             return
           }
-          const key = await agentApiKey.get()
+          // The provider comes from the model setting, so the turn reads only
+          // the one key it needs and can name the row to fill in.
+          const model = String(prefsRef.current[AGENT_PREF_KEYS.model] ?? DEFAULT_AGENT_MODEL)
+          const spec = parseModelSpec(model)
+          if ('error' in spec) {
+            agentSession.failTurn(spec.error, { needsApiKey: true })
+            return
+          }
+          const key = await agentApiKeys[spec.provider].get()
           if (!key.value) {
+            const label = PROVIDER_LABEL[spec.provider]
             agentSession.failTurn(
-              'No OpenAI API key is set. Add one in Settings, or set the OPENAI_API_KEY environment variable.',
+              `No ${label} API key is set, and the model is ${model}. Add one in Settings, ` +
+                `or set the ${AGENT_SECRETS[spec.provider].envVar} environment variable.`,
               { needsApiKey: true },
             )
             return
@@ -84,7 +103,7 @@ export function useAgentTurnRunner(): void {
               userText: text,
               history: getAgentSession().history,
               apiKey: key.value,
-              model: String(prefsRef.current[AGENT_PREF_KEYS.model] ?? DEFAULT_AGENT_MODEL),
+              model,
               reasoningEffort: toEffort(prefsRef.current[AGENT_PREF_KEYS.reasoningEffort]),
             },
             // A turn takes tens of seconds to minutes and reports its own

@@ -49,6 +49,32 @@ export interface TurnContext {
    * would leave the download running.
    */
   noteStream: (reqId: string) => void
+  /**
+   * What each call answered, by tool-call id.
+   *
+   * The transcript line for a result is pushed when the SDK reports the call
+   * finished, not when the tool returns -- pushing from the tool can beat the
+   * line announcing the call, and a result with nothing to attach to is
+   * dropped. The outcome is parked here in the meantime.
+   */
+  outcomes: Map<string, ToolOutcome>
+  /**
+   * Tool runs that have not settled yet.
+   *
+   * An aborted stream closes without waiting for them, so the loop waits
+   * here instead: a tool still writing to the scene after the undo
+   * transaction closed would leave an edit outside it.
+   */
+  inflight: Set<Promise<unknown>>
+  /**
+   * Serialises tool runs within the turn.
+   *
+   * The SDK runs a step's tool calls concurrently. They share one worker
+   * thread, so they cannot interleave except at an await -- but a download
+   * awaits, and the scene edits that follow it would then land in a
+   * different order than the model asked for.
+   */
+  queue: Promise<void>
 }
 
 export interface AgentTool {

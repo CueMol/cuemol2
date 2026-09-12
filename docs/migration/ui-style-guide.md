@@ -48,7 +48,8 @@ Blueprint の portal (popover / dialog) に dark テーマを効かせる `porta
 | `FieldGroup` | Field の縦スタック / セクション (任意で `title` → 重い `SectionHeader` バー) | 行間 `--form-row-gap`, section 間 `--form-section-gap` |
 | `SectionHeader` | サブセクション見出し**バー** (背景tint+下線, 大文字) | `.section-header` role (高 `--ctrl-h-md`) |
 | `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索、`password` で伏字 = API キー等) | 高 `--field-h` (22px) |
-| `TextAreaField` | 複数行テキスト入力。**行数で伸びる** (`minRows` 既定 1 / `maxRows` 既定 6、超えたらスクロール)。チャット composer や自由記述はこれ。伸びる高さ以外にサイズの選択肢は無い。**送信は `onSubmit` を渡す** (`onKeyDown` で自前に `key === 'Enter'` を見ない)。送信キーは `submitKey`: 既定 `'modifier-enter'` (Enter = 改行、Cmd/Ctrl+Enter = 送信)、`'enter'` で Slack 既定 (Enter = 送信、Shift+Enter = 改行)。どちらでも IME 変換確定の Enter は除外される | `.h3-form-textarea` (`_form-kit.css`) |
+| `TextAreaField` | 複数行テキスト入力。**行数で伸びる** (`minRows` 既定 1 / `maxRows` 既定 6、超えたらスクロール)。チャット composer や自由記述はこれ。伸びる高さ以外にサイズの選択肢は無い。**送信は `onSubmit` を渡す** (`onKeyDown` で自前に `key === 'Enter'` を見ない)。送信キーは `submitKey`: 既定 `'modifier-enter'` (Enter = 改行、Cmd/Ctrl+Enter = 送信)、`'enter'` で Slack 既定 (Enter = 送信、Shift+Enter = 改行)。どちらでも IME 変換確定の Enter は除外される。`ref` は forward されるので、値を差し替えた後に
+キャレットを動かす用途 (入力履歴の呼び戻し等) に使える | `.h3-form-textarea` (`_form-kit.css`) |
 | `SelectField` | ドロップダウン (`<option>` を children に)。**選択肢が閉じている**ときだけ | 高 `--field-h` (22px) |
 | `ComboBoxField` | 編集可能な入力 + 候補ドロップダウン。**選択肢が閉じていない**とき (履歴、モデル id 等)。候補は `string[]` か、値だけでは意味が分からないなら `{ value, label }[]` (label は右側に説明として出る) | `.h3-form-combobox` (`_form-kit.css`) |
 | `NumericField` | 数値 + 明示 slider (`slider` 既定 true)。**ネイティブ stepper は既定で非表示** (compact 用)。任意で `unit` | 入力高 `--field-h-sm` (20px) |

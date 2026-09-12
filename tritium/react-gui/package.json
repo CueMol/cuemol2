@@ -25,6 +25,8 @@
     "electron-store": "^8.2.0"
   },
   "devDependencies": {
+    "@ai-sdk/anthropic": "^4.0.53",
+    "@ai-sdk/openai": "^4.0.66",
     "@blueprintjs/core": "^5.13.0",
     "@blueprintjs/icons": "^5.13.0",
     "@cuemol/core": "workspace:*",
@@ -36,6 +38,7 @@
     "@types/react-dom": "^18.3.1",
     "@use-gesture/react": "^10.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "ai": "^7.0.99",
     "allotment": "^1.20.2",
     "electron": "^42.5.1",
     "electron-builder": "^25.1.8",
@@ -43,7 +46,6 @@
     "eslint": "^9.39.3",
     "eslint-plugin-react-hooks": "^5.2.0",
     "jsdom": "^26.1.0",
-    "openai": "^7.15.0",
     "react": "^18.3.1",
     "react-complex-tree": "^2.3.3",
     "react-dom": "^18.3.1",
@@ -55,6 +57,7 @@
     "typescript-eslint": "^8.68.0",
     "vite": "^6.4.3",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^3.2.6"
+    "vitest": "^3.2.6",
+    "zod": "^4.6.2"
   }
 }

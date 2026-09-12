@@ -8,15 +8,22 @@
  * imports, which the SDK ships with no runtime cost.
  */
 
-import type { ResponseInputItem } from 'openai/resources/responses/responses'
+import type { ModelMessage } from 'ai'
 import { pluginChannelName } from '@renderer/worker/shared/pluginCalls'
 import type { Result } from '@renderer/worker/shared/result'
+import type { Provider } from './modelSpec'
 
 /** The manifest id. Namespaces this plugin's services, channel and secret. */
 export const AGENT_PLUGIN_ID = 'agent'
 
-/** The model a turn runs on unless the user picks another. */
-export const DEFAULT_AGENT_MODEL = 'gpt-5.6'
+/**
+ * The model a turn runs on unless the user picks another.
+ *
+ * Written `provider:model`; a value with no prefix is read as OpenAI, so an
+ * installation that stored a bare id before this plugin had two providers
+ * keeps working (see `modelSpec.ts`).
+ */
+export const DEFAULT_AGENT_MODEL = 'openai:gpt-5.6'
 
 /**
  * The models worth offering, with what each is for.
@@ -30,10 +37,13 @@ export const DEFAULT_AGENT_MODEL = 'gpt-5.6'
  * stale.
  */
 export const AGENT_MODEL_SUGGESTIONS = [
-  { value: 'gpt-6-astra', label: 'Most capable' },
-  { value: 'gpt-5.6', label: 'Flagship' },
-  { value: 'gpt-5.6-terra', label: 'Balanced' },
-  { value: 'gpt-5.6-luna', label: 'Lowest cost' },
+  { value: 'openai:gpt-6-astra', label: 'OpenAI, most capable' },
+  { value: 'openai:gpt-5.6', label: 'OpenAI, flagship' },
+  { value: 'openai:gpt-5.6-terra', label: 'OpenAI, balanced' },
+  { value: 'openai:gpt-5.6-luna', label: 'OpenAI, lowest cost' },
+  { value: 'anthropic:claude-opus-5', label: 'Anthropic, most capable' },
+  { value: 'anthropic:claude-sonnet-5', label: 'Anthropic, balanced' },
+  { value: 'anthropic:claude-haiku-4-5', label: 'Anthropic, lowest cost' },
 ] as const
 
 /** How hard the model is asked to think before answering. */
@@ -60,12 +70,24 @@ export const ENTER_KEY_OPTIONS = {
 /** What the composer starts with: the choice that cannot lose a draft. */
 export const DEFAULT_ENTER_KEY = ENTER_KEY_OPTIONS.newline
 
-/** The keychain entry and the environment variable behind it. */
-export const AGENT_SECRET_KEY = 'openaiApiKey'
-export const AGENT_API_KEY_ENV = 'OPENAI_API_KEY'
+/**
+ * The keychain entry and environment variable behind each provider's key.
+ *
+ * One per provider rather than one shared key: the two are different
+ * credentials, and a turn reads only the one its model needs.
+ */
+export const AGENT_SECRETS: Record<Provider, { key: string; envVar: string }> = {
+  openai: { key: 'openaiApiKey', envVar: 'OPENAI_API_KEY' },
+  anthropic: { key: 'anthropicApiKey', envVar: 'ANTHROPIC_API_KEY' },
+}
 
-/** One item of the OpenAI conversation the panel owns and replays each turn. */
-export type AgentInputItem = ResponseInputItem
+/**
+ * One message of the conversation the panel owns and replays each turn.
+ *
+ * The SDK's provider-neutral shape, so the same history can be sent to
+ * either provider (`sanitizeHistory` drops the parts that cannot cross).
+ */
+export type AgentInputItem = ModelMessage
 
 /** Token counts for one turn, as reported by the API. */
 export interface AgentUsage {
@@ -103,10 +125,12 @@ export interface AgentRunTurnArgs {
   /** Every item of the conversation so far, oldest first. */
   history: AgentInputItem[]
   /**
-   * The OpenAI key, read at send time and passed straight through. Never
-   * logged, and never held in renderer state between turns.
+   * The key for the provider `model` names, read at send time and passed
+   * straight through. Never logged, and never held in renderer state
+   * between turns.
    */
   apiKey: string
+  /** `provider:model`; a bare id means OpenAI. */
   model: string
   reasoningEffort: ReasoningEffort
 }

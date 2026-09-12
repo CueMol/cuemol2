@@ -28,16 +28,17 @@ stick で出す」のような複合操作は人が順に辿るしかない。
 renderer                                       Web Worker                          main
 +-- plugins/agent/renderer --------------+   invokePluginService   +-- plugins/agent/worker ----+
 | AgentRoot (PluginRoots 配下, UI なし)    | ----------------------> | plugin.agent.runTurn       |
-|  useAgentTurnRunner                    |   { quiet: true }       |  turnLoop                  |
-|   - agentProgress.subscribe            | <---------------------- |   OpenAI Responses API     |
-|   - useSuppressUndoRedo(running)       |   [plugin-channel.      |   -> function_call          |
-|   - agentApiKey.get() -- IPC           |    agent.progress, u]   |   -> tools/* = 既存 service |
-|   - usePluginPrefs('agent')            |                         |  1 turn = 1 undo txn       |
-| agentSessionStore (module singleton)   |                         | plugin.agent.cancelTurn    |
-| AgentChatPane (SidePanel 配下)          |                         +----------------------------+
-+----------------------------------------+                                      |
-                       |                                          main: SECRET_GET/SET/STATUS
-                       +----------------------------------------> (safeStorage; OPENAI_API_KEY fallback)
+|  useAgentTurnRunner                    |   { quiet: true }       |  turnLoop: streamText()    |
+|   - agentProgress.subscribe            | <---------------------- |   modelProvider -> OpenAI  |
+|   - useSuppressUndoRedo(running)       |   [plugin-channel.      |                  / Anthropic|
+|   - parseModelSpec(model) -> provider  |    agent.progress, u]   |   -> tools/* = 既存 service |
+|   - agentApiKeys[provider].get() -- IPC|                         |  1 turn = 1 undo txn       |
+|   - usePluginPrefs('agent')            |                         | plugin.agent.cancelTurn    |
+| agentSessionStore (module singleton)   |                         +----------------------------+
+| AgentChatPane (SidePanel 配下)          |                                      |
+|   ^/v = promptHistory (localStorage)   |          main: SECRET_GET/SET/STATUS
++----------------------------------------+ -------> (safeStorage; OPENAI_API_KEY /
+                                                     ANTHROPIC_API_KEY fallback)
 ```
 
 - **LLM 呼び出しとツール実行は worker 内**。ツールは `fn(ctx, args)` の直接呼び出しで、
@@ -45,7 +46,10 @@ renderer                                       Web Worker                       
 - **会話履歴は renderer が所有**し、毎 turn 引数で渡す。worker は turn 中の
   `AbortController` 以外に状態を持たない (`streamFetchToReader` と同じ形)。
 - **API キーは main が保持**。renderer は送信時に読んで `runTurn` の引数に載せるだけで、
-  React state にもディスクの設定ファイルにも残さない。
+  React state にもディスクの設定ファイルにも残さない。provider ごとに 1 本ずつ持ち、
+  モデルが名指しした側だけを読む。
+- **LLM 層は Vercel AI SDK** (`ai` v7 + `@ai-sdk/openai` + `@ai-sdk/anthropic`)。
+  worker bundle は IIFE なので両 provider と `zod` が静的に入る (約 +815 KB)。
 
 ---
 
@@ -75,27 +79,65 @@ undo の*実行*を止めるだけで編集は止めない。恒久策は C++ `U
 統合」API を足すか、`Scene.qif` に `isInTxn` を露出して turn 開始時に他の txn が開いて
 いたら拒否する案 (どちらも別プラン)。
 
-### 3.2 loop は worker、provider 依存は 2 ファイルに閉じる
+### 3.2 loop は worker、provider 差は Vercel AI SDK に吸収させる
 
-`turnLoop.ts` が Responses API を stateless に使う (`store: false`)。履歴は毎回
-`input` 配列として渡し、`function_call` が無くなるまで繰り返す (最大 16 ラウンド)。
+`turnLoop.ts` が `streamText` + `stopWhen: isStepCount(16)` で回す。履歴は毎回 `messages` として
+渡す stateless な形 (OpenAI 側は `store: false`)。
 
 worker の unhandled rejection は致命的 (`worker_launcher` が `__worker_crash__` を post し
 transport が worker を破棄する) なので、**全ての await を try の中に置き**、
-`for await` を途中で break しない。
+`for await` を途中で break しない。`result.responseMessages` / `result.usage` は
+**成功経路でだけ await する** -- abort や error の後は遅れて settle するか reject する。
 
-provider 依存は `openaiClient.ts` (client の生成) と `turnLoop.ts` の event 分岐だけ。
-ツール宣言は JSON Schema のままなので他 provider でも再利用できる。**provider 中立の
-抽象層は作っていない** -- 2 つ目が要るまでは早すぎる。
+**provider 中立の層は自前で書いていない。** 当初は「2 つ目が要るまでは早すぎる」として OpenAI
+直叩きにしていたが、Anthropic を足す段になって、自前の抽象より AI SDK に載せるほうが小さいと
+判断した (`docs/plans/260913-ai-agent-ai-sdk-plan.md`)。SDK が吸収するのはリクエスト形・
+ストリームイベント・履歴の表現で、こちらに残る provider 依存は `worker/modelProvider.ts` の
+3 関数 (`createModel` / `providerOptionsFor` / `describeApiError`) と `shared/modelSpec.ts` の
+2 関数だけ。**`turnLoop.ts` に provider 名は出てこない。**
 
-`openaiClient.ts` の `AgentOpenAIClient` は SDK 全体ではなく `turnLoop` が使う分だけを
-書いた型。これが DI の継ぎ目で、テストは数行の fake で turn 全体を回せる。
+`createModel` が DI の継ぎ目で、テストは `MockLanguageModelV4` を渡して turn 全体を回せる。
 
+**モデル文字列が provider を決める**: Settings の Model は `openai:gpt-5.6` /
+`anthropic:claude-opus-5` の `provider:model`。prefix 無しは OpenAI と読む (この plugin が
+1 provider だった頃に保存された値を壊さないため)。provider 用の select を別に作らないのは、
+モデルと provider が食い違う状態を作れてしまうから。
+
+**`streamText` に素のモデル文字列を渡してはいけない** -- `'anthropic/claude-opus-5'` のような値は
+Vercel AI Gateway 経由にルーティングされる。必ず `createModel` で `LanguageModel` を作る。
+
+**reasoning effort は top-level の `reasoning`** に渡す。`providerOptions.openai.reasoningEffort` を
+書くと top-level が無視される (merge されない) ので、片方だけを使う。
+
+**Anthropic の prompt cache** は送信直前に最後の message へ `cacheControl` を付けて取る
+(`withCacheBreakpoint`)。breakpoint はそこまでの prefix 全部 (tools -> instructions -> 履歴) を
+対象にし、次 turn では同じ message が履歴に残るので prefix が一致する。tools に付ける案は tools
+ブロックしかキャッシュしない (instructions は tools の後) ので不適。履歴に保存するのは
+`cacheControl` の付いていない素の message -- OpenAI 側の履歴をバイト同一に保つため。
+
+**provider をまたぐ履歴**: reasoning part は自分の provider しか読めない状態 (OpenAI の encrypted
+content、Anthropic の thinking signature) を `providerOptions` の自分のキーに持つ。相手に渡した
+ときの挙動は未文書なので、`sanitizeHistory` が**別 provider の reasoning part を落とす**。
+text と tool 呼び出しは残るので、会話は続く。
 ### 3.3 ツールカタログは手書き
 
 TS 型 -> JSON Schema の自動生成は workspace に無く、`strict: true` で API 側が入力形を
 保証するので、クライアント側バリデータも持たない (`strict` は全 property を `required` に
 列挙 + `additionalProperties: false`、optional は `["string","null"]` で表す)。
+
+`buildAiSdkTools` が turn ごとに `tool({ inputSchema: jsonSchema(...), strict: true, execute })` の
+record を組む。`execute` は **throw しない** -- 失敗は `ok:false` を payload に載せる契約を保つ。
+throw すると SDK が payload を自前のエラーテキストに置き換えるうえ、`is_error` を持つのは
+Anthropic だけなので provider 間で挙動が割れる。
+
+`execute` は turn ごとの promise chain で**直列化**する。SDK は同じ step の tool を並行に呼ぶが、
+ダウンロードの後にレンダラ生成が来る順序が変わると、transcript と単一 undo txn の説明と食い違う。
+進行中の `execute` は `turn.inflight` に積み、loop が `Promise.allSettled` してから txn を閉じる
+(abort した stream は走っている tool を待たずに閉じるため)。
+
+transcript の `tool_result` は **`execute` からではなくストリームの part から** push する。
+`execute` から出すと、panel がまだ `tool_call` を処理していない時点で結果が届き得て、
+結び付ける先が無い結果は捨てられ「running...」のまま残る。
 
 各ツールは「LLM 向けの入力」を既存 service の args に変換し、結果を
 `normalizeServiceResult()` で正規化する。**service の結果は 3 方言が混在**していて
@@ -103,7 +145,9 @@ TS 型 -> JSON Schema の自動生成は workspace に無く、`strict: true` �
 モデルは同じ呼び出しを延々と再試行する。だから失敗には必ず理由を付ける。
 
 出力は `serializeToolOutput()` で JSON 化 (配列 200 件で truncate、8 KB で cap)。
-Responses API の function output に `is_error` は無いので `ok:false` を JSON に埋め、
+`execute` はこの**文字列をそのまま返す** -- SDK は文字列を text output として扱い、
+OpenAI の `function_call_output` / Anthropic の `tool_result` にそのまま載せるので、
+モデルが見るバイト列は provider を問わず同じ。`ok:false` を JSON に埋め、
 system prompt で「`ok:false` は失敗」と教える。
 
 登録順は **name 昇順で固定** (prompt caching の prefix を安定させるため)。
@@ -196,7 +240,7 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `analyze_interactions` | yes | `analyzeInteractions` |
 | `export_image` | no (シーン不変。ファイルは書く) | `getSceneExportInfo` -> `exportScene` |
 
-19 件。OpenAI の推奨は「1 turn で 20 未満」。
+19 件。OpenAI の推奨は「1 turn で 20 未満」で、どの provider でも妥当な上限。
 
 `get_named_selections` は当初あったが外した。毎 turn の `<scene_state>` が
 `namedSelections` を既に載せており、同じものを取りに行くだけの往復だったため。
@@ -230,25 +274,37 @@ description に必ず書いている曖昧点:
 
 ## 6. 設定と API キー
 
-Settings > Plugins > AI Agent (OpenAI) に 3 行:
+Settings > Plugins > AI Agent に 4 行:
 
 | 設定 | kind | 既定 | 保存先 |
 |---|---|---|---|
-| Model | `combo` (候補 4 件 + 自由入力) | `DEFAULT_AGENT_MODEL` | `UiState.pluginPrefs.agent.model` |
+| Model | `combo` (両 provider の候補 7 件 + 自由入力、`provider:model`) | `openai:gpt-5.6` | `UiState.pluginPrefs.agent.model` |
 | Reasoning effort | `select` (`default`/`low`/`medium`/`high`) | `low` | `UiState.pluginPrefs.agent.reasoningEffort` |
 | Pressing Enter | `select` (`start a new line` / `send the message`) | `start a new line` | `UiState.pluginPrefs.agent.enterKey` |
 | OpenAI API key | `secret` | -- | OS キーチェーン (`safeStorage`)、`OPENAI_API_KEY` fallback |
+| Anthropic API key | `secret` | -- | 同上、`ANTHROPIC_API_KEY` fallback |
 
-モデル id は候補リスト付きの自由入力 (`AGENT_MODEL_SUGGESTIONS`: `gpt-6-astra` /
-`gpt-5.6` / `gpt-5.6-terra` / `gpt-5.6-luna`、それぞれ用途を添える)。既定は
-`DEFAULT_AGENT_MODEL` 1 箇所。存在しない id は 404 として panel にそのまま出る。
+モデル id は候補リスト付きの自由入力 (`AGENT_MODEL_SUGGESTIONS`: OpenAI 4 件 + Anthropic 3 件、
+それぞれ provider と用途を label に添える)。既定は `DEFAULT_AGENT_MODEL` 1 箇所。
+存在しない id は 404 として panel にそのまま出る。
 
-**API から実リストを取る形にはしていない。** `models.list()` が返すのは
-`id` / `created` / `owned_by` / `shutdown_date` だけで **能力のメタデータが無く**、
-embedding・音声・画像・moderation 用のモデルも同じ配列に混ざる。「turn を回せる
-テキストモデル」への絞り込みは id 文字列のヒューリスティックにしかならず、新しい
-命名が出れば漏れる。加えてキー未設定では一覧自体が出せない。候補を手で挙げるほうが
-「何を入れればいいか分からない」を確実に解き、流動性は自由入力が吸収する。
+**キーは provider ごと**に持ち、turn はモデルが名指しした provider のものだけ読む。
+未設定のときの error 行は「どちらのキーを、どの行に」入れるかを名指しする -- 2 つある以上、
+「invalid API key」だけでは直せない。
+
+**API から実リストを取る形にはしていない。** 2 つの provider で事情が違う:
+
+- **OpenAI** の `/v1/models` は `id` / `created` / `owned_by` / `shutdown_date` だけで
+  **能力のメタデータが無い**。embedding・音声・画像・moderation 用も同じ配列に混ざるので、
+  「turn を回せるテキストモデル」への絞り込みは id 文字列のヒューリスティックにしかならず、
+  新しい命名が出れば漏れる。
+- **Anthropic** の `/v1/models` は `capabilities` を返す (`thinking.types.adaptive` /
+  `effort` / `structured_outputs` / `max_input_tokens`)。こちらは正確に絞り込める。
+
+片方だけ正確な一覧になり、しかも**どちらもキー未設定では何も出せない** -- 「何を入れれば
+いいか分からない」場面はまさにキーを入れる前なので、そこで空になるのでは解決しない。
+候補を手で挙げるほうが確実に解き、流動性は自由入力が吸収する。後続でやるなら
+「候補は手書きのまま、キーがある provider だけ Settings の Refresh で上書き」の形。
 
 キーは `safeStorage` で暗号化して electron-store に base64 で入れる。**暗号化できない
 環境 (keyring の無い Linux セッション等) では保存を拒否**し、環境変数を使うよう案内する
@@ -265,10 +321,21 @@ embedding・音声・画像・moderation 用のモデルも同じ配列に混ざ
   答えた操作を集めると、追加すべき tool の一覧がそのまま得られる。ラベル編集、カメラの保存、
   結合編集、重ね合わせなどは UXP から移植済みだが未 tool 化。
 - **turn 実行中の手動編集が agent の undo txn に吸収される** (§3.1)。
+- **provider 切り替え時に chain of thought は引き継がれない**: 別 provider の reasoning part は
+  `sanitizeHistory` が落とす (渡したときの挙動が未文書のため)。text と tool 呼び出しの履歴は残る。
+- **未検証**: OpenAI の `call_...` と Anthropic の `toolu_...` という tool call id が、
+  会話の途中で provider を切り替えたときに相手側で受理されるか。
+- **`reasoningEffort` の意味は provider で異なる** (OpenAI: Responses の reasoning effort、
+  Anthropic: adaptive thinking + effort)。同じ 3 段を top-level `reasoning` で写像するが、
+  体感は揃わない。
+- **worker bundle が約 815 KB 増えた** (1.45 MB -> 2.27 MB)。`zod` は `@ai-sdk/provider-utils` が
+  静的に import する必須 peer dep で、`jsonSchema()` しか使わなくても tree-shake できない。
+  `@ai-sdk/gateway` も `ai` から静的に入る。
 - **メニュー / コマンドから panel を開けない**: `activeView` が `MainLayout` のローカル
   state。`LayoutProvider` へ移して `UiState.sidebarActiveView` (現状 dead) を活かし、
   host の api に view を切り替える口を足すのは別タスク。
-- **会話履歴はセッション内のみ** (再起動と plugin の OFF/ON で消える)。
+- **会話そのものはセッション内のみ** (再起動と plugin の OFF/ON で消える)。localStorage に残るのは
+  送信した prompt の文字列だけ (§3.5) で、モデルの答えや tool の結果は残らない。
 - **Markdown 表示なし** (依存追加を避けた)。必要なら後続で検討。
 - `{ quiet: true }` は `tritium/CLAUDE.md` の表で「pointer-rate stream 専用」とされていた
   用途からの逸脱。数分の turn が Busy pill と wait cursor を占有するのを避けるためで、

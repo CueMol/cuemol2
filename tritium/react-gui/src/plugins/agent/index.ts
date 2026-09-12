@@ -6,9 +6,9 @@
  * the rest of the app calls, inside a single undo transaction, and the panel
  * streams what it is doing. See docs/architecture/ai-agent-plugin.md.
  *
- * Off by default. It needs an OpenAI API key the user pays for, so it is
- * something to opt into from Settings > Plugins rather than an icon everyone
- * finds in the activity bar.
+ * Off by default. It needs an API key the user pays for, so it is something
+ * to opt into from Settings > Plugins rather than an icon everyone finds in
+ * the activity bar.
  */
 
 import { definePlugin } from '@renderer/plugin-host/api'
@@ -16,10 +16,10 @@ import type { RendererPlugin } from '@renderer/plugin-host/api'
 import { AgentChatPane } from './renderer/AgentChatPane'
 import { AgentRoot } from './renderer/AgentRoot'
 import {
-  AGENT_API_KEY_ENV,
   AGENT_MODEL_SUGGESTIONS,
   AGENT_PLUGIN_ID,
   AGENT_PREF_KEYS,
+  AGENT_SECRETS,
   DEFAULT_AGENT_MODEL,
   DEFAULT_ENTER_KEY,
   ENTER_KEY_OPTIONS,
@@ -29,11 +29,11 @@ import './renderer/agent-chat.css'
 export const agentPlugin: RendererPlugin = /* @__PURE__ */ definePlugin({
   manifest: {
     id: AGENT_PLUGIN_ID,
-    name: 'AI Agent (OpenAI)',
+    name: 'AI Agent',
     version: '1.0.0',
     description:
-      'Chat panel that builds the scene for you: an OpenAI model calls the same operations ' +
-      'the menus do. Needs your own OpenAI API key.',
+      'Chat panel that builds the scene for you: a model calls the same operations the ' +
+      'menus do. Works with OpenAI or Anthropic; needs your own API key.',
     defaultEnabled: false,
     contributes: {
       views: [
@@ -49,8 +49,9 @@ export const agentPlugin: RendererPlugin = /* @__PURE__ */ definePlugin({
           key: AGENT_PREF_KEYS.model,
           label: 'Model',
           description:
-            'OpenAI model each turn runs on. Pick one of the suggestions, or type any id ' +
-            'your account can use; an unknown one is reported in the panel as a 404.',
+            'Which model each turn runs on, written provider:model. Pick one of the ' +
+            'suggestions, or type any id your account can use; an unknown one is reported ' +
+            'in the panel as a 404. The provider decides which API key below is used.',
           control: {
             kind: 'combo',
             options: [...AGENT_MODEL_SUGGESTIONS],
@@ -79,12 +80,22 @@ export const agentPlugin: RendererPlugin = /* @__PURE__ */ definePlugin({
           default: DEFAULT_ENTER_KEY,
         },
         {
-          key: 'openaiApiKey',
+          key: AGENT_SECRETS.openai.key,
           label: 'OpenAI API key',
           description:
-            `Stored encrypted by the operating system, never in the settings file. ` +
-            `Falls back to the ${AGENT_API_KEY_ENV} environment variable when nothing is stored.`,
-          control: { kind: 'secret', envVar: AGENT_API_KEY_ENV },
+            'Used when the model is an openai: one. Stored encrypted by the operating ' +
+            `system, never in the settings file. Falls back to the ` +
+            `${AGENT_SECRETS.openai.envVar} environment variable when nothing is stored.`,
+          control: { kind: 'secret', envVar: AGENT_SECRETS.openai.envVar },
+        },
+        {
+          key: AGENT_SECRETS.anthropic.key,
+          label: 'Anthropic API key',
+          description:
+            'Used when the model is an anthropic: one. Stored encrypted by the operating ' +
+            `system, never in the settings file. Falls back to the ` +
+            `${AGENT_SECRETS.anthropic.envVar} environment variable when nothing is stored.`,
+          control: { kind: 'secret', envVar: AGENT_SECRETS.anthropic.envVar },
         },
       ],
     },

@@ -12,7 +12,7 @@
  * @module form/TextAreaField
  */
 
-import React, { useCallback, useLayoutEffect, useRef } from 'react';
+import React, { useCallback, useImperativeHandle, useLayoutEffect, useRef } from 'react';
 import { isImeKey } from './imeGuard';
 
 /**
@@ -76,7 +76,12 @@ export interface TextAreaFieldProps {
     ariaLabel?: string;
 }
 
-export const TextAreaField: React.FC<TextAreaFieldProps> = ({
+/**
+ * Forwards the underlying textarea, for the cases that need the element
+ * itself -- putting the caret at the end after replacing the value, say.
+ * The component keeps its own ref for auto-growing either way.
+ */
+export const TextAreaField = React.forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(({
     value,
     onChange,
     placeholder,
@@ -91,8 +96,9 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
     onBlur,
     autoFocus,
     ariaLabel,
-}) => {
+}, forwardedRef) => {
     const ref = useRef<HTMLTextAreaElement>(null);
+    useImperativeHandle(forwardedRef, () => ref.current as HTMLTextAreaElement, []);
 
     // Measure from the element's own line-height rather than a hard-coded
     // number, so the growth steps follow whatever the tokens say a row is.
@@ -145,4 +151,5 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
             rows={minRows}
         />
     );
-};
+});
+TextAreaField.displayName = 'TextAreaField';
