@@ -101,8 +101,9 @@ protected:
 };
 
 // displayPick() draws only visible, unlocked, pick-capable renderers whose
-// default alpha is above the threshold, numbering them 1.. in the renderer
-// table the View reads back; processHit(bCpuOnly=true) covers the rest.
+// default alpha is above the threshold (at the threshold counts as
+// see-through), numbering them 1.. in the renderer table the View reads
+// back; processHit(bCpuOnly=true) covers the rest.
 TEST_F(ScenePickFixture, DisplayPickSelectsParticipantsAndCpuOnlyComplements)
 {
     PickTestRenderer *pOk = attach(true, true);
@@ -112,20 +113,29 @@ TEST_F(ScenePickFixture, DisplayPickSelectsParticipantsAndCpuOnlyComplements)
     pLocked->setUILocked(true);
     PickTestRenderer *pTransp = attach(true, true);
     pTransp->setDefaultAlpha(0.3);
+    // The threshold itself is click-through; just above it is not.
+    PickTestRenderer *pAtThresh = attach(true, true);
+    pAtThresh->setDefaultAlpha(qsys::Scene::PICK_ALPHA_THRESHOLD);
+    PickTestRenderer *pOverThresh = attach(true, true);
+    pOverThresh->setDefaultAlpha(qsys::Scene::PICK_ALPHA_THRESHOLD + 0.05);
     PickTestRenderer *pCpuOnly = attach(false, true);
     PickTestRenderer *pNoHit = attach(false, false);
 
     StubDC dc;
     m_pScene->displayPick(&dc);
 
-    // Only pOk was drawn, with renderer index 1, and the table maps 1 -> its uid.
-    ASSERT_EQ(dc.getHitRendTable().size(), 1u);
+    // pOk and pOverThresh were drawn, numbered 1.. in the renderer table.
+    ASSERT_EQ(dc.getHitRendTable().size(), 2u);
     EXPECT_EQ(dc.getHitRendTable()[0], pOk->getUID());
+    EXPECT_EQ(dc.getHitRendTable()[1], pOverThresh->getUID());
     ASSERT_EQ(pOk->m_drawnIdx.size(), 1u);
     EXPECT_EQ(pOk->m_drawnIdx[0], 1u);
+    ASSERT_EQ(pOverThresh->m_drawnIdx.size(), 1u);
+    EXPECT_EQ(pOverThresh->m_drawnIdx[0], 2u);
     EXPECT_TRUE(pHidden->m_drawnIdx.empty());
     EXPECT_TRUE(pLocked->m_drawnIdx.empty());
     EXPECT_TRUE(pTransp->m_drawnIdx.empty());
+    EXPECT_TRUE(pAtThresh->m_drawnIdx.empty());
     EXPECT_TRUE(pCpuOnly->m_drawnIdx.empty());
     EXPECT_TRUE(pNoHit->m_drawnIdx.empty());
     // Index is reset outside startHit/endHit.
@@ -145,8 +155,9 @@ TEST_F(ScenePickFixture, DisplayPickSelectsParticipantsAndCpuOnlyComplements)
     EXPECT_NE(std::find(visited.begin(), visited.end(), pNoHit->getUID()), visited.end());
     EXPECT_EQ(std::find(visited.begin(), visited.end(), pOk->getUID()), visited.end());
 
-    // The default (bCpuOnly=false) is the legacy behaviour: everyone visible.
+    // The default (bCpuOnly=false) is the legacy behaviour: everyone visible
+    // and unlocked, whatever their alpha or pick support.
     StubDC hc2;
     m_pScene->processHit(&hc2);
-    EXPECT_EQ(hc2.getHitRendTable().size(), 4u);
+    EXPECT_EQ(hc2.getHitRendTable().size(), 6u);
 }

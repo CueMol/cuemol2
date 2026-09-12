@@ -54,7 +54,7 @@ GpuPrim 直描き renderer             SphereIdx / CylinderIdx / LineIdx / LineV
 pick pass (GUIView::renderPickBuffer)
   pick RT (RGBA32UI + depth, backing size * PICK_SCALE=0.5, NEAREST) を bind / clear(0)
   pdc: PICK_DRAW, blend off, viewport = pick size, jitter 無しの projection, model matrix
-  Scene::displayPick(pdc): 可視 / 非UIロック / isPickSupported / alpha >= 0.5 の renderer ごとに
+  Scene::displayPick(pdc): 可視 / 非UIロック / isPickSupported / alpha > 0.6 の renderer ごとに
       pdc->resetNames(); pdc->startHit(uid); pRend->displayPick(pdc); pdc->endHit()
       DispListRenderer: 表示用の同じ display list を callDisplayList (pick 用の複製は無い)
       GpuPrim: draw() が isPickDraw() を見て pick program (*_pick_*.glsl) に切り替える
@@ -315,7 +315,7 @@ present 専用フレーム (setHoverHit / clearHoverHit だけが起きた):
   改善するが pick pass コストと RGBA32UI メモリが 4 倍になるので上げていない。
 - overlay に AA (FXAA / SMAA / jitter) はかからない (最終段の後に重ねる)。縁の滑らかさは blur した mask の
   bilinear 参照によるもので、pick 解像度より細かい形状 (細い線の太さの差など) は再現しない。
-- alpha < 0.5 の renderer、CPU fallback の renderer (`*symm` 等)、stereo では highlight されない
+- alpha <= 0.6 の renderer、CPU fallback の renderer (`*symm` 等)、stereo では highlight されない
   (pick buffer に無い)。
 - highlight の単位は hit 要素のみ。残基単位で同一分子の全 renderer を光らせるには Mol* の marker texture
   相当 (原子 ID -> mark の lookup と rend -> 分子の対応) が要る (未実装)。
