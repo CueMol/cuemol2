@@ -258,7 +258,7 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 
 | tool | mutates | 呼ぶ service |
 |---|---|---|
-| `get_scene_state` | no | `getSceneTree` + `getSelDefs` |
+| `get_scene_state` | no | `getSceneTree` + `getSelDefs` + scene 設定の読み取り |
 | `set_visible` | yes | `setNodeVisible` |
 | `get_mol_chains` | no | `getMolChains` |
 | `get_mol_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
@@ -268,8 +268,8 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `get_renderer_types` | no | `getNewRendererOptions` |
 | `create_renderer` | yes | `createRendererOnObject` |
 | `set_renderer_selection` | yes | `setGenericProp` (`propName: 'sel'`) |
-| `get_renderer_props` | no | `getGenericProps` |
-| `set_renderer_prop` | yes | `getGenericProps` -> `setGenericProp` |
+| `get_node_props` | no | `getGenericProps` (scene / object / renderer) |
+| `set_node_prop` | yes | `getGenericProps` -> `setGenericProp` |
 | `get_coloring_styles` | no | `getPaintColoringStyles` |
 | `set_renderer_coloring` | yes | `setRendererColoring` (レンダラ全体の着色を置き換える) |
 | `paint_selection` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` |
@@ -282,6 +282,20 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 20 件。OpenAI の推奨「1 turn で 20 未満」の**上限ちょうど**で、これ以上増やすなら先に畳む。
 候補は `center_view` -- 既に「選択も適用する」副作用を持っており、`set_mol_selection` の
 引数にできる。`tools/index.test.ts` が本数を pin している。
+
+`get_node_props` / `set_node_prop` は当初 `get_renderer_props` / `set_renderer_prop` だったものを
+**対象ノードを引数に取る形に広げた**もの。`resolvePropTarget` が scene / object / renderer を同じ
+lookup で解決するので、広げるのに必要だったのは `nodeType` 引数 1 つだけで、代わりに
+**scene 自身のプロパティが全部届くようになった** -- 背景色 (`bgcolor`)、ambient occlusion
+(`aoEnabled` と `ao*` の調整値)、anti-aliasing (`aa_method` / `aaJitterLevel`)、CMYK proofing
+(`use_colproof` / `icc_filename` / `icc_intent`)。これらに個別の tool を与えると scene だけで
+上限を使い切るので採らなかった。`nodeType: "scene"` のときだけ `nodeId` は不要 (turn が既に
+scene を固定しているため無視する) で、それ以外で `nodeId` が null なら書かずに error を返す。
+色は `setProp` が文字列を C++ の `ColCompiler` に渡すので `white` でも `#204080` でも通る。
+
+scene が設定を持つこと自体をモデルに気づかせるため、毎 turn の `<scene_state>` に
+`settings: { bgcolor, aoEnabled, aa_method }` を載せている。**キー名が property 名そのもの**なので、
+モデルは `get_node_props` を挟まずに `set_node_prop` を呼べる。残りは 1 回の読みで届く。
 
 `paint_selection` は 3 手を 1 本に畳んでいる。`paintRendererSelection` は塗る範囲を引数ではなく
 **分子の現在の選択**から読み、かつ renderer の coloring が `PaintColoring` でないと拒否するため、

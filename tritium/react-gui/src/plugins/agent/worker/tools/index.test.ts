@@ -46,11 +46,14 @@ const ALLOWED_SCHEMA_KEYWORDS = new Set([
  * The ceiling OpenAI's guidance puts on one turn's function list.
  *
  * A soft limit about selection accuracy rather than an API one -- past it a
- * model starts picking the wrong tool -- and the catalogue now sits exactly
- * on it. The next capability has to fold something first. The obvious
- * candidate is `center_view`, which already sets the molecule's selection as
- * a documented side effect and could become an argument of
- * `set_mol_selection` rather than a tool of its own.
+ * model starts picking the wrong tool -- and the catalogue sits exactly on
+ * it. A new capability that maps onto a C++ property belongs in
+ * `get_node_props` / `set_node_prop`, which reach the scene, an object and a
+ * renderer through one pair; that is how the scene-wide settings arrived
+ * without costing a slot. Something genuinely new has to fold a tool first,
+ * and the obvious candidate is `center_view`, which already sets the
+ * molecule's selection as a documented side effect and could become an
+ * argument of `set_mol_selection`.
  */
 const MAX_TOOLS = 20
 

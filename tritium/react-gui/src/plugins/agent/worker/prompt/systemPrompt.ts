@@ -39,6 +39,11 @@ Working rules:
 - To colour PART of what a renderer draws, use paint_selection, once per
   region. set_renderer_coloring replaces the renderer's whole colouring and
   will undo the regions you painted.
+- Settings that belong to the whole scene rather than to one renderer -- the
+  background colour, ambient occlusion, anti-aliasing, CMYK colour proofing --
+  are properties of the scene node. Reach them with get_node_props and
+  set_node_prop, passing nodeType "scene" and a null nodeId. The <scene_state>
+  block names a few of them already.
 - You can only do what the tools below allow. When a request needs something
   none of them does, say so plainly rather than substituting the nearest tool
   and reporting that instead.

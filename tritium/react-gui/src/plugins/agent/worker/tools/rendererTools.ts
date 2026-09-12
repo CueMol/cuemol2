@@ -5,12 +5,11 @@
 
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
-import { getGenericProps } from '@renderer/worker/server/services/props/read'
-import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import {
   getPaintColoringStyles,
   getRendererPaintInfo,
 } from '@renderer/worker/server/services/coloring/panelList'
+import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
 import { paintRendererSelection } from '@renderer/worker/server/services/coloring/paintCrud'
 import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
@@ -18,7 +17,6 @@ import { getMolFromRenderer } from '@renderer/worker/server/services/coloring/co
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { RendColoringId } from '@shared/types/sceneCtxMenu'
-import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { normalizeServiceResult } from '../toolOutput'
 import type { AgentTool, ToolOutcome } from './types'
 import { enumStr, int, nullable, str, strictSchema } from './types'
@@ -165,121 +163,6 @@ const setRendererSelection: AgentTool = {
       result,
       'The selection could not be applied to that renderer. Check the id and the expression.',
     )
-  },
-}
-
-const getRendererProps: AgentTool = {
-  name: 'get_renderer_props',
-  description:
-    'List the writable properties of one renderer with their current values and, for ' +
-    'enumerated ones, the allowed values. Read this before set_renderer_prop.',
-  parameters: strictSchema({
-    rendId: int('Uid of the renderer.'),
-  }),
-  mutates: false,
-  run(ctx, input, turn) {
-    const result = getGenericProps(ctx, {
-      sceneId: turn.sceneId,
-      nodeId: Number(input.rendId),
-      nodeType: 'renderer',
-    })
-    if (!result.ok) return { ok: false, error: 'No renderer with that id in this scene.' }
-    return {
-      ok: true,
-      data: {
-        type: result.typeLabel,
-        name: result.displayName,
-        // Container rows are the headers of nested objects: they carry no
-        // value and cannot be written, so they are noise here.
-        properties: result.entries
-          .filter((e: GenericPropEntry) => !e.isContainer)
-          .map((e: GenericPropEntry) => ({
-            key: e.key,
-            type: e.type,
-            value: e.value,
-            readonly: e.readonly,
-            ...(e.enumdef ? { allowed: e.enumdef } : {}),
-          })),
-      },
-    }
-  },
-}
-
-/** Coerce the model's string into what the property's C++ type expects. */
-function coerceProp(entry: GenericPropEntry, raw: string): string | number | boolean | null {
-  switch (entry.type) {
-    case 'boolean': {
-      const v = raw.trim().toLowerCase()
-      if (v === 'true' || v === '1' || v === 'yes') return true
-      if (v === 'false' || v === '0' || v === 'no') return false
-      return null
-    }
-    case 'integer': {
-      const n = Number(raw)
-      return Number.isInteger(n) ? n : null
-    }
-    case 'real': {
-      const n = Number(raw)
-      return Number.isFinite(n) ? n : null
-    }
-    default:
-      return raw
-  }
-}
-
-const setRendererProp: AgentTool = {
-  name: 'set_renderer_prop',
-  description:
-    'Set one property of one renderer, for example a width, a detail level, or a mode. ' +
-    'Call get_renderer_props first: the property name, its type, and the allowed values ' +
-    'all come from there.',
-  parameters: strictSchema({
-    rendId: int('Uid of the renderer.'),
-    prop: str('Property name, exactly as get_renderer_props reported it.'),
-    value: str('New value, written as text. It is converted to the property type.'),
-  }),
-  mutates: true,
-  run(ctx, input, turn): ToolOutcome {
-    const rendId = Number(input.rendId)
-    const propName = String(input.prop)
-    const props = getGenericProps(ctx, {
-      sceneId: turn.sceneId,
-      nodeId: rendId,
-      nodeType: 'renderer',
-    })
-    if (!props.ok) return { ok: false, error: 'No renderer with that id in this scene.' }
-    const entry = props.entries.find((e: GenericPropEntry) => e.key === propName)
-    if (!entry) {
-      return {
-        ok: false,
-        error: `This renderer has no property "${propName}". Call get_renderer_props for the list.`,
-      }
-    }
-    if (entry.readonly) return { ok: false, error: `"${propName}" is read only.` }
-
-    const raw = String(input.value)
-    if (entry.enumdef && !entry.enumdef.includes(raw)) {
-      return {
-        ok: false,
-        error: `"${raw}" is not allowed for "${propName}". Allowed: ${entry.enumdef.join(', ')}.`,
-      }
-    }
-    const value = coerceProp(entry, raw)
-    if (value === null) {
-      return { ok: false, error: `"${raw}" is not a valid ${entry.type} for "${propName}".` }
-    }
-
-    const result = setGenericProp(ctx, {
-      sceneId: turn.sceneId,
-      nodeId: rendId,
-      nodeType: 'renderer',
-      propName,
-      op: 'set',
-      valueType: entry.type,
-      value,
-      mode: 'commit',
-    })
-    return normalizeServiceResult(result, `"${propName}" could not be written.`)
   },
 }
 
@@ -432,8 +315,6 @@ export const RENDERER_TOOLS: AgentTool[] = [
   getRendererTypes,
   createRenderer,
   setRendererSelection,
-  getRendererProps,
-  setRendererProp,
   getColoringStyles,
   setRendererColoringTool,
   paintSelection,

@@ -17,6 +17,8 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
+import { safeRead } from '@renderer/worker/server/services/helpers/safeRead'
 
 /** Renderers listed per object before the tail is summarised away. */
 const MAX_RENDERERS_PER_OBJECT = 40
@@ -40,12 +42,57 @@ export interface SnapshotObject {
   renderersOmitted?: number
 }
 
+/**
+ * The scene's own settings, keyed by the property name that writes them back.
+ *
+ * A sample, not the whole list: the point is to show that the scene is a node
+ * with settings of its own and to hand over the exact spelling of the keys,
+ * so the model can reach for set_node_prop without a read first. The rest are
+ * one get_node_props call away.
+ */
+export interface SnapshotSceneSettings {
+  /** Background colour as `#rrggbb`, which is what `bgcolor` takes back. */
+  bgcolor: string
+  /** Whether ambient occlusion is on. */
+  aoEnabled: boolean
+  /** Post-process anti-aliasing method: `none`, `fxaa` or `smaa`. */
+  aa_method: string
+}
+
 export interface SceneSnapshot {
   sceneId: number
   viewId: number
+  /** Absent when the scene could not be read. */
+  settings?: SnapshotSceneSettings
   objects: SnapshotObject[]
   /** Named selections usable in a selection expression. */
   namedSelections: string[]
+}
+
+/** `#rrggbb`, the form the colour compiler reads back. */
+function hexOf(r: number, g: number, b: number): string {
+  const pair = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')
+  return `#${pair(r)}${pair(g)}${pair(b)}`
+}
+
+/**
+ * The scene-wide settings, or undefined when the scene cannot be read.
+ *
+ * @remarks `aa_method` is declared `enum` in Scene.qif, so the generated
+ *   wrapper types it as a number while C++ hands back the string id.
+ */
+function readSceneSettings(
+  ctx: WorkerContext,
+  sceneId: number,
+): SnapshotSceneSettings | undefined {
+  const scene = getSceneOrNull(ctx, sceneId)
+  if (!scene) return undefined
+  const bg = safeRead(() => scene.bgcolor)
+  return {
+    bgcolor: bg ? hexOf(bg.r(), bg.g(), bg.b()) : '#000000',
+    aoEnabled: safeRead(() => scene.aoEnabled) ?? false,
+    aa_method: String(safeRead(() => scene.aa_method) ?? 'fxaa'),
+  }
 }
 
 /** Flatten a renderer subtree; a group contributes itself and its children. */
@@ -91,9 +138,12 @@ export function buildSceneSnapshot(
 
   const defs = getSelDefs(ctx, { sceneId: args.sceneId })
 
+  const settings = readSceneSettings(ctx, args.sceneId)
+
   return {
     sceneId: args.sceneId,
     viewId: args.viewId,
+    ...(settings ? { settings } : {}),
     objects,
     namedSelections: [...defs.global, ...defs.scene],
   }

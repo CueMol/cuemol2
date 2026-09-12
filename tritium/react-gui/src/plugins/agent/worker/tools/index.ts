@@ -18,6 +18,7 @@ import { normalizeServiceResult, serializeToolOutput } from '../toolOutput'
 import { ANALYSIS_TOOLS } from './analysisTools'
 import { FILE_TOOLS } from './fileTools'
 import { MEASURE_TOOLS } from './measureTools'
+import { PROP_TOOLS } from './propTools'
 import { RENDERER_TOOLS } from './rendererTools'
 import { SCENE_TOOLS } from './sceneTools'
 import { SELECTION_TOOLS } from './selectionTools'
@@ -28,6 +29,7 @@ export const AGENT_TOOLS: readonly AgentTool[] = [
   ...SCENE_TOOLS,
   ...SELECTION_TOOLS,
   ...RENDERER_TOOLS,
+  ...PROP_TOOLS,
   ...FILE_TOOLS,
   ...ANALYSIS_TOOLS,
   ...MEASURE_TOOLS,
