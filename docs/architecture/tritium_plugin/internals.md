@@ -31,7 +31,19 @@ BUILTIN_PLUGINS
 
 `collectContributions(active)` が manifest の宣言と `panes` / `bottomTabs` の component を
 join して平坦化する。component の無い宣言はここで落ちる (`validatePlugin` が既に
-エラーを報告している)。
+エラーを報告している)。`settings` もここで plugin id / 表示名を付けて平坦化され、
+`secret` control には `namespace = manifest.id` が入る (plugin は namespace を書かない)。
+
+読み取り側 (`usePlugins` / `usePluginContributions` / `usePluginPrefs`) は
+**`pluginContext.ts`** にあり、`PluginProvider.tsx` には無い。provider は
+`@plugins/index` を import し、plugin は `plugin-host/api` を import するので、
+api barrel から provider を辿れると plugin -> api -> provider -> registry -> plugin の
+循環になる。実際これで `createDialogHook` が undefined になった。**api barrel に何かを
+足すときは、それが `@plugins/index` へ辿り着かないか確認する。**
+
+`UiState.pluginPrefs` も provider が持つ。保存は `pluginEnabled` とは**別の `UI_SAVE`
+呼び出し**で、かつ map 全体を書く: main の `saveUi` は top-level キーの shallow merge
+なので、部分的な `pluginPrefs` は他 plugin の設定を消す。
 
 ---
 
@@ -72,6 +84,69 @@ APP_MENU のコピー + 挿入。ipcChannel = 'menu:plugin:<commandId>'
 Windows / Linux の React menu bar と keybinding dispatcher も同じ `buildAppMenu()` を
 呼ぶので、両プラットフォームで同じメニューになる
 ([keyboard-shortcuts.md](../keyboard-shortcuts.md) の「OS ごとに 1 人のオーナー」は不変)。
+
+---
+
+## push channel のレーン
+
+`WorkerTransport` の `onmessage` は built-in の 4 channel を文字列一致で手配線していて、
+それ以外は call reply とみなす (`makeMethodSeq` で pending を引き、無ければ
+`orphanReplies++` して黙って捨てる)。plugin は分岐を足せないので、名前空間付きの
+channel 名を 1 分岐で受ける:
+
+```
+event.data = ['plugin-channel.<id>.<name>', payload]
+        |
+        v  isPluginChannel(method) -- APBS 分岐の直後、reply fallback の直前
+_pluginChannelListeners.get(channel) -> 各 cb(payload)
+```
+
+**prefix が service (`plugin.`) と別なのが肝**。service の reply も
+`['plugin.<id>.<name>', seqno, ok, result]` で届くので、同じ prefix にすると push が
+reply として捨てられるか、reply が push として配られる。分岐位置も同じ理由で
+reply fallback より前に置く。
+
+名前は両スレッドが `worker/shared/pluginCalls.ts` の `pluginChannelName()` から作る
+(renderer 側は `definePluginChannel` がそれを呼ぶ)。
+
+---
+
+## secret の経路
+
+値は electron-store ではなく OS のキーチェーンに入る。main が持ち、renderer は
+namespace + key で引く:
+
+```
+plugin: definePluginSecret('foo', 'apiKey', { envVar: 'FOO_API_KEY' })
+        |
+        v  window.electronAPI.invoke(IPC.SECRET_GET, { namespace, key, envVar })
+main/handlers/secrets.ts -> main/secretStore.ts
+        |
+        +-- stored: StoreSchema.secrets['<namespace>.<key>'] (safeStorage 暗号化 + base64)
+        +-- env:    process.env[envVar]
+        +-- none
+```
+
+`menu:set-plugin-contributions` と同じ形で、**main は namespace が何なのかを知らない**。
+plugin id を namespace に入れるのは host (`definePluginSecret`) 側なので、plugin が
+他の plugin の entry を指すことはできない。
+
+`safeStorage.isEncryptionAvailable()` が false のときは保存を**拒否**して環境変数を
+案内する。平文で書くくらいなら保存しないほうがよい、という判断。
+
+---
+
+## undo/redo の抑止
+
+`UndoRedoLockContext` は `ModalOpenCounterContext` と同じ参照カウントだが、count を
+**React state** に置く (`useUndoRedoState` が再 render して toolbar を落とし、native menu
+へ再 push する必要があるため。ref だとどちらも起きない)。
+
+`useUndoRedoState` 側は 2 箇所で見る: `applyState` が flags を false にして
+`MENU_UPDATE_STATE` を送り、`pickUndo` / `pickRedo` が実行を拒否する。**両方要る** --
+macOS は native menu が Cmd+Z を握るが、Windows / Linux の keybinding dispatcher は
+command bus に直接届くため。lock の取得・解放で `MENU_UPDATE_STATE` を送り直すのは、
+scene event が来ないと flags が更新されないから。
 
 ---
 
@@ -135,11 +210,17 @@ annotation を付けてある (現状どれも `devOnly` ではないので実�
    `PluginContributions` にも行を足す
 2. `pluginSelect.ts` の `collectContributions` で宣言と component を join する。
    `EMPTY_CONTRIBUTIONS` にも空配列を足す
-3. `definePlugin.ts` の `validatePlugin` に「宣言したのに component が無い」検査を足す
+3. `definePlugin.ts` の `validatePlugin` に「宣言したのに実体が無い」検査を足す
 4. 描く側 (`shell/StatusBar.tsx`) で `usePluginContributions()` を読み、built-in と
    合成する。位置指定が要るなら `insertAfterId` を使う
 5. 無効化でその寄与が消えたときのフォールバックを考える (アクティブだった tab や view が
    消えるなら既定へ戻す。`BottomPanel` / `MainLayout` に前例がある)
+
+`settings` 寄与が直近の実例。core 側は `SettingsPane` が `pluginPrefSettingDefs()` で行を
+生成し `buildCategoryTree()` でツリーに枝を足すだけで、plugin id はどこにも書かれない
+(既存の「Plugins ページの toggle 行を registry から生成する」と同じ形)。静的だった
+`CATEGORY_TREE` / `ALL_LEAF_IDS` は、pane が描くツリーを `leafIds()` / `buildLabelMap()` で
+その場で導くように変えた (nav store の初期値だけは静的なままでよい)。
 
 **core のどこにも plugin id を特別扱いで書かないこと。** 書いた時点でその plugin は
 外せなくなる。
@@ -162,6 +243,9 @@ plugin 機構そのものについて pin してあるのは以下だけ。こ�
 | `renderer/plugin-host/PluginProvider.test.tsx` | 保存が「明示的な選択だけ」であること、manifest 既定への fallback、`alwaysEnabled` が保存値を無視すること、`devOnly` gate |
 | `renderer/__test__/Toolbar.test.tsx` | 寄与ボタンが anchor の直後に出て、plugin command を dispatch する |
 | `plugins/index.test.ts` | manifest と実体の整合、同梱 plugin の切り替え方、worker service 名と契約の 1 対 1 |
+| `renderer/plugin-host/pluginChannels.test.ts` | push が listener に届き、service の reply は届かないこと |
+| `renderer/contexts/UndoRedoLockContext.test.tsx` | lock で flags が false + `MENU_UPDATE_STATE` 再 push、`pickUndo` が拒否 |
+| `src/main/secretStore.test.ts` | stored > env > none、空文字 = clear、暗号化不可なら保存拒否 |
 
 `devOnly` を宣言している plugin は無いので、その gate は
 `PluginProvider.test.tsx` が合成 plugin で検査している。
@@ -173,5 +257,8 @@ plugin 機構そのものについて pin してあるのは以下だけ。こ�
 | 型 | 場所 | 理由 |
 |---|---|---|
 | menu 寄与、`PluginCommandId` | `src/shared/types/pluginContrib.ts` | main が native menu を建てるのに必要 |
+| secret の req / res | `src/shared/types/secrets.ts` | main が実装を持つ |
 | それ以外の manifest、component | `src/renderer/plugin-host/types.ts` | `AppIconKey` と React に依存するので shared に置けない |
-| worker service 名の組み立て | `src/renderer/worker/shared/pluginCalls.ts` | 両スレッドが load する |
+| 設定 control の kind | `src/renderer/features/settings/settings/settingControl.ts` | `settingsConfig.ts` は contexts と worker DTO を引くので、plugin-host から名指ししたくない |
+| worker service / channel 名の組み立て | `src/renderer/worker/shared/pluginCalls.ts` | 両スレッドが load する |
+| registry の読み取り (`usePlugins` ほか) | `src/renderer/plugin-host/pluginContext.ts` | provider (= `@plugins/index`) を巻き込まずに読むため |

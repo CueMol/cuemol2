@@ -17,63 +17,31 @@
  * Menu rows are the one contribution the renderer cannot draw itself on
  * macOS, where the native menu belongs to main. The provider therefore pushes
  * the menu half over IPC whenever it changes, and main rebuilds.
+ *
+ * It also holds each plugin's own preferences (`UiState.pluginPrefs`), for
+ * the same reason it holds the enabled set: the registry sits above both the
+ * plugin Roots and the panes, which are mounted in sibling subtrees and
+ * therefore cannot share a context of their own.
  */
 
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { IPC } from '@shared/ipcChannels'
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import { BUILTIN_PLUGINS } from '@plugins/index'
 import {
-  EMPTY_CONTRIBUTIONS,
   collectContributions,
   isPluginEnabled,
   isPluginSwitchable,
   selectAvailablePlugins,
 } from './pluginSelect'
 import type { PluginChoices } from './pluginSelect'
-import type { PluginContributions, RendererPlugin } from './types'
-
-interface PluginContextValue {
-  /** Every plugin this build ships, switched on or not. */
-  available: readonly RendererPlugin[]
-  /** The ones the user can switch. Settings lists exactly these. */
-  switchable: readonly RendererPlugin[]
-  /** The plugins that are switched on right now. */
-  active: readonly RendererPlugin[]
-  /** The active plugins' contributions, joined with their components. */
-  contributions: PluginContributions
-  isEnabled: (id: string) => boolean
-  /** No-op for a plugin that is not switchable. */
-  setEnabled: (id: string, enabled: boolean) => void
-}
-
-const NO_PLUGINS: readonly RendererPlugin[] = []
+import type { RendererPlugin } from './types'
+import type { PluginPrefValue } from '@shared/types/uiPrefs'
+import { NO_PREFS, PluginContext } from './pluginContext'
+import type { PluginContextValue, PluginPrefsMap } from './pluginContext'
 
 /** Stable empty record so the initial state does not change identity per render. */
 const NO_CHOICES: PluginChoices = {}
-
-/**
- * What a consumer outside a provider sees: no plugins and no way to change
- * that. Panes and the shell chrome are mounted standalone in tests, and an
- * empty registry is the honest answer there.
- */
-const EMPTY_VALUE: PluginContextValue = {
-  available: NO_PLUGINS,
-  switchable: NO_PLUGINS,
-  active: NO_PLUGINS,
-  contributions: EMPTY_CONTRIBUTIONS,
-  isEnabled: () => true,
-  setEnabled: () => undefined,
-}
-
-const PluginContext = createContext<PluginContextValue | null>(null)
 
 interface PluginProviderProps {
   children: React.ReactNode
@@ -86,6 +54,7 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
   plugins = BUILTIN_PLUGINS,
 }) => {
   const [choices, setChoices] = useState<PluginChoices>(NO_CHOICES)
+  const [prefs, setPrefs] = useState<PluginPrefsMap>(NO_PREFS)
   const [loaded, setLoaded] = useState(false)
 
   // Load the persisted choices once. Until they arrive every plugin sits at
@@ -100,6 +69,7 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
         const ui = await window.electronAPI?.invoke(IPC.UI_LOAD)
         if (!guard.isCurrent(token)) return
         if (ui?.pluginEnabled) setChoices(ui.pluginEnabled)
+        if (ui?.pluginPrefs) setPrefs(ui.pluginPrefs)
       } catch {
         // Electron not available (Vite dev server) -- keep the defaults.
       }
@@ -147,6 +117,24 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
     [switchable],
   )
 
+  // Saved as one whole map rather than per plugin: main's `saveUi` merges
+  // top-level keys only, so a partial `pluginPrefs` would drop every other
+  // plugin's settings. Kept in its own UI_SAVE call, separate from
+  // `pluginEnabled`, so neither write can clobber the other's in-flight state.
+  const setPref = useCallback(
+    (pluginId: string, key: string, value: PluginPrefValue) => {
+      setPrefs((prev) => {
+        if (prev[pluginId]?.[key] === value) return prev
+        const next = { ...prev, [pluginId]: { ...(prev[pluginId] ?? {}), [key]: value } }
+        window.electronAPI
+          ?.invoke(IPC.UI_SAVE, { pluginPrefs: next })
+          .catch((e: unknown) => console.error('ui:save pluginPrefs:', e))
+        return next
+      })
+    },
+    [],
+  )
+
   const value = useMemo<PluginContextValue>(
     () => ({
       available,
@@ -155,24 +143,17 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
       contributions,
       isEnabled: (id: string) => active.some((p) => p.manifest.id === id),
       setEnabled,
+      prefs,
+      prefsLoaded: loaded,
+      setPref,
     }),
-    [available, switchable, active, contributions, setEnabled],
+    [available, switchable, active, contributions, setEnabled, prefs, loaded, setPref],
   )
 
   return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>
 }
 PluginProvider.displayName = 'PluginProvider'
 
-/**
- * The plugin registry. Outside a provider this reports an empty registry
- * rather than throwing, so a pane or a chrome component can still be mounted
- * on its own.
- */
-export function usePlugins(): PluginContextValue {
-  return useContext(PluginContext) ?? EMPTY_VALUE
-}
-
-/** Just the contributions, for the shell surfaces that only draw them. */
-export function usePluginContributions(): PluginContributions {
-  return usePlugins().contributions
-}
+// The hooks that read this registry live in `pluginContext`, not here: see
+// that file's header for why the read path must not import this one.
+export { usePluginContributions, usePlugins } from './pluginContext'

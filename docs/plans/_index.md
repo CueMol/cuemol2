@@ -18,7 +18,6 @@
 
 | ファイル | 内容 | 状態 |
 |---|---|---|
-| [260911-ai-agent-prompt-panel-plan.md](260911-ai-agent-prompt-panel-plan.md) | AI agent prompt panel (自然言語の指示から LLM が既存 worker service を呼ぶチャット UI)。OpenAI Responses API、worker 内 agent loop、1 指示 = 1 undo txn、tool カタログ 19 本、左 side pane の新 activity view、API キーの safeStorage 保管。P0-P5 | **未実装**。実装は 1 行も入っていない |
 | [260908-tritium-plugin-system-plan.md](260908-tritium-plugin-system-plan.md) | tritium の plugin システム (JS/TS + C++ 両レーン)。VSCode 拡張機構の調査、C++ 登録機構の seam、packaging と配置、Phase 0/A/A'/B/C | **Phase 0 のみ実装済み** (react 側の in-tree plugin host。`../architecture/tritium_plugin/`)。実行時ロード (Phase A)、C++ レーン (Phase A')、schema 駆動 UI / sideload (Phase B)、重い native の分離 (Phase C) は未実装 |
 | [umbreon-process-isolation-plan.md](umbreon-process-isolation-plan.md) | umbreon GI(OIDN) の大確保が Chromium PartitionAlloc で crash する件と、恒久対策としての process 分離 (mmap zero-copy) | **未実装 / 当面着手しない**。§2 の原因究明は確定した調査結果。着手条件は crash が実害になったとき |
 | [pymconsole-research-260529.md](pymconsole-research-260529.md) | PyMOL コマンド言語に部分互換な「pym console」導入の調査報告 | **調査のみ**。planning / 実装とも未着手 |
@@ -27,6 +26,9 @@
 
 | ファイル | 内容 | 実装の所在 |
 |---|---|---|
+| [260913-ai-agent-ai-sdk-plan.md](260913-ai-agent-ai-sdk-plan.md) | AI agent plugin の LLM 層を Vercel AI SDK (`ai` v7) へ載せ替え、OpenAI と Anthropic を `provider:model` で切り替え可能に。あわせて prompt history (↑/↓ でのシェル風呼び出し) を追加 | `tritium/react-gui/src/plugins/agent/` の `shared/modelSpec.ts` / `worker/modelProvider.ts` / `renderer/promptHistory.ts` ほか |
+| [260912-ai-agent-plugin-plan.md](260912-ai-agent-plugin-plan.md) | 上記を tritium の plugin 機構に載せ替えた再計画。agent の内部設計はそのまま、置き場所と core への到達経路を plugin 化し、必要な受け皿 (push channel レーン / plugin prefs / settings 寄与点 / 汎用 secrets IPC / undo-redo lock) を汎用の plugin API として足す | `tritium/react-gui/src/plugins/agent/`。[`../architecture/ai-agent-plugin.md`](../architecture/ai-agent-plugin.md) |
+| [260911-ai-agent-prompt-panel-plan.md](260911-ai-agent-prompt-panel-plan.md) | AI agent prompt panel の最初の計画 (core 直書き版)。調査結果と設計判断はここが初出 | **260912 に置き換え**。agent の内部設計は有効だが、配置は plugin 化された |
 | [anim-panel-timeline-plan.md](anim-panel-timeline-plan.md) | AnimationPanel を Blender 風タイムラインへ再構築する移行計画 (`docs/migration/` から移設) | ADR-0029 (anim panel migration complete)。`features/animation/` |
 | [260602-inspector-reset-ui-plan-prompt.md](260602-inspector-reset-ui-plan-prompt.md) | Inspector の per-property reset UI (計画作成の依頼書) | `features/inspector/` の `onResetValue` / `onResetAll` |
 | [260717-cpk-coord-texture-direct-update-plan.md](260717-cpk-coord-texture-direct-update-plan.md) | CPK renderer の座標テクスチャ direct update (Phase 1) と MD trajectory (Phase 2) の位置づけ | Phase 1: PR #441 |

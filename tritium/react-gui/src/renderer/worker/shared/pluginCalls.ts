@@ -25,3 +25,23 @@ export function pluginServiceName(pluginId: string, name: string): string {
 export function isPluginServiceName(name: string): boolean {
   return name.startsWith(PLUGIN_SERVICE_PREFIX)
 }
+
+/**
+ * Prefix of a push channel a plugin's worker service streams on.
+ *
+ * Deliberately NOT `PLUGIN_SERVICE_PREFIX`: a service reply also arrives as
+ * `['plugin.<id>.<name>', seqno, ok, result]` and has to keep reaching the
+ * reply path in `WorkerTransport`. A push carries no seqno, so the two are
+ * told apart by the prefix alone.
+ */
+export const PLUGIN_CHANNEL_PREFIX = 'plugin-channel.'
+
+/** The wire name of the push channel `name` as contributed by `pluginId`. */
+export function pluginChannelName(pluginId: string, name: string): string {
+  return `${PLUGIN_CHANNEL_PREFIX}${pluginId}.${name}`
+}
+
+/** True when a received message key addresses a plugin push channel. */
+export function isPluginChannel(method: unknown): method is string {
+  return typeof method === 'string' && method.startsWith(PLUGIN_CHANNEL_PREFIX)
+}

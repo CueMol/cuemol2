@@ -94,12 +94,20 @@ core の `CmdId` / `CommandMap` / `ServiceMap` は**閉じたまま**にして�
 |---|---|---|
 | command | `plugin.<pluginId>.<name>` | `useRegisterPluginCommand<TArgs, TResult>` の型引数 |
 | worker service | `plugin.<pluginId>.<name>` | plugin 側の `calls.ts` (`definePluginServices<M>`) |
+| push channel | `plugin-channel.<pluginId>.<name>` | `definePluginChannel<T>` の型引数 |
+| 設定値 | `pluginPrefs[<pluginId>][<key>]` | manifest の `contributes.settings` |
+| secret | `<pluginId>.<key>` (OS キーチェーン) | `definePluginSecret` |
 
 つまり **plugin が失うのは「マップ行を忘れたら compile error」だけ**で、型そのものは
 失わない。plugin は自分の契約を自分で書き、その範囲で型が効く。
 
 worker 側の名前空間化は **登録側が自動で付ける**ので、plugin の `services` に書く名前は
 素のままでよい (詳細は [internals.md](internals.md))。
+
+push channel の prefix が service と別なのは、service の reply も
+`['plugin.<id>.<name>', seqno, ok, result]` という形で同じ `onmessage` に届くため。
+secret の namespace も host が plugin id を入れるので、plugin が他の plugin の entry を
+指すことはできない。
 
 ---
 

@@ -16,6 +16,7 @@ import { CommandProvider } from '@renderer/commands/CommandRegistry'
 import { PluginProvider } from '@renderer/plugin-host'
 import { DialogProvider } from '@renderer/contexts/DialogContext'
 import { ModalOpenCounterProvider } from '@renderer/contexts/ModalOpenCounterContext'
+import { UndoRedoLockProvider } from '@renderer/contexts/UndoRedoLockContext'
 import { RenderConfigProvider } from '@renderer/contexts/RenderConfigContext'
 import { ApbsConfigProvider } from '@renderer/contexts/ApbsConfigContext'
 import { NewSceneDefaultsProvider } from '@renderer/contexts/NewSceneDefaultsContext'
@@ -60,9 +61,14 @@ createRoot(container).render(
                           {/* App-level state, below the dialog and command
                               providers (closing a tab runs the save prompt and
                               the FileSave command from inside the workspace). */}
-                          <AppStateProviders>
-                            <App />
-                          </AppStateProviders>
+                          {/* Above AppStateProviders, which owns the undo /
+                              redo state this gates, and above <App/>, whose
+                              plugin Roots and panes take the lock. */}
+                          <UndoRedoLockProvider>
+                            <AppStateProviders>
+                              <App />
+                            </AppStateProviders>
+                          </UndoRedoLockProvider>
                         </AppSettingsProvider>
                        </PickingPrefsProvider>
                       </ViewInputConfigProvider>

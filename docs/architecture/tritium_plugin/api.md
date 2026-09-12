@@ -31,7 +31,10 @@ export const fooPlugin = /* @__PURE__ */ definePlugin({
 空)。`plugins/index.test.ts` が「全 plugin で空であること」を検査している。
 
 検査する内容: id の形式、command id の prefix、command の重複宣言、menu / toolbar が
-指す command が宣言されているか、view の pane と bottom tab に component があるか。
+指す command が宣言されているか、view の pane と bottom tab に component があるか、
+settings の key の形式と重複、および `default` の有無 (`secret` は OS キーチェーンに
+値があるので `default` を持てず、それ以外の kind は `default` 必須 -- 保存値も既定も
+無い行は空欄で描画されるため)。
 
 ### 型
 
@@ -42,6 +45,7 @@ export const fooPlugin = /* @__PURE__ */ definePlugin({
 | `PluginCommandId` | `` `plugin.${string}` `` |
 | `PaneComponent` / `PaneComponentProps` | side pane の component と props |
 | `BottomTabComponent` / `BottomTabComponentProps` | bottom tab の component と props |
+| `PluginSettingDecl` / `PluginSettingControl` | `contributes.settings` の行 |
 
 ---
 
@@ -123,6 +127,91 @@ const r = await fooServices.invoke(cm, 'doThing', { sceneId })
 
 `AsyncCueMol` 型も barrel から取れる。core の service はこの client ではなく
 `cm.invokeService('name', args)` で直接呼ぶ。
+
+`invoke` は 4 番目に `opts?: InvokeOptions` を取る。今あるのは `quiet` 1 つで、
+`{ quiet: true }` はその呼び出しを busy 計上から外す (StatusBar の Busy pill と wait
+cursor に出さない)。**自前で進捗を出す長い呼び出し専用**で、既定のままが正しい。
+
+---
+
+## push channel レーン
+
+### `definePluginChannel<T>(pluginId, name): PluginChannel<T>`
+
+```ts
+interface PluginChannel<T> {
+  /** wire 名 `plugin-channel.<pluginId>.<name>` */
+  channel: string
+  subscribe(cm: AsyncCueMol, cb: (payload: T) => void): () => void
+}
+```
+
+service の戻り値ではなく、**実行中に流したいもの** (進捗・streaming delta) 用。
+worker 側は `ctx.svc.pushMessage(pluginChannelName(id, name), payload)` で流す
+(`worker/shared/pluginCalls.ts`; worker は `plugin-host/api` を import できない)。
+
+```ts
+export const fooProgress = definePluginChannel<FooUpdate>('foo', 'progress')
+useEffect(() => {
+  if (!cm) return
+  return fooProgress.subscribe(cm, (u) => { apply(u) })
+}, [cm])
+```
+
+prefix が service (`plugin.`) と別なのは意図的 ([contributions.md](contributions.md))。
+
+---
+
+## 設定と secret
+
+### `usePluginPrefs(pluginId): PluginPrefs`
+
+```ts
+interface PluginPrefs {
+  /** manifest の default に、ユーザーが変えた値を重ねたもの */
+  prefs: Readonly<Record<string, string | number | boolean>>
+  setPref: (key: string, value: string | number | boolean) => void
+  /** 読み込み前は false (その間は default が効く) */
+  loaded: boolean
+}
+```
+
+キーは `contributes.settings` で宣言したもの。**既定値は manifest にだけ**書き、
+ここでは補わない (`usePluginPrefs` が merge する)。保存は `UiState.pluginPrefs`。
+
+registry は plugin の Root と pane の両方の上にあるので、どちらからでも読める。
+
+### `definePluginSecret(pluginId, key, opts?): PluginSecret`
+
+```ts
+interface PluginSecret {
+  get(): Promise<{ value: string | null; source: 'stored' | 'env' | 'none' }>
+  set(value: string): Promise<{ ok: boolean; error?: string }>
+  clear(): Promise<{ ok: boolean; error?: string }>
+  status(): Promise<{ source; last4: string | null; encryptionAvailable: boolean }>
+}
+```
+
+`opts.envVar` を書くと、保存値が無いときその環境変数にフォールバックする。
+
+値は OS のキーチェーン (`safeStorage`) にあり、設定ファイルには入らない。**使う直前に
+`get()` し、そのまま渡す** -- React state・ログ・エラーメッセージに残さない。
+暗号化できない環境では `set()` が `ok: false` を返す (平文では保存しない)。
+
+---
+
+## undo/redo を止める
+
+### `useSuppressUndoRedo(active: boolean): void`
+
+`active` の間、Undo / Redo を**実行できなくする** (Edit メニュー・Cmd+Z・ツールバー・
+履歴 dropdown の全部)。複数の保持者を数えていて、unmount で必ず解放される。
+
+要るのは「複数の変更を 1 つの undo txn に包んでいる最中」だけ。C++ の `UndoManager` は
+入れ子の txn を最外側に吸収するので、外側の txn が開いている間に undo を実行すると
+ユーザーが見ていない中途半端な状態に戻ってしまう。
+
+**編集そのものは止まらない** (実行中のユーザー操作は同じ txn に入る)。
 
 ---
 
@@ -284,6 +373,8 @@ interface StreamProgressApi {
 | core の worker service | `cm.invokeService('name', args)` |
 | worker service の DTO 型 | `import type` で `@renderer/worker/server/...` から (値の import は禁止) |
 | `Result` / `ok` / `fail` | `@renderer/worker/shared/result` |
+| core の command id (`CmdId.UiSettingsTab` など) | `@renderer/commands/ids` |
+| IPC channel 定数 | `@shared/ipcChannels` (`window.electronAPI.invoke` 経由。`@main` は禁止) |
 
 ---
 
@@ -298,6 +389,7 @@ plugin の `worker/` は renderer とは別レイヤなので、barrel ではな
 | シーン / オブジェクト解決 | `@renderer/worker/server/services/helpers/sceneResolver` の `getSceneOrNull` / `getViewSceneObjOrNull` |
 | 選択文字列のコンパイル | `@renderer/worker/server/services/helpers/makeSel` |
 | undo トランザクション | `@renderer/worker/server/services/withUndoTxn` の `withUndoTxn` / `undoTxnResult` |
+| push channel 名 | `@renderer/worker/shared/pluginCalls` の `pluginChannelName` |
 | 戻り値 | `@renderer/worker/shared/result` の `ok` / `fail` / `failFrom` |
 | C++ wrapper の型 | `@cuemol/core/src/wrappers/<Class>` (型のみ) |
 

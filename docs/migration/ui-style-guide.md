@@ -47,8 +47,10 @@ Blueprint の portal (popover / dialog) に dark テーマを効かせる `porta
 | `Field` | label + control の1行 (stack / `inline` / `inline controlFirst`) — **下位ラベル** | 行 padding `--field-row-pad`, label↔control gap `--field-label-gap`, label は `.type-label` |
 | `FieldGroup` | Field の縦スタック / セクション (任意で `title` → 重い `SectionHeader` バー) | 行間 `--form-row-gap`, section 間 `--form-section-gap` |
 | `SectionHeader` | サブセクション見出し**バー** (背景tint+下線, 大文字) | `.section-header` role (高 `--ctrl-h-md`) |
-| `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索) | 高 `--field-h` (22px) |
-| `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
+| `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索、`password` で伏字 = API キー等) | 高 `--field-h` (22px) |
+| `TextAreaField` | 複数行テキスト入力。**行数で伸びる** (`minRows` 既定 1 / `maxRows` 既定 6、超えたらスクロール)。チャット composer や自由記述はこれ。伸びる高さ以外にサイズの選択肢は無い。**送信は `onSubmit` を渡す** (`onKeyDown` で自前に `key === 'Enter'` を見ない)。送信キーは `submitKey`: 既定 `'modifier-enter'` (Enter = 改行、Cmd/Ctrl+Enter = 送信)、`'enter'` で Slack 既定 (Enter = 送信、Shift+Enter = 改行)。どちらでも IME 変換確定の Enter は除外される。`ref` は forward されるので、値を差し替えた後にキャレットを動かす用途 (入力履歴の呼び戻し等) に使える | `.h3-form-textarea` (`_form-kit.css`) |
+| `SelectField` | ドロップダウン (`<option>` を children に)。**選択肢が閉じている**ときだけ | 高 `--field-h` (22px) |
+| `ComboBoxField` | 編集可能な入力 + 候補ドロップダウン。**選択肢が閉じていない**とき (履歴、モデル id 等)。候補は `string[]` か、値だけでは意味が分からないなら `{ value, label }[]` (label は右側に説明として出る) | `.h3-form-combobox` (`_form-kit.css`) |
 | `NumericField` | 数値 + 明示 slider (`slider` 既定 true)。**ネイティブ stepper は既定で非表示** (compact 用)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
 | `SliderField` | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |
 | `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない)。**ドラッグ感度は `min`/`max` と widget 幅から自動で決まる** (幅の 3/4 を drag すると全レンジを移動)。レンジに対して drag 量が釣り合うので、consumer は `pxPerStep` を指定しない — 指定するのは「レンジを掃くのが目的ではない」場合だけ (無限レンジ、UXP の 1 unit/px を再現する ViewPane 等) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
@@ -368,6 +370,8 @@ color: 'var(--accent)'
 
 UXP機能を tritium に起こす / 新規コンポーネントを追加するときに確認:
 
+- [ ] **テキスト入力で Enter を操作に割り当てるなら IME を除外したか** (`TextAreaField` は `onSubmit`、それ以外は `isImeKey(e.nativeEvent)`)。日本語・中国語・韓国語では変換確定の Enter が来るので、素の `key === 'Enter'` は入力途中で発火する
+- [ ] **複数行の入力で Enter を送信に割り当てていないか**。数語で終わらない文章では誤送信が頻発する。`TextAreaField` の既定 (`submitKey: 'modifier-enter'`) のままにし、送信手段はボタンかショートカット表示で見せる (Slack の Enter キー設定と同じ考え方)
 - [ ] **label+control の UI は §0 の form-kit カタログ (`Field`/`TextField`/`SelectField`/…) で組んだか** (生 Blueprint コントロール＋独自サイズ CSS を書いていないか)。コントロール高・行高・label gap・section spacing を consumer 側で指定していないか。無い部品は先にカタログへ追加したか
 - [ ] **list / tree 行は §0.5 の list-kit で揃えたか** (flex=`<ListRow>`、table=`.h3-list-table-row`+`.is-selected`、Blueprint Tree=`h3-listbox-tree` クラス)。行高・hover/selected を直書きしていないか
 - [ ] 色はすべて `var(--bg-*|--text-*|--accent*|--border*)` 経由か (生 hex / `Colors.*` / `--pt-*` を使っていないか)

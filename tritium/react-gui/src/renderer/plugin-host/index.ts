@@ -16,6 +16,7 @@ export type {
   PluginToolbarContribution,
   ResolvedPluginBottomTab,
   ResolvedPluginPane,
+  ResolvedPluginSetting,
   ResolvedPluginView,
   RendererPlugin,
 } from './types'

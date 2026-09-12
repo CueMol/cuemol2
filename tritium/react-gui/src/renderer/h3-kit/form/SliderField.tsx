@@ -35,6 +35,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Slider } from '@blueprintjs/core';
 import { AppIcon } from '@renderer/h3-kit/primitives';
 import { clampAndQuantize, quantize } from './numericMath';
+import { isImeKey } from './imeGuard';
 
 void React; // classic JSX runtime (vitest)
 
@@ -158,7 +159,7 @@ export const SliderField: React.FC<SliderFieldProps> = ({
     }, [editText, min, max, step, commit]);
     const handleNumericKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') e.currentTarget.blur();
+            if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) e.currentTarget.blur();
         },
         [],
     );

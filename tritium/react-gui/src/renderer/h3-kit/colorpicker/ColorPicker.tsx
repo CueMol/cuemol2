@@ -30,6 +30,7 @@ import { RgbHsbPanel } from './RgbHsbPanel'
 import { NamedListPanel } from './NamedListPanel'
 import { PalettePanel } from './PalettePanel'
 import { useCompiledColor } from './useCompiledColor'
+import { isImeKey } from '../form/imeGuard'
 
 const MOL_COLOR = '$molcol'
 
@@ -327,7 +328,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                         onChange={(e) => setDraft(e.target.value)}
                         onBlur={() => void commitText()}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) {
                                 e.currentTarget.blur()
                                 return
                             }

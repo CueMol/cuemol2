@@ -35,6 +35,12 @@ export const IPC = {
   // how the menu rows of the currently enabled plugins reach it.
   MENU_SET_PLUGIN_CONTRIBUTIONS: 'menu:set-plugin-contributions',
 
+  // Credentials, kept in the OS keychain rather than the preferences file.
+  // Namespaced so the owner (a plugin id) addresses only its own entries.
+  SECRET_GET:    'secret:get',
+  SECRET_SET:    'secret:set',
+  SECRET_STATUS: 'secret:status',
+
   // File > Open Recent (MRU) -- renderer <-> main
   RECENT_LOAD:  'recent:load',
   RECENT_ADD:   'recent:add',

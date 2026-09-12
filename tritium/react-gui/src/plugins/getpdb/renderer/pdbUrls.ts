@@ -1,6 +1,11 @@
 /**
  * @file plugins/getpdb/renderer/pdbUrls.ts
- * @description Where a PDB entry is fetched from, per server choice.
+ * @description Where a PDB entry's density map is fetched from, per server
+ * choice.
+ *
+ * The coordinate half lives in `worker/shared/pdbUrls.ts`, because a worker
+ * service fetches entries too; it is re-exported here so this stays the one
+ * place the dialog reads URLs from.
  *
  * The reader name travels with the URL because the two must agree: picking
  * the reader by extension on the way back re-introduces the `.cif`
@@ -8,32 +13,10 @@
  * JSON order.
  */
 
-import type { CoordServerType, MapServerType } from './GetPdbDialog'
+import type { MapServerType } from './GetPdbDialog'
 
-interface CoordUrlSpec {
-  url: string
-  readerName: string
-  /** Extension of the virtual filename the renderer lookup is done against. */
-  ext: string
-}
-
-/** The coordinate file for `pdbid` on the chosen server. */
-export function pickCoordUrl(pdbid: string, server: CoordServerType): CoordUrlSpec {
-  switch (server) {
-    case 'RCSB_CIF':
-      return {
-        url: `https://files.rcsb.org/download/${pdbid}.cif`,
-        readerName: 'mmcif',
-        ext: 'cif',
-      }
-    case 'RCSB_PDB':
-      return {
-        url: `https://files.rcsb.org/download/${pdbid}.pdb`,
-        readerName: 'pdb',
-        ext: 'pdb',
-      }
-  }
-}
+export { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
+export type { CoordServerType, CoordUrlSpec } from '@renderer/worker/shared/pdbUrls'
 
 interface MapUrlSpec {
   url: string

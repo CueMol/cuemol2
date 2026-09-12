@@ -20,6 +20,7 @@
  */
 
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+import type { InvokeOptions } from '@renderer/worker/client/WorkerTransport'
 
 /**
  * The shape a plugin's call contract has to have: one row per service.
@@ -31,10 +32,16 @@ export type PluginServiceCalls = Record<string, { args: unknown; result: unknown
 
 /** A typed caller for one plugin's services. */
 export interface PluginServiceClient<M extends PluginServiceCalls> {
+  /**
+   * @param opts - same per-call options the built-in `invokeService` takes.
+   *   `{ quiet: true }` keeps a long call out of the busy indicator, for a
+   *   plugin that shows its own progress.
+   */
   invoke<K extends keyof M & string>(
     cm: AsyncCueMol,
     name: K,
     args: M[K]['args'],
+    opts?: InvokeOptions,
   ): Promise<M[K]['result']>
 }
 
@@ -52,8 +59,9 @@ export function definePluginServices<M extends PluginServiceCalls>(
       cm: AsyncCueMol,
       name: K,
       args: M[K]['args'],
+      opts?: InvokeOptions,
     ): Promise<M[K]['result']> {
-      return cm.invokePluginService(pluginId, name, args) as Promise<M[K]['result']>
+      return cm.invokePluginService(pluginId, name, args, opts) as Promise<M[K]['result']>
     },
   }
 }

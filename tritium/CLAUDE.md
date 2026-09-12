@@ -167,9 +167,10 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit �
 
 Some features are packaged as **built-in plugins**: one directory each, declaring what they
 contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
-this way to keep the feature in one directory, not to make it removable) and `catalog` (the
-component gallery: it ships in every build but is `defaultEnabled: false`, so it appears only
-once someone switches it on in Settings > Plugins).
+this way to keep the feature in one directory, not to make it removable), `catalog` (the
+component gallery) and `agent` (the AI chat panel, OpenAI or Anthropic through the Vercel AI
+SDK) -- the last two ship in every build but are `defaultEnabled: false`, so they appear only
+once someone switches them on in Settings > Plugins.
 
 Full spec, API reference and a how-to-write walkthrough:
 [`docs/architecture/tritium_plugin/`](../docs/architecture/tritium_plugin/_index.md).
@@ -192,6 +193,16 @@ The rules that bite while editing core code:
   want gone (no Settings row, stored choices ignored), `defaultEnabled: false` for something
   the user opts into, neither for the ordinary default-on case. `UiState.pluginEnabled` stores
   only explicit choices, so an untouched plugin follows its own default.
+- **A plugin also gets its own preferences, settings rows, push channel and secret**, all on
+  the same string-id lane: `usePluginPrefs(id)` over `UiState.pluginPrefs`,
+  `contributes.settings` (drawn by `SettingsPane` from the registry, like the plugin
+  switches), `definePluginChannel` (wire prefix `plugin-channel.`, deliberately NOT the
+  service prefix -- a service reply lands on the same `onmessage`), and
+  `definePluginSecret` over the `SECRET_*` channels into `safeStorage`.
+- **Do not add anything to `plugin-host/api.ts` that reaches `@plugins/index`.** The registry
+  imports every plugin and every plugin imports the barrel, so such an export closes a cycle
+  and leaves whichever module the bundler evaluated first holding undefined imports. Reading
+  the registry goes through `plugin-host/pluginContext.ts`, which is split out for that reason.
 
 When adding a contribution point to the shell, extend the manifest type in
 `renderer/plugin-host/types.ts` and resolve it in `pluginSelect.ts`; do not special-case a
@@ -637,7 +648,7 @@ Prefer the typed helpers (`invokeService`, `invokeMethodTyped`, `invokeRpc`) —
 | Method | Maps to | Awaits | Pending count |
 |--------|---------|--------|---------------|
 | `invokeService<K>(name, args)` | `ServiceMap[K]` | Yes | Yes |
-| `invokeService<K>(name, args, { quiet: true })` | `ServiceMap[K]` | Yes | **No** — pointer-rate streams (viewport hover) only |
+| `invokeService<K>(name, args, { quiet: true })` | `ServiceMap[K]` | Yes | **No** — pointer-rate streams (viewport hover), or a long call that reports its own progress (`plugin.agent.runTurn`, a turn of minutes) |
 | `invokeMethodTyped<K>(name, ...args)` | `MethodMap[K]` | Yes | Yes |
 | `invokeRpc<K>(name, ...args)` | `RpcMap[K]` (used by `ObjProxy`) | Yes | Yes |
 | `invokeWorker(method, ...args)` | none — raw transport | Yes | Yes — `isBusy()` / `subscribeBusy()` |

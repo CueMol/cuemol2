@@ -231,6 +231,45 @@
   color: var(--text-muted);
 }
 
+/* Multi-line input (TextAreaField). Same surface as the single-line field;
+   height is set inline by the component as it grows between minRows and
+   maxRows, so only the per-row metrics belong here. */
+.h3-form-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--fs-lg);
+  line-height: var(--lh-normal);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  caret-color: var(--accent);
+  resize: none;
+  overflow-y: hidden;
+}
+
+.h3-form-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.h3-form-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.h3-form-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.h3-form-textarea-mono {
+  font-family: var(--font-mono);
+}
+
 /* Monospace variant (TextField `mono`) -- code / selection-expression fields. */
 .h3-form-input-mono.bp5-input-group .bp5-input,
 .h3-form-input-mono.bp5-input-group input {
