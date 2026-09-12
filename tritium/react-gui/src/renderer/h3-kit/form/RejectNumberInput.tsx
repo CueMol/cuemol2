@@ -23,6 +23,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { isImeKey } from './imeGuard';
 
 export interface RejectNumberInputProps {
     /** Stored value (post-`scale` division). */
@@ -96,7 +97,7 @@ export const RejectNumberInput: React.FC<RejectNumberInputProps> = ({
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => {
-                if (e.key === 'Enter') e.currentTarget.blur();
+                if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) e.currentTarget.blur();
             }}
         />
     );

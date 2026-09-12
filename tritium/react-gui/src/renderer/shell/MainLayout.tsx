@@ -9,11 +9,12 @@
  * debounce), so a drag re-renders nothing.
  */
 
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Allotment } from 'allotment'
 import 'allotment/dist/style.css'
 
-import { ActivityBar, type ActivityView } from './ActivityBar'
+import { usePluginContributions } from '@renderer/plugin-host'
+import { ActivityBar, BUILTIN_ACTIVITY_ITEMS, type ActivityView } from './ActivityBar'
 import { SidePanel } from './SidePanel'
 import { ContentArea } from './ContentArea'
 import { BottomPanel } from './BottomPanel'
@@ -32,6 +33,23 @@ export const MainLayout: React.FC = () => {
   const handleActivitySelect = useCallback((view: ActivityView) => {
     setActiveView((prev) => (prev === view ? null : view))
   }, [])
+
+  // A plugin view can go away under the user's feet: switching the plugin off
+  // in Settings unmounts its panes while its id is still the active one, and
+  // the sidebar would then show an empty frame with no way back. Fall back to
+  // the Explorer, the view that always exists.
+  const { views: pluginViews } = usePluginContributions()
+  const knownViews = useMemo(
+    () =>
+      new Set<string>([
+        ...BUILTIN_ACTIVITY_ITEMS.map((item) => item.id),
+        ...pluginViews.map((view) => view.id),
+      ]),
+    [pluginViews],
+  )
+  useEffect(() => {
+    setActiveView((prev) => (prev !== null && !knownViews.has(prev) ? 'explorer' : prev))
+  }, [knownViews])
 
   /**
    * Mirror a snap-driven collapse/reopen of the sidebar pane into

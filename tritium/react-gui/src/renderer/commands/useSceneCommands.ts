@@ -7,48 +7,20 @@
  * useUiDialogCommands / useTabCommands / useEditCommands.
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { SceneBgColor } from '@shared/types/menuState'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
-import type { Result } from '@renderer/worker/shared/result'
 import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { addRecent } from './addRecent'
 import { useShowFileOpenOptionDialog } from '@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialogProvider'
-import { useShowGetPdbDialog } from '@renderer/dialogs/GetPdbDialogProvider'
 import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
 import { useShowOpenMdTrajDialog } from '@renderer/dialogs/OpenMdTrajDialogProvider'
 import { useShowNewRendererDialog } from '@renderer/dialogs/NewRendererDialogProvider'
-import type { CoordServerType, MapServerType } from '@renderer/dialogs/GetPdbDialog'
-import { useStreamProgressDialog, type StreamProgressApi } from '@renderer/dialogs/StreamProgressDialogProvider'
-import { pushHistory as pushPdbIdHistory } from '@renderer/dialogs/pdbIdHistory'
-import type { PresetTypeEntry } from '@renderer/dialogs/fopen-opt-dlgs/types'
+import { fetchPresetTypes } from '@renderer/features/file-io/fetchPresetTypes'
+import { makeEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
 import type { NewSceneAction, OpenSceneFileAction } from '@renderer/hooks/useNewSceneAction'
-
-/**
- * Fetch the renderer presets (`<objType>-rendpreset` styles) for the
- * file-open option dialog. Called AFTER ensureActiveScene() because the
- * renderer-type lookup itself runs before a scene exists. Presets are
- * optional decoration -- any failure (including test mocks resolving
- * undefined) degrades to an empty list.
- */
-async function fetchPresetTypes(
-    cm: AsyncCueMol,
-    sceneId: number,
-    objType: string | undefined,
-): Promise<PresetTypeEntry[]> {
-    if (!objType) return []
-    try {
-        const r = await cm.invokeService('getRendPresetTypes', {
-            sceneId,
-            objClassName: objType,
-        })
-        return r?.presets ?? []
-    } catch {
-        return []
-    }
-}
 
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
@@ -73,11 +45,9 @@ export function useSceneCommands({
 }: UseSceneCommandsOptions): void {
 
     const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
-    const showGetPdbDialog = useShowGetPdbDialog()
     const showErrorAlert = useShowErrorAlert()
     const showOpenMdTrajDialog = useShowOpenMdTrajDialog()
     const showNewRendererDialog = useShowNewRendererDialog()
-    const streamProgress = useStreamProgressDialog()
 
     const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
         if (!cm) return
@@ -125,19 +95,12 @@ export function useSceneCommands({
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 
     // Resolve the active scene/view, creating a fresh scene + view (a new tab)
-    // when none is active (no tab open, or every molview tab closed). UXP always
-    // kept an active view, so a load always had somewhere to go; tritium has no
-    // implicit scene, so the load commands below create one on demand instead of
-    // silently doing nothing.
-    const ensureActiveScene = useCallback(async (): Promise<
-        { scene_uid: number; view_id: number } | undefined
-    > => {
-        const info = getActiveSceneInfo()
-        if (info) return info
-        const created = await newScene()
-        if (!created) return undefined
-        return { scene_uid: created.scene_uid, view_id: created.view_uid }
-    }, [getActiveSceneInfo, newScene])
+    // when none is active. Same resolver the plugins that load something of
+    // their own use -- see hooks/useEnsureActiveScene.ts.
+    const ensureActiveScene = useMemo(
+        () => makeEnsureActiveScene(getActiveSceneInfo, newScene),
+        [getActiveSceneInfo, newScene],
+    )
 
     const setSceneBgColor = useCallback(async (colorName: 'white' | 'black'): Promise<void> => {
         if (!cm) return
@@ -317,210 +280,4 @@ export function useSceneCommands({
             )
         },
     )
-
-    useRegisterCommand(
-        CmdId.UiGetPdbDialog,
-        () => {
-            if (!cm) return
-            ;(async () => {
-                const inputs = await showGetPdbDialog()
-                if (!inputs) return
-
-                // Resolve the target scene after the dialog is confirmed (so a
-                // cancel never leaves a stray new tab), creating a new scene +
-                // view when none is active.
-                const info = await ensureActiveScene()
-                if (!info) return
-
-                // Persist the accepted PDB ID to the dropdown history (LRU,
-                // dedup, capped) so future invocations can quickly recall it.
-                pushPdbIdHistory(inputs.pdbid)
-
-                const tasks: Array<() => Promise<Result<object>>> = []
-
-                // Coord task: same flow as Open File... + pre-resolved readerName.
-                if (inputs.coord) {
-                    const { url, readerName, ext } = pickCoordUrl(inputs.pdbid, inputs.coord.serverType)
-                    const virtualFilename = `${inputs.pdbid}.${ext}`
-                    // Pass readerName explicitly so the renderer-list lookup matches the
-                    // load reader. Skipping it re-introduces the .cif ambiguity
-                    // (mmcifmap wins by JSON order).
-                    const { types: rendererTypes, objType } = await cm.getCompatibleRendererNames(virtualFilename, readerName)
-                    if (!rendererTypes || rendererTypes.length === 0) {
-                        console.warn(`Get PDB: no compatible renderer for ${virtualFilename}`)
-                        await showErrorAlert({
-                            title: 'Get PDB failed',
-                            message: `Could not find a compatible reader for the requested PDB:\n${virtualFilename}\n\n` +
-                                'The selected server type may not provide this entry, or the format is unsupported.',
-                        })
-                    } else {
-                        const presetTypes = await fetchPresetTypes(cm, info.scene_uid, objType)
-                        const options = await showFileOpenOptionDialog({
-                            filePath: virtualFilename,
-                            sceneId: info.scene_uid,
-                            rendererTypes,
-                            presetTypes,
-                            objType,
-                            readerName,
-                        })
-                        if (options !== null) {
-                            tasks.push(() => streamWithProgress(
-                                cm, streamProgress,
-                                `Downloading ${inputs.pdbid}…`,
-                                (reqId) => cm.invokeService('streamLoadFromUrl', {
-                                    reqId, url, readerName,
-                                    objectName: inputs.pdbid,
-                                    sceneId: info.scene_uid,
-                                    options,
-                                }),
-                            ))
-                        }
-                    }
-                }
-
-                // 2Fo-Fc / Fo-Fc tasks: skip FileOpenOptionDialog, use preset
-                // contour color/sigma in the worker (UXP openMapImpl).
-                const buildMapTask = (server: MapServerType, mapType: '2fofc' | 'fofc') => {
-                    const { url, readerName, gzip } = pickMapUrl(inputs.pdbid, server, mapType)
-                    const objectName = `${inputs.pdbid}_${mapType}`
-                    return () => streamWithProgress(
-                        cm, streamProgress,
-                        `Downloading ${objectName}…`,
-                        (reqId) => cm.invokeService('streamLoadDensityMap', {
-                            reqId, url, readerName, gzip, mapType,
-                            objectName,
-                            sceneId: info.scene_uid,
-                            viewId: info.view_id,
-                        }),
-                    )
-                }
-                if (inputs.map2fofc) tasks.push(buildMapTask(inputs.map2fofc.serverType, '2fofc'))
-                if (inputs.mapFofc)  tasks.push(buildMapTask(inputs.mapFofc.serverType,  'fofc'))
-
-                // Run sequentially. Stop the chain on user cancel or on any
-                // failure. Failures arrive as a Result now (never a rejection):
-                // the try/catch below is for genuine bugs only.
-                for (const task of tasks) {
-                    try {
-                        const result = await task()
-                        if (result.ok) continue
-                        if (result.code === 'canceled') break
-                        console.error('Get PDB chain item failed:', result.error)
-                        await showErrorAlert({
-                            title: 'Get PDB failed',
-                            message: `A download or load step failed:\n\n${result.error}`,
-                        })
-                        break
-                    } catch (e) {
-                        const msg = e instanceof Error ? e.message : String(e)
-                        console.error('Get PDB chain item threw:', e)
-                        await showErrorAlert({
-                            title: 'Get PDB failed',
-                            message: `A download or load step failed:\n\n${msg}`,
-                        })
-                        break
-                    }
-                }
-            })().catch(async (e: unknown) => {
-                const msg = e instanceof Error ? e.message : String(e)
-                console.error('UiGetPdbDialog handler failed:', e)
-                await showErrorAlert({
-                    title: 'Get PDB failed',
-                    message: msg,
-                })
-            })
-        },
-    )
-}
-
-// ---------------------------------------------------------------------------
-// Helpers (exported for testability)
-// ---------------------------------------------------------------------------
-
-interface CoordUrlSpec {
-    url: string;
-    readerName: string;
-    ext: string;
-}
-
-export function pickCoordUrl(pdbid: string, server: CoordServerType): CoordUrlSpec {
-    switch (server) {
-        case 'RCSB_CIF':
-            return {
-                url: `https://files.rcsb.org/download/${pdbid}.cif`,
-                readerName: 'mmcif',
-                ext: 'cif',
-            }
-        case 'RCSB_PDB':
-            return {
-                url: `https://files.rcsb.org/download/${pdbid}.pdb`,
-                readerName: 'pdb',
-                ext: 'pdb',
-            }
-    }
-}
-
-interface MapUrlSpec {
-    url: string;
-    readerName: 'mmcifmap' | 'mtzmap';
-    gzip: boolean;
-}
-
-export function pickMapUrl(
-    pdbid: string,
-    server: MapServerType,
-    mapType: '2fofc' | 'fofc',
-): MapUrlSpec {
-    if (server === 'EBI_MTZ') {
-        return {
-            url: `https://www.ebi.ac.uk/pdbe/coordinates/files/${pdbid}_map.mtz`,
-            readerName: 'mtzmap',
-            gzip: false,
-        }
-    }
-    // RCSB_CIF: validation_reports cif.gz. mid = middle two chars of pdbid.
-    const mid = pdbid.substring(1, 3)
-    const suffix = mapType === '2fofc' ? '2fo-fc' : 'fo-fc'
-    return {
-        url: `https://files.rcsb.org/pub/pdb/validation_reports/${mid}/${pdbid}/${pdbid}_validation_${suffix}_map_coef.cif.gz`,
-        readerName: 'mmcifmap',
-        gzip: true,
-    }
-}
-
-function makeReqId(): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return crypto.randomUUID()
-    }
-    return `getpdb-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
-
-/**
- * Show the streaming progress dialog, subscribe to progress events, invoke
- * the worker service, and tear everything down on the way out. Used by
- * both the coord and density-map paths in the Get PDB chain.
- */
-async function streamWithProgress(
-    cm: AsyncCueMol,
-    streamProgress: StreamProgressApi,
-    title: string,
-    invoke: (reqId: string) => Promise<Result<object>>,
-): Promise<Result<object>> {
-    const reqId = makeReqId()
-    streamProgress.show({
-        title,
-        onCancel: () => {
-            cm.invokeService('cancelStreamLoad', { reqId })
-                .catch((e: unknown) => console.warn('cancelStreamLoad invoke failed:', e))
-        },
-    })
-    const unsub = cm.subscribeStreamProgress((id, bytes) => {
-        if (id === reqId) streamProgress.update(bytes)
-    })
-    try {
-        return await invoke(reqId)
-    } finally {
-        unsub()
-        streamProgress.hide()
-    }
 }

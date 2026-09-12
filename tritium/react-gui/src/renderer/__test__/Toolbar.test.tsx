@@ -17,7 +17,9 @@ import { mountTree } from '@renderer/__test__/helpers/testHarness'
 // Both Toolbar and UndoRedoSplitButton import this same module.
 const dispatch = vi.fn(() => Promise.resolve())
 vi.mock('@renderer/commands/CommandRegistry', () => ({
-  useCommands: () => ({ dispatch, register: vi.fn(), has: vi.fn() }),
+  // Toolbar dispatches by string id (a button may name a plugin command), so
+  // dispatchAny is the one it calls; UndoRedoSplitButton still uses dispatch.
+  useCommands: () => ({ dispatch, dispatchAny: dispatch, register: vi.fn(), has: vi.fn() }),
 }))
 
 // Toolbar reads undo/redo state and the active scene from their providers.
@@ -28,6 +30,14 @@ const toolbarState = vi.hoisted(() => ({
 vi.mock('@renderer/state/undoRedo', () => ({ useUndoRedo: () => toolbarState.undoRedo }))
 vi.mock('@renderer/state/workspace', () => ({
   useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: toolbarState.hasScene }),
+}))
+
+// The plugin registry: empty unless a test contributes a button.
+const pluginState = vi.hoisted(() => ({ toolbar: [] as unknown[] }))
+vi.mock('@renderer/plugin-host', () => ({
+  usePluginContributions: () => ({
+    menus: [], toolbar: pluginState.toolbar, views: [], bottomTabs: [],
+  }),
 }))
 
 import { Toolbar } from '@renderer/shell/Toolbar'
@@ -71,6 +81,7 @@ describe('Toolbar', () => {
 
   beforeEach(() => {
     dispatch.mockClear()
+    pluginState.toolbar = []
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   })
   afterEach(() => {
@@ -86,13 +97,34 @@ describe('Toolbar', () => {
       ['Open Scene', CmdId.UiOpenSceneDialog],
       ['Reload Scene', CmdId.SceneReload],
       ['Save Scene', CmdId.FileSave],
-      ['Get PDB', CmdId.UiGetPdbDialog],
     ]
     for (const [text, cmd] of cases) {
       dispatch.mockClear()
       clickButton(t.container, text)
       expect(dispatch).toHaveBeenCalledWith(cmd)
     }
+    t.unmount()
+  })
+
+  it('draws a contributed button after its anchor and dispatches its plugin command', () => {
+    // Get PDB is a plugin button now; this pins the lane it arrives through.
+    pluginState.toolbar = [
+      {
+        after: 'save-scene',
+        items: [
+          { id: 'demo', icon: 'toolbar.getPdb', text: 'Demo', command: 'plugin.demo.run' },
+        ],
+      },
+    ]
+    const t = mountToolbar(makeUndoRedo(), true)
+
+    const labels = Array.from(t.container.querySelectorAll('button')).map((b) =>
+      b.textContent?.trim(),
+    )
+    expect(labels.indexOf('Demo')).toBe(labels.indexOf('Save Scene') + 1)
+
+    clickButton(t.container, 'Demo')
+    expect(dispatch).toHaveBeenCalledWith('plugin.demo.run')
     t.unmount()
   })
 
@@ -150,7 +182,7 @@ describe('Toolbar', () => {
       expect(findButton(t.container, text)?.disabled).toBe(true)
     }
     // Scene-independent buttons stay enabled.
-    for (const text of ['New Tab', 'Open File', 'Open Scene', 'Get PDB']) {
+    for (const text of ['New Tab', 'Open File', 'Open Scene']) {
       expect(findButton(t.container, text)?.disabled).toBe(false)
     }
     t.unmount()

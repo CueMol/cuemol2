@@ -9,21 +9,32 @@
  * The bottom section contains a gear icon that opens the Settings tab
  * in the content area.
  *
+ * Plugins contribute views of their own; those buttons follow the built-in
+ * ones in registration order.
+ *
  * @module ActivityBar
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Tooltip } from "@blueprintjs/core";
 import { AppIcon } from "@renderer/h3-kit/primitives";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
+import { usePluginContributions } from "@renderer/plugin-host";
+import type { ResolvedPluginView } from "@renderer/plugin-host";
 import { useWorkspaceDispatch, useWorkspaceTabs } from "@renderer/state/workspace";
 
 // ------------------------------------------------------------
 // Types
 // ------------------------------------------------------------
 
-/** Identifiers for the sidebar views toggled by the activity bar. */
-export type ActivityView = "explorer" | "selection" | "crystal" | "catalog";
+/**
+ * Identifier of a sidebar view.
+ *
+ * A plain string rather than a union of the built-ins: a plugin names its own
+ * view, and the id has to survive a round trip through the persisted layout
+ * (`LayoutState.viewSizes`) of a profile where that plugin is absent.
+ */
+export type ActivityView = string;
 
 interface ActivityItemDef {
   id: ActivityView;
@@ -31,25 +42,25 @@ interface ActivityItemDef {
   label: string;
 }
 
-/**
- * Build the ordered list of activity-bar buttons rendered top-to-bottom.
- *
- * @param devUi - Whether developer-only views are part of this build. The
- *   Component Catalog is a design-review showcase, so it is present in
- *   developer builds only; see `__DEV_UI__` in electron.vite.config.ts.
- * @returns The buttons in top-to-bottom order.
- */
-export const buildActivityItems = (devUi: boolean): ActivityItemDef[] => [
+/** The views the application itself owns, in top-to-bottom order. */
+export const BUILTIN_ACTIVITY_ITEMS: readonly ActivityItemDef[] = [
   { id: "explorer", icon: "activity.explorer", label: "Explorer" },
   { id: "selection", icon: "activity.selection", label: "Selection" },
   { id: "crystal", icon: "activity.crystal", label: "Crystal" },
-  ...(devUi
-    ? [{ id: "catalog", icon: "activity.catalog", label: "Component Catalog" } as ActivityItemDef]
-    : []),
 ];
 
-/** Ordered list of activity-bar buttons rendered top-to-bottom. */
-const ITEMS: ActivityItemDef[] = buildActivityItems(__DEV_UI__);
+/**
+ * Build the ordered list of activity-bar buttons rendered top-to-bottom.
+ *
+ * @param views - the enabled plugins' view contributions.
+ * @returns The buttons in top-to-bottom order, built-ins first.
+ */
+export const buildActivityItems = (
+  views: readonly ResolvedPluginView[],
+): ActivityItemDef[] => [
+  ...BUILTIN_ACTIVITY_ITEMS,
+  ...views.map((view) => ({ id: view.id, icon: view.icon, label: view.title })),
+];
 
 // ------------------------------------------------------------
 // Component
@@ -70,10 +81,12 @@ const ActivityBarComponent: React.FC<ActivityBarProps> = ({
   // while it is in front.
   const { openSettingsTab } = useWorkspaceDispatch();
   const settingsActive = useWorkspaceTabs().activeTab?.type === "settings";
+  const { views } = usePluginContributions();
+  const items = useMemo(() => buildActivityItems(views), [views]);
   return (
     <div className="activity-bar">
       <div className="activity-bar-top">
-        {ITEMS.map((item) => (
+        {items.map((item) => (
           <Tooltip key={item.id} content={item.label} placement="right" compact>
             <div
               className={`activity-bar-item ${activeView === item.id ? "active" : ""}`}

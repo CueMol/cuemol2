@@ -163,6 +163,53 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit �
 
 ---
 
+## Built-in plugins (`react-gui/src/plugins/`)
+
+Some features are packaged as **built-in plugins**: one directory each, declaring what they
+contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
+this way to keep the feature in one directory, not to make it removable), `catalog` (the
+component gallery) and `agent` (the AI chat panel, OpenAI or Anthropic through the Vercel AI
+SDK) -- the last two ship in every build but are `defaultEnabled: false`, so they appear only
+once someone switches them on in Settings > Plugins.
+
+Full spec, API reference and a how-to-write walkthrough:
+[`docs/architecture/tritium_plugin/`](../docs/architecture/tritium_plugin/_index.md).
+The rules that bite while editing core code:
+
+- **Core must not import a plugin's internals.** ESLint (`NO_PLUGIN_INTERNALS`) rejects
+  `@plugins/*/**` from `src/renderer/**`; only `plugin-host/PluginProvider.tsx` imports the
+  `@plugins/index` registry. A plugin reaches core through `@renderer/plugin-host/api`.
+- **The typed maps stay closed.** `CmdId` / `CommandMap` / `ServiceMap` are for built-ins only.
+  A plugin uses the string lane instead: `registerAny` / `dispatchAny` for commands, and worker
+  services registered under `plugin.<id>.<name>` (the prefix is applied by the plugin glob in
+  `worker/server/services/index.ts`, so `calls/index.test.ts` still checks built-ins one-for-one).
+- **A contributed menu row carries its command in the channel** (`menu:plugin:<commandId>`),
+  because main builds the native menu and cannot see the renderer's plugin registry. Both menu
+  surfaces build from `buildAppMenu()` in `shared/pluginMenu.ts`.
+- **`definePlugin(...)` takes a pure annotation** at the call site. It only matters for a
+  `devOnly` plugin (nothing declares one today), which without it is not tree-shaken out of a
+  release build even though the `__DEV_UI__` branch folds away.
+- **Switchability is a manifest decision**: `alwaysEnabled: true` for a feature nobody would
+  want gone (no Settings row, stored choices ignored), `defaultEnabled: false` for something
+  the user opts into, neither for the ordinary default-on case. `UiState.pluginEnabled` stores
+  only explicit choices, so an untouched plugin follows its own default.
+- **A plugin also gets its own preferences, settings rows, push channel and secret**, all on
+  the same string-id lane: `usePluginPrefs(id)` over `UiState.pluginPrefs`,
+  `contributes.settings` (drawn by `SettingsPane` from the registry, like the plugin
+  switches), `definePluginChannel` (wire prefix `plugin-channel.`, deliberately NOT the
+  service prefix -- a service reply lands on the same `onmessage`), and
+  `definePluginSecret` over the `SECRET_*` channels into `safeStorage`.
+- **Do not add anything to `plugin-host/api.ts` that reaches `@plugins/index`.** The registry
+  imports every plugin and every plugin imports the barrel, so such an export closes a cycle
+  and leaves whichever module the bundler evaluated first holding undefined imports. Reading
+  the registry goes through `plugin-host/pluginContext.ts`, which is split out for that reason.
+
+When adding a contribution point to the shell, extend the manifest type in
+`renderer/plugin-host/types.ts` and resolve it in `pluginSelect.ts`; do not special-case a
+plugin id anywhere in core.
+
+---
+
 ## Common service patterns
 
 ### Service results: return `Result`, never throw across the boundary
@@ -601,7 +648,7 @@ Prefer the typed helpers (`invokeService`, `invokeMethodTyped`, `invokeRpc`) —
 | Method | Maps to | Awaits | Pending count |
 |--------|---------|--------|---------------|
 | `invokeService<K>(name, args)` | `ServiceMap[K]` | Yes | Yes |
-| `invokeService<K>(name, args, { quiet: true })` | `ServiceMap[K]` | Yes | **No** — pointer-rate streams (viewport hover) only |
+| `invokeService<K>(name, args, { quiet: true })` | `ServiceMap[K]` | Yes | **No** — pointer-rate streams (viewport hover), or a long call that reports its own progress (`plugin.agent.runTurn`, a turn of minutes) |
 | `invokeMethodTyped<K>(name, ...args)` | `MethodMap[K]` | Yes | Yes |
 | `invokeRpc<K>(name, ...args)` | `RpcMap[K]` (used by `ObjProxy`) | Yes | Yes |
 | `invokeWorker(method, ...args)` | none — raw transport | Yes | Yes — `isBusy()` / `subscribeBusy()` |

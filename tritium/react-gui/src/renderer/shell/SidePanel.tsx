@@ -17,10 +17,11 @@
  * | Explorer   | ScenePane, ColorPane, ViewPane              |
  * | Selection  | MolStructPane, SelectionPane                |
  * | Crystal    | SymmetryPane, DensityMapPane                |
- * | Catalog    | CatalogPane1, CatalogPane2, CatalogPane3    |
  *
- * New views and panes can be added by editing `VIEW_PANES` without
- * touching the layout / persistence logic.
+ * New built-in views and panes can be added by editing `VIEW_PANES` without
+ * touching the layout / persistence logic. A plugin declares its view in its
+ * manifest instead and reaches the same code path through
+ * `usePluginContributions()`; the Component Catalog is one.
  *
  * ## Terminology
  *
@@ -52,6 +53,8 @@ import { AppIcon } from "@renderer/h3-kit/primitives";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 import type { ActivityView } from "./ActivityBar";
+import { usePluginContributions } from "@renderer/plugin-host";
+import type { ResolvedPluginView } from "@renderer/plugin-host";
 import { useLayout, useLayoutDispatch } from "@renderer/state/layout";
 
 // Each pane comes from its own feature; the barrel that used to gather them
@@ -63,9 +66,6 @@ import { MolStructPane } from "@renderer/features/selection/MolStructPane";
 import { SelectionPane } from "@renderer/features/selection/SelectionPane";
 import { SymmetryPane } from "@renderer/features/density/SymmetryPane";
 import { DensityMapPane } from "@renderer/features/density/DensityMapPane";
-import { CatalogPane1 } from "./CatalogPane1";
-import { CatalogPane2 } from "./CatalogPane2";
-import { CatalogPane3 } from "./CatalogPane3";
 
 /* --- Re-export types for external consumers --- */
 export type { SceneTreeNode } from "@renderer/worker/shared/sceneTreeTypes";
@@ -77,18 +77,18 @@ const HEADER_HEIGHT = 28;
 
 /* --- View title / icon mapping --- */
 
-const VIEW_TITLES: Record<ActivityView, string> = {
+/* Built-in views only; a plugin view's title and icon come from its manifest. */
+
+const VIEW_TITLES: Record<string, string> = {
   explorer: "Explorer",
   selection: "Selection",
   crystal: "Crystal",
-  catalog: "Component Catalog",
 };
 
-const VIEW_ICONS: Record<ActivityView, AppIconKey> = {
+const VIEW_ICONS: Record<string, AppIconKey> = {
   explorer: "activity.explorer",
   selection: "activity.selection",
   crystal: "activity.crystal",
-  catalog: "activity.catalog",
 };
 
 /* --- Pane configuration --- */
@@ -163,34 +163,17 @@ const VIEW_PANES: Record<string, PaneConfig[]> = {
       ),
     },
   ],
-  /* Developer-only view: the whole entry (and, by tree-shaking, the
-   * CatalogPane modules) is dropped from a release build. `__DEV_UI__` is
-   * referenced inline rather than through a shared const so the bundler can
-   * fold the branch away -- see electron.vite.config.ts. */
-  ...(__DEV_UI__ ? { catalog: [
-    {
-      id: "catalog1",
-      defaultSize: 280,
-      render: (collapsed, onToggle) => (
-        <CatalogPane1 collapsed={collapsed} onToggleCollapse={onToggle} />
-      ),
-    },
-    {
-      id: "catalog2",
-      defaultSize: 280,
-      render: (collapsed, onToggle) => (
-        <CatalogPane2 collapsed={collapsed} onToggleCollapse={onToggle} />
-      ),
-    },
-    {
-      id: "catalog3",
-      defaultSize: 280,
-      render: (collapsed, onToggle) => (
-        <CatalogPane3 collapsed={collapsed} onToggleCollapse={onToggle} />
-      ),
-    },
-  ] } : {}),
 };
+
+/** A plugin view's panes, in the shape the layout code already understands. */
+const pluginPaneConfigs = (view: ResolvedPluginView): PaneConfig[] =>
+  view.panes.map((pane) => ({
+    id: pane.id,
+    defaultSize: pane.defaultSize,
+    render: (collapsed, onToggle) => (
+      <pane.Component collapsed={collapsed} onToggleCollapse={onToggle} />
+    ),
+  }));
 
 /* --- Props --- */
 
@@ -209,7 +192,19 @@ interface SidePanelProps {
 const SidePanelComponent: React.FC<SidePanelProps> = ({ activeView }) => {
   const { viewCollapsed, savedSizes } = useLayout();
   const { setViewSizes, setViewCollapsed } = useLayoutDispatch();
+  const { views: pluginViews } = usePluginContributions();
   const viewSizes = savedSizes.viewSizes;
+
+  /** The panes of `view`, built-in or contributed. */
+  const getPanes = useCallback(
+    (view: string): PaneConfig[] | undefined => {
+      const builtin = VIEW_PANES[view];
+      if (builtin) return builtin;
+      const contributed = pluginViews.find((v) => v.id === view);
+      return contributed ? pluginPaneConfigs(contributed) : undefined;
+    },
+    [pluginViews],
+  );
 
   /*
    * Open-size refs, keyed by `${view}:${paneId}`. Stores the last
@@ -242,7 +237,7 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({ activeView }) => {
 
   const renderView = useCallback(
     (view: string) => {
-      const panes = VIEW_PANES[view];
+      const panes = getPanes(view);
       if (!panes || panes.length === 0) return null;
 
       const collapsed = viewCollapsed[view] ?? {};
@@ -298,16 +293,24 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({ activeView }) => {
         </Allotment>
       );
     },
-    [viewCollapsed, getOpenSize, setViewSizes, setViewCollapsed],
+    [viewCollapsed, getOpenSize, getPanes, setViewSizes, setViewCollapsed],
   );
 
   /* --- Render --- */
 
+  // Title and icon come from the manifest for a contributed view. The last
+  // fallbacks cover a view id left over in the persisted layout after its
+  // plugin went away; MainLayout switches off it on the next render.
+  const contributedView = pluginViews.find((v) => v.id === activeView);
+  const viewTitle = VIEW_TITLES[activeView] ?? contributedView?.title ?? activeView;
+  const viewIcon: AppIconKey =
+    VIEW_ICONS[activeView] ?? contributedView?.icon ?? "activity.explorer";
+
   return (
     <div className="side-panel">
       <div className="side-panel-header">
-        <AppIcon name={VIEW_ICONS[activeView]} size="md" aria-hidden />
-        {VIEW_TITLES[activeView]}
+        <AppIcon name={viewIcon} size="md" aria-hidden />
+        {viewTitle}
       </div>
       <div className="side-panel-content">
         {renderView(activeView)}

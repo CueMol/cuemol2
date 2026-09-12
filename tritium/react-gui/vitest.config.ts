@@ -18,6 +18,7 @@ export default defineConfig({
       "@renderer": resolve(__dirname, "src/renderer"),
       "@shared": resolve(__dirname, "src/shared"),
       "@main": resolve(__dirname, "src/main"),
+      "@plugins": resolve(__dirname, "src/plugins"),
     },
   },
   test: {

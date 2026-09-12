@@ -18,6 +18,7 @@ import { type InvokeOptions,
     type RenderProgressListener,
     type AnimProgressListener,
     type ApbsProgressListener,
+    type PluginChannelListener,
 } from './WorkerTransport';
 import { EventSlots } from './EventSlots';
 import { ObjectFactory } from './ObjectFactory';
@@ -96,6 +97,16 @@ export class AsyncCueMol {
         return this._transport.subscribeApbsProgress(cb);
     }
 
+    /**
+     * Subscribe to a plugin push channel (`plugin-channel.<id>.<name>`).
+     *
+     * Prefer the plugin's own `definePluginChannel` client, which types the
+     * payload against that plugin's contract.
+     */
+    subscribePluginChannel(channel: string, cb: PluginChannelListener): () => void {
+        return this._transport.subscribePluginChannel(channel, cb);
+    }
+
     /** Low-level raw worker call. Prefer the typed helpers below. */
     invokeWorker(method: string, ...args: any[]): Promise<any[]> {
         return this._transport.invokeWorker(method, ...args);
@@ -118,6 +129,21 @@ export class AsyncCueMol {
         opts?: InvokeOptions,
     ): Promise<ServiceResult<K>> {
         return this._transport.invokeService(name, args, opts);
+    }
+
+    /**
+     * Call a plugin-contributed worker service.
+     *
+     * Prefer the plugin's own `definePluginServices` client, which types the
+     * args and result against that plugin's call contract.
+     */
+    invokePluginService(
+        pluginId: string,
+        name: string,
+        args: unknown,
+        opts?: InvokeOptions,
+    ): Promise<unknown> {
+        return this._transport.invokePluginService(pluginId, name, args, opts);
     }
 
     /** Call a worker variadic method (`MethodMap` entry). */

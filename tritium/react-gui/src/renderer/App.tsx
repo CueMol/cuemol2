@@ -10,6 +10,7 @@
  */
 
 import React from 'react'
+import { PluginRoots } from '@renderer/plugin-host'
 import { AppBoot, AppCommands, AppShell, RenderWindowBridge } from './shell'
 
 const App: React.FC = () => (
@@ -19,6 +20,9 @@ const App: React.FC = () => (
         slices they read re-render them alone, not the chrome. */}
     <AppBoot />
     <AppCommands />
+    {/* The enabled plugins' roots: their command handlers and dialogs, which
+        go away with the plugin when it is switched off. */}
+    <PluginRoots />
     <RenderWindowBridge />
     <AppShell />
   </>

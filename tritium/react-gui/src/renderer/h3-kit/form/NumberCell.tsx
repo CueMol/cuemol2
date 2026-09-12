@@ -15,6 +15,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { isImeKey } from './imeGuard';
 
 export interface NumberCellProps {
     /** Display string; may be empty to show a blank cell. */
@@ -55,7 +56,7 @@ export const NumberCell: React.FC<NumberCellProps> = ({
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => {
-                if (e.key === 'Enter') commit();
+                if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) commit();
             }}
         />
     );

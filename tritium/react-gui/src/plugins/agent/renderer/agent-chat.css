@@ -1,0 +1,197 @@
+/* ═══════════════════════════════════════════════════════════
+   AI Agent panel
+   Imported from the plugin entry, so disabling the plugin drops
+   the styles with it. Sizes and colours come from the tokens in
+   styles/_variables.css; nothing here re-chooses a control size.
+   ═══════════════════════════════════════════════════════════ */
+
+.agent-pane-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Transcript --- */
+
+.agent-transcript {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Every row keeps its own height. A flex item shrinks by default, so once a
+   conversation is longer than the pane the rows compress to fit instead of
+   overflowing -- the tool rows collapse to stripes and their disclosure
+   caret stops being clickable. The scrollbar is what should absorb the
+   length. */
+.agent-transcript > * {
+  flex-shrink: 0;
+}
+
+.agent-empty {
+  margin: auto;
+  max-width: 22em;
+  text-align: center;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.agent-empty-text {
+  margin: 0;
+  font-size: var(--fs-lg);
+  line-height: var(--lh-normal);
+}
+
+.agent-msg {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--fs-lg);
+  line-height: var(--lh-normal);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.agent-msg-user {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  align-self: flex-end;
+  max-width: 90%;
+}
+
+.agent-msg-assistant {
+  color: var(--text-primary);
+}
+
+.agent-msg-error {
+  color: var(--text-error);
+  background: var(--bg-input);
+}
+
+.agent-error-action {
+  margin-top: var(--space-2);
+}
+
+.agent-msg-notice {
+  color: var(--text-muted);
+  font-size: var(--fs-sm2);
+}
+
+/* The streaming cursor: a block that blinks while text is still arriving. */
+.agent-caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: agent-caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes agent-caret-blink {
+  to { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-caret { animation: none; }
+}
+
+/* --- Tool rows --- */
+
+.agent-tool {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* The caret and the tool name sit on one row that must stay tappable. */
+.agent-tool-head {
+  min-height: var(--ctrl-h-sm);
+}
+
+.agent-tool-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--fs-sm2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.agent-tool-head:hover {
+  background: var(--bg-hover);
+}
+
+.agent-tool-name {
+  font-family: var(--font-mono);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-tool-status {
+  color: var(--text-muted);
+}
+
+.agent-tool-error .agent-tool-status {
+  color: var(--text-error);
+}
+
+.agent-tool-body {
+  padding: 0 var(--space-3) var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+.agent-tool-label {
+  color: var(--text-muted);
+  font-size: var(--fs-sm2);
+  margin-top: var(--space-2);
+}
+
+.agent-tool-pre {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm2);
+  line-height: var(--lh-normal);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+/* --- Composer --- */
+
+.agent-composer {
+  border-top: 1px solid var(--border);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.agent-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.agent-composer-hint {
+  color: var(--text-muted);
+  font-size: var(--fs-sm2);
+}

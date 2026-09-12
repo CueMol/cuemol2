@@ -45,6 +45,25 @@ function setupHarness() {
   return { h, captured }
 }
 
+describe('useMenuDispatch -- plugin channels', () => {
+  it('decodes the command id out of a plugin channel and dispatches it', async () => {
+    // Main cannot resolve a plugin command, so the id travels inside the
+    // channel; this is the renderer half of that contract.
+    const seen: unknown[] = []
+    const h = makeRenderHook(() => {
+      const cmds = useCommands()
+      const dispatchMenuChannel = useMenuDispatch().dispatchMenuChannel
+      return { cmds, dispatchMenuChannel }
+    }, Wrapper)
+    h.result.cmds.registerAny('plugin.demo.run', (args) => { seen.push(args ?? null) })
+
+    h.result.dispatchMenuChannel('menu:plugin:plugin.demo.run')
+    await Promise.resolve()
+    expect(seen).toEqual([null])
+    h.unmount()
+  })
+})
+
 describe('useMenuDispatch -- channel to CmdId mapping', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
   let errSpy: ReturnType<typeof vi.spyOn>
@@ -85,7 +104,6 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
     ['menu:bg-white',           CmdId.SceneBgWhite,        undefined],
     ['menu:bg-black',           CmdId.SceneBgBlack,        undefined],
     ['menu:about',              CmdId.UiAboutDialog,       undefined],
-    [IPC.MENU_GET_PDB,          CmdId.UiGetPdbDialog,      undefined],
     ['menu:change-chain-id',    CmdId.UiChangeChainIdDialog, undefined],
     ['menu:delete-mol-atoms',   CmdId.UiDeleteMolDialog,    undefined],
     ['menu:change-resid-num',   CmdId.UiChangeResidueIndexDialog, undefined],

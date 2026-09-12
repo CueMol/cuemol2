@@ -46,10 +46,10 @@ import {
 } from '@renderer/viewInputConfig'
 import {
   CATEGORY_TREE,
-  ALL_LEAF_IDS,
   SETTINGS,
   DEFAULTS,
-  CATEGORY_LABELS,
+  buildLabelMap,
+  leafIds,
   RENDER_BINARY_SETTING_KEYS,
   APBS_SETTING_KEYS,
   INPUT_DEVICE_SETTING_KEY,
@@ -57,6 +57,14 @@ import {
   VIEW_INPUT_PARAM_SETTING_KEYS,
   PICKING_PREF_SETTING_KEYS,
 } from '@renderer/features/settings/settings/settingsConfig'
+import {
+  buildCategoryTree,
+  pluginIdFromSettingKey,
+  pluginPrefFromSettingKey,
+  pluginPrefSettingDefs,
+  pluginSettingDefs,
+} from '@renderer/features/settings/settings/pluginSettings'
+import { usePluginContributions, usePlugins } from '@renderer/plugin-host'
 import { ConfigTreeNode } from '@renderer/features/settings/settings/ConfigTreeNode'
 import { SettingRow } from '@renderer/features/settings/settings/SettingRow'
 import { AtomLabelPreview } from '@renderer/features/settings/settings/AtomLabelPreview'
@@ -96,6 +104,28 @@ export const SettingsPane: React.FC = () => {
   // App settings colours are scene-independent; `sceneId` is left undefined
   // so the colour picker resolves against the global StyleManager scope.
   const { cm } = useCueMol()
+  // The Plugins branch: one switch per switchable plugin, plus a page per
+  // enabled plugin that contributes settings rows. Both are generated from
+  // the registry, which also owns the values behind them.
+  const { switchable: switchablePlugins, isEnabled, setEnabled, prefs, setPref } = usePlugins()
+  const { settings: pluginSettings } = usePluginContributions()
+  const allSettings = useMemo(
+    () => [
+      ...SETTINGS,
+      ...pluginSettingDefs(switchablePlugins),
+      ...pluginPrefSettingDefs(pluginSettings),
+    ],
+    [switchablePlugins, pluginSettings],
+  )
+  // Every other category always has rows; the Plugins one is filled in from
+  // the registry and dropped entirely when it would be empty, because a tree
+  // node that opens an empty page reads as a bug.
+  const categoryTree = useMemo(
+    () => buildCategoryTree(CATEGORY_TREE, switchablePlugins, pluginSettings),
+    [switchablePlugins, pluginSettings],
+  )
+  const allLeafIds = useMemo(() => leafIds(categoryTree), [categoryTree])
+  const categoryLabels = useMemo(() => buildLabelMap(categoryTree), [categoryTree])
 
   // Navigation state (selected category / filter / expanded groups) is kept in
   // an in-session store so it survives the pane's unmount on a tab switch.
@@ -159,6 +189,22 @@ export const SettingsPane: React.FC = () => {
         return
       }
 
+      // A plugin's own preferences are owned by the plugin registry too.
+      // Checked before the switch below: `plugin.` and `plugins.` are
+      // different prefixes, but only this order reads unambiguously.
+      const pref = pluginPrefFromSettingKey(key)
+      if (pref) {
+        setPref(pref.pluginId, pref.prefKey, value)
+        return
+      }
+
+      // Plugin switches are owned by the plugin registry, not by `values`.
+      const pluginId = pluginIdFromSettingKey(key)
+      if (pluginId) {
+        setEnabled(pluginId, Boolean(value))
+        return
+      }
+
       setValues((prev) => ({ ...prev, [key]: value }))
 
       // Sync theme toggle with the ThemeContext.
@@ -166,7 +212,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam, pickingPrefs],
+    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam, pickingPrefs, setEnabled, setPref],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -180,15 +226,15 @@ export const SettingsPane: React.FC = () => {
 
   /** Settings filtered by the search query. */
   const filtered = useMemo(() => {
-    if (!filter.trim()) return SETTINGS
+    if (!filter.trim()) return allSettings
     const q = filter.toLowerCase()
-    return SETTINGS.filter(
+    return allSettings.filter(
       (s) =>
         s.label.toLowerCase().includes(q) ||
         s.description.toLowerCase().includes(q) ||
         s.key.toLowerCase().includes(q),
     )
-  }, [filter])
+  }, [filter, allSettings])
 
   /** Per-category setting count (for tree badges). */
   const settingsCount = useMemo(() => {
@@ -201,8 +247,8 @@ export const SettingsPane: React.FC = () => {
 
   /** Leaf categories that have at least one visible setting. */
   const visibleLeaves = useMemo(
-    () => ALL_LEAF_IDS.filter((id) => filtered.some((s) => s.category === id)),
-    [filtered],
+    () => allLeafIds.filter((id) => filtered.some((s) => s.category === id)),
+    [filtered, allLeafIds],
   )
 
   /** When searching, show all matching categories. Otherwise only the selected one. */
@@ -251,7 +297,7 @@ export const SettingsPane: React.FC = () => {
           <span className="config-tree-header-title">Settings</span>
         </div>
         <div className="config-tree-scroll">
-          {CATEGORY_TREE.map((node) => (
+          {categoryTree.map((node) => (
             <ConfigTreeNode
               key={node.id}
               node={node}
@@ -303,7 +349,7 @@ export const SettingsPane: React.FC = () => {
               ref={(el) => { sectionRefs.current[catId] = el }}
             >
               <div className="config-category-header">
-                {CATEGORY_LABELS[catId] ?? catId}
+                {categoryLabels[catId] ?? catId}
               </div>
               {catId === 'display.atomLabels' && <AtomLabelPreview />}
               {filtered
@@ -318,7 +364,18 @@ export const SettingsPane: React.FC = () => {
                   if (s.key === 'atomLabel.font' && s.control.kind === 'select') {
                     def = { ...s, control: { ...s.control, options: fontOptions } }
                   }
-                  if (s.key === INPUT_DEVICE_SETTING_KEY) {
+                  const pref = pluginPrefFromSettingKey(s.key)
+                  const pluginId = pluginIdFromSettingKey(s.key)
+                  if (pref) {
+                    // A secret has no value to show: SettingRow reads its
+                    // status straight from main and draws that instead.
+                    value =
+                      s.control.kind === 'secret'
+                        ? ''
+                        : prefs[pref.pluginId]?.[pref.prefKey] ?? s.default ?? ''
+                  } else if (pluginId) {
+                    value = isEnabled(pluginId)
+                  } else if (s.key === INPUT_DEVICE_SETTING_KEY) {
                     value = INPUT_DEVICE_PREF_LABELS[inputDevicePreference]
                     // In auto mode, surface the currently-detected device.
                     if (inputDevicePreference === 'auto') {

@@ -13,7 +13,7 @@ import { Button, Tabs, Tab, InputGroup } from '@blueprintjs/core'
 import { DialogShell } from './DialogShell';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
-import { ColorField } from '@renderer/h3-kit/form'
+import { isImeKey, ColorField } from '@renderer/h3-kit/form'
 import { AppIcon } from '@renderer/h3-kit/primitives'
 import type { GetStyleSetContentsResult } from '@renderer/worker/server/services/style/styleSetEdit'
 
@@ -38,7 +38,9 @@ const SelValueField: React.FC<{
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => {
-                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) {
+                    (e.target as HTMLInputElement).blur()
+                }
             }}
         />
     )

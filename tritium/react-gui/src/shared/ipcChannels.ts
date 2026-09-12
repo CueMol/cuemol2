@@ -31,6 +31,15 @@ export const IPC = {
   UI_SAVE:        'ui:save',
   MENU_UPDATE_STATE: 'menu:update-state',
   MENU_SET_MODAL_BLOCKED: 'menu:set-modal-blocked',
+  // The renderer owns the plugin registry; main owns the native menu. This is
+  // how the menu rows of the currently enabled plugins reach it.
+  MENU_SET_PLUGIN_CONTRIBUTIONS: 'menu:set-plugin-contributions',
+
+  // Credentials, kept in the OS keychain rather than the preferences file.
+  // Namespaced so the owner (a plugin id) addresses only its own entries.
+  SECRET_GET:    'secret:get',
+  SECRET_SET:    'secret:set',
+  SECRET_STATUS: 'secret:status',
 
   // File > Open Recent (MRU) -- renderer <-> main
   RECENT_LOAD:  'recent:load',
@@ -53,7 +62,6 @@ export const IPC = {
   MENU_OPEN_FILE:  'menu:open-file',
   MENU_OPEN_TRAJ:  'menu:open-traj',
   MENU_OPEN_SCENE: 'menu:open-scene',
-  MENU_GET_PDB:    'menu:get-pdb',
   MENU_UNDO:      'menu:undo',
   MENU_REDO:      'menu:redo',
   MENU_VIEW_PERSPECTIVE:  'menu:view-perspective',

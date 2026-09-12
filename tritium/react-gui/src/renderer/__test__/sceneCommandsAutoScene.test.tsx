@@ -2,10 +2,10 @@
  * @file __test__/sceneCommandsAutoScene.test.tsx
  * @description Pins the "load with no active view creates a scene" behaviour of
  * useSceneCommands. With no tab open (or after every molview tab is closed)
- * getActiveSceneInfo() is undefined; File > Open and Get PDB must then create a
- * fresh scene + view (a new tab) and load into it, instead of silently doing
- * nothing. An existing active scene is used as-is, and an unsupported file /
- * cancelled dialog must NOT leave a stray new tab.
+ * getActiveSceneInfo() is undefined; File > Open must then create a fresh
+ * scene + view (a new tab) and load into it, instead of silently doing
+ * nothing. An existing active scene is used as-is, and an unsupported file
+ * must NOT leave a stray new tab.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -16,22 +16,14 @@ import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } from '@renderer/__test__/helpers/testHarness'
 
 const showFileOpenOptionDialog = vi.fn<(args: unknown) => Promise<unknown>>()
-const showGetPdbDialog = vi.fn<() => Promise<unknown>>()
 const showErrorAlert = vi.fn<(args: unknown) => Promise<void>>()
 
 vi.mock('@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialogProvider', () => ({
   useShowFileOpenOptionDialog: () => showFileOpenOptionDialog,
 }))
-vi.mock('@renderer/dialogs/GetPdbDialogProvider', () => ({
-  useShowGetPdbDialog: () => showGetPdbDialog,
-}))
 vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
 }))
-vi.mock('@renderer/dialogs/StreamProgressDialogProvider', () => ({
-  useStreamProgressDialog: () => ({ show: vi.fn(), hide: vi.fn(), update: vi.fn() }),
-}))
-vi.mock('@renderer/dialogs/pdbIdHistory', () => ({ pushHistory: vi.fn() }))
 vi.mock('@renderer/commands/addRecent', () => ({ addRecent: vi.fn() }))
 vi.mock('@renderer/dialogs/OpenMdTrajDialogProvider', () => ({
   useShowOpenMdTrajDialog: () => vi.fn(),
@@ -90,7 +82,6 @@ describe('useSceneCommands - auto-create scene on load', () => {
   beforeEach(() => {
     setupElectronAPI()
     showFileOpenOptionDialog.mockReset()
-    showGetPdbDialog.mockReset()
     showErrorAlert.mockReset()
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
@@ -158,20 +149,6 @@ describe('useSceneCommands - auto-create scene on load', () => {
     await drain()
 
     expect(cm.loadObject).not.toHaveBeenCalled()
-    h.unmount()
-  })
-
-  it('UiGetPdbDialog cancelled does not create a scene', async () => {
-    const cm = makeCm()
-    showGetPdbDialog.mockResolvedValue(null)
-    const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
-    const h = mountWith(cm, () => undefined, newScene)
-    await flushPromises()
-
-    await h.result.dispatch(CmdId.UiGetPdbDialog)
-    await drain()
-
-    expect(newScene).not.toHaveBeenCalled()
     h.unmount()
   })
 })
@@ -280,7 +257,6 @@ describe('useSceneCommands - renderer preset supply (ADR-0046)', () => {
   beforeEach(() => {
     setupElectronAPI()
     showFileOpenOptionDialog.mockReset()
-    showGetPdbDialog.mockReset()
     showErrorAlert.mockReset()
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
