@@ -106,8 +106,16 @@ transport が worker を破棄する) なので、**全ての await を try の�
 **`streamText` に素のモデル文字列を渡してはいけない** -- `'anthropic/claude-opus-5'` のような値は
 Vercel AI Gateway 経由にルーティングされる。必ず `createModel` で `LanguageModel` を作る。
 
-**reasoning effort は top-level の `reasoning`** に渡す。`providerOptions.openai.reasoningEffort` を
-書くと top-level が無視される (merge されない) ので、片方だけを使う。
+**reasoning effort は top-level の `reasoning`** に渡し、`providerOptions` 側には
+reasoning 関連を一切書かない。理由は両 provider で同じ「SDK は未設定のキーだけ埋める」:
+
+- OpenAI: `providerOptions.openai.reasoningEffort` を書くと top-level が無視される (merge されない)。
+- Anthropic: SDK が **モデルごとに**使える thinking 設定を選ぶ (adaptive + effort が使えるモデルは
+  それ、使えないモデルは `{ type: 'enabled', budgetTokens }`)。`thinking` を自分で埋めるとこの分岐が
+  丸ごと飛ぶ。実際、adaptive を決め打ちしていたため Claude Haiku 4.5 への全リクエストが
+  "adaptive thinking is not supported on this model" で落ちていた。
+
+`modelProvider.test.ts` がこの「書かない」契約を pin している (実リクエストを投げるまで見えないため)。
 
 **Anthropic の prompt cache** は送信直前に最後の message へ `cacheControl` を付けて取る
 (`withCacheBreakpoint`)。breakpoint はそこまでの prefix 全部 (tools -> instructions -> 履歴) を
@@ -346,6 +354,10 @@ Settings > Plugins > AI Agent に 4 行:
 - **turn 実行中の手動編集が agent の undo txn に吸収される** (§3.1)。
 - **provider 切り替え時に chain of thought は引き継がれない**: 別 provider の reasoning part は
   `sanitizeHistory` が落とす (渡したときの挙動が未文書のため)。text と tool 呼び出しの履歴は残る。
+- **Claude モデル間の切り替えで thinking block の署名が合わないと turn が落ちうる**。
+  以前は `thinking.blockBinding.prefixMismatchBehavior: 'drop_block'` で吸収していたが、
+  `thinking` を書くと SDK のモデル別解決が飛ぶので外した (§3.2)。`sanitizeHistory` が落とすのは
+  「別 **provider** の reasoning」までで、同じ Anthropic 内のモデル差までは見ていない。
 - **未検証**: OpenAI の `call_...` と Anthropic の `toolu_...` という tool call id が、
   会話の途中で provider を切り替えたときに相手側で受理されるか。
 - **`reasoningEffort` の意味は provider で異なる** (OpenAI: Responses の reasoning effort、

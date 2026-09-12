@@ -55,25 +55,22 @@ export type CreateModel = (spec: ModelSpec, apiKey: string) => LanguageModel
 /**
  * The provider-specific request options that do not change between turns.
  *
- * Reasoning effort is deliberately absent: it goes in `streamText`'s
- * top-level `reasoning`, which the SDK maps for whichever provider is in use.
- * Setting `providerOptions.openai.reasoningEffort` here would make the SDK
- * ignore that top-level value entirely rather than merge with it.
+ * Anything to do with reasoning is deliberately absent, for the same reason
+ * in both directions: the SDK fills these in from `streamText`'s top-level
+ * `reasoning`, and only when we have left them unset.
+ *
+ * For OpenAI, writing `reasoningEffort` here makes it ignore the top-level
+ * value rather than merge with it. For Anthropic it is worse than that --
+ * the SDK picks the thinking configuration the MODEL supports (adaptive plus
+ * an effort where there is one, a token budget where there is not), and
+ * setting `thinking` ourselves skips that choice entirely. Hardcoding
+ * adaptive is how every request to Claude Haiku 4.5 came back with
+ * "adaptive thinking is not supported on this model".
  */
 export function providerOptionsFor(spec: ModelSpec): ProviderOptions {
-  if (spec.provider === 'anthropic') {
-    return {
-      anthropic: {
-        thinking: {
-          type: 'adaptive',
-          // Thinking blocks are bound to the model that produced them.
-          // Dropping a mismatched one keeps a conversation alive across a
-          // change of Claude model; the alternative is a rejected turn.
-          blockBinding: { prefixMismatchBehavior: 'drop_block' },
-        },
-      },
-    }
-  }
+  // Nothing to add for Anthropic: the SDK derives the thinking configuration
+  // from the model and the requested reasoning level.
+  if (spec.provider === 'anthropic') return {}
   return {
     openai: {
       // The conversation is ours, replayed from the renderer each turn.
