@@ -22,6 +22,7 @@ import { registerFileDialogHandlers } from './handlers/fileDialogHandlers';
 import { registerFileSystemHandlers } from './handlers/fileSystem';
 import { registerMenuStateHandlers } from './handlers/menuState';
 import { registerRecentFilesHandlers } from './handlers/recentFiles';
+import { registerSecretHandlers } from './handlers/secrets';
 import { registerWindowHandlers } from './handlers/windowActions';
 
 export { handleInvoke } from './ipc/handleInvoke';
@@ -41,6 +42,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   registerAppStateHandlers();
   registerMenuStateHandlers();
   registerRecentFilesHandlers(mainWindow);
+  registerSecretHandlers();
   registerContextMenuHandlers(mainWindow);
   registerWindowHandlers(mainWindow);
 }

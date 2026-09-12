@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { clampMs, formatMs, parseTimeInput } from './timeMath';
 import type { TimeCore } from './types';
+import { isImeKey } from '../imeGuard';
 
 export interface UseTimeEditResult {
     /**
@@ -93,7 +94,7 @@ export function useTimeEdit(core: TimeCore, { isPressing }: UseTimeEditOptions):
 
     const onEditKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) {
                 e.preventDefault();
                 commitEdit(true);
             } else if (e.key === 'Escape') {

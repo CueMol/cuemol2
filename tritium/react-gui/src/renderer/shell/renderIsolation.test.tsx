@@ -61,9 +61,6 @@ vi.mock('@renderer/features/selection/MolStructPane', () => ({ MolStructPane: ()
 vi.mock('@renderer/features/selection/SelectionPane', () => ({ SelectionPane: () => null }))
 vi.mock('@renderer/features/density/SymmetryPane', () => ({ SymmetryPane: () => null }))
 vi.mock('@renderer/features/density/DensityMapPane', () => ({ DensityMapPane: () => null }))
-vi.mock('./CatalogPane1', () => ({ CatalogPane1: () => null }))
-vi.mock('./CatalogPane2', () => ({ CatalogPane2: () => null }))
-vi.mock('./CatalogPane3', () => ({ CatalogPane3: () => null }))
 
 import { StatusBar } from './StatusBar'
 import { SidePanel } from './SidePanel'

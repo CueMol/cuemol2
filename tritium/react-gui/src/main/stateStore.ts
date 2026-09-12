@@ -35,6 +35,12 @@ interface StoreSchema {
   layout: LayoutState
   ui: UiState
   recentFiles: RecentFileEntry[]
+  /**
+   * Credentials, encrypted with `safeStorage` and base64-encoded, keyed
+   * `<namespace>.<key>`. Ciphertext only: the plaintext never reaches this
+   * file, and an entry is unreadable on another machine or user account.
+   */
+  secrets?: Record<string, string>
 }
 
 // --- Defaults ---
@@ -164,6 +170,20 @@ export function loadUi(): UiState {
 export function saveUi(ui: Partial<UiState>): void {
   const current = getStore().get('ui')
   getStore().set('ui', { ...current, ...ui })
+}
+
+/** The stored ciphertext for `id`, or undefined when nothing is stored. */
+export function loadSecretEnc(id: string): string | undefined {
+  return getStore().get('secrets')?.[id]
+}
+
+/** Store (or, with `null`, delete) the ciphertext for `id`. */
+export function saveSecretEnc(id: string, enc: string | null): void {
+  const current = getStore().get('secrets') ?? {}
+  const next = { ...current }
+  if (enc === null) delete next[id]
+  else next[id] = enc
+  getStore().set('secrets', next)
 }
 
 export function loadRecentFiles(): RecentFileEntry[] {

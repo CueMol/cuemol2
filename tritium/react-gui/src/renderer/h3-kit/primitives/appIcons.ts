@@ -68,6 +68,7 @@ import {
   SkipBack,
   SkipForward,
   SlidersHorizontal,
+  Sparkle,
   Scissors,
   SquaresFour,
   Stack,
@@ -98,6 +99,7 @@ import {
   Intersect,
   Key,
   Palette,
+  PuzzlePiece,
   Shield,
   TextAa,
 } from "@phosphor-icons/react";
@@ -128,6 +130,7 @@ export const APP_ICONS = {
   "activity.selection": { lib: "phosphor", Comp: Selection },
   "activity.crystal": { lib: "phosphor", Comp: Cube },
   "activity.catalog": { lib: "phosphor", Comp: SquaresFour },
+  "activity.agent": { lib: "phosphor", Comp: Sparkle },
   "activity.settings": { lib: "phosphor", Comp: Gear },
 
   // Top toolbar.
@@ -245,6 +248,7 @@ export const APP_ICONS = {
   "settings.language": { lib: "phosphor", Comp: Globe },
   "settings.updates": { lib: "phosphor", Comp: CloudArrowDown },
   "settings.privacy": { lib: "phosphor", Comp: Shield },
+  "settings.plugins": { lib: "phosphor", Comp: PuzzlePiece },
 
   // Animation track labels.
   "track.camera": { lib: "phosphor", Comp: Camera },

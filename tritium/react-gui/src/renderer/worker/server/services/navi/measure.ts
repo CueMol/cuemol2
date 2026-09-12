@@ -18,20 +18,17 @@ import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 import type { DistPickDrawObj } from '@cuemol/core/src/wrappers/DistPickDrawObj';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
-import type { AtomIntrRenderer } from '@cuemol/core/src/wrappers/AtomIntrRenderer';
 import type { HitTestResult } from '@renderer/types';
-import { withUndoTxn } from '../withUndoTxn';
 import {
     ATOMINTR_TYPE,
-    ATOMINTR_STYLES,
-    ATOMINTR_DEFAULT_TARGET_NAME as DEFAULT_TARGET_NAME,
+    appendMeasureLabel,
+    hasDegenerateAtoms,
+    measureAtomCount,
+    measureLabelNoun,
+    type MeasureMode,
 } from '@renderer/worker/server/services/helpers/atomintr';
 
-/**
- * Measure sub-mode. The required number of atom picks is 2 / 3 / 4 for
- * distance / angle / torsion respectively.
- */
-export type MeasureMode = 'distance' | 'angle' | 'torsion';
+export type { MeasureMode };
 
 /** One picked atom: the molecule object uid and the atom id within it. */
 interface PickedAtom {
@@ -95,43 +92,15 @@ function clearPickFeedback(view: GUIView): void {
     view.invalidate();
 }
 
-/** Number of atom picks a mode needs before its label is created. */
-function pickCountFor(mode: MeasureMode): number {
-    if (mode === 'distance') return 2;
-    if (mode === 'angle') return 3;
-    return 4;
-}
-
-/** Human-readable label noun used in status messages and the undo label. */
-function labelNounFor(mode: MeasureMode): string {
-    if (mode === 'distance') return 'Distance';
-    if (mode === 'angle') return 'Angle';
-    return 'Torsion';
-}
-
 /**
- * Reject degenerate picks so a zero-length / undefined measurement is not
- * created (UXP defineDistLabel guard). Any two consecutive picks being the same
- * atom is rejected; for an angle the two outer atoms must also differ.
- */
-function hasDegeneratePick(mode: MeasureMode, picks: PickedAtom[]): boolean {
-    const same = (a: PickedAtom, b: PickedAtom): boolean =>
-        a.objId === b.objId && a.atomId === b.atomId;
-    for (let i = 1; i < picks.length; i++) {
-        if (same(picks[i - 1], picks[i])) return true;
-    }
-    if (mode === 'angle' && same(picks[0], picks[2])) return true;
-    return false;
-}
-
-/**
- * Create the measure label from a completed pick sequence. The renderer is
- * created on (or reused from) the first pick's molecule; later atoms pass their
- * own object uid explicitly, so cross-molecule measurements work (UXP parity).
- * The whole create-or-reuse + append runs in one undo transaction.
+ * Create the measure label from a completed pick sequence.
+ *
+ * The renderer is created on (or reused from) the first pick's molecule; the
+ * shared helper owns that and the undo transaction, so the mouse tool and the
+ * AI agent's `measure_geometry` draw into the same label set.
  */
 function defineMeasureLabel(view: GUIView, buf: PickBuffer, target: string | undefined): string {
-    if (hasDegeneratePick(buf.mode, buf.picks)) {
+    if (hasDegenerateAtoms(buf.mode, buf.picks)) {
         return 'Atom pick canceled (same atom).';
     }
 
@@ -139,34 +108,8 @@ function defineMeasureLabel(view: GUIView, buf: PickBuffer, target: string | und
     const mol = scene.getObject(buf.picks[0].objId) as MolCoord;
     if (!mol) return 'Measure: target molecule not found.';
 
-    const noun = labelNounFor(buf.mode);
-    const name = (target ?? '').trim() || DEFAULT_TARGET_NAME;
-    withUndoTxn(scene, `Define ${noun} Label`, () => {
-        // Reuse the atomintr renderer with this name on the molecule, else create
-        // one and give it that name so later labels append to the same set.
-        let rend = mol.getRendererByNameType(name, ATOMINTR_TYPE) as AtomIntrRenderer | null;
-        if (!rend) {
-            rend = mol.createRenderer(ATOMINTR_TYPE) as AtomIntrRenderer;
-            rend.name = name;
-            rend.applyStyles(ATOMINTR_STYLES);
-        }
-        // The first atom is implicitly from the renderer's molecule (picks[0]);
-        // every later atom passes its own object uid, so a measurement may span
-        // molecules (UXP parity).
-        const p = buf.picks;
-        if (buf.mode === 'distance') {
-            rend.appendById(p[0].atomId, p[1].objId, p[1].atomId, true);
-        } else if (buf.mode === 'angle') {
-            rend.appendAngleById(p[0].atomId, p[1].objId, p[1].atomId, p[2].objId, p[2].atomId);
-        } else {
-            rend.appendTorsionById(
-                p[0].atomId, p[1].objId, p[1].atomId,
-                p[2].objId, p[2].atomId, p[3].objId, p[3].atomId,
-            );
-        }
-    });
-
-    return `${noun} label is defined.`;
+    appendMeasureLabel(scene, mol, buf.mode, buf.picks, target ?? '');
+    return `${measureLabelNoun(buf.mode)} label is defined.`;
 }
 
 // ---- service: measurePick (left click -- hittest + accumulate) ----
@@ -213,7 +156,7 @@ export function measurePick(ctx: WorkerContext, args: MeasurePickArgs): MeasureP
     appendPickFeedback(view, raw.obj_id, raw.atom_id);
 
     // Sequence complete: create the label, then reset picks and crosshairs.
-    if (buf.picks.length >= pickCountFor(buf.mode)) {
+    if (buf.picks.length >= measureAtomCount(buf.mode)) {
         const message = defineMeasureLabel(view, buf, args.target);
         buf.picks = [];
         clearPickFeedback(view);

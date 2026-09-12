@@ -29,7 +29,7 @@ import { useSelectionValidation } from '@renderer/features/selection/selection/u
 import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives';
 import { ObjectSelect, objectFilters } from '@renderer/h3-kit/ObjectSelect';
 import { fireService } from '@renderer/utils/fireService';
-import { FieldSection, FormButton, TextField } from '@renderer/h3-kit/form';
+import { isImeKey, FieldSection, FormButton, TextField } from '@renderer/h3-kit/form';
 import { useTheme } from '@renderer/contexts/ThemeContext';
 import { getHistory, pushHistory, useSelHitCount, useHitCountResolver, CountTag } from '@renderer/h3-kit/MolSelList';
 import {
@@ -303,7 +303,9 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
                                     if (errorMsg) setErrorMsg(null);
                                 }}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && selectEnabled) onTextApply();
+                                    if (e.key === 'Enter' && selectEnabled && !isImeKey(e.nativeEvent)) {
+                                        onTextApply();
+                                    }
                                 }}
                                 placeholder="Input selection command"
                                 invalid={!isValid}
@@ -352,7 +354,7 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
                                             onChange={setDefName}
                                             placeholder="name"
                                             onKeyDown={(e) => {
-                                                if (e.key === 'Enter') onConfirmDefine();
+                                                if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) onConfirmDefine();
                                                 if (e.key === 'Escape') setDefining(false);
                                             }}
                                         />

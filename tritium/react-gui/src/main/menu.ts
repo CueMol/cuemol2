@@ -9,8 +9,10 @@ import { app, Menu, webContents } from 'electron'
 import type { BrowserWindow, MenuItemConstructorOptions, WebContents } from 'electron'
 import path from 'path'
 import { IPC } from '@shared/ipcChannels'
-import { APP_MENU, macAppMenuGroup } from '@shared/menuTemplate'
+import { macAppMenuGroup } from '@shared/menuTemplate'
 import type { AppMenuItem, AppMenuGroup } from '@shared/menuTemplate'
+import { buildAppMenu, isPluginMenuChannel } from '@shared/pluginMenu'
+import type { PluginMenuContribution } from '@shared/types/pluginContrib'
 import {
   DEDICATED_DIRECT_CHANNELS,
   GENERIC_RELAY_CHANNELS,
@@ -208,7 +210,10 @@ function buildItem(
   if (item.ipcChannel) {
     if (specificHandlers[item.ipcChannel]) {
       result.click = specificHandlers[item.ipcChannel]
-    } else if (isMenuActionChannel(item.ipcChannel)) {
+    } else if (isMenuActionChannel(item.ipcChannel) || isPluginMenuChannel(item.ipcChannel)) {
+      // A plugin row's channel carries its command id; the renderer decodes
+      // it. Main never learns what the command does, which is what keeps the
+      // native menu independent of the plugin registry.
       const ch = item.ipcChannel
       result.click = () => mainWindow.webContents.send(IPC.MENU_GENERIC, ch)
     } else {
@@ -262,6 +267,11 @@ let pendingRebuild = false
 // static `enabled: false` template defaults after any RECENT_ADD.
 let lastMenuState: MenuState | null = null
 
+// Menu rows contributed by the plugins the renderer currently has enabled.
+// Empty until the renderer reports in, so the menu built at window creation
+// carries the built-ins only and gains the plugin rows on the first push.
+let pluginMenuContributions: PluginMenuContribution[] = []
+
 /**
  * Build the full application menu from `APP_MENU` (plus the macOS App menu)
  * and install it, then re-apply the last cached `MenuState` so dynamic
@@ -271,10 +281,10 @@ function buildAndSetMenu(mainWindow: BrowserWindow): void {
   const specificHandlers = buildSpecificHandlers(mainWindow)
 
   // macOS App menu first (it is titled with app.name, which only the main
-  // process knows), then APP_MENU.
+  // process knows), then APP_MENU with the plugin rows merged in.
   const groups: AppMenuGroup[] = [
     ...(isMac ? [macAppMenuGroup(app.name)] : []),
-    ...APP_MENU.filter((g) => !g.darwinOnly),
+    ...buildAppMenu(pluginMenuContributions).filter((g) => !g.darwinOnly),
   ]
 
   const template: MenuItemConstructorOptions[] = groups
@@ -347,6 +357,18 @@ export function rebuildApplicationMenu(): void {
 }
 
 /**
+ * Replace the plugin-contributed menu rows and rebuild.
+ *
+ * Pushed by the renderer whenever its enabled-plugin set changes, which
+ * includes the first push after launch: the menu installed at window creation
+ * predates the renderer, so it necessarily has no plugin rows yet.
+ */
+export function setPluginMenuContributions(contribs: PluginMenuContribution[]): void {
+  pluginMenuContributions = contribs
+  rebuildApplicationMenu()
+}
+
+/**
  * Test-only: reset both the menu-block state (in `menuBlock.ts`) and this
  * module's rebuild / cache state. Kept as the single reset entry point so
  * callers do not have to know the state is split across two modules.
@@ -356,6 +378,7 @@ export function _resetMenuBlockForTest(): void {
   mainWindowRef = null
   pendingRebuild = false
   lastMenuState = null
+  pluginMenuContributions = []
   // The menuBlock reset drops the injected callback; restore the production
   // wiring so a test does not silently run without the unblock hook.
   setDeferredRebuild(flushPendingRebuild)

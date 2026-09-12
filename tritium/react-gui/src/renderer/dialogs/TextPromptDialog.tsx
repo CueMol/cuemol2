@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { FormGroup, InputGroup } from '@blueprintjs/core'
 import { DialogShell } from './DialogShell';
+import { isImeKey } from '@renderer/h3-kit/form'
 
 /**
  * Single-line text input dialog -- replacement for Electron's disabled
@@ -53,7 +54,7 @@ export function TextPromptDialog({
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-        if (e.key === 'Enter' && canSubmit) {
+        if (e.key === 'Enter' && canSubmit && !isImeKey(e.nativeEvent)) {
             e.preventDefault()
             handleOk()
         }

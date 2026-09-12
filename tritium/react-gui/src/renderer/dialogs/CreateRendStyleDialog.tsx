@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { FormGroup, InputGroup } from '@blueprintjs/core'
 import { DialogShell } from './DialogShell';
+import { isImeKey } from '@renderer/h3-kit/form'
 
 /**
  * "Create Renderer Style" dialog -- UXP `rendstyle_create.xul` /
@@ -68,7 +69,7 @@ export function CreateRendStyleDialog({
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-        if (e.key === 'Enter' && canSubmit) {
+        if (e.key === 'Enter' && canSubmit && !isImeKey(e.nativeEvent)) {
             e.preventDefault()
             handleOk()
         }

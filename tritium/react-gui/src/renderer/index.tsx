@@ -13,8 +13,10 @@ import { CueMolProvider } from '@renderer/hooks/cuemol/useCueMol'
 import { LogProvider } from '@renderer/contexts/LogContext'
 import { ThemeProvider } from '@renderer/contexts/ThemeContext'
 import { CommandProvider } from '@renderer/commands/CommandRegistry'
+import { PluginProvider } from '@renderer/plugin-host'
 import { DialogProvider } from '@renderer/contexts/DialogContext'
 import { ModalOpenCounterProvider } from '@renderer/contexts/ModalOpenCounterContext'
+import { UndoRedoLockProvider } from '@renderer/contexts/UndoRedoLockContext'
 import { RenderConfigProvider } from '@renderer/contexts/RenderConfigContext'
 import { ApbsConfigProvider } from '@renderer/contexts/ApbsConfigContext'
 import { NewSceneDefaultsProvider } from '@renderer/contexts/NewSceneDefaultsContext'
@@ -38,6 +40,10 @@ createRoot(container).render(
       <LogProvider>
         <ThemeProvider>
           <CommandProvider>
+           {/* The plugin registry: which built-in plugins are switched on and
+               what they contribute. Above the chrome that draws the
+               contributions and below the command bus a plugin registers on. */}
+           <PluginProvider>
             <ModalOpenCounterProvider>
               {/* These two sit ABOVE DialogProvider because a dialog it
                   renders reads them: the APBS tool dialog needs the persisted
@@ -55,9 +61,14 @@ createRoot(container).render(
                           {/* App-level state, below the dialog and command
                               providers (closing a tab runs the save prompt and
                               the FileSave command from inside the workspace). */}
-                          <AppStateProviders>
-                            <App />
-                          </AppStateProviders>
+                          {/* Above AppStateProviders, which owns the undo /
+                              redo state this gates, and above <App/>, whose
+                              plugin Roots and panes take the lock. */}
+                          <UndoRedoLockProvider>
+                            <AppStateProviders>
+                              <App />
+                            </AppStateProviders>
+                          </UndoRedoLockProvider>
                         </AppSettingsProvider>
                        </PickingPrefsProvider>
                       </ViewInputConfigProvider>
@@ -66,6 +77,7 @@ createRoot(container).render(
                 </NewSceneDefaultsProvider>
               </ApbsConfigProvider>
             </ModalOpenCounterProvider>
+           </PluginProvider>
           </CommandProvider>
         </ThemeProvider>
       </LogProvider>

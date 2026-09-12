@@ -91,6 +91,7 @@ const workerGlobals: Record<string, string> = {
 const rendererAlias = {
   '@renderer': resolve(__dirname, 'src/renderer'),
   '@shared': resolve(__dirname, 'src/shared'),
+  '@plugins': resolve(__dirname, 'src/plugins'),
 }
 
 const mainAlias = {

@@ -56,6 +56,9 @@ export interface NewSceneDefaultsPrefs {
 }
 
 /** Miscellaneous UI preferences exchanged with the main process. */
+/** What a plugin preference may hold. Mirrors the setting control kinds. */
+export type PluginPrefValue = string | number | boolean
+
 export interface UiState {
   sidebarActiveView?: string
   selectionMolId?: string
@@ -107,4 +110,26 @@ export interface UiState {
   hoverInfo?: boolean
   /** Highlight the element under the pointer in the 3D view. Defaults to true. */
   hoverHighlight?: boolean
+  /**
+   * Built-in plugins the user has explicitly switched on or off, by plugin id.
+   *
+   * Only the choices the user actually made. An id that is absent has never
+   * been touched and takes the plugin's own default, so a plugin can ship
+   * default-off (the Component Catalog does) and a later version can change
+   * its default without overriding anyone. An id that no longer matches any
+   * plugin is ignored.
+   */
+  pluginEnabled?: Record<string, boolean>
+  /**
+   * Per-plugin preferences: plugin id -> (setting key -> value).
+   *
+   * The keys are the ones the plugin declares in `contributes.settings`; the
+   * host never interprets them. Only values the user actually changed are
+   * stored -- an absent key falls back to the `default` in the manifest, so a
+   * plugin owns its defaults in one place and can change them later.
+   *
+   * A secret (an API key) is NOT stored here: it goes through the secrets
+   * channels into the OS keychain, never into this file.
+   */
+  pluginPrefs?: Record<string, Record<string, PluginPrefValue>>
 }
