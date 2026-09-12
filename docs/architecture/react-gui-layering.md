@@ -73,7 +73,7 @@ src/
   (レジストリ) だけが例外で、それを import するのは `plugin-host/PluginProvider.tsx`
   1 箇所。依存が伸びた plugin は外せなくなるので、これが「plugin を外せる」の実体。
   plugin から core へは `@renderer/plugin-host/api` を使う (詳細は
-  [tritium-plugin-host.md](tritium-plugin-host.md))。
+  [tritium_plugin/](tritium_plugin/_index.md))。
 
 ---
 

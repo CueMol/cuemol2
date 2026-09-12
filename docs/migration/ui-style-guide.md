@@ -39,7 +39,7 @@ Blueprint の portal (popover / dialog) に dark テーマを効かせる `porta
 - **ベクトル (x/y/z)** = `VectorField` (`NumberCell` を自前で並べない)。
 真にカタログに無い時のみ、`_form-kit.css` にサイズを 1 定義して**先にカタログへ追加**する。カタログ調査を飛ばして Blueprint 直叩き/独自 CSS で作ると、既存の verified 実装とサイズ・デザインが食い違い手戻りする (このガイドが防ぎたい再発そのもの)。
 
-> **Component Catalog は built-in plugin で、既定オフ**: activity bar の "Component Catalog" view は plugin `catalog` (`react-gui/src/plugins/catalog/`) が寄与する。全ビルドに入るが `defaultEnabled: false` なので、**Settings > Plugins でオンにするまで表示されない**。開発・デザインレビュー時はここでオンにする。カタログに component を追加すると製品ビルドにも入るが、ユーザが自分でオンにしない限り目に触れない。仕組みは [tritium-plugin-host.md](../architecture/tritium-plugin-host.md)。
+> **Component Catalog は built-in plugin で、既定オフ**: activity bar の "Component Catalog" view は plugin `catalog` (`react-gui/src/plugins/catalog/`) が寄与する。全ビルドに入るが `defaultEnabled: false` なので、**Settings > Plugins でオンにするまで表示されない**。開発・デザインレビュー時はここでオンにする。カタログに component を追加すると製品ビルドにも入るが、ユーザが自分でオンにしない限り目に触れない。仕組みは [tritium_plugin/](../architecture/tritium_plugin/_index.md)。
 
 | コンポーネント | 用途 | canonical サイズ (source) |
 |---|---|---|

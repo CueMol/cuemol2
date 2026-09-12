@@ -171,7 +171,8 @@ this way to keep the feature in one directory, not to make it removable) and `ca
 component gallery: it ships in every build but is `defaultEnabled: false`, so it appears only
 once someone switches it on in Settings > Plugins).
 
-Full spec: [`docs/architecture/tritium-plugin-host.md`](../docs/architecture/tritium-plugin-host.md).
+Full spec, API reference and a how-to-write walkthrough:
+[`docs/architecture/tritium_plugin/`](../docs/architecture/tritium_plugin/_index.md).
 The rules that bite while editing core code:
 
 - **Core must not import a plugin's internals.** ESLint (`NO_PLUGIN_INTERNALS`) rejects

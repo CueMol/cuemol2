@@ -37,6 +37,16 @@ export type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 // --- App state a pane or dialog needs ---
 export { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 export { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
+export type { UseCueMolEventListenerOptions } from '@renderer/hooks/cuemol/useCueMolEventListener'
+// The fetch + auto-refresh engine every panel hook is built on. Exported
+// because a pane that fetches has to have the stale-fetch guard, and
+// hand-rolling that one is exactly what tritium/CLAUDE.md forbids.
+export { useLiveFetch } from '@renderer/hooks/cuemol/useLiveFetch'
+export type {
+  LiveFetchListener,
+  UseLiveFetchOptions,
+  UseLiveFetchResult,
+} from '@renderer/hooks/cuemol/useLiveFetch'
 export { useActiveScene } from '@renderer/state/workspace'
 export { useEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
 

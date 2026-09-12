@@ -8,7 +8,7 @@
 **実装状況 (2026-09-12 更新): Phase 0 のみ実装済み。** react-gui のレジストリを実行時に
 開き、既存機能 3 つ (Component Catalog / Get PDB / Sequence panel) を内蔵 plugin として
 同じ経路に載せ替えた。ビルド時同梱 (in-tree) までで、実行時ロードは含まない。
-仕様は [`../architecture/tritium-plugin-host.md`](../architecture/tritium-plugin-host.md)。
+仕様と書き方は [`../architecture/tritium_plugin/`](../architecture/tritium_plugin/_index.md)。
 Phase A (別 bundle の実行時ロードと packaging)、Phase A' (C++ dlopen レーン)、
 Phase B (schema 駆動 UI / userData sideload)、Phase C は**未実装**。
 本文書は履歴として残す (計画時点の調査結果と設計方針)。

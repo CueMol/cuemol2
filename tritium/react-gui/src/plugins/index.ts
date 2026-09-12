@@ -3,7 +3,7 @@
  * @description The built-in plugin registry: every plugin this build ships.
  *
  * Built-in means compiled into the app bundle, not loaded at runtime (see
- * docs/architecture/tritium-plugin-host.md). One directory per plugin, in the
+ * docs/architecture/tritium_plugin/). One directory per plugin, in the
  * layout a runtime-loaded plugin would have, so the move to Phase A of the
  * plugin plan is a packaging change rather than a rewrite.
  *
