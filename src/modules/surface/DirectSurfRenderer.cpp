@@ -664,6 +664,34 @@ void DirectSurfRenderer::buildMeshCache()
 ///////////////////////////////////////////
 // GPU draw path
 
+bool DirectSurfRenderer::ensureShader(DisplayContext *pdc)
+{
+  if (!m_bCheckShaderOK) {
+    m_bUseShader = m_trigGpuPrim.init(pdc);
+    if (m_bUseShader)
+      MB_DPRINTLN("DirectSurfRend> triangle shader OK");
+    m_bCheckShaderOK = true;
+  }
+  return m_bUseShader;
+}
+
+bool DirectSurfRenderer::isPickSupported() const
+{
+  return getDrawMode()==SFDRAW_FILL;
+}
+
+void DirectSurfRenderer::displayPick(DisplayContext *pdc)
+{
+  if (pdc->isFile() || getDrawMode()!=SFDRAW_FILL)
+    return;
+  // Without the shader, display() would fall back to the display list and
+  // draw the mesh into the ID buffer under a single (empty) name, occluding
+  // what is behind it for nothing. Draw nothing instead.
+  if (!ensureShader(pdc))
+    return;
+  display(pdc);
+}
+
 void DirectSurfRenderer::display(DisplayContext *pdc)
 {
   // File (non-GL) export and non-fill draw modes (line/point) use the legacy
@@ -673,14 +701,7 @@ void DirectSurfRenderer::display(DisplayContext *pdc)
     return;
   }
 
-  if (!m_bCheckShaderOK) {
-    m_bUseShader = m_trigGpuPrim.init(pdc);
-    if (m_bUseShader)
-      MB_DPRINTLN("DirectSurfRend> triangle shader OK");
-    m_bCheckShaderOK = true;
-  }
-
-  if (!m_bUseShader) {
+  if (!ensureShader(pdc)) {
     // shader unavailable --> legacy path
     super_t::display(pdc);
     return;
@@ -797,6 +818,9 @@ void DirectSurfRenderer::buildGpuMesh(DisplayContext *pdc)
     m_trigGpuPrim.setVertex(vj, m_verts[i].v3d());
     m_trigGpuPrim.setNormal(vj, m_verts[i].n3d());
     m_trigGpuPrim.setColor(vj, vcol[i]);
+    // The owning atom is the pick result. NO_ATOM_ID encodes to 0 = no name,
+    // so a vertex without an owner is simply not pickable.
+    m_trigGpuPrim.setHitName(vj, gfx::encodeHitName((int) m_verts[i].info));
   }
 
   int f = 0;

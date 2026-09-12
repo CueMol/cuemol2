@@ -327,11 +327,36 @@ pRF->registAlias("dsurf2", "dsurface", {{"surfalgor", "distfield"}});
   `detail` の効き方が変わる。リリースノート記載事項。
 - 旧 `dsurf2` シーンは alias 経由で見た目を保ったまま読める。
 
+## click / hover (GPU ID-buffer pick)
+
+`dsurface` は GPU pick に参加する (`docs/architecture/gpu-id-picking.md`)。fill 描画モードで
+`buildGpuMesh()` が各頂点の `MSVert::info` (所有原子の id) を `TrigGpuPrim` の `hitName`
+属性に `encodeHitName()` して載せるだけで、あとは既存部品が働く:
+
+- `isPickSupported()` は `drawmode == fill` のとき true。line / point は display-list 経路で、
+  `DisplayList::drawMesh` は mesh 全体に 1 つの name しか付けられないので対象外。
+- `displayPick()` は `display()` を呼ぶ (CPK2 と同じ)。shader が使えない環境では何も描かない
+  (display-list fallback を pick モードで描くと、名前無しの面が ID buffer で奥を隠すだけになる)。
+- `NO_ATOM_ID` は `encodeHitName(-1) == 0` = no name なので、所有原子不明の頂点は拾われない。
+- `showsel` で隠した頂点は GPU primitive に upload されないので ID buffer にも出ない。
+- 結果の JSON は `MolRenderer::interpHit()` (継承) が原子単位で作り、tritium の hover chip /
+  click は他の atom-level renderer と同じ経路で扱う。hover highlight はその原子のパッチ単位。
+- 三角形は provoking vertex の name を取るので、原子パッチの境界はノコギリ状になる
+  (surface ではパッチ境界自体が近似なので許容)。
+
+**採らなかったもの**: 半透明 surface の pick。`Scene::displayPick` は
+`alpha <= Scene::PICK_ALPHA_THRESHOLD` (0.6) の renderer を外す設計 (透けた surface の奥の原子を拾う)
+に従う。この閾値は全 renderer 共通で、0.5 から 0.6 に上げた: 0.6 の surface はまだ十分に透けていて、
+ユーザーは奥の原子に届かせたいと考えるのが自然なため。CPU 経路 (`isHitTestSupported()` +
+`renderHit()` の点リスト) も付けていないので、rect / lasso 選択と uxp_gui では dsurface は
+反応しない (follow-up 参照)。
+
 ## テスト
 
 | ファイル | pin する契約 |
 |---|---|
-| `src/tests/modules/surface/test_dsurf_color.cpp` | `DsurfAlgorFixture`: 3 アルゴリズムそれぞれが非空メッシュを作り、全頂点の `info` が実在の原子 id であること / フォールバックが `surfalgor` を書き換えないこと。`DsurfAlias`: 旧 `type="dsurf2"` シーンが `dsurface` + distfield として読め、非 default として保存されること。既存の着色契約 (potential / multigrad / GPU と display-list の一致) も同ファイル |
+| `src/tests/modules/surface/test_dsurf_color.cpp` | `DsurfAlgorFixture`: 3 アルゴリズムそれぞれが非空メッシュを作り、全頂点の `info` が実在の原子 id であること / フォールバックが `surfalgor` を書き換えないこと。`DsurfAlias`: 旧 `type="dsurf2"` シーンが `dsurface` + distfield として読め、非 default として保存されること。`GpuMeshCarriesAtomIdsAsHitNames`: fill 描画で upload された全頂点の hitName が所有原子 id の符号化と一致し、line 描画では pick 非対応になること (GL 無しの `MockDisplayContext`、`src/tests/gfx/mock_display_context.hpp`)。既存の着色契約 (potential / multigrad / GPU と display-list の一致) も同ファイル |
+| `src/tests/gfx/test_mesh_colors.cpp` | `gfx::Mesh` の色: gradient 頂点の `getCol` が元と同じ device code / material に解決し palette には成分だけが入ること、同値の base 色が 1 entry に畳まれ solid 頂点は登録オブジェクトそのものを返すこと、未書き込み頂点は `getCol` false |
 | `src/tests/modules/surface/test_distfield_surf.cpp` | 距離場ビルダーと marching cubes 単体 |
 | `src/tests/modules/surface/test_dsurf_detail_calib.cpp` | 契約テストではない。`DISABLED_` の計測ハーネス 2 本: `VertexCountsPerAlgorithm` (1CRN での detail 校正)、`LargeMoleculeCost` (1CRN を 6x6x6 = 7 万原子に複製し、グリッド予算と MeshMS 頂点予算の両方の発火を確認する。Debug ビルドで 2 分ほどかかる) |
 
@@ -344,3 +369,11 @@ pRF->registAlias("dsurf2", "dsurface", {{"surfalgor", "distfield"}});
 - **`DirectSurfRendererBase` の畳み込み**: concrete クラスが 1 つになったので基底と
   合併できるが、qif / wrapper / プロパティ定義の移動量が大きく機能上の利点が無いため
   見送った。
+- **rect / lasso 選択と uxp_gui での hit test**: CPU 経路 (`hitTestRect` / `hitTestPolygon`)
+  は `renderHit()` の点リストで動く。dsurface に付けるなら「描画中の原子の中心」を
+  `drawPointHit` する近似になる (surface のパッチ位置とは一致しない)。GPU pick が
+  rect 選択にも使えるようになれば不要。
+- **`gfx::Mesh` の gradient 頂点の一時オブジェクト**: `rampColor()` / `MultiGradient::getColor()`
+  が頂点ごとに作る `GradientColor` は保持されなくなったが、確保・解放の CPU コストは残る。
+  `Mesh::color(c1, c2, rho)` と `ScalarColorSupport` / `MultiGradient` の非確保経路を足せば
+  無くせる (exporter 側の `RendIntData::mesh` は `getCol` で再構成するので影響なし)。

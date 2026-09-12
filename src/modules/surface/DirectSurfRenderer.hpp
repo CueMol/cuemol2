@@ -51,6 +51,18 @@ namespace surface {
 
     void display(DisplayContext *pdc) override;
 
+    /// GPU ID-buffer picking. The fill draw mode uploads every vertex's
+    /// owning atom id as its hit name, so a click or hover on the surface
+    /// reports that atom (MolRenderer::interpHit). The line and point modes
+    /// draw through the display list, which carries one name per mesh, and
+    /// are not pickable.
+    bool isPickSupported() const override;
+
+    /// The pick pass reuses display(): TrigGpuPrim switches to its pick
+    /// program while DisplayContext::isPickDraw() is set. Draws nothing when
+    /// the shader is unavailable (the display-list fallback cannot name).
+    void displayPick(DisplayContext *pdc) override;
+
     void invalidateDisplayCache() override;
 
     void unloading() override;
@@ -93,6 +105,9 @@ namespace surface {
     /// the resolver the display-list path uses, so both paths agree.
     int computeShownColors(std::vector<int> &vidmap, std::vector<quint32> &vcol);
 
+    /// The GPU primitive the fill draw mode uploads (tests read its hit names).
+    const gfx::TrigGpuPrim &getTrigGpuPrim() const { return m_trigGpuPrim; }
+
   private:
     /// One atom handed to the mesh builders.
     struct SurfAtom
@@ -118,6 +133,10 @@ namespace surface {
     /// Give vertices left at NO_ATOM_ID the atom id of a face neighbour, so
     /// that every vertex the colouring sees names a real atom.
     void assignMissingAtomIds();
+
+    /// Load the triangle shader once; false when this context cannot draw
+    /// through the GPU primitive (display() then takes the display-list path).
+    bool ensureShader(DisplayContext *pdc);
 
     /// Build and upload the GPU triangle primitive directly from the mesh
     /// cache (bypasses the gfx::Mesh / display-list intermediates).

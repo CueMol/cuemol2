@@ -115,6 +115,11 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   `SphereGpuPrim` / `CylinderGpuPrim` (座標属性版) は `isPickDraw()` で何も描かない (この経路は pick 不可)。
 - `isPickSupported()`: `MolAtomRenderer` / `MainChainRenderer` で `isHitTestSupported()`。name を付けない
   renderer (AtomIntr / MolSurf / NameLabel / Selection / Symm / LW / UnitCell) は false のまま。
+- `dsurface` (`DirectSurfRenderer`): fill 描画モードのみ pick 対応。`buildGpuMesh()` が頂点の所有原子 id
+  (`MSVert::info`) を `TrigGpuPrim::setHitName()` で載せ、`displayPick()` は `display()` を呼ぶ。line / point
+  モードは display-list 経路 (mesh 全体で 1 name) なので `isPickSupported()` は false。`isHitTestSupported()`
+  (CPU 点リスト) は持たないので rect / lasso 選択には出ない
+  ([direct-surface-renderer](direct-surface-renderer.md))。
 
 ### 3.4 uxp_gui 非適用の gating
 - `ViewCap::hasGpuPick()` (既定 false)。`ElecViewCap` のみ true。`OcViewCap` は override しないので desktop /
@@ -221,6 +226,8 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 - readback は同期 `readPixels`。async (PBO + fence) は未実装。
 - hover ハイライトは §10 (pick buffer からの screen-space overlay)。カーソル変更は未実装。
 - stereo (CSM_PARA / CROSS) では GPU pick を使わず CPU 経路 (hover highlight も出ない)。
+- `dsurface` は GPU pick のみ (CPU 点リスト無し): rect / lasso 選択と uxp_gui の click では反応しない。
+  alpha <= 0.6 の surface は閾値どおり pick から外れる (透けた surface の奥の原子が拾える)。
 
 ## 10. hover highlight (pick ID buffer からの screen-space overlay)
 

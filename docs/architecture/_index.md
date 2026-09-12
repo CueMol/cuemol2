@@ -164,8 +164,12 @@ architecture, it belongs here.
   calibrated onto all three mesh builders (EDTSurf's voxel size is the
   reference), the MeshMS SES-only fallback rules, per-vertex atom ids
   (`MSVert::info`) including the MeshMS `atom_id` mapping and the null-atom
-  guard that fixed a `showsel` crash, and the `RendererFactory` type-name
-  alias that keeps scenes saved as `dsurf2` loading.
+  guard that fixed a `showsel` crash, the `RendererFactory` type-name
+  alias that keeps scenes saved as `dsurf2` loading, GPU ID-buffer picking
+  (click / hover report the owning atom; fill mode only), and the memory
+  budgets: the distance-field cell cap, the MeshMS vertex cap, and the
+  `gfx::Mesh` colour palette (16 bytes per vertex instead of a 72-byte
+  `ColorPtr` plus a 256-byte `GradientColor` each).
 - [Scene app data と render 設定の scene 保存](scene-app-data.md) (日本語) --
   Rendering window の設定を `.qsc` に保存する仕組み。`Scene` の汎用 typed app-data store
   (`<appdata id= type=>`、class 未登録なら verbatim 温存) と QIF class `RenderSettings`
