@@ -112,6 +112,27 @@ Key constraints and choices:
   wheel to scroll natively. Registered through `@use-gesture`'s `useWheel` with
   `passive: false`, as `MolViewPane` does: React's own `onWheel` is passive at
   the root and could not suppress the browser's page zoom.
+- **Framing survives a render.** The viewer keeps the zoom and the scroll
+  offset when the image is replaced, instead of re-fitting: a render is
+  normally the same scene again with one setting changed, and re-fitting made
+  the user zoom back in on every turn of the loop the history exists for.
+  Stepping the history keeps it too, which is what makes two attempts
+  comparable. An image of a different pixel size is rescaled by the ratio of
+  the two fit scales and re-centred on the same relative point, so the same
+  part of the picture stays on screen; a fit happens only on the first image
+  and when the user asks for it. The movie preview and the finished result are
+  separate components, so the handoff between them still re-fits.
+
+  The toolbar's zoom steps (and 100%) are anchored at the centre of the
+  viewport -- what the user is looking at when reaching for them -- while a
+  pinch stays anchored at the pointer. Both paths share one restore, which had
+  to be fixed first: it built the scroll offset from the stage's
+  `offsetLeft`/`offsetTop`, which are measured from the nearest *positioned*
+  ancestor. `.riv-scroll` is not positioned, so the vertical one carried the
+  toolbar's height and every zoom jumped to the bottom of the image (the
+  horizontal one was right only because that offset happened to be zero). It
+  now measures both client rects after the relayout and shifts the scroll by
+  the difference, which depends on no CSS positioning at all.
 - **Save / Copy** are back in the result toolbar. They were dropped as clutter
   while the window had no history; with one, exporting the render you settled
   on is the point of keeping the earlier attempts. Both act on what is on

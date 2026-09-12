@@ -72,9 +72,9 @@ const UMBREON: Record<string, Value> = {
     denoise: 'OIDN',
     giSkyGradient: true,
     giGroundColor: '#666666',
-    lightIntensity: 1.2,
-    flashFraction: 0.05,
-    ambientFraction: 0.4,
+    lightIntensity: 1.3,
+    flashFraction: 0,
+    ambientFraction: 0.6,
 };
 
 // The NPR block inherits the umbreon properties (GI keys included) with the
