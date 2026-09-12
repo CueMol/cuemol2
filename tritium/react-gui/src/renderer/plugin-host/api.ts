@@ -22,6 +22,8 @@ export type {
   PaneComponentProps,
   PluginCommandId,
   PluginManifest,
+  PluginSettingControl,
+  PluginSettingDecl,
   RendererPlugin,
 } from './types'
 
@@ -33,6 +35,18 @@ export { useCommands } from '@renderer/commands/CommandRegistry'
 export { definePluginServices } from './pluginServices'
 export type { PluginServiceCalls, PluginServiceClient } from './pluginServices'
 export type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
+export type { InvokeOptions } from '@renderer/worker/client/WorkerTransport'
+
+// --- The push-channel lane (worker -> renderer, no reply) ---
+export { definePluginChannel } from './pluginChannels'
+export type { PluginChannel } from './pluginChannels'
+
+// --- Preferences and secrets ---
+export { usePluginPrefs } from './usePluginPrefs'
+export type { PluginPrefs } from './usePluginPrefs'
+export type { PluginPrefValue } from '@shared/types/uiPrefs'
+export { definePluginSecret } from './pluginSecrets'
+export type { PluginSecret } from './pluginSecrets'
 
 // --- App state a pane or dialog needs ---
 export { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
@@ -49,6 +63,9 @@ export type {
 } from '@renderer/hooks/cuemol/useLiveFetch'
 export { useActiveScene } from '@renderer/state/workspace'
 export { useEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
+// Hold Undo / Redo off while the plugin is in the middle of an edit the user
+// must not be able to unwind halfway.
+export { useSuppressUndoRedo } from '@renderer/contexts/UndoRedoLockContext'
 
 // --- Shell chrome a pane is built from ---
 export { PaneSectionHeader } from '@renderer/shell/PaneSectionHeader'

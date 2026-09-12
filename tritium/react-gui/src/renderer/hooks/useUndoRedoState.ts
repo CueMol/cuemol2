@@ -13,7 +13,9 @@
  *   - `SCE_SCENE_UNDOINFO` (fired by commitUndoTxn / clearUndoData) and any
  *     other scene event on the active scene: re-pull (debounced);
  *   - after an undo/redo we run here -- C++ `undo()`/`redo()` do NOT fire
- *     `SCE_SCENE_UNDOINFO`, so we must refresh explicitly (UXP does the same).
+ *     `SCE_SCENE_UNDOINFO`, so we must refresh explicitly (UXP does the same);
+ *   - the undo/redo lock being taken or released (`UndoRedoLockContext`),
+ *     which forces both flags false without touching the scene.
  *
  * The scene uid is taken from the reactive `activeSceneId` prop, never read
  * back through a callback at effect time: the molview tab list resolves the
@@ -26,7 +28,7 @@
  * most recent, so picking history entry `i` calls `pickUndo(i)`.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IPC } from '@shared/ipcChannels'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import { CmdId } from '@renderer/commands/ids'
@@ -35,6 +37,7 @@ import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventLis
 import { SEM_SCENE, SEM_ANY } from '@renderer/event'
 import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
 import { useLatestRef } from '@renderer/hooks/react/useLatestRef'
+import { useUndoRedoLocked } from '@renderer/contexts/UndoRedoLockContext'
 
 interface UseUndoRedoStateOptions {
   cm: AsyncCueMol | null
@@ -78,6 +81,14 @@ export function useUndoRedoState({
   // without giving them a new identity per scene.
   const sceneIdRef = useLatestRef(activeSceneId)
 
+  // While something holds the lock (a plugin running a multi-step edit inside
+  // one transaction), undo / redo are reported and treated as unavailable.
+  // The last snapshot is kept so the flags can be restored on release without
+  // another round-trip.
+  const locked = useUndoRedoLocked()
+  const lockedRef = useLatestRef(locked)
+  const rawRef = useRef<typeof EMPTY>(EMPTY)
+
   const syncNativeMenu = useCallback((u: boolean, r: boolean) => {
     window.electronAPI?.invoke(IPC.MENU_UPDATE_STATE, {
       undo: { enabled: u },
@@ -88,12 +99,22 @@ export function useUndoRedoState({
   }, [])
 
   const applyState = useCallback((s: typeof EMPTY) => {
-    setCanUndo(s.canUndo)
-    setCanRedo(s.canRedo)
+    rawRef.current = s
+    const u = s.canUndo && !lockedRef.current
+    const r = s.canRedo && !lockedRef.current
+    setCanUndo(u)
+    setCanRedo(r)
     setUndoDescs(s.undoDescs)
     setRedoDescs(s.redoDescs)
-    syncNativeMenu(s.canUndo, s.canRedo)
-  }, [syncNativeMenu])
+    syncNativeMenu(u, r)
+  }, [syncNativeMenu, lockedRef])
+
+  // Taking or releasing the lock changes the answer without any scene event,
+  // so re-derive from the last snapshot; this is what re-pushes the native
+  // menu's enabled flags on both edges.
+  useEffect(() => {
+    applyState(rawRef.current)
+  }, [locked, applyState])
 
   const refresh = useCallback(async () => {
     const sceneId = sceneIdRef.current
@@ -110,21 +131,23 @@ export function useUndoRedoState({
     }
   }, [cm, applyState, sceneIdRef])
 
+  // The single choke point for running an undo: the Edit menu, Cmd+Z, the
+  // toolbar button and the history dropdown all arrive here.
   const pickUndo = useCallback((depth = 0) => {
     const sceneId = sceneIdRef.current
-    if (!cm || sceneId === undefined) return
+    if (!cm || sceneId === undefined || lockedRef.current) return
     cm.undo(sceneId, depth)
       .catch((e: unknown) => console.error('undo failed:', e))
       .finally(() => { void refresh() })
-  }, [cm, refresh, sceneIdRef])
+  }, [cm, refresh, sceneIdRef, lockedRef])
 
   const pickRedo = useCallback((depth = 0) => {
     const sceneId = sceneIdRef.current
-    if (!cm || sceneId === undefined) return
+    if (!cm || sceneId === undefined || lockedRef.current) return
     cm.redo(sceneId, depth)
       .catch((e: unknown) => console.error('redo failed:', e))
       .finally(() => { void refresh() })
-  }, [cm, refresh, sceneIdRef])
+  }, [cm, refresh, sceneIdRef, lockedRef])
 
   const clearUndo = useCallback(() => {
     const sceneId = sceneIdRef.current

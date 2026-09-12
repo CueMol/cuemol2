@@ -18,6 +18,7 @@ import {
   Field,
   FieldGroup,
   FieldSection,
+  TextAreaField,
   TextField,
   SelectField,
   NumericField,
@@ -48,6 +49,8 @@ export const CatalogPane1: PaneComponent = ({
   const [sw, setSw] = useState(true);
   const [gated, setGated] = useState(true);
   const [filter, setFilter] = useState("");
+  const [secret, setSecret] = useState("");
+  const [multiline, setMultiline] = useState("");
 
   return (
     <div className="sp-pane">
@@ -90,6 +93,16 @@ export const CatalogPane1: PaneComponent = ({
                   onChange={setFilter}
                   placeholder="Filter..."
                   leftIcon={<AppIcon name="ui.filter" aria-hidden />}
+                />
+              </Field>
+              <Field label="TextField (password)">
+                <TextField value={secret} onChange={setSecret} password placeholder="API key" />
+              </Field>
+              <Field label="TextAreaField">
+                <TextAreaField
+                  value={multiline}
+                  onChange={setMultiline}
+                  placeholder="Grows from one row to six"
                 />
               </Field>
               <Field label="SelectField">

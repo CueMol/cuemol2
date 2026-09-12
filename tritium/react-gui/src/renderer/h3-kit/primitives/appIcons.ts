@@ -68,6 +68,7 @@ import {
   SkipBack,
   SkipForward,
   SlidersHorizontal,
+  Sparkle,
   Scissors,
   SquaresFour,
   Stack,
@@ -129,6 +130,7 @@ export const APP_ICONS = {
   "activity.selection": { lib: "phosphor", Comp: Selection },
   "activity.crystal": { lib: "phosphor", Comp: Cube },
   "activity.catalog": { lib: "phosphor", Comp: SquaresFour },
+  "activity.agent": { lib: "phosphor", Comp: Sparkle },
   "activity.settings": { lib: "phosphor", Comp: Gear },
 
   // Top toolbar.

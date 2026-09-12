@@ -13,6 +13,7 @@ import type {
   ResolvedPluginBottomTab,
   ResolvedPluginView,
 } from './types'
+import type { SettingControl } from '@renderer/features/settings/settings/settingControl'
 
 /**
  * The plugins this build ships.
@@ -67,6 +68,7 @@ export const EMPTY_CONTRIBUTIONS: PluginContributions = {
   toolbar: [],
   views: [],
   bottomTabs: [],
+  settings: [],
 }
 
 /**
@@ -77,9 +79,12 @@ export const EMPTY_CONTRIBUTIONS: PluginContributions = {
  * rendered as a hole; `validatePlugin` has already reported it.
  */
 export function collectContributions(active: readonly RendererPlugin[]): PluginContributions {
-  const out: PluginContributions = { menus: [], toolbar: [], views: [], bottomTabs: [] }
+  const out: PluginContributions = {
+    menus: [], toolbar: [], views: [], bottomTabs: [], settings: [],
+  }
 
   for (const plugin of active) {
+    const { id: pluginId, name: pluginName } = plugin.manifest
     const contributes = plugin.manifest.contributes
     if (!contributes) continue
 
@@ -101,6 +106,16 @@ export function collectContributions(active: readonly RendererPlugin[]): PluginC
       if (!Component) continue
       const resolved: ResolvedPluginBottomTab = { ...tab, Component }
       out.bottomTabs.push(resolved)
+    }
+
+    for (const setting of contributes.settings ?? []) {
+      // A secret names no namespace in the manifest: it is filled in here
+      // with the plugin's own id, so a plugin cannot address another's.
+      const control: SettingControl =
+        setting.control.kind === 'secret'
+          ? { ...setting.control, namespace: pluginId }
+          : setting.control
+      out.settings.push({ ...setting, control, pluginId, pluginName })
     }
   }
 

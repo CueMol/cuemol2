@@ -36,10 +36,15 @@ plugin を 1 本書きたいだけなら **overview -> authoring** で足りる�
 | `getpdb` | command / menu / toolbar / dialog | 常時有効 | メニューやツールバーから開くダイアログ機能 |
 | `sequence` | bottom tab / worker service 4 本 | 常時有効 | 下部パネルと、自前の worker service を持つもの |
 | `catalog` | activity view + side pane 3 | 既定オフ | サイドパネルの view。worker 通信のない純 UI |
+| `agent` | activity view + side pane / worker service 2 / push channel / 設定 3 行 (secret 含む) | 既定オフ | 長い非同期処理、streaming、自前の設定と資格情報を持つもの |
 
 いずれも**その機能専用の C++ クラスを持たない**ことを基準に選んである。`CutByPlane` や
 `Prot2ndry`、`SymmOpManager` のように C++ 側の専用機能の interface になっている UI は、
 C++ とセットでないと切り出せないので JS/TS レーンだけでは plugin 化しない。
+
+`agent` ([ai-agent-plugin.md](../ai-agent-plugin.md)) は UXP に無い新機能で、host の
+寄与点をひととおり使う: push channel、plugin 自身の設定ページ、OS キーチェーンの資格情報、
+undo/redo の一時抑止。似たものを書くときの一番大きい実例。
 
 ---
 

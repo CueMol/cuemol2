@@ -5,6 +5,10 @@
  * (`SelectField` / `NumericField` / `SwitchField` / `ColorField` / `TextField`
  * + `FormButton`). Toggle rows put the switch inline with the label; the other
  * kinds stack the control below the description.
+ *
+ * The `secret` kind is the one that owns state of its own: its value lives in
+ * the OS keychain rather than in the pane, so it is delegated whole (see
+ * `SecretSettingControl`).
  */
 
 import React from 'react'
@@ -19,6 +23,8 @@ import {
 import { IPC } from '@shared/ipcChannels'
 import type { SettingDef } from './settingsConfig'
 import type { Mode } from '@renderer/h3-kit/colorpicker'
+import { SecretSettingControl } from './SecretSettingControl'
+import { pluginPrefFromSettingKey } from './pluginSettings'
 
 /**
  * App settings colours are scene-independent plain colours, so the picker
@@ -102,6 +108,27 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
           </div>
         )
       }
+      case 'text':
+        return (
+          <TextField
+            value={value as string}
+            onChange={(v) => onChange(key, v)}
+            placeholder={control.placeholder}
+            mono={control.mono}
+          />
+        )
+      case 'secret':
+        // The value never reaches this component: the control reads its own
+        // status from main. The key it addresses is the plugin-facing half of
+        // the row key, not the fully qualified one the pane routes on.
+        return (
+          <SecretSettingControl
+            namespace={control.namespace}
+            secretKey={pluginPrefFromSettingKey(key)?.prefKey ?? key}
+            envVar={control.envVar}
+            label={label}
+          />
+        )
       default:
         return null
     }

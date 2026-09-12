@@ -347,6 +347,26 @@
   flex-shrink: 0;
 }
 
+/* The secret row stacks the input + Clear over a status line. Sizes come from
+   the form kit; this is spacing and the muted status colour only. */
+.config-setting-secret {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.config-setting-secret-status {
+  color: var(--text-muted);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-normal);
+}
+
+.config-setting-secret-error {
+  color: var(--text-error);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-normal);
+}
+
 /* ═══════════════════════════════════════════════════════════
    No-results state
    ═══════════════════════════════════════════════════════════ */

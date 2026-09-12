@@ -14,10 +14,12 @@ import { describe, expect, it } from 'vitest'
 import { validatePlugin } from '@renderer/plugin-host/api'
 import { pluginServiceName } from '@renderer/worker/shared/pluginCalls'
 import { BUILTIN_PLUGINS } from './index'
+import { AGENT_KEYS } from './agent/calls'
 import { SEQ_KEYS } from './sequence/calls'
 
 /** Every plugin's declared service keys, keyed by plugin id. */
 const DECLARED_CALLS: Record<string, readonly string[]> = {
+  agent: AGENT_KEYS,
   sequence: SEQ_KEYS,
 }
 
@@ -61,6 +63,10 @@ describe('built-in plugins', () => {
     expect(byId.catalog?.alwaysEnabled).toBeUndefined()
     expect(byId.catalog?.defaultEnabled).toBe(false)
     expect(byId.catalog?.devOnly).toBeUndefined()
+    // The AI Agent needs an API key the user pays for, so it ships in every
+    // build but stays off until someone asks for it.
+    expect(byId.agent?.alwaysEnabled).toBeUndefined()
+    expect(byId.agent?.defaultEnabled).toBe(false)
   })
 
   it('use an id at most once', () => {

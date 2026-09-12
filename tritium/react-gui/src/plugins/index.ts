@@ -17,6 +17,7 @@
  */
 
 import type { RendererPlugin } from '@renderer/plugin-host/api'
+import { agentPlugin } from './agent'
 import { catalogPlugin } from './catalog'
 import { getPdbPlugin } from './getpdb'
 import { sequencePlugin } from './sequence'
@@ -25,4 +26,5 @@ export const BUILTIN_PLUGINS: readonly RendererPlugin[] = [
   getPdbPlugin,
   sequencePlugin,
   catalogPlugin,
+  agentPlugin,
 ]

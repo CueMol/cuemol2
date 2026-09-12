@@ -13,8 +13,13 @@ import type React from 'react'
 import type { AppIconKey } from '@renderer/h3-kit/primitives'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { PluginCommandId, PluginMenuContribution } from '@shared/types/pluginContrib'
+import type { PluginPrefValue } from '@shared/types/uiPrefs'
+import type {
+  PluginSettingControl,
+  SettingControl,
+} from '@renderer/features/settings/settings/settingControl'
 
-export type { PluginCommandId, PluginMenuContribution }
+export type { PluginCommandId, PluginMenuContribution, PluginSettingControl }
 
 // ------------------------------------------------------------
 // Manifest
@@ -72,6 +77,26 @@ export interface PluginBottomTab {
   after?: string
 }
 
+/**
+ * One row on the plugin's own page in Settings.
+ *
+ * The value lives in `UiState.pluginPrefs[<plugin id>][key]` and is read back
+ * with `usePluginPrefs`, except for a `secret`, whose value never touches
+ * that file (see `PluginSettingControl`).
+ */
+export interface PluginSettingDecl {
+  /** Identifier within the plugin. Letters and digits; no dots. */
+  key: string
+  label: string
+  description: string
+  control: PluginSettingControl
+  /**
+   * Value in force until the user changes it. Required for every kind except
+   * `secret`, which has no value to default to.
+   */
+  default?: PluginPrefValue
+}
+
 /** Everything a plugin adds to the shell. */
 export interface PluginContributes {
   commands?: PluginCommandDecl[]
@@ -79,6 +104,7 @@ export interface PluginContributes {
   toolbar?: PluginToolbarContribution[]
   views?: PluginViewContribution[]
   bottomTabs?: PluginBottomTab[]
+  settings?: PluginSettingDecl[]
 }
 
 /** The static declaration of a plugin. */
@@ -163,10 +189,23 @@ export interface ResolvedPluginBottomTab extends PluginBottomTab {
   Component: BottomTabComponent
 }
 
+/**
+ * A settings row with its owner attached, ready for the Settings pane to
+ * draw. A `secret` control has had its namespace filled in with the plugin
+ * id here, which is what keeps one plugin out of another's keychain entry.
+ */
+export interface ResolvedPluginSetting extends Omit<PluginSettingDecl, 'control'> {
+  pluginId: string
+  /** The manifest name, used as the title of the plugin's settings page. */
+  pluginName: string
+  control: SettingControl
+}
+
 /** What the shell reads: every enabled plugin's contributions, flattened. */
 export interface PluginContributions {
   menus: PluginMenuContribution[]
   toolbar: PluginToolbarContribution[]
   views: ResolvedPluginView[]
   bottomTabs: ResolvedPluginBottomTab[]
+  settings: ResolvedPluginSetting[]
 }

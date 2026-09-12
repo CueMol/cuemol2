@@ -7,7 +7,7 @@
  * `invokeMethod<K>` / `invokeRpc<K>` helpers built on top of the low-level
  * `invokeWorker` array-tail protocol. Also fans out `event-notify`,
  * `stream-progress`, `render-progress` and `anim-progress` push messages to
- * subscribers.
+ * subscribers, plus the generic plugin push channels.
  */
 import type {
     MethodArgs,
@@ -26,7 +26,7 @@ import type { ApbsUpdate } from '@renderer/worker/shared/apbsTypes';
 import { APBS_PROGRESS_CHANNEL } from '@renderer/worker/shared/apbsTypes';
 import type { AnimProgressUpdate } from '@renderer/worker/shared/animTypes';
 import { ANIM_PROGRESS_CHANNEL } from '@renderer/worker/shared/animTypes';
-import { pluginServiceName } from '@renderer/worker/shared/pluginCalls';
+import { isPluginChannel, pluginServiceName } from '@renderer/worker/shared/pluginCalls';
 import type { CrashSource } from '@shared/types/crash';
 import { report as reportCrash } from '@renderer/crash/CrashReporter';
 
@@ -59,6 +59,14 @@ export type RenderProgressListener = (update: RenderUpdate) => void;
 
 /** Listener for `apbs-progress` push messages from `calcApbsPot`. */
 export type ApbsProgressListener = (update: ApbsUpdate) => void;
+
+/**
+ * Listener for a plugin push channel.
+ *
+ * The payload is opaque here: the transport only routes it. The plugin's own
+ * `definePluginChannel<T>` puts the type back on at the subscribing end.
+ */
+export type PluginChannelListener = (payload: unknown) => void;
 
 /**
  * A call waiting for its reply.
@@ -130,6 +138,8 @@ export class WorkerTransport {
     private _animProgressListeners = new Set<AnimProgressListener>();
     private _renderProgressListeners: Set<RenderProgressListener> = new Set();
     private _apbsProgressListeners: Set<ApbsProgressListener> = new Set();
+    /** Plugin push channels, by wire name. Created on first subscribe. */
+    private _pluginChannelListeners = new Map<string, Set<PluginChannelListener>>();
 
     /**
      * Spawn the Web Worker (entry: `../server/worker_launcher.ts`) and
@@ -237,6 +247,21 @@ export class WorkerTransport {
                 return;
             }
 
+            if (isPluginChannel(method)) {
+                // event.data shape: ['plugin-channel.<id>.<name>', payload].
+                // Checked before the reply path below, which a push would
+                // otherwise reach and be dropped as an orphan reply: a plugin
+                // service REPLY uses the `plugin.` prefix and still lands there.
+                const [payload] = event.data.slice(1) as [unknown];
+                const listeners = this._pluginChannelListeners.get(method);
+                if (listeners) {
+                    for (const cb of listeners) {
+                        try { cb(payload); } catch (e) { log.warn(method + ' listener:', e); }
+                    }
+                }
+                return;
+            }
+
             const method_seq = makeMethodSeq(method, seqno);
             const pending = this._pending.get(method_seq);
             if (pending) {
@@ -293,6 +318,32 @@ export class WorkerTransport {
     subscribeApbsProgress(cb: ApbsProgressListener): () => void {
         this._apbsProgressListeners.add(cb);
         return () => { this._apbsProgressListeners.delete(cb); };
+    }
+
+    /**
+     * Subscribe to a plugin push channel.
+     *
+     * The generic half of the four channels above: a plugin cannot add a
+     * branch here, so its worker service pushes on a namespaced channel name
+     * and this routes by that name. Plugins go through
+     * `definePluginChannel` rather than calling this directly.
+     *
+     * @param channel - wire name, `plugin-channel.<pluginId>.<name>`.
+     * @returns An unsubscribe function.
+     */
+    subscribePluginChannel(channel: string, cb: PluginChannelListener): () => void {
+        let listeners = this._pluginChannelListeners.get(channel);
+        if (!listeners) {
+            listeners = new Set();
+            this._pluginChannelListeners.set(channel, listeners);
+        }
+        listeners.add(cb);
+        return () => {
+            const set = this._pluginChannelListeners.get(channel);
+            if (!set) return;
+            set.delete(cb);
+            if (set.size === 0) this._pluginChannelListeners.delete(channel);
+        };
     }
 
     /** Whether the worker has been launched and not yet terminated. */

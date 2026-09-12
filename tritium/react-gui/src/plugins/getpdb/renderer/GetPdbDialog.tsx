@@ -10,7 +10,11 @@ import { DialogShell } from '@renderer/plugin-host/api';
 import { ComboBoxField } from '@renderer/h3-kit/form';
 import { getHistory } from './pdbIdHistory';
 
-export type CoordServerType = 'RCSB_CIF' | 'RCSB_PDB';
+// The coordinate server choice is shared with the worker (see
+// worker/shared/pdbUrls.ts), which builds the URL for a headless fetch.
+import type { CoordServerType } from '@renderer/worker/shared/pdbUrls';
+
+export type { CoordServerType };
 export type MapServerType = 'RCSB_CIF' | 'EBI_MTZ';
 
 export interface GetPdbDialogResult {

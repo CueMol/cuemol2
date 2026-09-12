@@ -75,11 +75,16 @@ describe('plugin enabled state', () => {
 describe('PluginProvider', () => {
   let api: ReturnType<typeof setupElectronAPI>
 
-  /** Mount over the given stored choices. */
-  function withStored(pluginEnabled: Record<string, boolean>) {
+  /** Mount over the given stored state. */
+  function withStored(
+    pluginEnabled: Record<string, boolean>,
+    pluginPrefs?: Record<string, Record<string, string | number | boolean>>,
+  ) {
     api = setupElectronAPI({
       invoke: vi.fn((channel: string) =>
-        channel === IPC.UI_LOAD ? Promise.resolve({ pluginEnabled }) : Promise.resolve(undefined),
+        channel === IPC.UI_LOAD
+          ? Promise.resolve({ pluginEnabled, ...(pluginPrefs ? { pluginPrefs } : {}) })
+          : Promise.resolve(undefined),
       ) as unknown as ReturnType<typeof setupElectronAPI>['invoke'],
     })
     return mountRegistry()
@@ -138,6 +143,30 @@ describe('PluginProvider', () => {
 
     expect(api.invoke).not.toHaveBeenCalledWith(IPC.UI_SAVE, expect.anything())
     expect(h.result.isEnabled('fixed')).toBe(true)
+    h.unmount()
+  })
+
+  it('saves a plugin preference as the whole map, separately from the switches', async () => {
+    const h = withStored({}, { alpha: { model: 'a-model' } })
+    await flushPromises()
+    expect(h.result.prefs.alpha).toEqual({ model: 'a-model' })
+    api.invoke.mockClear()
+
+    await act(async () => {
+      h.result.setPref('alpha', 'effort', 'low')
+    })
+    await flushPromises()
+
+    // The WHOLE map: main merges top-level keys only, so a partial write
+    // would drop every other plugin's settings. And its own call, because a
+    // shared one would race the enabled set.
+    expect(api.invoke).toHaveBeenCalledWith(IPC.UI_SAVE, {
+      pluginPrefs: { alpha: { model: 'a-model', effort: 'low' } },
+    })
+    expect(api.invoke).not.toHaveBeenCalledWith(
+      IPC.UI_SAVE,
+      expect.objectContaining({ pluginEnabled: expect.anything() }),
+    )
     h.unmount()
   })
 })

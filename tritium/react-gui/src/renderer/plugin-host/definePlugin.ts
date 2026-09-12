@@ -15,6 +15,12 @@ import type { RendererPlugin } from './types'
 const PLUGIN_ID_RE = /^[a-z][a-z0-9-]*$/
 
 /**
+ * A settings key. No dots: the pane builds `plugin.<id>.<key>` and splits it
+ * back on the first two, so a dot in the key would make the halves ambiguous.
+ */
+const SETTING_KEY_RE = /^[a-zA-Z][a-zA-Z0-9]*$/
+
+/**
  * Everything wrong with `plugin`, as messages.
  *
  * Exported separately from {@link definePlugin} so a test can assert on the
@@ -64,6 +70,25 @@ export function validatePlugin(plugin: RendererPlugin): string[] {
   for (const tab of contributes.bottomTabs ?? []) {
     if (!plugin.bottomTabs?.[tab.id]) {
       errors.push(`bottom tab "${tab.id}" has no component`)
+    }
+  }
+
+  const settingKeys = new Set<string>()
+  for (const setting of contributes.settings ?? []) {
+    if (!SETTING_KEY_RE.test(setting.key)) {
+      errors.push(`setting "${setting.key}" must be alphanumeric, starting with a letter`)
+    }
+    if (settingKeys.has(setting.key)) errors.push(`setting "${setting.key}" is declared twice`)
+    settingKeys.add(setting.key)
+    // A secret's value is in the OS keychain, not in the preference file, so
+    // there is nothing for a default to mean; every other kind needs one,
+    // because a row with no stored value and no default draws as blank.
+    if (setting.control.kind === 'secret') {
+      if (setting.default !== undefined) {
+        errors.push(`setting "${setting.key}" is a secret and cannot have a default`)
+      }
+    } else if (setting.default === undefined) {
+      errors.push(`setting "${setting.key}" needs a default`)
     }
   }
 

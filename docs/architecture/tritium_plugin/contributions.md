@@ -86,11 +86,13 @@ interface PluginContributes {
   toolbar?: PluginToolbarContribution[]
   views?: PluginViewContribution[]
   bottomTabs?: PluginBottomTab[]
+  settings?: PluginSettingDecl[]
 }
 ```
 
 dialog と worker service は `contributes` に書かない。前者は `Root` が provider を
-mount するだけ、後者はファイル配置で自動登録されるため。
+mount するだけ、後者はファイル配置で自動登録されるため。push channel と secret も
+書かない (呼び出し側で `definePluginChannel` / `definePluginSecret` を宣言する)。
 
 ---
 
@@ -214,6 +216,63 @@ type PaneComponent = React.ComponentType<{
 
 ---
 
+### settings (plugin 自身の設定ページ)
+
+```ts
+interface PluginSettingDecl {
+  /** plugin 内で一意。英数字のみ (ドット不可)。UiState.pluginPrefs[<id>][key] の key になる */
+  key: string
+  label: string
+  description: string
+  control: PluginSettingControl
+  /** `secret` 以外は必須。値が保存されていない間これが使われる */
+  default?: string | number | boolean
+}
+```
+
+`control` は core の設定行と同じ `SettingControl`
+(`features/settings/settings/settingControl.ts`)。plugin が書けるのは:
+
+| kind | 用途 |
+|---|---|
+| `select` / `number` / `toggle` / `color` / `path` | core の設定行と同じ |
+| `text` | 自由入力 (1 行)。keystroke ごとに保存される |
+| `secret` | API キー等。**値は設定ファイルに入らない** (下記) |
+
+宣言すると **Settings > Plugins の下に plugin 名の leaf** が生え、そこに行が並ぶ。
+その leaf は **plugin が有効な間だけ**出る (無効な plugin の寄与は収集されないため)。
+
+値の読み書き:
+
+```ts
+const { prefs, setPref, loaded } = usePluginPrefs('foo')
+const model = String(prefs.model)          // manifest の default が下敷きになっている
+```
+
+保存先は `UiState.pluginPrefs[<pluginId>][<key>]` (electron-store)。**既定値は manifest の
+1 箇所だけ**に書く (`usePluginPrefs` が merge する)。ユーザーが変更した値だけが保存されるので、
+後から既定を変えれば未変更のユーザーにも届く。
+
+`secret` は別扱いで、値は OS のキーチェーン (`safeStorage`) に入る。`default` を書くと
+`definePlugin` がエラーにする。読むのは `definePluginSecret` ([api.md](api.md))。行には
+masked な入力欄・状態行 ("Stored (....ab12)" / "Using OPENAI_API_KEY" / "Not set") と
+Clear ボタンが出る。**暗号化できない環境では保存を拒否し**、環境変数を使うよう案内する
+(平文では保存しない)。
+
+```ts
+settings: [
+  { key: 'model', label: 'Model', description: '...',
+    control: { kind: 'text', mono: true }, default: 'gpt-5.6' },
+  { key: 'apiKey', label: 'API key', description: '...',
+    control: { kind: 'secret', envVar: 'FOO_API_KEY' } },
+],
+```
+
+`namespace` は manifest に書かない -- host が plugin id を入れる。これが「1 つの plugin が
+他の plugin の secret を読めない」の根拠なので、consumer 側で namespace を指定しない。
+
+---
+
 ### bottomTabs
 
 ```ts
@@ -295,3 +354,46 @@ index signature が付かないので `PluginServiceCalls` 制約を満たしま
 
 core の service (`selectObjectMol` など `ServiceMap` にあるもの) はそのまま
 `cm.invokeService(...)` で呼べます。plugin 用の client は自分の service 専用です。
+
+長い service を busy 表示に出したくないときは 4 番目の引数に `{ quiet: true }` を渡します
+(`invokeService` と同じ `InvokeOptions`)。自前で進捗を出す panel 向け。
+
+---
+
+## push channel (宣言なし)
+
+service が「返す前に流したい」もの (進捗・delta) 用。`WorkerTransport` の分岐は built-in
+4 本が手配線されていて plugin は足せないので、**名前空間付きの channel 名**で流します。
+
+```ts
+// calls.ts (renderer 側)
+export const fooProgress = definePluginChannel<FooUpdate>('foo', 'progress')
+// ... 購読
+useEffect(() => fooProgress.subscribe(cm, (u) => apply(u)), [cm])
+
+// worker/foo.ts
+ctx.svc.pushMessage(pluginChannelName('foo', 'progress'), update)
+```
+
+wire 名は `plugin-channel.<id>.<name>`、payload は `[channel, payload]` の 2 要素です。
+**service の prefix (`plugin.`) とは別**にしてあります: service の reply も
+`['plugin.<id>.<name>', seqno, ok, result]` で届くので、同じ prefix だと push が reply として
+捨てられます (逆もしかり)。worker 側は `plugin-host/api` を import できないので、
+`worker/shared/pluginCalls.ts` の `pluginChannelName()` で同じ名前を作ります。
+
+---
+
+## secret (宣言なし)
+
+API キーのような資格情報。値は electron-store ではなく **OS のキーチェーン**
+(`safeStorage`) に入り、読み出しは main 経由です。
+
+```ts
+export const fooKey = definePluginSecret('foo', 'apiKey', { envVar: 'FOO_API_KEY' })
+// 使う直前に読む。React state に置かない
+const { value, source } = await fooKey.get()
+```
+
+namespace は `definePluginSecret` の第 1 引数 (= plugin id) で、core 側に plugin id は
+出てきません。設定 UI が要るなら `contributes.settings` に `secret` kind の行を足します
+(上記)。

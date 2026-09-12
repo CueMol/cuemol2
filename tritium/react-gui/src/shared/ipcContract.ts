@@ -24,6 +24,9 @@ import type { TextEditAction, TextCtxShowPayload } from './types/textCtxMenu'
 import type { SceneCtxAction, SceneCtxMenuPayload } from './types/sceneCtxMenu'
 import type { MenuState } from './types/menuState'
 import type { PluginMenuContributionsReq } from './types/pluginContrib'
+import type {
+  SecretGetRes, SecretRef, SecretSetReq, SecretSetRes, SecretStatusRes,
+} from './types/secrets'
 import type { PluginMenuChannel } from './pluginMenu'
 import type { CrashReport } from './types/crash'
 import type {
@@ -86,6 +89,9 @@ export interface InvokeChannels {
   [IPC.MENU_UPDATE_STATE]: { req: MenuState;             res: void }
   [IPC.MENU_SET_MODAL_BLOCKED]: { req: boolean;          res: void }
   [IPC.MENU_SET_PLUGIN_CONTRIBUTIONS]: { req: PluginMenuContributionsReq; res: void }
+  [IPC.SECRET_GET]:        { req: SecretRef;             res: SecretGetRes }
+  [IPC.SECRET_SET]:        { req: SecretSetReq;          res: SecretSetRes }
+  [IPC.SECRET_STATUS]:     { req: SecretRef;             res: SecretStatusRes }
   [IPC.RECENT_LOAD]:       { req: void;                  res: RecentFileEntry[] }
   [IPC.RECENT_ADD]:        { req: RecentFileEntry;       res: void }
   [IPC.RECENT_CLEAR]:      { req: void;                  res: void }

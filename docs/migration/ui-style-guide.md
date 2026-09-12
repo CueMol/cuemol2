@@ -47,7 +47,8 @@ Blueprint の portal (popover / dialog) に dark テーマを効かせる `porta
 | `Field` | label + control の1行 (stack / `inline` / `inline controlFirst`) — **下位ラベル** | 行 padding `--field-row-pad`, label↔control gap `--field-label-gap`, label は `.type-label` |
 | `FieldGroup` | Field の縦スタック / セクション (任意で `title` → 重い `SectionHeader` バー) | 行間 `--form-row-gap`, section 間 `--form-section-gap` |
 | `SectionHeader` | サブセクション見出し**バー** (背景tint+下線, 大文字) | `.section-header` role (高 `--ctrl-h-md`) |
-| `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索) | 高 `--field-h` (22px) |
+| `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索、`password` で伏字 = API キー等) | 高 `--field-h` (22px) |
+| `TextAreaField` | 複数行テキスト入力。**行数で伸びる** (`minRows` 既定 1 / `maxRows` 既定 6、超えたらスクロール)。チャット composer や自由記述はこれ。伸びる高さ以外にサイズの選択肢は無い | `.h3-form-textarea` (`_form-kit.css`) |
 | `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
 | `NumericField` | 数値 + 明示 slider (`slider` 既定 true)。**ネイティブ stepper は既定で非表示** (compact 用)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
 | `SliderField` | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |

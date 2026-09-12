@@ -30,6 +30,8 @@ import type { LabelDefaults } from '@renderer/worker/server/services/view/labelD
 import type { ViewInputParams } from '@renderer/worker/server/services/view/viewInputParams'
 import type { PickingPrefs } from '@renderer/contexts/PickingPrefsContext'
 import { FALLBACK_FONT_LIST } from './labelFont'
+import type { PluginPrefValue } from '@shared/types/uiPrefs'
+import type { SettingControl } from './settingControl'
 
 // --- Category tree ---
 
@@ -72,34 +74,53 @@ export const CATEGORY_TREE: CategoryNode[] = [
       { id: 'tools.apbs', label: 'APBS / PDB2PQR', icon: 'settings.rendering', children: [] },
     ],
   },
-  // A leaf of its own: its rows are generated from the plugin registry
-  // (see settings/pluginSettings.ts), not listed in SETTINGS below.
-  { id: 'plugins', label: 'Plugins', icon: 'settings.plugins', children: [] },
+  // The one branch nothing below fills in: its children are generated from
+  // the plugin registry (see settings/pluginSettings.ts). `Installed` holds
+  // the on / off switches; each plugin that contributes settings rows gets a
+  // leaf of its own next to it.
+  {
+    id: 'plugins',
+    label: 'Plugins',
+    icon: 'settings.plugins',
+    children: [
+      { id: 'plugins.installed', label: 'Installed', icon: 'settings.plugins', children: [] },
+    ],
+  },
 ]
 
-/** All leaf-node ids, in tree order. */
-export const ALL_LEAF_IDS: string[] = CATEGORY_TREE.flatMap((parent) =>
-  parent.children.length > 0
-    ? parent.children.map((c) => c.id)
-    : [parent.id],
-)
+/** Leaf-node ids of `tree`, in tree order. */
+export function leafIds(tree: readonly CategoryNode[]): string[] {
+  return tree.flatMap((parent) =>
+    parent.children.length > 0 ? parent.children.map((c) => c.id) : [parent.id],
+  )
+}
+
+/**
+ * Leaf ids of the static tree.
+ *
+ * The nav store uses this for its initial selection and expansion, which must
+ * not depend on which plugins happen to be enabled. The pane itself walks the
+ * tree it actually draws (plugin leaves included).
+ */
+export const ALL_LEAF_IDS: string[] = leafIds(CATEGORY_TREE)
 
 // --- Setting definitions ---
 
-export type SettingControl =
-  | { kind: 'select'; options: string[]; renderInOwnFont?: boolean }
-  | { kind: 'number'; min: number; max: number; step: number; unit?: string }
-  | { kind: 'toggle' }
-  | { kind: 'color' }
-  | { kind: 'path'; directory?: boolean }
+export type { SettingControl } from './settingControl'
 
 export interface SettingDef {
   key: string
   label: string
   description: string
-  /** Must match a leaf-node id in `CATEGORY_TREE`. */
+  /** Must match a leaf-node id in the category tree. */
   category: string
   control: SettingControl
+  /**
+   * Value to show when nothing is stored. Used by the generated plugin rows,
+   * whose defaults live in the contributing plugin's manifest rather than in
+   * `DEFAULTS` below.
+   */
+  default?: PluginPrefValue
 }
 
 export const SETTINGS: SettingDef[] = [
@@ -288,8 +309,8 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
 
 // --- Label lookup: maps leaf category ids to their display titles ---
 
-/** Recursively flatten the category tree into an `{ id: label }` map. */
-function buildLabelMap(nodes: CategoryNode[]): Record<string, string> {
+/** Recursively flatten a category tree into an `{ id: label }` map. */
+export function buildLabelMap(nodes: readonly CategoryNode[]): Record<string, string> {
   const map: Record<string, string> = {}
   for (const node of nodes) {
     map[node.id] = node.label
