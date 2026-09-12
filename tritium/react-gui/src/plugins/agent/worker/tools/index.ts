@@ -14,6 +14,7 @@
 import type { FunctionTool } from 'openai/resources/responses/responses'
 import { ANALYSIS_TOOLS } from './analysisTools'
 import { FILE_TOOLS } from './fileTools'
+import { MEASURE_TOOLS } from './measureTools'
 import { RENDERER_TOOLS } from './rendererTools'
 import { SCENE_TOOLS } from './sceneTools'
 import { SELECTION_TOOLS } from './selectionTools'
@@ -26,6 +27,7 @@ export const AGENT_TOOLS: readonly AgentTool[] = [
   ...RENDERER_TOOLS,
   ...FILE_TOOLS,
   ...ANALYSIS_TOOLS,
+  ...MEASURE_TOOLS,
 ].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
 
 /** Lookup by the name the model used. */

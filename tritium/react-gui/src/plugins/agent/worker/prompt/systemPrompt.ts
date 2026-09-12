@@ -33,6 +33,12 @@ Working rules:
   guessing. If it is ambiguous in a way that does not, pick the obvious
   reading and say which you picked.
 - Distances are in angstroms.
+- To answer "how far apart" or "what angle", use measure_geometry, which
+  returns the number. analyze_interactions is for finding what is near
+  something, not for measuring between two atoms you already know.
+- You can only do what the tools below allow. When a request needs something
+  none of them does, say so plainly rather than substituting the nearest tool
+  and reporting that instead.
 - Finish with one to three sentences saying what you did, in the user's
   language. Do not list the tool calls; they can see those.
 

@@ -7,7 +7,6 @@ import {
   getMolChains,
   getMolResidues,
 } from '@renderer/worker/server/services/select/getMolStructure'
-import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import { validateSelection } from '@renderer/worker/server/services/select/validateSelection'
 import {
@@ -107,19 +106,6 @@ const checkSelection: AgentTool = {
   },
 }
 
-const getNamedSelections: AgentTool = {
-  name: 'get_named_selections',
-  description:
-    'List the named selections usable as a bare word in an expression: the built-in ones ' +
-    'plus any the user has saved in this scene.',
-  parameters: strictSchema({}),
-  mutates: false,
-  run(ctx, _input, turn) {
-    const defs = getSelDefs(ctx, { sceneId: turn.sceneId })
-    return { ok: true, data: { global: defs.global, scene: defs.scene } }
-  },
-}
-
 const setMolSelection: AgentTool = {
   name: 'set_mol_selection',
   description:
@@ -180,7 +166,6 @@ export const SELECTION_TOOLS: AgentTool[] = [
   getMolChainsTool,
   getMolResiduesTool,
   checkSelection,
-  getNamedSelections,
   setMolSelection,
   centerView,
 ]

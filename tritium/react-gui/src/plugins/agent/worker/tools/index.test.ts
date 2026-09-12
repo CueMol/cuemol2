@@ -24,12 +24,19 @@ import {
 /** OpenAI's own guidance: keep a turn under twenty functions. */
 const MAX_TOOLS = 20
 
-/** Every nested object schema, including the root. */
-function schemasOf(schema: StrictObjectSchema): StrictObjectSchema[] {
-  const nested = Object.values(schema.properties)
-    .filter((p): p is StrictObjectSchema => (p as StrictObjectSchema)?.type === 'object')
-    .flatMap(schemasOf)
-  return [schema, ...nested]
+/**
+ * Every object schema reachable from the root, including the ones inside
+ * array items -- strict mode applies to those the same way, and an argument
+ * that takes a list of objects is exactly where it is easy to forget.
+ */
+function schemasOf(node: unknown): StrictObjectSchema[] {
+  const n = node as { type?: string; properties?: Record<string, unknown>; items?: unknown }
+  if (n?.type === 'object' && n.properties) {
+    const nested = Object.values(n.properties).flatMap(schemasOf)
+    return [n as StrictObjectSchema, ...nested]
+  }
+  if (n?.type === 'array' && n.items) return schemasOf(n.items)
+  return []
 }
 
 describe('the tool catalogue', () => {

@@ -181,7 +181,6 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `get_mol_chains` | no | `getMolChains` |
 | `get_mol_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
 | `check_selection` | no | `validateSelection` + `getSelHitCount` |
-| `get_named_selections` | no | `getSelDefs` |
 | `set_mol_selection` | yes | `applyMolSelString` |
 | `center_view` | yes | `centerMolSelection` / `zoomMolSelection` |
 | `get_renderer_types` | no | `getNewRendererOptions` |
@@ -193,10 +192,27 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `set_renderer_coloring` | yes | `setRendererColoring` |
 | `fetch_pdb` | yes (async) | `streamLoadFromUrl` |
 | `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` |
+| `measure_geometry` | yes | `MolCoord.getAtom` + `helpers/atomintr` の `appendMeasureLabel` |
 | `analyze_interactions` | yes | `analyzeInteractions` |
 | `export_image` | no (シーン不変。ファイルは書く) | `getSceneExportInfo` -> `exportScene` |
 
 19 件。OpenAI の推奨は「1 turn で 20 未満」。
+
+`get_named_selections` は当初あったが外した。毎 turn の `<scene_state>` が
+`namedSelections` を既に載せており、同じものを取りに行くだけの往復だったため。
+
+`measure_geometry` は後から足した。UI の measure ツール
+(`services/navi/measure.ts`) は**マウスで原子を拾う状態機械**で、画面座標の
+hit test が前提なので、名前で原子を指定するモデルからは呼べない。そのため
+「A10 と A20 の CA の距離」に対して agent は数値を返せず、一番近い
+`analyze_interactions` (接触線の描画) に流れていた。新しい tool は
+`MolCoord.getAtom(chain, resid, atomName)` で原子を引き、数値を返しつつ
+measure ツールと**同じ** atomintr ラベルを描く (`appendMeasureLabel` を共有。
+2 つ目の実装を持つと同じ操作が別の renderer に描かれ始める)。
+
+torsion の符号は `qlib/VectorHelper.cpp` の `Vector4D::torsion` に合わせてある。
+返す数値の隣に C++ が描いたラベルが出るので、片方だけ手系が逆だと最悪 -- しかも
+もっともらしく見える。外積の順序 (`Vjk x A`) がその要。
 
 description に必ず書いている曖昧点:
 
@@ -243,6 +259,11 @@ embedding・音声・画像・moderation 用のモデルも同じ配列に混ざ
 
 ## 7. 既知の制約
 
+- **CueMol の機能のうち tool にしていないものは、モデルには存在しない**。system prompt は
+  機能一覧を持たず tool の説明だけを渡すので、機能を増やす唯一の経路は tool の追加。
+  逆に、呼べない機能を prompt に書くと「できます」と言って失敗する。モデルが「できない」と
+  答えた操作を集めると、追加すべき tool の一覧がそのまま得られる。ラベル編集、カメラの保存、
+  結合編集、重ね合わせなどは UXP から移植済みだが未 tool 化。
 - **turn 実行中の手動編集が agent の undo txn に吸収される** (§3.1)。
 - **メニュー / コマンドから panel を開けない**: `activeView` が `MainLayout` のローカル
   state。`LayoutProvider` へ移して `UiState.sidebarActiveView` (現状 dead) を活かし、
