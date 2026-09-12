@@ -31,7 +31,22 @@ export type ReasoningEffort = 'default' | 'low' | 'medium' | 'high'
 export const AGENT_PREF_KEYS = {
   model: 'model',
   reasoningEffort: 'reasoningEffort',
+  enterKey: 'enterKey',
 } as const
+
+/**
+ * The two Enter-key choices, worded as Slack words them.
+ *
+ * These strings are the stored values, so changing one resets the preference
+ * for everyone who had chosen it.
+ */
+export const ENTER_KEY_OPTIONS = {
+  newline: 'start a new line',
+  send: 'send the message',
+} as const
+
+/** What the composer starts with: the choice that cannot lose a draft. */
+export const DEFAULT_ENTER_KEY = ENTER_KEY_OPTIONS.newline
 
 /** The keychain entry and the environment variable behind it. */
 export const AGENT_SECRET_KEY = 'openaiApiKey'

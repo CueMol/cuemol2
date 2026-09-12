@@ -172,5 +172,12 @@
 
 .agent-composer-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.agent-composer-hint {
+  color: var(--text-muted);
+  font-size: var(--fs-sm2);
 }

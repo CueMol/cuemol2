@@ -20,6 +20,8 @@ import {
   AGENT_PLUGIN_ID,
   AGENT_PREF_KEYS,
   DEFAULT_AGENT_MODEL,
+  DEFAULT_ENTER_KEY,
+  ENTER_KEY_OPTIONS,
 } from './shared/agentTypes'
 import './renderer/agent-chat.css'
 
@@ -57,6 +59,18 @@ export const agentPlugin: RendererPlugin = /* @__PURE__ */ definePlugin({
             'How long the model may think before answering. Higher is slower and costs more.',
           control: { kind: 'select', options: ['default', 'low', 'medium', 'high'] },
           default: 'low',
+        },
+        {
+          key: AGENT_PREF_KEYS.enterKey,
+          label: 'Pressing Enter',
+          description:
+            'What Enter does in the message box. With "start a new line", Cmd+Enter or ' +
+            'Ctrl+Enter sends instead.',
+          control: {
+            kind: 'select',
+            options: [ENTER_KEY_OPTIONS.newline, ENTER_KEY_OPTIONS.send],
+          },
+          default: DEFAULT_ENTER_KEY,
         },
         {
           key: 'openaiApiKey',

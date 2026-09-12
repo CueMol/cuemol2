@@ -15,6 +15,28 @@
 import React, { useCallback, useLayoutEffect, useRef } from 'react';
 import { isImeKey } from './imeGuard';
 
+/**
+ * Which keystroke sends, following Slack's Enter-key preference.
+ *
+ * Slack offers exactly these two because neither suits everyone: Enter is
+ * quicker for one-line chat, and a newline is safer for anything the user
+ * composes over more than a few seconds.
+ */
+export type SubmitKey =
+    /** Enter sends; Shift+Enter inserts a newline. */
+    | 'enter'
+    /** Enter inserts a newline; Cmd+Enter (macOS) or Ctrl+Enter sends. */
+    | 'modifier-enter';
+
+/** Whether this keystroke is the send gesture for `submitKey`. */
+function isSubmitKey(e: React.KeyboardEvent, submitKey: SubmitKey): boolean {
+    if (e.key !== 'Enter') return false;
+    if (submitKey === 'enter') return !e.shiftKey && !e.ctrlKey && !e.metaKey;
+    // Either modifier, rather than the platform's own: a user who learned the
+    // other one gets what they meant, and neither has another meaning here.
+    return e.metaKey || e.ctrlKey;
+}
+
 export interface TextAreaFieldProps {
     value: string;
     onChange: (value: string) => void;
@@ -28,14 +50,23 @@ export interface TextAreaFieldProps {
     /** Rows to grow to before scrolling (default 6). */
     maxRows?: number;
     /**
-     * Send on Enter, newline on Shift+Enter -- the chat-composer convention.
+     * Called when the user asks to send. Which keystroke that is depends on
+     * `submitKey`.
      *
-     * Held off while an input method is composing, so the Enter that confirms
-     * a kana-to-kanji conversion (or any other IME candidate) reaches the IME
-     * instead of sending a half-typed message. Bind this rather than writing
-     * the Enter check in `onKeyDown`, which is where that bug comes from.
+     * Never fires for an Enter an input method is using, so the keystroke
+     * that confirms a kana-to-kanji conversion (or any other IME candidate)
+     * reaches the IME instead of sending a half-typed message. Bind this
+     * rather than writing the Enter check in `onKeyDown`, which is where that
+     * bug comes from.
      */
     onSubmit?: () => void;
+    /**
+     * Which keystroke sends. Defaults to `modifier-enter`, because in a field
+     * that holds several lines a bare Enter belongs to the text: binding it
+     * to send costs the user a half-written message every time they reach for
+     * a new line.
+     */
+    submitKey?: SubmitKey;
     /** Other keys. Not called for an Enter that `onSubmit` consumed. */
     onKeyDown?: React.KeyboardEventHandler<HTMLTextAreaElement>;
     onBlur?: React.FocusEventHandler<HTMLTextAreaElement>;
@@ -55,6 +86,7 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
     minRows = 1,
     maxRows = 6,
     onSubmit,
+    submitKey = 'modifier-enter',
     onKeyDown,
     onBlur,
     autoFocus,
@@ -87,14 +119,14 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-            if (onSubmit && e.key === 'Enter' && !e.shiftKey && !isImeKey(e.nativeEvent)) {
+            if (onSubmit && !isImeKey(e.nativeEvent) && isSubmitKey(e, submitKey)) {
                 e.preventDefault();
                 onSubmit();
                 return;
             }
             onKeyDown?.(e);
         },
-        [onSubmit, onKeyDown],
+        [onSubmit, submitKey, onKeyDown],
     );
 
     return (

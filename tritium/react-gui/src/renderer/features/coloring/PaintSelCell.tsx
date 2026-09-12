@@ -33,6 +33,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import { MolSelList, pushHistory } from '@renderer/h3-kit/MolSelList'
+import { isImeKey } from '@renderer/h3-kit/form'
 
 export interface PaintSelCellProps {
     sceneID: number
@@ -113,7 +114,7 @@ export const PaintSelCell: React.FC<PaintSelCellProps> = ({
      */
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>): void => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) {
                 e.preventDefault()
                 e.stopPropagation()
                 handleCommit(draft)

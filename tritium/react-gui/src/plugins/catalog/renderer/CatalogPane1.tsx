@@ -102,7 +102,8 @@ export const CatalogPane1: PaneComponent = ({
                 <TextAreaField
                   value={multiline}
                   onChange={setMultiline}
-                  placeholder="Grows from one row to six"
+                  placeholder="Grows from one row to six. Cmd/Ctrl+Enter submits"
+                  onSubmit={() => undefined}
                 />
               </Field>
               <Field label="SelectField">

@@ -135,9 +135,16 @@ Root の React Context は pane に見えない。side pane は activity view �
 plugin を実行中に無効化すると Root が unmount されるので、その cleanup で
 `cancelTurn` を送り、store を reset する。
 
-composer の送信は `TextAreaField` の `onSubmit` (Enter 送信 / Shift+Enter 改行)。
-**自前で `key === 'Enter'` を見てはいけない**: 日本語入力では変換確定の Enter が来るので、
-変換のたびに書きかけが送信される。kit 側が `isImeKey()` で除外している。
+composer の送信は `TextAreaField` の `onSubmit`。**自前で `key === 'Enter'` を見てはいけない**:
+日本語入力では変換確定の Enter が来るので、変換のたびに書きかけが送信される。kit 側が
+`isImeKey()` で除外している。
+
+**既定は Enter = 改行、Cmd/Ctrl+Enter = 送信** (`submitKey: 'modifier-enter'`)。Enter 送信は
+IME を除いてもなお誤送信が多い -- 数語で終わらない文章では、改行のつもりの Enter が
+そのまま送信になる。Slack と同じく設定で切り替えられ (Settings > Plugins > AI Agent の
+"Pressing Enter")、`'send the message'` を選ぶと Slack 既定の Enter 送信 / Shift+Enter 改行
+になる。既定を Slack と逆にしているのは、失うもの (書きかけ) が取り戻せない側だから。
+ショートカットは composer の Send ボタン横に出す (改行する field からは推測できないため)。
 
 ---
 
@@ -213,6 +220,7 @@ Settings > Plugins > AI Agent (OpenAI) に 3 行:
 |---|---|---|---|
 | Model | `text` | `DEFAULT_AGENT_MODEL` | `UiState.pluginPrefs.agent.model` |
 | Reasoning effort | `select` (`default`/`low`/`medium`/`high`) | `low` | `UiState.pluginPrefs.agent.reasoningEffort` |
+| Pressing Enter | `select` (`start a new line` / `send the message`) | `start a new line` | `UiState.pluginPrefs.agent.enterKey` |
 | OpenAI API key | `secret` | -- | OS キーチェーン (`safeStorage`)、`OPENAI_API_KEY` fallback |
 
 モデル ID は流動的なので**自由入力**にし、既定は `shared/agentTypes.ts` の

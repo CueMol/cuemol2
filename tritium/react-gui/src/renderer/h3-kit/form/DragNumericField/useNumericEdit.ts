@@ -9,6 +9,7 @@
 import { useCallback, useEffect } from 'react';
 import { clampAndQuantize } from '@renderer/h3-kit/form/numericMath';
 import type { FieldCore } from './types';
+import { isImeKey } from '../imeGuard';
 
 export interface UseNumericEditResult {
     /** Blur / Enter commit of the typed draft. */
@@ -58,7 +59,7 @@ export function useNumericEdit(
 
     const onEditKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) {
                 commitEdit();
                 onCommitNext?.();
             } else if (e.key === 'Tab') {

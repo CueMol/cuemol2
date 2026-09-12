@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Checkbox, FormGroup, Radio, RadioGroup } from '@blueprintjs/core';
 import { DialogShell } from '@renderer/plugin-host/api';
-import { ComboBoxField } from '@renderer/h3-kit/form';
+import { isImeKey, ComboBoxField } from '@renderer/h3-kit/form';
 import { getHistory } from './pdbIdHistory';
 
 // The coordinate server choice is shared with the worker (see
@@ -79,7 +79,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && canSubmit) {
+        if (e.key === 'Enter' && canSubmit && !isImeKey(e.nativeEvent)) {
             e.preventDefault();
             handleOk();
         }
