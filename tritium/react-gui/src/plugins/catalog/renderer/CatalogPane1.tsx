@@ -18,6 +18,7 @@ import {
   Field,
   FieldGroup,
   FieldSection,
+  ComboBoxField,
   TextAreaField,
   TextField,
   SelectField,
@@ -51,6 +52,7 @@ export const CatalogPane1: PaneComponent = ({
   const [filter, setFilter] = useState("");
   const [secret, setSecret] = useState("");
   const [multiline, setMultiline] = useState("");
+  const [combo, setCombo] = useState("gpt-5.6");
 
   return (
     <div className="sp-pane">
@@ -97,6 +99,17 @@ export const CatalogPane1: PaneComponent = ({
               </Field>
               <Field label="TextField (password)">
                 <TextField value={secret} onChange={setSecret} password placeholder="API key" />
+              </Field>
+              <Field label="ComboBoxField (labelled suggestions)">
+                <ComboBoxField
+                  value={combo}
+                  onChange={setCombo}
+                  options={[
+                    { value: 'gpt-6-astra', label: 'Most capable' },
+                    { value: 'gpt-5.6', label: 'Flagship' },
+                  ]}
+                  placeholder="Pick one, or type anything"
+                />
               </Field>
               <Field label="TextAreaField">
                 <TextAreaField

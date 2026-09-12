@@ -23,11 +23,23 @@ import React, { useState } from 'react';
 import { InputGroup, Intent, Menu, MenuItem, Popover } from '@blueprintjs/core';
 import { useDarkPortalClass } from '@renderer/h3-kit/primitives';
 
+/** A suggestion whose meaning is not obvious from its value. */
+export interface ComboBoxOption {
+    /** What is written into the field when picked. */
+    value: string;
+    /** Secondary text shown beside it, e.g. what this choice is for. */
+    label?: string;
+}
+
 export interface ComboBoxFieldProps {
     value: string;
     onChange: (value: string) => void;
-    /** Dropdown suggestions (e.g. recent inputs), newest-first. */
-    options: string[];
+    /**
+     * Dropdown suggestions (e.g. recent inputs), newest-first. Plain strings
+     * where the value speaks for itself; `{ value, label }` where it does not
+     * -- a list of ids is only useful if it says what each one is.
+     */
+    options: readonly (string | ComboBoxOption)[];
     /**
      * Called when an option is chosen from the dropdown. Defaults to `onChange`;
      * override when picking should do more than set the value.
@@ -74,6 +86,9 @@ export const ComboBoxField: React.FC<ComboBoxFieldProps> = ({
     const portalClassName = useDarkPortalClass();
     const [open, setOpen] = useState(false);
     const hasOptions = options.length > 0;
+    const items: ComboBoxOption[] = options.map((o) =>
+        typeof o === 'string' ? { value: o } : o,
+    );
 
     const pick = (v: string): void => {
         (onPick ?? onChange)(v);
@@ -114,12 +129,13 @@ export const ComboBoxField: React.FC<ComboBoxFieldProps> = ({
                 content={
                     <Menu className="h3-form-combobox-menu">
                         {hasOptions ? (
-                            options.map((opt, i) => (
+                            items.map((opt, i) => (
                                 <MenuItem
-                                    key={`${opt}-${i}`}
-                                    text={opt}
-                                    active={opt === value}
-                                    onClick={() => pick(opt)}
+                                    key={`${opt.value}-${i}`}
+                                    text={opt.value}
+                                    label={opt.label}
+                                    active={opt.value === value}
+                                    onClick={() => pick(opt.value)}
                                 />
                             ))
                         ) : (

@@ -17,6 +17,7 @@ import { AgentChatPane } from './renderer/AgentChatPane'
 import { AgentRoot } from './renderer/AgentRoot'
 import {
   AGENT_API_KEY_ENV,
+  AGENT_MODEL_SUGGESTIONS,
   AGENT_PLUGIN_ID,
   AGENT_PREF_KEYS,
   DEFAULT_AGENT_MODEL,
@@ -48,8 +49,13 @@ export const agentPlugin: RendererPlugin = /* @__PURE__ */ definePlugin({
           key: AGENT_PREF_KEYS.model,
           label: 'Model',
           description:
-            'OpenAI model id used for each turn. An unknown id is reported in the panel as a 404.',
-          control: { kind: 'text', mono: true },
+            'OpenAI model each turn runs on. Pick one of the suggestions, or type any id ' +
+            'your account can use; an unknown one is reported in the panel as a 404.',
+          control: {
+            kind: 'combo',
+            options: [...AGENT_MODEL_SUGGESTIONS],
+            placeholder: DEFAULT_AGENT_MODEL,
+          },
           default: DEFAULT_AGENT_MODEL,
         },
         {

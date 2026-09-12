@@ -10,6 +10,8 @@
  * `SettingRow` draws each kind; adding a kind means adding a case there.
  */
 
+import type { ComboBoxOption } from '@renderer/h3-kit/form'
+
 /** How one setting is edited. */
 export type SettingControl =
   | { kind: 'select'; options: string[]; renderInOwnFont?: boolean }
@@ -19,6 +21,15 @@ export type SettingControl =
   | { kind: 'path'; directory?: boolean }
   /** Free text. Persisted per keystroke, like the path rows. */
   | { kind: 'text'; placeholder?: string; mono?: boolean }
+  /**
+   * Free text with a dropdown of suggestions.
+   *
+   * For a value that has a handful of sensible answers but is not closed --
+   * a model id, say, where naming the known ones is what makes the field
+   * usable, and refusing an unknown one would strand the user until the app
+   * ships again. Use `select` when the set really is closed.
+   */
+  | { kind: 'combo'; options: ComboBoxOption[]; placeholder?: string }
   /**
    * A credential. Never stored with the other settings: the value lives in
    * the OS keychain behind the secret IPC channels, addressed by

@@ -49,7 +49,8 @@ Blueprint の portal (popover / dialog) に dark テーマを効かせる `porta
 | `SectionHeader` | サブセクション見出し**バー** (背景tint+下線, 大文字) | `.section-header` role (高 `--ctrl-h-md`) |
 | `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索、`password` で伏字 = API キー等) | 高 `--field-h` (22px) |
 | `TextAreaField` | 複数行テキスト入力。**行数で伸びる** (`minRows` 既定 1 / `maxRows` 既定 6、超えたらスクロール)。チャット composer や自由記述はこれ。伸びる高さ以外にサイズの選択肢は無い。**送信は `onSubmit` を渡す** (`onKeyDown` で自前に `key === 'Enter'` を見ない)。送信キーは `submitKey`: 既定 `'modifier-enter'` (Enter = 改行、Cmd/Ctrl+Enter = 送信)、`'enter'` で Slack 既定 (Enter = 送信、Shift+Enter = 改行)。どちらでも IME 変換確定の Enter は除外される | `.h3-form-textarea` (`_form-kit.css`) |
-| `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
+| `SelectField` | ドロップダウン (`<option>` を children に)。**選択肢が閉じている**ときだけ | 高 `--field-h` (22px) |
+| `ComboBoxField` | 編集可能な入力 + 候補ドロップダウン。**選択肢が閉じていない**とき (履歴、モデル id 等)。候補は `string[]` か、値だけでは意味が分からないなら `{ value, label }[]` (label は右側に説明として出る) | `.h3-form-combobox` (`_form-kit.css`) |
 | `NumericField` | 数値 + 明示 slider (`slider` 既定 true)。**ネイティブ stepper は既定で非表示** (compact 用)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
 | `SliderField` | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |
 | `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない)。**ドラッグ感度は `min`/`max` と widget 幅から自動で決まる** (幅の 3/4 を drag すると全レンジを移動)。レンジに対して drag 量が釣り合うので、consumer は `pxPerStep` を指定しない — 指定するのは「レンジを掃くのが目的ではない」場合だけ (無限レンジ、UXP の 1 unit/px を再現する ViewPane 等) | サイズは `.h3-form-drag*` (`_form-kit.css`) |

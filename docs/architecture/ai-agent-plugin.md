@@ -218,13 +218,21 @@ Settings > Plugins > AI Agent (OpenAI) に 3 行:
 
 | 設定 | kind | 既定 | 保存先 |
 |---|---|---|---|
-| Model | `text` | `DEFAULT_AGENT_MODEL` | `UiState.pluginPrefs.agent.model` |
+| Model | `combo` (候補 4 件 + 自由入力) | `DEFAULT_AGENT_MODEL` | `UiState.pluginPrefs.agent.model` |
 | Reasoning effort | `select` (`default`/`low`/`medium`/`high`) | `low` | `UiState.pluginPrefs.agent.reasoningEffort` |
 | Pressing Enter | `select` (`start a new line` / `send the message`) | `start a new line` | `UiState.pluginPrefs.agent.enterKey` |
 | OpenAI API key | `secret` | -- | OS キーチェーン (`safeStorage`)、`OPENAI_API_KEY` fallback |
 
-モデル ID は流動的なので**自由入力**にし、既定は `shared/agentTypes.ts` の
-`DEFAULT_AGENT_MODEL` 1 箇所。存在しない ID は 404 として panel にそのまま出る。
+モデル id は候補リスト付きの自由入力 (`AGENT_MODEL_SUGGESTIONS`: `gpt-6-astra` /
+`gpt-5.6` / `gpt-5.6-terra` / `gpt-5.6-luna`、それぞれ用途を添える)。既定は
+`DEFAULT_AGENT_MODEL` 1 箇所。存在しない id は 404 として panel にそのまま出る。
+
+**API から実リストを取る形にはしていない。** `models.list()` が返すのは
+`id` / `created` / `owned_by` / `shutdown_date` だけで **能力のメタデータが無く**、
+embedding・音声・画像・moderation 用のモデルも同じ配列に混ざる。「turn を回せる
+テキストモデル」への絞り込みは id 文字列のヒューリスティックにしかならず、新しい
+命名が出れば漏れる。加えてキー未設定では一覧自体が出せない。候補を手で挙げるほうが
+「何を入れればいいか分からない」を確実に解き、流動性は自由入力が吸収する。
 
 キーは `safeStorage` で暗号化して electron-store に base64 で入れる。**暗号化できない
 環境 (keyring の無い Linux セッション等) では保存を拒否**し、環境変数を使うよう案内する

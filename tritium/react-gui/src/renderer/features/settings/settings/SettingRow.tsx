@@ -13,6 +13,7 @@
 
 import React from 'react'
 import {
+  ComboBoxField,
   SelectField,
   NumericField,
   SwitchField,
@@ -115,6 +116,19 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
             onChange={(v) => onChange(key, v)}
             placeholder={control.placeholder}
             mono={control.mono}
+          />
+        )
+      case 'combo':
+        // The dropdown carries what each suggestion is for; the field still
+        // takes anything, so a value the list has not heard of is not refused.
+        return (
+          <ComboBoxField
+            value={String(value)}
+            onChange={(v) => onChange(key, v)}
+            options={control.options}
+            placeholder={control.placeholder}
+            triggerLabel={`Suggestions for ${label}`}
+            emptyText="No suggestions"
           />
         )
       case 'secret':

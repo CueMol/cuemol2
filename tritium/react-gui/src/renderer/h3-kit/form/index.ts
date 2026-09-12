@@ -30,7 +30,7 @@ export type { TimeFieldProps } from './TimeField';
 export { SelectField } from './SelectField';
 export type { SelectFieldProps } from './SelectField';
 export { ComboBoxField } from './ComboBoxField';
-export type { ComboBoxFieldProps } from './ComboBoxField';
+export type { ComboBoxFieldProps, ComboBoxOption } from './ComboBoxField';
 export { NumericField } from './NumericField';
 export type { NumericFieldProps } from './NumericField';
 export { SliderField } from './SliderField';

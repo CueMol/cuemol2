@@ -15,14 +15,26 @@ import type { Result } from '@renderer/worker/shared/result'
 /** The manifest id. Namespaces this plugin's services, channel and secret. */
 export const AGENT_PLUGIN_ID = 'agent'
 
-/**
- * The model a turn runs on unless the user names another.
- *
- * One constant rather than a list, because the catalogue moves faster than
- * this app ships: Settings takes free text, so an id that stops existing is a
- * one-line fix for the user and a 404 they can read in the panel.
- */
+/** The model a turn runs on unless the user picks another. */
 export const DEFAULT_AGENT_MODEL = 'gpt-5.6'
+
+/**
+ * The models worth offering, with what each is for.
+ *
+ * Suggestions, not a closed set: the Settings row still takes any id typed
+ * into it. The catalogue moves faster than this app ships, and the API gives
+ * no way to narrow a live list to the models that can actually run a turn --
+ * `models.list()` returns ids with no capability metadata, mixed in with the
+ * embedding, audio and image models. So naming the known-good ones here is
+ * what makes the field answerable, and free text is what keeps it from going
+ * stale.
+ */
+export const AGENT_MODEL_SUGGESTIONS = [
+  { value: 'gpt-6-astra', label: 'Most capable' },
+  { value: 'gpt-5.6', label: 'Flagship' },
+  { value: 'gpt-5.6-terra', label: 'Balanced' },
+  { value: 'gpt-5.6-luna', label: 'Lowest cost' },
+] as const
 
 /** How hard the model is asked to think before answering. */
 export type ReasoningEffort = 'default' | 'low' | 'medium' | 'high'
