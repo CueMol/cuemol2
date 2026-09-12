@@ -21,6 +21,27 @@ import {
   CHEAT_SHEET_NAMED_SELECTIONS,
 } from '../prompt/selectionCheatSheet'
 
+/**
+ * The JSON Schema keywords every provider's strict mode accepts.
+ *
+ * The intersection, not a preference: Anthropic's strict schemas reject
+ * numeric and string constraints outright, and bound an array only at 0 or 1
+ * items, so anything outside this set fails the whole request with a 400 --
+ * for every tool, not just the one that used it. That is how `minItems: 2`
+ * on measure_geometry broke Anthropic while OpenAI ran fine.
+ *
+ * Adding one here means checking it against every provider first.
+ */
+const ALLOWED_SCHEMA_KEYWORDS = new Set([
+  'type',
+  'description',
+  'properties',
+  'required',
+  'additionalProperties',
+  'items',
+  'enum',
+])
+
 /** OpenAI's guidance, and a reasonable bound for any provider: under twenty. */
 const MAX_TOOLS = 20
 
@@ -57,6 +78,23 @@ describe('the tool catalogue', () => {
       }
       expect(tool.description.length, tool.name).toBeGreaterThan(0)
     }
+  })
+
+  it('uses only schema keywords every provider accepts', () => {
+    // Walk every schema node, not just the roots: an unsupported keyword
+    // anywhere in the tool list fails the request for all of them.
+    const walk = (node: unknown, where: string): void => {
+      if (!node || typeof node !== 'object') return
+      const n = node as Record<string, unknown>
+      for (const key of Object.keys(n)) {
+        expect(ALLOWED_SCHEMA_KEYWORDS.has(key), `${where}: ${key}`).toBe(true)
+      }
+      if (n.properties && typeof n.properties === 'object') {
+        for (const [name, child] of Object.entries(n.properties)) walk(child, `${where}.${name}`)
+      }
+      if (n.items) walk(n.items, `${where}[]`)
+    }
+    for (const tool of AGENT_TOOLS) walk(tool.parameters, tool.name)
   })
 
   it('hands the whole catalogue to the model, in strict mode', () => {

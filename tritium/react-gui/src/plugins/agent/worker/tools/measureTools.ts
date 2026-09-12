@@ -67,11 +67,13 @@ const measureGeometry: AgentTool = {
     molId: int('Uid of the molecule object the atoms belong to.'),
     atoms: {
       type: 'array',
+      // The count is stated here and checked in `run`, not constrained in the
+      // schema: a strict schema may only bound an array at 0 or 1 items, so
+      // minItems/maxItems here is rejected outright by one of the providers.
       description:
-        'Two, three or four atoms, in order. The measurement is between them in that order: ' +
-        'an angle is measured at the second atom, a torsion about the second-to-third bond.',
-      minItems: 2,
-      maxItems: 4,
+        'Two, three or four atoms, in order. Two give a distance, three the angle at the ' +
+        'second atom, four the torsion about the second-to-third bond. Any other number is ' +
+        'an error.',
       items: {
         type: 'object',
         description: 'One atom, named the way the PDB file names it.',

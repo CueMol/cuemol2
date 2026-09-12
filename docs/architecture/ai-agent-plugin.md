@@ -150,6 +150,14 @@ OpenAI の `function_call_output` / Anthropic の `tool_result` にそのまま�
 モデルが見るバイト列は provider を問わず同じ。`ok:false` を JSON に埋め、
 system prompt で「`ok:false` は失敗」と教える。
 
+**スキーマは全 provider の strict モードが受ける共通部分だけを使う** (`type` / `description` /
+`properties` / `required` / `additionalProperties` / `items` / `enum`)。Anthropic の strict は
+数値・文字列の制約を受け付けず、配列は `minItems: 0 | 1` しか許さない。しかも tool 定義は
+**毎リクエストに 19 本すべて載る**ので、1 本のスキーマが不正だとモデルが何を呼ぶつもりでも
+リクエスト全体が 400 になる (実際 `measure_geometry` の `minItems: 2` が、測定と無関係な
+プロンプトまで Anthropic で止めた。OpenAI は通っていた)。`tools/index.test.ts` が
+キーワード集合を pin している。件数のような制約は description に書き、`run` で検証する。
+
 登録順は **name 昇順で固定** (prompt caching の prefix を安定させるため)。
 `tools/` 配下は `*.service.ts` と命名しない -- worker の glob に拾われる。
 
