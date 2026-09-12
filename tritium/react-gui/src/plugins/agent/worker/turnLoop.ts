@@ -37,7 +37,12 @@ import type {
 import { AGENT_PROGRESS_CHANNEL } from '../shared/agentTypes'
 import { parseModelSpec, sanitizeHistory } from '../shared/modelSpec'
 import type { ModelSpec } from '../shared/modelSpec'
-import { createModel, describeApiError, providerOptionsFor } from './modelProvider'
+import {
+  createModel,
+  describeApiError,
+  providerOptionsFor,
+  usesStrictTools,
+} from './modelProvider'
 import type { CreateModel } from './modelProvider'
 import { buildSceneSnapshot, formatSceneSnapshot } from './sceneSnapshot'
 import { SYSTEM_PROMPT } from './prompt/systemPrompt'
@@ -182,7 +187,7 @@ export async function runTurn(
       model: deps.createModel(spec, args.apiKey),
       instructions: SYSTEM_PROMPT,
       messages,
-      tools: buildAiSdkTools(deps.tools ?? AGENT_TOOLS, ctx, turn),
+      tools: buildAiSdkTools(deps.tools ?? AGENT_TOOLS, ctx, turn, usesStrictTools(spec)),
       stopWhen: isStepCount(MAX_ROUNDS),
       abortSignal: controller.signal,
       ...(args.reasoningEffort === 'default' ? {} : { reasoning: args.reasoningEffort }),

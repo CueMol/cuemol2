@@ -97,13 +97,17 @@ describe('the tool catalogue', () => {
     for (const tool of AGENT_TOOLS) walk(tool.parameters, tool.name)
   })
 
-  it('hands the whole catalogue to the model, in strict mode', () => {
+  it('hands the whole catalogue to the model, strict or not', () => {
     // The adapter is where a tool could silently go missing between the
     // catalogue and what the provider is offered.
-    const built = buildAiSdkTools(AGENT_TOOLS, {} as never, {} as never)
-    expect(Object.keys(built).sort()).toEqual(AGENT_TOOLS.map((t) => t.name).sort())
-    for (const [name, tool] of Object.entries(built)) {
-      expect((tool as { strict?: boolean }).strict, name).toBe(true)
+    for (const strict of [true, false]) {
+      const built = buildAiSdkTools(AGENT_TOOLS, {} as never, {} as never, strict)
+      expect(Object.keys(built).sort()).toEqual(AGENT_TOOLS.map((t) => t.name).sort())
+      for (const [name, tool] of Object.entries(built)) {
+        // All or nothing: one provider refuses a catalogue this size when
+        // any of it is strict, so the flag cannot vary tool by tool.
+        expect((tool as { strict?: boolean }).strict, name).toBe(strict)
+      }
     }
   })
 })

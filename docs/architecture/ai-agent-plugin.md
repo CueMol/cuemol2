@@ -129,11 +129,11 @@ content、Anthropic の thinking signature) を `providerOptions` の自分の�
 text と tool 呼び出しは残るので、会話は続く。
 ### 3.3 ツールカタログは手書き
 
-TS 型 -> JSON Schema の自動生成は workspace に無く、`strict: true` で API 側が入力形を
+TS 型 -> JSON Schema の自動生成は workspace に無く、strict が効く provider では API 側が入力形を
 保証するので、クライアント側バリデータも持たない (`strict` は全 property を `required` に
 列挙 + `additionalProperties: false`、optional は `["string","null"]` で表す)。
 
-`buildAiSdkTools` が turn ごとに `tool({ inputSchema: jsonSchema(...), strict: true, execute })` の
+`buildAiSdkTools` が turn ごとに `tool({ inputSchema: jsonSchema(...), strict, execute })` の
 record を組む。`execute` は **throw しない** -- 失敗は `ok:false` を payload に載せる契約を保つ。
 throw すると SDK が payload を自前のエラーテキストに置き換えるうえ、`is_error` を持つのは
 Anthropic だけなので provider 間で挙動が割れる。
@@ -157,6 +157,13 @@ transcript の `tool_result` は **`execute` からではなくストリーム�
 OpenAI の `function_call_output` / Anthropic の `tool_result` にそのまま載せるので、
 モデルが見るバイト列は provider を問わず同じ。`ok:false` を JSON に埋め、
 system prompt で「`ok:false` は失敗」と教える。
+
+**strict (スキーマをサンプリング時に強制させるか) は provider ごとの判断**
+(`usesStrictTools`)。OpenAI は本数に関係なく効くが、Anthropic は strict な schema を 1 つの
+grammar にコンパイルし、大きすぎると "The compiled grammar is too large" で拒否する --
+この 19 本がそれに当たる。調整できるサイズの余地は無いので all-or-nothing。
+strict を切った側で失うのは「引数が schema に従う保証」だけで、tool は受け取った値を
+coerce し、おかしければモデルが読める理由を返すので、往復 1 回のコストで済む。
 
 **スキーマは全 provider の strict モードが受ける共通部分だけを使う** (`type` / `description` /
 `properties` / `required` / `additionalProperties` / `items` / `enum`)。Anthropic の strict は

@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { providerOptionsFor } from './modelProvider'
+import { providerOptionsFor, usesStrictTools } from './modelProvider'
 
 describe('the per-provider request options', () => {
   it('leaves Anthropic reasoning entirely to the SDK', () => {
@@ -32,5 +32,12 @@ describe('the per-provider request options', () => {
     // Writing this would make the SDK ignore the top-level reasoning level
     // rather than merge with it.
     expect(options.openai?.reasoningEffort).toBeUndefined()
+  })
+
+  it('asks for schema enforcement only where a catalogue this size fits', () => {
+    // Anthropic compiles every strict schema into one grammar and rejects
+    // the request once it is too big, which nineteen tools is.
+    expect(usesStrictTools({ provider: 'openai', modelId: 'gpt-5.6' })).toBe(true)
+    expect(usesStrictTools({ provider: 'anthropic', modelId: 'claude-opus-5' })).toBe(false)
   })
 })

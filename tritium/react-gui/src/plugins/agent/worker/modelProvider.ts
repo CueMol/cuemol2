@@ -85,6 +85,24 @@ export function providerOptionsFor(spec: ModelSpec): ProviderOptions {
   }
 }
 
+/**
+ * Whether to ask this provider to enforce the tool schemas as it samples.
+ *
+ * OpenAI does it for any number of tools. Anthropic compiles every strict
+ * schema into one grammar and refuses the request when that grows too large
+ * ("The compiled grammar is too large") -- which this catalogue of nineteen
+ * tools does. There is no size to tune, so it is all or nothing per
+ * provider.
+ *
+ * What is lost where it is off: arguments are no longer guaranteed to match
+ * the schema. The tools coerce what they are given and answer with a reason
+ * the model can act on, so a malformed call costs a round trip rather than
+ * breaking the turn.
+ */
+export function usesStrictTools(spec: ModelSpec): boolean {
+  return spec.provider !== 'anthropic'
+}
+
 /** Human-readable provider name for a message the user will read. */
 const PROVIDER_LABEL: Record<ModelSpec['provider'], string> = {
   openai: 'OpenAI',

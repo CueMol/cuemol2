@@ -41,16 +41,17 @@ export function findTool(name: string): AgentTool | undefined {
 /**
  * The catalogue as the SDK takes it, bound to one turn.
  *
- * `strict: true` makes the provider enforce each schema before the call
- * arrives, which is why no tool validates its own argument shape.
- *
  * @param tools - the catalogue; taken as an argument so a test can supply its
  *   own without mocking this module.
+ * @param strict - whether to ask the provider to enforce each schema as it
+ *   samples. Not every provider can do that for a catalogue this size; see
+ *   `usesStrictTools`.
  */
 export function buildAiSdkTools(
   tools: readonly AgentTool[],
   ctx: WorkerContext,
   turn: TurnContext,
+  strict: boolean,
 ): ToolSet {
   const out: ToolSet = {}
   for (const t of tools) {
@@ -59,7 +60,7 @@ export function buildAiSdkTools(
       inputSchema: jsonSchema<Record<string, unknown>>(
         t.parameters as unknown as Parameters<typeof jsonSchema>[0],
       ),
-      strict: true,
+      strict,
       execute: (input: unknown, { toolCallId }: { toolCallId: string }) =>
         runQueued(t, ctx, turn, input as Record<string, unknown>, toolCallId),
     })
