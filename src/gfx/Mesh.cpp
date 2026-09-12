@@ -21,7 +21,11 @@ void Mesh::init(int nverts, int nfaces)
   m_nFaces = nfaces;
   m_verts = std::vector<float>(nverts*3);
   m_norms = std::vector<float>(nverts*3);
-  m_colptrs = std::vector<ColorPtr>(nverts*3);
+  // One colour per vertex: every access indexes this by the vertex number
+  // (see setVertex / getCol / convRGBAByteCols), so the x3 the positions and
+  // normals need does not apply. ColorPtr is a 32-byte smart pointer, which
+  // made this the largest allocation of the mesh by a wide margin.
+  m_colptrs = std::vector<ColorPtr>(nverts);
   m_faces = std::vector<int>(nfaces*3);
 }
 
