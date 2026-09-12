@@ -23,7 +23,6 @@
 
 //#include "MS2TestRenderer.hpp"
 #include "DirectSurfRenderer.hpp"
-#include "DirectSurfRenderer2.hpp"
 
 #include <qsys/StreamManager.hpp>
 
@@ -46,7 +45,11 @@ bool init()
 
   //pRF->regist<MS2TestRenderer>();
   pRF->regist<DirectSurfRenderer>();
-  pRF->regist<DirectSurfRenderer2>();
+
+  // "dsurf2" was the distance-field surface before it became an algorithm of
+  // dsurface; scenes saved then still name it.
+  pRF->registAlias("dsurf2", "dsurface",
+                   {{"surfalgor", "distfield"}});
 
   qsys::StreamManager *pSM = qsys::StreamManager::getInstance();
   pSM->registReader<MSMSFileReader>();

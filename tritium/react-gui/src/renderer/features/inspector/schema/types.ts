@@ -279,8 +279,13 @@ export interface BoolSelectRowDef extends RowBase {
 }
 
 /**
- * Powers of two, the natural ladder for a subdivision count. It stops at 32:
- * past that the tessellation costs more than it shows.
+ * The levels a `numEnum` row offers when it does not name its own.
+ *
+ * Powers of two are the natural rungs for a subdivision count, and this list
+ * is a sensible default, NOT a ceiling the app imposes: what is useful depends
+ * on the property. A row that needs other values -- an intermediate step like
+ * 24, or levels far above this range like 96 and 192 -- passes its own
+ * `ladder` and gets exactly those.
  */
 export const TESSELLATION_LADDER = [1, 2, 4, 8, 16, 32]
 
@@ -348,24 +353,40 @@ export interface MultiNumInputRowDef extends MultiRowBase {
  *
  * What the eye sees in a subdivision count is the difference between 4 and 8,
  * not between 8 and 9, so offering every integer asks for a precision the
- * value does not have and makes changing it a chore. The ladder is the powers
- * of two inside `min`..`max`; the property's default and its current value are
- * added to it, since a list that could not express either would show the row
- * as something it is not.
+ * value does not have and makes changing it a chore.
+ *
+ * Which levels to offer is the row's decision, in one of two ways:
+ *
+ * - `ladder` names them outright and is used verbatim. Use it whenever the
+ *   useful levels are not just powers of two -- an intermediate step, or
+ *   levels well above the shared default's range.
+ * - `min` / `max` instead trim `TESSELLATION_LADDER`, for the common case of
+ *   a property that wants the usual powers of two over part of their range.
+ *
+ * Either way the property's default and its current value are added, since a
+ * list that could not express either would show the row as something it is not.
  */
-export interface NumEnumRowDef extends MultiRowBase {
+export type NumEnumRowDef = MultiRowBase & {
   kind: 'numEnum'
-  /** Lowest level this property accepts; the ladder supplies the rest. */
-  min: number
-  /**
-   * Highest level, for a property whose tessellation gets expensive sooner
-   * than the ladder's own ceiling. Not a typing range: it only decides which
-   * rungs are offered.
-   */
-  max?: number
-  /** Replaces the powers-of-two ladder when a property wants its own. */
-  ladder?: number[]
-}
+} & (
+    | {
+        /** The levels to offer, used as given. */
+        ladder: number[]
+        min?: never
+        max?: never
+      }
+    | {
+        /** Lowest rung of `TESSELLATION_LADDER` to offer. */
+        min: number
+        /**
+         * Highest rung to offer, for a property whose tessellation gets
+         * expensive sooner than the shared ladder's range. Not a typing
+         * range: it only decides which rungs are offered.
+         */
+        max?: number
+        ladder?: never
+      }
+  )
 
 /**
  * A set of rows sharing one gate.

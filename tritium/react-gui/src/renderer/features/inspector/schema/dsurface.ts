@@ -1,11 +1,12 @@
 /**
  * @file features/inspector/schema/dsurface.ts
- * @description The `dsurface` and `dsurf2` renderer pages.
+ * @description The `dsurface` renderer page.
  *
  * UXP's `dsurf-propdlg`: a "Draw" groupbox (mode, line / point size, surface
  * type, tessellation detail) over the shared per-element radii the probe rolls
- * on. `dsurf2` is the distance-field surface and shares the property set, so
- * it shares the page.
+ * on. The Algorithm row is new: the distance-field surface used to be a
+ * separate renderer type (`dsurf2`) and is now one of the three mesh builders
+ * `surfalgor` selects.
  */
 
 import type { SchemaSectionDef } from './types'
@@ -24,11 +25,16 @@ const SURFTYPE_LABELS: Record<string, string> = {
   ses: 'Solvent excluded',
 }
 
-/** Both types render the same page; only the section keys differ. */
-function sections(prefix: string): SchemaSectionDef[] {
+const SURFALGOR_LABELS: Record<string, string> = {
+  distfield: 'Distance field',
+  meshms: 'MeshMS (analytic SES)',
+  edtsurf: 'EDTSurf (voxel)',
+}
+
+function sections(): SchemaSectionDef[] {
   return [
     {
-      key: `${prefix}-main`,
+      key: 'dsurface-main',
       title: 'Surface',
       defaultExpanded: true,
       rows: [
@@ -45,14 +51,28 @@ function sections(prefix: string): SchemaSectionDef[] {
           // A filled mesh has no line or point to size.
           disabledWhen: eq('drawmode', 'fill'),
         },
+        // Listed cheapest-name-first rather than in the enumdef's alphabetical
+        // order: MeshMS builds the SES analytically and falls back to the
+        // distance field where it cannot (non-SES surface types, builds
+        // without it).
+        {
+          kind: 'mappedEnum',
+          key: 'surfalgor',
+          label: 'Algorithm',
+          labels: SURFALGOR_LABELS,
+          options: ['distfield', 'meshms', 'edtsurf'],
+        },
         { kind: 'mappedEnum', key: 'surftype', label: 'Surface type', labels: SURFTYPE_LABELS },
-        // A direct surface is tessellated over the whole molecule, so it
-        // stops at 16 where the other renderers go on to 32.
-        { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 1, max: 16 },
+        // Powers of two plus 24: a direct surface is tessellated over the
+        // whole molecule, so the steps near the top are far apart in cost and
+        // 16 -> 32 is too big a jump to be the only choice there. The grid
+        // algorithms carry a cell budget that coarsens rather than allocate
+        // gigabytes at the top, and say so in the log.
+        { kind: 'numEnum', keys: ['detail'], label: 'Detail', ladder: [1, 2, 4, 8, 16, 24, 32] },
       ],
     },
     {
-      key: `${prefix}-radii`,
+      key: 'dsurface-radii',
       title: 'Atom radii',
       defaultExpanded: true,
       // Rebuilding a surface per drag frame is too expensive to preview.
@@ -61,5 +81,4 @@ function sections(prefix: string): SchemaSectionDef[] {
   ]
 }
 
-export const DSURFACE_SECTIONS: SchemaSectionDef[] = sections('dsurface')
-export const DSURF2_SECTIONS: SchemaSectionDef[] = sections('dsurf2')
+export const DSURFACE_SECTIONS: SchemaSectionDef[] = sections()

@@ -169,9 +169,12 @@ describe('the direct-surface Surface section', () => {
     const detail = rowByLabel(container, 'Detail')!
     expect(dragArrow(detail)).toBeNull()
     const sel = detail.querySelector('select') as HTMLSelectElement
-    // Powers of two from 1 up, plus the default 6 the property carries. This
-    // one stops at 16: a direct surface is tessellated over the whole molecule.
-    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['1', '2', '4', '6', '8', '16'])
+    // The levels this row names (powers of two plus 24, since 16 -> 32 is too
+    // big a jump in cost to be the only step there), plus the default 6 the
+    // property carries.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual([
+      '1', '2', '4', '6', '8', '16', '24', '32',
+    ])
     expect(sel.value).toBe('6')
     unmount()
   })

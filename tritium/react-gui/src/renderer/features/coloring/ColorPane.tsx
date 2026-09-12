@@ -187,7 +187,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
     const defaultColor = state?.defaultColor ?? ''
     const entries = state?.paintEntries ?? []
     const surfaceType = state?.surfaceType ?? ''
-    const isSurface = surfaceType === 'molsurf' || surfaceType === 'dsurface' || surfaceType === 'dsurf2'
+    const isSurface = surfaceType === 'molsurf' || surfaceType === 'dsurface'
     const isElepotActive = isSurface && state?.colormode === 'potential'
     const multiGradCapable = state?.multiGradCapable === true
     const isMultiGradActive = multiGradCapable && state?.colormode === 'multigrad'
