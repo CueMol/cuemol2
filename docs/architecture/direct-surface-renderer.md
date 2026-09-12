@@ -378,10 +378,22 @@ pRF->registAlias("dsurf2", "dsurface", {{"surfalgor", "distfield"}});
 
 ## 今後の課題
 
-- **MeshMS の `RSCache`**: `MolSurfObj` は density 非依存の RS 成分をキャッシュして
-  再生成を速くしている (`meshms-ses-backend.md`)。レンダラは持っていない。
-  Release の実測ではこれが meshms の約 9 ms の下限と、大分子での所要時間のかなりの
-  部分を占めている。効くのは `detail` だけを変えたときで、初回は必ず払う。
+- **MeshMS の `RSCache` は持たせない (計測して見送った)**: `MolSurfObj` は density
+  非依存の RS 成分をキャッシュして再生成を速くしている (`meshms-ses-backend.md`)。
+  レンダラにも同じものを入れるか検討し、RS と meshing を分けて計測した (Release):
+
+  | | 1CRN (327 原子) | 70632 原子 |
+  |---|---|---|
+  | RS 計算 | 1.8 ms | 330 ms |
+  | meshing (detail 6) | 6.9 ms | 3.9 s |
+  | RS の割合 | 21% | 8% |
+  | RSCache の常駐メモリ | 小 | 約 190 MB (原子あたり ~2.7 KB) |
+
+  支配項は RS ではなく meshing で、キャッシュが効くのは「同じ分子・選択・probe・
+  vdW 半径で `detail` だけ変えたとき」に限られる。その場合でも短縮は小分子で 2 ms、
+  大分子で 4.4 s -> 4.1 s と体感できない一方、レンダラが生きている間ずっと常駐する。
+  20 万原子級なら 540 MB になり、上のセル予算 (512 MB) / 頂点予算 (450 MB) と釣り合わない。
+  速度を改善するなら投資先は meshing 側 (MeshMS 本体) である。
 - **distfield の高速化**: Release で測ると既定 detail では distfield が最速だが、
   直列部分が残っている。marching cubes の頂点溶接が `unordered_map` による直列処理
   (ChimeraX は平面 2 枚分の配列 sweep で hash 無し)、SES の pass 2 が slab ごとに
