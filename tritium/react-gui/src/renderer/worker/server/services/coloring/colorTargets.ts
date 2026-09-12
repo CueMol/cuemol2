@@ -144,12 +144,12 @@ export function needsMolFancTarget(rend: Renderer): boolean {
  *
  * `colormode` decides which colouring path a surface or map renderer takes,
  * and the set of paths differs per type -- molsurf offers solid / potential /
- * molecule / multigrad, the map renderers drop potential, and the two
- * direct-surface renderers offer only potential / molecule. Restating that
- * list here is what produced the bug this replaces: a hard-coded
- * "molsurf or isosurf" gate stopped matching reality when dsurf2 gained a
- * potential mode, so the renderer could be put into a mode nothing took it
- * out of, and every later coloring choice was written but ignored.
+ * molecule / multigrad, the map renderers drop potential, and dsurface offers
+ * only potential / molecule. Restating that list here is what produced the
+ * bug this replaces: a hard-coded "molsurf or isosurf" gate stopped matching
+ * reality when the direct surface renderers gained a potential mode, so the
+ * renderer could be put into a mode nothing took it out of, and every later
+ * coloring choice was written but ignored.
  *
  * Empty for a renderer with no `colormode` at all (most of them).
  */
@@ -209,7 +209,7 @@ export function isMolColorRef(color: unknown): boolean {
 /** Surface-class renderers eligible for the Elepot deck. */
 export function isElepotCapable(rend: Renderer): boolean {
     const t = readTypeName(rend);
-    return t === 'molsurf' || t === 'dsurface' || t === 'dsurf2';
+    return t === 'molsurf' || t === 'dsurface';
 }
 
 /**

@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Direct molecular surface renderer: shared base of dsurface and dsurf2
+//  Direct molecular surface renderer: scriptable base of dsurface
 //
 
 #include <common.h>
@@ -147,10 +147,17 @@ bool DirectSurfRendererBase::isVertexShown(const VertexColorEnv &env, const MSVe
                                            MolAtomPtr &pAtom) const
 {
   pAtom = MolAtomPtr();
-  if (v.info<0 || env.pMol.isnull())
+  if (env.pMol.isnull())
     return true;
 
-  pAtom = env.pMol->getAtom(v.info);
+  pAtom = env.pMol->getAtom((int) v.info);
+  if (pAtom.isnull()) {
+    // The mesh builder could not name the owning atom (NO_ATOM_ID). Draw the
+    // vertex; resolveVertexColor() paints it defaultcolor. The selection
+    // nodes dereference the atom, so they must not see a null one.
+    return true;
+  }
+
   if (!m_pShowSel.isnull() &&
       !m_pShowSel->isEmpty() &&
       !m_pShowSel->isSelected(pAtom))

@@ -1364,75 +1364,6 @@ exports[`renderer Properties page > disorder / loopsize2-on 1`] = `
 }
 `;
 
-exports[`renderer Properties page > dsurf2 / default 1`] = `
-{
-  "Atom radii": {
-    "rows": [
-      "Carbon [drag-numeric] {resettable}",
-      "Nitrogen [drag-numeric] {resettable}",
-      "Oxygen [drag-numeric] {resettable}",
-      "Sulfur [drag-numeric] {resettable}",
-      "Phosphorus [drag-numeric] {resettable}",
-      "Hydrogen [drag-numeric] {resettable}",
-      "Others [drag-numeric] {resettable}",
-    ],
-    "writes": [
-      "Carbon -> set vdwr_C=1.75",
-      "Nitrogen -> set vdwr_N=1.6",
-      "Oxygen -> set vdwr_O=1.57",
-      "Sulfur -> set vdwr_S=1.85",
-      "Phosphorus -> set vdwr_P=1.85",
-      "Hydrogen -> set vdwr_H=1.25",
-      "Others -> set vdwr_X=1.75",
-    ],
-  },
-  "Basic settings": {
-    "rows": [
-      "Name [text] value=""",
-      "Selection [text] value=""",
-      "Visible [switch] {resettable} value="on"",
-      "Locked [switch] {resettable} value="on"",
-      "Material [select] {resettable} options=[] selected=",
-      "Opacity [drag-numeric] {resettable}",
-    ],
-    "writes": [
-      "Name -> set name="x"",
-      "Selection -> (nothing)",
-      "Visible -> set visible=false",
-      "Locked -> set locked=true",
-      "Material -> (not driven)",
-      "Opacity -> (nothing)",
-    ],
-  },
-  "Edge lines": {
-    "rows": [
-      "Edge type [select] {resettable} options=[none|edges|silhouette] selected=none",
-      "Width [drag-numeric] {resettable,disabled}",
-      "Color [color] {resettable,disabled} value="#000000"",
-    ],
-    "writes": [
-      "Edge type -> set egtype="edges"",
-      "Width -> (nothing)",
-      "Color -> (nothing)",
-    ],
-  },
-  "Surface": {
-    "rows": [
-      "Drawing mode [select] {resettable} options=[fill|line|point] selected=fill",
-      "Line/Point size [drag-numeric] {resettable,disabled}",
-      "Surface type [select] {resettable} options=[sas|ses|vdw] selected=ses",
-      "Detail [select] {resettable} options=[1|2|4|6|8|16] selected=6",
-    ],
-    "writes": [
-      "Drawing mode -> set drawmode="line"",
-      "Line/Point size -> (nothing)",
-      "Surface type -> set surftype="sas"",
-      "Detail -> set detail=1",
-    ],
-  },
-}
-`;
-
 exports[`renderer Properties page > dsurface / default 1`] = `
 {
   "Atom radii": {
@@ -1489,12 +1420,14 @@ exports[`renderer Properties page > dsurface / default 1`] = `
     "rows": [
       "Drawing mode [select] {resettable} options=[fill|line|point] selected=fill",
       "Line/Point size [drag-numeric] {resettable,disabled}",
+      "Algorithm [select] {resettable} options=[distfield|meshms|edtsurf] selected=distfield",
       "Surface type [select] {resettable} options=[sas|ses|vdw] selected=ses",
-      "Detail [select] {resettable} options=[1|2|4|6|8|16] selected=6",
+      "Detail [select] {resettable} options=[1|2|4|6|8|16|24|32] selected=6",
     ],
     "writes": [
       "Drawing mode -> set drawmode="line"",
       "Line/Point size -> (nothing)",
+      "Algorithm -> set surfalgor="meshms"",
       "Surface type -> set surftype="sas"",
       "Detail -> set detail=1",
     ],

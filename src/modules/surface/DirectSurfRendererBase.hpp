@@ -1,11 +1,11 @@
 // -*-Mode: C++;-*-
 //
-//  Direct molecular surface renderer: shared base of dsurface and dsurf2
+//  Direct molecular surface renderer: scriptable base of dsurface
 //
 //  Owns the properties, the display-list render path and the per-vertex
-//  colour resolution both renderers share. Subclasses supply the mesh
-//  builder (EDTSurf or distance field); dsurf2 adds a GPU draw path that
-//  colours through the same resolver.
+//  colour resolution. The concrete renderer supplies the mesh builders
+//  (EDTSurf / distance field / MeshMS) and a GPU draw path that colours
+//  through the same resolver.
 //
 
 #ifndef DIRECT_SURF_RENDERER_BASE_HPP_INCLUDED
@@ -45,6 +45,10 @@ namespace surface {
 
     DirectSurfRendererBase();
     ~DirectSurfRendererBase() override;
+
+    /// MSVert::info of a vertex whose owning atom is unknown. Chosen so that
+    /// MolCoord::getAtom((int) NO_ATOM_ID) never resolves.
+    static const quint32 NO_ATOM_ID = 0xFFFFFFFFu;
 
     ///////////////////////////////////////////
     // DispListRenderer implementation

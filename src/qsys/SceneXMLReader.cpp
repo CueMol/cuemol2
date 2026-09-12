@@ -346,8 +346,9 @@ qlib::LScrObjBasePtr SceneXMLReader::fromByteArray(const qlib::LByteArrayPtr &pb
   if (tag.equals("renderer") && !type_name.isEmpty()) {
     // pbuf contains Renderer
     RendererFactory *pRF = RendererFactory::getInstance();
+    // create() already reset the properties to their defaults; resetting again
+    // here would also wipe the presets a renderer type alias applied.
     RendererPtr pRend = pRF->create(type_name);
-    pRend->resetAllProps();
     pRend->readFrom2(pNode);
     pSObj = pRend;
   }

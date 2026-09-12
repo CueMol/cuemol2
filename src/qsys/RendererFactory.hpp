@@ -15,6 +15,10 @@
 #include <qlib/SingletonBase.hpp>
 #include <qlib/MapTable.hpp>
 
+#include <map>
+#include <utility>
+#include <vector>
+
 using qlib::LString;
 
 namespace qsys {
@@ -34,6 +38,24 @@ namespace qsys {
     typedef qlib::MapTable<RendererPtr> rendtab_t;
 
     rendtab_t m_rendtab;
+
+  public:
+    /// Property values applied to a renderer created through an alias, in order.
+    typedef std::vector<std::pair<LString, LString> > PresetList;
+
+  private:
+    struct AliasEntry
+    {
+      /// Registered type name the alias resolves to.
+      LString target;
+      /// Property presets applied after creation.
+      PresetList presets;
+    };
+
+    typedef std::map<LString, AliasEntry> aliastab_t;
+
+    /// Renamed/merged renderer type names, kept so old scene files still load.
+    aliastab_t m_aliastab;
 
   public:
     RendererFactory();
@@ -56,6 +78,26 @@ namespace qsys {
     bool isRegistered(const LString &abiname);
 
     RendererPtr create(const LString &nickname);
+
+    /**
+       Register an obsolete renderer type name resolving to a registered one.
+
+       create(oldName) then builds newName and applies the presets as user
+       values (the default flags are cleared, so reapplyStyle() keeps them),
+       and the renderer is saved back under newName. Aliases are invisible to
+       searchCompatibleRenderers(), so they are never offered in the GUI.
+    */
+    void registAlias(const LString &oldName, const LString &newName,
+                     const PresetList &presets = PresetList());
+
+    /// Unregister an alias. Returns false when oldName is not an alias.
+    bool unregistAlias(const LString &oldName);
+
+    /// True when nickname is an alias of another (registered) renderer type.
+    bool isAlias(const LString &nickname) const
+    {
+      return m_aliastab.find(nickname)!=m_aliastab.end();
+    }
 
     int searchCompatibleRenderers(ObjectPtr pobj, std::list<LString> &result);
 

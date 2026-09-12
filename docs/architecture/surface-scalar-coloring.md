@@ -1,12 +1,20 @@
 # Surface scalar colouring: `ScalarColorSupport` and `DirectSurfRendererBase`
 
-How the surface renderers (`molsurf`, `dsurface`, `dsurf2`) colour a
-surface by a scalar field (electrostatic potential ramp, multi-gradient),
-and why that code now lives in one mixin plus one shared base instead of
-three copies. Not a UXP migration item: the direct surface renderers
-never had multi-gradient colouring in UXP either.
+How the surface renderers (`molsurf`, `dsurface`) colour a surface by a
+scalar field (electrostatic potential ramp, multi-gradient), and why that
+code now lives in one mixin plus one shared base instead of three copies.
+Not a UXP migration item: the direct surface renderers never had
+multi-gradient colouring in UXP either.
 
 Date: 2026-09-03. Branch: `fix/rendgroup-name-dsurf-multigrad`.
+
+> `dsurf2` (`DirectSurfRenderer2`) was a second direct surface renderer at
+> the time of writing. It has since been merged into `dsurface` as the
+> `distfield` value of its `surfalgor` property, so the two concrete
+> classes below are now one; see
+> [direct-surface-renderer.md](direct-surface-renderer.md). Everything the
+> text says about dsurf2's GPU path and resolver now applies to
+> `DirectSurfRenderer` itself.
 
 ## Problem
 
@@ -41,11 +49,11 @@ qsys::DispListRenderer            molstr::MolRenderer
         |         |                        |         |
   surface::MolSurfRenderer         surface::DirectSurfRendererBase   <- abstract, scriptable
      (molsurf: also mixes in                    |
-      ScalarColorSupport)          +------------+-------------+
-                                   |                          |
-                        DirectSurfRenderer            DirectSurfRenderer2
-                        (dsurface: EDTSurf,           (dsurf2: distance field,
-                         `surfalgor`)                  GPU path over the resolver)
+      ScalarColorSupport)                       |
+                                        DirectSurfRenderer
+                                        (dsurface: `surfalgor` picks
+                                         EDTSurf / distance field / MeshMS;
+                                         GPU path over the resolver)
 ```
 
 ### `ScalarColorSupport` (`src/modules/surface/ScalarColorSupport.{hpp,cpp}`)
@@ -101,11 +109,11 @@ The base owns:
   `DS_SCAPOT` / `DS_MULTIGRAD`: `getScalarColor`), and
   `endVertexColors(env)` closes the schemes.
 
-Subclasses implement `buildMeshCache()` (fill `m_verts` / `m_faces`,
-`MSVert::info` = atom id) and may override `invalidateMeshCache()` and
-`onShowSelChanged()`; `dsurf2` uses both to drop or keep its GPU
-primitive, and its `computeShownColors()` is now a thin loop over the
-resolver that turns the returned colours into device codes.
+The concrete renderer implements `buildMeshCache()` (fill `m_verts` /
+`m_faces`, `MSVert::info` = atom id) and overrides `invalidateMeshCache()`
+and `onShowSelChanged()` to drop or keep its GPU primitive; its
+`computeShownColors()` is a thin loop over the resolver that turns the
+returned colours into device codes.
 
 ## Contracts
 
@@ -115,8 +123,8 @@ resolver that turns the returned colours into device codes.
   The old display-list loop left `gfx::Mesh`'s current colour untouched,
   so such a vertex silently inherited the previous vertex's colour; the
   GPU path had the same carry-over with `curDev`.
-- **Both dsurf2 paths agree by construction** because they share the
-  resolver. `Dsurf2PathsFixture.GpuAndDisplayListColorsAgree` compares
+- **Both draw paths agree by construction** because they share the
+  resolver. `DsurfPathsFixture.GpuAndDisplayListColorsAgree` compares
   the device code of every shown vertex between `render()` and
   `computeShownColors()` in molecule, potential and unresolved-potential
   mode.
@@ -127,9 +135,9 @@ resolver that turns the returned colours into device codes.
   it. A gradient stop edit then reaches `propChanged` as an event whose
   parent name is `multi_grad`, and since `qsys::Renderer::propChanged`
   does not invalidate on its own, the base invalidates when the mode is
-  `DS_MULTIGRAD` (dsurf2's `invalidateDisplayCache` override turns that
-  into a colour-only refresh of the GPU primitive, which is what makes
-  stop dragging live).
+  `DS_MULTIGRAD` (the `invalidateDisplayCache` override turns that into a
+  colour-only refresh of the GPU primitive, which is what makes stop
+  dragging live).
 - **`DS_MULTIGRAD = 4`** matches `MolSurfRenderer::SFREND_MULTIGRAD`;
   enum values serialise by name, so the number is free, but keeping them
   equal avoids surprises in scripts.
@@ -152,8 +160,8 @@ enum definition from the live wrapper, writes `color_mapname`, and calls
 `getColorMapObj()` for the map statistics / histogram; the direct surface
 pair now answers all four. Only the fixtures changed:
 `__test__/rendererColoringService.test.ts` (`COLORMODE_ENUMDEF`) and
-`features/inspector/__fixtures__/rendererProps.json` (`dsurface` /
-`dsurf2` `colormode.enumdef`). `dialog.dsurf` in
+`features/inspector/__fixtures__/rendererProps.json` (`colormode.enumdef`
+of the direct surfaces). `dialog.dsurf` in
 [`mapping/other_dlgs.md`](../migration/mapping/other_dlgs.md) and
 `panel.coloring.shell` in
 [`mapping/panels.md`](../migration/mapping/panels.md) link here.
@@ -163,7 +171,7 @@ pair now answers all four. Only the fixtures changed:
 | File | Pins |
 |---|---|
 | `src/tests/modules/surface/test_scalar_color_support.cpp` | ramp stops and interpolation, coincident stops (no division by zero), gradient lookup, `samplePos`, per-mode target names, one hook call per setter, scene resolution, and that molsurf redraws ramp changes in both scalar modes |
-| `src/tests/modules/surface/test_dsurf_color.cpp` (parametrised over `dsurface` / `dsurf2`) | potential and multigrad colours on a synthetic x-valued `ElePotMap`, `defaultcolor` fallback for an unresolved map in both modes, `ramp_above` changing the sampled colours, which setters redraw in which mode (incl. `setNodesJSON` through the nested-property path), qsc round trips of `elepot` / `color_mapname` / `target`, legacy potential and multigrad qsc files, and the dsurf2 GPU / DL parity |
+| `src/tests/modules/surface/test_dsurf_color.cpp` | potential and multigrad colours on a synthetic x-valued `ElePotMap`, `defaultcolor` fallback for an unresolved map in both modes, `ramp_above` changing the sampled colours, which setters redraw in which mode (incl. `setNodesJSON` through the nested-property path), qsc round trips of `elepot` / `color_mapname` / `target`, legacy potential and multigrad qsc files, and the GPU / DL parity |
 | `src/tests/modules/surface/test_molsurf_serialize.cpp` | the `color_mapname` / `elepot` separation on molsurf (unchanged; helpers moved to `qsc_roundtrip_util.hpp`) |
 
 Run them with `cd build_scripts && task build_libcuemol2 && task run_gtest`
@@ -174,8 +182,10 @@ Run them with `cd build_scripts && task build_libcuemol2 && task run_gtest`
 - `molsurf` still has its own vertex loop (its molecule mode maps
   positions to atoms through `AtomPosMap2`, the direct surfaces carry the
   atom id on the vertex); it only shares the mixin, not the resolver.
-- The MSMS surface algorithm option of `dsurface` (`surfalgor = msms`) is
-  still unimplemented (`buildMeshCache` asserts on it), unchanged here.
+- The `surfalgor` property of `dsurface` had an unimplemented `msms`
+  value at the time of writing. It was dropped when the algorithms were
+  reworked; see
+  [direct-surface-renderer.md](direct-surface-renderer.md).
 - The per-atom colour memo assumes a colouring scheme answers the same
   for the same atom within one `start()` / `end()` pass, which every
   scheme in `molstr` satisfies today.

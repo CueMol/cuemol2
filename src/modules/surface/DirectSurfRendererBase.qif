@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Direct molecular surface renderer: properties shared by dsurface and dsurf2
+//  Direct molecular surface renderer: properties of dsurface
 //
 
 #ifndef DIRECT_SURF_RENDERER_BASE_QIF_INCLUDED

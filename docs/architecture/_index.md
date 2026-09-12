@@ -176,14 +176,22 @@ architecture, it belongs here.
   renderer, and the compatible direction (run-time UID resolution, names kept
   on the wire). Records what the tritium guard covers and what it does not.
 - [Surface scalar colouring: `ScalarColorSupport` and `DirectSurfRendererBase`](surface-scalar-coloring.md) --
-  the potential ramp and multi-gradient colouring shared by `molsurf`,
-  `dsurface` and `dsurf2`: the non-scriptable mixin that owns the scalar
-  colouring properties and their evaluation, the abstract scriptable base
-  the direct surface pair now derives from (one display-list path, one
-  per-vertex resolver that also feeds dsurf2's GPU primitive), the
-  contracts (unresolved vertex = `defaultcolor`, separate per-mode target
-  names, `setupParentData("multi_grad")` placement, `target` kept as an
-  inert string) and the test map.
+  the potential ramp and multi-gradient colouring shared by `molsurf` and
+  `dsurface`: the non-scriptable mixin that owns the scalar colouring
+  properties and their evaluation, the abstract scriptable base the direct
+  surface renderer derives from (one display-list path, one per-vertex
+  resolver that also feeds its GPU primitive), the contracts (unresolved
+  vertex = `defaultcolor`, separate per-mode target names,
+  `setupParentData("multi_grad")` placement, `target` kept as an inert
+  string) and the test map.
+- [Direct surface renderer (`dsurface`): アルゴリズム選択と detail の統一](direct-surface-renderer.md) (日本語) --
+  the `surfalgor` property (`edtsurf` / `distfield` / `meshms`) that merged
+  the former `dsurf2` renderer into `dsurface`: how one `detail` value is
+  calibrated onto all three mesh builders (EDTSurf's voxel size is the
+  reference), the MeshMS SES-only fallback rules, per-vertex atom ids
+  (`MSVert::info`) including the MeshMS `atom_id` mapping and the null-atom
+  guard that fixed a `showsel` crash, and the `RendererFactory` type-name
+  alias that keeps scenes saved as `dsurf2` loading.
 - [Scene app data と render 設定の scene 保存](scene-app-data.md) (日本語) --
   Rendering window の設定を `.qsc` に保存する仕組み。`Scene` の汎用 typed app-data store
   (`<appdata id= type=>`、class 未登録なら verbatim 温存) と QIF class `RenderSettings`

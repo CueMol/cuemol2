@@ -23,7 +23,7 @@ import { CPK_SECTIONS } from "@renderer/features/inspector/schema/cpk";
 import { DISORDER_SECTIONS } from "@renderer/features/inspector/schema/disorder";
 import { MOLSURF_SECTIONS } from "@renderer/features/inspector/schema/molsurf";
 import { SPLINE_SECTIONS } from "@renderer/features/inspector/schema/spline";
-import { DSURF2_SECTIONS, DSURFACE_SECTIONS } from "@renderer/features/inspector/schema/dsurface";
+import { DSURFACE_SECTIONS } from "@renderer/features/inspector/schema/dsurface";
 import { TUBE_SECTIONS } from "@renderer/features/inspector/schema/tube";
 import { NUCL_SECTIONS } from "@renderer/features/inspector/schema/nucl";
 import { CARTOON_SECTIONS } from "@renderer/features/inspector/schema/cartoon";
@@ -181,11 +181,6 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // radii form the "Atom radii" section. The MolSurf coloring controls (target /
   // showsel / coloring mode) stay out (UXP Coloring panel, not migrated yet).
   dsurface: DSURFACE_SECTIONS,
-  // DirectSurfRenderer2 ("dsurf2"): the distance-field surface.
-  // Temporary exposure alongside dsurface -- it shares the same property set
-  // (surftype / detail / proberad / draw mode / per-element radii), so it
-  // reuses the dsurface property sections verbatim.
-  dsurf2: DSURF2_SECTIONS,
   // MolSurfRenderer ("molsurf"): UXP molsurf-propdlg "MolSurf" tab (shared
   // molsurf-page with dsurface, but Surface type / Detail / Atom radii are
   // dsurface-only while the "Selection mol" target is molsurf-only). One section:

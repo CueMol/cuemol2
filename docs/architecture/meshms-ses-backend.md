@@ -173,7 +173,7 @@ GUI を持たない headless 実行や CI で BALL 経路を回すため
 
 `createSESFromArray` は生成全体を `std::chrono::steady_clock` で計測し、
 どちらの経路を通ったかと一緒に 1 行で出力する (同モジュールの
-`DirectSurfRenderer2` の計測ログと同じ形式):
+`DirectSurfRenderer` の計測ログと同じ形式):
 
 ```
 MolSurfBuilder> SES built by MeshMS in 2.6 ms: atoms=2, verts=430, faces=856 (density=4.00, probe=1.40)
@@ -194,12 +194,18 @@ CI (Linux) は MeshMS 既定での全 ctest に加えて、`CUEMOL_SES_BACKEND=b
 - **winding**: MeshMS の faces は MSMS 規約 (外向き CCW)。cuemol2 の
   `MSMSFileReader` が MSMS faces を無変換格納して GL_CULL_FACE 描画してきた
   実績と整合する。gtest の符号付き体積 > 0 が回帰ガード。
-- **atom_id → MSVert::info は見送り**: MolSurfObj 経路の全消費者
-  (MolSurfRenderer = AtomPosMap 近傍検索着色 / QdfSurfWriter / CutByPlane) は
-  info を読まない。また MeshMS の atom_id は「入力配列 index+1」であり CueMol の
-  aid ではないため、aid 規約 (DirectSurfRenderer 系) と混同する誤用リスクの方が
-  大きい。将来 MolSurfRenderer の近傍検索着色を atom_id 直参照へ置換する際に、
+- **MolSurfObj 経路では atom_id → MSVert::info は見送り**: MolSurfObj 経路の
+  全消費者 (MolSurfRenderer = AtomPosMap 近傍検索着色 / QdfSurfWriter /
+  CutByPlane) は info を読まない。MeshMS の atom_id は「入力配列 index+1」であり
+  CueMol の aid ではないので、aid 規約と混同する誤用リスクの方が大きい。将来
+  MolSurfRenderer の近傍検索着色を atom_id 直参照へ置換する際に、
   `createSESFromArray` へ aid 配列を渡す拡張とセットで行うこと。
+- **レンダラ経路 (`dsurface` の `surfalgor=meshms`) では使う**: `DirectSurfRenderer`
+  の着色は `MSVert::info` を原子 id として読むので必須。同じ関数内で組んだ入力配列を
+  持っているため index → aid の対応が自明で、上記の混同リスクが無い
+  ([direct-surface-renderer.md](direct-surface-renderer.md))。レンダラは MolSurfObj
+  とは別に MeshMS を直接呼び、density 変換係数も BALL 基準ではなく EDTSurf 基準の
+  別係数を使う。RSCache は持たない。
 
 ## RSCache による再生成高速化
 
