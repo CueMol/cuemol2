@@ -59,14 +59,7 @@ export const AgentChatPane: PaneComponent = ({ collapsed, onToggleCollapse }) =>
               ariaLabel="Message the AI agent"
               minRows={1}
               maxRows={6}
-              onKeyDown={(e) => {
-                // Enter sends; Shift+Enter is a newline, the convention every
-                // chat composer uses.
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  submit()
-                }
-              }}
+              onSubmit={submit}
             />
             <div className="agent-composer-actions">
               {running ? (

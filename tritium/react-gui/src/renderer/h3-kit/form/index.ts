@@ -24,6 +24,7 @@ export { TextField } from './TextField';
 export type { TextFieldProps } from './TextField';
 export { TextAreaField } from './TextAreaField';
 export type { TextAreaFieldProps } from './TextAreaField';
+export { isImeKey } from './imeGuard';
 export { TimeField, formatMs, parseTime } from './TimeField';
 export type { TimeFieldProps } from './TimeField';
 export { SelectField } from './SelectField';

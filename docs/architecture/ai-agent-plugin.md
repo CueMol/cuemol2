@@ -135,6 +135,10 @@ Root の React Context は pane に見えない。side pane は activity view �
 plugin を実行中に無効化すると Root が unmount されるので、その cleanup で
 `cancelTurn` を送り、store を reset する。
 
+composer の送信は `TextAreaField` の `onSubmit` (Enter 送信 / Shift+Enter 改行)。
+**自前で `key === 'Enter'` を見てはいけない**: 日本語入力では変換確定の Enter が来るので、
+変換のたびに書きかけが送信される。kit 側が `isImeKey()` で除外している。
+
 ---
 
 ## 4. host 側に足した汎用の受け皿

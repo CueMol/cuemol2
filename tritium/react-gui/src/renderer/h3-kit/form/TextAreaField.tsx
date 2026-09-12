@@ -13,6 +13,7 @@
  */
 
 import React, { useCallback, useLayoutEffect, useRef } from 'react';
+import { isImeKey } from './imeGuard';
 
 export interface TextAreaFieldProps {
     value: string;
@@ -27,9 +28,15 @@ export interface TextAreaFieldProps {
     /** Rows to grow to before scrolling (default 6). */
     maxRows?: number;
     /**
-     * Keyboard handler. A composer binds Enter to submit here and lets
-     * Shift+Enter fall through as a newline.
+     * Send on Enter, newline on Shift+Enter -- the chat-composer convention.
+     *
+     * Held off while an input method is composing, so the Enter that confirms
+     * a kana-to-kanji conversion (or any other IME candidate) reaches the IME
+     * instead of sending a half-typed message. Bind this rather than writing
+     * the Enter check in `onKeyDown`, which is where that bug comes from.
      */
+    onSubmit?: () => void;
+    /** Other keys. Not called for an Enter that `onSubmit` consumed. */
     onKeyDown?: React.KeyboardEventHandler<HTMLTextAreaElement>;
     onBlur?: React.FocusEventHandler<HTMLTextAreaElement>;
     /** Focus on mount. */
@@ -47,6 +54,7 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
     mono,
     minRows = 1,
     maxRows = 6,
+    onSubmit,
     onKeyDown,
     onBlur,
     autoFocus,
@@ -77,6 +85,18 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
 
     useLayoutEffect(() => { resize(); }, [value, resize]);
 
+    const handleKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+            if (onSubmit && e.key === 'Enter' && !e.shiftKey && !isImeKey(e.nativeEvent)) {
+                e.preventDefault();
+                onSubmit();
+                return;
+            }
+            onKeyDown?.(e);
+        },
+        [onSubmit, onKeyDown],
+    );
+
     return (
         <textarea
             ref={ref}
@@ -86,7 +106,7 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
             placeholder={placeholder}
             disabled={disabled}
             readOnly={readOnly}
-            onKeyDown={onKeyDown}
+            onKeyDown={handleKeyDown}
             onBlur={onBlur}
             autoFocus={autoFocus}
             aria-label={ariaLabel}

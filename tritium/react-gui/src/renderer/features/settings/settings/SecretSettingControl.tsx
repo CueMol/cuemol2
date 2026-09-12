@@ -15,7 +15,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { FormButton, TextField } from '@renderer/h3-kit/form'
+import { FormButton, TextField, isImeKey } from '@renderer/h3-kit/form'
 import { IPC } from '@shared/ipcChannels'
 import type { SecretStatusRes } from '@shared/types/secrets'
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
@@ -116,7 +116,11 @@ export const SecretSettingControl: React.FC<SecretSettingControlProps> = ({
           onChange={setDraft}
           password
           placeholder={status.source === 'none' ? `Enter ${label}` : 'Enter a new value to replace it'}
-          onKeyDown={(e) => { if (e.key === 'Enter') commit() }}
+          onKeyDown={(e) => {
+            // Not the Enter that confirms an IME candidate: that one belongs
+            // to the input method, not to this field.
+            if (e.key === 'Enter' && !isImeKey(e.nativeEvent)) commit()
+          }}
           onBlur={commit}
         />
         <FormButton
