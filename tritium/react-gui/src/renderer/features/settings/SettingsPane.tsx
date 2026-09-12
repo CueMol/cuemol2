@@ -57,6 +57,12 @@ import {
   VIEW_INPUT_PARAM_SETTING_KEYS,
   PICKING_PREF_SETTING_KEYS,
 } from '@renderer/features/settings/settings/settingsConfig'
+import {
+  PLUGINS_CATEGORY,
+  pluginIdFromSettingKey,
+  pluginSettingDefs,
+} from '@renderer/features/settings/settings/pluginSettings'
+import { usePlugins } from '@renderer/plugin-host'
 import { ConfigTreeNode } from '@renderer/features/settings/settings/ConfigTreeNode'
 import { SettingRow } from '@renderer/features/settings/settings/SettingRow'
 import { AtomLabelPreview } from '@renderer/features/settings/settings/AtomLabelPreview'
@@ -96,6 +102,23 @@ export const SettingsPane: React.FC = () => {
   // App settings colours are scene-independent; `sceneId` is left undefined
   // so the colour picker resolves against the global StyleManager scope.
   const { cm } = useCueMol()
+  // The Plugins page: one row per switchable plugin, generated from the
+  // registry, which also owns their on / off state.
+  const { switchable: switchablePlugins, isEnabled, setEnabled } = usePlugins()
+  const allSettings = useMemo(
+    () => [...SETTINGS, ...pluginSettingDefs(switchablePlugins)],
+    [switchablePlugins],
+  )
+  // Every other category always has rows; the Plugins one has none when
+  // nothing is switchable (a release build), and a tree node that opens an
+  // empty page reads as a bug.
+  const categoryTree = useMemo(
+    () =>
+      switchablePlugins.length > 0
+        ? CATEGORY_TREE
+        : CATEGORY_TREE.filter((node) => node.id !== PLUGINS_CATEGORY),
+    [switchablePlugins],
+  )
 
   // Navigation state (selected category / filter / expanded groups) is kept in
   // an in-session store so it survives the pane's unmount on a tab switch.
@@ -159,6 +182,13 @@ export const SettingsPane: React.FC = () => {
         return
       }
 
+      // Plugin switches are owned by the plugin registry, not by `values`.
+      const pluginId = pluginIdFromSettingKey(key)
+      if (pluginId) {
+        setEnabled(pluginId, Boolean(value))
+        return
+      }
+
       setValues((prev) => ({ ...prev, [key]: value }))
 
       // Sync theme toggle with the ThemeContext.
@@ -166,7 +196,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam, pickingPrefs],
+    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam, pickingPrefs, setEnabled],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -180,15 +210,15 @@ export const SettingsPane: React.FC = () => {
 
   /** Settings filtered by the search query. */
   const filtered = useMemo(() => {
-    if (!filter.trim()) return SETTINGS
+    if (!filter.trim()) return allSettings
     const q = filter.toLowerCase()
-    return SETTINGS.filter(
+    return allSettings.filter(
       (s) =>
         s.label.toLowerCase().includes(q) ||
         s.description.toLowerCase().includes(q) ||
         s.key.toLowerCase().includes(q),
     )
-  }, [filter])
+  }, [filter, allSettings])
 
   /** Per-category setting count (for tree badges). */
   const settingsCount = useMemo(() => {
@@ -251,7 +281,7 @@ export const SettingsPane: React.FC = () => {
           <span className="config-tree-header-title">Settings</span>
         </div>
         <div className="config-tree-scroll">
-          {CATEGORY_TREE.map((node) => (
+          {categoryTree.map((node) => (
             <ConfigTreeNode
               key={node.id}
               node={node}
@@ -318,7 +348,10 @@ export const SettingsPane: React.FC = () => {
                   if (s.key === 'atomLabel.font' && s.control.kind === 'select') {
                     def = { ...s, control: { ...s.control, options: fontOptions } }
                   }
-                  if (s.key === INPUT_DEVICE_SETTING_KEY) {
+                  const pluginId = pluginIdFromSettingKey(s.key)
+                  if (pluginId) {
+                    value = isEnabled(pluginId)
+                  } else if (s.key === INPUT_DEVICE_SETTING_KEY) {
                     value = INPUT_DEVICE_PREF_LABELS[inputDevicePreference]
                     // In auto mode, surface the currently-detected device.
                     if (inputDevicePreference === 'auto') {

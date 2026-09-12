@@ -72,6 +72,9 @@ export const CATEGORY_TREE: CategoryNode[] = [
       { id: 'tools.apbs', label: 'APBS / PDB2PQR', icon: 'settings.rendering', children: [] },
     ],
   },
+  // A leaf of its own: its rows are generated from the plugin registry
+  // (see settings/pluginSettings.ts), not listed in SETTINGS below.
+  { id: 'plugins', label: 'Plugins', icon: 'settings.plugins', children: [] },
 ]
 
 /** All leaf-node ids, in tree order. */

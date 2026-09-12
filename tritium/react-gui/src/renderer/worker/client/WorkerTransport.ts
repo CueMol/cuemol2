@@ -26,6 +26,7 @@ import type { ApbsUpdate } from '@renderer/worker/shared/apbsTypes';
 import { APBS_PROGRESS_CHANNEL } from '@renderer/worker/shared/apbsTypes';
 import type { AnimProgressUpdate } from '@renderer/worker/shared/animTypes';
 import { ANIM_PROGRESS_CHANNEL } from '@renderer/worker/shared/animTypes';
+import { pluginServiceName } from '@renderer/worker/shared/pluginCalls';
 import type { CrashSource } from '@shared/types/crash';
 import { report as reportCrash } from '@renderer/crash/CrashReporter';
 
@@ -505,6 +506,26 @@ export class WorkerTransport {
     ): Promise<ServiceResult<K>> {
         const result = await this._call(name, [args], { tracked: !opts?.quiet });
         return result[0] as ServiceResult<K>;
+    }
+
+    /**
+     * Call a service contributed by a plugin.
+     *
+     * Same wire shape as `invokeService`; only the name differs, being
+     * namespaced by the plugin id so it cannot collide with a `ServiceMap`
+     * key. Untyped here -- the plugin's own `definePluginServices` client
+     * puts its call contract back on top.
+     */
+    async invokePluginService(
+        pluginId: string,
+        name: string,
+        args: unknown,
+        opts?: InvokeOptions,
+    ): Promise<unknown> {
+        const result = await this._call(pluginServiceName(pluginId, name), [args], {
+            tracked: !opts?.quiet,
+        });
+        return result[0];
     }
 
     /**

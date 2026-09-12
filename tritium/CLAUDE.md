@@ -163,6 +163,42 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit â
 
 ---
 
+## Built-in plugins (`react-gui/src/plugins/`)
+
+Some features are packaged as **built-in plugins**: one directory each, declaring what they
+contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
+this way to keep the feature in one directory, not to make it removable) and `catalog` (the
+component gallery: it ships in every build but is `defaultEnabled: false`, so it appears only
+once someone switches it on in Settings > Plugins).
+
+Full spec, API reference and a how-to-write walkthrough:
+[`docs/architecture/tritium_plugin/`](../docs/architecture/tritium_plugin/_index.md).
+The rules that bite while editing core code:
+
+- **Core must not import a plugin's internals.** ESLint (`NO_PLUGIN_INTERNALS`) rejects
+  `@plugins/*/**` from `src/renderer/**`; only `plugin-host/PluginProvider.tsx` imports the
+  `@plugins/index` registry. A plugin reaches core through `@renderer/plugin-host/api`.
+- **The typed maps stay closed.** `CmdId` / `CommandMap` / `ServiceMap` are for built-ins only.
+  A plugin uses the string lane instead: `registerAny` / `dispatchAny` for commands, and worker
+  services registered under `plugin.<id>.<name>` (the prefix is applied by the plugin glob in
+  `worker/server/services/index.ts`, so `calls/index.test.ts` still checks built-ins one-for-one).
+- **A contributed menu row carries its command in the channel** (`menu:plugin:<commandId>`),
+  because main builds the native menu and cannot see the renderer's plugin registry. Both menu
+  surfaces build from `buildAppMenu()` in `shared/pluginMenu.ts`.
+- **`definePlugin(...)` takes a pure annotation** at the call site. It only matters for a
+  `devOnly` plugin (nothing declares one today), which without it is not tree-shaken out of a
+  release build even though the `__DEV_UI__` branch folds away.
+- **Switchability is a manifest decision**: `alwaysEnabled: true` for a feature nobody would
+  want gone (no Settings row, stored choices ignored), `defaultEnabled: false` for something
+  the user opts into, neither for the ordinary default-on case. `UiState.pluginEnabled` stores
+  only explicit choices, so an untouched plugin follows its own default.
+
+When adding a contribution point to the shell, extend the manifest type in
+`renderer/plugin-host/types.ts` and resolve it in `pluginSelect.ts`; do not special-case a
+plugin id anywhere in core.
+
+---
+
 ## Common service patterns
 
 ### Service results: return `Result`, never throw across the boundary

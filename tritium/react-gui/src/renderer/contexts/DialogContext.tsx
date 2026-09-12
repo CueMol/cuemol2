@@ -14,7 +14,6 @@ import { AboutDialogProvider } from '@renderer/dialogs/AboutDialogProvider'
 import { NewTabDialogProvider } from '@renderer/dialogs/NewTabDialogProvider'
 import { ConfirmCloseTabDialogProvider } from '@renderer/dialogs/ConfirmCloseTabDialogProvider'
 import { FileOpenOptionDialogProvider } from '@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialogProvider'
-import { GetPdbDialogProvider } from '@renderer/dialogs/GetPdbDialogProvider'
 import { QscWriterOptionDialogProvider } from '@renderer/dialogs/QscWriterOptionDialogProvider'
 import { StreamProgressDialogProvider } from '@renderer/dialogs/StreamProgressDialogProvider'
 import { TextPromptDialogProvider } from '@renderer/dialogs/TextPromptDialogProvider'
@@ -54,7 +53,6 @@ export const DialogProvider = composeProviders([
   ConfirmCloseTabDialogProvider,
   FileOpenOptionDialogProvider,
   OpenMdTrajDialogProvider,
-  GetPdbDialogProvider,
   QscWriterOptionDialogProvider,
   StreamProgressDialogProvider,
   TextPromptDialogProvider,

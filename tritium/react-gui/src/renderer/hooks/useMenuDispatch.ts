@@ -10,6 +10,11 @@
  * Clear Recent, Close Tab) are commands that resolve focus or the active tab
  * themselves -- see commands/useFocusEditCommands.ts and useTabCommands.ts.
  * This file therefore does one thing: channel -> command id -> dispatch.
+ *
+ * A plugin-contributed row carries its command id inside the channel itself
+ * (`menu:plugin:<commandId>`), because main builds the native menu and cannot
+ * see the renderer's plugin registry. Decoding that is the one branch here
+ * that does not go through `MENU_ACTION_MAP`.
  */
 
 import { useCallback } from 'react'
@@ -22,16 +27,24 @@ import {
   isMenuActionChannel,
   isUnimplementedMenuAction,
 } from '@shared/menuActionMap'
+import { isPluginMenuChannel, pluginCommandFromChannel } from '@shared/pluginMenu'
 
 export function useMenuDispatch(): {
   dispatchMenuChannel: (channel: string) => void
   dispatchOpenRecent: (entry: RecentFileEntry) => void
 } {
-  const { dispatch } = useCommands()
+  const { dispatch, dispatchAny } = useCommands()
 
   const dispatchMenuChannel = useCallback(
     (channel: string) => {
       const logErr = (prefix: string) => (e: unknown) => console.error(prefix, e)
+
+      if (isPluginMenuChannel(channel)) {
+        // A plugin that is no longer enabled leaves no handler behind, so an
+        // unknown id here is a rejection, not a crash.
+        dispatchAny(pluginCommandFromChannel(channel)).catch(logErr(`${channel}:`))
+        return
+      }
 
       if (!isMenuActionChannel(channel) || isUnimplementedMenuAction(channel)) {
         console.warn('menu action not yet implemented:', channel)
@@ -44,7 +57,7 @@ export function useMenuDispatch(): {
       const dispatchNoArg = dispatch as (id: CommandKey) => Promise<unknown>
       dispatchNoArg(MENU_ACTION_MAP[channel].dispatch as CommandKey).catch(logErr(`${channel}:`))
     },
-    [dispatch],
+    [dispatch, dispatchAny],
   )
 
   const dispatchOpenRecent = useCallback(

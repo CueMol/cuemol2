@@ -40,16 +40,21 @@ src/
       shared/   両スレッドが load する wire DTO と純関数
       client/   renderer スレッド側の transport facade
     (それ以外)  renderer スレッドの UI
+  plugins/    内蔵 plugin (1 plugin = 1 ディレクトリ)
+    <id>/renderer/   renderer スレッド (UI と同じ規則)
+    <id>/worker/     Web Worker (worker/server と同じ規則)
 ```
 
-| from \ to | `shared/` | `worker/shared/` | `worker/server/` | `worker/client/` | UI | `main/` |
-|---|---|---|---|---|---|---|
-| `main/`, `preload/` | OK | x | x | x | x | OK |
-| `shared/` | OK | x | x | x | x | x |
-| `worker/server/` | OK | OK | OK | x | x | x |
-| `worker/shared/` | OK | OK | 型のみ | 型のみ | x | x |
-| `worker/client/` | OK | OK | 型のみ | OK | x | x |
-| UI (renderer) | OK | OK | **型のみ** | OK | OK | x |
+| from \ to | `shared/` | `worker/shared/` | `worker/server/` | `worker/client/` | UI | `main/` | `plugins/<id>/` |
+|---|---|---|---|---|---|---|---|
+| `main/`, `preload/` | OK | x | x | x | x | OK | x |
+| `shared/` | OK | x | x | x | x | x | x |
+| `worker/server/` | OK | OK | OK | x | x | x | x |
+| `worker/shared/` | OK | OK | 型のみ | 型のみ | x | x | x |
+| `worker/client/` | OK | OK | 型のみ | OK | x | x | x |
+| UI (renderer) | OK | OK | **型のみ** | OK | OK | x | **x** |
+| `plugins/<id>/renderer/` | OK | OK | 型のみ | OK | OK | x | 自分のみ |
+| `plugins/<id>/worker/` | OK | OK | OK | x | x | x | 自分の worker のみ |
 
 要点:
 
@@ -64,6 +69,11 @@ src/
   `@shared/` / `@main/` の alias を使う。
 - `@/*` は `@cuemol/core` 自身の alias (core の `src/` を指す)。react-gui の
   コードでは使わない。
+- **core は plugin の中身を import しない** (`NO_PLUGIN_INTERNALS`)。`@plugins/index`
+  (レジストリ) だけが例外で、それを import するのは `plugin-host/PluginProvider.tsx`
+  1 箇所。依存が伸びた plugin は外せなくなるので、これが「plugin を外せる」の実体。
+  plugin から core へは `@renderer/plugin-host/api` を使う (詳細は
+  [tritium_plugin/](tritium_plugin/_index.md))。
 
 ---
 

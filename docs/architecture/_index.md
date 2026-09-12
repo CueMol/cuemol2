@@ -40,6 +40,23 @@ architecture, it belongs here.
   アクセス、`hooks/react` と `hooks/cuemol` の分け方、テストの配置。
   `eslint.config.mjs` が強制しており、flat config の「後のブロックが rule
   options を上書きする」落とし穴もここに記録している。
+- [tritium plugin (JS/TS レーン)](tritium_plugin/_index.md) (日本語、ディレクトリ) --
+  react-gui の機能を plugin 単位で足し外しできるようにした仕組みと、その書き方
+  (プラン Phase 0、JS/TS レーンのみ・ビルド時同梱)。C++ レーンが入るときは別
+  ディレクトリを作る。5 ファイル構成:
+  [overview](tritium_plugin/overview.md) (設計・ディレクトリ・plugin が動くまで・
+  `CmdId` と `ServiceMap` を閉じたまま残して plugin だけ文字列レーンに分けた理由・
+  ESLint レイヤ規則)、
+  [authoring](tritium_plugin/authoring.md) (最小の plugin を 1 本作り、worker
+  service・side pane・dialog・toolbar を足していく手順とテスト)、
+  [contributions](tritium_plugin/contributions.md) (manifest 全フィールドと
+  寄与点のリファレンス、`alwaysEnabled` / `defaultEnabled` の使い分け)、
+  [api](tritium_plugin/api.md) (`@renderer/plugin-host/api` の API リファレンス)、
+  [internals](tritium_plugin/internals.md) (有効判定の解決順、native menu を持つ
+  main へ channel に command id を載せて渡す経路、worker service の glob と
+  名前空間化、dev-only と tree-shaking、寄与点の足しかた)。
+  現状の 3 つ (getpdb / sequence / catalog) は、その機能専用の C++ クラスを
+  持たないことを基準に選んでいる。
 - [C++ Scripting Bridge](cpp-scripting-bridge.md) -- metaclass macros
   (`MC_DYNCLASS` / `MC_SCRIPTABLE`), the `getClassObj` vs
   `getScrClassObj` contract, and what external script bridges (UXP
