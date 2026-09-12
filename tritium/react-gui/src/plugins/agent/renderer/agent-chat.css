@@ -25,6 +25,15 @@
   gap: var(--space-3);
 }
 
+/* Every row keeps its own height. A flex item shrinks by default, so once a
+   conversation is longer than the pane the rows compress to fit instead of
+   overflowing -- the tool rows collapse to stripes and their disclosure
+   caret stops being clickable. The scrollbar is what should absorb the
+   length. */
+.agent-transcript > * {
+  flex-shrink: 0;
+}
+
 .agent-empty {
   margin: auto;
   max-width: 22em;
@@ -101,6 +110,11 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
+}
+
+/* The caret and the tool name sit on one row that must stay tappable. */
+.agent-tool-head {
+  min-height: var(--ctrl-h-sm);
 }
 
 .agent-tool-head {

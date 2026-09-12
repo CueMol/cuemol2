@@ -15,11 +15,13 @@ import {
   usePluginPrefs,
 } from '@renderer/plugin-host/api'
 import type { PaneComponent } from '@renderer/plugin-host/api'
+import { Button, ButtonGroup, Tooltip } from '@blueprintjs/core'
+import { AppIcon } from '@renderer/h3-kit/primitives'
 import { FormButton, TextAreaField, isImeKey } from '@renderer/h3-kit/form'
 import type { SubmitKey } from '@renderer/h3-kit/form'
 import { CmdId } from '@renderer/commands/ids'
 import { AgentTranscript } from './AgentTranscript'
-import { useAgentSession } from './agentSessionStore'
+import { agentSession, useAgentSession } from './agentSessionStore'
 import { IDLE, getHistory, pushHistory, recallDown, recallUp } from './promptHistory'
 import type { RecallState } from './promptHistory'
 import {
@@ -125,6 +127,10 @@ export const AgentChatPane: PaneComponent = ({ collapsed, onToggleCollapse }) =>
     void dispatch(CmdId.UiSettingsTab)
   }, [dispatch])
 
+  // Starting over drops what the model has been told as well as what is on
+  // screen: a transcript the user cleared should not keep steering answers.
+  const clear = useCallback(() => { agentSession.clear() }, [])
+
   return (
     <div className="sp-pane">
       <PaneSectionHeader
@@ -132,6 +138,23 @@ export const AgentChatPane: PaneComponent = ({ collapsed, onToggleCollapse }) =>
         icon="activity.agent"
         collapsed={collapsed}
         onToggleCollapse={onToggleCollapse}
+        actions={
+          <ButtonGroup minimal>
+            <Tooltip content="Clear chat" placement="bottom" compact>
+              <Button
+                minimal
+                small
+                icon={<AppIcon name="ui.trash" aria-hidden />}
+                className="section-action-btn"
+                aria-label="Clear chat"
+                // While a turn runs its progress would land in the empty
+                // transcript it just made; Stop first.
+                disabled={running || transcript.length === 0}
+                onClick={clear}
+              />
+            </Tooltip>
+          </ButtonGroup>
+        }
       />
       {!collapsed && (
         <div className="agent-pane-body">

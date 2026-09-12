@@ -190,6 +190,21 @@ IME を除いてもなお誤送信が多い -- 数語で終わらない文章で
 になる。既定を Slack と逆にしているのは、失うもの (書きかけ) が取り戻せない側だから。
 ショートカットは composer の Send ボタン横に出す (改行する field からは推測できないため)。
 
+**送信済みの prompt は ↑/↓ で呼び戻せる** (`promptHistory.ts`)。シェルと同じ readline の規則で、
+↑ で過去へ、↓ で戻り、いちばん下で書きかけの下書きが返ってくる。localStorage に直近 50 件
+(`cuemol.agent.promptHistory`、LRU で同文は先頭へ移動)。**キャレットが先頭行 / 最終行にあるときだけ**
+発火するので、複数行の下書きの中では矢印がキャレット移動のまま。IME 変換中も素通し (候補選択)。
+記録は送信時で、失敗した turn の prompt も残す -- 言い直すために呼び戻すのが典型だから。
+
+**transcript の行は縮まない** (`.agent-transcript > * { flex-shrink: 0 }`)。スクロールする flex 列の
+中では子が既定で縮むので、会話が pane より長くなると行が潰れ、tool 行は縞になって disclosure
+caret が押せなくなる。長さを吸収するのはスクロールバーの役目。
+
+**Clear chat** はヘッダの actions に置く。transcript と会話履歴の**両方**を捨てる -- 消した会話が
+以後の答えを誘導し続けるのはおかしい。`agentSession.reset()` ではなく `clear()` を使う:
+`reset()` は runner も落とすので、Root が次に handler を張り直すまで composer が死ぬ。
+turn 実行中は無効 (先に Stop する)。
+
 ---
 
 ## 4. host 側に足した汎用の受け皿

@@ -208,6 +208,17 @@ export const agentSession = {
     })
   },
 
+  /**
+   * Start a new conversation, keeping the panel usable.
+   *
+   * Not `reset`: that drops the runner too, and the Root only installs one
+   * when its handlers change, so the composer would be dead until the next
+   * render. Clearing is something the user does with the panel open.
+   */
+  clear(): void {
+    setState({ ...INITIAL, runner: state.runner })
+  },
+
   /** Forget everything. Called when the plugin is switched off. */
   reset(): void {
     setState(INITIAL)
