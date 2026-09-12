@@ -7,8 +7,16 @@ import { getNewRendererOptions } from '@renderer/worker/server/services/rend/get
 import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
-import { getPaintColoringStyles } from '@renderer/worker/server/services/coloring/panelList'
+import {
+  getPaintColoringStyles,
+  getRendererPaintInfo,
+} from '@renderer/worker/server/services/coloring/panelList'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
+import { paintRendererSelection } from '@renderer/worker/server/services/coloring/paintCrud'
+import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
+import { getMolFromRenderer } from '@renderer/worker/server/services/coloring/colorTargets'
+import type { Renderer } from '@cuemol/core/src/wrappers/Renderer'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { normalizeServiceResult } from '../toolOutput'
@@ -340,6 +348,86 @@ const setRendererColoringTool: AgentTool = {
   },
 }
 
+const paintSelection: AgentTool = {
+  name: 'paint_selection',
+  description:
+    'Colour part of what one renderer draws, leaving the rest as it is. Use this for "make ' +
+    'chain A red" or "colour the ligand yellow" -- set_renderer_coloring replaces the whole ' +
+    "renderer's colouring instead. Painting the same renderer again adds another colour on " +
+    'top, so several regions can be coloured one call at a time.',
+  parameters: strictSchema({
+    rendId: int('Uid of the renderer to paint.'),
+    selection: str('Which atoms to colour. Check it with check_selection first.'),
+    color: str(
+      'Colour as hex ("#FF0000"), a CueMol colour name ("red"), or hsb(h,s,b). ' +
+        'Hex is the safest.',
+    ),
+  }),
+  mutates: true,
+  run(ctx, input, turn): ToolOutcome {
+    const rendId = Number(input.rendId)
+    const selection = String(input.selection)
+    if (selection.trim() === '') {
+      return { ok: false, error: 'The selection expression is empty.' }
+    }
+
+    const scene = getSceneOrNull(ctx, turn.sceneId)
+    if (!scene) return { ok: false, error: 'The scene could not be read.' }
+    const rend = scene.getRenderer(rendId) as Renderer | null
+    if (!rend) return { ok: false, error: 'No renderer with that id in this scene.' }
+    const mol = getMolFromRenderer(rend)
+    if (!mol) {
+      return { ok: false, error: 'That renderer does not draw a molecule, so it cannot be painted.' }
+    }
+
+    // The paint service reads the region from the MOLECULE's current
+    // selection rather than taking it as an argument, so it has to be set
+    // first. This is a visible side effect: the user sees the selection
+    // change, the same as if they had made it by hand.
+    const applied = applyMolSelString(ctx, {
+      sceneId: turn.sceneId,
+      molId: mol.uid,
+      selStr: selection,
+    })
+    if (!applied.ok) {
+      return {
+        ok: false,
+        error: 'That selection could not be applied. Check it with check_selection.',
+      }
+    }
+
+    // Painting needs a PaintColoring to insert into; anything else has no
+    // per-selection entries. Switching costs the renderer's previous
+    // colouring, which is why it is only done when it is not one already.
+    if (!getRendererPaintInfo(ctx, { sceneId: turn.sceneId, rendId }).canPaint) {
+      const switched = setRendererColoring(ctx, {
+        sceneId: turn.sceneId,
+        rendId,
+        coloringId: 'paint-type-paint',
+        targetKind: 'renderer',
+      })
+      if (!switched.ok) {
+        return { ok: false, error: 'That renderer cannot be switched to per-selection colouring.' }
+      }
+    }
+
+    const painted = paintRendererSelection(ctx, {
+      sceneId: turn.sceneId,
+      rendId,
+      colorValue: String(input.color),
+    })
+    if (!painted.ok) {
+      return {
+        ok: false,
+        error:
+          `The colour could not be applied. Check that "${String(input.color)}" is a colour ` +
+          'CueMol knows, and that the selection matches some atoms.',
+      }
+    }
+    return { ok: true, data: { rendererId: rendId, selection, color: String(input.color) } }
+  },
+}
+
 export const RENDERER_TOOLS: AgentTool[] = [
   getRendererTypes,
   createRenderer,
@@ -348,4 +436,5 @@ export const RENDERER_TOOLS: AgentTool[] = [
   setRendererProp,
   getColoringStyles,
   setRendererColoringTool,
+  paintSelection,
 ]

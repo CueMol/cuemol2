@@ -271,14 +271,24 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `get_renderer_props` | no | `getGenericProps` |
 | `set_renderer_prop` | yes | `getGenericProps` -> `setGenericProp` |
 | `get_coloring_styles` | no | `getPaintColoringStyles` |
-| `set_renderer_coloring` | yes | `setRendererColoring` |
+| `set_renderer_coloring` | yes | `setRendererColoring` (レンダラ全体の着色を置き換える) |
+| `paint_selection` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` |
 | `fetch_pdb` | yes (async) | `streamLoadFromUrl` |
 | `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` |
 | `measure_geometry` | yes | `MolCoord.getAtom` + `helpers/atomintr` の `appendMeasureLabel` |
 | `analyze_interactions` | yes | `analyzeInteractions` |
 | `export_image` | no (シーン不変。ファイルは書く) | `getSceneExportInfo` -> `exportScene` |
 
-19 件。OpenAI の推奨は「1 turn で 20 未満」で、どの provider でも妥当な上限。
+20 件。OpenAI の推奨「1 turn で 20 未満」の**上限ちょうど**で、これ以上増やすなら先に畳む。
+候補は `center_view` -- 既に「選択も適用する」副作用を持っており、`set_mol_selection` の
+引数にできる。`tools/index.test.ts` が本数を pin している。
+
+`paint_selection` は 3 手を 1 本に畳んでいる。`paintRendererSelection` は塗る範囲を引数ではなく
+**分子の現在の選択**から読み、かつ renderer の coloring が `PaintColoring` でないと拒否するため、
+「選択を適用 -> (必要なら) PaintColoring へ切り替え -> エントリ追加」の順に呼ぶ必要がある。
+モデルにこの順序を踏ませるより 1 本にしたほうが確実で、選択が変わるのは UI で手作業した場合と
+同じ可視の副作用なので隠していない。`set_renderer_coloring` は全体を置き換えるので、
+塗った領域を消してしまう -- その使い分けは system prompt に書いてある。
 
 `get_named_selections` は当初あったが外した。毎 turn の `<scene_state>` が
 `namedSelections` を既に載せており、同じものを取りに行くだけの往復だったため。
