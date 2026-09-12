@@ -217,7 +217,11 @@ TEST(DsurfDetailCalib, DISABLED_LargeMoleculeCost)
 
     std::printf("\n1CRN x %d^3 (%d atoms) SES probe=1.4\n", N, pMol->getAtomSize());
     std::printf("%8s %12s %14s %12s\n", "detail", "algorithm", "vertices", "ms");
-    for (int d = 16; d <= 32; d += 16) {
+    // detail 6 is where no budget fires, so all three deliver the density
+    // that was asked for and the times are comparable.
+    const int bigDetails[] = {6, 16, 32};
+    for (int di = 0; di < 3; ++di) {
+        const int d = bigDetails[di];
         for (int a = 0; a < 3; ++a) {
             ProbeCalib *pProbe = MB_NEW ProbeCalib();
             qsys::RendererPtr pRend(pProbe);

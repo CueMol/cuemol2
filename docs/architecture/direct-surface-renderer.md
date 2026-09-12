@@ -97,17 +97,19 @@ EDTSurf の `fixsf` は「1 Å あたりの voxel 数」なので、その逆数
 (`*LargeMoleculeCost*` も同じ filter で走り、大きな分子でのコストを別表で出す)
 
 1CRN (327 原子)、SES、probe 1.4 Å での頂点数比 (対 EDTSurf)。括弧内は所要時間 ms
-(Debug ビルド。Release ではグリッド系がもっと速い):
+(**Release ビルド**。Debug で測ると格子系だけが 5-20 倍遅く出る。MeshMS は別途
+Release + fast-FP + AVX2 でビルドされた静的ライブラリなので libcuemol2 の設定に
+影響されず、Debug 同士の比較にならない):
 
 | detail | edtsurf | distfield | meshms | df/edt | ms/edt |
 |---|---|---|---|---|---|
-| 2 | 2306 (14) | 2270 (22) | 3326 (9) | 0.98 | 1.44 |
-| 4 | 4185 (30) | 4080 (39) | 4876 (9) | 0.98 | 1.17 |
-| 6 (既定) | 6349 (54) | 6566 (64) | 6615 (10) | 1.03 | 1.04 |
-| 10 | 12991 (140) | 12858 (141) | 11768 (14) | 0.99 | 0.91 |
-| 16 | 27424 (391) | 26514 (385) | 21375 (23) | 0.97 | 0.78 |
-| 24 | 56429 (1099) | 52256 (1060) | 39767 (37) | 0.93 | 0.71 |
-| 32 | 94922 (2459) | 86940 (2599) | 63240 (59) | 0.92 | 0.67 |
+| 2 | 2306 (4) | 2270 (3) | 3326 (8) | 0.98 | 1.44 |
+| 4 | 4185 (7) | 4080 (4) | 4876 (8) | 0.98 | 1.17 |
+| 6 (既定) | 6349 (13) | 6566 (6) | 6615 (9) | 1.03 | 1.04 |
+| 10 | 12991 (32) | 12858 (15) | 11768 (12) | 0.99 | 0.91 |
+| 16 | 27424 (92) | 26514 (41) | 21375 (19) | 0.97 | 0.78 |
+| 24 | 56429 (278) | 52256 (120) | 39767 (32) | 0.93 | 0.71 |
+| 32 | 94922 (709) | 86940 (290) | 63240 (49) | 0.92 | 0.67 |
 
 **既定の detail=6 では 3 者とも約 6400 頂点で 4% 以内に収まる**。係数は既定値付近が
 合うように 2..16 の幾何平均で決めてあり、その範囲では distfield 0.99 (0.97-1.03)、
@@ -124,22 +126,36 @@ meshms 1.04 (0.78-1.44)。
 ### 大きな分子でのコストとグリッド予算
 
 距離場は密な 3 次元グリッド (`std::vector<float>` + `std::vector<int>` = 8 B/セル) なので、
-セル数は detail だけでなく**分子の大きさでも増える**。1CRN を 3x3x3 に複製した
-8829 原子・約 100 Å の分子での実測 (Debug ビルド):
+セル数は detail だけでなく**分子の大きさでも増える**。1CRN を 6x6x6 に複製した
+70632 原子・約 100 Å の分子での実測 (Release ビルド):
 
 | detail | edtsurf | distfield | meshms |
 |---|---|---|---|
-| 16 | 353333 頂点 (4.7 s) | 716450 頂点 (12.2 s) | 577125 頂点 (1.0 s) |
-| 32 | 353539 頂点 (4.7 s) | 952674 頂点 (17.1 s) | 1707480 頂点 (2.6 s) |
+| 6 (既定) | 675082 頂点 (1.3 s) | 1399788 頂点 (2.1 s) | 1428840 頂点 (4.5 s) |
+| 16 | 672363 頂点 (1.3 s) | 2533446 頂点 (4.2 s) | 4617000 頂点 (13.2 s) |
+| 32 | 672736 頂点 (1.3 s) | 2533446 頂点 (4.3 s) | 12855024 頂点 (42.7 s) |
+
+**比較できるのは detail 6 の行だけ**である。16 と 32 では distfield にセル予算が発火して
+同じ 0.533 Å に粗くなり (頂点数が同一なのはそのため)、EDTSurf は後述の上限で頭打ち、
+meshms も 32 で頂点予算が発火している。detail 6 はどのガードも発火しない。
 
 読み取れること:
 
+- **どれが速いかは分子の大きさと detail で入れ替わる**。距離場のコストは**体積**
+  (box³ / spacing³)、MeshMS は**表面積**に比例するためである。detail 6 の大分子では
+  distfield と meshms がほぼ同じ頂点数 (1.40M / 1.43M — 校正が効いている) で
+  **distfield が 2.1 倍速い**。逆に 1CRN の detail 32 では箱が小さく格子だけが細かく
+  なるので、頂点あたりで **meshms が 4 倍速い**。
+- **既定を distfield にしているのはこのため**。実際の使い方 (タンパク質全体を既定
+  detail で表示) は前者の領域にある。高 detail で小さい対象を見るときは meshms に
+  切り替えるのが素直。
+- **MeshMS には約 9 ms の下限がある** (1CRN の detail 2-6 が頭打ちになっている)。
+  density 非依存の RS 計算で、レンダラは `MolSurfObj` と違って `RSCache` を持たない
+  ので毎回払う。大分子ではこれが上表の時間のかなりの部分を占める。
 - **EDTSurf は大きな分子では detail が効かなくなる**。`boxlength > 300` で自動的に
-  スケールを落とす (`ProteinSurface::initpara`) ため、16 と 32 で頂点数も時間も
+  スケールを落とす (`ProteinSurface::initpara`) ため、6 / 16 / 32 で頂点数も時間も
   ほぼ同じになる。この上限は EDTSurf 固有で、他の 2 つは追随しない (統合前の dsurf2
   と同じ)。**校正が成り立つのは EDTSurf が頭打ちしない範囲まで**である。
-- **MeshMS は大きな分子ほど有利**。グリッドを持たないので detail 32 でも 2.6 s で、
-  しかも最も細かいメッシュを返す。高 detail では meshms を選ぶのが素直。
 - **distfield は無防備だとメモリが破綻する**。無制限なら detail 32 の 120 Å 級の
   複合体で約 2.85 億セル = 2.3 GB を確保しにいき、worker スレッドを数十秒止める。
 
@@ -358,14 +374,19 @@ pRF->registAlias("dsurf2", "dsurface", {{"surfalgor", "distfield"}});
 | `src/tests/modules/surface/test_dsurf_color.cpp` | `DsurfAlgorFixture`: 3 アルゴリズムそれぞれが非空メッシュを作り、全頂点の `info` が実在の原子 id であること / フォールバックが `surfalgor` を書き換えないこと。`DsurfAlias`: 旧 `type="dsurf2"` シーンが `dsurface` + distfield として読め、非 default として保存されること。`GpuMeshCarriesAtomIdsAsHitNames`: fill 描画で upload された全頂点の hitName が所有原子 id の符号化と一致し、line 描画では pick 非対応になること (GL 無しの `MockDisplayContext`、`src/tests/gfx/mock_display_context.hpp`)。既存の着色契約 (potential / multigrad / GPU と display-list の一致) も同ファイル |
 | `src/tests/gfx/test_mesh_colors.cpp` | `gfx::Mesh` の色: gradient 頂点の `getCol` が元と同じ device code / material に解決し palette には成分だけが入ること、同値の base 色が 1 entry に畳まれ solid 頂点は登録オブジェクトそのものを返すこと、未書き込み頂点は `getCol` false |
 | `src/tests/modules/surface/test_distfield_surf.cpp` | 距離場ビルダーと marching cubes 単体 |
-| `src/tests/modules/surface/test_dsurf_detail_calib.cpp` | 契約テストではない。`DISABLED_` の計測ハーネス 2 本: `VertexCountsPerAlgorithm` (1CRN での detail 校正)、`LargeMoleculeCost` (1CRN を 6x6x6 = 7 万原子に複製し、グリッド予算と MeshMS 頂点予算の両方の発火を確認する。Debug ビルドで 2 分ほどかかる) |
+| `src/tests/modules/surface/test_dsurf_detail_calib.cpp` | 契約テストではない。`DISABLED_` の計測ハーネス 2 本: `VertexCountsPerAlgorithm` (1CRN での detail 校正)、`LargeMoleculeCost` (1CRN を 6x6x6 = 7 万原子に複製し、detail 6 での公平な比較とグリッド予算 / MeshMS 頂点予算の発火を確認する。Release ビルドで 75 秒ほどかかる) |
 
 ## 今後の課題
 
 - **MeshMS の `RSCache`**: `MolSurfObj` は density 非依存の RS 成分をキャッシュして
   再生成を速くしている (`meshms-ses-backend.md`)。レンダラは持っていない。
-  レンダラの入力のうち cache を再利用できるのは `detail` 変更だけで、それも現状は
-  メッシュキャッシュごと捨てる実装なので、効果を測ってから入れる。
+  Release の実測ではこれが meshms の約 9 ms の下限と、大分子での所要時間のかなりの
+  部分を占めている。効くのは `detail` だけを変えたときで、初回は必ず払う。
+- **distfield の高速化**: Release で測ると既定 detail では distfield が最速だが、
+  直列部分が残っている。marching cubes の頂点溶接が `unordered_map` による直列処理
+  (ChimeraX は平面 2 枚分の配列 sweep で hash 無し)、SES の pass 2 が slab ごとに
+  全 probe 球を走査して box 判定している、距離場が Å 座標の double 演算 (ChimeraX は
+  格子 index 座標の float32)。既定を変える必要が無いので優先度は低い。
 - **`DirectSurfRendererBase` の畳み込み**: concrete クラスが 1 つになったので基底と
   合併できるが、qif / wrapper / プロパティ定義の移動量が大きく機能上の利点が無いため
   見送った。
