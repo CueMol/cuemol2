@@ -10,8 +10,8 @@
  *     UXP `makeSugName`).
  *   - Point density (/A): a `SliderField` (slider + number box + stepper)
  *     clamped to the shared 1-10 integer range (`molSurfDensity.ts`). Probe
- *     radius (A) stays a plain numeric input. Defaults match the UXP XUL:
- *     density = 1 (min, no explicit value), probe radius = 1.4.
+ *     radius (A) stays a plain numeric input. Probe radius defaults to the UXP
+ *     XUL value 1.4; density defaults to 2 (see `molSurfDensity.ts`).
  *   - OK commits via the `makeMolSurf` worker service under one undo txn.
  *
  * The caller passes only `{ sceneId }`. The last-picked molecule persists

@@ -117,7 +117,7 @@ describe('MakeMolSurfDialog commit wire', () => {
             objId: 11,
             selStr: '',
             surfName: 'sf_mol1',
-            density: 1,
+            density: 2,
             probeRadius: 1.4,
             backend: 'auto',
         })
@@ -178,8 +178,8 @@ describe('MakeMolSurfDialog commit wire', () => {
         await act(async () => { okButton().click() })
         await flushPromises()
 
-        // Default 1 stepped up twice.
-        expect((commitCalls()[0][1] as Record<string, unknown>).density).toBe(3)
+        // Default 2 stepped up twice.
+        expect((commitCalls()[0][1] as Record<string, unknown>).density).toBe(4)
         handle.unmount()
     })
 
