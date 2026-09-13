@@ -3,64 +3,28 @@
  * @description Turning a worker service's answer into something the model can
  * read.
  *
- * Two jobs, both of which exist because the services predate this plugin.
+ * Size is the concern here. A service answers at whatever length the scene
+ * happens to be -- every residue of a chain, every property of a renderer --
+ * and a model charged per token does not need all of it. Arrays are cut to a
+ * bound and the payload is capped, with the fact that something was cut
+ * stated in the output rather than left for the model to infer from a
+ * truncated list.
  *
- * First, normalisation. Three result dialects grew side by side: the current
- * `Result<T>` (`{ ok: false, error, code? }`), a bare `{ ok: boolean }` with
- * no reason, and `{ ok, error?, count? }`. A model told only `ok: false` will
- * retry the same call forever, so a failure without a reason is given one.
- *
- * Second, size. A service answers at whatever length the scene happens to be
- * -- every residue of a chain, every property of a renderer -- and a model
- * charged per token does not need all of it. Arrays are cut to a bound and
- * the payload is capped, with the fact that something was cut stated in the
- * output rather than left for the model to infer from a truncated list.
+ * Reading the three result dialects the services speak is not specific to a
+ * model, so that half lives in `worker/shared/serviceResult` and is
+ * re-exported here for the tools that already call it.
  */
 
+import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import type { ToolOutcome } from './tools/types'
+
+export { normalizeServiceResult }
 
 /** Longest array the model is shown before the tail is summarised away. */
 export const MAX_ARRAY_ITEMS = 200
 
 /** Hard ceiling on one tool result, in characters of JSON. */
 export const MAX_OUTPUT_CHARS = 8192
-
-/** The failure shapes a service may answer with, across all three dialects. */
-interface ServiceResultLike {
-  ok?: unknown
-  error?: unknown
-  code?: unknown
-}
-
-/**
- * A service result as a tool outcome.
- *
- * @param result - whatever the service returned.
- * @param fallbackError - the reason to report when the service gave none.
- *   Write it so the model can act on it ("no renderer with that id"), not as
- *   a restatement that something failed.
- */
-export function normalizeServiceResult(
-  result: unknown,
-  fallbackError: string,
-): ToolOutcome {
-  if (result === null || result === undefined) {
-    return { ok: false, error: fallbackError }
-  }
-  if (typeof result !== 'object') {
-    return { ok: true, data: result }
-  }
-  const r = result as ServiceResultLike
-  if (r.ok === false) {
-    const error = typeof r.error === 'string' && r.error !== '' ? r.error : fallbackError
-    return { ok: false, error }
-  }
-  // `ok: true` or a plain payload with no flag at all (a few reads answer
-  // with just their data). Strip the flag: it says nothing to the model.
-  const { ok: _ok, ...data } = r as Record<string, unknown>
-  void _ok
-  return { ok: true, data }
-}
 
 /** Recursively bound arrays, noting what was left out. */
 function truncate(value: unknown, depth = 0): unknown {

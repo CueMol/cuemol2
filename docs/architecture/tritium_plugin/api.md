@@ -372,6 +372,9 @@ interface StreamProgressApi {
 | フォーム部品・リスト・アイコン | `@renderer/h3-kit/form` / `/list` / `/primitives` などの barrel から直接 |
 | イベント定数 (`SEM_*`) | `@renderer/event` |
 | core の worker service | `cm.invokeService('name', args)` |
+| service 結果 3 方言の吸収 | `@renderer/worker/shared/serviceResult` の `normalizeServiceResult` |
+| ダイアログ無しで `FileOpenOptions` を組む | `@renderer/worker/server/services/file/headlessOpen` の `buildHeadlessFileOpenOptions` |
+| 入力欄の ↑/↓ 履歴 recall | `@renderer/utils/commandRecall` の `recallUp` / `recallDown` (履歴の保存は `createLruStringHistory` で plugin ごとに) |
 | worker service の DTO 型 | `import type` で `@renderer/worker/server/...` から (値の import は禁止) |
 | `Result` / `ok` / `fail` | `@renderer/worker/shared/result` |
 | core の command id (`CmdId.UiSettingsTab` など) | `@renderer/commands/ids` |

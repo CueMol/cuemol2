@@ -5,6 +5,12 @@
 - **目的**: 完全互換ではなく、PyMOL 経験者が analogy で cuemol3/tritium を使えること
 - **目標**: 本書は調査結果の最終まとめ。planning/coding は含まない
 
+> **2026-09-13 追記**: §0 の設計判断のうち **パーサ配置 (embedded Python) と C++ 新 API
+> `runPymCommand` は採らない**ことにした。パーサは TS で Web Worker に置き (§2 の案 C)、
+> cuetty / pymod との共有は非ゴールに変更。§3 (selection 翻訳)、§4 (コマンド写像総表)、
+> §6 (Tier 分け)、§8 (概念差分) は引き続き有効で、実装の正本として使っている。
+> 実装計画は [260913-pymconsole-plugin-plan.md](260913-pymconsole-plugin-plan.md)。
+
 ---
 
 ## 0. 確定済みの設計判断 (ユーザ合意済み)

@@ -22,8 +22,9 @@ import type { SubmitKey } from '@renderer/h3-kit/form'
 import { CmdId } from '@renderer/commands/ids'
 import { AgentTranscript } from './AgentTranscript'
 import { agentSession, useAgentSession } from './agentSessionStore'
-import { IDLE, getHistory, pushHistory, recallDown, recallUp } from './promptHistory'
-import type { RecallState } from './promptHistory'
+import { getHistory, pushHistory } from './promptHistory'
+import { IDLE, recallDown, recallUp } from '@renderer/utils/commandRecall'
+import type { RecallState } from '@renderer/utils/commandRecall'
 import {
   AGENT_PLUGIN_ID,
   AGENT_PREF_KEYS,

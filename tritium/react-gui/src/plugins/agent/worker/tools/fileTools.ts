@@ -11,7 +11,7 @@ import {
   getCompatibleRendererNames,
 } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
 import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
-import { buildHeadlessFileOpenOptions } from './defaultFileOpenOptions'
+import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
 import { normalizeServiceResult } from '../toolOutput'
 import type { AgentTool } from './types'
 import { enumStr, nullable, str, strictSchema } from './types'
