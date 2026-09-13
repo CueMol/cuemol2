@@ -26,6 +26,7 @@
 
 | ファイル | 内容 | 実装の所在 |
 |---|---|---|
+| [260913-mdtools-plugin-plan.md](260913-mdtools-plugin-plan.md) | mdtools (MD trajectory) の GUI -- 開くフロー・Trajectory bottom tab・worker service -- を built-in plugin `mdtools` (既定オフ) へ切り出し。C++ module は常時ロードのままで GUI だけを gate する割り切り、morph service の分離、メニュー anchor の付け替え | `tritium/react-gui/src/plugins/mdtools/`。[`../architecture/md-trajectory-open-dialog.md`](../architecture/md-trajectory-open-dialog.md) |
 | [260913-ai-agent-ai-sdk-plan.md](260913-ai-agent-ai-sdk-plan.md) | AI agent plugin の LLM 層を Vercel AI SDK (`ai` v7) へ載せ替え、OpenAI と Anthropic を `provider:model` で切り替え可能に。あわせて prompt history (↑/↓ でのシェル風呼び出し) を追加 | `tritium/react-gui/src/plugins/agent/` の `shared/modelSpec.ts` / `worker/modelProvider.ts` / `renderer/promptHistory.ts` ほか |
 | [260912-ai-agent-plugin-plan.md](260912-ai-agent-plugin-plan.md) | 上記を tritium の plugin 機構に載せ替えた再計画。agent の内部設計はそのまま、置き場所と core への到達経路を plugin 化し、必要な受け皿 (push channel レーン / plugin prefs / settings 寄与点 / 汎用 secrets IPC / undo-redo lock) を汎用の plugin API として足す | `tritium/react-gui/src/plugins/agent/`。[`../architecture/ai-agent-plugin.md`](../architecture/ai-agent-plugin.md) |
 | [260911-ai-agent-prompt-panel-plan.md](260911-ai-agent-prompt-panel-plan.md) | AI agent prompt panel の最初の計画 (core 直書き版)。調査結果と設計判断はここが初出 | **260912 に置き換え**。agent の内部設計は有効だが、配置は plugin 化された |

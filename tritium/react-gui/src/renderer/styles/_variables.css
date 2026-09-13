@@ -330,7 +330,8 @@
 
   /* MD Trajectory panel: single-lane block track. Block colors cycle through a
      fixed palette (theme-independent, like the anim-type colors above). Only
-     styles/_md-traj-panel.css references these. */
+     the MD Tools plugin's md-traj-panel.css references these; they live here
+     because stylelint bans raw hex outside this file. */
   --mdtraj-lane-h: 32px;                   /* block-segment lane height */
   --mdtraj-gutter-h: 12px;                 /* seek gutter (holds playhead grip) */
   --mdtraj-block-text: #f4f6fa;            /* fixed light label tone on blocks */

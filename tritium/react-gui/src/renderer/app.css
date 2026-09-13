@@ -21,7 +21,6 @@
 @import "./features/log/log-panel.css";
 @import "./features/render/render-window.css";
 @import "./features/animation/animation-panel.css";
-@import "./features/trajectory/md-traj-panel.css";
 @import "./styles/_status-bar.css";
 @import "./features/molview/viewport-tool-palette.css";
 @import "./features/molview/rectsel-overlay.css";

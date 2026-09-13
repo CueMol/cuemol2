@@ -8,6 +8,11 @@ MD simulation trajectory を tritium/react-gui から開くための UI・worker
 これは UXP からの migration ではない新規機能のため、`docs/migration/` の mapping/ADR には
 載せない (migration ADR は migration 専用に保つ)。
 
+この GUI は built-in plugin **`mdtools` (MD Tools)** として
+`tritium/react-gui/src/plugins/mdtools/` に入っており、**既定オフ** (Settings > Plugins で
+有効化する)。下表のファイルはすべてその配下で、core 側に残るのは汎用の受け皿だけ。
+plugin 機構は [tritium plugin](tritium_plugin/_index.md) を参照。
+
 ## 背景: なぜ通常の "Open File" と別扱いか
 
 libcuemol2 には 2 つのロードモデルが併存する。
@@ -116,14 +121,21 @@ topology の Browse は従来どおり single、trajectory の Add のみ `multi
 
 ## 主要ファイル
 
+plugin 配下 (`src/plugins/mdtools/`):
+
 | 層 | ファイル |
 |---|---|
-| worker service | `worker/server/services/loadTrajectory.service.ts`, `getTrajectoryRendererInfo.service.ts` |
-| worker 登録 | `worker/shared/calls/` (ServiceMap), `worker/client/apis/fileApi.ts`, `worker/client/AsyncCueMol.ts` |
-| main IPC | `shared/ipcContract.ts`, `main/handlers/fileDialogs.ts` |
-| dialog | `components/dialogs/OpenMdTrajDialog.tsx` (+ Provider), `trajPathHistory.ts`, `contexts/DialogContext.tsx` |
-| command / menu | `commands/ids.ts`, `commands/CommandMap.ts`, `commands/useSceneCommands.ts`, `shared/ipcChannels.ts`, `shared/menuTemplate.ts`, `shared/menuActionMap.ts` |
-| 再利用 (renderer) | `components/dialogs/NewRendererDialog.tsx`, `useRendererOptions`, `setupRenderer.service.ts` |
+| worker service | `worker/loadTrajectory.ts`, `worker/getTrajectoryRendererInfo.ts` |
+| worker 登録 | `worker/mdtools.service.ts` (glob が `plugin.mdtools.<name>` に名前空間化), `calls.ts` (`MdtoolsCalls` / `mdtoolsServices`) |
+| dialog | `renderer/OpenMdTrajDialog.tsx` (+ Provider), `renderer/trajPathHistory.ts`。Provider は plugin の `renderer/MdtoolsRoot.tsx` が mount する |
+| command / menu | `manifest.ts` (`plugin.mdtools.openTrajDialog` + `contributes.menus` の File > `open-traj` 行), `renderer/useOpenMdTrajCommand.ts` |
+
+core 側 (汎用の受け皿として残るもの):
+
+| 層 | ファイル |
+|---|---|
+| main IPC | `shared/ipcContract.ts`, `main/handlers/fileDialogs.ts` (`DIALOG_PICK_PATH` の `multi`) |
+| 再利用 (renderer) | `dialogs/NewRendererDialog.tsx` (+ `useShowNewRendererDialog` を plugin api barrel に公開), `useRendererOptions`, `rend/setupRenderer.ts` |
 
 ## テスト
 
@@ -145,6 +157,8 @@ topology の Browse は従来どおり single、trajectory の Add のみ `multi
   `frame` / `nframe` / `dynframe` / `frame_aver_size` を公開しており、既存 `AnimationPanel` /
   `AnimTransport` への配線は別タスク (Phase 2d/2e 相当)。
 - **MRU 非対応**。topology + trajectory のセットを単一パスで表現できないため、`addRecent` は呼ばない。
+- **plugin が無効だと File メニューに項目が出ない** (既定オフ)。worker service は
+  plugin の有効/無効に関わらず登録されたままだが、呼ぶ UI が無いので到達しない。
 - per-file 間引き・frame averaging (`frame_aver_size`)・追加時の原子数事前検証は未実装。
 
 ## 関連

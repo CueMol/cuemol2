@@ -26,8 +26,10 @@ export const getPdbManifest: PluginManifest = {
     menus: [
       {
         group: 'file',
-        // Right after Open MD Trajectory, where the built-in row used to sit.
-        after: 'open-traj',
+        // Right after Open File. The MD Tools plugin anchors its own row
+        // there too and is registered later, so with both on the order is
+        // Open File / Open MD Trajectory / Get PDB, as it always was.
+        after: 'open-file',
         items: [{ id: 'get-pdb', label: 'Get PDB...', command: GET_PDB_COMMAND }],
       },
     ],

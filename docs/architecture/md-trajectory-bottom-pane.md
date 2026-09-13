@@ -3,6 +3,12 @@
 Status: implemented (Phase A + B + C block remove/reorder + D-1 undo/redo).
 Related: [MD Trajectory Open Dialog](md-trajectory-open-dialog.md).
 
+この GUI は built-in plugin **`mdtools` (MD Tools)** として
+`tritium/react-gui/src/plugins/mdtools/` に入っており、**既定オフ**
+(Settings > Plugins で有効化する)。C++ 側 (`src/modules/mdtools/`) は常時ロードなので、
+plugin が gate するのは下記の UI と worker service の呼び出し口だけ。
+plugin 機構そのものは [tritium plugin](tritium_plugin/_index.md) を参照。
+
 ## 目的
 
 ロード済みの `mdtools::Trajectory` を tritium の bottom pane
@@ -95,19 +101,25 @@ SEM_CHANGED=4` と **連番**で、OR したビットマスクにならない。
 
 ## 構成 (実装ファイル)
 
-- worker: `worker/server/services/trajectory.service.ts`
+以下はすべて `tritium/react-gui/src/plugins/mdtools/` 配下。
+
+- worker: `worker/trajectory.ts`
   (`getTrajectoryState` / `setTrajectoryFrame` (undo txn なし=transient) /
-  `appendTrajectoryBlock` (undo txn。`loadTrajectory` の block 追記部を流用))。
-  `worker/shared/calls/` の `ServiceMap` に 3 行。hooks は `cm.invokeService` を直接呼ぶ
-  (anim hooks と同じ。client wrapper 追加なし)。
-- hooks: `hooks/useTrajectory.ts` (nframe/frame/blocks fetch + 構造イベント refetch) /
-  `hooks/useTrajPlayback.ts` (JS タイマー再生 + frame カーソル)。
-- components: `components/panels/TrajectoryPanel.tsx` + `panels/mdtraj/`
+  `appendTrajectoryBlock` / `removeTrajectoryBlock` / `moveTrajectoryBlock` (undo txn))。
+  登録は `worker/mdtools.service.ts` (glob が `plugin.mdtools.<name>` に名前空間化)、
+  呼び出し契約は `calls.ts` の `MdtoolsCalls`。hooks は `mdtoolsServices.invoke(cm, ...)`
+  を直接呼ぶ (anim hooks と同じ。client wrapper 追加なし)。
+- hooks: `renderer/useTrajectory.ts` (nframe/frame/blocks fetch + 構造イベント refetch) /
+  `renderer/useTrajPlayback.ts` (JS タイマー再生 + frame カーソル)。
+- components: `renderer/TrajectoryPanel.tsx` + `renderer/track/`
   (`TrajTransport` / `TrajTrack` / `TrajBlockStrip` / `trackGeometry` (frame<->px))。
-- 配線: `BottomPanel.tsx` に `trajectory` タブ、`h3-kit/ObjectSelect` に
-  `objectFilters.trajectory` (className==='Trajectory'。`molCoord` は 'Mol' 終端判定のため
-  Trajectory を拾わない)、`styles/_md-traj-panel.css` + `app.css` import、
-  `data/appIcons.ts` に `panel.trajectory` (FilmSlate)。
+- 配線: manifest の `contributes.bottomTabs` に `trajectory` (`after: 'animation'`)、
+  target 選択は panel ローカルの述語 (className==='Trajectory'。`objectFilters.molCoord` は
+  'Mol' 終端判定のため Trajectory を拾わない)、`renderer/md-traj-panel.css` は plugin の
+  `index.ts` から import (core の `app.css` ではない)。icon key `panel.trajectory`
+  (FilmSlate) と `--mdtraj-*` トークンは core 側 (`h3-kit/primitives/appIcons.ts` /
+  `styles/_variables.css`) に残る -- plugin は独自 icon を持てず、stylelint が
+  `_variables.css` 以外での生 hex を禁じているため。
 
 ## スコープ (現状) と後続
 

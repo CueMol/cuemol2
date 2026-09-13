@@ -20,7 +20,7 @@
 // surfaces are described by the minimal local interfaces below.
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
-import { withUndoTxn } from '../withUndoTxn';
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
 import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 
 const log = console;

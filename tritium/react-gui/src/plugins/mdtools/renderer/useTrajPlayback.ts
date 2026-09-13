@@ -1,5 +1,5 @@
 /**
- * @file features/trajectory/useTrajPlayback.ts
+ * @file plugins/mdtools/renderer/useTrajPlayback.ts
  * @description Playback transport + live frame cursor for the MD Trajectory
  * pane.
  *
@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
 import { SEM_OBJECT, SEM_CHANGED } from '@renderer/event';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
+import { mdtoolsServices } from '../calls';
 
 interface UseTrajPlaybackOptions {
     cm: AsyncCueMol | null;
@@ -117,11 +118,13 @@ export function useTrajPlayback({
         const oid = objIdRef.current;
         if (c && sid !== undefined && oid !== undefined) {
             selfWriteUntilRef.current = performance.now() + SELF_WRITE_GUARD_MS;
-            c.invokeService('setTrajectoryFrame', {
-                sceneId: sid,
-                objId: oid,
-                frame: clamped,
-            }).catch((err: unknown) => console.warn('setTrajectoryFrame failed:', err));
+            mdtoolsServices
+                .invoke(c, 'setTrajectoryFrame', {
+                    sceneId: sid,
+                    objId: oid,
+                    frame: clamped,
+                })
+                .catch((err: unknown) => console.warn('setTrajectoryFrame failed:', err));
         }
     }, []);
 
@@ -194,7 +197,8 @@ export function useTrajPlayback({
             const c = cmRef.current;
             const sid = sceneIdRef.current;
             if (!c || sid === undefined || oid === undefined) return;
-            c.invokeService('getTrajectoryState', { sceneId: sid, objId: oid })
+            mdtoolsServices
+                .invoke(c, 'getTrajectoryState', { sceneId: sid, objId: oid })
                 .then((res) => {
                     if (!res?.ok) return;
                     if (isPlayingRef.current || scrubRef.current !== null) return;

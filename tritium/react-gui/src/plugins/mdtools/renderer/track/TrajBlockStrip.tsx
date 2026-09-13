@@ -1,5 +1,5 @@
 /**
- * @file features/trajectory/mdtraj/TrajBlockStrip.tsx
+ * @file plugins/mdtools/renderer/track/TrajBlockStrip.tsx
  * @description One track segment = one trajectory block (a TrajBlock file).
  *
  * Positioned from the block's `startIndex` (left) and `nframe` (width) on the
@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import type { TrajBlockInfo } from '@renderer/worker/server/services/traj/trajectory';
+import type { TrajBlockInfo } from '../../worker/trajectory';
 import { Tooltip } from '@renderer/h3-kit/primitives';
 import { frameToPx, blockColorIndex, basename } from './trackGeometry';
 

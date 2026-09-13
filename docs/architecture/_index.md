@@ -55,8 +55,10 @@ architecture, it belongs here.
   [internals](tritium_plugin/internals.md) (有効判定の解決順、native menu を持つ
   main へ channel に command id を載せて渡す経路、worker service の glob と
   名前空間化、dev-only と tree-shaking、寄与点の足しかた)。
-  現状の 3 つ (getpdb / sequence / catalog) は、その機能専用の C++ クラスを
-  持たないことを基準に選んでいる。
+  現状の 5 つのうち 4 つ (getpdb / sequence / catalog / agent) は、その機能専用の
+  C++ クラスを持たないことを基準に選んでいる。5 つ目の `mdtools` (MD trajectory の
+  GUI) は専用の C++ module を持つ唯一の例で、C++ レーンが無いため module は常時
+  ロードのまま GUI だけを既定オフにしてある。
 - [AI Agent plugin (tritium)](ai-agent-plugin.md) (日本語) -- 自然言語の指示から
   LLM が既存の worker service を呼んでシーンを組み立てるチャット panel (built-in
   plugin、既定オフ)。worker 内で回す agent loop と「1 指示 = 1 undo txn、変更したら

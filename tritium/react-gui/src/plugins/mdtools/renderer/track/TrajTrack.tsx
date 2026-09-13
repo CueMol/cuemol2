@@ -1,5 +1,5 @@
 /**
- * @file features/trajectory/mdtraj/TrajTrack.tsx
+ * @file plugins/mdtools/renderer/track/TrajTrack.tsx
  * @description The trajectory track: a frame ruler, one lane of block segments,
  * and the seek playhead.
  *
@@ -12,7 +12,7 @@
  */
 
 import React, { useCallback, useRef, useState } from 'react';
-import type { TrajBlockInfo } from '@renderer/worker/server/services/traj/trajectory';
+import type { TrajBlockInfo } from '../../worker/trajectory';
 import { TrajBlockStrip } from './TrajBlockStrip';
 import {
     frameToPx,

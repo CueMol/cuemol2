@@ -23,8 +23,7 @@ vi.mock('@renderer/worker/server/services/rend/setupRenderer', () => ({
     setupRenderer: vi.fn(),
 }))
 
-import { services as loadTrajServices } from '@renderer/worker/server/services/file/file.service'
-import { services as trajRendServices } from '@renderer/worker/server/services/traj/traj.service'
+import { services as mdtoolsServices } from './mdtools.service'
 import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 
 const renderer: RendererOptions = {
@@ -89,7 +88,7 @@ describe('loadTrajectory — block-centric assembly', () => {
 
     it('reads the topology, appends each trajectory block in order, then sets up the renderer', () => {
         const { ctx, calls } = makeFixture()
-        const result = loadTrajServices.loadTrajectory(ctx, {
+        const result = mdtoolsServices.loadTrajectory(ctx, {
             sceneId: 1,
             topologyPath: '/p/system.gro',
             trajPaths: ['/p/a.dcd', '/p/b.xtc'],
@@ -128,7 +127,7 @@ describe('loadTrajectory — block-centric assembly', () => {
 
     it('maps .trr to the trrtraj reader', () => {
         const { ctx, calls } = makeFixture()
-        loadTrajServices.loadTrajectory(ctx, {
+        mdtoolsServices.loadTrajectory(ctx, {
             sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/x.trr'], renderer,
         })
         expect(calls).toContain('trrtraj.setPath(/p/x.trr)')
@@ -137,7 +136,7 @@ describe('loadTrajectory — block-centric assembly', () => {
 
     it('applies nevery>1 as a stride on each trajectory reader', () => {
         const { ctx, calls } = makeFixture()
-        loadTrajServices.loadTrajectory(ctx, {
+        mdtoolsServices.loadTrajectory(ctx, {
             sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/a.dcd'], nevery: 5, renderer,
         })
         expect(calls).toContain('dcdtraj.nevery=5')
@@ -145,7 +144,7 @@ describe('loadTrajectory — block-centric assembly', () => {
 
     it('does not set nevery when stride is 1 (default)', () => {
         const { ctx, calls } = makeFixture()
-        loadTrajServices.loadTrajectory(ctx, {
+        mdtoolsServices.loadTrajectory(ctx, {
             sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/a.dcd'], nevery: 1, renderer,
         })
         expect(calls.some((c) => c.startsWith('dcdtraj.nevery'))).toBe(false)
@@ -158,7 +157,7 @@ describe('loadTrajectory — block-centric assembly', () => {
         })
         // The C++ throw used to escape as a rejected promise on the renderer
         // side; undoTxnResult converts it after rolling back.
-        const result = loadTrajServices.loadTrajectory(ctx, {
+        const result = mdtoolsServices.loadTrajectory(ctx, {
             sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/a.dcd'], renderer,
         })
         expect(result).toEqual(expect.objectContaining({ ok: false, code: 'native', error: 'atom count mismatch' }))
@@ -169,7 +168,7 @@ describe('loadTrajectory — block-centric assembly', () => {
 
     it('rolls back on an unsupported trajectory extension', () => {
         const { ctx, scene } = makeFixture()
-        const result = loadTrajServices.loadTrajectory(ctx, {
+        const result = mdtoolsServices.loadTrajectory(ctx, {
             sceneId: 1, topologyPath: '/p/s.gro', trajPaths: ['/p/a.xyz'], renderer,
         })
         expect(result).toEqual(expect.objectContaining({
@@ -180,7 +179,7 @@ describe('loadTrajectory — block-centric assembly', () => {
 
     it('returns ok:false without starting a txn when no trajectory files are given', () => {
         const { ctx, scene } = makeFixture()
-        const result = loadTrajServices.loadTrajectory(ctx, {
+        const result = mdtoolsServices.loadTrajectory(ctx, {
             sceneId: 1, topologyPath: '/p/s.gro', trajPaths: [], renderer,
         })
         expect(result).toEqual(expect.objectContaining({ ok: false, code: 'invalid-args' }))
@@ -196,7 +195,7 @@ describe('getTrajectoryRendererInfo', () => {
         }))
         const ctx = { svc: { createObj } } as unknown as WorkerContext
 
-        const result = trajRendServices.getTrajectoryRendererInfo(ctx, {})
+        const result = mdtoolsServices.getTrajectoryRendererInfo(ctx, {})
 
         expect(result.objClassName).toBe('Trajectory')
         expect(result.types).toEqual(['simple', 'ballstick', 'cpk'])
