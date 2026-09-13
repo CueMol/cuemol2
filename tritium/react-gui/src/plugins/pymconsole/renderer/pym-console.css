@@ -22,6 +22,12 @@
   color: var(--text-secondary);
 }
 
+/* Says a command is in flight. The prompt cannot say it by going disabled:
+   that would take the focus away from it (see PymConsolePanel.tsx). */
+.pymc-running {
+  color: var(--text-muted);
+}
+
 .pymc-body {
   display: flex;
   flex: 1;
@@ -34,6 +40,8 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  color: var(--console-text);
 }
 
 /* A scrolling flex column squashes its children by default, which turns a
@@ -45,12 +53,13 @@
 .pymc-line {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: var(--text-primary);
+  color: var(--console-text);
 }
 
-/* The echoed command, dimmer than its output so the record reads as pairs. */
+/* The echoed command, dimmer than its output so the record reads as pairs --
+   but still an enabled-text tone, not a disabled one. */
 .pymc-line-echo {
-  color: var(--text-secondary);
+  color: var(--console-text-dim);
 }
 
 .pymc-line-warning {
@@ -77,6 +86,7 @@
 
 .pymc-prompt {
   display: flex;
+  background: var(--bg-input);
   flex-shrink: 0;
   align-items: flex-start;
   gap: var(--space-2);
@@ -84,9 +94,11 @@
   border-top: 1px solid var(--border);
 }
 
+/* Sits on the first line of the field's text: the same top padding the
+   textarea has, so the two baselines line up whatever the console size is. */
 .pymc-prompt-symbol {
   flex-shrink: 0;
-  padding-top: var(--space-1);
+  padding-top: var(--space-2);
   color: var(--text-muted);
   user-select: none;
 }

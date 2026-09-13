@@ -74,6 +74,52 @@ describe('PymConsolePanel', () => {
     tree.unmount()
   })
 
+  it('does not steal focus from a selection made in the transcript', () => {
+    // Clicking the transcript puts the caret back in the prompt, the way a
+    // terminal does -- but focusing an input collapses the document
+    // selection, so doing it after a drag made the output unselectable.
+    const tree = mountTree(<PymConsolePanel cm={null} />)
+    act(() => consoleSession.setRunner(vi.fn()))
+    act(() => consoleSession.finish([{ kind: 'output', text: 'selectable text' }]))
+
+    const body = tree.container.querySelector('.pymc-body')
+    if (!body) throw new Error('body not found')
+
+    // The prompt takes focus on mount, so drop it first: what is being
+    // checked is whether the click gives it back.
+    promptOf(tree.container).blur()
+
+    const selected = { isCollapsed: false } as Selection
+    const getSelection = vi.spyOn(window, 'getSelection').mockReturnValue(selected)
+    act(() => {
+      body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(document.activeElement).not.toBe(promptOf(tree.container))
+
+    // With nothing selected the click still focuses the prompt.
+    getSelection.mockReturnValue({ isCollapsed: true } as Selection)
+    act(() => {
+      body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(document.activeElement).toBe(promptOf(tree.container))
+
+    getSelection.mockRestore()
+    tree.unmount()
+  })
+
+  it('leaves the prompt usable while a command runs', () => {
+    // Disabling a focused element drops focus, and re-enabling it does not
+    // restore it -- so a disabled prompt meant clicking back into it after
+    // every command. Running state is shown in the toolbar instead.
+    const tree = mountTree(<PymConsolePanel cm={null} />)
+    act(() => consoleSession.setRunner(vi.fn()))
+    act(() => consoleSession.begin())
+
+    expect(promptOf(tree.container).disabled).toBe(false)
+    expect(tree.container.textContent).toContain('Running...')
+    tree.unmount()
+  })
+
   it('brings the previous line back with the up arrow', () => {
     pushHistory('fetch 1crn')
     const tree = mountTree(<PymConsolePanel cm={null} />)

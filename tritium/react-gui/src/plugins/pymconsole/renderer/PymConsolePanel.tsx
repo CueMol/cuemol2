@@ -92,35 +92,58 @@ export const PymConsolePanel: BottomTabComponent = () => {
 
   const focusPrompt = useCallback(() => inputRef.current?.focus(), [])
 
+  /**
+   * Put the caret back in the prompt after a click in the transcript, the way
+   * a terminal does -- but not when that click finished a selection.
+   *
+   * Focusing an input collapses the document selection, so doing this
+   * unconditionally made the transcript impossible to select: every drag
+   * ended by throwing away what it had just selected.
+   */
+  const handleBodyClick = useCallback(() => {
+    const selection = window.getSelection()
+    if (selection && !selection.isCollapsed) return
+    focusPrompt()
+  }, [focusPrompt])
+
   return (
     <div className="pymc-panel">
       <div className="pymc-toolbar">
-        <span className="pymc-title type-caption">PyM Console</span>
+        <span className="pymc-title type-panel-title">PyM Console</span>
+        {running && (
+          <span className="pymc-running type-caption" role="status">
+            Running...
+          </span>
+        )}
         <FormButton
           minimal
           icon={<AppIcon name="ui.eraser" aria-hidden />}
           text="Clear"
-          onClick={() => consoleSession.clear()}
+          onClick={() => {
+            consoleSession.clear()
+            focusPrompt()
+          }}
           disabled={running}
           aria-label="Clear console"
         />
         <FormButton
           minimal
           text="Help"
-          onClick={() => runner?.('help')}
+          onClick={() => {
+            runner?.('help')
+            focusPrompt()
+          }}
           disabled={running || !runner}
           aria-label="List commands"
         />
       </div>
 
-      {/* Clicking anywhere in the record puts the caret back in the prompt,
-          which is what a terminal does. */}
-      <div className="pymc-body" onClick={focusPrompt}>
+      <div className="pymc-body" onClick={handleBodyClick}>
         <ConsoleTranscript lines={lines} />
       </div>
 
       <div className="pymc-prompt">
-        <span className="pymc-prompt-symbol type-mono" aria-hidden>
+        <span className="pymc-prompt-symbol type-console" aria-hidden>
           PyM&gt;
         </span>
         <TextAreaField
@@ -130,11 +153,18 @@ export const PymConsolePanel: BottomTabComponent = () => {
           onSubmit={submit}
           onKeyDown={handleKeyDown}
           submitKey="enter"
-          mono
+          consoleText
           minRows={1}
           maxRows={8}
-          disabled={running || !runner}
-          placeholder={running ? 'Running...' : 'help'}
+          // Never disabled. Disabling a focused element makes the browser
+          // drop focus and re-enabling it does not give focus back, so a
+          // prompt that went disabled while a command ran left the user
+          // clicking back into it after every line. `submit` declines
+          // instead, which also keeps the half-typed next line rather than
+          // throwing it away. A disabled prompt would additionally swallow
+          // `autoFocus`, which fires once on mount and cannot retry.
+          autoFocus
+          placeholder="help"
           ariaLabel="PyM command"
         />
       </div>
