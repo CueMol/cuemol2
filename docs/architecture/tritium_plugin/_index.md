@@ -41,7 +41,7 @@ plugin を 1 本書きたいだけなら **overview -> authoring** で足りる�
 | `pymconsole` | bottom tab / worker service 1 本 | 既定オフ | 入力行 + 出力履歴。既存 service の上に別の操作体系を載せるもの |
 
 `pymconsole` ([260913 計画](../../plans/260913-pymconsole-plugin-plan.md)) は PyMOL コマンド言語に
-部分互換なコンソール。PyMOL のパーサ (`parsing.py` / `parser.py` / `shortcut.py`) を TS へ移植して
+部分互換なコンソール (UI 上の名前は **PyM Console**)。PyMOL のパーサ (`parsing.py` / `parser.py` / `shortcut.py`) を TS へ移植して
 worker に置き、1 submit = 1 undo txn で既存 service を直呼びする。C++ 変更ゼロ。**既存の機能に
 別の操作体系を被せる**形の plugin で、これも「専用 C++ クラスを持たない」側。
 

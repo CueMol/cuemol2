@@ -87,7 +87,7 @@ describe('runCommand', () => {
     expect(res.ok && res.aborted).toBe(true)
     // The third command never ran: two echoes, not three.
     const echoes = res.ok ? res.entries.filter((e) => e.kind === 'echo') : []
-    expect(echoes.map((e) => e.text)).toEqual(['PyMOL> mutate', 'PyMOL> boom'])
+    expect(echoes.map((e) => e.text)).toEqual(['PyM> mutate', 'PyM> boom'])
     expect(scene.undo.committed).toHaveLength(1)
   })
 

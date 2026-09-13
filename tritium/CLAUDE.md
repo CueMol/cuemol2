@@ -170,7 +170,7 @@ contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled
 this way to keep the feature in one directory, not to make it removable), `catalog` (the
 component gallery), `agent` (the AI chat panel, OpenAI or Anthropic through the Vercel AI
 SDK), `mdtools` (the MD trajectory GUI: the open flow plus the Trajectory bottom tab) and
-`pymconsole` (a command line that speaks part of the PyMOL command language) -- the last four
+`pymconsole` (the PyM console: a command line that speaks part of the PyMOL command language) -- the last four
 ship in every build but are `defaultEnabled: false`, so they appear only once someone switches
 them on in Settings > Plugins. `mdtools` is the one whose feature has a C++ module of its own
 (`src/modules/mdtools/`); that module is always loaded, so the switch gates the GUI only.

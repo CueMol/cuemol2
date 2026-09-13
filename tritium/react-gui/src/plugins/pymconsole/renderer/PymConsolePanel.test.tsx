@@ -50,7 +50,7 @@ describe('PymConsolePanel', () => {
   it('sends a submitted line to the runner and shows what comes back', async () => {
     const runner = vi.fn((text: string) => {
       consoleSession.finish([
-        { kind: 'echo', text: `PyMOL> ${text}` },
+        { kind: 'echo', text: `PyM> ${text}` },
         { kind: 'output', text: 'done' },
       ])
     })
@@ -67,7 +67,7 @@ describe('PymConsolePanel', () => {
     await act(async () => flushPromises())
 
     expect(runner).toHaveBeenCalledWith('bg_color white')
-    expect(tree.container.textContent).toContain('PyMOL> bg_color white')
+    expect(tree.container.textContent).toContain('PyM> bg_color white')
     expect(tree.container.textContent).toContain('done')
     // The prompt is cleared so the next line starts empty.
     expect(promptOf(tree.container).value).toBe('')

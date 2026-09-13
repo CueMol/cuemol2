@@ -37,13 +37,13 @@ export const ConsoleTranscript: React.FC<ConsoleTranscriptProps> = ({ lines }) =
         <div className="pymc-empty">
           <AppIcon name="panel.pymconsole" size={32} aria-hidden />
           <div className="pymc-empty-text">
-            PyMOL-compatible console. Type <code>help</code> to see what it knows.
+            A PyMOL-compatible console. Type <code>help</code> to see what it knows.
           </div>
         </div>
       ) : (
         lines.map((line) => (
           <div key={line.id} className={`pymc-line pymc-line-${line.kind}`}>
-            {line.text === '' ? ' ' : line.text}
+            {line.text === '' ? '\u00a0' : line.text}
           </div>
         ))
       )}

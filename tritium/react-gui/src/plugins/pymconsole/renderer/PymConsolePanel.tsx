@@ -1,6 +1,6 @@
 /**
  * @file plugins/pymconsole/renderer/PymConsolePanel.tsx
- * @description The PyMOL console tab: a transcript with a prompt under it.
+ * @description The PyM console tab: a transcript with a prompt under it.
  *
  * The prompt is a `TextAreaField`, not a `TextField`, for two reasons. Only
  * the textarea has an IME-safe `onSubmit` -- typing Japanese into a field
@@ -95,7 +95,7 @@ export const PymConsolePanel: BottomTabComponent = () => {
   return (
     <div className="pymc-panel">
       <div className="pymc-toolbar">
-        <span className="pymc-title type-caption">PyMOL Console</span>
+        <span className="pymc-title type-caption">PyM Console</span>
         <FormButton
           minimal
           icon={<AppIcon name="ui.eraser" aria-hidden />}
@@ -121,7 +121,7 @@ export const PymConsolePanel: BottomTabComponent = () => {
 
       <div className="pymc-prompt">
         <span className="pymc-prompt-symbol type-mono" aria-hidden>
-          PyMOL&gt;
+          PyM&gt;
         </span>
         <TextAreaField
           ref={inputRef}
@@ -135,7 +135,7 @@ export const PymConsolePanel: BottomTabComponent = () => {
           maxRows={8}
           disabled={running || !runner}
           placeholder={running ? 'Running...' : 'help'}
-          ariaLabel="PyMOL command"
+          ariaLabel="PyM command"
         />
       </div>
     </div>

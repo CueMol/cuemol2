@@ -1,6 +1,6 @@
 /**
  * @file plugins/pymconsole/index.ts
- * @description The PyMOL console: a command line that speaks part of the
+ * @description The PyM console: a command line that speaks part of the
  * PyMOL command language.
  *
  * For people arriving from PyMOL, who know `fetch 1crn` and `bg_color white`

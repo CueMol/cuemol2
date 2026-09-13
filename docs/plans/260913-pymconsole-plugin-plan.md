@@ -30,8 +30,8 @@ PyMOL ユーザーが analogy で tritium を使えるように、PyMOL コマ�
 
 | 論点 | 決定 |
 |---|---|
-| UI 配置 | **bottom tab** "PyMOL" (`after: 'output'`) |
-| plugin id | `pymconsole` / "PyMOL Console" / `defaultEnabled: false` (実験的) |
+| UI 配置 | **bottom tab** "PyM" (`after: 'output'`) |
+| plugin id | `pymconsole` / 表示名 "PyM Console" / `defaultEnabled: false` (実験的) |
 | `show`/`hide` の写像 (Phase 2) | **object x rep ごとに代表 renderer 1 つ**。show = sel の和集合、hide = 差集合 |
 | `select name, expr` (Phase 2) | `saveSelDef` で alias 登録 + `applyMolSelString` で可視化 |
 | 初回 PR | **Phase 1** (parser + console UI + selection 不要の Tier 0 コマンド) |

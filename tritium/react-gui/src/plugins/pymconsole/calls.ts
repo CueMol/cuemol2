@@ -1,6 +1,6 @@
 /**
  * @file plugins/pymconsole/calls.ts
- * @description The PyMOL console's renderer-to-worker call contract.
+ * @description The PyM console's renderer-to-worker call contract.
  *
  * The same `{ args; result }` shape a `ServiceMap` slice has, kept here
  * because a plugin cannot add rows to that closed map. `PYMCONSOLE_KEYS`

@@ -114,7 +114,7 @@ export async function runCommand(
   try {
     for (const cmd of commands) {
       sink.reset()
-      if (!cmd.quiet) entries.push({ kind: 'echo', text: `PyMOL> ${cmd.text}` })
+      if (!cmd.quiet) entries.push({ kind: 'echo', text: `PyM> ${cmd.text}` })
 
       if (cmd.python) {
         sink.push('error', 'Error: Python expressions are not available in this console')
