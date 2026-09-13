@@ -28,6 +28,7 @@ import { MolViewHoverLabel } from "@renderer/features/molview/MolViewHoverLabel"
 import { useNaviContextMenu } from "@renderer/features/molview/useNaviContextMenu";
 import { useActiveToolContext, useSetActiveTool } from "@renderer/contexts/ActiveToolContext";
 import { useSetStatusMessage } from "@renderer/state/statusMessage";
+import { useLayout, useLayoutDispatch } from "@renderer/state/layout";
 import type { HitTestResult } from "@renderer/types";
 
 // ---------------------------------------------
@@ -96,6 +97,16 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   // options popover, applied to each measure pick.
   const [measureTarget, setMeasureTarget] = useState("measure");
 
+  // The palette can get in the way of the model. Its cap, View > Tool palette
+  // and the shortcut all fold it to the cap; the flag is part of the persisted
+  // layout, like the side-panel collapse flags.
+  const { toolPaletteCollapsed } = useLayout();
+  const { setToolPaletteCollapsed } = useLayoutDispatch();
+  const onToggleToolPalette = useCallback(
+    () => setToolPaletteCollapsed(!toolPaletteCollapsed),
+    [setToolPaletteCollapsed, toolPaletteCollapsed],
+  );
+
   useNaviClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), openContextMenu });
   useMeasureClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), target: measureTarget });
   useBondEditClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}) });
@@ -122,6 +133,8 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
           onSelect={onSelectTool}
           measureTarget={measureTarget}
           onMeasureTargetChange={setMeasureTarget}
+          collapsed={toolPaletteCollapsed}
+          onToggleCollapse={onToggleToolPalette}
         />
       )}
     </div>

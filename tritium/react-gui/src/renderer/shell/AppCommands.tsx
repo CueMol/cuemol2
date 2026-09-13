@@ -8,8 +8,10 @@
 
 import React from 'react'
 import { useCommandRegistrations } from '@renderer/hooks/useCommandRegistrations'
+import { useToolPaletteMenuSync } from '@renderer/shell/menu/useToolPaletteMenuSync'
 
 export const AppCommands: React.FC = () => {
   useCommandRegistrations()
+  useToolPaletteMenuSync()
   return null
 }

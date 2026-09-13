@@ -241,6 +241,10 @@
      UI like the type around it; the asset is 256px so this downscales. */
   --icon-hero: calc(64px * var(--ui-scale));
 
+  /* Shadow of a chip floating over the 3D view (tool palette, hover label,
+     the hidden-palette edge tab). One value for both themes. */
+  --shadow-overlay: 0 2px 8px rgba(0, 0, 0, 0.25);
+
   /* Blender-style dropdown chevron. Single source for the glyph used by both
      the native-select caret (CSS mask in _form-kit.css) and the
      dropdown-trigger buttons (.h3-form-caret). Thin stroked V, drawn as a mask so

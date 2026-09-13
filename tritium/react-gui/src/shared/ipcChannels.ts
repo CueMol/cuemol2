@@ -105,6 +105,7 @@ export const IPC = {
   MENU_COLOR_PROOF:   'menu:color-proof',
   MENU_SCENE_PROPS:   'menu:scene-props',
   MENU_VIEW_PROPS:    'menu:view-props',
+  MENU_TOOL_PALETTE:  'menu:tool-palette',
   MENU_MOL_SUPERPOSE: 'menu:mol-superpose',
   MENU_INTERACTION:   'menu:interaction',
   MENU_REASSIGN_2NDRY: 'menu:reassign-2ndry',
