@@ -30,7 +30,7 @@ function fileItemIds(groups: ReturnType<typeof buildAppMenu>): string[] {
 
 const CONTRIB: PluginMenuContribution = {
   group: 'file',
-  after: 'open-traj',
+  after: 'open-file',
   items: [{ id: 'demo-row', label: 'Demo...', command: 'plugin.demo.run' }],
 }
 
@@ -47,7 +47,7 @@ describe('plugin menu channels', () => {
 describe('buildAppMenu', () => {
   it('inserts the row after the named item, carrying its command channel', () => {
     const ids = fileItemIds(buildAppMenu([CONTRIB]))
-    expect(ids[ids.indexOf('open-traj') + 1]).toBe('demo-row')
+    expect(ids[ids.indexOf('open-file') + 1]).toBe('demo-row')
 
     const file = buildAppMenu([CONTRIB]).find((g) => g.label === 'File')!
     const row = file.submenu.find((i) => i.id === 'demo-row')!

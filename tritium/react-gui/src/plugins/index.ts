@@ -20,6 +20,7 @@ import type { RendererPlugin } from '@renderer/plugin-host/api'
 import { agentPlugin } from './agent'
 import { catalogPlugin } from './catalog'
 import { getPdbPlugin } from './getpdb'
+import { mdtoolsPlugin } from './mdtools'
 import { sequencePlugin } from './sequence'
 
 export const BUILTIN_PLUGINS: readonly RendererPlugin[] = [
@@ -27,4 +28,5 @@ export const BUILTIN_PLUGINS: readonly RendererPlugin[] = [
   sequencePlugin,
   catalogPlugin,
   agentPlugin,
+  mdtoolsPlugin,
 ]

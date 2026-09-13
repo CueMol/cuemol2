@@ -1,5 +1,5 @@
 /**
- * @file dialogs/OpenMdTrajDialog.tsx
+ * @file plugins/mdtools/renderer/OpenMdTrajDialog.tsx
  * @description "Open MD Trajectory" dialog -- step 1 of the two-step trajectory
  * open flow. It COLLECTS a topology file (GROMACS .gro) plus an ordered list of
  * trajectory files (.dcd/.xtc/.trr); it does NOT load anything. The command
@@ -14,7 +14,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { DialogShell } from './DialogShell';
+import { DialogShell } from '@renderer/plugin-host/api';
 import { AppIcon } from '@renderer/h3-kit/primitives';
 import { Field, FieldSection, ComboBoxField, SliderField, ButtonRow, FormButton } from '@renderer/h3-kit/form';
 import { Listbox, ListRow } from '@renderer/h3-kit/list';

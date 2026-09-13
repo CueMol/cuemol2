@@ -1,5 +1,5 @@
 /**
- * @file features/trajectory/mdtraj/trackGeometry.ts
+ * @file plugins/mdtools/renderer/track/trackGeometry.ts
  * @description Pure geometry / formatting helpers for the MD trajectory track.
  *
  * The horizontal axis is FRAME index (not time); `pxPerFrame` is the scale.

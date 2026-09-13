@@ -13,7 +13,6 @@ import { getOpenFilters } from './getOpenFilters';
 import { getReaderDefaultOptions } from './getReaderDefaultOptions';
 import { loadObject } from './loadObject';
 import { loadScene, openSceneFile } from './loadScene';
-import { loadTrajectory } from './loadTrajectory';
 import { getObjectSaveInfo, listSavableObjects, saveObjectToFile } from './objectSave';
 import { cancelStreamLoad, streamLoadFromUrl } from './streamLoadFromUrl';
 
@@ -24,7 +23,6 @@ export const services = {
     loadObject,
     loadScene,
     openSceneFile,
-    loadTrajectory,
     getObjectSaveInfo,
     saveObjectToFile,
     listSavableObjects,
@@ -37,6 +35,5 @@ export type * from './getOpenFilters';
 export type * from './getReaderDefaultOptions';
 export type * from './loadObject';
 export type * from './loadScene';
-export type * from './loadTrajectory';
 export type * from './objectSave';
 export type * from './streamLoadFromUrl';

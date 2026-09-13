@@ -12,7 +12,7 @@
 import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { makeRenderHook } from '@renderer/__test__/helpers/testHarness'
-import { useTrajPlayback } from '@renderer/features/trajectory/useTrajPlayback'
+import { useTrajPlayback } from './useTrajPlayback'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 void React
@@ -22,7 +22,9 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 function makeCm() {
     return {
-        invokeService: vi.fn((name: string, args: { frame?: number }) => {
+        // A plugin service goes through invokePluginService(pluginId, name, args),
+        // not invokeService.
+        invokePluginService: vi.fn((_id: string, name: string, args: { frame?: number }) => {
             if (name === 'setTrajectoryFrame') return Promise.resolve({ ok: true, frame: args.frame })
             if (name === 'getTrajectoryState')
                 return Promise.resolve({ ok: true, nframe: 10, frame: 0, blocks: [] })
@@ -35,6 +37,13 @@ function makeCm() {
 
 type Opts = Parameters<typeof useTrajPlayback>[0]
 
+/** The (name, args) pairs the hook sent, ignoring the plugin id and options. */
+function seekCalls(cm: AsyncCueMol): unknown[][] {
+    const spy = (cm as unknown as { invokePluginService: { mock: { calls: unknown[][] } } })
+        .invokePluginService
+    return spy.mock.calls.map((c) => [c[1], c[2]])
+}
+
 describe('useTrajPlayback', () => {
     beforeEach(() => vi.clearAllMocks())
     afterEach(() => vi.restoreAllMocks())
@@ -45,11 +54,9 @@ describe('useTrajPlayback', () => {
         const h = makeRenderHook(() => useTrajPlayback(props))
         act(() => h.result.commit(100))
         expect(h.result.frame).toBe(9)
-        expect(cm.invokeService).toHaveBeenCalledWith('setTrajectoryFrame', {
-            sceneId: 1,
-            objId: 42,
-            frame: 9,
-        })
+        expect(seekCalls(cm)).toEqual([
+            ['setTrajectoryFrame', { sceneId: 1, objId: 42, frame: 9 }],
+        ])
         h.unmount()
     })
 
@@ -59,7 +66,7 @@ describe('useTrajPlayback', () => {
         const h = makeRenderHook(() => useTrajPlayback(props))
         act(() => h.result.previewFrame(5))
         expect(h.result.frame).toBe(5)
-        expect(cm.invokeService).not.toHaveBeenCalled()
+        expect(seekCalls(cm)).toEqual([])
         // Clearing the preview reverts to the committed frame (0).
         act(() => h.result.previewFrame(null))
         expect(h.result.frame).toBe(0)
@@ -95,11 +102,9 @@ describe('useTrajPlayback', () => {
 
         act(() => timerCb && timerCb())
         expect(h.result.frame).toBe(1)
-        expect(cm.invokeService).toHaveBeenCalledWith('setTrajectoryFrame', {
-            sceneId: 1,
-            objId: 42,
-            frame: 1,
-        })
+        expect(seekCalls(cm)).toEqual([
+            ['setTrajectoryFrame', { sceneId: 1, objId: 42, frame: 1 }],
+        ])
         h.unmount()
     })
 

@@ -16,8 +16,6 @@ import { CmdId } from './ids'
 import { addRecent } from './addRecent'
 import { useShowFileOpenOptionDialog } from '@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialogProvider'
 import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
-import { useShowOpenMdTrajDialog } from '@renderer/dialogs/OpenMdTrajDialogProvider'
-import { useShowNewRendererDialog } from '@renderer/dialogs/NewRendererDialogProvider'
 import { fetchPresetTypes } from '@renderer/features/file-io/fetchPresetTypes'
 import { makeEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
 import type { NewSceneAction, OpenSceneFileAction } from '@renderer/hooks/useNewSceneAction'
@@ -46,8 +44,6 @@ export function useSceneCommands({
 
     const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
     const showErrorAlert = useShowErrorAlert()
-    const showOpenMdTrajDialog = useShowOpenMdTrajDialog()
-    const showNewRendererDialog = useShowNewRendererDialog()
 
     const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
         if (!cm) return
@@ -210,66 +206,6 @@ export function useSceneCommands({
             })()
         },
     )
-
-    // MD trajectory open flow (File > Open MD Trajectory...). Two-step,
-    // deferred load: collect topology + trajectory files (dialog 1), pick the
-    // initial renderer (dialog 2), then load everything in one undo txn. The
-    // actual load runs only after both dialogs are confirmed, so cancelling
-    // either one loads nothing -- matching the normal object-open flow.
-    useRegisterCommand(CmdId.UiOpenTrajDialog, () => {
-        if (!cm) return
-        ;(async () => {
-            try {
-                const picked = await showOpenMdTrajDialog({})
-                if (!picked) return
-                // Resolve/create the target scene only after files are chosen,
-                // mirroring OpenObjByPath (no stray tab on cancel-before-this).
-                const info = await ensureActiveScene()
-                if (!info) return
-                // Compatible renderers for a Trajectory object -- probes an
-                // empty Trajectory, no file is loaded yet.
-                const rendInfo = await cm.getTrajectoryRendererInfo()
-                if (rendInfo.types.length === 0) {
-                    await showErrorAlert({
-                        title: 'Cannot open trajectory',
-                        message: 'No compatible renderer was found for Trajectory objects.',
-                    })
-                    return
-                }
-                const objName =
-                    picked.topologyPath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'trajectory'
-                const rend = await showNewRendererDialog({
-                    sceneId: info.scene_uid,
-                    objName,
-                    objClassName: rendInfo.objClassName || 'Trajectory',
-                    rendererTypes: rendInfo.types,
-                    defaultName: '',
-                    isMol: true,
-                })
-                if (!rend) return
-                const loaded = await cm.loadTrajectory({
-                    sceneId: info.scene_uid,
-                    topologyPath: picked.topologyPath,
-                    trajPaths: picked.trajPaths,
-                    nevery: picked.nevery,
-                    renderer: rend.rendOpts,
-                })
-                if (!loaded.ok) {
-                    await showErrorAlert({
-                        title: 'Open MD Trajectory failed',
-                        message: `Failed to open trajectory:\n${loaded.error}`,
-                    })
-                }
-            } catch (e) {
-                const msg = e instanceof Error ? e.message : String(e)
-                console.error('OpenMdTraj failed:', e)
-                await showErrorAlert({
-                    title: 'Open MD Trajectory failed',
-                    message: `Failed to open trajectory:\n${msg}`,
-                })
-            }
-        })()
-    })
 
     useRegisterCommand(
         CmdId.OpenSceneByPath,

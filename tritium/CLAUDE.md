@@ -168,9 +168,12 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit â
 Some features are packaged as **built-in plugins**: one directory each, declaring what they
 contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
 this way to keep the feature in one directory, not to make it removable), `catalog` (the
-component gallery) and `agent` (the AI chat panel, OpenAI or Anthropic through the Vercel AI
-SDK) -- the last two ship in every build but are `defaultEnabled: false`, so they appear only
-once someone switches them on in Settings > Plugins.
+component gallery), `agent` (the AI chat panel, OpenAI or Anthropic through the Vercel AI
+SDK) and `mdtools` (the MD trajectory GUI: the open flow plus the Trajectory bottom tab) --
+the last three ship in every build but are `defaultEnabled: false`, so they appear only
+once someone switches them on in Settings > Plugins. `mdtools` is the one whose feature has
+a C++ module of its own (`src/modules/mdtools/`); that module is always loaded, so the switch
+gates the GUI only.
 
 Full spec, API reference and a how-to-write walkthrough:
 [`docs/architecture/tritium_plugin/`](../docs/architecture/tritium_plugin/_index.md).

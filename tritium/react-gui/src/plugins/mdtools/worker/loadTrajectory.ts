@@ -26,8 +26,8 @@
 // wrapper types add nothing over these casts).
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
-import { setupRenderer } from '../rend/setupRenderer';
-import { undoTxnResult } from '../withUndoTxn';
+import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer';
+import { undoTxnResult } from '@renderer/worker/server/services/withUndoTxn';
 import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 import { fail, ok, type Result } from '@renderer/worker/shared/result';
 

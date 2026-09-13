@@ -14,10 +14,8 @@ import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import type { GetCompatibleRendererNamesResult } from '@renderer/worker/server/services/file/getCompatibleRendererNames';
 import type { GetMtzColumnInfoResult } from '@renderer/worker/server/services/map/map.service';
 import type { GetReaderDefaultOptionsResult } from '@renderer/worker/server/services/file/getReaderDefaultOptions';
-import type { LoadTrajectoryArgs, LoadTrajectoryResult } from '@renderer/worker/server/services/file/loadTrajectory';
 import type { LoadObjectResult } from '@renderer/worker/server/services/file/loadObject';
 import type { LoadSceneResult } from '@renderer/worker/server/services/file/loadScene';
-import type { GetTrajectoryRendererInfoResult } from '@renderer/worker/server/services/traj/getTrajectoryRendererInfo';
 
 const log = console;
 
@@ -179,44 +177,4 @@ export async function loadObject(
 ): Promise<LoadObjectResult> {
     log.info(`loading object file: ${filePath}`);
     return await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options, contentFirst, maxSniffBytes, readerName });
-}
-
-/**
- * Assemble and load an MD simulation trajectory (topology + ordered
- * trajectory files) into a scene as a single Trajectory object.
- *
- * @param transport - Worker transport.
- * @param args - Topology / trajectory paths, stride, renderer options and the
- *   target scene uid (see {@link LoadTrajectoryArgs}).
- * @returns the service result; `objId` is the new Trajectory's uid. A
- *   failure (e.g. atom-count mismatch) comes back as `{ ok: false, error }`,
- *   never as a rejection.
- * @remarks Calls `loadTrajectory` worker service.
- */
-export async function loadTrajectory(
-    transport: WorkerTransport, args: LoadTrajectoryArgs,
-): Promise<LoadTrajectoryResult> {
-    log.info(`loading MD trajectory: topology=${args.topologyPath}, ${args.trajPaths.length} traj file(s)`);
-    return await transport.invokeService('loadTrajectory', args);
-}
-
-/**
- * Fetch the renderer types compatible with a Trajectory object, without
- * loading any file. Drives the MD trajectory dialog's renderer picker, which
- * runs before the deferred load.
- *
- * @param transport - Worker transport.
- * @returns Compatible renderer types and the probe object's class name; empty
- *   on failure.
- * @remarks Calls `getTrajectoryRendererInfo` worker service.
- */
-export async function getTrajectoryRendererInfo(
-    transport: WorkerTransport,
-): Promise<GetTrajectoryRendererInfoResult> {
-    try {
-        return await transport.invokeService('getTrajectoryRendererInfo', {});
-    } catch (e) {
-        log.warn('getTrajectoryRendererInfo failed:', e);
-        return { types: [], objClassName: '' };
-    }
 }

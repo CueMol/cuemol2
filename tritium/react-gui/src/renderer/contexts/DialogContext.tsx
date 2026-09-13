@@ -18,7 +18,6 @@ import { QscWriterOptionDialogProvider } from '@renderer/dialogs/QscWriterOption
 import { StreamProgressDialogProvider } from '@renderer/dialogs/StreamProgressDialogProvider'
 import { TextPromptDialogProvider } from '@renderer/dialogs/TextPromptDialogProvider'
 import { NewRendererDialogProvider } from '@renderer/dialogs/NewRendererDialogProvider'
-import { OpenMdTrajDialogProvider } from '@renderer/dialogs/OpenMdTrajDialogProvider'
 import { ApplyRendStyleDialogProvider } from '@renderer/dialogs/ApplyRendStyleDialogProvider'
 import { CreateRendStyleDialogProvider } from '@renderer/dialogs/CreateRendStyleDialogProvider'
 import { ObjectPickerDialogProvider } from '@renderer/dialogs/ObjectPickerDialogProvider'
@@ -52,7 +51,6 @@ export const DialogProvider = composeProviders([
   NewTabDialogProvider,
   ConfirmCloseTabDialogProvider,
   FileOpenOptionDialogProvider,
-  OpenMdTrajDialogProvider,
   QscWriterOptionDialogProvider,
   StreamProgressDialogProvider,
   TextPromptDialogProvider,

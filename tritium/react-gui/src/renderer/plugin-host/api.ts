@@ -77,3 +77,7 @@ export { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
 export { useStreamProgressDialog } from '@renderer/dialogs/StreamProgressDialogProvider'
 export type { StreamProgressApi } from '@renderer/dialogs/StreamProgressDialogProvider'
 export { useShowFileOpenOptionDialog } from '@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialogProvider'
+// Pick the initial renderer for an object a plugin is about to load. Core
+// mounts the provider, so a plugin calls the hook without mounting anything.
+export { useShowNewRendererDialog } from '@renderer/dialogs/NewRendererDialogProvider'
+export type { NewRendererDialogArgs } from '@renderer/dialogs/NewRendererDialogProvider'

@@ -1,5 +1,5 @@
 /**
- * @file features/trajectory/useTrajectory.ts
+ * @file plugins/mdtools/renderer/useTrajectory.ts
  * @description Live trajectory state (frame count + current frame + block
  * segmentation) for the MD Trajectory bottom pane.
  *
@@ -13,13 +13,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
-import type {
-    TrajectoryState,
-    TrajBlockInfo,
-} from '@renderer/worker/server/services/traj/trajectory';
+import type { TrajectoryState, TrajBlockInfo } from '../worker/trajectory';
 import { SEM_OBJECT, SEM_ANY, SEM_CHANGED } from '@renderer/event';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
+import { mdtoolsServices } from '../calls';
 
 interface UseTrajectoryOptions {
     cm: AsyncCueMol | null;
@@ -72,7 +70,8 @@ export function useTrajectory({
         }
         const token = guard.next();
         setLoading(true);
-        cm.invokeService('getTrajectoryState', { sceneId: sid, objId: oid })
+        mdtoolsServices
+            .invoke(cm, 'getTrajectoryState', { sceneId: sid, objId: oid })
             .then((res) => {
                 if (guard.isCurrent(token)) setState(res ?? EMPTY);
             })
