@@ -12,6 +12,7 @@
 #include <common.h>
 
 #include "surface/DirectSurfRenderer.hpp"
+#include "../../gfx/mock_display_context.hpp"
 #include "surface/ElePotMap.hpp"
 #include "qsc_roundtrip_util.hpp"
 
@@ -419,6 +420,7 @@ class ProbeDsurf : public DirectSurfRenderer
 public:
     using DirectSurfRenderer::computeShownColors;
     using DirectSurfRenderer::ensureMeshCache;
+    using DirectSurfRenderer::getTrigGpuPrim;
     using DirectSurfRenderer::m_verts;
 };
 
@@ -670,4 +672,33 @@ TEST(DsurfAlias, LegacyDsurf2SceneLoadsAsDistfieldDsurface)
     // Not default any more, so reapplyStyle() kept it and saving writes it out.
     EXPECT_FALSE(pOut->isPropDefault("surfalgor"));
     EXPECT_EQ(p->getDetail(), 2) << "the legacy attributes still load";
+}
+
+// --- GPU pick: the surface names its vertices after their owning atoms ---
+
+// A click or hover on the surface reports the atom the patch belongs to:
+// the fill draw mode uploads MSVert::info as each vertex's hit name, and
+// only the fill mode is pickable (the display-list modes cannot name).
+TEST_F(DsurfPathsFixture, GpuMeshCarriesAtomIdsAsHitNames)
+{
+    MockDisplayContext dc;
+    ASSERT_TRUE(m_pProbe->isPickSupported());
+    m_pProbe->display(&dc);
+
+    std::vector<int> vidmap;
+    std::vector<quint32> vcol;
+    const int nshown = m_pProbe->computeShownColors(vidmap, vcol);
+    ASSERT_GT(nshown, 0);
+
+    const gfx::TrigGpuPrim &prim = m_pProbe->getTrigGpuPrim();
+    ASSERT_EQ(prim.getVertexSize(), nshown);
+    for (size_t i = 0; i < vidmap.size(); ++i) {
+        if (vidmap[i] < 0) continue;
+        EXPECT_EQ(prim.getHitName(vidmap[i]),
+                  gfx::encodeHitName((int) m_pProbe->m_verts[i].info))
+            << "vertex " << i;
+    }
+
+    m_pProbe->setDrawMode(DirectSurfRenderer::SFDRAW_LINE);
+    EXPECT_FALSE(m_pProbe->isPickSupported());
 }

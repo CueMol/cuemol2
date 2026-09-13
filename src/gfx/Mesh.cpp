@@ -7,9 +7,22 @@
 #include <common.h>
 
 #include "Mesh.hpp"
+#include "GradientColor.hpp"
 
 using namespace gfx;
 using qlib::Vector4D;
+
+namespace {
+  const Mesh::VertCol NO_VERTCOL = { Mesh::NO_COLOR, Mesh::NO_COLOR, 0.0 };
+}
+
+Mesh::Mesh()
+     : m_nVerts(0), m_nFaces(0),
+       m_curCol(NO_VERTCOL),
+       m_lastCid1(NO_COLOR), m_lastCid2(NO_COLOR)
+{
+  m_palMats.push_back(LString());
+}
 
 Mesh::~Mesh()
 {
@@ -21,11 +34,9 @@ void Mesh::init(int nverts, int nfaces)
   m_nFaces = nfaces;
   m_verts = std::vector<float>(nverts*3);
   m_norms = std::vector<float>(nverts*3);
-  // One colour per vertex: every access indexes this by the vertex number
-  // (see setVertex / getCol / convRGBAByteCols), so the x3 the positions and
-  // normals need does not apply. ColorPtr is a 32-byte smart pointer, which
-  // made this the largest allocation of the mesh by a wide margin.
-  m_colptrs = std::vector<ColorPtr>(nverts);
+  // One record per vertex, marked "never coloured" until setVertex() runs.
+  // The palette is left alone: color() may legitimately precede init().
+  m_vcols.assign(nverts, NO_VERTCOL);
   m_faces = std::vector<int>(nfaces*3);
 }
 
@@ -40,7 +51,6 @@ bool Mesh::reduce(int nverts, int nfaces)
 
 void Mesh::setVertex(int i, const Vector4D &v)
 {
-  //MB_ASSERT(m_pVerts!=NULL);
   MB_ASSERT(i*3+3<=m_verts.size());
   MB_ASSERT(i<m_nVerts);
   m_verts[i*3+0] = (float) v.x();
@@ -51,72 +61,112 @@ void Mesh::setVertex(int i, const Vector4D &v)
   m_norms[i*3+1] = (float) m_curNorm.y();
   m_norms[i*3+2] = (float) m_curNorm.z();
   
-  m_colptrs[i] = m_pCurCol;
-  
-  //m_pCols[i].cid2 = m_curCol.cid2;
-  //m_pCols[i].rho = m_curCol.rho;
+  m_vcols[i] = m_curCol;
+}
+
+quint32 Mesh::palIndex(const ColorPtr &pc)
+{
+  // The object itself is already in the palette: renderers hand the same
+  // colour objects in again and again (per atom, per ramp stop).
+  const AbstractColor *praw = pc.get();
+  auto pi = m_palPtrIndex.find(praw);
+  if (pi!=m_palPtrIndex.end())
+    return pi->second;
+
+  // Otherwise look it up by value, so a colour created afresh for every
+  // vertex (a modified molecule colour, for instance) still collapses into
+  // one entry. This is the same identity the exporters' colour table uses.
+  const quint32 code = pc->getCode();
+  const LString mat = pc->getMaterial();
+  quint32 imat = 0;
+  if (!mat.isEmpty()) {
+    imat = NO_COLOR;
+    for (size_t k=1; k<m_palMats.size(); ++k) {
+      if (m_palMats[k].equals(mat)) {
+        imat = (quint32) k;
+        break;
+      }
+    }
+    if (imat==NO_COLOR) {
+      imat = (quint32) m_palMats.size();
+      m_palMats.push_back(mat);
+    }
+  }
+  const quint64 key = (quint64(imat) << 32) | quint64(code);
+  auto vi = m_palIndex.find(key);
+  if (vi!=m_palIndex.end()) {
+    // Equal in value but a different object. It is not retained, so its
+    // address must not be indexed: once freed, a new object could reuse it.
+    return vi->second;
+  }
+
+  const quint32 idx = (quint32) m_palette.size();
+  m_palette.push_back(pc);
+  m_palIndex.emplace(key, idx);
+  m_palPtrIndex.emplace(praw, idx);
+  return idx;
 }
 
 void Mesh::color(const ColorPtr &c)
 {
-  m_pCurCol = c;
-  //m_curCol = m_clut.newColor(c, c->getMaterial());
-}
+  if (c.isnull()) {
+    m_pCurCol = ColorPtr();
+    m_curCol = NO_VERTCOL;
+    return;
+  }
 
-/*void Mesh::color(const ColorPtr &c, const LString &mtr)
-{
-  m_curCol = m_clut.newColor(c, mtr);
-}*/
+  // m_pCurCol retains the previous object, so an equal address here really
+  // is the same object.
+  if (!m_pCurCol.isnull() && c.get()==m_pCurCol.get())
+    return;
+  m_pCurCol = c;
+
+  qlib::LScrSp<GradientColor> pGrad(c, qlib::no_throw_tag());
+  if (pGrad.isnull()) {
+    m_curCol.cid1 = palIndex(c);
+    m_curCol.cid2 = NO_COLOR;
+    m_curCol.rho = 0.0;
+    return;
+  }
+
+  const ColorPtr pc1 = pGrad->getGradColor1();
+  const ColorPtr pc2 = pGrad->getGradColor2();
+  if (pc1.isnull() || pc2.isnull()) {
+    // A gradient without components has no colour (getCode() would throw).
+    m_curCol = NO_VERTCOL;
+    return;
+  }
+
+  // m_pLastC1/C2 retain the previous components, so comparing addresses is
+  // safe here too. A ramp resolves every interior vertex through this.
+  if (m_pLastC1.isnull() ||
+      pc1.get()!=m_pLastC1.get() || pc2.get()!=m_pLastC2.get()) {
+    m_lastCid1 = palIndex(pc1);
+    m_lastCid2 = palIndex(pc2);
+    m_pLastC1 = pc1;
+    m_pLastC2 = pc2;
+  }
+  m_curCol.cid1 = m_lastCid1;
+  m_curCol.cid2 = m_lastCid2;
+  m_curCol.rho = pGrad->getGradParam();
+}
 
 bool Mesh::getCol(ColorPtr &rc, int iv) const
 {
   if (iv<0 || iv>=m_nVerts)
     return false;
 
-  rc = m_colptrs[iv];
-  return true;
-  //const IntColor &id = m_pCols[iv];
-  //return m_clut.getColor(id, rc);
-}
-
-bool Mesh::convRGBAByteCols(quint8 *pcols, int nsize, int defalpha/*=255*/, qlib::uid_t nSceneID) const
-{
-  int i;
-  quint32 ccode;
-  ColorPtr pcol;
-
-  if (nsize<m_nVerts*4)
+  const VertCol &vc = m_vcols[iv];
+  if (vc.cid1==NO_COLOR)
     return false;
 
-  for (i=0; i<m_nVerts; ++i) {
-    pcol = m_colptrs[i];
-    if (nSceneID!=qlib::invalid_uid)
-      ccode = pcol->getDevCode(nSceneID);
-    else
-      ccode = pcol->getCode();
-
-    quint8 *pelem = &pcols[i*4];
-    pelem[0] = getRCode(ccode);
-    pelem[1] = getGCode(ccode);
-    pelem[2] = getBCode(ccode);
-    pelem[3] = getACode(ccode);
-
-    /*
-    const IntColor &id = m_pCols[i];
-    bool res = m_clut.getRGBAByteColor(id, pelem);
-    if (!res)
-      return false;
-     */
-
-    if (defalpha!=255) {
-      int blended = (int(pelem[3]) * defalpha)/255;
-      if (blended>255) blended = 255;
-      if (blended<0) blended = 0;
-      pelem[3] = (quint8)(blended);
-    }
-
+  if (vc.cid2==NO_COLOR) {
+    rc = m_palette[vc.cid1];
+    return true;
   }
 
+  // Same components, same parameter: getCode(), getDevCode() and
+  // getMaterial() of this object match the one color() was given.
+  rc = ColorPtr(MB_NEW GradientColor(m_palette[vc.cid1], m_palette[vc.cid2], vc.rho));
   return true;
 }
-

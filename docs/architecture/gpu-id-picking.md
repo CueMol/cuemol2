@@ -54,7 +54,7 @@ GpuPrim 直描き renderer             SphereIdx / CylinderIdx / LineIdx / LineV
 pick pass (GUIView::renderPickBuffer)
   pick RT (RGBA32UI + depth, backing size * PICK_SCALE=0.5, NEAREST) を bind / clear(0)
   pdc: PICK_DRAW, blend off, viewport = pick size, jitter 無しの projection, model matrix
-  Scene::displayPick(pdc): 可視 / 非UIロック / isPickSupported / alpha >= 0.5 の renderer ごとに
+  Scene::displayPick(pdc): 可視 / 非UIロック / isPickSupported / alpha > 0.6 の renderer ごとに
       pdc->resetNames(); pdc->startHit(uid); pRend->displayPick(pdc); pdc->endHit()
       DispListRenderer: 表示用の同じ display list を callDisplayList (pick 用の複製は無い)
       GpuPrim: draw() が isPickDraw() を見て pick program (*_pick_*.glsl) に切り替える
@@ -115,6 +115,11 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   `SphereGpuPrim` / `CylinderGpuPrim` (座標属性版) は `isPickDraw()` で何も描かない (この経路は pick 不可)。
 - `isPickSupported()`: `MolAtomRenderer` / `MainChainRenderer` で `isHitTestSupported()`。name を付けない
   renderer (AtomIntr / MolSurf / NameLabel / Selection / Symm / LW / UnitCell) は false のまま。
+- `dsurface` (`DirectSurfRenderer`): fill 描画モードのみ pick 対応。`buildGpuMesh()` が頂点の所有原子 id
+  (`MSVert::info`) を `TrigGpuPrim::setHitName()` で載せ、`displayPick()` は `display()` を呼ぶ。line / point
+  モードは display-list 経路 (mesh 全体で 1 name) なので `isPickSupported()` は false。`isHitTestSupported()`
+  (CPU 点リスト) は持たないので rect / lasso 選択には出ない
+  ([direct-surface-renderer](direct-surface-renderer.md))。
 
 ### 3.4 uxp_gui 非適用の gating
 - `ViewCap::hasGpuPick()` (既定 false)。`ElecViewCap` のみ true。`OcViewCap` は override しないので desktop /
@@ -221,6 +226,8 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
 - readback は同期 `readPixels`。async (PBO + fence) は未実装。
 - hover ハイライトは §10 (pick buffer からの screen-space overlay)。カーソル変更は未実装。
 - stereo (CSM_PARA / CROSS) では GPU pick を使わず CPU 経路 (hover highlight も出ない)。
+- `dsurface` は GPU pick のみ (CPU 点リスト無し): rect / lasso 選択と uxp_gui の click では反応しない。
+  alpha <= 0.6 の surface は閾値どおり pick から外れる (透けた surface の奥の原子が拾える)。
 
 ## 10. hover highlight (pick ID buffer からの screen-space overlay)
 
@@ -315,7 +322,7 @@ present 専用フレーム (setHoverHit / clearHoverHit だけが起きた):
   改善するが pick pass コストと RGBA32UI メモリが 4 倍になるので上げていない。
 - overlay に AA (FXAA / SMAA / jitter) はかからない (最終段の後に重ねる)。縁の滑らかさは blur した mask の
   bilinear 参照によるもので、pick 解像度より細かい形状 (細い線の太さの差など) は再現しない。
-- alpha < 0.5 の renderer、CPU fallback の renderer (`*symm` 等)、stereo では highlight されない
+- alpha <= 0.6 の renderer、CPU fallback の renderer (`*symm` 等)、stereo では highlight されない
   (pick buffer に無い)。
 - highlight の単位は hit 要素のみ。残基単位で同一分子の全 renderer を光らせるには Mol* の marker texture
   相当 (原子 ID -> mark の lookup と rend -> 分子の対応) が要る (未実装)。

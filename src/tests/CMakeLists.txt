@@ -66,6 +66,7 @@ add_executable(test_gfx
   gfx/test_aoconstants.cpp
   gfx/test_color_robustness.cpp
   gfx/test_copy_and_bounds.cpp
+  gfx/test_mesh_colors.cpp
 )
 target_include_directories(test_gfx PRIVATE
   ${CMAKE_SOURCE_DIR}/src

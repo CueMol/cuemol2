@@ -5,6 +5,7 @@
 #include <common.h>
 
 #include "gfx/GpuPrim.hpp"
+#include "mock_display_context.hpp"
 #include "gfx/DisplayContext.hpp"
 #include "gfx/DisplayList.hpp"
 #include "gfx/SphereIdxGpuPrim.hpp"
@@ -24,67 +25,7 @@
 using qlib::LString;
 using qlib::Vector4D;
 
-// ---- MockShaderObject ----
-
-class MockShaderObject : public gfx::ShaderObject
-{
-public:
-    bool loadShaders(const qlib::MapTable<qlib::LString> &) override { return true; }
-    void enable() override {}
-    void disable() override {}
-    void setUniform(const LString &, int) override {}
-    void setUniform(const LString &, int, int) override {}
-    void setUniform(const LString &, int, int, int) override {}
-    void setUniform(const LString &, int, int, int, int) override {}
-    void setUniformF(const LString &, float) override {}
-    void setUniformF(const LString &, float, float) override {}
-    void setUniformF(const LString &, float, float, float) override {}
-    void setUniformF(const LString &, float, float, float, float) override {}
-    void setMatrix(const LString &, const qlib::Matrix4D &) override {}
-    void setMatrix(const LString &, const qlib::Matrix3D &) override {}
-    int getAttribLocation(const char *) override { return 0; }
-    void setupFog(gfx::DisplayContext *) override {}
-    void setupMat(gfx::DisplayContext *) override {}
-};
-
-// ---- MockDisplayContext ----
-
-class MockDisplayContext : public gfx::DisplayContext
-{
-public:
-    MockShaderObject *m_pMockPO;
-
-    MockDisplayContext() : m_pMockPO(new MockShaderObject()) {}
-    ~MockDisplayContext() override { delete m_pMockPO; }
-
-    // Pure virtual implementations (all no-ops)
-    bool setCurrent() override { return true; }
-    bool isCurrent() const override { return true; }
-    bool isFile() const override { return false; }
-    void vertex(const Vector4D &) override {}
-    void normal(const Vector4D &) override {}
-    void setPolygonMode(int) override {}
-    void startPoints() override {}
-    void startPolygon() override {}
-    void startLines() override {}
-    void startLineStrip() override {}
-    void startTriangles() override {}
-    void startTriangleStrip() override {}
-    void startTriangleFan() override {}
-    void startQuadStrip() override {}
-    void startQuads() override {}
-    void end() override {}
-
-    // loadShaderObject returns the same mock for any shader name
-    gfx::ShaderObject *loadShaderObject(const LString &, const LString &,
-                                        const LString &) override
-    {
-        return m_pMockPO;
-    }
-
-    // drawElem is a no-op
-    void drawElem(const gfx::AbstDrawElem &) override {}
-};
+// The mocks live in mock_display_context.hpp (shared with test_surface).
 
 // ---- DisplayList hit names (GPU ID-buffer pick) ----
 
