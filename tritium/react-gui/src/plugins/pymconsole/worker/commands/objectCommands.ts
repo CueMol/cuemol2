@@ -24,6 +24,7 @@ function visibilityCommand(name: string, visible: boolean): PymCommand {
     mode: 'strict',
     mutates: true,
     summary: visible ? 'Show objects.' : 'Hide objects.',
+    completions: [{ source: 'objects', description: 'object', suffix: ' ' }],
     run(ctx, args, cc) {
       if (visible && !isDefaulted(args.parents, '0')) {
         cc.warn(`${name}: parents is ignored (not supported)`)

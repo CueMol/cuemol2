@@ -14,6 +14,7 @@
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { CompletionSourceId } from '../completion/sources'
 import type { ArgMode } from '../parser/parseArgs'
 import type { ParamSpec } from '../parser/bindArgs'
 
@@ -42,6 +43,21 @@ export interface CmdContext {
 /** A command either did its job or has a reason it could not. */
 export type CmdOutcome = { ok: true } | { ok: false; error: string }
 
+/**
+ * What Tab offers for one argument position.
+ *
+ * PyMOL's `auto_arg` entry, which is a `[source, description, suffix]`
+ * triple. The suffix is appended only when exactly one candidate matched:
+ * `', '` when another argument follows, `' '` when the name ends the
+ * command, and `''` for an argument the user may keep typing into.
+ */
+export interface ArgCompletion {
+  source: CompletionSourceId
+  /** Spliced into "no matching X." and "matching X:". */
+  description: string
+  suffix: '' | ' ' | ', '
+}
+
 /** One console command. */
 export interface PymCommand {
   /** PyMOL's name for it. */
@@ -54,6 +70,13 @@ export interface PymCommand {
   mutates: boolean
   /** One line for `help`. */
   summary: string
+  /**
+   * What Tab offers, by argument position.
+   *
+   * A position that is absent, or null, falls back to filename completion --
+   * which is what PyMOL does for every argument it has no entry for.
+   */
+  completions?: (ArgCompletion | null)[]
   /**
    * Do it.
    *

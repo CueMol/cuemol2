@@ -165,6 +165,7 @@ const deleteCmd: PymCommand = {
   mode: 'strict',
   mutates: true,
   summary: 'Remove objects from the scene. Wildcards and "all" are accepted.',
+  completions: [{ source: 'names', description: 'name', suffix: ' ' }],
   run(ctx, args, cc) {
     const hits = resolveObjects(ctx, cc.sceneId, args.name)
     if (hits.length === 0) {
@@ -189,6 +190,10 @@ const setName: PymCommand = {
   mode: 'strict',
   mutates: true,
   summary: 'Rename an object.',
+  completions: [
+    { source: 'names', description: 'name', suffix: ', ' },
+    { source: 'names', description: 'name', suffix: '' },
+  ],
   run(ctx, args, cc) {
     const found = resolveOneObject(ctx, cc.sceneId, args.old_name)
     if (!found.ok) return found

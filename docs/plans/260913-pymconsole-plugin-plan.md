@@ -1,6 +1,7 @@
 # pymconsole plugin (PyMOL コマンド互換コンソール、Python embedding なし)
 
-Status: **Phase 1 実装済み** (`tritium/react-gui/src/plugins/pymconsole/`)。Phase 2 以降は未着手。
+Status: **Phase 1 + Tab 補完 (Phase 1.5) 実装済み** (`tritium/react-gui/src/plugins/pymconsole/`)。
+Phase 2 以降は未着手。
 関連: [pym console 調査報告](pymconsole-research-260529.md)、
 [tritium plugin](../architecture/tritium_plugin/_index.md)、
 [AI agent plugin](../architecture/ai-agent-plugin.md)。
@@ -132,8 +133,57 @@ consumer か」— 後者 (上表の 3 つ) だけを core へ移した。
 | `worker/parser/parse.test.ts` | `;` が quote / 括弧の中では切れない / `#` と継続行 / prefix / nester が 1 引数になる / `name=value` / `literal1` / 括弧不一致の 2 分岐 / STRICT と LEGACY / `?` usage / 前方一致と略記と曖昧 |
 | `worker/runCommand.test.ts` | 変更ありは commit 1 回 / read-only は rollback / 途中失敗は残りを中止しつつ既変更は commit / 未知 command は scene を触らない |
 | `renderer/PymConsolePanel.test.tsx` | submit が runner に流れ entries が行として出る / ↑ で直近の履歴が draft に入る |
+| `worker/completion/complete.test.ts` | 完全一致コマンドが兄弟を列挙する / 略記 / 一意なら suffix / 共通接頭辞は厳密に長いときだけ伸びる / `[...]` 内の `,` を数えない / 値ソースに `argsSoFar` が渡る / エントリ無し・曖昧・ソース null の file fallback |
+| `worker/completion/columns.test.ts` | 列優先レイアウト (行優先だと同じ文字数・同じ行数で並び順だけ狂う) |
 
 書かなかったもの: 各 command の service forwarding (service 側 test が既にある)、色名表の総当たり、見た目。
+
+## Phase 1.5 (実装済み): Tab 補完
+
+PyMOL の補完を移植した。**独自 UI (ドロップダウン等) は作らない** -- 操作感覚が変わるため、
+候補一覧は PyMOL と同じく transcript に印字する。
+
+移植元と対応:
+
+| ファイル | 移植元 |
+|---|---|
+| `worker/parser/shortcut.ts` | `shortcut.py` の `Shortcut.interpret`。`commandLookup.ts` はこれの薄い wrapper になった |
+| `worker/completion/complete.ts` | `parser.py` の `_complete` + `complete_sc` (正規表現・fallback・印字文言まで) |
+| `worker/completion/columns.ts` | `parsing.list_to_str_list` (幅 77 / margin 2 / **列優先**) |
+| `worker/completion/sources.ts` | `completing.py` の候補ソース群 (`object_sc` / `selection_sc` / `setting_sc` / `color_sc` ...) |
+| `PymCommand.completions` | `completing.py` の `auto_arg` 表 (`[source, description, suffix]`) |
+
+**アルゴリズムの要点** (PyMOL のまま):
+
+- Tab は**行全体を置換**し caret は行末へ。**繰り返しても cycling しない** (再度一覧を印字するだけ)
+- コマンド位置 (行に `' '` も `'@'` も無い) は `prefixSearchOnExact` で検索するので、
+  `set<TAB>` は補完せず `set set_name` を列挙する。一意なら `+ ' '`
+- 引数位置は `,` の数で決める。**`[...]` の中だけ無視**し、括弧と quote は無視しない (PyMOL の癖)。
+  引数は `prefixSearchOnExact` **無し**なので、完全一致する候補があればそれで確定する
+- 一意一致のときだけ suffix (`''` / `' '` / `', '`) が付く。共通接頭辞まで伸ばす場合は付かず、
+  **pat より厳密に長いときだけ**伸ばす
+- コマンドの略記は正式名に書き換え、最後の `,` の空白を `, ` に正規化する
+- エントリが無い / コマンドが曖昧 / ソースが `null` を返す → **ファイル名補完に fallback**
+  (ディレクトリは `/` 付き、`$VAR` は環境変数)
+
+**PyMOL からの逸脱は 2 つだけ**:
+
+1. **`set <名>, <TAB>` で値を補完する**。PyMOL はここにエントリが無くファイル名を出す。
+   enum なら `enumdef`、boolean なら `on`/`off` を候補にし、それ以外 (数値・文字列) は PyMOL と同じ
+   fallback。`settingValue` ソースだけが `argsSoFar` を受け取るのはこのため
+2. **`selections` ソースは Phase 1 では名前だけ**。PyMOL は selection キーワード (`chain ` `resi ` ...)
+   も列挙するが、実行できない式に補完してしまうため。Phase 2 で `sources.ts` の当該 case に
+   1 配列足せば済むようにしてある
+
+**入れなかったもの**: `Ctrl+D` (候補を印字だけする) は PyMOL でも 3D ビュー内蔵の overlay コンソール
+(`Ortho.cpp`) だけの機能で、Qt の QLineEdit には無い。「一覧を見るだけ」は Tab の
+「複数候補なら印字し、共通接頭辞が伸びなければ行を変えない」挙動で足りる。`Ctrl+Up` (prefix 履歴検索) は
+macOS で OS (Mission Control) が横取りするため、入れるなら別キーの割り当てが要る。
+
+**renderer 側**: `PymConsolePanel` の `handleKeyDown` で Tab を**常に消費** (focus 移動に使わない。
+Shift+Tab は逃げ道として残す)。複数行 (script 貼り付け) のときは **caret のある行だけ**を送って置換する
+(PyMOL のコマンドラインは 1 行なのでこの区別が無い)。候補一覧は `consoleSession.append` で印字 --
+補完は runner を経由しない (undo txn を開かないため、`complete` は `runCommand` とは別 service)。
 
 ## Phase 2 (次 PR): selection 翻訳器 + Tier 1
 
@@ -158,6 +208,8 @@ consumer か」— 後者 (上表の 3 つ) だけを core へ移した。
 - `npm test` -- 417 files / 3834 tests pass
 - `pnpm run lint` -- 0 error、`npm run lint:style` -- 既存 14 件のまま、`pnpm run lint:comments` -- OK
 - `task build_tritium` -- 成功。worker bundle にパーサとコマンド、renderer bundle に panel が入ることを確認
+- Tab 補完: `<TAB>` で全コマンド / `se<TAB>` で一覧 / `b_c<TAB>` で `bg_color ` / `bg_color ye<TAB>` /
+  `set aa_method, <TAB>` で enum 値 / `load ~/<TAB>` / 複数行の途中行での Tab / Shift+Tab で focus が抜ける
 - 目視確認 (E2E): 既定オフで tab が無いこと、Settings > Plugins で ON にして
   `help` / `fetch 1crn` / `bg_color white` / `zoom 1crn` / `turn y, 90` / `view v1, store` /
   `delete 1crn; fetch 1crn` の Cmd+Z 1 回 / read-only 後に Redo が残ること / IME / tab 切替での状態保持

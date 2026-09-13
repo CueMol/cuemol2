@@ -9,15 +9,24 @@
  */
 
 import { definePluginServices } from '@renderer/plugin-host/api'
-import type { RunCommandArgs, RunCommandResult } from './shared/consoleTypes'
+import type {
+  CompleteArgs,
+  CompleteResult,
+  RunCommandArgs,
+  RunCommandResult,
+} from './shared/consoleTypes'
 
 // `type`, not `interface`: the plugin service client needs the implicit index
 // signature an interface does not have.
 export type PymConsoleCalls = {
   runCommand: { args: RunCommandArgs; result: RunCommandResult }
+  complete: { args: CompleteArgs; result: CompleteResult }
 }
 
-export const PYMCONSOLE_KEYS = ['runCommand'] as const satisfies readonly (keyof PymConsoleCalls)[]
+export const PYMCONSOLE_KEYS = [
+  'runCommand',
+  'complete',
+] as const satisfies readonly (keyof PymConsoleCalls)[]
 
 /** Typed caller for the services this plugin registers. */
 export const pymServices = definePluginServices<PymConsoleCalls>('pymconsole')

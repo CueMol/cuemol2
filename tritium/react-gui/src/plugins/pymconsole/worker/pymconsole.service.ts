@@ -7,10 +7,12 @@
  * `ServiceMap`. The panel calls it through the typed client in `../calls.ts`.
  */
 
+import { complete } from './completion/completeService'
 import { runCommand } from './runCommand'
 
 export const services = {
     runCommand,
+    complete,
 };
 
 export type * from '../shared/consoleTypes';

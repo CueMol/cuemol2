@@ -10,7 +10,9 @@
  *
  * The parser is a port of PyMOL's own (`modules/pymol/parsing.py`), running
  * in the Web Worker so a command reaches the existing worker services by
- * direct call. There is no embedded Python involved: the alternative of
+ * direct call. So is Tab completion (`parser.py`'s `_complete`), down to the
+ * printed candidate list -- a console whose Tab behaves differently is one
+ * nobody's fingers know. There is no embedded Python involved: the alternative of
  * hosting the parser in libcuemol2's CPython was investigated and set aside
  * (`docs/plans/pymconsole-research-260529.md`, and the plan that supersedes
  * its section 0).

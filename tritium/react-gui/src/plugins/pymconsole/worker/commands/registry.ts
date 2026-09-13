@@ -22,6 +22,7 @@ const help: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'List the commands, or explain one.',
+  completions: [{ source: 'commands', description: 'command', suffix: '' }],
   run(_ctx, args, cc) {
     const topic = args.command.trim()
     if (topic === '' || topic === 'commands') {

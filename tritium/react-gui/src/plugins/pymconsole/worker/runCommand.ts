@@ -53,7 +53,8 @@ const MAX_OUTPUT_LINES = 200
  */
 let workingDir = ''
 
-function currentDir(): string {
+/** The directory a relative path is read from. Shared with completion. */
+export function currentDir(): string {
   if (workingDir === '') {
     try {
       workingDir = process.cwd()

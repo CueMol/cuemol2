@@ -12,6 +12,7 @@
 import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mountTree, flushPromises } from '@renderer/__test__/helpers/testHarness'
+import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 
 void React
 
@@ -71,6 +72,60 @@ describe('PymConsolePanel', () => {
     expect(tree.container.textContent).toContain('done')
     // The prompt is cleared so the next line starts empty.
     expect(promptOf(tree.container).value).toBe('')
+    tree.unmount()
+  })
+
+  it('completes the line under the caret with what the worker answers', async () => {
+    const invokePluginService = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        replacement: 'bg_color ',
+        messages: [{ kind: 'output', text: ' parser: matching commands:' }],
+      }),
+    )
+    const cm = { invokePluginService } as unknown as AsyncCueMol
+    const tree = mountTree(<PymConsolePanel cm={cm} activeSceneId={1} activeMolViewId={2} />)
+    act(() => consoleSession.setRunner(vi.fn()))
+
+    const prompt = promptOf(tree.container)
+    act(() => type(prompt, 'bg'))
+    act(() => {
+      prompt.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      )
+    })
+    await act(async () => flushPromises())
+
+    const [pluginId, name, args] = invokePluginService.mock.calls[0] as unknown as [
+      string,
+      string,
+      { line: string },
+    ]
+    expect([pluginId, name]).toEqual(['pymconsole', 'complete'])
+    expect(args.line).toBe('bg')
+    expect(promptOf(tree.container).value).toBe('bg_color ')
+    expect(tree.container.textContent).toContain('parser: matching commands:')
+    tree.unmount()
+  })
+
+  it('keeps Tab inside the prompt rather than letting it move focus', () => {
+    const cm = {
+      invokePluginService: vi.fn(() =>
+        Promise.resolve({ ok: true, replacement: null, messages: [] }),
+      ),
+    } as unknown as AsyncCueMol
+    const tree = mountTree(<PymConsolePanel cm={cm} activeSceneId={1} />)
+    act(() => consoleSession.setRunner(vi.fn()))
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      promptOf(tree.container).dispatchEvent(event)
+    })
+    expect(event.defaultPrevented).toBe(true)
     tree.unmount()
   })
 

@@ -97,6 +97,17 @@ export const consoleSession = {
     })
   },
 
+  /**
+   * Append lines that did not come from running a command.
+   *
+   * Tab prints its candidate list this way: the completion service is not the
+   * runner, so `running` is not its to touch.
+   */
+  append(entries: readonly ConsoleEntry[]): void {
+    if (entries.length === 0) return
+    emit({ ...state, lines: [...state.lines, ...withIds(entries)] })
+  },
+
   /** Say something that did not come from a command. */
   notice(message: string): void {
     emit({ ...state, lines: [...state.lines, ...withIds([{ kind: 'output', text: message }])] })

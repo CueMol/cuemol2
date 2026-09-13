@@ -23,7 +23,7 @@ import { isDefaulted, resolveOneObject, toBoolean, toNumber } from './helpers'
 import { toCueMolColor } from './pymolColors'
 
 /** A PyMOL setting name that has an exact CueMol counterpart. */
-interface SettingAlias {
+export interface SettingAlias {
   /** The CueMol property name. */
   prop: string
   /** Where the property lives, when it is not the default target. */
@@ -39,18 +39,18 @@ interface SettingAlias {
  * spelling of the property list, and a name missing from it is more confusing
  * than a name that was never claimed.
  */
-const SETTING_ALIASES: Readonly<Record<string, SettingAlias>> = {
+export const SETTING_ALIASES: Readonly<Record<string, SettingAlias>> = {
   bg_rgb: { prop: 'bgcolor' },
   orthoscopic: { prop: 'perspective', nodeType: 'view', invert: true },
 }
 
 /** Where a `set` / `get` / `unset` reads or writes. */
-interface Target {
+export interface Target {
   nodeId: number
   nodeType: PropTargetType
 }
 
-function resolveTarget(
+export function resolveTarget(
   ctx: WorkerContext,
   cc: CmdContext,
   objectName: string,
@@ -67,7 +67,7 @@ function resolveTarget(
 }
 
 /** The property entry `propName` refers to on `target`, if there is one. */
-function findEntry(
+export function findEntry(
   ctx: WorkerContext,
   cc: CmdContext,
   target: Target,
@@ -121,6 +121,14 @@ const set: PymCommand = {
   mode: 'legacy',
   mutates: true,
   summary: 'Set a property on the scene or an object.',
+  completions: [
+    { source: 'settings', description: 'setting', suffix: ', ' },
+    // PyMOL has no entry here, so `set <name>, <TAB>` globs the directory --
+    // filenames, for a property value. Where the value set is known exactly
+    // (an enum, a flag) it is offered; anything open still falls back.
+    { source: 'settingValue', description: 'value', suffix: ', ' },
+    { source: 'names', description: 'name', suffix: ', ' },
+  ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('set: state is ignored (not supported)')
     const alias = SETTING_ALIASES[args.name.trim()]
@@ -159,6 +167,10 @@ const get: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Print a property of the scene or an object.',
+  completions: [
+    { source: 'settings', description: 'setting', suffix: ', ' },
+    { source: 'objects', description: 'object', suffix: ', ' },
+  ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('get: state is ignored (not supported)')
     const alias = SETTING_ALIASES[args.name.trim()]
@@ -180,6 +192,10 @@ const unset: PymCommand = {
   mode: 'strict',
   mutates: true,
   summary: 'Restore a property to its default.',
+  completions: [
+    { source: 'settings', description: 'setting', suffix: ', ' },
+    { source: 'names', description: 'name', suffix: ', ' },
+  ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('unset: state is ignored (not supported)')
     const alias = SETTING_ALIASES[args.name.trim()]
@@ -208,6 +224,7 @@ const bgColor: PymCommand = {
   mode: 'strict',
   mutates: true,
   summary: 'Set the background colour.',
+  completions: [{ source: 'colors', description: 'color', suffix: '' }],
   run(ctx, args, cc) {
     const color = toCueMolColor(args.color)
     if (color === null) return { ok: false, error: `Error: unknown color: "${args.color}"` }

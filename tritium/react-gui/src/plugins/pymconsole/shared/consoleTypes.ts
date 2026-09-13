@@ -34,3 +34,20 @@ export interface RunCommandOutcome {
 }
 
 export type RunCommandResult = Result<RunCommandOutcome>
+
+export interface CompleteArgs {
+  /** 0 when no scene is active; name candidates are then empty. */
+  sceneId: number
+  viewId: number
+  /** The line the caret is on, without its newline. */
+  line: string
+}
+
+export interface CompleteOutcome {
+  /** The whole line, rewritten. Null leaves what was typed alone. */
+  replacement: string | null
+  /** The candidate list, or the line saying there was nothing. */
+  messages: ConsoleEntry[]
+}
+
+export type CompleteResult = Result<CompleteOutcome>

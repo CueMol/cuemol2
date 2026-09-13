@@ -73,6 +73,7 @@ const zoom: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Fit the view to an object. Selections come in a later phase.',
+  completions: [{ source: 'selections', description: 'selection', suffix: '' }],
   run(ctx, args, cc) {
     for (const [name, def] of [
       ['buffer', '0.0'],
@@ -97,6 +98,7 @@ const center: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Centre the view on an object. Selections come in a later phase.',
+  completions: [{ source: 'selections', description: 'selection', suffix: '' }],
   run(ctx, args, cc) {
     for (const [name, def] of [
       ['state', '0'],
@@ -174,7 +176,7 @@ const move: PymCommand = {
 }
 
 /** The camera names stored in the scene, sorted. */
-function storedCameraNames(ctx: WorkerContext, sceneId: number): string[] {
+export function storedCameraNames(ctx: WorkerContext, sceneId: number): string[] {
   const scene = getSceneOrNull(ctx, sceneId)
   if (!scene) return []
   try {
@@ -199,6 +201,10 @@ const view: PymCommand = {
   // Storing or clearing writes a camera to the scene; recalling does not.
   mutates: false,
   summary: 'Store, recall and clear named camera views.',
+  completions: [
+    { source: 'cameras', description: 'view', suffix: '' },
+    { source: 'viewActions', description: 'view action', suffix: '' },
+  ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.animate, '-1')) cc.warn('view: animate is ignored (not supported)')
     const action = args.action.trim().toLowerCase()
