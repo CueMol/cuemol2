@@ -28,7 +28,7 @@ plugin を 1 本書きたいだけなら **overview -> authoring** で足りる�
 
 ## 現在の plugin
 
-`tritium/react-gui/src/plugins/` に 3 つある。実物が一番確実なサンプルなので、
+`tritium/react-gui/src/plugins/` に 5 つある。実物が一番確実なサンプルなので、
 近いものを真似るとよい。
 
 | id | 寄与 | 切り替え | 真似るとよい場面 |
@@ -37,10 +37,27 @@ plugin を 1 本書きたいだけなら **overview -> authoring** で足りる�
 | `sequence` | bottom tab / worker service 4 本 | 常時有効 | 下部パネルと、自前の worker service を持つもの |
 | `catalog` | activity view + side pane 3 | 既定オフ | サイドパネルの view。worker 通信のない純 UI |
 | `agent` | activity view + side pane / worker service 2 / push channel / 設定 5 行 (うち secret 2) | 既定オフ | 長い非同期処理、streaming、自前の設定と資格情報を持つもの |
+| `mdtools` | command / menu / dialog / bottom tab / worker service 7 本 | 既定オフ | 機能一式 (開くフロー + パネル + service) を丸ごと 1 ディレクトリに閉じるもの |
 
-いずれも**その機能専用の C++ クラスを持たない**ことを基準に選んである。`CutByPlane` や
-`Prot2ndry`、`SymmOpManager` のように C++ 側の専用機能の interface になっている UI は、
-C++ とセットでないと切り出せないので JS/TS レーンだけでは plugin 化しない。
+最初の 4 つは**その機能専用の C++ クラスを持たない**ことを基準に選んである。
+
+`mdtools` はその例外で、専用の C++ module (`src/modules/mdtools/`、`Trajectory` /
+`TrajBlock` と 4 つの reader) を持つ最初の plugin。C++ レーン
+([プラン](../../plans/260908-tritium-plugin-system-plan.md) の Phase A') が未実装なので
+module は常時ロードされたままで、**現状 plugin が gate するのは GUI だけ**
+(メニュー項目・bottom tab・dialog・worker service の呼び出し口)。無効にしても、既に
+読み込まれている `Trajectory` は描画され続ける。
+
+これは**恒久的な形ではなく中間状態**で、C++ 側の plugin 機構が入ったら module も
+plugin に含め、両レーンが同じ switch で入り切りする形にする予定。JS/TS 側を先に
+分けておくのは、そのときに残るのがパッケージングの変更だけになるため
+(`src/plugins/<id>/` のディレクトリ構成を実行時ロードと同じ形にしてあるのと同じ理由)。
+
+同じ理由で、`CutByPlane` や `Prot2ndry`、`SymmOpManager` のように C++ 側の専用機能
+そのものの interface になっている UI も、**いま**は JS/TS レーンだけで plugin 化しない --
+GUI を外しても得るものが無いため。`mdtools` を先に出したのは、trajectory が
+「読み込みフローと再生 UI」という独立した surface を持ち、GUI だけ外しても意味が
+通るから。
 
 `agent` ([ai-agent-plugin.md](../ai-agent-plugin.md)) は UXP に無い新機能で、host の
 寄与点をひととおり使う: push channel、plugin 自身の設定ページ、OS キーチェーンの資格情報、

@@ -11,7 +11,6 @@
 //#include "MS2TestRenderer.qif"
 #include "DirectSurfRendererBase.qif"
 #include "DirectSurfRenderer.qif"
-#include "DirectSurfRenderer2.qif"
 #include "XYZRFileWriter.qif"
 #include "PQRFileWriter.qif"
 #include "HoleSurfBuilder.qif"
@@ -30,7 +29,6 @@ module surface
   // MS2TestRenderer;
   DirectSurfRendererBase;
   DirectSurfRenderer;
-  DirectSurfRenderer2;
   XYZRFileWriter;
   PQRFileWriter;
   HoleSurfBuilder;

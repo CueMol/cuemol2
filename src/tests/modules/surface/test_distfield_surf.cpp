@@ -1,5 +1,6 @@
 //
-// Unit tests for the distance-field molecular surface builder (dsurf2 core).
+// Unit tests for the distance-field molecular surface builder
+// (the "distfield" algorithm of the dsurface renderer).
 //
 
 #include <gtest/gtest.h>
@@ -8,7 +9,6 @@
 #include <qlib/Vector4D.hpp>
 #include "surface/DistFieldSurfBuilder.hpp"
 #include "surface/DistMapMarchingCubes.hpp"
-#include "surface/DirectSurfRenderer2.hpp"
 
 #include <cmath>
 #include <vector>
@@ -198,14 +198,6 @@ TEST(DistFieldSurfTest, TwoAtomsSES)
     EXPECT_GT(dmin, R - tol);
     EXPECT_LT(dmin, R + probe + tol);
   }
-}
-
-// The v2 renderer is wired and reports its type name (the scripting class and
-// module registration are validated at build time via wrapper generation).
-TEST(DirectSurfRenderer2Test, GetTypeNameIsDsurf2)
-{
-  surface::DirectSurfRenderer2 r;
-  EXPECT_STREQ(r.getTypeName(), "dsurf2");
 }
 
 // Marching cubes welds shared edge vertices: a closed surface has every face

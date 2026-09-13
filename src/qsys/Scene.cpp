@@ -796,7 +796,7 @@ void Scene::displayPick(DisplayContext *pdc)
       return;
     if (!pRend->isPickSupported())
       return;
-    if (pRend->getDefaultAlpha() < PICK_ALPHA_THRESHOLD)
+    if (pRend->getDefaultAlpha() <= PICK_ALPHA_THRESHOLD)
       return;
 
     // A renderer that never calls loadName() records "no name" geometry.

@@ -24,7 +24,7 @@ import { Field, FieldSection, ButtonRow, FormButton } from '@renderer/h3-kit/for
 import { Listbox, ListRow } from '@renderer/h3-kit/list';
 import { ObjectSelect, objectFilters } from '@renderer/h3-kit/ObjectSelect';
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects';
-import type { MorphFrameInfo } from '@renderer/worker/server/services/traj/morphMol';
+import type { MorphFrameInfo } from '@renderer/worker/server/services/morph/morphMol';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { IPC } from '@shared/ipcChannels';
 

@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Colouring contract of the direct surface renderers (dsurface, dsurf2):
+// Colouring contract of the direct surface renderer (dsurface):
 // the potential ramp sampled from a scalar field, which property setters
 // invalidate the display cache in which colour mode, and the qsc round trip
 // of the colouring targets. The fixtures build a two-carbon molecule and a
@@ -12,7 +12,7 @@
 #include <common.h>
 
 #include "surface/DirectSurfRenderer.hpp"
-#include "surface/DirectSurfRenderer2.hpp"
+#include "../../gfx/mock_display_context.hpp"
 #include "surface/ElePotMap.hpp"
 #include "qsc_roundtrip_util.hpp"
 
@@ -35,7 +35,6 @@ using qlib::LString;
 using qlib::Vector4D;
 using gfx::ColorPtr;
 using surface::DirectSurfRenderer;
-using surface::DirectSurfRenderer2;
 
 namespace {
 
@@ -81,8 +80,6 @@ template <class F>
 void visitDsurf(const qsys::RendererPtr &pRend, F fn)
 {
     if (DirectSurfRenderer *p = dynamic_cast<DirectSurfRenderer *>(pRend.get()))
-        fn(*p);
-    else if (DirectSurfRenderer2 *p = dynamic_cast<DirectSurfRenderer2 *>(pRend.get()))
         fn(*p);
     else
         FAIL() << "not a direct surface renderer";
@@ -412,25 +409,28 @@ TEST_P(DsurfColorFixture, TargetIsAPersistedString)
 }
 
 INSTANTIATE_TEST_SUITE_P(DirectSurfTypes, DsurfColorFixture,
-                         ::testing::Values("dsurface", "dsurf2"));
+                         ::testing::Values("dsurface"));
 
-// --- dsurf2: the GPU colour pass and the display-list pass agree ---
+// --- the GPU colour pass and the display-list pass agree ---
 
 namespace {
 
-class ProbeDsurf2 : public DirectSurfRenderer2
+class ProbeDsurf : public DirectSurfRenderer
 {
 public:
-    using DirectSurfRenderer2::computeShownColors;
+    using DirectSurfRenderer::computeShownColors;
+    using DirectSurfRenderer::ensureMeshCache;
+    using DirectSurfRenderer::getTrigGpuPrim;
+    using DirectSurfRenderer::m_verts;
 };
 
-class Dsurf2PathsFixture : public ::testing::Test
+class DsurfPathsFixture : public ::testing::Test
 {
 protected:
     qsys::ScenePtr m_pScene;
     molstr::MolCoordPtr m_pMol;
     qsys::RendererPtr m_pRend;
-    ProbeDsurf2 *m_pProbe = nullptr;
+    ProbeDsurf *m_pProbe = nullptr;
 
     void SetUp() override
     {
@@ -439,7 +439,7 @@ protected:
         m_pMol = makeMol();
         m_pMol->setName("mol");
         m_pScene->addObject(m_pMol);
-        m_pProbe = MB_NEW ProbeDsurf2();
+        m_pProbe = MB_NEW ProbeDsurf();
         m_pRend = qsys::RendererPtr(m_pProbe);
         m_pProbe->resetAllProps();
         m_pMol->attachRenderer(m_pRend);
@@ -480,11 +480,11 @@ protected:
 
 }  // namespace
 
-TEST_F(Dsurf2PathsFixture, GpuAndDisplayListColorsAgree)
+TEST_F(DsurfPathsFixture, GpuAndDisplayListColorsAgree)
 {
     expectPathsAgree("molecule");
 
-    m_pProbe->setColorMode(DirectSurfRenderer2::DS_SCAPOT);
+    m_pProbe->setColorMode(DirectSurfRenderer::DS_SCAPOT);
     m_pProbe->setTgtElePotName("pot");
     m_pProbe->setLowPar(-1.0);
     m_pProbe->setMidPar(0.0);
@@ -546,11 +546,6 @@ TEST(DsurfRampSetters, DsurfaceInvalidatesOnlyInPotentialMode)
     expectRampSettersInvalidateOnlyInPotentialMode<DirectSurfRenderer>();
 }
 
-TEST(DsurfRampSetters, Dsurf2InvalidatesOnlyInPotentialMode)
-{
-    expectRampSettersInvalidateOnlyInPotentialMode<DirectSurfRenderer2>();
-}
-
 // --- multigrad mode: the same setters redraw, plus the map name and the stops ---
 
 namespace {
@@ -588,7 +583,122 @@ TEST(DsurfRampSetters, DsurfaceMultigradSettersInvalidate)
     expectMultigradSettersInvalidate<DirectSurfRenderer>();
 }
 
-TEST(DsurfRampSetters, Dsurf2MultigradSettersInvalidate)
+// --- the surfalgor algorithms and the dsurf2 type-name alias ---
+
+namespace {
+
+/// Scene + molecule with a probe renderer, for the mesh-level tests.
+class DsurfAlgorFixture : public ::testing::TestWithParam<const char *>
 {
-    expectMultigradSettersInvalidate<DirectSurfRenderer2>();
+protected:
+    qsys::ScenePtr m_pScene;
+    molstr::MolCoordPtr m_pMol;
+    qsys::RendererPtr m_pRend;
+    ProbeDsurf *m_pProbe = nullptr;
+
+    void SetUp() override
+    {
+        m_pScene = qsys::SceneManager::getInstance()->createScene();
+        m_pMol = makeMol();
+        m_pMol->setName("mol");
+        m_pScene->addObject(m_pMol);
+        m_pProbe = MB_NEW ProbeDsurf();
+        m_pRend = qsys::RendererPtr(m_pProbe);
+        m_pProbe->resetAllProps();
+        m_pMol->attachRenderer(m_pRend);
+        // A coarse surface keeps the run short.
+        m_pRend->setPropInt("detail", 2);
+    }
+
+    void TearDown() override
+    {
+        if (!m_pScene.isnull()) {
+            const qlib::uid_t uid = m_pScene->getUID();
+            m_pRend = qsys::RendererPtr();
+            m_pMol = molstr::MolCoordPtr();
+            m_pScene = qsys::ScenePtr();
+            qsys::SceneManager::getInstance()->destroyScene(uid);
+        }
+    }
+};
+
+}  // namespace
+
+// Every algorithm produces a mesh whose vertices name a real atom of the
+// client molecule: that is the contract the molecule-mode colouring and the
+// showsel filtering read (MSVert::info). An algorithm unavailable in this
+// build falls back to another one without rewriting the property.
+TEST_P(DsurfAlgorFixture, BuildsAMeshWhoseVerticesNameRealAtoms)
+{
+    m_pRend->setPropStr("surfalgor", GetParam());
+    const int nAlgor = m_pProbe->getSurfAlgor();
+    m_pProbe->ensureMeshCache();
+
+    const int nverts = m_pProbe->m_verts.size();
+    ASSERT_GT(nverts, 0) << GetParam();
+
+    for (int i = 0; i < nverts; ++i) {
+        const quint32 info = m_pProbe->m_verts[i].info;
+        ASSERT_FALSE(m_pMol->getAtom((int) info).isnull())
+            << GetParam() << ", vertex " << i << " info=" << info;
+    }
+
+    // A fallback builds with another algorithm but never rewrites the choice.
+    EXPECT_EQ(m_pProbe->getSurfAlgor(), nAlgor) << GetParam();
+}
+
+INSTANTIATE_TEST_SUITE_P(SurfAlgors, DsurfAlgorFixture,
+                         ::testing::Values("edtsurf", "distfield", "meshms"));
+
+// dsurf2 was a separate renderer type before the distance-field surface became
+// an algorithm of dsurface. A scene saved then loads as a dsurface built the
+// same way, and is written back under the new type name.
+TEST(DsurfAlias, LegacyDsurf2SceneLoadsAsDistfieldDsurface)
+{
+    const char *xml =
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+        "<renderer type=\"dsurf2\" name=\"surf1\" sel=\"*\" detail=\"2\">\n"
+        "<coloring type=\"CPKColoring\"/>\n"
+        "</renderer>\n";
+
+    qsys::RendererFactory *pRF = qsys::RendererFactory::getInstance();
+    qsys::RendererPtr pOut = surftest::loadFromXML(pRF, "dsurf2", xml);
+    ASSERT_FALSE(pOut.isnull());
+
+    DirectSurfRenderer *p = dynamic_cast<DirectSurfRenderer *>(pOut.get());
+    ASSERT_NE(p, nullptr);
+    EXPECT_STREQ(p->getTypeName(), "dsurface");
+    EXPECT_EQ(p->getSurfAlgor(), (int) DirectSurfRenderer::DS_DISTFIELD);
+    // Not default any more, so reapplyStyle() kept it and saving writes it out.
+    EXPECT_FALSE(pOut->isPropDefault("surfalgor"));
+    EXPECT_EQ(p->getDetail(), 2) << "the legacy attributes still load";
+}
+
+// --- GPU pick: the surface names its vertices after their owning atoms ---
+
+// A click or hover on the surface reports the atom the patch belongs to:
+// the fill draw mode uploads MSVert::info as each vertex's hit name, and
+// only the fill mode is pickable (the display-list modes cannot name).
+TEST_F(DsurfPathsFixture, GpuMeshCarriesAtomIdsAsHitNames)
+{
+    MockDisplayContext dc;
+    ASSERT_TRUE(m_pProbe->isPickSupported());
+    m_pProbe->display(&dc);
+
+    std::vector<int> vidmap;
+    std::vector<quint32> vcol;
+    const int nshown = m_pProbe->computeShownColors(vidmap, vcol);
+    ASSERT_GT(nshown, 0);
+
+    const gfx::TrigGpuPrim &prim = m_pProbe->getTrigGpuPrim();
+    ASSERT_EQ(prim.getVertexSize(), nshown);
+    for (size_t i = 0; i < vidmap.size(); ++i) {
+        if (vidmap[i] < 0) continue;
+        EXPECT_EQ(prim.getHitName(vidmap[i]),
+                  gfx::encodeHitName((int) m_pProbe->m_verts[i].info))
+            << "vertex " << i;
+    }
+
+    m_pProbe->setDrawMode(DirectSurfRenderer::SFDRAW_LINE);
+    EXPECT_FALSE(m_pProbe->isPickSupported());
 }

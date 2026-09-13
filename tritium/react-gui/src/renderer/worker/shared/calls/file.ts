@@ -29,10 +29,6 @@ import type {
   OpenSceneFileResult,
 } from '@renderer/worker/server/services/file/loadScene'
 import type {
-  LoadTrajectoryArgs,
-  LoadTrajectoryResult,
-} from '@renderer/worker/server/services/file/loadTrajectory'
-import type {
   GetObjectSaveInfoArgs,
   GetObjectSaveInfoResult,
   ListSavableObjectsArgs,
@@ -62,7 +58,6 @@ export interface FileCalls {
   probeMapHeader:             { args: ProbeMapHeaderArgs; result: ProbeMapHeaderResult }
   getOpenFilters:             { args: GetOpenFiltersArgs; result: ElectronFileFilter[] }
   loadObject:                 { args: LoadObjectArgs; result: LoadObjectResult }
-  loadTrajectory:             { args: LoadTrajectoryArgs; result: LoadTrajectoryResult }
   loadScene:                  { args: LoadSceneArgs; result: LoadSceneResult }
   openSceneFile:              { args: OpenSceneFileArgs; result: OpenSceneFileResult }
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs; result: StreamLoadFromUrlResult }
@@ -80,7 +75,6 @@ export const FILE_KEYS = [
   'probeMapHeader',
   'getOpenFilters',
   'loadObject',
-  'loadTrajectory',
   'loadScene',
   'openSceneFile',
   'streamLoadFromUrl',

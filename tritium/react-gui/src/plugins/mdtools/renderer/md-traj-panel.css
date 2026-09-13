@@ -286,3 +286,12 @@
   gap: var(--space-4);
   color: var(--text-muted);
 }
+
+/* Open MD Trajectory dialog: a roomier inter-section gap than the default so
+   its three meaning-units (topology / trajectory files / frame sampling) read
+   as clearly separate groups in a control-dense dialog. */
+.omt-traj-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}

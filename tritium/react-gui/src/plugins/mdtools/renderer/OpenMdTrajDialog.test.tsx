@@ -24,7 +24,7 @@ vi.mock('@renderer/contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'light', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { OpenMdTrajDialog } from '@renderer/dialogs/OpenMdTrajDialog'
+import { OpenMdTrajDialog } from './OpenMdTrajDialog'
 import { IPC } from '@shared/ipcChannels'
 import { mountTree, setupElectronAPI, teardownElectronAPI, flushPromises } from '@renderer/__test__/helpers/testHarness'
 

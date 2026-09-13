@@ -17,13 +17,15 @@ runtime_class DirectSurfRenderer extends DirectSurfRendererBase
   smartptr;
   cloneable;
 
-  /// Surface calculation algorithm
+  /// Surface calculation algorithm. "meshms" builds the SES analytically and
+  /// falls back to "distfield" where it is unavailable (see the class doc).
   enumdef surfalgor {
     edtsurf = surface::DirectSurfRenderer::DS_EDTSURF;
-    msms = surface::DirectSurfRenderer::DS_MSMS;
+    distfield = surface::DirectSurfRenderer::DS_DISTFIELD;
+    meshms = surface::DirectSurfRenderer::DS_MESHMS;
   }
   property enum surfalgor => redirect(getSurfAlgor, setSurfAlgor);
-  default surfalgor = "edtsurf";
+  default surfalgor = "distfield";
 
 };
 

@@ -16,7 +16,6 @@ const COLORMODE_ENUMDEF: Record<string, string[]> = {
     isosurf: ['molecule', 'multigrad', 'solid'],
     contour: ['molecule', 'multigrad', 'solid'],
     dsurface: ['molecule', 'multigrad', 'potential'],
-    dsurf2: ['molecule', 'multigrad', 'potential'],
 }
 
 interface MakeFixtureOpts {
@@ -915,43 +914,37 @@ describe('getRendererColoringState', () => {
     // of its own should colour by. A direct-surface renderer is attached to a
     // MolCoord and colours from it, so the selector would offer a choice that
     // changes nothing -- and the write behind it would store an unread name.
-    it.each(['dsurface', 'dsurf2'])(
-        'reports no molFancTarget for %s, which colours from its own molecule',
-        (typeName) => {
-            const { ctx } = makeRichFixture({
-                objects: [{
-                    id: 10, name: 'mol1', rends: [{
-                        id: 100, name: 'surf1', typeName,
-                        coloringClass: 'SolidColoring',
-                        colormode: 'molecule', target: 'mol1',
-                    }],
+    it('reports no molFancTarget for dsurface, which colours from its own molecule', () => {
+        const { ctx } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'surf1', typeName: 'dsurface',
+                    coloringClass: 'SolidColoring',
+                    colormode: 'molecule', target: 'mol1',
                 }],
-            })
-            const res = services.getRendererColoringState(ctx, { sceneId: 1, rendId: 100 })
-            expect(res.ok).toBe(true)
-            expect(res.colormode).toBe('molecule')
-            expect(res.molFancTarget).toBeUndefined()
-        },
-    )
+            }],
+        })
+        const res = services.getRendererColoringState(ctx, { sceneId: 1, rendId: 100 })
+        expect(res.ok).toBe(true)
+        expect(res.colormode).toBe('molecule')
+        expect(res.molFancTarget).toBeUndefined()
+    })
 
-    it.each(['dsurface', 'dsurf2'])(
-        'refuses a coloring-target write on %s',
-        (typeName) => {
-            const { ctx } = makeRichFixture({
-                objects: [{
-                    id: 10, name: 'mol1', rends: [{
-                        id: 100, name: 'surf1', typeName,
-                        coloringClass: 'SolidColoring',
-                        colormode: 'molecule', target: 'mol1',
-                    }],
+    it('refuses a coloring-target write on dsurface', () => {
+        const { ctx } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'surf1', typeName: 'dsurface',
+                    coloringClass: 'SolidColoring',
+                    colormode: 'molecule', target: 'mol1',
                 }],
-            })
-            const res = services.setRendererColoringTarget(ctx, {
-                sceneId: 1, rendId: 100, targetName: 'mol2',
-            })
-            expect(res).toEqual({ ok: false })
-        },
-    )
+            }],
+        })
+        const res = services.setRendererColoringTarget(ctx, {
+            sceneId: 1, rendId: 100, targetName: 'mol2',
+        })
+        expect(res).toEqual({ ok: false })
+    })
 
     it('does not expose an unrelated target prop as molFancTarget (no colormode)', () => {
         // DisoRenderer-like: has coloring + a `target` that names a renderer,
@@ -1759,7 +1752,7 @@ describe('setRendererColoring -- paint-type-elepot', () => {
  *
  * The cause was one stale predicate: the "put this renderer back into molecule
  * mode" gate listed molsurf and isosurf, while the gate that lets a renderer
- * ENTER potential mode had grown to include dsurface and dsurf2. Entry without
+ * ENTER potential mode had grown to include the direct surfaces. Entry without
  * a matching exit is the shape of the bug, so these tests pin the round trip
  * for every renderer whose colormode governs its coloring -- including contour,
  * which could reach multigrad the same way.
@@ -1776,7 +1769,7 @@ describe('setRendererColoring — leaving a special colormode', () => {
         'paint-type-paint',
     ]
 
-    for (const typeName of ['dsurf2', 'dsurface', 'molsurf', 'isosurf', 'contour']) {
+    for (const typeName of ['dsurface', 'molsurf', 'isosurf', 'contour']) {
         for (const coloringId of MOLECULE_COLORINGS) {
             it(`${typeName}: ${coloringId} leaves the special mode for "molecule"`, () => {
                 const { ctx, setColormode } = makeFixture({ typeName })
@@ -1817,9 +1810,9 @@ describe('setRendererColoring — leaving a special colormode', () => {
         expect(setTarget).toHaveBeenCalledWith('mol1')
     })
 
-    it('does not seed a target on dsurf2, which colours from its own molecule', () => {
+    it('does not seed a target on dsurface, which colours from its own molecule', () => {
         const { ctx, setTarget, setColormode } = makeFixture({
-            typeName: 'dsurf2',
+            typeName: 'dsurface',
             initialTarget: '',
             sceneObjects: [{ type: 'MolCoord', name: 'mol1' }],
         })

@@ -964,7 +964,7 @@
   /* Digit capacity, not a hand-picked pixel count: `ch` is the "0" advance, so
      this is literally "fits 4 digits" plus the padding and border. Four covers
      every consumer -- the widest value any of them reaches is 9999 (the
-     trajectory dialog's every-N-th-frame), and the Rainbow hue tops out at
+     MD Tools plugin's trajectory dialog, every-N-th-frame), and the Rainbow hue tops out at
      360. The previous 52px fit about six digits and left the box visibly
      oversized next to its three-digit values. */
   flex: 0 0 auto;

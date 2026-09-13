@@ -1,5 +1,5 @@
 /**
- * @file features/trajectory/mdtraj/TrajTransport.tsx
+ * @file plugins/mdtools/renderer/track/TrajTransport.tsx
  * @description Trajectory pane header: playback transport, frame readout /
  * spinbox, loop + speed, and zoom.
  *

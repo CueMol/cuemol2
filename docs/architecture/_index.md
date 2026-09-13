@@ -55,8 +55,10 @@ architecture, it belongs here.
   [internals](tritium_plugin/internals.md) (有効判定の解決順、native menu を持つ
   main へ channel に command id を載せて渡す経路、worker service の glob と
   名前空間化、dev-only と tree-shaking、寄与点の足しかた)。
-  現状の 3 つ (getpdb / sequence / catalog) は、その機能専用の C++ クラスを
-  持たないことを基準に選んでいる。
+  現状の 5 つのうち 4 つ (getpdb / sequence / catalog / agent) は、その機能専用の
+  C++ クラスを持たないことを基準に選んでいる。5 つ目の `mdtools` (MD trajectory の
+  GUI) は専用の C++ module を持つ唯一の例で、C++ レーンが無いため module は常時
+  ロードのまま GUI だけを既定オフにしてある。
 - [AI Agent plugin (tritium)](ai-agent-plugin.md) (日本語) -- 自然言語の指示から
   LLM が既存の worker service を呼んでシーンを組み立てるチャット panel (built-in
   plugin、既定オフ)。worker 内で回す agent loop と「1 指示 = 1 undo txn、変更したら
@@ -176,14 +178,26 @@ architecture, it belongs here.
   renderer, and the compatible direction (run-time UID resolution, names kept
   on the wire). Records what the tritium guard covers and what it does not.
 - [Surface scalar colouring: `ScalarColorSupport` and `DirectSurfRendererBase`](surface-scalar-coloring.md) --
-  the potential ramp and multi-gradient colouring shared by `molsurf`,
-  `dsurface` and `dsurf2`: the non-scriptable mixin that owns the scalar
-  colouring properties and their evaluation, the abstract scriptable base
-  the direct surface pair now derives from (one display-list path, one
-  per-vertex resolver that also feeds dsurf2's GPU primitive), the
-  contracts (unresolved vertex = `defaultcolor`, separate per-mode target
-  names, `setupParentData("multi_grad")` placement, `target` kept as an
-  inert string) and the test map.
+  the potential ramp and multi-gradient colouring shared by `molsurf` and
+  `dsurface`: the non-scriptable mixin that owns the scalar colouring
+  properties and their evaluation, the abstract scriptable base the direct
+  surface renderer derives from (one display-list path, one per-vertex
+  resolver that also feeds its GPU primitive), the contracts (unresolved
+  vertex = `defaultcolor`, separate per-mode target names,
+  `setupParentData("multi_grad")` placement, `target` kept as an inert
+  string) and the test map.
+- [Direct surface renderer (`dsurface`): アルゴリズム選択と detail の統一](direct-surface-renderer.md) (日本語) --
+  the `surfalgor` property (`edtsurf` / `distfield` / `meshms`) that merged
+  the former `dsurf2` renderer into `dsurface`: how one `detail` value is
+  calibrated onto all three mesh builders (EDTSurf's voxel size is the
+  reference), the MeshMS SES-only fallback rules, per-vertex atom ids
+  (`MSVert::info`) including the MeshMS `atom_id` mapping and the null-atom
+  guard that fixed a `showsel` crash, the `RendererFactory` type-name
+  alias that keeps scenes saved as `dsurf2` loading, GPU ID-buffer picking
+  (click / hover report the owning atom; fill mode only), and the memory
+  budgets: the distance-field cell cap, the MeshMS vertex cap, and the
+  `gfx::Mesh` colour palette (16 bytes per vertex instead of a 72-byte
+  `ColorPtr` plus a 256-byte `GradientColor` each).
 - [Scene app data と render 設定の scene 保存](scene-app-data.md) (日本語) --
   Rendering window の設定を `.qsc` に保存する仕組み。`Scene` の汎用 typed app-data store
   (`<appdata id= type=>`、class 未登録なら verbatim 温存) と QIF class `RenderSettings`

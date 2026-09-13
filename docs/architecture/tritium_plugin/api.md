@@ -348,6 +348,7 @@ createConfirmCancelDialog<FooArgs, FooResult>({ component: FooDialog, name: 'Foo
 |---|---|
 | `useShowErrorAlert()` | `(args: { title, message }) => Promise<void>` |
 | `useShowFileOpenOptionDialog()` | `(args: { filePath, sceneId, rendererTypes?, presetTypes?, objType?, readerName? }) => Promise<FileOpenOptions \| null>` |
+| `useShowNewRendererDialog()` | `(args: NewRendererDialogArgs) => Promise<NewRendererDialogResult \| null>` -- 読み込む object の初期 renderer を選ばせる |
 | `useStreamProgressDialog()` | `StreamProgressApi` |
 
 ```ts

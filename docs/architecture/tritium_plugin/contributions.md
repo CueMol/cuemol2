@@ -48,7 +48,7 @@ interface PluginManifest {
 | 書き方 | 意味 | 現状の該当 |
 |---|---|---|
 | `alwaysEnabled: true` | 常時有効。Settings に行が出ず、保存値も無視される | `getpdb`, `sequence` |
-| `defaultEnabled: false` | 既定オフ。ユーザが Settings で opt-in する | `catalog` |
+| `defaultEnabled: false` | 既定オフ。ユーザが Settings で opt-in する | `catalog`, `agent`, `mdtools` |
 | どちらも書かない | 既定オン、ユーザがオフにできる | 今のところ無し |
 
 **外す意味が無いなら `alwaysEnabled` にする。** `getpdb` / `sequence` がそうで、
@@ -149,7 +149,7 @@ native menu は renderer より先に建つので、renderer から menu 寄与�
 menus: [
   {
     group: 'file',
-    after: 'open-traj',
+    after: 'open-file',
     items: [{ id: 'get-pdb', label: 'Get PDB...', command: GET_PDB_COMMAND }],
   },
 ],
@@ -285,7 +285,7 @@ interface PluginBottomTab {
 }
 ```
 
-built-in tab は `output` / `animation` / `trajectory`。
+built-in tab は `output` / `animation` の 2 つ (`trajectory` は plugin `mdtools` の寄与)。
 
 component は `BottomTabComponent` で、アクティブなシーンが props で届きます:
 

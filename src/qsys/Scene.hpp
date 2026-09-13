@@ -503,7 +503,7 @@ namespace qsys {
 
     /// Draw the renderer/element IDs into the bound pick target (pdc in
     /// PICK_DRAW mode). Participants: visible, not UI-locked, isPickSupported()
-    /// and default alpha >= PICK_ALPHA_THRESHOLD (see-through objects are
+    /// and default alpha above PICK_ALPHA_THRESHOLD (see-through objects are
     /// skipped so what is behind them can be picked). Each renderer is drawn
     /// inside pdc->startHit(uid)/endHit(), which fills the renderer table read
     /// back by the View.
@@ -513,8 +513,11 @@ namespace qsys {
     /// miss (isHitTestSupported() but not isPickSupported()).
     bool hasCpuOnlyHitRenderers() const;
 
-    /// Minimum default alpha for a renderer to take part in the pick pass.
-    static constexpr double PICK_ALPHA_THRESHOLD = 0.5;
+    /// Default alpha at or below which a renderer is click-through: the pick
+    /// pass skips it so that what is behind it can be picked instead. A
+    /// surface at this alpha is still see-through enough that the user means
+    /// to reach the atoms behind it.
+    static constexpr double PICK_ALPHA_THRESHOLD = 0.6;
 
     RendererPtr getRenderer(qlib::uid_t uid) const;
     RendererPtr getRendByName(const LString &nm) const;

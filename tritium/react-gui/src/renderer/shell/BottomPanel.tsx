@@ -1,6 +1,6 @@
 /**
  * Bottom panel with VSCode-style tabbed switching between the Output log,
- * the Animation timeline and the MD trajectory transport. (Render execution
+ * the Animation timeline. (Render execution
  * lives in the modeless Rendering window -- see RenderWindowApp.)
  *
  * The Output tab renders `LogPanel` (pre-element based). The log
@@ -17,7 +17,6 @@ import type { AppIconKey } from "@renderer/h3-kit/primitives";
 import { PanelTabButton } from "./PanelTabButton";
 import { LogPanel } from "@renderer/features/log/LogPanel";
 import { AnimationPanel } from "@renderer/features/animation/AnimationPanel";
-import { TrajectoryPanel } from "@renderer/features/trajectory/TrajectoryPanel";
 import { insertAfterId, usePluginContributions } from "@renderer/plugin-host";
 import type { ResolvedPluginBottomTab } from "@renderer/plugin-host";
 import { useLogActions, useLogContents } from "@renderer/contexts/LogContext";
@@ -46,7 +45,6 @@ interface BottomTabDef {
 const BUILTIN_BOTTOM_TABS: readonly BottomTabDef[] = [
   { id: "output", label: "Output", icon: "panel.output" },
   { id: "animation", label: "Animation", icon: "panel.animation" },
-  { id: "trajectory", label: "Trajectory", icon: "panel.trajectory" },
 ];
 
 /** The tab strip for the enabled plugins: built-ins with the contributions spliced in. */
@@ -136,8 +134,6 @@ const BottomPanelComponent: React.FC = () => {
             activeMolViewId={activeMolViewId}
           />
         );
-      case "trajectory":
-        return <TrajectoryPanel cm={cm} activeSceneId={activeSceneId} />;
       default: {
         const contributed = contributedTabs.find((t) => t.id === activeTab);
         if (!contributed) return null;

@@ -19,7 +19,7 @@ import {
     APP_KEYS, SCENE_KEYS, UNDO_KEYS, SCENE_TREE_KEYS, PROPS_KEYS, FILE_KEYS,
     RENDER_KEYS, VIEW_KEYS, COLOR_KEYS, COLORING_KEYS, REND_KEYS, STYLE_KEYS,
     CAMERA_KEYS, SELECT_KEYS, NAVI_KEYS, MOLOPS_KEYS, APBS_KEYS, MAP_KEYS,
-    ANIM_KEYS, TRAJ_KEYS,
+    ANIM_KEYS, MORPH_KEYS,
 } from './index';
 
 const SLICES: Record<string, readonly string[]> = {
@@ -27,7 +27,7 @@ const SLICES: Record<string, readonly string[]> = {
     props: PROPS_KEYS, file: FILE_KEYS, render: RENDER_KEYS, view: VIEW_KEYS,
     color: COLOR_KEYS, coloring: COLORING_KEYS, rend: REND_KEYS, style: STYLE_KEYS,
     camera: CAMERA_KEYS, select: SELECT_KEYS, navi: NAVI_KEYS, molops: MOLOPS_KEYS,
-    apbs: APBS_KEYS, map: MAP_KEYS, anim: ANIM_KEYS, traj: TRAJ_KEYS,
+    apbs: APBS_KEYS, map: MAP_KEYS, anim: ANIM_KEYS, morph: MORPH_KEYS,
 };
 
 /** Service names the worker registers, read exactly as services/index.ts does. */

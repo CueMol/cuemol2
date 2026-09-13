@@ -1,5 +1,5 @@
 /**
- * @file features/trajectory/TrajectoryPanel.tsx
+ * @file plugins/mdtools/renderer/TrajectoryPanel.tsx
  * @description MD Trajectory bottom pane -- a frame timeline for a loaded
  * `mdtools::Trajectory`, in the spirit of the Animation panel.
  *
@@ -26,27 +26,29 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppIcon } from '@renderer/h3-kit/primitives';
 import { ButtonRow, FormButton } from '@renderer/h3-kit/form';
-import { ObjectSelect, objectFilters } from '@renderer/h3-kit/ObjectSelect';
-import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol';
+import { ObjectSelect } from '@renderer/h3-kit/ObjectSelect';
+import type { ObjectFilter } from '@renderer/h3-kit/ObjectSelect';
+import type { BottomTabComponent } from '@renderer/plugin-host/api';
 import { IPC } from '@shared/ipcChannels';
+import { mdtoolsServices } from '../calls';
 import { useTrajectory } from './useTrajectory';
 import { useTrajPlayback } from './useTrajPlayback';
-import { TrajTransport } from '@renderer/features/trajectory/mdtraj/TrajTransport';
-import { TrajTrack } from '@renderer/features/trajectory/mdtraj/TrajTrack';
+import { TrajTransport } from './track/TrajTransport';
+import { TrajTrack } from './track/TrajTrack';
 import {
     DEFAULT_PX_PER_FRAME,
     clampPxPerFrame,
     fitPxPerFrame,
-} from '@renderer/features/trajectory/mdtraj/trackGeometry';
-
-interface TrajectoryPanelProps {
-    cm: AsyncCueMol | null;
-    /** Active scene UID; undefined when no scene is active. */
-    activeSceneId: number | undefined;
-}
+} from './track/trackGeometry';
 
 /** Step factor for the zoom in / out buttons. */
 const ZOOM_FACTOR = 1.4;
+
+/**
+ * MD Trajectory objects (mdtools::Trajectory, a MolCoord subclass whose class
+ * name does not end in "Mol", so `objectFilters.molCoord` does not cover it).
+ */
+const isTrajectory: ObjectFilter = (it) => it.className === 'Trajectory';
 
 /** Native file-picker filters for adding trajectory blocks. */
 const TRAJ_FILTERS = [
@@ -59,7 +61,7 @@ const TRAJ_FILTERS = [
  * blocks as a frame-proportional track, drives frame playback / scrub, and adds
  * blocks (append). Remove / reorder are deferred (need new C++ methods).
  */
-export const TrajectoryPanel: React.FC<TrajectoryPanelProps> = ({ cm, activeSceneId }) => {
+export const TrajectoryPanel: BottomTabComponent = ({ cm, activeSceneId }) => {
     const [objId, setObjId] = useState<number | undefined>(undefined);
     const [pxPerFrame, setPxPerFrame] = useState(DEFAULT_PX_PER_FRAME);
     const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
@@ -132,7 +134,7 @@ export const TrajectoryPanel: React.FC<TrajectoryPanelProps> = ({ cm, activeScen
             if (!res || res.canceled) return;
             const paths = res.filePaths ?? (res.filePath ? [res.filePath] : []);
             for (const path of paths) {
-                const r = await cm.invokeService('appendTrajectoryBlock', {
+                const r = await mdtoolsServices.invoke(cm, 'appendTrajectoryBlock', {
                     sceneId: activeSceneId,
                     objId,
                     path,
@@ -153,7 +155,7 @@ export const TrajectoryPanel: React.FC<TrajectoryPanelProps> = ({ cm, activeScen
         if (!cm || activeSceneId === undefined || objId === undefined || selectedBlock === null) return;
         setError(null);
         try {
-            const r = await cm.invokeService('removeTrajectoryBlock', {
+            const r = await mdtoolsServices.invoke(cm, 'removeTrajectoryBlock', {
                 sceneId: activeSceneId,
                 objId,
                 index: selectedBlock,
@@ -173,7 +175,7 @@ export const TrajectoryPanel: React.FC<TrajectoryPanelProps> = ({ cm, activeScen
             if (from === to || to < 0 || to >= blocks.length) return;
             setError(null);
             try {
-                const r = await cm.invokeService('moveTrajectoryBlock', {
+                const r = await mdtoolsServices.invoke(cm, 'moveTrajectoryBlock', {
                     sceneId: activeSceneId,
                     objId,
                     from,
@@ -224,7 +226,7 @@ export const TrajectoryPanel: React.FC<TrajectoryPanelProps> = ({ cm, activeScen
                             cm={cm}
                             sceneId={activeSceneId}
                             label="Trajectory"
-                            filter={objectFilters.trajectory}
+                            filter={isTrajectory}
                             selectedId={objId}
                             onChange={setObjId}
                             emptyText="No trajectory loaded"

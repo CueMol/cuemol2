@@ -66,6 +66,7 @@ add_executable(test_gfx
   gfx/test_aoconstants.cpp
   gfx/test_color_robustness.cpp
   gfx/test_copy_and_bounds.cpp
+  gfx/test_mesh_colors.cpp
 )
 target_include_directories(test_gfx PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -192,6 +193,7 @@ add_executable(test_surface
   modules/surface/test_ply_reader.cpp
   modules/surface/test_molsurf_serialize.cpp
   modules/surface/test_dsurf_color.cpp
+  modules/surface/test_dsurf_detail_calib.cpp
   modules/surface/test_scalar_color_support.cpp
   modules/surface/test_ses_from_array.cpp
   modules/surface/test_reader_validation.cpp
@@ -205,6 +207,7 @@ target_include_directories(test_surface PRIVATE
 )
 target_compile_definitions(test_surface PRIVATE
   CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+  CUEMOL2_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tests/test_data"
 )
 target_link_libraries(test_surface PRIVATE surface symm xtal molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)

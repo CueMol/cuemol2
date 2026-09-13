@@ -462,9 +462,14 @@ function renderMultiRow(
           key={key}
           label={row.label}
           targets={targets}
-          ladder={(row.ladder ?? TESSELLATION_LADDER).filter(
-            (n) => n >= row.min && n <= (row.max ?? Infinity),
-          )}
+          ladder={
+            // A row that names its own levels gets exactly those; min / max
+            // only trim the shared default.
+            row.ladder ??
+            TESSELLATION_LADDER.filter(
+              (n) => n >= (row.min ?? 0) && n <= (row.max ?? Infinity),
+            )
+          }
           onSet={onSet}
           onSetMany={onSetMany}
           onReset={onReset}

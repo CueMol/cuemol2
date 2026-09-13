@@ -21,7 +21,6 @@ export interface CommandMap {
 
   // Dialogs
   [CmdId.UiOpenObjDialog]:     { args: void;            result: void }
-  [CmdId.UiOpenTrajDialog]:    { args: void;            result: void }
   [CmdId.UiOpenSceneDialog]:   { args: void;            result: void }
   [CmdId.UiAboutDialog]:       { args: void;            result: void }
   [CmdId.UiChangeChainIdDialog]: { args: void;          result: void }
