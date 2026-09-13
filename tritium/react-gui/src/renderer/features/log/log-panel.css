@@ -148,7 +148,7 @@
   gap: var(--space-3);
   padding: 0 var(--space-5);
   height: 100%;
-  font-size: var(--fs-base);
+  font-size: var(--type-label-fs);
   font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: var(--ls-tight);
@@ -318,10 +318,7 @@
   overflow-y: auto;
   padding: var(--space-2) var(--space-4);
   background: var(--bg-input);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: var(--fs-xl);
-  line-height: normal;
+  color: var(--console-text);
 }
 
 .render-log-line {
@@ -332,6 +329,6 @@
 .render-panel-empty {
   padding: var(--space-2) var(--space-4);
   font-family: var(--font-mono);
-  font-size: var(--fs-xl);
+  font-size: var(--type-console-fs);
   color: var(--text-muted);
 }

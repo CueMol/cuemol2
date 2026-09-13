@@ -45,6 +45,14 @@ export interface TextAreaFieldProps {
     readOnly?: boolean;
     /** Render the value in the monospace face. */
     mono?: boolean;
+    /**
+     * Size as console output rather than as a form row.
+     *
+     * For a command prompt sitting under its own transcript: reading the
+     * line you are typing at a different size from the lines above it is
+     * what this avoids. Implies `mono`.
+     */
+    consoleText?: boolean;
     /** Rows shown when empty (default 1). */
     minRows?: number;
     /** Rows to grow to before scrolling (default 6). */
@@ -88,6 +96,7 @@ export const TextAreaField = React.forwardRef<HTMLTextAreaElement, TextAreaField
     disabled,
     readOnly,
     mono,
+    consoleText,
     minRows = 1,
     maxRows = 6,
     onSubmit,
@@ -138,7 +147,7 @@ export const TextAreaField = React.forwardRef<HTMLTextAreaElement, TextAreaField
     return (
         <textarea
             ref={ref}
-            className={`h3-form-textarea${mono ? ' h3-form-textarea-mono' : ''}`}
+            className={`h3-form-textarea${consoleText ? ' h3-form-textarea-console' : mono ? ' h3-form-textarea-mono' : ''}`}
             value={value}
             onChange={(e) => { onChange(e.target.value); }}
             placeholder={placeholder}

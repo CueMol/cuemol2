@@ -1,15 +1,20 @@
 /**
- * @file plugins/agent/worker/tools/defaultFileOpenOptions.ts
- * @description The load options a headless load starts from.
+ * @file worker/server/services/file/headlessOpen.ts
+ * @description The load options a load without a dialog starts from.
  *
  * `loadObject` and `streamLoadFromUrl` both take the `FileOpenOptions` the
- * File Open dialog produces. There is no dialog here, so the same defaults
- * that dialog starts with are assembled directly: the reader's own values for
- * the format half (from C++, via `getReaderDefaultOptions`), and the standard
- * renderer row for the other.
+ * File Open dialog produces. A caller with no dialog in front of it -- the AI
+ * agent's load tool, the PyMOL console's `load` command -- assembles the same
+ * defaults that dialog starts with: the reader's own values for the format
+ * half (from C++, via `getReaderDefaultOptions`), and the standard renderer
+ * row for the other.
  *
- * `centerView` is left on, unlike the renderer tool's default: a file the user
- * just asked for should be in frame when it appears.
+ * `centerView` is left on: a file someone just asked for should be in frame
+ * when it appears.
+ *
+ * Not in `worker/shared/fileOpenDefaults` (where the pure default builders
+ * live) because this reaches a worker service, and that module is imported
+ * from the renderer thread by the File Open dialogs.
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -20,7 +25,7 @@ import {
   getDefaultRendererOptions,
   mapReaderDefaultsToFormatOptions,
 } from '@renderer/worker/shared/fileOpenDefaults'
-import { getReaderDefaultOptions } from '@renderer/worker/server/services/file/getReaderDefaultOptions'
+import { getReaderDefaultOptions } from './getReaderDefaultOptions'
 
 export interface HeadlessOpenArgs {
   /** Resolved reader nickname (pdb / mmcif / ...). */

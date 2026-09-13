@@ -82,6 +82,14 @@
   font-weight: var(--type-mono-fw);
 }
 
+/* Console and log output: see --type-console-* in _variables.css. */
+.type-console {
+  font-family: var(--font-mono);
+  font-size: var(--type-console-fs);
+  line-height: var(--type-console-lh);
+  font-weight: var(--type-console-fw);
+}
+
 .type-hero {
   font-size: var(--type-hero-fs);
   line-height: var(--type-hero-lh);

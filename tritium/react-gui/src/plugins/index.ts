@@ -21,6 +21,7 @@ import { agentPlugin } from './agent'
 import { catalogPlugin } from './catalog'
 import { getPdbPlugin } from './getpdb'
 import { mdtoolsPlugin } from './mdtools'
+import { pymConsolePlugin } from './pymconsole'
 import { sequencePlugin } from './sequence'
 
 export const BUILTIN_PLUGINS: readonly RendererPlugin[] = [
@@ -29,4 +30,5 @@ export const BUILTIN_PLUGINS: readonly RendererPlugin[] = [
   catalogPlugin,
   agentPlugin,
   mdtoolsPlugin,
+  pymConsolePlugin,
 ]
