@@ -75,7 +75,10 @@ export function collectRendPresetTypes(
 ): PresetTypeEntry[] {
     if (!objClassName) return [];
     const typenm = `${objClassName}-rendpreset`;
-    return [...fetchStyleEntries(ctx, 0), ...fetchStyleEntries(ctx, sceneId)]
+    // sceneId 0 means "no scene yet" (a file-open that will make one), and
+    // scope 0 is already the global one -- fetching it twice would duplicate
+    // every preset row in the dialog.
+    return [...fetchStyleEntries(ctx, 0), ...(sceneId > 0 ? fetchStyleEntries(ctx, sceneId) : [])]
         .filter((e) => e.type === typenm && !!e.name)
         .map((e) => ({ name: e.name as string, desc: e.desc ?? '' }));
 }

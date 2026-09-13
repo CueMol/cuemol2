@@ -39,7 +39,7 @@ function makeCm() {
     getCompatibleRendererNames: vi.fn(() =>
       Promise.resolve({ types: ['simple'], objType: 'MolCoord', readerName: 'pdb' }),
     ),
-    loadObject: vi.fn((..._args: unknown[]) => Promise.resolve()),
+    loadObject: vi.fn((..._args: unknown[]) => Promise.resolve({ ok: true })),
     loadScene: vi.fn((..._args: unknown[]) => Promise.resolve({ ok: true })),
     invokeService: vi.fn(() => Promise.resolve(undefined)),
   }
@@ -135,7 +135,7 @@ describe('useSceneCommands - auto-create scene on load', () => {
     h.unmount()
   })
 
-  it('OpenObjByPath cancelled option dialog does not load (scene may exist)', async () => {
+  it('OpenObjByPath cancelled option dialog loads nothing and leaves no tab', async () => {
     const cm = makeCm()
     showFileOpenOptionDialog.mockResolvedValue(null)
     const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
@@ -146,6 +146,60 @@ describe('useSceneCommands - auto-create scene on load', () => {
     await drain()
 
     expect(cm.loadObject).not.toHaveBeenCalled()
+    // The scene is created after the dialog is confirmed, so a cancel cannot
+    // strand an empty tab -- which it used to.
+    expect(newScene).not.toHaveBeenCalled()
+    h.unmount()
+  })
+
+  it("openTarget 'new' takes a scene of its own, and only after the dialog", async () => {
+    const cm = makeCm()
+    // Active scene is in use, so 'new' must not merge into it.
+    cm.invokeService = vi.fn((name: string) =>
+      name === 'isSceneJustCreated' ? Promise.resolve({ justCreated: false }) : Promise.resolve(undefined),
+    ) as unknown as typeof cm.invokeService
+    const order: string[] = []
+    showFileOpenOptionDialog.mockImplementation(() => {
+      order.push('dialog')
+      return Promise.resolve({})
+    })
+    const newScene = vi.fn(() => {
+      order.push('newScene')
+      return Promise.resolve(NEW_SCENE)
+    })
+    const h = mountWith(cm, () => ({ scene_uid: 1, view_id: 2 }), newScene)
+    await flushPromises()
+
+    await h.result.dispatch(
+      CmdId.OpenObjByPath, { path: '/tmp/x.pdb', openTarget: 'new' } as never,
+    )
+    await drain()
+
+    expect(newScene).toHaveBeenCalledTimes(1)
+    expect(cm.loadObject.mock.calls[0][1]).toBe(NEW_SCENE.scene_uid)
+    expect(order).toEqual(['dialog', 'newScene'])
+    h.unmount()
+  })
+
+  it("openTarget 'new' reuses the active scene while it is still untouched", async () => {
+    const cm = makeCm()
+    // The launch tab, or one just made with New Tab: loading into it rather
+    // than beside it is what keeps an empty "Untitled" from being stranded.
+    cm.invokeService = vi.fn((name: string) =>
+      name === 'isSceneJustCreated' ? Promise.resolve({ justCreated: true }) : Promise.resolve(undefined),
+    ) as unknown as typeof cm.invokeService
+    showFileOpenOptionDialog.mockResolvedValue({})
+    const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
+    const h = mountWith(cm, () => ({ scene_uid: 1, view_id: 2 }), newScene)
+    await flushPromises()
+
+    await h.result.dispatch(
+      CmdId.OpenObjByPath, { path: '/tmp/x.pdb', openTarget: 'new' } as never,
+    )
+    await drain()
+
+    expect(newScene).not.toHaveBeenCalled()
+    expect(cm.loadObject.mock.calls[0][1]).toBe(1)
     h.unmount()
   })
 })
