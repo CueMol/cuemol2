@@ -32,7 +32,7 @@ export const ConsoleTranscript: React.FC<ConsoleTranscriptProps> = ({ lines }) =
   }, [lines])
 
   return (
-    <div className="pymc-transcript type-mono" ref={scrollRef} data-select-scope>
+    <div className="pymc-transcript type-console" ref={scrollRef} data-select-scope>
       {lines.length === 0 ? (
         <div className="pymc-empty">
           <AppIcon name="panel.pymconsole" size={32} aria-hidden />
