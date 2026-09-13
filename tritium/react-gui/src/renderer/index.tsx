@@ -23,6 +23,7 @@ import { NewSceneDefaultsProvider } from '@renderer/contexts/NewSceneDefaultsCon
 import { ViewInputConfigProvider } from '@renderer/contexts/ViewInputConfigContext'
 import { AppSettingsProvider } from '@renderer/contexts/AppSettingsContext'
 import { PickingPrefsProvider } from '@renderer/contexts/PickingPrefsContext'
+import { FileOpenPrefsProvider } from '@renderer/contexts/FileOpenPrefsContext'
 import { ErrorBoundary } from '@renderer/crash/ErrorBoundary'
 import { installGlobalCrashHandlers } from '@renderer/crash/installGlobalCrashHandlers'
 
@@ -57,6 +58,7 @@ createRoot(container).render(
                     <RenderConfigProvider>
                       <ViewInputConfigProvider>
                        <PickingPrefsProvider>
+                        <FileOpenPrefsProvider>
                         <AppSettingsProvider>
                           {/* App-level state, below the dialog and command
                               providers (closing a tab runs the save prompt and
@@ -70,6 +72,7 @@ createRoot(container).render(
                             </AppStateProviders>
                           </UndoRedoLockProvider>
                         </AppSettingsProvider>
+                        </FileOpenPrefsProvider>
                        </PickingPrefsProvider>
                       </ViewInputConfigProvider>
                     </RenderConfigProvider>

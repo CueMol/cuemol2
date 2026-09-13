@@ -84,7 +84,12 @@ describe('LayoutProvider', () => {
     setupElectronAPI({
       invoke: vi.fn((ch: string) =>
         ch === IPC.LAYOUT_LOAD
-          ? Promise.resolve({ inspectorOpen: true, mainSizes: [300, 900], viewCollapsed: { explorer: { scene: true } } })
+          ? Promise.resolve({
+              inspectorOpen: true,
+              toolPaletteCollapsed: true,
+              mainSizes: [300, 900],
+              viewCollapsed: { explorer: { scene: true } },
+            })
           : Promise.resolve(undefined),
       ),
     })
@@ -94,6 +99,7 @@ describe('LayoutProvider', () => {
     await flushPromises()
     expect(live.v.loaded).toBe(true)
     expect(live.v.inspectorOpen).toBe(true)
+    expect(live.v.toolPaletteCollapsed).toBe(true)
     expect(live.v.savedSizes.mainSizes).toEqual([300, 900])
     expect(live.v.viewCollapsed.explorer).toEqual({ scene: true })
     unmount()

@@ -5,7 +5,8 @@
  *
  * All live item state is derived here at build time -- View-menu radio state
  * (projection / center mark / background color) from the current view props,
- * scene-operation gating from `hasScene`, export-item filtering from the
+ * the Tool palette check from the layout, scene-operation gating from
+ * `hasScene`, export-item filtering from the
  * available exporter list, and the dynamic "Open Recent" MRU expansion --
  * so the rendering side (`MenuPanel`) stays purely presentational.
  */
@@ -26,6 +27,8 @@ export interface MenuBarStateContext {
   viewProjection?: boolean | null
   viewCenterMark?: ViewCenterMark | null
   sceneBgColor?: SceneBgColor | null
+  /** View > Tool palette check; the palette is folded to its cap when false. */
+  toolPaletteVisible?: boolean
   hasScene?: boolean
   exportAvailable?: string[] | null
   recentFiles?: RecentFileEntry[]
@@ -135,6 +138,15 @@ function getSceneBgColorState(
   }
 }
 
+/**
+ * Checked state for View > Tool palette (always enabled), or null if `item`
+ * is not it. Unchecked while the palette is folded to its cap.
+ */
+function getToolPaletteChecked(item: AppMenuItem, visible: boolean | undefined): boolean | null {
+  if (item.id !== 'view-tool-palette') return null
+  return visible ?? true
+}
+
 /** Resolve one `AppMenuItem` (and its subtree) into a `MenuNode`. */
 function resolveItem(item: AppMenuItem, ctx: MenuBarStateContext): MenuNode<MenuBarPick> {
   if (item.type === 'separator') return { type: 'separator' }
@@ -142,6 +154,7 @@ function resolveItem(item: AppMenuItem, ctx: MenuBarStateContext): MenuNode<Menu
   const projectionState = getViewProjectionState(item, ctx.viewProjection)
   const centerMarkState = getViewCenterMarkState(item, ctx.viewCenterMark)
   const bgColorState = getSceneBgColorState(item, ctx.sceneBgColor)
+  const toolPaletteChecked = getToolPaletteChecked(item, ctx.toolPaletteVisible)
   const sceneOpsState = getSceneOpsState(item, ctx.hasScene)
   const enabled =
     projectionState?.enabled ??
@@ -150,7 +163,13 @@ function resolveItem(item: AppMenuItem, ctx: MenuBarStateContext): MenuNode<Menu
     sceneOpsState?.enabled ??
     item.enabled ??
     true
-  const checked = projectionState?.checked ?? centerMarkState?.checked ?? bgColorState?.checked ?? item.checked ?? false
+  const checked =
+    projectionState?.checked ??
+    centerMarkState?.checked ??
+    bgColorState?.checked ??
+    toolPaletteChecked ??
+    item.checked ??
+    false
 
   // Expand the static placeholder for "Open Recent" with the live MRU list;
   // drop scene-export items whose exporter is not built into libcuemol2.

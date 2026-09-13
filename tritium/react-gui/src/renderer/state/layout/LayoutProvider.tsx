@@ -36,6 +36,7 @@ const LAYOUT_DEFAULTS: LayoutState = {
   centerSizes: [],
   sidebarOpen: true,
   inspectorOpen: false,
+  toolPaletteCollapsed: false,
   viewSizes: {
     explorer: [220, 240],
     selection: [260, 180],
@@ -59,6 +60,8 @@ export interface LayoutValues {
   loaded: boolean
   sidebarOpen: boolean
   inspectorOpen: boolean
+  /** The viewport tool palette shows only its expand cap. */
+  toolPaletteCollapsed: boolean
   /** Per-view pane collapse state (what is shown), keyed by activity view. */
   viewCollapsed: Record<string, PaneCollapseState>
   /**
@@ -75,6 +78,7 @@ export interface LayoutDispatch {
   setCenterSizes: (sizes: number[]) => void
   setSidebarOpen: (open: boolean) => void
   setInspectorOpen: (open: boolean) => void
+  setToolPaletteCollapsed: (collapsed: boolean) => void
   /** Splitter sizes of one activity view (ref write + save; no re-render). */
   setViewSizes: (view: string, sizes: number[]) => void
   /** Collapse state of one activity view's panes. */
@@ -107,6 +111,7 @@ interface Flags {
   loaded: boolean
   sidebarOpen: boolean
   inspectorOpen: boolean
+  toolPaletteCollapsed: boolean
   viewCollapsed: Record<string, PaneCollapseState>
   savedSizes: SavedSizes
 }
@@ -128,6 +133,7 @@ export function LayoutProvider({ children }: { children: React.ReactNode }): Rea
     loaded: false,
     sidebarOpen: LAYOUT_DEFAULTS.sidebarOpen ?? true,
     inspectorOpen: LAYOUT_DEFAULTS.inspectorOpen ?? false,
+    toolPaletteCollapsed: LAYOUT_DEFAULTS.toolPaletteCollapsed ?? false,
     viewCollapsed: LAYOUT_DEFAULTS.viewCollapsed ?? {},
     savedSizes: sizesOf(LAYOUT_DEFAULTS),
   })
@@ -157,6 +163,7 @@ export function LayoutProvider({ children }: { children: React.ReactNode }): Rea
           loaded: true,
           sidebarOpen: l.sidebarOpen ?? true,
           inspectorOpen: l.inspectorOpen ?? false,
+          toolPaletteCollapsed: l.toolPaletteCollapsed ?? false,
           viewCollapsed: l.viewCollapsed ?? {},
           savedSizes: sizesOf(l),
         })
@@ -199,6 +206,12 @@ export function LayoutProvider({ children }: { children: React.ReactNode }): Rea
       setInspectorOpen: (open) => {
         patchLayout({ inspectorOpen: open })
         setFlags((f) => (f.inspectorOpen === open ? f : { ...f, inspectorOpen: open }))
+      },
+      setToolPaletteCollapsed: (collapsed) => {
+        patchLayout({ toolPaletteCollapsed: collapsed })
+        setFlags((f) =>
+          f.toolPaletteCollapsed === collapsed ? f : { ...f, toolPaletteCollapsed: collapsed },
+        )
       },
       setViewCollapsed: (view, collapsed) => {
         const viewCollapsed = { ...layoutRef.current.viewCollapsed, [view]: collapsed }

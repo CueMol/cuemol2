@@ -6,6 +6,9 @@
  * Types only: nothing in shared/types/ may import main/ or renderer/ code.
  */
 
+/** Where an opened object file is loaded. */
+export type OpenFileTarget = 'active' | 'new'
+
 export interface FileOpenedData {
   name: string
   path: string
@@ -26,6 +29,19 @@ export interface FileOpenedData {
    * with). Undefined for a fresh File > Open (reader resolved by sniff).
    */
   readerName?: string
+  /**
+   * Where to load this file. Omitted by main and by the in-app File > Open /
+   * Open Recent paths, which always use the active scene; set by the drop and
+   * shell-open entry points from their own preference.
+   */
+  openTarget?: OpenFileTarget
+  /**
+   * The scene the rest of this batch is already going into. Set on every file
+   * after the first of a multi-file open so they share one scene; carried as a
+   * uid rather than "the active scene" because the workspace's active-tab ref
+   * is only assigned at render time, so it may not show a just-created tab yet.
+   */
+  targetSceneId?: number
 }
 
 export interface FileErrorData {

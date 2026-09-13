@@ -12,6 +12,7 @@ import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useWorkspaceDispatch } from '@renderer/state/workspace';
 import { useActiveViewDispatch } from '@renderer/state/activeView';
 import { useInspectorActions } from '@renderer/state/inspector';
+import { useLayoutDispatch } from '@renderer/state/layout';
 import { useNewSceneAction, useOpenSceneFileAction } from './useNewSceneAction';
 import { useSceneCommands } from '@renderer/commands/useSceneCommands';
 import { useUiDialogCommands } from '@renderer/commands/useUiDialogCommands';
@@ -33,6 +34,8 @@ export function useCommandRegistrations(): void {
   const { onProjectionChanged, onCenterMarkChanged, onBgColorChanged, onColorProofingChanged } =
     useActiveViewDispatch();
   const { showView: showViewProperty, showScene: showSceneProperty } = useInspectorActions();
+  // The dispatch slice only: toggling the palette must not re-render this.
+  const { setToolPaletteCollapsed, getLayoutSnapshot } = useLayoutDispatch();
   // Shared "create scene + view + register tab" action (UXP onNewScene
   // equivalent); a scene FILE goes through its own action so a failed open
   // never leaves an empty molview tab behind.
@@ -56,6 +59,7 @@ export function useCommandRegistrations(): void {
     onProjectionChanged,
     onCenterMarkChanged,
     showViewProperty,
+    toggleToolPalette: () => setToolPaletteCollapsed(!getLayoutSnapshot().toolPaletteCollapsed),
   });
   useRenderCommands();
   useWindowCommands();

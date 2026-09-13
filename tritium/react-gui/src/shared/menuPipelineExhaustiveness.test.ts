@@ -69,6 +69,7 @@ const DISPATCH_HANDLED: ReadonlySet<string> = new Set<string>([
   IPC.MENU_CENTER_MARK_CROSS,
   IPC.MENU_CENTER_MARK_AXIS,
   IPC.MENU_CENTER_MARK_NONE,
+  IPC.MENU_TOOL_PALETTE,
   IPC.MENU_BG_WHITE,
   IPC.MENU_BG_BLACK,
   IPC.MENU_COLOR_PROOF,
@@ -145,7 +146,7 @@ describe('menu pipeline -- exhaustiveness', () => {
 
 describe('menu pipeline -- menuStateApply id subset', () => {
   /**
-   * The 14 menu-item ids that applyMenuStateTo writes to. Kept in sync with
+   * The 15 menu-item ids that applyMenuStateTo writes to. Kept in sync with
    * shared/menuStateApply.ts by inspection (the view/scene ids are not exported;
    * the export ids come from SCENE_EXPORT_MENU_EXPORTERS, gated via `visible`).
    */
@@ -157,6 +158,7 @@ describe('menu pipeline -- menuStateApply id subset', () => {
     'center-mark-axis',
     'bg-white',
     'bg-black',
+    'view-tool-palette',
     'undo',
     'redo',
     'export-png',

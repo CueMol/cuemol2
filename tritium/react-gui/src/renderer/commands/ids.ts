@@ -68,6 +68,7 @@ export const CmdId = {
   ViewCenterMarkAxis:  'view.centerMark.axis',  // no args
   ViewCenterMarkNone:  'view.centerMark.none',  // no args
   UiViewProperty:     'ui.viewProperty',     // no args -- open active view in inspector
+  ViewToolPalette:    'view.toolPalette',    // no args -- show / hide the viewport tool palette
 
   // Scene style
   SceneBgWhite: 'scene.bg.white', // no args

@@ -7,10 +7,11 @@
  */
 
 /**
- * UXP XUL default: the density numberbox has `min="1"` and no explicit
- * `value=`, so it initialises to its min.
+ * Default point density for a newly generated surface. UXP initialised the
+ * numberbox to its `min="1"`, but 1 /A is too coarse for a usable surface, so
+ * tritium starts one step above the minimum.
  */
-export const DEFAULT_DENSITY = 1
+export const DEFAULT_DENSITY = 2
 
 /** Slider range for the point density (/A). Values are clamped into it. */
 export const DENSITY_MIN = 1

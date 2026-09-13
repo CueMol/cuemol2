@@ -43,6 +43,8 @@ function renderPalette(activeTool: ToolId, onSelect = vi.fn()) {
         onSelect,
         measureTarget: "",
         onMeasureTargetChange: vi.fn(),
+        collapsed: false,
+        onToggleCollapse: vi.fn(),
       }),
     );
   });
@@ -106,10 +108,34 @@ describe("ViewportToolPalette", () => {
           onSelect: vi.fn(),
           measureTarget: "",
           onMeasureTargetChange: vi.fn(),
+          collapsed: false,
+          onToggleCollapse: vi.fn(),
         }),
       );
     });
     const activeBtn = container.querySelector('button[aria-pressed="true"]');
     expect(activeBtn!.getAttribute("aria-label")).toContain("Rect Select");
+  });
+
+  it("collapsed draws only the cap, and the cap toggles", () => {
+    const onToggleCollapse = vi.fn();
+    act(() => {
+      root.render(
+        React.createElement(ViewportToolPalette, {
+          activeTool: "navigate",
+          onSelect: vi.fn(),
+          measureTarget: "",
+          onMeasureTargetChange: vi.fn(),
+          collapsed: true,
+          onToggleCollapse,
+        }),
+      );
+    });
+    expect(container.querySelectorAll("button.tool-btn").length).toBe(0);
+    const cap = container.querySelector("button.tool-palette-collapse") as HTMLButtonElement;
+    expect(cap).not.toBeNull();
+    expect(cap.getAttribute("aria-label")).toBe("Show tool palette");
+    act(() => { cap.click(); });
+    expect(onToggleCollapse).toHaveBeenCalledTimes(1);
   });
 });

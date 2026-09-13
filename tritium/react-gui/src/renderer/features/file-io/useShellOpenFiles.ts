@@ -18,6 +18,7 @@ import { IPC } from '@shared/ipcChannels'
 import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import { useOpenFilePaths } from './useOpenFilePaths'
+import { useFileOpenPrefs } from '@renderer/contexts/FileOpenPrefsContext'
 
 interface UseShellOpenFilesOptions {
   cm: AsyncCueMol | null
@@ -37,6 +38,7 @@ export function useShellOpenFiles({
   initialSceneSettled,
 }: UseShellOpenFilesOptions): void {
   const { openPaths } = useOpenFilePaths({ cm })
+  const { getShellTarget } = useFileOpenPrefs()
   const showErrorAlert = useShowErrorAlert()
 
   // Latest-value ref: the push subscription is registered once.
@@ -55,7 +57,13 @@ export function useShellOpenFiles({
     }
     // 'queue': the request came from outside the app, so if a renderer-option
     // dialog is already up it must wait rather than be discarded.
-    if (req.paths.length > 0) await openPaths(req.paths, { policy: 'queue' })
+    if (req.paths.length > 0) {
+      // Awaited rather than read from state: this drain runs as soon as
+      // CueMol and the launch scene are ready, which is not ordered against
+      // the preferences' UI_LOAD round trip.
+      const openTarget = await getShellTarget()
+      await openPaths(req.paths, { policy: 'queue', openTarget })
+    }
   }
 
   // The gate must stay closed until the open commands can actually act:

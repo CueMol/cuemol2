@@ -13,11 +13,21 @@ import type { FileOpenedData } from '@shared/types/fileEvents'
 import type { ChangeRendSelKind, RendColoringId, SelectMolKind } from '@shared/types/sceneCtxMenu'
 import { CmdId } from './ids'
 
+/**
+ * What an open command reports back: whether the file loaded, and the scene it
+ * went into. The scene id lets a multi-file batch pin the rest of its files to
+ * the same scene (see features/file-io/useOpenFilePaths.ts).
+ */
+export interface OpenResult {
+  loaded: boolean
+  sceneId?: number
+}
+
 export interface CommandMap {
   // Scene
   [CmdId.SceneNew]:            { args: void;            result: void }
-  [CmdId.OpenObjByPath]:       { args: FileOpenedData;  result: void }
-  [CmdId.OpenSceneByPath]:     { args: string;          result: void }
+  [CmdId.OpenObjByPath]:       { args: FileOpenedData;  result: OpenResult }
+  [CmdId.OpenSceneByPath]:     { args: string;          result: OpenResult }
 
   // Dialogs
   [CmdId.UiOpenObjDialog]:     { args: void;            result: void }
@@ -72,6 +82,7 @@ export interface CommandMap {
   [CmdId.ViewCenterMarkAxis]:  { args: void;            result: void }
   [CmdId.ViewCenterMarkNone]:  { args: void;            result: void }
   [CmdId.UiViewProperty]:      { args: void;            result: void }
+  [CmdId.ViewToolPalette]:     { args: void;            result: void }
 
   // Scene background
   [CmdId.SceneBgWhite]:        { args: void;            result: void }

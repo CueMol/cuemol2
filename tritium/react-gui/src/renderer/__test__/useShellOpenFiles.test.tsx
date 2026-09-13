@@ -33,6 +33,16 @@ vi.mock('@renderer/features/file-io/useOpenFilePaths', async () => {
   }
 })
 
+vi.mock('@renderer/contexts/FileOpenPrefsContext', () => ({
+  useFileOpenPrefs: () => ({
+    dropTarget: 'active',
+    shellTarget: 'new',
+    setDropTarget: () => undefined,
+    setShellTarget: () => undefined,
+    getShellTarget: () => Promise.resolve('new' as const),
+  }),
+}))
+
 const showErrorAlert = vi.fn((_args: { title: string; message: string }) => Promise.resolve())
 vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
@@ -121,7 +131,9 @@ describe('useShellOpenFiles', () => {
     expect(openPaths.mock.calls[0][0]).toEqual(['/a.pdb', '/b.qsc'])
     // Must not be dropped when a dialog is already up: the request came from
     // outside the app.
-    expect(openPaths.mock.calls[0][1]).toMatchObject({ policy: 'queue' })
+    // The shell target, not the drop one: the two preferences are the same
+    // type, so a swap is invisible to the compiler.
+    expect(openPaths.mock.calls[0][1]).toMatchObject({ policy: 'queue', openTarget: 'new' })
 
     // A re-render must not pull again.
     handle.rerender()

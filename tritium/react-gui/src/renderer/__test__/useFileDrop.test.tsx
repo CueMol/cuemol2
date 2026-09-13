@@ -18,6 +18,16 @@ import { resetOpenFilePathsForTests } from '@renderer/features/file-io/useOpenFi
 
 void React
 
+vi.mock('@renderer/contexts/FileOpenPrefsContext', () => ({
+  useFileOpenPrefs: () => ({
+    dropTarget: 'new',
+    shellTarget: 'active',
+    setDropTarget: () => undefined,
+    setShellTarget: () => undefined,
+    getShellTarget: () => Promise.resolve('active' as const),
+  }),
+}))
+
 const showErrorAlert = vi.fn((_args: { title: string; message: string }) => Promise.resolve())
 vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({
   useShowErrorAlert: () => showErrorAlert,
@@ -192,6 +202,11 @@ describe('useFileDrop', () => {
       name: '1abc.pdb',
       path: '/drop/1abc.pdb',
       contentFirst: false,
+      // The drop preference (mocked to 'new' above), and no batch scene yet:
+      // this is the first file. The shell preference has the same type, so a
+      // swap between the two would otherwise be invisible.
+      openTarget: 'new',
+      targetSceneId: undefined,
     })
     expect(sceneSpy).not.toHaveBeenCalled()
 
