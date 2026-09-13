@@ -16,10 +16,13 @@ export const mdtoolsManifest: PluginManifest = {
   name: 'MD Tools',
   version: '1.0.0',
   description:
-    'Open MD simulation trajectories (topology + DCD/XTC/TRR) and play them back in the Trajectory tab.',
-  // The C++ mdtools module is linked into every build, so this switch gates
-  // the GUI only. Off by default: most sessions never open a trajectory, and
-  // the flow costs a File menu row plus a bottom tab while it is on.
+    'Experimental. Open MD simulation trajectories (topology + DCD/XTC/TRR) and play them back in the Trajectory tab.',
+  // Off by default: the feature is experimental and still rough in places,
+  // and it is of no use to anyone who does not run MD.
+  //
+  // The switch gates the GUI alone, because the C++ mdtools module is linked
+  // into every build and there is no plugin lane for it yet. Once one exists,
+  // the module follows this plugin and the two switch together.
   defaultEnabled: false,
   contributes: {
     commands: [{ id: OPEN_MD_TRAJ_COMMAND, title: 'Open MD Trajectory...' }],

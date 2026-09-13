@@ -26,7 +26,12 @@ plugin (既定オフ) にする。**C++ 側は変更しない**。`mdtools::init
   紛らわしいので採らない。既存の下位ディレクトリ `mdtraj/` も `renderer/track/` に改名した
   (CSS クラス `.mdtraj-*` とトークン `--mdtraj-*` は外部に見えない内部識別子なので据え置き)
 - **worker service も含めて全部 plugin へ移す**。core に trajectory 固有コードを残さない
-- `defaultEnabled: false` (Settings > Plugins で opt-in)
+- `defaultEnabled: false` (Settings > Plugins で opt-in)。理由は「実験的な機能で問題点が
+  まだ多く、MD をやらない利用者は使わない」から。C++ module が常時ロードであることは
+  既定を決めた理由ではない
+- **これは中間状態**。C++ 側の plugin 機構 (プラン 260908 の Phase A') が入ったら
+  `src/modules/mdtools/` も plugin に含め、両レーンを同じ switch で入り切りする。
+  JS/TS 側を先に分けておくことで、そのときに残るのはパッケージングの変更だけになる
 
 ## 実装の要点
 

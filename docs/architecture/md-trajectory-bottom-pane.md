@@ -4,7 +4,7 @@ Status: implemented (Phase A + B + C block remove/reorder + D-1 undo/redo).
 Related: [MD Trajectory Open Dialog](md-trajectory-open-dialog.md).
 
 この GUI は built-in plugin **`mdtools` (MD Tools)** として
-`tritium/react-gui/src/plugins/mdtools/` に入っており、**既定オフ**
+`tritium/react-gui/src/plugins/mdtools/` に入っており、**実験的な機能のため既定オフ**
 (Settings > Plugins で有効化する)。C++ 側 (`src/modules/mdtools/`) は常時ロードなので、
 plugin が gate するのは下記の UI と worker service の呼び出し口だけ。
 plugin 機構そのものは [tritium plugin](tritium_plugin/_index.md) を参照。

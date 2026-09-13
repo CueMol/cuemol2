@@ -42,12 +42,22 @@ plugin を 1 本書きたいだけなら **overview -> authoring** で足りる�
 最初の 4 つは**その機能専用の C++ クラスを持たない**ことを基準に選んである。
 
 `mdtools` はその例外で、専用の C++ module (`src/modules/mdtools/`、`Trajectory` /
-`TrajBlock` と 4 つの reader) を持つ最初の plugin。C++ レーンが無いので module は常時
-ロードされたままで、**plugin が gate するのは GUI だけ** (メニュー項目・bottom tab・
-dialog・worker service の呼び出し口)。無効にしても、既に読み込まれている `Trajectory`
-は描画され続ける。この割り切りができない UI -- `CutByPlane` や `Prot2ndry`、
-`SymmOpManager` のように C++ 側の専用機能そのものの interface になっているもの -- は、
-C++ とセットでないと意味がないので JS/TS レーンだけでは plugin 化しない。
+`TrajBlock` と 4 つの reader) を持つ最初の plugin。C++ レーン
+([プラン](../../plans/260908-tritium-plugin-system-plan.md) の Phase A') が未実装なので
+module は常時ロードされたままで、**現状 plugin が gate するのは GUI だけ**
+(メニュー項目・bottom tab・dialog・worker service の呼び出し口)。無効にしても、既に
+読み込まれている `Trajectory` は描画され続ける。
+
+これは**恒久的な形ではなく中間状態**で、C++ 側の plugin 機構が入ったら module も
+plugin に含め、両レーンが同じ switch で入り切りする形にする予定。JS/TS 側を先に
+分けておくのは、そのときに残るのがパッケージングの変更だけになるため
+(`src/plugins/<id>/` のディレクトリ構成を実行時ロードと同じ形にしてあるのと同じ理由)。
+
+同じ理由で、`CutByPlane` や `Prot2ndry`、`SymmOpManager` のように C++ 側の専用機能
+そのものの interface になっている UI も、**いま**は JS/TS レーンだけで plugin 化しない --
+GUI を外しても得るものが無いため。`mdtools` を先に出したのは、trajectory が
+「読み込みフローと再生 UI」という独立した surface を持ち、GUI だけ外しても意味が
+通るから。
 
 `agent` ([ai-agent-plugin.md](../ai-agent-plugin.md)) は UXP に無い新機能で、host の
 寄与点をひととおり使う: push channel、plugin 自身の設定ページ、OS キーチェーンの資格情報、

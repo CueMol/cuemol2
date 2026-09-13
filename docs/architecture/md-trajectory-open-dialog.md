@@ -9,7 +9,7 @@ MD simulation trajectory を tritium/react-gui から開くための UI・worker
 載せない (migration ADR は migration 専用に保つ)。
 
 この GUI は built-in plugin **`mdtools` (MD Tools)** として
-`tritium/react-gui/src/plugins/mdtools/` に入っており、**既定オフ** (Settings > Plugins で
+`tritium/react-gui/src/plugins/mdtools/` に入っており、**実験的な機能のため既定オフ** (Settings > Plugins で
 有効化する)。下表のファイルはすべてその配下で、core 側に残るのは汎用の受け皿だけ。
 plugin 機構は [tritium plugin](tritium_plugin/_index.md) を参照。
 
