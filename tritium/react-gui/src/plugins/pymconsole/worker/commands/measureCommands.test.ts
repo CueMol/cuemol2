@@ -1,14 +1,14 @@
 /**
  * @file plugins/pymconsole/worker/commands/measureCommands.test.ts
- * @description That a measurement is only taken between atoms it is sure of.
+ * @description That a measurement means one label between centroids.
  *
- * PyMOL measures between whatever the selections match; this draws a label
- * between two named atoms. The gap between those is the whole risk: a
- * selection matching a hundred atoms silently measured to the first of them
- * would give a number that looks right and is not. So the contract worth
- * pinning is that an expression which cannot name one atom is refused, and a
- * well-formed one reaches `getAtom` with the chain, residue and name the
- * user wrote, whatever order they wrote them in.
+ * The contract worth pinning is the deliberate divergence from PyMOL, which
+ * loops over every combination of atoms and would draw fifty million labels
+ * for four hundred-atom selections. Here each selection reaches C++ as one
+ * expression and one label comes back, so the two things that must hold are
+ * that the translated expressions are what gets passed and that the value
+ * printed is the one C++ measured -- not a number recomputed on this side,
+ * which could disagree with the label on screen.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -22,8 +22,7 @@ const { services } = vi.hoisted(() => {
     vi.fn<(...args: unknown[]) => unknown>(impl ?? (() => undefined))
   return {
     services: {
-      getAtom: stub(),
-      appendMeasureLabel: stub(),
+      appendMeasureLabelBySel: stub(() => ({ ok: true, value: 3.14159 })),
       listSceneObjects: stub(() => ({
         objects: [{ uid: 10, name: 'mol', className: 'MolCoord' }],
       })),
@@ -32,17 +31,14 @@ const { services } = vi.hoisted(() => {
 })
 
 vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
-  getSceneOrNull: () => ({
-    getObject: () => ({ getAtom: (...a: unknown[]) => services.getAtom(...a) }),
-  }),
+  getSceneOrNull: () => ({ getObject: () => ({ name: 'mol' }) }),
 }))
 vi.mock('@renderer/worker/server/services/scene/listSceneObjects', () => ({
   listSceneObjects: (...a: unknown[]) => services.listSceneObjects(...a),
 }))
 vi.mock('@renderer/worker/server/services/helpers/atomintr', () => ({
-  appendMeasureLabel: (...a: unknown[]) => services.appendMeasureLabel(...a),
+  appendMeasureLabelBySel: (...a: unknown[]) => services.appendMeasureLabelBySel(...a),
   measureAtomCount: (mode: string) => (mode === 'distance' ? 2 : mode === 'angle' ? 3 : 4),
-  hasDegenerateAtoms: () => false,
 }))
 
 import { MEASURE_COMMANDS } from './measureCommands'
@@ -59,69 +55,78 @@ const cc = {
   setCwd: vi.fn(),
 } as unknown as CmdContext
 
-const distance = MEASURE_COMMANDS.find((c) => c.name === 'distance')!
-
-/** Run `distance`, which is synchronous, and give the outcome its real type. */
-function run(args: Record<string, string>): { ok: boolean } {
-  return distance.run(ctx, args, cc) as { ok: boolean }
+/** Run one command synchronously and give the outcome its real type. */
+function run(name: string, args: Record<string, string>): { ok: boolean } {
+  const cmd = MEASURE_COMMANDS.find((c) => c.name === name)
+  if (!cmd) throw new Error(`no ${name}`)
+  return cmd.run(ctx, args, cc) as { ok: boolean }
 }
 
-/** An atom three angstroms along x from the origin, for a round answer. */
-function atomAt(x: number) {
-  return {
-    id: x,
-    pos: {
-      sub: (o: { x: number }) => ({ length: () => Math.abs(x - o.x) }),
-      x,
-    },
-  }
+/** The selection expressions handed to the label helper. */
+function passedSelections(): string[] | undefined {
+  return services.appendMeasureLabelBySel.mock.calls[0]?.[3] as string[] | undefined
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  services.appendMeasureLabelBySel.mockReturnValue({ ok: true, value: 3.14159 })
   services.listSceneObjects.mockReturnValue({
     objects: [{ uid: 10, name: 'mol', className: 'MolCoord' }],
   })
 })
 
-describe('a measurement between named atoms', () => {
-  it('measures between the atoms the selections name, in any argument order', () => {
-    services.getAtom.mockImplementation((_c, r) => atomAt(r === '10' ? 0 : 3))
-    const out = run({
+describe('a measurement between selections', () => {
+  it('draws one label per command, whatever the selections match', () => {
+    const out = run('dihedral', {
       name: '',
-      selection1: 'chain A and resi 10 and name CA',
-      selection2: 'name CA and resi 20 and chain A',
+      selection1: 'chain A',
+      selection2: 'chain B',
+      selection3: 'chain C',
+      selection4: 'chain D',
+      mode: '',
+      cutoff: '',
     })
     expect(out).toEqual({ ok: true })
-    expect(services.getAtom).toHaveBeenNthCalledWith(1, 'A', '10', 'CA')
-    expect(services.getAtom).toHaveBeenNthCalledWith(2, 'A', '20', 'CA')
-    expect(services.appendMeasureLabel).toHaveBeenCalled()
-    expect(cc.print).toHaveBeenCalledWith(' distance: 3.00 angstroms')
+    // Not one per quadruple of atoms, which is what PyMOL would do.
+    expect(services.appendMeasureLabelBySel).toHaveBeenCalledTimes(1)
+    expect(passedSelections()).toEqual(['chain A', 'chain B', 'chain C', 'chain D'])
   })
 
-  it('refuses an expression that can match more than one atom', () => {
-    services.getAtom.mockReturnValue(atomAt(0))
-    for (const expr of ['chain A', 'chain A and resi 1-10 and name CA', 'polymer']) {
-      const out = run({
-        name: '',
-        selection1: expr,
-        selection2: 'chain A and resi 20 and name CA',
-      })
-      expect(out.ok).toBe(false)
-      expect(services.appendMeasureLabel).not.toHaveBeenCalled()
-    }
-  })
-
-  it('draws nothing when a later selection names no atom', () => {
-    // The first atom resolves and the second does not; a half-drawn label
-    // would be left behind by a loop that drew as it went.
-    services.getAtom.mockImplementation((_c, r) => (r === '10' ? atomAt(0) : null))
-    const out = run({
+  it('passes the translated expression, not what the user typed', () => {
+    run('distance', {
       name: '',
-      selection1: 'chain A and resi 10 and name CA',
-      selection2: 'chain A and resi 99 and name CA',
+      selection1: 'resi 1-10',
+      selection2: 'name CA+CB',
+      mode: '',
+      cutoff: '',
+    })
+    expect(passedSelections()).toEqual(['resi 1:10', 'name CA,CB'])
+  })
+
+  it('prints the value C++ measured', () => {
+    run('angle', {
+      name: '',
+      selection1: 'chain A',
+      selection2: 'chain B',
+      selection3: 'chain C',
+      mode: '',
+    })
+    expect(cc.print).toHaveBeenCalledWith(' angle: 3.14 degrees')
+  })
+
+  it('reports a selection that matched nothing rather than printing a number', () => {
+    services.appendMeasureLabelBySel.mockReturnValue({
+      ok: false,
+      error: 'a selection did not compile or matched no atom',
+    })
+    const out = run('distance', {
+      name: '',
+      selection1: 'chain A',
+      selection2: 'chain Z',
+      mode: '',
+      cutoff: '',
     })
     expect(out.ok).toBe(false)
-    expect(services.appendMeasureLabel).not.toHaveBeenCalled()
+    expect(cc.print).not.toHaveBeenCalled()
   })
 })

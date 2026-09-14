@@ -19,7 +19,7 @@ import {
   type MeasureAtomRef,
   type MeasureMode,
 } from '@renderer/worker/server/services/helpers/atomintr'
-import { angleOf, distanceOf, torsionOf } from '@renderer/worker/server/services/helpers/geometry'
+import { angleOf, distanceOf, torsionOf } from '../geometry'
 import type { AgentTool, ToolOutcome } from './types'
 import { bool, int, str, strictSchema } from './types'
 

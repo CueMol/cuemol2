@@ -5,16 +5,23 @@
  *
  * Centralised so everything that draws one agrees on the renderer type, the
  * default styles, the default label-set name (UXP parity) and how a label is
- * appended. Two callers reach it by different routes -- the measure tool,
- * where the user picks atoms with the mouse, and the AI agent, which names
- * them -- and a second copy of the create-or-reuse logic is how the two would
- * start drawing into different renderers.
+ * appended. Three callers reach it by different routes -- the measure tool,
+ * where the user picks atoms with the mouse; the AI agent, which names them;
+ * and the PyM console, which gives a selection per point -- and a second copy
+ * of the create-or-reuse logic is how they would start drawing into different
+ * renderers.
+ *
+ * Hence the two append functions. C++ `AtomIntrElem` stores a point either as
+ * an atom id or as a selection, and reads a selection as the centroid of what
+ * it matches, so a measurement between groups is one label rather than one
+ * per atom pair.
  */
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { AtomIntrRenderer } from '@cuemol/core/src/wrappers/AtomIntrRenderer';
-import { withUndoTxn } from '../withUndoTxn';
+import { withUndoTxn, undoTxnResult } from '../withUndoTxn';
+import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 /** Renderer type name for distance / angle / torsion / interaction labels. */
 export const ATOMINTR_TYPE = 'atomintr';
@@ -89,6 +96,57 @@ export function appendMeasureLabel(
                 p[2].objId, p[2].atomId, p[3].objId, p[3].atomId,
             );
         }
+    });
+}
+
+/**
+ * Draw a measure label between whole selections, in its own undo transaction.
+ *
+ * Each selection counts as one point, the centroid of the atoms it matches,
+ * so `distance d, chain A, chain B` is one label between two groups rather
+ * than a label per atom pair. That is C++ `AtomIntrElem::AI_SEL`, the same
+ * mode the drawing code reads, so the number returned here is the number the
+ * label shows.
+ *
+ * Every selection is evaluated against the renderer's own molecule, which is
+ * `mol`; a measurement spanning molecules needs the by-atom form above.
+ *
+ * Rolls back rather than commits when the append fails, so a selection that
+ * matches nothing cannot leave a freshly created, empty renderer behind.
+ *
+ * @param sels - exactly `measureAtomCount(mode)` CueMol selection expressions.
+ * @returns the measured value: angstroms for a distance, degrees otherwise.
+ */
+export function appendMeasureLabelBySel(
+    scene: Scene,
+    mol: MolCoord,
+    mode: MeasureMode,
+    sels: string[],
+    targetName: string = ATOMINTR_DEFAULT_TARGET_NAME,
+): Result<{ value: number }> {
+    const name = targetName.trim() || ATOMINTR_DEFAULT_TARGET_NAME;
+    return undoTxnResult(scene, `Define ${measureLabelNoun(mode)} Label`, () => {
+        let rend = mol.getRendererByNameType(name, ATOMINTR_TYPE) as AtomIntrRenderer | null;
+        if (!rend) {
+            rend = mol.createRenderer(ATOMINTR_TYPE) as AtomIntrRenderer;
+            rend.name = name;
+            rend.applyStyles(ATOMINTR_STYLES);
+        }
+        const s = sels;
+        let id: number;
+        if (mode === 'distance') {
+            id = rend.append(s[0], s[1]);
+        } else if (mode === 'angle') {
+            id = rend.appendAngle(s[0], s[1], s[2]);
+        } else {
+            id = rend.appendTorsion(s[0], s[1], s[2], s[3]);
+        }
+        // C++ stores nothing and returns -1 when a selection does not compile
+        // or matches no atom.
+        if (id < 0) {
+            return fail('a selection did not compile or matched no atom', 'invalid-args');
+        }
+        return ok({ value: rend.getValue(id) });
     });
 }
 

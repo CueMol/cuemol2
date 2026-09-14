@@ -1,12 +1,10 @@
 /**
- * @file renderer/__test__/geometry.test.ts
+ * @file plugins/agent/worker/geometry.test.ts
  * @description That the measured numbers are right.
  *
  * These are the only geometry calculations in TypeScript -- the measure tool
  * lets C++ compute what it draws -- so nothing else would catch a wrong
- * conversion or a flipped torsion sign. Two callers now report the number
- * (the AI agent and the PyM console), which is why the helper sits in the
- * core rather than in either of them.
+ * conversion or a flipped torsion sign.
  *
  * The torsion sign is the part worth pinning, and the expected values below
  * are C++'s (`qlib/VectorHelper.cpp` `Vector4D::torsion`), not a convention
@@ -16,7 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { angleOf, distanceOf, torsionOf } from '../worker/server/services/helpers/geometry'
+import { angleOf, distanceOf, torsionOf } from './geometry'
 
 /** The bit of the Vector wrapper the geometry helpers use. */
 function v(x: number, y: number, z: number): never {

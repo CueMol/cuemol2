@@ -223,20 +223,37 @@ selectors 0x80 > `not` 0x70 > `and`/`-` 0x60 > `or`/`+`/`in` 0x40 > `around`/`ex
   renderer を console が書き換えないための境界
 - **`select`** は alias 登録 (`saveSelDef`) と可視化 (`applyMolSelString`) の両方をやる。CueMol の
   named selection は式の別名であって固定の原子集合ではないので、`help` でそう明記した
-- **計測** は `chain A and resi 10 and name CA` の形 (chain/resi/name の連言、各 1 値) に限る。
-  任意の式から原子 id を得るには `MolCoord.getSelArray` の packed `ByteArray` を addon 境界越しに
-  読む必要があり、アプリ内に前例が無い。`getAtom` 経由なら measure tool / AI agent と同じ経路。
+- **計測** は selection をそのまま取り、**各 selection を重心 1 点として 1 本のラベル**を引く。
+  PyMOL は原子の全組み合わせを回して組数ぶんラベルを引く仕様で、特に `dihedral` は `distance` の
+  `cutoff` に相当する絞りが無く (既定 `mode=0` では結合チェックも無効)、4 つの 100 原子 selection で
+  5000 万本になる。**この仕様は移植しない**。CueMol の `AtomIntrElem::AI_SEL` が元々重心を読む設計
+  なので、それに合わせる。`mode` / `cutoff` は受け取って警告付きで無視する。
   ラベルは `helpers/atomintr` が描くので、マウスで取った計測と同じ label set に入る。
-  数値も印字する (PyMOL は `quiet=0` のときだけ出すが、console では答えが目的)
+  数値は C++ の `getValue` から取る (画面のラベルと必ず一致する。TS 側で計算し直さない)
 - **map**: `isomesh` -> `contour`、`isosurface` -> `isosurf` renderer を map object 上に作り、
   `siglevel` に level を書く。`isolevel <名>` は scene 中の同名 map renderer を探す。描画領域は
   renderer 自身の中心まわりの箱なので `selection` / `carve` / `buffer` は近似せず警告して無視し、
   新規 renderer の中心は view に合わせる (file-open と同じ `applyMapCenterPolicy`)
 
+### C++ 側の追加 (`src/modules/molvis/`)
+
+`AtomIntrElem` は元々 `AI_SEL` (selection = その重心) を持ち、`evalPos` が距離・角度・二面角の全描画
+経路でそれを読む。にもかかわらず QIF に公開されていたのは距離の `append(sel, sel)` だけだった。
+当初の設計意図どおり角度・二面角も selection を取れるようにする:
+
+| 追加 | 場所 |
+|---|---|
+| `AtomIntrData` の 3/4 要素 selection ctor | `AtomIntrData.hpp` |
+| `appendAngleBySelStr` / `appendTorsionBySelStr` | `AtomIntrRenderer.{hpp,cpp}` |
+| `evalValue` (def を数値にする 1 箇所) と `getValue(id)` | 同上 |
+| `appendAngle` / `appendTorsion` / `getValue` の公開 | `AtomIntrRenderer.qif` |
+
+`appendSelImpl` が append 前に `evalValue` で評価を試し、**空 selection なら何も積まずに -1 を返す**。
+以前は評価できない def が積まれて、毎回の再描画で黙って飛ばされていた。
+serialization は要素ごとに汎用なので `.qsc` の往復は無変更で通る。
+
 ### core へ移したもの
 
-- `helpers/geometry.ts` -- agent plugin から昇格。距離 / 角度 / 二面角は計測を**数値で報告する**
-  呼び出し側 (AI agent と PyM console) が要るもので、どちらか片方の内部ではない
 - `commands/helpers.ts` の `molecules(ctx, sceneId, pattern?)` -- 同じ class 名フィルタが 4 箇所に
   増えたため集約
 

@@ -182,6 +182,12 @@ public:
 
   int appendBySelStr(const LString &sstr1, const LString &sstr2);
 
+  int appendAngleBySelStr(const LString &sstr1, const LString &sstr2,
+                          const LString &sstr3);
+
+  int appendTorsionBySelStr(const LString &sstr1, const LString &sstr2,
+                            const LString &sstr3, const LString &sstr4);
+
   int appendById(int nAid1, qlib::uid_t nMolID2, int nAid2, bool bShowMsg);
 
   int appendAngleById(int nAid1,
@@ -209,6 +215,10 @@ public:
 
   /// Get intr data defs by JSON rep.
   LString getDefsJSON() const;
+
+  /// Measured value of the def nid: angstroms for a distance, degrees for an
+  /// angle or a torsion. Throws when nid is unknown or cannot be evaluated.
+  double getValue(int nid);
 
   double getWidth() const { return m_linew; }
   void setWidth(double d) {
@@ -254,6 +264,8 @@ private:
 
   int appendImpl(const AtomIntrData &dat);
 
+  int appendSelImpl(const AtomIntrData &dat);
+
   //bool getSelCenter(const MolCoordPtr pmol,
   //const SelectionPtr &sel,
   //Vector4D &rval);
@@ -266,6 +278,11 @@ private:
 
   bool evalPos(AtomIntrElem &elem, Vector4D &rval);
   MolCoordPtr evalMol(const AtomIntrElem &elem) const;
+
+  /// Evaluate a def to the number its label shows.
+  /// Returns false when an element resolves to nothing (deleted molecule,
+  /// selection matching no atom).
+  bool evalValue(AtomIntrData &dat, double &rval);
 
   void drawArrow(DisplayContext *pdl,
                  const Vector4D &startPos,
