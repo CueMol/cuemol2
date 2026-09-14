@@ -21,7 +21,7 @@ export const pymConsoleManifest: PluginManifest = {
     bottomTabs: [
       {
         id: 'pymconsole',
-        label: 'PyM',
+        label: 'PyM Console',
         icon: 'panel.pymconsole',
         // Next to the Output tab: both are places text scrolls past.
         after: 'output',

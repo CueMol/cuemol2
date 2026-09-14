@@ -189,12 +189,6 @@ export const PymConsolePanel: BottomTabComponent = ({
   return (
     <div className="pymc-panel">
       <div className="pymc-toolbar">
-        <span className="pymc-title type-panel-title">PyM Console</span>
-        {running && (
-          <span className="pymc-running type-caption" role="status">
-            Running...
-          </span>
-        )}
         <FormButton
           minimal
           icon={<AppIcon name="ui.eraser" aria-hidden />}
@@ -216,6 +210,11 @@ export const PymConsolePanel: BottomTabComponent = ({
           disabled={running || !runner}
           aria-label="List commands"
         />
+        {running && (
+          <span className="pymc-running type-caption" role="status">
+            Running...
+          </span>
+        )}
       </div>
 
       <div className="pymc-body" onClick={handleBodyClick}>

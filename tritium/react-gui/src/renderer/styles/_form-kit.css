@@ -283,6 +283,15 @@
   color: var(--console-text);
 }
 
+/* No focus ring on a console prompt. A form field earns one by being one of
+   many that the keyboard could be in; a prompt is where the keyboard always
+   is, so the ring only draws a box around the thing the user is already
+   looking at. The accent caret remains the focus affordance. */
+.h3-form-textarea-console:focus {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
 /* Monospace variant (TextField `mono`) -- code / selection-expression fields. */
 .h3-form-input-mono.bp5-input-group .bp5-input,
 .h3-form-input-mono.bp5-input-group input {

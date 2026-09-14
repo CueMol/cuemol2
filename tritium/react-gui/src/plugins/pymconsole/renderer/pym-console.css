@@ -17,11 +17,6 @@
   border-bottom: 1px solid var(--border);
 }
 
-.pymc-title {
-  flex: 1;
-  color: var(--text-secondary);
-}
-
 /* Says a command is in flight. The prompt cannot say it by going disabled:
    that would take the focus away from it (see PymConsolePanel.tsx). */
 .pymc-running {
