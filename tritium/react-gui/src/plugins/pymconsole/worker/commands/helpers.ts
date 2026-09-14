@@ -59,6 +59,24 @@ export function resolveOneObject(
   return { ok: true, obj: hits[0] }
 }
 
+/**
+ * The molecules `pattern` names, in scene order; every one by default.
+ *
+ * A selection only means anything against a molecule, and the class name is
+ * the only thing `listSceneObjects` reports that separates one from a map or
+ * a surface. `endsWith('Mol')` catches the subclasses; `MolCoord` itself is
+ * spelled out because it does not end that way.
+ */
+export function molecules(
+  ctx: WorkerContext,
+  sceneId: number,
+  pattern: string = ALL,
+): SceneObjectEntry[] {
+  return resolveObjects(ctx, sceneId, pattern).filter(
+    (o) => o.className === 'MolCoord' || o.className.endsWith('Mol'),
+  )
+}
+
 /** Expand a leading `~` and make a relative path absolute against `cwd`. */
 export function resolvePath(cwd: string, filePath: string): string {
   const expanded = filePath.startsWith('~')

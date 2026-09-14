@@ -20,9 +20,14 @@ import {
 } from '@renderer/worker/server/services/camera/cameraOps'
 import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
+import {
+  centerMolSelection,
+  zoomMolSelection,
+} from '@renderer/worker/server/services/select/applyMolSelString'
 import { rotateView, translateView } from '@renderer/worker/server/services/view/viewXform'
+import { translateSelection } from '../sel/translate'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { ALL, formatNameList, isDefaulted, resolveObjects, toNumber } from './helpers'
+import { ALL, formatNameList, isDefaulted, molecules, resolveObjects, toNumber } from './helpers'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 /** The axis letters `turn` and `move` accept. */
@@ -34,31 +39,55 @@ function toAxis(raw: string): Axis | null {
 }
 
 /**
- * Fit the view to what `pattern` names.
+ * Fit or centre the view on what `pattern` names.
  *
- * With no object named, PyMOL fits everything. Here that becomes the first
- * object, with a warning when the scene holds more -- an honest partial is
- * better than quietly framing one object and calling it "all".
+ * An object name frames the object; anything else is read as a selection and
+ * framed through the molecule it matches. With no argument PyMOL fits
+ * everything, which CueMol has no primitive for (`fitView` belongs to an
+ * object), so that becomes the first object with a warning -- an honest
+ * partial beats quietly framing one object and calling it "all".
  */
-function fitTo(ctx: WorkerContext, cc: CmdContext, pattern: string): CmdOutcome {
-  const wantsAll = pattern.trim() === '' || pattern.trim() === ALL || pattern.trim() === '*'
-  const hits = resolveObjects(ctx, cc.sceneId, pattern)
-  if (hits.length === 0) {
-    return wantsAll
-      ? { ok: false, error: 'Error: the scene is empty' }
-      : { ok: false, error: `Error: object "${pattern}" not found` }
+function fitTo(
+  ctx: WorkerContext,
+  cc: CmdContext,
+  pattern: string,
+  mode: 'zoom' | 'center',
+): CmdOutcome {
+  const wanted = pattern.trim()
+  const wantsAll = wanted === '' || wanted === ALL || wanted === '*'
+  const named = wantsAll ? resolveObjects(ctx, cc.sceneId, 'all') : resolveObjects(ctx, cc.sceneId, wanted)
+
+  if (named.length > 0) {
+    if (wantsAll && named.length > 1) {
+      cc.warn(`fitting "${named[0].name}" only: fitting every object at once is not supported`)
+    }
+    const res = focusOnNode(ctx, {
+      sceneId: cc.sceneId,
+      viewId: cc.viewId,
+      nodeId: named[0].uid,
+      nodeType: 'object',
+    })
+    if (!res.ok) return { ok: false, error: `Error: cannot fit the view to "${named[0].name}"` }
+    return { ok: true }
   }
-  if (wantsAll && hits.length > 1) {
-    cc.warn(`fitting "${hits[0].name}" only: fitting every object at once is not supported`)
+  if (wantsAll) return { ok: false, error: 'Error: the scene is empty' }
+
+  // Not an object: read it as a selection.
+  const translated = translateSelection(wanted)
+  if (!translated.ok) return translated
+  const mols = molecules(ctx, cc.sceneId)
+  if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
+  if (mols.length > 1) {
+    cc.warn(`framing "${mols[0].name}" only: a selection spanning objects is not supported`)
   }
-  const res = focusOnNode(ctx, {
+  const args = {
     sceneId: cc.sceneId,
     viewId: cc.viewId,
-    nodeId: hits[0].uid,
-    nodeType: 'object',
-  })
-  if (!res.ok) return { ok: false, error: `Error: cannot fit the view to "${hits[0].name}"` }
-  return { ok: true }
+    molId: mols[0].uid,
+    selStr: translated.expr,
+  }
+  const res = mode === 'zoom' ? zoomMolSelection(ctx, args) : centerMolSelection(ctx, args)
+  return res.ok ? { ok: true } : { ok: false, error: `Error: "${wanted}" matched nothing` }
 }
 
 const zoom: PymCommand = {
@@ -72,7 +101,7 @@ const zoom: PymCommand = {
   ],
   mode: 'strict',
   mutates: false,
-  summary: 'Fit the view to an object. Selections come in a later phase.',
+  summary: 'Fit the view to an object or a selection.',
   completions: [{ source: 'selections', description: 'selection', suffix: '' }],
   run(ctx, args, cc) {
     for (const [name, def] of [
@@ -83,7 +112,7 @@ const zoom: PymCommand = {
     ] as const) {
       if (!isDefaulted(args[name], def)) cc.warn(`zoom: ${name} is ignored (not supported)`)
     }
-    return fitTo(ctx, cc, args.selection)
+    return fitTo(ctx, cc, args.selection, 'zoom')
   },
 }
 
@@ -97,7 +126,7 @@ const center: PymCommand = {
   ],
   mode: 'strict',
   mutates: false,
-  summary: 'Centre the view on an object. Selections come in a later phase.',
+  summary: 'Centre the view on an object or a selection.',
   completions: [{ source: 'selections', description: 'selection', suffix: '' }],
   run(ctx, args, cc) {
     for (const [name, def] of [
@@ -107,7 +136,7 @@ const center: PymCommand = {
     ] as const) {
       if (!isDefaulted(args[name], def)) cc.warn(`center: ${name} is ignored (not supported)`)
     }
-    return fitTo(ctx, cc, args.selection)
+    return fitTo(ctx, cc, args.selection, 'center')
   },
 }
 
@@ -127,7 +156,7 @@ const reset: PymCommand = {
     quat.y = 0
     quat.z = 0
     ;(view as unknown as { setRotQuat: (q: unknown) => void }).setRotQuat(quat)
-    return fitTo(ctx, cc, args.object)
+    return fitTo(ctx, cc, args.object, 'zoom')
   },
 }
 

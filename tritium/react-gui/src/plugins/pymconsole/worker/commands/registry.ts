@@ -8,6 +8,10 @@
  */
 
 import { FILE_COMMANDS } from './fileCommands'
+import { MAP_COMMANDS } from './mapCommands'
+import { MEASURE_COMMANDS } from './measureCommands'
+import { REP_COMMANDS } from './repCommands'
+import { SELECT_COMMANDS } from './selectCommands'
 import { MISC_COMMANDS } from './miscCommands'
 import { OBJECT_COMMANDS } from './objectCommands'
 import { SETTING_COMMANDS } from './settingCommands'
@@ -32,6 +36,13 @@ const help: PymCommand = {
       }
       cc.print('')
       cc.print('Type "help <command>" or "<command> ?" for usage.')
+      cc.print('')
+      // The one difference that changes what a command means rather than
+      // whether it works, so it is said before the user meets it.
+      cc.print('A selection made with "select" is a named expression, not a')
+      cc.print('fixed set of atoms: it is re-evaluated against each molecule')
+      cc.print('every time it is used, so loading more atoms can change what')
+      cc.print('it matches.')
       return { ok: true }
     }
     const found = lookupCommand(topic, commandNames())
@@ -55,6 +66,10 @@ const help: PymCommand = {
 export const PYM_COMMANDS: readonly PymCommand[] = [
   ...FILE_COMMANDS,
   ...OBJECT_COMMANDS,
+  ...SELECT_COMMANDS,
+  ...REP_COMMANDS,
+  ...MAP_COMMANDS,
+  ...MEASURE_COMMANDS,
   ...VIEW_COMMANDS,
   ...SETTING_COMMANDS,
   ...MISC_COMMANDS,

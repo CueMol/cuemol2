@@ -1,10 +1,11 @@
 /**
- * @file plugins/agent/worker/geometry.ts
+ * @file worker/server/services/helpers/geometry.ts
  * @description Distance, angle and torsion from atom positions.
  *
  * The measure tool never needed these in TypeScript: it hands atom ids to the
- * atomintr renderer and C++ computes the number it draws. The agent has to
- * report the number as data, so it is computed here.
+ * atomintr renderer and C++ computes the number it draws. Callers that have
+ * to report the number rather than draw it -- the AI agent as tool data, the
+ * PyM console as printed output -- compute it here.
  *
  * `Vector.angle` returns radians and the wrapper does not expose C++'s
  * `Vector4D::torsion`, so angles are converted and the dihedral is done by

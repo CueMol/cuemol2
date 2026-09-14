@@ -1,7 +1,7 @@
 # pymconsole plugin (PyMOL コマンド互換コンソール、Python embedding なし)
 
-Status: **Phase 1 + Tab 補完 (Phase 1.5) 実装済み** (`tritium/react-gui/src/plugins/pymconsole/`)。
-Phase 2 以降は未着手。
+Status: **Phase 1 + Tab 補完 (Phase 1.5) + Phase 2 実装済み** (`tritium/react-gui/src/plugins/pymconsole/`)。
+Phase 3 は未着手。
 関連: [pym console 調査報告](pymconsole-research-260529.md)、
 [tritium plugin](../architecture/tritium_plugin/_index.md)、
 [AI agent plugin](../architecture/ai-agent-plugin.md)。
@@ -172,8 +172,8 @@ PyMOL の補完を移植した。**独自 UI (ドロップダウン等) は作�
    enum なら `enumdef`、boolean なら `on`/`off` を候補にし、それ以外 (数値・文字列) は PyMOL と同じ
    fallback。`settingValue` ソースだけが `argsSoFar` を受け取るのはこのため
 2. **`selections` ソースは Phase 1 では名前だけ**。PyMOL は selection キーワード (`chain ` `resi ` ...)
-   も列挙するが、実行できない式に補完してしまうため。Phase 2 で `sources.ts` の当該 case に
-   1 配列足せば済むようにしてある
+   も列挙するが、実行できない式に補完してしまうため。Phase 2 で翻訳器が入り、この逸脱は解消した
+   (下記)
 
 **入れなかったもの**: `Ctrl+D` (候補を印字だけする) は PyMOL でも 3D ビュー内蔵の overlay コンソール
 (`Ortho.cpp`) だけの機能で、Qt の QLineEdit には無い。「一覧を見るだけ」は Tab の
@@ -185,16 +185,67 @@ Shift+Tab は逃げ道として残す)。複数行 (script 貼り付け) のと�
 (PyMOL のコマンドラインは 1 行なのでこの区別が無い)。候補一覧は `consoleSession.append` で印字 --
 補完は runner を経由しない (undo txn を開かないため、`complete` は `runCommand` とは別 service)。
 
-## Phase 2 (次 PR): selection 翻訳器 + Tier 1
+## Phase 2 (実装済み): selection 翻訳器 + Tier 1
 
-- `worker/sel/`: 調査報告 §3.3 の構成 (tokenizer -> 再帰下降 parser -> AST -> **完全括弧付き** CueMol 式)。
-  §3.4 の token 対応表が仕様。`-`/`+` の多義性は AST 経由でのみ解く。未対応 token は位置付きエラー
-- クラスマクロは **alias 登録ではなく翻訳時のインライン展開** (`setStrData` で global alias を登録する案は
-  worker 起動時の状態を持ち込むので採らない)。既存 global alias (`protein` `nucleic` `water` `helix`
-  `sheet` `coil` `ligand` `hydrogen`) はそのまま使う
-- `select` / `indicate` / `deselect`、`show` / `hide` / `as` (代表 renderer 規約)、`color`、
-  `distance` / `angle` / `dihedral` / `count_atoms` / `get_chains`、`zoom sel` / `center sel`、
-  `isomesh` / `isosurface` / `isolevel`
+### 翻訳器 (`worker/sel/`)
+
+`tokenize.ts` -> `parse.ts` (再帰下降) -> `emit.ts` (**完全括弧付き** CueMol 式)、入口は
+`translate.ts`。`-`/`+` の多義性は AST 経由でのみ解く (単独 token なら演算子、語中なら範囲 /
+区切り)。未対応 token は位置付きエラー (caret 行付き)。
+
+演算子優先順位は PyMOL `layer3/Selector.cpp` の `SELE_*` 下位バイトから採った:
+selectors 0x80 > `not` 0x70 > `and`/`-` 0x60 > `or`/`+`/`in` 0x40 > `around`/`expand` 0x30 >
+`byres` 0x20。CueMol `molstr/parser_sel.yxx` が**同じ順序**を宣言しているので、並べ替えは不要。
+それでも AST を経由して全項を括弧で包むのは、両者の結合規則の差に依存しないため。
+
+クラスマクロは **alias 登録ではなく翻訳時のインライン展開**。`setStrData` で global alias を登録
+する案は worker 起動時の状態を scene に持ち込む (`.qsc` に保存され、ユーザ定義名に shadow される)
+ので採らない。既存 global alias (`protein` `nucleic` `water` `helix` `sheet` `coil` `ligand`
+`hydrogen`) はそのまま使い、`polymer` / `backbone` / `sidechain` / `guide` は式に展開する。
+
+未対応のものは**名前を挙げて理由付きで拒否**する (`within` / `neighbor` / `segi` / `index` /
+`x`,`y`,`z` / `rep` / `color` など)。特に `neighbor` と `extend` は CueMol の parser を通るが
+実装が無く**何も選択しない**ので、通してはいけない。
+
+### コマンド
+
+| ファイル | コマンド |
+|---|---|
+| `selectCommands.ts` | `select` `indicate` `deselect` `count_atoms` `get_chains` |
+| `repCommands.ts` | `show` `hide` `as` `color` |
+| `measureCommands.ts` | `distance` `angle` `dihedral` |
+| `mapCommands.ts` | `isomesh` `isosurface` `isolevel` |
+| `viewCommands.ts` (拡張) | `zoom` / `center` が object 名で当たらなければ selection として解釈 |
+
+- **代表 renderer 規約** (`repCommands.ts`): object x rep ごとに `pym:<rep>` という名前の renderer
+  1 つ。`show` は sel の和集合、`hide` は差集合、`as` は置換 + 他の `pym:` を非表示、
+  `hide <rep>` (selection 無し) は renderer 自体を非表示。**prefix が本質** — GUI で作った
+  renderer を console が書き換えないための境界
+- **`select`** は alias 登録 (`saveSelDef`) と可視化 (`applyMolSelString`) の両方をやる。CueMol の
+  named selection は式の別名であって固定の原子集合ではないので、`help` でそう明記した
+- **計測** は `chain A and resi 10 and name CA` の形 (chain/resi/name の連言、各 1 値) に限る。
+  任意の式から原子 id を得るには `MolCoord.getSelArray` の packed `ByteArray` を addon 境界越しに
+  読む必要があり、アプリ内に前例が無い。`getAtom` 経由なら measure tool / AI agent と同じ経路。
+  ラベルは `helpers/atomintr` が描くので、マウスで取った計測と同じ label set に入る。
+  数値も印字する (PyMOL は `quiet=0` のときだけ出すが、console では答えが目的)
+- **map**: `isomesh` -> `contour`、`isosurface` -> `isosurf` renderer を map object 上に作り、
+  `siglevel` に level を書く。`isolevel <名>` は scene 中の同名 map renderer を探す。描画領域は
+  renderer 自身の中心まわりの箱なので `selection` / `carve` / `buffer` は近似せず警告して無視し、
+  新規 renderer の中心は view に合わせる (file-open と同じ `applyMapCenterPolicy`)
+
+### core へ移したもの
+
+- `helpers/geometry.ts` -- agent plugin から昇格。距離 / 角度 / 二面角は計測を**数値で報告する**
+  呼び出し側 (AI agent と PyM console) が要るもので、どちらか片方の内部ではない
+- `commands/helpers.ts` の `molecules(ctx, sceneId, pattern?)` -- 同じ class 名フィルタが 4 箇所に
+  増えたため集約
+
+### 補完の追随
+
+`selections` ソースが**翻訳器のテーブルから導出した** selection キーワードを名前一覧に足す
+(`sel/translate.ts` の `selectionKeywords()`)。手書きの一覧にしないのは、対応を外した keyword を
+補完し続けて「実行できない式に補完する」のを防ぐため。値を取る keyword は末尾 space 付き
+(PyMOL と同じ)。`representations` と `mapRenderers` ソースを追加。
 
 ## Phase 3 (以降、需要次第)
 
@@ -205,7 +256,7 @@ Shift+Tab は逃げ道として残す)。複数行 (script 貼り付け) のと�
 ## 検証
 
 - `npx tsc -p tsconfig.web.json --noEmit` / `tsconfig.node.json` -- 両方 0 error
-- `npm test` -- 417 files / 3834 tests pass
+- `npm test` -- 421 files / 3877 tests pass
 - `pnpm run lint` -- 0 error、`npm run lint:style` -- 既存 14 件のまま、`pnpm run lint:comments` -- OK
 - `task build_tritium` -- 成功。worker bundle にパーサとコマンド、renderer bundle に panel が入ることを確認
 - Tab 補完: `<TAB>` で全コマンド / `se<TAB>` で一覧 / `b_c<TAB>` で `bg_color ` / `bg_color ye<TAB>` /
@@ -213,3 +264,9 @@ Shift+Tab は逃げ道として残す)。複数行 (script 貼り付け) のと�
 - 目視確認 (E2E): 既定オフで tab が無いこと、Settings > Plugins で ON にして
   `help` / `fetch 1crn` / `bg_color white` / `zoom 1crn` / `turn y, 90` / `view v1, store` /
   `delete 1crn; fetch 1crn` の Cmd+Z 1 回 / read-only 後に Redo が残ること / IME / tab 切替での状態保持
+- Phase 2 の目視確認 (E2E): `show cartoon` -> `show sticks, chain A` -> `hide sticks, resi 1-10`
+  で sel が和 / 差になること、GUI で作った renderer が書き換わらないこと、`as spheres` /
+  `color red, byres (chain A around 5)` / `select core, polymer and not solvent` /
+  `count_atoms core` / `distance d1, chain A and resi 10 and name CA, chain A and resi 20 and name CA` /
+  `isomesh msh, <map>, 1.5` -> `isolevel msh, 2.0` / `zoom chain A` / 未対応語 (`within` `segi`) の
+  エラー位置 / `zoom ch<TAB>` が `chain ` を補完すること

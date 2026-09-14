@@ -17,6 +17,12 @@
  * (`docs/plans/pymconsole-research-260529.md`, and the plan that supersedes
  * its section 0).
  *
+ * Selection expressions are translated rather than passed through (`worker/sel/`):
+ * the two languages agree on operator priority but not on what `+` and `-`
+ * mean, and PyMOL has classes and operators CueMol has no answer for. Those
+ * are refused by name with a reason, because a selection that quietly means a
+ * different set of atoms is the worst thing this plugin could do.
+ *
  * Its stylesheet is imported from this entry rather than from `app.css`, so
  * dropping the plugin drops the CSS with it.
  */

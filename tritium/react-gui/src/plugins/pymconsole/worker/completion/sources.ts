@@ -17,6 +17,9 @@ import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { selectionKeywords } from '../sel/translate'
+import { mapRendererNames } from '../commands/mapCommands'
+import { representationNames } from '../commands/repCommands'
 import { storedCameraNames } from '../commands/viewCommands'
 import { PYMOL_COLORS } from '../commands/pymolColors'
 import { SETTING_ALIASES, findEntry, resolveTarget } from '../commands/settingCommands'
@@ -33,6 +36,8 @@ export type CompletionSourceId =
   | 'colors'
   | 'cameras'
   | 'viewActions'
+  | 'representations'
+  | 'mapRenderers'
 
 /** What a source is given: the scene it runs against and the arguments so far. */
 export interface SourceContext {
@@ -135,17 +140,18 @@ export function candidatesFor(
       return [...commandNames]
     case 'viewActions':
       return ['store', 'recall', 'clear']
+    case 'representations':
+      return representationNames()
+    case 'mapRenderers':
+      return hasScene ? mapRendererNames(ctx, sc.sceneId) : []
     case 'objects':
       return hasScene ? objectNames(ctx, sc.sceneId) : []
     case 'names':
       return hasScene ? publicNames(ctx, sc.sceneId) : []
     case 'selections':
-      // Names only for now. PyMOL also lists the selection keywords here
-      // (`chain `, `resi `, `polymer`, ...); offering them before the
-      // expressions they belong to can be run would complete a line into an
-      // error. When the translator arrives they are one more array to
-      // concatenate at this line.
-      return hasScene ? publicNames(ctx, sc.sceneId) : []
+      // PyMOL's selection source is `get_names('public')` plus the selection
+      // keywords, so `zoom ch<TAB>` completes `chain ` as it does there.
+      return hasScene ? [...publicNames(ctx, sc.sceneId), ...selectionKeywords()] : []
     case 'settings':
       return hasScene ? settingNames(ctx, sc.sceneId) : []
     case 'settingValue':
