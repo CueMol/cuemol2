@@ -44,6 +44,7 @@ function makeFakeMenu(): MenuLike & { items: Map<string, FakeMenuItem> } {
         'center-mark-axis',
         'bg-white',
         'bg-black',
+        'view-tool-palette',
         'undo',
         'redo',
         ...SCENE_REQUIRING_MENU_IDS,
@@ -159,6 +160,14 @@ describe('applyMenuStateTo — sets enabled/checked correctly', () => {
         expect(menu.items.get('bg-black')!.checked).toBe(false)
         expect(menu.items.get('bg-white')!.enabled).toBe(true)
         expect(menu.items.get('bg-black')!.enabled).toBe(true)
+    })
+
+    it('toolPalette: writes visible to the View > Tool palette check', () => {
+        const menu = makeFakeMenu()
+        applyMenuStateTo(menu, { toolPalette: { visible: false } })
+        expect(menu.items.get('view-tool-palette')!.checked).toBe(false)
+        applyMenuStateTo(menu, { toolPalette: { visible: true } })
+        expect(menu.items.get('view-tool-palette')!.checked).toBe(true)
     })
 
     it('undo/redo: writes the enabled flag to the undo/redo items', () => {

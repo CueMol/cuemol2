@@ -34,4 +34,6 @@ export interface LayoutState {
   // modern generic keys
   viewSizes?: Record<string, number[]>
   viewCollapsed?: Record<string, PaneCollapseState>
+  /** The 3D viewport tool palette is folded down to its expand cap. */
+  toolPaletteCollapsed?: boolean
 }

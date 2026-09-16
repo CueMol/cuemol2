@@ -15,7 +15,7 @@
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-overlay);
   color: var(--text-primary);
   pointer-events: none;
   user-select: none;

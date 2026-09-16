@@ -17,8 +17,10 @@ import { addRecent } from './addRecent'
 import { useShowFileOpenOptionDialog } from '@renderer/dialogs/fopen-opt-dlgs/FileOpenOptionDialogProvider'
 import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
 import { fetchPresetTypes } from '@renderer/features/file-io/fetchPresetTypes'
-import { makeEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
+import { makeResolveOpenTarget } from '@renderer/hooks/useEnsureActiveScene'
 import type { NewSceneAction, OpenSceneFileAction } from '@renderer/hooks/useNewSceneAction'
+import type { FileOpenedData } from '@shared/types/fileEvents'
+import type { OpenResult } from './CommandMap'
 
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
@@ -45,8 +47,8 @@ export function useSceneCommands({
     const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
     const showErrorAlert = useShowErrorAlert()
 
-    const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
-        if (!cm) return
+    const openNewScene = useCallback(async (filePath?: string): Promise<OpenResult> => {
+        if (!cm) return { loaded: false }
         // UXP openSceneImpl parity: opening a scene file into a "just created"
         // (empty & unmodified) current scene loads into it in place, without
         // spawning a new tab. New Scene (no filePath) always makes a fresh tab.
@@ -63,10 +65,10 @@ export function useSceneCommands({
                             title: 'Open Scene failed',
                             message: `Failed to open:\n${filePath}\n\n${loaded.error}`,
                         })
-                        return
+                        return { loaded: false }
                     }
                     addRecent(filePath, 'scene')
-                    return
+                    return { loaded: true, sceneId: active.scene_uid }
                 }
             }
         }
@@ -79,23 +81,29 @@ export function useSceneCommands({
                     title: 'Open Scene failed',
                     message: `Failed to open:\n${filePath}\n\n${opened.error}`,
                 })
-                return
+                return { loaded: false }
             }
             addRecent(filePath, 'scene')
-            return
+            return { loaded: true, sceneId: opened.scene_uid }
         }
         // File > New Scene: same path as app launch (UXP onNewScene).
         await newScene()
+        return { loaded: false }
     }, [cm, newScene, openSceneFile, getActiveSceneInfo, showErrorAlert])
 
-    useRegisterCommand(CmdId.SceneNew, () => openNewScene())
+    useRegisterCommand(CmdId.SceneNew, () => { void openNewScene() })
 
-    // Resolve the active scene/view, creating a fresh scene + view (a new tab)
-    // when none is active. Same resolver the plugins that load something of
-    // their own use -- see hooks/useEnsureActiveScene.ts.
-    const ensureActiveScene = useMemo(
-        () => makeEnsureActiveScene(getActiveSceneInfo, newScene),
-        [getActiveSceneInfo, newScene],
+    // Resolve where an opened object goes: the active scene, or a scene of its
+    // own when the caller asked for one. Creates the scene only on commit, so
+    // a cancelled option dialog leaves no tab behind -- see
+    // hooks/useEnsureActiveScene.ts.
+    const resolveOpenTarget = useMemo(
+        () => makeResolveOpenTarget(getActiveSceneInfo, newScene, async (sceneId) => {
+            if (!cm) return false
+            const res = await cm.invokeService('isSceneJustCreated', { sceneId })
+            return res?.justCreated === true
+        }),
+        [cm, getActiveSceneInfo, newScene],
     )
 
     const setSceneBgColor = useCallback(async (colorName: 'white' | 'black'): Promise<void> => {
@@ -137,9 +145,8 @@ export function useSceneCommands({
 
     useRegisterCommand(
         CmdId.OpenObjByPath,
-        (data: FileOpenedData | undefined) => {
-            if (!data) return
-            if (!cm) return
+        (data: FileOpenedData | undefined): Promise<OpenResult> => {
+            if (!data || !cm) return Promise.resolve({ loaded: false })
             // Return the promise so callers that await the dispatch (OS file
             // drop opens files sequentially) observe completion; existing
             // fire-and-forget callers are unaffected.
@@ -166,35 +173,45 @@ export function useSceneCommands({
                             message: `Could not determine a compatible reader for:\n${data.path}\n\n` +
                                 'The file may be corrupt, an unsupported format, or its extension does not match its content.',
                         })
-                        return
+                        return { loaded: false }
                     }
-                    // Resolve the target scene only after the file is known to be
-                    // loadable, so an unsupported file does not leave a stray new
-                    // tab. Creates a new scene + view when none is active.
-                    const info = await ensureActiveScene()
-                    if (!info) return
-                    const presetTypes = await fetchPresetTypes(cm, info.scene_uid, objType)
+                    // Where this file goes. A batch pins every file after the
+                    // first to the scene the first one used; otherwise the
+                    // entry point's preference decides, and an absent target
+                    // (File > Open, Open Recent) means the active scene.
+                    const pinned = data.targetSceneId
+                    const plan = pinned === undefined
+                        ? await resolveOpenTarget(data.openTarget ?? 'active')
+                        : undefined
+                    const previewSceneId = pinned ?? plan?.previewSceneId ?? 0
+                    // The scene is created by plan.commit() below, after the
+                    // dialog is confirmed, so neither an unsupported file nor
+                    // a cancel leaves a stray new tab behind.
+                    const presetTypes = await fetchPresetTypes(cm, previewSceneId, objType)
                     const options = await showFileOpenOptionDialog({
                         filePath: data.path,
-                        sceneId: info.scene_uid,
+                        sceneId: previewSceneId,
                         rendererTypes: types,
                         presetTypes,
                         objType,
                         readerName,
                     })
-                    if (options === null) return
+                    if (options === null) return { loaded: false }
+                    const sceneId = pinned ?? (await plan?.commit())?.scene_uid
+                    if (sceneId === undefined) return { loaded: false }
                     // Pass the resolved readerName so the actual load uses the
                     // exact reader the dialog previewed (no re-sniff drift), and
                     // record it in the MRU so a future reopen reuses it.
-                    const loaded = await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst, undefined, readerName)
+                    const loaded = await cm.loadObject(data.path, sceneId, options, data.contentFirst, undefined, readerName)
                     if (!loaded.ok) {
                         await showErrorAlert({
                             title: 'Open File failed',
                             message: `Failed to open:\n${data.path}\n\n${loaded.error}`,
                         })
-                        return
+                        return { loaded: false }
                     }
                     addRecent(data.path, 'obj', readerName)
+                    return { loaded: true, sceneId }
                 } catch (e) {
                     const msg = e instanceof Error ? e.message : String(e)
                     console.error('OpenObjByPath failed:', e)
@@ -202,6 +219,7 @@ export function useSceneCommands({
                         title: 'Open File failed',
                         message: `Failed to open:\n${data.path}\n\n${msg}`,
                     })
+                    return { loaded: false }
                 }
             })()
         },
@@ -209,11 +227,12 @@ export function useSceneCommands({
 
     useRegisterCommand(
         CmdId.OpenSceneByPath,
-        (path: string | undefined) => {
-            if (!path) return
-            return openNewScene(path).catch((e: unknown) =>
-                console.error('openNewScene failed:', e),
-            )
+        (path: string | undefined): Promise<OpenResult> => {
+            if (!path) return Promise.resolve({ loaded: false })
+            return openNewScene(path).catch((e: unknown) => {
+                console.error('openNewScene failed:', e)
+                return { loaded: false }
+            })
         },
     )
 }

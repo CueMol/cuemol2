@@ -44,6 +44,10 @@ vi.mock('@renderer/contexts/ActiveToolContext', () => ({
   useSetActiveTool: () => () => undefined,
 }))
 vi.mock('@renderer/state/statusMessage', () => ({ useSetStatusMessage: () => () => undefined }))
+vi.mock('@renderer/state/layout', () => ({
+  useLayout: () => ({ toolPaletteCollapsed: false }),
+  useLayoutDispatch: () => ({ setToolPaletteCollapsed: () => undefined }),
+}))
 
 import { ContentPane } from '@renderer/shell/ContentPane'
 

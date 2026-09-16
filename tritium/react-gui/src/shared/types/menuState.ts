@@ -32,6 +32,14 @@ export interface MenuState {
     enabled: boolean
     checked: boolean
   }
+  /**
+   * View > Tool palette. `visible` mirrors the renderer's persisted layout
+   * flag (the palette folded to its cap), so the check survives a menu
+   * rebuild and matches a state restored at startup.
+   */
+  toolPalette?: {
+    visible: boolean
+  }
   undo?: {
     enabled: boolean
   }

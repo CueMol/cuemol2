@@ -219,6 +219,10 @@ export const APP_MENU: AppMenuGroup[] = [
         ],
       },
       { type: 'separator' },
+      // Folds / unfolds the floating viewport tool palette (renderer layout
+      // state); the palette's own cap toggles the same flag.
+      { id: 'view-tool-palette', label: 'Tool palette', type: 'checkbox', checked: true, accelerator: 'CmdOrCtrl+Shift+P', ipcChannel: IPC.MENU_TOOL_PALETTE },
+      { type: 'separator' },
       { id: 'view-props', label: 'View property...', ipcChannel: IPC.MENU_VIEW_PROPS },
       { type: 'separator' },
       { role: 'toggleDevTools' },

@@ -157,6 +157,13 @@ architecture, it belongs here.
   renderer の keydown dispatcher (`shell/keybindings`) がショートカットを所有し両者が
   `dispatchMenuChannel` に合流する構成。隠しメニューから accelerator を外す判断、
   enabled / modal ゲートの再現、採らなかった案 (`before-input-event`、全 OS renderer 所有)。
+- [ファイルを開く先 (アクティブシーン / 新しいシーン) の方針](file-open-target-policy.md) (日本語) --
+  drag&drop と shell open (Finder/Explorer・コマンドライン) それぞれに「現在のシーンに追加 /
+  新しいシーンを作る」を選ばせる設定。既定は UXP と同じ「現在のシーン」。UXP の実挙動を
+  ソースから確認した記録 (報告された「shell open は新規シーン」は仕様ではなく未起動時の
+  副作用で、OS 差は Linux/Wayland と Windows の起動直後レースのみ)、`.qsc` を対象外にした
+  理由、シーン生成を option dialog の後ろへ動かしてキャンセル時の空タブを解消した経緯、
+  バッチを 1 シーンに固定する uid の持ち回り、起動レース対策の awaitable getter。
 - [ObjProxyBridge `_objSlot` ownership and lifetime](objslot-ownership.md) --
   the worker-side object bridge's slot ownership rules and when a slot may be
   released, from the renderer/worker refactoring work.

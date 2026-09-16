@@ -26,6 +26,7 @@ import {
 } from '@renderer/worker/shared/apbsTypes'
 import type { ApbsConfigKey } from '@renderer/contexts/ApbsConfigContext'
 import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '@renderer/viewInputConfig'
+import { OPEN_FILE_TARGET_OPTIONS, OPEN_FILE_TARGET_LABELS } from '@renderer/data/openFileTarget'
 import type { LabelDefaults } from '@renderer/worker/server/services/view/labelDefaults'
 import type { ViewInputParams } from '@renderer/worker/server/services/view/viewInputParams'
 import type { PickingPrefs } from '@renderer/contexts/PickingPrefsContext'
@@ -64,6 +65,14 @@ export const CATEGORY_TREE: CategoryNode[] = [
     icon: 'settings.input',
     children: [
       { id: 'input.mouse', label: 'Mouse & Navigation', icon: 'settings.mouse', children: [] },
+    ],
+  },
+  {
+    id: 'general',
+    label: 'General',
+    icon: 'settings.general',
+    children: [
+      { id: 'general.files', label: 'Files', icon: 'ui.folder', children: [] },
     ],
   },
   {
@@ -250,6 +259,27 @@ export const SETTINGS: SettingDef[] = [
     category: 'input.mouse',
     control: { kind: 'number', min: 1, max: 50, step: 1, unit: 'px' },
   },
+  // --- General > Files ---
+  {
+    key: 'files.dropTarget',
+    label: 'Drag and drop opens into',
+    description:
+      'Where a file dragged onto the window is loaded. Current scene: added to the scene ' +
+      'in the active tab. New scene: opened in a tab of its own, unless the active scene ' +
+      'is still empty. Files dropped together share one scene. Scene files (.qsc) are ' +
+      'unaffected, and File > Open always uses the current scene.',
+    category: 'general.files',
+    control: { kind: 'select', options: OPEN_FILE_TARGET_OPTIONS },
+  },
+  {
+    key: 'files.shellTarget',
+    label: 'File manager opens into',
+    description:
+      'The same, for a file opened from Finder / Explorer, named on the command line, or ' +
+      'handed over by a second launch.',
+    category: 'general.files',
+    control: { kind: 'select', options: OPEN_FILE_TARGET_OPTIONS },
+  },
   {
     key: 'picking.gpuPicking',
     label: 'GPU Picking',
@@ -305,6 +335,8 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'picking.gpuPicking': true,
   'picking.hoverInfo': true,
   'picking.hoverHighlight': true,
+  'files.dropTarget': OPEN_FILE_TARGET_LABELS.active,
+  'files.shellTarget': OPEN_FILE_TARGET_LABELS.active,
 }
 
 // --- Label lookup: maps leaf category ids to their display titles ---
@@ -379,3 +411,11 @@ export const PICKING_PREF_SETTING_KEYS: Record<string, keyof PickingPrefs> = {
   'picking.hoverInfo': 'hoverInfo',
   'picking.hoverHighlight': 'hoverHighlight',
 }
+
+// --- File-open target preferences ---
+// Backed by FileOpenPrefsContext (electron-store). One key per entry point
+// that carries an expectation of its own; the in-app File > Open paths have
+// no row because they always use the current scene.
+
+export const DROP_TARGET_SETTING_KEY = 'files.dropTarget'
+export const SHELL_TARGET_SETTING_KEY = 'files.shellTarget'

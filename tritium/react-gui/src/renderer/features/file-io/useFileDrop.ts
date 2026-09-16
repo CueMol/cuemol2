@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import { dragItemsMayContainOpenable } from '@renderer/utils/classifyDropFile'
 import { useOpenFilePaths } from './useOpenFilePaths'
+import { useFileOpenPrefs } from '@renderer/contexts/FileOpenPrefsContext'
 
 /** True when the drag carries OS files (not an in-app DnD payload). */
 function hasFiles(e: DragEvent): boolean {
@@ -49,6 +50,9 @@ function isAcceptableDrag(e: DragEvent): boolean {
  */
 export function useFileDrop({ cm }: { cm: AsyncCueMol | null }): { isDragActive: boolean } {
   const { openPaths } = useOpenFilePaths({ cm })
+  // Reading the state is enough here: a drop is a user action long after the
+  // preferences have loaded (the shell path, which races them, awaits instead).
+  const { dropTarget } = useFileOpenPrefs()
   const [isDragActive, setDragActive] = useState(false)
 
   // dragenter/dragleave fire in pairs on every child-element transition, so
@@ -72,7 +76,7 @@ export function useFileDrop({ cm }: { cm: AsyncCueMol | null }): { isDragActive:
     }
     // 'drop': a batch arriving while option dialogs are up is ignored -- the
     // user is right here and can drop again.
-    await openPaths(paths, { policy: 'drop', unopenable: unresolved })
+    await openPaths(paths, { policy: 'drop', unopenable: unresolved, openTarget: dropTarget })
   }
 
   useEffect(() => {

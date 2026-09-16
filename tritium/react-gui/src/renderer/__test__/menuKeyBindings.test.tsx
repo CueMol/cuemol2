@@ -33,6 +33,9 @@ vi.mock('@renderer/state/workspace', () => ({
   useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: live.hasScene }),
 }))
 vi.mock('@renderer/features/file-io/useRecentFiles', () => ({ useRecentFiles: () => [] }))
+vi.mock('@renderer/state/layout', () => ({
+  useLayout: () => ({ toolPaletteCollapsed: false }),
+}))
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   React.createElement(CommandProvider, null, children)

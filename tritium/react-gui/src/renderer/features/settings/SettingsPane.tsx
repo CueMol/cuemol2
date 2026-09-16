@@ -37,6 +37,11 @@ import { useApbsConfig } from '@renderer/contexts/ApbsConfigContext'
 import { useViewInputConfig } from '@renderer/contexts/ViewInputConfigContext'
 import { useAppSettings } from '@renderer/contexts/AppSettingsContext'
 import { usePickingPrefs } from '@renderer/contexts/PickingPrefsContext'
+import { useFileOpenPrefs } from '@renderer/contexts/FileOpenPrefsContext'
+import {
+  OPEN_FILE_TARGET_LABELS,
+  openFileTargetFromLabel,
+} from '@renderer/data/openFileTarget'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import {
@@ -56,6 +61,8 @@ import {
   LABEL_DEFAULT_SETTING_KEYS,
   VIEW_INPUT_PARAM_SETTING_KEYS,
   PICKING_PREF_SETTING_KEYS,
+  DROP_TARGET_SETTING_KEY,
+  SHELL_TARGET_SETTING_KEY,
 } from '@renderer/features/settings/settings/settingsConfig'
 import {
   buildCategoryTree,
@@ -90,6 +97,7 @@ export const SettingsPane: React.FC = () => {
   // 3D view picking preferences (GPU picking / hover info): electron-store,
   // gpuPicking applied live to C++.
   const pickingPrefs = usePickingPrefs()
+  const fileOpenPrefs = useFileOpenPrefs()
   // Installed system fonts for the atom-label font picker (falls back to a
   // curated list until `queryLocalFonts` resolves). Ensure the current value is
   // always selectable even if that family is not installed / not enumerated.
@@ -186,6 +194,16 @@ export const SettingsPane: React.FC = () => {
       const pickingKey = PICKING_PREF_SETTING_KEYS[key]
       if (pickingKey) {
         pickingPrefs.setPickingPref(pickingKey, Boolean(value))
+        return
+      }
+
+      // Where an opened file goes, one preference per entry point.
+      if (key === DROP_TARGET_SETTING_KEY) {
+        fileOpenPrefs.setDropTarget(openFileTargetFromLabel(String(value)))
+        return
+      }
+      if (key === SHELL_TARGET_SETTING_KEY) {
+        fileOpenPrefs.setShellTarget(openFileTargetFromLabel(String(value)))
         return
       }
 
@@ -384,6 +402,10 @@ export const SettingsPane: React.FC = () => {
                         description: `${s.description} Detected: ${INPUT_DEVICE_LABELS[effectiveDeviceMode]}.`,
                       }
                     }
+                  } else if (s.key === DROP_TARGET_SETTING_KEY) {
+                    value = OPEN_FILE_TARGET_LABELS[fileOpenPrefs.dropTarget]
+                  } else if (s.key === SHELL_TARGET_SETTING_KEY) {
+                    value = OPEN_FILE_TARGET_LABELS[fileOpenPrefs.shellTarget]
                   } else {
                     const labelKey = LABEL_DEFAULT_SETTING_KEYS[s.key]
                     const viewParamKey = VIEW_INPUT_PARAM_SETTING_KEYS[s.key]

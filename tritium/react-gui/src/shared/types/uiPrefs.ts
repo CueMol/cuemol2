@@ -111,6 +111,21 @@ export interface UiState {
   /** Highlight the element under the pointer in the 3D view. Defaults to true. */
   hoverHighlight?: boolean
   /**
+   * Where a file dragged onto the window is loaded. 'active': into the scene
+   * in the active tab (the default, and what UXP did). 'new': into a scene of
+   * its own, unless the active scene is still untouched. Files dropped
+   * together share one scene. Scene files (.qsc) ignore this and always load
+   * in place only into an untouched scene.
+   */
+  dropOpenTarget?: 'active' | 'new'
+  /**
+   * The same, for a file handed over by the OS shell (Finder / Explorer, a
+   * command-line argument, a second launch). Separate from the drop setting
+   * because a file arriving from outside the app may deserve a scene of its
+   * own even when a dropped one does not. Defaults to 'active'.
+   */
+  shellOpenTarget?: 'active' | 'new'
+  /**
    * Built-in plugins the user has explicitly switched on or off, by plugin id.
    *
    * Only the choices the user actually made. An id that is absent has never

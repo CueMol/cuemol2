@@ -6,6 +6,8 @@
  *
  * Layout:
  *   +----+
+ *   | v  |  <- collapse cap (folds the palette down to this cap alone)
+ *   +----+  <- separator
  *   | N  |  <- navigate group
  *   +----+  <- separator
  *   | B  |  <- select group
@@ -16,12 +18,15 @@
  *   | T  |
  *   +----+
  *
+ * The cap folds the palette down to the cap alone and unfolds it again;
+ * View > Tool palette and its shortcut toggle the same persisted flag.
+ *
  * @module ViewportToolPalette
  */
 
 import React from "react";
 import { Popover, Tooltip } from "@blueprintjs/core";
-import { AppIcon } from "@renderer/h3-kit/primitives";
+import { AppIcon, DisclosureCaret } from "@renderer/h3-kit/primitives";
 import { MeasureOptionsPopover } from "./MeasureOptionsPopover";
 import { BondEditOptionsPopover } from "./BondEditOptionsPopover";
 import { useTheme } from "@renderer/contexts/ThemeContext";
@@ -38,6 +43,9 @@ interface Props {
   measureTarget: string;
   /** Set the measure target label-set name. */
   onMeasureTargetChange: (name: string) => void;
+  /** Folded: only the cap that shows the tools again is drawn. */
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export const ViewportToolPalette: React.FC<Props> = ({
@@ -45,11 +53,27 @@ export const ViewportToolPalette: React.FC<Props> = ({
   onSelect,
   measureTarget,
   onMeasureTargetChange,
+  collapsed,
+  onToggleCollapse,
 }) => {
   const { theme } = useTheme();
+  const toggleLabel = collapsed ? "Show tool palette" : "Hide tool palette";
   return (
     <div className="viewport-tool-palette" role="toolbar" aria-label="Viewport tools">
-      {CATEGORY_ORDER.map((cat, idx) => {
+      {/* The label carries the state: Blueprint's Tooltip renders its own
+          target props and drops an aria-expanded passed through it. */}
+      <Tooltip placement="right" compact content={toggleLabel}>
+        <button
+          type="button"
+          className="tool-palette-collapse"
+          onClick={onToggleCollapse}
+          aria-label={toggleLabel}
+        >
+          <DisclosureCaret expanded={!collapsed} />
+        </button>
+      </Tooltip>
+      {!collapsed && <div className="tool-palette-separator" aria-hidden="true" />}
+      {!collapsed && CATEGORY_ORDER.map((cat, idx) => {
         const tools = TOOLS.filter((t) => t.category === cat);
         if (tools.length === 0) return null;
         return (

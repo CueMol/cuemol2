@@ -135,6 +135,7 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_CENTER_MARK_AXIS]: { dispatch: 'view.centerMark.axis',  deliver: 'generic' },
   [IPC.MENU_CENTER_MARK_NONE]: { dispatch: 'view.centerMark.none',  deliver: 'generic' },
   [IPC.MENU_VIEW_PROPS]:       { dispatch: 'ui.viewProperty',   deliver: 'generic' },
+  [IPC.MENU_TOOL_PALETTE]:     { dispatch: 'view.toolPalette',  deliver: 'generic' },
 
   // --- Tools ---
   [IPC.MENU_MOL_SUPERPOSE]:    { dispatch: 'ui.molSuperpose',    deliver: 'generic' },

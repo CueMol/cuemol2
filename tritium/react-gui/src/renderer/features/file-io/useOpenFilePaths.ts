@@ -22,6 +22,7 @@ import {
   IOH_CAT_OBJREADER,
   IOH_CAT_SCEREADER,
 } from '@renderer/utils/classifyDropFile'
+import type { OpenFileTarget } from '@renderer/data/openFileTarget'
 
 /**
  * What to do when another batch is already being opened.
@@ -34,6 +35,12 @@ export type OpenBusyPolicy = 'drop' | 'queue'
 export interface OpenPathsOptions {
   /** Busy behaviour. Defaults to 'drop'. */
   policy?: OpenBusyPolicy
+  /**
+   * Where the batch's object files go. The caller supplies its own entry
+   * point's preference (drop / shell); omitted means the active scene, which
+   * is what the in-app File > Open paths use.
+   */
+  openTarget?: OpenFileTarget
   /**
    * Display names the caller already knows are unopenable, merged into the
    * batch's single closing alert (e.g. a dropped File with no filesystem path).
@@ -75,7 +82,7 @@ export function useOpenFilePaths({ cm }: { cm: AsyncCueMol | null }): OpenFilePa
   const showErrorAlert = useShowErrorAlert()
 
   const runBatch = useCallback(
-    async (paths: string[], unopenable: string[]): Promise<void> => {
+    async (paths: string[], unopenable: string[], openTarget?: OpenFileTarget): Promise<void> => {
       opening = true
       try {
         const unsupported = [...unopenable]
@@ -84,6 +91,18 @@ export function useOpenFilePaths({ cm }: { cm: AsyncCueMol | null }): OpenFilePa
             cm.getOpenFilters(IOH_CAT_OBJREADER),
             cm.getOpenFilters(IOH_CAT_SCEREADER),
           ])
+          // Files opened together share one scene: the first file to land
+          // establishes it and the rest are pinned there. Only the first one
+          // counts -- a later file reporting a different scene must not move
+          // the pin. The uid is carried explicitly because the workspace's
+          // active-tab ref is assigned at render time and may not show a
+          // just-created tab yet.
+          let batchSceneId: number | undefined
+          const pin = (res: { loaded: boolean; sceneId?: number } | undefined): void => {
+            if (batchSceneId === undefined && res?.loaded && res.sceneId !== undefined) {
+              batchSceneId = res.sceneId
+            }
+          }
           // Sequential on purpose (UXP parity): each object file's renderer
           // option dialog is answered before the next file starts.
           for (const p of paths) {
@@ -91,13 +110,17 @@ export function useOpenFilePaths({ cm }: { cm: AsyncCueMol | null }): OpenFilePa
             try {
               if (cls.kind === 'obj') {
                 // No readerName: sniffed downstream, same as a fresh File > Open.
-                await dispatch(CmdId.OpenObjByPath, {
+                const res = await dispatch(CmdId.OpenObjByPath, {
                   name: baseName(p),
                   path: p,
                   contentFirst: cls.contentFirst,
+                  openTarget,
+                  targetSceneId: batchSceneId,
                 })
+                pin(res)
               } else if (cls.kind === 'scene') {
-                await dispatch(CmdId.OpenSceneByPath, p)
+                const res = await dispatch(CmdId.OpenSceneByPath, p)
+                pin(res)
               } else {
                 unsupported.push(baseName(p))
               }
@@ -134,7 +157,7 @@ export function useOpenFilePaths({ cm }: { cm: AsyncCueMol | null }): OpenFilePa
         // Start synchronously rather than through tail.then(): routing the
         // first batch through a microtask would delay the first dispatch by a
         // tick and change the observable ordering callers rely on.
-        const p = runBatch(paths, unopenable)
+        const p = runBatch(paths, unopenable, opts.openTarget)
         tail = p.catch(() => undefined)
         return p
       }
@@ -142,7 +165,7 @@ export function useOpenFilePaths({ cm }: { cm: AsyncCueMol | null }): OpenFilePa
         console.warn('file open ignored: a previous batch is still being opened')
         return Promise.resolve()
       }
-      const p = tail.then(() => runBatch(paths, unopenable))
+      const p = tail.then(() => runBatch(paths, unopenable, opts.openTarget))
       tail = p.catch(() => undefined)
       return p
     },

@@ -80,6 +80,7 @@ export function mergeMenuState(
         viewCenterMark: update.viewCenterMark ?? current?.viewCenterMark,
         sceneBgColor: update.sceneBgColor ?? current?.sceneBgColor,
         sceneColorProof: update.sceneColorProof ?? current?.sceneColorProof,
+        toolPalette: update.toolPalette ?? current?.toolPalette,
         undo: update.undo ?? current?.undo,
         redo: update.redo ?? current?.redo,
         sceneOps: update.sceneOps ?? current?.sceneOps,
@@ -131,6 +132,11 @@ export function applyMenuStateTo(menu: MenuLike, state: MenuState): void {
             item.enabled = enabled
             item.checked = enabled && checked
         }
+    }
+
+    if (state.toolPalette) {
+        const item = menu.getMenuItemById('view-tool-palette')
+        if (item) item.checked = state.toolPalette.visible
     }
 
     if (state.sceneBgColor) {

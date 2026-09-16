@@ -27,6 +27,9 @@ vi.mock('@renderer/state/workspace', () => ({
   useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: menuState.hasScene }),
 }))
 vi.mock('@renderer/features/file-io/useRecentFiles', () => ({ useRecentFiles: () => menuState.recentFiles }))
+vi.mock('@renderer/state/layout', () => ({
+  useLayout: () => ({ toolPaletteCollapsed: false }),
+}))
 
 // Must import after mocks
 const { MenuBar } = await import('@renderer/shell/MenuBar')
@@ -218,8 +221,13 @@ describe('MenuBar', () => {
 
     act(() => { viewItem.click() })
 
-    const items = Array.from(container.querySelectorAll('[role="menuitemcheckbox"]')) as HTMLElement[]
-    expect(items.length).toBeGreaterThanOrEqual(2)
+    // The projection pair only: the View menu's other checkbox (Tool palette)
+    // is a renderer-side toggle that stays available without a view.
+    const all = Array.from(container.querySelectorAll('[role="menuitemcheckbox"]')) as HTMLElement[]
+    const items = all.filter(
+      (el) => el.textContent?.includes('Perspective') || el.textContent?.includes('Orthographic'),
+    )
+    expect(items.length).toBe(2)
     expect(items.every((el) => el.getAttribute('aria-disabled') === 'true')).toBe(true)
     expect(items.every((el) => el.getAttribute('aria-checked') === 'false')).toBe(true)
     unmount()

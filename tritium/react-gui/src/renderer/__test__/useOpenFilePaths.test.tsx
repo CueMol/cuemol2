@@ -100,7 +100,29 @@ describe('useOpenFilePaths', () => {
       name: '1abc.pdb',
       path: '/abs/dir/1abc.pdb',
       contentFirst: false,
+      openTarget: undefined,
+      targetSceneId: undefined,
     })
+
+    handle.unmount()
+  })
+
+  it('pins every file after the first to the scene the first one reported', async () => {
+    // "New scene" means one scene for the whole batch, not one per file. The
+    // scene uid is carried explicitly rather than re-read from the active tab,
+    // whose ref is only assigned at render time.
+    let n = 0
+    const { handle, objSpy } = mountOpenPaths({
+      obj: () => Promise.resolve({ loaded: true, sceneId: ++n === 1 ? 42 : 99 }),
+    })
+
+    await handle.result.a.openPaths(['/a.pdb', '/b.pdb', '/c.pdb'], { openTarget: 'new' })
+
+    expect(objSpy).toHaveBeenCalledTimes(3)
+    const arg = (i: number) => objSpy.mock.calls[i][0] as { targetSceneId?: number }
+    expect(arg(0).targetSceneId).toBeUndefined()
+    expect(arg(1).targetSceneId).toBe(42)
+    expect(arg(2).targetSceneId).toBe(42)
 
     handle.unmount()
   })

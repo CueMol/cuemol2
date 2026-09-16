@@ -10,8 +10,12 @@ export function useViewCommands(opts: {
   onCenterMarkChanged?: (centerMark: ViewCenterMark) => void
   /** Open the active View in the generic property inspector. */
   showViewProperty?: (viewId: number) => void
+  /** Show / hide the viewport tool palette (View > Tool palette). */
+  toggleToolPalette?: () => void
 }): void {
-  const { cm, getActiveViewId, onProjectionChanged, onCenterMarkChanged, showViewProperty } = opts
+  const {
+    cm, getActiveViewId, onProjectionChanged, onCenterMarkChanged, showViewProperty, toggleToolPalette,
+  } = opts
 
   const setProjection = async (perspective: boolean): Promise<void> => {
     const viewId = getActiveViewId()
@@ -37,4 +41,6 @@ export function useViewCommands(opts: {
     const viewId = getActiveViewId()
     if (viewId !== undefined) showViewProperty?.(viewId)
   })
+
+  useRegisterCommand(CmdId.ViewToolPalette, () => toggleToolPalette?.())
 }

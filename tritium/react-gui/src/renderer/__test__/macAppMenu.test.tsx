@@ -29,6 +29,9 @@ vi.mock('@renderer/state/activeView', () => ({
 }))
 vi.mock('@renderer/state/workspace', () => ({ useActiveScene: () => ({ activeSceneId: undefined, activeMolViewId: undefined, hasScene: false }) }))
 vi.mock('@renderer/features/file-io/useRecentFiles', () => ({ useRecentFiles: () => [] }))
+vi.mock('@renderer/state/layout', () => ({
+  useLayout: () => ({ toolPaletteCollapsed: false }),
+}))
 
 // Must import after mocks
 const { MenuBar } = await import('@renderer/shell/MenuBar')
