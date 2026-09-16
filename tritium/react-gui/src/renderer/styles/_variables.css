@@ -92,6 +92,13 @@
   /* Log level colours */
   --log-warn: #e5c07b;
   --log-error: var(--accent-red);
+  /* Console / log foreground. Brighter than --text-primary: a log well is
+     darker than the panels around it, and text read line after line wants
+     more separation than a label in a form does. */
+  --console-text: #e6e9ef;
+  /* Echoed input and other second-rank console lines. Dimmer, but still read
+     as enabled text rather than as disabled. */
+  --console-text-dim: #aeb6c2;
   /* Inline status text (a field note, a panel warning line): why-based
      aliases so a surface never picks a raw accent. */
   --text-warning: var(--log-warn);
@@ -118,6 +125,7 @@
   --fs-lg:      calc(12px   * var(--ui-scale));
   --fs-xl:      calc(13px   * var(--ui-scale));
   --fs-2xl:     calc(14px   * var(--ui-scale));
+  --fs-3xl:     calc(15px   * var(--ui-scale));
   --fs-icon:    calc(18px   * var(--ui-scale));
   --fs-hero:    calc(20px   * var(--ui-scale));
   --fs-display: calc(48px   * var(--ui-scale));
@@ -127,6 +135,7 @@
   --fw-semibold: 600;
 
   --lh-tight:   1;
+  --lh-code:    1.2;
   --lh-snug:    1.3;
   --lh-normal:  1.4;
   --lh-relaxed: 1.5;
@@ -148,51 +157,64 @@
    * vars directly only for Blueprint-injected elements we do not render
    * ourselves (e.g. .bp5-tree-node-content, .bp5-menu-item). Theme-independent,
    * so the light block does not override them.
+   *
+   * These are also where the app's text size is tuned: moving every role one
+   * rung keeps the hierarchy between them and resizes the UI as a whole.
+   * Reaching for a raw --fs-* in a component defeats that, which is why it is
+   * reserved for the Blueprint cases above.
    */
   /* Dialog / major title */
-  --type-title-fs: var(--fs-2xl);
+  --type-title-fs: var(--fs-3xl);
   --type-title-lh: var(--lh-snug);
   --type-title-fw: var(--fw-semibold);
   /* Secondary heading */
-  --type-subtitle-fs: var(--fs-xl);
+  --type-subtitle-fs: var(--fs-2xl);
   --type-subtitle-lh: var(--lh-snug);
   --type-subtitle-fw: var(--fw-semibold);
   /* Title shown in a .panel-header: the panel's own name, or the object it is
      inspecting (Inspector, Render Settings). Content rather than a section
      heading, so it is never uppercased -- that is what --type-eyebrow is for. */
-  --type-panel-title-fs: var(--fs-lg);
+  --type-panel-title-fs: var(--fs-xl);
   --type-panel-title-lh: var(--lh-snug);
   --type-panel-title-fw: var(--fw-semibold);
   /* Uppercase section / panel-header eyebrow (pair with uppercase + --ls-wide) */
-  --type-eyebrow-fs: var(--fs-base);
+  --type-eyebrow-fs: var(--fs-lg);
   --type-eyebrow-lh: var(--lh-tight);
   --type-eyebrow-fw: var(--fw-semibold);
   /* Top-level group / section label inside a pane (first-letter caps, NOT
      uppercased). Heavier than a field label so a section heading reads as one
      hierarchy level above the fields it groups. Pair with --ls-wide. */
-  --type-group-label-fs: var(--fs-base);
+  --type-group-label-fs: var(--fs-lg);
   --type-group-label-lh: var(--lh-tight);
   --type-group-label-fw: var(--fw-semibold);
   /* Form / control label (one level below a group label) */
-  --type-label-fs: var(--fs-base);
+  --type-label-fs: var(--fs-lg);
   --type-label-lh: var(--lh-tight);
   --type-label-fw: var(--fw-medium);
   /* List / tree row text */
-  --type-row-fs: var(--fs-lg);
+  --type-row-fs: var(--fs-xl);
   --type-row-lh: var(--lh-snug);
   --type-row-fw: var(--fw-normal);
   /* Body text / descriptions / notes */
-  --type-body-fs: var(--fs-lg);
+  --type-body-fs: var(--fs-xl);
   --type-body-lh: var(--lh-normal);
   --type-body-fw: var(--fw-normal);
   /* Muted caption / metadata */
-  --type-caption-fs: var(--fs-sm2);
+  --type-caption-fs: var(--fs-md);
   --type-caption-lh: var(--lh-tight);
   --type-caption-fw: var(--fw-normal);
   /* Monospace code / console (pair with --font-mono) */
-  --type-mono-fs: var(--fs-lg);
+  --type-mono-fs: var(--fs-xl);
   --type-mono-lh: var(--lh-normal);
   --type-mono-fw: var(--fw-normal);
+  /* Console and log output (pair with --font-mono).
+     Its own size and leading rather than the UI ladder's, because a terminal
+     is what it is compared against: 14px set at --lh-code, which is tighter
+     than body text. Running output read line after line wants the lines
+     close enough to scan as a block. */
+  --type-console-fs: var(--fs-2xl);
+  --type-console-lh: var(--lh-code);
+  --type-console-fw: var(--fw-normal);
   /* Empty-state / splash hero */
   --type-hero-fs: var(--fs-hero);
   --type-hero-lh: var(--lh-tight);
@@ -414,6 +436,8 @@
   /* Log level colours */
   --log-warn: #b8860b;
   --log-error: var(--accent-red);
+  --console-text: #14161a;
+  --console-text-dim: #5a5d65;
   --text-warning: var(--log-warn);
   --text-error: var(--accent-red);
 }

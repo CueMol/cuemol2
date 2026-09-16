@@ -4,7 +4,8 @@
  *
  * The measure tool never needed these in TypeScript: it hands atom ids to the
  * atomintr renderer and C++ computes the number it draws. The agent has to
- * report the number as data, so it is computed here.
+ * report the number as data without necessarily drawing anything, so it is
+ * computed here.
  *
  * `Vector.angle` returns radians and the wrapper does not expose C++'s
  * `Vector4D::torsion`, so angles are converted and the dihedral is done by

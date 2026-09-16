@@ -270,6 +270,28 @@
   font-family: var(--font-mono);
 }
 
+/* Console variant (TextAreaField `consoleText`) -- a command prompt, sized to
+   match the transcript above it rather than the form rows elsewhere. The one
+   place a field departs from the form-kit type scale, because the prompt and
+   its output are one surface and reading them at two sizes is worse. */
+.h3-form-textarea-console {
+  font-family: var(--font-mono);
+  font-size: var(--type-console-fs);
+  line-height: var(--type-console-lh);
+  /* The line being typed and the lines above it are one surface; reading the
+     prompt dimmer than its own transcript is what --text-primary gave. */
+  color: var(--console-text);
+}
+
+/* No focus ring on a console prompt. A form field earns one by being one of
+   many that the keyboard could be in; a prompt is where the keyboard always
+   is, so the ring only draws a box around the thing the user is already
+   looking at. The accent caret remains the focus affordance. */
+.h3-form-textarea-console:focus {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
 /* Monospace variant (TextField `mono`) -- code / selection-expression fields. */
 .h3-form-input-mono.bp5-input-group .bp5-input,
 .h3-form-input-mono.bp5-input-group input {

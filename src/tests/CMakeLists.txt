@@ -147,6 +147,7 @@ add_executable(test_molstr
   modules/molstr/test_selnames_prime.cpp
   modules/molstr/test_selstate_ranges.cpp
   modules/molstr/test_selcommand.cpp
+  modules/molstr/test_selscope_fitview.cpp
   modules/molstr/test_simplerenderer.cpp
   modules/molstr/test_tracerenderer.cpp
 )

@@ -187,22 +187,73 @@ const char *AtomIntrRenderer::getTypeName() const
 
 //////////////////////////////////////////////////////////////////////////
 
+/// Compile a selection string, or return null when it does not compile.
+static SelectionPtr compileSel(const LString &sstr)
+{
+  SelCommand *pSel = MB_NEW SelCommand();
+  SelectionPtr rSel(pSel);
+  if (!pSel->compile(sstr))
+    return SelectionPtr();
+  return rSel;
+}
+
+/// Append a def built from selections, after checking it can be evaluated.
+///
+/// A selection matching no atom has no centroid, so the def would be stored
+/// and then silently skipped at every redraw. Rejecting it here is what lets
+/// the caller say which selection was empty.
+int AtomIntrRenderer::appendSelImpl(const AtomIntrData &dat)
+{
+  AtomIntrData probe = dat;
+  double dummy;
+  if (!evalValue(probe, dummy))
+    return -1;
+  return appendImpl(dat);
+}
+
 int AtomIntrRenderer::appendBySelStr(const LString &sstr1, const LString &sstr2)
 {
-  SelCommand *pSel1 = MB_NEW SelCommand();
-  SelectionPtr rSel1(pSel1);
-  if (!pSel1->compile(sstr1)) {
-    return -1;
-  }
-
-  SelCommand *pSel2 = MB_NEW SelCommand();
-  SelectionPtr rSel2(pSel2);
-  if (!pSel2->compile(sstr2)) {
-    return -1;
-  }
+  SelectionPtr rSel1 = compileSel(sstr1);
+  if (rSel1.isnull()) return -1;
+  SelectionPtr rSel2 = compileSel(sstr2);
+  if (rSel2.isnull()) return -1;
 
   qlib::uid_t nMolID = getClientObjID();
-  return appendImpl(AtomIntrData(nMolID, rSel1, nMolID, rSel2));
+  return appendSelImpl(AtomIntrData(nMolID, rSel1, nMolID, rSel2));
+}
+
+int AtomIntrRenderer::appendAngleBySelStr(const LString &sstr1,
+                                          const LString &sstr2,
+                                          const LString &sstr3)
+{
+  SelectionPtr rSel1 = compileSel(sstr1);
+  if (rSel1.isnull()) return -1;
+  SelectionPtr rSel2 = compileSel(sstr2);
+  if (rSel2.isnull()) return -1;
+  SelectionPtr rSel3 = compileSel(sstr3);
+  if (rSel3.isnull()) return -1;
+
+  qlib::uid_t nMolID = getClientObjID();
+  return appendSelImpl(AtomIntrData(nMolID, rSel1, nMolID, rSel2, nMolID, rSel3));
+}
+
+int AtomIntrRenderer::appendTorsionBySelStr(const LString &sstr1,
+                                            const LString &sstr2,
+                                            const LString &sstr3,
+                                            const LString &sstr4)
+{
+  SelectionPtr rSel1 = compileSel(sstr1);
+  if (rSel1.isnull()) return -1;
+  SelectionPtr rSel2 = compileSel(sstr2);
+  if (rSel2.isnull()) return -1;
+  SelectionPtr rSel3 = compileSel(sstr3);
+  if (rSel3.isnull()) return -1;
+  SelectionPtr rSel4 = compileSel(sstr4);
+  if (rSel4.isnull()) return -1;
+
+  qlib::uid_t nMolID = getClientObjID();
+  return appendSelImpl(AtomIntrData(nMolID, rSel1, nMolID, rSel2,
+                                    nMolID, rSel3, nMolID, rSel4));
 }
 
 int AtomIntrRenderer::appendById(int nAid1, qlib::uid_t nMolID2, int nAid2, bool bShowMsg)
@@ -724,6 +775,57 @@ void AtomIntrRenderer::renderTorsionLabel(AtomIntrData &value, DisplayContext *p
       value.nLabelCacheID = m_pixCache.addString( (pos1+pos2).divide(2.0),
                                                   LString::format("%.2f", dihe) );
   }
+}
+
+/// The number the label of dat shows: the distance in angstroms for a
+/// distance def, the angle in degrees for the other two.
+///
+/// Goes through evalPos, so it reads a selection element as the centroid of
+/// what it matches, exactly as the drawing code does.
+bool AtomIntrRenderer::evalValue(AtomIntrData &dat, double &rval)
+{
+  Vector4D pos0, pos1, pos2, pos3;
+
+  switch (dat.nmode) {
+  case 1:
+    if (!evalPos(dat.elem0, pos0)) return false;
+    if (!evalPos(dat.elem1, pos1)) return false;
+    rval = (pos0-pos1).length();
+    return true;
+
+  case 2:
+    if (!evalPos(dat.elem0, pos0)) return false;
+    if (!evalPos(dat.elem1, pos1)) return false;
+    if (!evalPos(dat.elem2, pos2)) return false;
+    rval = qlib::toDegree(Vector4D::angle((pos0-pos1), (pos2-pos1)));
+    return true;
+
+  case 3:
+    if (!evalPos(dat.elem0, pos0)) return false;
+    if (!evalPos(dat.elem1, pos1)) return false;
+    if (!evalPos(dat.elem2, pos2)) return false;
+    if (!evalPos(dat.elem3, pos3)) return false;
+    rval = qlib::toDegree(Vector4D::torsion(pos0, pos1, pos2, pos3));
+    return true;
+
+  default:
+    return false;
+  }
+}
+
+double AtomIntrRenderer::getValue(int nid)
+{
+  if (nid<0 || int(m_data.size())<=nid) {
+    MB_THROW(qlib::RuntimeException,
+             LString::format("AtomIntr: no label with ID %d", nid));
+  }
+
+  double rval;
+  if (!evalValue(m_data[nid], rval)) {
+    MB_THROW(qlib::RuntimeException,
+             LString::format("AtomIntr: label %d cannot be evaluated", nid));
+  }
+  return rval;
 }
 
 /// Evaluate and returns mol ptr of interaction element, elem

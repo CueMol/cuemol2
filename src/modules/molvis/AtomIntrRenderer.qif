@@ -104,15 +104,21 @@ runtime_class AtomIntrRenderer extends Renderer
   /////////////////////////////////////
   
   /// add new distance/label for atoms
+  ///
+  /// The selection forms take each selection as one point, the centroid of
+  /// the atoms it matches, so a group measures as a whole rather than
+  /// producing one label per atom pair.
   integer append(string selection1, string selection2) => appendBySelStr;
   integer appendById(integer aid1, integer mol_id2, integer mol_id2, boolean showmsg) => appendById;
 
   integer appendBy2Vecs(object<Vector> v1, object<Vector> v2);
 
   /// add new angle def
+  integer appendAngle(string selection1, string selection2, string selection3) => appendAngleBySelStr;
   integer appendAngleById(integer aid1, integer mol_id2, integer mol_id2, integer mol_id3, integer mol_id3) => appendAngleById;
 
   /// add new torsion def
+  integer appendTorsion(string selection1, string selection2, string selection3, string selection4) => appendTorsionBySelStr;
   integer appendTorsionById(integer aid1, integer mol_id2, integer mol_id2, integer mol_id3, integer mol_id3, integer mol_id4, integer mol_id4) => appendTorsionById;
   
   /// remove def by ID
@@ -120,6 +126,9 @@ runtime_class AtomIntrRenderer extends Renderer
 
   /// Get JSON rep. of distance defs
   string getDefsJSON();
+
+  /// Measured value of a def: angstroms for a distance, degrees otherwise
+  real getValue(integer id) => getValue;
 
 };
 

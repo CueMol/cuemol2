@@ -189,27 +189,47 @@ namespace molstr {
   private:
     LString m_name;
 
+    /// Scene the name is looked up in.
+    ///
+    /// A named selection is stored per scene (StyleMgr's "sel" string data),
+    /// so resolving one needs to know which. The name is resolved lazily --
+    /// the first isSelected() after the expression was compiled -- and by
+    /// then the compiling scope is long gone, so it is captured here while
+    /// it is still current. Reading StyleMgr::getContextID() at resolve time
+    /// instead only worked inside Scene::display, which pushes the scene
+    /// while drawing; every other caller (a script, a worker service, a panel
+    /// button, PDBFileWriter) got no scope and the name silently matched no
+    /// atom at all.
+    ///
+    /// Copied along with the name, which is safe because a compiled
+    /// selection never crosses scenes: a scene file carries the expression as
+    /// text (Renderer writes sel->toString()) and SceneXMLReader recompiles
+    /// it under the loading scene, so a name moved to another scene is
+    /// resolved there -- or refused there, if it is not defined.
+    qlib::uid_t m_nTargSceID;
+
     mutable SelectionPtr m_pCachedSel;
 
   public:
     SelRefNode()
+      : m_nTargSceID(qlib::invalid_uid)
     {
     }
 
     SelRefNode(const SelRefNode &arg)
-      : m_name(arg.m_name)
+      : m_name(arg.m_name), m_nTargSceID(arg.m_nTargSceID)
     {
     }
 
-    SelRefNode(const char *name)
-      : m_name(name)
-    {
-    }
+    /// Built by the parser, inside the compiling scope (see SelCommand::compile).
+    SelRefNode(const char *name);
 
     // ~SelRefNode() {}
 
     void setName(const char *name);
     const LString &getName() const { return m_name; }
+
+    qlib::uid_t getTargSceneID() const { return m_nTargSceID; }
 
     int getType() const override;
     SelSuperNode *clone() const override;

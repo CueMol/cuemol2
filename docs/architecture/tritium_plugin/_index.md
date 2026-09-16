@@ -28,7 +28,7 @@ plugin を 1 本書きたいだけなら **overview -> authoring** で足りる�
 
 ## 現在の plugin
 
-`tritium/react-gui/src/plugins/` に 5 つある。実物が一番確実なサンプルなので、
+`tritium/react-gui/src/plugins/` に 6 つある。実物が一番確実なサンプルなので、
 近いものを真似るとよい。
 
 | id | 寄与 | 切り替え | 真似るとよい場面 |
@@ -38,8 +38,14 @@ plugin を 1 本書きたいだけなら **overview -> authoring** で足りる�
 | `catalog` | activity view + side pane 3 | 既定オフ | サイドパネルの view。worker 通信のない純 UI |
 | `agent` | activity view + side pane / worker service 2 / push channel / 設定 5 行 (うち secret 2) | 既定オフ | 長い非同期処理、streaming、自前の設定と資格情報を持つもの |
 | `mdtools` | command / menu / dialog / bottom tab / worker service 7 本 | 既定オフ | 機能一式 (開くフロー + パネル + service) を丸ごと 1 ディレクトリに閉じるもの |
+| `pymconsole` | bottom tab / worker service 1 本 | 既定オフ | 入力行 + 出力履歴。既存 service の上に別の操作体系を載せるもの |
 
-最初の 4 つは**その機能専用の C++ クラスを持たない**ことを基準に選んである。
+`pymconsole` ([260913 計画](../../plans/260913-pymconsole-plugin-plan.md)) は PyMOL コマンド言語に
+部分互換なコンソール (UI 上の名前は **PyM Console**)。PyMOL のパーサ (`parsing.py` / `parser.py` / `shortcut.py`) を TS へ移植して
+worker に置き、1 submit = 1 undo txn で既存 service を直呼びする。C++ 変更ゼロ。**既存の機能に
+別の操作体系を被せる**形の plugin で、これも「専用 C++ クラスを持たない」側。
+
+`mdtools` 以外の 4 つは**その機能専用の C++ クラスを持たない**ことを基準に選んである。
 
 `mdtools` はその例外で、専用の C++ module (`src/modules/mdtools/`、`Trajectory` /
 `TrajBlock` と 4 つの reader) を持つ最初の plugin。C++ レーン

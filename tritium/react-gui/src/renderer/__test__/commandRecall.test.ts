@@ -1,5 +1,5 @@
 /**
- * @file plugins/agent/renderer/promptHistory.test.ts
+ * @file renderer/__test__/commandRecall.test.ts
  * @description Walking back through sent prompts, readline-style.
  *
  * The rule that is easy to get wrong and annoying to live with: a draft the
@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { IDLE, recallDown, recallUp } from './promptHistory'
+import { IDLE, recallDown, recallUp } from '@renderer/utils/commandRecall'
 
 /** Newest first, as the store returns them. */
 const HISTORY = ['third', 'second', 'first']

@@ -130,6 +130,18 @@ qlib::Vector4D MolCoord::getBoundBoxMax(bool fselect) const
   return pos.vend;
 }
 
+/// Smallest box fitView will frame, in angstroms.
+///
+/// The 20 percent margin below is a fraction of the box, so it adds nothing
+/// to one that has no size: a single atom, or several sharing a coordinate,
+/// gave a zero-width box, and a set lying on a line gave a zero height. Both
+/// then divided by zero working out the aspect ratio, and the zoom came out
+/// as zero (clamped to F_EPS4 by View::setZoom, i.e. magnified without
+/// limit) with the slab clamped to its own floor. Roughly the size of one
+/// atom with room around it, so zooming to a single atom shows its
+/// surroundings rather than nothing at all.
+static const double FITVIEW_MIN_EXTENT = 4.0;
+
 void MolCoord::fitView(qsys::ViewPtr pView, bool fselect) const
 {
   qlib::LQuat rotq = pView->getRotQuat();
@@ -137,7 +149,6 @@ void MolCoord::fitView(qsys::ViewPtr pView, bool fselect) const
   Matrix4D invmat = rmat.invert();
   //Matrix4D invmat = Matrix4D::makeRotMat(rotq.inv());
 
-  int natom=0;
   Box3D bbox;
 
   SelectionPtr psel;
@@ -154,11 +165,27 @@ void MolCoord::fitView(qsys::ViewPtr pView, bool fselect) const
       bbox.merge(vpos);
     }
   }
-  
+
+  // Nothing matched: leave the view where it is. A default Box3D is inverted
+  // (vstart above vend), so carrying on from here threw the camera to the
+  // origin with a zero-size box -- a worse answer than no answer.
+  if (bbox.isEmpty())
+    return;
+
   {
     Vector4D dv = (bbox.vend - bbox.vstart).scale(0.2);
     bbox.vend += dv;
     bbox.vstart -= dv;
+  }
+
+  // Grow any axis thinner than the minimum, about its own centre.
+  for (int i=0; i<3; ++i) {
+    const double width = bbox.vend.ai(i+1) - bbox.vstart.ai(i+1);
+    if (width >= FITVIEW_MIN_EXTENT)
+      continue;
+    const double cen = (bbox.vend.ai(i+1) + bbox.vstart.ai(i+1)) * 0.5;
+    bbox.vstart.ai(i+1) = cen - FITVIEW_MIN_EXTENT * 0.5;
+    bbox.vend.ai(i+1) = cen + FITVIEW_MIN_EXTENT * 0.5;
   }
 
   Vector4D cen = invmat.mulvec(bbox.center());

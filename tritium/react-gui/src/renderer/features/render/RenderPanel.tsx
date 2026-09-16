@@ -287,7 +287,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
              resizable / snappable when the log is not wanted). -- */}
       <div className="render-panel-logsection">
         <div className="render-panel-log-header type-label">Log</div>
-        <div className="render-panel-log">
+        <div className="render-panel-log type-console">
           {job && job.log.length > 0 ? (
             job.log.map((line, i) => (
               <div className="render-log-line" key={i}>

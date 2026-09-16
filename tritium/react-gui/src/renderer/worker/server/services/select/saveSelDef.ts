@@ -8,9 +8,17 @@
 // StyleMgr.setStrData requires a valid existing style-set UID within the
 // scope; we pick the first writable scene-scoped set, creating one when none
 // exists (mirrors UXP style_editor.js nScopeID/nStyleSetID usage).
+//
+// A created set is named `style_N`, which is what UXP's `createStyle`
+// proposes (`workspace_panel.js`). The name matters: `user` belongs to the
+// global scope, where UXP's startup puts the user's own stylesheet
+// (`cuemol2.js` loadStyleSetFromFile / createStyleSet("user", 0)), so
+// creating a scene-scoped set by that name too left two unrelated sets
+// called `user` side by side in the style list.
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { proposeUniqName } from '@renderer/worker/server/services/scene/proposeUniqName';
 import { withUndoTxn } from '../withUndoTxn';
 import { isValidUid } from '@renderer/worker/shared/uid';
 
@@ -62,7 +70,8 @@ export function saveSelDef(ctx: WorkerContext, args: SaveSelDefArgs): SaveSelDef
     withUndoTxn(scene, 'Define named selection', () => {
         let setId = findWritableSceneSet(styleMgr, args.sceneId);
         if (setId === null) {
-            setId = styleMgr.createStyleSet('user', args.sceneId);
+            const { name } = proposeUniqName(ctx, { kind: 'styleSet', prefix: 'style', sceneId: args.sceneId });
+            setId = styleMgr.createStyleSet(name, args.sceneId);
             // C++ returns qlib::invalid_uid (0) on failure, never a negative
             // number -- the old `< 0` guard never fired and named selections
             // were written into style-set id 0.

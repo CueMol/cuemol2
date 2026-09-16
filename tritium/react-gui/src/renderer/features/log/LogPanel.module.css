@@ -26,17 +26,16 @@
     flex: 0 0 auto;
 }
 
+/* Type comes from the `type-console` role class on the element; only the
+   box and the colour are set here. */
 .logContainer {
     background: var(--bg-input);
-    color: var(--text-primary);
+    color: var(--console-text);
     padding: var(--space-2) var(--space-4);
     margin: 0;
     flex: 1 1 auto;
     width: 100%;
     overflow-y: auto;
     white-space: pre-wrap;
-    font-family: var(--font-mono);
-    font-size: var(--fs-xl);
-    line-height: normal;
     box-sizing: border-box;
 }

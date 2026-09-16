@@ -112,6 +112,42 @@ struct AtomIntrData
       elem1.nMolID = nMolID2;
     }
 
+  /// make angle data by selection
+  AtomIntrData(qlib::uid_t nMolID1, SelectionPtr pSel1,
+               qlib::uid_t nMolID2, SelectionPtr pSel2,
+               qlib::uid_t nMolID3, SelectionPtr pSel3)
+       : nmode(2), nLabelCacheID(-1)
+    {
+      elem0.setSel(pSel1);
+      elem0.nMolID = nMolID1;
+
+      elem1.setSel(pSel2);
+      elem1.nMolID = nMolID2;
+
+      elem2.setSel(pSel3);
+      elem2.nMolID = nMolID3;
+    }
+
+  /// make torsion data by selection
+  AtomIntrData(qlib::uid_t nMolID1, SelectionPtr pSel1,
+               qlib::uid_t nMolID2, SelectionPtr pSel2,
+               qlib::uid_t nMolID3, SelectionPtr pSel3,
+               qlib::uid_t nMolID4, SelectionPtr pSel4)
+       : nmode(3), nLabelCacheID(-1)
+    {
+      elem0.setSel(pSel1);
+      elem0.nMolID = nMolID1;
+
+      elem1.setSel(pSel2);
+      elem1.nMolID = nMolID2;
+
+      elem2.setSel(pSel3);
+      elem2.nMolID = nMolID3;
+
+      elem3.setSel(pSel4);
+      elem3.nMolID = nMolID4;
+    }
+
   /// make distance data by AID
   AtomIntrData(qlib::uid_t nMolID1, int nAid1, 
                qlib::uid_t nMolID2, int nAid2)
