@@ -91,10 +91,6 @@ describe('what cannot be carried across', () => {
     expect(tr('chain A extend 2')).toContain('never implemented')
   })
 
-  it('refuses a directional two-set operator', () => {
-    expect(tr('chain A within 5 of chain B')).toContain('directional two-set')
-  })
-
   it('refuses a comparison CueMol does not have', () => {
     expect(tr('b <= 30')).toContain('only <, > and =')
   })
@@ -128,16 +124,43 @@ describe('the keywords offered for completion', () => {
       'resi ': '1', 'name ': 'CA', 'elem ': 'C', 'resn ': 'ALA', 'chain ': 'A',
       'alt ': 'A', 'id ': '1', 'ss ': 'H', 'b ': '< 30', 'q ': '< 1',
       'byres ': 'chain A', 'around ': '5', 'expand ': '5', 'not ': 'chain A',
+      'within ': '5 of resi 10', 'near_to ': '5 of resi 10', 'beyond ': '5 of resi 10',
     }
     for (const keyword of selectionKeywords()) {
       // The infix operators cannot stand at the head of an expression.
       if (keyword === 'and ' || keyword === 'or ') continue
       const suffix = sample[keyword] ?? ''
-      const expr =
-        keyword === 'around ' || keyword === 'expand '
-          ? `chain A ${keyword}${suffix}`
-          : `${keyword}${suffix}`
+      // The infix ones need a left-hand selection.
+      const infix = ['around ', 'expand ', 'within ', 'near_to ', 'beyond ']
+      const expr = infix.includes(keyword)
+        ? `chain A ${keyword}${suffix}`
+        : `${keyword}${suffix}`
       expect({ keyword, ...translateSelection(expr) }).toMatchObject({ ok: true })
     }
+  })
+})
+
+describe("PyMOL's two-set operators", () => {
+  it('reads within as an intersection with the ball around the other set', () => {
+    // `expand` is the ball INCLUDING the other set, which is what `within`
+    // means: an atom of s1 that is also in s2 is within 0 of it.
+    expect(tr('chain A within 5 of resi 10')).toBe('(chain A) and ((resi 10) expand 5)')
+  })
+
+  it('reads near_to with the ball that excludes the other set', () => {
+    expect(tr('chain A near_to 5 of resi 10')).toBe('(chain A) and ((resi 10) around 5)')
+  })
+
+  it('reads beyond as the complement of within', () => {
+    expect(tr('chain A beyond 5 of resi 10')).toBe('(chain A) and not ((resi 10) expand 5)')
+  })
+
+  it('says what is missing when the left-hand selection is', () => {
+    // Reading `within` as an object name would report "unexpected 5".
+    expect(tr('within 5 of resi 10')).toContain('needs a selection on its left')
+  })
+
+  it('needs the "of"', () => {
+    expect(tr('chain A within 5 resi 10')).toContain('needs "of"')
   })
 })

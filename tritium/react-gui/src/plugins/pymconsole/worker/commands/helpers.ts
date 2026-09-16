@@ -12,8 +12,10 @@
 import * as os from 'os'
 import * as path from 'path'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
+import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 
 /** PyMOL's name for every object at once. */
 export const ALL = 'all'
@@ -75,6 +77,55 @@ export function molecules(
   return resolveObjects(ctx, sceneId, pattern).filter(
     (o) => o.className === 'MolCoord' || o.className.endsWith('Mol'),
   )
+}
+
+/** A renderer somewhere in the scene, with the object it hangs from. */
+export interface SceneRendererEntry {
+  rendId: number
+  rendName: string
+  objId: number
+  objName: string
+}
+
+/**
+ * Every renderer in the scene, including those inside renderer groups.
+ *
+ * PyMOL names things the console has to find again -- `isomesh msh, map`
+ * makes an object there and a renderer here -- so a command that addresses
+ * something by name has to be able to see renderers too.
+ */
+export function sceneRenderers(ctx: WorkerContext, sceneId: number): SceneRendererEntry[] {
+  const tree = getSceneTree(ctx, { sceneId })
+  if (!tree.ok || !tree.tree) return []
+  const out: SceneRendererEntry[] = []
+  for (const obj of tree.tree.children) {
+    if (obj.type !== 'object') continue
+    const walk = (nodes: SceneTreeNode[]): void => {
+      for (const n of nodes) {
+        if (n.type === 'renderer') {
+          out.push({ rendId: n.id, rendName: n.name, objId: obj.id, objName: obj.name })
+        }
+        if (n.children.length > 0) walk(n.children)
+      }
+    }
+    walk(obj.children)
+  }
+  return out
+}
+
+/** The renderers whose name matches `pattern`, exactly or by wildcard. */
+export function resolveRenderers(
+  ctx: WorkerContext,
+  sceneId: number,
+  pattern: string,
+): SceneRendererEntry[] {
+  const want = pattern.trim()
+  if (want === '' || want === ALL || want === '*') return []
+  const all = sceneRenderers(ctx, sceneId)
+  const exact = all.filter((r) => r.rendName === want)
+  if (exact.length > 0) return exact
+  const re = globToRegExp(want)
+  return all.filter((r) => re.test(r.rendName))
 }
 
 /** Expand a leading `~` and make a relative path absolute against `cwd`. */

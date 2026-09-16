@@ -29,6 +29,7 @@ import {
   resolveObjects,
   resolveOneObject,
   resolvePath,
+  resolveRenderers,
 } from './helpers'
 
 /** Arguments PyMOL's `load` takes that have no counterpart here. */
@@ -285,21 +286,40 @@ const deleteCmd: PymCommand = {
   params: [{ name: 'name' }],
   mode: 'strict',
   mutates: true,
-  summary: 'Remove objects from the scene. Wildcards and "all" are accepted.',
-  completions: [{ source: 'names', description: 'name', suffix: ' ' }],
+  summary: 'Remove objects or renderers from the scene. Wildcards and "all" are accepted.',
+  completions: [{ source: 'deletable', description: 'name', suffix: ' ' }],
   run(ctx, args, cc) {
     const hits = resolveObjects(ctx, cc.sceneId, args.name)
-    if (hits.length === 0) {
-      return { ok: false, error: `Error: object "${args.name}" not found` }
+    if (hits.length > 0) {
+      for (const obj of hits) {
+        const res = deleteNode(ctx, {
+          sceneId: cc.sceneId,
+          nodeId: obj.uid,
+          nodeType: 'object',
+        })
+        if (!res.ok) return { ok: false, error: `Error: could not delete "${obj.name}"` }
+        cc.print(` delete: "${obj.name}" deleted.`)
+      }
+      return { ok: true }
     }
-    for (const obj of hits) {
+
+    // Not an object: PyMOL's `isomesh msh, map` makes one, so `delete msh`
+    // removes it there. Here it made a renderer, and the name is the only
+    // handle the user was given, so that is what is looked up next. Objects
+    // keep priority, so a renderer sharing an object's name is unreachable
+    // this way -- which is the safer way round.
+    const rends = resolveRenderers(ctx, cc.sceneId, args.name)
+    if (rends.length === 0) {
+      return { ok: false, error: `Error: nothing named "${args.name}" in the scene` }
+    }
+    for (const rend of rends) {
       const res = deleteNode(ctx, {
         sceneId: cc.sceneId,
-        nodeId: obj.uid,
-        nodeType: 'object',
+        nodeId: rend.rendId,
+        nodeType: 'renderer',
       })
-      if (!res.ok) return { ok: false, error: `Error: could not delete "${obj.name}"` }
-      cc.print(` delete: "${obj.name}" deleted.`)
+      if (!res.ok) return { ok: false, error: `Error: could not delete "${rend.rendName}"` }
+      cc.print(` delete: "${rend.objName}/${rend.rendName}" deleted.`)
     }
     return { ok: true }
   },

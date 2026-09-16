@@ -168,6 +168,24 @@ export function emitSelection(node: SelNode): string {
       return `byres (${emitSelection(node.operand)})`
     case 'prox':
       return `(${emitSelection(node.operand)}) ${node.op} ${node.distance}`
+    case 'twoset': {
+      // PyMOL's two-set operators have no CueMol counterpart as operators,
+      // but they are exactly an intersection with a proximity selection:
+      // `expand` is the ball around a selection including it, `around` is
+      // the same ball without it, and both programs agree on that
+      // (`SelAroundImpl2.cpp` returns true for expand and false for around
+      // on the child's own atoms; `Selector.cpp` skips base[4] only for
+      // near_to). So:
+      //
+      //   s1 within  D of s2  ->  (s1) and ((s2) expand D)
+      //   s1 near_to D of s2  ->  (s1) and ((s2) around D)
+      //   s1 beyond  D of s2  ->  (s1) and not ((s2) expand D)
+      const ball = `(${emitSelection(node.right)}) ${
+        node.op === 'near_to' ? 'around' : 'expand'
+      } ${node.distance}`
+      const left = `(${emitSelection(node.left)})`
+      return node.op === 'beyond' ? `${left} and not (${ball})` : `${left} and (${ball})`
+    }
     case 'prop':
       return property(node)
     case 'compare':

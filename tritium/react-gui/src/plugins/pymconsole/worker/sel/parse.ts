@@ -32,6 +32,14 @@ export type SelNode =
   | { kind: 'byres'; operand: SelNode }
   /** `around` / `expand`, which take a distance. */
   | { kind: 'prox'; op: 'around' | 'expand'; operand: SelNode; distance: string }
+  /** `within` / `near_to` / `beyond`: `left <op> D of right`. */
+  | {
+      kind: 'twoset'
+      op: 'within' | 'near_to' | 'beyond'
+      left: SelNode
+      right: SelNode
+      distance: string
+    }
   /** A keyword taking one value list: `chain A,B`, `resi 1-10`. */
   | { kind: 'prop'; keyword: string; value: string; pos: number }
   /** A comparison: `b < 30`. */
@@ -141,15 +149,25 @@ function isByres(t: string): boolean {
 }
 
 /**
+ * PyMOL's two-set operators and their abbreviations.
+ *
+ * They share `around`/`expand`'s priority (0x30 in `layer3/Selector.cpp`),
+ * so they are parsed at the same level.
+ */
+function twoSetOp(t: string): 'within' | 'near_to' | 'beyond' | null {
+  if (t === 'within' || t === 'w.') return 'within'
+  if (t === 'near_to' || t === 'nto.') return 'near_to'
+  if (t === 'beyond' || t === 'be.') return 'beyond'
+  return null
+}
+
+/**
  * Two-set and neighbour operators PyMOL has and CueMol does not.
  *
  * Named here so they are rejected by name rather than read as an object
  * called `within`, which would look like it worked and select nothing.
  */
 const UNSUPPORTED_OPS: Readonly<Record<string, string>> = {
-  within: 'within: CueMol has no directional two-set operator (try "around")',
-  beyond: 'beyond: CueMol has no directional two-set operator',
-  near_to: 'near_to: CueMol has no directional two-set operator (try "around")',
   in: 'in: CueMol has no "in" operator',
   like: 'like: CueMol has no "like" operator',
   neighbor: 'neighbor: parsed by CueMol but never implemented, so it would select nothing',
@@ -241,17 +259,41 @@ class Parser {
     for (;;) {
       const w = this.word()
       if (w === null) break
+
+      const two = twoSetOp(w)
+      if (two !== null) {
+        const opToken = this.take()
+        const distance = this.distanceAfter(two, opToken.pos)
+        // PyMOL's syntax is `s1 within D of s2`; the `of` is part of it.
+        if (this.word() !== 'of') {
+          throw new SelParseError(`${two} needs "of", as in "${two} 5 of chain A"`, opToken.pos)
+        }
+        this.take()
+        node = { kind: 'twoset', op: two, left: node, right: this.parseOr(), distance }
+        continue
+      }
+
       const op = proxOp(w)
       if (op === null) break
       const opToken = this.take()
-      const distance = this.peek()
-      if (!distance || distance.kind !== 'word' || !/^-?\d+(\.\d+)?$/.test(distance.text)) {
-        throw new SelParseError(`${op} needs a distance`, opToken.pos)
+      node = {
+        kind: 'prox',
+        op,
+        operand: node,
+        distance: this.distanceAfter(op, opToken.pos),
       }
-      this.take()
-      node = { kind: 'prox', op, operand: node, distance: distance.text }
     }
     return node
+  }
+
+  /** The number an operator takes, consumed. */
+  private distanceAfter(op: string, opPos: number): string {
+    const distance = this.peek()
+    if (!distance || distance.kind !== 'word' || !/^-?\d+(\.\d+)?$/.test(distance.text)) {
+      throw new SelParseError(`${op} needs a distance`, opPos)
+    }
+    this.take()
+    return distance.text
   }
 
   private parseOr(): SelNode {
@@ -317,6 +359,17 @@ class Parser {
 
     const opReason = UNSUPPORTED_OPS[key]
     if (opReason !== undefined) throw new SelParseError(opReason, t.pos)
+
+    // `within 5 of resi 10` with nothing on its left. PyMOL needs the left
+    // side too, but reading the word as an object name would turn this into
+    // "unexpected 5", which does not say what is missing.
+    const twoHere = twoSetOp(key)
+    if (twoHere !== null) {
+      throw new SelParseError(
+        `${twoHere} needs a selection on its left, as in "chain A ${twoHere} 5 of resi 10"`,
+        t.pos,
+      )
+    }
     const propReason = UNSUPPORTED_PROPS[key]
     if (propReason !== undefined) throw new SelParseError(propReason, t.pos)
 

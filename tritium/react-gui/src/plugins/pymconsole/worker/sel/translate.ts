@@ -65,6 +65,9 @@ export function selectionKeywords(): string[] {
     'byres ',
     'around ',
     'expand ',
+    'within ',
+    'near_to ',
+    'beyond ',
     'not ',
     'and ',
     'or ',
@@ -99,6 +102,7 @@ export function selectionNames(expr: string): string[] {
       case 'and':
       case 'or':
       case 'sub':
+      case 'twoset':
         walk(n.left)
         walk(n.right)
         return

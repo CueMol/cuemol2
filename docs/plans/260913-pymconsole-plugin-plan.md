@@ -218,7 +218,18 @@ selectors 0x80 > `not` 0x70 > `and`/`-` 0x60 > `or`/`+`/`in` 0x40 > `around`/`ex
 ので採らない。既存 global alias (`protein` `nucleic` `water` `helix` `sheet` `coil` `ligand`
 `hydrogen`) はそのまま使い、`polymer` / `backbone` / `sidechain` / `guide` は式に展開する。
 
-未対応のものは**名前を挙げて理由付きで拒否**する (`within` / `neighbor` / `segi` / `index` /
+PyMOL の二項演算子 `within` / `near_to` / `beyond` は、**CueMol の `around` / `expand` との
+交叉に展開**する。両者の `around` / `expand` の意味は一致していて (CueMol `SelAroundImpl2.cpp` は
+expand で子ノード自身の原子を含み around で含まない、PyMOL `Selector.cpp` は `near_to` のときだけ
+`base[4]` を除く)、したがって:
+
+```
+s1 within  D of s2  ->  (s1) and ((s2) expand D)
+s1 near_to D of s2  ->  (s1) and ((s2) around D)
+s1 beyond  D of s2  ->  (s1) and not ((s2) expand D)
+```
+
+未対応のものは**名前を挙げて理由付きで拒否**する (`neighbor` / `segi` / `index` /
 `x`,`y`,`z` / `rep` / `color` など)。特に `neighbor` と `extend` は CueMol の parser を通るが
 実装が無く**何も選択しない**ので、通してはいけない。
 

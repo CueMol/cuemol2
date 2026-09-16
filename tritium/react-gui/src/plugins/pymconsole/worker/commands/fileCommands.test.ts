@@ -27,6 +27,9 @@ const { services } = vi.hoisted(() => {
     services: {
       getCompatibleRendererNames: stub(() => ({ types: [], objType: '', readerName: 'mmcif' })),
       loadObject: stub(() => ({ ok: true })),
+      deleteNode: stub(() => ({ ok: true })),
+      getSceneTree: stub(() => ({ ok: false })),
+      listSceneObjects: stub(() => ({ objects: [] })),
     } satisfies Record<string, Stub>,
   }
 })
@@ -50,8 +53,15 @@ vi.mock('@renderer/worker/server/services/file/streamLoadFromUrl', () => ({
   streamLoadFromUrl: vi.fn(),
 }))
 vi.mock('@renderer/worker/server/services/sceneTree/sceneOps', () => ({
-  deleteNode: vi.fn(),
+  deleteNode: (...a: unknown[]) => services.deleteNode(...a),
   renameNode: vi.fn(),
+}))
+vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => ({
+  getSceneTree: (...a: unknown[]) => services.getSceneTree(...a),
+  setNodeVisible: vi.fn(),
+}))
+vi.mock('@renderer/worker/server/services/scene/listSceneObjects', () => ({
+  listSceneObjects: (...a: unknown[]) => services.listSceneObjects(...a),
 }))
 
 import { FILE_COMMANDS } from './fileCommands'
@@ -125,6 +135,9 @@ beforeEach(() => {
     readerName: 'mmcif',
   })
   services.loadObject.mockReturnValue({ ok: true })
+  services.deleteNode.mockReturnValue({ ok: true })
+  services.listSceneObjects.mockReturnValue({ objects: [] })
+  services.getSceneTree.mockReturnValue({ ok: false })
 })
 
 describe('load with an explicit format', () => {
@@ -177,5 +190,62 @@ describe('the renderer a load creates', () => {
     })
     load({ filename: 'x.mtz' })
     expect(rendererType()).toBe('contour')
+  })
+})
+
+describe('delete', () => {
+  /** A scene with one map object carrying a named contour renderer. */
+  function sceneWithMesh(): void {
+    services.listSceneObjects.mockReturnValue({
+      objects: [{ uid: 5, name: '2fofc', className: 'DensityMap' }],
+    })
+    services.getSceneTree.mockReturnValue({
+      ok: true,
+      tree: {
+        id: 1,
+        name: 'scene',
+        type: 'scene',
+        children: [
+          {
+            id: 5,
+            name: '2fofc',
+            type: 'object',
+            children: [{ id: 20, name: 'msh', type: 'renderer', children: [] }],
+          },
+        ],
+      },
+    })
+  }
+
+  function del(name: string): { ok: boolean } {
+    const cmd = FILE_COMMANDS.find((c) => c.name === 'delete')
+    if (!cmd) throw new Error('no delete')
+    return cmd.run(ctx, { name }, cc) as { ok: boolean }
+  }
+
+  it('removes a renderer that isomesh named', () => {
+    // PyMOL's isomesh makes an object, so `delete msh` works there; here it
+    // made a renderer, and the name is the only handle the user was given.
+    sceneWithMesh()
+    expect(del('msh')).toEqual({ ok: true })
+    expect(services.deleteNode).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({ nodeId: 20, nodeType: 'renderer' }),
+    )
+  })
+
+  it('prefers an object over a renderer of the same name', () => {
+    sceneWithMesh()
+    del('2fofc')
+    expect(services.deleteNode).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({ nodeId: 5, nodeType: 'object' }),
+    )
+  })
+
+  it('reports a name that matches neither', () => {
+    sceneWithMesh()
+    expect(del('nope').ok).toBe(false)
+    expect(services.deleteNode).not.toHaveBeenCalled()
   })
 })

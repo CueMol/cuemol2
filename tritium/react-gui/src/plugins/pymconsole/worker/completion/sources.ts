@@ -16,6 +16,7 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
+import { sceneRenderers } from '../commands/helpers'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { selectionKeywords } from '../sel/translate'
 import { loadFormatNames } from '../commands/fileCommands'
@@ -40,6 +41,7 @@ export type CompletionSourceId =
   | 'representations'
   | 'mapRenderers'
   | 'readers'
+  | 'deletable'
 
 /** What a source is given: the scene it runs against and the arguments so far. */
 export interface SourceContext {
@@ -146,6 +148,19 @@ export function candidatesFor(
       return representationNames()
     case 'mapRenderers':
       return hasScene ? mapRendererNames(ctx, sc.sceneId) : []
+    case 'deletable':
+      // `delete` reaches renderers as well as objects, because `isomesh`
+      // makes one where PyMOL makes an object. PyMOL's own source here is
+      // `names`; offering only that would hide half of what the command can
+      // remove.
+      return hasScene
+        ? [
+            ...publicNames(ctx, sc.sceneId),
+            ...sceneRenderers(ctx, sc.sceneId)
+              .map((r) => r.rendName)
+              .filter((n) => n !== ''),
+          ]
+        : []
     case 'readers':
       // Registered readers, so a format that does not exist in this build is
       // never offered.
