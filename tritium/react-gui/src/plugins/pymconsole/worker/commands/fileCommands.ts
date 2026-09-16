@@ -16,8 +16,11 @@ import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/f
 import { loadObject } from '@renderer/worker/server/services/file/loadObject'
 import { streamLoadFromUrl } from '@renderer/worker/server/services/file/streamLoadFromUrl'
 import { deleteNode, renameNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
+import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName'
+import { isHiddenObjReader } from '@renderer/worker/server/services/helpers/readerFilter'
 import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
 import type { CoordServerType } from '@renderer/worker/shared/pdbUrls'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import type { PymCommand } from './types'
 import {
@@ -31,12 +34,114 @@ import {
 /** Arguments PyMOL's `load` takes that have no counterpart here. */
 const LOAD_IGNORED: ReadonlyArray<[string, string]> = [
   ['state', '0'],
-  ['format', ''],
   ['discrete', '-1'],
   ['multiplex', ''],
   ['partial', '0'],
   ['mimic', '1'],
 ]
+
+/**
+ * PyMOL's format names, as the CueMol reader each one means.
+ *
+ * From `modules/pymol/constants.py`'s `loadable`; only the formats both
+ * programs read are listed. A name CueMol already uses for a reader is not
+ * listed, because `readerNames` accepts those directly -- `format=mmcifmap`
+ * works without an entry here.
+ *
+ * PyMOL has no name for a structure-factor CIF: its `cif` covers both, and
+ * its parser decides which it got. So the way to ask for one here is the
+ * CueMol reader name, `mmcifmap`.
+ */
+const FORMAT_ALIASES: Readonly<Record<string, string>> = {
+  cif: 'mmcif',
+  ent: 'pdb',
+  ccp4: 'ccp4map',
+  map: 'ccp4map',
+  mrc: 'ccp4map',
+  xplor: 'xplormap',
+  mol: 'sdf',
+  top: 'amberprm',
+}
+
+/**
+ * PyMOL's own default representation, as a CueMol renderer type.
+ *
+ * `auto_show_lines` is on by default there, so a molecule that has just been
+ * loaded is drawn as lines.
+ */
+const PYMOL_DEFAULT_REP = 'simple'
+
+/**
+ * The renderer to give a freshly loaded object.
+ *
+ * Without one the shared default is `simple`, a molecule renderer, whatever
+ * the object is -- and C++ `Object::createRenderer` does not check
+ * compatibility (`isCompatibleObj` only builds the list the GUI offers), so a
+ * density map came back carrying a SimpleRenderer and drawing nothing.
+ *
+ * A molecule keeps `simple`, matching PyMOL. Anything else takes the first
+ * type the object itself reports, which is what the File Open dialog starts
+ * from: `contour` for a map, `molsurf` for a surface.
+ *
+ * @param types - compatible types from `getCompatibleRendererNames`, already
+ *   filtered to the ones worth creating at load time.
+ * @returns null when the object reports none, leaving the shared default.
+ */
+function initialRendererType(types: readonly string[]): string | null {
+  if (types.includes(PYMOL_DEFAULT_REP)) return PYMOL_DEFAULT_REP
+  return types[0] ?? null
+}
+
+/** The names `load`'s `format` accepts, for completion and for errors. */
+export function loadFormatNames(ctx: WorkerContext): string[] {
+  const names = readerNames(ctx)
+  const aliases = Object.keys(FORMAT_ALIASES).filter((a) => names.includes(FORMAT_ALIASES[a]))
+  return [...new Set([...names, ...aliases])].sort()
+}
+
+/** The reader nicknames this build has, as `pickReaderName` sees them. */
+function readerNames(ctx: WorkerContext): string[] {
+  try {
+    const info = JSON.parse(ctx.strMgr.getInfoJSON2()) as Array<{
+      name: string
+      category: number
+    }>
+    return info
+      .filter((e) => e.category === OBJREADER_CATEGORY && !isHiddenObjReader(e.name))
+      .map((e) => e.name)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The reader PyMOL's `format` argument asks for.
+ *
+ * Read fresh from the registry rather than checked against a hard-coded
+ * list, so a reader added to C++ is accepted here without this file
+ * changing, and the error can name what this build actually has.
+ *
+ * @returns null when no format was given, and the caller should sniff.
+ */
+function readerForFormat(
+  ctx: WorkerContext,
+  format: string,
+): { ok: true; name: string | null } | { ok: false; error: string } {
+  const want = format.trim().toLowerCase()
+  if (want === '') return { ok: true, name: null }
+
+  const names = readerNames(ctx)
+  const direct = names.find((n) => n.toLowerCase() === want)
+  if (direct) return { ok: true, name: direct }
+
+  const alias = FORMAT_ALIASES[want]
+  if (alias && names.includes(alias)) return { ok: true, name: alias }
+
+  return {
+    ok: false,
+    error: `Error: unknown format "${format}" (one of ${loadFormatNames(ctx).join(', ')})`,
+  }
+}
 
 const load: PymCommand = {
   name: 'load',
@@ -55,6 +160,12 @@ const load: PymCommand = {
   mode: 'strict',
   mutates: true,
   summary: 'Read a structure or map file into the scene.',
+  completions: [
+    null,
+    null,
+    null,
+    { source: 'readers', description: 'format', suffix: ', ' },
+  ],
   run(ctx, args, cc) {
     for (const [name, def] of LOAD_IGNORED) {
       if (!isDefaulted(args[name], def)) cc.warn(`load: ${name} is ignored (not supported)`)
@@ -62,7 +173,17 @@ const load: PymCommand = {
     const filePath = resolvePath(cc.cwd, args.filename)
     if (!fs.existsSync(filePath)) return { ok: false, error: `Error: no such file: ${filePath}` }
 
-    const compat = getCompatibleRendererNames(ctx, { filePath })
+    // An explicit format skips the extension / content lookup, which is the
+    // only way to read a file the sniff gets wrong -- a structure-factor CIF
+    // being the one that bites, since it shares its extension with a
+    // coordinate CIF.
+    const asked = readerForFormat(ctx, args.format)
+    if (!asked.ok) return asked
+
+    const compat = getCompatibleRendererNames(ctx, {
+      filePath,
+      ...(asked.name === null ? {} : { readerName: asked.name }),
+    })
     if (!compat.readerName) {
       return { ok: false, error: `Error: no reader handles ${path.basename(filePath)}` }
     }
@@ -70,7 +191,7 @@ const load: PymCommand = {
     const options = buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
       objectName,
-      rendererType: null,
+      rendererType: initialRendererType(compat.types),
       selection: null,
     })
     const res = loadObject(ctx, {

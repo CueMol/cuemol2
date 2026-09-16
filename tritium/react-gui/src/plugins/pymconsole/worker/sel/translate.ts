@@ -10,6 +10,7 @@
  */
 
 import { COMPARE_KEYWORDS, MACRO_KEYWORDS, PROP_KEYWORDS, SelParseError, parseSelection } from './parse'
+import type { SelNode } from './parse'
 import { UNSUPPORTED_MACROS, emitSelection } from './emit'
 
 /** A translated expression, or why it could not be. */
@@ -68,4 +69,48 @@ export function selectionKeywords(): string[] {
     'and ',
     'or ',
   ]
+}
+
+/**
+ * The bare names an expression mentions, in the order they appear.
+ *
+ * A bare word in a PyMOL selection is an object or a named selection, and
+ * `translateSelection` passes it through untouched. A caller that has to
+ * pick one molecule to evaluate the expression against -- CueMol evaluates
+ * per molecule, PyMOL over the whole scene -- uses this to see whether the
+ * user already named one.
+ *
+ * @returns an empty array when the expression does not parse; the caller is
+ *   translating it anyway and will report the error from there.
+ */
+export function selectionNames(expr: string): string[] {
+  let node: SelNode
+  try {
+    node = parseSelection(expr.trim())
+  } catch {
+    return []
+  }
+  const out: string[] = []
+  const walk = (n: SelNode): void => {
+    switch (n.kind) {
+      case 'name':
+        out.push(n.name)
+        return
+      case 'and':
+      case 'or':
+      case 'sub':
+        walk(n.left)
+        walk(n.right)
+        return
+      case 'not':
+      case 'byres':
+      case 'prox':
+        walk(n.operand)
+        return
+      default:
+        return
+    }
+  }
+  walk(node)
+  return out
 }

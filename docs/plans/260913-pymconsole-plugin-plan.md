@@ -74,6 +74,21 @@ worker が持つ module 状態は **`cwd` 1 つだけ**。
 - PyMOL の signature はソースから転記。**PyMOL に無い引数は足さない**。CueMol に対応の無い
   PyMOL 引数 (`state` / `format` / `animate` / `ray` ...) は spec に載せて受け取り、
   ユーザーが既定以外を渡したときだけ `warn` で「ignored」と出す (位置引数のズレも防げる)
+- `load` の `format` はリーダーを明示指定し、拡張子 / content sniff を飛ばす。PyMOL の `load` は
+  **拡張子だけ**で形式を決め content sniff を持たない (`importing.py` の `filename_to_format`)。
+  同じ拡張子を共有する形式は形式名で指定するしかなく、特に structure-factor CIF は座標 CIF と
+  `*.cif` を共有するうえ PyMOL には両者を分ける形式名が無い (`cif` が両方) ので、CueMol の
+  リーダー名 `mmcifmap` を直接受け取る。受け付ける値は**登録済みリーダーを実行時に読む**ので、
+  C++ にリーダーが増えてもこのファイルは変えなくてよい。PyMOL の形式名
+  (`cif` `ccp4` `map` `mrc` `xplor` `mol` `top` `ent`) は別名表で写す
+- `load` が作る renderer は**オブジェクトの種類で選ぶ**。共通の既定は object の種類に関係なく
+  `simple` (分子の線表示) で、C++ `Object::createRenderer` は互換性を検査しない
+  (`isCompatibleObj` は GUI に出す一覧を作るためだけに使われ、生成の門番にはなっていない) ため、
+  density map に SimpleRenderer が付いて**何も描かれない**状態になっていた。分子は PyMOL に合わせて
+  `simple` (PyMOL の `auto_show_lines`)、それ以外は `getCompatibleRendererNames` が返す先頭
+  (map なら `contour`、surface なら `molsurf`)。C++ の一覧はアルファベット順なので分子で先頭を
+  採ると `anisou` になってしまう点に注意。libcuemol2 側でガードする案は、`.qsc` 読み込み
+  (`Object::readFrom2` は `createRenderer` を通らない) など影響範囲が読めないので採らない
 - 名前 -> uid は `resolveObjects` (`listSceneObjects` + 完全一致 / `all` / glob)
 - `zoom` / `center` に object 名を渡さない (= `all`) 場合、CueMol に「全 object を包む fit」が
   無いので**最初の object に fit して warn** する
@@ -231,9 +246,20 @@ selectors 0x80 > `not` 0x70 > `and`/`-` 0x60 > `or`/`+`/`in` 0x40 > `around`/`ex
   ラベルは `helpers/atomintr` が描くので、マウスで取った計測と同じ label set に入る。
   数値は C++ の `getValue` から取る (画面のラベルと必ず一致する。TS 側で計算し直さない)
 - **map**: `isomesh` -> `contour`、`isosurface` -> `isosurf` renderer を map object 上に作り、
-  `siglevel` に level を書く。`isolevel <名>` は scene 中の同名 map renderer を探す。描画領域は
-  renderer 自身の中心まわりの箱なので `selection` / `carve` / `buffer` は近似せず警告して無視し、
-  新規 renderer の中心は view に合わせる (file-open と同じ `applyMapCenterPolicy`)
+  `siglevel` に level を書く。`isolevel <名>` は scene 中の同名 map renderer を探す。
+  `selection` / `carve` / `buffer` は `MapRenderer` の mol boundary
+  (`bndry_molname` / `bndry_sel` / `bndry_rng`) に写す。`getBndryBBox` が選択の bbox を range で
+  膨らませた**直方体**にマーチング範囲を絞り (= PyMOL の `buffer`)、`inMolBndry` が range より遠い
+  グリッド点を落とす (= `carve`)。**range が 1 つで 2 つの引数を兼ねる**ので `carve` 優先、無ければ
+  `buffer` を使う (PyMOL も `Executive.cpp` で逆向きに同じ代入をしている)。両者を独立に指定すること
+  だけができない。selection が無いときは中心まわりの箱で、新規 renderer の中心は view に合わせる
+  (file-open と同じ `applyMapCenterPolicy`)。
+  boundary は分子名 1 つを取るので、対象は**式が名指しした分子**、無ければ最初の分子 (警告付き) --
+  `zoom` や計測と同じ規則
+- **map の対象外**: PyMOL の `volume` と `isodot` は実装しない。`volume` は CueMol にも
+  `gpu_mapvol` renderer があるので写せるが、`isodot` に相当する voxel ドット renderer は無く
+  (調査報告 §5 では新規実装 250-350 行)、どちらも需要が薄いと判断した。
+  `show volume` / `show dots` はその旨を返す
 
 ### C++ 側の追加 (`src/modules/molvis/`)
 

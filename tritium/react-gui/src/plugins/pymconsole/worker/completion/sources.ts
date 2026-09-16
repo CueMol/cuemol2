@@ -18,6 +18,7 @@ import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { selectionKeywords } from '../sel/translate'
+import { loadFormatNames } from '../commands/fileCommands'
 import { mapRendererNames } from '../commands/mapCommands'
 import { representationNames } from '../commands/repCommands'
 import { storedCameraNames } from '../commands/viewCommands'
@@ -38,6 +39,7 @@ export type CompletionSourceId =
   | 'viewActions'
   | 'representations'
   | 'mapRenderers'
+  | 'readers'
 
 /** What a source is given: the scene it runs against and the arguments so far. */
 export interface SourceContext {
@@ -144,6 +146,10 @@ export function candidatesFor(
       return representationNames()
     case 'mapRenderers':
       return hasScene ? mapRendererNames(ctx, sc.sceneId) : []
+    case 'readers':
+      // Registered readers, so a format that does not exist in this build is
+      // never offered.
+      return loadFormatNames(ctx)
     case 'objects':
       return hasScene ? objectNames(ctx, sc.sceneId) : []
     case 'names':

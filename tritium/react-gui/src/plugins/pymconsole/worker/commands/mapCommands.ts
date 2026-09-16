@@ -8,13 +8,34 @@
  * map object a `contour` renderer named `msh`, and `isolevel msh, 2.0` finds
  * that renderer by name and moves its level.
  *
- * Two differences are worth knowing rather than hiding. The region drawn is
- * a box around the renderer's own centre, not a selection with a buffer, so
- * `selection` and `carve` are refused rather than approximated; a fresh
- * renderer's centre is put on the view so the box lands where the user is
- * looking, as the file-open path does. And the level is `siglevel`, whose
- * unit is the map's: sigma multiples on a crystallographic map, top percent
- * of grid points on a cryo-EM one.
+ * `selection`, `carve` and `buffer` map onto the mol boundary every CueMol
+ * map renderer has (C++ `MapRenderer`'s `bndry_molname` / `bndry_sel` /
+ * `bndry_rng`), which does both of the jobs PyMOL splits between the latter
+ * two. `getBndryBBox` fits the marched region to the selection's bounding
+ * box grown by the range -- PyMOL's `buffer` -- and `inMolBndry` then drops
+ * every grid point farther than the range from any selected atom -- PyMOL's
+ * `carve`.
+ *
+ * One range, two PyMOL arguments, so `carve` wins when both are given and
+ * `buffer` fills in when only it is. PyMOL does the same substitution the
+ * other way round (`Executive.cpp`: `if (fbuf <= R_SMALL4) fbuf =
+ * fabs(carve)`), for the same reason -- a box narrower than the carve
+ * radius would cut the carved surface off at its faces. What cannot be
+ * carried across is setting the two independently, which in PyMOL means a
+ * box wider than the carving; here the corners come off at the same radius.
+ *
+ * The other difference is which molecule the selection runs against. PyMOL
+ * selections span the scene and carve against every object they match;
+ * `bndry_molname` names one molecule. This picks the one the expression
+ * names, or the first in the scene, the way `zoom` and the measure commands
+ * do -- and says so when the choice was not the user's.
+ *
+ * Without a selection the region is a box around the renderer's own centre,
+ * which is put on the view when the renderer is made, as the file-open path
+ * does; otherwise a fresh renderer contours around the origin and looks
+ * like it drew nothing. And the level is `siglevel`, whose unit is the
+ * map's: sigma multiples on a crystallographic map, top percent of grid
+ * points on a cryo-EM one.
  */
 
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
@@ -24,10 +45,12 @@ import { listMapRenderers } from '@renderer/worker/server/services/map/renderers
 import { getMapRendererState } from '@renderer/worker/server/services/map/state'
 import { setMapRendererProp } from '@renderer/worker/server/services/map/props'
 import type { MapRendererEntry } from '@renderer/worker/server/services/map/types'
+import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { selectionNames, translateSelection } from '../sel/translate'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isDefaulted, resolveObjects, toNumber } from './helpers'
+import { isDefaulted, molecules, resolveObjects, toNumber } from './helpers'
 
 /** PyMOL's two mesh commands, as the CueMol renderer type each becomes. */
 const MESH_TYPES = {
@@ -89,6 +112,80 @@ function resolveMap(
   return { ok: false, error: `Error: "${want}" is not a density map` }
 }
 
+/**
+ * A distance argument that may be absent.
+ *
+ * @returns the number, null when the argument was not given, or 'bad' when
+ *   it was given and is not a number.
+ */
+function optionalLength(raw: string): number | null | 'bad' {
+  if (raw.trim() === '') return null
+  const n = toNumber(raw)
+  return n === null ? 'bad' : n
+}
+
+/**
+ * Point a map renderer's mol boundary at a selection: PyMOL's `carve`.
+ *
+ * `bndry_molname` is a molecule NAME rather than a uid (C++ resolves it by
+ * name at every rebuild), and an empty name switches the boundary off, which
+ * is how the region goes back to the plain box.
+ */
+function writeBoundary(
+  ctx: WorkerContext,
+  sceneId: number,
+  rendId: number,
+  molName: string,
+  selStr: string,
+  range: number | null,
+): boolean {
+  const write = (propName: string, value: string | number, valueType: string): boolean =>
+    setGenericProp(ctx, {
+      sceneId,
+      nodeId: rendId,
+      nodeType: 'renderer',
+      propName,
+      op: 'set',
+      valueType,
+      value,
+      mode: 'commit',
+    }).ok
+
+  if (!write('bndry_molname', molName, 'string')) return false
+  // The selection is compiled by the property bridge, as a renderer's own
+  // `sel` is.
+  if (!write('bndry_sel', selStr, 'object<MolSelection>')) return false
+  if (range !== null && !write('bndry_rng', range, 'real')) return false
+  return true
+}
+
+/**
+ * The molecule a carve selection should run against.
+ *
+ * PyMOL evaluates a selection over the whole scene and carves against every
+ * object it matches; `bndry_molname` takes one name. The expression's own
+ * bare words are the user's answer when they gave one -- `isomesh m, map,
+ * 1.0, 1crn and resi 50` clearly means 1crn -- and otherwise the first
+ * molecule stands in, as it does for `zoom` and the measure commands.
+ */
+function boundaryMolecule(
+  ctx: WorkerContext,
+  cc: CmdContext,
+  expr: string,
+): { ok: true; name: string } | (CmdOutcome & { ok: false }) {
+  const mols = molecules(ctx, cc.sceneId)
+  if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
+
+  for (const word of selectionNames(expr)) {
+    const named = mols.find((m) => m.name === word)
+    if (named) return { ok: true, name: named.name }
+  }
+  if (mols.length > 1) {
+    cc.warn(`carving against "${mols[0].name}" only: name a molecule in the selection to pick another`)
+  }
+  return { ok: true, name: mols[0].name }
+}
+
 /** Every map renderer in the scene called `name`. */
 function renderersNamed(ctx: WorkerContext, sceneId: number, name: string): MapRendererEntry[] {
   return listMapRenderers(ctx, { sceneId }).items.filter((r) => r.rendName === name)
@@ -116,22 +213,54 @@ function meshCommand(name: 'isomesh' | 'isosurface'): PymCommand {
       name === 'isomesh'
         ? 'Contour a density map as a mesh.'
         : 'Contour a density map as a solid surface.',
-    completions: [null, { source: 'objects', description: 'object', suffix: ', ' }],
+    completions: [
+      null,
+      { source: 'objects', description: 'object', suffix: ', ' },
+      null,
+      { source: 'selections', description: 'selection', suffix: ', ' },
+    ],
     run(ctx, args, cc) {
-      for (const [arg, def, why] of [
-        ['selection', '', 'the region follows the view, not a selection'],
-        ['buffer', '0.0', 'the region size is the renderer extent'],
-        ['carve', '', 'not supported'],
-        ['state', '1', 'not supported'],
-        ['source_state', '0', 'not supported'],
+      for (const [arg, def] of [
+        ['state', '1'],
+        ['source_state', '0'],
       ] as const) {
-        if (!isDefaulted(args[arg], def)) cc.warn(`${name}: ${arg} is ignored (${why})`)
+        if (!isDefaulted(args[arg], def)) cc.warn(`${name}: ${arg} is ignored (not supported)`)
       }
 
       const rendName = args.name.trim()
       if (rendName === '') return { ok: false, error: `Error: ${name} needs a name` }
       const level = toNumber(args.level)
       if (level === null) return { ok: false, error: `Error: "${args.level}" is not a level` }
+
+      const carve = optionalLength(args.carve)
+      if (carve === 'bad') return { ok: false, error: `Error: "${args.carve}" is not a carve radius` }
+      // PyMOL's buffer default is 0.0, which means "not given" there too.
+      const buffer = args.buffer.trim() === '0.0' ? null : optionalLength(args.buffer)
+      if (buffer === 'bad') return { ok: false, error: `Error: "${args.buffer}" is not a buffer` }
+
+      // One range does the work of both, so `carve` wins and `buffer` fills
+      // in. A null leaves the renderer's own default in place.
+      const range = carve ?? buffer
+      if (carve !== null && buffer !== null) {
+        cc.warn(`${name}: buffer is ignored (one range both sizes the region and carves it)`)
+      }
+
+      // The carve selection, resolved before anything is created so a bad
+      // expression cannot leave a renderer behind.
+      let boundary: { molName: string; selStr: string } | null = null
+      if (args.selection.trim() !== '') {
+        const translated = translateSelection(args.selection)
+        if (!translated.ok) return translated
+        const target = boundaryMolecule(ctx, cc, args.selection)
+        if (!target.ok) return target
+        boundary = { molName: target.name, selStr: translated.expr }
+        if (carve === null) {
+          // PyMOL would show the whole box; here the corners come off.
+          cc.warn(`${name}: the region is also carved at ${range ?? 'the renderer default'} angstroms`)
+        }
+      } else if (range !== null) {
+        cc.warn(`${name}: carve and buffer need a selection to work from`)
+      }
 
       const map = resolveMap(ctx, cc, args.map, rendererType)
       if (!map.ok) return map
@@ -145,6 +274,10 @@ function meshCommand(name: 'isomesh' | 'isosurface'): PymCommand {
       if (existing.length > 0) {
         if (!writeLevel(ctx, cc.sceneId, existing[0].rendId, level)) {
           return { ok: false, error: `Error: could not set the level of "${rendName}"` }
+        }
+        if (boundary && !writeBoundary(ctx, cc.sceneId, existing[0].rendId,
+                                       boundary.molName, boundary.selStr, range)) {
+          return { ok: false, error: `Error: could not carve "${rendName}"` }
         }
         cc.print(` ${name}: "${rendName}" at ${level}`)
         return { ok: true }
@@ -166,9 +299,15 @@ function meshCommand(name: 'isomesh' | 'isosurface'): PymCommand {
       if (!created.ok || created.newRendId === undefined) {
         return { ok: false, error: `Error: could not contour "${map.name}"` }
       }
-      centreOnView(ctx, cc.sceneId, map.objId, created.newRendId)
+      // Only a boxed region needs a centre; a carved one takes its place
+      // from the atoms.
+      if (!boundary) centreOnView(ctx, cc.sceneId, map.objId, created.newRendId)
       if (!writeLevel(ctx, cc.sceneId, created.newRendId, level)) {
         return { ok: false, error: `Error: could not set the level of "${rendName}"` }
+      }
+      if (boundary && !writeBoundary(ctx, cc.sceneId, created.newRendId,
+                                     boundary.molName, boundary.selStr, range)) {
+        return { ok: false, error: `Error: could not carve "${rendName}"` }
       }
       cc.print(` ${name}: "${rendName}" on "${map.name}" at ${level}`)
       return { ok: true }

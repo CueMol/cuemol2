@@ -65,7 +65,10 @@ const REPRESENTATIONS: Readonly<Record<string, string>> = {
 
 const UNSUPPORTED_REPS: Readonly<Record<string, string>> = {
   mesh: 'mesh: a density representation; use isomesh on a map object',
-  dots: 'dots: a density representation; use isodot on a map object',
+  // CueMol has no dot renderer for a map, and `volume` (gpu_mapvol) is not
+  // wired up; naming a command that does not exist would be worse than
+  // saying so.
+  dots: 'dots: CueMol has no dot representation for a density map',
   volume: 'volume: not available from this console',
   slice: 'slice: CueMol has no slice representation',
   cell: 'cell: use the unit cell renderer from the GUI',
