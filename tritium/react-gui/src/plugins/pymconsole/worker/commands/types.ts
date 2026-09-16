@@ -89,8 +89,3 @@ export interface PymCommand {
     cc: CmdContext,
   ): CmdOutcome | Promise<CmdOutcome>
 }
-
-/** A command that is declared but not implemented yet. */
-export function notImplemented(name: string, phase: string): CmdOutcome {
-  return { ok: false, error: `${name}: not implemented yet (${phase})` }
-}
