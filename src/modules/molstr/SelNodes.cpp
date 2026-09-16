@@ -246,11 +246,21 @@ LString SelRefNode::toString() const
   return "Ref("+m_name+")";
 }
 
+SelRefNode::SelRefNode(const char *name)
+  : m_name(name)
+{
+  // The parser runs inside the scope SelCommand::compile pushed, so this is
+  // the scene the name was written against. Captured now because the name is
+  // resolved lazily, long after that scope has been popped.
+  m_nTargSceID = qsys::StyleMgr::getInstance()->getContextID();
+}
+
 void SelRefNode::setName(const char *name)
 {
   //m_bCached = false;
   m_pCachedSel = SelectionPtr();
   m_name = name;
+  m_nTargSceID = qsys::StyleMgr::getInstance()->getContextID();
   resolveReference();
 }
 
@@ -263,7 +273,11 @@ bool SelRefNode::resolveReference() const
   }
   
   qsys::StyleMgr *pPM = qsys::StyleMgr::getInstance();
-  qlib::uid_t nScopeID = pPM->getContextID();
+
+  // The scope this node was compiled in, not whatever is current now: the
+  // resolve happens on the first isSelected(), which is usually outside the
+  // compiling scope and may be outside any scope at all.
+  const qlib::uid_t nScopeID = m_nTargSceID;
 
   LString value = pPM->getStrData("sel", m_name, nScopeID);
   if (value.isEmpty()) {
@@ -274,7 +288,9 @@ bool SelRefNode::resolveReference() const
   //m_cachedStr = value;
   
   SelCommand *pComSel = MB_NEW SelCommand();
-  if (!pComSel->compile(value)) {
+  // Same scope for the expression the name stands for, so a named selection
+  // may refer to another one defined in the same scene.
+  if (!pComSel->compile(value, nScopeID)) {
     delete pComSel;
     //MB_THROW(qlib::RuntimeException, "SelRefNode: invalid reference "+m_name+" for "+value);
     LOG_DPRINTLN("SelRefNode: invalid reference "+m_name+" for "+value);

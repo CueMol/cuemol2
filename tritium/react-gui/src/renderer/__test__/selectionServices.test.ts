@@ -35,6 +35,8 @@ function makeCtx(scene: Record<string, unknown> | null, styleMgr?: unknown, sid 
     return {
         sceMgr: { getScene: vi.fn((id: number) => (id === sid ? scene : null)) },
         styleMgr,
+        // proposeUniqName asks the registry for the style manager, not ctx.styleMgr.
+        svc: { getService: vi.fn(() => styleMgr ?? null) },
     } as unknown as WorkerContext
 }
 
@@ -101,20 +103,39 @@ describe('saveSelDef', () => {
         expect(styleMgr.createStyleSet).not.toHaveBeenCalled()
     })
 
-    it('creates a writable scene set when none exists', () => {
+    it('creates a scene set named the way UXP names one', () => {
+        // Not `user`: that name belongs to the global scope, where the user's
+        // own stylesheet is loaded, and a scene-scoped set by the same name
+        // showed up as a second, unrelated `user` in the style list.
         const setStrData = vi.fn(() => true)
         const styleMgr = {
             getStyleSetsJSON: vi.fn(() =>
                 JSON.stringify([{ name: 'builtin', scene_id: 100, uid: 1, readonly: true }]),
             ),
+            hasStyleSet: vi.fn(() => 0),
             createStyleSet: vi.fn(() => 9),
             setStrData,
         }
         const scene = makeUndoScene(100)
         const ctx = makeCtx(scene, styleMgr)
         saveSelDef(ctx, { sceneId: 100, name: 'mysel', expr: 'chain A' })
-        expect(styleMgr.createStyleSet).toHaveBeenCalledWith('user', 100)
+        expect(styleMgr.createStyleSet).toHaveBeenCalledWith('style_0', 100)
         expect(setStrData).toHaveBeenCalledWith('sel', 'mysel', 'chain A', 100, 9)
+    })
+
+    it('steps past a scene set name already taken', () => {
+        const styleMgr = {
+            getStyleSetsJSON: vi.fn(() =>
+                JSON.stringify([{ name: 'style_0', scene_id: 100, uid: 1, readonly: true }]),
+            ),
+            hasStyleSet: vi.fn((name: string) => (name === 'style_0' ? 1 : 0)),
+            createStyleSet: vi.fn(() => 9),
+            setStrData: vi.fn(() => true),
+        }
+        const scene = makeUndoScene(100)
+        const ctx = makeCtx(scene, styleMgr)
+        saveSelDef(ctx, { sceneId: 100, name: 'mysel', expr: 'chain A' })
+        expect(styleMgr.createStyleSet).toHaveBeenCalledWith('style_1', 100)
     })
 
     it('rejects empty name or expr', () => {

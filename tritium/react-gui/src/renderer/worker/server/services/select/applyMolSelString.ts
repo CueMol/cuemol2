@@ -56,6 +56,23 @@ export interface ZoomMolSelectionResult {
 }
 
 /**
+ * Whether the molecule's current selection matches any atom.
+ *
+ * `fitView` and `getCenterPos` have nothing to work from when it does not,
+ * and leave the view alone (C++ returns early on an empty bounding box). The
+ * caller needs to know that happened so it can say so, rather than report a
+ * zoom that never moved.
+ */
+function selectionHitsAny(mol: MolCoord): boolean {
+    try {
+        return mol.getAtomSelSize(mol.sel) > 0;
+    } catch {
+        // Probe failure is not the same as "no atoms": let the caller try.
+        return true;
+    }
+}
+
+/**
  * Apply `selStr` to `mol.sel` and ensure the `*selection` renderer exists
  * so the change is visible. Returns false when the selection-string fails
  * to compile.
@@ -116,6 +133,7 @@ export function centerMolSelection(
     let ok = false;
     withUndoTxn(vsm.scene, 'Center on mol selection', () => {
         if (!assignMolSel(ctx, vsm.obj, args.selStr, vsm.scene.uid)) return;
+        if (!selectionHitsAny(vsm.obj)) return;
         const pos = safeGetSelectionCenter(vsm.obj);
         if (!pos) return;
         vsm.view.setViewCenter(pos);
@@ -151,6 +169,7 @@ export function zoomMolSelection(
     let ok = false;
     withUndoTxn(vsm.scene, 'Zoom to mol selection', () => {
         if (!assignMolSel(ctx, vsm.obj, args.selStr, vsm.scene.uid)) return;
+        if (!selectionHitsAny(vsm.obj)) return;
         ok = tryFitView(vsm.obj, vsm.view);
     });
     return { ok };
