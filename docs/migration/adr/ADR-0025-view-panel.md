@@ -71,6 +71,14 @@ activity-bar group in place of the PoC `DummyPane4`.
   the form padding + inter-section gap. Rows use `FieldGrid` / `FieldGridRow`
   (aligned label column + filling control) so label and widget share one line.
 
+## Update (2026-09-17): moved to the View activity view
+
+The pane was placed in the Explorer group by this ADR. It now sits in a new
+**View** activity view, below the new Camera pane, and Explorer keeps Scene and
+Color. The pane itself is unchanged apart from its header icon (`ui.viewXform`;
+`ui.camera` belongs to the Camera pane now). See
+[camera-pane](../../architecture/camera-pane.md).
+
 ## Notes
 
 - Implementation:

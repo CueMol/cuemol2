@@ -165,7 +165,7 @@ describe('sceneTree service', () => {
             expect(getScene).toHaveBeenCalledWith(99)
         })
 
-        it('returns parsed tree with synthesized cameraRoot/styleRoot when scene exists', () => {
+        it('returns parsed tree with a synthesized styleRoot when scene exists', () => {
             const json = JSON.stringify([
                 { name: 'Scene1', type: '', ID: 1 },
                 { name: 'mol1', type: 'PDBMol', ID: 10, visible: true, rends: [] },
@@ -174,32 +174,10 @@ describe('sceneTree service', () => {
             const res = services.getSceneTree(ctx, { sceneId: 1 })
             expect(res.ok).toBe(true)
             expect(res.tree?.id).toBe(1)
-            // 1 object + cameraRoot + styleRoot
-            expect(res.tree?.children).toHaveLength(3)
+            // 1 object + styleRoot; cameras live in the Camera pane
+            expect(res.tree?.children).toHaveLength(2)
             const types = res.tree?.children.map((c) => c.type)
-            expect(types).toEqual(['object', 'cameraRoot', 'styleRoot'])
-        })
-
-        it('populates cameraRoot children from getCameraInfoJSON with src + visSize', () => {
-            const json = JSON.stringify([{ name: 'Scene1', type: '', ID: 1 }])
-            const cameraInfo = JSON.stringify([
-                { name: 'cam0', vis_size: 0, src: '' },
-                { name: 'cam1', vis_size: 1, src: 'foo.cam' },
-            ])
-            const { ctx } = makeCtx(json, { cameraInfoJSON: cameraInfo })
-            const res = services.getSceneTree(ctx, { sceneId: 1 })
-            const cameraRoot = res.tree?.children.find((c) => c.type === 'cameraRoot')
-            expect(cameraRoot?.children).toHaveLength(2)
-            expect(cameraRoot?.children.map((c) => c.name)).toEqual(['cam0', 'cam1'])
-            // cameraInfo carries the fields ctxmenu Reload + Clear-vis-flags
-            // gates rely on.
-            expect(cameraRoot?.children[0].cameraInfo).toEqual({ src: '', visSize: 0 })
-            expect(cameraRoot?.children[1].cameraInfo).toEqual({
-                src: 'foo.cam', visSize: 1,
-            })
-            // file-linked cameras pick up className='linked' for the dim-icon hint
-            expect(cameraRoot?.children[0].className).toBe('')
-            expect(cameraRoot?.children[1].className).toBe('linked')
+            expect(types).toEqual(['object', 'styleRoot'])
         })
 
         it('populates styleRoot children from StyleManager.getStyleSetsJSON (global + scene)', () => {
@@ -252,15 +230,14 @@ describe('sceneTree service', () => {
             expect(styleRoot!.children[0].id).toBe(99)
         })
 
-        it('tolerates camera/style API failures by returning empty roots', () => {
+        it('tolerates a style API failure by returning an empty root', () => {
             const json = JSON.stringify([{ name: 'Scene1', type: '', ID: 1 }])
-            const { ctx, mockScene } = makeCtx(json)
-            ;(mockScene as { getCameraInfoJSON: ReturnType<typeof vi.fn> }).getCameraInfoJSON
-                .mockImplementation(() => { throw new Error('boom') })
+            const { ctx, getStyleSetsJSON } = makeCtx(json)
+            getStyleSetsJSON.mockImplementation(() => { throw new Error('boom') })
             const res = services.getSceneTree(ctx, { sceneId: 1 })
             expect(res.ok).toBe(true)
-            const cameraRoot = res.tree?.children.find((c) => c.type === 'cameraRoot')
-            expect(cameraRoot?.children).toHaveLength(0)
+            const styleRoot = res.tree?.children.find((c) => c.type === 'styleRoot')
+            expect(styleRoot?.children).toHaveLength(0)
         })
 
         it('returns ok:false when JSON parse fails', () => {
@@ -281,7 +258,7 @@ describe('sceneTree service', () => {
             expect(setObjectVisible).not.toHaveBeenCalled()
         })
 
-        it.each(['cameraRoot', 'styleRoot', 'camera', 'style'] as const)(
+        it.each(['styleRoot', 'style'] as const)(
             'rejects %s nodes (no visibility flag)',
             (nodeType) => {
                 const { ctx, setObjectVisible, setRendererVisible } = makeCtx('[]')

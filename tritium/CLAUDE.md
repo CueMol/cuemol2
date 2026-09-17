@@ -304,14 +304,14 @@ The worker side typically reads scene contents via JSON-returning methods. Their
 |---|---|---|
 | `scene.getSceneDataJSON()` | `[sceneNode, ...objectNodes]` flat array | Scene element has `type: ""`, object element has C++ class name. **Does not include cameras or styles.** |
 | Object's `rends` field in the above | array of renderers / groups | Groups are distinguished by the presence of a `childNodes` array (regular renderers omit that field). |
-| `scene.getCameraInfoJSON()` | `[{ name, vis_size, src }, ...]` | Cameras are owned by the scene but **not** in `getSceneDataJSON`. |
+| `scene.getCameraInfoJSON()` | `[{ name, ui_order, vis_size, src }, ...]` | Cameras are owned by the scene but **not** in `getSceneDataJSON`. Entries come in display order (`ui_order`), which the Camera pane persists and the qsc keeps as the `<camera>` element order. |
 | `StyleMgr.getStyleNamesJSON(sceneId)` | `[{ name }, ...]` | Style sets are owned by `StyleManager` service, not the scene. |
 
 When mirroring UXP behaviour where a single tree view shows scene + cameras + styles, the worker side must call all three APIs and synthesise the combined structure; never assume one JSON covers everything.
 
 ### IDs are not URLs
 
-The numeric `ID` returned in the JSON shapes above is a C++ `qlib::uid_t`. Treat it as opaque — never invent negative or large values for "virtual" UI rows except via clearly-marked synthesisers (see `buildCameraRoot` / `buildStyleRoot` in `sceneTreeTypes.ts`). Real C++ uids are non-negative.
+The numeric `ID` returned in the JSON shapes above is a C++ `qlib::uid_t`. Treat it as opaque — never invent negative or large values for "virtual" UI rows except via clearly-marked synthesisers (see `buildStyleRoot` in `sceneTreeTypes.ts`). Real C++ uids are non-negative.
 
 ---
 

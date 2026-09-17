@@ -10,18 +10,24 @@
 
 import React from 'react';
 
-export interface ListRowProps {
+/**
+ * Everything a plain div accepts is passed through (drag handlers, dataset
+ * attributes, double-click, context menu), so a list can be made draggable or
+ * renameable without a row variant per surface. What is deliberately NOT here
+ * is any size prop -- those belong to `.h3-list-row`.
+ */
+export interface ListRowProps
+    extends Omit<React.HTMLAttributes<HTMLDivElement>, 'className' | 'children'> {
     /** Highlight the row as selected. */
     selected?: boolean;
-    onClick?: React.MouseEventHandler<HTMLDivElement>;
     className?: string;
     children: React.ReactNode;
 }
 
-export const ListRow: React.FC<ListRowProps> = ({ selected, onClick, className, children }) => (
+export const ListRow: React.FC<ListRowProps> = ({ selected, className, children, ...rest }) => (
     <div
+        {...rest}
         className={`h3-list-row${selected ? ' is-selected' : ''}${className ? ` ${className}` : ''}`}
-        onClick={onClick}
         role="option"
         aria-selected={selected || undefined}
     >

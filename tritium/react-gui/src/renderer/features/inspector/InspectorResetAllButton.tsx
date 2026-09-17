@@ -13,9 +13,9 @@
  */
 
 import React, { useState } from "react";
-import { Alert, Button, Tooltip } from "@blueprintjs/core";
+import { Alert, Button } from "@blueprintjs/core";
 import { useTheme } from "@renderer/contexts/ThemeContext";
-import { AppIcon } from "@renderer/h3-kit/primitives";
+import { AppIcon, Tooltip } from "@renderer/h3-kit/primitives";
 
 export interface InspectorResetAllButtonProps {
     /** Whether any property is modified (enables the button). */
@@ -33,7 +33,7 @@ export const InspectorResetAllButton: React.FC<InspectorResetAllButtonProps> = (
 
     return (
         <>
-            <Tooltip content="Reset all to default" placement="bottom" compact>
+            <Tooltip content="Reset all to default" placement="bottom">
                 <Button
                     className="inspector-reset-all"
                     minimal

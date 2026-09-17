@@ -18,6 +18,9 @@ import type { Icon as PhosphorIcon, IconWeight } from "@phosphor-icons/react";
 import {
   Angle,
   ArrowClockwise,
+  ArrowLineDown,
+  ArrowLineUp,
+  Binoculars,
   ArrowDown,
   ArrowsClockwise,
   ArrowsOutCardinal,
@@ -45,6 +48,7 @@ import {
   File,
   FilmStrip,
   FloppyDisk,
+  LinkSimple,
   FloppyDiskBack,
   FolderOpen,
   Funnel,
@@ -64,6 +68,7 @@ import {
   Play,
   Plus,
   Ruler,
+  Perspective,
   Selection,
   SkipBack,
   SkipForward,
@@ -129,6 +134,7 @@ export const APP_ICONS = {
   // Activity bar (rendered bold by the consumer).
   "activity.explorer": { lib: "phosphor", Comp: TreeStructure },
   "activity.selection": { lib: "phosphor", Comp: Selection },
+  "activity.view": { lib: "phosphor", Comp: Binoculars },
   "activity.crystal": { lib: "phosphor", Comp: Cube },
   "activity.catalog": { lib: "phosphor", Comp: SquaresFour },
   "activity.agent": { lib: "phosphor", Comp: Sparkle },
@@ -163,6 +169,17 @@ export const APP_ICONS = {
   "ui.check": { lib: "phosphor", Comp: Check },
   "ui.cube": { lib: "phosphor", Comp: Cube },
   "ui.camera": { lib: "phosphor", Comp: Camera },
+  // View pane header -- the camera glyph now belongs to the Camera pane.
+  "ui.viewXform": { lib: "phosphor", Comp: Perspective },
+  // Camera pane toolbar. Save/Apply are opposite directions between the live
+  // view and the stored camera; the "with show/hide" variants add the arrow
+  // line, so the pair reads as the same action with more in it.
+  "ui.cameraSave": { lib: "phosphor", Comp: ArrowLineDown },
+  "ui.cameraSaveVis": { lib: "phosphor", Comp: ArrowLineDown, weight: "fill" },
+  "ui.cameraApply": { lib: "phosphor", Comp: ArrowLineUp },
+  "ui.cameraApplyVis": { lib: "phosphor", Comp: ArrowLineUp, weight: "fill" },
+  // A camera row backed by a .cam file on disk.
+  "ui.link": { lib: "phosphor", Comp: LinkSimple },
   "ui.tint": { lib: "phosphor", Comp: Drop },
   "ui.widget": { lib: "phosphor", Comp: SquaresFour },
   "ui.wrench": { lib: "phosphor", Comp: Wrench },

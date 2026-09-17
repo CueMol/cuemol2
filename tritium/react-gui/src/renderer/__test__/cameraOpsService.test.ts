@@ -56,11 +56,16 @@ describe('cameraOps.createCamera', () => {
         expect(saveViewToCam).not.toHaveBeenCalled()
     })
 
-    it('rejects already-taken names', () => {
-        const { ctx, saveViewToCam } = buildCtx({ existingNames: ['cam0'] })
+    // UXP `ws.createCamera` prompts with a suggestion but never checks the
+    // answer: an existing name is overwritten in place (Scene::setCamera is an
+    // upsert), under the "Change camera" label rather than "Create camera".
+    it('overwrites an existing name instead of refusing it', () => {
+        const { ctx, saveViewToCam, startUndoTxn } = buildCtx({ existingNames: ['cam0'] })
         const res = services.createCamera(ctx, { sceneId: 1, viewId: 7, name: 'cam0' })
-        expect(res.ok).toBe(false)
-        expect(saveViewToCam).not.toHaveBeenCalled()
+        expect(res.ok).toBe(true)
+        expect(res.overwritten).toBe(true)
+        expect(startUndoTxn).toHaveBeenCalledWith('Change camera cam0')
+        expect(saveViewToCam).toHaveBeenCalledWith(7, 'cam0')
     })
 
     it('runs saveViewToCam under undo txn on success', () => {

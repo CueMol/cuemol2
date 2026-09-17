@@ -104,7 +104,7 @@ describe('sceneOps service', () => {
                 sceneId: 1, viewId: 2, nodeId: 1, nodeType: 'scene',
             }).ok).toBe(false)
             expect(services.focusOnNode(ctx, {
-                sceneId: 1, viewId: 2, nodeId: -1, nodeType: 'cameraRoot',
+                sceneId: 1, viewId: 2, nodeId: -1, nodeType: 'styleRoot',
             }).ok).toBe(false)
         })
     })
@@ -155,9 +155,9 @@ describe('sceneOps service', () => {
             expect(commitUndoTxn).toHaveBeenCalledTimes(1)
         })
 
-        it('returns ok:false for camera/style/scene nodes (Phase 2 out of scope)', () => {
+        it('returns ok:false for style/scene nodes (Phase 2 out of scope)', () => {
             const { ctx } = makeCtx()
-            for (const nt of ['scene', 'camera', 'style', 'cameraRoot', 'styleRoot'] as const) {
+            for (const nt of ['scene', 'style', 'styleRoot'] as const) {
                 expect(services.deleteNode(ctx, {
                     sceneId: 1, nodeId: 1, nodeType: nt,
                 }).ok).toBe(false)
@@ -243,9 +243,8 @@ describe('sceneOps service', () => {
         it('returns ok:false for unsupported node types', () => {
             const { ctx } = makeCtx()
             // 'scene' has its own branch and is tested below; camera and
-            // style intentionally reject here (camera routes through
-            // cameraOps.renameCamera; style has no UXP rename handler).
-            for (const nt of ['camera', 'style', 'cameraRoot', 'styleRoot'] as const) {
+            // style intentionally rejects here (no UXP rename handler).
+            for (const nt of ['style', 'styleRoot'] as const) {
                 expect(services.renameNode(ctx, {
                     sceneId: 1, nodeId: 1, nodeType: nt, newName: 'x',
                 }).ok).toBe(false)

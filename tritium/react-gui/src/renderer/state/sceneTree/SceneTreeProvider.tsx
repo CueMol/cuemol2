@@ -74,7 +74,7 @@ export function SceneTreeProvider({ children }: { children: React.ReactNode }): 
     activeMolViewId,
   })
 
-  const flows = useSceneNewFlows({ cm, sceneId: activeSceneId, activeViewId: activeMolViewId, scene })
+  const flows = useSceneNewFlows({ cm, sceneId: activeSceneId, scene })
 
   const state = useMemo<SceneTreeState>(
     () => ({
@@ -94,7 +94,6 @@ export function SceneTreeProvider({ children }: { children: React.ReactNode }): 
         <SceneTreeCommands
           cm={cm}
           sceneId={activeSceneId}
-          activeViewId={activeMolViewId}
           scene={scene}
           beginInlineRename={actions.beginInlineRename}
           {...flows}

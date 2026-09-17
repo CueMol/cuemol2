@@ -15,8 +15,8 @@ import {
   usePluginPrefs,
 } from '@renderer/plugin-host/api'
 import type { PaneComponent } from '@renderer/plugin-host/api'
-import { Button, ButtonGroup, Tooltip } from '@blueprintjs/core'
-import { AppIcon } from '@renderer/h3-kit/primitives'
+import { Button, ButtonGroup } from '@blueprintjs/core'
+import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives'
 import { FormButton, TextAreaField, isImeKey } from '@renderer/h3-kit/form'
 import type { SubmitKey } from '@renderer/h3-kit/form'
 import { CmdId } from '@renderer/commands/ids'
@@ -141,7 +141,7 @@ export const AgentChatPane: PaneComponent = ({ collapsed, onToggleCollapse }) =>
         onToggleCollapse={onToggleCollapse}
         actions={
           <ButtonGroup minimal>
-            <Tooltip content="Clear chat" placement="bottom" compact>
+            <Tooltip content="Clear chat" placement="bottom">
               <Button
                 minimal
                 small

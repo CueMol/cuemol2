@@ -185,53 +185,35 @@ export function useSceneTreeController({
       },
 
       // UXP `onNewCmd` dispatches by selected row type: object / renderer /
-      // rendGroup to New Renderer, camera / cameraRoot to New Camera. Other
-      // selections are no-ops.
+      // rendGroup to New Renderer. Other selections are no-ops. (Its camera
+      // branch moved to the Camera pane's own New button.)
       addSelected: () => {
         const { scene: s, dispatch: d } = live.current;
         const node = s.selectedNode;
         if (!node) return;
-        if (node.type === "camera" || node.type === "cameraRoot") {
-          run("new camera", () => d(CmdId.CameraNew));
-          return;
-        }
         if (node.type !== "object" && node.type !== "renderer" && node.type !== "rendGroup") return;
         run("new renderer", () => d(CmdId.RendererNew, { sourceNodeId: String(node.id) }));
       },
 
-      // UXP `onTreeItemClick` detail==2: camera rows apply the camera to the
-      // active view (with vis flags); other rows open the property inspector.
-      // cameraRoot / styleRoot are no-ops.
+      // UXP `onTreeItemClick` detail==2: open the property inspector.
+      // styleRoot is a no-op.
       nodeDoubleClick: (node) => {
         const { dispatch: d } = live.current;
-        if (node.type === "camera") {
-          run("apply camera", () =>
-            d(CmdId.CameraApplyToView, { name: node.name, withVisFlags: true }),
-          );
-          return;
-        }
-        if (node.type === "cameraRoot" || node.type === "styleRoot") return;
+        if (node.type === "styleRoot") return;
         run("show property", () => d(CmdId.SceneNodeProperty, { id: String(node.id) }));
       },
 
       beginInlineRename,
       cancelInlineRename,
 
-      // Inline-rename commit: camera rows go through renameCamera (cameras
-      // have no in-place name setter once registered), everything else
-      // through the generic renameNode worker. Also clears the editor.
+      // Inline-rename commit goes through the generic renameNode worker.
+      // Also clears the editor.
       commitInlineRename: (node, newName) => {
         const { scene: s } = live.current;
         setEditingNodeId(null);
-        if (node.type === "camera") {
-          void s.renameCamera(node.name, newName).catch((err: unknown) => {
-            console.warn("inline rename camera failed:", err);
-          });
-        } else {
-          void s.renameNode(String(node.id), newName).catch((err: unknown) => {
-            console.warn("inline rename failed:", err);
-          });
-        }
+        void s.renameNode(String(node.id), newName).catch((err: unknown) => {
+          console.warn("inline rename failed:", err);
+        });
       },
 
       showContextMenu: (node, x, y) => {

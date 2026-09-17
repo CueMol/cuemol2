@@ -140,7 +140,13 @@ export interface CommandMap {
   [CmdId.StyleSaveAs]:          { args: StyleSetRef;             result: void }
 
   // Cameras, addressed by name (a registered camera has no uid).
-  [CmdId.CameraNew]:            { args: void;                    result: void }
+  // CameraNew resolves to the name it created, so the pane can select it.
+  [CmdId.CameraNew]:            { args: void;                    result: string | null }
+  [CmdId.CameraDelete]:         { args: { name: string };        result: void }
+  [CmdId.CameraRename]:         { args: { oldName: string; newName: string }; result: boolean }
+  [CmdId.CameraCopy]:           { args: { name: string };        result: boolean }
+  [CmdId.CameraPaste]:          { args: void;                    result: void }
+  [CmdId.CameraReorder]:        { args: { names: string[] };     result: void }
   [CmdId.CameraLoadFromFile]:   { args: void;                    result: void }
   [CmdId.CameraReload]:         { args: { name: string };        result: void }
   [CmdId.CameraSave]:           { args: { name: string };        result: void }

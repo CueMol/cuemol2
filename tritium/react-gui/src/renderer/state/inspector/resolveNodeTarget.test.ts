@@ -15,7 +15,6 @@ const tree = node({
   children: [
     node({ id: 10, type: 'object', name: 'mol', children: [node({ id: 11, type: 'renderer', name: 'rib' })] }),
     node({ id: 12, type: 'rendGroup', name: 'grp' }),
-    node({ id: -1, type: 'cameraRoot', name: 'Cameras', children: [node({ id: -3, type: 'camera', name: 'cam1' })] }),
     node({ id: -2, type: 'styleRoot', name: 'Styles', children: [node({ id: -4, type: 'style', name: 'st' })] }),
   ],
 })
@@ -29,8 +28,8 @@ describe('resolveNodeTarget', () => {
     expect(resolveNodeTarget(tree, '1')).toEqual({ kind: 'node', sceneId: 1, nodeId: 1, nodeType: 'scene' })
   })
 
-  it('does not resolve cameras, styles, the synthetic roots, or unknown ids', () => {
-    for (const id of ['-1', '-2', '-3', '-4', '999', '', 'abc']) {
+  it('does not resolve styles, the synthetic root, or unknown ids', () => {
+    for (const id of ['-2', '-4', '999', '', 'abc']) {
       expect(resolveNodeTarget(tree, id)).toBeNull()
     }
     expect(resolveNodeTarget(null, '11')).toBeNull()

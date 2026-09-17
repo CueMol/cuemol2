@@ -12,13 +12,11 @@ import type { UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
 import { useSceneNodeCommands } from './useSceneNodeCommands'
 import { useRendererCommands } from './useRendererCommands'
 import { useStyleCommands } from './useStyleCommands'
-import { useCameraCommands } from './useCameraCommands'
 import type { SceneNewFlows } from './useSceneNewFlows'
 
 export interface SceneTreeCommandsProps extends SceneNewFlows {
   cm: AsyncCueMol | null
   sceneId: number | undefined
-  activeViewId: number | undefined
   scene: UseSceneTreeResult
   beginInlineRename: (id: string) => void
 }
@@ -26,15 +24,12 @@ export interface SceneTreeCommandsProps extends SceneNewFlows {
 export const SceneTreeCommands: React.FC<SceneTreeCommandsProps> = ({
   cm,
   sceneId,
-  activeViewId,
   scene,
   beginInlineRename,
   openNewRendererFlow,
-  openNewCameraFlow,
 }) => {
   useSceneNodeCommands({ scene, beginInlineRename })
   useRendererCommands({ cm, sceneId, scene, openNewRendererFlow })
   useStyleCommands({ cm, sceneId, scene })
-  useCameraCommands({ cm, sceneId, activeViewId, scene, openNewCameraFlow })
   return null
 }

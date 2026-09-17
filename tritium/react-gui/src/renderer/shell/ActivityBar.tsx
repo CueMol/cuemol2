@@ -16,8 +16,7 @@
  */
 
 import React, { useMemo } from "react";
-import { Tooltip } from "@blueprintjs/core";
-import { AppIcon } from "@renderer/h3-kit/primitives";
+import { AppIcon, Tooltip } from "@renderer/h3-kit/primitives";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
 import { usePluginContributions } from "@renderer/plugin-host";
 import type { ResolvedPluginView } from "@renderer/plugin-host";
@@ -45,6 +44,7 @@ interface ActivityItemDef {
 /** The views the application itself owns, in top-to-bottom order. */
 export const BUILTIN_ACTIVITY_ITEMS: readonly ActivityItemDef[] = [
   { id: "explorer", icon: "activity.explorer", label: "Explorer" },
+  { id: "view", icon: "activity.view", label: "View" },
   { id: "selection", icon: "activity.selection", label: "Selection" },
   { id: "crystal", icon: "activity.crystal", label: "Crystal" },
 ];
@@ -87,7 +87,7 @@ const ActivityBarComponent: React.FC<ActivityBarProps> = ({
     <div className="activity-bar">
       <div className="activity-bar-top">
         {items.map((item) => (
-          <Tooltip key={item.id} content={item.label} placement="right" compact>
+          <Tooltip key={item.id} content={item.label} placement="right">
             <div
               className={`activity-bar-item ${activeView === item.id ? "active" : ""}`}
               onClick={() => onSelect(item.id)}
@@ -105,7 +105,7 @@ const ActivityBarComponent: React.FC<ActivityBarProps> = ({
         ))}
       </div>
       <div className="activity-bar-bottom">
-        <Tooltip content="Settings" placement="right" compact>
+        <Tooltip content="Settings" placement="right">
           <div
             className={`activity-bar-item ${settingsActive ? "active" : ""}`}
             onClick={openSettingsTab}

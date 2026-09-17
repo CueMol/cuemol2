@@ -57,7 +57,6 @@ const MOCK_TREE: SceneTreeNode = node({
                 }),
             ],
         }),
-        node({ id: 900, name: 'cam1', type: 'camera' }),
         node({
             id: 910, name: 'style1', type: 'style',
             styleInfo: { scopeId: 5, src: '', readonly: false, modified: false },
@@ -66,8 +65,7 @@ const MOCK_TREE: SceneTreeNode = node({
 })
 
 const objectNode = (): SceneTreeNode => MOCK_TREE.children[0]
-const cameraNode = (): SceneTreeNode => MOCK_TREE.children[1]
-const styleNode = (): SceneTreeNode => MOCK_TREE.children[2]
+const styleNode = (): SceneTreeNode => MOCK_TREE.children[1]
 const rendererNode = (): SceneTreeNode => MOCK_TREE.children[0].children[0]
 const groupChildNode = (): SceneTreeNode => MOCK_TREE.children[0].children[1].children[0]
 
@@ -83,7 +81,6 @@ function makeCm(overrides: Record<string, unknown> = {}): any {
             case 'toggleStyleSetReadOnly':
                 return Promise.resolve({ ok: true, readonly: true })
             case 'saveStyleSetToCurrentSrc':
-            case 'saveCameraToCurrentSrc':
                 return Promise.resolve({ ok: true, saved: true })
             default:
                 return Promise.resolve({ ok: true })
@@ -231,12 +228,6 @@ const WIRE_CASES: WireCase[] = [
         payload: { sceneId: SCENE_ID, nodeId: 200, nodeType: 'rendGroup', childIds: [201] },
     },
     {
-        name: 'deleteNode (camera routes to destroyCamera)',
-        run: (r) => r.deleteNode('900'),
-        channel: 'destroyCamera',
-        payload: { sceneId: SCENE_ID, name: 'cam1' },
-    },
-    {
         name: 'renameNode',
         run: (r) => r.renameNode('42', 'newName'),
         channel: 'renameNode',
@@ -259,12 +250,6 @@ const WIRE_CASES: WireCase[] = [
         run: (r) => r.copyNode(styleNode()),
         channel: 'copyNode',
         payload: { sceneId: SCENE_ID, nodeId: 910, nodeType: 'style', scopeId: 5 },
-    },
-    {
-        name: 'copyNode (camera carries cameraName)',
-        run: (r) => r.copyNode(cameraNode()),
-        channel: 'copyNode',
-        payload: { sceneId: SCENE_ID, nodeId: 900, nodeType: 'camera', cameraName: 'cam1' },
     },
     {
         // The clipboard payload read from main is threaded into the worker
@@ -409,60 +394,6 @@ const WIRE_CASES: WireCase[] = [
         channel: 'saveStyleSetToCurrentSrc',
         payload: { sceneId: SCENE_ID, scopeId: 5, styleSetId: 3 },
     },
-    {
-        name: 'createCamera',
-        run: (r) => r.createCamera(5, 'cam'),
-        channel: 'createCamera',
-        payload: { sceneId: SCENE_ID, viewId: 5, name: 'cam' },
-    },
-    {
-        name: 'renameCamera',
-        run: (r) => r.renameCamera('old', 'new'),
-        channel: 'renameCamera',
-        payload: { sceneId: SCENE_ID, oldName: 'old', newName: 'new' },
-    },
-    {
-        name: 'saveViewToCamera',
-        run: (r) => r.saveViewToCamera(5, 'cam', true),
-        channel: 'saveViewToCamera',
-        payload: { sceneId: SCENE_ID, viewId: 5, name: 'cam', withVisFlags: true },
-    },
-    {
-        name: 'applyCameraToView',
-        run: (r) => r.applyCameraToView(5, 'cam', false),
-        channel: 'applyCameraToView',
-        payload: { sceneId: SCENE_ID, viewId: 5, name: 'cam', withVisFlags: false },
-    },
-    {
-        name: 'clearCameraVisFlags',
-        run: (r) => r.clearCameraVisFlags('cam'),
-        channel: 'clearCameraVisFlags',
-        payload: { sceneId: SCENE_ID, name: 'cam' },
-    },
-    {
-        name: 'loadCameraFromFile',
-        run: (r) => r.loadCameraFromFile(5, '/p'),
-        channel: 'loadCameraFromFile',
-        payload: { sceneId: SCENE_ID, viewId: 5, path: '/p' },
-    },
-    {
-        name: 'saveCameraToFile',
-        run: (r) => r.saveCameraToFile('cam', '/p'),
-        channel: 'saveCameraToFile',
-        payload: { sceneId: SCENE_ID, name: 'cam', path: '/p' },
-    },
-    {
-        name: 'saveCameraToCurrentSrc',
-        run: (r) => r.saveCameraToCurrentSrc('cam'),
-        channel: 'saveCameraToCurrentSrc',
-        payload: { sceneId: SCENE_ID, name: 'cam' },
-    },
-    {
-        name: 'reloadCameraFromSrc',
-        run: (r) => r.reloadCameraFromSrc('cam'),
-        channel: 'reloadCameraFromSrc',
-        payload: { sceneId: SCENE_ID, name: 'cam' },
-    },
 ]
 
 describe('useSceneTree — action callback wire contracts', () => {
@@ -500,15 +431,6 @@ describe('useSceneTree — return-value mapping', () => {
         let res: unknown
         await act(async () => { res = await h.result.createStyleSet('s') })
         expect(res).toEqual({ ok: true, newId: 99 })
-        h.unmount()
-    })
-
-    it('saveCameraToCurrentSrc maps { ok, saved }', async () => {
-        const cm = makeCm()
-        const h = await mountReady(cm)
-        let res: unknown
-        await act(async () => { res = await h.result.saveCameraToCurrentSrc('cam') })
-        expect(res).toEqual({ ok: true, saved: true })
         h.unmount()
     })
 

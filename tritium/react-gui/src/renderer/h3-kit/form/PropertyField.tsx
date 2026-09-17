@@ -16,8 +16,8 @@
  */
 
 import React from 'react';
-import { Button, Tooltip } from '@blueprintjs/core';
-import { AppIcon } from '@renderer/h3-kit/primitives';
+import { Button } from '@blueprintjs/core';
+import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives';
 
 export interface PropertyFieldProps {
     /** Label shown above (stack) or beside (inline) the control. */
@@ -85,7 +85,6 @@ export const PropertyField: React.FC<PropertyFieldProps> = ({
                                 : 'Reset to default'
                         }
                         placement="top"
-                        compact
                     >
                         <Button
                             className="h3-form-prop-reset"

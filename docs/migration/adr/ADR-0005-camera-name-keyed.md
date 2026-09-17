@@ -129,7 +129,29 @@ dropped 2026-08-22 as unfounded: UXP's own `wspcPanelCameraCtxtMenu`
 Copy / Paste / Camera file / Save from view / Apply to view / vis-flag items only
 — so the tritium camera menu already matches it item for item and nothing is owed.
 
+### Surface moved to the Camera pane (2026-09-17)
+
+The decision above is unchanged: every camera worker service still takes
+`cameraName: string`, rename is still destroy + setCamera, and delete still
+bypasses `deleteNode`. What changed is where the user reaches them. Cameras
+left the scene tree for a Camera pane of their own (in a new View activity
+view), so:
+
+- the synthesised `cameraRoot` branch and the `cameraInfo` it carried are
+  gone; the pane reads `listCameras` instead of `Scene.getCameraInfoJSON`
+  through the tree;
+- the menu templates and `IPC.SCENE_CTX_SHOW` are reused as they are -- the
+  payload identifies a camera by name and never carried a tree id -- with a
+  camera-name variant of the action-to-command mapping;
+- the camera menu's Properties item is dropped (this ADR already recorded that
+  UXP has no such entry, and a camera has no uid for the inspector to resolve);
+- cameras gained a display order (`Camera.ui_order`, nopersist, saved as the
+  element order of the `<camera>` nodes) and `createCamera` now overwrites an
+  existing name instead of refusing it, matching UXP `ws.createCamera`.
+
+See [camera-pane](../../architecture/camera-pane.md).
+
 ### Related ADRs
 
-- *(none yet — Camera-related interactions are isolated from the other
+- *(none yet -- Camera-related interactions are isolated from the other
   ctxmenu ADRs)*

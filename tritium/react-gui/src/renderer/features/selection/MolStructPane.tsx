@@ -21,11 +21,10 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Button,
     ButtonGroup,
-    Tooltip,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
 import { ListboxTree } from "@renderer/h3-kit/list";
-import { AppIcon } from "@renderer/h3-kit/primitives";
+import { AppIcon, Tooltip } from "@renderer/h3-kit/primitives";
 import { PaneSectionHeader } from "@renderer/shell/PaneSectionHeader";
 import { useMolStructure } from "./useMolStructure";
 import { ObjectSelect, objectFilters } from "@renderer/h3-kit/ObjectSelect";
@@ -411,7 +410,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
                 onToggleCollapse={onToggleCollapse}
                 actions={
                     <ButtonGroup minimal>
-                        <Tooltip content="Select atoms" placement="bottom" compact>
+                        <Tooltip content="Select atoms" placement="bottom">
                             <Button
                                 minimal
                                 small
@@ -421,7 +420,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
                                 onClick={onSelect}
                             />
                         </Tooltip>
-                        <Tooltip content="Center at" placement="bottom" compact>
+                        <Tooltip content="Center at" placement="bottom">
                             <Button
                                 minimal
                                 small
@@ -431,7 +430,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
                                 onClick={onCenter}
                             />
                         </Tooltip>
-                        <Tooltip content="Zoom at" placement="bottom" compact>
+                        <Tooltip content="Zoom at" placement="bottom">
                             <Button
                                 minimal
                                 small
@@ -441,7 +440,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
                                 onClick={onZoom}
                             />
                         </Tooltip>
-                        <Tooltip content="Properties" placement="bottom" compact>
+                        <Tooltip content="Properties" placement="bottom">
                             <Button
                                 minimal
                                 small

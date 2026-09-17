@@ -149,27 +149,18 @@ export function sceneCtxActionToCommand(
     }
 
     // --- Cameras ---
+    // Camera menus are raised by the Camera pane, not by a tree row, so they
+    // resolve in `features/camera/cameraCtxActionToCommand` against a camera
+    // name. Listed here only to keep the switch exhaustive.
     case 'newCamera':
-      return type === 'camera' || type === 'cameraRoot' ? { id: CmdId.CameraNew } : null
     case 'cameraLoad':
-      return { id: CmdId.CameraLoadFromFile }
     case 'cameraReload':
-      return type === 'camera' ? { id: CmdId.CameraReload, args: { name: node.name } } : null
     case 'cameraSave':
-      return type === 'camera' ? { id: CmdId.CameraSave, args: { name: node.name } } : null
     case 'cameraSaveAs':
-      return type === 'camera' ? { id: CmdId.CameraSaveAs, args: { name: node.name } } : null
     case 'cameraSaveFromView':
-      return type === 'camera'
-        ? { id: CmdId.CameraSaveFromView, args: { name: node.name, withVisFlags: action.withVisFlags } }
-        : null
     case 'cameraApplyToView':
-      return type === 'camera'
-        ? { id: CmdId.CameraApplyToView, args: { name: node.name, withVisFlags: action.withVisFlags } }
-        : null
     case 'cameraEditVisFlags':
-      return type === 'camera' ? { id: CmdId.CameraEditVisFlags, args: { name: node.name } } : null
     case 'cameraClearVisFlags':
-      return type === 'camera' ? { id: CmdId.CameraClearVisFlags, args: { name: node.name } } : null
+      return null
   }
 }

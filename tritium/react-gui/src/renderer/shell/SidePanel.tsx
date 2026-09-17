@@ -14,7 +14,8 @@
  *
  * | View       | Panes                                       |
  * |------------|---------------------------------------------|
- * | Explorer   | ScenePane, ColorPane, ViewPane              |
+ * | Explorer   | ScenePane, ColorPane                        |
+ * | View       | CameraPane, ViewPane                        |
  * | Selection  | MolStructPane, SelectionPane                |
  * | Crystal    | SymmetryPane, DensityMapPane                |
  *
@@ -62,6 +63,7 @@ import { useLayout, useLayoutDispatch } from "@renderer/state/layout";
 import { ScenePane } from "@renderer/features/scene/ScenePane";
 import { ColorPane } from "@renderer/features/coloring/ColorPane";
 import { ViewPane } from "@renderer/features/molview/ViewPane";
+import { CameraPane } from "@renderer/features/camera/CameraPane";
 import { MolStructPane } from "@renderer/features/selection/MolStructPane";
 import { SelectionPane } from "@renderer/features/selection/SelectionPane";
 import { SymmetryPane } from "@renderer/features/density/SymmetryPane";
@@ -81,12 +83,14 @@ const HEADER_HEIGHT = 28;
 
 const VIEW_TITLES: Record<string, string> = {
   explorer: "Explorer",
+  view: "View",
   selection: "Selection",
   crystal: "Crystal",
 };
 
 const VIEW_ICONS: Record<string, AppIconKey> = {
   explorer: "activity.explorer",
+  view: "activity.view",
   selection: "activity.selection",
   crystal: "activity.crystal",
 };
@@ -123,9 +127,18 @@ const VIEW_PANES: Record<string, PaneConfig[]> = {
         <ColorPane collapsed={collapsed} onToggleCollapse={onToggle} />
       ),
     },
+  ],
+  view: [
+    {
+      id: "camera",
+      defaultSize: 200,
+      render: (collapsed, onToggle) => (
+        <CameraPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
     {
       id: "view",
-      defaultSize: 260,
+      defaultSize: 300,
       render: (collapsed, onToggle) => (
         <ViewPane collapsed={collapsed} onToggleCollapse={onToggle} />
       ),

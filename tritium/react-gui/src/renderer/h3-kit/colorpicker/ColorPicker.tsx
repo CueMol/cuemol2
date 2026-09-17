@@ -21,8 +21,8 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, ButtonGroup, InputGroup, Popover, Tooltip } from '@blueprintjs/core'
-import { useDarkPortalClass } from '@renderer/h3-kit/primitives'
+import { Button, ButtonGroup, InputGroup, Popover } from '@blueprintjs/core'
+import { Tooltip, useDarkPortalClass } from '@renderer/h3-kit/primitives'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { CompileColorResult } from '@renderer/worker/server/services/colorPicker.service'
 import { packToHex, type Rgb } from './colorMath'
@@ -289,7 +289,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                     className={'h3-color-widget' + (className ? ' ' + className : '')}
                 >
                     {resolved && resolved.inGamut === false ? (
-                        <Tooltip content="Out of gamut -- click to clamp" compact>
+                        <Tooltip content="Out of gamut -- click to clamp" placement="auto">
                             <button
                                 type="button"
                                 className="h3-color-swatch h3-color-swatch--warn"

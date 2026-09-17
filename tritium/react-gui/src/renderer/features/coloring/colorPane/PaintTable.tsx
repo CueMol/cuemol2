@@ -9,8 +9,8 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, ButtonGroup, Tooltip } from '@blueprintjs/core'
-import { AppIcon } from '@renderer/h3-kit/primitives'
+import { Button, ButtonGroup } from '@blueprintjs/core'
+import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives'
 import { useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider'
 import type { MenuNode } from '@shared/menuNodes'
 import { ColorSwatch, CueColorField } from '@renderer/h3-kit/colorpicker'
@@ -429,7 +429,7 @@ export const PaintTable: React.FC<PaintTableProps> = ({
 
             <div className="color-actions" data-clipboard-scope="paint-deck">
                 <ButtonGroup minimal>
-                    <Tooltip content="Add row" placement="top" compact>
+                    <Tooltip content="Add row" placement="top">
                         <Button
                             small
                             icon={<AppIcon name="ui.add" aria-hidden />}
@@ -438,7 +438,7 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                             onClick={onAdd}
                         />
                     </Tooltip>
-                    <Tooltip content="Remove row" placement="top" compact>
+                    <Tooltip content="Remove row" placement="top">
                         <Button
                             small
                             icon={<AppIcon name="ui.remove" aria-hidden />}
@@ -448,7 +448,7 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                             disabled={!isRowSelected}
                         />
                     </Tooltip>
-                    <Tooltip content="Move up" placement="top" compact>
+                    <Tooltip content="Move up" placement="top">
                         <Button
                             small
                             icon={<AppIcon name="ui.arrowUp" aria-hidden />}
@@ -458,7 +458,7 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                             disabled={!isSingleRow || selectedIdx === 0}
                         />
                     </Tooltip>
-                    <Tooltip content="Move down" placement="top" compact>
+                    <Tooltip content="Move down" placement="top">
                         <Button
                             small
                             icon={<AppIcon name="ui.arrowDown" aria-hidden />}

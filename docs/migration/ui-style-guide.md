@@ -31,6 +31,8 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 
 Blueprint の portal (popover / dialog) に dark テーマを効かせる `portalClassName` は、`theme === 'dark' ? 'bp5-dark' : ''` を各所で書かず **`useDarkPortalClass()`** (`h3-kit/primitives`) を使う。
 
+**tooltip は `h3-kit/primitives` の `Tooltip`** を使う (生の Blueprint `Tooltip` を import しない)。見た目 (compact・既定 placement) を 1 箇所に固定するためだけでなく、**Blueprint の既定は「target が focus を得たら開く」(`openOnTargetFocus`) で、これが実害を出した**ため: dialog を開くツールバーボタンは dialog を閉じた時に focus が戻り、**マウスが近くにも無いのに tooltip が勝手に出る** (Camera pane の New と scene tree の Add で報告)。kit 版は hover だけを trigger にし、ついでに Blueprint が wrapper span に付ける `tabindex="0"` も消える (tab はボタン本体に止まるべき)。`compact` は kit が固定するので consumer 側で渡さない。
+
 **実装前にカタログを探して再利用する (最優先 / まずこれ)**: UI を書き始める前に、下表と **実物カタログ `components/panes/CatalogPane1/2/3`** を一覧し、欲しい見た目 (参照画像があればそれ) に一致する既存 component を特定してから使う。既存パターンを別 component で自作し直さない。よくある取り違え:
 - **ステッパー付き数値ボックス (up/down 矢印)** = `SliderField`。`slider={false}` で slider 無しの「数値+ステッパー」だけになる。`NumericField` は**既定でステッパーを隠す**設計なので、ステッパーを足そうとしない。
 - **drag で増減する数値** = `DragNumericField` (`NumericField` ではない)。
@@ -119,6 +121,8 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 | flex (自前 React リスト) | `<Listbox>` + `<ListRow selected>` (`h3-kit/list/`) | size props 無し。`.h3-list-row .type-row` を出す |
 | HTML `<table>` | `.h3-list-table` + `<tr class="h3-list-table-row">`、選択は `.is-selected` | 行高/hover/selected を list-kit が供給。zebra・セル境界等は consumer 固有 (例: `.insp-gt-row`) |
 | Blueprint `<Tree>` | Tree の `className` に **`h3-listbox-tree`** を足す | Blueprint 注入要素 (`.bp5-tree-node-content`) に list-kit がトークンを当てる。indent は Blueprint の depth padding に委ねる (`.bp5-tree-node-content` の `padding-left` を直接上書きしない) |
+
+**行のテキストは選択できない** (`.h3-list-row` に `user-select: none`; 行内の `input` だけ `text` に戻す)。行ラベルは文章ではなくコントロールの名前で、行をまたぐドラッグは「行を動かす」操作であるべきだから。実害も出た: drag&drop 可能なリストで、ブラウザが行ではなく**選択されたテキスト**をドラッグし、ゴーストがポインタより下の全行ラベルと隣の pane の見出しになった。ドラッグ可能な行では併せて `dataTransfer.setDragImage(row, ...)` で**ドラッグ画像に行自身を明示**する (ブラウザ任せにしない)。
 
 **例外**: color swatch テーブル (`_color-panel.css`) は、色見本セル上で背景ハイライトが読めないため hover/selected を **outline 方式**で残す (SoT 公認の例外)。
 

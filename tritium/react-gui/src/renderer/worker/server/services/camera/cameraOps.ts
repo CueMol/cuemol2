@@ -10,6 +10,7 @@
 //
 // UXP source for each handler:
 //   - createCamera           -> workspace_panel.js  ws.createCamera
+//                              (an existing name is overwritten, not refused)
 //   - destroyCamera          -> workspace_panel.js  ws.destroyCamera
 //   - renameCamera           -> workspace_panel.js  ws.onRenameCamera
 //                              (atomic destroyCamera + setCamera since
@@ -38,26 +39,35 @@ function getCameraRef(scene: Scene, name: string): Camera | null {
 export interface CreateCameraArgs {
     sceneId: number;
     viewId: number;
-    /** User-confirmed name. Worker rejects empty / already-taken names. */
+    /**
+     * User-confirmed name. An empty name is rejected; an existing one is
+     * OVERWRITTEN without asking, which is what UXP `ws.createCamera` does
+     * (it calls `saveViewToCam` whatever the name, and `Scene::setCamera` is
+     * an upsert). The overwrite keeps the old camera's source path and its
+     * display slot, but not its visibility flags -- the view's camera has
+     * none, and UXP loses them the same way.
+     */
     name: string;
 }
 
 export interface CreateCameraResult {
     ok: boolean;
+    /** True when a camera of that name already existed and was replaced. */
+    overwritten: boolean;
 }
 
 export function createCamera(ctx: WorkerContext, args: CreateCameraArgs): CreateCameraResult {
     const trimmed = args.name.trim();
-    if (trimmed.length === 0) return { ok: false };
+    if (trimmed.length === 0) return { ok: false, overwritten: false };
     const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false };
-    if (scene.hasCamera(trimmed)) return { ok: false };
+    if (!scene) return { ok: false, overwritten: false };
 
+    const overwritten = scene.hasCamera(trimmed);
     let ok = false;
-    withUndoTxn(scene, `Create camera: ${trimmed}`, () => {
+    withUndoTxn(scene, overwritten ? `Change camera ${trimmed}` : `Create camera: ${trimmed}`, () => {
         ok = scene.saveViewToCam(args.viewId, trimmed);
     });
-    return { ok };
+    return { ok, overwritten };
 }
 
 // --- destroyCamera ---
