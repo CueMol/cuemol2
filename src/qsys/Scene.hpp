@@ -28,6 +28,7 @@
 
 #include <map>
 #include <memory>
+#include <vector>
 
 class Scene_wrap;
 
@@ -437,6 +438,12 @@ namespace qsys {
     /// Register new camera setting (impl/without event firing)
     /// This method overwrite if the camera with the same name exists.
     void setCameraImpl(const LString &name, CameraPtr r);
+
+    /// Next free ui_order slot (max of the registered ones + 1, 0 when empty)
+    int nextCameraUIOrder() const;
+
+    /// Cameras in display (ui_order, then name) order
+    std::vector<CameraIter> sortedCameras() const;
 
   public:
     /// Register new camera setting (with event firing)

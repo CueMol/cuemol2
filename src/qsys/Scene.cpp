@@ -1253,6 +1253,35 @@ void Scene::setCameraImpl(const LString &name, CameraPtr r)
   MB_ASSERT(res);
 }
 
+/// Next free ui_order slot (max of the registered ones + 1, 0 when empty)
+int Scene::nextCameraUIOrder() const
+{
+  int nmax = -1;
+  for (const auto &i : m_camtab)
+    nmax = qlib::max(nmax, i.second->getUIOrder());
+  return nmax + 1;
+}
+
+/// Cameras in display order: ui_order ascending, ties broken by name so the
+/// order is total even for cameras that share a slot (e.g. the internal
+/// __current one, which the GUI never reorders).
+std::vector<Scene::CameraIter> Scene::sortedCameras() const
+{
+  std::vector<CameraIter> rval;
+  rval.reserve(m_camtab.size());
+  for (CameraIter i = m_camtab.begin(); i != m_camtab.end(); ++i)
+    rval.push_back(i);
+
+  std::stable_sort(rval.begin(), rval.end(),
+                   [](const CameraIter &a, const CameraIter &b) -> bool {
+                     const int oa = a->second->getUIOrder();
+                     const int ob = b->second->getUIOrder();
+                     if (oa != ob) return oa < ob;
+                     return a->first.compare(b->first) < 0;
+                   });
+  return rval;
+}
+
 //////////
 // Interfaces
 
@@ -1260,6 +1289,18 @@ void Scene::setCameraImpl(const LString &name, CameraPtr r)
 void Scene::setCamera(const LString &name, CameraPtr pCam)
 {
   bool bCreate = !hasCamera(name);
+
+  // Assign the display slot before the undo info is recorded, so undo/redo
+  // replays the camera with the order it had. A camera that already carries
+  // a slot (a reorder, a rename, an undo replay) keeps it; a fresh one
+  // (loaded from a qsc/cam file, pasted, or saved from a view) inherits the
+  // slot it overwrites, or goes to the end.
+  if (pCam->getUIOrder() < 0) {
+    if (bCreate)
+      pCam->setUIOrder(nextCameraUIOrder());
+    else
+      pCam->setUIOrder(getCameraRef(name)->getUIOrder());
+  }
 
   // setup undo txn
   UndoUtil uu(this);
@@ -1427,6 +1468,10 @@ bool Scene::saveViewToCam(qlib::uid_t viewid, const LString &name)
   // source info shouldn't be overwritten by new value (i.e. empty string)
   pCam->setSource(srcpath);
 
+  // The view's camera carries the slot of whatever camera was applied to it
+  // last; clear it so setCamera() assigns this name's own slot.
+  pCam->setUIOrder(-1);
+
   setCamera(name, pCam);
 
   return true;
@@ -1467,16 +1512,22 @@ void Scene::setCamToViewAnim(qlib::uid_t viewid, const LString &name, bool bAnim
 LString Scene::getCameraInfoJSON() const
 {
   LString rval = "[";
-  
-  camtab_t::const_iterator viter = m_camtab.begin();
-  camtab_t::const_iterator eiter = m_camtab.end();
-  for (; viter!=eiter; ++viter) {
-    if (viter!=m_camtab.begin())
+
+  // Entries come in display order (ui_order), not in the name order of the
+  // backing map, so every consumer (GUI list, anim camera select, scripts)
+  // sees the order the user arranged.
+  std::vector<CameraIter> cams = sortedCameras();
+  bool bFirst = true;
+  for (const CameraIter &viter : cams) {
+    if (!bFirst)
       rval += ",";
+    bFirst = false;
 
     CameraPtr obj = viter->second;
 
     rval += "{\"name\":\""+ viter->first.escapeQuots() +"\",";
+
+    rval += LString::format("\"ui_order\": %d,", obj->getUIOrder());
 
     rval += LString::format("\"vis_size\": %d,", obj->getVisSize());
 
@@ -1653,9 +1704,11 @@ void Scene::stylesWriteTo(qlib::LDom2Node *pNode) const
 /// WriteTo2() impl for camera settings
 void Scene::camerasWriteTo(qlib::LDom2Node *pNode) const
 {
-  camtab_t::const_iterator viter = m_camtab.begin();
-  camtab_t::const_iterator eiter = m_camtab.end();
-  for (; viter!=eiter; ++viter) {
+  // Written in display order: ui_order is not persisted as an attribute, so
+  // the element order of the <camera> nodes IS the saved order (the load
+  // path assigns slots in the order it reads them). Same scheme as objects.
+  std::vector<CameraIter> cams = sortedCameras();
+  for (const CameraIter &viter : cams) {
     qlib::LDom2Node *pChNode = pNode->appendChild();
     pChNode->setTagName("camera");
 

@@ -28,6 +28,11 @@ runtime_class Camera
   /// Source of the camera (empty if embeded)
   property string src => redirect(getSource, XXX) (readonly);
 
+  /// Display order in the UI. Not written as an attribute: the order is
+  /// saved as the element order of the <camera> nodes in the qsc file
+  /// (same scheme as Object/Renderer ui_order).
+  property integer ui_order => redirect(getUIOrder, setUIOrder) (nopersist);
+
   property real zoom => redirect(getZoom, setZoom);
   default zoom = 50.0;
 

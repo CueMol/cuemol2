@@ -19,7 +19,7 @@
 using namespace qsys;
 
 Camera::Camera()
-     :  m_pVisSetNodes(NULL)
+     :  m_nUIOrder(-1), m_pVisSetNodes(NULL)
 {
   //m_fSlabDepth = 50.0;
   //m_fZoom = 50.0;
@@ -42,6 +42,11 @@ void Camera::copyFrom(const Camera&r)
 {
   m_name = r.m_name;
   m_source = r.m_source;
+
+  // The display order travels with the camera value, so the copies made by
+  // Scene::getCamera(), the undo/redo edit info and View::m_curcam keep the
+  // slot. equals() ignores it (it compares the view state only).
+  m_nUIOrder = r.m_nUIOrder;
 
   m_nStereoMode = r.m_nStereoMode;
   setDefaultPropFlag("stereoMode", false);
