@@ -500,8 +500,8 @@ void PostProcGpuPrim::drawHoverMaskBlur(DisplayContext *pDC, RenderTarget *maskR
 
 void PostProcGpuPrim::drawHoverHighlight(DisplayContext *pDC, RenderTarget *maskRT,
                                          const float fillRGBA[4],
-                                         const float edgeLightRGBA[4],
-                                         const float edgeDarkRGBA[4])
+                                         const float edgeInnerRGBA[4],
+                                         const float edgeOuterRGBA[4])
 {
     if (maskRT == nullptr) return;
     if (!ensureDrawElem(pDC)) return;
@@ -523,10 +523,10 @@ void PostProcGpuPrim::drawHoverHighlight(DisplayContext *pDC, RenderTarget *mask
     m_pHoverPO->setUniform("u_maskTex", RT_TU_COLOR);
     m_pHoverPO->setUniformF("u_fillColor", fillRGBA[0], fillRGBA[1], fillRGBA[2],
                             fillRGBA[3]);
-    m_pHoverPO->setUniformF("u_edgeLight", edgeLightRGBA[0], edgeLightRGBA[1],
-                            edgeLightRGBA[2], edgeLightRGBA[3]);
-    m_pHoverPO->setUniformF("u_edgeDark", edgeDarkRGBA[0], edgeDarkRGBA[1],
-                            edgeDarkRGBA[2], edgeDarkRGBA[3]);
+    m_pHoverPO->setUniformF("u_edgeInner", edgeInnerRGBA[0], edgeInnerRGBA[1],
+                            edgeInnerRGBA[2], edgeInnerRGBA[3]);
+    m_pHoverPO->setUniformF("u_edgeOuter", edgeOuterRGBA[0], edgeOuterRGBA[1],
+                            edgeOuterRGBA[2], edgeOuterRGBA[3]);
 
     pDC->drawElem(*m_pDrawElem);
 

@@ -215,12 +215,12 @@ public:
     /// Hover highlight, pass 3: sample the soft mask (maskRT, LINEAR, any size)
     /// and paint a translucent fill (fillRGBA, alpha = strength) plus a
     /// two-tone outline one sigma wide on each side of the element boundary
-    /// (edgeLightRGBA inside, edgeDarkRGBA outside). Fragments outside the
+    /// (edgeInnerRGBA inside, edgeOuterRGBA outside). Fragments outside the
     /// outline are discarded, so the caller draws it over the finished frame
     /// with the standard alpha blend enabled and the depth test disabled.
     void drawHoverHighlight(DisplayContext *pDC, RenderTarget *maskRT,
-                            const float fillRGBA[4], const float edgeLightRGBA[4],
-                            const float edgeDarkRGBA[4]);
+                            const float fillRGBA[4], const float edgeInnerRGBA[4],
+                            const float edgeOuterRGBA[4]);
 
 private:
     void alloc(DisplayContext *pDC);

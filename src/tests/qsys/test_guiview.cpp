@@ -433,3 +433,50 @@ TEST(GUIViewTest, ComputeSlabPlanesPickClipsAtFogEnd)
     EXPECT_DOUBLE_EQ(pn, 0.1);
     EXPECT_GT(pf, pn);
 }
+
+// --- Hover highlight: the outline tones follow the background lightness ---
+
+// The two outline tones lie on different surfaces (the outer one on the
+// background, the inner one on the element), and a thin element only ever gets
+// the outer one, so the outer tone is the one picked against the background:
+// white over a dark background, near-black over a light one, with the inner
+// tone always its opposite. The switch is hard and never lands on a mid grey
+// (an interpolated tone would be the worst choice against a mid grey
+// background), and mid grey itself stays on the light-background side.
+TEST(GUIViewTest, HoverEdgeTonesFlipWithBgLightness)
+{
+    float outer = 0.0f, inner = 0.0f;
+
+    const float black[3] = {0.0f, 0.0f, 0.0f};
+    qsys::GUIView::hoverEdgeTonesForBg(black, outer, inner);
+    EXPECT_FLOAT_EQ(outer, 1.0f);
+    EXPECT_LT(inner, 0.5f);
+
+    const float white[3] = {1.0f, 1.0f, 1.0f};
+    qsys::GUIView::hoverEdgeTonesForBg(white, outer, inner);
+    EXPECT_LT(outer, 0.5f);
+    EXPECT_GT(inner, 0.5f);
+
+    // Mid grey keeps the light-background tones: a plain inversion would put a
+    // mid grey line here, which would be invisible.
+    float outerGrey = 0.0f, innerGrey = 0.0f;
+    const float grey[3] = {0.5f, 0.5f, 0.5f};
+    qsys::GUIView::hoverEdgeTonesForBg(grey, outerGrey, innerGrey);
+    EXPECT_FLOAT_EQ(outerGrey, outer);
+    EXPECT_FLOAT_EQ(innerGrey, inner);
+}
+
+// "Dark" is the perceptual luminance of the background, not its HSB
+// brightness: a saturated blue background is dark (its outer tone goes white)
+// while a saturated green one is not, although max(R,G,B) is 1.0 for both.
+TEST(GUIViewTest, HoverEdgeTonesUseLuminanceNotHsbBrightness)
+{
+    float outerBlue = 0.0f, innerBlue = 0.0f;
+    float outerGreen = 0.0f, innerGreen = 0.0f;
+    const float blue[3] = {0.0f, 0.0f, 1.0f};
+    const float green[3] = {0.0f, 1.0f, 0.0f};
+    qsys::GUIView::hoverEdgeTonesForBg(blue, outerBlue, innerBlue);
+    qsys::GUIView::hoverEdgeTonesForBg(green, outerGreen, innerGreen);
+    EXPECT_FLOAT_EQ(outerBlue, 1.0f);
+    EXPECT_LT(outerGreen, 0.5f);
+}

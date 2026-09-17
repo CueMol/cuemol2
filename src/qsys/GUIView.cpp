@@ -287,17 +287,61 @@ bool GUIView::isHoverHighlightActive() const
 
 namespace {
 // Hover highlight look: a translucent fill in ViewInputConfig::hover_hl_color
-// and a two-tone outline (light inside, dark outside) so that one of the two
-// lines contrasts with any background colour.
+// and a two-tone outline. The two tones lie on different surfaces: the outer
+// one (low mask values) on the background, the inner one on the element
+// itself, so the tone that has to contrast with the scene background is the
+// outer one (hoverEdgeTonesForBg). A thin element gets the outer tone only:
+// its blurred mask peaks below the tone switch of hover_hl_frag.glsl, so
+// neither the inner tone nor the fill appear.
 constexpr float HOVER_HL_FILL_ALPHA = 0.35f;
+/// Inner tone over a light background, on the element, which is usually the
+/// darker of the two surfaces there.
 constexpr float HOVER_HL_EDGE_LIGHT = 0.95f;
+/// Outer tone over a light background, and the inner tone over a dark one.
 constexpr float HOVER_HL_EDGE_DARK = 0.1f;
+/// Outer tone over a dark background: plain white, the maximum contrast on
+/// the surface that carries the whole highlight for a thin element.
+constexpr float HOVER_HL_EDGE_WHITE = 1.0f;
 constexpr float HOVER_HL_EDGE_ALPHA = 0.9f;
 /// Width of each outline tone in CSS pixels. It is the sigma of the Gaussian
 /// that blurs the element mask; the outline spans one sigma on each side of
 /// the element boundary in the blurred mask.
 constexpr double HOVER_HL_EDGE_CSS_PX = 1.5;
+/// Background relative luminance at which the outer tone flips from white to
+/// near-black: the point where the two have the same contrast ratio against
+/// the background ((Y + 0.05)^2 = 1.05 * (0.1 linearised + 0.05), giving
+/// 4.18:1, the worst case over all background colours). The switch is hard
+/// rather than a ramp because the tone is a black-or-white decision: an
+/// interpolated value would be a mid grey, which is the worst choice against
+/// a mid grey background.
+constexpr float HOVER_HL_BG_LUM_THRESH = 0.20f;
+
+/// sRGB component (0..1) -> linear light (IEC 61966-2-1 / WCAG).
+float srgbToLinear(float c)
+{
+    return (c <= 0.04045f) ? (c / 12.92f) : std::pow((c + 0.055f) / 1.055f, 2.4f);
+}
+
+/// Relative luminance (WCAG 2.x) of an sRGB colour. Unlike the HSB brightness
+/// of AbstractColor::getHSB (= max(R,G,B)) this is perceptual: a saturated
+/// blue background counts as dark.
+float relLuminance(float r, float g, float b)
+{
+    return 0.2126f * srgbToLinear(r) + 0.7152f * srgbToLinear(g) +
+           0.0722f * srgbToLinear(b);
+}
 }  // namespace
+
+void GUIView::hoverEdgeTonesForBg(const float bg[3], float &outerGray, float &innerGray)
+{
+    if (relLuminance(bg[0], bg[1], bg[2]) < HOVER_HL_BG_LUM_THRESH) {
+        outerGray = HOVER_HL_EDGE_WHITE;
+        innerGray = HOVER_HL_EDGE_DARK;
+    } else {
+        outerGray = HOVER_HL_EDGE_DARK;
+        innerGray = HOVER_HL_EDGE_LIGHT;
+    }
+}
 
 bool GUIView::ensureHoverMaskTargets(int pw, int ph)
 {
@@ -381,6 +425,8 @@ void GUIView::drawHoverOverlay(DisplayContext *pdc)
         m_bHoverMaskValid = true;
     }
 
+    // Fill: the configured hover colour, not background dependent. On a thin
+    // element it does not appear at all (see the note on the constants).
     float r = 1.0f, g = 0.4f, b = 0.6f;
     const gfx::ColorPtr &pCol = ViewInputConfig::getInstance()->getHoverHlColor();
     if (!pCol.isnull()) {
@@ -389,15 +435,26 @@ void GUIView::drawHoverOverlay(DisplayContext *pdc)
         b = float(pCol->fb());
     }
     const float fill[4] = {r, g, b, HOVER_HL_FILL_ALPHA};
-    const float edgeLight[4] = {HOVER_HL_EDGE_LIGHT, HOVER_HL_EDGE_LIGHT,
-                                HOVER_HL_EDGE_LIGHT, HOVER_HL_EDGE_ALPHA};
-    const float edgeDark[4] = {HOVER_HL_EDGE_DARK, HOVER_HL_EDGE_DARK, HOVER_HL_EDGE_DARK,
-                               HOVER_HL_EDGE_ALPHA};
+
+    // Outline: the outer tone follows the scene background, so that a thin
+    // element, which gets that tone alone, stays visible over a dark scene.
+    float outerGray = HOVER_HL_EDGE_DARK, innerGray = HOVER_HL_EDGE_LIGHT;
+    ScenePtr pScene = getScene();
+    if (!pScene.isnull()) {
+        const gfx::ColorPtr &pBgCol = pScene->getBgColor();
+        if (!pBgCol.isnull()) {
+            const float bg[3] = {float(pBgCol->fr()), float(pBgCol->fg()),
+                                 float(pBgCol->fb())};
+            hoverEdgeTonesForBg(bg, outerGray, innerGray);
+        }
+    }
+    const float edgeInner[4] = {innerGray, innerGray, innerGray, HOVER_HL_EDGE_ALPHA};
+    const float edgeOuter[4] = {outerGray, outerGray, outerGray, HOVER_HL_EDGE_ALPHA};
 
     // Alpha-blend the overlay over the finished frame, ignoring depth.
     pdc->setBlendEnabled(true);
     pdc->setBlendModeAdd(false);
-    pPP->drawHoverHighlight(pdc, m_pHoverMaskRT[1], fill, edgeLight, edgeDark);
+    pPP->drawHoverHighlight(pdc, m_pHoverMaskRT[1], fill, edgeInner, edgeOuter);
     pdc->setDepthTestEnabled(true);
 }
 
