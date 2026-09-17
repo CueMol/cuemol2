@@ -21,7 +21,7 @@
  * through the existing view commands, so that hook stays the single source of
  * truth and the native menu stays in sync. See ADR-0025.
  *
- * This pane is one of the components within the Explorer view.
+ * This pane sits below the Camera pane in the View activity view.
  */
 
 import React, { useRef, useState, useCallback } from 'react'
@@ -194,7 +194,7 @@ export const ViewPane: React.FC<ViewPaneProps> = ({ collapsed, onToggleCollapse 
         <div className="sp-pane view-pane">
             <PaneSectionHeader
                 title="View"
-                icon="ui.camera"
+                icon="ui.viewXform"
                 collapsed={collapsed}
                 onToggleCollapse={onToggleCollapse}
             />

@@ -162,6 +162,9 @@ export function buildTemplate(payload: SceneCtxMenuPayload): SceneCtxNode[] {
  *   - Camera file submenu -- Reload only when src is non-empty
  *   - Edit vis flags... -- opens the shared vis-flags dialog
  *   - Clear vis flags -- enabled only when vis_size > 0
+ *
+ * No Properties entry: UXP's own `wspcPanelCameraCtxtMenu` has none, and a
+ * camera has no uid for the inspector to resolve (ADR-0005).
  */
 function buildCameraNodeMenu(
     payload: SceneCtxMenuPayload,
@@ -221,8 +224,6 @@ function buildCameraNodeMenu(
         },
         { type: 'separator' },
         renameItem(),
-        { type: 'separator' },
-        propertyItem(),
     ]
 }
 

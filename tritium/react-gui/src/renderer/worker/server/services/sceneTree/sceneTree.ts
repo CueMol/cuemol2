@@ -1,13 +1,10 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import {
-    buildCameraRoot,
     buildStyleRoot,
     parseSceneTreeJSON,
-    type CameraRootEntry,
     type SceneNodeType,
     type SceneTreeNode,
     type StyleRootEntry,
@@ -48,12 +45,6 @@ export interface SetNodeUiCollapsedResult {
     ok: boolean;
 }
 
-interface CameraInfoEntry {
-    name?: string;
-    src?: string;
-    vis_size?: number;
-}
-
 interface StyleSetJSONEntry {
     name?: string;
     uid?: number;
@@ -61,28 +52,6 @@ interface StyleSetJSONEntry {
     src?: string;
     readonly?: boolean;
     modified?: boolean;
-}
-
-function getCameraEntries(scene: Scene): CameraRootEntry[] {
-    try {
-        const json = scene.getCameraInfoJSON();
-        if (!json) return [];
-        const parsed = JSON.parse(json) as CameraInfoEntry[];
-        if (!Array.isArray(parsed)) return [];
-        const out: CameraRootEntry[] = [];
-        for (const e of parsed) {
-            const name = e.name ?? '';
-            if (name.length === 0) continue;
-            out.push({
-                name,
-                src: e.src ?? '',
-                visSize: typeof e.vis_size === 'number' ? e.vis_size : 0,
-            });
-        }
-        return out;
-    } catch {
-        return [];
-    }
 }
 
 function parseStyleSetsJSON(
@@ -130,12 +99,10 @@ export function getSceneTree(ctx: WorkerContext, args: GetSceneTreeArgs): GetSce
     const tree = parseSceneTreeJSON(json);
     if (!tree) return { ok: false, tree: null };
 
-    // Synthesize camera / style root branches so the tree matches UXP layout.
-    // C++ `getSceneDataJSON` does not include cameras or styles; these come
-    // from separate APIs.
-    const cameraEntries = getCameraEntries(scene);
+    // Synthesize the style root branch: C++ `getSceneDataJSON` covers neither
+    // styles nor cameras, and styles have no pane of their own yet. Cameras
+    // are served by `listCameras` to the Camera pane instead.
     const styleEntries = getStyleEntries(ctx, args.sceneId);
-    tree.children.push(buildCameraRoot(cameraEntries));
     tree.children.push(buildStyleRoot(styleEntries));
 
     return { ok: true, tree };

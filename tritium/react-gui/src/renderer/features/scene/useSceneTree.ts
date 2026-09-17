@@ -43,10 +43,6 @@ import {
     type SceneTreeRendererOps,
 } from '@renderer/hooks/sceneTree/useSceneTreeRendererOps'
 import {
-    useSceneTreeCameraOps,
-    type SceneTreeCameraOps,
-} from '@renderer/hooks/sceneTree/useSceneTreeCameraOps'
-import {
     useSceneTreeStyleOps,
     type SceneTreeStyleOps,
 } from '@renderer/hooks/sceneTree/useSceneTreeStyleOps'
@@ -100,7 +96,6 @@ export interface SceneTreeCoreState {
 export type UseSceneTreeResult = SceneTreeCoreState &
     SceneTreeNodeOps &
     SceneTreeRendererOps &
-    SceneTreeCameraOps &
     SceneTreeStyleOps
 
 // Source-type bitmask matching UXP workspace_panel.js: any add/remove/propchg
@@ -212,7 +207,6 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
     // --- Domain action callbacks ---
     const nodeOps = useSceneTreeNodeOps(cm, sceneIdRef, tree)
     const rendererOps = useSceneTreeRendererOps(cm, sceneIdRef, tree)
-    const cameraOps = useSceneTreeCameraOps(cm, sceneIdRef)
     const styleOps = useSceneTreeStyleOps(cm, sceneIdRef)
 
     const selectedNode = useMemo(
@@ -248,13 +242,12 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
             refetch,
             ...nodeOps,
             ...rendererOps,
-            ...cameraOps,
             ...styleOps,
         }),
         [
             tree, selectedId, selectedIds, selectedNode, selectedHasOps,
             setSelectedId, toggleInSelection, selectRangeTo, refetch,
-            nodeOps, rendererOps, cameraOps, styleOps,
+            nodeOps, rendererOps, styleOps,
         ],
     )
 }
@@ -263,13 +256,13 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
  * Decide which toolbar actions are valid for a given selected node.
  * Mirrors UXP `onTreeSelChanged` + `onNewCmd` / `deleteCmdImpl` enablement
  * rules:
- *   - focus: object / renderer / rendGroup
- *   - delete: object / renderer / rendGroup / camera (cameraRoot Delete is
- *     disabled in UXP via `wspcCamCtxt-disable` keyed to elem.type=="camera")
- *   - property: everything except the synthesised cameraRoot / styleRoot
- *   - add: object / renderer / rendGroup -> New Renderer;
- *          camera / cameraRoot -> New Camera
+ *   - focus / delete: object / renderer / rendGroup
+ *   - property: everything except the synthesised styleRoot
+ *   - add: object / renderer / rendGroup -> New Renderer
  *          (style is handled via its own ctxmenu path for now)
+ *
+ * Cameras used to be a branch of this tree; they live in the Camera pane now,
+ * which has its own toolbar.
  */
 function computeOps(node: SceneTreeNode | null): SceneTreeSelectionOps {
     if (!node) return { focus: false, delete: false, property: false, add: false }
@@ -277,15 +270,10 @@ function computeOps(node: SceneTreeNode | null): SceneTreeSelectionOps {
         node.type === 'object' ||
         node.type === 'renderer' ||
         node.type === 'rendGroup'
-    const propertyTarget =
-        node.type !== 'cameraRoot' && node.type !== 'styleRoot'
-    const canAdd =
-        isRendish || node.type === 'camera' || node.type === 'cameraRoot'
-    const canDelete = isRendish || node.type === 'camera'
     return {
         focus: isRendish,
-        delete: canDelete,
-        property: propertyTarget,
-        add: canAdd,
+        delete: isRendish,
+        property: node.type !== 'styleRoot',
+        add: isRendish,
     }
 }

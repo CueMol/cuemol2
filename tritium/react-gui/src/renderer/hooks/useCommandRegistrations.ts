@@ -20,6 +20,7 @@ import { useTabCommands } from '@renderer/commands/useTabCommands';
 import { useFocusEditCommands } from '@renderer/commands/useFocusEditCommands';
 import { useNewTabCommand } from '@renderer/commands/useNewTabCommand';
 import { useEditCommands } from '@renderer/commands/useEditCommands';
+import { useCameraCommands } from '@renderer/features/camera/useCameraCommands';
 import { useToolCommands } from '@renderer/commands/useToolCommands';
 import { useFileCommands } from '@renderer/commands/useFileCommands';
 import { useViewCommands } from '@renderer/commands/useViewCommands';
@@ -50,6 +51,7 @@ export function useCommandRegistrations(): void {
   useTabCommands({ closeTab, openSettingsTab, getActiveTabId });
   useNewTabCommand({ cm, getActiveSceneInfo, newScene });
   useEditCommands({ cm, getActiveSceneInfo });
+  useCameraCommands({ cm, getActiveSceneInfo });
   useFocusEditCommands();
   useToolCommands({ cm, getActiveSceneInfo });
   useFileCommands({ cm, getActiveSceneInfo });

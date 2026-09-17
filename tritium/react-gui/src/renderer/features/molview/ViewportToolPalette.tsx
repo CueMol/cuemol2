@@ -25,8 +25,8 @@
  */
 
 import React from "react";
-import { Popover, Tooltip } from "@blueprintjs/core";
-import { AppIcon, DisclosureCaret } from "@renderer/h3-kit/primitives";
+import { Popover } from "@blueprintjs/core";
+import { AppIcon, DisclosureCaret, Tooltip } from "@renderer/h3-kit/primitives";
 import { MeasureOptionsPopover } from "./MeasureOptionsPopover";
 import { BondEditOptionsPopover } from "./BondEditOptionsPopover";
 import { useTheme } from "@renderer/contexts/ThemeContext";
@@ -62,7 +62,7 @@ export const ViewportToolPalette: React.FC<Props> = ({
     <div className="viewport-tool-palette" role="toolbar" aria-label="Viewport tools">
       {/* The label carries the state: Blueprint's Tooltip renders its own
           target props and drops an aria-expanded passed through it. */}
-      <Tooltip placement="right" compact content={toggleLabel}>
+      <Tooltip placement="right" content={toggleLabel}>
         <button
           type="button"
           className="tool-palette-collapse"
@@ -124,7 +124,6 @@ export const ViewportToolPalette: React.FC<Props> = ({
               <Tooltip
                 key={t.id}
                 placement="right"
-                compact
                 content={
                   <span>
                     {t.label} <kbd className="tool-shortcut">{t.shortcut}</kbd>

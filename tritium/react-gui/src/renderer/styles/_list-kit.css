@@ -54,6 +54,20 @@
   font-weight: var(--type-row-fw);
   cursor: pointer;
   transition: background 0.1s;
+  /*
+   * A row label is a control's name, not prose: dragging across rows should
+   * move a row, never sweep a text selection. On a draggable list this was
+   * visible -- the browser dragged the selected text instead of the row, so
+   * the ghost was the labels of every row below the pointer (and the next
+   * pane's header) rather than the row being moved.
+   */
+  user-select: none;
+}
+
+/* An inline editor inside a row still needs ordinary text selection. */
+.h3-list-row input,
+.h3-list-row textarea {
+  user-select: text;
 }
 
 .h3-list-row:hover {

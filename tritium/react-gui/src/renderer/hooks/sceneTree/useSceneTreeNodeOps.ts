@@ -12,59 +12,9 @@ import type {
     SceneTreeNode,
 } from '@renderer/worker/shared/sceneTreeTypes'
 import type { SelectMolKind } from '@shared/types/sceneCtxMenu'
-import { IPC } from '@shared/ipcChannels'
 import { findNode, findParentNode, findTypedNode } from './sceneTreeNodeUtils'
 import { recordAppliedSel } from '@renderer/h3-kit/MolSelList'
-
-/** What a copy service returns for the caller to put on the clipboard. */
-interface SceneClipPayload {
-    ok: boolean
-    kind: 'object' | 'renderer' | 'style' | 'camera' | null
-    form?: 'single' | 'rendArray'
-    bytes?: Uint8Array
-}
-
-/**
- * Hand a freshly serialized node to the main process, which owns the OS
- * clipboard. Copy is only "done" once the payload is actually on the
- * clipboard, so a failed write reports failure rather than leaving the user
- * with a Paste that silently does the wrong thing.
- */
-async function writeSceneClip(res: SceneClipPayload | undefined): Promise<boolean> {
-    if (res?.ok !== true || !res.kind || !res.bytes) return false
-    const api = window.electronAPI
-    if (!api) return false
-    try {
-        const w = await api.invoke(IPC.CLIPBOARD_CUEMOL_WRITE, {
-            kind: res.kind,
-            form: res.form,
-            bytes: res.bytes,
-        })
-        return w?.ok === true
-    } catch (err) {
-        console.warn('clipboard write failed:', err)
-        return false
-    }
-}
-
-/**
- * Pull a scene-node payload off the OS clipboard. Paint rows live on the
- * same clipboard but are not a scene node, so they are refused here.
- */
-async function readSceneClip(): Promise<
-    { kind: 'object' | 'renderer' | 'style' | 'camera'; form: 'single' | 'rendArray'; bytes: Uint8Array } | null
-> {
-    const api = window.electronAPI
-    if (!api) return null
-    try {
-        const clip = await api.invoke(IPC.CLIPBOARD_CUEMOL_READ)
-        if (!clip || clip.kind === 'paint') return null
-        return clip
-    } catch (err) {
-        console.warn('clipboard read failed:', err)
-        return null
-    }
-}
+import { readSceneClip, writeSceneClip } from './sceneClipIo'
 
 export interface SceneTreeNodeOps {
     toggleVisibility: (id: string) => void
@@ -200,14 +150,6 @@ export function useSceneTreeNodeOps(
             // StyleManager.destroyStyleSet(scopeId, styleSetId).
             const scopeId =
                 node.type === 'style' ? node.styleInfo?.scopeId : undefined
-            // Camera nodes are keyed by name; deleteNode for cameras
-            // routes through the dedicated `destroyCamera` worker service.
-            if (node.type === 'camera') {
-                const res = await cm.invokeService('destroyCamera', {
-                    sceneId: sid, name: node.name,
-                })
-                return res?.ok === true
-            }
             const res = await cm.invokeService('deleteNode', {
                 sceneId: sid,
                 nodeId: numId,
@@ -264,20 +206,17 @@ export function useSceneTreeNodeOps(
                 node.type !== 'object' &&
                 node.type !== 'renderer' &&
                 node.type !== 'rendGroup' &&
-                node.type !== 'style' &&
-                node.type !== 'camera'
+                node.type !== 'style'
             ) {
                 return false
             }
             const scopeId =
                 node.type === 'style' ? node.styleInfo?.scopeId : undefined
-            const cameraName = node.type === 'camera' ? node.name : undefined
             const res = await cm.invokeService('copyNode', {
                 sceneId: sid,
                 nodeId: node.id,
                 nodeType: node.type,
                 scopeId,
-                cameraName,
             })
             return writeSceneClip(res)
         },

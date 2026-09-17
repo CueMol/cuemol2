@@ -113,6 +113,12 @@ namespace qsys {
     /// Alternative source path of the camera
     LString m_altsrc;
 
+    /// Display order in the UI (-1 means unassigned; Scene assigns a slot
+    /// in setCamera()). Not persistent as an attribute: the order is saved
+    /// as the element order of the <camera> nodes in the qsc file, the same
+    /// way Object/Renderer ui_order works.
+    int m_nUIOrder;
+
   public:
     
     /// Get/set camera name
@@ -122,6 +128,10 @@ namespace qsys {
     void setName(const LString &val) {
       m_name = val;
     }
+
+    /// Get/set the UI display order (see m_nUIOrder)
+    void setUIOrder(int n) { m_nUIOrder = n; }
+    int getUIOrder() const { return m_nUIOrder; }
 
     /// Get/set stereo mode
     int getStereoMode() const {

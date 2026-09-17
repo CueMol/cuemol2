@@ -11,6 +11,7 @@
 @import "./styles/_toolbar.css";
 @import "./styles/_activity-bar.css";
 @import "./styles/_side-panel.css";
+@import "./features/camera/camera-pane.css";
 @import "./features/coloring/color-panel.css";
 @import "./styles/_colorpicker.css";
 @import "./features/coloring/multigrad.css";

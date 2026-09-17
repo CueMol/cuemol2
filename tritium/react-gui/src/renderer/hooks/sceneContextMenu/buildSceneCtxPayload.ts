@@ -12,7 +12,7 @@
 
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
-import { IPC } from '@shared/ipcChannels'
+import { peekClipboardKind } from './useShowSceneCtxMenu'
 
 /**
  * Renderer type names that don't support a `coloring` property -- matches
@@ -58,7 +58,6 @@ export interface SceneCtxPayload {
     canEditInteractions: boolean
     rendChangeTypes: string[]
     styleInfo?: SceneTreeNode extends { styleInfo?: infer S } ? S : undefined
-    cameraInfo?: SceneTreeNode extends { cameraInfo?: infer C } ? C : undefined
 }
 
 export async function buildSceneCtxPayload(
@@ -96,18 +95,7 @@ export async function buildSceneCtxPayload(
         node.type === 'renderer' && node.className === 'atomintr'
 
     // Pre-fetch clipboard state so main can enable Paste items correctly.
-    // Peek rather than read: the payload may be megabytes and the menu only
-    // needs to know what kind is there. Asked on every menu open, so a copy
-    // made in another app (or another CueMol instance) is seen immediately.
-    // Paint rows share the clipboard but are not a scene node, so they read
-    // as "nothing to paste" here.
-    let clipboardKind: 'object' | 'renderer' | 'style' | 'camera' | null = null
-    try {
-        const r = await window.electronAPI?.invoke(IPC.CLIPBOARD_CUEMOL_PEEK)
-        clipboardKind = r && r.kind !== 'paint' ? r.kind : null
-    } catch (err) {
-        console.warn('clipboard peek failed:', err)
-    }
+    const clipboardKind = await peekClipboardKind()
 
     // Pre-fetch renderer-specific submenu data in parallel.
     let paintStyles: { name: string; label: string }[] = []
@@ -188,10 +176,9 @@ export async function buildSceneCtxPayload(
         }
     }
 
-    // Style + Camera node payload data is just property reads on the
-    // tree node -- getSceneTree already populated both.
+    // Style node payload data is just a property read on the tree node --
+    // getSceneTree already populated it.
     const styleInfo = node.type === 'style' ? node.styleInfo : undefined
-    const cameraInfo = node.type === 'camera' ? node.cameraInfo : undefined
 
     return {
         nodeType: node.type,
@@ -212,6 +199,5 @@ export async function buildSceneCtxPayload(
         canEditInteractions,
         rendChangeTypes,
         styleInfo: styleInfo as SceneCtxPayload['styleInfo'],
-        cameraInfo: cameraInfo as SceneCtxPayload['cameraInfo'],
     }
 }

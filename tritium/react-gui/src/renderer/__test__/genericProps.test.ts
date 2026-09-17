@@ -186,7 +186,7 @@ describe('resolvePropTarget', () => {
 
     it('returns a null target for unsupported node types', () => {
         const { ctx } = makeCtx();
-        expect(resolvePropTarget(ctx, { sceneId: 1, nodeId: 9, nodeType: 'camera' }).target).toBeNull();
+        expect(resolvePropTarget(ctx, { sceneId: 1, nodeId: 9, nodeType: 'styleRoot' }).target).toBeNull();
         expect(resolvePropTarget(ctx, { sceneId: 1, nodeId: 9, nodeType: 'style' }).target).toBeNull();
     });
 });
@@ -341,7 +341,7 @@ describe('genericProps services', () => {
     it('reports failure when the node cannot be resolved', () => {
         const { ctx } = makeEnv();
         const res = services.setGenericProp(ctx, {
-            ...ref, nodeType: 'camera', propName: 'alpha', op: 'set', valueType: 'real', value: 1,
+            ...ref, nodeType: 'style', propName: 'alpha', op: 'set', valueType: 'real', value: 1,
         });
         expect(res.ok).toBe(false);
         expect(res.entries).toEqual([]);

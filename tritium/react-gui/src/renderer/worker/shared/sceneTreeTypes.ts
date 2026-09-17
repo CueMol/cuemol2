@@ -17,9 +17,7 @@ export type SceneNodeType =
     | 'object'
     | 'renderer'
     | 'rendGroup'
-    | 'cameraRoot'
     | 'styleRoot'
-    | 'camera'
     | 'style';
 
 export interface SceneTreeNode {
@@ -56,16 +54,7 @@ export interface SceneTreeNode {
      * on `style` nodes; absent for everything else. Used by ctxmenu wiring
      * to drive Reload / Save / Read-only gates without an extra round-trip.
      */
-    styleInfo?: StyleNodeInfo;
-    /**
-     * Camera-node metadata from `Scene.getCameraInfoJSON`. Only present on
-     * `camera` nodes. Used by ctxmenu wiring to drive Reload (src present)
-     * and Clear vis flags (vis_size > 0) gates. Cameras are keyed by name
-     * (string) rather than uid, so the worker services take `cameraName`
-     * from the SceneTreeNode `name` field directly.
-     */
-    cameraInfo?: CameraNodeInfo;
-}
+    styleInfo?: StyleNodeInfo;}
 
 /**
  * Per-style-node metadata mirroring the fields produced by
@@ -79,14 +68,6 @@ export interface StyleNodeInfo {
     src: string;
     readonly: boolean;
     modified: boolean;
-}
-
-/** Per-camera-node metadata mirroring `Scene::getCameraInfoJSON`. */
-export interface CameraNodeInfo {
-    /** Source file path; empty for cameras created from a live view. */
-    src: string;
-    /** Count of saved visibility-flag entries on this camera. */
-    visSize: number;
 }
 
 // - Raw JSON shapes from C++ (internal to the parser) -
@@ -166,58 +147,6 @@ export function parseSceneTreeJSON(json: string): SceneTreeNode | null {
         uiOrder: 0,
         effectiveVisible: true,
         children: objectNodes,
-    };
-}
-
-/** Input shape for `buildCameraRoot` -- one entry per Camera. */
-export interface CameraRootEntry {
-    /** Camera name -- the lookup key in `Scene.{get,set,destroy}Camera`. */
-    name: string;
-    /** Source file path; empty for cameras saved from a live view. */
-    src: string;
-    /** Number of saved vis-flag entries on the camera (UXP `vis_size`). */
-    visSize: number;
-}
-
-/**
- * Build a virtual `cameraRoot` node listing the given cameras. Cameras
- * are not part of `getSceneDataJSON`; the worker service fetches them via
- * `scene.getCameraInfoJSON()` and synthesises this branch so the tree
- * matches the UXP layout.
- *
- * Cameras have no C++ uid -- they're keyed by **name** at the Scene API
- * level. We expose the name through the existing `name` field; for the
- * synthesised tree `id` we hash a small negative integer per row so
- * unique-id callers still get distinct values, but worker services on
- * camera rows take the name from `node.name` rather than `node.id`.
- */
-export function buildCameraRoot(entries: CameraRootEntry[]): SceneTreeNode {
-    return {
-        id: -1,
-        name: 'Camera',
-        type: 'cameraRoot',
-        className: '',
-        visible: true,
-        locked: false,
-        uiCollapsed: true,
-        uiOrder: 0,
-        effectiveVisible: true,
-        children: entries.map((e, idx) => ({
-            id: -1000 - idx,
-            name: e.name,
-            type: 'camera' as SceneNodeType,
-            // Mirror UXP `object_vis: "linked"` styling for file-linked
-            // cameras (src.length > 0). The ScenePane keys the link icon
-            // off this className hint.
-            className: e.src.length > 0 ? 'linked' : '',
-            visible: true,
-            locked: false,
-            uiCollapsed: false,
-            uiOrder: idx,
-            effectiveVisible: true,
-            children: [],
-            cameraInfo: { src: e.src, visSize: e.visSize },
-        })),
     };
 }
 

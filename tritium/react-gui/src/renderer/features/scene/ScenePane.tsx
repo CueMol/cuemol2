@@ -21,11 +21,10 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import {
     Button,
     ButtonGroup,
-    Tooltip,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
 import { ListboxTree } from "@renderer/h3-kit/list";
-import { AppIcon } from "@renderer/h3-kit/primitives";
+import { AppIcon, Tooltip } from "@renderer/h3-kit/primitives";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
 
 import type { SceneNodeType, SceneTreeNode } from "@renderer/worker/shared/sceneTreeTypes";
@@ -43,9 +42,7 @@ const TYPE_ICON: Record<SceneNodeType, AppIconKey> = {
     object: "node.object",
     renderer: "node.renderer",
     rendGroup: "node.group",
-    cameraRoot: "node.camera",
     styleRoot: "node.group",
-    camera: "node.camera",
     style: "node.style",
 };
 
@@ -145,12 +142,11 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
     // has no in-place name setter); every other type goes through the
     // renameNode worker, which accepts object / renderer / rendGroup /
     // scene (scene uses scene.setName as Scene.name is read-only at the
-    // .qif level). cameraRoot / styleRoot / style are not renameable.
+    // .qif level). styleRoot / style are not renameable.
     const isRenameableType = useCallback((t: SceneNodeType): boolean => {
         return (
             t === "scene" ||
-            t === "object" || t === "renderer" || t === "rendGroup" ||
-            t === "camera"
+            t === "object" || t === "renderer" || t === "rendGroup"
         );
     }, []);
 
@@ -474,7 +470,7 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
                 onToggleCollapse={onToggleCollapse}
                 actions={
                     <ButtonGroup minimal>
-                        <Tooltip content="Add" placement="bottom" compact>
+                        <Tooltip content="Add" placement="bottom">
                             <Button
                                 minimal
                                 small
@@ -484,7 +480,7 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
                                 onClick={onAddRenderer}
                             />
                         </Tooltip>
-                        <Tooltip content="Focus" placement="bottom" compact>
+                        <Tooltip content="Focus" placement="bottom">
                             <Button
                                 minimal
                                 small
@@ -494,7 +490,7 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
                                 onClick={() => onFocusSelected?.(selectedId)}
                             />
                         </Tooltip>
-                        <Tooltip content="Delete" placement="bottom" compact>
+                        <Tooltip content="Delete" placement="bottom">
                             <Button
                                 minimal
                                 small
@@ -504,7 +500,7 @@ const ScenePaneComponent: React.FC<ScenePaneProps> = ({
                                 onClick={() => onDeleteSelected?.(selectedId)}
                             />
                         </Tooltip>
-                        <Tooltip content="Property" placement="bottom" compact>
+                        <Tooltip content="Property" placement="bottom">
                             <Button
                                 minimal
                                 small
@@ -563,9 +559,7 @@ function nodeLabel(node: SceneTreeNode): string {
         case "renderer":
             return node.className ? `${node.name} (${node.className})` : node.name;
         case "rendGroup":
-        case "cameraRoot":
         case "styleRoot":
-        case "camera":
         case "style":
         default:
             return node.name;

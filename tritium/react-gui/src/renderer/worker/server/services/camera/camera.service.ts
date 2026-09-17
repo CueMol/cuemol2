@@ -9,9 +9,12 @@
 
 import { loadCameraFromFile, reloadCameraFromSrc, saveCameraToCurrentSrc, saveCameraToFile } from './cameraFile';
 import { applyCameraToView, clearCameraVisFlags, createCamera, destroyCamera, renameCamera, saveViewToCamera } from './cameraOps';
+import { listCameras, reorderCameras } from './cameraOrder';
 import { getCameraVisFlags, setCameraVisFlags } from './cameraVisFlags';
 
 export const services = {
+    listCameras,
+    reorderCameras,
     loadCameraFromFile,
     saveCameraToFile,
     saveCameraToCurrentSrc,
@@ -27,5 +30,6 @@ export const services = {
 };
 
 export type * from './cameraFile';
+export type * from './cameraOrder';
 export type * from './cameraOps';
 export type * from './cameraVisFlags';

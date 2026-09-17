@@ -173,8 +173,8 @@ describe('bulkSceneNodeOps.bulkSetNodeVisible', () => {
             sceneId: 7,
             visible: true,
             items: [
-                { nodeId: -1, nodeType: 'cameraRoot' },
-                { nodeId: -2, nodeType: 'styleRoot' },
+                { nodeId: -1, nodeType: 'styleRoot' },
+                { nodeId: -2, nodeType: 'style' },
             ],
         })
         expect(res).toEqual({ ok: false, applied: 0 })

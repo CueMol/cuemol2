@@ -1,65 +1,36 @@
 /**
  * @file state/sceneTree/commands/useSceneNewFlows.ts
- * @description The "New Renderer..." and "New Camera..." flows.
+ * @description The "New Renderer..." flow.
  *
- * Both have two entry points -- the context menu and the tree toolbar's Add
- * button, which UXP dispatched to the same two flows by the selected row's
- * type -- so they live here rather than in either caller.
+ * It has two entry points -- the context menu and the tree toolbar's Add
+ * button, which UXP dispatched to the same flow by the selected row's type --
+ * so it lives here rather than in either caller. The sibling "New Camera..."
+ * flow moved to `features/camera` with the rest of the camera surface.
  */
 
 import { useCallback } from 'react'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { UseSceneTreeResult } from '@renderer/features/scene/useSceneTree'
 import { findTypedNode } from '@renderer/hooks/sceneTree/sceneTreeNodeUtils'
-import { useShowTextPromptDialog } from '@renderer/dialogs/TextPromptDialogProvider'
 import { useShowNewRendererDialog } from '@renderer/dialogs/NewRendererDialogProvider'
 
 export interface SceneNewFlowsOptions {
   cm: AsyncCueMol | null
   sceneId: number | undefined
-  activeViewId: number | undefined
   scene: UseSceneTreeResult
 }
 
 export interface SceneNewFlows {
   /** New Renderer on an object / renderer / rendGroup row. */
   openNewRendererFlow: (nodeId: string) => Promise<void>
-  /** New Camera from the live view. */
-  openNewCameraFlow: () => Promise<void>
 }
 
 export function useSceneNewFlows({
   cm,
   sceneId,
-  activeViewId,
   scene,
 }: SceneNewFlowsOptions): SceneNewFlows {
-  const showTextPrompt = useShowTextPromptDialog()
   const showNewRenderer = useShowNewRendererDialog()
-
-  // Mirrors UXP `onNewCmd` (camera / cameraRoot branch).
-  const openNewCameraFlow = useCallback(async (): Promise<void> => {
-    if (activeViewId === undefined || sceneId === undefined) return
-    let suggestion = 'camera_0'
-    if (cm) {
-      try {
-        const r = await cm.invokeService('proposeUniqName', {
-          kind: 'camera', prefix: 'camera', sceneId,
-        })
-        suggestion = r?.name ?? suggestion
-      } catch (err) {
-        console.warn('proposeUniqName failed:', err)
-      }
-    }
-    const entered = await showTextPrompt({
-      title: 'New Camera',
-      label: 'Name for new camera:',
-      defaultValue: suggestion,
-      confirmLabel: 'Create',
-    })
-    if (entered == null) return
-    await scene.createCamera(activeViewId, entered)
-  }, [cm, sceneId, activeViewId, showTextPrompt, scene])
 
   // Mirrors UXP `onNewCmd`, which called the same `setupRendByObjID` from
   // both the ctxmenu item and the toolbar.
@@ -103,5 +74,5 @@ export function useSceneNewFlows({
     [cm, sceneId, showNewRenderer, scene],
   )
 
-  return { openNewRendererFlow, openNewCameraFlow }
+  return { openNewRendererFlow }
 }

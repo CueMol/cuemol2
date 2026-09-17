@@ -20,8 +20,6 @@ const scene = node({ id: 1, type: 'scene', name: 'S' })
 const object = node({ id: 42, type: 'object', name: 'mol1' })
 const renderer = node({ id: 100, type: 'renderer', name: 'simple1' })
 const rendGroup = node({ id: 50, type: 'rendGroup', name: 'grp' })
-const camera = node({ id: -3, type: 'camera', name: 'cam1' })
-const cameraRoot = node({ id: -1, type: 'cameraRoot', name: 'Cameras' })
 const style = node({ id: 7, type: 'style', name: 'st1', styleInfo: { scopeId: 3 } as never })
 const styleRoot = node({ id: -2, type: 'styleRoot', name: 'Styles' })
 
@@ -116,7 +114,7 @@ describe('sceneCtxActionToCommand - renderers', () => {
     expect(map(renderer, { kind: 'paintRend', colorValue: '#0f0' })).toEqual({
       id: CmdId.RendererPaint, args: { id: '100', colorValue: '#0f0' },
     })
-    expect(map(camera, { kind: 'paintRend', colorValue: '#00f' })).toBeNull()
+    expect(map(style, { kind: 'paintRend', colorValue: '#00f' })).toBeNull()
   })
 
   it('the renderer-only entries carry the row id and are gated', () => {
@@ -181,44 +179,5 @@ describe('sceneCtxActionToCommand - style sets', () => {
   it('Load and Reload need no row', () => {
     expect(map(styleRoot, { kind: 'styleLoad' })).toEqual({ id: CmdId.StyleLoadFromFile })
     expect(map(styleRoot, { kind: 'styleReload' })).toEqual({ id: CmdId.StyleReload })
-  })
-})
-
-describe('sceneCtxActionToCommand - cameras', () => {
-  it('addresses cameras by name (a registered camera has no uid)', () => {
-    expect(map(camera, { kind: 'cameraReload' })).toEqual({ id: CmdId.CameraReload, args: { name: 'cam1' } })
-    expect(map(camera, { kind: 'cameraSave' })).toEqual({ id: CmdId.CameraSave, args: { name: 'cam1' } })
-    expect(map(camera, { kind: 'cameraSaveAs' })).toEqual({ id: CmdId.CameraSaveAs, args: { name: 'cam1' } })
-    expect(map(camera, { kind: 'cameraSaveFromView', withVisFlags: true })).toEqual({
-      id: CmdId.CameraSaveFromView, args: { name: 'cam1', withVisFlags: true },
-    })
-    expect(map(camera, { kind: 'cameraApplyToView', withVisFlags: false })).toEqual({
-      id: CmdId.CameraApplyToView, args: { name: 'cam1', withVisFlags: false },
-    })
-    expect(map(camera, { kind: 'cameraEditVisFlags' })).toEqual({
-      id: CmdId.CameraEditVisFlags, args: { name: 'cam1' },
-    })
-    expect(map(camera, { kind: 'cameraClearVisFlags' })).toEqual({
-      id: CmdId.CameraClearVisFlags, args: { name: 'cam1' },
-    })
-  })
-
-  it('New Camera runs from a camera row or the Cameras root; Load needs neither', () => {
-    expect(map(camera, { kind: 'newCamera' })).toEqual({ id: CmdId.CameraNew })
-    expect(map(cameraRoot, { kind: 'newCamera' })).toEqual({ id: CmdId.CameraNew })
-    expect(map(object, { kind: 'newCamera' })).toBeNull()
-    expect(map(cameraRoot, { kind: 'cameraLoad' })).toEqual({ id: CmdId.CameraLoadFromFile })
-  })
-
-  it('the camera entries are gated to camera rows', () => {
-    for (const a of [
-      { kind: 'cameraReload' }, { kind: 'cameraSave' }, { kind: 'cameraSaveAs' },
-      { kind: 'cameraSaveFromView', withVisFlags: true },
-      { kind: 'cameraApplyToView', withVisFlags: true },
-      { kind: 'cameraEditVisFlags' }, { kind: 'cameraClearVisFlags' },
-    ] as SceneCtxAction[]) {
-      expect(map(cameraRoot, a)).toBeNull()
-      expect(map(object, a)).toBeNull()
-    }
   })
 })

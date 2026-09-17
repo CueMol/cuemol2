@@ -18,6 +18,12 @@ import type {
   SaveCameraToFileResult,
 } from '@renderer/worker/server/services/camera/cameraFile'
 import type {
+  ListCamerasArgs,
+  ListCamerasResult,
+  ReorderCamerasArgs,
+  ReorderCamerasResult,
+} from '@renderer/worker/server/services/camera/cameraOrder'
+import type {
   ApplyCameraToViewArgs,
   ApplyCameraToViewResult,
   ClearCameraVisFlagsArgs,
@@ -39,6 +45,8 @@ import type {
 } from '@renderer/worker/server/services/camera/cameraVisFlags'
 
 export interface CameraCalls {
+  listCameras:                { args: ListCamerasArgs; result: ListCamerasResult }
+  reorderCameras:             { args: ReorderCamerasArgs; result: ReorderCamerasResult }
   createCamera:               { args: CreateCameraArgs; result: CreateCameraResult }
   destroyCamera:              { args: DestroyCameraArgs; result: DestroyCameraResult }
   renameCamera:               { args: RenameCameraArgs; result: RenameCameraResult }
@@ -54,6 +62,8 @@ export interface CameraCalls {
 }
 
 export const CAMERA_KEYS = [
+  'listCameras',
+  'reorderCameras',
   'createCamera',
   'destroyCamera',
   'renameCamera',

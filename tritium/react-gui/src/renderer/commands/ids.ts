@@ -129,7 +129,12 @@ export const CmdId = {
   StyleSaveAs:           'scene.style.saveAs',           // args: { id; scopeId; name }
 
   // Cameras.
-  CameraNew:             'scene.camera.new',             // no args
+  CameraNew:             'scene.camera.new',             // no args -> created name
+  CameraDelete:          'scene.camera.delete',          // args: { name }
+  CameraRename:          'scene.camera.rename',          // args: { oldName; newName }
+  CameraCopy:            'scene.camera.copy',            // args: { name }
+  CameraPaste:           'scene.camera.paste',           // no args
+  CameraReorder:         'scene.camera.reorder',         // args: { names }
   CameraLoadFromFile:    'scene.camera.load',            // no args
   CameraReload:          'scene.camera.reload',          // args: { name }
   CameraSave:            'scene.camera.save',            // args: { name }

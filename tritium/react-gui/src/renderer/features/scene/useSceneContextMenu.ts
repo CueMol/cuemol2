@@ -11,10 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import type { SceneCtxAction, SceneCtxMenuPayload } from '@shared/types/sceneCtxMenu'
-import { IPC } from '@shared/ipcChannels'
-import { buildTemplate } from '@shared/sceneCtxMenu/sceneCtxTemplates'
-import { useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider'
+import type { SceneCtxMenuPayload } from '@shared/types/sceneCtxMenu'
+import { useShowSceneCtxMenu } from '@renderer/hooks/sceneContextMenu/useShowSceneCtxMenu'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import { useCommands } from '@renderer/commands/CommandRegistry'
@@ -36,22 +34,11 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
   openContextMenu: (node: SceneTreeNode, x: number, y: number) => Promise<void>
 } {
   const { cm, sceneId, selectedIds } = opts
-  const showContextMenu = useShowContextMenu()
   const { dispatch } = useCommands()
 
-  // macOS shows the native menu (main process); Windows / Linux render the
-  // same shared template with the React MenuPanel so the look matches the
-  // menu bar dropdowns.
-  const showSceneCtxMenu = useCallback(
-    async (payload: SceneCtxMenuPayload): Promise<SceneCtxAction | null> => {
-      const api = window.electronAPI
-      if (api?.platform === 'darwin') {
-        return await api.invoke(IPC.SCENE_CTX_SHOW, payload)
-      }
-      return await showContextMenu(buildTemplate(payload), { x: payload.x, y: payload.y })
-    },
-    [showContextMenu],
-  )
+  // Platform switch (native on macOS, MenuPanel elsewhere) is shared with the
+  // Camera pane, which raises the same camera menus.
+  const showSceneCtxMenu = useShowSceneCtxMenu()
 
   const openContextMenu = useCallback(
     async (node: SceneTreeNode, x: number, y: number): Promise<void> => {

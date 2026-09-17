@@ -1,0 +1,62 @@
+/*
+ * Camera pane. Row height, hover and selection come from list-kit
+ * (`_list-kit.css`); only what is specific to a camera row lives here.
+ */
+
+.camera-pane-body {
+    padding: var(--space-1) 0;
+}
+
+.camera-row-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Enabled supplementary marks (file link, stored show/hide state). */
+.camera-row-badge {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+}
+
+.h3-list-row.is-selected .camera-row-badge {
+    color: var(--accent);
+}
+
+/* Drop indicator, drawn on the row the pointer is over. */
+.camera-pane-body .h3-list-row {
+    position: relative;
+    cursor: grab;
+}
+
+/* The pinned row (`__current`) keeps the top and cannot be dragged. */
+.camera-pane-body .h3-list-row.is-pinned {
+    cursor: default;
+}
+
+.camera-pane-body .h3-list-row.is-drop-before::before,
+.camera-pane-body .h3-list-row.is-drop-after::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--accent);
+    pointer-events: none;
+}
+
+.camera-pane-body .h3-list-row.is-drop-before::before {
+    top: 0;
+}
+
+.camera-pane-body .h3-list-row.is-drop-after::after {
+    bottom: 0;
+}
+
+/* The inline rename editor takes the row's text slot. */
+.camera-pane-body .h3-list-row .bp5-input-group {
+    flex: 1 1 auto;
+    min-width: 0;
+}

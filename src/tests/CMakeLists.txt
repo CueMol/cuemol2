@@ -79,6 +79,7 @@ gtest_discover_tests(test_gfx PROPERTIES LABELS "test_gfx")
 add_executable(test_qsys
   qsys/test_main.cpp
   qsys/test_camera.cpp
+  qsys/test_camera_order.cpp
   qsys/test_drawobj.cpp
   qsys/test_dispcache.cpp
   qsys/test_editinfo.cpp

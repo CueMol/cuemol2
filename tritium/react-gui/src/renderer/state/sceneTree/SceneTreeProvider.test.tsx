@@ -36,7 +36,7 @@ vi.mock('@renderer/features/scene/useSceneTree', () => ({
     selectedHasOps: { focus: true, delete: true, property: true, add: true },
     setSelectedId: vi.fn(), toggleInSelection: vi.fn(), selectRangeTo: vi.fn(), refetch: vi.fn(),
     setNodeUiCollapsed: vi.fn(), moveSceneNode: vi.fn(), focusNode: vi.fn(),
-    renameNode: vi.fn(), renameCamera: vi.fn(),
+    renameNode: vi.fn(),
   }),
 }))
 vi.mock('@renderer/features/scene/useSceneContextMenu', () => ({
@@ -51,7 +51,7 @@ vi.mock('./commands', () => ({
     mounted.props = props
     return null
   },
-  useSceneNewFlows: () => ({ openNewRendererFlow: vi.fn(), openNewCameraFlow: vi.fn() }),
+  useSceneNewFlows: () => ({ openNewRendererFlow: vi.fn() }),
 }))
 
 function mount() {
@@ -109,7 +109,6 @@ describe('SceneTreeProvider', () => {
     const h = mount()
     expect(mounted.props).toMatchObject({
       sceneId: 1,
-      activeViewId: 5,
       scene: expect.objectContaining({ tree: fake.tree }),
     })
     // The rename editor is the controller's, so the handlers get its opener.

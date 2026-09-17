@@ -64,7 +64,6 @@ function makeScene(overrides: Record<string, unknown> = {}) {
     moveSceneNode: vi.fn(),
     focusNode: vi.fn().mockResolvedValue(true),
     renameNode: vi.fn().mockResolvedValue(true),
-    renameCamera: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
 }
@@ -169,13 +168,6 @@ describe('useSceneTreeController gestures dispatch commands', () => {
     h.unmount();
 
     dispatch.mockClear();
-    const onCamera = makeScene({ selectedNode: node({ id: -3, type: 'camera', name: 'cam1' }) });
-    const h2 = renderController(onCamera);
-    act(() => h2.result.actions.addSelected());
-    expect(dispatch).toHaveBeenCalledWith(CmdId.CameraNew);
-    h2.unmount();
-
-    dispatch.mockClear();
     const onStyle = makeScene({ selectedNode: node({ id: 7, type: 'style', name: 'st' }) });
     const h3 = renderController(onStyle);
     act(() => h3.result.actions.addSelected());
@@ -183,20 +175,12 @@ describe('useSceneTreeController gestures dispatch commands', () => {
     h3.unmount();
   });
 
-  it('a double-click applies a camera, and opens the inspector for anything else', () => {
+  it('a double-click opens the inspector, except on a synthesised root', () => {
     const h = renderController(makeScene());
-    act(() => h.result.actions.nodeDoubleClick(node({ id: -3, type: 'camera', name: 'cam1' })));
-    expect(dispatch).toHaveBeenCalledWith(CmdId.CameraApplyToView, {
-      name: 'cam1', withVisFlags: true,
-    });
-
-    dispatch.mockClear();
     act(() => h.result.actions.nodeDoubleClick(node({ id: 42, type: 'object', name: 'mol1' })));
     expect(dispatch).toHaveBeenCalledWith(CmdId.SceneNodeProperty, { id: '42' });
 
-    // The synthesised container rows do nothing.
     dispatch.mockClear();
-    act(() => h.result.actions.nodeDoubleClick(node({ id: -1, type: 'cameraRoot', name: 'Cameras' })));
     act(() => h.result.actions.nodeDoubleClick(node({ id: -2, type: 'styleRoot', name: 'Styles' })));
     expect(dispatch).not.toHaveBeenCalled();
     h.unmount();
@@ -218,25 +202,13 @@ describe('useSceneTreeController gestures dispatch commands', () => {
 });
 
 describe('useSceneTreeController inline-rename commit', () => {
-  it('routes a camera row through renameCamera', () => {
-    const scene = makeScene();
-    const h = renderController(scene);
-    act(() => {
-      h.result.actions.commitInlineRename(node({ id: -3, type: 'camera', name: 'cam1' }), 'cam-new');
-    });
-    expect(scene.renameCamera).toHaveBeenCalledWith('cam1', 'cam-new');
-    expect(scene.renameNode).not.toHaveBeenCalled();
-    h.unmount();
-  });
-
-  it('routes a non-camera row through renameNode (keyed by node id)', () => {
+  it('routes a row through renameNode (keyed by node id)', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
       h.result.actions.commitInlineRename(node({ id: 42, type: 'object', name: 'mol1' }), 'mol-new');
     });
     expect(scene.renameNode).toHaveBeenCalledWith('42', 'mol-new');
-    expect(scene.renameCamera).not.toHaveBeenCalled();
     h.unmount();
   });
 
@@ -269,7 +241,6 @@ describe('useSceneTreeController expand/collapse persistence', () => {
     const scene = makeScene();
     const h = renderController(scene);
     act(() => {
-      h.result.actions.nodeExpandChange(node({ id: -1, type: 'cameraRoot', name: 'Cameras' }), true);
       h.result.actions.nodeExpandChange(node({ id: -2, type: 'styleRoot', name: 'Styles' }), true);
       // Negative-id guard also applies to otherwise-persistable types.
       h.result.actions.nodeExpandChange(node({ id: -5, type: 'object', name: 'x' }), true);

@@ -10,6 +10,16 @@
  * some precondition is met). The Blueprint tooltip renders in a portal and
  * shows on hover of the wrapper span, so it works in both cases.
  *
+ * Hover is the ONLY trigger: Blueprint also opens a tooltip when its target
+ * takes focus (`openOnTargetFocus`, default true), which made a tooltip pop up
+ * with the pointer nowhere near the button. A toolbar button that opens a
+ * dialog gets the focus back when the dialog closes, and the tooltip then
+ * appeared over the pane on its own -- reported for the Camera pane's New
+ * button and the scene tree's Add button, but it applied to every tooltipped
+ * control that opens a dialog. Turning it off also drops the `tabindex="0"`
+ * Blueprint puts on the wrapper span, so these spans stop being tab stops of
+ * their own; the button inside is what the keyboard should land on.
+ *
  * @module Tooltip
  */
 
@@ -50,6 +60,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         content={content}
         placement={placement}
         compact
+        openOnTargetFocus={false}
         disabled={disabled || isEmptyContent(content)}
         className={className}
         renderTarget={renderTarget}
