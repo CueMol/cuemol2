@@ -183,6 +183,16 @@ public:
     static bool hoverIdToPickId(qlib::uid_t rendUid, int atomId, int symmId,
                                 const std::vector<qlib::uid_t> &rendTab, int out[3]);
 
+    /// Grey tones of the hover highlight outline for a scene with the given
+    /// background colour (sRGB components in 0..1). The two tones lie on
+    /// different surfaces: the outer one on the background, the inner one on
+    /// the element itself. A thin element only ever gets the outer tone, so
+    /// that one is chosen against the background (white over a dark
+    /// background, near-black over a light one) and the inner tone is its
+    /// opposite. GL-free, unit-tested.
+    static void hoverEdgeTonesForBg(const float bg[3], float &outerGray,
+                                    float &innerGray);
+
 protected:
     MouseEventHandler m_meh;
 

@@ -206,7 +206,9 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   こと (`AsyncCueMolBusy.test.ts`)。
 - hover highlight (§10): フレーム計画 `GUIView::planFrame` の表 (present 専用 / 通常 / jitter 再開)、
   `setHoverHit` が GPU pick 有効時だけ present 専用フレームを予約すること、hover 要素 -> pick texel ID の変換
-  `hoverIdToPickId` (`test_guiview.cpp`)、`hover_hl_color` の既定 (`test_viewinputconfig.cpp`)。tritium:
+  `hoverIdToPickId`、背景の明るさによる輪郭トーンの反転 `hoverEdgeTonesForBg` (黒背景で外側が白 / 中間灰では
+  反転しない、輝度は HSB の V ではなく relative luminance) (`test_guiview.cpp`)、`hover_hl_color` の既定
+  (`test_viewinputconfig.cpp`)。tritium:
   `naviHover` の `highlight` 引数が `setHoverHit` / `clearHoverHit` に写ること (`naviHoverService.test.ts`)、
   hover 終了時に `naviHoverClear` が 1 回だけ送られること、右押下と context menu の hold では clear せず解除で
   再サンプルすること (`useHoverInfoHandler.test.tsx`)。
@@ -246,7 +248,7 @@ pass 1 (pick 解像度, hover_mask_frag.glsl):  mask(p) = texelFetch(u_pickTex, 
 pass 2 (pick 解像度, hover_blur_frag.glsl):  maskRT[0] を縦方向に同じ kernel で blur          -> maskRT[1]
 pass 3 (画面解像度, hover_hl_frag.glsl):     s = texture(maskRT[1], uv).r  (RGBA8 LINEAR、1 sample)
     band = smoothstep(BAND_LO, ..) * (1 - smoothstep(BAND_HI, ..))   // s が Phi(-1)..Phi(+1) = 境界の +-sigma
-    edge = mix(u_edgeDark, u_edgeLight, smoothstep(0.42, 0.58, s)) * band   // 外側は暗く内側は明るい二色
+    edge = mix(u_edgeOuter, u_edgeInner, smoothstep(0.42, 0.58, s)) * band  // 外側 / 内側の二色
     fill = u_fillColor.a * smoothstep(0.45, 0.55, s)                        // s > 0.5 = 要素の内側
     out  = edge over fill (通常の alpha ブレンド)
 ```
@@ -259,10 +261,36 @@ pass 1-2 は **pick buffer が描き直されたか (`m_pickSerial`)、hover 要
 maskRT は RGBA8 × 2 (pick 解像度 = backing の 1/4 画素、dpr 2 の 4K 相当で約 5 MB)。
 `ShaderObject` に unsigned の setter が無いので ID は `ivec3` で渡し、shader 側で `uvec3` に変換する。
 
-**二色の輪郭**: 内側が明るい灰色 (0.95)、外側が暗い灰色 (0.1) の 2 本 (alpha 0.9) で、UI の選択枠と同じく
-どんな下地の色でも片方の線がコントラストを持つ (赤い帯の上でも見える)。塗りは `ViewInputConfig::hover_hl_color`
-(既定 Mol* の highlightColor 相当 (1.0, 0.4, 0.6)) を alpha 0.35 で重ねる (`GUIView.cpp` の定数)。
-下の色を読んで色を変える方式 (反転 ROP) は試したが、反転色の見た目が不自然だったので採っていない。
+**二色の輪郭は下地が別々**: 外側 (低い s = `u_edgeOuter`) は背景や手前の別 geometry の上に、内側 (高い s =
+`u_edgeInner`) は要素自身の色の上に乗る。UI の選択枠の二重ストローク (同じ下地に隣り合う 2 本) とは違い
+「どちらか片方が効く」のではなく **それぞれが自分の下地に対して効く必要がある**。さらに細い要素では外側しか
+描かれない (§10.4) ので、**背景に対して効くべきなのは外側トーン**である。そこで背景色の relative luminance Y
+で外側トーンを決め、内側はその反対にする (`GUIView::hoverEdgeTonesForBg`、GL 非依存の純関数):
+
+```
+Y <  0.20 (黒 / 濃紺などの暗い背景):      外側 = 白 1.0、内側 = 0.1
+Y >= 0.20 (白 / 中間灰などの明るい背景):  外側 = 0.1、内側 = 0.95   // 従来と同じ
+```
+
+- 閾値 0.20 は、白 (Y = 1.0) と暗い灰 0.1 (linear で Y = 0.01003) の contrast 比が一致する背景輝度
+  (`(Y + 0.05)^2 = 1.05 * 0.06003`)。この点での外側トーンの contrast は 4.18:1 で、これが全背景色を通じた
+  最悪値になる (黒背景では白が 21:1、白背景では暗い灰が 17.5:1)。**閾値の両側が同じ見やすさなので、
+  切り替わりの近傍に「弱い帯」が原理的に生じない**。
+- **ハード閾値であり smoothstep で補間しない**: 輪郭トーンは白か黒かの二択で、補間した中間値は中間灰に
+  なり、それは中間灰の背景に対して最もコントラストが低い値になる (塗りの色みと違って中点が最悪値)。
+  中間灰 (0.5, 0.5, 0.5) は Y = 0.214 で閾値の上なので従来どおり暗い外側線が出る (そこでの contrast は
+  暗い灰が 4.40:1、白なら 3.98:1 で、暗い灰のほうが正しい) = 単純な色反転のように「灰色で消える」
+  失敗形にならない。
+- 明るさの尺度に HSB の V (= max(R,G,B)、`AbstractColor::getHSB`) を使わないのは、濃紺 (0,0,1) の V が 1.0 で
+  「明るい」と誤判定されるため。gamma のままの luma ではなく linear 化した Y (sRGB -> linear + Rec.709 の
+  重み、WCAG 2.x) を使うのは、上の閾値が WCAG の contrast 比の定義そのものだから。`pow` 3 回 / frame の
+  コストは無視できるのでキャッシュはしない (背景色変更の無効化フックを持たずに Inspector の color picker の
+  ドラッグに追従できる)。`getScene()` / `bgcolor` が null のときは従来の組み合わせ (外 = 0.1 / 内 = 0.95)。
+
+**塗りは背景に依存しない**: `ViewInputConfig::hover_hl_color` (既定 Mol* の highlightColor 相当
+(1.0, 0.4, 0.6)) を alpha 0.35 で重ねる (`GUIView.cpp` の定数)。
+下の色を**画素ごとに**読んで色を変える方式 (反転 ROP) は試したが、反転色の見た目が不自然だったので
+採っていない。背景色 1 点だけを見る上の方式は frame buffer を読まないので present 専用フレームでも同じコスト。
 
 ### 10.2 present 専用フレーム (シーン再描画も jitter リセットもしない)
 
@@ -318,6 +346,18 @@ present 専用フレーム (setHoverHit / clearHoverHit だけが起きた):
 
 ### 10.4 制約
 
+- **細い要素では輪郭が 1 本 (外側) だけになり、塗りも出ない**。幅 w の帯を sigma でぼかした中心値は
+  `erf(w / (2*sqrt(2)*sigma))` で、pick buffer 上の線幅は line 系 GpuPrim の
+  `max(linew * pickScale, 1.5)` (`LineGpuPrim.cpp` ほか) で最低 1.5 texel、sigma は
+  `HOVER_HL_EDGE_CSS_PX`(1.5) x dpr x `PICK_SCALE`(0.5)。したがって dpr 2 では s のピークが 0.383 にしかならず、
+  `tone = smoothstep(0.42, 0.58, s)` と `fillA` の `smoothstep(0.45, 0.55, s)` がどちらも 0 になって、
+  外側トーン 1 本だけが描かれる。**dpr 1 では sigma が半分でピークが 0.683 になり内側トーンと塗りが出るので、
+  これは HiDPI 限定の症状**。dpr 2 で二色になるのは pick 上の線幅 > 1.65 texel、すなわち renderer の
+  `width` > 1.65 の線描だけ (SimpleRenderer の既定は 1.2)。外側トーンを背景に合わせた (§10.1) ので
+  この状態でも可読だが、細い要素に `hover_hl_color` の塗りを出すには blur 前に mask を dilate する pass が
+  要る (RT の増設は不要、ping-pong で足りる)。すべての要素の輪郭が 1 texel 外へ広がるので別タスク。
+- 1.5 x 1.5 texel 程度の点状要素は 2 方向の blur でピークが約 0.15 まで落ち、`band` の減衰で輪郭の alpha も
+  0.32 相当まで薄くなる (同じく mask の dilate が要る)。
 - overlay の解像度は pick buffer (backing の 0.5) のまま。dpr 1 では縁がやや粗い。`PICK_SCALE` を上げれば
   改善するが pick pass コストと RGBA32UI メモリが 4 倍になるので上げていない。
 - overlay に AA (FXAA / SMAA / jitter) はかからない (最終段の後に重ねる)。縁の滑らかさは blur した mask の
