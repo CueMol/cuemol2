@@ -1,0 +1,10 @@
+{
+  "name": "4hhb (haemoglobin, 4779 atoms) / cpk / coord-morph",
+  "file": "../data/4hhb.cif",
+  "morphFile": "../data/4hhb-morph.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "coord-morph",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

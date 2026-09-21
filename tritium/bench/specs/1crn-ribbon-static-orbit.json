@@ -1,8 +1,8 @@
 {
-  "name": "1crn (crambin, ~327 atoms) / dsurface / static-orbit",
+  "name": "1crn (crambin, 327 atoms) / ribbon / static-orbit",
   "file": "../data/1crn.cif",
   "reader": "mmcif",
-  "renderer": "dsurface",
+  "renderer": "ribbon",
   "scenario": "static-orbit",
   "warmupMs": 2000,
   "measureMs": 6000

@@ -14,6 +14,7 @@
 export type BenchScenarioId =
     | 'static-orbit'
     | 'md-playback'
+    | 'coord-morph'
     | 'prop-change'
     | 'load'
     | 'idle';
@@ -34,6 +35,11 @@ export interface BenchSpec {
     warmupMs?: number;
     /** Milliseconds of collection. */
     measureMs?: number;
+    /**
+     * Displaced copy of `file` for `coord-morph`, made by
+     * `tritium/bench/perturb.py`. Relative paths resolve against the spec.
+     */
+    morphFile?: string;
     /** MD trajectory to load for `md-playback`. */
     trajectory?: {
         file: string;
@@ -105,6 +111,12 @@ export interface BenchResult {
      * reports false is not comparable with one that does not.
      */
     view: { fitted: boolean; zoom: number; distance: number; slab: number };
+    /**
+     * How the coordinate-update scenario was set up, for a `coord-morph` cell.
+     * A cell whose morph carries fewer than two frames interpolates nothing
+     * and would report a healthy frame rate for a scene that never moved.
+     */
+    morph: { frames: number } | null;
     /** The scene properties that were forced, and which of them did not take. */
     pins: Record<string, string | number | boolean>;
     unpinned: string[];

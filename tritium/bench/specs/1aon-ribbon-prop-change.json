@@ -1,0 +1,9 @@
+{
+  "name": "1aon (GroEL/GroES, 58674 atoms) / ribbon / prop-change",
+  "file": "../data/1aon.cif",
+  "reader": "mmcif",
+  "renderer": "ribbon",
+  "scenario": "prop-change",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

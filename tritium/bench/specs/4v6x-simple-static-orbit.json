@@ -1,9 +1,0 @@
-{
-  "name": "4v6x (human 80S ribosome, ~220000 atoms) / simple / static-orbit",
-  "file": "../data/4v6x.cif",
-  "reader": "mmcif",
-  "renderer": "simple",
-  "scenario": "static-orbit",
-  "warmupMs": 2000,
-  "measureMs": 6000
-}

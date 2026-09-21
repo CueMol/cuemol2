@@ -24,12 +24,21 @@ export interface ScenarioDeps {
     obj: any | null;
     /** The trajectory wrapper for `md-playback`, else null. */
     traj: any | null;
+    /** The MorphMol for `coord-morph`, else null. */
+    morph: any | null;
     /** The renderer built for the object, for scenarios that mutate it. */
     rend: any | null;
 }
 
 /** Degrees of turntable rotation applied per frame by the orbit scenarios. */
 const ORBIT_DEG_PER_FRAME = 1.0;
+
+/**
+ * How far along the morph one frame moves. At 60 fps the structure takes
+ * about a second to cross, which is the rate a trajectory is played back at
+ * and slow enough that consecutive frames differ by a plausible amount.
+ */
+const MORPH_FRACTION_PER_FRAME = 1 / 60;
 
 /**
  * Build the per-frame step for a scenario.
@@ -58,6 +67,26 @@ export function makeScenarioStep(id: BenchScenarioId, deps: ScenarioDeps): Scena
                 if (nframe <= 1) return false;
                 frame = (frame + 1) % nframe;
                 traj.setProp('frame', frame);
+                deps.view.rotateView(0, ORBIT_DEG_PER_FRAME, 0);
+                return true;
+            };
+        }
+
+        case 'coord-morph': {
+            const morph = deps.morph;
+            if (!morph) return () => false;
+            // `frame` is a real in 0..1 across the whole morph, so sweeping it
+            // gives every displayed frame its own interpolated coordinates
+            // rather than repeating one of the two endpoints. The sweep turns
+            // around instead of wrapping: a wrap would jump the whole
+            // structure back in one frame and that single frame's rebuild
+            // would land in the tail of the distribution.
+            let t = 0;
+            let dir = 1;
+            return () => {
+                t += dir * MORPH_FRACTION_PER_FRAME;
+                if (t >= 1) { t = 1; dir = -1; } else if (t <= 0) { t = 0; dir = 1; }
+                morph.setProp('frame', t);
                 deps.view.rotateView(0, ORBIT_DEG_PER_FRAME, 0);
                 return true;
             };

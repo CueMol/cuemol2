@@ -1,0 +1,10 @@
+{
+  "name": "4v6x (80S ribosome, 237685 atoms) / cpk / coord-morph",
+  "file": "../data/4v6x.cif",
+  "morphFile": "../data/4v6x-morph.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "coord-morph",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

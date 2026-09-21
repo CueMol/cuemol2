@@ -1,8 +1,8 @@
 {
-  "name": "4v6x (human 80S ribosome, ~220000 atoms) / cartoon / static-orbit",
+  "name": "4v6x (80S ribosome, 237685 atoms) / ribbon / static-orbit",
   "file": "../data/4v6x.cif",
   "reader": "mmcif",
-  "renderer": "cartoon",
+  "renderer": "ribbon",
   "scenario": "static-orbit",
   "warmupMs": 2000,
   "measureMs": 6000

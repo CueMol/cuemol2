@@ -1,8 +1,8 @@
 {
-  "name": "4hhb (haemoglobin, ~4779 atoms) / dsurface / static-orbit",
+  "name": "4hhb (haemoglobin, 4779 atoms) / ribbon / static-orbit",
   "file": "../data/4hhb.cif",
   "reader": "mmcif",
-  "renderer": "dsurface",
+  "renderer": "ribbon",
   "scenario": "static-orbit",
   "warmupMs": 2000,
   "measureMs": 6000

@@ -22,6 +22,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { loadObject } from '@renderer/worker/server/services/file/loadObject';
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen';
+import { setupMorph } from './morphSetup';
 import { benchCounters, type FrameSample } from './benchCounters';
 import { benchGpuTimerAvailable } from './glProxy';
 import { makeScenarioStep } from './scenarios';
@@ -244,12 +245,38 @@ export async function runBench(
     });
     if (!loaded.ok) return loaded;
 
-    const obj = scene.getObject(loaded.objId);
+    let obj = scene.getObject(loaded.objId);
     let traj: any = null;
     if (spec.scenario === 'md-playback' && spec.trajectory) {
         // The trajectory rides on the object that was just loaded; a topology
         // file, when the format needs one, has already come in as that object.
         traj = obj;
+    }
+
+    // Turn the structure into a two-frame morph, for the scenario that moves
+    // the atoms without changing the topology. The object is replaced, so
+    // everything below -- fitView, the renderer lookup, the scenario step --
+    // has to see the MorphMol and not what was loaded.
+    let morph: any = null;
+    let morphInfo: { frames: number } | null = null;
+    if (spec.scenario === 'coord-morph') {
+        if (!spec.morphFile) {
+            return fail('coord-morph needs `morphFile` in the spec', 'unsupported');
+        }
+        const setup = setupMorph(ctx, {
+            sceneId: args.sceneId,
+            objId: loaded.objId,
+            morphFile: resolve(spec.morphFile),
+            readerName,
+            rendererType: spec.renderer,
+            selection: spec.selection ?? null,
+        });
+        if (!setup.ok || setup.objId === undefined) {
+            return fail(`morph setup: ${setup.error ?? 'failed'}`, 'native');
+        }
+        obj = scene.getObject(setup.objId);
+        morph = obj;
+        morphInfo = { frames: setup.frames ?? 0 };
     }
 
     // Frame the whole molecule.
@@ -329,7 +356,7 @@ export async function runBench(
     })();
 
     // --- Run ---
-    const step = makeScenarioStep(spec.scenario, { ctx, view, scene, obj, traj, rend });
+    const step = makeScenarioStep(spec.scenario, { ctx, view, scene, obj, traj, morph, rend });
     let advances = 0;
     let running = true;
     const tick = (): void => {
@@ -375,6 +402,7 @@ export async function runBench(
             distance: Number(safeGet(view, 'distance')) || 0,
             slab: Number(safeGet(view, 'slab')) || 0,
         },
+        morph: morphInfo,
         pins,
         unpinned,
         loadMs,

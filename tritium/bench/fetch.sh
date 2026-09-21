@@ -62,6 +62,24 @@ for entry in "${entries[@]}"; do
 done
 
 # A manifest so a corpus can be checked without re-downloading it.
+
+# Displaced copy of each structure, for the coord-morph scenario.
+#
+# That scenario measures the path where atoms move but topology does not --
+# what a trajectory drives. It needs a second set of coordinates for the same
+# atoms, and RCSB serves no trajectories; one displaced copy per structure
+# gives every size in the ladder the same treatment for free.
+for f in "$DATA_DIR"/*.cif; do
+    [ -f "$f" ] || continue
+    case "$f" in *-morph.cif) continue ;; esac
+    out="${f%.cif}-morph.cif"
+    if [ -f "$out" ] && [ "$out" -nt "$f" ]; then
+        echo "Have $(basename "$out")"
+        continue
+    fi
+    python3 ./perturb.py "$f" "$out"
+done
+
 {
     echo "{"
     echo "  \"fetched\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
@@ -70,6 +88,8 @@ done
     first=1
     for f in "$DATA_DIR"/*.cif; do
         [ -f "$f" ] || continue
+        # The displaced copies are derived from these, not fetched.
+        case "$f" in *-morph.cif) continue ;; esac
         id="$(basename "$f" .cif)"
         atoms=0
         desc=""
