@@ -138,7 +138,10 @@ bool AmberNetCDFReader::read(qlib::InStream &ins)
 
 void AmberNetCDFReader::loadFrm(int ifrm, TrajBlock *pTB)
 {
-    // Unreachable: read() reads all frames eagerly. Seek-based lazy loading is
-    // deferred until develop exposes a portable seekable-stream interface.
+    // Unreachable: read() reads all frames eagerly. Unlike the DCD / XTC / TRR
+    // readers this one has no frame index, because its frames are reached
+    // through Netcdf3InStream rather than by seeking the source directly, and
+    // whether that layer can be re-entered at an arbitrary record has not been
+    // established.
     MB_THROW(qlib::RuntimeException, "AmberNetCDFReader: lazy frame load not implemented");
 }

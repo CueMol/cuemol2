@@ -16,8 +16,10 @@ runtime_class DCDTrajReader extends ObjReader
   scriptable;
   smartptr;
 
+  /// Load frames on demand instead of all at once. On by default; a source
+  /// that cannot be reopened and seeked is read eagerly regardless.
   property boolean lazy_load => redirect(isLazyLoad, setLazyLoad);
-  default lazy_load = false;
+  default lazy_load = true;
 
   property integer nevery => redirect(getSkipNo, setSkipNo);
   default nevery = 1;

@@ -8,6 +8,7 @@
 
 #include "mdtools.hpp"
 #include <qlib/Array.hpp>
+#include <memory>
 #include <vector>
 
 #include <qsys/Object.hpp>
@@ -24,20 +25,41 @@ class TrajBlock;
 /// per-frame loader hook. The getTargTraj() resolver that maps the UID to a
 /// Trajectory is added together with the Trajectory class.
 ///
+/// Reading a trajectory comes in two shapes:
+///
+/// - Eager: read() decodes every frame into the block up front. Always
+///   available, and the only option when the source cannot be reopened and
+///   seeked (see canLazyLoad()).
+/// - Lazy: read() only walks the file to record where each kept frame starts
+///   (getFrameOffsets()), then hands the block back to this reader through
+///   TrajBlock::setTrajLoader(). Trajectory::getTrajBlkImpl() calls
+///   TrajBlock::load() the first time a frame is displayed, which reaches
+///   loadFrm() here, which reopens the source and decodes that one frame.
+///
+/// Lazy is about WHEN frames are decoded, not how much memory the block
+/// reserves: TrajBlock::allocate() still allocates every frame's array. What
+/// it saves is the whole-file decode at open (a large trajectory no longer
+/// stalls the worker) and the decode of frames nobody ever looks at -- and
+/// since qlib::Array does not zero its storage, untouched frames stay
+/// uncommitted pages rather than resident memory.
+///
 class MDTOOLS_API TrajBlockReader : public qsys::ObjReader
 {
     typedef qsys::ObjReader super_t;
 
 public:
-    TrajBlockReader() : super_t(), m_bLazyLoad(false), m_nTrajUID(qlib::invalid_uid) {}
+    TrajBlockReader() : super_t(), m_bLazyLoad(true), m_nTrajUID(qlib::invalid_uid) {}
 
-    /// Lazy-load interface: load a specific frame (ifrm) into pTB from the stream.
+    /// Load one frame into pTB, for a block this reader indexed lazily.
+    /// Throws when the block was read eagerly (no frame index to seek with).
     virtual void loadFrm(int ifrm, TrajBlock *pTB) = 0;
 
 private:
     bool m_bLazyLoad;
 
 public:
+    /// Ask for (or refuse) deferred frame loading. On by default; canLazyLoad()
+    /// still has the final say, and a source it rejects is read eagerly.
     void setLazyLoad(bool b) { m_bLazyLoad = b; }
     bool isLazyLoad() const { return m_bLazyLoad; }
 
@@ -61,6 +83,70 @@ protected:
     /// the Trajectory class.
     void scatterCoords(const TrajectoryPtr &pTraj, const std::vector<qfloat32> &filecrd,
                        int natomFile, qfloat32 *pcoord, float scale);
+
+    // ---- Lazy frame loading ----
+
+    /// Whether read() may index this source and defer the frames themselves.
+    ///
+    /// Every condition is about loadFrm() being able to come back for the data
+    /// later, long after read() returned and the stream it was given was
+    /// destroyed (ObjReader::read() deletes it immediately):
+    ///
+    /// - the stream must be seekable -- a decoder in between (gzip, base64)
+    ///   makes it a one-way pipe, and so do non-file sources;
+    /// - there must be a path to reopen, and no decoding on top of it;
+    /// - this reader must already be owned by a smart pointer, because the
+    ///   block co-owns it through setTrajLoader() and the reference counter
+    ///   lives on the object. A reader built on the stack (gtest) or with a
+    ///   raw new/delete (Object::readFromStream, the .qsc restore path) has
+    ///   none yet, and handing one to the block would hand it a dangling
+    ///   pointer and a double free.
+    ///
+    /// A source that fails any of these is read eagerly, which is always
+    /// correct -- only slower.
+    bool canLazyLoad(qlib::InStream &ins) const;
+
+    /// Absolute byte offset of the start of each KEPT frame (nevery already
+    /// applied, so entry i is the frame that becomes block frame i). Empty
+    /// when the block was read eagerly.
+    const std::vector<qint64> &getFrameOffsets() const
+    {
+        return m_frmOffsets;
+    }
+
+    /// Record the frame index built by read(); see getFrameOffsets().
+    void setFrameOffsets(std::vector<qint64> offsets)
+    {
+        m_frmOffsets = std::move(offsets);
+    }
+
+    /// Verify the source really holds every byte the frame index claims, by
+    /// touching the last one. An MD run killed mid-write leaves a truncated
+    /// final frame, which an index walk cannot notice on its own -- the header
+    /// that announced the frame is intact, the data behind it is not.
+    /// Throws qlib::FileFormatException when it is missing, so a truncated
+    /// file fails at open the way an eager read fails on it.
+    void checkIndexedRange(qlib::InStream &ins, qint64 endPos) const;
+
+    /// Size pTB for nkept frames, leave every frame unloaded, and wire the
+    /// block back to this reader so TrajBlock::load() can reach loadFrm().
+    /// Defined with the Trajectory class.
+    void setupLazyBlock(const TrajBlockPtr &pTB, const TrajectoryPtr &pTraj, int nAtoms,
+                        int nkept);
+
+    /// Reopen the source and seek to the start of frame ifrm, for loadFrm().
+    /// Throws when there is no frame index or ifrm is out of its range.
+    std::unique_ptr<qlib::InStream> openAtFrame(int ifrm) const;
+
+    /// Resolve the parent Trajectory during a lazy load. Unlike getTargTraj()
+    /// this does not need the reader to still be attached: by the time a frame
+    /// is displayed it is not, so the block carries the UID instead. Defined
+    /// with the Trajectory class.
+    TrajectoryPtr getTargTrajOf(TrajBlock *pTB) const;
+
+private:
+    /// Frame index; see getFrameOffsets().
+    std::vector<qint64> m_frmOffsets;
 };
 
 MC_DECL_SCRSP(TrajBlockReader);

@@ -48,6 +48,44 @@ TrajectoryPtr TrajBlockReader::getTargTraj() const
     return pTraj;
 }
 
+TrajectoryPtr TrajBlockReader::getTargTrajOf(TrajBlock *pTB) const
+{
+    // getTargTraj() can fall back to the attached block, but a lazy frame load
+    // happens long after detach(), so the block is passed in explicitly and
+    // carries the UID itself (setupLazyBlock puts it there).
+    qlib::uid_t uid = getTargTrajUID();
+    if (uid == qlib::invalid_uid && pTB != NULL) uid = pTB->getTrajUID();
+    if (uid == qlib::invalid_uid) {
+        MB_THROW(qlib::NullPointerException,
+                 "Trajectory frame load: parent trajectory is unknown");
+        return TrajectoryPtr();
+    }
+    TrajectoryPtr pTraj = qsys::SceneManager::getObjectS(uid);
+    if (pTraj.isnull()) {
+        MB_THROW(qlib::RuntimeException,
+                 "Trajectory frame load: parent trajectory is gone");
+    }
+    return pTraj;
+}
+
+void TrajBlockReader::setupLazyBlock(const TrajBlockPtr &pTB, const TrajectoryPtr &pTraj,
+                                     int nAtoms, int nkept)
+{
+    // allocate() leaves every frame flagged unloaded, which is exactly the
+    // lazy starting state: the arrays exist, nothing has been decoded into
+    // them yet.
+    pTB->allocate(nAtoms, nkept);
+
+    // Trajectory::append() assigns the start index and scene, but not this --
+    // only .qsc restore does -- and loadFrm() needs it to find its way back
+    // to the trajectory once the reader has been detached.
+    if (!pTraj.isnull()) pTB->setTrajUID(pTraj->getUID());
+
+    // The block co-owns the reader from here on; canLazyLoad() has already
+    // established that sharing ownership of `this` is sound.
+    pTB->setTrajLoader(TrajBlockReaderPtr(this));
+}
+
 void TrajBlockReader::scatterCoords(const TrajectoryPtr &pTraj,
                                     const std::vector<qfloat32> &filecrd, int natomFile,
                                     qfloat32 *pcoord, float scale)

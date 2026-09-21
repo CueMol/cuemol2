@@ -28,6 +28,7 @@ Phase 2 の目的は **MD trajectory (DCD) の realtime 表示**である。DCD 
 **保留(今後実装)**:
 - **厳密な 1-frame/vsync ベンチ**: AnimMgr は wall-clock でフレームを飛ばす(遅いと frame drop して同じ時間で再生)。ベンチには rAF tick ごとに `dynframe++` する frame カウントベースの harness が必要(`ViewLoopController` に追加、`PERF_MEASURE` と併用)。MVP では MolAnim の `length = nframes/target_fps`(秒)で近似。
 - **lazy loading**: develop の `InStream` に portable な seek が無い(`FileInStream` のみ int で 2GB 制限)ため eager のみ。seekable stream 抽象の導入が前提。
+  - **(解消済み)** その後 `InStream` に `isSeekable()`/`tell()`/`seekTo(qint64)` が入り、DCD/XTC/TRR は遅延ロード済み。設計は [`../architecture/md-trajectory-lazy-loading.md`](../architecture/md-trajectory-lazy-loading.md)。AMBER NetCDF と `TrajBlock` のフレーム eviction は未着手。
 - **MorphMol の AnimMol 再親子化**、**readsel(部分ロード)**、**frame_aver_size 検証**、**§2.3 の dynamic events / 共有テクスチャ (2e)**。
 
 テスト用データ + `.qsc`: `~/tmp/260718_cm3_traj/`(`gmx.gro`, `*.dcd`, `test_gro_traj*.qsc`)。
