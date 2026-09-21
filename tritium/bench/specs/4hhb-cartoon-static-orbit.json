@@ -1,0 +1,9 @@
+{
+  "name": "4hhb (haemoglobin, ~4779 atoms) / cartoon / static-orbit",
+  "file": "../data/4hhb.cif",
+  "reader": "mmcif",
+  "renderer": "cartoon",
+  "scenario": "static-orbit",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

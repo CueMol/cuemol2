@@ -3,6 +3,8 @@
 //
 
 #include "EcShaderObject.hpp"
+// Benchmark harness (bench/perf-harness branch only).
+#include "BenchStats.hpp"
 
 #include <qlib/FileStream.hpp>
 #include <qsys/SysConfig.hpp>
@@ -281,6 +283,7 @@ void EcShaderObject::setupViewport(gfx::DisplayContext *pdc)
 
 void EcShaderObject::updateMatricesUBO(const void *data, size_t size)
 {
+    BenchScope bench__(g_benchStats.uboUpdate);
     auto peer = m_pView->getPeerObj();
     auto env = peer.Env();
     auto buf = createBuffer(env, data, size);
@@ -294,6 +297,7 @@ void EcShaderObject::updateMatricesUBO(const void *data, size_t size)
 
 void EcShaderObject::updateFogUBO(const void *data, size_t size)
 {
+    BenchScope bench__(g_benchStats.uboUpdate);
     auto peer = m_pView->getPeerObj();
     auto env = peer.Env();
     auto buf = createBuffer(env, data, size);
@@ -320,6 +324,7 @@ void EcShaderObject::initDrawParamsUBO(size_t size)
 
 void EcShaderObject::updateDrawParamsUBO(const void *data, size_t size)
 {
+    BenchScope bench__(g_benchStats.uboUpdate);
     auto peer = m_pView->getPeerObj();
     auto env = peer.Env();
     auto buf = createBuffer(env, data, size);

@@ -1,6 +1,8 @@
 #include <common.h>
 
 #include "EcBufferRep.hpp"
+// Benchmark harness (bench/perf-harness branch only).
+#include "BenchStats.hpp"
 #include "ElecView.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <gfx/DrawAttrArray.hpp>
@@ -43,6 +45,7 @@ void EcBufferRep::deleteBuffer(ElecView *pView)
 
 void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &data)
 {
+    BenchScope bench__(g_benchStats.bufferCreate);
     auto pView = dynamic_cast<ElecView *>(pdc->getTargetView());
     if (pView == nullptr) {
         MB_THROW(qlib::RuntimeException, "target view is not set or not ElecView");
@@ -149,6 +152,7 @@ void EcBufferRep::bind() {}
 
 void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
 {
+    BenchScope bench__(g_benchStats.bufferUpdate);
     // In-place buffer update path, gated by the check-and-reset dirty flag
     // (mirrors OcBufferRep::update; see fa3909cd). The flag stays false on
     // ordinary frames, so per-frame draws upload nothing; a renderer that
@@ -182,6 +186,7 @@ void EcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada) {}
 
 void EcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
 {
+    BenchScope bench__(g_benchStats.bufferDraw);
     auto pView =
         qlib::ObjectManager::sGetObj<ElecView>(m_nViewID);
     if (pView == nullptr) {

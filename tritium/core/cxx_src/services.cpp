@@ -10,6 +10,8 @@
 #include <qlib/LByteArray.hpp>
 #include "wrapper.hpp"
 #include "services.hpp"
+// Benchmark harness (bench/perf-harness branch only).
+#include "BenchStats.hpp"
 
 // for test
 #define USE_MEM_TRACKING 1
@@ -646,6 +648,58 @@ Napi::Value resetMemoryTracking(const Napi::CallbackInfo &info)
 #ifdef USE_MEM_TRACKING
     g_memTracker.reset();
 #endif
+    return info.Env().Undefined();
+}
+
+/**
+ * Benchmark harness: the accumulated C++ timings.
+ *
+ * Flat keys rather than nested objects, so a result row can carry them into a
+ * CSV column without the reader having to know the shape.
+ *
+ * @param info - Napi callback info (not used)
+ * @return microseconds and call counts per instrumented site
+ */
+Napi::Value getBenchStats(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    auto obj = Napi::Object::New(env);
+
+    const auto put = [&](const char *name, const node_jsbr::BenchCounter &c) {
+        obj.Set(std::string(name) + "Us",
+                Napi::Number::New(env, static_cast<double>(
+                                           c.usec.load(std::memory_order_relaxed))));
+        obj.Set(std::string(name) + "Count",
+                Napi::Number::New(env, static_cast<double>(
+                                           c.count.load(std::memory_order_relaxed))));
+    };
+
+    put("drawElem", g_benchStats.drawElem);
+    put("bufferCreate", g_benchStats.bufferCreate);
+    put("bufferUpdate", g_benchStats.bufferUpdate);
+    put("bufferDraw", g_benchStats.bufferDraw);
+    put("uboUpdate", g_benchStats.uboUpdate);
+    put("coordTexUpdate", g_benchStats.coordTexUpdate);
+    obj.Set("allocBytes",
+            Napi::Number::New(env, static_cast<double>(
+                                       g_benchStats.allocBytes.load(
+                                           std::memory_order_relaxed))));
+    obj.Set("allocCount",
+            Napi::Number::New(env, static_cast<double>(
+                                       g_benchStats.allocCount.load(
+                                           std::memory_order_relaxed))));
+    return obj;
+}
+
+/**
+ * Benchmark harness: zero the timings before a measurement window opens.
+ *
+ * @param info - Napi callback info (not used)
+ * @return Undefined
+ */
+Napi::Value resetBenchStats(const Napi::CallbackInfo &info)
+{
+    g_benchStats.reset();
     return info.Env().Undefined();
 }
 

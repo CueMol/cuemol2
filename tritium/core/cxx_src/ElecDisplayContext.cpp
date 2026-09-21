@@ -1,6 +1,8 @@
 #include <common.h>
 
 #include "ElecDisplayContext.hpp"
+// Benchmark harness (bench/perf-harness branch only).
+#include "BenchStats.hpp"
 #include "EcShaderObject.hpp"
 #include "ElecView.hpp"
 #include "EcBufferRep.hpp"
@@ -266,6 +268,10 @@ void ElecDisplayContext::bindDefaultFramebuffer()
 
 void ElecDisplayContext::allocBuffer(gfx::AbstDrawAttrs &ada, int nvert, int nind)
 {
+    g_benchStats.allocBytes.fetch_add(
+        static_cast<int64_t>(nvert) * static_cast<int64_t>(ada.getElemSize()),
+        std::memory_order_relaxed);
+    g_benchStats.allocCount.fetch_add(1, std::memory_order_relaxed);
     if (m_pView == nullptr || !m_pView->isBound()) {
         // Fallback: behave like the default impl when no peer is available.
         ada.allocOwnedData(nvert);

@@ -195,6 +195,11 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
                 Napi::Function::New(env, node_jsbr::getMemoryTrackingStats));
     exports.Set(Napi::String::New(env, "resetMemoryTracking"),
                 Napi::Function::New(env, node_jsbr::resetMemoryTracking));
+    // Benchmark harness (bench/perf-harness branch only).
+    exports.Set(Napi::String::New(env, "getBenchStats"),
+                Napi::Function::New(env, node_jsbr::getBenchStats));
+    exports.Set(Napi::String::New(env, "resetBenchStats"),
+                Napi::Function::New(env, node_jsbr::resetBenchStats));
 
     exports = node_jsbr::Wrapper::init(env, exports);
 

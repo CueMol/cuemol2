@@ -1,6 +1,6 @@
 {
-  "name": "1crn / cpk / static-orbit",
-  "file": "../data/1crn.cif",
+  "name": "1aon (GroEL/GroES, ~58674 atoms) / cpk / static-orbit",
+  "file": "../data/1aon.cif",
   "reader": "mmcif",
   "renderer": "cpk",
   "scenario": "static-orbit",

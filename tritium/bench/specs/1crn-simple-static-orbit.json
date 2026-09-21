@@ -1,0 +1,9 @@
+{
+  "name": "1crn (crambin, ~327 atoms) / simple / static-orbit",
+  "file": "../data/1crn.cif",
+  "reader": "mmcif",
+  "renderer": "simple",
+  "scenario": "static-orbit",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

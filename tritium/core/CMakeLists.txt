@@ -65,6 +65,8 @@ SET(NODEJS_SRCS
   cxx_src/init_cuemol.cpp
   cxx_src/services.cpp
   cxx_src/wrapper.cpp
+  # Benchmark harness (bench/perf-harness branch only; never merged to develop).
+  cxx_src/BenchStats.cpp
   ${CMAKE_JS_SRC}
   )
 

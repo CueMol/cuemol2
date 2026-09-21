@@ -1,0 +1,9 @@
+{
+  "name": "4v6x / cpk / prop-change",
+  "file": "../data/4v6x.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "prop-change",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

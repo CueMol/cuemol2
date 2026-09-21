@@ -6,6 +6,8 @@
 #include <common.h>
 
 #include "EcFloatDataTexture.hpp"
+// Benchmark harness (bench/perf-harness branch only).
+#include "BenchStats.hpp"
 #include "ElecView.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <qsys/SceneManager.hpp>
@@ -50,6 +52,7 @@ bool EcFloatDataTexture::create(int w, int h, int ncomp)
 
 void EcFloatDataTexture::update(const void *data)
 {
+    BenchScope bench__(g_benchStats.coordTexUpdate);
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("EcFloatDataTexture::update> unknown parent view (%d)",
