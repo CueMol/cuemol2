@@ -156,6 +156,52 @@ reporting how slow that code is rather than anything about the backend, and
 this document is where that answer now lives. `cpk` is the path a renderer
 takes when it has one, and is what further measurement tracks.
 
+## What was changed, and what it cost
+
+Candidates 3 to 5 below were superseded: rather than making the per-atom
+lookups cheaper, the coordinate array became the source of truth and the
+lookups went away. `AnimMol` owns the array, `update()` fills it from the frame
+data, each atom holds a binding to its slot so `getPos()` reads it from there,
+and the coordinate-texture renderers resolve an atom to an array index once at
+build time. Separately, a renderer that finds nothing to draw now remembers it
+instead of rebuilding its layout every frame.
+
+Same machine and corpus as the tables above, three repeats per cell:
+
+| cell | before | after |
+|---|---|---|
+| 4V6X `coord-morph` | 24.9 fps, 26.01 ms CPU | **60.0 fps, 1.58 ms** |
+| 1AON `coord-morph` | 60.0 fps, 7.32 ms CPU | 60.0 fps, **0.78 ms** |
+| 4HHB `coord-morph` | 60.0 fps, 1.57 ms CPU | 60.0 fps, **0.33 ms** |
+| 4V6X `static-orbit` | 60.0 fps, 5.35 ms CPU | 60.0 fps, **0.30 ms** |
+| 1AON `static-orbit` | 60.0 fps, 3.54 ms CPU | 60.0 fps, **0.31 ms** |
+
+Static-viewing CPU is now flat at about 0.3 ms from 327 atoms to 237,685,
+where it used to climb with the structure -- that climb was the empty-selection
+rebuild, not the drawing. GPU time is unchanged either side (8.46 against
+8.72 ms at 4V6X), which is the check that the picture did not change.
+
+Sampling the same two cells afterwards:
+
+| | before | after |
+|---|---:|---:|
+| `coord-morph`: `MolCoord::getAtom`, all callers | 55.1% | **0.0%** |
+| `coord-morph`: `MorphMol::update` | 32.6% | 2.6% |
+| `coord-morph`: `CPK2Renderer::updateCoordTex` | 31.4% | 6.1% |
+| `coord-morph`: `Scene::display` | 65.0% | **6.7%** |
+| `static-orbit`: `SelectionRenderer::renderCoordTexImpl` | 31.4% | **0.0%** |
+| `static-orbit`: `Scene::display` | 31.6% | **0.6%** |
+
+**`prop-change` moved the other way**, from 38.86 to 42.93 ms of CPU at 1AON
+and 183.80 to 197.35 at 4V6X -- about 10%. Its buffer reallocations and its
+allocation volume are identical either side (2.00 per frame, 5.65 and 22.82 MB),
+so the path is unchanged; the cost is that building a layout now fills the
+coordinate texture in its own pass rather than in the same loop that writes the
+radii and colours. A cell that rebuilds once and then draws never notices;
+`prop-change` rebuilds every frame by construction, so it pays it every frame.
+That is the scenario whose real problem is that a colour change discards
+positions and normals it did not affect (candidate 1), which is untouched here.
+
 ## Candidate fixes, in the order the numbers suggest
 
 None of these has been attempted. They are listed with what each would have to
@@ -163,6 +209,8 @@ prove, because two earlier candidates -- hoisting the per-object uniform
 uploads to pass level, and giving the vertex buffers a ring or an orphaning
 usage hint -- were dropped after measurement put them at 0.3% and 2.5-3.3% of
 the frame respectively.
+
+(1 and 2 remain open; 3 to 5 were superseded by the change described above.)
 
 1. **Do not rebuild geometry for a colour change.** The largest single effect
    available: a colour change currently discards positions and normals too.

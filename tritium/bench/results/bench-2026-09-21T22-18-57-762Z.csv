@@ -1,0 +1,2 @@
+timestamp,spec,rep,canvas_w,canvas_h,dpr,scenario,renderer,atoms,render_fps,update_fps,frames,drawn_frames,frame_ms_mean,frame_ms_p50,frame_ms_p95,frame_ms_p99,cpu_ms_mean,gpu_ms_mean,load_ms,gl_total,gl_draw,gl_use_program,gl_buffer_sub_data,gl_buffer_sub_data_bytes,gl_get_uniform_location,rss_mb
+2026-09-21T22:18:55.698Z,prof-tmp-after-4v6x-static,0,1832,1010,2,static-orbit,cpk,237685,59.995,0,1800,1800,16.657,16.7,18.3,18.6,0.306,7.336,2546.3,42,1,4,6,528,1,532.726
