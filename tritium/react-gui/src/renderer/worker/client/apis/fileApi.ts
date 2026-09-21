@@ -95,15 +95,21 @@ export async function getReaderDefaultOptions(
  *
  * @param transport - Worker transport.
  * @param catId - File-category id (see C++ `FileCatTypes`).
+ * @param opts - `includeTrajReaders` keeps the trajectory-block readers in
+ *   the list; the open dialog leaves them out, the drop classifier wants
+ *   them (see `GetOpenFiltersArgs`).
  * @returns `ElectronFileFilter[]` for the Electron dialog; empty on
  *   failure.
  * @remarks Calls `getOpenFilters` worker service.
  */
 export async function getOpenFilters(
     transport: WorkerTransport, catId: number,
+    opts?: { includeTrajReaders?: boolean },
 ): Promise<ElectronFileFilter[]> {
     try {
-        return await transport.invokeService('getOpenFilters', { catId });
+        return await transport.invokeService('getOpenFilters', {
+            catId, includeTrajReaders: opts?.includeTrajReaders,
+        });
     } catch (e) {
         log.warn('getOpenFilters failed:', e);
         return [];

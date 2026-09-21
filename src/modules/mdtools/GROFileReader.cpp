@@ -40,7 +40,9 @@ constexpr int GRO_MIN_ATOM_LINE_LEN = GRO_PREFIX_LEN + 3 * GRO_DEFAULT_POS_WIDTH
 // The residue number is written as %5d, so it wraps around at 100000.
 constexpr int GRO_RESID_MODULO = 100000;
 
-// Upper bound on the per-file skipped-atom warnings written to the log.
+// Upper bound on how many individual occurrences of a repeating condition are
+// written to the log (skipped atoms, residue-numbering restarts). Past this,
+// occurrences are only counted and reported once at the end of the read.
 constexpr int GRO_MAX_WARN = 10;
 
 LString stripLineEnd(const LString &line)
@@ -53,7 +55,8 @@ LString stripLineEnd(const LString &line)
 GROFileReader::GROFileReader()
     : m_lineno(0), m_nDeclAtoms(0), m_nReadAtoms(0),
       m_nPosWidth(GRO_DEFAULT_POS_WIDTH), m_curChain("A"), m_nResidOffset(0),
-      m_nPrevResid(0), m_bHasPrevResid(false), m_nSkipAtoms(0)
+      m_nPrevResid(0), m_bHasPrevResid(false), m_nResidRestarts(0), m_nResidWraps(0),
+      m_nSkipAtoms(0)
 {
 }
 
@@ -142,6 +145,8 @@ bool GROFileReader::read(qlib::InStream &ins)
   m_nResidOffset = 0;
   m_nPrevResid = 0;
   m_bHasPrevResid = false;
+  m_nResidRestarts = 0;
+  m_nResidWraps = 0;
   m_nSkipAtoms = 0;
 
   try {
@@ -170,6 +175,21 @@ bool GROFileReader::read(qlib::InStream &ins)
   }
 
   LOG_DPRINTLN("GROFileReader> read %d atoms", m_nReadAtoms);
+  if (m_nResidRestarts > 0) {
+    LOG_DPRINTLN("GROFileReader> residue numbering restarted %d time(s), so the "
+                 "file holds %d molecule block(s); they were renumbered in steps "
+                 "of %d to keep residues distinct (the number as written in the "
+                 "file is index %% %d)",
+                 m_nResidRestarts, m_nResidRestarts + 1, GRO_RESID_MODULO,
+                 GRO_RESID_MODULO);
+  }
+  if (m_nResidWraps > 0) {
+    // This one IS worth calling out: it means the %5d field overflowed, i.e.
+    // the file really does describe more than 100000 residues.
+    LOG_DPRINTLN("GROFileReader> of those, %d involved a wraparound of the "
+                 "5-digit residue field (the file has more than %d residues)",
+                 m_nResidWraps, GRO_RESID_MODULO);
+  }
   if (m_nSkipAtoms > 0) {
     LOG_DPRINTLN("GROFileReader> Warning: %d atom(s) skipped (duplicated in the "
                  "same residue); the atom count no longer matches the file, so "
@@ -324,16 +344,23 @@ bool GROFileReader::parseAtomLine(const LString &line)
   // restart the original number is still recoverable as (index % 100000).
   if (m_bHasPrevResid && resid < m_nPrevResid) {
     m_nResidOffset += GRO_RESID_MODULO;
-    if (m_nPrevResid == GRO_RESID_MODULO - 1 && resid == 0) {
-      LOG_DPRINTLN("GROFileReader> residue number wraparound at line %d; "
-                   "renumbering the following residues from %d",
-                   m_lineno, m_nResidOffset);
+    ++m_nResidRestarts;
+    const bool bWrap = (m_nPrevResid == GRO_RESID_MODULO - 1 && resid == 0);
+    if (bWrap) ++m_nResidWraps;
+
+    // Not a warning: a .gro has no chain or molecule column, so a restart is
+    // simply where the next molecule begins, and a solvated system has one
+    // per lipid and per ion. Trace the first few (enough to see where the
+    // blocks fall) and leave the rest to the summary in read().
+    if (m_nResidRestarts <= GRO_MAX_WARN) {
+      LOG_DPRINTLN("GROFileReader> residue numbering %s at line %d (%d -> %d); "
+                   "block %d renumbered with a %d offset",
+                   bWrap ? "wrapped around" : "restarted", m_lineno, m_nPrevResid,
+                   resid, m_nResidRestarts + 1, m_nResidOffset);
     }
-    else {
-      LOG_DPRINTLN("GROFileReader> Warning: residue number decreased at line "
-                   "%d (%d -> %d); renumbering the following residues with a "
-                   "%d offset",
-                   m_lineno, m_nPrevResid, resid, m_nResidOffset);
+    else if (m_nResidRestarts == GRO_MAX_WARN + 1) {
+      LOG_DPRINTLN("GROFileReader> (further residue numbering restarts are "
+                   "counted, not listed)");
     }
   }
   m_nPrevResid = resid;

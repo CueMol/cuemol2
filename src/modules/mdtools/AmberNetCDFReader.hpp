@@ -28,8 +28,10 @@ class Trajectory;
 /// is read directly as {a, b, c, alpha, beta, gamma}.
 ///
 /// Frames are read eagerly and appended one at a time (TrajBlock::appendFrame).
-/// Seek-based lazy loading is not implemented (develop's InStream has no
-/// portable seek), so loadFrm() is unreachable. Single-frame NetCDF restart
+/// Frames are read eagerly. Unlike the DCD / XTC / TRR readers this one has
+/// no frame index: its frames are reached through Netcdf3InStream rather than
+/// by seeking the source directly, and whether that layer can be re-entered at
+/// an arbitrary record has not been established. loadFrm() is unreachable. Single-frame NetCDF restart
 /// files (Conventions="AMBERRESTART") are not supported.
 ///
 class MDTOOLS_API AmberNetCDFReader : public TrajBlockReader

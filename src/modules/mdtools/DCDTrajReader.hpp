@@ -35,9 +35,11 @@ using molstr::SelectionPtr;
 /// allocation exceeds one frame; this keeps large trajectories well under the
 /// PartitionAlloc single-allocation limit without a whole-file buffer.
 ///
-/// Frames are read eagerly. Seek-based lazy loading is not implemented yet
-/// (develop's InStream has no portable seek interface), so lazy_load is ignored
-/// and loadFrm() is unreachable.
+/// DCD frames are fixed-length records, so the frame index is pure arithmetic
+/// off the end of the header -- no walk of the file is needed. When the source
+/// can be reopened and seeked (TrajBlockReader::canLazyLoad) read() records
+/// that base offset and returns, and loadFrm() decodes one frame on demand;
+/// otherwise every frame is read up front.
 ///
 class MDTOOLS_API DCDTrajReader : public TrajBlockReader
 {
@@ -62,7 +64,7 @@ public:
 
     virtual bool read(qlib::InStream &ins) override;
 
-    /// Lazy-load one frame into pTB (not implemented; see class docs).
+    /// Decode frame ifrm into pTB, for a block this reader indexed lazily.
     virtual void loadFrm(int ifrm, TrajBlock *pTB) override;
 
     // ---- Properties ----
@@ -83,6 +85,17 @@ private:
     void readHeader(qlib::InStream &ins, const TrajectoryPtr &pTraj);
     void readBody(qlib::InStream &ins, const TrajBlockPtr &pTB,
                   const TrajectoryPtr &pTraj);
+
+    /// Bytes one frame occupies: the optional cell record plus the X/Y/Z
+    /// records, each wrapped in its Fortran length markers. Valid once
+    /// readHeader() has set m_natom / m_fcell.
+    qint64 getFrameBytes() const;
+
+    /// Record the frame offsets and hand the block back to this reader for
+    /// on-demand loading. bodyPos is the stream position just after the
+    /// header, i.e. where frame 0 begins.
+    void indexFrames(qlib::InStream &ins, const TrajBlockPtr &pTB,
+                     const TrajectoryPtr &pTraj, qint64 bodyPos);
 
     /// Read one frame's records from fbis into tmpv, and (if pcoord != NULL)
     /// scatter into pcoord/pcell using the trajectory's selection index array.

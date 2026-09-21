@@ -21,6 +21,7 @@
 
 #include "molstr/MolAtom.hpp"
 
+#include <qlib/FileStream.hpp>
 #include <qlib/StringStream.hpp>
 #include <qlib/Vector4D.hpp>
 #include <qlib/LExceptions.hpp>
@@ -29,6 +30,7 @@
 #include <climits>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -44,6 +46,7 @@ using mdtools::XtcTrajReader;
 using mdtools::AmberNetCDFReader;
 using mdtools::GROFileReader;
 using molstr::MolAtomPtr;
+using qlib::LString;
 using qlib::StrInStream;
 using qlib::Vector4D;
 
@@ -1045,6 +1048,72 @@ void appendAmberNC(const TrajectoryPtr &pTraj, const std::string &nc)
     pTraj->append(pBlk);
 }
 
+// ---- Lazy (on-demand) frame loading helpers ----
+//
+// Lazy loading only engages for a source the reader can reopen and seek, and
+// only for a reader an LScrSp already owns (TrajBlockReader::canLazyLoad), so
+// these tests need a real file on disk and a smart-pointer-held reader --
+// unlike the append*() helpers above, whose stack reader over a StrInStream
+// is exactly the shape that falls back to an eager read.
+
+/// Write trajectory bytes to a scratch file and return its path.
+LString writeTempTraj(const std::string &bytes, const char *suffix)
+{
+    static int s_counter = 0;
+    const std::string path =
+        ::testing::TempDir() + "/traj_" + std::to_string(++s_counter) + suffix;
+    std::ofstream out(path, std::ios::binary);
+    out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+    out.close();
+    return LString(path.c_str());
+}
+
+/// Read bytes through RdrT from a file (the lazy path) and append the block.
+/// Returns the block so the test can see which frames have been decoded.
+template <class RdrT>
+mdtools::TrajBlockPtr appendLazy(const TrajectoryPtr &pTraj, const std::string &bytes,
+                                 const char *suffix, int nevery = 1)
+{
+    qlib::LScrSp<RdrT> pRdr(MB_NEW RdrT());
+    pRdr->setTargTrajUID(pTraj->getUID());
+    if (nevery > 1) pRdr->setSkipNo(nevery);
+    mdtools::TrajBlockPtr pBlk(pRdr->createDefaultObj());
+    pRdr->attach(pBlk);
+    // setPath() plus a real file stream, which is what the no-argument
+    // ObjReader::read() would set up. It is spelled out here because that
+    // overload also serializes the reader's scriptable properties, and this
+    // test binary never calls mdtools::init(), so the reader's class object
+    // is not registered. Everything the lazy path depends on -- a seekable
+    // source, a path to reopen, a smart-pointer-owned reader -- is present.
+    const LString path = writeTempTraj(bytes, suffix);
+    pRdr->setPath(path);
+    qlib::FileInStream fis;
+    fis.open(path);
+    pRdr->read(fis);
+    fis.close();
+    pRdr->detach();
+    pTraj->append(pBlk);
+    return pBlk;
+}
+
+/// Compare every atom of frame `f` between two trajectories holding the same
+/// data, one read eagerly and one lazily. Both run the same decoder, so the
+/// results must be identical bit for bit, not merely close.
+void expectSameFrame(const TrajectoryPtr &pLazy, const TrajectoryPtr &pEager, int f,
+                     int natom)
+{
+    pEager->setFrame(f);
+    pLazy->setFrame(f);
+    for (int i = 0; i < natom; ++i) {
+        const quint32 idx = static_cast<quint32>(i);
+        Vector4D e = pEager->getAtom(pEager->getAtomIDByArrayInd(idx))->getPos();
+        Vector4D l = pLazy->getAtom(pLazy->getAtomIDByArrayInd(idx))->getPos();
+        EXPECT_DOUBLE_EQ(l.x(), e.x()) << "frame " << f << " atom " << i;
+        EXPECT_DOUBLE_EQ(l.y(), e.y()) << "frame " << f << " atom " << i;
+        EXPECT_DOUBLE_EQ(l.z(), e.z()) << "frame " << f << " atom " << i;
+    }
+}
+
 }  // namespace
 
 TEST(TrajectoryTest, DcdPlaybackMapsFramesToAtoms)
@@ -1566,4 +1635,143 @@ TEST(TrajReaderNevery, BelowOneIsClampedToOne)
     mdtools::AmberNetCDFReader ar;
     ar.setSkipNo(0);
     EXPECT_EQ(ar.getSkipNo(), 1);
+}
+
+// ---- Lazy (on-demand) frame loading ----
+//
+// One test per format, because the three build their frame index in three
+// different ways: DCD by arithmetic off a fixed record size, XTC by walking
+// the per-frame compressed-block length, TRR by parsing each variable-length
+// header. What they must agree on is the contract these pin: read() decodes
+// nothing but the primed first frame, and a frame fetched later -- in any
+// order -- is byte-for-byte what the eager path would have produced.
+
+TEST(TrajectoryTest, XtcLazyMatchesEagerAndDefersFrames)
+{
+    const int natom = 12;
+    const int nframes = 4;
+    const std::string xtc = buildXTCCompressed(natom, nframes, 1000.0f);
+
+    TrajectoryPtr pEager = makeTrajectoryNAtoms(natom);
+    appendXTC(pEager, xtc);
+
+    TrajectoryPtr pLazy = makeTrajectoryNAtoms(natom);
+    mdtools::TrajBlockPtr pBlk = appendLazy<XtcTrajReader>(pLazy, xtc, ".xtc");
+
+    ASSERT_EQ(pLazy->getFrameSize(), nframes);
+
+    // append() primes frame 0 for display; nothing else has been decompressed.
+    EXPECT_TRUE(pBlk->isLoaded(0));
+    for (int f = 1; f < nframes; ++f) EXPECT_FALSE(pBlk->isLoaded(f));
+
+    // Out of order on purpose: seeking backwards must work as well as
+    // forwards, which is the whole point of an offset index.
+    const int order[nframes] = {3, 1, 0, 2};
+    for (int k = 0; k < nframes; ++k) expectSameFrame(pLazy, pEager, order[k], natom);
+
+    EXPECT_TRUE(pBlk->isAllLoaded());
+
+    // The unit cell travels with the frame, not just the coordinates.
+    mdtools::TrajBlockPtr pRef = pEager->getBlock(0);
+    for (int i = 0; i < TrajBlock::CELL_SIZE; ++i) {
+        EXPECT_FLOAT_EQ(pBlk->getCellArray(2)[i], pRef->getCellArray(2)[i]);
+    }
+}
+
+TEST(TrajectoryTest, DcdLazyMatchesEagerAndDefersFrames)
+{
+    const int natom = 3;
+    const int nframes = 4;
+    const std::string dcd = buildDCD(natom, nframes);
+
+    TrajectoryPtr pEager = makeWaterTrajectory();
+    appendDCD(pEager, dcd);
+
+    TrajectoryPtr pLazy = makeWaterTrajectory();
+    mdtools::TrajBlockPtr pBlk = appendLazy<DCDTrajReader>(pLazy, dcd, ".dcd");
+
+    ASSERT_EQ(pLazy->getFrameSize(), nframes);
+    EXPECT_TRUE(pBlk->isLoaded(0));
+    for (int f = 1; f < nframes; ++f) EXPECT_FALSE(pBlk->isLoaded(f));
+
+    const int order[nframes] = {3, 1, 0, 2};
+    for (int k = 0; k < nframes; ++k) expectSameFrame(pLazy, pEager, order[k], natom);
+
+    EXPECT_TRUE(pBlk->isAllLoaded());
+}
+
+TEST(TrajectoryTest, TrrLazyMatchesEagerAndDefersFrames)
+{
+    const int natom = 3;
+    const int nframes = 4;
+    const std::string trr = buildTRR(natom, nframes, /*bDouble=*/false);
+
+    TrajectoryPtr pEager = makeWaterTrajectory();
+    appendTRR(pEager, trr);
+
+    TrajectoryPtr pLazy = makeWaterTrajectory();
+    mdtools::TrajBlockPtr pBlk = appendLazy<TrrTrajReader>(pLazy, trr, ".trr");
+
+    ASSERT_EQ(pLazy->getFrameSize(), nframes);
+    EXPECT_TRUE(pBlk->isLoaded(0));
+    for (int f = 1; f < nframes; ++f) EXPECT_FALSE(pBlk->isLoaded(f));
+
+    const int order[nframes] = {3, 1, 0, 2};
+    for (int k = 0; k < nframes; ++k) expectSameFrame(pLazy, pEager, order[k], natom);
+
+    EXPECT_TRUE(pBlk->isAllLoaded());
+}
+
+// nevery and the frame index are the pair most easily got wrong: the index
+// must hold only the kept frames, so that block frame i is file frame
+// i*nevery and loadFrm() stays a plain lookup.
+TEST(TrajectoryTest, XtcLazyHonoursNeverySkip)
+{
+    const int natom = 12;
+    const int nframes = 6;
+    const int nevery = 2;
+    const std::string xtc = buildXTCCompressed(natom, nframes, 1000.0f);
+
+    TrajectoryPtr pTraj = makeTrajectoryNAtoms(natom);
+    appendLazy<XtcTrajReader>(pTraj, xtc, ".xtc", nevery);
+
+    ASSERT_EQ(pTraj->getFrameSize(), nframes / nevery);
+
+    for (int f = 0; f < nframes / nevery; ++f) {
+        pTraj->setFrame(f);
+        for (int i = 0; i < natom; ++i) {
+            Vector4D pos =
+                pTraj->getAtom(pTraj->getAtomIDByArrayInd(static_cast<quint32>(i)))->getPos();
+            EXPECT_NEAR(pos.x(), trrCoordNm(f * nevery, i, 0) * 10.0, 0.02);
+            EXPECT_NEAR(pos.y(), trrCoordNm(f * nevery, i, 1) * 10.0, 0.02);
+            EXPECT_NEAR(pos.z(), trrCoordNm(f * nevery, i, 2) * 10.0, 0.02);
+        }
+    }
+}
+
+// A run killed mid-write leaves a final frame whose header is intact and whose
+// data is not. The index walk never reads that data, so without an explicit
+// check the file would look fine at open and fail during playback. Fail at
+// open, the way the eager path does (XtcTruncatedCompressedBlockThrows).
+TEST(TrajectoryTest, XtcLazyTruncatedFileThrows)
+{
+    const int natom = 12;
+    const std::string xtc = buildXTCCompressed(natom, 2, 1000.0f);
+    const std::string cut = xtc.substr(0, xtc.size() - 8);
+
+    TrajectoryPtr pTraj = makeTrajectoryNAtoms(natom);
+    EXPECT_THROW(appendLazy<XtcTrajReader>(pTraj, cut, ".xtc"), qlib::FileFormatException);
+}
+
+// The fallback the lazy path leans on: a source with no path behind it -- an
+// in-memory stream, which is also how .qsc restore reads a block -- is read
+// eagerly even though it is perfectly seekable.
+TEST(TrajectoryTest, XtcWithoutPathIsReadEagerly)
+{
+    const int natom = 12;
+    const int nframes = 3;
+    TrajectoryPtr pTraj = makeTrajectoryNAtoms(natom);
+    appendXTC(pTraj, buildXTCCompressed(natom, nframes, 1000.0f));
+
+    EXPECT_TRUE(pTraj->getBlock(0)->isAllLoaded());
 }

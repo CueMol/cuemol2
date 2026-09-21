@@ -1,4 +1,24 @@
-// Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
+/**
+ * @file worker/server/services/file/getCompatibleRendererNames.ts
+ * @description Resolves which reader will load a file and which renderer
+ * types could draw what that reader produces, for the file-open flow's
+ * renderer picker.
+ *
+ * Runs in the Web Worker thread. Wrappers are sync (no await on C++ wrappers).
+ *
+ * An empty `types` has two distinct causes, and the caller must tell them
+ * apart before it says anything to the user (see `useSceneCommands`'
+ * OpenObjByPath handler):
+ *
+ * - `readerName === ''` -- no reader claims this file. "Unsupported format"
+ *   is the honest message.
+ * - `readerName !== ''` -- a reader claims it, but nothing can draw the
+ *   object it produces. The file is fine and the format is supported; it
+ *   just cannot be opened on its own. `objType` says what it would have
+ *   built, which is how the caller recognises a `TrajBlock` (a `.dcd` /
+ *   `.xtc` / `.trr` / AMBER NetCDF trajectory, openable only together with a
+ *   topology) and can point at the flow that does accept it.
+ */
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import { pickReaderName, OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
@@ -47,6 +67,15 @@ export interface GetCompatibleRendererNamesResult {
     readerName: string;
 }
 
+/**
+ * No reader identified, or the identified one could not be instantiated.
+ *
+ * The instantiation failures report no `readerName` on purpose: without a
+ * temp object there is no `objType`, so the caller cannot say anything more
+ * specific than "this file cannot be opened" anyway, and claiming a reader it
+ * then knows nothing about would only narrow the message to something it
+ * cannot support.
+ */
 const EMPTY_RESULT: GetCompatibleRendererNamesResult = { types: [], objType: '', readerName: '' };
 
 export function getCompatibleRendererNames(
