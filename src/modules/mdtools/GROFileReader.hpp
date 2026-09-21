@@ -62,6 +62,18 @@ namespace mdtools {
     /// false until the first atom line of the current frame has been parsed
     bool m_bHasPrevResid;
 
+    /// how many times the residue number restarted, i.e. how many molecule
+    /// blocks the file holds beyond the first. A .gro carries no chain or
+    /// molecule column, so this restart is the only boundary marker it has
+    /// and a solvated system has thousands of them -- it is reported once at
+    /// the end of the read, not per occurrence.
+    int m_nResidRestarts;
+
+    /// of those restarts, how many were a genuine %5d wraparound (99999 -> 0)
+    /// rather than a new molecule numbered from 1. A non-zero count means the
+    /// file holds more than 100000 residues.
+    int m_nResidWraps;
+
     /// number of atoms dropped because appendAtom() failed
     int m_nSkipAtoms;
 

@@ -13,6 +13,8 @@
 #include <qlib/LExceptions.hpp>
 
 #include <cstring>
+#include <memory>
+#include <utility>
 #include <vector>
 
 using namespace mdtools;
@@ -86,139 +88,249 @@ bool TrrTrajReader::read(qlib::InStream &ins)
         return false;
     }
 
+    if (canLazyLoad(ins)) {
+        indexFrames(ins, pTB, pTraj);
+    } else {
+        readAllFrames(ins, pTB, pTraj);
+    }
+
+    return true;
+}
+
+bool TrrTrajReader::readFrameHeader(XdrInStream &xdr, FrameHeader &hdr)
+{
+    // Frame boundary: read the magic, or stop at a clean end of stream.
+    qint32 magic = 0;
+    if (!xdr.readI32opt(magic)) return false;
+    if (magic != TRR_MAGIC) {
+        MB_THROW(qlib::FileFormatException, "TRR: invalid frame magic");
+        return false;
+    }
+
+    // Version string (e.g. "GMX_trn_file"), consumed but not enforced.
+    xdr.readGmxString();
+
+    // Ten block-size fields, then natoms/step/nre.
+    const int ir_size = xdr.readI32();
+    const int e_size = xdr.readI32();
+    hdr.box_size = xdr.readI32();
+    hdr.vir_size = xdr.readI32();
+    hdr.pres_size = xdr.readI32();
+    const int top_size = xdr.readI32();
+    const int sym_size = xdr.readI32();
+    hdr.x_size = xdr.readI32();
+    hdr.v_size = xdr.readI32();
+    hdr.f_size = xdr.readI32();
+    (void)ir_size;
+    (void)e_size;
+    (void)top_size;
+    (void)sym_size;
+
+    hdr.natom = xdr.readI32();
+    xdr.readI32();  // step
+    xdr.readI32();  // nre
+
+    // TRR stores no precision flag: infer float vs double from a byte size.
+    int nflsize = 0;
+    if (hdr.box_size > 0) {
+        nflsize = hdr.box_size / 9;
+    } else if (hdr.natom > 0) {
+        if (hdr.x_size > 0)
+            nflsize = hdr.x_size / (hdr.natom * 3);
+        else if (hdr.v_size > 0)
+            nflsize = hdr.v_size / (hdr.natom * 3);
+        else if (hdr.f_size > 0)
+            nflsize = hdr.f_size / (hdr.natom * 3);
+    }
+    if (nflsize != static_cast<int>(sizeof(float)) &&
+        nflsize != static_cast<int>(sizeof(double))) {
+        MB_THROW(qlib::FileFormatException, "TRR: cannot determine precision");
+        return false;
+    }
+    hdr.bDouble = (nflsize == static_cast<int>(sizeof(double)));
+
+    // Time and lambda (real precision).
+    if (hdr.bDouble) {
+        xdr.readF64();
+        xdr.readF64();
+    } else {
+        xdr.readF32();
+        xdr.readF32();
+    }
+    return true;
+}
+
+void TrrTrajReader::readFrameBody(XdrInStream &xdr, const FrameHeader &hdr,
+                                  std::vector<qfloat32> &filecrd, qfloat32 cell[6])
+{
+    // Simulation box -> 6-value cell (Angstrom / degrees).
+    if (hdr.box_size > 0)
+        xdr.readGmxBox(hdr.bDouble, cell);
+    else
+        std::memset(cell, 0, sizeof(qfloat32) * 6);
+
+    // Skip virial/pressure tensors (legacy, unused).
+    const qint64 legacy = static_cast<qint64>(hdr.vir_size) + hdr.pres_size;
+    if (legacy > 0) xdr.skipBytes(legacy);
+
+    // Positions (file order, nm).
+    if (hdr.hasCoords()) {
+        filecrd.resize(static_cast<size_t>(hdr.natom) * 3);
+        if (hdr.bDouble) {
+            const int ncoord = hdr.natom * 3;
+            for (int i = 0; i < ncoord; ++i)
+                filecrd[i] = static_cast<qfloat32>(xdr.readF64());
+        } else {
+            xdr.readF32Array(filecrd.data(), hdr.natom * 3);
+        }
+    }
+
+    // Skip velocities and forces (not stored by TrajBlock).
+    const qint64 vfbytes = static_cast<qint64>(hdr.v_size) + hdr.f_size;
+    if (vfbytes > 0) xdr.skipBytes(vfbytes);
+}
+
+int TrrTrajReader::checkNatomAgainstTopology(int natom, const TrajectoryPtr &pTraj) const
+{
+    // Validate against the topology only when it is already loaded (during
+    // .qsc load the block is read before the topology).
+    const int topoN = static_cast<int>(pTraj->getAllAtomSize());
+    if (topoN > 0 && natom != topoN) {
+        LString msg = LString::format("TRR: inconsistent NATOM with topology %d!=%d", natom,
+                                      topoN);
+        MB_THROW(qlib::FileFormatException, msg);
+        return 0;
+    }
+    return (topoN > 0) ? static_cast<int>(pTraj->getAtomSize()) : natom;
+}
+
+void TrrTrajReader::readAllFrames(qlib::InStream &ins, const TrajBlockPtr &pTB,
+                                  const TrajectoryPtr &pTraj)
+{
     XdrInStream xdr(ins);
 
     bool inited = false;
-    int nReadAtoms = 0;
     int frameno = 0;
     std::vector<qfloat32> filecrd;
     qfloat32 cell[6];
 
     for (;;) {
-        // Frame boundary: read the magic, or stop at a clean end of stream.
-        qint32 magic = 0;
-        if (!xdr.readI32opt(magic)) break;
-        if (magic != TRR_MAGIC) {
-            MB_THROW(qlib::FileFormatException, "TRR: invalid frame magic");
-            return false;
-        }
-
-        // Version string (e.g. "GMX_trn_file"), consumed but not enforced.
-        xdr.readGmxString();
-
-        // Ten block-size fields, then natoms/step/nre.
-        const int ir_size = xdr.readI32();
-        const int e_size = xdr.readI32();
-        const int box_size = xdr.readI32();
-        const int vir_size = xdr.readI32();
-        const int pres_size = xdr.readI32();
-        const int top_size = xdr.readI32();
-        const int sym_size = xdr.readI32();
-        const int x_size = xdr.readI32();
-        const int v_size = xdr.readI32();
-        const int f_size = xdr.readI32();
-        (void)ir_size;
-        (void)e_size;
-        (void)top_size;
-        (void)sym_size;
-
-        const int natom = xdr.readI32();
-        xdr.readI32();  // step
-        xdr.readI32();  // nre
-
-        // TRR stores no precision flag: infer float vs double from a byte size.
-        int nflsize = 0;
-        if (box_size > 0) {
-            nflsize = box_size / 9;
-        } else if (natom > 0) {
-            if (x_size > 0)
-                nflsize = x_size / (natom * 3);
-            else if (v_size > 0)
-                nflsize = v_size / (natom * 3);
-            else if (f_size > 0)
-                nflsize = f_size / (natom * 3);
-        }
-        if (nflsize != static_cast<int>(sizeof(float)) &&
-            nflsize != static_cast<int>(sizeof(double))) {
-            MB_THROW(qlib::FileFormatException, "TRR: cannot determine precision");
-            return false;
-        }
-        const bool bDouble = (nflsize == static_cast<int>(sizeof(double)));
-
-        // Time and lambda (real precision).
-        if (bDouble) {
-            xdr.readF64();
-            xdr.readF64();
-        } else {
-            xdr.readF32();
-            xdr.readF32();
-        }
+        FrameHeader hdr;
+        if (!readFrameHeader(xdr, hdr)) break;
 
         if (!inited) {
-            m_natom = natom;
-            // Validate against the topology only when it is already loaded
-            // (during .qsc load the block is read before the topology).
-            const int topoN = static_cast<int>(pTraj->getAllAtomSize());
-            if (topoN > 0 && natom != topoN) {
-                LString msg = LString::format("TRR: inconsistent NATOM with topology %d!=%d",
-                                              natom, topoN);
-                MB_THROW(qlib::FileFormatException, msg);
-                return false;
-            }
-            nReadAtoms = (topoN > 0) ? static_cast<int>(pTraj->getAtomSize()) : natom;
-            pTB->initFrames(nReadAtoms);
-            filecrd.resize(static_cast<size_t>(natom) * 3);
-            LOG_DPRINTLN("TrrTraj> NATOM=%d, double=%d", natom, bDouble ? 1 : 0);
+            m_natom = hdr.natom;
+            pTB->initFrames(checkNatomAgainstTopology(hdr.natom, pTraj));
+            filecrd.resize(static_cast<size_t>(hdr.natom) * 3);
+            LOG_DPRINTLN("TrrTraj> NATOM=%d, double=%d", hdr.natom, hdr.bDouble ? 1 : 0);
             inited = true;
-        } else if (natom != m_natom) {
+        } else if (hdr.natom != m_natom) {
             MB_THROW(qlib::FileFormatException, "TRR: varying atom count not supported");
-            return false;
+            return;
         }
 
-        // Simulation box -> 6-value cell (Angstrom / degrees).
-        if (box_size > 0)
-            xdr.readGmxBox(bDouble, cell);
-        else
-            std::memset(cell, 0, sizeof(cell));
-
-        // Skip virial/pressure tensors (legacy, unused).
-        const qint64 legacy = static_cast<qint64>(vir_size) + pres_size;
-        if (legacy > 0) xdr.skipBytes(legacy);
-
-        // Positions (file order, nm).
-        const bool hasX = (x_size > 0);
-        if (hasX) {
-            if (bDouble) {
-                const int ncoord = natom * 3;
-                for (int i = 0; i < ncoord; ++i)
-                    filecrd[i] = static_cast<qfloat32>(xdr.readF64());
-            } else {
-                xdr.readF32Array(filecrd.data(), natom * 3);
-            }
-        }
-
-        // Skip velocities and forces (not stored by TrajBlock).
-        const qint64 vfbytes = static_cast<qint64>(v_size) + f_size;
-        if (vfbytes > 0) xdr.skipBytes(vfbytes);
+        readFrameBody(xdr, hdr, filecrd, cell);
 
         // Keep every m_nSkip-th frame that has coordinates.
-        if (hasX && (frameno % m_nSkip == 0)) {
+        if (hdr.hasCoords() && (frameno % m_nSkip == 0)) {
             qfloat32 *pcoord = pTB->appendFrame();
             qfloat32 *pcell = pTB->getCellArray(pTB->getSize() - 1);
             for (int i = 0; i < 6; ++i) pcell[i] = cell[i];
-            scatterCoords(pTraj, filecrd, natom, pcoord, 10.0f);
+            scatterCoords(pTraj, filecrd, hdr.natom, pcoord, 10.0f);
             pTB->setLoaded(pTB->getSize() - 1, true);
         }
         ++frameno;
     }
 
     LOG_DPRINTLN("TrrTraj> read %d frames (skip=%d)", pTB->getSize(), m_nSkip);
-    return true;
+}
+
+void TrrTrajReader::indexFrames(qlib::InStream &ins, const TrajBlockPtr &pTB,
+                                const TrajectoryPtr &pTraj)
+{
+    XdrInStream xdr(ins);
+
+    std::vector<qint64> offsets;
+    int frameno = 0;
+    qint64 pos = 0;
+    int nReadAtoms = 0;
+
+    for (;;) {
+        if (!ins.seekTo(pos)) {
+            MB_THROW(qlib::FileFormatException,
+                     LString::format("TRR: cannot seek to frame %d", frameno));
+            return;
+        }
+
+        FrameHeader hdr;
+        if (!readFrameHeader(xdr, hdr)) break;  // clean end of file
+
+        if (frameno == 0) {
+            m_natom = hdr.natom;
+            nReadAtoms = checkNatomAgainstTopology(hdr.natom, pTraj);
+            LOG_DPRINTLN("TrrTraj> NATOM=%d, double=%d", hdr.natom, hdr.bDouble ? 1 : 0);
+        } else if (hdr.natom != m_natom) {
+            MB_THROW(qlib::FileFormatException, "TRR: varying atom count not supported");
+            return;
+        }
+
+        // The header is variable-length (the version string is), so its size
+        // comes from where parsing stopped rather than from a constant.
+        const qint64 headerEnd = ins.tell();
+        if (headerEnd < 0) {
+            MB_THROW(qlib::FileFormatException, "TRR: source stopped reporting its position");
+            return;
+        }
+
+        // Same rule as the eager path: only a frame carrying coordinates can
+        // become a block frame, and the stride counts every frame.
+        if (hdr.hasCoords() && (frameno % m_nSkip == 0)) offsets.push_back(pos);
+        ++frameno;
+        pos = headerEnd + hdr.payloadBytes();
+    }
+
+    if (offsets.empty()) {
+        LOG_DPRINTLN("TrrTraj> no frames with coordinates found");
+        return;
+    }
+
+    // The walk only parsed headers, so a run killed mid-write would look
+    // intact until playback fell off the end. Fail at open instead.
+    checkIndexedRange(ins, pos);
+
+    const int nkept = static_cast<int>(offsets.size());
+    setFrameOffsets(std::move(offsets));
+    setupLazyBlock(pTB, pTraj, nReadAtoms, nkept);
+
+    LOG_DPRINTLN("TrrTraj> indexed %d frames (skip=%d) for on-demand loading", nkept,
+                 m_nSkip);
 }
 
 void TrrTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
 {
-    // Unreachable: read() reads all frames eagerly. Seek-based lazy loading is
-    // deferred until develop exposes a portable seekable-stream interface.
-    MB_THROW(qlib::RuntimeException, "TrrTrajReader: lazy frame load not implemented");
+    TrajectoryPtr pTraj = getTargTrajOf(pTB);
+
+    std::unique_ptr<qlib::InStream> pIn = openAtFrame(ifrm);
+    XdrInStream xdr(*pIn);
+
+    FrameHeader hdr;
+    if (!readFrameHeader(xdr, hdr)) {
+        MB_THROW(qlib::FileFormatException,
+                 LString::format("TRR: frame %d is missing", ifrm));
+        return;
+    }
+    if (hdr.natom != m_natom) {
+        MB_THROW(qlib::FileFormatException, "TRR: varying atom count not supported");
+        return;
+    }
+
+    std::vector<qfloat32> filecrd;
+    qfloat32 cell[6];
+    readFrameBody(xdr, hdr, filecrd, cell);
+
+    qfloat32 *pcell = pTB->getCellArray(ifrm);
+    for (int i = 0; i < 6; ++i) pcell[i] = cell[i];
+    scatterCoords(pTraj, filecrd, hdr.natom, pTB->getCrdArray(ifrm), 10.0f);
+
+    pIn->close();
 }

@@ -12,6 +12,10 @@
 
 #include <qlib/LExceptions.hpp>
 
+#include <memory>
+#include <utility>
+#include <vector>
+
 using namespace mdtools;
 
 DCDTrajReader::DCDTrajReader() : super_t()
@@ -63,9 +67,55 @@ bool DCDTrajReader::read(qlib::InStream &ins)
     }
 
     readHeader(ins, pTraj);
-    readBody(ins, pTB, pTraj);
+
+    if (canLazyLoad(ins)) {
+        indexFrames(ins, pTB, pTraj, ins.tell());
+    } else {
+        readBody(ins, pTB, pTraj);
+    }
 
     return true;
+}
+
+qint64 DCDTrajReader::getFrameBytes() const
+{
+    // Every record is [int32 length][payload][int32 length].
+    const qint64 marker = 2 * static_cast<qint64>(sizeof(qint32));
+    const qint64 cell = m_fcell ? (marker + 6 * static_cast<qint64>(sizeof(double))) : 0;
+    const qint64 axis = marker + static_cast<qint64>(m_natom) * sizeof(float);
+    return cell + 3 * axis;
+}
+
+void DCDTrajReader::indexFrames(qlib::InStream &ins, const TrajBlockPtr &pTB,
+                                const TrajectoryPtr &pTraj, qint64 bodyPos)
+{
+    const int nread = (m_nfile + m_nSkip - 1) / m_nSkip;
+    if (nread <= 0) return;
+
+    const qint64 framebytes = getFrameBytes();
+
+    // Fixed-length records mean the offsets are arithmetic; unlike XTC and TRR
+    // there is nothing to walk. Entry i is the frame that becomes block frame
+    // i, so the nevery stride is folded in here and loadFrm() stays a plain
+    // lookup.
+    std::vector<qint64> offsets;
+    offsets.reserve(static_cast<size_t>(nread));
+    for (int i = 0; i < nread; ++i) {
+        offsets.push_back(bodyPos + static_cast<qint64>(i) * m_nSkip * framebytes);
+    }
+
+    // Nothing above read the frame data, so a file cut short mid-run would go
+    // unnoticed until playback reached the end. Fail now instead.
+    checkIndexedRange(ins, bodyPos + static_cast<qint64>(m_nfile) * framebytes);
+
+    const int topoN = static_cast<int>(pTraj->getAtomSize());
+    const int nReadAtoms = (topoN > 0) ? topoN : m_natom;
+
+    setFrameOffsets(std::move(offsets));
+    setupLazyBlock(pTB, pTraj, nReadAtoms, nread);
+
+    LOG_DPRINTLN("DCDTraj> indexed %d frames (skip=%d) for on-demand loading", nread,
+                 m_nSkip);
 }
 
 void DCDTrajReader::readHeader(qlib::InStream &ins, const TrajectoryPtr &pTraj)
@@ -232,8 +282,13 @@ void DCDTrajReader::readBody(qlib::InStream &ins, const TrajBlockPtr &pTB,
 
 void DCDTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
 {
-    // Unreachable: read() reads all frames eagerly and never registers a block
-    // loader, so TrajBlock::load() is not called. Seek-based lazy loading is
-    // deferred until develop exposes a portable seekable-stream interface.
-    MB_THROW(qlib::RuntimeException, "DCDTrajReader: lazy frame load not implemented");
+    TrajectoryPtr pTraj = getTargTrajOf(pTB);
+
+    std::unique_ptr<qlib::InStream> pIn = openAtFrame(ifrm);
+
+    FortBinInStream fbis(*pIn);
+    std::vector<float> tmpv(static_cast<size_t>(m_natom) * 3);
+    readFrameRecords(fbis, tmpv, pTB->getCrdArray(ifrm), pTB->getCellArray(ifrm), pTraj);
+
+    pIn->close();
 }

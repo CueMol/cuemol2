@@ -87,8 +87,12 @@ export function useOpenFilePaths({ cm }: { cm: AsyncCueMol | null }): OpenFilePa
       try {
         const unsupported = [...unopenable]
         if (cm) {
+          // includeTrajReaders: classification is not an offer to open. A
+          // dropped .xtc must reach OpenObjByPath so the open flow can say
+          // what it is (a trajectory needing a topology); dropping it here
+          // would report "no reader accepts this file" instead.
           const [objFilters, sceneFilters] = await Promise.all([
-            cm.getOpenFilters(IOH_CAT_OBJREADER),
+            cm.getOpenFilters(IOH_CAT_OBJREADER, { includeTrajReaders: true }),
             cm.getOpenFilters(IOH_CAT_SCEREADER),
           ])
           // Files opened together share one scene: the first file to land

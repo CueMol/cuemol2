@@ -97,6 +97,12 @@ architecture, it belongs here.
   scriptable API のみで組み立てる `loadTrajectory` service、renderer cancel = 全 transaction
   キャンセルに合わせた 2 段 deferred-load フロー、`DIALOG_PICK_PATH` の複数選択拡張、
   `OpenMdTrajDialog` の構成とスコープ (gro のみ / 再生 UI 別タスク)。migration ではない。
+- [MD Trajectory の遅延フレーム読み込み (libcuemol2)](md-trajectory-lazy-loading.md) (日本語) --
+  DCD / XTC / TRR を、開いた時点で全展開せず表示されたフレームだけ読む設計。
+  `InStream` の 64bit seek が入って前提が変わった経緯、`canLazyLoad` の適用条件
+  (とくに `.qsc` 復元経路を eager に落とす smart pointer 所有チェックの理由)、
+  形式ごとの frame offset 索引の作り方、途中で切れたファイルの検出、
+  「遅延 fill であって遅延 allocate ではない」限界と未実装のフレーム eviction。
 - [MD Trajectory Bottom Pane (tritium)](md-trajectory-bottom-pane.md) (日本語) --
   ロード済み Trajectory を再生・シークし block セグメントを可視化する bottom pane の設計。
   Trajectory に再生エンジンが無いため JS タイマー駆動 (Animation の C++ AnimMgr との差)、
