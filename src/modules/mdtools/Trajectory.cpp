@@ -111,7 +111,6 @@ Trajectory::Trajectory()
     m_nTotalFrms = 0;
     m_nCurFrm = 0;
     m_nAver = 0;
-    m_bAverBufValid = false;
     m_nAllAtomSize = 0;
     m_bSetupDone = false;
 }
@@ -207,35 +206,39 @@ qfloat32 *Trajectory::getCrdArrayImplImpl(int ifrm)
     return pBlk->getCrdArray(nFrmInd);
 }
 
-qfloat32 *Trajectory::getCrdArrayImpl()
+void Trajectory::fillCrdArray()
 {
-    if (m_nAver > 0) {
-        if (m_bAverBufValid) return &m_averbuf[0];
+    allocCrdArray();
+    qfloat32 *pdst = mutableCrdArray();
+    if (pdst == NULL) return;
 
-        int ncrds = getAtomSize() * 3;
-        if (static_cast<int>(m_averbuf.size()) < ncrds) m_averbuf.resize(ncrds);
-        for (int i = 0; i < ncrds; ++i) m_averbuf[i] = 0.0f;
+    const int ncrds = getAtomSize() * 3;
+
+    if (m_nAver > 0) {
+        for (int i = 0; i < ncrds; ++i) pdst[i] = 0.0f;
 
         int nStart = qlib::max(0, m_nCurFrm - m_nAver);
         int nEnd = qlib::min(m_nCurFrm + m_nAver, m_nTotalFrms - 1);
         int nsum = 0;
         for (int j = nStart; j <= nEnd; ++j) {
-            qfloat32 *pcrd = getCrdArrayImplImpl(j);
-            for (int i = 0; i < ncrds; ++i) m_averbuf[i] += pcrd[i];
+            const qfloat32 *pcrd = getCrdArrayImplImpl(j);
+            for (int i = 0; i < ncrds; ++i) pdst[i] += pcrd[i];
             ++nsum;
         }
-        for (int i = 0; i < ncrds; ++i) m_averbuf[i] /= nsum;
-        m_bAverBufValid = true;
-        return &m_averbuf[0];
+        for (int i = 0; i < ncrds; ++i) pdst[i] /= nsum;
+        return;
     }
 
-    // no averaging: return the current frame
-    return getCrdArrayImplImpl(-1);
+    // no averaging: the current frame as it stands
+    const qfloat32 *pcrd = getCrdArrayImplImpl(-1);
+    for (int i = 0; i < ncrds; ++i) pdst[i] = pcrd[i];
 }
 
 void Trajectory::invalidateCrdArray()
 {
-    // Topology is fixed once loaded; nothing to invalidate.
+    // Topology is fixed once loaded, so the index maps and the atom bindings
+    // stay valid; only the base class's array would be dropped, and the next
+    // update() would have to build it again for nothing.
 }
 
 void Trajectory::createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap)
@@ -476,30 +479,32 @@ void Trajectory::update(int iframe, bool bDyn)
 {
     findBlk(iframe, m_nBlkInd, m_nFrmInd);
     m_nCurFrm = iframe;
-    m_bAverBufValid = false;
 
-    // Write-both: copy the current frame's coordinates into the MolAtoms so
-    // getPos()-based consumers (selection, measurement) and the already
-    // migrated coordinate-texture renderers both follow playback.
-    qfloat32 *pcrd = getCrdArrayImpl();
-    ensureIndexMap();
-    const int natoms = getAtomSize();
-    for (int i = 0; i < natoms; ++i) {
-        int aid = getAtomIDByArrayInd(static_cast<quint32>(i));
-        MolAtomPtr pAtom = getAtom(aid);
-        if (pAtom.isnull()) continue;
-        pAtom->setRawPos(Vector4D(pcrd[i * 3 + 0], pcrd[i * 3 + 1], pcrd[i * 3 + 2]));
-    }
+    // The coordinate array is the source of truth: fill it from the frame data
+    // and everything else -- the coordinate-texture renderers by array index,
+    // MolAtom::getPos() through the per-atom binding -- reads it from there.
+    fillCrdArray();
 
     // MVP: always fire OBE_CHANGED "atomsMoved". Dynamic-event distinction
     // (bDyn) is deferred to a later optimization sub-phase.
-    fireAtomsMoved();
+    commitCrdArray();
 }
 
 void Trajectory::setFrame(int ifrm)
 {
     ensureInit();
     update(ifrm);
+}
+
+void Trajectory::setFrmAverSize(int naver)
+{
+    if (m_nAver == naver) return;
+    m_nAver = naver;
+
+    // The array holds the average over the old window, and it is what every
+    // consumer reads, so a new window has to be applied now rather than at the
+    // next frame change.
+    if (m_bInit) update(m_nCurFrm);
 }
 
 void Trajectory::setDynFrame(int ifrm)

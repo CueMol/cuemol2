@@ -64,19 +64,6 @@ TEST(DisplayListHitNames, RecordedPerVertexAndResetPerRecording)
 
 // ---- Pick pass: every GpuPrim draws with its pick program ----
 
-// The coordinate-texture primitives take a FloatDataTexture; a no-op one is
-// enough to reach setupAttrs()/draw() without GL.
-class MockFloatDataTexture : public gfx::FloatDataTexture
-{
-public:
-    bool create(int, int, int) override { return true; }
-    void update(const void *) override {}
-    void bind(int) override {}
-    void unbind() override {}
-    int getWidth() const override { return 1; }
-    int getHeight() const override { return 1; }
-};
-
 // Regression: the hit-name attributes were added to the primitives' vertex
 // layouts, and the attribute table must be sized for all of them
 // (setAttrSize before setAttrInfo). A too-small table asserted inside

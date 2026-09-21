@@ -15,6 +15,7 @@
 #include "gfx/DisplayContext.hpp"
 #include "gfx/ShaderObject.hpp"
 #include "gfx/AbstDrawAttrs.hpp"
+#include "gfx/FloatDataTexture.hpp"
 #include <qlib/LString.hpp>
 #include <qlib/MapTable.hpp>
 #include <qlib/Matrix4D.hpp>
@@ -45,6 +46,24 @@ public:
     int getAttribLocation(const char *) override { return 0; }
     void setupFog(gfx::DisplayContext *) override {}
     void setupMat(gfx::DisplayContext *) override {}
+};
+
+// ---- MockFloatDataTexture ----
+
+// The coordinate-texture path needs a FloatDataTexture to get past its
+// allocation step; a no-op one is enough to reach the code that fills it.
+class MockFloatDataTexture : public gfx::FloatDataTexture
+{
+public:
+    bool create(int, int, int) override { return true; }
+    void update(const void *) override { ++m_nUpdates; }
+    void bind(int) override {}
+    void unbind() override {}
+    int getWidth() const override { return 1; }
+    int getHeight() const override { return 1; }
+
+    /// How many times the positions have been re-sent.
+    int m_nUpdates = 0;
 };
 
 // ---- MockDisplayContext ----
@@ -84,6 +103,13 @@ public:
 
     // drawElem is a no-op
     void drawElem(const gfx::AbstDrawElem &) override {}
+
+    // Hands out a working (if inert) coordinate texture, so a renderer takes
+    // its coordinate-texture path rather than falling back.
+    gfx::FloatDataTexture *createFloatDataTexture() override
+    {
+        return new MockFloatDataTexture();
+    }
 };
 
 #endif  // TESTS_GFX_MOCK_DISPLAY_CONTEXT_HPP

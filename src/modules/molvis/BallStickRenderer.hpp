@@ -8,6 +8,7 @@
 
 #include "molvis.hpp"
 #include <modules/molstr/MolAtomRenderer.hpp>
+#include <modules/molstr/CoordTexSupport.hpp>
 #include <gfx/GpuPrim.hpp>
 #include <gfx/SphereIdxGpuPrim.hpp>
 #include <gfx/CylinderIdxGpuPrim.hpp>
@@ -24,7 +25,8 @@ namespace molvis {
   using namespace molstr;
   using gfx::DisplayContext;
 
-  class MOLVIS_API BallStickRenderer : public MolAtomRenderer
+  class MOLVIS_API BallStickRenderer : public MolAtomRenderer,
+                                       public molstr::CoordTexSupport
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -155,20 +157,11 @@ namespace molvis {
     //////////////////////////
     // coordinate texture path (direct update)
 
-    bool m_bUseCoordTex;
-    bool m_bCoordDirty;
 
     /// Ball / stick primitives with texture-fetched positions (shared texture)
     gfx::SphereIdxGpuPrim m_sphIdxGpuPrim;
     gfx::CylinderIdxGpuPrim m_cylIdxGpuPrim;
 
-    /// Coordinate texture (owned) shared by both index primitives.
-    gfx::FloatDataTexture *m_pCoordTex;
-
-    std::vector<qfloat32> m_coordbuf;
-    std::vector<int> m_aidcache;
-    std::unordered_map<int, int> m_aid2idx;
-    int m_nTexW, m_nTexH;
 
     void renderCoordTexImpl(DisplayContext *pdc);
     bool updateCoordTex();

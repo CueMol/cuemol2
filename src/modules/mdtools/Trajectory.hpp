@@ -26,10 +26,13 @@ using molstr::SelectionPtr;
 /// MD trajectory object.
 ///
 /// An AnimMol whose coordinate frames live in a deque of TrajBlocks (each block
-/// a bounded chunk of frames; see DCDTrajReader). getCrdArrayImpl() returns the
-/// current frame's coordinates, and update() writes them into the MolAtoms
-/// (write-both) so getPos()-based consumers and the coordinate-texture renderers
-/// both follow playback.
+/// a bounded chunk of frames; see DCDTrajReader). update() copies the requested
+/// frame -- averaged over a window when frame_aver_size says so -- into the
+/// base class's coordinate array, and every consumer reads it from there.
+///
+/// The copy is what keeps frame loading out of the read path: a block can fault
+/// its frames in from disk on demand, and that has to happen while a frame is
+/// being selected, not underneath a renderer or a getPos() call.
 ///
 class MDTOOLS_API Trajectory : public molstr::AnimMol
 {
@@ -62,8 +65,6 @@ public:
 
     /// Topology is fixed once loaded; nothing to invalidate.
     virtual void invalidateCrdArray() override;
-
-    virtual qfloat32 *getCrdArrayImpl() override;
 
     virtual void createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap) override;
 
@@ -148,7 +149,15 @@ private:
     int m_nAllAtomSize;
 
     TrajBlockPtr getTrajBlkImpl(int ifrm, int &rBlkInd, int &rFrmInd) const;
+
+    /// Coordinates of one frame, straight out of its block. Loads the frame
+    /// from the data file if the block has not faulted it in yet, so this must
+    /// only be called while selecting a frame, never from a read path.
     qfloat32 *getCrdArrayImplImpl(int ifrm);
+
+    /// Copy the current frame (or the average over the window set by
+    /// frame_aver_size) into the base class's coordinate array.
+    void fillCrdArray();
 
 public:
     void setup();
@@ -186,16 +195,10 @@ public:
 private:
     /// Frame averaging window size (0: off)
     int m_nAver;
-    std::vector<float> m_averbuf;
-    bool m_bAverBufValid;
 
 public:
     int getFrmAverSize() const { return m_nAver; }
-    void setFrmAverSize(int naver)
-    {
-        m_nAver = naver;
-        m_bAverBufValid = false;
-    }
+    void setFrmAverSize(int naver);
 };
 
 }  // namespace mdtools

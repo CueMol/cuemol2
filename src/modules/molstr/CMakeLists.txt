@@ -40,6 +40,7 @@ MolResidue.cpp
 MolChain.cpp
 MolCoord.cpp
 AnimMol.cpp
+CoordTexSupport.cpp
 MolCoordGeomImpl.cpp
 AtomIterator.cpp
 PDBFileReader.cpp

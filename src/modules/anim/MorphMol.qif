@@ -6,9 +6,9 @@
 #ifndef MORPH_MOL_QIF_INCLUDED
 #define MORPH_MOL_QIF_INCLUDED
 
-#include <modules/molstr/MolCoord.qif>
+#include <modules/molstr/AnimMol.qif>
 
-runtime_class MorphMol extends MolCoord
+runtime_class MorphMol extends AnimMol
 {
   client_hdr "MorphMol.hpp";
   client_name anim::MorphMol;

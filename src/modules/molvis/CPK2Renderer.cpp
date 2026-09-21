@@ -18,28 +18,14 @@
 using namespace molvis;
 using namespace molstr;
 
-namespace {
-// Fixed coordinate texture width (matches TEX2D_WIDTH in lib_atoms.glsl).
-constexpr int TEX2D_WIDTH = 1024;
-}  // namespace
-
 CPK2Renderer::CPK2Renderer()
 {
     m_bUseShader = false;
     m_bCheckShaderOK = false;
     m_nGlRendMode = REND_DEFAULT;
-    m_pCoordTex = nullptr;
-    m_nTexW = 0;
-    m_nTexH = 0;
-    m_bUseCoordTex = false;
-    m_bCoordDirty = false;
 }
 
-CPK2Renderer::~CPK2Renderer()
-{
-  delete m_pCoordTex;
-  m_pCoordTex = nullptr;
-}
+CPK2Renderer::~CPK2Renderer() {}
 
 const char *CPK2Renderer::getTypeName() const
 {
@@ -62,35 +48,40 @@ void CPK2Renderer::display(DisplayContext *pdc)
     if (m_bUseShader)
       MB_DPRINTLN("CPK2 sphere shader OK");
     // Try the coordinate texture path; falls back silently when unavailable.
-    m_bUseCoordTex = m_bUseShader && m_sphIdxGpuPrim.init(pdc);
+    if (!m_bUseShader || !m_sphIdxGpuPrim.init(pdc)) ctDisable();
     m_bCheckShaderOK = true;
   }
 
   if (m_bUseShader &&
       (m_nGlRendMode==REND_DEFAULT ||
        m_nGlRendMode==REND_SHADER)) {
-    if (m_bUseCoordTex) {
+    if (ctUsable()) {
+      // Nothing matched the selection last time it was built. Rebuilding would
+      // walk the whole molecule again, evaluate the selection again and emit
+      // nothing again, every frame, for as long as the selection stays empty.
+      if (ctNothingToDraw()) return;
+
       if (!m_sphIdxGpuPrim.isValid()) {
         renderCoordTexImpl(pdc);
-        // renderCoordTexImpl clears m_bUseCoordTex when the backend
+        // renderCoordTexImpl stops the mixin being usable when the backend
         // cannot provide a float data texture.
       }
-      if (m_bUseCoordTex && m_sphIdxGpuPrim.isValid()) {
+      if (ctUsable() && m_sphIdxGpuPrim.isValid()) {
         // Deferred coordinate upload (see plan section 3.9): runs at most once
         // per frame, inside the rAF tick, right before the draw.
-        if (m_bCoordDirty) {
+        if (ctIsDirty()) {
           if (!updateCoordTex()) {
             // Topology changed under us: fall back to a full rebuild.
             invalidateDisplayCache();
             return;
           }
-          m_bCoordDirty = false;
         }
         preRender(pdc);
         m_sphIdxGpuPrim.draw(pdc);
         postRender(pdc);
         return;
       }
+      if (ctNothingToDraw()) return;
     }
 
     // shader rendering mode (non-texture fallback)
@@ -114,23 +105,14 @@ void CPK2Renderer::invalidateDisplayCache()
   super_t::invalidateDisplayCache();
   m_sphGpuPrim.invalidate();
   m_sphIdxGpuPrim.invalidate();
-  if (m_pCoordTex != nullptr) {
-    delete m_pCoordTex;
-    m_pCoordTex = nullptr;
-  }
-  m_aidcache.clear();
-  m_coordbuf.clear();
-  m_bCoordDirty = false;
+  ctInvalidate();
 }
 
 void CPK2Renderer::unloading()
 {
   m_sphGpuPrim.invalidate();
   m_sphIdxGpuPrim.invalidate();
-  if (m_pCoordTex != nullptr) {
-    delete m_pCoordTex;
-    m_pCoordTex = nullptr;
-  }
+  ctInvalidate();
   super_t::unloading();
 }
 
@@ -216,39 +198,43 @@ void CPK2Renderer::renderShaderImpl(DisplayContext *pdc)
     return;
   }
 
-  // estimate the size of drawing elements
-  int nsphs=0;
+  // Layout pass: which atoms get a texel, and in what order.
+  ctBegin();
   {
     AtomIterator iter(pMol, getSelection());
     for (iter.first(); iter.hasMore(); iter.next()) {
       int aid = iter.getID();
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
-      ++nsphs;
+      ctAddAtom(aid);
     }
   }
 
-  if (nsphs==0)
-    return; // nothing to draw
+  // Creates the texture and fills it with the current positions. False means
+  // either nothing is selected or the backend has no float textures; both are
+  // recorded in the mixin and read back by display().
+  if (!ctAlloc(pdc, pMol))
+    return;
+
+  const int nsphs = ctAtomCount();
 
   // initialize the coloring scheme
   getColSchm()->start(pMol, this);
   pMol->getColSchm()->start(pMol, this);
 
-  m_sphGpuPrim.alloc(pdc, nsphs);
+  m_sphIdxGpuPrim.alloc(pdc, nsphs);
 
-  {
-    AtomIterator iter(pMol, getSelection());
-    int i=0;
-    for (iter.first(); iter.hasMore(); iter.next()) {
-      int aid = iter.getID();
-      MolAtomPtr pAtom = pMol->getAtom(aid);
-      if (pAtom.isnull()) continue; // ignore errors
+  // Per-atom vertex data. Positions are not here: they live in the texture,
+  // which is the whole point -- moving the atoms re-sends only that.
+  for (int i = 0; i < nsphs; ++i) {
+    const int aid = ctAtomIDAt(i);
+    MolAtomPtr pAtom = pMol->getAtom(aid);
+    if (pAtom.isnull()) continue;
 
-      quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
-      m_sphGpuPrim.setData(i, pAtom->getPos(), static_cast<float>(getVdWRadius(pAtom)), devcode);
-      ++i;
-    }
+    quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
+    // The texel index is the enumeration order i itself (see plan section 3.4).
+    m_sphIdxGpuPrim.setData(i, i, static_cast<float>(getVdWRadius(pAtom)), devcode,
+                            gfx::encodeHitName(aid));
   }
 
   // finalize the coloring scheme
@@ -269,43 +255,25 @@ void CPK2Renderer::renderCoordTexImpl(DisplayContext *pdc)
     return;
   }
 
-  // estimate the size of drawing elements
-  int nsphs=0;
+  // Layout pass: which atoms get a texel, and in what order.
+  ctBegin();
   {
     AtomIterator iter(pMol, getSelection());
     for (iter.first(); iter.hasMore(); iter.next()) {
       int aid = iter.getID();
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
-      ++nsphs;
+      ctAddAtom(aid);
     }
   }
 
-  if (nsphs==0)
-    return; // nothing to draw
-
-  // allocate the coordinate texture (RGB32F, one texel per atom, width 1024)
-  m_nTexW = TEX2D_WIDTH;
-  m_nTexH = (nsphs + TEX2D_WIDTH - 1) / TEX2D_WIDTH;
-  m_coordbuf.resize(static_cast<size_t>(m_nTexW) * m_nTexH * 3);
-  m_aidcache.resize(nsphs);
-
-  m_pCoordTex = pdc->createFloatDataTexture();
-  if (m_pCoordTex == nullptr) {
-    // backend does not support float data textures; fall back
-    m_bUseCoordTex = false;
-    m_aidcache.clear();
-    m_coordbuf.clear();
+  // Creates the texture and fills it with the current positions. False means
+  // either nothing was selected or the backend has no float textures; the two
+  // are told apart by ctNothingToDraw(), which display() reads.
+  if (!ctAlloc(pdc, pMol))
     return;
-  }
-  if (!m_pCoordTex->create(m_nTexW, m_nTexH, 3)) {
-    delete m_pCoordTex;
-    m_pCoordTex = nullptr;
-    m_bUseCoordTex = false;
-    m_aidcache.clear();
-    m_coordbuf.clear();
-    return;
-  }
+
+  const int nsphs = ctAtomCount();
 
   // initialize the coloring scheme
   getColSchm()->start(pMol, this);
@@ -313,61 +281,33 @@ void CPK2Renderer::renderCoordTexImpl(DisplayContext *pdc)
 
   m_sphIdxGpuPrim.alloc(pdc, nsphs);
 
-  {
-    AtomIterator iter(pMol, getSelection());
-    int i=0;
-    for (iter.first(); iter.hasMore(); iter.next()) {
-      int aid = iter.getID();
-      MolAtomPtr pAtom = pMol->getAtom(aid);
-      if (pAtom.isnull()) continue; // ignore errors
+  // Per-atom vertex data. Positions are not among it: they are in the texture,
+  // which is the point -- when the atoms move only that is sent again.
+  for (int i = 0; i < nsphs; ++i) {
+    const int aid = ctAtomIDAt(i);
+    MolAtomPtr pAtom = pMol->getAtom(aid);
+    if (pAtom.isnull()) continue; // ignore errors
 
-      m_aidcache[i] = aid;
-      const qlib::Vector4D pos = pAtom->getPos();
-      m_coordbuf[i*3+0] = static_cast<qfloat32>(pos.x());
-      m_coordbuf[i*3+1] = static_cast<qfloat32>(pos.y());
-      m_coordbuf[i*3+2] = static_cast<qfloat32>(pos.z());
-
-      quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
-      // The texel index is the enumeration order i itself (see plan section 3.4).
-      m_sphIdxGpuPrim.setData(i, i, static_cast<float>(getVdWRadius(pAtom)), devcode,
-                              gfx::encodeHitName(aid));
-      ++i;
-    }
+    quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
+    // The texel index is the enumeration order i itself (see plan section 3.4).
+    m_sphIdxGpuPrim.setData(i, i, static_cast<float>(getVdWRadius(pAtom)), devcode,
+                            gfx::encodeHitName(aid));
   }
 
   // finalize the coloring scheme
   getColSchm()->end();
   pMol->getColSchm()->end();
 
-  m_pCoordTex->update(&m_coordbuf[0]);
-  m_sphIdxGpuPrim.setCoordTex(m_pCoordTex, 0);
-  m_bCoordDirty = false;
+  m_sphIdxGpuPrim.setCoordTex(ctTexture(), 0);
 
-  LOG_DPRINTLN("CPK2Renderer> rendered sphere atoms=%d (coord texture %dx%d)",
-               nsphs, m_nTexW, m_nTexH);
+  LOG_DPRINTLN("CPK2Renderer> rendered sphere atoms=%d (coord texture)", nsphs);
 }
 
 // Re-gather atom positions into the coordinate texture.
 // Only positions are touched; the VBO (index/radius/colour) stays as is.
 bool CPK2Renderer::updateCoordTex()
 {
-  if (!m_bUseCoordTex || m_pCoordTex == nullptr) return false;
-  if (m_aidcache.empty()) return false;
-
-  MolCoordPtr pMol = getClientMol();
-  if (pMol.isnull()) return false;
-
-  const int nsphs = static_cast<int>(m_aidcache.size());
-  for (int i = 0; i < nsphs; ++i) {
-    MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
-    if (pAtom.isnull()) return false;   // topology changed; force rebuild
-    const qlib::Vector4D pos = pAtom->getPos();
-    m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
-    m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
-    m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
-  }
-  m_pCoordTex->update(&m_coordbuf[0]);
-  return true;
+  return ctUpdate(getClientMol());
 }
 
 void CPK2Renderer::objectChanged(qsys::ObjectEvent &ev)
@@ -378,8 +318,12 @@ void CPK2Renderer::objectChanged(qsys::ObjectEvent &ev)
     // texture dirty and let display() do the upload: this runs inside the
     // rAF tick, has a DisplayContext, and coalesces repeated writes in one
     // task (e.g. drag preview) into a single upload per frame.
-    if (m_bUseCoordTex && m_sphIdxGpuPrim.isValid()) {
-      m_bCoordDirty = true;
+    // "Nothing to draw" is handled here too: moving atoms cannot make an empty
+    // selection non-empty, so falling through to the base class -- which
+    // invalidates on any OBE_CHANGED -- would put the rebuild loop back for the
+    // duration of the playback.
+    if (ctUsable() && (m_sphIdxGpuPrim.isValid() || ctNothingToDraw())) {
+      ctMarkDirty();
       qsys::ScenePtr pScene = getScene();
       if (!pScene.isnull()) pScene->setUpdateFlag();
       invalidateHittestCache();

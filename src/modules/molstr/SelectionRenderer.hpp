@@ -9,6 +9,7 @@
 
 #include "molstr.hpp"
 #include "MolAtomRenderer.hpp"
+#include "CoordTexSupport.hpp"
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/LineIdxGpuPrim.hpp>
 
@@ -22,7 +23,8 @@ namespace molstr {
 class MolCoord;
 using gfx::DisplayContext;
 
-class MOLSTR_API SelectionRenderer : public MolAtomRenderer
+class MOLSTR_API SelectionRenderer : public MolAtomRenderer,
+                                     public CoordTexSupport
 {
   MC_SCRIPTABLE;
   MC_CLONEABLE;
@@ -66,33 +68,13 @@ private:
   /// Line primitive with texture-fetched endpoints (used when available)
   gfx::LineIdxGpuPrim m_lineIdxGpuPrim;
 
-  /// Coordinate texture (owned). Null when the backend does not support it.
-  gfx::FloatDataTexture *m_pCoordTex;
-
-  /// CPU-side staging buffer for the coordinate texture (w*h*3 floats)
-  std::vector<qfloat32> m_coordbuf;
-
-  /// AIDs in the same order as the coordinate texture texels
-  std::vector<int> m_aidcache;
-
-  /// AID -> texel index (bonds/asters reference atoms by AID)
-  std::unordered_map<int, int> m_aid2idx;
-
-  int m_nTexW, m_nTexH;
-
-  /// True when the coordinate texture path is in use
-  bool m_bUseCoordTex;
-
-  /// Set by objectChanged(); consumed by display() (deferred upload, once/frame)
-  bool m_bCoordDirty;
-
   /// Build the immutable VBO (indices/offsets/colour) and the coordinate
-  /// texture. Falls back (clears m_bUseCoordTex) when the backend cannot
-  /// provide a float data texture.
+  /// texture. Falls back (the mixin stops being usable) when the backend
+  /// cannot provide a float data texture.
   void renderCoordTexImpl(DisplayContext *pdc);
 
   /// Re-gather atom positions into the coordinate texture. Called from
-  /// display() when m_bCoordDirty.
+  /// display() when the mixin is dirty.
   bool updateCoordTex();
 
 public:

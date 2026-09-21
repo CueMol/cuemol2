@@ -8,6 +8,7 @@
 
 #include "MolAtom.hpp"
 #include "MolCoord.hpp"
+#include "AnimMol.hpp"
 #include "MolResidue.hpp"
 #include "MolChain.hpp"
 // #include "atomobj_inst.hpp"
@@ -33,6 +34,9 @@ MolAtom::MolAtom()
 
   m_pXformMat = NULL;
 
+  m_pCrdSrc = NULL;
+  m_nCrdIdx = 0;
+
   // m_charge = 0.0;
   // m_radius = 0.0;
 }
@@ -53,7 +57,12 @@ MolAtom::MolAtom(const MolAtom &src)
   m_nID = src.m_nID;
 
   m_elem = src.m_elem;
-  m_pos = src.m_pos;
+  // A copy is a free-standing atom: it takes the source's current position as
+  // its own rather than sharing the animated molecule's array, the same way
+  // the xformMat below is not carried over.
+  m_pos = src.getRawPos();
+  m_pCrdSrc = NULL;
+  m_nCrdIdx = 0;
   m_bfac = src.m_bfac;
   m_occ = src.m_occ;
   m_confid = src.m_confid;
@@ -85,9 +94,16 @@ MolAtom::~MolAtom()
 
 ////////////////////////////////////////
 
+Vector4D MolAtom::getRawPos() const
+{
+  if (m_pCrdSrc!=NULL)
+    return m_pCrdSrc->getAtomPos(m_nCrdIdx);
+  return m_pos;
+}
+
 Vector4D MolAtom::getPos() const
 {
-  Vector4D p = m_pos;
+  Vector4D p = getRawPos();
   if (m_pXformMat==NULL) {
     return p;
   }
@@ -101,12 +117,40 @@ Vector4D MolAtom::getPos() const
 /// Set Atom position
 void MolAtom::setPos(const Vector4D &vec)
 {
+  if (m_pCrdSrc!=NULL) {
+    MB_THROW(qlib::RuntimeException,
+             "Cannot set the position of an atom of an animated molecule "
+             "(its coordinates come from the frame data)");
+    return;
+  }
   if (m_pXformMat==NULL) {
     m_pos = vec;
   }
   else {
     MB_THROW(qlib::RuntimeException, "Cannot set atom position to the xformMat applied atom/mol");
   }
+}
+
+void MolAtom::setRawPos(const Vector4D &vec)
+{
+  if (m_pCrdSrc!=NULL) {
+    MB_THROW(qlib::RuntimeException,
+             "Cannot set the position of an atom of an animated molecule "
+             "(its coordinates come from the frame data)");
+    return;
+  }
+  m_pos = vec;
+}
+
+void MolAtom::unbindCrdArray()
+{
+  if (m_pCrdSrc==NULL)
+    return;
+  // Keep the position the array last held, so an atom that outlives its
+  // molecule does not jump back to whatever m_pos held before binding.
+  m_pos = m_pCrdSrc->getAtomPos(m_nCrdIdx);
+  m_pCrdSrc = NULL;
+  m_nCrdIdx = 0;
 }
 
 MolCoordPtr MolAtom::getParent() const
