@@ -110,6 +110,12 @@ Two mechanisms explain them, and both are in `qlib::LScrSp`
 - The colouring and selection interfaces take `LScrSp<>` **by value**, so each
   atom costs a reference-counted handle constructed and destroyed.
 
+`ribbon` was dropped from the benchmark matrix after these runs. It measures
+geometry generation that has not been optimised, so repeating it would keep
+reporting how slow that code is rather than anything about the backend, and
+this document is where that answer now lives. `cpk` is the path a renderer
+takes when it has one, and is what further measurement tracks.
+
 ## Candidate fixes, in the order the numbers suggest
 
 None of these has been attempted. They are listed with what each would have to

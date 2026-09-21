@@ -1,9 +1,0 @@
-{
-  "name": "1aon (GroEL/GroES, 58870 atoms) / ribbon / load",
-  "file": "../data/1aon.cif",
-  "reader": "mmcif",
-  "renderer": "ribbon",
-  "scenario": "load",
-  "warmupMs": 500,
-  "measureMs": 1500
-}

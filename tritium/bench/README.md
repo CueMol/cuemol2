@@ -184,11 +184,19 @@ window at DPR 2 with the panels closed -- and each cell measures for 6 s after
 a 2 s warm-up, three times, in its own process. Spread across the three
 repeats is under 1% of the mean everywhere, so the tables give means only.
 
-Two renderers, chosen because they take different paths rather than because
-they look different: `cpk` puts atom positions in a coordinate texture and
-never rebuilds a vertex buffer to move them, while `ribbon` builds a mesh and
-has to regenerate it. `ballstick` is the same path as `cpk`, `dsurface` the
-same path as `ribbon`, and `simple` is too cheap to move under any of this.
+The tables below were taken with two renderers, `cpk` and `ribbon`, because
+they take different paths: `cpk` puts atom positions in a coordinate texture
+and never rebuilds a vertex buffer to move them, while `ribbon` builds a mesh
+and regenerates it. `ballstick` is the same path as `cpk`, `dsurface` the same
+path as `ribbon`, and `simple` is too cheap to move under any of this.
+
+**`ribbon` is not in the spec set any more.** It measures geometry generation
+that has not been optimised, so its numbers say how slow that code is rather
+than anything about the backend, and they say it once -- which is the point of
+[renderer-update-cost.md](../docs/architecture/renderer-update-cost.md). Its
+results stay in this document and in `results/` as the evidence behind that
+note. Further runs use `cpk`, which is the path a well-behaved renderer takes
+and therefore the one worth tracking.
 
 ### Turning the camera (`static-orbit`)
 
