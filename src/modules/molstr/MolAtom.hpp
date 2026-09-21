@@ -30,6 +30,7 @@ namespace molstr {
   class MolChain;
   class MolResidue;
   class MolBond;
+  class AnimMol;
 
   class MOLSTR_API MolAtom :
     public qlib::LSimpleCopyScrObject,
@@ -82,6 +83,13 @@ namespace molstr {
 
     /// Cached transformation matrix
     qlib::Matrix4D *m_pXformMat;
+
+    /// Animated molecule this atom takes its coordinates from, or NULL when
+    /// m_pos is the coordinate (the ordinary, editable case).
+    AnimMol *m_pCrdSrc;
+
+    /// Slot of this atom in m_pCrdSrc's coordinate array.
+    quint32 m_nCrdIdx;
 
     // /// formal charge
     // double m_charge;
@@ -145,14 +153,33 @@ namespace molstr {
     /// Get atom position (after applying xformMat)
     Vector4D getPos() const;
 
-    /// Set atom position. Set will fail if xformMat is applied to this mol/atom
+    /// Set atom position. Set will fail if xformMat is applied to this
+    /// mol/atom, or if this atom belongs to an animated molecule.
     void setPos(const Vector4D &vec);
 
-    /// Get atom position (without applying xformMat)
-    const Vector4D &getRawPos() const { return m_pos; }
+    /// Get atom position (without applying xformMat).
+    ///
+    /// Returns by value: an atom of an animated molecule keeps its coordinates
+    /// in that molecule's array rather than in a field of its own, so there is
+    /// nothing here to hand out a reference to.
+    Vector4D getRawPos() const;
 
-    /// Set atom position directly (ignoring xformMat prop)
-    void setRawPos(const Vector4D &vec) { m_pos = vec; }
+    /// Set atom position directly (ignoring xformMat prop). Fails for an atom
+    /// of an animated molecule, as setPos() does.
+    void setRawPos(const Vector4D &vec);
+
+    /// Take coordinates from an animated molecule's array instead of m_pos.
+    void bindCrdArray(AnimMol *pMol, quint32 idx)
+    {
+      m_pCrdSrc = pMol;
+      m_nCrdIdx = idx;
+    }
+
+    /// Stop taking coordinates from the array, keeping the last position read
+    /// from it so the atom stays where it was.
+    void unbindCrdArray();
+
+    bool isCrdArrayBound() const { return m_pCrdSrc != NULL; }
 
     /// Atom position-script version
     LScrVector4D getPosScr() const {

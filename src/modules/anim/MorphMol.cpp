@@ -239,6 +239,20 @@ void MorphMol::setupData()
       // aset.convertf( pFrm->m_crds );
     }
   }
+
+}
+
+void MorphMol::createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap)
+{
+  // The frames are laid out in MolArrayMap order, which m_id2aid already
+  // records; the array index is simply the position in it.
+  indmap.clear();
+  const int natoms = int(m_id2aid.size());
+  aidmap.resize(natoms);
+  for (int i=0; i<natoms; ++i) {
+    indmap.insert(CrdIndexMap::value_type(m_id2aid[i], quint32(i)));
+    aidmap[i] = m_id2aid[i];
+  }
 }
 
 using molstr::MolCoordPtr;
@@ -480,6 +494,14 @@ void MorphMol::update(double dframe)
 
   if (m_nAtoms<0) return;
 
+  // Frames prepared by appendThisFrame()/readFromStream() never go through
+  // setupData(), so the array is sized here rather than there. Sizing it is
+  // also what lets the atoms bind: commitCrdArray() below does that, after the
+  // interpolation has filled it -- never before, or the frame ingestion in
+  // setupData() would read an empty array back through getPos().
+  if (int(getCrdArraySize()) != m_nAtoms*3)
+    allocCrdArray();
+
   double xx;
   if (m_bScaleDframe) {
     // dframe changes between 0.0 and nfrm-1
@@ -493,15 +515,18 @@ void MorphMol::update(double dframe)
   int ifrm = int( ::floor(xx) );
   double rho = xx - double(ifrm);
 
-  int ncrd = m_nAtoms*3;
-  PosArray curtmp(ncrd);
+  // The interpolation result goes straight into the coordinate array, which is
+  // what every consumer reads.
+  const int ncrd = m_nAtoms*3;
+  qfloat32 *pcrd = mutableCrdArray();
+  if (pcrd==NULL) return;
 
   if (ifrm==m_frames.size()-1 || qlib::isNear4(rho, 0.0) ) {
     // ifrm is the last frame
     // rho is almost zero
     //   --> use ifrm (and not interpolate between ifrm~ifrm+1)
     for (i=0; i<ncrd; ++i) {
-      curtmp[i] = m_frames[ifrm]->m_crds.at(i);
+      pcrd[i] = qfloat32( m_frames[ifrm]->m_crds.at(i) );
     }
   }
   else {
@@ -509,25 +534,12 @@ void MorphMol::update(double dframe)
     for (i=0; i<ncrd; ++i) {
       const double x0 = m_frames[ifrm]->m_crds.at(i);
       const double x1 = m_frames[ifrm+1]->m_crds.at(i);
-      curtmp[i] = x0*(1.0-rho) + x1*rho;
+      pcrd[i] = qfloat32( x0*(1.0-rho) + x1*rho );
     }
-  }
-  
-  for (i=0; i<m_nAtoms; ++i) {
-    int aid = m_id2aid[i];
-    MolAtomPtr pAtom = getAtom(aid);
-    if (pAtom.isnull()) {
-      LOG_DPRINTLN("MorphMol::update mol mismatch at ID=%d (ignored)", i);
-      continue;
-    }
-    qlib::Vector4D pos(curtmp[i*3],
-                       curtmp[i*3+1],
-                       curtmp[i*3+2]);
-    pAtom->setPos(pos);
   }
 
   // broadcast modification event
-  fireAtomsMoved();
+  commitCrdArray();
 }
 
 /*void MorphMol::setScaleFrame(bool b)

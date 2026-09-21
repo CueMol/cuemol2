@@ -239,6 +239,17 @@ void MolCoord::xformByMat(const Matrix4D &mat, SelectionPtr pSel)
 {
   MolCoordPtr pthis = MolCoordPtr(this);
 
+  // An animated molecule's coordinates come from its frame data, so there is
+  // nowhere to write the moved atoms. Refuse before recording undo info: the
+  // setPos() below would throw halfway through, leaking the EditInfo and
+  // leaving the molecule half-transformed.
+  if (!isCoordEditable()) {
+    MB_THROW(qlib::RuntimeException,
+             "Cannot transform the atoms of an animated molecule "
+             "(use the xformMat property to move it as a whole)");
+    return;
+  }
+
   // Record undo info
   MolXformEditInfo *pPEI = NULL;
   UndoManager *pUM = NULL;
