@@ -303,8 +303,15 @@ export class AsyncCueMol {
         return fileApi.getReaderDefaultOptions(this._transport, nickname);
     }
 
-    /** Fetch open-dialog filters for the given file-category id. */
-    getOpenFilters(catId: number): Promise<ElectronFileFilter[]> { return fileApi.getOpenFilters(this._transport, catId); }
+    /**
+     * Fetch open-dialog filters for the given file-category id.
+     *
+     * @param opts - `includeTrajReaders` keeps `*.dcd` / `*.xtc` / `*.trr` /
+     *   AMBER NetCDF in the list. The open dialog omits them (they cannot be
+     *   opened on their own); the drop classifier asks for them so a dropped
+     *   trajectory is recognised rather than rejected outright.
+     */
+    getOpenFilters(catId: number, opts?: { includeTrajReaders?: boolean }): Promise<ElectronFileFilter[]> { return fileApi.getOpenFilters(this._transport, catId, opts); }
 
     /** Create a new scene + default view on the worker side. */
     createNewSceneAndView(dpr: number, name?: string, bindView?: boolean, initialProps?: NewSceneInitialProps): Promise<{ scene_uid: number; view_uid: number; scene_name: string; view_name: string } | null> {

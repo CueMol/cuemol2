@@ -257,3 +257,24 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
         expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord', readerName: 'mmcif' })
     })
 })
+
+describe('getCompatibleRendererNames -- reader found but nothing can draw it', () => {
+    beforeEach(() => { vi.clearAllMocks() })
+
+    // A trajectory block reader resolves fine and the file is perfectly good;
+    // there is simply no renderer registered against mdtools::TrajBlock,
+    // because frames only become displayable once a topology has built a
+    // Trajectory around them. The caller tells this apart from "no reader
+    // matched" by readerName being non-empty, and recognises WHICH kind of
+    // undrawable object it is from objType -- so it can point at File > Open
+    // MD Trajectory instead of claiming the file is corrupt.
+    it('reports the reader and objType when the reader produces a TrajBlock', () => {
+        const env = makeEnv({
+            readerRendTypes: { xtctraj: '' },
+            readerClassNames: { xtctraj: 'TrajBlock' },
+            info: [{ name: 'xtctraj', fext: '*.xtc', category: 0 }],
+        })
+        const result = getCompatibleRendererNames(env.ctx, { filePath: '/x/prd21.xtc' })
+        expect(result).toEqual({ types: [], objType: 'TrajBlock', readerName: 'xtctraj' })
+    })
+})

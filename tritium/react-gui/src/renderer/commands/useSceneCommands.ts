@@ -21,6 +21,59 @@ import { makeResolveOpenTarget } from '@renderer/hooks/useEnsureActiveScene'
 import type { NewSceneAction, OpenSceneFileAction } from '@renderer/hooks/useNewSceneAction'
 import type { FileOpenedData } from '@shared/types/fileEvents'
 import type { OpenResult } from './CommandMap'
+import { usePlugins } from '@renderer/plugin-host'
+
+/**
+ * Plugin that owns the MD trajectory open flow, named here so the
+ * "cannot open this on its own" message can tell the user whether the flow
+ * is even reachable -- the plugin is `defaultEnabled: false`, so by default
+ * there is no File > Open MD Trajectory... row to point at.
+ *
+ * Core naming a plugin id is a deliberate, contained exception to "do not
+ * special-case a plugin id anywhere in core" (tritium/CLAUDE.md): it buys a
+ * message that is actionable instead of one that sends the user looking for a
+ * menu item that is not there. It is confined to the message below. The
+ * general fix is a `contributes.fileOpeners` contribution point letting the
+ * plugin claim these extensions and pre-fill its dialog, at which point this
+ * constant goes away.
+ */
+const MDTOOLS_PLUGIN_ID = 'mdtools'
+
+/** C++ class name of a trajectory coordinate block (`mdtools::TrajBlock`). */
+const TRAJ_BLOCK_CLASS = 'TrajBlock'
+
+/**
+ * What to tell the user when no renderer type came back for a file.
+ *
+ * @param path - the file the user tried to open.
+ * @param readerName - reader nickname C++ resolved, `''` when none did.
+ * @param objType - C++ class the reader would have built, `''` when unknown.
+ * @param mdtoolsEnabled - whether the MD Tools plugin is switched on.
+ * @returns the alert body.
+ * @remarks An empty `readerName` is the only case that means "unsupported".
+ *   With a reader in hand the format IS supported, and saying otherwise is
+ *   what made a perfectly good `.xtc` look corrupt.
+ */
+function cannotOpenMessage(
+    path: string,
+    readerName: string,
+    objType: string,
+    mdtoolsEnabled: boolean,
+): string {
+    if (!readerName) {
+        return `Could not determine a compatible reader for:\n${path}\n\n` +
+            'The file may be corrupt, an unsupported format, or its extension does not match its content.'
+    }
+    if (objType === TRAJ_BLOCK_CLASS) {
+        const how = mdtoolsEnabled
+            ? 'Open it with File > Open MD Trajectory..., together with a topology file (.gro).'
+            : 'Enable the MD Tools plugin in Settings > Plugins, then open it with ' +
+              'File > Open MD Trajectory..., together with a topology file (.gro).'
+        return `This file holds MD trajectory frames and cannot be opened on its own:\n${path}\n\n${how}`
+    }
+    return `Nothing can display what this file contains:\n${path}\n\n` +
+        `It was read as "${readerName}", but no renderer accepts the resulting object.`
+}
 
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
@@ -43,6 +96,9 @@ export function useSceneCommands({
     newScene,
     openSceneFile,
 }: UseSceneCommandsOptions): void {
+    // Only to tell the user whether the MD trajectory flow is reachable;
+    // see MDTOOLS_PLUGIN_ID.
+    const { isEnabled } = usePlugins()
 
     const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
     const showErrorAlert = useShowErrorAlert()
@@ -163,15 +219,17 @@ export function useSceneCommands({
                     const { types, objType, readerName } = await cm.getCompatibleRendererNames(
                         data.path, data.readerName, data.contentFirst,
                     )
-                    // Empty types means the C++ side could not identify a
-                    // compatible reader (or extracted no compatible renderer
-                    // list). Surface this instead of opening the option
-                    // dialog in a half-populated state.
+                    // Empty types means nothing can draw this file, which
+                    // happens either because no reader claimed it or because
+                    // the one that did builds something undrawable (a
+                    // trajectory block). Say which -- and never open the
+                    // option dialog half-populated.
                     if (types.length === 0) {
                         await showErrorAlert({
                             title: 'Cannot open file',
-                            message: `Could not determine a compatible reader for:\n${data.path}\n\n` +
-                                'The file may be corrupt, an unsupported format, or its extension does not match its content.',
+                            message: cannotOpenMessage(
+                                data.path, readerName, objType, isEnabled(MDTOOLS_PLUGIN_ID),
+                            ),
                         })
                         return { loaded: false }
                     }

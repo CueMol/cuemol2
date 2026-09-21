@@ -34,6 +34,46 @@ C++ の新規追加は不要**。正典の手順は `src/tests/modules/importers
 stream read は非公開)、(c) `Trajectory::setup()` は非公開だが最初の block read 中に lazy 実行
 されるため明示呼び出し不要。
 
+## 通常の Open / drag & drop から trajectory file が来たとき
+
+`.xtc` / `.dcd` / `.trr` / AMBER NetCDF は **単体では開けない**。reader
+(`xtctraj` 等) の `createDefaultObj()` が返すのは `mdtools::TrajBlock` で、これを
+対象にしたレンダラは 1 つも登録されていない (topology が `Trajectory` を作って
+初めて描画対象になる)。にもかかわらず、以前はこれらが通常の File > Open の
+フィルタに並び、選ぶと必ず
+
+> Could not determine a compatible reader for: ... The file may be corrupt, ...
+
+というダイアログに落ちていた。reader は正しく特定できており、ファイルも壊れて
+おらず、形式もサポートしているので、**4 つの主張すべてが事実と違う**。原因は
+`getCompatibleRendererNames` が「reader 不明」と「reader は判ったが描画手段が
+無い」を同じ `types: []` に潰していたこと。実際の報告は drag & drop 経由で来た。
+
+現在の扱いは 3 点:
+
+1. **File > Open のフィルタから除外** — `getOpenFilters` は既定でこれらを外す
+   (`isTrajBlockObjReader`、`worker/server/services/helpers/readerFilter.ts`)。
+   選べない導線にするのが第一。
+2. **drop 分類には残す** — `useOpenFilePaths` は
+   `getOpenFilters(IOH_CAT_OBJREADER, { includeTrajReaders: true })` を使う。
+   `classifyDropFile` はこのフィルタ照合で種別を決めるので、外すと
+   `'unsupported'` に落ちて「No reader accepts the following file」という
+   **別の誤報**になる。分類は「開ける」という意味ではない。
+3. **正しい案内を出す** — `getCompatibleRendererNames` は `readerName` と
+   `objType` を返すので、呼び出し側 (`useSceneCommands` の `OpenObjByPath`) は
+   `readerName === ''` (本当に reader 不明) と `readerName !== '' && types.length === 0`
+   (reader は判った) を区別できる。後者で `objType === 'TrajBlock'` なら
+   「これは trajectory frame なので単体では開けない」と述べ、**plugin が無効なら
+   Settings > Plugins で MD Tools を有効化する手順から**案内する (既定オフなので、
+   有効化前は指すべきメニュー項目自体が存在しない)。
+
+この案内文のためだけに core が plugin id `'mdtools'` を直接参照している。
+tritium/CLAUDE.md の「core で plugin id を特別扱いしない」への意図的な例外で、
+`useSceneCommands.ts` の `MDTOOLS_PLUGIN_ID` 1 箇所に閉じている。**未実装**の
+一般解は `contributes.fileOpeners` 寄与点を設け、plugin 側が拡張子を引き取って
+落とされたファイルで本ダイアログを pre-fill する形 (`.gro` を topology 欄、残りを
+trajectory 欄に入れて開く)。そうなればこの定数は消える。
+
 ## フロー: 2 段 (deferred load)
 
 renderer dialog を cancel したとき「他の object load と同じく全 transaction がキャンセル
@@ -146,6 +186,11 @@ core 側 (汎用の受け皿として残るもの):
 - `__test__/openMdTrajDialog.test.tsx`: Open の活性ゲート (topology + traj>=1)、Add が
   `multi:true` + trajectory filter で picker を開き `filePaths` を末尾追記、確定 payload、cancel。
 - C++ 下層の block 連結は `test_trajio.cpp` (`MultipleDcdBlocksSpanFrames` 等) が既に担保。
+- core 側の誤報防止 (上記「通常の Open / drag & drop から trajectory file が来たとき」):
+  `__test__/getOpenFiltersService.test.ts` が「既定で除外 / `includeTrajReaders` で復活、
+  qdf* はどちらでも除外」を、`__test__/getCompatibleRendererNamesService.test.ts` が
+  「TrajBlock を作る reader では `readerName` 非空・`types: []`・`objType: 'TrajBlock'`」を pin する。
+  文面自体はテストしない。
 
 ## スコープと既知の制約
 
@@ -159,6 +204,10 @@ core 側 (汎用の受け皿として残るもの):
 - **MRU 非対応**。topology + trajectory のセットを単一パスで表現できないため、`addRecent` は呼ばない。
 - **plugin が無効だと File メニューに項目が出ない** (既定オフ)。worker service は
   plugin の有効/無効に関わらず登録されたままだが、呼ぶ UI が無いので到達しない。
+- **trajectory file を落としても本ダイアログは開かない**。案内文が出るだけで、
+  `.gro` と `.xtc` を一緒に落とした場合も `.gro` が単独の `MolCoord` として開き、
+  `.xtc` には案内が出る。pre-fill 誘導は未実装 (上記「通常の Open / drag & drop
+  から trajectory file が来たとき」参照)。
 - per-file 間引き・frame averaging (`frame_aver_size`)・追加時の原子数事前検証は未実装。
 
 ## 関連
