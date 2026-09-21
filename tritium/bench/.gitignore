@@ -1,3 +1,4 @@
-# Downloaded structures (fetch.sh rebuilds them) and measurement output.
+# Structures: fetch.sh downloads these from RCSB and derives the displaced
+# copies, and 4V6X alone is 25 MB. The manifest it writes carries each file's
+# size and SHA-256, so the corpus is checkable without carrying it here.
 data/
-results/

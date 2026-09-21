@@ -1,0 +1,9 @@
+{
+  "name": "4v6x (80S ribosome, 237685 atoms) / cpk / load",
+  "file": "../data/4v6x.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "load",
+  "warmupMs": 500,
+  "measureMs": 1500
+}

@@ -1,0 +1,7 @@
+timestamp,spec,rep,canvas_w,canvas_h,dpr,scenario,renderer,atoms,render_fps,update_fps,frames,drawn_frames,frame_ms_mean,frame_ms_p50,frame_ms_p95,frame_ms_p99,cpu_ms_mean,gpu_ms_mean,load_ms,gl_total,gl_draw,gl_use_program,gl_buffer_sub_data,gl_buffer_sub_data_bytes,gl_get_uniform_location,rss_mb
+2026-09-21T09:47:12.900Z,4v6x-cpk-static-orbit,0,2792,1730,2,static-orbit,cpk,237685,59.988,0,360,360,16.62,16.7,17.6,17.7,5.666,9.984,2585,42,1,4,6,528,1,528.073
+2026-09-21T09:47:26.748Z,4v6x-cpk-static-orbit,1,2792,1730,2,static-orbit,cpk,237685,59.98,0,360,360,16.62,16.7,17.6,17.7,4.635,10.085,2712.3,42,1,4,6,528,1,526.107
+2026-09-21T09:47:40.555Z,4v6x-cpk-static-orbit,2,2792,1730,2,static-orbit,cpk,237685,59.985,0,360,360,16.623,16.7,17.6,17.7,4.614,11.604,2588.4,42,1,4,6,528,1,528.253
+2026-09-21T09:47:54.889Z,4v6x-ribbon-static-orbit,0,2792,1730,2,static-orbit,ribbon,237685,60.101,0,361,361,16.619,16.7,17.6,17.7,5.933,11.914,3313,37,1,4,6,512,0,1394.409
+2026-09-21T09:48:09.289Z,4v6x-ribbon-static-orbit,1,2792,1730,2,static-orbit,ribbon,237685,59.991,0,360,360,16.623,16.7,17.6,17.7,5.835,11.708,3306,37,1,4,6,512,0,1394.508
+2026-09-21T09:48:23.609Z,4v6x-ribbon-static-orbit,2,2792,1730,2,static-orbit,ribbon,237685,59.99,0,360,360,16.62,16.7,17.6,17.7,5.803,11.914,3311,37,1,4,6,512,0,1393.246

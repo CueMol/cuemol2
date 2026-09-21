@@ -1,0 +1,9 @@
+{
+  "name": "1aon (GroEL/GroES, 58870 atoms) / cpk / load",
+  "file": "../data/1aon.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "load",
+  "warmupMs": 500,
+  "measureMs": 1500
+}

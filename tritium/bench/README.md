@@ -92,7 +92,8 @@ task build_tritium CONFIG=Release
 | scenario | per frame | read |
 |---|---|---|
 | `static-orbit` | rotate the view; geometry never changes | `render_fps`, frame-time percentiles, GPU ms, GL calls per frame |
-| `md-playback` | advance one trajectory frame **per displayed frame** | `update_fps` -- how many new frames actually reached the screen |
+| `coord-morph` | interpolate one step along a two-frame morph, so every atom moves and the topology does not | `update_fps`, `bufferData` per frame -- whether the renderer rebuilt |
+| `md-playback` | advance one trajectory frame **per displayed frame**; needs a trajectory in the spec, and none is in the corpus | `update_fps` -- how many new frames actually reached the screen |
 | `prop-change` | change a renderer property | `update_fps`, `gl_buffer_sub_data_bytes` |
 | `load` | nothing; the load already happened | `load_ms` |
 | `idle` | nothing at all | a self-check: this must draw zero frames |
@@ -104,9 +105,10 @@ the scenario's payload actually advanced -- a trajectory frame consumed, a
 property change taken up. A scenario that changes nothing reports zero for it
 by definition, and the meaningful number there is `render_fps`.
 
-Both are capped by vsync at 60, so below a few hundred thousand atoms every
-configuration sits at 60 and the differences are in the frame-time
-percentiles, the GPU time and the GL call counts instead.
+Both are capped by vsync at 60. Every `static-orbit` cell in the corpus sits
+there, so what separates those is the frame-time percentiles, the GPU time and
+the GL call counts rather than the rate. The scenarios that change something
+fall well below 60 and the rate is the result.
 
 ## Pinned confounders
 
@@ -137,6 +139,8 @@ The harness is new files plus a handful of one-line hooks, so that merging
 | `react-gui/src/main/windows/mainWindow.ts` | window size, result watcher, spec in the load query |
 | `react-gui/src/renderer/App.tsx` | mount `BenchRoot` |
 | `react-gui/src/renderer/shell/{AppShell,MainLayout}.tsx` | start with the panels closed |
+| `react-gui/src/renderer/shell/ContentPane.tsx` | do not mount the hover label |
+| `react-gui/src/renderer/features/molview/MolViewPane.tsx` | do not bind the canvas mouse listeners |
 | `react-gui/src/renderer/worker/server/gfx/ViewLoopController.ts` | per-frame timing |
 | `react-gui/src/renderer/worker/server/gfx_manager.ts` | `enableBenchCounters()` |
 | `react-gui/src/renderer/worker/server/WorkerService.ts` | two accessors for the harness |
@@ -175,59 +179,151 @@ the log, so `rendererProps` now carries them.
 
 ## Baseline
 
-Apple M2, macOS 26.5, Release build, 1832x1010 canvas (a 1920x1080 window at
-DPR 2, panels closed), `static-orbit`, 6 s after a 2 s warm-up. `uboUs/f` and
-`drawUs/f` are the addon's own timers divided by the frame count.
+Apple M2, macOS 26.5, Release build. The canvas is 1832x1010 -- a 1920x1080
+window at DPR 2 with the panels closed -- and each cell measures for 6 s after
+a 2 s warm-up, three times, in its own process. Spread across the three
+repeats is under 1% of the mean everywhere, so the tables give means only.
 
-> The table below was taken before the camera was fitted, so its larger
-> structures were measured partly outside the viewport and cannot be compared
-> across sizes. It is being retaken; the per-object finding it rests on holds
-> regardless, since that cost follows the number of drawn objects rather than
-> what is on screen.
+Two renderers, chosen because they take different paths rather than because
+they look different: `cpk` puts atom positions in a coordinate texture and
+never rebuilds a vertex buffer to move them, while `ribbon` builds a mesh and
+has to regenerate it. `ballstick` is the same path as `cpk`, `dsurface` the
+same path as `ribbon`, and `simple` is too cheap to move under any of this.
 
-| structure | atoms | renderer | load ms | gpu ms | draws/f | gl/f | uboUs/f | drawUs/f | rss MB |
-|---|---|---|---|---|---|---|---|---|---|
-| 1CRN | 327 | cpk | 266 | 0.47 | 2.0 | 42 | 48.1 | 17.1 | 227 |
-| 1CRN | 327 | ballstick | 264 | 0.36 | 3.0 | 63 | 67.4 | 19.9 | 225 |
-| 1CRN | 327 | cartoon | 264 | 0.43 | 2.0 | 37 | 64.6 | 19.6 | 227 |
-| 1CRN | 327 | dsurface | 266 | 0.39 | 2.0 | 39 | 64.5 | 21.2 | 233 |
-| 1CRN | 327 | simple | 265 | 0.34 | 2.0 | 42 | 57.2 | 14.8 | 226 |
-| 4HHB | 4,779 | cpk | 296 | 3.18 | 2.0 | 42 | 59.6 | 14.7 | 233 |
-| 4HHB | 4,779 | ballstick | 296 | 0.83 | 3.0 | 64 | 82.4 | 23.1 | 238 |
-| 4HHB | 4,779 | cartoon | 297 | 0.91 | 2.0 | 37 | 67.9 | 20.2 | 255 |
-| 4HHB | 4,779 | dsurface | 296 | 2.63 | 7.0 | 169 | 60.3 | 36.7 | 260 |
-| 1AON | 58,870 | cpk | 792 | 4.34 | 2.2 | 46 | 33.8 | 10.2 | 312 |
-| 1AON | 58,870 | ballstick | 781 | 2.00 | 3.0 | 63 | 40.9 | 11.7 | 344 |
-| 1AON | 58,870 | cartoon | 1,123 | 8.71 | 7.0 | 165 | 31.6 | 18.6 | 697 |
-| 4V6X | 237,685 | cpk | 2,553 | 8.69 | 2.0 | 42 | 15.8 | 5.0 | 531 |
-| 4V6X | 237,685 | cartoon | 34,213 | 8.21 | 2.0 | 37 | 11.7 | 3.7 | 1,396 |
+### Turning the camera (`static-orbit`)
 
-Every cell holds 60 render fps -- vsync, and the GPU time never exceeds 8.7 ms
-of the 16.6 ms budget -- so nothing here is limited by drawing. What the table
-is really about is the fixed cost per frame and what it is spent on.
+| structure | atoms | renderer | fps | frame ms (mean/p95) | cpu ms | gpu ms |
+|---|---:|---|---:|---|---:|---:|
+| 1CRN | 327 | cpk | 60.0 | 16.62 / 17.43 | 0.36 | 0.81 |
+| 1CRN | 327 | ribbon | 60.0 | 16.62 / 17.27 | 0.32 | 0.44 |
+| 4HHB | 4,779 | cpk | 60.0 | 16.62 / 17.47 | 0.86 | 1.58 |
+| 4HHB | 4,779 | ribbon | 60.0 | 16.62 / 17.57 | 0.71 | 0.77 |
+| 1AON | 58,870 | cpk | 60.0 | 16.62 / 17.63 | 3.54 | 4.24 |
+| 1AON | 58,870 | ribbon | 60.0 | 16.62 / 17.63 | 3.41 | 4.94 |
+| 4V6X | 237,685 | cpk | 60.0 | 16.62 / 17.47 | 5.35 | 8.72 |
+| 4V6X | 237,685 | ribbon | 60.0 | 16.62 / 17.43 | 5.48 | 8.66 |
 
-**Uniform uploads cost three to four times what the draws do, at every size.**
-Three UBO uploads per drawn object per frame (matrices, fog, draw params), each
-allocating a fresh ArrayBuffer in C++ and doing a bufferSubData in JS, against
-one draw call. At 1CRN -- 327 atoms, two objects -- that is already 48 us a
-frame against 17 us of drawing. The matrices and the fog are identical for
-every object in a pass, so most of it is the same 192 and 32 bytes re-sent for
-each object. This is the first thing to fix.
+Every cell holds vsync across nearly three orders of magnitude of structure
+size. At the top of the ladder the GPU is using 8.7 ms of a 16.6 ms budget and
+the CPU 5.5 ms, so neither is close to the limit. Nothing about viewing a
+structure is a problem at any size this corpus reaches.
 
-**The per-frame cost does not scale with the structure.** 4V6X has 727 times
-the atoms of 1CRN and a *lower* per-frame uniform cost (15.8 us against 48.1),
-because the cost follows the number of drawn objects, which barely moves. A
-molecular scene is a handful of big buffers, so the fixed overhead is what
-there is to win -- and it is the same win at every size.
+Raising the canvas to 2792x1730 -- 4.83 Mpx, 2.6 times the pixels -- leaves
+4V6X at 60 fps in both renderers, with the GPU going from 8.72 to 10.56 ms
+(`cpk`) and 8.66 to 11.85 ms (`ribbon`). Times the pixels by 2.6 and the GPU
+time rises by 1.2 to 1.4, so even the largest structure on the largest canvas
+here is not fill-rate bound.
 
-**`dsurface` at 4,779 atoms draws seven times per frame for 169 GL calls**,
-where the same structure as cartoon draws twice for 37. The edge/silhouette
-pass re-draws the same buffer with a second program, and it shows.
+### Changing a display property (`prop-change`)
 
-**Loading dominates the large end.** 4V6X cartoon takes 34 s to load against
-2.6 s for cpk, and holds 1.4 GB resident. That is geometry generation on the
-C++ side, not transfer.
+One colour change per frame, which is what a user does from the property
+panel.
 
-`idle` draws 0 of 240 frames with no GL calls at both 327 and 237,685 atoms, so
-the pins hold across the range and the numbers above are of the scenario rather
-than of a background redraw.
+| structure | atoms | renderer | fps | frame ms | cpu ms | gpu ms | bufferData/f | alloc MB/f |
+|---|---:|---|---:|---:|---:|---:|---:|---:|
+| 1AON | 58,870 | cpk | 25.4 | 39.11 | 38.86 | 4.96 | 2.0 | 5.7 |
+| 1AON | 58,870 | ribbon | 2.8 | 334.63 | 346.63 | 4.90 | 4.0 | 78.2 |
+| 4V6X | 237,685 | cpk | 5.2 | 185.94 | 183.80 | 9.15 | 2.0 | 22.8 |
+
+The GPU time is unchanged from `static-orbit` -- around 5 ms -- while the frame
+takes up to 335 ms. All of it is CPU, and a colour change discards and rebuilds
+geometry that its own colour did not invalidate.
+
+### Moving the atoms (`coord-morph`)
+
+Coordinates change every frame and the topology does not, which is what a
+trajectory drives.
+
+| structure | atoms | cpk fps | ribbon fps | cpk cpu ms | ribbon cpu ms | cpk bufferData/f | ribbon bufferData/f |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 1CRN | 327 | 60.0 | 60.0 | 0.28 | 3.88 | 0 | 4.0 |
+| 4HHB | 4,779 | 60.0 | 38.1 | 1.57 | 25.44 | 0 | 4.0 |
+| 1AON | 58,870 | 60.0 | 2.5 | 7.32 | 398.27 | 0 | 4.0 |
+| 4V6X | 237,685 | 24.9 | 1.1 | 26.01 | 919.02 | 0 | 4.0 |
+
+This is the clearest result in the set. The same structure under the same
+motion runs 24 times faster with the renderer that has a coordinate-texture
+path: `cpk` reallocates no vertex buffer at any size and spends 40-348 us a
+frame uploading a texture, while `ribbon` reallocates four buffers a frame and
+185 MB at the top of the ladder. The fast path exists and works; it is only
+the mesh renderers that lack it.
+
+### Opening a file (`load`)
+
+File on disk through to the first drawn frame, and the resident set once it is
+up.
+
+| structure | atoms | renderer | load ms | sd | rss MB |
+|---|---:|---|---:|---:|---:|
+| 1AON | 58,870 | cpk | 782 | 8 | 304 |
+| 1AON | 58,870 | ribbon | 944 | 5 | 687 |
+| 4V6X | 237,685 | cpk | 2,587 | 38 | 527 |
+| 4V6X | 237,685 | ribbon | 3,476 | 137 | 1,256 |
+
+Four times the atoms costs a little over three times the load, so nothing here
+is worse than linear. The mesh renderer's resident set is what stands out: a
+ribbon of the ribosome holds 1.26 GB against the sphere renderer's 527 MB for
+the same structure, which is the same geometry that `coord-morph` shows being
+rebuilt from scratch every frame.
+
+### Doing nothing (`idle`)
+
+A self-check, not a result. With jitter AA, ambient occlusion and hover
+highlighting all left at their defaults an idle frame is a full frame, and
+then no scenario measures what it claims to.
+
+| structure | atoms | draws/frame | gl calls/frame | cpu ms |
+|---|---:|---:|---:|---:|
+| 1CRN | 327 | 0 | 0 | 0.07 |
+| 4HHB | 4,779 | 0 | 0 | 0.04 |
+| 1AON | 58,870 | 0 | 0 | 0.08 |
+| 4V6X | 237,685 | 0 | 0 | 0.05 |
+
+Zero drawn frames out of 240 at every size, so the pins hold.
+
+## Where the time goes
+
+The counters in the addon answer what crossing into JS costs, and on every
+scenario that rebuilds geometry the answer is: not much.
+
+| cell | cpu ms | UBO uploads | buffer create | coord texture | accounted for |
+|---|---:|---:|---:|---:|---:|
+| 1AON cpk static-orbit | 3.54 | 38 us | 0 | 0 | 1.1% |
+| 4V6X cpk static-orbit | 5.35 | 16 us | 0 | 0 | 0.3% |
+| 1AON cpk prop-change | 38.86 | 18 us | 329 us | 93 us | 1.1% |
+| 1AON ribbon prop-change | 346.63 | 31 us | 11,446 us | 0 | 3.3% |
+| 4V6X cpk prop-change | 183.80 | 25 us | 4,222 us | 375 us | 2.5% |
+
+This is worth stating plainly because the harness was built expecting the
+opposite. The three per-object UBO uploads are 0.3% of the frame at the size
+that struggles, and the buffer uploads 2.5-3.3%; the vertex-buffer transfer
+work this project's WebGPU predecessor found so decisive -- a VBO ring beating
+a single buffer by 27x -- has almost nothing to act on here, because that
+benchmark generated its geometry from a lookup table and this one generates it
+for real.
+
+Sampling the worker thread (`profile_report.py` over macOS `sample`) says where
+the rest is. Shares are of the worker thread's own self time:
+
+| area | ribbon coord-morph | cpk coord-morph | cpk prop-change |
+|---|---:|---:|---:|
+| mesh emission | 14.0% | 0.0% | 0.0% |
+| scriptable smart pointer (`LSupScrSp`) | 8.1% | 15.6% | 18.8% |
+| per-element lookup (`getAtom`/`getResidue`/`getParent`) | 6.0% | 22.8% | 14.4% |
+| RTTI (`dynamic_cast`) | 5.4% | 0.0% | 11.8% |
+| colour resolution | 4.3% | 0.0% | 4.5% |
+| selection test | 1.1% | 6.4% | 4.0% |
+| allocation | 1.3% | 0.0% | 1.0% |
+
+with the overhead charged to a handful of call sites: `MolAtom::getParentResidue`,
+`MolResidue::getAtom`, `ColSchmHolder::getColor`, `PaintColoring::getAtomColor`,
+`SelCommand::isSelected` -- per-atom accessors and per-atom colour resolution,
+each taking and releasing a reference-counted scriptable handle, and several
+doing a `dynamic_cast` to walk one step up the molecular hierarchy.
+
+The addon's own binary (`cuemol_internal.node`) is 0.0% of that thread.
+
+So the cost that remains is in the renderer core, which the desktop build
+shares, and not in anything this port introduced. That answers the question the
+harness was built to ask, and it moves the optimization work somewhere the
+original plan did not point.

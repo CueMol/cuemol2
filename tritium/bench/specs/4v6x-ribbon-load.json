@@ -1,0 +1,9 @@
+{
+  "name": "4v6x (80S ribosome, 237685 atoms) / ribbon / load",
+  "file": "../data/4v6x.cif",
+  "reader": "mmcif",
+  "renderer": "ribbon",
+  "scenario": "load",
+  "warmupMs": 500,
+  "measureMs": 1500
+}
