@@ -1,0 +1,2 @@
+timestamp,spec,rep,canvas_w,canvas_h,dpr,scenario,renderer,atoms,render_fps,update_fps,frames,drawn_frames,frame_ms_mean,frame_ms_p50,frame_ms_p95,frame_ms_p99,cpu_ms_mean,gpu_ms_mean,load_ms,gl_total,gl_draw,gl_use_program,gl_buffer_sub_data,gl_buffer_sub_data_bytes,gl_get_uniform_location,rss_mb
+2026-09-21T09:56:43.616Z,prof-tmp-4v6x-cpk-morph,0,1832,1010,2,coord-morph,cpk,237685,24.363,24.363,731,731,40.992,40.5,43.6,45.8,26.778,8.494,8573.3,46,1,4,6,528,1,1383.137

@@ -110,6 +110,46 @@ Two mechanisms explain them, and both are in `qlib::LScrSp`
 - The colouring and selection interfaces take `LScrSp<>` **by value**, so each
   atom costs a reference-counted handle constructed and destroyed.
 
+### Why the sphere renderer falls off at 237,685 atoms
+
+`cpk` holds 60 fps under `coord-morph` up to 58,870 atoms and drops to 24.9
+(26.0 ms of CPU, 6.4 ms of GPU) at 237,685. Sampling that cell, with inclusive
+shares of the worker thread:
+
+| | share |
+|---|---:|
+| `MolCoord::getAtom(int)`, all callers | 55.1% |
+| `MorphMol::update` (writing the new positions) | 32.6% |
+| `CPK2Renderer::updateCoordTex` (reading them back) | 31.4% |
+| `AtomIterator::first` | 20.5% |
+| `isSelected` | 18.2% |
+| `SelectionRenderer::display` | 11.4% |
+| the texture upload itself (`EcFloatDataTexture`) | 0.8% |
+| the draw itself (`SphereIdxGpuPrim::draw`) | 0.1% |
+
+The work the frame exists to do is 0.9% of it. The rest is resolving atom IDs
+back to atoms:
+
+- **`MolCoord::getAtom(int)` is over half the frame.** `updateCoordTex` caches
+  atom *IDs* in `m_aidcache` and looks each one up again every frame, and
+  `MorphMol::update` does the same from `m_id2aid`; each lookup is a map probe
+  returning a reference-counted `MolAtomPtr` that is immediately destroyed.
+  At 237,685 atoms that is several hundred thousand probes and handle
+  round-trips per frame, for coordinates whose addresses did not change.
+- **`SelectionRenderer` spends 11.4% drawing nothing.** With an empty
+  selection its `updateCoordTex` returns false on `m_aidcache.empty()`, so
+  `display()` calls `invalidateDisplayCache()` and returns; the next frame
+  finds the GpuPrim invalid, runs `renderCoordTexImpl`, walks every atom
+  evaluating the selection, produces no geometry, and leaves the GpuPrim
+  invalid again. The loop repeats for as long as nothing is selected, which is
+  the normal case.
+
+Caching the atom pointers rather than the IDs would remove the first, and not
+re-entering the rebuild path on an empty selection the second -- together about
+three quarters of this frame, which would put 237,685 atoms back at 60 fps.
+The `MorphMol::update` share is partly an artefact of how this scenario drives
+the coordinates (see the caveats); the renderer-side shares are not.
+
 `ribbon` was dropped from the benchmark matrix after these runs. It measures
 geometry generation that has not been optimised, so repeating it would keep
 reporting how slow that code is rather than anything about the backend, and
