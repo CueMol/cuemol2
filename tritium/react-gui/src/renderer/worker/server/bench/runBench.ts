@@ -31,6 +31,24 @@ const DEFAULT_WARMUP_MS = 2000;
 const DEFAULT_MEASURE_MS = 6000;
 
 /**
+ * Renderer settings recorded with the result.
+ *
+ * Each of these changes how much geometry the renderer produces, so two cells
+ * that disagree on one of them are not comparable however alike their specs
+ * look. Names that a given renderer does not have are skipped.
+ */
+const RENDERER_PROPS_OF_INTEREST = [
+    'surfalgor',   // dsurface: distfield / meshms / edtsurf
+    'detail',      // tessellation level (spheres, cylinders, surfaces)
+    'probe_radius',
+    'density',
+    'sphr',        // ballstick sphere radius
+    'bondw',
+    'width',       // cartoon ribbon width
+    'lw',          // line width
+] as const;
+
+/**
  * Scene properties forced before measuring (names from src/qsys/Scene.qif).
  *
  * Temporal jitter supersampling and adaptive half-resolution AO each keep
@@ -71,6 +89,15 @@ function stat(values: number[]): BenchStat {
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** Read a property, or undefined when this object has none by that name. */
+function safeGet(target: any, name: string): unknown {
+    try {
+        return target.getProp(name);
+    } catch {
+        return undefined;
+    }
+}
 
 /**
  * Set a property, reporting whether it took.
@@ -167,6 +194,28 @@ export async function runBench(
     if (!view) return fail('view not found', 'not-found');
 
     benchCounters.enable();
+
+    // Nothing the mouse does may reach the measurement.
+    //
+    // A hover hit test runs a whole extra scene pass into the ID buffer and
+    // then reads it back with a synchronous readPixels, so a single stray
+    // mouse move over the window stalls the pipeline and lands in the frame
+    // times. The renderer already leaves the hover handler unmounted here
+    // (shell/ContentPane.tsx); this switches off the pick pass underneath it
+    // as well, so a hit test from any other source is just as harmless.
+    let gpuPickOff = false;
+    try {
+        const vic = ctx.svc.getService('ViewInputConfig') as unknown as {
+            gpu_pick?: boolean;
+        };
+        if (vic) {
+            vic.gpu_pick = false;
+            gpuPickOff = vic.gpu_pick === false;
+        }
+    } catch (e) {
+        console.warn('[bench] could not switch off the GPU pick pass:', e);
+    }
+
     // Swap the GL context for the counting wrapper now that the canvas is
     // bound. Doing it here, rather than at bindCanvas, keeps a normal session
     // on the raw context.
@@ -203,6 +252,27 @@ export async function runBench(
         traj = obj;
     }
 
+    // Frame the whole molecule.
+    //
+    // The load path only recentres the view (setupRenderer's
+    // `recenterIfRequested`), which leaves the zoom wherever it was: a large
+    // structure then hangs off every edge of the viewport and most of its
+    // triangles are clipped, so the frame cost would follow the viewport
+    // rather than the structure and two sizes would not be comparable.
+    // `fitView` is on MolCoord and not on Object, and the generated wrapper
+    // types do not reflect the runtime subclass, hence the probe.
+    const fitted = (() => {
+        try {
+            const probe = obj as unknown as Record<string, unknown>;
+            if (typeof probe?.fitView !== 'function') return false;
+            (probe.fitView as (v: unknown, fsel: boolean) => void)(view, false);
+            return true;
+        } catch (e) {
+            console.warn('[bench] fitView failed:', e);
+            return false;
+        }
+    })();
+
     // Let the first frames get through so the load number covers the whole
     // path from file to something on screen.
     await sleep(250);
@@ -224,6 +294,23 @@ export async function runBench(
         } catch {
             return null;
         }
+    })();
+
+    // The renderer's own settings, so a result says what it measured rather
+    // than only what was asked for. A surface renderer picks between three
+    // algorithms that differ by more than the thing being benchmarked, and
+    // until now the only way to tell which one ran was to read the log.
+    const rendererProps = (() => {
+        if (!rend) return {};
+        const out: Record<string, string | number | boolean> = {};
+        for (const name of RENDERER_PROPS_OF_INTEREST) {
+            const v = safeGet(rend, name);
+            if (v !== undefined && (typeof v === 'string' || typeof v === 'number' ||
+                                    typeof v === 'boolean')) {
+                out[name] = v;
+            }
+        }
+        return out;
     })();
 
     // MolCoord exposes the count as a method, not a property (MolCoord.qif
@@ -280,6 +367,14 @@ export async function runBench(
         glPerFrame: perFrameMeans(samples),
         native: nativeStats(ctx),
         memory: memoryNow(),
+        input: { gpuPickOff, hoverMounted: false, canvasMouseBound: false },
+        rendererProps,
+        view: {
+            fitted,
+            zoom: Number(safeGet(view, 'zoom')) || 0,
+            distance: Number(safeGet(view, 'distance')) || 0,
+            slab: Number(safeGet(view, 'slab')) || 0,
+        },
         pins,
         unpinned,
         loadMs,

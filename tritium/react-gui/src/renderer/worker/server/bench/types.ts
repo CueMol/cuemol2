@@ -86,6 +86,25 @@ export interface BenchResult {
     /** C++ side breakdown, as reported by the addon (microseconds and counts). */
     native: Record<string, number> | null;
     memory: { rssMB: number; externalMB: number; heapMB: number } | null;
+    /**
+     * The renderer's effective settings. A surface renderer picks between
+     * three algorithms, and a tessellation level decides how much geometry
+     * any of them emits, so a result that did not carry them could not be
+     * compared with another.
+     */
+    rendererProps: Record<string, string | number | boolean>;
+    /**
+     * What was done to keep stray input out of the measurement. A hover hit
+     * test runs an extra scene pass and reads it back synchronously, so one
+     * mouse move over the window would show up in the frame times.
+     */
+    input: { gpuPickOff: boolean; hoverMounted: boolean; canvasMouseBound: boolean };
+    /**
+     * The camera after fitting. Without `fitted` a large structure hangs off
+     * the viewport and most of its triangles are clipped, so a cell that
+     * reports false is not comparable with one that does not.
+     */
+    view: { fitted: boolean; zoom: number; distance: number; slab: number };
     /** The scene properties that were forced, and which of them did not take. */
     pins: Record<string, string | number | boolean>;
     unpinned: string[];

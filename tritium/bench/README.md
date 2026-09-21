@@ -146,11 +146,44 @@ main watches for. That is why nothing was added to the shared IPC contract or
 the preload surface -- the two files this branch would otherwise conflict with
 `develop` over most often.
 
-## Baseline (2026-09-21)
+## Keeping the measurement honest
+
+Three things decide whether two cells can be compared at all, and each is
+recorded in the result rather than assumed.
+
+**The camera is fitted to the structure.** The load path only recentres the
+view (`setupRenderer`'s `recenterIfRequested`), which leaves the zoom where it
+was: a large structure then hangs off every edge of the viewport and most of
+its triangles are clipped, so the frame cost would follow the viewport rather
+than the structure. `runBench` calls `MolCoord.fitView` and reports
+`view.fitted`; a cell with `fitted: false` is not comparable with one without.
+
+**Stray input cannot reach the frame loop.** A hover hit test runs an extra
+scene pass into the ID buffer and reads it back with a synchronous
+`readPixels`, so one mouse move over the window would stall the pipeline and
+land in the frame times. A measured run does not mount the hover handler
+(`shell/ContentPane.tsx`), switches off `ViewInputConfig.gpu_pick` underneath
+it, and does not bind the canvas mouse listeners at all -- a drag would
+otherwise rotate the view under the scenario. All three are reported as
+`input`.
+
+**The renderer's own settings travel with the result.** A surface renderer
+chooses between `distfield`, `meshms` and `edtsurf`, and a tessellation level
+decides how much geometry any renderer emits; both change the thing being
+measured by more than the optimizations do. They used to be visible only in
+the log, so `rendererProps` now carries them.
+
+## Baseline
 
 Apple M2, macOS 26.5, Release build, 1832x1010 canvas (a 1920x1080 window at
 DPR 2, panels closed), `static-orbit`, 6 s after a 2 s warm-up. `uboUs/f` and
 `drawUs/f` are the addon's own timers divided by the frame count.
+
+> The table below was taken before the camera was fitted, so its larger
+> structures were measured partly outside the viewport and cannot be compared
+> across sizes. It is being retaken; the per-object finding it rests on holds
+> regardless, since that cost follows the number of drawn objects rather than
+> what is on screen.
 
 | structure | atoms | renderer | load ms | gpu ms | draws/f | gl/f | uboUs/f | drawUs/f | rss MB |
 |---|---|---|---|---|---|---|---|---|---|

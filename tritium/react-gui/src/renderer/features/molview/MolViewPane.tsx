@@ -7,6 +7,8 @@ import { useViewInputConfig } from '@renderer/contexts/ViewInputConfigContext'
 import { useLogActions } from '@renderer/contexts/LogContext'
 import { GES_PINCH, GES_ROTATE } from '@renderer/worker/shared/gestureAxes'
 import { IPC } from '@shared/ipcChannels'
+// Benchmark harness (bench/perf-harness branch only; never merged to develop).
+import { isBenchMode } from '@renderer/bench/isBenchMode'
 
 /**
  * Tab content pane for "molview" tabs -- WebGL canvas for molecular visualization.
@@ -207,6 +209,10 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    // A measured run drives the camera from the scenario. A stray drag would
+    // rotate the view underneath it, and the resulting frames would be of
+    // something nobody asked for.
+    if (isBenchMode()) return
     const handleMouse = (method: string) => (event: MouseEvent): void => {
       const viewID = getActiveViewIdRef.current()
       if (viewID !== undefined && cmRef.current) cmRef.current.onMouseEvent(viewID, method, event)

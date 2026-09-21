@@ -25,6 +25,8 @@ import { useNaviClickHandler } from "@renderer/features/molview/useNaviClickHand
 import { useMeasureClickHandler } from "@renderer/features/molview/useMeasureClickHandler";
 import { useBondEditClickHandler } from "@renderer/features/molview/useBondEditClickHandler";
 import { MolViewHoverLabel } from "@renderer/features/molview/MolViewHoverLabel";
+// Benchmark harness (bench/perf-harness branch only; never merged to develop).
+import { isBenchMode } from "@renderer/bench/isBenchMode";
 import { useNaviContextMenu } from "@renderer/features/molview/useNaviContextMenu";
 import { useActiveToolContext, useSetActiveTool } from "@renderer/contexts/ActiveToolContext";
 import { useSetStatusMessage } from "@renderer/state/statusMessage";
@@ -126,7 +128,10 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
           is active. Mounted only while the canvas is visible. */}
       {molViewVisible && <RectSelectOverlay />}
       {/* What is under the pointer -- bottom-left chip, owns the hover state. */}
-      {molViewVisible && <MolViewHoverLabel containerRef={paneRef} />}
+      {/* Not during a measured run: hover runs a GPU pick pass whose
+          readPixels is synchronous, so one stray mouse move over the window
+          stalls the pipeline and lands in the numbers. */}
+      {molViewVisible && !isBenchMode() && <MolViewHoverLabel containerRef={paneRef} />}
       {molViewVisible && (
         <ViewportToolPalette
           activeTool={activeTool}
