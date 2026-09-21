@@ -19,6 +19,9 @@ import { APP_PRODUCT_NAME } from '@shared/appInfo'
 import { IPC } from '@shared/ipcChannels'
 import { setAppQuitting, setCloseConfirmed, setForceQuit } from '../quitState'
 import { chromeWindowOptions, forwardConsoleMessages, hideMenuBar } from './windowChrome'
+// Benchmark harness (bench/perf-harness branch only; never merged to develop).
+import { benchContentSize, installBenchResultWatcher } from '../bench/benchMode'
+import { getBenchArgs } from '../bench/benchState'
 import { isVisibleOnAnyDisplay, trackWindowState } from './windowState'
 import { handleWindowClose } from './closeFunnel'
 import { holdUntilRevealed } from './reveal'
@@ -104,10 +107,19 @@ export function createWindow(): void {
   const saved = loadWindowBounds()
   const boundsOnScreen = saved ? isVisibleOnAnyDisplay(saved) : false
 
+  // A bench run sizes the window so the canvas lands on exactly the requested
+  // number of device pixels, and ignores whatever bounds were saved.
+  const bench = getBenchArgs()
+  const benchSize = bench ? benchContentSize(bench) : null
+
   const win = new BrowserWindow({
-    width: boundsOnScreen ? saved!.width : 1400,
-    height: boundsOnScreen ? saved!.height : 900,
-    ...(boundsOnScreen ? { x: saved!.x, y: saved!.y } : {}),
+    ...(benchSize
+      ? { width: benchSize.width, height: benchSize.height, useContentSize: true }
+      : {
+          width: boundsOnScreen ? saved!.width : 1400,
+          height: boundsOnScreen ? saved!.height : 900,
+        }),
+    ...(boundsOnScreen && !benchSize ? { x: saved!.x, y: saved!.y } : {}),
     minWidth: 400,
     minHeight: 300,
     // Base title; the renderer appends the active scene:view through
@@ -168,10 +180,25 @@ export function createWindow(): void {
     win.webContents.send(IPC.ROTATE_GESTURE, rotation)
   })
 
+  if (bench) {
+    installBenchResultWatcher(win, bench)
+    // The page is shown regardless of the reveal handshake: a bench cell must
+    // draw real frames, and a held-back window does not.
+    win.show()
+  }
+
+  // The spec path travels in the page's query string. It is the one thing the
+  // renderer needs from the command line, and a query needs no IPC channel and
+  // no preload surface -- both of which are files this branch would otherwise
+  // conflict with develop over.
+  const query = bench ? { benchSpec: bench.specPath } : undefined
+
   if (process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
-    win.webContents.openDevTools({ mode: 'undocked' })
+    const url = new URL(process.env['ELECTRON_RENDERER_URL'])
+    if (query) url.searchParams.set('benchSpec', query.benchSpec)
+    win.loadURL(url.toString())
+    if (!bench) win.webContents.openDevTools({ mode: 'undocked' })
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
+    win.loadFile(join(__dirname, '../renderer/index.html'), query ? { query } : undefined)
   }
 }

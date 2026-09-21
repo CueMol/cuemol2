@@ -12,6 +12,8 @@
 import React from 'react'
 import { PluginRoots } from '@renderer/plugin-host'
 import { AppBoot, AppCommands, AppShell, RenderWindowBridge } from './shell'
+// Benchmark harness (bench/perf-harness branch only; never merged to develop).
+import { BenchRoot } from './bench/BenchRoot'
 
 const App: React.FC = () => (
   <>
@@ -25,6 +27,7 @@ const App: React.FC = () => (
     <PluginRoots />
     <RenderWindowBridge />
     <AppShell />
+    <BenchRoot />
   </>
 )
 

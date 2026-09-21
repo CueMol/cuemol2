@@ -1,0 +1,9 @@
+{
+  "name": "1crn / cpk / static-orbit",
+  "file": "../data/1crn.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "static-orbit",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

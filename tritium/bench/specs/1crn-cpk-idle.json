@@ -1,0 +1,9 @@
+{
+  "name": "1crn / cpk / idle (self-check: the pins must make this ~0)",
+  "file": "../data/1crn.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "idle",
+  "warmupMs": 1500,
+  "measureMs": 4000
+}

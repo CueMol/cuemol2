@@ -16,6 +16,9 @@
  * caller stops the other loops on activation.
  */
 
+import { benchCounters } from '../bench/benchCounters';
+import { benchGpuFrameBegin, benchGpuFrameEnd } from '../bench/glProxy';
+
 /** Predicate: whether a view id is currently bound as a render peer. */
 type IsBound = (viewId: number) => boolean;
 
@@ -63,6 +66,9 @@ export class ViewLoopController {
         const existing = this._afcbid_map.get(view_id);
         if (existing !== undefined) cancelAnimationFrame(existing);
         const render = (): void => {
+            // Dormant outside a --bench run: two boolean checks per frame.
+            const benchStart = benchCounters.begin();
+            if (benchStart !== 0) benchGpuFrameBegin();
             try {
                 // Pump the C++ event / timer queue before rendering so AnimMgr
                 // playback (and any other setTimer-based work) advances and its
@@ -78,6 +84,8 @@ export class ViewLoopController {
                 // drawing, so a progress readout and the frame agree.
                 this.afterIdle?.();
                 this.sceMgr.invokeMethod('checkAndUpdateScenes');
+                if (benchStart !== 0) benchGpuFrameEnd();
+                benchCounters.end(benchStart);
                 this._afcbid_map.set(view_id, requestAnimationFrame(render));
             } catch (err) {
                 // A render-loop fault is fatal -- do not reschedule the rAF.

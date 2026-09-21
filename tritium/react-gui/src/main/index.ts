@@ -13,10 +13,18 @@ import { clearRenderHistory, sweepStaleRenderHistory } from './renderHistory'
 import { sweepMovieOutputs } from './movieOutput'
 import { APP_ID, APP_PRODUCT_NAME } from '@shared/appInfo'
 import { installMainCrashHandlers } from './installMainCrashHandlers'
+// Benchmark harness (bench/perf-harness branch only; never merged to develop).
+import { parseBenchArgs } from './bench/benchMode'
+import { setBenchArgs } from './bench/benchState'
 
 // Before anything else, so a throw during the setup below is still reported
 // to the terminal and a closed stdout pipe cannot masquerade as a crash.
 installMainCrashHandlers()
+
+// `--bench=<spec>` turns this launch into a single measured cell that exits
+// when it is done. Read before the window is built: it decides the window's
+// size and how the page is loaded.
+setBenchArgs(parseBenchArgs(process.argv, process.cwd()))
 
 app.setName(APP_PRODUCT_NAME)
 

@@ -262,6 +262,22 @@ export class WorkerService {
      * `ScrEventManager`) and the `GfxManager`, and wire the event listener.
      * Must be the first worker call; all other methods assume it has run.
      */
+    /**
+     * Switch the GL context for a counting wrapper, for a `--bench` run.
+     *
+     * Delegation rather than exposing `_gfx_mgr`: the harness needs exactly
+     * this one thing, and handing out the manager would make every internal
+     * of it part of the service surface.
+     */
+    enableBenchCounters(): void {
+        this._gfx_mgr?.enableBenchCounters();
+    }
+
+    /** The native addon root, for the benchmark harness's own counters. */
+    get nativeRoot(): CueMolInternal {
+        return this._internal;
+    }
+
     initCueMol(loadPath?: string): boolean {
         log.info(`Worker> initCueMol called, loadPath: ${loadPath}`);
         this._cm.initCueMol(loadPath);

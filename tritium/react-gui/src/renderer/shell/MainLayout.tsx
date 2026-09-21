@@ -21,14 +21,22 @@ import { BottomPanel } from './BottomPanel'
 import { InspectorPanel } from '@renderer/features/inspector/InspectorPanel'
 import { useLayout, useLayoutDispatch } from '@renderer/state/layout'
 import { useInspector } from '@renderer/state/inspector'
+// Benchmark harness (bench/perf-harness branch only; never merged to develop).
+import { isBenchMode } from '@renderer/bench/isBenchMode'
 
 export const MainLayout: React.FC = () => {
   const { loaded, inspectorOpen, savedSizes } = useLayout()
+  // A measured run starts with every panel closed so the 3D view is the whole
+  // window: the canvas backing store is the surface being measured, and the
+  // chrome would otherwise decide how much of the requested size it gets.
+  const benchMode = isBenchMode()
   const { setMainSizes, setRightPanelSizes, setCenterSizes, setInspectorOpen } =
     useLayoutDispatch()
   const inspectorHasTarget = useInspector().target !== null
 
-  const [activeView, setActiveView] = useState<ActivityView | null>('explorer')
+  const [activeView, setActiveView] = useState<ActivityView | null>(
+    isBenchMode() ? null : 'explorer',
+  )
 
   const handleActivitySelect = useCallback((view: ActivityView) => {
     setActiveView((prev) => (prev === view ? null : view))
@@ -138,7 +146,12 @@ export const MainLayout: React.FC = () => {
                       <Allotment.Pane>
                         <ContentArea />
                       </Allotment.Pane>
-                      <Allotment.Pane minSize={100} preferredSize={200} snap>
+                      <Allotment.Pane
+                        minSize={100}
+                        preferredSize={200}
+                        visible={!benchMode}
+                        snap
+                      >
                         <BottomPanel />
                       </Allotment.Pane>
                     </Allotment>

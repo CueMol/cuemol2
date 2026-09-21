@@ -25,6 +25,7 @@ import { TextureStore } from '@renderer/worker/server/gfx/TextureStore';
 import { FboStore } from '@renderer/worker/server/gfx/FboStore';
 import { ViewLoopController } from '@renderer/worker/server/gfx/ViewLoopController';
 import * as glState from '@renderer/worker/server/gfx/glState';
+import { installGlCounters } from '@renderer/worker/server/bench/glProxy';
 
 
 /**
@@ -56,6 +57,10 @@ export class GfxManager {
     private _logicalH: number = 0;
 
     private _context!: WebGL2RenderingContext;
+    // bindCanvas-time capability flags, kept so the benchmark harness can
+    // re-inject them when it swaps the context for a counting wrapper.
+    private _floatColorAvailable = false;
+    private _defaultFbMultisampled = false;
 
     /**
      * @param cuemol - the native addon root
@@ -114,6 +119,8 @@ export class GfxManager {
         this.shaders.setContext(gl);
         this.buffers.setContext(gl);
         this.textures.setContext(gl);
+        this._floatColorAvailable = floatColorExt !== null;
+        this._defaultFbMultisampled = defaultFbMultisampled;
         this.fbos.setContext(gl, canvas, floatColorExt !== null, defaultFbMultisampled);
 
         gl.enable(gl.DEPTH_TEST);
@@ -138,6 +145,30 @@ export class GfxManager {
 
     get canvas(): any {
         return this._canvas;
+    }
+
+    /**
+     * Swap the GL context for one that counts the calls a frame makes.
+     *
+     * Called only by the benchmark harness, after the canvas is bound. Doing
+     * it here rather than at `bindCanvas` keeps a normal session on the raw
+     * context: a counting Proxy in front of every GL call is not something to
+     * leave switched on. The stores each hold their own reference, so they are
+     * re-pointed at the wrapper too.
+     */
+    enableBenchCounters(): void {
+        if (this._canvas === null) throw Error('not bound to canvas');
+        const counted = installGlCounters(this._context);
+        this._context = counted;
+        this.shaders.setContext(counted);
+        this.buffers.setContext(counted);
+        this.textures.setContext(counted);
+        this.fbos.setContext(
+            counted,
+            this._canvas,
+            this._floatColorAvailable,
+            this._defaultFbMultisampled,
+        );
     }
 
     /** Bind an additional view as a render peer on the already-bound canvas. */
