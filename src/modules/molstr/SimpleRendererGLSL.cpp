@@ -36,27 +36,31 @@ void SimpleRenderer::display(DisplayContext *pdc)
     if (!m_bCheckShaderOK) {
         // Prefer the coordinate-texture path (direct update). Fall back to the
         // plain wide-line shader if the coordinate-texture shader is missing.
-        m_bUseCoordTex = m_lineValGpuPrim.init(pdc);
-        if (m_bUseCoordTex) MB_DPRINTLN("SimpleRenderer coord-tex line shader OK");
+        if (m_lineValGpuPrim.init(pdc))
+            MB_DPRINTLN("SimpleRenderer coord-tex line shader OK");
+        else
+            ctDisable();
         m_bCheckShaderOK = true;
     }
 
-    if (m_bUseCoordTex) {
+    if (ctUsable()) {
+        // Nothing matched the selection last time: see CPK2Renderer::display.
+        if (ctNothingToDraw()) return;
+
         if (!m_lineValGpuPrim.isValid()) {
             renderCoordTexImpl(pdc);
-            // renderCoordTexImpl clears m_bUseCoordTex if the backend cannot
-            // provide a float data texture.
+            // renderCoordTexImpl stops the mixin being usable if the backend
+            // cannot provide a float data texture.
         }
-        if (m_bUseCoordTex && m_lineValGpuPrim.isValid()) {
+        if (ctUsable() && m_lineValGpuPrim.isValid()) {
             // Deferred coordinate upload: at most once per frame, inside the
             // rAF tick, right before the draw.
-            if (m_bCoordDirty) {
+            if (ctIsDirty()) {
                 if (!updateCoordTex()) {
                     // Topology changed under us: fall back to a full rebuild.
                     invalidateDisplayCache();
                     return;
                 }
-                m_bCoordDirty = false;
             }
             preRender(pdc);
             m_lineValGpuPrim.setLineWidth(static_cast<float>(m_lw) *
@@ -65,6 +69,7 @@ void SimpleRenderer::display(DisplayContext *pdc)
             postRender(pdc);
             return;
         }
+        if (ctNothingToDraw()) return;
         // Float texture unavailable: initialise the plain wide-line shader.
         if (!m_bUseShader && !m_lineGpuPrim.isValid())
             m_bUseShader = m_lineGpuPrim.init(pdc);
@@ -258,23 +263,21 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
     getColSchm()->start(pMol, this);
     pMol->getColSchm()->start(pMol, this);
 
-    // Build the atom texel layout (all selected atoms) + AID -> index map.
-    m_aidcache.clear();
-    m_aid2idx.clear();
+    // Build the atom texel layout (all selected atoms).
+    ctBegin();
     {
         AtomIterator aiter(pMol, getSelection());
-        int i = 0;
         for (aiter.first(); aiter.hasMore(); aiter.next()) {
             int aid = aiter.getID();
             MolAtomPtr pAtom = pMol->getAtom(aid);
             if (pAtom.isnull()) continue;
-            m_aidcache.push_back(aid);
-            m_aid2idx[aid] = i;
-            ++i;
+            ctAddAtom(aid);
         }
     }
-    const int natoms = static_cast<int>(m_aidcache.size());
+    const int natoms = ctAtomCount();
     if (natoms == 0) {
+        // Records that there is nothing to draw, so display() stops asking.
+        ctAlloc(pdc, pMol);
         getColSchm()->end();
         pMol->getColSchm()->end();
         return;
@@ -289,9 +292,7 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
             MolBond *pMB = biter.getBond();
             int aid1 = pMB->getAtom1();
             int aid2 = pMB->getAtom2();
-            if (m_aid2idx.find(aid1) == m_aid2idx.end() ||
-                m_aid2idx.find(aid2) == m_aid2idx.end())
-                continue;
+            if (ctIndexOf(aid1) < 0 || ctIndexOf(aid2) < 0) continue;
             MolAtomPtr pA1 = pMol->getAtom(aid1);
             MolAtomPtr pA2 = pMol->getAtom(aid2);
             if (pA1.isnull() || pA2.isnull()) continue;
@@ -315,7 +316,8 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
     }
 
     std::vector<int> iso_atoms;
-    for (int aid : m_aidcache) {
+    for (int i = 0; i < natoms; ++i) {
+        const int aid = ctAtomIDAt(i);
         if (bonded_atoms.find(aid) == bonded_atoms.end()) {
             iso_atoms.push_back(aid);
             nlines += 3;
@@ -328,33 +330,11 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
         return;
     }
 
-    // Allocate the coordinate texture (RGB32F, one texel per atom, width 1024).
-    m_nTexW = TEX2D_WIDTH;
-    m_nTexH = (natoms + TEX2D_WIDTH - 1) / TEX2D_WIDTH;
-    m_coordbuf.resize(static_cast<size_t>(m_nTexW) * m_nTexH * 3);
-
-    m_pCoordTex = pdc->createFloatDataTexture();
-    if (m_pCoordTex == nullptr || !m_pCoordTex->create(m_nTexW, m_nTexH, 3)) {
-        if (m_pCoordTex != nullptr) {
-            delete m_pCoordTex;
-            m_pCoordTex = nullptr;
-        }
-        m_bUseCoordTex = false;
-        m_aidcache.clear();
-        m_aid2idx.clear();
-        m_coordbuf.clear();
+    // Creates the coordinate texture and fills it with the current positions.
+    if (!ctAlloc(pdc, pMol)) {
         getColSchm()->end();
         pMol->getColSchm()->end();
         return;
-    }
-
-    // Write atom positions into the staging buffer.
-    for (int i = 0; i < natoms; ++i) {
-        MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
-        const Vector4D pos = pAtom->getPos();
-        m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
-        m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
-        m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
     }
 
     m_lineValGpuPrim.alloc(pdc, nlines);
@@ -365,15 +345,15 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
         BondIterator biter(pMol, getSelection());
         for (biter.first(); biter.hasMore(); biter.next()) {
             MolBond *pMB = biter.getBond();
-            auto it1 = m_aid2idx.find(pMB->getAtom1());
-            auto it2 = m_aid2idx.find(pMB->getAtom2());
-            if (it1 == m_aid2idx.end() || it2 == m_aid2idx.end()) continue;
+            const int i1 = ctIndexOf(pMB->getAtom1());
+            const int i2 = ctIndexOf(pMB->getAtom2());
+            if (i1 < 0 || i2 < 0) continue;
             MolAtomPtr pA1 = pMol->getAtom(pMB->getAtom1());
             MolAtomPtr pA2 = pMol->getAtom(pMB->getAtom2());
             if (pA1.isnull() || pA2.isnull()) continue;
 
-            const int idx1 = it1->second;
-            const int idx2 = it2->second;
+            const int idx1 = i1;
+            const int idx2 = i2;
             // Hit names (pick pass): a half bond belongs to its own atom, a
             // full single-colour bond is split at the midpoint in the shader.
             const quint32 n1 = gfx::encodeHitName(pMB->getAtom1());
@@ -392,8 +372,8 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
                 int idxd = -1;
                 int refAid = pMB->getDblBondRefAtom(pMol);
                 if (refAid >= 0) {
-                    auto itd = m_aid2idx.find(refAid);
-                    if (itd != m_aid2idx.end()) idxd = itd->second;
+                    const int iref = ctIndexOf(refAid);
+                    if (iref >= 0) idxd = iref;
                 }
                 const float s1 = static_cast<float>(m_dCvScl1);
                 const float s2 = static_cast<float>(m_dCvScl2);
@@ -441,9 +421,9 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
     const Vector4D nxdel = xdel.scale(-1.0), nydel = ydel.scale(-1.0),
                    nzdel = zdel.scale(-1.0);
     for (int aid : iso_atoms) {
-        auto it = m_aid2idx.find(aid);
-        if (it == m_aid2idx.end()) continue;
-        const int idx = it->second;
+        const int itex = ctIndexOf(aid);
+        if (itex < 0) continue;
+        const int idx = itex;
         MolAtomPtr pAtom = pMol->getAtom(aid);
         if (pAtom.isnull()) continue;
         quint32 cc = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
@@ -453,37 +433,19 @@ void SimpleRenderer::renderCoordTexImpl(gfx::DisplayContext *pdc)
         m_lineValGpuPrim.setAster(iline++, idx, nzdel, zdel, cc, nm);
     }
 
-    m_pCoordTex->update(&m_coordbuf[0]);
-    m_lineValGpuPrim.setCoordTex(m_pCoordTex, 0);
-    m_bCoordDirty = false;
+    m_lineValGpuPrim.setCoordTex(ctTexture(), 0);
 
     // Finalize the coloring scheme
     getColSchm()->end();
     pMol->getColSchm()->end();
 
-    LOG_DPRINTLN("SimpleRenderer> rendered %d line segments (coord texture %dx%d)",
-                 nlines, m_nTexW, m_nTexH);
+    LOG_DPRINTLN("SimpleRenderer> rendered %d line segments (coord texture)",
+                 nlines);
 }
 
 bool SimpleRenderer::updateCoordTex()
 {
-    if (!m_bUseCoordTex || m_pCoordTex == nullptr) return false;
-    if (m_aidcache.empty()) return false;
-
-    MolCoordPtr pMol = getClientMol();
-    if (pMol.isnull()) return false;
-
-    const int natoms = static_cast<int>(m_aidcache.size());
-    for (int i = 0; i < natoms; ++i) {
-        MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
-        if (pAtom.isnull()) return false;  // topology changed; force rebuild
-        const Vector4D pos = pAtom->getPos();
-        m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
-        m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
-        m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
-    }
-    m_pCoordTex->update(&m_coordbuf[0]);
-    return true;
+    return ctUpdate(getClientMol());
 }
 
 void SimpleRenderer::invalidateDisplayCache()
@@ -491,25 +453,18 @@ void SimpleRenderer::invalidateDisplayCache()
     super_t::invalidateDisplayCache();
     m_lineValGpuPrim.invalidate();
     m_lineGpuPrim.invalidate();
-    if (m_pCoordTex != nullptr) {
-        delete m_pCoordTex;
-        m_pCoordTex = nullptr;
-    }
-    m_aidcache.clear();
-    m_aid2idx.clear();
-    m_coordbuf.clear();
-    m_bCoordDirty = false;
+    ctInvalidate();
 }
 
 void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
     if (ev.getType() == qsys::ObjectEvent::OBE_CHANGED) {
         if (ev.getDescr().equals("atomsMoved")) {
-            if (m_bUseCoordTex && m_lineValGpuPrim.isValid()) {
+            if (ctUsable() && (m_lineValGpuPrim.isValid() || ctNothingToDraw())) {
                 // Positions changed but topology did not. Mark the coordinate
                 // texture dirty and let display() upload it (once per frame,
                 // inside the rAF tick). No GL calls here.
-                m_bCoordDirty = true;
+                ctMarkDirty();
                 qsys::ScenePtr pScene = getScene();
                 if (!pScene.isnull()) pScene->setUpdateFlag();
                 invalidateHittestCache();

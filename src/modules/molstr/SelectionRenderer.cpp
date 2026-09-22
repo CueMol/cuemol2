@@ -29,11 +29,6 @@ using namespace molstr;
 using qlib::Vector4D;
 using gfx::ColorPtr;
 
-namespace {
-// Fixed coordinate texture width (matches TEX2D_WIDTH in lib_atoms.glsl).
-constexpr int TEX2D_WIDTH = 1024;
-}  // namespace
-
 SelectionRenderer::SelectionRenderer()
 {
   m_nMode = MODE_STICK;
@@ -41,20 +36,9 @@ SelectionRenderer::SelectionRenderer()
 
   m_bUseShader = false;
   m_bCheckShaderOK = false;
-  m_pCoordTex = nullptr;
-  m_nTexW = 0;
-  m_nTexH = 0;
-  m_bUseCoordTex = false;
-  m_bCoordDirty = false;
 }
 
-SelectionRenderer::~SelectionRenderer()
-{
-  if (m_pCoordTex != nullptr) {
-    delete m_pCoordTex;
-    m_pCoordTex = nullptr;
-  }
-}
+SelectionRenderer::~SelectionRenderer() {}
 
 const char *SelectionRenderer::getTypeName() const
 {
@@ -135,26 +119,33 @@ void SelectionRenderer::display(DisplayContext *pdc)
 
   if (!m_bCheckShaderOK) {
     m_bUseShader = m_lineIdxGpuPrim.init(pdc);
-    m_bUseCoordTex = m_bUseShader;
+    if (!m_bUseShader) ctDisable();
     m_bCheckShaderOK = true;
   }
 
-  if (m_bUseCoordTex) {
+  if (ctUsable()) {
+    // Nothing is selected, and nothing was selected when this was last built.
+    // Rebuilding would walk every atom of the molecule evaluating the
+    // selection and produce no geometry, and it would do that on every frame
+    // for as long as the selection stayed empty -- which is the normal state
+    // of a molecule nobody has selected anything in. The legacy path below is
+    // skipped for the same reason.
+    if (ctNothingToDraw()) return;
+
     if (!m_lineIdxGpuPrim.isValid()) {
       renderCoordTexImpl(pdc);
-      // renderCoordTexImpl clears m_bUseCoordTex if the backend cannot
+      // renderCoordTexImpl stops the mixin being usable if the backend cannot
       // provide a float data texture.
     }
-    if (m_bUseCoordTex && m_lineIdxGpuPrim.isValid()) {
+    if (ctUsable() && m_lineIdxGpuPrim.isValid()) {
       // Deferred coordinate upload: at most once per frame, inside the rAF
       // tick, right before the draw.
-      if (m_bCoordDirty) {
+      if (ctIsDirty()) {
         if (!updateCoordTex()) {
           // Topology changed under us: fall back to a full rebuild.
           invalidateDisplayCache();
           return;
         }
-        m_bCoordDirty = false;
       }
       preRender(pdc);
       m_lineIdxGpuPrim.setLineWidth(static_cast<float>(m_linew) * pdc->getPixSclFac());
@@ -162,6 +153,7 @@ void SelectionRenderer::display(DisplayContext *pdc)
       postRender(pdc);
       return;
     }
+    if (ctNothingToDraw()) return;
   }
 
   // Shader/texture not available: legacy rendering.
@@ -172,14 +164,7 @@ void SelectionRenderer::invalidateDisplayCache()
 {
   super_t::invalidateDisplayCache();
   m_lineIdxGpuPrim.invalidate();
-  if (m_pCoordTex != nullptr) {
-    delete m_pCoordTex;
-    m_pCoordTex = nullptr;
-  }
-  m_aidcache.clear();
-  m_aid2idx.clear();
-  m_coordbuf.clear();
-  m_bCoordDirty = false;
+  ctInvalidate();
 }
 
 void SelectionRenderer::renderCoordTexImpl(DisplayContext *pdc)
@@ -187,23 +172,24 @@ void SelectionRenderer::renderCoordTexImpl(DisplayContext *pdc)
   MolCoordPtr pMol = getClientMol();
   if (pMol.isnull()) return;
 
-  // Build the atom texel layout (all selected atoms) + AID -> index map.
-  m_aidcache.clear();
-  m_aid2idx.clear();
+  // Build the atom texel layout (all selected atoms).
+  ctBegin();
   {
     AtomIterator aiter(pMol, getSelection());
-    int i = 0;
     for (aiter.first(); aiter.hasMore(); aiter.next()) {
       int aid = aiter.getID();
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue;
-      m_aidcache.push_back(aid);
-      m_aid2idx[aid] = i;
-      ++i;
+      ctAddAtom(aid);
     }
   }
-  const int natoms = static_cast<int>(m_aidcache.size());
-  if (natoms == 0) return;
+  const int natoms = ctAtomCount();
+  if (natoms == 0) {
+    // Records that there is nothing to draw, which is what stops display()
+    // asking again on every frame while the selection stays empty.
+    ctAlloc(pdc, pMol);
+    return;
+  }
 
   // Count line segments: bonds (1 each) + isolated atoms (3-axis aster).
   int nlines = 0;
@@ -214,16 +200,15 @@ void SelectionRenderer::renderCoordTexImpl(DisplayContext *pdc)
       MolBond *pMB = biter.getBond();
       int aid1 = pMB->getAtom1();
       int aid2 = pMB->getAtom2();
-      if (m_aid2idx.find(aid1) == m_aid2idx.end() ||
-          m_aid2idx.find(aid2) == m_aid2idx.end())
-        continue;
+      if (ctIndexOf(aid1) < 0 || ctIndexOf(aid2) < 0) continue;
       bonded.insert(aid1);
       bonded.insert(aid2);
       ++nlines;
     }
   }
   std::vector<int> iso_atoms;
-  for (int aid : m_aidcache) {
+  for (int i = 0; i < natoms; ++i) {
+    const int aid = ctAtomIDAt(i);
     if (bonded.find(aid) == bonded.end()) {
       iso_atoms.push_back(aid);
       nlines += 3;
@@ -231,37 +216,8 @@ void SelectionRenderer::renderCoordTexImpl(DisplayContext *pdc)
   }
   if (nlines == 0) return;
 
-  // Allocate the coordinate texture (RGB32F, one texel per atom, width 1024).
-  m_nTexW = TEX2D_WIDTH;
-  m_nTexH = (natoms + TEX2D_WIDTH - 1) / TEX2D_WIDTH;
-  m_coordbuf.resize(static_cast<size_t>(m_nTexW) * m_nTexH * 3);
-
-  m_pCoordTex = pdc->createFloatDataTexture();
-  if (m_pCoordTex == nullptr) {
-    m_bUseCoordTex = false;
-    m_aidcache.clear();
-    m_aid2idx.clear();
-    m_coordbuf.clear();
-    return;
-  }
-  if (!m_pCoordTex->create(m_nTexW, m_nTexH, 3)) {
-    delete m_pCoordTex;
-    m_pCoordTex = nullptr;
-    m_bUseCoordTex = false;
-    m_aidcache.clear();
-    m_aid2idx.clear();
-    m_coordbuf.clear();
-    return;
-  }
-
-  // Write atom positions into the staging buffer.
-  for (int i = 0; i < natoms; ++i) {
-    MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
-    const Vector4D pos = pAtom->getPos();
-    m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
-    m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
-    m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
-  }
+  // Creates the texture and fills it with the current positions.
+  if (!ctAlloc(pdc, pMol)) return;
 
   m_lineIdxGpuPrim.alloc(pdc, nlines);
 
@@ -274,10 +230,10 @@ void SelectionRenderer::renderCoordTexImpl(DisplayContext *pdc)
     BondIterator biter(pMol, getSelection());
     for (biter.first(); biter.hasMore(); biter.next()) {
       MolBond *pMB = biter.getBond();
-      auto it1 = m_aid2idx.find(pMB->getAtom1());
-      auto it2 = m_aid2idx.find(pMB->getAtom2());
-      if (it1 == m_aid2idx.end() || it2 == m_aid2idx.end()) continue;
-      m_lineIdxGpuPrim.setData(iline++, it1->second, zero, cc, it2->second, zero, cc);
+      const int i1 = ctIndexOf(pMB->getAtom1());
+      const int i2 = ctIndexOf(pMB->getAtom2());
+      if (i1 < 0 || i2 < 0) continue;
+      m_lineIdxGpuPrim.setData(iline++, i1, zero, cc, i2, zero, cc);
     }
   }
 
@@ -287,39 +243,20 @@ void SelectionRenderer::renderCoordTexImpl(DisplayContext *pdc)
   const Vector4D nxdel = xdel.scale(-1.0), nydel = ydel.scale(-1.0),
                  nzdel = zdel.scale(-1.0);
   for (int aid : iso_atoms) {
-    const int idx = m_aid2idx[aid];
+    const int idx = ctIndexOf(aid);
     m_lineIdxGpuPrim.setData(iline++, idx, nxdel, cc, idx, xdel, cc);
     m_lineIdxGpuPrim.setData(iline++, idx, nydel, cc, idx, ydel, cc);
     m_lineIdxGpuPrim.setData(iline++, idx, nzdel, cc, idx, zdel, cc);
   }
 
-  m_pCoordTex->update(&m_coordbuf[0]);
-  m_lineIdxGpuPrim.setCoordTex(m_pCoordTex, 0);
-  m_bCoordDirty = false;
+  m_lineIdxGpuPrim.setCoordTex(ctTexture(), 0);
 
-  LOG_DPRINTLN("SelectionRenderer> rendered %d line segments (coord texture %dx%d)",
-               nlines, m_nTexW, m_nTexH);
+  LOG_DPRINTLN("SelectionRenderer> rendered %d line segments (coord texture)", nlines);
 }
 
 bool SelectionRenderer::updateCoordTex()
 {
-  if (!m_bUseCoordTex || m_pCoordTex == nullptr) return false;
-  if (m_aidcache.empty()) return false;
-
-  MolCoordPtr pMol = getClientMol();
-  if (pMol.isnull()) return false;
-
-  const int natoms = static_cast<int>(m_aidcache.size());
-  for (int i = 0; i < natoms; ++i) {
-    MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
-    if (pAtom.isnull()) return false;   // topology changed; force rebuild
-    const Vector4D pos = pAtom->getPos();
-    m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
-    m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
-    m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
-  }
-  m_pCoordTex->update(&m_coordbuf[0]);
-  return true;
+  return ctUpdate(getClientMol());
 }
 
 void SelectionRenderer::beginRend(DisplayContext *pdl)
@@ -405,8 +342,8 @@ void SelectionRenderer::objectChanged(qsys::ObjectEvent &ev)
     // Positions changed but topology/selection did not. Mark the coordinate
     // texture dirty and let display() do the upload (once per frame, inside
     // the rAF tick). No hittest cache here (SelectionRenderer has none).
-    if (m_bUseCoordTex && m_lineIdxGpuPrim.isValid()) {
-      m_bCoordDirty = true;
+    if (ctUsable() && (m_lineIdxGpuPrim.isValid() || ctNothingToDraw())) {
+      ctMarkDirty();
       qsys::ScenePtr pScene = getScene();
       if (!pScene.isnull()) pScene->setUpdateFlag();
       return;

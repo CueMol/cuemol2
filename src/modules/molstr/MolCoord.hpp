@@ -249,6 +249,17 @@ namespace molstr {
     void setXformMatrix(const qlib::Matrix4D &m) override;
 
     ///
+    /// Whether the atoms of this molecule can be moved one by one.
+    ///
+    /// True for an ordinary structure, which owns its coordinates atom by
+    /// atom. An animated molecule (AnimMol) takes them from its frame data
+    /// instead, so moving a single atom has nowhere to be written and the
+    /// setters throw; callers that can offer the user something better than an
+    /// exception should ask first.
+    ///
+    virtual bool isCoordEditable() const { return true; }
+
+    ///
     ///  Apply affine transformation to the selected part by pSel
     ///    (impl: MolCoordGeomImpl.cpp)
     /// TO DO: correct impl when m_xformMat is applied

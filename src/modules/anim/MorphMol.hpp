@@ -10,6 +10,7 @@
 #include <qlib/Array.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
+#include <modules/molstr/AnimMol.hpp>
 
 namespace anim {
 
@@ -43,19 +44,30 @@ namespace anim {
     void updateSrcPath(const LString &srcpath) override;
   };
 
-  class ANIM_API MorphMol : public molstr::MolCoord
+  ///
+  /// Molecule that interpolates between a set of coordinate frames.
+  ///
+  /// An AnimMol: the topology is fixed and only the coordinates change, so the
+  /// interpolated result goes into the base class's coordinate array and every
+  /// consumer reads it from there -- the coordinate-texture renderers by array
+  /// index, everything else through MolAtom::getPos().
+  ///
+  class ANIM_API MorphMol : public molstr::AnimMol
   {
     MC_SCRIPTABLE;
 
   private:
-    typedef molstr::MolCoord super_t;
+    typedef molstr::AnimMol super_t;
 
     /////////////////////////////////////////////////////
     // specific data
 
     /// number of atoms in each frame
     int m_nAtoms;
-    
+
+    /// coordinate-array index -> AID. The frames are laid out in MolArrayMap
+    /// order (by chain, residue and atom name), not by AID, so that a frame
+    /// loaded from another file lines up with this molecule by name.
     std::vector<int> m_id2aid;
 
     typedef std::deque<FrameData *> FrameArray;
@@ -63,6 +75,16 @@ namespace anim {
     FrameArray m_frames;
 
   public:
+
+    void createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap) override;
+
+    /// One slot per frame entry, which is one per (chain, residue, atom name)
+    /// and so can be fewer than the atoms when alternate conformations exist.
+    int getCrdArrayAtomCount() const override
+    {
+      return int(m_id2aid.size());
+    }
+
     
     /////////////////////////////////////////////////////
     // construction/destruction

@@ -12,6 +12,7 @@
 #include <gfx/SphereIdxGpuPrim.hpp>
 
 #include <modules/molstr/MolAtomRenderer.hpp>
+#include <modules/molstr/CoordTexSupport.hpp>
 
 #include <vector>
 
@@ -22,7 +23,8 @@ namespace molvis {
   using namespace molstr;
   using gfx::DisplayContext;
 
-  class MOLVIS_API CPK2Renderer : public MolAtomRenderer
+  class MOLVIS_API CPK2Renderer : public MolAtomRenderer,
+                                  public molstr::CoordTexSupport
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -56,25 +58,6 @@ namespace molvis {
 
     /// Sphere primitive with texture-fetched positions (used when available)
     gfx::SphereIdxGpuPrim m_sphIdxGpuPrim;
-
-    /// Coordinate texture (owned). Null when the backend does not support it.
-    gfx::FloatDataTexture *m_pCoordTex;
-
-    /// CPU-side staging buffer for the coordinate texture (w*h*3 floats)
-    std::vector<qfloat32> m_coordbuf;
-
-    /// AIDs in the same order as the coordinate texture texels
-    std::vector<int> m_aidcache;
-
-    int m_nTexW, m_nTexH;
-
-    /// True when the coordinate texture path is in use
-    bool m_bUseCoordTex;
-
-    /// Set by objectChanged(); consumed by display(). See the plan section 3.9:
-    /// the upload is deferred so that it coalesces to once per frame and always
-    /// runs inside the rAF tick with a DisplayContext at hand.
-    bool m_bCoordDirty;
 
   public:
     /// The pick pass reuses display(): every draw path (coordinate-texture
@@ -141,12 +124,12 @@ namespace molvis {
     // coordinate texture (direct update) implementations
 
     /// Build the immutable VBO (index/radius/colour) and the coordinate texture.
-    /// Falls back (clears m_bUseCoordTex) when the backend cannot provide a
+    /// Falls back (the mixin stops being usable) when the backend cannot provide a
     /// float data texture.
     void renderCoordTexImpl(DisplayContext *pdc);
 
     /// Re-gather atom positions into the coordinate texture. Only positions are
-    /// touched; the VBO stays as is. Called from display() when m_bCoordDirty.
+    /// touched; the VBO stays as is. Called from display() when the mixin is dirty.
     bool updateCoordTex();
 
   private:

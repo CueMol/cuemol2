@@ -9,6 +9,7 @@
 
 #include "molstr.hpp"
 #include "MainChainRenderer.hpp"
+#include "CoordTexSupport.hpp"
 #include <gfx/LineIdxGpuPrim.hpp>
 
 #include <vector>
@@ -21,7 +22,8 @@ namespace molstr {
 
   using qlib::Vector4D;
 
-  class MOLSTR_API TraceRenderer : public MainChainRenderer
+  class MOLSTR_API TraceRenderer : public MainChainRenderer,
+                                   public CoordTexSupport
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -46,22 +48,6 @@ namespace molstr {
     /// Line primitive with texture-fetched endpoints (used when available)
     gfx::LineIdxGpuPrim m_lineIdxGpuPrim;
 
-    /// Coordinate texture (owned). Null when the backend does not support it.
-    gfx::FloatDataTexture *m_pCoordTex;
-
-    /// CPU-side staging buffer for the coordinate texture (w*h*3 floats)
-    std::vector<qfloat32> m_coordbuf;
-
-    /// Pivot AIDs in the same order as the coordinate texture texels
-    std::vector<int> m_aidcache;
-
-    /// pivot AID -> texel index
-    std::unordered_map<int, int> m_aid2idx;
-
-    int m_nTexW, m_nTexH;
-
-    bool m_bUseCoordTex;
-    bool m_bCoordDirty;
 
     // ---- collection state (filled during a collect-mode traversal) ----
 

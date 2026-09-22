@@ -151,6 +151,8 @@ add_executable(test_molstr
   modules/molstr/test_selscope_fitview.cpp
   modules/molstr/test_simplerenderer.cpp
   modules/molstr/test_tracerenderer.cpp
+  modules/molstr/test_molatom_crdbind.cpp
+  modules/molstr/test_coordtexsupport.cpp
 )
 target_include_directories(test_molstr PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -187,6 +189,25 @@ if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_molvis PRIVATE sysdep)
 endif()
 gtest_discover_tests(test_molvis PROPERTIES LABELS "test_molvis")
+
+add_executable(test_anim
+  modules/anim/test_main.cpp
+  modules/anim/test_morphmol_crdarray.cpp
+)
+target_include_directories(test_anim PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/modules
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_compile_definitions(test_anim PRIVATE
+  CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+)
+target_link_libraries(test_anim PRIVATE anim molstr qsys gfx qlib Boost::filesystem GTest::gtest)
+if (BUILD_OPENGL_SYSDEP)
+  target_link_libraries(test_anim PRIVATE sysdep)
+endif()
+gtest_discover_tests(test_anim PROPERTIES LABELS "test_anim")
 
 add_executable(test_surface
   modules/surface/test_crystalinfo_setters.cpp
