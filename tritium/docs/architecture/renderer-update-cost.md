@@ -200,7 +200,8 @@ coordinate texture in its own pass rather than in the same loop that writes the
 radii and colours. A cell that rebuilds once and then draws never notices;
 `prop-change` rebuilds every frame by construction, so it pays it every frame.
 That is the scenario whose real problem is that a colour change discards
-positions and normals it did not affect (candidate 1), which is untouched here.
+positions and normals it did not affect -- which is left alone deliberately,
+for the reason under candidate 1 below.
 
 ## The transfer became visible once the lookups went
 
@@ -264,15 +265,22 @@ The same reasoning still applies to `BufferStore`, which is still a single VBO w
 `STATIC_DRAW` and a full `bufferSubData` at offset 0 -- untouched by this work
 because the coordinate-texture renderers do not re-upload vertex buffers. It
 matters for the mesh renderers, which reallocate four buffers every frame, and
-that is worth measuring again after candidate 1 below, which should make those
-rebuilds rare.
+that is worth measuring again after candidate 2 below, which is what would make
+those rebuilds rare.
 
 ## What is still open
 
+None of what follows is being worked on. The measurement round this document
+came out of ended after two changes; these are what it found and did not do,
+written down so the next person starts from the numbers rather than from the
+same guesses.
+
+
 Items 3 to 5 below were what the numbers first suggested and are superseded by
 the change above, which removed the lookups rather than making them cheaper.
-**1 and 2 have not been attempted**, and are listed with what each would have
-to prove.
+**2 has not been attempted** and is listed with what it would have to prove;
+**1 is withdrawn**, for a reason worth reading before ranking anything else
+here.
 
 The coordinate texture's own double buffering, which used to head this list,
 is done -- see above.
@@ -282,13 +290,23 @@ uploads to pass level, at 0.3% of the frame at the size that struggles. The
 other, giving the vertex buffers a ring or an orphaning usage hint, was dropped
 at 2.5-3.3%, came back as the texture ring above, and is still open for
 `BufferStore` itself -- but the renderers that would benefit are the mesh ones,
-which rebuild for reasons candidate 1 addresses, so that is worth measuring
+which rebuild for reasons candidate 2 addresses, so that is worth measuring
 again afterwards rather than now.
 
-1. **Do not rebuild geometry for a colour change.** The largest single effect
-   available: a colour change currently discards positions and normals too.
-   Needs each renderer to be able to re-run its colour assignment over existing
-   draw elements, which is a real interface change, not a local one.
+1. ~~**Do not rebuild geometry for a colour change.**~~ **Withdrawn.** A colour
+   change does discard everything -- the coordinate texture, the atom layout
+   and the vertex buffer, through `MolRenderer::propChanged` -> `defaultcolor`
+   -> `invalidateDisplayCache` -- and at 42 ms on GroEL/GroES it was the
+   largest number left. But a colour scheme is changed once, by hand, and 42 ms
+   of that is a blink; nothing in the application changes a colour every frame.
+   The work would be a real interface change (each renderer re-running its
+   colour assignment over existing draw elements) to shorten a blink. The two
+   changes already made were worth making because they were on paths that run
+   every frame while someone watches.
+
+   Recorded because the number invites the opposite conclusion: it is the
+   biggest one in the table, and being the biggest is not the same as being
+   worth paying for. Ask how often a path runs before ranking it.
 2. **Give the mesh renderers a coordinate fast path.** `cpk` shows a 24x
    difference on the same structure under the same motion. Whether a spline
    mesh can be updated rather than regenerated when only coordinates move is
@@ -303,11 +321,11 @@ again afterwards rather than now.
    `ElecDisplayContext::allocBuffer` allocates a fresh one every time; at
    78-185 MB per frame that churn shows up as `madvise` and V8 time. This one
    is in the WebGL backend rather than the core, and it is only worth doing if
-   1 and 2 do not make the rebuild rare enough to stop mattering.
+   2 does not make the rebuild rare enough to stop mattering.
 
-1 and 2 are renderer interface work, and 1 is what `prop-change` needs: that
-scenario rebuilds every frame precisely because a colour change throws away
-geometry the colour did not affect.
+2 is renderer interface work and the only item left on a path that runs every
+frame while someone is watching: a trajectory played back through a ribbon.
+That is an ordinary way to use the application, and it runs at 2.5 fps.
 
 ## Caveats
 

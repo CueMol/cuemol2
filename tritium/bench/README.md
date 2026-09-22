@@ -238,10 +238,19 @@ Raising the canvas to 2792x1730 -- 4.83 Mpx, 2.6 times the pixels -- leaves
 time rises by 1.2 to 1.4, so even the largest structure on the largest canvas
 here is not fill-rate bound.
 
-### Changing a display property (`prop-change`)
+### Changing a display property (`prop-change`) -- reference only
 
-One colour change per frame, which is what a user does from the property
-panel.
+One colour change per frame.
+
+**Read this one differently from the others.** Nobody changes a colour sixty
+times a second: a colour scheme is changed once, by hand, and 40 ms of it is a
+blink. The cell is a synthetic load that isolates what a rebuild costs, not a
+rate anybody experiences. It is kept because that cost is worth knowing and
+because a regression in it would mean a rebuild got more expensive -- not
+because the frame rate here is a result.
+
+The scenarios above and below are the ones that run every frame while a user
+watches.
 
 | structure | atoms | renderer | fps | frame ms | cpu ms | gpu ms | bufferData/f | alloc MB/f |
 |---|---:|---|---:|---:|---:|---:|---:|---:|
