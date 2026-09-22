@@ -202,15 +202,64 @@ radii and colours. A cell that rebuilds once and then draws never notices;
 That is the scenario whose real problem is that a colour change discards
 positions and normals it did not affect (candidate 1), which is untouched here.
 
+## The transfer became visible once the lookups went
+
+Taking the per-atom lookups out did not only make the frame shorter; it changed
+what the frame is spent on. The coordinate texture is uploaded with one
+`texSubImage2D` over a single RGB32F texture, and the addon's own timer around
+that call reads differently either side of the change -- same bytes, same
+format, same call:
+
+| structure | bytes/frame | before | after |
+|---|---:|---:|---:|
+| 1CRN | 12 KB | 41 us | 62 us |
+| 4HHB | 60 KB | 61 us | 94 us |
+| 1AON | 696 KB | 119 us | 306 us |
+| 4V6X | 2.7 MB | 346 us | 874 us |
+| 3J3Q | 28 MB | -- | 22,031 us |
+
+Uploading the same data takes two and a half times as long as it did. Nothing
+about the upload changed; what changed is that the 26 ms of `getAtom` that used
+to sit around it is gone, so the write now lands while the GPU is still reading
+the texture it is writing into. 3J3Q is the clearest case: it is the first cell
+in the corpus where GPU and CPU are comparable (24.44 against 24.78 ms), and
+22 ms of that CPU is the upload call itself.
+
+This is the same shape as the finding the WebGPU prototype this work grew out
+of made about vertex buffers, where writing into a buffer the GPU was reading
+cost 27x against a two-buffer ring. That finding was measured here early on and
+set aside at 2.5-3.3% of the frame -- correctly at the time, and wrongly as a
+conclusion: the transfer was cheap only because something slower was standing
+in front of it.
+
+So the next thing to try is a second coordinate texture, alternated per frame
+(with `setCoordTex` pointing at whichever is not being read), or orphaning the
+texture at smaller sizes. `TextureStore.updateFloatDataTexture` is where it
+would go. `static-orbit` must not move, since it touches no texture at all.
+
+The same is true of `BufferStore`, which is still a single VBO with
+`STATIC_DRAW` and a full `bufferSubData` at offset 0 -- untouched by this work
+because the coordinate-texture renderers do not re-upload vertex buffers. It
+matters for the mesh renderers, which reallocate four buffers every frame, and
+that is worth measuring again after candidate 1 below, which should make those
+rebuilds rare.
+
 ## What is still open
 
 Items 3 to 5 below were what the numbers first suggested and are superseded by
 the change above, which removed the lookups rather than making them cheaper.
 **1 and 2 have not been attempted**, and are listed with what each would have
-to prove -- because two candidates before them (hoisting the per-object uniform
-uploads to pass level, and giving the vertex buffers a ring or an orphaning
-usage hint) were dropped when measurement put them at 0.3% and 2.5-3.3% of the
-frame.
+to prove.
+
+Ahead of both is the coordinate texture's own double buffering, from the
+section above: it is smaller than either, it is local to
+`TextureStore.updateFloatDataTexture`, and it is now the last thing standing
+between an atom moving in C++ and the pixel changing.
+
+One earlier candidate was dropped for good -- hoisting the per-object uniform
+uploads to pass level, at 0.3% of the frame at the size that struggles. The
+other, giving the vertex buffers a ring or an orphaning usage hint, was dropped
+at 2.5-3.3% and has come back in a different place; see above.
 
 1. **Do not rebuild geometry for a colour change.** The largest single effect
    available: a colour change currently discards positions and normals too.

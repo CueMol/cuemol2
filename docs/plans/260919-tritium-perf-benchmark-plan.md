@@ -1,20 +1,11 @@
-> 実施済み。結果は `tritium/bench/README.md`、遅い箇所の記録と最適化の前後比較は
+> **状況(2026-09-22 更新)**
+>
+> Phase 1(計測基盤)完了、Phase 2 は当初案を取り下げて別の対象を実施・マージ済み。
+> 結果は `tritium/bench/README.md`、原因と前後比較は
 > `tritium/docs/architecture/renderer-update-cost.md`。
->
-> Phase 1(計測基盤)は完了。5 シナリオ(static-orbit / prop-change / coord-morph /
-> load / input-latency)+ idle 自己診断、4 規模 + 3J3Q(244 万原子)。
->
-> Phase 2 の最適化 2 項目(2.1 per-object UBO 巻き上げ / 2.2 VBO 更新経路)は
-> **実施していない**。計測でそれぞれフレームの 0.3% と 2.5〜3.3% と判明し、
-> 「各項目は計測でゲート」の条件を満たさなかったため。代わりに計測が指した
-> 対象 — 座標配列を source of truth にする変更 — を PR #625 で develop へ入れた
-> (4V6X の座標更新 24.9 → 60 fps、静的表示の CPU が全規模で約 0.3 ms に平坦化)。
->
-> 行列も縮小: レンダラは cpk と ribbon の 2 つ(経路が異なるのはこの 2 つで、
-> ballstick は cpk と、dsurface は ribbon と同経路)。その後 ribbon は外し cpk のみ。
-> `md-playback` はトラジェクトリ入手不可のため `coord-morph`(MorphMol による
-> 座標補間)で代替。`input-latency` は motion-to-photon ではなく、ワーカー内の
-> 区間のみを測る。
+> **次にやるべきことは末尾の「## 現在地と次にやること」を読むこと。**
+> 以下の本文は当初のプランで、実施内容とは異なる箇所がある(どこがどう違うかは
+> 末尾にまとめた)。
 
 # tritium(CueMol3)性能ベンチマークと最適化プラン
 
@@ -213,3 +204,112 @@ curl -fL --retry 3 -o data/<id>.cif.gz https://files.rcsb.org/download/<id>.cif.
 - 3J3Q の `.cif` は数百 MB。取得は 1 回だけで済むが、`load` シナリオの時間は他規模と桁が違う
 - `pin` するプロパティ名の確認漏れ → `idle` シナリオで自己診断
 - bench ブランチと develop の乖離。`merge develop` を最適化 PR ごとに実施
+
+
+---
+
+# 現在地と次にやること
+
+*(2026-09-22 追記。以上の本文は当初案。以下が実際の結果と、そこから見えた次の作業。)*
+
+## 完了したこと
+
+**Phase 1(計測基盤)** — 完了。5 シナリオ + idle 自己診断、5 規模(327 / 4,779 /
+58,870 / 237,685 / 2,440,800 原子)。1 セル 1 プロセス、3 反復、反復間の広がりは
+平均の 1% 未満。
+
+| シナリオ | 内容 |
+|---|---|
+| `static-orbit` | カメラのみ動かす。ジオメトリ不変 |
+| `prop-change` | 毎フレーム色を変える |
+| `coord-morph` | 毎フレーム全原子が動く。topology 不変(`md-playback` の代替) |
+| `load` | ファイル読込 → 初回描画 |
+| `input-latency` | 合成ドラッグ。ワーカー内の区間のみ(motion-to-photon ではない) |
+| `idle` | 自己診断。撹乱要因の固定が効いているかを確認 |
+
+**Phase 2** — 当初の 2 項目は実施せず、計測が指した別の対象を PR #625 で develop
+へマージ。4V6X(237,685 原子)の座標更新が 24.9 → 60 fps、静的表示の CPU が全規模で
+約 0.3 ms に平坦化。
+
+## やる必要がなかったこと
+
+| 当初案 | 実測 | 判断 |
+|---|---|---|
+| **2.1 per-object UBO をパス単位に巻き上げ** | 重い側(4V6X)でフレームの **0.3%**。小さい構造ほど相対的に大きく見えるが、そちらは元々 CPU 0.36 ms で削っても見えない | **取り下げ**。分母を draw 時間ではなくフレーム全体に取れば最初から分かったこと |
+| **2.2 VBO 更新経路(usage hint / orphan / ring / 部分更新)** | 当時 2.5〜3.3% | **一旦取り下げたが、後述の通り再浮上** |
+| **ribbon / dsurface / ballstick / simple の行列** | ballstick は cpk と、dsurface は ribbon と同経路。ribbon は最適化されていないジオメトリ生成を測るだけ | cpk のみに縮小。ribbon の測定値は「メッシュ経路がなぜ遅いか」の記録として保存 |
+| **`md-playback`** | トラジェクトリがマシン上に存在せず、RCSB にも無い | `coord-morph`(MorphMol による座標補間)で代替。`MorphMol::update` も `Trajectory::update` も `fireAtomsMoved` で終わるのでレンダラからは区別できない |
+
+**当初案が外れた理由は共通している。** PoC はジオメトリ生成が LUT で激安だったため
+転送が律速に見えたが、実アプリでは生成側と原子走査が支配的で、転送はその陰に隠れて
+いた。**プランの「各項目は計測でゲート」という条件だけが正しく機能した。**
+
+## 次にやること
+
+### A. 座標テクスチャのダブルバッファリング(最優先・新規)
+
+**PoC の VBO ring(27 倍)の知見は tritium でも生きていた。** 当初 2.2 を
+「2.5〜3.3% だから不要」と判断したのは、その時点で `MolCoord::getAtom` の 26 ms が
+実質のスペーサになっていて GPU が読み終わる余裕があったから。それが消えた今、
+**単一テクスチャへの書き込みが GPU の読み取りと衝突している。**
+
+`coordTexUpdate`(`texSubImage2D` の実測、C++ カウンタ)の前後比較 — 転送量も
+フォーマットも同一で、変わったのは前後の CPU 作業が減ったことだけ:
+
+| 構造 | 転送量/frame | 変更前 | 変更後 | 倍率 |
+|---|---:|---:|---:|---:|
+| 1CRN | 12 KB | 41 µs | 62 µs | 1.5x |
+| 4HHB | 60 KB | 61 µs | 94 µs | 1.5x |
+| 1AON | 696 KB | 119 µs | 306 µs | **2.6x** |
+| 4V6X | 2.7 MB | 346 µs | 874 µs | **2.5x** |
+| 3J3Q | 28 MB | — | **22,031 µs** | — |
+
+3J3Q で CPU と GPU が初めて拮抗する(24.78 / 24.44 ms)のも、22 ms が
+`texSubImage2D` に費やされているため。
+
+現状(`TextureStore.ts:updateFloatDataTexture`)は**単一 RGB32F テクスチャへの
+全面 `texSubImage2D`**。PoC が VBO で見た構図と同型。
+
+- 2 枚のテクスチャを交互に使う(`setCoordTex` で毎フレーム差し替え)
+- サイズ閾値で orphan(`texImage2D` で再確保 → `texSubImage2D`)と ring を切替
+- 検証: `coord-morph` の `coordTexUpdate` と GPU 時間。3J3Q が最も効くはず
+- **`static-orbit` に回帰が無いことを必須条件**(テクスチャを触らないので原理的には無変化)
+
+### B. VBO 側のダブルバッファリング(A と同型、メッシュ経路向け)
+
+`BufferStore.ts` は当初のまま単一 VBO / `STATIC_DRAW` / offset 0 の全量
+`bufferSubData`。座標テクスチャ対応レンダラは VBO を毎フレーム触らないので現状は
+効かないが、メッシュ系(ribbon / cartoon / dsurface)は毎フレーム再確保している。
+**C を先にやればそもそも再確保が減る**ので、C の後に測り直してから判断する。
+
+### C. 色変更でジオメトリを捨てない(`prop-change` の本質)
+
+`prop-change` は 1AON で CPU 42.9 ms / GPU 4.8 ms。色を変えただけで位置も法線も
+捨てて作り直している(`SplineRenderer::propChanged` → `invalidateDisplayCache`)。
+各レンダラが既存の draw element に対して色の再割り当てだけを走らせられる必要があり、
+インタフェース変更を伴う。
+
+なお PR #625 で `prop-change` は約 10% 悪化した(構築時に座標収集が独立パスに
+なったため、毎フレーム再構築するこのシナリオだけが毎回払う)。C がこれを帳消しにする。
+
+### D. メッシュ系レンダラの座標高速経路
+
+cpk は同じ構造・同じ動きで ribbon の 24 倍速い。スプラインメッシュを座標変化時に
+再生成ではなく更新できるかは未検証(スプライン係数自体は変わる)。A〜C より大きい。
+
+### 優先順位
+
+**A → C → B → D。** A は局所的で、論文が主張する「座標更新 → テクスチャ更新」経路の
+最後の律速。C はインタフェース変更を伴うが `prop-change` の唯一の解。B は C 次第。
+D は設計判断が要る。
+
+## ブランチ運用(実績)
+
+当初案通り機能した。`bench/perf-harness` は永続でベンチコードを隔離し、develop へ
+入ったのは `src/` とドキュメント 1 本のみ(PR #625、32 + 1 ファイル)。
+`git branch --contains bench/perf-harness` が bench 自身しか返さないことで片方向性を
+担保。効果測定は bench へ一時マージして実施。
+
+1 点だけ運用上の注意: perf ブランチは develop 由来で `tritium/bench/.gitignore` を
+持たないため、`git add -A` が構造ファイル(25 MB)を拾う。実際 3 回混入させ、
+履歴から除去した。**perf ブランチでは `git add` にパスを明示すること。**
