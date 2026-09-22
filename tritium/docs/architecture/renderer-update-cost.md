@@ -232,12 +232,35 @@ set aside at 2.5-3.3% of the frame -- correctly at the time, and wrongly as a
 conclusion: the transfer was cheap only because something slower was standing
 in front of it.
 
-So the next thing to try is a second coordinate texture, alternated per frame
-(with `setCoordTex` pointing at whichever is not being read), or orphaning the
-texture at smaller sizes. `TextureStore.updateFloatDataTexture` is where it
-would go. `static-orbit` must not move, since it touches no texture at all.
+### And a second face fixes it
 
-The same is true of `BufferStore`, which is still a single VBO with
+Each name now owns a ring of two textures: an update writes the next face and
+makes it current, so the draw that follows binds what was just written and
+leaves the one the GPU is still reading alone. It is 67 lines in
+`TextureStore.ts`; the C++ side addresses these textures by name and never sees
+the ring.
+
+| cell | before | after |
+|---|---|---|
+| 3J3Q `coord-morph` upload | 22,031 us | **9,902 us** |
+| 3J3Q `coord-morph` | 36.4 fps, 24.78 ms CPU | **53.9 fps, 12.44 ms** |
+| 4V6X `coord-morph` upload | 874 us | **787 us** |
+| 4V6X `coord-morph` | 60.0 fps | 60.0 fps (more headroom) |
+
+Uploading the same bytes takes half as long. At sizes already at vsync the
+upload still drops but the frame rate cannot show it, which is what a headroom
+improvement looks like from outside.
+
+`static-orbit` does not move at any size and reports no upload time at all,
+which is the check that the ring is confined to the path that writes: a
+renderer that only turns the camera never touches the texture.
+
+The cost is one more texture per name -- 77 MB at capsid scale, nothing at the
+sizes people work at. Two faces and not three: a third would only help if a
+draw outlived two of its own updates, and the frame loop issues one update per
+draw.
+
+The same reasoning still applies to `BufferStore`, which is still a single VBO with
 `STATIC_DRAW` and a full `bufferSubData` at offset 0 -- untouched by this work
 because the coordinate-texture renderers do not re-upload vertex buffers. It
 matters for the mesh renderers, which reallocate four buffers every frame, and
@@ -251,15 +274,16 @@ the change above, which removed the lookups rather than making them cheaper.
 **1 and 2 have not been attempted**, and are listed with what each would have
 to prove.
 
-Ahead of both is the coordinate texture's own double buffering, from the
-section above: it is smaller than either, it is local to
-`TextureStore.updateFloatDataTexture`, and it is now the last thing standing
-between an atom moving in C++ and the pixel changing.
+The coordinate texture's own double buffering, which used to head this list,
+is done -- see above.
 
-One earlier candidate was dropped for good -- hoisting the per-object uniform
+One earlier candidate was dropped for good: hoisting the per-object uniform
 uploads to pass level, at 0.3% of the frame at the size that struggles. The
 other, giving the vertex buffers a ring or an orphaning usage hint, was dropped
-at 2.5-3.3% and has come back in a different place; see above.
+at 2.5-3.3%, came back as the texture ring above, and is still open for
+`BufferStore` itself -- but the renderers that would benefit are the mesh ones,
+which rebuild for reasons candidate 1 addresses, so that is worth measuring
+again afterwards rather than now.
 
 1. **Do not rebuild geometry for a colour change.** The largest single effect
    available: a colour change currently discards positions and normals too.

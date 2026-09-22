@@ -321,7 +321,7 @@ dwarf everything else. One run each, to show whether it loads at all.
 | scenario | fps | frame ms | cpu ms | gpu ms | load | rss |
 |---|---:|---:|---:|---:|---:|---:|
 | `static-orbit` | 60.0 | 16.64 | 0.27 | 17.18 | 15.3 s | 3,261 MB |
-| `coord-morph` | 36.4 | 27.38 | 24.78 | 24.44 | 56.2 s | 2,890 MB |
+| `coord-morph` | 53.9 | 18.55 | 12.44 | 21.76 | 56.2 s | 2,967 MB |
 
 It loads, and it holds vsync while being viewed. The CPU figure for static
 viewing -- 0.27 ms -- is the same as at 237,685 atoms and at 327, which is the
@@ -329,9 +329,13 @@ clearest statement of the point: after the coordinate work, viewing cost does
 not follow the structure at all.
 
 Moving every atom is where this size finally costs something, and it is the
-first cell in the corpus where CPU and GPU are comparable (24.8 against
-24.4 ms) rather than the CPU dominating. Loading is the practical limit: 56 s
-for the morph cell, which reads the structure twice.
+only cell where the GPU leads (21.8 against 12.4 ms of CPU) rather than the CPU
+dominating. It reads 28 MB of coordinates into a texture every frame; giving
+that texture a second face to write into took the upload from 22.0 to 9.9 ms
+and the cell from 36.4 to 53.9 fps (see
+[renderer-update-cost.md](../docs/architecture/renderer-update-cost.md)).
+Loading is the practical limit: 56 s for the morph cell, which reads the
+structure twice.
 
 ### Doing nothing (`idle`)
 
