@@ -179,6 +179,15 @@ the log, so `rendererProps` now carries them.
 
 ## Baseline
 
+The tables below are the **before** state, taken on `develop` as it stood on
+2026-09-21. The coordinate path has since been rebuilt (PR #625, now merged),
+and the after numbers are alongside them in
+[renderer-update-cost.md](../docs/architecture/renderer-update-cost.md). In
+short: 4V6X under `coord-morph` went from 24.9 fps to vsync, and static-viewing
+CPU is now flat at about 0.3 ms across the whole ladder instead of climbing
+with the structure. They are kept as taken, because what they measure -- where
+a frame went before anything was changed -- is the reason the change happened.
+
 Apple M2, macOS 26.5, Release build. The canvas is 1832x1010 -- a 1920x1080
 window at DPR 2 with the panels closed -- and each cell measures for 6 s after
 a 2 s warm-up, three times, in its own process. Spread across the three
