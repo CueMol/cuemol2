@@ -9,6 +9,12 @@ scenes.
 `perf/<topic>` branch cut from `develop`, measured by merging that branch into
 this one temporarily, and go to `develop` by pull request.
 
+Every number here came from one machine: an Apple M2, where Electron reaches
+the GPU through ANGLE's Metal backend. Results carry the machine with them
+(`machine.unmaskedRenderer` in the JSON, `gpu` in the CSV) so a second one can
+be told apart. To run this somewhere else, see
+[RUNNING-ELSEWHERE.md](RUNNING-ELSEWHERE.md).
+
 ## One process per measured cell
 
 `run.js` starts a fresh Electron process for every cell. Switching scene,

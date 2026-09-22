@@ -269,6 +269,10 @@ export class WorkerService {
      * this one thing, and handing out the manager would make every internal
      * of it part of the service surface.
      */
+    benchGpuInfo(): Record<string, string | boolean> {
+        return this._gfx_mgr?.benchGpuInfo() ?? {};
+    }
+
     enableBenchCounters(): void {
         this._gfx_mgr?.enableBenchCounters();
     }

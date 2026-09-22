@@ -171,6 +171,40 @@ export class GfxManager {
         );
     }
 
+    ///
+    /// What the GL context says about the machine it runs on.
+    ///
+    /// A frame time only means something next to the hardware that produced
+    /// it, and more than that: how a driver treats a write into a texture the
+    /// GPU is reading is exactly what the coordinate-texture ring is built
+    /// around, and that differs between ANGLE's Metal, D3D11 and Vulkan
+    /// backends. A result that does not say which one it came from cannot be
+    /// compared with one from another machine.
+    ///
+    /// The unmasked strings need WEBGL_debug_renderer_info, which is not
+    /// guaranteed; the masked ones are always there and still name the backend.
+    ///
+    benchGpuInfo(): Record<string, string | boolean> {
+        if (this._canvas === null) throw Error('not bound to canvas');
+        const gl = this._context;
+        const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+        const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+        return {
+            vendor: str(gl.getParameter(gl.VENDOR)),
+            renderer: str(gl.getParameter(gl.RENDERER)),
+            version: str(gl.getParameter(gl.VERSION)),
+            shadingLanguage: str(gl.getParameter(gl.SHADING_LANGUAGE_VERSION)),
+            unmaskedVendor: dbg
+                ? str(gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL))
+                : '',
+            unmaskedRenderer: dbg
+                ? str(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL))
+                : '',
+            floatColorBuffer: this._floatColorAvailable,
+            defaultFbMultisampled: this._defaultFbMultisampled,
+        };
+    }
+
     /** Bind an additional view as a render peer on the already-bound canvas. */
     addView(view_id: number, dpr: number): void {
         if (this._canvas === null) {

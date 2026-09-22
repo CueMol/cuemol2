@@ -67,6 +67,21 @@ function buildPlan() {
   return plan
 }
 
+/** The electron executable this app's node_modules installed. */
+function electronBin() {
+  // The package writes the path to its binary here, relative to its own
+  // directory, on every platform.
+  const pkgDir = path.join(APP_DIR, 'node_modules', 'electron')
+  try {
+    const rel = fs.readFileSync(path.join(pkgDir, 'path.txt'), 'utf8').trim()
+    const bin = path.join(pkgDir, 'dist', rel)
+    if (fs.existsSync(bin)) return bin
+  } catch { /* fall through to the launcher below */ }
+  // pnpm may hoist it elsewhere; the CLI shim works when it does.
+  return path.join(APP_DIR, 'node_modules', '.bin',
+                   process.platform === 'win32' ? 'electron.cmd' : 'electron')
+}
+
 function runCell(cell) {
   fs.rmSync(CELL_FILE, { force: true })
   const args = [
@@ -86,7 +101,11 @@ function runCell(cell) {
     BUNDLE_APPS:
       process.env.BUNDLE_APPS || path.join(os.homedir(), 'tmp/proj64_deplibs'),
   }
-  const res = spawnSync('npx', ['electron', ...args], {
+  // Run the local electron binary rather than going through npx: on Windows
+  // npx is a .cmd, which spawnSync will not find without a shell, and putting
+  // a shell in the way would make the command line quoting depend on which
+  // shell answered.
+  const res = spawnSync(electronBin(), args, {
     cwd: APP_DIR,
     env,
     stdio: 'inherit',
@@ -110,11 +129,19 @@ const CSV_COLUMNS = [
   'gl_total', 'gl_draw', 'gl_use_program', 'gl_buffer_sub_data',
   'gl_buffer_sub_data_bytes', 'gl_get_uniform_location',
   'rss_mb',
+  // Which machine produced the row. Two rows are only comparable if these
+  // agree, and more than usual here: how a driver treats a write into a
+  // texture the GPU is reading is what the coordinate-texture ring is built
+  // around, and ANGLE's Metal, D3D11 and Vulkan backends differ on it.
+  'gpu', 'gl_version', 'platform',
 ]
 
 function toRow(cell, r) {
   const gl = r.glPerFrame || {}
   const n = (v) => (typeof v === 'number' ? Number(v.toFixed(3)) : '')
+  // GPU strings carry commas ("ANGLE (Apple, Apple M2, ...)"), so they are
+  // quoted rather than left to break the column count.
+  const csv = (v) => (typeof v === 'string' ? `"${v.replace(/"/g, '""')}"` : '')
   return [
     r.timestamp, cell.stem, cell.rep,
     r.canvas?.width ?? '', r.canvas?.height ?? '', r.canvas?.dpr ?? '',
@@ -125,6 +152,9 @@ function toRow(cell, r) {
     n(gl.total), n(gl.draw), n(gl.useProgram), n(gl.bufferSubData),
     n(gl.bufferSubDataBytes), n(gl.getUniformLocation),
     n(r.memory?.rssMB),
+    csv(r.machine?.unmaskedRenderer || r.machine?.renderer),
+    csv(r.machine?.version),
+    csv(r.machine?.platform),
   ].join(',')
 }
 

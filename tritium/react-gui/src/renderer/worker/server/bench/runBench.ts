@@ -75,6 +75,28 @@ function reader(spec: BenchSpec): string {
     return 'mmcif';
 }
 
+/**
+ * What produced these numbers: the GL context's own account of the GPU and
+ * driver, plus the versions around it. Best effort -- a missing field is left
+ * out rather than guessed at, since a wrong machine label is worse than none.
+ */
+function machineInfo(ctx: WorkerContext): Record<string, string | boolean | number> {
+    const out: Record<string, string | boolean | number> = {};
+    try {
+        const nav = globalThis.navigator as unknown as
+            { userAgent?: string; platform?: string; hardwareConcurrency?: number };
+        if (nav?.userAgent) out.userAgent = nav.userAgent;
+        if (nav?.platform) out.platform = nav.platform;
+        if (nav?.hardwareConcurrency) out.cpuThreads = nav.hardwareConcurrency;
+    } catch { /* not available in this worker */ }
+    try {
+        Object.assign(out, ctx.svc.benchGpuInfo());
+    } catch (e) {
+        console.warn('[bench] could not read the GL context info:', e);
+    }
+    return out;
+}
+
 function stat(values: number[]): BenchStat {
     if (values.length === 0) return { mean: 0, p50: 0, p95: 0, p99: 0, max: 0 };
     const sorted = [...values].sort((a, b) => a - b);
@@ -387,6 +409,7 @@ export async function runBench(
         spec,
         atomCount,
         canvas: { width: args.canvasWidth, height: args.canvasHeight, dpr: args.dpr },
+        machine: machineInfo(ctx),
         frames: samples.length,
         drawnFrames: samples.filter((s) => s.drawn).length,
         renderFps: elapsedSec > 0 ? samples.length / elapsedSec : 0,

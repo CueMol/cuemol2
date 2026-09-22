@@ -74,6 +74,16 @@ export interface BenchResult {
     /** Atom count of the loaded object, when the object exposes one. */
     atomCount: number | null;
     canvas: { width: number; height: number; dpr: number };
+    /**
+     * The machine the cell ran on: OS, Electron build, and what the GL context
+     * says about the GPU and driver.
+     *
+     * Two results are only comparable if these agree. It matters more than
+     * usual here because the coordinate-texture ring is built around how a
+     * driver treats a write into a texture the GPU is reading, and ANGLE's
+     * Metal, D3D11 and Vulkan backends do not treat it the same way.
+     */
+    machine: Record<string, string | boolean | number>;
     frames: number;
     /**
      * Frames that issued at least one draw call.
