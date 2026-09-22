@@ -1,0 +1,9 @@
+{
+  "name": "4hhb (haemoglobin, 4779 atoms) / cpk / input-latency",
+  "file": "../data/4hhb.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "input-latency",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

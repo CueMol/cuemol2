@@ -1,0 +1,237 @@
+{
+  "cells": [
+    {
+      "cell": {
+        "stem": "3j3q-cpk-coord-morph",
+        "canvas": "1920x1080",
+        "rep": 0
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "3j3q (HIV-1 capsid, 2440800 atoms) / cpk / coord-morph",
+          "file": "../data/3j3q.cif",
+          "morphFile": "../data/3j3q-morph.cif",
+          "reader": "mmcif",
+          "renderer": "cpk",
+          "scenario": "coord-morph",
+          "warmupMs": 5000,
+          "measureMs": 10000
+        },
+        "atomCount": 2440800,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "frames": 365,
+        "drawnFrames": 365,
+        "renderFps": 36.38756243173891,
+        "updateFps": 36.38756243173891,
+        "frameMs": {
+          "mean": 27.383013698499497,
+          "p50": 27.100000143051147,
+          "p95": 32.10000014305115,
+          "p99": 40.5,
+          "max": 94.69999980926514
+        },
+        "cpuMs": {
+          "mean": 24.78027396855289,
+          "p50": 24.700000047683716,
+          "p95": 28,
+          "p99": 35.200000047683716,
+          "max": 92.39999985694885
+        },
+        "gpuMs": {
+          "mean": 24.439843524590177,
+          "p50": 24.369541,
+          "p95": 27.87425,
+          "p99": 33.946958,
+          "max": 39.848458
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 29294592,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 730,
+          "bufferDrawUs": 2377,
+          "bufferDrawCount": 730,
+          "uboUpdateUs": 28402,
+          "uboUpdateCount": 2190,
+          "coordTexUpdateUs": 8041306,
+          "coordTexUpdateCount": 365,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 2889.613312,
+          "externalMB": 414.416315,
+          "heapMB": 5.34528
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 1507.7412,
+          "distance": 200,
+          "slab": 400
+        },
+        "morph": {
+          "frames": 2
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 56151.60000014305,
+        "timestamp": "2026-09-22T01:30:43.979Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "3j3q-cpk-static-orbit",
+        "canvas": "1920x1080",
+        "rep": 0
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "3j3q (HIV-1 capsid, 2440800 atoms) / cpk / static-orbit",
+          "file": "../data/3j3q.cif",
+          "reader": "mmcif",
+          "renderer": "cpk",
+          "scenario": "static-orbit",
+          "warmupMs": 5000,
+          "measureMs": 10000
+        },
+        "atomCount": 2440800,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "frames": 600,
+        "drawnFrames": 600,
+        "renderFps": 59.99100134979753,
+        "updateFps": 0,
+        "frameMs": {
+          "mean": 16.63983333349228,
+          "p50": 16.699999809265137,
+          "p95": 17.5,
+          "p99": 17.699999809265137,
+          "max": 17.700000047683716
+        },
+        "cpuMs": {
+          "mean": 0.26766667564709984,
+          "p50": 0.2999999523162842,
+          "p95": 0.40000009536743164,
+          "p99": 0.40000009536743164,
+          "max": 0.5
+        },
+        "gpuMs": {
+          "mean": 17.17560456765677,
+          "p50": 17.129,
+          "p95": 18.764374,
+          "p99": 19.448541,
+          "max": 20.384666
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 2,
+          "texSubImage": 0,
+          "texSubImageBytes": 0,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 42
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 3,
+          "bufferUpdateCount": 1200,
+          "bufferDrawUs": 10874,
+          "bufferDrawCount": 1200,
+          "uboUpdateUs": 34728,
+          "uboUpdateCount": 3600,
+          "coordTexUpdateUs": 0,
+          "coordTexUpdateCount": 0,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 3261.349888,
+          "externalMB": 297.255289,
+          "heapMB": 6.484356
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 1507.7412,
+          "distance": 200,
+          "slab": 400
+        },
+        "morph": null,
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 15306.100000143051,
+        "timestamp": "2026-09-22T01:31:18.162Z"
+      }
+    }
+  ]
+}

@@ -119,16 +119,25 @@ class BenchCounters {
         return performance.now();
     }
 
+    /** Input-to-draw intervals closed during collection, in milliseconds. */
+    readonly inputLatencies: number[] = [];
+
+    /** Record one input-to-draw interval, if collection is running. */
+    addInputLatency(ms: number): void {
+        if (this._collecting) this.inputLatencies.push(ms);
+    }
+
     /** Called at the bottom of the rAF callback with `begin`'s return value. */
     end(startedAt: number): void {
         if (!this._enabled || startedAt === 0) return;
         const now = performance.now();
+        const drewSomething = this.live.draw + this.live.drawInstanced > 0;
         if (this._collecting) {
             this._samples.push({
                 intervalMs: this._lastFrameStart === 0 ? 0 : startedAt - this._lastFrameStart,
                 cpuMs: now - startedAt,
                 gpuMs: this.pendingGpuMs,
-                drawn: this.live.draw + this.live.drawInstanced > 0,
+                drawn: drewSomething,
                 gl: this.live,
             });
         }

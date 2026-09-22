@@ -1,0 +1,9 @@
+{
+  "name": "1crn (crambin, 327 atoms) / cpk / input-latency",
+  "file": "../data/1crn.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "input-latency",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

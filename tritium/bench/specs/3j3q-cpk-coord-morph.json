@@ -1,0 +1,10 @@
+{
+  "name": "3j3q (HIV-1 capsid, 2440800 atoms) / cpk / coord-morph",
+  "file": "../data/3j3q.cif",
+  "morphFile": "../data/3j3q-morph.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "coord-morph",
+  "warmupMs": 5000,
+  "measureMs": 10000
+}

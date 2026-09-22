@@ -1,0 +1,9 @@
+{
+  "name": "3j3q (HIV-1 capsid, 2440800 atoms) / cpk / static-orbit",
+  "file": "../data/3j3q.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "static-orbit",
+  "warmupMs": 5000,
+  "measureMs": 10000
+}

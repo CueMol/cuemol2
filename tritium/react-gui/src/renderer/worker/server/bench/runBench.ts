@@ -356,6 +356,7 @@ export async function runBench(
     })();
 
     // --- Run ---
+    //
     const step = makeScenarioStep(spec.scenario, { ctx, view, scene, obj, traj, morph, rend });
     let advances = 0;
     let running = true;
@@ -369,12 +370,14 @@ export async function runBench(
     await sleep(spec.warmupMs ?? DEFAULT_WARMUP_MS);
 
     advances = 0;
+    benchCounters.inputLatencies.length = 0;
     resetNativeStats(ctx);
     benchCounters.startCollecting();
     const measureStart = performance.now();
     await sleep(spec.measureMs ?? DEFAULT_MEASURE_MS);
     const elapsedSec = (performance.now() - measureStart) / 1000;
     const samples = benchCounters.stopCollecting();
+    const latencies = benchCounters.inputLatencies.slice();
     running = false;
 
     const gpuSamples = samples.map((s) => s.gpuMs).filter((v): v is number => v !== null);
@@ -395,6 +398,7 @@ export async function runBench(
         native: nativeStats(ctx),
         memory: memoryNow(),
         input: { gpuPickOff, hoverMounted: false, canvasMouseBound: false },
+        inputLatencyMs: latencies.length > 0 ? stat(latencies) : null,
         rendererProps,
         view: {
             fitted,

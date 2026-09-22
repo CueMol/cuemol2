@@ -1,0 +1,9 @@
+{
+  "name": "1aon (GroEL/GroES, 58870 atoms) / cpk / input-latency",
+  "file": "../data/1aon.cif",
+  "reader": "mmcif",
+  "renderer": "cpk",
+  "scenario": "input-latency",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

@@ -11,6 +11,12 @@
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import {
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+} from '@renderer/worker/server/inputEvents';
+import { benchCounters } from './benchCounters';
 import type { BenchScenarioId } from './types';
 
 /** Per-frame work, returning true when the scenario's payload advanced. */
@@ -39,6 +45,16 @@ const ORBIT_DEG_PER_FRAME = 1.0;
  * and slow enough that consecutive frames differ by a plausible amount.
  */
 const MORPH_FRACTION_PER_FRAME = 1 / 60;
+
+/**
+ * The synthetic drag: where it starts, how far it travels before wrapping, and
+ * how far it moves per frame. Kept well inside the canvas so no frame is spent
+ * on a pointer that has left it, and large enough per step that the view
+ * actually turns rather than rounding to no rotation at all.
+ */
+const INPUT_ORIGIN_PX = 200;
+const INPUT_SPAN_PX = 400;
+const INPUT_STEP_PX = 4;
 
 /**
  * Build the per-frame step for a scenario.
@@ -88,6 +104,52 @@ export function makeScenarioStep(id: BenchScenarioId, deps: ScenarioDeps): Scena
                 if (t >= 1) { t = 1; dir = -1; } else if (t <= 0) { t = 0; dir = 1; }
                 morph.setProp('frame', t);
                 deps.view.rotateView(0, ORBIT_DEG_PER_FRAME, 0);
+                return true;
+            };
+        }
+
+        case 'input-latency': {
+            // A drag, because that is the interaction whose latency a user
+            // actually feels: the view follows the pointer, so the delay
+            // between moving and seeing is the thing being measured.
+            //
+            // It has to begin with a button press. MouseEventHandler drops a
+            // move that arrives in DRAG_NONE, so a stream of bare moves would
+            // be discarded before reaching the view and the cell would measure
+            // a scene that never redrew. The buttons/modifier bits are what a
+            // real left drag sends (see makeModif), so this takes the same
+            // path through ViewInputConfig as a hand on the mouse.
+            const view = deps.view;
+            let x = 0;
+            let pressed = false;
+            const at = (px: number) => ({
+                offsetX: px, offsetY: INPUT_ORIGIN_PX,
+                screenX: px, screenY: INPUT_ORIGIN_PX,
+                buttons: 1, button: 0,
+                ctrlKey: false, shiftKey: false, altKey: false,
+            });
+            return () => {
+                if (!pressed) {
+                    handleMouseDown(view, at(INPUT_ORIGIN_PX));
+                    pressed = true;
+                }
+                x += INPUT_STEP_PX;
+                if (x >= INPUT_SPAN_PX) {
+                    // Lift and press again rather than teleporting the pointer
+                    // back, which would be one enormous drag delta.
+                    handleMouseUp(view, at(INPUT_ORIGIN_PX + x));
+                    pressed = false;
+                    x = 0;
+                    return false;
+                }
+                // A view drag draws synchronously: View::handleMouseDrag ends
+                // in forceRedraw(), which calls drawScene() itself rather than
+                // raising a flag for the frame loop to notice. So the interval
+                // closes when handleMouseMove returns -- which is the honest
+                // boundary anyway, since by then the frame has been built.
+                const sent = performance.now();
+                handleMouseMove(view, at(INPUT_ORIGIN_PX + x));
+                benchCounters.addInputLatency(performance.now() - sent);
                 return true;
             };
         }

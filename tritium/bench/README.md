@@ -95,6 +95,7 @@ task build_tritium CONFIG=Release
 | `coord-morph` | interpolate one step along a two-frame morph, so every atom moves and the topology does not | `update_fps`, `bufferData` per frame -- whether the renderer rebuilt |
 | `md-playback` | advance one trajectory frame **per displayed frame**; needs a trajectory in the spec, and none is in the corpus | `update_fps` -- how many new frames actually reached the screen |
 | `prop-change` | change a renderer property | `update_fps`, `gl_buffer_sub_data_bytes` |
+| `input-latency` | one step of a synthetic left drag | `input_latency_ms` percentiles -- what the worker's own handling costs, not motion-to-photon |
 | `load` | nothing; the load already happened | `load_ms` |
 | `idle` | nothing at all | a self-check: this must draw zero frames |
 
@@ -282,6 +283,55 @@ is worse than linear. The mesh renderer's resident set is what stands out: a
 ribbon of the ribosome holds 1.26 GB against the sphere renderer's 527 MB for
 the same structure, which is the same geometry that `coord-morph` shows being
 rebuilt from scratch every frame.
+
+### Answering the pointer (`input-latency`)
+
+A synthetic left drag, one move per frame, timed from handing the event to the
+worker's mouse handler to that handler returning -- by which point the frame
+has been built, because a view drag draws synchronously (`View::forceRedraw`
+calls `drawScene()` itself rather than raising a flag for the frame loop).
+
+| structure | atoms | p50 | p95 | p99 | max |
+|---|---:|---:|---:|---:|---:|
+| 1CRN | 327 | 0.30 | 0.40 | 0.40 | 0.53 |
+| 4HHB | 4,779 | 0.30 | 0.40 | 0.40 | 0.53 |
+| 1AON | 58,870 | 0.30 | 0.47 | 0.50 | 0.57 |
+| 4V6X | 237,685 | 0.30 | 0.43 | 0.53 | 0.57 |
+
+Flat across three orders of magnitude, and about 2% of a 16.6 ms frame at the
+tail.
+
+**This is not motion-to-photon.** It excludes everything before the event
+reaches the worker -- the OS, the browser's event loop, the hop from the
+renderer thread -- and everything after the frame is built: compositing, and
+the display's own latency. Those are the larger terms in what a user feels, and
+none of them is visible from inside the worker. What the number covers is the
+part between this architecture's own two ends.
+
+A cell here reports `drawnFrames: 0`, correctly: the drawing happens inside the
+mouse handler, not in the frame loop the GL counters wrap, so the loop sees a
+frame that drew nothing.
+
+### The largest entry that exists (`3j3q`)
+
+2,440,800 atoms, a 242 MB mmCIF -- an order of magnitude past the rest of the
+ladder, and kept out of the default matrix because fetching and parsing it
+dwarf everything else. One run each, to show whether it loads at all.
+
+| scenario | fps | frame ms | cpu ms | gpu ms | load | rss |
+|---|---:|---:|---:|---:|---:|---:|
+| `static-orbit` | 60.0 | 16.64 | 0.27 | 17.18 | 15.3 s | 3,261 MB |
+| `coord-morph` | 36.4 | 27.38 | 24.78 | 24.44 | 56.2 s | 2,890 MB |
+
+It loads, and it holds vsync while being viewed. The CPU figure for static
+viewing -- 0.27 ms -- is the same as at 237,685 atoms and at 327, which is the
+clearest statement of the point: after the coordinate work, viewing cost does
+not follow the structure at all.
+
+Moving every atom is where this size finally costs something, and it is the
+first cell in the corpus where CPU and GPU are comparable (24.8 against
+24.4 ms) rather than the CPU dominating. Loading is the practical limit: 56 s
+for the morph cell, which reads the structure twice.
 
 ### Doing nothing (`idle`)
 

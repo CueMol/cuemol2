@@ -1,15 +1,20 @@
-> 実施済み。結果は `tritium/bench/README.md`、遅い箇所の記録は
+> 実施済み。結果は `tritium/bench/README.md`、遅い箇所の記録と最適化の前後比較は
 > `tritium/docs/architecture/renderer-update-cost.md`。
+>
+> Phase 1(計測基盤)は完了。5 シナリオ(static-orbit / prop-change / coord-morph /
+> load / input-latency)+ idle 自己診断、4 規模 + 3J3Q(244 万原子)。
 >
 > Phase 2 の最適化 2 項目(2.1 per-object UBO 巻き上げ / 2.2 VBO 更新経路)は
 > **実施していない**。計測でそれぞれフレームの 0.3% と 2.5〜3.3% と判明し、
-> プランの「各項目は計測でゲート」の条件を満たさなかったため。真の支配項
-> (レンダラのジオメトリ再生成と原子ごとのオーバーヘッド)は上記 architecture
-> ドキュメントに記録し、今後の修正対象とする。
+> 「各項目は計測でゲート」の条件を満たさなかったため。代わりに計測が指した
+> 対象 — 座標配列を source of truth にする変更 — を PR #625 で develop へ入れた
+> (4V6X の座標更新 24.9 → 60 fps、静的表示の CPU が全規模で約 0.3 ms に平坦化)。
 >
 > 行列も縮小: レンダラは cpk と ribbon の 2 つ(経路が異なるのはこの 2 つで、
-> ballstick は cpk と、dsurface は ribbon と同経路)。`md-playback` は
-> トラジェクトリ入手不可のため `coord-morph`(MorphMol による座標補間)で代替。
+> ballstick は cpk と、dsurface は ribbon と同経路)。その後 ribbon は外し cpk のみ。
+> `md-playback` はトラジェクトリ入手不可のため `coord-morph`(MorphMol による
+> 座標補間)で代替。`input-latency` は motion-to-photon ではなく、ワーカー内の
+> 区間のみを測る。
 
 # tritium(CueMol3)性能ベンチマークと最適化プラン
 

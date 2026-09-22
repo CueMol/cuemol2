@@ -15,6 +15,7 @@ export type BenchScenarioId =
     | 'static-orbit'
     | 'md-playback'
     | 'coord-morph'
+    | 'input-latency'
     | 'prop-change'
     | 'load'
     | 'idle';
@@ -74,7 +75,14 @@ export interface BenchResult {
     atomCount: number | null;
     canvas: { width: number; height: number; dpr: number };
     frames: number;
-    /** Frames that issued at least one draw call. */
+    /**
+     * Frames that issued at least one draw call.
+     *
+     * Zero for `input-latency`, and correctly so: a view drag draws inside the
+     * mouse handler rather than in the frame loop the GL counters wrap, so the
+     * loop sees a frame that drew nothing. The drawing is accounted for in
+     * `inputLatencyMs` instead.
+     */
     drawnFrames: number;
     renderFps: number;
     /**
@@ -111,6 +119,21 @@ export interface BenchResult {
      * reports false is not comparable with one that does not.
      */
     view: { fitted: boolean; zoom: number; distance: number; slab: number };
+    /**
+     * Input-to-draw latency, for an `input-latency` cell.
+     *
+     * A view drag draws synchronously -- `View::handleMouseDrag` ends in
+     * `forceRedraw()`, which calls `drawScene()` itself rather than raising a
+     * flag for the frame loop -- so this is the time the worker's mouse
+     * handler takes to return, by which point the frame has been built.
+     *
+     * It is **not** motion-to-photon. It excludes everything before the event
+     * reaches the worker (the OS, the browser's event loop, the hop from the
+     * renderer thread) and everything after the frame is built (compositing,
+     * the display's own latency). What it covers is the part between the
+     * architecture's own two ends.
+     */
+    inputLatencyMs: BenchStat | null;
     /**
      * How the coordinate-update scenario was set up, for a `coord-morph` cell.
      * A cell whose morph carries fewer than two frames interpolates nothing
