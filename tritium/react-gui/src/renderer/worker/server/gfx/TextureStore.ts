@@ -16,6 +16,15 @@
 type GL = WebGL2RenderingContext;
 
 /**
+ * How many faces a coordinate texture cycles through.
+ *
+ * Two is enough to keep a write off the face the GPU is reading, which is the
+ * whole point; a third would only help if a frame's draw outlived two of its
+ * own updates, and the frame loop issues one update per draw.
+ */
+const COORD_TEX_RING = 2;
+
+/**
  * Resource table for 2D textures.
  *
  * The GL context is injected via setContext once bindCanvas has acquired it.
@@ -27,6 +36,23 @@ export class TextureStore {
     // Size of each mutable float texture (needed by updateFloatDataTexture's
     // texSubImage2D). Only populated for createFloatDataTexture entries.
     private _tex_size: { [key: string]: { width: number; height: number } } = {};
+
+    ///
+    /// The other faces of a float data texture, and which one is current.
+    ///
+    /// A coordinate texture is rewritten in full every frame while the GPU is
+    /// still drawing from it, which is the one case where writing into a
+    /// resource the GPU is reading costs real time: measured here, the same
+    /// texSubImage2D of the same bytes went from 119 to 306 us on GroEL/GroES
+    /// and from 346 to 874 on the ribosome once the CPU work that used to sit
+    /// around it was removed and the write started landing inside the draw.
+    /// So each name owns a small ring: the write goes to the next face and the
+    /// draw binds it, leaving the one the GPU is still reading alone.
+    ///
+    /// Only these textures need it. The other kinds here are written once.
+    ///
+    private _tex_ring: { [key: string]: WebGLTexture[] } = {};
+    private _tex_ring_pos: { [key: string]: number } = {};
 
     private _gl!: GL;
 
@@ -119,30 +145,48 @@ export class TextureStore {
         }
 
         const gl = this._gl;
-        const tex = gl.createTexture()!;
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F, width, height, 0,
-                      gl.RGB, gl.FLOAT, null);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.bindTexture(gl.TEXTURE_2D, null);
+        const ring: WebGLTexture[] = [];
+        for (let i = 0; i < COORD_TEX_RING; ++i) {
+            const tex = gl.createTexture()!;
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F, width, height, 0,
+                          gl.RGB, gl.FLOAT, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            ring.push(tex);
+        }
 
-        this._tex_data[name] = tex;
+        this._tex_ring[name] = ring;
+        this._tex_ring_pos[name] = 0;
+        // The current face is what bindTexture and deleteTexture see, so the
+        // rest of this class needs to know nothing about the ring.
+        this._tex_data[name] = ring[0];
         this._tex_size[name] = { width, height };
         console.log('create float data texture OK, name=', name, 'size=', width,
-                    'x', height, 'ncomp=', ncomp);
+                    'x', height, 'ncomp=', ncomp, 'ring=', COORD_TEX_RING);
         return true;
     }
 
-    /** Replace the whole contents of a float data texture (RGB32F). */
+    /**
+     * Replace the whole contents of a float data texture (RGB32F).
+     *
+     * Writes to the next face of the ring and makes it current, so the draw
+     * that follows binds what was just written while the GPU finishes reading
+     * the previous one.
+     */
     updateFloatDataTexture(name: string, array_buf: any): boolean {
-        const tex = this._tex_data[name];
         const sz = this._tex_size[name];
-        if (!tex || !sz) return false;
+        const ring = this._tex_ring[name];
+        if (!ring || !sz) return false;
         const gl = this._gl;
+        const pos = (this._tex_ring_pos[name] + 1) % ring.length;
+        const tex = ring[pos];
+        this._tex_ring_pos[name] = pos;
+        this._tex_data[name] = tex;
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, sz.width, sz.height,
@@ -169,7 +213,14 @@ export class TextureStore {
     deleteTexture(name: string): boolean {
         const gl = this._gl;
         if (!(name in this._tex_data)) return false;
-        gl.deleteTexture(this._tex_data[name]);
+        const ring = this._tex_ring[name];
+        if (ring) {
+            for (const tex of ring) gl.deleteTexture(tex);
+            delete this._tex_ring[name];
+            delete this._tex_ring_pos[name];
+        } else {
+            gl.deleteTexture(this._tex_data[name]);
+        }
         delete this._tex_data[name];
         delete this._tex_size[name];
         return true;
