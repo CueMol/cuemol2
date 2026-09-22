@@ -9,17 +9,23 @@ uploads together account for under 4% of a frame that rebuilds geometry. The
 rest is renderer-side work in `libcuemol2`, most of it per-atom overhead that
 produces no geometry.
 
-This is a record of what was measured, not a plan. Nothing here has been
-changed. It exists so the next person to look at renderer performance starts
-from numbers instead of from guesses, and so the residual that
+This exists so the next person to look at renderer performance starts from
+numbers instead of from guesses, and so the residual that
 [buffer-alloc-routing.md](buffer-alloc-routing.md) identified but did not
 explain -- "the dominant cost of frame 0 (~172 ms, ~82%) is C++ renderer-side
 geometry generation" -- has an accounting.
 
-Measured on the `bench/perf-harness` branch, whose `tritium/bench/README.md`
-has the method, the corpus and the full tables. Apple M2, macOS 26.5, Release
-build, 1832x1010, three repeats per cell in separate processes, spread under 1%
-of the mean.
+Apple M2, macOS 26.5, Release build, 1832x1010, three repeats per cell in
+separate processes, spread under 1% of the mean.
+
+The measurements come from a benchmark harness that is **not on this branch**.
+It lives on `bench/perf-harness`, which is never merged here: it adds a
+`--bench` mode to the application, accumulating timers inside the addon, and a
+GL call-counting proxy, none of which belong in a release. That branch's
+`tritium/bench/README.md` has the method, the corpus (structures fetched from
+RCSB by `fetch.sh`) and the full tables; `profile_report.py` there reduces a
+macOS `sample` call graph to the areas quoted below. Reproducing any number
+here means starting from that branch, which takes `develop` periodically.
 
 ## What holds up
 
@@ -150,12 +156,6 @@ three quarters of this frame, which would put 237,685 atoms back at 60 fps.
 The `MorphMol::update` share is partly an artefact of how this scenario drives
 the coordinates (see the caveats); the renderer-side shares are not.
 
-`ribbon` was dropped from the benchmark matrix after these runs. It measures
-geometry generation that has not been optimised, so repeating it would keep
-reporting how slow that code is rather than anything about the backend, and
-this document is where that answer now lives. `cpk` is the path a renderer
-takes when it has one, and is what further measurement tracks.
-
 ## What was changed, and what it cost
 
 Candidates 3 to 5 below were superseded: rather than making the per-atom
@@ -202,15 +202,15 @@ radii and colours. A cell that rebuilds once and then draws never notices;
 That is the scenario whose real problem is that a colour change discards
 positions and normals it did not affect (candidate 1), which is untouched here.
 
-## Candidate fixes, in the order the numbers suggest
+## What is still open
 
-None of these has been attempted. They are listed with what each would have to
-prove, because two earlier candidates -- hoisting the per-object uniform
+Items 3 to 5 below were what the numbers first suggested and are superseded by
+the change above, which removed the lookups rather than making them cheaper.
+**1 and 2 have not been attempted**, and are listed with what each would have
+to prove -- because two candidates before them (hoisting the per-object uniform
 uploads to pass level, and giving the vertex buffers a ring or an orphaning
-usage hint -- were dropped after measurement put them at 0.3% and 2.5-3.3% of
-the frame respectively.
-
-(1 and 2 remain open; 3 to 5 were superseded by the change described above.)
+usage hint) were dropped when measurement put them at 0.3% and 2.5-3.3% of the
+frame.
 
 1. **Do not rebuild geometry for a colour change.** The largest single effect
    available: a colour change currently discards positions and normals too.
@@ -232,20 +232,22 @@ the frame respectively.
    is in the WebGL backend rather than the core, and it is only worth doing if
    1 and 2 do not make the rebuild rare enough to stop mattering.
 
-3 and 4 are in `libcuemol2` and would benefit the desktop build equally. 1 and
-2 are renderer interface work. Only 5 is specific to this backend.
+1 and 2 are renderer interface work, and 1 is what `prop-change` needs: that
+scenario rebuilds every frame precisely because a colour change throws away
+geometry the colour did not affect.
 
 ## Caveats
 
 - The coordinate-change scenario is driven by `MorphMol` interpolating between
-  a structure and a displaced copy, not by a trajectory reader. `MorphMol::update`
-  ends in `fireAtomsMoved` exactly as a trajectory frame change does, so the
-  renderers see the same event, but `MorphMol::update` also does its own
-  per-atom scatter, which a trajectory would not do identically. The mesh-vs-
-  texture comparison is unaffected -- both renderers see the same event -- but
-  the absolute `cpk` numbers carry some harness cost.
+  a structure and a displaced copy, not by a trajectory reader. Both are now
+  `AnimMol`s that fill the same array and end in `fireAtomsMoved`, so a
+  renderer cannot tell them apart; what differs is upstream, where `MorphMol`
+  interpolates between frames and `Trajectory` copies one (or averages a
+  window). The before numbers additionally carried `MorphMol`'s own per-atom
+  scatter, which was 32.6% of that cell and is gone with the write-back.
 - The sampling shares come from macOS `sample`, which attributes to the nearest
   exported symbol. `libcuemol2` frames are reliable; Electron Framework frames
   are not, and are reported only as an aggregate.
-- One structure (1AON) at one canvas size was sampled. The counter-based
-  numbers cover the whole corpus; the profile does not.
+- The profiles are of one structure at one canvas size: 1AON before, 4V6X
+  before and after. The counter-based numbers cover the whole corpus; the
+  profiles do not.
