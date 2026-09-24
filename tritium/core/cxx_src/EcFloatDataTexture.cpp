@@ -61,8 +61,6 @@ bool EcFloatDataTexture::create(int w, int h, int ncomp)
 
 void EcFloatDataTexture::update(const void *data)
 {
-    // Bench timer at both entry points (not in upload()), so a caller that
-    // still hands over its own buffer is charged for the copy as well.
     BenchScope bench__(g_benchStats.coordTexUpdate);
     if (m_pStaging == nullptr) return;
     if (data != m_pStaging) {
