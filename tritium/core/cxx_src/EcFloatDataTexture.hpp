@@ -38,13 +38,29 @@ public:
     /// Replace the whole texture contents with w*h*ncomp floats.
     void update(const void *data) override;
 
+    /// The JS ArrayBuffer every upload is sent from. Filling it directly and
+    /// calling updateFromStaging() skips the copy update() makes.
+    void *getStagingData() override { return m_pStaging; }
+    void updateFromStaging() override;
+
     void bind(int texUnit) override;
     void unbind() override;
     int getWidth() const override { return m_nWidth; }
     int getHeight() const override { return m_nHeight; }
 
 private:
+    /// Send the staging buffer to the JS peer.
+    void upload();
+
     gfx::DisplayContext *m_pdc;   ///< non-owning; used only during create()
+
+    /// One ArrayBuffer for the texture's lifetime. A texture that is rewritten
+    /// every frame used to get a new one per upload, which on 3J3Q (29 MB) cost
+    /// more than the upload itself: a fresh allocation, a copy into it, and
+    /// garbage the collector had to catch up with.
+    Napi::ObjectReference m_stagingRef;
+    void *m_pStaging = nullptr;
+
     qlib::uid_t m_nViewID;
     qlib::LString m_texName;
     int m_nWidth, m_nHeight, m_nComp;
