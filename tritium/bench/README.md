@@ -73,7 +73,7 @@ It records what it found in `data/md/manifest.json`.
 | `ifabp` | 12,445 | I-FABP in water with ions | PDB + DCD, 500 frames | MDAnalysisData `ifabp_water` (figshare, CC-BY 4.0) |
 | `yiip` | 111,815 | YiiP in a POPE:POPG membrane, water, ions | PDB + XTC, 900 frames | MDAnalysisData `yiip_equilibrium_short` (figshare, CC-BY 4.0) |
 | `mcv448` | 161,188 | SARS-CoV-2 budding system | PDB + XTC, first 300 of 8,001 frames | MDposit `MCV1900448` REST API (CC-BY 4.0) |
-| `large` | ~10^6 | the maintainer's own simulation | GRO + XTC | not distributed; place by hand |
+| `a4tail` | 3,940,938 | cyanopodophage A4 portal-tail complex in water with NaCl | GRO + XTC, first 100 of ~2,530 frames | Zenodo 20275758, cut out of a 41 GB tar by byte range (CC-BY 4.0) |
 
 Three things about the corpus are not obvious:
 
@@ -85,14 +85,18 @@ Three things about the corpus are not obvious:
   published hash exists to pin it against. Its hash is recorded in the
   manifest, so two machines can still tell whether they measured the same
   bytes.
-- **Public trajectories of 10^6 atoms with the solvent in do not come in a
-  size anyone downloads.** MDposit's largest entry is 161,188 atoms. MDRepo
-  needs a token. GPCRmd says downloading requires an account. The Amaro lab
-  publishes its 1.7M-atom spike system only as a single PSF/PDB structure,
-  and its trajectories have the solvent stripped (~70k atoms). So the top
-  rung is a `manual` entry: copy the files into `data/md/large/` and run
-  `./fetch-md.py large` to record their hashes. `run.js` skips a cell whose
-  data is not present and says so, rather than reporting a load failure.
+- **The 10^6-atom rung comes out of a 41 GB archive without downloading it.**
+  Solvated public trajectories of this size are rare. MDposit's largest entry
+  is 161,188 atoms. MDRepo needs a token. GPCRmd says downloading requires an
+  account. The Amaro lab's 1.7M-atom spike system is a single structure, and
+  its trajectories are solvent-stripped. The A4 portal-tail system is
+  published as one uncompressed tar. `fetch-md.py` finds the members by
+  reading only the tar headers over HTTP Range, then fetches `em.gro` and
+  the first `xtcFrames` frames of `prod.xtc`, measured frame by frame from
+  their XTC headers. The frames are about 15 MB each, and a decoded frame is
+  47 MB of memory.
+- `run.js` skips a cell whose data is not present and says so, rather than
+  reporting a load failure.
 
 The topology is read onto an mdtools `Trajectory` with the reader the spec
 names (`trajectory.topologyReader`, else the spec's `reader`). A public
@@ -357,6 +361,24 @@ Apple M2 / ANGLE-Metal, 1920x1080, 3 repeats.
 | yiip cpk (XTC, eager) | 111,815 | 60.0 | 0.30 / 0.43 | 1.04 | 526 | 2,311 |
 | yiip ribbon (XTC, lazy) | 111,815 | 26.8 | 1.98 / 2.13 | 34.7 | - | 1,049 |
 | mcv448 cpk (XTC, lazy) | 161,188 | 60.0 | 2.20 / 4.33 | 0.89 | 461 | 2,078 |
+| a4tail cpk (XTC, lazy, 5 frames) | 3,940,938 | 25.1 | 2.77 / 3.30 | 34.7 | 30,588 | 28,561 |
+
+**A lazily read frame is decoded once and then kept** (`TrajBlock::load`
+sets a per-frame loaded flag). Playing back and forth over fewer frames than
+the run shows therefore measures the decode on the first pass only. Each
+`md-playback` result now splits the update into `updateSplit.first`, a frame
+shown for the first time, and `updateSplit.cached`, one already held.
+
+- mcv448 plays 300 frames in a run that shows about 480, so its 2.20 ms mixes
+  the two. A later run split it into 4.07 ms first (n=179) and 0.32 ms cached
+  (n=181).
+- ifabp and yiip have more frames than the run shows, so their numbers are
+  all first showings.
+- The a4tail row was a 5-frame trial, so every measured frame was cached. Its
+  2.77 ms is the 47 MB copy and not the decode. What the row does show is the
+  cost of the size itself: 25 fps, 31 ms a frame uploading the coordinate
+  texture, 28.6 s to load and 3.5 GB resident. The 100-frame cell has not
+  been run yet.
 
 `coord-morph` stood in for this scenario on the grounds that a renderer cannot
 tell a morph from a trajectory, and for the renderer that holds: `cpk` keeps

@@ -423,7 +423,7 @@ export async function runBench(
 
     advances = 0;
     benchCounters.inputLatencies.length = 0;
-    benchCounters.updateTimes.length = 0;
+    benchCounters.clearUpdateTimes();
     resetNativeStats(ctx);
     benchCounters.startCollecting();
     const measureStart = performance.now();
@@ -432,6 +432,8 @@ export async function runBench(
     const samples = benchCounters.stopCollecting();
     const latencies = benchCounters.inputLatencies.slice();
     const updates = benchCounters.updateTimes.slice();
+    const updatesFirst = benchCounters.updateTimesFirst.slice();
+    const updatesCached = benchCounters.updateTimesCached.slice();
     running = false;
 
     const gpuSamples = samples.map((s) => s.gpuMs).filter((v): v is number => v !== null);
@@ -464,6 +466,14 @@ export async function runBench(
         morph: morphInfo,
         trajectory: trajInfo ? { ...trajInfo, atoms: atomCount } : null,
         updateMs: updates.length > 0 ? stat(updates) : null,
+        updateSplit: spec.scenario === 'md-playback'
+            ? {
+                first: updatesFirst.length > 0 ? stat(updatesFirst) : null,
+                firstCount: updatesFirst.length,
+                cached: updatesCached.length > 0 ? stat(updatesCached) : null,
+                cachedCount: updatesCached.length,
+            }
+            : null,
         pins,
         unpinned,
         loadMs,

@@ -153,6 +153,9 @@ const CSV_COLUMNS = [
   // Time the scenario step spent advancing the atoms (trajectory frame decode
   // and copy, or morph interpolation), and what the trajectory was.
   'update_ms_mean', 'update_ms_p95', 'traj_frames', 'traj_format', 'traj_lazy',
+  // md-playback only: the update split by first showing (decode included)
+  // versus a frame already held.
+  'update_first_ms_mean', 'update_first_n', 'update_cached_ms_mean', 'update_cached_n',
   // Which machine produced the row. Two rows are only comparable if these
   // agree, and more than usual here: how a driver treats a write into a
   // texture the GPU is reading is what the coordinate-texture ring is built
@@ -179,6 +182,8 @@ function toRow(cell, r) {
     r.updateMs ? n(r.updateMs.mean) : '', r.updateMs ? n(r.updateMs.p95) : '',
     r.trajectory?.frames ?? '', r.trajectory ? r.trajectory.formats.join('+') : '',
     r.trajectory?.lazy ?? '',
+    r.updateSplit?.first ? n(r.updateSplit.first.mean) : '', r.updateSplit?.firstCount ?? '',
+    r.updateSplit?.cached ? n(r.updateSplit.cached.mean) : '', r.updateSplit?.cachedCount ?? '',
     csv(r.machine?.unmaskedRenderer || r.machine?.renderer),
     csv(r.machine?.version),
     csv(r.machine?.platform),
@@ -214,7 +219,9 @@ function main() {
       console.log(
         `[runner]   render=${r.renderFps.toFixed(1)}fps update=${r.updateFps.toFixed(1)}fps ` +
           `frame=${r.frameMs.mean.toFixed(2)}ms load=${r.loadMs.toFixed(0)}ms` +
-          (r.updateMs ? ` updateStep=${r.updateMs.mean.toFixed(2)}ms` : ''),
+          (r.updateMs ? ` updateStep=${r.updateMs.mean.toFixed(2)}ms` : '') +
+          (r.updateSplit?.first ? ` first=${r.updateSplit.first.mean.toFixed(2)}ms(n=${r.updateSplit.firstCount})` : '') +
+          (r.updateSplit?.cached ? ` cached=${r.updateSplit.cached.mean.toFixed(2)}ms(n=${r.updateSplit.cachedCount})` : ''),
       )
     }
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, SETTLE_MS)

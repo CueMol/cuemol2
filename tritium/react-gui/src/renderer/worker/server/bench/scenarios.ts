@@ -82,15 +82,24 @@ export function makeScenarioStep(id: BenchScenarioId, deps: ScenarioDeps): Scena
             // last frame of a real trajectory is nowhere near the first, and a
             // wrap would move every atom at once in one frame whose rebuild
             // lands in the tail of the distribution.
+            //
+            // A lazily read frame is decoded the first time it is shown and
+            // then kept (TrajBlock::load), so a trajectory shorter than the
+            // run is decoded on its first pass only. Each update is tagged
+            // with whether its frame had been shown before, so the decode and
+            // the rest can be read apart whatever the frame count.
             let frame = 0;
             let dir = 1;
+            const shown = new Set<number>([0]);
             return () => {
                 if (nframe <= 1) return false;
                 if (frame + dir < 0 || frame + dir >= nframe) dir = -dir;
                 frame += dir;
+                const first = !shown.has(frame);
+                shown.add(frame);
                 const t0 = performance.now();
                 traj.setProp('frame', frame);
-                benchCounters.addUpdateTime(performance.now() - t0);
+                benchCounters.addUpdateTime(performance.now() - t0, first);
                 deps.view.rotateView(0, ORBIT_DEG_PER_FRAME, 0);
                 return true;
             };

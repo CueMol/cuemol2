@@ -1,5 +1,5 @@
 {
-  "comment": "MD trajectories for the md-playback scenario. fetch-md.py downloads the url entries into data/md/<id>/ and checks them against sha256; manual entries are placed by hand and only checked. See README.md, 'MD trajectory corpus'.",
+  "comment": "MD trajectories for the md-playback scenario. fetch-md.py downloads the entries into data/md/<id>/ and checks them against sha256 where one is pinned. See README.md, 'Getting the MD trajectories'.",
   "entries": [
     {
       "id": "ifabp",
@@ -90,24 +90,30 @@
       ]
     },
     {
-      "id": "large",
-      "atoms": 1000000,
-      "description": "A ~10^6-atom system from the maintainer's own simulations. Not distributed: place the files by hand.",
-      "source": "manual",
-      "license": "not redistributable",
-      "manual": "Copy the topology and trajectory into data/md/large/ under the names below, then run ./fetch-md.py large to record their size and SHA-256. Cells whose files are missing are skipped by run.js and reported as such.",
-      "topology": "large.gro",
+      "id": "a4tail",
+      "atoms": 3940938,
+      "description": "Cyanopodophage A4 portal-tail complex (48 chains) in water with NaCl (GROMACS, frames 100 ps apart; first 100 of ~2530)",
+      "source": "Zenodo 20275758 (Medvedev, UCF), A4_portal_tail_MD.tar",
+      "license": "CC-BY 4.0",
+      "topology": "em.gro",
       "topologyReader": "gro",
       "trajectory": [
-        "large.xtc"
+        "prod-100f.xtc"
       ],
       "files": [
         {
-          "name": "large.gro",
+          "name": "em.gro",
+          "url": "https://zenodo.org/records/20275758/files/A4_portal_tail_MD.tar?download=1",
+          "tarMember": "A4_portal_tail_MD/em.gro",
+          "tarHeaderOffset": 544656384,
           "sha256": null
         },
         {
-          "name": "large.xtc",
+          "name": "prod-100f.xtc",
+          "url": "https://zenodo.org/records/20275758/files/A4_portal_tail_MD.tar?download=1",
+          "tarMember": "A4_portal_tail_MD/prod.xtc",
+          "tarHeaderOffset": 834050560,
+          "xtcFrames": 100,
           "sha256": null
         }
       ]

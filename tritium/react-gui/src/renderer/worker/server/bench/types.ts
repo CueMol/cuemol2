@@ -187,6 +187,19 @@ export interface BenchResult {
      * so this is the part a trajectory costs over and above a morph.
      */
     updateMs: BenchStat | null;
+    /**
+     * `updateMs` for an `md-playback` cell, split by whether the frame was
+     * shown for the first time in the run. A lazily read frame is decoded on
+     * its first showing and kept afterwards, so `first` carries the decode
+     * and `cached` only the copy and the atomsMoved fan-out. A trajectory
+     * with fewer frames than the run shows is mostly `cached`.
+     */
+    updateSplit: {
+        first: BenchStat | null;
+        firstCount: number;
+        cached: BenchStat | null;
+        cachedCount: number;
+    } | null;
     /** The scene properties that were forced, and which of them did not take. */
     pins: Record<string, string | number | boolean>;
     unpinned: string[];

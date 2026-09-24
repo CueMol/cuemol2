@@ -68,14 +68,16 @@ mattered most, so it is the interesting one. Skip it rather than swap.
 For the `md-playback` cells, fetch the MD trajectories as well:
 
 ```sh
-./fetch-md.py       # ifabp, yiip, mcv448 -- about 650 MB, all anonymous downloads
+./fetch-md.py                 # ifabp, yiip, mcv448, a4tail -- about 2.4 GB, all anonymous
+./fetch-md.py ifabp yiip mcv448   # without the 3.9M-atom a4tail -- about 650 MB
 ```
 
 `fetch-md.py` refuses a file whose SHA-256 differs from `md-corpus.json`.
 It derives the local copies the readers need (a little-endian DCD, a GRO
-topology) and writes `data/md/manifest.json`. The `large` entry is the
-maintainer's own simulation and is not distributed. Without it, `run.js`
-skips `large-cpk-md-playback` and says so, which is expected.
+topology) and writes `data/md/manifest.json`. a4tail is cut out of a 41 GB
+Zenodo archive by byte range. Its cell loads 3.9M atoms and needs well over
+4 GB of memory, 47 MB more for each frame decoded. Leave it out on a smaller
+machine: `run.js` skips a cell whose data is not present and says so.
 
 ## 3. Run
 

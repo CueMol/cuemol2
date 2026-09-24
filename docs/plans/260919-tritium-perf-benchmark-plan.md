@@ -247,9 +247,10 @@ curl -fL --retry 3 -o data/<id>.cif.gz https://files.rcsb.org/download/<id>.cif.
 
 公開 MD データを `tritium/bench/md-corpus.json` に登録した。取得は `fetch-md.py` で行い、
 匿名で取れて SHA-256 を照合できるものだけを採った。GPCRmd はダウンロードにアカウントが要り、
-MDRepo はトークンが要るので不採用。10⁶ 原子級で溶媒込みの公開トラジェクトリは実用的なサイズの
-ものが無く、自前計算を手動配置のエントリ (`large`) とした。詳細は `tritium/bench/README.md`
-の「Getting the MD trajectories」。
+MDRepo はトークンが要るので不採用。10⁶ 原子級は Zenodo 20275758 (A4 portal-tail 複合体、
+3,940,938 原子、溶媒込み) を採った。配布は 41 GB の非圧縮 tar 1 本のみだが、HTTP Range で
+tar ヘッダだけをたどって `em.gro` と `prod.xtc` の先頭 N フレームを切り出す。詳細は
+`tritium/bench/README.md` の「Getting the MD trajectories」。
 
 | セル | 原子 | fps | フレーム更新 ms | CPU ms | 座標テクスチャ µs/f |
 |---|---:|---:|---:|---:|---:|
@@ -257,9 +258,16 @@ MDRepo はトークンが要るので不採用。10⁶ 原子級で溶媒込み�
 | yiip cpk (XTC, lazy) | 111,815 | 60.0 | 3.34 | 0.47 | 228 |
 | yiip cpk (XTC, eager) | 111,815 | 60.0 | 0.30 | 1.04 | 526 |
 | yiip ribbon (XTC, lazy) | 111,815 | 26.8 | 1.98 | 34.7 | - |
-| mcv448 cpk (XTC, lazy) | 161,188 | 60.0 | 2.20 | 0.89 | 461 |
+| mcv448 cpk (XTC, lazy) | 161,188 | 60.0 | 2.20 (*) | 0.89 | 461 |
+| a4tail cpk (XTC, lazy, 5 フレーム試験) | 3,940,938 | 25.1 | 2.77 (**) | 34.7 | 30,588 |
 
-(Apple M2 / ANGLE-Metal、1920x1080、3 反復)
+(Apple M2 / ANGLE-Metal、1920x1080。a4tail 以外は 3 反復)
+
+- (*) 初回表示と再表示の混合。lazy 読込のフレームは初回表示でデコードされ、以後は保持される
+  (`TrajBlock::load`)。そのため、フレーム数が表示回数より少ないとデコードは 1 周目にしか入らない。
+  結果を `updateSplit` (初回 / 再表示) に分けた後の再計測では、初回 4.07 ms、再表示 0.32 ms
+- (**) 5 フレームなので計測中は全て再表示で、47 MB のコピー分だけ。デコード込みの値は
+  100 フレームのセルで取る (未実施)。load 28.6 s、RSS 3.5 GB
 
 - **cpk は 16 万原子の実トラジェクトリで 60 fps。** coord-morph の結論はそのまま成り立つ
 - **MorphMol に無いコストは lazy 読込の XTC 展開で、11 万原子で約 3 ms/frame。** 16.7 ms の

@@ -129,10 +129,29 @@ class BenchCounters {
 
     /** Scenario update intervals (see BenchResult.updateMs), in milliseconds. */
     readonly updateTimes: number[] = [];
+    /** The subset of `updateTimes` that showed a trajectory frame for the first time. */
+    readonly updateTimesFirst: number[] = [];
+    /** The subset that showed a frame already decoded earlier in the run. */
+    readonly updateTimesCached: number[] = [];
 
-    /** Record one scenario update interval, if collection is running. */
-    addUpdateTime(ms: number): void {
-        if (this._collecting) this.updateTimes.push(ms);
+    /**
+     * Record one scenario update interval, if collection is running.
+     *
+     * @param firstVisit - for a trajectory, whether this frame is shown for
+     *   the first time (decoded now) or again (already held); omitted for
+     *   scenarios where the distinction does not exist.
+     */
+    addUpdateTime(ms: number, firstVisit?: boolean): void {
+        if (!this._collecting) return;
+        this.updateTimes.push(ms);
+        if (firstVisit === true) this.updateTimesFirst.push(ms);
+        else if (firstVisit === false) this.updateTimesCached.push(ms);
+    }
+
+    clearUpdateTimes(): void {
+        this.updateTimes.length = 0;
+        this.updateTimesFirst.length = 0;
+        this.updateTimesCached.length = 0;
     }
 
     /** Called at the bottom of the rAF callback with `begin`'s return value. */

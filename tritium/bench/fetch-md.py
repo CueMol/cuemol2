@@ -27,6 +27,12 @@ An entry may also list `derived` files, made locally from a fetched one:
   by when they restart rather than by their value (GROFileReader.cpp), so the
   same atoms in the same order come through whole.
 
+A file may also be one member of a large uncompressed tar (`tarMember`),
+fetched with HTTP Range requests so the rest of the archive is never
+downloaded, and an XTC member may be cut to its first `xtcFrames` frames.
+The ~4M-atom A4 portal-tail system is published only as a 41 GB tar; this
+takes its topology and a few hundred MB of frames out of it.
+
 `manual` entries are never downloaded. When their files are missing the
 script prints where to put them and carries on; run.js then skips the cells
 that need them.
@@ -39,6 +45,7 @@ Usage:
 import hashlib
 import json
 import os
+import struct
 import sys
 import time
 import urllib.request
@@ -61,13 +68,19 @@ def sha256_of(path):
     return h.hexdigest()
 
 
-def download(url, out):
+def download(url, out, start=None, length=None):
     """Stream `url` to `out` through a .part file, so an interrupted fetch never
-    leaves a truncated file under the final name."""
+    leaves a truncated file under the final name. With `start`/`length`, only
+    that byte range of the resource is fetched (HTTP Range)."""
     part = out + '.part'
-    req = urllib.request.Request(url, headers={'User-Agent': 'cuemol-bench'})
+    headers = {'User-Agent': 'cuemol-bench'}
+    if start is not None:
+        headers['Range'] = f'bytes={start}-{start + length - 1}'
+    req = urllib.request.Request(url, headers=headers)
     t0 = time.time()
     with urllib.request.urlopen(req, timeout=120) as r, open(part, 'wb') as f:
+        if start is not None and r.status != 206:
+            raise RuntimeError(f'{url}: server ignored the byte range (HTTP {r.status})')
         total = int(r.headers.get('Content-Length') or 0)
         done = 0
         last = 0.0
@@ -82,8 +95,93 @@ def download(url, out):
                 last = now
                 pct = f' {100.0 * done / total:5.1f}%' if total else ''
                 print(f'    {done / 1e6:8.1f} MB{pct}', flush=True)
+    if length is not None and done != length:
+        raise RuntimeError(f'{url}: got {done} bytes of the {length} asked for')
     os.replace(part, out)
     print(f'    {done / 1e6:.1f} MB in {time.time() - t0:.0f} s')
+
+
+def read_range(url, start, length):
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'cuemol-bench',
+        'Range': f'bytes={start}-{start + length - 1}',
+    })
+    with urllib.request.urlopen(req, timeout=60) as r:
+        if r.status != 206:
+            raise RuntimeError(f'{url}: server ignored the byte range (HTTP {r.status})')
+        return r.read()
+
+
+def tar_member(url, member, hint=None):
+    """(data offset, size) of `member` inside an uncompressed tar at `url`.
+
+    Reads only the 512-byte headers, jumping over each member's data, so a
+    40 GB archive costs one small request per member. `hint` is the header
+    offset recorded in the corpus; it is checked and used when right, which
+    skips the walk.
+    """
+    def header(off):
+        h = read_range(url, off, 512)
+        name = h[0:100].rstrip(b'\0').decode('latin-1')
+        field = h[124:136]
+        if field[0] & 0x80:  # GNU base-256 size, for members over 8 GB
+            size = int.from_bytes(field[1:], 'big')
+        else:
+            text = field.rstrip(b'\0 ').decode()
+            size = int(text, 8) if text else 0
+        return h, name, size
+
+    if hint is not None:
+        _, name, size = header(hint)
+        if name == member:
+            return hint + 512, size
+        print(f'    header hint {hint} holds {name!r}, walking the archive instead')
+    off = 0
+    while True:
+        h, name, size = header(off)
+        if h == b'\0' * 512:
+            raise RuntimeError(f'{member} not found in {url}')
+        if name == member:
+            return off + 512, size
+        off += 512 + ((size + 511) // 512) * 512
+
+
+def xtc_prefix_length(url, start, frames):
+    """Bytes taken by the first `frames` frames of an XTC stored at `start`.
+
+    Each XTC frame is a fixed 92-byte header followed by its compressed
+    coordinates, whose byte count sits in the header, so the frames can be
+    measured one small request at a time without fetching them.
+    """
+    pos = 0
+    for _ in range(frames):
+        h = read_range(url, start + pos, 92)
+        magic, natoms = struct.unpack('>ii', h[:8])
+        if magic != 1995:
+            raise RuntimeError(f'no XTC frame at byte {start + pos} (magic {magic})')
+        if natoms <= 9:
+            raise RuntimeError('uncompressed XTC frames are not handled')
+        nbytes = struct.unpack('>i', h[88:92])[0]
+        pos += 92 + ((nbytes + 3) // 4) * 4
+    return pos
+
+
+def fetch_file(spec, out):
+    """Download one corpus file: whole, one tar member, or the first frames
+    of an XTC tar member."""
+    url = spec['url']
+    member = spec.get('tarMember')
+    if not member:
+        download(url, out)
+        return
+    start, size = tar_member(url, member, spec.get('tarHeaderOffset'))
+    frames = spec.get('xtcFrames')
+    length = xtc_prefix_length(url, start, frames) if frames else size
+    if length > size:
+        raise RuntimeError(f'{member}: {frames} frames run past the member')
+    what = f'first {frames} frames of {member}' if frames else member
+    print(f'    {what}: {length / 1e6:.1f} MB at byte {start}')
+    download(url, out, start, length)
 
 
 def dcd_to_little_endian(src, dst):
@@ -204,7 +302,7 @@ def fetch_entry(entry):
                 ok = False
                 continue
             print(f'  {eid}/{name}: downloading')
-            download(spec['url'], out)
+            fetch_file(spec, out)
         else:
             print(f'  {eid}/{name}: present')
         digest = sha256_of(out)
