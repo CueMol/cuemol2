@@ -1678,6 +1678,43 @@ TEST(TrajectoryTest, XtcLazyMatchesEagerAndDefersFrames)
     }
 }
 
+// A lazily read block keeps at most TrajBlock::getCacheLimitBytes() of decoded
+// frames: past it the least recently shown frame is released, and showing it
+// again decodes it anew. Without the limit a long trajectory of a large system
+// holds every frame it has ever shown (47 MB a frame at 4M atoms).
+TEST(TrajectoryTest, XtcLazyCacheLimitReleasesLeastRecentFrames)
+{
+    const int natom = 12;
+    const int nframes = 8;
+    const int nkeep = 3;
+    const std::string xtc = buildXTCCompressed(natom, nframes, 1000.0f);
+
+    struct LimitGuard
+    {
+        size_t saved = TrajBlock::getCacheLimitBytes();
+        ~LimitGuard() { TrajBlock::setCacheLimitBytes(saved); }
+    } guard;
+    TrajBlock::setCacheLimitBytes(size_t(nkeep) * natom * 3 * sizeof(qfloat32));
+
+    TrajectoryPtr pEager = makeTrajectoryNAtoms(natom);
+    appendXTC(pEager, xtc);
+    TrajectoryPtr pLazy = makeTrajectoryNAtoms(natom);
+    mdtools::TrajBlockPtr pBlk = appendLazy<XtcTrajReader>(pLazy, xtc, ".xtc");
+
+    // Forward then back, as playback does; every frame must still be exact.
+    for (int f = 0; f < nframes; ++f) {
+        expectSameFrame(pLazy, pEager, f, natom);
+        EXPECT_LE(pBlk->getResidentCount(), nkeep) << "after frame " << f;
+    }
+    // The last nkeep frames shown are the ones kept.
+    for (int f = 0; f < nframes; ++f) {
+        EXPECT_EQ(pBlk->isLoaded(f), f >= nframes - nkeep) << "frame " << f;
+    }
+    for (int f = nframes - 1; f >= 0; --f) expectSameFrame(pLazy, pEager, f, natom);
+    EXPECT_LE(pBlk->getResidentCount(), nkeep);
+    EXPECT_FALSE(pBlk->isAllLoaded());
+}
+
 TEST(TrajectoryTest, DcdLazyMatchesEagerAndDefersFrames)
 {
     const int natom = 3;
@@ -1775,3 +1812,4 @@ TEST(TrajectoryTest, XtcWithoutPathIsReadEagerly)
 
     EXPECT_TRUE(pTraj->getBlock(0)->isAllLoaded());
 }
+

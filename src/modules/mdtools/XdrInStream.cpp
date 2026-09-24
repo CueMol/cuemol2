@@ -20,6 +20,10 @@
 #include <cstring>
 #include <algorithm>
 
+#ifdef _MSC_VER
+#include <stdlib.h>
+#endif
+
 using namespace mdtools;
 using qlib::LString;
 
@@ -77,70 +81,85 @@ quint32 sizeofints(const quint32 num_of_ints, const quint32 sizes[])
     return num_of_bits + num_of_bytes * CHAR_BIT;
 }
 
-struct DecodeState
+inline std::uint64_t byteSwap64(std::uint64_t x)
 {
-    size_t count;
-    size_t lastbits;
-    quint8 lastbyte;
+#ifdef _MSC_VER
+    return _byteswap_uint64(x);
+#else
+    return __builtin_bswap64(x);
+#endif
+}
+
+/// Bits of the compressed block, read most significant first.
+///
+/// The block is copied into a buffer with kReadPad zero bytes after its end,
+/// so the refill loop needs no bounds check of its own: a well-formed block
+/// never reads past its end, and a truncated or corrupt one is caught by
+/// checkInBounds(), which the decoder calls once per atom. The pad covers the
+/// most one atom can read (a 96-bit triple, a 6-bit run header and up to ten
+/// triples of at most 72 bits each), so no read can leave the buffer before
+/// that check runs.
+class BitReader
+{
+public:
+    static constexpr size_t kReadPad = 128;
+
+    BitReader(const std::vector<char> &buf, size_t nbytes)
+        : m_p(reinterpret_cast<const quint8 *>(buf.data())),
+          m_end(m_p + nbytes),
+          m_acc(0),
+          m_nacc(0)
+    {
+    }
+
+    /// Next n bits (n <= 32) as an unsigned integer.
+    quint32 read(quint32 n)
+    {
+        // At most 39 bits are held, so the 64-bit accumulator cannot overflow.
+        while (m_nacc < n) {
+            m_acc = (m_acc << CHAR_BIT) | *m_p++;
+            m_nacc += CHAR_BIT;
+        }
+        m_nacc -= n;
+        return static_cast<quint32>((m_acc >> m_nacc) & ((std::uint64_t(1) << n) - 1));
+    }
+
+    void checkInBounds() const
+    {
+        if (m_p > m_end) {
+            MB_THROW(qlib::FileFormatException, "XTC: compressed block is truncated");
+        }
+    }
+
+private:
+    const quint8 *m_p;
+    const quint8 *m_end;
+    std::uint64_t m_acc;
+    quint32 m_nacc;
 };
 
-/// Next byte of the compressed block; the block length comes from the file,
-/// so a truncated block must not be read past its end.
-inline quint8 nextByte(const std::vector<char> &buf, DecodeState &state)
-{
-    if (state.count >= buf.size()) {
-        MB_THROW(qlib::FileFormatException, "XTC: compressed block is truncated");
-        return 0;
-    }
-    return static_cast<quint8>(buf[state.count++]);
-}
-
-/// decodebits: extract num_of_bits from the buffer and build an integer.
-template <typename T>
-T decodebits(const std::vector<char> &buf, DecodeState &state, quint32 num_of_bits)
-{
-    const quint32 mask = static_cast<quint32>(1 << num_of_bits) - 1;
-
-    size_t lastbits = state.lastbits;
-    quint32 lastbyte = state.lastbyte;
-
-    quint32 num = 0;
-    while (num_of_bits >= CHAR_BIT) {
-        lastbyte = (lastbyte << CHAR_BIT) | nextByte(buf, state);
-        num |= (lastbyte >> lastbits) << (num_of_bits - CHAR_BIT);
-        num_of_bits -= CHAR_BIT;
-    }
-    if (num_of_bits > 0) {
-        if (lastbits < num_of_bits) {
-            lastbits += CHAR_BIT;
-            lastbyte = (lastbyte << CHAR_BIT) | nextByte(buf, state);
-        }
-        lastbits -= num_of_bits;
-        num |= (lastbyte >> lastbits) & (static_cast<quint32>(1 << num_of_bits) - 1);
-    }
-    num &= mask;
-    state.lastbits = lastbits;
-    state.lastbyte = lastbyte & 0xff;
-    return static_cast<T>(num);
-}
-
 // Fast path for num_of_bits <= 64: accumulate the packed value and split it
-// with plain 64-bit arithmetic (libxtc technique). 64-bit throughout avoids
-// truncation/overflow that fixed-width intermediates would introduce for large
-// coordinate ranges.
-void unpack_from_int(const std::vector<char> &buf, DecodeState &state, quint32 num_of_bits,
-                     const quint32 sizes[3], qint32 nums[3])
+// with plain 64-bit arithmetic (libxtc technique). The value is stored as a
+// little-endian sequence of 8-bit groups, each group most significant bit
+// first, which is why it is assembled a byte at a time.
+void unpack_from_int(BitReader &br, quint32 num_of_bits, const quint32 sizes[3], qint32 nums[3])
 {
+    // The whole bytes, read up to four at a time, arrive first group first;
+    // reversing their byte order puts the first group in the lowest byte.
+    const quint32 nfull = num_of_bits / CHAR_BIT;
+    const quint32 nrest = num_of_bits % CHAR_BIT;
     std::uint64_t v = 0;
-    size_t num_of_bytes = 0;
-    while (num_of_bits >= CHAR_BIT) {
-        std::uint64_t byte = decodebits<std::uint64_t>(buf, state, CHAR_BIT);
-        v |= byte << (CHAR_BIT * num_of_bytes++);
-        num_of_bits -= CHAR_BIT;
+    if (nfull > 0) {
+        std::uint64_t be = 0;
+        for (quint32 k = nfull; k > 0;) {
+            const quint32 take = std::min<quint32>(k, 4);
+            be = (be << (take * CHAR_BIT)) | br.read(take * CHAR_BIT);
+            k -= take;
+        }
+        v = byteSwap64(be) >> (64 - nfull * CHAR_BIT);
     }
-    if (num_of_bits > 0) {
-        std::uint64_t byte = decodebits<std::uint64_t>(buf, state, num_of_bits);
-        v |= byte << (CHAR_BIT * num_of_bytes);
+    if (nrest > 0) {
+        v |= std::uint64_t(br.read(nrest)) << (nfull * CHAR_BIT);
     }
 
     const std::uint64_t sz = sizes[2];
@@ -157,8 +176,7 @@ void unpack_from_int(const std::vector<char> &buf, DecodeState &state, quint32 n
 }
 
 /// decodeints: decode 3 small integers from the buffer.
-void decodeints(const std::vector<char> &buf, DecodeState &state, quint32 num_of_bits,
-                const quint32 sizes[3], qint32 nums[3])
+void decodeints(BitReader &br, quint32 num_of_bits, const quint32 sizes[3], qint32 nums[3])
 {
     if (sizes[0] == 0 || sizes[1] == 0 || sizes[2] == 0) {
         MB_THROW(qlib::FileFormatException,
@@ -166,7 +184,7 @@ void decodeints(const std::vector<char> &buf, DecodeState &state, quint32 num_of
     }
 
     if (num_of_bits <= 64) {
-        unpack_from_int(buf, state, num_of_bits, sizes, nums);
+        unpack_from_int(br, num_of_bits, sizes, nums);
         return;
     }
 
@@ -174,11 +192,11 @@ void decodeints(const std::vector<char> &buf, DecodeState &state, quint32 num_of
     bytes[1] = bytes[2] = bytes[3] = 0;
     size_t num_of_bytes = 0;
     while (num_of_bits >= CHAR_BIT) {
-        bytes[num_of_bytes++] = decodebits<quint8>(buf, state, CHAR_BIT);
+        bytes[num_of_bytes++] = static_cast<quint8>(br.read(CHAR_BIT));
         num_of_bits -= CHAR_BIT;
     }
     if (num_of_bits > 0) {
-        bytes[num_of_bytes++] = decodebits<quint8>(buf, state, num_of_bits);
+        bytes[num_of_bytes++] = static_cast<quint8>(br.read(num_of_bits));
     }
     for (size_t i = 2; i > 0; --i) {
         quint32 num = 0;
@@ -365,10 +383,12 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
     sizesmall[0] = sizesmall[1] = sizesmall[2] = static_cast<quint32>(MAGICINTS[smallidx]);
 
     readOpaque(m_compressed, bLongFormat);
+    const size_t nbytes = m_compressed.size();
+    m_compressed.resize(nbytes + BitReader::kReadPad, 0);
     m_intbuf.resize(data.size());
 
     const size_t natoms = data.size() / 3;
-    DecodeState state = {0, 0, 0};
+    BitReader br(m_compressed, nbytes);
     int run = 0;
     int prevcoord[3];
     const float inv_precision = 1.0f / precision;
@@ -378,11 +398,11 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
         qfloat32 *thiscoord_fl = data.data() + write_idx * 3;
 
         if (bitsize == 0) {
-            thiscoord[0] = decodebits<int>(m_compressed, state, bitsizeint[0]);
-            thiscoord[1] = decodebits<int>(m_compressed, state, bitsizeint[1]);
-            thiscoord[2] = decodebits<int>(m_compressed, state, bitsizeint[2]);
+            thiscoord[0] = static_cast<int>(br.read(bitsizeint[0]));
+            thiscoord[1] = static_cast<int>(br.read(bitsizeint[1]));
+            thiscoord[2] = static_cast<int>(br.read(bitsizeint[2]));
         } else {
-            decodeints(m_compressed, state, bitsize, sizeint, thiscoord);
+            decodeints(br, bitsize, sizeint, thiscoord);
         }
 
         thiscoord[0] += minint[0];
@@ -393,10 +413,10 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
         prevcoord[1] = thiscoord[1];
         prevcoord[2] = thiscoord[2];
 
-        const bool flag = decodebits<int>(m_compressed, state, 1) != 0;
+        const bool flag = br.read(1) != 0;
         int is_smaller = 0;
         if (flag) {
-            run = decodebits<int>(m_compressed, state, 5);
+            run = static_cast<int>(br.read(5));
             is_smaller = run % 3;
             run -= is_smaller;
             is_smaller--;
@@ -408,8 +428,7 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
         if (run > 0) {
             thiscoord = m_intbuf.data() + (read_idx + 1) * 3;
             for (int k = 0; k < run; k += 3) {
-                decodeints(m_compressed, state, static_cast<quint32>(smallidx), sizesmall,
-                           thiscoord);
+                decodeints(br, static_cast<quint32>(smallidx), sizesmall, thiscoord);
                 ++read_idx;
                 thiscoord[0] += prevcoord[0] - smallnum;
                 thiscoord[1] += prevcoord[1] - smallnum;
@@ -460,6 +479,7 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
             smaller = smallnum;
             smallnum = MAGICINTS[smallidx] / 2;
         }
+        br.checkInBounds();
         // MAGICINTS[smallidx] == 0 below FIRSTIDX: caught by the size check
         sizesmall[0] = sizesmall[1] = sizesmall[2] = static_cast<quint32>(MAGICINTS[smallidx]);
         if (sizesmall[0] == 0) {
@@ -468,5 +488,7 @@ float XdrInStream::readCompressedCoords(std::vector<qfloat32> &data, bool bLongF
         }
     }
 
+    br.checkInBounds();
+    m_compressed.resize(nbytes);
     return precision;
 }
