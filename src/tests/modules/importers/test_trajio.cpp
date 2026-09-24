@@ -23,6 +23,7 @@
 #include "molstr/SelCommand.hpp"
 
 #include <qlib/FileStream.hpp>
+#include <qlib/parallel.hpp>
 #include <qlib/StringStream.hpp>
 #include <qlib/Vector4D.hpp>
 #include <qlib/LExceptions.hpp>
@@ -1815,6 +1816,49 @@ TEST(TrajectoryTest, LoadSelGivenBeforeTopologyAppliesOnDetach)
             EXPECT_FLOAT_EQ(tb.getCrdArray(0)[j * 3 + c], static_cast<float>(psia[j] * 3 + c));
         }
     }
+}
+
+// A lazily read XTC block decodes the frames after the one shown, in the
+// direction playback moves, and a frame taken from such a prefetch is exactly
+// the frame the eager reader produces.
+TEST(TrajectoryTest, XtcLazyPrefetchFollowsPlaybackDirection)
+{
+    if (!qlib::TaskGroup::available()) GTEST_SKIP() << "no background threads in this build";
+    const int natom = 12;
+    const int nframes = 10;
+    const int depth = 2;
+    const std::string xtc = buildXTCCompressed(natom, nframes, 1000.0f);
+
+    struct DepthGuard
+    {
+        int saved = TrajBlock::getPrefetchDepth();
+        ~DepthGuard() { TrajBlock::setPrefetchDepth(saved); }
+    } guard;
+    TrajBlock::setPrefetchDepth(depth);
+
+    TrajectoryPtr pEager = makeTrajectoryNAtoms(natom);
+    appendXTC(pEager, xtc);
+    TrajectoryPtr pLazy = makeTrajectoryNAtoms(natom);
+    mdtools::TrajBlockPtr pBlk = appendLazy<XtcTrajReader>(pLazy, xtc, ".xtc");
+
+    // Forward: showing frame 3 queues 4 and 5.
+    for (int f = 0; f <= 3; ++f) expectSameFrame(pLazy, pEager, f, natom);
+    EXPECT_TRUE(pBlk->isPrefetched(4));
+    EXPECT_TRUE(pBlk->isPrefetched(5));
+    EXPECT_FALSE(pBlk->isPrefetched(6));
+
+    // Played on, the queued frames are taken rather than decoded again.
+    for (int f = 4; f < nframes; ++f) expectSameFrame(pLazy, pEager, f, natom);
+    for (int f = 0; f < nframes; ++f) EXPECT_FALSE(pBlk->isPrefetched(f)) << "frame " << f;
+
+    // Backward from a fresh block: showing 7 then 6 queues 5 and 4.
+    TrajectoryPtr pBack = makeTrajectoryNAtoms(natom);
+    mdtools::TrajBlockPtr pBlk2 = appendLazy<XtcTrajReader>(pBack, xtc, ".xtc");
+    expectSameFrame(pBack, pEager, 7, natom);
+    expectSameFrame(pBack, pEager, 6, natom);
+    EXPECT_TRUE(pBlk2->isPrefetched(5));
+    EXPECT_TRUE(pBlk2->isPrefetched(4));
+    for (int f = 5; f >= 0; --f) expectSameFrame(pBack, pEager, f, natom);
 }
 
 TEST(TrajectoryTest, DcdLazyMatchesEagerAndDefersFrames)

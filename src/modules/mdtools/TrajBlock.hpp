@@ -8,15 +8,34 @@
 
 #include "mdtools.hpp"
 #include <qlib/Array.hpp>
+#include <functional>
+#include <map>
 #include <memory>
 #include <vector>
 
 #include <qsys/Object.hpp>
 #include <qsys/ObjReader.hpp>
 
+namespace qlib {
+class TaskGroup;
+}
+
 namespace mdtools {
 
 class TrajBlock;
+
+/// One frame decoded away from the worker thread: coordinates for the
+/// trajectory's loaded atoms (Angstrom, xyz interleaved) and the unit cell.
+struct DetachedFrame
+{
+    std::vector<qfloat32> crd;
+    qfloat32 cell[6];
+};
+
+/// A self-contained frame decode, safe to run on another thread: it holds
+/// plain copies of what it needs (path, offset, atom map) and touches no
+/// reader, block or trajectory. Throws as loadFrm() would on a bad frame.
+typedef std::function<void(DetachedFrame &)> DetachedDecode;
 
 ///
 /// Abstract base for trajectory readers that fill TrajBlock coordinate frames.
@@ -53,6 +72,16 @@ public:
     /// Load one frame into pTB, for a block this reader indexed lazily.
     /// Throws when the block was read eagerly (no frame index to seek with).
     virtual void loadFrm(int ifrm, TrajBlock *pTB) = 0;
+
+    /// A decode of frame ifrm that TrajBlock can run ahead of time on a worker
+    /// thread (see DetachedDecode). Built on the calling thread, which may
+    /// read the reader and the trajectory; the returned job may not. Empty
+    /// when this reader cannot decode a frame that way; the block then loads
+    /// the frame through loadFrm() when it is shown.
+    virtual DetachedDecode makeDetachedDecode(int ifrm, TrajBlock *pTB)
+    {
+        return DetachedDecode();
+    }
 
 private:
     bool m_bLazyLoad;
@@ -308,6 +337,49 @@ private:
     quint64 m_nUseTick;
 
     static size_t s_nCacheLimitBytes;
+
+    // ---- Prefetching ----
+    //
+    // After each load() the block starts decoding the next few frames in the
+    // direction playback is moving, on qlib::TaskGroup threads, so that a frame
+    // shown for the first time is usually decoded already. A frame is decoded
+    // once: load() waits for a prefetch in flight rather than starting its own.
+    // Only on-demand blocks whose reader offers makeDetachedDecode() prefetch.
+    // Everything below is touched from the loading thread only; a task sees
+    // nothing but its own PrefetchSlot.
+
+    struct PrefetchSlot;
+
+    /// Frames being (or already) decoded ahead, by frame index.
+    std::map<int, std::shared_ptr<PrefetchSlot>> m_prefetch;
+
+    std::unique_ptr<qlib::TaskGroup> m_pTasks;
+
+    /// The frame load() saw last, for the playback direction.
+    int m_nLastLoad;
+
+    static int s_nPrefetchDepth;
+
+    /// Submit decodes for the frames after ifrm in the playback direction.
+    void prefetchAfter(int ifrm);
+
+    /// Take frame ifrm from a prefetch, waiting for it if still running.
+    /// False when there is none, or it failed; the caller then decodes.
+    bool takePrefetched(int ifrm);
+
+    /// Wait for every prefetch and drop them all.
+    void cancelPrefetch();
+
+public:
+    /// How many frames ahead a lazily read block decodes in the background
+    /// (default 4; 0 disables prefetching). Prefetching also needs oneTBB
+    /// and more than one thread (qlib::TaskGroup::available()).
+    static void setPrefetchDepth(int n);
+    static int getPrefetchDepth();
+
+    /// True while frame ifrm has a background decode, running or finished,
+    /// that load() has not taken yet.
+    bool isPrefetched(int ifrm) const { return m_prefetch.count(ifrm) > 0; }
 };
 
 }  // namespace mdtools
