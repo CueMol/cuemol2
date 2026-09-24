@@ -102,7 +102,6 @@ bool CoordTexSupport::ctAlloc(gfx::DisplayContext *pdc, const MolCoordPtr &pMol)
 
     m_nTexW = TEX2D_WIDTH;
     m_nTexH = (natoms + TEX2D_WIDTH - 1) / TEX2D_WIDTH;
-    m_coordbuf.resize(static_cast<size_t>(m_nTexW) * m_nTexH * 3);
 
     m_pCoordTex = pdc->createFloatDataTexture();
     if (m_pCoordTex == NULL || !m_pCoordTex->create(m_nTexW, m_nTexH, 3)) {
@@ -117,6 +116,11 @@ bool CoordTexSupport::ctAlloc(gfx::DisplayContext *pdc, const MolCoordPtr &pMol)
         m_aid2idx.clear();
         m_coordbuf.clear();
         return false;
+    }
+    // A backend that exposes its upload buffer is written directly; only one
+    // without needs a staging array of our own.
+    if (m_pCoordTex->getStagingData() == NULL) {
+        m_coordbuf.assign(static_cast<size_t>(m_nTexW) * m_nTexH * 3, 0.0f);
     }
 
     ctResolveCrdIndices(pMol);
@@ -142,6 +146,12 @@ bool CoordTexSupport::ctGather(const MolCoordPtr &pMol)
     const qlib::Matrix4D xform = pMol->getXformMatrix();
     const bool bXform = !xform.isIdentAffine();
 
+    // Positions go straight into the backend's upload buffer when it has one,
+    // so they are not copied a second time on their way to the GPU.
+    qfloat32 *pdst = static_cast<qfloat32 *>(m_pCoordTex->getStagingData());
+    const bool bStaging = (pdst != NULL);
+    if (!bStaging) pdst = &m_coordbuf[0];
+
     if (!m_crdidx.empty()) {
         AnimMolPtr pAnim(pMol, qlib::no_throw_tag());
         if (pAnim.isnull()) return false;
@@ -155,13 +165,13 @@ bool CoordTexSupport::ctGather(const MolCoordPtr &pMol)
                 Vector4D pos(p[0], p[1], p[2]);
                 pos.w() = 1.0;
                 xform.xform4D(pos);
-                m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
-                m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
-                m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
+                pdst[i * 3 + 0] = static_cast<qfloat32>(pos.x());
+                pdst[i * 3 + 1] = static_cast<qfloat32>(pos.y());
+                pdst[i * 3 + 2] = static_cast<qfloat32>(pos.z());
             } else {
-                m_coordbuf[i * 3 + 0] = p[0];
-                m_coordbuf[i * 3 + 1] = p[1];
-                m_coordbuf[i * 3 + 2] = p[2];
+                pdst[i * 3 + 0] = p[0];
+                pdst[i * 3 + 1] = p[1];
+                pdst[i * 3 + 2] = p[2];
             }
         }
     } else {
@@ -171,13 +181,17 @@ bool CoordTexSupport::ctGather(const MolCoordPtr &pMol)
             // build it again.
             if (pAtom.isnull()) return false;
             const Vector4D pos = pAtom->getPos();
-            m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
-            m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
-            m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
+            pdst[i * 3 + 0] = static_cast<qfloat32>(pos.x());
+            pdst[i * 3 + 1] = static_cast<qfloat32>(pos.y());
+            pdst[i * 3 + 2] = static_cast<qfloat32>(pos.z());
         }
     }
 
-    m_pCoordTex->update(&m_coordbuf[0]);
+    if (bStaging) {
+        m_pCoordTex->updateFromStaging();
+    } else {
+        m_pCoordTex->update(pdst);
+    }
     m_bCoordDirty = false;
     return true;
 }

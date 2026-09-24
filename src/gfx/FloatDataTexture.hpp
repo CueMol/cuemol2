@@ -28,6 +28,16 @@ public:
     /// Upload w*h*ncomp floats, replacing the whole texture contents.
     virtual void update(const void *data) = 0;
 
+    /// Backend-owned memory of w*h*ncomp floats that a caller may fill instead
+    /// of an array of its own, sparing the copy update() would make. NULL when
+    /// the backend has none. Valid from a successful create() until the
+    /// texture is destroyed; the contents persist between uploads.
+    virtual void *getStagingData() { return NULL; }
+
+    /// Upload the contents of getStagingData(). Only meaningful when that
+    /// returned non-NULL.
+    virtual void updateFromStaging() {}
+
     /// Bind this texture to the given texture unit.
     virtual void bind(int texUnit) = 0;
 
