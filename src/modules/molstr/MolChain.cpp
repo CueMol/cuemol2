@@ -7,6 +7,8 @@
 #include <common.h>
 
 #include "MolChain.hpp"
+
+#include <algorithm>
 #include "MolResidue.hpp"
 #include "MolCoord.hpp"
 
@@ -67,6 +69,17 @@ MolResiduePtr MolChain::getResidue(ResidIndex idx) const
     return MolResiduePtr();
   
   return iter->second;
+}
+
+void MolChain::removeResidues(const std::set<ResidIndex> &idx)
+{
+  if (idx.empty())
+    return;
+  for (const ResidIndex &i : idx)
+    m_map.erase(i);
+  m_data.erase(std::remove_if(m_data.begin(), m_data.end(),
+                              [&idx](const MolResiduePtr &p) { return idx.count(p->getIndex()) > 0; }),
+               m_data.end());
 }
 
 bool MolChain::removeResidue(MolResiduePtr pRes)

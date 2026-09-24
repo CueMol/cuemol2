@@ -189,9 +189,11 @@ void Trajectory::applyLoadSelImpl()
             drop.push_back(it->first);
     }
 
+    // In one call: most of a solvated system goes, and removing its residues
+    // one at a time from a single long chain (GRO has no chains) is quadratic.
     // Trajectory::removeAtom() refuses (the topology is fixed once frames
-    // exist); here no frame is attached yet.
-    for (int aid : drop) molstr::MolCoord::removeAtom(aid);
+    // exist), but no frame is attached yet.
+    molstr::MolCoord::removeAtoms(drop);
     // The topology reader already bonded the full system; drop the bonds the
     // removed atoms leave dangling. primeInitialFrame() applies the topology
     // again on the kept atoms.
