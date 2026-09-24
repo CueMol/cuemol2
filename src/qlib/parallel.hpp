@@ -19,12 +19,14 @@
 #endif
 
 #include <cstddef>
+#include <functional>
 
 #if defined(HAVE_TBB)
 #  include <tbb/blocked_range.h>
 #  include <tbb/parallel_for.h>
 #  include <tbb/info.h>
 #  include <tbb/global_control.h>
+#  include <tbb/task_group.h>
 #  include <cstdlib>
 #  include <memory>
 #endif
@@ -115,6 +117,56 @@ inline void parallel_for(std::size_t begin, std::size_t end, const Func &fn)
   }
 #endif
 }
+
+/// Tasks run in the background on the oneTBB worker threads, for work the
+/// caller does not wait for at once (prefetching, for instance). Unlike
+/// parallel_for, run() returns immediately.
+///
+/// Without oneTBB, or when CUEMOL_TBB_THREADS=1, there is no background thread
+/// to run on: available() is false, and a caller should do the work itself
+/// when it needs the result rather than submit it. run() still works then, by
+/// running the task on the spot, so nothing is ever lost.
+///
+/// The destructor waits for the tasks still running, so anything a task
+/// captures by reference must outlive the group.
+class TaskGroup
+{
+public:
+  TaskGroup() = default;
+  TaskGroup(const TaskGroup &) = delete;
+  TaskGroup &operator=(const TaskGroup &) = delete;
+  ~TaskGroup() { wait(); }
+
+  /// True when run() hands tasks to other threads.
+  static bool available()
+  {
+    return parallel_enabled() && parallel_max_concurrency() > 1;
+  }
+
+  void run(std::function<void()> fn)
+  {
+#if defined(HAVE_TBB)
+    if (available()) {
+      m_group.run(std::move(fn));
+      return;
+    }
+#endif
+    fn();
+  }
+
+  /// Block until every task submitted so far has finished.
+  void wait()
+  {
+#if defined(HAVE_TBB)
+    m_group.wait();
+#endif
+  }
+
+private:
+#if defined(HAVE_TBB)
+  tbb::task_group m_group;
+#endif
+};
 
 }  // namespace qlib
 

@@ -68,6 +68,8 @@ public:
     /// Decompress frame ifrm into pTB, for a block this reader indexed lazily.
     virtual void loadFrm(int ifrm, TrajBlock *pTB) override;
 
+    virtual DetachedDecode makeDetachedDecode(int ifrm, TrajBlock *pTB) override;
+
     // ---- Properties ----
 
 private:
@@ -87,17 +89,21 @@ private:
     /// values, 1.3 MB apiece at 112k atoms), and allocating and zeroing them
     /// again for every frame shown was a tenth of the cost of showing one.
     std::vector<qfloat32> m_lazyFilecrd;
+
+    /// The trajectory's file-index map as makeDetachedDecode() hands it to its
+    /// jobs, shared by all of them; rebuilt when the map's size changes.
+    std::shared_ptr<const std::vector<quint32>> m_pDetachedSel;
     std::vector<char> m_lazyCompressed;
     std::vector<qint32> m_lazyIntbuf;
 
     /// Read a frame header at the current position (magic through the
     /// repeated atom count), filling cell / natom / bLong. Returns false at a
     /// clean end of stream, and throws on a corrupt or truncated one.
-    bool readFrameHeader(XdrInStream &xdr, qfloat32 cell[6], int &natom, bool &bLong);
+    static bool readFrameHeader(XdrInStream &xdr, qfloat32 cell[6], int &natom, bool &bLong);
 
     /// Read the coordinate block that follows a header, resizing filecrd to
     /// natom*3. Coordinates stay in the file's unit (nm).
-    void readFrameCoords(XdrInStream &xdr, std::vector<qfloat32> &filecrd, int natom,
+    static void readFrameCoords(XdrInStream &xdr, std::vector<qfloat32> &filecrd, int natom,
                          bool bLong);
 
     /// Walk the file recording where each kept frame starts, then hand the
