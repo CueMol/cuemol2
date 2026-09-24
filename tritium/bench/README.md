@@ -440,6 +440,29 @@ The output is identical at every thread count. This was measured with a
 temporary test that decodes whole frames through `qlib::parallel_for`, with
 the file already in the OS page cache.
 
+#### Loading only the selected atoms, and decoding ahead
+
+Two further changes follow from that. `Trajectory.applyLoadSel()` keeps
+only the selected atoms, so frames are stored and copied for those alone
+(`trajectory.loadSelection` in a spec). A lazily read XTC block then decodes
+the next frames in the playback direction on oneTBB threads
+(`TrajBlock::setPrefetchDepth`, 4 by default).
+
+| a4tail cpk, 3.9M atoms in the file | fps | update, first showing | load | rss |
+|---|---:|---:|---:|---:|
+| water hidden only | 26-32 | 40-48 ms | 24 s | 4.0-4.9 GB |
+| water not loaded (`loadSelection`) | 52-53 | 33-34 ms | 21 s | 2.0-2.8 GB |
+| water not loaded, with prefetch | **60.0** | **1.1 ms** | 21 s | |
+| the same, first pass only (`-loadsel-cold`) | 60.0 | 1.1 ms | | |
+| the same, first pass, `CUEMOL_TBB_THREADS=1` | 30 | 32.5 ms | | |
+
+With prefetching, the frame shown for the first time costs about the same
+as one shown before: yiip goes from 2.81 to 0.58 ms and mcv448 from 3.30 to
+0.63 ms. The all-atom a4tail cell rises from 19 to 22-23 fps; it is bound
+by the GPU. The `-cold` cell has a 100 ms warm-up, so it measures the first
+pass over the frames. With the 2 s default warm-up, a 100-frame trajectory
+at 60 fps is past its first pass before collection starts.
+
 - **The frame cache limit holds.** The a4tail cell shows 115 frames at 47 MB
   each and stays at 3-4 GB.
 - **At 3.9M atoms the frame is bound by the GPU**: 47 ms of about 52 ms. The
