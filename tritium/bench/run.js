@@ -179,7 +179,7 @@ const CSV_COLUMNS = [
   // Ablation: the transfer path timed the same way under every condition,
   // and where the row came from.
   'crd_send_ms_mean', 'crd_send_ms_p95', 'tex_upload_ms_mean', 'tex_upload_ms_p95',
-  'alloc_mb_per_frame', 'transfer_clock', 'frame_ms_p95_cpu', 'gpu_ms_p95',
+  'alloc_mb_per_frame', 'napi_buf_mb_per_frame', 'transfer_clock', 'frame_ms_p95_cpu', 'gpu_ms_p95',
   'label', 'git_sha', 'patch_sha256', 'addon_path',
   // Which machine produced the row. Two rows are only comparable if these
   // agree, and more than usual here: how a driver treats a write into a
@@ -213,7 +213,7 @@ function toRow(cell, r) {
     r.transfer?.crdSendMs ? n(r.transfer.crdSendMs.p95) : '',
     r.transfer?.texUploadMs ? n(r.transfer.texUploadMs.mean) : '',
     r.transfer?.texUploadMs ? n(r.transfer.texUploadMs.p95) : '',
-    n(r.transfer?.allocMBPerFrame), csv(r.transfer?.setup?.clock),
+    n(r.transfer?.allocMBPerFrame), n(r.transfer?.napiBufMBPerFrame), csv(r.transfer?.setup?.clock),
     n(r.cpuMs?.p95), r.gpuMs ? n(r.gpuMs.p95) : '',
     csv(r.build?.label), csv(r.build?.gitSha), csv(r.build?.patchSha256), csv(r.build?.addonPath),
     csv(r.machine?.unmaskedRenderer || r.machine?.renderer),

@@ -56,7 +56,9 @@ function rng(seed) {
 }
 
 function shuffle(xs, seed) {
-  const r = rng(seed)
+  // Small consecutive seeds give mulberry32 near-identical first draws (the
+  // first run got B D A C for both seeds 2 and 3), so spread the seed first.
+  const r = rng(Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ 0xc2b2ae35)
   const a = xs.slice()
   for (let i = a.length - 1; i > 0; --i) {
     const j = Math.floor(r() * (i + 1))

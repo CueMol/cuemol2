@@ -212,6 +212,8 @@ export interface BenchResult {
         texUploadCount: number;
         /** ElecDisplayContext::allocBuffer bytes per measured frame, in MB. */
         allocMBPerFrame: number | null;
+        /** createBuffer() ArrayBuffer bytes per measured frame, in MB. */
+        napiBufMBPerFrame: number | null;
     };
     /**
      * `updateMs` for an `md-playback` cell, split by whether the frame was

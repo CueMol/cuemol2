@@ -54,6 +54,7 @@ def metrics(r):
         'tex_upload_p95_ms': (t.get('texUploadMs') or {}).get('p95'),
         'crd_minus_tex_ms': (crd - tex) if crd is not None and tex is not None else None,
         'alloc_mb_per_frame': t.get('allocMBPerFrame'),
+        'napi_buf_mb_per_frame': t.get('napiBufMBPerFrame'),
         'tex_bytes_per_frame': gl.get('texSubImageBytes'),
         'rss_mb': (r.get('memory') or {}).get('rssMB'),
     }

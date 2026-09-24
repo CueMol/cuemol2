@@ -562,6 +562,8 @@ export async function runBench(
                 texUploadCount: texUploads.length,
                 allocMBPerFrame: native && samples.length > 0
                     ? (native.allocBytes ?? 0) / samples.length / 1e6 : null,
+                napiBufMBPerFrame: native && samples.length > 0 && native.napiBufBytes !== undefined
+                    ? native.napiBufBytes / samples.length / 1e6 : null,
             };
         })(),
         updateSplit: spec.scenario === 'md-playback'

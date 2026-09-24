@@ -67,6 +67,12 @@ struct BenchStats
     /** ElecDisplayContext::allocBuffer -- bytes handed to V8 per rebuild. */
     std::atomic<int64_t> allocBytes{0};
     std::atomic<int64_t> allocCount{0};
+    /**
+     * createBuffer() -- every ArrayBuffer the addon allocates to hand data to
+     * JS (ablation: the per-frame coordinate copy before the staging change).
+     */
+    std::atomic<int64_t> napiBufBytes{0};
+    std::atomic<int64_t> napiBufCount{0};
 
     void reset()
     {
@@ -78,6 +84,8 @@ struct BenchStats
         coordTexUpdate.reset();
         allocBytes.store(0, std::memory_order_relaxed);
         allocCount.store(0, std::memory_order_relaxed);
+        napiBufBytes.store(0, std::memory_order_relaxed);
+        napiBufCount.store(0, std::memory_order_relaxed);
     }
 };
 

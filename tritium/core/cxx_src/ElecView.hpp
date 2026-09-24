@@ -2,6 +2,8 @@
 
 #include <napi.h>
 
+#include "BenchStats.hpp"
+
 #include <qsys/Scene.hpp>
 #include <qsys/qsys.hpp>
 #include <qsys/GUIView.hpp>
@@ -70,6 +72,10 @@ inline Napi::Object createBuffer(Napi::Env env, const void *src_data,
                                  size_t byte_length)
 {
     Napi::ArrayBuffer ab = Napi::ArrayBuffer::New(env, byte_length);
+    // Ablation harness: count the allocation (see BenchStats::napiBufBytes).
+    g_benchStats.napiBufBytes.fetch_add(static_cast<int64_t>(byte_length),
+                                        std::memory_order_relaxed);
+    g_benchStats.napiBufCount.fetch_add(1, std::memory_order_relaxed);
     if (src_data) {
         memcpy(ab.Data(), src_data, byte_length);
     }

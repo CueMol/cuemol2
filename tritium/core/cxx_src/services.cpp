@@ -693,6 +693,12 @@ Napi::Value getBenchStats(const Napi::CallbackInfo &info)
         obj.Set("crdSendUs", Napi::Number::New(env, sum));
         obj.Set("crdSendCount", Napi::Number::New(env, static_cast<double>(cs.size())));
     }
+    obj.Set("napiBufBytes",
+            Napi::Number::New(env, static_cast<double>(
+                                       g_benchStats.napiBufBytes.load(std::memory_order_relaxed))));
+    obj.Set("napiBufCount",
+            Napi::Number::New(env, static_cast<double>(
+                                       g_benchStats.napiBufCount.load(std::memory_order_relaxed))));
     obj.Set("allocCount",
             Napi::Number::New(env, static_cast<double>(
                                        g_benchStats.allocCount.load(
