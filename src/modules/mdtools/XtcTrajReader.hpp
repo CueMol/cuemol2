@@ -82,6 +82,14 @@ private:
     /// File atom count (0 until the first frame header is read).
     int m_natom;
 
+    /// Buffers loadFrm() decodes through, kept across frames. Each is sized by
+    /// the atom count (the coordinates and the integer scratch are natom*3
+    /// values, 1.3 MB apiece at 112k atoms), and allocating and zeroing them
+    /// again for every frame shown was a tenth of the cost of showing one.
+    std::vector<qfloat32> m_lazyFilecrd;
+    std::vector<char> m_lazyCompressed;
+    std::vector<qint32> m_lazyIntbuf;
+
     /// Read a frame header at the current position (magic through the
     /// repeated atom count), filling cell / natom / bLong. Returns false at a
     /// clean end of stream, and throws on a corrupt or truncated one.
