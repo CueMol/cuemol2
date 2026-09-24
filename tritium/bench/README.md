@@ -377,8 +377,8 @@ shown for the first time, and `updateSplit.cached`, one already held.
 - The a4tail row was a 5-frame trial, so every measured frame was cached. Its
   2.77 ms is the 47 MB copy and not the decode. What the row does show is the
   cost of the size itself: 25 fps, 31 ms a frame uploading the coordinate
-  texture, 28.6 s to load and 3.5 GB resident. The 100-frame cell has not
-  been run yet.
+  texture, 28.6 s to load and 3.5 GB resident. The 100-frame cell is below,
+  under "After #628 and #629".
 
 `coord-morph` stood in for this scenario on the grounds that a renderer cannot
 tell a morph from a trajectory, and for the renderer that holds: `cpk` keeps
@@ -392,9 +392,31 @@ and 0.6 GB of memory.
 trajectory: 35 ms of CPU and four buffers reallocated per frame, for only the
 protein part of the system.
 
-One number is not explained yet. The ribbon cell's update step (1.98 ms) is
-shorter than the cpk cell's (3.34 ms), although both decode the same lazily
-read XTC.
+The ribbon cell's update step (1.98 ms) is shorter than the cpk cell's
+(3.34 ms), although both decode the same lazily read XTC. This is the CPU's
+state, not the work. A cpk cell leaves the CPU nearly idle between frames, so
+the decode runs cold. The ribbon cell keeps the CPU busy, and its figure is
+close to what a tight decode loop measures: 1.30 ms before #629 and 0.86 ms
+after. Compare update times only between cells under the same load.
+
+#### After #628 and #629
+
+These results are with #628 (coordinate-texture staging buffer) and #629
+merged in. #629 bounds the frames a lazy trajectory keeps decoded (2 GiB per
+block) and speeds up XTC decoding by about a third, bit for bit.
+
+| cell | atoms | fps | update first / cached ms | cpu ms | gpu ms | rss MB |
+|---|---:|---:|---:|---:|---:|---:|
+| yiip cpk (XTC, lazy) | 111,815 | 60.0 | 2.81 / - | 0.38 | - | 1,074 |
+| yiip ribbon (XTC, lazy) | 111,815 | 27.2 | 1.30 / - | 34.9 | - | 730 |
+| mcv448 cpk (XTC, lazy) | 161,188 | 60.0 | 3.30 / 0.41 | 0.61 | - | 1,047 |
+| a4tail cpk (XTC, lazy, 100 frames) | 3,940,938 | 19.0 | 44.3 / 6.3 | 21.5 | 47.4 | 3,000-4,000 |
+
+- **The frame cache limit holds.** The a4tail cell shows 115 frames at 47 MB
+  each and stays at 3-4 GB.
+- **At 3.9M atoms the frame is bound by the GPU**: 47 ms of about 52 ms. The
+  decode runs on the worker thread largely in parallel with it, so
+  prefetching frames on another thread would not raise the rate much.
 
 ### Opening a file (`load`)
 
