@@ -11,6 +11,9 @@
 #include "MolChain.hpp"
 #include "MolResidue.hpp"
 #include "MolAtom.hpp"
+
+#include <map>
+#include <set>
 #include <qsys/SceneManager.hpp>
 #include "AtomIterator.hpp"
 
@@ -350,13 +353,13 @@ int MolCoord::appendAtomScr1(MolAtomPtr pAtom, const LString &ch, int nresid, co
   return appendAtomScrHelper(pAtom, ch, ResidIndex(nresid), resn);
 }
 
-bool MolCoord::removeAtom(int atomid)
+MolResiduePtr MolCoord::removeAtomFromResidue(int atomid)
 {
   MolAtomPtr pAtom = getAtom(atomid);
 
   if (pAtom.isnull() || pAtom->getParentUID()!=getUID())
-    return false;
-  
+    return MolResiduePtr();
+
   m_atomPool.remove(atomid);
 
   // invalidate ID
@@ -369,11 +372,11 @@ bool MolCoord::removeAtom(int atomid)
 
   MolChainPtr pCh = getChain(cname);
   if (pCh.isnull())
-    return false;
-  
+    return MolResiduePtr();
+
   MolResiduePtr pRes = getResidue(cname, nresid);
   if (pRes.isnull())
-    return false;
+    return MolResiduePtr();
 
   // MolResidue::removeAtom(name) without a conf ID also drops the
   // alternate conformations ("name:X") from the residue map; take those
@@ -395,12 +398,25 @@ bool MolCoord::removeAtom(int atomid)
 
   // remove atom
   if (!pRes->removeAtom(aname, cConfID))
+    return MolResiduePtr();
+  return pRes;
+}
+
+bool MolCoord::removeAtom(int atomid)
+{
+  MolResiduePtr pRes = removeAtomFromResidue(atomid);
+  if (pRes.isnull())
     return false;
   if (pRes->getAtomSize()>0)
     return true;
 
+  const LString cname = pRes->getChainName();
+  MolChainPtr pCh = getChain(cname);
+  if (pCh.isnull())
+    return false;
+
   // purge the empty residue
-  if (!pCh->removeResidue(nresid))
+  if (!pCh->removeResidue(pRes->getIndex()))
     return false;
   // delete pRes;
   if (pCh->getSize()>0)
@@ -412,6 +428,30 @@ bool MolCoord::removeAtom(int atomid)
   // delete pCh;
 
   return true;
+}
+
+int MolCoord::removeAtoms(const std::vector<int> &atomids)
+{
+  std::map<LString, std::set<ResidIndex>> emptied;
+  int nremoved = 0;
+  for (int aid : atomids) {
+    MolResiduePtr pRes = removeAtomFromResidue(aid);
+    if (pRes.isnull())
+      continue;
+    ++nremoved;
+    if (pRes->getAtomSize()==0)
+      emptied[pRes->getChainName()].insert(pRes->getIndex());
+  }
+
+  for (const auto &elem : emptied) {
+    MolChainPtr pCh = getChain(elem.first);
+    if (pCh.isnull())
+      continue;
+    pCh->removeResidues(elem.second);
+    if (pCh->getSize()==0)
+      removeChain(elem.first);
+  }
+  return nremoved;
 }
 
 

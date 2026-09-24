@@ -152,6 +152,14 @@ namespace molstr {
 
     /// Remove an atom by atom ID
     bool removeAtom(int atomid);
+
+    /// Remove many atoms by atom ID, purging the residues and chains they
+    /// leave empty in one pass per chain. Equivalent to removeAtom() on each,
+    /// which is quadratic when most of a long chain goes (each emptied residue
+    /// is searched for in its chain). Bonds are left as removeAtom() leaves
+    /// them; removeNonpersBonds() drops those orphaned. Returns the number of
+    /// atoms removed.
+    int removeAtoms(const std::vector<int> &atomids);
   
     /// Bond two atoms.
     /// In the inter-residue bond case,
@@ -164,6 +172,15 @@ namespace molstr {
 
     /// clear non-persistent bond information
     void removeNonpersBonds();
+
+  private:
+    /// The part of removeAtom() that takes the atom (and, for an atom without
+    /// a conformation ID, its alternate conformations) out of the pool and out
+    /// of its residue. Returns that residue, possibly now empty, or null when
+    /// the atom could not be removed.
+    MolResiduePtr removeAtomFromResidue(int atomid);
+
+  public:
     
     /////////////////////////////////////////////////////
     // atom/bond access

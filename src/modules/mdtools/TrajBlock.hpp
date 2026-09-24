@@ -271,6 +271,13 @@ public:
     /// mark it as the most recently used frame.
     void load(int ifrm);
 
+    /// Keep only the atoms at the given 0-based positions (ascending) of every
+    /// frame, and shrink the per-frame coordinate count to nsel atoms. For a
+    /// block sized for every atom in its file before the trajectory's load
+    /// selection was known (a .qsc restores blocks before the topology).
+    /// Frames not yet decoded simply get the new size.
+    void selectAtoms(const quint32 *pidx, int nsel);
+
     /// Number of frames currently holding decoded coordinates through load().
     int getResidentCount() const { return m_nResident; }
 
@@ -282,7 +289,7 @@ public:
     static size_t getCacheLimitBytes();
 
 private:
-    PosArray *allocFrame(int ifrm);
+    PosArray *allocFrame(int ifrm, int ncrds = -1);
 
     /// Frames the cache limit allows this block to keep decoded at once.
     int maxResidentFrames() const;
