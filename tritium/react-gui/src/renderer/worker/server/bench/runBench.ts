@@ -216,6 +216,8 @@ function setupTransferTimers(ctx: WorkerContext): BenchResult['transfer']['setup
         prev = t;
     }
     const perfNowStepUs = Number.isFinite(step) ? step * 1000 : -1;
+    // The native side honours CUEMOL_BENCH_TIMERS=0 itself; texUpload follows.
+    benchCounters.transferTimersOn = timersOn;
     let clock = 'performance.now';
     if ((perfNowStepUs < 0 || perfNowStepUs > 5) && typeof native?.benchNowUs === 'function') {
         const nowUs = native.benchNowUs as () => number;

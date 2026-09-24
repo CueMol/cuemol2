@@ -158,9 +158,15 @@ class BenchCounters {
     private _now: () => number = () => performance.now();
     clockName = 'performance.now';
 
+    /**
+     * Whether texUpload is timed. Off with CUEMOL_BENCH_TIMERS=0, together
+     * with libcuemol2's crdSend timer, for the timer-overhead check.
+     */
+    transferTimersOn = true;
+
     /** Milliseconds on the clock the texUpload section uses. */
     now(): number {
-        return this._enabled ? this._now() : 0;
+        return this._enabled && this.transferTimersOn ? this._now() : 0;
     }
 
     /** Time texUpload with `fn` (milliseconds) instead of performance.now(). */
@@ -170,7 +176,7 @@ class BenchCounters {
     }
 
     addTexUpload(ms: number): void {
-        if (this._collecting) this.texUploadTimes.push(ms);
+        if (this._collecting && this.transferTimersOn) this.texUploadTimes.push(ms);
     }
 
     clearUpdateTimes(): void {
