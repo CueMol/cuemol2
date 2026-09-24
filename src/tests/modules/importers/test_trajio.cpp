@@ -20,6 +20,7 @@
 #include "qsys/Scene.hpp"
 
 #include "molstr/MolAtom.hpp"
+#include "molstr/SelCommand.hpp"
 
 #include <qlib/FileStream.hpp>
 #include <qlib/StringStream.hpp>
@@ -441,6 +442,31 @@ TrajectoryPtr makeTrajectoryNAtoms(int n)
     rdr.detach();
     pTraj->setup();
     return pTraj;
+}
+
+// GRO text of n one-atom residues, every third an ALA and the rest SOL, so a
+// "!resn SOL" load selection keeps atoms 0, 3, 6, ... of each frame.
+std::string mixedGRO(int n)
+{
+    std::string gro = "mixed\n";
+    gro += qlib::LString::format("%5d\n", n).c_str();
+    for (int i = 0; i < n; ++i) {
+        gro += qlib::LString::format("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n", i + 1,
+                                     (i % 3 == 0) ? "ALA" : "SOL", "C", i + 1, 0.0, 0.0, 0.0)
+                   .c_str();
+    }
+    gro += "   5.00000   5.00000   5.00000\n";
+    return gro;
+}
+
+/// Read a GRO topology onto an existing Trajectory.
+void readGROInto(const TrajectoryPtr &pTraj, const std::string &gro)
+{
+    GROFileReader rdr;
+    rdr.attach(pTraj);
+    StrInStream gins(gro.data(), static_cast<int>(gro.size()));
+    rdr.read(gins);
+    rdr.detach();
 }
 
 // Load one DCD (as bytes) into a new TrajBlock and append it to pTraj, matching
@@ -1713,6 +1739,82 @@ TEST(TrajectoryTest, XtcLazyCacheLimitReleasesLeastRecentFrames)
     for (int f = nframes - 1; f >= 0; --f) expectSameFrame(pLazy, pEager, f, natom);
     EXPECT_LE(pBlk->getResidentCount(), nkeep);
     EXPECT_FALSE(pBlk->isAllLoaded());
+}
+
+// A load selection keeps only the selected atoms, and each kept atom plays
+// exactly the coordinates it has in a trajectory loaded whole, through both
+// the eager and the lazy (on-demand) readers.
+TEST(TrajectoryTest, LoadSelKeepsSelectedAtomsBitForBit)
+{
+    const int natom = 12;
+    const int nframes = 4;
+    const std::string xtc = buildXTCCompressed(natom, nframes, 1000.0f);
+    molstr::SelectionPtr pSel(MB_NEW molstr::SelCommand("!resn SOL"));
+
+    TrajectoryPtr pFull(MB_NEW Trajectory());
+    readGROInto(pFull, mixedGRO(natom));
+    pFull->setup();
+    appendXTC(pFull, xtc);
+
+    for (int lazy = 0; lazy < 2; ++lazy) {
+        TrajectoryPtr pPart(MB_NEW Trajectory());
+        readGROInto(pPart, mixedGRO(natom));
+        pPart->applyLoadSel(pSel);
+        ASSERT_EQ(pPart->getAtomSize(), natom / 3) << "lazy=" << lazy;
+        EXPECT_EQ(static_cast<int>(pPart->getAllAtomSize()), natom);
+        if (lazy)
+            appendLazy<XtcTrajReader>(pPart, xtc, ".xtc");
+        else
+            appendXTC(pPart, xtc);
+        ASSERT_EQ(pPart->getFrameSize(), nframes);
+        EXPECT_EQ(pPart->getBlock(0)->getCrdSize(), natom / 3 * 3);
+
+        for (int f = nframes - 1; f >= 0; --f) {
+            pFull->setFrame(f);
+            pPart->setFrame(f);
+            for (int j = 0; j < natom / 3; ++j) {
+                Vector4D p = pPart->getAtom(pPart->getAtomIDByArrayInd(quint32(j)))->getPos();
+                Vector4D e = pFull->getAtom(pFull->getAtomIDByArrayInd(quint32(j * 3)))->getPos();
+                EXPECT_DOUBLE_EQ(p.x(), e.x()) << "lazy=" << lazy << " frame " << f << " atom " << j;
+                EXPECT_DOUBLE_EQ(p.y(), e.y()) << "lazy=" << lazy << " frame " << f << " atom " << j;
+                EXPECT_DOUBLE_EQ(p.z(), e.z()) << "lazy=" << lazy << " frame " << f << " atom " << j;
+            }
+        }
+    }
+}
+
+// A .qsc restores the trajectory's node, and so its load selection, before the
+// topology; the selection waits and is applied when the topology reader
+// detaches. Blocks the .qsc restored at the file's full width are cut down to
+// the kept atoms.
+TEST(TrajectoryTest, LoadSelGivenBeforeTopologyAppliesOnDetach)
+{
+    const int natom = 9;
+    TrajectoryPtr pTraj(MB_NEW Trajectory());
+    pTraj->applyLoadSel(molstr::SelectionPtr(MB_NEW molstr::SelCommand("!resn SOL")));
+    EXPECT_EQ(pTraj->getAtomSize(), 0);
+
+    readGROInto(pTraj, mixedGRO(natom));
+    EXPECT_EQ(pTraj->getAtomSize(), natom / 3);
+    EXPECT_EQ(static_cast<int>(pTraj->getAllAtomSize()), natom);
+    const quint32 *psia = pTraj->getSelIndexArray();
+    ASSERT_NE(psia, nullptr);
+    EXPECT_EQ(psia[0], 0u);
+    EXPECT_EQ(psia[1], 3u);
+    EXPECT_EQ(psia[2], 6u);
+
+    // What the restored block goes through: full width in, kept atoms out.
+    TrajBlock tb;
+    tb.allocate(natom, 1);
+    for (int i = 0; i < natom * 3; ++i) tb.getCrdArray(0)[i] = static_cast<float>(i);
+    tb.setLoaded(0, true);
+    tb.selectAtoms(psia, natom / 3);
+    ASSERT_EQ(tb.getCrdSize(), natom / 3 * 3);
+    for (int j = 0; j < natom / 3; ++j) {
+        for (int c = 0; c < 3; ++c) {
+            EXPECT_FLOAT_EQ(tb.getCrdArray(0)[j * 3 + c], static_cast<float>(psia[j] * 3 + c));
+        }
+    }
 }
 
 TEST(TrajectoryTest, DcdLazyMatchesEagerAndDefersFrames)

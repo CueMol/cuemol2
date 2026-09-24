@@ -10,6 +10,7 @@
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolAtom.hpp>
+#include <modules/molstr/SelCommand.hpp>
 
 #include <qsys/SceneManager.hpp>
 #include <qsys/Scene.hpp>
@@ -149,6 +150,64 @@ void Trajectory::setupSel(int nAll, const SelectionPtr &pLoadSel,
     m_nAllAtomSize = nAll;
     m_pLoadSel = pLoadSel;
     m_bSetupDone = true;
+}
+
+void Trajectory::applyLoadSel(const SelectionPtr &pSel)
+{
+    if (m_bInit) {
+        MB_THROW(qlib::RuntimeException,
+                 "Trajectory: a load selection must be applied before any block is added");
+        return;
+    }
+    m_pLoadSel = pSel;
+    if (getAtomSize() == 0) {
+        m_bLoadSelPending = true;
+        return;
+    }
+    applyLoadSelImpl();
+}
+
+void Trajectory::applyLoadSelImpl()
+{
+    m_bLoadSelPending = false;
+    if (m_pLoadSel.isnull()) {
+        setup();
+        return;
+    }
+
+    // Atoms iterate in ID order, which is file order for every topology
+    // reader (setup() relies on the same), so an atom's ordinal here is its
+    // position in each frame of the data files.
+    const int nAll = getAtomSize();
+    std::deque<int> keep;
+    std::vector<int> drop;
+    int ifile = 0;
+    for (AtomIter it = beginAtom(); it != endAtom(); ++it, ++ifile) {
+        if (m_pLoadSel->isSelected(it->second))
+            keep.push_back(ifile);
+        else
+            drop.push_back(it->first);
+    }
+
+    // Trajectory::removeAtom() refuses (the topology is fixed once frames
+    // exist); here no frame is attached yet.
+    for (int aid : drop) molstr::MolCoord::removeAtom(aid);
+    // The topology reader already bonded the full system; drop the bonds the
+    // removed atoms leave dangling. primeInitialFrame() applies the topology
+    // again on the kept atoms.
+    if (!drop.empty()) removeNonpersBonds();
+
+    setupSel(nAll, m_pLoadSel, keep);
+
+    // Blocks restored from a .qsc were indexed before the topology, sized for
+    // every atom in the file.
+    for (const TrajBlockPtr &pBlk : m_blocks) {
+        if (pBlk->getCrdSize() == nAll * 3 && !drop.empty())
+            pBlk->selectAtoms(&m_loadSelAry[0], static_cast<int>(m_loadSelAry.size()));
+    }
+
+    LOG_DPRINTLN("Trajectory> load selection %s keeps %d of %d atoms",
+                 m_pLoadSel->toString().c_str(), static_cast<int>(keep.size()), nAll);
 }
 
 void Trajectory::ensureSetup()
@@ -589,6 +648,8 @@ void Trajectory::primeInitialFrame()
 void Trajectory::readerDetached()
 {
     super_t::readerDetached();
+    // A load selection read from the .qsc waits for the atoms it selects.
+    if (m_bLoadSelPending && getAtomSize() > 0) applyLoadSelImpl();
     // End of a topology/data load. In a .qsc the <trajfiles> blocks are read
     // before the topology src, so by the time the topology reader detaches both
     // the blocks and the atoms exist: prime frame 0 now, before the first
@@ -605,6 +666,8 @@ void Trajectory::writeTo2(qlib::LDom2Node *pNode) const
 {
     super_t::writeTo2(pNode);
 
+    if (!m_pLoadSel.isnull()) pNode->appendStrAttr("loadsel", m_pLoadSel->toString());
+
     qlib::LDom2Node *pFSNode = pNode->appendChild("trajfiles");
     for (const TrajBlockPtr &pBlk : m_blocks) {
         qlib::LDom2Node *pCCNode = pFSNode->appendChild("trajfile");
@@ -615,6 +678,12 @@ void Trajectory::writeTo2(qlib::LDom2Node *pNode) const
 void Trajectory::readFrom2(qlib::LDom2Node *pNode)
 {
     super_t::readFrom2(pNode);
+
+    const LString loadsel = pNode->getStrAttr("loadsel");
+    if (!loadsel.isEmpty()) {
+        m_pLoadSel = SelectionPtr(MB_NEW molstr::SelCommand(loadsel));
+        m_bLoadSelPending = true;
+    }
 
     qlib::LDom2Node *pFSNode = pNode->findChild("trajfiles");
     if (pFSNode == NULL) return;

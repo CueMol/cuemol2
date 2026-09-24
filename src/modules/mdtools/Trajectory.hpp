@@ -159,7 +159,29 @@ private:
     /// frame_aver_size) into the base class's coordinate array.
     void fillCrdArray();
 
+    /// Load selection given before the topology was read (a .qsc restores the
+    /// trajectory's own node first); applied once the atoms exist.
+    bool m_bLoadSelPending = false;
+
+    /// Remove the atoms m_pLoadSel does not select and record, for each atom
+    /// kept, its position in the data files (see applyLoadSel()).
+    void applyLoadSelImpl();
+
 public:
+    /// Keep only the atoms `pSel` selects, so that frames are stored, copied
+    /// and drawn for those atoms alone. The data files are still read whole
+    /// (an XTC frame is one compressed stream); each frame is scattered down
+    /// to the selected atoms as it is decoded.
+    ///
+    /// Call after the topology is read and before the first block is
+    /// appended. With no atoms yet (a .qsc restore) it is deferred until the
+    /// topology reader detaches. A null selection loads every atom. The
+    /// selection is saved with the scene.
+    void applyLoadSel(const SelectionPtr &pSel);
+
+    /// The load selection, or null when every atom is loaded.
+    SelectionPtr getLoadSel() const { return m_pLoadSel; }
+
     void setup();
 
     /// Setup with a read selection (partial-atom load)
