@@ -37,6 +37,9 @@ runtime_class Trajectory extends AnimMol
   void removeBlock(integer index);
 
   void moveBlock(integer from, integer to);
+
+  // Keep only the selected atoms (call after the topology, before append).
+  void applyLoadSel(object<MolSelection$> sel);
 };
 
 #endif

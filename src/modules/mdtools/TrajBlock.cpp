@@ -117,10 +117,10 @@ void TrajBlock::allocateOnDemand(int natom, int nsize)
     m_bOnDemand = true;
 }
 
-TrajBlock::PosArray *TrajBlock::allocFrame(int ifrm)
+TrajBlock::PosArray *TrajBlock::allocFrame(int ifrm, int ncrds)
 {
     PosArray *p = MB_NEW PosArray();
-    p->allocate(m_nCrds);
+    p->allocate(ncrds < 0 ? m_nCrds : ncrds);
     m_data[ifrm] = p;
     return p;
 }
@@ -153,6 +153,34 @@ void TrajBlock::clear()
     m_nResident = 0;
     m_nUseTick = 0;
     m_bOnDemand = false;
+}
+
+void TrajBlock::selectAtoms(const quint32 *pidx, int nsel)
+{
+    const int nNew = nsel * 3;
+    for (size_t f = 0; f < m_data.size(); ++f) {
+        PosArray *pOld = m_data[f];
+        if (pOld == nullptr) continue;
+        if (!m_flags[f]) {
+            // Nothing decoded into it yet: an on-demand frame is allocated
+            // again at the new size when first written, an eager one now.
+            delete pOld;
+            m_data[f] = nullptr;
+            if (!m_bOnDemand) allocFrame(static_cast<int>(f), nNew);
+            continue;
+        }
+        PosArray *pNew = MB_NEW PosArray();
+        pNew->allocate(nNew);
+        for (int j = 0; j < nsel; ++j) {
+            const size_t k = size_t(pidx[j]) * 3;
+            (*pNew)[j * 3 + 0] = (*pOld)[k + 0];
+            (*pNew)[j * 3 + 1] = (*pOld)[k + 1];
+            (*pNew)[j * 3 + 2] = (*pOld)[k + 2];
+        }
+        delete pOld;
+        m_data[f] = pNew;
+    }
+    m_nCrds = nNew;
 }
 
 bool TrajBlock::isAllLoaded() const
