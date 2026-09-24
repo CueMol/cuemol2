@@ -1,0 +1,188 @@
+{
+  "checks": [
+    {
+      "criterion": "1. A reproduces documented values (+-5%)",
+      "pass": false,
+      "detail": {
+        "4v6x coord-morph fps": {
+          "measured": 59.989002449531554,
+          "reference": 60.0,
+          "within_5pct": true
+        },
+        "4v6x coord-morph cpu ms": {
+          "measured": 1.5380555523766413,
+          "reference": 1.58,
+          "within_5pct": true
+        },
+        "4v6x static-orbit cpu ms": {
+          "measured": null,
+          "reference": 0.3,
+          "within_5pct": false
+        },
+        "3j3q coord-morph fps": {
+          "measured": 36.93244142732319,
+          "reference": 36.4,
+          "within_5pct": true
+        },
+        "3j3q coord-morph texUpload ms": {
+          "measured": 18.963608654329438,
+          "reference": 22.0,
+          "within_5pct": false
+        }
+      }
+    },
+    {
+      "criterion": "2. B 3J3Q coord-morph 52-54 fps",
+      "pass": false,
+      "detail": {
+        "measured": 54.79670685223811,
+        "nearer": "53.9 (docs)"
+      }
+    },
+    {
+      "criterion": "3. idle: zero drawn frames and zero GL calls",
+      "pass": false,
+      "detail": {
+        "A": [],
+        "B": [],
+        "C": [],
+        "D": []
+      }
+    },
+    {
+      "criterion": "4. static-orbit CPU and GPU within +-3% across conditions",
+      "pass": false,
+      "detail": {
+        "1crn cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "1crn gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "4hhb cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "4hhb gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "1aon cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "1aon gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "4v6x cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "4v6x gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "3j3q cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "3j3q gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        }
+      }
+    },
+    {
+      "criterion": "5. fitted, pinned, input isolated; rendererProps equal",
+      "pass": true,
+      "detail": {
+        "violations": [],
+        "rendererProps_mismatch": {}
+      }
+    },
+    {
+      "criterion": "6. repetition CV under 3%",
+      "pass": false,
+      "detail": {
+        "over_3pct": [
+          {
+            "cell": "A/4v6x/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.10959054170912012,
+            "mean": 7.97597012709108
+          },
+          {
+            "cell": "C/4v6x/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.042798804927954064,
+            "mean": 8.2315476545961
+          }
+        ]
+      }
+    }
+  ],
+  "failed_cells": {}
+}
