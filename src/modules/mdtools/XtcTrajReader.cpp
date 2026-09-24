@@ -323,12 +323,13 @@ void XtcTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
         return;
     }
 
-    std::vector<qfloat32> filecrd;
-    readFrameCoords(xdr, filecrd, natom, bLong);
+    xdr.swapScratch(m_lazyCompressed, m_lazyIntbuf);
+    readFrameCoords(xdr, m_lazyFilecrd, natom, bLong);
+    xdr.swapScratch(m_lazyCompressed, m_lazyIntbuf);
 
     qfloat32 *pcell = pTB->getCellArray(ifrm);
     for (int i = 0; i < 6; ++i) pcell[i] = cell[i];
-    scatterCoords(pTraj, filecrd, natom, pTB->getCrdArray(ifrm), 10.0f);
+    scatterCoords(pTraj, m_lazyFilecrd, natom, pTB->getCrdArray(ifrm), 10.0f);
 
     pIn->close();
 }

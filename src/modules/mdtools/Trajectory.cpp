@@ -71,10 +71,10 @@ TrajectoryPtr TrajBlockReader::getTargTrajOf(TrajBlock *pTB) const
 void TrajBlockReader::setupLazyBlock(const TrajBlockPtr &pTB, const TrajectoryPtr &pTraj,
                                      int nAtoms, int nkept)
 {
-    // allocate() leaves every frame flagged unloaded, which is exactly the
-    // lazy starting state: the arrays exist, nothing has been decoded into
-    // them yet.
-    pTB->allocate(nAtoms, nkept);
+    // Every frame starts unloaded and without storage; a frame's coordinates
+    // are allocated when it is first decoded and may be released again under
+    // TrajBlock's cache limit.
+    pTB->allocateOnDemand(nAtoms, nkept);
 
     // Trajectory::append() assigns the start index and scene, but not this --
     // only .qsc restore does -- and loadFrm() needs it to find its way back
@@ -190,9 +190,8 @@ TrajBlockPtr Trajectory::getTrajBlkImpl(int ifrm, int &rBlkInd, int &rFrmInd) co
         return TrajBlockPtr();
     }
     TrajBlockPtr pBlk = m_blocks[nBlkInd];
-    if (!pBlk->isLoaded(nFrmInd)) {
-        pBlk->load(nFrmInd);
-    }
+    // Unconditionally: load() also records the use the cache limit ranks by.
+    pBlk->load(nFrmInd);
 
     rBlkInd = nBlkInd;
     rFrmInd = nFrmInd;

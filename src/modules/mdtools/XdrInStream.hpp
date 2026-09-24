@@ -68,6 +68,15 @@ public:
     /// Skip nbytes of the underlying stream.
     void skipBytes(qint64 nbytes);
 
+    /// Exchange the decompression scratch buffers with caller-owned ones, so
+    /// a caller that builds a stream per frame can keep their allocations
+    /// from one frame to the next. Swap in before decoding and back after.
+    void swapScratch(std::vector<char> &compressed, std::vector<qint32> &intbuf)
+    {
+        m_compressed.swap(compressed);
+        m_intbuf.swap(intbuf);
+    }
+
 private:
     /// Read XDR variable-length opaque data (with 4-byte padding).
     void readOpaque(std::vector<char> &data, bool bLongFormat);
