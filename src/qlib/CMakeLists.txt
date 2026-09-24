@@ -8,6 +8,7 @@ SET(QLIB_LINK_LIBRARIES
 
 # Normal C++ source files
 SET(QLIB_SRCS
+BenchTimer.cpp
 LByteArray.cpp
 NamedObject.cpp
 LMsgLog.cpp
@@ -59,6 +60,7 @@ qlib.cpp
 
 # API header files
 SET(QLIB_HDRS
+BenchTimer.hpp
 Array.hpp
 ArrayIOImpl.hpp
 BSPTree.hpp

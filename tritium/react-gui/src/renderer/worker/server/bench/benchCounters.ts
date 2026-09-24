@@ -148,10 +148,36 @@ class BenchCounters {
         else if (firstVisit === false) this.updateTimesCached.push(ms);
     }
 
+    /**
+     * texSubImage2D durations for the coordinate texture (ablation texUpload),
+     * in milliseconds, collected only while a window is open.
+     */
+    readonly texUploadTimes: number[] = [];
+
+    /** The clock texUpload is timed with; see `useClock`. */
+    private _now: () => number = () => performance.now();
+    clockName = 'performance.now';
+
+    /** Milliseconds on the clock the texUpload section uses. */
+    now(): number {
+        return this._enabled ? this._now() : 0;
+    }
+
+    /** Time texUpload with `fn` (milliseconds) instead of performance.now(). */
+    useClock(name: string, fn: () => number): void {
+        this.clockName = name;
+        this._now = fn;
+    }
+
+    addTexUpload(ms: number): void {
+        if (this._collecting) this.texUploadTimes.push(ms);
+    }
+
     clearUpdateTimes(): void {
         this.updateTimes.length = 0;
         this.updateTimesFirst.length = 0;
         this.updateTimesCached.length = 0;
+        this.texUploadTimes.length = 0;
     }
 
     /** Called at the bottom of the rAF callback with `begin`'s return value. */

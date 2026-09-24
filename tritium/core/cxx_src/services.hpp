@@ -52,5 +52,8 @@ Napi::Value resetMemoryTracking(const Napi::CallbackInfo &info);
 /// timings, and a reset before a measurement window opens.
 Napi::Value getBenchStats(const Napi::CallbackInfo &info);
 Napi::Value resetBenchStats(const Napi::CallbackInfo &info);
+Napi::Value setBenchTimers(const Napi::CallbackInfo &info);
+Napi::Value getBenchSamples(const Napi::CallbackInfo &info);
+Napi::Value benchNowUs(const Napi::CallbackInfo &info);
 
 }  // namespace node_jsbr

@@ -6,6 +6,7 @@
 #include <common.h>
 
 #include "CoordTexSupport.hpp"
+#include <qlib/BenchTimer.hpp>
 
 #include "AnimMol.hpp"
 #include "MolAtom.hpp"
@@ -133,6 +134,8 @@ bool CoordTexSupport::ctUpdate(const MolCoordPtr &pMol)
     if (m_aidcache.empty()) return false;
     if (pMol.isnull()) return false;
 
+    // Ablation harness: one sample per renderer per frame (crdSend).
+    qlib::bench::CrdSendScope bench__;
     return ctGather(pMol);
 }
 

@@ -12,6 +12,7 @@
 #include "services.hpp"
 // Benchmark harness (bench/perf-harness branch only).
 #include "BenchStats.hpp"
+#include <qlib/BenchTimer.hpp>
 
 // for test
 #define USE_MEM_TRACKING 1
@@ -684,6 +685,14 @@ Napi::Value getBenchStats(const Napi::CallbackInfo &info)
             Napi::Number::New(env, static_cast<double>(
                                        g_benchStats.allocBytes.load(
                                            std::memory_order_relaxed))));
+    {
+        // Ablation harness: libcuemol2's per-frame coordinate resend (crdSend).
+        const std::vector<double> &cs = qlib::bench::crdSendSamples();
+        double sum = 0.0;
+        for (double v : cs) sum += v;
+        obj.Set("crdSendUs", Napi::Number::New(env, sum));
+        obj.Set("crdSendCount", Napi::Number::New(env, static_cast<double>(cs.size())));
+    }
     obj.Set("allocCount",
             Napi::Number::New(env, static_cast<double>(
                                        g_benchStats.allocCount.load(
@@ -700,7 +709,52 @@ Napi::Value getBenchStats(const Napi::CallbackInfo &info)
 Napi::Value resetBenchStats(const Napi::CallbackInfo &info)
 {
     g_benchStats.reset();
+    qlib::bench::reset();
     return info.Env().Undefined();
+}
+
+/**
+ * Ablation harness: turn libcuemol2's per-sample timers on or off.
+ * CUEMOL_BENCH_TIMERS=0 keeps them off regardless (the overhead check).
+ *
+ * @param info - [0] boolean
+ * @return whether the timers are now recording
+ */
+Napi::Value setBenchTimers(const Napi::CallbackInfo &info)
+{
+    const bool on = info.Length() > 0 && info[0].ToBoolean().Value();
+    qlib::bench::setEnabled(on);
+    return Napi::Boolean::New(info.Env(), qlib::bench::isEnabled());
+}
+
+/**
+ * Ablation harness: the per-call samples, for percentiles.
+ *
+ * @param info - Napi callback info (not used)
+ * @return { crdSend: Float64Array of microseconds }
+ */
+Napi::Value getBenchSamples(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    const std::vector<double> &cs = qlib::bench::crdSendSamples();
+    Napi::Float64Array arr = Napi::Float64Array::New(env, cs.size());
+    for (size_t i = 0; i < cs.size(); ++i) arr[i] = cs[i];
+    auto obj = Napi::Object::New(env);
+    obj.Set("crdSend", arr);
+    return obj;
+}
+
+/**
+ * Ablation harness: steady_clock in microseconds, for timing a JS section
+ * with the same clock as the C++ ones when performance.now() is too coarse.
+ *
+ * @param info - Napi callback info (not used)
+ * @return microseconds since an arbitrary epoch
+ */
+Napi::Value benchNowUs(const Napi::CallbackInfo &info)
+{
+    const auto t = std::chrono::steady_clock::now().time_since_epoch();
+    return Napi::Number::New(info.Env(), std::chrono::duration<double, std::micro>(t).count());
 }
 
 

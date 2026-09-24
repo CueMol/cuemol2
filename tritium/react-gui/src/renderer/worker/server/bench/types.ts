@@ -195,6 +195,24 @@ export interface BenchResult {
      * so this is the part a trajectory costs over and above a morph.
      */
     updateMs: BenchStat | null;
+    /** Condition label, commit and the loaded addon / libcuemol2 (ablation). */
+    build: Record<string, string>;
+    /**
+     * The coordinate-transfer path, timed the same way under every ablation
+     * condition. `crdSendMs` is one renderer's whole per-frame resend
+     * (CoordTexSupport::ctUpdate); `texUploadMs` is the texSubImage2D call
+     * inside it. Their difference is gathering, allocation, copying and the
+     * N-API crossing.
+     */
+    transfer: {
+        setup: { timersOn: boolean; clock: string; perfNowStepUs: number };
+        crdSendMs: BenchStat | null;
+        crdSendCount: number;
+        texUploadMs: BenchStat | null;
+        texUploadCount: number;
+        /** ElecDisplayContext::allocBuffer bytes per measured frame, in MB. */
+        allocMBPerFrame: number | null;
+    };
     /**
      * `updateMs` for an `md-playback` cell, split by whether the frame was
      * shown for the first time in the run. A lazily read frame is decoded on

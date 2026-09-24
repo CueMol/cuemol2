@@ -200,6 +200,12 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
                 Napi::Function::New(env, node_jsbr::getBenchStats));
     exports.Set(Napi::String::New(env, "resetBenchStats"),
                 Napi::Function::New(env, node_jsbr::resetBenchStats));
+    exports.Set(Napi::String::New(env, "setBenchTimers"),
+                Napi::Function::New(env, node_jsbr::setBenchTimers));
+    exports.Set(Napi::String::New(env, "getBenchSamples"),
+                Napi::Function::New(env, node_jsbr::getBenchSamples));
+    exports.Set(Napi::String::New(env, "benchNowUs"),
+                Napi::Function::New(env, node_jsbr::benchNowUs));
 
     exports = node_jsbr::Wrapper::init(env, exports);
 

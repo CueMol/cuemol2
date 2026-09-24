@@ -13,6 +13,8 @@
  * intentionally preserved.
  */
 
+import { benchCounters } from '../bench/benchCounters';
+
 type GL = WebGL2RenderingContext;
 
 /**
@@ -189,8 +191,12 @@ export class TextureStore {
         this._tex_data[name] = tex;
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tex);
+        // Ablation harness: texUpload is the texSubImage2D call alone.
+        const view = new Float32Array(array_buf);
+        const texUpload0 = benchCounters.now();
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, sz.width, sz.height,
-                         gl.RGB, gl.FLOAT, new Float32Array(array_buf));
+                         gl.RGB, gl.FLOAT, view);
+        benchCounters.addTexUpload(benchCounters.now() - texUpload0);
         gl.bindTexture(gl.TEXTURE_2D, null);
         return true;
     }

@@ -189,6 +189,82 @@ function resetNativeStats(ctx: WorkerContext): void {
     }
 }
 
+/**
+ * Ablation harness: switch on libcuemol2's per-frame crdSend timer and pick the
+ * clock texUpload is timed with.
+ *
+ * A texSubImage2D for a small structure takes tens of microseconds, so
+ * performance.now() is only used when its step is fine enough to resolve
+ * that; otherwise the addon's steady_clock (the one crdSend uses) is read.
+ */
+function setupTransferTimers(ctx: WorkerContext): BenchResult['transfer']['setup'] {
+    const native = ctx.svc.nativeRoot as unknown as Record<string, unknown>;
+    let timersOn = false;
+    try {
+        if (typeof native?.setBenchTimers === 'function') {
+            timersOn = Boolean((native.setBenchTimers as (b: boolean) => boolean)(true));
+        }
+    } catch (e) {
+        console.warn('[bench] could not enable the transfer timers:', e);
+    }
+    // Smallest nonzero step performance.now() takes.
+    let step = Infinity;
+    let prev = performance.now();
+    for (let i = 0; i < 20000 && step > 0.0005; ++i) {
+        const t = performance.now();
+        if (t > prev) step = Math.min(step, t - prev);
+        prev = t;
+    }
+    const perfNowStepUs = Number.isFinite(step) ? step * 1000 : -1;
+    let clock = 'performance.now';
+    if ((perfNowStepUs < 0 || perfNowStepUs > 5) && typeof native?.benchNowUs === 'function') {
+        const nowUs = native.benchNowUs as () => number;
+        benchCounters.useClock('steady_clock', () => nowUs() / 1000);
+        clock = 'steady_clock';
+    }
+    return { timersOn, clock, perfNowStepUs };
+}
+
+/**
+ * Where the numbers came from: the condition label and commit the runner
+ * passed in, and the addon and libcuemol2 this process actually loaded.
+ */
+function buildInfo(): Record<string, string> {
+    const out: Record<string, string> = {};
+    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+        .process?.env ?? {};
+    for (const [key, name] of [
+        ['CUEMOL_BENCH_LABEL', 'label'],
+        ['CUEMOL_BENCH_GIT_SHA', 'gitSha'],
+        ['CUEMOL_BENCH_PATCH_SHA256', 'patchSha256'],
+    ] as const) {
+        if (env[key]) out[name] = env[key] as string;
+    }
+    try {
+        const proc = (globalThis as { process?: { report?: { getReport(): unknown } } }).process;
+        const report = proc?.report?.getReport() as { sharedObjects?: string[] } | undefined;
+        for (const so of report?.sharedObjects ?? []) {
+            if (so.endsWith('cuemol_internal.node')) out.addonPath = so;
+            if (/libcuemol2[^/]*\.(dylib|so|dll)$/.test(so)) out.libcuemol2Path = so;
+        }
+    } catch (e) {
+        console.warn('[bench] could not list the loaded shared objects:', e);
+    }
+    return out;
+}
+
+/** crdSend samples (microseconds) recorded by libcuemol2 since the last reset. */
+function crdSendSamples(ctx: WorkerContext): number[] {
+    const native = ctx.svc.nativeRoot as unknown as Record<string, unknown>;
+    if (typeof native?.getBenchSamples !== 'function') return [];
+    try {
+        const r = (native.getBenchSamples as () => { crdSend?: Float64Array })();
+        return Array.from(r.crdSend ?? []);
+    } catch {
+        return [];
+    }
+}
+
 export interface RunBenchArgs {
     /** Absolute path of the spec file. */
     specPath: string;
@@ -249,6 +325,9 @@ export async function runBench(
     } catch (e) {
         return failFrom(e, 'unsupported');
     }
+    const transferSetup = setupTransferTimers(ctx);
+    const build = buildInfo();
+    console.log(`[bench] build ${JSON.stringify(build)} transfer ${JSON.stringify(transferSetup)}`);
 
     // --- Load ---
     const loadStart = performance.now();
@@ -436,6 +515,8 @@ export async function runBench(
     const updates = benchCounters.updateTimes.slice();
     const updatesFirst = benchCounters.updateTimesFirst.slice();
     const updatesCached = benchCounters.updateTimesCached.slice();
+    const texUploads = benchCounters.texUploadTimes.slice();
+    const crdSends = crdSendSamples(ctx).map((us) => us / 1000);
     running = false;
 
     const gpuSamples = samples.map((s) => s.gpuMs).filter((v): v is number => v !== null);
@@ -446,6 +527,7 @@ export async function runBench(
         atomCount,
         canvas: { width: args.canvasWidth, height: args.canvasHeight, dpr: args.dpr },
         machine: machineInfo(ctx),
+        build,
         frames: samples.length,
         drawnFrames: samples.filter((s) => s.drawn).length,
         renderFps: elapsedSec > 0 ? samples.length / elapsedSec : 0,
@@ -468,6 +550,18 @@ export async function runBench(
         morph: morphInfo,
         trajectory: trajInfo ? { ...trajInfo, atoms: atomCount } : null,
         updateMs: updates.length > 0 ? stat(updates) : null,
+        transfer: (() => {
+            const native = nativeStats(ctx);
+            return {
+                setup: transferSetup,
+                crdSendMs: crdSends.length > 0 ? stat(crdSends) : null,
+                crdSendCount: crdSends.length,
+                texUploadMs: texUploads.length > 0 ? stat(texUploads) : null,
+                texUploadCount: texUploads.length,
+                allocMBPerFrame: native && samples.length > 0
+                    ? (native.allocBytes ?? 0) / samples.length / 1e6 : null,
+            };
+        })(),
         updateSplit: spec.scenario === 'md-playback'
             ? {
                 first: updatesFirst.length > 0 ? stat(updatesFirst) : null,

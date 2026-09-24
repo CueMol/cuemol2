@@ -49,6 +49,24 @@ const filters = {
   repeat: Number(argValue('repeat')) || 1,
 }
 
+// Ablation runs: a condition label carried into every row, and a results
+// directory of their own (the default is results/).
+const LABEL = argValue('label') || process.env.CUEMOL_BENCH_LABEL || ''
+const OUT_DIR = argValue('out-dir') ? path.resolve(argValue('out-dir')) : RESULTS_DIR
+/** After a cell of one of these, wait longer so its memory pressure is gone. */
+const LARGE_SETTLE_MS = 10000
+const LARGE_STEMS = /^3j3q-/
+
+function gitSha() {
+  try {
+    const r = spawnSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' })
+    return r.status === 0 ? r.stdout.trim() : ''
+  } catch {
+    return ''
+  }
+}
+const GIT_SHA = process.env.CUEMOL_BENCH_GIT_SHA || gitSha()
+
 function buildPlan() {
   const specs = fs
     .readdirSync(SPEC_DIR)
@@ -116,6 +134,8 @@ function runCell(cell) {
     // A throwaway profile, so no persisted preference from a previous run
     // leaks into a measurement.
     CUEMOL_FRESH_PREFS: '1',
+    CUEMOL_BENCH_LABEL: LABEL,
+    CUEMOL_BENCH_GIT_SHA: GIT_SHA,
     // Same two the `run_tritium` task sets; a bench launch bypasses it.
     LIBCUEMOL2_ROOT:
       process.env.LIBCUEMOL2_ROOT || path.resolve(ROOT, '../../.build_out/cuemol2'),
@@ -156,6 +176,11 @@ const CSV_COLUMNS = [
   // md-playback only: the update split by first showing (decode included)
   // versus a frame already held.
   'update_first_ms_mean', 'update_first_n', 'update_cached_ms_mean', 'update_cached_n',
+  // Ablation: the transfer path timed the same way under every condition,
+  // and where the row came from.
+  'crd_send_ms_mean', 'crd_send_ms_p95', 'tex_upload_ms_mean', 'tex_upload_ms_p95',
+  'alloc_mb_per_frame', 'transfer_clock', 'frame_ms_p95_cpu', 'gpu_ms_p95',
+  'label', 'git_sha', 'patch_sha256', 'addon_path',
   // Which machine produced the row. Two rows are only comparable if these
   // agree, and more than usual here: how a driver treats a write into a
   // texture the GPU is reading is what the coordinate-texture ring is built
@@ -184,6 +209,13 @@ function toRow(cell, r) {
     r.trajectory?.lazy ?? '',
     r.updateSplit?.first ? n(r.updateSplit.first.mean) : '', r.updateSplit?.firstCount ?? '',
     r.updateSplit?.cached ? n(r.updateSplit.cached.mean) : '', r.updateSplit?.cachedCount ?? '',
+    r.transfer?.crdSendMs ? n(r.transfer.crdSendMs.mean) : '',
+    r.transfer?.crdSendMs ? n(r.transfer.crdSendMs.p95) : '',
+    r.transfer?.texUploadMs ? n(r.transfer.texUploadMs.mean) : '',
+    r.transfer?.texUploadMs ? n(r.transfer.texUploadMs.p95) : '',
+    n(r.transfer?.allocMBPerFrame), csv(r.transfer?.setup?.clock),
+    n(r.cpuMs?.p95), r.gpuMs ? n(r.gpuMs.p95) : '',
+    csv(r.build?.label), csv(r.build?.gitSha), csv(r.build?.patchSha256), csv(r.build?.addonPath),
     csv(r.machine?.unmaskedRenderer || r.machine?.renderer),
     csv(r.machine?.version),
     csv(r.machine?.platform),
@@ -196,12 +228,13 @@ function main() {
     console.error('[runner] no spec matched the filters')
     process.exit(1)
   }
-  fs.mkdirSync(RESULTS_DIR, { recursive: true })
+  fs.mkdirSync(OUT_DIR, { recursive: true })
   console.log(`[runner] ${plan.length} cell(s), one process each`)
 
   const cells = []
   const rows = []
   const skipped = new Set()
+  const failed = []
   plan.forEach((cell, i) => {
     console.log(`[runner] (${i + 1}/${plan.length}) ${cell.stem} @${cell.canvas} rep=${cell.rep}`)
     const missing = missingData(cell.stem)
@@ -213,6 +246,9 @@ function main() {
     const r = runCell(cell)
     if (!r || !r.ok) {
       console.warn(`[runner]   failed: ${r ? r.error : 'no result file'}`)
+      // Kept, not dropped: a failed, out-of-memory or timed-out cell is a
+      // result too (a missing value in the ablation tables).
+      failed.push({ cell, label: LABEL, gitSha: GIT_SHA, error: r ? r.error : 'no result file' })
     } else {
       cells.push({ cell, result: r })
       rows.push(toRow(cell, r))
@@ -224,22 +260,24 @@ function main() {
           (r.updateSplit?.cached ? ` cached=${r.updateSplit.cached.mean.toFixed(2)}ms(n=${r.updateSplit.cachedCount})` : ''),
       )
     }
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, SETTLE_MS)
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0,
+                 LARGE_STEMS.test(cell.stem) ? LARGE_SETTLE_MS : SETTLE_MS)
   })
 
   if (skipped.size > 0) {
     console.warn(`[runner] skipped for missing data: ${[...skipped].join(', ')}`)
   }
-  if (cells.length === 0) {
+  if (cells.length === 0 && failed.length === 0) {
     console.error('[runner] no cell produced a result')
     process.exit(1)
   }
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const csvPath = path.join(RESULTS_DIR, `bench-${stamp}.csv`)
-  const jsonPath = path.join(RESULTS_DIR, `bench-${stamp}.json`)
+  const tag = LABEL ? `-${LABEL}` : ''
+  const csvPath = path.join(OUT_DIR, `bench-${stamp}${tag}.csv`)
+  const jsonPath = path.join(OUT_DIR, `bench-${stamp}${tag}.json`)
   fs.writeFileSync(csvPath, [CSV_COLUMNS.join(','), ...rows].join('\n') + '\n')
-  fs.writeFileSync(jsonPath, JSON.stringify({ cells }, null, 2))
+  fs.writeFileSync(jsonPath, JSON.stringify({ label: LABEL, gitSha: GIT_SHA, cells, failed }, null, 2))
   console.log(`[runner] wrote ${csvPath}`)
   fs.rmSync(CELL_FILE, { force: true })
 }
