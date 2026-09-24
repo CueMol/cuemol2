@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <vector>
 #include <common.h>
 
 #include "molstr/CoordTexSupport.hpp"
@@ -148,4 +149,66 @@ TEST(CoordTexSupport, MissingAtomForcesRebuild)
 
     pMol->removeAtom(ct.ctAtomIDAt(0));
     EXPECT_FALSE(ct.ctUpdate(pMol));
+}
+
+namespace {
+
+/// A texture backend that exposes its upload buffer, as the Electron one does.
+class StagingFloatDataTexture : public MockFloatDataTexture
+{
+public:
+    bool create(int w, int h, int ncomp) override
+    {
+        m_buf.assign(size_t(w) * size_t(h) * size_t(ncomp), 0.0f);
+        return true;
+    }
+    void *getStagingData() override { return m_buf.data(); }
+    void updateFromStaging() override { ++m_nStagedUploads; }
+
+    std::vector<float> m_buf;
+    int m_nStagedUploads = 0;
+};
+
+class StagingDisplayContext : public MockDisplayContext
+{
+public:
+    gfx::FloatDataTexture *createFloatDataTexture() override
+    {
+        m_pTex = new StagingFloatDataTexture();
+        return m_pTex;
+    }
+    /// Owned by the CoordTexSupport it was handed to.
+    StagingFloatDataTexture *m_pTex = nullptr;
+};
+
+}  // namespace
+
+/**
+ * Positions are gathered straight into a backend's staging buffer.
+ *
+ * Going through update() instead copies the whole array once more per frame;
+ * on a 2.4M-atom morph that copy, plus the fresh buffer it used to be made
+ * into, was what kept the frame over its budget.
+ */
+TEST(CoordTexSupport, StagingBufferIsWrittenInPlace)
+{
+    StagingDisplayContext dc;
+    MolCoordPtr pMol = makeMol(3);
+
+    CoordTexSupport ct;
+    addAll(ct, pMol);
+    ASSERT_TRUE(ct.ctAlloc(&dc, pMol));
+    StagingFloatDataTexture *pTex = dc.m_pTex;
+    ASSERT_NE(pTex, nullptr);
+    EXPECT_EQ(pTex->m_nUpdates, 0);
+    EXPECT_EQ(pTex->m_nStagedUploads, 1);
+
+    const int aid = ct.ctAtomIDAt(0);
+    MolAtomPtr pAtom = pMol->getAtom(aid);
+    pAtom->setPos(Vector4D(42.0, 0.0, 0.0));
+    ASSERT_TRUE(ct.ctUpdate(pMol));
+
+    EXPECT_EQ(pTex->m_nUpdates, 0);
+    EXPECT_EQ(pTex->m_nStagedUploads, 2);
+    EXPECT_FLOAT_EQ(pTex->m_buf[ct.ctIndexOf(aid) * 3], 42.0f);
 }

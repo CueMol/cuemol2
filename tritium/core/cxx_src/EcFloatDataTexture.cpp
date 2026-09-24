@@ -40,6 +40,15 @@ bool EcFloatDataTexture::create(int w, int h, int ncomp)
             {Napi::String::New(env, m_texName), Napi::Number::New(env, w),
              Napi::Number::New(env, h), Napi::Number::New(env, ncomp)});
         result = rval.As<Napi::Boolean>().Value();
+        if (result) {
+            // Zero-filled by V8, so the padding texels past the last atom
+            // stay defined without the caller writing them.
+            const size_t data_size =
+                size_t(w) * size_t(h) * size_t(ncomp) * sizeof(float);
+            Napi::ArrayBuffer ab = Napi::ArrayBuffer::New(env, data_size);
+            m_stagingRef = Napi::Persistent(ab.As<Napi::Object>());
+            m_pStaging = ab.Data();
+        }
     } catch (const Napi::Error &e) {
         MB_DPRINTLN("EcFloatDataTexture::create failed: %s", e.Message().c_str());
         return false;
@@ -52,7 +61,26 @@ bool EcFloatDataTexture::create(int w, int h, int ncomp)
 
 void EcFloatDataTexture::update(const void *data)
 {
+    // Bench timer at both entry points (not in upload()), so a caller that
+    // still hands over its own buffer is charged for the copy as well.
     BenchScope bench__(g_benchStats.coordTexUpdate);
+    if (m_pStaging == nullptr) return;
+    if (data != m_pStaging) {
+        memcpy(m_pStaging, data,
+               size_t(m_nWidth) * size_t(m_nHeight) * size_t(m_nComp) * sizeof(float));
+    }
+    upload();
+}
+
+void EcFloatDataTexture::updateFromStaging()
+{
+    BenchScope bench__(g_benchStats.coordTexUpdate);
+    if (m_pStaging == nullptr) return;
+    upload();
+}
+
+void EcFloatDataTexture::upload()
+{
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("EcFloatDataTexture::update> unknown parent view (%d)",
@@ -66,15 +94,11 @@ void EcFloatDataTexture::update(const void *data)
     auto peer = pEView->getPeerObj();
     auto env = peer.Env();
 
-    const size_t data_size =
-        size_t(m_nWidth) * size_t(m_nHeight) * size_t(m_nComp) * sizeof(float);
-
     try {
-        // Transient buffer: updateFloatDataTexture copies into the GL texture
-        // synchronously during the call, so no persistent ref is needed.
-        Napi::Object buf = createBuffer(env, data, data_size);
+        // updateFloatDataTexture copies into the GL texture synchronously
+        // during the call, so the same buffer can be refilled for the next one.
         auto method = peer.Get("updateFloatDataTexture").As<Napi::Function>();
-        method.Call(peer, {Napi::String::New(env, m_texName), buf});
+        method.Call(peer, {Napi::String::New(env, m_texName), m_stagingRef.Value()});
     } catch (const Napi::Error &e) {
         MB_DPRINTLN("EcFloatDataTexture::update failed: %s", e.Message().c_str());
     }

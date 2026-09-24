@@ -147,7 +147,8 @@ public:
     }
 
 private:
-    /// Fill m_coordbuf from the molecule and upload it.
+    /// Fill the upload buffer (the backend's own, or m_coordbuf) from the
+    /// molecule and upload it.
     bool ctGather(const MolCoordPtr &pMol);
 
     /// Resolve the layout to AnimMol array indices, or leave it empty when the
@@ -158,6 +159,7 @@ private:
     gfx::FloatDataTexture *m_pCoordTex;
 
     /// Positions staged for upload (xyz interleaved, one texel per atom).
+    /// Empty when the texture backend exposes its own staging memory.
     std::vector<qfloat32> m_coordbuf;
 
     /// Texel index -> AID.
