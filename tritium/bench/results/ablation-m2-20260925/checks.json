@@ -1,0 +1,504 @@
+{
+  "checks": [
+    {
+      "criterion": "1. A reproduces documented values (+-5%)",
+      "pass": false,
+      "detail": {
+        "4v6x coord-morph fps": {
+          "measured": 60.04353734109622,
+          "reference": 60.0,
+          "within_5pct": true
+        },
+        "4v6x coord-morph cpu ms": {
+          "measured": 1.5279968247849525,
+          "reference": 1.58,
+          "within_5pct": true
+        },
+        "4v6x static-orbit cpu ms": {
+          "measured": 0.3308333354967612,
+          "reference": 0.3,
+          "within_5pct": false
+        },
+        "3j3q coord-morph fps": {
+          "measured": 36.98463983388383,
+          "reference": 36.4,
+          "within_5pct": true
+        },
+        "3j3q coord-morph texUpload ms": {
+          "measured": 18.901278994281267,
+          "reference": 22.0,
+          "within_5pct": false
+        }
+      }
+    },
+    {
+      "criterion": "2. B 3J3Q coord-morph 52-54 fps",
+      "pass": false,
+      "detail": {
+        "measured": 55.1651859396873,
+        "nearer": "53.9 (docs)"
+      }
+    },
+    {
+      "criterion": "3. idle: zero drawn frames and zero GL calls",
+      "pass": false,
+      "detail": {
+        "A": [
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          },
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          },
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          }
+        ],
+        "B": [
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          },
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          },
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029045643153526972
+          }
+        ],
+        "C": [
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          },
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          },
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          }
+        ],
+        "D": [
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          },
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          },
+          {
+            "drawnFrames": 0,
+            "glTotal": 0.029166666666666667
+          }
+        ]
+      }
+    },
+    {
+      "criterion": "4. static-orbit CPU and GPU within +-3% across conditions",
+      "pass": false,
+      "detail": {
+        "1crn cpu_ms": {
+          "values": {
+            "A": 0.2937963002257877,
+            "B": 0.2894665039250994,
+            "C": 0.2789814829826355,
+            "D": 0.2781481424967448
+          },
+          "max_dev_from_mean": 0.03050947232626195,
+          "pass": false
+        },
+        "1crn gpu_ms": {
+          "values": {
+            "A": 0.8400732,
+            "B": 0.839166331132656,
+            "C": 0.8442856777777773,
+            "D": 0.8401739166666666
+          },
+          "max_dev_from_mean": 0.003996667071613576,
+          "pass": true
+        },
+        "4hhb cpu_ms": {
+          "values": {
+            "A": 0.2949982048365181,
+            "B": 0.29672976604997164,
+            "C": 0.2811313727409079,
+            "D": 0.2980609338589542
+          },
+          "max_dev_from_mean": 0.0396224981450636,
+          "pass": false
+        },
+        "4hhb gpu_ms": {
+          "values": {
+            "A": 1.6000017924976915,
+            "B": 1.5990508396532268,
+            "C": 1.604078634261823,
+            "D": 1.590796269621422
+          },
+          "max_dev_from_mean": 0.004808070997868021,
+          "pass": true
+        },
+        "1aon cpu_ms": {
+          "values": {
+            "A": 0.3206481452341433,
+            "B": 0.3049371615176055,
+            "C": 0.3138650346960522,
+            "D": 0.30500000251664056
+          },
+          "max_dev_from_mean": 0.03064986655122131,
+          "pass": false
+        },
+        "1aon gpu_ms": {
+          "values": {
+            "A": 4.18069775925926,
+            "B": 4.253119182710066,
+            "C": 4.24847633959167,
+            "D": 4.258606752777776
+          },
+          "max_dev_from_mean": 0.012874699505907519,
+          "pass": true
+        },
+        "4v6x cpu_ms": {
+          "values": {
+            "A": 0.3308333354967612,
+            "B": 0.31787037584516736,
+            "C": 0.3066707680705292,
+            "D": 0.34595900861632584
+          },
+          "max_dev_from_mean": 0.06339846564733514,
+          "pass": false
+        },
+        "4v6x gpu_ms": {
+          "values": {
+            "A": 8.2678975037037,
+            "B": 8.412648385185184,
+            "C": 8.419382029634763,
+            "D": 8.465602460296944
+          },
+          "max_dev_from_mean": 0.014715702639915902,
+          "pass": true
+        },
+        "3j3q cpu_ms": {
+          "values": {
+            "A": 0.10772222028838263,
+            "B": 0.17987372272026517,
+            "C": 0.029666668441560535,
+            "D": 0.1138888892862532
+          },
+          "max_dev_from_mean": 0.7247680373058093,
+          "pass": false
+        },
+        "3j3q gpu_ms": {
+          "values": {
+            "A": 17.341240007176957,
+            "B": 17.278707596173,
+            "C": 17.22596246513124,
+            "D": 17.345719134928345
+          },
+          "max_dev_from_mean": 0.004159164138751189,
+          "pass": true
+        }
+      }
+    },
+    {
+      "criterion": "5. fitted, pinned, input isolated; rendererProps equal",
+      "pass": true,
+      "detail": {
+        "violations": [],
+        "rendererProps_mismatch": {}
+      }
+    },
+    {
+      "criterion": "6. repetition CV under 3%",
+      "pass": false,
+      "detail": {
+        "over_3pct": [
+          {
+            "cell": "A/1crn/coord-morph",
+            "metric": "cpu_ms",
+            "cv": 0.04092797187961258,
+            "mean": 0.312962962962963
+          },
+          {
+            "cell": "A/1crn/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.040416046247206905,
+            "mean": 0.0783500712962963
+          },
+          {
+            "cell": "A/1crn/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.039863389812765986,
+            "mean": 0.024716235973216868
+          },
+          {
+            "cell": "B/1crn/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.04320953261075161,
+            "mean": 0.08009160804093565
+          },
+          {
+            "cell": "B/1crn/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.04193904708706022,
+            "mean": 0.02397364003481933
+          },
+          {
+            "cell": "C/1crn/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.031503314949262166,
+            "mean": 0.04842647037037036
+          },
+          {
+            "cell": "D/1crn/coord-morph",
+            "metric": "cpu_ms",
+            "cv": 0.04295310753625979,
+            "mean": 0.28981481062041387
+          },
+          {
+            "cell": "D/1crn/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.034240782184433834,
+            "mean": 0.053444631481481486
+          },
+          {
+            "cell": "A/4hhb/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.0340361312783516,
+            "mean": 0.02811372380042866
+          },
+          {
+            "cell": "B/4hhb/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.0412938767046737,
+            "mean": 0.12298941746434804
+          },
+          {
+            "cell": "B/4hhb/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.031119603494217475,
+            "mean": 0.0267646519846949
+          },
+          {
+            "cell": "D/4hhb/coord-morph",
+            "metric": "cpu_ms",
+            "cv": 0.06014879854134887,
+            "mean": 0.3131437929071401
+          },
+          {
+            "cell": "D/4hhb/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.054359377622474926,
+            "mean": 0.07440410485790498
+          },
+          {
+            "cell": "D/4hhb/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.043154699181774156,
+            "mean": 0.028503609313908093
+          },
+          {
+            "cell": "A/1aon/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.03159988005849052,
+            "mean": 0.5361525407407408
+          },
+          {
+            "cell": "D/1aon/coord-morph",
+            "metric": "cpu_ms",
+            "cv": 0.03973794239189114,
+            "mean": 0.6209259271621704
+          },
+          {
+            "cell": "D/1aon/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.04100094809919635,
+            "mean": 0.3664372824074072
+          },
+          {
+            "cell": "D/1aon/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.03663907696603415,
+            "mean": 0.10296974667796382
+          },
+          {
+            "cell": "A/4v6x/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.05566675065275809,
+            "mean": 8.213156814373654
+          },
+          {
+            "cell": "A/4v6x/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.05407553917401088,
+            "mean": 0.161641151520782
+          },
+          {
+            "cell": "B/4v6x/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.04323887568307691,
+            "mean": 8.23940382296066
+          },
+          {
+            "cell": "B/4v6x/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.03440566132288555,
+            "mean": 0.16144985269617151
+          },
+          {
+            "cell": "C/4v6x/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.07610954136318215,
+            "mean": 8.084941370262488
+          },
+          {
+            "cell": "D/3j3q/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.03229235393778678,
+            "mean": 6.550649818687244
+          },
+          {
+            "cell": "A/4v6x/idle",
+            "metric": "cpu_ms",
+            "cv": 0.10799981664153337,
+            "mean": 0.03902777433395386
+          },
+          {
+            "cell": "B/4v6x/idle",
+            "metric": "cpu_ms",
+            "cv": 0.06655247366764641,
+            "mean": 0.038699855533488176
+          },
+          {
+            "cell": "C/4v6x/idle",
+            "metric": "cpu_ms",
+            "cv": 0.07928331111163793,
+            "mean": 0.04013889299498664
+          },
+          {
+            "cell": "D/4v6x/idle",
+            "metric": "cpu_ms",
+            "cv": 0.05972591790469233,
+            "mean": 0.040277768505944146
+          },
+          {
+            "cell": "A/1crn/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.07911748891483157,
+            "mean": 0.2937963002257877
+          },
+          {
+            "cell": "B/1crn/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.05267065785162178,
+            "mean": 0.2894665039250994
+          },
+          {
+            "cell": "C/1crn/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.05682678039981584,
+            "mean": 0.2789814829826355
+          },
+          {
+            "cell": "D/1crn/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.031092627067967636,
+            "mean": 0.2781481424967448
+          },
+          {
+            "cell": "A/4hhb/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.09192922617245455,
+            "mean": 0.2949982048365181
+          },
+          {
+            "cell": "B/4hhb/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.10313173362420916,
+            "mean": 0.29672976604997164
+          },
+          {
+            "cell": "D/4hhb/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.06479635858567002,
+            "mean": 0.2980609338589542
+          },
+          {
+            "cell": "B/1aon/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.2764278632151036,
+            "mean": 0.3049371615176055
+          },
+          {
+            "cell": "C/1aon/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.033066516177425634,
+            "mean": 0.3138650346960522
+          },
+          {
+            "cell": "A/4v6x/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.08919074358083776,
+            "mean": 0.3308333354967612
+          },
+          {
+            "cell": "A/4v6x/static-orbit",
+            "metric": "gpu_ms",
+            "cv": 0.044396662082992894,
+            "mean": 8.2678975037037
+          },
+          {
+            "cell": "B/4v6x/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.0726225059277979,
+            "mean": 0.31787037584516736
+          },
+          {
+            "cell": "C/4v6x/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.04208956237719854,
+            "mean": 0.3066707680705292
+          },
+          {
+            "cell": "D/4v6x/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.052735729730594975,
+            "mean": 0.34595900861632584
+          },
+          {
+            "cell": "A/3j3q/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 1.122287575686819,
+            "mean": 0.10772222028838263
+          },
+          {
+            "cell": "B/3j3q/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.7349535479618229,
+            "mean": 0.17987372272026517
+          },
+          {
+            "cell": "C/3j3q/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.19076313872256168,
+            "mean": 0.029666668441560535
+          },
+          {
+            "cell": "D/3j3q/static-orbit",
+            "metric": "cpu_ms",
+            "cv": 0.7011731217875741,
+            "mean": 0.1138888892862532
+          }
+        ]
+      }
+    }
+  ],
+  "failed_cells": {}
+}
