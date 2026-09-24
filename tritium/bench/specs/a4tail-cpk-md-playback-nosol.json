@@ -1,0 +1,15 @@
+{
+  "name": "a4tail (A4 portal-tail complex, 3940938 atoms, water hidden: ~348k drawn, XTC) / cpk / md-playback",
+  "file": "../data/md/a4tail/em.gro",
+  "reader": "gro",
+  "renderer": "cpk",
+  "selection": "!resn SOL",
+  "scenario": "md-playback",
+  "trajectory": {
+    "files": [
+      "../data/md/a4tail/prod-100f.xtc"
+    ]
+  },
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

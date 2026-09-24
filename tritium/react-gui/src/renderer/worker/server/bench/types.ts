@@ -190,9 +190,12 @@ export interface BenchResult {
     /**
      * `updateMs` for an `md-playback` cell, split by whether the frame was
      * shown for the first time in the run. A lazily read frame is decoded on
-     * its first showing and kept afterwards, so `first` carries the decode
-     * and `cached` only the copy and the atomsMoved fan-out. A trajectory
-     * with fewer frames than the run shows is mostly `cached`.
+     * its first showing, so `first` always carries the decode. `cached` is a
+     * frame shown before, which is still held unless the block's cache limit
+     * released it since (TrajBlock::setCacheLimitBytes, 2 GiB by default, so
+     * about 45 frames at 3.9M atoms); a released frame is decoded again and
+     * counts here too. So `cached` is only the copy and the atomsMoved
+     * fan-out when every frame the run revisits fits under the limit.
      */
     updateSplit: {
         first: BenchStat | null;

@@ -411,6 +411,34 @@ block) and speeds up XTC decoding by about a third, bit for bit.
 | yiip ribbon (XTC, lazy) | 111,815 | 27.2 | 1.30 / - | 34.9 | - | 730 |
 | mcv448 cpk (XTC, lazy) | 161,188 | 60.0 | 3.30 / 0.41 | 0.61 | - | 1,047 |
 | a4tail cpk (XTC, lazy, 100 frames) | 3,940,938 | 19.0 | 44.3 / 6.3 | 21.5 | 47.4 | 3,000-4,000 |
+| a4tail cpk, water hidden (`!resn SOL`, ~348k drawn) | 3,940,938 | 28.3-32.0 | 43.2 / 20.5 | 0.6 | 8.6 | 4,200-5,700 |
+
+**"cached" means shown before, not necessarily still held.** The cache
+holds about 45 frames at 3.9M atoms. The water-hidden cell runs at about 30
+fps and shows about 170 frames going back and forth, so on the way back it
+reaches frames the limit has already released and decodes them again. That
+is its 20 ms. The all-atom cell shows fewer frames and finds them still
+held (6 ms). In both cells the decode is the frame's largest CPU cost.
+
+**Hiding the water does not shrink the per-frame work.** The GPU drops from
+47 to 9 ms, but the XTC holds whole frames, so every frame still decodes all
+3.9M atoms (34 ms in a tight loop). `fillCrdArray` also copies all of them
+(47 MB) into the coordinate array, although the renderer gathers only the
+348k it draws. What would help is a reader that keeps only the selected
+atoms and decodes frames ahead in parallel. Decoding independent frames on
+oneTBB threads scales almost linearly on the M2 (4 performance + 4
+efficiency cores):
+
+| threads | 3.9M atoms, ms/frame | 112k atoms, ms/frame |
+|---:|---:|---:|
+| 1 | 33.9 | 0.90 |
+| 2 | 17.3 | 0.45 |
+| 4 | 9.5 | 0.24 |
+| 8 | 7.9 | 0.19 |
+
+The output is identical at every thread count. This was measured with a
+temporary test that decodes whole frames through `qlib::parallel_for`, with
+the file already in the OS page cache.
 
 - **The frame cache limit holds.** The a4tail cell shows 115 frames at 47 MB
   each and stays at 3-4 GB.
