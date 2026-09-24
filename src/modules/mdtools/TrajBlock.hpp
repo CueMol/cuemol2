@@ -198,6 +198,12 @@ public:
     /// Allocate coord array (natom x nsize frames)
     void allocate(int natom, int nsize);
 
+    /// Size the block for nsize frames of natom atoms without allocating any
+    /// frame's coordinates: a frame gets its storage when it is first written
+    /// (getCrdArray) and may give it back again under the cache limit. This is
+    /// the lazy-loading layout; allocate() is the eager one.
+    void allocateOnDemand(int natom, int nsize);
+
     /// Prepare for streaming appends: set the per-frame atom count and drop any
     /// existing frames. Used by readers that do not know the frame count up
     /// front (XTC/TRR); frames are added one at a time via appendFrame().
@@ -217,6 +223,7 @@ public:
         MB_ASSERT(ifrm < getSize());
 
         PosArray *p = m_data[ifrm];
+        if (p == nullptr) p = allocFrame(ifrm);
         return &(*p)[0];
     }
 
@@ -260,7 +267,40 @@ public:
 
     bool isAllLoaded() const;
 
+    /// Make frame ifrm's coordinates available, decoding it if needed, and
+    /// mark it as the most recently used frame.
     void load(int ifrm);
+
+    /// Number of frames currently holding decoded coordinates through load().
+    int getResidentCount() const { return m_nResident; }
+
+    /// Upper bound on decoded coordinates one on-demand block keeps, in bytes.
+    /// Past it, loading a frame first releases the least recently used one; a
+    /// released frame is decoded again when it is next shown. At least two
+    /// frames are always kept. Blocks read eagerly are never trimmed.
+    static void setCacheLimitBytes(size_t nbytes);
+    static size_t getCacheLimitBytes();
+
+private:
+    PosArray *allocFrame(int ifrm);
+
+    /// Frames the cache limit allows this block to keep decoded at once.
+    int maxResidentFrames() const;
+
+    /// Release least recently used frames until one more fits, keeping `keep`.
+    void evictFor(int keep);
+
+    /// True for a block laid out by allocateOnDemand().
+    bool m_bOnDemand;
+
+    /// Frames holding coordinates decoded by load(), for the cache limit.
+    int m_nResident;
+
+    /// Per-frame last-use stamps (m_nUseTick at the frame's last load()).
+    std::vector<quint64> m_lastUse;
+    quint64 m_nUseTick;
+
+    static size_t s_nCacheLimitBytes;
 };
 
 }  // namespace mdtools
