@@ -225,6 +225,7 @@ curl -fL --retry 3 -o data/<id>.cif.gz https://files.rcsb.org/download/<id>.cif.
 | `static-orbit` | カメラのみ動かす。ジオメトリ不変 |
 | `prop-change` | 毎フレーム色を変える |
 | `coord-morph` | 毎フレーム全原子が動く。topology 不変(`md-playback` の代替) |
+| `md-playback` | 実 MD トラジェクトリを rAF ごとに 1 フレーム進める(往復再生)。2026-09-24 追加、下記「md-playback を実データで有効化」 |
 | `load` | ファイル読込 → 初回描画 |
 | `input-latency` | 合成ドラッグ。ワーカー内の区間のみ(motion-to-photon ではない) |
 | `idle` | 自己診断。撹乱要因の固定が効いているかを確認 |
@@ -241,6 +242,34 @@ curl -fL --retry 3 -o data/<id>.cif.gz https://files.rcsb.org/download/<id>.cif.
 衝突するようになった。同じバイト数・同じ呼び出しで転送時間が 2.5 倍に増えたことで
 発覚。**PoC の VBO ring(27 倍)の知見は tritium でも生きていたが、別のボトルネックに
 隠れていた。**
+
+## md-playback を実データで有効化 (2026-09-24)
+
+公開 MD データを `tritium/bench/md-corpus.json` に登録した。取得は `fetch-md.py` で行い、
+匿名で取れて SHA-256 を照合できるものだけを採った。GPCRmd はダウンロードにアカウントが要り、
+MDRepo はトークンが要るので不採用。10⁶ 原子級で溶媒込みの公開トラジェクトリは実用的なサイズの
+ものが無く、自前計算を手動配置のエントリ (`large`) とした。詳細は `tritium/bench/README.md`
+の「Getting the MD trajectories」。
+
+| セル | 原子 | fps | フレーム更新 ms | CPU ms | 座標テクスチャ µs/f |
+|---|---:|---:|---:|---:|---:|
+| ifabp cpk (DCD) | 12,445 | 60.0 | 0.60 | 0.44 | 135 |
+| yiip cpk (XTC, lazy) | 111,815 | 60.0 | 3.34 | 0.47 | 228 |
+| yiip cpk (XTC, eager) | 111,815 | 60.0 | 0.30 | 1.04 | 526 |
+| yiip ribbon (XTC, lazy) | 111,815 | 26.8 | 1.98 | 34.7 | - |
+| mcv448 cpk (XTC, lazy) | 161,188 | 60.0 | 2.20 | 0.89 | 461 |
+
+(Apple M2 / ANGLE-Metal、1920x1080、3 反復)
+
+- **cpk は 16 万原子の実トラジェクトリで 60 fps。** coord-morph の結論はそのまま成り立つ
+- **MorphMol に無いコストは lazy 読込の XTC 展開で、11 万原子で約 3 ms/frame。** 16.7 ms の
+  予算には収まる。eager にすると消えるが、load が 1.0 -> 2.3 s、RSS が 1.1 -> 1.7 GB に増える
+- **ribbon は実データでも 27 fps (CPU 35 ms)。** 残項目「メッシュ系レンダラの座標高速経路」が
+  実用上最大の差であることが、実データの再生でも確認できた
+- **公開データを読むと reader の制約に当たった。** 製品側では直さず、ベンチの派生ファイルで回避した:
+  - DCD reader は little-endian しか読めない (ifabp の DCD は big-endian)
+  - PDB reader は chain ID が重複した鎖と 5 桁 resid を区別できない (YiiP)
+  - PDB reader は `loadsegid` を使っても水の resid wrap が残る
 
 ## 取り下げた項目: 色変更でジオメトリを捨てない(旧 C)
 
@@ -270,7 +299,7 @@ curl -fL --retry 3 -o data/<id>.cif.gz https://files.rcsb.org/download/<id>.cif.
 | **2.1 per-object UBO をパス単位に巻き上げ** | 重い側(4V6X)でフレームの **0.3%**。小さい構造ほど相対的に大きく見えるが、そちらは元々 CPU 0.36 ms で削っても見えない | **取り下げ**。分母を draw 時間ではなくフレーム全体に取れば最初から分かったこと |
 | **2.2 VBO 更新経路(usage hint / orphan / ring / 部分更新)** | 当時 2.5〜3.3% | **取り下げは当時正しく、結論としては誤り。** #625 で前後の CPU 作業が消えると同じ転送が 2.5 倍に増え、リングが効くようになった(#626 で実施)。VBO 本体は未着手(B) |
 | **ribbon / dsurface / ballstick / simple の行列** | ballstick は cpk と、dsurface は ribbon と同経路。ribbon は最適化されていないジオメトリ生成を測るだけ | cpk のみに縮小。ribbon の測定値は「メッシュ経路がなぜ遅いか」の記録として保存 |
-| **`md-playback`** | トラジェクトリがマシン上に存在せず、RCSB にも無い | `coord-morph`(MorphMol による座標補間)で代替。`MorphMol::update` も `Trajectory::update` も `fireAtomsMoved` で終わるのでレンダラからは区別できない |
+| **`md-playback`** | 当時はトラジェクトリがマシン上に無く、RCSB にも無い | `coord-morph`(MorphMol による座標補間)で代替した。**後に実データで有効化**(下記)。代替の根拠(レンダラからは区別できない)は正しかったが、フレームのデコードは MorphMol に無いコストだった |
 
 **当初案が外れた理由は共通している。** PoC はジオメトリ生成が LUT で激安だったため
 転送が律速に見えたが、実アプリでは生成側と原子走査が支配的で、転送はその陰に隠れて

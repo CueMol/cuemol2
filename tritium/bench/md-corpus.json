@@ -1,0 +1,116 @@
+{
+  "comment": "MD trajectories for the md-playback scenario. fetch-md.py downloads the url entries into data/md/<id>/ and checks them against sha256; manual entries are placed by hand and only checked. See README.md, 'MD trajectory corpus'.",
+  "entries": [
+    {
+      "id": "ifabp",
+      "atoms": 12445,
+      "description": "I-FABP in water with ions (CHARMM, 500 frames, 1 ps apart)",
+      "source": "MDAnalysisData ifabp_water, figshare 10.6084/m9.figshare.7058030.v1",
+      "license": "CC-BY 4.0",
+      "topology": "ifabp_water_0.pdb",
+      "topologyReader": "pdb",
+      "trajectory": [
+        "rmsfit_ifabp_water_1-le.dcd"
+      ],
+      "files": [
+        {
+          "name": "ifabp_water_0.pdb",
+          "url": "https://ndownloader.figshare.com/files/12980636",
+          "sha256": "8ccf5f75fd85385921c0cb77f00281a93b933fc1261c42fc9492f43983448a72"
+        },
+        {
+          "name": "rmsfit_ifabp_water_1.dcd",
+          "url": "https://ndownloader.figshare.com/files/12980642",
+          "sha256": "cebb48e58015abc8ff2f5bb7ba3eb7a289047f256351a8252bf1f29f9aaacf0e"
+        }
+      ],
+      "derived": [
+        {
+          "name": "rmsfit_ifabp_water_1-le.dcd",
+          "from": "rmsfit_ifabp_water_1.dcd",
+          "op": "dcd-to-little-endian",
+          "note": "The published DCD is big-endian; CueMol's DCD reader reads little-endian only."
+        }
+      ]
+    },
+    {
+      "id": "yiip",
+      "atoms": 111815,
+      "description": "YiiP in a POPE:POPG membrane with water and ions (GROMACS, 900 frames, 10 ps apart)",
+      "source": "MDAnalysisData yiip_equilibrium_short, figshare",
+      "license": "CC-BY 4.0",
+      "topology": "YiiP_system.gro",
+      "topologyReader": "gro",
+      "trajectory": [
+        "YiiP_system_9ns_center.xtc"
+      ],
+      "files": [
+        {
+          "name": "YiiP_system.pdb",
+          "url": "https://ndownloader.figshare.com/files/15286808",
+          "sha256": "3c2b96bbd2f95105e1a4f37140132ee073a947df8fe209a8170f09ca5b73e6cf"
+        },
+        {
+          "name": "YiiP_system_9ns_center.xtc",
+          "url": "https://ndownloader.figshare.com/files/15285461",
+          "sha256": "97f6a93acc1e330915338b290625d81d84928a7e4c1e5aed63d209881fbe268b"
+        }
+      ],
+      "derived": [
+        {
+          "name": "YiiP_system.gro",
+          "from": "YiiP_system.pdb",
+          "op": "pdb-to-gro",
+          "note": "Chains PROA/PROB share chain ID P and the waters wrap the 4-digit residue number, so the PDB reader merges 10,216 atoms; the GRO reader keeps them apart."
+        }
+      ]
+    },
+    {
+      "id": "mcv448",
+      "atoms": 161188,
+      "description": "SARS-CoV-2 budding system, MDposit MCV1900448 (first 300 of 8001 frames, as served)",
+      "source": "MDposit / MDDB REST API, https://mmb.mddbr.eu/api/rest/v1/projects/MCV1900448",
+      "license": "CC-BY 4.0",
+      "topology": "structure.pdb",
+      "topologyReader": "pdb",
+      "trajectory": [
+        "trajectory.xtc"
+      ],
+      "files": [
+        {
+          "name": "structure.pdb",
+          "url": "https://mmb.mddbr.eu/api/rest/v1/projects/MCV1900448/structure",
+          "sha256": null
+        },
+        {
+          "name": "trajectory.xtc",
+          "url": "https://mmb.mddbr.eu/api/rest/v1/projects/MCV1900448/trajectory?format=xtc&frames=1-300",
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "large",
+      "atoms": 1000000,
+      "description": "A ~10^6-atom system from the maintainer's own simulations. Not distributed: place the files by hand.",
+      "source": "manual",
+      "license": "not redistributable",
+      "manual": "Copy the topology and trajectory into data/md/large/ under the names below, then run ./fetch-md.py large to record their size and SHA-256. Cells whose files are missing are skipped by run.js and reported as such.",
+      "topology": "large.gro",
+      "topologyReader": "gro",
+      "trajectory": [
+        "large.xtc"
+      ],
+      "files": [
+        {
+          "name": "large.gro",
+          "sha256": null
+        },
+        {
+          "name": "large.xtc",
+          "sha256": null
+        }
+      ]
+    }
+  ]
+}

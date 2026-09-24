@@ -1,0 +1,14 @@
+{
+  "name": "ifabp (I-FABP in water, 12445 atoms, DCD) / cpk / md-playback",
+  "file": "../data/md/ifabp/ifabp_water_0.pdb",
+  "reader": "pdb",
+  "renderer": "cpk",
+  "scenario": "md-playback",
+  "trajectory": {
+    "files": [
+      "../data/md/ifabp/rmsfit_ifabp_water_1-le.dcd"
+    ]
+  },
+  "warmupMs": 2000,
+  "measureMs": 6000
+}

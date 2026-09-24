@@ -41,11 +41,24 @@ export interface BenchSpec {
      * `tritium/bench/perturb.py`. Relative paths resolve against the spec.
      */
     morphFile?: string;
-    /** MD trajectory to load for `md-playback`. */
+    /**
+     * MD trajectory for `md-playback`. `file` is then the topology, read onto
+     * an mdtools Trajectory, and these are the coordinate files appended to it
+     * as blocks (see plugins/mdtools/worker/loadTrajectory.ts).
+     */
     trajectory?: {
-        file: string;
-        /** Topology file when the trajectory format needs one (PSF, prmtop). */
-        topology?: string;
+        /** Frame files (.dcd/.xtc/.trr) in playback order. Relative to the spec. */
+        files: string[];
+        /** Topology reader nickname for `file`. Defaults to `reader`, else from the extension. */
+        topologyReader?: string;
+        /** Keep every Nth frame. */
+        nevery?: number;
+        /**
+         * Decode frames on demand (the readers' default, true) or all at open.
+         * On demand is what a user gets, and puts file I/O and XTC
+         * decompression into every frame; false isolates what is left.
+         */
+        lazy?: boolean;
     };
     /**
      * View / scene properties forced before measuring.
@@ -150,6 +163,30 @@ export interface BenchResult {
      * and would report a healthy frame rate for a scene that never moved.
      */
     morph: { frames: number } | null;
+    /**
+     * How the trajectory was set up, for an `md-playback` cell. Like `morph`,
+     * a cell with fewer than two frames plays nothing and must not pass for a
+     * healthy one.
+     */
+    trajectory: {
+        atoms: number | null;
+        frames: number;
+        blocks: number;
+        formats: string[];
+        lazy: boolean | null;
+    } | null;
+    /**
+     * Time the scenario step spent advancing the payload, for scenarios that
+     * move atoms (`md-playback`, `coord-morph`).
+     *
+     * Setting the frame runs synchronously up to the point where renderers
+     * mark themselves dirty: for a trajectory that is the frame decode (file
+     * read and XTC decompression when loading lazily), the copy into the
+     * coordinate array and the atomsMoved fan-out. The upload and the draw
+     * happen later in the frame loop and are in `cpuMs` / `native` instead,
+     * so this is the part a trajectory costs over and above a morph.
+     */
+    updateMs: BenchStat | null;
     /** The scene properties that were forced, and which of them did not take. */
     pins: Record<string, string | number | boolean>;
     unpinned: string[];

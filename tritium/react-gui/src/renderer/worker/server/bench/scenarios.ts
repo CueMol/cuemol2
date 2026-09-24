@@ -78,11 +78,19 @@ export function makeScenarioStep(id: BenchScenarioId, deps: ScenarioDeps): Scena
             const traj = deps.traj;
             if (!traj) return () => false;
             const nframe = Number(traj.getProp('nframe')) || 0;
+            // Back and forth rather than wrapping, as coord-morph does: the
+            // last frame of a real trajectory is nowhere near the first, and a
+            // wrap would move every atom at once in one frame whose rebuild
+            // lands in the tail of the distribution.
             let frame = 0;
+            let dir = 1;
             return () => {
                 if (nframe <= 1) return false;
-                frame = (frame + 1) % nframe;
+                if (frame + dir < 0 || frame + dir >= nframe) dir = -dir;
+                frame += dir;
+                const t0 = performance.now();
                 traj.setProp('frame', frame);
+                benchCounters.addUpdateTime(performance.now() - t0);
                 deps.view.rotateView(0, ORBIT_DEG_PER_FRAME, 0);
                 return true;
             };
@@ -102,7 +110,9 @@ export function makeScenarioStep(id: BenchScenarioId, deps: ScenarioDeps): Scena
             return () => {
                 t += dir * MORPH_FRACTION_PER_FRAME;
                 if (t >= 1) { t = 1; dir = -1; } else if (t <= 0) { t = 0; dir = 1; }
+                const t0 = performance.now();
                 morph.setProp('frame', t);
+                benchCounters.addUpdateTime(performance.now() - t0);
                 deps.view.rotateView(0, ORBIT_DEG_PER_FRAME, 0);
                 return true;
             };

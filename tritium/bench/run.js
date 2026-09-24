@@ -82,6 +82,27 @@ function electronBin() {
                    process.platform === 'win32' ? 'electron.cmd' : 'electron')
 }
 
+/**
+ * Data files a spec needs that are not on this machine.
+ *
+ * The public corpus comes from fetch.sh / fetch-md.py, but the largest MD
+ * entry is hand-placed and exists only where someone put it. Launching a cell
+ * without its data would spend a process to report a load failure, and a
+ * failure is easy to misread as a regression; a skip says what it is.
+ */
+function missingData(stem) {
+  const specPath = path.join(SPEC_DIR, stem + '.json')
+  let spec
+  try {
+    spec = JSON.parse(fs.readFileSync(specPath, 'utf8'))
+  } catch {
+    return [] // let the cell itself report the unreadable spec
+  }
+  const resolve = (p) => (path.isAbsolute(p) ? p : path.resolve(SPEC_DIR, p))
+  const files = [spec.file, spec.morphFile, ...(spec.trajectory?.files ?? [])].filter(Boolean)
+  return files.map(resolve).filter((f) => !fs.existsSync(f))
+}
+
 function runCell(cell) {
   fs.rmSync(CELL_FILE, { force: true })
   const args = [
@@ -129,6 +150,9 @@ const CSV_COLUMNS = [
   'gl_total', 'gl_draw', 'gl_use_program', 'gl_buffer_sub_data',
   'gl_buffer_sub_data_bytes', 'gl_get_uniform_location',
   'rss_mb',
+  // Time the scenario step spent advancing the atoms (trajectory frame decode
+  // and copy, or morph interpolation), and what the trajectory was.
+  'update_ms_mean', 'update_ms_p95', 'traj_frames', 'traj_format', 'traj_lazy',
   // Which machine produced the row. Two rows are only comparable if these
   // agree, and more than usual here: how a driver treats a write into a
   // texture the GPU is reading is what the coordinate-texture ring is built
@@ -152,6 +176,9 @@ function toRow(cell, r) {
     n(gl.total), n(gl.draw), n(gl.useProgram), n(gl.bufferSubData),
     n(gl.bufferSubDataBytes), n(gl.getUniformLocation),
     n(r.memory?.rssMB),
+    r.updateMs ? n(r.updateMs.mean) : '', r.updateMs ? n(r.updateMs.p95) : '',
+    r.trajectory?.frames ?? '', r.trajectory ? r.trajectory.formats.join('+') : '',
+    r.trajectory?.lazy ?? '',
     csv(r.machine?.unmaskedRenderer || r.machine?.renderer),
     csv(r.machine?.version),
     csv(r.machine?.platform),
@@ -169,8 +196,15 @@ function main() {
 
   const cells = []
   const rows = []
+  const skipped = new Set()
   plan.forEach((cell, i) => {
     console.log(`[runner] (${i + 1}/${plan.length}) ${cell.stem} @${cell.canvas} rep=${cell.rep}`)
+    const missing = missingData(cell.stem)
+    if (missing.length > 0) {
+      console.warn(`[runner]   skipped, data not present: ${missing.join(', ')}`)
+      skipped.add(cell.stem)
+      return
+    }
     const r = runCell(cell)
     if (!r || !r.ok) {
       console.warn(`[runner]   failed: ${r ? r.error : 'no result file'}`)
@@ -179,14 +213,18 @@ function main() {
       rows.push(toRow(cell, r))
       console.log(
         `[runner]   render=${r.renderFps.toFixed(1)}fps update=${r.updateFps.toFixed(1)}fps ` +
-          `frame=${r.frameMs.mean.toFixed(2)}ms load=${r.loadMs.toFixed(0)}ms`,
+          `frame=${r.frameMs.mean.toFixed(2)}ms load=${r.loadMs.toFixed(0)}ms` +
+          (r.updateMs ? ` updateStep=${r.updateMs.mean.toFixed(2)}ms` : ''),
       )
     }
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, SETTLE_MS)
   })
 
+  if (skipped.size > 0) {
+    console.warn(`[runner] skipped for missing data: ${[...skipped].join(', ')}`)
+  }
   if (cells.length === 0) {
-    console.error('[runner] every cell failed')
+    console.error('[runner] no cell produced a result')
     process.exit(1)
   }
 

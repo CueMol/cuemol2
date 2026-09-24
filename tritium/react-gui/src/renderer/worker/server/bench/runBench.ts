@@ -23,6 +23,7 @@ import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result'
 import { loadObject } from '@renderer/worker/server/services/file/loadObject';
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen';
 import { setupMorph } from './morphSetup';
+import { setupTrajectory } from './trajSetup';
 import { benchCounters, type FrameSample } from './benchCounters';
 import { benchGpuTimerAvailable } from './glProxy';
 import { makeScenarioStep } from './scenarios';
@@ -72,6 +73,7 @@ function reader(spec: BenchSpec): string {
     const ext = path.extname(spec.file).toLowerCase();
     if (ext === '.cif' || ext === '.mmcif') return 'mmcif';
     if (ext === '.pdb' || ext === '.ent') return 'pdb';
+    if (ext === '.gro') return 'gro';
     return 'mmcif';
 }
 
@@ -258,21 +260,49 @@ export async function runBench(
         rendererType: spec.renderer,
         selection: spec.selection ?? null,
     });
-    const loaded = loadObject(ctx, {
-        filePath: resolve(spec.file),
-        sceneId: args.sceneId,
-        options,
-        contentFirst: false,
-        readerName,
-    });
-    if (!loaded.ok) return loaded;
-
-    let obj = scene.getObject(loaded.objId);
+    let obj: any;
+    let loadedObjId: number;
     let traj: any = null;
-    if (spec.scenario === 'md-playback' && spec.trajectory) {
-        // The trajectory rides on the object that was just loaded; a topology
-        // file, when the format needs one, has already come in as that object.
+    let trajInfo: BenchResult['trajectory'] = null;
+    if (spec.scenario === 'md-playback') {
+        // `file` is the topology; the frames come from the coordinate files,
+        // appended to an mdtools Trajectory built on top of it.
+        if (!spec.trajectory || spec.trajectory.files.length === 0) {
+            return fail('md-playback needs `trajectory.files` in the spec', 'unsupported');
+        }
+        const setup = setupTrajectory(ctx, {
+            sceneId: args.sceneId,
+            topologyPath: resolve(spec.file),
+            topologyReader: spec.trajectory.topologyReader ?? readerName,
+            trajPaths: spec.trajectory.files.map(resolve),
+            nevery: spec.trajectory.nevery,
+            lazy: spec.trajectory.lazy,
+            renderer: options.renderer,
+        });
+        if (!setup.ok || setup.objId === undefined) {
+            return fail(`trajectory setup: ${setup.error ?? 'failed'}`, 'native');
+        }
+        loadedObjId = setup.objId;
+        obj = scene.getObject(loadedObjId);
         traj = obj;
+        trajInfo = {
+            atoms: null,
+            frames: setup.frames ?? 0,
+            blocks: setup.blocks ?? 0,
+            formats: setup.formats ?? [],
+            lazy: setup.lazy ?? null,
+        };
+    } else {
+        const loaded = loadObject(ctx, {
+            filePath: resolve(spec.file),
+            sceneId: args.sceneId,
+            options,
+            contentFirst: false,
+            readerName,
+        });
+        if (!loaded.ok) return loaded;
+        loadedObjId = loaded.objId;
+        obj = scene.getObject(loadedObjId);
     }
 
     // Turn the structure into a two-frame morph, for the scenario that moves
@@ -287,7 +317,7 @@ export async function runBench(
         }
         const setup = setupMorph(ctx, {
             sceneId: args.sceneId,
-            objId: loaded.objId,
+            objId: loadedObjId,
             morphFile: resolve(spec.morphFile),
             readerName,
             rendererType: spec.renderer,
@@ -393,6 +423,7 @@ export async function runBench(
 
     advances = 0;
     benchCounters.inputLatencies.length = 0;
+    benchCounters.updateTimes.length = 0;
     resetNativeStats(ctx);
     benchCounters.startCollecting();
     const measureStart = performance.now();
@@ -400,6 +431,7 @@ export async function runBench(
     const elapsedSec = (performance.now() - measureStart) / 1000;
     const samples = benchCounters.stopCollecting();
     const latencies = benchCounters.inputLatencies.slice();
+    const updates = benchCounters.updateTimes.slice();
     running = false;
 
     const gpuSamples = samples.map((s) => s.gpuMs).filter((v): v is number => v !== null);
@@ -430,6 +462,8 @@ export async function runBench(
             slab: Number(safeGet(view, 'slab')) || 0,
         },
         morph: morphInfo,
+        trajectory: trajInfo ? { ...trajInfo, atoms: atomCount } : null,
+        updateMs: updates.length > 0 ? stat(updates) : null,
         pins,
         unpinned,
         loadMs,

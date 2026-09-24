@@ -65,6 +65,18 @@ Include `--all` if the machine has the memory for it. 3J3Q is 2,440,800 atoms
 and the run reaches about 3 GB resident; it is also the cell where the ring
 mattered most, so it is the interesting one. Skip it rather than swap.
 
+For the `md-playback` cells, fetch the MD trajectories as well:
+
+```sh
+./fetch-md.py       # ifabp, yiip, mcv448 -- about 650 MB, all anonymous downloads
+```
+
+`fetch-md.py` refuses a file whose SHA-256 differs from `md-corpus.json`.
+It derives the local copies the readers need (a little-endian DCD, a GRO
+topology) and writes `data/md/manifest.json`. The `large` entry is the
+maintainer's own simulation and is not distributed. Without it, `run.js`
+skips `large-cpk-md-playback` and says so, which is expected.
+
 ## 3. Run
 
 ```sh

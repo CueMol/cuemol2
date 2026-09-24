@@ -127,6 +127,14 @@ class BenchCounters {
         if (this._collecting) this.inputLatencies.push(ms);
     }
 
+    /** Scenario update intervals (see BenchResult.updateMs), in milliseconds. */
+    readonly updateTimes: number[] = [];
+
+    /** Record one scenario update interval, if collection is running. */
+    addUpdateTime(ms: number): void {
+        if (this._collecting) this.updateTimes.push(ms);
+    }
+
     /** Called at the bottom of the rAF callback with `begin`'s return value. */
     end(startedAt: number): void {
         if (!this._enabled || startedAt === 0) return;

@@ -54,6 +54,53 @@ format can express and exist only as mmCIF, so mixing formats would mean the
 with each file's size and SHA-256 so a corpus can be checked without
 re-downloading it.
 
+## Getting the MD trajectories
+
+```sh
+./fetch-md.py               # every entry in md-corpus.json
+./fetch-md.py ifabp yiip    # named entries only
+```
+
+`md-playback` plays real trajectories, which RCSB does not serve, so they come
+from public MD repositories that allow anonymous download. `md-corpus.json`
+lists each entry's files with their source URL and SHA-256. `fetch-md.py`
+downloads them into `data/md/<id>/` and refuses a file whose hash differs:
+a cell measured on other bytes cannot be compared with one measured on these.
+It records what it found in `data/md/manifest.json`.
+
+| id | atoms | system | topology + frames | source |
+|---|---:|---|---|---|
+| `ifabp` | 12,445 | I-FABP in water with ions | PDB + DCD, 500 frames | MDAnalysisData `ifabp_water` (figshare, CC-BY 4.0) |
+| `yiip` | 111,815 | YiiP in a POPE:POPG membrane, water, ions | PDB + XTC, 900 frames | MDAnalysisData `yiip_equilibrium_short` (figshare, CC-BY 4.0) |
+| `mcv448` | 161,188 | SARS-CoV-2 budding system | PDB + XTC, first 300 of 8,001 frames | MDposit `MCV1900448` REST API (CC-BY 4.0) |
+| `large` | ~10^6 | the maintainer's own simulation | GRO + XTC | not distributed; place by hand |
+
+Three things about the corpus are not obvious:
+
+- **The I-FABP DCD is big-endian**, written on a machine of that byte order,
+  and CueMol's DCD reader reads little-endian only. `fetch-md.py` derives a
+  little-endian copy (`-le.dcd`) that swaps bytes and changes nothing else.
+  The spec plays the copy.
+- **The MDposit trajectory is exported on request** by the server, so no
+  published hash exists to pin it against. Its hash is recorded in the
+  manifest, so two machines can still tell whether they measured the same
+  bytes.
+- **Public trajectories of 10^6 atoms with the solvent in do not come in a
+  size anyone downloads.** MDposit's largest entry is 161,188 atoms. MDRepo
+  needs a token. GPCRmd says downloading requires an account. The Amaro lab
+  publishes its 1.7M-atom spike system only as a single PSF/PDB structure,
+  and its trajectories have the solvent stripped (~70k atoms). So the top
+  rung is a `manual` entry: copy the files into `data/md/large/` and run
+  `./fetch-md.py large` to record their hashes. `run.js` skips a cell whose
+  data is not present and says so, rather than reporting a load failure.
+
+The topology is read onto an mdtools `Trajectory` with the reader the spec
+names (`trajectory.topologyReader`, else the spec's `reader`). A public
+trajectory ships its topology as PDB rather than the `.gro` the application's
+open dialog asks for. `Trajectory::append` throws when a frame's atom count
+differs from the topology's, so a reader that dropped or merged atoms fails
+the cell instead of scrambling it.
+
 ## Running
 
 ```sh
@@ -95,11 +142,28 @@ task build_tritium CONFIG=Release
 }
 ```
 
+An `md-playback` spec names the topology as `file` and adds the frames:
+
+```json
+{
+  "file": "../data/md/yiip/YiiP_system.pdb",
+  "reader": "pdb",
+  "renderer": "cpk",
+  "scenario": "md-playback",
+  "trajectory": { "files": ["../data/md/yiip/YiiP_system_9ns_center.xtc"], "lazy": true }
+}
+```
+
+`lazy` is the readers' `lazy_load`. With `true`, the default and what a user
+gets, every frame is read from the file and XTC-decompressed when it is shown.
+With `false`, every frame is decoded once at open, which leaves the copy and
+the renderer's own work. `nevery` keeps every Nth frame.
+
 | scenario | per frame | read |
 |---|---|---|
 | `static-orbit` | rotate the view; geometry never changes | `render_fps`, frame-time percentiles, GPU ms, GL calls per frame |
 | `coord-morph` | interpolate one step along a two-frame morph, so every atom moves and the topology does not | `update_fps`, `bufferData` per frame -- whether the renderer rebuilt |
-| `md-playback` | advance one trajectory frame **per displayed frame**; needs a trajectory in the spec, and none is in the corpus | `update_fps` -- how many new frames actually reached the screen |
+| `md-playback` | advance one trajectory frame **per displayed frame**, back and forth through the whole trajectory | `update_fps` -- how many new frames actually reached the screen; `update_ms` -- what setting the frame cost (decode + copy + `atomsMoved`) |
 | `prop-change` | change a renderer property | `update_fps`, `gl_buffer_sub_data_bytes` |
 | `input-latency` | one step of a synthetic left drag | `input_latency_ms` percentiles -- what the worker's own handling costs, not motion-to-photon |
 | `load` | nothing; the load already happened | `load_ms` |
@@ -280,6 +344,35 @@ path: `cpk` reallocates no vertex buffer at any size and spends 40-348 us a
 frame uploading a texture, while `ribbon` reallocates four buffers a frame and
 185 MB at the top of the ladder. The fast path exists and works; it is only
 the mesh renderers that lack it.
+
+### Playing a trajectory (`md-playback`)
+
+Real MD trajectories from the MD corpus, one frame per displayed frame.
+Apple M2 / ANGLE-Metal, 1920x1080, 3 repeats.
+
+| cell | atoms | fps | update ms (mean / p95) | cpu ms | coord tex us/f | load ms |
+|---|---:|---:|---:|---:|---:|---:|
+| ifabp cpk (DCD) | 12,445 | 60.0 | 0.60 / 1.00 | 0.44 | 135 | 308 |
+| yiip cpk (XTC, lazy) | 111,815 | 60.0 | 3.34 / 3.70 | 0.47 | 228 | 1,042 |
+| yiip cpk (XTC, eager) | 111,815 | 60.0 | 0.30 / 0.43 | 1.04 | 526 | 2,311 |
+| yiip ribbon (XTC, lazy) | 111,815 | 26.8 | 1.98 / 2.13 | 34.7 | - | 1,049 |
+| mcv448 cpk (XTC, lazy) | 161,188 | 60.0 | 2.20 / 4.33 | 0.89 | 461 | 2,078 |
+
+`coord-morph` stood in for this scenario on the grounds that a renderer cannot
+tell a morph from a trajectory, and for the renderer that holds: `cpk` keeps
+60 fps and reallocates nothing at every size here. What the morph did not have
+is the frame decode. Reading lazily, as a user does, a YiiP frame costs about
+3 ms of XTC decompression (lazy 3.34 ms vs eager 0.30 ms). That is inside the
+frame budget. Decoding everything at open removes it, but costs 1.3 s of load
+and 0.6 GB of memory.
+
+`ribbon` at 27 fps is the mesh-rebuild gap from `coord-morph`, now on a real
+trajectory: 35 ms of CPU and four buffers reallocated per frame, for only the
+protein part of the system.
+
+One number is not explained yet. The ribbon cell's update step (1.98 ms) is
+shorter than the cpk cell's (3.34 ms), although both decode the same lazily
+read XTC.
 
 ### Opening a file (`load`)
 
