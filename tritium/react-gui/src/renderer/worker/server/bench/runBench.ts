@@ -277,6 +277,7 @@ export async function runBench(
             trajPaths: spec.trajectory.files.map(resolve),
             nevery: spec.trajectory.nevery,
             lazy: spec.trajectory.lazy,
+            loadSelection: spec.trajectory.loadSelection,
             renderer: options.renderer,
         });
         if (!setup.ok || setup.objId === undefined) {
@@ -291,6 +292,7 @@ export async function runBench(
             blocks: setup.blocks ?? 0,
             formats: setup.formats ?? [],
             lazy: setup.lazy ?? null,
+            loadedAtoms: setup.loadedAtoms ?? null,
         };
     } else {
         const loaded = loadObject(ctx, {

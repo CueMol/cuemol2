@@ -59,6 +59,12 @@ export interface BenchSpec {
          * decompression into every frame; false isolates what is left.
          */
         lazy?: boolean;
+        /**
+         * Keep only these atoms (Trajectory.applyLoadSel). Frames are then
+         * stored, copied and drawn for them alone; the files are still
+         * decoded whole.
+         */
+        loadSelection?: string;
     };
     /**
      * View / scene properties forced before measuring.
@@ -174,6 +180,8 @@ export interface BenchResult {
         blocks: number;
         formats: string[];
         lazy: boolean | null;
+        /** Atoms kept by `trajectory.loadSelection`, or null without one. */
+        loadedAtoms: number | null;
     } | null;
     /**
      * Time the scenario step spent advancing the payload, for scenarios that

@@ -23,6 +23,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer';
 import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 
 /** Coordinate-file extension -> mdtools TrajBlockReader nickname. */
 const TRAJ_READER_BY_EXT: Record<string, string> = {
@@ -51,6 +52,8 @@ interface TrajObj {
     nframe: number;
     nblock: number;
     append(block: unknown): void;
+    applyLoadSel(sel: unknown): void;
+    getAtomSize(): number;
 }
 
 export interface TrajSetupArgs {
@@ -61,6 +64,8 @@ export interface TrajSetupArgs {
     nevery?: number;
     /** The block readers' `lazy_load`; the reader default (true) when absent. */
     lazy?: boolean;
+    /** Atoms to keep (Trajectory.applyLoadSel); every atom when absent. */
+    loadSelection?: string;
     renderer: RendererOptions;
 }
 
@@ -73,6 +78,8 @@ export interface TrajSetupResult {
     formats?: string[];
     /** The `lazy_load` the block readers ended up with. */
     lazy?: boolean | null;
+    /** Atoms kept by the load selection, or null when every atom was loaded. */
+    loadedAtoms?: number | null;
 }
 
 function fileExt(p: string): string {
@@ -105,6 +112,16 @@ export function setupTrajectory(ctx: WorkerContext, args: TrajSetupArgs): TrajSe
 
         traj.name = args.renderer.objectName;
         (scene as unknown as { addObject(o: unknown): void }).addObject(traj);
+
+        // Before the first block: frames are then stored and copied for the
+        // kept atoms only, although every file is still decoded whole.
+        let loadedAtoms: number | null = null;
+        if (args.loadSelection) {
+            const sel = makeSel(ctx, args.loadSelection, args.sceneId);
+            if (!sel) return { ok: false, error: `invalid load selection: ${args.loadSelection}` };
+            traj.applyLoadSel(sel);
+            loadedAtoms = traj.getAtomSize();
+        }
 
         const formats: string[] = [];
         let lazy: boolean | null = null;
@@ -142,6 +159,7 @@ export function setupTrajectory(ctx: WorkerContext, args: TrajSetupArgs): TrajSe
             blocks: Number(traj.nblock) || 0,
             formats,
             lazy,
+            loadedAtoms,
         };
     } catch (e) {
         return { ok: false, error: e instanceof Error ? e.message : String(e) };
