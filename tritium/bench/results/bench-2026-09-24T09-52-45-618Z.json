@@ -1,0 +1,2434 @@
+{
+  "cells": [
+    {
+      "cell": {
+        "stem": "ifabp-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 0
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "ifabp (I-FABP in water, 12445 atoms, DCD) / cpk / md-playback",
+          "file": "../data/md/ifabp/ifabp_water_0.pdb",
+          "reader": "pdb",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/ifabp/rmsfit_ifabp_water_1-le.dcd"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 12445,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.98400426648236,
+        "updateFps": 59.98400426648236,
+        "frameMs": {
+          "mean": 16.619722222619586,
+          "p50": 16.600000143051147,
+          "p95": 18.40000009536743,
+          "p99": 18.600000143051147,
+          "max": 18.700000047683716
+        },
+        "cpuMs": {
+          "mean": 0.34388888743188645,
+          "p50": 0.3000001907348633,
+          "p95": 0.5,
+          "p99": 0.6000001430511475,
+          "max": 0.7000000476837158
+        },
+        "gpuMs": {
+          "mean": 1.9862502888888884,
+          "p50": 2.048375,
+          "p95": 2.138416,
+          "p99": 2.179,
+          "max": 3.47175
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 159744,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 7762,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 16110,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 19461,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 343.670784,
+          "externalMB": 6.065831,
+          "heapMB": 8.74876
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 95.94564056396484,
+          "distance": 200,
+          "slab": 100.14575805664063
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 12445,
+          "frames": 500,
+          "blocks": 1,
+          "formats": [
+            "dcd"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 0.736111111773385,
+          "p50": 0.6000001430511475,
+          "p95": 1.6000001430511475,
+          "p99": 2.0999999046325684,
+          "max": 2.299999952316284
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 0.736111111773385,
+            "p50": 0.6000001430511475,
+            "p95": 1.6000001430511475,
+            "p99": 2.0999999046325684,
+            "max": 2.299999952316284
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 308.10000014305115,
+        "timestamp": "2026-09-24T09:49:53.563Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "ifabp-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 1
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "ifabp (I-FABP in water, 12445 atoms, DCD) / cpk / md-playback",
+          "file": "../data/md/ifabp/ifabp_water_0.pdb",
+          "reader": "pdb",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/ifabp/rmsfit_ifabp_water_1-le.dcd"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 12445,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.990001666388935,
+        "updateFps": 59.990001666388935,
+        "frameMs": {
+          "mean": 16.62388888862398,
+          "p50": 16.700000047683716,
+          "p95": 18.299999952316284,
+          "p99": 18.700000047683716,
+          "max": 18.90000009536743
+        },
+        "cpuMs": {
+          "mean": 0.3611111190583971,
+          "p50": 0.39999985694885254,
+          "p95": 0.5999999046325684,
+          "p99": 0.6000001430511475,
+          "max": 0.7999999523162842
+        },
+        "gpuMs": {
+          "mean": 2.0295883777777757,
+          "p50": 2.036999,
+          "p95": 2.147749,
+          "p99": 2.199666,
+          "max": 3.497499
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 159744,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 8114,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 16544,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 22456,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 345.423872,
+          "externalMB": 6.065303,
+          "heapMB": 8.746992
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 95.94564056396484,
+          "distance": 200,
+          "slab": 100.14575805664063
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 12445,
+          "frames": 500,
+          "blocks": 1,
+          "formats": [
+            "dcd"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 0.54333333240615,
+          "p50": 0.5,
+          "p95": 0.7999999523162842,
+          "p99": 0.8000001907348633,
+          "max": 0.9000000953674316
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 0.54333333240615,
+            "p50": 0.5,
+            "p95": 0.7999999523162842,
+            "p99": 0.8000001907348633,
+            "max": 0.9000000953674316
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 307,
+        "timestamp": "2026-09-24T09:50:04.675Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "ifabp-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 2
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "ifabp (I-FABP in water, 12445 atoms, DCD) / cpk / md-playback",
+          "file": "../data/md/ifabp/ifabp_water_0.pdb",
+          "reader": "pdb",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/ifabp/rmsfit_ifabp_water_1-le.dcd"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 12445,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.987002816533156,
+        "updateFps": 59.987002816533156,
+        "frameMs": {
+          "mean": 16.620277777645324,
+          "p50": 16.699999809265137,
+          "p95": 18,
+          "p99": 18.59999990463257,
+          "max": 18.800000190734863
+        },
+        "cpuMs": {
+          "mean": 0.33722222248713174,
+          "p50": 0.3000001907348633,
+          "p95": 0.5,
+          "p99": 0.6000001430511475,
+          "max": 0.6000001430511475
+        },
+        "gpuMs": {
+          "mean": 2.052004361111111,
+          "p50": 2.055625,
+          "p95": 2.14325,
+          "p99": 2.213499,
+          "max": 3.416124
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 159744,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 7326,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 15564,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 19378,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 345.53856,
+          "externalMB": 6.065303,
+          "heapMB": 8.778424
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 95.94564056396484,
+          "distance": 200,
+          "slab": 100.14575805664063
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 12445,
+          "frames": 500,
+          "blocks": 1,
+          "formats": [
+            "dcd"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 0.5480555613835653,
+          "p50": 0.5,
+          "p95": 0.7999999523162842,
+          "p99": 0.9000000953674316,
+          "max": 1
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 0.5480555613835653,
+            "p50": 0.5,
+            "p95": 0.7999999523162842,
+            "p99": 0.9000000953674316,
+            "max": 1
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 307.10000014305115,
+        "timestamp": "2026-09-24T09:50:15.763Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "mcv448-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 0
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "mcv448 (SARS-CoV-2 budding, 161188 atoms, XTC) / cpk / md-playback",
+          "file": "../data/md/mcv448/structure.pdb",
+          "reader": "pdb",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/mcv448/trajectory.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 161188,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 361,
+        "drawnFrames": 361,
+        "renderFps": 60.1646611774826,
+        "updateFps": 60.1646611774826,
+        "frameMs": {
+          "mean": 16.616620498350784,
+          "p50": 16.699999809265137,
+          "p95": 18.200000047683716,
+          "p99": 18.600000143051147,
+          "max": 18.700000047683716
+        },
+        "cpuMs": {
+          "mean": 0.6326869736087619,
+          "p50": 0.5,
+          "p95": 1,
+          "p99": 1.3999998569488525,
+          "max": 1.9000000953674316
+        },
+        "gpuMs": {
+          "mean": 6.2550498171745135,
+          "p50": 6.367875,
+          "p95": 6.6245,
+          "p99": 6.769625,
+          "max": 6.92675
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1941504,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.01939058171745
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 722,
+          "bufferDrawUs": 2966,
+          "bufferDrawCount": 722,
+          "uboUpdateUs": 11658,
+          "uboUpdateCount": 2166,
+          "coordTexUpdateUs": 47094,
+          "coordTexUpdateCount": 361,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1046.085632,
+          "externalMB": 25.697279,
+          "heapMB": 8.746776
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 303.5760215759277,
+          "distance": 200,
+          "slab": 132.74799957275388
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 161188,
+          "frames": 300,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 1.849584490308471,
+          "p50": 0.6999998092651367,
+          "p95": 3.799999952316284,
+          "p99": 4.299999952316284,
+          "max": 4.400000095367432
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 3.3597765461692597,
+            "p50": 3.4000000953674316,
+            "p95": 4,
+            "p99": 4.299999952316284,
+            "max": 4.400000095367432
+          },
+          "firstCount": 179,
+          "cached": {
+            "mean": 0.3642857100937393,
+            "p50": 0.39999985694885254,
+            "p95": 0.5999999046325684,
+            "p99": 0.6999998092651367,
+            "max": 0.7000000476837158
+          },
+          "cachedCount": 182
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 2086.9000000953674,
+        "timestamp": "2026-09-24T09:50:28.656Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "mcv448-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 1
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "mcv448 (SARS-CoV-2 budding, 161188 atoms, XTC) / cpk / md-playback",
+          "file": "../data/md/mcv448/structure.pdb",
+          "reader": "pdb",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/mcv448/trajectory.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 161188,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.987002814149996,
+        "updateFps": 59.987002814149996,
+        "frameMs": {
+          "mean": 16.615277777777777,
+          "p50": 16.699999809265137,
+          "p95": 18.200000047683716,
+          "p99": 18.600000143051147,
+          "max": 18.799999952316284
+        },
+        "cpuMs": {
+          "mean": 0.6075000067551931,
+          "p50": 0.5,
+          "p95": 1,
+          "p99": 1,
+          "max": 1.9000000953674316
+        },
+        "gpuMs": {
+          "mean": 6.24244208888888,
+          "p50": 6.367958,
+          "p95": 6.625791,
+          "p99": 6.700875,
+          "max": 6.756416
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1941504,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 3050,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 11252,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 47555,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1046.85568,
+          "externalMB": 25.693055,
+          "heapMB": 8.69684
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 303.5760215759277,
+          "distance": 200,
+          "slab": 132.74799957275388
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 161188,
+          "frames": 300,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 1.9172222230169509,
+          "p50": 0.9000000953674316,
+          "p95": 3.700000047683716,
+          "p99": 3.8000001907348633,
+          "max": 3.9000000953674316
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 3.4217877161569437,
+            "p50": 3.5,
+            "p95": 3.799999952316284,
+            "p99": 3.8000001907348633,
+            "max": 3.9000000953674316
+          },
+          "firstCount": 179,
+          "cached": {
+            "mean": 0.42928176295032816,
+            "p50": 0.40000009536743164,
+            "p95": 0.5999999046325684,
+            "p99": 0.8000001907348633,
+            "max": 0.9000000953674316
+          },
+          "cachedCount": 181
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 2062,
+        "timestamp": "2026-09-24T09:50:41.514Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "mcv448-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 2
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "mcv448 (SARS-CoV-2 budding, 161188 atoms, XTC) / cpk / md-playback",
+          "file": "../data/md/mcv448/structure.pdb",
+          "reader": "pdb",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/mcv448/trajectory.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 161188,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.989002017250336,
+        "updateFps": 59.989002017250336,
+        "frameMs": {
+          "mean": 16.619444444444444,
+          "p50": 16.700000047683716,
+          "p95": 18.09999990463257,
+          "p99": 18.59999990463257,
+          "max": 18.600000143051147
+        },
+        "cpuMs": {
+          "mean": 0.5922222276528676,
+          "p50": 0.5,
+          "p95": 0.9000000953674316,
+          "p99": 1.2999999523162842,
+          "max": 1.7000000476837158
+        },
+        "gpuMs": {
+          "mean": 6.239054933333336,
+          "p50": 6.37075,
+          "p95": 6.635624,
+          "p99": 6.73825,
+          "max": 6.847999
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1941504,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 2961,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 11270,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 45967,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1046.822912,
+          "externalMB": 25.696223,
+          "heapMB": 8.712584
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 303.5760215759277,
+          "distance": 200,
+          "slab": 132.74799957275388
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 161188,
+          "frames": 300,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 1.7783333341280618,
+          "p50": 1.2000000476837158,
+          "p95": 3.5999999046325684,
+          "p99": 3.799999952316284,
+          "max": 4.099999904632568
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 3.130726256184072,
+            "p50": 3.1000001430511475,
+            "p95": 3.700000047683716,
+            "p99": 3.8000001907348633,
+            "max": 4.099999904632568
+          },
+          "firstCount": 179,
+          "cached": {
+            "mean": 0.440883980271566,
+            "p50": 0.5,
+            "p95": 0.6000001430511475,
+            "p99": 0.7999999523162842,
+            "max": 1.2000000476837158
+          },
+          "cachedCount": 181
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 2058.4000000953674,
+        "timestamp": "2026-09-24T09:50:54.374Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-cpk-md-playback-eager",
+        "canvas": "1920x1080",
+        "rep": 0
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC decoded at open) / cpk / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ],
+            "lazy": false
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.99500041663195,
+        "updateFps": 59.99500041663195,
+        "frameMs": {
+          "mean": 16.620000000132453,
+          "p50": 16.699999809265137,
+          "p95": 18.299999952316284,
+          "p99": 18.699999809265137,
+          "max": 19.399999856948853
+        },
+        "cpuMs": {
+          "mean": 0.7252777702278561,
+          "p50": 0.7000000476837158,
+          "p95": 0.9000000953674316,
+          "p99": 1.2000000476837158,
+          "max": 1.5
+        },
+        "gpuMs": {
+          "mean": 7.758332200000007,
+          "p50": 7.692875,
+          "p95": 8.061041,
+          "p99": 8.222999,
+          "max": 8.367749
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1351680,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 5218,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 18447,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 58697,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1647.296512,
+          "externalMB": 19.184279,
+          "heapMB": 8.800304
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": false
+        },
+        "updateMs": {
+          "mean": 0.4288888931274414,
+          "p50": 0.40000009536743164,
+          "p95": 0.6000001430511475,
+          "p99": 0.7000000476837158,
+          "max": 0.8000001907348633
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 0.4288888931274414,
+            "p50": 0.40000009536743164,
+            "p95": 0.6000001430511475,
+            "p99": 0.7000000476837158,
+            "max": 0.8000001907348633
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1944.7999999523163,
+        "timestamp": "2026-09-24T09:51:07.119Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-cpk-md-playback-eager",
+        "canvas": "1920x1080",
+        "rep": 1
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC decoded at open) / cpk / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ],
+            "lazy": false
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.97900734599889,
+        "updateFps": 59.97900734599889,
+        "frameMs": {
+          "mean": 16.619166666931577,
+          "p50": 16.700000047683716,
+          "p95": 18.299999952316284,
+          "p99": 18.59999990463257,
+          "max": 18.800000190734863
+        },
+        "cpuMs": {
+          "mean": 0.6927777707576752,
+          "p50": 0.7000000476837158,
+          "p95": 0.9000000953674316,
+          "p99": 1.0999999046325684,
+          "max": 1.2999999523162842
+        },
+        "gpuMs": {
+          "mean": 7.738839911111107,
+          "p50": 7.684,
+          "p95": 8.057625,
+          "p99": 8.182916,
+          "max": 8.313083
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1351680,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 4889,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 17867,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 57591,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1649.082368,
+          "externalMB": 19.183751,
+          "heapMB": 8.784808
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": false
+        },
+        "updateMs": {
+          "mean": 0.2758333371745216,
+          "p50": 0.2999999523162842,
+          "p95": 0.40000009536743164,
+          "p99": 0.5,
+          "max": 0.5999999046325684
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 0.2758333371745216,
+            "p50": 0.2999999523162842,
+            "p95": 0.40000009536743164,
+            "p99": 0.5,
+            "max": 0.5999999046325684
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1912.1000001430511,
+        "timestamp": "2026-09-24T09:51:19.882Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-cpk-md-playback-eager",
+        "canvas": "1920x1080",
+        "rep": 2
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC decoded at open) / cpk / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ],
+            "lazy": false
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.98800240142668,
+        "updateFps": 59.98800240142668,
+        "frameMs": {
+          "mean": 16.620833333333334,
+          "p50": 16.700000047683716,
+          "p95": 18.200000047683716,
+          "p99": 18.699999809265137,
+          "max": 18.799999952316284
+        },
+        "cpuMs": {
+          "mean": 0.7822222153345744,
+          "p50": 0.7999999523162842,
+          "p95": 1.0999999046325684,
+          "p99": 1.3999998569488525,
+          "max": 1.7000000476837158
+        },
+        "gpuMs": {
+          "mean": 7.755860597222224,
+          "p50": 7.689916,
+          "p95": 8.044,
+          "p99": 8.326125,
+          "max": 8.380874
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1351680,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 5310,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 18984,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 61978,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1648.39424,
+          "externalMB": 19.178999,
+          "heapMB": 8.676532
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": false
+        },
+        "updateMs": {
+          "mean": 0.27888889114061993,
+          "p50": 0.2999999523162842,
+          "p95": 0.40000009536743164,
+          "p99": 0.5,
+          "max": 0.6000001430511475
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 0.27888889114061993,
+            "p50": 0.2999999523162842,
+            "p95": 0.40000009536743164,
+            "p99": 0.5,
+            "max": 0.6000001430511475
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1902.0999999046326,
+        "timestamp": "2026-09-24T09:51:32.589Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 0
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC) / cpk / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.99100135122762,
+        "updateFps": 59.99100135122762,
+        "frameMs": {
+          "mean": 16.619722221957314,
+          "p50": 16.700000047683716,
+          "p95": 17.100000143051147,
+          "p99": 18.299999952316284,
+          "max": 18.699999809265137
+        },
+        "cpuMs": {
+          "mean": 0.37472222646077474,
+          "p50": 0.39999985694885254,
+          "p95": 0.5,
+          "p99": 0.5999999046325684,
+          "max": 0.7000000476837158
+        },
+        "gpuMs": {
+          "mean": 7.7299016750000025,
+          "p50": 7.681999,
+          "p95": 7.989,
+          "p99": 8.171125,
+          "max": 8.234125
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1351680,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 1806,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 7912,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 26232,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1074.95424,
+          "externalMB": 19.181111,
+          "heapMB": 8.740108
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 2.83972222076522,
+          "p50": 2.8999998569488525,
+          "p95": 3.200000047683716,
+          "p99": 3.299999952316284,
+          "max": 3.3999998569488525
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 2.83972222076522,
+            "p50": 2.8999998569488525,
+            "p95": 3.200000047683716,
+            "p99": 3.299999952316284,
+            "max": 3.3999998569488525
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1020.3999998569489,
+        "timestamp": "2026-09-24T09:51:44.421Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 1
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC) / cpk / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.98400426409945,
+        "updateFps": 59.98400426409945,
+        "frameMs": {
+          "mean": 16.61500000026491,
+          "p50": 16.699999809265137,
+          "p95": 18,
+          "p99": 18.40000009536743,
+          "max": 18.600000143051147
+        },
+        "cpuMs": {
+          "mean": 0.37777777910232546,
+          "p50": 0.39999985694885254,
+          "p95": 0.5,
+          "p99": 0.5999999046325684,
+          "max": 0.7999999523162842
+        },
+        "gpuMs": {
+          "mean": 7.675105505555552,
+          "p50": 7.685166,
+          "p95": 8.002333,
+          "p99": 8.0895,
+          "max": 8.132125
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1351680,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 1782,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 7933,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 29874,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1074.774016,
+          "externalMB": 19.182167,
+          "heapMB": 8.786196
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 2.7577777836057873,
+          "p50": 2.700000047683716,
+          "p95": 3.200000047683716,
+          "p99": 3.299999952316284,
+          "max": 3.4000000953674316
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 2.7577777836057873,
+            "p50": 2.700000047683716,
+            "p95": 3.200000047683716,
+            "p99": 3.299999952316284,
+            "max": 3.4000000953674316
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1021.4000000953674,
+        "timestamp": "2026-09-24T09:51:56.237Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-cpk-md-playback",
+        "canvas": "1920x1080",
+        "rep": 2
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC) / cpk / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "cpk",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 360,
+        "drawnFrames": 360,
+        "renderFps": 59.99500041663195,
+        "updateFps": 59.99500041663195,
+        "frameMs": {
+          "mean": 16.618055555555557,
+          "p50": 16.700000047683716,
+          "p95": 18.299999952316284,
+          "p99": 18.59999990463257,
+          "max": 18.700000047683716
+        },
+        "cpuMs": {
+          "mean": 0.37750000490082636,
+          "p50": 0.39999985694885254,
+          "p95": 0.5,
+          "p99": 0.6000001430511475,
+          "max": 0.8000001907348633
+        },
+        "gpuMs": {
+          "mean": 7.737411305555555,
+          "p50": 7.687666,
+          "p95": 8.027291,
+          "p99": 8.149875,
+          "max": 8.321083
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 0,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 528,
+          "bindBuffer": 12,
+          "bindBufferBase": 2,
+          "bindVertexArray": 4,
+          "bindFramebuffer": 0,
+          "bindTexture": 4,
+          "texSubImage": 1,
+          "texSubImageBytes": 1351680,
+          "getUniformLocation": 1,
+          "uniform": 1,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 46.019444444444446
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 0,
+          "bufferCreateCount": 0,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 720,
+          "bufferDrawUs": 1977,
+          "bufferDrawCount": 720,
+          "uboUpdateUs": 8089,
+          "uboUpdateCount": 2160,
+          "coordTexUpdateUs": 26902,
+          "coordTexUpdateCount": 360,
+          "allocBytes": 0,
+          "allocCount": 0
+        },
+        "memory": {
+          "rssMB": 1073.152,
+          "externalMB": 19.184279,
+          "heapMB": 8.820384
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {
+          "detail": 10
+        },
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 2.8302777727444965,
+          "p50": 2.799999952316284,
+          "p95": 3.200000047683716,
+          "p99": 3.3999998569488525,
+          "max": 4
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 2.8302777727444965,
+            "p50": 2.799999952316284,
+            "p95": 3.200000047683716,
+            "p99": 3.3999998569488525,
+            "max": 4
+          },
+          "firstCount": 360,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1020,
+        "timestamp": "2026-09-24T09:52:08.052Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-ribbon-md-playback",
+        "canvas": "1920x1080",
+        "rep": 0
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC) / ribbon / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "ribbon",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 165,
+        "drawnFrames": 165,
+        "renderFps": 27.404540850025782,
+        "updateFps": 27.404540850025782,
+        "frameMs": {
+          "mean": 36.26787878816778,
+          "p50": 36.200000047683716,
+          "p95": 38.39999985694885,
+          "p99": 39.10000014305115,
+          "max": 39.19999980926514
+        },
+        "cpuMs": {
+          "mean": 34.62848484732888,
+          "p50": 34.5,
+          "p95": 35.799999952316284,
+          "p99": 36.39999985694885,
+          "max": 37.59999990463257
+        },
+        "gpuMs": {
+          "mean": 0.4897530240963855,
+          "p50": 0.51325,
+          "p95": 0.521916,
+          "p99": 0.735166,
+          "max": 0.735166
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 4,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 512,
+          "bindBuffer": 18,
+          "bindBufferBase": 4,
+          "bindVertexArray": 6,
+          "bindFramebuffer": 0,
+          "bindTexture": 0,
+          "texSubImage": 0,
+          "texSubImageBytes": 0,
+          "getUniformLocation": 0,
+          "uniform": 0,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 71.04242424242425
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 50468,
+          "bufferCreateCount": 165,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 165,
+          "bufferDrawUs": 1219,
+          "bufferDrawCount": 330,
+          "uboUpdateUs": 3382,
+          "uboUpdateCount": 990,
+          "coordTexUpdateUs": 0,
+          "coordTexUpdateCount": 0,
+          "allocBytes": 903196800,
+          "allocCount": 165
+        },
+        "memory": {
+          "rssMB": 744.751104,
+          "externalMB": 48.849169,
+          "heapMB": 5.30962
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {},
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 1.284848484848485,
+          "p50": 1.2999999523162842,
+          "p95": 1.4000000953674316,
+          "p99": 1.4000000953674316,
+          "max": 1.4000000953674316
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 1.284848484848485,
+            "p50": 1.2999999523162842,
+            "p95": 1.4000000953674316,
+            "p99": 1.4000000953674316,
+            "max": 1.4000000953674316
+          },
+          "firstCount": 165,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1021.4000000953674,
+        "timestamp": "2026-09-24T09:52:19.892Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-ribbon-md-playback",
+        "canvas": "1920x1080",
+        "rep": 1
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC) / ribbon / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "ribbon",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 163,
+        "drawnFrames": 163,
+        "renderFps": 27.11063801433945,
+        "updateFps": 27.11063801433945,
+        "frameMs": {
+          "mean": 36.66196319076913,
+          "p50": 36.60000014305115,
+          "p95": 38.799999952316284,
+          "p99": 39.89999985694885,
+          "max": 39.89999985694885
+        },
+        "cpuMs": {
+          "mean": 35.02883436197152,
+          "p50": 34.90000009536743,
+          "p95": 36.200000047683716,
+          "p99": 37.200000047683716,
+          "max": 38.200000047683716
+        },
+        "gpuMs": {
+          "mean": 0.48391411111111093,
+          "p50": 0.508666,
+          "p95": 0.521166,
+          "p99": 0.523291,
+          "max": 0.523291
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 4,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 512,
+          "bindBuffer": 18,
+          "bindBufferBase": 4,
+          "bindVertexArray": 6,
+          "bindFramebuffer": 0,
+          "bindTexture": 0,
+          "texSubImage": 0,
+          "texSubImageBytes": 0,
+          "getUniformLocation": 0,
+          "uniform": 0,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 71.04294478527608
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 51283,
+          "bufferCreateCount": 163,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 163,
+          "bufferDrawUs": 1248,
+          "bufferDrawCount": 326,
+          "uboUpdateUs": 3248,
+          "uboUpdateCount": 978,
+          "coordTexUpdateUs": 0,
+          "coordTexUpdateCount": 0,
+          "allocBytes": 892248960,
+          "allocCount": 163
+        },
+        "memory": {
+          "rssMB": 718.553088,
+          "externalMB": 26.599921,
+          "heapMB": 5.246948
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {},
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 1.3030674779341995,
+          "p50": 1.2999999523162842,
+          "p95": 1.4000000953674316,
+          "p99": 1.5,
+          "max": 1.5
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 1.3030674779341995,
+            "p50": 1.2999999523162842,
+            "p95": 1.4000000953674316,
+            "p99": 1.5,
+            "max": 1.5
+          },
+          "firstCount": 163,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1024.5,
+        "timestamp": "2026-09-24T09:52:31.718Z"
+      }
+    },
+    {
+      "cell": {
+        "stem": "yiip-ribbon-md-playback",
+        "canvas": "1920x1080",
+        "rep": 2
+      },
+      "result": {
+        "ok": true,
+        "spec": {
+          "name": "yiip (YiiP in membrane, 111815 atoms, XTC) / ribbon / md-playback",
+          "file": "../data/md/yiip/YiiP_system.gro",
+          "reader": "gro",
+          "renderer": "ribbon",
+          "scenario": "md-playback",
+          "trajectory": {
+            "files": [
+              "../data/md/yiip/YiiP_system_9ns_center.xtc"
+            ]
+          },
+          "warmupMs": 2000,
+          "measureMs": 6000
+        },
+        "atomCount": 111815,
+        "canvas": {
+          "width": 1832,
+          "height": 1010,
+          "dpr": 2
+        },
+        "machine": {
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+          "platform": "MacIntel",
+          "cpuThreads": 8,
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)",
+          "floatColorBuffer": true,
+          "defaultFbMultisampled": false
+        },
+        "frames": 163,
+        "drawnFrames": 163,
+        "renderFps": 27.11920805257466,
+        "updateFps": 27.11920805257466,
+        "frameMs": {
+          "mean": 36.64907975430869,
+          "p50": 36.700000047683716,
+          "p95": 38.5,
+          "p99": 39.299999952316284,
+          "max": 39.5
+        },
+        "cpuMs": {
+          "mean": 35.02085890067867,
+          "p50": 35,
+          "p95": 35.90000009536743,
+          "p99": 36.700000047683716,
+          "max": 36.700000047683716
+        },
+        "gpuMs": {
+          "mean": 0.48405137804878046,
+          "p50": 0.514124,
+          "p95": 0.523125,
+          "p99": 0.6045,
+          "max": 0.6045
+        },
+        "glPerFrame": {
+          "useProgram": 4,
+          "bufferData": 4,
+          "bufferSubData": 6,
+          "bufferSubDataBytes": 512,
+          "bindBuffer": 18,
+          "bindBufferBase": 4,
+          "bindVertexArray": 6,
+          "bindFramebuffer": 0,
+          "bindTexture": 0,
+          "texSubImage": 0,
+          "texSubImageBytes": 0,
+          "getUniformLocation": 0,
+          "uniform": 0,
+          "draw": 1,
+          "drawInstanced": 1,
+          "readPixels": 0,
+          "total": 71.04294478527608
+        },
+        "native": {
+          "drawElemUs": 0,
+          "drawElemCount": 0,
+          "bufferCreateUs": 50053,
+          "bufferCreateCount": 163,
+          "bufferUpdateUs": 0,
+          "bufferUpdateCount": 163,
+          "bufferDrawUs": 1342,
+          "bufferDrawCount": 326,
+          "uboUpdateUs": 3290,
+          "uboUpdateCount": 978,
+          "coordTexUpdateUs": 0,
+          "coordTexUpdateCount": 0,
+          "allocBytes": 892248960,
+          "allocCount": 163
+        },
+        "memory": {
+          "rssMB": 726.892544,
+          "externalMB": 34.016337,
+          "heapMB": 5.267408
+        },
+        "input": {
+          "gpuPickOff": true,
+          "hoverMounted": false,
+          "canvasMouseBound": false
+        },
+        "inputLatencyMs": null,
+        "rendererProps": {},
+        "view": {
+          "fitted": true,
+          "zoom": 165.9980089187622,
+          "distance": 200,
+          "slab": 185.43000432252882
+        },
+        "morph": null,
+        "trajectory": {
+          "atoms": 111815,
+          "frames": 901,
+          "blocks": 1,
+          "formats": [
+            "xtc"
+          ],
+          "lazy": true
+        },
+        "updateMs": {
+          "mean": 1.3018404867020121,
+          "p50": 1.2999999523162842,
+          "p95": 1.4000000953674316,
+          "p99": 1.5,
+          "max": 1.5
+        },
+        "updateSplit": {
+          "first": {
+            "mean": 1.3018404867020121,
+            "p50": 1.2999999523162842,
+            "p95": 1.4000000953674316,
+            "p99": 1.5,
+            "max": 1.5
+          },
+          "firstCount": 163,
+          "cached": null,
+          "cachedCount": 0
+        },
+        "pins": {
+          "aaJitterLevel": 0,
+          "aoEnabled": false,
+          "aoHalfRes": false,
+          "aa_method": "none"
+        },
+        "unpinned": [],
+        "loadMs": 1035,
+        "timestamp": "2026-09-24T09:52:43.579Z"
+      }
+    }
+  ]
+}
