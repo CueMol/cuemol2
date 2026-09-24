@@ -106,7 +106,7 @@
           "url": "https://zenodo.org/records/20275758/files/A4_portal_tail_MD.tar?download=1",
           "tarMember": "A4_portal_tail_MD/em.gro",
           "tarHeaderOffset": 544656384,
-          "sha256": null
+          "sha256": "82482eee2a32f67c077b5f16ad4f27e4f53575bbc6fe26f11ed9294dbb432268"
         },
         {
           "name": "prod-100f.xtc",
@@ -114,7 +114,7 @@
           "tarMember": "A4_portal_tail_MD/prod.xtc",
           "tarHeaderOffset": 834050560,
           "xtcFrames": 100,
-          "sha256": null
+          "sha256": "c5f6d8be534dd84b84b3954d581a84f52db336c4eaa3d0dd9fd767101b1aff13"
         }
       ]
     }

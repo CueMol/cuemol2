@@ -68,18 +68,127 @@ def sha256_of(path):
     return h.hexdigest()
 
 
-def download(url, out, start=None, length=None):
+def download(url, out, start=None, length=None, retries=20):
     """Stream `url` to `out` through a .part file, so an interrupted fetch never
     leaves a truncated file under the final name. With `start`/`length`, only
-    that byte range of the resource is fetched (HTTP Range)."""
+    that byte range of the resource is fetched (HTTP Range).
+
+    A ranged fetch that the server cuts short -- Zenodo drops a long transfer
+    now and then -- is resumed from where the .part file ends, including one
+    left behind by an earlier run, up to `retries` times.
+    """
     part = out + '.part'
-    headers = {'User-Agent': 'cuemol-bench'}
-    if start is not None:
-        headers['Range'] = f'bytes={start}-{start + length - 1}'
-    req = urllib.request.Request(url, headers=headers)
     t0 = time.time()
-    with urllib.request.urlopen(req, timeout=120) as r, open(part, 'wb') as f:
-        if start is not None and r.status != 206:
+    if start is None:
+        _fetch_to(url, part, None, 'wb')
+    elif length > PARALLEL_CHUNK:
+        _download_parallel(url, part, start, length, retries)
+    else:
+        attempt = 0
+        while True:
+            have = os.path.getsize(part) if os.path.exists(part) else 0
+            if have >= length:
+                break
+            if have > 0:
+                print(f'    resuming at {have / 1e6:.1f} MB')
+            try:
+                _fetch_to(url, part, (start + have, length - have), 'ab')
+            except OSError as e:  # URLError, connection reset, timeout
+                print(f'    interrupted: {e}')
+            attempt += 1
+            if os.path.getsize(part) < length and attempt > retries:
+                raise RuntimeError(f'{url}: gave up after {retries} retries')
+            if os.path.getsize(part) < length:
+                time.sleep(min(30, 2 * attempt))
+        if os.path.getsize(part) != length:
+            raise RuntimeError(f'{url}: got {os.path.getsize(part)} bytes of the {length} asked for')
+    os.replace(part, out)
+    print(f'    {os.path.getsize(out) / 1e6:.1f} MB in {time.time() - t0:.0f} s')
+
+
+# A long ranged transfer is split into chunks fetched this many at a time.
+# Zenodo serves one connection at a few tens of KB/s at worst, so a single
+# 1.5 GB request can take a day where parallel ones need not. The chunks are
+# small enough that the last few do not leave one slow connection running
+# alone at the end (64 MB chunks left a 40 MB single-stream tail).
+PARALLEL_CHUNK = 16 << 20
+PARALLEL_JOBS = 6
+
+
+def _download_parallel(url, part, start, length, retries):
+    """Fetch [start, start+length) as PARALLEL_CHUNK pieces in parallel, each
+    resumable in its own .NNN file, then join them into `part`."""
+    import concurrent.futures
+
+    nchunk = (length + PARALLEL_CHUNK - 1) // PARALLEL_CHUNK
+    chunks = []
+    for i in range(nchunk):
+        off = i * PARALLEL_CHUNK
+        chunks.append((f'{part}.{i:03d}', start + off, min(PARALLEL_CHUNK, length - off)))
+    # A .part left by an earlier single-stream run is the head of chunk 0.
+    if os.path.exists(part) and not os.path.exists(chunks[0][0]):
+        if os.path.getsize(part) <= chunks[0][2]:
+            os.replace(part, chunks[0][0])
+        else:
+            os.remove(part)
+
+    progress = {'done': sum(os.path.getsize(c[0]) for c in chunks if os.path.exists(c[0]))}
+    lock = __import__('threading').Lock()
+    t0 = time.time()
+
+    def one(chunk):
+        path, cstart, clen = chunk
+        attempt = 0
+        while True:
+            have = os.path.getsize(path) if os.path.exists(path) else 0
+            if have >= clen:
+                return
+            try:
+                before = have
+                _fetch_to(url, path, (cstart + have, clen - have), 'ab', quiet=True)
+            except OSError as e:
+                print(f'    {os.path.basename(path)} interrupted: {e}', flush=True)
+            got = os.path.getsize(path) - before
+            with lock:
+                progress['done'] += got
+                rate = progress['done'] / max(1.0, time.time() - t0)
+                print(f'    {progress["done"] / 1e6:8.1f} / {length / 1e6:.1f} MB'
+                      f'  ({rate / 1e6:.2f} MB/s overall)', flush=True)
+            if os.path.getsize(path) < clen:
+                attempt += 1
+                if attempt > retries:
+                    raise RuntimeError(f'{path}: gave up after {retries} retries')
+                time.sleep(min(30, 2 * attempt))
+
+    with concurrent.futures.ThreadPoolExecutor(PARALLEL_JOBS) as ex:
+        for f in [ex.submit(one, c) for c in chunks]:
+            f.result()
+
+    with open(part, 'wb') as g:
+        for path, _, clen in chunks:
+            if os.path.getsize(path) != clen:
+                raise RuntimeError(f'{path}: {os.path.getsize(path)} bytes, expected {clen}')
+            with open(path, 'rb') as f:
+                while True:
+                    b = f.read(CHUNK)
+                    if not b:
+                        break
+                    g.write(b)
+    for path, _, _ in chunks:
+        os.remove(path)
+
+
+def _fetch_to(url, path, byte_range, mode, quiet=False):
+    """Append (or write) `url`, or the (start, length) `byte_range` of it, to
+    `path`. Returns normally also when the server closes the stream early;
+    the caller compares sizes."""
+    headers = {'User-Agent': 'cuemol-bench'}
+    if byte_range is not None:
+        a, n = byte_range
+        headers['Range'] = f'bytes={a}-{a + n - 1}'
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=120) as r, open(path, mode) as f:
+        if byte_range is not None and r.status != 206:
             raise RuntimeError(f'{url}: server ignored the byte range (HTTP {r.status})')
         total = int(r.headers.get('Content-Length') or 0)
         done = 0
@@ -91,14 +200,10 @@ def download(url, out, start=None, length=None):
             f.write(b)
             done += len(b)
             now = time.time()
-            if now - last > 2.0:
+            if not quiet and now - last > 2.0:
                 last = now
                 pct = f' {100.0 * done / total:5.1f}%' if total else ''
                 print(f'    {done / 1e6:8.1f} MB{pct}', flush=True)
-    if length is not None and done != length:
-        raise RuntimeError(f'{url}: got {done} bytes of the {length} asked for')
-    os.replace(part, out)
-    print(f'    {done / 1e6:.1f} MB in {time.time() - t0:.0f} s')
 
 
 def read_range(url, start, length):
