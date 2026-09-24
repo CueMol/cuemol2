@@ -9,8 +9,15 @@
 #include <qlib/LExceptions.hpp>
 #include <qlib/LString.hpp>
 
+#include <qlib/parallel.hpp>
+
 #include <algorithm>
 #include <climits>
+#include <condition_variable>
+#include <cstdlib>
+#include <cstring>
+#include <exception>
+#include <mutex>
 
 using namespace mdtools;
 using qlib::LString;
@@ -79,8 +86,42 @@ std::unique_ptr<qlib::InStream> TrajBlockReader::openAtFrame(int ifrm) const
 // from its UID) is defined together with the Trajectory class, since it needs
 // the complete Trajectory type. DCDTrajReader is its only caller.
 
+/// One background decode. The task fills `frame` or `err` and sets `done`;
+/// the loading thread waits on `cv` for it.
+struct TrajBlock::PrefetchSlot
+{
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool done = false;
+    DetachedFrame frame;
+    std::exception_ptr err;
+
+    bool isDone()
+    {
+        std::lock_guard<std::mutex> lk(mtx);
+        return done;
+    }
+};
+
+int TrajBlock::s_nPrefetchDepth = 4;
+
+void TrajBlock::setPrefetchDepth(int n)
+{
+    s_nPrefetchDepth = std::max(0, n);
+}
+
+int TrajBlock::getPrefetchDepth()
+{
+    return s_nPrefetchDepth;
+}
+
 TrajBlock::TrajBlock()
-    : m_nIndex(0), m_nCrds(0), m_bOnDemand(false), m_nResident(0), m_nUseTick(0)
+    : m_nIndex(0),
+      m_nCrds(0),
+      m_bOnDemand(false),
+      m_nResident(0),
+      m_nUseTick(0),
+      m_nLastLoad(-1)
 {
 }
 
@@ -143,6 +184,7 @@ qfloat32 *TrajBlock::appendFrame()
 
 void TrajBlock::clear()
 {
+    cancelPrefetch();
     for (PosArray *p : m_data) {
         delete p;
     }
@@ -237,10 +279,92 @@ void TrajBlock::evictFor(int keep)
     }
 }
 
+void TrajBlock::cancelPrefetch()
+{
+    if (m_pTasks) m_pTasks->wait();
+    m_prefetch.clear();
+    m_nLastLoad = -1;
+}
+
+bool TrajBlock::takePrefetched(int ifrm)
+{
+    auto it = m_prefetch.find(ifrm);
+    if (it == m_prefetch.end()) return false;
+    std::shared_ptr<PrefetchSlot> slot = it->second;
+    m_prefetch.erase(it);
+    {
+        std::unique_lock<std::mutex> lk(slot->mtx);
+        slot->cv.wait(lk, [&slot] { return slot->done; });
+    }
+    // A failed decode is redone by loadFrm(), which raises the error where
+    // the caller expects it. A frame decoded for a different atom count
+    // (the load selection changed since) is no use either.
+    if (slot->err || slot->frame.crd.size() != size_t(m_nCrds)) return false;
+    std::memcpy(getCrdArray(ifrm), slot->frame.crd.data(), size_t(m_nCrds) * sizeof(qfloat32));
+    std::memcpy(getCellArray(ifrm), slot->frame.cell, sizeof(slot->frame.cell));
+    return true;
+}
+
+void TrajBlock::prefetchAfter(int ifrm)
+{
+    const int depth = std::min(s_nPrefetchDepth, maxResidentFrames() - 1);
+    const int dir = (m_nLastLoad >= 0 && ifrm < m_nLastLoad) ? -1 : 1;
+    m_nLastLoad = ifrm;
+    if (depth <= 0 || !m_bOnDemand || m_pReader.isnull()) return;
+    if (!qlib::TaskGroup::available()) return;
+
+    // Frames decoded ahead that playback has moved away from (it reversed,
+    // or jumped) are only memory now.
+    for (auto it = m_prefetch.begin(); it != m_prefetch.end();) {
+        if (std::abs(it->first - ifrm) > depth && it->second->isDone())
+            it = m_prefetch.erase(it);
+        else
+            ++it;
+    }
+
+    for (int k = 1; k <= depth; ++k) {
+        const int j = ifrm + dir * k;
+        if (j < 0 || j >= getSize()) break;
+        if (m_flags[j] || m_prefetch.count(j) > 0) continue;
+        DetachedDecode job;
+        try {
+            job = m_pReader->makeDetachedDecode(j, this);
+        } catch (...) {
+            // A prefetch is only ever an optimisation; the frame being shown
+            // has been loaded already, and a later load() reports the error.
+            return;
+        }
+        if (!job) return;
+        if (!m_pTasks) m_pTasks.reset(MB_NEW qlib::TaskGroup());
+        auto slot = std::make_shared<PrefetchSlot>();
+        m_prefetch[j] = slot;
+        m_pTasks->run([slot, job]() {
+            DetachedFrame frame;
+            std::exception_ptr err;
+            try {
+                job(frame);
+            } catch (...) {
+                err = std::current_exception();
+            }
+            {
+                std::lock_guard<std::mutex> lk(slot->mtx);
+                slot->frame = std::move(frame);
+                slot->err = err;
+                slot->done = true;
+            }
+            slot->cv.notify_all();
+        });
+    }
+}
+
 void TrajBlock::load(int ifrm)
 {
     if (!m_lastUse.empty()) m_lastUse[ifrm] = ++m_nUseTick;
-    if (m_flags[ifrm]) return;
+    if (m_flags[ifrm]) {
+        // Held already; keep the frames after it coming all the same.
+        if (!m_pReader.isnull()) prefetchAfter(ifrm);
+        return;
+    }
 
     if (m_pReader.isnull()) {
         LString msg = LString::format("Cannot load TrajBlock %d (reader is null)", ifrm);
@@ -255,10 +379,11 @@ void TrajBlock::load(int ifrm)
     }
 
     evictFor(ifrm);
-    m_pReader->loadFrm(ifrm, this);
+    if (!takePrefetched(ifrm)) m_pReader->loadFrm(ifrm, this);
 
     m_flags[ifrm] = true;
     ++m_nResident;
+    prefetchAfter(ifrm);
 
     // The reader is kept while a released frame may still need decoding again.
     if (isAllLoaded() && (!m_bOnDemand || maxResidentFrames() >= getSize())) {

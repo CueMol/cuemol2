@@ -6,6 +6,8 @@
 #include <common.h>
 
 #include "XtcTrajReader.hpp"
+
+#include <qlib/FileStream.hpp>
 #include "TrajBlock.hpp"
 #include "Trajectory.hpp"
 #include "XdrInStream.hpp"
@@ -301,6 +303,60 @@ void XtcTrajReader::indexFrames(qlib::InStream &ins, const TrajBlockPtr &pTB,
 
     LOG_DPRINTLN("XtcTraj> indexed %d frames (skip=%d) for on-demand loading", nkept,
                  m_nSkip);
+}
+
+DetachedDecode XtcTrajReader::makeDetachedDecode(int ifrm, TrajBlock *pTB)
+{
+    const std::vector<qint64> &offsets = getFrameOffsets();
+    if (ifrm < 0 || ifrm >= static_cast<int>(offsets.size())) return DetachedDecode();
+    if (m_natom <= 0 || getPath().isEmpty()) return DetachedDecode();
+
+    TrajectoryPtr pTraj = getTargTrajOf(pTB);
+    const quint32 *psia = pTraj->getSelIndexArray();
+    const int nread = (psia != NULL) ? static_cast<int>(pTraj->getAtomSize()) : m_natom;
+    if (psia != NULL &&
+        (m_pDetachedSel == nullptr || static_cast<int>(m_pDetachedSel->size()) != nread)) {
+        m_pDetachedSel = std::make_shared<const std::vector<quint32>>(psia, psia + nread);
+    }
+    std::shared_ptr<const std::vector<quint32>> pSel =
+        (psia != NULL) ? m_pDetachedSel : std::shared_ptr<const std::vector<quint32>>();
+
+    const std::string path = getPath().c_str();
+    const qint64 offset = offsets[ifrm];
+    const int natomFile = m_natom;
+
+    return [path, offset, natomFile, nread, pSel](DetachedFrame &out) {
+        // Per worker thread, so a thread decoding one frame after another
+        // keeps its buffers, as loadFrm() does on the loading thread.
+        thread_local std::vector<qfloat32> filecrd;
+        thread_local std::vector<char> compressed;
+        thread_local std::vector<qint32> intbuf;
+
+        qlib::FileInStream fis;
+        fis.open(LString(path.c_str()));
+        fis.seekTo(offset);
+        XdrInStream xdr(fis);
+
+        int natom = 0;
+        bool bLong = false;
+        if (!readFrameHeader(xdr, out.cell, natom, bLong) || natom != natomFile) {
+            MB_THROW(qlib::FileFormatException, "XTC: frame header does not match the index");
+            return;
+        }
+        xdr.swapScratch(compressed, intbuf);
+        readFrameCoords(xdr, filecrd, natom, bLong);
+        xdr.swapScratch(compressed, intbuf);
+        fis.close();
+
+        // The same arithmetic as scatterCoords(), from the copied map.
+        out.crd.resize(static_cast<size_t>(nread) * 3);
+        for (int jj = 0; jj < nread; ++jj) {
+            const size_t k = (pSel != nullptr) ? size_t((*pSel)[jj]) : size_t(jj);
+            out.crd[jj * 3 + 0] = filecrd[k * 3 + 0] * 10.0f;
+            out.crd[jj * 3 + 1] = filecrd[k * 3 + 1] * 10.0f;
+            out.crd[jj * 3 + 2] = filecrd[k * 3 + 2] * 10.0f;
+        }
+    };
 }
 
 void XtcTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
