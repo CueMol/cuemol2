@@ -10,6 +10,8 @@
 
 #include <qlib/mcutils.hpp>
 #include "MolResidue.hpp"
+
+#include <set>
 // #include <qlib/LSerial.hpp>
 
 namespace molstr {
@@ -99,6 +101,11 @@ namespace molstr {
 
     /// Remove residue by smptr.
     bool removeResidue(MolResiduePtr pRes);
+
+    /// Remove every residue whose index is in `idx`, in one pass over the
+    /// chain. removeResidue() searches the chain for each residue, so
+    /// removing most of a long chain one residue at a time is quadratic.
+    void removeResidues(const std::set<ResidIndex> &idx);
     
     /// Get number of contained residues.
     int getSize() const {

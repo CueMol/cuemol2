@@ -4,9 +4,11 @@
 #include <gtest/gtest.h>
 #include <common.h>
 #include <string>
+#include <vector>
 #include "molstr/MolCoord.hpp"
 #include "molstr/MolAtom.hpp"
 #include "molstr/MolResidue.hpp"
+#include "molstr/MolChain.hpp"
 #include "molstr/MolArrayMap.hpp"
 #include "molstr/PDBFileWriter.hpp"
 #include "molstr/ResidIndex.hpp"
@@ -62,6 +64,43 @@ TEST(MolCoordRemoveAtom, RemovingOneAltConfKeepsTheOthers)
     ASSERT_TRUE(pMol->removeAtom(a1));
     EXPECT_EQ(pMol->getAtomSize(), 1);
     EXPECT_FALSE(pMol->getAtom(a2).isnull());
+}
+
+// removeAtoms() leaves the molecule as removeAtom() on each atom would: the
+// residues and the chain it empties are gone, the rest keep their order, and
+// alternate conformations leave the pool with their base atom.
+TEST(MolCoordRemoveAtom, RemoveAtomsPurgesEmptiedResiduesInOnePass)
+{
+    MolCoordPtr pMol(MB_NEW MolCoord());
+    std::vector<int> drop;
+    std::vector<int> keep;
+    for (int r = 1; r <= 6; ++r) {
+        const int a = addAtom(pMol, "CA", ResidIndex(r), '\0');
+        const int b = addAtom(pMol, "CB", ResidIndex(r), '\0');
+        if (r % 3 == 0) {
+            keep.push_back(a);
+            keep.push_back(b);
+        } else {
+            drop.push_back(a);
+            drop.push_back(b);
+        }
+    }
+    const int alt = addAtom(pMol, "CA", ResidIndex(1), 'A');
+    ASSERT_EQ(pMol->getAtomSize(), 13);
+
+    EXPECT_EQ(pMol->removeAtoms(drop), static_cast<int>(drop.size()));
+    EXPECT_EQ(pMol->getAtomSize(), static_cast<int>(keep.size()));
+    EXPECT_TRUE(pMol->getAtom(alt).isnull());
+    molstr::MolChainPtr pCh = pMol->getChain("A");
+    ASSERT_FALSE(pCh.isnull());
+    ASSERT_EQ(pCh->getSize(), 2);
+    EXPECT_EQ((*pCh->begin())->getIndex().first, 3);
+    EXPECT_EQ((*(pCh->begin() + 1))->getIndex().first, 6);
+    EXPECT_TRUE(pMol->getResidue("A", ResidIndex(1)).isnull());
+
+    // Emptying the chain removes it.
+    EXPECT_EQ(pMol->removeAtoms(keep), static_cast<int>(keep.size()));
+    EXPECT_TRUE(pMol->getChain("A").isnull());
 }
 
 TEST(MolArrayMapKey, InsertionCodeKeepsResiduesApart)
