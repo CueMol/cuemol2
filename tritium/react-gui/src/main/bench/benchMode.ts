@@ -17,6 +17,7 @@
 import { app, type BrowserWindow, screen } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import { startAppMetrics, stopAppMetrics, summarizeAppMetrics } from './appMetrics'
 
 /** Prefix the renderer prints its result JSON behind. */
 export const BENCH_RESULT_MARKER = '[BENCH_RESULT]'
@@ -28,6 +29,8 @@ export interface BenchArgs {
   outPath: string
   /** Canvas size in device pixels, or null to leave the window at its default. */
   canvas: { width: number; height: number } | null
+  /** `--bench-snapshot=<png>`: save the window as it is when the result arrives. */
+  snapshotPath: string | null
 }
 
 function argValue(argv: string[], name: string): string | null {
@@ -47,6 +50,7 @@ export function parseBenchArgs(argv: string[], cwd: string): BenchArgs | null {
   if (!spec) return null
 
   const out = argValue(argv, 'bench-out')
+  const snapshot = argValue(argv, 'bench-snapshot')
   const canvasArg = argValue(argv, 'canvas')
   let canvas: BenchArgs['canvas'] = null
   if (canvasArg) {
@@ -59,6 +63,7 @@ export function parseBenchArgs(argv: string[], cwd: string): BenchArgs | null {
     specPath: path.resolve(cwd, spec),
     outPath: out ? path.resolve(cwd, out) : path.resolve(cwd, 'bench-result.json'),
     canvas,
+    snapshotPath: snapshot ? path.resolve(cwd, snapshot) : null,
   }
 }
 
@@ -83,19 +88,46 @@ export function benchContentSize(args: BenchArgs): { width: number; height: numb
  *
  * A separate listener from the one `forwardConsoleMessages` installs, so the
  * output still reaches stdout as usual.
+ *
+ * Main samples every process's memory for the whole run (`appMetrics.ts`) and
+ * adds the summary to the result as `appMetrics`, placed against the phase
+ * times the result carries. A renderer that dies is recorded as a failed
+ * result with its reason, since for a large trajectory the failure is the
+ * finding.
  */
 export function installBenchResultWatcher(win: BrowserWindow, args: BenchArgs): void {
   let done = false
+  const startedAt = Date.now()
+  startAppMetrics()
 
-  const finish = (payload: string, failed: boolean): void => {
+  const finish = async (payload: string, failed: boolean): Promise<void> => {
     if (done) return
     done = true
+    stopAppMetrics()
+    let out = payload
+    try {
+      const result = JSON.parse(payload)
+      result.appMetrics = summarizeAppMetrics(result.phases)
+      out = JSON.stringify(result)
+    } catch (e) {
+      console.error('[Bench] could not attach appMetrics to the result:', e)
+    }
     try {
       fs.mkdirSync(path.dirname(args.outPath), { recursive: true })
-      fs.writeFileSync(args.outPath, payload)
+      fs.writeFileSync(args.outPath, out)
       console.log(`[Bench] wrote ${args.outPath}`)
     } catch (e) {
       console.error('[Bench] could not write the result:', e)
+    }
+    if (args.snapshotPath && !failed) {
+      try {
+        const img = await win.webContents.capturePage()
+        fs.mkdirSync(path.dirname(args.snapshotPath), { recursive: true })
+        fs.writeFileSync(args.snapshotPath, img.toPNG())
+        console.log(`[Bench] wrote ${args.snapshotPath}`)
+      } catch (e) {
+        console.error('[Bench] could not save the snapshot:', e)
+      }
     }
     // A modified scene would otherwise raise the save-confirm dialog on the
     // way out and hang a run that nobody is watching.
@@ -105,7 +137,20 @@ export function installBenchResultWatcher(win: BrowserWindow, args: BenchArgs): 
   win.webContents.on('console-message', (_event, _level, message) => {
     const at = message.indexOf(BENCH_RESULT_MARKER)
     if (at < 0) return
-    finish(message.slice(at + BENCH_RESULT_MARKER.length).trim(), false)
+    void finish(message.slice(at + BENCH_RESULT_MARKER.length).trim(), false)
+  })
+
+  win.webContents.on('render-process-gone', (_event, details) => {
+    console.error(`[Bench] renderer gone: ${details.reason} (exit ${details.exitCode})`)
+    void finish(
+      JSON.stringify({
+        ok: false,
+        error: `render-process-gone: ${details.reason}`,
+        exitCode: details.exitCode,
+        elapsedMs: Date.now() - startedAt,
+      }),
+      true,
+    )
   })
 
   // A cell that never reports is a failure, not a process to leave running.
@@ -113,6 +158,6 @@ export function installBenchResultWatcher(win: BrowserWindow, args: BenchArgs): 
   setTimeout(() => {
     if (done) return
     console.error(`[Bench] no result after ${timeoutMs} ms; giving up`)
-    finish(JSON.stringify({ ok: false, error: 'timeout' }), true)
+    void finish(JSON.stringify({ ok: false, error: 'timeout', elapsedMs: Date.now() - startedAt }), true)
   }, timeoutMs)
 }

@@ -173,6 +173,11 @@ function perFrameMeans(samples: FrameSample[]): Record<string, number> {
     return out;
 }
 
+/** A `performance.now()` value as epoch milliseconds, comparable with main's clock. */
+function epochMs(t: number): number {
+    return performance.timeOrigin + t;
+}
+
 function memoryNow(): BenchResult['memory'] {
     try {
         const m = process.memoryUsage();
@@ -271,6 +276,7 @@ export async function runBench(
 
     // --- Load ---
     const loadStart = performance.now();
+    benchCounters.armFirstDraw();
     const readerName = reader(spec);
     const objectName = path.basename(spec.file).replace(/\.[^.]+$/, '');
     const options = buildHeadlessFileOpenOptions(ctx, {
@@ -377,6 +383,15 @@ export async function runBench(
     // path from file to something on screen.
     await sleep(250);
     const loadMs = performance.now() - loadStart;
+    // The first frame that drew anything, which is what the Mol* comparison
+    // measures on its side too; loadMs above includes a fixed 250 ms wait.
+    for (let waited = 0; benchCounters.firstDrawAt === null && waited < 10000; waited += 50) {
+        await sleep(50);
+    }
+    const firstDrawMs = benchCounters.firstDrawAt !== null
+        ? benchCounters.firstDrawAt - loadStart
+        : null;
+    const loadedEpochMs = epochMs(performance.now());
 
     // --- Pin the confounders ---
     const pins = { ...DEFAULT_PINS, ...(spec.pin ?? {}) };
@@ -449,7 +464,8 @@ export async function runBench(
     benchCounters.startCollecting();
     const measureStart = performance.now();
     await sleep(spec.measureMs ?? DEFAULT_MEASURE_MS);
-    const elapsedSec = (performance.now() - measureStart) / 1000;
+    const measureEnd = performance.now();
+    const elapsedSec = (measureEnd - measureStart) / 1000;
     const samples = benchCounters.stopCollecting();
     const latencies = benchCounters.inputLatencies.slice();
     const updates = benchCounters.updateTimes.slice();
@@ -498,6 +514,13 @@ export async function runBench(
         pins,
         unpinned,
         loadMs,
+        firstDrawMs,
+        phases: {
+            loadStartEpochMs: epochMs(loadStart),
+            loadedEpochMs,
+            measureStartEpochMs: epochMs(measureStart),
+            measureEndEpochMs: epochMs(measureEnd),
+        },
         timestamp: new Date().toISOString(),
     };
 

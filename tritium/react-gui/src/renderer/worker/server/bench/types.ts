@@ -217,5 +217,21 @@ export interface BenchResult {
     unpinned: string[];
     /** Wall-clock milliseconds the load phase took (file open through first draw). */
     loadMs: number;
+    /**
+     * Milliseconds from the start of the load to the first frame that drew
+     * anything (null if none came within 10 s of the load). Unlike `loadMs` it
+     * has no fixed wait in it; it is the number the Mol* comparison uses.
+     */
+    firstDrawMs: number | null;
+    /**
+     * When each phase started or ended, as epoch milliseconds, so main can place
+     * its process memory samples (`appMetrics`) against them.
+     */
+    phases: {
+        loadStartEpochMs: number;
+        loadedEpochMs: number;
+        measureStartEpochMs: number;
+        measureEndEpochMs: number;
+    };
     timestamp: string;
 }

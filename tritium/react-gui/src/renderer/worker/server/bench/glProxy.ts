@@ -24,6 +24,21 @@ function byteLengthOf(src: unknown): number {
 }
 
 /**
+ * Bytes of the first argument that carries data (anything with a
+ * `byteLength`), whatever overload was used. A size-only `bufferData` or a
+ * `texImage2D(..., null)` counts 0. The Mol* comparison harness uses the same
+ * rule (`tritium/bench/molstar/glcount.js`).
+ */
+function dataBytesOf(args: unknown[]): number {
+    for (const a of args) {
+        if (a != null && typeof (a as { byteLength?: unknown }).byteLength === 'number') {
+            return (a as { byteLength: number }).byteLength;
+        }
+    }
+    return 0;
+}
+
+/**
  * GPU frame timing through `EXT_disjoint_timer_query_webgl2`.
  *
  * One query is in flight at a time and its result is picked up a few frames
@@ -114,7 +129,10 @@ export function installGlCounters(gl: WebGL2RenderingContext): WebGL2RenderingCo
                 c.total++;
                 switch (name) {
                     case 'useProgram': c.useProgram++; break;
-                    case 'bufferData': c.bufferData++; break;
+                    case 'bufferData':
+                        c.bufferData++;
+                        c.bufferDataBytes += dataBytesOf(args);
+                        break;
                     case 'bufferSubData':
                         c.bufferSubData++;
                         // (target, offset, srcData, ...) -- srcData is third.
@@ -129,6 +147,11 @@ export function installGlCounters(gl: WebGL2RenderingContext): WebGL2RenderingCo
                     case 'texSubImage3D':
                         c.texSubImage++;
                         c.texSubImageBytes += byteLengthOf(args[args.length - 1]);
+                        break;
+                    case 'texImage2D':
+                    case 'texImage3D':
+                        c.texImage++;
+                        c.texImageBytes += dataBytesOf(args);
                         break;
                     case 'getUniformLocation': c.getUniformLocation++; break;
                     case 'drawArrays':
