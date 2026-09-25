@@ -7,6 +7,12 @@
 
 #include <common.h>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <unordered_map>
+#include <vector>
+
 #include <qlib/LExceptions.hpp>
 #include <qlib/LQuat.hpp>
 #include <qlib/Vector4D.hpp>
@@ -405,10 +411,13 @@ namespace {
         pCurr->removePropStr("secondary");
         pCurr->removePropStr("secondary2");
 
+	// Stop at the first missing atom: a miss makes getAtom() scan the whole
+	// residue, and a solvated system has millions of non-protein residues.
 	pCurrN = pCurr->getAtom(tagnmN);
-	pCurrO = pCurr->getAtom(tagnmO);
-	pCurrC = pCurr->getAtom(tagnmC);
-	pCurrCA = pCurr->getAtom(tagnmCA);
+	if (!pCurrN.isnull()) pCurrO = pCurr->getAtom(tagnmO);
+	if (!pCurrN.isnull() && !pCurrO.isnull()) pCurrC = pCurr->getAtom(tagnmC);
+	if (!pCurrN.isnull() && !pCurrO.isnull() && !pCurrC.isnull())
+	  pCurrCA = pCurr->getAtom(tagnmCA);
 	if (pCurrN.isnull() ||
 	    pCurrC.isnull() ||
 	    pCurrO.isnull() ||
@@ -527,13 +536,47 @@ namespace {
       const double CADIST = 9.0;
       int i, j;
 
-      for (i = 0; i < m_chains.size(); ++i) {
+      // Only residues whose CA atoms lie within CADIST can be paired, so
+      // bucket the CAs into CADIST-sized cells and look for partners in the
+      // 27 cells around each one, instead of measuring every pair (which is
+      // quadratic: 2.4e8 pairs for a 22k-residue complex). For each i the
+      // candidates are visited in increasing j, the order the all-pairs loop
+      // used, so the hydrogen-bond lists come out the same.
+      const int nres = static_cast<int>(m_chains.size());
+      std::unordered_map<qint64, std::vector<int>> cells;
+      auto cellKey = [](qint64 ix, qint64 iy, qint64 iz) {
+        return ((ix & 0x1FFFFF) << 42) | ((iy & 0x1FFFFF) << 21) | (iz & 0x1FFFFF);
+      };
+      std::vector<std::array<qint64, 3>> cellIdx(nres);
+      for (i = 0; i < nres; ++i) {
+        const Vector4D &ca = m_chains[i]->ca;
+        const qint64 ix = static_cast<qint64>(std::floor(ca.x() / CADIST));
+        const qint64 iy = static_cast<qint64>(std::floor(ca.y() / CADIST));
+        const qint64 iz = static_cast<qint64>(std::floor(ca.z() / CADIST));
+        cellIdx[i] = {ix, iy, iz};
+        cells[cellKey(ix, iy, iz)].push_back(i);
+      }
+
+      std::vector<int> cand;
+      for (i = 0; i < nres; ++i) {
 	// skip the chain break mark
 	if (!noChainBrk(i, i))
 	  continue;
 
 	Backbone &WITH = *m_chains[i];
-	for (j = i + 1; j < m_chains.size(); ++j) {
+        cand.clear();
+        for (qint64 dx = -1; dx <= 1; ++dx)
+          for (qint64 dy = -1; dy <= 1; ++dy)
+            for (qint64 dz = -1; dz <= 1; ++dz) {
+              auto it = cells.find(cellKey(cellIdx[i][0] + dx, cellIdx[i][1] + dy,
+                                           cellIdx[i][2] + dz));
+              if (it == cells.end()) continue;
+              for (int k : it->second)
+                if (k > i) cand.push_back(k);
+            }
+        std::sort(cand.begin(), cand.end());
+	for (const int jc : cand) {
+	  j = jc;
 	  // skip the chain break mark
 	  if (!noChainBrk(j, j))
 	    continue;
@@ -733,7 +776,32 @@ namespace {
       if (!noChainBrk(i - 1, i + 1))
 	return;
 
-      for (j=i+3; j<m_chains.size() && j2==0; ++j) {
+      // A bridge needs one of the hydrogen bonds tested below, and every one
+      // of them names j directly: j is an acceptor of i or i+1, or one past
+      // such an acceptor (isHbon only looks at a residue's two best
+      // acceptors). So instead of trying every j > i + 2 (quadratic in the
+      // residue count), try those at most eight residues, in increasing
+      // order as the scan did, with the same early exit.
+      std::vector<int> cand;
+      auto addAcceptors = [this, &cand](int res) {
+        const HbonList &accs = m_chains[res]->acceptors;
+        int k = 0;
+        for (HbonList::const_iterator it = accs.begin(); it != accs.end() && k < 2; ++it, ++k) {
+          cand.push_back(it->peer);
+          cand.push_back(it->peer + 1);
+        }
+      };
+      addAcceptors(i);
+      addAcceptors(i + 1);
+      std::sort(cand.begin(), cand.end());
+      cand.erase(std::unique(cand.begin(), cand.end()), cand.end());
+
+      for (const int jc : cand) {
+	j = jc;
+	if (j < i + 3 || j >= static_cast<int>(m_chains.size()))
+	  continue;
+	if (j2 != 0)
+	  break;
 	if (!noChainBrk(j - 1, j + 1))
 	  continue;
 	
