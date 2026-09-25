@@ -27,6 +27,7 @@ add_executable(test_qlib
   qlib/test_matrix4d.cpp
   qlib/test_lquat.cpp
   qlib/test_lstring.cpp
+  qlib/test_tagname.cpp
   qlib/test_rangeset.cpp
   qlib/test_lscrtime.cpp
   qlib/test_lregexpr.cpp

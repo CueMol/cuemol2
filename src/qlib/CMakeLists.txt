@@ -22,6 +22,7 @@ LScrObjects.cpp
 LScrSmartPtr.cpp
 LChar.cpp
 LString.cpp
+TagName.cpp
 LUnicode.cpp
 LThread.cpp
 ObjectManager.cpp
