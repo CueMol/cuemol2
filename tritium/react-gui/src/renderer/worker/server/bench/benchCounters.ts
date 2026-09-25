@@ -19,6 +19,13 @@
 export interface GlCallCounts {
     useProgram: number;
     bufferData: number;
+    /**
+     * Bytes handed to `bufferData` as data (a size-only allocation counts 0).
+     * This and the other `*Bytes` fields added with it take the first argument
+     * that has a `byteLength`, so every overload is counted the same way; the
+     * Mol* comparison harness counts its context with the same rule.
+     */
+    bufferDataBytes: number;
     bufferSubData: number;
     bufferSubDataBytes: number;
     bindBuffer: number;
@@ -28,6 +35,9 @@ export interface GlCallCounts {
     bindTexture: number;
     texSubImage: number;
     texSubImageBytes: number;
+    /** `texImage2D` / `texImage3D` calls, and the bytes of data they were given. */
+    texImage: number;
+    texImageBytes: number;
     getUniformLocation: number;
     uniform: number;
     draw: number;
@@ -53,6 +63,7 @@ function zeroCounts(): GlCallCounts {
     return {
         useProgram: 0,
         bufferData: 0,
+        bufferDataBytes: 0,
         bufferSubData: 0,
         bufferSubDataBytes: 0,
         bindBuffer: 0,
@@ -62,6 +73,8 @@ function zeroCounts(): GlCallCounts {
         bindTexture: 0,
         texSubImage: 0,
         texSubImageBytes: 0,
+        texImage: 0,
+        texImageBytes: 0,
         getUniformLocation: 0,
         uniform: 0,
         draw: 0,
@@ -95,6 +108,19 @@ class BenchCounters {
 
     enable(): void {
         this._enabled = true;
+    }
+
+    /**
+     * `performance.now()` of the first frame that drew something after
+     * `armFirstDraw()`, or null until there is one.
+     */
+    firstDrawAt: number | null = null;
+    private _watchFirstDraw = false;
+
+    /** Watch for the next frame that draws, from now on. */
+    armFirstDraw(): void {
+        this.firstDrawAt = null;
+        this._watchFirstDraw = true;
     }
 
     /** Start keeping samples. Clears whatever a previous phase collected. */
@@ -159,6 +185,10 @@ class BenchCounters {
         if (!this._enabled || startedAt === 0) return;
         const now = performance.now();
         const drewSomething = this.live.draw + this.live.drawInstanced > 0;
+        if (this._watchFirstDraw && drewSomething) {
+            this.firstDrawAt = now;
+            this._watchFirstDraw = false;
+        }
         if (this._collecting) {
             this._samples.push({
                 intervalMs: this._lastFrameStart === 0 ? 0 : startedAt - this._lastFrameStart,
