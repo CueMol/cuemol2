@@ -26,29 +26,8 @@ git worktree add --detach ../abl/X ebb4bddb
 cd ../abl/X && git apply --3way ../harness-overlay.patch && git apply -p1 <this dir>/X.patch
 ```
 
-## Result (Apple M2, 3J3Q coord-morph, 3 runs each)
+## Result
 
-| | D | F | G | H |
-|---|---:|---:|---:|---:|
-| update fps | 57.6 | 52.4 | 54.4 | 57.1 |
-| texUpload ms | 6.68 | 8.99 | 8.59 | 6.30 |
-| bytes per frame | 29.3 MB | 29.3 MB | 39.1 MB | 39.1 MB |
-| GPU-process CPU per frame for the upload | ~7.4 ms | ~2.2 ms | ~4.5 ms | ~2.1 ms |
-
-The GPU-process figures are estimates from `sample` profiles:
-`results/ablation-m2-20260925/profiles/`.
-
-- **D** runs an ANGLE loop that converts RGB to RGBA, then Metal
-  `replaceRegion`, which makes the AGX driver twiddle the data into its tiled
-  layout on the CPU.
-- **F** removes both from the CPU; ANGLE copies from the PBO on the GPU. It is
-  nevertheless slower at the application level.
-- **G** removes the conversion and the twiddle: ANGLE copies to a staging
-  Metal buffer and blits on the GPU. It sends 33% more bytes.
-- **H** has the least hidden work, one linear memcpy into the PBO. At the
-  application level it is no faster than D, and it varies more between runs.
-  In 4V6X (60 fps in every condition) D has the lowest CPU time.
-
-**Decision: RGBA32F and PBO are not adopted.** They remove copies inside ANGLE
-without improving the frame. The remaining limit appears to be the
-renderer-to-GPU-process transfer, and that part has not been verified.
+Measured on the Apple M2 against D (3J3Q and 4V6X coord-morph, 3 runs each); raw results
+in `results/ablation-m2-20260925/pbo-F/` and `rgba-pbo/`, GPU-process profiles in
+`profiles/`. **RGBA32F and PBO are not adopted.**

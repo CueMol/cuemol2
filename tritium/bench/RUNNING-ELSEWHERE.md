@@ -173,12 +173,10 @@ Two things, specifically.
 
 **Does the coordinate-texture ring help here too?** Compare `coord-morph`
 against this branch's parent with `TextureStore`'s `COORD_TEX_RING` set to 1.
-On the M2 the upload halved on 3J3Q and the cell went from 36.4 to 53.9 fps.
 If a D3D11 driver already renames the texture, the ring will show nothing --
 which is worth knowing and is not a failure.
 
-**Does the shape of the result hold?** The M2 numbers say static viewing costs
-about 0.3 ms of CPU regardless of structure size, and that moving atoms is
-bounded by the upload rather than by anything per-atom. Those are claims about
-the architecture rather than about one machine, and a second machine is what
-decides whether they are.
+**Does the shape of the result hold?** The M2 results make claims about how
+static viewing and moving atoms scale with structure size. Those are claims
+about the architecture rather than about one machine, and a second machine is
+what decides whether they are.
