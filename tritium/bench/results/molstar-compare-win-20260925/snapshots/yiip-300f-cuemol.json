@@ -1,0 +1,509 @@
+{
+ "ok": true,
+ "spec": {
+  "name": "yiip, first 300 frames / md-playback",
+  "file": "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system.gro",
+  "reader": "gro",
+  "renderer": "cpk",
+  "scenario": "idle",
+  "trajectory": {
+   "files": [
+    "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system_9ns_center-300f.xtc"
+   ]
+  },
+  "warmupMs": 1500,
+  "measureMs": 500,
+  "tools": [
+   "cuemol",
+   "molstar"
+  ]
+ },
+ "atomCount": 111815,
+ "canvas": {
+  "width": 1832,
+  "height": 1010,
+  "dpr": 1,
+  "domWidth": 300,
+  "domHeight": 150
+ },
+ "machine": {
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) CueMol3/0.1.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36",
+  "platform": "Win32",
+  "cpuThreads": 32,
+  "vendor": "WebKit",
+  "renderer": "WebKit WebGL",
+  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+  "shadingLanguage": "WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)",
+  "unmaskedVendor": "Google Inc. (NVIDIA)",
+  "unmaskedRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 (0x00002786) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "floatColorBuffer": true,
+  "defaultFbMultisampled": false
+ },
+ "frames": 30,
+ "drawnFrames": 0,
+ "renderFps": 59.98800239666022,
+ "updateFps": 0,
+ "frameMs": {
+  "mean": 16.09666666587194,
+  "p50": 16.699999928474426,
+  "p95": 17.399999976158142,
+  "p99": 17.399999976158142,
+  "max": 17.399999976158142
+ },
+ "cpuMs": {
+  "mean": 0.026666665077209474,
+  "p50": 0,
+  "p95": 0.10000002384185791,
+  "p99": 0.19999992847442627,
+  "max": 0.19999992847442627
+ },
+ "gpuMs": {
+  "mean": 0,
+  "p50": 0,
+  "p95": 0,
+  "p99": 0,
+  "max": 0
+ },
+ "glPerFrame": {
+  "useProgram": 0,
+  "bufferData": 0,
+  "bufferDataBytes": 0,
+  "bufferSubData": 0,
+  "bufferSubDataBytes": 0,
+  "bindBuffer": 0,
+  "bindBufferBase": 0,
+  "bindVertexArray": 0,
+  "bindFramebuffer": 0,
+  "bindTexture": 0,
+  "texSubImage": 0,
+  "texSubImageBytes": 0,
+  "texImage": 0,
+  "texImageBytes": 0,
+  "getUniformLocation": 0,
+  "uniform": 0,
+  "draw": 0,
+  "drawInstanced": 0,
+  "readPixels": 0,
+  "total": 0.23333333333333334
+ },
+ "native": {
+  "drawElemUs": 0,
+  "drawElemCount": 0,
+  "bufferCreateUs": 0,
+  "bufferCreateCount": 0,
+  "bufferUpdateUs": 0,
+  "bufferUpdateCount": 0,
+  "bufferDrawUs": 0,
+  "bufferDrawCount": 0,
+  "uboUpdateUs": 0,
+  "uboUpdateCount": 0,
+  "coordTexUpdateUs": 0,
+  "coordTexUpdateCount": 0,
+  "allocBytes": 0,
+  "allocCount": 0
+ },
+ "memory": {
+  "rssMB": 343.887872,
+  "externalMB": 19.148137,
+  "heapMB": 7.93646
+ },
+ "input": {
+  "gpuPickOff": true,
+  "hoverMounted": false,
+  "canvasMouseBound": false
+ },
+ "inputLatencyMs": null,
+ "rendererProps": {
+  "detail": 10
+ },
+ "view": {
+  "fitted": true,
+  "zoom": 164.724,
+  "distance": 200,
+  "slab": 200.046
+ },
+ "morph": null,
+ "trajectory": null,
+ "updateMs": null,
+ "updateSplit": null,
+ "pins": {
+  "aaJitterLevel": 0,
+  "aoEnabled": false,
+  "aoHalfRes": false,
+  "aa_method": "none"
+ },
+ "unpinned": [],
+ "loadMs": 594.6999999284744,
+ "firstDrawMs": 507.10000002384186,
+ "phases": {
+  "loadStartEpochMs": 1790325678456.1,
+  "loadedEpochMs": 1790325679050.8,
+  "measureStartEpochMs": 1790325680559,
+  "measureEndEpochMs": 1790325681059.1
+ },
+ "timestamp": "2026-09-25T08:41:21.059Z",
+ "appMetrics": {
+  "intervalMs": 250,
+  "samples": 13,
+  "peak": {
+   "t": 1790325681061,
+   "totalWorkingSetMB": 608.5625,
+   "totalPrivateMB": 520.8671875,
+   "byType": {
+    "Browser": {
+     "workingSetMB": 99.82421875,
+     "privateMB": 41.85546875
+    },
+    "GPU": {
+     "workingSetMB": 131.7421875,
+     "privateMB": 200.67578125
+    },
+    "Utility": {
+     "workingSetMB": 48.21875,
+     "privateMB": 12.234375
+    },
+    "Tab": {
+     "workingSetMB": 328.77734375,
+     "privateMB": 266.1015625
+    }
+   }
+  },
+  "loaded": {
+   "t": 1790325679065,
+   "totalWorkingSetMB": 607.34765625,
+   "totalPrivateMB": 519.59375,
+   "byType": {
+    "Browser": {
+     "workingSetMB": 99.78125,
+     "privateMB": 41.60546875
+    },
+    "GPU": {
+     "workingSetMB": 131.890625,
+     "privateMB": 200.8671875
+    },
+    "Utility": {
+     "workingSetMB": 48.21875,
+     "privateMB": 12.234375
+    },
+    "Tab": {
+     "workingSetMB": 327.45703125,
+     "privateMB": 264.88671875
+    }
+   }
+  },
+  "measurePeak": {
+   "t": 1790325680901,
+   "totalWorkingSetMB": 607.66796875,
+   "totalPrivateMB": 520.5,
+   "byType": {
+    "Browser": {
+     "workingSetMB": 99.8203125,
+     "privateMB": 41.85546875
+    },
+    "GPU": {
+     "workingSetMB": 131.73828125,
+     "privateMB": 200.67578125
+    },
+    "Utility": {
+     "workingSetMB": 48.21875,
+     "privateMB": 12.234375
+    },
+    "Tab": {
+     "workingSetMB": 327.890625,
+     "privateMB": 265.734375
+    }
+   }
+  },
+  "timeline": [
+   {
+    "t": 1790325678047,
+    "totalWorkingSetMB": 86.6171875,
+    "totalPrivateMB": 38.26171875,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 86.6171875,
+      "privateMB": 38.26171875
+     }
+    }
+   },
+   {
+    "t": 1790325678305,
+    "totalWorkingSetMB": 362.1875,
+    "totalPrivateMB": 201.28515625,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.1171875,
+      "privateMB": 41.4140625
+     },
+     "GPU": {
+      "workingSetMB": 89.4609375,
+      "privateMB": 72.05078125
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 125.390625,
+      "privateMB": 75.5859375
+     }
+    }
+   },
+   {
+    "t": 1790325678557,
+    "totalWorkingSetMB": 456.28515625,
+    "totalPrivateMB": 360.91015625,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.609375,
+      "privateMB": 41.5703125
+     },
+     "GPU": {
+      "workingSetMB": 98.9921875,
+      "privateMB": 149.15625
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 209.46484375,
+      "privateMB": 157.94921875
+     }
+    }
+   },
+   {
+    "t": 1790325678811,
+    "totalWorkingSetMB": 543.70703125,
+    "totalPrivateMB": 457.703125,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.62109375,
+      "privateMB": 41.58203125
+     },
+     "GPU": {
+      "workingSetMB": 102.5859375,
+      "privateMB": 160.14453125
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 293.28125,
+      "privateMB": 243.7421875
+     }
+    }
+   },
+   {
+    "t": 1790325679065,
+    "totalWorkingSetMB": 607.34765625,
+    "totalPrivateMB": 519.59375,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.78125,
+      "privateMB": 41.60546875
+     },
+     "GPU": {
+      "workingSetMB": 131.890625,
+      "privateMB": 200.8671875
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 327.45703125,
+      "privateMB": 264.88671875
+     }
+    }
+   },
+   {
+    "t": 1790325679325,
+    "totalWorkingSetMB": 607.76171875,
+    "totalPrivateMB": 520.40625,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.78515625,
+      "privateMB": 41.60546875
+     },
+     "GPU": {
+      "workingSetMB": 131.89453125,
+      "privateMB": 200.87109375
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 327.86328125,
+      "privateMB": 265.6953125
+     }
+    }
+   },
+   {
+    "t": 1790325679609,
+    "totalWorkingSetMB": 607.79296875,
+    "totalPrivateMB": 520.66796875,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.796875,
+      "privateMB": 41.85546875
+     },
+     "GPU": {
+      "workingSetMB": 131.90625,
+      "privateMB": 200.87890625
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 327.87109375,
+      "privateMB": 265.69921875
+     }
+    }
+   },
+   {
+    "t": 1790325679870,
+    "totalWorkingSetMB": 607.890625,
+    "totalPrivateMB": 520.6796875,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.80859375,
+      "privateMB": 41.85546875
+     },
+     "GPU": {
+      "workingSetMB": 131.9765625,
+      "privateMB": 200.8828125
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 327.88671875,
+      "privateMB": 265.70703125
+     }
+    }
+   },
+   {
+    "t": 1790325680135,
+    "totalWorkingSetMB": 607.90234375,
+    "totalPrivateMB": 520.6875,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.80859375,
+      "privateMB": 41.85546875
+     },
+     "GPU": {
+      "workingSetMB": 131.984375,
+      "privateMB": 200.890625
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 327.890625,
+      "privateMB": 265.70703125
+     }
+    }
+   },
+   {
+    "t": 1790325680387,
+    "totalWorkingSetMB": 607.65234375,
+    "totalPrivateMB": 520.49609375,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.8203125,
+      "privateMB": 41.85546875
+     },
+     "GPU": {
+      "workingSetMB": 131.734375,
+      "privateMB": 200.671875
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 327.87890625,
+      "privateMB": 265.734375
+     }
+    }
+   },
+   {
+    "t": 1790325680638,
+    "totalWorkingSetMB": 607.6640625,
+    "totalPrivateMB": 520.5,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.8203125,
+      "privateMB": 41.85546875
+     },
+     "GPU": {
+      "workingSetMB": 131.73828125,
+      "privateMB": 200.67578125
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 327.88671875,
+      "privateMB": 265.734375
+     }
+    }
+   },
+   {
+    "t": 1790325680901,
+    "totalWorkingSetMB": 607.66796875,
+    "totalPrivateMB": 520.5,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.8203125,
+      "privateMB": 41.85546875
+     },
+     "GPU": {
+      "workingSetMB": 131.73828125,
+      "privateMB": 200.67578125
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 327.890625,
+      "privateMB": 265.734375
+     }
+    }
+   },
+   {
+    "t": 1790325681061,
+    "totalWorkingSetMB": 608.5625,
+    "totalPrivateMB": 520.8671875,
+    "byType": {
+     "Browser": {
+      "workingSetMB": 99.82421875,
+      "privateMB": 41.85546875
+     },
+     "GPU": {
+      "workingSetMB": 131.7421875,
+      "privateMB": 200.67578125
+     },
+     "Utility": {
+      "workingSetMB": 48.21875,
+      "privateMB": 12.234375
+     },
+     "Tab": {
+      "workingSetMB": 328.77734375,
+      "privateMB": 266.1015625
+     }
+    }
+   }
+  ]
+ },
+ "wallMs": 3301,
+ "exitStatus": 0
+}
