@@ -1,0 +1,6 @@
+# SHA-256 of the harness overlay patch, generated as
+#   git diff ebb4bddb <commit> -- . ':!tritium/bench/results' ':!docs' ':!tritium/docs'
+# main run and timer overhead (from bb85be19)
+406cbda3066ef3666399a1519412d41cf51b73edaf77d2a57e15452ddd063cf3  harness-overlay.patch
+# alloc rerun and F/G/H (from 0db6b5f6, adds the createBuffer counter)
+c976f716719ee436e6dd210222aebd1ec0f98c677b47207b39effa9e918a26d5  harness-overlay.patch

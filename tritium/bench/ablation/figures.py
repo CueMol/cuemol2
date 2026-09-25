@@ -120,10 +120,16 @@ def fig_b(rows, outdir):
                         markersize=3.5, linewidth=1.1, **STYLE[c])
         ax.set_xscale('log')
         ax.set_yscale('log')
+        # Below 0.1 ms the timers and scheduling dominate; those points are
+        # shown but not used for any comparison.
+        lo, hi = ax.get_ylim()
+        ax.axhspan(lo, 0.1, color='#eeeeee', zorder=0, linewidth=0)
+        ax.set_ylim(lo, hi)
         ax.set_xlabel('bytes uploaded per frame')
         ax.set_title(title)
     axes[0].set_ylabel('ms per frame')
     axes[0].legend(frameon=False, loc='upper left')
+    fig.text(0.5, -0.10, 'shaded: below 0.1 ms, not used for comparison', ha='center', fontsize=7)
     save(fig, outdir, 'fig_b_send_time_vs_bytes')
 
 
@@ -161,8 +167,11 @@ def fig_d(rows, outdir):
         ax.set_xticks(range(len(STRUCTS)))
         ax.set_xticklabels([s.upper() for s in STRUCTS])
         ax.set_ylabel(ylabel)
-    axes[0].legend(frameon=False, loc='upper left')
-    fig.suptitle('static-orbit (no coordinates sent): the four conditions should agree', fontsize=9)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, frameon=False, loc='upper center', ncol=4,
+               bbox_to_anchor=(0.5, 1.02))
+    fig.suptitle('static-orbit (no coordinates sent): the four conditions should agree',
+                 fontsize=9, y=1.10)
     save(fig, outdir, 'fig_d_static_orbit_control')
 
 
