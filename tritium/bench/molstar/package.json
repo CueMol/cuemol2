@@ -1,0 +1,11 @@
+{
+  "name": "cuemol-bench-molstar",
+  "private": true,
+  "description": "Mol* side of the CueMol3 / Mol* MD playback comparison (one measured cell per Electron process)",
+  "main": "main.js",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "42.5.1",
+    "molstar": "5.11.0"
+  }
+}

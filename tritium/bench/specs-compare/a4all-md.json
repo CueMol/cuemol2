@@ -1,0 +1,18 @@
+{
+  "name": "a4tail all atoms (3940938 atoms, XTC, 100 frames) / md-playback",
+  "file": "../data/md/a4tail/em.gro",
+  "reader": "gro",
+  "renderer": "cpk",
+  "scenario": "md-playback",
+  "trajectory": {
+    "files": [
+      "../data/md/a4tail/prod-100f.xtc"
+    ]
+  },
+  "warmupMs": 2000,
+  "measureMs": 6000,
+  "tools": [
+    "cuemol",
+    "molstar"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "a4tail without water, first 50 frames / md-playback",
+  "file": "../data/md/a4tail/em-nosol.gro",
+  "reader": "gro",
+  "renderer": "cpk",
+  "scenario": "md-playback",
+  "trajectory": {
+    "files": [
+      "../data/md/a4tail/prod-50f-nosol.xtc"
+    ]
+  },
+  "warmupMs": 2000,
+  "measureMs": 6000,
+  "tools": [
+    "cuemol",
+    "molstar"
+  ]
+}
