@@ -1,0 +1,117 @@
+{
+ "started": "2026-09-25T16:25:02.729Z",
+ "seed": 1499623048,
+ "repeat": 3,
+ "gitSha": "b44949af5c44fb4ebbc5c1927abb89fb8eba5b1a",
+ "electron": "/Users/user1/proj64/molstar-wt/tritium/react-gui/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+ "canvas": {
+  "cuemol": "1920x1080",
+  "molstar": "1836x1014"
+ },
+ "dprSwitch": null,
+ "files": {
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/em.gro": {
+   "sha256": "82482eee2a32f67c077b5f16ad4f27e4f53575bbc6fe26f11ed9294dbb432268",
+   "bytes": 177342266
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-25f.xtc": {
+   "sha256": "02e4fba69b81035351658800909a1ca2ca411494e4fd77a627fad145ad2a289b",
+   "bytes": 382039884
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-50f.xtc": {
+   "sha256": "93c5250d8131e9cb24ea776b80d04972723b87cf14df73f64707006109c0c656",
+   "bytes": 764074836
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-100f.xtc": {
+   "sha256": "c5f6d8be534dd84b84b3954d581a84f52db336c4eaa3d0dd9fd767101b1aff13",
+   "bytes": 1528146256
+  }
+ },
+ "order": [
+  {
+   "order": 1,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 2,
+   "tool": "cuemol",
+   "spec": "a4all-25f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 3,
+   "tool": "cuemol",
+   "spec": "a4all-50f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 4,
+   "tool": "cuemol",
+   "spec": "a4all-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 5,
+   "tool": "cuemol",
+   "spec": "a4all-25f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 6,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 7,
+   "tool": "cuemol",
+   "spec": "a4all-50f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 8,
+   "tool": "cuemol",
+   "spec": "a4all-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 9,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 10,
+   "tool": "cuemol",
+   "spec": "a4all-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 11,
+   "tool": "cuemol",
+   "spec": "a4all-50f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 12,
+   "tool": "cuemol",
+   "spec": "a4all-25f-md",
+   "rep": 2,
+   "ok": true
+  }
+ ],
+ "finished": "2026-09-25T16:38:35.512Z"
+}
