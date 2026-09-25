@@ -8,6 +8,9 @@
 
 #include "mdtools.hpp"
 
+#include <string>
+#include <unordered_map>
+
 #include <qlib/mcutils.hpp>
 #include <qlib/LExceptions.hpp>
 #include <qsys/ObjReader.hpp>
@@ -126,6 +129,11 @@ namespace mdtools {
 
     /// Guess element ID from atom name (1-2 char prefix lookup).
     int guessElement(const LString &aname) const;
+  int guessElementImpl(const LString &aname) const;
+
+  /// guessElement() results by atom name, for one read(). A solvated system
+  /// repeats a handful of names millions of times (OW, HW1, HW2, ...).
+  mutable std::unordered_map<std::string, int> m_elemCache;
 
   };
 
