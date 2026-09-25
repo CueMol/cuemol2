@@ -273,6 +273,11 @@ namespace qlib {
 
   };
 
+  /// Three single-precision values: 12 bytes, no vtable, zeroed by the
+  /// default constructor. Used where coordinates are stored per atom.
+  using Vector3F = VectorND<3, float>;
+  static_assert(sizeof(Vector3F) == 3 * sizeof(float), "Vector3F must stay three bare floats");
+
 } // namespace qlib
 
 #endif

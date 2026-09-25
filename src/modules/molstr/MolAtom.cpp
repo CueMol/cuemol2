@@ -25,7 +25,6 @@ MolAtom::MolAtom()
   m_nID = -1;
   m_elem = ElemSym::XX;
   m_paib = NULL;
-  m_pos[0] = m_pos[1] = m_pos[2] = 0.0f;
   
   // no = AtomSym::C;
   m_bfac = 1.0;
@@ -99,7 +98,7 @@ Vector4D MolAtom::getRawPos() const
 {
   if (m_pCrdSrc!=NULL)
     return m_pCrdSrc->getAtomPos(m_nCrdIdx);
-  return Vector4D(m_pos[0], m_pos[1], m_pos[2]);
+  return Vector4D(m_pos.ai(1), m_pos.ai(2), m_pos.ai(3));
 }
 
 Vector4D MolAtom::getPos() const

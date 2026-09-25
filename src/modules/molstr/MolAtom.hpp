@@ -16,6 +16,7 @@
 #include <qlib/LScrVector4D.hpp>
 #include <qlib/Matrix4D.hpp>
 #include <qlib/TagName.hpp>
+#include <qlib/VectorND.hpp>
 
 #include "ElemSym.hpp"
 
@@ -71,7 +72,7 @@ namespace molstr {
     /// Coordinates in angstrom. Stored in single precision, as the QDF
     /// format and the coordinate arrays of animated molecules do;
     /// computation stays in double.
-    float m_pos[3];
+    qlib::Vector3F m_pos;
 
     /// Occupancy
     float m_occ;
@@ -188,9 +189,9 @@ namespace molstr {
   private:
     void setPosImpl(const Vector4D &vec)
     {
-      m_pos[0] = static_cast<float>(vec.x());
-      m_pos[1] = static_cast<float>(vec.y());
-      m_pos[2] = static_cast<float>(vec.z());
+      m_pos.ai(1) = static_cast<float>(vec.x());
+      m_pos.ai(2) = static_cast<float>(vec.y());
+      m_pos.ai(3) = static_cast<float>(vec.z());
     }
 
   public:
