@@ -98,8 +98,14 @@ function sha256(file) {
   return h.digest('hex')
 }
 
+/** Swap in use, MB: the page file on Windows, `vm.swapusage` on macOS. */
 function pagefileMB() {
   try {
+    if (process.platform === 'darwin') {
+      const out = execFileSync('sysctl', ['-n', 'vm.swapusage'], { encoding: 'utf8' })
+      const m = /used\s*=\s*([\d.]+)M/.exec(out)
+      return m ? Number(m[1]) : null
+    }
     const out = execFileSync('powershell', ['-NoProfile', '-Command',
       '(Get-CimInstance Win32_PageFileUsage | Measure-Object CurrentUsage -Sum).Sum'], { encoding: 'utf8' })
     return Number(out.trim())
@@ -123,7 +129,9 @@ function runCell(tool, specFile, extra = []) {
         ...process.env,
         CUEMOL_FRESH_PREFS: '1',
         LIBCUEMOL2_ROOT: process.env.LIBCUEMOL2_ROOT || path.resolve(BENCH, '../../.build_out/cuemol2'),
-        BUNDLE_APPS: process.env.BUNDLE_APPS || 'C:\\tmp\\proj64_deplibs',
+        BUNDLE_APPS: process.env.BUNDLE_APPS || (process.platform === 'win32'
+          ? 'C:\\tmp\\proj64_deplibs'
+          : path.join(os.homedir(), 'tmp/proj64_deplibs')),
       },
     })
   } else {
@@ -182,7 +190,8 @@ function toRow(c) {
 
 function outDir() {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const dir = path.join(BENCH, 'results', `molstar-compare-win-${date}`)
+  const host = process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : process.platform
+  const dir = path.join(BENCH, 'results', `molstar-compare-${host}-${date}`)
   fs.mkdirSync(path.join(dir, 'cells'), { recursive: true })
   return dir
 }
