@@ -3,6 +3,10 @@
 Apple M2, run on 2026-09-24/25. Instructions: `docs/plans/ablation-bench-instructions.md`
 (not on this branch; kept alongside it in the working copy).
 
+The report, results and scripts are also copied to `bench/perf-harness`; the harness
+code they were measured with (the `crdSend` / `texUpload` timers, the `createBuffer`
+counter, the F/G/H patches) is on `bench/ablation` only.
+
 All numbers below come from this run, under
 `tritium/bench/results/ablation-m2-20260925/`. Earlier documents are used only as the
 references of the acceptance checks (section 3).
