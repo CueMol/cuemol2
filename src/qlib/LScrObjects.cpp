@@ -19,9 +19,10 @@ using namespace qlib;
 
 
 LScrObjBase::LScrObjBase()
-     : m_rootuid(invalid_uid)
+     : m_rootuid(invalid_uid), m_pEvtCaster(NULL)
 {
-  m_pEvtCaster = MB_NEW LPropEventCaster;
+  // The event caster is created by the first addPropListener(): most
+  // scriptable objects (atoms, residues) never get a listener.
 }
 
 LScrObjBase::~LScrObjBase()
@@ -58,7 +59,7 @@ void LScrObjBase::setupParentData(const LString &propname)
   LScrObjBase *pNewPropCon = static_cast<LScrObjBase *>(pNewObjVal);
 
   pNewPropCon->m_rootuid = getRootUID();
-  pNewPropCon->m_thisname = m_thisname + propname;
+  pNewPropCon->m_thisname = m_thisname.str() + propname;
 
   // TO DO: travarse into the child properties of pNewPropCon
 }
@@ -67,12 +68,13 @@ void LScrObjBase::setupParentData(const LString &propname)
 int LScrObjBase::addPropListener(LPropEventListener *pL)
 {
   if (pL==NULL) return -1;
+  if (m_pEvtCaster==NULL) m_pEvtCaster = MB_NEW LPropEventCaster;
   return m_pEvtCaster->add(pL);
 }
 
 bool LScrObjBase::removePropListener(LPropEventListener *pL)
 {
-  if (pL==NULL) return false;
+  if (pL==NULL || m_pEvtCaster==NULL) return false;
   return m_pEvtCaster->remove(pL);
 }
 
@@ -89,7 +91,7 @@ void LScrObjBase::firePropChanged(LPropEvent &ev, const LString &parentname)
 */
   
   ev.setTarget(this);
-  m_pEvtCaster->replicaFire(ev);
+  if (m_pEvtCaster!=NULL) m_pEvtCaster->replicaFire(ev);
 }
 
 void LScrObjBase::nodePropChgImpl(LPropEvent &ev)
@@ -536,9 +538,10 @@ public:
 
 }
 
-LDefSupportScrObjBase::LDefSupportScrObjBase() : super_t()
+LDefSupportScrObjBase::LDefSupportScrObjBase() : super_t(), m_pdf(NULL)
 {
-  m_pdf = MB_NEW LDefaultFlagImpl;
+  // The flag table is created by the first setDefaultPropFlag(); until then
+  // every property is at its default and none has an instance default.
 }
 
 LDefSupportScrObjBase::~LDefSupportScrObjBase()
@@ -550,17 +553,20 @@ bool LDefSupportScrObjBase::isPropDefault(const LString &propnm) const
 {
   if (!hasPropDefault(propnm))
     return false;
+  if (m_pdf==NULL)
+    return true;
   return m_pdf->getDefaultPropFlag(propnm, this);
 }
 
 void LDefSupportScrObjBase::setDefaultPropFlag(const LString &propnm, bool bflag)
 {
+  if (m_pdf==NULL) m_pdf = MB_NEW LDefaultFlagImpl;
   m_pdf->setDefaultPropFlag(propnm, bflag, this);
 }
 
 bool LDefSupportScrObjBase::hasPropDefault(const LString &propnm) const
 {
-  if (m_pdf->hasPropDefault(propnm)) {
+  if (m_pdf!=NULL && m_pdf->hasPropDefault(propnm)) {
     // has instance default
     return true;
   }
@@ -570,6 +576,12 @@ bool LDefSupportScrObjBase::hasPropDefault(const LString &propnm) const
 
 void LDefSupportScrObjBase::copyDefaultFlags(const LDefSupportScrObjBase &src)
 {
+  if (src.m_pdf==NULL) {
+    delete m_pdf;
+    m_pdf = NULL;
+    return;
+  }
+  if (m_pdf==NULL) m_pdf = MB_NEW LDefaultFlagImpl;
   m_pdf->copyDefaultFlags(*(src.m_pdf));
 }
 

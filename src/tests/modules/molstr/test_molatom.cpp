@@ -2,6 +2,9 @@
 #include <common.h>
 #include "molstr/MolAtom.hpp"
 #include "molstr/ElemSym.hpp"
+#include <qlib/LPropEvent.hpp>
+
+#include <set>
 
 using molstr::MolAtom;
 using molstr::MolBond;
@@ -441,4 +444,37 @@ TEST(MolAtomTest, RemoveAtomProp)
     EXPECT_TRUE(atom.hasAtomProp("key"));
     atom.removeAtomProp("key");
     EXPECT_FALSE(atom.hasAtomProp("key"));
+}
+
+// ---- Lazily allocated scriptable-base storage ----
+// The dynamic property table, the prop listener list and the default-flag
+// table start unallocated; each must behave as empty until first written.
+
+namespace {
+struct NullPropListener : public qlib::LPropEventListener {
+    void propChanged(qlib::LPropEvent &) override {}
+};
+}  // namespace
+
+TEST(MolAtomTest, LazyBaseStorageActsEmptyUntilWritten)
+{
+    MolAtom atom;
+    EXPECT_FALSE(atom.hasAtomProp("charge"));
+    std::set<LString> names;
+    EXPECT_EQ(atom.getAtomPropNames(names), 0);
+    EXPECT_FALSE(atom.removeAtomProp("charge"));
+    atom.setAtomPropInt("charge", 2);
+    EXPECT_EQ(atom.getAtomPropInt("charge"), 2);
+    EXPECT_TRUE(atom.removeAtomProp("charge"));
+    EXPECT_FALSE(atom.hasAtomProp("charge"));
+
+    NullPropListener lsnr;
+    EXPECT_FALSE(atom.removePropListener(&lsnr));
+    EXPECT_GE(atom.addPropListener(&lsnr), 0);
+    EXPECT_TRUE(atom.removePropListener(&lsnr));
+
+    EXPECT_FALSE(atom.hasPropDefault("no_such_prop"));
+    atom.setDefaultPropFlag("no_such_prop", false);
+    EXPECT_TRUE(atom.hasPropDefault("no_such_prop"));
+    EXPECT_FALSE(atom.isPropDefault("no_such_prop"));
 }
