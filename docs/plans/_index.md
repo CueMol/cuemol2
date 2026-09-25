@@ -21,6 +21,7 @@
 | [260908-tritium-plugin-system-plan.md](260908-tritium-plugin-system-plan.md) | tritium の plugin システム (JS/TS + C++ 両レーン)。VSCode 拡張機構の調査、C++ 登録機構の seam、packaging と配置、Phase 0/A/A'/B/C | **Phase 0 のみ実装済み** (react 側の in-tree plugin host。`../architecture/tritium_plugin/`)。実行時ロード (Phase A)、C++ レーン (Phase A')、schema 駆動 UI / sideload (Phase B)、重い native の分離 (Phase C) は未実装 |
 | [umbreon-process-isolation-plan.md](umbreon-process-isolation-plan.md) | umbreon GI(OIDN) の大確保が Chromium PartitionAlloc で crash する件と、恒久対策としての process 分離 (mmap zero-copy) | **未実装 / 当面着手しない**。§2 の原因究明は確定した調査結果。着手条件は crash が実害になったとき |
 | [260913-pymconsole-plugin-plan.md](260913-pymconsole-plugin-plan.md) | PyMOL コマンド言語に部分互換なコンソールを built-in plugin `pymconsole` (既定オフ) として追加。パーサは PyMOL の `parsing.py` / `parser.py` / `shortcut.py` を TS へ移植し Web Worker に置く (embedded Python は使わない) | **Phase 1 + Tab 補完 + Phase 2 実装済み** (parser + console UI + 21 command + PyMOL 互換 Tab 補完 + selection 翻訳器と Tier 1 command。`tritium/react-gui/src/plugins/pymconsole/`)。Phase 3 は未着手 |
+| [260925-molcoord-atom-vector-plan.md](260925-molcoord-atom-vector-plan.md) | `MolCoord` の原子プール (`std::map<int, MolAtomPtr>` + 検索用の索引 vector) を、所有も持つ vector に置き換える案。互換 `AtomIter`、見込み (メモリ 5-6% 減) と着手時の確認事項 | **未実装 / 今後の課題**。GRO 読み込み高速化 (`perf/gro-load`) では索引の併設までで止めた |
 | [pymconsole-research-260529.md](pymconsole-research-260529.md) | PyMOL コマンド言語に部分互換な「pym console」導入の調査報告 | **§0 の一部は 260913 計画で差し替え** (embedded Python パーサ / C++ 新 API は不採用、TS 実装に変更)。§3 / §4 / §6 / §8 は有効 |
 
 ## 実装済み (履歴)
