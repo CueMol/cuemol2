@@ -28,7 +28,9 @@ function arg(name, def) {
 const WORK = path.resolve(arg('work', path.join(__dirname, '../../../../abl')))
 const OUT = path.resolve(arg('out', ''))
 const REPS = Number(arg('reps', 3))
-const CONDS = ['A', 'B', 'C', 'D']
+// Conditions to run; --conds=D,F picks a subset or an extra condition such as
+// F (PBO upload), which lives in its own worktree next to A-D.
+const CONDS = String(arg('conds', 'A,B,C,D')).split(',')
 
 const SPECS = arg('only', '') ? String(arg('only')).split(',') : [
   '1crn-cpk-coord-morph', '4hhb-cpk-coord-morph', '1aon-cpk-coord-morph',
