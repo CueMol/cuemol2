@@ -1,0 +1,316 @@
+{
+  "started": "2026-09-24T21:46:39.223Z",
+  "patchSha256": "c976f716719ee436e6dd210222aebd1ec0f98c677b47207b39effa9e918a26d5",
+  "conditions": {
+    "A": {
+      "dir": "/Users/user1/proj64/abl/A",
+      "head": "3cfd40c7807e741f20fc2823f391445f3e98b8a4",
+      "subject": "Merge pull request #625 from CueMol/perf/crdarray-source-of-truth",
+      "addon": "/Users/user1/proj64/abl/A/tritium/core/build/Release/cuemol_internal.node"
+    },
+    "B": {
+      "dir": "/Users/user1/proj64/abl/B",
+      "head": "98731d7ea06451c668c5abe7deea211cd94d1cef",
+      "subject": "Merge pull request #626 from CueMol/perf/coord-tex-ring",
+      "addon": "/Users/user1/proj64/abl/B/tritium/core/build/Release/cuemol_internal.node"
+    },
+    "C": {
+      "dir": "/Users/user1/proj64/abl/C",
+      "head": "b3a703ce1b2b7b29528fef96859ea15a4ea301eb",
+      "subject": "Revert \"Give the coordinate texture a second face to write into\"",
+      "addon": "/Users/user1/proj64/abl/C/tritium/core/build/Release/cuemol_internal.node"
+    },
+    "D": {
+      "dir": "/Users/user1/proj64/abl/D",
+      "head": "ebb4bddb76a75ffe8ebeb5a260859bc4b1fb0e2e",
+      "subject": "Merge pull request #628 from CueMol/perf/coord-tex-staging",
+      "addon": "/Users/user1/proj64/abl/D/tritium/core/build/Release/cuemol_internal.node"
+    }
+  },
+  "machine": {
+    "cpu": "Apple M2",
+    "memBytes": "25769803776",
+    "os": "26.5.2",
+    "power": "Now drawing from 'AC Power'",
+    "lowPowerMode": "lowpowermode         0"
+  },
+  "runs": [
+    {
+      "label": "A-r1",
+      "cond": "A",
+      "rep": 1,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 103.821,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=36.8fps update=36.8fps frame=27.05ms load=56784ms updateStep=1.86ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8645ms updateStep=0.52ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T21-48-23-067Z-A-r1.csv"
+      ]
+    },
+    {
+      "label": "B-r1",
+      "cond": "B",
+      "rep": 1,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 101.458,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=55.4fps update=55.4fps frame=17.99ms load=54237ms updateStep=2.43ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8692ms updateStep=0.50ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T21-50-04-552Z-B-r1.csv"
+      ]
+    },
+    {
+      "label": "C-r1",
+      "cond": "C",
+      "rep": 1,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 104.356,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=39.1fps update=39.1fps frame=25.48ms load=55079ms updateStep=1.69ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.1fps update=60.1fps frame=16.62ms load=8659ms updateStep=0.54ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T21-51-48-948Z-C-r1.csv"
+      ]
+    },
+    {
+      "label": "D-r1",
+      "cond": "D",
+      "rep": 1,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 101.169,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=57.9fps update=57.9fps frame=17.24ms load=54031ms updateStep=2.44ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.2fps update=60.2fps frame=16.62ms load=8676ms updateStep=0.54ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T21-53-30-159Z-D-r1.csv"
+      ]
+    },
+    {
+      "label": "C-r2",
+      "cond": "C",
+      "rep": 2,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 101.958,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=39.3fps update=39.3fps frame=25.37ms load=54779ms updateStep=1.69ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=59.8fps update=59.8fps frame=16.67ms load=8640ms updateStep=0.54ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T21-55-12-154Z-C-r2.csv"
+      ]
+    },
+    {
+      "label": "D-r2",
+      "cond": "D",
+      "rep": 2,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 102.215,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=58.2fps update=58.2fps frame=17.15ms load=55417ms updateStep=2.46ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8676ms updateStep=0.55ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T21-56-54-403Z-D-r2.csv"
+      ]
+    },
+    {
+      "label": "B-r2",
+      "cond": "B",
+      "rep": 2,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 101.792,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=55.1fps update=55.1fps frame=18.13ms load=54625ms updateStep=2.42ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8667ms updateStep=0.50ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T21-58-36-234Z-B-r2.csv"
+      ]
+    },
+    {
+      "label": "A-r2",
+      "cond": "A",
+      "rep": 2,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 101.411,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=36.8fps update=36.8fps frame=27.09ms load=54262ms updateStep=1.88ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8692ms updateStep=0.51ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T22-00-17-682Z-A-r2.csv"
+      ]
+    },
+    {
+      "label": "C-r3",
+      "cond": "C",
+      "rep": 3,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 106.647,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=39.0fps update=39.0fps frame=25.56ms load=59271ms updateStep=1.71ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8655ms updateStep=0.53ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T22-02-04-368Z-C-r3.csv"
+      ]
+    },
+    {
+      "label": "A-r3",
+      "cond": "A",
+      "rep": 3,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 101.892,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=37.2fps update=37.2fps frame=26.77ms load=54891ms updateStep=1.86ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8673ms updateStep=0.51ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T22-03-46-298Z-A-r3.csv"
+      ]
+    },
+    {
+      "label": "B-r3",
+      "cond": "B",
+      "rep": 3,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 101.387,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=53.9fps update=53.9fps frame=18.52ms load=54185ms updateStep=2.49ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8682ms updateStep=0.50ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T22-05-27-731Z-B-r3.csv"
+      ]
+    },
+    {
+      "label": "D-r3",
+      "cond": "D",
+      "rep": 3,
+      "tag": "",
+      "specs": [
+        "3j3q-cpk-coord-morph",
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 101.425,
+      "thermBefore": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "thermAfter": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+      "runner": [
+        "[runner] 2 cell(s), one process each",
+        "[runner] (1/2) 3j3q-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=57.8fps update=57.8fps frame=17.27ms load=53886ms updateStep=2.45ms",
+        "[runner] (2/2) 4v6x-cpk-coord-morph @1920x1080 rep=0",
+        "[runner]   render=60.0fps update=60.0fps frame=16.62ms load=8632ms updateStep=0.53ms",
+        "[runner] wrote /Users/user1/proj64/cuemol2/tritium/bench/results/ablation-m2-20260925/alloc-rerun/raw/bench-2026-09-24T22-07-09-200Z-D-r3.csv"
+      ]
+    }
+  ],
+  "finished": "2026-09-24T22:07:09.248Z"
+}

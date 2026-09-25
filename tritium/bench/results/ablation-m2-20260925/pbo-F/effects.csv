@@ -1,0 +1,9 @@
+structure,metric,A,B,C,D,ring_main,staging_main,interaction
+3j3q,update_fps,,,,57.72444170775677,,,
+3j3q,crd_send_ms,,,,8.92170853093226,,,
+3j3q,tex_upload_ms,,,,6.743867973266865,,,
+3j3q,crd_minus_tex_ms,,,,2.177840557665395,,,
+4v6x,update_fps,,,,59.98966933772073,,,
+4v6x,crd_send_ms,,,,0.7809430972222222,,,
+4v6x,tex_upload_ms,,,,0.18191817469067043,,,
+4v6x,crd_minus_tex_ms,,,,0.5990249225315517,,,

@@ -4,6 +4,8 @@ Measures the CueMol3 rendering path -- C++ geometry generation, the N-API
 boundary, and the WebGL2 frame loop in the Web Worker -- on real molecular
 scenes.
 
+The results the paper draws on are indexed in [`PAPER-RESULTS.md`](PAPER-RESULTS.md).
+
 **This directory lives on `bench/perf-harness` and is never merged into
 `develop`.** Optimizations found with it are implemented on their own
 `perf/<topic>` branch cut from `develop`, measured by merging that branch into

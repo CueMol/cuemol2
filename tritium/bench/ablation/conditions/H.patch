@@ -1,0 +1,146 @@
+diff -u a/src/modules/molstr/CoordTexSupport.cpp b/src/modules/molstr/CoordTexSupport.cpp
+--- a/src/modules/molstr/CoordTexSupport.cpp
++++ b/src/modules/molstr/CoordTexSupport.cpp
+@@ -105,7 +105,7 @@
+     m_nTexH = (natoms + TEX2D_WIDTH - 1) / TEX2D_WIDTH;
+ 
+     m_pCoordTex = pdc->createFloatDataTexture();
+-    if (m_pCoordTex == NULL || !m_pCoordTex->create(m_nTexW, m_nTexH, 3)) {
++    if (m_pCoordTex == NULL || !m_pCoordTex->create(m_nTexW, m_nTexH, 4)) {
+         // No float textures on this backend: the renderer falls back to its
+         // own path, and must not be asked again.
+         if (m_pCoordTex != NULL) {
+@@ -121,7 +121,7 @@
+     // A backend that exposes its upload buffer is written directly; only one
+     // without needs a staging array of our own.
+     if (m_pCoordTex->getStagingData() == NULL) {
+-        m_coordbuf.assign(static_cast<size_t>(m_nTexW) * m_nTexH * 3, 0.0f);
++        m_coordbuf.assign(static_cast<size_t>(m_nTexW) * m_nTexH * 4, 0.0f);
+     }
+ 
+     ctResolveCrdIndices(pMol);
+@@ -168,13 +168,15 @@
+                 Vector4D pos(p[0], p[1], p[2]);
+                 pos.w() = 1.0;
+                 xform.xform4D(pos);
+-                pdst[i * 3 + 0] = static_cast<qfloat32>(pos.x());
+-                pdst[i * 3 + 1] = static_cast<qfloat32>(pos.y());
+-                pdst[i * 3 + 2] = static_cast<qfloat32>(pos.z());
++                pdst[i * 4 + 0] = static_cast<qfloat32>(pos.x());
++                pdst[i * 4 + 1] = static_cast<qfloat32>(pos.y());
++                pdst[i * 4 + 2] = static_cast<qfloat32>(pos.z());
++                pdst[i * 4 + 3] = 1.0f;  // ablation G/H: xyzw
+             } else {
+-                pdst[i * 3 + 0] = p[0];
+-                pdst[i * 3 + 1] = p[1];
+-                pdst[i * 3 + 2] = p[2];
++                pdst[i * 4 + 0] = p[0];
++                pdst[i * 4 + 1] = p[1];
++                pdst[i * 4 + 2] = p[2];
++                pdst[i * 4 + 3] = 1.0f;  // ablation G/H: xyzw
+             }
+         }
+     } else {
+@@ -184,9 +186,10 @@
+             // build it again.
+             if (pAtom.isnull()) return false;
+             const Vector4D pos = pAtom->getPos();
+-            pdst[i * 3 + 0] = static_cast<qfloat32>(pos.x());
+-            pdst[i * 3 + 1] = static_cast<qfloat32>(pos.y());
+-            pdst[i * 3 + 2] = static_cast<qfloat32>(pos.z());
++            pdst[i * 4 + 0] = static_cast<qfloat32>(pos.x());
++            pdst[i * 4 + 1] = static_cast<qfloat32>(pos.y());
++            pdst[i * 4 + 2] = static_cast<qfloat32>(pos.z());
++                pdst[i * 4 + 3] = 1.0f;  // ablation G/H: xyzw
+         }
+     }
+ 
+diff -u a/tritium/react-gui/src/renderer/worker/server/gfx/TextureStore.ts b/tritium/react-gui/src/renderer/worker/server/gfx/TextureStore.ts
+--- a/tritium/react-gui/src/renderer/worker/server/gfx/TextureStore.ts
++++ b/tritium/react-gui/src/renderer/worker/server/gfx/TextureStore.ts
+@@ -55,7 +55,11 @@
+     ///
+     private _tex_ring: { [key: string]: WebGLTexture[] } = {};
+     private _tex_ring_pos: { [key: string]: number } = {};
++    private _tex_ncomp: { [key: string]: number } = {};
+ 
++    /// Ablation condition H: a pixel unpack buffer per ring face (as F).
++    private _tex_pbo: { [key: string]: WebGLBuffer[] } = {};
++
+     private _gl!: GL;
+ 
+     /** Inject the WebGL2 context once it has been acquired in bindCanvas. */
+@@ -141,7 +145,7 @@
+             console.log(`texture name ${name} already exists`);
+             return false;
+         }
+-        if (ncomp !== 3) {
++        if (ncomp !== 3 && ncomp !== 4) {
+             console.log(`createFloatDataTexture: unsupported ncomp ${ncomp}`);
+             return false;
+         }
+@@ -152,8 +156,9 @@
+             const tex = gl.createTexture()!;
+             gl.activeTexture(gl.TEXTURE0);
+             gl.bindTexture(gl.TEXTURE_2D, tex);
+-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F, width, height, 0,
+-                          gl.RGB, gl.FLOAT, null);
++            // Ablation G/H: xyzw coordinates in an RGBA32F texture.
++            gl.texImage2D(gl.TEXTURE_2D, 0, ncomp === 4 ? gl.RGBA32F : gl.RGB32F,
++                          width, height, 0, ncomp === 4 ? gl.RGBA : gl.RGB, gl.FLOAT, null);
+             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+@@ -162,12 +167,23 @@
+             ring.push(tex);
+         }
+ 
++        const pbos: WebGLBuffer[] = [];
++        for (let i = 0; i < COORD_TEX_RING; ++i) {
++            const pbo = gl.createBuffer()!;
++            gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, pbo);
++            gl.bufferData(gl.PIXEL_UNPACK_BUFFER, width * height * ncomp * 4, gl.STREAM_DRAW);
++            pbos.push(pbo);
++        }
++        gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
++        this._tex_pbo[name] = pbos;
++
+         this._tex_ring[name] = ring;
+         this._tex_ring_pos[name] = 0;
+         // The current face is what bindTexture and deleteTexture see, so the
+         // rest of this class needs to know nothing about the ring.
+         this._tex_data[name] = ring[0];
+         this._tex_size[name] = { width, height };
++        this._tex_ncomp[name] = ncomp;
+         console.log('create float data texture OK, name=', name, 'size=', width,
+                     'x', height, 'ncomp=', ncomp, 'ring=', COORD_TEX_RING);
+         return true;
+@@ -191,11 +207,16 @@
+         this._tex_data[name] = tex;
+         gl.activeTexture(gl.TEXTURE0);
+         gl.bindTexture(gl.TEXTURE_2D, tex);
+-        // Ablation harness: texUpload is the texSubImage2D call alone.
++        // Ablation condition H: texUpload spans the write into the unpack
++        // buffer and the texSubImage2D that reads it.
+         const view = new Float32Array(array_buf);
++        const fmt = this._tex_ncomp[name] === 4 ? gl.RGBA : gl.RGB;
++        const pbo = this._tex_pbo[name][pos];
+         const texUpload0 = benchCounters.now();
+-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, sz.width, sz.height,
+-                         gl.RGB, gl.FLOAT, view);
++        gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, pbo);
++        gl.bufferSubData(gl.PIXEL_UNPACK_BUFFER, 0, view);
++        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, sz.width, sz.height, fmt, gl.FLOAT, 0);
++        gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
+         benchCounters.addTexUpload(benchCounters.now() - texUpload0);
+         gl.bindTexture(gl.TEXTURE_2D, null);
+         return true;
+@@ -224,6 +245,8 @@
+             for (const tex of ring) gl.deleteTexture(tex);
+             delete this._tex_ring[name];
+             delete this._tex_ring_pos[name];
++            for (const pbo of this._tex_pbo[name] ?? []) gl.deleteBuffer(pbo);
++            delete this._tex_pbo[name];
+         } else {
+             gl.deleteTexture(this._tex_data[name]);
+         }

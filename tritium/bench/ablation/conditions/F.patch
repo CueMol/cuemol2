@@ -1,0 +1,61 @@
+diff -u a/tritium/react-gui/src/renderer/worker/server/gfx/TextureStore.ts b/tritium/react-gui/src/renderer/worker/server/gfx/TextureStore.ts
+--- a/tritium/react-gui/src/renderer/worker/server/gfx/TextureStore.ts
++++ b/tritium/react-gui/src/renderer/worker/server/gfx/TextureStore.ts
+@@ -56,6 +56,12 @@
+     private _tex_ring: { [key: string]: WebGLTexture[] } = {};
+     private _tex_ring_pos: { [key: string]: number } = {};
+ 
++    /// Ablation condition F: a pixel unpack buffer per ring face. The
++    /// coordinates are written into it with bufferSubData, and texSubImage2D
++    /// then reads from the buffer (offset 0) instead of from client memory,
++    /// which lets ANGLE copy buffer -> texture on the GPU if it can.
++    private _tex_pbo: { [key: string]: WebGLBuffer[] } = {};
++
+     private _gl!: GL;
+ 
+     /** Inject the WebGL2 context once it has been acquired in bindCanvas. */
+@@ -162,6 +168,16 @@
+             ring.push(tex);
+         }
+ 
++        const pbos: WebGLBuffer[] = [];
++        for (let i = 0; i < COORD_TEX_RING; ++i) {
++            const pbo = gl.createBuffer()!;
++            gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, pbo);
++            gl.bufferData(gl.PIXEL_UNPACK_BUFFER, width * height * 3 * 4, gl.STREAM_DRAW);
++            pbos.push(pbo);
++        }
++        gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
++        this._tex_pbo[name] = pbos;
++
+         this._tex_ring[name] = ring;
+         this._tex_ring_pos[name] = 0;
+         // The current face is what bindTexture and deleteTexture see, so the
+@@ -191,11 +207,16 @@
+         this._tex_data[name] = tex;
+         gl.activeTexture(gl.TEXTURE0);
+         gl.bindTexture(gl.TEXTURE_2D, tex);
+-        // Ablation harness: texUpload is the texSubImage2D call alone.
++        // Ablation condition F: texUpload spans the write into the unpack
++        // buffer and the texSubImage2D that reads it.
+         const view = new Float32Array(array_buf);
++        const pbo = this._tex_pbo[name][pos];
+         const texUpload0 = benchCounters.now();
++        gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, pbo);
++        gl.bufferSubData(gl.PIXEL_UNPACK_BUFFER, 0, view);
+         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, sz.width, sz.height,
+-                         gl.RGB, gl.FLOAT, view);
++                         gl.RGB, gl.FLOAT, 0);
++        gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
+         benchCounters.addTexUpload(benchCounters.now() - texUpload0);
+         gl.bindTexture(gl.TEXTURE_2D, null);
+         return true;
+@@ -224,6 +245,8 @@
+             for (const tex of ring) gl.deleteTexture(tex);
+             delete this._tex_ring[name];
+             delete this._tex_ring_pos[name];
++            for (const pbo of this._tex_pbo[name] ?? []) gl.deleteBuffer(pbo);
++            delete this._tex_pbo[name];
+         } else {
+             gl.deleteTexture(this._tex_data[name]);
+         }
