@@ -281,7 +281,7 @@ TEST(GROFileReaderTest, HighPrecisionFieldsParsed)
 
 // The reader parses plain fixed-point fields itself and hands anything else
 // (here an exponent) to the general parser; both must give the value strtod
-// gives, bit for bit.
+// gives, bit for bit once stored (atoms keep single-precision coordinates).
 TEST(GROFileReaderTest, CoordinateFieldsMatchStrtod)
 {
     static const char kFields[] =
@@ -295,9 +295,9 @@ TEST(GROFileReaderTest, CoordinateFieldsMatchStrtod)
     ASSERT_EQ(pMol->getAtomSize(), 1);
 
     qlib::Vector4D pos = pMol->getAtom(0)->getPos();
-    EXPECT_EQ(pos.x(), std::strtod("0.123", nullptr) * 10.0);
-    EXPECT_EQ(pos.y(), std::strtod("1.00e-01", nullptr) * 10.0);
-    EXPECT_EQ(pos.z(), std::strtod("-2.501", nullptr) * 10.0);
+    EXPECT_EQ(pos.x(), static_cast<double>(static_cast<float>(std::strtod("0.123", nullptr) * 10.0)));
+    EXPECT_EQ(pos.y(), static_cast<double>(static_cast<float>(std::strtod("1.00e-01", nullptr) * 10.0)));
+    EXPECT_EQ(pos.z(), static_cast<double>(static_cast<float>(std::strtod("-2.501", nullptr) * 10.0)));
 }
 
 // ---- Multi-frame: only first frame is loaded ----

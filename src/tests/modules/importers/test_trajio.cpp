@@ -1991,3 +1991,17 @@ TEST(TrajectoryTest, XtcWithoutPathIsReadEagerly)
     EXPECT_TRUE(pTraj->getBlock(0)->isAllLoaded());
 }
 
+
+// A trajectory is superposed frame by frame, never as a whole: an object-level
+// xformMat (e.g. from an old .qsc) is dropped rather than applied.
+TEST(TrajectoryTest, XformMatIsIgnored)
+{
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+    MolAtomPtr pAtom = pTraj->getAtom(0);
+    ASSERT_FALSE(pAtom.isnull());
+    const Vector4D before = pAtom->getPos();
+
+    pTraj->setXformMatrix(qlib::Matrix4D::makeTransMat(Vector4D(5.0, 0.0, 0.0)));
+    EXPECT_TRUE(pTraj->getXformMatrix().isIdent());
+    EXPECT_DOUBLE_EQ(pAtom->getPos().x(), before.x());
+}

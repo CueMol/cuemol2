@@ -385,7 +385,7 @@ MolResiduePtr MolCoord::removeAtomFromResidue(int atomid)
     const LString prefix = aname + ":";
     std::vector<int> altids;
     for (MolResidue::AtomCursor ai = pRes->atomBegin(); ai != pRes->atomEnd(); ++ai) {
-      if (ai->second != atomid && ai->first.startsWith(prefix))
+      if (ai->second != atomid && ai->first.str().startsWith(prefix))
         altids.push_back(ai->second);
     }
     for (int altid : altids) {

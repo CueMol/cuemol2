@@ -10,6 +10,10 @@
 
 #include <qlib/LString.hpp>
 #include <qlib/MapTable.hpp>
+#include <qlib/TagName.hpp>
+
+#include <utility>
+#include <vector>
 #include <qlib/LScrVector4D.hpp>
 
 #include "MolAtom.hpp"
@@ -33,13 +37,16 @@ namespace molstr {
 
   private:
 
-    typedef qlib::MapTable<int> atomdata_t;
+    /// (atom name, atom ID) pairs sorted by name. A residue holds a handful
+    /// of atoms, so a sorted vector is both smaller and faster than a map.
+    /// The name carries the conformation ID as "NAME:c" for alt. conf. atoms.
+    typedef std::vector<std::pair<qlib::TagName, int>> atomdata_t;
 
     /// Name of this residue
-    LString m_name;
+    qlib::TagName m_name;
 
     /// Polymer type
-    LString m_type;
+    qlib::TagName m_type;
 
     /// Topology object of this residue
     ResiToppar *m_pTopology;
@@ -48,7 +55,7 @@ namespace molstr {
     qlib::uid_t m_molID;
 
     /// Name of the parent chain (containing this residue)
-    LString m_chain;
+    qlib::TagName m_chain;
 
     /// Residue index (in the parent chain) with ins code.
     /// Negative number should be permitted.
@@ -120,7 +127,7 @@ namespace molstr {
     void setName(const LString &name);
   
     /// get name of this residue
-    const LString &getName() const { return m_name; }
+    const LString &getName() const { return m_name.str(); }
 
     // /// Set sequence number
     // void setSeqNo(int val) { m_nSeqNo = val; }
@@ -140,7 +147,7 @@ namespace molstr {
     }
 
     /// get type name of this residue
-    const LString &getType() const { return m_type; }
+    const LString &getType() const { return m_type.str(); }
 
     //////////
 
@@ -154,7 +161,7 @@ namespace molstr {
     LString getStrIndex() const { return m_index.toString(); }
 
     void setChainName(const LString &cname) { m_chain = cname; }
-    const LString &getChainName() const { return m_chain; }
+    const LString &getChainName() const { return m_chain.str(); }
 
     //////////////////////////////////////////////////////////
     // property access
@@ -190,7 +197,7 @@ namespace molstr {
     MolChainPtr getParentChain() const;
 
   private:
-    LString m_sPivAtomName;
+    qlib::TagName m_sPivAtomName;
 
   public:
     void setPivotAtomName(const LString &nm) {
@@ -198,11 +205,11 @@ namespace molstr {
     }
 
     const LString &getPivotAtomName() const {
-      return m_sPivAtomName;
+      return m_sPivAtomName.str();
     }
 
     MolAtomPtr getPivotAtom() const {
-      return getAtom(m_sPivAtomName);
+      return getAtom(m_sPivAtomName.str());
     }
 
     qlib::LScrVector4D getPivotPosScr() const;
