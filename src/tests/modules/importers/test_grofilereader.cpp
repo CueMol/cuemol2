@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+
+#include <cstdlib>
 #include <common.h>
 
 #include "mdtools/GROFileReader.hpp"
@@ -273,6 +275,29 @@ TEST(GROFileReaderTest, HighPrecisionFieldsParsed)
     EXPECT_NEAR(pos.x(), 1.234567, 1e-6);
     EXPECT_NEAR(pos.y(), 2.345678, 1e-6);
     EXPECT_NEAR(pos.z(), 3.456789, 1e-6);
+}
+
+// ---- Coordinate parsing: fixed-point fast path and general fallback ----
+
+// The reader parses plain fixed-point fields itself and hands anything else
+// (here an exponent) to the general parser; both must give the value strtod
+// gives, bit for bit.
+TEST(GROFileReaderTest, CoordinateFieldsMatchStrtod)
+{
+    static const char kFields[] =
+        "coords\n"
+        "1\n"
+        "    1SOL     OW    1   0.1231.00e-01  -2.501\n"
+        "   1.00000   1.00000   1.00000\n";
+    GROFileReader reader;
+    MolCoordPtr pMol = loadGRO(reader, kFields);
+    ASSERT_FALSE(pMol.isnull());
+    ASSERT_EQ(pMol->getAtomSize(), 1);
+
+    qlib::Vector4D pos = pMol->getAtom(0)->getPos();
+    EXPECT_EQ(pos.x(), std::strtod("0.123", nullptr) * 10.0);
+    EXPECT_EQ(pos.y(), std::strtod("1.00e-01", nullptr) * 10.0);
+    EXPECT_EQ(pos.z(), std::strtod("-2.501", nullptr) * 10.0);
 }
 
 // ---- Multi-frame: only first frame is loaded ----

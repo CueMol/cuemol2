@@ -139,6 +139,7 @@ bool GROFileReader::read(qlib::InStream &ins)
   m_lineno = 0;
   m_nDeclAtoms = 0;
   m_nReadAtoms = 0;
+  m_elemCache.clear();
   m_nPosWidth = GRO_DEFAULT_POS_WIDTH;
   m_title = LString();
   m_curChain = LString("A");
@@ -311,6 +312,51 @@ void GROFileReader::determineFieldLayout(const LString &line)
   m_nPosWidth = W;
 }
 
+namespace {
+
+/// Parse one fixed-width coordinate field ("[spaces][-]digits[.digits][spaces]")
+/// to exactly the double strtod would give: with at most 15 significant
+/// digits the integer mantissa and the power of ten are both exact doubles,
+/// and IEEE division rounds correctly. Returns false for anything else
+/// (exponents, more digits, stray characters), which the caller then parses
+/// the slow, general way. LString::toDouble builds an istringstream per call
+/// outside Windows, and a 4M-atom file has 12M coordinates.
+bool parseFixedField(const char *p, int n, double *out)
+{
+  static const double kPow10[] = {1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7,
+                                  1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15};
+  int i = 0;
+  while (i < n && p[i] == ' ') ++i;
+  bool neg = false;
+  if (i < n && (p[i] == '-' || p[i] == '+')) {
+    neg = (p[i] == '-');
+    ++i;
+  }
+  long long mant = 0;
+  int ndigits = 0, nfrac = 0;
+  bool dot = false, any = false;
+  for (; i < n; ++i) {
+    const char c = p[i];
+    if (c >= '0' && c <= '9') {
+      if (++ndigits > 15) return false;
+      mant = mant * 10 + (c - '0');
+      if (dot) ++nfrac;
+      any = true;
+    } else if (c == '.' && !dot) {
+      dot = true;
+    } else {
+      break;
+    }
+  }
+  while (i < n && p[i] == ' ') ++i;
+  if (!any || i != n) return false;
+  const double v = static_cast<double>(mant) / kPow10[nfrac];
+  *out = neg ? -v : v;
+  return true;
+}
+
+}  // namespace
+
 bool GROFileReader::parseAtomLine(const LString &line)
 {
   const int len = static_cast<int>(line.length());
@@ -377,17 +423,21 @@ bool GROFileReader::parseAtomLine(const LString &line)
   // Positions (nm in source, converted to Angstrom).
   const int W = m_nPosWidth;
   double x, y, z;
-  if (!line.substr(GRO_PREFIX_LEN + 0 * W, W).trim().toDouble(&x)) {
+  const char *pl = line.c_str();
+  const bool bFast = parseFixedField(pl + GRO_PREFIX_LEN + 0 * W, W, &x) &&
+                     parseFixedField(pl + GRO_PREFIX_LEN + 1 * W, W, &y) &&
+                     parseFixedField(pl + GRO_PREFIX_LEN + 2 * W, W, &z);
+  if (!bFast && !line.substr(GRO_PREFIX_LEN + 0 * W, W).trim().toDouble(&x)) {
     MB_THROW(GROFileFormatException,
              LString::format("Invalid X coordinate at line %d", m_lineno));
     return false;
   }
-  if (!line.substr(GRO_PREFIX_LEN + 1 * W, W).trim().toDouble(&y)) {
+  if (!bFast && !line.substr(GRO_PREFIX_LEN + 1 * W, W).trim().toDouble(&y)) {
     MB_THROW(GROFileFormatException,
              LString::format("Invalid Y coordinate at line %d", m_lineno));
     return false;
   }
-  if (!line.substr(GRO_PREFIX_LEN + 2 * W, W).trim().toDouble(&z)) {
+  if (!bFast && !line.substr(GRO_PREFIX_LEN + 2 * W, W).trim().toDouble(&z)) {
     MB_THROW(GROFileFormatException,
              LString::format("Invalid Z coordinate at line %d", m_lineno));
     return false;
@@ -507,6 +557,15 @@ void GROFileReader::parseBoxLine(const LString &line)
 }
 
 int GROFileReader::guessElement(const LString &aname) const
+{
+  auto cached = m_elemCache.find(aname.c_str());
+  if (cached != m_elemCache.end()) return cached->second;
+  const int id = guessElementImpl(aname);
+  m_elemCache.emplace(aname.c_str(), id);
+  return id;
+}
+
+int GROFileReader::guessElementImpl(const LString &aname) const
 {
   // Try whole name first (handles cases like "Na", "Mg", "Fe").
   int id = ElemSym::str2SymID(aname);

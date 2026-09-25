@@ -101,8 +101,10 @@ architecture, it belongs here.
   DCD / XTC / TRR を、開いた時点で全展開せず表示されたフレームだけ読む設計。
   `InStream` の 64bit seek が入って前提が変わった経緯、`canLazyLoad` の適用条件
   (とくに `.qsc` 復元経路を eager に落とす smart pointer 所有チェックの理由)、
-  形式ごとの frame offset 索引の作り方、途中で切れたファイルの検出、
-  「遅延 fill であって遅延 allocate ではない」限界と未実装のフレーム eviction。
+  形式ごとの frame offset 索引の作り方、途中で切れたファイルの検出。
+  後から入ったもの: デコード済みフレームの上限と LRU 解放 (#629)、XTC デコードの高速化 (#629)、
+  読み込み時の原子の選択 `applyLoadSel` とその .qsc 保存、原子の一括削除 (#630)、
+  oneTBB による次フレームの先読みとそのスレッド安全性の設計 (#631)。
 - [MD Trajectory Bottom Pane (tritium)](md-trajectory-bottom-pane.md) (日本語) --
   ロード済み Trajectory を再生・シークし block セグメントを可視化する bottom pane の設計。
   Trajectory に再生エンジンが無いため JS タイマー駆動 (Animation の C++ AnimMgr との差)、

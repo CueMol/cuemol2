@@ -11,6 +11,7 @@
 #include <qlib/mcutils.hpp>
 #include <modules/molstr/molstr.hpp>
 
+#include <memory>
 #include <vector>
 
 #include "TrajBlock.hpp"
@@ -19,6 +20,7 @@ namespace mdtools {
 
 class Trajectory;
 class XdrInStream;
+class XtcScratchPool;
 
 ///
 /// GROMACS XTC binary trajectory reader (block-centric).
@@ -70,6 +72,11 @@ public:
 
     virtual DetachedDecode makeDetachedDecode(int ifrm, TrajBlock *pTB) override;
 
+    /// How many sets of decode buffers the background decodes have allocated
+    /// so far. Bounded by how many of them ran at once, whatever the number of
+    /// worker threads that ran them.
+    int getDecodeScratchCount() const;
+
     // ---- Properties ----
 
 private:
@@ -95,6 +102,11 @@ private:
     std::shared_ptr<const std::vector<quint32>> m_pDetachedSel;
     std::vector<char> m_lazyCompressed;
     std::vector<qint32> m_lazyIntbuf;
+
+    /// Buffers the jobs from makeDetachedDecode() decode through, lent out one
+    /// set per running decode and returned after. Shared with the jobs, which
+    /// may outlive this reader. Created on first use.
+    std::shared_ptr<XtcScratchPool> m_pScratchPool;
 
     /// Read a frame header at the current position (magic through the
     /// repeated atom count), filling cell / natom / bLong. Returns false at a

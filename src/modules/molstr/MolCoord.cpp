@@ -81,10 +81,10 @@ MolResiduePtr MolCoord::getResidScr(const LString &chain, const LString &sresid)
 
 MolAtomPtr MolCoord::getAtom(int atomid) const
 {
-    AtomPool::const_iterator iter = m_atomPool.find(atomid);
-    if (iter==m_atomPool.end())
+    const MolAtomPtr *p = m_atomPool.lookup(atomid);
+    if (p == nullptr)
         return MolAtomPtr();
-    return iter->second;
+    return *p;
 }
 
 MolBond *MolCoord::getBond(int bondid) const
