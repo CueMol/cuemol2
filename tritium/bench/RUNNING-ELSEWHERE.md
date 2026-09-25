@@ -79,6 +79,38 @@ Zenodo archive by byte range. Its cell loads 3.9M atoms and needs well over
 4 GB of memory, 47 MB more for each frame decoded. Leave it out on a smaller
 machine: `run.js` skips a cell whose data is not present and says so.
 
+### Copying the data from a machine that has it
+
+The corpus is about 2.8 GB: 0.5 GB of structures and 2.3 GB of
+trajectories, 1.6 GB of that a4tail. Zenodo can take most of an hour for
+a4tail alone, so copying `tritium/bench/data/` from a machine that already
+has it is quicker, and nothing is lost by it.
+
+1. Copy the whole `tritium/bench/data/` directory, including `md/` and both
+   `manifest.json` files, into the same place in this checkout. Use
+   `robocopy`, a network share or a USB drive. It is gitignored, so it never
+   reaches a commit.
+2. Check it:
+
+   ```sh
+   cd tritium/bench
+   python fetch-md.py      # (py fetch-md.py on Windows)
+   ```
+
+   Every file's SHA-256 is pinned in `md-corpus.json`, including the MDposit
+   export and the derived files. Every entry must report `present`, and
+   there must be no `SHA-256 MISMATCH`. Nothing is downloaded when the files
+   are there.
+
+   If copying changed the timestamps, a derived file (`-le.dcd`, the yiip
+   GRO) may be rebuilt. The derivations are deterministic, so the rebuilt
+   file must still match its pinned hash.
+3. For the structures, `bash fetch.sh` (Git Bash on Windows) skips files that
+   are present and rewrites `data/manifest.json` with each file's SHA-256.
+   Compare that with the copied machine's manifest. It may also regenerate
+   the `-morph.cif` copies if their timestamps look older than the sources,
+   but `perturb.py` uses a fixed seed, so they come out the same.
+
 ## 3. Run
 
 ```sh

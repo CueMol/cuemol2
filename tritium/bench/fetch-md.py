@@ -432,13 +432,21 @@ def fetch_entry(entry):
             DERIVATIONS[spec['op']](src, out)
         else:
             print(f'  {eid}/{spec["name"]}: present (derived)')
+        digest = sha256_of(out)
+        want = spec.get('sha256')
+        if want and digest != want:
+            # The derivations are deterministic, so a mismatch means the
+            # source or the derivation differs from the machine that pinned it.
+            print(f'  {eid}/{spec["name"]}: SHA-256 MISMATCH (derived)\n    want {want}\n    have {digest}')
+            ok = False
+            continue
         records.append({
             'name': spec['name'],
             'bytes': os.path.getsize(out),
-            'sha256': sha256_of(out),
+            'sha256': digest,
             'derivedFrom': spec['from'],
             'op': spec['op'],
-            'pinned': False,
+            'pinned': bool(want),
         })
     if manual and not ok:
         print(f'  {eid}: {entry.get("manual", "place the files by hand")}')

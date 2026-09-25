@@ -29,7 +29,8 @@
           "name": "rmsfit_ifabp_water_1-le.dcd",
           "from": "rmsfit_ifabp_water_1.dcd",
           "op": "dcd-to-little-endian",
-          "note": "The published DCD is big-endian; CueMol's DCD reader reads little-endian only."
+          "note": "The published DCD is big-endian; CueMol's DCD reader reads little-endian only.",
+          "sha256": "ad2163a9b65f4275540047229d8b04e678f3b3e5cec06c72d025a202c317124f"
         }
       ]
     },
@@ -61,7 +62,8 @@
           "name": "YiiP_system.gro",
           "from": "YiiP_system.pdb",
           "op": "pdb-to-gro",
-          "note": "Chains PROA/PROB share chain ID P and the waters wrap the 4-digit residue number, so the PDB reader merges 10,216 atoms; the GRO reader keeps them apart."
+          "note": "Chains PROA/PROB share chain ID P and the waters wrap the 4-digit residue number, so the PDB reader merges 10,216 atoms; the GRO reader keeps them apart.",
+          "sha256": "4c71b03b4f68636e94b688ae140529cb38cdd9b3de15b1656adb3a36d2145bad"
         }
       ]
     },
@@ -80,12 +82,12 @@
         {
           "name": "structure.pdb",
           "url": "https://mmb.mddbr.eu/api/rest/v1/projects/MCV1900448/structure",
-          "sha256": null
+          "sha256": "32a6137f6ea09ea8d4dae28288fb2388189002cd2b676ff488ad3b617f1ba029"
         },
         {
           "name": "trajectory.xtc",
           "url": "https://mmb.mddbr.eu/api/rest/v1/projects/MCV1900448/trajectory?format=xtc&frames=1-300",
-          "sha256": null
+          "sha256": "698555f5483f90e614552730f02e9320331c1715f5f1268b59fe7b54d2ed73d5"
         }
       ]
     },
