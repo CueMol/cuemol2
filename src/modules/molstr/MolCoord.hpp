@@ -9,6 +9,9 @@
 
 #include "molstr.hpp"
 
+#include <algorithm>
+#include <vector>
+
 #include <qlib/IndexedTable.hpp>
 #include <qlib/LDOM2Stream.hpp>
 #include <qlib/LRegExpr.hpp>
@@ -60,21 +63,44 @@ namespace molstr {
     {
     private:
       int m_nNextIndex;
+
+      /// Map entry for each key, or null once removed. Keys are handed out
+      /// sequentially from 0, so a vector indexed by key gives an O(1) lookup;
+      /// std::map nodes do not move, so the pointers stay valid.
+      std::vector<const MolAtomPtr *> m_index;
+
     public:
       typedef std::map<int, MolAtomPtr> super_t;
       AtomPool() : super_t(), m_nNextIndex(0) {}
 
       int put(MolAtomPtr p) {
 	int key = m_nNextIndex;
-	super_t::insert(super_t::value_type(key, p));
+	// Keys only grow, so the end hint makes this amortized O(1).
+	super_t::iterator iter = super_t::emplace_hint(super_t::end(), key, p);
+	m_index.push_back(&iter->second);
 	m_nNextIndex++;
 	return key;
       }
 
       void remove(int id) {
 	super_t::iterator iter = super_t::find(id);
-	if (iter!=super_t::end())
+	if (iter!=super_t::end()) {
 	  super_t::erase(iter);
+	  m_index[id] = nullptr;
+	}
+      }
+
+      /// Keys are not reused after clear(), as before; the index keeps its
+      /// length so that it stays aligned with m_nNextIndex.
+      void clear() {
+	super_t::clear();
+	std::fill(m_index.begin(), m_index.end(), nullptr);
+      }
+
+      /// Entry for the key, or null when there is none.
+      const MolAtomPtr *lookup(int id) const {
+	if (id < 0 || id >= static_cast<int>(m_index.size())) return nullptr;
+	return m_index[id];
       }
     };
     
