@@ -1,0 +1,648 @@
+{
+ "started": "2026-09-25T13:18:40.446Z",
+ "seed": 1488440344,
+ "repeat": 3,
+ "gitSha": "598e0be9fc2eee74cf7c889d3d9e4f9a032085a7",
+ "electron": "/Users/user1/proj64/molstar-wt/tritium/react-gui/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+ "canvas": {
+  "cuemol": "1920x1080",
+  "molstar": "1836x1014"
+ },
+ "dprSwitch": null,
+ "files": {
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/em.gro": {
+   "sha256": "82482eee2a32f67c077b5f16ad4f27e4f53575bbc6fe26f11ed9294dbb432268",
+   "bytes": 177342266
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-25f.xtc": {
+   "sha256": "02e4fba69b81035351658800909a1ca2ca411494e4fd77a627fad145ad2a289b",
+   "bytes": 382039884
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-50f.xtc": {
+   "sha256": "93c5250d8131e9cb24ea776b80d04972723b87cf14df73f64707006109c0c656",
+   "bytes": 764074836
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-100f.xtc": {
+   "sha256": "c5f6d8be534dd84b84b3954d581a84f52db336c4eaa3d0dd9fd767101b1aff13",
+   "bytes": 1528146256
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/em-nosol.gro": {
+   "sha256": "01d244f5c2ab72e9e508a9deb63a186dee908bdb2a88bf15bf3882429bf65436",
+   "bytes": 15688945
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-25f-nosol.xtc": {
+   "sha256": "32ef5d38ce94cd09addfd97079a79b4f2a86b214783241822293a0b24ddd758d",
+   "bytes": 34031936
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-50f-nosol.xtc": {
+   "sha256": "5c10208c502d0a7ad7bc6d1697ead176ebe41e574914875ffd0ea893818f91f7",
+   "bytes": 68060868
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/a4tail/prod-100f-nosol.xtc": {
+   "sha256": "4d1af34efa647dfb54ae78d3d266c6f2aa7b13cae8d18996275331a48a678e79",
+   "bytes": 136122128
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/ifabp/ifabp_water_0.pdb": {
+   "sha256": "8ccf5f75fd85385921c0cb77f00281a93b933fc1261c42fc9492f43983448a72",
+   "bytes": 958441
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/ifabp/rmsfit_ifabp_water_1-le.dcd": {
+   "sha256": "ad2163a9b65f4275540047229d8b04e678f3b3e5cec06c72d025a202c317124f",
+   "bytes": 74710276
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/mcv448/structure.pdb": {
+   "sha256": "32a6137f6ea09ea8d4dae28288fb2388189002cd2b676ff488ad3b617f1ba029",
+   "bytes": 13056267
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/mcv448/trajectory.xtc": {
+   "sha256": "698555f5483f90e614552730f02e9320331c1715f5f1268b59fe7b54d2ed73d5",
+   "bytes": 182069708
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/yiip/YiiP_system.gro": {
+   "sha256": "4c71b03b4f68636e94b688ae140529cb38cdd9b3de15b1656adb3a36d2145bad",
+   "bytes": 5031759
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/yiip/YiiP_system_9ns_center-100f.xtc": {
+   "sha256": "1d285193412af23414d1fd2bc0d09dc0ac8ac68e8086c7e97b48694f3ea4b006",
+   "bytes": 41350624
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/yiip/YiiP_system_9ns_center-300f.xtc": {
+   "sha256": "c9d31c9f9372fb25bdbaab2d9b937174b66fd9f4458a9aec81c13f6c2af46c0d",
+   "bytes": 124057076
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/yiip/YiiP_system_9ns_center.xtc": {
+   "sha256": "97f6a93acc1e330915338b290625d81d84928a7e4c1e5aed63d209881fbe268b",
+   "bytes": 372588552
+  }
+ },
+ "order": [
+  {
+   "order": 1,
+   "tool": "cuemol",
+   "spec": "yiip-md-eager",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 2,
+   "tool": "cuemol",
+   "spec": "a4nosol-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 3,
+   "tool": "molstar",
+   "spec": "yiip-300f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 4,
+   "tool": "molstar",
+   "spec": "a4all-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 5,
+   "tool": "molstar",
+   "spec": "yiip-100f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 6,
+   "tool": "molstar",
+   "spec": "a4all-25f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 7,
+   "tool": "cuemol",
+   "spec": "a4nosol-25f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 8,
+   "tool": "molstar",
+   "spec": "a4nosol-25f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 9,
+   "tool": "cuemol",
+   "spec": "a4all-25f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 10,
+   "tool": "cuemol",
+   "spec": "a4nosol-md-eager",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 11,
+   "tool": "cuemol",
+   "spec": "a4all-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 12,
+   "tool": "cuemol",
+   "spec": "yiip-100f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 13,
+   "tool": "molstar",
+   "spec": "ifabp-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 14,
+   "tool": "molstar",
+   "spec": "a4nosol-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 15,
+   "tool": "molstar",
+   "spec": "mcv448-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 16,
+   "tool": "cuemol",
+   "spec": "mcv448-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 17,
+   "tool": "cuemol",
+   "spec": "a4nosol-50f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 18,
+   "tool": "cuemol",
+   "spec": "yiip-300f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 19,
+   "tool": "molstar",
+   "spec": "a4all-50f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 20,
+   "tool": "molstar",
+   "spec": "yiip-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 21,
+   "tool": "cuemol",
+   "spec": "ifabp-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 22,
+   "tool": "cuemol",
+   "spec": "a4all-50f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 23,
+   "tool": "cuemol",
+   "spec": "yiip-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 24,
+   "tool": "cuemol",
+   "spec": "yiip-idle",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 25,
+   "tool": "molstar",
+   "spec": "yiip-idle",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 26,
+   "tool": "molstar",
+   "spec": "a4nosol-50f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 27,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 28,
+   "tool": "cuemol",
+   "spec": "mcv448-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 29,
+   "tool": "molstar",
+   "spec": "a4all-50f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 30,
+   "tool": "cuemol",
+   "spec": "yiip-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 31,
+   "tool": "cuemol",
+   "spec": "yiip-100f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 32,
+   "tool": "cuemol",
+   "spec": "a4nosol-50f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 33,
+   "tool": "cuemol",
+   "spec": "a4all-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 34,
+   "tool": "cuemol",
+   "spec": "ifabp-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 35,
+   "tool": "molstar",
+   "spec": "yiip-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 36,
+   "tool": "molstar",
+   "spec": "a4nosol-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 37,
+   "tool": "molstar",
+   "spec": "yiip-300f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 38,
+   "tool": "molstar",
+   "spec": "yiip-idle",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 39,
+   "tool": "cuemol",
+   "spec": "yiip-300f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 40,
+   "tool": "molstar",
+   "spec": "a4all-25f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 41,
+   "tool": "cuemol",
+   "spec": "a4nosol-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 42,
+   "tool": "molstar",
+   "spec": "ifabp-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 43,
+   "tool": "cuemol",
+   "spec": "yiip-md-eager",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 44,
+   "tool": "cuemol",
+   "spec": "a4all-50f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 45,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 46,
+   "tool": "molstar",
+   "spec": "yiip-100f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 47,
+   "tool": "molstar",
+   "spec": "mcv448-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 48,
+   "tool": "molstar",
+   "spec": "a4nosol-50f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 49,
+   "tool": "molstar",
+   "spec": "a4nosol-25f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 50,
+   "tool": "cuemol",
+   "spec": "a4all-25f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 51,
+   "tool": "cuemol",
+   "spec": "yiip-idle",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 52,
+   "tool": "cuemol",
+   "spec": "a4nosol-25f-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 53,
+   "tool": "cuemol",
+   "spec": "a4nosol-md-eager",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 54,
+   "tool": "molstar",
+   "spec": "a4all-md",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 55,
+   "tool": "cuemol",
+   "spec": "a4all-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 56,
+   "tool": "molstar",
+   "spec": "yiip-idle",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 57,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 58,
+   "tool": "molstar",
+   "spec": "a4all-25f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 59,
+   "tool": "cuemol",
+   "spec": "a4nosol-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 60,
+   "tool": "molstar",
+   "spec": "a4nosol-50f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 61,
+   "tool": "molstar",
+   "spec": "mcv448-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 62,
+   "tool": "cuemol",
+   "spec": "yiip-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 63,
+   "tool": "cuemol",
+   "spec": "yiip-idle",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 64,
+   "tool": "cuemol",
+   "spec": "a4nosol-md-eager",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 65,
+   "tool": "cuemol",
+   "spec": "a4all-25f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 66,
+   "tool": "cuemol",
+   "spec": "yiip-300f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 67,
+   "tool": "molstar",
+   "spec": "yiip-300f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 68,
+   "tool": "cuemol",
+   "spec": "ifabp-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 69,
+   "tool": "cuemol",
+   "spec": "a4nosol-25f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 70,
+   "tool": "cuemol",
+   "spec": "a4nosol-50f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 71,
+   "tool": "cuemol",
+   "spec": "a4all-50f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 72,
+   "tool": "cuemol",
+   "spec": "yiip-md-eager",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 73,
+   "tool": "molstar",
+   "spec": "a4nosol-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 74,
+   "tool": "cuemol",
+   "spec": "yiip-100f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 75,
+   "tool": "molstar",
+   "spec": "a4all-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 76,
+   "tool": "molstar",
+   "spec": "yiip-100f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 77,
+   "tool": "molstar",
+   "spec": "a4all-50f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 78,
+   "tool": "cuemol",
+   "spec": "mcv448-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 79,
+   "tool": "molstar",
+   "spec": "yiip-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 80,
+   "tool": "molstar",
+   "spec": "a4nosol-25f-md",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 81,
+   "tool": "molstar",
+   "spec": "ifabp-md",
+   "rep": 2,
+   "ok": true
+  }
+ ],
+ "finished": "2026-09-25T13:54:36.844Z"
+}

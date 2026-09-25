@@ -1,0 +1,75 @@
+{
+ "started": "2026-09-25T13:16:12.818Z",
+ "seed": 1488294626,
+ "repeat": 1,
+ "gitSha": "598e0be9fc2eee74cf7c889d3d9e4f9a032085a7",
+ "electron": "/Users/user1/proj64/molstar-wt/tritium/react-gui/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+ "canvas": {
+  "cuemol": "1920x1080",
+  "molstar": "1836x1014"
+ },
+ "dprSwitch": null,
+ "files": {
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/ifabp/ifabp_water_0.pdb": {
+   "sha256": "8ccf5f75fd85385921c0cb77f00281a93b933fc1261c42fc9492f43983448a72",
+   "bytes": 958441
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/ifabp/rmsfit_ifabp_water_1-le.dcd": {
+   "sha256": "ad2163a9b65f4275540047229d8b04e678f3b3e5cec06c72d025a202c317124f",
+   "bytes": 74710276
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/yiip/YiiP_system.gro": {
+   "sha256": "4c71b03b4f68636e94b688ae140529cb38cdd9b3de15b1656adb3a36d2145bad",
+   "bytes": 5031759
+  },
+  "/Users/user1/proj64/molstar-wt/tritium/bench/data/md/yiip/YiiP_system_9ns_center.xtc": {
+   "sha256": "97f6a93acc1e330915338b290625d81d84928a7e4c1e5aed63d209881fbe268b",
+   "bytes": 372588552
+  }
+ },
+ "order": [
+  {
+   "order": 1,
+   "tool": "cuemol",
+   "spec": "ifabp-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 2,
+   "tool": "cuemol",
+   "spec": "yiip-idle",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 3,
+   "tool": "molstar",
+   "spec": "yiip-idle",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 4,
+   "tool": "molstar",
+   "spec": "ifabp-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 5,
+   "tool": "molstar",
+   "spec": "yiip-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 6,
+   "tool": "cuemol",
+   "spec": "yiip-md",
+   "rep": 0,
+   "ok": true
+  }
+ ],
+ "finished": "2026-09-25T13:17:29.768Z"
+}

@@ -55,14 +55,17 @@ view depends on each tool's UI around it, so `CANVAS` in `run-compare.js`
 holds a size per tool that makes both draw 1832x1010:
 
 - Windows 11: CueMol `1876x1045` (its UI takes 44x35), Mol\* `1834x1012`.
-- **macOS: not measured.** The menu bar is outside the window there and the
-  window frame differs, so both values will change. Run one idle cell per tool,
-  read `canvas` from the result, and adjust `CANVAS` until both read 1832x1010.
+- macOS (M2, built-in Retina display 2560x1664): CueMol `1920x1080`, Mol\*
+  `1836x1014`, at DPR 2. `CANVAS_CUEMOL` / `CANVAS_MOLSTAR` override them for
+  another Mac: run one idle cell per tool, read `canvas` from the result, and
+  adjust until both read 1832x1010.
 
 Pinning the DPR to 1 was needed on Windows, whose 150% scaling puts the two
-layouts on different pixel grids. On a Retina display the alternative is to
-drop the switch and size both at DPR 2 (the earlier M2 runs drew 1832x1010 at
-DPR 2); either way both tools must draw the same size.
+layouts on different pixel grids. On the M2 it cannot be used: at DPR 1 a
+1832x1010 view is larger than the Retina screen in points, and both
+windows were shrunk (CueMol drew 1426x888, Mol\* 1468x889). So on macOS
+`run-compare.js` leaves the switch out and both tools draw 1832x1010 at DPR 2,
+as the earlier M2 runs did; either way both tools must draw the same size.
 
 ## Differences from the instructions, as run on Windows
 
