@@ -1,7 +1,8 @@
 # MD trajectory playback: results
 
 All the `md-playback` results in one place: what was measured, how it
-changed as #628-#631 went in, and which numbers are superseded.
+changed as #628-#631 went in, how long the 3.9M-atom structure takes
+to load (#633), and which numbers are superseded.
 
 The per-step write-ups remain where they were written:
 - `README.md`, "Playing a trajectory"
@@ -117,6 +118,36 @@ warm-up and measures the first pass itself.
   3.9M-atom frame (34 ms on one thread, 9.5 ms per frame on four). The
   result is 60 fps from the first frame.
 
+## Loading the 3.9M-atom structure (GRO, #633)
+
+Reading a4tail's `em.gro` into a molecule: parsing, residues, topology
+(bonds) and secondary structure. The timing comes from a temporary gtest
+that runs `GROFileReader` on the file (Release, one run per step). A hash
+over every atom (id, chain, residue, name, element, position), every
+residue's `secondary` property and the bond count was identical at every
+step.
+
+| step | load | change |
+|---|---:|---|
+| before | 12.5 s | |
+| secondary structure without all-pairs scans | 10.0 s | H-bond partners from a 9 A grid of CA atoms; bridges tried only against the residues their H-bonds name |
+| coordinate parsing | 7.2 s | plain fixed-point fields parsed directly to the exact `strtod` value, instead of an `istringstream` per field; element guess cached per atom name |
+| backbone lookup stops at the first missing atom | 6.5 s | a miss scans the residue, and 91% of the residues are water |
+| atom lookup by ID in constant time | **4.8 s** | `MolCoord::getAtom` used a `std::map` of 3.9M nodes; a vector index now sits beside it |
+
+- The atom index costs 8 bytes per atom ID, about 32 MB here, against a
+  peak of 4.19 GB for the whole load.
+- The remaining 4.8 s is spread out: line reading, field slicing, adding
+  atoms, topology and secondary structure take 0.4-0.8 s each. Taking it
+  further means changing shared code (the qlib line reader), so it stops
+  here.
+- Replacing the atom map with a vector that owns the atoms would save a
+  further estimated 200-250 MB (5-6%). It is recorded as future work in
+  `docs/plans/260925-molcoord-atom-vector-plan.md`.
+- The **load** column of the a4tail table above predates #633 and was not
+  rerun. It also includes opening the trajectory and, for the
+  `loadSelection` cells, removing the water.
+
 ## The decode itself
 
 Lazily decoding each frame in turn, in a tight loop (temporary checksum
@@ -160,6 +191,7 @@ between frames decodes at a lower clock.
 | #629 | frame cache limit; faster XTC decode | `docs/architecture/md-trajectory-lazy-loading.md` |
 | #630 | `Trajectory::applyLoadSel`, `MolCoord::removeAtoms` | the same page |
 | #631 | next-frame prefetch (`qlib::TaskGroup`) | the same page |
+| #633 | faster GRO load (secondary structure, atom lookup, coordinate parsing) | `docs/plans/260925-molcoord-atom-vector-plan.md` (the follow-up) |
 
 Raw results, all on this branch:
 - `results/bench-2026-09-24T08-28-26-187Z` (baseline) through
