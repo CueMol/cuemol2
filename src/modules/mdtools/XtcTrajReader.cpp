@@ -15,6 +15,7 @@
 #include <qlib/LExceptions.hpp>
 
 #include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -48,6 +49,77 @@ qint64 pad4(qint64 n)
     return (n + 3) & ~static_cast<qint64>(3);
 }
 }  // namespace
+
+namespace mdtools {
+
+/// The buffers one frame decode works through. Each is sized by the atom
+/// count (about 100 MB together at 3.9M atoms), which is why they are reused
+/// rather than allocated per frame.
+struct XtcDecodeScratch
+{
+    std::vector<qfloat32> filecrd;
+    std::vector<char> compressed;
+    std::vector<qint32> intbuf;
+};
+
+/// Decode buffers lent to background decodes, one set per decode in progress.
+///
+/// They used to be thread_local, which kept a set alive on every worker thread
+/// that had ever run a decode. The prefetch keeps only a few decodes going,
+/// but the pool hands each to whichever thread is free, so over a playback
+/// every thread ended up holding a set: about 2.5 GB of buffers at 3.9M atoms
+/// on a 32-thread machine, for no speed. Lending them out bounds the sets by
+/// how many decodes run at once instead.
+class XtcScratchPool
+{
+public:
+    /// A set borrowed for the lifetime of the lease, handed back after, also
+    /// when the decode throws.
+    class Lease
+    {
+    public:
+        explicit Lease(XtcScratchPool &pool) : m_pool(pool), m_p(pool.acquire()) {}
+        ~Lease() { m_pool.release(std::move(m_p)); }
+        Lease(const Lease &) = delete;
+        Lease &operator=(const Lease &) = delete;
+        XtcDecodeScratch &get() { return *m_p; }
+
+    private:
+        XtcScratchPool &m_pool;
+        std::unique_ptr<XtcDecodeScratch> m_p;
+    };
+
+    int createdCount() const
+    {
+        std::lock_guard<std::mutex> lk(m_mtx);
+        return m_nCreated;
+    }
+
+private:
+    std::unique_ptr<XtcDecodeScratch> acquire()
+    {
+        std::lock_guard<std::mutex> lk(m_mtx);
+        if (m_free.empty()) {
+            ++m_nCreated;
+            return std::make_unique<XtcDecodeScratch>();
+        }
+        std::unique_ptr<XtcDecodeScratch> p = std::move(m_free.back());
+        m_free.pop_back();
+        return p;
+    }
+
+    void release(std::unique_ptr<XtcDecodeScratch> p)
+    {
+        std::lock_guard<std::mutex> lk(m_mtx);
+        m_free.push_back(std::move(p));
+    }
+
+    mutable std::mutex m_mtx;
+    std::vector<std::unique_ptr<XtcDecodeScratch>> m_free;
+    int m_nCreated = 0;
+};
+
+}  // namespace mdtools
 
 XtcTrajReader::XtcTrajReader() : super_t()
 {
@@ -324,13 +396,16 @@ DetachedDecode XtcTrajReader::makeDetachedDecode(int ifrm, TrajBlock *pTB)
     const std::string path = getPath().c_str();
     const qint64 offset = offsets[ifrm];
     const int natomFile = m_natom;
+    if (!m_pScratchPool) m_pScratchPool = std::make_shared<XtcScratchPool>();
+    std::shared_ptr<XtcScratchPool> pPool = m_pScratchPool;
 
-    return [path, offset, natomFile, nread, pSel](DetachedFrame &out) {
-        // Per worker thread, so a thread decoding one frame after another
-        // keeps its buffers, as loadFrm() does on the loading thread.
-        thread_local std::vector<qfloat32> filecrd;
-        thread_local std::vector<char> compressed;
-        thread_local std::vector<qint32> intbuf;
+    return [path, offset, natomFile, nread, pSel, pPool](DetachedFrame &out) {
+        // Borrowed for this decode only, so a set is reused by the next decode
+        // on any thread, as loadFrm() reuses its own on the loading thread.
+        XtcScratchPool::Lease lease(*pPool);
+        std::vector<qfloat32> &filecrd = lease.get().filecrd;
+        std::vector<char> &compressed = lease.get().compressed;
+        std::vector<qint32> &intbuf = lease.get().intbuf;
 
         qlib::FileInStream fis;
         fis.open(LString(path.c_str()));
@@ -357,6 +432,11 @@ DetachedDecode XtcTrajReader::makeDetachedDecode(int ifrm, TrajBlock *pTB)
             out.crd[jj * 3 + 2] = filecrd[k * 3 + 2] * 10.0f;
         }
     };
+}
+
+int XtcTrajReader::getDecodeScratchCount() const
+{
+    return m_pScratchPool ? m_pScratchPool->createdCount() : 0;
 }
 
 void XtcTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
