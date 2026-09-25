@@ -29,9 +29,15 @@ const APP_DIR = path.resolve(BENCH, '../react-gui')
 const SPEC_DIR = path.join(BENCH, 'specs-compare')
 const CELL_FILE = path.join(os.tmpdir(), `molstar-compare-cell-${process.pid}.json`)
 
-/** --canvas per tool, device pixels, at DPR 1, so both draw 1832x1010. */
-const CANVAS = { cuemol: '1876x1045', molstar: '1834x1012' }
-const DPR_SWITCH = '--force-device-scale-factor=1'
+/**
+ * --canvas per tool, device pixels, so both draw 1832x1010. Windows pins DPR 1;
+ * a Retina Mac cannot fit 1832x1010 logical pixels on screen, so there both
+ * tools run at the display's DPR 2 instead (as the earlier M2 runs did).
+ */
+const CANVAS = process.platform === 'darwin'
+  ? { cuemol: process.env.CANVAS_CUEMOL || '1920x1080', molstar: process.env.CANVAS_MOLSTAR || '1836x1014' }
+  : { cuemol: '1876x1045', molstar: '1834x1012' }
+const DPR_SWITCH = process.platform === 'darwin' ? null : '--force-device-scale-factor=1'
 const SETTLE_MS = 2000
 const LARGE_SETTLE_MS = 30000
 /** A cell whose file is at least this big gets the long settle before and after. */
@@ -117,7 +123,7 @@ function pagefileMB() {
 /** Launch one cell; returns the parsed result (or a failure record). */
 function runCell(tool, specFile, extra = []) {
   fs.rmSync(CELL_FILE, { force: true })
-  const common = [DPR_SWITCH, `--bench=${specFile}`, `--bench-out=${CELL_FILE}`, `--canvas=${CANVAS[tool]}`, ...extra]
+  const common = [...(DPR_SWITCH ? [DPR_SWITCH] : []), `--bench=${specFile}`, `--bench-out=${CELL_FILE}`, `--canvas=${CANVAS[tool]}`, ...extra]
   const opts = { stdio: 'inherit', timeout: CELL_TIMEOUT_MS }
   const t0 = Date.now()
   let res
