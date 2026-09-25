@@ -1099,9 +1099,11 @@ LString writeTempTraj(const std::string &bytes, const char *suffix)
 /// Returns the block so the test can see which frames have been decoded.
 template <class RdrT>
 mdtools::TrajBlockPtr appendLazy(const TrajectoryPtr &pTraj, const std::string &bytes,
-                                 const char *suffix, int nevery = 1)
+                                 const char *suffix, int nevery = 1,
+                                 qlib::LScrSp<RdrT> *ppRdr = nullptr)
 {
     qlib::LScrSp<RdrT> pRdr(MB_NEW RdrT());
+    if (ppRdr != nullptr) *ppRdr = pRdr;
     pRdr->setTargTrajUID(pTraj->getUID());
     if (nevery > 1) pRdr->setSkipNo(nevery);
     mdtools::TrajBlockPtr pBlk(pRdr->createDefaultObj());
@@ -1859,6 +1861,36 @@ TEST(TrajectoryTest, XtcLazyPrefetchFollowsPlaybackDirection)
     EXPECT_TRUE(pBlk2->isPrefetched(5));
     EXPECT_TRUE(pBlk2->isPrefetched(4));
     for (int f = 5; f >= 0; --f) expectSameFrame(pBack, pEager, f, natom);
+}
+
+// Background decodes borrow their buffers and hand them back, so a playback
+// allocates at most one set per decode running at once. Kept per worker thread
+// instead, a set survived on every thread that had ever run a decode: about
+// 100 MB each at 3.9M atoms, 2.5 GB more on a 32-thread machine.
+TEST(TrajectoryTest, XtcPrefetchBuffersAreBoundedByDepth)
+{
+    if (!qlib::TaskGroup::available()) GTEST_SKIP() << "no background threads in this build";
+    const int natom = 12;
+    const int nframes = 40;
+    const int depth = 2;
+    const std::string xtc = buildXTCCompressed(natom, nframes, 1000.0f);
+
+    struct DepthGuard
+    {
+        int saved = TrajBlock::getPrefetchDepth();
+        ~DepthGuard() { TrajBlock::setPrefetchDepth(saved); }
+    } guard;
+    TrajBlock::setPrefetchDepth(depth);
+
+    TrajectoryPtr pEager = makeTrajectoryNAtoms(natom);
+    appendXTC(pEager, xtc);
+    TrajectoryPtr pLazy = makeTrajectoryNAtoms(natom);
+    qlib::LScrSp<XtcTrajReader> pRdr;
+    appendLazy<XtcTrajReader>(pLazy, xtc, ".xtc", 1, &pRdr);
+
+    for (int f = 0; f < nframes; ++f) expectSameFrame(pLazy, pEager, f, natom);
+    EXPECT_GE(pRdr->getDecodeScratchCount(), 1);
+    EXPECT_LE(pRdr->getDecodeScratchCount(), depth);
 }
 
 TEST(TrajectoryTest, DcdLazyMatchesEagerAndDefersFrames)
