@@ -351,6 +351,10 @@ the mesh renderers that lack it.
 
 ### Playing a trajectory (`md-playback`)
 
+The consolidated results, from the first run through #631, are in
+[MD-RESULTS.md](MD-RESULTS.md). The subsections below were written step by step
+as the work went in, and some of their earlier figures are superseded there.
+
 Real MD trajectories from the MD corpus, one frame per displayed frame.
 Apple M2 / ANGLE-Metal, 1920x1080, 3 repeats.
 
