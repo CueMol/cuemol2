@@ -2,7 +2,8 @@
 
 All the `md-playback` results in one place: what was measured, how it
 changed as #628-#631 went in, how long the 3.9M-atom structure takes
-to load (#633), and which numbers are superseded.
+to load (#633), the same runs on Windows / RTX 4070, and which numbers
+are superseded.
 
 The per-step write-ups remain where they were written:
 - `README.md`, "Playing a trajectory"
@@ -10,7 +11,7 @@ The per-step write-ups remain where they were written:
 
 Every number below is recomputed from the raw results in `results/`.
 
-**Machine and setup**
+**Machine and setup** (all sections except "Windows 11 / RTX 4070")
 - Apple M2 (4 performance + 4 efficiency cores, 24 GB), ANGLE on Metal,
   Electron with the renderer running in a Web Worker.
 - 1920x1080 window with panels closed (canvas 1832x1010, DPR 2).
@@ -118,6 +119,58 @@ warm-up and measures the first pass itself.
   3.9M-atom frame (34 ms on one thread, 9.5 ms per frame on four). The
   result is 60 fps from the first frame.
 
+## Windows 11 / RTX 4070
+
+Every md-playback spec, repeat 3, on the state after #631 (6ab2e9d8, before
+the #633 GRO work). The corpus was copied from the M2 machine and checked
+against `md-corpus.json`.
+
+**Machine**: Windows 11, i9-14900KF, RTX 4070 on PCIe 4.0 x16, ANGLE on
+D3D11, Release build, DPR 1.5.
+
+**The canvas size is not confirmed.** Every Windows result file records the
+canvas as 300x150, the default size of an HTML canvas element, while the M2
+files record 1832x1010. The harness reads the size from the DOM canvas
+element, which the worker no longer controls once the canvas is transferred
+to it, so the 300x150 is probably a recording fault rather than the size
+drawn at. Until that is checked, compare the GPU-bound cells (a4tail with
+the water drawn) with care. Even at the same window size the pixel count
+differs: DPR 1.5 against the M2's 2 is about 0.56x the pixels.
+
+| cell | measured | M2 (after #631) | Windows |
+|---|---|---:|---:|
+| ifabp (DCD) | fps / update, first | 60 / 0.61 ms (after #629) | 60.0 / 0.19 ms |
+| yiip (XTC, lazy) | fps / update, first | 60 / 0.59 ms | 60.0 / 0.50 ms |
+| yiip (XTC, eager) | fps / update | 60 / 0.33 ms (after #629) | 60.0 / 0.20 ms |
+| mcv448 (XTC, lazy) | update, first / again | 0.63 / 0.45 ms | 0.66 / 0.24 ms |
+| yiip / ribbon | fps / CPU ms | 27.2 / 35 (after #629) | **20.3 / 48.1** |
+| a4tail, all atoms drawn | fps | 22.5 | 36.7 |
+| | update, first / again | 17.8 / 10.0 ms | 14.6 / 9.9 ms |
+| | load / RSS | 27.2 s / 3.9 GB | 30.0 s / **12.8 GB** |
+| a4tail, water hidden by the renderer | fps | 30.2 (after #629) | 50.0 |
+| | update, first / again | 43.2 / 20.5 ms (after #629) | 17.6 / 11.4 ms |
+| | load / RSS | 23.4 s / 4.9 GB (after #629) | 26.5 s / **12.2 GB** |
+| a4tail, water not loaded | fps / update, again | 60.0 / 0.43 ms | 60.0 / 0.46 ms |
+| | load / RSS | 21.2 s / 3.5 GB | 25.6 s / 4.4 GB |
+| the same, first pass only (`-cold`) | fps / update, first | 60.0 / 1.09 ms | 60.0 / 1.31 ms |
+
+- The mid-size systems and a4tail with the water not loaded hold 60 fps, as
+  on the M2, with updates at or below the M2's.
+- With every atom drawn, a4tail runs faster than on the M2 (36.7 against
+  22.5 fps, and 50.0 against 30.2 with the water hidden), consistent with
+  those cells being GPU-bound. The canvas-size question above applies here.
+- Two things are worse on Windows, and neither is investigated yet:
+  - yiip / ribbon runs at 20.3 fps with 48 ms of CPU per frame (M2: 27.2 fps,
+    35 ms). The mesh rebuild is the cost on both machines.
+  - a4tail with every atom loaded peaks at about 12 GB resident (M2: about
+    4 GB). With the water not loaded it is 4.4 GB, close to the M2.
+- The M2 column mixes stages where the M2 cell was not rerun after #631;
+  those entries are marked.
+
+The coordinate-texture staging buffer (#628) was also measured on this
+machine (`eab7a0ce`): 3J3Q coord-morph goes from 40.0 to 58.6 fps, and the
+coordinate upload from 8.7 to 4.3 ms per update (4V6X stays at 60 fps).
+
 ## Loading the 3.9M-atom structure (GRO, #633)
 
 Reading a4tail's `em.gro` into a molecule: parsing, residues, topology
@@ -197,3 +250,6 @@ Raw results, all on this branch:
 - `results/bench-2026-09-24T08-28-26-187Z` (baseline) through
   `bench-2026-09-24T12-38-35-250Z` (after #631)
 - `results/ablation-m2-20260925/` (the transfer-path ablation)
+- `results/bench-2026-09-25T02-58-09-447Z` (Windows md-playback)
+- `results/bench-2026-09-24T02-12-31-976Z` and `bench-2026-09-24T04-44-55-351Z`
+  (Windows, before and after #628)
