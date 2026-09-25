@@ -64,6 +64,26 @@
           "op": "pdb-to-gro",
           "note": "Chains PROA/PROB share chain ID P and the waters wrap the 4-digit residue number, so the PDB reader merges 10,216 atoms; the GRO reader keeps them apart.",
           "sha256": "4c71b03b4f68636e94b688ae140529cb38cdd9b3de15b1656adb3a36d2145bad"
+        },
+        {
+          "name": "YiiP_system_9ns_center-100f.xtc",
+          "from": "YiiP_system_9ns_center.xtc",
+          "op": "xtc-head",
+          "params": {
+            "frames": 100
+          },
+          "note": "first 100 of the 901 frames, byte for byte, for the trajectory-length sweep of the Mol* comparison",
+          "sha256": "1d285193412af23414d1fd2bc0d09dc0ac8ac68e8086c7e97b48694f3ea4b006"
+        },
+        {
+          "name": "YiiP_system_9ns_center-300f.xtc",
+          "from": "YiiP_system_9ns_center.xtc",
+          "op": "xtc-head",
+          "params": {
+            "frames": 300
+          },
+          "note": "first 300 of the 901 frames, byte for byte, for the trajectory-length sweep of the Mol* comparison",
+          "sha256": "c9d31c9f9372fb25bdbaab2d9b937174b66fd9f4458a9aec81c13f6c2af46c0d"
         }
       ]
     },
@@ -117,6 +137,69 @@
           "tarHeaderOffset": 834050560,
           "xtcFrames": 100,
           "sha256": "c5f6d8be534dd84b84b3954d581a84f52db336c4eaa3d0dd9fd767101b1aff13"
+        }
+      ],
+      "derived": [
+        {
+          "name": "prod-50f.xtc",
+          "from": "prod-100f.xtc",
+          "op": "xtc-head",
+          "params": {
+            "frames": 50
+          },
+          "note": "first 50 of the 100 frames, byte for byte, for the trajectory-length sweep (all atoms)",
+          "sha256": "93c5250d8131e9cb24ea776b80d04972723b87cf14df73f64707006109c0c656"
+        },
+        {
+          "name": "prod-25f.xtc",
+          "from": "prod-100f.xtc",
+          "op": "xtc-head",
+          "params": {
+            "frames": 25
+          },
+          "note": "first 25 of the 100 frames, byte for byte, for the trajectory-length sweep (all atoms)",
+          "sha256": "02e4fba69b81035351658800909a1ca2ca411494e4fd77a627fad145ad2a289b"
+        },
+        {
+          "name": "em-nosol.gro",
+          "from": "em.gro",
+          "op": "gro-drop-resname",
+          "params": {
+            "resname": "SOL"
+          },
+          "note": "the topology without water (ions kept), the same atoms as the loadSelection \"!resn SOL\"; lets a reader without load-time selection (Mol*) read the same data",
+          "sha256": "01d244f5c2ab72e9e508a9deb63a186dee908bdb2a88bf15bf3882429bf65436"
+        },
+        {
+          "name": "prod-100f-nosol.xtc",
+          "from": "prod-100f.xtc",
+          "op": "xtc-drop-resname",
+          "params": {
+            "topology": "em.gro",
+            "resname": "SOL"
+          },
+          "note": "the 100 frames without water, re-encoded by MDAnalysis at the source precision (1000), so the kept integer coordinates are unchanged",
+          "sha256": "5549afe35e5695c5a7fdd51769156418ed16bbbe5a3ab7b9393fc874f9a6bbaf"
+        },
+        {
+          "name": "prod-25f-nosol.xtc",
+          "from": "prod-100f-nosol.xtc",
+          "op": "xtc-head",
+          "params": {
+            "frames": 25
+          },
+          "note": "first 25 frames of the water-free trajectory",
+          "sha256": "b2538529f5fff5ab3842a56082e8362389705140f0b7d323f4444308ff6297ba"
+        },
+        {
+          "name": "prod-50f-nosol.xtc",
+          "from": "prod-100f-nosol.xtc",
+          "op": "xtc-head",
+          "params": {
+            "frames": 50
+          },
+          "note": "first 50 frames of the water-free trajectory",
+          "sha256": "68efb757d3797e6906e1a4792188087861d88eda38bb43065e24840079bd7601"
         }
       ]
     }

@@ -43,6 +43,7 @@ Usage:
 """
 
 import hashlib
+import math
 import json
 import os
 import struct
@@ -289,7 +290,7 @@ def fetch_file(spec, out):
     download(url, out, start, length)
 
 
-def dcd_to_little_endian(src, dst):
+def dcd_to_little_endian(src, dst, **_):
     """Rewrite a big-endian DCD as little-endian.
 
     Every Fortran record marker and every 4-byte word is swapped, except the
@@ -334,7 +335,7 @@ def swap_words(data, width):
     return bytes(out)
 
 
-def pdb_to_gro(src, dst):
+def pdb_to_gro(src, dst, **_):
     """Rewrite the ATOM/HETATM records of a PDB as a GRO file, atom for atom.
 
     Only what the GRO reader uses as topology is carried: residue name, atom
@@ -384,9 +385,111 @@ def pdb_to_gro(src, dst):
     os.replace(part, dst)
 
 
+def _xtc_frames(path):
+    """(offset, length, natoms, precision) of every frame in a local XTC."""
+    frames = []
+    size = os.path.getsize(path)
+    with open(path, 'rb') as f:
+        pos = 0
+        while pos < size:
+            f.seek(pos)
+            h = f.read(92)
+            if len(h) < 92:
+                raise ValueError(f'{path}: truncated frame header at byte {pos}')
+            magic, natoms = struct.unpack('>ii', h[:8])
+            if magic != 1995:
+                raise ValueError(f'{path}: no XTC frame at byte {pos} (magic {magic})')
+            if natoms <= 9:
+                raise ValueError(f'{path}: uncompressed XTC frames are not handled')
+            precision = struct.unpack('>f', h[56:60])[0]
+            nbytes = struct.unpack('>i', h[88:92])[0]
+            length = 92 + ((nbytes + 3) // 4) * 4
+            frames.append((pos, length, natoms, precision))
+            pos += length
+    return frames
+
+
+def xtc_head(src, dst, frames, **_):
+    """Copy the first `frames` frames of an XTC byte for byte.
+
+    Nothing is decoded or re-encoded, so every frame kept is the source's own.
+    """
+    index = _xtc_frames(src)
+    if len(index) < frames:
+        raise ValueError(f'{src}: has {len(index)} frames, {frames} wanted')
+    length = index[frames - 1][0] + index[frames - 1][1]
+    part = dst + '.part'
+    with open(src, 'rb') as f, open(part, 'wb') as g:
+        left = length
+        while left:
+            chunk = f.read(min(left, 64 << 20))
+            g.write(chunk)
+            left -= len(chunk)
+    os.replace(part, dst)
+
+
+def _gro_keep(line, resname):
+    return line[5:10].strip() != resname
+
+
+def gro_drop_resname(src, dst, resname, **_):
+    """Write a GRO without the atoms of one residue name.
+
+    The kept atom lines are copied as they are (numbering included), so the
+    only change is which atoms are there; the title and box lines are kept and
+    the atom count is rewritten.
+    """
+    with open(src) as f:
+        title = f.readline()
+        natoms = int(f.readline())
+        atoms = [f.readline() for _ in range(natoms)]
+        box = f.readline()
+    kept = [a for a in atoms if _gro_keep(a, resname)]
+    part = dst + '.part'
+    with open(part, 'w', newline='\n') as g:
+        g.write(title)
+        g.write(f'{len(kept):5d}\n')
+        g.writelines(kept)
+        g.write(box)
+    os.replace(part, dst)
+    print(f'    kept {len(kept)} of {natoms} atoms')
+
+
+def xtc_drop_resname(src, dst, topology, resname, **_):
+    """Write an XTC without the atoms of one residue name.
+
+    XTC has to be re-encoded to drop atoms, which MDAnalysis does; it is
+    imported here only, so the rest of this script needs nothing beyond the
+    standard library. The precision is the source's, so the kept atoms'
+    integer coordinates, and so their positions, are unchanged.
+    """
+    try:
+        import MDAnalysis as mda
+    except ImportError:
+        raise RuntimeError('xtc-drop-resname needs MDAnalysis (pip install MDAnalysis)')
+    precisions = {p for _, _, _, p in _xtc_frames(src)}
+    if len(precisions) != 1:
+        raise ValueError(f'{src}: mixed precisions {sorted(precisions)}')
+    precision = precisions.pop()
+    top = os.path.join(os.path.dirname(src), topology)
+    u = mda.Universe(top, src)
+    sel = u.select_atoms(f'not resname {resname}')
+    part = dst + '.part'
+    # MDAnalysis takes the precision as decimal digits (3 for 1000).
+    digits = int(round(math.log10(precision)))
+    with mda.Writer(part, sel.n_atoms, format='XTC', precision=digits) as w:
+        for _ in u.trajectory:
+            w.write(sel)
+    os.replace(part, dst)
+    print(f'    kept {sel.n_atoms} atoms over {len(u.trajectory)} frames, precision {precision:g}')
+
+
 DERIVATIONS = {
     'dcd-to-little-endian': dcd_to_little_endian,
     'pdb-to-gro': pdb_to_gro,
+    'xtc-head': xtc_head,
+    'gro-drop-resname': gro_drop_resname,
+    'xtc-drop-resname': xtc_drop_resname,
 }
 
 
@@ -429,7 +532,7 @@ def fetch_entry(entry):
         src = os.path.join(edir, spec['from'])
         if not os.path.exists(out) or os.path.getmtime(out) < os.path.getmtime(src):
             print(f'  {eid}/{spec["name"]}: deriving ({spec["op"]}) from {spec["from"]}')
-            DERIVATIONS[spec['op']](src, out)
+            DERIVATIONS[spec['op']](src, out, **spec.get('params', {}))
         else:
             print(f'  {eid}/{spec["name"]}: present (derived)')
         digest = sha256_of(out)
