@@ -273,6 +273,10 @@ export class WorkerService {
         return this._gfx_mgr?.benchGpuInfo() ?? {};
     }
 
+    benchCanvasSize(): { width: number; height: number } | null {
+        return this._gfx_mgr?.benchCanvasSize() ?? null;
+    }
+
     enableBenchCounters(): void {
         this._gfx_mgr?.enableBenchCounters();
     }

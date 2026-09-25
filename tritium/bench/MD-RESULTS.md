@@ -128,14 +128,19 @@ against `md-corpus.json`.
 **Machine**: Windows 11, i9-14900KF, RTX 4070 on PCIe 4.0 x16, ANGLE on
 D3D11, Release build, DPR 1.5.
 
-**The canvas size is not confirmed.** Every Windows result file records the
-canvas as 300x150, the default size of an HTML canvas element, while the M2
-files record 1832x1010. The harness reads the size from the DOM canvas
-element, which the worker no longer controls once the canvas is transferred
-to it, so the 300x150 is probably a recording fault rather than the size
-drawn at. Until that is checked, compare the GPU-bound cells (a4tail with
-the water drawn) with care. Even at the same window size the pixel count
-differs: DPR 1.5 against the M2's 2 is about 0.56x the pixels.
+**The recorded canvas size is wrong; the drawn size is not known exactly.**
+Every Windows result file records the canvas as 300x150, the default size
+of an HTML canvas element, while the M2 files record 1832x1010. The harness
+read the size from the DOM canvas element, which keeps whatever size it had
+when it was transferred to the worker, so on Windows it recorded the size
+from before layout. The runs were made with the panels closed and the
+molecule view as the main area, as on the M2, so the view was drawn at the
+window's size; the exact window size was not noted. The harness now records
+the GL drawing buffer instead (`canvas.width` / `height`, with the DOM
+element's size kept as `domWidth` / `domHeight`); on the M2 both read
+1832x1010. Even at the same window size the pixel count differs: DPR 1.5
+against the M2's 2 is about 0.56x the pixels. Compare the GPU-bound cells
+(a4tail with the water drawn) with that in mind.
 
 | cell | measured | M2 (after #631) | Windows |
 |---|---|---:|---:|
@@ -158,7 +163,7 @@ differs: DPR 1.5 against the M2's 2 is about 0.56x the pixels.
   on the M2, with updates at or below the M2's.
 - With every atom drawn, a4tail runs faster than on the M2 (36.7 against
   22.5 fps, and 50.0 against 30.2 with the water hidden), consistent with
-  those cells being GPU-bound. The canvas-size question above applies here.
+  those cells being GPU-bound. See the canvas-size note above.
 - Two things are worse on Windows, and neither is investigated yet:
   - yiip / ribbon runs at 20.3 fps with 48 ms of CPU per frame (M2: 27.2 fps,
     35 ms). The mesh rebuild is the cost on both machines.

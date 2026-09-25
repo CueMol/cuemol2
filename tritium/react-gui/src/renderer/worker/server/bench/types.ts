@@ -92,7 +92,8 @@ export interface BenchResult {
     spec: BenchSpec;
     /** Atom count of the loaded object, when the object exposes one. */
     atomCount: number | null;
-    canvas: { width: number; height: number; dpr: number };
+    /** width/height: the GL drawing buffer; domWidth/domHeight: the DOM element. */
+    canvas: { width: number; height: number; dpr: number; domWidth?: number; domHeight?: number };
     /**
      * The machine the cell ran on: OS, Electron build, and what the GL context
      * says about the GPU and driver.

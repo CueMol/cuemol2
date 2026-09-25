@@ -82,6 +82,25 @@ function reader(spec: BenchSpec): string {
  * driver, plus the versions around it. Best effort -- a missing field is left
  * out rather than guessed at, since a wrong machine label is worse than none.
  */
+/**
+ * The canvas as drawn: the GL drawing buffer, falling back to the DOM element's
+ * size (which stays at its size when transferred, 300x150 if it had no layout
+ * yet) only when the buffer cannot be read.
+ */
+function canvasSize(
+    ctx: WorkerContext,
+    args: { canvasWidth: number; canvasHeight: number; dpr: number },
+): BenchResult['canvas'] {
+    const dom = { domWidth: args.canvasWidth, domHeight: args.canvasHeight };
+    try {
+        const buf = ctx.svc.benchCanvasSize();
+        if (buf) return { width: buf.width, height: buf.height, dpr: args.dpr, ...dom };
+    } catch (e) {
+        console.warn('[bench] could not read the drawing buffer size:', e);
+    }
+    return { width: args.canvasWidth, height: args.canvasHeight, dpr: args.dpr, ...dom };
+}
+
 function machineInfo(ctx: WorkerContext): Record<string, string | boolean | number> {
     const out: Record<string, string | boolean | number> = {};
     try {
@@ -444,7 +463,7 @@ export async function runBench(
         ok: true,
         spec,
         atomCount,
-        canvas: { width: args.canvasWidth, height: args.canvasHeight, dpr: args.dpr },
+        canvas: canvasSize(ctx, args),
         machine: machineInfo(ctx),
         frames: samples.length,
         drawnFrames: samples.filter((s) => s.drawn).length,

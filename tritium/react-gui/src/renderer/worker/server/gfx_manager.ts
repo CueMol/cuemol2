@@ -171,6 +171,16 @@ export class GfxManager {
         );
     }
 
+    /// Size of the GL drawing buffer, i.e. the pixels actually drawn, for the
+    /// benchmark harness. The DOM canvas element cannot tell: once it is
+    /// transferred to this worker it keeps whatever size it had then.
+    ///
+    benchCanvasSize(): { width: number; height: number } {
+        if (this._canvas === null) throw Error('not bound to canvas');
+        const gl = this._context;
+        return { width: gl.drawingBufferWidth, height: gl.drawingBufferHeight };
+    }
+
     ///
     /// What the GL context says about the machine it runs on.
     ///
