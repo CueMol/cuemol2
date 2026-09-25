@@ -44,13 +44,13 @@ quint32 AnimMol::getCrdArrayInd(int aid) const
     AnimMol *pthis = const_cast<AnimMol *>(this);
     pthis->ensureIndexMap();
 
-    CrdIndexMap::const_iterator iter = m_indmap.find(aid);
-    if (iter == m_indmap.end()) {
+    const quint32 ind = m_indmap.lookup(aid);
+    if (ind == CrdIndexMap::npos) {
         MB_THROW(qlib::RuntimeException, "getCrdArrayInd failed");
         return static_cast<quint32>(-1);
     }
 
-    return iter->second;
+    return ind;
 }
 
 void AnimMol::allocCrdArray()
