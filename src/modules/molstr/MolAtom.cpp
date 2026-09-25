@@ -104,12 +104,15 @@ Vector4D MolAtom::getRawPos() const
 Vector4D MolAtom::getPos() const
 {
   Vector4D p = getRawPos();
-  if (m_pXformMat==NULL) {
+  // A bound atom shares its molecule's transform instead of holding a copy.
+  const qlib::Matrix4D *pXform =
+    (m_pCrdSrc!=NULL) ? m_pCrdSrc->getAtomXform() : m_pXformMat;
+  if (pXform==NULL) {
     return p;
   }
   else {
     p.w() = 1.0;
-    m_pXformMat->xform4D(p);
+    pXform->xform4D(p);
     return p;
   }
 }

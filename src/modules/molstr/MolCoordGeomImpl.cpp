@@ -246,7 +246,7 @@ void MolCoord::xformByMat(const Matrix4D &mat, SelectionPtr pSel)
   if (!isCoordEditable()) {
     MB_THROW(qlib::RuntimeException,
              "Cannot transform the atoms of an animated molecule "
-             "(use the xformMat property to move it as a whole)");
+             "(its coordinates come from the frame data)");
     return;
   }
 

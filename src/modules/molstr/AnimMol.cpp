@@ -17,6 +17,21 @@ AnimMol::~AnimMol()
     unbindAtoms();
 }
 
+void AnimMol::setXformMatrix(const qlib::Matrix4D &m)
+{
+    if (m.isIdent())
+        m_pAtomXform.reset();
+    else
+        m_pAtomXform.reset(MB_NEW qlib::Matrix4D(m));
+
+    if (m_bAtomsBound) {
+        // Bound atoms read the transform from this object (getAtomXform()).
+        qsys::Object::setXformMatrix(m);
+        return;
+    }
+    MolCoord::setXformMatrix(m);
+}
+
 void AnimMol::invalidateCrdArray()
 {
     unbindAtoms();
@@ -75,6 +90,8 @@ void AnimMol::bindAtoms()
         MolAtomPtr pAtom = getAtom(m_aidmap[i]);
         if (pAtom.isnull()) continue;
         pAtom->bindCrdArray(this, i);
+        // From here on getPos() takes the transform from getAtomXform().
+        pAtom->resetXformMatrix();
     }
     m_bAtomsBound = true;
 }
@@ -88,6 +105,7 @@ void AnimMol::unbindAtoms()
         MolAtomPtr pAtom = getAtom(m_aidmap[i]);
         if (pAtom.isnull()) continue;
         pAtom->unbindCrdArray();
+        if (m_pAtomXform) pAtom->setXformMatrix(*m_pAtomXform);
     }
     m_bAtomsBound = false;
 }

@@ -9,7 +9,8 @@
 #include "molstr.hpp"
 #include "MolCoord.hpp"
 
-#include <unordered_map>
+#include <memory>
+#include <utility>
 #include <vector>
 
 namespace molstr {
@@ -99,6 +100,10 @@ private:
     /// Whether the atoms currently read their positions from m_crdarray.
     bool m_bAtomsBound = false;
 
+    /// The xformMat the bound atoms apply, or NULL when it is the identity.
+    /// Held once here instead of copied into every atom.
+    std::unique_ptr<qlib::Matrix4D> m_pAtomXform;
+
 public:
     AnimMol() {}
 
@@ -151,6 +156,14 @@ public:
         const qfloat32 *p = &m_crdarray[idx * 3];
         return qlib::Vector4D(p[0], p[1], p[2]);
     }
+
+    /// The transform MolAtom::getPos() applies to a bound atom, or NULL for
+    /// the identity.
+    const qlib::Matrix4D *getAtomXform() const { return m_pAtomXform.get(); }
+
+    /// Keeps a single copy for the bound atoms rather than giving each atom
+    /// its own; atoms not bound yet get the per-atom copy as in MolCoord.
+    void setXformMatrix(const qlib::Matrix4D &m) override;
 
     /// An AnimMol's coordinates come from its frames, so individual atoms
     /// cannot be moved once the array is in place.
