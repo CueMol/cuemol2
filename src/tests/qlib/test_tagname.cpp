@@ -2,6 +2,7 @@
 #include <common.h>
 #include "qlib/TagName.hpp"
 
+#include <algorithm>
 #include <thread>
 #include <vector>
 
@@ -36,8 +37,8 @@ TEST(TagName, InternIsStableAndRoundTrips)
 // string, and every thread sees the same ID for it.
 TEST(TagName, ConcurrentInternGivesUniqueIDs)
 {
-    const int kThreads = 8;
-    const int kNames = 5000;  // crosses a chunk boundary of the table
+    static constexpr int kThreads = 8;
+    static constexpr int kNames = 5000;  // crosses a chunk boundary of the table
     std::vector<std::vector<qlib::TagID>> ids(kThreads, std::vector<qlib::TagID>(kNames));
     std::vector<std::thread> threads;
     for (int t = 0; t < kThreads; ++t) {

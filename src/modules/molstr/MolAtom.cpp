@@ -25,6 +25,7 @@ MolAtom::MolAtom()
   m_nID = -1;
   m_elem = ElemSym::XX;
   m_paib = NULL;
+  m_pos[0] = m_pos[1] = m_pos[2] = 0.0f;
   
   // no = AtomSym::C;
   m_bfac = 1.0;
