@@ -354,7 +354,7 @@ TEST(MolAtomTest, CopyCtorCopiesProperties)
     EXPECT_EQ(copy.getID(), 3);
     EXPECT_EQ(copy.getElement(), (molstr::ElemID)ElemSym::C);
     EXPECT_DOUBLE_EQ(copy.getBfac(), 15.0);
-    EXPECT_DOUBLE_EQ(copy.getOcc(), 0.8);
+    EXPECT_FLOAT_EQ(copy.getOcc(), 0.8f);
     EXPECT_EQ(copy.getConfID(), 'A');
     EXPECT_EQ(copy.getCName(), LString("CB"));
     Vector4D p = copy.getPos();

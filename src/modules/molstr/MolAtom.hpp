@@ -15,6 +15,7 @@
 
 #include <qlib/LScrVector4D.hpp>
 #include <qlib/Matrix4D.hpp>
+#include <qlib/TagName.hpp>
 
 #include "ElemSym.hpp"
 
@@ -42,44 +43,11 @@ namespace molstr {
     friend class ::MolAtom_wrap;
 
   private:
-    /// Name of this atom (e.g. CA, CB, ...)
-    LString m_name;
-
-    /// owner molecule object ID
-    qlib::uid_t m_molID;
-
-    /// chain name of this atom
-    LString m_chain;
-
-    /// residue name of this atom
-    LString m_resname;
-
-    /// Residue index of this atom
-    ResidIndex m_nresid;
-
-    /// Atom index of this atom
-    int m_nID;
-
-    /// Element
-    ElemID m_elem;
-
-    /// Coordinates in angstrom
-    Vector4D m_pos;
-
-    /// Occupancy
-    double m_occ;
-
-    /// Temperature factor
-    double m_bfac;
+    // Members are ordered by size to keep padding down: this class is
+    // instantiated once per atom, millions of times for large systems.
 
     /// Anisotropic U (!=NULL if exists)
     double *m_paib;
-
-    /// Alternative conf. ID
-    char m_confid;
-
-    /// canonical name in the topology definition
-    LString m_canonName;
 
     /// Cached transformation matrix
     qlib::Matrix4D *m_pXformMat;
@@ -88,8 +56,46 @@ namespace molstr {
     /// m_pos is the coordinate (the ordinary, editable case).
     AnimMol *m_pCrdSrc;
 
+    /// owner molecule object ID
+    qlib::uid_t m_molID;
+
+    /// Residue index of this atom
+    ResidIndex m_nresid;
+
+    /// Atom index of this atom
+    int m_nID;
+
     /// Slot of this atom in m_pCrdSrc's coordinate array.
     quint32 m_nCrdIdx;
+
+    /// Coordinates in angstrom. Stored in single precision, as the QDF
+    /// format and the coordinate arrays of animated molecules do;
+    /// computation stays in double.
+    float m_pos[3];
+
+    /// Occupancy
+    float m_occ;
+
+    /// Temperature factor
+    float m_bfac;
+
+    /// Name of this atom (e.g. CA, CB, ...)
+    qlib::TagName m_name;
+
+    /// chain name of this atom
+    qlib::TagName m_chain;
+
+    /// residue name of this atom
+    qlib::TagName m_resname;
+
+    /// canonical name in the topology definition
+    qlib::TagName m_canonName;
+
+    /// Element
+    ElemID m_elem;
+
+    /// Alternative conf. ID
+    char m_confid;
 
     // /// formal charge
     // double m_charge;
@@ -112,7 +118,7 @@ namespace molstr {
 
     /// Atom name
     const LString &getName() const {
-      return m_name;
+      return m_name.str();
     }
     void setName(const LString &nm) {
       m_name = nm;
@@ -179,6 +185,16 @@ namespace molstr {
     /// from it so the atom stays where it was.
     void unbindCrdArray();
 
+  private:
+    void setPosImpl(const Vector4D &vec)
+    {
+      m_pos[0] = static_cast<float>(vec.x());
+      m_pos[1] = static_cast<float>(vec.y());
+      m_pos[2] = static_cast<float>(vec.z());
+    }
+
+  public:
+
     bool isCrdArrayBound() const { return m_pCrdSrc != NULL; }
 
     /// Atom position-script version
@@ -197,7 +213,7 @@ namespace molstr {
     }
     void setBfac(double bfactor)
     {
-      m_bfac = bfactor;
+      m_bfac = static_cast<float>(bfactor);
     }
 
     double getOcc() const
@@ -206,12 +222,12 @@ namespace molstr {
     }
     void setOcc(double occup)
     {
-      m_occ = occup;
+      m_occ = static_cast<float>(occup);
     }
 
     /// Get canonical name of atom in the topology definition
     const LString &getCName() const {
-      return m_canonName;
+      return m_canonName.str();
     }
     void setCName(const LString &nm) {
       m_canonName = nm;
@@ -223,10 +239,10 @@ namespace molstr {
     void setID(int id) { m_nID = id; }
 
     void setChainName(const LString &cname) { m_chain = cname; }
-    const LString &getChainName() const { return m_chain; }
+    const LString &getChainName() const { return m_chain.str(); }
 
     void setResName(const LString &name) { m_resname = name; }
-    const LString &getResName() const { return m_resname; }
+    const LString &getResName() const { return m_resname.str(); }
 
     void setResIndex(const ResidIndex &id) {
       m_nresid = id;

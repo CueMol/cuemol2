@@ -60,7 +60,7 @@ MolAtom::MolAtom(const MolAtom &src)
   // A copy is a free-standing atom: it takes the source's current position as
   // its own rather than sharing the animated molecule's array, the same way
   // the xformMat below is not carried over.
-  m_pos = src.getRawPos();
+  setPosImpl(src.getRawPos());
   m_pCrdSrc = NULL;
   m_nCrdIdx = 0;
   m_bfac = src.m_bfac;
@@ -98,7 +98,7 @@ Vector4D MolAtom::getRawPos() const
 {
   if (m_pCrdSrc!=NULL)
     return m_pCrdSrc->getAtomPos(m_nCrdIdx);
-  return m_pos;
+  return Vector4D(m_pos[0], m_pos[1], m_pos[2]);
 }
 
 Vector4D MolAtom::getPos() const
@@ -124,7 +124,7 @@ void MolAtom::setPos(const Vector4D &vec)
     return;
   }
   if (m_pXformMat==NULL) {
-    m_pos = vec;
+    setPosImpl(vec);
   }
   else {
     MB_THROW(qlib::RuntimeException, "Cannot set atom position to the xformMat applied atom/mol");
@@ -139,7 +139,7 @@ void MolAtom::setRawPos(const Vector4D &vec)
              "(its coordinates come from the frame data)");
     return;
   }
-  m_pos = vec;
+  setPosImpl(vec);
 }
 
 void MolAtom::unbindCrdArray()
@@ -148,7 +148,7 @@ void MolAtom::unbindCrdArray()
     return;
   // Keep the position the array last held, so an atom that outlives its
   // molecule does not jump back to whatever m_pos held before binding.
-  m_pos = m_pCrdSrc->getAtomPos(m_nCrdIdx);
+  setPosImpl(m_pCrdSrc->getAtomPos(m_nCrdIdx));
   m_pCrdSrc = NULL;
   m_nCrdIdx = 0;
 }
