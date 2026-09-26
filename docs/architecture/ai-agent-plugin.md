@@ -30,15 +30,17 @@ renderer                                       Web Worker                       
 | AgentRoot (PluginRoots 配下, UI なし)    | ----------------------> | plugin.agent.runTurn       |
 |  useAgentTurnRunner                    |   { quiet: true }       |  turnLoop: streamText()    |
 |   - agentProgress.subscribe            | <---------------------- |   modelProvider -> OpenAI  |
-|   - useSuppressUndoRedo(running)       |   [plugin-channel.      |                  / Anthropic|
+|   - useSuppressUndoRedo(running)       |   [plugin-channel.      |     / Anthropic / Google   |
 |   - parseModelSpec(model) -> provider  |    agent.progress, u]   |   -> tools/* = 既存 service |
 |   - agentApiKeys[provider].get() -- IPC|                         |  1 turn = 1 undo txn       |
 |   - usePluginPrefs('agent')            |                         | plugin.agent.cancelTurn    |
-| agentSessionStore (module singleton)   |                         +----------------------------+
+| agentSessionStore (module singleton)   |                         | plugin.agent.listModels    |
+| AgentModelPicker (pane 最上段)          |                         +----------------------------+
 | AgentChatPane (SidePanel 配下)          |                                      |
 |   ^/v = promptHistory (localStorage)   |          main: SECRET_GET/SET/STATUS
 +----------------------------------------+ -------> (safeStorage; OPENAI_API_KEY /
-                                                     ANTHROPIC_API_KEY fallback)
+                                                     ANTHROPIC_API_KEY /
+                                                     GEMINI_API_KEY fallback)
 ```
 
 - **LLM 呼び出しとツール実行は worker 内**。ツールは `fn(ctx, args)` の直接呼び出しで、
@@ -48,8 +50,9 @@ renderer                                       Web Worker                       
 - **API キーは main が保持**。renderer は送信時に読んで `runTurn` の引数に載せるだけで、
   React state にもディスクの設定ファイルにも残さない。provider ごとに 1 本ずつ持ち、
   モデルが名指しした側だけを読む。
-- **LLM 層は Vercel AI SDK** (`ai` v7 + `@ai-sdk/openai` + `@ai-sdk/anthropic`)。
-  worker bundle は IIFE なので両 provider と `zod` が静的に入る (約 +815 KB)。
+- **LLM 層は Vercel AI SDK** (`ai` v7 + `@ai-sdk/openai` + `@ai-sdk/anthropic` + `@ai-sdk/google`)。
+  worker bundle は IIFE なので全 provider と `zod` が静的に入る。`@ai-sdk/google` は `ai` と同じ
+  `@ai-sdk/provider` / `provider-utils` を使う版 (4.0.70) に合わせてあり、SDK core は二重に入らない。
 
 ---
 
@@ -99,7 +102,8 @@ transport が worker を破棄する) なので、**全ての await を try の�
 `createModel` が DI の継ぎ目で、テストは `MockLanguageModelV4` を渡して turn 全体を回せる。
 
 **モデル文字列が provider を決める**: Settings の Model は `openai:gpt-5.6` /
-`anthropic:claude-opus-5` の `provider:model`。prefix 無しは OpenAI と読む (この plugin が
+`anthropic:claude-opus-5` / `google:gemini-flash-latest` の `provider:model`。prefix は
+`gemini` ではなく `google` -- `providerOptions` のキーと同じ名前でないと `sanitizeHistory` が効かない。prefix 無しは OpenAI と読む (この plugin が
 1 provider だった頃に保存された値を壊さないため)。provider 用の select を別に作らないのは、
 モデルと provider が食い違う状態を作れてしまうから。
 
@@ -107,13 +111,15 @@ transport が worker を破棄する) なので、**全ての await を try の�
 Vercel AI Gateway 経由にルーティングされる。必ず `createModel` で `LanguageModel` を作る。
 
 **reasoning effort は top-level の `reasoning`** に渡し、`providerOptions` 側には
-reasoning 関連を一切書かない。理由は両 provider で同じ「SDK は未設定のキーだけ埋める」:
+reasoning 関連を一切書かない。理由は全 provider で同じ「SDK は未設定のキーだけ埋める」:
 
 - OpenAI: `providerOptions.openai.reasoningEffort` を書くと top-level が無視される (merge されない)。
 - Anthropic: SDK が **モデルごとに**使える thinking 設定を選ぶ (adaptive + effort が使えるモデルは
   それ、使えないモデルは `{ type: 'enabled', budgetTokens }`)。`thinking` を自分で埋めるとこの分岐が
   丸ごと飛ぶ。実際、adaptive を決め打ちしていたため Claude Haiku 4.5 への全リクエストが
   "adaptive thinking is not supported on this model" で落ちていた。
+- Google: SDK がモデル世代ごとに `thinkingConfig` を選ぶ (Gemini 2.5 は `thinkingBudget`、3.x は
+  `thinkingLevel`)。Anthropic と同じ理由で `providerOptions.google` は空。
 
 `modelProvider.test.ts` がこの「書かない」契約を pin している (実リクエストを投げるまで見えないため)。
 
@@ -124,9 +130,11 @@ reasoning 関連を一切書かない。理由は両 provider で同じ「SDK �
 `cacheControl` の付いていない素の message -- OpenAI 側の履歴をバイト同一に保つため。
 
 **provider をまたぐ履歴**: reasoning part は自分の provider しか読めない状態 (OpenAI の encrypted
-content、Anthropic の thinking signature) を `providerOptions` の自分のキーに持つ。相手に渡した
-ときの挙動は未文書なので、`sanitizeHistory` が**別 provider の reasoning part を落とす**。
-text と tool 呼び出しは残るので、会話は続く。
+content、Anthropic の thinking signature、Gemini の thought signature) を `providerOptions` の自分の
+キーに持つ。相手に渡したときの挙動は未文書なので、`sanitizeHistory` が**別 provider の reasoning
+part を落とす**。text と tool 呼び出しは残るので、会話は続く。Gemini 3 は tool call に thought
+signature を要求するが、他 provider 由来の tool call には SDK が `skip_thought_signature_validator`
+を自動で入れるので 400 にはならない。
 ### 3.3 ツールカタログは手書き
 
 TS 型 -> JSON Schema の自動生成は workspace に無く、strict が効く provider では API 側が入力形を
@@ -159,7 +167,8 @@ OpenAI の `function_call_output` / Anthropic の `tool_result` にそのまま�
 system prompt で「`ok:false` は失敗」と教える。
 
 **strict (スキーマをサンプリング時に強制させるか) は provider ごとの判断**
-(`usesStrictTools`)。OpenAI は本数に関係なく効くが、Anthropic は strict な schema を 1 つの
+(`usesStrictTools`)。OpenAI は本数に関係なく効き、Google は function calling の `VALIDATED` mode で
+効く。Anthropic は strict な schema を 1 つの
 grammar にコンパイルし、大きすぎると "The compiled grammar is too large" で拒否する --
 この 20 本がそれに当たる。調整できるサイズの余地は無いので all-or-nothing。
 strict を切った側で失うのは「引数が schema に従う保証」だけで、tool は受け取った値を
@@ -243,6 +252,7 @@ turn 実行中は無効 (先に Stop する)。
 | plugin prefs (`usePluginPrefs` / `UiState.pluginPrefs`) | model 名と reasoning effort の保存先。plugin ごとの設定置き場が無かった |
 | settings 寄与点 (`contributes.settings`) | その設定を Settings に出す口。`SettingControl` に `text` と `secret` を追加 |
 | 汎用 secrets IPC (`definePluginSecret` / `main/secretStore.ts`) | API キーを設定ファイルに置かないため。`safeStorage` の利用は初 |
+| secret 変更通知 (`onPluginSecretChanged`) | Settings でキーを変えたら panel の model picker を取り直すため。書き手 (Settings 行と `PluginSecret.set/clear`) が同じ renderer にいるので main からの push は要らない |
 | undo/redo lock (`useSuppressUndoRedo`) | §3.1 |
 
 ついでに shared へ移したもの: `worker/shared/pdbUrls.ts` (RCSB の座標 URL。getpdb plugin の
@@ -336,37 +346,53 @@ description に必ず書いている曖昧点:
 
 ## 6. 設定と API キー
 
-Settings > Plugins > AI Agent に 5 行:
+Settings > Plugins > AI Agent に 6 行:
 
 | 設定 | kind | 既定 | 保存先 |
 |---|---|---|---|
-| Model | `combo` (両 provider の候補 7 件 + 自由入力、`provider:model`) | `openai:gpt-5.6` | `UiState.pluginPrefs.agent.model` |
+| Model | `combo` (3 provider の候補 10 件 + 自由入力、`provider:model`) | `openai:gpt-5.6` | `UiState.pluginPrefs.agent.model` |
 | Reasoning effort | `select` (`default`/`low`/`medium`/`high`) | `low` | `UiState.pluginPrefs.agent.reasoningEffort` |
 | Pressing Enter | `select` (`start a new line` / `send the message`) | `start a new line` | `UiState.pluginPrefs.agent.enterKey` |
 | OpenAI API key | `secret` | -- | OS キーチェーン (`safeStorage`)、`OPENAI_API_KEY` fallback |
 | Anthropic API key | `secret` | -- | 同上、`ANTHROPIC_API_KEY` fallback |
+| Google AI API key | `secret` | -- | 同上、`GEMINI_API_KEY` fallback (Google AI Studio の表記。SDK 既定の `GOOGLE_GENERATIVE_AI_API_KEY` は読まない) |
 
-モデル id は候補リスト付きの自由入力 (`AGENT_MODEL_SUGGESTIONS`: OpenAI 4 件 + Anthropic 3 件、
-それぞれ provider と用途を label に添える)。既定は `DEFAULT_AGENT_MODEL` 1 箇所。
-存在しない id は 404 として panel にそのまま出る。
+モデル id は候補リスト付きの自由入力 (`AGENT_MODEL_SUGGESTIONS`: OpenAI 4 件 + Anthropic 3 件 +
+Google 3 件、それぞれ provider と用途を label に添える)。既定は `DEFAULT_AGENT_MODEL` 1 箇所。
+Google は `gemini-pro-latest` / `gemini-flash-latest` / `gemini-flash-lite-latest` の alias を使う
+(preview の改名が頻繁で、日付付き id はすぐ古くなるため)。存在しない id は 404 として panel に
+そのまま出る。Gemini は無効なキーを 401 ではなく **400 "API key not valid"** で返すので、
+`describeApiError` はそれもキーの問題として案内する。
 
 **キーは provider ごと**に持ち、turn はモデルが名指しした provider のものだけ読む。
-未設定のときの error 行は「どちらのキーを、どの行に」入れるかを名指しする -- 2 つある以上、
+未設定のときの error 行は「どのキーを、どの行に」入れるかを名指しする -- 複数ある以上、
 「invalid API key」だけでは直せない。
 
-**API から実リストを取る形にはしていない。** 2 つの provider で事情が違う:
+### 6.1 panel の model picker
 
-- **OpenAI** の `/v1/models` は `id` / `created` / `owned_by` / `shutdown_date` だけで
-  **能力のメタデータが無い**。embedding・音声・画像・moderation 用も同じ配列に混ざるので、
-  「turn を回せるテキストモデル」への絞り込みは id 文字列のヒューリスティックにしかならず、
-  新しい命名が出れば漏れる。
-- **Anthropic** の `/v1/models` は `capabilities` を返す (`thinking.types.adaptive` /
-  `effort` / `structured_outputs` / `max_input_tokens`)。こちらは正確に絞り込める。
+panel 最上段の `Model` select (`AgentModelPicker`) は Settings の Model と**同じ pref を読み書き**
+する (source of truth は pref。どちらで変えても揃う)。出すのは「今のキーで使える候補」だけで、
+2 段で絞る (`useAvailableModels`):
 
-片方だけ正確な一覧になり、しかも**どちらもキー未設定では何も出せない** -- 「何を入れれば
-いいか分からない」場面はまさにキーを入れる前なので、そこで空になるのでは解決しない。
-候補を手で挙げるほうが確実に解き、流動性は自由入力が吸収する。後続でやるなら
-「候補は手書きのまま、キーがある provider だけ Settings の Refresh で上書き」の形。
+1. **キーの無い provider を落とす**。`PluginSecret.status()` (source と末尾 4 文字だけ) で判定し、
+   値は読まず通信もしない。
+2. **キーのある provider は model list API に聞き、手書き候補との積を出す**
+   (`plugin.agent.listModels` -> `worker/modelList.ts`、照合は `shared/modelCatalog.ts`)。
+   OpenAI `/v1/models`、Anthropic `/v1/models` (ページ送り)、Gemini `v1beta/models`
+   (`models/` prefix を外す、ページ送り)。一致は id 完全一致か日付付き snapshot
+   (`<id>-YYYYMMDD`) のみ -- prefix 一致だと `claude-opus-5-5` を `claude-opus-5` の証拠と取り違える。
+
+**API の一覧をそのまま出さないのは**、そのキーで「呼べる」ことは分かっても「turn を回せる」
+ことは分からないため。OpenAI の一覧は能力メタデータを持たず、どの provider も embedding・画像・
+音声モデルが混ざる。「turn を回せる」を手書き候補が、「呼べる」を API が保証し、積を取る。
+
+- 一覧の取得に失敗したら (オフライン等) その provider の候補を**全部出す** (キーはあるので、
+  隠すほうが悪い推測)。失敗は cache せず次の refresh で再試行。
+- 取得結果はキーの fingerprint (source + 末尾 4 文字) ごとに session 中 cache する。pane は
+  activity 切替で unmount されるが、再 mount では status IPC だけで済む。
+- Settings でキーを保存・削除すると `onPluginSecretChanged` で取り直す。
+- 候補に無い id (Settings で手入力、キーを消した provider のモデル) が pref に入っていれば、
+  次の turn はそれで走るので、select の先頭にその値を 1 行足して表示する。
 
 キーは `safeStorage` で暗号化して electron-store に base64 で入れる。**暗号化できない
 環境 (keyring の無い Linux セッション等) では保存を拒否**し、環境変数を使うよう案内する
@@ -389,12 +415,12 @@ Settings > Plugins > AI Agent に 5 行:
   以前は `thinking.blockBinding.prefixMismatchBehavior: 'drop_block'` で吸収していたが、
   `thinking` を書くと SDK のモデル別解決が飛ぶので外した (§3.2)。`sanitizeHistory` が落とすのは
   「別 **provider** の reasoning」までで、同じ Anthropic 内のモデル差までは見ていない。
-- **未検証**: OpenAI の `call_...` と Anthropic の `toolu_...` という tool call id が、
+- **未検証**: OpenAI の `call_...` / Anthropic の `toolu_...` / Gemini の tool call id が、
   会話の途中で provider を切り替えたときに相手側で受理されるか。
 - **`reasoningEffort` の意味は provider で異なる** (OpenAI: Responses の reasoning effort、
-  Anthropic: adaptive thinking + effort)。同じ 3 段を top-level `reasoning` で写像するが、
+  Anthropic: adaptive thinking + effort、Google: thinking budget / level)。同じ 3 段を top-level `reasoning` で写像するが、
   体感は揃わない。
-- **worker bundle が約 815 KB 増えた** (1.45 MB -> 2.27 MB)。`zod` は `@ai-sdk/provider-utils` が
+- **worker bundle が大きい** (plugin 導入で 1.45 MB -> 2.27 MB、Google provider 追加後の現在は約 2.73 MB)。`zod` は `@ai-sdk/provider-utils` が
   静的に import する必須 peer dep で、`jsonSchema()` しか使わなくても tree-shake できない。
   `@ai-sdk/gateway` も `ai` から静的に入る。
 - **メニュー / コマンドから panel を開けない**: `activeView` が `MainLayout` のローカル

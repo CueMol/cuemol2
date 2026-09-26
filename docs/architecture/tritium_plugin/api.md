@@ -198,6 +198,13 @@ interface PluginSecret {
 `get()` し、そのまま渡す** -- React state・ログ・エラーメッセージに残さない。
 暗号化できない環境では `set()` が `ok: false` を返す (平文では保存しない)。
 
+### `onPluginSecretChanged(pluginId, listener): () => void`
+
+`pluginId` の secret のどれかが保存・削除されたら `listener` を呼ぶ (戻り値は unsubscribe)。
+値は渡さないので、要るなら listener の中で `status()` / `get()` する。キーの有無から
+派生させた表示 (例: agent の model picker) を取り直すためのもの。通知するのは Settings の
+secret 行と `PluginSecret.set` / `clear` -- どちらも同じ renderer にいるので main からは push しない。
+
 ---
 
 ## undo/redo を止める
