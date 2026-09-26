@@ -238,6 +238,7 @@ GUIView::FramePlan GUIView::planFrame(const FrameFlags &f)
     // restart it; an accumulation still in progress just continues.
     p.restartJitter =
         f.presentDirty && !p.presentOnly && !p.sceneChanged && !f.jitterMore;
+    p.deferJitter = p.sceneChanged;
     return p;
 }
 
@@ -625,15 +626,19 @@ void GUIView::drawScene()
                 int jitterLevel = pScene->getAAJitterLevel();
                 if (jitterLevel < 0) jitterLevel = 0;
                 if (jitterLevel > 5) jitterLevel = 5;
-                const bool jitterActive = jitterLevel > 0;
+                // A frame of a moving view (scene / camera changed) is drawn
+                // without jitter, at the cost of the plain post-AA frame; the
+                // accumulation is deferred until the view is still (see
+                // planFrame / needsContinuousRedraw).
+                const bool jitterDeferred = jitterLevel > 0 && plan.deferJitter;
+                const bool jitterActive = jitterLevel > 0 && !plan.deferJitter;
                 const int jitterN = gfx::jitterSampleCount(jitterLevel);
                 if (jitterActive) {
-                    // Restart accumulation when the scene or camera changed
-                    // (planFrame: view update flag / forceRedraw), when a
-                    // present-only request fell back to this frame, or after
-                    // convergence.
-                    if (plan.sceneChanged || plan.restartJitter ||
-                        m_jitterSampleIndex >= jitterN) {
+                    // Restart accumulation when a present-only request fell
+                    // back to this frame, or after convergence (a scene or
+                    // camera change already reset the index in the deferred
+                    // frame).
+                    if (plan.restartJitter || m_jitterSampleIndex >= jitterN) {
                         m_jitterSampleIndex = 0;
                         MB_DPRINTLN("GUIView> jitter SS start (level=%d, %d samples)",
                                     jitterLevel, jitterN);
@@ -682,6 +687,12 @@ void GUIView::drawScene()
                         MB_DPRINTLN("GUIView> jitter SS converged (%d samples)",
                                     jitterN);
                     }
+                }
+                else if (jitterDeferred) {
+                    // Start from the first sample once the view is still.
+                    m_jitterSampleIndex = 0;
+                    m_jitterMoreSamples = true;
+                    m_tJitterChange = std::chrono::steady_clock::now();
                 }
             } else {
                 setUpModelMat(MM_NORMAL);

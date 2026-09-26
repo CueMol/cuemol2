@@ -3,10 +3,11 @@
  * @description Per-view requestAnimationFrame render loop for GfxManager.
  *
  * Owns the per-view rAF callback id map and drives the render loop: each frame
- * pumps the C++ event/timer queue (so AnimMgr playback advances inside the
+ * pumps the C++ event/timer queue once (so AnimMgr playback advances inside the
  * Worker, where the Electron libuv timer that would call performIdleTasks is
- * not driven), lets `afterIdle` observe what that pump moved, and then calls
- * checkAndUpdateScenes. A render-loop fault is
+ * not driven; the pump also runs SceneManager's checkAndUpdateScenes idle
+ * task, which draws the frame) and lets `afterIdle` observe what that pump
+ * moved. A render-loop fault is
  * forwarded to the renderer as a `__worker_crash__` message and re-thrown so
  * the worker global error handler can capture filename / line.
  *
@@ -20,8 +21,8 @@
 type IsBound = (viewId: number) => boolean;
 
 /**
- * Called each frame after the C++ timer pump, before drawing. This is the
- * only moment anything can observe what that pump advanced: animation
+ * Called each frame after the C++ timer pump (which also drew the frame). This
+ * is the only moment anything can observe what that pump advanced: animation
  * playback runs on a native timer and fires no event of its own.
  */
 type AfterIdle = () => void;
@@ -30,7 +31,8 @@ type AfterIdle = () => void;
  * Drives the requestAnimationFrame render loop for bound views.
  *
  * @param cuemol - the native addon root (for performIdleTasks pumping)
- * @param sceMgr - SceneManager wrapper (for checkAndUpdateScenes)
+ * @param sceMgr - SceneManager wrapper (checkAndUpdateScenes fallback for an
+ *   addon without performIdleTasks)
  * @param isBound - predicate to skip starting a loop for an unbound view
  * @param afterIdle - runs each frame after the C++ timer pump
  */
@@ -50,8 +52,8 @@ export class ViewLoopController {
     }
 
     /**
-     * Start the requestAnimationFrame render loop for a view. Each frame calls
-     * checkAndUpdateScenes; an existing loop for the same view is cancelled
+     * Start the requestAnimationFrame render loop for a view. Each frame pumps
+     * performIdleTasks (which updates the scenes); an existing loop for the same view is cancelled
      * first. No-op if the view is not bound.
      */
     startViewLoop(view_id: number): void {
@@ -64,20 +66,23 @@ export class ViewLoopController {
         if (existing !== undefined) cancelAnimationFrame(existing);
         const render = (): void => {
             try {
-                // Pump the C++ event / timer queue before rendering so AnimMgr
-                // playback (and any other setTimer-based work) advances and its
-                // camera update is drawn this same frame. The Electron libuv
-                // timer that would normally call performIdleTasks is not driven
-                // inside the Worker, so the render loop services it here. Guarded
-                // so an older native addon (without the export) degrades to a
-                // no-op rather than throwing.
+                // Pump the C++ event / timer queue so AnimMgr playback (and any
+                // other setTimer-based work) advances. The Electron libuv timer
+                // that would normally call performIdleTasks is not driven inside
+                // the Worker, so the render loop services it here. SceneManager
+                // is registered as an idle task, so this pump also runs
+                // checkAndUpdateScenes after the timers, drawing their camera
+                // update this same frame. Calling checkAndUpdateScenes again
+                // here would update the scenes twice per frame (an extra
+                // temporal-jitter sample every frame), so it is only the
+                // fallback for an older native addon without the export.
                 if (typeof this.cuemol.performIdleTasks === 'function') {
                     this.cuemol.performIdleTasks();
+                } else {
+                    this.sceMgr.invokeMethod('checkAndUpdateScenes');
                 }
-                // Report what the pump advanced (animation playback) before
-                // drawing, so a progress readout and the frame agree.
+                // Report what the pump advanced (animation playback).
                 this.afterIdle?.();
-                this.sceMgr.invokeMethod('checkAndUpdateScenes');
                 this._afcbid_map.set(view_id, requestAnimationFrame(render));
             } catch (err) {
                 // A render-loop fault is fatal -- do not reschedule the rAF.
