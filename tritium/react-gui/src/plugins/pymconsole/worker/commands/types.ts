@@ -38,6 +38,18 @@ export interface CmdContext {
   markMutated(): void
   /** Move the working directory (`cd` only). */
   setCwd(dir: string): void
+  /**
+   * Register a download's stream request id, so Stop cancels it (`fetch`).
+   * The id should come from `streamId`.
+   */
+  noteStream(reqId: string): void
+  /** A stream request id unique to this run, for `noteStream`. */
+  streamId(tag: string): string
+  /**
+   * Run a `.pml` file's commands here, inside this submission's transaction
+   * (`run`; the `@` line prefix goes through the same path).
+   */
+  runScript(filePath: string): Promise<CmdOutcome>
 }
 
 /** A command either did its job or has a reason it could not. */

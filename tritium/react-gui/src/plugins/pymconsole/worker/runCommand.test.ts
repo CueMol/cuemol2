@@ -46,7 +46,28 @@ const failing: PymCommand = {
   run: () => ({ ok: false, error: 'Error: boom' }),
 }
 
-const STUBS = [mutating, readOnly, failing]
+/** Waits on a download until the test lets it go, as `fetch` does. */
+let releaseDownload: () => void = () => undefined
+let downloadReqId = ''
+const downloading: PymCommand = {
+  name: 'download',
+  params: [],
+  mode: 'strict',
+  mutates: true,
+  summary: 'stub',
+  run: async (_ctx, _args, cc) => {
+    downloadReqId = cc.streamId('dl')
+    cc.noteStream(downloadReqId)
+    await new Promise<void>((resolve) => { releaseDownload = resolve })
+    return { ok: false, error: 'download canceled' }
+  },
+}
+
+const STUBS = [mutating, readOnly, failing, downloading]
+
+vi.mock('@renderer/worker/server/services/helpers/streamFetchToReader', () => ({
+  cancelStream: vi.fn(() => true),
+}))
 
 vi.mock('./commands/registry', () => ({
   PYM_COMMANDS: [],
@@ -54,7 +75,12 @@ vi.mock('./commands/registry', () => ({
   findCommand: (name: string) => STUBS.find((c) => c.name === name),
 }))
 
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
+import { cancelStream } from '@renderer/worker/server/services/helpers/streamFetchToReader'
 import { runCommand } from './runCommand'
+import { cancelRun } from './runControl'
 
 function setup() {
   const scene = fakeScene({ uid: 1 })
@@ -67,7 +93,7 @@ describe('runCommand', () => {
 
   it('commits once for a whole submission that changed the scene', async () => {
     const { scene, ctx } = setup()
-    const res = await runCommand(ctx, { sceneId: 1, viewId: 7, text: 'mutate; mutate' })
+    const res = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r1', text: 'mutate; mutate' })
     expect(res.ok).toBe(true)
     expect(scene.undo.started).toHaveLength(1)
     expect(scene.undo.committed).toHaveLength(1)
@@ -76,14 +102,14 @@ describe('runCommand', () => {
 
   it('rolls back a read-only submission, so the redo stack survives', async () => {
     const { scene, ctx } = setup()
-    await runCommand(ctx, { sceneId: 1, viewId: 7, text: 'readonly' })
+    await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r1', text: 'readonly' })
     expect(scene.undo.committed).toHaveLength(0)
     expect(scene.undo.rolledBack).toHaveLength(1)
   })
 
   it('stops at a failure but keeps what already changed', async () => {
     const { scene, ctx } = setup()
-    const res = await runCommand(ctx, { sceneId: 1, viewId: 7, text: 'mutate; boom; mutate' })
+    const res = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r1', text: 'mutate; boom; mutate' })
     expect(res.ok && res.aborted).toBe(true)
     // The third command never ran: two echoes, not three.
     const echoes = res.ok ? res.entries.filter((e) => e.kind === 'echo') : []
@@ -93,10 +119,48 @@ describe('runCommand', () => {
 
   it('reports an unknown command without touching the scene', async () => {
     const { scene, ctx } = setup()
-    const res = await runCommand(ctx, { sceneId: 1, viewId: 7, text: 'nosuch' })
+    const res = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r1', text: 'nosuch' })
     expect(res.ok).toBe(true)
     const errors = res.ok ? res.entries.filter((e) => e.kind === 'error') : []
     expect(errors[0]?.text).toContain('unknown command')
     expect(scene.undo.committed).toHaveLength(0)
+  })
+
+  it('runs a script, nested scripts included, as one transaction, and stops a script that runs itself', async () => {
+    const { scene, ctx } = setup()
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pymc-'))
+    const inner = path.join(dir, 'inner.pml')
+    const outer = path.join(dir, 'outer.pml')
+    const self = path.join(dir, 'self.pml')
+    fs.writeFileSync(inner, 'mutate\n')
+    fs.writeFileSync(outer, `# comment\nmutate\n@${inner}\n`)
+    fs.writeFileSync(self, `@${self}\n`)
+
+    const res = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r2', text: `@${outer}` })
+    expect(res.ok && !res.aborted).toBe(true)
+    // One Cmd+Z takes back the whole script.
+    expect(scene.undo.started).toHaveLength(1)
+    expect(scene.undo.committed).toHaveLength(1)
+
+    const looped = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r3', text: `@${self}` })
+    const errors = looped.ok ? looped.entries.filter((e) => e.kind === 'error') : []
+    expect(errors.map((e) => e.text).join()).toContain('nested more than')
+  })
+
+  it('stops on Stop: cancels the download it is waiting on and runs nothing after it', async () => {
+    const { scene, ctx } = setup()
+    const pending = runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r4', text: 'mutate; download; mutate' })
+    await vi.waitFor(() => { expect(downloadReqId).not.toBe('') })
+
+    cancelRun(ctx, { runId: 'r4' })
+    expect(cancelStream).toHaveBeenCalledWith(downloadReqId)
+    releaseDownload()
+
+    const res = await pending
+    expect(res.ok && res.interrupted).toBe(true)
+    const echoes = res.ok ? res.entries.filter((e) => e.kind === 'echo') : []
+    expect(echoes).toHaveLength(2)
+    // The first mutate already ran, so it is kept.
+    expect(scene.undo.committed).toHaveLength(1)
   })
 })

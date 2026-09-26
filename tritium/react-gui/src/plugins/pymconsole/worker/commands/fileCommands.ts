@@ -265,8 +265,12 @@ const fetch: PymCommand = {
         rendererType: null,
         selection: null,
       })
+      // Registered with the run, so Stop cancels the download rather than
+      // waiting for it to finish.
+      const reqId = cc.streamId(`fetch-${pdbId}`)
+      cc.noteStream(reqId)
       const res = await streamLoadFromUrl(ctx, {
-        reqId: `pymconsole:${pdbId}:${Date.now()}`,
+        reqId,
         url: spec.url,
         readerName: spec.readerName,
         objectName,
@@ -412,4 +416,27 @@ const ls: PymCommand = {
   },
 }
 
-export const FILE_COMMANDS: PymCommand[] = [load, fetch, deleteCmd, setName, cd, pwd, ls]
+/**
+ * `run file.pml`: the same as `@file.pml`.
+ *
+ * PyMOL's `run` is for Python files and hands a `.pml` to `load`, which runs
+ * it as a script (parsing.py run). Only that second half applies here.
+ */
+const run: PymCommand = {
+  name: 'run',
+  params: [{ name: 'filename' }, { name: 'namespace', default: 'global' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Run the commands in a .pml script (the same as @file).',
+  run(_ctx, args, cc) {
+    if (!/\.pml$/i.test(args.filename.trim())) {
+      return {
+        ok: false,
+        error: 'Error: run takes a .pml script here; Python scripts are not available in this console',
+      }
+    }
+    return cc.runScript(args.filename.trim())
+  },
+}
+
+export const FILE_COMMANDS: PymCommand[] = [load, fetch, deleteCmd, setName, cd, pwd, ls, run]
