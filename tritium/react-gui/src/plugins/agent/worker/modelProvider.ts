@@ -13,9 +13,11 @@
  */
 
 import { createAnthropic } from '@ai-sdk/anthropic'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 import { APICallError, RetryError, StreamProviderError, type streamText } from 'ai'
 import type { LanguageModel } from 'ai'
+import { PROVIDER_LABELS } from '../shared/modelSpec'
 import type { ModelSpec } from '../shared/modelSpec'
 
 /**
@@ -46,6 +48,9 @@ export function createModel(spec: ModelSpec, apiKey: string): LanguageModel {
       headers: { 'anthropic-dangerous-direct-browser-access': 'true' },
     })(spec.modelId)
   }
+  if (spec.provider === 'google') {
+    return createGoogleGenerativeAI({ apiKey })(spec.modelId)
+  }
   return createOpenAI({ apiKey })(spec.modelId)
 }
 
@@ -68,9 +73,11 @@ export type CreateModel = (spec: ModelSpec, apiKey: string) => LanguageModel
  * "adaptive thinking is not supported on this model".
  */
 export function providerOptionsFor(spec: ModelSpec): ProviderOptions {
-  // Nothing to add for Anthropic: the SDK derives the thinking configuration
-  // from the model and the requested reasoning level.
-  if (spec.provider === 'anthropic') return {}
+  // Nothing to add for Anthropic or Google: the SDK derives the thinking
+  // configuration from the model and the requested reasoning level (a token
+  // budget for Gemini 2.5, a thinking level for Gemini 3), and writing
+  // `thinkingConfig` here would skip that choice as it does for Anthropic.
+  if (spec.provider !== 'openai') return {}
   return {
     openai: {
       // The conversation is ours, replayed from the renderer each turn.
@@ -88,7 +95,8 @@ export function providerOptionsFor(spec: ModelSpec): ProviderOptions {
 /**
  * Whether to ask this provider to enforce the tool schemas as it samples.
  *
- * OpenAI does it for any number of tools. Anthropic compiles every strict
+ * OpenAI does it for any number of tools, and Gemini through its VALIDATED
+ * function-calling mode. Anthropic compiles every strict
  * schema into one grammar and refuses the request when that grows too large
  * ("The compiled grammar is too large") -- which a catalogue this size
  * does. There is no size to tune, so it is all or nothing per provider.
@@ -100,12 +108,6 @@ export function providerOptionsFor(spec: ModelSpec): ProviderOptions {
  */
 export function usesStrictTools(spec: ModelSpec): boolean {
   return spec.provider !== 'anthropic'
-}
-
-/** Human-readable provider name for a message the user will read. */
-const PROVIDER_LABEL: Record<ModelSpec['provider'], string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
 }
 
 /** The HTTP status behind a failure, through whatever the SDK wrapped it in. */
@@ -130,16 +132,17 @@ function unwrap(error: unknown): unknown {
 /**
  * What went wrong, said so the user knows what to change.
  *
- * Names the provider and the settings row, because with two providers
+ * Names the provider and the settings row, because with several providers
  * configured "invalid API key" alone does not say which one to fix.
  */
 export function describeApiError(error: unknown, spec: ModelSpec): string {
   const inner = unwrap(error)
   const status = statusOf(inner)
   const message = inner instanceof Error ? inner.message : String(inner)
-  const label = PROVIDER_LABEL[spec.provider]
+  const label = PROVIDER_LABELS[spec.provider]
 
-  if (status === 401 || status === 403) {
+  // Gemini answers a bad key with 400 "API key not valid" rather than 401.
+  if (status === 401 || status === 403 || (status === 400 && /API key/i.test(message))) {
     return `Invalid ${label} API key (${status}). Check Settings > Plugins > AI Agent.`
   }
   if (status === 404) {

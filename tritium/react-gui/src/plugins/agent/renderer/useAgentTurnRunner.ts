@@ -22,8 +22,7 @@ import {
   DEFAULT_AGENT_MODEL,
 } from '../shared/agentTypes'
 import type { ReasoningEffort } from '../shared/agentTypes'
-import { parseModelSpec } from '../shared/modelSpec'
-import type { Provider } from '../shared/modelSpec'
+import { PROVIDER_LABELS, parseModelSpec } from '../shared/modelSpec'
 import { agentSession, getAgentSession, useAgentSession } from './agentSessionStore'
 
 /** A fresh turn id. `crypto.randomUUID` is missing on some older hosts. */
@@ -37,12 +36,6 @@ const EFFORTS: ReasoningEffort[] = ['default', 'low', 'medium', 'high']
 /** Read the stored effort, falling back when the value is not one we know. */
 function toEffort(value: unknown): ReasoningEffort {
   return EFFORTS.includes(value as ReasoningEffort) ? (value as ReasoningEffort) : 'low'
-}
-
-/** Human-readable provider name, for a message that says which key to set. */
-const PROVIDER_LABEL: Record<Provider, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
 }
 
 export function useAgentTurnRunner(): void {
@@ -84,7 +77,7 @@ export function useAgentTurnRunner(): void {
           }
           const key = await agentApiKeys[spec.provider].get()
           if (!key.value) {
-            const label = PROVIDER_LABEL[spec.provider]
+            const label = PROVIDER_LABELS[spec.provider]
             agentSession.failTurn(
               `No ${label} API key is set, and the model is ${model}. Add one in Settings, ` +
                 `or set the ${AGENT_SECRETS[spec.provider].envVar} environment variable.`,

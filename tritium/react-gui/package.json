@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^4.0.53",
+    "@ai-sdk/google": "^4.0.70",
     "@ai-sdk/openai": "^4.0.66",
     "@blueprintjs/core": "^5.13.0",
     "@blueprintjs/icons": "^5.13.0",
