@@ -35,6 +35,32 @@ export interface PluginSecret {
   status(): Promise<SecretStatusRes>
 }
 
+/** Listeners for a change to any entry, by the namespace it belongs to. */
+const changeListeners = new Set<(namespace: string) => void>()
+
+/**
+ * Say that an entry of `namespace` was stored or cleared.
+ *
+ * Main does not push this: the Settings row and a plugin's own `set` are the
+ * only writers, and both run in this renderer, so they call it themselves.
+ * Carries no value -- a listener that needs one reads it.
+ */
+export function notifyPluginSecretChanged(namespace: string): void {
+  for (const listener of changeListeners) listener(namespace)
+}
+
+/**
+ * Be told when an entry of `pluginId` changes, e.g. to refresh anything that
+ * was derived from which keys are set.
+ *
+ * @returns the unsubscribe function.
+ */
+export function onPluginSecretChanged(pluginId: string, listener: () => void): () => void {
+  const wrapped = (namespace: string): void => { if (namespace === pluginId) listener() }
+  changeListeners.add(wrapped)
+  return () => { changeListeners.delete(wrapped) }
+}
+
 /** What each call answers when Electron is not there (the Vite dev server). */
 const NO_ELECTRON = {
   get: { value: null, source: 'none' } as SecretGetRes,
@@ -59,10 +85,14 @@ export function definePluginSecret(
       return (await window.electronAPI?.invoke(IPC.SECRET_GET, ref)) ?? NO_ELECTRON.get
     },
     async set(value: string) {
-      return (await window.electronAPI?.invoke(IPC.SECRET_SET, { ...ref, value })) ?? NO_ELECTRON.set
+      const res = (await window.electronAPI?.invoke(IPC.SECRET_SET, { ...ref, value })) ?? NO_ELECTRON.set
+      notifyPluginSecretChanged(pluginId)
+      return res
     },
     async clear() {
-      return (await window.electronAPI?.invoke(IPC.SECRET_SET, { ...ref, value: '' })) ?? NO_ELECTRON.set
+      const res = (await window.electronAPI?.invoke(IPC.SECRET_SET, { ...ref, value: '' })) ?? NO_ELECTRON.set
+      notifyPluginSecretChanged(pluginId)
+      return res
     },
     async status() {
       return (await window.electronAPI?.invoke(IPC.SECRET_STATUS, ref)) ?? NO_ELECTRON.status

@@ -7,8 +7,9 @@
  * The prefix is applied there, so the names below stay bare.
  */
 
+import { listModels } from './modelList'
 import { cancelTurn, runTurn } from './turnLoop'
 
-export const services = { runTurn, cancelTurn }
+export const services = { runTurn, cancelTurn, listModels }
 
 export type * from '../shared/agentTypes'
