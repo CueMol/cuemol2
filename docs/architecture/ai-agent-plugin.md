@@ -170,14 +170,14 @@ system prompt で「`ok:false` は失敗」と教える。
 (`usesStrictTools`)。OpenAI は本数に関係なく効き、Google は function calling の `VALIDATED` mode で
 効く。Anthropic は strict な schema を 1 つの
 grammar にコンパイルし、大きすぎると "The compiled grammar is too large" で拒否する --
-この 20 本がそれに当たる。調整できるサイズの余地は無いので all-or-nothing。
+この 21 本がそれに当たる。調整できるサイズの余地は無いので all-or-nothing。
 strict を切った側で失うのは「引数が schema に従う保証」だけで、tool は受け取った値を
 coerce し、おかしければモデルが読める理由を返すので、往復 1 回のコストで済む。
 
 **スキーマは全 provider の strict モードが受ける共通部分だけを使う** (`type` / `description` /
 `properties` / `required` / `additionalProperties` / `items` / `enum`)。Anthropic の strict は
 数値・文字列の制約を受け付けず、配列は `minItems: 0 | 1` しか許さない。しかも tool 定義は
-**毎リクエストに 20 本すべて載る**ので、1 本のスキーマが不正だとモデルが何を呼ぶつもりでも
+**毎リクエストに 21 本すべて載る**ので、1 本のスキーマが不正だとモデルが何を呼ぶつもりでも
 リクエスト全体が 400 になる (実際 `measure_geometry` の `minItems: 2` が、測定と無関係な
 プロンプトまで Anthropic で止めた。OpenAI は通っていた)。`tools/index.test.ts` が
 キーワード集合を pin している。件数のような制約は description に書き、`run` で検証する。
@@ -287,9 +287,34 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` |
 | `measure_geometry` | yes | `MolCoord.getAtom` + `helpers/atomintr` の `appendMeasureLabel` |
 | `analyze_interactions` | yes | `analyzeInteractions` |
+| `capture_view` | no | `getSceneExportInfo` -> `exportScene` (一時ファイル) -> 画像を tool 結果に添付 |
 | `export_image` | no (シーン不変。ファイルは書く) | `getSceneExportInfo` -> `exportScene` |
 
-20 件。OpenAI の推奨「1 turn で 20 未満」の**上限ちょうど**で、これ以上増やすなら先に畳む。
+21 件。OpenAI の推奨 20 本を `capture_view` の分だけ意図的に超えている (他の tool で代わりが
+きかない唯一の tool のため)。`tools/index.test.ts` の `MAX_TOOLS` が 21 を pin しており、
+これ以上増やすなら先に畳む (候補は `center_view` を `set_mol_selection` の引数にする案)。
+
+### 5.1 表示を画像で見せる (`capture_view`)
+
+モデルが自分で呼ぶ tool で、ユーザーの発言に毎 turn 自動添付はしない (見る必要の無い turn で
+token を払わないため)。
+
+- **経路**: C++ の PNG exporter で `os.tmpdir()` に書き、worker で読んで base64 にし、即削除する。
+  tool の結果は `ToolOutcome.image` に載せ、`toModelOutput` が JSON text の後ろに file part
+  (`image/png`) として付ける。各 provider はこれを自分の画像 block に変換する (Anthropic は
+  `tool_result` 内の `image`、OpenAI は `function_call_output` 内の `input_image`、Gemini は
+  `functionResponse.parts[].inlineData`)。画像の無い tool の出力は SDK 既定と同じ
+  `{ type: 'text' }` のままで、送るバイト列は変わらない。
+- **サイズ**: 既定は長辺 1024px (1 枚およそ 1000 token)。`longSide` で 256-1568px。上限は
+  Anthropic が縮小を始める大きさ (約 1568px / 1.15 MP) で全 provider 共通にした。細部は
+  解像度より **`center_view` で寄ってから撮る**ほうが安い (token は画素数に比例) ので、
+  system prompt と tool 説明でそう指示している。
+- **履歴**: 会話は毎 turn 全部を再送するので、renderer が保存するときに `dropStaleImages`
+  (`shared/historyImages.ts`) で**最新 1 枚以外を注記 text に置き換える**。同じ turn の中の
+  step 間では SDK が全画像を保持する (before / after の比較はできる)。
+- **panel 表示**: 同じ画像を progress の `tool_result.image` で renderer に送り、
+  長辺 480px の JPEG に縮小して tool 行に常時表示する (`renderer/viewThumbnail.ts`)。
+  transcript は session 中全行を持つので、原寸は保持しない。
 候補は `center_view` -- 既に「選択も適用する」副作用を持っており、`set_mol_selection` の
 引数にできる。`tools/index.test.ts` が本数を pin している。
 
