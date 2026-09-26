@@ -160,6 +160,13 @@
   color: var(--text-error);
 }
 
+.agent-tool-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-top: 1px solid var(--border);
+}
+
 .agent-tool-body {
   padding: 0 var(--space-3) var(--space-2);
   border-top: 1px solid var(--border);

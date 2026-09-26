@@ -106,6 +106,13 @@ export interface AgentUsage {
   cachedTokens: number
 }
 
+/** A picture of the view, as a tool handed it to the model. */
+export interface AgentViewImage {
+  mediaType: 'image/png'
+  /** The encoded file, base64. */
+  base64: string
+}
+
 /** What the worker streams while a turn runs. Every variant names its turn. */
 export type AgentProgressUpdate =
   | { kind: 'status'; turnId: string; phase: 'thinking' | 'calling-tools' | 'writing' }
@@ -119,6 +126,8 @@ export type AgentProgressUpdate =
       ok: boolean
       /** One line for the transcript. Never the whole payload. */
       summary: string
+      /** The picture the model was shown, so the panel can show it too. */
+      image?: AgentViewImage
     }
 
 /** The push channel the worker streams those on. */

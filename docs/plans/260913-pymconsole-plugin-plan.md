@@ -118,6 +118,10 @@ worker が持つ module 状態は **`cwd` 1 つだけ**。
 
 ## AI agent tool との共有化は「今はやらない」
 
+> **更新 (260926)**: MCP が 3 つ目の consumer となり着手条件を満たした。共有化の計画は
+> [260926-mcp-tool-catalog-plan.md](260926-mcp-tool-catalog-plan.md) (正式 interface は CueMol ネイティブの
+> ops + toolCatalog、console はその consumer)。
+
 将来 agent の tool 定義と console の command 定義を TS 側で共有したい、という要望があるが、
 **この計画では共有層を作らない**。
 
