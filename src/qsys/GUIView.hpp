@@ -11,6 +11,7 @@
 #include "MouseEventHandler.hpp"
 #include "InDevEvent.hpp"
 #include <gfx/Hittest.hpp>
+#include <chrono>
 
 namespace gfx {
 class RenderTarget;
@@ -80,13 +81,19 @@ public:
 
     void drawScene() override;
 
-    /// Keep redrawing on idle while temporal-jitter accumulation is unfinished,
-    /// while a full-resolution AO follow-up is owed after a half-res
-    /// (camera-moving) frame (adaptive aoHalfRes), or while a present-only
-    /// frame is owed because the hover highlight changed.
+    /// Keep redrawing on idle while temporal-jitter accumulation is unfinished
+    /// and the view has been still long enough (isJitterStill), while a
+    /// full-resolution AO follow-up is owed after a half-res (camera-moving)
+    /// frame (adaptive aoHalfRes), or while a present-only frame is owed
+    /// because the hover highlight changed.
     bool needsContinuousRedraw() const override
     {
-        return m_jitterMoreSamples || m_aoHalfPending || m_bPresentDirty;
+        if (m_aoHalfPending || m_bPresentDirty) return true;
+        if (!m_jitterMoreSamples) return false;
+        const double ms = std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - m_tJitterChange)
+                              .count();
+        return isJitterStill(ms);
     }
 
     /// Force a redraw and restart any temporal-jitter accumulation (used when
@@ -165,8 +172,24 @@ public:
         /// jitter accumulation so a regular frame of an unchanged scene does not
         /// add a converged sample once more.
         bool restartJitter = false;
+        /// Scene or camera changed (the view is moving): draw this frame
+        /// without temporal jitter and defer the accumulation until the view
+        /// is still (isJitterStill), so no sample is spent on a frame that the
+        /// next change discards.
+        bool deferJitter = false;
     };
     static FramePlan planFrame(const FrameFlags &f);
+
+    /// Delay after the last scene / camera change before the temporal-jitter
+    /// accumulation starts.
+    static constexpr double kJitterStillDelayMs = 100.0;
+
+    /// True when msSinceChange (since the last scene / camera change) is long
+    /// enough to regard the view as still and accumulate jitter samples.
+    static bool isJitterStill(double msSinceChange)
+    {
+        return msSinceChange >= kJitterStillDelayMs;
+    }
 
     /// Slab planes of a camera (near / far clip and the fog range) as
     /// setUpProjMat derives them. bPickProj selects the pick-pass far clip,
@@ -319,6 +342,9 @@ private:
     int m_jitterSampleIndex = 0;
     bool m_jitterMoreSamples = false;
     bool m_jitterResetRequested = false;
+    /// Time of the last deferred (moving) frame; the accumulation starts once
+    /// the view has been still for kJitterStillDelayMs since then.
+    std::chrono::steady_clock::time_point m_tJitterChange;
     /// Current sample's sub-pixel offset (backing pixels), applied in setUpProjMat.
     double m_jitterPxX = 0.0;
     double m_jitterPxY = 0.0;
