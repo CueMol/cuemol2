@@ -45,7 +45,7 @@ export type { PluginChannel } from './pluginChannels'
 export { usePluginPrefs } from './usePluginPrefs'
 export type { PluginPrefs } from './usePluginPrefs'
 export type { PluginPrefValue } from '@shared/types/uiPrefs'
-export { definePluginSecret } from './pluginSecrets'
+export { definePluginSecret, onPluginSecretChanged } from './pluginSecrets'
 export type { PluginSecret } from './pluginSecrets'
 
 // --- App state a pane or dialog needs ---

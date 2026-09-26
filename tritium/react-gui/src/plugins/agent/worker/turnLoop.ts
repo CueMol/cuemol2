@@ -11,7 +11,7 @@
  * the undo transaction around it, the progress it streams to the panel, and
  * cancellation. Nothing here names a provider -- `modelProvider.ts` turns the
  * user's model setting into a model and a bag of options, and the same code
- * drives OpenAI and Anthropic.
+ * drives OpenAI, Anthropic and Google.
  *
  * The undo transaction is committed, not rolled back, as soon as any mutating
  * tool has succeeded -- even when the turn is then cancelled or fails. C++

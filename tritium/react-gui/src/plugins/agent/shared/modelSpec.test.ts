@@ -18,6 +18,8 @@ describe('reading the model setting', () => {
   it.each([
     ['anthropic:claude-opus-5', 'anthropic', 'claude-opus-5'],
     ['openai:gpt-5.6', 'openai', 'gpt-5.6'],
+    // `google`, not `gemini`: the prefix is also the providerOptions key.
+    ['google:gemini-flash-latest', 'google', 'gemini-flash-latest'],
     // No prefix: what an installation stored before there were two providers.
     ['gpt-5.6', 'openai', 'gpt-5.6'],
     // A colon inside the id itself still splits on the first one only.
@@ -28,6 +30,7 @@ describe('reading the model setting', () => {
 
   it.each([
     ['gemini:pro', 'not a known provider'],
+    ['mistral:large', 'not a known provider'],
     ['anthropic:', 'No model named'],
     ['   ', 'No model is set'],
   ])('rejects %s with something to act on', (raw, fragment) => {

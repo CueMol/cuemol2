@@ -168,7 +168,7 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit â
 Some features are packaged as **built-in plugins**: one directory each, declaring what they
 contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
 this way to keep the feature in one directory, not to make it removable), `catalog` (the
-component gallery), `agent` (the AI chat panel, OpenAI or Anthropic through the Vercel AI
+component gallery), `agent` (the AI chat panel, OpenAI, Anthropic or Google Gemini through the Vercel AI
 SDK), `mdtools` (the MD trajectory GUI: the open flow plus the Trajectory bottom tab) and
 `pymconsole` (the PyM console: a command line that speaks part of the PyMOL command language) -- the last four
 ship in every build but are `defaultEnabled: false`, so they appear only once someone switches

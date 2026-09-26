@@ -80,7 +80,7 @@ export function buildAiSdkTools(
  * @returns the serialized outcome, which is what the model reads. A failure
  *   is reported inside it as `ok: false` rather than by throwing: throwing
  *   would make the SDK replace the payload with its own error text, and only
- *   one of the two providers has a notion of an errored tool result.
+ *   not every provider has a notion of an errored tool result.
  */
 function runQueued(
   t: AgentTool,
