@@ -34,7 +34,7 @@ export const PymConsolePanel: BottomTabComponent = ({
   activeSceneId,
   activeMolViewId,
 }) => {
-  const { lines, running, draft, runner } = useConsoleSession()
+  const { lines, running, draft, runner, stopper } = useConsoleSession()
   const [recall, setRecall] = useState<RecallState>(IDLE)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -211,9 +211,20 @@ export const PymConsolePanel: BottomTabComponent = ({
           aria-label="List commands"
         />
         {running && (
-          <span className="pymc-running type-caption" role="status">
-            Running...
-          </span>
+          <>
+            <span className="pymc-running type-caption" role="status">
+              Running...
+            </span>
+            {/* Stops before the next command, and cancels a download in
+                progress; what already ran is kept. */}
+            <FormButton
+              minimal
+              text="Stop"
+              onClick={() => { stopper?.() }}
+              disabled={!stopper}
+              aria-label="Stop the running commands"
+            />
+          </>
         )}
       </div>
 

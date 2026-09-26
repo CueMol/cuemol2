@@ -60,7 +60,6 @@ const REPRESENTATIONS: Readonly<Record<string, string>> = {
   surface: 'dsurface',
   nonbonded: 'simple',
   nb_spheres: 'cpk',
-  labels: '*namelabel',
 }
 
 const UNSUPPORTED_REPS: Readonly<Record<string, string>> = {
@@ -73,6 +72,10 @@ const UNSUPPORTED_REPS: Readonly<Record<string, string>> = {
   slice: 'slice: CueMol has no slice representation',
   cell: 'cell: use the unit cell renderer from the GUI',
   ellipsoids: 'ellipsoids: use the anisou renderer from the GUI',
+  // The label renderer is not a selectable renderer type, so creating it
+  // the way the others are created always failed. A label command that
+  // drives it directly is planned.
+  labels: 'labels: not available from this console yet',
 }
 
 /** The renderers of one object, from the scene tree. */

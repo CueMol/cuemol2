@@ -9,9 +9,11 @@
 
 import { complete } from './completion/completeService'
 import { runCommand } from './runCommand'
+import { cancelRun } from './runControl'
 
 export const services = {
     runCommand,
+    cancelRun,
     complete,
 };
 

@@ -12,10 +12,16 @@
  * than failing.
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useCueMol, useEnsureActiveScene, useSuppressUndoRedo } from '@renderer/plugin-host/api'
 import { pymServices } from '../calls'
 import { consoleSession, useConsoleSession } from './consoleSessionStore'
+
+/** A fresh run id. `crypto.randomUUID` is missing on some older hosts. */
+function makeRunId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
+  return `run-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
 
 /** Registers the runner the panel calls. Renders nothing. */
 export function usePymCommandRunner(): void {
@@ -27,6 +33,9 @@ export function usePymCommandRunner(): void {
   // undoing into it would land the scene somewhere nobody has seen.
   useSuppressUndoRedo(running)
 
+  // The run in flight, for Stop. Not state: nothing renders from it.
+  const runIdRef = useRef<string | null>(null)
+
   const run = useCallback(
     (text: string) => {
       if (!cm) {
@@ -34,6 +43,8 @@ export function usePymCommandRunner(): void {
         return
       }
       consoleSession.begin()
+      const runId = makeRunId()
+      runIdRef.current = runId
       ;(async () => {
         try {
           const target = await ensureActiveScene()
@@ -45,6 +56,7 @@ export function usePymCommandRunner(): void {
             sceneId: target.scene_uid,
             viewId: target.view_id,
             text,
+            runId,
           })
           if (!res.ok) {
             consoleSession.failed(`Error: ${res.error}`)
@@ -55,15 +67,25 @@ export function usePymCommandRunner(): void {
           const msg = e instanceof Error ? e.message : String(e)
           console.error('pymconsole: runCommand failed:', e)
           consoleSession.failed(`Error: ${msg}`)
+        } finally {
+          if (runIdRef.current === runId) runIdRef.current = null
         }
       })()
     },
     [cm, ensureActiveScene],
   )
 
+  const stop = useCallback(() => {
+    const runId = runIdRef.current
+    if (!cm || !runId) return
+    void pymServices
+      .invoke(cm, 'cancelRun', { runId })
+      .catch((e: unknown) => { console.warn('pymconsole cancelRun:', e) })
+  }, [cm])
+
   useEffect(() => {
-    consoleSession.setRunner(run)
-  }, [run])
+    consoleSession.setRunner(run, stop)
+  }, [run, stop])
 
   // Switching the plugin off unmounts the Root; drop the session with it.
   useEffect(() => {
