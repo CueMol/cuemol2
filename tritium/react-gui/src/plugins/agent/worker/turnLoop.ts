@@ -238,6 +238,7 @@ export async function runTurn(
             name: part.toolName,
             ok: outcome?.ok ?? true,
             summary: outcome ? summarizeOutcome(outcome) : String(part.output),
+            ...(outcome?.ok && outcome.image ? { image: outcome.image } : {}),
           })
           break
         }

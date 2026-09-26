@@ -30,6 +30,8 @@ export type TranscriptEntry =
       /** Null until the tool has answered. */
       ok: boolean | null
       summary: string
+      /** A small copy of the picture the model was shown, as a data URL. */
+      thumbnail?: string
     }
   | { kind: 'error'; id: string; text: string; /** Offer a way to set the key. */ needsApiKey?: boolean }
   | { kind: 'notice'; id: string; text: string }
@@ -102,6 +104,22 @@ export const agentSession = {
       running: true,
       turnId,
       transcript: [...state.transcript, { kind: 'user', id: nextId('user'), text }],
+    })
+  },
+
+  /**
+   * Attach a picture to the tool row of `callId`.
+   *
+   * Separate from `applyProgress` because the thumbnail is made after the
+   * result arrives (decoding and scaling are asynchronous), by which time the
+   * turn may have ended -- so this does not check the turn id.
+   */
+  setToolThumbnail(callId: string, thumbnail: string): void {
+    setState({
+      ...state,
+      transcript: state.transcript.map((entry) =>
+        entry.kind === 'tool' && entry.callId === callId ? { ...entry, thumbnail } : entry,
+      ),
     })
   },
 

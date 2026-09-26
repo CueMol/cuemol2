@@ -14,7 +14,8 @@
 import { jsonSchema, tool } from 'ai'
 import type { ToolSet } from 'ai'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { normalizeServiceResult, serializeToolOutput } from '../toolOutput'
+import { normalizeServiceResult, serializeToolOutput, toolModelOutput } from '../toolOutput'
+import type { ToolRunOutput } from '../toolOutput'
 import { ANALYSIS_TOOLS } from './analysisTools'
 import { FILE_TOOLS } from './fileTools'
 import { MEASURE_TOOLS } from './measureTools'
@@ -65,6 +66,8 @@ export function buildAiSdkTools(
       strict,
       execute: (input: unknown, { toolCallId }: { toolCallId: string }) =>
         runQueued(t, ctx, turn, input as Record<string, unknown>, toolCallId),
+      // A picture cannot ride inside the JSON text; this puts it next to it.
+      toModelOutput: ({ output }: { output: ToolRunOutput }) => toolModelOutput(output),
     })
   }
   return out
@@ -77,7 +80,8 @@ export function buildAiSdkTools(
  * edits in the order the model asked for, which is what the transcript and
  * the single undo transaction both describe.
  *
- * @returns the serialized outcome, which is what the model reads. A failure
+ * @returns the serialized outcome, which is what the model reads, with the
+ *   outcome's picture beside it when it has one. A failure
  *   is reported inside it as `ok: false` rather than by throwing: throwing
  *   would make the SDK replace the payload with its own error text, and only
  *   not every provider has a notion of an errored tool result.
@@ -88,8 +92,8 @@ function runQueued(
   turn: TurnContext,
   input: Record<string, unknown>,
   toolCallId: string,
-): Promise<string> {
-  const run = turn.queue.then(async () => {
+): Promise<ToolRunOutput> {
+  const run = turn.queue.then(async (): Promise<ToolRunOutput> => {
     let outcome: ToolOutcome
     try {
       outcome = await t.run(ctx, input, { ...turn, callId: toolCallId })
@@ -103,7 +107,8 @@ function runQueued(
     // what decides commit against rollback when it ends.
     if (t.mutates && outcome.ok) turn.mutated = true
     turn.outcomes.set(toolCallId, outcome)
-    return serializeToolOutput(outcome)
+    const text = serializeToolOutput(outcome)
+    return outcome.ok && outcome.image ? { text, image: outcome.image } : text
   })
 
   // An aborted stream closes without waiting for a running tool, so the loop

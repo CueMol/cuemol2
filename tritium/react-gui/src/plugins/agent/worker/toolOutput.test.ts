@@ -14,6 +14,7 @@ import {
   MAX_OUTPUT_CHARS,
   normalizeServiceResult,
   serializeToolOutput,
+  toolModelOutput,
 } from './toolOutput'
 
 describe('normalizing a service result', () => {
@@ -49,5 +50,22 @@ describe('serializing a tool result', () => {
     const parsed = JSON.parse(text) as { truncated?: boolean }
     expect(parsed.truncated).toBe(true)
     expect(text.length).toBeLessThan(MAX_OUTPUT_CHARS * 2)
+  })
+})
+
+describe('the tool result the provider receives', () => {
+  it('sends a plain result as the text the SDK sent before, and a picture beside it', () => {
+    // Every tool now has toModelOutput; one without a picture must still send
+    // exactly what the SDK's default did for a string.
+    expect(toolModelOutput('{"ok":true}')).toEqual({ type: 'text', value: '{"ok":true}' })
+
+    const out = toolModelOutput({ text: '{"ok":true}', image: { mediaType: 'image/png', base64: 'AAAA' } })
+    expect(out).toEqual({
+      type: 'content',
+      value: [
+        { type: 'text', text: '{"ok":true}' },
+        { type: 'file', mediaType: 'image/png', data: { type: 'data', data: 'AAAA' } },
+      ],
+    })
   })
 })

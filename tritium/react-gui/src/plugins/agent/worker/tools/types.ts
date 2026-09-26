@@ -14,6 +14,7 @@
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { AgentViewImage } from '../../shared/agentTypes'
 
 /**
  * A JSON Schema object in the shape `strict: true` requires: every property
@@ -27,9 +28,15 @@ export interface StrictObjectSchema {
   additionalProperties: false
 }
 
-/** What a tool reports back. `data` is serialised for the model. */
+/** A picture a tool hands the model to look at, alongside its JSON result. */
+export type ToolImage = AgentViewImage
+
+/**
+ * What a tool reports back. `data` is serialised for the model; `image`, when
+ * present, is sent next to it as an image part rather than inside the JSON.
+ */
 export type ToolOutcome =
-  | { ok: true; data?: unknown }
+  | { ok: true; data?: unknown; image?: ToolImage }
   | { ok: false; error: string }
 
 /** The turn a tool call belongs to. */
