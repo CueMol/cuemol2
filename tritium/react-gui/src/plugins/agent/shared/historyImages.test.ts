@@ -35,7 +35,7 @@ function carried(history: ModelMessage[]): unknown[][] {
     m.role === 'tool'
       ? m.content.flatMap((p) =>
           p.type === 'tool-result' && p.output.type === 'content'
-            ? [p.output.value.map((v) => (v.type === 'file' ? 'image' : v.text))]
+            ? [p.output.value.map((v) => (v.type === 'text' ? v.text : v.type))]
             : [],
         )
       : [],
@@ -51,7 +51,7 @@ describe('dropping stale pictures from the conversation', () => {
     ]
     expect(carried(dropStaleImages(history))).toEqual([
       ['{"ok":true}', DROPPED_IMAGE_NOTE],
-      ['{"ok":true}', 'image'],
+      ['{"ok":true}', 'file'],
     ])
     // Nothing to drop: left as it was.
     expect(dropStaleImages([capture('c1')])).toEqual([capture('c1')])
