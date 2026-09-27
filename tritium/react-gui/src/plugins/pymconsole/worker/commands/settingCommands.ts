@@ -6,7 +6,9 @@
  * properties on the scene, an object, a renderer or the view. There is no
  * table that could map one onto the other, so the rule here is: a handful of
  * PyMOL names that have an exact CueMol counterpart are aliased, and anything
- * else is tried as a CueMol property name. That way `set` reaches every
+ * else is tried as a CueMol property name. The settings of one
+ * representation (`stick_radius`, `cartoon_transparency`) go to the
+ * console's renderers for it instead (repSettings.ts). That way `set` reaches every
  * property the inspector shows, and the PyMOL names people actually type for
  * the overlapping settings still work.
  *
@@ -22,6 +24,7 @@ import type { CmdContext, PymCommand } from './types'
 import { isDefaulted, resolveObjects, resolveOneObject, resolveRenderers, toBoolean, toNumber } from './helpers'
 import { parseRgb } from './colorCommands'
 import { toCueMolColor } from './pymolColors'
+import { REP_SETTINGS, getRepSetting, setRepSetting, unsetRepSetting } from './repSettings'
 
 /** A PyMOL setting name that has an exact CueMol counterpart. */
 export interface SettingAlias {
@@ -150,6 +153,8 @@ const set: PymCommand = {
   ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('set: state is ignored (not supported)')
+    const repSetting = REP_SETTINGS[args.name.trim()]
+    if (repSetting) return setRepSetting(ctx, cc, args.name.trim(), repSetting, args.value, args.selection)
     const alias = SETTING_ALIASES[args.name.trim()]
     const propName = alias?.prop ?? args.name.trim()
     const target = resolveTarget(ctx, cc, args.selection, alias)
@@ -197,6 +202,8 @@ const get: PymCommand = {
   ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('get: state is ignored (not supported)')
+    const repSetting = REP_SETTINGS[args.name.trim()]
+    if (repSetting) return getRepSetting(ctx, cc, args.name.trim(), repSetting, args.selection)
     const alias = SETTING_ALIASES[args.name.trim()]
     const propName = alias?.prop ?? args.name.trim()
     const target = resolveTarget(ctx, cc, args.selection, alias)
@@ -229,6 +236,8 @@ const unset: PymCommand = {
   ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('unset: state is ignored (not supported)')
+    const repSetting = REP_SETTINGS[args.name.trim()]
+    if (repSetting) return unsetRepSetting(ctx, cc, args.name.trim(), repSetting, args.selection)
     const alias = SETTING_ALIASES[args.name.trim()]
     const propName = alias?.prop ?? args.name.trim()
     const target = resolveTarget(ctx, cc, args.selection, alias)

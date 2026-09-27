@@ -31,6 +31,7 @@ import {
   renameNamedSelection,
 } from './namedSelections'
 import { repOfRendererType } from './repCommands'
+import { applyRememberedToObject } from './repSettings'
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes'
 import {
   fileStem,
@@ -232,6 +233,7 @@ async function loadUrl(ctx: WorkerContext, args: Record<string, string>, cc: Cmd
   const res = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName, sceneId: cc.sceneId, options })
   const norm = normalizeServiceResult(res, `Error: could not load ${url}`)
   if (!norm.ok) return norm
+  applyRememberedToObject(ctx, cc.sceneId, objectName)
   cc.print(` load: "${url}" loaded as "${objectName}".`)
   return { ok: true }
 }
@@ -316,6 +318,7 @@ const load: PymCommand = {
     })
     const norm = normalizeServiceResult(res, `Error: could not load ${filePath}`)
     if (!norm.ok) return norm
+    applyRememberedToObject(ctx, cc.sceneId, objectName)
     cc.print(` load: "${filePath}" loaded as "${objectName}".`)
     return { ok: true }
   },
@@ -415,6 +418,7 @@ const fetch: PymCommand = {
           }
           return norm
         }
+        applyRememberedToObject(ctx, cc.sceneId, objectName)
         cc.print(` fetch: "${objectName}" fetched.`)
         continue
       }

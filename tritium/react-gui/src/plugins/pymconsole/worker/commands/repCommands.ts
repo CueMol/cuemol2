@@ -22,6 +22,7 @@
  * rewrote their selection would be worse than one that does nothing.
  */
 
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
@@ -40,6 +41,7 @@ import type { MoleculeSelection } from './helpers'
 import { removeConsoleLabels, setConsoleLabelsVisible } from './labelCommands'
 import { interpretShortcut } from '../parser/shortcut'
 import { toCueMolColor } from './pymolColors'
+import { applyRememberedSettings } from './repSettings'
 
 
 /**
@@ -71,6 +73,16 @@ const UNSUPPORTED_REPS: Readonly<Record<string, string>> = {
   slice: 'slice: CueMol has no slice representation',
   cell: 'cell: use the unit cell renderer from the GUI',
   ellipsoids: 'ellipsoids: use the anisou renderer from the GUI',
+}
+
+/**
+ * Renderer styles for representations whose CueMol default looks unlike
+ * PyMOL's. A PyMOL stick has no ball, only joints capped at the stick
+ * radius, which is CueMol's Stick style rather than its ball-and-stick
+ * default. The colouring style is the one the default list carries.
+ */
+const REP_STYLES: Readonly<Record<string, string>> = {
+  sticks: 'StickBallStick,DefaultCPKColoring',
 }
 
 /** Read one renderer property as a string. */
@@ -162,6 +174,15 @@ function createOwned(
   if (!created.ok || created.newRendId === undefined) {
     return { ok: false, error: `Error: could not create ${rep} on "${obj.name}"` }
   }
+  const style = REP_STYLES[rep]
+  if (style) {
+    const rend = getSceneOrNull(ctx, cc.sceneId)?.getRenderer(created.newRendId) as
+      | { applyStyles(style: string): void }
+      | null
+      | undefined
+    rend?.applyStyles(style)
+  }
+  applyRememberedSettings(ctx, cc.sceneId, rep, created.newRendId)
   return { ok: true, rendId: created.newRendId }
 }
 
@@ -260,7 +281,9 @@ function applyRep(
   }
   // It is there: combine with what it already draws, which is what makes
   // show additive and hide subtractive the way PyMOL's flags are.
-  const current = readProp(ctx, cc.sceneId, existing.id, 'sel') ?? '*'
+  // An empty selection is one never set (the renderer a load makes), which
+  // draws everything.
+  const current = readProp(ctx, cc.sceneId, existing.id, 'sel')?.trim() || '*'
   const next =
     name === 'as'
       ? selStr
