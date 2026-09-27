@@ -90,6 +90,12 @@ export interface PymCommand {
    */
   completions?: (ArgCompletion | null)[]
   /**
+   * Whether this call has to run outside the submission's transaction --
+   * saving a scene resets the undo stack, which cannot happen inside one.
+   * Such a call must then be the only command on the line, like `undo`.
+   */
+  outsideTxn?: (args: Record<string, string>) => boolean
+  /**
    * Do it.
    *
    * Never throws: a failure is `{ ok: false, error }` so the transcript can

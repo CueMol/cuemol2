@@ -29,6 +29,8 @@ import { translateSelection } from '../sel/translate'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import { ALL, formatNameList, isDefaulted, molecules, resolveObjects, toNumber } from './helpers'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { camToPymol, formatViewMatrix, parseViewMatrix, pymolToCam } from './viewMatrix'
+import type { CamState } from './viewMatrix'
 
 /** The axis letters `turn` and `move` accept. */
 type Axis = 'x' | 'y' | 'z'
@@ -297,4 +299,93 @@ const refresh: PymCommand = {
   },
 }
 
-export const VIEW_COMMANDS: PymCommand[] = [zoom, center, reset, turn, move, view, refresh]
+/** The camera fields `get_view` / `set_view` use, as the view exposes them. */
+interface CamView {
+  zoom: number
+  distance: number
+  slab: number
+  perspective: boolean
+  center: { x: number; y: number; z: number }
+  rotation: { a: number; x: number; y: number; z: number }
+  setRotQuat(q: unknown): void
+}
+
+/** The active view's camera, or null when there is no view. */
+function readCam(ctx: WorkerContext, viewId: number): CamState | null {
+  const v = ctx.sceMgr.getView(viewId) as unknown as CamView | null
+  if (!v) return null
+  const r = v.rotation
+  const c = v.center
+  return {
+    quat: { a: r.a, x: r.x, y: r.y, z: r.z },
+    center: [c.x, c.y, c.z],
+    distance: v.distance,
+    slab: v.slab,
+    zoom: v.zoom,
+    perspective: Boolean(v.perspective),
+  }
+}
+
+/** Put `cam` on the active view. */
+function writeCam(ctx: WorkerContext, viewId: number, cam: CamState): boolean {
+  const v = ctx.sceMgr.getView(viewId) as unknown as CamView | null
+  if (!v) return false
+  const q = ctx.svc.createObj('Quat') as unknown as CamView['rotation'] | null
+  const c = ctx.svc.createObj('Vector') as unknown as CamView['center'] | null
+  if (!q || !c) return false
+  q.a = cam.quat.a
+  q.x = cam.quat.x
+  q.y = cam.quat.y
+  q.z = cam.quat.z
+  v.setRotQuat(q)
+  c.x = cam.center[0]
+  c.y = cam.center[1]
+  c.z = cam.center[2]
+  v.center = c
+  // Distance first: the slab is clamped to twice the distance.
+  v.distance = cam.distance
+  v.slab = cam.slab
+  v.zoom = cam.zoom
+  v.perspective = cam.perspective
+  return true
+}
+
+const getView: PymCommand = {
+  name: 'get_view',
+  params: [{ name: 'output', default: '1' }, { name: 'quiet', default: '1' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Print the camera as a set_view line that can be pasted back.',
+  run(ctx, _args, cc) {
+    const cam = readCam(ctx, cc.viewId)
+    if (!cam) return { ok: false, error: 'Error: no active view' }
+    for (const line of formatViewMatrix(camToPymol(cam))) cc.print(line)
+    return { ok: true }
+  },
+}
+
+const setView: PymCommand = {
+  name: 'set_view',
+  params: [
+    { name: 'view' },
+    { name: 'animate', default: '0' },
+    { name: 'quiet', default: '1' },
+    { name: 'hand', default: '1' },
+  ],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Set the camera from the 18 numbers get_view prints.',
+  run(ctx, args, cc) {
+    const v = parseViewMatrix(args.view)
+    if (!v) return { ok: false, error: 'Error: set_view needs 18 numbers, as get_view prints them' }
+    if (!isDefaulted(args.animate, '0')) cc.warn('set_view: animate is ignored')
+    if (!isDefaulted(args.hand, '1')) cc.warn('set_view: hand is ignored')
+    if (Math.abs(v[9]) > 1e-6 || Math.abs(v[10]) > 1e-6) {
+      cc.warn('the view is off-centre; it is shown the same, but turns about the screen centre')
+    }
+    if (!writeCam(ctx, cc.viewId, pymolToCam(v))) return { ok: false, error: 'Error: no active view' }
+    return { ok: true }
+  },
+}
+
+export const VIEW_COMMANDS: PymCommand[] = [zoom, center, reset, turn, move, view, refresh, getView, setView]

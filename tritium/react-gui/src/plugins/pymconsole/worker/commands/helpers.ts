@@ -16,6 +16,7 @@ import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTr
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
+import { translateSelection } from '../sel/translate'
 
 /** PyMOL's name for every object at once. */
 export const ALL = 'all'
@@ -172,4 +173,69 @@ export function isDefaulted(raw: string | undefined, defaultValue: string): bool
 /** Render a list of names the way PyMOL prints one. */
 export function formatNameList(names: readonly string[]): string {
   return `[${names.map((n) => `'${n}'`).join(', ')}]`
+}
+
+/** PyMOL's spelling of "everything": `all`, `(all)`, `*`, or nothing at all. */
+export function isAllSelection(raw: string): boolean {
+  const t = raw.trim().replace(/^\((.*)\)$/, '$1').trim()
+  return t === '' || t === ALL || t === '*'
+}
+
+/** A molecule and the CueMol expression to apply inside it. */
+export interface MolSelection {
+  obj: SceneObjectEntry
+  /** CueMol expression; `*` for the whole molecule. */
+  selStr: string
+}
+
+/**
+ * The molecule and selection a PyMOL argument names, for a command that
+ * works on one molecule at a time (`save`, `align`).
+ *
+ * Read in this order: an object name (the whole molecule); `<object> and
+ * <selection>` (that part of it -- the only way to say "chain A of 1abc"
+ * here, since a CueMol expression is evaluated against one molecule rather
+ * than naming objects); `all` when the scene has exactly one molecule; any
+ * other expression against the first molecule, with a warning when there is
+ * more than one -- the rule `zoom` and the measurements follow.
+ *
+ * @param warn - where the "first molecule only" warning goes.
+ */
+export function resolveMolSelection(
+  ctx: WorkerContext,
+  sceneId: number,
+  raw: string,
+  warn: (text: string) => void,
+): { ok: true; target: MolSelection } | { ok: false; error: string } {
+  const mols = molecules(ctx, sceneId)
+  if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
+  const text = raw.trim()
+
+  const named = mols.find((m) => m.name === text)
+  if (named) return { ok: true, target: { obj: named, selStr: '*' } }
+
+  const scoped = /^(\S+)\s+and\s+(.+)$/i.exec(text)
+  const scopedObj = scoped ? mols.find((m) => m.name === scoped[1]) : undefined
+  if (scoped && scopedObj) {
+    const translated = translateSelection(scoped[2])
+    if (!translated.ok) return translated
+    return { ok: true, target: { obj: scopedObj, selStr: translated.expr } }
+  }
+
+  if (isAllSelection(text)) {
+    if (mols.length > 1) {
+      return {
+        ok: false,
+        error: `Error: name one molecule (${mols.map((m) => m.name).join(', ')}); this works on one at a time`,
+      }
+    }
+    return { ok: true, target: { obj: mols[0], selStr: '*' } }
+  }
+
+  const translated = translateSelection(text)
+  if (!translated.ok) return translated
+  if (mols.length > 1) {
+    warn(`using "${mols[0].name}" only: write "<object> and <selection>" to pick another`)
+  }
+  return { ok: true, target: { obj: mols[0], selStr: translated.expr } }
 }

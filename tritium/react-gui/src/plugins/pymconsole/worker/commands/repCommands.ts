@@ -41,7 +41,7 @@ import { molecules } from './helpers'
 import { toCueMolColor } from './pymolColors'
 
 /** Prefix marking a renderer this console owns. */
-const OWNED = 'pym:'
+export const OWNED = 'pym:'
 
 /**
  * PyMOL representation names as CueMol renderer types.
@@ -79,7 +79,7 @@ const UNSUPPORTED_REPS: Readonly<Record<string, string>> = {
 }
 
 /** The renderers of one object, from the scene tree. */
-function renderersOf(ctx: WorkerContext, sceneId: number, objId: number): SceneTreeNode[] {
+export function renderersOf(ctx: WorkerContext, sceneId: number, objId: number): SceneTreeNode[] {
   const tree = getSceneTree(ctx, { sceneId })
   if (!tree.ok || !tree.tree) return []
   const obj = tree.tree.children.find((c) => c.id === objId && c.type === 'object')

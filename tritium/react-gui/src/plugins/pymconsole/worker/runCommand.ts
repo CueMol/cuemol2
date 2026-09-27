@@ -215,6 +215,11 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
       }
       throw e
     }
+    // A lone one of these was handled before the transaction opened.
+    if (spec.outsideTxn?.(bound)) {
+      sink.push('error', `Error: this ${spec.name} must be the only command on the line`)
+      return false
+    }
 
     // What was typed, not what a script it ran contained: replaying the log
     // runs the script again.
@@ -268,28 +273,74 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
 }
 
 /**
- * A submission that is exactly one `undo` or `redo`, run without a
- * transaction: they move the undo stack, which cannot happen inside one.
+ * A submission that is exactly one command that cannot run inside a
+ * transaction -- `undo` / `redo`, which move the undo stack, or a command
+ * whose `outsideTxn` says so for these arguments -- run without one.
  *
  * @returns null when the submission is anything else.
  */
-function runUndoRedo(ctx: WorkerContext, args: RunCommandArgs, commands: SplitCommand[]): RunCommandResult | null {
+async function runStandalone(
+  ctx: WorkerContext,
+  args: RunCommandArgs,
+  commands: SplitCommand[],
+): Promise<RunCommandResult | null> {
   if (commands.length !== 1 || commands[0].python || commands[0].script) return null
   const cmd = commands[0]
   const word = cmd.text.split(/\s+/)[0]
   const found = lookupCommand(word, commandNames())
   if (found.kind !== 'found') return null
-  if (found.name !== 'undo' && found.name !== 'redo') return null
+  const spec = findCommand(found.name)
+  if (!spec) return null
 
   const entries: ConsoleEntry[] = []
-  if (!cmd.quiet) entries.push({ kind: 'echo', text: `PyM> ${cmd.text}` })
-  const res = found.name === 'undo' ? undo(ctx, { sceneId: args.sceneId }) : redo(ctx, { sceneId: args.sceneId })
-  if (!res.ok) {
-    entries.push({ kind: 'error', text: `Error: nothing to ${found.name}` })
-    return ok({ entries, mutated: false, aborted: true, interrupted: false })
+  const echo = (): void => { if (!cmd.quiet) entries.push({ kind: 'echo', text: `PyM> ${cmd.text}` }) }
+
+  if (spec.name === 'undo' || spec.name === 'redo') {
+    echo()
+    const res = spec.name === 'undo' ? undo(ctx, { sceneId: args.sceneId }) : redo(ctx, { sceneId: args.sceneId })
+    if (!res.ok) {
+      entries.push({ kind: 'error', text: `Error: nothing to ${spec.name}` })
+      return ok({ entries, mutated: false, aborted: true, interrupted: false })
+    }
+    if (!cmd.quiet) writeLog(cmd.text)
+    return ok({ entries, mutated: false, aborted: false, interrupted: false })
   }
+
+  if (!spec.outsideTxn) return null
+  let bound: Record<string, string>
+  try {
+    const result = bindArgs(spec.name, spec.params, parseArgs(cmd.text, spec.mode), spec.mode)
+    // Usage and argument errors are reported by the ordinary path.
+    if (result.kind === 'usage') return null
+    bound = result.args
+  } catch {
+    return null
+  }
+  if (!spec.outsideTxn(bound)) return null
+
+  echo()
   if (!cmd.quiet) writeLog(cmd.text)
-  return ok({ entries, mutated: false, aborted: false, interrupted: false })
+  const sink = new EntrySink(entries)
+  const cc: CmdContext = {
+    sceneId: args.sceneId,
+    viewId: args.viewId,
+    cwd: currentDir(),
+    print: (text) => sink.push('output', text),
+    warn: (text) => sink.push('warning', text),
+    markMutated: () => undefined,
+    setCwd: (dir) => { workingDir = dir },
+    noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
+    streamId: (tag) => `pymconsole:${args.runId}:${tag}:1`,
+    runScript: () => Promise.resolve({ ok: false, error: 'Error: a script cannot run from here' }),
+  }
+  let outcome: CmdOutcome
+  try {
+    outcome = await spec.run(ctx, bound, cc)
+  } catch (e) {
+    outcome = { ok: false, error: `Error: ${spec.name}: ${e instanceof Error ? e.message : String(e)}` }
+  }
+  if (!outcome.ok) sink.push('error', outcome.error)
+  return ok({ entries, mutated: false, aborted: !outcome.ok, interrupted: false })
 }
 
 /**
@@ -306,8 +357,8 @@ export async function runCommand(
   if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found')
 
   const commands = splitCommands(args.text)
-  const undoRedo = runUndoRedo(ctx, args, commands)
-  if (undoRedo) return undoRedo
+  const standalone = await runStandalone(ctx, args, commands)
+  if (standalone) return standalone
 
   const entries: ConsoleEntry[] = []
   const sub: Submission = {
