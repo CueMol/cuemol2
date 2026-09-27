@@ -120,6 +120,8 @@ interface Submission {
   sink: EntrySink
   mutated: boolean
   interrupted: boolean
+  /** A scene file to hand to the panel (CmdContext.openScene). */
+  openScene?: string
 }
 
 /**
@@ -244,6 +246,7 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
       noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
       streamId: (tag) => `pymconsole:${args.runId}:${tag}:${++streamSeq}`,
       runScript: (filePath) => runScriptFile(sub, filePath, depth),
+      openScene: (filePath) => { sub.openScene = filePath },
     }
 
     let outcome
@@ -321,6 +324,7 @@ async function runStandalone(
   echo()
   if (!cmd.quiet) writeLog(cmd.text)
   const sink = new EntrySink(entries)
+  let openScene: string | undefined
   const cc: CmdContext = {
     sceneId: args.sceneId,
     viewId: args.viewId,
@@ -332,6 +336,7 @@ async function runStandalone(
     noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
     streamId: (tag) => `pymconsole:${args.runId}:${tag}:1`,
     runScript: () => Promise.resolve({ ok: false, error: 'Error: a script cannot run from here' }),
+    openScene: (filePath) => { openScene = filePath },
   }
   let outcome: CmdOutcome
   try {
@@ -340,7 +345,13 @@ async function runStandalone(
     outcome = { ok: false, error: `Error: ${spec.name}: ${e instanceof Error ? e.message : String(e)}` }
   }
   if (!outcome.ok) sink.push('error', outcome.error)
-  return ok({ entries, mutated: false, aborted: !outcome.ok, interrupted: false })
+  return ok({
+    entries,
+    mutated: false,
+    aborted: !outcome.ok,
+    interrupted: false,
+    ...(outcome.ok && openScene ? { openScene } : {}),
+  })
 }
 
 /**
@@ -385,5 +396,11 @@ export async function runCommand(
   if (sub.mutated) scene.commitUndoTxn()
   else scene.rollbackUndoTxn()
 
-  return ok({ entries, mutated: sub.mutated, aborted: !completed, interrupted: sub.interrupted })
+  return ok({
+    entries,
+    mutated: sub.mutated,
+    aborted: !completed,
+    interrupted: sub.interrupted,
+    ...(sub.openScene ? { openScene: sub.openScene } : {}),
+  })
 }

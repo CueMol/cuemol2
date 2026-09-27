@@ -154,6 +154,7 @@ add_executable(test_molstr
   modules/molstr/test_tracerenderer.cpp
   modules/molstr/test_molatom_crdbind.cpp
   modules/molstr/test_coordtexsupport.cpp
+  modules/molstr/test_namelabel.cpp
 )
 target_include_directories(test_molstr PRIVATE
   ${CMAKE_SOURCE_DIR}/src

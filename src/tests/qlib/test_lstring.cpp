@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <common.h>
 #include "qlib/LString.hpp"
+#include <spdlog/fmt/bundled/format.h>
 #include <list>
 
 using qlib::LString;
@@ -165,4 +166,25 @@ TEST(LString, OperatorAdd)
     LString b(" world");
     LString c = a + b;
     EXPECT_TRUE(c.equals("hello world"));
+}
+
+// fmtFormat / vfmtFormat: std::format-style formatting next to the printf
+// one. Pins what a caller relies on: specs are honoured, the runtime form
+// takes a format string only known at run time, output is not cut at the
+// printf buffer size, and a bad runtime format is reported, not printed.
+TEST(LString, FmtFormat)
+{
+    EXPECT_EQ(qlib::LString::fmtFormat("{}-{:>4}|{:.2f}", "ALA", 12, 3.14159),
+              qlib::LString("ALA-  12|3.14"));
+
+    int n = 7;
+    EXPECT_EQ(qlib::LString::vfmtFormat("{:03d}", fmt::make_format_args(n)),
+              qlib::LString("007"));
+
+    const std::string big(100 * 1024, 'x');
+    EXPECT_EQ(qlib::LString::fmtFormat("{}", big).length(), big.size());
+
+    double b = 1.0;
+    EXPECT_THROW(qlib::LString::vfmtFormat("{:d}", fmt::make_format_args(b)),
+                 fmt::format_error);
 }

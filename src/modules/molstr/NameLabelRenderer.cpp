@@ -10,6 +10,7 @@
 #include "MolCoord.hpp"
 #include "MolChain.hpp"
 #include "MolResidue.hpp"
+#include "LabelFormat.hpp"
 
 #include <gfx/PixelBuffer.hpp>
 //#include <gfx/TextRenderManager.hpp>
@@ -27,7 +28,7 @@ namespace molstr {
     }
 
     NameLabel(const NameLabel &arg)
-         : aid(arg.aid), strAid(arg.strAid), str(arg.str), m_nCacheID(arg.m_nCacheID)
+         : aid(arg.aid), strAid(arg.strAid), str(arg.str), fmt(arg.fmt), m_nCacheID(arg.m_nCacheID)
     {
     }
 
@@ -37,8 +38,11 @@ namespace molstr {
     /// Target atom in string representation
     LString strAid;
 
-    /// Custom label string
+    /// Custom label string, shown as is (set by the PSE importer)
     LString str;
+
+    /// Label format (LabelFormat); empty for the renderer's format
+    LString fmt;
 
     /// cache entry ID
     int m_nCacheID;
@@ -160,8 +164,22 @@ bool NameLabelRenderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4D
 
   rpos = pAtom->getPos();
 
+  // The literal text wins, then this label's format, then the renderer's.
+  const LString &fmtstr = nlab.fmt.isEmpty() ? m_strFormat : nlab.fmt;
   if (!nlab.str.isEmpty()) {
     rstrlab = nlab.str;
+  }
+  else if (!fmtstr.isEmpty()) {
+    try {
+      rstrlab = LabelFormat(fmtstr).apply(pAtom);
+    }
+    catch (const qlib::LException &e) {
+      // Only a format read from a file can be invalid here: the setters
+      // check theirs. Show the built-in text rather than nothing.
+      LOG_DPRINTLN("NameLabelRenderer> %s", e.getMsg().c_str());
+      rstrlab = pAtom->getChainName() + " " + pAtom->getResName() +
+                pAtom->getResIndex().toString() + " " + pAtom->getName();
+    }
   }
   else {
     LString sbuf = pAtom->getChainName() + " " +
@@ -277,6 +295,53 @@ bool NameLabelRenderer::addLabelByID(int aid, const LString &label /*= LString()
     return false;
   }
   return addLabel(pAtom, label);
+}
+
+bool NameLabelRenderer::setLabelFormat(int aid, const LString &fmtstr)
+{
+  // Checked here so a bad format fails the call, not a later draw.
+  if (!fmtstr.isEmpty())
+    LabelFormat check(fmtstr);
+
+  MolCoordPtr pobj = getClientMol();
+  MB_ASSERT(!pobj.isnull());
+  MolAtomPtr pAtom = pobj->getAtom(aid);
+  if (pAtom.isnull()) {
+    LOG_DPRINTLN("NameLabelRenderer> atom %d not found", aid);
+    return false;
+  }
+
+  BOOST_FOREACH(NameLabel &nlab, *m_pdata) {
+    if (nlab.aid != aid)
+      continue;
+    // Relabel: drop the cached image so render() makes the new text.
+    nlab.fmt = fmtstr;
+    nlab.str = LString();
+    if (nlab.m_nCacheID >= 0) {
+      m_pixCache.remove(nlab.m_nCacheID);
+      nlab.m_nCacheID = -1;
+    }
+    qsys::ScenePtr pScene = getScene();
+    if (!pScene.isnull())
+      pScene->setUpdateFlag();
+    return true;
+  }
+
+  if (!addLabel(pAtom))
+    return false;
+  m_pdata->back().fmt = fmtstr;
+  return true;
+}
+
+void NameLabelRenderer::setFormat(const LString &val)
+{
+  if (!val.isEmpty())
+    LabelFormat check(val);
+  if (val.equals(m_strFormat))
+    return;
+  m_strFormat = val;
+  // every label without its own format changes text
+  invalidateAll();
 }
 
 bool NameLabelRenderer::removeLabelByID(int aid)
@@ -437,7 +502,10 @@ void NameLabelRenderer::writeTo2(qlib::LDom2Node *pNode) const
   
   BOOST_FOREACH(NameLabel &value, *m_pdata) {
 
-    LString said = pobj->toStrAID(value.aid);
+    // A label read from a file keeps its atom as text until it is first
+    // drawn (makeLabelStr resolves it); write that text back rather than
+    // dropping the label.
+    LString said = value.aid >= 0 ? pobj->toStrAID(value.aid) : value.strAid;
     if (said.isEmpty())
       continue;
 
@@ -447,6 +515,12 @@ void NameLabelRenderer::writeTo2(qlib::LDom2Node *pNode) const
 
     // add atom attribute
     pChNode->appendStrAttr("aid", said);
+    // Written only when set, so a label with the built-in text is stored
+    // exactly as before.
+    if (!value.str.isEmpty())
+      pChNode->appendStrAttr("str", value.str);
+    if (!value.fmt.isEmpty())
+      pChNode->appendStrAttr("format", value.fmt);
   }
 }
 
@@ -477,6 +551,10 @@ void NameLabelRenderer::readFrom2(qlib::LDom2Node *pNode)
     NameLabel elem;
     elem.aid = -1;
     elem.strAid = value;
+    if (pChNode->findChild("str"))
+      elem.str = pChNode->getStrAttr("str");
+    if (pChNode->findChild("format"))
+      elem.fmt = pChNode->getStrAttr("format");
 
     m_pdata->push_back(elem);
   }

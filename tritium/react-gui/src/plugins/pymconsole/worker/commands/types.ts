@@ -50,6 +50,12 @@ export interface CmdContext {
    * (`run`; the `@` line prefix goes through the same path).
    */
   runScript(filePath: string): Promise<CmdOutcome>
+  /**
+   * Ask the panel to open a scene file once the submission is done (`load
+   * x.qsc`). The worker cannot make a tab, so the panel does it the way
+   * File > Open does.
+   */
+  openScene(filePath: string): void
 }
 
 /** A command either did its job or has a reason it could not. */

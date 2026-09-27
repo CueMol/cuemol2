@@ -56,6 +56,10 @@ private:
   /// label's font weight (corresponds to the font-weight prop of CSS)
   LString m_strFontWgt;
 
+  /// Default label format (LabelFormat); empty for the built-in
+  /// "<chain> <resn><resi> <name>[:alt]" text.
+  LString m_strFormat;
+
   /// label pixbuf cache
   gfx::LabelCacheImpl m_pixCache;
 
@@ -108,6 +112,12 @@ public:
 
   bool removeLabelByID(int aid);
 
+  /// Label atom `aid` with the format `fmt` (LabelFormat): adds a label if
+  /// there is none, replaces the format if there is one. An empty `fmt`
+  /// falls back to the renderer's default format.
+  /// @throws qlib::IllegalArgumentException when `fmt` does not parse.
+  bool setLabelFormat(int aid, const LString &fmt);
+
   void setMaxLabel(int nmax) { m_nMax = nmax; }
   int getMaxLabel() const { return m_nMax; }
 
@@ -123,6 +133,10 @@ public:
   
   void setFontWgt(const LString &val);
   LString getFontWgt() const { return m_strFontWgt; }
+
+  /// @throws qlib::IllegalArgumentException when `val` does not parse.
+  void setFormat(const LString &val);
+  LString getFormat() const { return m_strFormat; }
 
 private:
   bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
