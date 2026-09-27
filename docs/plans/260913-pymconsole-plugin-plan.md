@@ -307,6 +307,8 @@ serialization は要素ごとに汎用なので `.qsc` の往復は無変更で�
 
 ## Phase 3 (以降、需要次第)
 
+> **更新 (260926)**: 詳細計画は [260926-pymconsole-phase3-plan.md](260926-pymconsole-phase3-plan.md)。
+
 `@script.pml`、`fetch` の cancel、`save`、`label` / `spectrum` / `set_color`、anim
 (`mplay` `mstop` `frame` `mview`)、`align`/`super` -> SSM 代替、PyMOL 設定名 alias 表の拡充、
 暗黙コンテキスト (直近 selection 名の省略)、`log`。
