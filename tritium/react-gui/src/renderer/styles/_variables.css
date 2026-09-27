@@ -99,6 +99,11 @@
   /* Echoed input and other second-rank console lines. Dimmer, but still read
      as enabled text rather than as disabled. */
   --console-text-dim: #aeb6c2;
+  /* Selected console text. Opaque: a transcript drawn one block per line has
+     glyph boxes taller than its line height, so the rectangles of adjacent
+     lines overlap, and a translucent highlight shows each overlap as a darker
+     stripe. */
+  --console-selection-bg: #2d4f73;
   /* Inline status text (a field note, a panel warning line): why-based
      aliases so a surface never picks a raw accent. */
   --text-warning: var(--log-warn);
@@ -438,6 +443,7 @@
   --log-error: var(--accent-red);
   --console-text: #14161a;
   --console-text-dim: #5a5d65;
+  --console-selection-bg: #b9d7f0;
   --text-warning: var(--log-warn);
   --text-error: var(--accent-red);
 }
