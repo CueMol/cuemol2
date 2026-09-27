@@ -24,6 +24,7 @@ PaintColoring.cpp
 NARenderer.cpp
 AtomIntrRenderer.cpp
 DisoRenderer.cpp
+TraceStickRenderer.cpp
 RainbowColoring.cpp
 # ScriptColoring.cpp
 DistPickDrawObj.cpp
@@ -67,6 +68,7 @@ PaintColoring.qif
 NARenderer.qif
 AtomIntrRenderer.qif
 DisoRenderer.qif
+TraceStickRenderer.qif
 RainbowColoring.qif
 # ScriptColoring.qif
 DistPickDrawObj.qif

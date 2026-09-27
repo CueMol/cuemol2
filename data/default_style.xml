@@ -131,6 +131,20 @@
     bondw="0.5" sphr="0.5" detail="10" ringcolor="$molcol">
   </style>
 
+  <!-- tracestick styles (stick: bondw == sphr, ball & stick: bondw < sphr) -->
+  <style id="DefaultTraceStick" type="renderer" desc="Default"
+    bondw="0.25" sphr="0.25" detail="10">
+  </style>
+  <style id="ThickTraceStick" type="renderer" desc="Thick"
+    bondw="0.5" sphr="0.5" detail="10">
+  </style>
+  <style id="BallTraceStick" type="renderer" desc="Ball &amp; stick"
+    bondw="0.2" sphr="0.4" detail="10">
+  </style>
+  <style id="ThickBallTraceStick" type="renderer" desc="Thick ball &amp; stick"
+    bondw="0.35" sphr="0.7" detail="10">
+  </style>
+
   <style id="DefaultCPK" type="renderer" desc="Default"
     detail="10">
   </style>
