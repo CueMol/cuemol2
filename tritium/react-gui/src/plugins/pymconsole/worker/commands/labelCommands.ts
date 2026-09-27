@@ -23,6 +23,7 @@ import type { MoleculeSelection } from './helpers'
 import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { OWNED, renderersOf } from './helpers'
 import { pymolLabelFormat } from './labelExpr'
+import { applyRememberedSettings } from './repSettings'
 
 /** The name of the console's label renderer on each molecule. */
 export const LABEL_RENDERER = `${OWNED}labels`
@@ -31,6 +32,7 @@ export const LABEL_RENDERER = `${OWNED}labels`
 const MAX_LABELS = 2000
 
 interface LabelRenderer {
+  uid: number
   name: string
   maxlabel: number
   applyStyles(style: string): void
@@ -79,6 +81,7 @@ function labelRenderer(
   if (!rend) return null
   rend.applyStyles('DefaultLabel')
   rend.name = LABEL_RENDERER
+  applyRememberedSettings(ctx, sceneId, 'labels', rend.uid)
   return rend
 }
 

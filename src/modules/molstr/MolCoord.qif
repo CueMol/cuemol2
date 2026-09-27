@@ -63,6 +63,7 @@ runtime_class MolCoord extends Object
 
   void fitView(object<View$> pView, boolean fsel);
   void fitView2(object<View$> pView, object<MolSelection$> sel);
+  void orientView(object<View$> pView, object<MolSelection$> sel);
 
   // Operations
   string getChainNameCandsJSON();

@@ -20,6 +20,8 @@ import { OBJREADER_CATEGORY, pickReaderName } from '@renderer/worker/server/serv
 import { isHiddenObjReader } from '@renderer/worker/server/services/helpers/readerFilter'
 import { pickCoordUrl, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
 import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
+import { deleteMolAtoms } from '@renderer/worker/server/services/molops/deleteMolAtoms'
+import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import type { CoordServerType } from '@renderer/worker/shared/pdbUrls'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
@@ -31,11 +33,13 @@ import {
   renameNamedSelection,
 } from './namedSelections'
 import { repOfRendererType } from './repCommands'
+import { applyRememberedToObject } from './repSettings'
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes'
 import {
   fileStem,
   isAllSelection,
   isDefaulted,
+  molecules,
   OWNED,
   resolveObjects,
   resolvePath,
@@ -232,6 +236,7 @@ async function loadUrl(ctx: WorkerContext, args: Record<string, string>, cc: Cmd
   const res = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName, sceneId: cc.sceneId, options })
   const norm = normalizeServiceResult(res, `Error: could not load ${url}`)
   if (!norm.ok) return norm
+  applyRememberedToObject(ctx, cc.sceneId, objectName)
   cc.print(` load: "${url}" loaded as "${objectName}".`)
   return { ok: true }
 }
@@ -316,12 +321,26 @@ const load: PymCommand = {
     })
     const norm = normalizeServiceResult(res, `Error: could not load ${filePath}`)
     if (!norm.ok) return norm
+    applyRememberedToObject(ctx, cc.sceneId, objectName)
     cc.print(` load: "${filePath}" loaded as "${objectName}".`)
     return { ok: true }
   },
 }
 
 /** PyMOL's `type` argument, as the server it means. */
+/**
+ * A fetch code as PyMOL reads it (importing.py `fetch`): four characters of
+ * PDB id, then optionally a chain, which may follow a `.`, `_`, `-` or `:`
+ * (`1abcA`, `1abc_A`).
+ *
+ * @returns null when the code is not a PDB id.
+ */
+export function parseFetchCode(code: string): { pdbId: string; chain: string } | null {
+  const m = /^([0-9][0-9a-z]{3})(?:[._\-:]?([0-9a-z]+))?$/i.exec(code)
+  if (!m) return null
+  return { pdbId: m[1].toLowerCase(), chain: m[2] ?? '' }
+}
+
 /** What a fetch `type` asks for (importing.py fetch). */
 type FetchKind =
   | { kind: 'coord'; server: CoordServerType }
@@ -337,6 +356,23 @@ export function fetchKind(type: string): FetchKind | null {
   if (assembly) return { kind: 'assembly', n: Number(assembly[1]) }
   if (t === '2fofc' || t === 'fofc') return { kind: 'map', mapType: t }
   return null
+}
+
+/**
+ * Leave only `chain` in the molecule just fetched, as PyMOL's one-chain
+ * fetch does (it removes the rest, and fails when the chain is not there,
+ * keeping what it loaded).
+ */
+function keepChain(ctx: WorkerContext, cc: CmdContext, objectName: string, chain: string): CmdOutcome {
+  // The newest object of that name is the one just loaded.
+  const mol = molecules(ctx, cc.sceneId, objectName).at(-1)
+  if (!mol) return { ok: false, error: `Error: "${objectName}" is not a molecule` }
+  const selStr = `chain ${chain}`
+  const hits = getSelHitCount(ctx, { sceneId: cc.sceneId, molId: mol.uid, selStr })
+  if (!hits.count) return { ok: false, error: `Error: no such chain: ${chain}` }
+  const res = deleteMolAtoms(ctx, { sceneId: cc.sceneId, objId: mol.uid, selStr: `not (${selStr})` })
+  if (!res.ok) return { ok: false, error: `Error: could not remove the other chains of "${objectName}"` }
+  return { ok: true }
 }
 
 const fetch: PymCommand = {
@@ -380,13 +416,12 @@ const fetch: PymCommand = {
     }
 
     for (const code of codes) {
-      if (!/^[0-9][0-9a-z]{3}$/i.test(code)) {
-        if (/^[0-9][0-9a-z]{3}[a-z]$/i.test(code)) {
-          return { ok: false, error: `Error: chain-specific codes are not supported: ${code}` }
-        }
-        return { ok: false, error: `Error: "${code}" is not a PDB id` }
+      const parsed = parseFetchCode(code)
+      if (!parsed) return { ok: false, error: `Error: "${code}" is not a PDB id` }
+      const { pdbId, chain } = parsed
+      if (chain !== '' && kind.kind === 'map') {
+        return { ok: false, error: `Error: a map cannot be fetched for one chain: ${code}` }
       }
-      const pdbId = code.toLowerCase()
       // Registered with the run, so Stop cancels the download rather than
       // waiting for it to finish.
       const reqId = cc.streamId(`fetch-${pdbId}`)
@@ -422,7 +457,8 @@ const fetch: PymCommand = {
       const spec = kind.kind === 'coord'
         ? pickCoordUrl(pdbId, kind.server)
         : { url: `https://files.rcsb.org/download/${pdbId}.pdb${kind.n}`, readerName: 'pdb' }
-      const objectName = args.name !== '' ? args.name : pdbId
+      // PyMOL names a one-chain fetch after the code as typed (1abcA).
+      const objectName = args.name !== '' ? args.name : chain !== '' ? code : pdbId
       const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
         readerName: spec.readerName,
         objectName,
@@ -439,6 +475,11 @@ const fetch: PymCommand = {
       })
       const norm = normalizeServiceResult(res, `Error: could not fetch ${pdbId}`)
       if (!norm.ok) return norm
+      if (chain !== '') {
+        const kept = keepChain(ctx, cc, objectName, chain)
+        if (!kept.ok) return kept
+      }
+      applyRememberedToObject(ctx, cc.sceneId, objectName)
       cc.print(` fetch: "${objectName}" fetched.`)
     }
     return { ok: true }

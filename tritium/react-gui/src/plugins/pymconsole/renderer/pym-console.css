@@ -39,6 +39,16 @@
   color: var(--console-text);
 }
 
+/* Focusable only so that a click keeps focus here for Cmd+A; it is not a
+   control, so no focus ring (the prompt has none either). */
+.pymc-transcript:focus {
+  outline: none;
+}
+
+.pymc-transcript ::selection {
+  background: var(--console-selection-bg);
+}
+
 /* A scrolling flex column squashes its children by default, which turns a
    long transcript into unreadable slivers. Length is the scrollbar's job. */
 .pymc-transcript > * {

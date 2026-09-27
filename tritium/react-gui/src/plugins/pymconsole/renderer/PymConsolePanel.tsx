@@ -173,18 +173,22 @@ export const PymConsolePanel: BottomTabComponent = ({
   const focusPrompt = useCallback(() => inputRef.current?.focus(), [])
 
   /**
-   * Put the caret back in the prompt after a click in the transcript, the way
-   * a terminal does -- but not when that click finished a selection.
+   * Send typing that starts in the transcript to the prompt, the way a
+   * terminal does.
    *
-   * Focusing an input collapses the document selection, so doing this
-   * unconditionally made the transcript impossible to select: every drag
-   * ended by throwing away what it had just selected.
+   * A click in the transcript leaves focus there (it is focusable), so that
+   * Cmd+A / Ctrl+A selects the log rather than the prompt's line. Moving
+   * focus during keydown makes the browser deliver the key to the prompt,
+   * so the character is not lost. Shortcuts (with Cmd / Ctrl / Alt) and
+   * keys that type nothing stay with the transcript.
    */
-  const handleBodyClick = useCallback(() => {
-    const selection = window.getSelection()
-    if (selection && !selection.isCollapsed) return
-    focusPrompt()
-  }, [focusPrompt])
+  const handleBodyKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return
+      focusPrompt()
+    },
+    [focusPrompt],
+  )
 
   return (
     <div className="pymc-panel">
@@ -228,7 +232,7 @@ export const PymConsolePanel: BottomTabComponent = ({
         )}
       </div>
 
-      <div className="pymc-body" onClick={handleBodyClick}>
+      <div className="pymc-body" onKeyDown={handleBodyKeyDown}>
         <ConsoleTranscript lines={lines} />
       </div>
 

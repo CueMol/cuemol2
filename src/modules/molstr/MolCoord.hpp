@@ -333,6 +333,12 @@ namespace molstr {
     void fitView(qsys::ViewPtr pView, bool fselect) const;
     void fitView2(qsys::ViewPtr pView, SelectionPtr pSel) const;
 
+    /// Turn the view so that the principal axes of the selected atoms lie
+    /// along the screen axes (the largest spread along x, then y, the
+    /// smallest along z), then frame them as fitView2 does. PyMOL's orient.
+    /// (impl: MolCoordGeomImpl.cpp)
+    void orientView(qsys::ViewPtr pView, SelectionPtr pSel) const;
+
     ///
     /// Calculate secondary structure (impl: Prot2ndry.cpp)
     ///

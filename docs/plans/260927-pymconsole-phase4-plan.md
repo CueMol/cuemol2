@@ -1,6 +1,6 @@
 # pymconsole Phase 4 (実装済みコマンドの見落としの修正)
 
-Status: **実装済み**。上位 1-5 は #647、6-10 とその他は `feat/pymconsole-phase4b`。
+Status: **実装済み**。上位 1-5 は #647、6-10 とその他は #648。見送った 3 件のうち 2 件は #649。
 関連: [Phase 3 計画](260926-pymconsole-phase3-plan.md)。
 
 ## 背景
@@ -50,5 +50,9 @@ PyMOL 本体 (`~/ext/pymol-open-source/modules/pymol/`) と CueMol の service �
 
 ## 見送ったもの
 
-`spectrum` の chain ごとの rainbow (PyMOL の spectrum に対応する式が無い)、chain 付きの `fetch 1abcA`、
-`get_names enabled_only`。
+- `spectrum` の chain ごとの rainbow: **対象外**。PyMOL でも `spectrum` の式ではなく `util.chainbow`
+  の機能。CueMol 側は `RainbowColoring` の `mode=chain` で描けるので、`util.chainbow` を扱うなら使える。
+- chain 付きの `fetch 1abcA`: **実装済み (#649)**。読込後に指定 chain 以外を `deleteMolAtoms` で消す
+  (PyMOL `importing.py` と同じく object 名は `1abcA`、chain が無ければ `no such chain`)。
+- `get_names enabled_only`: **実装済み (#649)**。object は scene tree の `visible` で絞る。named
+  selection は表示状態を持たないので絞らない。

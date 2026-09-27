@@ -5,7 +5,9 @@
  * Monospaced and plain: a console's output is columnar (file listings,
  * property values) and proportional type breaks that. `data-select-scope`
  * makes Cmd+A select the transcript rather than the whole window, the way it
- * does in the Output tab.
+ * does in the Output tab. It is focusable (`tabIndex={-1}`, a click but not
+ * Tab) so that a click keeps focus here instead of in the prompt, which
+ * would otherwise take Cmd+A for its own line.
  */
 
 import React, { useEffect, useRef } from 'react'
@@ -32,7 +34,7 @@ export const ConsoleTranscript: React.FC<ConsoleTranscriptProps> = ({ lines }) =
   }, [lines])
 
   return (
-    <div className="pymc-transcript type-console" ref={scrollRef} data-select-scope>
+    <div className="pymc-transcript type-console" ref={scrollRef} tabIndex={-1} data-select-scope>
       {lines.length === 0 ? (
         <div className="pymc-empty">
           <AppIcon name="panel.pymconsole" size={32} aria-hidden />

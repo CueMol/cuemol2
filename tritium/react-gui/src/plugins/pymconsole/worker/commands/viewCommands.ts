@@ -209,6 +209,54 @@ const center: PymCommand = {
   },
 }
 
+/**
+ * `orient`: the principal axes of the atoms along the screen axes, then
+ * framed. The axes are worked out by C++ (MolCoord.orientView), which the
+ * GUI can use as well.
+ */
+const orient: PymCommand = {
+  name: 'orient',
+  params: [
+    { name: 'selection', default: '(all)' },
+    { name: 'state', default: '0' },
+    { name: 'animate', default: '0' },
+  ],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Turn the view to the principal axes of a selection, then fit it.',
+  completions: [{ source: 'selections', description: 'selection', suffix: '' }],
+  run(ctx, args, cc) {
+    for (const [name, def] of [
+      ['state', '0'],
+      ['animate', '0'],
+    ] as const) {
+      if (!isDefaulted(args[name], def)) cc.warn(`orient: ${name} is ignored (not supported)`)
+    }
+    const sels = moleculeSelections(ctx, cc.sceneId, args.selection)
+    if (!sels.ok) return sels
+    if (sels.items.length === 0) return { ok: false, error: 'Error: the scene has no molecule' }
+    if (sels.items.length > 1) {
+      cc.warn(`orienting "${sels.items[0].obj.name}" only: a selection spanning objects is not supported`)
+    }
+    const { obj, selStr } = sels.items[0]
+    const hits = getSelHitCount(ctx, { sceneId: cc.sceneId, molId: obj.uid, selStr })
+    if (hits.count === null) return { ok: false, error: `Error: "${args.selection}" did not compile` }
+    if (hits.count === 0) return { ok: false, error: `Error: "${args.selection}" matched nothing` }
+    const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(obj.uid) as unknown as OrientMol | null
+    const view = ctx.sceMgr.getView(cc.viewId)
+    const sel = makeSel(ctx, selStr, cc.sceneId)
+    if (!mol || !view) return { ok: false, error: 'Error: no active view' }
+    if (!sel) return { ok: false, error: `Error: "${args.selection}" did not compile` }
+    mol.orientView(view, sel)
+    return { ok: true }
+  },
+}
+
+/** The member `orient` uses, as the MolCoord wrapper exposes it. */
+interface OrientMol {
+  orientView(view: unknown, sel: unknown): void
+}
+
 const reset: PymCommand = {
   name: 'reset',
   params: [{ name: 'object', default: '' }],
@@ -461,4 +509,4 @@ const setView: PymCommand = {
   },
 }
 
-export const VIEW_COMMANDS: PymCommand[] = [zoom, center, reset, turn, move, view, refresh, getView, setView]
+export const VIEW_COMMANDS: PymCommand[] = [zoom, center, orient, reset, turn, move, view, refresh, getView, setView]
