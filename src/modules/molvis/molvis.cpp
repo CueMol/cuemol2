@@ -19,6 +19,7 @@
 #include "AtomIntrRenderer.hpp"
 #include "Ribbon2Renderer.hpp"
 #include "DisoRenderer.hpp"
+#include "TraceStickRenderer.hpp"
 
 extern void molvis_regClasses();
 extern void molvis_unregClasses();
@@ -44,6 +45,7 @@ bool init()
   pRF->regist<AtomIntrRenderer>();
   pRF->regist<Ribbon2Renderer>();
   pRF->regist<DisoRenderer>();
+  pRF->regist<TraceStickRenderer>();
 
   MB_DPRINTLN("molvis init: OK");
   return true;
