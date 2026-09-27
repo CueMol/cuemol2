@@ -39,6 +39,11 @@ export interface RunCommandOutcome {
   aborted: boolean
   /** Whether it was Stop. What had already run is kept, like any other abort. */
   interrupted: boolean
+  /**
+   * A scene file the panel should open (`load x.qsc`): into the current
+   * scene when it is new and empty, otherwise in a new tab.
+   */
+  openScene?: string
 }
 
 export type RunCommandResult = Result<RunCommandOutcome>
