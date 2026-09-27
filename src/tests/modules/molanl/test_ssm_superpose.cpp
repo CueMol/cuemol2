@@ -279,6 +279,40 @@ TEST_F(SSMSuperposeTest, UsePropSetsXformMatNotRawCoords)
     expectCoordsNear(collectCAPos(mov), refCA, 1.0e-2);
 }
 
+// A residue modelled with two residue types at one position
+// (microheterogeneity, as 1EJG has PRO/SER at 22 and LEU/ILE at 25) must not
+// break SSM. The alternate-location atom of the second type used to reach
+// MMDB, which keys residues by (seqNum, resName), and the copy threw
+// "Coordinate conversion for MMDB is failed!!". Only location 'A' / none
+// is copied now, so the result is that of the molecule without it.
+TEST_F(SSMSuperposeTest, AltLocMicroheterogeneityIsSkipped)
+{
+    MolCoordPtr ref = loadCrambin("ref");
+    MolCoordPtr mov = loadCrambin("mov");
+
+    // Copy residue 22's CA as a SER, alternate location B.
+    molstr::MolAtomPtr ca;
+    AtomIterator iter(mov, SelectionPtr(new SelCommand(LString("resi 22 and name CA"))));
+    for (iter.first(); iter.hasMore(); iter.next()) ca = iter.get();
+    ASSERT_FALSE(ca.isnull());
+    molstr::MolAtomPtr alt(MB_NEW molstr::MolAtom());
+    alt->setName("CA");
+    alt->setElementName("C");
+    alt->setChainName(ca->getChainName());
+    alt->setResIndex(ca->getResIndex());
+    alt->setResName("SER");
+    alt->setConfID('B');
+    alt->setPos(ca->getPos() + Vector4D(0.3, 0.0, 0.0));
+    alt->setOcc(0.5);
+    alt->setBfac(ca->getBfac());
+    ASSERT_GE(mov->appendAtom(alt), 0);
+
+    auto *mgr = molanl::MolAnlManager::getInstance();
+    double rmsd = -1.0;
+    EXPECT_NO_THROW(rmsd = mgr->superposeSSM_rmsd(ref, supSel(), mov, supSel(), false));
+    EXPECT_NEAR(rmsd, 0.0, 1.0e-3);
+}
+
 // E2E baseline: 1CRN crystal structure vs its AlphaFold2 prediction with the
 // same sequence (no indels). Pins RMSD / Nalgn / Ngaps / rotation angle.
 TEST_F(SSMSuperposeTest, AF2SameSeqBaseline)
