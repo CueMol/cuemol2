@@ -22,6 +22,12 @@ export interface RunCommandArgs {
   viewId: number
   /** What the user submitted: one command, several joined by `;`, or a script. */
   text: string
+  /** Names this run, so `cancelRun` can stop it. */
+  runId: string
+}
+
+export interface CancelRunArgs {
+  runId: string
 }
 
 export interface RunCommandOutcome {
@@ -29,8 +35,10 @@ export interface RunCommandOutcome {
   entries: ConsoleEntry[]
   /** Whether the scene was changed, and so whether a transaction was committed. */
   mutated: boolean
-  /** Whether a failure stopped the rest of the submission from running. */
+  /** Whether a failure, or Stop, kept the rest of the submission from running. */
   aborted: boolean
+  /** Whether it was Stop. What had already run is kept, like any other abort. */
+  interrupted: boolean
 }
 
 export type RunCommandResult = Result<RunCommandOutcome>
