@@ -122,6 +122,16 @@ namespace {
     for (iter.first(); iter.hasMore(); iter.next()) {
       MolAtomPtr pAtom = iter.get();
 
+      // Keep one conformation per residue: atoms with no alternate
+      // location, or location 'A'. MMDB keys a residue by (seqNum, resName),
+      // so a residue modelled with two residue types at one position
+      // (microheterogeneity, e.g. 1EJG PRO/SER 22) makes PutAtom fail for
+      // the second type; duplicated A/B atoms would also double-count in
+      // the alignment.
+      const char confid = pAtom->getConfID();
+      if (confid != '\0' && confid != ' ' && confid != 'A')
+        continue;
+
       chainID = pAtom->getChainName();
       //segID;
 
