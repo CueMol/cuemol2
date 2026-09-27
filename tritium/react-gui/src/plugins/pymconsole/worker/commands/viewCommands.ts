@@ -20,14 +20,11 @@ import {
 } from '@renderer/worker/server/services/camera/cameraOps'
 import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
-import {
-  centerMolSelection,
-  zoomMolSelection,
-} from '@renderer/worker/server/services/select/applyMolSelString'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
+import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import { rotateView, translateView } from '@renderer/worker/server/services/view/viewXform'
-import { translateSelection } from '../sel/translate'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { ALL, formatNameList, isDefaulted, molecules, resolveObjects, toNumber } from './helpers'
+import { ALL, formatNameList, isDefaulted, moleculeSelections, resolveObjects, toNumber } from './helpers'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { camToPymol, formatViewMatrix, parseViewMatrix, pymolToCam } from './viewMatrix'
 import type { CamState } from './viewMatrix'
@@ -63,6 +60,15 @@ function fitTo(
     if (wantsAll && named.length > 1) {
       cc.warn(`fitting "${named[0].name}" only: fitting every object at once is not supported`)
     }
+    // `center` moves the centre only; fitting would change the zoom too.
+    if (mode === 'center') {
+      const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(named[0].uid) as unknown as FitMol | null
+      const view = ctx.sceMgr.getView(cc.viewId) as unknown as FitView | null
+      if (mol && view && typeof mol.getCenterPos === 'function') {
+        view.setViewCenter(mol.getCenterPos(false))
+        return { ok: true }
+      }
+    }
     const res = focusOnNode(ctx, {
       sceneId: cc.sceneId,
       viewId: cc.viewId,
@@ -74,22 +80,82 @@ function fitTo(
   }
   if (wantsAll) return { ok: false, error: 'Error: the scene is empty' }
 
-  // Not an object: read it as a selection.
-  const translated = translateSelection(wanted)
-  if (!translated.ok) return translated
-  const mols = molecules(ctx, cc.sceneId)
-  if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
-  if (mols.length > 1) {
-    cc.warn(`framing "${mols[0].name}" only: a selection spanning objects is not supported`)
+  // Not an object: read it as a selection, inside the molecule it names.
+  const sels = moleculeSelections(ctx, cc.sceneId, wanted)
+  if (!sels.ok) return sels
+  if (sels.items.length > 1) {
+    cc.warn(`framing "${sels.items[0].obj.name}" only: a selection spanning objects is not supported`)
   }
-  const args = {
-    sceneId: cc.sceneId,
-    viewId: cc.viewId,
-    molId: mols[0].uid,
-    selStr: translated.expr,
+  const { obj, selStr } = sels.items[0]
+  const hits = getSelHitCount(ctx, { sceneId: cc.sceneId, molId: obj.uid, selStr })
+  if (hits.count === null) return { ok: false, error: `Error: "${wanted}" did not compile` }
+  if (hits.count === 0) return { ok: false, error: `Error: "${wanted}" matched nothing` }
+
+  // The molecule's own selection is left alone: the GUI's zoom-to-selection
+  // services set it first, which here would leave the matched atoms
+  // highlighted after every zoom.
+  const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(obj.uid) as unknown as FitMol | null
+  const view = ctx.sceMgr.getView(cc.viewId) as unknown as FitView | null
+  if (!mol || !view) return { ok: false, error: 'Error: no active view' }
+  if (mode === 'zoom') {
+    const sel = makeSel(ctx, selStr, cc.sceneId)
+    if (!sel) return { ok: false, error: `Error: "${wanted}" did not compile` }
+    mol.fitView2(view, sel)
+    return { ok: true }
   }
-  const res = mode === 'zoom' ? zoomMolSelection(ctx, args) : centerMolSelection(ctx, args)
-  return res.ok ? { ok: true } : { ok: false, error: `Error: "${wanted}" matched nothing` }
+  const center = selectionCenter(ctx, cc.sceneId, mol, selStr)
+  if (!center) return { ok: false, error: `Error: "${wanted}" matched nothing` }
+  view.setViewCenter(center)
+  return { ok: true }
+}
+
+/** The members fitting and centring use, as the wrappers expose them. */
+interface FitMol {
+  fitView2(view: unknown, sel: unknown): void
+  getCenterPos(fsel: boolean): unknown
+}
+interface FitView {
+  setViewCenter(pos: unknown): void
+}
+
+interface AtomIter {
+  target: unknown
+  sel: unknown
+  first(): void
+  next(): void
+  hasMore(): boolean
+  get(): { pos: { x: number; y: number; z: number } }
+}
+
+/**
+ * The centre of the atoms `selStr` matches, as a CueMol Vector.
+ *
+ * MolCoord.getCenterPos(true) reads the molecule's own selection, which
+ * would have to be changed first; the atoms are averaged here instead.
+ */
+function selectionCenter(ctx: WorkerContext, sceneId: number, mol: unknown, selStr: string): unknown {
+  const sel = makeSel(ctx, selStr, sceneId)
+  const iter = ctx.svc.createObj('AtomIterator') as unknown as AtomIter | null
+  const out = ctx.svc.createObj('Vector') as unknown as { x: number; y: number; z: number } | null
+  if (!sel || !iter || !out) return null
+  iter.target = mol
+  iter.sel = sel
+  let n = 0
+  let x = 0
+  let y = 0
+  let z = 0
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    const p = iter.get().pos
+    x += p.x
+    y += p.y
+    z += p.z
+    n += 1
+  }
+  if (n === 0) return null
+  out.x = x / n
+  out.y = y / n
+  out.z = z / n
+  return out
 }
 
 const zoom: PymCommand = {

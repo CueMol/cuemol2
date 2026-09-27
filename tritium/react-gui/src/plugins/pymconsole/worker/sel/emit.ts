@@ -153,21 +153,27 @@ function property(node: Extract<SelNode, { kind: 'prop' }>): string {
 }
 
 /** The CueMol expression for a parsed selection. */
-export function emitSelection(node: SelNode): string {
+/**
+ * What a bare name becomes, or undefined to leave it as a named-selection
+ * reference. Used to turn object names into `all` / `none` per molecule.
+ */
+export type NameResolver = (name: string) => string | undefined
+
+export function emitSelection(node: SelNode, names?: NameResolver): string {
   switch (node.kind) {
     case 'and':
-      return `(${emitSelection(node.left)}) and (${emitSelection(node.right)})`
+      return `(${emitSelection(node.left, names)}) and (${emitSelection(node.right, names)})`
     case 'or':
-      return `(${emitSelection(node.left)}) or (${emitSelection(node.right)})`
+      return `(${emitSelection(node.left, names)}) or (${emitSelection(node.right, names)})`
     case 'sub':
       // PyMOL's `-`: CueMol has no subtraction, so it is spelled out.
-      return `(${emitSelection(node.left)}) and not (${emitSelection(node.right)})`
+      return `(${emitSelection(node.left, names)}) and not (${emitSelection(node.right, names)})`
     case 'not':
-      return `not (${emitSelection(node.operand)})`
+      return `not (${emitSelection(node.operand, names)})`
     case 'byres':
-      return `byres (${emitSelection(node.operand)})`
+      return `byres (${emitSelection(node.operand, names)})`
     case 'prox':
-      return `(${emitSelection(node.operand)}) ${node.op} ${node.distance}`
+      return `(${emitSelection(node.operand, names)}) ${node.op} ${node.distance}`
     case 'twoset': {
       // PyMOL's two-set operators have no CueMol counterpart as operators,
       // but they are exactly an intersection with a proximity selection:
@@ -180,10 +186,10 @@ export function emitSelection(node: SelNode): string {
       //   s1 within  D of s2  ->  (s1) and ((s2) expand D)
       //   s1 near_to D of s2  ->  (s1) and ((s2) around D)
       //   s1 beyond  D of s2  ->  (s1) and not ((s2) expand D)
-      const ball = `(${emitSelection(node.right)}) ${
+      const ball = `(${emitSelection(node.right, names)}) ${
         node.op === 'near_to' ? 'around' : 'expand'
       } ${node.distance}`
-      const left = `(${emitSelection(node.left)})`
+      const left = `(${emitSelection(node.left, names)})`
       return node.op === 'beyond' ? `${left} and not (${ball})` : `${left} and (${ball})`
     }
     case 'prop':
@@ -200,6 +206,6 @@ export function emitSelection(node: SelNode): string {
       return expr
     }
     case 'name':
-      return node.name
+      return names?.(node.name) ?? node.name
   }
 }

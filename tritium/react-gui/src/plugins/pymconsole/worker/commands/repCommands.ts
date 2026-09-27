@@ -26,7 +26,6 @@ import { createRendererOnObject } from '@renderer/worker/server/services/rend/cr
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
-import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
@@ -35,13 +34,13 @@ import { paintRendererSelection } from '@renderer/worker/server/services/colorin
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { translateSelection } from '../sel/translate'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { molecules } from './helpers'
+import { OWNED, isAllSelection, moleculeSelections, renderersOf } from './helpers'
+import type { MoleculeSelection } from './helpers'
+import { removeConsoleLabels, setConsoleLabelsVisible } from './labelCommands'
+import { interpretShortcut } from '../parser/shortcut'
 import { toCueMolColor } from './pymolColors'
 
-/** Prefix marking a renderer this console owns. */
-export const OWNED = 'pym:'
 
 /**
  * PyMOL representation names as CueMol renderer types.
@@ -74,23 +73,6 @@ const UNSUPPORTED_REPS: Readonly<Record<string, string>> = {
   ellipsoids: 'ellipsoids: use the anisou renderer from the GUI',
 }
 
-/** The renderers of one object, from the scene tree. */
-export function renderersOf(ctx: WorkerContext, sceneId: number, objId: number): SceneTreeNode[] {
-  const tree = getSceneTree(ctx, { sceneId })
-  if (!tree.ok || !tree.tree) return []
-  const obj = tree.tree.children.find((c) => c.id === objId && c.type === 'object')
-  if (!obj) return []
-  const out: SceneTreeNode[] = []
-  const walk = (nodes: SceneTreeNode[]): void => {
-    for (const n of nodes) {
-      if (n.type === 'renderer') out.push(n)
-      if (n.children.length > 0) walk(n.children)
-    }
-  }
-  walk(obj.children)
-  return out
-}
-
 /** Read one renderer property as a string. */
 function readProp(
   ctx: WorkerContext,
@@ -102,6 +84,18 @@ function readProp(
   if (!props.ok) return null
   const entry = props.entries.find((e) => e.key === propName)
   return entry === undefined ? null : String(entry.value)
+}
+
+/**
+ * A molecule's own selection, as an expression ('' when it has none), so a
+ * command that has to set it can put it back.
+ */
+function readMolSelection(ctx: WorkerContext, sceneId: number, molId: number): string {
+  const props = getGenericProps(ctx, { sceneId, nodeId: molId, nodeType: 'object' })
+  if (!props.ok) return ''
+  const entry = props.entries.find((e) => e.key === 'sel')
+  const value = entry?.value
+  return value === null || value === undefined ? '' : String(value)
 }
 
 /** Write a renderer's selection expression. */
@@ -171,138 +165,186 @@ function createOwned(
   return { ok: true, rendId: created.newRendId }
 }
 
-/** Resolve a PyMOL representation name, or say why it cannot be. */
-function representation(name: string): { ok: true; rep: string; type: string } | { ok: false; error: string } {
-  const key = name.trim().toLowerCase()
-  if (key === '') return { ok: false, error: 'Error: no representation given' }
-  const reason = UNSUPPORTED_REPS[key]
-  if (reason !== undefined) return { ok: false, error: `Error: ${reason}` }
-  const type = REPRESENTATIONS[key]
-  if (type === undefined) {
-    const known = Object.keys(REPRESENTATIONS).sort().join(', ')
-    return { ok: false, error: `Error: unknown representation "${name}" (one of ${known})` }
-  }
-  return { ok: true, rep: key, type }
+/**
+ * Every representation name PyMOL accepts (constants.py `repmasks`), for its
+ * unique-prefix shortcuts: `stick`, `cart` and `surf` are all valid PyMOL.
+ */
+const PYMOL_REPS: readonly string[] = [
+  'everything', 'sticks', 'spheres', 'surface', 'labels', 'nb_spheres', 'cartoon',
+  'ribbon', 'lines', 'mesh', 'dots', 'dashes', 'nonbonded', 'cell', 'cgo', 'callback',
+  'extent', 'slice', 'angles', 'dihedrals', 'ellipsoids', 'volume', 'wire', 'licorice',
+]
+
+/**
+ * PyMOL's compound names, as the console representations they stand for.
+ * `wire` is lines + nonbonded, which CueMol draws with one renderer.
+ */
+const COMPOUND_REPS: Readonly<Record<string, readonly string[]>> = {
+  wire: ['lines'],
+  licorice: ['sticks'],
+}
+
+/** What a representation argument asks for. */
+interface RepRequest {
+  /** Console representations (REPRESENTATIONS keys), in the order given. */
+  reps: string[]
+  /** Whether labels are among them. */
+  labels: boolean
 }
 
 /**
- * `show labels` / `hide labels`. Labels are made by `label`, whose renderer
- * (`pym:labels`, see labelCommands.ts) has no selection to widen or narrow,
- * so only hiding it whole means anything here.
+ * Read a representation argument: one or more names separated by spaces,
+ * each a PyMOL name or an unambiguous prefix of one (`_rep_to_repmask`).
+ * `everything` means every representation the console draws, quietly
+ * leaving out the ones CueMol has no molecule renderer for; naming one of
+ * those explicitly says why.
  */
-function labelsRep(ctx: WorkerContext, cc: CmdContext, name: 'show' | 'hide' | 'as', wholeObject: boolean): CmdOutcome {
-  if (name !== 'hide' || !wholeObject) {
-    return {
-      ok: false,
-      error: 'Error: labels: add them with label <selection>, <expression>; hide labels hides them all',
+function readReps(raw: string): { ok: true; req: RepRequest } | { ok: false; error: string } {
+  const req: RepRequest = { reps: [], labels: false }
+  const add = (rep: string): void => { if (!req.reps.includes(rep)) req.reps.push(rep) }
+  const words = raw.trim().toLowerCase().split(/\s+/).filter((w) => w !== '')
+  if (words.length === 0) return { ok: false, error: 'Error: no representation given' }
+  for (const word of words) {
+    const found = interpretShortcut(word, PYMOL_REPS)
+    if (found.kind === 'none') {
+      const known = Object.keys(REPRESENTATIONS).sort().join(', ')
+      return { ok: false, error: `Error: unknown representation "${word}" (one of ${known}, labels, everything)` }
+    }
+    if (found.kind === 'ambiguous') {
+      return { ok: false, error: `Error: ambiguous representation "${word}": ${found.candidates.join(', ')}` }
+    }
+    const rep = found.name
+    if (rep === 'everything') {
+      Object.keys(REPRESENTATIONS).forEach(add)
+      req.labels = true
+    } else if (rep === 'labels') {
+      req.labels = true
+    } else if (COMPOUND_REPS[rep]) {
+      COMPOUND_REPS[rep].forEach(add)
+    } else if (REPRESENTATIONS[rep] !== undefined) {
+      add(rep)
+    } else {
+      const reason = UNSUPPORTED_REPS[rep] ?? `${rep}: not available from this console`
+      return { ok: false, error: `Error: ${reason}` }
     }
   }
-  for (const obj of molecules(ctx, cc.sceneId)) {
-    const rend = renderersOf(ctx, cc.sceneId, obj.uid).find((r) => r.name === `${OWNED}labels`)
-    if (rend) {
-      setNodeVisible(ctx, { sceneId: cc.sceneId, nodeId: rend.id, nodeType: 'renderer', visible: false })
-    }
+  return { ok: true, req }
+}
+
+/** Hide a console renderer and empty its selection, so a later show starts afresh. */
+function hideOwned(ctx: WorkerContext, sceneId: number, rendId: number): void {
+  // Emptied as well as hidden: `show rep, sel` unions with what the renderer
+  // already draws, and without this the atoms hidden here would come back.
+  writeSelection(ctx, sceneId, rendId, 'none')
+  setNodeVisible(ctx, { sceneId, nodeId: rendId, nodeType: 'renderer', visible: false })
+}
+
+/** Apply one representation of a show / hide / as to one molecule. */
+function applyRep(
+  ctx: WorkerContext,
+  cc: CmdContext,
+  name: 'show' | 'hide' | 'as',
+  item: MoleculeSelection,
+  rep: string,
+  whole: boolean,
+): CmdOutcome {
+  const { obj, selStr } = item
+  const existing = ownedRenderer(ctx, cc.sceneId, obj.uid, rep)
+  if (name === 'hide' && whole) {
+    if (existing) hideOwned(ctx, cc.sceneId, existing.id)
+    return { ok: true }
   }
+  if (!existing) {
+    if (name === 'hide') return { ok: true }
+    return createOwned(ctx, cc, obj, rep, REPRESENTATIONS[rep], selStr)
+  }
+  // It is there: combine with what it already draws, which is what makes
+  // show additive and hide subtractive the way PyMOL's flags are.
+  const current = readProp(ctx, cc.sceneId, existing.id, 'sel') ?? '*'
+  const next =
+    name === 'as'
+      ? selStr
+      : name === 'show'
+        ? `(${current}) or (${selStr})`
+        : `(${current}) and not (${selStr})`
+  if (!writeSelection(ctx, cc.sceneId, existing.id, next)) {
+    return { ok: false, error: `Error: could not change ${rep} on "${obj.name}"` }
+  }
+  setNodeVisible(ctx, { sceneId: cc.sceneId, nodeId: existing.id, nodeType: 'renderer', visible: true })
   return { ok: true }
 }
 
-/** `show` / `hide` / `as`, which differ only in how the selection is combined. */
-function repCommand(name: 'show' | 'hide' | 'as'): PymCommand {
+/**
+ * `show` / `hide` / `as` (and `show_as`), which differ only in how the
+ * selection is combined.
+ *
+ * As in PyMOL (`_showhide`), a first argument that is empty, `all`, or looks
+ * like a selection (has `(` or `/`) is the selection, and the representation
+ * is then `wire` for show / as and `everything` for hide: `hide` alone hides
+ * everything, `show` alone shows lines.
+ */
+function repCommand(name: 'show' | 'hide' | 'as', alias?: string): PymCommand {
   return {
-    name,
+    name: alias ?? name,
     params: [
       { name: 'representation', default: '' },
-      { name: 'selection', default: 'all' },
+      { name: 'selection', default: '' },
       ...(name === 'as' ? [] : [{ name: 'state', default: '0' }]),
     ],
     mode: 'strict',
     mutates: true,
     summary:
       name === 'show'
-        ? 'Add a representation over a selection.'
+        ? 'Add representations over a selection (show alone: lines).'
         : name === 'hide'
-          ? 'Take a representation off a selection, or hide it entirely.'
+          ? 'Take representations off a selection (hide alone: everything).'
           : 'Show one representation and hide the rest.',
     completions: [
       { source: 'representations', description: 'representation', suffix: ', ' },
       { source: 'selections', description: 'selection', suffix: '' },
     ],
     run(ctx, args, cc): CmdOutcome {
-      const wholeObject = args.selection.trim() === '' || args.selection.trim() === 'all'
-      if (args.representation.trim().toLowerCase() === 'labels') {
-        return labelsRep(ctx, cc, name, wholeObject)
+      let repArg = args.representation.trim()
+      let selArg = args.selection.trim()
+      if (selArg === '' && (repArg === '' || repArg === 'all' || repArg.includes('(') || repArg.includes('/'))) {
+        selArg = repArg
+        repArg = name === 'hide' ? 'everything' : 'wire'
       }
+      const parsed = readReps(repArg)
+      if (!parsed.ok) return parsed
+      const { req } = parsed
 
-      const rep = representation(args.representation)
-      if (!rep.ok) return rep
+      const whole = isAllSelection(selArg)
+      const sels = moleculeSelections(ctx, cc.sceneId, selArg)
+      if (!sels.ok) return sels
 
-      // `hide rep` with nothing to hide from means hide the renderer.
-      const hideAll = name === 'hide' && wholeObject
-
-      let selStr = '*'
-      if (!wholeObject) {
-        const translated = translateSelection(args.selection)
-        if (!translated.ok) return translated
-        selStr = translated.expr
-      }
-
-      const targets = molecules(ctx, cc.sceneId)
-      if (targets.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
-
-      for (const obj of targets) {
-        const existing = ownedRenderer(ctx, cc.sceneId, obj.uid, rep.rep)
-
-        if (hideAll) {
-          if (existing) {
-            setNodeVisible(ctx, {
-              sceneId: cc.sceneId,
-              nodeId: existing.id,
-              nodeType: 'renderer',
-              visible: false,
-            })
-          }
-          continue
-        }
-
+      for (const item of sels.items) {
         if (name === 'as') {
           // Everything else this console put on the object steps aside.
-          for (const other of renderersOf(ctx, cc.sceneId, obj.uid)) {
-            if (other.name.startsWith(OWNED) && other.name !== `${OWNED}${rep.rep}`) {
-              setNodeVisible(ctx, {
-                sceneId: cc.sceneId,
-                nodeId: other.id,
-                nodeType: 'renderer',
-                visible: false,
-              })
+          for (const other of renderersOf(ctx, cc.sceneId, item.obj.uid)) {
+            const otherRep = other.name.slice(OWNED.length)
+            if (other.name.startsWith(OWNED) && !req.reps.includes(otherRep) && otherRep !== 'labels') {
+              hideOwned(ctx, cc.sceneId, other.id)
             }
           }
         }
-
-        if (!existing) {
-          if (name === 'hide') continue
-          const created = createOwned(ctx, cc, obj, rep.rep, rep.type, selStr)
-          if (!created.ok) return created
-          continue
+        for (const rep of req.reps) {
+          const res = applyRep(ctx, cc, name, item, rep, whole)
+          if (!res.ok) return res
         }
+      }
 
-        // It is there: combine with what it already draws, which is what
-        // makes show additive and hide subtractive the way PyMOL's flags are.
-        const current = readProp(ctx, cc.sceneId, existing.id, 'sel') ?? '*'
-        const next =
-          name === 'as'
-            ? selStr
-            : name === 'show'
-              ? `(${current}) or (${selStr})`
-              : `(${current}) and not (${selStr})`
-        if (!writeSelection(ctx, cc.sceneId, existing.id, next)) {
-          return { ok: false, error: `Error: could not change ${rep.rep} on "${obj.name}"` }
+      if (req.labels) {
+        // Labels have their text; only showing, hiding, or taking them off
+        // part of the molecule means anything here.
+        if (name === 'hide' && !whole) {
+          if (!removeConsoleLabels(ctx, cc.sceneId, sels.items)) {
+            return { ok: false, error: `Error: "${selArg}" did not compile` }
+          }
+        } else {
+          setConsoleLabelsVisible(ctx, cc.sceneId, sels.items, name !== 'hide')
+          if (name !== 'hide' && !whole) cc.warn('labels: shown whole; add labels with label <selection>, <expression>')
         }
-        setNodeVisible(ctx, {
-          sceneId: cc.sceneId,
-          nodeId: existing.id,
-          nodeType: 'renderer',
-          visible: true,
-        })
       }
       return { ok: true }
     },
@@ -311,7 +353,12 @@ function repCommand(name: 'show' | 'hide' | 'as'): PymCommand {
 
 const color: PymCommand = {
   name: 'color',
-  params: [{ name: 'color' }, { name: 'selection', default: 'all' }],
+  params: [
+    { name: 'color' },
+    { name: 'selection', default: 'all' },
+    { name: 'quiet', default: '1' },
+    { name: 'flags', default: '0' },
+  ],
   mode: 'legacy',
   mutates: true,
   summary: 'Colour part of what the console draws.',
@@ -323,19 +370,14 @@ const color: PymCommand = {
     const colour = toCueMolColor(args.color)
     if (colour === null) return { ok: false, error: `Error: unknown color: "${args.color}"` }
 
-    const wholeObject = args.selection.trim() === '' || args.selection.trim() === 'all'
-    let selStr = '*'
-    if (!wholeObject) {
-      const translated = translateSelection(args.selection)
-      if (!translated.ok) return translated
-      selStr = translated.expr
-    }
-
-    const targets = molecules(ctx, cc.sceneId)
-    if (targets.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
+    const sels = moleculeSelections(ctx, cc.sceneId, args.selection)
+    if (!sels.ok) return sels
 
     let painted = 0
-    for (const obj of targets) {
+    for (const { obj, selStr } of sels.items) {
+      // The paint service reads its region from the molecule's selection;
+      // what the user had selected is put back afterwards.
+      const before = readMolSelection(ctx, cc.sceneId, obj.uid)
       // The paint service reads the region from the MOLECULE's selection
       // rather than taking it as an argument, so it is set first. The user
       // sees the selection change, as they would having made it by hand.
@@ -366,6 +408,7 @@ const color: PymCommand = {
           painted += 1
         }
       }
+      applyMolSelString(ctx, { sceneId: cc.sceneId, molId: obj.uid, selStr: before })
     }
     if (painted === 0) {
       return {
@@ -377,6 +420,18 @@ const color: PymCommand = {
   },
 }
 
+/**
+ * The console representation a CueMol renderer type draws, for naming the
+ * renderer `load` / `fetch` make so the console treats it as its own.
+ */
+export function repOfRendererType(type: string): string | null {
+  // lines before nonbonded: both are 'simple', and lines is what PyMOL shows.
+  for (const rep of ['lines', 'sticks', 'spheres', 'cartoon', 'ribbon', 'surface']) {
+    if (REPRESENTATIONS[rep] === type) return rep
+  }
+  return null
+}
+
 /** The representation names this console accepts, for completion. */
 export function representationNames(): string[] {
   return Object.keys(REPRESENTATIONS).sort()
@@ -386,5 +441,7 @@ export const REP_COMMANDS: PymCommand[] = [
   repCommand('show'),
   repCommand('hide'),
   repCommand('as'),
+  // The name PyMOL's own scripts use; `as` is the keyword alias of it.
+  repCommand('as', 'show_as'),
   color,
 ]

@@ -116,6 +116,9 @@ const set: PymCommand = {
     { name: 'value', default: '1' },
     { name: 'selection', default: '' },
     { name: 'state', default: '0' },
+    { name: 'updates', default: '1' },
+    { name: 'log', default: '0' },
+    { name: 'quiet', default: '1' },
   ],
   // PyMOL's `set ambient=0.3` is a value, not a named argument.
   mode: 'legacy',
@@ -163,7 +166,12 @@ const set: PymCommand = {
 
 const get: PymCommand = {
   name: 'get',
-  params: [{ name: 'name' }, { name: 'selection', default: '' }, { name: 'state', default: '0' }],
+  params: [
+    { name: 'name' },
+    { name: 'selection', default: '' },
+    { name: 'state', default: '0' },
+    { name: 'quiet', default: '1' },
+  ],
   mode: 'strict',
   mutates: false,
   summary: 'Print a property of the scene or an object.',
@@ -188,7 +196,14 @@ const get: PymCommand = {
 
 const unset: PymCommand = {
   name: 'unset',
-  params: [{ name: 'name' }, { name: 'selection', default: '' }, { name: 'state', default: '0' }],
+  params: [
+    { name: 'name' },
+    { name: 'selection', default: '' },
+    { name: 'state', default: '0' },
+    { name: 'updates', default: '1' },
+    { name: 'log', default: '0' },
+    { name: 'quiet', default: '1' },
+  ],
   mode: 'strict',
   mutates: true,
   summary: 'Restore a property to its default.',

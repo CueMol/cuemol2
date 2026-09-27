@@ -23,9 +23,13 @@ import type { CoordServerType } from '@renderer/worker/shared/pdbUrls'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import type { PymCommand } from './types'
+import { repOfRendererType } from './repCommands'
+import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes'
 import {
   fileStem,
+  isAllSelection,
   isDefaulted,
+  OWNED,
   resolveObjects,
   resolveOneObject,
   resolvePath,
@@ -39,7 +43,34 @@ const LOAD_IGNORED: ReadonlyArray<[string, string]> = [
   ['multiplex', ''],
   ['partial', '0'],
   ['mimic', '1'],
+  ['object_props', ''],
+  ['atom_props', ''],
 ]
+
+/** fetch's arguments with no counterpart here, with PyMOL's defaults. */
+const FETCH_IGNORED: ReadonlyArray<[string, string]> = [
+  ['state', '0'],
+  ['discrete', '-1'],
+  ['multiplex', '-2'],
+  ['file', ''],
+]
+
+/**
+ * Name the renderer a load makes after the console representation it draws
+ * (`pym:lines`), so `hide lines`, `as` and `color` right after a `fetch`
+ * treat it as the console's own; and honour `zoom=0` (do not recentre).
+ */
+function consoleRendererOptions(options: FileOpenOptions, zoom: string): FileOpenOptions {
+  const rep = repOfRendererType(options.renderer.rendererType)
+  return {
+    ...options,
+    renderer: {
+      ...options.renderer,
+      ...(rep !== null ? { rendererName: `${OWNED}${rep}` } : {}),
+      centerView: zoom.trim() !== '0',
+    },
+  }
+}
 
 /**
  * PyMOL's format names, as the CueMol reader each one means.
@@ -158,10 +189,14 @@ const load: PymCommand = {
     { name: 'format', default: '' },
     { name: 'finish', default: '1' },
     { name: 'discrete', default: '-1' },
+    // PyMOL's order (importing.py load): quiet comes before multiplex.
+    { name: 'quiet', default: '1' },
     { name: 'multiplex', default: '' },
     { name: 'zoom', default: '-1' },
     { name: 'partial', default: '0' },
     { name: 'mimic', default: '1' },
+    { name: 'object_props', default: '' },
+    { name: 'atom_props', default: '' },
   ],
   mode: 'strict',
   mutates: true,
@@ -206,12 +241,12 @@ const load: PymCommand = {
       return { ok: false, error: `Error: no reader handles ${path.basename(filePath)}` }
     }
     const objectName = args.object !== '' ? args.object : fileStem(filePath)
-    const options = buildHeadlessFileOpenOptions(ctx, {
+    const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
       objectName,
       rendererType: initialRendererType(compat.types),
       selection: null,
-    })
+    }), args.zoom)
     const res = loadObject(ctx, {
       filePath,
       sceneId: cc.sceneId,
@@ -245,13 +280,21 @@ const fetch: PymCommand = {
     { name: 'multiplex', default: '-2' },
     { name: 'zoom', default: '-1' },
     { name: 'type', default: '' },
+    // PyMOL's `async_`, spelled as its command line takes it. A fetch here
+    // always finishes before the next command, which is what async=0 asks.
+    { name: 'async', default: '0' },
     { name: 'path', default: '' },
+    { name: 'file', default: '' },
+    { name: 'quiet', default: '1' },
   ],
   mode: 'strict',
   mutates: true,
   summary: 'Download an entry from RCSB and load it.',
   async run(ctx, args, cc) {
     if (!isDefaulted(args.path, '')) cc.warn('fetch: path is ignored (not supported)')
+    for (const [name, def] of FETCH_IGNORED) {
+      if (!isDefaulted(args[name], def)) cc.warn(`fetch: ${name} is ignored (not supported)`)
+    }
     const server = coordServer(args.type)
     if (server === null) {
       return { ok: false, error: `Error: unsupported fetch type "${args.type}" (cif or pdb)` }
@@ -276,12 +319,12 @@ const fetch: PymCommand = {
       const pdbId = code.toLowerCase()
       const spec = pickCoordUrl(pdbId, server)
       const objectName = args.name !== '' ? args.name : pdbId
-      const options = buildHeadlessFileOpenOptions(ctx, {
+      const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
         readerName: spec.readerName,
         objectName,
         rendererType: null,
         selection: null,
-      })
+      }), args.zoom)
       // Registered with the run, so Stop cancels the download rather than
       // waiting for it to finish.
       const reqId = cc.streamId(`fetch-${pdbId}`)
@@ -331,6 +374,9 @@ const deleteCmd: PymCommand = {
     // this way -- which is the safer way round.
     const rends = resolveRenderers(ctx, cc.sceneId, args.name)
     if (rends.length === 0) {
+      // `delete all` on an empty scene is how scripts start; PyMOL says
+      // nothing, so neither does this.
+      if (isAllSelection(args.name)) return { ok: true }
       return { ok: false, error: `Error: nothing named "${args.name}" in the scene` }
     }
     for (const rend of rends) {
@@ -372,7 +418,7 @@ const setName: PymCommand = {
 
 const cd: PymCommand = {
   name: 'cd',
-  params: [{ name: 'dir', default: '~' }],
+  params: [{ name: 'dir', default: '~' }, { name: 'complain', default: '1' }, { name: 'quiet', default: '1' }],
   mode: 'strict',
   mutates: false,
   summary: 'Change the working directory relative paths are read from.',

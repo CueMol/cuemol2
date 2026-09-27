@@ -75,12 +75,31 @@ function superpose(
   return { ok: true }
 }
 
-/** Ignored PyMOL tuning arguments, with the defaults `align` / `super` declare. */
-const TUNING_DEFAULTS: ReadonlyArray<readonly [string, string]> = [
-  ['cutoff', '2.0'],
-  ['cycles', '5'],
-  ['object', ''],
-]
+/**
+ * align / super's arguments after mobile and target, in PyMOL's order
+ * (fitting.py). SSM chooses its own alignment, so only `transform` is
+ * honoured; the rest are accepted, and ignored with a warning when set.
+ */
+function tuningParams(name: 'align' | 'super'): ReadonlyArray<readonly [string, string]> {
+  return [
+    ['cutoff', '2.0'],
+    ['cycles', '5'],
+    ['gap', name === 'align' ? '-10.0' : '-1.5'],
+    ['extend', name === 'align' ? '-0.5' : '-0.7'],
+    ['max_gap', '50'],
+    ['object', ''],
+    ['matrix', 'BLOSUM62'],
+    ['mobile_state', '0'],
+    ['target_state', '0'],
+    ['quiet', '1'],
+    ['max_skip', '0'],
+    ['transform', '1'],
+    ['reset', '0'],
+  ]
+}
+
+/** Arguments that change nothing when given, and so earn no warning. */
+const SILENT = new Set(['quiet', 'transform'])
 
 /** `align` and `super`: both an SSM superposition here. */
 function ssmCommand(name: 'align' | 'super'): PymCommand {
@@ -89,7 +108,7 @@ function ssmCommand(name: 'align' | 'super'): PymCommand {
     params: [
       { name: 'mobile' },
       { name: 'target' },
-      ...TUNING_DEFAULTS.map(([n, d]) => ({ name: n, default: d })),
+      ...tuningParams(name).map(([n, d]) => ({ name: n, default: d })),
     ],
     mode: 'strict',
     mutates: true,
@@ -102,13 +121,16 @@ function ssmCommand(name: 'align' | 'super'): PymCommand {
       { source: 'objects', description: 'object', suffix: '' },
     ],
     run(ctx, args, cc) {
-      for (const [n, d] of TUNING_DEFAULTS) {
-        if (!isDefaulted(args[n], d)) cc.warn(`${name}: ${n} is ignored (SSM chooses its own)`)
+      for (const [n, d] of tuningParams(name)) {
+        if (!SILENT.has(n) && !isDefaulted(args[n], d)) cc.warn(`${name}: ${n} is ignored (SSM chooses its own)`)
       }
       const pair = resolvePair(ctx, cc, args.mobile, args.target)
       if (!pair.ok) return pair
-      const fitted = superpose(ctx, cc, 'SSM', pair.mob, pair.ref)
-      if (!fitted.ok) return fitted
+      // transform=0: report the RMSD without moving anything.
+      if (args.transform.trim() !== '0') {
+        const fitted = superpose(ctx, cc, 'SSM', pair.mob, pair.ref)
+        if (!fitted.ok) return fitted
+      }
 
       // Reported after the move, from the same SSM correspondence.
       const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager | null
@@ -129,7 +151,7 @@ function ssmCommand(name: 'align' | 'super'): PymCommand {
 
 const pairFit: PymCommand = {
   name: 'pair_fit',
-  params: [{ name: 'mobile' }, { name: 'target' }],
+  params: [{ name: 'mobile' }, { name: 'target' }, { name: 'quiet', default: '0' }],
   mode: 'strict',
   mutates: true,
   summary: 'Least-squares fit of mobile onto target, atoms paired in order.',
