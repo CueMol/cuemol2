@@ -63,7 +63,18 @@ const downloading: PymCommand = {
   },
 }
 
-const STUBS = [mutating, readOnly, failing, downloading]
+/** Stands for `save x.qsc`: has to run outside the submission's transaction. */
+const outside: PymCommand = {
+  name: 'outside',
+  params: [],
+  mode: 'strict',
+  mutates: false,
+  summary: 'stub',
+  outsideTxn: () => true,
+  run: () => ({ ok: true }),
+}
+
+const STUBS = [mutating, readOnly, failing, downloading, outside]
 
 vi.mock('@renderer/worker/server/services/helpers/streamFetchToReader', () => ({
   cancelStream: vi.fn(() => true),
@@ -161,6 +172,19 @@ describe('runCommand', () => {
     const echoes = res.ok ? res.entries.filter((e) => e.kind === 'echo') : []
     expect(echoes).toHaveLength(2)
     // The first mutate already ran, so it is kept.
+    expect(scene.undo.committed).toHaveLength(1)
+  })
+
+  it('runs an outside-transaction command alone with no transaction, and refuses it in a longer line', async () => {
+    const { scene, ctx } = setup()
+    const alone = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r5', text: 'outside' })
+    expect(alone.ok && !alone.aborted).toBe(true)
+    expect(scene.undo.started).toHaveLength(0)
+
+    const mixed = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r6', text: 'mutate; outside' })
+    const errors = mixed.ok ? mixed.entries.filter((e) => e.kind === 'error') : []
+    expect(errors.map((e) => e.text).join()).toContain('must be the only command on the line')
+    // What ran before it is kept, as with any other failure.
     expect(scene.undo.committed).toHaveLength(1)
   })
 })
