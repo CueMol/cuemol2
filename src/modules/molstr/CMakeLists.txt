@@ -48,6 +48,7 @@ PDBFileWriter.cpp
 NuclBasePair.cpp
 MolRenderer.cpp
 NameLabelRenderer.cpp
+LabelFormat.cpp
 SelectionRenderer.cpp
 Prot2ndry.cpp
 AtomPosMap.cpp
