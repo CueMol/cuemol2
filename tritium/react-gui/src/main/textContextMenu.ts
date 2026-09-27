@@ -83,8 +83,15 @@ export function buildTextContextMenuTemplate(
  * edit role back through `IPC.TEXT_CTX_ACTION`. Both paths show a menu
  * only when the template gate yields items, leaving scene-tree / navi
  * right-clicks to their existing menus.
+ *
+ * @param onSelectAll - what the native menu's Select All does. The main
+ *   window passes the renderer's scoped Select All; the default, the native
+ *   `selectAll()`, serves a window whose renderer has no such handler.
  */
-export function registerTextContextMenu(mainWindow: BrowserWindow): void {
+export function registerTextContextMenu(
+  mainWindow: BrowserWindow,
+  onSelectAll: () => void = () => mainWindow.webContents.selectAll(),
+): void {
   mainWindow.webContents.on('context-menu', (_event, params) => {
     const menuParams: TextContextMenuParams = {
       isEditable: params.isEditable,
@@ -111,10 +118,7 @@ export function registerTextContextMenu(mainWindow: BrowserWindow): void {
 
     const template = buildTextContextMenuTemplate(
       menuParams,
-      // Act on this window's own contents. Routing through MENU_GENERIC only
-      // works for the main window, which is the only one with a listener --
-      // from the Rendering window it was a silent no-op.
-      () => mainWindow.webContents.selectAll(),
+      onSelectAll,
     )
     if (template.length === 0) return
     const menu = Menu.buildFromTemplate(template)
