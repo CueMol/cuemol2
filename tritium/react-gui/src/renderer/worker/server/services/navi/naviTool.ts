@@ -170,7 +170,7 @@ export interface NaviHoverResult {
 
 /** Renderer types whose geometry belongs to residues rather than atoms. */
 const RESIDUE_LEVEL_RENDTYPES: ReadonlySet<string> = new Set([
-    'cartoon', 'ribbon', 'tube', 'spline', 'nucl', 'trace',
+    'cartoon', 'ribbon', 'tube', 'spline', 'nucl', 'trace', 'tracestick',
 ]);
 
 function buildHoverLabel(ctx: WorkerContext, viewId: number, raw: HitTestResult): HoverLabel {

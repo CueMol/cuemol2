@@ -9,6 +9,8 @@ export function getDefaultStyleName(rendererType: string, mapKind: MapKind = 'xt
     const mapStyle = MAP_MODE_STYLES[rendererType];
     if (mapStyle) return mapStyle[mapKind];
     switch (rendererType) {
+        case 'tracestick':
+            return 'DefaultTraceStick,DefaultHSCPaint';
         case 'tube':
         case 'spline':
             return 'DefaultHSCPaint';

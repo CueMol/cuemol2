@@ -19,6 +19,7 @@
 // #include "ScriptColoring.qif"
 #include "DistPickDrawObj.qif"
 #include "DisoRenderer.qif"
+#include "TraceStickRenderer.qif"
 
 module molvis
 {
@@ -38,6 +39,7 @@ module molvis
   NARenderer;
   AtomIntrRenderer;
   DisoRenderer;
+  TraceStickRenderer;
   Ribbon2Renderer;
   RainbowColoring;
   // ScriptColoring;
