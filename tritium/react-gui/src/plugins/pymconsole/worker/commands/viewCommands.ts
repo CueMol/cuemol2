@@ -27,6 +27,7 @@ import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import { ALL, formatNameList, isDefaulted, moleculeSelections, resolveObjects, toNumber } from './helpers'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { camToPymol, formatViewMatrix, parseViewMatrix, pymolToCam } from './viewMatrix'
+import { interpretShortcut } from '../parser/shortcut'
 import type { CamState } from './viewMatrix'
 
 /** The axis letters `turn` and `move` accept. */
@@ -304,7 +305,13 @@ const view: PymCommand = {
   ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.animate, '-1')) cc.warn('view: animate is ignored (not supported)')
-    const action = args.action.trim().toLowerCase()
+    // PyMOL takes unique prefixes (`view v1, st`), as with command names.
+    const asked = args.action.trim().toLowerCase()
+    const found = interpretShortcut(asked, ['store', 'recall', 'clear'])
+    if (found.kind === 'ambiguous') {
+      return { ok: false, error: `Error: ambiguous view action "${asked}": ${found.candidates.join(', ')}` }
+    }
+    const action = found.kind === 'found' ? found.name : asked
     const key = args.key.trim()
 
     if (key === '*') {

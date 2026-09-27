@@ -14,6 +14,7 @@ describe('spectrum', () => {
   it.each([
     ['b', 'blue_red', { kind: 'bfac', mode: 'bfac', low: '#0000ff', high: '#ff0000' }],
     ['q', 'green_yellow', { kind: 'bfac', mode: 'occ' }],
+    ['b', 'blue red', { kind: 'bfac', low: '#0000ff', high: '#ff0000' }],
     ['count', 'rainbow', { kind: 'rainbow', startHue: 240, endHue: 0 }],
     ['resi', 'rainbow_rev', { kind: 'rainbow', startHue: 0, endHue: 240 }],
   ])('draws %s with %s', (expr, palette, expected) => {

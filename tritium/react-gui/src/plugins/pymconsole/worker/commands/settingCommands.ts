@@ -19,7 +19,8 @@ import { resetGenericProps, setGenericProp } from '@renderer/worker/server/servi
 import type { GenericPropEntry, PropTargetType } from '@renderer/worker/shared/genericProps'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, PymCommand } from './types'
-import { isDefaulted, resolveOneObject, toBoolean, toNumber } from './helpers'
+import { isDefaulted, resolveObjects, resolveOneObject, resolveRenderers, toBoolean, toNumber } from './helpers'
+import { parseRgb } from './colorCommands'
 import { toCueMolColor } from './pymolColors'
 
 /** A PyMOL setting name that has an exact CueMol counterpart. */
@@ -61,9 +62,22 @@ export function resolveTarget(
   }
   const name = objectName.trim()
   if (name === '') return { ok: true, target: { nodeId: cc.sceneId, nodeType: 'scene' } }
-  const found = resolveOneObject(ctx, cc.sceneId, name)
-  if (!found.ok) return found
-  return { ok: true, target: { nodeId: found.obj.uid, nodeType: 'object' } }
+  // PyMOL's third argument names an object; here it may also name a
+  // renderer (an isomesh, pym:sticks) or the view, which carry the
+  // properties PyMOL keeps as per-object settings.
+  if (name === 'view') return { ok: true, target: { nodeId: cc.viewId, nodeType: 'view' } }
+  if (resolveObjects(ctx, cc.sceneId, name).length > 0) {
+    const found = resolveOneObject(ctx, cc.sceneId, name)
+    if (!found.ok) return found
+    return { ok: true, target: { nodeId: found.obj.uid, nodeType: 'object' } }
+  }
+  const rends = resolveRenderers(ctx, cc.sceneId, name)
+  if (rends.length === 1) return { ok: true, target: { nodeId: rends[0].rendId, nodeType: 'renderer' } }
+  if (rends.length > 1) {
+    const names = rends.map((r) => `${r.objName}/${r.rendName}`).join(', ')
+    return { ok: false, error: `Error: "${name}" names more than one renderer (${names})` }
+  }
+  return { ok: false, error: `Error: nothing named "${name}" (an object, a renderer, or view)` }
 }
 
 /** The property entry `propName` refers to on `target`, if there is one. */
@@ -101,8 +115,10 @@ function coerce(
     case 'real':
       return toNumber(raw)
     default: {
-      // Strings, enums, and the object types C++ parses from a string (a
-      // colour, a selection) go through unchanged.
+      // A colour takes PyMOL's names and [r, g, b] as `color` does.
+      if (/AbstractColor|Color/.test(entry.type)) return parseRgb(raw) ?? toCueMolColor(raw)
+      // Strings, enums, and the other object types C++ parses from a string
+      // (a selection) go through unchanged.
       if (entry.enumdef && !entry.enumdef.includes(raw)) return null
       return raw
     }
