@@ -72,10 +72,6 @@ const UNSUPPORTED_REPS: Readonly<Record<string, string>> = {
   slice: 'slice: CueMol has no slice representation',
   cell: 'cell: use the unit cell renderer from the GUI',
   ellipsoids: 'ellipsoids: use the anisou renderer from the GUI',
-  // The label renderer is not a selectable renderer type, so creating it
-  // the way the others are created always failed. A label command that
-  // drives it directly is planned.
-  labels: 'labels: not available from this console yet',
 }
 
 /** The renderers of one object, from the scene tree. */
@@ -189,6 +185,27 @@ function representation(name: string): { ok: true; rep: string; type: string } |
   return { ok: true, rep: key, type }
 }
 
+/**
+ * `show labels` / `hide labels`. Labels are made by `label`, whose renderer
+ * (`pym:labels`, see labelCommands.ts) has no selection to widen or narrow,
+ * so only hiding it whole means anything here.
+ */
+function labelsRep(ctx: WorkerContext, cc: CmdContext, name: 'show' | 'hide' | 'as', wholeObject: boolean): CmdOutcome {
+  if (name !== 'hide' || !wholeObject) {
+    return {
+      ok: false,
+      error: 'Error: labels: add them with label <selection>, <expression>; hide labels hides them all',
+    }
+  }
+  for (const obj of molecules(ctx, cc.sceneId)) {
+    const rend = renderersOf(ctx, cc.sceneId, obj.uid).find((r) => r.name === `${OWNED}labels`)
+    if (rend) {
+      setNodeVisible(ctx, { sceneId: cc.sceneId, nodeId: rend.id, nodeType: 'renderer', visible: false })
+    }
+  }
+  return { ok: true }
+}
+
 /** `show` / `hide` / `as`, which differ only in how the selection is combined. */
 function repCommand(name: 'show' | 'hide' | 'as'): PymCommand {
   return {
@@ -211,10 +228,14 @@ function repCommand(name: 'show' | 'hide' | 'as'): PymCommand {
       { source: 'selections', description: 'selection', suffix: '' },
     ],
     run(ctx, args, cc): CmdOutcome {
+      const wholeObject = args.selection.trim() === '' || args.selection.trim() === 'all'
+      if (args.representation.trim().toLowerCase() === 'labels') {
+        return labelsRep(ctx, cc, name, wholeObject)
+      }
+
       const rep = representation(args.representation)
       if (!rep.ok) return rep
 
-      const wholeObject = args.selection.trim() === '' || args.selection.trim() === 'all'
       // `hide rep` with nothing to hide from means hide the renderer.
       const hideAll = name === 'hide' && wholeObject
 
