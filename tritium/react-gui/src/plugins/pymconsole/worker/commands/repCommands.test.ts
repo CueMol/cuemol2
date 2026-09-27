@@ -158,13 +158,61 @@ describe('show / hide on the console-owned renderer', () => {
     expect(opts?.rendOpts.rendererName).toBe('pym:sticks')
   })
 
-  it('hides the renderer when no selection narrows it', () => {
+  it('hides the renderer when no selection narrows it, and empties it for the next show', () => {
     sceneWith([{ id: 20, name: 'pym:sticks' }])
     command('hide').run(ctx, { representation: 'sticks', selection: 'all' }, cc)
-    expect(writtenSelection()).toBeUndefined()
+    // Emptied: a later `show sticks, sel` unions with it, and the atoms
+    // hidden here must not come back with that.
+    expect(writtenSelection()).toBe('none')
     expect(services.setNodeVisible).toHaveBeenCalledWith(
       ctx,
       expect.objectContaining({ nodeId: 20, visible: false }),
     )
+  })
+
+  it('with no argument, hide empties and hides every console renderer', () => {
+    sceneWith([{ id: 20, name: 'pym:sticks' }, { id: 21, name: 'pym:cartoon' }])
+    // PyMOL's `hide` alone: everything, everywhere.
+    command('hide').run(ctx, { representation: '', selection: '', state: '0' }, cc)
+    const emptied = services.setGenericProp.mock.calls
+      .map((c) => c[1] as { nodeId: number; propName: string; value: string })
+      .filter((a) => a.propName === 'sel' && a.value === 'none')
+      .map((a) => a.nodeId)
+    expect(emptied.sort()).toEqual([20, 21])
+    expect(services.setNodeVisible).toHaveBeenCalledWith(ctx, expect.objectContaining({ nodeId: 21, visible: false }))
+  })
+})
+
+describe('an object name inside a selection', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('picks that molecule and means all of it there (abbreviated rep name too)', () => {
+    services.listSceneObjects.mockReturnValue({
+      objects: [
+        { uid: 10, name: '1ubq', className: 'MolCoord' },
+        { uid: 11, name: '1ubi', className: 'MolCoord' },
+      ],
+    })
+    services.getSceneTree.mockReturnValue({
+      ok: true,
+      tree: {
+        children: [
+          { id: 10, name: '1ubq', type: 'object', children: [] },
+          { id: 11, name: '1ubi', type: 'object', children: [] },
+        ],
+      },
+    })
+    // `stick` is PyMOL's unique prefix of sticks.
+    command('show').run(ctx, { representation: 'stick', selection: '1ubi and resi 5', state: '0' }, cc)
+    expect(services.createRendererOnObject).toHaveBeenCalledOnce()
+    const args = services.createRendererOnObject.mock.calls[0][1] as {
+      objId: number
+      rendOpts: { selection: string; rendererName: string }
+    }
+    expect(args.objId).toBe(11)
+    expect(args.rendOpts.rendererName).toBe('pym:sticks')
+    // The object name became `all` in its own molecule rather than an
+    // undefined named-selection reference.
+    expect(args.rendOpts.selection).toBe('(all) and (resi 5)')
   })
 })

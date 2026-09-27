@@ -37,6 +37,8 @@ const png: PymCommand = {
     { name: 'height', default: '0' },
     { name: 'dpi', default: '-1.0' },
     { name: 'ray', default: '0' },
+    // PyMOL's order (exporting.py png): quiet comes before prior.
+    { name: 'quiet', default: '1' },
     { name: 'prior', default: '0' },
     { name: 'format', default: '0' },
   ],

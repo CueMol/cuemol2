@@ -17,11 +17,12 @@
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { translateSelection } from '../sel/translate'
 import type { PymCommand } from './types'
-import { isAllSelection, molecules } from './helpers'
+import { moleculeSelections } from './helpers'
+import type { MoleculeSelection } from './helpers'
+import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
+import { OWNED, renderersOf } from './helpers'
 import { pymolLabelFormat } from './labelExpr'
-import { OWNED, renderersOf } from './repCommands'
 
 /** The name of the console's label renderer on each molecule. */
 export const LABEL_RENDERER = `${OWNED}labels`
@@ -68,7 +69,11 @@ function labelRenderer(
 ): LabelRenderer | null {
   const scene = getSceneOrNull(ctx, sceneId)
   const found = renderersOf(ctx, sceneId, objId).find((r) => r.name === LABEL_RENDERER)
-  if (found) return (scene?.getRenderer(found.id) as unknown as LabelRenderer | null) ?? null
+  if (found) {
+    // Labelling again after `hide labels` brings them back, as in PyMOL.
+    if (create) setNodeVisible(ctx, { sceneId, nodeId: found.id, nodeType: 'renderer', visible: true })
+    return (scene?.getRenderer(found.id) as unknown as LabelRenderer | null) ?? null
+  }
   if (!create) return null
   const rend = mol.createRenderer('*namelabel') as LabelRenderer | null
   if (!rend) return null
@@ -86,7 +91,11 @@ function nativeReason(e: unknown): string {
 
 const label: PymCommand = {
   name: 'label',
-  params: [{ name: 'selection', default: '(all)' }, { name: 'expression', default: '' }],
+  params: [
+    { name: 'selection', default: '(all)' },
+    { name: 'expression', default: '' },
+    { name: 'quiet', default: '1' },
+  ],
   mode: 'strict',
   mutates: true,
   summary: 'Label atoms, e.g. label name CA, "%s%s" % (resn, resi); an empty expression removes labels.',
@@ -97,21 +106,15 @@ const label: PymCommand = {
     const format = translatedFormat.format
     const removing = format === ''
 
-    let selStr = '*'
-    if (!isAllSelection(args.selection)) {
-      const translated = translateSelection(args.selection)
-      if (!translated.ok) return translated
-      selStr = translated.expr
-    }
-
+    const sels = moleculeSelections(ctx, cc.sceneId, args.selection)
+    if (!sels.ok) return sels
     const scene = getSceneOrNull(ctx, cc.sceneId)
-    const mols = molecules(ctx, cc.sceneId)
-    if (!scene || mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
+    if (!scene) return { ok: false, error: 'Error: no scene' }
 
     // Every atom first, so nothing is labelled when the count is refused.
-    const targets: { obj: (typeof mols)[number]; mol: { createRenderer(type: string): unknown }; ids: number[] }[] = []
+    const targets: { obj: MoleculeSelection['obj']; mol: { createRenderer(type: string): unknown }; ids: number[] }[] = []
     let total = 0
-    for (const obj of mols) {
+    for (const { obj, selStr } of sels.items) {
       const mol = scene.getObject(obj.uid) as unknown as { createRenderer(type: string): unknown } | null
       if (!mol) continue
       const ids = atomIds(ctx, cc.sceneId, mol, selStr)
@@ -145,6 +148,42 @@ const label: PymCommand = {
     }
     return { ok: true }
   },
+}
+
+/**
+ * Show or hide the console's labels on each item's molecule (`show labels`
+ * / `hide labels` over whole molecules).
+ */
+export function setConsoleLabelsVisible(
+  ctx: WorkerContext,
+  sceneId: number,
+  items: readonly MoleculeSelection[],
+  visible: boolean,
+): void {
+  for (const item of items) {
+    const rend = renderersOf(ctx, sceneId, item.obj.uid).find((r) => r.name === LABEL_RENDERER)
+    if (rend) setNodeVisible(ctx, { sceneId, nodeId: rend.id, nodeType: 'renderer', visible })
+  }
+}
+
+/** Take the console's labels off the atoms of each item (`hide labels, sel`). */
+export function removeConsoleLabels(
+  ctx: WorkerContext,
+  sceneId: number,
+  items: readonly MoleculeSelection[],
+): boolean {
+  const scene = getSceneOrNull(ctx, sceneId)
+  if (!scene) return false
+  for (const item of items) {
+    const mol = scene.getObject(item.obj.uid) as unknown as { createRenderer(type: string): unknown } | null
+    if (!mol) continue
+    const rend = labelRenderer(ctx, sceneId, item.obj.uid, mol, false)
+    if (!rend) continue
+    const ids = atomIds(ctx, sceneId, mol, item.selStr)
+    if (ids === null) return false
+    for (const aid of ids) rend.removeLabel(aid)
+  }
+  return true
 }
 
 export const LABEL_COMMANDS: PymCommand[] = [label]

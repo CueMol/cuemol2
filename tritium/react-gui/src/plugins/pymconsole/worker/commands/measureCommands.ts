@@ -32,9 +32,9 @@ import {
 import type { MeasureMode } from '@renderer/worker/server/services/helpers/atomintr'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord'
-import { translateSelection } from '../sel/translate'
 import type { PymCommand } from './types'
-import { isDefaulted, molecules } from './helpers'
+import { isDefaulted, moleculeSelections } from './helpers'
+import type { MoleculeSelection } from './helpers'
 
 /**
  * PyMOL's defaults for the arguments that follow the selections.
@@ -120,26 +120,38 @@ function measureCommand(name: 'distance' | 'angle' | 'dihedral', mode: MeasureMo
       const scene = getSceneOrNull(ctx, cc.sceneId)
       if (!scene) return { ok: false, error: 'Error: no scene' }
 
-      const sels: string[] = []
+      // Each selection read per molecule; the measurement is taken inside
+      // the molecule they name, or the first one when none is named.
+      const perArg: MoleculeSelection[][] = []
+      const namedUids = new Set<number>()
       for (let i = 0; i < count; i += 1) {
         const raw = args[`selection${i + 1}`] ?? ''
         if (raw.trim() === '') {
           return { ok: false, error: `Error: ${name} needs ${count} selections` }
         }
-        const translated = translateSelection(raw)
-        if (!translated.ok) return translated
-        sels.push(translated.expr)
+        const res = moleculeSelections(ctx, cc.sceneId, raw)
+        if (!res.ok) return res
+        if (res.named) res.items.forEach((it) => namedUids.add(it.obj.uid))
+        perArg.push(res.items)
       }
+      if (namedUids.size > 1) {
+        return { ok: false, error: `Error: ${name} across molecules is not supported; name one object` }
+      }
+      const all = perArg[0]
+      const chosen = namedUids.size === 1 ? [...namedUids][0] : all[0]?.obj.uid
+      const measured = all.find((it) => it.obj.uid === chosen) ?? perArg.flat().find((it) => it.obj.uid === chosen)
+      if (!measured) return { ok: false, error: 'Error: no molecule in the scene' }
+      if (namedUids.size === 0 && all.length > 1) {
+        cc.warn(`measuring "${measured.obj.name}" only: name the object in a selection to pick another`)
+      }
+      const sels: string[] = []
+      for (const items of perArg) {
+        const it = items.find((x) => x.obj.uid === measured.obj.uid)
+        if (!it) return { ok: false, error: `Error: ${name} across molecules is not supported; name one object` }
+        sels.push(it.selStr)
+      }
+      const mols = [measured.obj]
 
-      // Every selection is evaluated against one molecule, so the command
-      // picks one rather than applying to each: N molecules would mean N
-      // labels from one line, and the count would depend on what happens to
-      // be loaded.
-      const mols = molecules(ctx, cc.sceneId)
-      if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
-      if (mols.length > 1) {
-        cc.warn(`measuring "${mols[0].name}" only: a measurement spanning objects is not supported`)
-      }
       const mol = scene.getObject(mols[0].uid) as unknown as MolCoord | null
       if (!mol) return { ok: false, error: `Error: could not read "${mols[0].name}"` }
 

@@ -24,8 +24,8 @@ import {
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import { isAllSelection, isDefaulted, molecules, toNumber } from './helpers'
+import { OWNED, renderersOf } from './helpers'
 import { PYMOL_COLORS, toCueMolColor } from './pymolColors'
-import { OWNED, renderersOf } from './repCommands'
 
 /** The scene-local style set `set_color` writes into. */
 const PYM_STYLE_SET = 'pym'
@@ -185,6 +185,7 @@ const spectrum: PymCommand = {
     { name: 'maximum', default: '' },
     { name: 'byres', default: '0' },
     { name: 'quiet', default: '1' },
+    { name: 'interpolation', default: 'rgb' },
   ],
   mode: 'strict',
   mutates: true,

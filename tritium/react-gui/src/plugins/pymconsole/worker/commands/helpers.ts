@@ -16,7 +16,7 @@ import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTr
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
-import { translateSelection } from '../sel/translate'
+import { selectionNames, translateSelection } from '../sel/translate'
 
 /** PyMOL's name for every object at once. */
 export const ALL = 'all'
@@ -182,22 +182,17 @@ export function isAllSelection(raw: string): boolean {
 }
 
 /** A molecule and the CueMol expression to apply inside it. */
-export interface MolSelection {
-  obj: SceneObjectEntry
-  /** CueMol expression; `*` for the whole molecule. */
-  selStr: string
-}
+export type MolSelection = MoleculeSelection
 
 /**
  * The molecule and selection a PyMOL argument names, for a command that
  * works on one molecule at a time (`save`, `align`).
  *
- * Read in this order: an object name (the whole molecule); `<object> and
- * <selection>` (that part of it -- the only way to say "chain A of 1abc"
- * here, since a CueMol expression is evaluated against one molecule rather
- * than naming objects); `all` when the scene has exactly one molecule; any
- * other expression against the first molecule, with a warning when there is
- * more than one -- the rule `zoom` and the measurements follow.
+ * The molecule is the one the expression names (`1abc`, `1abc and chain A`,
+ * see `moleculeSelections`); naming two is refused. `all` needs the scene to
+ * have exactly one molecule. An expression that names none is evaluated
+ * against the first molecule, with a warning when there is more than one --
+ * the rule `zoom` and the measurements follow.
  *
  * @param warn - where the "first molecule only" warning goes.
  */
@@ -209,33 +204,83 @@ export function resolveMolSelection(
 ): { ok: true; target: MolSelection } | { ok: false; error: string } {
   const mols = molecules(ctx, sceneId)
   if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
-  const text = raw.trim()
-
-  const named = mols.find((m) => m.name === text)
-  if (named) return { ok: true, target: { obj: named, selStr: '*' } }
-
-  const scoped = /^(\S+)\s+and\s+(.+)$/i.exec(text)
-  const scopedObj = scoped ? mols.find((m) => m.name === scoped[1]) : undefined
-  if (scoped && scopedObj) {
-    const translated = translateSelection(scoped[2])
-    if (!translated.ok) return translated
-    return { ok: true, target: { obj: scopedObj, selStr: translated.expr } }
-  }
-
-  if (isAllSelection(text)) {
-    if (mols.length > 1) {
-      return {
-        ok: false,
-        error: `Error: name one molecule (${mols.map((m) => m.name).join(', ')}); this works on one at a time`,
-      }
+  if (isAllSelection(raw) && mols.length > 1) {
+    return {
+      ok: false,
+      error: `Error: name one molecule (${mols.map((m) => m.name).join(', ')}); this works on one at a time`,
     }
-    return { ok: true, target: { obj: mols[0], selStr: '*' } }
   }
+  const res = moleculeSelections(ctx, sceneId, raw)
+  if (!res.ok) return res
+  if (res.named && res.items.length > 1) {
+    const names = res.items.map((i) => i.obj.name).join(', ')
+    return { ok: false, error: `Error: the selection names more than one molecule (${names}); this works on one at a time` }
+  }
+  if (!res.named && res.items.length > 1) {
+    warn(`using "${res.items[0].obj.name}" only: name the object in the selection to pick another`)
+  }
+  return { ok: true, target: res.items[0] }
+}
 
-  const translated = translateSelection(text)
-  if (!translated.ok) return translated
-  if (mols.length > 1) {
-    warn(`using "${mols[0].name}" only: write "<object> and <selection>" to pick another`)
+/** One molecule and the CueMol expression a PyMOL selection means inside it. */
+export interface MoleculeSelection {
+  obj: SceneObjectEntry
+  /** CueMol expression; `*` for the whole molecule. */
+  selStr: string
+}
+
+/**
+ * A PyMOL selection, as one CueMol expression per molecule.
+ *
+ * PyMOL evaluates a selection over the whole scene, where an object name is
+ * one of the terms (`1abc and chain A`). CueMol evaluates it against one
+ * molecule at a time and reads a bare word as a named selection, so an
+ * object name would be refused as an undefined reference. Here each object
+ * name becomes `all` inside that molecule and `none` inside the others, and
+ * when the expression names any objects only those molecules are returned.
+ * Names that are not objects stay as they are: named selections.
+ *
+ * @returns the molecules to act on, in scene order, and whether the
+ *   expression named any of them.
+ */
+export function moleculeSelections(
+  ctx: WorkerContext,
+  sceneId: number,
+  raw: string,
+): { ok: true; items: MoleculeSelection[]; named: boolean } | { ok: false; error: string } {
+  const mols = molecules(ctx, sceneId)
+  if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
+  if (isAllSelection(raw)) return { ok: true, items: mols.map((obj) => ({ obj, selStr: '*' })), named: false }
+
+  const molNames = new Set(mols.map((m) => m.name))
+  const mentioned = new Set(selectionNames(raw).filter((n) => molNames.has(n)))
+  const targets = mentioned.size > 0 ? mols.filter((m) => mentioned.has(m.name)) : mols
+  const items: MoleculeSelection[] = []
+  for (const obj of targets) {
+    const translated = translateSelection(raw, (n) =>
+      molNames.has(n) ? (n === obj.name ? 'all' : 'none') : undefined)
+    if (!translated.ok) return translated
+    items.push({ obj, selStr: translated.expr })
   }
-  return { ok: true, target: { obj: mols[0], selStr: translated.expr } }
+  return { ok: true, items, named: mentioned.size > 0 }
+}
+
+/** Prefix marking a renderer this console owns. */
+export const OWNED = 'pym:'
+
+/** The renderers of one object, from the scene tree. */
+export function renderersOf(ctx: WorkerContext, sceneId: number, objId: number): SceneTreeNode[] {
+  const tree = getSceneTree(ctx, { sceneId })
+  if (!tree.ok || !tree.tree) return []
+  const obj = tree.tree.children.find((c) => c.id === objId && c.type === 'object')
+  if (!obj) return []
+  const out: SceneTreeNode[] = []
+  const walk = (nodes: SceneTreeNode[]): void => {
+    for (const n of nodes) {
+      if (n.type === 'renderer') out.push(n)
+      if (n.children.length > 0) walk(n.children)
+    }
+  }
+  walk(obj.children)
+  return out
 }
