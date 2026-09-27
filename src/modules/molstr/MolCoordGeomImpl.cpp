@@ -16,7 +16,11 @@
 #include "TopparManager.hpp"
 #include "TopoBuilder.hpp"
 
+#include <algorithm>
+
 #include <qlib/Box3D.hpp>
+#include <qlib/LQuat.hpp>
+#include <qlib/Matrix3D.hpp>
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
 #include <qsys/ObjectEvent.hpp>
@@ -27,6 +31,8 @@ using namespace molstr;
 using qlib::Vector4D;
 using qlib::Matrix4D;
 using qlib::Box3D;
+using qlib::LQuat;
+using qlib::Matrix3D;
 
 using qsys::UndoManager;
 
@@ -233,6 +239,72 @@ void MolCoord::fitView2(qsys::ViewPtr pView, SelectionPtr pSel) const
   pthis->setSelection(pSel);
   fitView(pView, true);
   pthis->setSelection(pOldSel);
+}
+
+void MolCoord::orientView(qsys::ViewPtr pView, SelectionPtr pSel) const
+{
+  MolCoordPtr pthis(const_cast<MolCoord *>(this));
+
+  // The centroid, then the second moments about it (the quantity PyMOL's
+  // ExecutiveGetMoment diagonalizes).
+  Vector4D cen;
+  int natom = 0;
+  {
+    AtomIterator iter(pthis, pSel);
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      cen += iter.get()->getPos();
+      ++natom;
+    }
+  }
+  if (natom == 0)
+    return;
+  cen.divideSelf(double(natom));
+
+  Matrix3D mom(0, qlib::detail::no_init_tag());
+  for (int i = 1; i <= 3; ++i)
+    for (int j = 1; j <= 3; ++j)
+      mom.aij(i, j) = 0.0;
+  {
+    AtomIterator iter(pthis, pSel);
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      const Vector4D d = iter.get()->getPos() - cen;
+      for (int i = 1; i <= 3; ++i)
+        for (int j = 1; j <= 3; ++j)
+          mom.aij(i, j) += d.ai(i) * d.ai(j);
+    }
+  }
+
+  // The eigenvectors are the columns of evecs. Without a solution (the
+  // Jacobi loop did not converge) the rotation is left as it is.
+  Matrix3D evecs;
+  Vector4D evals;
+  if (mom.diag(evecs, evals)) {
+    int order[3] = {1, 2, 3};
+    std::sort(order, order + 3,
+              [&evals](int a, int b) { return evals.ai(a) > evals.ai(b); });
+
+    const Vector4D e1(evecs.aij(1, order[0]), evecs.aij(2, order[0]),
+                      evecs.aij(3, order[0]));
+    const Vector4D e2(evecs.aij(1, order[1]), evecs.aij(2, order[1]),
+                      evecs.aij(3, order[1]));
+    // Right-handed, as PyMOL makes it: the third axis follows from the two.
+    const Vector4D e3 = e1.cross(e2);
+
+    // Rows of the view rotation are the screen axes in model space, so the
+    // view coordinates of p are (e1.p, e2.p, e3.p): fitView reads view
+    // coordinates as makeRotMat(q).mulvec(p).
+    Matrix3D rmat(0, qlib::detail::no_init_tag());
+    for (int j = 1; j <= 3; ++j) {
+      rmat.aij(1, j) = e1.ai(j);
+      rmat.aij(2, j) = e2.ai(j);
+      rmat.aij(3, j) = e3.ai(j);
+    }
+    LQuat q = LQuat::makeFromRotMat(rmat);
+    q.normalizeSelf();
+    pView->setRotQuat(q);
+  }
+
+  fitView2(pView, pSel);
 }
 
 void MolCoord::xformByMat(const Matrix4D &mat, SelectionPtr pSel)
