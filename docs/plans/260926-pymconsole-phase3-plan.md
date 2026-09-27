@@ -1,6 +1,6 @@
 # pymconsole Phase 3 (未実装コマンドの追加)
 
-Status: **3a / 3b 実装済み (#642 / #644)。3c は `label` 実装済み、`orient` と設定名 alias は未着手**。
+Status: **3a / 3b 実装済み (#642 / #644)。3c は `label` と設定名 alias 実装済み、`orient` は未着手**。
 3c では計画外に `load x.qsc` も追加した (`save x.qsc` と対になる)。
 関連: [pymconsole plugin 計画 (Phase 1-2)](260913-pymconsole-plugin-plan.md)、
 [pym console 調査報告](pymconsole-research-260529.md)、
@@ -51,7 +51,7 @@ C++ QIF) で実現できるかを調べ、工数と C++ 変更の有無で 3 段
 |---|---|---|
 | `label selection, expression` | **実装済み (計画から変更)**。TS の式評価器ではなく、C++ の label 書式 (`molstr/LabelFormat`、`{resn}{resi}` / `{bfac:.2f}`、フィールド名は選択式の語) を `NameLabelRenderer` の `format` property と `setLabel(aid, format)` として入れた。書式の実装には spdlog 同梱の fmt を使い、`LString::fmtFormat` / `vfmtFormat` を追加 (std::format 互換の API のみ) | object ごとに `pym:labels`。PyMOL の式は書式への書き換えだけを TS で行う (`labelExpr.ts`)。label の文字列 / 書式は .qsc に保存される |
 | `orient [selection]` | 無しでも可 (TS で共分散 -> `Matrix.diag3()`)。ただし `getCrdArray` / `getSelArray` の ByteArray を TS から読んだ実績が無いので、実装が重ければ `MolCoord` に主軸を返す C++ helper を足す | 主軸を view の `rotation` に写し、`fitView` で収める |
-| PyMOL 設定名 alias の拡充 | 無し | 現在は `bg_rgb` と `orthoscopic` の 2 件のみ。調査報告 §4.12 から、CueMol に同義の property がある頻出設定 (`cartoon_transparency`、`stick_radius`、`sphere_scale`、`ray_trace_mode` 相当など) を表に足す。**意味が一致するものだけ** (近いもので代用しない) |
+| PyMOL 設定名 alias の拡充 | 無し | 現在は `bg_rgb` と `orthoscopic` の 2 件のみ。調査報告 §4.12 から、CueMol に同義の property がある頻出設定 (`cartoon_transparency`、`stick_radius`、`sphere_scale`、`ray_trace_mode` 相当など) を表に足す。**意味が一致するものだけ** (近いもので代用しない)。**実装済み**: 表現ごとの 9 設定 (`stick_radius`・`*_transparency`・`line_width`・`solvent_radius`・`label_size`・`label_color`) を console の `pym:<rep>` renderer の property に対応付けた (`worker/commands/repSettings.ts`)。`sphere_scale` は CPK に全体の scale が無く、`ray_trace_mode` は同義の property が無いため対象外 |
 
 ## PyMOL 側の参照元 (`~/ext/pymol-open-source`)
 
