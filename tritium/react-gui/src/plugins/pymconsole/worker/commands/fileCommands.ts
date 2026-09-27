@@ -16,13 +16,20 @@ import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/f
 import { loadObject } from '@renderer/worker/server/services/file/loadObject'
 import { streamLoadFromUrl } from '@renderer/worker/server/services/file/streamLoadFromUrl'
 import { deleteNode, renameNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
-import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName'
+import { OBJREADER_CATEGORY, pickReaderName } from '@renderer/worker/server/services/helpers/pickReaderName'
 import { isHiddenObjReader } from '@renderer/worker/server/services/helpers/readerFilter'
-import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
+import { pickCoordUrl, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
+import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
 import type { CoordServerType } from '@renderer/worker/shared/pdbUrls'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
-import type { PymCommand } from './types'
+import type { CmdContext, CmdOutcome, PymCommand } from './types'
+import {
+  matchNamedSelections,
+  namedSelections,
+  removeNamedSelection,
+  renameNamedSelection,
+} from './namedSelections'
 import { repOfRendererType } from './repCommands'
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes'
 import {
@@ -31,7 +38,6 @@ import {
   isDefaulted,
   OWNED,
   resolveObjects,
-  resolveOneObject,
   resolvePath,
   resolveRenderers,
 } from './helpers'
@@ -175,9 +181,59 @@ function readerForFormat(
   }
 }
 
-/** Whether a path names a CueMol scene file. */
+/**
+ * Whether a path names a scene file: CueMol's .qsc, or a PyMOL session
+ * (.pse), which the C++ `psefile` scene reader opens.
+ */
 function isSceneFile(filePath: string): boolean {
-  return /\.qsc$/i.test(filePath.trim())
+  return /\.(qsc|pse)$/i.test(filePath.trim())
+}
+
+/** Whether a load argument is a URL rather than a path. */
+function isUrl(filename: string): boolean {
+  return /^https?:\/\//i.test(filename.trim())
+}
+
+/** Load a structure or map straight from a URL, as fetch does for an entry. */
+async function loadUrl(ctx: WorkerContext, args: Record<string, string>, cc: CmdContext): Promise<CmdOutcome> {
+  const url = args.filename.trim()
+  let leaf: string
+  try {
+    leaf = path.basename(new URL(url).pathname)
+  } catch {
+    return { ok: false, error: `Error: not a URL: ${url}` }
+  }
+  if (isSceneFile(leaf) || /\.pml$/i.test(leaf)) {
+    return { ok: false, error: `Error: download ${leaf} first; scenes and scripts load from a file` }
+  }
+  const asked = readerForFormat(ctx, args.format)
+  if (!asked.ok) return asked
+  let readerName = asked.name ?? ''
+  if (readerName === '') {
+    try {
+      // By extension only: there is no file to sniff until it is downloaded.
+      readerName = pickReaderName(ctx, leaf, false)
+    } catch {
+      readerName = ''
+    }
+  }
+  if (readerName === '') {
+    return { ok: false, error: `Error: no reader for ${leaf}; give format=<reader>` }
+  }
+  const objectName = args.object !== '' ? args.object : fileStem(leaf)
+  const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
+    readerName,
+    objectName,
+    rendererType: null,
+    selection: null,
+  }), args.zoom)
+  const reqId = cc.streamId('load-url')
+  cc.noteStream(reqId)
+  const res = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName, sceneId: cc.sceneId, options })
+  const norm = normalizeServiceResult(res, `Error: could not load ${url}`)
+  if (!norm.ok) return norm
+  cc.print(` load: "${url}" loaded as "${objectName}".`)
+  return { ok: true }
 }
 
 const load: PymCommand = {
@@ -200,7 +256,7 @@ const load: PymCommand = {
   ],
   mode: 'strict',
   mutates: true,
-  summary: 'Read a structure or map file into the scene, or open a .qsc scene.',
+  summary: 'Read a structure or map (a file or a URL), open a .qsc / .pse scene, or run a .pml.',
   // A scene file replaces or adds a scene, which later commands on the same
   // line would not expect, so it has to stand alone like `save x.qsc`.
   outsideTxn: (args) => isSceneFile(args.filename ?? ''),
@@ -210,12 +266,16 @@ const load: PymCommand = {
     null,
     { source: 'readers', description: 'format', suffix: ', ' },
   ],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     for (const [name, def] of LOAD_IGNORED) {
       if (!isDefaulted(args[name], def)) cc.warn(`load: ${name} is ignored (not supported)`)
     }
+    if (isUrl(args.filename)) return loadUrl(ctx, args, cc)
     const filePath = resolvePath(cc.cwd, args.filename)
     if (!fs.existsSync(filePath)) return { ok: false, error: `Error: no such file: ${filePath}` }
+
+    // PyMOL's load runs a .pml as a script (importing.py loadfunctions).
+    if (/\.pml$/i.test(filePath)) return cc.runScript(filePath)
 
     // PyMOL loads a session (.pse) the same way; CueMol's is a .qsc. The
     // panel opens it as File > Open would: into the current scene when that
@@ -262,10 +322,20 @@ const load: PymCommand = {
 }
 
 /** PyMOL's `type` argument, as the server it means. */
-function coordServer(type: string): CoordServerType | null {
+/** What a fetch `type` asks for (importing.py fetch). */
+type FetchKind =
+  | { kind: 'coord'; server: CoordServerType }
+  | { kind: 'assembly'; n: number }
+  | { kind: 'map'; mapType: '2fofc' | 'fofc' }
+
+export function fetchKind(type: string): FetchKind | null {
   const t = type.trim().toLowerCase()
-  if (t === '' || t === 'cif' || t === 'mmcif') return 'RCSB_CIF'
-  if (t === 'pdb') return 'RCSB_PDB'
+  if (t === '' || t === 'cif' || t === 'mmcif') return { kind: 'coord', server: 'RCSB_CIF' }
+  if (t === 'pdb') return { kind: 'coord', server: 'RCSB_PDB' }
+  // pdb1, pdb2, ...: the biological assemblies RCSB serves as PDB files.
+  const assembly = /^pdb([1-9][0-9]*)$/.exec(t)
+  if (assembly) return { kind: 'assembly', n: Number(assembly[1]) }
+  if (t === '2fofc' || t === 'fofc') return { kind: 'map', mapType: t }
   return null
 }
 
@@ -289,15 +359,15 @@ const fetch: PymCommand = {
   ],
   mode: 'strict',
   mutates: true,
-  summary: 'Download an entry from RCSB and load it.',
+  summary: 'Download an entry from RCSB (coordinates, an assembly, or a density map) and load it.',
   async run(ctx, args, cc) {
     if (!isDefaulted(args.path, '')) cc.warn('fetch: path is ignored (not supported)')
     for (const [name, def] of FETCH_IGNORED) {
       if (!isDefaulted(args[name], def)) cc.warn(`fetch: ${name} is ignored (not supported)`)
     }
-    const server = coordServer(args.type)
-    if (server === null) {
-      return { ok: false, error: `Error: unsupported fetch type "${args.type}" (cif or pdb)` }
+    const kind = fetchKind(args.type)
+    if (kind === null) {
+      return { ok: false, error: `Error: unsupported fetch type "${args.type}" (cif, pdb, pdb1.., 2fofc or fofc)` }
     }
     // PyMOL accepts several codes at once.
     const codes = args.code
@@ -317,7 +387,41 @@ const fetch: PymCommand = {
         return { ok: false, error: `Error: "${code}" is not a PDB id` }
       }
       const pdbId = code.toLowerCase()
-      const spec = pickCoordUrl(pdbId, server)
+      // Registered with the run, so Stop cancels the download rather than
+      // waiting for it to finish.
+      const reqId = cc.streamId(`fetch-${pdbId}`)
+      cc.noteStream(reqId)
+
+      if (kind.kind === 'map') {
+        // The Get PDB dialog's path; PyMOL names the map object the same way.
+        const spec = pickMapUrl(pdbId, 'RCSB_CIF', kind.mapType)
+        const objectName = args.name !== '' ? args.name : `${pdbId}_${kind.mapType}`
+        const res = await streamLoadDensityMap(ctx, {
+          reqId,
+          url: spec.url,
+          readerName: spec.readerName,
+          gzip: spec.gzip,
+          mapType: kind.mapType,
+          objectName,
+          sceneId: cc.sceneId,
+          viewId: cc.viewId,
+        })
+        const norm = normalizeServiceResult(res, `Error: could not fetch the ${kind.mapType} map of ${pdbId}`)
+        if (!norm.ok) {
+          // RCSB publishes map coefficients only for entries deposited with
+          // structure factors; older ones (1crn, 4hhb) have none.
+          if (/\b404\b/.test(norm.error)) {
+            return { ok: false, error: `Error: RCSB has no ${kind.mapType} map for ${pdbId} (no structure factors were deposited)` }
+          }
+          return norm
+        }
+        cc.print(` fetch: "${objectName}" fetched.`)
+        continue
+      }
+
+      const spec = kind.kind === 'coord'
+        ? pickCoordUrl(pdbId, kind.server)
+        : { url: `https://files.rcsb.org/download/${pdbId}.pdb${kind.n}`, readerName: 'pdb' }
       const objectName = args.name !== '' ? args.name : pdbId
       const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
         readerName: spec.readerName,
@@ -325,10 +429,6 @@ const fetch: PymCommand = {
         rendererType: null,
         selection: null,
       }), args.zoom)
-      // Registered with the run, so Stop cancels the download rather than
-      // waiting for it to finish.
-      const reqId = cc.streamId(`fetch-${pdbId}`)
-      cc.noteStream(reqId)
       const res = await streamLoadFromUrl(ctx, {
         reqId,
         url: spec.url,
@@ -343,6 +443,15 @@ const fetch: PymCommand = {
     }
     return { ok: true }
   },
+}
+
+/** Forget the named selections `pattern` names; how many there were. */
+function deleteSelections(ctx: WorkerContext, cc: CmdContext, pattern: string): number {
+  const sels = matchNamedSelections(ctx, cc.sceneId, pattern)
+  for (const sel of sels) {
+    if (removeNamedSelection(ctx, cc.sceneId, sel)) cc.print(` delete: selection "${sel.name}" deleted.`)
+  }
+  return sels.length
 }
 
 const deleteCmd: PymCommand = {
@@ -364,6 +473,8 @@ const deleteCmd: PymCommand = {
         if (!res.ok) return { ok: false, error: `Error: could not delete "${obj.name}"` }
         cc.print(` delete: "${obj.name}" deleted.`)
       }
+      // PyMOL's `delete all` also forgets the named selections.
+      if (isAllSelection(args.name)) deleteSelections(ctx, cc, args.name)
       return { ok: true }
     }
 
@@ -374,6 +485,8 @@ const deleteCmd: PymCommand = {
     // this way -- which is the safer way round.
     const rends = resolveRenderers(ctx, cc.sceneId, args.name)
     if (rends.length === 0) {
+      // Then a named selection, which PyMOL's delete also takes.
+      if (deleteSelections(ctx, cc, args.name) > 0) return { ok: true }
       // `delete all` on an empty scene is how scripts start; PyMOL says
       // nothing, so neither does this.
       if (isAllSelection(args.name)) return { ok: true }
@@ -397,21 +510,36 @@ const setName: PymCommand = {
   params: [{ name: 'old_name' }, { name: 'new_name' }],
   mode: 'strict',
   mutates: true,
-  summary: 'Rename an object.',
+  summary: 'Rename an object, a renderer (e.g. an isomesh), or a named selection.',
   completions: [
     { source: 'names', description: 'name', suffix: ', ' },
     { source: 'names', description: 'name', suffix: '' },
   ],
   run(ctx, args, cc) {
-    const found = resolveOneObject(ctx, cc.sceneId, args.old_name)
-    if (!found.ok) return found
-    const res = renameNode(ctx, {
-      sceneId: cc.sceneId,
-      nodeId: found.obj.uid,
-      nodeType: 'object',
-      newName: args.new_name,
-    })
-    if (!res.ok) return { ok: false, error: `Error: could not rename "${args.old_name}"` }
+    const newName = args.new_name.trim()
+    if (newName === '') return { ok: false, error: 'Error: no new name given' }
+    // Looked up in delete's order: object, renderer, named selection.
+    const objs = resolveObjects(ctx, cc.sceneId, args.old_name).filter((o) => o.name === args.old_name.trim())
+    const rends = objs.length > 0 ? [] : resolveRenderers(ctx, cc.sceneId, args.old_name)
+      .filter((r) => r.rendName === args.old_name.trim())
+    if (objs.length > 1 || rends.length > 1) {
+      return { ok: false, error: `Error: "${args.old_name}" names more than one thing` }
+    }
+    if (objs.length === 1 || rends.length === 1) {
+      const res = renameNode(ctx, {
+        sceneId: cc.sceneId,
+        nodeId: objs.length === 1 ? objs[0].uid : rends[0].rendId,
+        nodeType: objs.length === 1 ? 'object' : 'renderer',
+        newName,
+      })
+      if (!res.ok) return { ok: false, error: `Error: could not rename "${args.old_name}"` }
+      return { ok: true }
+    }
+    const sel = namedSelections(ctx, cc.sceneId).find((s) => s.name === args.old_name.trim())
+    if (!sel) return { ok: false, error: `Error: nothing named "${args.old_name}" in the scene` }
+    if (!renameNamedSelection(ctx, cc.sceneId, sel, newName)) {
+      return { ok: false, error: `Error: could not rename "${args.old_name}"` }
+    }
     return { ok: true }
   },
 }

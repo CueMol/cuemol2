@@ -15,6 +15,8 @@
  */
 
 import { saveScene } from '@renderer/worker/server/services/scene/saveScene'
+import { exportScene, getSceneExportInfo } from '@renderer/worker/server/services/scene/exportImage'
+import { writePng } from './miscCommands'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
@@ -30,13 +32,23 @@ const MOL_WRITERS: Readonly<Record<string, string>> = {
   pdb: 'pdb',
   sdf: 'sdf',
   mol: 'sdf',
+  pqr: 'pqr',
+}
+
+/**
+ * Formats that are the scene drawn to a file rather than a molecule written
+ * out: PyMOL's save routes .png to png, and writes .pov / .stl from the view
+ * (exporting.py savefunctions).
+ */
+const SCENE_EXPORTERS: Readonly<Record<string, string>> = {
+  pov: 'pov',
+  stl: 'stl',
 }
 
 /** The formats PyMOL writes that have no writer here, with the reason. */
 const UNSUPPORTED_FORMATS: Readonly<Record<string, string>> = {
   cif: 'CueMol has no mmCIF writer; save as .pdb',
   pse: 'a .pse is a PyMOL session; save the scene as .qsc',
-  png: 'use png to save an image',
 }
 
 /** The file format a name and an explicit `format` argument ask for. */
@@ -115,7 +127,7 @@ const save: PymCommand = {
   ],
   mode: 'strict',
   mutates: false,
-  summary: 'Write a molecule (or part of one) to .pdb / .sdf, or the scene to .qsc.',
+  summary: 'Write a molecule (or part of one) to .pdb / .sdf / .pqr, the scene to .qsc, or the view to .png / .pov / .stl.',
   completions: [null, { source: 'selections', description: 'selection', suffix: ', ' }],
   outsideTxn: (args) => formatOf(args.filename ?? '', args.format ?? '') === 'qsc',
   run(ctx, args, cc) {
@@ -130,6 +142,26 @@ const save: PymCommand = {
       return { ok: true }
     }
 
+    if (format === 'png') {
+      return writePng(ctx, cc, { filename: filePath, width: '0', height: '0', dpi: '-1', ray: '0' })
+    }
+    const exporter = SCENE_EXPORTERS[format]
+    if (exporter !== undefined) {
+      const info = getSceneExportInfo(ctx, { sceneId: cc.sceneId, viewId: cc.viewId })
+      if (!info.ok) return { ok: false, error: 'Error: no active view' }
+      const res = exportScene(ctx, {
+        sceneId: cc.sceneId,
+        viewId: cc.viewId,
+        filePath,
+        exporterName: exporter,
+        width: info.width,
+        height: info.height,
+      })
+      if (!res.ok) return { ok: false, error: `Error: cannot write ${filePath}` }
+      cc.print(` Save: wrote "${filePath}".`)
+      return { ok: true }
+    }
+
     const unsupported = UNSUPPORTED_FORMATS[format]
     if (unsupported !== undefined) return { ok: false, error: `Error: ${format}: ${unsupported}` }
     const writerName = MOL_WRITERS[format]
@@ -137,7 +169,7 @@ const save: PymCommand = {
       // PyMOL raises on an extension it does not know (exporting.py save).
       return {
         ok: false,
-        error: `Error: Unrecognized file format${format ? ` "${format}"` : ''} (one of .pdb, .sdf, .mol, .qsc)`,
+        error: `Error: Unrecognized file format${format ? ` "${format}"` : ''} (one of .pdb, .sdf, .mol, .pqr, .qsc, .png, .pov, .stl)`,
       }
     }
 

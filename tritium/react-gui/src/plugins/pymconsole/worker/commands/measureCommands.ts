@@ -32,8 +32,10 @@ import {
 import type { MeasureMode } from '@renderer/worker/server/services/helpers/atomintr'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord'
-import type { PymCommand } from './types'
-import { isDefaulted, moleculeSelections } from './helpers'
+import { analyzeInteractions } from '@renderer/worker/server/services/molops/analyzeInteractions'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { CmdContext, CmdOutcome, PymCommand } from './types'
+import { isDefaulted, moleculeSelections, resolveMolSelection, toNumber } from './helpers'
 import type { MoleculeSelection } from './helpers'
 
 /**
@@ -75,6 +77,73 @@ function trailingParams(name: string): { name: string; default: string }[] {
   }))
 }
 
+/** What PyMOL's distance mode / cutoff ask for (querying.py distance). */
+type ContactMode =
+  | { kind: 'centroid' }
+  | { kind: 'contacts'; maxDist: number; hbondOnly: boolean }
+
+/** The most labels one contact search draws, as the GUI's analysis caps them. */
+const MAX_CONTACT_LABELS = 100
+
+/**
+ * PyMOL's default: one distance between the two selections, which for two
+ * atoms is the same thing as a centroid here. Modes 0 and 3 (all pairs
+ * within the cutoff) and 2 (polar contacts), or a cutoff on its own, list
+ * contacts instead. Modes CueMol has nothing for are refused.
+ */
+export function contactMode(modeArg: string, cutoffArg: string): ContactMode | { error: string } {
+  const mode = modeArg.trim()
+  const cutoff = cutoffArg.trim() === '' ? null : toNumber(cutoffArg)
+  if (cutoffArg.trim() !== '' && (cutoff === null || cutoff <= 0)) {
+    return { error: 'Error: distance: cutoff must be a positive number' }
+  }
+  if (mode === '' || mode === '4') {
+    if (cutoff === null) return { kind: 'centroid' }
+    return { kind: 'contacts', maxDist: cutoff, hbondOnly: false }
+  }
+  if (mode === '0' || mode === '3') return { kind: 'contacts', maxDist: cutoff ?? 4.0, hbondOnly: false }
+  // PyMOL's polar-contact cutoff (h_bond_cutoff_edge) is about 3.6 A.
+  if (mode === '2') return { kind: 'contacts', maxDist: cutoff ?? 3.6, hbondOnly: true }
+  return { error: `Error: distance: mode ${mode} is not available (0, 2, 3 or 4)` }
+}
+
+/**
+ * distance as a contact search: one dashed label per atom pair between the
+ * two selections within the cutoff, in one molecule or across two.
+ */
+function distanceContacts(
+  ctx: WorkerContext,
+  cc: CmdContext,
+  args: Record<string, string>,
+  mode: Extract<ContactMode, { kind: 'contacts' }>,
+): CmdOutcome {
+  if (args.selection1.trim() === '' || args.selection2.trim() === '') {
+    return { ok: false, error: 'Error: distance needs 2 selections' }
+  }
+  const one = resolveMolSelection(ctx, cc.sceneId, args.selection1, cc.warn)
+  if (!one.ok) return one
+  const two = resolveMolSelection(ctx, cc.sceneId, args.selection2, cc.warn)
+  if (!two.ok) return two
+  const across = one.target.obj.uid !== two.target.obj.uid
+  const res = analyzeInteractions(ctx, {
+    sceneId: cc.sceneId,
+    objId: one.target.obj.uid,
+    selStr: one.target.selStr,
+    useMol2: across,
+    ...(across ? { objId2: two.target.obj.uid } : {}),
+    useSel2: true,
+    selStr2: two.target.selStr,
+    minDist: 0,
+    maxDist: mode.maxDist,
+    maxLabels: MAX_CONTACT_LABELS,
+    hbondOnly: mode.hbondOnly,
+    rendName: args.name.trim() !== '' ? args.name.trim() : 'measure',
+  })
+  if (!res.ok) return { ok: false, error: `Error: distance: ${res.error ?? 'the contacts could not be computed'}` }
+  cc.print(` distance: ${res.count ?? 0} contacts within ${mode.maxDist} angstroms${mode.hbondOnly ? ' (polar)' : ''}`)
+  return { ok: true }
+}
+
 /** `distance` / `angle` / `dihedral`, which differ only in how many points. */
 function measureCommand(name: 'distance' | 'angle' | 'dihedral', mode: MeasureMode): PymCommand {
   const count = measureAtomCount(mode)
@@ -102,13 +171,14 @@ function measureCommand(name: 'distance' | 'angle' | 'dihedral', mode: MeasureMo
       })),
     ],
     run(ctx, args, cc) {
-      // `mode` and `cutoff` only mean something to a command that draws one
-      // label per combination; against a centroid there is nothing to filter.
-      if (!isDefaulted(args.mode, '')) {
+      // distance with a cutoff or an all-pairs mode draws one label per
+      // contact, through the interaction analysis the GUI uses.
+      if (name === 'distance') {
+        const contacts = contactMode(args.mode, args.cutoff)
+        if ('error' in contacts) return { ok: false, error: contacts.error }
+        if (contacts.kind === 'contacts') return distanceContacts(ctx, cc, args, contacts)
+      } else if (!isDefaulted(args.mode, '')) {
         cc.warn(`${name}: mode is ignored (each selection is taken as its centroid)`)
-      }
-      if (!isDefaulted(args.cutoff, '')) {
-        cc.warn('distance: cutoff is ignored (one label is drawn, not one per atom pair)')
       }
       for (const arg of ['zoom', 'width', 'length', 'gap', 'label', 'reset', 'state'] as const) {
         const spec = TRAILING_DEFAULTS[arg]

@@ -1,6 +1,6 @@
 # pymconsole Phase 4 (実装済みコマンドの見落としの修正)
 
-Status: **上位 1-5 実装済み** (`feat/pymconsole-phase4`、#645 の上)。6 以降は未着手。
+Status: **実装済み**。上位 1-5 は #647、6-10 とその他は `feat/pymconsole-phase4b`。
 関連: [Phase 3 計画](260926-pymconsole-phase3-plan.md)。
 
 ## 背景
@@ -32,13 +32,23 @@ PyMOL 本体 (`~/ext/pymol-open-source/modules/pymol/`) と CueMol の service �
 あわせて: 空の scene での `delete all` を成功扱い、`color` / `zoom` / `center` が分子の選択を
 書き換えたままにする副作用の解消 (color は元に戻す、zoom は `fitView2`、center は中心だけ移す)。
 
-## 未着手 (価値の高い順)
+## 実装したもの (6 以降)
 
-6. `load x.pse` (C++ の `psefile` reader) / `load x.pml` (スクリプト) / URL
-7. `fetch type=2fofc|fofc|pdb1`
-8. `png` の縦横比 (片方だけ指定) と `ray=1`、`save .png/.pqr/.pov/.stl`
-9. `delete` / `enable` / `disable` / `set_name` での named selection と renderer 名
-10. `distance` の `cutoff` / `mode=2`、分子をまたぐ計測
+6. `load x.pse` (C++ の `psefile` scene reader で開く) / `load x.pml` (スクリプトとして実行) / URL
+   (`streamLoadFromUrl`、reader は拡張子から)。`1crn.pdb.gz` の object 名は `1crn`。
+7. `fetch type=2fofc|fofc` (Get PDB と同じ `streamLoadDensityMap`、URL は `worker/shared/pdbUrls.ts`
+   `pickMapUrl` に移した) と `type=pdb1..` (生物学的集合体)。構造因子の無い entry の 404 は理由付きで返す。
+8. `png` は幅か高さの片方だけなら view の縦横比を保つ、`ray=1` は umbreon。`save` は `.png` / `.pqr` /
+   `.pov` / `.stl` も書く。
+9. `delete` / `enable` / `disable` / `set_name` が renderer 名と named selection も扱う (`namedSelections.ts`)。
+   `delete all` は named selection も消す。
+10. `distance` の `cutoff` / `mode=0,2,3` は `analyzeInteractions` で原子の組ごとの label (分子をまたいでも可)。
+    mode 1 / 5-8 は拒否。
 
-ほか: `set` / `get` が renderer / view を対象にできない (設定名 alias 拡充の前提)、`spectrum` の
-空白区切り palette と chain ごとの rainbow、`view` の略記。
+ほか: `set` / `get` / `unset` の対象に renderer 名と `view`、色の property は PyMOL の色名と `[r,g,b]`。
+`spectrum` の空白区切り palette、`view` の action の略記。
+
+## 見送ったもの
+
+`spectrum` の chain ごとの rainbow (PyMOL の spectrum に対応する式が無い)、chain 付きの `fetch 1abcA`、
+`get_names enabled_only`。

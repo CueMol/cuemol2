@@ -140,7 +140,8 @@ export function resolvePath(cwd: string, filePath: string): string {
 /** A file's name without its directory or final extension. */
 export function fileStem(filePath: string): string {
   const base = filePath.split(/[\\/]/).pop() ?? filePath
-  return base.replace(/\.[^.]+$/, '')
+  // `1crn.pdb.gz` is `1crn`, as in PyMOL: a compression suffix goes too.
+  return base.replace(/\.(gz|bz2|xz|zip)$/i, '').replace(/\.[^.]+$/, '')
 }
 
 /** Parse a number argument, or null when it is not one. */

@@ -124,7 +124,9 @@ export function planSpectrum(expression: string, palette: string): SpectrumPlan 
   const pal = palette.trim().toLowerCase()
 
   if (expr === 'b' || expr === 'q') {
-    const parts = pal.split('_')
+    // A palette name (`blue_red`) or the colours themselves, space separated
+    // (`blue red`), as PyMOL's spectrum takes either.
+    const parts = pal.includes(' ') ? pal.split(/\s+/) : pal.split('_')
     const low = parts.length === 2 ? toCueMolColor(parts[0]) : null
     const high = parts.length === 2 ? toCueMolColor(parts[1]) : null
     if (low === null || high === null || parts.some((p) => PYMOL_COLORS[p] === undefined)) {
