@@ -10,6 +10,7 @@
 
 import * as path from 'path'
 import { exportScene, getSceneExportInfo } from '@renderer/worker/server/services/scene/exportImage'
+import { closeLog, currentLog, openLog, writeLog } from '../commandLog'
 import type { PymCommand } from './types'
 import { isDefaulted, resolvePath, toNumber } from './helpers'
 
@@ -109,7 +110,64 @@ const quit: PymCommand = {
   },
 }
 
+const logOpen: PymCommand = {
+  name: 'log_open',
+  params: [{ name: 'filename', default: 'log.pml' }, { name: 'mode', default: 'w' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Record the commands typed from now on to a .pml file.',
+  run(_ctx, args, cc) {
+    const mode = args.mode.trim()
+    if (mode !== 'w' && mode !== 'a') {
+      return { ok: false, error: 'Error: mode must be "w" (new file) or "a" (append)' }
+    }
+    if (/\.(py|pym)$/i.test(args.filename.trim())) {
+      return { ok: false, error: 'Error: only .pml logs can be written; this console cannot run Python back' }
+    }
+    const filePath = resolvePath(cc.cwd, args.filename.trim())
+    try {
+      openLog(filePath, mode)
+    } catch {
+      return { ok: false, error: `Error: unable to open log file '${filePath}'` }
+    }
+    // PyMOL's wording (commanding.py log_open).
+    cc.print(mode === 'a' ? ` Cmd: appending to '${filePath}'.` : ` Cmd: logging to '${filePath}'.`)
+    return { ok: true }
+  },
+}
+
+const logClose: PymCommand = {
+  name: 'log_close',
+  params: [],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Stop recording commands to the log file.',
+  run(_ctx, _args, cc) {
+    const was = currentLog()
+    closeLog()
+    if (was !== null) cc.print(` Cmd: log closed.`)
+    return { ok: true }
+  },
+}
+
+const logLine: PymCommand = {
+  name: 'log',
+  params: [{ name: 'text', default: '' }, { name: 'alt_text', default: '' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Write a line to the open log file.',
+  run(_ctx, args) {
+    // PyMOL writes `alt_text` (Python) only to a .py log, which is never
+    // open here, so it has nowhere to go.
+    if (args.text !== '') writeLog(args.text)
+    return { ok: true }
+  },
+}
+
 export const MISC_COMMANDS: PymCommand[] = [
+  logOpen,
+  logClose,
+  logLine,
   png,
   undoStackCommand('undo'),
   undoStackCommand('redo'),
