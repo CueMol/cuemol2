@@ -42,6 +42,11 @@ runtime_class NameLabelRenderer extends Renderer
   property string font_weight => redirect(getFontWgt, setFontWgt);
   default font_weight = "normal";
 
+  /// Default label format, e.g. "{resn}{resi} {name}" (see LabelFormat.hpp);
+  /// empty for the built-in text
+  property string format => redirect(getFormat, setFormat);
+  default format = "";
+
   //////////
 
   // add new label for the atom
@@ -49,6 +54,9 @@ runtime_class NameLabelRenderer extends Renderer
 
   // remove label for atom
   boolean removeLabel(integer aid) => removeLabelByID;
+
+  // label the atom with a format ("" = the renderer's format), or change it
+  boolean setLabel(integer aid, string format) => setLabelFormat;
 };
 
 #endif

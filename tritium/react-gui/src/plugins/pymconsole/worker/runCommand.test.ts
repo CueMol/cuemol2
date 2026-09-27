@@ -71,7 +71,11 @@ const outside: PymCommand = {
   mutates: false,
   summary: 'stub',
   outsideTxn: () => true,
-  run: () => ({ ok: true }),
+  // As `load x.qsc` does: the panel opens the file once the run returns.
+  run: (_ctx, _args, cc) => {
+    cc.openScene('/tmp/scene.qsc')
+    return { ok: true }
+  },
 }
 
 const STUBS = [mutating, readOnly, failing, downloading, outside]
@@ -179,6 +183,7 @@ describe('runCommand', () => {
     const { scene, ctx } = setup()
     const alone = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r5', text: 'outside' })
     expect(alone.ok && !alone.aborted).toBe(true)
+    expect(alone.ok && alone.openScene).toBe('/tmp/scene.qsc')
     expect(scene.undo.started).toHaveLength(0)
 
     const mixed = await runCommand(ctx, { sceneId: 1, viewId: 7, runId: 'r6', text: 'mutate; outside' })

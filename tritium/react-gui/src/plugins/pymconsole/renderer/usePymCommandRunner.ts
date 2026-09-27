@@ -13,7 +13,8 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
-import { useCueMol, useEnsureActiveScene, useSuppressUndoRedo } from '@renderer/plugin-host/api'
+import { useCommands, useCueMol, useEnsureActiveScene, useSuppressUndoRedo } from '@renderer/plugin-host/api'
+import { CmdId } from '@renderer/commands/ids'
 import { pymServices } from '../calls'
 import { consoleSession, useConsoleSession } from './consoleSessionStore'
 
@@ -27,6 +28,7 @@ function makeRunId(): string {
 export function usePymCommandRunner(): void {
   const { cm } = useCueMol()
   const ensureActiveScene = useEnsureActiveScene()
+  const { dispatch } = useCommands()
   const { running } = useConsoleSession()
 
   // A transaction is open in the worker for the length of a submission;
@@ -63,6 +65,13 @@ export function usePymCommandRunner(): void {
             return
           }
           consoleSession.finish(res.entries)
+          // `load x.qsc`: File > Open's own path -- into the current scene
+          // when it is new and empty, otherwise a new tab. It reports a file
+          // it cannot read itself.
+          if (res.openScene) {
+            const opened = await dispatch(CmdId.OpenSceneByPath, res.openScene)
+            if (opened && !opened.loaded) consoleSession.failed(`Error: could not open ${res.openScene}`)
+          }
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e)
           console.error('pymconsole: runCommand failed:', e)
@@ -72,7 +81,7 @@ export function usePymCommandRunner(): void {
         }
       })()
     },
-    [cm, ensureActiveScene],
+    [cm, ensureActiveScene, dispatch],
   )
 
   const stop = useCallback(() => {

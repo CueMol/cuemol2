@@ -144,6 +144,11 @@ function readerForFormat(
   }
 }
 
+/** Whether a path names a CueMol scene file. */
+function isSceneFile(filePath: string): boolean {
+  return /\.qsc$/i.test(filePath.trim())
+}
+
 const load: PymCommand = {
   name: 'load',
   params: [
@@ -160,7 +165,10 @@ const load: PymCommand = {
   ],
   mode: 'strict',
   mutates: true,
-  summary: 'Read a structure or map file into the scene.',
+  summary: 'Read a structure or map file into the scene, or open a .qsc scene.',
+  // A scene file replaces or adds a scene, which later commands on the same
+  // line would not expect, so it has to stand alone like `save x.qsc`.
+  outsideTxn: (args) => isSceneFile(args.filename ?? ''),
   completions: [
     null,
     null,
@@ -173,6 +181,15 @@ const load: PymCommand = {
     }
     const filePath = resolvePath(cc.cwd, args.filename)
     if (!fs.existsSync(filePath)) return { ok: false, error: `Error: no such file: ${filePath}` }
+
+    // PyMOL loads a session (.pse) the same way; CueMol's is a .qsc. The
+    // panel opens it as File > Open would: into the current scene when that
+    // is new and empty, otherwise in a new tab.
+    if (isSceneFile(filePath)) {
+      cc.openScene(filePath)
+      cc.print(` Load: opening scene "${filePath}".`)
+      return { ok: true }
+    }
 
     // An explicit format skips the extension / content lookup, which is the
     // only way to read a file the sniff gets wrong -- a structure-factor CIF
