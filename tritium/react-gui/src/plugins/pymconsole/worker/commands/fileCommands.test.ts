@@ -64,7 +64,7 @@ vi.mock('@renderer/worker/server/services/scene/listSceneObjects', () => ({
   listSceneObjects: (...a: unknown[]) => services.listSceneObjects(...a),
 }))
 
-import { FILE_COMMANDS } from './fileCommands'
+import { FILE_COMMANDS, parseFetchCode } from './fileCommands'
 import type { CmdContext } from './types'
 
 /** A worker context whose registry holds the readers a real build has. */
@@ -247,5 +247,14 @@ describe('delete', () => {
     sceneWithMesh()
     expect(del('nope').ok).toBe(false)
     expect(services.deleteNode).not.toHaveBeenCalled()
+  })
+})
+
+describe('fetch codes', () => {
+  it('reads a chain after the PDB id, as PyMOL does', () => {
+    expect(parseFetchCode('1ABC')).toEqual({ pdbId: '1abc', chain: '' })
+    expect(parseFetchCode('4hhbA')).toEqual({ pdbId: '4hhb', chain: 'A' })
+    expect(parseFetchCode('4hhb_B')).toEqual({ pdbId: '4hhb', chain: 'B' })
+    expect(parseFetchCode('abcd')).toBeNull()
   })
 })
