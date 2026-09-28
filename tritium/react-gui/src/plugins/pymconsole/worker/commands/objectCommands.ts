@@ -8,10 +8,12 @@
  * part of this phase.
  */
 
-import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
+import { getSceneTree, setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import type { PymCommand } from './types'
-import { formatNameList, isDefaulted, resolveObjects } from './helpers'
+import { formatNameList, isDefaulted, resolveObjects, resolveRenderers, toBoolean } from './helpers'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { matchNamedSelections, showNamedSelection } from './namedSelections'
 
 /** Build `enable` and `disable` from the one thing that differs. */
 function visibilityCommand(name: string, visible: boolean): PymCommand {
@@ -23,14 +25,28 @@ function visibilityCommand(name: string, visible: boolean): PymCommand {
     ],
     mode: 'strict',
     mutates: true,
-    summary: visible ? 'Show objects.' : 'Hide objects.',
+    summary: visible
+      ? 'Show objects or renderers, or show a named selection.'
+      : 'Hide objects or renderers, or hide a named selection.',
     completions: [{ source: 'objects', description: 'object', suffix: ' ' }],
     run(ctx, args, cc) {
       if (visible && !isDefaulted(args.parents, '0')) {
         cc.warn(`${name}: parents is ignored (not supported)`)
       }
       const hits = resolveObjects(ctx, cc.sceneId, args.name)
-      if (hits.length === 0) return { ok: false, error: `Error: object "${args.name}" not found` }
+      if (hits.length === 0) {
+        // A renderer by name (an isomesh, a distance), as delete takes it,
+        // then a named selection, whose atoms PyMOL shows or hides.
+        const rends = resolveRenderers(ctx, cc.sceneId, args.name)
+        for (const rend of rends) {
+          setNodeVisible(ctx, { sceneId: cc.sceneId, nodeId: rend.rendId, nodeType: 'renderer', visible })
+        }
+        if (rends.length > 0) return { ok: true }
+        const sels = matchNamedSelections(ctx, cc.sceneId, args.name)
+        for (const sel of sels) showNamedSelection(ctx, cc.sceneId, sel, visible)
+        if (sels.length > 0) return { ok: true }
+        return { ok: false, error: `Error: nothing named "${args.name}" in the scene` }
+      }
       for (const obj of hits) {
         const res = setNodeVisible(ctx, {
           sceneId: cc.sceneId,
@@ -43,6 +59,13 @@ function visibilityCommand(name: string, visible: boolean): PymCommand {
       return { ok: true }
     },
   }
+}
+
+/** The uids of the objects the scene tree shows as hidden. */
+function hiddenObjectIds(ctx: WorkerContext, sceneId: number): Set<number> {
+  const tree = getSceneTree(ctx, { sceneId })
+  if (!tree.ok || !tree.tree) return new Set()
+  return new Set(tree.tree.children.filter((c) => c.type === 'object' && !c.visible).map((c) => c.id))
 }
 
 /** PyMOL's `get_names` types, as what this console can answer with. */
@@ -66,9 +89,8 @@ const getNames: PymCommand = {
   mutates: false,
   summary: 'List object and selection names.',
   run(ctx, args, cc) {
-    if (!isDefaulted(args.enabled_only, '0')) {
-      cc.warn('get_names: enabled_only is ignored (not supported)')
-    }
+    const enabledOnly = toBoolean(args.enabled_only)
+    if (enabledOnly === null) return { ok: false, error: `Error: enabled_only must be 0 or 1: "${args.enabled_only}"` }
     if (!isDefaulted(args.selection, '')) {
       cc.warn('get_names: selection is ignored (not supported)')
     }
@@ -80,7 +102,11 @@ const getNames: PymCommand = {
     }
     const names: string[] = []
     if (wantObjects) {
-      names.push(...resolveObjects(ctx, cc.sceneId, 'all').map((o) => o.name))
+      // Enabled is the object's own visible flag, which is what enable /
+      // disable set. A named selection keeps no such state here, so
+      // enabled_only leaves the selections as they are.
+      const hidden = enabledOnly ? hiddenObjectIds(ctx, cc.sceneId) : new Set<number>()
+      names.push(...resolveObjects(ctx, cc.sceneId, 'all').filter((o) => !hidden.has(o.uid)).map((o) => o.name))
     }
     if (wantSelections) {
       const defs = getSelDefs(ctx, { sceneId: cc.sceneId })

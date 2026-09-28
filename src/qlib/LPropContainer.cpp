@@ -8,26 +8,41 @@
 
 using namespace qlib;
 
-LDynPropContainer::LDynPropContainer()
+LDynPropContainer::LDynPropContainer() : m_pProps(NULL) {}
+
+LDynPropContainer::LDynPropContainer(const LDynPropContainer &src) : m_pProps(NULL)
 {
+    if (src.m_pProps != NULL) m_pProps = MB_NEW DynPropTab(*src.m_pProps);
+}
+
+LDynPropContainer &LDynPropContainer::operator=(const LDynPropContainer &src)
+{
+    if (&src == this) return *this;
+    delete m_pProps;
+    m_pProps = NULL;
+    if (src.m_pProps != NULL) m_pProps = MB_NEW DynPropTab(*src.m_pProps);
+    return *this;
 }
 
 LDynPropContainer::~LDynPropContainer()
 {
+    delete m_pProps;
 }
 
 bool LDynPropContainer::hasDynProp(const LString &propnm) const
 {
-    DynPropTab::const_iterator i = m_props.find(propnm);
-    if (m_props.end()==i)
+    if (m_pProps == NULL) return false;
+    DynPropTab::const_iterator i = m_pProps->find(propnm);
+    if (m_pProps->end()==i)
         return false; // not found!!
     return true;
 }
 
 bool LDynPropContainer::getDynProp(const LString &propnm, qlib::LVariant &presult) const
 {
-  DynPropTab::const_iterator i = m_props.find(propnm);
-  if (m_props.end()==i)
+  if (m_pProps == NULL) return false;
+  DynPropTab::const_iterator i = m_pProps->find(propnm);
+  if (m_pProps->end()==i)
     return false; // not found!!
 
   presult = i->second;
@@ -36,19 +51,22 @@ bool LDynPropContainer::getDynProp(const LString &propnm, qlib::LVariant &presul
 
 bool LDynPropContainer::setDynProp(const LString &propnm, const qlib::LVariant &pvalue)
 {
-  m_props.forceSet(propnm, pvalue);
+  if (m_pProps == NULL) m_pProps = MB_NEW DynPropTab;
+  m_pProps->forceSet(propnm, pvalue);
   return true;
 }
 
 bool LDynPropContainer::removeDynProp(const LString &propnm)
 {
-  return m_props.remove(propnm);
+  if (m_pProps == NULL) return false;
+  return m_pProps->remove(propnm);
 }
 
 int LDynPropContainer::getDynPropNames(std::set<LString> &names) const
 {
-  DynPropTab::const_iterator i = m_props.begin();
-  DynPropTab::const_iterator ie = m_props.end();
+  if (m_pProps == NULL) return 0;
+  DynPropTab::const_iterator i = m_pProps->begin();
+  DynPropTab::const_iterator ie = m_pProps->end();
   
   int nnames = 0;
   for (; i!=ie; ++i) {
@@ -61,8 +79,9 @@ int LDynPropContainer::getDynPropNames(std::set<LString> &names) const
 
 LString LDynPropContainer::getDynPropTypeName(const LString &propnm) const
 {
-  DynPropTab::const_iterator i = m_props.find(propnm);
-  if (m_props.end()==i)
+  if (m_pProps == NULL) return LString();
+  DynPropTab::const_iterator i = m_pProps->find(propnm);
+  if (m_pProps->end()==i)
     return LString(); // not found!!
 
   return i->second.getTypeString();

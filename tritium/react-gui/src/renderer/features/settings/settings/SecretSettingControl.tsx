@@ -19,6 +19,7 @@ import { FormButton, TextField, isImeKey } from '@renderer/h3-kit/form'
 import { IPC } from '@shared/ipcChannels'
 import type { SecretStatusRes } from '@shared/types/secrets'
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
+import { notifyPluginSecretChanged } from '@renderer/plugin-host/pluginSecrets'
 
 export interface SecretSettingControlProps {
   /** Owning namespace (the plugin id), filled in by the plugin host. */
@@ -89,6 +90,7 @@ export const SecretSettingControl: React.FC<SecretSettingControlProps> = ({
       } catch {
         setError('Could not store the value.')
       }
+      notifyPluginSecretChanged(namespace)
       refresh()
     })()
   }, [draft, namespace, secretKey, envVar, refresh])
@@ -104,6 +106,7 @@ export const SecretSettingControl: React.FC<SecretSettingControlProps> = ({
       } catch {
         setError('Could not clear the value.')
       }
+      notifyPluginSecretChanged(namespace)
       refresh()
     })()
   }, [namespace, secretKey, envVar, refresh])

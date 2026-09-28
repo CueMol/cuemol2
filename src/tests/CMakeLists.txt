@@ -27,6 +27,7 @@ add_executable(test_qlib
   qlib/test_matrix4d.cpp
   qlib/test_lquat.cpp
   qlib/test_lstring.cpp
+  qlib/test_tagname.cpp
   qlib/test_rangeset.cpp
   qlib/test_lscrtime.cpp
   qlib/test_lregexpr.cpp
@@ -153,6 +154,7 @@ add_executable(test_molstr
   modules/molstr/test_tracerenderer.cpp
   modules/molstr/test_molatom_crdbind.cpp
   modules/molstr/test_coordtexsupport.cpp
+  modules/molstr/test_namelabel.cpp
 )
 target_include_directories(test_molstr PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -172,6 +174,7 @@ gtest_discover_tests(test_molstr PROPERTIES LABELS "test_molstr")
 add_executable(test_molvis
   modules/molvis/test_main.cpp
   modules/molvis/test_cpk2renderer.cpp
+  modules/molvis/test_tracestickrenderer.cpp
   modules/molvis/test_smoothspline.cpp
   modules/molvis/test_script_index_checks.cpp
 )

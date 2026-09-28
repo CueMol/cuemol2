@@ -3,7 +3,7 @@
  * @description How the panel reaches the worker, the stream, and the key.
  *
  * The three lanes this plugin owns, declared in one place:
- *   - two worker services, on the wire as `plugin.agent.<name>`;
+ *   - three worker services, on the wire as `plugin.agent.<name>`;
  *   - one push channel the running turn streams progress on;
  *   - one credential per provider, kept in the OS keychain by the host.
  *
@@ -20,6 +20,7 @@ import {
 import type { Result } from '@renderer/worker/shared/result'
 import { AGENT_PLUGIN_ID, AGENT_SECRETS } from './shared/agentTypes'
 import type {
+  AgentListModelsArgs,
   AgentProgressUpdate,
   AgentRunTurnArgs,
   AgentRunTurnResult,
@@ -31,10 +32,11 @@ import type { PluginSecret } from '@renderer/plugin-host/api'
 export type AgentCalls = {
   runTurn: { args: AgentRunTurnArgs; result: AgentRunTurnResult }
   cancelTurn: { args: { turnId: string }; result: Result }
+  listModels: { args: AgentListModelsArgs; result: Result<{ ids: string[] }> }
 }
 
 /** Checked against what the worker actually registers by plugins/index.test.ts. */
-export const AGENT_KEYS = ['runTurn', 'cancelTurn'] as const satisfies readonly (keyof AgentCalls)[]
+export const AGENT_KEYS = ['runTurn', 'cancelTurn', 'listModels'] as const satisfies readonly (keyof AgentCalls)[]
 
 export const agentServices = definePluginServices<AgentCalls>(AGENT_PLUGIN_ID)
 

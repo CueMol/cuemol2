@@ -21,14 +21,19 @@ namespace qlib {
   {
   public:
     LDynPropContainer();
+    LDynPropContainer(const LDynPropContainer &src);
+    LDynPropContainer &operator=(const LDynPropContainer &src);
     virtual ~LDynPropContainer();
 
     //////////////////////
     // dynamic properties
   private:
     typedef MapTable<LVariant> DynPropTab;
-    
-    DynPropTab m_props;
+
+    /// Allocated on the first setDynProp(): most holders (e.g. atoms) never
+    /// have a dynamic property, and an empty map still costs a heap node on
+    /// some standard libraries.
+    DynPropTab *m_pProps;
 
   public:
     

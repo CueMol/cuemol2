@@ -19,6 +19,7 @@ import type { SchemaSectionDef } from "@renderer/features/inspector/schema/types
 import { SIMPLE_SECTIONS, TRACE_SECTIONS } from "@renderer/features/inspector/schema/simple";
 import { ANISOU_SECTIONS } from "@renderer/features/inspector/schema/anisou";
 import { BALLSTICK_SECTIONS } from "@renderer/features/inspector/schema/ballstick";
+import { TRACESTICK_SECTIONS } from "@renderer/features/inspector/schema/tracestick";
 import { CPK_SECTIONS } from "@renderer/features/inspector/schema/cpk";
 import { DISORDER_SECTIONS } from "@renderer/features/inspector/schema/disorder";
 import { MOLSURF_SECTIONS } from "@renderer/features/inspector/schema/molsurf";
@@ -130,6 +131,9 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // TraceRenderer ("trace"): shares the UXP simple-propdlg with SimpleRenderer
   // (line width only), so the same SimpleRendererSection is reused here.
   trace: TRACE_SECTIONS,
+  // TraceStickRenderer ("tracestick"): ball-and-stick trace, no UXP dialog;
+  // the sphere/stick rows of ballstick without the ring display.
+  tracestick: TRACESTICK_SECTIONS,
   // SplineRenderer ("spline"): no dedicated UXP dialog; curated from the C++
   // SplineRenderer.qif. A single section (no nested cross-section / putty), the
   // tube cap-type props are omitted (non-functional on a line).

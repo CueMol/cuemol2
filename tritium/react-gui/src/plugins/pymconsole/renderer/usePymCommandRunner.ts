@@ -12,20 +12,31 @@
  * than failing.
  */
 
-import { useCallback, useEffect } from 'react'
-import { useCueMol, useEnsureActiveScene, useSuppressUndoRedo } from '@renderer/plugin-host/api'
+import { useCallback, useEffect, useRef } from 'react'
+import { useCommands, useCueMol, useEnsureActiveScene, useSuppressUndoRedo } from '@renderer/plugin-host/api'
+import { CmdId } from '@renderer/commands/ids'
 import { pymServices } from '../calls'
 import { consoleSession, useConsoleSession } from './consoleSessionStore'
+
+/** A fresh run id. `crypto.randomUUID` is missing on some older hosts. */
+function makeRunId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
+  return `run-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
 
 /** Registers the runner the panel calls. Renders nothing. */
 export function usePymCommandRunner(): void {
   const { cm } = useCueMol()
   const ensureActiveScene = useEnsureActiveScene()
+  const { dispatch } = useCommands()
   const { running } = useConsoleSession()
 
   // A transaction is open in the worker for the length of a submission;
   // undoing into it would land the scene somewhere nobody has seen.
   useSuppressUndoRedo(running)
+
+  // The run in flight, for Stop. Not state: nothing renders from it.
+  const runIdRef = useRef<string | null>(null)
 
   const run = useCallback(
     (text: string) => {
@@ -34,6 +45,8 @@ export function usePymCommandRunner(): void {
         return
       }
       consoleSession.begin()
+      const runId = makeRunId()
+      runIdRef.current = runId
       ;(async () => {
         try {
           const target = await ensureActiveScene()
@@ -45,25 +58,43 @@ export function usePymCommandRunner(): void {
             sceneId: target.scene_uid,
             viewId: target.view_id,
             text,
+            runId,
           })
           if (!res.ok) {
             consoleSession.failed(`Error: ${res.error}`)
             return
           }
           consoleSession.finish(res.entries)
+          // `load x.qsc`: File > Open's own path -- into the current scene
+          // when it is new and empty, otherwise a new tab. It reports a file
+          // it cannot read itself.
+          if (res.openScene) {
+            const opened = await dispatch(CmdId.OpenSceneByPath, res.openScene)
+            if (opened && !opened.loaded) consoleSession.failed(`Error: could not open ${res.openScene}`)
+          }
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e)
           console.error('pymconsole: runCommand failed:', e)
           consoleSession.failed(`Error: ${msg}`)
+        } finally {
+          if (runIdRef.current === runId) runIdRef.current = null
         }
       })()
     },
-    [cm, ensureActiveScene],
+    [cm, ensureActiveScene, dispatch],
   )
 
+  const stop = useCallback(() => {
+    const runId = runIdRef.current
+    if (!cm || !runId) return
+    void pymServices
+      .invoke(cm, 'cancelRun', { runId })
+      .catch((e: unknown) => { console.warn('pymconsole cancelRun:', e) })
+  }, [cm])
+
   useEffect(() => {
-    consoleSession.setRunner(run)
-  }, [run])
+    consoleSession.setRunner(run, stop)
+  }, [run, stop])
 
   // Switching the plugin off unmounts the Root; drop the session with it.
   useEffect(() => {

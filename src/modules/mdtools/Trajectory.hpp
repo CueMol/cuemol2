@@ -66,6 +66,11 @@ public:
     /// Topology is fixed once loaded; nothing to invalidate.
     virtual void invalidateCrdArray() override;
 
+    /// Superposing a trajectory is meaningful only frame by frame, so an
+    /// object-level transform is not supported: a non-identity matrix (e.g.
+    /// from an old .qsc) is ignored with a warning.
+    void setXformMatrix(const qlib::Matrix4D &m) override;
+
     virtual void createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap) override;
 
     /////////////////////

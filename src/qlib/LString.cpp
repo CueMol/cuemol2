@@ -11,6 +11,8 @@
 
 #include "LChar.hpp"
 
+#include <spdlog/fmt/bundled/format.h>
+
 #if defined(HAVE_XLOCALE_H)
 #include <xlocale.h>
 #elif defined(HAVE_LOCALE_H)
@@ -201,6 +203,11 @@ LString LString::join(const char *sep, const LString *ps, int nsize)
     for (; pos < nsize; ++pos) ret = ret + delim + (ps[pos]);
 
     return ret;
+}
+
+LString LString::vfmtFormat(std::string_view f, fmt::format_args args)
+{
+    return LString(fmt::vformat(fmt::string_view(f.data(), f.size()), args));
 }
 
 void LString::format2(const char *fmt, ...)

@@ -12,6 +12,13 @@
   flex-direction: column;
 }
 
+/* --- Model bar --- */
+
+.agent-model-bar {
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-2) var(--space-4);
+}
+
 /* --- Transcript --- */
 
 .agent-transcript {
@@ -151,6 +158,13 @@
 
 .agent-tool-error .agent-tool-status {
   color: var(--text-error);
+}
+
+.agent-tool-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-top: 1px solid var(--border);
 }
 
 .agent-tool-body {

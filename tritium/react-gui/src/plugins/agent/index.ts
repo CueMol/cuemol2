@@ -33,7 +33,7 @@ export const agentPlugin: RendererPlugin = /* @__PURE__ */ definePlugin({
     version: '1.0.0',
     description:
       'Chat panel that builds the scene for you: a model calls the same operations the ' +
-      'menus do. Works with OpenAI or Anthropic; needs your own API key.',
+      'menus do. Works with OpenAI, Anthropic or Google Gemini; needs your own API key.',
     defaultEnabled: false,
     contributes: {
       views: [
@@ -96,6 +96,15 @@ export const agentPlugin: RendererPlugin = /* @__PURE__ */ definePlugin({
             `system, never in the settings file. Falls back to the ` +
             `${AGENT_SECRETS.anthropic.envVar} environment variable when nothing is stored.`,
           control: { kind: 'secret', envVar: AGENT_SECRETS.anthropic.envVar },
+        },
+        {
+          key: AGENT_SECRETS.google.key,
+          label: 'Google AI API key',
+          description:
+            'Used when the model is a google: one (a Gemini API key from Google AI Studio). ' +
+            'Stored encrypted by the operating system, never in the settings file. Falls back ' +
+            `to the ${AGENT_SECRETS.google.envVar} environment variable when nothing is stored.`,
+          control: { kind: 'secret', envVar: AGENT_SECRETS.google.envVar },
         },
       ],
     },

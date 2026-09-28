@@ -12,6 +12,7 @@
 import { COMPARE_KEYWORDS, MACRO_KEYWORDS, PROP_KEYWORDS, SelParseError, parseSelection } from './parse'
 import type { SelNode } from './parse'
 import { UNSUPPORTED_MACROS, emitSelection } from './emit'
+import type { NameResolver } from './emit'
 
 /** A translated expression, or why it could not be. */
 export type TranslateResult =
@@ -22,12 +23,14 @@ export type TranslateResult =
  * `expr` as CueMol would write it.
  *
  * @param expr - a PyMOL selection expression.
+ * @param names - what a bare name becomes; unresolved names stay as
+ *   named-selection references (see `moleculeSelections`).
  */
-export function translateSelection(expr: string): TranslateResult {
+export function translateSelection(expr: string, names?: NameResolver): TranslateResult {
   const trimmed = expr.trim()
   if (trimmed === '') return { ok: false, error: 'Error: the selection is empty' }
   try {
-    return { ok: true, expr: emitSelection(parseSelection(trimmed)) }
+    return { ok: true, expr: emitSelection(parseSelection(trimmed), names) }
   } catch (e) {
     if (e instanceof SelParseError) {
       // The caret line points at the word, the way the argument parser's

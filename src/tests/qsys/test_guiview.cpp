@@ -350,6 +350,28 @@ TEST(GUIViewTest, PlanFramePresentOnlyVsRegularFrame)
     }
 }
 
+// Temporal jitter accumulates only while the view is still: a frame of a
+// moving view (camera or scene changed) defers the jitter, a progressive
+// sample does not, and the accumulation starts only after the still delay.
+TEST(GUIViewTest, JitterDeferredWhileMoving)
+{
+    using Flags = qsys::GUIView::FrameFlags;
+    Flags camera;
+    camera.updateFlag = true;
+    Flags scene;
+    scene.jitterReset = true;
+    Flags sample;
+    sample.jitterMore = true;
+    EXPECT_TRUE(qsys::GUIView::planFrame(camera).deferJitter);
+    EXPECT_TRUE(qsys::GUIView::planFrame(scene).deferJitter);
+    EXPECT_FALSE(qsys::GUIView::planFrame(sample).deferJitter);
+
+    const double delay = qsys::GUIView::kJitterStillDelayMs;
+    EXPECT_FALSE(qsys::GUIView::isJitterStill(0.0));
+    EXPECT_FALSE(qsys::GUIView::isJitterStill(delay * 0.5));
+    EXPECT_TRUE(qsys::GUIView::isJitterStill(delay));
+}
+
 // setHoverHit schedules a present-only frame (needsContinuousRedraw) only when
 // the value changes and the GPU pick pass is active; the same value again is
 // a no-op and clearHoverHit schedules the frame that removes the overlay.

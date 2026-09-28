@@ -129,36 +129,28 @@ describe('PymConsolePanel', () => {
     tree.unmount()
   })
 
-  it('does not steal focus from a selection made in the transcript', () => {
-    // Clicking the transcript puts the caret back in the prompt, the way a
-    // terminal does -- but focusing an input collapses the document
-    // selection, so doing it after a drag made the output unselectable.
+  it('keeps focus in the transcript on click, and sends typing to the prompt', () => {
+    // Focus stays in the transcript so Cmd+A selects the log, not the
+    // prompt's line; a printable key still lands in the prompt, the way a
+    // terminal does, and a shortcut does not move focus.
     const tree = mountTree(<PymConsolePanel cm={null} />)
     act(() => consoleSession.setRunner(vi.fn()))
     act(() => consoleSession.finish([{ kind: 'output', text: 'selectable text' }]))
 
-    const body = tree.container.querySelector('.pymc-body')
-    if (!body) throw new Error('body not found')
+    const transcript = tree.container.querySelector<HTMLElement>('.pymc-transcript')
+    if (!transcript) throw new Error('transcript not found')
+    act(() => transcript.focus())
+    expect(document.activeElement).toBe(transcript)
 
-    // The prompt takes focus on mount, so drop it first: what is being
-    // checked is whether the click gives it back.
-    promptOf(tree.container).blur()
-
-    const selected = { isCollapsed: false } as Selection
-    const getSelection = vi.spyOn(window, 'getSelection').mockReturnValue(selected)
     act(() => {
-      body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      transcript.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', metaKey: true, bubbles: true }))
     })
-    expect(document.activeElement).not.toBe(promptOf(tree.container))
+    expect(document.activeElement).toBe(transcript)
 
-    // With nothing selected the click still focuses the prompt.
-    getSelection.mockReturnValue({ isCollapsed: true } as Selection)
     act(() => {
-      body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      transcript.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
     })
     expect(document.activeElement).toBe(promptOf(tree.container))
-
-    getSelection.mockRestore()
     tree.unmount()
   })
 

@@ -9,7 +9,8 @@
 #include "molstr.hpp"
 #include "MolCoord.hpp"
 
-#include <unordered_map>
+#include <memory>
+#include <utility>
 #include <vector>
 
 namespace molstr {
@@ -42,8 +43,49 @@ class MOLSTR_API AnimMol : public MolCoord
     MC_SCRIPTABLE;
 
 public:
-    typedef std::unordered_map<int, quint32> CrdIndexMap;  ///< AID -> array index
-    typedef std::vector<quint32> AidIndexMap;              ///< array index -> AID
+    /// AID -> array index. A plain array indexed by AID: MolCoord hands AIDs
+    /// out from 0 without gaps (until atoms are removed), so this costs 4
+    /// bytes per atom where a hash map cost ten times that.
+    class CrdIndexMap
+    {
+    public:
+        typedef std::pair<int, quint32> value_type;
+        static constexpr quint32 npos = 0xFFFFFFFFu;
+
+        void clear()
+        {
+            m_ind.clear();
+            m_nsize = 0;
+        }
+
+        /// Maps value.first to value.second unless it is mapped already
+        /// (the insert semantics of the std maps).
+        void insert(const value_type &value)
+        {
+            if (value.first < 0) return;
+            const size_t aid = static_cast<size_t>(value.first);
+            if (aid >= m_ind.size()) m_ind.resize(aid + 1, npos);
+            if (m_ind[aid] != npos) return;
+            m_ind[aid] = value.second;
+            ++m_nsize;
+        }
+
+        /// Number of mapped AIDs
+        size_t size() const { return m_nsize; }
+
+        /// Array index of aid, or npos when it has none
+        quint32 lookup(int aid) const
+        {
+            if (aid < 0 || static_cast<size_t>(aid) >= m_ind.size()) return npos;
+            return m_ind[aid];
+        }
+
+    private:
+        std::vector<quint32> m_ind;
+        size_t m_nsize = 0;
+    };
+
+    typedef std::vector<quint32> AidIndexMap;  ///< array index -> AID
 
 private:
     /// AID -> CrdArray index
@@ -57,6 +99,10 @@ private:
 
     /// Whether the atoms currently read their positions from m_crdarray.
     bool m_bAtomsBound = false;
+
+    /// The xformMat the bound atoms apply, or NULL when it is the identity.
+    /// Held once here instead of copied into every atom.
+    std::unique_ptr<qlib::Matrix4D> m_pAtomXform;
 
 public:
     AnimMol() {}
@@ -110,6 +156,14 @@ public:
         const qfloat32 *p = &m_crdarray[idx * 3];
         return qlib::Vector4D(p[0], p[1], p[2]);
     }
+
+    /// The transform MolAtom::getPos() applies to a bound atom, or NULL for
+    /// the identity.
+    const qlib::Matrix4D *getAtomXform() const { return m_pAtomXform.get(); }
+
+    /// Keeps a single copy for the bound atoms rather than giving each atom
+    /// its own; atoms not bound yet get the per-atom copy as in MolCoord.
+    void setXformMatrix(const qlib::Matrix4D &m) override;
 
     /// An AnimMol's coordinates come from its frames, so individual atoms
     /// cannot be moved once the array is in place.

@@ -22,6 +22,7 @@ LScrObjects.cpp
 LScrSmartPtr.cpp
 LChar.cpp
 LString.cpp
+TagName.cpp
 LUnicode.cpp
 LThread.cpp
 ObjectManager.cpp
@@ -235,6 +236,9 @@ target_include_directories(
 )
 
 target_link_libraries(qlib PRIVATE ${QLIB_LINK_LIBRARIES})
+# PUBLIC: LString.hpp includes the fmt bundled with spdlog, so every target
+# that includes it needs its include path and definitions.
+target_link_libraries(qlib PUBLIC spdlog::spdlog)
 
 # oneTBB (optional). PUBLIC so the TBB::tbb usage requirements (include dirs)
 # and the static archive propagate to every module that includes parallel.hpp;

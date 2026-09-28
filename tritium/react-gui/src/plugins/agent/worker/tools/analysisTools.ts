@@ -1,7 +1,12 @@
 /**
  * @file plugins/agent/worker/tools/analysisTools.ts
- * @description Tools that measure the structure or write an image of it.
+ * @description Tools that measure the structure, or picture it -- for the
+ * user as a file, or for the model to look at.
  */
+
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 
 import { analyzeInteractions } from '@renderer/worker/server/services/molops/analyzeInteractions'
 import {
@@ -105,6 +110,84 @@ const exportImage: AgentTool = {
   },
 }
 
+/** The longer side of a picture for the model, unless it asks for another. */
+const DEFAULT_LONG_SIDE = 1024
+/**
+ * The range a requested size is clamped to. Below the floor a structure is a
+ * smudge. The ceiling is where Anthropic starts downscaling (about 1568 px,
+ * 1.15 MP); OpenAI and Gemini would take more, but only at a token cost that
+ * zooming the camera avoids, so every provider gets the same cap.
+ */
+const MIN_LONG_SIDE = 256
+const MAX_LONG_SIDE = 1568
+
+/** The view's size scaled so its longer side is `longSide`, aspect kept. */
+export function fitLongSide(width: number, height: number, longSide: number): { width: number; height: number } {
+  const scale = longSide / Math.max(width, height)
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  }
+}
+
+const captureView: AgentTool = {
+  name: 'capture_view',
+  description:
+    'Look at the current view: returns a picture of what the user sees. Use it to check that ' +
+    'a change looks the way you intended, or when the user refers to something on screen. ' +
+    'Each picture costs about a thousand tokens, so capture once a change is done rather than ' +
+    'after every step. To see detail, zoom in first with center_view rather than raising ' +
+    'longSide: tokens grow with the pixel count. Nothing is saved; use export_image to give ' +
+    'the user a file.',
+  parameters: strictSchema({
+    longSide: nullable(
+      'integer',
+      `Pixels on the longer side. Null uses ${DEFAULT_LONG_SIDE}, which suits almost every ` +
+        `check; clamped to ${MIN_LONG_SIDE}-${MAX_LONG_SIDE}.`,
+    ),
+  }),
+  mutates: false,
+  run(ctx, input, turn) {
+    const info = getSceneExportInfo(ctx, { sceneId: turn.sceneId, viewId: turn.viewId })
+    if (!info.ok || info.width <= 0 || info.height <= 0) {
+      return { ok: false, error: 'The view could not be read.' }
+    }
+    const requested = input.longSide === null || input.longSide === undefined
+      ? DEFAULT_LONG_SIDE
+      : Number(input.longSide)
+    const longSide = Math.min(MAX_LONG_SIDE, Math.max(MIN_LONG_SIDE, Math.round(requested) || DEFAULT_LONG_SIDE))
+    const { width, height } = fitLongSide(info.width, info.height, longSide)
+
+    // The exporter writes only to a path, so the picture goes through a
+    // temporary file that is removed as soon as it has been read.
+    const filePath = path.join(
+      os.tmpdir(),
+      `cuemol-agent-view-${turn.callId.replace(/[^A-Za-z0-9_-]/g, '') || Date.now()}.png`,
+    )
+    try {
+      const result = exportScene(ctx, {
+        sceneId: turn.sceneId,
+        viewId: turn.viewId,
+        filePath,
+        exporterName: 'png',
+        width,
+        height,
+      })
+      if (!result.ok) return { ok: false, error: 'The view could not be rendered.' }
+      const base64 = fs.readFileSync(filePath).toString('base64')
+      return {
+        ok: true,
+        data: { width, height },
+        image: { mediaType: 'image/png', base64 },
+      }
+    } catch (e) {
+      return { ok: false, error: `The view could not be captured: ${e instanceof Error ? e.message : String(e)}` }
+    } finally {
+      try { fs.rmSync(filePath, { force: true }) } catch { /* already gone */ }
+    }
+  },
+}
+
 /**
  * Where an exported image goes.
  *
@@ -116,4 +199,4 @@ function desktopDir(): string {
   return home ? `${home}/Desktop` : '.'
 }
 
-export const ANALYSIS_TOOLS: AgentTool[] = [analyzeInteractionsTool, exportImage]
+export const ANALYSIS_TOOLS: AgentTool[] = [analyzeInteractionsTool, captureView, exportImage]

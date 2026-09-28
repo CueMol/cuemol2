@@ -64,7 +64,7 @@ vi.mock('@renderer/worker/server/services/scene/listSceneObjects', () => ({
   listSceneObjects: (...a: unknown[]) => services.listSceneObjects(...a),
 }))
 
-import { FILE_COMMANDS } from './fileCommands'
+import { FILE_COMMANDS, parseFetchCode } from './fileCommands'
 import type { CmdContext } from './types'
 
 /** A worker context whose registry holds the readers a real build has. */
@@ -95,7 +95,7 @@ const cc = {
 } as unknown as CmdContext
 
 /** Run `load` synchronously with the arguments that matter. */
-function load(over: Record<string, string>): { ok: boolean; error?: string } {
+async function load(over: Record<string, string>): Promise<{ ok: boolean; error?: string }> {
   const cmd = FILE_COMMANDS.find((c) => c.name === 'load')
   if (!cmd) throw new Error('no load')
   const args = {
@@ -111,7 +111,7 @@ function load(over: Record<string, string>): { ok: boolean; error?: string } {
     mimic: '1',
     ...over,
   }
-  return cmd.run(ctx, args, cc) as { ok: boolean; error?: string }
+  return (await cmd.run(ctx, args, cc)) as { ok: boolean; error?: string }
 }
 
 /** The renderer type the load was told to create. */
@@ -141,24 +141,24 @@ beforeEach(() => {
 })
 
 describe('load with an explicit format', () => {
-  it('sniffs when no format is given', () => {
-    load({})
+  it('sniffs when no format is given', async () => {
+    await load({})
     expect(askedReader()).toBeUndefined()
   })
 
-  it('passes a CueMol reader name straight through', () => {
+  it('passes a CueMol reader name straight through', async () => {
     // The case the argument exists for: same extension, different object.
-    load({ filename: '1crn-sf.cif', format: 'mmcifmap' })
+    await load({ filename: '1crn-sf.cif', format: 'mmcifmap' })
     expect(askedReader()).toBe('mmcifmap')
   })
 
-  it("translates PyMOL's own format names", () => {
-    load({ filename: 'x.ccp4', format: 'ccp4' })
+  it("translates PyMOL's own format names", async () => {
+    await load({ filename: 'x.ccp4', format: 'ccp4' })
     expect(askedReader()).toBe('ccp4map')
   })
 
-  it('refuses a format this build has no reader for, and lists what it has', () => {
-    const out = load({ format: 'dx' })
+  it('refuses a format this build has no reader for, and lists what it has', async () => {
+    const out = await load({ format: 'dx' })
     expect(out.ok).toBe(false)
     expect(out.error).toContain('mmcifmap')
     // Internal readers are not offered as formats.
@@ -168,19 +168,19 @@ describe('load with an explicit format', () => {
 })
 
 describe('the renderer a load creates', () => {
-  it('draws a molecule as lines, the way PyMOL does', () => {
+  it('draws a molecule as lines, the way PyMOL does', async () => {
     services.getCompatibleRendererNames.mockReturnValue({
       types: ['anisou', 'ballstick', 'cartoon', 'simple', 'tube'],
       objType: 'MolCoord',
       readerName: 'pdb',
     })
-    load({ filename: '1crn.pdb' })
+    await load({ filename: '1crn.pdb' })
     // Not types[0]: the C++ list is alphabetical, so that would be `anisou`,
     // which draws nothing without ANISOU records.
     expect(rendererType()).toBe('simple')
   })
 
-  it('gives a map a map renderer', () => {
+  it('gives a map a map renderer', async () => {
     // The bug this pins: `simple` is not in the list, and C++ would attach it
     // anyway, leaving the map invisible.
     services.getCompatibleRendererNames.mockReturnValue({
@@ -188,7 +188,7 @@ describe('the renderer a load creates', () => {
       objType: 'DensityMap',
       readerName: 'mtzmap',
     })
-    load({ filename: 'x.mtz' })
+    await load({ filename: 'x.mtz' })
     expect(rendererType()).toBe('contour')
   })
 })
@@ -223,7 +223,7 @@ describe('delete', () => {
     return cmd.run(ctx, { name }, cc) as { ok: boolean }
   }
 
-  it('removes a renderer that isomesh named', () => {
+  it('removes a renderer that isomesh named', async () => {
     // PyMOL's isomesh makes an object, so `delete msh` works there; here it
     // made a renderer, and the name is the only handle the user was given.
     sceneWithMesh()
@@ -234,7 +234,7 @@ describe('delete', () => {
     )
   })
 
-  it('prefers an object over a renderer of the same name', () => {
+  it('prefers an object over a renderer of the same name', async () => {
     sceneWithMesh()
     del('2fofc')
     expect(services.deleteNode).toHaveBeenCalledWith(
@@ -243,9 +243,18 @@ describe('delete', () => {
     )
   })
 
-  it('reports a name that matches neither', () => {
+  it('reports a name that matches neither', async () => {
     sceneWithMesh()
     expect(del('nope').ok).toBe(false)
     expect(services.deleteNode).not.toHaveBeenCalled()
+  })
+})
+
+describe('fetch codes', () => {
+  it('reads a chain after the PDB id, as PyMOL does', () => {
+    expect(parseFetchCode('1ABC')).toEqual({ pdbId: '1abc', chain: '' })
+    expect(parseFetchCode('4hhbA')).toEqual({ pdbId: '4hhb', chain: 'A' })
+    expect(parseFetchCode('4hhb_B')).toEqual({ pdbId: '4hhb', chain: 'B' })
+    expect(parseFetchCode('abcd')).toBeNull()
   })
 })

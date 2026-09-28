@@ -16,18 +16,32 @@ import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/f
 import { loadObject } from '@renderer/worker/server/services/file/loadObject'
 import { streamLoadFromUrl } from '@renderer/worker/server/services/file/streamLoadFromUrl'
 import { deleteNode, renameNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
-import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName'
+import { OBJREADER_CATEGORY, pickReaderName } from '@renderer/worker/server/services/helpers/pickReaderName'
 import { isHiddenObjReader } from '@renderer/worker/server/services/helpers/readerFilter'
-import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
+import { pickCoordUrl, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
+import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
+import { deleteMolAtoms } from '@renderer/worker/server/services/molops/deleteMolAtoms'
+import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import type { CoordServerType } from '@renderer/worker/shared/pdbUrls'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
-import type { PymCommand } from './types'
+import type { CmdContext, CmdOutcome, PymCommand } from './types'
+import {
+  matchNamedSelections,
+  namedSelections,
+  removeNamedSelection,
+  renameNamedSelection,
+} from './namedSelections'
+import { repOfRendererType } from './repCommands'
+import { applyRememberedToObject } from './repSettings'
+import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes'
 import {
   fileStem,
+  isAllSelection,
   isDefaulted,
+  molecules,
+  OWNED,
   resolveObjects,
-  resolveOneObject,
   resolvePath,
   resolveRenderers,
 } from './helpers'
@@ -39,7 +53,34 @@ const LOAD_IGNORED: ReadonlyArray<[string, string]> = [
   ['multiplex', ''],
   ['partial', '0'],
   ['mimic', '1'],
+  ['object_props', ''],
+  ['atom_props', ''],
 ]
+
+/** fetch's arguments with no counterpart here, with PyMOL's defaults. */
+const FETCH_IGNORED: ReadonlyArray<[string, string]> = [
+  ['state', '0'],
+  ['discrete', '-1'],
+  ['multiplex', '-2'],
+  ['file', ''],
+]
+
+/**
+ * Name the renderer a load makes after the console representation it draws
+ * (`pym:lines`), so `hide lines`, `as` and `color` right after a `fetch`
+ * treat it as the console's own; and honour `zoom=0` (do not recentre).
+ */
+function consoleRendererOptions(options: FileOpenOptions, zoom: string): FileOpenOptions {
+  const rep = repOfRendererType(options.renderer.rendererType)
+  return {
+    ...options,
+    renderer: {
+      ...options.renderer,
+      ...(rep !== null ? { rendererName: `${OWNED}${rep}` } : {}),
+      centerView: zoom.trim() !== '0',
+    },
+  }
+}
 
 /**
  * PyMOL's format names, as the CueMol reader each one means.
@@ -144,6 +185,62 @@ function readerForFormat(
   }
 }
 
+/**
+ * Whether a path names a scene file: CueMol's .qsc, or a PyMOL session
+ * (.pse), which the C++ `psefile` scene reader opens.
+ */
+function isSceneFile(filePath: string): boolean {
+  return /\.(qsc|pse)$/i.test(filePath.trim())
+}
+
+/** Whether a load argument is a URL rather than a path. */
+function isUrl(filename: string): boolean {
+  return /^https?:\/\//i.test(filename.trim())
+}
+
+/** Load a structure or map straight from a URL, as fetch does for an entry. */
+async function loadUrl(ctx: WorkerContext, args: Record<string, string>, cc: CmdContext): Promise<CmdOutcome> {
+  const url = args.filename.trim()
+  let leaf: string
+  try {
+    leaf = path.basename(new URL(url).pathname)
+  } catch {
+    return { ok: false, error: `Error: not a URL: ${url}` }
+  }
+  if (isSceneFile(leaf) || /\.pml$/i.test(leaf)) {
+    return { ok: false, error: `Error: download ${leaf} first; scenes and scripts load from a file` }
+  }
+  const asked = readerForFormat(ctx, args.format)
+  if (!asked.ok) return asked
+  let readerName = asked.name ?? ''
+  if (readerName === '') {
+    try {
+      // By extension only: there is no file to sniff until it is downloaded.
+      readerName = pickReaderName(ctx, leaf, false)
+    } catch {
+      readerName = ''
+    }
+  }
+  if (readerName === '') {
+    return { ok: false, error: `Error: no reader for ${leaf}; give format=<reader>` }
+  }
+  const objectName = args.object !== '' ? args.object : fileStem(leaf)
+  const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
+    readerName,
+    objectName,
+    rendererType: null,
+    selection: null,
+  }), args.zoom)
+  const reqId = cc.streamId('load-url')
+  cc.noteStream(reqId)
+  const res = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName, sceneId: cc.sceneId, options })
+  const norm = normalizeServiceResult(res, `Error: could not load ${url}`)
+  if (!norm.ok) return norm
+  applyRememberedToObject(ctx, cc.sceneId, objectName)
+  cc.print(` load: "${url}" loaded as "${objectName}".`)
+  return { ok: true }
+}
+
 const load: PymCommand = {
   name: 'load',
   params: [
@@ -153,26 +250,46 @@ const load: PymCommand = {
     { name: 'format', default: '' },
     { name: 'finish', default: '1' },
     { name: 'discrete', default: '-1' },
+    // PyMOL's order (importing.py load): quiet comes before multiplex.
+    { name: 'quiet', default: '1' },
     { name: 'multiplex', default: '' },
     { name: 'zoom', default: '-1' },
     { name: 'partial', default: '0' },
     { name: 'mimic', default: '1' },
+    { name: 'object_props', default: '' },
+    { name: 'atom_props', default: '' },
   ],
   mode: 'strict',
   mutates: true,
-  summary: 'Read a structure or map file into the scene.',
+  summary: 'Read a structure or map (a file or a URL), open a .qsc / .pse scene, or run a .pml.',
+  // A scene file replaces or adds a scene, which later commands on the same
+  // line would not expect, so it has to stand alone like `save x.qsc`.
+  outsideTxn: (args) => isSceneFile(args.filename ?? ''),
   completions: [
     null,
     null,
     null,
     { source: 'readers', description: 'format', suffix: ', ' },
   ],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     for (const [name, def] of LOAD_IGNORED) {
       if (!isDefaulted(args[name], def)) cc.warn(`load: ${name} is ignored (not supported)`)
     }
+    if (isUrl(args.filename)) return loadUrl(ctx, args, cc)
     const filePath = resolvePath(cc.cwd, args.filename)
     if (!fs.existsSync(filePath)) return { ok: false, error: `Error: no such file: ${filePath}` }
+
+    // PyMOL's load runs a .pml as a script (importing.py loadfunctions).
+    if (/\.pml$/i.test(filePath)) return cc.runScript(filePath)
+
+    // PyMOL loads a session (.pse) the same way; CueMol's is a .qsc. The
+    // panel opens it as File > Open would: into the current scene when that
+    // is new and empty, otherwise in a new tab.
+    if (isSceneFile(filePath)) {
+      cc.openScene(filePath)
+      cc.print(` Load: opening scene "${filePath}".`)
+      return { ok: true }
+    }
 
     // An explicit format skips the extension / content lookup, which is the
     // only way to read a file the sniff gets wrong -- a structure-factor CIF
@@ -189,12 +306,12 @@ const load: PymCommand = {
       return { ok: false, error: `Error: no reader handles ${path.basename(filePath)}` }
     }
     const objectName = args.object !== '' ? args.object : fileStem(filePath)
-    const options = buildHeadlessFileOpenOptions(ctx, {
+    const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
       objectName,
       rendererType: initialRendererType(compat.types),
       selection: null,
-    })
+    }), args.zoom)
     const res = loadObject(ctx, {
       filePath,
       sceneId: cc.sceneId,
@@ -204,17 +321,58 @@ const load: PymCommand = {
     })
     const norm = normalizeServiceResult(res, `Error: could not load ${filePath}`)
     if (!norm.ok) return norm
+    applyRememberedToObject(ctx, cc.sceneId, objectName)
     cc.print(` load: "${filePath}" loaded as "${objectName}".`)
     return { ok: true }
   },
 }
 
 /** PyMOL's `type` argument, as the server it means. */
-function coordServer(type: string): CoordServerType | null {
+/**
+ * A fetch code as PyMOL reads it (importing.py `fetch`): four characters of
+ * PDB id, then optionally a chain, which may follow a `.`, `_`, `-` or `:`
+ * (`1abcA`, `1abc_A`).
+ *
+ * @returns null when the code is not a PDB id.
+ */
+export function parseFetchCode(code: string): { pdbId: string; chain: string } | null {
+  const m = /^([0-9][0-9a-z]{3})(?:[._\-:]?([0-9a-z]+))?$/i.exec(code)
+  if (!m) return null
+  return { pdbId: m[1].toLowerCase(), chain: m[2] ?? '' }
+}
+
+/** What a fetch `type` asks for (importing.py fetch). */
+type FetchKind =
+  | { kind: 'coord'; server: CoordServerType }
+  | { kind: 'assembly'; n: number }
+  | { kind: 'map'; mapType: '2fofc' | 'fofc' }
+
+export function fetchKind(type: string): FetchKind | null {
   const t = type.trim().toLowerCase()
-  if (t === '' || t === 'cif' || t === 'mmcif') return 'RCSB_CIF'
-  if (t === 'pdb') return 'RCSB_PDB'
+  if (t === '' || t === 'cif' || t === 'mmcif') return { kind: 'coord', server: 'RCSB_CIF' }
+  if (t === 'pdb') return { kind: 'coord', server: 'RCSB_PDB' }
+  // pdb1, pdb2, ...: the biological assemblies RCSB serves as PDB files.
+  const assembly = /^pdb([1-9][0-9]*)$/.exec(t)
+  if (assembly) return { kind: 'assembly', n: Number(assembly[1]) }
+  if (t === '2fofc' || t === 'fofc') return { kind: 'map', mapType: t }
   return null
+}
+
+/**
+ * Leave only `chain` in the molecule just fetched, as PyMOL's one-chain
+ * fetch does (it removes the rest, and fails when the chain is not there,
+ * keeping what it loaded).
+ */
+function keepChain(ctx: WorkerContext, cc: CmdContext, objectName: string, chain: string): CmdOutcome {
+  // The newest object of that name is the one just loaded.
+  const mol = molecules(ctx, cc.sceneId, objectName).at(-1)
+  if (!mol) return { ok: false, error: `Error: "${objectName}" is not a molecule` }
+  const selStr = `chain ${chain}`
+  const hits = getSelHitCount(ctx, { sceneId: cc.sceneId, molId: mol.uid, selStr })
+  if (!hits.count) return { ok: false, error: `Error: no such chain: ${chain}` }
+  const res = deleteMolAtoms(ctx, { sceneId: cc.sceneId, objId: mol.uid, selStr: `not (${selStr})` })
+  if (!res.ok) return { ok: false, error: `Error: could not remove the other chains of "${objectName}"` }
+  return { ok: true }
 }
 
 const fetch: PymCommand = {
@@ -228,16 +386,24 @@ const fetch: PymCommand = {
     { name: 'multiplex', default: '-2' },
     { name: 'zoom', default: '-1' },
     { name: 'type', default: '' },
+    // PyMOL's `async_`, spelled as its command line takes it. A fetch here
+    // always finishes before the next command, which is what async=0 asks.
+    { name: 'async', default: '0' },
     { name: 'path', default: '' },
+    { name: 'file', default: '' },
+    { name: 'quiet', default: '1' },
   ],
   mode: 'strict',
   mutates: true,
-  summary: 'Download an entry from RCSB and load it.',
+  summary: 'Download an entry from RCSB (coordinates, an assembly, or a density map) and load it.',
   async run(ctx, args, cc) {
     if (!isDefaulted(args.path, '')) cc.warn('fetch: path is ignored (not supported)')
-    const server = coordServer(args.type)
-    if (server === null) {
-      return { ok: false, error: `Error: unsupported fetch type "${args.type}" (cif or pdb)` }
+    for (const [name, def] of FETCH_IGNORED) {
+      if (!isDefaulted(args[name], def)) cc.warn(`fetch: ${name} is ignored (not supported)`)
+    }
+    const kind = fetchKind(args.type)
+    if (kind === null) {
+      return { ok: false, error: `Error: unsupported fetch type "${args.type}" (cif, pdb, pdb1.., 2fofc or fofc)` }
     }
     // PyMOL accepts several codes at once.
     const codes = args.code
@@ -250,23 +416,57 @@ const fetch: PymCommand = {
     }
 
     for (const code of codes) {
-      if (!/^[0-9][0-9a-z]{3}$/i.test(code)) {
-        if (/^[0-9][0-9a-z]{3}[a-z]$/i.test(code)) {
-          return { ok: false, error: `Error: chain-specific codes are not supported: ${code}` }
-        }
-        return { ok: false, error: `Error: "${code}" is not a PDB id` }
+      const parsed = parseFetchCode(code)
+      if (!parsed) return { ok: false, error: `Error: "${code}" is not a PDB id` }
+      const { pdbId, chain } = parsed
+      if (chain !== '' && kind.kind === 'map') {
+        return { ok: false, error: `Error: a map cannot be fetched for one chain: ${code}` }
       }
-      const pdbId = code.toLowerCase()
-      const spec = pickCoordUrl(pdbId, server)
-      const objectName = args.name !== '' ? args.name : pdbId
-      const options = buildHeadlessFileOpenOptions(ctx, {
+      // Registered with the run, so Stop cancels the download rather than
+      // waiting for it to finish.
+      const reqId = cc.streamId(`fetch-${pdbId}`)
+      cc.noteStream(reqId)
+
+      if (kind.kind === 'map') {
+        // The Get PDB dialog's path; PyMOL names the map object the same way.
+        const spec = pickMapUrl(pdbId, 'RCSB_CIF', kind.mapType)
+        const objectName = args.name !== '' ? args.name : `${pdbId}_${kind.mapType}`
+        const res = await streamLoadDensityMap(ctx, {
+          reqId,
+          url: spec.url,
+          readerName: spec.readerName,
+          gzip: spec.gzip,
+          mapType: kind.mapType,
+          objectName,
+          sceneId: cc.sceneId,
+          viewId: cc.viewId,
+        })
+        const norm = normalizeServiceResult(res, `Error: could not fetch the ${kind.mapType} map of ${pdbId}`)
+        if (!norm.ok) {
+          // RCSB publishes map coefficients only for entries deposited with
+          // structure factors; older ones (1crn, 4hhb) have none.
+          if (/\b404\b/.test(norm.error)) {
+            return { ok: false, error: `Error: RCSB has no ${kind.mapType} map for ${pdbId} (no structure factors were deposited)` }
+          }
+          return norm
+        }
+        cc.print(` fetch: "${objectName}" fetched.`)
+        continue
+      }
+
+      const spec = kind.kind === 'coord'
+        ? pickCoordUrl(pdbId, kind.server)
+        : { url: `https://files.rcsb.org/download/${pdbId}.pdb${kind.n}`, readerName: 'pdb' }
+      // PyMOL names a one-chain fetch after the code as typed (1abcA).
+      const objectName = args.name !== '' ? args.name : chain !== '' ? code : pdbId
+      const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
         readerName: spec.readerName,
         objectName,
         rendererType: null,
         selection: null,
-      })
+      }), args.zoom)
       const res = await streamLoadFromUrl(ctx, {
-        reqId: `pymconsole:${pdbId}:${Date.now()}`,
+        reqId,
         url: spec.url,
         readerName: spec.readerName,
         objectName,
@@ -275,10 +475,24 @@ const fetch: PymCommand = {
       })
       const norm = normalizeServiceResult(res, `Error: could not fetch ${pdbId}`)
       if (!norm.ok) return norm
+      if (chain !== '') {
+        const kept = keepChain(ctx, cc, objectName, chain)
+        if (!kept.ok) return kept
+      }
+      applyRememberedToObject(ctx, cc.sceneId, objectName)
       cc.print(` fetch: "${objectName}" fetched.`)
     }
     return { ok: true }
   },
+}
+
+/** Forget the named selections `pattern` names; how many there were. */
+function deleteSelections(ctx: WorkerContext, cc: CmdContext, pattern: string): number {
+  const sels = matchNamedSelections(ctx, cc.sceneId, pattern)
+  for (const sel of sels) {
+    if (removeNamedSelection(ctx, cc.sceneId, sel)) cc.print(` delete: selection "${sel.name}" deleted.`)
+  }
+  return sels.length
 }
 
 const deleteCmd: PymCommand = {
@@ -300,6 +514,8 @@ const deleteCmd: PymCommand = {
         if (!res.ok) return { ok: false, error: `Error: could not delete "${obj.name}"` }
         cc.print(` delete: "${obj.name}" deleted.`)
       }
+      // PyMOL's `delete all` also forgets the named selections.
+      if (isAllSelection(args.name)) deleteSelections(ctx, cc, args.name)
       return { ok: true }
     }
 
@@ -310,6 +526,11 @@ const deleteCmd: PymCommand = {
     // this way -- which is the safer way round.
     const rends = resolveRenderers(ctx, cc.sceneId, args.name)
     if (rends.length === 0) {
+      // Then a named selection, which PyMOL's delete also takes.
+      if (deleteSelections(ctx, cc, args.name) > 0) return { ok: true }
+      // `delete all` on an empty scene is how scripts start; PyMOL says
+      // nothing, so neither does this.
+      if (isAllSelection(args.name)) return { ok: true }
       return { ok: false, error: `Error: nothing named "${args.name}" in the scene` }
     }
     for (const rend of rends) {
@@ -330,28 +551,43 @@ const setName: PymCommand = {
   params: [{ name: 'old_name' }, { name: 'new_name' }],
   mode: 'strict',
   mutates: true,
-  summary: 'Rename an object.',
+  summary: 'Rename an object, a renderer (e.g. an isomesh), or a named selection.',
   completions: [
     { source: 'names', description: 'name', suffix: ', ' },
     { source: 'names', description: 'name', suffix: '' },
   ],
   run(ctx, args, cc) {
-    const found = resolveOneObject(ctx, cc.sceneId, args.old_name)
-    if (!found.ok) return found
-    const res = renameNode(ctx, {
-      sceneId: cc.sceneId,
-      nodeId: found.obj.uid,
-      nodeType: 'object',
-      newName: args.new_name,
-    })
-    if (!res.ok) return { ok: false, error: `Error: could not rename "${args.old_name}"` }
+    const newName = args.new_name.trim()
+    if (newName === '') return { ok: false, error: 'Error: no new name given' }
+    // Looked up in delete's order: object, renderer, named selection.
+    const objs = resolveObjects(ctx, cc.sceneId, args.old_name).filter((o) => o.name === args.old_name.trim())
+    const rends = objs.length > 0 ? [] : resolveRenderers(ctx, cc.sceneId, args.old_name)
+      .filter((r) => r.rendName === args.old_name.trim())
+    if (objs.length > 1 || rends.length > 1) {
+      return { ok: false, error: `Error: "${args.old_name}" names more than one thing` }
+    }
+    if (objs.length === 1 || rends.length === 1) {
+      const res = renameNode(ctx, {
+        sceneId: cc.sceneId,
+        nodeId: objs.length === 1 ? objs[0].uid : rends[0].rendId,
+        nodeType: objs.length === 1 ? 'object' : 'renderer',
+        newName,
+      })
+      if (!res.ok) return { ok: false, error: `Error: could not rename "${args.old_name}"` }
+      return { ok: true }
+    }
+    const sel = namedSelections(ctx, cc.sceneId).find((s) => s.name === args.old_name.trim())
+    if (!sel) return { ok: false, error: `Error: nothing named "${args.old_name}" in the scene` }
+    if (!renameNamedSelection(ctx, cc.sceneId, sel, newName)) {
+      return { ok: false, error: `Error: could not rename "${args.old_name}"` }
+    }
     return { ok: true }
   },
 }
 
 const cd: PymCommand = {
   name: 'cd',
-  params: [{ name: 'dir', default: '~' }],
+  params: [{ name: 'dir', default: '~' }, { name: 'complain', default: '1' }, { name: 'quiet', default: '1' }],
   mode: 'strict',
   mutates: false,
   summary: 'Change the working directory relative paths are read from.',
@@ -412,4 +648,27 @@ const ls: PymCommand = {
   },
 }
 
-export const FILE_COMMANDS: PymCommand[] = [load, fetch, deleteCmd, setName, cd, pwd, ls]
+/**
+ * `run file.pml`: the same as `@file.pml`.
+ *
+ * PyMOL's `run` is for Python files and hands a `.pml` to `load`, which runs
+ * it as a script (parsing.py run). Only that second half applies here.
+ */
+const run: PymCommand = {
+  name: 'run',
+  params: [{ name: 'filename' }, { name: 'namespace', default: 'global' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Run the commands in a .pml script (the same as @file).',
+  run(_ctx, args, cc) {
+    if (!/\.pml$/i.test(args.filename.trim())) {
+      return {
+        ok: false,
+        error: 'Error: run takes a .pml script here; Python scripts are not available in this console',
+      }
+    }
+    return cc.runScript(args.filename.trim())
+  },
+}
+
+export const FILE_COMMANDS: PymCommand[] = [load, fetch, deleteCmd, setName, cd, pwd, ls, run]

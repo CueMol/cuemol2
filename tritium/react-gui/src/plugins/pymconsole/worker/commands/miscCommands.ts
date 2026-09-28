@@ -9,8 +9,14 @@
  */
 
 import * as path from 'path'
-import { exportScene, getSceneExportInfo } from '@renderer/worker/server/services/scene/exportImage'
-import type { PymCommand } from './types'
+import {
+  exportScene,
+  getAvailableSceneExporters,
+  getSceneExportInfo,
+} from '@renderer/worker/server/services/scene/exportImage'
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { closeLog, currentLog, openLog, writeLog } from '../commandLog'
+import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import { isDefaulted, resolvePath, toNumber } from './helpers'
 
 /** A `png` size argument: pixels, or inches / centimetres needing a dpi. */
@@ -36,6 +42,8 @@ const png: PymCommand = {
     { name: 'height', default: '0' },
     { name: 'dpi', default: '-1.0' },
     { name: 'ray', default: '0' },
+    // PyMOL's order (exporting.py png): quiet comes before prior.
+    { name: 'quiet', default: '1' },
     { name: 'prior', default: '0' },
     { name: 'format', default: '0' },
   ],
@@ -44,38 +52,75 @@ const png: PymCommand = {
   summary: 'Write the view to a PNG file.',
   run(ctx, args, cc) {
     for (const [name, def] of [
-      ['ray', '0'],
       ['prior', '0'],
       ['format', '0'],
     ] as const) {
       if (!isDefaulted(args[name], def)) cc.warn(`png: ${name} is ignored (not supported)`)
     }
-    const info = getSceneExportInfo(ctx, { sceneId: cc.sceneId, viewId: cc.viewId })
-    if (!info.ok) return { ok: false, error: 'Error: no active view' }
-
-    const dpi = toNumber(args.dpi) ?? -1
-    const width = pixelsOf(args.width, dpi)
-    const height = pixelsOf(args.height, dpi)
-    if (width === null || height === null) {
-      return { ok: false, error: 'Error: a size in in/cm needs a dpi' }
-    }
-
-    let filePath = resolvePath(cc.cwd, args.filename)
-    if (path.extname(filePath) === '') filePath += '.png'
-
-    const res = exportScene(ctx, {
-      sceneId: cc.sceneId,
-      viewId: cc.viewId,
-      filePath,
-      exporterName: 'png',
-      width: width > 0 ? width : info.width,
-      height: height > 0 ? height : info.height,
-      ...(dpi > 0 ? { resoln: dpi } : {}),
+    return writePng(ctx, cc, {
+      filename: args.filename,
+      width: args.width,
+      height: args.height,
+      dpi: args.dpi,
+      ray: args.ray,
     })
-    if (!res.ok) return { ok: false, error: `Error: could not write ${filePath}` }
-    cc.print(` png: wrote ${filePath}`)
-    return { ok: true }
   },
+}
+
+/** What `png` (and `save x.png`) writes: PyMOL's png arguments. */
+export interface PngRequest {
+  filename: string
+  width: string
+  height: string
+  dpi: string
+  ray: string
+}
+
+/**
+ * Write the view to a PNG.
+ *
+ * Given only one of width and height, the other follows the view's aspect
+ * ratio, as in PyMOL. `ray=1` renders with the ray tracer (umbreon) when the
+ * build has it.
+ */
+export function writePng(ctx: WorkerContext, cc: CmdContext, req: PngRequest): CmdOutcome {
+  const info = getSceneExportInfo(ctx, { sceneId: cc.sceneId, viewId: cc.viewId })
+  if (!info.ok || info.width <= 0 || info.height <= 0) return { ok: false, error: 'Error: no active view' }
+
+  const dpi = toNumber(req.dpi) ?? -1
+  let width = pixelsOf(req.width, dpi)
+  let height = pixelsOf(req.height, dpi)
+  if (width === null || height === null) {
+    return { ok: false, error: 'Error: a size in in/cm needs a dpi' }
+  }
+  if (width > 0 && height <= 0) height = Math.round((width * info.height) / info.width)
+  else if (height > 0 && width <= 0) width = Math.round((height * info.width) / info.height)
+  else if (width <= 0 && height <= 0) {
+    width = info.width
+    height = info.height
+  }
+
+  let exporterName = 'png'
+  if (!isDefaulted(req.ray, '0')) {
+    if (getAvailableSceneExporters(ctx).names.includes('umbreon')) exporterName = 'umbreon'
+    else cc.warn('png: ray is ignored (this build has no ray tracer)')
+  }
+
+  let filePath = resolvePath(cc.cwd, req.filename)
+  if (path.extname(filePath) === '') filePath += '.png'
+
+  const res = exportScene(ctx, {
+    sceneId: cc.sceneId,
+    viewId: cc.viewId,
+    filePath,
+    exporterName,
+    width,
+    height,
+    ...(dpi > 0 ? { resoln: dpi } : {}),
+  })
+  if (!res.ok) return { ok: false, error: `Error: could not write ${filePath}` }
+  cc.print(` png: wrote ${filePath}`)
+  return { ok: true }
 }
 
 /**
@@ -109,7 +154,64 @@ const quit: PymCommand = {
   },
 }
 
+const logOpen: PymCommand = {
+  name: 'log_open',
+  params: [{ name: 'filename', default: 'log.pml' }, { name: 'mode', default: 'w' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Record the commands typed from now on to a .pml file.',
+  run(_ctx, args, cc) {
+    const mode = args.mode.trim()
+    if (mode !== 'w' && mode !== 'a') {
+      return { ok: false, error: 'Error: mode must be "w" (new file) or "a" (append)' }
+    }
+    if (/\.(py|pym)$/i.test(args.filename.trim())) {
+      return { ok: false, error: 'Error: only .pml logs can be written; this console cannot run Python back' }
+    }
+    const filePath = resolvePath(cc.cwd, args.filename.trim())
+    try {
+      openLog(filePath, mode)
+    } catch {
+      return { ok: false, error: `Error: unable to open log file '${filePath}'` }
+    }
+    // PyMOL's wording (commanding.py log_open).
+    cc.print(mode === 'a' ? ` Cmd: appending to '${filePath}'.` : ` Cmd: logging to '${filePath}'.`)
+    return { ok: true }
+  },
+}
+
+const logClose: PymCommand = {
+  name: 'log_close',
+  params: [],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Stop recording commands to the log file.',
+  run(_ctx, _args, cc) {
+    const was = currentLog()
+    closeLog()
+    if (was !== null) cc.print(` Cmd: log closed.`)
+    return { ok: true }
+  },
+}
+
+const logLine: PymCommand = {
+  name: 'log',
+  params: [{ name: 'text', default: '' }, { name: 'alt_text', default: '' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Write a line to the open log file.',
+  run(_ctx, args) {
+    // PyMOL writes `alt_text` (Python) only to a .py log, which is never
+    // open here, so it has nowhere to go.
+    if (args.text !== '') writeLog(args.text)
+    return { ok: true }
+  },
+}
+
 export const MISC_COMMANDS: PymCommand[] = [
+  logOpen,
+  logClose,
+  logLine,
   png,
   undoStackCommand('undo'),
   undoStackCommand('redo'),

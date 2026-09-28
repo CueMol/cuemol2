@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for TraceStickRenderer
+//
+
+#ifndef TRACE_STICK_RENDERER_QIF_INCLUDED
+#define TRACE_STICK_RENDERER_QIF_INCLUDED
+
+#include <modules/molstr/MainChainRenderer.qif>
+
+runtime_class TraceStickRenderer extends MainChainRenderer
+{
+  client_hdr "TraceStickRenderer.hpp";
+  client_name molvis::TraceStickRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// Cylinder radius
+  property real bondw => m_bondw;
+  default bondw = 0.25;
+
+  /// Sphere radius at the pivot atoms
+  property real sphr => m_sphr;
+  default sphr = 0.25;
+
+  property integer detail => m_nDetail;
+  default detail = 3;
+
+};
+
+#endif

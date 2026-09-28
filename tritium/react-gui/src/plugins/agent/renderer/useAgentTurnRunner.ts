@@ -22,9 +22,10 @@ import {
   DEFAULT_AGENT_MODEL,
 } from '../shared/agentTypes'
 import type { ReasoningEffort } from '../shared/agentTypes'
-import { parseModelSpec } from '../shared/modelSpec'
-import type { Provider } from '../shared/modelSpec'
+import { dropStaleImages } from '../shared/historyImages'
+import { PROVIDER_LABELS, parseModelSpec } from '../shared/modelSpec'
 import { agentSession, getAgentSession, useAgentSession } from './agentSessionStore'
+import { makeThumbnail } from './viewThumbnail'
 
 /** A fresh turn id. `crypto.randomUUID` is missing on some older hosts. */
 function makeTurnId(): string {
@@ -37,12 +38,6 @@ const EFFORTS: ReasoningEffort[] = ['default', 'low', 'medium', 'high']
 /** Read the stored effort, falling back when the value is not one we know. */
 function toEffort(value: unknown): ReasoningEffort {
   return EFFORTS.includes(value as ReasoningEffort) ? (value as ReasoningEffort) : 'low'
-}
-
-/** Human-readable provider name, for a message that says which key to set. */
-const PROVIDER_LABEL: Record<Provider, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
 }
 
 export function useAgentTurnRunner(): void {
@@ -84,7 +79,7 @@ export function useAgentTurnRunner(): void {
           }
           const key = await agentApiKeys[spec.provider].get()
           if (!key.value) {
-            const label = PROVIDER_LABEL[spec.provider]
+            const label = PROVIDER_LABELS[spec.provider]
             agentSession.failTurn(
               `No ${label} API key is set, and the model is ${model}. Add one in Settings, ` +
                 `or set the ${AGENT_SECRETS[spec.provider].envVar} environment variable.`,
@@ -117,7 +112,9 @@ export function useAgentTurnRunner(): void {
             else agentSession.failTurn(result.error)
             return
           }
-          agentSession.endTurn([...getAgentSession().history, ...result.appended])
+          // Stored with only the latest picture of the view: the conversation is
+          // replayed every turn, and an old picture would be paid for each time.
+          agentSession.endTurn(dropStaleImages([...getAgentSession().history, ...result.appended]))
           if (result.roundLimitHit) {
             agentSession.notice('Stopped after the maximum number of steps. Ask again to continue.')
           }
@@ -149,7 +146,17 @@ export function useAgentTurnRunner(): void {
   // other than the current one.
   useEffect(() => {
     if (!cm) return
-    return agentProgress.subscribe(cm, (update) => { agentSession.applyProgress(update) })
+    return agentProgress.subscribe(cm, (update) => {
+      agentSession.applyProgress(update)
+      // The full picture is not kept in the transcript: only a small copy,
+      // made off the progress path so a large decode cannot hold it up.
+      if (update.kind === 'tool_result' && update.image) {
+        const { callId } = update
+        void makeThumbnail(update.image).then((url) => {
+          agentSession.setToolThumbnail(callId, url)
+        })
+      }
+    })
   }, [cm])
 
   // Switching the plugin off unmounts this Root mid-turn. Stop the turn

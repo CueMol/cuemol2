@@ -39,6 +39,11 @@ const ToolRow: React.FC<ToolRowProps> = ({ entry }) => {
           {entry.ok === null ? 'running...' : entry.ok ? 'ok' : 'failed'}
         </span>
       </button>
+      {entry.thumbnail && (
+        // Shown whether or not the row is expanded: it is what the model
+        // looked at, which is the point of the call.
+        <img className="agent-tool-thumb" src={entry.thumbnail} alt="The view as sent to the model" />
+      )}
       {expanded && (
         <div className="agent-tool-body">
           <div className="agent-tool-label">Input</div>

@@ -148,7 +148,10 @@ export function createWindow(): void {
   watchRendererProcess(win, renderActivity)
 
   trackWindowState(win, loadWindowBounds, saveWindowBounds)
-  registerTextContextMenu(win)
+  // Select All goes to the renderer's scoped selectAllInScope (the region
+  // last clicked, e.g. a log), as the Edit menu's does: the native
+  // selectAll() selects every text node of the GUI.
+  registerTextContextMenu(win, () => win.webContents.send(IPC.MENU_GENERIC, IPC.MENU_SELECT_ALL))
   registerIpcHandlers(win)
   registerCuemolClipboardIpc()
   registerRenderWindowIpc({

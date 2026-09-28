@@ -7,6 +7,10 @@
 #include <qsys/SceneManager.hpp>
 #include <qsys/style/StyleMgr.hpp>
 #include <qsys/TTYView.hpp>
+#include <qlib/LQuat.hpp>
+#include <qlib/Matrix4D.hpp>
+
+#include <cmath>
 
 using molstr::MolAtom;
 using molstr::MolAtomPtr;
@@ -183,4 +187,56 @@ TEST(FitViewGuardTest, SingleAtomGetsAWorkableZoom)
     EXPECT_GE(pView->getSlabDepth(), 1.0);
     // Centred on the atom (added at x = resid).
     EXPECT_NEAR(pView->getViewCenter().x(), 3.0, 1.0e-6);
+}
+
+/**
+ * orientView lays the principal axes of the atoms along the screen axes,
+ * the longest along x and the thinnest along z (PyMOL's orient).
+ *
+ * The atoms form a slab whose long side runs diagonally in the xy plane, so
+ * a view that kept any part of the starting rotation, or mixed up the order
+ * of the axes, maps the long direction somewhere other than screen x.
+ */
+TEST(OrientViewTest, PrincipalAxesLieAlongTheScreenAxes)
+{
+    qsys::ScenePtr pScene = qsys::SceneManager::getInstance()->createScene();
+    MolCoordPtr pMol(MB_NEW MolCoord());
+    const double r = 1.0 / std::sqrt(2.0);
+    const Vector4D uLong(r, r, 0.0), uMid(-r, r, 0.0), uThin(0.0, 0.0, 1.0);
+    int resid = 1;
+    for (int i = -5; i <= 5; ++i) {
+        for (int j = -2; j <= 2; ++j) {
+            for (int k = 0; k <= 1; ++k) {
+                MolAtomPtr pAtom(MB_NEW MolAtom());
+                pAtom->setChainName("A");
+                pAtom->setResName("XXX");
+                pAtom->setResIndex(ResidIndex(resid++));
+                pAtom->setName("CA");
+                pAtom->setElementName("C");
+                pAtom->setPos(uLong.scale(2.0 * i) + uMid.scale(1.0 * j) +
+                              uThin.scale(0.5 * k));
+                pMol->appendAtom(pAtom);
+            }
+        }
+    }
+    pScene->addObject(pMol);
+
+    qsys::ViewPtr pView(MB_NEW qsys::TTYView());
+    // Start from an arbitrary rotation, which orientView must replace.
+    pView->setRotQuat(qlib::LQuat(Vector4D(1.0, 2.0, 3.0).normalize(), 0.4));
+
+    SelCommand *pCom = MB_NEW SelCommand();
+    SelectionPtr pSel(pCom);
+    ASSERT_TRUE(pCom->compile("*", pScene->getUID()));
+    pMol->orientView(pView, pSel);
+
+    // fitView's convention: view coordinates are makeRotMat(q).mulvec(p).
+    const qlib::Matrix4D rmat = qlib::Matrix4D::makeRotMat(pView->getRotQuat());
+    const Vector4D vLong = rmat.mulvec(uLong);
+    const Vector4D vMid = rmat.mulvec(uMid);
+    const Vector4D vThin = rmat.mulvec(uThin);
+    // The sign of an eigenvector is arbitrary, as in PyMOL.
+    EXPECT_NEAR(std::abs(vLong.x()), 1.0, 1.0e-6);
+    EXPECT_NEAR(std::abs(vMid.y()), 1.0, 1.0e-6);
+    EXPECT_NEAR(std::abs(vThin.z()), 1.0, 1.0e-6);
 }

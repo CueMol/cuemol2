@@ -20,19 +20,23 @@ import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHi
 import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
 import { getMolChains } from '@renderer/worker/server/services/select/getMolStructure'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { translateSelection } from '../sel/translate'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isDefaulted, molecules, resolveOneObject } from './helpers'
+import { isDefaulted, moleculeSelections, molecules, resolveOneObject } from './helpers'
+import type { MoleculeSelection } from './helpers'
 
-/** Apply one expression to every molecule in the scene. */
-function applyToAll(
+/**
+ * Show a PyMOL selection on the molecules it covers, and clear it on the
+ * others: `select s, 1abc and chain A` leaves nothing selected elsewhere.
+ */
+function applyItems(
   ctx: WorkerContext,
   cc: CmdContext,
-  selStr: string,
+  items: readonly MoleculeSelection[],
 ): CmdOutcome {
   const mols = molecules(ctx, cc.sceneId)
   if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
   for (const mol of mols) {
+    const selStr = items.find((i) => i.obj.uid === mol.uid)?.selStr ?? ''
     const res = applyMolSelString(ctx, { sceneId: cc.sceneId, molId: mol.uid, selStr })
     if (!res.ok) {
       return { ok: false, error: `Error: could not apply the selection to "${mol.name}"` }
@@ -71,17 +75,25 @@ const select: PymCommand = {
     const source = hasExpr ? args.selection : args.name
     if (name === '') return { ok: false, error: 'Error: the selection needs a name' }
 
-    const translated = translateSelection(source)
-    if (!translated.ok) return translated
-
-    const saved = saveSelDef(ctx, { sceneId: cc.sceneId, name, expr: translated.expr })
-    if (!saved.ok) return { ok: false, error: `Error: could not define "${name}"` }
+    const sels = moleculeSelections(ctx, cc.sceneId, source)
+    if (!sels.ok) return sels
 
     // Applying it is the visible half: a CueMol named selection on its own
     // changes nothing on screen.
-    const applied = applyToAll(ctx, cc, translated.expr)
+    const applied = applyItems(ctx, cc, sels.items)
     if (!applied.ok) return applied
-    cc.print(` select: "${name}" defined as ${translated.expr}`)
+
+    // A CueMol named selection is one expression, evaluated inside whichever
+    // molecule uses it, so it cannot say "in 1abc". One that names objects is
+    // shown but not stored.
+    if (sels.named) {
+      cc.warn(`"${name}" is shown but not saved as a named selection: it names objects`)
+      return { ok: true }
+    }
+    const expr = sels.items[0]?.selStr ?? '*'
+    const saved = saveSelDef(ctx, { sceneId: cc.sceneId, name, expr })
+    if (!saved.ok) return { ok: false, error: `Error: could not define "${name}"` }
+    cc.print(` select: "${name}" defined as ${expr}`)
     return { ok: true }
   },
 }
@@ -94,9 +106,9 @@ const indicate: PymCommand = {
   summary: 'Show what an expression matches, without naming it.',
   completions: [{ source: 'selections', description: 'selection', suffix: '' }],
   run(ctx, args, cc) {
-    const translated = translateSelection(args.selection)
-    if (!translated.ok) return translated
-    return applyToAll(ctx, cc, translated.expr)
+    const sels = moleculeSelections(ctx, cc.sceneId, args.selection)
+    if (!sels.ok) return sels
+    return applyItems(ctx, cc, sels.items)
   },
 }
 
@@ -118,24 +130,30 @@ const deselect: PymCommand = {
 
 const countAtoms: PymCommand = {
   name: 'count_atoms',
-  params: [{ name: 'selection', default: 'all' }, { name: 'state', default: '0' }],
+  // PyMOL's order (querying.py count_atoms).
+  params: [
+    { name: 'selection', default: '(all)' },
+    { name: 'quiet', default: '1' },
+    { name: 'state', default: '0' },
+    { name: 'domain', default: '' },
+  ],
   mode: 'strict',
   mutates: false,
   summary: 'Count the atoms an expression matches, per molecule.',
   completions: [{ source: 'selections', description: 'selection', suffix: '' }],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('count_atoms: state is ignored (not supported)')
-    const translated = translateSelection(args.selection)
-    if (!translated.ok) return translated
+    if (!isDefaulted(args.domain, '')) cc.warn('count_atoms: domain is ignored (not supported)')
+    const sels = moleculeSelections(ctx, cc.sceneId, args.selection)
+    if (!sels.ok) return sels
 
-    const mols = molecules(ctx, cc.sceneId)
-    if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
+    const mols = sels.items.map((i) => i.obj)
     let total = 0
-    for (const mol of mols) {
+    for (const { obj: mol, selStr } of sels.items) {
       const res = getSelHitCount(ctx, {
         sceneId: cc.sceneId,
         molId: mol.uid,
-        selStr: translated.expr,
+        selStr,
       })
       if (res.count === null) {
         return { ok: false, error: `Error: "${args.selection}" did not compile` }
@@ -145,7 +163,7 @@ const countAtoms: PymCommand = {
       // one rather than naming a single set of atoms.
       if (mols.length > 1) cc.print(` ${mol.name}: ${res.count}`)
     }
-    cc.print(` count_atoms: ${total}`)
+    cc.print(` count_atoms: ${total} atoms`)
     return { ok: true }
   },
 }
