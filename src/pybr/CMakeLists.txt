@@ -3,6 +3,9 @@ message(STATUS "Python3_NumPy_FOUND=${Python3_NumPy_FOUND}")
 
 # Dependent libs
 SET(PYBR_LINK_LIBRARIES
+  # For qlib's usage requirements (the fmt headers LString.hpp includes),
+  # as the other modules link it.
+  qlib
   Boost::filesystem
   Python3::Python
 )

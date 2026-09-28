@@ -168,7 +168,7 @@ Don't migrate `_methods` entries into `_registered` without a concrete benefit â
 Some features are packaged as **built-in plugins**: one directory each, declaring what they
 contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
 this way to keep the feature in one directory, not to make it removable), `catalog` (the
-component gallery), `agent` (the AI chat panel, OpenAI or Anthropic through the Vercel AI
+component gallery), `agent` (the AI chat panel, OpenAI, Anthropic or Google Gemini through the Vercel AI
 SDK), `mdtools` (the MD trajectory GUI: the open flow plus the Trajectory bottom tab) and
 `pymconsole` (the PyM console: a command line that speaks part of the PyMOL command language) -- the last four
 ship in every build but are `defaultEnabled: false`, so they appear only once someone switches
@@ -509,7 +509,7 @@ Note: the C++ `View` / `Scene` objects are not destroyed by `removeView`; that i
 
 The Web Worker owns the GL context for its whole lifetime (`GfxManager._canvas` has no unbind path, above), so a GL call is legal from **any** Worker task, not only from the rAF callback. Message-handler / service tasks already call GL directly in production: `WorkerService.resized()` runs a full `drawScene` synchronously, `GfxManager.activateView()` issues a redraw, and `exportImage.service.ts` renders to an FBO + `readPixels`. None of these run inside rAF and all are correct -- the safety comes from the context being held, not from being in rAF.
 
-What the rAF callback owns is **present**: one tick runs `cuemol.performIdleTasks()` then `checkAndUpdateScenes()` (`ViewLoopController`), in that order, and re-schedules itself unconditionally. Consequences:
+What the rAF callback owns is **present**: one tick runs `cuemol.performIdleTasks()` once (`ViewLoopController`) and re-schedules itself unconditionally. The pump runs the timers first and then the idle tasks, and `SceneManager` is an idle task, so the same call ends with `checkAndUpdateScenes()`. Do not call `checkAndUpdateScenes()` again from the loop: a second scene update per tick draws an extra temporal-jitter sample every frame (it halved the frame rate while the view moved with AA High / Ultra). Consequences:
 
 - To ask for a redraw, set `Scene::setUpdateFlag()` (a single bool the rAF loop polls); do not drive `drawScene` yourself from an event handler.
 - Timer-driven state changes (AnimMgr playback -> `fireAtomsMoved`) run inside `performIdleTasks()`, so they are drawn in the **same** tick. UI-driven changes (message-handler `setProp`) run outside rAF, so they are drawn on the **next** tick (up to one frame later).

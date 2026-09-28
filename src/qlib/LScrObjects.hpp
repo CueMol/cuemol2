@@ -8,6 +8,7 @@
 #include "qlib.hpp"
 #include "LScriptable.hpp"
 #include "LVariant.hpp"
+#include "TagName.hpp"
 
 namespace qlib {
 
@@ -20,7 +21,7 @@ namespace qlib {
   {
   protected:
     uid_t m_rootuid;
-    LString m_thisname;
+    TagName m_thisname;
     
     LPropEventCaster *m_pEvtCaster;
 
@@ -70,7 +71,7 @@ namespace qlib {
     //////////////////////
     // convenience methods
 
-    const LString &getThisName() const { return m_thisname; }
+    const LString &getThisName() const { return m_thisname.str(); }
 
     /*// XXX ATTN: this method returns NULL or addRefed ptr!!
     bool handleNestedProp(const LString &name, LString &last_name,

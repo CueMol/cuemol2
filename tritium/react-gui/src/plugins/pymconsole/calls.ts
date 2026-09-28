@@ -9,7 +9,9 @@
  */
 
 import { definePluginServices } from '@renderer/plugin-host/api'
+import type { Result } from '@renderer/worker/shared/result'
 import type {
+  CancelRunArgs,
   CompleteArgs,
   CompleteResult,
   RunCommandArgs,
@@ -20,11 +22,13 @@ import type {
 // signature an interface does not have.
 export type PymConsoleCalls = {
   runCommand: { args: RunCommandArgs; result: RunCommandResult }
+  cancelRun: { args: CancelRunArgs; result: Result }
   complete: { args: CompleteArgs; result: CompleteResult }
 }
 
 export const PYMCONSOLE_KEYS = [
   'runCommand',
+  'cancelRun',
   'complete',
 ] as const satisfies readonly (keyof PymConsoleCalls)[]
 

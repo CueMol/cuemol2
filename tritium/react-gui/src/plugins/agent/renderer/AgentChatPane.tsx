@@ -20,6 +20,7 @@ import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives'
 import { FormButton, TextAreaField, isImeKey } from '@renderer/h3-kit/form'
 import type { SubmitKey } from '@renderer/h3-kit/form'
 import { CmdId } from '@renderer/commands/ids'
+import { AgentModelPicker } from './AgentModelPicker'
 import { AgentTranscript } from './AgentTranscript'
 import { agentSession, useAgentSession } from './agentSessionStore'
 import { getHistory, pushHistory } from './promptHistory'
@@ -159,6 +160,7 @@ export const AgentChatPane: PaneComponent = ({ collapsed, onToggleCollapse }) =>
       />
       {!collapsed && (
         <div className="agent-pane-body">
+          <AgentModelPicker disabled={running} />
           <AgentTranscript entries={transcript} onOpenSettings={openSettings} />
           <div className="agent-composer">
             <TextAreaField

@@ -11,9 +11,20 @@
 import type { ModelMessage } from 'ai'
 
 /** The model vendors this plugin can talk to. */
-export type Provider = 'openai' | 'anthropic'
+export type Provider = 'openai' | 'anthropic' | 'google'
 
-export const PROVIDERS: readonly Provider[] = ['openai', 'anthropic']
+/**
+ * Also the key each provider's metadata is filed under in `providerOptions`,
+ * which `sanitizeHistory` relies on -- so Gemini is `google`, not `gemini`.
+ */
+export const PROVIDERS: readonly Provider[] = ['openai', 'anthropic', 'google']
+
+/** Human-readable provider name, for anything the user reads. */
+export const PROVIDER_LABELS: Record<Provider, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  google: 'Google',
+}
 
 export interface ModelSpec {
   provider: Provider
@@ -25,7 +36,7 @@ export interface ModelSpec {
  * The provider a settings value names, written `provider:model`.
  *
  * A bare id means OpenAI. That is not a default so much as a compatibility
- * rule: the setting predates this plugin having two providers, so an
+ * rule: the setting predates this plugin having more than one provider, so an
  * installation that already stored `gpt-5.6` keeps working.
  *
  * @returns the spec, or `{ error }` with something the user can act on.
@@ -42,8 +53,8 @@ export function parseModelSpec(raw: string): ModelSpec | { error: string } {
   if (!isProvider(provider)) {
     return {
       error:
-        `"${provider}" is not a known provider. Write the model as ` +
-        `${PROVIDERS.map((p) => `${p}:<model>`).join(' or ')}.`,
+        `"${provider}" is not a known provider. Write the model as one of ` +
+        `${PROVIDERS.map((p) => `${p}:<model>`).join(', ')}.`,
     }
   }
   if (modelId === '') return { error: `No model named after "${provider}:".` }
@@ -58,7 +69,8 @@ function isProvider(value: string): value is Provider {
  * The conversation with the other provider's reasoning removed.
  *
  * A reasoning part carries state only its own provider can read -- OpenAI's
- * encrypted content, Anthropic's thinking signature -- under that provider's
+ * encrypted content, Anthropic's thinking signature, Gemini's thought
+ * signature -- under that provider's
  * key in `providerOptions`. What happens when the other one receives it is
  * undocumented, and the failure would be a rejected turn rather than
  * something we could recover from, so the parts are dropped instead.

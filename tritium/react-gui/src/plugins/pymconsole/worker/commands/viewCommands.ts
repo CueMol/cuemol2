@@ -20,15 +20,15 @@ import {
 } from '@renderer/worker/server/services/camera/cameraOps'
 import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
-import {
-  centerMolSelection,
-  zoomMolSelection,
-} from '@renderer/worker/server/services/select/applyMolSelString'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
+import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import { rotateView, translateView } from '@renderer/worker/server/services/view/viewXform'
-import { translateSelection } from '../sel/translate'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { ALL, formatNameList, isDefaulted, molecules, resolveObjects, toNumber } from './helpers'
+import { ALL, formatNameList, isDefaulted, moleculeSelections, resolveObjects, toNumber } from './helpers'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { camToPymol, formatViewMatrix, parseViewMatrix, pymolToCam } from './viewMatrix'
+import { interpretShortcut } from '../parser/shortcut'
+import type { CamState } from './viewMatrix'
 
 /** The axis letters `turn` and `move` accept. */
 type Axis = 'x' | 'y' | 'z'
@@ -61,6 +61,15 @@ function fitTo(
     if (wantsAll && named.length > 1) {
       cc.warn(`fitting "${named[0].name}" only: fitting every object at once is not supported`)
     }
+    // `center` moves the centre only; fitting would change the zoom too.
+    if (mode === 'center') {
+      const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(named[0].uid) as unknown as FitMol | null
+      const view = ctx.sceMgr.getView(cc.viewId) as unknown as FitView | null
+      if (mol && view && typeof mol.getCenterPos === 'function') {
+        view.setViewCenter(mol.getCenterPos(false))
+        return { ok: true }
+      }
+    }
     const res = focusOnNode(ctx, {
       sceneId: cc.sceneId,
       viewId: cc.viewId,
@@ -72,22 +81,82 @@ function fitTo(
   }
   if (wantsAll) return { ok: false, error: 'Error: the scene is empty' }
 
-  // Not an object: read it as a selection.
-  const translated = translateSelection(wanted)
-  if (!translated.ok) return translated
-  const mols = molecules(ctx, cc.sceneId)
-  if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
-  if (mols.length > 1) {
-    cc.warn(`framing "${mols[0].name}" only: a selection spanning objects is not supported`)
+  // Not an object: read it as a selection, inside the molecule it names.
+  const sels = moleculeSelections(ctx, cc.sceneId, wanted)
+  if (!sels.ok) return sels
+  if (sels.items.length > 1) {
+    cc.warn(`framing "${sels.items[0].obj.name}" only: a selection spanning objects is not supported`)
   }
-  const args = {
-    sceneId: cc.sceneId,
-    viewId: cc.viewId,
-    molId: mols[0].uid,
-    selStr: translated.expr,
+  const { obj, selStr } = sels.items[0]
+  const hits = getSelHitCount(ctx, { sceneId: cc.sceneId, molId: obj.uid, selStr })
+  if (hits.count === null) return { ok: false, error: `Error: "${wanted}" did not compile` }
+  if (hits.count === 0) return { ok: false, error: `Error: "${wanted}" matched nothing` }
+
+  // The molecule's own selection is left alone: the GUI's zoom-to-selection
+  // services set it first, which here would leave the matched atoms
+  // highlighted after every zoom.
+  const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(obj.uid) as unknown as FitMol | null
+  const view = ctx.sceMgr.getView(cc.viewId) as unknown as FitView | null
+  if (!mol || !view) return { ok: false, error: 'Error: no active view' }
+  if (mode === 'zoom') {
+    const sel = makeSel(ctx, selStr, cc.sceneId)
+    if (!sel) return { ok: false, error: `Error: "${wanted}" did not compile` }
+    mol.fitView2(view, sel)
+    return { ok: true }
   }
-  const res = mode === 'zoom' ? zoomMolSelection(ctx, args) : centerMolSelection(ctx, args)
-  return res.ok ? { ok: true } : { ok: false, error: `Error: "${wanted}" matched nothing` }
+  const center = selectionCenter(ctx, cc.sceneId, mol, selStr)
+  if (!center) return { ok: false, error: `Error: "${wanted}" matched nothing` }
+  view.setViewCenter(center)
+  return { ok: true }
+}
+
+/** The members fitting and centring use, as the wrappers expose them. */
+interface FitMol {
+  fitView2(view: unknown, sel: unknown): void
+  getCenterPos(fsel: boolean): unknown
+}
+interface FitView {
+  setViewCenter(pos: unknown): void
+}
+
+interface AtomIter {
+  target: unknown
+  sel: unknown
+  first(): void
+  next(): void
+  hasMore(): boolean
+  get(): { pos: { x: number; y: number; z: number } }
+}
+
+/**
+ * The centre of the atoms `selStr` matches, as a CueMol Vector.
+ *
+ * MolCoord.getCenterPos(true) reads the molecule's own selection, which
+ * would have to be changed first; the atoms are averaged here instead.
+ */
+function selectionCenter(ctx: WorkerContext, sceneId: number, mol: unknown, selStr: string): unknown {
+  const sel = makeSel(ctx, selStr, sceneId)
+  const iter = ctx.svc.createObj('AtomIterator') as unknown as AtomIter | null
+  const out = ctx.svc.createObj('Vector') as unknown as { x: number; y: number; z: number } | null
+  if (!sel || !iter || !out) return null
+  iter.target = mol
+  iter.sel = sel
+  let n = 0
+  let x = 0
+  let y = 0
+  let z = 0
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    const p = iter.get().pos
+    x += p.x
+    y += p.y
+    z += p.z
+    n += 1
+  }
+  if (n === 0) return null
+  out.x = x / n
+  out.y = y / n
+  out.z = z / n
+  return out
 }
 
 const zoom: PymCommand = {
@@ -138,6 +207,54 @@ const center: PymCommand = {
     }
     return fitTo(ctx, cc, args.selection, 'center')
   },
+}
+
+/**
+ * `orient`: the principal axes of the atoms along the screen axes, then
+ * framed. The axes are worked out by C++ (MolCoord.orientView), which the
+ * GUI can use as well.
+ */
+const orient: PymCommand = {
+  name: 'orient',
+  params: [
+    { name: 'selection', default: '(all)' },
+    { name: 'state', default: '0' },
+    { name: 'animate', default: '0' },
+  ],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Turn the view to the principal axes of a selection, then fit it.',
+  completions: [{ source: 'selections', description: 'selection', suffix: '' }],
+  run(ctx, args, cc) {
+    for (const [name, def] of [
+      ['state', '0'],
+      ['animate', '0'],
+    ] as const) {
+      if (!isDefaulted(args[name], def)) cc.warn(`orient: ${name} is ignored (not supported)`)
+    }
+    const sels = moleculeSelections(ctx, cc.sceneId, args.selection)
+    if (!sels.ok) return sels
+    if (sels.items.length === 0) return { ok: false, error: 'Error: the scene has no molecule' }
+    if (sels.items.length > 1) {
+      cc.warn(`orienting "${sels.items[0].obj.name}" only: a selection spanning objects is not supported`)
+    }
+    const { obj, selStr } = sels.items[0]
+    const hits = getSelHitCount(ctx, { sceneId: cc.sceneId, molId: obj.uid, selStr })
+    if (hits.count === null) return { ok: false, error: `Error: "${args.selection}" did not compile` }
+    if (hits.count === 0) return { ok: false, error: `Error: "${args.selection}" matched nothing` }
+    const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(obj.uid) as unknown as OrientMol | null
+    const view = ctx.sceMgr.getView(cc.viewId)
+    const sel = makeSel(ctx, selStr, cc.sceneId)
+    if (!mol || !view) return { ok: false, error: 'Error: no active view' }
+    if (!sel) return { ok: false, error: `Error: "${args.selection}" did not compile` }
+    mol.orientView(view, sel)
+    return { ok: true }
+  },
+}
+
+/** The member `orient` uses, as the MolCoord wrapper exposes it. */
+interface OrientMol {
+  orientView(view: unknown, sel: unknown): void
 }
 
 const reset: PymCommand = {
@@ -236,7 +353,13 @@ const view: PymCommand = {
   ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.animate, '-1')) cc.warn('view: animate is ignored (not supported)')
-    const action = args.action.trim().toLowerCase()
+    // PyMOL takes unique prefixes (`view v1, st`), as with command names.
+    const asked = args.action.trim().toLowerCase()
+    const found = interpretShortcut(asked, ['store', 'recall', 'clear'])
+    if (found.kind === 'ambiguous') {
+      return { ok: false, error: `Error: ambiguous view action "${asked}": ${found.candidates.join(', ')}` }
+    }
+    const action = found.kind === 'found' ? found.name : asked
     const key = args.key.trim()
 
     if (key === '*') {
@@ -297,4 +420,93 @@ const refresh: PymCommand = {
   },
 }
 
-export const VIEW_COMMANDS: PymCommand[] = [zoom, center, reset, turn, move, view, refresh]
+/** The camera fields `get_view` / `set_view` use, as the view exposes them. */
+interface CamView {
+  zoom: number
+  distance: number
+  slab: number
+  perspective: boolean
+  center: { x: number; y: number; z: number }
+  rotation: { a: number; x: number; y: number; z: number }
+  setRotQuat(q: unknown): void
+}
+
+/** The active view's camera, or null when there is no view. */
+function readCam(ctx: WorkerContext, viewId: number): CamState | null {
+  const v = ctx.sceMgr.getView(viewId) as unknown as CamView | null
+  if (!v) return null
+  const r = v.rotation
+  const c = v.center
+  return {
+    quat: { a: r.a, x: r.x, y: r.y, z: r.z },
+    center: [c.x, c.y, c.z],
+    distance: v.distance,
+    slab: v.slab,
+    zoom: v.zoom,
+    perspective: Boolean(v.perspective),
+  }
+}
+
+/** Put `cam` on the active view. */
+function writeCam(ctx: WorkerContext, viewId: number, cam: CamState): boolean {
+  const v = ctx.sceMgr.getView(viewId) as unknown as CamView | null
+  if (!v) return false
+  const q = ctx.svc.createObj('Quat') as unknown as CamView['rotation'] | null
+  const c = ctx.svc.createObj('Vector') as unknown as CamView['center'] | null
+  if (!q || !c) return false
+  q.a = cam.quat.a
+  q.x = cam.quat.x
+  q.y = cam.quat.y
+  q.z = cam.quat.z
+  v.setRotQuat(q)
+  c.x = cam.center[0]
+  c.y = cam.center[1]
+  c.z = cam.center[2]
+  v.center = c
+  // Distance first: the slab is clamped to twice the distance.
+  v.distance = cam.distance
+  v.slab = cam.slab
+  v.zoom = cam.zoom
+  v.perspective = cam.perspective
+  return true
+}
+
+const getView: PymCommand = {
+  name: 'get_view',
+  params: [{ name: 'output', default: '1' }, { name: 'quiet', default: '1' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Print the camera as a set_view line that can be pasted back.',
+  run(ctx, _args, cc) {
+    const cam = readCam(ctx, cc.viewId)
+    if (!cam) return { ok: false, error: 'Error: no active view' }
+    for (const line of formatViewMatrix(camToPymol(cam))) cc.print(line)
+    return { ok: true }
+  },
+}
+
+const setView: PymCommand = {
+  name: 'set_view',
+  params: [
+    { name: 'view' },
+    { name: 'animate', default: '0' },
+    { name: 'quiet', default: '1' },
+    { name: 'hand', default: '1' },
+  ],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Set the camera from the 18 numbers get_view prints.',
+  run(ctx, args, cc) {
+    const v = parseViewMatrix(args.view)
+    if (!v) return { ok: false, error: 'Error: set_view needs 18 numbers, as get_view prints them' }
+    if (!isDefaulted(args.animate, '0')) cc.warn('set_view: animate is ignored')
+    if (!isDefaulted(args.hand, '1')) cc.warn('set_view: hand is ignored')
+    if (Math.abs(v[9]) > 1e-6 || Math.abs(v[10]) > 1e-6) {
+      cc.warn('the view is off-centre; it is shown the same, but turns about the screen centre')
+    }
+    if (!writeCam(ctx, cc.viewId, pymolToCam(v))) return { ok: false, error: 'Error: no active view' }
+    return { ok: true }
+  },
+}
+
+export const VIEW_COMMANDS: PymCommand[] = [zoom, center, orient, reset, turn, move, view, refresh, getView, setView]

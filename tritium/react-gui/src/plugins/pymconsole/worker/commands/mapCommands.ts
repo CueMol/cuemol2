@@ -48,9 +48,8 @@ import type { MapRendererEntry } from '@renderer/worker/server/services/map/type
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { selectionNames, translateSelection } from '../sel/translate'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isDefaulted, molecules, resolveObjects, toNumber } from './helpers'
+import { isDefaulted, moleculeSelections, resolveObjects, toNumber } from './helpers'
 
 /** PyMOL's two mesh commands, as the CueMol renderer type each becomes. */
 const MESH_TYPES = {
@@ -172,18 +171,13 @@ function boundaryMolecule(
   ctx: WorkerContext,
   cc: CmdContext,
   expr: string,
-): { ok: true; name: string } | (CmdOutcome & { ok: false }) {
-  const mols = molecules(ctx, cc.sceneId)
-  if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
-
-  for (const word of selectionNames(expr)) {
-    const named = mols.find((m) => m.name === word)
-    if (named) return { ok: true, name: named.name }
+): { ok: true; name: string; selStr: string } | (CmdOutcome & { ok: false }) {
+  const sels = moleculeSelections(ctx, cc.sceneId, expr)
+  if (!sels.ok) return sels
+  if (sels.items.length > 1) {
+    cc.warn(`carving against "${sels.items[0].obj.name}" only: name a molecule in the selection to pick another`)
   }
-  if (mols.length > 1) {
-    cc.warn(`carving against "${mols[0].name}" only: name a molecule in the selection to pick another`)
-  }
-  return { ok: true, name: mols[0].name }
+  return { ok: true, name: sels.items[0].obj.name, selStr: sels.items[0].selStr }
 }
 
 /** Every map renderer in the scene called `name`. */
@@ -249,11 +243,9 @@ function meshCommand(name: 'isomesh' | 'isosurface'): PymCommand {
       // expression cannot leave a renderer behind.
       let boundary: { molName: string; selStr: string } | null = null
       if (args.selection.trim() !== '') {
-        const translated = translateSelection(args.selection)
-        if (!translated.ok) return translated
         const target = boundaryMolecule(ctx, cc, args.selection)
         if (!target.ok) return target
-        boundary = { molName: target.name, selStr: translated.expr }
+        boundary = { molName: target.name, selStr: target.selStr }
         if (carve === null) {
           // PyMOL would show the whole box; here the corners come off.
           cc.warn(`${name}: the region is also carved at ${range ?? 'the renderer default'} angstroms`)

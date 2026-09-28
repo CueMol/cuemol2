@@ -21,8 +21,8 @@ export const AGENT_PLUGIN_ID = 'agent'
  * The model a turn runs on unless the user picks another.
  *
  * Written `provider:model`; a value with no prefix is read as OpenAI, so an
- * installation that stored a bare id before this plugin had two providers
- * keeps working (see `modelSpec.ts`).
+ * installation that stored a bare id before this plugin had more than one
+ * provider keeps working (see `modelSpec.ts`).
  */
 export const DEFAULT_AGENT_MODEL = 'openai:gpt-5.6'
 
@@ -45,6 +45,11 @@ export const AGENT_MODEL_SUGGESTIONS = [
   { value: 'anthropic:claude-opus-5', label: 'Anthropic, most capable' },
   { value: 'anthropic:claude-sonnet-5', label: 'Anthropic, balanced' },
   { value: 'anthropic:claude-haiku-4-5', label: 'Anthropic, lowest cost' },
+  // Google's moving aliases rather than dated ids: the Gemini catalogue
+  // renames its previews often enough that a pinned id would go stale first.
+  { value: 'google:gemini-pro-latest', label: 'Google, most capable' },
+  { value: 'google:gemini-flash-latest', label: 'Google, balanced' },
+  { value: 'google:gemini-flash-lite-latest', label: 'Google, lowest cost' },
 ] as const
 
 /** How hard the model is asked to think before answering. */
@@ -74,19 +79,22 @@ export const DEFAULT_ENTER_KEY = ENTER_KEY_OPTIONS.newline
 /**
  * The keychain entry and environment variable behind each provider's key.
  *
- * One per provider rather than one shared key: the two are different
+ * One per provider rather than one shared key: they are different
  * credentials, and a turn reads only the one its model needs.
  */
 export const AGENT_SECRETS: Record<Provider, { key: string; envVar: string }> = {
   openai: { key: 'openaiApiKey', envVar: 'OPENAI_API_KEY' },
   anthropic: { key: 'anthropicApiKey', envVar: 'ANTHROPIC_API_KEY' },
+  // The name Google AI Studio documents. The SDK's own default,
+  // GOOGLE_GENERATIVE_AI_API_KEY, is never read: the key is passed in.
+  google: { key: 'googleApiKey', envVar: 'GEMINI_API_KEY' },
 }
 
 /**
  * One message of the conversation the panel owns and replays each turn.
  *
  * The SDK's provider-neutral shape, so the same history can be sent to
- * either provider (`sanitizeHistory` drops the parts that cannot cross).
+ * any provider (`sanitizeHistory` drops the parts that cannot cross).
  */
 export type AgentInputItem = ModelMessage
 
@@ -96,6 +104,13 @@ export interface AgentUsage {
   outputTokens: number
   /** Prefix tokens served from the prompt cache. Zero on a first turn. */
   cachedTokens: number
+}
+
+/** A picture of the view, as a tool handed it to the model. */
+export interface AgentViewImage {
+  mediaType: 'image/png'
+  /** The encoded file, base64. */
+  base64: string
 }
 
 /** What the worker streams while a turn runs. Every variant names its turn. */
@@ -111,10 +126,19 @@ export type AgentProgressUpdate =
       ok: boolean
       /** One line for the transcript. Never the whole payload. */
       summary: string
+      /** The picture the model was shown, so the panel can show it too. */
+      image?: AgentViewImage
     }
 
 /** The push channel the worker streams those on. */
 export const AGENT_PROGRESS_CHANNEL = pluginChannelName(AGENT_PLUGIN_ID, 'progress')
+
+/** One provider's model list, for the panel's model picker. */
+export interface AgentListModelsArgs {
+  provider: Provider
+  /** Read at call time and passed straight through, as for a turn. */
+  apiKey: string
+}
 
 export interface AgentRunTurnArgs {
   /** Identifies this turn for progress routing and cancellation. */

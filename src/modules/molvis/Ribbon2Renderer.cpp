@@ -756,20 +756,7 @@ void Ribbon2Renderer::renderHelix(DisplayContext *pdl)
       pCol = calcColor(t, pC);
     pdl->loadName(calcHitName(t, pC));
       pC->m_spl.interpolate(t, &f1, &vpt);
-      if (m_nHelixWidthMode==HWIDTH_WAVY && pC->m_bWsplValid) {
-        pC->m_wspl.interpolate(t, &width, &dwidth);
-      }
-      else if (m_nHelixWidthMode==HWIDTH_AVER || m_nHelixWidthMode==HWIDTH_WAVY) {
-        // average width (also the fallback for a wavy helix too short for its spline)
-        width = pC->m_dWidthAver;
-        dwidth = 0.0;
-      }
-      else {
-        // HWIDTH_CONST
-        width = m_dHelixWidth;
-        dwidth = 0.0;
-      }
-      width += m_dWidthPlus;
+      width = calcHelixWidth(pC, t, dwidth);
       if (j==0) {
         bnorm_base = f1-p0;
       }
@@ -810,6 +797,66 @@ void Ribbon2Renderer::renderHelix(DisplayContext *pdl)
   }
   pdl->end();
  */
+}
+
+double Ribbon2Renderer::calcHelixWidth(SecSplDat *pC, double t, double &dwidth) const
+{
+  double width;
+  if (m_nHelixWidthMode==HWIDTH_WAVY && pC->m_bWsplValid) {
+    pC->m_wspl.interpolate(t, &width, &dwidth);
+  }
+  else if (m_nHelixWidthMode==HWIDTH_AVER || m_nHelixWidthMode==HWIDTH_WAVY) {
+    // average width (also the fallback for a wavy helix too short for its spline)
+    width = pC->m_dWidthAver;
+    dwidth = 0.0;
+  }
+  else {
+    // HWIDTH_CONST
+    width = m_dHelixWidth;
+    dwidth = 0.0;
+  }
+  return width + m_dWidthPlus;
+}
+
+Vector4D Ribbon2Renderer::calcHelixJctPos(int ires)
+{
+  MolResiduePtr pRes = m_resvec[ires];
+  Vector4D pos = getPivotPos(pRes);
+
+  // Find the cylinder that holds this residue (m_indvec is shared with the
+  // sheets and may be stale, so check the residue identity as well)
+  const int icyl = m_indvec[ires];
+  if (icyl<0 || icyl>=int(m_cylinders.size()))
+    return pos;
+  SecSplDat *pC = m_cylinders[icyl];
+  const int ipt = ires - pC->m_nResDelta;
+  if (ipt<0 || ipt>=int(pC->m_resvec.size()) || pC->m_resvec[ipt]!=pRes.get())
+    return pos;
+
+  // Skip the degenerated cylinder that renderHelix() does not draw
+  double tstart = pC->m_bStartExtend ? 1.0-m_dAxExt : 0.0;
+  double tend = pC->m_spl.getPoints()-1.0;
+  if (pC->m_bEndExtend)
+    tend -= 1.0-m_dAxExt;
+  if (int(::floor((tend-tstart)*getAxialDetail()))<=0)
+    return pos;
+
+  const double t = double(ipt);
+  Vector4D axpos;
+  pC->m_spl.interpolate(t, &axpos);
+  double dwidth;
+  const double lim = qlib::max(0.0, calcHelixWidth(pC, t, dwidth) - m_ptsCoil->getWidth());
+
+  // Pull the pivot radially toward the axis so that the coil tube stays
+  // inside the cylinder (the pivot inside the cylinder is left untouched)
+  Vector4D dv = pos - axpos;
+  dv.w() = 0.0;
+  const double len = dv.length();
+  if (len<=lim)
+    return pos;
+  Vector4D res = axpos + dv.scale(lim/len);
+  res.w() = pos.w();
+  return res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1187,6 +1234,8 @@ void Ribbon2Renderer::buildCoilData()
             // Prev res is helix (H C)
             pCoil->setStart();
             pCoil->addPoint( this, pPrevRes, m_dAnchorWgt);
+            if (!m_bRibbonHelix)
+              pCoil->setLastPos( calcHelixJctPos(i-1) );
             pCoil->addPoint( this, pRes, m_dAnchorWgt);
           }
           pCoil->m_bStartExtend = true;
@@ -1215,6 +1264,8 @@ void Ribbon2Renderer::buildCoilData()
           // coil-helix junction (C H)
           pCoil->m_posvec.back().w() = m_dAnchorWgt;
           pCoil->addPoint( this, pRes, m_dAnchorWgt);
+          if (!m_bRibbonHelix)
+            pCoil->setLastPos( calcHelixJctPos(i) );
           pCoil->setEnd();
         }
         pCoil->m_bEndExtend = true;

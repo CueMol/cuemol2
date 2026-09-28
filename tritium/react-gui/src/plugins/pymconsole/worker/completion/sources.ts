@@ -25,6 +25,7 @@ import { representationNames } from '../commands/repCommands'
 import { storedCameraNames } from '../commands/viewCommands'
 import { PYMOL_COLORS } from '../commands/pymolColors'
 import { SETTING_ALIASES, findEntry, resolveTarget } from '../commands/settingCommands'
+import { REP_SETTINGS } from '../commands/repSettings'
 import type { CmdContext } from '../commands/types'
 
 /** The kinds of candidate a command argument can ask for. */
@@ -70,11 +71,11 @@ function publicNames(ctx: WorkerContext, sceneId: number): string[] {
   return [...objectNames(ctx, sceneId), ...defs.scene]
 }
 
-/** Property names writable on the scene, plus the PyMOL aliases for them. */
+/** Property names writable on the scene, plus the PyMOL names `set` also takes. */
 function settingNames(ctx: WorkerContext, sceneId: number): string[] {
   const props = getGenericProps(ctx, { sceneId, nodeId: sceneId, nodeType: 'scene' })
   const names = props.ok ? props.entries.filter((e) => !e.readonly).map((e) => e.key) : []
-  return [...new Set([...names, ...Object.keys(SETTING_ALIASES)])]
+  return [...new Set([...names, ...Object.keys(SETTING_ALIASES), ...Object.keys(REP_SETTINGS)])]
 }
 
 /**

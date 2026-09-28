@@ -38,6 +38,24 @@ export interface CmdContext {
   markMutated(): void
   /** Move the working directory (`cd` only). */
   setCwd(dir: string): void
+  /**
+   * Register a download's stream request id, so Stop cancels it (`fetch`).
+   * The id should come from `streamId`.
+   */
+  noteStream(reqId: string): void
+  /** A stream request id unique to this run, for `noteStream`. */
+  streamId(tag: string): string
+  /**
+   * Run a `.pml` file's commands here, inside this submission's transaction
+   * (`run`; the `@` line prefix goes through the same path).
+   */
+  runScript(filePath: string): Promise<CmdOutcome>
+  /**
+   * Ask the panel to open a scene file once the submission is done (`load
+   * x.qsc`). The worker cannot make a tab, so the panel does it the way
+   * File > Open does.
+   */
+  openScene(filePath: string): void
 }
 
 /** A command either did its job or has a reason it could not. */
@@ -77,6 +95,12 @@ export interface PymCommand {
    * which is what PyMOL does for every argument it has no entry for.
    */
   completions?: (ArgCompletion | null)[]
+  /**
+   * Whether this call has to run outside the submission's transaction --
+   * saving a scene resets the undo stack, which cannot happen inside one.
+   * Such a call must then be the only command on the line, like `undo`.
+   */
+  outsideTxn?: (args: Record<string, string>) => boolean
   /**
    * Do it.
    *

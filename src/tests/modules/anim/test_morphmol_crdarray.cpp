@@ -125,3 +125,28 @@ TEST(MorphMolCrdArray, AtomsAreNotIndividuallyMovable)
     EXPECT_THROW(pAtom->setPos(Vector4D(1.0, 2.0, 3.0)), qlib::RuntimeException);
     EXPECT_THROW(f.pMorph->xformByMat(qlib::Matrix4D()), qlib::RuntimeException);
 }
+
+/**
+ * A morph's xformMat moves every frame, applied exactly once.
+ *
+ * Bound atoms take the transform from the morph instead of holding a copy
+ * each; a matrix set before the atoms bind to the array (the .qsc restore
+ * order) must not end up applied twice, nor lost, once they do.
+ */
+TEST(MorphMolCrdArray, XformMatAppliesToEveryFrameOnce)
+{
+    Fixture f;
+    f.pMorph->setXformMatrix(qlib::Matrix4D::makeTransMat(Vector4D(1.0, 0.0, 0.0)));
+    f.pMorph->setFrame(0.0);
+
+    MolAtomPtr pAtom = f.pMorph->getAtom(f.pMorph->getAtomIDByArrayInd(0));
+    ASSERT_FALSE(pAtom.isnull());
+    EXPECT_NEAR(pAtom->getPos().x(), 1.0, 1.0e-4);
+    EXPECT_NEAR(pAtom->getRawPos().x(), 0.0, 1.0e-4);
+
+    f.pMorph->setFrame(1.0);
+    EXPECT_NEAR(pAtom->getPos().x(), 11.0, 1.0e-4);
+
+    f.pMorph->setXformMatrix(qlib::Matrix4D());
+    EXPECT_NEAR(pAtom->getPos().x(), 10.0, 1.0e-4);
+}

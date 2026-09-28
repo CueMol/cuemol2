@@ -4,6 +4,16 @@
 //
 
 #include <sstream>
+#include <string_view>
+
+// std::format-style formatting (LString::fmtFormat) uses the fmt bundled with
+// spdlog. Only its light base.h is included here; format.h is read by
+// LString.cpp alone. FMT_UNICODE matches the qmspdlog build, so code built
+// against the installed headers sees the same fmt configuration.
+#ifndef FMT_UNICODE
+#define FMT_UNICODE 0
+#endif
+#include <spdlog/fmt/bundled/base.h>
 
 #include "LObject.hpp"
 #include "qlib.hpp"
@@ -343,6 +353,24 @@ public:
     void format2(const char *fmt, ...);
 
     static LString format(const char *msg, ...);
+
+    /// std::format-style formatting: `{}` / `{:spec}` fields, the format
+    /// string checked at compile time. Unlike format(), the result has no
+    /// length limit and does not depend on the locale (the same output as
+    /// format() in the "C" locale). Uses only what std::format also has,
+    /// so it can move to std once the code base is C++20.
+    template <typename... Args>
+    static LString fmtFormat(fmt::format_string<Args...> f, Args &&...args)
+    {
+        const auto sv = f.get();
+        return vfmtFormat(std::string_view(sv.data(), sv.size()),
+                          fmt::make_format_args(args...));
+    }
+
+    /// The runtime counterpart of fmtFormat, for a format string that is
+    /// only known at run time.
+    /// @throws fmt::format_error when `f` is not a valid format for `args`.
+    static LString vfmtFormat(std::string_view f, fmt::format_args args);
 
     static inline LString fromBool(bool b)
     {

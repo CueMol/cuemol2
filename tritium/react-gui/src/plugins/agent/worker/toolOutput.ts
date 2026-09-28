@@ -16,7 +16,15 @@
  */
 
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
-import type { ToolOutcome } from './tools/types'
+import type { Tool } from 'ai'
+import type { ToolImage, ToolOutcome } from './tools/types'
+
+/**
+ * What `toModelOutput` returns. Derived rather than imported: `ai` uses the
+ * type without exporting it (the same reason as `ProviderOptions` in
+ * `modelProvider.ts`).
+ */
+type ToolResultOutput = Awaited<ReturnType<NonNullable<Tool['toModelOutput']>>>
 
 export { normalizeServiceResult }
 
@@ -70,6 +78,33 @@ export function serializeToolOutput(outcome: ToolOutcome): string {
       note: `Result too large (${text.length} chars); showing the first ${MAX_OUTPUT_CHARS}.`,
     }).slice(0, -1) + ',"head":' + JSON.stringify(text.slice(0, MAX_OUTPUT_CHARS)) + '}'
   )
+}
+
+/** What `runQueued` resolves to: the JSON text, plus the picture if there is one. */
+export type ToolRunOutput = string | { text: string; image: ToolImage }
+
+/**
+ * The tool result as the model receives it.
+ *
+ * A plain string becomes a text output, which is exactly what the SDK does
+ * when a tool has no `toModelOutput` -- so the tools that return no picture
+ * send the same bytes as before. A picture goes as a file part after the
+ * text, which each provider maps to its own image block inside the tool
+ * result.
+ */
+export function toolModelOutput(output: ToolRunOutput): ToolResultOutput {
+  if (typeof output === 'string') return { type: 'text', value: output }
+  return {
+    type: 'content',
+    value: [
+      { type: 'text', text: output.text },
+      {
+        type: 'file',
+        mediaType: output.image.mediaType,
+        data: { type: 'data', data: output.image.base64 },
+      },
+    ],
+  }
 }
 
 /** One line describing an outcome, for the transcript. */

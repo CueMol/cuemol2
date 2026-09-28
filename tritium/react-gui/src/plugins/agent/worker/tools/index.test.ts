@@ -43,11 +43,13 @@ const ALLOWED_SCHEMA_KEYWORDS = new Set([
 ])
 
 /**
- * The ceiling OpenAI's guidance puts on one turn's function list.
+ * The ceiling on one turn's function list: OpenAI's guidance of 20, plus
+ * capture_view.
  *
  * A soft limit about selection accuracy rather than an API one -- past it a
- * model starts picking the wrong tool -- and the catalogue sits exactly on
- * it. A new capability that maps onto a C++ property belongs in
+ * model starts picking the wrong tool. capture_view was let past it
+ * deliberately, being the one tool no other can stand in for, and the
+ * catalogue sits exactly on the raised ceiling. A new capability that maps onto a C++ property belongs in
  * `get_node_props` / `set_node_prop`, which reach the scene, an object and a
  * renderer through one pair; that is how the scene-wide settings arrived
  * without costing a slot. Something genuinely new has to fold a tool first,
@@ -55,7 +57,7 @@ const ALLOWED_SCHEMA_KEYWORDS = new Set([
  * molecule's selection as a documented side effect and could become an
  * argument of `set_mol_selection`.
  */
-const MAX_TOOLS = 20
+const MAX_TOOLS = 21
 
 /**
  * Every object schema reachable from the root, including the ones inside

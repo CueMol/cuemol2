@@ -6,7 +6,9 @@
  * properties on the scene, an object, a renderer or the view. There is no
  * table that could map one onto the other, so the rule here is: a handful of
  * PyMOL names that have an exact CueMol counterpart are aliased, and anything
- * else is tried as a CueMol property name. That way `set` reaches every
+ * else is tried as a CueMol property name. The settings of one
+ * representation (`stick_radius`, `cartoon_transparency`) go to the
+ * console's renderers for it instead (repSettings.ts). That way `set` reaches every
  * property the inspector shows, and the PyMOL names people actually type for
  * the overlapping settings still work.
  *
@@ -19,8 +21,10 @@ import { resetGenericProps, setGenericProp } from '@renderer/worker/server/servi
 import type { GenericPropEntry, PropTargetType } from '@renderer/worker/shared/genericProps'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, PymCommand } from './types'
-import { isDefaulted, resolveOneObject, toBoolean, toNumber } from './helpers'
+import { isDefaulted, resolveObjects, resolveOneObject, resolveRenderers, toBoolean, toNumber } from './helpers'
+import { parseRgb } from './colorCommands'
 import { toCueMolColor } from './pymolColors'
+import { REP_SETTINGS, getRepSetting, setRepSetting, unsetRepSetting } from './repSettings'
 
 /** A PyMOL setting name that has an exact CueMol counterpart. */
 export interface SettingAlias {
@@ -61,9 +65,22 @@ export function resolveTarget(
   }
   const name = objectName.trim()
   if (name === '') return { ok: true, target: { nodeId: cc.sceneId, nodeType: 'scene' } }
-  const found = resolveOneObject(ctx, cc.sceneId, name)
-  if (!found.ok) return found
-  return { ok: true, target: { nodeId: found.obj.uid, nodeType: 'object' } }
+  // PyMOL's third argument names an object; here it may also name a
+  // renderer (an isomesh, pym:sticks) or the view, which carry the
+  // properties PyMOL keeps as per-object settings.
+  if (name === 'view') return { ok: true, target: { nodeId: cc.viewId, nodeType: 'view' } }
+  if (resolveObjects(ctx, cc.sceneId, name).length > 0) {
+    const found = resolveOneObject(ctx, cc.sceneId, name)
+    if (!found.ok) return found
+    return { ok: true, target: { nodeId: found.obj.uid, nodeType: 'object' } }
+  }
+  const rends = resolveRenderers(ctx, cc.sceneId, name)
+  if (rends.length === 1) return { ok: true, target: { nodeId: rends[0].rendId, nodeType: 'renderer' } }
+  if (rends.length > 1) {
+    const names = rends.map((r) => `${r.objName}/${r.rendName}`).join(', ')
+    return { ok: false, error: `Error: "${name}" names more than one renderer (${names})` }
+  }
+  return { ok: false, error: `Error: nothing named "${name}" (an object, a renderer, or view)` }
 }
 
 /** The property entry `propName` refers to on `target`, if there is one. */
@@ -101,8 +118,10 @@ function coerce(
     case 'real':
       return toNumber(raw)
     default: {
-      // Strings, enums, and the object types C++ parses from a string (a
-      // colour, a selection) go through unchanged.
+      // A colour takes PyMOL's names and [r, g, b] as `color` does.
+      if (/AbstractColor|Color/.test(entry.type)) return parseRgb(raw) ?? toCueMolColor(raw)
+      // Strings, enums, and the other object types C++ parses from a string
+      // (a selection) go through unchanged.
       if (entry.enumdef && !entry.enumdef.includes(raw)) return null
       return raw
     }
@@ -116,6 +135,9 @@ const set: PymCommand = {
     { name: 'value', default: '1' },
     { name: 'selection', default: '' },
     { name: 'state', default: '0' },
+    { name: 'updates', default: '1' },
+    { name: 'log', default: '0' },
+    { name: 'quiet', default: '1' },
   ],
   // PyMOL's `set ambient=0.3` is a value, not a named argument.
   mode: 'legacy',
@@ -131,6 +153,8 @@ const set: PymCommand = {
   ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('set: state is ignored (not supported)')
+    const repSetting = REP_SETTINGS[args.name.trim()]
+    if (repSetting) return setRepSetting(ctx, cc, args.name.trim(), repSetting, args.value, args.selection)
     const alias = SETTING_ALIASES[args.name.trim()]
     const propName = alias?.prop ?? args.name.trim()
     const target = resolveTarget(ctx, cc, args.selection, alias)
@@ -163,7 +187,12 @@ const set: PymCommand = {
 
 const get: PymCommand = {
   name: 'get',
-  params: [{ name: 'name' }, { name: 'selection', default: '' }, { name: 'state', default: '0' }],
+  params: [
+    { name: 'name' },
+    { name: 'selection', default: '' },
+    { name: 'state', default: '0' },
+    { name: 'quiet', default: '1' },
+  ],
   mode: 'strict',
   mutates: false,
   summary: 'Print a property of the scene or an object.',
@@ -173,6 +202,8 @@ const get: PymCommand = {
   ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('get: state is ignored (not supported)')
+    const repSetting = REP_SETTINGS[args.name.trim()]
+    if (repSetting) return getRepSetting(ctx, cc, args.name.trim(), repSetting, args.selection)
     const alias = SETTING_ALIASES[args.name.trim()]
     const propName = alias?.prop ?? args.name.trim()
     const target = resolveTarget(ctx, cc, args.selection, alias)
@@ -188,7 +219,14 @@ const get: PymCommand = {
 
 const unset: PymCommand = {
   name: 'unset',
-  params: [{ name: 'name' }, { name: 'selection', default: '' }, { name: 'state', default: '0' }],
+  params: [
+    { name: 'name' },
+    { name: 'selection', default: '' },
+    { name: 'state', default: '0' },
+    { name: 'updates', default: '1' },
+    { name: 'log', default: '0' },
+    { name: 'quiet', default: '1' },
+  ],
   mode: 'strict',
   mutates: true,
   summary: 'Restore a property to its default.',
@@ -198,6 +236,8 @@ const unset: PymCommand = {
   ],
   run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('unset: state is ignored (not supported)')
+    const repSetting = REP_SETTINGS[args.name.trim()]
+    if (repSetting) return unsetRepSetting(ctx, cc, args.name.trim(), repSetting, args.selection)
     const alias = SETTING_ALIASES[args.name.trim()]
     const propName = alias?.prop ?? args.name.trim()
     const target = resolveTarget(ctx, cc, args.selection, alias)

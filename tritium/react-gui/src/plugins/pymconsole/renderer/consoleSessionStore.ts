@@ -22,6 +22,9 @@ export interface ConsoleLine extends ConsoleEntry {
 /** What runs a submission. Owned by the Root, called by the panel. */
 export type ConsoleRunner = (text: string) => void
 
+/** Stops the submission in progress. */
+export type ConsoleStopper = () => void
+
 export interface ConsoleSessionState {
   lines: ConsoleLine[]
   /** True while a submission is in flight; the prompt is disabled. */
@@ -29,6 +32,7 @@ export interface ConsoleSessionState {
   /** What is typed but not sent, kept across tab switches. */
   draft: string
   runner: ConsoleRunner | null
+  stopper: ConsoleStopper | null
 }
 
 const EMPTY: ConsoleSessionState = {
@@ -36,6 +40,7 @@ const EMPTY: ConsoleSessionState = {
   running: false,
   draft: '',
   runner: null,
+  stopper: null,
 }
 
 let state: ConsoleSessionState = EMPTY
@@ -70,8 +75,8 @@ export function getConsoleSession(): ConsoleSessionState {
 
 export const consoleSession = {
   /** The Root registers the runner it owns. */
-  setRunner(runner: ConsoleRunner | null): void {
-    emit({ ...state, runner })
+  setRunner(runner: ConsoleRunner | null, stopper: ConsoleStopper | null = null): void {
+    emit({ ...state, runner, stopper })
   },
 
   setDraft(draft: string): void {

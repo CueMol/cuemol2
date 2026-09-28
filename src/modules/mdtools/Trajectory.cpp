@@ -124,6 +124,16 @@ bool Trajectory::removeAtom(int atomid)
     return false;
 }
 
+void Trajectory::setXformMatrix(const qlib::Matrix4D &m)
+{
+    if (!m.isIdent()) {
+        LOG_DPRINTLN("Trajectory> warning: xformMat is not supported for a trajectory (ignored)");
+        super_t::setXformMatrix(qlib::Matrix4D());
+        return;
+    }
+    super_t::setXformMatrix(m);
+}
+
 //////////
 
 void Trajectory::setup()

@@ -14,7 +14,29 @@
 
 #include <qsys/SceneManager.hpp>
 
+#include <algorithm>
+
 using namespace molstr;
+
+namespace {
+
+typedef std::pair<qlib::TagName, int> AtomEntry;
+
+struct AtomEntryLess
+{
+    bool operator()(const AtomEntry &a, const LString &b) const { return a.first.str() < b; }
+    bool operator()(const LString &a, const AtomEntry &b) const { return a < b.first.str(); }
+};
+
+template <class Vec>
+auto findAtomEntry(Vec &tab, const LString &name) -> decltype(tab.begin())
+{
+    auto iter = std::lower_bound(tab.begin(), tab.end(), name, AtomEntryLess());
+    if (iter != tab.end() && iter->first.str().equals(name)) return iter;
+    return tab.end();
+}
+
+}  // namespace
 
 MolResidue::MolResidue()
 {
@@ -37,7 +59,7 @@ int MolResidue::getAtomID(const LString &atomname, char confid /*= '\0'*/) const
   // atom name with conf ID
   if (confid) {
     const LString encname = atomname + ":" + LString(confid);
-    atomdata_t::const_iterator iter = m_atomData.find(encname);
+    atomdata_t::const_iterator iter = findAtomEntry(m_atomData, encname);
     if (iter!=m_atomData.end())
       return iter->second;
 
@@ -75,7 +97,7 @@ int MolResidue::getAtomID(const LString &atomname, char confid /*= '\0'*/) const
   
   // atom name without conf ID
   {
-    atomdata_t::const_iterator iter = m_atomData.find(atomname);
+    atomdata_t::const_iterator iter = findAtomEntry(m_atomData, atomname);
     if (iter!=m_atomData.end())
       return iter->second;
   }
@@ -130,7 +152,11 @@ bool MolResidue::appendAtom(MolAtomPtr pAtom)
   if (confid)
     encname = atomname + ":" + LString(confid);
 
-  m_atomData.set(encname, atomid);
+  auto iter = std::lower_bound(m_atomData.begin(), m_atomData.end(), encname, AtomEntryLess());
+  if (iter != m_atomData.end() && iter->first.str().equals(encname))
+    iter->second = atomid;
+  else
+    m_atomData.insert(iter, AtomEntry(qlib::TagName(encname), atomid));
   return true;
 }
 
@@ -138,7 +164,10 @@ bool MolResidue::removeAtom(const LString &atomname, char confid /*= '\0'*/)
 {
   if (confid) {
     const LString encname = atomname + ":" + LString(confid);
-    return m_atomData.remove(encname);
+    atomdata_t::iterator iter = findAtomEntry(m_atomData, encname);
+    if (iter == m_atomData.end()) return false;
+    m_atomData.erase(iter);
+    return true;
   }
 
   atomdata_t::iterator iter = m_atomData.begin();
@@ -147,9 +176,7 @@ bool MolResidue::removeAtom(const LString &atomname, char confid /*= '\0'*/)
   for (;iter!=m_atomData.end();) {
     const LString &nm = iter->first;
     if (nm.equals(atomname) || nm.startsWith(prefix)) {
-      atomdata_t::iterator diter = iter;
-      ++iter;
-      m_atomData.erase(diter);
+      iter = m_atomData.erase(iter);
       ++ndel;
       continue;
     }
@@ -183,7 +210,7 @@ LString MolResidue::toString() const
   MolCoordPtr pmol = getParent();
   if (!pmol.isnull())
     molname = pmol->getName();
-  return molname+" "+m_chain+" "+m_index.toString()+" "+m_name;
+  return molname+" "+m_chain.str()+" "+m_index.toString()+" "+m_name.str();
 }
 
 MolAtomPtr MolResidue::getAtom(const LString &atomname, char confid /*= '\0'*/) const
@@ -279,7 +306,7 @@ LString MolResidue::getAtomsJSON() const
     if (bcomma) rval += ",";
     MolAtomPtr pAtom = pmol->getAtom(iter->second);
     rval += "{";
-    rval += "\"name\":\""+iter->first.escapeQuots()+"\",";
+    rval += "\"name\":\""+iter->first.str().escapeQuots()+"\",";
     rval += LString::format("\"id\":%d,", iter->second);
     rval += "\"elem\":\""+pAtom->getElementName().escapeQuots()+"\"";
     rval += "}";

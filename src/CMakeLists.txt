@@ -209,6 +209,8 @@ add_subdirectory(pcre)
 add_subdirectory(expat)
 add_subdirectory(zlib)
 add_subdirectory(libpng)
+# spdlog (with fmt), fetched at configure time: see cmake/spdlog.cmake
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/spdlog.cmake)
 
 # main components/modules
 add_subdirectory(qlib)
@@ -258,6 +260,7 @@ endif()
 SET(CUEMOL2_LINK_LIBRARIES
   qmpcre
   qmexpat
+  spdlog::spdlog
   qmpng
   qmzlib
   qlib

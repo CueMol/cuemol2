@@ -73,6 +73,14 @@ using namespace molstr;
         m_resvec.push_back(pRes.get());
       }
 
+      /// Move the last point, keeping its weight
+      void setLastPos(const Vector4D &pos)
+      {
+        const double wgt = m_posvec.back().w();
+        m_posvec.back() = pos;
+        m_posvec.back().w() = wgt;
+      }
+
       void setStart()
       {
         int nleft = m_posvec.size();
@@ -252,6 +260,13 @@ using namespace molstr;
     void buildHelixData();
     void clearHelixData();
     void renderHelix(DisplayContext *pdl);
+
+    /// Cylinder radius of the helix pC at the parameter t
+    double calcHelixWidth(detail::SecSplDat *pC, double t, double &dwidth) const;
+
+    /// Coil control point for the helix residue at m_resvec[ires]
+    /// (the pivot position pulled into the cylinder when it lies outside)
+    Vector4D calcHelixJctPos(int ires);
 
     void buildSheetData();
     void clearSheetData();

@@ -27,6 +27,9 @@ architecture, it belongs here.
   qsc には `<camera>` 要素の並び順として保存する (object / renderer と同じ仕組み)。
   save / apply の with show/hide 版を含むツールバー、drag での並べ替え、既存名の上書き挙動。
 
+- [Ball & stick trace renderer (`tracestick`)](tracestick-renderer.md) (日本語) --
+  主鎖 pivot atom (CA / P) を sphere + cylinder で結ぶ `trace` の ball & stick 版。
+  segment 判定は MainChainRenderer 共通、coordinate texture 経路と display-list 経路、style 一覧。
 - [GPU ID-buffer picking と 3D view の hover 情報 / hover highlight](gpu-id-picking.md) (日本語) --
   tritium の 3D view で、renderer が描いた幾何そのものに対する hittest (整数 render target に
   renderer/要素 ID を描画して読み戻す、Mol* の pick pass 方式) と、マウス hover で左下ステータスに対象を

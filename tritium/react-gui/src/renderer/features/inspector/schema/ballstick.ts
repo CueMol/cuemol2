@@ -10,6 +10,8 @@
  * shows these rows as its first section and adds its own on top -- built from
  * here rather than copied. It asks for them without the live preview: it draws
  * an ellipsoid per atom, which is too expensive to rebuild per drag frame.
+ * The ball-and-stick trace renderer (`tracestick`) reuses the sphere/stick
+ * rows without the ring display.
  */
 
 import type { PropRowDef, SchemaSectionDef } from './types'
@@ -17,6 +19,19 @@ import { isOff } from './predicates'
 
 /** Ring thickness and colour apply only while the ring display is on. */
 const ringOff = isOff('ring')
+
+/**
+ * Sphere subdivision, stick width and sphere radius: the rows every
+ * sphere-and-cylinder renderer (`ballstick`, `anisou`, `tracestick`) shares.
+ */
+export function sphereStickRows(opts: { realtime: boolean }): PropRowDef[] {
+  const { realtime } = opts
+  return [
+    { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 2 },
+    { kind: 'num', key: 'bondw', label: 'Bond width', min: 0, max: 3, step: 0.01, unit: 'Å', realtime },
+    { kind: 'num', key: 'sphr', label: 'Atom radius', min: 0, max: 3, step: 0.01, unit: 'Å', realtime },
+  ]
+}
 
 /**
  * Atoms and bonds, as ball-and-stick draws them.
@@ -29,9 +44,7 @@ const ringOff = isOff('ring')
 export function ballstickRows(opts: { realtime: boolean }): PropRowDef[] {
   const { realtime } = opts
   return [
-    { kind: 'numEnum', keys: ['detail'], label: 'Detail', min: 2 },
-    { kind: 'num', key: 'bondw', label: 'Bond width', min: 0, max: 3, step: 0.01, unit: 'Å', realtime },
-    { kind: 'num', key: 'sphr', label: 'Atom radius', min: 0, max: 3, step: 0.01, unit: 'Å', realtime },
+    ...sphereStickRows(opts),
     { kind: 'bool', key: 'ring', label: 'Show ring' },
     {
       kind: 'num',

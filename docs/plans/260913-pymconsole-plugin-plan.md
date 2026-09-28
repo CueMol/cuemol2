@@ -118,6 +118,10 @@ worker が持つ module 状態は **`cwd` 1 つだけ**。
 
 ## AI agent tool との共有化は「今はやらない」
 
+> **更新 (260926)**: MCP が 3 つ目の consumer となり着手条件を満たした。共有化の計画は
+> [260926-mcp-tool-catalog-plan.md](260926-mcp-tool-catalog-plan.md) (正式 interface は CueMol ネイティブの
+> ops + toolCatalog、console はその consumer)。
+
 将来 agent の tool 定義と console の command 定義を TS 側で共有したい、という要望があるが、
 **この計画では共有層を作らない**。
 
@@ -302,6 +306,8 @@ serialization は要素ごとに汎用なので `.qsc` の往復は無変更で�
 (PyMOL と同じ)。`representations` と `mapRenderers` ソースを追加。
 
 ## Phase 3 (以降、需要次第)
+
+> **更新 (260926)**: 詳細計画は [260926-pymconsole-phase3-plan.md](260926-pymconsole-phase3-plan.md)。
 
 `@script.pml`、`fetch` の cancel、`save`、`label` / `spectrum` / `set_color`、anim
 (`mplay` `mstop` `frame` `mview`)、`align`/`super` -> SSM 代替、PyMOL 設定名 alias 表の拡充、

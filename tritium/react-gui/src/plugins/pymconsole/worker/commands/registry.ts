@@ -16,6 +16,11 @@ import { MISC_COMMANDS } from './miscCommands'
 import { OBJECT_COMMANDS } from './objectCommands'
 import { SETTING_COMMANDS } from './settingCommands'
 import { VIEW_COMMANDS } from './viewCommands'
+import { SAVE_COMMANDS } from './saveCommands'
+import { COLOR_COMMANDS } from './colorCommands'
+import { FIT_COMMANDS } from './fitCommands'
+import { MOVIE_COMMANDS } from './movieCommands'
+import { LABEL_COMMANDS } from './labelCommands'
 import { usageLine } from '../parser/bindArgs'
 import { lookupCommand } from '../parser/commandLookup'
 import type { PymCommand } from './types'
@@ -73,6 +78,11 @@ export const PYM_COMMANDS: readonly PymCommand[] = [
   ...VIEW_COMMANDS,
   ...SETTING_COMMANDS,
   ...MISC_COMMANDS,
+  ...SAVE_COMMANDS,
+  ...COLOR_COMMANDS,
+  ...FIT_COMMANDS,
+  ...MOVIE_COMMANDS,
+  ...LABEL_COMMANDS,
   help,
 ].sort((a, b) => a.name.localeCompare(b.name))
 

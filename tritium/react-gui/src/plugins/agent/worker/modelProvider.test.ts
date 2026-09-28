@@ -15,13 +15,19 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { providerOptionsFor, usesStrictTools } from './modelProvider'
+import { APICallError } from 'ai'
+import { describeApiError, providerOptionsFor, usesStrictTools } from './modelProvider'
 
 describe('the per-provider request options', () => {
   it('leaves Anthropic reasoning entirely to the SDK', () => {
     const options = providerOptionsFor({ provider: 'anthropic', modelId: 'claude-haiku-4-5' })
     expect(options.anthropic?.thinking).toBeUndefined()
     expect(options.anthropic?.effort).toBeUndefined()
+  })
+
+  it('leaves Gemini thinking entirely to the SDK', () => {
+    // A budget for 2.5, a level for 3.x: `thinkingConfig` here would skip that.
+    expect(providerOptionsFor({ provider: 'google', modelId: 'gemini-flash-latest' })).toEqual({})
   })
 
   it('sets what OpenAI needs, but not the effort', () => {
@@ -39,5 +45,19 @@ describe('the per-provider request options', () => {
     // the request once it is too big, which a catalogue this size is.
     expect(usesStrictTools({ provider: 'openai', modelId: 'gpt-5.6' })).toBe(true)
     expect(usesStrictTools({ provider: 'anthropic', modelId: 'claude-opus-5' })).toBe(false)
+  })
+})
+
+describe('reporting a failed request', () => {
+  it('reads Gemini 400 "API key not valid" as a bad key, naming the provider', () => {
+    // Gemini does not answer a bad key with 401 like the other two.
+    const error = new APICallError({
+      message: 'API key not valid. Please pass a valid API key.',
+      url: 'https://generativelanguage.googleapis.com/',
+      requestBodyValues: {},
+      statusCode: 400,
+    })
+    expect(describeApiError(error, { provider: 'google', modelId: 'gemini-flash-latest' }))
+      .toMatch(/^Invalid Google API key \(400\)/)
   })
 })

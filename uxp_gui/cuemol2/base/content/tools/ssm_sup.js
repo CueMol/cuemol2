@@ -34,9 +34,15 @@ dlg.ctor = function ()
     cuemol.evtMgr.SEM_OBJECT);
   this.mRefObjBox._tgtSceID = this.mTargetSceneID;
 
+  // A trajectory can only be superposed frame by frame, so it cannot be the
+  // moving molecule (its xformMat is ignored and its atoms are not editable).
+  var mov_filter_fn = function (elem) {
+    return filter_fn(elem) && !cuemol.implIface(elem.type, "Trajectory");
+  };
+
   this.mMovObjBox = new cuemolui.ObjMenuList(
     "mov_obj",
-    window, filter_fn,
+    window, mov_filter_fn,
     cuemol.evtMgr.SEM_OBJECT);
   this.mMovObjBox._tgtSceID = this.mTargetSceneID;
 
