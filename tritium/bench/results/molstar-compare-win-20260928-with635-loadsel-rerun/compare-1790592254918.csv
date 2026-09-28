@@ -1,0 +1,2 @@
+tool,spec,rep,order,ok,error,canvas_w,canvas_h,dpr,atoms,traj_frames,traj_lazy,render_fps,update_fps,frame_ms_mean,frame_ms_p95,first_draw_ms,load_ms,ws_peak_mb,ws_loaded_mb,ws_measure_peak_mb,private_peak_mb,ws_peak_renderer_mb,ws_peak_gpu_mb,ws_peak_browser_mb,upload_bytes_per_frame,upload_bytes_per_update,wall_ms,pagefile_before_mb,pagefile_after_mb,gpu
+cuemol,a4all-md-loadsel,0,1,0,"render-process-gone: crashed",,,,,,,,,,,,,2994.109,,,2982.762,2742.906,98.801,104.191,,,12100,169,169,

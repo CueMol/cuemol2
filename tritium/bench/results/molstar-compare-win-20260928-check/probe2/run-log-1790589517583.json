@@ -1,0 +1,32 @@
+{
+ "started": "2026-09-28T09:58:37.570Z",
+ "seed": 1735639422,
+ "repeat": 1,
+ "gitSha": "ddb48f3cab1d2b09dfef17977eeec2a857472e67",
+ "electron": "C:\\proj64\\cuemol2\\tritium\\react-gui\\node_modules\\electron\\dist\\electron.exe",
+ "canvas": {
+  "cuemol": "1876x1045",
+  "molstar": "1834x1012"
+ },
+ "dprSwitch": "--force-device-scale-factor=1",
+ "files": {
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system.gro": {
+   "sha256": "4c71b03b4f68636e94b688ae140529cb38cdd9b3de15b1656adb3a36d2145bad",
+   "bytes": 5031759
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system_9ns_center.xtc": {
+   "sha256": "97f6a93acc1e330915338b290625d81d84928a7e4c1e5aed63d209881fbe268b",
+   "bytes": 372588552
+  }
+ },
+ "order": [
+  {
+   "order": 1,
+   "tool": "cuemol",
+   "spec": "yiip-idle",
+   "rep": 0,
+   "ok": true
+  }
+ ],
+ "finished": "2026-09-28T09:58:49.326Z"
+}

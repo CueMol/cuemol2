@@ -1,0 +1,9 @@
+tool,spec,rep,order,ok,error,canvas_w,canvas_h,dpr,atoms,traj_frames,traj_lazy,render_fps,update_fps,frame_ms_mean,frame_ms_p95,first_draw_ms,load_ms,ws_peak_mb,ws_loaded_mb,ws_measure_peak_mb,private_peak_mb,ws_peak_renderer_mb,ws_peak_gpu_mb,ws_peak_browser_mb,upload_bytes_per_frame,upload_bytes_per_update,wall_ms,pagefile_before_mb,pagefile_after_mb,gpu
+cuemol,yiip-300f-md,0,1,0,"no result (status 0, signal null)",,,,,,,,,,,,,,,,,,,,,,141,169,169,
+cuemol,yiip-idle,0,2,0,"no result (status 0, signal null)",,,,,,,,,,,,,,,,,,,,,,140,169,169,
+cuemol,a4all-25f-md,0,3,1,,1832,1010,1,3940938,25,true,44.824,44.824,22.185,33,15430.6,15419.3,6159.602,5534.34,5568.047,6863.266,4940.605,1071.461,99.23,47297040,47297040,24153,169,169,"ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 (0x00002786) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+cuemol,ifabp-md,0,4,1,,1832,1010,1,12445,500,true,60.125,60.125,16.621,17.4,107.5,297.9,506.855,415.738,506.074,405.391,254.527,101.383,102.539,160272,160272,8931,169,169,"ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 (0x00002786) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+cuemol,yiip-300f-md,1,5,1,,1832,1010,1,111815,300,true,59.992,59.992,16.623,17.2,652.2,735.4,956.043,570.844,956.043,874.066,673.992,134.273,99.617,1352208,1352208,9357,169,169,"ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 (0x00002786) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+cuemol,yiip-idle,1,6,0,"no result (status 0, signal null)",,,,,,,,,,,,,,,,,,,,,,135,169,169,
+cuemol,a4all-25f-md,1,7,0,"no result (status 0, signal null)",,,,,,,,,,,,,,,,,,,,,,129,169,169,
+cuemol,ifabp-md,1,8,0,"no result (status 0, signal null)",,,,,,,,,,,,,,,,,,,,,,125,169,169,

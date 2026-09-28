@@ -1,0 +1,72 @@
+{
+ "started": "2026-09-28T10:18:12.662Z",
+ "seed": 1736814090,
+ "repeat": 2,
+ "gitSha": "ddb48f3cab1d2b09dfef17977eeec2a857472e67",
+ "electron": "C:\\proj64\\cuemol2\\tritium\\react-gui\\node_modules\\electron\\dist\\electron.exe",
+ "canvas": {
+  "cuemol": "1876x1045",
+  "molstar": "1834x1012"
+ },
+ "dprSwitch": "--force-device-scale-factor=1",
+ "files": {
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\a4tail\\em.gro": {
+   "sha256": "82482eee2a32f67c077b5f16ad4f27e4f53575bbc6fe26f11ed9294dbb432268",
+   "bytes": 177342266
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\a4tail\\prod-25f.xtc": {
+   "sha256": "02e4fba69b81035351658800909a1ca2ca411494e4fd77a627fad145ad2a289b",
+   "bytes": 382039884
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\ifabp\\ifabp_water_0.pdb": {
+   "sha256": "8ccf5f75fd85385921c0cb77f00281a93b933fc1261c42fc9492f43983448a72",
+   "bytes": 958441
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\ifabp\\rmsfit_ifabp_water_1-le.dcd": {
+   "sha256": "ad2163a9b65f4275540047229d8b04e678f3b3e5cec06c72d025a202c317124f",
+   "bytes": 74710276
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system.gro": {
+   "sha256": "4c71b03b4f68636e94b688ae140529cb38cdd9b3de15b1656adb3a36d2145bad",
+   "bytes": 5031759
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system_9ns_center-300f.xtc": {
+   "sha256": "c9d31c9f9372fb25bdbaab2d9b937174b66fd9f4458a9aec81c13f6c2af46c0d",
+   "bytes": 124057076
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system_9ns_center.xtc": {
+   "sha256": "97f6a93acc1e330915338b290625d81d84928a7e4c1e5aed63d209881fbe268b",
+   "bytes": 372588552
+  }
+ },
+ "order": [
+  {
+   "order": 1,
+   "tool": "cuemol",
+   "spec": "yiip-300f-md",
+   "rep": 0,
+   "ok": false
+  },
+  {
+   "order": 2,
+   "tool": "cuemol",
+   "spec": "yiip-idle",
+   "rep": 0,
+   "ok": false
+  },
+  {
+   "order": 3,
+   "tool": "cuemol",
+   "spec": "a4all-25f-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 4,
+   "tool": "cuemol",
+   "spec": "ifabp-md",
+   "rep": 0,
+   "ok": true
+  }
+ ]
+}

@@ -1,0 +1,67 @@
+{
+ "started": "2026-09-28T08:26:22.536Z",
+ "seed": 1730103733,
+ "repeat": 6,
+ "gitSha": "ddb48f3cab1d2b09dfef17977eeec2a857472e67",
+ "electron": "C:\\proj64\\cuemol2\\tritium\\react-gui\\node_modules\\electron\\dist\\electron.exe",
+ "canvas": {
+  "cuemol": "1876x1045",
+  "molstar": "1834x1012"
+ },
+ "dprSwitch": "--force-device-scale-factor=1",
+ "files": {
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\a4tail\\em.gro": {
+   "sha256": "82482eee2a32f67c077b5f16ad4f27e4f53575bbc6fe26f11ed9294dbb432268",
+   "bytes": 177342266
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\a4tail\\prod-100f.xtc": {
+   "sha256": "c5f6d8be534dd84b84b3954d581a84f52db336c4eaa3d0dd9fd767101b1aff13",
+   "bytes": 1528146256
+  }
+ },
+ "order": [
+  {
+   "order": 1,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 2,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 1,
+   "ok": true
+  },
+  {
+   "order": 3,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 2,
+   "ok": true
+  },
+  {
+   "order": 4,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 3,
+   "ok": true
+  },
+  {
+   "order": 5,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 4,
+   "ok": true
+  },
+  {
+   "order": 6,
+   "tool": "cuemol",
+   "spec": "a4all-md-loadsel",
+   "rep": 5,
+   "ok": true
+  }
+ ],
+ "finished": "2026-09-28T08:34:36.271Z"
+}

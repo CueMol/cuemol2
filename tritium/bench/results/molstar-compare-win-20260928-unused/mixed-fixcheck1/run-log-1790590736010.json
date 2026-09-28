@@ -1,0 +1,87 @@
+{
+ "started": "2026-09-28T10:18:55.993Z",
+ "seed": 1736856667,
+ "repeat": 2,
+ "gitSha": "ddb48f3cab1d2b09dfef17977eeec2a857472e67",
+ "electron": "C:\\proj64\\cuemol2\\tritium\\react-gui\\node_modules\\electron\\dist\\electron.exe",
+ "canvas": {
+  "cuemol": "1876x1045",
+  "molstar": "1834x1012"
+ },
+ "dprSwitch": "--force-device-scale-factor=1",
+ "files": {
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\a4tail\\em.gro": {
+   "sha256": "82482eee2a32f67c077b5f16ad4f27e4f53575bbc6fe26f11ed9294dbb432268",
+   "bytes": 177342266
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\a4tail\\prod-25f.xtc": {
+   "sha256": "02e4fba69b81035351658800909a1ca2ca411494e4fd77a627fad145ad2a289b",
+   "bytes": 382039884
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\a4tail\\prod-100f.xtc": {
+   "sha256": "c5f6d8be534dd84b84b3954d581a84f52db336c4eaa3d0dd9fd767101b1aff13",
+   "bytes": 1528146256
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\ifabp\\ifabp_water_0.pdb": {
+   "sha256": "8ccf5f75fd85385921c0cb77f00281a93b933fc1261c42fc9492f43983448a72",
+   "bytes": 958441
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\ifabp\\rmsfit_ifabp_water_1-le.dcd": {
+   "sha256": "ad2163a9b65f4275540047229d8b04e678f3b3e5cec06c72d025a202c317124f",
+   "bytes": 74710276
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\mcv448\\structure.pdb": {
+   "sha256": "32a6137f6ea09ea8d4dae28288fb2388189002cd2b676ff488ad3b617f1ba029",
+   "bytes": 13056267
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\mcv448\\trajectory.xtc": {
+   "sha256": "698555f5483f90e614552730f02e9320331c1715f5f1268b59fe7b54d2ed73d5",
+   "bytes": 182069708
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system.gro": {
+   "sha256": "4c71b03b4f68636e94b688ae140529cb38cdd9b3de15b1656adb3a36d2145bad",
+   "bytes": 5031759
+  },
+  "C:\\proj64\\cuemol2\\tritium\\bench\\data\\md\\yiip\\YiiP_system_9ns_center.xtc": {
+   "sha256": "97f6a93acc1e330915338b290625d81d84928a7e4c1e5aed63d209881fbe268b",
+   "bytes": 372588552
+  }
+ },
+ "order": [
+  {
+   "order": 1,
+   "tool": "cuemol",
+   "spec": "mcv448-md",
+   "rep": 0,
+   "ok": false
+  },
+  {
+   "order": 2,
+   "tool": "cuemol",
+   "spec": "ifabp-md",
+   "rep": 0,
+   "ok": false
+  },
+  {
+   "order": 3,
+   "tool": "cuemol",
+   "spec": "yiip-idle",
+   "rep": 0,
+   "ok": false
+  },
+  {
+   "order": 4,
+   "tool": "cuemol",
+   "spec": "a4all-25f-md",
+   "rep": 0,
+   "ok": false
+  },
+  {
+   "order": 5,
+   "tool": "cuemol",
+   "spec": "yiip-md",
+   "rep": 0,
+   "ok": true
+  }
+ ]
+}
