@@ -221,6 +221,13 @@ export interface RunBenchArgs {
     canvasWidth: number;
     canvasHeight: number;
     dpr: number;
+    /**
+     * The drawing buffer the renderer's layout asks for (CSS size x dpr), or
+     * null when the canvas had no layout. A cell whose buffer differs after
+     * the warm-up fails rather than measuring a stretched 300x150 view.
+     */
+    expectedWidth?: number | null;
+    expectedHeight?: number | null;
 }
 
 export async function runBench(
@@ -456,6 +463,18 @@ export async function runBench(
     requestAnimationFrame(tick);
 
     await sleep(spec.warmupMs ?? DEFAULT_WARMUP_MS);
+
+    if (args.expectedWidth && args.expectedHeight) {
+        const drawn = canvasSize(ctx, args);
+        if (drawn.width !== args.expectedWidth || drawn.height !== args.expectedHeight) {
+            running = false;
+            return fail(
+                `drawing buffer ${drawn.width}x${drawn.height}, layout asks for ` +
+                `${args.expectedWidth}x${args.expectedHeight}`,
+                'native',
+            );
+        }
+    }
 
     advances = 0;
     benchCounters.inputLatencies.length = 0;
