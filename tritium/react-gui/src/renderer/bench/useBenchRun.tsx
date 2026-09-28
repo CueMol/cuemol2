@@ -63,6 +63,15 @@ export function useBenchRun(): void {
         const width = canvas ? canvas.width : 0
         const height = canvas ? canvas.height : 0
 
+        // Send the laid-out size once more before the cell starts. On a slow
+        // start the pane binds the canvas while it still has no layout (0x0),
+        // and the size that follows can be dropped, leaving the drawing buffer
+        // at the element's default 300x150 for the whole cell. The worker
+        // handles this before `benchRun` (both go over the same channel) and
+        // checks the buffer against it after the warm-up.
+        const layout = canvas ? await waitForLayout(canvas) : null
+        if (layout) cm.resized(target.view_id, layout.width, layout.height, dpr)
+
         const res = await cm.invokeService('benchRun', {
           specPath,
           sceneId: target.scene_uid,
@@ -70,6 +79,8 @@ export function useBenchRun(): void {
           canvasWidth: width,
           canvasHeight: height,
           dpr,
+          expectedWidth: layout ? Math.round(layout.width * dpr) : null,
+          expectedHeight: layout ? Math.round(layout.height * dpr) : null,
         })
 
         report(res.ok ? res.result : { ok: false, error: res.error })
@@ -78,6 +89,32 @@ export function useBenchRun(): void {
       }
     })()
   }, [cm, ensureActiveScene])
+}
+
+/**
+ * Resolve with the canvas's laid-out CSS size once it has one, or null if it
+ * gets none within the timeout.
+ */
+function waitForLayout(
+  canvas: HTMLCanvasElement,
+  timeoutMs = 10000,
+): Promise<{ width: number; height: number } | null> {
+  const deadline = Date.now() + timeoutMs
+  return new Promise((resolve) => {
+    const check = (): void => {
+      const { width, height } = canvas.getBoundingClientRect()
+      if (width > 0 && height > 0) {
+        resolve({ width, height })
+        return
+      }
+      if (Date.now() > deadline) {
+        resolve(null)
+        return
+      }
+      setTimeout(check, 50)
+    }
+    check()
+  })
 }
 
 /** Resolve once a canvas with a real backing store exists. */
