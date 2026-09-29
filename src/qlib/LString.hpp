@@ -4,7 +4,6 @@
 //
 
 #include <sstream>
-#include <string_view>
 
 // std::format-style formatting (LString::fmtFormat) uses the fmt bundled with
 // spdlog. Only its light base.h is included here; format.h is read by
@@ -362,15 +361,13 @@ public:
     template <typename... Args>
     static LString fmtFormat(fmt::format_string<Args...> f, Args &&...args)
     {
-        const auto sv = f.get();
-        return vfmtFormat(std::string_view(sv.data(), sv.size()),
-                          fmt::make_format_args(args...));
+        return vfmtFormat(f.get(), fmt::make_format_args(args...));
     }
 
     /// The runtime counterpart of fmtFormat, for a format string that is
     /// only known at run time.
     /// @throws fmt::format_error when `f` is not a valid format for `args`.
-    static LString vfmtFormat(std::string_view f, fmt::format_args args);
+    static LString vfmtFormat(fmt::string_view f, fmt::format_args args);
 
     static inline LString fromBool(bool b)
     {
