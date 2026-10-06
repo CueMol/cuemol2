@@ -21,6 +21,12 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":["string","null"],"description":"Selection expression to centre on. Null uses the molecule's current selection."},"zoom":{"type":"boolean","description":"True also zooms to fit the selection; false only recentres."}},"required":["molId","selection","zoom"],"additionalProperties":false}",
   },
   {
+    "description": "Redraw one renderer as another type (for example cartoon to ribbon), keeping its name, selection and place in the list. The renderer is replaced, so it gets a NEW uid, which is returned; use that one from now on. Use this rather than creating a second renderer when the user wants the same thing drawn differently.",
+    "mutates": true,
+    "name": "change_renderer_type",
+    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"rendererType":{"type":"string","description":"The new type. Must be one the renderer can change to; a wrong one is answered with the list."}},"required":["rendId","rendererType"],"additionalProperties":false}",
+  },
+  {
     "description": "Compile a selection expression and count the atoms it matches in one molecule. Do this before using an expression anywhere else: an expression can be valid and still match nothing, which looks like a renderer that did not work.",
     "mutates": false,
     "name": "check_selection",
@@ -33,10 +39,16 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object to draw."},"rendererType":{"type":"string","description":"Renderer type, from get_renderer_types."},"name":{"type":["string","null"],"description":"Name for the renderer. Null picks an unused default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws the whole object. Check it with check_selection first."}},"required":["objId","rendererType","name","selection"],"additionalProperties":false}",
   },
   {
-    "description": "Switch on more tools for this conversation. The tools below are always available; these groups add more once switched on, from your next step: "analysis" -- Measuring and analysing: distances, angles and torsions between named atoms, close contacts around a selection, and saving a PNG of the view to the desktop. Switch a group on only when the request needs it.",
+    "description": "Delete one object, renderer, or renderer group from the scene. Deleting an object deletes everything drawn from it; deleting a group deletes its renderers. Only when the user asked to remove it: to take something out of view, hide it with set_visible instead.",
+    "mutates": true,
+    "name": "delete_node",
+    "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the object, renderer, or renderer group."},"nodeType":{"type":"string","enum":["object","renderer","rendGroup"],"description":"What nodeId refers to. Must match what get_scene_state reported."}},"required":["nodeId","nodeType"],"additionalProperties":false}",
+  },
+  {
+    "description": "Switch on more tools for this conversation. The tools below are always available; these groups add more once switched on, from your next step: "analysis" -- Measuring and analysing: distances, angles and torsions between named atoms, close contacts around a selection, and listing the residues of a chain. "files" -- Files on this computer: opening a structure file the user named, and saving a PNG of the view to the desktop. (Downloading from the PDB is always available.) "coloring" -- Colouring by a named style: listing the styles set_renderer_coloring accepts. Switch a group on only when the request needs it.",
     "mutates": false,
     "name": "enable_toolsets",
-    "parameters": "{"type":"object","properties":{"toolsets":{"type":"array","description":"The groups to switch on.","items":{"type":"string","enum":["analysis"]}}},"required":["toolsets"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"toolsets":{"type":"array","description":"The groups to switch on.","items":{"type":"string","enum":["analysis","files","coloring"]}}},"required":["toolsets"],"additionalProperties":false}",
   },
   {
     "description": "Save a PNG of the current view to the desktop. Give a file name only, not a path. This writes a file; the full path is reported back so you can tell the user where it went.",
@@ -103,6 +115,12 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "mutates": true,
     "name": "paint_selection",
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer to paint."},"selection":{"type":"string","description":"Which atoms to colour. Check it with check_selection first."},"color":{"type":"string","description":"Colour as hex (\\"#FF0000\\"), a CueMol colour name (\\"red\\"), or hsb(h,s,b). Hex is the safest."}},"required":["rendId","selection","color"],"additionalProperties":false}",
+  },
+  {
+    "description": "Rename one object, renderer, or renderer group. Renaming a group keeps its renderers in it.",
+    "mutates": true,
+    "name": "rename_node",
+    "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the object, renderer, or renderer group."},"nodeType":{"type":"string","enum":["object","renderer","rendGroup"],"description":"What nodeId refers to. Must match what get_scene_state reported."},"name":{"type":"string","description":"The new name. Not empty; a renderer group name must be unused in the scene."}},"required":["nodeId","nodeType","name"],"additionalProperties":false}",
   },
   {
     "description": "Turn the view about a screen axis: x runs left to right, y bottom to top, z out of the screen toward the viewer. Use it to show the structure from another side; capture_view tells you which way it went.",

@@ -80,7 +80,7 @@ export const exportImage = defineOp({
   },
   // The scene is unchanged: this writes a file, which no undo can take back.
   mutates: false,
-  expose: { tool: 'analysis', console: true },
+  expose: { tool: 'files', console: true },
   run(ctx, args, oc) {
     const fileName = args.fileName
     if (!SAFE_BASENAME_RE.test(fileName)) {

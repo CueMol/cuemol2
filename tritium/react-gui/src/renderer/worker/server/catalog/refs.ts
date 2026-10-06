@@ -8,13 +8,14 @@
  *
  * - `#12` or `12` -- that uid, whatever it is;
  * - `1crn` -- the object of that name;
- * - `1crn.cartoon1` or `1crn/cartoon1` -- the renderer (or renderer group)
- *   of that name on that object;
+ * - `1crn/cartoon1` -- the renderer (or renderer group) of that name on that
+ *   object. The separator is `/`, never `.`: an object is usually named
+ *   after its file (`1ox1.pdb`), so a dot cannot tell the two apart;
  * - `cartoon1` -- a renderer of that name, when only one object has one.
  *
- * and a property from a path that ends in the property name:
- * `1crn.cartoon1.width`, `1crn/cartoon1.width`, `1crn.visible`, or a bare
- * `bgcolor` for the scene's own.
+ * and a property from the node followed by `.` and the property name:
+ * `1crn/cartoon1.width`, `1crn.visible`, or a bare `bgcolor` for the scene's
+ * own.
  *
  * Names are not unique in CueMol. A name that matches more than one node is
  * refused rather than guessed, with the uids to choose between.
@@ -57,9 +58,9 @@ export function sceneNodes(ctx: WorkerContext, sceneId: number): SceneNodeEntry[
   return out
 }
 
-/** How a node is written back: `obj` or `obj.rend`. */
+/** How a node is written back: `obj` or `obj/rend`. */
 export function nodePath(n: SceneNodeEntry): string {
-  return n.type === 'object' ? n.name : `${n.objName ?? ''}.${n.name}`
+  return n.type === 'object' ? n.name : `${n.objName ?? ''}/${n.name}`
 }
 
 /** The resolved node, or why the text does not name one. */
@@ -114,20 +115,7 @@ export function resolveRef(
   // An object is the likelier meaning of a bare name; a renderer is only
   // looked for when no object answers.
   if (objects.length > 0) return one(want, objects)
-  const rends = nodes.filter((n) => n.type !== 'object' && n.name === want && accepts(kind, n))
-  if (rends.length > 0) return one(want, rends)
-
-  // `obj.rend`, split at whichever dot leaves an object name that exists (an
-  // object name may itself contain a dot).
-  for (let at = want.indexOf('.'); at > 0; at = want.indexOf('.', at + 1)) {
-    const objName = want.slice(0, at)
-    const rendName = want.slice(at + 1)
-    const hits = nodes.filter(
-      (n) => n.type !== 'object' && n.objName === objName && n.name === rendName && accepts(kind, n),
-    )
-    if (hits.length > 0) return one(want, hits)
-  }
-  return { ok: false, error: `nothing named "${want}" in the scene` }
+  return one(want, nodes.filter((n) => n.type !== 'object' && n.name === want && accepts(kind, n)))
 }
 
 /** Where a property lives, and its name there. */
@@ -148,10 +136,11 @@ function targetOf(node: SceneNodeEntry): Omit<PropTarget, 'prop'> {
 /**
  * Split a property path into the node and the property name.
  *
- * The node is the longest prefix that names one: `obj` then, when the next
- * segment names a renderer of it and more follows, `obj.rend`. Whatever is
- * left is the property name, so a nested property (`coloring.col_C`) passes
- * through whole. A path whose first segment names no object is a property of
+ * With a `/` (or a leading `#uid`) the node is everything up to the first
+ * `.` after it: `obj/rend.prop`. Without one, the node is an object: the
+ * shortest dot-separated prefix that names one (`1ox1.pdb.visible`), the rest
+ * being the property. Either way the property may itself be dotted
+ * (`coloring.col_C`). A path whose prefix names no object is a property of
  * the scene.
  */
 export function resolvePropPath(
@@ -183,12 +172,7 @@ export function resolvePropPath(
       const which = objs.map((o) => `#${o.id}`).join(', ')
       return { ok: false, error: `"${objName}" names more than one object: ${which}; give the uid instead` }
     }
-    const rest = segs.slice(i)
-    if (rest.length >= 2) {
-      const rends = nodes.filter((n) => n.type !== 'object' && n.objName === objName && n.name === rest[0])
-      if (rends.length === 1) return { ok: true, ...targetOf(rends[0]), prop: rest.slice(1).join('.') }
-    }
-    return { ok: true, ...targetOf(objs[0]), prop: rest.join('.') }
+    return { ok: true, ...targetOf(objs[0]), prop: segs.slice(i).join('.') }
   }
   return { ok: true, nodeType: 'scene', nodeId: sceneId, prop: want }
 }

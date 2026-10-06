@@ -38,11 +38,11 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 | `.qif` スカラー | `boolean` / `integer` / `real` / `string` / `enumOf(values)` | boolean / integer / number / string / string+enum | `true`/`false`/`on`/`off`、数値、文字列 |
 | 省略可能 | `optional(p)` | `[type, "null"]` | 省略 (既定値 `''`) |
 | object uid | `objectId` / `moleculeId` / `rendererId` | integer | `1crn`、`#12` |
-| node uid | `nodeId(desc, typeParam)` | integer + 種別 enum | `1crn`、`1crn.cartoon1`、`1crn/cartoon1`、`#12` (種別も解決される) |
+| node uid | `nodeId(desc, typeParam)` | integer + 種別 enum | `1crn`、`1crn/cartoon1`、`#12` (種別も解決される)。object と renderer の区切りは `/` だけ (object 名がファイル名由来で `.` を含むため) |
 | selection | `selection` | string | CueMol 選択式をそのまま (bind 時に `validateSelection`) |
 | colour / path | `color` / `path` | string | 色名・`#rrggbb` / cwd 基準のパス |
 | renderer type | `rendererType` | string | 補完は対象 object の作成可能 type |
-| property | `propName` / `propValue` / `propPath` | string | `propPath` は `obj.rend.prop` / `obj/rend.prop` / `obj.prop` / scene の `prop` |
+| property | `propName` / `propValue` / `propPath` | string | `propPath` は `obj/rend.prop` / `obj.prop` / scene の `prop` (node の後ろに `.` で property) |
 | 座標 | `vec3` | number の配列 (3 要素は読み込み時に検査) | `x y z` |
 | 原子列 | `atoms` | `{chain, resid, atomName}` の配列 | `A/20/CA A/21/CA` |
 
@@ -89,7 +89,7 @@ lone `undo` / `redo` と `outsideTxn` のコマンドは txn の外、script は
   含むため、空白区切りは採らない。`key=value` も使える。
 - 主な verb: `show` / `hide`、`select`、`zoom` / `center`、`turn`、`view` / `slab` / `fit_slab`、
   `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`png`、
-  `ls_scene`。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
+  `ls_scene`、`delete` / `rename` / `retype`。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
   `log` / `undo` / `redo` / `help`。script の拡張子は `.cml`。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
 - 補完は param の意味型から: enum 値、object / renderer / node 名、名前付き selection、色、

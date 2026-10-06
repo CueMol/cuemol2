@@ -1,6 +1,8 @@
 # op catalog の網羅: GUI の service を op にする
 
-Status: **未実装 (計画)**。
+Status: **フェーズ 1 実装済み** (`delete_node` / `rename_node` / `change_renderer_type` を core に追加し、
+`get_mol_residues` を `analysis`、`load_file` / `export_image` を `files`、`get_coloring_styles` を `coloring` へ移した)。
+2 以降は未実装。
 関連: [op catalog と console](../architecture/op-catalog.md)、
 [native console / op catalog 計画](261006-native-console-op-catalog-plan.md)。
 

@@ -63,10 +63,11 @@ const cc = {
 describe('a command generated from an op', () => {
   it('fixes the verb argument, resolves names and passes a selection through', async () => {
     const show = catalogCommands([op]).find((c) => c.command.name === 'show')!.command
-    // A fixed argument is not a parameter, so it cannot be typed.
-    expect(show.params.map((p) => p.name)).toEqual(['nodeId', 'nodeType', 'sel'])
+    // A fixed argument is not a parameter; the kind a name fills in goes last
+    // so the next positional argument does not land in it.
+    expect(show.params.map((p) => p.name)).toEqual(['nodeId', 'sel', 'nodeType'])
 
-    const res = await show.run({} as WorkerContext, { nodeId: '1crn.cartoon1', nodeType: '', sel: 'chain A and resid 1:5' }, cc)
+    const res = await show.run({} as WorkerContext, { nodeId: '1crn/cartoon1', nodeType: '', sel: 'chain A and resid 1:5' }, cc)
 
     expect(res).toEqual({ ok: true })
     expect(run.mock.calls[0][1]).toEqual({

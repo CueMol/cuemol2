@@ -3,7 +3,7 @@
  * @description How a typed name or property path finds its node.
  *
  * A console user names things; an op takes uids. Getting the split wrong is
- * silent -- `1crn.cartoon1.width` read as an object property, or a duplicated
+ * silent -- a renderer property written to its object, or a duplicated
  * name quietly picking one of two molecules, writes to the wrong node.
  */
 
@@ -35,11 +35,12 @@ const ctx = {} as WorkerContext
 
 describe('resolvePropPath', () => {
   it('splits a path into the node and the (possibly nested) property', () => {
-    expect(resolvePropPath(ctx, 1, '1crn.cartoon1.width')).toEqual({ ok: true, nodeType: 'renderer', nodeId: 11, prop: 'width' })
     expect(resolvePropPath(ctx, 1, '1crn/cartoon1.width')).toEqual({ ok: true, nodeType: 'renderer', nodeId: 11, prop: 'width' })
-    expect(resolvePropPath(ctx, 1, '1crn.cartoon1.coloring.col_C')).toMatchObject({ nodeId: 11, prop: 'coloring.col_C' })
+    expect(resolvePropPath(ctx, 1, '1crn/cartoon1.coloring.col_C')).toMatchObject({ nodeId: 11, prop: 'coloring.col_C' })
     // A group is a renderer to the property bridge.
-    expect(resolvePropPath(ctx, 1, '1crn.grp.visible')).toMatchObject({ nodeType: 'renderer', nodeId: 12 })
+    expect(resolvePropPath(ctx, 1, '1crn/grp.visible')).toMatchObject({ nodeType: 'renderer', nodeId: 12 })
+    // A dot never reaches a renderer: the separator is `/`.
+    expect(resolvePropPath(ctx, 1, '1crn.cartoon1.width')).toMatchObject({ nodeType: 'object', nodeId: 10, prop: 'cartoon1.width' })
     expect(resolvePropPath(ctx, 1, '1crn.visible')).toEqual({ ok: true, nodeType: 'object', nodeId: 10, prop: 'visible' })
     // No object prefix: the scene's own property.
     expect(resolvePropPath(ctx, 1, 'bgcolor')).toEqual({ ok: true, nodeType: 'scene', nodeId: 1, prop: 'bgcolor' })

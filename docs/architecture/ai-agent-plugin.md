@@ -283,8 +283,9 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 |---|---|---|
 | `get_scene_state` | no | `getSceneTree` + `getSelDefs` + scene 設定の読み取り |
 | `set_visible` | yes | `setNodeVisible` |
+| `delete_node` | yes | `deleteNode` (object / renderer / group。隠すだけなら `set_visible`) |
+| `rename_node` | yes | `renameNode` |
 | `get_mol_chains` | no | `getMolChains` |
-| `get_mol_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
 | `check_selection` | no | `validateSelection` + `getSelHitCount` |
 | `set_mol_selection` | yes | `applyMolSelString` |
 | `center_view` | yes | `centerMolSelection` / `zoomMolSelection` |
@@ -292,14 +293,13 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `set_view` | no | `getViewXform` / `setViewXform` (zoom / slab / distance / center を個別に。`fitSlab` は中心とズームを保って slab を全分子に合わせる) |
 | `get_renderer_types` | no | `getNewRendererOptions` |
 | `create_renderer` | yes | `createRendererOnObject` (名前省略時は `unusedRendererName(type)`) |
+| `change_renderer_type` | yes | `getRendererChangeTypes` で検査 -> `changeRendererType` (uid が変わるので新 uid を返す) |
 | `set_renderer_selection` | yes | `setGenericProp` (`propName: 'sel'`) |
 | `get_node_props` | no | `getGenericProps` (scene / object / renderer) |
 | `set_node_prop` | yes | `getGenericProps` -> `setGenericProp` |
-| `get_coloring_styles` | no | `getPaintColoringStyles` |
 | `set_renderer_coloring` | yes | `setRendererColoring` (レンダラ全体の着色を置き換える) |
 | `paint_selection` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` |
 | `fetch_pdb` | yes (async) | `streamLoadFromUrl` |
-| `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` (`.qsc` は開けない旨を返す) |
 | `capture_view` | no | `getSceneExportInfo` -> `exportScene` (一時ファイル) -> 画像を tool 結果に添付 |
 | `enable_toolsets` | no | (agent 側の meta tool。turn の `toolsets` に追加) |
 
@@ -309,7 +309,20 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 |---|---|---|
 | `measure_geometry` | yes | `MolCoord.getAtom` + `helpers/atomintr` の `appendMeasureLabel` |
 | `analyze_interactions` | yes | `analyzeInteractions` (既定は炭素を含む接触を除く。`includeCarbon` で含める) |
+| `get_mol_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
+
+**toolset `files`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` (`.qsc` は開けない旨を返す) |
 | `export_image` | no (シーン不変。ファイルは書く) | `getSceneExportInfo` -> `exportScene` |
+
+**toolset `coloring`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `get_coloring_styles` | no | `getPaintColoringStyles` |
 
 core は 21 件。OpenAI の推奨 20 本を意図的に 1 本超えている。`tools/index.test.ts` の `MAX_TOOLS`
 が core の 21 を pin しており、新しい op は使用頻度が低ければ toolset に入れる (toolset 側は本数を

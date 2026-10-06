@@ -11,7 +11,7 @@
  */
 
 /** The toolsets there are. */
-export type ToolsetId = 'analysis'
+export type ToolsetId = 'analysis' | 'files' | 'coloring'
 
 export interface Toolset {
   id: ToolsetId
@@ -25,6 +25,16 @@ export const TOOLSETS: readonly Toolset[] = [
     id: 'analysis',
     description:
       'Measuring and analysing: distances, angles and torsions between named atoms, ' +
-      'close contacts around a selection, and saving a PNG of the view to the desktop.',
+      'close contacts around a selection, and listing the residues of a chain.',
+  },
+  {
+    id: 'files',
+    description:
+      'Files on this computer: opening a structure file the user named, and saving a PNG ' +
+      'of the view to the desktop. (Downloading from the PDB is always available.)',
+  },
+  {
+    id: 'coloring',
+    description: 'Colouring by a named style: listing the styles set_renderer_coloring accepts.',
   },
 ]
