@@ -1,21 +1,21 @@
 /**
- * @file plugins/agent/worker/tools/analysisTools.ts
- * @description Tools that measure the structure, or picture it -- for the
- * user as a file, or for the model to look at.
+ * @file worker/server/catalog/ops/analysisOps.ts
+ * @description Ops that measure the structure, or picture it -- for the user
+ * as a file, or for a model to look at.
  */
 
 import * as fs from 'fs'
 import * as os from 'os'
-import * as path from 'path'
+import * as nodePath from 'path'
 
 import { analyzeInteractions } from '@renderer/worker/server/services/molops/analyzeInteractions'
 import {
   exportScene,
   getSceneExportInfo,
 } from '@renderer/worker/server/services/scene/exportImage'
-import { normalizeServiceResult } from '../toolOutput'
-import type { AgentTool } from './types'
-import { bool, int, nullable, str, strictSchema } from './types'
+import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { defineOp } from '../op'
+import { boolean, integer, moleculeId, optional, real, selection, string } from '../params'
 
 /** The dialog's own starting values, so both routes measure the same thing. */
 const MIN_CONTACT_DIST = 0
@@ -24,32 +24,30 @@ const MAX_LABELS = 100
 /** The label set contacts are drawn into, as the measurement UI names it. */
 const MEASURE_LABEL_SET = 'measure'
 
-const analyzeInteractionsTool: AgentTool = {
+export const analyzeInteractionsOp = defineOp({
   name: 'analyze_interactions',
   description:
     'Find close contacts around a selection and draw them as labelled dashed lines. ' +
     'Use it for hydrogen bonds and for what a ligand touches. This adds labels to the scene.',
-  parameters: strictSchema({
-    objId: int('Uid of the molecule to measure within.'),
-    selection: str('Selection the contacts start from, for example a ligand.'),
-    maxDist: nullable('number', `Longest contact to report, in angstroms. Null uses ${DEFAULT_MAX_CONTACT_DIST}.`),
-    hbondOnly: bool('True reports only nitrogen and oxygen contacts (hydrogen-bond candidates).'),
-  }),
+  params: {
+    objId: moleculeId('Uid of the molecule to measure within.'),
+    selection: selection('Selection the contacts start from, for example a ligand.'),
+    maxDist: optional(real(`Longest contact to report, in angstroms. Null uses ${DEFAULT_MAX_CONTACT_DIST}.`)),
+    hbondOnly: boolean('True reports only nitrogen and oxygen contacts (hydrogen-bond candidates).'),
+  },
   mutates: true,
-  run(ctx, input, turn) {
-    const maxDist = input.maxDist === null || input.maxDist === undefined
-      ? DEFAULT_MAX_CONTACT_DIST
-      : Number(input.maxDist)
+  expose: { tool: 'core', console: true },
+  run(ctx, args, oc) {
     const result = analyzeInteractions(ctx, {
-      sceneId: turn.sceneId,
-      objId: Number(input.objId),
-      selStr: String(input.selection),
+      sceneId: oc.sceneId,
+      objId: args.objId,
+      selStr: args.selection,
       useMol2: false,
       useSel2: false,
       minDist: MIN_CONTACT_DIST,
-      maxDist,
+      maxDist: args.maxDist ?? DEFAULT_MAX_CONTACT_DIST,
       maxLabels: MAX_LABELS,
-      hbondOnly: Boolean(input.hbondOnly),
+      hbondOnly: args.hbondOnly,
       rendName: MEASURE_LABEL_SET,
     })
     return normalizeServiceResult(
@@ -57,60 +55,75 @@ const analyzeInteractionsTool: AgentTool = {
       'The contacts could not be computed. Check the molecule id and the selection.',
     )
   },
-}
+})
 
 /** Reject anything that would write outside the chosen directory. */
 const SAFE_BASENAME_RE = /^[A-Za-z0-9._-]+$/
 
-const exportImage: AgentTool = {
+export const exportImage = defineOp({
   name: 'export_image',
   description:
     'Save a PNG of the current view to the desktop. Give a file name only, not a path. ' +
     'This writes a file; the full path is reported back so you can tell the user where it went.',
-  parameters: strictSchema({
-    fileName: str('File name with no directories, for example overview.png.'),
-    width: nullable('integer', 'Image width in pixels. Null uses the size of the view on screen.'),
-    height: nullable('integer', 'Image height in pixels. Null uses the size of the view on screen.'),
-  }),
+  params: {
+    fileName: string('File name with no directories, for example overview.png.'),
+    width: optional(integer('Image width in pixels. Null uses the size of the view on screen.')),
+    height: optional(integer('Image height in pixels. Null uses the size of the view on screen.')),
+  },
   // The scene is unchanged: this writes a file, which no undo can take back.
   mutates: false,
-  run(ctx, input, turn) {
-    const fileName = String(input.fileName)
+  expose: { tool: 'core', console: true },
+  run(ctx, args, oc) {
+    const fileName = args.fileName
     if (!SAFE_BASENAME_RE.test(fileName)) {
       return {
         ok: false,
         error: 'Give a plain file name with no directory separators, for example overview.png.',
       }
     }
-    const info = getSceneExportInfo(ctx, { sceneId: turn.sceneId, viewId: turn.viewId })
-    if (!info.ok) return { ok: false, error: 'The view could not be read for export.' }
-
-    const width = input.width === null || input.width === undefined
-      ? info.width
-      : Number(input.width)
-    const height = input.height === null || input.height === undefined
-      ? info.height
-      : Number(input.height)
-    if (width <= 0 || height <= 0) {
-      return { ok: false, error: 'The image size must be positive.' }
-    }
-
     const name = fileName.toLowerCase().endsWith('.png') ? fileName : `${fileName}.png`
-    const filePath = `${desktopDir()}/${name}`
-    const result = exportScene(ctx, {
-      sceneId: turn.sceneId,
-      viewId: turn.viewId,
-      filePath,
-      exporterName: 'png',
-      width,
-      height,
-    })
-    if (!result.ok) return { ok: false, error: `The image could not be written to ${filePath}.` }
-    return { ok: true, data: { path: filePath, width, height } }
+    return writePng(ctx, oc.sceneId, oc.viewId, `${desktopDir()}/${name}`, args.width, args.height)
   },
+})
+
+/**
+ * Render the view to a PNG file.
+ *
+ * Shared by `export_image` (a name on the desktop, for a model) and `png` (any
+ * path, for a console user who chose it).
+ *
+ * @param width - null uses the size of the view on screen; so does `height`.
+ */
+export function writePng(
+  ctx: Parameters<typeof exportScene>[0],
+  sceneId: number,
+  viewId: number,
+  filePath: string,
+  w: number | null,
+  h: number | null,
+): { ok: true; data: { path: string; width: number; height: number } } | { ok: false; error: string } {
+  const info = getSceneExportInfo(ctx, { sceneId, viewId })
+  if (!info.ok) return { ok: false, error: 'The view could not be read for export.' }
+
+  const width = w ?? info.width
+  const height = h ?? info.height
+  if (width <= 0 || height <= 0) {
+    return { ok: false, error: 'The image size must be positive.' }
+  }
+
+  const result = exportScene(ctx, {
+    sceneId,
+    viewId,
+    filePath,
+    exporterName: 'png',
+    width,
+    height,
+  })
+  if (!result.ok) return { ok: false, error: `The image could not be written to ${filePath}.` }
+  return { ok: true, data: { path: filePath, width, height } }
 }
 
-/** The longer side of a picture for the model, unless it asks for another. */
+/** The longer side of a picture for a model, unless it asks for another. */
 const DEFAULT_LONG_SIDE = 1024
 /**
  * The range a requested size is clamped to. Below the floor a structure is a
@@ -130,7 +143,7 @@ export function fitLongSide(width: number, height: number, longSide: number): { 
   }
 }
 
-const captureView: AgentTool = {
+export const captureView = defineOp({
   name: 'capture_view',
   description:
     'Look at the current view: returns a picture of what the user sees. Use it to check that ' +
@@ -139,35 +152,36 @@ const captureView: AgentTool = {
     'after every step. To see detail, zoom in first with center_view rather than raising ' +
     'longSide: tokens grow with the pixel count. Nothing is saved; use export_image to give ' +
     'the user a file.',
-  parameters: strictSchema({
-    longSide: nullable(
-      'integer',
-      `Pixels on the longer side. Null uses ${DEFAULT_LONG_SIDE}, which suits almost every ` +
-        `check; clamped to ${MIN_LONG_SIDE}-${MAX_LONG_SIDE}.`,
+  params: {
+    longSide: optional(
+      integer(
+        `Pixels on the longer side. Null uses ${DEFAULT_LONG_SIDE}, which suits almost every ` +
+          `check; clamped to ${MIN_LONG_SIDE}-${MAX_LONG_SIDE}.`,
+      ),
     ),
-  }),
+  },
   mutates: false,
-  run(ctx, input, turn) {
-    const info = getSceneExportInfo(ctx, { sceneId: turn.sceneId, viewId: turn.viewId })
+  // A picture is for a model to look at; a console has nowhere to show it.
+  expose: { tool: 'core', console: false },
+  run(ctx, args, oc) {
+    const info = getSceneExportInfo(ctx, { sceneId: oc.sceneId, viewId: oc.viewId })
     if (!info.ok || info.width <= 0 || info.height <= 0) {
       return { ok: false, error: 'The view could not be read.' }
     }
-    const requested = input.longSide === null || input.longSide === undefined
-      ? DEFAULT_LONG_SIDE
-      : Number(input.longSide)
+    const requested = args.longSide ?? DEFAULT_LONG_SIDE
     const longSide = Math.min(MAX_LONG_SIDE, Math.max(MIN_LONG_SIDE, Math.round(requested) || DEFAULT_LONG_SIDE))
     const { width, height } = fitLongSide(info.width, info.height, longSide)
 
     // The exporter writes only to a path, so the picture goes through a
     // temporary file that is removed as soon as it has been read.
-    const filePath = path.join(
+    const filePath = nodePath.join(
       os.tmpdir(),
-      `cuemol-agent-view-${turn.callId.replace(/[^A-Za-z0-9_-]/g, '') || Date.now()}.png`,
+      `cuemol-agent-view-${oc.callId.replace(/[^A-Za-z0-9_-]/g, '') || Date.now()}.png`,
     )
     try {
       const result = exportScene(ctx, {
-        sceneId: turn.sceneId,
-        viewId: turn.viewId,
+        sceneId: oc.sceneId,
+        viewId: oc.viewId,
         filePath,
         exporterName: 'png',
         width,
@@ -186,12 +200,12 @@ const captureView: AgentTool = {
       try { fs.rmSync(filePath, { force: true }) } catch { /* already gone */ }
     }
   },
-}
+})
 
 /**
  * Where an exported image goes.
  *
- * Fixed rather than asked for: the model has no file picker, and a path it
+ * Fixed rather than asked for: a model has no file picker, and a path it
  * chose itself is a path the user did not.
  */
 function desktopDir(): string {
@@ -199,4 +213,4 @@ function desktopDir(): string {
   return home ? `${home}/Desktop` : '.'
 }
 
-export const ANALYSIS_TOOLS: AgentTool[] = [analyzeInteractionsTool, captureView, exportImage]
+export const ANALYSIS_OPS = [analyzeInteractionsOp, captureView, exportImage]

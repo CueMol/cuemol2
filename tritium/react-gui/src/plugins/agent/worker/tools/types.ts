@@ -2,42 +2,28 @@
  * @file plugins/agent/worker/tools/types.ts
  * @description What an agent tool is.
  *
- * A tool is the adapter between one function the model may call and one (or
- * a few) existing worker services. It owns the JSON schema the model sees,
- * the translation into service arguments, and the decision of whether calling
- * it counts as changing the scene.
- *
- * Schemas are written by hand. There is no TS-type-to-JSON-schema generator
- * in this workspace, and `strict: true` makes the API enforce the shape
- * before the call arrives, so a client-side validator would only repeat work
- * the API has already done.
+ * A tool is an op from the core catalogue (`worker/server/catalog`) as the
+ * model sees it: the op's name and description, its parameters as a strict
+ * JSON Schema, and a `run` that reads the model's arguments into the op's
+ * types and invokes it within the turn. The tools are generated from the
+ * catalogue (`index.ts`); this type stays separate so a test can hand the
+ * loop a tool of its own without declaring an op.
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import type { AgentViewImage } from '../../shared/agentTypes'
+import type { OpImage, OpOutcome, StrictObjectSchema } from '@renderer/worker/server/catalog'
+import { paramsSchema } from '@renderer/worker/server/catalog'
 
-/**
- * A JSON Schema object in the shape `strict: true` requires: every property
- * listed in `required`, and no additional ones. An optional argument is
- * expressed as a nullable type (`['string', 'null']`), not by omission.
- */
-export interface StrictObjectSchema {
-  type: 'object'
-  properties: Record<string, unknown>
-  required: string[]
-  additionalProperties: false
-}
+export type { StrictObjectSchema } from '@renderer/worker/server/catalog'
 
 /** A picture a tool hands the model to look at, alongside its JSON result. */
-export type ToolImage = AgentViewImage
+export type ToolImage = OpImage
 
 /**
  * What a tool reports back. `data` is serialised for the model; `image`, when
  * present, is sent next to it as an image part rather than inside the JSON.
  */
-export type ToolOutcome =
-  | { ok: true; data?: unknown; image?: ToolImage }
-  | { ok: false; error: string }
+export type ToolOutcome = OpOutcome
 
 /** The turn a tool call belongs to. */
 export interface TurnContext {
@@ -103,40 +89,7 @@ export interface AgentTool {
   ): ToolOutcome | Promise<ToolOutcome>
 }
 
-/** Build a strict schema from its properties; every key becomes required. */
-export function strictSchema(properties: Record<string, unknown>): StrictObjectSchema {
-  return {
-    type: 'object',
-    properties,
-    required: Object.keys(properties),
-    additionalProperties: false,
-  }
-}
-
-/** A required string argument. */
-export function str(description: string): Record<string, unknown> {
-  return { type: 'string', description }
-}
-
-/** A required integer argument (a uid, a count). */
-export function int(description: string): Record<string, unknown> {
-  return { type: 'integer', description }
-}
-
-/** A required boolean argument. */
-export function bool(description: string): Record<string, unknown> {
-  return { type: 'boolean', description }
-}
-
-/** An argument the model may decline to supply, spelled as nullable. */
-export function nullable(
-  type: 'string' | 'integer' | 'number' | 'boolean',
-  description: string,
-): Record<string, unknown> {
-  return { type: [type, 'null'], description }
-}
-
-/** A required enumerated string. */
-export function enumStr(values: string[], description: string): Record<string, unknown> {
-  return { type: 'string', enum: values, description }
+/** A strict schema with no parameters, for tests that declare their own tool. */
+export function emptySchema(): StrictObjectSchema {
+  return paramsSchema({})
 }

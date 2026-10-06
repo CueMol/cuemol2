@@ -44,7 +44,8 @@ import {
   usesStrictTools,
 } from './modelProvider'
 import type { CreateModel } from './modelProvider'
-import { buildSceneSnapshot, formatSceneSnapshot } from './sceneSnapshot'
+import { runInTxn, txnLabel } from '@renderer/worker/server/catalog'
+import { buildSceneSnapshot, formatSceneSnapshot } from '@renderer/worker/server/catalog/ops/sceneSnapshot'
 import { SYSTEM_PROMPT } from './prompt/systemPrompt'
 import { AGENT_TOOLS, buildAiSdkTools } from './tools/index'
 import type { AgentTool, TurnContext } from './tools/types'
@@ -79,12 +80,6 @@ const DEFAULT_DEPS: TurnDeps = { createModel }
 
 function push(ctx: WorkerContext, update: AgentProgressUpdate): void {
   ctx.svc.pushMessage(AGENT_PROGRESS_CHANNEL, update)
-}
-
-/** The label the turn's undo entry carries. */
-function undoLabel(userText: string): string {
-  const oneLine = userText.replace(/\s+/g, ' ').trim()
-  return `AI: ${oneLine.length > 40 ? `${oneLine.slice(0, 40)}...` : oneLine}`
 }
 
 /** The user's message, with the scene described ahead of it. */
@@ -175,13 +170,42 @@ export async function runTurn(
     userItem,
   ])
 
+  try {
+    // Committed whenever the scene was actually changed, including on a
+    // cancel: rolling back would revert edits the user has already seen.
+    return await runInTxn(scene, txnLabel('AI: ', args.userText), () => turn.mutated, () =>
+      streamTurn({ ctx, args, deps, spec, turn, controller, messages, userItem }),
+    )
+  } finally {
+    activeTurns.delete(args.turnId)
+    turnStreams.delete(args.turnId)
+  }
+}
+
+/** What one turn's model loop runs with. */
+interface TurnRun {
+  ctx: WorkerContext
+  args: AgentRunTurnArgs
+  deps: TurnDeps
+  spec: ModelSpec
+  turn: TurnContext
+  controller: AbortController
+  messages: ModelMessage[]
+  userItem: ModelMessage
+}
+
+/**
+ * Drive the model until it stops asking for tools, inside the turn's undo
+ * transaction (opened by `runTurn`).
+ */
+async function streamTurn(run: TurnRun): Promise<AgentRunTurnResult> {
+  const { ctx, args, deps, spec, turn, controller, messages, userItem } = run
   let finalText = ''
   let toolCalls = 0
   let finishReason = ''
   let failure: unknown = null
   let canceled = false
 
-  scene.startUndoTxn(undoLabel(args.userText))
   try {
     const result = streamText({
       model: deps.createModel(spec, args.apiKey),
@@ -302,13 +326,6 @@ export async function runTurn(
     // `cancelTurn`, so a raised abort can only be ours.
     if (controller.signal.aborted) return fail('canceled', 'canceled')
     return fail(describeApiError(e, spec), 'io')
-  } finally {
-    // Commit whenever the scene was actually changed, including on a cancel:
-    // rolling back would revert edits the user has already seen.
-    if (turn.mutated) scene.commitUndoTxn()
-    else scene.rollbackUndoTxn()
-    activeTurns.delete(args.turnId)
-    turnStreams.delete(args.turnId)
   }
 }
 

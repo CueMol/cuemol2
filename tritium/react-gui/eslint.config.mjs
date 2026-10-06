@@ -222,6 +222,10 @@ export default tseslint.config(
         group: ['react', 'react-dom', '@blueprintjs/**', '@renderer/worker/client/**', '**/worker/client/**', '../client/**'],
         message: 'Wrong thread: worker/server may not reach the renderer thread or React.',
       },
+      // The op catalogue lives here and every plugin consumes it; a core
+      // module reaching back into one would make that plugin's dialect part
+      // of the core interface.
+      NO_PLUGIN_INTERNALS,
     ),
   },
 

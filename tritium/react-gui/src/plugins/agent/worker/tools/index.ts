@@ -1,40 +1,59 @@
 /**
  * @file plugins/agent/worker/tools/index.ts
- * @description The tool catalogue, and the adapter that hands it to the model.
+ * @description The tools the model may call, and the adapter that hands them
+ * to the SDK.
  *
- * Sorted by name and frozen in that order. The tool list is part of the
- * cached prompt prefix, so a catalogue that reordered itself between turns
- * would miss the cache every time for no benefit.
- *
- * Files here are deliberately NOT named `*.service.ts`: the worker registry
- * globs that pattern across every plugin directory and would try to register
- * a tool module as a service.
+ * The tools are the core op catalogue's `tool: 'core'` ops
+ * (`worker/server/catalog`), in its order: the schema is generated from each
+ * op's parameters, and a call reads the model's arguments into the op's types
+ * and runs it through the catalogue's `invokeOp`. Nothing here declares an
+ * operation of its own.
  */
 
 import { jsonSchema, tool } from 'ai'
 import type { ToolSet } from 'ai'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import {
+  invokeOp,
+  readToolArgs,
+  TOOL_OPS,
+  toolSchema,
+} from '@renderer/worker/server/catalog'
+import type { AnyOp, OpContext } from '@renderer/worker/server/catalog'
 import { normalizeServiceResult, serializeToolOutput, toolModelOutput } from '../toolOutput'
 import type { ToolRunOutput } from '../toolOutput'
-import { ANALYSIS_TOOLS } from './analysisTools'
-import { FILE_TOOLS } from './fileTools'
-import { MEASURE_TOOLS } from './measureTools'
-import { PROP_TOOLS } from './propTools'
-import { RENDERER_TOOLS } from './rendererTools'
-import { SCENE_TOOLS } from './sceneTools'
-import { SELECTION_TOOLS } from './selectionTools'
 import type { AgentTool, ToolOutcome, TurnContext } from './types'
 
+/** What an op needs from the turn it runs in. */
+function opContextOf(turn: TurnContext): OpContext {
+  return {
+    sceneId: turn.sceneId,
+    viewId: turn.viewId,
+    callId: turn.callId,
+    markMutated: () => { turn.mutated = true },
+    noteStream: turn.noteStream,
+    // Namespaced by turn and call, which is how `cancelTurn` finds it.
+    streamId: () => `${turn.turnId}:${turn.callId}`,
+  }
+}
+
+/** One op as the model sees it. */
+function opTool(op: AnyOp): AgentTool {
+  return {
+    name: op.name,
+    description: op.description,
+    parameters: toolSchema(op),
+    mutates: op.mutates,
+    run(ctx, input, turn): Promise<ToolOutcome> | ToolOutcome {
+      const args = readToolArgs(op, input)
+      if (typeof args === 'string') return { ok: false, error: args }
+      return invokeOp(op, ctx, args, opContextOf(turn))
+    },
+  }
+}
+
 /** Every tool the model may call, by name. */
-export const AGENT_TOOLS: readonly AgentTool[] = [
-  ...SCENE_TOOLS,
-  ...SELECTION_TOOLS,
-  ...RENDERER_TOOLS,
-  ...PROP_TOOLS,
-  ...FILE_TOOLS,
-  ...ANALYSIS_TOOLS,
-  ...MEASURE_TOOLS,
-].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+export const AGENT_TOOLS: readonly AgentTool[] = TOOL_OPS.map(opTool)
 
 /** Lookup by the name the model used. */
 export function findTool(name: string): AgentTool | undefined {

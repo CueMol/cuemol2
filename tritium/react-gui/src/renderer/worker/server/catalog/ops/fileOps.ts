@@ -1,6 +1,6 @@
 /**
- * @file plugins/agent/worker/tools/fileTools.ts
- * @description Tools that bring structures into the scene.
+ * @file worker/server/catalog/ops/fileOps.ts
+ * @description Ops that bring structures into the scene.
  */
 
 import {
@@ -12,57 +12,53 @@ import {
 } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
 import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
-import { normalizeServiceResult } from '../toolOutput'
-import type { AgentTool } from './types'
-import { enumStr, nullable, str, strictSchema } from './types'
+import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { defineOp } from '../op'
+import { enumOf, optional, path, selection, string } from '../params'
 
 /** A four-character PDB accession code. */
 const PDB_ID_RE = /^[0-9][0-9a-z]{3}$/i
 
-const fetchPdb: AgentTool = {
+export const fetchPdb = defineOp({
   name: 'fetch_pdb',
   description:
     'Download a structure from the RCSB PDB by its four-character accession code and add it ' +
     'to the scene. Creates a new object AND a default renderer, so call get_scene_state ' +
     'afterwards to learn their ids. This one takes a few seconds.',
-  parameters: strictSchema({
-    pdbId: str('Four-character PDB accession code, for example 1CRN.'),
-    format: enumStr(['mmcif', 'pdb'], 'Which file to fetch. Prefer mmcif.'),
-    rendererType: nullable(
-      'string',
-      "Renderer to create for it, for example cartoon. Null uses the reader's default.",
+  params: {
+    pdbId: string('Four-character PDB accession code, for example 1CRN.'),
+    format: enumOf(['mmcif', 'pdb'], 'Which file to fetch. Prefer mmcif.'),
+    rendererType: optional(
+      string("Renderer to create for it, for example cartoon. Null uses the reader's default."),
     ),
-    selection: nullable('string', 'Draw only this selection. Null draws everything.'),
-  }),
+    selection: optional(selection('Draw only this selection. Null draws everything.')),
+  },
   mutates: true,
-  async run(ctx, input, turn) {
-    const pdbId = String(input.pdbId).trim().toLowerCase()
+  expose: { tool: 'core', console: true },
+  async run(ctx, args, oc) {
+    const pdbId = args.pdbId.trim().toLowerCase()
     if (!PDB_ID_RE.test(pdbId)) {
-      return { ok: false, error: `"${input.pdbId}" is not a PDB accession code (four characters, first a digit).` }
+      return { ok: false, error: `"${args.pdbId}" is not a PDB accession code (four characters, first a digit).` }
     }
-    const spec = pickCoordUrl(pdbId, input.format === 'pdb' ? 'RCSB_PDB' : 'RCSB_CIF')
+    const spec = pickCoordUrl(pdbId, args.format === 'pdb' ? 'RCSB_PDB' : 'RCSB_CIF')
     const options = buildHeadlessFileOpenOptions(ctx, {
       readerName: spec.readerName,
       objectName: pdbId,
-      rendererType: input.rendererType === null || input.rendererType === undefined
-        ? null
-        : String(input.rendererType),
-      selection: input.selection === null || input.selection === undefined
-        ? null
-        : String(input.selection),
+      rendererType: args.rendererType,
+      selection: args.selection,
     })
 
-    // Namespaced by turn and call, and registered with the turn so that
-    // stopping the turn aborts this download rather than leaving it running.
-    const reqId = `${turn.turnId}:${turn.callId}`
-    turn.noteStream(reqId)
+    // Registered with the caller so that stopping it aborts this download
+    // rather than leaving it running.
+    const reqId = oc.streamId('fetch')
+    oc.noteStream(reqId)
 
     const result = await streamLoadFromUrl(ctx, {
       reqId,
       url: spec.url,
       readerName: spec.readerName,
       objectName: pdbId,
-      sceneId: turn.sceneId,
+      sceneId: oc.sceneId,
       options,
     })
     if (!result.ok) {
@@ -73,25 +69,23 @@ const fetchPdb: AgentTool = {
     }
     return { ok: true, data: { objectId: result.objId, name: pdbId } }
   },
-}
+})
 
-const loadFile: AgentTool = {
+export const loadFile = defineOp({
   name: 'load_file',
   description:
     'Open a structure file already on this computer and add it to the scene. Only use a path ' +
     'the user gave you. Creates a new object AND a default renderer, so call get_scene_state ' +
     'afterwards to learn their ids.',
-  parameters: strictSchema({
-    path: str('Absolute path of the file to open.'),
-    rendererType: nullable(
-      'string',
-      "Renderer to create for it. Null uses the reader's default.",
-    ),
-    selection: nullable('string', 'Draw only this selection. Null draws everything.'),
-  }),
+  params: {
+    path: path('Absolute path of the file to open.'),
+    rendererType: optional(string("Renderer to create for it. Null uses the reader's default.")),
+    selection: optional(selection('Draw only this selection. Null draws everything.')),
+  },
   mutates: true,
-  run(ctx, input, turn) {
-    const filePath = String(input.path)
+  expose: { tool: 'core', console: true },
+  run(ctx, args, oc) {
+    const filePath = args.path
     const compat = getCompatibleRendererNames(ctx, { filePath })
     // An unreadable file resolves to no reader at all; saying so here is more
     // useful than letting loadObject fail later on the same fact.
@@ -102,23 +96,19 @@ const loadFile: AgentTool = {
     const options = buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
       objectName: baseName,
-      rendererType: input.rendererType === null || input.rendererType === undefined
-        ? null
-        : String(input.rendererType),
-      selection: input.selection === null || input.selection === undefined
-        ? null
-        : String(input.selection),
+      rendererType: args.rendererType,
+      selection: args.selection,
     })
 
     const result = loadObject(ctx, {
       filePath,
-      sceneId: turn.sceneId,
+      sceneId: oc.sceneId,
       options,
       contentFirst: false,
       readerName: compat.readerName,
     })
     return normalizeServiceResult(result, `"${filePath}" could not be opened.`)
   },
-}
+})
 
-export const FILE_TOOLS: AgentTool[] = [fetchPdb, loadFile]
+export const FILE_OPS = [fetchPdb, loadFile]
