@@ -12,16 +12,27 @@
  * Up and Down walk the history, but only when the caret is on the first or
  * last line, so they keep meaning "move the caret" inside a pasted script.
  * Tab completes, the way PyMOL's command line does.
+ *
+ * The console speaks one dialect at a time: native (CueMol's own commands,
+ * generated from the op catalogue) or PyMOL. The switch in the toolbar, or
+ * typing just `native` or `pymol`, changes it; the choice is a plugin
+ * preference, and each dialect keeps its own history.
  */
 
 import React, { useCallback, useRef, useState } from 'react'
 import { AppIcon } from '@renderer/h3-kit/primitives'
-import { FormButton, TextAreaField, isImeKey } from '@renderer/h3-kit/form'
+import { FormButton, SegmentField, TextAreaField, isImeKey } from '@renderer/h3-kit/form'
+import { usePluginPrefs } from '@renderer/plugin-host/api'
 import type { BottomTabComponent } from '@renderer/plugin-host/api'
 import { IDLE, recallDown, recallUp } from '@renderer/utils/commandRecall'
 import type { RecallState } from '@renderer/utils/commandRecall'
 import { consoleServices } from '../calls'
-import { DIALECT_PROMPTS } from '../shared/consoleTypes'
+import {
+  CONSOLE_PLUGIN_ID,
+  DEFAULT_DIALECT,
+  DIALECT_PREF,
+  DIALECT_PROMPTS,
+} from '../shared/consoleTypes'
 import type { DialectId } from '../shared/consoleTypes'
 import { ConsoleTranscript } from './ConsoleTranscript'
 import { consoleSession, useConsoleSession } from './consoleSessionStore'
@@ -31,15 +42,41 @@ void React
 
 const NEWLINE = '\n'
 
+/** The switch's segments, in the order shown. */
+const DIALECT_OPTIONS: { label: string; value: DialectId }[] = [
+  { label: 'CueMol', value: 'native' },
+  { label: 'PyMOL', value: 'pymol' },
+]
+
+/** What the user types to switch: the dialect's id, alone on the line. */
+function dialectNamedBy(text: string): DialectId | null {
+  const word = text.trim().toLowerCase()
+  return word === 'native' || word === 'pymol' ? word : null
+}
+
 export const ConsolePanel: BottomTabComponent = ({
   cm,
   activeSceneId,
   activeMolViewId,
 }) => {
   const { lines, running, draft, runner, stopper } = useConsoleSession()
-  const dialect: DialectId = 'pymol'
-  const history = historyOf(dialect)
   const [recall, setRecall] = useState<RecallState>(IDLE)
+  const { prefs, setPref } = usePluginPrefs(CONSOLE_PLUGIN_ID)
+  const dialect: DialectId =
+    prefs[DIALECT_PREF] === 'pymol' || prefs[DIALECT_PREF] === 'native'
+      ? prefs[DIALECT_PREF]
+      : DEFAULT_DIALECT
+  const history = historyOf(dialect)
+
+  const switchDialect = useCallback(
+    (next: DialectId) => {
+      if (next === dialect) return
+      setPref(DIALECT_PREF, next)
+      setRecall(IDLE)
+      consoleSession.notice(`Now speaking ${next === 'native' ? 'CueMol' : 'PyMOL'} commands.`)
+    },
+    [dialect, setPref],
+  )
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   /**
@@ -118,13 +155,20 @@ export const ConsolePanel: BottomTabComponent = ({
   const submit = useCallback(() => {
     const text = draft.trim()
     if (text === '' || running || !runner) return
+    // Switching is the panel's business, not a command either dialect knows.
+    const named = dialectNamedBy(text)
+    if (named) {
+      consoleSession.setDraft('')
+      switchDialect(named)
+      return
+    }
     // Recorded before running: a line that failed is exactly the one worth
     // getting back.
     history.pushHistory(text)
     setRecall(IDLE)
     consoleSession.setDraft('')
     runner(text, dialect)
-  }, [draft, running, runner, dialect, history])
+  }, [draft, running, runner, dialect, history, switchDialect])
 
   const handleChange = useCallback((value: string) => {
     consoleSession.setDraft(value)
@@ -198,6 +242,14 @@ export const ConsolePanel: BottomTabComponent = ({
   return (
     <div className="console-panel">
       <div className="console-toolbar">
+        <SegmentField
+          compact
+          fill={false}
+          value={dialect}
+          onValueChange={switchDialect}
+          options={DIALECT_OPTIONS}
+          disabled={running}
+        />
         <FormButton
           minimal
           icon={<AppIcon name="ui.eraser" aria-hidden />}
@@ -263,7 +315,7 @@ export const ConsolePanel: BottomTabComponent = ({
           // throwing it away. A disabled prompt would additionally swallow
           // `autoFocus`, which fires once on mount and cannot retry.
           autoFocus
-          placeholder="help"
+          placeholder={dialect === 'native' ? 'help  (or "pymol" to switch)' : 'help  (or "native" to switch)'}
           ariaLabel={`${DIALECT_PROMPTS[dialect]} command`}
         />
       </div>

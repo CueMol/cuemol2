@@ -32,6 +32,11 @@ export interface TurnContext {
   viewId: number
   /** Set by the loop when a mutating tool succeeds; decides commit vs rollback. */
   mutated: boolean
+  /**
+   * The toolsets switched on in this conversation (`enable_toolsets`). Their
+   * tools are offered from the next step on.
+   */
+  toolsets: Set<string>
   /** Identifies this call, e.g. for a cancellable download. */
   callId: string
   /**

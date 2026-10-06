@@ -7,7 +7,9 @@ import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/scene
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
 import { boolean, enumOf, nodeId } from '../params'
+import { columns, wrapList } from '../consoleFormat'
 import { buildSceneSnapshot } from './sceneSnapshot'
+import type { SceneSnapshot } from './sceneSnapshot'
 
 export const getSceneState = defineOp({
   name: 'get_scene_state',
@@ -18,6 +20,8 @@ export const getSceneState = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'core', console: true },
+  verbs: [{ verb: 'ls_scene', summary: 'List the objects, renderers and selections in the scene.' }],
+  format: (data) => formatSnapshot(data as SceneSnapshot),
   run(ctx, _args, oc) {
     return {
       ok: true,
@@ -25,6 +29,30 @@ export const getSceneState = defineOp({
     }
   },
 })
+
+/**
+ * The scene as a tree a person reads: each object, its renderers under it,
+ * with the uid to address it by and whether it is hidden.
+ */
+function formatSnapshot(s: SceneSnapshot): string[] {
+  const out: string[] = []
+  if (s.settings) {
+    const st = s.settings
+    out.push(`scene: bgcolor ${st.bgcolor}, AO ${st.aoEnabled ? 'on' : 'off'}, AA ${st.aa_method}`)
+  }
+  if (s.objects.length === 0) out.push('(no objects)')
+  const rows: string[][] = []
+  for (const o of s.objects) {
+    rows.push([o.name, `#${o.id}`, o.className, o.visible ? '' : '(hidden)'])
+    for (const r of o.renderers) {
+      rows.push([`  ${o.name}/${r.name}`, `#${r.id}`, r.type, r.visible ? '' : '(hidden)'])
+    }
+    if (o.renderersOmitted) rows.push([`  ... ${o.renderersOmitted} more renderers`, '', '', ''])
+  }
+  out.push(...columns(rows))
+  if (s.namedSelections.length > 0) out.push('selections:', ...wrapList(s.namedSelections, '  '))
+  return out
+}
 
 export const setVisible = defineOp({
   name: 'set_visible',
@@ -41,6 +69,10 @@ export const setVisible = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  verbs: [
+    { verb: 'show', fixed: { visible: true }, summary: 'Show an object, renderer or renderer group.' },
+    { verb: 'hide', fixed: { visible: false }, summary: 'Hide an object, renderer or renderer group.' },
+  ],
   run(ctx, args, oc) {
     const result = setNodeVisible(ctx, {
       sceneId: oc.sceneId,

@@ -8,6 +8,7 @@
  * cannot invalidate the prefix.
  */
 
+import { TOOLSETS } from '@renderer/worker/server/catalog'
 import { SELECTION_CHEAT_SHEET } from './selectionCheatSheet'
 
 export const SYSTEM_PROMPT = `
@@ -33,9 +34,18 @@ Working rules:
   guessing. If it is ambiguous in a way that does not, pick the obvious
   reading and say which you picked.
 - Distances are in angstroms.
-- To answer "how far apart" or "what angle", use measure_geometry, which
-  returns the number. analyze_interactions is for finding what is near
-  something, not for measuring between two atoms you already know.
+- Some tools come in groups that are off until you switch them on with
+  enable_toolsets: ${TOOLSETS.map((ts) => ts.id).join(', ')}. Switch one on when
+  the request needs it; its tools are there from your next step and stay on.
+- To answer "how far apart" or "what angle", use measure_geometry (in the
+  "analysis" group), which returns the number. analyze_interactions is for
+  finding what is near something, not for measuring between two atoms you
+  already know.
+- To show the structure from another side, turn it with rotate_view.
+- center_view moves the centre AND (with zoom) the zoom and clipping. When
+  only one of them should change -- "make the whole molecule visible in depth",
+  "zoom out a bit" -- use set_view, which changes just what you give it;
+  fitSlab fits the clipping to the molecules without moving the camera.
 - To colour PART of what a renderer draws, use paint_selection, once per
   region. set_renderer_coloring replaces the renderer's whole colouring and
   will undo the regions you painted.

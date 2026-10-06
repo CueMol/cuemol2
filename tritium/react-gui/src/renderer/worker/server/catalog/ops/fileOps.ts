@@ -14,7 +14,10 @@ import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { enumOf, optional, path, selection, string } from '../params'
+import { enumOf, optional, path, rendererType, selection, string } from '../params'
+
+/** A CueMol scene file, which opens as a scene rather than loading into one. */
+const SCENE_FILE_RE = /\.qsc$/i
 
 /** A four-character PDB accession code. */
 const PDB_ID_RE = /^[0-9][0-9a-z]{3}$/i
@@ -29,12 +32,20 @@ export const fetchPdb = defineOp({
     pdbId: string('Four-character PDB accession code, for example 1CRN.'),
     format: enumOf(['mmcif', 'pdb'], 'Which file to fetch. Prefer mmcif.'),
     rendererType: optional(
-      string("Renderer to create for it, for example cartoon. Null uses the reader's default."),
+      rendererType("Renderer to create for it, for example cartoon. Null uses the reader's default."),
     ),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  verbs: [
+    {
+      verb: 'fetch',
+      defaults: { format: 'mmcif' },
+      order: ['pdbId', 'rendererType', 'selection', 'format'],
+      summary: 'Download a structure from the PDB by its accession code.',
+    },
+  ],
   async run(ctx, args, oc) {
     const pdbId = args.pdbId.trim().toLowerCase()
     if (!PDB_ID_RE.test(pdbId)) {
@@ -79,13 +90,24 @@ export const loadFile = defineOp({
     'afterwards to learn their ids.',
   params: {
     path: path('Absolute path of the file to open.'),
-    rendererType: optional(string("Renderer to create for it. Null uses the reader's default.")),
+    rendererType: optional(rendererType("Renderer to create for it. Null uses the reader's default.")),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  verbs: [{ verb: 'load', summary: 'Open a structure file, or a .qsc scene.' }],
+  outsideTxn: (raw) => SCENE_FILE_RE.test((raw.path ?? '').trim()),
   run(ctx, args, oc) {
     const filePath = args.path
+    if (SCENE_FILE_RE.test(filePath)) {
+      // A scene is opened by the UI the way File > Open does it -- into the
+      // current tab when that is new and empty, otherwise a new one.
+      if (!oc.openScene) {
+        return { ok: false, error: `"${filePath}" is a scene file; open it with File > Open.` }
+      }
+      oc.openScene(filePath)
+      return { ok: true, data: { scene: filePath } }
+    }
     const compat = getCompatibleRendererNames(ctx, { filePath })
     // An unreadable file resolves to no reader at all; saying so here is more
     // useful than letting loadObject fail later on the same fact.

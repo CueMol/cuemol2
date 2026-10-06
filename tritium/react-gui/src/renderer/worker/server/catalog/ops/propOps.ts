@@ -25,7 +25,9 @@ import type {
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
-import { enumOf, nodeId, optional, string } from '../params'
+import { enumOf, nodeId, optional, propName, propPath, propValue } from '../params'
+import { resolvePropPath } from '../refs'
+import { columns } from '../consoleFormat'
 
 /**
  * The node kinds a caller may address.
@@ -152,6 +154,25 @@ export const getNodeProps = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
+  verbs: [{ verb: 'props', order: ['nodeId'], summary: 'List the properties of a node (the scene when none is given).' }],
+  format(data) {
+    const d = data as {
+      type: string
+      name: string
+      properties: { key: string; type: string; value: unknown; readonly: boolean }[]
+    }
+    const show = (v: unknown): string => {
+      const t = typeof v === 'string' ? v : JSON.stringify(v) ?? ''
+      return t.length > 40 ? `${t.slice(0, 40)}...` : t
+    }
+    return [
+      `${d.name} (${d.type})`,
+      ...columns(
+        d.properties.map((p) => [p.key, '=', show(p.value), p.readonly ? `${p.type}, read-only` : p.type]),
+        '  ',
+      ),
+    ]
+  },
   run(ctx, args, oc): OpOutcome {
     const ref = nodeRefOf(args.nodeType, args.nodeId, oc)
     if (typeof ref === 'string') return { ok: false, error: ref }
@@ -191,8 +212,8 @@ export const setNodeProp = defineOp({
   params: {
     nodeType: nodeTypeParam(),
     nodeId: nodeIdParam(),
-    prop: string('Property name, exactly as get_node_props reported it.'),
-    value: string(
+    prop: propName('Property name, exactly as get_node_props reported it.'),
+    value: propValue(
       'New value, written as text; it is converted to the property type. A colour is a ' +
         'name such as "white" or a hex code such as "#204080".',
     ),
@@ -206,4 +227,52 @@ export const setNodeProp = defineOp({
   },
 })
 
-export const PROP_OPS = [getNodeProps, setNodeProp]
+export const setProp = defineOp({
+  name: 'set_prop',
+  description:
+    'Set one property, named by its path: obj.rend.prop (or obj/rend.prop) for a renderer, ' +
+    'obj.prop for an object, and a bare name for the scene.',
+  params: {
+    path: propPath('The property, e.g. 1crn.cartoon1.width or bgcolor.'),
+    value: propValue('New value as text; converted by the property type.'),
+  },
+  mutates: true,
+  // The model addresses nodes by uid through set_node_prop; a path of names
+  // is for a person at a prompt.
+  expose: { tool: false, console: true },
+  verbs: [{ verb: 'set', summary: 'Set a property: set 1crn.cartoon1.width, 2 / set bgcolor, white' }],
+  // The service answers with every property of the node, which is what an
+  // inspector redraws from; at a prompt a write that worked says nothing.
+  format: () => [],
+  run(ctx, args, oc): OpOutcome {
+    const target = resolvePropPath(ctx, oc.sceneId, args.path)
+    if (!target.ok) return { ok: false, error: target.error }
+    return writeNodeProp(ctx, oc, { nodeId: target.nodeId, nodeType: target.nodeType }, target.prop, args.value)
+  },
+})
+
+export const getProp = defineOp({
+  name: 'get_prop',
+  description: 'Read one property, named by its path as set_prop takes it.',
+  params: {
+    path: propPath('The property, e.g. 1crn.cartoon1.width or bgcolor.'),
+  },
+  mutates: false,
+  expose: { tool: false, console: true },
+  verbs: [{ verb: 'get', summary: 'Print a property: get 1crn.cartoon1.width / get bgcolor' }],
+  format(data) {
+    const d = data as { prop: string; value: unknown }
+    return [`${d.prop} = ${typeof d.value === 'string' ? d.value : JSON.stringify(d.value)}`]
+  },
+  run(ctx, args, oc): OpOutcome {
+    const target = resolvePropPath(ctx, oc.sceneId, args.path)
+    if (!target.ok) return { ok: false, error: target.error }
+    const props = getGenericProps(ctx, { sceneId: oc.sceneId, nodeId: target.nodeId, nodeType: target.nodeType })
+    if (!props.ok) return { ok: false, error: 'No node with that id and type in this scene.' }
+    const entry = props.entries.find((e: GenericPropEntry) => e.key === target.prop)
+    if (!entry) return { ok: false, error: `This ${target.nodeType} has no property "${target.prop}".` }
+    return { ok: true, data: { prop: args.path.trim(), value: entry.value } }
+  },
+})
+
+export const PROP_OPS = [getNodeProps, setNodeProp, setProp, getProp]

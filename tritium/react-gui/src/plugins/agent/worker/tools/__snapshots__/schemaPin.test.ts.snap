@@ -3,10 +3,10 @@
 exports[`the tool list sent to the model > is unchanged 1`] = `
 [
   {
-    "description": "Find close contacts around a selection and draw them as labelled dashed lines. Use it for hydrogen bonds and for what a ligand touches. This adds labels to the scene.",
+    "description": "Find close contacts around a selection and draw them as labelled dashed lines. Use it for hydrogen bonds and for what a ligand touches; by default only polar atoms (no carbon) are paired. This adds labels to the scene.",
     "mutates": true,
     "name": "analyze_interactions",
-    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the molecule to measure within."},"selection":{"type":"string","description":"Selection the contacts start from, for example a ligand."},"maxDist":{"type":["number","null"],"description":"Longest contact to report, in angstroms. Null uses 4."},"hbondOnly":{"type":"boolean","description":"True reports only nitrogen and oxygen contacts (hydrogen-bond candidates)."}},"required":["objId","selection","maxDist","hbondOnly"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the molecule to measure within."},"selection":{"type":"string","description":"Selection the contacts start from, for example a ligand."},"maxDist":{"type":["number","null"],"description":"Longest contact to report, in angstroms. Null uses 4."},"includeCarbon":{"type":["boolean","null"],"description":"True also reports contacts that involve a carbon atom. Null or false leaves carbon out, so only atoms that can make hydrogen bonds or salt bridges (N, O, S, ...) are reported -- which is what \\"interactions\\" usually means."}},"required":["objId","selection","maxDist","includeCarbon"],"additionalProperties":false}",
   },
   {
     "description": "Look at the current view: returns a picture of what the user sees. Use it to check that a change looks the way you intended, or when the user refers to something on screen. Each picture costs about a thousand tokens, so capture once a change is done rather than after every step. To see detail, zoom in first with center_view rather than raising longSide: tokens grow with the pixel count. Nothing is saved; use export_image to give the user a file.",
@@ -31,6 +31,12 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "mutates": true,
     "name": "create_renderer",
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object to draw."},"rendererType":{"type":"string","description":"Renderer type, from get_renderer_types."},"name":{"type":["string","null"],"description":"Name for the renderer. Null picks an unused default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws the whole object. Check it with check_selection first."}},"required":["objId","rendererType","name","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Switch on more tools for this conversation. The tools below are always available; these groups add more once switched on, from your next step: "analysis" -- Measuring and analysing: distances, angles and torsions between named atoms, close contacts around a selection, and saving a PNG of the view to the desktop. Switch a group on only when the request needs it.",
+    "mutates": false,
+    "name": "enable_toolsets",
+    "parameters": "{"type":"object","properties":{"toolsets":{"type":"array","description":"The groups to switch on.","items":{"type":"string","enum":["analysis"]}}},"required":["toolsets"],"additionalProperties":false}",
   },
   {
     "description": "Save a PNG of the current view to the desktop. Give a file name only, not a path. This writes a file; the full path is reported back so you can tell the user where it went.",
@@ -99,6 +105,12 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer to paint."},"selection":{"type":"string","description":"Which atoms to colour. Check it with check_selection first."},"color":{"type":"string","description":"Colour as hex (\\"#FF0000\\"), a CueMol colour name (\\"red\\"), or hsb(h,s,b). Hex is the safest."}},"required":["rendId","selection","color"],"additionalProperties":false}",
   },
   {
+    "description": "Turn the view about a screen axis: x runs left to right, y bottom to top, z out of the screen toward the viewer. Use it to show the structure from another side; capture_view tells you which way it went.",
+    "mutates": false,
+    "name": "rotate_view",
+    "parameters": "{"type":"object","properties":{"axis":{"type":"string","enum":["x","y","z"],"description":"Screen axis to turn about."},"angle":{"type":"number","description":"Angle in degrees; negative turns the other way."}},"required":["axis","angle"],"additionalProperties":false}",
+  },
+  {
     "description": "Set one molecule's current selection, which is what the user sees highlighted. An empty expression clears it. This does not change what any renderer draws; use set_renderer_selection for that.",
     "mutates": true,
     "name": "set_mol_selection",
@@ -121,6 +133,12 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "mutates": true,
     "name": "set_renderer_selection",
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"selection":{"type":"string","description":"Selection expression the renderer should draw."}},"required":["rendId","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Read or change the camera without moving to a selection: zoom (the height of the view, in angstroms), slab (the depth that is drawn, about the centre; atoms outside it are clipped), distance (from the eye to the centre), and centre. Give only what should change; with nothing given it just reports the current values. fitSlab sets the slab so every molecule (or objId) is in it while keeping the centre and zoom as they are -- use it, not center_view, when only the clipping is wrong.",
+    "mutates": false,
+    "name": "set_view",
+    "parameters": "{"type":"object","properties":{"zoom":{"type":["number","null"],"description":"New zoom in angstroms. Null leaves it."},"slab":{"type":["number","null"],"description":"New slab depth in angstroms. Null leaves it."},"distance":{"type":["number","null"],"description":"New eye-to-centre distance in angstroms. Null leaves it."},"center":{"type":["array","null"],"description":"New centre [x, y, z] in angstroms. Null leaves it.","items":{"type":"number"}},"fitSlab":{"type":["boolean","null"],"description":"True fits the slab to the molecules. Do not also give slab."},"objId":{"type":["integer","null"],"description":"With fitSlab: fit to this object only. Null fits every molecule."}},"required":["zoom","slab","distance","center","fitSlab","objId"],"additionalProperties":false}",
   },
   {
     "description": "Show or hide one object, renderer, or renderer group. Hiding an object hides everything drawn from it. Use this rather than deleting something the user may want back.",

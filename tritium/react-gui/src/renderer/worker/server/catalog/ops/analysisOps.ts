@@ -15,7 +15,7 @@ import {
 } from '@renderer/worker/server/services/scene/exportImage'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { boolean, integer, moleculeId, optional, real, selection, string } from '../params'
+import { boolean, integer, moleculeId, optional, path, real, selection, string } from '../params'
 
 /** The dialog's own starting values, so both routes measure the same thing. */
 const MIN_CONTACT_DIST = 0
@@ -28,15 +28,22 @@ export const analyzeInteractionsOp = defineOp({
   name: 'analyze_interactions',
   description:
     'Find close contacts around a selection and draw them as labelled dashed lines. ' +
-    'Use it for hydrogen bonds and for what a ligand touches. This adds labels to the scene.',
+    'Use it for hydrogen bonds and for what a ligand touches; by default only polar atoms ' +
+    '(no carbon) are paired. This adds labels to the scene.',
   params: {
     objId: moleculeId('Uid of the molecule to measure within.'),
     selection: selection('Selection the contacts start from, for example a ligand.'),
     maxDist: optional(real(`Longest contact to report, in angstroms. Null uses ${DEFAULT_MAX_CONTACT_DIST}.`)),
-    hbondOnly: boolean('True reports only nitrogen and oxygen contacts (hydrogen-bond candidates).'),
+    includeCarbon: optional(
+      boolean(
+        'True also reports contacts that involve a carbon atom. Null or false leaves carbon ' +
+          'out, so only atoms that can make hydrogen bonds or salt bridges (N, O, S, ...) are ' +
+          'reported -- which is what "interactions" usually means.',
+      ),
+    ),
   },
   mutates: true,
-  expose: { tool: 'core', console: true },
+  expose: { tool: 'analysis', console: true },
   run(ctx, args, oc) {
     const result = analyzeInteractions(ctx, {
       sceneId: oc.sceneId,
@@ -47,7 +54,8 @@ export const analyzeInteractionsOp = defineOp({
       minDist: MIN_CONTACT_DIST,
       maxDist: args.maxDist ?? DEFAULT_MAX_CONTACT_DIST,
       maxLabels: MAX_LABELS,
-      hbondOnly: args.hbondOnly,
+      // C++ `hbond` skips carbon (hydrogen is skipped either way).
+      hbondOnly: !(args.includeCarbon ?? false),
       rendName: MEASURE_LABEL_SET,
     })
     return normalizeServiceResult(
@@ -72,7 +80,7 @@ export const exportImage = defineOp({
   },
   // The scene is unchanged: this writes a file, which no undo can take back.
   mutates: false,
-  expose: { tool: 'core', console: true },
+  expose: { tool: 'analysis', console: true },
   run(ctx, args, oc) {
     const fileName = args.fileName
     if (!SAFE_BASENAME_RE.test(fileName)) {
@@ -213,4 +221,23 @@ function desktopDir(): string {
   return home ? `${home}/Desktop` : '.'
 }
 
-export const ANALYSIS_OPS = [analyzeInteractionsOp, captureView, exportImage]
+export const savePng = defineOp({
+  name: 'save_png',
+  description: 'Save a PNG of the current view to a file.',
+  params: {
+    path: path('Where to write the PNG.'),
+    width: optional(integer('Image width in pixels. Null uses the size of the view on screen.')),
+    height: optional(integer('Image height in pixels. Null uses the size of the view on screen.')),
+  },
+  mutates: false,
+  // A model writes only to the desktop, by name (export_image); a path is
+  // for a person who chose it.
+  expose: { tool: false, console: true },
+  verbs: [{ verb: 'png', summary: 'Save a PNG of the current view.' }],
+  run(ctx, args, oc) {
+    const filePath = args.path.toLowerCase().endsWith('.png') ? args.path : `${args.path}.png`
+    return writePng(ctx, oc.sceneId, oc.viewId, filePath, args.width, args.height)
+  },
+})
+
+export const ANALYSIS_OPS = [analyzeInteractionsOp, captureView, exportImage, savePng]

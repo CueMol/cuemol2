@@ -15,6 +15,15 @@ import type { Result } from '@renderer/worker/shared/result'
  */
 export type DialectId = 'native' | 'pymol'
 
+/** The plugin id, which is also its preferences key. */
+export const CONSOLE_PLUGIN_ID = 'console'
+
+/** The plugin preference holding the dialect the panel speaks. */
+export const DIALECT_PREF = 'dialect'
+
+/** The dialect a fresh panel speaks. */
+export const DEFAULT_DIALECT: DialectId = 'native'
+
 /** What each dialect's prompt reads, in the panel and in the transcript's echo. */
 export const DIALECT_PROMPTS: Readonly<Record<DialectId, string>> = {
   native: 'CueMol>',

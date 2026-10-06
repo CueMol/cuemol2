@@ -129,6 +129,11 @@ export interface SourceContext {
    * being set) reads it here.
    */
   argsSoFar: readonly string[]
+  /**
+   * What is typed of the argument being completed. A source whose candidates
+   * form a hierarchy (a property path) lists the level the pattern is at.
+   */
+  pattern: string
 }
 
 /** One command language the console can speak. */

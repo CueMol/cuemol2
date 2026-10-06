@@ -119,6 +119,8 @@ describe('runCommand', () => {
     expect(scene.undo.started).toHaveLength(1)
     expect(scene.undo.committed).toHaveLength(1)
     expect(scene.undo.rolledBack).toHaveLength(0)
+    // The undo entry says which dialect the edit came from.
+    expect(scene.undo.committed[0]).toBe('pym: mutate; mutate')
   })
 
   it('rolls back a read-only submission, so the redo stack survives', async () => {

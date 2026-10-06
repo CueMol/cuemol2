@@ -48,7 +48,7 @@ export function useConsoleRunner(): void {
       consoleSession.begin()
       const runId = makeRunId()
       runIdRef.current = runId
-      ;(async () => {
+      void (async () => {
         try {
           const target = await ensureActiveScene()
           if (!target) {

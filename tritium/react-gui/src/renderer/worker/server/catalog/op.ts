@@ -12,6 +12,7 @@
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ArgsOf, ParamMap } from './params'
+import type { ToolsetId } from './toolsets'
 
 /** A picture an op hands back next to its data (a model can look at it). */
 export interface OpImage {
@@ -43,16 +44,27 @@ export interface OpContext {
   noteStream(reqId: string): void
   /** A stream request id unique to this call. */
   streamId(tag: string): string
+  /**
+   * Ask the caller to open a scene file once the call is done. The worker
+   * cannot make a tab, so only a caller with a UI (the console) offers this;
+   * an op must say it cannot do the job when it is absent.
+   */
+  openScene?(filePath: string): void
 }
 
 /**
  * A second name an op answers to in a console, with some arguments fixed:
- * `enable` is `set_visible` with `visible` true.
+ * `show` is `set_visible` with `visible` true.
  */
 export interface OpVerb {
   verb: string
   /** Arguments the verb supplies; the user cannot give them. */
   fixed?: Readonly<Record<string, unknown>>
+  /**
+   * Values for arguments the user may leave out under this verb, though the
+   * op itself requires them (`fetch` defaults the format to mmCIF).
+   */
+  defaults?: Readonly<Record<string, string>>
   /** Positional order for this verb, when the op's own order reads badly. */
   order?: readonly string[]
   /** One line for help; defaults to the op's first sentence. */
@@ -61,8 +73,12 @@ export interface OpVerb {
 
 /** Which callers see an op. */
 export interface OpExposure {
-  /** `core`: in the AI agent's tool list (and an MCP server's). */
-  tool: 'core' | false
+  /**
+   * `core`: always in a tool caller's list (the AI agent's, an MCP
+   * server's). A toolset id: in the list once that toolset is switched on.
+   * False: never a tool.
+   */
+  tool: 'core' | ToolsetId | false
   /** Generated as a console command. */
   console: boolean
 }
@@ -81,6 +97,12 @@ export interface Op<P extends ParamMap = ParamMap> {
   mutates: boolean
   expose: OpExposure
   verbs?: readonly OpVerb[]
+  /**
+   * Whether a console call with these (still unparsed) arguments has to run
+   * outside the submission's undo transaction, alone on its line -- opening
+   * a scene replaces the undo stack, which cannot happen inside one.
+   */
+  outsideTxn?(raw: Readonly<Record<string, string>>): boolean
   /**
    * Lines a console prints for a successful result. Without it the data is
    * printed as JSON.

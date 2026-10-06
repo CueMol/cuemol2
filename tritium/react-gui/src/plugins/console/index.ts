@@ -1,27 +1,23 @@
 /**
  * @file plugins/console/index.ts
- * @description The PyM console: a command line that speaks part of the
- * PyMOL command language.
+ * @description The console: a command line in one of two dialects.
  *
- * For people arriving from PyMOL, who know `fetch 1crn` and `bg_color white`
- * and would rather type them than find them in menus. Partial compatibility
- * by design -- the aim is that what you already know works, not that every
- * PyMOL script runs.
+ * The native dialect speaks CueMol's own commands. They are not written here:
+ * they are generated from the core op catalogue (`worker/server/catalog`),
+ * the same declarations the AI agent's tools come from, so a command and a
+ * tool of the same name do the same thing. Selections are CueMol selections.
  *
- * The parser is a port of PyMOL's own (`modules/pymol/parsing.py`), running
- * in the Web Worker so a command reaches the existing worker services by
- * direct call. So is Tab completion (`parser.py`'s `_complete`), down to the
- * printed candidate list -- a console whose Tab behaves differently is one
- * nobody's fingers know. There is no embedded Python involved: the alternative of
- * hosting the parser in libcuemol2's CPython was investigated and set aside
- * (`docs/plans/pymconsole-research-260529.md`, and the plan that supersedes
- * its section 0).
+ * The PyMOL dialect is for people arriving from PyMOL, who know `fetch 1crn`
+ * and `bg_color white`. Its parser is a port of PyMOL's own
+ * (`modules/pymol/parsing.py`), as is Tab completion (`parser.py`'s
+ * `_complete`), and PyMOL selections are translated into CueMol ones
+ * (`worker/dialects/pymol/sel/`) -- refused by name where CueMol has no
+ * equivalent, because a selection that quietly means a different set of atoms
+ * is the worst thing a console could do. There is no embedded Python
+ * (`docs/plans/pymconsole-research-260529.md`).
  *
- * Selection expressions are translated rather than passed through (`worker/sel/`):
- * the two languages agree on operator priority but not on what `+` and `-`
- * mean, and PyMOL has classes and operators CueMol has no answer for. Those
- * are refused by name with a reason, because a selection that quietly means a
- * different set of atoms is the worst thing this plugin could do.
+ * Both run in the Web Worker, one undo transaction per submission
+ * (`worker/runtime/`), and reach the existing worker services by direct call.
  *
  * Its stylesheet is imported from this entry rather than from `app.css`, so
  * dropping the plugin drops the CSS with it.

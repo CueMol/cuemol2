@@ -17,7 +17,7 @@
  */
 
 /** The `.qif` scalar types, plus the one structured kind ops need. */
-export type ParamKind = 'boolean' | 'integer' | 'real' | 'string' | 'enum' | 'atoms'
+export type ParamKind = 'boolean' | 'integer' | 'real' | 'string' | 'enum' | 'vec3' | 'atoms'
 
 /**
  * What a value means beyond its type.
@@ -34,6 +34,10 @@ export type ParamSemantic =
   | 'selection'
   | 'color'
   | 'path'
+  | 'rendererType'
+  | 'propName'
+  | 'propPath'
+  | 'propValue'
 
 /** One atom named the way a PDB file names it. */
 export interface AtomSpec {
@@ -139,9 +143,47 @@ export function color(description: string): Param<string> {
   return param('string', description, { semantic: 'color' })
 }
 
+/**
+ * A renderer type name (`cartoon`, `ball`, ...). What is valid depends on the
+ * object it is created on, which is why completion reads it from there.
+ */
+export function rendererType(description: string): Param<string> {
+  return param('string', description, { semantic: 'rendererType' })
+}
+
+/**
+ * The name of a property of the node another parameter names. What is valid
+ * depends on that node, which is why completion reads it from there.
+ */
+export function propName(description: string): Param<string> {
+  return param('string', description, { semantic: 'propName' })
+}
+
+/**
+ * A property named by its path from the scene: `obj.rend.prop`,
+ * `obj/rend.prop`, `obj.prop`, or a bare scene property (see
+ * `resolvePropPath`). For a person at a prompt; a model is given uids.
+ */
+export function propPath(description: string): Param<string> {
+  return param('string', description, { semantic: 'propPath' })
+}
+
+/**
+ * A value for the property another parameter names, as text; it is converted
+ * by the property's own `.qif` type when written.
+ */
+export function propValue(description: string): Param<string> {
+  return param('string', description, { semantic: 'propValue' })
+}
+
 /** A file path. */
 export function path(description: string): Param<string> {
   return param('string', description, { semantic: 'path' })
+}
+
+/** A point or direction (`object<Vector>`): x, y, z. */
+export function vec3(description: string): Param<[number, number, number]> {
+  return param('vec3', description)
 }
 
 /** An ordered list of atoms, each named by chain, residue and atom name. */

@@ -7,15 +7,16 @@
  */
 
 import type { PluginManifest } from '@renderer/plugin-host/api'
+import { CONSOLE_PLUGIN_ID } from './shared/consoleTypes'
 
 export const consoleManifest: PluginManifest = {
-  id: 'console',
+  id: CONSOLE_PLUGIN_ID,
   name: 'Console',
   version: '1.0.0',
   description:
-    'Experimental. A command line that understands part of the PyMOL command language.',
-  // Off by default: the command coverage is partial and still growing, and
-  // the tab is of no use to anyone who does not already know PyMOL.
+    'Experimental. A command line for CueMol, with a PyMOL-compatible dialect.',
+  // Off by default: the command coverage is still growing, and the tab is of
+  // no use to anyone who would rather work from the menus.
   defaultEnabled: false,
   contributes: {
     bottomTabs: [

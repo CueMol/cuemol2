@@ -47,7 +47,7 @@ import type { CreateModel } from './modelProvider'
 import { runInTxn, txnLabel } from '@renderer/worker/server/catalog'
 import { buildSceneSnapshot, formatSceneSnapshot } from '@renderer/worker/server/catalog/ops/sceneSnapshot'
 import { SYSTEM_PROMPT } from './prompt/systemPrompt'
-import { AGENT_TOOLS, buildAiSdkTools } from './tools/index'
+import { ALL_AGENT_TOOLS, activeToolNames, buildAiSdkTools, toolsetsEnabledIn } from './tools/index'
 import type { AgentTool, TurnContext } from './tools/types'
 import { summarizeOutcome } from './toolOutput'
 
@@ -157,6 +157,7 @@ export async function runTurn(
     sceneId: args.sceneId,
     viewId: args.viewId,
     mutated: false,
+    toolsets: toolsetsEnabledIn(args.history),
     callId: '',
     noteStream: (reqId: string) => { noteStream(args.turnId, reqId) },
     outcomes: new Map(),
@@ -200,6 +201,7 @@ interface TurnRun {
  */
 async function streamTurn(run: TurnRun): Promise<AgentRunTurnResult> {
   const { ctx, args, deps, spec, turn, controller, messages, userItem } = run
+  const offered = deps.tools ?? ALL_AGENT_TOOLS
   let finalText = ''
   let toolCalls = 0
   let finishReason = ''
@@ -211,7 +213,10 @@ async function streamTurn(run: TurnRun): Promise<AgentRunTurnResult> {
       model: deps.createModel(spec, args.apiKey),
       instructions: SYSTEM_PROMPT,
       messages,
-      tools: buildAiSdkTools(deps.tools ?? AGENT_TOOLS, ctx, turn, usesStrictTools(spec)),
+      tools: buildAiSdkTools(offered, ctx, turn, usesStrictTools(spec)),
+      // A toolset switched on mid-turn is offered from the next step.
+      activeTools: activeToolNames(offered, turn.toolsets),
+      prepareStep: () => ({ activeTools: activeToolNames(offered, turn.toolsets) }),
       stopWhen: isStepCount(MAX_ROUNDS),
       abortSignal: controller.signal,
       ...(args.reasoningEffort === 'default' ? {} : { reasoning: args.reasoningEffort }),

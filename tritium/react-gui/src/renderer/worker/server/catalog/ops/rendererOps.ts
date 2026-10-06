@@ -3,7 +3,10 @@
  * @description Ops that create and configure renderers.
  */
 
-import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
+import {
+  getNewRendererOptions,
+  unusedRendererName,
+} from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
 import {
   getPaintColoringStyles,
@@ -20,7 +23,7 @@ import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
-import { color, enumOf, objectId, optional, rendererId, selection, string } from '../params'
+import { color, enumOf, objectId, optional, rendererId, rendererType, selection, string } from '../params'
 
 /** The colouring modes that are not style names. */
 const PAINT_TYPES = [
@@ -92,7 +95,7 @@ export const createRenderer = defineOp({
     "renderer's uid. The type must be one get_renderer_types listed for that object.",
   params: {
     objId: objectId('Uid of the object to draw.'),
-    rendererType: string('Renderer type, from get_renderer_types.'),
+    rendererType: rendererType('Renderer type, from get_renderer_types.'),
     name: optional(string('Name for the renderer. Null picks an unused default.')),
     selection: optional(
       selection('Draw only this selection. Null draws the whole object. Check it with check_selection first.'),
@@ -113,7 +116,9 @@ export const createRenderer = defineOp({
         error: `This object has no renderer type "${args.rendererType}". Available: ${options.rendererTypes.join(', ')}.`,
       }
     }
-    const name = args.name ?? (options.defaultName || `${args.rendererType}1`)
+    // The dialog's default name is for its first type, not the one asked for.
+    const scene = getSceneOrNull(ctx, oc.sceneId)
+    const name = args.name ?? (scene ? unusedRendererName(scene, args.rendererType) : `${args.rendererType}1`)
 
     const result = createRendererOnObject(ctx, {
       sceneId: oc.sceneId,

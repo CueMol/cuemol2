@@ -10,11 +10,11 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { AGENT_TOOLS } from './index'
+import { ALL_AGENT_TOOLS } from './index'
 
 describe('the tool list sent to the model', () => {
   it('is unchanged', () => {
-    const sent = AGENT_TOOLS.map((t) => ({
+    const sent = ALL_AGENT_TOOLS.map((t) => ({
       name: t.name,
       description: t.description,
       mutates: t.mutates,

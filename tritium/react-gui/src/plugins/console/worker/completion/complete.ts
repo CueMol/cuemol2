@@ -211,6 +211,7 @@ export function completeLine(
         sceneId: cc.sceneId,
         viewId: cc.viewId,
         argsSoFar: argumentsBefore(line, index),
+        pattern,
       }
       const candidates = cc.dialect.candidates(entry.source, ctx, sc)
       if (candidates !== null) {

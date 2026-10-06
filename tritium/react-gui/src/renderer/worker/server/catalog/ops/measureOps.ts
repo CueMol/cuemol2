@@ -59,7 +59,7 @@ export const measureGeometry = defineOp({
   // as mutating is the safe way round: a transaction that drew a label and is
   // then rolled back would take the label with it.
   mutates: true,
-  expose: { tool: 'core', console: true },
+  expose: { tool: 'analysis', console: true },
   run(ctx, args, oc): OpOutcome {
     const specs = args.atoms
     const mode = MODE_BY_COUNT[specs.length]

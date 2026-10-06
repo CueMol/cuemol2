@@ -40,12 +40,12 @@ function type(el: HTMLTextAreaElement, text: string): void {
 
 describe('ConsolePanel', () => {
   beforeEach(() => {
-    historyOf('pymol').clearHistory()
+    historyOf('native').clearHistory()
     consoleSession.reset()
   })
   afterEach(() => {
     consoleSession.reset()
-    historyOf('pymol').clearHistory()
+    historyOf('native').clearHistory()
   })
 
   it('sends a submitted line to the runner and shows what comes back', async () => {
@@ -67,7 +67,8 @@ describe('ConsolePanel', () => {
     })
     await act(async () => flushPromises())
 
-    expect(runner).toHaveBeenCalledWith('bg_color white', 'pymol')
+    // A fresh panel speaks the native dialect.
+    expect(runner).toHaveBeenCalledWith('bg_color white', 'native')
     expect(tree.container.textContent).toContain('PyM> bg_color white')
     expect(tree.container.textContent).toContain('done')
     // The prompt is cleared so the next line starts empty.
@@ -168,7 +169,7 @@ describe('ConsolePanel', () => {
   })
 
   it('brings the previous line back with the up arrow', () => {
-    historyOf('pymol').pushHistory('fetch 1crn')
+    historyOf('native').pushHistory('fetch 1crn')
     const tree = mountTree(<ConsolePanel cm={null} />)
     act(() => consoleSession.setRunner(vi.fn()))
 

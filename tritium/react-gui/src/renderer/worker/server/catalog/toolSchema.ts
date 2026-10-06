@@ -55,6 +55,11 @@ function paramSchema(p: Param<unknown>): Record<string, unknown> {
     // items, so minItems/maxItems is rejected outright by one provider.
     return { type: 'array', description: p.description, items: ATOM_ITEM_SCHEMA }
   }
+  if (p.kind === 'vec3') {
+    // Three numbers; the count is checked when read, for the same strict-mode
+    // reason as `atoms`. Nullable when optional, like any other argument.
+    return { type: p.optional ? ['array', 'null'] : 'array', description: p.description, items: { type: 'number' } }
+  }
   const type = JSON_TYPE[p.kind]
   if (p.kind === 'enum') {
     return p.optional
@@ -119,6 +124,11 @@ function readJsonArg(name: string, p: Param<unknown>, value: unknown): { value: 
     case 'atoms': {
       const list = readAtoms(value)
       return typeof list === 'string' ? list : { value: list }
+    }
+    case 'vec3': {
+      const v = Array.isArray(value) ? value.map(Number) : []
+      if (v.length !== 3 || !v.every(Number.isFinite)) return `"${name}" must be three numbers [x, y, z].`
+      return { value: v }
     }
     default:
       return { value: String(value) }
