@@ -1,44 +1,163 @@
 /**
  * @file plugins/agent/worker/tools/index.ts
- * @description The tool catalogue, and the adapter that hands it to the model.
+ * @description The tools the model may call, and the adapter that hands them
+ * to the SDK.
  *
- * Sorted by name and frozen in that order. The tool list is part of the
- * cached prompt prefix, so a catalogue that reordered itself between turns
- * would miss the cache every time for no benefit.
- *
- * Files here are deliberately NOT named `*.service.ts`: the worker registry
- * globs that pattern across every plugin directory and would try to register
- * a tool module as a service.
+ * The tools are the core op catalogue's `tool: 'core'` ops
+ * (`worker/server/catalog`), in its order: the schema is generated from each
+ * op's parameters, and a call reads the model's arguments into the op's types
+ * and runs it through the catalogue's `invokeOp`. Nothing here declares an
+ * operation of its own.
  */
 
 import { jsonSchema, tool } from 'ai'
 import type { ToolSet } from 'ai'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { ModelMessage } from 'ai'
+import {
+  invokeOp,
+  readToolArgs,
+  TOOL_OPS,
+  TOOLSETS,
+  toolSchema,
+  toolsetOps,
+} from '@renderer/worker/server/catalog'
+import type { AnyOp, OpContext } from '@renderer/worker/server/catalog'
 import { normalizeServiceResult, serializeToolOutput, toolModelOutput } from '../toolOutput'
 import type { ToolRunOutput } from '../toolOutput'
-import { ANALYSIS_TOOLS } from './analysisTools'
-import { FILE_TOOLS } from './fileTools'
-import { MEASURE_TOOLS } from './measureTools'
-import { PROP_TOOLS } from './propTools'
-import { RENDERER_TOOLS } from './rendererTools'
-import { SCENE_TOOLS } from './sceneTools'
-import { SELECTION_TOOLS } from './selectionTools'
 import type { AgentTool, ToolOutcome, TurnContext } from './types'
 
-/** Every tool the model may call, by name. */
-export const AGENT_TOOLS: readonly AgentTool[] = [
-  ...SCENE_TOOLS,
-  ...SELECTION_TOOLS,
-  ...RENDERER_TOOLS,
-  ...PROP_TOOLS,
-  ...FILE_TOOLS,
-  ...ANALYSIS_TOOLS,
-  ...MEASURE_TOOLS,
-].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+/** What an op needs from the turn it runs in. */
+function opContextOf(turn: TurnContext): OpContext {
+  return {
+    sceneId: turn.sceneId,
+    viewId: turn.viewId,
+    callId: turn.callId,
+    markMutated: () => { turn.mutated = true },
+    noteStream: turn.noteStream,
+    // Namespaced by turn and call, which is how `cancelTurn` finds it.
+    streamId: () => `${turn.turnId}:${turn.callId}`,
+  }
+}
+
+/** One op as the model sees it. */
+function opTool(op: AnyOp): AgentTool {
+  return {
+    name: op.name,
+    description: op.description,
+    parameters: toolSchema(op),
+    mutates: op.mutates,
+    run(ctx, input, turn): Promise<ToolOutcome> | ToolOutcome {
+      const args = readToolArgs(op, input)
+      if (typeof args === 'string') return { ok: false, error: args }
+      return invokeOp(op, ctx, args, opContextOf(turn))
+    },
+  }
+}
+
+function byName(a: AgentTool, b: AgentTool): number {
+  return a.name < b.name ? -1 : a.name > b.name ? 1 : 0
+}
+
+/** The name of the tool that switches toolsets on. */
+export const ENABLE_TOOLSETS = 'enable_toolsets'
+
+/** The tools each toolset adds once it is on. */
+const TOOLSET_TOOLS: ReadonlyMap<string, readonly AgentTool[]> = new Map(
+  TOOLSETS.map((ts) => [ts.id, toolsetOps(ts.id).map(opTool)]),
+)
+
+/** Which toolset a tool belongs to; absent for a core tool. */
+const TOOLSET_OF: ReadonlyMap<string, string> = new Map(
+  [...TOOLSET_TOOLS].flatMap(([id, tools]) => tools.map((t) => [t.name, id] as const)),
+)
+
+/**
+ * Switch toolsets on for the rest of the conversation.
+ *
+ * Kept on once on, so the tool list -- part of the cached prompt prefix --
+ * changes once per toolset rather than back and forth.
+ */
+const enableToolsets: AgentTool = {
+  name: ENABLE_TOOLSETS,
+  description:
+    'Switch on more tools for this conversation. The tools below are always available; ' +
+    'these groups add more once switched on, from your next step: ' +
+    TOOLSETS.map((ts) => `"${ts.id}" -- ${ts.description}`).join(' ') +
+    ' Switch a group on only when the request needs it.',
+  parameters: {
+    type: 'object',
+    properties: {
+      toolsets: {
+        type: 'array',
+        description: 'The groups to switch on.',
+        items: { type: 'string', enum: TOOLSETS.map((ts) => ts.id) },
+      },
+    },
+    required: ['toolsets'],
+    additionalProperties: false,
+  },
+  mutates: false,
+  run(_ctx, input, turn) {
+    const asked = Array.isArray(input.toolsets) ? input.toolsets.map(String) : []
+    const unknown = asked.filter((id) => !TOOLSET_TOOLS.has(id))
+    if (unknown.length > 0) {
+      return { ok: false, error: `No toolset named ${unknown.join(', ')}. Known: ${TOOLSETS.map((t) => t.id).join(', ')}.` }
+    }
+    for (const id of asked) turn.toolsets.add(id)
+    return {
+      ok: true,
+      data: {
+        enabled: [...turn.toolsets],
+        tools: asked.flatMap((id) => (TOOLSET_TOOLS.get(id) ?? []).map((t) => t.name)),
+      },
+    }
+  },
+}
+
+/** The tools always offered: the core ops, and the switch for the rest. */
+export const AGENT_TOOLS: readonly AgentTool[] = [...TOOL_OPS.map(opTool), enableToolsets].sort(byName)
+
+/** Every tool a turn may offer, toolsets included, by name. */
+export const ALL_AGENT_TOOLS: readonly AgentTool[] = [
+  ...AGENT_TOOLS,
+  ...[...TOOLSET_TOOLS.values()].flat(),
+].sort(byName)
+
+/**
+ * The names to offer this step: every tool that is core (or unknown to the
+ * catalogue, as a test's own tool is), plus the switched-on toolsets'.
+ */
+export function activeToolNames(tools: readonly AgentTool[], enabled: ReadonlySet<string>): string[] {
+  return tools
+    .filter((t) => {
+      const ts = TOOLSET_OF.get(t.name)
+      return ts === undefined || enabled.has(ts)
+    })
+    .map((t) => t.name)
+}
+
+/**
+ * The toolsets an earlier turn of this conversation switched on, read back
+ * from its tool calls, so they stay on without the renderer keeping state.
+ */
+export function toolsetsEnabledIn(history: readonly ModelMessage[]): Set<string> {
+  const out = new Set<string>()
+  for (const msg of history) {
+    if (msg.role !== 'assistant' || !Array.isArray(msg.content)) continue
+    for (const part of msg.content) {
+      if (part.type !== 'tool-call' || part.toolName !== ENABLE_TOOLSETS) continue
+      const ids = (part.input as { toolsets?: unknown } | undefined)?.toolsets
+      if (!Array.isArray(ids)) continue
+      for (const id of ids) if (TOOLSET_TOOLS.has(String(id))) out.add(String(id))
+    }
+  }
+  return out
+}
 
 /** Lookup by the name the model used. */
 export function findTool(name: string): AgentTool | undefined {
-  return AGENT_TOOLS.find((t) => t.name === name)
+  return ALL_AGENT_TOOLS.find((t) => t.name === name)
 }
 
 /**

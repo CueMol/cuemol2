@@ -13,7 +13,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { AGENT_TOOLS, buildAiSdkTools } from './index'
+import { AGENT_TOOLS, ALL_AGENT_TOOLS, activeToolNames, buildAiSdkTools, findTool, toolsetsEnabledIn } from './index'
+import type { TurnContext } from './types'
 import type { StrictObjectSchema } from './types'
 import { SYSTEM_PROMPT } from '../prompt/systemPrompt'
 import {
@@ -83,7 +84,8 @@ describe('the tool catalogue', () => {
   })
 
   it('declares every schema in the form strict mode requires', () => {
-    for (const tool of AGENT_TOOLS) {
+    // Toolset tools too: once switched on they go out under the same flag.
+    for (const tool of ALL_AGENT_TOOLS) {
       for (const schema of schemasOf(tool.parameters)) {
         expect(schema.additionalProperties, tool.name).toBe(false)
         expect([...schema.required].sort(), tool.name).toEqual(
@@ -108,7 +110,7 @@ describe('the tool catalogue', () => {
       }
       if (n.items) walk(n.items, `${where}[]`)
     }
-    for (const tool of AGENT_TOOLS) walk(tool.parameters, tool.name)
+    for (const tool of ALL_AGENT_TOOLS) walk(tool.parameters, tool.name)
   })
 
   it('hands the whole catalogue to the model, strict or not', () => {
@@ -123,6 +125,25 @@ describe('the tool catalogue', () => {
         expect((tool as { strict?: boolean }).strict, name).toBe(strict)
       }
     }
+  })
+})
+
+describe('toolsets', () => {
+  it('offers a toolset only once it is switched on, and keeps it on across turns', async () => {
+    const off = activeToolNames(ALL_AGENT_TOOLS, new Set())
+    expect(off).toContain('enable_toolsets')
+    expect(off).not.toContain('measure_geometry')
+
+    const turn = { toolsets: new Set<string>() } as unknown as TurnContext
+    const res = await findTool('enable_toolsets')!.run({} as never, { toolsets: ['analysis'] }, turn)
+    expect(res.ok).toBe(true)
+    expect(activeToolNames(ALL_AGENT_TOOLS, turn.toolsets)).toContain('measure_geometry')
+
+    // The next turn reads the switch back from the conversation.
+    const history = [
+      { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'c1', toolName: 'enable_toolsets', input: { toolsets: ['analysis'] } }] },
+    ]
+    expect([...toolsetsEnabledIn(history as never)]).toEqual(['analysis'])
   })
 })
 

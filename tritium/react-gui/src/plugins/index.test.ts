@@ -16,14 +16,14 @@ import { pluginServiceName } from '@renderer/worker/shared/pluginCalls'
 import { BUILTIN_PLUGINS } from './index'
 import { AGENT_KEYS } from './agent/calls'
 import { MDTOOLS_KEYS } from './mdtools/calls'
-import { PYMCONSOLE_KEYS } from './pymconsole/calls'
+import { CONSOLE_KEYS } from './console/calls'
 import { SEQ_KEYS } from './sequence/calls'
 
 /** Every plugin's declared service keys, keyed by plugin id. */
 const DECLARED_CALLS: Record<string, readonly string[]> = {
   agent: AGENT_KEYS,
   mdtools: MDTOOLS_KEYS,
-  pymconsole: PYMCONSOLE_KEYS,
+  console: CONSOLE_KEYS,
   sequence: SEQ_KEYS,
 }
 
@@ -77,8 +77,8 @@ describe('built-in plugins', () => {
     expect(byId.mdtools?.defaultEnabled).toBe(false)
     // The PyMOL console understands part of the language, and only helps
     // someone who already knows it.
-    expect(byId.pymconsole?.alwaysEnabled).toBeUndefined()
-    expect(byId.pymconsole?.defaultEnabled).toBe(false)
+    expect(byId.console?.alwaysEnabled).toBeUndefined()
+    expect(byId.console?.defaultEnabled).toBe(false)
   })
 
   it('use an id at most once', () => {

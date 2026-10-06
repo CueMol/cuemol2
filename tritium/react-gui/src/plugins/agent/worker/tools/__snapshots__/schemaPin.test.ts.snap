@@ -1,0 +1,150 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the tool list sent to the model > is unchanged 1`] = `
+[
+  {
+    "description": "Find close contacts around a selection and draw them as labelled dashed lines. Use it for hydrogen bonds and for what a ligand touches; by default only polar atoms (no carbon) are paired. This adds labels to the scene.",
+    "mutates": true,
+    "name": "analyze_interactions",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the molecule to measure within."},"selection":{"type":"string","description":"Selection the contacts start from, for example a ligand."},"maxDist":{"type":["number","null"],"description":"Longest contact to report, in angstroms. Null uses 4."},"includeCarbon":{"type":["boolean","null"],"description":"True also reports contacts that involve a carbon atom. Null or false leaves carbon out, so only atoms that can make hydrogen bonds or salt bridges (N, O, S, ...) are reported -- which is what \\"interactions\\" usually means."}},"required":["objId","selection","maxDist","includeCarbon"],"additionalProperties":false}",
+  },
+  {
+    "description": "Look at the current view: returns a picture of what the user sees. Use it to check that a change looks the way you intended, or when the user refers to something on screen. Each picture costs about a thousand tokens, so capture once a change is done rather than after every step. To see detail, zoom in first with center_view rather than raising longSide: tokens grow with the pixel count. Nothing is saved; use export_image to give the user a file.",
+    "mutates": false,
+    "name": "capture_view",
+    "parameters": "{"type":"object","properties":{"longSide":{"type":["integer","null"],"description":"Pixels on the longer side. Null uses 1024, which suits almost every check; clamped to 256-1568."}},"required":["longSide"],"additionalProperties":false}",
+  },
+  {
+    "description": "Move the camera to a selection. Note the side effect: this also SETS the molecule's current selection to the expression given, the same as set_mol_selection.",
+    "mutates": true,
+    "name": "center_view",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":["string","null"],"description":"Selection expression to centre on. Null uses the molecule's current selection."},"zoom":{"type":"boolean","description":"True also zooms to fit the selection; false only recentres."}},"required":["molId","selection","zoom"],"additionalProperties":false}",
+  },
+  {
+    "description": "Compile a selection expression and count the atoms it matches in one molecule. Do this before using an expression anywhere else: an expression can be valid and still match nothing, which looks like a renderer that did not work.",
+    "mutates": false,
+    "name": "check_selection",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule to count against."},"selection":{"type":"string","description":"The selection expression to check."}},"required":["molId","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Draw an object a new way: create a renderer of the given type on it. Returns the new renderer's uid. The type must be one get_renderer_types listed for that object.",
+    "mutates": true,
+    "name": "create_renderer",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object to draw."},"rendererType":{"type":"string","description":"Renderer type, from get_renderer_types."},"name":{"type":["string","null"],"description":"Name for the renderer. Null picks an unused default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws the whole object. Check it with check_selection first."}},"required":["objId","rendererType","name","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Switch on more tools for this conversation. The tools below are always available; these groups add more once switched on, from your next step: "analysis" -- Measuring and analysing: distances, angles and torsions between named atoms, close contacts around a selection, and saving a PNG of the view to the desktop. Switch a group on only when the request needs it.",
+    "mutates": false,
+    "name": "enable_toolsets",
+    "parameters": "{"type":"object","properties":{"toolsets":{"type":"array","description":"The groups to switch on.","items":{"type":"string","enum":["analysis"]}}},"required":["toolsets"],"additionalProperties":false}",
+  },
+  {
+    "description": "Save a PNG of the current view to the desktop. Give a file name only, not a path. This writes a file; the full path is reported back so you can tell the user where it went.",
+    "mutates": false,
+    "name": "export_image",
+    "parameters": "{"type":"object","properties":{"fileName":{"type":"string","description":"File name with no directories, for example overview.png."},"width":{"type":["integer","null"],"description":"Image width in pixels. Null uses the size of the view on screen."},"height":{"type":["integer","null"],"description":"Image height in pixels. Null uses the size of the view on screen."}},"required":["fileName","width","height"],"additionalProperties":false}",
+  },
+  {
+    "description": "Download a structure from the RCSB PDB by its four-character accession code and add it to the scene. Creates a new object AND a default renderer, so call get_scene_state afterwards to learn their ids. This one takes a few seconds.",
+    "mutates": true,
+    "name": "fetch_pdb",
+    "parameters": "{"type":"object","properties":{"pdbId":{"type":"string","description":"Four-character PDB accession code, for example 1CRN."},"format":{"type":"string","enum":["mmcif","pdb"],"description":"Which file to fetch. Prefer mmcif."},"rendererType":{"type":["string","null"],"description":"Renderer to create for it, for example cartoon. Null uses the reader's default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws everything."}},"required":["pdbId","format","rendererType","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "List the named colouring styles available in this scene. These are the style names set_renderer_coloring accepts; the fixed modes it also accepts are listed in its own description.",
+    "mutates": false,
+    "name": "get_coloring_styles",
+    "parameters": "{"type":"object","properties":{},"required":[],"additionalProperties":false}",
+  },
+  {
+    "description": "List the chain names of one molecule. Use before writing a chain-based selection.",
+    "mutates": false,
+    "name": "get_mol_chains",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object, from get_scene_state."}},"required":["molId"],"additionalProperties":false}",
+  },
+  {
+    "description": "List the residues of one chain: index, three-letter name, and one-letter code. The index is a STRING because it may carry an insertion code (for example "20A"), so use it verbatim in a selection.",
+    "mutates": false,
+    "name": "get_mol_residues",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"chain":{"type":"string","description":"Chain name, from get_mol_chains."},"offset":{"type":["integer","null"],"description":"Skip this many residues. Null starts at the beginning."}},"required":["molId","chain","offset"],"additionalProperties":false}",
+  },
+  {
+    "description": "List the writable properties of one node with their current values and, for enumerated ones, the allowed values. The node may be a renderer, an object, or the scene itself -- the scene is where the background colour, ambient occlusion, anti-aliasing and colour proofing live. Read this before set_node_prop.",
+    "mutates": false,
+    "name": "get_node_props",
+    "parameters": "{"type":"object","properties":{"nodeType":{"type":"string","enum":["scene","object","renderer"],"description":"What kind of node to address. \\"scene\\" is the scene as a whole; \\"renderer\\" also covers a renderer group."},"nodeId":{"type":["integer","null"],"description":"Uid of the object or renderer, from get_scene_state. Null addresses the scene itself, which is the one node with no id of its own."}},"required":["nodeType","nodeId"],"additionalProperties":false}",
+  },
+  {
+    "description": "List the renderer types that can be created on one object (for example simple, ball, cartoon, spacefill), and the presets available. Only a type from this list will work.",
+    "mutates": false,
+    "name": "get_renderer_types",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object, from get_scene_state."}},"required":["objId"],"additionalProperties":false}",
+  },
+  {
+    "description": "List the objects in the scene, their renderers, and the named selections available. Every id you use in another tool must come from here or from a tool result. Call it again after loading a file or creating a renderer, since ids are assigned then.",
+    "mutates": false,
+    "name": "get_scene_state",
+    "parameters": "{"type":"object","properties":{},"required":[],"additionalProperties":false}",
+  },
+  {
+    "description": "Open a structure file already on this computer and add it to the scene. Only use a path the user gave you. Creates a new object AND a default renderer, so call get_scene_state afterwards to learn their ids.",
+    "mutates": true,
+    "name": "load_file",
+    "parameters": "{"type":"object","properties":{"path":{"type":"string","description":"Absolute path of the file to open."},"rendererType":{"type":["string","null"],"description":"Renderer to create for it. Null uses the reader's default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws everything."}},"required":["path","rendererType","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Measure between named atoms and return the number: two atoms give a distance in angstroms, three give the angle at the middle atom in degrees, four give the torsion about the middle bond in degrees. Also draws the measurement in the 3D view as a labelled line, the same way the measure tool does. Use get_mol_residues to check a residue index first; the atom name is the PDB name, for example CA, N, C, O, CB.",
+    "mutates": true,
+    "name": "measure_geometry",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object the atoms belong to."},"atoms":{"type":"array","description":"Two, three or four atoms, in order. Two give a distance, three the angle at the second atom, four the torsion about the second-to-third bond. Any other number is an error.","items":{"type":"object","description":"One atom, named the way the PDB file names it.","properties":{"chain":{"type":"string","description":"Chain name, for example A."},"resid":{"type":"string","description":"Residue index as a string, because it may carry an insertion code (for example \\"20\\" or \\"20A\\")."},"atomName":{"type":"string","description":"Atom name, for example CA."}},"required":["chain","resid","atomName"],"additionalProperties":false}},"draw":{"type":"boolean","description":"True also draws the labelled measurement in the 3D view; false only returns the number."},"label":{"type":"string","description":"Name of the label set to draw into. Use \\"measure\\" unless the user asked for another."}},"required":["molId","atoms","draw","label"],"additionalProperties":false}",
+  },
+  {
+    "description": "Colour part of what one renderer draws, leaving the rest as it is. Use this for "make chain A red" or "colour the ligand yellow" -- set_renderer_coloring replaces the whole renderer's colouring instead. Painting the same renderer again adds another colour on top, so several regions can be coloured one call at a time.",
+    "mutates": true,
+    "name": "paint_selection",
+    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer to paint."},"selection":{"type":"string","description":"Which atoms to colour. Check it with check_selection first."},"color":{"type":"string","description":"Colour as hex (\\"#FF0000\\"), a CueMol colour name (\\"red\\"), or hsb(h,s,b). Hex is the safest."}},"required":["rendId","selection","color"],"additionalProperties":false}",
+  },
+  {
+    "description": "Turn the view about a screen axis: x runs left to right, y bottom to top, z out of the screen toward the viewer. Use it to show the structure from another side; capture_view tells you which way it went.",
+    "mutates": false,
+    "name": "rotate_view",
+    "parameters": "{"type":"object","properties":{"axis":{"type":"string","enum":["x","y","z"],"description":"Screen axis to turn about."},"angle":{"type":"number","description":"Angle in degrees; negative turns the other way."}},"required":["axis","angle"],"additionalProperties":false}",
+  },
+  {
+    "description": "Set one molecule's current selection, which is what the user sees highlighted. An empty expression clears it. This does not change what any renderer draws; use set_renderer_selection for that.",
+    "mutates": true,
+    "name": "set_mol_selection",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":"string","description":"Selection expression. Empty string clears the selection."}},"required":["molId","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Set one property of one node. On the scene this is how to change the background colour ("bgcolor"), turn ambient occlusion on and tune it ("aoEnabled", "aoRadius", "aoIntensity", "aoSteps"), choose anti-aliasing ("aa_method", "aaJitterLevel"), and switch on CMYK colour proofing ("use_colproof", "icc_filename"). On a renderer it sets a width, a detail level, or a mode. Call get_node_props first: the property name, its type, and the allowed values all come from there.",
+    "mutates": true,
+    "name": "set_node_prop",
+    "parameters": "{"type":"object","properties":{"nodeType":{"type":"string","enum":["scene","object","renderer"],"description":"What kind of node to address. \\"scene\\" is the scene as a whole; \\"renderer\\" also covers a renderer group."},"nodeId":{"type":["integer","null"],"description":"Uid of the object or renderer, from get_scene_state. Null addresses the scene itself, which is the one node with no id of its own."},"prop":{"type":"string","description":"Property name, exactly as get_node_props reported it."},"value":{"type":"string","description":"New value, written as text; it is converted to the property type. A colour is a name such as \\"white\\" or a hex code such as \\"#204080\\"."}},"required":["nodeType","nodeId","prop","value"],"additionalProperties":false}",
+  },
+  {
+    "description": "Colour one renderer. Either give a mode -- cpk (by element), rainbow (along the chain), bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style name from get_coloring_styles.",
+    "mutates": true,
+    "name": "set_renderer_coloring",
+    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"mode":{"type":"string","enum":["paint-type-cpk","paint-type-rainbow","paint-type-bfac","paint-type-solid","paint-type-resetdef","style"],"description":"One of the fixed modes, or \\"style\\" to use styleName instead."},"styleName":{"type":["string","null"],"description":"Style name from get_coloring_styles. Required when mode is \\"style\\", otherwise null."}},"required":["rendId","mode","styleName"],"additionalProperties":false}",
+  },
+  {
+    "description": "Change which atoms one renderer draws. Check the expression with check_selection first: an expression that matches nothing leaves the renderer drawing nothing.",
+    "mutates": true,
+    "name": "set_renderer_selection",
+    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"selection":{"type":"string","description":"Selection expression the renderer should draw."}},"required":["rendId","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Read or change the camera without moving to a selection: zoom (the height of the view, in angstroms), slab (the depth that is drawn, about the centre; atoms outside it are clipped), distance (from the eye to the centre), and centre. Give only what should change; with nothing given it just reports the current values. fitSlab sets the slab so every molecule (or objId) is in it while keeping the centre and zoom as they are -- use it, not center_view, when only the clipping is wrong.",
+    "mutates": false,
+    "name": "set_view",
+    "parameters": "{"type":"object","properties":{"zoom":{"type":["number","null"],"description":"New zoom in angstroms. Null leaves it."},"slab":{"type":["number","null"],"description":"New slab depth in angstroms. Null leaves it."},"distance":{"type":["number","null"],"description":"New eye-to-centre distance in angstroms. Null leaves it."},"center":{"type":["array","null"],"description":"New centre [x, y, z] in angstroms. Null leaves it.","items":{"type":"number"}},"fitSlab":{"type":["boolean","null"],"description":"True fits the slab to the molecules. Do not also give slab."},"objId":{"type":["integer","null"],"description":"With fitSlab: fit to this object only. Null fits every molecule."}},"required":["zoom","slab","distance","center","fitSlab","objId"],"additionalProperties":false}",
+  },
+  {
+    "description": "Show or hide one object, renderer, or renderer group. Hiding an object hides everything drawn from it. Use this rather than deleting something the user may want back.",
+    "mutates": true,
+    "name": "set_visible",
+    "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the object, renderer, or renderer group."},"nodeType":{"type":"string","enum":["object","renderer","rendGroup"],"description":"What nodeId refers to. Must match what get_scene_state reported."},"visible":{"type":"boolean","description":"True to show, false to hide."}},"required":["nodeId","nodeType","visible"],"additionalProperties":false}",
+  },
+]
+`;

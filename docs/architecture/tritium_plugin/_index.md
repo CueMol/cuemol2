@@ -38,11 +38,13 @@ plugin を 1 本書きたいだけなら **overview -> authoring** で足りる�
 | `catalog` | activity view + side pane 3 | 既定オフ | サイドパネルの view。worker 通信のない純 UI |
 | `agent` | activity view + side pane / worker service 2 / push channel / 設定 5 行 (うち secret 2) | 既定オフ | 長い非同期処理、streaming、自前の設定と資格情報を持つもの |
 | `mdtools` | command / menu / dialog / bottom tab / worker service 7 本 | 既定オフ | 機能一式 (開くフロー + パネル + service) を丸ごと 1 ディレクトリに閉じるもの |
-| `pymconsole` | bottom tab / worker service 1 本 | 既定オフ | 入力行 + 出力履歴。既存 service の上に別の操作体系を載せるもの |
+| `console` | bottom tab / worker service 1 本 | 既定オフ | 入力行 + 出力履歴。既存 service の上に別の操作体系を載せるもの |
 
-`pymconsole` ([260913 計画](../../plans/260913-pymconsole-plugin-plan.md)) は PyMOL コマンド言語に
-部分互換なコンソール (UI 上の名前は **PyM Console**)。PyMOL のパーサ (`parsing.py` / `parser.py` / `shortcut.py`) を TS へ移植して
-worker に置き、1 submit = 1 undo txn で既存 service を直呼びする。C++ 変更ゼロ。**既存の機能に
+`console` (旧 `pymconsole`、[260913 計画](../../plans/260913-pymconsole-plugin-plan.md)、
+[261006 計画](../../plans/261006-native-console-op-catalog-plan.md)) は 2 つの dialect を持つコンソール
+(UI 上の名前は **Console**)。native dialect は core の op catalog からコマンドを生成し、PyMOL dialect は
+PyMOL のパーサ (`parsing.py` / `parser.py` / `shortcut.py`) を TS へ移植した部分互換の操作体系
+([op-catalog.md](../op-catalog.md))。どちらも worker で 1 submit = 1 undo txn。C++ 変更ゼロ。**既存の機能に
 別の操作体系を被せる**形の plugin で、これも「専用 C++ クラスを持たない」側。
 
 `mdtools` 以外の 4 つは**その機能専用の C++ クラスを持たない**ことを基準に選んである。

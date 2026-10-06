@@ -155,7 +155,7 @@ export const APP_ICONS = {
   "panel.sequence": { lib: "phosphor", Comp: TextAlignLeft },
   "panel.animation": { lib: "phosphor", Comp: FilmStrip },
   "panel.trajectory": { lib: "phosphor", Comp: FilmSlate },
-  "panel.pymconsole": { lib: "phosphor", Comp: TerminalWindow },
+  "panel.console": { lib: "phosphor", Comp: TerminalWindow },
   "panel.render": { lib: "phosphor", Comp: Image },
 
   // Generic reusable UI icons.
