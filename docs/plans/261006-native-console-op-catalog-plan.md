@@ -1,6 +1,7 @@
 # native console 導入と、op catalog による agent / MCP / console の共通化
 
-Status: **実装中** (フェーズ 0-3)。
+Status: **実装済み** (フェーズ 0-3)。仕様は [op-catalog.md](../architecture/op-catalog.md)。
+実装中の目視確認で決めた変更は末尾の「実装時の変更」にまとめる。
 関連: [MCP / tool catalog 計画](260926-mcp-tool-catalog-plan.md) (D1 と「構成」を本計画で置き換える)、
 [pymconsole plugin 計画](260913-pymconsole-plugin-plan.md)、
 [AI agent plugin](../architecture/ai-agent-plugin.md)。
@@ -179,3 +180,27 @@ defineOp({
    - `npm test`
    - `npx tsc -p tsconfig.web.json --noEmit` と `tsconfig.node.json`
    - `task lint_tritium_style`
+
+## 実装時の変更 (目視確認で決めたもの)
+
+- **構文はカンマ区切りのみ**。`set x v` の空白区切りを一時入れたが、selection が空白を含むため
+  文脈依存の特例になり、取り下げた。
+- **`enable` / `disable` -> `show` / `hide`**。native では CueMol の renderer = 表現なので
+  PyMOL の `show`(表現の追加) と衝突しない。
+- **property は path で書く**: `set obj.rend.prop, value` / `obj/rend.prop` / `obj.prop` / scene の
+  `prop`。console 専用 op `set_prop` / `get_prop`。node 引数も `obj.rend` を受け付ける。
+- **builtin**: `cd` / `pwd` / `ls` / `run` / `log*` / `undo` / `redo` / `help` は op ではなく
+  native dialect の builtin (console 自身の機能で、agent / MCP は使わない)。
+- **PyMOL dialect は生成コマンドを再利用しない**。PyMOL の `load` / `fetch` / `png` は引数と
+  文言が PyMOL 固有で、置き換えると互換が崩れるため。
+- **`.qsc` の `load`**: `OpContext.openScene` と op の `outsideTxn` を追加し、panel が開く。
+- **結果の表示**: JSON ではなく op の `format`、無ければ汎用の key: value 表示。
+- **意味型の追加**: `rendererType` / `propName` / `propValue` / `propPath` / `vec3`。
+  path 以外の自由文字列の補完はファイル名に fall back しない。
+- **agent の toolset (C 方式)**: core 21 本 + toolset `analysis` (`measure_geometry` /
+  `analyze_interactions` / `export_image`)。`enable_toolsets` + `prepareStep` / `activeTools`。
+  provider の tool search (`deferLoading`) は将来の最適化。
+- **追加した op**: `rotate_view` (`turn`)、`set_view` (`view` / `slab` / `fit_slab`。GUI と同じ
+  `viewXform` service)、`get_prop` / `set_prop`、`save_png` (`png`)。
+- **既存の不具合の修正**: `create_renderer` の既定名がダイアログ先頭 type 由来だった
+  (`unusedRendererName`)、`analyze_interactions` が既定で炭素を含めていた (`includeCarbon`)。

@@ -37,6 +37,10 @@ architecture, it belongs here.
   `HitData` を GPU 経路の正式なデータ経路に昇格させた判断、頂点整数属性 / pick shader / CPU fallback 規則、
   uxp_gui を従来経路のまま保つ gating、hover UI (`naviHover` / throttle / busy 非計上)、採らなかった案
   (色に ID を埋め込む方式)。
+- [Op catalog と console (native / PyMOL dialect)](op-catalog.md) (日本語) --
+  AI agent の tool と console のコマンドを生成する core の op catalog。`.qif` 型に合わせた param DSL と
+  意味型 (node 名・property path・selection)、`invokeOp` / `runInTxn`、agent の toolset と
+  `enable_toolsets`、console runtime と native / PyMOL dialect、補完と結果整形。
 - [react-gui 大規模リファクタリング (2026-08)](react-gui-refactoring.md)
   (日本語) -- 移行完了後の構造作り替えの設計記録。動機 (churn が 4 つのハブ
   ファイルに集中していた) と、採用した判断 (feature ディレクトリ / hook は
@@ -64,7 +68,7 @@ architecture, it belongs here.
   [internals](tritium_plugin/internals.md) (有効判定の解決順、native menu を持つ
   main へ channel に command id を載せて渡す経路、worker service の glob と
   名前空間化、dev-only と tree-shaking、寄与点の足しかた)。
-  現状の 6 つのうち 5 つ (getpdb / sequence / catalog / agent / pymconsole) は、その
+  現状の 6 つのうち 5 つ (getpdb / sequence / catalog / agent / console) は、その
   機能専用の C++ クラスを持たないことを基準に選んでいる。残る `mdtools` (MD trajectory の
   GUI) は専用の C++ module を持つ唯一の例で、C++ レーンが無いため module は常時
   ロードのまま GUI だけを既定オフにしてある。
