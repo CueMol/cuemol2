@@ -1,6 +1,8 @@
 # MCP server と tool カタログの共通化 (agent / MCP / pymconsole)
 
-Status: **未実装 (計画)**。
+Status: **未実装 (計画)**。D1 と「構成」の ops 層は
+[261006 native console / op catalog 計画](261006-native-console-op-catalog-plan.md) で置き換えた
+(ops は新しい層を作らず既存の worker service、toolCatalog は core の op catalog)。MCP の部分 (D4 以降) は有効。
 関連: [AI agent plugin](../architecture/ai-agent-plugin.md)、
 [pymconsole plugin 計画](260913-pymconsole-plugin-plan.md)、
 [tritium plugin](../architecture/tritium_plugin/_index.md)。
