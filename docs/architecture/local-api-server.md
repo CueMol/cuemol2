@@ -1,8 +1,13 @@
 # Local API server と MCP (日本語)
 
 GUI アプリ (tritium) に内蔵した HTTP server。外部のプログラムが、今開いている CueMol を
-操作するための入口で、現在の endpoint は MCP (`/mcp`) だけ。console の command line client
-(`/console/*`) は [261007 計画](../plans/261007-local-api-server-plan.md) の PR 2 で足す予定。
+操作するための入口で、endpoint は 2 つ:
+
+- MCP (`/mcp`) -- plugin `mcp`。AI client から op catalog を tool として呼ぶ (§3, §4)。
+- console (`/console/run`, `/console/complete`) -- plugin `console`。terminal の
+  `cuemol-console` から console の native / PyMOL dialect を使う (§5)。
+
+計画: [261007](../plans/261007-local-api-server-plan.md)。
 
 関連: [op catalog と console](op-catalog.md) (MCP の tool の中身)、
 [plugin の API](tritium_plugin/api.md) (`useLocalApiEndpoint` など)。
@@ -10,15 +15,18 @@ GUI アプリ (tritium) に内蔵した HTTP server。外部のプログラム�
 ## 1. 経路
 
 ```
-MCP client --POST /mcp--> main: localApi/server.ts (127.0.0.1:<port>)
+MCP client      --POST /mcp-----------+
+cuemol-console  --POST /console/*-----+--> main: localApi/server.ts (127.0.0.1:<port>)
                                  token / Origin / Host 検査、path -> endpoint
                                  localApi/mcpEndpoint.ts (MCP SDK, stateless)
+                                 localApi/consoleEndpoint.ts (JSON)
                                         |
                   push LOCAL_API_REQUEST {reqId, endpoint, kind, payload}
                                         v
-           renderer: plugin mcp の Root (useLocalApiEndpoint('mcp', ...))
+           renderer: endpoint を持つ plugin の Root (useLocalApiEndpoint)
                                         v
            worker: plugin.mcp.{describe, listTools, callTool, cancelCall}
+                   plugin.console.{runCommand, complete, cancelRun}
                                         |
                   invoke LOCAL_API_REPLY {reqId, res} -> HTTP 応答
 ```
@@ -97,8 +105,42 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
   埋めてコピーする (画面上は `<token>`)。中身は `plugins/mcp/renderer/clientSetup.ts`。
   Codex は tool の timeout が既定 60 秒なので `tool_timeout_sec = 1800` を入れている。
 
-## 5. 既知の制約
+## 5. console endpoint と `cuemol-console`
+
+- **有効化**: Settings > Plugins > Console を有効にし、そのページの「Command line access」
+  (`remoteAccess`、既定 off) を on にする。console plugin の Root が `useLocalApiEndpoint('console', ...)`
+  を開く (`renderer/useConsoleEndpoint.ts`)。
+- **wire 形式** (`shared/types/localApi.ts`):
+  - `POST /console/run` `{ dialect, text, cwd }` -> `{ entries, aborted, interrupted, cwd }`
+  - `POST /console/complete` `{ dialect, line, cwd }` -> `{ replacement, messages }`
+  - body の形は main で検査し (`cwd` は絶対パス)、だめなら 400。worker の失敗 (busy 等) は 409 `{ error }`。
+- **実行**: panel と同じ worker service (`runCommand` / `complete`) を、アクティブなタブに対して
+  呼ぶ。1 submission = 1 undo txn、排他 (`txnBusy()`) も panel と同じ。`load x.qsc` は panel と同じく
+  File > Open の経路で開く。client の切断 (Ctrl-C) は `cancelRun` (= Stop)。
+- **作業ディレクトリ**: client が持つ。request の `cwd` で相対パスを解決し、`cd` の結果を応答の
+  `cwd` で返す。worker は client のための状態を持たず、panel の作業ディレクトリ (module 変数) も
+  動かさない (`RunCommandArgs.cwd` / `CompleteArgs.cwd`)。PyMOL の log と `lastRay` は panel と共有。
+- **GUI 側の表示**: CLI から来た submission の出力は console panel の transcript にも追加し、
+  echo 行に `[cli] ` を付ける。
+
+### client (`tritium/react-gui/tools/cuemol-console.mjs`)
+
+Node (18 以降) だけで動く、依存なしの thin client。repo から `node tools/cuemol-console.mjs` で起動する。
+
+- 接続情報は request ごとに `~/.cuemol/local-api.json` (`CUEMOL_LOCAL_API_INFO`) から読む。
+  無い、または `console` endpoint が無ければ「Command line access を on に」と案内する。
+  port は MCP plugin の設定で変わり得るが、client は毎回このファイルを読むので影響しない。
+- 対話: prompt は `CueMol>` / `PyM>`、`native` / `pymol` で dialect 切り替え、Tab 補完
+  (`/console/complete` の返す行全体で入力行を書き換える)、履歴 `~/.cuemol_console_history`、
+  実行中の Ctrl-C は中断、待機中は入力行の消去 / 終了。`exit` か Ctrl-D で抜ける。
+- 非対話: `-c "..."`、script ファイル、stdin のパイプ。全体を 1 submission として送る
+  (= 1 undo、途中で失敗するとそこで止まる)。失敗があれば exit code 1。
+- 出力: output は stdout、warning / error は stderr (TTY なら黄 / 赤)。echo 行は `--echo` のときだけ。
+
+## 6. 既知の制約
 
 - stateless なので `tools/list_changed` を送らない。tool の追加は client の再接続で反映。
 - token の再発行・port の変更後は client を登録し直す必要がある。
 - 起動中の call を GUI 側から止める UI は無い (client 側の中断で止まる)。
+- `cuemol-console` は配布物に入っていない (repo から起動)。パッケージ同梱
+  (`ELECTRON_RUN_AS_NODE` で動かす wrapper など) は別タスク。

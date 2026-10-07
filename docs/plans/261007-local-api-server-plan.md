@@ -1,6 +1,6 @@
 # Local API server: MCP と console CLI から CueMol を操作する
 
-Status: **PR 1 (server + MCP) 実装済み**、PR 2 (console endpoint + CLI) は未実装。
+Status: **実装済み** (PR 1: server + MCP #656、PR 2: console endpoint + CLI)。
 実装後の仕様は [local API server](../architecture/local-api-server.md)。
 
 PR 1 で計画から変えた点:
@@ -14,6 +14,13 @@ PR 1 で計画から変えた点:
 - 接続情報ファイルは `<userData>` ではなく `~/.cuemol/local-api.json` (`CUEMOL_LOCAL_API_INFO` で上書き)。
 - MCP SDK は `McpServer` の下の protocol server に list / call handler を直接設定する
   (低レベル `Server` は deprecated)。
+
+PR 2 で計画から変えた点:
+- port は MCP plugin の設定のまま。CLI は毎 request 接続情報ファイルを読むので、port の置き場所を
+  core に移す必要は無かった。
+- パイプ入力は行ごとではなく全体を 1 submission として送る (script ファイルと同じ。1 undo)。
+- echo 行は `--echo` のときだけ表示する (対話では入力と重複するため)。
+- 接続情報の場所は `~/.cuemol/local-api.json` に一本化したので、`CUEMOL_USER_DATA` は不要。
 関連: [op catalog と console](../architecture/op-catalog.md)、
 [260926 MCP / tool catalog 計画](260926-mcp-tool-catalog-plan.md) (D4 とセキュリティ節を本計画で具体化)。
 

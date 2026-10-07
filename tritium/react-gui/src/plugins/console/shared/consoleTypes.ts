@@ -21,6 +21,9 @@ export const CONSOLE_PLUGIN_ID = 'console'
 /** The plugin preference holding the dialect the panel speaks. */
 export const DIALECT_PREF = 'dialect'
 
+/** The plugin preference that opens the endpoint `cuemol-console` talks to. */
+export const REMOTE_ACCESS_PREF = 'remoteAccess'
+
 /** The dialect a fresh panel speaks. */
 export const DEFAULT_DIALECT: DialectId = 'native'
 
@@ -47,6 +50,11 @@ export interface RunCommandArgs {
   text: string
   /** Names this run, so `cancelRun` can stop it. */
   runId: string
+  /**
+   * The working directory, for a caller that keeps its own (the command-line
+   * client). Absent, the panel's directory is used and `cd` moves it.
+   */
+  cwd?: string
 }
 
 export interface CancelRunArgs {
@@ -67,6 +75,8 @@ export interface RunCommandOutcome {
    * scene when it is new and empty, otherwise in a new tab.
    */
   openScene?: string
+  /** Where `cd` left the directory, when the caller passed `cwd`. */
+  cwd?: string
 }
 
 export type RunCommandResult = Result<RunCommandOutcome>
@@ -78,6 +88,8 @@ export interface CompleteArgs {
   viewId: number
   /** The line the caret is on, without its newline. */
   line: string
+  /** As in `RunCommandArgs`. */
+  cwd?: string
 }
 
 export interface CompleteOutcome {
