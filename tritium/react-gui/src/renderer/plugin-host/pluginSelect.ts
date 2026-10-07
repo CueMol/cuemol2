@@ -68,6 +68,7 @@ export const EMPTY_CONTRIBUTIONS: PluginContributions = {
   toolbar: [],
   views: [],
   bottomTabs: [],
+  statusBar: [],
   settings: [],
 }
 
@@ -80,7 +81,7 @@ export const EMPTY_CONTRIBUTIONS: PluginContributions = {
  */
 export function collectContributions(active: readonly RendererPlugin[]): PluginContributions {
   const out: PluginContributions = {
-    menus: [], toolbar: [], views: [], bottomTabs: [], settings: [],
+    menus: [], toolbar: [], views: [], bottomTabs: [], statusBar: [], settings: [],
   }
 
   for (const plugin of active) {
@@ -106,6 +107,12 @@ export function collectContributions(active: readonly RendererPlugin[]): PluginC
       if (!Component) continue
       const resolved: ResolvedPluginBottomTab = { ...tab, Component }
       out.bottomTabs.push(resolved)
+    }
+
+    for (const item of contributes.statusBar ?? []) {
+      const Component = plugin.statusBarItems?.[item.id]
+      if (!Component) continue
+      out.statusBar.push({ ...item, key: `${pluginId}.${item.id}`, Component })
     }
 
     for (const setting of contributes.settings ?? []) {

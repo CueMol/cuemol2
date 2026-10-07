@@ -78,6 +78,15 @@ export interface PluginBottomTab {
 }
 
 /**
+ * An item on the right of the status bar, ahead of the Busy / Ready
+ * indicator. The component draws itself (an icon, usually a button that
+ * opens a popover); the host only places it.
+ */
+export interface PluginStatusBarItem {
+  id: string
+}
+
+/**
  * One row on the plugin's own page in Settings.
  *
  * The value lives in `UiState.pluginPrefs[<plugin id>][key]` and is read back
@@ -104,6 +113,7 @@ export interface PluginContributes {
   toolbar?: PluginToolbarContribution[]
   views?: PluginViewContribution[]
   bottomTabs?: PluginBottomTab[]
+  statusBar?: PluginStatusBarItem[]
   settings?: PluginSettingDecl[]
 }
 
@@ -171,6 +181,8 @@ export interface RendererPlugin {
   panes?: Record<string, PaneComponent>
   /** Tab components, keyed by the tab id declared in `contributes.bottomTabs`. */
   bottomTabs?: Record<string, BottomTabComponent>
+  /** Status bar components, keyed by the id declared in `contributes.statusBar`. */
+  statusBarItems?: Record<string, React.ComponentType>
 }
 
 // ------------------------------------------------------------
@@ -187,6 +199,12 @@ export interface ResolvedPluginView extends Omit<PluginViewContribution, 'panes'
 
 export interface ResolvedPluginBottomTab extends PluginBottomTab {
   Component: BottomTabComponent
+}
+
+export interface ResolvedPluginStatusBarItem extends PluginStatusBarItem {
+  /** Unique across plugins: `<plugin id>.<item id>`. */
+  key: string
+  Component: React.ComponentType
 }
 
 /**
@@ -207,5 +225,6 @@ export interface PluginContributions {
   toolbar: PluginToolbarContribution[]
   views: ResolvedPluginView[]
   bottomTabs: ResolvedPluginBottomTab[]
+  statusBar: ResolvedPluginStatusBarItem[]
   settings: ResolvedPluginSetting[]
 }

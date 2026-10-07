@@ -75,6 +75,16 @@ defineOp({
 - toolset に属する op は、モデルが `enable_toolsets` で有効にした次の step から渡す
   (`prepareStep` / `activeTools`)。有効化は会話の間続き、履歴から復元する。
 - 詳細は [ai-agent-plugin.md](ai-agent-plugin.md) §3.3 / §5。
+- tool の規則と selection の早見表は `catalog/guide.ts` (`TOOL_RULES`、`SELECTION_CHEAT_SHEET`) に
+  あり、agent の system prompt と MCP の `instructions` が共有する。結果の JSON 化は
+  `catalog/toolOutput.ts` の `serializeToolOutput`。
+
+## 4.1 MCP への公開
+
+- `expose.tool !== false` の op を全て MCP の tool として公開する (toolset の段階なし)。
+  1 call = 1 undo txn (`MCP: <name>`)、`fileAccess: 'any'`。
+- agent の turn・console の submit・MCP の call は `txnBusy()` で排他し、busy なら待たずに断る。
+- 詳細は [local-api-server.md](local-api-server.md)。
 
 ## 5. Console
 

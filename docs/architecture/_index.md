@@ -236,3 +236,9 @@ architecture, it belongs here.
   「Use settings」のみ) と loop guard、別の app data を足す手順。レンダー時の設定 -> umbreon exporter の
   写像は C++ `UmbreonSceneExporter::applyRenderSettings` に一本化し、tritium / cuetty / Python が共有する
   (設定の無い scene は class 既定 + camera の projection)。
+- [Local API server と MCP](local-api-server.md) (日本語) --
+  GUI に内蔵した 127.0.0.1 の HTTP server (bearer token、Origin / Host 検査、endpoint を
+  plugin が `useLocalApiEndpoint` で開閉)。MCP endpoint (Streamable HTTP、stateless) で op
+  catalog を tool として公開し、1 call = 1 undo txn、agent / console と `txnBusy()` で排他。
+  status bar のアイコンと popover、client ごとの接続設定 dialog、接続情報ファイル
+  `~/.cuemol/local-api.json`。

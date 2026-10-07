@@ -13,6 +13,7 @@ import { clearRenderHistory, sweepStaleRenderHistory } from './renderHistory'
 import { sweepMovieOutputs } from './movieOutput'
 import { APP_ID, APP_PRODUCT_NAME } from '@shared/appInfo'
 import { installMainCrashHandlers } from './installMainCrashHandlers'
+import { stopLocalApi } from './localApi'
 
 // Before anything else, so a throw during the setup below is still reported
 // to the terminal and a closed stdout pipe cannot masquerade as a crash.
@@ -178,6 +179,7 @@ app.on('will-quit', () => {
   // check just keeps a losing instance from creating one on its way out.
   if (!gotSingleInstanceLock) return
   clearRenderHistory()
+  void stopLocalApi()
 })
 
 app.on('window-all-closed', () => {

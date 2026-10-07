@@ -6,11 +6,12 @@ import { desktopDir, outputPath } from './outputFile'
 const ctx = (fileAccess?: 'any' | 'desktop') => ({ fileAccess }) as unknown as OpContext
 
 describe('outputPath', () => {
-  it('confines a model to a bare name on the desktop, and gives the console an absolute path', () => {
+  it('confines a model to a bare name on the desktop, and resolves a free caller\'s relative path from the desktop', () => {
     expect(outputPath(ctx('desktop'), 'pic', '.png')).toEqual({ path: nodePath.join(desktopDir(), 'pic.png') })
     expect(outputPath(ctx('desktop'), '../pic.png', '.png')).toHaveProperty('error')
     expect(outputPath(ctx('desktop'), '/tmp/pic.png', '.png')).toHaveProperty('error')
     expect(outputPath(ctx(), 'sub/pic.png', '.png')).toHaveProperty('error')
-    expect(outputPath(ctx('any'), 'sub/pic', '.png')).toEqual({ path: nodePath.resolve('sub/pic.png') })
+    expect(outputPath(ctx('any'), 'sub/pic', '.png')).toEqual({ path: nodePath.join(desktopDir(), 'sub/pic.png') })
+    expect(outputPath(ctx('any'), '/tmp/pic.png', '.png')).toEqual({ path: '/tmp/pic.png' })
   })
 })

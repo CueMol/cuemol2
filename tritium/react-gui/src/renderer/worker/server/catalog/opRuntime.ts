@@ -19,6 +19,14 @@
  * - rolls it back when nothing changed. Committing an empty transaction
  *   clears the redo stack, so a read-only action would silently cost the user
  *   their redo.
+ *
+ * Only one such action runs at a time. The callers do not share a queue (an
+ * agent turn, the console panel, the command line and an MCP client each
+ * start on their own), and a second one started inside the first's
+ * transaction would have its edits committed or undone with the first's. So
+ * each caller checks `txnBusy()` before it starts and refuses rather than
+ * waits: an agent turn can sit on its transaction for minutes while the
+ * model thinks, longer than any remote caller should hang.
  */
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
@@ -53,6 +61,18 @@ export async function invokeOp(
   return outcome
 }
 
+/** Transactions open now, from any caller. */
+let openTxns = 0
+
+/** Whether an action's transaction is open, so another must not start. */
+export function txnBusy(): boolean {
+  return openTxns > 0
+}
+
+/** What a caller refused by `txnBusy()` reports. */
+export const TXN_BUSY_MESSAGE =
+  'CueMol is busy: another command or agent turn is running. Try again when it has finished.'
+
 /**
  * Run `body` inside one undo transaction, then commit or roll back by the
  * rule above.
@@ -67,9 +87,11 @@ export async function runInTxn<T>(
   body: () => Promise<T>,
 ): Promise<T> {
   scene.startUndoTxn(label)
+  openTxns++
   try {
     return await body()
   } finally {
+    openTxns--
     if (mutated()) scene.commitUndoTxn()
     else scene.rollbackUndoTxn()
   }

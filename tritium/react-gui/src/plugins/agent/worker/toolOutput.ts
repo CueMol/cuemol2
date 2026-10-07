@@ -3,12 +3,9 @@
  * @description Turning a worker service's answer into something the model can
  * read.
  *
- * Size is the concern here. A service answers at whatever length the scene
- * happens to be -- every residue of a chain, every property of a renderer --
- * and a model charged per token does not need all of it. Arrays are cut to a
- * bound and the payload is capped, with the fact that something was cut
- * stated in the output rather than left for the model to infer from a
- * truncated list.
+ * The JSON text and its size bounds are the catalogue's
+ * (`catalog/toolOutput.ts`), shared with the MCP server; what is here is the
+ * AI SDK's side: the picture beside the text, and the transcript line.
  *
  * Reading the three result dialects the services speak is not specific to a
  * model, so that half lives in `worker/shared/serviceResult` and is
@@ -16,6 +13,7 @@
  */
 
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { MAX_ARRAY_ITEMS, MAX_OUTPUT_CHARS, serializeToolOutput } from '@renderer/worker/server/catalog'
 import type { Tool } from 'ai'
 import type { ToolImage, ToolOutcome } from './tools/types'
 
@@ -26,59 +24,7 @@ import type { ToolImage, ToolOutcome } from './tools/types'
  */
 type ToolResultOutput = Awaited<ReturnType<NonNullable<Tool['toModelOutput']>>>
 
-export { normalizeServiceResult }
-
-/** Longest array the model is shown before the tail is summarised away. */
-export const MAX_ARRAY_ITEMS = 200
-
-/** Hard ceiling on one tool result, in characters of JSON. */
-export const MAX_OUTPUT_CHARS = 8192
-
-/** Recursively bound arrays, noting what was left out. */
-function truncate(value: unknown, depth = 0): unknown {
-  if (Array.isArray(value)) {
-    const head = value.slice(0, MAX_ARRAY_ITEMS).map((v) => truncate(v, depth + 1))
-    if (value.length > MAX_ARRAY_ITEMS) {
-      head.push(`...${value.length - MAX_ARRAY_ITEMS} more of ${value.length} omitted`)
-    }
-    return head
-  }
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = truncate(v, depth + 1)
-    }
-    return out
-  }
-  return value
-}
-
-/**
- * The JSON string sent back as the function call's output.
- *
- * The Responses API has no error flag on a function output, so the outcome is
- * carried in the payload as `ok` and the system prompt tells the model that
- * `ok: false` means the call failed.
- */
-export function serializeToolOutput(outcome: ToolOutcome): string {
-  const body = outcome.ok
-    ? { ok: true, ...(outcome.data === undefined ? {} : { result: truncate(outcome.data) }) }
-    : { ok: false, error: outcome.error }
-  let text: string
-  try {
-    text = JSON.stringify(body)
-  } catch {
-    return JSON.stringify({ ok: false, error: 'The result could not be serialized.' })
-  }
-  if (text.length <= MAX_OUTPUT_CHARS) return text
-  return (
-    JSON.stringify({
-      ok: outcome.ok,
-      truncated: true,
-      note: `Result too large (${text.length} chars); showing the first ${MAX_OUTPUT_CHARS}.`,
-    }).slice(0, -1) + ',"head":' + JSON.stringify(text.slice(0, MAX_OUTPUT_CHARS)) + '}'
-  )
-}
+export { MAX_ARRAY_ITEMS, MAX_OUTPUT_CHARS, normalizeServiceResult, serializeToolOutput }
 
 /** What `runQueued` resolves to: the JSON text, plus the picture if there is one. */
 export type ToolRunOutput = string | { text: string; image: ToolImage }

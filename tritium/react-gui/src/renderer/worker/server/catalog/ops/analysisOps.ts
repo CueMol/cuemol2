@@ -72,8 +72,10 @@ const SAFE_BASENAME_RE = /^[A-Za-z0-9._-]+$/
 export const exportImage = defineOp({
   name: 'export_image',
   description:
-    'Save a PNG of the current view to the desktop. Give a file name only, not a path. ' +
-    'This writes a file; the full path is reported back so you can tell the user where it went.',
+    'Save a PNG of the current view to a file, only when the user asks for a file. To look at ' +
+    'the view yourself, use capture_view, which saves nothing. ' +
+    'Give a file name only, not a path: it is saved to the desktop, and the full path is ' +
+    'reported back -- tell the user where it went.',
   params: {
     fileName: string('File name with no directories, for example overview.png.'),
     width: optional(integer('Image width in pixels. Null uses the size of the view on screen.')),

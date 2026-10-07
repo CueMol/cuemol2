@@ -20,6 +20,7 @@ import { registerAppStateHandlers } from './handlers/appState';
 import { registerContextMenuHandlers } from './handlers/contextMenus';
 import { registerFileDialogHandlers } from './handlers/fileDialogHandlers';
 import { registerFileSystemHandlers } from './handlers/fileSystem';
+import { registerLocalApiHandlers } from './localApi';
 import { registerMenuStateHandlers } from './handlers/menuState';
 import { registerRecentFilesHandlers } from './handlers/recentFiles';
 import { registerSecretHandlers } from './handlers/secrets';
@@ -45,4 +46,5 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   registerSecretHandlers();
   registerContextMenuHandlers(mainWindow);
   registerWindowHandlers(mainWindow);
+  registerLocalApiHandlers(mainWindow);
 }

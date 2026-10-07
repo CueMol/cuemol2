@@ -17,6 +17,7 @@ import { BUILTIN_PLUGINS } from './index'
 import { AGENT_KEYS } from './agent/calls'
 import { MDTOOLS_KEYS } from './mdtools/calls'
 import { CONSOLE_KEYS } from './console/calls'
+import { MCP_KEYS } from './mcp/calls'
 import { SEQ_KEYS } from './sequence/calls'
 
 /** Every plugin's declared service keys, keyed by plugin id. */
@@ -24,6 +25,7 @@ const DECLARED_CALLS: Record<string, readonly string[]> = {
   agent: AGENT_KEYS,
   mdtools: MDTOOLS_KEYS,
   console: CONSOLE_KEYS,
+  mcp: MCP_KEYS,
   sequence: SEQ_KEYS,
 }
 

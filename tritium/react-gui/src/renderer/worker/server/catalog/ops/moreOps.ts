@@ -122,8 +122,9 @@ export const saveObject = defineOp({
   name: 'save_object',
   description:
     'Write one object to a file in the format its extension names (for a molecule e.g. .pdb ' +
-    'or .cif). Give a file name only; it is saved to the desktop and the full path is ' +
-    'reported back -- tell the user where it went.',
+    'or .cif). ' +
+    'Give a plain file name, which is saved to the desktop, or an absolute path where the ' +
+    'caller allows one; the full path is reported back -- tell the user where it went.',
   params: {
     objId: objectId('Uid of the object.'),
     fileName: path('The file, e.g. model.pdb.'),

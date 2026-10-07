@@ -20,7 +20,7 @@ import { SYSTEM_PROMPT } from '../prompt/systemPrompt'
 import {
   CHEAT_SHEET_KEYWORDS,
   CHEAT_SHEET_NAMED_SELECTIONS,
-} from '../prompt/selectionCheatSheet'
+} from '@renderer/worker/server/catalog/selectionCheatSheet'
 
 /**
  * The JSON Schema keywords every provider's strict mode accepts.

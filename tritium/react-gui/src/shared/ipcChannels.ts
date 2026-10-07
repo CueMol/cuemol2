@@ -164,6 +164,13 @@ export const IPC = {
   RENDER_MOVIE_TEMPDIR:     'render-window:movie-tempdir',     // invoke: render window -> main (app-managed output folder)
   RENDER_MOVIE_SAVE:        'render-window:movie-save',        // invoke: render window -> main (copy the movie out)
 
+  // --- Local API server (MCP, console command line) ---
+  // Main accepts a request on 127.0.0.1 and asks the main window to answer it.
+  LOCAL_API_REQUEST: 'local-api:request', // push:   main -> main window
+  LOCAL_API_REPLY:   'local-api:reply',   // invoke: main window -> main
+  LOCAL_API_CONTROL: 'local-api:control', // invoke: main window -> main (endpoint on/off, token, port)
+  LOCAL_API_STATUS:  'local-api:status',  // invoke: main window -> main
+
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
 
