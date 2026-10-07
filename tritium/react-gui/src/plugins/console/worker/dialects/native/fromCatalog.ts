@@ -221,6 +221,9 @@ function opContextOf(cc: CmdContext): OpContext {
     noteStream: (reqId) => cc.noteStream(reqId),
     streamId: (tag) => cc.streamId(tag),
     openScene: (filePath) => cc.openScene(filePath),
+    cancelled: () => cc.stopped(),
+    // The person at the prompt chose the path.
+    fileAccess: 'any',
   }
 }
 

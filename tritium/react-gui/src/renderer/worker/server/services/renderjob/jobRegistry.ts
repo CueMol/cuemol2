@@ -35,7 +35,54 @@ export function isSceneBeingRendered(sceneUid: number): boolean {
 
 /** Push a render update to the renderer. */
 export function emit(ctx: WorkerContext, update: RenderUpdate): void {
+  if (awaited.has(update.jobId) && (update.type === "complete" || update.type === "error")) {
+    outcomes.set(update.jobId, update);
+  }
   ctx.svc.pushMessage(RENDER_PROGRESS_CHANNEL, update);
+}
+
+/** Jobs a worker-side caller is waiting on, and how each ended. */
+const awaited = new Set<string>();
+const outcomes = new Map<string, RenderUpdate>();
+
+/** How often a waiting caller looks at its job, in ms. */
+const WAIT_POLL_MS = 250;
+
+/**
+ * Wait for a job to end, for a caller inside the worker (an op) that has no
+ * push channel to listen on.
+ *
+ * Resolves with the job's `complete` or `error` update. A cancelled job sends
+ * neither, so a job that leaves the registry without one resolves as an
+ * error saying so. `cancelled` is asked on every look; when it says yes the
+ * job is cancelled through `cancel` and the wait goes on until it unwinds.
+ */
+export function waitForRenderJob(
+  jobId: string,
+  cancelled: () => boolean,
+  cancel: () => void,
+): Promise<Extract<RenderUpdate, { type: "complete" | "error" }>> {
+  awaited.add(jobId);
+  let asked = false;
+  return new Promise((resolve) => {
+    const timer = setInterval(() => {
+      const done = outcomes.get(jobId);
+      if (done || !jobs.has(jobId)) {
+        clearInterval(timer);
+        awaited.delete(jobId);
+        outcomes.delete(jobId);
+        resolve(
+          (done as Extract<RenderUpdate, { type: "complete" | "error" }> | undefined) ??
+            { type: "error", jobId, error: "The render was cancelled." },
+        );
+        return;
+      }
+      if (!asked && cancelled()) {
+        asked = true;
+        cancel();
+      }
+    }, WAIT_POLL_MS);
+  });
 }
 
 export function stopTimer(entry: RenderJobEntry): void {

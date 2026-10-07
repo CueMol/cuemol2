@@ -160,6 +160,7 @@ export async function runTurn(
     toolsets: toolsetsEnabledIn(args.history),
     callId: '',
     noteStream: (reqId: string) => { noteStream(args.turnId, reqId) },
+    aborted: () => controller.signal.aborted,
     outcomes: new Map(),
     inflight: new Set(),
     queue: Promise.resolve(),

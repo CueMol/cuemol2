@@ -47,6 +47,8 @@ export interface CmdContext {
   noteStream(reqId: string): void
   /** A stream request id unique to this run, for `noteStream`. */
   streamId(tag: string): string
+  /** Whether Stop has been pressed, for a command that waits on a job it can cancel. */
+  stopped(): boolean
   /**
    * Run a `.pml` file's commands here, inside this submission's transaction
    * (`run`; the `@` line prefix goes through the same path).

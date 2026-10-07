@@ -11,7 +11,18 @@
  */
 
 /** The toolsets there are. */
-export type ToolsetId = 'analysis' | 'files' | 'coloring'
+export type ToolsetId =
+  | 'analysis'
+  | 'files'
+  | 'coloring'
+  | 'view'
+  | 'map'
+  | 'molops'
+  | 'xtal'
+  | 'style'
+  | 'selection'
+  | 'render'
+  | 'anim'
 
 export interface Toolset {
   id: ToolsetId
@@ -35,6 +46,46 @@ export const TOOLSETS: readonly Toolset[] = [
   },
   {
     id: 'coloring',
-    description: 'Colouring by a named style: listing the styles set_renderer_coloring accepts.',
+    description:
+      'More colouring: the named styles set_renderer_coloring accepts, clearing painted ' +
+      'regions, and a painted renderer\'s base colour.',
+  },
+  {
+    id: 'view',
+    description:
+      'Camera: saving and restoring named views, perspective or orthographic projection, ' +
+      'sliding the view, and fitting it to one object or renderer.',
+  },
+  {
+    id: 'map',
+    description: 'Electron density maps: fetching a PDB entry\'s map, and setting contour level, extent and colour.',
+  },
+  {
+    id: 'molops',
+    description:
+      'Changing molecules: superposing one onto another, molecular surfaces, deleting atoms, ' +
+      'renaming chains, merging molecules, and secondary structure.',
+  },
+  {
+    id: 'xtal',
+    description: 'Crystal structures: symmetry mates and the unit cell.',
+  },
+  {
+    id: 'style',
+    description: 'Named renderer styles (preset looks and outlines).',
+  },
+  {
+    id: 'selection',
+    description: 'Naming a selection expression for later use.',
+  },
+  {
+    id: 'render',
+    description:
+      'High-quality rendering: ray-traced images with global illumination or a hatched ' +
+      'illustration style, saved as PNG (like PyMOL ray).',
+  },
+  {
+    id: 'anim',
+    description: 'Playing the scene\'s animation.',
   },
 ]

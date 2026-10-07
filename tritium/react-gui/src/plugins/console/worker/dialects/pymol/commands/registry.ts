@@ -13,6 +13,7 @@ import { MEASURE_COMMANDS } from './measureCommands'
 import { REP_COMMANDS } from './repCommands'
 import { SELECT_COMMANDS } from './selectCommands'
 import { MISC_COMMANDS } from './miscCommands'
+import { RAY_COMMANDS } from './rayCommands'
 import { OBJECT_COMMANDS } from './objectCommands'
 import { SETTING_COMMANDS } from './settingCommands'
 import { VIEW_COMMANDS } from './viewCommands'
@@ -78,6 +79,7 @@ export const PYM_COMMANDS: readonly PymCommand[] = [
   ...VIEW_COMMANDS,
   ...SETTING_COMMANDS,
   ...MISC_COMMANDS,
+  ...RAY_COMMANDS,
   ...SAVE_COMMANDS,
   ...COLOR_COMMANDS,
   ...FIT_COMMANDS,

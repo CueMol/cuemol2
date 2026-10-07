@@ -1,8 +1,14 @@
 # op catalog の網羅: GUI の service を op にする
 
-Status: **フェーズ 1 実装済み** (`delete_node` / `rename_node` / `change_renderer_type` を core に追加し、
-`get_mol_residues` を `analysis`、`load_file` / `export_image` を `files`、`get_coloring_styles` を `coloring` へ移した)。
-2 以降は未実装。
+Status: **実装済み** (APBS / morph / アニメーション編集を除く)。
+フェーズ 1 で `delete_node` / `rename_node` / `change_renderer_type` を core に足し、
+`get_mol_residues` を `analysis`、`load_file` / `export_image` を `files`、`get_coloring_styles` を
+`coloring` へ移した。フェーズ 2 以降で toolset `view` / `map` / `molops` / `xtal` / `selection` /
+`style` / `coloring` / `files` / `render` / `anim` の op を足した (一覧は
+[ai-agent-plugin.md](../architecture/ai-agent-plugin.md) §5)。書き込みは、agent はデスクトップへの
+bare 名のみ、console は任意のパス (`catalog/outputFile.ts`)。`render_image` (console `ray`) は
+umbreon の in-process job で ray tracing / GI を行い、PyMOL dialect の `ray` / `png` もこれを使う。
+未対応: APBS、morph、アニメーションの編集 (再生・停止・時刻移動のみ op 化)、POV-Ray 出力。
 関連: [op catalog と console](../architecture/op-catalog.md)、
 [native console / op catalog 計画](261006-native-console-op-catalog-plan.md)。
 

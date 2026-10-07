@@ -37,6 +37,9 @@ function opContextOf(turn: TurnContext): OpContext {
     noteStream: turn.noteStream,
     // Namespaced by turn and call, which is how `cancelTurn` finds it.
     streamId: () => `${turn.turnId}:${turn.callId}`,
+    cancelled: () => turn.aborted?.() ?? false,
+    // A model names a file, never a place: what it writes goes to the desktop.
+    fileAccess: 'desktop',
   }
 }
 
