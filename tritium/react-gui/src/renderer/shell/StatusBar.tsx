@@ -4,6 +4,7 @@ import { useActiveToolDef } from '@renderer/contexts/ActiveToolContext';
 import { useStatusMessage } from '@renderer/state/statusMessage';
 import { useCueMolBusy } from '@renderer/hooks/useCueMolBusy';
 import { useBusyCursor } from '@renderer/hooks/useBusyCursor';
+import { usePluginContributions } from '@renderer/plugin-host';
 
 const StatusBarComponent: React.FC = () => {
   // Everything shown here is read from its owner; App passes nothing in.
@@ -13,6 +14,7 @@ const StatusBarComponent: React.FC = () => {
   // The same flag drives a global wait cursor, so the busy state is visible
   // wherever the pointer is -- not only here.
   useBusyCursor(busy);
+  const { statusBar: pluginItems } = usePluginContributions();
   const { label: activeToolLabel, shortcut: activeToolShortcut, icon: activeToolIcon } = activeDef;
   return (
     <div className="status-bar">
@@ -35,6 +37,7 @@ const StatusBarComponent: React.FC = () => {
         )}
       </div>
       <div className="status-right">
+        {pluginItems.map(({ key, Component }) => <Component key={key} />)}
         {busy ? (
           <span className="status-item status-busy" title="Worker is processing">
             <AppIcon name="ui.refresh" size={10} className="status-spinner" aria-hidden />

@@ -105,6 +105,7 @@ import {
   Intersect,
   Key,
   Palette,
+  PlugsConnected,
   PuzzlePiece,
   Shield,
   TextAa,
@@ -161,6 +162,7 @@ export const APP_ICONS = {
   // Generic reusable UI icons.
   "ui.refresh": { lib: "phosphor", Comp: ArrowClockwise },
   "ui.statusDot": { lib: "phosphor", Comp: Circle, weight: "fill" },
+  "status.mcp": { lib: "phosphor", Comp: PlugsConnected },
   "ui.properties": { lib: "phosphor", Comp: SlidersHorizontal },
   "ui.menu": { lib: "phosphor", Comp: List },
   "ui.close": { lib: "phosphor", Comp: X },

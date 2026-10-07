@@ -207,6 +207,36 @@ secret 行と `PluginSecret.set` / `clear` -- どちらも同じ renderer にい
 
 ---
 
+### `useOpenPluginSettings(pluginId): () => void`
+
+Settings タブを開き、その plugin の設定ページ (`contributes.settings` の行が並ぶページ) を
+表示する関数を返します。検索欄は空にし、Plugins の枝を展開します。Settings タブが既に
+開いていて別のページを表示していても切り替わります。status bar の popover の「設定」
+ボタンなどから使います。
+
+## local API (main の HTTP server の endpoint)
+
+main は 127.0.0.1 に HTTP server を 1 つ持ち、endpoint ごとに持ち主の plugin が
+renderer から開け閉めします。仕組みは [../local-api-server.md](../local-api-server.md)。
+
+### `useLocalApiEndpoint(endpoint, enabled, handlers): void`
+
+mount 中かつ `enabled` の間、`endpoint` を開きます。その endpoint への request は
+`handlers.handle({ reqId, kind, payload })` に届き、resolve した値が応答になります
+(throw は `{ error }`)。client が切断すると `handlers.cancel(reqId)`。`Root` に置けば
+plugin の有効/無効に endpoint が連動します。`handlers` は ref で読むので毎 render
+作り直して構いません。
+
+### `useLocalApiStatus(): LocalApiStatus | null`
+
+server の状態 (`listening`, `port`, `endpoints`, `token`, `error`)。変化に追随します。
+アプリ外 (test など) では null。
+
+### `controlLocalApi(req): Promise<LocalApiStatus | null>`
+
+`{ action: 'setPort', port }` / `{ action: 'regenerateToken' }` /
+`{ action: 'endpoint', endpoint, enabled }`。通常 endpoint は `useLocalApiEndpoint` に任せます。
+
 ## undo/redo を止める
 
 ### `useSuppressUndoRedo(active: boolean): void`

@@ -169,10 +169,12 @@ Some features are packaged as **built-in plugins**: one directory each, declarin
 contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled` -- packaged
 this way to keep the feature in one directory, not to make it removable), `catalog` (the
 component gallery), `agent` (the AI chat panel, OpenAI, Anthropic or Google Gemini through the Vercel AI
-SDK), `mdtools` (the MD trajectory GUI: the open flow plus the Trajectory bottom tab) and
+SDK), `mdtools` (the MD trajectory GUI: the open flow plus the Trajectory bottom tab),
 `console` (a command line with two dialects: native, generated from the core op catalog in
 `renderer/worker/server/catalog/`, and a partial PyMOL dialect; see
-[`docs/architecture/op-catalog.md`](../docs/architecture/op-catalog.md)) -- the last four
+[`docs/architecture/op-catalog.md`](../docs/architecture/op-catalog.md)) and `mcp` (the op
+catalog served to MCP clients through main's local API server, with a status bar item; see
+[`docs/architecture/local-api-server.md`](../docs/architecture/local-api-server.md)) -- the last five
 ship in every build but are `defaultEnabled: false`, so they appear only once someone switches
 them on in Settings > Plugins. `mdtools` is the one whose feature has a C++ module of its own
 (`src/modules/mdtools/`); that module is always loaded, so the switch gates the GUI only.

@@ -35,6 +35,9 @@ import type {
   RelayGetPayload, RelayReplyPayload, RelayRequestPayload, RelayKind, RelayRes, RenderWindowEditAction,
 } from './types/renderWindow'
 import type { CuemolClipWriteReq, CuemolClipReadRes, CuemolClipPeekRes } from './types/clipboard'
+import type {
+  LocalApiControlReq, LocalApiReplyPayload, LocalApiRequestPayload, LocalApiStatus,
+} from './types/localApi'
 
 export interface InvokeChannels {
   [IPC.APP_PATH]:          { req: void;                  res: AppPathInfo }
@@ -111,6 +114,10 @@ export interface InvokeChannels {
    */
   [IPC.RENDER_RELAY_GET]:   { req: RelayGetPayload; res: RelayRes<RelayKind> }
   [IPC.RENDER_RELAY_REPLY]: { req: RelayReplyPayload; res: void }
+  // Local API server: the answer to a pushed request, and the server's switches.
+  [IPC.LOCAL_API_REPLY]:   { req: LocalApiReplyPayload; res: void }
+  [IPC.LOCAL_API_CONTROL]: { req: LocalApiControlReq;   res: LocalApiStatus }
+  [IPC.LOCAL_API_STATUS]:  { req: void;                 res: LocalApiStatus }
   /**
    * Archive a finished render's PNG under its result id (main window -> main).
    * `workDir` is the job's temp directory when it is one the app should clean
@@ -205,6 +212,7 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_MODE_PUSH]:  RenderWindowModeRequest
   [IPC.RENDER_WINDOW_EDIT_PUSH]:  RenderWindowEditAction
   [IPC.RENDER_RELAY_REQUEST]:     RelayRequestPayload
+  [IPC.LOCAL_API_REQUEST]:        LocalApiRequestPayload
 }
 
 export type InvokeChannel = keyof InvokeChannels

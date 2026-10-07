@@ -1,0 +1,117 @@
+/* MCP plugin: the status bar item and its popover. */
+
+.mcp-status {
+  height: 20px;
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mcp-status:hover,
+.mcp-status[aria-expanded='true'] {
+  background: var(--bg-hover);
+}
+
+.mcp-status:focus-visible {
+  outline: 1px solid var(--accent);
+}
+
+.mcp-status--off {
+  color: var(--text-muted);
+}
+
+.mcp-status--idle {
+  color: var(--accent-green);
+}
+
+.mcp-status--running,
+.mcp-status--starting {
+  color: var(--accent-yellow);
+}
+
+.mcp-status--error {
+  color: var(--text-error);
+}
+
+/* --- Popover --- */
+
+.mcp-pop {
+  width: 320px;
+  padding: var(--space-2) var(--space-5);
+}
+
+.mcp-pop-header,
+.mcp-pop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.mcp-pop-header {
+  padding: var(--space-3) 0;
+}
+
+.mcp-pop-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.mcp-pop-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.mcp-pop-value,
+.mcp-pop-detail {
+  color: var(--text-secondary);
+}
+
+.mcp-pop-value--idle {
+  color: var(--accent-green);
+}
+
+.mcp-pop-value--running,
+.mcp-pop-value--starting {
+  color: var(--accent-yellow);
+}
+
+.mcp-pop-value--error {
+  color: var(--text-error);
+}
+
+.mcp-pop-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.mcp-pop-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.mcp-pop-link:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* --- Connect dialog --- */
+
+.mcp-connect {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mcp-connect-note {
+  color: var(--text-secondary);
+}

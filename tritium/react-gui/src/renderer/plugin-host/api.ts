@@ -30,6 +30,7 @@ export type {
 // --- The command lane ---
 export { useRegisterPluginCommand } from './usePluginCommand'
 export { useCommands } from '@renderer/commands/CommandRegistry'
+export { useOpenPluginSettings } from './openPluginSettings'
 
 // --- The worker-service lane ---
 export { definePluginServices } from './pluginServices'
@@ -46,6 +47,9 @@ export { usePluginPrefs } from './usePluginPrefs'
 export type { PluginPrefs } from './usePluginPrefs'
 export type { PluginPrefValue } from '@shared/types/uiPrefs'
 export { definePluginSecret, onPluginSecretChanged } from './pluginSecrets'
+export { controlLocalApi, useLocalApiEndpoint, useLocalApiStatus } from './localApi'
+export type { LocalApiCall, LocalApiEndpointHandlers } from './localApi'
+export type { LocalApiEndpoint, LocalApiStatus } from '@shared/types/localApi'
 export type { PluginSecret } from './pluginSecrets'
 
 // --- App state a pane or dialog needs ---

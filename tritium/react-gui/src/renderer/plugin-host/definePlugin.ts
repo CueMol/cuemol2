@@ -72,6 +72,11 @@ export function validatePlugin(plugin: RendererPlugin): string[] {
       errors.push(`bottom tab "${tab.id}" has no component`)
     }
   }
+  for (const item of contributes.statusBar ?? []) {
+    if (!plugin.statusBarItems?.[item.id]) {
+      errors.push(`status bar item "${item.id}" has no component`)
+    }
+  }
 
   const settingKeys = new Set<string>()
   for (const setting of contributes.settings ?? []) {

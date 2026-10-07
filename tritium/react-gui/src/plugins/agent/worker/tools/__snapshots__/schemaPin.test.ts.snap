@@ -87,7 +87,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"toolsets":{"type":"array","description":"The groups to switch on.","items":{"type":"string","enum":["analysis","files","coloring","view","map","molops","xtal","style","selection","render","anim"]}}},"required":["toolsets"],"additionalProperties":false}",
   },
   {
-    "description": "Save a PNG of the current view to the desktop. Give a file name only, not a path. This writes a file; the full path is reported back so you can tell the user where it went.",
+    "description": "Save a PNG of the current view to a file, only when the user asks for a file. To look at the view yourself, use capture_view, which saves nothing. Give a file name only, not a path: it is saved to the desktop, and the full path is reported back -- tell the user where it went.",
     "mutates": false,
     "name": "export_image",
     "parameters": "{"type":"object","properties":{"fileName":{"type":"string","description":"File name with no directories, for example overview.png."},"width":{"type":["integer","null"],"description":"Image width in pixels. Null uses the size of the view on screen."},"height":{"type":["integer","null"],"description":"Image height in pixels. Null uses the size of the view on screen."}},"required":["fileName","width","height"],"additionalProperties":false}",
@@ -213,7 +213,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the object, renderer, or renderer group."},"nodeType":{"type":"string","enum":["object","renderer","rendGroup"],"description":"What nodeId refers to. Must match what get_scene_state reported."},"name":{"type":"string","description":"The new name. Not empty; a renderer group name must be unused in the scene."}},"required":["nodeId","nodeType","name"],"additionalProperties":false}",
   },
   {
-    "description": "Render the current view with the ray tracer and save it as a PNG: global illumination (soft shadows, ambient occlusion) by default, or an illustration style with hatching (npr). Takes from seconds to minutes depending on size; the rest of the render settings are the scene's own, as in the Rendering window. Give a file name only; it is saved to the desktop and the full path is reported back -- tell the user where it went. Use capture_view to look at the view quickly instead.",
+    "description": "Render the current view with the ray tracer and save it as a PNG: global illumination (soft shadows, ambient occlusion) by default, or an illustration style with hatching (npr). Takes from seconds to minutes depending on size; the rest of the render settings are the scene's own, as in the Rendering window. Give a plain file name, which is saved to the desktop, or an absolute path where the caller allows one; the full path is reported back -- tell the user where it went. Use capture_view to look at the view quickly instead.",
     "mutates": false,
     "name": "render_image",
     "parameters": "{"type":"object","properties":{"fileName":{"type":"string","description":"PNG file to write. A bare name is saved to the desktop."},"width":{"type":["integer","null"],"description":"Width in pixels. Null keeps the scene's render size."},"height":{"type":["integer","null"],"description":"Height in pixels. Null keeps the scene's render size."},"style":{"type":["string","null"],"enum":["gi","npr",null],"description":"gi (default): photorealistic lighting; npr: hatched illustration."}},"required":["fileName","width","height","style"],"additionalProperties":false}",
@@ -231,7 +231,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"Name of the camera."}},"required":["name"],"additionalProperties":false}",
   },
   {
-    "description": "Write one object to a file in the format its extension names (for a molecule e.g. .pdb or .cif). Give a file name only; it is saved to the desktop and the full path is reported back -- tell the user where it went.",
+    "description": "Write one object to a file in the format its extension names (for a molecule e.g. .pdb or .cif). Give a plain file name, which is saved to the desktop, or an absolute path where the caller allows one; the full path is reported back -- tell the user where it went.",
     "mutates": false,
     "name": "save_object",
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object."},"fileName":{"type":"string","description":"The file, e.g. model.pdb."}},"required":["objId","fileName"],"additionalProperties":false}",

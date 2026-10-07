@@ -25,7 +25,7 @@
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { redo } from '@renderer/worker/server/services/undo/redo'
 import { undo } from '@renderer/worker/server/services/undo/undo'
-import { runInTxn, txnLabel } from '@renderer/worker/server/catalog'
+import { runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from '@renderer/worker/server/catalog'
 import { fail, failFrom, ok } from '@renderer/worker/shared/result'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type {
@@ -365,6 +365,7 @@ export async function runCommand(
 ): Promise<RunCommandResult> {
   const scene = getSceneOrNull(ctx, args.sceneId)
   if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found')
+  if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
   const dialect = dialectOf(args.dialect)
 
   const commands = splitCommands(args.text)

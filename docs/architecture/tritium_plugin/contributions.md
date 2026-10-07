@@ -20,6 +20,8 @@ interface RendererPlugin {
   panes?: Record<string, PaneComponent>
   /** contributes.bottomTabs で宣言した tab id -> component */
   bottomTabs?: Record<string, BottomTabComponent>
+  /** contributes.statusBar で宣言した item id -> component */
+  statusBarItems?: Record<string, React.ComponentType>
 }
 ```
 
@@ -48,7 +50,7 @@ interface PluginManifest {
 | 書き方 | 意味 | 現状の該当 |
 |---|---|---|
 | `alwaysEnabled: true` | 常時有効。Settings に行が出ず、保存値も無視される | `getpdb`, `sequence` |
-| `defaultEnabled: false` | 既定オフ。ユーザが Settings で opt-in する | `catalog`, `agent`, `mdtools` |
+| `defaultEnabled: false` | 既定オフ。ユーザが Settings で opt-in する | `catalog`, `agent`, `mdtools`, `console`, `mcp` |
 | どちらも書かない | 既定オン、ユーザがオフにできる | 今のところ無し |
 
 **外す意味が無いなら `alwaysEnabled` にする。** `getpdb` / `sequence` がそうで、
@@ -86,6 +88,7 @@ interface PluginContributes {
   toolbar?: PluginToolbarContribution[]
   views?: PluginViewContribution[]
   bottomTabs?: PluginBottomTab[]
+  statusBar?: PluginStatusBarItem[]
   settings?: PluginSettingDecl[]
 }
 ```
@@ -298,6 +301,25 @@ type BottomTabComponent = React.ComponentType<{
 ```
 
 無効化でそのタブが消えたとき、アクティブだったなら `output` に戻ります。
+
+---
+
+### statusBar
+
+```ts
+interface PluginStatusBarItem {
+  id: string
+}
+```
+
+status bar の右側、Busy / Ready 表示の左に置かれます。host は置くだけで、見た目と
+操作は component (`statusBarItems[id]`、props なし) が持ちます。動作状況を表すアイコンと、
+クリックで開く popover (よく使う操作 + 設定ページへの入口) という形を想定しています
+(実例: `mcp` の `McpStatusItem`)。
+
+- 背景・余白は `status-item` class と hover 時の `--bg-hover` で揃える。
+- 設定ページを開くには `useOpenPluginSettings(pluginId)` ([api.md](api.md))。
+- 長い内容 (設定の snippet など) は popover に詰めず、popover から開く dialog に分ける。
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * @file plugins/agent/worker/prompt/selectionCheatSheet.ts
+ * @file worker/server/catalog/selectionCheatSheet.ts
  * @description CueMol's selection language, written out for the model.
  *
  * A static transcription, not a generated one. The vocabulary's own source of
@@ -9,8 +9,8 @@
  * anything here.
  *
  * That makes drift possible, so a test checks this text against the grammar
- * (`tools/index.test.ts`): every keyword the builder can emit, and every
- * built-in name, has to appear here.
+ * (`plugins/agent/worker/tools/index.test.ts`): every keyword the builder can
+ * emit, and every built-in name, has to appear here.
  */
 
 export const SELECTION_CHEAT_SHEET = `

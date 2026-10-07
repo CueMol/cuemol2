@@ -36,7 +36,7 @@ vi.mock('@renderer/state/workspace', () => ({
 const pluginState = vi.hoisted(() => ({ toolbar: [] as unknown[] }))
 vi.mock('@renderer/plugin-host', () => ({
   usePluginContributions: () => ({
-    menus: [], toolbar: pluginState.toolbar, views: [], bottomTabs: [],
+    menus: [], toolbar: pluginState.toolbar, views: [], bottomTabs: [], statusBar: [],
   }),
 }))
 

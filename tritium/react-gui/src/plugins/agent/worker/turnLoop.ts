@@ -44,7 +44,7 @@ import {
   usesStrictTools,
 } from './modelProvider'
 import type { CreateModel } from './modelProvider'
-import { runInTxn, txnLabel } from '@renderer/worker/server/catalog'
+import { runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from '@renderer/worker/server/catalog'
 import { buildSceneSnapshot, formatSceneSnapshot } from '@renderer/worker/server/catalog/ops/sceneSnapshot'
 import { SYSTEM_PROMPT } from './prompt/systemPrompt'
 import { ALL_AGENT_TOOLS, activeToolNames, buildAiSdkTools, toolsetsEnabledIn } from './tools/index'
@@ -144,6 +144,7 @@ export async function runTurn(
   const scene: Scene | null = getSceneOrNull(ctx, args.sceneId)
   if (!scene) return fail('scene not found', 'not-found')
   if (args.apiKey === '') return fail('No API key is set.', 'invalid-args')
+  if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
 
   const parsed = parseModelSpec(args.model)
   if ('error' in parsed) return fail(parsed.error, 'invalid-args')
