@@ -4,9 +4,10 @@
  */
 
 import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
+import { deleteNode as deleteNodeService, renameNode as renameNodeService } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { boolean, enumOf, nodeId } from '../params'
+import { boolean, enumOf, nodeId, string } from '../params'
 import { columns, wrapList } from '../consoleFormat'
 import { buildSceneSnapshot } from './sceneSnapshot'
 import type { SceneSnapshot } from './sceneSnapshot'
@@ -84,4 +85,53 @@ export const setVisible = defineOp({
   },
 })
 
-export const SCENE_OPS = [getSceneState, setVisible]
+/** The node kinds the tree edits address. */
+const TREE_NODE_TYPES = ['object', 'renderer', 'rendGroup'] as const
+
+export const deleteNode = defineOp({
+  name: 'delete_node',
+  description:
+    'Delete one object, renderer, or renderer group from the scene. Deleting an object deletes ' +
+    'everything drawn from it; deleting a group deletes its renderers. Only when the user asked ' +
+    'to remove it: to take something out of view, hide it with set_visible instead.',
+  params: {
+    nodeId: nodeId('Uid of the object, renderer, or renderer group.', 'nodeType'),
+    nodeType: enumOf(TREE_NODE_TYPES, 'What nodeId refers to. Must match what get_scene_state reported.'),
+  },
+  mutates: true,
+  expose: { tool: 'core', console: true },
+  verbs: [{ verb: 'delete', summary: 'Delete an object, renderer or renderer group.' }],
+  run(ctx, args, oc) {
+    const result = deleteNodeService(ctx, { sceneId: oc.sceneId, nodeId: args.nodeId, nodeType: args.nodeType })
+    return normalizeServiceResult(result, 'No node with that id and type in this scene.')
+  },
+})
+
+export const renameNode = defineOp({
+  name: 'rename_node',
+  description:
+    'Rename one object, renderer, or renderer group. Renaming a group keeps its renderers in it.',
+  params: {
+    nodeId: nodeId('Uid of the object, renderer, or renderer group.', 'nodeType'),
+    nodeType: enumOf(TREE_NODE_TYPES, 'What nodeId refers to. Must match what get_scene_state reported.'),
+    name: string('The new name. Not empty; a renderer group name must be unused in the scene.'),
+  },
+  mutates: true,
+  expose: { tool: 'core', console: true },
+  verbs: [{ verb: 'rename', summary: 'Rename an object, renderer or renderer group: rename 1crn, mol1' }],
+  run(ctx, args, oc) {
+    const result = renameNodeService(ctx, {
+      sceneId: oc.sceneId,
+      nodeId: args.nodeId,
+      nodeType: args.nodeType,
+      newName: args.name,
+    })
+    return normalizeServiceResult(
+      result,
+      'The node could not be renamed. Check the id and type, and that the name is not empty ' +
+        '(or, for a group, not already used).',
+    )
+  },
+})
+
+export const SCENE_OPS = [getSceneState, setVisible, deleteNode, renameNode]

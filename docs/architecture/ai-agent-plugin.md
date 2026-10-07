@@ -283,8 +283,9 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 |---|---|---|
 | `get_scene_state` | no | `getSceneTree` + `getSelDefs` + scene 設定の読み取り |
 | `set_visible` | yes | `setNodeVisible` |
+| `delete_node` | yes | `deleteNode` (object / renderer / group。隠すだけなら `set_visible`) |
+| `rename_node` | yes | `renameNode` |
 | `get_mol_chains` | no | `getMolChains` |
-| `get_mol_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
 | `check_selection` | no | `validateSelection` + `getSelHitCount` |
 | `set_mol_selection` | yes | `applyMolSelString` |
 | `center_view` | yes | `centerMolSelection` / `zoomMolSelection` |
@@ -292,14 +293,13 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `set_view` | no | `getViewXform` / `setViewXform` (zoom / slab / distance / center を個別に。`fitSlab` は中心とズームを保って slab を全分子に合わせる) |
 | `get_renderer_types` | no | `getNewRendererOptions` |
 | `create_renderer` | yes | `createRendererOnObject` (名前省略時は `unusedRendererName(type)`) |
+| `change_renderer_type` | yes | `getRendererChangeTypes` で検査 -> `changeRendererType` (uid が変わるので新 uid を返す) |
 | `set_renderer_selection` | yes | `setGenericProp` (`propName: 'sel'`) |
 | `get_node_props` | no | `getGenericProps` (scene / object / renderer) |
 | `set_node_prop` | yes | `getGenericProps` -> `setGenericProp` |
-| `get_coloring_styles` | no | `getPaintColoringStyles` |
 | `set_renderer_coloring` | yes | `setRendererColoring` (レンダラ全体の着色を置き換える) |
 | `paint_selection` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` |
 | `fetch_pdb` | yes (async) | `streamLoadFromUrl` |
-| `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` (`.qsc` は開けない旨を返す) |
 | `capture_view` | no | `getSceneExportInfo` -> `exportScene` (一時ファイル) -> 画像を tool 結果に添付 |
 | `enable_toolsets` | no | (agent 側の meta tool。turn の `toolsets` に追加) |
 
@@ -309,7 +309,69 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 |---|---|---|
 | `measure_geometry` | yes | `MolCoord.getAtom` + `helpers/atomintr` の `appendMeasureLabel` |
 | `analyze_interactions` | yes | `analyzeInteractions` (既定は炭素を含む接触を除く。`includeCarbon` で含める) |
+| `get_mol_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
+
+**toolset `files`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` (`.qsc` は開けない旨を返す) |
 | `export_image` | no (シーン不変。ファイルは書く) | `getSceneExportInfo` -> `exportScene` |
+| `save_object` | no (ファイルは書く) | `getObjectSaveInfo` -> `saveObjectToFile` (writer は拡張子で選ぶ) |
+
+agent が書くファイルは**ディレクトリを含まない名前だけ**を受け付け、デスクトップ
+(`os.homedir()/Desktop`) に置く (`catalog/outputFile.ts`)。結果には絶対パスを返し、説明文で
+ユーザーに full path を伝えるよう指示している。console (`fileAccess: 'any'`) は任意のパスに書ける。
+scene の保存 (`save_scene`) は console 専用 (`tool: false`)。
+
+**toolset `render`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `render_image` | no (シーン不変。ファイルは書く) | `setSceneRenderSettings` (幅・高さを一時的に) -> `renderStart` (umbreon、`gi` / `npr`) -> `waitForRenderJob` -> 設定を戻す |
+
+render job は GUI の Render パネルと同じ in-process job で走る。待つ間も view は動き、Stop
+(`turn.aborted`) で `renderCancel` する。
+
+**toolset `coloring`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `get_coloring_styles` | no | `getPaintColoringStyles` |
+| `clear_paint` | yes | `clearPaintEntries` |
+| `set_default_color` | yes | `setRendererDefaultColor` |
+
+**toolset `view`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `list_cameras` / `save_camera` / `apply_camera` / `delete_camera` | save / delete のみ yes | `listCameras` / `cameraOps` (名前付きの視点) |
+| `set_projection` | no | `getViewProjection` / `setViewProjection` |
+| `pan_view` | no | `translateView` |
+| `focus_node` | no | `focusOnNode` |
+
+**toolset `map`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `fetch_map` | yes (async) | `streamLoadDensityMap` (既定 2fofc) |
+| `list_map_contours` | no | `listMapRenderers` + `getMapRendererState` |
+| `set_map_contour` | yes | `setMapRendererProp` |
+
+**toolset `molops` / `xtal` / `selection` / `style` / `anim`**
+
+| tool | toolset | mutates | 呼ぶ service |
+|---|---|---|---|
+| `superpose` | molops | yes | `superposeMol` |
+| `make_surface` | molops | yes | `makeMolSurf` |
+| `delete_atoms` | molops | yes | `deleteMolAtoms` |
+| `rename_chain` | molops | yes | `changeChainName` |
+| `merge_molecules` | molops | yes | `mergeMol` |
+| `set_secondary_structure` | molops | yes | `reassignProt2ndry` |
+| `show_symmetry` | xtal | yes | `showSymmRenderer` / `showUnitCellRenderer` |
+| `save_selection` | selection | yes | `saveSelDef` |
+| `list_renderer_styles` / `apply_renderer_style` | style | apply のみ yes | `rendererStyle` |
+| `animate` | anim | no | `anim/transport` (`play` / `stop` / `goTime`) |
 
 core は 21 件。OpenAI の推奨 20 本を意図的に 1 本超えている。`tools/index.test.ts` の `MAX_TOOLS`
 が core の 21 を pin しており、新しい op は使用頻度が低ければ toolset に入れる (toolset 側は本数を
@@ -452,8 +514,8 @@ panel 最上段の `Model` select (`AgentModelPicker`) は Settings の Model �
 - **CueMol の機能のうち tool にしていないものは、モデルには存在しない**。system prompt は
   機能一覧を持たず tool の説明だけを渡すので、機能を増やす唯一の経路は tool の追加。
   逆に、呼べない機能を prompt に書くと「できます」と言って失敗する。モデルが「できない」と
-  答えた操作を集めると、追加すべき tool の一覧がそのまま得られる。ラベル編集、カメラの保存、
-  結合編集、重ね合わせなどは UXP から移植済みだが未 tool 化。
+  答えた操作を集めると、追加すべき tool の一覧がそのまま得られる。ラベル編集、結合編集、
+  APBS、morph、アニメーションの編集、POV-Ray 出力などは UXP から移植済みだが未 tool 化。
 - **turn 実行中の手動編集が agent の undo txn に吸収される** (§3.1)。
 - **provider 切り替え時に chain of thought は引き継がれない**: 別 provider の reasoning part は
   `sanitizeHistory` が落とす (渡したときの挙動が未文書のため)。text と tool 呼び出しの履歴は残る。

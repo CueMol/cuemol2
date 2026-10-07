@@ -242,6 +242,7 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
         workingDir = dir
       },
       noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
+      stopped: () => isStopped(args.runId),
       streamId: (tag) => `console:${args.runId}:${tag}:${++streamSeq}`,
       runScript: (filePath) => runScriptFile(sub, filePath, depth),
       openScene: (filePath) => { sub.openScene = filePath },
@@ -331,6 +332,7 @@ async function runStandalone(
     markMutated: () => undefined,
     setCwd: (dir) => { workingDir = dir },
     noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
+    stopped: () => isStopped(args.runId),
     streamId: (tag) => `console:${args.runId}:${tag}:1`,
     runScript: () => Promise.resolve({ ok: false, error: 'Error: a script cannot run from here' }),
     openScene: (filePath) => { openScene = filePath },

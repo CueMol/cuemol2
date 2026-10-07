@@ -14,6 +14,7 @@
 
 import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
+import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
@@ -65,6 +66,7 @@ const help: ConsoleCommand = {
       cc.print('Type "help <command>" or "<command> ?" for its arguments.')
       cc.print('Separate arguments with commas: zoom 1crn, chain A and resid 10:20')
       cc.print('Name a renderer as object/renderer (1crn/cartoon1), or any node by #uid.')
+      cc.print('A property follows its node after a dot: set 1crn/cartoon1.width, 2')
       return { ok: true }
     }
     const found = lookupCommand(topic, NATIVE_COMMANDS.map((c) => c.name))
@@ -138,27 +140,32 @@ function writableProps(
 }
 
 /**
- * The level of a property path the pattern is at: the scene's properties and
- * its objects at the top, an object's properties and renderers under it, a
- * renderer's properties under that. A node is offered as `name.` so Tab can
- * be pressed again to go down.
+ * The level of a property path the pattern is at. At the top: the scene's
+ * properties, and each object twice -- `obj.` for its own properties and
+ * `obj/` for its renderers. After `obj/`: its renderers as `obj/rend.`. After
+ * a node and a dot: that node's properties. A node is offered ending in its
+ * separator so Tab can be pressed again to go down.
  */
 function propPathCandidates(ctx: WorkerContext, sc: SourceContext): string[] {
+  const nodes = sceneNodes(ctx, sc.sceneId)
+  const slash = sc.pattern.indexOf('/')
+  if (slash >= 0 && sc.pattern.indexOf('.', slash) < 0) {
+    const objName = sc.pattern.slice(0, slash)
+    return nodes
+      .filter((n) => n.type !== 'object' && n.objName === objName)
+      .map((n) => `${objName}/${n.name}.`)
+  }
   const target = resolvePropPath(ctx, sc.sceneId, sc.pattern === '' ? '_' : sc.pattern)
   if (!target.ok) return []
   const typedProp = sc.pattern === '' ? '' : target.prop
   const prefix = sc.pattern.slice(0, sc.pattern.length - typedProp.length)
   const out = writableProps(ctx, sc.sceneId, target.nodeId, target.nodeType).map((e) => `${prefix}${e.key}`)
-  const nodes = sceneNodes(ctx, sc.sceneId)
   if (target.nodeType === 'scene') {
-    out.push(...nodes.filter((n) => n.type === 'object' && n.name !== '').map((n) => `${n.name}.`))
-  } else if (target.nodeType === 'object') {
-    const obj = nodes.find((n) => n.id === target.nodeId)
-    out.push(
-      ...nodes
-        .filter((n) => n.type !== 'object' && n.objName === obj?.name)
-        .map((n) => `${prefix}${n.name}.`),
-    )
+    for (const n of nodes) {
+      if (n.type !== 'object' || n.name === '') continue
+      out.push(`${n.name}.`)
+      if (nodes.some((r) => r.type !== 'object' && r.objName === n.name)) out.push(`${n.name}/`)
+    }
   }
   return out
 }
@@ -208,6 +215,11 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): string[]
     if (!entry) return []
     if (entry.enumdef && entry.enumdef.length > 0) return [...entry.enumdef]
     return entry.type === 'boolean' ? ['true', 'false'] : []
+  }
+  if (id.startsWith('rendererChangeTypes:')) {
+    const rendText = sc.argsSoFar[Number(id.slice('rendererChangeTypes:'.length))] ?? ''
+    const ref = resolveRef(ctx, sc.sceneId, rendText, 'renderer')
+    return ref.ok ? getRendererChangeTypes(ctx, { sceneId: sc.sceneId, rendId: ref.node.id }).typeNames : []
   }
   if (id.startsWith('rendererTypes:')) {
     // The types an object can be drawn as depend on the object, so they are

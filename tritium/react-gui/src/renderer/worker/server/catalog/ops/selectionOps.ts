@@ -48,7 +48,7 @@ export const getMolResiduesOp = defineOp({
     offset: optional(integer('Skip this many residues. Null starts at the beginning.')),
   },
   mutates: false,
-  expose: { tool: 'core', console: true },
+  expose: { tool: 'analysis', console: true },
   format(data) {
     const d = data as {
       total: number

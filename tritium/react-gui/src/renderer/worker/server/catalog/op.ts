@@ -50,6 +50,17 @@ export interface OpContext {
    * an op must say it cannot do the job when it is absent.
    */
   openScene?(filePath: string): void
+  /**
+   * Whether the caller has been stopped (a cancelled agent turn, the
+   * console's Stop), for an op that waits on something it can cancel.
+   */
+  cancelled?(): boolean
+  /**
+   * Where the op may write a file. `any`: the path as given (a person at a
+   * prompt chose it). Otherwise only a bare file name, written to the desktop
+   * -- a model has no file picker, and a path it chose is not the user's.
+   */
+  fileAccess?: 'any' | 'desktop'
 }
 
 /**

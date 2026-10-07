@@ -15,6 +15,7 @@ import {
 } from '@renderer/worker/server/services/scene/exportImage'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
+import { desktopDir } from '../outputFile'
 import { boolean, integer, moleculeId, optional, path, real, selection, string } from '../params'
 
 /** The dialog's own starting values, so both routes measure the same thing. */
@@ -80,7 +81,7 @@ export const exportImage = defineOp({
   },
   // The scene is unchanged: this writes a file, which no undo can take back.
   mutates: false,
-  expose: { tool: 'analysis', console: true },
+  expose: { tool: 'files', console: true },
   run(ctx, args, oc) {
     const fileName = args.fileName
     if (!SAFE_BASENAME_RE.test(fileName)) {
@@ -90,7 +91,7 @@ export const exportImage = defineOp({
       }
     }
     const name = fileName.toLowerCase().endsWith('.png') ? fileName : `${fileName}.png`
-    return writePng(ctx, oc.sceneId, oc.viewId, `${desktopDir()}/${name}`, args.width, args.height)
+    return writePng(ctx, oc.sceneId, oc.viewId, nodePath.join(desktopDir(), name), args.width, args.height)
   },
 })
 
@@ -210,16 +211,6 @@ export const captureView = defineOp({
   },
 })
 
-/**
- * Where an exported image goes.
- *
- * Fixed rather than asked for: a model has no file picker, and a path it
- * chose itself is a path the user did not.
- */
-function desktopDir(): string {
-  const home = typeof process !== 'undefined' ? (process.env.HOME ?? process.env.USERPROFILE ?? '') : ''
-  return home ? `${home}/Desktop` : '.'
-}
 
 export const savePng = defineOp({
   name: 'save_png',

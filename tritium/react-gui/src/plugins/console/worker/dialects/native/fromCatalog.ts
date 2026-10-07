@@ -31,11 +31,20 @@ export function firstSentence(text: string): string {
   return m ? m[1] : text
 }
 
-/** Parameter names in the order a verb reads them: its own order first. */
+/**
+ * Parameter names in the order a command reads them positionally: the verb's
+ * own order first, then the op's -- except that a node's kind parameter goes
+ * last. It is filled in from the node's name, so leaving it in its op
+ * position would make the next positional argument land in it
+ * (`rename 1crn, mol1` putting `mol1` into the kind). It can still be given
+ * by name (`nodeType=renderer`).
+ */
 function orderedNames(op: AnyOp, verb: OpVerb | undefined): string[] {
   const all = Object.keys(op.params)
   const first = (verb?.order ?? []).filter((n) => all.includes(n))
-  return [...first, ...all.filter((n) => !first.includes(n))]
+  const derived = typeParamsOf(op.params as ParamMap)
+  const rest = all.filter((n) => !first.includes(n))
+  return [...first, ...rest.filter((n) => !derived.has(n)), ...rest.filter((n) => derived.has(n))]
 }
 
 /** The enum parameters a node uid fills in when it is resolved by name. */
@@ -212,6 +221,9 @@ function opContextOf(cc: CmdContext): OpContext {
     noteStream: (reqId) => cc.noteStream(reqId),
     streamId: (tag) => cc.streamId(tag),
     openScene: (filePath) => cc.openScene(filePath),
+    cancelled: () => cc.stopped(),
+    // The person at the prompt chose the path.
+    fileAccess: 'any',
   }
 }
 
@@ -235,6 +247,7 @@ function completionOf(
   nodeIndex: number,
   propIndex: number,
   pathIndex: number,
+  rendererIndex: number,
 ): ArgCompletion | null {
   const suffix = last ? '' : ', '
   if (p.kind === 'enum' && p.values) {
@@ -254,7 +267,11 @@ function completionOf(
     case 'color':
       return { source: 'colors', description: 'color', suffix }
     case 'rendererType':
-      return { source: `rendererTypes:${objectIndex}`, description: 'renderer type', suffix }
+      // Created on an object: what that object can show. Changed on a
+      // renderer: what that renderer can become.
+      return objectIndex < 0 && rendererIndex >= 0
+        ? { source: `rendererChangeTypes:${rendererIndex}`, description: 'renderer type', suffix }
+        : { source: `rendererTypes:${objectIndex}`, description: 'renderer type', suffix }
     case 'propName':
       return { source: `props:${nodeIndex}`, description: 'property', suffix }
     case 'propValue':
@@ -302,6 +319,7 @@ function opCommand(op: AnyOp, verb?: OpVerb): ConsoleCommand {
         names.findIndex((m) => params[m].semantic === 'node'),
         names.findIndex((m) => params[m].semantic === 'propName'),
         names.findIndex((m) => params[m].semantic === 'propPath'),
+        names.findIndex((m) => params[m].semantic === 'renderer'),
       ),
     ),
     ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(bound) ?? false } : {}),

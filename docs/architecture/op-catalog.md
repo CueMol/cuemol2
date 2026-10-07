@@ -38,11 +38,11 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 | `.qif` スカラー | `boolean` / `integer` / `real` / `string` / `enumOf(values)` | boolean / integer / number / string / string+enum | `true`/`false`/`on`/`off`、数値、文字列 |
 | 省略可能 | `optional(p)` | `[type, "null"]` | 省略 (既定値 `''`) |
 | object uid | `objectId` / `moleculeId` / `rendererId` | integer | `1crn`、`#12` |
-| node uid | `nodeId(desc, typeParam)` | integer + 種別 enum | `1crn`、`1crn.cartoon1`、`1crn/cartoon1`、`#12` (種別も解決される) |
+| node uid | `nodeId(desc, typeParam)` | integer + 種別 enum | `1crn`、`1crn/cartoon1`、`#12` (種別も解決される)。object と renderer の区切りは `/` だけ (object 名がファイル名由来で `.` を含むため) |
 | selection | `selection` | string | CueMol 選択式をそのまま (bind 時に `validateSelection`) |
 | colour / path | `color` / `path` | string | 色名・`#rrggbb` / cwd 基準のパス |
 | renderer type | `rendererType` | string | 補完は対象 object の作成可能 type |
-| property | `propName` / `propValue` / `propPath` | string | `propPath` は `obj.rend.prop` / `obj/rend.prop` / `obj.prop` / scene の `prop` |
+| property | `propName` / `propValue` / `propPath` | string | `propPath` は `obj/rend.prop` / `obj.prop` / scene の `prop` (node の後ろに `.` で property) |
 | 座標 | `vec3` | number の配列 (3 要素は読み込み時に検査) | `x y z` |
 | 原子列 | `atoms` | `{chain, resid, atomName}` の配列 | `A/20/CA A/21/CA` |
 
@@ -63,7 +63,8 @@ defineOp({
 ```
 
 - `OpContext` は `sceneId` / `viewId` / `callId` / `markMutated` / `noteStream` / `streamId` と、
-  UI を持つ呼び出し元だけが渡す `openScene`。
+  UI を持つ呼び出し元だけが渡す `openScene`、中断を伝える `cancelled()`、書き込み先の制限
+  `fileAccess` (`'any'` = console、既定は desktop のみ。`catalog/outputFile.ts`)。
 - `invokeOp` が唯一の実行入口: throw を失敗に変え、成功した `mutates` op で `markMutated` を呼ぶ。
 - `runInTxn` が txn 規則: 変更があれば (途中で失敗しても) commit、無ければ rollback
   (空 commit は redo を消すため)。agent の 1 turn、console の 1 submit がそれぞれ 1 txn。
@@ -89,7 +90,9 @@ lone `undo` / `redo` と `outsideTxn` のコマンドは txn の外、script は
   含むため、空白区切りは採らない。`key=value` も使える。
 - 主な verb: `show` / `hide`、`select`、`zoom` / `center`、`turn`、`view` / `slab` / `fit_slab`、
   `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`png`、
-  `ls_scene`。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
+  `ls_scene`、`delete` / `rename` / `retype`、`ray` (ray tracing / GI。Stop で中断)、
+  `save` / `write`、`save_view` / `restore_view` / `cameras`、`projection` / `pan` / `focus`、
+  `contour`、`surface`、`define`、`style`。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
   `log` / `undo` / `redo` / `help`。script の拡張子は `.cml`。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
 - 補完は param の意味型から: enum 値、object / renderer / node 名、名前付き selection、色、
@@ -98,14 +101,18 @@ lone `undo` / `redo` と `outsideTxn` のコマンドは txn の外、script は
 
 **PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
 (CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる。
+`ray` は native の `render_image` で一時ファイルに描き、undo 位置とカメラを署名として覚える。
+直後の `png` (幅・高さ指定なし) は、署名が変わっていなければその画像を書き出す。`png ..., ray=1`
+はその場で ray tracing する。
 
 **panel**: toolbar の CueMol / PyMOL 切り替え、または `native` / `pymol` と打つと切り替わる。
 選択は plugin preference (`console.dialect`)、履歴は dialect ごと (PyMOL は旧 key を引き継ぐ)。
 
 ## 6. 未対応 (範囲外)
 
-- GUI 用 service のうち op になっていないものは agent / console から使えない。必要になった順に
-  op を足す (`set_view` は `viewXform` service をそのまま包んで足した例)。
+- GUI 用 service のうち op になっていないものは agent / console から使えない。op 化の対象と
+  状況は [網羅計画](../plans/261006-op-catalog-coverage-plan.md)。APBS、morph、アニメーションの
+  編集、POV-Ray 出力は未対応。
 - MCP server、アクションの記録と再生、undo 履歴 UI は別計画
   ([260926 計画](../plans/260926-mcp-tool-catalog-plan.md) の D4 以降、
   [261006 計画](../plans/261006-native-console-op-catalog-plan.md) の「将来」)。

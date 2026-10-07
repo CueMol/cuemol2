@@ -187,8 +187,9 @@ defineOp({
   文脈依存の特例になり、取り下げた。
 - **`enable` / `disable` -> `show` / `hide`**。native では CueMol の renderer = 表現なので
   PyMOL の `show`(表現の追加) と衝突しない。
-- **property は path で書く**: `set obj.rend.prop, value` / `obj/rend.prop` / `obj.prop` / scene の
-  `prop`。console 専用 op `set_prop` / `get_prop`。node 引数も `obj.rend` を受け付ける。
+- **property は path で書く**: `set obj/rend.prop, value` / `obj.prop` / scene の `prop`。console 専用 op
+  `set_prop` / `get_prop`。object と renderer の区切りは `/` だけ (当初 `obj.rend` も受け付けたが、
+  object 名がファイル名由来で `.` を含む (`1ox1.pdb`) ため曖昧になり、`/` に統一した)。
 - **builtin**: `cd` / `pwd` / `ls` / `run` / `log*` / `undo` / `redo` / `help` は op ではなく
   native dialect の builtin (console 自身の機能で、agent / MCP は使わない)。
 - **PyMOL dialect は生成コマンドを再利用しない**。PyMOL の `load` / `fetch` / `png` は引数と

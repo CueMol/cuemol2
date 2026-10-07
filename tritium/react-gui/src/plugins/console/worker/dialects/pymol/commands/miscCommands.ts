@@ -18,6 +18,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { closeLog, currentLog, openLog, writeLog } from '@plugins/console/worker/runtime/commandLog'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import { isDefaulted, resolvePath, toNumber } from './helpers'
+import { rayToFile, writeLastRay } from './rayCommands'
 
 /** A `png` size argument: pixels, or inches / centimetres needing a dpi. */
 function pixelsOf(raw: string, dpi: number): number | null {
@@ -49,13 +50,31 @@ const png: PymCommand = {
   ],
   mode: 'strict',
   mutates: false,
-  summary: 'Write the view to a PNG file.',
-  run(ctx, args, cc) {
+  summary: 'Write the view to a PNG file (the ray-traced one, after ray).',
+  async run(ctx, args, cc) {
     for (const [name, def] of [
       ['prior', '0'],
       ['format', '0'],
     ] as const) {
       if (!isDefaulted(args[name], def)) cc.warn(`png: ${name} is ignored (not supported)`)
+    }
+    let filePath = resolvePath(cc.cwd, args.filename)
+    if (path.extname(filePath) === '') filePath += '.png'
+    // ray=1: render now, on the ray tracer job (the view stays live and Stop
+    // cancels it), rather than the blocking exporter.
+    if (!isDefaulted(args.ray, '0')) {
+      const dpi = toNumber(args.dpi) ?? -1
+      const w = pixelsOf(args.width, dpi)
+      const h = pixelsOf(args.height, dpi)
+      if (w === null || h === null) return { ok: false, error: 'Error: a size in in/cm needs a dpi' }
+      const res = await rayToFile(ctx, cc, filePath, w, h)
+      if (res.ok) cc.print(` png: wrote ${filePath}`)
+      return res
+    }
+    // After `ray`, PyMOL's png saves the rendered image.
+    if (isDefaulted(args.width, '0') && isDefaulted(args.height, '0') && writeLastRay(ctx, cc, filePath)) {
+      cc.print(` png: wrote ${filePath} (ray-traced)`)
+      return { ok: true }
     }
     return writePng(ctx, cc, {
       filename: args.filename,

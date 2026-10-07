@@ -29,6 +29,8 @@ vi.mock('@renderer/worker/server/services/select/validateSelection', () => ({
 import { defineOp } from '@renderer/worker/server/catalog/op'
 import { boolean, enumOf, nodeId, optional, selection } from '@renderer/worker/server/catalog/params'
 import { catalogCommands } from './fromCatalog'
+import { CONSOLE_COMMAND_OPS } from '@renderer/worker/server/catalog'
+import { NATIVE_BUILTINS } from './builtins'
 
 const run = vi.fn((_ctx: unknown, _args: unknown) => ({ ok: true as const }))
 const op = defineOp({
@@ -63,10 +65,11 @@ const cc = {
 describe('a command generated from an op', () => {
   it('fixes the verb argument, resolves names and passes a selection through', async () => {
     const show = catalogCommands([op]).find((c) => c.command.name === 'show')!.command
-    // A fixed argument is not a parameter, so it cannot be typed.
-    expect(show.params.map((p) => p.name)).toEqual(['nodeId', 'nodeType', 'sel'])
+    // A fixed argument is not a parameter; the kind a name fills in goes last
+    // so the next positional argument does not land in it.
+    expect(show.params.map((p) => p.name)).toEqual(['nodeId', 'sel', 'nodeType'])
 
-    const res = await show.run({} as WorkerContext, { nodeId: '1crn.cartoon1', nodeType: '', sel: 'chain A and resid 1:5' }, cc)
+    const res = await show.run({} as WorkerContext, { nodeId: '1crn/cartoon1', nodeType: '', sel: 'chain A and resid 1:5' }, cc)
 
     expect(res).toEqual({ ok: true })
     expect(run.mock.calls[0][1]).toEqual({
@@ -83,5 +86,17 @@ describe('a command generated from an op', () => {
     const res = await cmd.run({} as WorkerContext, { nodeId: '1crn', nodeType: '', visible: 'maybe', sel: '' }, cc)
     expect(res.ok).toBe(false)
     expect(run).not.toHaveBeenCalled()
+  })
+})
+
+describe('the native command set', () => {
+  it('names every command once', () => {
+    // A verb that repeats an op name (or a builtin) would shadow it silently:
+    // lookup takes the first match.
+    const names = [
+      ...catalogCommands(CONSOLE_COMMAND_OPS).map((c) => c.command.name),
+      ...NATIVE_BUILTINS.map((c) => c.name),
+    ]
+    expect(names.filter((n, i) => names.indexOf(n) !== i)).toEqual([])
   })
 })

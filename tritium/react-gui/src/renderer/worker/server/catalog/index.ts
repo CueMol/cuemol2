@@ -20,6 +20,11 @@ import { RENDERER_OPS } from './ops/rendererOps'
 import { SCENE_OPS } from './ops/sceneOps'
 import { SELECTION_OPS } from './ops/selectionOps'
 import { VIEW_OPS } from './ops/viewOps'
+import { CAMERA_OPS } from './ops/cameraOps'
+import { MAP_OPS } from './ops/mapOps'
+import { MOL_OPS } from './ops/molOps'
+import { MORE_OPS } from './ops/moreOps'
+import { RENDER_OPS } from './ops/renderOps'
 import type { ToolsetId } from './toolsets'
 
 export type { AnyOp, Op, OpContext, OpImage, OpOutcome, OpVerb } from './op'
@@ -44,6 +49,11 @@ export const OPS: readonly AnyOp[] = [
   ...ANALYSIS_OPS,
   ...MEASURE_OPS,
   ...VIEW_OPS,
+  ...CAMERA_OPS,
+  ...MAP_OPS,
+  ...MOL_OPS,
+  ...MORE_OPS,
+  ...RENDER_OPS,
 ].sort(byName)
 
 /** The ops always offered to a tool caller, in catalogue order. */

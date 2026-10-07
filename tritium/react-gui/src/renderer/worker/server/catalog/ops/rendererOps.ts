@@ -8,6 +8,8 @@ import {
   unusedRendererName,
 } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
+import { changeRendererType as changeRendererTypeService } from '@renderer/worker/server/services/rend/changeRendererType'
+import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import {
   getPaintColoringStyles,
   getRendererPaintInfo,
@@ -175,7 +177,7 @@ export const getColoringStyles = defineOp({
     'description.',
   params: {},
   mutates: false,
-  expose: { tool: 'core', console: true },
+  expose: { tool: 'coloring', console: true },
   run(ctx, _args, oc) {
     const result = getPaintColoringStyles(ctx, { sceneId: oc.sceneId })
     if (!result.ok) return { ok: false, error: 'The colouring styles could not be read.' }
@@ -310,7 +312,38 @@ export const paintSelection = defineOp({
   },
 })
 
+export const changeRendererType = defineOp({
+  name: 'change_renderer_type',
+  description:
+    'Redraw one renderer as another type (for example cartoon to ribbon), keeping its name, ' +
+    'selection and place in the list. The renderer is replaced, so it gets a NEW uid, which ' +
+    'is returned; use that one from now on. Use this rather than creating a second renderer ' +
+    'when the user wants the same thing drawn differently.',
+  params: {
+    rendId: rendererId('Uid of the renderer.'),
+    rendererType: rendererType('The new type. Must be one the renderer can change to; a wrong one is answered with the list.'),
+  },
+  mutates: true,
+  expose: { tool: 'core', console: true },
+  verbs: [{ verb: 'retype', summary: 'Redraw a renderer as another type: retype 1crn/cartoon1, ribbon' }],
+  run(ctx, args, oc) {
+    const allowed = getRendererChangeTypes(ctx, { sceneId: oc.sceneId, rendId: args.rendId }).typeNames
+    if (!allowed.includes(args.rendererType)) {
+      return {
+        ok: false,
+        error: allowed.length === 0
+          ? 'That renderer cannot change type (or there is no renderer with that id).'
+          : `It cannot become "${args.rendererType}". Allowed: ${allowed.join(', ')}.`,
+      }
+    }
+    const result = changeRendererTypeService(ctx, { sceneId: oc.sceneId, rendId: args.rendId, newType: args.rendererType })
+    if (!result.ok) return { ok: false, error: 'The renderer type could not be changed.' }
+    return { ok: true, data: { rendererId: result.newRendId, name: result.newName } }
+  },
+})
+
 export const RENDERER_OPS = [
+  changeRendererType,
   getRendererTypes,
   createRenderer,
   setRendererSelection,

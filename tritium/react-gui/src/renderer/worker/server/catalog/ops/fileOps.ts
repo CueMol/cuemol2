@@ -94,7 +94,7 @@ export const loadFile = defineOp({
     selection: optional(selection('Draw only this selection. Null draws everything.')),
   },
   mutates: true,
-  expose: { tool: 'core', console: true },
+  expose: { tool: 'files', console: true },
   verbs: [{ verb: 'load', summary: 'Open a structure file, or a .qsc scene.' }],
   outsideTxn: (raw) => SCENE_FILE_RE.test((raw.path ?? '').trim()),
   run(ctx, args, oc) {

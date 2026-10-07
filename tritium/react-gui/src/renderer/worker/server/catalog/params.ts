@@ -160,8 +160,8 @@ export function propName(description: string): Param<string> {
 }
 
 /**
- * A property named by its path from the scene: `obj.rend.prop`,
- * `obj/rend.prop`, `obj.prop`, or a bare scene property (see
+ * A property named by its path from the scene: `obj/rend.prop`,
+ * `obj.prop`, or a bare scene property (see
  * `resolvePropPath`). For a person at a prompt; a model is given uids.
  */
 export function propPath(description: string): Param<string> {

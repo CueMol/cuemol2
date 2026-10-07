@@ -47,6 +47,8 @@ export interface TurnContext {
    * would leave the download running.
    */
   noteStream: (reqId: string) => void
+  /** Whether the turn has been cancelled, for a tool that waits on a job it can stop. */
+  aborted?: () => boolean
   /**
    * What each call answered, by tool-call id.
    *
