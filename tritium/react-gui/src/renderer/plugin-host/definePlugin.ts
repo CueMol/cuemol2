@@ -88,7 +88,11 @@ export function validatePlugin(plugin: RendererPlugin): string[] {
     // A secret's value is in the OS keychain, not in the preference file, so
     // there is nothing for a default to mean; every other kind needs one,
     // because a row with no stored value and no default draws as blank.
-    if (setting.control.kind === 'secret') {
+    if (setting.control.kind === 'custom') {
+      if (!plugin.settingRows?.[setting.key]) {
+        errors.push(`setting "${setting.key}" is custom and has no component`)
+      }
+    } else if (setting.control.kind === 'secret') {
       if (setting.default !== undefined) {
         errors.push(`setting "${setting.key}" is a secret and cannot have a default`)
       }

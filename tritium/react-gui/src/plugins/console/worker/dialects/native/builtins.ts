@@ -12,7 +12,8 @@ import * as fs from 'fs'
 import * as nodePath from 'path'
 import { closeLog, currentLog, openLog, writeLog } from '../../runtime/commandLog'
 import { resolvePath } from '../../runtime/paths'
-import type { ConsoleCommand } from '../../runtime/types'
+import type { CmdContext, CmdOutcome, ConsoleCommand } from '../../runtime/types'
+import type { SceneRequest } from '../../../shared/consoleTypes'
 
 /** The file extension of a native console script. */
 export const NATIVE_SCRIPT_EXT = '.cml'
@@ -146,7 +147,66 @@ function undoStack(name: 'undo' | 'redo'): ConsoleCommand {
   }
 }
 
+// --- Scenes ---
+// A scene is a tab, which only the panel can make or close, so these parse
+// their arguments and hand the request over (CmdContext.requestScene).
+
+const SCENE_COMPLETION = { source: 'scenes', description: 'scene', suffix: '' } as const
+
+/** Hand `req` to the panel; refused inside a script. */
+function handOff(name: string, req: SceneRequest, cc: CmdContext): CmdOutcome {
+  if (cc.requestScene(req)) return { ok: true }
+  return { ok: false, error: `Error: ${name} cannot run inside a script; put it on the command line` }
+}
+
+const scenes: ConsoleCommand = {
+  name: 'scenes',
+  params: [],
+  mode: 'strict',
+  mutates: false,
+  summary: 'List the open scenes; * marks the active one.',
+  run: (_ctx, _args, cc) => handOff('scenes', { op: 'list' }, cc),
+}
+
+const newScene: ConsoleCommand = {
+  name: 'new_scene',
+  params: [{ name: 'name', default: '' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Open a new empty scene in a tab of its own and make it active.',
+  completions: [{ source: 'none', description: 'name', suffix: '' }],
+  run: (_ctx, args, cc) => handOff('new_scene', { op: 'new', name: args.name.trim() }, cc),
+}
+
+const switchScene: ConsoleCommand = {
+  name: 'switch_scene',
+  params: [{ name: 'scene' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Make a scene active, by its number in "scenes", #uid or name.',
+  completions: [SCENE_COMPLETION],
+  run: (_ctx, args, cc) => handOff('switch_scene', { op: 'switch', scene: args.scene.trim() }, cc),
+}
+
+const closeScene: ConsoleCommand = {
+  name: 'close_scene',
+  params: [{ name: 'scene', default: '' }, { name: 'force', default: '' }],
+  mode: 'strict',
+  mutates: false,
+  summary: 'Close a scene (the active one when none is named); force discards unsaved changes.',
+  completions: [{ ...SCENE_COMPLETION, suffix: ', ' }, { source: 'enum:force', description: 'option', suffix: '' }],
+  run(_ctx, args, cc) {
+    const force = args.force.trim()
+    if (force !== '' && force !== 'force') return { ok: false, error: 'Error: the second argument can only be "force"' }
+    return handOff('close_scene', { op: 'close', scene: args.scene.trim(), force: force === 'force' }, cc)
+  },
+}
+
 export const NATIVE_BUILTINS: ConsoleCommand[] = [
+  scenes,
+  newScene,
+  switchScene,
+  closeScene,
   cd,
   pwd,
   ls,

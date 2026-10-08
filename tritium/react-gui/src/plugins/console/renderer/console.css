@@ -112,3 +112,15 @@
   flex: 1;
   min-width: 0;
 }
+
+/* --- Settings: the tritium_cli row (path + Copy over a one-line hint) --- */
+.console-cli-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.console-cli-row .type-caption {
+  color: var(--text-muted);
+  user-select: text;
+}

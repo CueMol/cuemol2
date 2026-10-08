@@ -47,7 +47,7 @@ export { usePluginPrefs } from './usePluginPrefs'
 export type { PluginPrefs } from './usePluginPrefs'
 export type { PluginPrefValue } from '@shared/types/uiPrefs'
 export { definePluginSecret, onPluginSecretChanged } from './pluginSecrets'
-export { controlLocalApi, useLocalApiEndpoint, useLocalApiStatus } from './localApi'
+export { controlLocalApi, useCliAccessGranted, useLocalApiEndpoint, useLocalApiStatus } from './localApi'
 export type { LocalApiCall, LocalApiEndpointHandlers } from './localApi'
 export type { LocalApiEndpoint, LocalApiStatus } from '@shared/types/localApi'
 export type { PluginSecret } from './pluginSecrets'
@@ -67,6 +67,10 @@ export type {
 } from '@renderer/hooks/cuemol/useLiveFetch'
 export { useActiveScene } from '@renderer/state/workspace'
 export { useEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
+// The open scenes by name: list, make, show and close them (the console's
+// scene commands).
+export { useSceneTabs } from './sceneTabs'
+export type { OpenScene, SceneTabs } from './sceneTabs'
 // Hold Undo / Redo off while the plugin is in the middle of an edit the user
 // must not be able to unwind halfway.
 export { useSuppressUndoRedo } from '@renderer/contexts/UndoRedoLockContext'

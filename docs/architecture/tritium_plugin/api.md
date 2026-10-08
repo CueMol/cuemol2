@@ -227,6 +227,12 @@ mount 中かつ `enabled` の間、`endpoint` を開きます。その endpoint 
 plugin の有効/無効に endpoint が連動します。`handlers` は ref で読むので毎 render
 作り直して構いません。
 
+### `useCliAccessGranted(): boolean`
+
+この app が `tritium_cli` から起動された (起動中に 2 個目のプロセスとして `--tritium-cli` を
+受け取った場合も含む) なら true。一度 true になれば app の終了まで戻らない。console plugin は
+これを設定値と OR して console endpoint を開く (設定値は変えない)。
+
 ### `useLocalApiStatus(): LocalApiStatus | null`
 
 server の状態 (`listening`, `port`, `endpoints`, `token`, `error`)。変化に追随します。
@@ -276,6 +282,20 @@ bottom tab の component には同じ値が props で届くので、そちらで
 
 **ダイアログを確定した後に呼ぶ**こと。先に呼ぶと、ユーザがキャンセルしたときに空のタブ
 だけが残る。
+
+### `useSceneTabs(): SceneTabs`
+
+開いている scene を名前で扱う。scene は molview タブが 1 つでもある間だけ開いているので、
+一覧は tab strip の順。
+
+- `list()` -- `{ sceneId, name, viewIds, active, modified }[]`
+- `create(name?)` -- 新しい scene とタブを作って前面に出す
+- `activate(sceneId)` -- その scene の最初のタブを前面に出す
+- `close(sceneId)` -- その scene のタブを全部閉じる。**保存確認は出さない** (呼び出し側が
+  `modified` を見て決める)
+
+各操作は tab strip に反映されてから resolve するので、続けて `useEnsureActiveScene()` を
+呼べば新しいアクティブ scene が返る。console の scene コマンドが使っている。
 
 ### `useCueMolEventListener(opts): void`
 

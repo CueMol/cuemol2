@@ -129,6 +129,15 @@ describe('argument completion', () => {
     expect(run('set bgcolor,alw').replacement).toBe('set bgcolor, always, ')
   })
 
+  it('completes a name with a space in it, and otherwise the last word', () => {
+    // The whole argument is tried first, so "my sc" reaches "my scene"; an
+    // expression whose whole text matches nothing still completes its last
+    // word, as PyMOL does.
+    candidates.mockReturnValue(['my scene', 'yellow'])
+    expect(run('set bgcolor, my sc').replacement).toBe('set bgcolor, my scene, ')
+    expect(run('set bgcolor, red or yel').replacement).toBe('set bgcolor, red or yellow, ')
+  })
+
   it('does not count a comma inside brackets as an argument boundary', () => {
     candidates.mockReturnValue(['only-for-argument-0'])
     // Were the bracketed comma counted, this would look like argument 1 and

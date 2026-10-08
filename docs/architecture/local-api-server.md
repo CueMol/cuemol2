@@ -4,8 +4,8 @@ GUI アプリ (tritium) に内蔵した HTTP server。外部のプログラム�
 操作するための入口で、endpoint は 2 つ:
 
 - MCP (`/mcp`) -- plugin `mcp`。AI client から op catalog を tool として呼ぶ (§3, §4)。
-- console (`/console/run`, `/console/complete`) -- plugin `console`。terminal の
-  `cuemol-console` から console の native / PyMOL dialect を使う (§5)。
+- console (`/console/run`, `/console/complete`, `/console/info`) -- plugin `console`。terminal の
+  `tritium_cli` から console の native / PyMOL dialect を使う (§5)。
 
 計画: [261007](../plans/261007-local-api-server-plan.md)。
 
@@ -16,7 +16,7 @@ GUI アプリ (tritium) に内蔵した HTTP server。外部のプログラム�
 
 ```
 MCP client      --POST /mcp-----------+
-cuemol-console  --POST /console/*-----+--> main: localApi/server.ts (127.0.0.1:<port>)
+tritium_cli     --POST /console/*-----+--> main: localApi/server.ts (127.0.0.1:<port>)
                                  token / Origin / Host 検査、path -> endpoint
                                  localApi/mcpEndpoint.ts (MCP SDK, stateless)
                                  localApi/consoleEndpoint.ts (JSON)
@@ -105,42 +105,81 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
   埋めてコピーする (画面上は `<token>`)。中身は `plugins/mcp/renderer/clientSetup.ts`。
   Codex は tool の timeout が既定 60 秒なので `tool_timeout_sec = 1800` を入れている。
 
-## 5. console endpoint と `cuemol-console`
+## 5. console endpoint と `tritium_cli`
 
-- **有効化**: Settings > Plugins > Console を有効にし、そのページの「Command line access」
-  (`remoteAccess`、既定 off) を on にする。console plugin の Root が `useLocalApiEndpoint('console', ...)`
-  を開く (`renderer/useConsoleEndpoint.ts`)。
+- **有効化**: Console plugin (既定 on) の Root が `useLocalApiEndpoint('console', ...)` を開く
+  (`renderer/useConsoleEndpoint.ts`)。開くのは、Settings の「Command line access」(`remoteAccess`、
+  既定 off) が on のとき、または `--tritium-cli` 付きで起動された app の起動中 (下記)。
 - **wire 形式** (`shared/types/localApi.ts`):
   - `POST /console/run` `{ dialect, text, cwd }` -> `{ entries, aborted, interrupted, cwd }`
   - `POST /console/complete` `{ dialect, line, cwd }` -> `{ replacement, messages }`
+  - `POST /console/info` `{}` -> `{ version, build }` (libcuemol2 の version と source revision。
+    client の banner 用)
   - body の形は main で検査し (`cwd` は絶対パス)、だめなら 400。worker の失敗 (busy 等) は 409 `{ error }`。
 - **実行**: panel と同じ worker service (`runCommand` / `complete`) を、アクティブなタブに対して
   呼ぶ。1 submission = 1 undo txn、排他 (`txnBusy()`) も panel と同じ。`load x.qsc` は panel と同じく
-  File > Open の経路で開く。client の切断 (Ctrl-C) は `cancelRun` (= Stop)。
+  File > Open の経路で開く。client の切断 (Ctrl-C) は `cancelRun` (= Stop)。panel と共通の
+  `renderer/runSubmission.ts` を通るので、scene コマンド (§5.2) も同じに動く。
 - **作業ディレクトリ**: client が持つ。request の `cwd` で相対パスを解決し、`cd` の結果を応答の
   `cwd` で返す。worker は client のための状態を持たず、panel の作業ディレクトリ (module 変数) も
   動かさない (`RunCommandArgs.cwd` / `CompleteArgs.cwd`)。PyMOL の log と `lastRay` は panel と共有。
 - **GUI 側の表示**: CLI から来た submission の出力は console panel の transcript にも追加し、
   echo 行に `[cli] ` を付ける。
 
-### client (`tritium/react-gui/tools/cuemol-console.mjs`)
+### 5.1 client (`tritium/react-gui/tools/tritium_cli.mjs`)
 
-Node (18 以降) だけで動く、依存なしの thin client。repo から `node tools/cuemol-console.mjs` で起動する。
+Node (18 以降) だけで動く、依存なしの thin client。repo からは `node tools/tritium_cli.mjs`、
+配布物からは同梱の wrapper `tritium_cli` (§5.3) で起動する。
 
 - 接続情報は request ごとに `~/.cuemol/local-api.json` (`CUEMOL_LOCAL_API_INFO`) から読む。
-  無い、または `console` endpoint が無ければ「Command line access を on に」と案内する。
   port は MCP plugin の設定で変わり得るが、client は毎回このファイルを読むので影響しない。
-- 対話: prompt は `CueMol>` / `PyM>`、`native` / `pymol` で dialect 切り替え、Tab 補完
-  (`/console/complete` の返す行全体で入力行を書き換える)、履歴 `~/.cuemol_console_history`、
+- **app の自動起動** (`ensureApp`): 情報ファイルが無い、`console` endpoint が無い、pid が
+  死んでいるときは、`ELECTRON_RUN_AS_NODE` 下 (= wrapper 経由、`process.execPath` が app) に限り
+  app を `--tritium-cli` 付きで detached 起動し (`ELECTRON_RUN_AS_NODE` は外す)、情報ファイルに
+  `console` が載るまで最長 90 秒待つ。CLI を抜けても app は残る。動いている app (access off) に
+  対しても同じで、2 個目のプロセスは single-instance lock で argv を渡して終わり、動いている app が
+  その起動中だけ endpoint を開く (main `noteCliLaunch` -> invoke `LOCAL_API_CLI_ACCESS` / push
+  `LOCAL_API_CLI_ACCESS_GRANTED` -> renderer `useCliAccessGranted()`)。設定値は変えない。
+  repo から node で起動したときと `--no-launch` では起動せず、案内を出して終わる。
+- 対話: 起動時に banner (version、port、pid、操作の案内) を出す。prompt は `CueMol <dir> ❯` /
+  `pymol <dir> ❯` (dialect 名は色分け)、`native` / `pymol` で dialect 切り替え、Tab 補完
+  (`/console/complete` の返す行全体で入力行を書き換える)、履歴 `~/.tritium_cli_history`、
+  待機中は spinner と経過秒、1 秒以上かかったコマンドは `✓` / `✗` と所要時間を出す。
   実行中の Ctrl-C は中断、待機中は入力行の消去 / 終了。`exit` か Ctrl-D で抜ける。
+  色は TTY のときだけで、`NO_COLOR` で消える。dim / 灰色は暗い端末で読みにくいので使わない。
 - 非対話: `-c "..."`、script ファイル、stdin のパイプ。全体を 1 submission として送る
   (= 1 undo、途中で失敗するとそこで止まる)。失敗があれば exit code 1。
 - 出力: output は stdout、warning / error は stderr (TTY なら黄 / 赤)。echo 行は `--echo` のときだけ。
+
+### 5.2 scene コマンド (native dialect)
+
+`scenes` (一覧、`*` がアクティブ)、`new_scene [name]`、`switch_scene <scene>`、
+`close_scene [scene] [, force]`。scene は番号 (`scenes` の順)、`#uid`、名前で指定し、名前は Tab で
+補完する。scene はタブなので worker では作れない: command は `CmdContext.requestScene` で要求を
+返して submission をそこで終え (`RunCommandOutcome.sceneRequest` と残りの `rest`)、renderer の
+`runSubmission` が `doSceneRequest` (`renderer/sceneRequest.ts`) でタブを操作してから、残りを
+その時点のアクティブ scene に対して送り直す。よって `new_scene; fetch 1crn` は新しい scene に入り、
+undo txn は scene ごとに分かれる。タブ操作は plugin API `useSceneTabs()` (各操作は tab strip に
+反映されてから resolve する)。保存確認の dialog は出さない (terminal から操作中に GUI で止まるため):
+未保存の scene は `force` が無いと閉じない。`@file` / `run` の script 内では使えない。
+
+### 5.3 配布物への同梱
+
+- `tools/tritium_cli.mjs` を extraResources で `<resources>/cli/` に置き、afterPack hook
+  (`build/cliWrapper.js`) が隣に wrapper を書く: macOS / Linux は sh の `tritium_cli`、Windows は
+  `tritium_cli.cmd`。wrapper は app 自身の実行ファイルを `ELECTRON_RUN_AS_NODE=1` で Node として
+  動かす (VS Code の `code` と同じ)。Electron の RunAsNode fuse を切らないこと。sh 版は symlink を
+  辿ってから app を探すので、PATH 上の symlink から起動できる。
+- PATH は installer では触らない。Settings > Plugins > Console の「Command line tool」行に
+  wrapper のフルパス (Copy) と PATH への入れ方を出す (`AppPathInfo.cliPath`、custom setting 行
+  `CliPathRow`)。例外は deb で、`/usr/bin/tritium_cli` に symlink を張る
+  (`build/linux/after-install.tpl` / `after-remove.tpl`、app-builder-lib の stock template の写し +
+  1 行)。AppImage は resources が起動ごとの一時 mount なので非対応。
 
 ## 6. 既知の制約
 
 - stateless なので `tools/list_changed` を送らない。tool の追加は client の再接続で反映。
 - token の再発行・port の変更後は client を登録し直す必要がある。
 - 起動中の call を GUI 側から止める UI は無い (client 側の中断で止まる)。
-- `cuemol-console` は配布物に入っていない (repo から起動)。パッケージ同梱
-  (`ELECTRON_RUN_AS_NODE` で動かす wrapper など) は別タスク。
+- Windows の `tritium_cli.cmd` (GUI subsystem の exe を Node として動かす) で、対話 (readline) と
+  Ctrl-C が動くかは未確認。

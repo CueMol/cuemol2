@@ -43,4 +43,10 @@ export interface AppPathInfo {
     apbsExe: string
     pdb2pqrExe: string
   }
+  /**
+   * The tritium_cli command (getCliPath): the shipped wrapper when packaged,
+   * the repo's `tools/tritium_cli.mjs` in dev, empty where there is none
+   * (AppImage).
+   */
+  cliPath: string
 }

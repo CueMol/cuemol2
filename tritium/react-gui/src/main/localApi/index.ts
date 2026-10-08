@@ -14,7 +14,7 @@ import * as os from 'os'
 import * as nodePath from 'path'
 import { randomBytes } from 'crypto'
 import { IPC } from '@shared/ipcChannels'
-import { DEFAULT_LOCAL_API_PORT } from '@shared/types/localApi'
+import { DEFAULT_LOCAL_API_PORT, TRITIUM_CLI_FLAG } from '@shared/types/localApi'
 import { handleInvoke } from '../ipc/handleInvoke'
 import { getSecret, setSecret } from '../secretStore'
 import { getMainWindow } from '../windows/mainWindow'
@@ -53,6 +53,20 @@ function newToken(): string {
 
 let server: LocalApiServer | null = null
 
+/** Whether tritium_cli launched this run of the app (or a second instance of it). */
+let cliAccess = false
+
+/**
+ * Note a command line that carries TRITIUM_CLI_FLAG. Called with the app's own
+ * argv before any window exists (the window asks later) and with a second
+ * instance's (the window is told). Never turned back off for the run.
+ */
+export function noteCliLaunch(argv: readonly string[]): void {
+  if (cliAccess || !argv.includes(TRITIUM_CLI_FLAG)) return
+  cliAccess = true
+  getMainWindow()?.webContents.send(IPC.LOCAL_API_CLI_ACCESS_GRANTED)
+}
+
 /** Register the local API channels; the server is created closed. */
 export function registerLocalApiHandlers(mainWindow: BrowserWindow): void {
   token = loadToken()
@@ -68,6 +82,7 @@ export function registerLocalApiHandlers(mainWindow: BrowserWindow): void {
 
   handleInvoke(IPC.LOCAL_API_REPLY, (_e, p) => relay.reply(p))
   handleInvoke(IPC.LOCAL_API_STATUS, () => srv.status())
+  handleInvoke(IPC.LOCAL_API_CLI_ACCESS, () => cliAccess)
   handleInvoke(IPC.LOCAL_API_CONTROL, async (_e, req) => {
     switch (req.action) {
       case 'endpoint':

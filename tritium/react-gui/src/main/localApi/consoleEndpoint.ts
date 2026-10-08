@@ -1,7 +1,7 @@
 /**
  * @file main/localApi/consoleEndpoint.ts
- * @description The console endpoint (`/console/run`, `/console/complete`):
- * what the `cuemol-console` command line sends.
+ * @description The console endpoint (`/console/run`, `/console/complete`,
+ * `/console/info`): what the `tritium_cli` command line sends.
  *
  * Plain JSON in, plain JSON out. The body is checked for shape here and
  * relayed to the main window, where the console plugin runs it exactly as a
@@ -17,6 +17,7 @@ import type { EndpointHandler } from './server'
 
 export const CONSOLE_RUN_PATH = '/console/run'
 export const CONSOLE_COMPLETE_PATH = '/console/complete'
+export const CONSOLE_INFO_PATH = '/console/info'
 
 function send(res: ServerResponse, code: number, body: unknown): void {
   if (res.headersSent || res.destroyed) return
@@ -28,8 +29,9 @@ function send(res: ServerResponse, code: number, body: unknown): void {
 export function readConsoleRequest(
   path: string,
   body: unknown,
-): ConsoleRunRequest | ConsoleCompleteRequest | string {
+): ConsoleRunRequest | ConsoleCompleteRequest | Record<string, never> | string {
   if (!body || typeof body !== 'object') return 'The body must be a JSON object.'
+  if (path === CONSOLE_INFO_PATH) return {}
   const b = body as Record<string, unknown>
   if (b.dialect !== 'native' && b.dialect !== 'pymol') return 'dialect must be "native" or "pymol".'
   if (typeof b.cwd !== 'string' || !nodePath.isAbsolute(b.cwd)) return 'cwd must be an absolute path.'
@@ -44,7 +46,7 @@ export function readConsoleRequest(
 export function consoleEndpoint(relay: LocalApiRelay): EndpointHandler {
   return {
     endpoint: 'console',
-    paths: [CONSOLE_RUN_PATH, CONSOLE_COMPLETE_PATH],
+    paths: [CONSOLE_RUN_PATH, CONSOLE_COMPLETE_PATH, CONSOLE_INFO_PATH],
     async handle(req: IncomingMessage, res: ServerResponse, body: unknown) {
       if (req.method !== 'POST') {
         res.writeHead(405, { Allow: 'POST' }).end()
@@ -56,7 +58,7 @@ export function consoleEndpoint(relay: LocalApiRelay): EndpointHandler {
 
       const ac = new AbortController()
       res.on('close', () => { if (!res.writableEnded) ac.abort() })
-      const kind = path === CONSOLE_RUN_PATH ? 'run' : 'complete'
+      const kind = path === CONSOLE_RUN_PATH ? 'run' : path === CONSOLE_INFO_PATH ? 'info' : 'complete'
       try {
         const answer = (await relay.request('console', kind, request, ac.signal)) as { error?: unknown }
         if (answer && typeof answer.error === 'string') return send(res, 409, { error: answer.error })

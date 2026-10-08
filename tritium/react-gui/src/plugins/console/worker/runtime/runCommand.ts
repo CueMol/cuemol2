@@ -32,12 +32,13 @@ import type {
   ConsoleEntry,
   RunCommandArgs,
   RunCommandResult,
+  SceneRequest,
 } from '../../shared/consoleTypes'
 import { BindError, bindArgs } from '../parser/bindArgs'
 import { lookupCommand } from '../parser/commandLookup'
 import { ParseError, parseArgs } from '../parser/parseArgs'
 import * as fs from 'fs'
-import { splitCommands } from '../parser/splitCommands'
+import { joinCommands, splitCommands } from '../parser/splitCommands'
 import type { SplitCommand } from '../parser/splitCommands'
 import { dialectOf } from '../dialects'
 import { resolvePath } from './paths'
@@ -134,6 +135,9 @@ interface Submission {
   dir: WorkDir
   /** A scene file to hand to the panel (CmdContext.openScene). */
   openScene?: string
+  /** A scene command the run stopped at, and what followed it (CmdContext.requestScene). */
+  sceneRequest?: SceneRequest
+  rest?: string
 }
 
 /** The command a typed word names in this dialect, by unique prefix. */
@@ -182,7 +186,7 @@ async function runScriptFile(sub: Submission, filePath: string, depth: number): 
  */
 async function runLines(sub: Submission, commands: SplitCommand[], depth: number): Promise<boolean> {
   const { dialect, ctx, args, entries, sink } = sub
-  for (const cmd of commands) {
+  for (const [index, cmd] of commands.entries()) {
     if (isStopped(args.runId)) {
       entries.push({ kind: 'warning', text: 'Interrupted.' })
       sub.interrupted = true
@@ -264,6 +268,12 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
       streamId: (tag) => `console:${args.runId}:${tag}:${++streamSeq}`,
       runScript: (filePath) => runScriptFile(sub, filePath, depth),
       openScene: (filePath) => { sub.openScene = filePath },
+      requestScene: (req) => {
+        if (depth > 0) return false
+        sub.sceneRequest = req
+        sub.rest = joinCommands(commands.slice(index + 1))
+        return true
+      },
     }
 
     let outcome
@@ -288,6 +298,8 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
       }
       return false
     }
+    // The panel does the scene command, then submits the rest itself.
+    if (sub.sceneRequest) return true
   }
   return true
 }
@@ -356,6 +368,7 @@ async function runStandalone(
     streamId: (tag) => `console:${args.runId}:${tag}:1`,
     runScript: () => Promise.resolve({ ok: false, error: 'Error: a script cannot run from here' }),
     openScene: (filePath) => { openScene = filePath },
+    requestScene: () => false,
   }
   let outcome: CmdOutcome
   try {
@@ -423,6 +436,7 @@ export async function runCommand(
     aborted: !completed,
     interrupted: sub.interrupted,
     ...(sub.openScene ? { openScene: sub.openScene } : {}),
+    ...(sub.sceneRequest ? { sceneRequest: sub.sceneRequest, rest: sub.rest ?? '' } : {}),
     ...(args.cwd !== undefined ? { cwd: sub.dir.get() } : {}),
   })
 }
