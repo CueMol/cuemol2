@@ -4,8 +4,8 @@
  *
  * One pair of ops over the generic property bridge -- the same path the
  * inspector panel edits through. It reaches the scene itself (background
- * colour, ambient occlusion, anti-aliasing, CMYK colour proofing), an object,
- * and a renderer, so every setting a C++ class exposes is reachable without an
+ * colour, ambient occlusion, anti-aliasing, CMYK colour proofing), the view
+ * (stereo, centre mark, mouse speeds), an object, and a renderer, so every setting a C++ class exposes is reachable without an
  * op per setting. The agent's tool list has a ceiling (see
  * plugins/agent/worker/tools/index.test.ts) that an op-per-setting design
  * would spend on the scene alone.
@@ -35,20 +35,20 @@ import { columns } from '../consoleFormat'
  * `renderer` covers a renderer group too: a group IS a renderer in C++ and
  * the bridge resolves both through the same lookup.
  */
-const NODE_TYPES = ['scene', 'object', 'renderer'] as const
+const NODE_TYPES = ['scene', 'view', 'object', 'renderer'] as const
 
 const nodeTypeParam = () =>
   enumOf(
     NODE_TYPES,
-    'What kind of node to address. "scene" is the scene as a whole; "renderer" also ' +
-      'covers a renderer group.',
+    'What kind of node to address. "scene" is the scene as a whole; "view" is the current ' +
+      'view; "renderer" also covers a renderer group.',
   )
 
 const nodeIdParam = () =>
   optional(
     nodeId(
-      'Uid of the object or renderer, from get_scene_state. Null addresses the scene ' +
-        'itself, which is the one node with no id of its own.',
+      'Uid of the object or renderer, from get_scene_state. Null for the scene and the ' +
+        'view, which have no id of their own.',
       'nodeType',
     ),
   )
@@ -61,9 +61,10 @@ function nodeRefOf(
   id: number | null,
   oc: OpContext,
 ): NodeRef | string {
-  // The scene is the caller's scene; there is no id to supply, and one that
-  // was invented would be ignored rather than rejected.
+  // The scene and the view are the caller's; there is no id to supply, and
+  // one that was invented would be ignored rather than rejected.
   if (nodeType === 'scene') return { nodeId: oc.sceneId, nodeType }
+  if (nodeType === 'view') return { nodeId: oc.viewId, nodeType }
   if (id === null) {
     return `nodeId is required when nodeType is "${nodeType}".`
   }
@@ -145,16 +146,17 @@ export const getNodeProps = defineOp({
   name: 'get_node_props',
   description:
     'List the writable properties of one node with their current values and, for ' +
-    'enumerated ones, the allowed values. The node may be a renderer, an object, or the ' +
-    'scene itself -- the scene is where the background colour, ambient occlusion, ' +
-    'anti-aliasing and colour proofing live. Read this before set_node_prop.',
+    'enumerated ones, the allowed values. The node may be a renderer, an object, the ' +
+    'scene itself -- where the background colour, ambient occlusion, anti-aliasing and ' +
+    'colour proofing live -- or the view (stereo, centre mark, mouse speeds). Read this ' +
+    'before set_node_prop.',
   params: {
     nodeType: nodeTypeParam(),
     nodeId: nodeIdParam(),
   },
   mutates: false,
   expose: { tool: 'core', console: true },
-  aliases: [{ name: 'props', order: ['nodeId'], summary: 'List the properties of a node (the scene when none is given).' }],
+  aliases: [{ name: 'props', order: ['nodeId'], summary: 'List the properties of a node, or of view (the scene when none is given).' }],
   format(data) {
     const d = data as {
       type: string
@@ -206,7 +208,9 @@ export const setNodeProp = defineOp({
     'Set one property of one node. On the scene this is how to change the background ' +
     'colour ("bgcolor"), turn ambient occlusion on and tune it ("aoEnabled", "aoRadius", ' +
     '"aoIntensity", "aoSteps"), choose anti-aliasing ("aa_method", "aaJitterLevel"), and ' +
-    'switch on CMYK colour proofing ("use_colproof", "icc_filename"). On a renderer it ' +
+    'switch on CMYK colour proofing ("use_colproof", "icc_filename"). On the view it sets ' +
+    'stereo ("stereoMode", "stereoDist", "swapStereoEyes") and the centre mark ' +
+    '("centerMark"). On a renderer it ' +
     'sets a width, a detail level, or a mode. Call get_node_props first: the property ' +
     'name, its type, and the allowed values all come from there.',
   params: {
@@ -231,7 +235,7 @@ export const setProp = defineOp({
   name: 'set_prop',
   description:
     'Set one property, named by its path: obj/rend.prop for a renderer, ' +
-    'obj.prop for an object, and a bare name for the scene.',
+    'obj.prop for an object, view.prop for the view, and a bare name for the scene.',
   params: {
     path: propPath('The property, e.g. 1crn/cartoon1.width or bgcolor.'),
     value: propValue('New value as text; converted by the property type.'),
@@ -245,7 +249,7 @@ export const setProp = defineOp({
   // inspector redraws from; at a prompt a write that worked says nothing.
   format: () => [],
   run(ctx, args, oc): OpOutcome {
-    const target = resolvePropPath(ctx, oc.sceneId, args.path)
+    const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)
     if (!target.ok) return { ok: false, error: target.error }
     return writeNodeProp(ctx, oc, { nodeId: target.nodeId, nodeType: target.nodeType }, target.prop, args.value)
   },
@@ -265,7 +269,7 @@ export const getProp = defineOp({
     return [`${d.prop} = ${typeof d.value === 'string' ? d.value : JSON.stringify(d.value)}`]
   },
   run(ctx, args, oc): OpOutcome {
-    const target = resolvePropPath(ctx, oc.sceneId, args.path)
+    const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)
     if (!target.ok) return { ok: false, error: target.error }
     const props = getGenericProps(ctx, { sceneId: oc.sceneId, nodeId: target.nodeId, nodeType: target.nodeType })
     if (!props.ok) return { ok: false, error: 'No node with that id and type in this scene.' }

@@ -184,3 +184,18 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
 - camera: `rename_camera`、`move_camera name, to`、`save_camera` / `apply_camera` の `withVisibility`
   (表示・非表示も保存・適用。適用時は txn を commit する)
 - `animate` に `pause` を追加し、`timeMs` は seek のときだけ必要
+
+### view property と reader のオプション
+
+- **view property** (View > View property の inspector と同じ generic property bridge):
+  - `get_node_props` / `set_node_prop` の `nodeType` に `view` を足した。nodeId は不要で、呼び出し元の view を指す。
+  - console では `props view`、`get view.stereoMode`、`set view.centerMark, axis` と書く。property path の補完は先頭で `view.` を出す。
+  - `view.` で始まる path は、`view` という名前の object が無いときだけ view を指す (`refs.ts` の `resolvePropPath`)。
+  - View の property には既定値が無いので (View.qif の default はコメントアウト)、`reset_prop view.xxx` は断る。
+- **reader のオプション** (File Open のオプション dialog と同じ `FileOpenOptions`):
+  - `load_file` に次の引数を足した。
+    - `name`: object の名前
+    - `options`: `key=value` を空白区切りで並べたもの。key は dialog のオプション名で、大文字小文字は区別しない (`build2ndry=false`、`columnF=FWT columnPhi=PHWT`、`truncateMin=-2 mapType=em`)。
+    - `companion`: 2 ファイル形式の相方のファイル (MSMS の .vert、NAMD の .psf、AMBER の座標)。
+  - 値は、置き換えるオプションの既定値の型で読む。値を指定すると、その値を使うためのスイッチも on になる (`truncateMin` → `truncateMinEnabled`、`columnW` → `weightEnabled`)。知らない key を渡すと、その reader のオプション一覧を返す (`catalog/readerOptions.ts`)。
+  - `reader_options path` (console / MCP) は、そのファイルの reader と、オプションの既定値を一覧する。

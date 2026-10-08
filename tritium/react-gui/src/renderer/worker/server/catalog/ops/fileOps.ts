@@ -15,6 +15,7 @@ import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/f
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
 import { enumOf, optional, path, rendererType, selection, string } from '../params'
+import { applyReaderOptionText, settableReaderOptions, withCompanionFile } from '../readerOptions'
 
 /** A CueMol scene file, which opens as a scene rather than loading into one. */
 const SCENE_FILE_RE = /\.qsc$/i
@@ -87,11 +88,16 @@ export const loadFile = defineOp({
   description:
     'Open a structure file already on this computer and add it to the scene. Only use a path ' +
     'the user gave you. Creates a new object AND a default renderer, so call get_scene_state ' +
-    'afterwards to learn their ids.',
+    'afterwards to learn their ids. The reader options of the File Open dialog (e.g. ' +
+    'build2ndry=false for a PDB file, columnF=FWT columnPhi=PHWT for an MTZ file) go in ' +
+    'options; an unknown key is answered with the list of the reader\'s options.',
   params: {
     path: path('Absolute path of the file to open.'),
     rendererType: optional(rendererType("Renderer to create for it. Null uses the reader's default.")),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
+    name: optional(string('Name of the new object. Null uses the file name.')),
+    options: optional(string('Reader options as key=value pairs separated by spaces, e.g. "loadModel=true build2ndry=false". Null keeps the defaults.')),
+    companion: optional(path('The second file of a two-file format: the .vert file of an MSMS surface, the .psf of NAMD coordinates, the coordinates of an AMBER prmtop. Null for none.')),
   },
   mutates: true,
   expose: { tool: 'files', console: true },
@@ -117,10 +123,20 @@ export const loadFile = defineOp({
     const baseName = filePath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'object'
     const options = buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
-      objectName: baseName,
+      objectName: args.name?.trim() || baseName,
       rendererType: args.rendererType,
       selection: args.selection,
     })
+    if (args.options !== null) {
+      const format = applyReaderOptionText(options.format, args.options)
+      if ('error' in format) return { ok: false, error: format.error }
+      options.format = format
+    }
+    if (args.companion !== null) {
+      const format = withCompanionFile(options.format, args.companion)
+      if ('error' in format) return { ok: false, error: format.error }
+      options.format = format
+    }
 
     const result = loadObject(ctx, {
       filePath,
@@ -133,4 +149,33 @@ export const loadFile = defineOp({
   },
 })
 
-export const FILE_OPS = [fetchPdb, loadFile]
+export const readerOptions = defineOp({
+  name: 'reader_options',
+  description:
+    'List the reader options load_file takes for a file (those of the File Open dialog), ' +
+    'with the values a load uses when none is given.',
+  params: { path: path('The file to open.') },
+  mutates: false,
+  expose: { tool: false, console: true, mcp: true },
+  format(data) {
+    const d = data as { reader: string; options: Record<string, unknown> }
+    const rows = Object.entries(d.options).map(([k, v]) => `  ${k}=${String(v)}`)
+    return [`reader ${d.reader}`, ...(rows.length > 0 ? rows : ['  (no options)'])]
+  },
+  run(ctx, args) {
+    if (SCENE_FILE_RE.test(args.path)) return { ok: false, error: 'A scene file has no reader options.' }
+    const compat = getCompatibleRendererNames(ctx, { filePath: args.path })
+    if (compat.readerName === '') {
+      return { ok: false, error: `No reader can handle "${args.path}". Check the path and the format.` }
+    }
+    const options = buildHeadlessFileOpenOptions(ctx, {
+      readerName: compat.readerName,
+      objectName: 'object',
+      rendererType: null,
+      selection: null,
+    })
+    return { ok: true, data: { reader: compat.readerName, options: settableReaderOptions(options.format) } }
+  },
+})
+
+export const FILE_OPS = [fetchPdb, loadFile, readerOptions]
