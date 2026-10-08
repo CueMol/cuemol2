@@ -13,6 +13,9 @@
 
 import type { AnyOp } from './op'
 import { ANALYSIS_OPS } from './ops/analysisOps'
+import { ANIM_OPS } from './ops/animOps'
+import { APBS_OPS } from './ops/apbsOps'
+import { TOOL_MENU_OPS } from './ops/toolOps'
 import { FILE_OPS } from './ops/fileOps'
 import { MEASURE_OPS } from './ops/measureOps'
 import { PROP_OPS } from './ops/propOps'
@@ -27,7 +30,7 @@ import { MORE_OPS } from './ops/moreOps'
 import { RENDER_OPS } from './ops/renderOps'
 import type { ToolsetId } from './toolsets'
 
-export type { AnyOp, Op, OpContext, OpImage, OpOutcome, OpVerb } from './op'
+export type { AnyOp, Op, OpContext, OpImage, OpOutcome, OpAlias } from './op'
 export { defineOp } from './op'
 export { invokeOp, runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from './opRuntime'
 export { MAX_ARRAY_ITEMS, MAX_OUTPUT_CHARS, serializeToolOutput } from './toolOutput'
@@ -55,6 +58,9 @@ export const OPS: readonly AnyOp[] = [
   ...MOL_OPS,
   ...MORE_OPS,
   ...RENDER_OPS,
+  ...APBS_OPS,
+  ...TOOL_MENU_OPS,
+  ...ANIM_OPS,
 ].sort(byName)
 
 /** The ops always offered to a tool caller, in catalogue order. */

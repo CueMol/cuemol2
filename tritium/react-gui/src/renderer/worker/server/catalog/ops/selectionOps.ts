@@ -131,7 +131,7 @@ export const setMolSelection = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
-  verbs: [{ verb: 'select', summary: "Set a molecule's current selection." }],
+  aliases: [{ name: 'select', summary: "Set a molecule's current selection." }],
   run(ctx, args, oc) {
     const result = applyMolSelString(ctx, {
       sceneId: oc.sceneId,
@@ -159,9 +159,9 @@ export const centerView = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
-  verbs: [
-    { verb: 'zoom', fixed: { zoom: true }, summary: 'Centre the view on a selection and zoom to fit it.' },
-    { verb: 'center', fixed: { zoom: false }, summary: 'Centre the view on a selection.' },
+  aliases: [
+    { name: 'zoom', fixed: { zoom: true }, summary: 'Centre the view on a selection and zoom to fit it.' },
+    { name: 'center', fixed: { zoom: false }, summary: 'Centre the view on a selection.' },
   ],
   run(ctx, args, oc) {
     const svcArgs = {

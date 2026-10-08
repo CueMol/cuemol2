@@ -46,7 +46,7 @@ export const renderImage = defineOp({
   // The scene is unchanged (see the size handling below); the file is written.
   mutates: false,
   expose: { tool: 'render', console: true },
-  verbs: [{ verb: 'ray', summary: 'Ray-trace the view to a PNG: ray out.png, 1920, 1080' }],
+  aliases: [{ name: 'ray', summary: 'Ray-trace the view to a PNG: ray out.png, 1920, 1080' }],
   async run(ctx, args, oc) {
     const target = outputPath(oc, args.fileName, '.png')
     if ('error' in target) return { ok: false, error: target.error }

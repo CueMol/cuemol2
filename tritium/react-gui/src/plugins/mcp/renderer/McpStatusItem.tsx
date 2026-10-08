@@ -72,10 +72,10 @@ export const McpStatusItem: React.FC = () => {
   const text = describeState(state, status, activity)
 
   const content = (
-    <div className="mcp-pop">
-      <div className="mcp-pop-header">
+    <div className="status-pop">
+      <div className="status-pop-header">
         <span className="type-title">MCP Server</span>
-        <span className="mcp-pop-header-actions">
+        <span className="status-pop-header-actions">
           <SwitchField checked={serverEnabled} onChange={setServerEnabled} />
           <Button
             minimal
@@ -91,20 +91,20 @@ export const McpStatusItem: React.FC = () => {
         </span>
       </div>
 
-      <div className="mcp-pop-section">
-        <div className="mcp-pop-row">
+      <div className="status-pop-section">
+        <div className="status-pop-row">
           <span className="type-label">Status</span>
-          <span className={`type-body mcp-pop-value mcp-pop-value--${state}`}>{STATE_LABELS[state]}</span>
+          <span className={`type-body status-pop-value status-pop-value--${state}`}>{STATE_LABELS[state]}</span>
         </div>
-        <span className={`type-caption mcp-pop-detail mcp-pop-value--${state}`}>{text}</span>
+        <span className={`type-caption status-pop-detail status-pop-value--${state}`}>{text}</span>
       </div>
 
-      <div className="mcp-pop-section">
-        <div className="mcp-pop-row">
+      <div className="status-pop-section">
+        <div className="status-pop-row">
           <span className="type-label">Clients</span>
           <button
             type="button"
-            className="mcp-pop-link type-body"
+            className="status-pop-link type-body"
             disabled={!status}
             onClick={() => {
               setOpen(false)
@@ -114,22 +114,22 @@ export const McpStatusItem: React.FC = () => {
             Set up...
           </button>
         </div>
-        <span className="type-caption mcp-pop-detail">Claude Code, Codex, Antigravity and others.</span>
+        <span className="type-caption status-pop-detail">Claude Code, Codex, Antigravity and others.</span>
       </div>
 
-      <div className="mcp-pop-section">
-        <div className="mcp-pop-row">
+      <div className="status-pop-section">
+        <div className="status-pop-row">
           <span className="type-label">Token</span>
           <button
             type="button"
-            className="mcp-pop-link type-body"
+            className="status-pop-link type-body"
             disabled={!status}
             onClick={() => { void controlLocalApi({ action: 'regenerateToken' }) }}
           >
             Regenerate
           </button>
         </div>
-        <span className="type-caption mcp-pop-detail">
+        <span className="type-caption status-pop-detail">
           Clients registered with the old token must be registered again.
         </span>
       </div>
@@ -149,7 +149,7 @@ export const McpStatusItem: React.FC = () => {
           {...targetProps}
           ref={ref}
           type="button"
-          className={`status-item mcp-status mcp-status--${state}`}
+          className={`status-item status-button status-button--${state}`}
           title={`MCP Server: ${STATE_LABELS[state]}`}
           onClick={() => setOpen((v) => !v)}
         >

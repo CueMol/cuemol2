@@ -30,7 +30,7 @@ export const rotateView = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
-  verbs: [{ verb: 'turn', summary: 'Turn the view about a screen axis: turn y, 90' }],
+  aliases: [{ name: 'turn', summary: 'Turn the view about a screen axis: turn y, 90' }],
   run(ctx, args, oc) {
     const res = rotateViewService(ctx, {
       viewId: oc.viewId,
@@ -135,10 +135,10 @@ export const setView = defineOp({
   // The camera is not part of the undo history, as with the mouse.
   mutates: false,
   expose: { tool: 'core', console: true },
-  verbs: [
-    { verb: 'view', summary: 'Print the camera: zoom, slab, distance, centre.' },
-    { verb: 'slab', order: ['slab'], summary: 'Set the slab depth: slab 30' },
-    { verb: 'fit_slab', fixed: { fitSlab: true }, order: ['objId'], summary: 'Fit the slab to the molecules, keeping centre and zoom.' },
+  aliases: [
+    { name: 'view', summary: 'Print the camera: zoom, slab, distance, centre.' },
+    { name: 'slab', order: ['slab'], summary: 'Set the slab depth: slab 30' },
+    { name: 'fit_slab', fixed: { fitSlab: true }, order: ['objId'], summary: 'Fit the slab to the molecules, keeping centre and zoom.' },
   ],
   format(data) {
     const d = data as { zoom: number; slab: number; distance: number; center: number[] }

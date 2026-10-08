@@ -91,7 +91,7 @@ export const setMapContour = defineOp({
   },
   mutates: true,
   expose: { tool: 'map', console: true },
-  verbs: [{ verb: 'contour', summary: 'Set a map contour: contour 1crn_2fofc/contour1, level=1.5' }],
+  aliases: [{ name: 'contour', summary: 'Set a map contour: contour 1crn_2fofc/contour1, level=1.5' }],
   run(ctx, args, oc) {
     const writes: [Parameters<typeof setMapRendererProp>[1]['propName'], number | string][] = []
     if (args.level !== null) writes.push(['siglevel', args.level])

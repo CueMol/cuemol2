@@ -72,7 +72,7 @@ export const makeSurface = defineOp({
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
-  verbs: [{ verb: 'surface', summary: 'Make a molecular surface: surface 1crn' }],
+  aliases: [{ name: 'surface', summary: 'Make a molecular surface: surface 1crn' }],
   run(ctx, args, oc) {
     const name = args.name ?? proposeMolSurfName(ctx, { sceneId: oc.sceneId, objId: args.molId }).name
     const res = makeMolSurf(ctx, {
@@ -160,13 +160,21 @@ export const setSecondaryStructure = defineOp({
     molId: moleculeId('Uid of the molecule.'),
     selection: optional(selection('Residues to assign. Null recomputes the whole molecule.')),
     type: optional(enumOf(SEC_TYPES, 'With a selection: the type to assign.')),
+    ignoreBulge: optional(boolean('Recomputing: ignore beta bulges. Null is false.')),
+    helixGapAngle: optional(real('Recomputing: fill gaps in a helix up to this angle in degrees (the dialog offers 120). Null or 0 does not fill.')),
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
   run(ctx, args, oc) {
     if (args.selection === null) {
       return normalizeServiceResult(
-        reassignProt2ndry(ctx, { sceneId: oc.sceneId, objId: args.molId, mode: 'recalc' }),
+        reassignProt2ndry(ctx, {
+          sceneId: oc.sceneId,
+          objId: args.molId,
+          mode: 'recalc',
+          ...(args.ignoreBulge !== null ? { ignBulge: args.ignoreBulge } : {}),
+          ...(args.helixGapAngle !== null ? { helixGapAngle: args.helixGapAngle } : {}),
+        }),
         'The secondary structure could not be computed.',
       )
     }
@@ -220,7 +228,7 @@ export const saveSelection = defineOp({
   },
   mutates: true,
   expose: { tool: 'selection', console: true },
-  verbs: [{ verb: 'define', summary: 'Name a selection: define site1, resid 10:20' }],
+  aliases: [{ name: 'define', summary: 'Name a selection: define site1, resid 10:20' }],
   run(ctx, args, oc) {
     return normalizeServiceResult(
       saveSelDef(ctx, { sceneId: oc.sceneId, name: args.name, expr: args.selection }),

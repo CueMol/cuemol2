@@ -53,7 +53,7 @@ export const applyRendererStyleOp = defineOp({
   },
   mutates: true,
   expose: { tool: 'style', console: true },
-  verbs: [{ verb: 'style', summary: 'Apply a named style to a renderer: style 1crn/cartoon1, <name>' }],
+  aliases: [{ name: 'style', summary: 'Apply a named style to a renderer: style 1crn/cartoon1, <name>' }],
   run(ctx, args, oc) {
     const res = getRendererStyleEntries(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!res.ok) return { ok: false, error: 'No renderer with that id in this scene.' }
@@ -106,10 +106,11 @@ export const saveSceneOp = defineOp({
   params: { path: path('Where to write the .qsc file.') },
   mutates: false,
   // Saving resets the undo stack, which cannot happen inside an agent turn's
-  // transaction, so this is the console's only (alone on its line).
-  expose: { tool: false, console: true },
+  // transaction: the console runs it alone on its line, an MCP call outside
+  // any transaction.
+  expose: { tool: false, console: true, mcp: true },
   outsideTxn: () => true,
-  verbs: [{ verb: 'save', summary: 'Save the scene: save ~/work/session.qsc' }],
+  aliases: [{ name: 'save', summary: 'Save the scene: save ~/work/session.qsc' }],
   run(ctx, args, oc) {
     const target = outputPath(oc, args.path, '.qsc')
     if ('error' in target) return { ok: false, error: target.error }
@@ -131,7 +132,7 @@ export const saveObject = defineOp({
   },
   mutates: false,
   expose: { tool: 'files', console: true },
-  verbs: [{ verb: 'write', summary: 'Write an object to a file: write 1crn, out.pdb' }],
+  aliases: [{ name: 'write', summary: 'Write an object to a file: write 1crn, out.pdb' }],
   run(ctx, args, oc) {
     const target = outputPath(oc, args.fileName, '.pdb')
     if ('error' in target) return { ok: false, error: target.error }
@@ -180,7 +181,7 @@ export const focusNode = defineOp({
   },
   mutates: false,
   expose: { tool: 'view', console: true },
-  verbs: [{ verb: 'focus', summary: 'Fit the view to a node: focus 1crn/cartoon1' }],
+  aliases: [{ name: 'focus', summary: 'Fit the view to a node: focus 1crn/cartoon1' }],
   run(ctx, args, oc) {
     return normalizeServiceResult(
       focusOnNode(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, nodeId: args.nodeId, nodeType: args.nodeType }),

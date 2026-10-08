@@ -33,6 +33,7 @@ import type {
 } from '@shared/types/localApi'
 import { consoleServices } from '../calls'
 import { CONSOLE_PLUGIN_ID, REMOTE_ACCESS_PREF } from '../shared/consoleTypes'
+import { beginCliRun } from './cliActivity'
 import { consoleSession } from './consoleSessionStore'
 import { runSubmission } from './runSubmission'
 
@@ -86,6 +87,7 @@ export function useConsoleEndpoint(): void {
       const runId = `cli-${reqId}`
       runIds.current.set(reqId, runId)
       setRunning((n) => n + 1)
+      const end = beginCliRun()
       try {
         const res = await runSubmission(
           { cm, ensureActiveScene, tabs, openScene },
@@ -106,6 +108,7 @@ export function useConsoleEndpoint(): void {
         runIds.current.delete(reqId)
         stopped.current.delete(reqId)
         setRunning((n) => n - 1)
+        end()
       }
     },
     cancel(reqId) {

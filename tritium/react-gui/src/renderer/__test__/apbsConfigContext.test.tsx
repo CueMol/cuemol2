@@ -15,6 +15,12 @@ import { IPC } from '@shared/ipcChannels';
 import { ApbsConfigProvider, useApbsConfig } from '@renderer/contexts/ApbsConfigContext';
 import { DEFAULT_APBS_BINARIES } from '@renderer/worker/shared/apbsTypes';
 
+// The provider sends the resolved paths to the worker, for the console's apbs.
+const invokeService = vi.fn(() => Promise.resolve({ ok: true }));
+vi.mock('@renderer/hooks/cuemol/useCueMol', () => ({
+    useCueMol: () => ({ cueMolReady: true, cm: { invokeService } }),
+}));
+
 void React;
 
 function setupChannels(ui: unknown, appInfo: unknown) {
@@ -42,6 +48,11 @@ describe('ApbsConfigContext', () => {
 
         expect(h.result.config.apbsExe).toBe(BUNDLED.apbsExe);
         expect(h.result.config.pdb2pqrExe).toBe(BUNDLED.pdb2pqrExe);
+        // The worker's copy follows the resolved value (a command has no dialog to pass it).
+        expect(invokeService).toHaveBeenLastCalledWith('setApbsDefaults', {
+            binaries: BUNDLED,
+            forceField: 'charmm',
+        });
         h.unmount();
     });
 

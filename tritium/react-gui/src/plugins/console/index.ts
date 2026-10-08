@@ -27,6 +27,7 @@ import { definePlugin } from '@renderer/plugin-host/api'
 import { consoleManifest } from './manifest'
 import { ConsolePanel } from './renderer/ConsolePanel'
 import { CliPathRow } from './renderer/CliPathRow'
+import { CliStatusItem } from './renderer/CliStatusItem'
 import { ConsoleRoot } from './renderer/ConsoleRoot'
 import { CLI_PATH_ROW } from './shared/consoleTypes'
 import './renderer/console.css'
@@ -39,5 +40,8 @@ export const consolePlugin = /* @__PURE__ */ definePlugin({
   },
   settingRows: {
     [CLI_PATH_ROW]: CliPathRow,
+  },
+  statusBarItems: {
+    cli: CliStatusItem,
   },
 })

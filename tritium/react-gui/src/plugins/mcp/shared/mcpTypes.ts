@@ -34,6 +34,15 @@ export interface McpCallResult {
   isError: boolean
 }
 
+/**
+ * What the worker answers for a call: the MCP result, and a scene file to
+ * open when the call was `load_file` of a .qsc -- a scene is a tab, which
+ * only the window can make, so the root opens it and reports where it went.
+ */
+export interface CallToolOutcome extends McpCallResult {
+  openScene?: string
+}
+
 export interface DescribeOutcome {
   /** What the client is told on `initialize`. */
   instructions: string
