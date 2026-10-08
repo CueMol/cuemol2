@@ -68,3 +68,121 @@
   animation: status-spin 0.9s linear infinite;
   transform-origin: 50% 50%;
 }
+
+/* --- A status bar item that opens a popover (a plugin's: MCP, Console) ---
+   .status-button is the item, coloured by its state (--off / --starting /
+   --idle / --running / --error); .status-pop* lay out its popover as a header
+   with an on/off switch and label / value sections. */
+
+.status-button {
+  height: 20px;
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* No focus ring and no highlight while the popover is open: a box around the
+   label overflowed the bar's height. Hover only tints the background (below). */
+.status-button:focus,
+.status-button:focus-visible {
+  outline: none;
+}
+
+/* The label keeps its state colour; hover lightens the background behind it
+   toward the bar's own (white) text, inside the bar's height. */
+.status-button {
+  color: var(--status-state-color);
+}
+
+.status-button:hover {
+  background: color-mix(in srgb, var(--statusbar-bg) 75%, var(--statusbar-text));
+}
+
+.status-button--off {
+  --status-state-color: var(--text-muted);
+}
+
+.status-button--idle {
+  --status-state-color: var(--accent-green);
+}
+
+.status-button--running,
+.status-button--starting {
+  --status-state-color: var(--accent-yellow);
+}
+
+.status-button--error {
+  --status-state-color: var(--text-error);
+}
+
+/* --- Popover --- */
+
+.status-pop {
+  width: 320px;
+  padding: var(--space-2) var(--space-5);
+}
+
+.status-pop-header,
+.status-pop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.status-pop-header {
+  padding: var(--space-3) 0;
+}
+
+.status-pop-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.status-pop-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.status-pop-value,
+.status-pop-detail {
+  color: var(--text-secondary);
+}
+
+.status-pop-value--idle {
+  color: var(--accent-green);
+}
+
+.status-pop-value--running,
+.status-pop-value--starting {
+  color: var(--accent-yellow);
+}
+
+.status-pop-value--error {
+  color: var(--text-error);
+}
+
+.status-pop-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.status-pop-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.status-pop-link:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+

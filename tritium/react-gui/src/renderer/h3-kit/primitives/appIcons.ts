@@ -163,6 +163,7 @@ export const APP_ICONS = {
   "ui.refresh": { lib: "phosphor", Comp: ArrowClockwise },
   "ui.statusDot": { lib: "phosphor", Comp: Circle, weight: "fill" },
   "status.mcp": { lib: "phosphor", Comp: PlugsConnected },
+  "status.cli": { lib: "phosphor", Comp: TerminalWindow },
   "ui.properties": { lib: "phosphor", Comp: SlidersHorizontal },
   "ui.menu": { lib: "phosphor", Comp: List },
   "ui.close": { lib: "phosphor", Comp: X },

@@ -19,6 +19,7 @@ export const consoleManifest: PluginManifest = {
   // cannot turn a plugin on.
   defaultEnabled: true,
   contributes: {
+    statusBar: [{ id: 'cli' }],
     settings: [
       {
         key: REMOTE_ACCESS_PREF,
