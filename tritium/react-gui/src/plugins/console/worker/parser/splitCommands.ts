@@ -115,3 +115,13 @@ export function splitCommands(text: string): SplitCommand[] {
   }
   return out
 }
+
+/**
+ * Commands back as text that `splitCommands` reads as the same commands:
+ * the prefixes restored, one per line.
+ */
+export function joinCommands(commands: readonly SplitCommand[]): string {
+  return commands
+    .map((c) => `${c.quiet ? '_ ' : ''}${c.python ? '/' : ''}${c.script ? '@' : ''}${c.text}`)
+    .join('\n')
+}

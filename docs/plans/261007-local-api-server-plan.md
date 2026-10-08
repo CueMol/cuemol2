@@ -1,5 +1,7 @@
 # Local API server: MCP と console CLI から CueMol を操作する
 
+> 261008: thin client は `tritium_cli` に改名し、配布物に同梱した ([261008](261008-tritium-cli-distribution-plan.md))。以下の `cuemol-console` はその前の名前。
+
 Status: **実装済み** (PR 1: server + MCP #656、PR 2: console endpoint + CLI)。
 実装後の仕様は [local API server](../architecture/local-api-server.md)。
 

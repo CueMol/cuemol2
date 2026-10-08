@@ -77,10 +77,10 @@ describe('built-in plugins', () => {
     // switch only decides whether the menu row and the tab are there.
     expect(byId.mdtools?.alwaysEnabled).toBeUndefined()
     expect(byId.mdtools?.defaultEnabled).toBe(false)
-    // The PyMOL console understands part of the language, and only helps
-    // someone who already knows it.
+    // The console is on so that tritium_cli works out of the box (a launch
+    // from the command line opens its endpoint but cannot turn it on).
     expect(byId.console?.alwaysEnabled).toBeUndefined()
-    expect(byId.console?.defaultEnabled).toBe(false)
+    expect(byId.console?.defaultEnabled).toBe(true)
   })
 
   it('use an id at most once', () => {

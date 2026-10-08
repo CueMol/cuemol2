@@ -121,6 +121,8 @@ files:
 #           ...
 #         bin/
 #           blendpng
+#       cli/
+#         tritium_cli.mjs, tritium_cli   (tritium_cli.cmd on Windows)
 #       bundle_apps/
 #         povray/bin/povray, povray/include/
 #         apbs/{apbs,pdb2pqr,dat/}   (staged for uxp parity; not yet wired)
@@ -141,6 +143,13 @@ extraResources:
     to: bundle_apps
     filter:
       - "**/*"
+  # tritium_cli (console command line) -> Resources/cli/tritium_cli.mjs. The
+  # command that runs it (cli/tritium_cli, or tritium_cli.cmd on Windows) is
+  # written by the afterPack hook (build/cliWrapper.js): it runs the script in
+  # this app's executable with ELECTRON_RUN_AS_NODE, so the RunAsNode fuse must
+  # stay on (no fuses are set).
+  - from: tools/tritium_cli.mjs
+    to: cli/tritium_cli.mjs
 
 mac:
   # arm64 DMG only (matches host build of libcuemol2.dylib)
@@ -375,3 +384,13 @@ linux:
     - ext: omap
       mimeType: application/x-brix-map
       description: BRIX Density Map
+
+# deb install scripts: the stock after-install / after-remove
+# (app-builder-lib templates/linux) plus a /usr/bin/tritium_cli link to the
+# command in resources/cli. Templates like the stock ones (${executable},
+# ${sanitizedProductName} are filled in), so keep them in step with the stock
+# ones when electron-builder is upgraded. The AppImage has no install step,
+# and its resources move each run, so it gets no link.
+deb:
+  afterInstall: build/linux/after-install.tpl
+  afterRemove: build/linux/after-remove.tpl

@@ -18,7 +18,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ArgMode } from '../parser/parseArgs'
 import type { ParamSpec } from '../parser/bindArgs'
 import type { SplitCommand } from '../parser/splitCommands'
-import type { DialectId } from '../../shared/consoleTypes'
+import type { DialectId, SceneRequest } from '../../shared/consoleTypes'
 
 export type { ParamSpec } from '../parser/bindArgs'
 export type { ArgMode } from '../parser/parseArgs'
@@ -60,6 +60,12 @@ export interface CmdContext {
    * File > Open does.
    */
   openScene(filePath: string): void
+  /**
+   * Hand a scene command to the panel and end the submission here; what
+   * follows is sent back for the panel to submit once the scene command is
+   * done. False inside a script, which cannot be split that way.
+   */
+  requestScene(req: SceneRequest): boolean
 }
 
 /** A command either did its job or has a reason it could not. */

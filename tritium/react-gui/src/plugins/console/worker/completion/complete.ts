@@ -29,7 +29,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ConsoleEntry } from '../../shared/consoleTypes'
 import { interpretShortcut } from '../parser/shortcut'
 import { resolvePath } from '../runtime/paths'
-import type { ConsoleDialect, SourceContext } from '../runtime/types'
+import type { ConsoleDialect } from '../runtime/types'
 import { commonPrefix, formatColumns } from './columns'
 
 /** What Tab produced. */
@@ -206,14 +206,26 @@ export function completeLine(
     const index = (line.replace(LIST_RE, '').match(/,/g) ?? []).length
     const entry = spec?.completions?.[index] ?? null
     if (spec && entry) {
-      const pattern = line.replace(/.*[, ]/, '')
-      const sc: SourceContext = {
-        sceneId: cc.sceneId,
-        viewId: cc.viewId,
-        argsSoFar: argumentsBefore(line, index),
-        pattern,
+      const argsSoFar = argumentsBefore(line, index)
+      const ask = (pattern: string) =>
+        cc.dialect.candidates(entry.source, ctx, { sceneId: cc.sceneId, viewId: cc.viewId, argsSoFar, pattern })
+      // PyMOL completes the last word only, which cannot reach a name with a
+      // space in it ("my scene"). So the whole argument goes first, and the
+      // last word (a selection expression's) only when nothing starts with it.
+      const lastWord = line.replace(/.*[, ]/, '')
+      const whole = (index === 0 ? line.replace(/^[^ ]* /, '') : line.replace(/.*,/, '')).replace(/^\s+/, '')
+      let pattern = lastWord
+      let pre = rebuildPrefix(line, resolved.name)
+      let candidates: string[] | null = null
+      if (whole !== lastWord) {
+        const found = ask(whole)
+        if (found?.some((c) => c.startsWith(whole))) {
+          pattern = whole
+          pre = `${resolved.name} ${argsSoFar.map((a) => `${a}, `).join('')}`
+          candidates = found
+        }
       }
-      const candidates = cc.dialect.candidates(entry.source, ctx, sc)
+      candidates ??= ask(pattern)
       if (candidates !== null) {
         const result = completeAgainst(
           pattern,
@@ -224,7 +236,7 @@ export function completeLine(
           false,
         )
         return {
-          replacement: result === null ? null : rebuildPrefix(line, resolved.name) + result,
+          replacement: result === null ? null : pre + result,
           messages,
         }
       }

@@ -183,6 +183,8 @@ export interface RendererPlugin {
   bottomTabs?: Record<string, BottomTabComponent>
   /** Status bar components, keyed by the id declared in `contributes.statusBar`. */
   statusBarItems?: Record<string, React.ComponentType>
+  /** Controls of `custom` settings rows, keyed by the setting's key. */
+  settingRows?: Record<string, React.ComponentType>
 }
 
 // ------------------------------------------------------------

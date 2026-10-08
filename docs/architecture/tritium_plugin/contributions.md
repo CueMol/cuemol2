@@ -242,6 +242,7 @@ interface PluginSettingDecl {
 | `text` | 自由入力 (1 行)。keystroke ごとに保存される |
 | `combo` | 自由入力 + 候補ドロップダウン。`options: { value, label? }[]`。**選択肢が閉じていない**とき (label は「その候補が何なのか」を書く) |
 | `secret` | API キー等。**値は設定ファイルに入らない** (下記) |
+| `custom` | 値を持たない、plugin が描く行。component は `RendererPlugin.settingRows[key]` に置く (無ければ `definePlugin` がエラー)。`default` は不要。例: console の「Command line tool」行 (`CliPathRow`) |
 
 宣言すると **Settings > Plugins の下に plugin 名の leaf** が生え、そこに行が並ぶ。
 その leaf は **plugin が有効な間だけ**出る (無効な plugin の寄与は収集されないため)。

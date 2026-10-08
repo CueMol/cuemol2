@@ -170,6 +170,9 @@ export const IPC = {
   LOCAL_API_REPLY:   'local-api:reply',   // invoke: main window -> main
   LOCAL_API_CONTROL: 'local-api:control', // invoke: main window -> main (endpoint on/off, token, port)
   LOCAL_API_STATUS:  'local-api:status',  // invoke: main window -> main
+  // Launched by tritium_cli: open command line access for this run of the app.
+  LOCAL_API_CLI_ACCESS:        'local-api:cli-access',         // invoke: main window -> main
+  LOCAL_API_CLI_ACCESS_GRANTED: 'local-api:cli-access-granted', // push:   main -> main window
 
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',

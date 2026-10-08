@@ -143,6 +143,8 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
             label={label}
           />
         )
+      case 'custom':
+        return <control.Component />
       default:
         return null
     }

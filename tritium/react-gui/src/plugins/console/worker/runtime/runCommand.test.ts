@@ -91,7 +91,18 @@ const chdir: PymCommand = {
   },
 }
 
-const STUBS = [mutating, readOnly, failing, downloading, outside, chdir]
+/** Stands for `new_scene`: hands a scene request to the panel. */
+const sceneCmd: PymCommand = {
+  name: 'newscene',
+  params: [],
+  mode: 'strict',
+  mutates: false,
+  summary: 'stub',
+  run: (_ctx, _args, cc) =>
+    cc.requestScene({ op: 'new', name: '' }) ? { ok: true } : { ok: false, error: 'Error: not in a script' },
+}
+
+const STUBS = [mutating, readOnly, failing, downloading, outside, chdir, sceneCmd]
 
 vi.mock('@renderer/worker/server/services/helpers/streamFetchToReader', () => ({
   cancelStream: vi.fn(() => true),
@@ -208,6 +219,26 @@ describe('runCommand', () => {
     expect(echoes).toHaveLength(2)
     // The first mutate already ran, so it is kept.
     expect(scene.undo.committed).toHaveLength(1)
+  })
+
+  it('stops at a scene command and hands back the rest, but not inside a script', async () => {
+    // The panel makes the scene, then submits the rest against it; what ran
+    // before is this scene's own transaction.
+    const { scene, ctx } = setup()
+    const res = await runCommand(ctx, {
+      dialect: 'pymol', sceneId: 1, viewId: 7, runId: 'r7', text: 'mutate; newscene; _ mutate; @x.pml',
+    })
+    expect(res.ok && !res.aborted).toBe(true)
+    expect(res.ok && res.sceneRequest).toEqual({ op: 'new', name: '' })
+    expect(res.ok && res.rest).toBe('_ mutate\n@x.pml')
+    expect(scene.undo.committed).toHaveLength(1)
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pymc-'))
+    const script = path.join(dir, 's.pml')
+    fs.writeFileSync(script, 'newscene\n')
+    const inScript = await runCommand(ctx, { dialect: 'pymol', sceneId: 1, viewId: 7, runId: 'r8', text: `@${script}` })
+    expect(inScript.ok && inScript.aborted).toBe(true)
+    expect(inScript.ok && inScript.sceneRequest).toBeUndefined()
   })
 
   it('runs an outside-transaction command alone with no transaction, and refuses it in a longer line', async () => {

@@ -91,7 +91,7 @@ defineOp({
 **runtime**: 1 submit = 1 txn (label は dialect の接頭辞 `cmd:` / `pym:`)、失敗で以降を中止、
 lone `undo` / `redo` と `outsideTxn` のコマンドは txn の外、script は最大 8 段のネスト、Stop で
 ダウンロードも中断。
-terminal からは thin client `cuemol-console` で同じ runtime を使える (作業ディレクトリは client 側。
+terminal からは thin client `tritium_cli` で同じ runtime を使える (作業ディレクトリは client 側。
 [local-api-server.md](local-api-server.md) §5)。
 
 **native dialect** (既定。prompt `CueMol>`):
@@ -105,11 +105,13 @@ terminal からは thin client `cuemol-console` で同じ runtime を使える (
   `ls_scene`、`delete` / `rename` / `retype`、`ray` (ray tracing / GI。Stop で中断)、
   `save` / `write`、`save_view` / `restore_view` / `cameras`、`projection` / `pan` / `focus`、
   `contour`、`surface`、`define`、`style`。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
-  `log` / `undo` / `redo` / `help`。script の拡張子は `.cml`。
+  `log` / `undo` / `redo` / `help`、scene (タブ) の `scenes` / `new_scene` / `switch_scene` /
+  `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
 - 補完は param の意味型から: enum 値、object / renderer / node 名、名前付き selection、色、
   renderer type (前の object 引数から)、property path (階層ごと)、property 値 (enum / boolean)。
-  path 以外の自由文字列はファイル名に fall back しない。
+  path 以外の自由文字列はファイル名に fall back しない。補完対象はまず引数全体 (スペースを含む
+  名前に届くように) で、それで始まる候補が無いときだけ PyMOL どおり最後の単語にする。
 
 **PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
 (CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる。

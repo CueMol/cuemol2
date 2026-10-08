@@ -118,6 +118,7 @@ export interface InvokeChannels {
   [IPC.LOCAL_API_REPLY]:   { req: LocalApiReplyPayload; res: void }
   [IPC.LOCAL_API_CONTROL]: { req: LocalApiControlReq;   res: LocalApiStatus }
   [IPC.LOCAL_API_STATUS]:  { req: void;                 res: LocalApiStatus }
+  [IPC.LOCAL_API_CLI_ACCESS]: { req: void;              res: boolean }
   /**
    * Archive a finished render's PNG under its result id (main window -> main).
    * `workDir` is the job's temp directory when it is one the app should clean
@@ -213,6 +214,7 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_EDIT_PUSH]:  RenderWindowEditAction
   [IPC.RENDER_RELAY_REQUEST]:     RelayRequestPayload
   [IPC.LOCAL_API_REQUEST]:        LocalApiRequestPayload
+  [IPC.LOCAL_API_CLI_ACCESS_GRANTED]: void
 }
 
 export type InvokeChannel = keyof InvokeChannels

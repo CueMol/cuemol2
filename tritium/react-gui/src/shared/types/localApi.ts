@@ -65,10 +65,19 @@ export interface LocalApiInfoFile {
   endpoints: LocalApiEndpoint[]
 }
 
+/**
+ * The argument `tritium_cli` launches the app with (the client has its own
+ * copy). An app started with it, or a running app whose second instance is,
+ * opens the console endpoint for the rest of its run whatever the
+ * Command line access setting says: the user asked for it by running the
+ * command, and the setting itself is left alone.
+ */
+export const TRITIUM_CLI_FLAG = '--tritium-cli'
+
 /** The port used until one is chosen. */
 export const DEFAULT_LOCAL_API_PORT = 27182
 
-// --- The console endpoint's wire format (also read by tools/cuemol-console.mjs) ---
+// --- The console endpoint's wire format (also read by tools/tritium_cli.mjs) ---
 
 export type ConsoleDialectId = 'native' | 'pymol'
 
@@ -109,4 +118,11 @@ export interface ConsoleCompleteResponse {
   replacement: string | null
   /** A candidate list to print, or the line saying there was nothing. */
   messages: ConsoleWireEntry[]
+}
+
+/** `POST /console/info` (empty body): what the client shows in its banner. */
+export interface ConsoleInfoResponse {
+  /** libcuemol2's version and build, as in About. */
+  version: string
+  build: string
 }

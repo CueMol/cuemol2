@@ -60,6 +60,27 @@ export function useLocalApiStatus(): LocalApiStatus | null {
 }
 
 /**
+ * Whether tritium_cli launched this run of the app (TRITIUM_CLI_FLAG), which
+ * asks for the console endpoint to be open whatever its setting says. Once
+ * true it stays true.
+ */
+export function useCliAccessGranted(): boolean {
+  const [granted, setGranted] = useState(false)
+  useEffect(() => {
+    const api = window.electronAPI
+    if (!api) return
+    let live = true
+    const off = api.onPush(IPC.LOCAL_API_CLI_ACCESS_GRANTED, () => { if (live) setGranted(true) })
+    void api.invoke(IPC.LOCAL_API_CLI_ACCESS).then((g) => { if (live && g) setGranted(true) })
+    return () => {
+      live = false
+      off()
+    }
+  }, [])
+  return granted
+}
+
+/**
  * Own `endpoint` while mounted and `enabled`.
  *
  * @param handlers - read through a ref, so a new object each render neither

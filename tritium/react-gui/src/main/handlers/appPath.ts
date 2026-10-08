@@ -90,6 +90,23 @@ export function getApbsBinaries(): AppPathInfo['defaultApbsBinaries'] {
   }
 }
 
+/**
+ * The tritium_cli command to show the user (Settings > Plugins > Console).
+ *
+ * - Packaged: the wrapper staged by electron-builder.yml extraResources into
+ *   `<resources>/cli`, which runs `tritium_cli.mjs` in this app's executable.
+ *   Empty for an AppImage, whose resources are a mount that moves each run.
+ * - Dev: the script in the repo, run with `node`.
+ */
+export function getCliPath(): string {
+  if (app.isPackaged) {
+    if (process.env.APPIMAGE) return ''
+    const name = process.platform === 'win32' ? 'tritium_cli.cmd' : 'tritium_cli'
+    return path.join(process.resourcesPath, 'cli', name)
+  }
+  return path.join(app.getAppPath(), 'tools', 'tritium_cli.mjs')
+}
+
 /** Register the app-path channel. */
 export function registerAppPathHandlers(): void {
   handleInvoke(IPC.APP_PATH, async () => {
@@ -110,6 +127,7 @@ export function registerAppPathHandlers(): void {
       userStyleExists,
       defaultRenderBinaries: getRenderBinaries(),
       defaultApbsBinaries: getApbsBinaries(),
+      cliPath: getCliPath(),
     }
   })
 }

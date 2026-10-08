@@ -13,7 +13,7 @@ import { clearRenderHistory, sweepStaleRenderHistory } from './renderHistory'
 import { sweepMovieOutputs } from './movieOutput'
 import { APP_ID, APP_PRODUCT_NAME } from '@shared/appInfo'
 import { installMainCrashHandlers } from './installMainCrashHandlers'
-import { stopLocalApi } from './localApi'
+import { noteCliLaunch, stopLocalApi } from './localApi'
 
 // Before anything else, so a throw during the setup below is still reported
 // to the terminal and a closed stdout pipe cannot masquerade as a crash.
@@ -110,6 +110,7 @@ if (gotSingleInstanceLock) {
   // app. UXP cuemol2-cmdline.js parity: raise the running window and open into
   // it, never create a second one.
   app.on('second-instance', (_event, argv, workingDirectory) => {
+    noteCliLaunch(argv)
     focusMainWindow()
     // Pull the app forward from whichever app the user launched us from.
     if (process.platform === 'darwin') app.focus({ steal: true })
@@ -117,6 +118,8 @@ if (gotSingleInstanceLock) {
       parseFileArgs({ argv, isPackaged: app.isPackaged, cwd: workingDirectory }),
     )
   })
+
+  noteCliLaunch(process.argv)
 
   // Command-line file arguments. Read at module scope: the queue tolerates
   // being filled before any window exists.

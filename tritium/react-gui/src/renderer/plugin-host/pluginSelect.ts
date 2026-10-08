@@ -118,10 +118,17 @@ export function collectContributions(active: readonly RendererPlugin[]): PluginC
     for (const setting of contributes.settings ?? []) {
       // A secret names no namespace in the manifest: it is filled in here
       // with the plugin's own id, so a plugin cannot address another's.
-      const control: SettingControl =
-        setting.control.kind === 'secret'
-          ? { ...setting.control, namespace: pluginId }
-          : setting.control
+      // A custom row's control is the plugin's component.
+      let control: SettingControl
+      if (setting.control.kind === 'secret') {
+        control = { ...setting.control, namespace: pluginId }
+      } else if (setting.control.kind === 'custom') {
+        const Component = plugin.settingRows?.[setting.key]
+        if (!Component) continue
+        control = { kind: 'custom', Component }
+      } else {
+        control = setting.control
+      }
       out.settings.push({ ...setting, control, pluginId, pluginName })
     }
   }

@@ -241,5 +241,6 @@ architecture, it belongs here.
   plugin が `useLocalApiEndpoint` で開閉)。MCP endpoint (Streamable HTTP、stateless) で op
   catalog を tool として公開し、1 call = 1 undo txn、agent / console と `txnBusy()` で排他。
   status bar のアイコンと popover、client ごとの接続設定 dialog、接続情報ファイル
-  `~/.cuemol/local-api.json`。console endpoint と terminal の thin client `cuemol-console`
-  (native / PyMOL dialect、client が作業ディレクトリを持つ)。
+  `~/.cuemol/local-api.json`。console endpoint と terminal の thin client `tritium_cli`
+  (native / PyMOL dialect、client が作業ディレクトリを持つ。配布物に同梱し、app が動いていなければ
+  起動して接続する)。console の scene コマンド (`scenes` / `new_scene` / `switch_scene` / `close_scene`)。

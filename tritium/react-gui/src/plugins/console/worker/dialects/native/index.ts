@@ -99,6 +99,16 @@ const NATIVE_COMMANDS: readonly ConsoleCommand[] = [
   help,
 ].sort((a, b) => a.name.localeCompare(b.name))
 
+/** The names of the open scenes, for the scene commands. */
+function sceneNames(ctx: WorkerContext): string[] {
+  const out: string[] = []
+  for (const uid of ctx.sceMgr.getSceneUIDList().split(',')) {
+    const scene = uid.trim() === '' ? null : getSceneOrNull(ctx, Number(uid))
+    if (scene?.name) out.push(scene.name)
+  }
+  return [...new Set(out)]
+}
+
 /** Colour names the scene and the application define. */
 function colorNames(ctx: WorkerContext, sceneId: number): string[] {
   const out: string[] = []
@@ -174,6 +184,7 @@ function propPathCandidates(ctx: WorkerContext, sc: SourceContext): string[] {
 function candidates(id: string, ctx: WorkerContext, sc: SourceContext): string[] | null {
   if (id === 'commands') return NATIVE_COMMANDS.map((c) => c.name)
   if (id === 'none') return []
+  if (id === 'scenes') return sceneNames(ctx)
   if (id.startsWith('enum:')) return id.slice('enum:'.length).split('|')
 
   const hasScene = sc.sceneId > 0 && getSceneOrNull(ctx, sc.sceneId) !== null

@@ -21,8 +21,11 @@ export const CONSOLE_PLUGIN_ID = 'console'
 /** The plugin preference holding the dialect the panel speaks. */
 export const DIALECT_PREF = 'dialect'
 
-/** The plugin preference that opens the endpoint `cuemol-console` talks to. */
+/** The plugin preference that opens the endpoint `tritium_cli` talks to. */
 export const REMOTE_ACCESS_PREF = 'remoteAccess'
+
+/** The Settings row (custom, nothing stored) that shows where tritium_cli is. */
+export const CLI_PATH_ROW = 'cliPath'
 
 /** The dialect a fresh panel speaks. */
 export const DEFAULT_DIALECT: DialectId = 'native'
@@ -61,6 +64,22 @@ export interface CancelRunArgs {
   runId: string
 }
 
+/**
+ * A scene command (`scenes`, `new_scene`, `switch_scene`, `close_scene`).
+ *
+ * Scenes are tabs, and the worker cannot see or make a tab, so the worker
+ * only parses one and hands it back; the panel does it and then sends the
+ * rest of the submission (`RunCommandOutcome.rest`), which so runs against
+ * whatever scene is active by then.
+ */
+export type SceneRequest =
+  | { op: 'list' }
+  | { op: 'new'; name: string }
+  /** `scene`: a list number, `#uid` or a name. */
+  | { op: 'switch'; scene: string }
+  /** `scene` as for switch; empty is the active scene. */
+  | { op: 'close'; scene: string; force: boolean }
+
 export interface RunCommandOutcome {
   /** The lines to append, in order. */
   entries: ConsoleEntry[]
@@ -75,6 +94,13 @@ export interface RunCommandOutcome {
    * scene when it is new and empty, otherwise in a new tab.
    */
   openScene?: string
+  /** A scene command the run stopped at, for the panel to do. */
+  sceneRequest?: SceneRequest
+  /**
+   * What followed the scene command, to submit once it is done (empty when
+   * nothing did). The scene command itself has been echoed and logged.
+   */
+  rest?: string
   /** Where `cd` left the directory, when the caller passed `cwd`. */
   cwd?: string
 }

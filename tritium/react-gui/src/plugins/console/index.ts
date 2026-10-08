@@ -26,7 +26,9 @@
 import { definePlugin } from '@renderer/plugin-host/api'
 import { consoleManifest } from './manifest'
 import { ConsolePanel } from './renderer/ConsolePanel'
+import { CliPathRow } from './renderer/CliPathRow'
 import { ConsoleRoot } from './renderer/ConsoleRoot'
+import { CLI_PATH_ROW } from './shared/consoleTypes'
 import './renderer/console.css'
 
 export const consolePlugin = /* @__PURE__ */ definePlugin({
@@ -34,5 +36,8 @@ export const consolePlugin = /* @__PURE__ */ definePlugin({
   Root: ConsoleRoot,
   bottomTabs: {
     console: ConsolePanel,
+  },
+  settingRows: {
+    [CLI_PATH_ROW]: CliPathRow,
   },
 })

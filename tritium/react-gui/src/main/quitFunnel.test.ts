@@ -188,7 +188,7 @@ vi.mock('@main/menu', () => ({
 }))
 vi.mock('@main/textContextMenu', () => ({ registerTextContextMenu: vi.fn() }))
 // The local API reads its token from the secret store, which is not modelled here.
-vi.mock('@main/localApi', () => ({ registerLocalApiHandlers: vi.fn(), stopLocalApi: vi.fn(), localApiInfoFile: vi.fn() }))
+vi.mock('@main/localApi', () => ({ registerLocalApiHandlers: vi.fn(), stopLocalApi: vi.fn(), localApiInfoFile: vi.fn(), noteCliLaunch: vi.fn() }))
 vi.mock('@main/recentFiles', () => ({
   addRecent: vi.fn(() => []),
   clearRecents: vi.fn(() => []),

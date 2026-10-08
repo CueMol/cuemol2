@@ -7,7 +7,7 @@
  */
 
 import type { PluginManifest } from '@renderer/plugin-host/api'
-import { CONSOLE_PLUGIN_ID, REMOTE_ACCESS_PREF } from './shared/consoleTypes'
+import { CLI_PATH_ROW, CONSOLE_PLUGIN_ID, REMOTE_ACCESS_PREF } from './shared/consoleTypes'
 
 export const consoleManifest: PluginManifest = {
   id: CONSOLE_PLUGIN_ID,
@@ -15,20 +15,28 @@ export const consoleManifest: PluginManifest = {
   version: '1.0.0',
   description:
     'Experimental. A command line for CueMol, with a PyMOL-compatible dialect.',
-  // Off by default: the command coverage is still growing, and the tab is of
-  // no use to anyone who would rather work from the menus.
-  defaultEnabled: false,
+  // On by default: tritium_cli needs it, and a launch from the command line
+  // cannot turn a plugin on.
+  defaultEnabled: true,
   contributes: {
     settings: [
       {
         key: REMOTE_ACCESS_PREF,
         label: 'Command line access',
         description:
-          'Let the cuemol-console command line run commands in this window, against the ' +
+          'Let the tritium_cli command line run commands in this window, against the ' +
           'active tab. It uses the local server the MCP plugin also uses, and finds the port ' +
-          'and token in ~/.cuemol/local-api.json.',
+          'and token in ~/.cuemol/local-api.json. A CueMol3 started by tritium_cli allows it ' +
+          'for that run without changing this setting.',
         control: { kind: 'toggle' },
         default: false,
+      },
+      {
+        key: CLI_PATH_ROW,
+        label: 'Command line tool',
+        description:
+          'tritium_cli runs console commands from a terminal, starting CueMol3 if it is not running.',
+        control: { kind: 'custom' },
       },
     ],
     bottomTabs: [
