@@ -38,7 +38,7 @@ export const calcElepot = defineOp({
     nonLinear: optional(boolean('Solve the non-linear Poisson-Boltzmann equation. Null is false (linear).')),
   },
   mutates: true,
-  expose: { tool: false, console: true },
+  expose: { tool: false, console: true, mcp: true },
   async run(ctx, args, oc) {
     const defaults = apbsDefaults()
     const started = calcApbsStart(ctx, {

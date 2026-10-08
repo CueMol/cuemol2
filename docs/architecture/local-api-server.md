@@ -78,7 +78,8 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
 ### tool と 1 call の扱い (`plugins/mcp/worker/mcp.service.ts`)
 
 - 公開するのは `expose.tool !== false` の op 全部 (core + 全 toolset) と、`expose.mcp: true` の op
-  (agent には出さない MCP 専用。今は `save_scene`)。MCP client は全 server の tool を一覧して自分で
+  (agent には出さない MCP 専用。`save_scene`、Tools 系の `calc_elepot` / `cut_surface` / `morph_*`、
+  アニメーション編集の `anim_*`)。MCP client は全 server の tool を一覧して自分で
   選ぶので、agent の `enable_toolsets` の段階は無い。
 - 1 call = 1 undo transaction (label `MCP: <tool 名>`)。Cmd+Z 1 回で 1 call が戻る。
   何も変えなかった call は rollback (空 commit で redo を消さないため)。

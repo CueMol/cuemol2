@@ -95,9 +95,11 @@ export interface OpExposure {
   /** Generated as a console command. */
   console: boolean
   /**
-   * Offered to MCP clients although `tool` is false: an op that has to run
-   * outside an undo transaction (`outsideTxn`), which an agent turn -- one
-   * transaction for the whole turn -- cannot give it, while an MCP call can.
+   * Offered to MCP clients although `tool` is false. For an op that has to
+   * run outside an undo transaction (`outsideTxn`), which an agent turn --
+   * one transaction for the whole turn -- cannot give it; and for the
+   * console's Tools-menu and animation commands, which an MCP client lists
+   * and picks from itself, while the agent's short tool list leaves them out.
    */
   mcp?: boolean
 }

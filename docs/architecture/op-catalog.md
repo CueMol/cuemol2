@@ -82,8 +82,9 @@ defineOp({
 ## 4.1 MCP への公開
 
 - `expose.tool !== false` の op を全て MCP の tool として公開する (toolset の段階なし)。
-  `expose.mcp: true` は agent には出さず MCP にだけ出す (`outsideTxn` の op。agent の turn は全体が
-  1 txn なので実行できない)。
+  `expose.mcp: true` は agent には出さず MCP にだけ出す: `outsideTxn` の op (agent の turn は全体が
+  1 txn なので実行できない) と、console で使える Tools 系・アニメーション編集の op (agent の tool 一覧は
+  短く保つが、MCP client は自分で選ぶ)。
   1 call = 1 undo txn (`MCP: <name>`)、`fileAccess: 'any'`。
 - agent の turn・console の submit・MCP の call は `txnBusy()` で排他し、busy なら待たずに断る。
 - 詳細は [local-api-server.md](local-api-server.md)。
@@ -109,7 +110,7 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   `save` / `write`、`save_view` / `restore_view` / `cameras`、`projection` / `pan` / `focus`、
   `contour`、`surface`、`define`、`style`、Tools メニューの dialog に当たる
   `calc_elepot`・`cut_surface`・`morph_frames` / `morph_add` / `morph_remove`
-  (この 5 つは console 専用、`tool: false`)。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
+  (console と MCP、agent には出さない: `tool: false, mcp: true`)、アニメーション編集の `anim_*` (同じ)。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
   `log` / `undo` / `redo` / `help`、scene (タブ) の `scenes` / `new_scene` / `switch_scene` /
   `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
@@ -136,7 +137,7 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   ([260926 計画](../plans/260926-mcp-tool-catalog-plan.md) の D4 以降、
   [261006 計画](../plans/261006-native-console-op-catalog-plan.md) の「将来」)。
 
-### console 専用の Tools 系 op (`ops/apbsOps.ts`, `ops/toolOps.ts`)
+### Tools 系の op (`ops/apbsOps.ts`, `ops/toolOps.ts`。console と MCP)
 
 - `calc_elepot`: APBS の job (pdb2pqr -> apbs、外部プロセス) を dialog と同じ service で
   起動し、終わるまで待つ (`waitForApbsJob`、Stop で kill)。実行ファイルのパスと既定の force field は
@@ -147,3 +148,21 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   または scene の分子から。普通の分子は先に MorphMol に変換され uid が変わる)・削除。再生の設定は
   Animation panel。
 - `set_secondary_structure` は再計算に dialog の `ignoreBulge` / `helixGapAngle` も取る。
+
+### アニメーション編集の op (`ops/animOps.ts`。console と MCP)
+
+Animation panel と element inspector が使う service をそのまま呼ぶので、undo の単位も panel と同じ。
+再生・停止・時刻移動は既存の `animate`。
+
+- `anim_list`: 長さ・再生状態・loop・開始カメラと、要素ごとの番号 (1 から)・名前・型・`#uid`・
+  絶対時刻 (相対時刻と追従先)。時刻の参照が解決しないときはその理由。
+- `anim_add type [, name] [, before]`: `spin` / `camera` / `show` / `hide` / `slidein` / `slideout` /
+  `mol` / `wait`。直前の要素に追従する (panel の追加と同じ)。
+- `anim_remove` / `anim_move element, to` / `anim_time element, startMs, endMs` (追従先からの相対 ms)。
+- `anim_set element, prop, value`: inspector で書ける property (`name`、`timeRefName`、`disabled`、
+  `quadric`、`angle`、`axis` (`"0 1 0"`)、`endcam`、`ignore*`、`rend`、`hide`、`fade`、`tgtAlpha`、
+  `direction`、`distance`、`mol`、`startValue`、`endValue`)。値は property の型に変換する。
+- `anim_options [loop] [, startCamera]`。
+- 要素は `anim_list` の番号、`#uid`、名前で指定する (同名が複数なら番号か uid を求める)。
+  `morph_frames` などの番号も同じく 1 から。
+- 追加できない型 (`RealPropAnim` / `RendXformAnim`、ファイル由来) の generic property は未対応。

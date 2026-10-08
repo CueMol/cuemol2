@@ -36,7 +36,7 @@ export const cutSurface = defineOp({
     density: optional(real(`Cross-section mesh density per angstrom. Null uses ${CUT_DENSITY}.`)),
   },
   mutates: true,
-  expose: { tool: false, console: true },
+  expose: { tool: false, console: true, mcp: true },
   run(ctx, args, oc) {
     return normalizeServiceResult(
       cutSurfByPlane(ctx, {
@@ -51,9 +51,9 @@ export const cutSurface = defineOp({
   },
 })
 
-/** A frame list as lines: index, name, where it came from. */
+/** A frame list as lines: number (from 1), name, where it came from. */
 function frameLines(frames: readonly MorphFrameInfo[]): string[] {
-  return frames.map((f, i) => `${i}  ${f.isThis ? '(this)' : f.name}${f.src ? `  ${f.src}` : ''}`)
+  return frames.map((f, i) => `${i + 1}  ${f.isThis ? '(this)' : f.name}${f.src ? `  ${f.src}` : ''}`)
 }
 
 export const morphFrames = defineOp({
@@ -61,7 +61,7 @@ export const morphFrames = defineOp({
   description: 'List the frames of a morphing molecule (made by morph_add), in order.',
   params: { molId: moleculeId('Uid of the molecule.') },
   mutates: false,
-  expose: { tool: false, console: true },
+  expose: { tool: false, console: true, mcp: true },
   format: (data) => frameLines((data as { frames: MorphFrameInfo[] }).frames),
   run(ctx, args, oc) {
     const res = getMorphFrames(ctx, { sceneId: oc.sceneId, objId: args.molId })
@@ -82,10 +82,10 @@ export const morphAdd = defineOp({
     molId: moleculeId('Uid of the molecule to morph.'),
     file: optional(path('PDB file (.pdb, .ent, optionally .gz) to add. Null uses fromMolId.')),
     fromMolId: optional(moleculeId('Uid of a molecule whose coordinates to add. Null uses file.')),
-    before: optional(integer('Insert before this frame index (morph_frames). Null appends.')),
+    before: optional(integer('Insert before this frame, by its number in morph_frames (from 1). Null appends.')),
   },
   mutates: true,
-  expose: { tool: false, console: true },
+  expose: { tool: false, console: true, mcp: true },
   run(ctx, args, oc) {
     if ((args.file === null) === (args.fromMolId === null)) {
       return { ok: false, error: 'Give either a file or fromMolId.' }
@@ -100,7 +100,7 @@ export const morphAdd = defineOp({
       }
       objId = conv.morphObjId
     }
-    const insertIndex = args.before ?? -1
+    const insertIndex = args.before === null ? -1 : args.before - 1
     const added = args.file !== null
       ? addMorphFrameFromFile(ctx, { sceneId: oc.sceneId, objId, path: args.file, insertIndex })
       : addMorphFrameFromMol(ctx, { sceneId: oc.sceneId, objId, srcObjId: args.fromMolId as number, insertIndex })
@@ -112,16 +112,16 @@ export const morphAdd = defineOp({
 
 export const morphRemove = defineOp({
   name: 'morph_remove',
-  description: 'Remove one frame from a morphing molecule, by its index in morph_frames. The base frame, (this), cannot be removed.',
+  description: 'Remove one frame from a morphing molecule, by its number in morph_frames (from 1). The base frame, (this), cannot be removed.',
   params: {
     molId: moleculeId('Uid of the morphing molecule.'),
-    frame: integer('Index of the frame (morph_frames).'),
+    frame: integer('The frame\'s number in morph_frames (from 1).'),
   },
   mutates: true,
-  expose: { tool: false, console: true },
+  expose: { tool: false, console: true, mcp: true },
   run(ctx, args, oc) {
     return normalizeServiceResult(
-      removeMorphFrame(ctx, { sceneId: oc.sceneId, objId: args.molId, frameIndex: args.frame }),
+      removeMorphFrame(ctx, { sceneId: oc.sceneId, objId: args.molId, frameIndex: args.frame - 1 }),
       'The frame could not be removed.',
     )
   },

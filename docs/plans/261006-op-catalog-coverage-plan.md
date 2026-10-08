@@ -1,6 +1,6 @@
 # op catalog の網羅: GUI の service を op にする
 
-Status: **実装済み** (アニメーション編集を除く。APBS・morph・surface cutter は後に console 専用 op として追加)。
+Status: **実装済み** (APBS・morph・surface cutter・アニメーション編集は後に console / MCP 用の op として追加)。
 フェーズ 1 で `delete_node` / `rename_node` / `change_renderer_type` を core に足し、
 `get_mol_residues` を `analysis`、`load_file` / `export_image` を `files`、`get_coloring_styles` を
 `coloring` へ移した。フェーズ 2 以降で toolset `view` / `map` / `molops` / `xtal` / `selection` /
@@ -8,7 +8,7 @@ Status: **実装済み** (アニメーション編集を除く。APBS・morph・
 [ai-agent-plugin.md](../architecture/ai-agent-plugin.md) §5)。書き込みは、agent はデスクトップへの
 bare 名のみ、console は任意のパス (`catalog/outputFile.ts`)。`render_image` (console `ray`) は
 umbreon の in-process job で ray tracing / GI を行い、PyMOL dialect の `ray` / `png` もこれを使う。
-未対応: アニメーションの編集 (再生・停止・時刻移動のみ op 化)、POV-Ray 出力。APBS (`calc_elepot`)・morph (`morph_*`)・surface cutter (`cutsurf`) は console 専用 op として追加した (`../architecture/op-catalog.md`)。
+未対応: POV-Ray 出力。APBS (`calc_elepot`)・morph (`morph_*`)・surface cutter (`cutsurf`) は console と MCP の op (agent には出さない) として追加した (`../architecture/op-catalog.md`)。アニメーションの編集 (`anim_*`) も同様。
 関連: [op catalog と console](../architecture/op-catalog.md)、
 [native console / op catalog 計画](261006-native-console-op-catalog-plan.md)。
 
