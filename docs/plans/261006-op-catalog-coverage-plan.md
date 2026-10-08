@@ -8,7 +8,7 @@ Status: **実装済み** (アニメーション編集を除く。APBS・morph・
 [ai-agent-plugin.md](../architecture/ai-agent-plugin.md) §5)。書き込みは、agent はデスクトップへの
 bare 名のみ、console は任意のパス (`catalog/outputFile.ts`)。`render_image` (console `ray`) は
 umbreon の in-process job で ray tracing / GI を行い、PyMOL dialect の `ray` / `png` もこれを使う。
-未対応: アニメーションの編集 (再生・停止・時刻移動のみ op 化)、POV-Ray 出力。APBS (`apbs`)・morph (`morph_*`)・surface cutter (`cutsurf`) は console 専用 op として追加した (`../architecture/op-catalog.md`)。
+未対応: アニメーションの編集 (再生・停止・時刻移動のみ op 化)、POV-Ray 出力。APBS (`calc_elepot`)・morph (`morph_*`)・surface cutter (`cutsurf`) は console 専用 op として追加した (`../architecture/op-catalog.md`)。
 関連: [op catalog と console](../architecture/op-catalog.md)、
 [native console / op catalog 計画](261006-native-console-op-catalog-plan.md)。
 

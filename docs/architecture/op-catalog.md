@@ -106,8 +106,8 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`png`、
   `ls_scene`、`delete` / `rename` / `retype`、`ray` (ray tracing / GI。Stop で中断)、
   `save` / `write`、`save_view` / `restore_view` / `cameras`、`projection` / `pan` / `focus`、
-  `contour`、`surface`、`define`、`style`、Tools メニューの dialog に当たる `apbs`
-  (`calc_elepot`)・`cutsurf` (`cut_surface`)・`morph_frames` / `morph_add` / `morph_remove`
+  `contour`、`surface`、`define`、`style`、Tools メニューの dialog に当たる
+  `calc_elepot`・`cutsurf` (`cut_surface`)・`morph_frames` / `morph_add` / `morph_remove`
   (この 5 つは console 専用、`tool: false`)。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
   `log` / `undo` / `redo` / `help`、scene (タブ) の `scenes` / `new_scene` / `switch_scene` /
   `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
@@ -137,7 +137,7 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 
 ### console 専用の Tools 系 op (`ops/apbsOps.ts`, `ops/toolOps.ts`)
 
-- `calc_elepot` (`apbs`): APBS の job (pdb2pqr -> apbs、外部プロセス) を dialog と同じ service で
+- `calc_elepot`: APBS の job (pdb2pqr -> apbs、外部プロセス) を dialog と同じ service で
   起動し、終わるまで待つ (`waitForApbsJob`、Stop で kill)。実行ファイルのパスと既定の force field は
   Settings の値を `ApbsConfigProvider` が worker に送っておいたもの (`setApbsDefaults`、
   `services/apbs/defaults.ts`)。他の値は dialog の既定 (温度 298.15、誘電率 78.54 / 2.0)。

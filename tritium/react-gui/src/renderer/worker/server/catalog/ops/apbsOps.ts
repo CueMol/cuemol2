@@ -39,7 +39,6 @@ export const calcElepot = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true },
-  verbs: [{ verb: 'apbs', summary: 'Electrostatic potential with APBS: apbs 1crn' }],
   async run(ctx, args, oc) {
     const defaults = apbsDefaults()
     const started = calcApbsStart(ctx, {
