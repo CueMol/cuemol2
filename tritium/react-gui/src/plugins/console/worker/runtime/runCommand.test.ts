@@ -78,7 +78,20 @@ const outside: PymCommand = {
   },
 }
 
-const STUBS = [mutating, readOnly, failing, downloading, outside]
+/** Stands for `cd sub`: moves the working directory one level down. */
+const chdir: PymCommand = {
+  name: 'chdir',
+  params: [],
+  mode: 'strict',
+  mutates: false,
+  summary: 'stub',
+  run: (_ctx, _args, cc) => {
+    cc.setCwd(`${cc.cwd}/sub`)
+    return { ok: true }
+  },
+}
+
+const STUBS = [mutating, readOnly, failing, downloading, outside, chdir]
 
 vi.mock('@renderer/worker/server/services/helpers/streamFetchToReader', () => ({
   cancelStream: vi.fn(() => true),
@@ -100,7 +113,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import { cancelStream } from '@renderer/worker/server/services/helpers/streamFetchToReader'
-import { runCommand } from './runCommand'
+import { currentDir, runCommand } from './runCommand'
 import { cancelRun } from './runControl'
 
 function setup() {
@@ -111,6 +124,16 @@ function setup() {
 
 describe('runCommand', () => {
   beforeEach(() => vi.clearAllMocks())
+
+  it('keeps a caller-owned working directory out of the panel\'s', async () => {
+    const { ctx } = setup()
+    const panelDir = currentDir()
+    const res = await runCommand(ctx, {
+      dialect: 'pymol', sceneId: 1, viewId: 7, runId: 'r1', text: 'chdir; chdir', cwd: '/cli',
+    })
+    expect(res.ok && res.cwd).toBe('/cli/sub/sub')
+    expect(currentDir()).toBe(panelDir)
+  })
 
   it('commits once for a whole submission that changed the scene', async () => {
     const { scene, ctx } = setup()

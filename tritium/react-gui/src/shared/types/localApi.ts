@@ -67,3 +67,46 @@ export interface LocalApiInfoFile {
 
 /** The port used until one is chosen. */
 export const DEFAULT_LOCAL_API_PORT = 27182
+
+// --- The console endpoint's wire format (also read by tools/cuemol-console.mjs) ---
+
+export type ConsoleDialectId = 'native' | 'pymol'
+
+/** One transcript line, as the panel shows it. */
+export interface ConsoleWireEntry {
+  kind: 'echo' | 'output' | 'warning' | 'error'
+  text: string
+}
+
+/** `POST /console/run`. */
+export interface ConsoleRunRequest {
+  dialect: ConsoleDialectId
+  /** One command, several joined by `;`, or a script's lines. */
+  text: string
+  /** The client's working directory, absolute. */
+  cwd: string
+}
+
+export interface ConsoleRunResponse {
+  entries: ConsoleWireEntry[]
+  /** A failure, or a cancel, kept the rest from running. */
+  aborted: boolean
+  interrupted: boolean
+  /** Where `cd` left the directory. */
+  cwd: string
+}
+
+/** `POST /console/complete`. */
+export interface ConsoleCompleteRequest {
+  dialect: ConsoleDialectId
+  /** The line typed so far. */
+  line: string
+  cwd: string
+}
+
+export interface ConsoleCompleteResponse {
+  /** The whole line, rewritten; null leaves it alone. */
+  replacement: string | null
+  /** A candidate list to print, or the line saying there was nothing. */
+  messages: ConsoleWireEntry[]
+}

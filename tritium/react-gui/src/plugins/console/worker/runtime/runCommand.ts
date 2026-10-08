@@ -72,6 +72,25 @@ export function currentDir(): string {
   return workingDir
 }
 
+/** A working directory a run reads and `cd` moves. */
+interface WorkDir {
+  get(): string
+  set(dir: string): void
+}
+
+/**
+ * The panel's directory, or the caller's own when it passed one. A caller
+ * with its own (the command-line client, one per terminal) gets the result
+ * back in the outcome, so the worker keeps nothing for it between runs.
+ */
+function workDirFor(args: { cwd?: string }): WorkDir {
+  if (args.cwd === undefined) {
+    return { get: currentDir, set: (dir) => { workingDir = dir } }
+  }
+  let dir = args.cwd
+  return { get: () => dir, set: (d) => { dir = d } }
+}
+
 /** Collects one command's lines, bounded so a huge answer cannot flood. */
 class EntrySink {
   private lines = 0
@@ -112,6 +131,7 @@ interface Submission {
   sink: EntrySink
   mutated: boolean
   interrupted: boolean
+  dir: WorkDir
   /** A scene file to hand to the panel (CmdContext.openScene). */
   openScene?: string
 }
@@ -137,7 +157,7 @@ function resolveCommand(
  * The dialect may refuse a file it cannot run (PyMOL's Python scripts).
  */
 async function runScriptFile(sub: Submission, filePath: string, depth: number): Promise<CmdOutcome> {
-  const resolved = resolvePath(currentDir(), filePath)
+  const resolved = resolvePath(sub.dir.get(), filePath)
   const refusal = sub.dialect.refuseScript(resolved)
   if (refusal !== null) return { ok: false, error: refusal.replace(resolved, filePath) }
   if (depth >= MAX_SCRIPT_DEPTH) {
@@ -232,15 +252,13 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
     const cc: CmdContext = {
       sceneId: args.sceneId,
       viewId: args.viewId,
-      cwd: currentDir(),
+      cwd: sub.dir.get(),
       print: (text) => sink.push('output', text),
       warn: (text) => sink.push('warning', text),
       markMutated: () => {
         commandMutated = true
       },
-      setCwd: (dir) => {
-        workingDir = dir
-      },
+      setCwd: (dir) => sub.dir.set(dir),
       noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
       stopped: () => isStopped(args.runId),
       streamId: (tag) => `console:${args.runId}:${tag}:${++streamSeq}`,
@@ -294,6 +312,8 @@ async function runStandalone(
   const spec = resolved.spec
 
   const entries: ConsoleEntry[] = []
+  const dir = workDirFor(args)
+  const cwdOut = args.cwd !== undefined ? { cwd: dir.get() } : {}
   const echo = (): void => { if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.prompt} ${cmd.text}` }) }
 
   if (spec.name === 'undo' || spec.name === 'redo') {
@@ -301,10 +321,10 @@ async function runStandalone(
     const res = spec.name === 'undo' ? undo(ctx, { sceneId: args.sceneId }) : redo(ctx, { sceneId: args.sceneId })
     if (!res.ok) {
       entries.push({ kind: 'error', text: `Error: nothing to ${spec.name}` })
-      return ok({ entries, mutated: false, aborted: true, interrupted: false })
+      return ok({ entries, mutated: false, aborted: true, interrupted: false, ...cwdOut })
     }
     if (!cmd.quiet) writeLog(cmd.text)
-    return ok({ entries, mutated: false, aborted: false, interrupted: false })
+    return ok({ entries, mutated: false, aborted: false, interrupted: false, ...cwdOut })
   }
 
   if (!spec.outsideTxn) return null
@@ -326,11 +346,11 @@ async function runStandalone(
   const cc: CmdContext = {
     sceneId: args.sceneId,
     viewId: args.viewId,
-    cwd: currentDir(),
+    cwd: dir.get(),
     print: (text) => sink.push('output', text),
     warn: (text) => sink.push('warning', text),
     markMutated: () => undefined,
-    setCwd: (dir) => { workingDir = dir },
+    setCwd: (d) => dir.set(d),
     noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
     stopped: () => isStopped(args.runId),
     streamId: (tag) => `console:${args.runId}:${tag}:1`,
@@ -350,6 +370,7 @@ async function runStandalone(
     aborted: !outcome.ok,
     interrupted: false,
     ...(outcome.ok && openScene ? { openScene } : {}),
+    ...(args.cwd !== undefined ? { cwd: dir.get() } : {}),
   })
 }
 
@@ -381,6 +402,7 @@ export async function runCommand(
     sink: new EntrySink(entries),
     mutated: false,
     interrupted: false,
+    dir: workDirFor(args),
   }
 
   beginRun(args.runId)
@@ -401,5 +423,6 @@ export async function runCommand(
     aborted: !completed,
     interrupted: sub.interrupted,
     ...(sub.openScene ? { openScene: sub.openScene } : {}),
+    ...(args.cwd !== undefined ? { cwd: sub.dir.get() } : {}),
   })
 }

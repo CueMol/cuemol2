@@ -7,7 +7,7 @@
  */
 
 import type { PluginManifest } from '@renderer/plugin-host/api'
-import { CONSOLE_PLUGIN_ID } from './shared/consoleTypes'
+import { CONSOLE_PLUGIN_ID, REMOTE_ACCESS_PREF } from './shared/consoleTypes'
 
 export const consoleManifest: PluginManifest = {
   id: CONSOLE_PLUGIN_ID,
@@ -19,6 +19,18 @@ export const consoleManifest: PluginManifest = {
   // no use to anyone who would rather work from the menus.
   defaultEnabled: false,
   contributes: {
+    settings: [
+      {
+        key: REMOTE_ACCESS_PREF,
+        label: 'Command line access',
+        description:
+          'Let the cuemol-console command line run commands in this window, against the ' +
+          'active tab. It uses the local server the MCP plugin also uses, and finds the port ' +
+          'and token in ~/.cuemol/local-api.json.',
+        control: { kind: 'toggle' },
+        default: false,
+      },
+    ],
     bottomTabs: [
       {
         id: 'console',

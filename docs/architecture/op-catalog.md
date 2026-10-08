@@ -91,6 +91,8 @@ defineOp({
 **runtime**: 1 submit = 1 txn (label は dialect の接頭辞 `cmd:` / `pym:`)、失敗で以降を中止、
 lone `undo` / `redo` と `outsideTxn` のコマンドは txn の外、script は最大 8 段のネスト、Stop で
 ダウンロードも中断。
+terminal からは thin client `cuemol-console` で同じ runtime を使える (作業ディレクトリは client 側。
+[local-api-server.md](local-api-server.md) §5)。
 
 **native dialect** (既定。prompt `CueMol>`):
 

@@ -22,7 +22,7 @@ export function complete(ctx: WorkerContext, args: CompleteArgs): CompleteResult
   const outcome = completeLine(ctx, args.line, {
     sceneId: args.sceneId,
     viewId: args.viewId,
-    cwd: currentDir(),
+    cwd: args.cwd ?? currentDir(),
     dialect: dialectOf(args.dialect),
   })
   return ok(outcome)
