@@ -4,17 +4,19 @@
  * panning: the camera side of the View activity, for a caller with no mouse.
  */
 
-import { listCameras as listCamerasService } from '@renderer/worker/server/services/camera/cameraOrder'
+import { listCameras as listCamerasService, reorderCameras } from '@renderer/worker/server/services/camera/cameraOrder'
 import {
   applyCameraToView,
   createCamera,
   destroyCamera,
+  renameCamera,
+  saveViewToCamera,
 } from '@renderer/worker/server/services/camera/cameraOps'
 import { getViewProjection, setViewProjection } from '@renderer/worker/server/services/view/viewProjection'
 import { translateView } from '@renderer/worker/server/services/view/viewXform'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { boolean, optional, real, string } from '../params'
+import { boolean, integer, optional, real, string } from '../params'
 
 export const listCameras = defineOp({
   name: 'list_cameras',
@@ -38,6 +40,7 @@ export const saveCamera = defineOp({
     'An existing camera of that name is overwritten.',
   params: {
     name: string('Name of the camera.'),
+    withVisibility: optional(boolean('Also remember which objects and renderers are shown. Null is false.')),
   },
   mutates: true,
   expose: { tool: 'view', console: true },
@@ -45,6 +48,10 @@ export const saveCamera = defineOp({
   run(ctx, args, oc) {
     const res = createCamera(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, name: args.name })
     if (!res.ok) return { ok: false, error: 'The camera could not be saved. Give a non-empty name.' }
+    if (args.withVisibility) {
+      const vis = saveViewToCamera(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, name: args.name.trim(), withVisFlags: true })
+      if (!vis.ok) return { ok: false, error: 'The camera was saved, but its visibility could not be.' }
+    }
     return { ok: true, data: { name: args.name.trim(), overwritten: res.overwritten } }
   },
 })
@@ -54,13 +61,16 @@ export const applyCamera = defineOp({
   description: 'Move the view to a named camera saved earlier (see list_cameras).',
   params: {
     name: string('Name of the camera, from list_cameras.'),
+    withVisibility: optional(boolean('Also show and hide objects as the camera remembers. Null is false.')),
   },
-  // The view is not part of the undo history.
+  // The view is not part of the undo history; the visibility it may apply is.
   mutates: false,
   expose: { tool: 'view', console: true },
   aliases: [{ name: 'restore_view', summary: 'Go to a saved view: restore_view front' }],
   run(ctx, args, oc) {
-    const res = applyCameraToView(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, name: args.name })
+    const withVisFlags = args.withVisibility === true
+    if (withVisFlags) oc.markMutated()
+    const res = applyCameraToView(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, name: args.name, withVisFlags })
     return normalizeServiceResult(res, `No camera named "${args.name}". Call list_cameras for the names.`)
   },
 })
@@ -120,4 +130,45 @@ export const panView = defineOp({
   },
 })
 
-export const CAMERA_OPS = [listCameras, saveCamera, applyCamera, deleteCamera, setProjection, panView]
+export const renameCameraOp = defineOp({
+  name: 'rename_camera',
+  description: 'Rename a camera.',
+  params: {
+    name: string('Name of the camera, from list_cameras.'),
+    newName: string('Its new name.'),
+  },
+  mutates: true,
+  expose: { tool: false, console: true, mcp: true },
+  format: () => [],
+  run(ctx, args, oc) {
+    return normalizeServiceResult(
+      renameCamera(ctx, { sceneId: oc.sceneId, oldName: args.name, newName: args.newName }),
+      `"${args.name}" could not be renamed (is there such a camera, and is the new name free?).`,
+    )
+  },
+})
+
+export const moveCamera = defineOp({
+  name: 'move_camera',
+  description: 'Move a camera to another place in the camera list (its number in list_cameras, from 1).',
+  params: {
+    name: string('Name of the camera, from list_cameras.'),
+    to: integer('The number it should have.'),
+  },
+  mutates: true,
+  expose: { tool: false, console: true, mcp: true },
+  format: () => [],
+  run(ctx, args, oc) {
+    const list = listCamerasService(ctx, { sceneId: oc.sceneId })
+    if (!list.ok) return { ok: false, error: list.error }
+    const names = list.cameras.map((c) => c.name)
+    const from = names.indexOf(args.name)
+    if (from < 0) return { ok: false, error: `No camera named "${args.name}".` }
+    if (args.to < 1 || args.to > names.length) return { ok: false, error: `to must be 1 to ${names.length}.` }
+    names.splice(from, 1)
+    names.splice(args.to - 1, 0, args.name)
+    return normalizeServiceResult(reorderCameras(ctx, { sceneId: oc.sceneId, names }), 'The cameras could not be reordered.')
+  },
+})
+
+export const CAMERA_OPS = [listCameras, saveCamera, applyCamera, deleteCamera, setProjection, panView, renameCameraOp, moveCamera]

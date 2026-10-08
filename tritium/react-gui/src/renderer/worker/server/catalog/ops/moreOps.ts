@@ -14,11 +14,11 @@ import { clearPaintEntries } from '@renderer/worker/server/services/coloring/pai
 import { setRendererDefaultColor } from '@renderer/worker/server/services/coloring/applyColoring'
 import { saveScene } from '@renderer/worker/server/services/scene/saveScene'
 import { getObjectSaveInfo, saveObjectToFile } from '@renderer/worker/server/services/file/objectSave'
-import { goTime, play, stop } from '@renderer/worker/server/services/anim/transport'
+import { goTime, pause, play, stop } from '@renderer/worker/server/services/anim/transport'
 import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { color, enumOf, nodeId, objectId, path, real, rendererId, string } from '../params'
+import { color, enumOf, nodeId, objectId, optional, path, real, rendererId, string } from '../params'
 import { outputPath } from '../outputFile'
 
 export const listRendererStyles = defineOp({
@@ -152,21 +152,24 @@ export const saveObject = defineOp({
 export const animate = defineOp({
   name: 'animate',
   description:
-    'Control the scene\'s animation (made in the Animation panel): play it, stop it, or show ' +
+    'Control the scene\'s animation (made in the Animation panel): play it, pause it, stop it, or show ' +
     'the frame at a time.',
   params: {
-    action: enumOf(['play', 'stop', 'seek'], 'play, stop, or seek to timeMs.'),
-    timeMs: real('With seek: the time to show, in milliseconds. Ignored otherwise.'),
+    action: enumOf(['play', 'pause', 'stop', 'seek'], 'play, pause (keep the time), stop, or seek to timeMs.'),
+    timeMs: optional(real('With seek: the time to show, in milliseconds. Null otherwise.')),
   },
   // Playback is not part of the undo history.
   mutates: false,
   expose: { tool: 'anim', console: true },
   run(ctx, args, oc) {
+    if (args.action === 'seek' && args.timeMs === null) return { ok: false, error: 'seek needs timeMs.' }
     const res = args.action === 'play'
       ? play(ctx, { sceneId: oc.sceneId, viewId: oc.viewId })
-      : args.action === 'stop'
-        ? stop(ctx, { sceneId: oc.sceneId })
-        : goTime(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, ms: args.timeMs })
+      : args.action === 'pause'
+        ? pause(ctx, { sceneId: oc.sceneId })
+        : args.action === 'stop'
+          ? stop(ctx, { sceneId: oc.sceneId })
+          : goTime(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, ms: args.timeMs ?? 0 })
     if (!res.ok) return { ok: false, error: res.error }
     return { ok: true, data: { state: res.mgr.playState, timeMs: res.mgr.elapsedMs, lengthMs: res.mgr.lengthMs } }
   },
