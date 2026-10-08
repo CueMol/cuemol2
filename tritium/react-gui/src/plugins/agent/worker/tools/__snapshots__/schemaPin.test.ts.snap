@@ -9,16 +9,16 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the molecule to measure within."},"selection":{"type":"string","description":"Selection the contacts start from, for example a ligand."},"maxDist":{"type":["number","null"],"description":"Longest contact to report, in angstroms. Null uses 4."},"includeCarbon":{"type":["boolean","null"],"description":"True also reports contacts that involve a carbon atom. Null or false leaves carbon out, so only atoms that can make hydrogen bonds or salt bridges (N, O, S, ...) are reported -- which is what \\"interactions\\" usually means."}},"required":["objId","selection","maxDist","includeCarbon"],"additionalProperties":false}",
   },
   {
-    "description": "Control the scene's animation (made in the Animation panel): play it, stop it, or show the frame at a time.",
+    "description": "Control the scene's animation (made in the Animation panel): play it, pause it, stop it, or show the frame at a time.",
     "mutates": false,
     "name": "animate",
-    "parameters": "{"type":"object","properties":{"action":{"type":"string","enum":["play","stop","seek"],"description":"play, stop, or seek to timeMs."},"timeMs":{"type":"number","description":"With seek: the time to show, in milliseconds. Ignored otherwise."}},"required":["action","timeMs"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"action":{"type":"string","enum":["play","pause","stop","seek"],"description":"play, pause (keep the time), stop, or seek to timeMs."},"timeMs":{"type":["number","null"],"description":"With seek: the time to show, in milliseconds. Null otherwise."}},"required":["action","timeMs"],"additionalProperties":false}",
   },
   {
     "description": "Move the view to a named camera saved earlier (see list_cameras).",
     "mutates": false,
     "name": "apply_camera",
-    "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"Name of the camera, from list_cameras."}},"required":["name"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"Name of the camera, from list_cameras."},"withVisibility":{"type":["boolean","null"],"description":"Also show and hide objects as the camera remembers. Null is false."}},"required":["name","withVisibility"],"additionalProperties":false}",
   },
   {
     "description": "Apply a named style (from list_renderer_styles) to one renderer, replacing the style of the same kind it had.",
@@ -228,7 +228,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "description": "Save the current view as a named camera, so it can be restored later with apply_camera. An existing camera of that name is overwritten.",
     "mutates": true,
     "name": "save_camera",
-    "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"Name of the camera."}},"required":["name"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"Name of the camera."},"withVisibility":{"type":["boolean","null"],"description":"Also remember which objects and renderers are shown. Null is false."}},"required":["name","withVisibility"],"additionalProperties":false}",
   },
   {
     "description": "Write one object to a file in the format its extension names (for a molecule e.g. .pdb or .cif). Give a plain file name, which is saved to the desktop, or an absolute path where the caller allows one; the full path is reported back -- tell the user where it went.",

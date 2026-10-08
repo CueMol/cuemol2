@@ -166,3 +166,21 @@ Animation panel と element inspector が使う service をそのまま呼ぶの
 - 要素は `anim_list` の番号、`#uid`、名前で指定する (同名が複数なら番号か uid を求める)。
   `morph_frames` などの番号も同じく 1 から。
 - 追加できない型 (`RealPropAnim` / `RendXformAnim`、ファイル由来) の generic property は未対応。
+
+### GUI の編集操作の op (`ops/editOps.ts` ほか。console と MCP)
+
+dialog・context menu・panel が使う service をそのまま呼ぶ (undo の単位も GUI と同じ)。一覧は 1 から番号を振る。
+
+- `reset_prop path` (inspector の Reset。`node.*` で Reset all = 変更済みで既定値のある property を 1 txn で)、
+  `clear_undo` (Edit > Clear undo data。txn の外で実行)
+- `change_resid molId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond molId, A/20/SG A/45/SG`、
+  `set_symmetry molId, a, b, c, alpha, beta, gamma, spaceGroup`
+- `create_group objId [, name]`、`gen_surface_obj rendId` (map の isosurf のみ)、`regen_surface surfId [, density]`
+- `list_interactions` / `remove_interaction rendId, number` (距離・角度・二面角の個別削除)
+- `list_paint` / `update_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)
+- `color_by_elepot rendId [, map] [, low] [, high]` (molsurf / dsurface を静電ポテンシャルで色付け)
+- `recenter_map rendId` (map を view の中心で描き直す)、`export_scene path [, format] [, width] [, height] [, transparent] [, dpi]`
+  (png / pov / stl / mqo)
+- camera: `rename_camera`、`move_camera name, to`、`save_camera` / `apply_camera` の `withVisibility`
+  (表示・非表示も保存・適用。適用時は txn を commit する)
+- `animate` に `pause` を追加し、`timeMs` は seek のときだけ必要
