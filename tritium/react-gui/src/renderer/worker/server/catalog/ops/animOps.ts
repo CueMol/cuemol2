@@ -101,7 +101,9 @@ export const animList = defineOp({
   expose: { tool: false, console: true, mcp: true },
   format: (data) => timelineLines(data as AnimTimeline),
   run(ctx, _args, oc) {
-    return { ok: true, data: timeline(ctx, oc.sceneId) }
+    // Number the elements from 1, as the other anim_* ops take them.
+    const t = timeline(ctx, oc.sceneId)
+    return { ok: true, data: { ...t, elements: t.elements.map(({ index, ...e }) => ({ number: index + 1, ...e })) } }
   },
 })
 

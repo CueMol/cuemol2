@@ -272,11 +272,11 @@ export const listInteractions = defineOp({
   params: { rendId: rendererId('Uid of the interaction renderer.') },
   mutates: false,
   expose: EXPOSE,
-  format: (data) => (data as { entries: { mode: string; atoms: string[] }[] }).entries.map((e, i) => `${i + 1}  ${e.mode}  ${e.atoms.join('  ')}`),
+  format: (data) => (data as { entries: { number: number; mode: string; atoms: string[] }[] }).entries.map((e) => `${e.number}  ${e.mode}  ${e.atoms.join('  ')}`),
   run(ctx, args, oc) {
     const res = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!res.ok) return { ok: false, error: 'That is not an interaction renderer.' }
-    return { ok: true, data: { entries: res.entries.map((e) => ({ id: e.id, mode: INTR_MODES[e.mode] ?? String(e.mode), atoms: e.atoms })) } }
+    return { ok: true, data: { entries: res.entries.map((e, i) => ({ number: i + 1, mode: INTR_MODES[e.mode] ?? String(e.mode), atoms: e.atoms })) } }
   },
 })
 
@@ -316,11 +316,11 @@ export const listPaint = defineOp({
   params: { rendId: rendererId('Uid of the renderer.') },
   mutates: false,
   expose: EXPOSE,
-  format: (data) => (data as { entries: { selStr: string; colorValue: string }[] }).entries.map((e, i) => `${i + 1}  ${e.colorValue}  ${e.selStr}`),
+  format: (data) => (data as { entries: { number: number; selStr: string; colorValue: string }[] }).entries.map((e) => `${e.number}  ${e.colorValue}  ${e.selStr}`),
   run(ctx, args, oc) {
     const p = paintEntries(ctx, oc.sceneId, args.rendId)
     if ('error' in p) return { ok: false, error: p.error }
-    return { ok: true, data: { entries: p.entries.map(({ selStr, colorValue }) => ({ selStr, colorValue })) } }
+    return { ok: true, data: { entries: p.entries.map(({ selStr, colorValue }, i) => ({ number: i + 1, selStr, colorValue })) } }
   },
 })
 
