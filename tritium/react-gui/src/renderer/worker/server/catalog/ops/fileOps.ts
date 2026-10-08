@@ -38,9 +38,9 @@ export const fetchPdb = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
-  verbs: [
+  aliases: [
     {
-      verb: 'fetch',
+      name: 'fetch',
       defaults: { format: 'mmcif' },
       order: ['pdbId', 'rendererType', 'selection', 'format'],
       summary: 'Download a structure from the PDB by its accession code.',
@@ -95,7 +95,7 @@ export const loadFile = defineOp({
   },
   mutates: true,
   expose: { tool: 'files', console: true },
-  verbs: [{ verb: 'load', summary: 'Open a structure file, or a .qsc scene.' }],
+  aliases: [{ name: 'load', summary: 'Open a structure file, or a .qsc scene.' }],
   outsideTxn: (raw) => SCENE_FILE_RE.test((raw.path ?? '').trim()),
   run(ctx, args, oc) {
     const filePath = args.path

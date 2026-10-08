@@ -21,7 +21,7 @@ export const getSceneState = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'core', console: true },
-  verbs: [{ verb: 'ls_scene', summary: 'List the objects, renderers and selections in the scene.' }],
+  aliases: [{ name: 'ls_scene', summary: 'List the objects, renderers and selections in the scene.' }],
   format: (data) => formatSnapshot(data as SceneSnapshot),
   run(ctx, _args, oc) {
     return {
@@ -70,9 +70,9 @@ export const setVisible = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
-  verbs: [
-    { verb: 'show', fixed: { visible: true }, summary: 'Show an object, renderer or renderer group.' },
-    { verb: 'hide', fixed: { visible: false }, summary: 'Hide an object, renderer or renderer group.' },
+  aliases: [
+    { name: 'show', fixed: { visible: true }, summary: 'Show an object, renderer or renderer group.' },
+    { name: 'hide', fixed: { visible: false }, summary: 'Hide an object, renderer or renderer group.' },
   ],
   run(ctx, args, oc) {
     const result = setNodeVisible(ctx, {
@@ -100,7 +100,7 @@ export const deleteNode = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
-  verbs: [{ verb: 'delete', summary: 'Delete an object, renderer or renderer group.' }],
+  aliases: [{ name: 'delete', summary: 'Delete an object, renderer or renderer group.' }],
   run(ctx, args, oc) {
     const result = deleteNodeService(ctx, { sceneId: oc.sceneId, nodeId: args.nodeId, nodeType: args.nodeType })
     return normalizeServiceResult(result, 'No node with that id and type in this scene.')
@@ -118,7 +118,7 @@ export const renameNode = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
-  verbs: [{ verb: 'rename', summary: 'Rename an object, renderer or renderer group: rename 1crn, mol1' }],
+  aliases: [{ name: 'rename', summary: 'Rename an object, renderer or renderer group: rename 1crn, mol1' }],
   run(ctx, args, oc) {
     const result = renameNodeService(ctx, {
       sceneId: oc.sceneId,

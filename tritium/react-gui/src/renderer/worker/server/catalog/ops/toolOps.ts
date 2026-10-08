@@ -37,7 +37,6 @@ export const cutSurface = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true },
-  verbs: [{ verb: 'cutsurf', summary: 'Cut a surface by the view\'s slab plane: cutsurf sf_1crn, separate' }],
   run(ctx, args, oc) {
     return normalizeServiceResult(
       cutSurfByPlane(ctx, {

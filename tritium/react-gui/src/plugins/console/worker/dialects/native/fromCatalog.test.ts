@@ -3,7 +3,7 @@
  * @description What a command generated from an op hands the op.
  *
  * The native console has no hand-written scene commands, so this binding is
- * the whole contract between what is typed and what runs: a verb's fixed
+ * the whole contract between what is typed and what runs: an alias's fixed
  * argument stays fixed, a node named by name arrives as its uid with its kind
  * filled in, and a CueMol selection arrives exactly as typed.
  */
@@ -44,7 +44,7 @@ const op = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true },
-  verbs: [{ verb: 'show', fixed: { visible: true } }],
+  aliases: [{ name: 'show', fixed: { visible: true } }],
   run,
 })
 
@@ -63,7 +63,7 @@ const cc = {
 } as unknown as CmdContext
 
 describe('a command generated from an op', () => {
-  it('fixes the verb argument, resolves names and passes a selection through', async () => {
+  it('fixes the alias argument, resolves names and passes a selection through', async () => {
     const show = catalogCommands([op]).find((c) => c.command.name === 'show')!.command
     // A fixed argument is not a parameter; the kind a name fills in goes last
     // so the next positional argument does not land in it.
@@ -91,7 +91,7 @@ describe('a command generated from an op', () => {
 
 describe('the native command set', () => {
   it('names every command once', () => {
-    // A verb that repeats an op name (or a builtin) would shadow it silently:
+    // An alias that repeats an op name (or a builtin) would shadow it silently:
     // lookup takes the first match.
     const names = [
       ...catalogCommands(CONSOLE_COMMAND_OPS).map((c) => c.command.name),

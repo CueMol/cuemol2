@@ -55,7 +55,7 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 defineOp({
   name, description, params, mutates,
   expose: { tool: 'core' | ToolsetId | false, console: boolean, mcp?: boolean },
-  verbs?: [{ verb, fixed?, defaults?, order?, summary? }],
+  aliases?: [{ name, fixed?, defaults?, order?, summary? }],
   outsideTxn?(raw): boolean,   // console で txn の外・単独行で走らせる (例: .qsc の load)
   format?(data): string[],     // console での表示 (無ければ汎用の key: value 表示)
   run(ctx, args, oc: OpContext),
@@ -98,16 +98,17 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 
 **native dialect** (既定。prompt `CueMol>`):
 
-- コマンドは `CONSOLE_COMMAND_OPS` から生成する。op 名 (`set_visible`) と各 verb (`show` / `hide`)
-  の両方で呼べる。verb の `fixed` 引数は引数一覧に出ない (指定できない)。
+- コマンドは `CONSOLE_COMMAND_OPS` から生成する。op 名 (`set_visible`) と各 alias (`show` / `hide`)
+  の両方で呼べる。alias は 1 つの op を呼ぶ別名で、引数を固定 (`fixed`。引数一覧に出ず、指定できない)・
+  既定 (`defaults`)・並べ替え (`order`) できる。ユーザー定義のコマンド列とは別物。
 - 引数は PyMOL と同じくカンマ区切り (`zoom 1crn, chain A and resid 10:20`)。selection が空白を
   含むため、空白区切りは採らない。`key=value` も使える。
-- 主な verb: `show` / `hide`、`select`、`zoom` / `center`、`turn`、`view` / `slab` / `fit_slab`、
+- 主な alias: `show` / `hide`、`select`、`zoom` / `center`、`turn`、`view` / `slab` / `fit_slab`、
   `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`png`、
   `ls_scene`、`delete` / `rename` / `retype`、`ray` (ray tracing / GI。Stop で中断)、
   `save` / `write`、`save_view` / `restore_view` / `cameras`、`projection` / `pan` / `focus`、
   `contour`、`surface`、`define`、`style`、Tools メニューの dialog に当たる
-  `calc_elepot`・`cutsurf` (`cut_surface`)・`morph_frames` / `morph_add` / `morph_remove`
+  `calc_elepot`・`cut_surface`・`morph_frames` / `morph_add` / `morph_remove`
   (この 5 つは console 専用、`tool: false`)。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
   `log` / `undo` / `redo` / `help`、scene (タブ) の `scenes` / `new_scene` / `switch_scene` /
   `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
@@ -141,7 +142,7 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   起動し、終わるまで待つ (`waitForApbsJob`、Stop で kill)。実行ファイルのパスと既定の force field は
   Settings の値を `ApbsConfigProvider` が worker に送っておいたもの (`setApbsDefaults`、
   `services/apbs/defaults.ts`)。他の値は dialog の既定 (温度 298.15、誘電率 78.54 / 2.0)。
-- `cut_surface` (`cutsurf`): view の前面 slab 面で分子表面を切る (Mol surface cutter)。
+- `cut_surface`: view の前面 slab 面で分子表面を切る (Mol surface cutter)。
 - `morph_frames` / `morph_add` / `morph_remove`: 分子の morphing frame の一覧・追加 (PDB ファイル
   または scene の分子から。普通の分子は先に MorphMol に変換され uid が変わる)・削除。再生の設定は
   Animation panel。

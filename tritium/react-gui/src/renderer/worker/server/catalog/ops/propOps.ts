@@ -154,7 +154,7 @@ export const getNodeProps = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
-  verbs: [{ verb: 'props', order: ['nodeId'], summary: 'List the properties of a node (the scene when none is given).' }],
+  aliases: [{ name: 'props', order: ['nodeId'], summary: 'List the properties of a node (the scene when none is given).' }],
   format(data) {
     const d = data as {
       type: string
@@ -240,7 +240,7 @@ export const setProp = defineOp({
   // The model addresses nodes by uid through set_node_prop; a path of names
   // is for a person at a prompt.
   expose: { tool: false, console: true },
-  verbs: [{ verb: 'set', summary: 'Set a property: set 1crn/cartoon1.width, 2 / set bgcolor, white' }],
+  aliases: [{ name: 'set', summary: 'Set a property: set 1crn/cartoon1.width, 2 / set bgcolor, white' }],
   // The service answers with every property of the node, which is what an
   // inspector redraws from; at a prompt a write that worked says nothing.
   format: () => [],
@@ -259,7 +259,7 @@ export const getProp = defineOp({
   },
   mutates: false,
   expose: { tool: false, console: true },
-  verbs: [{ verb: 'get', summary: 'Print a property: get 1crn/cartoon1.width / get bgcolor' }],
+  aliases: [{ name: 'get', summary: 'Print a property: get 1crn/cartoon1.width / get bgcolor' }],
   format(data) {
     const d = data as { prop: string; value: unknown }
     return [`${d.prop} = ${typeof d.value === 'string' ? d.value : JSON.stringify(d.value)}`]

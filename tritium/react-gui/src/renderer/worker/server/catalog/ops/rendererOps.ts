@@ -325,7 +325,7 @@ export const changeRendererType = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
-  verbs: [{ verb: 'retype', summary: 'Redraw a renderer as another type: retype 1crn/cartoon1, ribbon' }],
+  aliases: [{ name: 'retype', summary: 'Redraw a renderer as another type: retype 1crn/cartoon1, ribbon' }],
   run(ctx, args, oc) {
     const allowed = getRendererChangeTypes(ctx, { sceneId: oc.sceneId, rendId: args.rendId }).typeNames
     if (!allowed.includes(args.rendererType)) {

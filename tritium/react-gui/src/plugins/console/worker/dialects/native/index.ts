@@ -82,10 +82,10 @@ const help: ConsoleCommand = {
       return { ok: true }
     }
     for (const line of wrap(origin.op.description)) cc.print(line)
-    if (origin.verb?.fixed) {
-      const fixed = Object.entries(origin.verb.fixed).map(([k, v]) => `${k}=${String(v)}`).join(', ')
+    if (origin.alias?.fixed) {
+      const fixed = Object.entries(origin.alias.fixed).map(([k, v]) => `${k}=${String(v)}`).join(', ')
       cc.print(`(${origin.op.name} with ${fixed})`)
-    } else if (origin.verb) {
+    } else if (origin.alias) {
       cc.print(`(the same as ${origin.op.name})`)
     }
     return { ok: true }

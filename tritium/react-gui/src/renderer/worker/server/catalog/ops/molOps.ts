@@ -72,7 +72,7 @@ export const makeSurface = defineOp({
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
-  verbs: [{ verb: 'surface', summary: 'Make a molecular surface: surface 1crn' }],
+  aliases: [{ name: 'surface', summary: 'Make a molecular surface: surface 1crn' }],
   run(ctx, args, oc) {
     const name = args.name ?? proposeMolSurfName(ctx, { sceneId: oc.sceneId, objId: args.molId }).name
     const res = makeMolSurf(ctx, {
@@ -228,7 +228,7 @@ export const saveSelection = defineOp({
   },
   mutates: true,
   expose: { tool: 'selection', console: true },
-  verbs: [{ verb: 'define', summary: 'Name a selection: define site1, resid 10:20' }],
+  aliases: [{ name: 'define', summary: 'Name a selection: define site1, resid 10:20' }],
   run(ctx, args, oc) {
     return normalizeServiceResult(
       saveSelDef(ctx, { sceneId: oc.sceneId, name: args.name, expr: args.selection }),

@@ -22,7 +22,7 @@ export const listCameras = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'view', console: true },
-  verbs: [{ verb: 'cameras', summary: 'List the saved views.' }],
+  aliases: [{ name: 'cameras', summary: 'List the saved views.' }],
   format: (data) => (data as { cameras: { name: string }[] }).cameras.map((c) => c.name),
   run(ctx, _args, oc) {
     const res = listCamerasService(ctx, { sceneId: oc.sceneId })
@@ -41,7 +41,7 @@ export const saveCamera = defineOp({
   },
   mutates: true,
   expose: { tool: 'view', console: true },
-  verbs: [{ verb: 'save_view', summary: 'Save the current view under a name: save_view front' }],
+  aliases: [{ name: 'save_view', summary: 'Save the current view under a name: save_view front' }],
   run(ctx, args, oc) {
     const res = createCamera(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, name: args.name })
     if (!res.ok) return { ok: false, error: 'The camera could not be saved. Give a non-empty name.' }
@@ -58,7 +58,7 @@ export const applyCamera = defineOp({
   // The view is not part of the undo history.
   mutates: false,
   expose: { tool: 'view', console: true },
-  verbs: [{ verb: 'restore_view', summary: 'Go to a saved view: restore_view front' }],
+  aliases: [{ name: 'restore_view', summary: 'Go to a saved view: restore_view front' }],
   run(ctx, args, oc) {
     const res = applyCameraToView(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, name: args.name })
     return normalizeServiceResult(res, `No camera named "${args.name}". Call list_cameras for the names.`)
@@ -89,7 +89,7 @@ export const setProjection = defineOp({
   },
   mutates: false,
   expose: { tool: 'view', console: true },
-  verbs: [{ verb: 'projection', summary: 'Show or set the projection: projection false' }],
+  aliases: [{ name: 'projection', summary: 'Show or set the projection: projection false' }],
   run(ctx, args, oc) {
     const res = args.perspective === null
       ? getViewProjection(ctx, { viewId: oc.viewId })
@@ -112,7 +112,7 @@ export const panView = defineOp({
   },
   mutates: false,
   expose: { tool: 'view', console: true },
-  verbs: [{ verb: 'pan', summary: 'Slide the view: pan 10, 0' }],
+  aliases: [{ name: 'pan', summary: 'Slide the view: pan 10, 0' }],
   run(ctx, args, oc) {
     const res = translateView(ctx, { viewId: oc.viewId, dx: args.dx, dy: args.dy, dz: args.dz ?? 0, dragging: false })
     if (!res.ok) return { ok: false, error: 'The view could not be read.' }

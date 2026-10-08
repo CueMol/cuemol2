@@ -64,19 +64,21 @@ export interface OpContext {
 }
 
 /**
- * A second name an op answers to in a console, with some arguments fixed:
- * `show` is `set_visible` with `visible` true.
+ * Another name an op answers to in a console: `ray` is `render_image`.
+ * It may fix or default some arguments (`show` is `set_visible` with
+ * `visible` true), but it is always one call of this op, declared here; a
+ * user-defined command sequence would be a different thing.
  */
-export interface OpVerb {
-  verb: string
-  /** Arguments the verb supplies; the user cannot give them. */
+export interface OpAlias {
+  name: string
+  /** Arguments the alias supplies; the user cannot give them. */
   fixed?: Readonly<Record<string, unknown>>
   /**
-   * Values for arguments the user may leave out under this verb, though the
+   * Values for arguments the user may leave out under this alias, though the
    * op itself requires them (`fetch` defaults the format to mmCIF).
    */
   defaults?: Readonly<Record<string, string>>
-  /** Positional order for this verb, when the op's own order reads badly. */
+  /** Positional order for this alias, when the op's own order reads badly. */
   order?: readonly string[]
   /** One line for help; defaults to the op's first sentence. */
   summary?: string
@@ -113,7 +115,7 @@ export interface Op<P extends ParamMap = ParamMap> {
    */
   mutates: boolean
   expose: OpExposure
-  verbs?: readonly OpVerb[]
+  aliases?: readonly OpAlias[]
   /**
    * Whether a console call with these (still unparsed) arguments has to run
    * outside the submission's undo transaction, alone on its line -- opening

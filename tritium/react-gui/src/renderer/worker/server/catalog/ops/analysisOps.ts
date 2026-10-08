@@ -226,7 +226,7 @@ export const savePng = defineOp({
   // A model writes only to the desktop, by name (export_image); a path is
   // for a person who chose it.
   expose: { tool: false, console: true },
-  verbs: [{ verb: 'png', summary: 'Save a PNG of the current view.' }],
+  aliases: [{ name: 'png', summary: 'Save a PNG of the current view.' }],
   run(ctx, args, oc) {
     const filePath = args.path.toLowerCase().endsWith('.png') ? args.path : `${args.path}.png`
     return writePng(ctx, oc.sceneId, oc.viewId, filePath, args.width, args.height)

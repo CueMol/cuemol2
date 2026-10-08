@@ -3,7 +3,7 @@
  * @description Console commands generated from the core op catalogue.
  *
  * Every op the catalogue exposes to a console becomes a command under its own
- * name (`set_visible`) and under each verb it declares (`show`, `hide`).
+ * name (`set_visible`) and under each alias it declares (`show`, `hide`).
  * Nothing here is written per op: the parameters, their order, what Tab
  * offers, and how a typed string becomes the value `run` takes all come from
  * the op's declaration. That is the point of the catalogue -- an op added for
@@ -16,7 +16,7 @@
 
 import { validateSelection } from '@renderer/worker/server/services/select/validateSelection'
 import { invokeOp } from '@renderer/worker/server/catalog'
-import type { AnyOp, OpContext, OpOutcome, OpVerb } from '@renderer/worker/server/catalog'
+import type { AnyOp, OpContext, OpOutcome, OpAlias } from '@renderer/worker/server/catalog'
 import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/params'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { resolvePath } from '../../runtime/paths'
@@ -32,16 +32,16 @@ export function firstSentence(text: string): string {
 }
 
 /**
- * Parameter names in the order a command reads them positionally: the verb's
+ * Parameter names in the order a command reads them positionally: the alias's
  * own order first, then the op's -- except that a node's kind parameter goes
  * last. It is filled in from the node's name, so leaving it in its op
  * position would make the next positional argument land in it
  * (`rename 1crn, mol1` putting `mol1` into the kind). It can still be given
  * by name (`nodeType=renderer`).
  */
-function orderedNames(op: AnyOp, verb: OpVerb | undefined): string[] {
+function orderedNames(op: AnyOp, alias: OpAlias | undefined): string[] {
   const all = Object.keys(op.params)
-  const first = (verb?.order ?? []).filter((n) => all.includes(n))
+  const first = (alias?.order ?? []).filter((n) => all.includes(n))
   const derived = typeParamsOf(op.params as ParamMap)
   const rest = all.filter((n) => !first.includes(n))
   return [...first, ...rest.filter((n) => !derived.has(n)), ...rest.filter((n) => derived.has(n))]
@@ -161,11 +161,11 @@ export function readConsoleArgs(
   cc: CmdContext,
   op: AnyOp,
   bound: Readonly<Record<string, string>>,
-  verb?: OpVerb,
+  alias?: OpAlias,
 ): Record<string, unknown> | string {
   const params = op.params as ParamMap
-  const fixed = verb?.fixed ?? {}
-  const defaults = verb?.defaults ?? {}
+  const fixed = alias?.fixed ?? {}
+  const defaults = alias?.defaults ?? {}
   const out: Record<string, unknown> = {}
   const derived: Record<string, string> = {}
 
@@ -291,13 +291,13 @@ function completionOf(
   }
 }
 
-/** One command for an op, under its name or one of its verbs. */
-function opCommand(op: AnyOp, verb?: OpVerb): ConsoleCommand {
+/** One command for an op, under its name or one of its aliases. */
+function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
   const params = op.params as ParamMap
-  const fixed = verb?.fixed ?? {}
-  const defaults = verb?.defaults ?? {}
+  const fixed = alias?.fixed ?? {}
+  const defaults = alias?.defaults ?? {}
   const derivable = typeParamsOf(params)
-  const names = orderedNames(op, verb).filter((n) => !(n in fixed))
+  const names = orderedNames(op, alias).filter((n) => !(n in fixed))
 
   const specs: ParamSpec[] = names.map((n) => {
     const p = params[n]
@@ -306,11 +306,11 @@ function opCommand(op: AnyOp, verb?: OpVerb): ConsoleCommand {
   })
 
   return {
-    name: verb?.verb ?? op.name,
+    name: alias?.name ?? op.name,
     params: specs,
     mode: 'strict',
     mutates: op.mutates,
-    summary: verb?.summary ?? firstSentence(op.description),
+    summary: alias?.summary ?? firstSentence(op.description),
     completions: names.map((n, i) =>
       completionOf(
         params[n],
@@ -324,7 +324,7 @@ function opCommand(op: AnyOp, verb?: OpVerb): ConsoleCommand {
     ),
     ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(bound) ?? false } : {}),
     async run(ctx, bound, cc): Promise<CmdOutcome> {
-      const args = readConsoleArgs(ctx, cc, op, bound, verb)
+      const args = readConsoleArgs(ctx, cc, op, bound, alias)
       if (typeof args === 'string') return { ok: false, error: `Error: ${args}` }
       const outcome = await invokeOp(op, ctx, args, opContextOf(cc))
       if (!outcome.ok) return { ok: false, error: `Error: ${outcome.error}` }
@@ -337,7 +337,7 @@ function opCommand(op: AnyOp, verb?: OpVerb): ConsoleCommand {
 /** What `help <command>` adds for a generated command: the op it runs. */
 export interface CommandOrigin {
   op: AnyOp
-  verb?: OpVerb
+  alias?: OpAlias
 }
 
 /**
@@ -347,8 +347,8 @@ export function catalogCommands(ops: readonly AnyOp[]): { command: ConsoleComman
   const out: { command: ConsoleCommand; origin: CommandOrigin }[] = []
   for (const op of ops) {
     out.push({ command: opCommand(op), origin: { op } })
-    for (const verb of op.verbs ?? []) {
-      out.push({ command: opCommand(op, verb), origin: { op, verb } })
+    for (const alias of op.aliases ?? []) {
+      out.push({ command: opCommand(op, alias), origin: { op, alias } })
     }
   }
   return out
