@@ -37,15 +37,21 @@ import type { Result } from '@renderer/worker/shared/result'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type {
   CallToolArgs,
+  CallToolOutcome,
   CancelCallArgs,
   DescribeOutcome,
   ListToolsOutcome,
   McpCallResult,
 } from '../shared/mcpTypes'
 
-/** Whether `op` is offered: every op a tool caller may use. */
+/** Whether `op` is offered: every op a tool caller may use, and the MCP-only ones. */
 function offered(op: AnyOp): boolean {
-  return op.expose.tool !== false
+  return op.expose.tool !== false || op.expose.mcp === true
+}
+
+/** The arguments as the text a console would have typed, for `outsideTxn`. */
+function rawArgs(args: Record<string, unknown>): Record<string, string> {
+  return Object.fromEntries(Object.entries(args).map(([k, v]) => [k, v == null ? '' : String(v)]))
 }
 
 function describe(): Result<DescribeOutcome> {
@@ -83,7 +89,7 @@ export function toMcpResult(outcome: OpOutcome): McpCallResult {
   return { content, isError: false }
 }
 
-async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<McpCallResult>> {
+async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<CallToolOutcome>> {
   const op = findOp(args.name)
   if (!op || !offered(op)) return ok(failed(`There is no tool named ${args.name}.`))
   const scene = args.sceneId > 0 ? getSceneOrNull(ctx, args.sceneId) : null
@@ -95,6 +101,7 @@ async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<
   const state: CallState = { cancelled: false, streams: new Set() }
   calls.set(args.callId, state)
   let mutated = false
+  let openScene: string | undefined
   const oc: OpContext = {
     sceneId: args.sceneId,
     viewId: args.viewId,
@@ -104,12 +111,16 @@ async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<
     streamId: (tag) => `mcp:${args.callId}:${tag}`,
     cancelled: () => state.cancelled,
     fileAccess: 'any',
+    openScene: (filePath) => { openScene = filePath },
   }
   try {
-    const outcome = await runInTxn(scene, txnLabel('MCP: ', op.name), () => mutated, () =>
-      invokeOp(op, ctx, input, oc),
-    )
-    return ok(toMcpResult(outcome))
+    // Saving or opening a scene resets its undo stack, so it runs outside a
+    // transaction, as it does alone on a console line.
+    const outcome = op.outsideTxn?.(rawArgs(args.arguments ?? {}))
+      ? await invokeOp(op, ctx, input, oc)
+      : await runInTxn(scene, txnLabel('MCP: ', op.name), () => mutated, () => invokeOp(op, ctx, input, oc))
+    const result = toMcpResult(outcome)
+    return ok(outcome.ok && openScene ? { ...result, openScene } : result)
   } finally {
     calls.delete(args.callId)
   }

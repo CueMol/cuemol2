@@ -148,7 +148,8 @@
   `CueMol <dir> ❯`、spinner と経過秒、遅いコマンドの所要時間。dim / 灰色は使わない。
 - **scene コマンド** (「範囲外」に挙げていたタブ操作のうち console 分): `scenes` / `new_scene` /
   `switch_scene` / `close_scene`。worker が要求を返し、renderer がタブを操作してから残りを送り直す。
-  plugin API `useSceneTabs()` を追加。MCP からのタブ操作は未実装。
+  plugin API `useSceneTabs()` を追加。MCP からのタブ操作は後続の PR で追加 (`list_scenes` ほか、
+  `save_scene` と `.qsc` の `load_file` も MCP から使えるようにした)。
 - **Tab 補完**: スペースを含む名前に届くよう、引数全体を先に試す。
 - **テスト**: `ensureApp` (`consoleEndpoint.test.ts`)、scene コマンドでの submission 分割
   (`runCommand.test.ts`)、scene の指定と `force` (`sceneRequest.test.ts`)、補完 (`complete.test.ts`)。

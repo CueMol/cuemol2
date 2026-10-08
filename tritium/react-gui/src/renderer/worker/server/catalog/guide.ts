@@ -59,7 +59,10 @@ export const TOOL_RULES: readonly string[] = [
  */
 export const MCP_INSTRUCTIONS = `
 CueMol is a molecular structure viewer running on the user's desktop. These
-tools drive the scene in its active window, which the user is looking at.
+tools drive the active scene -- the one in the tab the user is looking at.
+Several scenes can be open, one per tab: list_scenes, new_scene, switch_scene
+and close_scene manage them, and save_scene / load_file (.qsc) save and open
+one.
 
 - Identifiers are opaque integers. Call get_scene_state first and use only the
   ids it or another tool result gives you; after anything that adds, removes

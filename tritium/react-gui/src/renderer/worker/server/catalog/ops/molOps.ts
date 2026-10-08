@@ -160,13 +160,21 @@ export const setSecondaryStructure = defineOp({
     molId: moleculeId('Uid of the molecule.'),
     selection: optional(selection('Residues to assign. Null recomputes the whole molecule.')),
     type: optional(enumOf(SEC_TYPES, 'With a selection: the type to assign.')),
+    ignoreBulge: optional(boolean('Recomputing: ignore beta bulges. Null is false.')),
+    helixGapAngle: optional(real('Recomputing: fill gaps in a helix up to this angle in degrees (the dialog offers 120). Null or 0 does not fill.')),
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
   run(ctx, args, oc) {
     if (args.selection === null) {
       return normalizeServiceResult(
-        reassignProt2ndry(ctx, { sceneId: oc.sceneId, objId: args.molId, mode: 'recalc' }),
+        reassignProt2ndry(ctx, {
+          sceneId: oc.sceneId,
+          objId: args.molId,
+          mode: 'recalc',
+          ...(args.ignoreBulge !== null ? { ignBulge: args.ignoreBulge } : {}),
+          ...(args.helixGapAngle !== null ? { helixGapAngle: args.helixGapAngle } : {}),
+        }),
         'The secondary structure could not be computed.',
       )
     }

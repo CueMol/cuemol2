@@ -106,8 +106,9 @@ export const saveSceneOp = defineOp({
   params: { path: path('Where to write the .qsc file.') },
   mutates: false,
   // Saving resets the undo stack, which cannot happen inside an agent turn's
-  // transaction, so this is the console's only (alone on its line).
-  expose: { tool: false, console: true },
+  // transaction: the console runs it alone on its line, an MCP call outside
+  // any transaction.
+  expose: { tool: false, console: true, mcp: true },
   outsideTxn: () => true,
   verbs: [{ verb: 'save', summary: 'Save the scene: save ~/work/session.qsc' }],
   run(ctx, args, oc) {

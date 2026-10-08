@@ -92,6 +92,12 @@ export interface OpExposure {
   tool: 'core' | ToolsetId | false
   /** Generated as a console command. */
   console: boolean
+  /**
+   * Offered to MCP clients although `tool` is false: an op that has to run
+   * outside an undo transaction (`outsideTxn`), which an agent turn -- one
+   * transaction for the whole turn -- cannot give it, while an MCP call can.
+   */
+  mcp?: boolean
 }
 
 export interface Op<P extends ParamMap = ParamMap> {

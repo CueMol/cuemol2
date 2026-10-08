@@ -77,11 +77,16 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
 
 ### tool と 1 call の扱い (`plugins/mcp/worker/mcp.service.ts`)
 
-- 公開するのは `expose.tool !== false` の op 全部 (core + 全 toolset)。MCP client は全 server の
-  tool を一覧して自分で選ぶので、agent の `enable_toolsets` の段階は無い。
+- 公開するのは `expose.tool !== false` の op 全部 (core + 全 toolset) と、`expose.mcp: true` の op
+  (agent には出さない MCP 専用。今は `save_scene`)。MCP client は全 server の tool を一覧して自分で
+  選ぶので、agent の `enable_toolsets` の段階は無い。
 - 1 call = 1 undo transaction (label `MCP: <tool 名>`)。Cmd+Z 1 回で 1 call が戻る。
   何も変えなかった call は rollback (空 commit で redo を消さないため)。
-- 対象はアクティブなタブの scene / view。無ければ「No scene is open」。
+- 対象はアクティブなタブの scene / view。タブが無ければ (console と同じく) 新しい scene を作る。
+- `outsideTxn` の op (`save_scene`、`.qsc` を開く `load_file`) は txn の外で実行する (scene の
+  保存・読み込みは undo stack を作り直すため。agent の turn は全体が 1 txn なので、agent には出さない)。
+  `load_file` の `.qsc` は worker が path を返し (`CallToolOutcome.openScene`)、`McpRoot` が
+  File > Open と同じ経路 (`CmdId.OpenSceneByPath`) で開いて `{ scene, sceneId }` を返す。
 - **排他**: agent の turn、console の submit、MCP の call は `txnBusy()` (catalog の
   `runInTxn` が数える、開いている txn の数) を見て、busy なら待たずに `TXN_BUSY_MESSAGE` を返す。
   client の timeout と、agent の turn が LLM 待ちで数分続くことがあるため。
@@ -89,7 +94,14 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
   返す (画像を model に渡すか、表示するかは client 次第)。
 - ファイルを書く op (`export_image` / `render_image` / `save_object`) の説明と共有の規則に
   「ユーザが頼んだときだけ書く。見るだけなら `capture_view`」と書いてある。
-- `.qsc` を開く `load_file` (`outsideTxn`) は未対応。`save_scene` は tool に出ない。
+
+### scene (タブ) の tool (`plugins/mcp/renderer/sceneTools.ts`)
+
+`list_scenes` / `new_scene {name}` / `switch_scene {sceneId}` / `close_scene {sceneId, discardChanges}`。
+タブは window のものなので worker には行かず、`McpRoot` が `useSceneTabs()` で答える (結果は op と
+同じ `{ ok, result }` の JSON)。console の scene コマンド (§5.2) と同じく保存確認は出さず、未保存の
+scene は `discardChanges: true` が無いと閉じない (説明文で「捨てる前にユーザに聞く」よう指示)。
+`MCP_INSTRUCTIONS` にも scene が複数あり得ることと、これらの tool を書いた。
 
 ## 4. UI (plugin `mcp`)
 

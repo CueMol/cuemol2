@@ -13,7 +13,7 @@ import type {
   CancelCallArgs,
   DescribeOutcome,
   ListToolsOutcome,
-  McpCallResult,
+  CallToolOutcome,
 } from './shared/mcpTypes'
 
 // `type`, not `interface`: the plugin service client needs the implicit index
@@ -21,7 +21,7 @@ import type {
 export type McpCalls = {
   describe: { args: Record<string, never>; result: Result<DescribeOutcome> }
   listTools: { args: Record<string, never>; result: Result<ListToolsOutcome> }
-  callTool: { args: CallToolArgs; result: Result<McpCallResult> }
+  callTool: { args: CallToolArgs; result: Result<CallToolOutcome> }
   cancelCall: { args: CancelCallArgs; result: Result }
 }
 
