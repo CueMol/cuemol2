@@ -32,6 +32,7 @@ import type { AnyOp, OpContext, OpOutcome } from '@renderer/worker/server/catalo
 import { MCP_INSTRUCTIONS } from '@renderer/worker/server/catalog/guide'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { cancelStream } from '@renderer/worker/server/services/helpers/streamFetchToReader'
+import { mcpErrorResult } from '@shared/mcpResult'
 import { ok } from '@renderer/worker/shared/result'
 import type { Result } from '@renderer/worker/shared/result'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -76,10 +77,6 @@ interface CallState {
 
 const calls = new Map<string, CallState>()
 
-function failed(message: string): McpCallResult {
-  return { content: [{ type: 'text', text: message }], isError: true }
-}
-
 /** An op's outcome as MCP content: the JSON text, then the picture if any. */
 export function toMcpResult(outcome: OpOutcome): McpCallResult {
   const text = serializeToolOutput(outcome)
@@ -91,12 +88,12 @@ export function toMcpResult(outcome: OpOutcome): McpCallResult {
 
 async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<CallToolOutcome>> {
   const op = findOp(args.name)
-  if (!op || !offered(op)) return ok(failed(`There is no tool named ${args.name}.`))
+  if (!op || !offered(op)) return ok(mcpErrorResult(`There is no tool named ${args.name}.`))
   const scene = args.sceneId > 0 ? getSceneOrNull(ctx, args.sceneId) : null
-  if (!scene) return ok(failed('No scene is open in CueMol. Open a scene (a tab) first.'))
-  if (txnBusy()) return ok(failed(TXN_BUSY_MESSAGE))
+  if (!scene) return ok(mcpErrorResult('No scene is open in CueMol. Open a scene (a tab) first.'))
+  if (txnBusy()) return ok(mcpErrorResult(TXN_BUSY_MESSAGE))
   const input = readToolArgs(op, args.arguments ?? {})
-  if (typeof input === 'string') return ok(failed(input))
+  if (typeof input === 'string') return ok(mcpErrorResult(input))
 
   const state: CallState = { cancelled: false, streams: new Set() }
   calls.set(args.callId, state)

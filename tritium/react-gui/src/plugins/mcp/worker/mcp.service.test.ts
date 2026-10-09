@@ -80,7 +80,7 @@ describe('an MCP tool call', () => {
     release()
     await other
     expect(res.ok && res.isError).toBe(true)
-    expect(res.ok && res.content[0]).toEqual({ type: 'text', text: TXN_BUSY_MESSAGE })
+    expect(res.ok && res.content[0]).toEqual({ type: 'text', text: JSON.stringify({ ok: false, error: TXN_BUSY_MESSAGE }) })
     expect(scene.undo.committed).toEqual([])
   })
 })

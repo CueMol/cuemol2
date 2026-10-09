@@ -58,9 +58,9 @@ export interface LocalApiServer {
   stop(): Promise<void>
 }
 
-/** A JSON body, or a plain-text error. */
-function send(res: http.ServerResponse, code: number, body: unknown): void {
-  if (res.headersSent) return
+/** Answer with a JSON body, unless the response has already gone or the client left. */
+export function send(res: http.ServerResponse, code: number, body: unknown): void {
+  if (res.headersSent || res.destroyed) return
   const text = JSON.stringify(body)
   res.writeHead(code, { 'Content-Type': 'application/json' })
   res.end(text)

@@ -20,6 +20,7 @@ import {
   useSuppressUndoRedo,
 } from '@renderer/plugin-host/api'
 import { CmdId } from '@renderer/commands/ids'
+import { mcpErrorResult, mcpOkResult } from '@shared/mcpResult'
 import { mcpServices } from '../calls'
 import type { McpCallResult } from '../shared/mcpTypes'
 import { beginMcpCall } from './mcpActivity'
@@ -27,10 +28,6 @@ import { SCENE_TOOLS, useSceneTools } from './sceneTools'
 import { useMcpPrefs } from './useMcpPrefs'
 
 void React
-
-function failed(message: string): McpCallResult {
-  return { content: [{ type: 'text', text: message }], isError: true }
-}
 
 export const McpRoot: React.FC = () => {
   const { cm } = useCueMol()
@@ -47,9 +44,8 @@ export const McpRoot: React.FC = () => {
   /** `load_file` of a .qsc: opened the way File > Open does, into a tab. */
   const openSceneFile = async (filePath: string): Promise<McpCallResult> => {
     const opened = await dispatch(CmdId.OpenSceneByPath, filePath)
-    if (!opened?.loaded) return failed(`Could not open the scene file ${filePath}.`)
-    const text = JSON.stringify({ ok: true, result: { scene: filePath, sceneId: opened.sceneId, active: true } })
-    return { content: [{ type: 'text', text }], isError: false }
+    if (!opened?.loaded) return mcpErrorResult(`Could not open the scene file ${filePath}.`)
+    return mcpOkResult({ scene: filePath, sceneId: opened.sceneId, active: true })
   }
 
   // The port row commits per keystroke; wait for the typing to stop so the
@@ -105,7 +101,7 @@ export const McpRoot: React.FC = () => {
               // A render can take minutes; the busy indicator is not the place.
               { quiet: true },
             )
-            if (!res.ok) return failed(res.error)
+            if (!res.ok) return mcpErrorResult(res.error)
             if (res.openScene) return await openSceneFile(res.openScene)
             return { content: res.content, isError: res.isError }
           } finally {
