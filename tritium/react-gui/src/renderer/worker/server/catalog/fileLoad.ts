@@ -80,6 +80,7 @@ export function loadObjectFile(
     objectName: args.name?.trim() || fileStem(target.filePath) || 'object',
     rendererType: args.rendererType,
     selection: args.selection,
+    filePath: target.filePath,
   })
   if (adjust) {
     const format = adjust(options.format)

@@ -9,6 +9,7 @@
  * object as one opened from the menu.
  */
 
+import { initialRendererType } from '@renderer/worker/shared/fileOpenDefaults'
 import * as fs from 'fs'
 import * as path from 'path'
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
@@ -103,35 +104,6 @@ const FORMAT_ALIASES: Readonly<Record<string, string>> = {
   xplor: 'xplormap',
   mol: 'sdf',
   top: 'amberprm',
-}
-
-/**
- * PyMOL's own default representation, as a CueMol renderer type.
- *
- * `auto_show_lines` is on by default there, so a molecule that has just been
- * loaded is drawn as lines.
- */
-const PYMOL_DEFAULT_REP = 'simple'
-
-/**
- * The renderer to give a freshly loaded object.
- *
- * Without one the shared default is `simple`, a molecule renderer, whatever
- * the object is -- and C++ `Object::createRenderer` does not check
- * compatibility (`isCompatibleObj` only builds the list the GUI offers), so a
- * density map came back carrying a SimpleRenderer and drawing nothing.
- *
- * A molecule keeps `simple`, matching PyMOL. Anything else takes the first
- * type the object itself reports, which is what the File Open dialog starts
- * from: `contour` for a map, `molsurf` for a surface.
- *
- * @param types - compatible types from `getCompatibleRendererNames`, already
- *   filtered to the ones worth creating at load time.
- * @returns null when the object reports none, leaving the shared default.
- */
-function initialRendererType(types: readonly string[]): string | null {
-  if (types.includes(PYMOL_DEFAULT_REP)) return PYMOL_DEFAULT_REP
-  return types[0] ?? null
 }
 
 /** The names `load`'s `format` accepts, for completion and for errors. */
@@ -309,7 +281,8 @@ const load: PymCommand = {
     const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
       objectName,
-      rendererType: initialRendererType(compat.types),
+      // A molecule is drawn as lines (`simple`), as PyMOL's auto_show_lines does.
+      rendererType: initialRendererType(compat.types) || null,
       selection: null,
     }), args.zoom)
     const res = loadObject(ctx, {
