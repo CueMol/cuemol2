@@ -183,7 +183,16 @@ export function readConsoleArgs(
       continue
     }
     const ref = resolveRef(ctx, cc.sceneId, unquote(raw), 'node')
-    if (!ref.ok) return `${name}: ${ref.error}`
+    if (!ref.ok) {
+      // The scene and the view have no id: their type word names them
+      // (props view), unless a node has that name.
+      if ((raw === 'scene' || raw === 'view') && typeParam?.values?.includes(raw)) {
+        derived[p.typeParam] = raw
+        out[name] = null
+        continue
+      }
+      return `${name}: ${ref.error}`
+    }
     out[name] = ref.node.id
     // A group is a renderer to the ops that do not tell them apart.
     const kind = typeParam?.values?.includes(ref.node.type) ? ref.node.type : 'renderer'

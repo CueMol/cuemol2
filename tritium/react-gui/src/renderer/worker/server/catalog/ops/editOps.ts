@@ -56,15 +56,21 @@ export const resetProp = defineOp({
   expose: EXPOSE,
   format: () => [],
   run(ctx, args, oc) {
-    const target = resolvePropPath(ctx, oc.sceneId, args.path)
+    const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)
     if (!target.ok) return { ok: false, error: target.error }
     const node = { sceneId: oc.sceneId, nodeId: target.nodeId, nodeType: target.nodeType }
+    const props = getGenericProps(ctx, node)
+    if (!props.ok) return { ok: false, error: 'The properties could not be read.' }
     let names = [target.prop]
     if (target.prop === '*') {
-      const props = getGenericProps(ctx, node)
-      if (!props.ok) return { ok: false, error: 'The properties could not be read.' }
       names = props.entries.filter((e) => !e.isContainer && !e.readonly && e.hasdefault && !e.isdefault).map((e) => e.key)
       if (names.length === 0) return { ok: true }
+    } else {
+      // Resetting a property with no default does nothing, so say so rather
+      // than report a reset that did not happen (every View property is one).
+      const entry = props.entries.find((e) => e.key === target.prop)
+      if (!entry) return { ok: false, error: `This ${target.nodeType} has no property "${target.prop}".` }
+      if (!entry.hasdefault) return { ok: false, error: `${args.path} has no default to reset to.` }
     }
     const res = resetGenericProps(ctx, { ...node, propNames: names })
     return res.ok ? { ok: true } : { ok: false, error: `${args.path} could not be reset (does it have a default?).` }

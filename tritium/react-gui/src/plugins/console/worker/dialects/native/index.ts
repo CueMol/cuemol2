@@ -27,7 +27,8 @@ import type { ConsoleCommand, ConsoleDialect, SourceContext } from '../../runtim
 import { NATIVE_BUILTINS, NATIVE_SCRIPT_EXT } from './builtins'
 import { catalogCommands } from './fromCatalog'
 import type { CommandOrigin } from './fromCatalog'
-import { nodePath, resolvePropPath, resolveRef, sceneNodes } from '@renderer/worker/server/catalog/refs'
+import { nodePath, resolvePropPath, resolveRef, sceneNodes, VIEW_PREFIX } from '@renderer/worker/server/catalog/refs'
+import type { PropTarget } from '@renderer/worker/server/catalog/refs'
 
 const GENERATED = catalogCommands(CONSOLE_COMMAND_OPS)
 
@@ -143,7 +144,7 @@ function writableProps(
   ctx: WorkerContext,
   sceneId: number,
   nodeId: number,
-  nodeType: 'scene' | 'object' | 'renderer',
+  nodeType: PropTarget['nodeType'],
 ): GenericPropEntry[] {
   const props = getGenericProps(ctx, { sceneId, nodeId, nodeType })
   return props.ok ? props.entries.filter((e) => !e.isContainer && !e.readonly) : []
@@ -151,7 +152,7 @@ function writableProps(
 
 /**
  * The level of a property path the pattern is at. At the top: the scene's
- * properties, and each object twice -- `obj.` for its own properties and
+ * properties, `view.` for the view's, and each object twice -- `obj.` for its own properties and
  * `obj/` for its renderers. After `obj/`: its renderers as `obj/rend.`. After
  * a node and a dot: that node's properties. A node is offered ending in its
  * separator so Tab can be pressed again to go down.
@@ -165,12 +166,13 @@ function propPathCandidates(ctx: WorkerContext, sc: SourceContext): string[] {
       .filter((n) => n.type !== 'object' && n.objName === objName)
       .map((n) => `${objName}/${n.name}.`)
   }
-  const target = resolvePropPath(ctx, sc.sceneId, sc.pattern === '' ? '_' : sc.pattern)
+  const target = resolvePropPath(ctx, sc.sceneId, sc.pattern === '' ? '_' : sc.pattern, sc.viewId)
   if (!target.ok) return []
   const typedProp = sc.pattern === '' ? '' : target.prop
   const prefix = sc.pattern.slice(0, sc.pattern.length - typedProp.length)
   const out = writableProps(ctx, sc.sceneId, target.nodeId, target.nodeType).map((e) => `${prefix}${e.key}`)
   if (target.nodeType === 'scene') {
+    out.push(`${VIEW_PREFIX}.`)
     for (const n of nodes) {
       if (n.type !== 'object' || n.name === '') continue
       out.push(`${n.name}.`)
@@ -207,7 +209,7 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): string[]
   if (id === 'propPath') return propPathCandidates(ctx, sc)
   if (id.startsWith('pathValues:')) {
     const path = (sc.argsSoFar[Number(id.slice('pathValues:'.length))] ?? '').trim()
-    const target = resolvePropPath(ctx, sc.sceneId, path)
+    const target = resolvePropPath(ctx, sc.sceneId, path, sc.viewId)
     if (!target.ok) return []
     const entry = writableProps(ctx, sc.sceneId, target.nodeId, target.nodeType).find((e) => e.key === target.prop)
     if (!entry) return []

@@ -44,6 +44,8 @@ describe('resolvePropPath', () => {
     expect(resolvePropPath(ctx, 1, '1crn.visible')).toEqual({ ok: true, nodeType: 'object', nodeId: 10, prop: 'visible' })
     // No object prefix: the scene's own property.
     expect(resolvePropPath(ctx, 1, 'bgcolor')).toEqual({ ok: true, nodeType: 'scene', nodeId: 1, prop: 'bgcolor' })
+    // `view.` is the caller's view.
+    expect(resolvePropPath(ctx, 1, 'view.stereoMode', 7)).toEqual({ ok: true, nodeType: 'view', nodeId: 7, prop: 'stereoMode' })
   })
 
   it('refuses a duplicated object name instead of picking one', () => {

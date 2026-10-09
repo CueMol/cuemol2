@@ -118,10 +118,13 @@ export function resolveRef(
   return one(want, nodes.filter((n) => n.type !== 'object' && n.name === want && accepts(kind, n)))
 }
 
+/** The first segment of a property path that names the caller's view. */
+export const VIEW_PREFIX = 'view'
+
 /** Where a property lives, and its name there. */
 export interface PropTarget {
-  nodeType: 'scene' | 'object' | 'renderer'
-  /** The node's uid; the scene's own uid for a scene property. */
+  nodeType: 'scene' | 'object' | 'renderer' | 'view'
+  /** The node's uid; the scene's own uid for a scene property, the view's for a view one. */
   nodeId: number
   /** The property name, possibly dotted for a nested one. */
   prop: string
@@ -140,13 +143,15 @@ function targetOf(node: SceneNodeEntry): Omit<PropTarget, 'prop'> {
  * `.` after it: `obj/rend.prop`. Without one, the node is an object: the
  * shortest dot-separated prefix that names one (`1ox1.pdb.visible`), the rest
  * being the property. Either way the property may itself be dotted
- * (`coloring.col_C`). A path whose prefix names no object is a property of
- * the scene.
+ * (`coloring.col_C`). `view.prop` is a property of the caller's view (the
+ * View > View property inspector), unless an object is named `view`. Any other
+ * path whose prefix names no object is a property of the scene.
  */
 export function resolvePropPath(
   ctx: WorkerContext,
   sceneId: number,
   text: string,
+  viewId?: number,
 ): ({ ok: true } & PropTarget) | { ok: false; error: string } {
   const want = text.trim()
   if (want === '') return { ok: false, error: 'no property given' }
@@ -173,6 +178,9 @@ export function resolvePropPath(
       return { ok: false, error: `"${objName}" names more than one object: ${which}; give the uid instead` }
     }
     return { ok: true, ...targetOf(objs[0]), prop: segs.slice(i).join('.') }
+  }
+  if (segs[0] === VIEW_PREFIX && segs.length > 1 && viewId !== undefined) {
+    return { ok: true, nodeType: 'view', nodeId: viewId, prop: segs.slice(1).join('.') }
   }
   return { ok: true, nodeType: 'scene', nodeId: sceneId, prop: want }
 }
