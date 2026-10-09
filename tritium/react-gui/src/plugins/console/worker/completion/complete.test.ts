@@ -155,6 +155,14 @@ describe('argument completion', () => {
     expect(candidates.mock.calls[0][2].argsSoFar).toEqual(['aoEnabled'])
   })
 
+  it('completes a name=value argument from the source of the parameter it names', () => {
+    candidates.mockReturnValue(['buildit=true', 'buildit=false'])
+    // In the first position, but `b=` names the second parameter.
+    const out = run('set b=buildit=t')
+    expect(candidates.mock.calls[0][0]).toBe('settingValue')
+    expect(out.replacement).toBe('set b=buildit=true, ')
+  })
+
   it('falls back to files when the source declines', () => {
     candidates.mockReturnValue(null)
     const out = run('set aoRadius, 0')

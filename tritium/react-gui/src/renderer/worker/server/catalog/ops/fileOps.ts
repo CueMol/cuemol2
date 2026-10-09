@@ -16,7 +16,7 @@ import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { fileStem } from '@shared/fileExt'
 import { defineOp } from '../op'
 import { callerPath } from '../outputFile'
-import { enumOf, optional, path, rendererType, selection, string } from '../params'
+import { enumOf, optional, path, readerOptionText, rendererType, selection, string } from '../params'
 import { applyReaderOptionText, settableReaderOptions, withCompanionFile } from '../readerOptions'
 
 /** A CueMol scene file, which opens as a scene rather than loading into one. */
@@ -97,7 +97,7 @@ export const loadFile = defineOp({
     rendererType: optional(rendererType("Renderer to create for it. Null uses the reader's default.")),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
     name: optional(string('Name of the new object. Null uses the file name.')),
-    options: optional(string('Reader options as key=value pairs separated by spaces, e.g. "loadModel=true build2ndry=false". Null keeps the defaults.')),
+    options: optional(readerOptionText('Reader options as key=value pairs separated by spaces, e.g. "loadModel=true build2ndry=false". Null keeps the defaults.')),
     companion: optional(path('The second file of a two-file format: the .vert file of an MSMS surface, the .psf of NAMD coordinates, the coordinates of an AMBER prmtop. Null for none.')),
   },
   mutates: true,

@@ -241,6 +241,9 @@ function completionOf(
       if (rendererIndex >= 0) return { source: `rendererChangeTypes:${rendererIndex}`, description: 'renderer type', suffix }
       if (fileIndex >= 0) return { source: `fileRendererTypes:${fileIndex}`, description: 'renderer type', suffix }
       return { source: 'moleculeRendererTypes', description: 'renderer type', suffix }
+    case 'readerOptions':
+      // No suffix: several key=value pairs go in this one argument.
+      return fileIndex >= 0 ? { source: `readerOptions:${fileIndex}`, description: 'reader option', suffix: '' } : null
     case 'propName':
       return { source: `props:${nodeIndex}`, description: 'property', suffix }
     case 'propValue':

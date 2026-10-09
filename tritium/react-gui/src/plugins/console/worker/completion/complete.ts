@@ -204,7 +204,12 @@ export function completeLine(
     // rule, kept so a line that counts as argument 2 there counts as argument
     // 2 here.
     const index = (line.replace(LIST_RE, '').match(/,/g) ?? []).length
-    const entry = spec?.completions?.[index] ?? null
+    // `name=value`: the value of the parameter it names, wherever it stands.
+    const current = (index === 0 ? line.replace(/^[^ ]* /, '') : line.replace(/.*,/, '')).replace(/^\s+/, '')
+    const kw = /^([A-Za-z_][A-Za-z0-9_]*)=/.exec(current)
+    const kwIndex = kw && spec ? spec.params.findIndex((p) => p.name === kw[1]) : -1
+    const kwText = kwIndex >= 0 && kw ? kw[0] : ''
+    const entry = spec?.completions?.[kwIndex >= 0 ? kwIndex : index] ?? null
     if (spec && entry) {
       const argsSoFar = argumentsBefore(line, index)
       const ask = (pattern: string) =>
@@ -212,16 +217,20 @@ export function completeLine(
       // PyMOL completes the last word only, which cannot reach a name with a
       // space in it ("my scene"). So the whole argument goes first, and the
       // last word (a selection expression's) only when nothing starts with it.
-      const lastWord = line.replace(/.*[, ]/, '')
-      const whole = (index === 0 ? line.replace(/^[^ ]* /, '') : line.replace(/.*,/, '')).replace(/^\s+/, '')
-      let pattern = lastWord
+      let lastWord = line.replace(/.*[, ]/, '')
+      const whole = current.slice(kwText.length)
       let pre = rebuildPrefix(line, resolved.name)
+      if (kwText !== '' && lastWord.startsWith(kwText)) {
+        lastWord = lastWord.slice(kwText.length)
+        pre += kwText
+      }
+      let pattern = lastWord
       let candidates: string[] | null = null
       if (whole !== lastWord) {
         const found = ask(whole)
         if (found?.some((c) => c.startsWith(whole))) {
           pattern = whole
-          pre = `${resolved.name} ${argsSoFar.map((a) => `${a}, `).join('')}`
+          pre = `${resolved.name} ${argsSoFar.map((a) => `${a}, `).join('')}${kwText}`
           candidates = found
         }
       }

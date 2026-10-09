@@ -21,7 +21,7 @@ const COMPANION_KEY: Partial<Record<FormatOptions['kind'], string>> = {
 }
 
 /** Options whose value is one of a closed set. */
-const CHOICES: Readonly<Record<string, readonly string[]>> = {
+export const READER_OPTION_CHOICES: Readonly<Record<string, readonly string[]>> = {
   mapType: ['auto', 'xtal', 'em'],
 }
 
@@ -50,7 +50,7 @@ export function settableReaderOptions(format: FormatOptions): Record<string, str
 function readValue(key: string, current: string | number | boolean, text: string): string | number | boolean | { error: string } {
   if (typeof current === 'boolean') return parseBoolText(text) ?? { error: `${key} takes true or false.` }
   if (typeof current === 'number') return parseNumberText(text) ?? { error: `${key} takes a number.` }
-  const choices = CHOICES[key]
+  const choices = READER_OPTION_CHOICES[key]
   if (choices && !choices.includes(text)) return { error: `${key} takes one of: ${choices.join(', ')}.` }
   return text
 }
