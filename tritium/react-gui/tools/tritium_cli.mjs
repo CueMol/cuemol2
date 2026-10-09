@@ -338,7 +338,8 @@ async function interactive() {
           // completion (append a suffix) cannot express.
           setImmediate(() => {
             if (res.messages?.length) {
-              process.stdout.write('\n')
+              // A heading per Tab, so a list is told apart from the one before it.
+              process.stdout.write(`\n${sgr(STYLE.accent, `Tab: ${line}`)}\n`)
               printEntries(res.messages, true)
             }
             if (res.replacement !== null && res.replacement !== undefined && res.replacement !== line) {

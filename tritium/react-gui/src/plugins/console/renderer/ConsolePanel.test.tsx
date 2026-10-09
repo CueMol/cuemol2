@@ -105,7 +105,13 @@ describe('ConsolePanel', () => {
     expect([pluginId, name]).toEqual(['console', 'complete'])
     expect(args.line).toBe('bg')
     expect(promptOf(tree.container).value).toBe('bg_color ')
-    expect(tree.container.textContent).toContain('parser: matching commands:')
+    // The list goes to the strip above the prompt, not the transcript, and
+    // typing clears it: it only ever shows the latest Tab's candidates.
+    const strip = () => tree.container.querySelector('.console-completions')
+    expect(strip()?.textContent).toContain('parser: matching commands:')
+    expect(tree.container.querySelector('.console-transcript')?.textContent).not.toContain('parser: matching')
+    act(() => type(promptOf(tree.container), 'bg_color w'))
+    expect(strip()).toBeNull()
     tree.unmount()
   })
 

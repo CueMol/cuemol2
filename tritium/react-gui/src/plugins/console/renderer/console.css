@@ -89,6 +89,19 @@
   text-align: center;
 }
 
+/* What the last Tab listed: replaced by the next Tab, cleared by typing,
+   Enter or Esc. Above the prompt and out of the transcript, so it is always
+   the latest list; long lists scroll here rather than push the prompt away. */
+.console-completions {
+  flex: 0 1 auto;
+  max-height: 40%;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border-top: 1px solid var(--border);
+  color: var(--console-text);
+}
+
 .console-prompt {
   display: flex;
   background: var(--bg-input);

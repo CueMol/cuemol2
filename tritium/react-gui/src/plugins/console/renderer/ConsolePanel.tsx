@@ -11,7 +11,10 @@
  *
  * Up and Down walk the history, but only when the caret is on the first or
  * last line, so they keep meaning "move the caret" inside a pasted script.
- * Tab completes, the way PyMOL's command line does.
+ * Tab completes, the way PyMOL's command line does. What a Tab lists goes in
+ * a strip just above the prompt, not the transcript: each Tab replaces it,
+ * and typing, Enter or Esc clears it, so it always shows the latest Tab's
+ * candidates and the transcript keeps only what ran.
  *
  * The console speaks one dialect at a time: native (CueMol's own commands,
  * generated from the op catalogue) or PyMOL. The switch in the toolbar, or
@@ -33,7 +36,7 @@ import {
   DIALECT_PREF,
   DIALECT_PROMPTS,
 } from '../shared/consoleTypes'
-import type { DialectId } from '../shared/consoleTypes'
+import type { ConsoleEntry, DialectId } from '../shared/consoleTypes'
 import { ConsoleTranscript } from './ConsoleTranscript'
 import { consoleSession, useConsoleSession } from './consoleSessionStore'
 import { historyOf } from './commandHistory'
@@ -61,6 +64,8 @@ export const ConsolePanel: BottomTabComponent = ({
 }) => {
   const { lines, running, draft, runner, stopper } = useConsoleSession()
   const [recall, setRecall] = useState<RecallState>(IDLE)
+  // What the last Tab listed; null when nothing is shown.
+  const [completions, setCompletions] = useState<ConsoleEntry[] | null>(null)
   const { prefs, setPref } = usePluginPrefs(CONSOLE_PLUGIN_ID)
   const dialect: DialectId =
     prefs[DIALECT_PREF] === 'pymol' || prefs[DIALECT_PREF] === 'native'
@@ -136,10 +141,10 @@ export const ConsolePanel: BottomTabComponent = ({
         )
         .then((res) => {
           if (!res.ok) {
-            consoleSession.append([{ kind: 'error', text: `Error: ${res.error}` }])
+            setCompletions([{ kind: 'error', text: `Error: ${res.error}` }])
             return
           }
-          consoleSession.append(res.messages)
+          setCompletions(res.messages.length > 0 ? res.messages : null)
           if (res.replacement === null) return
           const next = value.slice(0, start) + res.replacement + value.slice(end)
           setRecall(IDLE)
@@ -166,6 +171,7 @@ export const ConsolePanel: BottomTabComponent = ({
     // getting back.
     history.pushHistory(text)
     setRecall(IDLE)
+    setCompletions(null)
     consoleSession.setDraft('')
     runner(text, dialect)
   }, [draft, running, runner, dialect, history, switchDialect])
@@ -173,6 +179,7 @@ export const ConsolePanel: BottomTabComponent = ({
   const handleChange = useCallback((value: string) => {
     consoleSession.setDraft(value)
     setRecall(IDLE)
+    setCompletions(null)
   }, [])
 
   const handleKeyDown = useCallback(
@@ -180,6 +187,12 @@ export const ConsolePanel: BottomTabComponent = ({
       // While converting, these keys belong to the IME: the arrows pick a
       // candidate and Tab accepts one.
       if (isImeKey(e.nativeEvent)) return
+
+      if (e.key === 'Escape' && completions) {
+        e.preventDefault()
+        setCompletions(null)
+        return
+      }
 
       if (e.key === 'Tab') {
         // Shift+Tab is left alone as the way out of the prompt by keyboard;
@@ -216,7 +229,7 @@ export const ConsolePanel: BottomTabComponent = ({
       setRecall(step.state)
       showRecalled(step.draft)
     },
-    [recall, showRecalled, completeAtCaret, history],
+    [recall, showRecalled, completeAtCaret, history, completions],
   )
 
   const focusPrompt = useCallback(() => inputRef.current?.focus(), [])
@@ -292,6 +305,14 @@ export const ConsolePanel: BottomTabComponent = ({
       <div className="console-body" onKeyDown={handleBodyKeyDown}>
         <ConsoleTranscript lines={lines} />
       </div>
+
+      {completions && (
+        <div className="console-completions type-console" role="status" aria-label="Completions">
+          {completions.map((line, i) => (
+            <div key={i} className={`console-line console-line-${line.kind}`}>{line.text}</div>
+          ))}
+        </div>
+      )}
 
       <div className="console-prompt">
         <span className="console-prompt-symbol type-console" aria-hidden>
