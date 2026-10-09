@@ -38,7 +38,6 @@ export type ParamSemantic =
   | 'propName'
   | 'propPath'
   | 'propValue'
-  | 'readerOptions'
 
 /** One atom named the way a PDB file names it. */
 export interface AtomSpec {
@@ -167,14 +166,6 @@ export function propName(description: string): Param<string> {
  */
 export function propPath(description: string): Param<string> {
   return param('string', description, { semantic: 'propPath' })
-}
-
-/**
- * The reader options of the file named by the op's path parameter, as
- * `key=value` pairs (see `readerOptions.ts`); completed from that reader.
- */
-export function readerOptionText(description: string): Param<string> {
-  return param('string', description, { semantic: 'readerOptions' })
 }
 
 /**

@@ -17,8 +17,6 @@ import { getNewRendererOptions } from '@renderer/worker/server/services/rend/get
 import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
 import { resolvePath } from '../../runtime/paths'
-import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
-import { READER_OPTION_CHOICES, settableReaderOptions } from '@renderer/worker/server/catalog/readerOptions'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
@@ -253,19 +251,6 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): string[]
     const file = unquoted(sc.argsSoFar[Number(id.slice('fileRendererTypes:'.length))] ?? '')
     if (file === '') return []
     return getCompatibleRendererNames(ctx, { filePath: resolvePath(sc.cwd, file) }).types
-  }
-  if (id.startsWith('readerOptions:')) {
-    // The options of the typed file's reader: a switch as key=true / key=false,
-    // a choice as each key=value, anything else as key= to type the value after.
-    const file = unquoted(sc.argsSoFar[Number(id.slice('readerOptions:'.length))] ?? '')
-    if (file === '') return []
-    const readerName = getCompatibleRendererNames(ctx, { filePath: resolvePath(sc.cwd, file) }).readerName
-    if (!readerName) return []
-    const format = buildHeadlessFileOpenOptions(ctx, { readerName, objectName: 'object', rendererType: null, selection: null }).format
-    return Object.entries(settableReaderOptions(format)).flatMap(([k, v]) => {
-      const choices = typeof v === 'boolean' ? ['true', 'false'] : (READER_OPTION_CHOICES[k] ?? null)
-      return choices ? choices.map((c) => `${k}=${c}`) : [`${k}=`]
-    })
   }
   if (id === 'moleculeRendererTypes') {
     // A downloaded structure (fetch): a molecule, whichever format.

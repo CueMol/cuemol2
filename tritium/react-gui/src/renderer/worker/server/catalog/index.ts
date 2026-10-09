@@ -16,6 +16,7 @@ import { ANALYSIS_OPS } from './ops/analysisOps'
 import { ANIM_OPS } from './ops/animOps'
 import { APBS_OPS } from './ops/apbsOps'
 import { EDIT_OPS } from './ops/editOps'
+import { LOAD_FORMAT_OPS } from './ops/loadFormatOps'
 import { TOOL_MENU_OPS } from './ops/toolOps'
 import { FILE_OPS } from './ops/fileOps'
 import { MEASURE_OPS } from './ops/measureOps'
@@ -63,6 +64,7 @@ export const OPS: readonly AnyOp[] = [
   ...TOOL_MENU_OPS,
   ...ANIM_OPS,
   ...EDIT_OPS,
+  ...LOAD_FORMAT_OPS,
 ].sort(byName)
 
 /** The ops always offered to a tool caller, in catalogue order. */
