@@ -17,6 +17,7 @@ import {
 } from '@renderer/worker/server/services/morph/morphMol'
 import type { MorphFrameInfo } from '@renderer/worker/server/services/morph/morphMol'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { checkPosition, pickByNumber } from '@renderer/worker/shared/numbered'
 import { defineOp } from '../op'
 import { callerPath } from '../outputFile'
 import { enumOf, integer, moleculeId, objectId, optional, path, real } from '../params'
@@ -104,6 +105,10 @@ export const morphAdd = defineOp({
       }
       objId = conv.morphObjId
     }
+    if (args.before !== null) {
+      const bad = checkPosition(args.before, frames.frames.length, 'list_morph_frames')
+      if (bad) return { ok: false, error: bad }
+    }
     const insertIndex = args.before === null ? -1 : args.before - 1
     const added = args.file !== null
       ? addMorphFrameFromFile(ctx, { sceneId: oc.sceneId, objId, path: callerPath(args.file), insertIndex })
@@ -125,6 +130,10 @@ export const morphRemove = defineOp({
   expose: { tool: false, console: true, mcp: true },
   group: 'animation',
   run(ctx, args, oc) {
+    const frames = getMorphFrames(ctx, { sceneId: oc.sceneId, objId: args.molId })
+    if (!frames.ok || !frames.isMorphMol) return { ok: false, error: 'This molecule has no morphing frames.' }
+    const frame = pickByNumber(frames.frames, args.frame, 'frame', 'list_morph_frames')
+    if (typeof frame === 'string') return { ok: false, error: frame }
     return normalizeServiceResult(
       removeMorphFrame(ctx, { sceneId: oc.sceneId, objId: args.molId, frameIndex: args.frame - 1 }),
       'The frame could not be removed.',

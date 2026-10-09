@@ -35,6 +35,7 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { resolvePropPath } from '../refs'
+import { checkPosition, numbered, pickByNumber } from '@renderer/worker/shared/numbered'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { atoms, boolean, enumOf, integer, moleculeId, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
@@ -292,7 +293,7 @@ export const listInteractions = defineOp({
   run(ctx, args, oc) {
     const res = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!res.ok) return { ok: false, error: 'That is not an interaction renderer.' }
-    return { ok: true, data: { entries: res.entries.map((e, i) => ({ number: i + 1, mode: INTR_MODES[e.mode] ?? String(e.mode), atoms: e.atoms })) } }
+    return { ok: true, data: { entries: numbered(res.entries.map((e) => ({ mode: INTR_MODES[e.mode] ?? String(e.mode), atoms: e.atoms }))) } }
   },
 })
 
@@ -310,8 +311,8 @@ export const removeInteraction = defineOp({
   run(ctx, args, oc) {
     const list = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!list.ok) return { ok: false, error: 'That is not an interaction renderer.' }
-    const entry = list.entries[args.number - 1]
-    if (!entry) return { ok: false, error: `There is no interaction ${args.number}; list_interactions numbers them 1 to ${list.entries.length}.` }
+    const entry = pickByNumber(list.entries, args.number, 'interaction', 'list_interactions')
+    if (typeof entry === 'string') return { ok: false, error: entry }
     const res = removeAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId, ids: [entry.id] })
     return res.ok ? { ok: true } : { ok: false, error: 'The interaction could not be removed.' }
   },
@@ -338,7 +339,7 @@ export const listPaint = defineOp({
   run(ctx, args, oc) {
     const p = paintEntries(ctx, oc.sceneId, args.rendId)
     if ('error' in p) return { ok: false, error: p.error }
-    return { ok: true, data: { entries: p.entries.map(({ selStr, colorValue }, i) => ({ number: i + 1, selStr, colorValue })) } }
+    return { ok: true, data: { entries: numbered(p.entries.map(({ selStr, colorValue }) => ({ selStr, colorValue }))) } }
   },
 })
 
@@ -348,9 +349,8 @@ const PAINT_NUMBER = 'The entry\'s number in list_paint (from 1).'
 function paintIndex(ctx: Parameters<typeof getRendererColoringState>[0], sceneId: number, rendId: number, n: number): { entry: PaintEntryDto; count: number } | { error: string } {
   const p = paintEntries(ctx, sceneId, rendId)
   if ('error' in p) return p
-  const e = p.entries[n - 1]
-  if (!e) return { error: `There is no paint entry ${n}; list_paint numbers them 1 to ${p.entries.length}.` }
-  return { entry: e, count: p.entries.length }
+  const e = pickByNumber(p.entries, n, 'paint entry', 'list_paint')
+  return typeof e === 'string' ? { error: e } : { entry: e, count: p.entries.length }
 }
 
 export const updatePaint = defineOp({
@@ -413,7 +413,8 @@ export const movePaint = defineOp({
   run(ctx, args, oc) {
     const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
     if ('error' in at) return { ok: false, error: at.error }
-    if (args.to < 1 || args.to > at.count) return { ok: false, error: `to must be 1 to ${at.count}.` }
+    const bad = checkPosition(args.to, at.count, 'list_paint')
+    if (bad) return { ok: false, error: bad }
     return normalizeServiceResult(
       movePaintEntry(ctx, { sceneId: oc.sceneId, rendId: args.rendId, fromIdx: at.entry.idx, toIdx: args.to - 1 }),
       'The paint entry could not be moved.',

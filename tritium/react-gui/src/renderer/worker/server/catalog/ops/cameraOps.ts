@@ -15,6 +15,7 @@ import {
 import { getViewProjection, setViewProjection } from '@renderer/worker/server/services/view/viewProjection'
 import { translateView } from '@renderer/worker/server/services/view/viewXform'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { checkPosition, numbered } from '@renderer/worker/shared/numbered'
 import { defineOp } from '../op'
 import { boolean, integer, optional, real, string } from '../params'
 
@@ -26,11 +27,11 @@ export const listCameras = defineOp({
   expose: { tool: 'view', console: true },
   group: 'viewing',
   aliases: [{ name: 'cameras', summary: 'List the saved views.' }],
-  format: (data) => (data as { cameras: { name: string }[] }).cameras.map((c) => c.name),
+  format: (data) => (data as { cameras: { number: number; name: string }[] }).cameras.map((c) => `${c.number}  ${c.name}`),
   run(ctx, _args, oc) {
     const res = listCamerasService(ctx, { sceneId: oc.sceneId })
     if (!res.ok) return { ok: false, error: res.error }
-    return { ok: true, data: { cameras: res.cameras.map((c) => ({ name: c.name })) } }
+    return { ok: true, data: { cameras: numbered(res.cameras.map((c) => ({ name: c.name }))) } }
   },
 })
 
@@ -172,7 +173,8 @@ export const moveCamera = defineOp({
     const names = list.cameras.map((c) => c.name)
     const from = names.indexOf(args.name)
     if (from < 0) return { ok: false, error: `No camera named "${args.name}".` }
-    if (args.to < 1 || args.to > names.length) return { ok: false, error: `to must be 1 to ${names.length}.` }
+    const bad = checkPosition(args.to, names.length, 'list_cameras')
+    if (bad) return { ok: false, error: bad }
     names.splice(from, 1)
     names.splice(args.to - 1, 0, args.name)
     return normalizeServiceResult(reorderCameras(ctx, { sceneId: oc.sceneId, names }), 'The cameras could not be reordered.')

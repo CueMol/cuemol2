@@ -23,6 +23,7 @@ import type { AnimElementPropKey } from '@renderer/worker/server/services/anim/t
 import type { AnimAddType, AnimElement, AnimTimeline } from '@renderer/worker/shared/animTypes'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { parseBoolText, parseNumberText } from '../argValues'
+import { checkPosition, findBySpec, numbered } from '@renderer/worker/shared/numbered'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { boolean, enumOf, integer, optional, real, string } from '../params'
@@ -50,16 +51,7 @@ const ELEMENT_DESC = 'The element: its number in list_anims (from 1), #uid, or i
 
 /** The element `spec` names, or why it names none. */
 export function findElement(elements: readonly AnimElement[], spec: string): AnimElement | string {
-  const s = spec.trim()
-  const uid = /^#(\d+)$/.exec(s)
-  if (uid) return elements.find((e) => e.uid === Number(uid[1])) ?? `No animation element has uid ${s}.`
-  if (/^\d+$/.test(s)) {
-    return elements[Number(s) - 1] ?? `There is no animation element ${s}; list_anims numbers them 1 to ${elements.length}.`
-  }
-  const named = elements.filter((e) => e.name === s)
-  if (named.length === 1) return named[0]
-  if (named.length > 1) return `${named.length} animation elements are named "${s}"; give its number or #uid.`
-  return `No animation element is named "${s}".`
+  return findBySpec(elements, spec, { uid: (e) => e.uid, name: (e) => e.name, noun: 'animation element', listCmd: 'list_anims' })
 }
 
 function timeline(ctx: WorkerContext, sceneId: number): AnimTimeline {
@@ -105,7 +97,7 @@ export const animList = defineOp({
   run(ctx, _args, oc) {
     // Number the elements from 1, as the other anim_* ops take them.
     const t = timeline(ctx, oc.sceneId)
-    return { ok: true, data: { ...t, elements: t.elements.map(({ index, ...e }) => ({ number: index + 1, ...e })) } }
+    return { ok: true, data: { ...t, elements: numbered(t.elements.map(({ index: _index, ...e }) => e)) } }
   },
 })
 
@@ -174,6 +166,8 @@ export const animMove = defineOp({
   run(ctx, args, oc) {
     const e = element(ctx, oc.sceneId, args.element)
     if ('error' in e) return { ok: false, error: e.error }
+    const bad = checkPosition(args.to, timeline(ctx, oc.sceneId).elements.length, 'list_anims')
+    if (bad) return { ok: false, error: bad }
     return outcome(moveElement(ctx, { sceneId: oc.sceneId, uid: e.uid, to: args.to - 1 }))
   },
 })
