@@ -316,6 +316,7 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
 
   return {
     name: alias?.name ?? op.name,
+    group: op.group,
     params: specs,
     mode: 'strict',
     mutates: op.mutates,

@@ -1,6 +1,6 @@
 /**
  * @file plugins/console/renderer/sceneRequest.ts
- * @description Doing what a scene command asked for (`scenes`, `new_scene`,
+ * @description Doing what a scene command asked for (`list_scenes`, `create_scene`,
  * `switch_scene`, `close_scene`), on the tab strip.
  *
  * The worker parsed the command; everything it means happens here, because
@@ -15,7 +15,7 @@ import type { SceneRequest } from '../shared/consoleTypes'
 /** The lines to print, or why it could not be done. */
 export type SceneRequestOutcome = { ok: true; lines: string[] } | { ok: false; error: string }
 
-/** One `scenes` line: `* 2  name  #uid  (2 views, modified)`. */
+/** One `list_scenes` line: `* 2  name  #uid  (2 views, modified)`. */
 function describe(scene: OpenScene, index: number): string {
   const notes = [
     ...(scene.viewIds.length > 1 ? [`${scene.viewIds.length} views`] : []),
@@ -26,7 +26,7 @@ function describe(scene: OpenScene, index: number): string {
 }
 
 /**
- * The scene `spec` names: a number from `scenes` (1-based), `#uid`, or a
+ * The scene `spec` names: a number from `list_scenes` (1-based), `#uid`, or a
  * name. Empty is the active scene.
  */
 export function findScene(list: readonly OpenScene[], spec: string): OpenScene | string {
@@ -35,7 +35,7 @@ export function findScene(list: readonly OpenScene[], spec: string): OpenScene |
   const uid = /^#(\d+)$/.exec(spec)
   if (uid) return list.find((s) => s.sceneId === Number(uid[1])) ?? `Error: no open scene has uid ${spec}`
   if (/^\d+$/.test(spec)) {
-    return list[Number(spec) - 1] ?? `Error: no scene ${spec}; "scenes" lists 1 to ${list.length}`
+    return list[Number(spec) - 1] ?? `Error: no scene ${spec}; list_scenes numbers them 1 to ${list.length}`
   }
   const named = list.filter((s) => s.name === spec)
   if (named.length === 1) return named[0]

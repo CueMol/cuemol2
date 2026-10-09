@@ -20,6 +20,7 @@ export const NATIVE_SCRIPT_EXT = '.cml'
 
 const cd: ConsoleCommand = {
   name: 'cd',
+  group: 'console',
   params: [{ name: 'dir', default: '~' }],
   mode: 'strict',
   mutates: false,
@@ -37,6 +38,7 @@ const cd: ConsoleCommand = {
 
 const pwd: ConsoleCommand = {
   name: 'pwd',
+  group: 'console',
   params: [],
   mode: 'strict',
   mutates: false,
@@ -49,6 +51,7 @@ const pwd: ConsoleCommand = {
 
 const ls: ConsoleCommand = {
   name: 'ls',
+  group: 'console',
   params: [{ name: 'dir', default: '' }],
   mode: 'strict',
   mutates: false,
@@ -72,6 +75,7 @@ const ls: ConsoleCommand = {
 
 const run: ConsoleCommand = {
   name: 'run',
+  group: 'console',
   params: [{ name: 'file' }],
   mode: 'strict',
   mutates: false,
@@ -82,7 +86,8 @@ const run: ConsoleCommand = {
 }
 
 const logOpen: ConsoleCommand = {
-  name: 'log_open',
+  name: 'open_log',
+  group: 'console',
   params: [{ name: 'file', default: `log${NATIVE_SCRIPT_EXT}` }, { name: 'mode', default: 'w' }],
   mode: 'strict',
   mutates: false,
@@ -104,7 +109,8 @@ const logOpen: ConsoleCommand = {
 }
 
 const logClose: ConsoleCommand = {
-  name: 'log_close',
+  name: 'close_log',
+  group: 'console',
   params: [],
   mode: 'strict',
   mutates: false,
@@ -119,6 +125,7 @@ const logClose: ConsoleCommand = {
 
 const logLine: ConsoleCommand = {
   name: 'log',
+  group: 'console',
   params: [{ name: 'text', default: '' }],
   mode: 'literal1',
   mutates: false,
@@ -137,6 +144,7 @@ const logLine: ConsoleCommand = {
 function undoStack(name: 'undo' | 'redo'): ConsoleCommand {
   return {
     name,
+    group: 'edit',
     params: [],
     mode: 'strict',
     mutates: false,
@@ -159,37 +167,46 @@ function handOff(name: string, req: SceneRequest, cc: CmdContext): CmdOutcome {
   return { ok: false, error: `Error: ${name} cannot run inside a script; put it on the command line` }
 }
 
-const scenes: ConsoleCommand = {
-  name: 'scenes',
-  params: [],
-  mode: 'strict',
-  mutates: false,
-  summary: 'List the open scenes; * marks the active one.',
-  run: (_ctx, _args, cc) => handOff('scenes', { op: 'list' }, cc),
+/** `list_scenes`, and its short form `scenes`. */
+function listScenesAs(name: string, summary: string): ConsoleCommand {
+  return {
+    name,
+    group: 'tabs',
+    params: [],
+    mode: 'strict',
+    mutates: false,
+    summary,
+    run: (_ctx, _args, cc) => handOff(name, { op: 'list' }, cc),
+  }
 }
+const listScenes = listScenesAs('list_scenes', 'List the open scenes; * marks the active one.')
+const scenes = listScenesAs('scenes', 'Short for list_scenes.')
 
 const newScene: ConsoleCommand = {
-  name: 'new_scene',
+  name: 'create_scene',
+  group: 'tabs',
   params: [{ name: 'name', default: '' }],
   mode: 'strict',
   mutates: false,
   summary: 'Open a new empty scene in a tab of its own and make it active.',
   completions: [{ source: 'none', description: 'name', suffix: '' }],
-  run: (_ctx, args, cc) => handOff('new_scene', { op: 'new', name: args.name.trim() }, cc),
+  run: (_ctx, args, cc) => handOff('create_scene', { op: 'new', name: args.name.trim() }, cc),
 }
 
 const switchScene: ConsoleCommand = {
   name: 'switch_scene',
+  group: 'tabs',
   params: [{ name: 'scene' }],
   mode: 'strict',
   mutates: false,
-  summary: 'Make a scene active, by its number in "scenes", #uid or name.',
+  summary: 'Make a scene active, by its number in list_scenes, #uid or name.',
   completions: [SCENE_COMPLETION],
   run: (_ctx, args, cc) => handOff('switch_scene', { op: 'switch', scene: args.scene.trim() }, cc),
 }
 
 const closeScene: ConsoleCommand = {
   name: 'close_scene',
+  group: 'tabs',
   params: [{ name: 'scene', default: '' }, { name: 'force', default: '' }],
   mode: 'strict',
   mutates: false,
@@ -203,6 +220,7 @@ const closeScene: ConsoleCommand = {
 }
 
 export const NATIVE_BUILTINS: ConsoleCommand[] = [
+  listScenes,
   scenes,
   newScene,
   switchScene,

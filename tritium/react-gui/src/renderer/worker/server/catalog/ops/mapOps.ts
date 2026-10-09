@@ -30,6 +30,7 @@ export const fetchMap = defineOp({
   },
   mutates: true,
   expose: { tool: 'map', console: true },
+  group: 'maps',
   async run(ctx, args, oc) {
     const pdbId = args.pdbId.trim().toLowerCase()
     if (!PDB_ID_RE.test(pdbId)) return { ok: false, error: `"${args.pdbId}" is not a PDB accession code.` }
@@ -58,6 +59,7 @@ export const listMapRenderers = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'map', console: true },
+  group: 'maps',
   run(ctx, _args, oc): OpOutcome {
     const items = listMapRenderersService(ctx, { sceneId: oc.sceneId }).items
     return {
@@ -91,6 +93,7 @@ export const setMapContour = defineOp({
   },
   mutates: true,
   expose: { tool: 'map', console: true },
+  group: 'maps',
   aliases: [{ name: 'contour', summary: 'Set a map contour: contour 1crn_2fofc/contour1, level=1.5' }],
   run(ctx, args, oc) {
     const writes: [Parameters<typeof setMapRendererProp>[1]['propName'], number | string][] = []

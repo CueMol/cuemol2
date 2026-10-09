@@ -121,7 +121,8 @@ class EntrySink {
 const MAX_SCRIPT_DEPTH = 8
 
 /** Commands that are never written to the log: they are about the log. */
-const UNLOGGED = new Set(['log', 'log_open', 'log_close'])
+// The log commands of both dialects: native open_log / close_log, PyMOL log_open / log_close.
+const UNLOGGED = new Set(['log', 'log_open', 'log_close', 'open_log', 'close_log'])
 
 /** What one submission accumulates as its commands run. */
 interface Submission {

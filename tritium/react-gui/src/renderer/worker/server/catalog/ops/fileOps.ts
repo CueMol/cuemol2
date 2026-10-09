@@ -39,6 +39,7 @@ export const fetchPdb = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'files',
   aliases: [
     {
       name: 'fetch',
@@ -101,6 +102,7 @@ export const loadFile = defineOp({
   },
   mutates: true,
   expose: { tool: 'files', console: true },
+  group: 'files',
   aliases: [{ name: 'load', summary: 'Open a structure file, or a .qsc scene.' }],
   outsideTxn: (raw) => SCENE_FILE_RE.test((raw.path ?? '').trim()),
   run(ctx, args, oc) {
@@ -150,13 +152,14 @@ export const loadFile = defineOp({
 })
 
 export const readerOptions = defineOp({
-  name: 'reader_options',
+  name: 'list_reader_options',
   description:
     'List the reader options load_file takes for a file (those of the File Open dialog), ' +
     'with the values a load uses when none is given.',
   params: { path: path('The file to open.') },
   mutates: false,
   expose: { tool: false, console: true, mcp: true },
+  group: 'files',
   format(data) {
     const d = data as { reader: string; options: Record<string, unknown> }
     const rows = Object.entries(d.options).map(([k, v]) => `  ${k}=${String(v)}`)

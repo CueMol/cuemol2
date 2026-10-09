@@ -15,8 +15,8 @@ import {
 } from '@renderer/worker/server/services/scene/exportImage'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { desktopDir } from '../outputFile'
-import { boolean, integer, moleculeId, optional, path, real, selection, string } from '../params'
+import { outputPath } from '../outputFile'
+import { boolean, integer, moleculeId, optional, path, real, selection } from '../params'
 
 /** The dialog's own starting values, so both routes measure the same thing. */
 const MIN_CONTACT_DIST = 0
@@ -45,6 +45,7 @@ export const analyzeInteractionsOp = defineOp({
   },
   mutates: true,
   expose: { tool: 'analysis', console: true },
+  group: 'analysis',
   run(ctx, args, oc) {
     const result = analyzeInteractions(ctx, {
       sceneId: oc.sceneId,
@@ -66,42 +67,33 @@ export const analyzeInteractionsOp = defineOp({
   },
 })
 
-/** Reject anything that would write outside the chosen directory. */
-const SAFE_BASENAME_RE = /^[A-Za-z0-9._-]+$/
-
 export const exportImage = defineOp({
   name: 'export_image',
   description:
     'Save a PNG of the current view to a file, only when the user asks for a file. To look at ' +
     'the view yourself, use capture_view, which saves nothing. ' +
-    'Give a file name only, not a path: it is saved to the desktop, and the full path is ' +
-    'reported back -- tell the user where it went.',
+    'Give a plain file name, which is saved to the desktop, or an absolute path where the ' +
+    'caller allows one; the full path is reported back -- tell the user where it went.',
   params: {
-    fileName: string('File name with no directories, for example overview.png.'),
+    path: path('The file, e.g. overview.png.'),
     width: optional(integer('Image width in pixels. Null uses the size of the view on screen.')),
     height: optional(integer('Image height in pixels. Null uses the size of the view on screen.')),
   },
   // The scene is unchanged: this writes a file, which no undo can take back.
   mutates: false,
-  expose: { tool: 'files', console: true },
+  expose: { tool: 'files', console: true, mcp: true },
+  group: 'files',
   run(ctx, args, oc) {
-    const fileName = args.fileName
-    if (!SAFE_BASENAME_RE.test(fileName)) {
-      return {
-        ok: false,
-        error: 'Give a plain file name with no directory separators, for example overview.png.',
-      }
-    }
-    const name = fileName.toLowerCase().endsWith('.png') ? fileName : `${fileName}.png`
-    return writePng(ctx, oc.sceneId, oc.viewId, nodePath.join(desktopDir(), name), args.width, args.height)
+    const target = outputPath(oc, args.path, '.png')
+    if ('error' in target) return { ok: false, error: target.error }
+    return writePng(ctx, oc.sceneId, oc.viewId, target.path, args.width, args.height)
   },
 })
 
 /**
  * Render the view to a PNG file.
  *
- * Shared by `export_image` (a name on the desktop, for a model) and `png` (any
- * path, for a console user who chose it).
+ * Used by `export_image`, which decides where through `outputPath`.
  *
  * @param width - null uses the size of the view on screen; so does `height`.
  */
@@ -174,6 +166,7 @@ export const captureView = defineOp({
   mutates: false,
   // A picture is for a model to look at; a console has nowhere to show it.
   expose: { tool: 'core', console: false },
+  group: 'viewing',
   run(ctx, args, oc) {
     const info = getSceneExportInfo(ctx, { sceneId: oc.sceneId, viewId: oc.viewId })
     if (!info.ok || info.width <= 0 || info.height <= 0) {
@@ -214,23 +207,4 @@ export const captureView = defineOp({
 })
 
 
-export const savePng = defineOp({
-  name: 'save_png',
-  description: 'Save a PNG of the current view to a file.',
-  params: {
-    path: path('Where to write the PNG.'),
-    width: optional(integer('Image width in pixels. Null uses the size of the view on screen.')),
-    height: optional(integer('Image height in pixels. Null uses the size of the view on screen.')),
-  },
-  mutates: false,
-  // A model writes only to the desktop, by name (export_image); a path is
-  // for a person who chose it.
-  expose: { tool: false, console: true },
-  aliases: [{ name: 'png', summary: 'Save a PNG of the current view.' }],
-  run(ctx, args, oc) {
-    const filePath = args.path.toLowerCase().endsWith('.png') ? args.path : `${args.path}.png`
-    return writePng(ctx, oc.sceneId, oc.viewId, filePath, args.width, args.height)
-  },
-})
-
-export const ANALYSIS_OPS = [analyzeInteractionsOp, captureView, exportImage, savePng]
+export const ANALYSIS_OPS = [analyzeInteractionsOp, captureView, exportImage]

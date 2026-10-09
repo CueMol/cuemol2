@@ -39,6 +39,7 @@ export const calcElepot = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'surfaces',
   async run(ctx, args, oc) {
     const defaults = apbsDefaults()
     const started = calcApbsStart(ctx, {

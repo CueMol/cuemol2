@@ -79,7 +79,7 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
 
 - 公開するのは `expose.tool !== false` の op 全部 (core + 全 toolset) と、`expose.mcp: true` の op
   (agent には出さない MCP 専用。`save_scene`、Tools 系の `calc_elepot` / `cut_surface` / `morph_*`、
-  アニメーション編集の `anim_*`)。MCP client は全 server の tool を一覧して自分で
+  アニメーション編集の `list_anims` / `add_anim` など)。MCP client は全 server の tool を一覧して自分で
   選ぶので、agent の `enable_toolsets` の段階は無い。
 - 1 call = 1 undo transaction (label `MCP: <tool 名>`)。Cmd+Z 1 回で 1 call が戻る。
   何も変えなかった call は rollback (空 commit で redo を消さないため)。
@@ -98,7 +98,7 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
 
 ### scene (タブ) の tool (`plugins/mcp/renderer/sceneTools.ts`)
 
-`list_scenes` / `new_scene {name}` / `switch_scene {sceneId}` / `close_scene {sceneId, discardChanges}`。
+`list_scenes` / `create_scene {name}` / `switch_scene {sceneId}` / `close_scene {sceneId, discardChanges}`。
 タブは window のものなので worker には行かず、`McpRoot` が `useSceneTabs()` で答える (結果は op と
 同じ `{ ok, result }` の JSON)。console の scene コマンド (§5.2) と同じく保存確認は出さず、未保存の
 scene は `discardChanges: true` が無いと閉じない (説明文で「捨てる前にユーザに聞く」よう指示)。
@@ -166,12 +166,12 @@ Node (18 以降) だけで動く、依存なしの thin client。repo からは 
 
 ### 5.2 scene コマンド (native dialect)
 
-`scenes` (一覧、`*` がアクティブ)、`new_scene [name]`、`switch_scene <scene>`、
-`close_scene [scene] [, force]`。scene は番号 (`scenes` の順)、`#uid`、名前で指定し、名前は Tab で
+`list_scenes` (短縮形 `scenes`。一覧、`*` がアクティブ)、`create_scene [name]`、`switch_scene <scene>`、
+`close_scene [scene] [, force]`。scene は番号 (`list_scenes` の順)、`#uid`、名前で指定し、名前は Tab で
 補完する。scene はタブなので worker では作れない: command は `CmdContext.requestScene` で要求を
 返して submission をそこで終え (`RunCommandOutcome.sceneRequest` と残りの `rest`)、renderer の
 `runSubmission` が `doSceneRequest` (`renderer/sceneRequest.ts`) でタブを操作してから、残りを
-その時点のアクティブ scene に対して送り直す。よって `new_scene; fetch 1crn` は新しい scene に入り、
+その時点のアクティブ scene に対して送り直す。よって `create_scene; fetch 1crn` は新しい scene に入り、
 undo txn は scene ごとに分かれる。タブ操作は plugin API `useSceneTabs()` (各操作は tab strip に
 反映されてから resolve する)。保存確認の dialog は出さない (terminal から操作中に GUI で止まるため):
 未保存の scene は `force` が無いと閉じない。`@file` / `run` の script 内では使えない。

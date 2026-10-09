@@ -114,7 +114,7 @@ export function writeNodeProp(
   if (!entry) {
     return {
       ok: false,
-      error: `This ${ref.nodeType} has no property "${propName}". Call get_node_props for the list.`,
+      error: `This ${ref.nodeType} has no property "${propName}". Call list_node_props for the list.`,
     }
   }
   if (entry.readonly) return { ok: false, error: `"${propName}" is read only.` }
@@ -143,7 +143,7 @@ export function writeNodeProp(
 }
 
 export const getNodeProps = defineOp({
-  name: 'get_node_props',
+  name: 'list_node_props',
   description:
     'List the writable properties of one node with their current values and, for ' +
     'enumerated ones, the allowed values. The node may be a renderer, an object, the ' +
@@ -156,6 +156,7 @@ export const getNodeProps = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'properties',
   aliases: [{ name: 'props', order: ['nodeId'], summary: 'List the properties of a node, or of view (the scene when none is given).' }],
   format(data) {
     const d = data as {
@@ -211,12 +212,12 @@ export const setNodeProp = defineOp({
     'switch on CMYK colour proofing ("use_colproof", "icc_filename"). On the view it sets ' +
     'stereo ("stereoMode", "stereoDist", "swapStereoEyes") and the centre mark ' +
     '("centerMark"). On a renderer it ' +
-    'sets a width, a detail level, or a mode. Call get_node_props first: the property ' +
+    'sets a width, a detail level, or a mode. Call list_node_props first: the property ' +
     'name, its type, and the allowed values all come from there.',
   params: {
     nodeType: nodeTypeParam(),
     nodeId: nodeIdParam(),
-    prop: propName('Property name, exactly as get_node_props reported it.'),
+    prop: propName('Property name, exactly as list_node_props reported it.'),
     value: propValue(
       'New value, written as text; it is converted to the property type. A colour is a ' +
         'name such as "white" or a hex code such as "#204080".',
@@ -224,6 +225,7 @@ export const setNodeProp = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'properties',
   run(ctx, args, oc): OpOutcome {
     const ref = nodeRefOf(args.nodeType, args.nodeId, oc)
     if (typeof ref === 'string') return { ok: false, error: ref }
@@ -244,6 +246,7 @@ export const setProp = defineOp({
   // The model addresses nodes by uid through set_node_prop; a path of names
   // is for a person at a prompt.
   expose: { tool: false, console: true },
+  group: 'properties',
   aliases: [{ name: 'set', summary: 'Set a property: set 1crn/cartoon1.width, 2 / set bgcolor, white' }],
   // The service answers with every property of the node, which is what an
   // inspector redraws from; at a prompt a write that worked says nothing.
@@ -263,6 +266,7 @@ export const getProp = defineOp({
   },
   mutates: false,
   expose: { tool: false, console: true },
+  group: 'properties',
   aliases: [{ name: 'get', summary: 'Print a property: get 1crn/cartoon1.width / get bgcolor' }],
   format(data) {
     const d = data as { prop: string; value: unknown }

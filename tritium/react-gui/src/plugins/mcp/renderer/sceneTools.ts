@@ -37,7 +37,7 @@ export const SCENE_TOOLS: readonly McpToolDecl[] = [
     inputSchema: schema({}),
   },
   {
-    name: 'new_scene',
+    name: 'create_scene',
     description:
       'Open a new empty scene in a tab of its own and make it the active scene, so the tools ' +
       'that follow work on it. Use it to keep separate work apart; loading into the current ' +
@@ -81,7 +81,7 @@ export async function callSceneTool(
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpCallResult> {
-  if (name === 'new_scene') {
+  if (name === 'create_scene') {
     const made = await tabs.create(typeof args.name === 'string' && args.name !== '' ? args.name : undefined)
     return made ? done({ sceneId: made.sceneId, name: made.name, active: true }) : refused('The scene could not be made.')
   }

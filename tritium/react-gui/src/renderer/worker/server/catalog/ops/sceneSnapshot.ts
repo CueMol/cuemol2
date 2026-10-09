@@ -48,7 +48,7 @@ export interface SnapshotObject {
  * A sample, not the whole list: the point is to show that the scene is a node
  * with settings of its own and to hand over the exact spelling of the keys,
  * so the model can reach for set_node_prop without a read first. The rest are
- * one get_node_props call away.
+ * one list_node_props call away.
  */
 export interface SnapshotSceneSettings {
   /** Background colour as `#rrggbb`, which is what `bgcolor` takes back. */

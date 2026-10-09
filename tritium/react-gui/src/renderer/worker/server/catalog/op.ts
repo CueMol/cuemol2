@@ -104,9 +104,42 @@ export interface OpExposure {
   mcp?: boolean
 }
 
+/**
+ * The subjects the console's `help` lists commands under, with their headings.
+ *
+ * An id is also what `help <id>` takes, so none may be a command name (a test
+ * checks): `viewing` and `properties` rather than `view` and `props`, which
+ * are commands.
+ */
+export const OP_GROUPS = {
+  tabs: 'Scenes and tabs',
+  nodes: 'Objects and the scene tree',
+  edit: 'Undo',
+  renderers: 'Renderers',
+  coloring: 'Colouring',
+  selections: 'Selections',
+  viewing: 'View and cameras',
+  properties: 'Properties',
+  molecule: 'Molecule editing',
+  surfaces: 'Surfaces',
+  analysis: 'Measurement and analysis',
+  maps: 'Density maps',
+  animation: 'Animation',
+  files: 'Files and images',
+  console: 'Console',
+} as const
+
+export type OpGroup = keyof typeof OP_GROUPS
+
 export interface Op<P extends ParamMap = ParamMap> {
-  /** snake_case; the tool name and the console command name. Unique. */
+  /**
+   * snake_case; the tool name and the console command name. Unique. A verb
+   * first, then what it acts on (`list_cameras`, `add_paint`); see the naming
+   * rules in docs/architecture/op-catalog.md.
+   */
   name: string
+  /** The heading `help` lists it under. */
+  group: OpGroup
   /** What it does AND when to reach for it. A model has only this. */
   description: string
   params: P

@@ -6,7 +6,7 @@
  *
  * Each runs the service the panel or the element inspector commits through,
  * so a command and the panel leave the same undo steps. An element is named
- * by its number in `anim_list` (from 1), `#uid`, or its name. Times are in
+ * by its number in `list_anims` (from 1), `#uid`, or its name. Times are in
  * milliseconds, relative to the element it follows (`timeRefName`), as the
  * inspector shows them. `animate` plays it.
  */
@@ -26,7 +26,7 @@ import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { boolean, enumOf, integer, optional, real, string } from '../params'
 
-/** The element types `anim_add` takes, by the word typed. */
+/** The element types `add_anim` takes, by the word typed. */
 const ADD_TYPES: Readonly<Record<string, AnimAddType>> = {
   spin: 'SimpleSpin',
   camera: 'CamMotion',
@@ -39,13 +39,13 @@ const ADD_TYPES: Readonly<Record<string, AnimAddType>> = {
 }
 const ADD_TYPE_NAMES = Object.keys(ADD_TYPES) as [string, ...string[]]
 
-/** The properties `anim_set` writes, by the kind of value each takes. */
+/** The properties `set_anim_prop` writes, by the kind of value each takes. */
 const BOOL_PROPS = ['disabled', 'ignorerotate', 'ignorecenter', 'ignorezoom', 'ignoreslab', 'hide', 'fade'] as const
 const NUMBER_PROPS = ['quadric', 'angle', 'tgtAlpha', 'direction', 'distance', 'startValue', 'endValue'] as const
 const TEXT_PROPS = ['name', 'timeRefName', 'endcam', 'rend', 'mol'] as const
 const SET_PROPS = [...TEXT_PROPS, ...BOOL_PROPS, ...NUMBER_PROPS, 'axis'] as const
 
-const ELEMENT_DESC = 'The element: its number in anim_list (from 1), #uid, or its name.'
+const ELEMENT_DESC = 'The element: its number in list_anims (from 1), #uid, or its name.'
 
 /** The element `spec` names, or why it names none. */
 export function findElement(elements: readonly AnimElement[], spec: string): AnimElement | string {
@@ -53,7 +53,7 @@ export function findElement(elements: readonly AnimElement[], spec: string): Ani
   const uid = /^#(\d+)$/.exec(s)
   if (uid) return elements.find((e) => e.uid === Number(uid[1])) ?? `No animation element has uid ${s}.`
   if (/^\d+$/.test(s)) {
-    return elements[Number(s) - 1] ?? `There is no animation element ${s}; anim_list numbers them 1 to ${elements.length}.`
+    return elements[Number(s) - 1] ?? `There is no animation element ${s}; list_anims numbers them 1 to ${elements.length}.`
   }
   const named = elements.filter((e) => e.name === s)
   if (named.length === 1) return named[0]
@@ -76,13 +76,13 @@ function outcome(res: { ok: boolean; error?: string }, data?: unknown): OpOutcom
   return res.ok ? { ok: true, ...(data === undefined ? {} : { data }) } : { ok: false, error: res.error ?? 'The animation could not be changed.' }
 }
 
-/** `anim_list`'s lines: the manager, then one element per line. */
+/** `list_anims`'s lines: the manager, then one element per line. */
 function timelineLines(t: AnimTimeline): string[] {
   const m = t.mgr
   const lines = [
     `length ${m.lengthMs} ms, ${m.playState}${m.loop ? ', loop' : ''}${m.startcam ? `, start camera ${m.startcam}` : ''}`,
   ]
-  if (t.elements.length === 0) lines.push('no elements; add one with anim_add')
+  if (t.elements.length === 0) lines.push('no elements; add one with add_anim')
   t.elements.forEach((e, i) => {
     const after = e.timeRefName ? ` after ${e.timeRefName}` : ''
     const off = e.disabled ? '  (disabled)' : ''
@@ -94,11 +94,12 @@ function timelineLines(t: AnimTimeline): string[] {
 }
 
 export const animList = defineOp({
-  name: 'anim_list',
+  name: 'list_anims',
   description: 'List the scene\'s animation: its length and settings, then each element with its type and times.',
   params: {},
   mutates: false,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   format: (data) => timelineLines(data as AnimTimeline),
   run(ctx, _args, oc) {
     // Number the elements from 1, as the other anim_* ops take them.
@@ -108,11 +109,11 @@ export const animList = defineOp({
 })
 
 export const animAdd = defineOp({
-  name: 'anim_add',
+  name: 'add_anim',
   description:
     'Add an element to the animation: spin (rotate the view), camera (move to a camera), show / ' +
     'hide (a renderer), slidein / slideout, mol (morphing), wait (does nothing for a time). It ' +
-    'follows the element before it; set what it acts on with anim_set.',
+    'follows the element before it; set what it acts on with set_anim_prop.',
   params: {
     type: enumOf(ADD_TYPE_NAMES, 'What kind of element.'),
     name: optional(string('Its name. Null picks one.')),
@@ -120,6 +121,7 @@ export const animAdd = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   format(data) {
     const d = data as { uid: number; number: number; name: string }
     return [`added ${d.name} as ${d.number}  #${d.uid}`]
@@ -143,11 +145,12 @@ export const animAdd = defineOp({
 })
 
 export const animRemove = defineOp({
-  name: 'anim_remove',
+  name: 'remove_anim',
   description: 'Remove an element from the animation.',
   params: { element: string(ELEMENT_DESC) },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   format: () => [],
   run(ctx, args, oc) {
     const e = element(ctx, oc.sceneId, args.element)
@@ -157,14 +160,15 @@ export const animRemove = defineOp({
 })
 
 export const animMove = defineOp({
-  name: 'anim_move',
-  description: 'Move an element to another place in the list (its number in anim_list, from 1).',
+  name: 'move_anim',
+  description: 'Move an element to another place in the list (its number in list_anims, from 1).',
   params: {
     element: string(ELEMENT_DESC),
     to: integer('The number it should have.'),
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   format: () => [],
   run(ctx, args, oc) {
     const e = element(ctx, oc.sceneId, args.element)
@@ -174,7 +178,7 @@ export const animMove = defineOp({
 })
 
 export const animTime = defineOp({
-  name: 'anim_time',
+  name: 'set_anim_time',
   description:
     'Set when an element runs, in milliseconds, relative to the end of the element it follows ' +
     '(or to the start of the animation when it follows none).',
@@ -185,6 +189,7 @@ export const animTime = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   format: () => [],
   run(ctx, args, oc) {
     if (args.endMs < args.startMs) return { ok: false, error: 'The end must not be before the start.' }
@@ -220,7 +225,7 @@ function readPropValue(prop: (typeof SET_PROPS)[number], text: string): string |
 }
 
 export const animSet = defineOp({
-  name: 'anim_set',
+  name: 'set_anim_prop',
   description:
     'Set one property of an element, as the inspector does: name, timeRefName (the element it ' +
     'follows; empty for none), disabled, quadric (easing); spin: angle, axis ("0 1 0"); camera: ' +
@@ -233,6 +238,7 @@ export const animSet = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   format: () => [],
   run(ctx, args, oc) {
     const e = element(ctx, oc.sceneId, args.element)
@@ -249,7 +255,7 @@ export const animSet = defineOp({
 })
 
 export const animOptions = defineOp({
-  name: 'anim_options',
+  name: 'set_anim_options',
   description: 'Set whether the animation loops, and the camera it starts from (empty for none).',
   params: {
     loop: optional(boolean('Play it in a loop. Null leaves it.')),
@@ -257,6 +263,7 @@ export const animOptions = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   format: () => [],
   run(ctx, args, oc) {
     if (args.loop !== null) {

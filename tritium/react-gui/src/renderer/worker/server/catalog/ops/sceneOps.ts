@@ -21,7 +21,8 @@ export const getSceneState = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'core', console: true },
-  aliases: [{ name: 'ls_scene', summary: 'List the objects, renderers and selections in the scene.' }],
+  group: 'nodes',
+  aliases: [{ name: 'scene', summary: 'List the objects, renderers and selections in the scene.' }],
   format: (data) => formatSnapshot(data as SceneSnapshot),
   run(ctx, _args, oc) {
     return {
@@ -70,6 +71,7 @@ export const setVisible = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'nodes',
   aliases: [
     { name: 'show', fixed: { visible: true }, summary: 'Show an object, renderer or renderer group.' },
     { name: 'hide', fixed: { visible: false }, summary: 'Hide an object, renderer or renderer group.' },
@@ -100,6 +102,7 @@ export const deleteNode = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'nodes',
   aliases: [{ name: 'delete', summary: 'Delete an object, renderer or renderer group.' }],
   run(ctx, args, oc) {
     const result = deleteNodeService(ctx, { sceneId: oc.sceneId, nodeId: args.nodeId, nodeType: args.nodeType })
@@ -118,6 +121,7 @@ export const renameNode = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'nodes',
   aliases: [{ name: 'rename', summary: 'Rename an object, renderer or renderer group: rename 1crn, mol1' }],
   run(ctx, args, oc) {
     const result = renameNodeService(ctx, {

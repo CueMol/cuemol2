@@ -1,7 +1,7 @@
 /**
  * @file worker/server/catalog/ops/animOps.test.ts
  * @description How an animation command names an element: its number in
- * anim_list (from 1), #uid, or a name -- and a shared name is refused rather
+ * list_anims (from 1), #uid, or a name -- and a shared name is refused rather
  * than guessed.
  */
 

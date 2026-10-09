@@ -6,7 +6,7 @@
  * Usually that is one worker call. A scene command splits it: the worker
  * stops there and hands the command back (`sceneRequest`), this does it on
  * the tab strip, and the rest goes to the worker again, against whatever
- * scene is active by then. So `new_scene; fetch 1crn` fetches into the new
+ * scene is active by then. So `create_scene; fetch 1crn` fetches into the new
  * scene, and each scene's commands are one undo transaction in that scene.
  */
 

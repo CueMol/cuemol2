@@ -19,6 +19,8 @@ import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { CONSOLE_COMMAND_OPS } from '@renderer/worker/server/catalog'
+import { OP_GROUPS } from '@renderer/worker/server/catalog/op'
+import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { DIALECT_PROMPTS } from '../../../shared/consoleTypes'
 import { usageLine } from '../../parser/bindArgs'
@@ -51,20 +53,36 @@ function wrap(text: string, width = 76): string[] {
   return out
 }
 
+/** Print the commands of one group under its heading. */
+function printGroup(group: OpGroup, cc: Parameters<ConsoleCommand['run']>[2]): void {
+  cc.print(`${OP_GROUPS[group]} (help ${group}):`)
+  for (const c of NATIVE_COMMANDS) {
+    if (c.group === group) cc.print(`  ${c.name.padEnd(22)} ${c.summary}`)
+  }
+}
+
 const help: ConsoleCommand = {
   name: 'help',
+  group: 'console',
   params: [{ name: 'command', default: '' }],
   mode: 'strict',
   mutates: false,
-  summary: 'List the commands, or explain one.',
-  completions: [{ source: 'commands', description: 'command', suffix: '' }],
+  summary: 'List the commands by subject, the commands of one subject, or explain one command.',
+  completions: [{ source: 'helpTopics', description: 'command or subject', suffix: '' }],
   run(_ctx, args, cc) {
     const topic = args.command.trim()
+    if (topic in OP_GROUPS) {
+      printGroup(topic as OpGroup, cc)
+      return { ok: true }
+    }
     if (topic === '') {
-      cc.print('Commands:')
-      for (const c of NATIVE_COMMANDS) cc.print(`  ${c.name.padEnd(22)} ${c.summary}`)
-      cc.print('')
-      cc.print('Type "help <command>" or "<command> ?" for its arguments.')
+      for (const group of Object.keys(OP_GROUPS) as OpGroup[]) {
+        printGroup(group, cc)
+        cc.print('')
+      }
+      cc.print('Type "help <subject>" for one subject, "help <command>" or "<command> ?" for its arguments.')
+      cc.print('A command name is a verb and what it acts on (list_cameras, add_paint). A name')
+      cc.print('that is only a noun (props, view, slab) shows that thing, or sets it when given a value.')
       cc.print('Separate arguments with commas: zoom 1crn, chain A and resid 10:20')
       cc.print('Name a renderer as object/renderer (1crn/cartoon1), or any node by #uid.')
       cc.print('A property follows its node after a dot: set 1crn/cartoon1.width, 2')
@@ -185,6 +203,7 @@ function propPathCandidates(ctx: WorkerContext, sc: SourceContext): string[] {
 /** The candidates for one source id, read fresh on every Tab. */
 function candidates(id: string, ctx: WorkerContext, sc: SourceContext): string[] | null {
   if (id === 'commands') return NATIVE_COMMANDS.map((c) => c.name)
+  if (id === 'helpTopics') return [...Object.keys(OP_GROUPS), ...NATIVE_COMMANDS.map((c) => c.name)]
   if (id === 'none') return []
   if (id === 'scenes') return sceneNames(ctx)
   if (id.startsWith('enum:')) return id.slice('enum:'.length).split('|')

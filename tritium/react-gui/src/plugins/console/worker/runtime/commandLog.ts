@@ -1,6 +1,6 @@
 /**
  * @file plugins/console/worker/runtime/commandLog.ts
- * @description The log file `log_open` starts: what was typed, one line each.
+ * @description The log file `open_log` (PyMOL `log_open`) starts: what was typed, one line each.
  *
  * PyMOL's log records input, not output, so that replaying the file with `@`
  * does the same thing again. Only `.pml` logs are written: PyMOL's `.py` log

@@ -30,6 +30,7 @@ export const rotateView = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'viewing',
   aliases: [{ name: 'turn', summary: 'Turn the view about a screen axis: turn y, 90' }],
   run(ctx, args, oc) {
     const res = rotateViewService(ctx, {
@@ -135,6 +136,7 @@ export const setView = defineOp({
   // The camera is not part of the undo history, as with the mouse.
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'viewing',
   aliases: [
     { name: 'view', summary: 'Print the camera: zoom, slab, distance, centre.' },
     { name: 'slab', order: ['slab'], summary: 'Set the slab depth: slab 30' },

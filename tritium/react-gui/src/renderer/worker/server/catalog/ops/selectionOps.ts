@@ -23,13 +23,14 @@ import { wrapList } from '../consoleFormat'
 const MAX_RESIDUES = 200
 
 export const getMolChainsOp = defineOp({
-  name: 'get_mol_chains',
+  name: 'list_chains',
   description: 'List the chain names of one molecule. Use before writing a chain-based selection.',
   params: {
     molId: moleculeId('Uid of the molecule object, from get_scene_state.'),
   },
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'selections',
   run(ctx, args, oc) {
     const result = getMolChains(ctx, { sceneId: oc.sceneId, molId: args.molId })
     return normalizeServiceResult(result, 'No molecule with that id, or it has no chains.')
@@ -37,18 +38,19 @@ export const getMolChainsOp = defineOp({
 })
 
 export const getMolResiduesOp = defineOp({
-  name: 'get_mol_residues',
+  name: 'list_residues',
   description:
     'List the residues of one chain: index, three-letter name, and one-letter code. ' +
     'The index is a STRING because it may carry an insertion code (for example "20A"), ' +
     'so use it verbatim in a selection.',
   params: {
     molId: moleculeId('Uid of the molecule object.'),
-    chain: string('Chain name, from get_mol_chains.'),
+    chain: string('Chain name, from list_chains.'),
     offset: optional(integer('Skip this many residues. Null starts at the beginning.')),
   },
   mutates: false,
   expose: { tool: 'analysis', console: true },
+  group: 'selections',
   format(data) {
     const d = data as {
       total: number
@@ -86,7 +88,7 @@ export const getMolResiduesOp = defineOp({
 })
 
 export const checkSelection = defineOp({
-  name: 'check_selection',
+  name: 'count_selection',
   description:
     'Compile a selection expression and count the atoms it matches in one molecule. ' +
     'Do this before using an expression anywhere else: an expression can be valid and ' +
@@ -97,6 +99,8 @@ export const checkSelection = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'selections',
+  aliases: [{ name: 'count', summary: 'Count the atoms a selection matches: count 1crn, resn CYS' }],
   run(ctx, args, oc) {
     // An empty string compiles as "everything" but means "no expression",
     // which is never what the caller intended to write.
@@ -131,6 +135,7 @@ export const setMolSelection = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'selections',
   aliases: [{ name: 'select', summary: "Set a molecule's current selection." }],
   run(ctx, args, oc) {
     const result = applyMolSelString(ctx, {
@@ -159,6 +164,7 @@ export const centerView = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'viewing',
   aliases: [
     { name: 'zoom', fixed: { zoom: true }, summary: 'Centre the view on a selection and zoom to fit it.' },
     { name: 'center', fixed: { zoom: false }, summary: 'Centre the view on a selection.' },

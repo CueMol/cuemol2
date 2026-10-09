@@ -91,7 +91,7 @@ const chdir: PymCommand = {
   },
 }
 
-/** Stands for `new_scene`: hands a scene request to the panel. */
+/** Stands for `create_scene`: hands a scene request to the panel. */
 const sceneCmd: PymCommand = {
   name: 'newscene',
   params: [],

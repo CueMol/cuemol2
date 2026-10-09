@@ -198,7 +198,7 @@ provider 側の tool search (`deferLoading`、Anthropic / OpenAI のみ) は将�
 ### 3.4 プロンプト
 
 `instructions` は静的テキスト 1 本 (バイト一致でキャッシュに乗せる): 役割、原則
-(ID は snapshot の値のみ使う / 選択式は `check_selection` で検証してから使う /
+(ID は snapshot の値のみ使う / 選択式は `count_selection` で検証してから使う /
 `ok:false` は失敗・2 回続いたら諦めて報告する / 曖昧なら訊く / 最後に 1〜3 文で報告)、
 そして **選択式チートシート**。
 
@@ -285,20 +285,20 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `set_visible` | yes | `setNodeVisible` |
 | `delete_node` | yes | `deleteNode` (object / renderer / group。隠すだけなら `set_visible`) |
 | `rename_node` | yes | `renameNode` |
-| `get_mol_chains` | no | `getMolChains` |
-| `check_selection` | no | `validateSelection` + `getSelHitCount` |
+| `list_chains` | no | `getMolChains` |
+| `count_selection` | no | `validateSelection` + `getSelHitCount` |
 | `set_mol_selection` | yes | `applyMolSelString` |
 | `center_view` | yes | `centerMolSelection` / `zoomMolSelection` |
 | `rotate_view` | no (view は undo 対象外) | `rotateView` |
 | `set_view` | no | `getViewXform` / `setViewXform` (zoom / slab / distance / center を個別に。`fitSlab` は中心とズームを保って slab を全分子に合わせる) |
-| `get_renderer_types` | no | `getNewRendererOptions` |
+| `list_renderer_types` | no | `getNewRendererOptions` |
 | `create_renderer` | yes | `createRendererOnObject` (名前省略時は `unusedRendererName(type)`) |
-| `change_renderer_type` | yes | `getRendererChangeTypes` で検査 -> `changeRendererType` (uid が変わるので新 uid を返す) |
+| `set_renderer_type` | yes | `getRendererChangeTypes` で検査 -> `changeRendererType` (uid が変わるので新 uid を返す) |
 | `set_renderer_selection` | yes | `setGenericProp` (`propName: 'sel'`) |
-| `get_node_props` | no | `getGenericProps` (scene / object / renderer) |
+| `list_node_props` | no | `getGenericProps` (scene / object / renderer) |
 | `set_node_prop` | yes | `getGenericProps` -> `setGenericProp` |
 | `set_renderer_coloring` | yes | `setRendererColoring` (レンダラ全体の着色を置き換える) |
-| `paint_selection` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` |
+| `add_paint` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` |
 | `fetch_pdb` | yes (async) | `streamLoadFromUrl` |
 | `capture_view` | no | `getSceneExportInfo` -> `exportScene` (一時ファイル) -> 画像を tool 結果に添付 |
 | `enable_toolsets` | no | (agent 側の meta tool。turn の `toolsets` に追加) |
@@ -309,7 +309,7 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 |---|---|---|
 | `measure_geometry` | yes | `MolCoord.getAtom` + `helpers/atomintr` の `appendMeasureLabel` |
 | `analyze_interactions` | yes | `analyzeInteractions` (既定は炭素を含む接触を除く。`includeCarbon` で含める) |
-| `get_mol_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
+| `list_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
 
 **toolset `files`**
 
@@ -337,7 +337,7 @@ render job は GUI の Render パネルと同じ in-process job で走る。待�
 
 | tool | mutates | 呼ぶ service |
 |---|---|---|
-| `get_coloring_styles` | no | `getPaintColoringStyles` |
+| `list_coloring_styles` | no | `getPaintColoringStyles` |
 | `clear_paint` | yes | `clearPaintEntries` |
 | `set_default_color` | yes | `setRendererDefaultColor` |
 
@@ -363,13 +363,13 @@ render job は GUI の Render パネルと同じ in-process job で走る。待�
 | tool | toolset | mutates | 呼ぶ service |
 |---|---|---|---|
 | `superpose` | molops | yes | `superposeMol` |
-| `make_surface` | molops | yes | `makeMolSurf` |
+| `create_surface` | molops | yes | `makeMolSurf` |
 | `delete_atoms` | molops | yes | `deleteMolAtoms` |
 | `rename_chain` | molops | yes | `changeChainName` |
 | `merge_molecules` | molops | yes | `mergeMol` |
 | `set_secondary_structure` | molops | yes | `reassignProt2ndry` |
 | `show_symmetry` | xtal | yes | `showSymmRenderer` / `showUnitCellRenderer` |
-| `save_selection` | selection | yes | `saveSelDef` |
+| `define_selection` | selection | yes | `saveSelDef` |
 | `list_renderer_styles` / `apply_renderer_style` | style | apply のみ yes | `rendererStyle` |
 | `animate` | anim | no | `anim/transport` (`play` / `stop` / `goTime`) |
 
@@ -401,7 +401,7 @@ token を払わないため)。
 候補は `center_view` -- 既に「選択も適用する」副作用を持っており、`set_mol_selection` の
 引数にできる。`tools/index.test.ts` が本数を pin している。
 
-`get_node_props` / `set_node_prop` は当初 `get_renderer_props` / `set_renderer_prop` だったものを
+`list_node_props` / `set_node_prop` は当初 `get_renderer_props` / `set_renderer_prop` だったものを
 **対象ノードを引数に取る形に広げた**もの。`resolvePropTarget` が scene / object / renderer を同じ
 lookup で解決するので、広げるのに必要だったのは `nodeType` 引数 1 つだけで、代わりに
 **scene 自身のプロパティが全部届くようになった** -- 背景色 (`bgcolor`)、ambient occlusion
@@ -413,9 +413,9 @@ scene を固定しているため無視する) で、それ以外で `nodeId` �
 
 scene が設定を持つこと自体をモデルに気づかせるため、毎 turn の `<scene_state>` に
 `settings: { bgcolor, aoEnabled, aa_method }` を載せている。**キー名が property 名そのもの**なので、
-モデルは `get_node_props` を挟まずに `set_node_prop` を呼べる。残りは 1 回の読みで届く。
+モデルは `list_node_props` を挟まずに `set_node_prop` を呼べる。残りは 1 回の読みで届く。
 
-`paint_selection` は 3 手を 1 本に畳んでいる。`paintRendererSelection` は塗る範囲を引数ではなく
+`add_paint` は 3 手を 1 本に畳んでいる。`paintRendererSelection` は塗る範囲を引数ではなく
 **分子の現在の選択**から読み、かつ renderer の coloring が `PaintColoring` でないと拒否するため、
 「選択を適用 -> (必要なら) PaintColoring へ切り替え -> エントリ追加」の順に呼ぶ必要がある。
 モデルにこの順序を踏ませるより 1 本にしたほうが確実で、選択が変わるのは UI で手作業した場合と
@@ -443,9 +443,9 @@ description に必ず書いている曖昧点:
 - uid は不透明な整数。名前から推測せず `get_scene_state` で取る
 - `residueIndex` は文字列 (挿入コード付きがある)
 - `center_view` は選択の適用も行う (副作用)
-- `set_renderer_coloring` の style 名は `get_coloring_styles` のものだけ有効
+- `set_renderer_coloring` の style 名は `list_coloring_styles` のものだけ有効
 - `fetch_pdb` / `load_file` は新しい object と既定 renderer を作る
-- `export_image` はディスクにファイルを書く (保存先は Desktop 固定、basename のみ受ける)
+- `export_image` はディスクにファイルを書く (agent からは Desktop に basename だけで書く。console / MCP はパスを指定できる。`outputPath`)
 
 `set_renderer_selection` が `setRendererSelection` ではなく `setGenericProp` を使うのは、
 前者が定型の 6 種 (`all` / `visible` / ...) しか受け付けず任意の選択式を書けないため。

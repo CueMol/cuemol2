@@ -65,7 +65,7 @@ export interface CancelRunArgs {
 }
 
 /**
- * A scene command (`scenes`, `new_scene`, `switch_scene`, `close_scene`).
+ * A scene command (`list_scenes`, `create_scene`, `switch_scene`, `close_scene`).
  *
  * Scenes are tabs, and the worker cannot see or make a tab, so the worker
  * only parses one and hands it back; the panel does it and then sends the

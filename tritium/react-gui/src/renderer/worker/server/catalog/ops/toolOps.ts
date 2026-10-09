@@ -37,6 +37,7 @@ export const cutSurface = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'surfaces',
   run(ctx, args, oc) {
     return normalizeServiceResult(
       cutSurfByPlane(ctx, {
@@ -57,22 +58,23 @@ function frameLines(frames: readonly MorphFrameInfo[]): string[] {
 }
 
 export const morphFrames = defineOp({
-  name: 'morph_frames',
-  description: 'List the frames of a morphing molecule (made by morph_add), in order.',
+  name: 'list_morph_frames',
+  description: 'List the frames of a morphing molecule (made by add_morph_frame), in order.',
   params: { molId: moleculeId('Uid of the molecule.') },
   mutates: false,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   format: (data) => frameLines((data as { frames: MorphFrameInfo[] }).frames),
   run(ctx, args, oc) {
     const res = getMorphFrames(ctx, { sceneId: oc.sceneId, objId: args.molId })
     if (!res.ok) return { ok: false, error: 'The frames could not be read.' }
-    if (!res.isMorphMol) return { ok: false, error: 'This molecule has no morphing frames; add one with morph_add.' }
+    if (!res.isMorphMol) return { ok: false, error: 'This molecule has no morphing frames; add one with add_morph_frame.' }
     return { ok: true, data: { frames: res.frames } }
   },
 })
 
 export const morphAdd = defineOp({
-  name: 'morph_add',
+  name: 'add_morph_frame',
   description:
     'Add a frame (another conformation of the same molecule) to a morphing animation, from a ' +
     'PDB file or from another molecule in the scene. A plain molecule is first turned into a ' +
@@ -82,10 +84,11 @@ export const morphAdd = defineOp({
     molId: moleculeId('Uid of the molecule to morph.'),
     file: optional(path('PDB file (.pdb, .ent, optionally .gz) to add. Null uses fromMolId.')),
     fromMolId: optional(moleculeId('Uid of a molecule whose coordinates to add. Null uses file.')),
-    before: optional(integer('Insert before this frame, by its number in morph_frames (from 1). Null appends.')),
+    before: optional(integer('Insert before this frame, by its number in list_morph_frames (from 1). Null appends.')),
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   run(ctx, args, oc) {
     if ((args.file === null) === (args.fromMolId === null)) {
       return { ok: false, error: 'Give either a file or fromMolId.' }
@@ -111,14 +114,15 @@ export const morphAdd = defineOp({
 })
 
 export const morphRemove = defineOp({
-  name: 'morph_remove',
-  description: 'Remove one frame from a morphing molecule, by its number in morph_frames (from 1). The base frame, (this), cannot be removed.',
+  name: 'remove_morph_frame',
+  description: 'Remove one frame from a morphing molecule, by its number in list_morph_frames (from 1). The base frame, (this), cannot be removed.',
   params: {
     molId: moleculeId('Uid of the morphing molecule.'),
-    frame: integer('The frame\'s number in morph_frames (from 1).'),
+    frame: integer('The frame\'s number in list_morph_frames (from 1).'),
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
   run(ctx, args, oc) {
     return normalizeServiceResult(
       removeMorphFrame(ctx, { sceneId: oc.sceneId, objId: args.molId, frameIndex: args.frame - 1 }),

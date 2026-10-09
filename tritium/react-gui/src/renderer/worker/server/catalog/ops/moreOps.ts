@@ -29,6 +29,7 @@ export const listRendererStyles = defineOp({
   params: { rendId: rendererId('Uid of the renderer.') },
   mutates: false,
   expose: { tool: 'style', console: true },
+  group: 'renderers',
   run(ctx, args, oc) {
     const res = getRendererStyleEntries(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!res.ok) return { ok: false, error: 'No renderer with that id in this scene.' }
@@ -53,6 +54,7 @@ export const applyRendererStyleOp = defineOp({
   },
   mutates: true,
   expose: { tool: 'style', console: true },
+  group: 'renderers',
   aliases: [{ name: 'style', summary: 'Apply a named style to a renderer: style 1crn/cartoon1, <name>' }],
   run(ctx, args, oc) {
     const res = getRendererStyleEntries(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
@@ -70,10 +72,11 @@ export const applyRendererStyleOp = defineOp({
 
 export const clearPaint = defineOp({
   name: 'clear_paint',
-  description: 'Remove every region painted on one renderer with paint_selection.',
+  description: 'Remove every region painted on one renderer with add_paint.',
   params: { rendId: rendererId('Uid of the renderer.') },
   mutates: true,
   expose: { tool: 'coloring', console: true },
+  group: 'coloring',
   run(ctx, args, oc) {
     return normalizeServiceResult(
       clearPaintEntries(ctx, { sceneId: oc.sceneId, rendId: args.rendId }),
@@ -92,6 +95,7 @@ export const setDefaultColor = defineOp({
   },
   mutates: true,
   expose: { tool: 'coloring', console: true },
+  group: 'coloring',
   run(ctx, args, oc) {
     return normalizeServiceResult(
       setRendererDefaultColor(ctx, { sceneId: oc.sceneId, rendId: args.rendId, colorValue: args.color }),
@@ -109,6 +113,7 @@ export const saveSceneOp = defineOp({
   // transaction: the console runs it alone on its line, an MCP call outside
   // any transaction.
   expose: { tool: false, console: true, mcp: true },
+  group: 'files',
   outsideTxn: () => true,
   aliases: [{ name: 'save', summary: 'Save the scene: save ~/work/session.qsc' }],
   run(ctx, args, oc) {
@@ -132,6 +137,7 @@ export const saveObject = defineOp({
   },
   mutates: false,
   expose: { tool: 'files', console: true },
+  group: 'files',
   aliases: [{ name: 'write', summary: 'Write an object to a file: write 1crn, out.pdb' }],
   run(ctx, args, oc) {
     const target = outputPath(oc, args.fileName, '.pdb')
@@ -161,6 +167,7 @@ export const animate = defineOp({
   // Playback is not part of the undo history.
   mutates: false,
   expose: { tool: 'anim', console: true },
+  group: 'animation',
   run(ctx, args, oc) {
     if (args.action === 'seek' && args.timeMs === null) return { ok: false, error: 'seek needs timeMs.' }
     const res = args.action === 'play'
@@ -184,6 +191,7 @@ export const focusNode = defineOp({
   },
   mutates: false,
   expose: { tool: 'view', console: true },
+  group: 'nodes',
   aliases: [{ name: 'focus', summary: 'Fit the view to a node: focus 1crn/cartoon1' }],
   run(ctx, args, oc) {
     return normalizeServiceResult(

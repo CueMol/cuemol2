@@ -54,6 +54,7 @@ export const resetProp = defineOp({
   params: { path: propPath('The property, or node.* for all of them.') },
   mutates: true,
   expose: EXPOSE,
+  group: 'properties',
   format: () => [],
   run(ctx, args, oc) {
     const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)
@@ -83,6 +84,7 @@ export const clearUndo = defineOp({
   params: {},
   mutates: false,
   expose: EXPOSE,
+  group: 'edit',
   // It empties the undo stack, which cannot happen inside a transaction.
   outsideTxn: () => true,
   format: () => [],
@@ -94,7 +96,7 @@ export const clearUndo = defineOp({
 // --- Molecules ---
 
 export const changeResid = defineOp({
-  name: 'change_resid',
+  name: 'renumber_residues',
   description:
     'Change residue numbers of a molecule (Edit > Change residue number): shift them by a ' +
     'value, or number them from a value. renumber numbers consecutively instead of keeping ' +
@@ -108,6 +110,7 @@ export const changeResid = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     return normalizeServiceResult(
@@ -155,6 +158,7 @@ export const addBond = defineOp({
   params: { molId: moleculeId('Uid of the molecule.'), atoms: atoms(BOND_ATOMS) },
   mutates: true,
   expose: EXPOSE,
+  group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     const found = bondAtoms(ctx, oc.sceneId, args.molId, args.atoms)
@@ -175,6 +179,7 @@ export const removeBond = defineOp({
   params: { molId: moleculeId('Uid of the molecule.'), atoms: atoms(BOND_ATOMS) },
   mutates: true,
   expose: EXPOSE,
+  group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     const found = bondAtoms(ctx, oc.sceneId, args.molId, args.atoms)
@@ -204,6 +209,7 @@ export const setSymmetry = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     return normalizeServiceResult(
@@ -228,6 +234,7 @@ export const createGroup = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'renderers',
   run(ctx, args, oc) {
     const res = createRendererGroup(ctx, { sceneId: oc.sceneId, objId: args.objId, name: args.name ?? undefined })
     if (!res.ok) return { ok: false, error: 'The group could not be made (is the name taken?).' }
@@ -236,11 +243,12 @@ export const createGroup = defineOp({
 })
 
 export const genSurfaceObj = defineOp({
-  name: 'gen_surface_obj',
+  name: 'create_surface_from_map',
   description: 'Turn the contour surface of a density map (an isosurf renderer) into a surface object of its own (Generate surface obj).',
   params: { rendId: rendererId('Uid of the isosurf renderer.') },
   mutates: true,
   expose: EXPOSE,
+  group: 'maps',
   run(ctx, args, oc) {
     const res = generateRendererSurfObj(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!res.ok) return { ok: false, error: 'Only a map contour drawn as a surface (an isosurf renderer) can make a surface object.' }
@@ -249,7 +257,7 @@ export const genSurfaceObj = defineOp({
 })
 
 export const regenSurface = defineOp({
-  name: 'regen_surface',
+  name: 'recalc_surface',
   description: 'Compute a molecular surface object again from its molecule, optionally at another density.',
   params: {
     surfId: objectId('Uid of the surface object.'),
@@ -257,6 +265,7 @@ export const regenSurface = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'surfaces',
   format: () => [],
   run(ctx, args, oc) {
     const info = getMolSurfRegenInfo(ctx, { sceneId: oc.sceneId, objId: args.surfId })
@@ -278,6 +287,7 @@ export const listInteractions = defineOp({
   params: { rendId: rendererId('Uid of the interaction renderer.') },
   mutates: false,
   expose: EXPOSE,
+  group: 'analysis',
   format: (data) => (data as { entries: { number: number; mode: string; atoms: string[] }[] }).entries.map((e) => `${e.number}  ${e.mode}  ${e.atoms.join('  ')}`),
   run(ctx, args, oc) {
     const res = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
@@ -295,6 +305,7 @@ export const removeInteraction = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'analysis',
   format: () => [],
   run(ctx, args, oc) {
     const list = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
@@ -312,7 +323,7 @@ export const removeInteraction = defineOp({
 function paintEntries(ctx: Parameters<typeof getRendererColoringState>[0], sceneId: number, rendId: number): { entries: PaintEntryDto[] } | { error: string } {
   const state = getRendererColoringState(ctx, { sceneId, rendId })
   if (!state.ok) return { error: 'No renderer with that id in this scene.' }
-  if (state.className !== 'PaintColoring') return { error: 'That renderer is not coloured by paint; paint_selection makes it so.' }
+  if (state.className !== 'PaintColoring') return { error: 'That renderer is not coloured by paint; add_paint makes it so.' }
   return { entries: state.paintEntries }
 }
 
@@ -322,6 +333,7 @@ export const listPaint = defineOp({
   params: { rendId: rendererId('Uid of the renderer.') },
   mutates: false,
   expose: EXPOSE,
+  group: 'coloring',
   format: (data) => (data as { entries: { number: number; selStr: string; colorValue: string }[] }).entries.map((e) => `${e.number}  ${e.colorValue}  ${e.selStr}`),
   run(ctx, args, oc) {
     const p = paintEntries(ctx, oc.sceneId, args.rendId)
@@ -342,7 +354,7 @@ function paintIndex(ctx: Parameters<typeof getRendererColoringState>[0], sceneId
 }
 
 export const updatePaint = defineOp({
-  name: 'update_paint',
+  name: 'set_paint',
   description: 'Change the selection or the colour of one paint entry.',
   params: {
     rendId: rendererId('Uid of the renderer.'),
@@ -352,6 +364,7 @@ export const updatePaint = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
     const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
@@ -373,6 +386,7 @@ export const removePaint = defineOp({
   params: { rendId: rendererId('Uid of the renderer.'), number: integer(PAINT_NUMBER) },
   mutates: true,
   expose: EXPOSE,
+  group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
     const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
@@ -394,6 +408,7 @@ export const movePaint = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
     const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
@@ -407,7 +422,7 @@ export const movePaint = defineOp({
 })
 
 export const colorByElepot = defineOp({
-  name: 'color_by_elepot',
+  name: 'set_elepot_coloring',
   description:
     'Colour a molecular surface renderer by an electrostatic potential map (made by ' +
     'calc_elepot): red for negative, blue for positive, white between, as in the Coloring panel.',
@@ -419,6 +434,7 @@ export const colorByElepot = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
     const base = { sceneId: oc.sceneId, rendId: args.rendId }
@@ -446,6 +462,7 @@ export const recenterMap = defineOp({
   params: { rendId: rendererId('Uid of the map renderer.') },
   mutates: true,
   expose: EXPOSE,
+  group: 'maps',
   format: () => [],
   run(ctx, args, oc) {
     const rend = getSceneOrNull(ctx, oc.sceneId)?.getRenderer(args.rendId) as { type_name?: string } | null
@@ -478,6 +495,7 @@ export const exportSceneOp = defineOp({
   },
   mutates: false,
   expose: EXPOSE,
+  group: 'files',
   run(ctx, args, oc): OpOutcome {
     const ext = args.path.trim().toLowerCase().match(/\.(png|pov|stl|mqo)$/)?.[1] as keyof typeof EXPORT_EXT | undefined
     const format = args.format ?? ext ?? 'png'

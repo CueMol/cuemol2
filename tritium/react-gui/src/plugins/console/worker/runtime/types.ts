@@ -15,6 +15,7 @@
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { ArgMode } from '../parser/parseArgs'
 import type { ParamSpec } from '../parser/bindArgs'
 import type { SplitCommand } from '../parser/splitCommands'
@@ -99,6 +100,8 @@ export interface ConsoleCommand {
   mutates: boolean
   /** One line for `help`. */
   summary: string
+  /** The heading the native `help` lists it under. */
+  group?: OpGroup
   /**
    * What Tab offers, by argument position.
    *
