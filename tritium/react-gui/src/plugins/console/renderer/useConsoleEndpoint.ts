@@ -15,15 +15,14 @@ import { useCallback, useRef, useState } from 'react'
 import {
   useActiveScene,
   useCliAccessGranted,
-  useCommands,
   useCueMol,
   useEnsureActiveScene,
   useLocalApiEndpoint,
+  useOpenSceneFile,
   usePluginPrefs,
   useSceneTabs,
   useSuppressUndoRedo,
 } from '@renderer/plugin-host/api'
-import { CmdId } from '@renderer/commands/ids'
 import type {
   ConsoleCompleteRequest,
   ConsoleCompleteResponse,
@@ -44,7 +43,6 @@ export function useConsoleEndpoint(): void {
   const { cm } = useCueMol()
   const ensureActiveScene = useEnsureActiveScene()
   const { activeSceneId, activeMolViewId } = useActiveScene()
-  const { dispatch } = useCommands()
   const { prefs } = usePluginPrefs(CONSOLE_PLUGIN_ID)
   const [running, setRunning] = useState(0)
   // As for a panel run: the worker holds a transaction open.
@@ -53,10 +51,8 @@ export function useConsoleEndpoint(): void {
   // Requests whose client went away, for a submission a scene command split.
   const stopped = useRef(new Set<number>())
   const tabs = useSceneTabs()
-  const openScene = useCallback(
-    async (filePath: string) => (await dispatch(CmdId.OpenSceneByPath, filePath))?.loaded !== false,
-    [dispatch],
-  )
+  const openSceneFile = useOpenSceneFile()
+  const openScene = useCallback(async (filePath: string) => (await openSceneFile(filePath)).ok, [openSceneFile])
 
   const cliLaunched = useCliAccessGranted()
 

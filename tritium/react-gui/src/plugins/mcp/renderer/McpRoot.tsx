@@ -13,13 +13,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
   controlLocalApi,
-  useCommands,
   useCueMol,
   useEnsureActiveScene,
   useLocalApiEndpoint,
+  useOpenSceneFile,
   useSuppressUndoRedo,
 } from '@renderer/plugin-host/api'
-import { CmdId } from '@renderer/commands/ids'
 import { mcpErrorResult, mcpOkResult } from '@shared/mcpResult'
 import { mcpServices } from '../calls'
 import type { McpCallResult } from '../shared/mcpTypes'
@@ -39,12 +38,12 @@ export const McpRoot: React.FC = () => {
   useSuppressUndoRedo(running > 0)
   const callIds = useRef(new Map<number, string>())
   const sceneTools = useSceneTools()
-  const { dispatch } = useCommands()
+  const openFile = useOpenSceneFile()
 
   /** `load_file` of a .qsc: opened the way File > Open does, into a tab. */
   const openSceneFile = async (filePath: string): Promise<McpCallResult> => {
-    const opened = await dispatch(CmdId.OpenSceneByPath, filePath)
-    if (!opened?.loaded) return mcpErrorResult(`Could not open the scene file ${filePath}.`)
+    const opened = await openFile(filePath)
+    if (!opened.ok) return mcpErrorResult(`Could not open the scene file ${filePath}.`)
     return mcpOkResult({ scene: filePath, sceneId: opened.sceneId, active: true })
   }
 

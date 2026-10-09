@@ -70,6 +70,8 @@ export { useEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
 // The open scenes by name: list, make, show and close them (the console's
 // scene commands).
 export { useSceneTabs } from './sceneTabs'
+export { useOpenSceneFile } from './openSceneFile'
+export type { OpenSceneFileResult } from './openSceneFile'
 export type { OpenScene, SceneTabs } from './sceneTabs'
 // Hold Undo / Redo off while the plugin is in the middle of an edit the user
 // must not be able to unwind halfway.
