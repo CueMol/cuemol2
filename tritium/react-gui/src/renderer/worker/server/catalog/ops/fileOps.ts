@@ -105,7 +105,7 @@ export const loadFile = defineOp({
   expose: { tool: 'files', console: true },
   group: 'files',
   aliases: [{ name: 'load', summary: 'Open a structure file, or a .qsc scene.' }],
-  outsideTxn: (raw) => SCENE_FILE_RE.test((raw.path ?? '').trim()),
+  outsideTxn: (args) => typeof args.path === 'string' && SCENE_FILE_RE.test(args.path.trim()),
   run(ctx, args, oc) {
     const filePath = callerPath(args.path)
     if (SCENE_FILE_RE.test(filePath)) {

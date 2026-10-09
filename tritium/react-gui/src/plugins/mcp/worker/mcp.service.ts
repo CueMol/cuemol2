@@ -21,6 +21,7 @@ import {
   invokeOp,
   OPS,
   readToolArgs,
+  runExclusive,
   runInTxn,
   serializeToolOutput,
   toolSchema,
@@ -48,11 +49,6 @@ import type {
 /** Whether `op` is offered: every op a tool caller may use, and the MCP-only ones. */
 function offered(op: AnyOp): boolean {
   return op.expose.tool !== false || op.expose.mcp === true
-}
-
-/** The arguments as the text a console would have typed, for `outsideTxn`. */
-function rawArgs(args: Record<string, unknown>): Record<string, string> {
-  return Object.fromEntries(Object.entries(args).map(([k, v]) => [k, v == null ? '' : String(v)]))
 }
 
 function describe(): Result<DescribeOutcome> {
@@ -113,8 +109,8 @@ async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<
   try {
     // Saving or opening a scene resets its undo stack, so it runs outside a
     // transaction, as it does alone on a console line.
-    const outcome = op.outsideTxn?.(rawArgs(args.arguments ?? {}))
-      ? await invokeOp(op, ctx, input, oc)
+    const outcome = op.outsideTxn?.(input)
+      ? await runExclusive(() => invokeOp(op, ctx, input, oc))
       : await runInTxn(scene, txnLabel('MCP: ', op.name), () => mutated, () => invokeOp(op, ctx, input, oc))
     const result = toMcpResult(outcome)
     return ok(outcome.ok && openScene ? { ...result, openScene } : result)

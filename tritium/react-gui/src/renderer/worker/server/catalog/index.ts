@@ -33,7 +33,7 @@ import type { ToolsetId } from './toolsets'
 
 export type { AnyOp, Op, OpContext, OpImage, OpOutcome, OpAlias } from './op'
 export { defineOp } from './op'
-export { invokeOp, runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from './opRuntime'
+export { invokeOp, runExclusive, runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from './opRuntime'
 export { MAX_ARRAY_ITEMS, MAX_OUTPUT_CHARS, serializeToolOutput } from './toolOutput'
 export { paramsSchema, readToolArgs, toolSchema } from './toolSchema'
 export type { StrictObjectSchema } from './toolSchema'

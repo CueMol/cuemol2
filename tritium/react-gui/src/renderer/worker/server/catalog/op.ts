@@ -152,11 +152,13 @@ export interface Op<P extends ParamMap = ParamMap> {
   expose: OpExposure
   aliases?: readonly OpAlias[]
   /**
-   * Whether a console call with these (still unparsed) arguments has to run
-   * outside the submission's undo transaction, alone on its line -- opening
-   * a scene replaces the undo stack, which cannot happen inside one.
+   * Whether a call with these arguments has to run outside an undo
+   * transaction (alone on its line, at the console) -- opening or saving a
+   * scene replaces the undo stack, which cannot happen inside one. Given the
+   * console's bound text or a JSON caller's values alike, so a predicate
+   * reads only what both carry the same way (a path string).
    */
-  outsideTxn?(raw: Readonly<Record<string, string>>): boolean
+  outsideTxn?(args: Readonly<Record<string, unknown>>): boolean
   /**
    * Lines a console prints for a successful result. Without it the data is
    * printed as JSON.

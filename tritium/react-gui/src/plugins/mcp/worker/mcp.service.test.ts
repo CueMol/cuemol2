@@ -24,12 +24,12 @@ vi.mock('@renderer/worker/server/catalog', async (importOriginal) => {
     description: 'stub',
     mutates: false,
     expose: { tool: false, console: true, mcp: true },
-    outsideTxn: (raw: Record<string, string>) => raw.path.endsWith('.qsc'),
+    outsideTxn: (args: Record<string, unknown>) => String(args.path).endsWith('.qsc'),
   }
   return {
     ...real,
     findOp: (name: string) => [op, open].find((o) => o.name === name),
-    readToolArgs: () => ({}),
+    readToolArgs: (_op: unknown, input: Record<string, unknown>) => input,
     invokeOp: async (o: { name: string }, _ctx: unknown, _input: unknown, oc: { markMutated(): void; openScene?(p: string): void }) => {
       if (o.name === 'open') {
         oc.openScene?.('/w/a.qsc')

@@ -117,6 +117,20 @@ export async function runInTxn<T>(
   }
 }
 
+/**
+ * Run `body` outside any transaction (an op whose `outsideTxn` holds), yet
+ * as busy as one: no other command, call or turn may start until it ends,
+ * since a scene save or open must not have edits land in the middle.
+ */
+export async function runExclusive<T>(body: () => Promise<T>): Promise<T> {
+  openTxns++
+  try {
+    return await body()
+  } finally {
+    openTxns--
+  }
+}
+
 /** A transaction label from what the user typed or asked: one line, bounded. */
 export function txnLabel(prefix: string, text: string): string {
   const flat = text.replace(/\s+/g, ' ').trim()

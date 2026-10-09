@@ -25,7 +25,7 @@
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { redo } from '@renderer/worker/server/services/undo/redo'
 import { undo } from '@renderer/worker/server/services/undo/undo'
-import { runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from '@renderer/worker/server/catalog'
+import { runExclusive, runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from '@renderer/worker/server/catalog'
 import { fail, failFrom, ok } from '@renderer/worker/shared/result'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type {
@@ -375,7 +375,7 @@ async function runStandalone(
     openScene: (filePath) => { openScene = filePath },
     requestScene: () => false,
   })
-  const outcome = await runSpec(spec, ctx, bound, cc)
+  const outcome = await runExclusive(() => runSpec(spec, ctx, bound, cc))
   if (!outcome.ok) sink.push('error', outcome.error)
   return ok({
     entries,
