@@ -71,6 +71,8 @@ export { useEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
 // scene commands).
 export { useSceneTabs } from './sceneTabs'
 export { useOpenSceneFile } from './openSceneFile'
+export { closeScene, createScene, listScenes, resolveScene, switchScene } from './sceneTabOps'
+export type { NumberedScene, SceneSpec, SceneTabResult } from './sceneTabOps'
 export type { OpenSceneFileResult } from './openSceneFile'
 export type { OpenScene, SceneTabs } from './sceneTabs'
 // Hold Undo / Redo off while the plugin is in the middle of an edit the user

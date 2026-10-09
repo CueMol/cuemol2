@@ -14,9 +14,9 @@
  */
 
 import { useMemo } from 'react'
-import { useSceneTabs } from '@renderer/plugin-host/api'
+import { closeScene, createScene, listScenes, switchScene, useSceneTabs } from '@renderer/plugin-host/api'
 import { mcpErrorResult, mcpOkResult } from '@shared/mcpResult'
-import type { SceneTabs } from '@renderer/plugin-host/api'
+import type { NumberedScene, SceneTabs } from '@renderer/plugin-host/api'
 import type { McpCallResult, McpToolDecl } from '../shared/mcpTypes'
 
 /** A strict object schema, as the op catalogue writes them. */
@@ -68,36 +68,34 @@ export const SCENE_TOOLS: readonly McpToolDecl[] = [
 
 const NAMES = new Set(SCENE_TOOLS.map((t) => t.name))
 
-/** Carry out one scene tool call. */
+/** One scene, as the scene tools report it. */
+function sceneJson(s: NumberedScene) {
+  return { sceneId: s.sceneId, name: s.name, active: s.active, modified: s.modified, tabs: s.viewIds.length }
+}
+
+/** Carry out one scene tool call, through the tab operations the console uses too. */
 export async function callSceneTool(
   tabs: SceneTabs,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpCallResult> {
-  if (name === 'create_scene') {
-    const made = await tabs.create(typeof args.name === 'string' && args.name !== '' ? args.name : undefined)
-    return made ? mcpOkResult({ sceneId: made.sceneId, name: made.name, active: true }) : mcpErrorResult('The scene could not be made.')
-  }
-
-  const list = await tabs.list()
-  if (name === 'list_scenes') {
-    return mcpOkResult(list.map((s) => ({ sceneId: s.sceneId, name: s.name, active: s.active, modified: s.modified, tabs: s.viewIds.length })))
-  }
-
   const id = typeof args.sceneId === 'number' ? args.sceneId : null
-  const scene = id === null ? list.find((s) => s.active) : list.find((s) => s.sceneId === id)
-  if (!scene) return mcpErrorResult(id === null ? 'No scene is active.' : `No open scene has sceneId ${id}; call list_scenes.`)
-
-  if (name === 'switch_scene') {
-    await tabs.activate(scene.sceneId)
-    return mcpOkResult({ sceneId: scene.sceneId, name: scene.name, active: true })
+  switch (name) {
+    case 'list_scenes':
+      return mcpOkResult((await listScenes(tabs)).map(sceneJson))
+    case 'create_scene': {
+      const made = await createScene(tabs, typeof args.name === 'string' ? args.name : null)
+      return made.ok ? mcpOkResult({ ...made.data, active: true }) : mcpErrorResult(made.error)
+    }
+    case 'switch_scene': {
+      const res = await switchScene(tabs, id)
+      return res.ok ? mcpOkResult(sceneJson(res.data)) : mcpErrorResult(res.error)
+    }
+    default: {
+      const res = await closeScene(tabs, id, args.discardChanges === true)
+      return res.ok ? mcpOkResult({ closed: res.data.sceneId }) : mcpErrorResult(res.error)
+    }
   }
-
-  if (scene.modified && args.discardChanges !== true) {
-    return mcpErrorResult(`Scene ${scene.name} (${scene.sceneId}) has unsaved changes. Save it with save_scene, or ask the user before closing it with discardChanges true.`)
-  }
-  if (!(await tabs.close(scene.sceneId))) return mcpErrorResult(`Scene ${scene.name} could not be closed.`)
-  return mcpOkResult({ closed: scene.sceneId })
 }
 
 /** The scene tools, bound to the tab strip; `call` returns null for any other tool. */

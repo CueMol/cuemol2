@@ -8,6 +8,7 @@
  * filesystem, so they are written here rather than added to the catalogue.
  */
 
+import { parseBoolText } from '@renderer/worker/server/catalog/argValues'
 import * as fs from 'fs'
 import * as nodePath from 'path'
 import { closeLog, currentLog, openLog, writeLog } from '../../runtime/commandLog'
@@ -207,15 +208,15 @@ const switchScene: ConsoleCommand = {
 const closeScene: ConsoleCommand = {
   name: 'close_scene',
   group: 'tabs',
-  params: [{ name: 'scene', default: '' }, { name: 'force', default: '' }],
+  params: [{ name: 'scene', default: '' }, { name: 'discardChanges', default: 'false' }],
   mode: 'strict',
   mutates: false,
-  summary: 'Close a scene (the active one when none is named); force discards unsaved changes.',
-  completions: [{ ...SCENE_COMPLETION, suffix: ', ' }, { source: 'enum:force', description: 'option', suffix: '' }],
+  summary: 'Close a scene (the active one when none is named); discardChanges true closes it with unsaved changes.',
+  completions: [{ ...SCENE_COMPLETION, suffix: ', ' }, { source: 'enum:true|false', description: 'discardChanges', suffix: '' }],
   run(_ctx, args, cc) {
-    const force = args.force.trim()
-    if (force !== '' && force !== 'force') return { ok: false, error: 'Error: the second argument can only be "force"' }
-    return handOff('close_scene', { op: 'close', scene: args.scene.trim(), force: force === 'force' }, cc)
+    const discardChanges = parseBoolText(args.discardChanges)
+    if (discardChanges === null) return { ok: false, error: 'Error: discardChanges must be true or false' }
+    return handOff('close_scene', { op: 'close', scene: args.scene.trim(), discardChanges }, cc)
   },
 }
 

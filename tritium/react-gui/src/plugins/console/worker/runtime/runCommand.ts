@@ -388,6 +388,46 @@ async function runStandalone(
   })
 }
 
+/** Whether the first command of a submission is a tab command, which needs no scene. */
+function startsWithTabCommand(dialect: ConsoleDialect, commands: SplitCommand[]): boolean {
+  const first = commands[0]
+  if (!first || first.script) return false
+  const resolved = resolveCommand(dialect, first.text.split(/\s+/)[0])
+  return resolved.kind === 'found' && resolved.spec.group === 'tabs'
+}
+
+/**
+ * Run a submission that starts with a tab command while no scene exists. The
+ * tab command hands its request back, so nothing reaches a scene and no
+ * transaction is needed; the rest is sent again once the window has acted.
+ */
+async function runWithoutScene(
+  dialect: ConsoleDialect,
+  ctx: WorkerContext,
+  args: RunCommandArgs,
+  commands: SplitCommand[],
+): Promise<RunCommandResult> {
+  const entries: ConsoleEntry[] = []
+  const sub: Submission = {
+    dialect, ctx, args, entries, sink: new EntrySink(entries), mutated: false, interrupted: false, dir: workDirFor(args),
+  }
+  beginRun(args.runId)
+  let completed: boolean
+  try {
+    completed = await runLines(sub, commands, 0)
+  } finally {
+    endRun(args.runId)
+  }
+  return ok({
+    entries,
+    mutated: false,
+    aborted: !completed,
+    interrupted: sub.interrupted,
+    ...(sub.sceneRequest ? { sceneRequest: sub.sceneRequest, rest: sub.rest ?? '' } : {}),
+    ...(args.cwd !== undefined ? { cwd: sub.dir.get() } : {}),
+  })
+}
+
 /**
  * Run a submission.
  *
@@ -398,12 +438,17 @@ export async function runCommand(
   ctx: WorkerContext,
   args: RunCommandArgs,
 ): Promise<RunCommandResult> {
-  const scene = getSceneOrNull(ctx, args.sceneId)
-  if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found')
-  if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
   const dialect = dialectOf(args.dialect)
-
   const commands = splitCommands(args.text)
+  const scene = getSceneOrNull(ctx, args.sceneId)
+  if (!scene) {
+    // No tab is open. A tab command (list_scenes, create_scene) needs none, so
+    // it runs here; anything else is refused as not-found, and the window
+    // makes a scene and sends the submission again.
+    if (!startsWithTabCommand(dialect, commands)) return fail(`scene ${args.sceneId} not found`, 'not-found')
+    return runWithoutScene(dialect, ctx, args, commands)
+  }
+  if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
   const standalone = await runStandalone(dialect, ctx, args, commands)
   if (standalone) return standalone
 

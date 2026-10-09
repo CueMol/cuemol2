@@ -167,14 +167,23 @@ Node (18 以降) だけで動く、依存なしの thin client。repo からは 
 ### 5.2 scene コマンド (native dialect)
 
 `list_scenes` (短縮形 `scenes`。一覧、`*` がアクティブ)、`create_scene [name]`、`switch_scene <scene>`、
-`close_scene [scene] [, force]`。scene は番号 (`list_scenes` の順)、`#uid`、名前で指定し、名前は Tab で
+`close_scene [scene] [, discardChanges]`。scene は番号 (`list_scenes` の順)、`#uid`、名前で指定し、名前は Tab で
 補完する。scene はタブなので worker では作れない: command は `CmdContext.requestScene` で要求を
 返して submission をそこで終え (`RunCommandOutcome.sceneRequest` と残りの `rest`)、renderer の
 `runSubmission` が `doSceneRequest` (`renderer/sceneRequest.ts`) でタブを操作してから、残りを
 その時点のアクティブ scene に対して送り直す。よって `create_scene; fetch 1crn` は新しい scene に入り、
-undo txn は scene ごとに分かれる。タブ操作は plugin API `useSceneTabs()` (各操作は tab strip に
-反映されてから resolve する)。保存確認の dialog は出さない (terminal から操作中に GUI で止まるため):
-未保存の scene は `force` が無いと閉じない。`@file` / `run` の script 内では使えない。
+undo txn は scene ごとに分かれる。
+
+- タブの操作そのもの (scene の解決、一覧、作成、切り替え、閉じる) は plugin host の `sceneTabOps.ts`
+  にあり、MCP の scene tool (`plugins/mcp/renderer/sceneTools.ts`) と共有する。各 front end は結果を
+  行 (console) か JSON (MCP) に整形するだけ。タブ操作は plugin API `useSceneTabs()` (各操作は
+  tab strip に反映されてから resolve する)。
+- 保存確認の dialog は出さない (terminal から操作中に GUI で止まるため): 未保存の scene は
+  `discardChanges` が true でないと閉じない (MCP も同じ引数名)。
+- タブが 1 つも無いとき、`runSubmission` はまず scene 無し (sceneId 0) で worker に送る。先頭が
+  タブのコマンドならそのまま動き (`list_scenes` で scene が作られることはない)、それ以外は
+  `not-found` で返り、そこで scene を作って送り直す。
+- `@file` / `run` の script 内では使えない。
 
 ### 5.3 配布物への同梱
 

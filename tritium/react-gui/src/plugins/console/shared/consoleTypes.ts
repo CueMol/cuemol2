@@ -78,7 +78,7 @@ export type SceneRequest =
   /** `scene`: a list number, `#uid` or a name. */
   | { op: 'switch'; scene: string }
   /** `scene` as for switch; empty is the active scene. */
-  | { op: 'close'; scene: string; force: boolean }
+  | { op: 'close'; scene: string; discardChanges: boolean }
 
 export interface RunCommandOutcome {
   /** The lines to append, in order. */
