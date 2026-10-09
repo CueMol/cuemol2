@@ -10,14 +10,14 @@
  * and a .qsc that `load_file` names is opened here, into a tab.
  */
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import {
   controlLocalApi,
   useCueMol,
   useEnsureActiveScene,
   useLocalApiEndpoint,
   useOpenSceneFile,
-  useSuppressUndoRedo,
+  useTrackedEndpointCalls,
 } from '@renderer/plugin-host/api'
 import { mcpErrorResult, mcpOkResult } from '@shared/mcpResult'
 import { mcpServices } from '../calls'
@@ -32,11 +32,8 @@ export const McpRoot: React.FC = () => {
   const { cm } = useCueMol()
   const ensureActiveScene = useEnsureActiveScene()
   const { serverEnabled, port } = useMcpPrefs()
-  const [running, setRunning] = useState(0)
-  // A call holds an undo transaction open in the worker; undoing into it
-  // would land the scene somewhere nobody has seen.
-  useSuppressUndoRedo(running > 0)
-  const callIds = useRef(new Map<number, string>())
+  // A call holds an undo transaction open in the worker.
+  const calls = useTrackedEndpointCalls()
   const sceneTools = useSceneTools()
   const openFile = useOpenSceneFile()
 
@@ -78,10 +75,8 @@ export const McpRoot: React.FC = () => {
         case 'callTool': {
           const p = payload as { name: string; arguments: Record<string, unknown> }
           const callId = `mcp-${reqId}`
-          callIds.current.set(reqId, callId)
-          setRunning((n) => n + 1)
           const end = beginMcpCall(p.name)
-          try {
+          return calls.track(reqId, callId, async () => {
             // Before a scene is made for it: list_scenes with no tab open
             // should say so, not open one.
             const sceneCall = sceneTools.call(p.name, p.arguments ?? {})
@@ -103,18 +98,14 @@ export const McpRoot: React.FC = () => {
             if (!res.ok) return mcpErrorResult(res.error)
             if (res.openScene) return await openSceneFile(res.openScene)
             return { content: res.content, isError: res.isError }
-          } finally {
-            callIds.current.delete(reqId)
-            setRunning((n) => n - 1)
-            end()
-          }
+          }).finally(end)
         }
         default:
           throw new Error(`Unknown request: ${kind}`)
       }
     },
     cancel(reqId) {
-      const callId = callIds.current.get(reqId)
+      const callId = calls.stop(reqId)
       if (cm && callId) void mcpServices.invoke(cm, 'cancelCall', { callId })
     },
   })

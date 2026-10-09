@@ -71,6 +71,8 @@ export { useEnsureActiveScene } from '@renderer/hooks/useEnsureActiveScene'
 // scene commands).
 export { useSceneTabs } from './sceneTabs'
 export { useOpenSceneFile } from './openSceneFile'
+export { useTrackedEndpointCalls } from './trackedCalls'
+export type { TrackedEndpointCalls } from './trackedCalls'
 export { closeScene, createScene, listScenes, resolveScene, switchScene } from './sceneTabOps'
 export type { NumberedScene, SceneSpec, SceneTabResult } from './sceneTabOps'
 export type { OpenSceneFileResult } from './openSceneFile'

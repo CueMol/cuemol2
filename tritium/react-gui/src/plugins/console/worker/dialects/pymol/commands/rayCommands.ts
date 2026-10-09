@@ -10,11 +10,11 @@
  * which case `png` writes the plain view as PyMOL would.
  */
 
+import { opContextOf } from '@plugins/console/worker/runtime/opContext'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import { invokeOp } from '@renderer/worker/server/catalog'
-import type { OpContext } from '@renderer/worker/server/catalog'
 import { renderImage } from '@renderer/worker/server/catalog/ops/renderOps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { getSceneExportInfo } from '@renderer/worker/server/services/scene/exportImage'
@@ -45,19 +45,6 @@ function stateSignature(ctx: WorkerContext, cc: CmdContext): string {
   return parts.join('|')
 }
 
-function opContextOf(cc: CmdContext): OpContext {
-  return {
-    sceneId: cc.sceneId,
-    viewId: cc.viewId,
-    callId: cc.streamId('ray'),
-    markMutated: () => cc.markMutated(),
-    noteStream: (reqId) => cc.noteStream(reqId),
-    streamId: (tag) => cc.streamId(tag),
-    cancelled: () => cc.stopped(),
-    fileAccess: 'any',
-  }
-}
-
 /**
  * Ray-trace the view to `file`. A size of 0 means the view's own size, as in
  * PyMOL; given only one, the other follows the view's aspect.
@@ -79,7 +66,7 @@ export async function rayToFile(
     w = info.width
     h = info.height
   }
-  const res = await invokeOp(renderImage, ctx, { fileName: file, width: w, height: h, style: null }, opContextOf(cc))
+  const res = await invokeOp(renderImage, ctx, { fileName: file, width: w, height: h, style: null }, opContextOf(cc, 'ray'))
   if (!res.ok) return { ok: false, error: `Error: ray: ${res.error}` }
   const seconds = (res.data as { seconds?: number } | undefined)?.seconds
   cc.print(` Ray: render time: ${seconds ?? '?'} sec. (${w}x${h})`)

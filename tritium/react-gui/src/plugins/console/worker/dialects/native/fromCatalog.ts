@@ -15,12 +15,13 @@
  */
 
 import { invokeOp } from '@renderer/worker/server/catalog'
-import type { AnyOp, OpContext, OpOutcome, OpAlias } from '@renderer/worker/server/catalog'
+import type { AnyOp, OpOutcome, OpAlias } from '@renderer/worker/server/catalog'
 import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/params'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { resolvePath } from '../../runtime/paths'
 import type { ArgCompletion, CmdContext, CmdOutcome, ConsoleCommand, ParamSpec } from '../../runtime/types'
 import { formatData } from './formatData'
+import { opContextOf } from '../../runtime/opContext'
 import { checkArg, parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
 import { resolveRef } from '@renderer/worker/server/catalog/refs'
 import type { RefKind } from '@renderer/worker/server/catalog/refs'
@@ -191,21 +192,6 @@ export function readConsoleArgs(
 }
 
 /** What an op needs from the console line it runs for. */
-function opContextOf(cc: CmdContext): OpContext {
-  return {
-    sceneId: cc.sceneId,
-    viewId: cc.viewId,
-    callId: cc.streamId('call'),
-    markMutated: () => cc.markMutated(),
-    noteStream: (reqId) => cc.noteStream(reqId),
-    streamId: (tag) => cc.streamId(tag),
-    openScene: (filePath) => cc.openScene(filePath),
-    cancelled: () => cc.stopped(),
-    // The person at the prompt chose the path.
-    fileAccess: 'any',
-  }
-}
-
 /** Print a successful result: the op's own way, or the generic layout. */
 function printOutcome(op: AnyOp, outcome: Extract<OpOutcome, { ok: true }>, cc: CmdContext): void {
   if (outcome.data === undefined) return
@@ -306,7 +292,7 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
     async run(ctx, bound, cc): Promise<CmdOutcome> {
       const args = readConsoleArgs(ctx, cc, op, bound, alias)
       if (typeof args === 'string') return { ok: false, error: `Error: ${args}` }
-      const outcome = await invokeOp(op, ctx, args, opContextOf(cc))
+      const outcome = await invokeOp(op, ctx, args, opContextOf(cc, 'call'))
       if (!outcome.ok) return { ok: false, error: `Error: ${outcome.error}` }
       printOutcome(op, outcome, cc)
       return { ok: true }
