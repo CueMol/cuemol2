@@ -11,6 +11,7 @@
  */
 
 import type { FormatOptions } from '@renderer/worker/shared/fileOpenTypes'
+import { parseBoolText, parseNumberText } from './argValues'
 
 /** The option holding the companion file, per format; not set through the text. */
 const COMPANION_KEY: Partial<Record<FormatOptions['kind'], string>> = {
@@ -47,15 +48,8 @@ export function settableReaderOptions(format: FormatOptions): Record<string, str
 
 /** One value as the option's type takes it, or why it is not one. */
 function readValue(key: string, current: string | number | boolean, text: string): string | number | boolean | { error: string } {
-  if (typeof current === 'boolean') {
-    if (/^(true|on|yes|1)$/i.test(text)) return true
-    if (/^(false|off|no|0)$/i.test(text)) return false
-    return { error: `${key} takes true or false.` }
-  }
-  if (typeof current === 'number') {
-    const n = Number(text)
-    return text !== '' && Number.isFinite(n) ? n : { error: `${key} takes a number.` }
-  }
+  if (typeof current === 'boolean') return parseBoolText(text) ?? { error: `${key} takes true or false.` }
+  if (typeof current === 'number') return parseNumberText(text) ?? { error: `${key} takes a number.` }
   const choices = CHOICES[key]
   if (choices && !choices.includes(text)) return { error: `${key} takes one of: ${choices.join(', ')}.` }
   return text

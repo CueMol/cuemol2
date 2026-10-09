@@ -14,7 +14,6 @@
  * its CueMol name (see `refs.ts`).
  */
 
-import { validateSelection } from '@renderer/worker/server/services/select/validateSelection'
 import { invokeOp } from '@renderer/worker/server/catalog'
 import type { AnyOp, OpContext, OpOutcome, OpAlias } from '@renderer/worker/server/catalog'
 import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/params'
@@ -22,6 +21,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { resolvePath } from '../../runtime/paths'
 import type { ArgCompletion, CmdContext, CmdOutcome, ConsoleCommand, ParamSpec } from '../../runtime/types'
 import { formatData } from './formatData'
+import { checkArg, parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
 import { resolveRef } from '@renderer/worker/server/catalog/refs'
 import type { RefKind } from '@renderer/worker/server/catalog/refs'
 
@@ -63,13 +63,6 @@ function unquote(raw: string): string {
   return t
 }
 
-function readBoolean(raw: string): boolean | null {
-  const v = raw.toLowerCase()
-  if (['true', 'on', 'yes', '1'].includes(v)) return true
-  if (['false', 'off', 'no', '0'].includes(v)) return false
-  return null
-}
-
 /** `A/20/CA A/21/CA` -> two atoms. */
 function readAtoms(raw: string): AtomSpec[] | string {
   const out: AtomSpec[] = []
@@ -108,44 +101,21 @@ function readArg(
     const ref = resolveRef(ctx, cc.sceneId, text, refKind)
     return ref.ok ? { value: ref.node.id } : `${name}: ${ref.error}`
   }
-  switch (p.kind) {
-    case 'boolean': {
-      const b = readBoolean(text)
-      return b === null ? `${name} must be true or false, not "${text}"` : { value: b }
-    }
-    case 'integer': {
-      const n = Number(text)
-      return Number.isInteger(n) ? { value: n } : `${name} must be a whole number, not "${text}"`
-    }
-    case 'real': {
-      const n = Number(text)
-      return text !== '' && Number.isFinite(n) ? { value: n } : `${name} must be a number, not "${text}"`
-    }
-    case 'enum':
-      return p.values?.includes(text)
-        ? { value: text }
-        : `${name} must be one of ${(p.values ?? []).join(', ')}, not "${text}"`
-    case 'atoms': {
-      const list = readAtoms(text)
-      return typeof list === 'string' ? list : { value: list }
-    }
-    case 'vec3': {
-      // Written `x y z`: a comma would end the argument.
-      const v = text.split(/\s+/).filter((w) => w !== '').map(Number)
-      return v.length === 3 && v.every(Number.isFinite)
-        ? { value: v }
-        : `${name} must be three numbers, x y z, not "${text}"`
-    }
-    default:
-      break
+  if (p.kind === 'atoms') {
+    const list = readAtoms(text)
+    return typeof list === 'string' ? list : { value: list }
   }
+  // Parsed from text here, then checked by the rules a JSON caller meets too.
+  const parsed =
+    p.kind === 'boolean' ? parseBoolText(text)
+    : p.kind === 'integer' || p.kind === 'real' ? parseNumberText(text)
+    // Written `x y z`: a comma would end the argument.
+    : p.kind === 'vec3' ? text.split(/\s+/).filter((w) => w !== '').map(Number)
+    : text
+  const bad = checkArg(name, p, parsed)
+  if (bad) return `${bad.slice(0, -1)}, not "${text}"`
+  if (p.kind !== 'string') return { value: parsed }
   if (p.semantic === 'path') return { value: resolvePath(cc.cwd, text) }
-  if (p.semantic === 'selection' && text !== '') {
-    // Checked here rather than left to the op, so a typo is reported as a
-    // typo before anything has been changed.
-    const valid = validateSelection(ctx, { selStr: text, sceneId: cc.sceneId })
-    if (!valid.ok) return `${name}: "${text}" is not a valid selection`
-  }
   return { value: text }
 }
 

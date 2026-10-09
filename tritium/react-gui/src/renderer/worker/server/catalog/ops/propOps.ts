@@ -23,6 +23,7 @@ import type {
   PropTargetType,
 } from '@renderer/worker/shared/genericProps'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { parseBoolText, parseNumberText } from '../argValues'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
 import { enumOf, nodeId, optional, propName, propPath, propValue } from '../params'
@@ -74,20 +75,14 @@ function nodeRefOf(
 /** Coerce a string into what the property's C++ type expects. */
 export function coerceProp(entry: GenericPropEntry, raw: string): string | number | boolean | null {
   switch (entry.type) {
-    case 'boolean': {
-      const v = raw.trim().toLowerCase()
-      if (v === 'true' || v === '1' || v === 'yes' || v === 'on') return true
-      if (v === 'false' || v === '0' || v === 'no' || v === 'off') return false
-      return null
-    }
+    case 'boolean':
+      return parseBoolText(raw)
     case 'integer': {
-      const n = Number(raw)
-      return Number.isInteger(n) ? n : null
+      const n = parseNumberText(raw)
+      return n !== null && Number.isInteger(n) ? n : null
     }
-    case 'real': {
-      const n = Number(raw)
-      return Number.isFinite(n) ? n : null
-    }
+    case 'real':
+      return parseNumberText(raw)
     default:
       // Strings, enums, and the object types that convert from a string
       // (a colour, a selection) are passed through for C++ to parse.

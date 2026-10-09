@@ -22,6 +22,7 @@ import { setLoop, setStartCam } from '@renderer/worker/server/services/anim/tran
 import type { AnimElementPropKey } from '@renderer/worker/server/services/anim/types'
 import type { AnimAddType, AnimElement, AnimTimeline } from '@renderer/worker/shared/animTypes'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { parseBoolText, parseNumberText } from '../argValues'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { boolean, enumOf, integer, optional, real, string } from '../params'
@@ -208,13 +209,10 @@ export const animTime = defineOp({
 function readPropValue(prop: (typeof SET_PROPS)[number], text: string): string | number | boolean | { x: number; y: number; z: number } | { error: string } {
   const t = text.trim()
   if ((BOOL_PROPS as readonly string[]).includes(prop)) {
-    if (/^(true|on|yes|1)$/i.test(t)) return true
-    if (/^(false|off|no|0)$/i.test(t)) return false
-    return { error: `${prop} takes true or false.` }
+    return parseBoolText(t) ?? { error: `${prop} takes true or false.` }
   }
   if ((NUMBER_PROPS as readonly string[]).includes(prop)) {
-    const n = Number(t)
-    return t !== '' && Number.isFinite(n) ? n : { error: `${prop} takes a number.` }
+    return parseNumberText(t) ?? { error: `${prop} takes a number.` }
   }
   if (prop === 'axis') {
     const v = t.split(/\s+/).map(Number)

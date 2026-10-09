@@ -37,9 +37,22 @@ export function outputPath(oc: OpContext, raw: string, ext: string): { path: str
   if (name === '') return { error: 'Give a file name.' }
   const withExt = nodePath.extname(name) === '' ? `${name}${ext}` : name
   // Absolute either way, so what an op reports is a path the reader can use.
-  if (oc.fileAccess === 'any') return { path: nodePath.resolve(desktopDir(), withExt) }
+  if (oc.fileAccess === 'any') return { path: callerPath(withExt) }
   if (!SAFE_BASENAME_RE.test(withExt)) {
     return { error: `Give a plain file name with no directory, for example picture${ext}; it is saved to the desktop.` }
   }
   return { path: nodePath.join(desktopDir(), withExt) }
+}
+
+/**
+ * A path a caller gave, made absolute: `~` is the home directory, and a
+ * relative path is taken from the desktop, as `outputPath` takes one. The
+ * console resolves its own against its cwd before an op sees it; an MCP
+ * client's or a model's working directory is not the worker's, which is what
+ * a relative path would otherwise be read against.
+ */
+export function callerPath(raw: string): string {
+  const p = raw.trim()
+  const home = p === '~' || p.startsWith('~/') ? nodePath.join(os.homedir(), p.slice(1)) : p
+  return nodePath.resolve(desktopDir(), home)
 }

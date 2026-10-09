@@ -14,6 +14,7 @@ import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
+import { callerPath } from '../outputFile'
 import { enumOf, optional, path, rendererType, selection, string } from '../params'
 import { applyReaderOptionText, settableReaderOptions, withCompanionFile } from '../readerOptions'
 
@@ -106,7 +107,7 @@ export const loadFile = defineOp({
   aliases: [{ name: 'load', summary: 'Open a structure file, or a .qsc scene.' }],
   outsideTxn: (raw) => SCENE_FILE_RE.test((raw.path ?? '').trim()),
   run(ctx, args, oc) {
-    const filePath = args.path
+    const filePath = callerPath(args.path)
     if (SCENE_FILE_RE.test(filePath)) {
       // A scene is opened by the UI the way File > Open does it -- into the
       // current tab when that is new and empty, otherwise a new one.
@@ -135,7 +136,7 @@ export const loadFile = defineOp({
       options.format = format
     }
     if (args.companion !== null) {
-      const format = withCompanionFile(options.format, args.companion)
+      const format = withCompanionFile(options.format, callerPath(args.companion))
       if ('error' in format) return { ok: false, error: format.error }
       options.format = format
     }
@@ -166,10 +167,11 @@ export const readerOptions = defineOp({
     return [`reader ${d.reader}`, ...(rows.length > 0 ? rows : ['  (no options)'])]
   },
   run(ctx, args) {
-    if (SCENE_FILE_RE.test(args.path)) return { ok: false, error: 'A scene file has no reader options.' }
-    const compat = getCompatibleRendererNames(ctx, { filePath: args.path })
+    const filePath = callerPath(args.path)
+    if (SCENE_FILE_RE.test(filePath)) return { ok: false, error: 'A scene file has no reader options.' }
+    const compat = getCompatibleRendererNames(ctx, { filePath })
     if (compat.readerName === '') {
-      return { ok: false, error: `No reader can handle "${args.path}". Check the path and the format.` }
+      return { ok: false, error: `No reader can handle "${filePath}". Check the path and the format.` }
     }
     const options = buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,

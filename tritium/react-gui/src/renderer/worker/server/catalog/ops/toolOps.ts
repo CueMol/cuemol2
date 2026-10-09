@@ -18,6 +18,7 @@ import {
 import type { MorphFrameInfo } from '@renderer/worker/server/services/morph/morphMol'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
+import { callerPath } from '../outputFile'
 import { enumOf, integer, moleculeId, objectId, optional, path, real } from '../params'
 
 /** Section mesh density of the cutter dialog. */
@@ -105,7 +106,7 @@ export const morphAdd = defineOp({
     }
     const insertIndex = args.before === null ? -1 : args.before - 1
     const added = args.file !== null
-      ? addMorphFrameFromFile(ctx, { sceneId: oc.sceneId, objId, path: args.file, insertIndex })
+      ? addMorphFrameFromFile(ctx, { sceneId: oc.sceneId, objId, path: callerPath(args.file), insertIndex })
       : addMorphFrameFromMol(ctx, { sceneId: oc.sceneId, objId, srcObjId: args.fromMolId as number, insertIndex })
     if (!added.ok) return { ok: false, error: added.error || 'The frame could not be added.' }
     const after = getMorphFrames(ctx, { sceneId: oc.sceneId, objId })

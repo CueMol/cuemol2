@@ -9,6 +9,7 @@
  * and paths without each command inventing its own rules.
  */
 
+import { parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
@@ -137,20 +138,10 @@ export function fileStem(filePath: string): string {
 }
 
 /** Parse a number argument, or null when it is not one. */
-export function toNumber(raw: string): number | null {
-  const trimmed = raw.trim()
-  if (trimmed === '') return null
-  const n = Number(trimmed)
-  return Number.isFinite(n) ? n : null
-}
+export const toNumber = parseNumberText
 
 /** Parse PyMOL's loose booleans (`1`/`0`, `on`/`off`, `yes`/`no`, `true`/`false`). */
-export function toBoolean(raw: string): boolean | null {
-  const v = raw.trim().toLowerCase()
-  if (v === '1' || v === 'on' || v === 'yes' || v === 'true') return true
-  if (v === '0' || v === 'off' || v === 'no' || v === 'false') return false
-  return null
-}
+export const toBoolean = parseBoolText
 
 /**
  * Whether an argument was left at a default that means "not asked for".
