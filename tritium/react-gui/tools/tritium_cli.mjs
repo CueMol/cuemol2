@@ -385,10 +385,17 @@ async function interactive() {
           // The answer rewrites the whole line, which readline's own
           // completion (append a suffix) cannot express.
           setImmediate(() => {
+            // `line` is the text before the cursor, as bash completes the
+            // word before it; what follows the cursor is kept.
             if (res.replacement !== null && res.replacement !== undefined && res.replacement !== line) {
+              const rest = rl.line.slice(line.length)
+              let head = res.replacement
+              if (head.endsWith(', ') && /^\s*,/.test(rest)) head = head.slice(0, -2)
+              else if (head.endsWith(' ') && /^\s/.test(rest)) head = head.slice(0, -1)
               rl.write(null, { ctrl: true, name: 'e' })
               rl.write(null, { ctrl: true, name: 'u' })
-              rl.write(res.replacement)
+              rl.write(head + rest)
+              for (let i = 0; i < rest.length; i++) rl.write(null, { name: 'left' })
             }
             if (res.messages?.length) completionList.show(res.messages)
           })

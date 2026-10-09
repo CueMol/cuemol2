@@ -115,6 +115,27 @@ describe('ConsolePanel', () => {
     tree.unmount()
   })
 
+  it('completes the word before the caret and keeps what follows it, as bash does', async () => {
+    const invokePluginService = vi.fn(() => Promise.resolve({ ok: true, replacement: 'load f, cartoon, ', messages: [] }))
+    const cm = { invokePluginService } as unknown as AsyncCueMol
+    const tree = mountTree(<ConsolePanel cm={cm} activeSceneId={1} activeMolViewId={2} />)
+    act(() => consoleSession.setRunner(vi.fn()))
+
+    const prompt = promptOf(tree.container)
+    act(() => type(prompt, 'load f, car, protein'))
+    prompt.setSelectionRange(11, 11) // after "car"
+    act(() => {
+      prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+    })
+    await act(async () => flushPromises())
+
+    const args = (invokePluginService.mock.calls[0] as unknown as [string, string, { line: string }])[2]
+    expect(args.line).toBe('load f, car')
+    // The `, ` the completion ends with is already there after the caret.
+    expect(promptOf(tree.container).value).toBe('load f, cartoon, protein')
+    tree.unmount()
+  })
+
   it('keeps Tab inside the prompt rather than letting it move focus', () => {
     const cm = {
       invokePluginService: vi.fn(() =>
