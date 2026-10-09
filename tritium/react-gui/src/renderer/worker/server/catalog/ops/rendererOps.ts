@@ -23,6 +23,7 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { color, enumOf, objectId, optional, rendererId, rendererType, selection, string } from '../params'
@@ -53,7 +54,7 @@ export const getRendererTypes = defineOp({
       sourceNodeId: args.objId,
       sourceNodeType: 'object',
     })
-    if (!result.ok) return { ok: false, error: 'No object with that id in this scene.' }
+    if (!result.ok) return { ok: false, error: NO_OBJECT }
     return {
       ok: true,
       data: {
@@ -113,7 +114,7 @@ export const createRenderer = defineOp({
       sourceNodeId: args.objId,
       sourceNodeType: 'object',
     })
-    if (!options.ok) return { ok: false, error: 'No object with that id in this scene.' }
+    if (!options.ok) return { ok: false, error: NO_OBJECT }
     if (!options.rendererTypes.includes(args.rendererType)) {
       return {
         ok: false,
@@ -264,7 +265,7 @@ export const paintSelection = defineOp({
     const scene = getSceneOrNull(ctx, oc.sceneId)
     if (!scene) return { ok: false, error: 'The scene could not be read.' }
     const rend = scene.getRenderer(rendId) as Renderer | null
-    if (!rend) return { ok: false, error: 'No renderer with that id in this scene.' }
+    if (!rend) return { ok: false, error: NO_RENDERER }
     const mol = getMolFromRenderer(rend)
     if (!mol) {
       return { ok: false, error: 'That renderer does not draw a molecule, so it cannot be painted.' }

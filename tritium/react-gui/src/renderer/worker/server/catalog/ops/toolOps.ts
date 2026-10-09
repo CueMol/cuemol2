@@ -18,6 +18,7 @@ import {
 import type { MorphFrameInfo } from '@renderer/worker/server/services/morph/morphMol'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { checkPosition, pickByNumber } from '@renderer/worker/shared/numbered'
+import { failedWith } from '../errors'
 import { defineOp } from '../op'
 import { callerPath } from '../outputFile'
 import { enumOf, integer, moleculeId, objectId, optional, path, real } from '../params'
@@ -101,7 +102,7 @@ export const morphAdd = defineOp({
     if (!frames.isMorphMol) {
       const conv = convertToMorphMol(ctx, { sceneId: oc.sceneId, objId })
       if (!conv.ok || conv.morphObjId === undefined) {
-        return { ok: false, error: conv.error || 'The molecule could not be made a morphing one.' }
+        return failedWith(conv, 'The molecule could not be made a morphing one.')
       }
       objId = conv.morphObjId
     }
@@ -113,7 +114,7 @@ export const morphAdd = defineOp({
     const added = args.file !== null
       ? addMorphFrameFromFile(ctx, { sceneId: oc.sceneId, objId, path: callerPath(args.file), insertIndex })
       : addMorphFrameFromMol(ctx, { sceneId: oc.sceneId, objId, srcObjId: args.fromMolId as number, insertIndex })
-    if (!added.ok) return { ok: false, error: added.error || 'The frame could not be added.' }
+    if (!added.ok) return failedWith(added, 'The frame could not be added.')
     const after = getMorphFrames(ctx, { sceneId: oc.sceneId, objId })
     return { ok: true, data: { objectId: objId, frames: after.frames.length } }
   },

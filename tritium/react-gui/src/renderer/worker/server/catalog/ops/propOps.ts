@@ -24,6 +24,7 @@ import type {
 } from '@renderer/worker/shared/genericProps'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { parseBoolText, parseNumberText } from '../argValues'
+import { NO_NODE } from '../errors'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
 import { enumOf, nodeId, optional, propName, propPath, propValue } from '../params'
@@ -104,7 +105,7 @@ export function writeNodeProp(
   raw: string,
 ): OpOutcome {
   const props = getGenericProps(ctx, { sceneId: oc.sceneId, ...ref })
-  if (!props.ok) return { ok: false, error: 'No node with that id and type in this scene.' }
+  if (!props.ok) return { ok: false, error: NO_NODE }
   const entry = props.entries.find((e: GenericPropEntry) => e.key === propName)
   if (!entry) {
     return {
@@ -176,7 +177,7 @@ export const getNodeProps = defineOp({
     if (typeof ref === 'string') return { ok: false, error: ref }
 
     const result = getGenericProps(ctx, { sceneId: oc.sceneId, ...ref })
-    if (!result.ok) return { ok: false, error: 'No node with that id and type in this scene.' }
+    if (!result.ok) return { ok: false, error: NO_NODE }
     return {
       ok: true,
       data: {
@@ -271,7 +272,7 @@ export const getProp = defineOp({
     const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)
     if (!target.ok) return { ok: false, error: target.error }
     const props = getGenericProps(ctx, { sceneId: oc.sceneId, nodeId: target.nodeId, nodeType: target.nodeType })
-    if (!props.ok) return { ok: false, error: 'No node with that id and type in this scene.' }
+    if (!props.ok) return { ok: false, error: NO_NODE }
     const entry = props.entries.find((e: GenericPropEntry) => e.key === target.prop)
     if (!entry) return { ok: false, error: `This ${target.nodeType} has no property "${target.prop}".` }
     return { ok: true, data: { prop: args.path.trim(), value: entry.value } }

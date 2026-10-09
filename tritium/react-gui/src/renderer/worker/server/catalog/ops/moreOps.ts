@@ -17,6 +17,7 @@ import { getObjectSaveInfo, saveObjectToFile } from '@renderer/worker/server/ser
 import { goTime, pause, play, stop } from '@renderer/worker/server/services/anim/transport'
 import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import { color, enumOf, nodeId, objectId, optional, path, real, rendererId, string } from '../params'
 import { outputPath } from '../outputFile'
@@ -32,7 +33,7 @@ export const listRendererStyles = defineOp({
   group: 'renderers',
   run(ctx, args, oc) {
     const res = getRendererStyleEntries(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
-    if (!res.ok) return { ok: false, error: 'No renderer with that id in this scene.' }
+    if (!res.ok) return { ok: false, error: NO_RENDERER }
     return {
       ok: true,
       data: {
@@ -58,7 +59,7 @@ export const applyRendererStyleOp = defineOp({
   aliases: [{ name: 'style', summary: 'Apply a named style to a renderer: style 1crn/cartoon1, <name>' }],
   run(ctx, args, oc) {
     const res = getRendererStyleEntries(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
-    if (!res.ok) return { ok: false, error: 'No renderer with that id in this scene.' }
+    if (!res.ok) return { ok: false, error: NO_RENDERER }
     const entry = [...res.typeStyles, ...res.edgeStyles].find((e) => e.name === args.style)
     if (!entry) {
       return { ok: false, error: `No style "${args.style}" for that renderer. Call list_renderer_styles for the names.` }
@@ -143,7 +144,7 @@ export const saveObject = defineOp({
     const target = outputPath(oc, args.fileName, '.pdb')
     if ('error' in target) return { ok: false, error: target.error }
     const info = getObjectSaveInfo(ctx, { sceneId: oc.sceneId, objId: args.objId })
-    if (!info.ok) return { ok: false, error: 'No object with that id in this scene.' }
+    if (!info.ok) return { ok: false, error: NO_OBJECT }
     const ext = nodePath.extname(target.path).slice(1).toLowerCase()
     const writer = info.filters.find((f) => f.extensions.map((e) => e.toLowerCase()).includes(ext))
     if (!writer) {

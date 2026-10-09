@@ -19,6 +19,7 @@ import {
 } from '@renderer/worker/server/services/renderSettings/renderSettings.service'
 import { getAvailableSceneExporters } from '@renderer/worker/server/services/scene/exportImage'
 import { DEFAULT_RENDER_BINARIES } from '@renderer/worker/shared/renderTypes'
+import { failedWith } from '../errors'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
 import { enumOf, integer, optional, path } from '../params'
@@ -95,7 +96,7 @@ async function renderTo(
     snapshot: { mode: 'still', backend, commonProps: [], backendProps: [] },
     binaries: DEFAULT_RENDER_BINARIES,
   })
-  if (!started.ok) return { ok: false, error: started.error || 'The render could not be started.' }
+  if (!started.ok) return failedWith(started, 'The render could not be started.')
 
   const end = await waitForRenderJob(
     started.jobId,

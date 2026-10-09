@@ -14,6 +14,7 @@ import {
   getSceneExportInfo,
 } from '@renderer/worker/server/services/scene/exportImage'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
 import { outputPath } from '../outputFile'
 import { boolean, integer, moleculeId, optional, path, real, selection } from '../params'
@@ -170,7 +171,7 @@ export const captureView = defineOp({
   run(ctx, args, oc) {
     const info = getSceneExportInfo(ctx, { sceneId: oc.sceneId, viewId: oc.viewId })
     if (!info.ok || info.width <= 0 || info.height <= 0) {
-      return { ok: false, error: 'The view could not be read.' }
+      return { ok: false, error: VIEW_UNREADABLE }
     }
     const requested = args.longSide ?? DEFAULT_LONG_SIDE
     const longSide = Math.min(MAX_LONG_SIDE, Math.max(MIN_LONG_SIDE, Math.round(requested) || DEFAULT_LONG_SIDE))

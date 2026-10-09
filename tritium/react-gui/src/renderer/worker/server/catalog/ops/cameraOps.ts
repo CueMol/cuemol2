@@ -16,6 +16,7 @@ import { getViewProjection, setViewProjection } from '@renderer/worker/server/se
 import { translateView } from '@renderer/worker/server/services/view/viewXform'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { checkPosition, numbered } from '@renderer/worker/shared/numbered'
+import { VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
 import { boolean, integer, optional, real, string } from '../params'
 
@@ -110,7 +111,7 @@ export const setProjection = defineOp({
     const res = args.perspective === null
       ? getViewProjection(ctx, { viewId: oc.viewId })
       : setViewProjection(ctx, { viewId: oc.viewId, perspective: args.perspective })
-    if (!res.ok) return { ok: false, error: 'The view could not be read.' }
+    if (!res.ok) return { ok: false, error: VIEW_UNREADABLE }
     return { ok: true, data: { perspective: res.perspective } }
   },
 })
@@ -132,7 +133,7 @@ export const panView = defineOp({
   aliases: [{ name: 'pan', summary: 'Slide the view: pan 10, 0' }],
   run(ctx, args, oc) {
     const res = translateView(ctx, { viewId: oc.viewId, dx: args.dx, dy: args.dy, dz: args.dz ?? 0, dragging: false })
-    if (!res.ok) return { ok: false, error: 'The view could not be read.' }
+    if (!res.ok) return { ok: false, error: VIEW_UNREADABLE }
     return { ok: true, data: { center: [res.centerX, res.centerY, res.centerZ] } }
   },
 })

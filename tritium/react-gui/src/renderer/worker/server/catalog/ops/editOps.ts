@@ -36,6 +36,7 @@ import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { resolvePropPath } from '../refs'
 import { checkPosition, numbered, pickByNumber } from '@renderer/worker/shared/numbered'
+import { NO_MOLECULE, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { atoms, boolean, enumOf, integer, moleculeId, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
@@ -143,7 +144,7 @@ function bondAtoms(ctx: Parameters<typeof getSceneOrNull>[0], sceneId: number, m
   if (specs.length !== 2) return { error: 'Give exactly two atoms, e.g. A/20/SG A/45/SG.' }
   const scene = getSceneOrNull(ctx, sceneId)
   const mol = scene?.getObject(molId) as MolCoord | null
-  if (!scene || !mol) return { error: 'No molecule with that id in this scene.' }
+  if (!scene || !mol) return { error: NO_MOLECULE }
   const a = atomOf(mol, specs[0])
   const b = atomOf(mol, specs[1])
   if (!a || !b) return { error: 'An atom was not found; check the chain, residue and atom name.' }
@@ -323,7 +324,7 @@ export const removeInteraction = defineOp({
 /** The renderer's paint entries, or why it has none. */
 function paintEntries(ctx: Parameters<typeof getRendererColoringState>[0], sceneId: number, rendId: number): { entries: PaintEntryDto[] } | { error: string } {
   const state = getRendererColoringState(ctx, { sceneId, rendId })
-  if (!state.ok) return { error: 'No renderer with that id in this scene.' }
+  if (!state.ok) return { error: NO_RENDERER }
   if (state.className !== 'PaintColoring') return { error: 'That renderer is not coloured by paint; add_paint makes it so.' }
   return { entries: state.paintEntries }
 }

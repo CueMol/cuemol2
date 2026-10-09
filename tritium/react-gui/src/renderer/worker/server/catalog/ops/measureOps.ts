@@ -20,6 +20,7 @@ import {
   type MeasureMode,
 } from '@renderer/worker/server/services/helpers/atomintr'
 import { angleOf, distanceOf, torsionOf } from './geometry'
+import { NO_OBJECT } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import type { AtomSpec } from '../params'
@@ -72,7 +73,7 @@ export const measureGeometry = defineOp({
     if (!scene) return { ok: false, error: 'The scene could not be read.' }
     const molId = args.molId
     const mol = scene.getObject(molId) as MolCoord | null
-    if (!mol) return { ok: false, error: 'No object with that id in this scene.' }
+    if (!mol) return { ok: false, error: NO_OBJECT }
 
     // Resolve every atom before measuring anything, so a typo in the last one
     // does not leave a half-drawn label behind.

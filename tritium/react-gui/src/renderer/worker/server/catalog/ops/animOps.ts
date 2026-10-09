@@ -24,8 +24,8 @@ import type { AnimAddType, AnimElement, AnimTimeline } from '@renderer/worker/sh
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { parseBoolText, parseNumberText } from '../argValues'
 import { checkPosition, findBySpec, numbered } from '@renderer/worker/shared/numbered'
+import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import type { OpOutcome } from '../op'
 import { boolean, enumOf, integer, optional, real, string } from '../params'
 
 /** The element types `add_anim` takes, by the word typed. */
@@ -47,6 +47,9 @@ const NUMBER_PROPS = ['quadric', 'angle', 'tgtAlpha', 'direction', 'distance', '
 const TEXT_PROPS = ['name', 'timeRefName', 'endcam', 'rend', 'mol'] as const
 const SET_PROPS = [...TEXT_PROPS, ...BOOL_PROPS, ...NUMBER_PROPS, 'axis'] as const
 
+/** What a failed edit says when the service gives no reason. */
+const ANIM_FAILED = 'The animation could not be changed.'
+
 const ELEMENT_DESC = 'The element: its number in list_anims (from 1), #uid, or its name.'
 
 /** The element `spec` names, or why it names none. */
@@ -62,11 +65,6 @@ function timeline(ctx: WorkerContext, sceneId: number): AnimTimeline {
 function element(ctx: WorkerContext, sceneId: number, spec: string): AnimElement | { error: string } {
   const found = findElement(timeline(ctx, sceneId).elements, spec)
   return typeof found === 'string' ? { error: found } : found
-}
-
-/** A service's failure as an op's. */
-function outcome(res: { ok: boolean; error?: string }, data?: unknown): OpOutcome {
-  return res.ok ? { ok: true, ...(data === undefined ? {} : { data }) } : { ok: false, error: res.error ?? 'The animation could not be changed.' }
 }
 
 /** `list_anims`'s lines: the manager, then one element per line. */
@@ -148,7 +146,7 @@ export const animRemove = defineOp({
   run(ctx, args, oc) {
     const e = element(ctx, oc.sceneId, args.element)
     if ('error' in e) return { ok: false, error: e.error }
-    return outcome(removeElement(ctx, { sceneId: oc.sceneId, uid: e.uid }))
+    return normalizeServiceResult(removeElement(ctx, { sceneId: oc.sceneId, uid: e.uid }), ANIM_FAILED)
   },
 })
 
@@ -168,7 +166,7 @@ export const animMove = defineOp({
     if ('error' in e) return { ok: false, error: e.error }
     const bad = checkPosition(args.to, timeline(ctx, oc.sceneId).elements.length, 'list_anims')
     if (bad) return { ok: false, error: bad }
-    return outcome(moveElement(ctx, { sceneId: oc.sceneId, uid: e.uid, to: args.to - 1 }))
+    return normalizeServiceResult(moveElement(ctx, { sceneId: oc.sceneId, uid: e.uid, to: args.to - 1 }), ANIM_FAILED)
   },
 })
 
@@ -190,12 +188,12 @@ export const animTime = defineOp({
     if (args.endMs < args.startMs) return { ok: false, error: 'The end must not be before the start.' }
     const e = element(ctx, oc.sceneId, args.element)
     if ('error' in e) return { ok: false, error: e.error }
-    return outcome(setAnimElementProp(ctx, {
+    return normalizeServiceResult(setAnimElementProp(ctx, {
       sceneId: oc.sceneId,
       uid: e.uid,
       prop: 'timing',
       value: { startMs: args.startMs, endMs: args.endMs },
-    }))
+    }), ANIM_FAILED)
   },
 })
 
@@ -237,12 +235,12 @@ export const animSet = defineOp({
     if ('error' in e) return { ok: false, error: e.error }
     const value = readPropValue(args.prop, args.value)
     if (typeof value === 'object' && 'error' in value) return { ok: false, error: value.error }
-    return outcome(setAnimElementProp(ctx, {
+    return normalizeServiceResult(setAnimElementProp(ctx, {
       sceneId: oc.sceneId,
       uid: e.uid,
       prop: args.prop as AnimElementPropKey,
       value,
-    }))
+    }), ANIM_FAILED)
   },
 })
 

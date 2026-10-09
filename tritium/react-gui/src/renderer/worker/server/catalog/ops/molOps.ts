@@ -14,6 +14,7 @@ import { reassignProt2ndry } from '@renderer/worker/server/services/molops/reass
 import { showSymmRenderer, showUnitCellRenderer } from '@renderer/worker/server/services/molops/symmetryPanelOps'
 import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { failedWith } from '../errors'
 import { defineOp } from '../op'
 import { boolean, enumOf, moleculeId, optional, real, selection, string } from '../params'
 
@@ -84,7 +85,7 @@ export const makeSurface = defineOp({
       density: args.density ?? SURF_DENSITY,
       probeRadius: args.probeRadius ?? SURF_PROBE,
     })
-    if (!res.ok) return { ok: false, error: res.error || 'The surface could not be made.' }
+    if (!res.ok) return failedWith(res, 'The surface could not be made.')
     return { ok: true, data: { objectId: res.newObjId, name: res.newObjName } }
   },
 })
