@@ -24,6 +24,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { CallToolResult, ListToolsResult } from '@modelcontextprotocol/sdk/types.js'
+import { mcpErrorResult } from '@shared/mcpResult'
+import { relayed } from './relay'
 import type { LocalApiRelay } from './relay'
 import type { EndpointHandler } from './server'
 
@@ -36,7 +38,7 @@ interface McpDescribe {
 const running = new Map<string, AbortController>()
 
 /** The request ids a `notifications/cancelled` body names; empty when it is something else. */
-export function cancelledRequestIds(body: unknown): string[] {
+function cancelledRequestIds(body: unknown): string[] {
   const msgs = Array.isArray(body) ? body : [body]
   const ids: string[] = []
   for (const m of msgs) {
@@ -48,10 +50,6 @@ export function cancelledRequestIds(body: unknown): string[] {
   return ids
 }
 
-function errorResult(message: string): CallToolResult {
-  return { content: [{ type: 'text', text: message }], isError: true }
-}
-
 /**
  * Create the endpoint.
  *
@@ -60,10 +58,17 @@ function errorResult(message: string): CallToolResult {
 export function mcpEndpoint(relay: LocalApiRelay, version: string): EndpointHandler {
   let instructions: string | null = null
 
-  async function describe(): Promise<string> {
+  /**
+   * The instructions, asked for once. A failure (the window is still starting)
+   * is not kept: the client gets none this time, and the next request asks again.
+   */
+  async function describe(): Promise<string | undefined> {
     if (instructions === null) {
-      const d = (await relay.request('mcp', 'describe', {})) as McpDescribe
-      instructions = d.instructions
+      try {
+        instructions = ((await relayed(relay, 'mcp', 'describe', {})) as McpDescribe).instructions
+      } catch {
+        return undefined
+      }
     }
     return instructions
   }
@@ -74,8 +79,9 @@ export function mcpEndpoint(relay: LocalApiRelay, version: string): EndpointHand
       { capabilities: { tools: {} }, instructions: await describe() },
     )
     const server = mcp.server
+    // A failure throws, which the SDK answers as a JSON-RPC error.
     server.setRequestHandler(ListToolsRequestSchema, async () =>
-      (await relay.request('mcp', 'listTools', {})) as ListToolsResult,
+      (await relayed(relay, 'mcp', 'listTools', {})) as ListToolsResult,
     )
     server.setRequestHandler(CallToolRequestSchema, async (req, extra) => {
       const key = String(extra.requestId)
@@ -84,14 +90,16 @@ export function mcpEndpoint(relay: LocalApiRelay, version: string): EndpointHand
       extra.signal.addEventListener('abort', onAbort, { once: true })
       running.set(key, ac)
       try {
-        return (await relay.request(
+        return (await relayed(
+          relay,
           'mcp',
           'callTool',
           { name: req.params.name, arguments: req.params.arguments ?? {} },
           ac.signal,
         )) as CallToolResult
       } catch (e) {
-        return errorResult(e instanceof Error ? e.message : 'The call failed.')
+        // A failed call is a tool result, in the JSON every tool answers with.
+        return mcpErrorResult(e instanceof Error ? e.message : 'The call failed.') as CallToolResult
       } finally {
         extra.signal.removeEventListener('abort', onAbort)
         if (running.get(key) === ac) running.delete(key)

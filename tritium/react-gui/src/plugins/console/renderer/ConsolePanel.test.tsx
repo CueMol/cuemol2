@@ -105,7 +105,34 @@ describe('ConsolePanel', () => {
     expect([pluginId, name]).toEqual(['console', 'complete'])
     expect(args.line).toBe('bg')
     expect(promptOf(tree.container).value).toBe('bg_color ')
-    expect(tree.container.textContent).toContain('parser: matching commands:')
+    // The list goes to the strip above the prompt, not the transcript, and
+    // typing clears it: it only ever shows the latest Tab's candidates.
+    const strip = () => tree.container.querySelector('.console-completions')
+    expect(strip()?.textContent).toContain('parser: matching commands:')
+    expect(tree.container.querySelector('.console-transcript')?.textContent).not.toContain('parser: matching')
+    act(() => type(promptOf(tree.container), 'bg_color w'))
+    expect(strip()).toBeNull()
+    tree.unmount()
+  })
+
+  it('completes the word before the caret and keeps what follows it, as bash does', async () => {
+    const invokePluginService = vi.fn(() => Promise.resolve({ ok: true, replacement: 'load f, cartoon, ', messages: [] }))
+    const cm = { invokePluginService } as unknown as AsyncCueMol
+    const tree = mountTree(<ConsolePanel cm={cm} activeSceneId={1} activeMolViewId={2} />)
+    act(() => consoleSession.setRunner(vi.fn()))
+
+    const prompt = promptOf(tree.container)
+    act(() => type(prompt, 'load f, car, protein'))
+    prompt.setSelectionRange(11, 11) // after "car"
+    act(() => {
+      prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+    })
+    await act(async () => flushPromises())
+
+    const args = (invokePluginService.mock.calls[0] as unknown as [string, string, { line: string }])[2]
+    expect(args.line).toBe('load f, car')
+    // The `, ` the completion ends with is already there after the caret.
+    expect(promptOf(tree.container).value).toBe('load f, cartoon, protein')
     tree.unmount()
   })
 

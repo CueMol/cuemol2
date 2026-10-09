@@ -76,7 +76,7 @@ function settingNames(ctx: WorkerContext, sceneId: number): string[] {
  * PyMOL does.
  */
 function settingValues(ctx: WorkerContext, sc: SourceContext): string[] | null {
-  const typed = (sc.argsSoFar[0] ?? '').trim()
+  const typed = (sc.bound.name ?? '').trim()
   if (typed === '') return null
   const alias = SETTING_ALIASES[typed]
   const propName = alias?.prop ?? typed

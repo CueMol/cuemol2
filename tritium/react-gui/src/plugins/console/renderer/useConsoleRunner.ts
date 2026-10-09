@@ -13,8 +13,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
-import { useCommands, useCueMol, useEnsureActiveScene, useSceneTabs, useSuppressUndoRedo } from '@renderer/plugin-host/api'
-import { CmdId } from '@renderer/commands/ids'
+import { useCueMol, useEnsureActiveScene, useOpenSceneFile, useSceneTabs, useSuppressUndoRedo } from '@renderer/plugin-host/api'
 import { consoleServices } from '../calls'
 import type { DialectId } from '../shared/consoleTypes'
 import { consoleSession, useConsoleSession } from './consoleSessionStore'
@@ -30,13 +29,10 @@ function makeRunId(): string {
 export function useConsoleRunner(): void {
   const { cm } = useCueMol()
   const ensureActiveScene = useEnsureActiveScene()
-  const { dispatch } = useCommands()
   const tabs = useSceneTabs()
   const { running } = useConsoleSession()
-  const openScene = useCallback(
-    async (filePath: string) => (await dispatch(CmdId.OpenSceneByPath, filePath))?.loaded !== false,
-    [dispatch],
-  )
+  const openSceneFile = useOpenSceneFile()
+  const openScene = useCallback(async (filePath: string) => (await openSceneFile(filePath)).ok, [openSceneFile])
 
   // A transaction is open in the worker for the length of a submission;
   // undoing into it would land the scene somewhere nobody has seen.

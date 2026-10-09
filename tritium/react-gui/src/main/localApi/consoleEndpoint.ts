@@ -12,21 +12,17 @@
 import type { IncomingMessage, ServerResponse } from 'http'
 import * as nodePath from 'path'
 import type { ConsoleCompleteRequest, ConsoleRunRequest } from '@shared/types/localApi'
+import { relayed, RelayedError } from './relay'
 import type { LocalApiRelay } from './relay'
+import { send } from './server'
 import type { EndpointHandler } from './server'
 
 export const CONSOLE_RUN_PATH = '/console/run'
 export const CONSOLE_COMPLETE_PATH = '/console/complete'
 export const CONSOLE_INFO_PATH = '/console/info'
 
-function send(res: ServerResponse, code: number, body: unknown): void {
-  if (res.headersSent || res.destroyed) return
-  res.writeHead(code, { 'Content-Type': 'application/json' })
-  res.end(JSON.stringify(body))
-}
-
 /** The request, if `body` is one; else why not. */
-export function readConsoleRequest(
+function readConsoleRequest(
   path: string,
   body: unknown,
 ): ConsoleRunRequest | ConsoleCompleteRequest | Record<string, never> | string {
@@ -60,10 +56,9 @@ export function consoleEndpoint(relay: LocalApiRelay): EndpointHandler {
       res.on('close', () => { if (!res.writableEnded) ac.abort() })
       const kind = path === CONSOLE_RUN_PATH ? 'run' : path === CONSOLE_INFO_PATH ? 'info' : 'complete'
       try {
-        const answer = (await relay.request('console', kind, request, ac.signal)) as { error?: unknown }
-        if (answer && typeof answer.error === 'string') return send(res, 409, { error: answer.error })
-        send(res, 200, answer)
+        send(res, 200, await relayed(relay, 'console', kind, request, ac.signal))
       } catch (e) {
+        if (e instanceof RelayedError) return send(res, 409, { error: e.message })
         send(res, 503, { error: e instanceof Error ? e.message : 'The CueMol window did not answer.' })
       }
     },

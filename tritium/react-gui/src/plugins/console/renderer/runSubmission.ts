@@ -6,7 +6,7 @@
  * Usually that is one worker call. A scene command splits it: the worker
  * stops there and hands the command back (`sceneRequest`), this does it on
  * the tab strip, and the rest goes to the worker again, against whatever
- * scene is active by then. So `new_scene; fetch 1crn` fetches into the new
+ * scene is active by then. So `create_scene; fetch 1crn` fetches into the new
  * scene, and each scene's commands are one undo transaction in that scene.
  */
 
@@ -52,16 +52,25 @@ export async function runSubmission(deps: SubmissionDeps, args: SubmissionArgs):
     return { entries, aborted: true, interrupted: false, cwd }
   }
 
-  let text = args.text
-  for (;;) {
-    const target = await deps.ensureActiveScene()
-    if (!target) return failed('Error: no scene to run against')
-    const res = await consoleServices.invoke(
+  const run = (target: { scene_uid: number; view_id: number }, text: string) =>
+    consoleServices.invoke(
       deps.cm,
       'runCommand',
       { dialect: args.dialect, sceneId: target.scene_uid, viewId: target.view_id, text, runId: args.runId, cwd },
       args.quiet ? { quiet: true } : undefined,
     )
+
+  let text = args.text
+  for (;;) {
+    // With no tab open, the worker is asked first without a scene: a tab
+    // command (list_scenes) runs without one, and only a command that needs
+    // a scene gets one made for it.
+    let res = (await deps.tabs.list()).length === 0 ? await run({ scene_uid: 0, view_id: 0 }, text) : null
+    if (res === null || (!res.ok && res.code === 'not-found')) {
+      const target = await deps.ensureActiveScene()
+      if (!target) return failed('Error: no scene to run against')
+      res = await run(target, text)
+    }
     if (!res.ok) return failed(`Error: ${res.error}`)
     entries.push(...res.entries)
     cwd = res.cwd ?? cwd

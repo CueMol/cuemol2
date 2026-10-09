@@ -37,25 +37,32 @@ export interface SceneNodeEntry {
   objName?: string
 }
 
-/** Every object, renderer and renderer group in the scene. */
-export function sceneNodes(ctx: WorkerContext, sceneId: number): SceneNodeEntry[] {
+/** The renderers and renderer groups under one object node of the scene tree, depth first. */
+export function rendererNodesOf(obj: SceneTreeNode): SceneTreeNode[] {
+  const out: SceneTreeNode[] = []
+  const walk = (nodes: SceneTreeNode[]): void => {
+    for (const n of nodes) {
+      if (n.type === 'renderer' || n.type === 'rendGroup') out.push(n)
+      if (n.children.length > 0) walk(n.children)
+    }
+  }
+  walk(obj.children)
+  return out
+}
+
+/** The object nodes of the scene tree. */
+export function objectNodes(ctx: WorkerContext, sceneId: number): SceneTreeNode[] {
   const tree = getSceneTree(ctx, { sceneId })
   if (!tree.ok || !tree.tree) return []
-  const out: SceneNodeEntry[] = []
-  for (const obj of tree.tree.children) {
-    if (obj.type !== 'object') continue
-    out.push({ id: obj.id, name: obj.name, type: 'object' })
-    const walk = (nodes: SceneTreeNode[]): void => {
-      for (const n of nodes) {
-        if (n.type === 'renderer' || n.type === 'rendGroup') {
-          out.push({ id: n.id, name: n.name, type: n.type, objName: obj.name })
-        }
-        if (n.children.length > 0) walk(n.children)
-      }
-    }
-    walk(obj.children)
-  }
-  return out
+  return tree.tree.children.filter((c) => c.type === 'object')
+}
+
+/** Every object, renderer and renderer group in the scene. */
+export function sceneNodes(ctx: WorkerContext, sceneId: number): SceneNodeEntry[] {
+  return objectNodes(ctx, sceneId).flatMap((obj) => [
+    { id: obj.id, name: obj.name, type: 'object' as const },
+    ...rendererNodesOf(obj).map((n) => ({ id: n.id, name: n.name, type: n.type as 'renderer' | 'rendGroup', objName: obj.name })),
+  ])
 }
 
 /** How a node is written back: `obj` or `obj/rend`. */

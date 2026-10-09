@@ -16,6 +16,7 @@ import { ANALYSIS_OPS } from './ops/analysisOps'
 import { ANIM_OPS } from './ops/animOps'
 import { APBS_OPS } from './ops/apbsOps'
 import { EDIT_OPS } from './ops/editOps'
+import { LOAD_FORMAT_OPS } from './ops/loadFormatOps'
 import { TOOL_MENU_OPS } from './ops/toolOps'
 import { FILE_OPS } from './ops/fileOps'
 import { MEASURE_OPS } from './ops/measureOps'
@@ -33,7 +34,7 @@ import type { ToolsetId } from './toolsets'
 
 export type { AnyOp, Op, OpContext, OpImage, OpOutcome, OpAlias } from './op'
 export { defineOp } from './op'
-export { invokeOp, runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from './opRuntime'
+export { invokeOp, runExclusive, runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from './opRuntime'
 export { MAX_ARRAY_ITEMS, MAX_OUTPUT_CHARS, serializeToolOutput } from './toolOutput'
 export { paramsSchema, readToolArgs, toolSchema } from './toolSchema'
 export type { StrictObjectSchema } from './toolSchema'
@@ -63,6 +64,7 @@ export const OPS: readonly AnyOp[] = [
   ...TOOL_MENU_OPS,
   ...ANIM_OPS,
   ...EDIT_OPS,
+  ...LOAD_FORMAT_OPS,
 ].sort(byName)
 
 /** The ops always offered to a tool caller, in catalogue order. */
@@ -72,6 +74,18 @@ export const TOOL_OPS: readonly AnyOp[] = OPS.filter((op) => op.expose.tool === 
 export function toolsetOps(id: ToolsetId): readonly AnyOp[] {
   return OPS.filter((op) => op.expose.tool === id)
 }
+
+/**
+ * The ops an MCP client is offered: every op a tool caller may use, toolsets
+ * included (a client picks from all its servers' tools itself), and the
+ * MCP-only ones.
+ */
+export function isMcpOp(op: AnyOp): boolean {
+  return op.expose.tool !== false || op.expose.mcp === true
+}
+
+/** The ops `isMcpOp` offers, in catalogue order. */
+export const MCP_OPS: readonly AnyOp[] = OPS.filter(isMcpOp)
 
 /** The ops a console makes commands of, in catalogue order. */
 export const CONSOLE_COMMAND_OPS: readonly AnyOp[] = OPS.filter((op) => op.expose.console)

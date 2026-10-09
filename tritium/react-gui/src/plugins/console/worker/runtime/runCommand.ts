@@ -25,7 +25,7 @@
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { redo } from '@renderer/worker/server/services/undo/redo'
 import { undo } from '@renderer/worker/server/services/undo/undo'
-import { runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from '@renderer/worker/server/catalog'
+import { runExclusive, runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from '@renderer/worker/server/catalog'
 import { fail, failFrom, ok } from '@renderer/worker/shared/result'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type {
@@ -121,7 +121,8 @@ class EntrySink {
 const MAX_SCRIPT_DEPTH = 8
 
 /** Commands that are never written to the log: they are about the log. */
-const UNLOGGED = new Set(['log', 'log_open', 'log_close'])
+// The log commands of both dialects: native open_log / close_log, PyMOL log_open / log_close.
+const UNLOGGED = new Set(['log', 'log_open', 'log_close', 'open_log', 'close_log'])
 
 /** What one submission accumulates as its commands run. */
 interface Submission {
@@ -178,6 +179,39 @@ async function runScriptFile(sub: Submission, filePath: string, depth: number): 
   return completed ? { ok: true } : { ok: false, error: '' }
 }
 
+/** What a `CmdContext` does differently where a command runs. */
+type CmdContextHooks = Pick<CmdContext, 'markMutated' | 'runScript' | 'openScene' | 'requestScene'>
+
+/** The context a command runs with: printing to `sink`, the run's streams and Stop. */
+function makeCmdContext(args: RunCommandArgs, dir: WorkDir, sink: EntrySink, hooks: CmdContextHooks): CmdContext {
+  let streamSeq = 0
+  return {
+    sceneId: args.sceneId,
+    viewId: args.viewId,
+    cwd: dir.get(),
+    print: (text) => sink.push('output', text),
+    warn: (text) => sink.push('warning', text),
+    setCwd: (d) => dir.set(d),
+    noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
+    stopped: () => isStopped(args.runId),
+    streamId: (tag) => `console:${args.runId}:${tag}:${++streamSeq}`,
+    ...hooks,
+  }
+}
+
+/**
+ * Run one command. A command should return its failures; a throw is a bug,
+ * but it must not take the transaction with it, so it is reported as one.
+ */
+async function runSpec(spec: ConsoleCommand, ctx: WorkerContext, bound: Record<string, string>, cc: CmdContext): Promise<CmdOutcome> {
+  try {
+    return await spec.run(ctx, bound, cc)
+  } catch (e) {
+    log.warn(`[worker] console: ${spec.name} threw:`, e)
+    return { ok: false, error: `Error: ${spec.name}: ${e instanceof Error ? e.message : String(e)}` }
+  }
+}
+
 /**
  * Run commands in order until one fails or Stop is pressed.
  *
@@ -226,7 +260,7 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
     let bound: Record<string, string>
     try {
       const parsed = parseArgs(cmd.text, spec.mode)
-      const result = bindArgs(spec.name, spec.params, parsed, spec.mode)
+      const result = bindArgs(spec.name, spec.params, parsed, spec.mode, dialect.argRule)
       if (result.kind === 'usage') {
         sink.push('output', result.usage)
         continue
@@ -252,20 +286,10 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
     }
 
     let commandMutated = false
-    let streamSeq = 0
-    const cc: CmdContext = {
-      sceneId: args.sceneId,
-      viewId: args.viewId,
-      cwd: sub.dir.get(),
-      print: (text) => sink.push('output', text),
-      warn: (text) => sink.push('warning', text),
+    const cc = makeCmdContext(args, sub.dir, sink, {
       markMutated: () => {
         commandMutated = true
       },
-      setCwd: (dir) => sub.dir.set(dir),
-      noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
-      stopped: () => isStopped(args.runId),
-      streamId: (tag) => `console:${args.runId}:${tag}:${++streamSeq}`,
       runScript: (filePath) => runScriptFile(sub, filePath, depth),
       openScene: (filePath) => { sub.openScene = filePath },
       requestScene: (req) => {
@@ -274,18 +298,8 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
         sub.rest = joinCommands(commands.slice(index + 1))
         return true
       },
-    }
-
-    let outcome
-    try {
-      outcome = await spec.run(ctx, bound, cc)
-    } catch (e) {
-      // A command should return its failures; a throw is a bug, but it must
-      // not take the transaction with it.
-      log.warn(`[worker] console: ${spec.name} threw:`, e)
-      const msg = e instanceof Error ? e.message : String(e)
-      outcome = { ok: false as const, error: `Error: ${spec.name}: ${msg}` }
-    }
+    })
+    const outcome = await runSpec(spec, ctx, bound, cc)
 
     if (outcome.ok && (spec.mutates || commandMutated)) sub.mutated = true
     if (!outcome.ok) {
@@ -342,7 +356,7 @@ async function runStandalone(
   if (!spec.outsideTxn) return null
   let bound: Record<string, string>
   try {
-    const result = bindArgs(spec.name, spec.params, parseArgs(cmd.text, spec.mode), spec.mode)
+    const result = bindArgs(spec.name, spec.params, parseArgs(cmd.text, spec.mode), spec.mode, dialect.argRule)
     // Usage and argument errors are reported by the ordinary path.
     if (result.kind === 'usage') return null
     bound = result.args
@@ -355,27 +369,13 @@ async function runStandalone(
   if (!cmd.quiet) writeLog(cmd.text)
   const sink = new EntrySink(entries)
   let openScene: string | undefined
-  const cc: CmdContext = {
-    sceneId: args.sceneId,
-    viewId: args.viewId,
-    cwd: dir.get(),
-    print: (text) => sink.push('output', text),
-    warn: (text) => sink.push('warning', text),
+  const cc = makeCmdContext(args, dir, sink, {
     markMutated: () => undefined,
-    setCwd: (d) => dir.set(d),
-    noteStream: (reqId) => { noteRunStream(args.runId, reqId) },
-    stopped: () => isStopped(args.runId),
-    streamId: (tag) => `console:${args.runId}:${tag}:1`,
     runScript: () => Promise.resolve({ ok: false, error: 'Error: a script cannot run from here' }),
     openScene: (filePath) => { openScene = filePath },
     requestScene: () => false,
-  }
-  let outcome: CmdOutcome
-  try {
-    outcome = await spec.run(ctx, bound, cc)
-  } catch (e) {
-    outcome = { ok: false, error: `Error: ${spec.name}: ${e instanceof Error ? e.message : String(e)}` }
-  }
+  })
+  const outcome = await runExclusive(() => runSpec(spec, ctx, bound, cc))
   if (!outcome.ok) sink.push('error', outcome.error)
   return ok({
     entries,
@@ -384,6 +384,46 @@ async function runStandalone(
     interrupted: false,
     ...(outcome.ok && openScene ? { openScene } : {}),
     ...(args.cwd !== undefined ? { cwd: dir.get() } : {}),
+  })
+}
+
+/** Whether the first command of a submission is a tab command, which needs no scene. */
+function startsWithTabCommand(dialect: ConsoleDialect, commands: SplitCommand[]): boolean {
+  const first = commands[0]
+  if (!first || first.script) return false
+  const resolved = resolveCommand(dialect, first.text.split(/\s+/)[0])
+  return resolved.kind === 'found' && resolved.spec.group === 'tabs'
+}
+
+/**
+ * Run a submission that starts with a tab command while no scene exists. The
+ * tab command hands its request back, so nothing reaches a scene and no
+ * transaction is needed; the rest is sent again once the window has acted.
+ */
+async function runWithoutScene(
+  dialect: ConsoleDialect,
+  ctx: WorkerContext,
+  args: RunCommandArgs,
+  commands: SplitCommand[],
+): Promise<RunCommandResult> {
+  const entries: ConsoleEntry[] = []
+  const sub: Submission = {
+    dialect, ctx, args, entries, sink: new EntrySink(entries), mutated: false, interrupted: false, dir: workDirFor(args),
+  }
+  beginRun(args.runId)
+  let completed: boolean
+  try {
+    completed = await runLines(sub, commands, 0)
+  } finally {
+    endRun(args.runId)
+  }
+  return ok({
+    entries,
+    mutated: false,
+    aborted: !completed,
+    interrupted: sub.interrupted,
+    ...(sub.sceneRequest ? { sceneRequest: sub.sceneRequest, rest: sub.rest ?? '' } : {}),
+    ...(args.cwd !== undefined ? { cwd: sub.dir.get() } : {}),
   })
 }
 
@@ -397,12 +437,17 @@ export async function runCommand(
   ctx: WorkerContext,
   args: RunCommandArgs,
 ): Promise<RunCommandResult> {
-  const scene = getSceneOrNull(ctx, args.sceneId)
-  if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found')
-  if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
   const dialect = dialectOf(args.dialect)
-
   const commands = splitCommands(args.text)
+  const scene = getSceneOrNull(ctx, args.sceneId)
+  if (!scene) {
+    // No tab is open. A tab command (list_scenes, create_scene) needs none, so
+    // it runs here; anything else is refused as not-found, and the window
+    // makes a scene and sends the submission again.
+    if (!startsWithTabCommand(dialect, commands)) return fail(`scene ${args.sceneId} not found`, 'not-found')
+    return runWithoutScene(dialect, ctx, args, commands)
+  }
+  if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
   const standalone = await runStandalone(dialect, ctx, args, commands)
   if (standalone) return standalone
 

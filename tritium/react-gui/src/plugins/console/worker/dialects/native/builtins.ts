@@ -8,6 +8,7 @@
  * filesystem, so they are written here rather than added to the catalogue.
  */
 
+import { parseBoolText } from '@renderer/worker/server/catalog/argValues'
 import * as fs from 'fs'
 import * as nodePath from 'path'
 import { closeLog, currentLog, openLog, writeLog } from '../../runtime/commandLog'
@@ -20,10 +21,12 @@ export const NATIVE_SCRIPT_EXT = '.cml'
 
 const cd: ConsoleCommand = {
   name: 'cd',
+  group: 'console',
   params: [{ name: 'dir', default: '~' }],
   mode: 'strict',
   mutates: false,
   summary: 'Change the working directory relative paths are read from.',
+  completions: [{ source: 'files', description: 'directory' }],
   run(_ctx, args, cc) {
     const dir = resolvePath(cc.cwd, args.dir)
     if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
@@ -37,6 +40,7 @@ const cd: ConsoleCommand = {
 
 const pwd: ConsoleCommand = {
   name: 'pwd',
+  group: 'console',
   params: [],
   mode: 'strict',
   mutates: false,
@@ -49,10 +53,12 @@ const pwd: ConsoleCommand = {
 
 const ls: ConsoleCommand = {
   name: 'ls',
+  group: 'console',
   params: [{ name: 'dir', default: '' }],
   mode: 'strict',
   mutates: false,
   summary: 'List a directory (the working directory when none is given).',
+  completions: [{ source: 'files', description: 'file' }],
   run(_ctx, args, cc) {
     const dir = resolvePath(cc.cwd, args.dir.trim() === '' ? '.' : args.dir.trim())
     let names: string[]
@@ -72,21 +78,25 @@ const ls: ConsoleCommand = {
 
 const run: ConsoleCommand = {
   name: 'run',
+  group: 'console',
   params: [{ name: 'file' }],
   mode: 'strict',
   mutates: false,
   summary: `Run the commands in a ${NATIVE_SCRIPT_EXT} script (the same as @file).`,
+  completions: [{ source: 'files', description: 'script' }],
   run(_ctx, args, cc) {
     return cc.runScript(args.file.trim())
   },
 }
 
 const logOpen: ConsoleCommand = {
-  name: 'log_open',
+  name: 'open_log',
+  group: 'console',
   params: [{ name: 'file', default: `log${NATIVE_SCRIPT_EXT}` }, { name: 'mode', default: 'w' }],
   mode: 'strict',
   mutates: false,
   summary: 'Record the commands typed from now on to a script file.',
+  completions: [{ source: 'files', description: 'file' }, { source: 'enum:w|a', description: 'mode' }],
   run(_ctx, args, cc) {
     const mode = args.mode.trim()
     if (mode !== 'w' && mode !== 'a') {
@@ -104,7 +114,8 @@ const logOpen: ConsoleCommand = {
 }
 
 const logClose: ConsoleCommand = {
-  name: 'log_close',
+  name: 'close_log',
+  group: 'console',
   params: [],
   mode: 'strict',
   mutates: false,
@@ -119,6 +130,7 @@ const logClose: ConsoleCommand = {
 
 const logLine: ConsoleCommand = {
   name: 'log',
+  group: 'console',
   params: [{ name: 'text', default: '' }],
   mode: 'literal1',
   mutates: false,
@@ -137,6 +149,7 @@ const logLine: ConsoleCommand = {
 function undoStack(name: 'undo' | 'redo'): ConsoleCommand {
   return {
     name,
+    group: 'edit',
     params: [],
     mode: 'strict',
     mutates: false,
@@ -151,7 +164,7 @@ function undoStack(name: 'undo' | 'redo'): ConsoleCommand {
 // A scene is a tab, which only the panel can make or close, so these parse
 // their arguments and hand the request over (CmdContext.requestScene).
 
-const SCENE_COMPLETION = { source: 'scenes', description: 'scene', suffix: '' } as const
+const SCENE_COMPLETION = { source: 'scenes', description: 'scene' } as const
 
 /** Hand `req` to the panel; refused inside a script. */
 function handOff(name: string, req: SceneRequest, cc: CmdContext): CmdOutcome {
@@ -159,50 +172,60 @@ function handOff(name: string, req: SceneRequest, cc: CmdContext): CmdOutcome {
   return { ok: false, error: `Error: ${name} cannot run inside a script; put it on the command line` }
 }
 
-const scenes: ConsoleCommand = {
-  name: 'scenes',
-  params: [],
-  mode: 'strict',
-  mutates: false,
-  summary: 'List the open scenes; * marks the active one.',
-  run: (_ctx, _args, cc) => handOff('scenes', { op: 'list' }, cc),
+/** `list_scenes`, and its short form `scenes`. */
+function listScenesAs(name: string, summary: string): ConsoleCommand {
+  return {
+    name,
+    group: 'tabs',
+    params: [],
+    mode: 'strict',
+    mutates: false,
+    summary,
+    run: (_ctx, _args, cc) => handOff(name, { op: 'list' }, cc),
+  }
 }
+const listScenes = listScenesAs('list_scenes', 'List the open scenes; * marks the active one.')
+const scenes = listScenesAs('scenes', 'Short for list_scenes.')
 
 const newScene: ConsoleCommand = {
-  name: 'new_scene',
+  name: 'create_scene',
+  group: 'tabs',
   params: [{ name: 'name', default: '' }],
   mode: 'strict',
   mutates: false,
   summary: 'Open a new empty scene in a tab of its own and make it active.',
-  completions: [{ source: 'none', description: 'name', suffix: '' }],
-  run: (_ctx, args, cc) => handOff('new_scene', { op: 'new', name: args.name.trim() }, cc),
+  completions: [{ source: 'none', description: 'name' }],
+  run: (_ctx, args, cc) => handOff('create_scene', { op: 'new', name: args.name.trim() }, cc),
 }
 
 const switchScene: ConsoleCommand = {
   name: 'switch_scene',
+  group: 'tabs',
   params: [{ name: 'scene' }],
   mode: 'strict',
   mutates: false,
-  summary: 'Make a scene active, by its number in "scenes", #uid or name.',
+  summary: 'Make a scene active, by its number in list_scenes, #uid or name.',
   completions: [SCENE_COMPLETION],
   run: (_ctx, args, cc) => handOff('switch_scene', { op: 'switch', scene: args.scene.trim() }, cc),
 }
 
 const closeScene: ConsoleCommand = {
   name: 'close_scene',
-  params: [{ name: 'scene', default: '' }, { name: 'force', default: '' }],
+  group: 'tabs',
+  params: [{ name: 'scene', default: '' }, { name: 'discardChanges', default: 'false' }],
   mode: 'strict',
   mutates: false,
-  summary: 'Close a scene (the active one when none is named); force discards unsaved changes.',
-  completions: [{ ...SCENE_COMPLETION, suffix: ', ' }, { source: 'enum:force', description: 'option', suffix: '' }],
+  summary: 'Close a scene (the active one when none is named); discardChanges true closes it with unsaved changes.',
+  completions: [SCENE_COMPLETION, { source: 'enum:true|false', description: 'discardChanges' }],
   run(_ctx, args, cc) {
-    const force = args.force.trim()
-    if (force !== '' && force !== 'force') return { ok: false, error: 'Error: the second argument can only be "force"' }
-    return handOff('close_scene', { op: 'close', scene: args.scene.trim(), force: force === 'force' }, cc)
+    const discardChanges = parseBoolText(args.discardChanges)
+    if (discardChanges === null) return { ok: false, error: 'Error: discardChanges must be true or false' }
+    return handOff('close_scene', { op: 'close', scene: args.scene.trim(), discardChanges }, cc)
   },
 }
 
 export const NATIVE_BUILTINS: ConsoleCommand[] = [
+  listScenes,
   scenes,
   newScene,
   switchScene,

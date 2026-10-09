@@ -243,4 +243,4 @@ architecture, it belongs here.
   status bar のアイコンと popover、client ごとの接続設定 dialog、接続情報ファイル
   `~/.cuemol/local-api.json`。console endpoint と terminal の thin client `tritium_cli`
   (native / PyMOL dialect、client が作業ディレクトリを持つ。配布物に同梱し、app が動いていなければ
-  起動して接続する)。console の scene コマンド (`scenes` / `new_scene` / `switch_scene` / `close_scene`)。
+  起動して接続する)。console の scene コマンド (`list_scenes` / `create_scene` / `switch_scene` / `close_scene`)。

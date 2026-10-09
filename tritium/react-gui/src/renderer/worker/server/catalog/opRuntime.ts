@@ -31,9 +31,27 @@
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { validateSelection } from '@renderer/worker/server/services/select/validateSelection'
 import type { AnyOp, OpContext, OpOutcome } from './op'
+import type { ParamMap } from './params'
 
 const log = console
+
+/**
+ * The first selection argument that does not compile, as an error; else null.
+ *
+ * Checked before the op runs, for every caller alike, so a typo is reported as
+ * a typo before anything has changed. An empty one is left to the op, where it
+ * means "none" or "everything".
+ */
+function invalidSelection(op: AnyOp, ctx: WorkerContext, args: Record<string, unknown>, sceneId: number): string | null {
+  for (const [name, p] of Object.entries(op.params as ParamMap)) {
+    const v = args[name]
+    if (p.semantic !== 'selection' || typeof v !== 'string' || v.trim() === '') continue
+    if (!validateSelection(ctx, { selStr: v, sceneId }).ok) return `${name}: "${v}" is not a valid selection.`
+  }
+  return null
+}
 
 /**
  * Run one op.
@@ -50,6 +68,8 @@ export async function invokeOp(
   args: Record<string, unknown>,
   oc: OpContext,
 ): Promise<OpOutcome> {
+  const badSel = invalidSelection(op, ctx, args, oc.sceneId)
+  if (badSel) return { ok: false, error: badSel }
   let outcome: OpOutcome
   try {
     outcome = await op.run(ctx, args, oc)
@@ -94,6 +114,20 @@ export async function runInTxn<T>(
     openTxns--
     if (mutated()) scene.commitUndoTxn()
     else scene.rollbackUndoTxn()
+  }
+}
+
+/**
+ * Run `body` outside any transaction (an op whose `outsideTxn` holds), yet
+ * as busy as one: no other command, call or turn may start until it ends,
+ * since a scene save or open must not have edits land in the middle.
+ */
+export async function runExclusive<T>(body: () => Promise<T>): Promise<T> {
+  openTxns++
+  try {
+    return await body()
+  } finally {
+    openTxns--
   }
 }
 

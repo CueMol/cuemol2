@@ -34,7 +34,10 @@ function fakeRelay(asked: { endpoint: string; kind: string; payload: unknown }[]
       switch (kind) {
         case 'describe': return { instructions: 'Use the tools.' }
         case 'listTools': return { tools: [{ name: 'paint', description: 'Paint.', inputSchema: { type: 'object' } }] }
-        case 'callTool': return { content: [{ type: 'text', text: '{"ok":true}' }], isError: false }
+        case 'callTool':
+          // The window's handler threw: useLocalApiEndpoint answers { error }.
+          if ((payload as { name?: string }).name === 'broken') return { error: 'CueMol is not ready yet.' }
+          return { content: [{ type: 'text', text: '{"ok":true}' }], isError: false }
         default: throw new Error(kind)
       }
     },
@@ -94,5 +97,17 @@ describe('the local API server', () => {
     })).json()
     expect(call.result).toEqual({ content: [{ type: 'text', text: '{"ok":true}' }], isError: false })
     expect(asked).toContainEqual({ endpoint: 'mcp', kind: 'callTool', payload: { name: 'paint', arguments: { color: 'red' } } })
+  })
+
+  it('answers a call the window failed as a tool result in the JSON every tool answers with', async () => {
+    const { port } = await start()
+    await server!.setEndpoint('mcp', true)
+    const call = await (await rpc(port, {
+      jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'broken', arguments: {} },
+    })).json()
+    expect(call.result).toEqual({
+      content: [{ type: 'text', text: JSON.stringify({ ok: false, error: 'CueMol is not ready yet.' }) }],
+      isError: true,
+    })
   })
 })

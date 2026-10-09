@@ -23,6 +23,8 @@ import type {
   PropTargetType,
 } from '@renderer/worker/shared/genericProps'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { parseBoolText, parseNumberText } from '../argValues'
+import { NO_NODE } from '../errors'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
 import { enumOf, nodeId, optional, propName, propPath, propValue } from '../params'
@@ -72,22 +74,16 @@ function nodeRefOf(
 }
 
 /** Coerce a string into what the property's C++ type expects. */
-export function coerceProp(entry: GenericPropEntry, raw: string): string | number | boolean | null {
+function coerceProp(entry: GenericPropEntry, raw: string): string | number | boolean | null {
   switch (entry.type) {
-    case 'boolean': {
-      const v = raw.trim().toLowerCase()
-      if (v === 'true' || v === '1' || v === 'yes' || v === 'on') return true
-      if (v === 'false' || v === '0' || v === 'no' || v === 'off') return false
-      return null
-    }
+    case 'boolean':
+      return parseBoolText(raw)
     case 'integer': {
-      const n = Number(raw)
-      return Number.isInteger(n) ? n : null
+      const n = parseNumberText(raw)
+      return n !== null && Number.isInteger(n) ? n : null
     }
-    case 'real': {
-      const n = Number(raw)
-      return Number.isFinite(n) ? n : null
-    }
+    case 'real':
+      return parseNumberText(raw)
     default:
       // Strings, enums, and the object types that convert from a string
       // (a colour, a selection) are passed through for C++ to parse.
@@ -101,7 +97,7 @@ export function coerceProp(entry: GenericPropEntry, raw: string): string | numbe
  * Shared by `set_node_prop` and the console's `set`: both take the value as
  * text and must refuse the same things the same way.
  */
-export function writeNodeProp(
+function writeNodeProp(
   ctx: WorkerContext,
   oc: OpContext,
   ref: NodeRef,
@@ -109,12 +105,12 @@ export function writeNodeProp(
   raw: string,
 ): OpOutcome {
   const props = getGenericProps(ctx, { sceneId: oc.sceneId, ...ref })
-  if (!props.ok) return { ok: false, error: 'No node with that id and type in this scene.' }
+  if (!props.ok) return { ok: false, error: NO_NODE }
   const entry = props.entries.find((e: GenericPropEntry) => e.key === propName)
   if (!entry) {
     return {
       ok: false,
-      error: `This ${ref.nodeType} has no property "${propName}". Call get_node_props for the list.`,
+      error: `This ${ref.nodeType} has no property "${propName}". Call list_node_props for the list.`,
     }
   }
   if (entry.readonly) return { ok: false, error: `"${propName}" is read only.` }
@@ -143,7 +139,7 @@ export function writeNodeProp(
 }
 
 export const getNodeProps = defineOp({
-  name: 'get_node_props',
+  name: 'list_node_props',
   description:
     'List the writable properties of one node with their current values and, for ' +
     'enumerated ones, the allowed values. The node may be a renderer, an object, the ' +
@@ -156,6 +152,7 @@ export const getNodeProps = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'properties',
   aliases: [{ name: 'props', order: ['nodeId'], summary: 'List the properties of a node, or of view (the scene when none is given).' }],
   format(data) {
     const d = data as {
@@ -180,7 +177,7 @@ export const getNodeProps = defineOp({
     if (typeof ref === 'string') return { ok: false, error: ref }
 
     const result = getGenericProps(ctx, { sceneId: oc.sceneId, ...ref })
-    if (!result.ok) return { ok: false, error: 'No node with that id and type in this scene.' }
+    if (!result.ok) return { ok: false, error: NO_NODE }
     return {
       ok: true,
       data: {
@@ -211,12 +208,12 @@ export const setNodeProp = defineOp({
     'switch on CMYK colour proofing ("use_colproof", "icc_filename"). On the view it sets ' +
     'stereo ("stereoMode", "stereoDist", "swapStereoEyes") and the centre mark ' +
     '("centerMark"). On a renderer it ' +
-    'sets a width, a detail level, or a mode. Call get_node_props first: the property ' +
+    'sets a width, a detail level, or a mode. Call list_node_props first: the property ' +
     'name, its type, and the allowed values all come from there.',
   params: {
     nodeType: nodeTypeParam(),
     nodeId: nodeIdParam(),
-    prop: propName('Property name, exactly as get_node_props reported it.'),
+    prop: propName('Property name, exactly as list_node_props reported it.'),
     value: propValue(
       'New value, written as text; it is converted to the property type. A colour is a ' +
         'name such as "white" or a hex code such as "#204080".',
@@ -224,6 +221,7 @@ export const setNodeProp = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'properties',
   run(ctx, args, oc): OpOutcome {
     const ref = nodeRefOf(args.nodeType, args.nodeId, oc)
     if (typeof ref === 'string') return { ok: false, error: ref }
@@ -244,6 +242,7 @@ export const setProp = defineOp({
   // The model addresses nodes by uid through set_node_prop; a path of names
   // is for a person at a prompt.
   expose: { tool: false, console: true },
+  group: 'properties',
   aliases: [{ name: 'set', summary: 'Set a property: set 1crn/cartoon1.width, 2 / set bgcolor, white' }],
   // The service answers with every property of the node, which is what an
   // inspector redraws from; at a prompt a write that worked says nothing.
@@ -263,6 +262,7 @@ export const getProp = defineOp({
   },
   mutates: false,
   expose: { tool: false, console: true },
+  group: 'properties',
   aliases: [{ name: 'get', summary: 'Print a property: get 1crn/cartoon1.width / get bgcolor' }],
   format(data) {
     const d = data as { prop: string; value: unknown }
@@ -272,7 +272,7 @@ export const getProp = defineOp({
     const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)
     if (!target.ok) return { ok: false, error: target.error }
     const props = getGenericProps(ctx, { sceneId: oc.sceneId, nodeId: target.nodeId, nodeType: target.nodeType })
-    if (!props.ok) return { ok: false, error: 'No node with that id and type in this scene.' }
+    if (!props.ok) return { ok: false, error: NO_NODE }
     const entry = props.entries.find((e: GenericPropEntry) => e.key === target.prop)
     if (!entry) return { ok: false, error: `This ${target.nodeType} has no property "${target.prop}".` }
     return { ok: true, data: { prop: args.path.trim(), value: entry.value } }

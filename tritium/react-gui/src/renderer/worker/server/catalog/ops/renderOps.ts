@@ -19,6 +19,7 @@ import {
 } from '@renderer/worker/server/services/renderSettings/renderSettings.service'
 import { getAvailableSceneExporters } from '@renderer/worker/server/services/scene/exportImage'
 import { DEFAULT_RENDER_BINARIES } from '@renderer/worker/shared/renderTypes'
+import { failedWith } from '../errors'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
 import { enumOf, integer, optional, path } from '../params'
@@ -46,7 +47,8 @@ export const renderImage = defineOp({
   // The scene is unchanged (see the size handling below); the file is written.
   mutates: false,
   expose: { tool: 'render', console: true },
-  aliases: [{ name: 'ray', summary: 'Ray-trace the view to a PNG: ray out.png, 1920, 1080' }],
+  group: 'files',
+  aliases: [{ name: 'render', summary: 'Ray-trace the view to a PNG: render out.png, 1920, 1080' }],
   async run(ctx, args, oc) {
     const target = outputPath(oc, args.fileName, '.png')
     if ('error' in target) return { ok: false, error: target.error }
@@ -94,7 +96,7 @@ async function renderTo(
     snapshot: { mode: 'still', backend, commonProps: [], backendProps: [] },
     binaries: DEFAULT_RENDER_BINARIES,
   })
-  if (!started.ok) return { ok: false, error: started.error || 'The render could not be started.' }
+  if (!started.ok) return failedWith(started, 'The render could not be started.')
 
   const end = await waitForRenderJob(
     started.jobId,

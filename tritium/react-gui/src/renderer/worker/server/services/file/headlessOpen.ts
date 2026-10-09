@@ -23,17 +23,21 @@ import {
   buildDefaultFormatOptions,
   formatKindForReader,
   getDefaultRendererOptions,
+  initialRendererType,
   mapReaderDefaultsToFormatOptions,
 } from '@renderer/worker/shared/fileOpenDefaults'
 import { getReaderDefaultOptions } from './getReaderDefaultOptions'
+import { getCompatibleRendererNames } from './getCompatibleRendererNames'
 
 export interface HeadlessOpenArgs {
   /** Resolved reader nickname (pdb / mmcif / ...). */
   readerName: string
   /** Name for the new object; also seeds the renderer name. */
   objectName: string
-  /** Renderer to create, or null for the reader's default. */
+  /** Renderer to create, or null for the object type's default (`initialRendererType`). */
   rendererType: string | null
+  /** The file being loaded, if any; only to ask its reader's object what it can show. */
+  filePath?: string
   /** Draw only this selection, or null for everything. */
   selection: string | null
 }
@@ -49,10 +53,10 @@ export function buildHeadlessFileOpenOptions(
     ? mapReaderDefaultsToFormatOptions(kind, defaults.values)
     : buildDefaultFormatOptions(kind)
 
-  const renderer = getDefaultRendererOptions(
-    args.objectName,
-    args.rendererType ?? undefined,
-  )
+  // Not chosen: what this kind of object starts with, not a molecule's `simple`.
+  const rendererType = args.rendererType ??
+    initialRendererType(getCompatibleRendererNames(ctx, { filePath: args.filePath ?? '', readerName: args.readerName }).types)
+  const renderer = getDefaultRendererOptions(args.objectName, rendererType || undefined)
 
   return {
     format,

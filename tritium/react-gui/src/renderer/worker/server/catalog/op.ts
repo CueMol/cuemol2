@@ -104,9 +104,42 @@ export interface OpExposure {
   mcp?: boolean
 }
 
+/**
+ * The subjects the console's `help` lists commands under, with their headings.
+ *
+ * An id is also what `help <id>` takes, so none may be a command name (a test
+ * checks): `viewing` and `properties` rather than `view` and `props`, which
+ * are commands.
+ */
+export const OP_GROUPS = {
+  tabs: 'Scenes and tabs',
+  nodes: 'Objects and the scene tree',
+  edit: 'Undo',
+  renderers: 'Renderers',
+  coloring: 'Colouring',
+  selections: 'Selections',
+  viewing: 'View and cameras',
+  properties: 'Properties',
+  molecule: 'Molecule editing',
+  surfaces: 'Surfaces',
+  analysis: 'Measurement and analysis',
+  maps: 'Density maps',
+  animation: 'Animation',
+  files: 'Files and images',
+  console: 'Console',
+} as const
+
+export type OpGroup = keyof typeof OP_GROUPS
+
 export interface Op<P extends ParamMap = ParamMap> {
-  /** snake_case; the tool name and the console command name. Unique. */
+  /**
+   * snake_case; the tool name and the console command name. Unique. A verb
+   * first, then what it acts on (`list_cameras`, `add_paint`); see the naming
+   * rules in docs/architecture/op-catalog.md.
+   */
   name: string
+  /** The heading `help` lists it under. */
+  group: OpGroup
   /** What it does AND when to reach for it. A model has only this. */
   description: string
   params: P
@@ -119,11 +152,13 @@ export interface Op<P extends ParamMap = ParamMap> {
   expose: OpExposure
   aliases?: readonly OpAlias[]
   /**
-   * Whether a console call with these (still unparsed) arguments has to run
-   * outside the submission's undo transaction, alone on its line -- opening
-   * a scene replaces the undo stack, which cannot happen inside one.
+   * Whether a call with these arguments has to run outside an undo
+   * transaction (alone on its line, at the console) -- opening or saving a
+   * scene replaces the undo stack, which cannot happen inside one. Given the
+   * console's bound text or a JSON caller's values alike, so a predicate
+   * reads only what both carry the same way (a path string).
    */
-  outsideTxn?(raw: Readonly<Record<string, string>>): boolean
+  outsideTxn?(args: Readonly<Record<string, unknown>>): boolean
   /**
    * Lines a console prints for a successful result. Without it the data is
    * printed as JSON.

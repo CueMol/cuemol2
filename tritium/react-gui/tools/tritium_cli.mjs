@@ -197,6 +197,54 @@ function printEntries(entries, echo) {
   }
 }
 
+/** The width a string takes on screen, its colour codes not counted. */
+function visibleLength(text) {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*m/g, '').length
+}
+
+/**
+ * Tab's candidates, as zsh shows them. A list that fits on the screen goes
+ * under the prompt, with the cursor left on the prompt line, and is gone at
+ * the next key: the prompt line never moves. A list taller than the screen
+ * cannot sit under a prompt that stays in view, so it is printed into the
+ * scrollback and the prompt is drawn again below it, as bash (and zsh) do.
+ */
+function makeCompletionList(rl) {
+  const out = process.stdout
+  let rows = 0
+  return {
+    clear() {
+      if (rows === 0) return
+      // Save the cursor, step to the line under the prompt, erase to the end
+      // of the screen, and come back.
+      out.write('\x1b7\x1b[1B\r\x1b[J\x1b8')
+      rows = 0
+    },
+    show(entries) {
+      this.clear()
+      const width = out.columns || 80
+      let text = ''
+      let count = 0
+      for (const e of entries) {
+        const line = e.kind === 'error' ? sgr(STYLE.red, e.text) : e.kind === 'warning' ? sgr(STYLE.yellow, e.text) : e.text
+        text += `\n\r\x1b[K${line}`
+        count += Math.max(1, Math.ceil(visibleLength(e.text) / width))
+      }
+      // The prompt line plus the list must fit on the screen to come back to it.
+      if (count + 1 > (out.rows || 24)) {
+        out.write(`${text}\n`)
+        rl.prompt(true)
+        return
+      }
+      // Back up to the prompt line, to the column readline left the cursor at.
+      const col = rl.getCursorPos().cols
+      out.write(`${text}\x1b[${count}A\r${col > 0 ? `\x1b[${col}C` : ''}`)
+      rows = count
+    },
+  }
+}
+
 /**
  * A spinner with the elapsed time on stderr, while waiting. It shows only
  * after `delayMs`, so a quick command prints nothing extra. Returns the stop
@@ -337,22 +385,28 @@ async function interactive() {
           // The answer rewrites the whole line, which readline's own
           // completion (append a suffix) cannot express.
           setImmediate(() => {
-            if (res.messages?.length) {
-              process.stdout.write('\n')
-              printEntries(res.messages, true)
-            }
+            // `line` is the text before the cursor, as bash completes the
+            // word before it; what follows the cursor is kept.
             if (res.replacement !== null && res.replacement !== undefined && res.replacement !== line) {
+              const rest = rl.line.slice(line.length)
+              let head = res.replacement
+              if (head.endsWith(', ') && /^\s*,/.test(rest)) head = head.slice(0, -2)
+              else if (head.endsWith(' ') && /^\s/.test(rest)) head = head.slice(0, -1)
               rl.write(null, { ctrl: true, name: 'e' })
               rl.write(null, { ctrl: true, name: 'u' })
-              rl.write(res.replacement)
-            } else if (res.messages?.length) {
-              rl.prompt(true)
+              rl.write(head + rest)
+              for (let i = 0; i < rest.length; i++) rl.write(null, { name: 'left' })
             }
+            if (res.messages?.length) completionList.show(res.messages)
           })
         })
         .catch(() => callback(null, [[], line]))
     },
   })
+  const completionList = makeCompletionList(rl)
+  // The next key, whatever it is, takes the list away first -- before
+  // readline acts on it, so a line that runs is printed below a clean prompt.
+  process.stdin.prependListener('keypress', () => completionList.clear())
   const prompt = () => {
     rl.setPrompt(promptText())
     rl.prompt()

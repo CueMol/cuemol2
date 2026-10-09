@@ -15,8 +15,9 @@
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { ArgMode } from '../parser/parseArgs'
-import type { ParamSpec } from '../parser/bindArgs'
+import type { ArgRule, ParamSpec } from '../parser/bindArgs'
 import type { SplitCommand } from '../parser/splitCommands'
 import type { DialectId, SceneRequest } from '../../shared/consoleTypes'
 
@@ -72,19 +73,40 @@ export interface CmdContext {
 export type CmdOutcome = { ok: true } | { ok: false; error: string }
 
 /**
- * What Tab offers for one argument position.
+ * Where Tab finds the values of one parameter.
  *
- * PyMOL's `auto_arg` entry, which is a `[source, description, suffix]`
- * triple. The suffix is appended only when exactly one candidate matched:
- * `', '` when another argument follows, `' '` when the name ends the
- * command, and `''` for an argument the user may keep typing into.
+ * PyMOL's `auto_arg` entry (`[source, description, suffix]`), kept as the
+ * shape so PyMOL commands declare it as PyMOL does. What follows a value
+ * once it is chosen is decided per candidate (`completion/complete.ts`).
  */
 export interface ArgCompletion {
-  /** A source id the dialect's `candidates` understands. */
+  /**
+   * A source id the dialect's `candidates` understands; `files` lists the
+   * file system (a path parameter).
+   */
   source: string
-  /** Spliced into "no matching X." and "matching X:". */
+  /** The heading of its candidates: "matching X:", "no matching X.". */
   description: string
-  suffix: '' | ' ' | ', '
+  /**
+   * What follows a chosen value, when the language fixes it (PyMOL: `' '`
+   * after a name that ends the command). Without it: `, ` while parameters
+   * remain unbound, else nothing.
+   */
+  suffix?: '' | ' ' | ', '
+  /** A value the user keeps typing into (a selection, a path): nothing follows it. */
+  open?: boolean
+}
+
+/**
+ * One candidate, when a source says more than its text.
+ *
+ * After LSP's CompletionItem: what to insert, and what comes after it --
+ * `next` ends the value (the separator follows), `continue` leaves the
+ * caret in it (`name=`, `obj.`, a directory).
+ */
+export interface CompletionItem {
+  text: string
+  then?: 'next' | 'continue'
 }
 
 /** One console command. */
@@ -99,11 +121,12 @@ export interface ConsoleCommand {
   mutates: boolean
   /** One line for `help`. */
   summary: string
+  /** The heading the native `help` lists it under. */
+  group?: OpGroup
   /**
-   * What Tab offers, by argument position.
-   *
-   * A position that is absent, or null, falls back to filename completion --
-   * which is what PyMOL does for every argument it has no entry for.
+   * Where Tab finds each parameter's values: `completions[i]` is for
+   * `params[i]`, whatever position or name it is typed at. A parameter with
+   * no entry offers no values (a dialect with `fileFallback` lists files).
    */
   completions?: (ArgCompletion | null)[]
   /**
@@ -131,12 +154,14 @@ export type { DialectId } from '../../shared/consoleTypes'
 export interface SourceContext {
   sceneId: number
   viewId: number
+  /** The console's working directory, for a source that reads a file typed earlier. */
+  cwd: string
   /**
-   * The argument values typed before the one being completed, in order.
-   * A source that depends on an earlier argument (the values of the property
-   * being set) reads it here.
+   * The arguments typed before the one being completed, by parameter name,
+   * whether they were typed by position or by name. A source that depends on
+   * an earlier argument (the values of the property being set) reads it here.
    */
-  argsSoFar: readonly string[]
+  bound: Readonly<Record<string, string>>
   /**
    * What is typed of the argument being completed. A source whose candidates
    * form a hierarchy (a property path) lists the level the pattern is at.
@@ -151,6 +176,8 @@ export interface ConsoleDialect {
   prompt: string
   /** The undo entry's label prefix, so the history says where an edit came from. */
   txnPrefix: string
+  /** How typed arguments are matched to parameters (`parser/bindArgs.ts`). */
+  argRule: ArgRule
   /** Every command, sorted by name. */
   commands(): readonly ConsoleCommand[]
   /**
@@ -161,8 +188,10 @@ export interface ConsoleDialect {
   /** Why a script file cannot run in this dialect, or null when it can. */
   refuseScript(filePath: string): string | null
   /**
-   * The candidates for one completion source, or null to fall back to
-   * filename completion.
+   * PyMOL's habit: where a parameter has no values to offer, list files.
+   * Off for a dialect whose path parameters say so themselves.
    */
-  candidates(id: string, ctx: WorkerContext, sc: SourceContext): string[] | null
+  fileFallback: boolean
+  /** The candidates for one completion source, or null when it has none to offer. */
+  candidates(id: string, ctx: WorkerContext, sc: SourceContext): (string | CompletionItem)[] | null
 }

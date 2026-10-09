@@ -43,6 +43,7 @@ const op = defineOp({
     sel: optional(selection('selection')),
   },
   mutates: true,
+  group: 'nodes',
   expose: { tool: false, console: true },
   aliases: [{ name: 'show', fixed: { visible: true } }],
   run,

@@ -35,6 +35,8 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { resolvePropPath } from '../refs'
+import { checkPosition, numbered, pickByNumber } from '@renderer/worker/shared/numbered'
+import { NO_MOLECULE, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { atoms, boolean, enumOf, integer, moleculeId, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
@@ -54,6 +56,7 @@ export const resetProp = defineOp({
   params: { path: propPath('The property, or node.* for all of them.') },
   mutates: true,
   expose: EXPOSE,
+  group: 'properties',
   format: () => [],
   run(ctx, args, oc) {
     const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)
@@ -83,6 +86,7 @@ export const clearUndo = defineOp({
   params: {},
   mutates: false,
   expose: EXPOSE,
+  group: 'edit',
   // It empties the undo stack, which cannot happen inside a transaction.
   outsideTxn: () => true,
   format: () => [],
@@ -94,7 +98,7 @@ export const clearUndo = defineOp({
 // --- Molecules ---
 
 export const changeResid = defineOp({
-  name: 'change_resid',
+  name: 'renumber_residues',
   description:
     'Change residue numbers of a molecule (Edit > Change residue number): shift them by a ' +
     'value, or number them from a value. renumber numbers consecutively instead of keeping ' +
@@ -108,6 +112,7 @@ export const changeResid = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     return normalizeServiceResult(
@@ -139,7 +144,7 @@ function bondAtoms(ctx: Parameters<typeof getSceneOrNull>[0], sceneId: number, m
   if (specs.length !== 2) return { error: 'Give exactly two atoms, e.g. A/20/SG A/45/SG.' }
   const scene = getSceneOrNull(ctx, sceneId)
   const mol = scene?.getObject(molId) as MolCoord | null
-  if (!scene || !mol) return { error: 'No molecule with that id in this scene.' }
+  if (!scene || !mol) return { error: NO_MOLECULE }
   const a = atomOf(mol, specs[0])
   const b = atomOf(mol, specs[1])
   if (!a || !b) return { error: 'An atom was not found; check the chain, residue and atom name.' }
@@ -155,6 +160,7 @@ export const addBond = defineOp({
   params: { molId: moleculeId('Uid of the molecule.'), atoms: atoms(BOND_ATOMS) },
   mutates: true,
   expose: EXPOSE,
+  group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     const found = bondAtoms(ctx, oc.sceneId, args.molId, args.atoms)
@@ -175,6 +181,7 @@ export const removeBond = defineOp({
   params: { molId: moleculeId('Uid of the molecule.'), atoms: atoms(BOND_ATOMS) },
   mutates: true,
   expose: EXPOSE,
+  group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     const found = bondAtoms(ctx, oc.sceneId, args.molId, args.atoms)
@@ -204,6 +211,7 @@ export const setSymmetry = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     return normalizeServiceResult(
@@ -228,6 +236,7 @@ export const createGroup = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'renderers',
   run(ctx, args, oc) {
     const res = createRendererGroup(ctx, { sceneId: oc.sceneId, objId: args.objId, name: args.name ?? undefined })
     if (!res.ok) return { ok: false, error: 'The group could not be made (is the name taken?).' }
@@ -236,11 +245,12 @@ export const createGroup = defineOp({
 })
 
 export const genSurfaceObj = defineOp({
-  name: 'gen_surface_obj',
+  name: 'create_surface_from_map',
   description: 'Turn the contour surface of a density map (an isosurf renderer) into a surface object of its own (Generate surface obj).',
   params: { rendId: rendererId('Uid of the isosurf renderer.') },
   mutates: true,
   expose: EXPOSE,
+  group: 'maps',
   run(ctx, args, oc) {
     const res = generateRendererSurfObj(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!res.ok) return { ok: false, error: 'Only a map contour drawn as a surface (an isosurf renderer) can make a surface object.' }
@@ -249,7 +259,7 @@ export const genSurfaceObj = defineOp({
 })
 
 export const regenSurface = defineOp({
-  name: 'regen_surface',
+  name: 'recalc_surface',
   description: 'Compute a molecular surface object again from its molecule, optionally at another density.',
   params: {
     surfId: objectId('Uid of the surface object.'),
@@ -257,6 +267,7 @@ export const regenSurface = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'surfaces',
   format: () => [],
   run(ctx, args, oc) {
     const info = getMolSurfRegenInfo(ctx, { sceneId: oc.sceneId, objId: args.surfId })
@@ -278,11 +289,12 @@ export const listInteractions = defineOp({
   params: { rendId: rendererId('Uid of the interaction renderer.') },
   mutates: false,
   expose: EXPOSE,
+  group: 'analysis',
   format: (data) => (data as { entries: { number: number; mode: string; atoms: string[] }[] }).entries.map((e) => `${e.number}  ${e.mode}  ${e.atoms.join('  ')}`),
   run(ctx, args, oc) {
     const res = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!res.ok) return { ok: false, error: 'That is not an interaction renderer.' }
-    return { ok: true, data: { entries: res.entries.map((e, i) => ({ number: i + 1, mode: INTR_MODES[e.mode] ?? String(e.mode), atoms: e.atoms })) } }
+    return { ok: true, data: { entries: numbered(res.entries.map((e) => ({ mode: INTR_MODES[e.mode] ?? String(e.mode), atoms: e.atoms }))) } }
   },
 })
 
@@ -295,12 +307,13 @@ export const removeInteraction = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'analysis',
   format: () => [],
   run(ctx, args, oc) {
     const list = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
     if (!list.ok) return { ok: false, error: 'That is not an interaction renderer.' }
-    const entry = list.entries[args.number - 1]
-    if (!entry) return { ok: false, error: `There is no interaction ${args.number}; list_interactions numbers them 1 to ${list.entries.length}.` }
+    const entry = pickByNumber(list.entries, args.number, 'interaction', 'list_interactions')
+    if (typeof entry === 'string') return { ok: false, error: entry }
     const res = removeAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId, ids: [entry.id] })
     return res.ok ? { ok: true } : { ok: false, error: 'The interaction could not be removed.' }
   },
@@ -311,8 +324,8 @@ export const removeInteraction = defineOp({
 /** The renderer's paint entries, or why it has none. */
 function paintEntries(ctx: Parameters<typeof getRendererColoringState>[0], sceneId: number, rendId: number): { entries: PaintEntryDto[] } | { error: string } {
   const state = getRendererColoringState(ctx, { sceneId, rendId })
-  if (!state.ok) return { error: 'No renderer with that id in this scene.' }
-  if (state.className !== 'PaintColoring') return { error: 'That renderer is not coloured by paint; paint_selection makes it so.' }
+  if (!state.ok) return { error: NO_RENDERER }
+  if (state.className !== 'PaintColoring') return { error: 'That renderer is not coloured by paint; add_paint makes it so.' }
   return { entries: state.paintEntries }
 }
 
@@ -322,11 +335,12 @@ export const listPaint = defineOp({
   params: { rendId: rendererId('Uid of the renderer.') },
   mutates: false,
   expose: EXPOSE,
+  group: 'coloring',
   format: (data) => (data as { entries: { number: number; selStr: string; colorValue: string }[] }).entries.map((e) => `${e.number}  ${e.colorValue}  ${e.selStr}`),
   run(ctx, args, oc) {
     const p = paintEntries(ctx, oc.sceneId, args.rendId)
     if ('error' in p) return { ok: false, error: p.error }
-    return { ok: true, data: { entries: p.entries.map(({ selStr, colorValue }, i) => ({ number: i + 1, selStr, colorValue })) } }
+    return { ok: true, data: { entries: numbered(p.entries.map(({ selStr, colorValue }) => ({ selStr, colorValue }))) } }
   },
 })
 
@@ -336,13 +350,12 @@ const PAINT_NUMBER = 'The entry\'s number in list_paint (from 1).'
 function paintIndex(ctx: Parameters<typeof getRendererColoringState>[0], sceneId: number, rendId: number, n: number): { entry: PaintEntryDto; count: number } | { error: string } {
   const p = paintEntries(ctx, sceneId, rendId)
   if ('error' in p) return p
-  const e = p.entries[n - 1]
-  if (!e) return { error: `There is no paint entry ${n}; list_paint numbers them 1 to ${p.entries.length}.` }
-  return { entry: e, count: p.entries.length }
+  const e = pickByNumber(p.entries, n, 'paint entry', 'list_paint')
+  return typeof e === 'string' ? { error: e } : { entry: e, count: p.entries.length }
 }
 
 export const updatePaint = defineOp({
-  name: 'update_paint',
+  name: 'set_paint',
   description: 'Change the selection or the colour of one paint entry.',
   params: {
     rendId: rendererId('Uid of the renderer.'),
@@ -352,6 +365,7 @@ export const updatePaint = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
     const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
@@ -373,6 +387,7 @@ export const removePaint = defineOp({
   params: { rendId: rendererId('Uid of the renderer.'), number: integer(PAINT_NUMBER) },
   mutates: true,
   expose: EXPOSE,
+  group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
     const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
@@ -394,11 +409,13 @@ export const movePaint = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
     const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
     if ('error' in at) return { ok: false, error: at.error }
-    if (args.to < 1 || args.to > at.count) return { ok: false, error: `to must be 1 to ${at.count}.` }
+    const bad = checkPosition(args.to, at.count, 'list_paint')
+    if (bad) return { ok: false, error: bad }
     return normalizeServiceResult(
       movePaintEntry(ctx, { sceneId: oc.sceneId, rendId: args.rendId, fromIdx: at.entry.idx, toIdx: args.to - 1 }),
       'The paint entry could not be moved.',
@@ -407,7 +424,7 @@ export const movePaint = defineOp({
 })
 
 export const colorByElepot = defineOp({
-  name: 'color_by_elepot',
+  name: 'set_elepot_coloring',
   description:
     'Colour a molecular surface renderer by an electrostatic potential map (made by ' +
     'calc_elepot): red for negative, blue for positive, white between, as in the Coloring panel.',
@@ -419,6 +436,7 @@ export const colorByElepot = defineOp({
   },
   mutates: true,
   expose: EXPOSE,
+  group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
     const base = { sceneId: oc.sceneId, rendId: args.rendId }
@@ -446,6 +464,7 @@ export const recenterMap = defineOp({
   params: { rendId: rendererId('Uid of the map renderer.') },
   mutates: true,
   expose: EXPOSE,
+  group: 'maps',
   format: () => [],
   run(ctx, args, oc) {
     const rend = getSceneOrNull(ctx, oc.sceneId)?.getRenderer(args.rendId) as { type_name?: string } | null
@@ -478,6 +497,7 @@ export const exportSceneOp = defineOp({
   },
   mutates: false,
   expose: EXPOSE,
+  group: 'files',
   run(ctx, args, oc): OpOutcome {
     const ext = args.path.trim().toLowerCase().match(/\.(png|pov|stl|mqo)$/)?.[1] as keyof typeof EXPORT_EXT | undefined
     const format = args.format ?? ext ?? 'png'

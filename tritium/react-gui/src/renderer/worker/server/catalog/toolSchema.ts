@@ -9,6 +9,7 @@
  * accepts (see `plugins/agent/worker/tools/index.test.ts`).
  */
 
+import { checkArg, parseBoolText, parseNumberText } from './argValues'
 import type { AnyOp } from './op'
 import type { AtomSpec, Param, ParamMap } from './params'
 
@@ -105,34 +106,19 @@ function readJsonArg(name: string, p: Param<unknown>, value: unknown): { value: 
   if (value === null || value === undefined) {
     return p.optional ? { value: null } : `Missing argument "${name}".`
   }
-  switch (p.kind) {
-    case 'boolean':
-      return { value: value === true || value === 'true' }
-    case 'integer':
-    case 'real': {
-      const n = Number(value)
-      if (!Number.isFinite(n)) return `"${name}" must be a number.`
-      return { value: n }
-    }
-    case 'enum': {
-      const s = String(value)
-      if (p.values && !p.values.includes(s)) {
-        return `"${s}" is not allowed for "${name}". Allowed: ${p.values.join(', ')}.`
-      }
-      return { value: s }
-    }
-    case 'atoms': {
-      const list = readAtoms(value)
-      return typeof list === 'string' ? list : { value: list }
-    }
-    case 'vec3': {
-      const v = Array.isArray(value) ? value.map(Number) : []
-      if (v.length !== 3 || !v.every(Number.isFinite)) return `"${name}" must be three numbers [x, y, z].`
-      return { value: v }
-    }
-    default:
-      return { value: String(value) }
+  if (p.kind === 'atoms') {
+    const list = readAtoms(value)
+    return typeof list === 'string' ? list : { value: list }
   }
+  if (p.kind === 'string') return { value: String(value) }
+  // A caller without strict mode may send a number or a boolean as a string.
+  const parsed =
+    p.kind === 'boolean' ? (typeof value === 'string' ? parseBoolText(value) : value)
+    : p.kind === 'integer' || p.kind === 'real' ? (typeof value === 'string' ? parseNumberText(value) : value)
+    : p.kind === 'vec3' ? (Array.isArray(value) ? value.map(Number) : value)
+    : String(value)
+  const bad = checkArg(name, p, parsed)
+  return bad ? bad : { value: parsed }
 }
 
 /**

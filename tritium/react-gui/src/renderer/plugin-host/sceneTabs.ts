@@ -9,7 +9,7 @@
  * order, and every action here is a tab action.
  *
  * Each action resolves only once the strip shows its result, so a caller
- * that carries on (a command line that runs `new_scene; fetch 1crn`) finds
+ * that carries on (a command line that runs `create_scene; fetch 1crn`) finds
  * the scene it just made already active. The workspace's state is read
  * through refs that move on render, not on dispatch.
  */

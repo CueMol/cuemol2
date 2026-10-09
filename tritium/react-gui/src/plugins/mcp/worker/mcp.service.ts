@@ -19,8 +19,10 @@
 import {
   findOp,
   invokeOp,
-  OPS,
+  isMcpOp,
+  MCP_OPS,
   readToolArgs,
+  runExclusive,
   runInTxn,
   serializeToolOutput,
   toolSchema,
@@ -28,10 +30,11 @@ import {
   txnBusy,
   txnLabel,
 } from '@renderer/worker/server/catalog'
-import type { AnyOp, OpContext, OpOutcome } from '@renderer/worker/server/catalog'
+import type { OpContext, OpOutcome } from '@renderer/worker/server/catalog'
 import { MCP_INSTRUCTIONS } from '@renderer/worker/server/catalog/guide'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { cancelStream } from '@renderer/worker/server/services/helpers/streamFetchToReader'
+import { mcpErrorResult } from '@shared/mcpResult'
 import { ok } from '@renderer/worker/shared/result'
 import type { Result } from '@renderer/worker/shared/result'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -44,23 +47,13 @@ import type {
   McpCallResult,
 } from '../shared/mcpTypes'
 
-/** Whether `op` is offered: every op a tool caller may use, and the MCP-only ones. */
-function offered(op: AnyOp): boolean {
-  return op.expose.tool !== false || op.expose.mcp === true
-}
-
-/** The arguments as the text a console would have typed, for `outsideTxn`. */
-function rawArgs(args: Record<string, unknown>): Record<string, string> {
-  return Object.fromEntries(Object.entries(args).map(([k, v]) => [k, v == null ? '' : String(v)]))
-}
-
 function describe(): Result<DescribeOutcome> {
   return ok({ instructions: MCP_INSTRUCTIONS })
 }
 
 function listTools(): Result<ListToolsOutcome> {
   return ok({
-    tools: OPS.filter(offered).map((op) => ({
+    tools: MCP_OPS.map((op) => ({
       name: op.name,
       description: op.description,
       inputSchema: toolSchema(op) as unknown as Record<string, unknown>,
@@ -76,12 +69,8 @@ interface CallState {
 
 const calls = new Map<string, CallState>()
 
-function failed(message: string): McpCallResult {
-  return { content: [{ type: 'text', text: message }], isError: true }
-}
-
 /** An op's outcome as MCP content: the JSON text, then the picture if any. */
-export function toMcpResult(outcome: OpOutcome): McpCallResult {
+function toMcpResult(outcome: OpOutcome): McpCallResult {
   const text = serializeToolOutput(outcome)
   if (!outcome.ok) return { content: [{ type: 'text', text }], isError: true }
   const content: McpCallResult['content'] = [{ type: 'text', text }]
@@ -91,12 +80,12 @@ export function toMcpResult(outcome: OpOutcome): McpCallResult {
 
 async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<CallToolOutcome>> {
   const op = findOp(args.name)
-  if (!op || !offered(op)) return ok(failed(`There is no tool named ${args.name}.`))
+  if (!op || !isMcpOp(op)) return ok(mcpErrorResult(`There is no tool named ${args.name}.`))
   const scene = args.sceneId > 0 ? getSceneOrNull(ctx, args.sceneId) : null
-  if (!scene) return ok(failed('No scene is open in CueMol. Open a scene (a tab) first.'))
-  if (txnBusy()) return ok(failed(TXN_BUSY_MESSAGE))
+  if (!scene) return ok(mcpErrorResult('No scene is open in CueMol. Open a scene (a tab) first.'))
+  if (txnBusy()) return ok(mcpErrorResult(TXN_BUSY_MESSAGE))
   const input = readToolArgs(op, args.arguments ?? {})
-  if (typeof input === 'string') return ok(failed(input))
+  if (typeof input === 'string') return ok(mcpErrorResult(input))
 
   const state: CallState = { cancelled: false, streams: new Set() }
   calls.set(args.callId, state)
@@ -116,8 +105,8 @@ async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<
   try {
     // Saving or opening a scene resets its undo stack, so it runs outside a
     // transaction, as it does alone on a console line.
-    const outcome = op.outsideTxn?.(rawArgs(args.arguments ?? {}))
-      ? await invokeOp(op, ctx, input, oc)
+    const outcome = op.outsideTxn?.(input)
+      ? await runExclusive(() => invokeOp(op, ctx, input, oc))
       : await runInTxn(scene, txnLabel('MCP: ', op.name), () => mutated, () => invokeOp(op, ctx, input, oc))
     const result = toMcpResult(outcome)
     return ok(outcome.ok && openScene ? { ...result, openScene } : result)

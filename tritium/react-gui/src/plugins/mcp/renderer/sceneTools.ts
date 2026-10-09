@@ -14,8 +14,9 @@
  */
 
 import { useMemo } from 'react'
-import { useSceneTabs } from '@renderer/plugin-host/api'
-import type { SceneTabs } from '@renderer/plugin-host/api'
+import { closeScene, createScene, listScenes, switchScene, useSceneTabs } from '@renderer/plugin-host/api'
+import { mcpErrorResult, mcpOkResult } from '@shared/mcpResult'
+import type { NumberedScene, SceneTabs } from '@renderer/plugin-host/api'
 import type { McpCallResult, McpToolDecl } from '../shared/mcpTypes'
 
 /** A strict object schema, as the op catalogue writes them. */
@@ -37,7 +38,7 @@ export const SCENE_TOOLS: readonly McpToolDecl[] = [
     inputSchema: schema({}),
   },
   {
-    name: 'new_scene',
+    name: 'create_scene',
     description:
       'Open a new empty scene in a tab of its own and make it the active scene, so the tools ' +
       'that follow work on it. Use it to keep separate work apart; loading into the current ' +
@@ -67,44 +68,34 @@ export const SCENE_TOOLS: readonly McpToolDecl[] = [
 
 const NAMES = new Set(SCENE_TOOLS.map((t) => t.name))
 
-function done(result: unknown): McpCallResult {
-  return { content: [{ type: 'text', text: JSON.stringify({ ok: true, result }) }], isError: false }
+/** One scene, as the scene tools report it. */
+function sceneJson(s: NumberedScene) {
+  return { sceneId: s.sceneId, name: s.name, active: s.active, modified: s.modified, tabs: s.viewIds.length }
 }
 
-function refused(error: string): McpCallResult {
-  return { content: [{ type: 'text', text: JSON.stringify({ ok: false, error }) }], isError: true }
-}
-
-/** Carry out one scene tool call. */
-export async function callSceneTool(
+/** Carry out one scene tool call, through the tab operations the console uses too. */
+async function callSceneTool(
   tabs: SceneTabs,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpCallResult> {
-  if (name === 'new_scene') {
-    const made = await tabs.create(typeof args.name === 'string' && args.name !== '' ? args.name : undefined)
-    return made ? done({ sceneId: made.sceneId, name: made.name, active: true }) : refused('The scene could not be made.')
-  }
-
-  const list = await tabs.list()
-  if (name === 'list_scenes') {
-    return done(list.map((s) => ({ sceneId: s.sceneId, name: s.name, active: s.active, modified: s.modified, tabs: s.viewIds.length })))
-  }
-
   const id = typeof args.sceneId === 'number' ? args.sceneId : null
-  const scene = id === null ? list.find((s) => s.active) : list.find((s) => s.sceneId === id)
-  if (!scene) return refused(id === null ? 'No scene is active.' : `No open scene has sceneId ${id}; call list_scenes.`)
-
-  if (name === 'switch_scene') {
-    await tabs.activate(scene.sceneId)
-    return done({ sceneId: scene.sceneId, name: scene.name, active: true })
+  switch (name) {
+    case 'list_scenes':
+      return mcpOkResult((await listScenes(tabs)).map(sceneJson))
+    case 'create_scene': {
+      const made = await createScene(tabs, typeof args.name === 'string' ? args.name : null)
+      return made.ok ? mcpOkResult({ ...made.data, active: true }) : mcpErrorResult(made.error)
+    }
+    case 'switch_scene': {
+      const res = await switchScene(tabs, id)
+      return res.ok ? mcpOkResult(sceneJson(res.data)) : mcpErrorResult(res.error)
+    }
+    default: {
+      const res = await closeScene(tabs, id, args.discardChanges === true)
+      return res.ok ? mcpOkResult({ closed: res.data.sceneId }) : mcpErrorResult(res.error)
+    }
   }
-
-  if (scene.modified && args.discardChanges !== true) {
-    return refused(`Scene ${scene.name} (${scene.sceneId}) has unsaved changes. Save it with save_scene, or ask the user before closing it with discardChanges true.`)
-  }
-  if (!(await tabs.close(scene.sceneId))) return refused(`Scene ${scene.name} could not be closed.`)
-  return done({ closed: scene.sceneId })
 }
 
 /** The scene tools, bound to the tab strip; `call` returns null for any other tool. */

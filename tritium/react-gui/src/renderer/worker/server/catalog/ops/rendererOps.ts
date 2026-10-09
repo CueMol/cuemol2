@@ -23,6 +23,7 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { RendColoringId } from '@shared/types/sceneCtxMenu'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { color, enumOf, objectId, optional, rendererId, rendererType, selection, string } from '../params'
@@ -37,7 +38,7 @@ const PAINT_TYPES = [
 ] as const
 
 export const getRendererTypes = defineOp({
-  name: 'get_renderer_types',
+  name: 'list_renderer_types',
   description:
     'List the renderer types that can be created on one object (for example simple, ball, ' +
     'cartoon, spacefill), and the presets available. Only a type from this list will work.',
@@ -46,13 +47,14 @@ export const getRendererTypes = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'renderers',
   run(ctx, args, oc) {
     const result = getNewRendererOptions(ctx, {
       sceneId: oc.sceneId,
       sourceNodeId: args.objId,
       sourceNodeType: 'object',
     })
-    if (!result.ok) return { ok: false, error: 'No object with that id in this scene.' }
+    if (!result.ok) return { ok: false, error: NO_OBJECT }
     return {
       ok: true,
       data: {
@@ -94,24 +96,25 @@ export const createRenderer = defineOp({
   name: 'create_renderer',
   description:
     'Draw an object a new way: create a renderer of the given type on it. Returns the new ' +
-    "renderer's uid. The type must be one get_renderer_types listed for that object.",
+    "renderer's uid. The type must be one list_renderer_types listed for that object.",
   params: {
     objId: objectId('Uid of the object to draw.'),
-    rendererType: rendererType('Renderer type, from get_renderer_types.'),
+    rendererType: rendererType('Renderer type, from list_renderer_types.'),
     name: optional(string('Name for the renderer. Null picks an unused default.')),
     selection: optional(
-      selection('Draw only this selection. Null draws the whole object. Check it with check_selection first.'),
+      selection('Draw only this selection. Null draws the whole object. Check it with count_selection first.'),
     ),
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'renderers',
   run(ctx, args, oc) {
     const options = getNewRendererOptions(ctx, {
       sceneId: oc.sceneId,
       sourceNodeId: args.objId,
       sourceNodeType: 'object',
     })
-    if (!options.ok) return { ok: false, error: 'No object with that id in this scene.' }
+    if (!options.ok) return { ok: false, error: NO_OBJECT }
     if (!options.rendererTypes.includes(args.rendererType)) {
       return {
         ok: false,
@@ -140,7 +143,7 @@ export const createRenderer = defineOp({
 export const setRendererSelection = defineOp({
   name: 'set_renderer_selection',
   description:
-    'Change which atoms one renderer draws. Check the expression with check_selection first: ' +
+    'Change which atoms one renderer draws. Check the expression with count_selection first: ' +
     'an expression that matches nothing leaves the renderer drawing nothing.',
   params: {
     rendId: rendererId('Uid of the renderer.'),
@@ -148,6 +151,7 @@ export const setRendererSelection = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'renderers',
   run(ctx, args, oc) {
     // `setRendererSelection` takes six fixed kinds (all, visible, none, ...)
     // rather than an expression, so an arbitrary one is written through the
@@ -170,7 +174,7 @@ export const setRendererSelection = defineOp({
 })
 
 export const getColoringStyles = defineOp({
-  name: 'get_coloring_styles',
+  name: 'list_coloring_styles',
   description:
     'List the named colouring styles available in this scene. These are the style names ' +
     'set_renderer_coloring accepts; the fixed modes it also accepts are listed in its own ' +
@@ -178,6 +182,7 @@ export const getColoringStyles = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'coloring', console: true },
+  group: 'coloring',
   run(ctx, _args, oc) {
     const result = getPaintColoringStyles(ctx, { sceneId: oc.sceneId })
     if (!result.ok) return { ok: false, error: 'The colouring styles could not be read.' }
@@ -190,7 +195,7 @@ export const setRendererColoringOp = defineOp({
   description:
     'Colour one renderer. Either give a mode -- cpk (by element), rainbow (along the chain), ' +
     'bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style ' +
-    'name from get_coloring_styles.',
+    'name from list_coloring_styles.',
   params: {
     rendId: rendererId('Uid of the renderer.'),
     mode: enumOf(
@@ -198,11 +203,12 @@ export const setRendererColoringOp = defineOp({
       'One of the fixed modes, or "style" to use styleName instead.',
     ),
     styleName: optional(
-      string('Style name from get_coloring_styles. Required when mode is "style", otherwise null.'),
+      string('Style name from list_coloring_styles. Required when mode is "style", otherwise null.'),
     ),
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'coloring',
   run(ctx, args, oc) {
     let coloringId: RendColoringId
     if (args.mode === 'style') {
@@ -214,7 +220,7 @@ export const setRendererColoringOp = defineOp({
       if (styles.ok && !styles.entries.some((e) => e.name === styleName)) {
         return {
           ok: false,
-          error: `No colouring style named "${styleName}". Call get_coloring_styles for the list.`,
+          error: `No colouring style named "${styleName}". Call list_coloring_styles for the list.`,
         }
       }
       coloringId = `style-${styleName}`
@@ -233,7 +239,7 @@ export const setRendererColoringOp = defineOp({
 })
 
 export const paintSelection = defineOp({
-  name: 'paint_selection',
+  name: 'add_paint',
   description:
     'Colour part of what one renderer draws, leaving the rest as it is. Use this for "make ' +
     'chain A red" or "colour the ligand yellow" -- set_renderer_coloring replaces the whole ' +
@@ -241,7 +247,7 @@ export const paintSelection = defineOp({
     'top, so several regions can be coloured one call at a time.',
   params: {
     rendId: rendererId('Uid of the renderer to paint.'),
-    selection: selection('Which atoms to colour. Check it with check_selection first.'),
+    selection: selection('Which atoms to colour. Check it with count_selection first.'),
     color: color(
       'Colour as hex ("#FF0000"), a CueMol colour name ("red"), or hsb(h,s,b). ' +
         'Hex is the safest.',
@@ -249,6 +255,7 @@ export const paintSelection = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'coloring',
   run(ctx, args, oc): OpOutcome {
     const rendId = args.rendId
     if (args.selection.trim() === '') {
@@ -258,7 +265,7 @@ export const paintSelection = defineOp({
     const scene = getSceneOrNull(ctx, oc.sceneId)
     if (!scene) return { ok: false, error: 'The scene could not be read.' }
     const rend = scene.getRenderer(rendId) as Renderer | null
-    if (!rend) return { ok: false, error: 'No renderer with that id in this scene.' }
+    if (!rend) return { ok: false, error: NO_RENDERER }
     const mol = getMolFromRenderer(rend)
     if (!mol) {
       return { ok: false, error: 'That renderer does not draw a molecule, so it cannot be painted.' }
@@ -276,7 +283,7 @@ export const paintSelection = defineOp({
     if (!applied.ok) {
       return {
         ok: false,
-        error: 'That selection could not be applied. Check it with check_selection.',
+        error: 'That selection could not be applied. Check it with count_selection.',
       }
     }
 
@@ -313,7 +320,7 @@ export const paintSelection = defineOp({
 })
 
 export const changeRendererType = defineOp({
-  name: 'change_renderer_type',
+  name: 'set_renderer_type',
   description:
     'Redraw one renderer as another type (for example cartoon to ribbon), keeping its name, ' +
     'selection and place in the list. The renderer is replaced, so it gets a NEW uid, which ' +
@@ -325,6 +332,7 @@ export const changeRendererType = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'renderers',
   aliases: [{ name: 'retype', summary: 'Redraw a renderer as another type: retype 1crn/cartoon1, ribbon' }],
   run(ctx, args, oc) {
     const allowed = getRendererChangeTypes(ctx, { sceneId: oc.sceneId, rendId: args.rendId }).typeNames

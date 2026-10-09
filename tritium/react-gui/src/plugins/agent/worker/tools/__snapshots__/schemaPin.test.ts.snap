@@ -3,6 +3,12 @@
 exports[`the tool list sent to the model > is unchanged 1`] = `
 [
   {
+    "description": "Colour part of what one renderer draws, leaving the rest as it is. Use this for "make chain A red" or "colour the ligand yellow" -- set_renderer_coloring replaces the whole renderer's colouring instead. Painting the same renderer again adds another colour on top, so several regions can be coloured one call at a time.",
+    "mutates": true,
+    "name": "add_paint",
+    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer to paint."},"selection":{"type":"string","description":"Which atoms to colour. Check it with count_selection first."},"color":{"type":"string","description":"Colour as hex (\\"#FF0000\\"), a CueMol colour name (\\"red\\"), or hsb(h,s,b). Hex is the safest."}},"required":["rendId","selection","color"],"additionalProperties":false}",
+  },
+  {
     "description": "Find close contacts around a selection and draw them as labelled dashed lines. Use it for hydrogen bonds and for what a ligand touches; by default only polar atoms (no carbon) are paired. This adds labels to the scene.",
     "mutates": true,
     "name": "analyze_interactions",
@@ -39,28 +45,34 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":["string","null"],"description":"Selection expression to centre on. Null uses the molecule's current selection."},"zoom":{"type":"boolean","description":"True also zooms to fit the selection; false only recentres."}},"required":["molId","selection","zoom"],"additionalProperties":false}",
   },
   {
-    "description": "Redraw one renderer as another type (for example cartoon to ribbon), keeping its name, selection and place in the list. The renderer is replaced, so it gets a NEW uid, which is returned; use that one from now on. Use this rather than creating a second renderer when the user wants the same thing drawn differently.",
-    "mutates": true,
-    "name": "change_renderer_type",
-    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"rendererType":{"type":"string","description":"The new type. Must be one the renderer can change to; a wrong one is answered with the list."}},"required":["rendId","rendererType"],"additionalProperties":false}",
-  },
-  {
-    "description": "Compile a selection expression and count the atoms it matches in one molecule. Do this before using an expression anywhere else: an expression can be valid and still match nothing, which looks like a renderer that did not work.",
-    "mutates": false,
-    "name": "check_selection",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule to count against."},"selection":{"type":"string","description":"The selection expression to check."}},"required":["molId","selection"],"additionalProperties":false}",
-  },
-  {
-    "description": "Remove every region painted on one renderer with paint_selection.",
+    "description": "Remove every region painted on one renderer with add_paint.",
     "mutates": true,
     "name": "clear_paint",
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."}},"required":["rendId"],"additionalProperties":false}",
   },
   {
-    "description": "Draw an object a new way: create a renderer of the given type on it. Returns the new renderer's uid. The type must be one get_renderer_types listed for that object.",
+    "description": "Compile a selection expression and count the atoms it matches in one molecule. Do this before using an expression anywhere else: an expression can be valid and still match nothing, which looks like a renderer that did not work.",
+    "mutates": false,
+    "name": "count_selection",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule to count against."},"selection":{"type":"string","description":"The selection expression to check."}},"required":["molId","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Draw an object a new way: create a renderer of the given type on it. Returns the new renderer's uid. The type must be one list_renderer_types listed for that object.",
     "mutates": true,
     "name": "create_renderer",
-    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object to draw."},"rendererType":{"type":"string","description":"Renderer type, from get_renderer_types."},"name":{"type":["string","null"],"description":"Name for the renderer. Null picks an unused default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws the whole object. Check it with check_selection first."}},"required":["objId","rendererType","name","selection"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object to draw."},"rendererType":{"type":"string","description":"Renderer type, from list_renderer_types."},"name":{"type":["string","null"],"description":"Name for the renderer. Null picks an unused default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws the whole object. Check it with count_selection first."}},"required":["objId","rendererType","name","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Compute the molecular (solvent excluded) surface of a molecule, or of a selection of it, as a new surface object with a renderer. Returns the new object's uid.",
+    "mutates": true,
+    "name": "create_surface",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule."},"selection":{"type":["string","null"],"description":"Only these atoms. Null uses the whole molecule."},"name":{"type":["string","null"],"description":"Name for the surface object. Null picks an unused one."},"probeRadius":{"type":["number","null"],"description":"Probe radius in angstroms. Null uses 1.4."},"density":{"type":["number","null"],"description":"Points per angstrom. Null uses 2; higher is finer and slower."}},"required":["molId","selection","name","probeRadius","density"],"additionalProperties":false}",
+  },
+  {
+    "description": "Give a selection expression a name, usable in any later selection (and listed by get_scene_state). The name stands for the expression, re-evaluated each time it is used.",
+    "mutates": true,
+    "name": "define_selection",
+    "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"The name, e.g. site1."},"selection":{"type":"string","description":"The expression it stands for."}},"required":["name","selection"],"additionalProperties":false}",
   },
   {
     "description": "Delete the atoms a selection matches from a molecule. Undoable, but only use it when the user asked to remove atoms.",
@@ -87,10 +99,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"toolsets":{"type":"array","description":"The groups to switch on.","items":{"type":"string","enum":["analysis","files","coloring","view","map","molops","xtal","style","selection","render","anim"]}}},"required":["toolsets"],"additionalProperties":false}",
   },
   {
-    "description": "Save a PNG of the current view to a file, only when the user asks for a file. To look at the view yourself, use capture_view, which saves nothing. Give a file name only, not a path: it is saved to the desktop, and the full path is reported back -- tell the user where it went.",
+    "description": "Save a PNG of the current view to a file, only when the user asks for a file. To look at the view yourself, use capture_view, which saves nothing. Give a plain file name, which is saved to the desktop, or an absolute path where the caller allows one; the full path is reported back -- tell the user where it went.",
     "mutates": false,
     "name": "export_image",
-    "parameters": "{"type":"object","properties":{"fileName":{"type":"string","description":"File name with no directories, for example overview.png."},"width":{"type":["integer","null"],"description":"Image width in pixels. Null uses the size of the view on screen."},"height":{"type":["integer","null"],"description":"Image height in pixels. Null uses the size of the view on screen."}},"required":["fileName","width","height"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"path":{"type":"string","description":"The file, e.g. overview.png."},"width":{"type":["integer","null"],"description":"Image width in pixels. Null uses the size of the view on screen."},"height":{"type":["integer","null"],"description":"Image height in pixels. Null uses the size of the view on screen."}},"required":["path","width","height"],"additionalProperties":false}",
   },
   {
     "description": "Download the electron density map of a PDB entry (from its deposited structure factors) and add it to the scene with a contour. 2fofc is the usual map; fofc is the difference map, drawn at +/-3 sigma in two colours. Fetch the structure itself with fetch_pdb.",
@@ -111,36 +123,6 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the object, renderer, or renderer group."},"nodeType":{"type":"string","enum":["object","renderer","rendGroup"],"description":"What nodeId refers to."}},"required":["nodeId","nodeType"],"additionalProperties":false}",
   },
   {
-    "description": "List the named colouring styles available in this scene. These are the style names set_renderer_coloring accepts; the fixed modes it also accepts are listed in its own description.",
-    "mutates": false,
-    "name": "get_coloring_styles",
-    "parameters": "{"type":"object","properties":{},"required":[],"additionalProperties":false}",
-  },
-  {
-    "description": "List the chain names of one molecule. Use before writing a chain-based selection.",
-    "mutates": false,
-    "name": "get_mol_chains",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object, from get_scene_state."}},"required":["molId"],"additionalProperties":false}",
-  },
-  {
-    "description": "List the residues of one chain: index, three-letter name, and one-letter code. The index is a STRING because it may carry an insertion code (for example "20A"), so use it verbatim in a selection.",
-    "mutates": false,
-    "name": "get_mol_residues",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"chain":{"type":"string","description":"Chain name, from get_mol_chains."},"offset":{"type":["integer","null"],"description":"Skip this many residues. Null starts at the beginning."}},"required":["molId","chain","offset"],"additionalProperties":false}",
-  },
-  {
-    "description": "List the writable properties of one node with their current values and, for enumerated ones, the allowed values. The node may be a renderer, an object, the scene itself -- where the background colour, ambient occlusion, anti-aliasing and colour proofing live -- or the view (stereo, centre mark, mouse speeds). Read this before set_node_prop.",
-    "mutates": false,
-    "name": "get_node_props",
-    "parameters": "{"type":"object","properties":{"nodeType":{"type":"string","enum":["scene","view","object","renderer"],"description":"What kind of node to address. \\"scene\\" is the scene as a whole; \\"view\\" is the current view; \\"renderer\\" also covers a renderer group."},"nodeId":{"type":["integer","null"],"description":"Uid of the object or renderer, from get_scene_state. Null for the scene and the view, which have no id of their own."}},"required":["nodeType","nodeId"],"additionalProperties":false}",
-  },
-  {
-    "description": "List the renderer types that can be created on one object (for example simple, ball, cartoon, spacefill), and the presets available. Only a type from this list will work.",
-    "mutates": false,
-    "name": "get_renderer_types",
-    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object, from get_scene_state."}},"required":["objId"],"additionalProperties":false}",
-  },
-  {
     "description": "List the objects in the scene, their renderers, and the named selections available. Every id you use in another tool must come from here or from a tool result. Call it again after loading a file or creating a renderer, since ids are assigned then.",
     "mutates": false,
     "name": "get_scene_state",
@@ -153,10 +135,28 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{},"required":[],"additionalProperties":false}",
   },
   {
+    "description": "List the chain names of one molecule. Use before writing a chain-based selection.",
+    "mutates": false,
+    "name": "list_chains",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object, from get_scene_state."}},"required":["molId"],"additionalProperties":false}",
+  },
+  {
+    "description": "List the named colouring styles available in this scene. These are the style names set_renderer_coloring accepts; the fixed modes it also accepts are listed in its own description.",
+    "mutates": false,
+    "name": "list_coloring_styles",
+    "parameters": "{"type":"object","properties":{},"required":[],"additionalProperties":false}",
+  },
+  {
     "description": "List the contour renderers drawn from density maps, with their current level.",
     "mutates": false,
     "name": "list_map_contours",
     "parameters": "{"type":"object","properties":{},"required":[],"additionalProperties":false}",
+  },
+  {
+    "description": "List the writable properties of one node with their current values and, for enumerated ones, the allowed values. The node may be a renderer, an object, the scene itself -- where the background colour, ambient occlusion, anti-aliasing and colour proofing live -- or the view (stereo, centre mark, mouse speeds). Read this before set_node_prop.",
+    "mutates": false,
+    "name": "list_node_props",
+    "parameters": "{"type":"object","properties":{"nodeType":{"type":"string","enum":["scene","view","object","renderer"],"description":"What kind of node to address. \\"scene\\" is the scene as a whole; \\"view\\" is the current view; \\"renderer\\" also covers a renderer group."},"nodeId":{"type":["integer","null"],"description":"Uid of the object or renderer, from get_scene_state. Null for the scene and the view, which have no id of their own."}},"required":["nodeType","nodeId"],"additionalProperties":false}",
   },
   {
     "description": "List the named styles one renderer can take: type styles (a whole look, e.g. a ribbon width preset) and edge styles (outlines). Apply one with apply_renderer_style.",
@@ -165,19 +165,25 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."}},"required":["rendId"],"additionalProperties":false}",
   },
   {
-    "description": "Open a structure file already on this computer and add it to the scene. Only use a path the user gave you. Creates a new object AND a default renderer, so call get_scene_state afterwards to learn their ids. The reader options of the File Open dialog (e.g. build2ndry=false for a PDB file, columnF=FWT columnPhi=PHWT for an MTZ file) go in options; an unknown key is answered with the list of the reader's options.",
+    "description": "List the renderer types that can be created on one object (for example simple, ball, cartoon, spacefill), and the presets available. Only a type from this list will work.",
+    "mutates": false,
+    "name": "list_renderer_types",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object, from get_scene_state."}},"required":["objId"],"additionalProperties":false}",
+  },
+  {
+    "description": "List the residues of one chain: index, three-letter name, and one-letter code. The index is a STRING because it may carry an insertion code (for example "20A"), so use it verbatim in a selection.",
+    "mutates": false,
+    "name": "list_residues",
+    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"chain":{"type":"string","description":"Chain name, from list_chains."},"offset":{"type":["integer","null"],"description":"Skip this many residues. Null starts at the beginning."}},"required":["molId","chain","offset"],"additionalProperties":false}",
+  },
+  {
+    "description": "Open a structure file already on this computer and add it to the scene. Only use a path the user gave you. The reader is picked as File > Open picks it (by extension, or by the content when the extension is ambiguous or unknown) and uses its default options. Creates a new object AND a default renderer, so call get_scene_state afterwards to learn their ids.",
     "mutates": true,
     "name": "load_file",
-    "parameters": "{"type":"object","properties":{"path":{"type":"string","description":"Absolute path of the file to open."},"rendererType":{"type":["string","null"],"description":"Renderer to create for it. Null uses the reader's default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws everything."},"name":{"type":["string","null"],"description":"Name of the new object. Null uses the file name."},"options":{"type":["string","null"],"description":"Reader options as key=value pairs separated by spaces, e.g. \\"loadModel=true build2ndry=false\\". Null keeps the defaults."},"companion":{"type":["string","null"],"description":"The second file of a two-file format: the .vert file of an MSMS surface, the .psf of NAMD coordinates, the coordinates of an AMBER prmtop. Null for none."}},"required":["path","rendererType","selection","name","options","companion"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"path":{"type":"string","description":"Absolute path of the file to open."},"rendererType":{"type":["string","null"],"description":"Renderer to create for it. Null uses the reader's default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws everything."},"name":{"type":["string","null"],"description":"Name of the new object. Null uses the file name."}},"required":["path","rendererType","selection","name"],"additionalProperties":false}",
   },
   {
-    "description": "Compute the molecular (solvent excluded) surface of a molecule, or of a selection of it, as a new surface object with a renderer. Returns the new object's uid.",
-    "mutates": true,
-    "name": "make_surface",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule."},"selection":{"type":["string","null"],"description":"Only these atoms. Null uses the whole molecule."},"name":{"type":["string","null"],"description":"Name for the surface object. Null picks an unused one."},"probeRadius":{"type":["number","null"],"description":"Probe radius in angstroms. Null uses 1.4."},"density":{"type":["number","null"],"description":"Points per angstrom. Null uses 2; higher is finer and slower."}},"required":["molId","selection","name","probeRadius","density"],"additionalProperties":false}",
-  },
-  {
-    "description": "Measure between named atoms and return the number: two atoms give a distance in angstroms, three give the angle at the middle atom in degrees, four give the torsion about the middle bond in degrees. Also draws the measurement in the 3D view as a labelled line, the same way the measure tool does. Use get_mol_residues to check a residue index first; the atom name is the PDB name, for example CA, N, C, O, CB.",
+    "description": "Measure between named atoms and return the number: two atoms give a distance in angstroms, three give the angle at the middle atom in degrees, four give the torsion about the middle bond in degrees. Also draws the measurement in the 3D view as a labelled line, the same way the measure tool does. Use list_residues to check a residue index first; the atom name is the PDB name, for example CA, N, C, O, CB.",
     "mutates": true,
     "name": "measure_geometry",
     "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object the atoms belong to."},"atoms":{"type":"array","description":"Two, three or four atoms, in order. Two give a distance, three the angle at the second atom, four the torsion about the second-to-third bond. Any other number is an error.","items":{"type":"object","description":"One atom, named the way the PDB file names it.","properties":{"chain":{"type":"string","description":"Chain name, for example A."},"resid":{"type":"string","description":"Residue index as a string, because it may carry an insertion code (for example \\"20\\" or \\"20A\\")."},"atomName":{"type":"string","description":"Atom name, for example CA."}},"required":["chain","resid","atomName"],"additionalProperties":false}},"draw":{"type":"boolean","description":"True also draws the labelled measurement in the 3D view; false only returns the number."},"label":{"type":"string","description":"Name of the label set to draw into. Use \\"measure\\" unless the user asked for another."}},"required":["molId","atoms","draw","label"],"additionalProperties":false}",
@@ -187,12 +193,6 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "mutates": true,
     "name": "merge_molecules",
     "parameters": "{"type":"object","properties":{"fromId":{"type":"integer","description":"Uid of the molecule the atoms come from."},"toId":{"type":"integer","description":"Uid of the molecule they go into."},"selection":{"type":["string","null"],"description":"Which atoms. Null takes all of them."},"copy":{"type":["boolean","null"],"description":"True copies and leaves the source as it is; false (default) moves."}},"required":["fromId","toId","selection","copy"],"additionalProperties":false}",
-  },
-  {
-    "description": "Colour part of what one renderer draws, leaving the rest as it is. Use this for "make chain A red" or "colour the ligand yellow" -- set_renderer_coloring replaces the whole renderer's colouring instead. Painting the same renderer again adds another colour on top, so several regions can be coloured one call at a time.",
-    "mutates": true,
-    "name": "paint_selection",
-    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer to paint."},"selection":{"type":"string","description":"Which atoms to colour. Check it with check_selection first."},"color":{"type":"string","description":"Colour as hex (\\"#FF0000\\"), a CueMol colour name (\\"red\\"), or hsb(h,s,b). Hex is the safest."}},"required":["rendId","selection","color"],"additionalProperties":false}",
   },
   {
     "description": "Slide the view without turning it: x moves the scene right, y up, z toward the viewer, in screen units (about one pixel each at the current zoom). Use center_view to go to a selection instead.",
@@ -237,12 +237,6 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object."},"fileName":{"type":"string","description":"The file, e.g. model.pdb."}},"required":["objId","fileName"],"additionalProperties":false}",
   },
   {
-    "description": "Give a selection expression a name, usable in any later selection (and listed by get_scene_state). The name stands for the expression, re-evaluated each time it is used.",
-    "mutates": true,
-    "name": "save_selection",
-    "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"The name, e.g. site1."},"selection":{"type":"string","description":"The expression it stands for."}},"required":["name","selection"],"additionalProperties":false}",
-  },
-  {
     "description": "Set the colour a painted renderer uses where no painted region applies (its base colour).",
     "mutates": true,
     "name": "set_default_color",
@@ -261,10 +255,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":"string","description":"Selection expression. Empty string clears the selection."}},"required":["molId","selection"],"additionalProperties":false}",
   },
   {
-    "description": "Set one property of one node. On the scene this is how to change the background colour ("bgcolor"), turn ambient occlusion on and tune it ("aoEnabled", "aoRadius", "aoIntensity", "aoSteps"), choose anti-aliasing ("aa_method", "aaJitterLevel"), and switch on CMYK colour proofing ("use_colproof", "icc_filename"). On the view it sets stereo ("stereoMode", "stereoDist", "swapStereoEyes") and the centre mark ("centerMark"). On a renderer it sets a width, a detail level, or a mode. Call get_node_props first: the property name, its type, and the allowed values all come from there.",
+    "description": "Set one property of one node. On the scene this is how to change the background colour ("bgcolor"), turn ambient occlusion on and tune it ("aoEnabled", "aoRadius", "aoIntensity", "aoSteps"), choose anti-aliasing ("aa_method", "aaJitterLevel"), and switch on CMYK colour proofing ("use_colproof", "icc_filename"). On the view it sets stereo ("stereoMode", "stereoDist", "swapStereoEyes") and the centre mark ("centerMark"). On a renderer it sets a width, a detail level, or a mode. Call list_node_props first: the property name, its type, and the allowed values all come from there.",
     "mutates": true,
     "name": "set_node_prop",
-    "parameters": "{"type":"object","properties":{"nodeType":{"type":"string","enum":["scene","view","object","renderer"],"description":"What kind of node to address. \\"scene\\" is the scene as a whole; \\"view\\" is the current view; \\"renderer\\" also covers a renderer group."},"nodeId":{"type":["integer","null"],"description":"Uid of the object or renderer, from get_scene_state. Null for the scene and the view, which have no id of their own."},"prop":{"type":"string","description":"Property name, exactly as get_node_props reported it."},"value":{"type":"string","description":"New value, written as text; it is converted to the property type. A colour is a name such as \\"white\\" or a hex code such as \\"#204080\\"."}},"required":["nodeType","nodeId","prop","value"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"nodeType":{"type":"string","enum":["scene","view","object","renderer"],"description":"What kind of node to address. \\"scene\\" is the scene as a whole; \\"view\\" is the current view; \\"renderer\\" also covers a renderer group."},"nodeId":{"type":["integer","null"],"description":"Uid of the object or renderer, from get_scene_state. Null for the scene and the view, which have no id of their own."},"prop":{"type":"string","description":"Property name, exactly as list_node_props reported it."},"value":{"type":"string","description":"New value, written as text; it is converted to the property type. A colour is a name such as \\"white\\" or a hex code such as \\"#204080\\"."}},"required":["nodeType","nodeId","prop","value"],"additionalProperties":false}",
   },
   {
     "description": "Switch the view between perspective and orthographic projection. With nothing given it reports which one is in use.",
@@ -273,16 +267,22 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"perspective":{"type":["boolean","null"],"description":"True for perspective, false for orthographic. Null only reports."}},"required":["perspective"],"additionalProperties":false}",
   },
   {
-    "description": "Colour one renderer. Either give a mode -- cpk (by element), rainbow (along the chain), bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style name from get_coloring_styles.",
+    "description": "Colour one renderer. Either give a mode -- cpk (by element), rainbow (along the chain), bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style name from list_coloring_styles.",
     "mutates": true,
     "name": "set_renderer_coloring",
-    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"mode":{"type":"string","enum":["paint-type-cpk","paint-type-rainbow","paint-type-bfac","paint-type-solid","paint-type-resetdef","style"],"description":"One of the fixed modes, or \\"style\\" to use styleName instead."},"styleName":{"type":["string","null"],"description":"Style name from get_coloring_styles. Required when mode is \\"style\\", otherwise null."}},"required":["rendId","mode","styleName"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"mode":{"type":"string","enum":["paint-type-cpk","paint-type-rainbow","paint-type-bfac","paint-type-solid","paint-type-resetdef","style"],"description":"One of the fixed modes, or \\"style\\" to use styleName instead."},"styleName":{"type":["string","null"],"description":"Style name from list_coloring_styles. Required when mode is \\"style\\", otherwise null."}},"required":["rendId","mode","styleName"],"additionalProperties":false}",
   },
   {
-    "description": "Change which atoms one renderer draws. Check the expression with check_selection first: an expression that matches nothing leaves the renderer drawing nothing.",
+    "description": "Change which atoms one renderer draws. Check the expression with count_selection first: an expression that matches nothing leaves the renderer drawing nothing.",
     "mutates": true,
     "name": "set_renderer_selection",
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"selection":{"type":"string","description":"Selection expression the renderer should draw."}},"required":["rendId","selection"],"additionalProperties":false}",
+  },
+  {
+    "description": "Redraw one renderer as another type (for example cartoon to ribbon), keeping its name, selection and place in the list. The renderer is replaced, so it gets a NEW uid, which is returned; use that one from now on. Use this rather than creating a second renderer when the user wants the same thing drawn differently.",
+    "mutates": true,
+    "name": "set_renderer_type",
+    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"rendererType":{"type":"string","description":"The new type. Must be one the renderer can change to; a wrong one is answered with the list."}},"required":["rendId","rendererType"],"additionalProperties":false}",
   },
   {
     "description": "Recompute a protein's secondary structure from its coordinates (no selection given), or assign one type to the residues a selection matches.",

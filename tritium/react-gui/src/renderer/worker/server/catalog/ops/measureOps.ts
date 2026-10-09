@@ -20,6 +20,7 @@ import {
   type MeasureMode,
 } from '@renderer/worker/server/services/helpers/atomintr'
 import { angleOf, distanceOf, torsionOf } from './geometry'
+import { NO_OBJECT } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import type { AtomSpec } from '../params'
@@ -42,7 +43,7 @@ export const measureGeometry = defineOp({
     'Measure between named atoms and return the number: two atoms give a distance in ' +
     'angstroms, three give the angle at the middle atom in degrees, four give the torsion ' +
     'about the middle bond in degrees. Also draws the measurement in the 3D view as a ' +
-    'labelled line, the same way the measure tool does. Use get_mol_residues to check a ' +
+    'labelled line, the same way the measure tool does. Use list_residues to check a ' +
     'residue index first; the atom name is the PDB name, for example CA, N, C, O, CB.',
   params: {
     molId: moleculeId('Uid of the molecule object the atoms belong to.'),
@@ -60,6 +61,7 @@ export const measureGeometry = defineOp({
   // then rolled back would take the label with it.
   mutates: true,
   expose: { tool: 'analysis', console: true },
+  group: 'analysis',
   run(ctx, args, oc): OpOutcome {
     const specs = args.atoms
     const mode = MODE_BY_COUNT[specs.length]
@@ -71,7 +73,7 @@ export const measureGeometry = defineOp({
     if (!scene) return { ok: false, error: 'The scene could not be read.' }
     const molId = args.molId
     const mol = scene.getObject(molId) as MolCoord | null
-    if (!mol) return { ok: false, error: 'No object with that id in this scene.' }
+    if (!mol) return { ok: false, error: NO_OBJECT }
 
     // Resolve every atom before measuring anything, so a typo in the last one
     // does not leave a half-drawn label behind.
@@ -88,7 +90,7 @@ export const measureGeometry = defineOp({
           ok: false,
           error:
             `No atom ${describe(spec)} in that molecule. Check the chain and residue with ` +
-            'get_mol_chains and get_mol_residues, and the atom name against the PDB naming.',
+            'list_chains and list_residues, and the atom name against the PDB naming.',
         }
       }
       found.push(atom)

@@ -59,6 +59,98 @@ export function usageLine(name: string, params: readonly ParamSpec[]): string {
 }
 
 /**
+ * How positional and named arguments are matched to parameters.
+ *
+ * - `pymol`: PyMOL's own rule, for its dialect. A positional argument takes
+ *   the parameter at its index in the whole list, named ones counted; a
+ *   repeated argument overwrites; LEGACY mode applies.
+ * - `python`: a Python call's rule, for the native dialect. Positional
+ *   arguments fill the parameters in order and may not follow a named one;
+ *   an argument given twice is an error.
+ */
+export type ArgRule = 'pymol' | 'python'
+
+/** What `assignArgs` made of a list: the values given, by name, and what was wrong. */
+export interface Assignment {
+  bound: Record<string, string>
+  /** Every parameter that was given, a blank one (`a,,b`) included. */
+  given: Set<string>
+  errors: string[]
+}
+
+/** LEGACY: a `name=value` whose name is not declared is two positional values. */
+function expandLegacy(list: readonly ParsedArg[], names: readonly string[]): ParsedArg[] {
+  return list.flatMap((a) =>
+    a.name !== null && !names.includes(a.name)
+      ? [{ name: null, value: a.name }, { name: null, value: a.value }]
+      : [a],
+  )
+}
+
+/**
+ * Match typed arguments to parameters, never throwing.
+ *
+ * The one place the matching rule lives: execution (`bindArgs`) and
+ * completion both go through it.
+ */
+export function assignArgs(
+  name: string,
+  params: readonly ParamSpec[],
+  parsed: readonly ParsedArg[],
+  mode: ArgMode,
+  rule: ArgRule,
+): Assignment {
+  const names = params.map((p) => p.name)
+  const list = mode === 'legacy' && rule === 'pymol' ? expandLegacy(parsed, names) : parsed
+  const out: Assignment = { bound: {}, given: new Set(), errors: [] }
+  let positional = 0
+  let sawNamed = false
+  list.forEach((a, index) => {
+    let key = a.name
+    if (key === null) {
+      if (rule === 'python' && sawNamed) {
+        out.errors.push(`${usageLine(name, params)}\nError: a positional argument follows a named one in ${name}`)
+        return
+      }
+      const at = rule === 'python' ? positional++ : index
+      if (at >= params.length) {
+        out.errors.push(`${usageLine(name, params)}\nError: too many positional arguments for ${name}`)
+        return
+      }
+      key = names[at]
+    } else {
+      sawNamed = true
+      if (!names.includes(key)) {
+        out.errors.push(`${usageLine(name, params)}\nError: invalid argument "${key}" for ${name}`)
+        return
+      }
+    }
+    if (rule === 'python' && out.given.has(key)) {
+      out.errors.push(`${usageLine(name, params)}\nError: argument "${key}" is given twice in ${name}`)
+      return
+    }
+    out.given.add(key)
+    if (a.value !== null) out.bound[key] = a.value
+  })
+  return out
+}
+
+/**
+ * The parameter a positional argument typed after `parsed` would take, or
+ * null when none would: the list is full, or (`python`) a named argument has
+ * already been given.
+ */
+export function nextPositional(
+  params: readonly ParamSpec[],
+  parsed: readonly ParsedArg[],
+  rule: ArgRule,
+): string | null {
+  if (rule === 'pymol') return params[parsed.length]?.name ?? null
+  if (parsed.some((a) => a.name !== null)) return null
+  return params[parsed.length]?.name ?? null
+}
+
+/**
  * Bind typed arguments to a command's parameters.
  *
  * @returns the bound arguments, or a usage request when the user typed `?`.
@@ -69,44 +161,14 @@ export function bindArgs(
   params: readonly ParamSpec[],
   parsed: readonly ParsedArg[],
   mode: ArgMode = 'strict',
+  rule: ArgRule = 'pymol',
 ): BoundArgs | UsageRequest {
   if (parsed.length === 1 && parsed[0].name === null && parsed[0].value === '?') {
     return { kind: 'usage', usage: usageLine(name, params) }
   }
 
-  const names = params.map((p) => p.name)
-  let list = parsed
-
-  if (mode === 'legacy') {
-    const expanded: ParsedArg[] = []
-    for (const a of list) {
-      if (a.name !== null && !names.includes(a.name)) {
-        expanded.push({ name: null, value: a.name })
-        expanded.push({ name: null, value: a.value })
-      } else {
-        expanded.push(a)
-      }
-    }
-    list = expanded
-  }
-
-  const bound: Record<string, string> = {}
-  list.forEach((a, index) => {
-    let key = a.name
-    if (key === null) {
-      if (index >= params.length) {
-        throw new BindError(
-          `${usageLine(name, params)}\nError: too many positional arguments for ${name}`,
-        )
-      }
-      key = names[index]
-    } else if (!names.includes(key)) {
-      throw new BindError(
-        `${usageLine(name, params)}\nError: invalid argument "${key}" for ${name}`,
-      )
-    }
-    if (a.value !== null) bound[key] = a.value
-  })
+  const { bound, errors } = assignArgs(name, params, parsed, mode, rule)
+  if (errors.length > 0) throw new BindError(errors[0])
 
   for (const p of params) {
     if (p.name in bound) continue

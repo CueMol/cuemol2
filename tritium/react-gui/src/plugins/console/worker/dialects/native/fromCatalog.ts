@@ -14,19 +14,20 @@
  * its CueMol name (see `refs.ts`).
  */
 
-import { validateSelection } from '@renderer/worker/server/services/select/validateSelection'
 import { invokeOp } from '@renderer/worker/server/catalog'
-import type { AnyOp, OpContext, OpOutcome, OpAlias } from '@renderer/worker/server/catalog'
+import type { AnyOp, OpOutcome, OpAlias } from '@renderer/worker/server/catalog'
 import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/params'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { resolvePath } from '../../runtime/paths'
 import type { ArgCompletion, CmdContext, CmdOutcome, ConsoleCommand, ParamSpec } from '../../runtime/types'
 import { formatData } from './formatData'
+import { opContextOf } from '../../runtime/opContext'
+import { checkArg, parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
 import { resolveRef } from '@renderer/worker/server/catalog/refs'
 import type { RefKind } from '@renderer/worker/server/catalog/refs'
 
 /** The first sentence of a description, for `help`. */
-export function firstSentence(text: string): string {
+function firstSentence(text: string): string {
   const m = /^(.*?[.!?])(\s|$)/.exec(text)
   return m ? m[1] : text
 }
@@ -61,13 +62,6 @@ function unquote(raw: string): string {
   const t = raw.trim()
   if (t.length >= 2 && (t[0] === '"' || t[0] === "'") && t[t.length - 1] === t[0]) return t.slice(1, -1)
   return t
-}
-
-function readBoolean(raw: string): boolean | null {
-  const v = raw.toLowerCase()
-  if (['true', 'on', 'yes', '1'].includes(v)) return true
-  if (['false', 'off', 'no', '0'].includes(v)) return false
-  return null
 }
 
 /** `A/20/CA A/21/CA` -> two atoms. */
@@ -108,44 +102,21 @@ function readArg(
     const ref = resolveRef(ctx, cc.sceneId, text, refKind)
     return ref.ok ? { value: ref.node.id } : `${name}: ${ref.error}`
   }
-  switch (p.kind) {
-    case 'boolean': {
-      const b = readBoolean(text)
-      return b === null ? `${name} must be true or false, not "${text}"` : { value: b }
-    }
-    case 'integer': {
-      const n = Number(text)
-      return Number.isInteger(n) ? { value: n } : `${name} must be a whole number, not "${text}"`
-    }
-    case 'real': {
-      const n = Number(text)
-      return text !== '' && Number.isFinite(n) ? { value: n } : `${name} must be a number, not "${text}"`
-    }
-    case 'enum':
-      return p.values?.includes(text)
-        ? { value: text }
-        : `${name} must be one of ${(p.values ?? []).join(', ')}, not "${text}"`
-    case 'atoms': {
-      const list = readAtoms(text)
-      return typeof list === 'string' ? list : { value: list }
-    }
-    case 'vec3': {
-      // Written `x y z`: a comma would end the argument.
-      const v = text.split(/\s+/).filter((w) => w !== '').map(Number)
-      return v.length === 3 && v.every(Number.isFinite)
-        ? { value: v }
-        : `${name} must be three numbers, x y z, not "${text}"`
-    }
-    default:
-      break
+  if (p.kind === 'atoms') {
+    const list = readAtoms(text)
+    return typeof list === 'string' ? list : { value: list }
   }
+  // Parsed from text here, then checked by the rules a JSON caller meets too.
+  const parsed =
+    p.kind === 'boolean' ? parseBoolText(text)
+    : p.kind === 'integer' || p.kind === 'real' ? parseNumberText(text)
+    // Written `x y z`: a comma would end the argument.
+    : p.kind === 'vec3' ? text.split(/\s+/).filter((w) => w !== '').map(Number)
+    : text
+  const bad = checkArg(name, p, parsed)
+  if (bad) return `${bad.slice(0, -1)}, not "${text}"`
+  if (p.kind !== 'string') return { value: parsed }
   if (p.semantic === 'path') return { value: resolvePath(cc.cwd, text) }
-  if (p.semantic === 'selection' && text !== '') {
-    // Checked here rather than left to the op, so a typo is reported as a
-    // typo before anything has been changed.
-    const valid = validateSelection(ctx, { selStr: text, sceneId: cc.sceneId })
-    if (!valid.ok) return `${name}: "${text}" is not a valid selection`
-  }
   return { value: text }
 }
 
@@ -156,7 +127,7 @@ function readArg(
  * kind of node it is, unless the user gave that one. A node left out of a
  * parameter that can address the scene addresses the scene.
  */
-export function readConsoleArgs(
+function readConsoleArgs(
   ctx: WorkerContext,
   cc: CmdContext,
   op: AnyOp,
@@ -221,21 +192,6 @@ export function readConsoleArgs(
 }
 
 /** What an op needs from the console line it runs for. */
-function opContextOf(cc: CmdContext): OpContext {
-  return {
-    sceneId: cc.sceneId,
-    viewId: cc.viewId,
-    callId: cc.streamId('call'),
-    markMutated: () => cc.markMutated(),
-    noteStream: (reqId) => cc.noteStream(reqId),
-    streamId: (tag) => cc.streamId(tag),
-    openScene: (filePath) => cc.openScene(filePath),
-    cancelled: () => cc.stopped(),
-    // The person at the prompt chose the path.
-    fileAccess: 'any',
-  }
-}
-
 /** Print a successful result: the op's own way, or the generic layout. */
 function printOutcome(op: AnyOp, outcome: Extract<OpOutcome, { ok: true }>, cc: CmdContext): void {
   if (outcome.data === undefined) return
@@ -243,60 +199,72 @@ function printOutcome(op: AnyOp, outcome: Extract<OpOutcome, { ok: true }>, cc: 
   for (const line of lines) cc.print(line)
 }
 
+/** The parameters a completion source reads, by their role. */
+interface RelatedParams {
+  object: string | null
+  node: string | null
+  prop: string | null
+  propPath: string | null
+  renderer: string | null
+  file: string | null
+}
+
 /**
- * The completion source for one parameter, by its semantic kind.
- *
- * @param objectIndex - the position of the op's object parameter, for a
- *   source whose candidates depend on it (renderer types); -1 when none.
+ * Where Tab finds one parameter's values, by its semantic kind. A source that
+ * depends on another argument names that parameter; the value typed for it
+ * reaches the source by name (`SourceContext.bound`), however it was typed.
  */
-function completionOf(
-  p: Param<unknown>,
-  last: boolean,
-  objectIndex: number,
-  nodeIndex: number,
-  propIndex: number,
-  pathIndex: number,
-  rendererIndex: number,
-): ArgCompletion | null {
-  const suffix = last ? '' : ', '
-  if (p.kind === 'enum' && p.values) {
-    return { source: `enum:${p.values.join('|')}`, description: 'value', suffix }
-  }
-  if (p.kind === 'boolean') return { source: 'enum:true|false', description: 'value', suffix }
+function completionOf(p: Param<unknown>, rel: RelatedParams): ArgCompletion | null {
+  if (p.kind === 'enum' && p.values) return { source: `enum:${p.values.join('|')}`, description: 'value' }
+  if (p.kind === 'boolean') return { source: 'enum:true|false', description: 'value' }
   switch (p.semantic) {
     case 'object':
     case 'molecule':
-      return { source: 'objects', description: 'object', suffix }
+      return { source: 'objects', description: 'object' }
     case 'renderer':
-      return { source: 'renderers', description: 'renderer', suffix }
+      return { source: 'renderers', description: 'renderer' }
     case 'node':
-      return { source: 'nodes', description: 'node', suffix }
+      return { source: 'nodes', description: 'node' }
     case 'selection':
-      return { source: 'selections', description: 'selection', suffix: '' }
+      return { source: 'selections', description: 'selection', open: true }
     case 'color':
-      return { source: 'colors', description: 'color', suffix }
+      return { source: 'colors', description: 'color' }
     case 'rendererType':
       // Created on an object: what that object can show. Changed on a
-      // renderer: what that renderer can become.
-      return objectIndex < 0 && rendererIndex >= 0
-        ? { source: `rendererChangeTypes:${rendererIndex}`, description: 'renderer type', suffix }
-        : { source: `rendererTypes:${objectIndex}`, description: 'renderer type', suffix }
+      // renderer: what that renderer can become. Created with what a file
+      // loads (load): what its reader's object can show. With none of
+      // those (fetch): what a molecule can show.
+      if (rel.object) return { source: `rendererTypes:${rel.object}`, description: 'renderer type' }
+      if (rel.renderer) return { source: `rendererChangeTypes:${rel.renderer}`, description: 'renderer type' }
+      if (rel.file) return { source: `fileRendererTypes:${rel.file}`, description: 'renderer type' }
+      return { source: 'moleculeRendererTypes', description: 'renderer type' }
     case 'propName':
-      return { source: `props:${nodeIndex}`, description: 'property', suffix }
+      return { source: `props:${rel.node ?? ''}`, description: 'property' }
     case 'propValue':
-      return propIndex >= 0
-        ? { source: `propValues:${propIndex}:${nodeIndex}`, description: 'value', suffix }
-        : { source: `pathValues:${pathIndex}`, description: 'value', suffix }
+      return rel.prop
+        ? { source: `propValues:${rel.prop}:${rel.node ?? ''}`, description: 'value' }
+        : { source: `pathValues:${rel.propPath ?? ''}`, description: 'value' }
     case 'propPath':
-      // No separator: a node completes to `name.` and the path goes on.
-      return { source: 'propPath', description: 'property', suffix: '' }
+      return { source: 'propPath', description: 'property' }
     case 'path':
-      // Null falls back to filename completion.
-      return null
+      return { source: 'files', description: 'file' }
     default:
       // Free text (a name, a chain, a property) has nothing to offer, and
       // listing files for it would only mislead.
-      return { source: 'none', description: 'value', suffix }
+      return { source: 'none', description: 'value' }
+  }
+}
+
+/** The first parameter of each role a completion source reads. */
+function related(params: ParamMap): RelatedParams {
+  const named = (...kinds: string[]) => Object.keys(params).find((n) => kinds.includes(params[n].semantic ?? '')) ?? null
+  return {
+    object: named('object', 'molecule'),
+    node: named('node'),
+    prop: named('propName'),
+    propPath: named('propPath'),
+    renderer: named('renderer'),
+    file: named('path'),
   }
 }
 
@@ -316,26 +284,17 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
 
   return {
     name: alias?.name ?? op.name,
+    group: op.group,
     params: specs,
     mode: 'strict',
     mutates: op.mutates,
     summary: alias?.summary ?? firstSentence(op.description),
-    completions: names.map((n, i) =>
-      completionOf(
-        params[n],
-        i === names.length - 1,
-        names.findIndex((m) => params[m].semantic === 'object' || params[m].semantic === 'molecule'),
-        names.findIndex((m) => params[m].semantic === 'node'),
-        names.findIndex((m) => params[m].semantic === 'propName'),
-        names.findIndex((m) => params[m].semantic === 'propPath'),
-        names.findIndex((m) => params[m].semantic === 'renderer'),
-      ),
-    ),
+    completions: names.map((n) => completionOf(params[n], related(params))),
     ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(bound) ?? false } : {}),
     async run(ctx, bound, cc): Promise<CmdOutcome> {
       const args = readConsoleArgs(ctx, cc, op, bound, alias)
       if (typeof args === 'string') return { ok: false, error: `Error: ${args}` }
-      const outcome = await invokeOp(op, ctx, args, opContextOf(cc))
+      const outcome = await invokeOp(op, ctx, args, opContextOf(cc, 'call'))
       if (!outcome.ok) return { ok: false, error: `Error: ${outcome.error}` }
       printOutcome(op, outcome, cc)
       return { ok: true }

@@ -6,6 +6,7 @@
 import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { deleteNode as deleteNodeService, renameNode as renameNodeService } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { NO_NODE } from '../errors'
 import { defineOp } from '../op'
 import { boolean, enumOf, nodeId, string } from '../params'
 import { columns, wrapList } from '../consoleFormat'
@@ -21,7 +22,8 @@ export const getSceneState = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'core', console: true },
-  aliases: [{ name: 'ls_scene', summary: 'List the objects, renderers and selections in the scene.' }],
+  group: 'nodes',
+  aliases: [{ name: 'scene', summary: 'List the objects, renderers and selections in the scene.' }],
   format: (data) => formatSnapshot(data as SceneSnapshot),
   run(ctx, _args, oc) {
     return {
@@ -70,6 +72,7 @@ export const setVisible = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'nodes',
   aliases: [
     { name: 'show', fixed: { visible: true }, summary: 'Show an object, renderer or renderer group.' },
     { name: 'hide', fixed: { visible: false }, summary: 'Hide an object, renderer or renderer group.' },
@@ -81,7 +84,7 @@ export const setVisible = defineOp({
       nodeType: args.nodeType,
       visible: args.visible,
     })
-    return normalizeServiceResult(result, 'No node with that id and type in this scene.')
+    return normalizeServiceResult(result, NO_NODE)
   },
 })
 
@@ -100,10 +103,11 @@ export const deleteNode = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'nodes',
   aliases: [{ name: 'delete', summary: 'Delete an object, renderer or renderer group.' }],
   run(ctx, args, oc) {
     const result = deleteNodeService(ctx, { sceneId: oc.sceneId, nodeId: args.nodeId, nodeType: args.nodeType })
-    return normalizeServiceResult(result, 'No node with that id and type in this scene.')
+    return normalizeServiceResult(result, NO_NODE)
   },
 })
 
@@ -118,6 +122,7 @@ export const renameNode = defineOp({
   },
   mutates: true,
   expose: { tool: 'core', console: true },
+  group: 'nodes',
   aliases: [{ name: 'rename', summary: 'Rename an object, renderer or renderer group: rename 1crn, mol1' }],
   run(ctx, args, oc) {
     const result = renameNodeService(ctx, {

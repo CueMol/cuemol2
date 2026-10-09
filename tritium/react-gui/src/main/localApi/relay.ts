@@ -17,8 +17,33 @@ import type {
   LocalApiEndpoint, LocalApiReplyPayload, LocalApiRequestPayload,
 } from '@shared/types/localApi'
 
+/**
+ * The window answered, but with a failure: its handler threw, and
+ * `useLocalApiEndpoint` sent `{ error }` in place of an answer.
+ */
+export class RelayedError extends Error {}
+
+/**
+ * Ask the window and get its answer, or a throw: `RelayedError` when the
+ * window's handler failed, a plain `Error` when the window did not answer at
+ * all. Every endpoint goes through this, so none mistakes `{ error }` for an
+ * answer.
+ */
+export async function relayed(
+  relay: LocalApiRelay,
+  endpoint: LocalApiEndpoint,
+  kind: string,
+  payload: unknown,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  const answer = await relay.request(endpoint, kind, payload, signal)
+  const err = (answer as { error?: unknown } | null)?.error
+  if (typeof err === 'string') throw new RelayedError(err)
+  return answer
+}
+
 /** Longest a request may wait for the window: a long ray-traced render. */
-export const LOCAL_API_TIMEOUT_MS = 30 * 60 * 1000
+const LOCAL_API_TIMEOUT_MS = 30 * 60 * 1000
 
 export interface LocalApiRelay {
   /**

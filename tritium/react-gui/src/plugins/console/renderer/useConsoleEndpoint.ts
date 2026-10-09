@@ -11,19 +11,18 @@
  * `[cli]`, so the window shows what changed the scene.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback } from 'react'
 import {
   useActiveScene,
   useCliAccessGranted,
-  useCommands,
   useCueMol,
   useEnsureActiveScene,
   useLocalApiEndpoint,
+  useOpenSceneFile,
   usePluginPrefs,
   useSceneTabs,
-  useSuppressUndoRedo,
+  useTrackedEndpointCalls,
 } from '@renderer/plugin-host/api'
-import { CmdId } from '@renderer/commands/ids'
 import type {
   ConsoleCompleteRequest,
   ConsoleCompleteResponse,
@@ -44,19 +43,12 @@ export function useConsoleEndpoint(): void {
   const { cm } = useCueMol()
   const ensureActiveScene = useEnsureActiveScene()
   const { activeSceneId, activeMolViewId } = useActiveScene()
-  const { dispatch } = useCommands()
   const { prefs } = usePluginPrefs(CONSOLE_PLUGIN_ID)
-  const [running, setRunning] = useState(0)
   // As for a panel run: the worker holds a transaction open.
-  useSuppressUndoRedo(running > 0)
-  const runIds = useRef(new Map<number, string>())
-  // Requests whose client went away, for a submission a scene command split.
-  const stopped = useRef(new Set<number>())
+  const calls = useTrackedEndpointCalls()
   const tabs = useSceneTabs()
-  const openScene = useCallback(
-    async (filePath: string) => (await dispatch(CmdId.OpenSceneByPath, filePath))?.loaded !== false,
-    [dispatch],
-  )
+  const openSceneFile = useOpenSceneFile()
+  const openScene = useCallback(async (filePath: string) => (await openSceneFile(filePath)).ok, [openSceneFile])
 
   const cliLaunched = useCliAccessGranted()
 
@@ -85,14 +77,12 @@ export function useConsoleEndpoint(): void {
 
       const p = payload as ConsoleRunRequest
       const runId = `cli-${reqId}`
-      runIds.current.set(reqId, runId)
-      setRunning((n) => n + 1)
       const end = beginCliRun()
-      try {
+      return calls.track(reqId, runId, async () => {
         const res = await runSubmission(
           { cm, ensureActiveScene, tabs, openScene },
           // A script can run for minutes; the busy indicator is not the place.
-          { dialect: p.dialect, text: p.text, runId, cwd: p.cwd, quiet: true, stopped: () => stopped.current.has(reqId) },
+          { dialect: p.dialect, text: p.text, runId, cwd: p.cwd, quiet: true, stopped: () => calls.stopped(reqId) },
         )
         consoleSession.append(
           res.entries.map((e) => (e.kind === 'echo' ? { ...e, text: `${CLI_ECHO_PREFIX}${e.text}` } : e)),
@@ -104,16 +94,10 @@ export function useConsoleEndpoint(): void {
           cwd: res.cwd ?? p.cwd,
         }
         return answer
-      } finally {
-        runIds.current.delete(reqId)
-        stopped.current.delete(reqId)
-        setRunning((n) => n - 1)
-        end()
-      }
+      }).finally(end)
     },
     cancel(reqId) {
-      const runId = runIds.current.get(reqId)
-      if (runId) stopped.current.add(reqId)
+      const runId = calls.stop(reqId)
       if (cm && runId) void consoleServices.invoke(cm, 'cancelRun', { runId })
     },
   })

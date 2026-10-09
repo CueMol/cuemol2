@@ -51,7 +51,7 @@ const ALLOWED_SCHEMA_KEYWORDS = new Set([
  * model starts picking the wrong tool. capture_view was let past it
  * deliberately, being the one tool no other can stand in for, and the
  * catalogue sits exactly on the raised ceiling. A new capability that maps onto a C++ property belongs in
- * `get_node_props` / `set_node_prop`, which reach the scene, an object and a
+ * `list_node_props` / `set_node_prop`, which reach the scene, an object and a
  * renderer through one pair; that is how the scene-wide settings arrived
  * without costing a slot. Something genuinely new has to fold a tool first,
  * and the obvious candidate is `center_view`, which already sets the

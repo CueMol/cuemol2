@@ -68,11 +68,6 @@ export function useConsoleSession(): ConsoleSessionState {
   )
 }
 
-/** Read the session without subscribing. */
-export function getConsoleSession(): ConsoleSessionState {
-  return state
-}
-
 export const consoleSession = {
   /** The Root registers the runner it owns. */
   setRunner(runner: ConsoleRunner | null, stopper: ConsoleStopper | null = null): void {

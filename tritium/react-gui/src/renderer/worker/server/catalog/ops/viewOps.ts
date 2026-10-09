@@ -14,6 +14,7 @@ import {
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import { VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { boolean, enumOf, objectId, optional, real, vec3 } from '../params'
@@ -30,6 +31,7 @@ export const rotateView = defineOp({
   },
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'viewing',
   aliases: [{ name: 'turn', summary: 'Turn the view about a screen axis: turn y, 90' }],
   run(ctx, args, oc) {
     const res = rotateViewService(ctx, {
@@ -38,7 +40,7 @@ export const rotateView = defineOp({
       rotY: args.axis === 'y' ? args.angle : 0,
       rotZ: args.axis === 'z' ? args.angle : 0,
     })
-    return res.ok ? { ok: true } : { ok: false, error: 'The view could not be read.' }
+    return res.ok ? { ok: true } : { ok: false, error: VIEW_UNREADABLE }
   },
 })
 
@@ -75,7 +77,7 @@ const SLAB_MARGIN = 0.1
 function fittedSlab(ctx: WorkerContext, sceneId: number, viewId: number, objId: number | null): number | string {
   const view = ctx.sceMgr.getView(viewId) as unknown as ViewLike | null
   const scene = getSceneOrNull(ctx, sceneId)
-  if (!view || !scene) return 'The view could not be read.'
+  if (!view || !scene) return VIEW_UNREADABLE
   const rot = view.rotation.toMatrix()
   const cz = rot.mulvec(view.center).z
 
@@ -102,7 +104,7 @@ function fittedSlab(ctx: WorkerContext, sceneId: number, viewId: number, objId: 
 /** The view's camera as an op reports it. */
 function viewState(ctx: WorkerContext, viewId: number): OpOutcome {
   const x = getViewXform(ctx, { viewId })
-  if (!x.ok) return { ok: false, error: 'The view could not be read.' }
+  if (!x.ok) return { ok: false, error: VIEW_UNREADABLE }
   const r = (v: number) => Math.round(v * 100) / 100
   return {
     ok: true,
@@ -135,6 +137,7 @@ export const setView = defineOp({
   // The camera is not part of the undo history, as with the mouse.
   mutates: false,
   expose: { tool: 'core', console: true },
+  group: 'viewing',
   aliases: [
     { name: 'view', summary: 'Print the camera: zoom, slab, distance, centre.' },
     { name: 'slab', order: ['slab'], summary: 'Set the slab depth: slab 30' },

@@ -8,14 +8,12 @@ import { listMapRenderers as listMapRenderersService } from '@renderer/worker/se
 import { getMapRendererState } from '@renderer/worker/server/services/map/state'
 import { setMapRendererProp } from '@renderer/worker/server/services/map/props'
 import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
-import { pickMapUrl } from '@renderer/worker/shared/pdbUrls'
+import { PDB_ID_RE, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { color, enumOf, optional, real, rendererId, string } from '../params'
 
-/** A four-character PDB accession code. */
-const PDB_ID_RE = /^[0-9][0-9a-z]{3}$/i
 
 export const fetchMap = defineOp({
   name: 'fetch_map',
@@ -30,6 +28,7 @@ export const fetchMap = defineOp({
   },
   mutates: true,
   expose: { tool: 'map', console: true },
+  group: 'maps',
   async run(ctx, args, oc) {
     const pdbId = args.pdbId.trim().toLowerCase()
     if (!PDB_ID_RE.test(pdbId)) return { ok: false, error: `"${args.pdbId}" is not a PDB accession code.` }
@@ -58,6 +57,7 @@ export const listMapRenderers = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'map', console: true },
+  group: 'maps',
   run(ctx, _args, oc): OpOutcome {
     const items = listMapRenderersService(ctx, { sceneId: oc.sceneId }).items
     return {
@@ -91,6 +91,7 @@ export const setMapContour = defineOp({
   },
   mutates: true,
   expose: { tool: 'map', console: true },
+  group: 'maps',
   aliases: [{ name: 'contour', summary: 'Set a map contour: contour 1crn_2fofc/contour1, level=1.5' }],
   run(ctx, args, oc) {
     const writes: [Parameters<typeof setMapRendererProp>[1]['propName'], number | string][] = []

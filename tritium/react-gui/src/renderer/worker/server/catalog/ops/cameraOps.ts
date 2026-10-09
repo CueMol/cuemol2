@@ -15,6 +15,8 @@ import {
 import { getViewProjection, setViewProjection } from '@renderer/worker/server/services/view/viewProjection'
 import { translateView } from '@renderer/worker/server/services/view/viewXform'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { checkPosition, numbered } from '@renderer/worker/shared/numbered'
+import { VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
 import { boolean, integer, optional, real, string } from '../params'
 
@@ -24,12 +26,13 @@ export const listCameras = defineOp({
   params: {},
   mutates: false,
   expose: { tool: 'view', console: true },
+  group: 'viewing',
   aliases: [{ name: 'cameras', summary: 'List the saved views.' }],
-  format: (data) => (data as { cameras: { name: string }[] }).cameras.map((c) => c.name),
+  format: (data) => (data as { cameras: { number: number; name: string }[] }).cameras.map((c) => `${c.number}  ${c.name}`),
   run(ctx, _args, oc) {
     const res = listCamerasService(ctx, { sceneId: oc.sceneId })
     if (!res.ok) return { ok: false, error: res.error }
-    return { ok: true, data: { cameras: res.cameras.map((c) => ({ name: c.name })) } }
+    return { ok: true, data: { cameras: numbered(res.cameras.map((c) => ({ name: c.name }))) } }
   },
 })
 
@@ -44,6 +47,7 @@ export const saveCamera = defineOp({
   },
   mutates: true,
   expose: { tool: 'view', console: true },
+  group: 'viewing',
   aliases: [{ name: 'save_view', summary: 'Save the current view under a name: save_view front' }],
   run(ctx, args, oc) {
     const res = createCamera(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, name: args.name })
@@ -66,6 +70,7 @@ export const applyCamera = defineOp({
   // The view is not part of the undo history; the visibility it may apply is.
   mutates: false,
   expose: { tool: 'view', console: true },
+  group: 'viewing',
   aliases: [{ name: 'restore_view', summary: 'Go to a saved view: restore_view front' }],
   run(ctx, args, oc) {
     const withVisFlags = args.withVisibility === true
@@ -83,6 +88,7 @@ export const deleteCamera = defineOp({
   },
   mutates: true,
   expose: { tool: 'view', console: true },
+  group: 'viewing',
   run(ctx, args, oc) {
     const res = destroyCamera(ctx, { sceneId: oc.sceneId, name: args.name })
     return normalizeServiceResult(res, `No camera named "${args.name}".`)
@@ -99,12 +105,13 @@ export const setProjection = defineOp({
   },
   mutates: false,
   expose: { tool: 'view', console: true },
+  group: 'viewing',
   aliases: [{ name: 'projection', summary: 'Show or set the projection: projection false' }],
   run(ctx, args, oc) {
     const res = args.perspective === null
       ? getViewProjection(ctx, { viewId: oc.viewId })
       : setViewProjection(ctx, { viewId: oc.viewId, perspective: args.perspective })
-    if (!res.ok) return { ok: false, error: 'The view could not be read.' }
+    if (!res.ok) return { ok: false, error: VIEW_UNREADABLE }
     return { ok: true, data: { perspective: res.perspective } }
   },
 })
@@ -122,10 +129,11 @@ export const panView = defineOp({
   },
   mutates: false,
   expose: { tool: 'view', console: true },
+  group: 'viewing',
   aliases: [{ name: 'pan', summary: 'Slide the view: pan 10, 0' }],
   run(ctx, args, oc) {
     const res = translateView(ctx, { viewId: oc.viewId, dx: args.dx, dy: args.dy, dz: args.dz ?? 0, dragging: false })
-    if (!res.ok) return { ok: false, error: 'The view could not be read.' }
+    if (!res.ok) return { ok: false, error: VIEW_UNREADABLE }
     return { ok: true, data: { center: [res.centerX, res.centerY, res.centerZ] } }
   },
 })
@@ -139,6 +147,7 @@ export const renameCameraOp = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'viewing',
   format: () => [],
   run(ctx, args, oc) {
     return normalizeServiceResult(
@@ -157,6 +166,7 @@ export const moveCamera = defineOp({
   },
   mutates: true,
   expose: { tool: false, console: true, mcp: true },
+  group: 'viewing',
   format: () => [],
   run(ctx, args, oc) {
     const list = listCamerasService(ctx, { sceneId: oc.sceneId })
@@ -164,7 +174,8 @@ export const moveCamera = defineOp({
     const names = list.cameras.map((c) => c.name)
     const from = names.indexOf(args.name)
     if (from < 0) return { ok: false, error: `No camera named "${args.name}".` }
-    if (args.to < 1 || args.to > names.length) return { ok: false, error: `to must be 1 to ${names.length}.` }
+    const bad = checkPosition(args.to, names.length, 'list_cameras')
+    if (bad) return { ok: false, error: bad }
     names.splice(from, 1)
     names.splice(args.to - 1, 0, args.name)
     return normalizeServiceResult(reorderCameras(ctx, { sceneId: oc.sceneId, names }), 'The cameras could not be reordered.')

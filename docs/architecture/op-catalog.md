@@ -56,7 +56,8 @@ defineOp({
   name, description, params, mutates,
   expose: { tool: 'core' | ToolsetId | false, console: boolean, mcp?: boolean },
   aliases?: [{ name, fixed?, defaults?, order?, summary? }],
-  outsideTxn?(raw): boolean,   // console で txn の外・単独行で走らせる (例: .qsc の load)
+  group,                       // help の分類 (OP_GROUPS)
+  outsideTxn?(args): boolean,  // txn の外で走らせる (例: .qsc の load)。console の文字列でも JSON の値でも呼ばれる
   format?(data): string[],     // console での表示 (無ければ汎用の key: value 表示)
   run(ctx, args, oc: OpContext),
 })
@@ -65,9 +66,20 @@ defineOp({
 - `OpContext` は `sceneId` / `viewId` / `callId` / `markMutated` / `noteStream` / `streamId` と、
   UI を持つ呼び出し元だけが渡す `openScene`、中断を伝える `cancelled()`、書き込み先の制限
   `fileAccess` (`'any'` = console、既定は desktop のみ。`catalog/outputFile.ts`)。
-- `invokeOp` が唯一の実行入口: throw を失敗に変え、成功した `mutates` op で `markMutated` を呼ぶ。
+- `invokeOp` が唯一の実行入口: selection 引数を実行前に検査し (どの呼び出し元でも同じ)、throw を
+  失敗に変え、成功した `mutates` op で `markMutated` を呼ぶ。
+- 引数の読み方: console は文字列を、MCP と agent は JSON を、それぞれ型に読んでから同じ `checkArg`
+  (`catalog/argValues.ts`) で検査する。整数に 1.5、真偽値に `maybe` は、どちらから来ても断る。
+  文字列の真偽値・数値は `parseBoolText` / `parseNumberText` (空は数値にしない) で読み、property 値・
+  アニメーションの property・reader のオプション・PyMOL dialect も同じ関数を使う。
+- 入力ファイルのパスは `callerPath` (`catalog/outputFile.ts`) で絶対パスにする: `~` は home、相対は
+  desktop から (console は自分の cwd で解決済み)。出力の `outputPath` と同じ基準。
+- 一覧の番号は 1 から (`worker/shared/numbered.ts` の `numbered` / `pickByNumber` / `checkPosition` /
+  `findBySpec`)。よく出る失敗の文言は `catalog/errors.ts`。
 - `runInTxn` が txn 規則: 変更があれば (途中で失敗しても) commit、無ければ rollback
   (空 commit は redo を消すため)。agent の 1 turn、console の 1 submit がそれぞれ 1 txn。
+  `outsideTxn` の op は `runExclusive` で txn の外で走らせるが、その間も `txnBusy()` は busy を返す
+  (scene の保存・open の途中に他の編集が割り込まないように)。
 
 ## 4. AI agent への公開
 
@@ -103,21 +115,36 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   の両方で呼べる。alias は 1 つの op を呼ぶ別名で、引数を固定 (`fixed`。引数一覧に出ず、指定できない)・
   既定 (`defaults`)・並べ替え (`order`) できる。ユーザー定義のコマンド列とは別物。
 - 引数は PyMOL と同じくカンマ区切り (`zoom 1crn, chain A and resid 10:20`)。selection が空白を
-  含むため、空白区切りは採らない。`key=value` も使える。
+  含むため、空白区切りは採らない。括弧と引用符の中のカンマは区切りにしない (`parser/parseArgs.ts`)。
+- 引数の割り当て規則は dialect ごと (`ConsoleDialect.argRule`、`parser/bindArgs.ts` の `assignArgs`):
+  - native は **Python の呼び出しと同じ**: 位置引数は先頭から順に埋まり、名前付き (`name=value`) の後には書けない。
+    同じ引数を 2 回書くとエラー。
+  - PyMOL dialect は PyMOL のまま: 位置引数は名前付きも数えた全体の番号の引数に入り、重複は後勝ち、LEGACY 展開あり。
 - 主な alias: `show` / `hide`、`select`、`zoom` / `center`、`turn`、`view` / `slab` / `fit_slab`、
-  `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`png`、
-  `ls_scene`、`delete` / `rename` / `retype`、`ray` (ray tracing / GI。Stop で中断)、
+  `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`scene`、
+  `count`、`delete` / `rename` / `retype`、`render` (ray tracing / GI。Stop で中断)、
   `save` / `write`、`save_view` / `restore_view` / `cameras`、`projection` / `pan` / `focus`、
-  `contour`、`surface`、`define`、`style`、Tools メニューの dialog に当たる
-  `calc_elepot`・`cut_surface`・`morph_frames` / `morph_add` / `morph_remove`
-  (console と MCP、agent には出さない: `tool: false, mcp: true`)、アニメーション編集の `anim_*` (同じ)。console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `log_open` / `log_close` /
-  `log` / `undo` / `redo` / `help`、scene (タブ) の `scenes` / `new_scene` / `switch_scene` /
-  `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
+  `contour`、`define`、`style`。
+- console と MCP にだけ出す op (`tool: false, mcp: true`。agent には出さない): Tools メニューの dialog に当たる
+  `calc_elepot`・`cut_surface`・`list_morph_frames` / `add_morph_frame` / `remove_morph_frame`、
+  アニメーション編集の `list_anims` / `add_anim` / `set_anim_prop` など。
+- console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `open_log` / `close_log` / `log` /
+  `undo` / `redo` / `help`、scene (タブ) の `list_scenes` (短縮形 `scenes`) / `create_scene` /
+  `switch_scene` / `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
+- `help` は対象ごとの見出し (op の `group`、`OP_GROUPS`) に分けて一覧し、`help <subject>`
+  (`help animation` など) でその見出しだけを出す。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
-- 補完は param の意味型から: enum 値、object / renderer / node 名、名前付き selection、色、
-  renderer type (前の object 引数から)、property path (階層ごと)、property 値 (enum / boolean)。
-  path 以外の自由文字列はファイル名に fall back しない。補完対象はまず引数全体 (スペースを含む
-  名前に届くように) で、それで始まる候補が無いときだけ PyMOL どおり最後の単語にする。
+- **Tab 補完** (`completion/complete.ts`。設計は [計画](../plans/261009-console-completion-plan.md)):
+  - 入力途中の行を実行時と同じ規則で読む (`scanArgs` の partial、`assignArgs`)。書きかけの括弧の中は 1 つの引数。
+  - その位置に書けるものを全部出す: 次の位置の引数の値と、まだ書いていない引数の `name=` を、見出しを分けて一覧する。
+    `name=` を書いた後はその引数の値。native で名前付きの後は `name=` だけ。
+  - 値の候補源は param の意味型から (`fromCatalog.ts` の `completionOf`): enum 値、object / renderer / node 名、
+    selection (scene と app の名前)、色、renderer type (object、renderer、読み込むファイルの reader、分子)、
+    property path (階層ごと)、property 値、ファイル (path 型)。前の引数は名前で受け取る (`SourceContext.bound`)。
+  - 候補は文字列か `CompletionItem { text, then }`。確定後に付ける区切りは候補ごと: `name=`・`obj.`・ディレクトリは
+    何も付けず、値は引数が残っていれば `, `。何も入力していないときに候補が `name=` 1 つだけなら、書かずに一覧する。
+  - 照合は引数全体を先に、それで始まる候補が無ければ最後の単語 (空白・カンマ・括弧の後)。
+  - 候補が無いときのファイル名 fall back は PyMOL dialect だけ (`ConsoleDialect.fileFallback`)。native は path 型の引数だけがファイルを出す。
 
 **PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
 (CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる。
@@ -127,6 +154,45 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 
 **panel**: toolbar の CueMol / PyMOL 切り替え、または `native` / `pymol` と打つと切り替わる。
 選択は plugin preference (`console.dialect`)、履歴は dialect ごと (PyMOL は旧 key を引き継ぐ)。
+
+## 5.1 コマンド名の規約
+
+op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は次の規約で付ける。
+`plugins/console/worker/dialects/native/naming.test.ts` が動詞と `help` の分類を検査する。
+経緯と対応表は [計画](../plans/261009-command-naming-plan.md)。
+
+- **op 名は `動詞_目的語`** (snake_case): `list_cameras`、`add_paint`。`名詞_動詞` (`anim_add`) や
+  名詞だけ (`scenes`) の op 名は付けない。目的語が自明な固有の動作は動詞だけ (`superpose`、`animate`)。
+- **動詞の語彙**:
+
+  | 動詞 | 意味 |
+  |---|---|
+  | `list` | 複数のものを一覧する (目的語は複数形) |
+  | `get` | 1 つのものの状態や値を読む |
+  | `set` / `reset` | 既にあるものの属性を書き換える / 既定値に戻す |
+  | `create` / `delete` | scene の node (object・renderer・group・camera・scene) を作る / 消す |
+  | `add` / `remove` | あるものの中の項目 (bond・paint・アニメーション要素・morph frame・相互作用) を足す / 除く |
+  | `move` / `rename` | 並べ替える / 名前を変える |
+  | `clear` | 中身を全部消す |
+  | `apply` | 名前の付いたもの (style・camera) を当てる |
+  | `load` / `save` | CueMol のファイルを読み書きする |
+  | `export` | 画像や他の形式に書き出す |
+  | `fetch` | ネットワークから取ってくる |
+  | `calc` / `recalc` | 計算して結果を作る / 作り直す |
+  | `show` / `hide` | 表示する / 隠す (この意味だけ。情報の表示には使わない) |
+
+  固有の動詞 (`superpose`、`measure`、`merge`、`cut`、`rotate`、`pan`、`focus`、`center`、
+  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture` など) は、
+  上の動詞と意味が重ならないものに限って使う。`make` / `gen` / `new` (→ `create`)、
+  `compute` / `regen` (→ `calc` / `recalc`)、`change` / `update` (→ `set`)、一覧の `get` (→ `list`) は使わない。
+- **目的語**: `scene`、`object`、`renderer`、`group`、`camera`、`view`、`prop(s)`、`selection`、
+  `paint`、`anim`、`morph_frame`、`map_contour`、`surface`。分子に限るものは `mol` を付ける
+  (`set_mol_selection`) が、chain / residue には付けない (`list_chains`)。
+- **alias** (console だけの短縮形。MCP と agent には出さない):
+  - 1 語の動詞 (`load`、`save`、`write`、`delete`、`select`、`focus`、`turn`、`render`、`count`)。
+  - 名詞だけの alias は「引数なしで表示、引数ありで設定」するものに限る (`scenes`、`cameras`、`props`、
+    `scene`、`view`、`slab`、`projection`、`style`、`contour`)。作成や書き出しに名詞の alias は付けない。
+  - PyMOL の語 (`ray`、`png`) は PyMOL dialect が持ち、native には入れない。
 
 ## 6. 未対応 (範囲外)
 
@@ -144,7 +210,7 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   Settings の値を `ApbsConfigProvider` が worker に送っておいたもの (`setApbsDefaults`、
   `services/apbs/defaults.ts`)。他の値は dialog の既定 (温度 298.15、誘電率 78.54 / 2.0)。
 - `cut_surface`: view の前面 slab 面で分子表面を切る (Mol surface cutter)。
-- `morph_frames` / `morph_add` / `morph_remove`: 分子の morphing frame の一覧・追加 (PDB ファイル
+- `list_morph_frames` / `add_morph_frame` / `remove_morph_frame`: 分子の morphing frame の一覧・追加 (PDB ファイル
   または scene の分子から。普通の分子は先に MorphMol に変換され uid が変わる)・削除。再生の設定は
   Animation panel。
 - `set_secondary_structure` は再計算に dialog の `ignoreBulge` / `helixGapAngle` も取る。
@@ -154,17 +220,17 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 Animation panel と element inspector が使う service をそのまま呼ぶので、undo の単位も panel と同じ。
 再生・停止・時刻移動は既存の `animate`。
 
-- `anim_list`: 長さ・再生状態・loop・開始カメラと、要素ごとの番号 (1 から)・名前・型・`#uid`・
+- `list_anims`: 長さ・再生状態・loop・開始カメラと、要素ごとの番号 (1 から)・名前・型・`#uid`・
   絶対時刻 (相対時刻と追従先)。時刻の参照が解決しないときはその理由。
-- `anim_add type [, name] [, before]`: `spin` / `camera` / `show` / `hide` / `slidein` / `slideout` /
+- `add_anim type [, name] [, before]`: `spin` / `camera` / `show` / `hide` / `slidein` / `slideout` /
   `mol` / `wait`。直前の要素に追従する (panel の追加と同じ)。
-- `anim_remove` / `anim_move element, to` / `anim_time element, startMs, endMs` (追従先からの相対 ms)。
-- `anim_set element, prop, value`: inspector で書ける property (`name`、`timeRefName`、`disabled`、
+- `remove_anim` / `move_anim element, to` / `set_anim_time element, startMs, endMs` (追従先からの相対 ms)。
+- `set_anim_prop element, prop, value`: inspector で書ける property (`name`、`timeRefName`、`disabled`、
   `quadric`、`angle`、`axis` (`"0 1 0"`)、`endcam`、`ignore*`、`rend`、`hide`、`fade`、`tgtAlpha`、
   `direction`、`distance`、`mol`、`startValue`、`endValue`)。値は property の型に変換する。
-- `anim_options [loop] [, startCamera]`。
-- 要素は `anim_list` の番号、`#uid`、名前で指定する (同名が複数なら番号か uid を求める)。
-  `morph_frames` などの番号も同じく 1 から。
+- `set_anim_options [loop] [, startCamera]`。
+- 要素は `list_anims` の番号、`#uid`、名前で指定する (同名が複数なら番号か uid を求める)。
+  `list_morph_frames` などの番号も同じく 1 から。
 - 追加できない型 (`RealPropAnim` / `RendXformAnim`、ファイル由来) の generic property は未対応。
 
 ### GUI の編集操作の op (`ops/editOps.ts` ほか。console と MCP)
@@ -173,12 +239,12 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
 
 - `reset_prop path` (inspector の Reset。`node.*` で Reset all = 変更済みで既定値のある property を 1 txn で)、
   `clear_undo` (Edit > Clear undo data。txn の外で実行)
-- `change_resid molId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond molId, A/20/SG A/45/SG`、
+- `renumber_residues molId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond molId, A/20/SG A/45/SG`、
   `set_symmetry molId, a, b, c, alpha, beta, gamma, spaceGroup`
-- `create_group objId [, name]`、`gen_surface_obj rendId` (map の isosurf のみ)、`regen_surface surfId [, density]`
+- `create_group objId [, name]`、`create_surface_from_map rendId` (map の isosurf のみ)、`recalc_surface surfId [, density]`
 - `list_interactions` / `remove_interaction rendId, number` (距離・角度・二面角の個別削除)
-- `list_paint` / `update_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)
-- `color_by_elepot rendId [, map] [, low] [, high]` (molsurf / dsurface を静電ポテンシャルで色付け)
+- `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)
+- `set_elepot_coloring rendId [, map] [, low] [, high]` (molsurf / dsurface を静電ポテンシャルで色付け)
 - `recenter_map rendId` (map を view の中心で描き直す)、`export_scene path [, format] [, width] [, height] [, transparent] [, dpi]`
   (png / pov / stl / mqo)
 - camera: `rename_camera`、`move_camera name, to`、`save_camera` / `apply_camera` の `withVisibility`
@@ -188,14 +254,18 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
 ### view property と reader のオプション
 
 - **view property** (View > View property の inspector と同じ generic property bridge):
-  - `get_node_props` / `set_node_prop` の `nodeType` に `view` を足した。nodeId は不要で、呼び出し元の view を指す。
+  - `list_node_props` / `set_node_prop` の `nodeType` に `view` を足した。nodeId は不要で、呼び出し元の view を指す。
   - console では `props view`、`get view.stereoMode`、`set view.centerMark, axis` と書く。property path の補完は先頭で `view.` を出す。
   - `view.` で始まる path は、`view` という名前の object が無いときだけ view を指す (`refs.ts` の `resolvePropPath`)。
   - View の property には既定値が無いので (View.qif の default はコメントアウト)、`reset_prop view.xxx` は断る。
-- **reader のオプション** (File Open のオプション dialog と同じ `FileOpenOptions`):
-  - `load_file` に次の引数を足した。
-    - `name`: object の名前
-    - `options`: `key=value` を空白区切りで並べたもの。key は dialog のオプション名で、大文字小文字は区別しない (`build2ndry=false`、`columnF=FWT columnPhi=PHWT`、`truncateMin=-2 mapType=em`)。
-    - `companion`: 2 ファイル形式の相方のファイル (MSMS の .vert、NAMD の .psf、AMBER の座標)。
-  - 値は、置き換えるオプションの既定値の型で読む。値を指定すると、その値を使うためのスイッチも on になる (`truncateMin` → `truncateMinEnabled`、`columnW` → `weightEnabled`)。知らない key を渡すと、その reader のオプション一覧を返す (`catalog/readerOptions.ts`)。
-  - `reader_options path` (console / MCP) は、そのファイルの reader と、オプションの既定値を一覧する。
+- **ファイルの読み込みと reader のオプション** (`catalog/fileLoad.ts`、`ops/loadFormatOps.ts`):
+  - reader の選び方は GUI と同じ規則 (`shared/openFileKind.ts` の `classifyOpenFile`。File > Open・drop と共有):
+    scene reader の拡張子なら scene として開く。拡張子を受け持つ reader がちょうど 1 つならそれ、2 つ以上か
+    無ければ中身で決める (sniff)。その後は `OpenObjByPath` と同じく、選んだ reader の既定のオプションで `loadObject`。
+  - `load_file` (`load`) の引数は `path` / `rendererType` / `selection` / `name` だけで、オプションは reader の既定値。
+  - オプションを変えるときは形式ごとの op (console / MCP、agent には出さない)。引数名は `fileOpenTypes.ts` の
+    option 型と同じで、null は reader の既定値。形式の違うファイルは断る (`load_mtz f.pdb` → not an MTZ file)。
+    - `load_pdb` (PDB / mmCIF): `loadModel`、`loadAnisou`、`loadAltConf`、`loadSegid`、`build2ndry`、`autoTopology`
+    - `load_mtz`: `columnF`、`columnPhi`、`columnWeight`、`resolutionLimit`、`gridSpacing` (列を指定するとその列を使う)
+    - `load_ccp4`: `normalize`、`truncateMin`、`truncateMax` (指定すると切り捨てる)、`mapType`、`subsample`
+    - `load_msms` (`vertFile`)、`load_namd` (`psfFile`)、`load_amber` (`coordFile`)

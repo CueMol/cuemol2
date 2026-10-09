@@ -14,6 +14,7 @@ import { reassignProt2ndry } from '@renderer/worker/server/services/molops/reass
 import { showSymmRenderer, showUnitCellRenderer } from '@renderer/worker/server/services/molops/symmetryPanelOps'
 import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { failedWith } from '../errors'
 import { defineOp } from '../op'
 import { boolean, enumOf, moleculeId, optional, real, selection, string } from '../params'
 
@@ -40,6 +41,7 @@ export const superpose = defineOp({
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
+  group: 'molecule',
   async run(ctx, args, oc) {
     const algo = args.algo ?? 'SSM'
     const dflt = algo === 'LSQ' ? 'name CA' : '*'
@@ -59,7 +61,7 @@ export const superpose = defineOp({
 })
 
 export const makeSurface = defineOp({
-  name: 'make_surface',
+  name: 'create_surface',
   description:
     'Compute the molecular (solvent excluded) surface of a molecule, or of a selection of it, as ' +
     'a new surface object with a renderer. Returns the new object\'s uid.',
@@ -72,7 +74,7 @@ export const makeSurface = defineOp({
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
-  aliases: [{ name: 'surface', summary: 'Make a molecular surface: surface 1crn' }],
+  group: 'surfaces',
   run(ctx, args, oc) {
     const name = args.name ?? proposeMolSurfName(ctx, { sceneId: oc.sceneId, objId: args.molId }).name
     const res = makeMolSurf(ctx, {
@@ -83,7 +85,7 @@ export const makeSurface = defineOp({
       density: args.density ?? SURF_DENSITY,
       probeRadius: args.probeRadius ?? SURF_PROBE,
     })
-    if (!res.ok) return { ok: false, error: res.error || 'The surface could not be made.' }
+    if (!res.ok) return failedWith(res, 'The surface could not be made.')
     return { ok: true, data: { objectId: res.newObjId, name: res.newObjName } }
   },
 })
@@ -97,6 +99,7 @@ export const deleteAtoms = defineOp({
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
+  group: 'molecule',
   run(ctx, args, oc) {
     if (args.selection.trim() === '') return { ok: false, error: 'Give a selection; it would delete every atom.' }
     return normalizeServiceResult(
@@ -116,6 +119,7 @@ export const renameChain = defineOp({
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
+  group: 'molecule',
   run(ctx, args, oc) {
     return normalizeServiceResult(
       changeChainName(ctx, { sceneId: oc.sceneId, objId: args.molId, selStr: args.selection, chainName: args.chain }),
@@ -137,6 +141,7 @@ export const mergeMolecules = defineOp({
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
+  group: 'molecule',
   run(ctx, args, oc) {
     return normalizeServiceResult(
       mergeMol(ctx, {
@@ -165,6 +170,7 @@ export const setSecondaryStructure = defineOp({
   },
   mutates: true,
   expose: { tool: 'molops', console: true },
+  group: 'molecule',
   run(ctx, args, oc) {
     if (args.selection === null) {
       return normalizeServiceResult(
@@ -204,6 +210,7 @@ export const showSymmetry = defineOp({
   },
   mutates: true,
   expose: { tool: 'xtal', console: true },
+  group: 'molecule',
   run(ctx, args, oc) {
     const res = showSymmRenderer(ctx, {
       sceneId: oc.sceneId,
@@ -218,7 +225,7 @@ export const showSymmetry = defineOp({
 })
 
 export const saveSelection = defineOp({
-  name: 'save_selection',
+  name: 'define_selection',
   description:
     'Give a selection expression a name, usable in any later selection (and listed by ' +
     'get_scene_state). The name stands for the expression, re-evaluated each time it is used.',
@@ -228,6 +235,7 @@ export const saveSelection = defineOp({
   },
   mutates: true,
   expose: { tool: 'selection', console: true },
+  group: 'selections',
   aliases: [{ name: 'define', summary: 'Name a selection: define site1, resid 10:20' }],
   run(ctx, args, oc) {
     return normalizeServiceResult(

@@ -13,7 +13,7 @@ import { SELECTION_CHEAT_SHEET } from './selectionCheatSheet'
 
 /** One bullet per rule, each a few wrapped lines starting with "- ". */
 export const TOOL_RULES: readonly string[] = [
-  `- Check a selection expression with check_selection before using it anywhere
+  `- Check a selection expression with count_selection before using it anywhere
   else. An expression that is valid but matches nothing is the usual cause of
   a renderer that appears to do nothing.`,
   `- A tool result is JSON. "ok": false means the call failed and "error" says
@@ -30,12 +30,12 @@ export const TOOL_RULES: readonly string[] = [
   only one of them should change -- "make the whole molecule visible in depth",
   "zoom out a bit" -- use set_view, which changes just what you give it;
   fitSlab fits the clipping to the molecules without moving the camera.`,
-  `- To colour PART of what a renderer draws, use paint_selection, once per
+  `- To colour PART of what a renderer draws, use add_paint, once per
   region. set_renderer_coloring replaces the renderer's whole colouring and
   will undo the regions you painted.`,
   `- Settings that belong to the whole scene rather than to one renderer -- the
   background colour, ambient occlusion, anti-aliasing, CMYK colour proofing --
-  are properties of the scene node. Reach them with get_node_props and
+  are properties of the scene node. Reach them with list_node_props and
   set_node_prop, passing nodeType "scene" and a null nodeId.`,
   `- capture_view shows you the view as the user sees it. After a change whose
   look matters -- colours, a representation, what is in frame -- capture once
@@ -60,7 +60,7 @@ export const TOOL_RULES: readonly string[] = [
 export const MCP_INSTRUCTIONS = `
 CueMol is a molecular structure viewer running on the user's desktop. These
 tools drive the active scene -- the one in the tab the user is looking at.
-Several scenes can be open, one per tab: list_scenes, new_scene, switch_scene
+Several scenes can be open, one per tab: list_scenes, create_scene, switch_scene
 and close_scene manage them, and save_scene / load_file (.qsc) save and open
 one.
 

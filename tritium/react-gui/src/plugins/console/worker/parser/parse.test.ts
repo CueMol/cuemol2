@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { splitCommands } from './splitCommands'
-import { ParseError, parseArgs } from './parseArgs'
+import { ParseError, parseArgs, scanArgs } from './parseArgs'
 import { BindError, bindArgs } from './bindArgs'
 import { lookupCommand } from './commandLookup'
 
@@ -69,6 +69,17 @@ describe('parseArgs', () => {
   })
 })
 
+describe('scanArgs on a line being typed', () => {
+  it('returns the open last argument, an unclosed bracket included, with where it starts', () => {
+    const line = 'count 1crn, (resid 1:10, chain'
+    const { args, current } = scanArgs(line, 'strict', true)
+    expect(args.map((a) => a.value)).toEqual(['1crn'])
+    expect(current).toEqual({ name: null, text: '(resid 1:10, chain', start: 12, valueStart: 12 })
+    expect(scanArgs('load f, name=a', 'strict', true).current).toMatchObject({ name: 'name', text: 'a' })
+    expect(scanArgs('load f, ', 'strict', true).current).toMatchObject({ name: null, text: '', start: 8 })
+  })
+})
+
 describe('bindArgs', () => {
   const params = [{ name: 'name' }, { name: 'value', default: '1' }]
 
@@ -105,6 +116,19 @@ describe('bindArgs', () => {
       kind: 'usage',
       usage: 'Usage: set name [, value ]',
     })
+  })
+})
+
+describe('argument rules', () => {
+  const PARAMS = [{ name: 'a' }, { name: 'b', default: '' }, { name: 'c', default: '' }]
+  const typed = 'cmd x, b=y, z'
+
+  it('python refuses a positional after a named one and a repeat; pymol takes both', () => {
+    expect(() => bindArgs('cmd', PARAMS, parseArgs(typed), 'strict', 'python')).toThrow(/follows a named one/)
+    expect(() => bindArgs('cmd', PARAMS, parseArgs('cmd x, a=y'), 'strict', 'python')).toThrow(/given twice/)
+    // PyMOL: the third argument takes the third parameter, named ones counted.
+    expect(bindArgs('cmd', PARAMS, parseArgs(typed), 'strict', 'pymol')).toEqual({ kind: 'args', args: { a: 'x', b: 'y', c: 'z' } })
+    expect(bindArgs('cmd', PARAMS, parseArgs('cmd x, a=y'), 'strict', 'pymol')).toEqual({ kind: 'args', args: { a: 'y', b: '', c: '' } })
   })
 })
 
