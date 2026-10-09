@@ -71,13 +71,19 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
   そのまま返す。
 - `initialize` の `instructions` は `catalog/guide.ts` の `MCP_INSTRUCTIONS` (agent の system
   prompt と共有する tool の規則 + selection 構文の早見表)。初回に worker から取り、以後 cache。
+  取れなかったとき (window の起動中など) は cache せず、次の request で取り直す。
+- window への中継は endpoint 共通の `relayed()` (`main/localApi/relay.ts`) を通す。window の handler
+  が throw すると `{ error }` が返るので、それを throw に変える: console は 409、MCP の
+  `tools/list` は JSON-RPC error、`tools/call` は tool の結果になる。
+- 失敗した `tools/call` は、どこで失敗しても (main、window、worker) `{ ok: false, error }` の JSON を
+  `isError: true` で返す (`shared/mcpResult.ts`)。`TOOL_RULES` が client にそう約束している。
 - `notifications/cancelled` は SDK に渡す前に拾い、実行中の call の AbortController を止める
   (別の POST で届くため)。
 - SDK (`@modelcontextprotocol/sdk`) は devDependency で、main の bundle に同梱する。
 
 ### tool と 1 call の扱い (`plugins/mcp/worker/mcp.service.ts`)
 
-- 公開するのは `expose.tool !== false` の op 全部 (core + 全 toolset) と、`expose.mcp: true` の op
+- 公開するのは `isMcpOp` (`catalog/index.ts`、一覧は `MCP_OPS`): `expose.tool !== false` の op 全部 (core + 全 toolset) と、`expose.mcp: true` の op
   (agent には出さない MCP 専用。`save_scene`、Tools 系の `calc_elepot` / `cut_surface` / `morph_*`、
   アニメーション編集の `list_anims` / `add_anim` など)。MCP client は全 server の tool を一覧して自分で
   選ぶので、agent の `enable_toolsets` の段階は無い。

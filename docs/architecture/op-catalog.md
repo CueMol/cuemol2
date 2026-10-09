@@ -56,7 +56,8 @@ defineOp({
   name, description, params, mutates,
   expose: { tool: 'core' | ToolsetId | false, console: boolean, mcp?: boolean },
   aliases?: [{ name, fixed?, defaults?, order?, summary? }],
-  outsideTxn?(raw): boolean,   // console で txn の外・単独行で走らせる (例: .qsc の load)
+  group,                       // help の分類 (OP_GROUPS)
+  outsideTxn?(args): boolean,  // txn の外で走らせる (例: .qsc の load)。console の文字列でも JSON の値でも呼ばれる
   format?(data): string[],     // console での表示 (無ければ汎用の key: value 表示)
   run(ctx, args, oc: OpContext),
 })
@@ -65,9 +66,20 @@ defineOp({
 - `OpContext` は `sceneId` / `viewId` / `callId` / `markMutated` / `noteStream` / `streamId` と、
   UI を持つ呼び出し元だけが渡す `openScene`、中断を伝える `cancelled()`、書き込み先の制限
   `fileAccess` (`'any'` = console、既定は desktop のみ。`catalog/outputFile.ts`)。
-- `invokeOp` が唯一の実行入口: throw を失敗に変え、成功した `mutates` op で `markMutated` を呼ぶ。
+- `invokeOp` が唯一の実行入口: selection 引数を実行前に検査し (どの呼び出し元でも同じ)、throw を
+  失敗に変え、成功した `mutates` op で `markMutated` を呼ぶ。
+- 引数の読み方: console は文字列を、MCP と agent は JSON を、それぞれ型に読んでから同じ `checkArg`
+  (`catalog/argValues.ts`) で検査する。整数に 1.5、真偽値に `maybe` は、どちらから来ても断る。
+  文字列の真偽値・数値は `parseBoolText` / `parseNumberText` (空は数値にしない) で読み、property 値・
+  アニメーションの property・reader のオプション・PyMOL dialect も同じ関数を使う。
+- 入力ファイルのパスは `callerPath` (`catalog/outputFile.ts`) で絶対パスにする: `~` は home、相対は
+  desktop から (console は自分の cwd で解決済み)。出力の `outputPath` と同じ基準。
+- 一覧の番号は 1 から (`worker/shared/numbered.ts` の `numbered` / `pickByNumber` / `checkPosition` /
+  `findBySpec`)。よく出る失敗の文言は `catalog/errors.ts`。
 - `runInTxn` が txn 規則: 変更があれば (途中で失敗しても) commit、無ければ rollback
   (空 commit は redo を消すため)。agent の 1 turn、console の 1 submit がそれぞれ 1 txn。
+  `outsideTxn` の op は `runExclusive` で txn の外で走らせるが、その間も `txnBusy()` は busy を返す
+  (scene の保存・open の途中に他の編集が割り込まないように)。
 
 ## 4. AI agent への公開
 
