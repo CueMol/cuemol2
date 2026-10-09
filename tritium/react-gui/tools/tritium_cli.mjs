@@ -204,9 +204,11 @@ function visibleLength(text) {
 }
 
 /**
- * Tab's candidates, as zsh shows them: listed under the prompt, with the
- * cursor left on the prompt line, and gone at the next key. The prompt line
- * never moves, and nothing is left behind in the scrollback.
+ * Tab's candidates, as zsh shows them. A list that fits on the screen goes
+ * under the prompt, with the cursor left on the prompt line, and is gone at
+ * the next key: the prompt line never moves. A list taller than the screen
+ * cannot sit under a prompt that stays in view, so it is printed into the
+ * scrollback and the prompt is drawn again below it, as bash (and zsh) do.
  */
 function makeCompletionList(rl) {
   const out = process.stdout
@@ -228,6 +230,12 @@ function makeCompletionList(rl) {
         const line = e.kind === 'error' ? sgr(STYLE.red, e.text) : e.kind === 'warning' ? sgr(STYLE.yellow, e.text) : e.text
         text += `\n\r\x1b[K${line}`
         count += Math.max(1, Math.ceil(visibleLength(e.text) / width))
+      }
+      // The prompt line plus the list must fit on the screen to come back to it.
+      if (count + 1 > (out.rows || 24)) {
+        out.write(`${text}\n`)
+        rl.prompt(true)
+        return
       }
       // Back up to the prompt line, to the column readline left the cursor at.
       const col = rl.getCursorPos().cols
