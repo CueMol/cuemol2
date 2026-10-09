@@ -134,6 +134,8 @@ export type { DialectId } from '../../shared/consoleTypes'
 export interface SourceContext {
   sceneId: number
   viewId: number
+  /** The console's working directory, for a source that reads a file typed earlier. */
+  cwd: string
   /**
    * The argument values typed before the one being completed, in order.
    * A source that depends on an earlier argument (the values of the property

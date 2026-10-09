@@ -213,6 +213,7 @@ function completionOf(
   propIndex: number,
   pathIndex: number,
   rendererIndex: number,
+  fileIndex: number,
 ): ArgCompletion | null {
   const suffix = last ? '' : ', '
   if (p.kind === 'enum' && p.values) {
@@ -233,10 +234,13 @@ function completionOf(
       return { source: 'colors', description: 'color', suffix }
     case 'rendererType':
       // Created on an object: what that object can show. Changed on a
-      // renderer: what that renderer can become.
-      return objectIndex < 0 && rendererIndex >= 0
-        ? { source: `rendererChangeTypes:${rendererIndex}`, description: 'renderer type', suffix }
-        : { source: `rendererTypes:${objectIndex}`, description: 'renderer type', suffix }
+      // renderer: what that renderer can become. Created with what a file
+      // loads (load): what its reader's object can show. With none of
+      // those (fetch): what a molecule can show.
+      if (objectIndex >= 0) return { source: `rendererTypes:${objectIndex}`, description: 'renderer type', suffix }
+      if (rendererIndex >= 0) return { source: `rendererChangeTypes:${rendererIndex}`, description: 'renderer type', suffix }
+      if (fileIndex >= 0) return { source: `fileRendererTypes:${fileIndex}`, description: 'renderer type', suffix }
+      return { source: 'moleculeRendererTypes', description: 'renderer type', suffix }
     case 'propName':
       return { source: `props:${nodeIndex}`, description: 'property', suffix }
     case 'propValue':
@@ -286,6 +290,7 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
         names.findIndex((m) => params[m].semantic === 'propName'),
         names.findIndex((m) => params[m].semantic === 'propPath'),
         names.findIndex((m) => params[m].semantic === 'renderer'),
+        names.findIndex((m) => params[m].semantic === 'path'),
       ),
     ),
     ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(bound) ?? false } : {}),

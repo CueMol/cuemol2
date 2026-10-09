@@ -15,6 +15,8 @@
 import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
+import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
+import { resolvePath } from '../../runtime/paths'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
@@ -102,6 +104,12 @@ const NATIVE_COMMANDS: readonly ConsoleCommand[] = [
   ...NATIVE_BUILTINS,
   help,
 ].sort((a, b) => a.name.localeCompare(b.name))
+
+/** An argument as typed, without the quotes around it. */
+function unquoted(text: string): string {
+  const t = text.trim()
+  return t.length >= 2 && (t[0] === '"' || t[0] === "'") && t[t.length - 1] === t[0] ? t.slice(1, -1) : t
+}
 
 /** The names of the open scenes, for the scene commands. */
 function sceneNames(ctx: WorkerContext): string[] {
@@ -237,6 +245,16 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): string[]
     const rendText = sc.argsSoFar[Number(id.slice('rendererChangeTypes:'.length))] ?? ''
     const ref = resolveRef(ctx, sc.sceneId, rendText, 'renderer')
     return ref.ok ? getRendererChangeTypes(ctx, { sceneId: sc.sceneId, rendId: ref.node.id }).typeNames : []
+  }
+  if (id.startsWith('fileRendererTypes:')) {
+    // What the reader of the file typed earlier makes, and what that can show.
+    const file = unquoted(sc.argsSoFar[Number(id.slice('fileRendererTypes:'.length))] ?? '')
+    if (file === '') return []
+    return getCompatibleRendererNames(ctx, { filePath: resolvePath(sc.cwd, file) }).types
+  }
+  if (id === 'moleculeRendererTypes') {
+    // A downloaded structure (fetch): a molecule, whichever format.
+    return getCompatibleRendererNames(ctx, { filePath: 'structure.pdb', readerName: 'pdb' }).types
   }
   if (id.startsWith('rendererTypes:')) {
     // The types an object can be drawn as depend on the object, so they are

@@ -208,7 +208,7 @@ export function completeLine(
     if (spec && entry) {
       const argsSoFar = argumentsBefore(line, index)
       const ask = (pattern: string) =>
-        cc.dialect.candidates(entry.source, ctx, { sceneId: cc.sceneId, viewId: cc.viewId, argsSoFar, pattern })
+        cc.dialect.candidates(entry.source, ctx, { sceneId: cc.sceneId, viewId: cc.viewId, cwd: cc.cwd, argsSoFar, pattern })
       // PyMOL completes the last word only, which cannot reach a name with a
       // space in it ("my scene"). So the whole argument goes first, and the
       // last word (a selection expression's) only when nothing starts with it.
