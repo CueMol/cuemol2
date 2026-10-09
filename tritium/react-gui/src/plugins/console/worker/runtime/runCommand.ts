@@ -260,7 +260,7 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
     let bound: Record<string, string>
     try {
       const parsed = parseArgs(cmd.text, spec.mode)
-      const result = bindArgs(spec.name, spec.params, parsed, spec.mode)
+      const result = bindArgs(spec.name, spec.params, parsed, spec.mode, dialect.argRule)
       if (result.kind === 'usage') {
         sink.push('output', result.usage)
         continue
@@ -356,7 +356,7 @@ async function runStandalone(
   if (!spec.outsideTxn) return null
   let bound: Record<string, string>
   try {
-    const result = bindArgs(spec.name, spec.params, parseArgs(cmd.text, spec.mode), spec.mode)
+    const result = bindArgs(spec.name, spec.params, parseArgs(cmd.text, spec.mode), spec.mode, dialect.argRule)
     // Usage and argument errors are reported by the ordinary path.
     if (result.kind === 'usage') return null
     bound = result.args

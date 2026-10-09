@@ -277,6 +277,8 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): string[]
 export const NATIVE_DIALECT: ConsoleDialect = {
   id: 'native',
   prompt: DIALECT_PROMPTS.native,
+  // Its own language: arguments match as in a Python call.
+  argRule: 'python',
   txnPrefix: 'cmd: ',
   commands: () => NATIVE_COMMANDS,
   refuseLine: (cmd) =>

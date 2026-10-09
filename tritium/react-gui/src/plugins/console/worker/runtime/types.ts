@@ -17,7 +17,7 @@
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { ArgMode } from '../parser/parseArgs'
-import type { ParamSpec } from '../parser/bindArgs'
+import type { ArgRule, ParamSpec } from '../parser/bindArgs'
 import type { SplitCommand } from '../parser/splitCommands'
 import type { DialectId, SceneRequest } from '../../shared/consoleTypes'
 
@@ -156,6 +156,8 @@ export interface ConsoleDialect {
   prompt: string
   /** The undo entry's label prefix, so the history says where an edit came from. */
   txnPrefix: string
+  /** How typed arguments are matched to parameters (`parser/bindArgs.ts`). */
+  argRule: ArgRule
   /** Every command, sorted by name. */
   commands(): readonly ConsoleCommand[]
   /**

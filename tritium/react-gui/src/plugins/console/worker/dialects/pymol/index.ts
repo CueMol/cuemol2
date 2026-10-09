@@ -18,6 +18,8 @@ import type { CompletionSourceId } from './sources'
 export const PYMOL_DIALECT: ConsoleDialect = {
   id: 'pymol',
   prompt: DIALECT_PROMPTS.pymol,
+  // PyMOL's own matching, which its scripts rely on.
+  argRule: 'pymol',
   txnPrefix: 'pym: ',
   commands: () => PYM_COMMANDS,
   refuseLine: (cmd) =>
