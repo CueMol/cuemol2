@@ -26,6 +26,7 @@ const cd: ConsoleCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Change the working directory relative paths are read from.',
+  completions: [{ source: 'files', description: 'directory' }],
   run(_ctx, args, cc) {
     const dir = resolvePath(cc.cwd, args.dir)
     if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
@@ -57,6 +58,7 @@ const ls: ConsoleCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'List a directory (the working directory when none is given).',
+  completions: [{ source: 'files', description: 'file' }],
   run(_ctx, args, cc) {
     const dir = resolvePath(cc.cwd, args.dir.trim() === '' ? '.' : args.dir.trim())
     let names: string[]
@@ -81,6 +83,7 @@ const run: ConsoleCommand = {
   mode: 'strict',
   mutates: false,
   summary: `Run the commands in a ${NATIVE_SCRIPT_EXT} script (the same as @file).`,
+  completions: [{ source: 'files', description: 'script' }],
   run(_ctx, args, cc) {
     return cc.runScript(args.file.trim())
   },
@@ -93,6 +96,7 @@ const logOpen: ConsoleCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Record the commands typed from now on to a script file.',
+  completions: [{ source: 'files', description: 'file' }, { source: 'enum:w|a', description: 'mode' }],
   run(_ctx, args, cc) {
     const mode = args.mode.trim()
     if (mode !== 'w' && mode !== 'a') {
@@ -160,7 +164,7 @@ function undoStack(name: 'undo' | 'redo'): ConsoleCommand {
 // A scene is a tab, which only the panel can make or close, so these parse
 // their arguments and hand the request over (CmdContext.requestScene).
 
-const SCENE_COMPLETION = { source: 'scenes', description: 'scene', suffix: '' } as const
+const SCENE_COMPLETION = { source: 'scenes', description: 'scene' } as const
 
 /** Hand `req` to the panel; refused inside a script. */
 function handOff(name: string, req: SceneRequest, cc: CmdContext): CmdOutcome {
@@ -190,7 +194,7 @@ const newScene: ConsoleCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Open a new empty scene in a tab of its own and make it active.',
-  completions: [{ source: 'none', description: 'name', suffix: '' }],
+  completions: [{ source: 'none', description: 'name' }],
   run: (_ctx, args, cc) => handOff('create_scene', { op: 'new', name: args.name.trim() }, cc),
 }
 
@@ -212,7 +216,7 @@ const closeScene: ConsoleCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Close a scene (the active one when none is named); discardChanges true closes it with unsaved changes.',
-  completions: [{ ...SCENE_COMPLETION, suffix: ', ' }, { source: 'enum:true|false', description: 'discardChanges', suffix: '' }],
+  completions: [SCENE_COMPLETION, { source: 'enum:true|false', description: 'discardChanges' }],
   run(_ctx, args, cc) {
     const discardChanges = parseBoolText(args.discardChanges)
     if (discardChanges === null) return { ok: false, error: 'Error: discardChanges must be true or false' }

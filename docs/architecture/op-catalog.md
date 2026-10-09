@@ -115,7 +115,11 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   の両方で呼べる。alias は 1 つの op を呼ぶ別名で、引数を固定 (`fixed`。引数一覧に出ず、指定できない)・
   既定 (`defaults`)・並べ替え (`order`) できる。ユーザー定義のコマンド列とは別物。
 - 引数は PyMOL と同じくカンマ区切り (`zoom 1crn, chain A and resid 10:20`)。selection が空白を
-  含むため、空白区切りは採らない。`key=value` も使える。
+  含むため、空白区切りは採らない。括弧と引用符の中のカンマは区切りにしない (`parser/parseArgs.ts`)。
+- 引数の割り当て規則は dialect ごと (`ConsoleDialect.argRule`、`parser/bindArgs.ts` の `assignArgs`):
+  - native は **Python の呼び出しと同じ**: 位置引数は先頭から順に埋まり、名前付き (`name=value`) の後には書けない。
+    同じ引数を 2 回書くとエラー。
+  - PyMOL dialect は PyMOL のまま: 位置引数は名前付きも数えた全体の番号の引数に入り、重複は後勝ち、LEGACY 展開あり。
 - 主な alias: `show` / `hide`、`select`、`zoom` / `center`、`turn`、`view` / `slab` / `fit_slab`、
   `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`scene`、
   `count`、`delete` / `rename` / `retype`、`render` (ray tracing / GI。Stop で中断)、
@@ -130,10 +134,17 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 - `help` は対象ごとの見出し (op の `group`、`OP_GROUPS`) に分けて一覧し、`help <subject>`
   (`help animation` など) でその見出しだけを出す。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
-- 補完は param の意味型から: enum 値、object / renderer / node 名、名前付き selection、色、
-  renderer type (前の object 引数から)、property path (階層ごと)、property 値 (enum / boolean)。
-  path 以外の自由文字列はファイル名に fall back しない。補完対象はまず引数全体 (スペースを含む
-  名前に届くように) で、それで始まる候補が無いときだけ PyMOL どおり最後の単語にする。
+- **Tab 補完** (`completion/complete.ts`。設計は [計画](../plans/261009-console-completion-plan.md)):
+  - 入力途中の行を実行時と同じ規則で読む (`scanArgs` の partial、`assignArgs`)。書きかけの括弧の中は 1 つの引数。
+  - その位置に書けるものを全部出す: 次の位置の引数の値と、まだ書いていない引数の `name=` を、見出しを分けて一覧する。
+    `name=` を書いた後はその引数の値。native で名前付きの後は `name=` だけ。
+  - 値の候補源は param の意味型から (`fromCatalog.ts` の `completionOf`): enum 値、object / renderer / node 名、
+    selection (scene と app の名前)、色、renderer type (object、renderer、読み込むファイルの reader、分子)、
+    property path (階層ごと)、property 値、ファイル (path 型)。前の引数は名前で受け取る (`SourceContext.bound`)。
+  - 候補は文字列か `CompletionItem { text, then }`。確定後に付ける区切りは候補ごと: `name=`・`obj.`・ディレクトリは
+    何も付けず、値は引数が残っていれば `, `。何も入力していないときに候補が `name=` 1 つだけなら、書かずに一覧する。
+  - 照合は引数全体を先に、それで始まる候補が無ければ最後の単語 (空白・カンマ・括弧の後)。
+  - 候補が無いときのファイル名 fall back は PyMOL dialect だけ (`ConsoleDialect.fileFallback`)。native は path 型の引数だけがファイルを出す。
 
 **PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
 (CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる。
@@ -247,10 +258,14 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
   - console では `props view`、`get view.stereoMode`、`set view.centerMark, axis` と書く。property path の補完は先頭で `view.` を出す。
   - `view.` で始まる path は、`view` という名前の object が無いときだけ view を指す (`refs.ts` の `resolvePropPath`)。
   - View の property には既定値が無いので (View.qif の default はコメントアウト)、`reset_prop view.xxx` は断る。
-- **reader のオプション** (File Open のオプション dialog と同じ `FileOpenOptions`):
-  - `load_file` に次の引数を足した。
-    - `name`: object の名前
-    - `options`: `key=value` を空白区切りで並べたもの。key は dialog のオプション名で、大文字小文字は区別しない (`build2ndry=false`、`columnF=FWT columnPhi=PHWT`、`truncateMin=-2 mapType=em`)。
-    - `companion`: 2 ファイル形式の相方のファイル (MSMS の .vert、NAMD の .psf、AMBER の座標)。
-  - 値は、置き換えるオプションの既定値の型で読む。値を指定すると、その値を使うためのスイッチも on になる (`truncateMin` → `truncateMinEnabled`、`columnW` → `weightEnabled`)。知らない key を渡すと、その reader のオプション一覧を返す (`catalog/readerOptions.ts`)。
-  - `list_reader_options path` (console / MCP) は、そのファイルの reader と、オプションの既定値を一覧する。
+- **ファイルの読み込みと reader のオプション** (`catalog/fileLoad.ts`、`ops/loadFormatOps.ts`):
+  - reader の選び方は GUI と同じ規則 (`shared/openFileKind.ts` の `classifyOpenFile`。File > Open・drop と共有):
+    scene reader の拡張子なら scene として開く。拡張子を受け持つ reader がちょうど 1 つならそれ、2 つ以上か
+    無ければ中身で決める (sniff)。その後は `OpenObjByPath` と同じく、選んだ reader の既定のオプションで `loadObject`。
+  - `load_file` (`load`) の引数は `path` / `rendererType` / `selection` / `name` だけで、オプションは reader の既定値。
+  - オプションを変えるときは形式ごとの op (console / MCP、agent には出さない)。引数名は `fileOpenTypes.ts` の
+    option 型と同じで、null は reader の既定値。形式の違うファイルは断る (`load_mtz f.pdb` → not an MTZ file)。
+    - `load_pdb` (PDB / mmCIF): `loadModel`、`loadAnisou`、`loadAltConf`、`loadSegid`、`build2ndry`、`autoTopology`
+    - `load_mtz`: `columnF`、`columnPhi`、`columnWeight`、`resolutionLimit`、`gridSpacing` (列を指定するとその列を使う)
+    - `load_ccp4`: `normalize`、`truncateMin`、`truncateMax` (指定すると切り捨てる)、`mapType`、`subsample`
+    - `load_msms` (`vertFile`)、`load_namd` (`psfFile`)、`load_amber` (`coordFile`)

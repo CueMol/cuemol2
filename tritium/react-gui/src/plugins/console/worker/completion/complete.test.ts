@@ -50,7 +50,10 @@ const { COMMANDS, candidates } = vi.hoisted(() => {
 import { completeLine } from './complete'
 
 const ctx = {} as WorkerContext
+/** PyMOL's habits: its argument rule, and files wherever a source declines. */
 const dialect = {
+  argRule: 'pymol',
+  fileFallback: true,
   commands: () => COMMANDS,
   candidates: (...args: unknown[]) => candidates(...args),
 } as unknown as ConsoleDialect
@@ -150,9 +153,9 @@ describe('argument completion', () => {
     candidates.mockReturnValue(['on', 'off'])
     run('set aoEnabled, o')
     expect(candidates.mock.calls[0][0]).toBe('settingValue')
-    // The value source is told what came before, which is how it knows which
-    // property's values to list.
-    expect(candidates.mock.calls[0][2].argsSoFar).toEqual(['aoEnabled'])
+    // The value source is told what came before, by parameter name, which is
+    // how it knows which property's values to list.
+    expect(candidates.mock.calls[0][2].bound).toEqual({ a: 'aoEnabled' })
   })
 
   it('completes a name=value argument from the source of the parameter it names', () => {
@@ -166,13 +169,13 @@ describe('argument completion', () => {
   it('falls back to files when the source declines', () => {
     candidates.mockReturnValue(null)
     const out = run('set aoRadius, 0')
-    expect(printed(out.messages)).toContain('no matching files.')
+    expect(printed(out.messages)).toContain('no matching files')
   })
 
   it('falls back to files for a command with no entry at that position', () => {
     const out = run('load /nowhere-that-exists/x')
     expect(candidates).not.toHaveBeenCalled()
-    expect(printed(out.messages)).toContain('no matching files.')
+    expect(printed(out.messages)).toContain('no matching files')
   })
 
   it('falls back to files when the command word is ambiguous', () => {
@@ -181,5 +184,65 @@ describe('argument completion', () => {
     const out = run('se /nowhere-that-exists/x')
     expect(candidates).not.toHaveBeenCalled()
     expect(printed(out.messages)).toContain('no matching files.')
+  })
+})
+
+// --- The native dialect's completion: every kind of thing an argument can be ---
+
+const LOAD = {
+  name: 'load',
+  params: [{ name: 'path' }, { name: 'rendererType', default: '' }, { name: 'selection', default: '' }],
+  mode: 'strict',
+  mutates: true,
+  summary: 'stub',
+  completions: [
+    { source: 'files', description: 'file', open: true },
+    { source: 'rendererTypes', description: 'renderer type' },
+    { source: 'selections', description: 'selection', open: true },
+  ],
+  run: () => ({ ok: true }),
+}
+const nativeSources = vi.fn((id: string, _ctx?: unknown, _sc?: unknown) =>
+  id === 'rendererTypes' ? ['cartoon', 'cpk', 'simple'] : id === 'selections' ? ['protein', 'ligand'] : [],
+)
+const native = {
+  argRule: 'python',
+  fileFallback: false,
+  commands: () => [LOAD],
+  candidates: (id: string, c: unknown, sc: unknown) => nativeSources(id, c, sc),
+} as unknown as ConsoleDialect
+const runNative = (line: string) => completeLine(ctx, line, { ...cc, dialect: native })
+
+describe('native argument completion', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('offers the values of the next parameter and the names of the ones not given', () => {
+    const out = runNative('load f.pdb, ')
+    expect(printed(out.messages)).toMatch(/matching renderer type:[\s\S]*cartoon[\s\S]*matching argument:[\s\S]*rendererType=[\s\S]*selection=/)
+    expect(printed(out.messages)).not.toContain('path=')
+    // A name completes to `name=`, with nothing after it; a value to `, ` while parameters remain.
+    expect(runNative('load f.pdb, sel').replacement).toBe('load f.pdb, selection=')
+    expect(runNative('load f.pdb, car').replacement).toBe('load f.pdb, cartoon, ')
+  })
+
+  it('completes the value of a named parameter, and gives its source the arguments by name', () => {
+    expect(runNative('load path=f.pdb, rendererType=cp').replacement).toBe('load path=f.pdb, rendererType=cpk, ')
+    expect(nativeSources.mock.calls.at(-1)?.[2]).toMatchObject({ bound: { path: 'f.pdb' } })
+    // After a named argument only names may follow (a Python call's rule).
+    const out = runNative('load path=f.pdb, ')
+    expect(printed(out.messages)).not.toContain('matching renderer type')
+    expect(printed(out.messages)).toContain('rendererType=')
+  })
+
+  it('reads a bracket as execution does, and adds nothing after the last parameter or an open one', () => {
+    expect(runNative('load f.pdb, cartoon, (prot').replacement).toBe('load f.pdb, cartoon, (protein')
+    expect(runNative('load f.pdb, cartoon, (protein, lig').replacement).toBe('load f.pdb, cartoon, (protein, ligand')
+  })
+
+  it('does not fall back to files where a parameter offers nothing', () => {
+    nativeSources.mockReturnValueOnce([])
+    const out = runNative('load f.pdb, zz')
+    expect(printed(out.messages)).toContain('no matching renderer type or argument.')
+    expect(printed(out.messages)).not.toContain('files')
   })
 })

@@ -199,64 +199,72 @@ function printOutcome(op: AnyOp, outcome: Extract<OpOutcome, { ok: true }>, cc: 
   for (const line of lines) cc.print(line)
 }
 
+/** The parameters a completion source reads, by their role. */
+interface RelatedParams {
+  object: string | null
+  node: string | null
+  prop: string | null
+  propPath: string | null
+  renderer: string | null
+  file: string | null
+}
+
 /**
- * The completion source for one parameter, by its semantic kind.
- *
- * @param objectIndex - the position of the op's object parameter, for a
- *   source whose candidates depend on it (renderer types); -1 when none.
+ * Where Tab finds one parameter's values, by its semantic kind. A source that
+ * depends on another argument names that parameter; the value typed for it
+ * reaches the source by name (`SourceContext.bound`), however it was typed.
  */
-function completionOf(
-  p: Param<unknown>,
-  last: boolean,
-  objectIndex: number,
-  nodeIndex: number,
-  propIndex: number,
-  pathIndex: number,
-  rendererIndex: number,
-  fileIndex: number,
-): ArgCompletion | null {
-  const suffix = last ? '' : ', '
-  if (p.kind === 'enum' && p.values) {
-    return { source: `enum:${p.values.join('|')}`, description: 'value', suffix }
-  }
-  if (p.kind === 'boolean') return { source: 'enum:true|false', description: 'value', suffix }
+function completionOf(p: Param<unknown>, rel: RelatedParams): ArgCompletion | null {
+  if (p.kind === 'enum' && p.values) return { source: `enum:${p.values.join('|')}`, description: 'value' }
+  if (p.kind === 'boolean') return { source: 'enum:true|false', description: 'value' }
   switch (p.semantic) {
     case 'object':
     case 'molecule':
-      return { source: 'objects', description: 'object', suffix }
+      return { source: 'objects', description: 'object' }
     case 'renderer':
-      return { source: 'renderers', description: 'renderer', suffix }
+      return { source: 'renderers', description: 'renderer' }
     case 'node':
-      return { source: 'nodes', description: 'node', suffix }
+      return { source: 'nodes', description: 'node' }
     case 'selection':
-      return { source: 'selections', description: 'selection', suffix: '' }
+      return { source: 'selections', description: 'selection', open: true }
     case 'color':
-      return { source: 'colors', description: 'color', suffix }
+      return { source: 'colors', description: 'color' }
     case 'rendererType':
       // Created on an object: what that object can show. Changed on a
       // renderer: what that renderer can become. Created with what a file
       // loads (load): what its reader's object can show. With none of
       // those (fetch): what a molecule can show.
-      if (objectIndex >= 0) return { source: `rendererTypes:${objectIndex}`, description: 'renderer type', suffix }
-      if (rendererIndex >= 0) return { source: `rendererChangeTypes:${rendererIndex}`, description: 'renderer type', suffix }
-      if (fileIndex >= 0) return { source: `fileRendererTypes:${fileIndex}`, description: 'renderer type', suffix }
-      return { source: 'moleculeRendererTypes', description: 'renderer type', suffix }
+      if (rel.object) return { source: `rendererTypes:${rel.object}`, description: 'renderer type' }
+      if (rel.renderer) return { source: `rendererChangeTypes:${rel.renderer}`, description: 'renderer type' }
+      if (rel.file) return { source: `fileRendererTypes:${rel.file}`, description: 'renderer type' }
+      return { source: 'moleculeRendererTypes', description: 'renderer type' }
     case 'propName':
-      return { source: `props:${nodeIndex}`, description: 'property', suffix }
+      return { source: `props:${rel.node ?? ''}`, description: 'property' }
     case 'propValue':
-      return propIndex >= 0
-        ? { source: `propValues:${propIndex}:${nodeIndex}`, description: 'value', suffix }
-        : { source: `pathValues:${pathIndex}`, description: 'value', suffix }
+      return rel.prop
+        ? { source: `propValues:${rel.prop}:${rel.node ?? ''}`, description: 'value' }
+        : { source: `pathValues:${rel.propPath ?? ''}`, description: 'value' }
     case 'propPath':
-      // No separator: a node completes to `name.` and the path goes on.
-      return { source: 'propPath', description: 'property', suffix: '' }
+      return { source: 'propPath', description: 'property' }
     case 'path':
-      // Null falls back to filename completion.
-      return null
+      return { source: 'files', description: 'file' }
     default:
       // Free text (a name, a chain, a property) has nothing to offer, and
       // listing files for it would only mislead.
-      return { source: 'none', description: 'value', suffix }
+      return { source: 'none', description: 'value' }
+  }
+}
+
+/** The first parameter of each role a completion source reads. */
+function related(params: ParamMap): RelatedParams {
+  const named = (...kinds: string[]) => Object.keys(params).find((n) => kinds.includes(params[n].semantic ?? '')) ?? null
+  return {
+    object: named('object', 'molecule'),
+    node: named('node'),
+    prop: named('propName'),
+    propPath: named('propPath'),
+    renderer: named('renderer'),
+    file: named('path'),
   }
 }
 
@@ -281,18 +289,7 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
     mode: 'strict',
     mutates: op.mutates,
     summary: alias?.summary ?? firstSentence(op.description),
-    completions: names.map((n, i) =>
-      completionOf(
-        params[n],
-        i === names.length - 1,
-        names.findIndex((m) => params[m].semantic === 'object' || params[m].semantic === 'molecule'),
-        names.findIndex((m) => params[m].semantic === 'node'),
-        names.findIndex((m) => params[m].semantic === 'propName'),
-        names.findIndex((m) => params[m].semantic === 'propPath'),
-        names.findIndex((m) => params[m].semantic === 'renderer'),
-        names.findIndex((m) => params[m].semantic === 'path'),
-      ),
-    ),
+    completions: names.map((n) => completionOf(params[n], related(params))),
     ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(bound) ?? false } : {}),
     async run(ctx, bound, cc): Promise<CmdOutcome> {
       const args = readConsoleArgs(ctx, cc, op, bound, alias)

@@ -29,7 +29,9 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ConsoleEntry } from '../../shared/consoleTypes'
 import { interpretShortcut } from '../parser/shortcut'
 import { resolvePath } from '../runtime/paths'
-import type { ConsoleDialect } from '../runtime/types'
+import { assignArgs, nextPositional } from '../parser/bindArgs'
+import { scanArgs } from '../parser/parseArgs'
+import type { CompletionItem, ConsoleCommand, ConsoleDialect } from '../runtime/types'
 import { commonPrefix, formatColumns } from './columns'
 
 /** What Tab produced. */
@@ -49,9 +51,6 @@ export interface CompletionContext {
   /** The language whose commands and candidate sources are offered. */
   dialect: ConsoleDialect
 }
-
-/** PyMOL masks bracketed lists before counting commas -- and nothing else. */
-const LIST_RE = /\[[^\]]*\]/g
 
 function say(messages: ConsoleEntry[], text: string): void {
   messages.push({ kind: 'output', text })
@@ -172,6 +171,184 @@ function completeFilename(
   }
 }
 
+/** A candidate as it is offered: its text, and what follows it once chosen. */
+interface Offer {
+  text: string
+  /** Appended when this one is chosen alone. */
+  sep: string
+}
+
+/**
+ * One kind of thing the argument being typed can be (a parameter's values,
+ * or the `name=` of a parameter not given yet), matched against its own
+ * pattern: the line from `regionStart` on is what a choice replaces.
+ */
+interface Group {
+  heading: string
+  pattern: string
+  regionStart: number
+  offers: Offer[]
+  /** Match by plain prefix (file names), not PyMOL's abbreviations. */
+  plain?: boolean
+}
+
+/** Files under the typed path; a directory continues the path. */
+function fileOffers(typed: string, cwd: string, sep: string): Offer[] {
+  if (typed.startsWith('$')) {
+    return Object.keys(process.env)
+      .filter((v) => v.startsWith(typed.slice(1)))
+      .sort()
+      .map((v) => ({ text: `$${v}`, sep: '' }))
+  }
+  const absolute = resolvePath(cwd, typed)
+  const endsInDir = typed === '' || typed.endsWith('/') || typed.endsWith(path.sep)
+  const dir = endsInDir ? absolute : path.dirname(absolute)
+  const stem = endsInDir ? '' : path.basename(absolute)
+  // What was typed of the directory stays as typed: relative stays relative, `~` stays `~`.
+  const typedDir = typed.slice(0, typed.length - stem.length)
+  return fileCandidates(dir, stem).map((n) => ({ text: typedDir + n, sep: n.endsWith('/') ? '' : sep }))
+}
+
+/** The candidates of a group that the pattern selects. */
+function matchesOf(g: Group): string[] {
+  const texts = g.offers.map((o) => o.text)
+  if (g.plain) return texts.filter((t) => t.startsWith(g.pattern))
+  const found = interpretShortcut(g.pattern, texts, { prefixSearchOnExact: false })
+  return found.kind === 'found' ? [found.name] : found.kind === 'ambiguous' ? found.candidates : []
+}
+
+/**
+ * The line up to `at`, as PyMOL rebuilds it: the command abbreviation
+ * written out, and the space after a last comma made exactly one.
+ */
+function prefixAt(line: string, at: number, commandName: string): string {
+  return line
+    .slice(0, at)
+    .replace(/^\s*\S+\s*/, `${commandName} `)
+    .replace(/,\s*$/, ', ')
+}
+
+/**
+ * Complete an argument: everything the argument being typed can be, from
+ * the same reading of the line execution makes (`scanArgs`, `assignArgs`).
+ */
+function completeArgument(
+  ctx: WorkerContext,
+  line: string,
+  spec: ConsoleCommand,
+  cc: CompletionContext,
+  messages: ConsoleEntry[],
+): CompletionOutcome | null {
+  let scanned
+  try {
+    scanned = scanArgs(line, spec.mode, true)
+  } catch {
+    return null
+  }
+  const current = scanned.current
+  if (!current) return null
+  const rule = cc.dialect.argRule
+  const { bound, given } = assignArgs(spec.name, spec.params, scanned.args, spec.mode, rule)
+  const entryOf = (name: string) => spec.completions?.[spec.params.findIndex((p) => p.name === name)] ?? null
+
+  // The parameter a value typed here goes to: the one named, or the next by position.
+  const target = current.name ?? nextPositional(spec.params, scanned.args, rule)
+  const known = target !== null && spec.params.some((p) => p.name === target)
+  // Whether a parameter is still open once `p` is given: then a value ends with `, `.
+  const moreAfter = (p: string) => spec.params.some((q) => q.name !== p && !given.has(q.name))
+
+  const groups: Group[] = []
+  const text = current.text
+  // The word being typed: after the last space, comma or bracket (`(prot`).
+  const lastWord = /[^, ()[\]]*$/.exec(text)?.[0] ?? ''
+  const lastStart = current.valueStart + text.length - lastWord.length
+  let valuesDeclined = !known
+
+  if (known && target !== null) {
+    const entry = entryOf(target)
+    const sepFor = (then: CompletionItem['then']) =>
+      then === 'continue' || entry?.open ? '' : (entry?.suffix ?? (moreAfter(target) ? ', ' : ''))
+    const toOffers = (items: readonly (string | CompletionItem)[]) =>
+      items.map((it) => (typeof it === 'string' ? { text: it, sep: sepFor('next') } : { text: it.text, sep: sepFor(it.then) }))
+
+    if (entry?.source === 'files') {
+      groups.push({ heading: 'files', pattern: text, regionStart: current.valueStart, offers: fileOffers(text, cc.cwd, sepFor('next')), plain: true })
+    } else if (entry) {
+      const ask = (pattern: string) =>
+        cc.dialect.candidates(entry.source, ctx, { sceneId: cc.sceneId, viewId: cc.viewId, cwd: cc.cwd, bound, pattern })
+      // The whole argument first, so a name with a space in it ("my scene")
+      // can complete; the last word (of an expression) when nothing starts so.
+      const whole = text !== lastWord ? ask(text) : null
+      if (whole && whole.some((c) => (typeof c === 'string' ? c : c.text).startsWith(text))) {
+        groups.push({ heading: entry.description, pattern: text, regionStart: current.valueStart, offers: toOffers(whole) })
+      } else {
+        const items = ask(lastWord)
+        if (items === null) valuesDeclined = true
+        else groups.push({ heading: entry.description, pattern: lastWord, regionStart: lastStart, offers: toOffers(items) })
+      }
+    } else {
+      valuesDeclined = true
+    }
+    if (valuesDeclined && cc.dialect.fileFallback) {
+      // PyMOL's own fallback: a file name is left as typed, nothing after it.
+      groups.push({ heading: 'files', pattern: text, regionStart: current.valueStart, offers: fileOffers(text, cc.cwd, ''), plain: true })
+    }
+  }
+
+  // The names of the parameters not given yet, which may be written here too.
+  if (current.name === null) {
+    const open = spec.params.filter((p) => !given.has(p.name))
+    if (open.length > 0) {
+      groups.push({
+        heading: 'argument',
+        pattern: text,
+        regionStart: current.start,
+        offers: open.map((p) => ({ text: `${p.name}=`, sep: '' })),
+      })
+    }
+  }
+
+  if (groups.length === 0) return null
+
+  const matched = groups.map((g) => ({ g, hits: matchesOf(g) })).filter((m) => m.hits.length > 0)
+  const total = matched.reduce((n, m) => n + m.hits.length, 0)
+  if (total === 0) {
+    const headings = [...new Set(groups.map((g) => g.heading))]
+    complain(messages, ` parser: no matching ${headings.join(' or ')}.`)
+    return { replacement: null, messages }
+  }
+  // Nothing typed, and the only match a parameter's name: list it rather
+  // than write it, since the value itself is what the user came to type.
+  const onlyName = matched.length === 1 && matched[0].g.heading === 'argument' && text === '' && known
+  if (total === 1 && !onlyName) {
+    const { g, hits } = matched[0]
+    const offer = g.offers.find((o) => o.text === hits[0])
+    return { replacement: prefixAt(line, g.regionStart, spec.name) + hits[0] + (offer?.sep ?? ''), messages }
+  }
+
+  // Several: list them by kind. Names starting with an underscore are
+  // internal -- not listed, and not holding the common prefix back.
+  const shown: string[] = []
+  for (const { g, hits } of matched) {
+    const visible = hits.filter((h) => !h.startsWith('_'))
+    if (visible.length === 0) continue
+    say(messages, ` parser: matching ${g.heading}:`)
+    for (const l of formatColumns(visible)) say(messages, l)
+    shown.push(...visible)
+  }
+  // The line grows to what they share -- strictly longer than what was
+  // typed, else it would look like a no-op -- when they replace the same part.
+  const first = matched[0].g
+  if (onlyName || !matched.every((m) => m.g.regionStart === first.regionStart && m.g.pattern === first.pattern)) {
+    return { replacement: null, messages }
+  }
+  const prefix = commonPrefix(shown)
+  return {
+    replacement: prefix.length > first.pattern.length ? prefixAt(line, first.regionStart, spec.name) + prefix : null,
+    messages,
+  }
+}
+
 /**
  * Complete one command line.
  *
@@ -198,91 +375,14 @@ export function completeLine(
   // --- an argument ---
   const word = line.replace(/ .*/, '')
   const resolved = interpretShortcut(word, names)
-  if (resolved.kind === 'found') {
-    const spec = commands.find((c) => c.name === resolved.name)
-    // Brackets are masked; parentheses and quotes are not. That is PyMOL's
-    // rule, kept so a line that counts as argument 2 there counts as argument
-    // 2 here.
-    const index = (line.replace(LIST_RE, '').match(/,/g) ?? []).length
-    // `name=value`: the value of the parameter it names, wherever it stands.
-    const current = (index === 0 ? line.replace(/^[^ ]* /, '') : line.replace(/.*,/, '')).replace(/^\s+/, '')
-    const kw = /^([A-Za-z_][A-Za-z0-9_]*)=/.exec(current)
-    const kwIndex = kw && spec ? spec.params.findIndex((p) => p.name === kw[1]) : -1
-    const kwText = kwIndex >= 0 && kw ? kw[0] : ''
-    const entry = spec?.completions?.[kwIndex >= 0 ? kwIndex : index] ?? null
-    if (spec && entry) {
-      const argsSoFar = argumentsBefore(line, index)
-      const ask = (pattern: string) =>
-        cc.dialect.candidates(entry.source, ctx, { sceneId: cc.sceneId, viewId: cc.viewId, cwd: cc.cwd, argsSoFar, pattern })
-      // PyMOL completes the last word only, which cannot reach a name with a
-      // space in it ("my scene"). So the whole argument goes first, and the
-      // last word (a selection expression's) only when nothing starts with it.
-      let lastWord = line.replace(/.*[, ]/, '')
-      const whole = current.slice(kwText.length)
-      let pre = rebuildPrefix(line, resolved.name)
-      if (kwText !== '' && lastWord.startsWith(kwText)) {
-        lastWord = lastWord.slice(kwText.length)
-        pre += kwText
-      }
-      let pattern = lastWord
-      let candidates: string[] | null = null
-      if (whole !== lastWord) {
-        const found = ask(whole)
-        if (found?.some((c) => c.startsWith(whole))) {
-          pattern = whole
-          pre = `${resolved.name} ${argsSoFar.map((a) => `${a}, `).join('')}${kwText}`
-          candidates = found
-        }
-      }
-      candidates ??= ask(pattern)
-      if (candidates !== null) {
-        const result = completeAgainst(
-          pattern,
-          candidates,
-          entry.description,
-          entry.suffix,
-          messages,
-          false,
-        )
-        return {
-          replacement: result === null ? null : pre + result,
-          messages,
-        }
-      }
-    }
+  const spec = resolved.kind === 'found' ? commands.find((c) => c.name === resolved.name) : undefined
+  if (spec) {
+    const done = completeArgument(ctx, line, spec, cc, messages)
+    if (done) return done
   }
-
+  if (!cc.dialect.fileFallback && spec) {
+    complain(messages, ' parser: nothing to complete here.')
+    return { replacement: null, messages }
+  }
   return completeFilename(line, cc, messages)
-}
-
-/**
- * Everything before the argument being completed, split on commas.
- *
- * Only `settingValue` needs it, to know which property is being set.
- */
-function argumentsBefore(line: string, index: number): string[] {
-  const afterCommand = line.replace(/^[^ ]* /, '')
-  return afterCommand
-    .split(',')
-    .slice(0, index)
-    .map((s) => s.trim())
-}
-
-/**
- * The part of the line the completion is appended to.
- *
- * PyMOL rewrites the typed abbreviation to the full command name and
- * normalises the spacing after the last comma to exactly `", "`, so a line
- * completed twice does not accumulate whitespace.
- */
-function rebuildPrefix(line: string, commandName: string): string {
-  let pre = line.replace(/^[^ ]* /, ' ')
-  if (pre.includes(',')) {
-    pre = pre.replace(/[^, ]*$/, '')
-    pre = pre.replace(/,\s*$/, ', ')
-  } else {
-    pre = pre.replace(/[^ ]*$/, '')
-  }
-  pre = pre.replace(/^ */, '')
-  return `${commandName} ${pre}`
 }
