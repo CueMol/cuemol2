@@ -19,7 +19,8 @@
 import {
   findOp,
   invokeOp,
-  OPS,
+  isMcpOp,
+  MCP_OPS,
   readToolArgs,
   runExclusive,
   runInTxn,
@@ -29,7 +30,7 @@ import {
   txnBusy,
   txnLabel,
 } from '@renderer/worker/server/catalog'
-import type { AnyOp, OpContext, OpOutcome } from '@renderer/worker/server/catalog'
+import type { OpContext, OpOutcome } from '@renderer/worker/server/catalog'
 import { MCP_INSTRUCTIONS } from '@renderer/worker/server/catalog/guide'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { cancelStream } from '@renderer/worker/server/services/helpers/streamFetchToReader'
@@ -46,18 +47,13 @@ import type {
   McpCallResult,
 } from '../shared/mcpTypes'
 
-/** Whether `op` is offered: every op a tool caller may use, and the MCP-only ones. */
-function offered(op: AnyOp): boolean {
-  return op.expose.tool !== false || op.expose.mcp === true
-}
-
 function describe(): Result<DescribeOutcome> {
   return ok({ instructions: MCP_INSTRUCTIONS })
 }
 
 function listTools(): Result<ListToolsOutcome> {
   return ok({
-    tools: OPS.filter(offered).map((op) => ({
+    tools: MCP_OPS.map((op) => ({
       name: op.name,
       description: op.description,
       inputSchema: toolSchema(op) as unknown as Record<string, unknown>,
@@ -74,7 +70,7 @@ interface CallState {
 const calls = new Map<string, CallState>()
 
 /** An op's outcome as MCP content: the JSON text, then the picture if any. */
-export function toMcpResult(outcome: OpOutcome): McpCallResult {
+function toMcpResult(outcome: OpOutcome): McpCallResult {
   const text = serializeToolOutput(outcome)
   if (!outcome.ok) return { content: [{ type: 'text', text }], isError: true }
   const content: McpCallResult['content'] = [{ type: 'text', text }]
@@ -84,7 +80,7 @@ export function toMcpResult(outcome: OpOutcome): McpCallResult {
 
 async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<CallToolOutcome>> {
   const op = findOp(args.name)
-  if (!op || !offered(op)) return ok(mcpErrorResult(`There is no tool named ${args.name}.`))
+  if (!op || !isMcpOp(op)) return ok(mcpErrorResult(`There is no tool named ${args.name}.`))
   const scene = args.sceneId > 0 ? getSceneOrNull(ctx, args.sceneId) : null
   if (!scene) return ok(mcpErrorResult('No scene is open in CueMol. Open a scene (a tab) first.'))
   if (txnBusy()) return ok(mcpErrorResult(TXN_BUSY_MESSAGE))

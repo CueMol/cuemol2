@@ -24,6 +24,7 @@
 // The native objects are driven through raw scriptable methods, so their
 // surfaces are described by the minimal local interfaces below (the generated
 // wrapper types add nothing over these casts).
+import { fileStem } from '@shared/fileExt';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer';
@@ -79,12 +80,6 @@ export interface LoadTrajectoryArgs {
     nevery?: number;
     /** Initial renderer options (from the renderer dialog). */
     renderer: RendererOptions;
-}
-
-/** File basename with its final extension removed (path stem). */
-function fileStem(filePath: string): string {
-    const base = filePath.split(/[\\/]/).pop() ?? filePath;
-    return base.replace(/\.[^.]+$/, '');
 }
 
 /** Lower-cased final extension (without the dot). */

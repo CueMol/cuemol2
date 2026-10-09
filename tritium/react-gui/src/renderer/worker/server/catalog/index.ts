@@ -73,6 +73,18 @@ export function toolsetOps(id: ToolsetId): readonly AnyOp[] {
   return OPS.filter((op) => op.expose.tool === id)
 }
 
+/**
+ * The ops an MCP client is offered: every op a tool caller may use, toolsets
+ * included (a client picks from all its servers' tools itself), and the
+ * MCP-only ones.
+ */
+export function isMcpOp(op: AnyOp): boolean {
+  return op.expose.tool !== false || op.expose.mcp === true
+}
+
+/** The ops `isMcpOp` offers, in catalogue order. */
+export const MCP_OPS: readonly AnyOp[] = OPS.filter(isMcpOp)
+
 /** The ops a console makes commands of, in catalogue order. */
 export const CONSOLE_COMMAND_OPS: readonly AnyOp[] = OPS.filter((op) => op.expose.console)
 

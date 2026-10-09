@@ -9,9 +9,9 @@
  * and paths without each command inventing its own rules.
  */
 
+import { objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/refs'
 import { parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
@@ -95,22 +95,11 @@ export interface SceneRendererEntry {
  * something by name has to be able to see renderers too.
  */
 export function sceneRenderers(ctx: WorkerContext, sceneId: number): SceneRendererEntry[] {
-  const tree = getSceneTree(ctx, { sceneId })
-  if (!tree.ok || !tree.tree) return []
-  const out: SceneRendererEntry[] = []
-  for (const obj of tree.tree.children) {
-    if (obj.type !== 'object') continue
-    const walk = (nodes: SceneTreeNode[]): void => {
-      for (const n of nodes) {
-        if (n.type === 'renderer') {
-          out.push({ rendId: n.id, rendName: n.name, objId: obj.id, objName: obj.name })
-        }
-        if (n.children.length > 0) walk(n.children)
-      }
-    }
-    walk(obj.children)
-  }
-  return out
+  return objectNodes(ctx, sceneId).flatMap((obj) =>
+    rendererNodesOf(obj)
+      .filter((n) => n.type === 'renderer')
+      .map((n) => ({ rendId: n.id, rendName: n.name, objId: obj.id, objName: obj.name })),
+  )
 }
 
 /** The renderers whose name matches `pattern`, exactly or by wildcard. */
@@ -254,17 +243,6 @@ export const OWNED = 'pym:'
 
 /** The renderers of one object, from the scene tree. */
 export function renderersOf(ctx: WorkerContext, sceneId: number, objId: number): SceneTreeNode[] {
-  const tree = getSceneTree(ctx, { sceneId })
-  if (!tree.ok || !tree.tree) return []
-  const obj = tree.tree.children.find((c) => c.id === objId && c.type === 'object')
-  if (!obj) return []
-  const out: SceneTreeNode[] = []
-  const walk = (nodes: SceneTreeNode[]): void => {
-    for (const n of nodes) {
-      if (n.type === 'renderer') out.push(n)
-      if (n.children.length > 0) walk(n.children)
-    }
-  }
-  walk(obj.children)
-  return out
+  const obj = objectNodes(ctx, sceneId).find((c) => c.id === objId)
+  return obj ? rendererNodesOf(obj).filter((n) => n.type === 'renderer') : []
 }

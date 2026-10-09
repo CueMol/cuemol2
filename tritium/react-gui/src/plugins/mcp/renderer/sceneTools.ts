@@ -74,7 +74,7 @@ function sceneJson(s: NumberedScene) {
 }
 
 /** Carry out one scene tool call, through the tab operations the console uses too. */
-export async function callSceneTool(
+async function callSceneTool(
   tabs: SceneTabs,
   name: string,
   args: Record<string, unknown>,

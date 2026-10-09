@@ -38,7 +38,7 @@ interface McpDescribe {
 const running = new Map<string, AbortController>()
 
 /** The request ids a `notifications/cancelled` body names; empty when it is something else. */
-export function cancelledRequestIds(body: unknown): string[] {
+function cancelledRequestIds(body: unknown): string[] {
   const msgs = Array.isArray(body) ? body : [body]
   const ids: string[] = []
   for (const m of msgs) {

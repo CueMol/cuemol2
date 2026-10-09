@@ -74,7 +74,7 @@ function nodeRefOf(
 }
 
 /** Coerce a string into what the property's C++ type expects. */
-export function coerceProp(entry: GenericPropEntry, raw: string): string | number | boolean | null {
+function coerceProp(entry: GenericPropEntry, raw: string): string | number | boolean | null {
   switch (entry.type) {
     case 'boolean':
       return parseBoolText(raw)
@@ -97,7 +97,7 @@ export function coerceProp(entry: GenericPropEntry, raw: string): string | numbe
  * Shared by `set_node_prop` and the console's `set`: both take the value as
  * text and must refuse the same things the same way.
  */
-export function writeNodeProp(
+function writeNodeProp(
   ctx: WorkerContext,
   oc: OpContext,
   ref: NodeRef,

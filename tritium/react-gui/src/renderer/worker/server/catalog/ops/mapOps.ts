@@ -8,14 +8,12 @@ import { listMapRenderers as listMapRenderersService } from '@renderer/worker/se
 import { getMapRendererState } from '@renderer/worker/server/services/map/state'
 import { setMapRendererProp } from '@renderer/worker/server/services/map/props'
 import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
-import { pickMapUrl } from '@renderer/worker/shared/pdbUrls'
+import { PDB_ID_RE, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { color, enumOf, optional, real, rendererId, string } from '../params'
 
-/** A four-character PDB accession code. */
-const PDB_ID_RE = /^[0-9][0-9a-z]{3}$/i
 
 export const fetchMap = defineOp({
   name: 'fetch_map',

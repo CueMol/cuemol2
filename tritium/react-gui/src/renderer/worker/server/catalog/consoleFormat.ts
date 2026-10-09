@@ -5,7 +5,7 @@
  */
 
 /** Transcript width a wrapped list fills. */
-export const CONSOLE_WIDTH = 76
+const CONSOLE_WIDTH = 76
 
 /** Words joined with `sep`, wrapped to the transcript width. */
 export function wrapList(items: readonly string[], indent: string, sep = ', '): string[] {

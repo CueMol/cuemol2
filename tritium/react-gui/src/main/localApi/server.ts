@@ -71,19 +71,19 @@ export function send(res: http.ServerResponse, code: number, body: unknown): voi
  * machine's loopback; any other site is refused so that a page the user
  * visits cannot drive CueMol through the browser (DNS rebinding).
  */
-export function originAllowed(origin: string | undefined): boolean {
+function originAllowed(origin: string | undefined): boolean {
   if (origin === undefined) return true
   return /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(origin)
 }
 
 /** Whether the Host header names the loopback, for the same reason. */
-export function hostAllowed(host: string | undefined): boolean {
+function hostAllowed(host: string | undefined): boolean {
   if (host === undefined) return false
   return /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(host)
 }
 
 /** Constant-time comparison of the presented token. */
-export function tokenMatches(header: string | undefined, token: string): boolean {
+function tokenMatches(header: string | undefined, token: string): boolean {
   const m = /^Bearer\s+(.+)$/i.exec(header ?? '')
   if (!m || token === '') return false
   const a = Buffer.from(m[1].trim())

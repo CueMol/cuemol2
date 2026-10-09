@@ -10,9 +10,10 @@ import { loadObject } from '@renderer/worker/server/services/file/loadObject'
 import {
   getCompatibleRendererNames,
 } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
-import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
+import { PDB_ID_RE, pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { fileStem } from '@shared/fileExt'
 import { defineOp } from '../op'
 import { callerPath } from '../outputFile'
 import { enumOf, optional, path, rendererType, selection, string } from '../params'
@@ -21,8 +22,6 @@ import { applyReaderOptionText, settableReaderOptions, withCompanionFile } from 
 /** A CueMol scene file, which opens as a scene rather than loading into one. */
 const SCENE_FILE_RE = /\.qsc$/i
 
-/** A four-character PDB accession code. */
-const PDB_ID_RE = /^[0-9][0-9a-z]{3}$/i
 
 export const fetchPdb = defineOp({
   name: 'fetch_pdb',
@@ -123,7 +122,7 @@ export const loadFile = defineOp({
     if (compat.readerName === '') {
       return { ok: false, error: `No reader can handle "${filePath}". Check the path and the format.` }
     }
-    const baseName = filePath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'object'
+    const baseName = fileStem(filePath) || 'object'
     const options = buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
       objectName: args.name?.trim() || baseName,

@@ -22,7 +22,7 @@ export const CONSOLE_COMPLETE_PATH = '/console/complete'
 export const CONSOLE_INFO_PATH = '/console/info'
 
 /** The request, if `body` is one; else why not. */
-export function readConsoleRequest(
+function readConsoleRequest(
   path: string,
   body: unknown,
 ): ConsoleRunRequest | ConsoleCompleteRequest | Record<string, never> | string {

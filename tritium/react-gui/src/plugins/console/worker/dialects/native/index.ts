@@ -19,6 +19,7 @@ import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { CONSOLE_COMMAND_OPS } from '@renderer/worker/server/catalog'
+import { wrapList } from '@renderer/worker/server/catalog/consoleFormat'
 import { OP_GROUPS } from '@renderer/worker/server/catalog/op'
 import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -36,22 +37,6 @@ const GENERATED = catalogCommands(CONSOLE_COMMAND_OPS)
 
 /** The op each generated command runs, for `help`. */
 const ORIGINS = new Map<string, CommandOrigin>(GENERATED.map((g) => [g.command.name, g.origin]))
-
-/** Wrap prose to the transcript's width. */
-function wrap(text: string, width = 76): string[] {
-  const out: string[] = []
-  let line = ''
-  for (const word of text.split(/\s+/)) {
-    if (line !== '' && line.length + word.length + 1 > width) {
-      out.push(line)
-      line = word
-    } else {
-      line = line === '' ? word : `${line} ${word}`
-    }
-  }
-  if (line !== '') out.push(line)
-  return out
-}
 
 /** Print the commands of one group under its heading. */
 function printGroup(group: OpGroup, cc: Parameters<ConsoleCommand['run']>[2]): void {
@@ -100,7 +85,7 @@ const help: ConsoleCommand = {
       cc.print(cmd.summary)
       return { ok: true }
     }
-    for (const line of wrap(origin.op.description)) cc.print(line)
+    for (const line of wrapList(origin.op.description.split(/\s+/), '', ' ')) cc.print(line)
     if (origin.alias?.fixed) {
       const fixed = Object.entries(origin.alias.fixed).map(([k, v]) => `${k}=${String(v)}`).join(', ')
       cc.print(`(${origin.op.name} with ${fixed})`)

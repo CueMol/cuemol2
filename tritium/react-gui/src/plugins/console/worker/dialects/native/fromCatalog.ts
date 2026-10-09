@@ -27,7 +27,7 @@ import { resolveRef } from '@renderer/worker/server/catalog/refs'
 import type { RefKind } from '@renderer/worker/server/catalog/refs'
 
 /** The first sentence of a description, for `help`. */
-export function firstSentence(text: string): string {
+function firstSentence(text: string): string {
   const m = /^(.*?[.!?])(\s|$)/.exec(text)
   return m ? m[1] : text
 }
@@ -127,7 +127,7 @@ function readArg(
  * kind of node it is, unless the user gave that one. A node left out of a
  * parameter that can address the scene addresses the scene.
  */
-export function readConsoleArgs(
+function readConsoleArgs(
   ctx: WorkerContext,
   cc: CmdContext,
   op: AnyOp,

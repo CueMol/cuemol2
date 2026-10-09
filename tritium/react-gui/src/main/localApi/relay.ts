@@ -43,7 +43,7 @@ export async function relayed(
 }
 
 /** Longest a request may wait for the window: a long ray-traced render. */
-export const LOCAL_API_TIMEOUT_MS = 30 * 60 * 1000
+const LOCAL_API_TIMEOUT_MS = 30 * 60 * 1000
 
 export interface LocalApiRelay {
   /**

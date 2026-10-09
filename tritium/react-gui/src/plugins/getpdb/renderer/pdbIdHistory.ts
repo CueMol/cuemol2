@@ -10,20 +10,20 @@
  * `createLruStringHistory` factory.
  */
 
+import { PDB_ID_RE } from '@renderer/worker/shared/pdbUrls';
 import { createLruStringHistory } from '@renderer/utils/createLruStringHistory';
 
 export const STORAGE_KEY = 'cuemol.getPdbDialog.history';
 export const MAX_ENTRIES = 20;
 
 // Same shape as UXP openPDB.js:104-111 -- first char digit, remaining alnum.
-const PDBID_RE = /^[0-9][0-9a-z]{3}$/i;
 
 const store = createLruStringHistory({
     key: STORAGE_KEY,
     max: MAX_ENTRIES,
     normalize: (v) => v.trim().toLowerCase(),
-    guard: (v) => PDBID_RE.test(v),
-    readGuard: (v) => PDBID_RE.test(v),
+    guard: (v) => PDB_ID_RE.test(v),
+    readGuard: (v) => PDB_ID_RE.test(v),
 });
 
 export const getHistory = store.getHistory;
