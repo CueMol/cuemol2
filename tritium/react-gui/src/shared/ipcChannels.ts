@@ -137,6 +137,9 @@ export const IPC = {
   // Renderer/Worker crash reporting + fallback UI's Quit button
   CRASH_REPORT: 'app:crash-report',
   FORCE_QUIT:   'app:force-quit',
+  // The console's quit / exit: Cmd+Q, or with force a quit without the save
+  // prompts (main/appQuit.ts, shared with tritium_cli's /app/quit).
+  APP_QUIT:     'app:quit',
 
   // --- Rendering window (modeless child) relay ---
   // The render window has no CueMol worker; commands and state are relayed

@@ -25,7 +25,7 @@ const VERBS = new Set([
   // Verbs of their own, which overlap none of the above.
   'superpose', 'measure', 'merge', 'cut', 'rotate', 'pan', 'focus', 'center', 'recenter',
   'analyze', 'render', 'animate', 'renumber', 'define', 'count', 'capture', 'open', 'close',
-  'switch', 'run', 'log', 'undo', 'redo', 'help',
+  'switch', 'run', 'log', 'undo', 'redo', 'help', 'quit', 'exit',
 ])
 
 /** Builtins named after the shell, and the short form of list_scenes. */

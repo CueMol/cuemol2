@@ -54,3 +54,8 @@ node "$(node -p "require.resolve('electron/install.js')")"
 # Build react-gui with electron-vite
 cd $TRITIUM_DIR/react-gui
 pnpm run build
+
+# Bundle tritium_cli (shipped by react-gui's electron-builder, run from the repo
+# by `task run_tritium_cli`).
+cd $TRITIUM_DIR/cli
+pnpm run build

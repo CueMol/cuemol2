@@ -65,12 +65,14 @@ export interface CancelRunArgs {
 }
 
 /**
- * A scene command (`list_scenes`, `create_scene`, `switch_scene`, `close_scene`).
+ * A scene command (`list_scenes`, `create_scene`, `switch_scene`, `close_scene`),
+ * or `quit` / `exit`.
  *
  * Scenes are tabs, and the worker cannot see or make a tab, so the worker
  * only parses one and hands it back; the panel does it and then sends the
  * rest of the submission (`RunCommandOutcome.rest`), which so runs against
- * whatever scene is active by then.
+ * whatever scene is active by then. Quitting the app is handed back the same
+ * way, since only main can do it; nothing after it runs.
  */
 export type SceneRequest =
   | { op: 'list' }
@@ -79,6 +81,8 @@ export type SceneRequest =
   | { op: 'switch'; scene: string }
   /** `scene` as for switch; empty is the active scene. */
   | { op: 'close'; scene: string; discardChanges: boolean }
+  /** Quit the app as Cmd+Q does; `force` skips the save prompts. */
+  | { op: 'quit'; force: boolean }
 
 export interface RunCommandOutcome {
   /** The lines to append, in order. */

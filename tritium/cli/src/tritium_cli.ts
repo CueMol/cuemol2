@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @file tools/tritium_cli.mjs
+ * @file tritium_cli.ts
  * @description A command line for a running CueMol: the console panel's two
  * dialects (native and PyMOL), from a terminal.
  *
@@ -11,17 +11,18 @@
  * pasted. The working directory is this process's: relative paths in a
  * command are resolved against it, and `cd` moves it for the session.
  *
- * Shipped with the app as `<resources>/cli/tritium_cli` (`.cmd` on Windows),
- * a wrapper that runs this file in the app's own executable as Node
+ * Bundled by scripts/build.mjs into one file, `dist/tritium_cli.mjs`,
+ * shipped with the app as `<resources>/cli/tritium_cli` (`.cmd` on Windows),
+ * a wrapper that runs it in the app's own executable as Node
  * (ELECTRON_RUN_AS_NODE). Run that way, it starts the app when no running app
  * answers, and the app opens command line access for that run of it. From the
- * repo it needs only Node (18 or later, for fetch) and a running app with
- * Settings > Plugins > Console > Command line access on.
+ * repo, `task run_tritium_cli` builds and runs it against the dev app.
  *
  *   tritium_cli                        interactive (Tab completes, Ctrl-C stops a run)
  *   tritium_cli -c "fetch 1crn; show cartoon"
  *   tritium_cli script.cml             run a file
  *   cat cmds.txt | tritium_cli         run what is piped in
+ *   tritium_cli -c quit                quit the app (asks to save; quit --force does not)
  *   --dialect pymol                       speak PyMOL instead of native
  *   --echo                                print each command before its output
  *   --no-launch                           fail instead of starting the app
@@ -31,8 +32,17 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import * as readline from 'node:readline'
-import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import type {
+  ConsoleCompleteResponse,
+  ConsoleDialectId,
+  ConsoleInfoResponse,
+  ConsoleRunResponse,
+  ConsoleWireEntry,
+  LocalApiInfoFile,
+} from '@cuemol/console-kit'
+import { quitLine } from '@cuemol/console-kit'
+import { ensureApp, NOT_RUNNING, post, quitApp, readInfo } from './connection'
 
 const HISTORY_FILE = path.join(os.homedir(), '.tritium_cli_history')
 const HISTORY_SIZE = 1000
@@ -42,132 +52,22 @@ const USAGE = `usage: tritium_cli [--dialect native|pymol] [--echo] [--no-launch
 Runs CueMol console commands in the running app, against the active tab.
 With no COMMANDS or SCRIPT and a terminal on stdin, starts an interactive
 prompt; type "native" or "pymol" to switch dialect, "exit" or Ctrl-D to leave.
+"quit" quits CueMol itself and then leaves (it asks to save changes;
+"quit --force" or "quit force=true" does not).
 Starts CueMol3 when it is not running (unless --no-launch).`
-
-// --- Connection ---
-
-/** Where the app writes its port and token. */
-export function infoFilePath(env = process.env) {
-  return env.CUEMOL_LOCAL_API_INFO || path.join(os.homedir(), '.cuemol', 'local-api.json')
-}
-
-const NOT_RUNNING =
-  'CueMol is not running, or command line access is off ' +
-  '(Settings > Plugins > Console > Command line access).'
-
-/** The connection info, or an Error saying why there is none. */
-export function readInfo(file = infoFilePath()) {
-  let info
-  try {
-    info = JSON.parse(fs.readFileSync(file, 'utf8'))
-  } catch {
-    return new Error(NOT_RUNNING)
-  }
-  if (!Array.isArray(info.endpoints) || !info.endpoints.includes('console')) return new Error(NOT_RUNNING)
-  return info
-}
-
-/** Whether process `pid` is alive (EPERM: alive, but someone else's). */
-function alive(pid) {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (e) {
-    return e.code === 'EPERM'
-  }
-}
-
-/** Info for a live app with the console endpoint open, or null. */
-function liveInfo(file) {
-  const info = readInfo(file)
-  if (info instanceof Error) return null
-  // A crashed app leaves its file behind.
-  if (typeof info.pid === 'number' && !alive(info.pid)) return null
-  return info
-}
-
-/** The argument that makes the app open command line access for its run. */
-export const LAUNCH_FLAG = '--tritium-cli'
-
-const START_TIMEOUT_MS = 90_000
-
-function spawnDetached(execPath, args, env) {
-  spawn(execPath, args, { detached: true, stdio: 'ignore', env }).unref()
-}
-
-/**
- * Make sure an app with command line access is there, starting one if not.
- *
- * Only when run by the app's own executable (the shipped wrapper sets
- * ELECTRON_RUN_AS_NODE): then `execPath` is the app. An app that is running
- * with access off gets the same launch; the second instance hands its
- * arguments to the running one and exits, and the running one opens access.
- * The started app outlives this process.
- *
- * Resolves when the console endpoint is in the info file; rejects with an
- * Error saying why not.
- */
-export async function ensureApp({
-  env = process.env,
-  execPath = process.execPath,
-  file = infoFilePath(env),
-  launch = spawnDetached,
-  onStart = () => process.stderr.write('Starting CueMol3...\n'),
-  timeoutMs = START_TIMEOUT_MS,
-  pollMs = 300,
-} = {}) {
-  if (liveInfo(file)) return
-  if (!env.ELECTRON_RUN_AS_NODE) throw new Error(NOT_RUNNING)
-  const appEnv = { ...env }
-  delete appEnv.ELECTRON_RUN_AS_NODE
-  onStart()
-  launch(execPath, [LAUNCH_FLAG], appEnv)
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, pollMs))
-    if (liveInfo(file)) return
-  }
-  throw new Error('CueMol3 did not open command line access in time (is the Console plugin turned off?).')
-}
-
-/**
- * POST `body` to `route` and return the parsed answer.
- *
- * The info file is read per request: the app may have moved to another port
- * or made a new token since the last one.
- */
-export async function post(route, body, signal) {
-  const info = readInfo()
-  if (info instanceof Error) throw info
-  let res
-  try {
-    res = await fetch(`http://127.0.0.1:${info.port}${route}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${info.token}` },
-      body: JSON.stringify(body),
-      signal,
-    })
-  } catch (e) {
-    if (signal?.aborted) throw e
-    throw new Error(NOT_RUNNING)
-  }
-  const answer = await res.json().catch(() => ({}))
-  if (res.status === 404) throw new Error(NOT_RUNNING)
-  if (!res.ok) throw new Error(answer.error || `The app answered ${res.status}.`)
-  return answer
-}
 
 // --- Output ---
 
 /** Colour only on a terminal, and not under NO_COLOR (no-color.org). */
-const colourOn = (stream) => stream.isTTY === true && !process.env.NO_COLOR
-const sgr = (code, text, stream = process.stdout) => (colourOn(stream) ? `\x1b[${code}m${text}\x1b[0m` : text)
+const colourOn = (stream: NodeJS.WriteStream): boolean => stream.isTTY === true && !process.env.NO_COLOR
+const sgr = (code: string, text: string, stream: NodeJS.WriteStream = process.stdout): string =>
+  colourOn(stream) ? `\x1b[${code}m${text}\x1b[0m` : text
 
 // No dim or gray: both read poorly on a dark terminal. Secondary text is the
 // default colour; keys and values are picked out with `accent` (light violet).
 const STYLE = { bold: '1', red: '31', green: '32', yellow: '33', magenta: '35', cyan: '36', accent: '38;5;147' }
-const DIALECT_STYLE = { native: STYLE.cyan, pymol: STYLE.magenta }
-const DIALECT_NAME = { native: 'CueMol', pymol: 'pymol' }
+const DIALECT_STYLE: Record<ConsoleDialectId, string> = { native: STYLE.cyan, pymol: STYLE.magenta }
+const DIALECT_NAME: Record<ConsoleDialectId, string> = { native: 'CueMol', pymol: 'pymol' }
 
 // Kept as escapes so the source stays ASCII.
 const GLYPH = {
@@ -183,7 +83,7 @@ const GLYPH = {
 }
 
 /** Print transcript entries: output to stdout, warnings and errors to stderr. */
-function printEntries(entries, echo) {
+function printEntries(entries: readonly ConsoleWireEntry[], echo: boolean): void {
   for (const e of entries) {
     if (e.kind === 'echo') {
       if (echo) process.stdout.write(`${`${sgr(STYLE.accent, GLYPH.prompt)} ${e.text}`}\n`)
@@ -198,7 +98,7 @@ function printEntries(entries, echo) {
 }
 
 /** The width a string takes on screen, its colour codes not counted. */
-function visibleLength(text) {
+function visibleLength(text: string): number {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*m/g, '').length
 }
@@ -210,7 +110,7 @@ function visibleLength(text) {
  * cannot sit under a prompt that stays in view, so it is printed into the
  * scrollback and the prompt is drawn again below it, as bash (and zsh) do.
  */
-function makeCompletionList(rl) {
+function makeCompletionList(rl: readline.Interface) {
   const out = process.stdout
   let rows = 0
   return {
@@ -221,7 +121,7 @@ function makeCompletionList(rl) {
       out.write('\x1b7\x1b[1B\r\x1b[J\x1b8')
       rows = 0
     },
-    show(entries) {
+    show(entries: readonly ConsoleWireEntry[]) {
       this.clear()
       const width = out.columns || 80
       let text = ''
@@ -250,13 +150,13 @@ function makeCompletionList(rl) {
  * after `delayMs`, so a quick command prints nothing extra. Returns the stop
  * function, which also erases it.
  */
-function startSpinner(label, delayMs = 250) {
+function startSpinner(label: string, delayMs = 250): () => void {
   const err = process.stderr
   if (!err.isTTY) return () => {}
   const t0 = Date.now()
   let frame = 0
   let shown = false
-  let timer = null
+  let timer: NodeJS.Timeout | null = null
   const draw = () => {
     shown = true
     const secs = ((Date.now() - t0) / 1000).toFixed(1)
@@ -275,13 +175,13 @@ function startSpinner(label, delayMs = 250) {
 }
 
 /** A command as a spinner label: its first line, cut short. */
-function spinnerLabel(text) {
+function spinnerLabel(text: string): string {
   const first = text.trim().split('\n')[0]
   return first.length > 40 ? `${first.slice(0, 39)}${GLYPH.ellipsis}` : first
 }
 
 /** `dir` with the home directory as ~ and only the last three parts. */
-function shortDir(dir) {
+function shortDir(dir: string): string {
   const home = os.homedir()
   let d = dir === home || dir.startsWith(home + path.sep) ? `~${dir.slice(home.length)}` : dir
   const parts = d.split(path.sep)
@@ -290,14 +190,14 @@ function shortDir(dir) {
 }
 
 /** The prompt: dialect, working directory, arrow. */
-function promptText() {
+function promptText(): string {
   const name = sgr(DIALECT_STYLE[session.dialect], DIALECT_NAME[session.dialect])
   return `${name} ${shortDir(session.cwd)} ${sgr(STYLE.bold, GLYPH.prompt)} `
 }
 
 /** The banner at the top of an interactive session. */
-function printBanner(info, appInfo) {
-  const key = (t) => sgr(STYLE.accent, t)
+function printBanner(info: LocalApiInfoFile, appInfo: ConsoleInfoResponse | null): void {
+  const key = (t: string): string => sgr(STYLE.accent, t)
   const dot = ` ${GLYPH.dot} `
   // `build` is the source revision; the build number is already in `version`.
   const version = appInfo ? `${appInfo.version}${appInfo.build ? ` ${key(appInfo.build)}` : ''}` : ''
@@ -309,7 +209,8 @@ function printBanner(info, appInfo) {
       `${key('Ctrl-C')} stops a run`,
       `${key('pymol')} / ${key('native')} switch`,
       `${key('help')} lists commands`,
-      `${key('exit')} quits`,
+      `${key('exit')} leaves`,
+      `${key('quit')} quits CueMol`,
     ].join(dot)}`,
   ]
   process.stdout.write(`\n${lines.join('\n')}\n\n`)
@@ -318,14 +219,18 @@ function printBanner(info, appInfo) {
 // --- Running ---
 
 /** Session state: what the next request carries. */
-const session = { dialect: 'native', cwd: process.cwd(), echo: false }
+const session: { dialect: ConsoleDialectId; cwd: string; echo: boolean } = {
+  dialect: 'native',
+  cwd: process.cwd(),
+  echo: false,
+}
 
 /** Run `text` as one submission; resolves to whether it all ran. */
-async function run(text, signal) {
+async function run(text: string, signal: AbortSignal): Promise<boolean> {
   const stop = startSpinner(spinnerLabel(text))
-  let res
+  let res: ConsoleRunResponse
   try {
-    res = await post('/console/run', { dialect: session.dialect, text, cwd: session.cwd }, signal)
+    res = await post<ConsoleRunResponse>('/console/run', { dialect: session.dialect, text, cwd: session.cwd }, signal)
   } finally {
     stop()
   }
@@ -335,19 +240,46 @@ async function run(text, signal) {
 }
 
 /** Non-interactive: one submission, exit status 1 when any of it failed. */
-async function runOnce(text) {
+async function runOnce(text: string): Promise<number> {
   const ac = new AbortController()
   process.on('SIGINT', () => ac.abort())
+  const quit = quitLine(text)
+  if (quit) return (await requestQuit(quit.force, ac.signal)) ? 0 : 1
   try {
     return (await run(text, ac.signal)) ? 0 : 1
   } catch (e) {
     if (ac.signal.aborted) return 130
-    process.stderr.write(`${sgr(STYLE.red, e.message, process.stderr)}\n`)
+    process.stderr.write(`${sgr(STYLE.red, (e as Error).message, process.stderr)}\n`)
     return 1
   }
 }
 
-function loadHistory() {
+/**
+ * Ask the app to quit and say how it went; resolves to whether it did.
+ *
+ * A normal quit waits on the app's save prompts, which the app brings to the
+ * front. Ctrl-C stops waiting but cannot take the prompt back.
+ */
+async function requestQuit(force: boolean, signal: AbortSignal): Promise<boolean> {
+  const stop = force ? () => {} : startSpinner('Waiting for CueMol to confirm', 0)
+  try {
+    const outcome = await quitApp(force, signal)
+    stop()
+    if (outcome === 'cancelled') {
+      process.stderr.write(`${sgr(STYLE.yellow, 'Quit cancelled in CueMol.', process.stderr)}\n`)
+      return false
+    }
+    process.stdout.write('CueMol quit.\n')
+    return true
+  } catch (e) {
+    stop()
+    const text = signal.aborted ? 'Stopped waiting; CueMol may still be asking.' : (e as Error).message
+    process.stderr.write(`${sgr(signal.aborted ? STYLE.yellow : STYLE.red, text, process.stderr)}\n`)
+    return false
+  }
+}
+
+function loadHistory(): string[] {
   try {
     return fs.readFileSync(HISTORY_FILE, 'utf8').split('\n').filter((l) => l !== '').reverse().slice(0, HISTORY_SIZE)
   } catch {
@@ -355,7 +287,7 @@ function loadHistory() {
   }
 }
 
-function appendHistory(line) {
+function appendHistory(line: string): void {
   try {
     fs.appendFileSync(HISTORY_FILE, `${line}\n`, { mode: 0o600 })
   } catch {
@@ -364,13 +296,14 @@ function appendHistory(line) {
 }
 
 /** Interactive: a banner, then a prompt until exit / Ctrl-D. */
-async function interactive() {
+async function interactive(): Promise<number> {
   const info = readInfo()
-  const appInfo = await post('/console/info', {}).catch(() => null)
+  if (info instanceof Error) throw info
+  const appInfo = await post<ConsoleInfoResponse>('/console/info', {}).catch(() => null)
   printBanner(info, appInfo)
 
   /** The request in flight, for Ctrl-C. */
-  let inflight = null
+  let inflight: AbortController | null = null
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -378,8 +311,8 @@ async function interactive() {
     history: loadHistory(),
     historySize: HISTORY_SIZE,
     removeHistoryDuplicates: true,
-    completer: (line, callback) => {
-      post('/console/complete', { dialect: session.dialect, line, cwd: session.cwd })
+    completer: (line: string, callback: (err: null, result: [string[], string]) => void) => {
+      post<ConsoleCompleteResponse>('/console/complete', { dialect: session.dialect, line, cwd: session.cwd })
         .then((res) => {
           callback(null, [[], line])
           // The answer rewrites the whole line, which readline's own
@@ -424,7 +357,7 @@ async function interactive() {
     rl.close()
   })
 
-  rl.on('line', async (raw) => {
+  rl.on('line', async (raw: string) => {
     const line = raw.trim()
     if (inflight) {
       process.stderr.write('A command is still running; press Ctrl-C to stop it.\n')
@@ -433,6 +366,17 @@ async function interactive() {
     if (line === '') return prompt()
     appendHistory(line)
     if (line === 'exit') return rl.close()
+    const quit = quitLine(line)
+    if (quit) {
+      inflight = new AbortController()
+      let done = false
+      try {
+        done = await requestQuit(quit.force, inflight.signal)
+      } finally {
+        inflight = null
+      }
+      return done ? rl.close() : prompt()
+    }
     if (line === 'native' || line === 'pymol') {
       session.dialect = line
       process.stdout.write(`${`Switched to the ${line === 'pymol' ? 'PyMOL' : 'native'} dialect.`}\n`)
@@ -445,7 +389,7 @@ async function interactive() {
       ok = await run(line, inflight.signal)
     } catch (e) {
       if (inflight.signal.aborted) process.stderr.write(`${sgr(STYLE.yellow, 'Interrupted.', process.stderr)}\n`)
-      else process.stderr.write(`${sgr(STYLE.red, e.message, process.stderr)}\n`)
+      else process.stderr.write(`${sgr(STYLE.red, (e as Error).message, process.stderr)}\n`)
     } finally {
       inflight = null
     }
@@ -468,8 +412,18 @@ async function interactive() {
 // --- Entry ---
 
 /** The options on the command line, or an Error. */
-export function parseArgv(argv) {
-  const opts = { dialect: 'native', echo: false, launch: true, command: null, script: null, help: false }
+/** What the command line asked for. */
+export interface CliOptions {
+  dialect: ConsoleDialectId
+  echo: boolean
+  launch: boolean
+  command: string | null
+  script: string | null
+  help: boolean
+}
+
+export function parseArgv(argv: readonly string[]): CliOptions | Error {
+  const opts: CliOptions = { dialect: 'native', echo: false, launch: true, command: null, script: null, help: false }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '-h' || a === '--help') opts.help = true
@@ -489,16 +443,16 @@ export function parseArgv(argv) {
   return opts
 }
 
-function readStdin() {
+function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
-    const chunks = []
+    const chunks: Buffer[] = []
     process.stdin.on('data', (c) => chunks.push(c))
     process.stdin.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
     process.stdin.on('error', reject)
   })
 }
 
-async function main(argv) {
+async function main(argv: string[]): Promise<number> {
   const opts = parseArgv(argv)
   if (opts instanceof Error) {
     process.stderr.write(`tritium_cli: ${opts.message}\n${USAGE}\n`)
@@ -525,7 +479,7 @@ async function main(argv) {
     }
   } catch (e) {
     stopSpinner()
-    process.stderr.write(`${sgr(STYLE.red, e.message, process.stderr)}\n`)
+    process.stderr.write(`${sgr(STYLE.red, (e as Error).message, process.stderr)}\n`)
     return 1
   }
   stopSpinner()
@@ -547,5 +501,5 @@ async function main(argv) {
 
 // Run only when executed, so a test can import the helpers above.
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main(process.argv.slice(2)).then((code) => process.exit(code))
+  void main(process.argv.slice(2)).then((code) => process.exit(code))
 }

@@ -18,6 +18,8 @@ import { DEFAULT_LOCAL_API_PORT, TRITIUM_CLI_FLAG } from '@shared/types/localApi
 import { handleInvoke } from '../ipc/handleInvoke'
 import { getSecret, setSecret } from '../secretStore'
 import { getMainWindow } from '../windows/mainWindow'
+import { quitApp } from '../appQuit'
+import { appEndpoint } from './appEndpoint'
 import { consoleEndpoint } from './consoleEndpoint'
 import { mcpEndpoint } from './mcpEndpoint'
 import { makeLocalApiRelay } from './relay'
@@ -72,7 +74,7 @@ export function registerLocalApiHandlers(mainWindow: BrowserWindow): void {
   token = loadToken()
   const relay = makeLocalApiRelay(() => getMainWindow() ?? mainWindow)
   server = createLocalApiServer({
-    handlers: [mcpEndpoint(relay, app.getVersion()), consoleEndpoint(relay)],
+    handlers: [mcpEndpoint(relay, app.getVersion()), consoleEndpoint(relay), appEndpoint(quitApp)],
     token: () => token,
     // The owning plugin sends its stored port before switching an endpoint on.
     port: DEFAULT_LOCAL_API_PORT,
