@@ -30,6 +30,7 @@ import { NUCL_SECTIONS } from "@renderer/features/inspector/schema/nucl";
 import { CARTOON_SECTIONS } from "@renderer/features/inspector/schema/cartoon";
 import { RIBBON_SECTIONS } from "@renderer/features/inspector/schema/ribbon";
 import { ATOMINTR_SECTIONS } from "@renderer/features/inspector/schema/atomintr";
+import { NAMELABEL_SECTIONS } from "@renderer/features/inspector/schema/namelabel";
 import { CONTOUR_SECTIONS, GPU_MAPMESH_SECTIONS, ISOSURF_SECTIONS } from "@renderer/features/inspector/schema/map";
 import { SCENE_SECTIONS } from "@renderer/features/inspector/schema/scene";
 import { DENSITY_MAP_SECTIONS } from "@renderer/features/inspector/schema/densitymap";
@@ -152,6 +153,9 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // accordion sections; the dashed toggle writes all six stipple values in one
   // undo step via `onSetMany`.
   atomintr: ATOMINTR_SECTIONS,
+  // NameLabelRenderer ("*namelabel"): no UXP dialog; label text / colour /
+  // on-top / screen offset plus the font.
+  "*namelabel": NAMELABEL_SECTIONS,
   // Ribbon2Renderer ("cartoon"): UXP cartoon-propdlg tabs. Only the flat
   // top-level properties are surfaced here; the per-section shape controls live
   // on nested sub-objects (TubeSection / JctTable) and remain in the Generic tab
