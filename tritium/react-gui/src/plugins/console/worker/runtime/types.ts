@@ -95,6 +95,12 @@ export interface ArgCompletion {
   suffix?: '' | ' ' | ', '
   /** A value the user keeps typing into (a selection, a path): nothing follows it. */
   open?: boolean
+  /**
+   * For `files`: `openable` lists the files a load opens (by the readers'
+   * extensions) and directories, or every file when none of those match
+   * (zsh `_files -g`); `dirs` lists directories only.
+   */
+  files?: 'openable' | 'dirs'
 }
 
 /**

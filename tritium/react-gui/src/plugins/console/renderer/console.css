@@ -91,7 +91,9 @@
 
 /* What the last Tab listed: replaced by the next Tab, cleared by typing,
    Enter or Esc. Above the prompt and out of the transcript, so it is always
-   the latest list; long lists scroll here rather than push the prompt away. */
+   the latest list; long lists scroll here rather than push the prompt away.
+   Candidates are a column-major grid per group (columns and rows come from
+   @cuemol/console-kit layoutSections, set inline). */
 .console-completions {
   flex: 0 1 auto;
   max-height: 40%;
@@ -100,6 +102,40 @@
   background: var(--bg-input);
   border-top: 1px solid var(--border);
   color: var(--console-text);
+}
+
+.console-completion-heading {
+  color: var(--console-text-dim);
+}
+
+.console-completion-grid {
+  display: grid;
+  grid-auto-flow: column;
+  column-gap: var(--console-completion-gap);
+}
+
+.console-completion {
+  white-space: pre;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* Colour only: a bold weight the console font lacks is drawn in another
+   font, wider than the ch the grid is measured in. */
+.console-completion-dir {
+  color: var(--console-dir);
+}
+
+.console-completion-exec {
+  color: var(--console-exec);
+}
+
+.console-completion-link {
+  color: var(--console-link);
+}
+
+.console-completion.is-selected {
+  background: var(--console-selection-bg);
 }
 
 .console-prompt {

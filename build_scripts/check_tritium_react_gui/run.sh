@@ -33,3 +33,4 @@ cd $WORKSPACE/tritium
 pnpm --filter @cuemol/console-kit run typecheck
 pnpm --filter @cuemol/tritium-cli run typecheck
 pnpm --filter @cuemol/tritium-cli run test
+pnpm --filter @cuemol/console-kit run test
