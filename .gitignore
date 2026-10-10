@@ -17,6 +17,7 @@ lib/
 # ... but never application source: this Python packaging rule silently
 # swallowed a TypeScript directory once (tritium/react-gui/src/renderer/lib).
 !tritium/**/src/**/lib/
+!tritium/**/e2e/**/lib/
 lib64/
 parts/
 sdist/
