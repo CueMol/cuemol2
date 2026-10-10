@@ -85,6 +85,24 @@ describe('useRevealWindow', () => {
         h.unmount();
     });
 
+    it('signals from a hidden window even when no animation frame ever comes', () => {
+        // Chromium may produce no frames for a window that was never shown,
+        // which left it to main's 3 s fallback.
+        // Only timers: the frames stay with the stub above, which never paints.
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        const vis = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+        try {
+            const h = makeRenderHook(() => useRevealWindow(true));
+            act(() => { vi.runAllTimers(); });
+            expect(reveals()).toBe(1);
+            expect(frames).toHaveLength(0);
+            h.unmount();
+        } finally {
+            vis.mockRestore();
+            vi.useRealTimers();
+        }
+    });
+
     it('useHoldReveal holds for exactly as long as the flag is on', () => {
         let on = true;
         const hold = makeRenderHook(() => useHoldReveal(on));
