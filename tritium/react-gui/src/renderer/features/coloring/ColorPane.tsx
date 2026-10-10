@@ -53,6 +53,7 @@ import {
     PAINT_DECK_CLASS,
     PAINT_SUBMENU_ID,
     SOLID_DECK_CLASSES,
+    coloringModeLabel,
 } from '@renderer/features/coloring/colorPane/coloringModes'
 import { makeKey, parseTargetKey, type TargetKey } from '@renderer/features/coloring/colorPane/targetKey'
 import { RendererSelector } from '@renderer/features/coloring/colorPane/RendererSelector'
@@ -268,7 +269,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
     )
 
     const {
-        onSelectMode, onAddRow, onRemoveRow, onMoveRow, onRemoveAllRows,
+        onSelectMode, onAddRow, onRemoveRow, onMoveRow, onMoveRowTo, onRemoveAllRows,
         onClipboardTake, onPasteRows, onUpdateCell, onDefaultColorCommit,
         onSetColoringProp, onSetElepotProp, onSetColoringTarget,
     } = useColorPaneActions({
@@ -302,9 +303,6 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
         if (isMultiGradActive) {
             return (
                 <div className="color-deck-scroll">
-                    <div className="color-section-label">
-                        Multi-gradient coloring:
-                    </div>
                     <MultiGradSection
                         cm={cm}
                         sceneId={sceneId}
@@ -376,9 +374,10 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
                         onToggleSelect={toggleSelectedRow}
                         onSelectRange={selectRowRange}
                         onAdd={onAddRow}
-                        onRemove={onRemoveRow}
                         onMoveUp={() => onMoveRow('up')}
                         onMoveDown={() => onMoveRow('down')}
+                        onMoveTo={onMoveRowTo}
+                        onRemove={onRemoveRow}
                         onUpdate={onUpdateCell}
                         onRemoveAll={onRemoveAllRows}
                         onCut={() => onClipboardTake('cut')}
@@ -393,7 +392,6 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
             if (SOLID_DECK_CLASSES.has(className)) {
                 return (
                     <SolidDeck
-                        className={className}
                         defaultColor={defaultColor}
                         onCommit={onDefaultColorCommit}
                     />
@@ -435,6 +433,14 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
     // Also disabled while the first coloring-state fetch is in flight, so
     // the dropdown never opens with capability flags still unknown.
     const dropdownDisabled = target === null || state === null
+    const modeLabel = state?.ok
+        ? coloringModeLabel({
+              className,
+              elepot: isElepotActive,
+              multiGrad: isMultiGradActive,
+              mapSolid: isMapRenderer,
+          })
+        : 'Coloring'
 
     return (
         <ColorPickerProvider cm={cm} sceneId={sceneId}>
@@ -519,14 +525,22 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
                                 small
                                 className="h3-form-dropdown-caret"
                                 rightIcon={<span className="h3-form-caret" aria-hidden />}
-                                text="Coloring"
+                                text={modeLabel}
+                                title="Coloring mode"
                                 disabled={dropdownDisabled}
                             />
                         </Popover>
                     </div>
 
-                    {/* Deck content -- panel.coloring.deck.* */}
-                    {renderDeck()}
+                    {/* Deck content -- panel.coloring.deck.*. The Paint list
+                        runs the full pane width like the Camera list; the
+                        form decks keep the form padding. */}
+                    {className === PAINT_DECK_CLASS && state?.ok && !isMultiGradActive &&
+                    !isMapRenderer && !isElepotActive ? (
+                        renderDeck()
+                    ) : (
+                        <div className="color-deck-pad">{renderDeck()}</div>
+                    )}
                 </div>
             )}
         </div>
