@@ -30,6 +30,8 @@ bash "$SCRIPT_DIR/collect-cuemol2-runtime.sh"
 # Component Catalog sidebar view -- is not built into a shipped bundle.
 cd "$REACT_GUI"
 CUEMOL_RELEASE=1 pnpm exec electron-vite build
+# tritium_cli, bundled into ../cli/dist/ (shipped through extraResources).
+pnpm --filter @cuemol/tritium-cli run build
 
 # --- 3. electron-builder ----------------------------------------------------
 # Derive the bundle version from the master QM_VERSION (single source of truth:

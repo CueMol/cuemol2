@@ -1,5 +1,7 @@
 packages:
   - core
+  - console-kit
+  - cli
   - react-gui
 
 ignoredBuiltDependencies:

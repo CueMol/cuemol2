@@ -25,7 +25,11 @@ function describe(scene: NumberedScene): string {
   return `${scene.active ? '*' : ' '} ${scene.number}  ${scene.name}  #${scene.sceneId}${tail}`
 }
 
-export async function doSceneRequest(tabs: SceneTabs, req: SceneRequest): Promise<SceneRequestOutcome> {
+/** Do a scene command on the tab strip (`quit` is runSubmission's, not a tab's). */
+export async function doSceneRequest(
+  tabs: SceneTabs,
+  req: Exclude<SceneRequest, { op: 'quit' }>,
+): Promise<SceneRequestOutcome> {
   switch (req.op) {
     case 'list': {
       const list = await listScenes(tabs)

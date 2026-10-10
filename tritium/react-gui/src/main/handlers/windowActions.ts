@@ -1,8 +1,8 @@
 /**
  * @file main/handlers/windowActions.ts
  * @description Window-scoped requests from the renderer: the close funnel's
- * verdict, crash reports, the crash UI's force-quit, menu roles, focus, and
- * the window title.
+ * verdict, crash reports, the crash UI's force-quit, the console's quit, menu
+ * roles, focus, and the window title.
  *
  * The close verdict is the interesting one: `WINDOW_CLOSE_PROCEED` is the
  * renderer's answer to a close the main process paused, so it either confirms
@@ -14,11 +14,13 @@ import { IPC } from '@shared/ipcChannels';
 import { APP_PRODUCT_NAME } from '@shared/appInfo';
 import { handleInvoke } from '../ipc/handleInvoke';
 import { revealWindow } from '../windows/reveal';
+import { quitApp } from '../appQuit';
 import {
   setAppQuitting,
   setCloseConfirmed,
   setCloseInFlight,
   setForceQuit,
+  settleQuitOutcome,
 } from '../quitState';
 
 /** Register the window-scoped channels. */
@@ -32,6 +34,9 @@ export function registerWindowHandlers(mainWindow: BrowserWindow): void {
 
   handleInvoke(IPC.WINDOW_CLOSE_PROCEED, (_event, { proceed }) => {
     setCloseInFlight(mainWindow, false)
+    // Told before the window goes, so a waiting command line hears the
+    // verdict before the server that carries its answer is closed.
+    settleQuitOutcome(proceed ? 'quit' : 'cancelled')
     if (proceed) {
       setCloseConfirmed(mainWindow, true)
       mainWindow.close()
@@ -68,6 +73,9 @@ export function registerWindowHandlers(mainWindow: BrowserWindow): void {
     }
     app.exit(0)
   })
+
+  // The console's quit / exit (the panel, or a tritium_cli script relayed to it).
+  handleInvoke(IPC.APP_QUIT, (_event, { force }) => quitApp(force))
 
   /**
    * The two roles the menu template actually carries.

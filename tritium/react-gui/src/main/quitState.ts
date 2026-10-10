@@ -83,3 +83,26 @@ export function setForceQuit(value: boolean): void {
   forceQuit = value
 }
 
+
+// --- Waiting on the outcome of a quit (tritium_cli `quit`) ---
+
+/** How a quit sequence ended: the window went, or the user said Cancel. */
+export type QuitOutcome = 'quit' | 'cancelled'
+
+let quitWaiters: Array<(outcome: QuitOutcome) => void> = []
+
+/**
+ * Resolves with the renderer's verdict on the next close of the main window.
+ * Main is otherwise never told whether a quit it started went through, and a
+ * caller outside the app (the command line) has to say which.
+ */
+export function waitQuitOutcome(): Promise<QuitOutcome> {
+  return new Promise((resolve) => quitWaiters.push(resolve))
+}
+
+/** Hand the verdict to everyone waiting on it (IPC.WINDOW_CLOSE_PROCEED). */
+export function settleQuitOutcome(outcome: QuitOutcome): void {
+  const waiters = quitWaiters
+  quitWaiters = []
+  for (const w of waiters) w(outcome)
+}

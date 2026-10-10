@@ -45,7 +45,7 @@ export interface AppPathInfo {
   }
   /**
    * The tritium_cli command (getCliPath): the shipped wrapper when packaged,
-   * the repo's `tools/tritium_cli.mjs` in dev, empty where there is none
+   * the cli package's `dist/tritium_cli.mjs` in dev, empty where there is none
    * (AppImage).
    */
   cliPath: string

@@ -96,7 +96,7 @@ export function getApbsBinaries(): AppPathInfo['defaultApbsBinaries'] {
  * - Packaged: the wrapper staged by electron-builder.yml extraResources into
  *   `<resources>/cli`, which runs `tritium_cli.mjs` in this app's executable.
  *   Empty for an AppImage, whose resources are a mount that moves each run.
- * - Dev: the script in the repo, run with `node`.
+ * - Dev: the bundle the sibling cli package builds, run with `node`.
  */
 export function getCliPath(): string {
   if (app.isPackaged) {
@@ -104,7 +104,7 @@ export function getCliPath(): string {
     const name = process.platform === 'win32' ? 'tritium_cli.cmd' : 'tritium_cli'
     return path.join(process.resourcesPath, 'cli', name)
   }
-  return path.join(app.getAppPath(), 'tools', 'tritium_cli.mjs')
+  return path.join(app.getAppPath(), '..', 'cli', 'dist', 'tritium_cli.mjs')
 }
 
 /** Register the app-path channel. */
