@@ -3,8 +3,8 @@
  * @description When a held-back window goes on screen.
  *
  * Both windows are created hidden (`show: false` in windowChrome) and revealed
- * on the renderer's say-so -- `IPC.WINDOW_REVEAL`, sent once the first frame
- * worth looking at has painted. Electron's own `ready-to-show` fires on the
+ * on the renderer's say-so -- `IPC.WINDOW_REVEAL`, sent once the page holds
+ * what it should show (useRevealWindow.ts). Electron's own `ready-to-show` fires on the
  * document's first paint, which for these pages is an empty root element:
  * React has not mounted yet, let alone fetched what the widgets show. So
  * revealing there put an unfurnished window on screen and let the user watch
@@ -19,8 +19,8 @@ import type { BrowserWindow } from 'electron'
 
 /**
  * How long after the page's first paint to wait for the renderer's signal.
- * The main window's takes ~750 ms on this machine (its first scene has to be
- * created by the worker first); the margin is for slower ones.
+ * The main window's comes ~150 ms after it and the Rendering window's ~45 ms
+ * on this machine; the margin is for slower ones.
  */
 export const REVEAL_FALLBACK_MS = 3000
 

@@ -198,6 +198,9 @@ dead ではなく、pin テストを書いてから畳んだ。
 **空の root 要素の初回 paint** で発火する (計測: 構築 +47ms が first paint、
 中身が届くのが +176ms)。さらに `maximize()` は隠しウィンドウを表示する。
 表示のタイミングは renderer 側の申告 (`IPC.WINDOW_REVEAL`) にした。
+申告は描画済み frame を待たず task 1 つ後に送る: 表示前のウィンドウには
+animation frame が約 1 秒に 1 回しか来ず (Windows で計測、`visibilityState`
+は `"visible"` のまま)、frame 2 回待ちで表示が 1-2 秒遅れていた。
 
 **UXP parity は正しさの保証ではない。** coloring の potential 出口欠落は
 UXP にも同じバグがあり、移植で継承していた。C++ の実際の enum を確認する。
