@@ -183,8 +183,11 @@ export function useRowReorderDnd({
     )
 
     /** True when the event came from a row, which owns its own handling. */
-    const overRow = (e: React.DragEvent): boolean =>
-        e.target instanceof Element && e.target.closest(`[${rowAttr}]`) !== null
+    const overRow = useCallback(
+        (e: React.DragEvent): boolean =>
+            e.target instanceof Element && e.target.closest(`[${rowAttr}]`) !== null,
+        [rowAttr],
+    )
 
     const onListDragOver = useCallback(
         (e: React.DragEvent) => {
@@ -200,7 +203,7 @@ export function useRowReorderDnd({
                 return { name: last, side: 'after' }
             })
         },
-        [enabled, names, pinned, rowAttr],
+        [enabled, names, pinned, overRow],
     )
 
     const onListDrop = useCallback(
@@ -213,7 +216,7 @@ export function useRowReorderDnd({
             const plan = planRowDropAtEnd(names, src, pinned)
             if (plan) void onReorder(plan, src)
         },
-        [enabled, names, onReorder, pinned, reset, mime, rowAttr],
+        [enabled, names, onReorder, pinned, reset, mime, overRow],
     )
 
     const onListDragLeave = useCallback(

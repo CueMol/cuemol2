@@ -10,8 +10,9 @@
  * the rows look identical. Values live here only (lint ignoreFiles, like
  * _form-kit.css); consumers never re-choose row height / padding / state colour.
  *
- * Exception: the colour-swatch table keeps an outline hover/selected (a bg
- * highlight is unreadable over colour cells) -- see _color-panel.css.
+ * The Paint table is one of these tables too: its colour cells show a small
+ * chip next to the name (_colorpicker.css), so the background highlight reads
+ * over them.
  */
 
 /* ── (1) flex rows (custom React lists / <ListRow>) ── */
@@ -210,4 +211,40 @@
 .h3-listbox-tree .bp5-tree-node-secondary-label {
   display: flex;
   align-items: center;
+}
+
+/* ── Drop indicator for drag-to-reorder (h3-kit/list useRowReorderDnd) ──
+   A 1px accent line on the edge the dragged row will land on. Flex rows draw
+   it as a pseudo-element; table rows cannot carry positioned pseudo-elements
+   reliably, so their cells draw it as an inset shadow. */
+.h3-list-row.is-drop-before,
+.h3-list-row.is-drop-after {
+  position: relative;
+}
+
+.h3-list-row.is-drop-before::before,
+.h3-list-row.is-drop-after::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.h3-list-row.is-drop-before::before {
+  top: 0;
+}
+
+.h3-list-row.is-drop-after::after {
+  bottom: 0;
+}
+
+.h3-list-table-row.is-drop-before > * {
+  box-shadow: inset 0 1px 0 var(--accent);
+}
+
+.h3-list-table-row.is-drop-after > * {
+  box-shadow: inset 0 -1px 0 var(--accent);
 }
