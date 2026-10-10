@@ -47,6 +47,8 @@ Options:
   --view <viewId>       sidebar view to show
   --plugin <id>         plugin to switch on first (repeatable)
   --root <selector>     element to audit and screenshot
+  --click <selector>    click the first match before auditing (repeatable;
+                        add shift+ / meta+ in front for a modifier click)
   --open <file>         file to open at launch (e.g. a PDB), repeatable
   --theme <list>        comma list of dark,light        (default dark,light)
   --size <list>         comma list of WxH content sizes (default 1400x900,1000x700)
@@ -66,6 +68,7 @@ const { values: opt } = parseArgs({
     view: { type: 'string' },
     plugin: { type: 'string', multiple: true, default: [] },
     root: { type: 'string' },
+    click: { type: 'string', multiple: true, default: [] },
     open: { type: 'string', multiple: true, default: [] },
     theme: { type: 'string', default: 'dark,light' },
     size: { type: 'string', default: '1400x900,1000x700' },
@@ -308,6 +311,13 @@ try {
     const args = i === plan.dispatch.length - 1 ? lastArgs : undefined
     await waitFor(() => page.evaluate((c) => window.__cuemolE2E.has(c), id), 10000, `command ${id} registered`)
     await page.evaluate(([c, a]) => window.__cuemolE2E.dispatch(c, a), [id, args])
+  }
+
+  for (const spec of opt.click) {
+    const m = /^((?:shift|meta|alt|control)\+)*/.exec(spec)[0]
+    const modifiers = m.split('+').filter(Boolean).map((k) => k[0].toUpperCase() + k.slice(1))
+    const sel = spec.slice(m.length)
+    await page.locator(sel).first().click({ modifiers, timeout: 10000 })
   }
 
   const shots = []
