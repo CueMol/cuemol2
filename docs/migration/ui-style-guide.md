@@ -385,7 +385,7 @@ UXP機能を tritium に起こす / 新規コンポーネントを追加する�
 - [ ] **各テキスト要素に意味的 role を当てたか** (`.type-*` クラス。Blueprint 注入要素は `--type-<role>-*` 変数)。生 `--fs-*`/`--lh-*` を直書き・px 逆算で選んでいないか。同じ役割の隣接 UI と同じ role か
 - [ ] panel/section header・タブ strip・リスト行は `.panel-header` (+`-icon`/`-name`) / `.mode-bar` / `.section-header` / `.h3-list-row` を使い、box を重複定義していないか (§構造 role)
 - [ ] 既存 role に収まらない場合のみ、コンポーネントに直書きせず `_variables.css` + `_typography.css` に新 role を足したか
-- [ ] **dark / light 両テーマで確認したか** (`task run_tritium` 後にテーマ切替)
+- [ ] **dark / light 両テーマで確認したか** (`task run_tritium` 後にテーマ切替)。先に `task inspect_tritium_ui -- --target <pane/dialog>` で両テーマ・複数サイズの切れ/はみ出し/重なり/サイズ token を自動確認する ([ui-layout-inspect](../architecture/ui-layout-inspect.md))
 - [ ] `npm run lint:style` を通したか (ベースライン件数を増やしていないか)
 - [ ] 新しく `div` + CSS を書く前に、既存パターン (CLAUDE.md「新規ダイアログの追加パターン」、`SettingsPane`/`SettingRow` の宣言的UI、`components/` の既存コンポーネント) を探したか
 

@@ -244,3 +244,8 @@ architecture, it belongs here.
   `~/.cuemol/local-api.json`。console endpoint と terminal の thin client `tritium_cli`
   (native / PyMOL dialect、client が作業ディレクトリを持つ。配布物に同梱し、app が動いていなければ
   起動して接続する)。console の scene コマンド (`list_scenes` / `create_scene` / `switch_scene` / `close_scene`)。
+- [UI レイアウト検査 (`inspect_tritium_ui`)](ui-layout-inspect.md) (日本語) --
+  実装中の自己検証ツール (回帰テストではない)。Playwright `_electron` でビルド済みアプリを起動し、
+  pane / dialog を開いて dark/light × 複数サイズのスクリーンショットと DOM レイアウト監査
+  (文字の切れ・はみ出し・重なり・サイズ token 不一致) を出す。dev ビルド限定の `window.__cuemolE2E`
+  ブリッジ (`CUEMOL_E2E=1` -> `?e2e=1`)、監査の種類と除外 (`data-audit-ignore`)。

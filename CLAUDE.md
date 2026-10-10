@@ -154,6 +154,7 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 1. `cd build_scripts && task build_tritium` (electron-vite production bundle — bundler レベルの依存解決を catch。既存テストの修正もこの段階ではしない)
 2. `cd build_scripts && task run_tritium` で起動し、`launch worker OK` → `CueMol2 nodejs add-on : INITIALIZED` → `bindCanvas` → `shader program created OK` まで進むか確認
    - **起動前に必ず前のアプリが残っていないか確認し、残っていれば終了させてから起動する** (`pgrep -fl "tritium/node_modules/.pnpm/electron"` -> あれば同じ pattern で `pkill -f` して消えたのを確かめる。Electron 本体は pnpm store 配下にあり `react-gui/node_modules/electron` では一致しない)。single instance lock により新しいプロセスが即座に終了し、起動マーカーが出ないまま待ち続けることになるため
+   - UI (pane / dialog / CSS / form-kit) を変えたら、目視を依頼する前に `task inspect_tritium_ui -- --target <変更箇所>` で自己検証する (`inspect-ui` skill)。dark/light と複数サイズのスクリーンショットおよびレイアウト監査を見て、直してから 3 に進む
 3. **ユーザーによる目視確認 (E2E) を依頼し、フィードバックを反映する。挙動が確定するまで 1-3 を繰り返す**
 4. 確定後に: `cd tritium/react-gui && npm test` (Vitest) — 既存テストの追随修正と新規テストの追加
    (新規は上記「テスト方針」の最小集合に絞る)

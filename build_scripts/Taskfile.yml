@@ -296,6 +296,20 @@ tasks:
     cmds:
       - pnpm run start
 
+  inspect_tritium_ui:
+    desc: "Audit the layout of one pane/dialog of the built tritium app (screenshots + report). Usage: task inspect_tritium_ui -- --target dialog:ui.aboutDialog"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    env:
+      LIBCUEMOL2_ROOT: "{{.LIBCUEMOL2_INSTDIR}}"
+      BUNDLE_APPS:
+        sh: echo "{{.WORKDIR}}"
+      # Relative --open / --out paths resolve against where task was run.
+      INSPECT_CWD: "{{.USER_WORKING_DIR}}"
+    cmds:
+      # Launches its own instance on a throwaway profile (CUEMOL_E2E=1 +
+      # CUEMOL_FRESH_PREFS=1) and quits it; needs `task build_tritium` first.
+      - node e2e/inspect.mjs {{.CLI_ARGS}}
+
   package_tritium:
     desc: "Package the tritium app into a distributable (macOS arm64 DMG / Windows x64 NSIS installer)"
     deps:

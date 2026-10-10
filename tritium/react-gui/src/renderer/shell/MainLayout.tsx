@@ -16,6 +16,7 @@ import 'allotment/dist/style.css'
 import { usePluginContributions } from '@renderer/plugin-host'
 import { ActivityBar, BUILTIN_ACTIVITY_ITEMS, type ActivityView } from './ActivityBar'
 import { SidePanel } from './SidePanel'
+import { useE2eHook } from './E2eBridge'
 import { ContentArea } from './ContentArea'
 import { BottomPanel } from './BottomPanel'
 import { InspectorPanel } from '@renderer/features/inspector/InspectorPanel'
@@ -33,6 +34,7 @@ export const MainLayout: React.FC = () => {
   const handleActivitySelect = useCallback((view: ActivityView) => {
     setActiveView((prev) => (prev === view ? null : view))
   }, [])
+  useE2eHook('openView', setActiveView)
 
   // A plugin view can go away under the user's feet: switching the plugin off
   // in Settings unmounts its panes while its id is still the active one, and
