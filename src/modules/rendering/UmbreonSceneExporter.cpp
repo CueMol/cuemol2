@@ -56,9 +56,10 @@ namespace {
   /// Write an interleaved 8-bit image (top-left origin, ncomp = 3 or 4) to the
   /// output stream as a PNG. Mirrors PngSceneExporter's libpng setup but emits
   /// the whole framebuffer in one pass. Always tags the file as sRGB (see the
-  /// note at the png_set_sRGB_gAMA_and_cHRM call).
+  /// note at the png_set_sRGB_gAMA_and_cHRM call). `dpi` > 0 is written as
+  /// the pHYs resolution.
   void writePngToStream(qlib::OutStream *pOut, int width, int height,
-                        const unsigned char *pBytes, int ncomp)
+                        const unsigned char *pBytes, int ncomp, double dpi)
   {
     png_structp pPNG = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,
                                                umb_png_error_fn,
@@ -95,6 +96,12 @@ namespace {
     // exactly linear, and the sRGB tag tells a color-managed viewer to apply
     // the sRGB transfer curve at display time (the intended gamma look).
     png_set_sRGB_gAMA_and_cHRM(pPNG, pInfo, PNG_sRGB_INTENT_PERCEPTUAL);
+
+    // Resolution in pixels per meter, as PngSceneExporter writes it
+    if (dpi > 0.0) {
+      const png_uint_32 ppm = png_uint_32(39.37 * dpi + 0.5);
+      png_set_pHYs(pPNG, pInfo, ppm, ppm, PNG_RESOLUTION_METER);
+    }
 
     png_write_info(pPNG, pInfo);
 
@@ -148,7 +155,7 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_dAmbientFraction(-1.0),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
        m_bContactEdges(true), m_dOutlineFarDepth(0.2), m_bPerPixelBlend(true),
-       m_bTransparentBackground(false),
+       m_bTransparentBackground(false), m_dResDPI(0.0),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
        m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
        m_bGiSkyGradient(true), m_sGiGroundColor("#666666"),
@@ -417,6 +424,7 @@ LString UmbreonSceneExporter::applyRenderSettings(
   {
     const LString unit = rs.s("unit", "px");
     const double dpi = rs.r("dpi", 600.0);
+    m_dResDPI = dpi;
     setWidth(toPixels(rs.r("width", 640.0), dpi, unit));
     setHeight(toPixels(rs.r("height", 480.0), dpi, unit));
   }
@@ -516,7 +524,7 @@ void UmbreonSceneExporter::write()
   }
 
   qlib::OutStream *pOut = createOutStream();
-  writePngToStream(pOut, ow, oh, &pix[0], ncomp);
+  writePngToStream(pOut, ow, oh, &pix[0], ncomp, m_dResDPI);
   pOut->close();
   delete pOut;
 }
@@ -597,7 +605,7 @@ void UmbreonSceneExporter::endRender()
   }
 
   qlib::OutStream *pOut = createOutStream();
-  writePngToStream(pOut, ow, oh, &pix[0], ncomp);
+  writePngToStream(pOut, ow, oh, &pix[0], ncomp, m_dResDPI);
   pOut->close();
   delete pOut;
 }

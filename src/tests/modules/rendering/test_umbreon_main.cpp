@@ -3,6 +3,7 @@
 #include "qlib/qlib.hpp"
 #include "qsys/qsys.hpp"
 #include "qsys/style/StyleFile.hpp"
+#include "modules/rendering/render.hpp"
 
 // The umbreon export test drives a DisplayContext -> RendIntData, whose color
 // resolution touches qsys::StyleMgr, so qsys must be initialized with the
@@ -12,6 +13,8 @@ public:
     void SetUp() override {
         qlib::init();
         qsys::init(CUEMOL2_SYSCONFIG_PATH);
+        // RenderSettings (the exporter's render settings) is a render class
+        render::init();
 
         // qsys::init's loadStyle() resolves default_style.xml as
         // %%CONFDIR%%/data/default_style.xml; with the in-source sysconfig
@@ -30,6 +33,7 @@ public:
         }
     }
     void TearDown() override {
+        render::fini();
         qsys::fini();
         qlib::fini();
     }
