@@ -1,16 +1,20 @@
 /**
- * @file features/camera/useCameraDragDrop.ts
- * @description Reordering the camera rows by dragging one between two others.
+ * @file h3-kit/list/useRowReorderDnd.ts
+ * @description Reordering the rows of a flat list by dragging one between two
+ * others (the Camera pane, the Paint table).
  *
  * A flat list needs far less than the scene tree's drop planner: there is no
  * hierarchy, so a drop is "before" or "after" the row under the pointer, and
- * the new order is computed whole and sent as one list. As in the tree, the
- * drop indicator only appears where the drop would actually change something,
- * so what the user sees and what the drop does cannot disagree.
+ * the new order is computed whole and handed to the caller. As in the tree,
+ * the drop indicator only appears where the drop would actually change
+ * something, so what the user sees and what the drop does cannot disagree.
+ * The indicator is drawn by list-kit (`.is-drop-before` / `.is-drop-after` on
+ * the row).
  *
- * One row can be pinned to the top (`__current`). It cannot be dragged, and
- * nothing can be dropped above it -- the plan resolves a "before" on it to an
- * "after", so the indicator is drawn where the row will really land.
+ * One row can be pinned to the top (the Camera pane's `__current`). It cannot
+ * be dragged, and nothing can be dropped above it -- the plan resolves a
+ * "before" on it to an "after", so the indicator is drawn where the row will
+ * really land.
  *
  * The empty space below the rows is a drop target too, meaning "put it last".
  * Without that, reaching the end of the list required hitting the lower half
@@ -20,20 +24,17 @@
 
 import { useCallback, useRef, useState } from 'react'
 
-/** Drag payload: the dragged camera's name. */
-export const CAMERA_MIME = 'application/x-cuemol-camera'
-
-export type DropSide = 'before' | 'after'
+export type RowDropSide = 'before' | 'after'
 
 /**
  * The order after dropping `src` on `tgt`, or null when the drop is a no-op
  * (dropping a row on itself, or back where it already was).
  */
-export function planCameraReorder(
+export function planRowReorder(
     names: readonly string[],
     src: string,
     tgt: string,
-    side: DropSide,
+    side: RowDropSide,
     pinned?: string,
 ): string[] | null {
     if (src === tgt) return null
@@ -53,7 +54,7 @@ export function planCameraReorder(
  * The order after dropping `src` past the end of the list, or null when it is
  * already last (or is the pinned row, which does not move).
  */
-export function planCameraDropAtEnd(
+export function planRowDropAtEnd(
     names: readonly string[],
     src: string,
     pinned?: string,
@@ -64,24 +65,34 @@ export function planCameraDropAtEnd(
     return [...names.filter((n) => n !== src), src]
 }
 
-export interface CameraDropIndicator {
+export interface RowDropIndicator {
     name: string
-    side: DropSide
+    side: RowDropSide
 }
 
-export interface UseCameraDragDropOptions {
-    /** Row names, top to bottom. */
+export interface UseRowReorderDndOptions {
+    /** Row ids, top to bottom. */
     names: readonly string[]
-    /** Commit an accepted reorder with the complete new order. */
-    onReorder: (names: string[]) => unknown
+    /**
+     * Drag payload type, so a drop from another list (or another app) is not
+     * taken for a reorder of this one.
+     */
+    mime: string
+    /**
+     * The attribute every row carries (e.g. `data-camera-name`); an event from
+     * inside a row belongs to the row, not to the empty space below the rows.
+     */
+    rowAttr: string
+    /** Commit an accepted reorder: the complete new order and the dragged row. */
+    onReorder: (names: string[], src: string) => unknown
     /** Row fixed at the top: not draggable, and nothing drops above it. */
     pinned?: string
     /** False while a row is being renamed (the editor owns the pointer). */
     enabled?: boolean
 }
 
-export interface CameraDragDrop {
-    indicator: CameraDropIndicator | null
+export interface RowReorderDnd {
+    indicator: RowDropIndicator | null
     onDragStart: (e: React.DragEvent, name: string) => void
     onDragOver: (e: React.DragEvent, name: string) => void
     onDrop: (e: React.DragEvent, name: string) => void
@@ -93,18 +104,20 @@ export interface CameraDragDrop {
     onListDragLeave: (e: React.DragEvent) => void
 }
 
-export function useCameraDragDrop({
+export function useRowReorderDnd({
     names,
+    mime,
+    rowAttr,
     onReorder,
     pinned,
     enabled = true,
-}: UseCameraDragDropOptions): CameraDragDrop {
-    const [indicator, setIndicator] = useState<CameraDropIndicator | null>(null)
+}: UseRowReorderDndOptions): RowReorderDnd {
+    const [indicator, setIndicator] = useState<RowDropIndicator | null>(null)
     // dataTransfer.getData is unreadable during dragover, so the source is
     // also kept here (same reason as the scene tree's dragSourceRef).
     const srcRef = useRef<string | null>(null)
 
-    const sideOf = useCallback((e: React.DragEvent, el: Element): DropSide => {
+    const sideOf = useCallback((e: React.DragEvent, el: Element): RowDropSide => {
         const r = el.getBoundingClientRect()
         return e.clientY < r.top + r.height / 2 ? 'before' : 'after'
     }, [])
@@ -121,7 +134,7 @@ export function useCameraDragDrop({
                 return
             }
             srcRef.current = name
-            e.dataTransfer.setData(CAMERA_MIME, name)
+            e.dataTransfer.setData(mime, name)
             e.dataTransfer.effectAllowed = 'move'
             // Say explicitly that the row is what is being dragged. Left to
             // itself the browser picks the drag image, and what it picked was
@@ -132,7 +145,7 @@ export function useCameraDragDrop({
                 e.dataTransfer.setDragImage(row, e.clientX - r.left, e.clientY - r.top)
             }
         },
-        [enabled, pinned],
+        [enabled, pinned, mime],
     )
 
     const onDragOver = useCallback(
@@ -143,7 +156,7 @@ export function useCameraDragDrop({
             e.preventDefault()
             e.dataTransfer.dropEffect = 'move'
             const side = sideOf(e, e.currentTarget)
-            const accepted = planCameraReorder(names, src, name, side, pinned) !== null
+            const accepted = planRowReorder(names, src, name, side, pinned) !== null
             // Show the indicator where the row will land, which for the pinned
             // row is always below it.
             const shown = name === pinned ? 'after' : side
@@ -158,20 +171,23 @@ export function useCameraDragDrop({
 
     const onDrop = useCallback(
         (e: React.DragEvent, name: string) => {
-            const src = e.dataTransfer.getData(CAMERA_MIME) || srcRef.current
+            const src = e.dataTransfer.getData(mime) || srcRef.current
             const side = sideOf(e, e.currentTarget)
             reset()
             if (!enabled || !src) return
             e.preventDefault()
-            const plan = planCameraReorder(names, src, name, side, pinned)
-            if (plan) void onReorder(plan)
+            const plan = planRowReorder(names, src, name, side, pinned)
+            if (plan) void onReorder(plan, src)
         },
-        [enabled, names, onReorder, pinned, reset, sideOf],
+        [enabled, names, onReorder, pinned, reset, sideOf, mime],
     )
 
     /** True when the event came from a row, which owns its own handling. */
-    const overRow = (e: React.DragEvent): boolean =>
-        e.target instanceof Element && e.target.closest('[data-camera-name]') !== null
+    const overRow = useCallback(
+        (e: React.DragEvent): boolean =>
+            e.target instanceof Element && e.target.closest(`[${rowAttr}]`) !== null,
+        [rowAttr],
+    )
 
     const onListDragOver = useCallback(
         (e: React.DragEvent) => {
@@ -180,27 +196,27 @@ export function useCameraDragDrop({
             e.preventDefault()
             e.dataTransfer.dropEffect = 'move'
             const last = names[names.length - 1]
-            const accepted = last !== undefined && planCameraDropAtEnd(names, src, pinned) !== null
+            const accepted = last !== undefined && planRowDropAtEnd(names, src, pinned) !== null
             setIndicator((prev) => {
                 if (!accepted) return prev === null ? prev : null
                 if (prev?.name === last && prev.side === 'after') return prev
                 return { name: last, side: 'after' }
             })
         },
-        [enabled, names, pinned],
+        [enabled, names, pinned, overRow],
     )
 
     const onListDrop = useCallback(
         (e: React.DragEvent) => {
             if (overRow(e)) return
-            const src = e.dataTransfer.getData(CAMERA_MIME) || srcRef.current
+            const src = e.dataTransfer.getData(mime) || srcRef.current
             reset()
             if (!enabled || !src) return
             e.preventDefault()
-            const plan = planCameraDropAtEnd(names, src, pinned)
-            if (plan) void onReorder(plan)
+            const plan = planRowDropAtEnd(names, src, pinned)
+            if (plan) void onReorder(plan, src)
         },
-        [enabled, names, onReorder, pinned, reset],
+        [enabled, names, onReorder, pinned, reset, mime, overRow],
     )
 
     const onListDragLeave = useCallback(

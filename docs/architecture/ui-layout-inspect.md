@@ -29,6 +29,7 @@ task inspect_tritium_ui -- --target catalog
 | `--target catalog` | Component Catalog plugin を有効にして、その view を監査する |
 | `--target pane:<selector>` | 既に表示されている任意の要素を監査する |
 | `--dispatch` / `--args` / `--view` / `--plugin` / `--root` | target の構成要素を個別に指定する (組み合わせ可) |
+| `--click <selector>` | 監査の前に最初に一致した要素をクリックする (複数可。`shift+` / `meta+` を前に付けると修飾キー付き) |
 | `--open <file>` | 起動時に開くファイル。File Open オプションダイアログは primary ボタンで閉じる |
 | `--theme dark,light` / `--size 1400x900,1000x700` | 撮影する組み合わせ (表は既定値) |
 | `--ignore <selector>` | 監査から外す subtree |

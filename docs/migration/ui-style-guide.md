@@ -124,7 +124,7 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 
 **行のテキストは選択できない** (`.h3-list-row` に `user-select: none`; 行内の `input` だけ `text` に戻す)。行ラベルは文章ではなくコントロールの名前で、行をまたぐドラッグは「行を動かす」操作であるべきだから。実害も出た: drag&drop 可能なリストで、ブラウザが行ではなく**選択されたテキスト**をドラッグし、ゴーストがポインタより下の全行ラベルと隣の pane の見出しになった。ドラッグ可能な行では併せて `dataTransfer.setDragImage(row, ...)` で**ドラッグ画像に行自身を明示**する (ブラウザ任せにしない)。
 
-**例外**: color swatch テーブル (`_color-panel.css`) は、色見本セル上で背景ハイライトが読めないため hover/selected を **outline 方式**で残す (SoT 公認の例外)。
+**色を表示する行**: Paint テーブルのような色のセルを持つ行も `.h3-list-table-row` で揃える。行の中の `ColorSwatch` は kit 側 (`_colorpicker.css`) で小さい色チップ (`--icon-md` 高) になるので、背景ハイライトの上でも読める。以前は色見本が行の高さいっぱいだったため outline 方式の例外を置いていたが、廃止した。
 
 **popup menu の色を pane に持ち込まない**: Blueprint の `<Menu>` を pane に埋め込むと popover 用パレットで塗られ、周りのリストから浮く。同じ component を popover と pane の両方で使う場合 (`SelMenus` の Named / History) は、**pane 文脈だけ** listbox のトークン (`--bg-input` / `--bg-hover` / `--bg-active` + `--accent`) に上書きする。popover 側は menu の色のままでよい。
 

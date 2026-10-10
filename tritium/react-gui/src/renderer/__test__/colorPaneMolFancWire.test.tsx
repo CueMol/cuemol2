@@ -173,9 +173,9 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
 
     it('isosurf dropdown offers the paint set + Multi-gradient but no Elepot', async () => {
         const { container, unmount } = await mountWith(ISOSURF_SOLID)
-        const trigger = Array.from(
-            container.querySelectorAll('button'),
-        ).find((b) => b.textContent?.includes('Coloring')) as HTMLButtonElement
+        const trigger = container.querySelector(
+            'button[title="Coloring mode"]',
+        ) as HTMLButtonElement
         await act(async () => { trigger.click() })
         await flushPromises()
         const items = Array.from(document.querySelectorAll('.bp5-menu-item'))
@@ -198,9 +198,9 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('getPaintColoringStyles', {
             sceneId: SCENE_ID,
         })
-        const trigger = Array.from(
-            container.querySelectorAll('button'),
-        ).find((b) => b.textContent?.includes('Coloring')) as HTMLButtonElement
+        const trigger = container.querySelector(
+            'button[title="Coloring mode"]',
+        ) as HTMLButtonElement
         await act(async () => { trigger.click() })
         await flushPromises()
         const paint = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
@@ -244,9 +244,9 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
         // renderer exactly as it was and the colour on screen went on coming
         // from the object's own coloring.
         const { cm, container, unmount } = await mountWith(ISOSURF_SOLID)
-        const trigger = Array.from(
-            container.querySelectorAll('button'),
-        ).find((b) => b.textContent?.includes('Coloring')) as HTMLButtonElement
+        const trigger = container.querySelector(
+            'button[title="Coloring mode"]',
+        ) as HTMLButtonElement
         await act(async () => { trigger.click() })
         await flushPromises()
         const paint = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
