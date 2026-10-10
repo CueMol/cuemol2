@@ -36,6 +36,7 @@
 
 | ファイル | 内容 | 実装の所在 |
 |---|---|---|
+| [261010-ui-layout-inspect-plan.md](261010-ui-layout-inspect-plan.md) | Playwright `_electron` による UI レイアウトの自己検証ツール (実装中に Claude が使う。pin した表示との比較による回帰テストはしない) | `tritium/react-gui/e2e/`、`src/renderer/shell/E2eBridge.tsx`、`task inspect_tritium_ui`。仕様は `../architecture/ui-layout-inspect.md` |
 | [261005-hover-highlight-retention-plan.md](261005-hover-highlight-retention-plan.md) | 3D view の hover highlight / チップをボタン押下 (クリック) では消さず、押下点から 2px 以上のドラッグ (C++ の drag start 判定と同じ) でのみ消す | `tritium/react-gui/src/renderer/features/molview/useHoverInfoHandler.ts` |
 | [260926-pymconsole-phase3-plan.md](260926-pymconsole-phase3-plan.md) | pymconsole Phase 3: 未実装コマンドを 3 段で追加 (3a console 完結: `@`/`run`・`log`・中断、3b 既存 service の adapter: `save`・`set_color`・`spectrum`・`align`/`super`・`get_view`/`set_view`・anim、3c C++ 変更あり: `label`・`orient`・設定 alias) | **実装済み** (3a #642、3b #644、3c `label`・`load x.qsc` #645、設定 alias・`orient` #649) |
 | [260927-pymconsole-phase4-plan.md](260927-pymconsole-phase4-plan.md) | pymconsole Phase 4: 実装済み 58 コマンドの見落とし修正 (選択式中の object 名、load/fetch の renderer 名、hide 後の再表示、show/hide の PyMOL 互換、PyMOL 引数の受け付けと順番) と残りの一覧 | **実装済み** (1-5: #647、6-10 とその他: #648、見送り分の `fetch 1abcA`・`get_names enabled_only`: #649) |
