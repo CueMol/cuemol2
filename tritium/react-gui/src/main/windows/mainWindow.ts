@@ -171,10 +171,15 @@ export function createWindow(): void {
     win.webContents.send(IPC.ROTATE_GESTURE, rotation)
   })
 
+  // CUEMOL_E2E=1 (the UI layout inspector, e2e/inspect.mjs) turns on the
+  // renderer's dev-only window.__cuemolE2E bridge through the page query.
+  const e2e = process.env['CUEMOL_E2E'] === '1'
   if (process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
-    win.webContents.openDevTools({ mode: 'undocked' })
+    const url = new URL(process.env['ELECTRON_RENDERER_URL'])
+    if (e2e) url.searchParams.set('e2e', '1')
+    win.loadURL(url.toString())
+    if (!e2e) win.webContents.openDevTools({ mode: 'undocked' })
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
+    win.loadFile(join(__dirname, '../renderer/index.html'), e2e ? { query: { e2e: '1' } } : undefined)
   }
 }
