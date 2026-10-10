@@ -394,8 +394,10 @@ void PovDisplayContext::writeHeader()
   ips.format("\n");
 
   // label macro
-  ips.format("#macro make_label(aCen, aW, aH, aPixFile)\n");
+  // aAX, aAY: point of the image placed at aCen (0..1, 0,0 = bottom-left)
+  ips.format("#macro make_label(aCen, aW, aH, aAX, aAY, aPixFile)\n");
   ips.format("#local scl = _zoomx/image_width;\n");
+  ips.format("#local org = aCen - <aAX*aW, aAY*aH, 0>*scl;\n");
   ips.format("#local tex_0 = texture {\n");
   ips.format("  finish {\n");
   ips.format("   ambient 0\n");
@@ -409,15 +411,15 @@ void PovDisplayContext::writeHeader()
   ips.format("     map_type 0\n");
   ips.format("    }\n");
   ips.format("    scale <aW,aH>*scl\n");
-  ips.format("    translate aCen\n");
+  ips.format("    translate org\n");
   ips.format("  }\n");
   ips.format("}\n");
   ips.format("\n");
   ips.format("polygon { 4,\n");
-  ips.format("    aCen,\n");
-  ips.format("    aCen+<aW,0,0>*scl,\n");
-  ips.format("    aCen+<aW,aH,0>*scl,\n");
-  ips.format("    aCen+<0,aH,0>*scl\n");
+  ips.format("    org,\n");
+  ips.format("    org+<aW,0,0>*scl,\n");
+  ips.format("    org+<aW,aH,0>*scl,\n");
+  ips.format("    org+<0,aH,0>*scl\n");
   ips.format("    texture{tex_0}}\n");
   ips.format("#end\n");
   ips.format("\n");
@@ -1107,6 +1109,8 @@ void PovDisplayContext::drawPixels(const Vector4D &pos,
   img.m_pos = v;
   img.m_nWidth = img_w / getPixSclFac();
   img.m_nHeight = img_h / getPixSclFac();
+  img.m_anchorX = data.getAnchorX();
+  img.m_anchorY = data.getAnchorY();
   img.m_pData = MB_NEW gfx::PixelBuffer();
 
   img.m_pData->setWidth(img_w);
@@ -1232,9 +1236,10 @@ void PovDisplayContext::writePixData()
     fname = fname.escapeQuots();
 
     Vector4D v1 = img.m_pos;
-    ips.format("make_label(<%f, %f, %f>, %d, %d, \"%s\")\n",
+    ips.format("make_label(<%f, %f, %f>, %d, %d, %f, %f, \"%s\")\n",
                img.m_pos.x(), img.m_pos.y(), img.m_pos.z(),
-               img.m_nWidth, img.m_nHeight, fname.c_str());
+               img.m_nWidth, img.m_nHeight, img.m_anchorX, img.m_anchorY,
+               fname.c_str());
 
     ++i;
   }

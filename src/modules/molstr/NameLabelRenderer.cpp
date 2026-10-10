@@ -72,6 +72,9 @@ NameLabelRenderer::NameLabelRenderer()
 
   m_strFontStyle = "normal";
   m_strFontWgt = "normal";
+  m_bLabelOnTop = false;
+  m_nHAlign = HALIGN_LEFT;
+  m_nVAlign = VALIGN_BOTTOM;
 
   // will be called by RendererFactory
   //resetAllProps();
@@ -133,6 +136,8 @@ void NameLabelRenderer::preRender(DisplayContext *pdc)
     pview->convXYTrans(m_xdispl, m_ydispl, dv);
 
   pdc->enableDepthTest(false);
+  if (m_bLabelOnTop)
+    pdc->setDepthTestEnabled(false);
 
   pdc->pushMatrix();
   pdc->translate(dv);
@@ -144,6 +149,8 @@ void NameLabelRenderer::preRender(DisplayContext *pdc)
 void NameLabelRenderer::postRender(DisplayContext *pdc)
 {
   pdc->popMatrix();
+  if (m_bLabelOnTop)
+    pdc->setDepthTestEnabled(true);
   pdc->enableDepthTest(true);
 }
 
@@ -224,6 +231,8 @@ void NameLabelRenderer::render(DisplayContext *pdc)
   }
   
   m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
+  // HALIGN_* / VALIGN_* run 0, 1, 2 from left / bottom
+  m_pixCache.setAnchor(0.5f * m_nHAlign, 0.5f * m_nVAlign);
   pdc->color(m_color);
   m_pixCache.draw(pdc);
 
@@ -436,20 +445,11 @@ void NameLabelRenderer::invalidateAll()
 
 void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
 {
-  const LString propnm = ev.getName();
-  if (propnm.equals("color")) {
-    //invalidateDisplayCache();
-    // to be redrawn
-    qsys::ScenePtr pScene = getScene();
-    if (!pScene.isnull())
-      pScene->setUpdateFlag();
-  }
-
-  /*else if (propnm.startsWith("font_")) {
-    makeLabelImg();
-    //m_pixCache.invalidate();
-    //m_pixCache.render();
-  }*/
+  // Labels are drawn every frame outside any display list, so every
+  // property (color, offset, font, label_on_top, ...) only needs a redraw.
+  qsys::ScenePtr pScene = getScene();
+  if (!pScene.isnull())
+    pScene->setUpdateFlag();
 
   super_t::propChanged(ev);
 }

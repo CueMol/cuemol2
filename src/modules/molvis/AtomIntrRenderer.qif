@@ -30,6 +30,10 @@ runtime_class AtomIntrRenderer extends Renderer
   /// Label display flag
   property boolean showlabel => redirect(isShowLabel, setShowLabel);
   default showlabel = false;
+
+  /// Draw the labels over all geometry (not hidden by objects in front)
+  property boolean label_on_top => m_bLabelOnTop;
+  default label_on_top = false;
   
 
   /// detail level of tesselation

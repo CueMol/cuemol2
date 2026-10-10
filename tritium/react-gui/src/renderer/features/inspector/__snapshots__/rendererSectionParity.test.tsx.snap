@@ -1,5 +1,62 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`renderer Properties page > *namelabel / default 1`] = `
+{
+  "Basic settings": {
+    "rows": [
+      "Name [text] value=""",
+      "Visible [switch] {resettable} value="on"",
+      "Locked [switch] {resettable} value="on"",
+      "Material [select] {resettable} options=[] selected=",
+      "Opacity [drag-numeric] {resettable}",
+    ],
+    "writes": [
+      "Name -> set name="x"",
+      "Visible -> set visible=false",
+      "Locked -> set locked=true",
+      "Material -> (not driven)",
+      "Opacity -> (nothing)",
+    ],
+  },
+  "Font": {
+    "rows": [
+      "Font size [drag-numeric] {resettable}",
+      "Font name [select] {resettable} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
+      "Font style [select] {resettable} options=[normal|italic] selected=normal",
+      "Font weight [select] {resettable} options=[normal|bold] selected=normal",
+    ],
+    "writes": [
+      "Font size -> set font_size=13",
+      "Font name -> set font_name="serif"",
+      "Font style -> set font_style="italic"",
+      "Font weight -> set font_weight="bold"",
+    ],
+  },
+  "Name label": {
+    "rows": [
+      "Format [text] {resettable} value=""",
+      "Color [color] {resettable} value="#FFFF00"",
+      "Label on top [switch] {resettable} value="on"",
+      "Max labels [numeric] {resettable} value="50"",
+      "Horizontal align [select] {resettable} options=[left|center|right] selected=left",
+      "Vertical align [select] {resettable} options=[top|middle|bottom] selected=bottom",
+      "Offset X [drag-numeric] {resettable}",
+      "Offset Y [drag-numeric] {resettable}",
+    ],
+    "writes": [
+      "Format -> set format="x"",
+      "Color -> (nothing)",
+      "Label on top -> set label_on_top=true",
+      "Max labels -> set maxlabel=51",
+      "Horizontal align -> set halign="center"",
+      "Vertical align -> set valign="top"",
+      "Offset X -> set dispx=1 (preview) + set dispx=1 (commit)",
+      "Offset Y -> set dispy=1 (preview) + set dispy=1 (commit)",
+    ],
+  },
+}
+`;
+
 exports[`renderer Properties page > anisou / default 1`] = `
 {
   "Anisotropic displacement": {
@@ -135,12 +192,14 @@ exports[`renderer Properties page > atomintr / caps-arrow 1`] = `
       "Font name [select] {resettable,disabled} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
       "Font style [select] {resettable,disabled} options=[normal|italic] selected=normal",
       "Font weight [select] {resettable,disabled} options=[normal|bold] selected=normal",
+      "Label on top [switch] {resettable,disabled} value="on"",
     ],
     "writes": [
       "Font size -> (nothing)",
       "Font name -> set font_name="serif"",
       "Font style -> set font_style="italic"",
       "Font weight -> set font_weight="bold"",
+      "Label on top -> (nothing)",
     ],
   },
 }
@@ -216,12 +275,14 @@ exports[`renderer Properties page > atomintr / default 1`] = `
       "Font name [select] {resettable,disabled} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
       "Font style [select] {resettable,disabled} options=[normal|italic] selected=normal",
       "Font weight [select] {resettable,disabled} options=[normal|bold] selected=normal",
+      "Label on top [switch] {resettable,disabled} value="on"",
     ],
     "writes": [
       "Font size -> (nothing)",
       "Font name -> set font_name="serif"",
       "Font style -> set font_style="italic"",
       "Font weight -> set font_weight="bold"",
+      "Label on top -> (nothing)",
     ],
   },
 }
@@ -297,12 +358,14 @@ exports[`renderer Properties page > atomintr / labels-on 1`] = `
       "Font name [select] {resettable} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
       "Font style [select] {resettable} options=[normal|italic] selected=normal",
       "Font weight [select] {resettable} options=[normal|bold] selected=normal",
+      "Label on top [switch] {resettable} value="on"",
     ],
     "writes": [
       "Font size -> set font_size=13",
       "Font name -> set font_name="serif"",
       "Font style -> set font_style="italic"",
       "Font weight -> set font_weight="bold"",
+      "Label on top -> set label_on_top=true",
     ],
   },
 }
@@ -378,12 +441,14 @@ exports[`renderer Properties page > atomintr / mode-simple 1`] = `
       "Font name [select] {resettable,disabled} options=[sans-serif|serif|monospace|cursive|fantasy|Helvetica|Arial|Times New Roman|Georgia|Courier New|Verdana|Trebuchet MS|Menlo|Monaco|Consolas] selected=sans-serif",
       "Font style [select] {resettable,disabled} options=[normal|italic] selected=normal",
       "Font weight [select] {resettable,disabled} options=[normal|bold] selected=normal",
+      "Label on top [switch] {resettable,disabled} value="on"",
     ],
     "writes": [
       "Font size -> (nothing)",
       "Font name -> set font_name="serif"",
       "Font style -> set font_style="italic"",
       "Font weight -> set font_weight="bold"",
+      "Label on top -> (nothing)",
     ],
   },
 }
@@ -1453,18 +1518,6 @@ exports[`renderer Properties page > gpu_mapmesh / default 1`] = `
       "Opacity -> (nothing)",
     ],
   },
-  "Edge lines": {
-    "rows": [
-      "Edge type [select] {resettable} options=[none|edges|silhouette] selected=none",
-      "Width [drag-numeric] {resettable,disabled}",
-      "Color [color] {resettable,disabled} value="#000000"",
-    ],
-    "writes": [
-      "Edge type -> set egtype="edges"",
-      "Width -> (nothing)",
-      "Color -> (nothing)",
-    ],
-  },
   "GPU contour": {
     "rows": [
       "Center update [select] {resettable} options=[none|auto|drag] selected=drag",
@@ -1510,18 +1563,6 @@ exports[`renderer Properties page > gpu_mapmesh / region-full 1`] = `
       "Locked -> set locked=true",
       "Material -> (not driven)",
       "Opacity -> (nothing)",
-    ],
-  },
-  "Edge lines": {
-    "rows": [
-      "Edge type [select] {resettable} options=[none|edges|silhouette] selected=none",
-      "Width [drag-numeric] {resettable,disabled}",
-      "Color [color] {resettable,disabled} value="#000000"",
-    ],
-    "writes": [
-      "Edge type -> set egtype="edges"",
-      "Width -> (nothing)",
-      "Color -> (nothing)",
     ],
   },
   "GPU contour": {
@@ -2475,18 +2516,6 @@ exports[`renderer Properties page > spline / default 1`] = `
       "Locked -> set locked=true",
       "Material -> (not driven)",
       "Opacity -> (nothing)",
-    ],
-  },
-  "Edge lines": {
-    "rows": [
-      "Edge type [select] {resettable} options=[none|edges|silhouette] selected=none",
-      "Width [drag-numeric] {resettable,disabled}",
-      "Color [color] {resettable,disabled} value="#000000"",
-    ],
-    "writes": [
-      "Edge type -> set egtype="edges"",
-      "Width -> (nothing)",
-      "Color -> (nothing)",
     ],
   },
   "Spline": {

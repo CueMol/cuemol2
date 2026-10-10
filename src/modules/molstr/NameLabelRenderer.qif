@@ -47,6 +47,27 @@ runtime_class NameLabelRenderer extends Renderer
   property string format => redirect(getFormat, setFormat);
   default format = "";
 
+  /// Draw the labels over all geometry (not hidden by objects in front)
+  property boolean label_on_top => m_bLabelOnTop;
+  default label_on_top = false;
+
+  /// Which point of a label sits on its anchor (atom position + dispx/dispy)
+  enumdef halign {
+    left = molstr::NameLabelRenderer::HALIGN_LEFT;
+    center = molstr::NameLabelRenderer::HALIGN_CENTER;
+    right = molstr::NameLabelRenderer::HALIGN_RIGHT;
+  }
+  property enum halign => m_nHAlign;
+  default halign = "left";
+
+  enumdef valign {
+    bottom = molstr::NameLabelRenderer::VALIGN_BOTTOM;
+    middle = molstr::NameLabelRenderer::VALIGN_MIDDLE;
+    top = molstr::NameLabelRenderer::VALIGN_TOP;
+  }
+  property enum valign => m_nVAlign;
+  default valign = "bottom";
+
   //////////
 
   // add new label for the atom

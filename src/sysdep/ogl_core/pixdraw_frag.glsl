@@ -11,7 +11,9 @@
 
 layout(std140) uniform DrawParamsBlock {
     float frag_alpha;     // offset 0
-    float _p1, _p2, _p3; // offset 4, 8, 12 (padding for vec3 alignment)
+    float u_anchorX;      // offset 4 (must match the vertex shader's block)
+    float u_anchorY;      // offset 8
+    float _p3;            // offset 12 (padding for vec3 alignment)
     vec3  u_position;     // offset 16
     float _p4;            // offset 28
     vec2  u_size;         // offset 32

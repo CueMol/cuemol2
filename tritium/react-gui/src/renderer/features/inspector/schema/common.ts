@@ -28,13 +28,24 @@ const EGTYPE_OPTIONS = ['none', 'edges', 'silhouette']
  * Renderer types whose "Edge lines" block is suppressed. Edge / silhouette
  * lines are derived from surface geometry (see the C++ `getEdgeLineType()`
  * checks in MapSurfRenderer / MolSurfRenderer / DirectSurfRenderer), so a
- * renderer that draws only lines -- `simple` / `trace` (bond lines) and
- * `contour` (a wireframe map mesh) -- has no faces to outline and the three
- * properties are dead knobs there. They inherit `egtype` / `eglinew` /
- * `egcolor` from the C++ `Renderer` base regardless, so the gate has to be by
- * type rather than by property presence.
+ * renderer that never draws a 3D face has nothing to outline and the three
+ * properties are dead knobs there: the line-only ones -- `simple` / `trace`
+ * (bond lines), `spline` (a line strip), `contour` / `gpu_mapmesh` (a
+ * wireframe map mesh), `*selection` and `*unitcell` -- and `*namelabel`
+ * (screen-space text). They inherit `egtype` / `eglinew` / `egcolor` from the
+ * C++ `Renderer` base regardless, so the gate has to be by type rather than by
+ * property presence. `atomintr` is not listed: its 3D-tube mode has faces.
  */
-const NO_EDGE_LINE_TYPES = ['simple', 'trace', 'contour']
+const NO_EDGE_LINE_TYPES = [
+  'simple',
+  'trace',
+  'spline',
+  'contour',
+  'gpu_mapmesh',
+  '*selection',
+  '*unitcell',
+  '*namelabel',
+]
 
 export const RENDERER_COMMON_SECTIONS: SchemaSectionDef[] = [
   {

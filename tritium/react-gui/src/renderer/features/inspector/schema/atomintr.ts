@@ -24,6 +24,7 @@
 
 import { and, eq, neq, or, present } from './predicates'
 import { DashedStippleRows } from '@renderer/features/inspector/rows'
+import { FONT_STYLE_OPTIONS, FONT_WEIGHT_OPTIONS } from './labels'
 import type { SchemaSectionDef } from './types'
 
 const MODE_LABELS: Record<string, string> = {
@@ -35,14 +36,6 @@ const CAP_LABELS: Record<string, string> = {
   sphere: 'Round',
   arrow: 'Arrow',
 }
-const FONT_STYLE_OPTIONS = [
-  { label: 'Normal', value: 'normal' },
-  { label: 'Italic', value: 'italic' },
-]
-const FONT_WEIGHT_OPTIONS = [
-  { label: 'Normal', value: 'normal' },
-  { label: 'Bold', value: 'bold' },
-]
 
 /** Drawn as a simple line rather than a tube. An absent mode is the tube. */
 const isSimple = and(present('mode'), neq('mode', 'fancy'))
@@ -117,6 +110,7 @@ export const ATOMINTR_SECTIONS: SchemaSectionDef[] = [
       { kind: 'fontSelect', key: 'font_name', label: 'Font name' },
       { kind: 'stringSelect', key: 'font_style', label: 'Font style', options: FONT_STYLE_OPTIONS },
       { kind: 'stringSelect', key: 'font_weight', label: 'Font weight', options: FONT_WEIGHT_OPTIONS },
+      { kind: 'bool', key: 'label_on_top', label: 'Label on top' },
     ],
   },
 ]

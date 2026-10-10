@@ -126,6 +126,7 @@ AtomIntrRenderer::AtomIntrRenderer()
   // m_pdata = MB_NEW AtomIntrData;
 
   m_bShowLabel = false;
+  m_bLabelOnTop = false;
   m_nMode = AIR_FANCY;
   m_linew=0.3;
   //m_nEndType = END_SPHERE;
@@ -1016,6 +1017,12 @@ void AtomIntrRenderer::propChanged(qlib::LPropEvent &ev)
   else if (propnm.equals("showlabel")) {
     invalidateDisplayCache();
   }
+  else if (propnm.equals("label_on_top")) {
+    // labels are drawn every frame outside the display list
+    qsys::ScenePtr pScene = getScene();
+    if (!pScene.isnull())
+      pScene->setUpdateFlag();
+  }
 
   super_t::propChanged(ev);
 }
@@ -1377,7 +1384,11 @@ void AtomIntrRenderer::displayLabels(DisplayContext *pdc)
   if (m_bShowLabel) {
     m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
     pdc->color(m_pcolor);
+    if (m_bLabelOnTop)
+      pdc->setDepthTestEnabled(false);
     m_pixCache.draw(pdc);
+    if (m_bLabelOnTop)
+      pdc->setDepthTestEnabled(true);
   }
 }
 

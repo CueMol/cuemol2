@@ -60,6 +60,28 @@ private:
   /// "<chain> <resn><resi> <name>[:alt]" text.
   LString m_strFormat;
 
+  /// Draw the labels over all geometry, ignoring the depth test
+  bool m_bLabelOnTop;
+
+public:
+  /// Which point of a label sits on its anchor (atom position + dispx/dispy)
+  enum {
+    HALIGN_LEFT = 0,
+    HALIGN_CENTER = 1,
+    HALIGN_RIGHT = 2,
+  };
+  enum {
+    VALIGN_BOTTOM = 0,
+    VALIGN_MIDDLE = 1,
+    VALIGN_TOP = 2,
+  };
+
+private:
+  /// Horizontal alignment of the labels on their anchor (HALIGN_*)
+  int m_nHAlign;
+  /// Vertical alignment of the labels on their anchor (VALIGN_*)
+  int m_nVAlign;
+
   /// label pixbuf cache
   gfx::LabelCacheImpl m_pixCache;
 
