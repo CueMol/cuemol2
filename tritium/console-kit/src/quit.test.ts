@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { quitLine } from '@cuemol/console-kit'
+import { quitLine } from './quit'
 
 describe('quitLine', () => {
   it('reads force in every spelling, and leaves exit and bad values to the app', () => {

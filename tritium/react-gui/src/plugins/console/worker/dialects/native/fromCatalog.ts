@@ -213,8 +213,10 @@ interface RelatedParams {
  * Where Tab finds one parameter's values, by its semantic kind. A source that
  * depends on another argument names that parameter; the value typed for it
  * reaches the source by name (`SourceContext.bound`), however it was typed.
+ *
+ * @param opens - a path a load opens: its readers' files come first
  */
-function completionOf(p: Param<unknown>, rel: RelatedParams): ArgCompletion | null {
+function completionOf(p: Param<unknown>, rel: RelatedParams, opens = false): ArgCompletion | null {
   if (p.kind === 'enum' && p.values) return { source: `enum:${p.values.join('|')}`, description: 'value' }
   if (p.kind === 'boolean') return { source: 'enum:true|false', description: 'value' }
   switch (p.semantic) {
@@ -247,7 +249,7 @@ function completionOf(p: Param<unknown>, rel: RelatedParams): ArgCompletion | nu
     case 'propPath':
       return { source: 'propPath', description: 'property' }
     case 'path':
-      return { source: 'files', description: 'file' }
+      return opens ? { source: 'files', description: 'file', files: 'openable' } : { source: 'files', description: 'file' }
     default:
       // Free text (a name, a chain, a property) has nothing to offer, and
       // listing files for it would only mislead.
@@ -289,7 +291,8 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
     mode: 'strict',
     mutates: op.mutates,
     summary: alias?.summary ?? firstSentence(op.description),
-    completions: names.map((n) => completionOf(params[n], related(params))),
+    // The file a load op opens lists what it can open first.
+    completions: names.map((n) => completionOf(params[n], related(params), n === 'path' && op.name.startsWith('load'))),
     ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(bound) ?? false } : {}),
     async run(ctx, bound, cc): Promise<CmdOutcome> {
       const args = readConsoleArgs(ctx, cc, op, bound, alias)

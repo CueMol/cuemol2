@@ -10,14 +10,19 @@
  * the whole line. It does not insert at the caret. PyMOL's own GUI then
  * replaces the field and drops the caret at the end, and so does ours.
  *
- * Three outcomes, all of them PyMOL's:
+ * Three outcomes:
  *
  * - one candidate -> the line is rewritten with it, plus the argument's
- *   separator (` ` or `, `). This is the only place a separator is added.
- * - several -> the list is printed and the line is extended to their common
- *   prefix, but only if that is strictly longer than what was typed. No
- *   separator.
+ *   separator (` ` or `, `).
+ * - several -> they are returned as candidates, each with the line it
+ *   stands for (separator included), for the client to list and walk as zsh
+ *   does (@cuemol/console-kit completion.ts); the line is extended to their
+ *   common prefix, but only if that is strictly longer than what was typed.
  * - none -> a line saying so, and the line is left alone.
+ *
+ * File names follow zsh rather than PyMOL: dot files only when a dot is
+ * typed, a case-insensitive retry when nothing matches as typed, for a load
+ * the files it opens first, for `cd` directories only (ArgCompletion.files).
  *
  * Anything the catalogue cannot answer falls through to filenames, which is
  * why `load <TAB>` works without `load` declaring anything.
@@ -31,15 +36,20 @@ import { interpretShortcut } from '../parser/shortcut'
 import { resolvePath } from '../runtime/paths'
 import { assignArgs, nextPositional } from '../parser/bindArgs'
 import { scanArgs } from '../parser/parseArgs'
-import type { CompletionItem, ConsoleCommand, ConsoleDialect } from '../runtime/types'
-import { commonPrefix, formatColumns } from './columns'
+import type { ArgCompletion, CompletionItem, ConsoleCommand, ConsoleDialect } from '../runtime/types'
+import { commonPrefix } from '@cuemol/console-kit'
+import type { CandidateKind, CompletionCandidate } from '@cuemol/console-kit'
+import { hasExt } from '@shared/fileExt'
+import { openableExtensions } from '@renderer/worker/server/catalog/fileLoad'
 
 /** What Tab produced. */
 export interface CompletionOutcome {
   /** The whole line, rewritten. Null leaves the line as typed. */
   replacement: string | null
-  /** Lines to print: the candidate list, or why there was nothing. */
+  /** Why there was nothing to complete. */
   messages: ConsoleEntry[]
+  /** Two or more candidates, for the client to list and walk. */
+  candidates?: CompletionCandidate[]
 }
 
 /** Where a completion runs. */
@@ -52,123 +62,121 @@ export interface CompletionContext {
   dialect: ConsoleDialect
 }
 
-function say(messages: ConsoleEntry[], text: string): void {
-  messages.push({ kind: 'output', text })
-}
-
 function complain(messages: ConsoleEntry[], text: string): void {
   messages.push({ kind: 'warning', text })
 }
 
 /**
- * Resolve one pattern against one candidate list.
+ * The command word against the command names.
  *
- * `complete_sc` in PyMOL. Returns the text to put in place of `pattern`, or
- * null to leave it alone.
+ * `complete_sc` in PyMOL, with the list returned instead of printed.
  */
-function completeAgainst(
-  pattern: string,
-  candidates: readonly string[],
-  description: string,
-  suffix: string,
-  messages: ConsoleEntry[],
-  prefixSearchOnExact: boolean,
-): string | null {
-  const found = interpretShortcut(pattern, candidates, { prefixSearchOnExact })
+function completeCommand(line: string, names: readonly string[], messages: ConsoleEntry[]): CompletionOutcome {
+  const found = interpretShortcut(line, names, { prefixSearchOnExact: true })
   if (found.kind === 'none') {
-    complain(messages, ` parser: no matching ${description}.`)
-    return null
+    complain(messages, ' parser: no matching commands.')
+    return { replacement: null, messages }
   }
-  if (found.kind === 'found') return found.name + suffix
+  if (found.kind === 'found') return { replacement: `${found.name} `, messages }
 
   // Names starting with an underscore are internal: they are neither listed
   // nor allowed to hold the common prefix back, though an exact one still
   // resolves above.
   const shown = found.candidates.filter((c) => !c.startsWith('_'))
-  say(messages, ` parser: matching ${description}:`)
-  for (const line of formatColumns(shown)) say(messages, line)
-
   const prefix = commonPrefix(shown)
-  // Strictly longer: extending to what is already typed would look like a
-  // no-op with a list printed under it, which is exactly what PyMOL shows.
-  return prefix.length > pattern.length ? prefix : null
+  return {
+    // Strictly longer: extending to what is already typed is a no-op.
+    replacement: prefix.length > line.length ? prefix : null,
+    messages,
+    candidates: shown.map((c) => ({ label: c, replacement: `${c} `, kind: 'command', group: 'commands' })),
+  }
 }
 
-/** Directory entries starting with `stem`, directories marked with a slash. */
-function fileCandidates(dir: string, stem: string): string[] {
+/**
+ * The longest prefix `items` share. When they matched `pattern` only
+ * ignoring case (fileEntries' retry), case is ignored here too and the
+ * first item's spelling is taken.
+ */
+function sharedPrefix(items: readonly string[], pattern: string): string {
+  if (items.every((t) => t.startsWith(pattern))) return commonPrefix(items)
+  const folded = commonPrefix(items.map((t) => t.toLowerCase()))
+  return items[0].slice(0, folded.length)
+}
+
+/** A directory entry as listed: its name (a directory with a slash) and kind. */
+interface FileEntry {
+  name: string
+  kind: CandidateKind
+}
+
+/** What an entry is: a directory (a link to one too, since it continues a path), a link, an executable, a file. */
+function kindOf(full: string): CandidateKind {
+  try {
+    const st = fs.statSync(full)
+    if (st.isDirectory()) return 'dir'
+    if (fs.lstatSync(full).isSymbolicLink()) return 'link'
+    return (st.mode & 0o111) !== 0 ? 'exec' : 'file'
+  } catch {
+    // A dangling link: listed, but there is nothing to continue into.
+    return 'link'
+  }
+}
+
+/** Which entries to list: every one (null), directories only, or files with these extensions first. */
+type FileKinds = null | 'dirs' | readonly string[]
+
+/**
+ * Entries of `dir` starting with `stem`, as zsh offers them: dot files only
+ * when `stem` starts with a dot, and ignoring case when nothing matches as
+ * typed. With extensions, the files carrying one of them and the
+ * directories, unless that leaves nothing.
+ */
+function fileEntries(dir: string, stem: string, kinds: FileKinds): FileEntry[] {
   let names: string[]
   try {
     names = fs.readdirSync(dir)
   } catch {
     return []
   }
-  return names
-    .filter((n) => n.startsWith(stem))
-    .sort()
-    .map((n) => {
-      try {
-        // A trailing slash literally, not path.sep -- the console's paths are
-        // written the way PyMOL writes them.
-        return fs.statSync(path.join(dir, n)).isDirectory() ? `${n}/` : n
-      } catch {
-        return n
-      }
-    })
+  const visible = stem.startsWith('.') ? names : names.filter((n) => !n.startsWith('.'))
+  let hits = visible.filter((n) => n.startsWith(stem))
+  if (hits.length === 0) {
+    const folded = stem.toLowerCase()
+    hits = visible.filter((n) => n.toLowerCase().startsWith(folded))
+  }
+  const entries = hits.sort().map((n) => {
+    const kind = kindOf(path.join(dir, n))
+    // A trailing slash literally, not path.sep -- the console's paths are
+    // written the way PyMOL writes them.
+    return { name: kind === 'dir' ? `${n}/` : n, kind }
+  })
+  if (kinds === null) return entries
+  if (kinds === 'dirs') return entries.filter((e) => e.kind === 'dir')
+  const preferred = entries.filter((e) => e.kind === 'dir' || kinds.some((x) => hasExt(e.name, x)))
+  return preferred.length > 0 ? preferred : entries
+}
+
+/**
+ * A name as it can be typed in an argument: quoted when it holds what ends
+ * one (`,` `;`) or would be trimmed (spaces at either end). Spaces inside
+ * need nothing.
+ */
+function typeable(name: string): string {
+  if (!/[,;]|^\s|\s$/.test(name)) return name
+  return name.includes('"') ? `'${name}'` : `"${name}"`
 }
 
 /**
  * Filename completion, PyMOL's fallback for everything the catalogue does
  * not describe.
  */
-function completeFilename(
-  line: string,
-  cc: CompletionContext,
-  messages: ConsoleEntry[],
-): CompletionOutcome {
+function completeFilename(line: string, cc: CompletionContext, messages: ConsoleEntry[]): CompletionOutcome {
   const lastSep = Math.max(line.lastIndexOf(','), line.lastIndexOf('@'))
   const loc = lastSep >= 0 ? lastSep + 1 : line.indexOf(' ') + 1
   const pre = line.slice(0, loc)
   const typed = line.slice(loc).replace(/^\s+/, '')
-
-  // Environment variables, as PyMOL does when nothing on disk matches.
-  if (typed.startsWith('$')) {
-    const vars = Object.keys(process.env)
-      .filter((v) => v.startsWith(typed.slice(1)))
-      .sort()
-      .map((v) => `$${v}`)
-    if (vars.length === 1) return { replacement: pre + vars[0], messages }
-    if (vars.length > 1) {
-      say(messages, ' parser: matching variables:')
-      for (const l of formatColumns(vars)) say(messages, l)
-      const prefix = commonPrefix(vars)
-      return { replacement: prefix.length > typed.length ? pre + prefix : null, messages }
-    }
-  }
-
-  const absolute = resolvePath(cc.cwd, typed)
-  // A path ending in a separator is a directory to list, not a stem to match.
-  const endsInDir = typed === '' || typed.endsWith('/') || typed.endsWith(path.sep)
-  const dir = endsInDir ? absolute : path.dirname(absolute)
-  const stem = endsInDir ? '' : path.basename(absolute)
-  const hits = fileCandidates(dir, stem)
-
-  if (hits.length === 0) {
-    complain(messages, ' parser: no matching files.')
-    return { replacement: null, messages }
-  }
-  // What the user typed, minus the part being completed: kept verbatim so a
-  // relative path stays relative and `~` stays `~`.
-  const typedDir = typed.slice(0, typed.length - stem.length)
-  if (hits.length === 1) {
-    return { replacement: pre + typedDir + hits[0], messages }
-  }
-  say(messages, ' parser: matching files:')
-  for (const l of formatColumns(hits)) say(messages, l)
-  const prefix = commonPrefix(hits)
-  return {
-    replacement: prefix.length > stem.length ? pre + typedDir + prefix : null,
-    messages,
-  }
+  const group: Group = { heading: 'files', pattern: typed, regionStart: loc, offers: fileOffers(typed, cc.cwd, '', null), plain: true }
+  return settle([group], () => pre, false, typed, messages)
 }
 
 /** A candidate as it is offered: its text, and what follows it once chosen. */
@@ -176,6 +184,9 @@ interface Offer {
   text: string
   /** Appended when this one is chosen alone. */
   sep: string
+  /** As listed, when not `text` (a file's own name, not its path). */
+  label?: string
+  kind: CandidateKind
 }
 
 /**
@@ -193,26 +204,45 @@ interface Group {
 }
 
 /** Files under the typed path; a directory continues the path. */
-function fileOffers(typed: string, cwd: string, sep: string): Offer[] {
+function fileOffers(typed: string, cwd: string, sep: string, kinds: FileKinds): Offer[] {
   if (typed.startsWith('$')) {
     return Object.keys(process.env)
       .filter((v) => v.startsWith(typed.slice(1)))
       .sort()
-      .map((v) => ({ text: `$${v}`, sep: '' }))
+      .map((v) => ({ text: `$${v}`, sep: '', kind: 'variable' as const }))
   }
-  const absolute = resolvePath(cwd, typed)
-  const endsInDir = typed === '' || typed.endsWith('/') || typed.endsWith(path.sep)
-  const dir = endsInDir ? absolute : path.dirname(absolute)
-  const stem = endsInDir ? '' : path.basename(absolute)
+  // The stem is what follows the last slash as typed: resolving first would
+  // turn `.` (a dot file to come) into the current directory's own name.
+  const cut = Math.max(typed.lastIndexOf('/'), typed.lastIndexOf(path.sep)) + 1
+  const stem = typed.slice(cut)
   // What was typed of the directory stays as typed: relative stays relative, `~` stays `~`.
-  const typedDir = typed.slice(0, typed.length - stem.length)
-  return fileCandidates(dir, stem).map((n) => ({ text: typedDir + n, sep: n.endsWith('/') ? '' : sep }))
+  const typedDir = typed.slice(0, cut)
+  const dir = resolvePath(cwd, typedDir === '' ? '.' : typedDir)
+  return fileEntries(dir, stem, kinds).map((e) => ({
+    text: typedDir + typeable(e.name),
+    sep: e.kind === 'dir' ? '' : sep,
+    label: e.name,
+    kind: e.kind,
+  }))
+}
+
+/** Which entries a `files` entry lists (ArgCompletion.files). */
+function kindsOf(ctx: WorkerContext, entry: ArgCompletion | null): FileKinds {
+  if (entry?.files === 'dirs') return 'dirs'
+  if (entry?.files !== 'openable') return null
+  try {
+    return openableExtensions(ctx)
+  } catch {
+    // No stream manager (no app behind the worker): every file.
+    return null
+  }
 }
 
 /** The candidates of a group that the pattern selects. */
 function matchesOf(g: Group): string[] {
   const texts = g.offers.map((o) => o.text)
-  if (g.plain) return texts.filter((t) => t.startsWith(g.pattern))
+  // Files are matched as they are listed (fileEntries), case retry included.
+  if (g.plain) return texts
   const found = interpretShortcut(g.pattern, texts, { prefixSearchOnExact: false })
   return found.kind === 'found' ? [found.name] : found.kind === 'ambiguous' ? found.candidates : []
 }
@@ -269,10 +299,14 @@ function completeArgument(
     const sepFor = (then: CompletionItem['then']) =>
       then === 'continue' || entry?.open ? '' : (entry?.suffix ?? (moreAfter(target) ? ', ' : ''))
     const toOffers = (items: readonly (string | CompletionItem)[]) =>
-      items.map((it) => (typeof it === 'string' ? { text: it, sep: sepFor('next') } : { text: it.text, sep: sepFor(it.then) }))
+      items.map((it): Offer =>
+        typeof it === 'string'
+          ? { text: it, sep: sepFor('next'), kind: 'value' }
+          : { text: it.text, sep: sepFor(it.then), kind: 'value' },
+      )
 
     if (entry?.source === 'files') {
-      groups.push({ heading: 'files', pattern: text, regionStart: current.valueStart, offers: fileOffers(text, cc.cwd, sepFor('next')), plain: true })
+      groups.push({ heading: 'files', pattern: text, regionStart: current.valueStart, offers: fileOffers(text, cc.cwd, sepFor('next'), kindsOf(ctx, entry)), plain: true })
     } else if (entry) {
       const ask = (pattern: string) =>
         cc.dialect.candidates(entry.source, ctx, { sceneId: cc.sceneId, viewId: cc.viewId, cwd: cc.cwd, bound, pattern })
@@ -291,7 +325,7 @@ function completeArgument(
     }
     if (valuesDeclined && cc.dialect.fileFallback) {
       // PyMOL's own fallback: a file name is left as typed, nothing after it.
-      groups.push({ heading: 'files', pattern: text, regionStart: current.valueStart, offers: fileOffers(text, cc.cwd, ''), plain: true })
+      groups.push({ heading: 'files', pattern: text, regionStart: current.valueStart, offers: fileOffers(text, cc.cwd, '', null), plain: true })
     }
   }
 
@@ -303,13 +337,30 @@ function completeArgument(
         heading: 'argument',
         pattern: text,
         regionStart: current.start,
-        offers: open.map((p) => ({ text: `${p.name}=`, sep: '' })),
+        offers: open.map((p): Offer => ({ text: `${p.name}=`, sep: '', kind: 'argument' })),
       })
     }
   }
 
   if (groups.length === 0) return null
+  return settle(groups, (at) => prefixAt(line, at, spec.name), known, text, messages)
+}
 
+/**
+ * The outcome of the groups the argument being typed can be from: one match
+ * written in, several returned as candidates, none said.
+ *
+ * @param prefixOf - the line up to where a group's choice goes
+ * @param known - whether the argument goes to a known parameter; then a
+ *   lone parameter name is listed rather than written over an empty value
+ */
+function settle(
+  groups: Group[],
+  prefixOf: (at: number) => string,
+  known: boolean,
+  text: string,
+  messages: ConsoleEntry[],
+): CompletionOutcome {
   const matched = groups.map((g) => ({ g, hits: matchesOf(g) })).filter((m) => m.hits.length > 0)
   const total = matched.reduce((n, m) => n + m.hits.length, 0)
   if (total === 0) {
@@ -323,29 +374,31 @@ function completeArgument(
   if (total === 1 && !onlyName) {
     const { g, hits } = matched[0]
     const offer = g.offers.find((o) => o.text === hits[0])
-    return { replacement: prefixAt(line, g.regionStart, spec.name) + hits[0] + (offer?.sep ?? ''), messages }
+    return { replacement: prefixOf(g.regionStart) + hits[0] + (offer?.sep ?? ''), messages }
   }
 
-  // Several: list them by kind. Names starting with an underscore are
-  // internal -- not listed, and not holding the common prefix back.
+  // Several, by kind. Names starting with an underscore are internal --
+  // not listed, and not holding the common prefix back.
+  const candidates: CompletionCandidate[] = []
   const shown: string[] = []
   for (const { g, hits } of matched) {
-    const visible = hits.filter((h) => !h.startsWith('_'))
-    if (visible.length === 0) continue
-    say(messages, ` parser: matching ${g.heading}:`)
-    for (const l of formatColumns(visible)) say(messages, l)
-    shown.push(...visible)
+    const head = prefixOf(g.regionStart)
+    for (const h of hits) {
+      if (h.startsWith('_')) continue
+      const offer = g.offers.find((o) => o.text === h)
+      candidates.push({ label: offer?.label ?? h, replacement: head + h + (offer?.sep ?? ''), kind: offer?.kind ?? 'value', group: g.heading })
+      shown.push(h)
+    }
   }
   // The line grows to what they share -- strictly longer than what was
   // typed, else it would look like a no-op -- when they replace the same part.
   const first = matched[0].g
-  if (onlyName || !matched.every((m) => m.g.regionStart === first.regionStart && m.g.pattern === first.pattern)) {
-    return { replacement: null, messages }
-  }
-  const prefix = commonPrefix(shown)
+  const samePart = matched.every((m) => m.g.regionStart === first.regionStart && m.g.pattern === first.pattern)
+  const prefix = onlyName || !samePart ? '' : sharedPrefix(shown, first.pattern)
   return {
-    replacement: prefix.length > first.pattern.length ? prefixAt(line, first.regionStart, spec.name) + prefix : null,
+    replacement: prefix.length > first.pattern.length ? prefixOf(first.regionStart) + prefix : null,
     messages,
+    candidates,
   }
 }
 
@@ -367,10 +420,7 @@ export function completeLine(
   // --- the command word ---
   // PyMOL's test exactly: no space and no `@` anywhere means we are still on
   // the keyword. A leading space is therefore already argument territory.
-  if (!line.includes(' ') && !line.includes('@')) {
-    const result = completeAgainst(line, names, 'commands', ' ', messages, true)
-    return { replacement: result === null ? null : result, messages }
-  }
+  if (!line.includes(' ') && !line.includes('@')) return completeCommand(line, names, messages)
 
   // --- an argument ---
   const word = line.replace(/ .*/, '')

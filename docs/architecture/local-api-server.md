@@ -132,7 +132,8 @@ scene は `discardChanges: true` が無いと閉じない (説明文で「捨て
   既定 off) が on のとき、または `--tritium-cli` 付きで起動された app の起動中 (下記)。
 - **wire 形式** (`shared/types/localApi.ts`):
   - `POST /console/run` `{ dialect, text, cwd }` -> `{ entries, aborted, interrupted, cwd }`
-  - `POST /console/complete` `{ dialect, line, cwd }` -> `{ replacement, messages }`
+  - `POST /console/complete` `{ dialect, line, cwd }` -> `{ replacement, messages, candidates? }`
+    ([console-completion.md](console-completion.md))
   - `POST /console/info` `{}` -> `{ version, build }` (libcuemol2 の version と source revision。
     client の banner 用)
   - body の形は main で検査し (`cwd` は絶対パス)、だめなら 400。worker の失敗 (busy 等) は 409 `{ error }`。
@@ -178,7 +179,7 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
   ディレクトリにする。素の `node` で起動したときと `--no-launch` では起動せず、案内を出して終わる。
 - 対話: 起動時に banner (version、port、pid、操作の案内) を出す。prompt は `CueMol <dir> ❯` /
   `pymol <dir> ❯` (dialect 名は色分け)、`native` / `pymol` で dialect 切り替え、Tab 補完
-  (`/console/complete` の返す行全体で入力行を書き換える)、履歴 `~/.tritium_cli_history`、
+  (zsh 式の一覧とメニュー。[console-completion.md](console-completion.md))、履歴 `~/.tritium_cli_history`、
   待機中は spinner と経過秒、1 秒以上かかったコマンドは `✓` / `✗` と所要時間を出す。
   実行中の Ctrl-C は中断、待機中は入力行の消去 / 終了。`exit` か Ctrl-D で抜ける (app は残る)。
   `quit` (`--force` / `force=true` で確認なし) は app ごと終了し、CLI も終わる (§5.4)。

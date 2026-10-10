@@ -104,6 +104,14 @@
      lines overlap, and a translucent highlight shows each overlap as a darker
      stripe. */
   --console-selection-bg: #2d4f73;
+  /* Tab's candidates by kind, after ls / zsh colours: directories, programs,
+     links. Aliases, so both themes follow their own accents. */
+  --console-dir: var(--accent);
+  --console-exec: var(--accent-green);
+  --console-link: var(--accent-yellow);
+  /* Between the columns of Tab's candidates: two characters, as
+     @cuemol/console-kit GRID_GAP lays them out. */
+  --console-completion-gap: 2ch;
   /* Inline status text (a field note, a panel warning line): why-based
      aliases so a surface never picks a raw accent. */
   --text-warning: var(--log-warn);

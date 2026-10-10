@@ -9,6 +9,8 @@
  * of the contract that only the app uses.
  */
 
+import type { CompletionCandidate } from './completion'
+
 /** An endpoint the server can offer; each is switched on by its plugin. */
 export type LocalApiEndpoint = 'mcp' | 'console'
 
@@ -67,8 +69,10 @@ export interface ConsoleCompleteRequest {
 export interface ConsoleCompleteResponse {
   /** The whole line, rewritten; null leaves it alone. */
   replacement: string | null
-  /** A candidate list to print, or the line saying there was nothing. */
+  /** Why there was nothing to complete; candidates are not printed here. */
   messages: ConsoleWireEntry[]
+  /** Two or more candidates, for the client to list and walk (completion.ts). */
+  candidates?: CompletionCandidate[]
 }
 
 /** `POST /console/info` (empty body): what the client shows in its banner. */
