@@ -167,6 +167,9 @@ namespace render {
       Vector4D m_pos;
       int m_nWidth;
       int m_nHeight;
+      /// anchor of the image at m_pos (see gfx::PixelBuffer::setAnchor)
+      double m_anchorX;
+      double m_anchorY;
       gfx::PixelBuffer *m_pData;
     };
     

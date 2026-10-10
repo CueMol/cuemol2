@@ -45,6 +45,9 @@ private:
   /// Label flag
   bool m_bShowLabel;
 
+  /// Draw the labels over all geometry, ignoring the depth test
+  bool m_bLabelOnTop;
+
   /// line width
   double m_linew;
 
