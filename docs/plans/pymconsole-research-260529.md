@@ -9,7 +9,7 @@
 > `runPymCommand` は採らない**ことにした。パーサは TS で Web Worker に置き (§2 の案 C)、
 > cuetty / pymod との共有は非ゴールに変更。§3 (selection 翻訳)、§4 (コマンド写像総表)、
 > §6 (Tier 分け)、§8 (概念差分) は引き続き有効で、実装の正本として使っている。
-> 実装計画は [260913-pymconsole-plugin-plan.md](260913-pymconsole-plugin-plan.md)。
+> 実装済みの仕様は [console PyMOL dialect](../architecture/console-pymol-dialect.md)、残りの候補は [260928](260928-pymconsole-remaining-plan.md)。
 
 ---
 

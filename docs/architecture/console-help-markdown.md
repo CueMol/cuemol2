@@ -47,7 +47,9 @@ op から生成したコマンドの `help <command>` は、本文に op の `de
 そのまま使う。これは MCP server と内蔵 agent が tool schema としてモデルに渡すのと同じ文字列で、console 用の
 説明文を別に持たない。文章を整えたいときは op の `description` 自体を書き直す (両方に効く)。
 長い description (`set_node_prop` / `render_image` / `set_view` / `capture_view` / `measure_geometry`) は
-箇条書きと `code` だけの軽い Markdown で書いてある。先頭の 1 文はコマンド表の Summary に使う。
+箇条書きと `code` だけの軽い Markdown で書いてある。見出しや表は使わない (MCP と agent には
+Markdown 原文のまま渡り、tool 定義は毎リクエスト送られるので、記号を増やすだけになる)。
+先頭の 1 文はコマンド表の Summary に使う。
 console だけの文章は op を持たないもの (builtin と PyMOL コマンドの `summary`、`help syntax`) に限る。
 
 ## help の構成 (PyMOL)
