@@ -5,6 +5,7 @@ import { useStatusMessage } from '@renderer/state/statusMessage';
 import { useCueMolBusy } from '@renderer/hooks/useCueMolBusy';
 import { useBusyCursor } from '@renderer/hooks/useBusyCursor';
 import { usePluginContributions } from '@renderer/plugin-host';
+import { NotificationBell } from './notifications';
 
 const StatusBarComponent: React.FC = () => {
   // Everything shown here is read from its owner; App passes nothing in.
@@ -49,6 +50,7 @@ const StatusBarComponent: React.FC = () => {
             Ready
           </span>
         )}
+        <NotificationBell />
       </div>
     </div>
   );

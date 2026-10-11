@@ -10,7 +10,7 @@
  * and a .qsc that `load_file` names is opened here, into a tab.
  */
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import {
   controlLocalApi,
   useCueMol,
@@ -44,18 +44,11 @@ export const McpRoot: React.FC = () => {
     return mcpOkResult({ scene: filePath, sceneId: opened.sceneId, active: true })
   }
 
-  // The port row commits per keystroke; wait for the typing to stop so the
-  // server is not reopened on every digit. Declared ahead of the endpoint, so
-  // on mount the port is set before the endpoint opens.
-  const firstPort = useRef(true)
+  // The port row applies a value on Enter / blur only (McpPortSettingRow),
+  // so each change reopens the server once. Declared ahead of the endpoint,
+  // so on mount the port is set before the endpoint opens.
   useEffect(() => {
-    if (firstPort.current) {
-      firstPort.current = false
-      void controlLocalApi({ action: 'setPort', port })
-      return
-    }
-    const t = setTimeout(() => { void controlLocalApi({ action: 'setPort', port }) }, 800)
-    return () => clearTimeout(t)
+    void controlLocalApi({ action: 'setPort', port })
   }, [port])
 
   useLocalApiEndpoint('mcp', cm !== null && serverEnabled, {

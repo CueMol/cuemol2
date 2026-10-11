@@ -62,6 +62,7 @@ export function macAppMenuGroup(appName: string): AppMenuGroup {
     label: appName,
     submenu: [
       { id: 'about-mac', label: `About ${appName}`, ipcChannel: IPC.MENU_ABOUT },
+      { id: 'check-updates-mac', label: 'Check for Updates...', ipcChannel: IPC.MENU_CHECK_UPDATES },
       { type: 'separator' },
       { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: IPC.MENU_OPTIONS },
       { type: 'separator' },
@@ -262,14 +263,16 @@ export const APP_MENU: AppMenuGroup[] = [
   },
 
   // Help menu
-  // Only About is carried forward; the UXP plugins / config / addon-manager /
-  // console / update-check items were Mozilla-platform specific. On macOS About
-  // lives in the Application menu, so this single-item group is empty there and
-  // is dropped by buildAndSetMenu (empty-submenu groups are filtered out).
+  // About and Check for Updates (main/updater; UXP had its own Mozilla-based
+  // one). The UXP plugins / config / addon-manager / console items were
+  // Mozilla-platform specific. On macOS both
+  // live in the Application menu, so this group is empty there and is dropped
+  // by buildAndSetMenu (empty-submenu groups are filtered out).
   {
     label: 'Help',
     submenu: [
       { id: 'about', label: `About ${APP_PRODUCT_NAME}`, ipcChannel: IPC.MENU_ABOUT, othersOnly: true },
+      { id: 'check-updates', label: 'Check for Updates...', ipcChannel: IPC.MENU_CHECK_UPDATES, othersOnly: true },
     ],
   },
 ]

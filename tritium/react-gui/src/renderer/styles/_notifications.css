@@ -1,0 +1,177 @@
+/* --- Notifications (shell/notifications/) ---
+   VS Code style: toasts stacked at the bottom right above the status bar, or
+   the center in their place. The layer itself takes no pointer events, so the
+   window under its empty area stays usable. */
+
+.notification-layer {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--statusbar-h) + var(--space-4));
+  z-index: var(--z-notification);
+  width: var(--notification-w);
+  max-width: calc(100vw - 2 * var(--space-4));
+  pointer-events: none;
+}
+
+.notification-toasts,
+.notification-center {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  pointer-events: auto;
+}
+
+.notification-center {
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-overlay);
+  overflow: hidden;
+}
+
+.notification-center-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--ctrl-h-md);
+  padding: 0 var(--space-2) 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.notification-center-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.notification-center-list .notification {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.notification-center-list .notification:last-child {
+  border-bottom: none;
+}
+
+.notification {
+  --notification-color: var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-overlay);
+  color: var(--text-primary);
+}
+
+.notification--warning {
+  --notification-color: var(--text-warning);
+}
+
+.notification--error {
+  --notification-color: var(--text-error);
+}
+
+.notification-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.notification-icon {
+  flex: none;
+  color: var(--notification-color);
+}
+
+.notification-message {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.notification-tools {
+  display: flex;
+  flex: none;
+  gap: var(--space-1);
+}
+
+.notification-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ctrl-h-sm);
+  height: var(--ctrl-h-sm);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.notification-tool:hover:not(:disabled) {
+  background: var(--overlay-hover);
+}
+
+.notification-tool:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* Detail, progress and the foot line up under the message, past the icon. */
+.notification-detail,
+.notification-progress,
+.notification-foot {
+  margin-left: calc(var(--icon-md) + var(--space-3));
+}
+
+.notification-detail {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.notification-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.notification-progress-label {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.notification-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.notification-source {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.notification-actions {
+  display: flex;
+  flex: none;
+  gap: var(--space-2);
+}
+
+/* No focus ring on any button here (VS Code draws none either): the ring
+   overflowed the tool buttons at the card's edge. Hover still marks them. */
+.notification-layer button:focus,
+.notification-layer button:focus-visible {
+  outline: none;
+}

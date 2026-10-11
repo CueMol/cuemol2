@@ -125,7 +125,7 @@ export function collectContributions(active: readonly RendererPlugin[]): PluginC
       } else if (setting.control.kind === 'custom') {
         const Component = plugin.settingRows?.[setting.key]
         if (!Component) continue
-        control = { kind: 'custom', Component }
+        control = { kind: 'custom', Component, wide: setting.control.wide }
       } else {
         control = setting.control
       }

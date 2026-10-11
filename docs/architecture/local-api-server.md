@@ -48,8 +48,10 @@ tritium_cli     --POST /console/*-----+--> main: localApi/server.ts (127.0.0.1:<
 
 - bind は `127.0.0.1` のみ。
 - `Authorization: Bearer <token>` が一致しなければ 401 (`timingSafeEqual`)。token は
-  `secretStore` (namespace `localApi`、key `token`) に暗号化して保存し、無ければ
-  `randomBytes(32)` で作る。popover の「Regenerate」で作り直せる。
+  userData の `local-api-token` (権限 0600) に保存し、無ければ `randomBytes(32)` で作る。
+  popover の「Regenerate」で作り直せる。`safeStorage` (Keychain) は使わない: 同じ token を
+  情報ファイル (下記、0600) に平文で書くので暗号化しても守るものが無く、起動のたびの
+  Keychain 読み出しが、ad-hoc 署名の app では更新のたびにパスワードダイアログを出していた。
 - `Origin` が付いていて loopback 以外なら 403、`Host` が loopback 以外でも 403
   (DNS rebinding で web ページから叩かれるのを防ぐ)。
 - body は JSON 4 MB まで。
@@ -115,6 +117,10 @@ scene は `discardChanges: true` が無いと閉じない (説明文で「捨て
 
 - **Settings > Plugins > MCP Server** を on にすると plugin が有効になる (既定 off)。
   ページの行は「Accept connections」(`serverEnabled`、既定 on) と「Port」(既定 27182)。
+  Port は数値の text 欄 (`McpPortSettingRow`) で、Enter / blur のときだけ反映する
+  (入力の途中で server を開き直さない)。1024-65535 以外は反映せずに赤字で示し、下の行に
+  実際の状態 (Listening / ほかのプログラムが使用中などのエラー / endpoint が無く閉じている) を出す。
+  既定値でなければ Reset を出す。
   port は入力が止まって 0.8 秒後に適用する。
 - **status bar のアイコン** (`contributes.statusBar`): off は灰、待機中は緑、実行中は黄で
   tool 名、port が使用中などのエラーは赤。クリックで popover:

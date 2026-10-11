@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-4);
-  height: 24px;
+  height: var(--statusbar-h);
   background: var(--statusbar-bg);
   flex-shrink: 0;
   font-size: var(--fs-md);
@@ -186,3 +186,36 @@
   cursor: default;
 }
 
+
+/* --- Notification bell (shell/notifications/NotificationBell.tsx) ---
+   The rightmost item. Plain status-bar text colour (not a state colour);
+   a dot on the bell marks notifications not yet seen. */
+.status-bell {
+  --status-state-color: var(--statusbar-text);
+}
+
+.status-bell--open {
+  background: color-mix(in srgb, var(--statusbar-bg) 75%, var(--statusbar-text));
+}
+
+.status-bell-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.status-bell-dot {
+  position: absolute;
+  top: calc(-1 * var(--space-1));
+  right: calc(-1 * var(--space-1));
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: 50%;
+  /* The bar's own text colour: an accent dot vanished on the light theme's
+     blue bar. */
+  background: var(--statusbar-text);
+}
+
+.status-bell-progress {
+  font-variant-numeric: tabular-nums;
+}

@@ -253,6 +253,13 @@
   max-width: 320px;
 }
 
+/* A path row (capped by .config-setting-path-row instead) or a custom row of
+   text and buttons (SettingControl `wide`): the cap above is for a single
+   input; it cut paths short and wrapped sentences mid-phrase. */
+.config-setting-control--wide {
+  max-width: none;
+}
+
 /* ── Toggle setting — inline layout ── */
 .config-setting-toggle {
   display: flex;

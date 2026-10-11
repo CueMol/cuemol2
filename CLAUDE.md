@@ -12,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `tritium/react-gui/` — Electron + React 18 app
   - `tritium/cli/` — `tritium_cli`, the console's command line (`@cuemol/tritium-cli`, esbuild bundle shipped with the app)
   - `tritium/console-kit/` — code react-gui and the CLI share (`@cuemol/console-kit`, TS source, bundled by each consumer)
+  - `tritium/updater/` — the app's self-updater core (`@cuemol/updater`, Node TS source bundled into main; see `docs/architecture/auto-update.md`)
 - **UXP GUI** (`uxp_gui/`) — CueMol2 legacy desktop app built on UXP (mozilla)
 
 **Auto-generated — do not edit manually:**
