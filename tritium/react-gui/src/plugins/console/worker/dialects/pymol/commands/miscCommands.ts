@@ -19,6 +19,7 @@ import { closeLog, currentLog, openLog, writeLog } from '@plugins/console/worker
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import { isDefaulted, resolvePath, toNumber } from './helpers'
 import { rayToFile, writeLastRay } from './rayCommands'
+import { quitCommand } from '@plugins/console/worker/runtime/quitCommand'
 
 /** A `png` size argument: pixels, or inches / centimetres needing a dpi. */
 function pixelsOf(raw: string, dpi: number): number | null {
@@ -161,18 +162,6 @@ function undoStackCommand(name: string): PymCommand {
   }
 }
 
-const quit: PymCommand = {
-  name: 'quit',
-  params: [],
-  mode: 'strict',
-  mutates: false,
-  summary: 'Not available: close the window instead.',
-  run(_ctx, _args, cc) {
-    cc.warn('quit: use the window close button')
-    return { ok: true }
-  },
-}
-
 const logOpen: PymCommand = {
   name: 'log_open',
   params: [{ name: 'filename', default: 'log.pml' }, { name: 'mode', default: 'w' }],
@@ -234,5 +223,6 @@ export const MISC_COMMANDS: PymCommand[] = [
   png,
   undoStackCommand('undo'),
   undoStackCommand('redo'),
-  quit,
+  quitCommand('quit'),
+  quitCommand('exit'),
 ]

@@ -36,6 +36,7 @@ import type {
 } from './types/renderWindow'
 import type { CuemolClipWriteReq, CuemolClipReadRes, CuemolClipPeekRes } from './types/clipboard'
 import type {
+  AppQuitRequest, AppQuitResponse,
   LocalApiControlReq, LocalApiReplyPayload, LocalApiRequestPayload, LocalApiStatus,
 } from './types/localApi'
 
@@ -180,6 +181,7 @@ export interface InvokeChannels {
   [IPC.TEXT_CTX_ACTION]:   { req: TextEditAction;         res: void }
   [IPC.CRASH_REPORT]:      { req: CrashReport;           res: void }
   [IPC.FORCE_QUIT]:        { req: void;                  res: void }
+  [IPC.APP_QUIT]:          { req: AppQuitRequest;        res: AppQuitResponse['outcome'] }
 }
 
 export interface PushChannels {

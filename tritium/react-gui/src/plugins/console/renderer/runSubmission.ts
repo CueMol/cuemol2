@@ -11,6 +11,7 @@
  */
 
 import type { AsyncCueMol, SceneTabs } from '@renderer/plugin-host/api'
+import { IPC } from '@shared/ipcChannels'
 import { consoleServices } from '../calls'
 import type { ConsoleEntry, DialectId } from '../shared/consoleTypes'
 import { doSceneRequest } from './sceneRequest'
@@ -81,6 +82,14 @@ export async function runSubmission(deps: SubmissionDeps, args: SubmissionArgs):
       return failed(`Error: could not open ${res.openScene}`)
     }
     if (!res.sceneRequest) return { entries, aborted: false, interrupted: false, cwd }
+
+    // `quit` / `exit`: main runs the save prompts and quits. Not awaited, so
+    // this run is answered (to the panel, or to tritium_cli) before the
+    // window goes; whatever followed is dropped.
+    if (res.sceneRequest.op === 'quit') {
+      void window.electronAPI?.invoke(IPC.APP_QUIT, { force: res.sceneRequest.force })
+      return { entries, aborted: false, interrupted: false, cwd }
+    }
 
     const done = await doSceneRequest(deps.tabs, res.sceneRequest)
     if (!done.ok) return failed(done.error)

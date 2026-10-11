@@ -1,0 +1,15 @@
+{
+  "name": "@cuemol/console-kit",
+  "version": "1.0.0",
+  "description": "Code the console panel (react-gui) and tritium_cli share: the local API wire format, and soon completion and Markdown helpers",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

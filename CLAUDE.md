@@ -10,6 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **tritium** (`tritium/`) — CueMol desktop app (Electron + React 18 pnpm monorepo), bridging libcuemol2 via a Node.js native addon
   - `tritium/core/` — C++ native addon (`@cuemol/core`)
   - `tritium/react-gui/` — Electron + React 18 app
+  - `tritium/cli/` — `tritium_cli`, the console's command line (`@cuemol/tritium-cli`, esbuild bundle shipped with the app)
+  - `tritium/console-kit/` — code react-gui and the CLI share (`@cuemol/console-kit`, TS source, bundled by each consumer)
 - **UXP GUI** (`uxp_gui/`) — CueMol2 legacy desktop app built on UXP (mozilla)
 
 **Auto-generated — do not edit manually:**
@@ -28,6 +30,7 @@ Recurring operations are [Task](https://taskfile.dev) targets run from
 | `task build_libcuemol2` / `rebuild_libcuemol2` | Build / clean-rebuild libcuemol2 |
 | `task run_gtest` | C++ unit tests (ctest) |
 | `task build_tritium` / `run_tritium` | Build / run the tritium app |
+| `task run_tritium_cli` | Run `tritium_cli` against the dev app (starts it if needed; `-- -c '...'` for one-shot) |
 | `task test_tritium` | tritium tests (core Jest + react-gui Vitest) |
 | `task bump_version_build` | Bump build number `x.y.z.BUILD` (edits all 3 version files) |
 | `task bump_version_rev` | Bump revision number `x.y.REV.build` |

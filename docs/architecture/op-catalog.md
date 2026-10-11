@@ -131,6 +131,10 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 - console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `open_log` / `close_log` / `log` /
   `undo` / `redo` / `help`、scene (タブ) の `list_scenes` (短縮形 `scenes`) / `create_scene` /
   `switch_scene` / `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
+- `quit` / `exit` (両 dialect 共通。`runtime/quitCommand.ts`。`exit` は引数を取らない `quit`): app を終了する。worker は
+  scene コマンドと同じく `requestScene({ op: 'quit', force })` で panel に渡し、`runSubmission` が
+  `IPC.APP_QUIT` で main (`main/appQuit.ts`) に頼む。Cmd+Q と同じ保存確認を出し、`force` (`true` /
+  `--force` / `-f`) なら確認なしで終了する。後続のコマンドは捨てる。script (`run` / `@file`) 内では使えない。
 - `help` は対象ごとの見出し (op の `group`、`OP_GROUPS`) に分けて一覧し、`help <subject>`
   (`help animation` など) でその見出しだけを出す。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
@@ -182,7 +186,7 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
   | `show` / `hide` | 表示する / 隠す (この意味だけ。情報の表示には使わない) |
 
   固有の動詞 (`superpose`、`measure`、`merge`、`cut`、`rotate`、`pan`、`focus`、`center`、
-  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture` など) は、
+  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`quit` / `exit` など) は、
   上の動詞と意味が重ならないものに限って使う。`make` / `gen` / `new` (→ `create`)、
   `compute` / `regen` (→ `calc` / `recalc`)、`change` / `update` (→ `set`)、一覧の `get` (→ `list`) は使わない。
 - **目的語**: `scene`、`object`、`renderer`、`group`、`camera`、`view`、`prop(s)`、`selection`、

@@ -4,8 +4,8 @@ GUI アプリ (tritium) に内蔵した HTTP server。外部のプログラム�
 操作するための入口で、endpoint は 2 つ:
 
 - MCP (`/mcp`) -- plugin `mcp`。AI client から op catalog を tool として呼ぶ (§3, §4)。
-- console (`/console/run`, `/console/complete`, `/console/info`) -- plugin `console`。terminal の
-  `tritium_cli` から console の native / PyMOL dialect を使う (§5)。
+- console (`/console/run`, `/console/complete`, `/console/info`、`/app/quit`) -- plugin `console`。
+  terminal の `tritium_cli` から console の native / PyMOL dialect を使い、app を終了する (§5)。
 
 計画: [261007](../plans/261007-local-api-server-plan.md)。
 
@@ -17,9 +17,10 @@ GUI アプリ (tritium) に内蔵した HTTP server。外部のプログラム�
 ```
 MCP client      --POST /mcp-----------+
 tritium_cli     --POST /console/*-----+--> main: localApi/server.ts (127.0.0.1:<port>)
-                                 token / Origin / Host 検査、path -> endpoint
+                --POST /app/quit                 token / Origin / Host 検査、path -> endpoint
                                  localApi/mcpEndpoint.ts (MCP SDK, stateless)
                                  localApi/consoleEndpoint.ts (JSON)
+                                 localApi/appEndpoint.ts (/app/quit: main だけで答える。下記 §5.4)
                                         |
                   push LOCAL_API_REQUEST {reqId, endpoint, kind, payload}
                                         v
@@ -145,10 +146,22 @@ scene は `discardChanges: true` が無いと閉じない (説明文で「捨て
 - **GUI 側の表示**: CLI から来た submission の出力は console panel の transcript にも追加し、
   echo 行に `[cli] ` を付ける。
 
-### 5.1 client (`tritium/react-gui/tools/tritium_cli.mjs`)
+### 5.1 client (pnpm package `tritium/cli`、`@cuemol/tritium-cli`)
 
-Node (18 以降) だけで動く、依存なしの thin client。repo からは `node tools/tritium_cli.mjs`、
-配布物からは同梱の wrapper `tritium_cli` (§5.3) で起動する。
+thin client。react-gui と並ぶ workspace package で、ソースは TS (`src/tritium_cli.ts` が entry、
+接続まわりは `src/connection.ts`)。`scripts/build.mjs` (esbuild) が import ごと 1 ファイルの
+ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含まれる。単体は
+`task build_tritium_cli`)。実行は Node 18 以降。
+
+- wire 型 (`LocalApiInfoFile`、`TRITIUM_CLI_FLAG`、`/console/*` と `/app/quit` の body) は、app と
+  共有する package `tritium/console-kit` (`@cuemol/console-kit`) にある。TS ソースのまま配り、各 consumer
+  が bundle する (DOM / Node 非依存)。react-gui は `src/shared/types/localApi.ts` から re-export するので、
+  app 側の import は変わらない。react-gui の devDependency なので electron-vite の main build でも
+  外部化されず bundle される (`externalizeDepsPlugin` が外に出すのは `dependencies` だけ)。
+- 検査: `task test_tritium_cli` (console-kit / cli の typecheck と cli の Vitest)。CI は
+  `check_tritium_react_gui` から同じものを走らせる。CLI と endpoint を突き合わせる結合テストは
+  react-gui 側 (`main/localApi/consoleEndpoint.test.ts`、devDependency `@cuemol/tritium-cli`)。repo からは `task run_tritium_cli`
+(`-- -c '...'` で非対話)、配布物からは同梱の wrapper `tritium_cli` (§5.3) で起動する。
 
 - 接続情報は request ごとに `~/.cuemol/local-api.json` (`CUEMOL_LOCAL_API_INFO`) から読む。
   port は MCP plugin の設定で変わり得るが、client は毎回このファイルを読むので影響しない。
@@ -159,12 +172,16 @@ Node (18 以降) だけで動く、依存なしの thin client。repo からは 
   対しても同じで、2 個目のプロセスは single-instance lock で argv を渡して終わり、動いている app が
   その起動中だけ endpoint を開く (main `noteCliLaunch` -> invoke `LOCAL_API_CLI_ACCESS` / push
   `LOCAL_API_CLI_ACCESS_GRANTED` -> renderer `useCliAccessGranted()`)。設定値は変えない。
-  repo から node で起動したときと `--no-launch` では起動せず、案内を出して終わる。
+  `task run_tritium_cli` からは、env `TRITIUM_CLI_DEV_APP` (react-gui のパス) を見て、そこで
+  `pnpm exec electron-vite preview --skipBuild -- --tritium-cli` を detached 起動する (build 済みの
+  dev app。electron-vite は `--` 以降を app の argv に渡す)。task は CLI の cwd を task を実行した
+  ディレクトリにする。素の `node` で起動したときと `--no-launch` では起動せず、案内を出して終わる。
 - 対話: 起動時に banner (version、port、pid、操作の案内) を出す。prompt は `CueMol <dir> ❯` /
   `pymol <dir> ❯` (dialect 名は色分け)、`native` / `pymol` で dialect 切り替え、Tab 補完
   (`/console/complete` の返す行全体で入力行を書き換える)、履歴 `~/.tritium_cli_history`、
   待機中は spinner と経過秒、1 秒以上かかったコマンドは `✓` / `✗` と所要時間を出す。
-  実行中の Ctrl-C は中断、待機中は入力行の消去 / 終了。`exit` か Ctrl-D で抜ける。
+  実行中の Ctrl-C は中断、待機中は入力行の消去 / 終了。`exit` か Ctrl-D で抜ける (app は残る)。
+  `quit` (`--force` / `force=true` で確認なし) は app ごと終了し、CLI も終わる (§5.4)。
   色は TTY のときだけで、`NO_COLOR` で消える。dim / 灰色は暗い端末で読みにくいので使わない。
 - 非対話: `-c "..."`、script ファイル、stdin のパイプ。全体を 1 submission として送る
   (= 1 undo、途中で失敗するとそこで止まる)。失敗があれば exit code 1。
@@ -193,7 +210,7 @@ undo txn は scene ごとに分かれる。
 
 ### 5.3 配布物への同梱
 
-- `tools/tritium_cli.mjs` を extraResources で `<resources>/cli/` に置き、afterPack hook
+- cli package の `dist/tritium_cli.mjs` を extraResources (`from: ../cli/dist/...`) で `<resources>/cli/` に置き、afterPack hook
   (`build/cliWrapper.js`) が隣に wrapper を書く: macOS / Linux は sh の `tritium_cli`、Windows は
   `tritium_cli.cmd`。wrapper は app 自身の実行ファイルを `ELECTRON_RUN_AS_NODE=1` で Node として
   動かす (VS Code の `code` と同じ)。Electron の RunAsNode fuse を切らないこと。sh 版は symlink を
@@ -203,6 +220,31 @@ undo txn は scene ごとに分かれる。
   `CliPathRow`)。例外は deb で、`/usr/bin/tritium_cli` に symlink を張る
   (`build/linux/after-install.tpl` / `after-remove.tpl`、app-builder-lib の stock template の写し +
   1 行)。AppImage は resources が起動ごとの一時 mount なので非対応。
+
+### 5.4 `quit` (`POST /app/quit`)
+
+- 1 行が `quit` と高々 force 引数だけのとき (`quit`、`quit --force`、`quit -f`、`quit true`、
+  `quit force=true`。読み方は console-kit `quitLine()` で app の command と共有)、client はそれを console に送らず
+  `POST /app/quit` `{ force }` -> `{ outcome: 'quit' | 'cancelled' }` を送る (対話・`-c`・script・stdin
+  の全モード)、app が終了したら client も終わる。対話の `exit` は CLI を抜けるだけ (`exit` は引数を取らない。force は `quit` だけ)。app 側にも同じ働きの `quit` / `exit` command が
+  あり ([op-catalog.md](op-catalog.md) の builtin)、`-c "load x; quit"` のように他のコマンドと並んだ
+  `quit` はそちらで終了する (結果の `cancelled` は返らない)。
+- console endpoint に属する (CLI アクセスと同時に開閉) が、window には relay せず main が答える
+  (`localApi/appEndpoint.ts`、終了処理は `main/appQuit.ts` を注入)。閉じようとしている window に
+  答えさせると、返事が来ないまま window が消えるため。
+- **通常**: main window を前面に出し (macOS は `app.focus({ steal: true })`)、`app.quit()`。
+  Cmd+Q と同じく `before-quit` -> close funnel -> renderer の保存確認 (`ConfirmCloseTabDialog`) を通る。
+  前面に出すのは、terminal が focus を持ったまま dialog が裏や最小化中の window に出ると、誰も
+  答えられずに待ち続けるため。結果は `quitState.waitQuitOutcome()` で待ち、renderer の
+  `WINDOW_CLOSE_PROCEED` (`proceed` true -> `quit`、false -> `cancelled`) で決まる。応答は window が
+  閉じる前に返る。
+- **force**: crash UI の Quit と同じフラグ (`setForceQuit` / `setAppQuitting` / confirmed) を立てるが、
+  `app.exit()` ではなく `app.quit()` で終わる。`will-quit` が走るので、接続情報ファイルと render
+  history は消える。保存確認は出ず、未保存の変更は失われる。
+- client: 通常の quit は確認待ちの間 spinner を出す。`cancelled` なら案内を出して対話を続け、
+  `quit` なら終了する。app が落ちて応答が届かなかった場合は pid が消えたことで `quit` とみなす。
+  ルートの無い古い app (404) には「この CueMol は CLI から終了できない」と出す。Ctrl-C は待つのを
+  やめるだけで、app の dialog は残る。
 
 ## 6. 既知の制約
 

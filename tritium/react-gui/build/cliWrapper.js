@@ -3,7 +3,7 @@
  * @description Writes the tritium_cli command into a packaged app (called from
  * the afterPack hook).
  *
- * `tools/tritium_cli.mjs` is copied to `<resources>/cli/` by extraResources;
+ * `tritium/cli/dist/tritium_cli.mjs` (built by the cli package) is copied to `<resources>/cli/` by extraResources;
  * this adds the command next to it: `tritium_cli` (sh) on macOS and Linux,
  * `tritium_cli.cmd` on Windows. Both run the script in the app's own
  * executable as Node (ELECTRON_RUN_AS_NODE, the way VS Code's `code` command

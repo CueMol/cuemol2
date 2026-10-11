@@ -13,6 +13,7 @@ import * as fs from 'fs'
 import * as nodePath from 'path'
 import { closeLog, currentLog, openLog, writeLog } from '../../runtime/commandLog'
 import { resolvePath } from '../../runtime/paths'
+import { quitCommand } from '../../runtime/quitCommand'
 import type { CmdContext, CmdOutcome, ConsoleCommand } from '../../runtime/types'
 import type { SceneRequest } from '../../../shared/consoleTypes'
 
@@ -239,4 +240,6 @@ export const NATIVE_BUILTINS: ConsoleCommand[] = [
   logLine,
   undoStack('undo'),
   undoStack('redo'),
+  quitCommand('quit'),
+  quitCommand('exit'),
 ]

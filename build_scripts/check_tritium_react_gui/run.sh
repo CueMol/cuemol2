@@ -33,3 +33,9 @@ node e2e/inspect.mjs --help > /dev/null
 
 # Vitest (renderer, worker, main, shared).
 pnpm run test
+
+# The sibling packages the app bundles: the shared console code and tritium_cli.
+cd $WORKSPACE/tritium
+pnpm --filter @cuemol/console-kit run typecheck
+pnpm --filter @cuemol/tritium-cli run typecheck
+pnpm --filter @cuemol/tritium-cli run test

@@ -296,6 +296,30 @@ tasks:
     cmds:
       - pnpm run start
 
+  build_tritium_cli:
+    desc: "Bundle tritium_cli (tritium/cli) into tritium/cli/dist/tritium_cli.mjs (build_tritium does this too)"
+    dir: "{{.ROOT_DIR}}/../tritium/cli"
+    cmds:
+      - pnpm run build
+
+  run_tritium_cli:
+    desc: "Run tritium_cli against the dev app, starting it if needed (needs build_tritium). Usage: task run_tritium_cli -- -c 'help'"
+    deps: [build_tritium_cli]
+    interactive: true
+    # The CLI's working directory is where task was run, so relative paths in
+    # commands (load ./x.pdb, cd) mean what they would in that shell.
+    dir: "{{.USER_WORKING_DIR}}"
+    env:
+      # Same render-binary roots as run_tritium, for an app the CLI starts.
+      LIBCUEMOL2_ROOT: "{{.LIBCUEMOL2_INSTDIR}}"
+      BUNDLE_APPS:
+        sh: echo "{{.WORKDIR}}"
+      # Tells the CLI how to start the dev app when none is running
+      # (cli/connection.ts launchCommand: electron-vite preview --skipBuild).
+      TRITIUM_CLI_DEV_APP: "{{.ROOT_DIR}}/../tritium/react-gui"
+    cmds:
+      - node "{{.ROOT_DIR}}/../tritium/cli/dist/tritium_cli.mjs" {{.CLI_ARGS}}
+
   inspect_tritium_ui:
     desc: "Audit the layout of one pane/dialog of the built tritium app (screenshots + report). Usage: task inspect_tritium_ui -- --target dialog:ui.aboutDialog"
     dir: "{{.ROOT_DIR}}/../tritium/react-gui"
@@ -391,10 +415,11 @@ tasks:
       - pnpm run lint:comments
 
   test_tritium:
-    desc: "Run tritium tests (core Jest + react-gui Vitest)"
+    desc: "Run tritium tests (core Jest + react-gui Vitest + cli Vitest)"
     cmds:
       - task: test_tritium_core
       - task: test_tritium_react_gui
+      - task: test_tritium_cli
 
   test_tritium_core:
     desc: "Run tritium/core Jest tests (Node pinned via tritium/.nvmrc)"
@@ -410,6 +435,14 @@ tasks:
     dir: "{{.ROOT_DIR}}/../tritium/react-gui"
     cmds:
       - bash -c 'set -e; export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; . "$NVM_DIR/nvm.sh"; nvm use; pnpm test'
+
+  test_tritium_cli:
+    desc: "Type-check and run the Vitest tests of tritium/cli and tritium/console-kit"
+    dir: "{{.ROOT_DIR}}/../tritium"
+    cmds:
+      - pnpm --filter @cuemol/console-kit run typecheck
+      - pnpm --filter @cuemol/tritium-cli run typecheck
+      - pnpm --filter @cuemol/tritium-cli run test
 
 #####
 

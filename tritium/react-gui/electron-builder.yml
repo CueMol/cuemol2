@@ -143,12 +143,12 @@ extraResources:
     to: bundle_apps
     filter:
       - "**/*"
-  # tritium_cli (console command line) -> Resources/cli/tritium_cli.mjs. The
-  # command that runs it (cli/tritium_cli, or tritium_cli.cmd on Windows) is
+  # tritium_cli (console command line, the bundle the ../cli package builds)
+  # -> Resources/cli/tritium_cli.mjs. The command that runs it (cli/tritium_cli, or tritium_cli.cmd on Windows) is
   # written by the afterPack hook (build/cliWrapper.js): it runs the script in
   # this app's executable with ELECTRON_RUN_AS_NODE, so the RunAsNode fuse must
   # stay on (no fuses are set).
-  - from: tools/tritium_cli.mjs
+  - from: ../cli/dist/tritium_cli.mjs
     to: cli/tritium_cli.mjs
 
 mac:
