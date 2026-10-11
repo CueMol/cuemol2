@@ -13,6 +13,8 @@ import { definePlugin } from '@renderer/plugin-host/api'
 import { mcpManifest } from './manifest'
 import { McpRoot } from './renderer/McpRoot'
 import { McpStatusItem } from './renderer/McpStatusItem'
+import { McpPortSettingRow } from './renderer/McpPortSettingRow'
+import { MCP_PREF_KEYS } from './shared/mcpTypes'
 import './renderer/mcp.css'
 
 export const mcpPlugin = /* @__PURE__ */ definePlugin({
@@ -20,5 +22,8 @@ export const mcpPlugin = /* @__PURE__ */ definePlugin({
   Root: McpRoot,
   statusBarItems: {
     mcp: McpStatusItem,
+  },
+  settingRows: {
+    [MCP_PREF_KEYS.port]: McpPortSettingRow,
   },
 })

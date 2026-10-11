@@ -11,6 +11,7 @@ export interface McpPrefs {
   serverEnabled: boolean
   port: number
   setServerEnabled: (on: boolean) => void
+  setPort: (port: number) => void
 }
 
 export function useMcpPrefs(): McpPrefs {
@@ -20,5 +21,6 @@ export function useMcpPrefs(): McpPrefs {
     serverEnabled: prefs[MCP_PREF_KEYS.serverEnabled] !== false,
     port: typeof port === 'number' ? port : DEFAULT_LOCAL_API_PORT,
     setServerEnabled: (on) => setPref(MCP_PREF_KEYS.serverEnabled, on),
+    setPort: (p) => setPref(MCP_PREF_KEYS.port, p),
   }
 }

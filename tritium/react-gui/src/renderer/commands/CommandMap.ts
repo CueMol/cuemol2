@@ -33,6 +33,8 @@ export interface CommandMap {
   [CmdId.UiOpenObjDialog]:     { args: void;            result: void }
   [CmdId.UiOpenSceneDialog]:   { args: void;            result: void }
   [CmdId.UiAboutDialog]:       { args: void;            result: void }
+  [CmdId.AppCheckForUpdates]:  { args: void;            result: void }
+  [CmdId.DevUpdateSample]:     { args: { state: string }; result: void }
   [CmdId.UiChangeChainIdDialog]: { args: void;          result: void }
   [CmdId.UiDeleteMolDialog]:   { args: void;            result: void }
   [CmdId.UiChangeResidueIndexDialog]: { args: void;     result: void }

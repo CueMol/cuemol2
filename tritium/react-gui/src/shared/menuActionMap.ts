@@ -153,10 +153,10 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_WINDOW_RENDER]:    { dispatch: 'ui.renderWindow',    deliver: 'generic' },
 
   // --- Help ---
-  // Only About is carried forward (see menuTemplate.ts). The Mozilla-specific
-  // Help items (plugins / config / addon-mgr / console / check-updates) were
-  // dropped, so they no longer appear here.
+  // About and Check for Updates (see menuTemplate.ts). The Mozilla-specific
+  // Help items (plugins / config / addon-mgr / console) were dropped.
   [IPC.MENU_ABOUT]:            { dispatch: 'ui.aboutDialog',     deliver: 'generic' },
+  [IPC.MENU_CHECK_UPDATES]:    { dispatch: 'app.checkForUpdates', deliver: 'generic' },
 } as const satisfies Record<string, MenuActionEntry>
 
 /** Union of all valid menu-action channel keys. */

@@ -22,6 +22,7 @@ import { chromeWindowOptions, forwardConsoleMessages, hideMenuBar } from './wind
 import { isVisibleOnAnyDisplay, trackWindowState } from './windowState'
 import { handleWindowClose } from './closeFunnel'
 import { holdUntilRevealed } from './reveal'
+import { noteMainWindowRevealed } from '../updater'
 import { createOrFocusRenderWindow, getRenderWindow } from './renderWindow'
 
 let mainWindow: BrowserWindow | null = null
@@ -123,10 +124,11 @@ export function createWindow(): void {
   // Shown when the renderer reports its first real frame (reveal.ts).
   // Restoring the maximized state waits for the same moment: `maximize()`
   // shows a window that is being held back.
-  holdUntilRevealed(win, () => {
+  holdUntilRevealed(win, (byFallback) => {
     if (saved?.isMaximized) win.maximize()
     win.show()
     win.focus()
+    noteMainWindowRevealed(byFallback)
   })
 
   // Power-save hold + renderer pid log while a render job runs (renderActivity.ts).

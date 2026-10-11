@@ -437,13 +437,15 @@ tasks:
       - bash -c 'set -e; export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; . "$NVM_DIR/nvm.sh"; nvm use; pnpm test'
 
   test_tritium_cli:
-    desc: "Type-check and run the Vitest tests of tritium/cli and tritium/console-kit"
+    desc: "Type-check and run the Vitest tests of tritium/cli, tritium/console-kit and tritium/updater"
     dir: "{{.ROOT_DIR}}/../tritium"
     cmds:
       - pnpm --filter @cuemol/console-kit run typecheck
       - pnpm --filter @cuemol/tritium-cli run typecheck
+      - pnpm --filter @cuemol/updater run typecheck
       - pnpm --filter @cuemol/tritium-cli run test
       - pnpm --filter @cuemol/console-kit run test
+      - pnpm --filter @cuemol/updater run test
 
 #####
 

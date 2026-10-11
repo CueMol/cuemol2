@@ -15,6 +15,10 @@ export const CmdId = {
   UiOpenObjDialog:    'ui.openObjDialog',    // no args
   UiOpenSceneDialog:  'ui.openSceneDialog',  // no args
   UiAboutDialog:      'ui.aboutDialog',      // no args
+  AppCheckForUpdates: 'app.checkForUpdates', // no args -- Help > Check for Updates
+  // Dev builds only: show the update UI in a given state without a release
+  // (for the UI layout inspector). args: { state }
+  DevUpdateSample:    'dev.updateSample',
   UiChangeChainIdDialog: 'ui.changeChainIdDialog', // no args
   UiDeleteMolDialog:  'ui.deleteMolDialog',  // no args
   UiChangeResidueIndexDialog: 'ui.changeResidueIndexDialog', // no args

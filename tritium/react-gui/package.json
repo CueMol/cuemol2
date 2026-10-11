@@ -31,6 +31,7 @@
     "@blueprintjs/core": "^5.13.0",
     "@blueprintjs/icons": "^5.13.0",
     "@cuemol/console-kit": "workspace:*",
+    "@cuemol/updater": "workspace:*",
     "@cuemol/core": "workspace:*",
     "@cuemol/tritium-cli": "workspace:*",
     "@electron-toolkit/tsconfig": "^1.0.1",

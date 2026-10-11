@@ -42,11 +42,20 @@ export type SettingControl =
    */
   | { kind: 'secret'; namespace: string; envVar?: string }
   /**
-   * A row whose control a plugin draws itself (something to read or copy
-   * rather than a value to store: a path the app computed, say). The host
-   * fills `Component` in from the plugin's `settingRows`.
+   * A row that draws its own control (something to read or act on rather
+   * than a value to store: a path the app computed, a Check Now button). A
+   * built-in row names `Component` directly; for a plugin's row the host
+   * fills it in from the plugin's `settingRows`.
    */
-  | { kind: 'custom'; Component: React.ComponentType }
+  | {
+      kind: 'custom'
+      Component: React.ComponentType
+      /**
+       * Lift the control column's width cap (sized for one input or select),
+       * for a row that lays out text and a row of buttons.
+       */
+      wide?: boolean
+    }
 
 /**
  * What a plugin writes in `contributes.settings`.
@@ -57,4 +66,4 @@ export type SettingControl =
 export type PluginSettingControl =
   | Exclude<SettingControl, { kind: 'secret' } | { kind: 'custom' }>
   | { kind: 'secret'; envVar?: string }
-  | { kind: 'custom' }
+  | { kind: 'custom'; wide?: boolean }

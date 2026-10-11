@@ -38,7 +38,7 @@ export const mcpManifest: PluginManifest = {
         description:
           'The port on 127.0.0.1 the server listens on. After changing it, register the ' +
           'client again (the status bar item copies the command).',
-        control: { kind: 'number', min: 1024, max: 65535, step: 1 },
+        control: { kind: 'custom', wide: true },
         default: DEFAULT_LOCAL_API_PORT,
       },
     ],

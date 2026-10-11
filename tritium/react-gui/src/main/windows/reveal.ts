@@ -29,9 +29,10 @@ const pending = new Map<BrowserWindow, (byFallback: boolean) => void>()
 /**
  * Keep `win` hidden until `revealWindow(win)` or the fallback, whichever
  * comes first; `reveal` runs exactly once, and not at all for a window that
- * closed while waiting.
+ * closed while waiting. It is told whether the fallback fired: the renderer's
+ * signal is what the updater takes as proof that a new version started.
  */
-export function holdUntilRevealed(win: BrowserWindow, reveal: () => void): void {
+export function holdUntilRevealed(win: BrowserWindow, reveal: (byFallback: boolean) => void): void {
   let timer: ReturnType<typeof setTimeout> | null = null
   let paintedAt = 0
   const fire = (byFallback: boolean): void => {
@@ -43,7 +44,7 @@ export function holdUntilRevealed(win: BrowserWindow, reveal: () => void): void 
     const after = paintedAt ? `${Date.now() - paintedAt} ms after first paint` : 'before first paint'
     if (byFallback) console.warn(`[Main] window revealed by the fallback, ${after}`)
     else console.log(`[Main] window revealed by the renderer, ${after}`)
-    reveal()
+    reveal(byFallback)
   }
   pending.set(win, fire)
   win.once('ready-to-show', () => {

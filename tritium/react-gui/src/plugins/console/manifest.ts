@@ -37,7 +37,7 @@ export const consoleManifest: PluginManifest = {
         label: 'Command line tool',
         description:
           'tritium_cli runs console commands from a terminal, starting CueMol3 if it is not running.',
-        control: { kind: 'custom' },
+        control: { kind: 'custom', wide: true },
       },
     ],
     bottomTabs: [

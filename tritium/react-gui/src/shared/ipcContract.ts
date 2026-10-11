@@ -39,6 +39,7 @@ import type {
   AppQuitRequest, AppQuitResponse,
   LocalApiControlReq, LocalApiReplyPayload, LocalApiRequestPayload, LocalApiStatus,
 } from './types/localApi'
+import type { UpdateStatus } from './types/update'
 
 export interface InvokeChannels {
   [IPC.APP_PATH]:          { req: void;                  res: AppPathInfo }
@@ -120,6 +121,14 @@ export interface InvokeChannels {
   [IPC.LOCAL_API_CONTROL]: { req: LocalApiControlReq;   res: LocalApiStatus }
   [IPC.LOCAL_API_STATUS]:  { req: void;                 res: LocalApiStatus }
   [IPC.LOCAL_API_CLI_ACCESS]: { req: void;              res: boolean }
+  [IPC.UPDATE_GET_STATUS]:     { req: void; res: UpdateStatus }
+  [IPC.UPDATE_CHECK]:          { req: void; res: void }
+  [IPC.UPDATE_DOWNLOAD]:       { req: void; res: void }
+  [IPC.UPDATE_CANCEL]:         { req: void; res: void }
+  [IPC.UPDATE_INSTALL]:        { req: void; res: void }
+  [IPC.UPDATE_RESTART]:        { req: void; res: void }
+  [IPC.UPDATE_OPEN_RELEASE]:   { req: void; res: void }
+  [IPC.UPDATE_DISMISS_RESULT]: { req: void; res: void }
   /**
    * Archive a finished render's PNG under its result id (main window -> main).
    * `workDir` is the job's temp directory when it is one the app should clean
@@ -217,6 +226,7 @@ export interface PushChannels {
   [IPC.RENDER_RELAY_REQUEST]:     RelayRequestPayload
   [IPC.LOCAL_API_REQUEST]:        LocalApiRequestPayload
   [IPC.LOCAL_API_CLI_ACCESS_GRANTED]: void
+  [IPC.UPDATE_STATUS]:            UpdateStatus
 }
 
 export type InvokeChannel = keyof InvokeChannels

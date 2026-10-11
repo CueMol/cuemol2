@@ -32,6 +32,7 @@ import type { ViewInputParams } from '@renderer/worker/server/services/view/view
 import type { PickingPrefs } from '@renderer/contexts/PickingPrefsContext'
 import { FALLBACK_FONT_LIST } from './labelFont'
 import type { PluginPrefValue } from '@shared/types/uiPrefs'
+import { UpdateCheckRow } from '@renderer/features/update/UpdateCheckRow'
 import type { SettingControl } from './settingControl'
 
 // --- Category tree ---
@@ -73,6 +74,7 @@ export const CATEGORY_TREE: CategoryNode[] = [
     icon: 'settings.general',
     children: [
       { id: 'general.files', label: 'Files', icon: 'ui.folder', children: [] },
+      { id: 'general.updates', label: 'Updates', icon: 'ui.download', children: [] },
     ],
   },
   {
@@ -280,6 +282,26 @@ export const SETTINGS: SettingDef[] = [
     category: 'general.files',
     control: { kind: 'select', options: OPEN_FILE_TARGET_OPTIONS },
   },
+  // --- General > Updates ---
+  {
+    key: 'updates.check',
+    label: 'Check for Updates at Startup',
+    description:
+      'Look for a newer CueMol3 release on GitHub shortly after the app starts, and offer it ' +
+      'in a notification. Off, no check is made; Check for Updates below, or the ' +
+      'Check for Updates menu item, still works.',
+    category: 'general.updates',
+    control: { kind: 'toggle' },
+  },
+  {
+    key: 'updates.checkNow',
+    label: 'Check for Updates',
+    description:
+      'Look for a newer release now, whether or not the startup check is on. ' +
+      'A newer version can be installed from here.',
+    category: 'general.updates',
+    control: { kind: 'custom', Component: UpdateCheckRow, wide: true },
+  },
   {
     key: 'picking.gpuPicking',
     label: 'GPU Picking',
@@ -337,6 +359,7 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'picking.hoverHighlight': true,
   'files.dropTarget': OPEN_FILE_TARGET_LABELS.active,
   'files.shellTarget': OPEN_FILE_TARGET_LABELS.active,
+  'updates.check': true,
 }
 
 // --- Label lookup: maps leaf category ids to their display titles ---
@@ -419,3 +442,5 @@ export const PICKING_PREF_SETTING_KEYS: Record<string, keyof PickingPrefs> = {
 
 export const DROP_TARGET_SETTING_KEY = 'files.dropTarget'
 export const SHELL_TARGET_SETTING_KEY = 'files.shellTarget'
+/** Setting key of `UiState.updateCheck` (features/update/useUpdateCheckPref.ts). */
+export const UPDATE_CHECK_SETTING_KEY = 'updates.check'

@@ -292,6 +292,15 @@
      the hidden-palette edge tab). One value for both themes. */
   --shadow-overlay: 0 2px 8px rgba(0, 0, 0, 0.25);
 
+  /* Status bar height; the notification overlay sits just above it. */
+  --statusbar-h: 24px;
+  /* Notification toast / center width (VS Code's is 450px at its default
+     font size; ours is narrower to match the denser UI). */
+  --notification-w: calc(340px * var(--ui-scale));
+  /* Notification overlay: above the Allotment sashes (35), below Blueprint
+     portals (40), so a dialog opened from a notification covers it. */
+  --z-notification: 38;
+
   /* Blender-style dropdown chevron. Single source for the glyph used by both
      the native-select caret (CSS mask in _form-kit.css) and the
      dropdown-trigger buttons (.h3-form-caret). Thin stroked V, drawn as a mask so
