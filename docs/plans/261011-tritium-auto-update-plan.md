@@ -1,7 +1,9 @@
 # tritium の自動更新 (コード署名なし)
 
 **状態: macOS 分は実装済み**。仕様は [`../architecture/auto-update.md`](../architecture/auto-update.md)。
-Windows と Linux (§3.3、§4 の Phase 3・4) は未実装。実装で計画から変えた点は末尾の「実装時の変更」に書く。
+Windows (§3.3、§4 の Phase 3) は未実装。**Linux (Phase 4) は当分実装しないので、Windows が
+終わった時点でこの計画は完了とする** (Linux は着手するときに改めて計画する)。実装で計画から変えた点は
+末尾の「実装時の変更」に書く。
 
 ## Context
 - tritium (CueMol3) には更新の仕組みが無い。新しい版を使うには、ユーザーが GitHub Releases から
@@ -152,7 +154,7 @@ Terminal ではなく CueMol3 になる)。スクリプトは次を行った:
 | 1 | 確認と通知 (全 OS)。4 桁版の埋め込み、`updateCheck.ts`、メニュー、dialog、設定。Update ボタンは release page を開く | なし |
 | 2 | macOS の in-place 更新 (ダウンロード、置換、再起動)。書き込めない場合と Translocation の fallback | Phase 1 |
 | 3 | Windows の更新 (昇格した silent install) | Windows 実機の spike: UAC、silent でのインストール先の維持、SmartScreen、`--force-run` による再起動 |
-| 4 | Linux AppImage の自己置換 (deb は Phase 1 の通知のまま) | Linux 実機での確認 |
+| 4 | Linux AppImage の自己置換 (deb は Phase 1 の通知のまま)。**当分実装しない (この計画の完了条件に含めない)** | Linux 実機での確認 |
 
 ## 5. テスト (最小集合)
 - `updateCheck.test.ts`:
