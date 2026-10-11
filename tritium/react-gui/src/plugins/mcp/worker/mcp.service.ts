@@ -107,7 +107,7 @@ async function callTool(ctx: WorkerContext, args: CallToolArgs): Promise<Result<
     // transaction, as it does alone on a console line.
     const outcome = op.outsideTxn?.(input)
       ? await runExclusive(() => invokeOp(op, ctx, input, oc))
-      : await runInTxn(scene, txnLabel('MCP: ', op.name), () => mutated, () => invokeOp(op, ctx, input, oc))
+      : await runInTxn(scene, txnLabel('MCP: ', op.name), () => mutated, () => invokeOp(op, ctx, input, oc), 'mcp')
     const result = toMcpResult(outcome)
     return ok(outcome.ok && openScene ? { ...result, openScene } : result)
   } finally {

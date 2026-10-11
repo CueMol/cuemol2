@@ -27,9 +27,10 @@ export const PYMOL_DIALECT: ConsoleDialect = {
   refuseLine: (cmd) =>
     cmd.python ? 'Error: Python expressions are not available in this console' : null,
   // PyMOL runs these through `run`, and warns when they are given to `@`.
-  refuseScript: (filePath) =>
-    /\.(py|pym)$/i.test(filePath)
-      ? `Error: ${filePath} is a Python script; Python is not available in this console`
-      : null,
+  refuseScript: (filePath) => {
+    if (/\.(py|pym)$/i.test(filePath)) return `Error: ${filePath} is a Python script; Python is not available in this console`
+    if (/\.qax$/i.test(filePath)) return `Error: ${filePath} is a qax file; switch the console to the native dialect to run it`
+    return null
+  },
   candidates: (id, ctx, sc) => candidatesFor(id as CompletionSourceId, ctx, sc, commandNames()),
 }

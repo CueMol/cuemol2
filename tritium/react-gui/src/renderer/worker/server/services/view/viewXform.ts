@@ -15,6 +15,7 @@
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /**
  * Transform-related `qsys::View` props this service touches. The generated
@@ -145,10 +146,26 @@ export function setViewXform(ctx: WorkerContext, args: SetViewXformArgs): SetVie
     return { ok: true };
 }
 
+/** The uid of the scene a view shows, for the action log; null if unreadable. */
+function sceneIdOfView(view: unknown): number | null {
+    try {
+        const scene = (view as { getScene?: () => { uid: number } | null }).getScene?.();
+        return scene ? scene.uid : null;
+    } catch {
+        return null;
+    }
+}
+
 export function rotateView(ctx: WorkerContext, args: RotateViewArgs): RotateViewResult {
     const view = getViewAccess(ctx, args.viewId);
     if (!view) return { ok: false };
     view.rotateView(args.rotX, args.rotY, args.rotZ);
+    const sceneId = sceneIdOfView(view);
+    if (sceneId !== null) {
+        for (const [axis, angle] of [['x', args.rotX], ['y', args.rotY], ['z', args.rotZ]] as const) {
+            if (angle !== 0) recordOp(ctx, sceneId, 'rotate_view', { axis, angle });
+        }
+    }
     return { ok: true };
 }
 
@@ -164,6 +181,8 @@ export function translateView(ctx: WorkerContext, args: TranslateViewArgs): Tran
     if (!view) return { ok: false, centerX: 0, centerY: 0, centerZ: 0 };
     if (args.dragging ?? true) view.translateViewDrag(args.dx, args.dy, args.dz);
     else view.translateView(args.dx, args.dy, args.dz);
+    const sceneId = sceneIdOfView(view);
+    if (sceneId !== null) recordOp(ctx, sceneId, 'pan_view', { dx: args.dx, dy: args.dy, dz: args.dz });
     const center = view.center;
     return { ok: true, centerX: center.x, centerY: center.y, centerZ: center.z };
 }

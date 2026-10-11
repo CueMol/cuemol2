@@ -10,16 +10,15 @@ PyMOL dialect のコマンドの残りは [260928](260928-pymconsole-remaining-p
 
 ## 1. op 基盤: 記録・再生と undo の連携
 
-op の実行入口は `opRuntime.ts` の `invokeOp` 1 箇所に限ってあり、params は順序と型を catalog に
-持つ。下の項目はこの 2 点を前提に足せるようにしてある。
+op ごとの記録と qax での再生は実装済み ([action-log.md](../architecture/action-log.md))。残りは次のとおり。
 
 | 項目 | 内容 |
 |---|---|
-| アクションの記録 (journal) | `invokeOp` に記録点を置き、実行した op と引数を残す。入れ子の深さ管理も同じ場所 |
-| 再生 | journal を op として流し直す。console の script と同じ 1 txn 規則に乗せるかは要検討 |
-| formatter | 引数から canonical なコマンド文字列 (native 構文) への逆変換。記録の表示や script 化に使う |
-| undo 履歴パネル | UndoInfo に meta (op 名・引数・呼び出し元 `cmd:` / `pym:` / `MCP:` / agent) を載せ、undo の各項目がどの op から来たかを出す |
-| undo 履歴の永続化 | scene と一緒に保存するか、別ファイルか |
+| Action pane (GUI) | action log の行を一覧・展開・範囲選択し、qax で保存 / コマンド行としてコピーする pane。plugin の構成、push channel、undo dropdown との関係を別の plan で詰める |
+| マクロ (`<macro>`) | op の組を名前付きの action として登録し、型付きの引数 (`<param>`、`<arg param="...">`) を持つ関数マクロとして呼ぶ。qax v1 では予約のみ |
+| 記録の対応表の拡充 | paint・coloring、GUI の renderer 作成と file 読み込みのオプション、PyMOL dialect で service を迂回して C++ を直接変更するコマンド (`label`、`set_view` の回転、`orient` など) を op として記録する |
+| undo 履歴の永続化 | action log を scene と一緒に保存するか、別ファイルにするか |
+| qax の C++ 移行 | コマンド系とあわせて qax の読み書きを C++ に移す。golden file で同じ形式を検証する |
 | context 参照の ref | 意味型の ref で「アクティブな object」「現在の selection」を指せるようにする |
 
 ## 2. op になっていない機能

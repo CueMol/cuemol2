@@ -22,6 +22,7 @@ import { syncMapRendererStyles } from '@renderer/worker/server/services/helpers/
 import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import { collectProps } from './read';
 import { isSceneNameWrite } from './selContext';
+import { recordOp, recordPropWrite, recordRenameNode } from '@renderer/worker/server/actions/serviceOps';
 import type {
     ResetGenericPropsArgs,
     SetGenericPropArgs,
@@ -153,6 +154,11 @@ export function setGenericProp(
             else target.setProp(args.propName, args.originalValue);
         }
         withUndoTxn(scene, label, () => {
+            // The op that does the same: a group's rename and its cascaded
+            // visibility are their own ops, which carry the members along.
+            if (grpRename) recordRenameNode(ctx, scene.uid, 'rendGroup', args.nodeId, grpRename.newName);
+            else if (grpVisibility) recordOp(ctx, scene.uid, 'set_visible', { nodeId: args.nodeId, nodeType: 'rendGroup', visible: args.value === true }, ['nodeId']);
+            else recordPropWrite(ctx, scene.uid, args);
             if (args.op === 'reset') {
                 target.resetProp(args.propName);
             } else if (isSceneNameWrite(args.nodeType, args.propName)) {
@@ -227,6 +233,7 @@ export function resetGenericProps(
     try {
         withUndoTxn(scene, label, () => {
             for (const name of propNames) {
+                recordPropWrite(ctx, scene.uid, { nodeType: args.nodeType, nodeId: args.nodeId, propName: name, op: 'reset' });
                 // Skip props that vanished because a parent object property
                 // was swapped earlier in this very loop (e.g. resetting
                 // `coloring` before `coloring.xxx`) -- UXP resetAllToDefault's
@@ -279,6 +286,7 @@ export function setGenericProps(
     try {
         withUndoTxn(scene, label, () => {
             for (const w of args.writes) {
+                recordPropWrite(ctx, scene.uid, { ...args, ...w });
                 if (w.op === 'reset') {
                     target.resetProp(w.propName);
                 } else if (isSceneNameWrite(args.nodeType, w.propName)) {

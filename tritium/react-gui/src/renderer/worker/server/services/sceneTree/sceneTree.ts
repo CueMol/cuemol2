@@ -10,6 +10,7 @@ import {
     type StyleRootEntry,
 } from '@renderer/worker/shared/sceneTreeTypes';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 
@@ -131,6 +132,7 @@ export function setNodeVisible(
         const grp = scene.getRenderer(args.nodeId) as Renderer | null;
         if (!grp) return { ok: false };
         withUndoTxn(scene, 'Change group visibility', () => {
+            recordOp(ctx, scene.uid, 'set_visible', { nodeId: args.nodeId, nodeType: 'rendGroup', visible: args.visible }, ['nodeId']);
             grp.visible = args.visible;
             for (const child of listGroupChildRenderers(scene, grp)) {
                 child.visible = args.visible;
@@ -141,6 +143,7 @@ export function setNodeVisible(
 
     const label = args.visible ? 'Show' : 'Hide';
     withUndoTxn(scene, label, () => {
+        recordOp(ctx, scene.uid, 'set_visible', { nodeId: args.nodeId, nodeType: args.nodeType, visible: args.visible }, ['nodeId']);
         if (args.nodeType === 'object') {
             const obj = scene.getObject(args.nodeId) as CueMolObject;
             if (!obj) return;

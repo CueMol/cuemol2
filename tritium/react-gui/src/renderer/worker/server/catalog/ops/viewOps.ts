@@ -30,6 +30,7 @@ export const rotateView = defineOp({
     angle: real('Angle in degrees; negative turns the other way.'),
   },
   mutates: false,
+  replay: true,
   expose: { tool: 'core', console: true },
   group: 'viewing',
   aliases: [{ name: 'turn', summary: 'Turn the view about a screen axis: turn y, 90' }],
@@ -138,6 +139,8 @@ export const setView = defineOp({
   },
   // The camera is not part of the undo history, as with the mouse.
   mutates: false,
+  // With nothing given it only reads.
+  replay: (args) => ['zoom', 'slab', 'distance', 'center'].some((k) => args[k] !== null && args[k] !== undefined) || args.fitSlab === true,
   expose: { tool: 'core', console: true },
   group: 'viewing',
   aliases: [

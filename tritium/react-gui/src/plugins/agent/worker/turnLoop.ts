@@ -178,6 +178,7 @@ export async function runTurn(
     // cancel: rolling back would revert edits the user has already seen.
     return await runInTxn(scene, txnLabel('AI: ', args.userText), () => turn.mutated, () =>
       streamTurn({ ctx, args, deps, spec, turn, controller, messages, userItem }),
+      'ai',
     )
   } finally {
     activeTurns.delete(args.turnId)

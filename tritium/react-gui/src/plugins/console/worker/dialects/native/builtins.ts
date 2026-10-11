@@ -11,14 +11,22 @@
 import { parseBoolText } from '@renderer/worker/server/catalog/argValues'
 import * as fs from 'fs'
 import * as nodePath from 'path'
-import { closeLog, currentLog, openLog, writeLog } from '../../runtime/commandLog'
+import { actionRows } from '@renderer/worker/server/actions/actionLog'
+import { entryLine, rowsToQax } from '@renderer/worker/server/actions/export'
+import { writeQax } from '@renderer/worker/server/actions/qax/codec'
+import { QAX_EXT } from '@renderer/worker/server/actions/qax/model'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
+import { closeQaxLog, currentQaxLog, noteQaxLog, openQaxLog } from '../../runtime/qaxLog'
 import { resolvePath } from '../../runtime/paths'
 import { quitCommand } from '../../runtime/quitCommand'
 import type { CmdContext, CmdOutcome, ConsoleCommand } from '../../runtime/types'
 import type { SceneRequest } from '../../../shared/consoleTypes'
 
-/** The file extension of a native console script. */
-export const NATIVE_SCRIPT_EXT = '.cml'
+/**
+ * The file extension of a native console script: a qax file (CueMol
+ * actions, XML). `run` also reads a plain text file of commands.
+ */
+export const NATIVE_SCRIPT_EXT = QAX_EXT
 
 const cd: ConsoleCommand = {
   name: 'cd',
@@ -83,7 +91,7 @@ const run: ConsoleCommand = {
   params: [{ name: 'file' }],
   mode: 'strict',
   mutates: false,
-  summary: `Run the commands in a ${NATIVE_SCRIPT_EXT} script (the same as @file).`,
+  summary: `Run a ${NATIVE_SCRIPT_EXT} file (each action its own undo step when run alone), or a text file of commands (the same as @file).`,
   completions: [{ source: 'files', description: 'script' }],
   run(_ctx, args, cc) {
     return cc.runScript(args.file.trim())
@@ -96,19 +104,16 @@ const logOpen: ConsoleCommand = {
   params: [{ name: 'file', default: `log${NATIVE_SCRIPT_EXT}` }, { name: 'mode', default: 'w' }],
   mode: 'strict',
   mutates: false,
-  summary: 'Record the commands typed from now on to a script file.',
+  summary: `Record what each console submission does from now on, as the native ops it ran, to a ${NATIVE_SCRIPT_EXT} file.`,
   completions: [{ source: 'files', description: 'file' }, { source: 'enum:w|a', description: 'mode' }],
-  run(_ctx, args, cc) {
+  run(ctx, args, cc) {
     const mode = args.mode.trim()
     if (mode !== 'w' && mode !== 'a') {
       return { ok: false, error: 'Error: mode must be "w" (new file) or "a" (append)' }
     }
     const filePath = resolvePath(cc.cwd, args.file.trim())
-    try {
-      openLog(filePath, mode)
-    } catch {
-      return { ok: false, error: `Error: cannot open log file ${filePath}` }
-    }
+    const problem = openQaxLog(ctx, filePath, mode)
+    if (problem !== null) return { ok: false, error: `Error: cannot open log file: ${problem}` }
     cc.print(`logging to ${filePath}`)
     return { ok: true }
   },
@@ -120,10 +125,10 @@ const logClose: ConsoleCommand = {
   params: [],
   mode: 'strict',
   mutates: false,
-  summary: 'Stop recording commands to the log file.',
+  summary: 'Stop recording to the log file.',
   run(_ctx, _args, cc) {
-    const was = currentLog()
-    closeLog()
+    const was = currentQaxLog()
+    closeQaxLog()
     if (was !== null) cc.print('log closed')
     return { ok: true }
   },
@@ -135,9 +140,71 @@ const logLine: ConsoleCommand = {
   params: [{ name: 'text', default: '' }],
   mode: 'literal1',
   mutates: false,
-  summary: 'Write a line to the open log file.',
+  summary: 'Write a note to the open log file.',
   run(_ctx, args) {
-    if (args.text !== '') writeLog(args.text)
+    if (args.text !== '') noteQaxLog(args.text)
+    return { ok: true }
+  },
+}
+
+// --- Actions ---
+// The scene's undo steps with the native ops each ran (the action log).
+
+/** A row number as `list_actions` shows it, 1 = the oldest. */
+function rowNumber(text: string, count: number, fallback: number): number | string {
+  const t = text.trim()
+  if (t === '') return fallback
+  const n = Number(t)
+  if (!Number.isInteger(n) || n < 1 || n > count) return `no action ${t} (there ${count === 1 ? 'is 1' : `are ${count}`})`
+  return n
+}
+
+const listActions: ConsoleCommand = {
+  name: 'list_actions',
+  group: 'edit',
+  params: [],
+  mode: 'strict',
+  mutates: false,
+  summary: "List the scene's undo steps with the commands each ran, oldest first; (undone) marks the redo side.",
+  run(ctx, _args, cc) {
+    const rows = actionRows(getSceneOrNull(ctx, cc.sceneId), cc.sceneId)
+    if (rows.length === 0) {
+      cc.print('(no actions)')
+      return { ok: true }
+    }
+    rows.forEach((row, i) => {
+      cc.print(`${i + 1}  [${row.source ?? '?'}] ${row.label}${row.undone ? '  (undone)' : ''}`)
+      if (row.entries.length === 0) cc.print('     # no op recorded for this edit')
+      for (const e of row.entries) cc.print(`     ${entryLine(e)}`)
+    })
+    return { ok: true }
+  },
+}
+
+const exportActions: ConsoleCommand = {
+  name: 'export_actions',
+  group: 'edit',
+  params: [{ name: 'file' }, { name: 'first', default: '' }, { name: 'last', default: '' }],
+  mode: 'strict',
+  mutates: false,
+  summary: `Write actions (by their list_actions numbers, all by default) to a ${NATIVE_SCRIPT_EXT} file, to run again with run.`,
+  completions: [{ source: 'files', description: 'file' }, { source: 'none', description: 'first' }, { source: 'none', description: 'last' }],
+  run(ctx, args, cc) {
+    const rows = actionRows(getSceneOrNull(ctx, cc.sceneId), cc.sceneId)
+    if (rows.length === 0) return { ok: false, error: 'Error: the scene has no actions' }
+    const first = rowNumber(args.first, rows.length, 1)
+    if (typeof first === 'string') return { ok: false, error: `Error: ${first}` }
+    const last = rowNumber(args.last, rows.length, args.first.trim() === '' ? rows.length : first)
+    if (typeof last === 'string') return { ok: false, error: `Error: ${last}` }
+    if (last < first) return { ok: false, error: 'Error: last comes before first' }
+    let filePath = resolvePath(cc.cwd, args.file.trim())
+    if (!filePath.toLowerCase().endsWith(NATIVE_SCRIPT_EXT)) filePath += NATIVE_SCRIPT_EXT
+    try {
+      fs.writeFileSync(filePath, writeQax(rowsToQax(rows.slice(first - 1, last))))
+    } catch {
+      return { ok: false, error: `Error: cannot write ${filePath}` }
+    }
+    cc.print(`wrote ${last - first + 1} action${last === first ? '' : 's'} to ${filePath}`)
     return { ok: true }
   },
 }
@@ -238,6 +305,8 @@ export const NATIVE_BUILTINS: ConsoleCommand[] = [
   logOpen,
   logClose,
   logLine,
+  listActions,
+  exportActions,
   undoStack('undo'),
   undoStack('redo'),
   quitCommand('quit'),

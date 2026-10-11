@@ -108,9 +108,12 @@ vi.mock('@renderer/worker/server/services/helpers/streamFetchToReader', () => ({
   cancelStream: vi.fn(() => true),
 }))
 
+/** Which dialect the stub stands for; a qax file runs only in the native one. */
+const dialect = vi.hoisted(() => ({ id: 'pymol' }))
+
 vi.mock('../dialects', () => ({
   dialectOf: () => ({
-    id: 'pymol',
+    id: dialect.id,
     prompt: 'PyM>',
     txnPrefix: 'pym: ',
     commands: () => STUBS,
@@ -134,7 +137,10 @@ function setup() {
 }
 
 describe('runCommand', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    dialect.id = 'pymol'
+  })
 
   it('keeps a caller-owned working directory out of the panel\'s', async () => {
     const { ctx } = setup()
@@ -253,5 +259,38 @@ describe('runCommand', () => {
     expect(errors.map((e) => e.text).join()).toContain('must be the only command on the line')
     // What ran before it is kept, as with any other failure.
     expect(scene.undo.committed).toHaveLength(1)
+  })
+
+  it('replays a qax file alone on the line one undo step per action, under its recorded label', async () => {
+    const { scene, ctx } = setup()
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qax-'))
+    const file = path.join(dir, 'a.qax')
+    fs.writeFileSync(file, [
+      '<cuemol-actions version="1">',
+      '  <action label="first"><cmd>mutate</cmd><note>skipped</note></action>',
+      '  <action><cmd>mutate</cmd><cmd>mutate</cmd></action>',
+      '  <action label="third"><cmd>boom</cmd></action>',
+      '  <action label="never"><cmd>mutate</cmd></action>',
+      '</cuemol-actions>',
+    ].join('\n'))
+
+    // The PyMOL dialect does not run qax files.
+    const refused = await runCommand(ctx, { dialect: 'pymol', sceneId: 1, viewId: 7, runId: 'q1', text: `@${file}` })
+    expect(refused.ok && refused.aborted).toBe(true)
+    expect(scene.undo.started).toHaveLength(0)
+
+    dialect.id = 'native'
+    const res = await runCommand(ctx, { dialect: 'native', sceneId: 1, viewId: 7, runId: 'q2', text: `@${file}` })
+    // The failing action stops the rest; the ones before it stay.
+    expect(res.ok && res.aborted).toBe(true)
+    // An action without a label is named after the file.
+    expect(scene.undo.committed).toEqual(['first', expect.stringMatching(/^qax: /)])
+
+    // Inside a longer line it is part of that line's one transaction.
+    scene.undo.committed.length = 0
+    fs.writeFileSync(file, '<cuemol-actions version="1"><action label="x"><cmd>mutate</cmd></action></cuemol-actions>')
+    await runCommand(ctx, { dialect: 'native', sceneId: 1, viewId: 7, runId: 'q3', text: `mutate; @${file}` })
+    expect(scene.undo.committed).toHaveLength(1)
+    expect(scene.undo.committed[0]).not.toBe('x')
   })
 })

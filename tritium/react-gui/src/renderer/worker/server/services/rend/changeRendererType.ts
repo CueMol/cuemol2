@@ -17,6 +17,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getDefaultStyleName } from '@renderer/worker/server/services/helpers/getDefaultStyleName';
 import { resolveMapKind } from '@renderer/worker/server/services/helpers/mapRendererStyles';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordChangeRendererType } from '@renderer/worker/server/actions/serviceOps';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface ChangeRendererTypeArgs {
@@ -110,6 +111,7 @@ export function changeRendererType(
     let newRendId = -1;
     let newName = '';
     withUndoTxn(scene, 'Change rend type', () => {
+        recordChangeRendererType(ctx, scene.uid, args.rendId, args.newType);
         obj.destroyRenderer(args.rendId);
         obj.attachRenderer(newRend);
         newRendId = (newRend as unknown as { uid: number }).uid ?? -1;

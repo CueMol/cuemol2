@@ -158,7 +158,10 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   (表現を足す) と意味が衝突しない。
 - console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `open_log` / `close_log` / `log` /
   `undo` / `redo` / `help`、scene (タブ) の `list_scenes` (短縮形 `scenes`) / `create_scene` /
-  `switch_scene` / `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
+  `switch_scene` / `close_scene` ([local-api-server.md](local-api-server.md) §5.2)、undo の各項目が実行した op を
+  出す `list_actions` と、それを qax ファイルに書き出す `export_actions`。script は qax (`.qax`、XML) で、
+  `run x.qax` は action ごとに 1 txn で再生する。`open_log` も qax で書く。それ以外の拡張子のファイルは
+  コマンド行のテキストとして読む ([action-log.md](action-log.md))。
 - `quit` / `exit` (両 dialect 共通。`runtime/quitCommand.ts`。`exit` は引数を取らない `quit`): app を終了する。worker は
   scene コマンドと同じく `requestScene({ op: 'quit', force })` で panel に渡し、`runSubmission` が
   `IPC.APP_QUIT` で main (`main/appQuit.ts`) に頼む。Cmd+Q と同じ保存確認を出し、`force` (`true` /
