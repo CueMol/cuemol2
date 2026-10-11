@@ -27,6 +27,23 @@ console panel (GUI) と `tritium_cli` (CLI) の Tab は同じ補完を使い、z
 
 `_` で始まる名前は内部用として一覧に出さない (完全一致なら補完はする)。
 
+## 行の読み方と候補源
+
+- 行は実行時と同じ規則で読む: `scanArgs` (`parser/parseArgs.ts`。書きかけの括弧・引用符は throw せず
+  入力中の引数として返し、行の中の開始位置を持つ) と、dialect の割り当て規則 `assignArgs`
+  (`ConsoleDialect.argRule`。native は Python の呼び出しと同じ、PyMOL は PyMOL のまま。
+  [op-catalog.md](op-catalog.md) §5)。カンマの数で位置を決めないので、括弧や引用符の中のカンマで
+  ずれない。補完後の行は元の行を引数の開始位置で切って作るので、入力した空白や引用符は残る。
+- 候補源は引数ごとに宣言する: `ConsoleCommand.completions[i]` が `params[i]` の
+  `ArgCompletion { source, description, suffix?, open?, files? }` で、位置で書いても名前で書いても
+  同じ宣言を使う。`description` は見出し (`matching X:`)、`open` は値が続く引数 (selection、path)。
+- 候補源は前の引数を名前で受け取る (`SourceContext.bound`)。位置の番号で引くと、名前付きで書いた
+  ときにずれるため。native の宣言は op の param の意味型から作る (`dialects/native/fromCatalog.ts`)。
+- 候補は文字列か `CompletionItem { text, then }` (LSP の CompletionItem に倣う)。`then: 'continue'`
+  は区切りを付けない (`name=`、`obj.`、ディレクトリ)。区切りは候補ごとに決まり、位置で固定しない。
+- 名前付き引数 (`name=`) の候補は両 dialect で出す。候補が無いときにファイル名へ fall back するのは
+  PyMOL dialect だけ (`ConsoleDialect.fileFallback`)。
+
 ## メニュー
 
 1. 1 回目の Tab: 候補が複数なら一覧を出す (共通 prefix まで伸ばす)
@@ -37,6 +54,8 @@ console panel (GUI) と `tritium_cli` (CLI) の Tab は同じ補完を使い、z
 
 一覧は column-major (i 番目は `i % rows` 行目)。列数は GUI はパネルの幅 (等幅フォントの
 文字数)、CLI は端末幅から決める。CLI で画面より高い一覧は、選択の周りの行だけを出す。
+CLI の桁数は console-kit の `displayWidth` で数える (全角は 2 桁、結合文字は 0 桁。Markdown の
+表の幅合わせも同じ関数)。
 
 ## ファイル名の一致規則
 

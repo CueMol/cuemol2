@@ -114,7 +114,7 @@ export interface OpExposure {
 export const OP_GROUPS = {
   tabs: 'Scenes and tabs',
   nodes: 'Objects and the scene tree',
-  edit: 'Undo',
+  edit: 'Undo and actions',
   renderers: 'Renderers',
   coloring: 'Colouring',
   selections: 'Selections',
@@ -159,6 +159,14 @@ export interface Op<P extends ParamMap = ParamMap> {
    * reads only what both carry the same way (a path string).
    */
   outsideTxn?(args: Readonly<Record<string, unknown>>): boolean
+  /**
+   * Whether a successful call is kept in the action log although it does not
+   * change the scene (`mutates` false): a change of view, which the undo
+   * stack does not hold but which a replay has to repeat. A predicate for an
+   * op that only reads with some arguments (`set_view` with none given).
+   * Kept only when the transaction around it commits.
+   */
+  replay?: boolean | ((args: Readonly<Record<string, unknown>>) => boolean)
   /**
    * Lines a console prints for a successful result. Without it the data is
    * printed as JSON.

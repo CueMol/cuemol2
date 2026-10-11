@@ -1,8 +1,8 @@
 # Op catalog と console (native / PyMOL dialect)
 
-CueMol を名前で操作する呼び出し元 (AI agent の tool、console のコマンド、将来の MCP server) が
-共有する「操作の定義」の仕様。経緯と判断は
-[`../plans/261006-native-console-op-catalog-plan.md`](../plans/261006-native-console-op-catalog-plan.md)。
+CueMol を名前で操作する呼び出し元 (AI agent の tool、console のコマンド、MCP server) が
+共有する「操作の定義」の仕様。まだ実装していない項目は
+[op / console の backlog](../plans/261011-op-console-backlog-plan.md) にある。
 
 ## 1. 構成
 
@@ -22,11 +22,13 @@ plugin console/worker/
          parser/          PyMOL 由来の引数パーサ (両 dialect 共用)
          completion/      Tab 補完 (候補源は dialect が持つ)
          dialects/native/ op catalog から生成するコマンド + console 自前の builtin
-         dialects/pymol/  PyMOL 語彙のコマンド 77 本、selection 翻訳 (sel/)
+         dialects/pymol/  PyMOL 語彙のコマンド、selection 翻訳 (sel/)
 ```
 
 op 本体は新しい層を作らず、既存の worker service 関数を呼ぶ。GUI と同じ service を通るので、
 GUI でできる操作は op を 1 つ書けば agent と console の両方に出る。
+ServiceMap から tool を自動生成はしない (service の形は UI の都合で、説明文が無く、数も多すぎる)。
+`CmdId` (renderer の UI handler) とも層が違うので共通化しない。
 
 依存の向き (ESLint で強制): `worker/server` は plugin を import しない。console の runtime と
 native dialect は `dialects/pymol` を import しない (例外は dialect 表 `dialects/index.ts`)。
@@ -47,7 +49,12 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 | 原子列 | `atoms` | `{chain, resid, atomName}` の配列 | `A/20/CA A/21/CA` |
 
 `run` の引数型は DSL から推論される。console が文字列から変換できる種別だけに限っているのが、
-コマンドを自動生成できる条件。
+コマンドを自動生成できる条件 (zod などの汎用 schema を使わないのはこのため)。
+
+- **名前の解決** (`refs.ts`): session をまたいで一意な id は持たず、名前か `#uid` で引く。CueMol の
+  名前は一意でないので、複数に一致する名前は失敗にして uid を求める (`names more than one node`)。
+- **selection**: native・agent・MCP は CueMol の選択式をそのまま受け、PyMOL 構文への翻訳 (`sel/`) は
+  通さない。PyMOL の選択式を受けるのは PyMOL dialect だけ。
 
 ## 3. Op
 
@@ -80,6 +87,25 @@ defineOp({
   (空 commit は redo を消すため)。agent の 1 turn、console の 1 submit がそれぞれ 1 txn。
   `outsideTxn` の op は `runExclusive` で txn の外で走らせるが、その間も `txnBusy()` は busy を返す
   (scene の保存・open の途中に他の編集が割り込まないように)。
+- 結果は op の値をそのまま返し、表示は呼び出し元が決める (agent / MCP は JSON、console は `format`)。
+- 後から足す機能のための前提: 実行は `invokeOp` 以外から呼ばない (操作の記録や入れ子の管理を
+  ここに足す)。params の順序と型は catalog に残す (引数から command 文字列を組み立て直せるように)。
+
+## 3.1 何を op にするか
+
+- **基準**: ユーザーが「〜して」と頼む単位の操作。GUI 内部の補助は op にしない: マウス操作の補助
+  (`naviHover` / `measurePick` / `rectSelect` など)、名前の提案 (`propose*`)、dialog の初期値
+  (`get*Info`)、`drainLogMessages`、`cancelAllJobs`。
+- `undo` / `redo` は op にしない。console では builtin、agent では turn 単位の txn と衝突する。
+- console 自身の機能 (`cd` / `pwd` / `ls` / `run` / log / `help`) も op にせず native dialect の
+  builtin にする (agent / MCP は使わない)。
+- **置き場所** (agent): 頻繁に使い、無いと別の tool で代用されるもの (slab だけ変えたいのに
+  `center_view` で中心とズームまで変える、など) は `core`。それ以外は toolset。`core` が上限
+  (`MAX_TOOLS`) に当たっているときは、使用頻度の低い `core` を toolset に移してから足す。
+  dialog 由来の重い操作 (Tools 系・アニメーション編集・形式ごとの load) は agent に出さず、
+  `tool: false, mcp: true` で console と MCP にだけ出す。
+- console には toolset に関係なく全ての op が出る (`expose.console`)。例外は `capture_view`
+  (画像はモデルに見せるもので、console には出す場所が無い)。
 
 ## 4. AI agent への公開
 
@@ -128,9 +154,14 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 - console と MCP にだけ出す op (`tool: false, mcp: true`。agent には出さない): Tools メニューの dialog に当たる
   `calc_elepot`・`cut_surface`・`list_morph_frames` / `add_morph_frame` / `remove_morph_frame`、
   アニメーション編集の `list_anims` / `add_anim` / `set_anim_prop` など。
+- `show` / `hide` は `set_visible` の alias。CueMol では renderer が表現なので、PyMOL の `show`
+  (表現を足す) と意味が衝突しない。
 - console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `open_log` / `close_log` / `log` /
   `undo` / `redo` / `help`、scene (タブ) の `list_scenes` (短縮形 `scenes`) / `create_scene` /
-  `switch_scene` / `close_scene` ([local-api-server.md](local-api-server.md) §5.2)。script の拡張子は `.cml`。
+  `switch_scene` / `close_scene` ([local-api-server.md](local-api-server.md) §5.2)、undo の各項目が実行した op を
+  出す `list_actions` と、それを qax ファイルに書き出す `export_actions`。script は qax (`.qax`、XML) で、
+  `run x.qax` は action ごとに 1 txn で再生する。`open_log` も qax で書く。それ以外の拡張子のファイルは
+  コマンド行のテキストとして読む ([action-log.md](action-log.md))。
 - `quit` / `exit` (両 dialect 共通。`runtime/quitCommand.ts`。`exit` は引数を取らない `quit`): app を終了する。worker は
   scene コマンドと同じく `requestScene({ op: 'quit', force })` で panel に渡し、`runSubmission` が
   `IPC.APP_QUIT` で main (`main/appQuit.ts`) に頼む。Cmd+Q と同じ保存確認を出し、`force` (`true` /
@@ -139,7 +170,7 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   その主題のコマンドを、`help <command>` で書式と引数を出す。出力は Markdown
   ([console-help-markdown.md](console-help-markdown.md))。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
-- **Tab 補完** (`completion/complete.ts`。設計は [計画](../plans/261009-console-completion-plan.md)):
+- **Tab 補完** (`completion/complete.ts`。候補の返し方と client 側のメニューは [console-completion.md](console-completion.md)):
   - 入力途中の行を実行時と同じ規則で読む (`scanArgs` の partial、`assignArgs`)。書きかけの括弧の中は 1 つの引数。
   - その位置に書けるものを全部出す: 次の位置の引数の値と、まだ書いていない引数の `name=` を、見出しを分けて一覧する。
     `name=` を書いた後はその引数の値。native で名前付きの後は `name=` だけ。
@@ -152,7 +183,10 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   - 候補が無いときのファイル名 fall back は PyMOL dialect だけ (`ConsoleDialect.fileFallback`)。native は path 型の引数だけがファイルを出す。
 
 **PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
-(CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる。
+(CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる (詳細は
+[console-pymol-dialect.md](console-pymol-dialect.md))。
+`load` / `fetch` / `png` のように native と同じ名前のコマンドも、native の生成コマンドは再利用せず
+service を直接呼ぶ。引数と文言が PyMOL 固有で、置き換えると PyMOL との互換が崩れるため。
 `ray` は native の `render_image` で一時ファイルに描き、undo 位置とカメラを署名として覚える。
 直後の `png` (幅・高さ指定なし) は、署名が変わっていなければその画像を書き出す。`png ..., ray=1`
 はその場で ray tracing する。
@@ -164,7 +198,8 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 
 op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は次の規約で付ける。
 `plugins/console/worker/dialects/native/naming.test.ts` が動詞と `help` の分類を検査する。
-経緯と対応表は [計画](../plans/261009-command-naming-plan.md)。
+語順を `名詞_動詞` にしないことで失う「同じ対象の op が Tab 補完で並ぶ」性質は、`help` の主題
+(`OP_GROUPS`) で補う。
 
 - **op 名は `動詞_目的語`** (snake_case): `list_cameras`、`add_paint`。`名詞_動詞` (`anim_add`) や
   名詞だけ (`scenes`) の op 名は付けない。目的語が自明な固有の動作は動詞だけ (`superpose`、`animate`)。
@@ -201,12 +236,12 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
 
 ## 6. 未対応 (範囲外)
 
-- GUI 用 service のうち op になっていないものは agent / console から使えない。op 化の対象と
-  状況は [網羅計画](../plans/261006-op-catalog-coverage-plan.md)。APBS、morph、アニメーションの
-  編集、POV-Ray 出力は未対応。
-- MCP server、アクションの記録と再生、undo 履歴 UI は別計画
-  ([260926 計画](../plans/260926-mcp-tool-catalog-plan.md) の D4 以降、
-  [261006 計画](../plans/261006-native-console-op-catalog-plan.md) の「将来」)。
+- GUI 用 service のうち op になっていないものは agent / console / MCP から使えない。主なもの:
+  node の copy / paste、material の一覧、対称分子の生成 (`createSymmMol`)、原子の一覧、
+  multigrad 着色、保存できる object の一覧、POV-Ray 出力。一覧は
+  [backlog](../plans/261011-op-console-backlog-plan.md) の「op になっていない機能」。
+- アクションの記録と再生、undo 履歴 UI は未実装
+  ([backlog](../plans/261011-op-console-backlog-plan.md) の「op 基盤 (記録・再生・undo 連携)」)。
 
 ### Tools 系の op (`ops/apbsOps.ts`, `ops/toolOps.ts`。console と MCP)
 

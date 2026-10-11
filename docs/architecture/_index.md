@@ -56,6 +56,16 @@ architecture, it belongs here.
   AI agent の tool と console のコマンドを生成する core の op catalog。`.qif` 型に合わせた param DSL と
   意味型 (node 名・property path・selection)、`invokeOp` / `runInTxn`、agent の toolset と
   `enable_toolsets`、console runtime と native / PyMOL dialect、補完と結果整形。
+- [Action log と qax (CueMol actions XML)](action-log.md) (日本語) -- undo 履歴の 1 項目ごとに、実際に
+  実行した native の op を記録する仕組み (GUI・console・PyMOL・MCP・agent 共通)。txn helper への hook と
+  C++ undo stack との reconcile、service ごとの op 対応表、`replay` op。記録を書き出して再生する XML 形式
+  qax v1 のスキーマと値の書き方、`run x.qax` の 1 action = 1 txn、`open_log`、`list_actions` /
+  `export_actions`。
+- [Console の PyMOL dialect](console-pymol-dialect.md) (日本語) -- PyMOL のコマンド言語に部分互換の
+  63 コマンド (TS、Python embedding なし)。PyMOL 選択式の CueMol 式への翻訳 (優先順位、`-` / `+` の 2 つの
+  意味、object 名の分子ごとの展開、断る語の一覧)、object x 表現ごとの `pym:<rep>` renderer 規約、
+  コマンドごとの PyMOL との違い (align / super は SSM、`.cif` / `.pse` の保存は断る、計測は重心など)、
+  PyMOL 設定名の別名表、制約とテストの所在。
 - [react-gui 大規模リファクタリング (2026-08)](react-gui-refactoring.md)
   (日本語) -- 移行完了後の構造作り替えの設計記録。動機 (churn が 4 つのハブ
   ファイルに集中していた) と、採用した判断 (feature ディレクトリ / hook は

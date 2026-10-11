@@ -7,7 +7,7 @@ GUI アプリ (tritium) に内蔵した HTTP server。外部のプログラム�
 - console (`/console/run`, `/console/complete`, `/console/info`、`/app/quit`) -- plugin `console`。
   terminal の `tritium_cli` から console の native / PyMOL dialect を使い、app を終了する (§5)。
 
-計画: [261007](../plans/261007-local-api-server-plan.md)。
+まだ実装していない項目は [backlog](../plans/261011-op-console-backlog-plan.md) の「MCP / agent」「console 本体」。
 
 関連: [op catalog と console](op-catalog.md) (MCP の tool の中身)、
 [plugin の API](tritium_plugin/api.md) (`useLocalApiEndpoint` など)。
@@ -175,7 +175,8 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
 - **app の自動起動** (`ensureApp`): 情報ファイルが無い、`console` endpoint が無い、pid が
   死んでいるときは、`ELECTRON_RUN_AS_NODE` 下 (= wrapper 経由、`process.execPath` が app) に限り
   app を `--tritium-cli` 付きで detached 起動し (`ELECTRON_RUN_AS_NODE` は外す)、情報ファイルに
-  `console` が載るまで最長 90 秒待つ。CLI を抜けても app は残る。動いている app (access off) に
+  `console` が載るまで最長 90 秒待つ (300 ms ごとに読む。endpoint は worker の初期化が終わってから
+  開くので、これが準備完了の合図になる)。CLI を抜けても app は残る。動いている app (access off) に
   対しても同じで、2 個目のプロセスは single-instance lock で argv を渡して終わり、動いている app が
   その起動中だけ endpoint を開く (main `noteCliLaunch` -> invoke `LOCAL_API_CLI_ACCESS` / push
   `LOCAL_API_CLI_ACCESS_GRANTED` -> renderer `useCliAccessGranted()`)。設定値は変えない。
@@ -222,6 +223,10 @@ undo txn は scene ごとに分かれる。
   `tritium_cli.cmd`。wrapper は app 自身の実行ファイルを `ELECTRON_RUN_AS_NODE=1` で Node として
   動かす (VS Code の `code` と同じ)。Electron の RunAsNode fuse を切らないこと。sh 版は symlink を
   辿ってから app を探すので、PATH 上の symlink から起動できる。
+- wrapper を固定ファイルで持たず afterPack で生成するのは、実行ファイルの場所が packager の決める
+  ものだから (Linux では package 名から導かれる `packager.executableName`)。mac では同じ hook
+  (`build/afterPack.js`) が wrapper を書いた後に deep ad-hoc codesign するので、wrapper も署名に入る。
+- `cliPath` は、開発ビルドでは cli package の `dist/tritium_cli.mjs` (`node` で起動)、AppImage では空。
 - PATH は installer では触らない。Settings > Plugins > Console の「Command line tool」行に
   wrapper のフルパス (Copy) と PATH への入れ方を出す (`AppPathInfo.cliPath`、custom setting 行
   `CliPathRow`)。例外は deb で、`/usr/bin/tritium_cli` に symlink を張る

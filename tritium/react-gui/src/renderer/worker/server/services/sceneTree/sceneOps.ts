@@ -16,6 +16,7 @@ import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { SceneNodeType } from '@renderer/worker/shared/sceneTreeTypes';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordDeleteNode, recordOp, recordRenameNode } from '@renderer/worker/server/actions/serviceOps';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 import { collectGroupMemberUids } from '@renderer/worker/server/services/helpers/rendGroup';
@@ -86,6 +87,9 @@ export function focusOnNode(ctx: WorkerContext, args: FocusOnNodeArgs): FocusOnN
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
     const view = ctx.sceMgr.getView(args.viewId) as GUIView;
     if (!scene || !view) return { ok: false };
+    if (args.nodeType === 'object' || args.nodeType === 'renderer' || args.nodeType === 'rendGroup') {
+        recordOp(ctx, scene.uid, 'focus_node', { nodeId: args.nodeId, nodeType: args.nodeType }, ['nodeId']);
+    }
 
     if (args.nodeType === 'object') {
         const obj = scene.getObject(args.nodeId) as CueMolObject | null;
@@ -146,6 +150,7 @@ export function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNode
         if (!obj) return { ok: false };
         const name = safeRead(() => obj.name) ?? '';
         withUndoTxn(scene, `Destroy object ${name}`, () => {
+            recordDeleteNode(ctx, scene.uid, 'object', args.nodeId);
             scene.destroyObject(args.nodeId);
         });
         return { ok: true };
@@ -159,6 +164,7 @@ export function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNode
         const objName = safeRead(() => client.name) ?? '';
         const rendName = safeRead(() => rend.name) ?? '';
         withUndoTxn(scene, `Delete renderer: ${objName}/${rendName}`, () => {
+            recordDeleteNode(ctx, scene.uid, 'renderer', args.nodeId);
             client.destroyRenderer(args.nodeId);
         });
         return { ok: true };
@@ -185,6 +191,7 @@ export function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNode
         const objName = safeRead(() => client.name) ?? '';
         const grpName = safeRead(() => grp.name) ?? '';
         withUndoTxn(scene, `Delete rend group: ${objName}/${grpName}`, () => {
+            recordDeleteNode(ctx, scene.uid, 'rendGroup', args.nodeId);
             // Union the caller's snapshot with the live membership: a renderer
             // moved into the group after the tree was fetched would otherwise
             // survive with `group` still naming the destroyed group, which
@@ -234,6 +241,7 @@ export function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNode
         // resolving via `getObject` etc. The setName method is on
         // Scene itself.
         withUndoTxn(scene, `Rename to ${trimmed}`, () => {
+            recordRenameNode(ctx, scene.uid, 'scene', args.nodeId, trimmed);
             (scene as unknown as { setName: (n: string) => void }).setName(trimmed);
         });
         return { ok: true };
@@ -254,6 +262,7 @@ export function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNode
         // Collect members by the OLD name before the rename happens.
         const children = listGroupChildRenderers(scene, grp);
         withUndoTxn(scene, `Change rend group name: ${trimmed}`, () => {
+            recordRenameNode(ctx, scene.uid, 'rendGroup', args.nodeId, trimmed);
             grp.name = trimmed;
             for (const c of children) {
                 try { c.group = trimmed; } catch { /* ignore */ }
@@ -271,6 +280,7 @@ export function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNode
     if (!target) return { ok: false };
 
     withUndoTxn(scene, `Rename to ${trimmed}`, () => {
+        recordRenameNode(ctx, scene.uid, args.nodeType, args.nodeId, trimmed);
         target!.name = trimmed;
     });
     return { ok: true };

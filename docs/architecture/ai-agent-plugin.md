@@ -375,7 +375,8 @@ render job は GUI の Render パネルと同じ in-process job で走る。待�
 
 core は 21 件。OpenAI の推奨 20 本を意図的に 1 本超えている。`tools/index.test.ts` の `MAX_TOOLS`
 が core の 21 を pin しており、新しい op は使用頻度が低ければ toolset に入れる (toolset 側は本数を
-縛らず、説明で選ばせる)。
+縛らず、説明で選ばせる)。core に足すときは、使用頻度の低い core を toolset に移して枠を空ける
+(何を op にし、どこに置くかは [op-catalog.md](op-catalog.md) §3.1)。
 
 ### 5.1 表示を画像で見せる (`capture_view`)
 

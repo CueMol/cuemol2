@@ -20,7 +20,7 @@
  *
  *   tritium_cli                        interactive (Tab completes, Ctrl-C stops a run)
  *   tritium_cli -c "fetch 1crn; show cartoon"
- *   tritium_cli script.cml             run a file
+ *   tritium_cli script.qax             run a qax (actions) file, or a text file of commands
  *   cat cmds.txt | tritium_cli         run what is piped in
  *   tritium_cli -c quit                quit the app (asks to save; quit --force does not)
  *   --dialect pymol                       speak PyMOL instead of native
@@ -600,6 +600,9 @@ async function main(argv: string[]): Promise<number> {
 
   if (opts.command !== null) return runOnce(opts.command)
   if (opts.script !== null && opts.script !== '-') {
+    // A qax file is XML, read by the app itself (each action its own undo
+    // step); a text script is sent line by line.
+    if (opts.script.toLowerCase().endsWith('.qax')) return runOnce(`run "${path.resolve(opts.script)}"`)
     let text
     try {
       text = fs.readFileSync(opts.script, 'utf8')

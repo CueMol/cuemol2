@@ -25,6 +25,7 @@ import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from '../rend/setupRenderer';
 import { undoTxnResult } from '../withUndoTxn';
+import { recordLoadFile } from '@renderer/worker/server/actions/serviceOps';
 import { pickReaderName, OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
 import { applyMapTypeChoice, applyMapCenterPolicy } from '@renderer/worker/server/services/map/emDefaults';
@@ -89,6 +90,7 @@ export function loadObject(ctx: WorkerContext, args: LoadObjectArgs): LoadObject
     if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
 
     return undoTxnResult(scene, 'Open file', () => {
+        recordLoadFile(ctx, scene.uid, args.filePath, args.options.renderer);
         let obj: CObject | null = null;
         try {
             obj = reader.createDefaultObj() as unknown as CObject;

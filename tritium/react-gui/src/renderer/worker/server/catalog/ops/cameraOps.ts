@@ -69,6 +69,7 @@ export const applyCamera = defineOp({
   },
   // The view is not part of the undo history; the visibility it may apply is.
   mutates: false,
+  replay: true,
   expose: { tool: 'view', console: true },
   group: 'viewing',
   aliases: [{ name: 'restore_view', summary: 'Go to a saved view: restore_view front' }],
@@ -104,6 +105,7 @@ export const setProjection = defineOp({
     perspective: optional(boolean('True for perspective, false for orthographic. Null only reports.')),
   },
   mutates: false,
+  replay: (args) => args.perspective !== null && args.perspective !== undefined,
   expose: { tool: 'view', console: true },
   group: 'viewing',
   aliases: [{ name: 'projection', summary: 'Show or set the projection: projection false' }],
@@ -128,6 +130,7 @@ export const panView = defineOp({
     dz: optional(real('Shift along the line of sight. Null leaves the depth.')),
   },
   mutates: false,
+  replay: true,
   expose: { tool: 'view', console: true },
   group: 'viewing',
   aliases: [{ name: 'pan', summary: 'Slide the view: pan 10, 0' }],

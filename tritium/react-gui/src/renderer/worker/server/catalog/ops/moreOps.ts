@@ -191,6 +191,7 @@ export const focusNode = defineOp({
     nodeType: enumOf(['object', 'renderer', 'rendGroup'], 'What nodeId refers to.'),
   },
   mutates: false,
+  replay: true,
   expose: { tool: 'view', console: true },
   group: 'nodes',
   aliases: [{ name: 'focus', summary: 'Fit the view to a node: focus 1crn/cartoon1' }],

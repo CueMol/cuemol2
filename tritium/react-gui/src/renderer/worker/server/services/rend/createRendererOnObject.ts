@@ -12,6 +12,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from './setupRenderer';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordCreateRenderer } from '@renderer/worker/server/actions/serviceOps';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 
 export interface CreateRendererOnObjectArgs {
@@ -67,6 +68,10 @@ export function createRendererOnObject(
             }
             newRendId = (rend as unknown as { uid: number }).uid ?? -1;
             try { newName = rend.name ?? ''; } catch { newName = ''; }
+            recordCreateRenderer(ctx, scene.uid, args.objId, { ...args.rendOpts, rendererName: newName || args.rendOpts.rendererName }, {
+                rendId: newRendId,
+                groupName: args.rendOpts.presetName ? undefined : args.groupName,
+            });
         },
     );
 

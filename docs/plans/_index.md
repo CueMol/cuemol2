@@ -2,13 +2,14 @@
 
 実装計画・計画作成の依頼書・着手前の調査記録の置き場。
 
-**このディレクトリは「まだ実装されていないもの」と「実装に至るまでの経緯」を持つ。**
+**このディレクトリは「まだ実装されていないもの」だけを持つ。**
 実装が済んだ仕様の説明は [`../architecture/`](../architecture/_index.md) 側に置く
 (architecture は現在のコードの spec として読めることを保証する)。UXP -> tritium の
 移植判断は [`../migration/adr/`](../migration/adr/_index.md)。
 
-プランが実装されたとき、本書のプランは**履歴として残す** (削除しない)。仕様の説明が
-必要なら architecture 側に別途書き起こし、下表の状態を「実装済み」に更新する。
+項目を実装したら、その仕様 (現在の挙動、設計判断の理由、計画から変えた点) を architecture 側に
+書き起こしてから plan から消す。全項目が済んだ plan はファイルごと削除し、下表の行も消す
+(経緯は git 履歴で追う)。一部だけ済んだ plan は残りの項目だけに書き直す。
 
 新規ファイルの命名は `YYMMDD-<slug>-plan.md` (例: `260908-tritium-plugin-system-plan.md`)。
 
@@ -20,28 +21,20 @@
 |---|---|---|
 | [260908-tritium-plugin-system-plan.md](260908-tritium-plugin-system-plan.md) | tritium の plugin システム (JS/TS + C++ 両レーン)。VSCode 拡張機構の調査、C++ 登録機構の seam、packaging と配置、Phase 0/A/A'/B/C | **Phase 0 のみ実装済み** (react 側の in-tree plugin host。`../architecture/tritium_plugin/`)。実行時ロード (Phase A)、C++ レーン (Phase A')、schema 駆動 UI / sideload (Phase B)、重い native の分離 (Phase C) は未実装 |
 | [umbreon-process-isolation-plan.md](umbreon-process-isolation-plan.md) | umbreon GI(OIDN) の大確保が Chromium PartitionAlloc で crash する件と、恒久対策としての process 分離 (mmap zero-copy) | **未実装 / 当面着手しない**。§2 の原因究明は確定した調査結果。着手条件は crash が実害になったとき |
-| [260913-pymconsole-plugin-plan.md](260913-pymconsole-plugin-plan.md) | PyMOL コマンド言語に部分互換なコンソールを built-in plugin `pymconsole` (既定オフ) として追加。パーサは PyMOL の `parsing.py` / `parser.py` / `shortcut.py` を TS へ移植し Web Worker に置く (embedded Python は使わない) | **Phase 1 + Tab 補完 + Phase 2 実装済み** (parser + console UI + 21 command + PyMOL 互換 Tab 補完 + selection 翻訳器と Tier 1 command。`tritium/react-gui/src/plugins/pymconsole/`)。Phase 3 は未着手 |
-| [260926-mcp-tool-catalog-plan.md](260926-mcp-tool-catalog-plan.md) | CueMol を MCP server (GUI 内蔵、Streamable HTTP) として公開し、agent / MCP / pymconsole の操作本体を core の ops + toolCatalog に共通化。正式 interface は CueMol ネイティブ (pymconsole は consumer、`run_pymol` は実験用のみ) | **未実装 (計画)**。D1 と「構成」(ops 層) は 261006 計画で置き換え。MCP 部分 (D4) は 261007 local API server 計画で具体化 |
-| [261006-native-console-op-catalog-plan.md](261006-native-console-op-catalog-plan.md) | op catalog (qif 型に合わせた param DSL) から agent tool の schema と native console のコマンドを生成する。pymconsole を console plugin の pymol dialect に作り直し、native dialect (CueMol selection 構文) を追加 | **実装済み** (フェーズ 0-3)。仕様は `../architecture/op-catalog.md` |
-| [261006-op-catalog-coverage-plan.md](261006-op-catalog-coverage-plan.md) | GUI では使えるのに op になっていない service の一覧と、agent の core / toolset への振り分け、op 化の順序 | **実装済み** (APBS / morph / surface cutter / アニメーション編集は後に console / MCP 用の op として追加) |
-| [261007-local-api-server-plan.md](261007-local-api-server-plan.md) | GUI 内蔵の local API server (127.0.0.1、bearer token) で、MCP (op catalog を tool として公開) と console CLI (thin client から native / PyMOL dialect を実行。261008 で `tritium_cli` に改名) を提供する | **実装済み** (MCP #656、console CLI) |
-| [261008-tritium-cli-distribution-plan.md](261008-tritium-cli-distribution-plan.md) | console の CLI を `tritium_cli` に改名して配布物に同梱し (ELECTRON_RUN_AS_NODE の wrapper、deb は `/usr/bin` に symlink)、app が動いていなければ起動して接続する。console の scene コマンド (`scenes` / `new_scene` / `switch_scene` / `close_scene`) | **実装済み**。MCP からのタブ操作・scene の保存と open も後続 PR で実装 |
-| [261009-command-naming-plan.md](261009-command-naming-plan.md) | op 名 (console / MCP / agent のコマンド名) の規約 (`動詞_目的語`、動詞の語彙、名詞だけの alias は表示・設定に限る、分類つき `help`) と、約 30 個の一斉リネームの対応表。続けて MCP / console の実装の見直し | **実装済み**。規約は `../architecture/op-catalog.md` §5.1 |
-| [261009-console-completion-plan.md](261009-console-completion-plan.md) | console の Tab 補完の作り直し (実行時と同じ規則で入力途中の行を読み、その位置に書ける値と `name=` を全部出す。候補は item、区切りは候補ごと)、native の引数の割り当てを Python と同じ規則に、reader のオプションを形式ごとの load コマンドに、reader の選び方 (sniff) を GUI と統一 | **実装済み**。仕様は `../architecture/op-catalog.md` §5 |
-| [261010-console-zsh-completion-markdown-quit-plan.md](261010-console-zsh-completion-markdown-quit-plan.md) | console の改善 3 点: `tritium_cli` の TS 化と esbuild bundle・go-task からの起動・CLI の `quit` (確認あり / `--force`) / CLI と GUI 共通の zsh 風補完 (構造化候補 + メニュー選択 + 一致規則) / help の Markdown 化 (`format: 'markdown'`、`marked` を共通パーサに、MCP description と出どころを共有) | **実装済み** (PR1 #668: CLI bundle + quit、PR2 #670: zsh 風補完、PR3: help の Markdown 化)。仕様は `../architecture/console-completion.md`、`../architecture/console-help-markdown.md` |
 | [261011-tritium-auto-update-plan.md](261011-tritium-auto-update-plan.md) | コード署名なしの自動更新。electron-updater は使わず、main process が GitHub Releases API (4 桁タグを比較) から asset を Node で取得し、SHA-256 を照合して OS ごとに置換する (mac は DMG から `.app` を置換、Windows は昇格した NSIS の silent install、Linux は AppImage の置換、deb は通知のみ) | **macOS 分は実装済み**。仕様は `../architecture/auto-update.md`。Windows は未実装 (spike が要る)。Linux は当分実装しないので、Windows が終われば完了 |
 | [260925-molcoord-atom-vector-plan.md](260925-molcoord-atom-vector-plan.md) | `MolCoord` の原子プール (`std::map<int, MolAtomPtr>` + 検索用の索引 vector) を、所有も持つ vector に置き換える案。互換 `AtomIter`、見込み (メモリ 5-6% 減) と着手時の確認事項 | **未実装 / 今後の課題**。GRO 読み込み高速化 (`perf/gro-load`) では索引の併設までで止めた |
-| [pymconsole-research-260529.md](pymconsole-research-260529.md) | PyMOL コマンド言語に部分互換な「pym console」導入の調査報告 | **§0 の一部は 260913 計画で差し替え** (embedded Python パーサ / C++ 新 API は不採用、TS 実装に変更)。§3 / §4 / §6 / §8 は有効 |
-| [260928-pymconsole-remaining-plan.md](260928-pymconsole-remaining-plan.md) | pymconsole の残り: MD trajectory 系 (`load_traj`・`intra_fit`・`smooth`・`split_states` など)、picking 依存、重量級アルゴリズム、既存コマンドの小改善の候補一覧 | **未着手 / 後日** (Phase 3・4 はすべて実装済み) |
+| [pymconsole-research-260529.md](pymconsole-research-260529.md) | PyMOL コマンド言語に部分互換な「pym console」導入の調査報告 (着手前の調査記録) | §4 の写像総表は 260928 の候補の出どころとして有効。§0 の embedded Python パーサ / C++ 新 API は不採用 (TS 実装)。実装済みの仕様は `../architecture/console-pymol-dialect.md` |
+| [261011-op-console-backlog-plan.md](261011-op-console-backlog-plan.md) | op / console / MCP の未実装項目の一覧: Action pane・マクロ・記録の対応表の拡充、op になっていない service、MCP の resource / introspection、console 本体の残り | **未実装 (候補の一覧)**。実装済みの仕様は `../architecture/op-catalog.md` ほか |
+| [260928-pymconsole-remaining-plan.md](260928-pymconsole-remaining-plan.md) | console の PyMOL dialect に残ったコマンドの候補: MD trajectory 系 (`load_traj`・`intra_fit`・`smooth`・`split_states` など)、picking 依存、重量級アルゴリズム、既存コマンドの小改善 | **未着手 / 後日**。実装済みの仕様は `../architecture/console-pymol-dialect.md` |
 
-## 実装済み (履歴)
+## 実装済み (旧ルールで残っているもの)
+
+以前は実装済みの plan を履歴として残していた。以下はその名残で、触るときに仕様を architecture 側へ移してから削除する。
 
 | ファイル | 内容 | 実装の所在 |
 |---|---|---|
 | [261010-ui-layout-inspect-plan.md](261010-ui-layout-inspect-plan.md) | Playwright `_electron` による UI レイアウトの自己検証ツール (実装中に Claude が使う。pin した表示との比較による回帰テストはしない) | `tritium/react-gui/e2e/`、`src/renderer/shell/E2eBridge.tsx`、`task inspect_tritium_ui`。仕様は `../architecture/ui-layout-inspect.md` |
 | [261005-hover-highlight-retention-plan.md](261005-hover-highlight-retention-plan.md) | 3D view の hover highlight / チップをボタン押下 (クリック) では消さず、押下点から 2px 以上のドラッグ (C++ の drag start 判定と同じ) でのみ消す | `tritium/react-gui/src/renderer/features/molview/useHoverInfoHandler.ts` |
-| [260926-pymconsole-phase3-plan.md](260926-pymconsole-phase3-plan.md) | pymconsole Phase 3: 未実装コマンドを 3 段で追加 (3a console 完結: `@`/`run`・`log`・中断、3b 既存 service の adapter: `save`・`set_color`・`spectrum`・`align`/`super`・`get_view`/`set_view`・anim、3c C++ 変更あり: `label`・`orient`・設定 alias) | **実装済み** (3a #642、3b #644、3c `label`・`load x.qsc` #645、設定 alias・`orient` #649) |
-| [260927-pymconsole-phase4-plan.md](260927-pymconsole-phase4-plan.md) | pymconsole Phase 4: 実装済み 58 コマンドの見落とし修正 (選択式中の object 名、load/fetch の renderer 名、hide 後の再表示、show/hide の PyMOL 互換、PyMOL 引数の受け付けと順番) と残りの一覧 | **実装済み** (1-5: #647、6-10 とその他: #648、見送り分の `fetch 1abcA`・`get_names enabled_only`: #649) |
 | [260917-camera-pane-plan.md](260917-camera-pane-plan.md) | 名前付き camera を scene tree の枝から独立した Camera pane に移し、View activity view (Camera pane + View pane) を新設。並べ替えを Camera の `ui_order` (nopersist) で持ち qsc の要素順として保存、新規作成時の既存名は上書き、save/apply の with show/hide 版をツールバーに | `tritium/react-gui/src/renderer/features/camera/` と `src/qsys/Camera.{hpp,cpp,qif}` / `Scene.cpp`。[`../architecture/camera-pane.md`](../architecture/camera-pane.md) |
 | [260913-mdtools-plugin-plan.md](260913-mdtools-plugin-plan.md) | mdtools (MD trajectory) の GUI -- 開くフロー・Trajectory bottom tab・worker service -- を built-in plugin `mdtools` (既定オフ) へ切り出し。C++ module は常時ロードのままで GUI だけを gate する割り切り、morph service の分離、メニュー anchor の付け替え | `tritium/react-gui/src/plugins/mdtools/`。[`../architecture/md-trajectory-open-dialog.md`](../architecture/md-trajectory-open-dialog.md) |
 | [260913-ai-agent-ai-sdk-plan.md](260913-ai-agent-ai-sdk-plan.md) | AI agent plugin の LLM 層を Vercel AI SDK (`ai` v7) へ載せ替え、OpenAI と Anthropic を `provider:model` で切り替え可能に。あわせて prompt history (↑/↓ でのシェル風呼び出し) を追加 | `tritium/react-gui/src/plugins/agent/` の `shared/modelSpec.ts` / `worker/modelProvider.ts` / `renderer/promptHistory.ts` ほか |

@@ -44,6 +44,8 @@ import { dialectOf } from '../dialects'
 import { resolvePath } from './paths'
 import { beginRun, endRun, isStopped, noteRunStream } from './runControl'
 import { writeLog } from './commandLog'
+import { isQaxPath, readQaxFile, runQaxItems } from './runQax'
+import type { QaxRunner } from './runQax'
 import type { CmdContext, CmdOutcome, ConsoleCommand, ConsoleDialect } from './types'
 
 const log = console
@@ -168,6 +170,7 @@ async function runScriptFile(sub: Submission, filePath: string, depth: number): 
   if (depth >= MAX_SCRIPT_DEPTH) {
     return { ok: false, error: `Error: scripts nested more than ${MAX_SCRIPT_DEPTH} deep (does ${filePath} run itself?)` }
   }
+  if (isQaxPath(resolved)) return runQaxInline(sub, resolved, depth)
   let text: string
   try {
     text = fs.readFileSync(resolved, 'utf8')
@@ -177,6 +180,47 @@ async function runScriptFile(sub: Submission, filePath: string, depth: number): 
   const completed = await runLines(sub, splitCommands(text), depth + 1)
   // The failing line has already said why; the caller only has to stop.
   return completed ? { ok: true } : { ok: false, error: '' }
+}
+
+/**
+ * What the qax runner needs from a submission: its ops print, stream and
+ * mark the submission changed like any command, and a `<cmd>` runs as a line
+ * of a script at the next depth.
+ */
+function qaxRunner(sub: Submission, depth: number): QaxRunner {
+  const cc = makeCmdContext(sub.args, sub.dir, sub.sink, {
+    markMutated: () => { sub.mutated = true },
+    runScript: (filePath) => runScriptFile(sub, filePath, depth + 1),
+    openScene: (filePath) => { sub.openScene = filePath },
+    requestScene: () => false,
+  })
+  return {
+    ctx: sub.ctx,
+    cmdContext: () => cc,
+    runLine: (text) => runLines(sub, splitCommands(text), depth + 1),
+    error: (text) => sub.sink.push('error', text),
+  }
+}
+
+/** Why a qax file cannot run in this dialect, or null. */
+function qaxRefusal(dialect: ConsoleDialect, filePath: string): string | null {
+  return dialect.id === 'native' ? null : `Error: ${filePath} is a qax file; switch the console to the native dialect to run it`
+}
+
+/**
+ * Run a qax file inside the current transaction (from a script, or with
+ * other commands on the line): its actions become part of this one.
+ */
+async function runQaxInline(sub: Submission, resolved: string, depth: number): Promise<CmdOutcome> {
+  const refusal = qaxRefusal(sub.dialect, resolved)
+  if (refusal !== null) return { ok: false, error: refusal }
+  const doc = readQaxFile(resolved)
+  if ('error' in doc) return { ok: false, error: doc.error }
+  const runner = qaxRunner(sub, depth)
+  for (const action of doc.actions) {
+    if (!(await runQaxItems(action.items, runner))) return { ok: false, error: '' }
+  }
+  return { ok: true }
 }
 
 /** What a `CmdContext` does differently where a command runs. */
@@ -388,6 +432,88 @@ async function runStandalone(
   })
 }
 
+/**
+ * The qax file a submission runs when it is exactly `@file.qax` or
+ * `run file.qax`; null for anything else.
+ */
+function loneQaxScript(dialect: ConsoleDialect, commands: SplitCommand[]): string | null {
+  if (commands.length !== 1) return null
+  const cmd = commands[0]
+  if (cmd.script) return isQaxPath(cmd.text) ? cmd.text.trim() : null
+  const resolved = resolveCommand(dialect, cmd.text.split(/\s+/)[0])
+  if (resolved.kind !== 'found' || resolved.spec.name !== 'run') return null
+  try {
+    const result = bindArgs('run', resolved.spec.params, parseArgs(cmd.text, resolved.spec.mode), resolved.spec.mode, dialect.argRule)
+    if (result.kind !== 'args') return null
+    const file = (result.args.file ?? '').trim()
+    return isQaxPath(file) ? file : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Run a qax file alone on the line: each of its actions is its own undo
+ * transaction, labelled as it was when written, so the undo history after a
+ * replay reads like the one it was recorded from. The first action that
+ * fails stops the rest; the actions before it stay.
+ */
+async function runQaxStandalone(
+  dialect: ConsoleDialect,
+  ctx: WorkerContext,
+  args: RunCommandArgs,
+  scene: NonNullable<ReturnType<typeof getSceneOrNull>>,
+  cmd: SplitCommand,
+  filePath: string,
+): Promise<RunCommandResult> {
+  const entries: ConsoleEntry[] = []
+  const sub: Submission = {
+    dialect, ctx, args, entries, sink: new EntrySink(entries), mutated: false, interrupted: false, dir: workDirFor(args),
+  }
+  if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.prompt} ${cmd.script ? '@' : ''}${cmd.text}` })
+  const cwdOut = (): { cwd?: string } => (args.cwd !== undefined ? { cwd: sub.dir.get() } : {})
+  const stop = (text: string): RunCommandResult => {
+    sub.sink.push('error', text)
+    return ok({ entries, mutated: false, aborted: true, interrupted: false, ...cwdOut() })
+  }
+  const resolved = resolvePath(sub.dir.get(), filePath)
+  const refusal = qaxRefusal(dialect, filePath)
+  if (refusal !== null) return stop(refusal)
+  const doc = readQaxFile(resolved)
+  if ('error' in doc) return stop(doc.error)
+  if (!cmd.quiet) writeLog(cmd.script ? `@${cmd.text}` : cmd.text)
+
+  let completed = true
+  let anyMutated = false
+  beginRun(args.runId)
+  try {
+    for (const action of doc.actions) {
+      sub.mutated = false
+      const done = await runInTxn(
+        scene,
+        action.label || txnLabel('qax: ', filePath),
+        () => sub.mutated,
+        () => runQaxItems(action.items, qaxRunner(sub, 1)),
+        'qax',
+      )
+      anyMutated = anyMutated || sub.mutated
+      if (!done) {
+        completed = false
+        if (isStopped(args.runId)) {
+          entries.push({ kind: 'warning', text: 'Interrupted.' })
+          sub.interrupted = true
+        }
+        break
+      }
+    }
+  } catch (e) {
+    return failFrom(e)
+  } finally {
+    endRun(args.runId)
+  }
+  return ok({ entries, mutated: anyMutated, aborted: !completed, interrupted: sub.interrupted, ...cwdOut() })
+}
+
 /** Whether the first command of a submission is a tab command, which needs no scene. */
 function startsWithTabCommand(dialect: ConsoleDialect, commands: SplitCommand[]): boolean {
   const first = commands[0]
@@ -449,6 +575,8 @@ export async function runCommand(
     return runWithoutScene(dialect, ctx, args, commands)
   }
   if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
+  const qaxFile = loneQaxScript(dialect, commands)
+  if (qaxFile !== null) return runQaxStandalone(dialect, ctx, args, scene, commands[0], qaxFile)
   const standalone = await runStandalone(dialect, ctx, args, commands)
   if (standalone) return standalone
 
@@ -467,8 +595,12 @@ export async function runCommand(
   beginRun(args.runId)
   let completed: boolean
   try {
-    completed = await runInTxn(scene, txnLabel(dialect.txnPrefix, args.text), () => sub.mutated, () =>
-      runLines(sub, commands, 0),
+    completed = await runInTxn(
+      scene,
+      txnLabel(dialect.txnPrefix, args.text),
+      () => sub.mutated,
+      () => runLines(sub, commands, 0),
+      dialect.id === 'pymol' ? 'pym' : 'cmd',
     )
   } catch (e) {
     return failFrom(e)
