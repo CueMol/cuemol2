@@ -12,3 +12,4 @@
 export * from './localApi'
 export * from './quit'
 export * from './completion'
+export * from './markdown'

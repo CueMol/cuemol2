@@ -26,6 +26,11 @@ architecture, it belongs here.
   `completion.ts` が段組みとメニューの状態遷移を持つ。ファイル名の一致規則 (dot file、
   大小無視の再試行、load の拡張子優先、cd はディレクトリだけ)。
 
+- [Console の help と Markdown 出力](console-help-markdown.md) (日本語) -- `format: 'markdown'` の
+  entry を `@cuemol/console-kit` の `markdown.ts` (`marked` の lexer) で読み、panel は React、
+  tritium_cli は ANSI で描く。help は主題 -> コマンド -> 引数の 3 段で、op のコマンドの説明は
+  MCP と同じ op の description から出す。
+
 - [Camera pane と camera の表示順 (`ui_order`)](camera-pane.md) (日本語) --
   名前付き camera を scene tree の枝から独立した Camera pane に移し、View activity view
   (Camera pane + View pane) を新設した記録。Camera に `ui_order` property (nopersist) を足し、

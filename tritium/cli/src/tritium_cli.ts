@@ -48,6 +48,7 @@ import type {
 } from '@cuemol/console-kit'
 import { quitLine } from '@cuemol/console-kit'
 import { ensureApp, NOT_RUNNING, post, quitApp, readInfo } from './connection'
+import { markdownToAnsi } from './markdownAnsi'
 
 const HISTORY_FILE = path.join(os.homedir(), '.tritium_cli_history')
 const HISTORY_SIZE = 1000
@@ -87,7 +88,7 @@ const GLYPH = {
   spinner: ['\u280b', '\u2819', '\u2839', '\u2838', '\u283c', '\u2834', '\u2826', '\u2827', '\u2807', '\u280f'],
 }
 
-/** Print transcript entries: output to stdout, warnings and errors to stderr. */
+/** Print transcript entries: output to stdout, warnings and errors to stderr; Markdown formatted on a terminal. */
 function printEntries(entries: readonly ConsoleWireEntry[], echo: boolean): void {
   for (const e of entries) {
     if (e.kind === 'echo') {
@@ -96,6 +97,10 @@ function printEntries(entries: readonly ConsoleWireEntry[], echo: boolean): void
       process.stderr.write(`${sgr(STYLE.red, e.text, process.stderr)}\n`)
     } else if (e.kind === 'warning') {
       process.stderr.write(`${sgr(STYLE.yellow, e.text, process.stderr)}\n`)
+    } else if (e.format === 'markdown' && process.stdout.isTTY) {
+      // Formatted on a terminal; piped, the Markdown itself, to reuse as is.
+      const width = Math.max(20, (process.stdout.columns || 80) - 1)
+      for (const l of markdownToAnsi(e.text, width, colourOn(process.stdout))) process.stdout.write(`${l}\n`)
     } else {
       process.stdout.write(`${e.text}\n`)
     }
