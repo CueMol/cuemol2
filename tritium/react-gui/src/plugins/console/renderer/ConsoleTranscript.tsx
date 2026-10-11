@@ -3,7 +3,8 @@
  * @description The scrolling record of what was typed and what came back.
  *
  * Monospaced and plain: a console's output is columnar (file listings,
- * property values) and proportional type breaks that. `data-select-scope`
+ * property values) and proportional type breaks that. An entry marked
+ * `format: 'markdown'` (help) is formatted instead (MarkdownBlock). `data-select-scope`
  * makes Cmd+A select the transcript rather than the whole window, the way it
  * does in the Output tab. It is focusable (`tabIndex={-1}`, a click but not
  * Tab) so that a click keeps focus here instead of in the prompt, which
@@ -12,6 +13,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { AppIcon } from '@renderer/h3-kit/primitives'
+import { MarkdownBlock } from '@renderer/h3-kit/markdown'
 import type { ConsoleLine } from './consoleSessionStore'
 
 void React
@@ -43,11 +45,15 @@ export const ConsoleTranscript: React.FC<ConsoleTranscriptProps> = ({ lines }) =
           </div>
         </div>
       ) : (
-        lines.map((line) => (
-          <div key={line.id} className={`console-line console-line-${line.kind}`}>
-            {line.text === '' ? '\u00a0' : line.text}
-          </div>
-        ))
+        lines.map((line) =>
+          line.format === 'markdown' ? (
+            <MarkdownBlock key={line.id} text={line.text} className={`console-line console-line-${line.kind}`} />
+          ) : (
+            <div key={line.id} className={`console-line console-line-${line.kind}`}>
+              {line.text === '' ? '\u00a0' : line.text}
+            </div>
+          ),
+        )
       )}
     </div>
   )

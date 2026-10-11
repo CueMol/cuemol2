@@ -104,6 +104,9 @@
      lines overlap, and a translucent highlight shows each overlap as a darker
      stripe. */
   --console-selection-bg: #2d4f73;
+  /* The band behind an echoed command, which marks where each command's
+     output starts. An alias, so each theme takes its own hover tone. */
+  --console-echo-bg: var(--bg-hover);
   /* Tab's candidates by kind, after ls / zsh colours: directories, programs,
      links. Aliases, so both themes follow their own accents. */
   --console-dir: var(--accent);
@@ -112,6 +115,15 @@
   /* Between the columns of Tab's candidates: two characters, as
      @cuemol/console-kit GRID_GAP lays them out. */
   --console-completion-gap: 2ch;
+  /* Markdown output (styles/_markdown-kit.css), after a terminal's: headings
+     and strong text bold in the brightest foreground, code spans lavender.
+     Bold is a stroke, not a weight: the console font (on a Japanese macOS,
+     `monospace` is Osaka-Mono) may have no bold face, and Chromium then
+     swaps in a proportional one of another size. */
+  --md-bold-stroke: 0.04em;
+  --md-strong: #ffffff;
+  --md-code: #afafff;
+  --md-rule: var(--border);
   /* Inline status text (a field note, a panel warning line): why-based
      aliases so a surface never picks a raw accent. */
   --text-warning: var(--log-warn);
@@ -411,6 +423,8 @@
      as-is here so splitting the two changes nothing in this theme. */
   --text-disabled: #9a9da5;
   --text-strong: #1c2127;
+  --md-strong: var(--text-strong);
+  --md-code: var(--accent);
 
   /* Accent — slightly deeper for contrast on light backgrounds */
   --accent: #2979b5;

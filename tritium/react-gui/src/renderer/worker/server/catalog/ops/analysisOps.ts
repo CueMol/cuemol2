@@ -151,11 +151,12 @@ export const captureView = defineOp({
   name: 'capture_view',
   description:
     'Look at the current view: returns a picture of what the user sees. Use it to check that ' +
-    'a change looks the way you intended, or when the user refers to something on screen. ' +
-    'Each picture costs about a thousand tokens, so capture once a change is done rather than ' +
-    'after every step. To see detail, zoom in first with center_view rather than raising ' +
-    'longSide: tokens grow with the pixel count. Nothing is saved; use export_image to give ' +
-    'the user a file.',
+    'a change looks the way you intended, or when the user refers to something on screen.\n\n' +
+    '- Each picture costs about a thousand tokens, so capture once a change is done rather ' +
+    'than after every step.\n' +
+    '- To see detail, zoom in first with `center_view` rather than raising `longSide`: ' +
+    'tokens grow with the pixel count.\n' +
+    '- Nothing is saved; use `export_image` to give the user a file.',
   params: {
     longSide: optional(
       integer(

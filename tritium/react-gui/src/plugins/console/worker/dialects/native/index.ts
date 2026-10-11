@@ -22,7 +22,8 @@ import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { CONSOLE_COMMAND_OPS } from '@renderer/worker/server/catalog'
-import { wrapList } from '@renderer/worker/server/catalog/consoleFormat'
+import type { Param } from '@renderer/worker/server/catalog/params'
+import { commandHelp, table } from '../../help/helpMarkdown'
 import { OP_GROUPS } from '@renderer/worker/server/catalog/op'
 import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -41,12 +42,93 @@ const GENERATED = catalogCommands(CONSOLE_COMMAND_OPS)
 /** The op each generated command runs, for `help`. */
 const ORIGINS = new Map<string, CommandOrigin>(GENERATED.map((g) => [g.command.name, g.origin]))
 
-/** Print the commands of one group under its heading. */
-function printGroup(group: OpGroup, cc: Parameters<ConsoleCommand['run']>[2]): void {
-  cc.print(`${OP_GROUPS[group]} (help ${group}):`)
-  for (const c of NATIVE_COMMANDS) {
-    if (c.group === group) cc.print(`  ${c.name.padEnd(22)} ${c.summary}`)
+/** `help syntax`: how a native command is written. */
+const SYNTAX_TOPIC = 'syntax'
+const NATIVE_SYNTAX = `# Writing commands
+
+- **Names**: a command name is a verb and what it acts on (\`list_cameras\`, \`add_paint\`).
+  A name that is only a noun (\`props\`, \`view\`, \`slab\`) shows that thing, or sets it when given a value.
+- **Arguments** are separated by commas, since a selection has spaces in it:
+  \`zoom 1crn, chain A and resid 10:20\`
+- **Nodes**: name a renderer as object/renderer (\`1crn/cartoon1\`), or any node by \`#uid\`.
+- **Properties** follow their node after a dot: \`set 1crn/cartoon1.width, 2\``
+
+function commandsOf(group: OpGroup): readonly ConsoleCommand[] {
+  return NATIVE_COMMANDS.filter((c) => c.group === group)
+}
+
+/** `help`: the subjects only, so the list stays short; each subject's help has the commands. */
+function subjectIndex(): string {
+  const groups = (Object.keys(OP_GROUPS) as OpGroup[]).filter((g) => commandsOf(g).length > 0)
+  const rows = [
+    ...groups.map((g) => [`\`help ${g}\``, OP_GROUPS[g], String(commandsOf(g).length)]),
+    [`\`help ${SYNTAX_TOPIC}\``, 'How commands are written', ''],
+  ]
+  return [
+    '# CueMol commands',
+    table(['Subject', 'About', 'Commands'], rows),
+    'Type `help <subject>` for its commands, and `help <command>` (or `<command> ?`) for one command\'s arguments.',
+  ].join('\n\n')
+}
+
+/** `help <subject>`: its commands, one line each. */
+function subjectHelp(group: OpGroup): string {
+  const rows = commandsOf(group).map((c) => [`\`${c.name}\``, c.summary])
+  return [`# ${OP_GROUPS[group]}`, table(['Command', 'Summary'], rows), 'Type `help <command>` for its usage and arguments.'].join('\n\n')
+}
+
+/** What an op parameter takes, as the argument table says it. */
+function typeOf(p: Param<unknown>): string {
+  if (p.kind === 'enum' && p.values) return `one of ${p.values.map((v) => `\`${v}\``).join(', ')}`
+  if (p.kind === 'boolean') return '`true` or `false`'
+  return PARAM_TYPE_NAMES[p.semantic ?? p.kind] ?? p.semantic ?? p.kind
+}
+
+const PARAM_TYPE_NAMES: Readonly<Record<string, string>> = {
+  rendererType: 'renderer type',
+  propName: 'property',
+  propPath: 'property path',
+  propValue: 'value',
+  real: 'number',
+  vec3: 'x, y, z',
+}
+
+/** A command's help: for one made from an op, the op's own text, which the MCP server sends too. */
+function nativeCommandHelp(cmd: ConsoleCommand): string {
+  const usage = usageLine(cmd.name, cmd.params).replace(/^Usage: /, '')
+  const origin = ORIGINS.get(cmd.name)
+  if (!origin) {
+    return commandHelp({
+      name: cmd.name,
+      usage,
+      body: cmd.summary,
+      args: cmd.params.map((p) => ({ name: p.name, default: p.default === undefined ? 'required' : p.default === '' ? 'optional' : p.default })),
+    })
   }
+  const params = origin.op.params as Readonly<Record<string, Param<unknown>>>
+  const defaults = origin.alias?.defaults ?? {}
+  let note: string | undefined
+  if (origin.alias?.fixed) {
+    const fixed = Object.entries(origin.alias.fixed).map(([k, v]) => `${k}=${String(v)}`).join(', ')
+    note = `\`${origin.op.name}\` with ${fixed}`
+  } else if (origin.alias) {
+    note = `The same as \`${origin.op.name}\``
+  }
+  return commandHelp({
+    name: cmd.name,
+    usage,
+    body: origin.op.description,
+    args: cmd.params.map((sp) => {
+      const p = params[sp.name]
+      return {
+        name: sp.name,
+        type: typeOf(p),
+        default: defaults[sp.name] ?? (sp.default === undefined ? 'required' : 'optional'),
+        description: p.description,
+      }
+    }),
+    note,
+  })
 }
 
 const help: ConsoleCommand = {
@@ -55,25 +137,20 @@ const help: ConsoleCommand = {
   params: [{ name: 'command', default: '' }],
   mode: 'strict',
   mutates: false,
-  summary: 'List the commands by subject, the commands of one subject, or explain one command.',
+  summary: 'List the subjects, the commands of one subject, or explain one command.',
   completions: [{ source: 'helpTopics', description: 'command or subject' }],
   run(_ctx, args, cc) {
     const topic = args.command.trim()
-    if (topic in OP_GROUPS) {
-      printGroup(topic as OpGroup, cc)
+    if (topic === '') {
+      cc.printMarkdown(subjectIndex())
       return { ok: true }
     }
-    if (topic === '') {
-      for (const group of Object.keys(OP_GROUPS) as OpGroup[]) {
-        printGroup(group, cc)
-        cc.print('')
-      }
-      cc.print('Type "help <subject>" for one subject, "help <command>" or "<command> ?" for its arguments.')
-      cc.print('A command name is a verb and what it acts on (list_cameras, add_paint). A name')
-      cc.print('that is only a noun (props, view, slab) shows that thing, or sets it when given a value.')
-      cc.print('Separate arguments with commas: zoom 1crn, chain A and resid 10:20')
-      cc.print('Name a renderer as object/renderer (1crn/cartoon1), or any node by #uid.')
-      cc.print('A property follows its node after a dot: set 1crn/cartoon1.width, 2')
+    if (topic in OP_GROUPS) {
+      cc.printMarkdown(subjectHelp(topic as OpGroup))
+      return { ok: true }
+    }
+    if (topic === SYNTAX_TOPIC) {
+      cc.printMarkdown(NATIVE_SYNTAX)
       return { ok: true }
     }
     const found = lookupCommand(topic, NATIVE_COMMANDS.map((c) => c.name))
@@ -82,19 +159,7 @@ const help: ConsoleCommand = {
     }
     const cmd = found.kind === 'found' ? NATIVE_COMMANDS.find((c) => c.name === found.name) : undefined
     if (!cmd) return { ok: false, error: `Error: unknown command: "${topic}"` }
-    cc.print(usageLine(cmd.name, cmd.params))
-    const origin = ORIGINS.get(cmd.name)
-    if (!origin) {
-      cc.print(cmd.summary)
-      return { ok: true }
-    }
-    for (const line of wrapList(origin.op.description.split(/\s+/), '', ' ')) cc.print(line)
-    if (origin.alias?.fixed) {
-      const fixed = Object.entries(origin.alias.fixed).map(([k, v]) => `${k}=${String(v)}`).join(', ')
-      cc.print(`(${origin.op.name} with ${fixed})`)
-    } else if (origin.alias) {
-      cc.print(`(the same as ${origin.op.name})`)
-    }
+    cc.printMarkdown(nativeCommandHelp(cmd))
     return { ok: true }
   },
 }
@@ -204,7 +269,7 @@ function propPathCandidates(ctx: WorkerContext, sc: SourceContext): (string | Co
 /** The candidates for one source id, read fresh on every Tab. */
 function candidates(id: string, ctx: WorkerContext, sc: SourceContext): (string | CompletionItem)[] | null {
   if (id === 'commands') return NATIVE_COMMANDS.map((c) => c.name)
-  if (id === 'helpTopics') return [...Object.keys(OP_GROUPS), ...NATIVE_COMMANDS.map((c) => c.name)]
+  if (id === 'helpTopics') return [...Object.keys(OP_GROUPS), SYNTAX_TOPIC, ...NATIVE_COMMANDS.map((c) => c.name)]
   if (id === 'none') return []
   if (id === 'scenes') return sceneNames(ctx)
   if (id.startsWith('enum:')) return id.slice('enum:'.length).split('|')

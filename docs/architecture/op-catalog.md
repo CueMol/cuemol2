@@ -135,8 +135,9 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   scene コマンドと同じく `requestScene({ op: 'quit', force })` で panel に渡し、`runSubmission` が
   `IPC.APP_QUIT` で main (`main/appQuit.ts`) に頼む。Cmd+Q と同じ保存確認を出し、`force` (`true` /
   `--force` / `-f`) なら確認なしで終了する。後続のコマンドは捨てる。script (`run` / `@file`) 内では使えない。
-- `help` は対象ごとの見出し (op の `group`、`OP_GROUPS`) に分けて一覧し、`help <subject>`
-  (`help animation` など) でその見出しだけを出す。
+- `help` は主題 (op の `group`、`OP_GROUPS`) の一覧だけを出し、`help <subject>` (`help animation` など) で
+  その主題のコマンドを、`help <command>` で書式と引数を出す。出力は Markdown
+  ([console-help-markdown.md](console-help-markdown.md))。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
 - **Tab 補完** (`completion/complete.ts`。設計は [計画](../plans/261009-console-completion-plan.md)):
   - 入力途中の行を実行時と同じ規則で読む (`scanArgs` の partial、`assignArgs`)。書きかけの括弧の中は 1 つの引数。

@@ -31,13 +31,14 @@ const STYLE_BACKEND = { gi: 'umbreon', npr: 'umbreon_npr' } as const
 export const renderImage = defineOp({
   name: 'render_image',
   description:
-    'Render the current view with the ray tracer and save it as a PNG: global illumination ' +
-    '(soft shadows, ambient occlusion) by default, or an illustration style with hatching ' +
-    '(npr). Takes from seconds to minutes depending on size; the rest of the render settings ' +
-    'are the scene\'s own, as in the Rendering window. ' +
-    'Give a plain file name, which is saved to the desktop, or an absolute path where the ' +
-    'caller allows one; the full path is reported back -- tell the user where it went. ' +
-    'Use capture_view to look at the view quickly instead.',
+    'Render the current view with the ray tracer and save it as a PNG.\n\n' +
+    '- Style: global illumination (soft shadows, ambient occlusion) by default, or an ' +
+    'illustration style with hatching (`npr`). The rest of the render settings are the ' +
+    'scene\'s own, as in the Rendering window.\n' +
+    '- Takes from seconds to minutes depending on size.\n' +
+    '- Give a plain file name, which is saved to the desktop, or an absolute path where the ' +
+    'caller allows one. The full path is reported back -- tell the user where it went.\n\n' +
+    'Use `capture_view` to look at the view quickly instead.',
   params: {
     fileName: path('PNG file to write. A bare name is saved to the desktop.'),
     width: optional(integer('Width in pixels. Null keeps the scene\'s render size.')),

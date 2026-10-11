@@ -202,14 +202,15 @@ export const getNodeProps = defineOp({
 export const setNodeProp = defineOp({
   name: 'set_node_prop',
   description:
-    'Set one property of one node. On the scene this is how to change the background ' +
-    'colour ("bgcolor"), turn ambient occlusion on and tune it ("aoEnabled", "aoRadius", ' +
-    '"aoIntensity", "aoSteps"), choose anti-aliasing ("aa_method", "aaJitterLevel"), and ' +
-    'switch on CMYK colour proofing ("use_colproof", "icc_filename"). On the view it sets ' +
-    'stereo ("stereoMode", "stereoDist", "swapStereoEyes") and the centre mark ' +
-    '("centerMark"). On a renderer it ' +
-    'sets a width, a detail level, or a mode. Call list_node_props first: the property ' +
-    'name, its type, and the allowed values all come from there.',
+    'Set one property of one node.\n\n' +
+    '- On the scene: the background colour (`bgcolor`), ambient occlusion (`aoEnabled`, ' +
+    '`aoRadius`, `aoIntensity`, `aoSteps`), anti-aliasing (`aa_method`, `aaJitterLevel`), ' +
+    'and CMYK colour proofing (`use_colproof`, `icc_filename`).\n' +
+    '- On the view: stereo (`stereoMode`, `stereoDist`, `swapStereoEyes`) and the centre ' +
+    'mark (`centerMark`).\n' +
+    '- On a renderer: a width, a detail level, or a mode.\n\n' +
+    'Call `list_node_props` first: the property name, its type, and the allowed values all ' +
+    'come from there.',
   params: {
     nodeType: nodeTypeParam(),
     nodeId: nodeIdParam(),

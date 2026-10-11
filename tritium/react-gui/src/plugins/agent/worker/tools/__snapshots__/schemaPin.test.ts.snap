@@ -33,7 +33,11 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"style":{"type":"string","description":"Style name, from list_renderer_styles."}},"required":["rendId","style"],"additionalProperties":false}",
   },
   {
-    "description": "Look at the current view: returns a picture of what the user sees. Use it to check that a change looks the way you intended, or when the user refers to something on screen. Each picture costs about a thousand tokens, so capture once a change is done rather than after every step. To see detail, zoom in first with center_view rather than raising longSide: tokens grow with the pixel count. Nothing is saved; use export_image to give the user a file.",
+    "description": "Look at the current view: returns a picture of what the user sees. Use it to check that a change looks the way you intended, or when the user refers to something on screen.
+
+- Each picture costs about a thousand tokens, so capture once a change is done rather than after every step.
+- To see detail, zoom in first with \`center_view\` rather than raising \`longSide\`: tokens grow with the pixel count.
+- Nothing is saved; use \`export_image\` to give the user a file.",
     "mutates": false,
     "name": "capture_view",
     "parameters": "{"type":"object","properties":{"longSide":{"type":["integer","null"],"description":"Pixels on the longer side. Null uses 1024, which suits almost every check; clamped to 256-1568."}},"required":["longSide"],"additionalProperties":false}",
@@ -183,7 +187,11 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"path":{"type":"string","description":"Absolute path of the file to open."},"rendererType":{"type":["string","null"],"description":"Renderer to create for it. Null uses the reader's default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws everything."},"name":{"type":["string","null"],"description":"Name of the new object. Null uses the file name."}},"required":["path","rendererType","selection","name"],"additionalProperties":false}",
   },
   {
-    "description": "Measure between named atoms and return the number: two atoms give a distance in angstroms, three give the angle at the middle atom in degrees, four give the torsion about the middle bond in degrees. Also draws the measurement in the 3D view as a labelled line, the same way the measure tool does. Use list_residues to check a residue index first; the atom name is the PDB name, for example CA, N, C, O, CB.",
+    "description": "Measure between named atoms and return the number.
+
+- Two atoms give a distance in angstroms, three the angle at the middle atom in degrees, four the torsion about the middle bond in degrees.
+- Also draws the measurement in the 3D view as a labelled line, the same way the measure tool does.
+- Use \`list_residues\` to check a residue index first; the atom name is the PDB name, for example \`CA\`, \`N\`, \`C\`, \`O\`, \`CB\`.",
     "mutates": true,
     "name": "measure_geometry",
     "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object the atoms belong to."},"atoms":{"type":"array","description":"Two, three or four atoms, in order. Two give a distance, three the angle at the second atom, four the torsion about the second-to-third bond. Any other number is an error.","items":{"type":"object","description":"One atom, named the way the PDB file names it.","properties":{"chain":{"type":"string","description":"Chain name, for example A."},"resid":{"type":"string","description":"Residue index as a string, because it may carry an insertion code (for example \\"20\\" or \\"20A\\")."},"atomName":{"type":"string","description":"Atom name, for example CA."}},"required":["chain","resid","atomName"],"additionalProperties":false}},"draw":{"type":"boolean","description":"True also draws the labelled measurement in the 3D view; false only returns the number."},"label":{"type":"string","description":"Name of the label set to draw into. Use \\"measure\\" unless the user asked for another."}},"required":["molId","atoms","draw","label"],"additionalProperties":false}",
@@ -213,7 +221,13 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the object, renderer, or renderer group."},"nodeType":{"type":"string","enum":["object","renderer","rendGroup"],"description":"What nodeId refers to. Must match what get_scene_state reported."},"name":{"type":"string","description":"The new name. Not empty; a renderer group name must be unused in the scene."}},"required":["nodeId","nodeType","name"],"additionalProperties":false}",
   },
   {
-    "description": "Render the current view with the ray tracer and save it as a PNG: global illumination (soft shadows, ambient occlusion) by default, or an illustration style with hatching (npr). Takes from seconds to minutes depending on size; the rest of the render settings are the scene's own, as in the Rendering window. Give a plain file name, which is saved to the desktop, or an absolute path where the caller allows one; the full path is reported back -- tell the user where it went. Use capture_view to look at the view quickly instead.",
+    "description": "Render the current view with the ray tracer and save it as a PNG.
+
+- Style: global illumination (soft shadows, ambient occlusion) by default, or an illustration style with hatching (\`npr\`). The rest of the render settings are the scene's own, as in the Rendering window.
+- Takes from seconds to minutes depending on size.
+- Give a plain file name, which is saved to the desktop, or an absolute path where the caller allows one. The full path is reported back -- tell the user where it went.
+
+Use \`capture_view\` to look at the view quickly instead.",
     "mutates": false,
     "name": "render_image",
     "parameters": "{"type":"object","properties":{"fileName":{"type":"string","description":"PNG file to write. A bare name is saved to the desktop."},"width":{"type":["integer","null"],"description":"Width in pixels. Null keeps the scene's render size."},"height":{"type":["integer","null"],"description":"Height in pixels. Null keeps the scene's render size."},"style":{"type":["string","null"],"enum":["gi","npr",null],"description":"gi (default): photorealistic lighting; npr: hatched illustration."}},"required":["fileName","width","height","style"],"additionalProperties":false}",
@@ -255,7 +269,13 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":"string","description":"Selection expression. Empty string clears the selection."}},"required":["molId","selection"],"additionalProperties":false}",
   },
   {
-    "description": "Set one property of one node. On the scene this is how to change the background colour ("bgcolor"), turn ambient occlusion on and tune it ("aoEnabled", "aoRadius", "aoIntensity", "aoSteps"), choose anti-aliasing ("aa_method", "aaJitterLevel"), and switch on CMYK colour proofing ("use_colproof", "icc_filename"). On the view it sets stereo ("stereoMode", "stereoDist", "swapStereoEyes") and the centre mark ("centerMark"). On a renderer it sets a width, a detail level, or a mode. Call list_node_props first: the property name, its type, and the allowed values all come from there.",
+    "description": "Set one property of one node.
+
+- On the scene: the background colour (\`bgcolor\`), ambient occlusion (\`aoEnabled\`, \`aoRadius\`, \`aoIntensity\`, \`aoSteps\`), anti-aliasing (\`aa_method\`, \`aaJitterLevel\`), and CMYK colour proofing (\`use_colproof\`, \`icc_filename\`).
+- On the view: stereo (\`stereoMode\`, \`stereoDist\`, \`swapStereoEyes\`) and the centre mark (\`centerMark\`).
+- On a renderer: a width, a detail level, or a mode.
+
+Call \`list_node_props\` first: the property name, its type, and the allowed values all come from there.",
     "mutates": true,
     "name": "set_node_prop",
     "parameters": "{"type":"object","properties":{"nodeType":{"type":"string","enum":["scene","view","object","renderer"],"description":"What kind of node to address. \\"scene\\" is the scene as a whole; \\"view\\" is the current view; \\"renderer\\" also covers a renderer group."},"nodeId":{"type":["integer","null"],"description":"Uid of the object or renderer, from get_scene_state. Null for the scene and the view, which have no id of their own."},"prop":{"type":"string","description":"Property name, exactly as list_node_props reported it."},"value":{"type":"string","description":"New value, written as text; it is converted to the property type. A colour is a name such as \\"white\\" or a hex code such as \\"#204080\\"."}},"required":["nodeType","nodeId","prop","value"],"additionalProperties":false}",
@@ -291,7 +311,14 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule."},"selection":{"type":["string","null"],"description":"Residues to assign. Null recomputes the whole molecule."},"type":{"type":["string","null"],"enum":["coil","strand","helix","helix310","helixpi",null],"description":"With a selection: the type to assign."},"ignoreBulge":{"type":["boolean","null"],"description":"Recomputing: ignore beta bulges. Null is false."},"helixGapAngle":{"type":["number","null"],"description":"Recomputing: fill gaps in a helix up to this angle in degrees (the dialog offers 120). Null or 0 does not fill."}},"required":["molId","selection","type","ignoreBulge","helixGapAngle"],"additionalProperties":false}",
   },
   {
-    "description": "Read or change the camera without moving to a selection: zoom (the height of the view, in angstroms), slab (the depth that is drawn, about the centre; atoms outside it are clipped), distance (from the eye to the centre), and centre. Give only what should change; with nothing given it just reports the current values. fitSlab sets the slab so every molecule (or objId) is in it while keeping the centre and zoom as they are -- use it, not center_view, when only the clipping is wrong.",
+    "description": "Read or change the camera without moving to a selection.
+
+- \`zoom\`: the height of the view, in angstroms.
+- \`slab\`: the depth that is drawn, about the centre; atoms outside it are clipped.
+- \`distance\`: from the eye to the centre. And the centre itself.
+- \`fitSlab\` sets the slab so every molecule (or \`objId\`) is in it while keeping the centre and zoom as they are -- use it, not \`center_view\`, when only the clipping is wrong.
+
+Give only what should change; with nothing given it just reports the current values.",
     "mutates": false,
     "name": "set_view",
     "parameters": "{"type":"object","properties":{"zoom":{"type":["number","null"],"description":"New zoom in angstroms. Null leaves it."},"slab":{"type":["number","null"],"description":"New slab depth in angstroms. Null leaves it."},"distance":{"type":["number","null"],"description":"New eye-to-centre distance in angstroms. Null leaves it."},"center":{"type":["array","null"],"description":"New centre [x, y, z] in angstroms. Null leaves it.","items":{"type":"number"}},"fitSlab":{"type":["boolean","null"],"description":"True fits the slab to the molecules. Do not also give slab."},"objId":{"type":["integer","null"],"description":"With fitSlab: fit to this object only. Null fits every molecule."}},"required":["zoom","slab","distance","center","fitSlab","objId"],"additionalProperties":false}",

@@ -141,6 +141,12 @@ PR は 3 つに分ける (依存順): **PR1 CLI の TS 化・bundle + quit** →
 
 ## PR3: Markdown 出力 (主目的: help の可読性向上)
 
+> 実装時の変更: 共通パーサは `tritium/console-kit/src/markdown.ts`、CLI 描画は `tritium/cli/src/markdownAnsi.ts`。
+> `help` は全コマンドの表を並べると長すぎたため、主題の一覧 -> `help <subject>` (1 コマンド 1 行の表) ->
+> `help <command>` の 3 段にし、使い方の説明は `help syntax` に分けた。太字は等幅フォントに bold の書体がない
+> 環境 (日本語 macOS の Osaka-Mono) で別フォントに置き換わるため、GUI では `-webkit-text-stroke` で太らせる。
+> 仕様は `../architecture/console-help-markdown.md`。
+
 Markdown 化の主目的は help を読みやすくすること。仕組みは汎用 (`format: 'markdown'`) にするが、
 **PR3 で Markdown にする出力は help だけ**。op 結果などは後で必要になったら同じ仕組みに乗せる。
 
