@@ -14,6 +14,7 @@ import { sweepMovieOutputs } from './movieOutput'
 import { APP_ID, APP_PRODUCT_NAME } from '@shared/appInfo'
 import { installMainCrashHandlers } from './installMainCrashHandlers'
 import { noteCliLaunch, stopLocalApi } from './localApi'
+import { initUpdater, swapOnQuit } from './updater'
 
 // Before anything else, so a throw during the setup below is still reported
 // to the terminal and a closed stdout pipe cannot masquerade as a crash.
@@ -173,6 +174,7 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler(() => true)
 
   createWindow()
+  initUpdater()
 })
 
 // The render history is per-run: its images are temp files and the settings
@@ -183,6 +185,7 @@ app.on('will-quit', () => {
   if (!gotSingleInstanceLock) return
   clearRenderHistory()
   void stopLocalApi()
+  swapOnQuit()
 })
 
 app.on('window-all-closed', () => {

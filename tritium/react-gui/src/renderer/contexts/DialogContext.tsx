@@ -42,12 +42,17 @@ import { EditInteractionListDialogProvider } from '@renderer/dialogs/EditInterac
 import { StyleEditorDialogProvider } from '@renderer/dialogs/StyleEditorDialogProvider'
 import { composeProviders } from './composeProviders'
 import { ContextMenuProvider } from '@renderer/shell/menu/ContextMenuProvider'
+import { NotificationProvider } from '@renderer/shell/notifications'
+import { UpdateConfirmDialogProvider } from '@renderer/features/update/UpdateConfirmDialog'
 
 export const DialogProvider = composeProviders([
   // Not a dialog, but the same "mount one host, expose a useShowXxx hook"
   // shape: the React context menu host for Windows / Linux.
   ContextMenuProvider,
+  // Also not a dialog: the notification list (toasts, center, status bar bell).
+  NotificationProvider,
   AboutDialogProvider,
+  UpdateConfirmDialogProvider,
   NewTabDialogProvider,
   ConfirmCloseTabDialogProvider,
   FileOpenOptionDialogProvider,

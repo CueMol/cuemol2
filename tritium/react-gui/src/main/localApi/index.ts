@@ -10,13 +10,15 @@
 
 import { app } from 'electron'
 import type { BrowserWindow } from 'electron'
+import * as fs from 'fs'
 import * as os from 'os'
 import * as nodePath from 'path'
 import { randomBytes } from 'crypto'
 import { IPC } from '@shared/ipcChannels'
 import { DEFAULT_LOCAL_API_PORT, TRITIUM_CLI_FLAG } from '@shared/types/localApi'
 import { handleInvoke } from '../ipc/handleInvoke'
-import { getSecret, setSecret } from '../secretStore'
+import { secretId } from '../secretStore'
+import { saveSecretEnc } from '../stateStore'
 import { getMainWindow } from '../windows/mainWindow'
 import { quitApp } from '../appQuit'
 import { appEndpoint } from './appEndpoint'
@@ -26,7 +28,22 @@ import { makeLocalApiRelay } from './relay'
 import { createLocalApiServer } from './server'
 import type { LocalApiServer } from './server'
 
-const TOKEN_REF = { namespace: 'localApi', key: 'token' } as const
+/**
+ * Where the token is kept between runs: a plain file readable by this user
+ * only, under userData.
+ *
+ * Not in `safeStorage`: the same token is written in the clear to the info
+ * file (`localApiInfoFile`, also 0600) for the command line to read, so
+ * encrypting this copy protected nothing, while reading it at every launch
+ * raised the macOS Keychain password prompt -- after every update of the
+ * ad-hoc-signed app, since the Keychain trusts one build's signature.
+ */
+function tokenFile(): string {
+  return nodePath.join(app.getPath('userData'), 'local-api-token')
+}
+
+/** The token the app kept in `safeStorage` before; dropped unread. */
+const LEGACY_TOKEN_REF = { namespace: 'localApi', key: 'token' } as const
 
 /**
  * Where a command-line client finds the port and token. In the home
@@ -39,17 +56,26 @@ export function localApiInfoFile(): string {
 
 let token = ''
 
-/** The stored token, or a new one (kept in memory only where the OS cannot encrypt). */
+/** The stored token, or a new one. */
 function loadToken(): string {
-  const stored = getSecret(TOKEN_REF).value
-  if (stored) return stored
+  // Removing the old encrypted entry needs no decryption, so no prompt.
+  saveSecretEnc(secretId(LEGACY_TOKEN_REF), null)
+  try {
+    const stored = fs.readFileSync(tokenFile(), 'utf8').trim()
+    if (stored) return stored
+  } catch {
+    // First run: no file yet.
+  }
   return newToken()
 }
 
 function newToken(): string {
   const t = randomBytes(32).toString('base64url')
-  const res = setSecret({ ...TOKEN_REF, value: t })
-  if (!res.ok) console.warn('[localApi] token kept for this session only:', res.error)
+  try {
+    fs.writeFileSync(tokenFile(), t, { mode: 0o600 })
+  } catch (e) {
+    console.warn('[localApi] token kept for this session only:', e)
+  }
   return t
 }
 

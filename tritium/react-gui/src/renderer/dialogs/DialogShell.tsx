@@ -79,6 +79,12 @@ export interface DialogShellProps {
      */
     footerActions?: React.ReactNode
     /**
+     * Leaves the footer out altogether, for a dialog with no action at all --
+     * a short step that closes itself (the update's unpack progress). An
+     * empty `footerActions` would still draw the footer band.
+     */
+    noFooter?: boolean
+    /**
      * Extra portal sibling rendered after the footer inside the Dialog (e.g. a
      * confirm `Alert` for the two Alert-gated molecule-edit dialogs).
      */
@@ -126,6 +132,7 @@ export function DialogShell({
     errorMsg = null,
     children,
     footerActions,
+    noFooter = false,
     extra,
     canEscapeKeyClose = true,
     className,
@@ -157,7 +164,7 @@ export function DialogShell({
                     </div>
                 </DialogBody>
             )}
-            <DialogFooter
+            {!noFooter && <DialogFooter
                 actions={
                     footerActions ?? (
                         <>
@@ -173,7 +180,7 @@ export function DialogShell({
                         </>
                     )
                 }
-            />
+            />}
             {extra}
         </Dialog>
     )

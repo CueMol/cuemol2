@@ -2,6 +2,7 @@ packages:
   - core
   - console-kit
   - cli
+  - updater
   - react-gui
 
 ignoredBuiltDependencies:

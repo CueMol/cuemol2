@@ -1,7 +1,7 @@
 /**
  * @file shell/AppShell.tsx
  * @description The application chrome: menu bar, toolbar, the resizable
- * frame, the status bar and the file-drop overlay.
+ * frame, the status bar, the notification overlay and the file-drop overlay.
  *
  * Every child reads what it shows from a provider, so this composes them
  * without passing anything down and re-renders only when it is itself
@@ -15,6 +15,7 @@ import { Toolbar } from './Toolbar'
 import { StatusBar } from './StatusBar'
 import { MainLayout } from './MainLayout'
 import { FileDropLayer } from './FileDropLayer'
+import { NotificationLayer } from './notifications'
 
 /**
  * Phosphor icon defaults: inherit the text colour (theme-aware), regular
@@ -31,6 +32,7 @@ export const AppShell: React.FC = () => (
       <Toolbar />
       <MainLayout />
       <StatusBar />
+      <NotificationLayer />
       <FileDropLayer />
     </div>
   </IconContext.Provider>

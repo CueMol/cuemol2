@@ -177,6 +177,19 @@ export const IPC = {
   LOCAL_API_CLI_ACCESS:        'local-api:cli-access',         // invoke: main window -> main
   LOCAL_API_CLI_ACCESS_GRANTED: 'local-api:cli-access-granted', // push:   main -> main window
 
+  // App self-update (main/updater). Main owns the flow and pushes the whole
+  // status on every change; the main window shows it and sends the user's choices.
+  UPDATE_GET_STATUS:     'update:get-status',     // invoke: main window -> main
+  UPDATE_CHECK:          'update:check',          // invoke: main window -> main (manual check)
+  UPDATE_DOWNLOAD:       'update:download',       // invoke: main window -> main
+  UPDATE_CANCEL:         'update:cancel',         // invoke: main window -> main
+  UPDATE_INSTALL:        'update:install',        // invoke: main window -> main (stage the new app)
+  UPDATE_RESTART:        'update:restart',        // invoke: main window -> main (quit and swap)
+  UPDATE_OPEN_RELEASE:   'update:open-release',   // invoke: main window -> main
+  UPDATE_DISMISS_RESULT: 'update:dismiss-result', // invoke: main window -> main
+  UPDATE_STATUS:         'update:status',         // push:   main -> main window
+  MENU_CHECK_UPDATES:    'menu:check-updates',
+
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
 

@@ -99,10 +99,12 @@ cairo が要り、これはアプリのビルドにもパッケージングに�
   4 桁表記とも揃う
 - **リネームは CI を壊さない。** CueMol3 の成果物を消費しているのはすべて拡張子 glob
   (`*.dmg` / `*.exe` / `*.AppImage` / `*.deb`、リリース添付は `files: artifacts/*`) で、
-  ファイル名を literal 参照している箇所はリポジトリ内に存在しない。auto-update も無い
-  (`electron-updater` 不使用、`publish:` 未設定なので `latest*.yml` も生成されない) ので、
-  更新機構が壊れる経路も無い。全 upload に `if-no-files-found: error` が付いているため、
-  名前が想定外になれば CI が赤くなって気付ける
+  ファイル名を literal 参照している箇所は CI には無い。全 upload に `if-no-files-found: error`
+  が付いているため、名前が想定外になれば CI が赤くなって気付ける
+- **asset 名はアプリの updater との契約でもある。** 後から入った自動更新
+  ([auto-update.md](auto-update.md)) は、release の asset を名前の正規表現
+  (`tritium/updater/src/release.ts` の `ASSET_PATTERNS`、例 `^CueMol3-.*-macOS-arm64-Installer\.dmg$`)
+  で選ぶ。名前を変えるときは同時に直すこと。外れると、既に配布した版が更新を見つけられなくなる
 - **`dmg.title` は既定のままにした。** 4 桁バージョンを入れようとしたが、`dmg.title` は
   `${env.*}` を展開せず、実ビルドで `CueMol3 ${env.CM_FULL_VERSION}` という名前の
   ボリュームがマウントされた (実機確認済み)。`${version}` は 3 桁なのでファイル名と揃える

@@ -62,6 +62,7 @@ import {
   VIEW_INPUT_PARAM_SETTING_KEYS,
   PICKING_PREF_SETTING_KEYS,
   DROP_TARGET_SETTING_KEY,
+  UPDATE_CHECK_SETTING_KEY,
   SHELL_TARGET_SETTING_KEY,
 } from '@renderer/features/settings/settings/settingsConfig'
 import {
@@ -77,6 +78,7 @@ import { SettingRow } from '@renderer/features/settings/settings/SettingRow'
 import { AtomLabelPreview } from '@renderer/features/settings/settings/AtomLabelPreview'
 import { useSettingsPaneNav } from '@renderer/features/settings/settings/useSettingsPaneNav'
 import { useSystemFonts } from './useSystemFonts'
+import { useUpdateCheckPref } from '@renderer/features/update/useUpdateCheckPref'
 
 export const SettingsPane: React.FC = () => {
   const { theme, setTheme } = useTheme()
@@ -98,6 +100,7 @@ export const SettingsPane: React.FC = () => {
   // gpuPicking applied live to C++.
   const pickingPrefs = usePickingPrefs()
   const fileOpenPrefs = useFileOpenPrefs()
+  const { updateCheck, setUpdateCheck } = useUpdateCheckPref()
   // Installed system fonts for the atom-label font picker (falls back to a
   // curated list until `queryLocalFonts` resolves). Ensure the current value is
   // always selectable even if that family is not installed / not enumerated.
@@ -206,6 +209,10 @@ export const SettingsPane: React.FC = () => {
         fileOpenPrefs.setShellTarget(openFileTargetFromLabel(String(value)))
         return
       }
+      if (key === UPDATE_CHECK_SETTING_KEY) {
+        setUpdateCheck(Boolean(value))
+        return
+      }
 
       // A plugin's own preferences are owned by the plugin registry too.
       // Checked before the switch below: `plugin.` and `plugins.` are
@@ -230,7 +237,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam, pickingPrefs, setEnabled, setPref],
+    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam, pickingPrefs, setEnabled, setPref, setUpdateCheck],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -406,6 +413,8 @@ export const SettingsPane: React.FC = () => {
                     value = OPEN_FILE_TARGET_LABELS[fileOpenPrefs.dropTarget]
                   } else if (s.key === SHELL_TARGET_SETTING_KEY) {
                     value = OPEN_FILE_TARGET_LABELS[fileOpenPrefs.shellTarget]
+                  } else if (s.key === UPDATE_CHECK_SETTING_KEY) {
+                    value = updateCheck
                   } else {
                     const labelKey = LABEL_DEFAULT_SETTING_KEYS[s.key]
                     const viewParamKey = VIEW_INPUT_PARAM_SETTING_KEYS[s.key]

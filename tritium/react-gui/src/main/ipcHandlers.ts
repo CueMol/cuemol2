@@ -25,6 +25,7 @@ import { registerMenuStateHandlers } from './handlers/menuState';
 import { registerRecentFilesHandlers } from './handlers/recentFiles';
 import { registerSecretHandlers } from './handlers/secrets';
 import { registerWindowHandlers } from './handlers/windowActions';
+import { registerUpdaterHandlers } from './updater';
 
 export { handleInvoke } from './ipc/handleInvoke';
 export { handleOpenFile } from './fileOpen';
@@ -47,4 +48,5 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   registerContextMenuHandlers(mainWindow);
   registerWindowHandlers(mainWindow);
   registerLocalApiHandlers(mainWindow);
+  registerUpdaterHandlers();
 }
