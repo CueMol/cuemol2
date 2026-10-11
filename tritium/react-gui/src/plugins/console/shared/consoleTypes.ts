@@ -43,6 +43,8 @@ export type ConsoleEntryKind = 'echo' | 'output' | 'warning' | 'error'
 export interface ConsoleEntry {
   kind: ConsoleEntryKind
   text: string
+  /** `markdown`: the text is Markdown to format (help); else it is shown as written. */
+  format?: 'markdown'
 }
 
 export interface RunCommandArgs {

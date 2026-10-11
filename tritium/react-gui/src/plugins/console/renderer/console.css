@@ -61,10 +61,17 @@
   color: var(--console-text);
 }
 
-/* The echoed command, dimmer than its output so the record reads as pairs --
-   but still an enabled-text tone, not a disabled one. */
+/* The echoed command, on a band the width of the transcript and set off from
+   the output before it, so each command and what it printed read as one
+   block. */
 .console-line-echo {
-  color: var(--console-text-dim);
+  margin: 0 calc(-1 * var(--space-3));
+  padding: 0 var(--space-3);
+  background: var(--console-echo-bg);
+}
+
+.console-line + .console-line-echo {
+  margin-top: var(--space-4);
 }
 
 .console-line-warning {
@@ -73,6 +80,11 @@
 
 .console-line-error {
   color: var(--text-error);
+}
+
+/* Formatted output (help): soft line breaks in its source are not breaks. */
+.md.console-line {
+  white-space: normal;
 }
 
 .console-empty {

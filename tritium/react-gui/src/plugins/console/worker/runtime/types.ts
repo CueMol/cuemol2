@@ -32,6 +32,8 @@ export interface CmdContext {
   cwd: string
   /** A line of ordinary output. */
   print(text: string): void
+  /** Output written as Markdown (help), formatted by the panel and tritium_cli. */
+  printMarkdown(text: string): void
   /** A line saying something was not honoured. */
   warn(text: string): void
   /**

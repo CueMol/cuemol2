@@ -98,10 +98,10 @@ class EntrySink {
 
   constructor(private readonly entries: ConsoleEntry[]) {}
 
-  push(kind: ConsoleEntry['kind'], text: string): void {
+  push(kind: ConsoleEntry['kind'], text: string, format?: 'markdown'): void {
     this.lines += 1
     if (this.lines <= MAX_OUTPUT_LINES) {
-      this.entries.push({ kind, text })
+      this.entries.push(format ? { kind, text, format } : { kind, text })
       return
     }
     if (this.lines === MAX_OUTPUT_LINES + 1) {
@@ -190,6 +190,7 @@ function makeCmdContext(args: RunCommandArgs, dir: WorkDir, sink: EntrySink, hoo
     viewId: args.viewId,
     cwd: dir.get(),
     print: (text) => sink.push('output', text),
+    printMarkdown: (text) => sink.push('output', text, 'markdown'),
     warn: (text) => sink.push('warning', text),
     setCwd: (d) => dir.set(d),
     noteStream: (reqId) => { noteRunStream(args.runId, reqId) },

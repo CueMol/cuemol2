@@ -40,11 +40,13 @@ function describe(spec: AtomSpec): string {
 export const measureGeometry = defineOp({
   name: 'measure_geometry',
   description:
-    'Measure between named atoms and return the number: two atoms give a distance in ' +
-    'angstroms, three give the angle at the middle atom in degrees, four give the torsion ' +
-    'about the middle bond in degrees. Also draws the measurement in the 3D view as a ' +
-    'labelled line, the same way the measure tool does. Use list_residues to check a ' +
-    'residue index first; the atom name is the PDB name, for example CA, N, C, O, CB.',
+    'Measure between named atoms and return the number.\n\n' +
+    '- Two atoms give a distance in angstroms, three the angle at the middle atom in ' +
+    'degrees, four the torsion about the middle bond in degrees.\n' +
+    '- Also draws the measurement in the 3D view as a labelled line, the same way the ' +
+    'measure tool does.\n' +
+    '- Use `list_residues` to check a residue index first; the atom name is the PDB name, ' +
+    'for example `CA`, `N`, `C`, `O`, `CB`.',
   params: {
     molId: moleculeId('Uid of the molecule object the atoms belong to.'),
     atoms: atoms(

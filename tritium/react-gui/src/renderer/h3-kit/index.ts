@@ -9,12 +9,13 @@
  *   list/        selectable-list rows and their keyboard navigation
  *   gradient/    the gradient stop strip and its value/pixel geometry
  *   colorpicker/ the colour popover and the field that opens it
+ *   markdown/    Markdown text as React elements (console help)
  *   MolSelList/  the molecular-selection picker
  *   selection/   the selection-expression builder shared by the pane and the picker
  *   ObjectSelect the scene-object dropdown
  *
- * The last four read CueMol state through the worker transport; the first
- * three do not. Nothing in the kit imports application code -- no components/,
+ * The last four read CueMol state through the worker transport; the others
+ * do not. Nothing in the kit imports application code -- no components/,
  * contexts/, state/, commands/ or shell/ -- which is what lets a pane be
  * rewritten without touching a control, and is enforced in eslint.config.mjs.
  *
@@ -27,6 +28,7 @@ export * from './form';
 export * from './list';
 export * from './gradient';
 export * from './colorpicker';
+export * from './markdown';
 export * from './MolSelList';
 export * from './selection';
 export { ObjectSelect, objectFilters } from './ObjectSelect';

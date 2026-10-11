@@ -120,12 +120,14 @@ function viewState(ctx: WorkerContext, viewId: number): OpOutcome {
 export const setView = defineOp({
   name: 'set_view',
   description:
-    'Read or change the camera without moving to a selection: zoom (the height of the view, ' +
-    'in angstroms), slab (the depth that is drawn, about the centre; atoms outside it are ' +
-    'clipped), distance (from the eye to the centre), and centre. Give only what should ' +
-    'change; with nothing given it just reports the current values. fitSlab sets the slab so ' +
-    'every molecule (or objId) is in it while keeping the centre and zoom as they are -- use ' +
-    'it, not center_view, when only the clipping is wrong.',
+    'Read or change the camera without moving to a selection.\n\n' +
+    '- `zoom`: the height of the view, in angstroms.\n' +
+    '- `slab`: the depth that is drawn, about the centre; atoms outside it are clipped.\n' +
+    '- `distance`: from the eye to the centre. And the centre itself.\n' +
+    '- `fitSlab` sets the slab so every molecule (or `objId`) is in it while keeping the ' +
+    'centre and zoom as they are -- use it, not `center_view`, when only the clipping is ' +
+    'wrong.\n\n' +
+    'Give only what should change; with nothing given it just reports the current values.',
   params: {
     zoom: optional(real('New zoom in angstroms. Null leaves it.')),
     slab: optional(real('New slab depth in angstroms. Null leaves it.')),

@@ -38,6 +38,8 @@ export type ConsoleDialectId = 'native' | 'pymol'
 export interface ConsoleWireEntry {
   kind: 'echo' | 'output' | 'warning' | 'error'
   text: string
+  /** `markdown`: the text is Markdown (help) to be formatted (markdown.ts); else plain lines. */
+  format?: 'markdown'
 }
 
 /** `POST /console/run`. */

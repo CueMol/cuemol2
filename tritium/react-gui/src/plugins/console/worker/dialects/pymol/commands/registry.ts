@@ -24,7 +24,15 @@ import { MOVIE_COMMANDS } from './movieCommands'
 import { LABEL_COMMANDS } from './labelCommands'
 import { usageLine } from '@plugins/console/worker/parser/bindArgs'
 import { lookupCommand } from '@plugins/console/worker/parser/commandLookup'
+import { commandHelp, commandTable } from '@plugins/console/worker/help/helpMarkdown'
 import type { PymCommand } from './types'
+
+/** What the PyMOL dialect's `help` says after the command table. */
+const PYMOL_OVERVIEW = `Type \`help <command>\` or \`<command> ?\` for its arguments.
+
+> A selection made with \`select\` is a **named expression**, not a fixed set of atoms:
+> it is evaluated again against each molecule every time it is used, so loading more
+> atoms can change what it matches.`
 
 const help: PymCommand = {
   name: 'help',
@@ -36,19 +44,9 @@ const help: PymCommand = {
   run(_ctx, args, cc) {
     const topic = args.command.trim()
     if (topic === '' || topic === 'commands') {
-      cc.print('Available commands:')
-      for (const c of PYM_COMMANDS) {
-        cc.print(`  ${c.name.padEnd(12)} ${c.summary}`)
-      }
-      cc.print('')
-      cc.print('Type "help <command>" or "<command> ?" for usage.')
-      cc.print('')
-      // The one difference that changes what a command means rather than
-      // whether it works, so it is said before the user meets it.
-      cc.print('A selection made with "select" is a named expression, not a')
-      cc.print('fixed set of atoms: it is re-evaluated against each molecule')
-      cc.print('every time it is used, so loading more atoms can change what')
-      cc.print('it matches.')
+      // The note on selections is the one difference that changes what a
+      // command means rather than whether it works, so it is said up front.
+      cc.printMarkdown(['# PyMOL commands', commandTable('Available commands', PYM_COMMANDS), PYMOL_OVERVIEW].join('\n\n'))
       return { ok: true }
     }
     const found = lookupCommand(topic, commandNames())
@@ -58,8 +56,14 @@ const help: PymCommand = {
     }
     const cmd = findCommand(found.name)
     if (!cmd) return { ok: false, error: `Error: unknown command: "${topic}"` }
-    cc.print(usageLine(cmd.name, cmd.params))
-    cc.print(cmd.summary)
+    cc.printMarkdown(
+      commandHelp({
+        name: cmd.name,
+        usage: usageLine(cmd.name, cmd.params).replace(/^Usage: /, ''),
+        body: cmd.summary,
+        args: cmd.params.map((p) => ({ name: p.name, default: p.default === undefined ? 'required' : p.default === '' ? 'optional' : p.default })),
+      }),
+    )
     return { ok: true }
   },
 }
