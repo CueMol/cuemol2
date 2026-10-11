@@ -14,6 +14,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ConsoleCommand as PymCommand, ConsoleDialect } from '../runtime/types'
 
@@ -47,6 +50,9 @@ const { COMMANDS, candidates } = vi.hoisted(() => {
   }
 })
 
+// What a load opens, without a stream manager behind the worker.
+vi.mock('@renderer/worker/server/catalog/fileLoad', () => ({ openableExtensions: () => ['pdb'] }))
+
 import { completeLine } from './complete'
 
 const ctx = {} as WorkerContext
@@ -68,6 +74,13 @@ function printed(messages: { text: string }[]): string {
   return messages.map((m) => m.text).join('\n')
 }
 
+/** The candidates' labels by group, as `group: a b c` lines. */
+function listed(out: { candidates?: { label: string; group: string }[] }): string {
+  const groups = new Map<string, string[]>()
+  for (const c of out.candidates ?? []) groups.set(c.group, [...(groups.get(c.group) ?? []), c.label])
+  return [...groups].map(([g, ls]) => `${g}: ${ls.join(' ')}`).join('\n')
+}
+
 describe('command completion', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -80,8 +93,7 @@ describe('command completion', () => {
     // `set_name` rather than completing to itself.
     const out = run('set')
     expect(out.replacement).toBeNull()
-    expect(printed(out.messages)).toContain('set')
-    expect(printed(out.messages)).toContain('set_name')
+    expect(listed(out)).toBe('commands: set set_name')
   })
 
   it('accepts an underscore abbreviation', () => {
@@ -109,14 +121,17 @@ describe('argument completion', () => {
     // The line grows as far as the candidates agree -- but they are several,
     // so no `, ` is added and the user is left mid-word.
     expect(out.replacement).toBe('set aoEn')
-    expect(printed(out.messages)).toContain('matching setting:')
+    // Each candidate carries the whole line it stands for, separator included,
+    // so a client walks them without rebuilding the line.
+    expect(out.candidates?.map((c) => c.replacement)).toEqual(['set aoEnabled, ', 'set aoEnergy, '])
+    expect(out.messages).toEqual([])
   })
 
   it('leaves the line alone when the common prefix adds nothing', () => {
     candidates.mockReturnValue(['aoRadius', 'aoSteps'])
     const out = run('set ao')
     expect(out.replacement).toBeNull()
-    expect(printed(out.messages)).toContain('matching setting:')
+    expect(listed(out)).toBe('setting: aoRadius aoSteps')
   })
 
   it('completes an argument that is already a candidate exactly', () => {
@@ -218,8 +233,7 @@ describe('native argument completion', () => {
 
   it('offers the values of the next parameter and the names of the ones not given', () => {
     const out = runNative('load f.pdb, ')
-    expect(printed(out.messages)).toMatch(/matching renderer type:[\s\S]*cartoon[\s\S]*matching argument:[\s\S]*rendererType=[\s\S]*selection=/)
-    expect(printed(out.messages)).not.toContain('path=')
+    expect(listed(out)).toBe('renderer type: cartoon cpk simple\nargument: rendererType= selection=')
     // A name completes to `name=`, with nothing after it; a value to `, ` while parameters remain.
     expect(runNative('load f.pdb, sel').replacement).toBe('load f.pdb, selection=')
     expect(runNative('load f.pdb, car').replacement).toBe('load f.pdb, cartoon, ')
@@ -230,8 +244,7 @@ describe('native argument completion', () => {
     expect(nativeSources.mock.calls.at(-1)?.[2]).toMatchObject({ bound: { path: 'f.pdb' } })
     // After a named argument only names may follow (a Python call's rule).
     const out = runNative('load path=f.pdb, ')
-    expect(printed(out.messages)).not.toContain('matching renderer type')
-    expect(printed(out.messages)).toContain('rendererType=')
+    expect(listed(out)).toBe('argument: rendererType= selection=')
   })
 
   it('reads a bracket as execution does, and adds nothing after the last parameter or an open one', () => {
@@ -244,5 +257,41 @@ describe('native argument completion', () => {
     const out = runNative('load f.pdb, zz')
     expect(printed(out.messages)).toContain('no matching renderer type or argument.')
     expect(printed(out.messages)).not.toContain('files')
+  })
+})
+
+// --- File names, as zsh lists them ---
+
+describe('file completion', () => {
+  it('hides dot files, retries ignoring case, puts what a load opens first, and lists only directories for cd', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cuemol-complete-'))
+    for (const f of ['1crn.pdb', 'notes.txt', '.hidden', 'a,b.pdb']) fs.writeFileSync(path.join(dir, f), '')
+    fs.mkdirSync(path.join(dir, 'Data'))
+    const cmd = (name: string, files: 'openable' | 'dirs') => ({
+      name,
+      params: [{ name: 'path' }],
+      mode: 'strict',
+      mutates: false,
+      summary: 'stub',
+      completions: [{ source: 'files', description: 'file', files }],
+      run: () => ({ ok: true }),
+    })
+    const files = {
+      argRule: 'python',
+      fileFallback: false,
+      commands: () => [cmd('load', 'openable'), cmd('cd', 'dirs')],
+      candidates: () => [],
+    } as unknown as ConsoleDialect
+    const go = (line: string) => completeLine(ctx, line, { ...cc, cwd: dir, dialect: files })
+
+    // No dot file unless a dot is typed; .txt dropped for a load; `,` quoted.
+    expect(listed(go('load '))).toBe('files: 1crn.pdb Data/ a,b.pdb\nargument: path=')
+    expect(go('load a').replacement).toBe('load "a,b.pdb"')
+    expect(go('load .').replacement).toBe('load .hidden')
+    // Nothing matches `da` as typed, so case is ignored -- and the real spelling written.
+    expect(go('load da').replacement).toBe('load Data/')
+    // Nothing a load opens starts with `n`: every file then.
+    expect(go('load n').replacement).toBe('load notes.txt')
+    expect(listed(go('cd '))).toBe('files: Data/\nargument: path=')
   })
 })

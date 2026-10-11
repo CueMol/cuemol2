@@ -33,7 +33,12 @@ import * as os from 'node:os'
 import * as path from 'node:path'
 import * as readline from 'node:readline'
 import { fileURLToPath } from 'node:url'
+import { displayWidth, layoutSections, menuText, moveMenu, sectionRows } from '@cuemol/console-kit'
 import type {
+  CandidateKind,
+  CompletionMenu,
+  GridSection,
+  MenuMove,
   ConsoleCompleteResponse,
   ConsoleDialectId,
   ConsoleInfoResponse,
@@ -65,7 +70,7 @@ const sgr = (code: string, text: string, stream: NodeJS.WriteStream = process.st
 
 // No dim or gray: both read poorly on a dark terminal. Secondary text is the
 // default colour; keys and values are picked out with `accent` (light violet).
-const STYLE = { bold: '1', red: '31', green: '32', yellow: '33', magenta: '35', cyan: '36', accent: '38;5;147' }
+const STYLE = { bold: '1', red: '31', green: '32', yellow: '33', magenta: '35', cyan: '36', accent: '38;5;147', dir: '1;34' }
 const DIALECT_STYLE: Record<ConsoleDialectId, string> = { native: STYLE.cyan, pymol: STYLE.magenta }
 const DIALECT_NAME: Record<ConsoleDialectId, string> = { native: 'CueMol', pymol: 'pymol' }
 
@@ -100,48 +105,177 @@ function printEntries(entries: readonly ConsoleWireEntry[], echo: boolean): void
 /** The width a string takes on screen, its colour codes not counted. */
 function visibleLength(text: string): number {
   // eslint-disable-next-line no-control-regex
-  return text.replace(/\x1b\[[0-9;]*m/g, '').length
+  return displayWidth(text.replace(/\x1b\[[0-9;]*m/g, ''))
+}
+
+/** A candidate's colour, after ls: directories, programs, links. */
+const KIND_STYLE: Partial<Record<CandidateKind, string>> = { dir: STYLE.dir, exec: STYLE.green, link: STYLE.cyan }
+
+/** A readline Interface with the internals Tab's menu takes over. */
+type MenuInterface = readline.Interface & {
+  _ttyWrite(s: string | undefined, key: readline.Key | undefined): void
+  line: string
+  cursor: number
 }
 
 /**
- * Tab's candidates, as zsh shows them. A list that fits on the screen goes
- * under the prompt, with the cursor left on the prompt line, and is gone at
- * the next key: the prompt line never moves. A list taller than the screen
- * cannot sit under a prompt that stays in view, so it is printed into the
- * scrollback and the prompt is drawn again below it, as bash (and zsh) do.
+ * Tab, as zsh does it (@cuemol/console-kit completion.ts, shared with the
+ * panel): one candidate is written in, several are listed under the prompt,
+ * and a second Tab walks them in a menu -- Tab / Shift-Tab and the arrows
+ * move, Enter accepts, Esc or Ctrl-G puts back what was typed, any other key
+ * accepts and goes on.
+ *
+ * The list is drawn under the prompt with the cursor left on the prompt
+ * line, so the prompt never moves; a list taller than the screen shows the
+ * rows around the selection. Keys reach readline through `_ttyWrite`, which
+ * this wraps to see them first.
  */
-function makeCompletionList(rl: readline.Interface) {
+function installCompletion(rl: MenuInterface, complete: (line: string) => Promise<ConsoleCompleteResponse>): void {
   const out = process.stdout
+  const ttyWrite = rl._ttyWrite.bind(rl)
+  /** Lines drawn under the prompt. */
   let rows = 0
-  return {
-    clear() {
-      if (rows === 0) return
-      // Save the cursor, step to the line under the prompt, erase to the end
-      // of the screen, and come back.
-      out.write('\x1b7\x1b[1B\r\x1b[J\x1b8')
-      rows = 0
-    },
-    show(entries: readonly ConsoleWireEntry[]) {
-      this.clear()
-      const width = out.columns || 80
-      let text = ''
-      let count = 0
-      for (const e of entries) {
-        const line = e.kind === 'error' ? sgr(STYLE.red, e.text) : e.kind === 'warning' ? sgr(STYLE.yellow, e.text) : e.text
-        text += `\n\r\x1b[K${line}`
-        count += Math.max(1, Math.ceil(visibleLength(e.text) / width))
+  let notes: readonly ConsoleWireEntry[] = []
+  let menu: { view: CompletionMenu; rest: string; sections: GridSection[] } | null = null
+  /** Set while this writes the line itself, so those keys go straight to readline. */
+  let writing = false
+
+  const clear = () => {
+    if (rows === 0) return
+    // Save the cursor, step to the line under the prompt, erase to the end
+    // of the screen, and come back.
+    out.write('\x1b7\x1b[1B\r\x1b[J\x1b8')
+    rows = 0
+  }
+
+  const close = () => {
+    clear()
+    menu = null
+    notes = []
+  }
+
+  /** Replace the text before the cursor, keeping what follows it. */
+  const setHead = (head: string, rest: string) => {
+    if (head.endsWith(', ') && /^\s*,/.test(rest)) head = head.slice(0, -2)
+    else if (head.endsWith(' ') && /^\s/.test(rest)) head = head.slice(0, -1)
+    if (head + rest === rl.line && rl.cursor === head.length) return
+    writing = true
+    try {
+      rl.write(null, { ctrl: true, name: 'e' })
+      rl.write(null, { ctrl: true, name: 'u' })
+      rl.write(head + rest)
+      for (let i = 0; i < rest.length; i++) rl.write(null, { name: 'left' })
+    } finally {
+      writing = false
+    }
+  }
+
+  /** The list as screen lines, and which one holds the selection. */
+  const listLines = (): { lines: string[]; at: number } => {
+    const lines = notes.map((e) =>
+      e.kind === 'error' ? sgr(STYLE.red, e.text) : e.kind === 'warning' ? sgr(STYLE.yellow, e.text) : e.text,
+    )
+    let at = -1
+    if (menu) {
+      const { view, sections } = menu
+      for (const sec of sections) {
+        if (sections.length > 1) lines.push(sgr(STYLE.accent, sec.group))
+        for (const row of sectionRows(sec)) {
+          if (row.includes(view.selected)) at = lines.length
+          const cells = row.map((i) => {
+            const c = view.candidates[i]
+            const padded = c.label + ' '.repeat(Math.max(0, sec.cellWidth - displayWidth(c.label)))
+            // Reverse video marks the selection even without colour.
+            if (i === view.selected) return `\x1b[7m${padded}\x1b[27m`
+            const style = KIND_STYLE[c.kind]
+            return style ? sgr(style, padded) : padded
+          })
+          lines.push(cells.join('  ').trimEnd())
+        }
       }
-      // The prompt line plus the list must fit on the screen to come back to it.
-      if (count + 1 > (out.rows || 24)) {
-        out.write(`${text}\n`)
-        rl.prompt(true)
-        return
+    }
+    return { lines, at }
+  }
+
+  const draw = () => {
+    clear()
+    const width = (out.columns || 80) - 1
+    const { lines, at } = listLines()
+    if (lines.length === 0) return
+    // The prompt line stays on screen: show a window of rows around the selection.
+    const room = Math.max(2, (out.rows || 24) - 2)
+    let shown = lines
+    if (lines.length > room) {
+      const top = Math.min(Math.max(0, at - Math.floor((room - 1) / 2)), lines.length - (room - 1))
+      shown = [...lines.slice(top, top + room - 1), sgr(STYLE.accent, `rows ${top + 1}-${top + room - 1} of ${lines.length}`)]
+    }
+    let count = 0
+    let text = ''
+    for (const l of shown) {
+      text += `\n\r\x1b[K${l}`
+      count += Math.max(1, Math.ceil(visibleLength(l) / (width + 1)))
+    }
+    // Back up to the prompt line, to the column readline left the cursor at.
+    const col = rl.getCursorPos().cols
+    out.write(`${text}\x1b[${count}A\r${col > 0 ? `\x1b[${col}C` : ''}`)
+    rows = count
+  }
+
+  const walk = (move: MenuMove) => {
+    if (!menu) return
+    menu.view = moveMenu(menu.view, move, menu.sections)
+    setHead(menuText(menu.view), menu.rest)
+    draw()
+  }
+
+  const tab = () => {
+    const line = rl.line.slice(0, rl.cursor)
+    const rest = rl.line.slice(rl.cursor)
+    complete(line)
+      .then((res) => {
+        // Typed on while asking: the answer is for a line that is gone.
+        if (rl.line.slice(0, rl.cursor) !== line) return
+        notes = res.messages ?? []
+        const head = res.replacement ?? line
+        if (res.replacement !== null && res.replacement !== undefined) setHead(head, rest)
+        const candidates = res.candidates ?? []
+        menu =
+          candidates.length > 1
+            ? {
+                view: { candidates, original: head, selected: -1 },
+                rest,
+                sections: layoutSections(candidates, (out.columns || 80) - 1),
+              }
+            : null
+        draw()
+      })
+      .catch(() => {})
+  }
+
+  const ARROWS: Record<string, MenuMove> = { up: 'up', down: 'down', left: 'left', right: 'right' }
+
+  rl._ttyWrite = (str, key) => {
+    if (writing || !key) return ttyWrite(str, key)
+    const plain = !key.ctrl && !key.meta
+    if (key.name === 'tab' && plain) {
+      if (menu) walk(key.shift ? 'prev' : 'next')
+      else if (!key.shift) tab()
+      return
+    }
+    const cancel = key.name === 'escape' || (key.ctrl && key.name === 'g')
+    if (menu && menu.view.selected >= 0) {
+      const arrow = key.name ? ARROWS[key.name] : undefined
+      if (arrow && plain && !key.shift) return walk(arrow)
+      if (key.name === 'return' || key.name === 'enter') return close()
+      if (cancel) {
+        setHead(menu.view.original, menu.rest)
+        return close()
       }
-      // Back up to the prompt line, to the column readline left the cursor at.
-      const col = rl.getCursorPos().cols
-      out.write(`${text}\x1b[${count}A\r${col > 0 ? `\x1b[${col}C` : ''}`)
-      rows = count
-    },
+    }
+    if (cancel && (menu || notes.length > 0)) return close()
+    // Anything else accepts what is shown and does what it does.
+    if (rows > 0 || menu) close()
+    ttyWrite(str, key)
   }
 }
 
@@ -311,35 +445,10 @@ async function interactive(): Promise<number> {
     history: loadHistory(),
     historySize: HISTORY_SIZE,
     removeHistoryDuplicates: true,
-    completer: (line: string, callback: (err: null, result: [string[], string]) => void) => {
-      post<ConsoleCompleteResponse>('/console/complete', { dialect: session.dialect, line, cwd: session.cwd })
-        .then((res) => {
-          callback(null, [[], line])
-          // The answer rewrites the whole line, which readline's own
-          // completion (append a suffix) cannot express.
-          setImmediate(() => {
-            // `line` is the text before the cursor, as bash completes the
-            // word before it; what follows the cursor is kept.
-            if (res.replacement !== null && res.replacement !== undefined && res.replacement !== line) {
-              const rest = rl.line.slice(line.length)
-              let head = res.replacement
-              if (head.endsWith(', ') && /^\s*,/.test(rest)) head = head.slice(0, -2)
-              else if (head.endsWith(' ') && /^\s/.test(rest)) head = head.slice(0, -1)
-              rl.write(null, { ctrl: true, name: 'e' })
-              rl.write(null, { ctrl: true, name: 'u' })
-              rl.write(head + rest)
-              for (let i = 0; i < rest.length; i++) rl.write(null, { name: 'left' })
-            }
-            if (res.messages?.length) completionList.show(res.messages)
-          })
-        })
-        .catch(() => callback(null, [[], line]))
-    },
   })
-  const completionList = makeCompletionList(rl)
-  // The next key, whatever it is, takes the list away first -- before
-  // readline acts on it, so a line that runs is printed below a clean prompt.
-  process.stdin.prependListener('keypress', () => completionList.clear())
+  installCompletion(rl as MenuInterface, (line) =>
+    post<ConsoleCompleteResponse>('/console/complete', { dialect: session.dialect, line, cwd: session.cwd }),
+  )
   const prompt = () => {
     rl.setPrompt(promptText())
     rl.prompt()

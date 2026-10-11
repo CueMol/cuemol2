@@ -76,42 +76,53 @@ describe('ConsolePanel', () => {
     tree.unmount()
   })
 
-  it('completes the line under the caret with what the worker answers', async () => {
-    const invokePluginService = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        replacement: 'bg_color ',
-        messages: [{ kind: 'output', text: ' parser: matching commands:' }],
-      }),
-    )
+  it('lists several candidates, walks them on the next Tab, and Esc puts back what was typed', async () => {
+    const candidates = ['bg_color', 'bg_gradient'].map((c) => ({
+      label: c,
+      replacement: `${c} `,
+      kind: 'command',
+      group: 'commands',
+    }))
+    const invokePluginService = vi.fn(() => Promise.resolve({ ok: true, replacement: 'bg_', messages: [], candidates }))
+    const runner = vi.fn()
     const cm = { invokePluginService } as unknown as AsyncCueMol
     const tree = mountTree(<ConsolePanel cm={cm} activeSceneId={1} activeMolViewId={2} />)
-    act(() => consoleSession.setRunner(vi.fn()))
+    act(() => consoleSession.setRunner(runner))
+    const key = (k: string) =>
+      act(() => {
+        promptOf(tree.container).dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
+      })
 
-    const prompt = promptOf(tree.container)
-    act(() => type(prompt, 'bg'))
-    act(() => {
-      prompt.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
-      )
-    })
+    act(() => type(promptOf(tree.container), 'bg'))
+    key('Tab')
     await act(async () => flushPromises())
 
-    const [pluginId, name, args] = invokePluginService.mock.calls[0] as unknown as [
-      string,
-      string,
-      { line: string },
-    ]
-    expect([pluginId, name]).toEqual(['console', 'complete'])
-    expect(args.line).toBe('bg')
-    expect(promptOf(tree.container).value).toBe('bg_color ')
-    // The list goes to the strip above the prompt, not the transcript, and
-    // typing clears it: it only ever shows the latest Tab's candidates.
+    const [pluginId, name, args] = invokePluginService.mock.calls[0] as unknown as [string, string, { line: string }]
+    expect([pluginId, name, args.line]).toEqual(['console', 'complete', 'bg'])
+    // Extended to what they share, and listed above the prompt, not in the transcript.
+    expect(promptOf(tree.container).value).toBe('bg_')
     const strip = () => tree.container.querySelector('.console-completions')
-    expect(strip()?.textContent).toContain('parser: matching commands:')
-    expect(tree.container.querySelector('.console-transcript')?.textContent).not.toContain('parser: matching')
-    act(() => type(promptOf(tree.container), 'bg_color w'))
+    expect(strip()?.textContent).toContain('bg_gradient')
+    expect(tree.container.querySelector('.console-transcript')?.textContent ?? '').not.toContain('bg_gradient')
+
+    // The second Tab walks the list without asking the worker again.
+    key('Tab')
+    key('Tab')
+    expect(invokePluginService).toHaveBeenCalledTimes(1)
+    expect(promptOf(tree.container).value).toBe('bg_gradient ')
+    expect(strip()?.querySelector('.is-selected')?.textContent).toBe('bg_gradient')
+
+    key('Escape')
+    expect(promptOf(tree.container).value).toBe('bg_')
     expect(strip()).toBeNull()
+
+    // Enter in a menu takes the selection and runs nothing.
+    key('Tab')
+    await act(async () => flushPromises())
+    key('Tab')
+    key('Enter')
+    expect(promptOf(tree.container).value).toBe('bg_color ')
+    expect(runner).not.toHaveBeenCalled()
     tree.unmount()
   })
 

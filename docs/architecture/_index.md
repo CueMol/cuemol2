@@ -21,6 +21,11 @@ instead. If a change ports a UXP surface it belongs there; if it adds
 something UXP never had, or concerns build / packaging / internal
 architecture, it belongs here.
 
+- [Console の Tab 補完](console-completion.md) (日本語) -- console panel と tritium_cli で共通の
+  zsh 式補完。worker が候補ごとに「選んだときの行」を返し、`@cuemol/console-kit` の
+  `completion.ts` が段組みとメニューの状態遷移を持つ。ファイル名の一致規則 (dot file、
+  大小無視の再試行、load の拡張子優先、cd はディレクトリだけ)。
+
 - [Camera pane と camera の表示順 (`ui_order`)](camera-pane.md) (日本語) --
   名前付き camera を scene tree の枝から独立した Camera pane に移し、View activity view
   (Camera pane + View pane) を新設した記録。Camera に `ui_order` property (nopersist) を足し、

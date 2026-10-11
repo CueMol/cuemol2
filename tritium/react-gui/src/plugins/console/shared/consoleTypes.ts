@@ -8,6 +8,7 @@
  */
 
 import type { Result } from '@renderer/worker/shared/result'
+import type { CompletionCandidate } from '@cuemol/console-kit'
 
 /**
  * The command languages the console speaks: `native`, generated from the
@@ -125,8 +126,10 @@ export interface CompleteArgs {
 export interface CompleteOutcome {
   /** The whole line, rewritten. Null leaves what was typed alone. */
   replacement: string | null
-  /** The candidate list, or the line saying there was nothing. */
+  /** The line saying there was nothing; candidates are not printed. */
   messages: ConsoleEntry[]
+  /** Two or more candidates, for the panel to list and walk. */
+  candidates?: CompletionCandidate[]
 }
 
 export type CompleteResult = Result<CompleteOutcome>

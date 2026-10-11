@@ -11,10 +11,11 @@
  *
  * Up and Down walk the history, but only when the caret is on the first or
  * last line, so they keep meaning "move the caret" inside a pasted script.
- * Tab completes, the way PyMOL's command line does. What a Tab lists goes in
- * a strip just above the prompt, not the transcript: each Tab replaces it,
- * and typing, Enter or Esc clears it, so it always shows the latest Tab's
- * candidates and the transcript keeps only what ran.
+ * Tab completes as zsh does (@cuemol/console-kit completion.ts, shared with
+ * tritium_cli): several candidates are listed in a strip just above the
+ * prompt, not the transcript; a second Tab starts a menu on them, which Tab,
+ * Shift+Tab and the arrows walk, Enter accepts, Esc backs out of, and any
+ * other key accepts and goes on. A click accepts one too.
  *
  * The console speaks one dialect at a time: native (CueMol's own commands,
  * generated from the op catalogue) or PyMOL. The switch in the toolbar, or
@@ -22,7 +23,9 @@
  * preference, and each dialect keeps its own history.
  */
 
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { layoutSections, menuText, moveMenu } from '@cuemol/console-kit'
+import type { CompletionMenu, MenuMove } from '@cuemol/console-kit'
 import { AppIcon } from '@renderer/h3-kit/primitives'
 import { FormButton, SegmentField, TextAreaField, isImeKey } from '@renderer/h3-kit/form'
 import { usePluginPrefs } from '@renderer/plugin-host/api'
@@ -61,6 +64,29 @@ function joinBeforeCaret(completed: string, rest: string): string {
   return completed
 }
 
+/** The keys that walk an open menu. */
+const MENU_ARROWS: Record<string, MenuMove> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
+
+/** A menu over a Tab's candidates, and where in the prompt it writes. */
+interface MenuView {
+  menu: CompletionMenu
+  /** The prompt before the caret's line. */
+  before: string
+  /** The prompt after the caret. */
+  rest: string
+}
+
+/** Characters of the console font that fit across `el`. */
+function cellsAcross(el: HTMLElement): number {
+  const ctx = document.createElement('canvas').getContext('2d')
+  if (!ctx) return 80
+  const style = getComputedStyle(el)
+  ctx.font = style.font
+  const ch = ctx.measureText('0').width || 8
+  const inner = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+  return Math.max(1, Math.floor(inner / ch))
+}
+
 /** What the user types to switch: the dialect's id, alone on the line. */
 function dialectNamedBy(text: string): DialectId | null {
   const word = text.trim().toLowerCase()
@@ -74,8 +100,13 @@ export const ConsolePanel: BottomTabComponent = ({
 }) => {
   const { lines, running, draft, runner, stopper } = useConsoleSession()
   const [recall, setRecall] = useState<RecallState>(IDLE)
-  // What the last Tab listed; null when nothing is shown.
-  const [completions, setCompletions] = useState<ConsoleEntry[] | null>(null)
+  // Why the last Tab found nothing; null when nothing is shown.
+  const [notes, setNotes] = useState<ConsoleEntry[] | null>(null)
+  // The last Tab's candidates, listed or walked; null when none are shown.
+  const [menuView, setMenuView] = useState<MenuView | null>(null)
+  const stripRef = useRef<HTMLDivElement>(null)
+  // The strip's width in characters, for the grid.
+  const [cells, setCells] = useState(80)
   const { prefs, setPref } = usePluginPrefs(CONSOLE_PLUGIN_ID)
   const dialect: DialectId =
     prefs[DIALECT_PREF] === 'pymol' || prefs[DIALECT_PREF] === 'native'
@@ -117,6 +148,66 @@ export const ConsolePanel: BottomTabComponent = ({
     [showText],
   )
 
+  const closeMenu = useCallback(() => {
+    setMenuView(null)
+    setNotes(null)
+  }, [])
+
+  /** Write what the menu stands for before the caret, keeping the rest. */
+  const showMenu = useCallback(
+    (view: MenuView) => {
+      const head = joinBeforeCaret(menuText(view.menu), view.rest)
+      showText(view.before + head + view.rest, view.before.length + head.length)
+    },
+    [showText],
+  )
+
+  const sections = useMemo(
+    () => (menuView ? layoutSections(menuView.menu.candidates, cells) : []),
+    [menuView, cells],
+  )
+
+  /** Move the menu (starting it on a listed one) and show the selection. */
+  const walkMenu = useCallback(
+    (move: MenuMove) => {
+      if (!menuView) return
+      const next = { ...menuView, menu: moveMenu(menuView.menu, move, sections) }
+      setMenuView(next)
+      setRecall(IDLE)
+      showMenu(next)
+    },
+    [menuView, sections, showMenu],
+  )
+
+  /** Accept a candidate by index (a click), or the selection. */
+  const acceptMenu = useCallback(
+    (index?: number) => {
+      if (!menuView) return
+      if (index !== undefined) showMenu({ ...menuView, menu: { ...menuView.menu, selected: index } })
+      closeMenu()
+      inputRef.current?.focus()
+    },
+    [menuView, showMenu, closeMenu],
+  )
+
+  // The grid follows the strip's width, measured while the strip is up.
+  const listing = menuView !== null
+  useLayoutEffect(() => {
+    const el = stripRef.current
+    if (!el) return
+    setCells(cellsAcross(el))
+    // Absent outside a browser (jsdom): the grid keeps its first measure.
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => setCells(cellsAcross(el)))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [listing])
+
+  // Keep the selection in view in a list that scrolls.
+  useLayoutEffect(() => {
+    stripRef.current?.querySelector('.is-selected')?.scrollIntoView?.({ block: 'nearest' })
+  }, [menuView])
+
   /**
    * Complete at the caret, as bash and zsh do.
    *
@@ -149,15 +240,22 @@ export const ConsolePanel: BottomTabComponent = ({
         )
         .then((res) => {
           if (!res.ok) {
-            setCompletions([{ kind: 'error', text: `Error: ${res.error}` }])
+            setMenuView(null)
+            setNotes([{ kind: 'error', text: `Error: ${res.error}` }])
             return
           }
-          setCompletions(res.messages.length > 0 ? res.messages : null)
-          if (res.replacement === null) return
+          setNotes(res.messages.length > 0 ? res.messages : null)
           const rest = value.slice(caret)
-          const head = joinBeforeCaret(res.replacement, rest)
+          const head = res.replacement === null ? line : joinBeforeCaret(res.replacement, rest)
+          const before = value.slice(0, start)
+          if (res.candidates && res.candidates.length > 1) {
+            setMenuView({ menu: { candidates: res.candidates, original: head, selected: -1 }, before, rest })
+          } else {
+            setMenuView(null)
+          }
+          if (res.replacement === null) return
           setRecall(IDLE)
-          showText(value.slice(0, start) + head + rest, start + head.length)
+          showText(before + head + rest, start + head.length)
         })
         .catch((e: unknown) => {
           console.error('console: complete failed:', e)
@@ -167,6 +265,11 @@ export const ConsolePanel: BottomTabComponent = ({
   )
 
   const submit = useCallback(() => {
+    // Enter in a menu takes the selection; it does not run the line.
+    if (menuView && menuView.menu.selected >= 0) {
+      acceptMenu()
+      return
+    }
     const text = draft.trim()
     if (text === '' || running || !runner) return
     // Switching is the panel's business, not a command either dialect knows.
@@ -180,16 +283,20 @@ export const ConsolePanel: BottomTabComponent = ({
     // getting back.
     history.pushHistory(text)
     setRecall(IDLE)
-    setCompletions(null)
+    closeMenu()
     consoleSession.setDraft('')
     runner(text, dialect)
-  }, [draft, running, runner, dialect, history, switchDialect])
+  }, [draft, running, runner, dialect, history, switchDialect, menuView, acceptMenu, closeMenu])
 
-  const handleChange = useCallback((value: string) => {
-    consoleSession.setDraft(value)
-    setRecall(IDLE)
-    setCompletions(null)
-  }, [])
+  // Typing accepts what the menu shows and goes on from there.
+  const handleChange = useCallback(
+    (value: string) => {
+      consoleSession.setDraft(value)
+      setRecall(IDLE)
+      closeMenu()
+    },
+    [closeMenu],
+  )
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -197,20 +304,34 @@ export const ConsolePanel: BottomTabComponent = ({
       // candidate and Tab accepts one.
       if (isImeKey(e.nativeEvent)) return
 
-      if (e.key === 'Escape' && completions) {
+      const walking = menuView !== null && menuView.menu.selected >= 0
+      if (e.key === 'Escape' && (menuView || notes)) {
         e.preventDefault()
-        setCompletions(null)
+        // Out of a menu, back to what was typed.
+        if (walking) showMenu({ ...menuView, menu: { ...menuView.menu, selected: -1 } })
+        closeMenu()
         return
       }
 
       if (e.key === 'Tab') {
-        // Shift+Tab is left alone as the way out of the prompt by keyboard;
-        // plain Tab always completes, and never moves focus.
-        if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return
+        if (e.altKey || e.ctrlKey || e.metaKey) return
+        // Shift+Tab steps back in a list; elsewhere it is left alone as the
+        // way out of the prompt by keyboard. Plain Tab never moves focus.
+        if (e.shiftKey && !menuView) return
         e.preventDefault()
-        completeAtCaret(e.currentTarget)
+        if (menuView) walkMenu(e.shiftKey ? 'prev' : 'next')
+        else completeAtCaret(e.currentTarget)
         return
       }
+
+      const arrow = MENU_ARROWS[e.key]
+      if (walking && arrow && !(e.altKey || e.ctrlKey || e.metaKey || e.shiftKey)) {
+        e.preventDefault()
+        walkMenu(arrow)
+        return
+      }
+      // Any other key accepts the menu and does what it does.
+      if (menuView && !['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) closeMenu()
 
       if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
@@ -238,7 +359,7 @@ export const ConsolePanel: BottomTabComponent = ({
       setRecall(step.state)
       showRecalled(step.draft)
     },
-    [recall, showRecalled, completeAtCaret, history, completions],
+    [recall, showRecalled, completeAtCaret, history, menuView, notes, showMenu, closeMenu, walkMenu],
   )
 
   const focusPrompt = useCallback(() => inputRef.current?.focus(), [])
@@ -315,10 +436,38 @@ export const ConsolePanel: BottomTabComponent = ({
         <ConsoleTranscript lines={lines} />
       </div>
 
-      {completions && (
-        <div className="console-completions type-console" role="status" aria-label="Completions">
-          {completions.map((line, i) => (
+      {(menuView || notes) && (
+        <div ref={stripRef} className="console-completions type-console" role="status" aria-label="Completions">
+          {notes?.map((line, i) => (
             <div key={i} className={`console-line console-line-${line.kind}`}>{line.text}</div>
+          ))}
+          {menuView && sections.map((sec) => (
+            <div key={sec.start}>
+              {sections.length > 1 && <div className="console-completion-heading">{sec.group}</div>}
+              <div
+                className="console-completion-grid"
+                style={{
+                  gridTemplateColumns: `repeat(${sec.columns}, ${sec.cellWidth}ch)`,
+                  gridTemplateRows: `repeat(${sec.rows}, auto)`,
+                }}
+              >
+                {menuView.menu.candidates.slice(sec.start, sec.start + sec.count).map((c, k) => (
+                  <div
+                    key={sec.start + k}
+                    className={`console-completion console-completion-${c.kind}${
+                      sec.start + k === menuView.menu.selected ? ' is-selected' : ''
+                    }`}
+                    // Keep the prompt focused through the click.
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      acceptMenu(sec.start + k)
+                    }}
+                  >
+                    {c.label}
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}

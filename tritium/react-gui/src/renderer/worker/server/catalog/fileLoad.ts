@@ -55,6 +55,11 @@ export function openTarget(ctx: WorkerContext, raw: string): OpenTarget | { erro
   return { scene: false, filePath, readerName, contentFirst }
 }
 
+/** Every extension a load opens by (object and scene readers); console Tab lists these first. */
+export function openableExtensions(ctx: WorkerContext): string[] {
+  return [OBJREADER_CATEGORY, SCENE_READER_CATEGORY].flatMap((catId) => getOpenFilters(ctx, { catId })[0]?.extensions ?? [])
+}
+
 /** The arguments every load op takes. */
 export interface LoadArgs {
   rendererType: string | null

@@ -70,7 +70,11 @@ export function useConsoleEndpoint(): void {
           cwd: p.cwd,
         })
         if (!res.ok) return { error: res.error }
-        const answer: ConsoleCompleteResponse = { replacement: res.replacement, messages: res.messages }
+        const answer: ConsoleCompleteResponse = {
+          replacement: res.replacement,
+          messages: res.messages,
+          candidates: res.candidates,
+        }
         return answer
       }
       if (kind !== 'run') throw new Error(`Unknown request: ${kind}`)

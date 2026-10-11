@@ -238,7 +238,8 @@ const load: PymCommand = {
   // line would not expect, so it has to stand alone like `save x.qsc`.
   outsideTxn: (args) => isSceneFile(args.filename ?? ''),
   completions: [
-    null,
+    // Nothing after the name, as PyMOL's own file fallback leaves it.
+    { source: 'files', description: 'file', suffix: '', files: 'openable' },
     null,
     null,
     { source: 'readers', description: 'format', suffix: ', ' },
@@ -564,6 +565,7 @@ const cd: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Change the working directory relative paths are read from.',
+  completions: [{ source: 'files', description: 'directory', suffix: '', files: 'dirs' }],
   run(_ctx, args, cc) {
     const dir = resolvePath(cc.cwd, args.dir)
     if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {

@@ -27,7 +27,7 @@ const cd: ConsoleCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Change the working directory relative paths are read from.',
-  completions: [{ source: 'files', description: 'directory' }],
+  completions: [{ source: 'files', description: 'directory', files: 'dirs' }],
   run(_ctx, args, cc) {
     const dir = resolvePath(cc.cwd, args.dir)
     if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
