@@ -293,8 +293,11 @@ export const ActionHistoryPane: React.FC<ActionHistoryPaneProps> = ({ collapsed,
 
     const treeContents = useMemo<TreeNodeInfo[]>(() => {
         if (steps.length === 0) return []
+        // The row is usually too narrow for its text; the tooltip shows it whole.
         const rowLabel = (id: string, text: string, className: string): React.JSX.Element => (
-            <span className={`action-row-text type-row ${className}`} data-row-id={id}>{text}</span>
+            <Tooltip content={text} placement="right" className="action-row-tip">
+                <span className={`action-row-text type-row ${className}`} data-row-id={id}>{text}</span>
+            </Tooltip>
         )
         const initial: TreeNodeInfo = {
             id: INITIAL_ROW,
