@@ -41,11 +41,13 @@ const LAYOUT_DEFAULTS: LayoutState = {
     explorer: [220, 240],
     view: [200, 300],
     selection: [260, 180],
+    actions: [400],
   },
   viewCollapsed: {
     explorer: { scene: false, color: false },
     view: { camera: false, view: false },
     selection: { mol: false, selection: false },
+    actions: { history: false },
   },
 }
 

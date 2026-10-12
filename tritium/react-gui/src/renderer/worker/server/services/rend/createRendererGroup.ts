@@ -10,6 +10,7 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface CreateRendererGroupArgs {
     sceneId: number;
@@ -66,6 +67,7 @@ export function createRendererGroup(
     withUndoTxn(scene, `Create renderer group: ${finalName}`, () => {
         const rend = obj.createRenderer('*group') as unknown as Renderer | null;
         if (!rend) return;
+        recordOp(ctx, scene.uid, 'create_group', { objId: args.objId, name: finalName }, ['objId']);
         try { rend.name = finalName; } catch { /* '*group' should accept name set */ }
         newRendId = (rend as unknown as { uid: number }).uid;
     });

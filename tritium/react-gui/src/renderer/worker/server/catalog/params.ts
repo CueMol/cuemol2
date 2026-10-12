@@ -133,6 +133,17 @@ export function nodeId(description: string, typeParam: string): Param<number> {
   return param('integer', description, { semantic: 'node', typeParam })
 }
 
+/**
+ * What a colouring op acts on: a renderer, or an object (the colouring its
+ * renderers take by default). `nodeType` is derived from a node path.
+ */
+export function coloringTarget(what: string): { nodeId: Param<number>; nodeType: Param<'renderer' | 'object'> } {
+  return {
+    nodeId: nodeId(`Uid of the renderer or object ${what}.`, 'nodeType'),
+    nodeType: enumOf(['renderer', 'object'], 'What nodeId refers to: a renderer, or an object (the colouring its renderers take by default).'),
+  }
+}
+
 /** A CueMol selection expression (`object<MolSelection>`). */
 export function selection(description: string): Param<string> {
   return param('string', description, { semantic: 'selection' })

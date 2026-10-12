@@ -20,6 +20,7 @@ import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { proposeUniqName } from '@renderer/worker/server/services/scene/proposeUniqName';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { isValidUid } from '@renderer/worker/shared/uid';
 
 export interface SaveSelDefArgs {
@@ -78,6 +79,7 @@ export function saveSelDef(ctx: WorkerContext, args: SaveSelDefArgs): SaveSelDef
             if (!isValidUid(setId)) return;
         }
         ok = styleMgr.setStrData('sel', name, expr, args.sceneId, setId);
+        if (ok) recordOp(ctx, scene.uid, 'define_selection', { name, selection: expr });
     });
     return { ok };
 }

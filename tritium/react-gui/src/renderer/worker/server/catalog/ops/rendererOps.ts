@@ -16,9 +16,10 @@ import {
 } from '@renderer/worker/server/services/coloring/panelList'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
-import { paintRendererSelection } from '@renderer/worker/server/services/coloring/paintCrud'
+import { paintObjectSelection, paintRendererSelection } from '@renderer/worker/server/services/coloring/paintCrud'
 import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
-import { getMolFromRenderer } from '@renderer/worker/server/services/coloring/colorTargets'
+import { getMolFromRenderer, getObjectColoringClassName } from '@renderer/worker/server/services/coloring/colorTargets'
+import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord'
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { RendColoringId } from '@shared/types/sceneCtxMenu'
@@ -26,7 +27,7 @@ import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
-import { color, enumOf, objectId, optional, rendererId, rendererType, selection, string } from '../params'
+import { color, coloringTarget, enumOf, objectId, optional, rendererId, rendererType, selection, string } from '../params'
 
 /** The colouring modes that are not style names. */
 const PAINT_TYPES = [
@@ -106,6 +107,7 @@ export const createRenderer = defineOp({
     ),
   },
   mutates: true,
+  describe: (a, n) => `Add ${a.rendererType}${a.name ? ` ${a.name}` : ''} to ${n('objId')}${a.selection ? ` (${a.selection})` : ''}`,
   expose: { tool: 'core', console: true },
   group: 'renderers',
   run(ctx, args, oc) {
@@ -150,6 +152,7 @@ export const setRendererSelection = defineOp({
     selection: selection('Selection expression the renderer should draw.'),
   },
   mutates: true,
+  describe: (a, n) => `Draw ${a.selection} in ${n('rendId')}`,
   expose: { tool: 'core', console: true },
   group: 'renderers',
   run(ctx, args, oc) {
@@ -193,11 +196,12 @@ export const getColoringStyles = defineOp({
 export const setRendererColoringOp = defineOp({
   name: 'set_renderer_coloring',
   description:
-    'Colour one renderer. Either give a mode -- cpk (by element), rainbow (along the chain), ' +
+    'Colour one renderer, or an object (the colouring its renderers take by default; style ' +
+    'names are for renderers only). Either give a mode -- cpk (by element), rainbow (along the chain), ' +
     'bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style ' +
     'name from list_coloring_styles.',
   params: {
-    rendId: rendererId('Uid of the renderer.'),
+    ...coloringTarget('to colour'),
     mode: enumOf(
       [...PAINT_TYPES, 'style'],
       'One of the fixed modes, or "style" to use styleName instead.',
@@ -207,10 +211,14 @@ export const setRendererColoringOp = defineOp({
     ),
   },
   mutates: true,
+  describe: (a, n) => `Colour ${n('nodeId')} by ${a.styleName ?? a.mode}`,
   expose: { tool: 'core', console: true },
   group: 'coloring',
   run(ctx, args, oc) {
     let coloringId: RendColoringId
+    if (args.mode === 'style' && args.nodeType === 'object') {
+      return { ok: false, error: 'A colouring style can only be set on a renderer.' }
+    }
     if (args.mode === 'style') {
       const styleName = args.styleName ?? ''
       if (styleName === '') {
@@ -230,23 +238,24 @@ export const setRendererColoringOp = defineOp({
 
     const result = setRendererColoring(ctx, {
       sceneId: oc.sceneId,
-      rendId: args.rendId,
+      rendId: args.nodeId,
       coloringId,
-      targetKind: 'renderer',
+      targetKind: args.nodeType,
     })
-    return normalizeServiceResult(result, 'The colouring could not be applied to that renderer.')
+    return normalizeServiceResult(result, `The colouring could not be applied to that ${args.nodeType}.`)
   },
 })
 
 export const paintSelection = defineOp({
   name: 'add_paint',
   description:
-    'Colour part of what one renderer draws, leaving the rest as it is. Use this for "make ' +
+    'Colour part of what one renderer (or every renderer of an object that follows its ' +
+    'colouring) draws, leaving the rest as it is. Use this for "make ' +
     'chain A red" or "colour the ligand yellow" -- set_renderer_coloring replaces the whole ' +
     "renderer's colouring instead. Painting the same renderer again adds another colour on " +
     'top, so several regions can be coloured one call at a time.',
   params: {
-    rendId: rendererId('Uid of the renderer to paint.'),
+    ...coloringTarget('to paint'),
     selection: selection('Which atoms to colour. Check it with count_selection first.'),
     color: color(
       'Colour as hex ("#FF0000"), a CueMol colour name ("red"), or hsb(h,s,b). ' +
@@ -254,21 +263,23 @@ export const paintSelection = defineOp({
     ),
   },
   mutates: true,
+  describe: (a, n) => `Paint ${a.selection} ${a.color} on ${n('nodeId')}`,
   expose: { tool: 'core', console: true },
   group: 'coloring',
   run(ctx, args, oc): OpOutcome {
-    const rendId = args.rendId
+    const target = { sceneId: oc.sceneId, rendId: args.nodeId, targetKind: args.nodeType }
     if (args.selection.trim() === '') {
       return { ok: false, error: 'The selection expression is empty.' }
     }
 
     const scene = getSceneOrNull(ctx, oc.sceneId)
     if (!scene) return { ok: false, error: 'The scene could not be read.' }
-    const rend = scene.getRenderer(rendId) as Renderer | null
-    if (!rend) return { ok: false, error: NO_RENDERER }
-    const mol = getMolFromRenderer(rend)
+    const onObject = args.nodeType === 'object'
+    const node = onObject ? scene.getObject(args.nodeId) : scene.getRenderer(args.nodeId)
+    if (!node) return { ok: false, error: onObject ? NO_OBJECT : NO_RENDERER }
+    const mol = onObject ? (node as unknown as MolCoord) : getMolFromRenderer(node as Renderer)
     if (!mol) {
-      return { ok: false, error: 'That renderer does not draw a molecule, so it cannot be painted.' }
+      return { ok: false, error: `That ${args.nodeType} is not a molecule, so it cannot be painted.` }
     }
 
     // The paint service reads the region from the MOLECULE's current
@@ -290,23 +301,19 @@ export const paintSelection = defineOp({
     // Painting needs a PaintColoring to insert into; anything else has no
     // per-selection entries. Switching costs the renderer's previous
     // colouring, which is why it is only done when it is not one already.
-    if (!getRendererPaintInfo(ctx, { sceneId: oc.sceneId, rendId }).canPaint) {
-      const switched = setRendererColoring(ctx, {
-        sceneId: oc.sceneId,
-        rendId,
-        coloringId: 'paint-type-paint',
-        targetKind: 'renderer',
-      })
+    const canPaint = onObject
+      ? getObjectColoringClassName(mol) === 'PaintColoring'
+      : getRendererPaintInfo(ctx, { sceneId: oc.sceneId, rendId: args.nodeId }).canPaint
+    if (!canPaint) {
+      const switched = setRendererColoring(ctx, { ...target, coloringId: 'paint-type-paint' })
       if (!switched.ok) {
-        return { ok: false, error: 'That renderer cannot be switched to per-selection colouring.' }
+        return { ok: false, error: `That ${args.nodeType} cannot be switched to per-selection colouring.` }
       }
     }
 
-    const painted = paintRendererSelection(ctx, {
-      sceneId: oc.sceneId,
-      rendId,
-      colorValue: args.color,
-    })
+    const painted = onObject
+      ? paintObjectSelection(ctx, { sceneId: oc.sceneId, objId: args.nodeId, colorValue: args.color })
+      : paintRendererSelection(ctx, { sceneId: oc.sceneId, rendId: args.nodeId, colorValue: args.color })
     if (!painted.ok) {
       return {
         ok: false,
@@ -315,7 +322,7 @@ export const paintSelection = defineOp({
           'CueMol knows, and that the selection matches some atoms.',
       }
     }
-    return { ok: true, data: { rendererId: rendId, selection: args.selection, color: args.color } }
+    return { ok: true, data: { nodeId: args.nodeId, nodeType: args.nodeType, selection: args.selection, color: args.color } }
   },
 })
 
@@ -331,6 +338,7 @@ export const changeRendererType = defineOp({
     rendererType: rendererType('The new type. Must be one the renderer can change to; a wrong one is answered with the list.'),
   },
   mutates: true,
+  describe: (a, n) => `Change ${n('rendId')} to ${a.rendererType}`,
   expose: { tool: 'core', console: true },
   group: 'renderers',
   aliases: [{ name: 'retype', summary: 'Redraw a renderer as another type: retype 1crn/cartoon1, ribbon' }],

@@ -24,7 +24,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 |---|---|
 | `h3-kit/primitives` | `AppIcon` / アイコン登録表 / `DisclosureCaret` (開閉 caret) / `Tooltip` / `useDarkPortalClass` |
 | `h3-kit/form` | 下表の label+control カタログ。**サイズの単一ソース** |
-| `h3-kit/list` | `Listbox` / `ListRow` / `ListboxTree` (Blueprint `Tree` の kit 版) / `useListKeyNav` |
+| `h3-kit/list` | `Listbox` / `ListRow` / `ListboxTree` (Blueprint `Tree` の kit 版) / `TruncatedText` (省略される 1 行ラベルと hover の全文表示) / `useListKeyNav` |
 | `h3-kit/gradient` | `GradientStopBar` + gradient の値/ピクセル幾何 |
 | `h3-kit/colorpicker` | 色ポップオーバーと `CueColorField` |
 | `h3-kit/MolSelList` / `h3-kit/selection` | 分子選択のピッカーと式ビルダ |
@@ -84,6 +84,8 @@ class は padding / 区切り線などの chrome だけを持ち、行やコン�
 **なぜカタログか (最重要)**: トークン (`--space-*` / `--ctrl-h-*`) は「どの値か」を統一するが、**値を選ぶ行為自体がサイズ選び**になり強制力にならない (typography の `.type-*` role がテキストで解決したのと同じ問題が、コントロール高・行・余白の軸に残っていた)。カタログコンポーネントは **size props を公開しない** ので、**同じコンポーネントを使えば必ず同じサイズ**になる。これが「コンポーネント追加のたびにサイズがおかしくなる」再発を仕組みで防ぐ唯一の方法。
 
 **ラベルの階層 (これも component で強制 / 微調整しない)**: pane 内のラベルは2階層。**最上位グループ** (例: `Molecule` / `Selection` / `Term` / `Modify`) は **`FieldSection` の `title`** で出す → `.type-group-label` role (頭文字のみ大文字・semibold・`--ls-wide`)。**下位ラベル** (section 内の行ラベル, 例: `Dist` / `Apply`) は `Field` の label か `.type-label`。section 間の余白は **親 container に `gap: var(--form-section-gap)` を 1 回指定**するだけ (FieldSection 自身は margin を持たない) → 全グループが同一リズムになり、weight/大文字/letter-spacing/spacing を **consumer 側で個別調整しない**。「最上位かそうでないか」は `FieldSection` か `Field` かの**選択だけ**で決まる。
+
+**Inspector のページは Inspector の部品で組む (MUST)**: 右の Inspector に出すものは、何を表示するページでも (scene node、View、アニメーション要素、Action history の undo step など) **Scene / Renderer の Properties ページと同じ部品**で組む。上位の見出し (`Basic settings`、`Step`、`Op` など) は `features/inspector/AccordionSection.tsx` の **`AccordionSection`** (開閉させないなら **`FlatSection`**)、その中の 1 値 1 行は **`PropertyField`** (control は form-kit。読むだけの値は readonly の `TextField`)、本体は `.inspector-body` > `.insp-properties-tab` に置く。dialog や pane 用の `FieldSection` / `Field` を Inspector に持ち込まない。見出しが `.type-group-label` になり、行が 2 段組みと横並びで混ざって、Properties ページと見出しの階層・行の形が食い違う (Action step の表示で実際に起きた)。見出しの文字列に値を埋め込まない (`Op: set_visible` ではなく、見出しは `Op`、名前は `Name` の行)。
 
 **ルール**:
 - コントロール高・行高・label gap・section spacing を **consumer の CSS や inline `style` で指定しない**。サイズの単一ソースは `styles/_form-kit.css` ＋ `_variables.css` の `--field-*` / `--form-*` トークンのみ。
@@ -212,6 +214,10 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 - **Blueprint `Tree` は `ListboxTree`** (`h3-kit/list`) 経由で描く。Blueprint 内蔵の caret は差し替え不可の
   塗りパス (`chevron-right`) で pane header の Phosphor caret より太く見えるため、`ListboxTree` が全ノードに
   `hasCaret: false` を渡して `DisclosureCaret` を icon スロットに描く。props は Blueprint `TreeProps` そのまま。
+- **リストの行で省略 (`...`) されるラベルは `TruncatedText`** (`h3-kit/list`) で描く。省略されているときだけ、
+  全文を kit の `Tooltip` (ツールバーのボタンと同じ吹き出し) で、ラベルの**右側** (`placement="right"`) に出す。下側中央だと、長い文が左へ伸びて window の外にはみ出す。tooltip の基準は、実際に省略して
+  いる要素 (= 画面に見えている文字の枠) にする。省略を親に任せた要素を `Tooltip` で包むと、省略される前の
+  (見えていない) 文字列の幅が基準になり、吹き出しが行の外に浮く (Action history pane で実際に起きた)。
 - Blueprint コンポーネント内蔵アイコン(input clear 等、CSS フォント由来)はそのまま。段階移行のため、まだ
   `AppIcon` 化していない箇所で `<Icon>` 直書きが残るのは許容(移行時にキーを足して寄せる)。
 

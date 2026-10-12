@@ -27,6 +27,7 @@ export const fetchMap = defineOp({
     name: optional(string('Name for the map object. Null uses <pdbid>_<mapType>.')),
   },
   mutates: true,
+  describe: (a) => `Fetch the ${a.mapType ?? '2fofc'} map of ${a.pdbId}`,
   expose: { tool: 'map', console: true },
   group: 'maps',
   async run(ctx, args, oc) {

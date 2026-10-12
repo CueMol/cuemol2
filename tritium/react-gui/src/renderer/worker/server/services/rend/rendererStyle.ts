@@ -14,6 +14,7 @@ import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from '@renderer/worker/server/services/helpers/styleutil';
 import { fetchStyleEntries, type RawStyleEntry } from '@renderer/worker/server/services/helpers/styleEntries';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface GetRendererStyleEntriesArgs {
     sceneId: number;
@@ -166,6 +167,7 @@ export function applyRendererStyle(
     const next = stylePush(stripped, args.styleName);
 
     withUndoTxn(scene, 'Change style', () => {
+        recordOp(ctx, scene.uid, 'apply_renderer_style', { rendId: args.rendId, style: args.styleName }, ['rendId']);
         rend.applyStyles(next);
     });
     return { ok: true };
@@ -317,6 +319,7 @@ export function applyRendererStyleList(
         .join(',');
 
     withUndoTxn(scene, 'Change style', () => {
+        recordOp(ctx, scene.uid, 'set_renderer_styles', { rendId: args.rendId, styles: stylestr }, ['rendId']);
         rend.applyStyles(stylestr);
     });
     return { ok: true };

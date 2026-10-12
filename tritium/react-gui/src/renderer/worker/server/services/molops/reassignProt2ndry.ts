@@ -21,6 +21,10 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+
+/** Secondary structure kinds of set_secondary_structure, indexed by secType. */
+const SEC_TYPES = ['coil', 'strand', 'helix', 'helix310', 'helixpi'] as const;
 
 export interface ReassignProt2ndryArgs {
     sceneId: number;
@@ -64,12 +68,29 @@ export function reassignProt2ndry(
     try {
         if (args.mode === 'recalc') {
             withUndoTxn(scene, 'Recalc protein secondary str', () => {
+                recordOp(ctx, scene.uid, 'set_secondary_structure', {
+                    molId: args.objId,
+                    selection: null,
+                    type: null,
+                    ignoreBulge: args.ignBulge ?? null,
+                    helixGapAngle: args.helixGapAngle ?? null,
+                }, ['molId']);
                 mgr.calcProt2ndry2(m, args.ignBulge ?? false, args.helixGapAngle ?? 0);
             });
         } else {
             const sel = makeSel(ctx, args.selStr ?? '', scene.uid);
             if (!sel) return { ok: false, error: 'invalid selection' };
             withUndoTxn(scene, 'Assign protein secondary str', () => {
+                const type = SEC_TYPES[args.secType ?? 0];
+                if (type !== undefined) {
+                    recordOp(ctx, scene.uid, 'set_secondary_structure', {
+                        molId: args.objId,
+                        selection: args.selStr ?? '',
+                        type,
+                        ignoreBulge: null,
+                        helixGapAngle: null,
+                    }, ['molId']);
+                }
                 mgr.setProt2ndry(m, sel as unknown as MolSelection, args.secType ?? 0);
             });
         }

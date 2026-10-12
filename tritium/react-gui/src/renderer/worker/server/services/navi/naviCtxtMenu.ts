@@ -9,6 +9,7 @@ import { invertSelStr, rewriteAround, toggleSidechainStr } from '@renderer/worke
 import { getViewSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { withUndoTxn } from '../withUndoTxn';
 import { quoteSelName } from '@renderer/worker/server/services/helpers/selName';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /**
  * Granularity of an atom context-menu selection. Canonical source for the
@@ -40,6 +41,9 @@ function applyMolSel(ctx: WorkerContext, mol: MolCoord, selStr: string, sceneUid
     autoCreateSelRend(mol);
     const sel = makeSel(ctx, selStr, sceneUid);
     if (sel === null) return;
+    // Same change as `set_mol_selection` (applyMolSelString), which also
+    // creates the `*selection` renderer when the molecule has none.
+    recordOp(ctx, sceneUid, 'set_mol_selection', { molId: mol.uid, selection: selStr }, ['molId']);
     mol.sel = sel;
 }
 

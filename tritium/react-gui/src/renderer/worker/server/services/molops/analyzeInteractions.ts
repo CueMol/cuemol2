@@ -26,6 +26,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import {
     ATOMINTR_TYPE,
     ATOMINTR_STYLES,
@@ -155,6 +156,17 @@ export function analyzeInteractions(
     let count = 0;
     try {
         withUndoTxn(scene, 'Define Label(s)', () => {
+            // analyze_interactions takes one molecule and one selection, with
+            // the dialog's minimum distance, label cap and label set; other
+            // choices have no op.
+            if (!needSel2 && rmin === 0 && nmax === 100 && name === ATOMINTR_DEFAULT_TARGET_NAME) {
+                recordOp(ctx, scene.uid, 'analyze_interactions', {
+                    objId: args.objId,
+                    selection: args.selStr,
+                    maxDist: rmax,
+                    includeCarbon: !args.hbondOnly,
+                }, ['objId']);
+            }
             let rend = (mol as unknown as MolCoord).getRendererByNameType(
                 name, ATOMINTR_TYPE,
             ) as AtomIntrRenderer | null;

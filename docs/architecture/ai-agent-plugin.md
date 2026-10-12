@@ -298,7 +298,7 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `list_node_props` | no | `getGenericProps` (scene / object / renderer) |
 | `set_node_prop` | yes | `getGenericProps` -> `setGenericProp` |
 | `set_renderer_coloring` | yes | `setRendererColoring` (レンダラ全体の着色を置き換える) |
-| `add_paint` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` |
+| `add_paint` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` (object が対象なら `paintObjectSelection`) |
 | `fetch_pdb` | yes (async) | `streamLoadFromUrl` |
 | `capture_view` | no | `getSceneExportInfo` -> `exportScene` (一時ファイル) -> 画像を tool 結果に添付 |
 | `enable_toolsets` | no | (agent 側の meta tool。turn の `toolsets` に追加) |
@@ -370,7 +370,7 @@ render job は GUI の Render パネルと同じ in-process job で走る。待�
 | `set_secondary_structure` | molops | yes | `reassignProt2ndry` |
 | `show_symmetry` | xtal | yes | `showSymmRenderer` / `showUnitCellRenderer` |
 | `define_selection` | selection | yes | `saveSelDef` |
-| `list_renderer_styles` / `apply_renderer_style` | style | apply のみ yes | `rendererStyle` |
+| `list_renderer_styles` / `apply_renderer_style` / `set_renderer_styles` | style | apply と set のみ yes | `rendererStyle` |
 | `animate` | anim | no | `anim/transport` (`play` / `stop` / `goTime`) |
 
 core は 21 件。OpenAI の推奨 20 本を意図的に 1 本超えている。`tools/index.test.ts` の `MAX_TOOLS`
@@ -422,6 +422,11 @@ scene が設定を持つこと自体をモデルに気づかせるため、毎 t
 モデルにこの順序を踏ませるより 1 本にしたほうが確実で、選択が変わるのは UI で手作業した場合と
 同じ可視の副作用なので隠していない。`set_renderer_coloring` は全体を置き換えるので、
 塗った領域を消してしまう -- その使い分けは system prompt に書いてある。
+
+着色と paint の op (`add_paint` / `list_paint` / `set_paint` / `remove_paint` / `move_paint` /
+`clear_paint` / `set_default_color` / `set_renderer_coloring`) は、対象を `nodeId` + `nodeType`
+(`renderer` / `object`) で取る。object を指すと、その object の着色 (renderer が既定で従うもの) を
+変える。Color pane が既定で object を対象にするので、その操作も同じ op で記録・再生できる。
 
 `get_named_selections` は当初あったが外した。毎 turn の `<scene_state>` が
 `namedSelections` を既に載せており、同じものを取りに行くだけの往復だったため。

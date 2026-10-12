@@ -7,6 +7,7 @@
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /** "sel" str-data category = named MolSel definitions (UXP Selection tab). */
 const SEL_CAT = 'sel';
@@ -202,13 +203,39 @@ export interface SetStyleSetSelectionArgs {
     value: string;
 }
 
+/**
+ * Whether `styleSetId` is the set `define_selection` writes to: the first
+ * writable set of the scene's own scope (as `saveSelDef` picks it).
+ */
+function isDefineSelectionSet(ctx: WorkerContext, sceneId: number, styleSetId: number): boolean {
+    try {
+        const parsed: unknown = JSON.parse(ctx.styleMgr.getStyleSetsJSON(sceneId));
+        if (!Array.isArray(parsed)) return false;
+        const entry = (parsed as { scene_id?: number; uid?: number; readonly?: boolean }[]).find(
+            (e) => e.scene_id === sceneId && e.readonly === false,
+        );
+        return entry?.uid === styleSetId;
+    } catch {
+        return false;
+    }
+}
+
 export function setStyleSetSelection(
     ctx: WorkerContext,
     args: SetStyleSetSelectionArgs,
 ): StyleSetEditResult {
     const name = args.name.trim();
     if (name.length === 0) return { ok: false };
+    // define_selection reproduces this only in the set it picks itself, and
+    // trims the expression it stores.
+    const opEquivalent =
+        args.value.trim() === args.value &&
+        args.value !== '' &&
+        isDefineSelectionSet(ctx, args.sceneId, args.styleSetId);
     const ok = mutate(ctx, args.sceneId, args.styleSetId, `Set style selection ${name}`, (set) => {
+        if (opEquivalent) {
+            recordOp(ctx, args.sceneId, 'define_selection', { name, selection: args.value });
+        }
         set.setStrData(SEL_CAT, name, args.value);
     });
     return { ok };

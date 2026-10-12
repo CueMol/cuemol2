@@ -134,6 +134,7 @@ export const setMolSelection = defineOp({
     selection: selection('Selection expression. Empty string clears the selection.'),
   },
   mutates: true,
+  describe: (a, n) => (a.selection ? `Select ${a.selection} in ${n('molId')}` : `Clear the selection of ${n('molId')}`),
   expose: { tool: 'core', console: true },
   group: 'selections',
   aliases: [{ name: 'select', summary: "Set a molecule's current selection." }],

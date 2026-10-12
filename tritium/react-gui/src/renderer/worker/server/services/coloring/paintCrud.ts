@@ -16,6 +16,7 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
@@ -26,6 +27,7 @@ import {
     getColoringClassName,
     getObjectColoringClassName,
     materializeColoringIfDefault,
+    coloringOpTarget,
     resolvePaintTarget,
 } from './colorTargets';
 import type {
@@ -66,6 +68,14 @@ export function paintRendererSelection(
 
     const color = makeColor(ctx, args.colorValue, scene.uid);
     withUndoTxn(scene, 'Insert paint entry', () => {
+        // add_paint first sets the molecule's selection to this expression
+        // (the one it already has) and then inserts the entry at the top.
+        recordOp(ctx, scene.uid, 'add_paint', {
+            nodeId: args.rendId,
+            nodeType: 'renderer',
+            selection: sel.toString(),
+            color: args.colorValue,
+        }, ['nodeId']);
         coloring.insertBefore(0, sel, color);
     });
     return { ok: true };
@@ -92,6 +102,13 @@ export function paintObjectSelection(
     const coloring = (mol as unknown as { coloring: PaintColoring }).coloring;
     const color = makeColor(ctx, args.colorValue, scene.uid);
     withUndoTxn(scene, 'Insert paint entry', () => {
+        // As for a renderer: add_paint sets this same selection, then inserts.
+        recordOp(ctx, scene.uid, 'add_paint', {
+            nodeId: args.objId,
+            nodeType: 'object',
+            selection: sel.toString(),
+            color: args.colorValue,
+        }, ['nodeId']);
         coloring.insertBefore(0, sel, color);
     });
     return { ok: true };
@@ -142,6 +159,7 @@ export function removePaintEntry(
     if (args.idx < 0 || args.idx >= coloring.size) return { ok: false };
 
     withUndoTxn(scene, 'Delete paint entry', () => {
+        recordOp(ctx, scene.uid, 'remove_paint', { ...coloringOpTarget(args), number: args.idx + 1 }, ['nodeId']);
         materializeColoringIfDefault(rend);
         const live = (rend as unknown as MolRenderer).coloring as PaintColoring;
         live.removeAt(args.idx);
@@ -167,6 +185,12 @@ export function updatePaintEntry(
     const color = makeColor(ctx, args.colorValue, scene.uid);
 
     withUndoTxn(scene, 'Change paint entry', () => {
+        recordOp(ctx, scene.uid, 'set_paint', {
+            ...coloringOpTarget(args),
+            number: args.idx + 1,
+            selection: args.selStr,
+            color: args.colorValue,
+        }, ['nodeId']);
         materializeColoringIfDefault(rend);
         const live = (rend as unknown as MolRenderer).coloring as PaintColoring;
         live.changeAt(args.idx, sel, color);
@@ -194,6 +218,7 @@ export function movePaintEntry(
     if (toIdx < 0 || toIdx > size - 1) return { ok: false };
 
     withUndoTxn(scene, 'Move paint entry', () => {
+        recordOp(ctx, scene.uid, 'move_paint', { ...coloringOpTarget(args), number: fromIdx + 1, to: toIdx + 1 }, ['nodeId']);
         materializeColoringIfDefault(rend);
         // After materialize, refetch the (possibly new) coloring instance.
         const live = (rend as unknown as MolRenderer).coloring as PaintColoring;

@@ -18,6 +18,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { makeSel } from '../helpers/makeSel';
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /** One element of a hit-test JSON array (View.hitTestRect / hitTestPolygon). */
 export interface SelectionHit {
@@ -99,6 +100,7 @@ export function applySelectionHits(
                 if (prevSelStr) selStr = `(${prevSelStr}) or (${newSelStr})`;
             }
             if (assignMolSel(ctx, mol, selStr, scene.uid)) {
+                recordOp(ctx, scene.uid, 'set_mol_selection', { molId: objId, selection: selStr }, ['molId']);
                 selectedObjIds.push(objId);
                 selStrs.push(selStr);
             }

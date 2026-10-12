@@ -94,7 +94,7 @@ function fieldByLabel(container: HTMLElement, label: string): HTMLElement | null
   const lab = Array.from(container.querySelectorAll(".h3-form-field-label")).find(
     (l) => l.textContent === label,
   );
-  return lab ? (lab.parentElement as HTMLElement) : null;
+  return lab ? (lab.closest(".h3-form-prop-row") as HTMLElement) : null;
 }
 
 describe("AnimElementInspector", () => {

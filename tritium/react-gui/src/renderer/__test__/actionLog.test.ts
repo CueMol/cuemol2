@@ -15,7 +15,16 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import { fakeObject, fakeRenderer, fakeScene, makeWorkerCtx } from '@renderer/worker/testing'
 import type { FakeScene } from '@renderer/worker/testing'
-import { actionRows, resetActionLog } from '@renderer/worker/server/actions/actionLog'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
+import { actionRows, onActionsChanged, resetActionLog } from '@renderer/worker/server/actions/actionLog'
+import { getUndoState } from '@renderer/worker/server/services/undo/undoState'
+import { undo } from '@renderer/worker/server/services/undo/undo'
+import { exportActionSteps } from '@renderer/worker/server/services/actions/actions'
+import { parseQax } from '@renderer/worker/server/actions/qax/codec'
+import { applyRendererStyleList } from '@renderer/worker/server/services/rend/rendererStyle'
+import { removePaintEntries } from '@renderer/worker/server/services/coloring/paintClipboard'
 import { recordOp } from '@renderer/worker/server/actions/serviceOps'
 import { withUndoTxn, undoTxnResult } from '@renderer/worker/server/services/withUndoTxn'
 import { invokeOp, runInTxn } from '@renderer/worker/server/catalog/opRuntime'
@@ -61,6 +70,10 @@ function stackScene(uid = 1): StackScene {
     undoOne: () => { redo.push(done.pop() as string) },
     redoOne: () => { done.push(redo.pop() as string) },
     clearStack: () => { done.length = 0; redo.length = 0 },
+    undo: (depth: number) => {
+      for (let i = 0; i <= depth; ++i) redo.push(done.pop() as string)
+      return true
+    },
   })
   return scene
 }
@@ -73,6 +86,17 @@ function edit(scene: StackScene, label: string): void {
 }
 
 const rowsOf = (scene: StackScene) => actionRows(asScene(scene), scene.uid)
+
+/** An edit that records the given ops, as a GUI service does. */
+function editWith(scene: StackScene, ctx: ReturnType<typeof makeWorkerCtx>['ctx'], label: string, ops: [string, Record<string, unknown>][]): void {
+  withUndoTxn(asScene(scene), label, () => {
+    scene.touch()
+    for (const [op, args] of ops) recordOp(ctx, scene.uid, op, args)
+  })
+}
+
+const HIDE: [string, Record<string, unknown>] = ['set_visible', { nodeId: 5, nodeType: 'object', visible: false }]
+const CLEAR: [string, Record<string, unknown>] = ['apply_renderer_style', { rendId: 7, style: 'Wide' }]
 
 describe('actionLog', () => {
   beforeEach(() => resetActionLog())
@@ -128,7 +152,7 @@ describe('actionLog', () => {
     scene.startUndoTxn('loaded')
     scene.touch()
     scene.commitUndoTxn()
-    expect(rowsOf(scene)).toEqual([{ label: 'loaded', source: null, time: null, entries: [], undone: false }])
+    expect(rowsOf(scene)).toEqual([{ id: expect.any(Number), label: 'loaded', source: null, time: null, entries: [], undone: false }])
     expect(actionRows(null, scene.uid)).toEqual([])
   })
 
@@ -215,5 +239,105 @@ describe('serviceOps', () => {
       expect(typeof readToolArgs(op!, e.args), `${e.op}: ${String(readToolArgs(op!, e.args))}`).toBe('object')
     }
     expect(entries[2]).toMatchObject({ op: 'reset_prop', args: { path: '1crn/cartoon1.width' } })
+  })
+
+  it('records the Edit Style dialog as the whole style list its op takes', async () => {
+    const { findOp } = await import('@renderer/worker/server/catalog')
+    const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
+    const scene = stackScene()
+    const mol = fakeObject({ name: '1crn', scene })
+    scene.addObject(mol)
+    const rend = fakeRenderer({ type: 'cartoon', name: 'cartoon1' })
+    mol.attachRenderer(rend)
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    rend.applyStyles.mockImplementation(() => scene.touch())
+
+    applyRendererStyleList(ctx as never, { sceneId: scene.uid, rendId: rend.uid, styleNames: [' DefaultCartoon', 'EgLineCartoon '] })
+
+    const [entry] = rowsOf(scene)[0].entries
+    expect(entry).toEqual({
+      kind: 'op',
+      op: 'set_renderer_styles',
+      args: { rendId: rend.uid, styles: 'DefaultCartoon,EgLineCartoon' },
+      refs: { rendId: '1crn/cartoon1' },
+    })
+    expect(rend.applyStyles).toHaveBeenCalledWith('DefaultCartoon,EgLineCartoon')
+    expect(typeof readToolArgs(findOp('set_renderer_styles')!, (entry as { args: Record<string, unknown> }).args)).toBe('object')
+  })
+
+  it('records a paint edit on an object (the Color pane default) with the object as the target', async () => {
+    const { findOp } = await import('@renderer/worker/server/catalog')
+    const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
+    const scene = stackScene()
+    const mol = fakeObject({ name: '1crn', scene })
+    scene.addObject(mol)
+    const rows = ['sheet', 'helix', '*']
+    Object.assign(mol, {
+      coloring: {
+        getClassName: () => 'PaintColoring',
+        get size() { return rows.length },
+        removeAt: (i: number) => { rows.splice(i, 1); scene.touch() },
+      },
+      hasPropDefault: () => false,
+    })
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+
+    removePaintEntries(ctx as never, { sceneId: scene.uid, rendId: mol.uid, targetKind: 'object', idxs: [0, 2] })
+
+    const entries = rowsOf(scene)[0].entries
+    // Highest row first, as they are removed, so each number is still right on replay.
+    expect(entries).toEqual([
+      { kind: 'op', op: 'remove_paint', args: { nodeId: mol.uid, nodeType: 'object', number: 3 }, refs: { nodeId: '1crn' } },
+      { kind: 'op', op: 'remove_paint', args: { nodeId: mol.uid, nodeType: 'object', number: 1 }, refs: { nodeId: '1crn' } },
+    ])
+    expect(typeof readToolArgs(findOp('remove_paint')!, (entries[0] as { args: Record<string, unknown> }).args)).toBe('object')
+  })
+
+  it('words each undo step from its ops, and falls back to the undo description', () => {
+    const scene = stackScene()
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    editWith(scene, ctx, 'hide', [HIDE])
+    editWith(scene, ctx, 'clear', [CLEAR])
+    editWith(scene, ctx, 'both', [HIDE, CLEAR])
+    editWith(scene, ctx, 'bare', [])
+    scene.undoOne()
+    const state = getUndoState(ctx, { sceneId: scene.uid })
+    // describe() of the op; an op without one is its name and arguments; a
+    // step of several ops is its first and a count. The undone step with no
+    // op keeps its description, on the redo side.
+    expect(state.undoTexts).toEqual(['Hide #5 (+1 more)', 'Apply renderer style: #7, Wide', 'Hide #5'])
+    expect(state.redoTexts).toEqual(['bare'])
+    expect(state.undoDescs).toEqual(['both', 'clear', 'hide'])
+  })
+
+  it('tells the renderer the history moved after an undo, which C++ does not', () => {
+    const scene = stackScene()
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    edit(scene, 'a')
+    rowsOf(scene)
+    const changed: number[] = []
+    onActionsChanged((id) => changed.push(id))
+    undo(ctx, { sceneId: scene.uid })
+    expect(changed).toEqual([scene.uid])
+    expect(rowsOf(scene).map((r) => r.undone)).toEqual([true])
+  })
+
+  it('writes the steps named by id to a qax file, and refuses a step that is gone', () => {
+    const scene = stackScene()
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    editWith(scene, ctx, 'hide', [HIDE])
+    editWith(scene, ctx, 'clear', [CLEAR])
+    editWith(scene, ctx, 'again', [HIDE])
+    const ids = rowsOf(scene).map((r) => r.id)
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'qax-')), 'steps.qax')
+
+    expect(exportActionSteps(ctx, { sceneId: scene.uid, stepIds: [ids[2], ids[0]], filePath: file })).toEqual({ ok: true, count: 2 })
+    const doc = parseQax(fs.readFileSync(file, 'utf8'))
+    if ('error' in doc) throw new Error(doc.error)
+    expect(doc.actions.map((a) => a.label)).toEqual(['hide', 'again'])
+    expect(doc.actions[0].items).toMatchObject([{ kind: 'op', name: 'set_visible' }])
+
+    scene.clearStack()
+    expect(exportActionSteps(ctx, { sceneId: scene.uid, stepIds: [ids[0]], filePath: file })).toMatchObject({ ok: false, code: 'not-found' })
   })
 })

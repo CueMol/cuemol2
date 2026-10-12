@@ -22,6 +22,7 @@ import type {
 } from '@renderer/worker/shared/calls';
 import type { RenderUpdate } from '@renderer/worker/shared/renderTypes';
 import { RENDER_PROGRESS_CHANNEL } from '@renderer/worker/shared/renderTypes';
+import { ACTIONS_CHANGED_CHANNEL } from '@renderer/worker/shared/actionTypes';
 import type { ApbsUpdate } from '@renderer/worker/shared/apbsTypes';
 import { APBS_PROGRESS_CHANNEL } from '@renderer/worker/shared/apbsTypes';
 import type { AnimProgressUpdate } from '@renderer/worker/shared/animTypes';
@@ -137,6 +138,7 @@ export class WorkerTransport {
     private _streamProgressListeners: Set<StreamProgressListener> = new Set();
     private _animProgressListeners = new Set<AnimProgressListener>();
     private _renderProgressListeners: Set<RenderProgressListener> = new Set();
+    private _actionsChangedListeners: Set<(sceneId: number) => void> = new Set();
     private _apbsProgressListeners: Set<ApbsProgressListener> = new Set();
     /** Plugin push channels, by wire name. Created on first subscribe. */
     private _pluginChannelListeners = new Map<string, Set<PluginChannelListener>>();
@@ -238,6 +240,15 @@ export class WorkerTransport {
                 return;
             }
 
+            if (method === ACTIONS_CHANGED_CHANNEL) {
+                // event.data shape: ['actions-changed', sceneId]
+                const [sceneId] = event.data.slice(1) as [number];
+                for (const cb of this._actionsChangedListeners) {
+                    try { cb(sceneId); } catch (e) { log.warn('actions-changed listener:', e); }
+                }
+                return;
+            }
+
             if (method === APBS_PROGRESS_CHANNEL) {
                 // event.data shape: ['apbs-progress', ApbsUpdate]
                 const [update] = event.data.slice(1) as [ApbsUpdate];
@@ -308,6 +319,16 @@ export class WorkerTransport {
     subscribeRenderProgress(cb: RenderProgressListener): () => void {
         this._renderProgressListeners.add(cb);
         return () => { this._renderProgressListeners.delete(cb); };
+    }
+
+    /**
+     * Subscribe to `actions-changed`: a scene's undo steps changed.
+     *
+     * @returns An unsubscribe function.
+     */
+    subscribeActionsChanged(cb: (sceneId: number) => void): () => void {
+        this._actionsChangedListeners.add(cb);
+        return () => { this._actionsChangedListeners.delete(cb); };
     }
 
     /**

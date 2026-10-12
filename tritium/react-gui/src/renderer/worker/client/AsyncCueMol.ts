@@ -90,6 +90,11 @@ export class AsyncCueMol {
         return this._transport.subscribeAnimProgress(cb);
     }
 
+    /** Subscribe to `actions-changed`: a scene's undo steps changed (payload: its uid). */
+    subscribeActionsChanged(cb: (sceneId: number) => void): () => void {
+        return this._transport.subscribeActionsChanged(cb);
+    }
+
     /** Subscribe to `apbs-progress` push messages from `calcApbsPot`. */
     subscribeApbsProgress(cb: ApbsProgressListener): () => void {
         return this._transport.subscribeApbsProgress(cb);

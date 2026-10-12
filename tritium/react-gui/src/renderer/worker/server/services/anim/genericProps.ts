@@ -15,7 +15,7 @@ import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext"
 import { fail, failFrom, ok } from "@renderer/worker/shared/result";
 import { readAnimGraph, resolveMgr, resolveSceneMgr } from "./resolve";
 import { undoTxnResult } from "../withUndoTxn";
-import { findByUid } from "./detail";
+import { findByUid, recordAnimPropWrite } from "./detail";
 import { planNameWrite, planTimeRefWrite } from "./elementWrites";
 import { goneFail, noMgrFail } from "./types";
 import type {
@@ -32,6 +32,17 @@ import type { BaseWrapper } from "@cuemol/core/src/BaseWrapper";
 const GUARDED = new Set(["name", "timeRefName"]);
 /** Rows the Generic tab shows but does not write (one span, two fields). */
 const TIMING_ROWS = new Set(["start", "end"]);
+
+/**
+ * The `set_anim_prop` name of a raw property the Generic tab writes, or null
+ * when the op does not take it. `axis` is left out: the raw tab writes it as
+ * a vector text the op does not read.
+ */
+function animOpPropOf(key: string): string | null {
+  if (key === "tgt_alpha") return "tgtAlpha";
+  if (key === "axis" || key === "tgtAlpha") return null;
+  return key;
+}
 
 /** Read + parse the AnimObj's full property list (generic tab). */
 function readAnimGenericEntries(obj: AnimObj): GenericPropEntry[] {
@@ -92,6 +103,7 @@ export function setAnimElementGenericProp(
     if (!plan.ok) return plan;
     if (!plan.noop) {
       const r = undoTxnResult(scene, `Change property: ${key}`, () => {
+        recordAnimPropWrite(ctx, scene.uid, mgr, args.uid, key, args.value);
         plan.apply();
         return ok();
       });
@@ -130,6 +142,9 @@ export function setAnimElementGenericProp(
   }
   const label = args.op === "reset" ? `Reset property: ${key}` : `Change property: ${key}`;
   const r = undoTxnResult(scene, label, () => {
+    // A reset has no op.
+    const opProp = args.op === "set" ? animOpPropOf(key) : null;
+    if (opProp !== null) recordAnimPropWrite(ctx, scene.uid, mgr, args.uid, opProp, args.value);
     if (args.op === "reset") obj.resetProp(key);
     else obj.setProp(key, args.value);
     return ok();

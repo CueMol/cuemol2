@@ -23,6 +23,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface MergeMolArgs {
     sceneId: number;
@@ -67,6 +68,12 @@ export function mergeMol(ctx: WorkerContext, args: MergeMolArgs): MergeMolResult
 
     try {
         withUndoTxn(scene, 'Merge molecule', () => {
+            recordOp(ctx, scene.uid, 'merge_molecules', {
+                fromId: args.fromObjId,
+                toId: args.toObjId,
+                selection: args.selStr,
+                copy: args.copy,
+            }, ['fromId', 'toId']);
             // copyAtoms(destination, source, selection)
             if (!mgr.copyAtoms(to, from, s)) {
                 throw new Error('copyAtoms failed');

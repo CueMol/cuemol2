@@ -8,6 +8,8 @@
 import * as nodePath from 'path'
 import {
   applyRendererStyle,
+  applyRendererStyleList,
+  getRendererStyleEditInfo,
   getRendererStyleEntries,
 } from '@renderer/worker/server/services/rend/rendererStyle'
 import { clearPaintEntries } from '@renderer/worker/server/services/coloring/paintClipboard'
@@ -19,7 +21,7 @@ import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
-import { color, enumOf, nodeId, objectId, optional, path, real, rendererId, string } from '../params'
+import { color, coloringTarget, enumOf, nodeId, objectId, optional, path, real, rendererId, string } from '../params'
 import { outputPath } from '../outputFile'
 
 export const listRendererStyles = defineOp({
@@ -71,17 +73,52 @@ export const applyRendererStyleOp = defineOp({
   },
 })
 
+export const setRendererStyles = defineOp({
+  name: 'set_renderer_styles',
+  description:
+    'Replace the whole ordered list of named styles a renderer has (what the Edit Style dialog ' +
+    'does), e.g. "DefaultCartoon EgLineThick". Later styles override earlier ones. An empty ' +
+    'list removes them all. To change one style, use apply_renderer_style.',
+  params: {
+    rendId: rendererId('Uid of the renderer.'),
+    styles: string('Style names in order, separated by commas or spaces. Empty for none.'),
+  },
+  mutates: true,
+  describe: (a, n) => (a.styles ? `Set styles of ${n('rendId')}: ${a.styles}` : `Remove the styles of ${n('rendId')}`),
+  expose: { tool: 'style', console: true },
+  group: 'renderers',
+  run(ctx, args, oc) {
+    const info = getRendererStyleEditInfo(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
+    if (!info.ok) return { ok: false, error: NO_RENDERER }
+    const names = args.styles.split(/[,\s]+/).filter((s) => s.length > 0)
+    // A name the renderer can take now, or one it already has.
+    const known = new Set([
+      ...info.currentStyles,
+      ...[...info.typeMatch, ...info.edgeMatch, ...info.coloringMatch].map((e) => e.name),
+    ])
+    const unknown = names.filter((s) => !known.has(s))
+    if (unknown.length > 0) {
+      return { ok: false, error: `No style ${unknown.join(', ')} for that renderer. Call list_renderer_styles for the names.` }
+    }
+    return normalizeServiceResult(
+      applyRendererStyleList(ctx, { sceneId: oc.sceneId, rendId: args.rendId, styleNames: names }),
+      'The styles could not be set.',
+    )
+  },
+})
+
 export const clearPaint = defineOp({
   name: 'clear_paint',
-  description: 'Remove every region painted on one renderer with add_paint.',
-  params: { rendId: rendererId('Uid of the renderer.') },
+  description: 'Remove every region painted with add_paint on one renderer or object.',
+  params: coloringTarget('to clear'),
   mutates: true,
+  describe: (_a, n) => `Clear paint of ${n('nodeId')}`,
   expose: { tool: 'coloring', console: true },
   group: 'coloring',
   run(ctx, args, oc) {
     return normalizeServiceResult(
-      clearPaintEntries(ctx, { sceneId: oc.sceneId, rendId: args.rendId }),
-      'That renderer has no painted regions to clear.',
+      clearPaintEntries(ctx, { sceneId: oc.sceneId, rendId: args.nodeId, targetKind: args.nodeType }),
+      `That ${args.nodeType} has no painted regions to clear.`,
     )
   },
 })
@@ -89,18 +126,19 @@ export const clearPaint = defineOp({
 export const setDefaultColor = defineOp({
   name: 'set_default_color',
   description:
-    'Set the colour a painted renderer uses where no painted region applies (its base colour).',
+    'Set the colour a painted renderer or object uses where no painted region applies (its base colour).',
   params: {
-    rendId: rendererId('Uid of the renderer.'),
+    ...coloringTarget('to set it on'),
     color: color('The colour, e.g. white or #c0c0c0.'),
   },
   mutates: true,
+  describe: (a, n) => `Set default colour of ${n('nodeId')} to ${a.color}`,
   expose: { tool: 'coloring', console: true },
   group: 'coloring',
   run(ctx, args, oc) {
     return normalizeServiceResult(
-      setRendererDefaultColor(ctx, { sceneId: oc.sceneId, rendId: args.rendId, colorValue: args.color }),
-      'The default colour could not be set (is the renderer painted?).',
+      setRendererDefaultColor(ctx, { sceneId: oc.sceneId, rendId: args.nodeId, targetKind: args.nodeType, colorValue: args.color }),
+      `The default colour could not be set (is the ${args.nodeType} painted?).`,
     )
   },
 })
@@ -191,6 +229,7 @@ export const focusNode = defineOp({
     nodeType: enumOf(['object', 'renderer', 'rendGroup'], 'What nodeId refers to.'),
   },
   mutates: false,
+  describe: (_a, n) => `Focus on ${n('nodeId')}`,
   replay: true,
   expose: { tool: 'view', console: true },
   group: 'nodes',
@@ -206,6 +245,7 @@ export const focusNode = defineOp({
 export const MORE_OPS = [
   listRendererStyles,
   applyRendererStyleOp,
+  setRendererStyles,
   clearPaint,
   setDefaultColor,
   saveSceneOp,

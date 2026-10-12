@@ -147,6 +147,12 @@ export const CmdId = {
   CameraApplyToView:     'scene.camera.applyToView',     // args: { name; withVisFlags }
   CameraEditVisFlags:    'scene.camera.editVisFlags',    // args: { name }
   CameraClearVisFlags:   'scene.camera.clearVisFlags',   // args: { name }
+
+  // Action history (the active scene's undo steps, by action-log step id).
+  ActionsShowStep:       'actions.showStep',             // args: { stepId; entryIndex? }
+  ActionsGoToStep:       'actions.goToStep',             // args: { stepId | null }
+  ActionsSave:           'actions.save',                 // args: { stepIds }
+  ActionsCopy:           'actions.copy',                 // args: { stepIds }
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]

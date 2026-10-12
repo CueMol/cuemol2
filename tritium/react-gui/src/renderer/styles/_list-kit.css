@@ -248,3 +248,18 @@
 .h3-list-table-row.is-drop-after > * {
   box-shadow: inset 0 -1px 0 var(--accent);
 }
+
+/* ── TruncatedText: an ellipsized one-line label (its tooltip is the kit's) ── */
+.h3-truncated-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Blueprint makes every span of a tree label inline, which would leave the
+   label's own ellipsis cutting the text and this one never knowing. */
+.h3-listbox-tree .bp5-tree-node-label > .h3-truncated-text {
+  display: block;
+}

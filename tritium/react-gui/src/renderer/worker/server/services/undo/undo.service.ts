@@ -7,7 +7,8 @@
  */
 
 import { redo } from './redo';
-import { clearUndoData, getUndoState, undo } from './undo';
+import { clearUndoData, undo } from './undo';
+import { getUndoState } from './undoState';
 
 export const services = {
     redo,
@@ -18,3 +19,4 @@ export const services = {
 
 export type * from './redo';
 export type * from './undo';
+export type * from './undoState';

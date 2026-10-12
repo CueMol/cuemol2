@@ -40,12 +40,17 @@ export function quoteArg(text: string): string {
   return JSON.stringify(text)
 }
 
+/** Atoms as `chain/resid/name`, joined by `sep`. */
+export function atomList(atoms: readonly AtomSpec[], sep = ' '): string {
+  return atoms.map((a) => `${a.chain}/${a.resid}/${a.atomName}`).join(sep)
+}
+
 /** One argument's value as text, or null when it is left out. */
 function argText(value: unknown, kind: string, ref: string | undefined): string | null {
   if (value === null || value === undefined) return null
   if (ref !== undefined) return quoteArg(ref)
   if (kind === 'atoms' && Array.isArray(value)) {
-    return (value as AtomSpec[]).map((a) => `${a.chain}/${a.resid}/${a.atomName}`).join(' ')
+    return atomList(value as AtomSpec[])
   }
   if (kind === 'vec3' && Array.isArray(value)) return value.map(String).join(' ')
   return quoteArg(String(value))

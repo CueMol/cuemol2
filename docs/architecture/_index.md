@@ -60,7 +60,8 @@ architecture, it belongs here.
   実行した native の op を記録する仕組み (GUI・console・PyMOL・MCP・agent 共通)。txn helper への hook と
   C++ undo stack との reconcile、service ごとの op 対応表、`replay` op。記録を書き出して再生する XML 形式
   qax v1 のスキーマと値の書き方、`run x.qax` の 1 action = 1 txn、`open_log`、`list_actions` /
-  `export_actions`。
+  `export_actions`。GUI の Actions view と History pane (選択・Go to step・qax 保存・コピー)、
+  Inspector の step 表示、op から作る undo の表示文 (`describe`)、`actions-changed` push。
 - [Console の PyMOL dialect](console-pymol-dialect.md) (日本語) -- PyMOL のコマンド言語に部分互換の
   63 コマンド (TS、Python embedding なし)。PyMOL 選択式の CueMol 式への翻訳 (優先順位、`-` / `+` の 2 つの
   意味、object 名の分子ごとの展開、断る語の一覧)、object x 表現ごとの `pym:<rep>` renderer 規約、

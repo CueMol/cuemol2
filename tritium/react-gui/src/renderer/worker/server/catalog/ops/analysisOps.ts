@@ -45,6 +45,7 @@ export const analyzeInteractionsOp = defineOp({
     ),
   },
   mutates: true,
+  describe: (a, n) => `Find contacts around ${a.selection} in ${n('objId')}`,
   expose: { tool: 'analysis', console: true },
   group: 'analysis',
   run(ctx, args, oc) {

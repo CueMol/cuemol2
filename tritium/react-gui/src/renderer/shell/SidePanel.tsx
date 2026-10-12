@@ -18,6 +18,7 @@
  * | View       | CameraPane, ViewPane                        |
  * | Selection  | MolStructPane, SelectionPane                |
  * | Crystal    | SymmetryPane, DensityMapPane                |
+ * | Actions    | ActionHistoryPane                           |
  *
  * New built-in views and panes can be added by editing `VIEW_PANES` without
  * touching the layout / persistence logic. A plugin declares its view in its
@@ -68,6 +69,7 @@ import { MolStructPane } from "@renderer/features/selection/MolStructPane";
 import { SelectionPane } from "@renderer/features/selection/SelectionPane";
 import { SymmetryPane } from "@renderer/features/density/SymmetryPane";
 import { DensityMapPane } from "@renderer/features/density/DensityMapPane";
+import { ActionHistoryPane } from "@renderer/features/actions/ActionHistoryPane";
 
 /* --- Re-export types for external consumers --- */
 export type { SceneTreeNode } from "@renderer/worker/shared/sceneTreeTypes";
@@ -86,6 +88,7 @@ const VIEW_TITLES: Record<string, string> = {
   view: "View",
   selection: "Selection",
   crystal: "Crystal",
+  actions: "Actions",
 };
 
 const VIEW_ICONS: Record<string, AppIconKey> = {
@@ -93,6 +96,7 @@ const VIEW_ICONS: Record<string, AppIconKey> = {
   view: "activity.view",
   selection: "activity.selection",
   crystal: "activity.crystal",
+  actions: "activity.actions",
 };
 
 /* --- Pane configuration --- */
@@ -173,6 +177,17 @@ const VIEW_PANES: Record<string, PaneConfig[]> = {
       defaultSize: 240,
       render: (collapsed, onToggle) => (
         <DensityMapPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+  ],
+  // The undo history of the active scene; saved actions and presets are to
+  // join it as further panes.
+  actions: [
+    {
+      id: "history",
+      defaultSize: 400,
+      render: (collapsed, onToggle) => (
+        <ActionHistoryPane collapsed={collapsed} onToggleCollapse={onToggle} />
       ),
     },
   ],

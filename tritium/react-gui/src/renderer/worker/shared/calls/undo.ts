@@ -8,12 +8,8 @@
  */
 
 import type { RedoArgs } from '@renderer/worker/server/services/undo/redo'
-import type {
-  ClearUndoDataArgs,
-  GetUndoStateArgs,
-  UndoArgs,
-  UndoState,
-} from '@renderer/worker/server/services/undo/undo'
+import type { ClearUndoDataArgs, UndoArgs } from '@renderer/worker/server/services/undo/undo'
+import type { GetUndoStateArgs, UndoState } from '@renderer/worker/server/services/undo/undoState'
 
 export interface UndoCalls {
   redo:                       { args: RedoArgs; result: { ok: boolean } }

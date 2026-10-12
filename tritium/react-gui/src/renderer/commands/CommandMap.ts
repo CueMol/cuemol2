@@ -157,6 +157,14 @@ export interface CommandMap {
   [CmdId.CameraApplyToView]:    { args: { name: string; withVisFlags: boolean }; result: void }
   [CmdId.CameraEditVisFlags]:   { args: { name: string };        result: void }
   [CmdId.CameraClearVisFlags]:  { args: { name: string };        result: void }
+
+  // Action history. Showing a step is read-only; only GoToStep moves the
+  // undo stack (null = the initial state, every step undone).
+  // entryIndex: one op of the step (an op row) rather than the step.
+  [CmdId.ActionsShowStep]:      { args: { stepId: number; entryIndex?: number }; result: void }
+  [CmdId.ActionsGoToStep]:      { args: { stepId: number | null }; result: void }
+  [CmdId.ActionsSave]:          { args: { stepIds: number[] };   result: void }
+  [CmdId.ActionsCopy]:          { args: { stepIds: number[] };   result: boolean }
 }
 
 /** A style-set row: its uid, the scope it lives in, and its display name. */

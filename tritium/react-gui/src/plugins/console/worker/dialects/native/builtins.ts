@@ -12,8 +12,7 @@ import { parseBoolText } from '@renderer/worker/server/catalog/argValues'
 import * as fs from 'fs'
 import * as nodePath from 'path'
 import { actionRows } from '@renderer/worker/server/actions/actionLog'
-import { entryLine, rowsToQax } from '@renderer/worker/server/actions/export'
-import { writeQax } from '@renderer/worker/server/actions/qax/codec'
+import { entryLine, writeRowsFile } from '@renderer/worker/server/actions/export'
 import { QAX_EXT } from '@renderer/worker/server/actions/qax/model'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { closeQaxLog, currentQaxLog, noteQaxLog, openQaxLog } from '../../runtime/qaxLog'
@@ -199,11 +198,8 @@ const exportActions: ConsoleCommand = {
     if (last < first) return { ok: false, error: 'Error: last comes before first' }
     let filePath = resolvePath(cc.cwd, args.file.trim())
     if (!filePath.toLowerCase().endsWith(NATIVE_SCRIPT_EXT)) filePath += NATIVE_SCRIPT_EXT
-    try {
-      fs.writeFileSync(filePath, writeQax(rowsToQax(rows.slice(first - 1, last))))
-    } catch {
-      return { ok: false, error: `Error: cannot write ${filePath}` }
-    }
+    const problem = writeRowsFile(rows.slice(first - 1, last), filePath)
+    if (problem !== null) return { ok: false, error: `Error: ${problem}` }
     cc.print(`wrote ${last - first + 1} action${last === first ? '' : 's'} to ${filePath}`)
     return { ok: true }
   },

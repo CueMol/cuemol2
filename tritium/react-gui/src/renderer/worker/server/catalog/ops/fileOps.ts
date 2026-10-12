@@ -27,6 +27,7 @@ export const fetchPdb = defineOp({
     selection: optional(selection('Draw only this selection. Null draws everything.')),
   },
   mutates: true,
+  describe: (a) => `Fetch ${a.pdbId}${a.rendererType !== null ? ` as ${a.rendererType}` : ''}`,
   expose: { tool: 'core', console: true },
   group: 'files',
   aliases: [
@@ -87,6 +88,7 @@ export const loadFile = defineOp({
     name: optional(string('Name of the new object. Null uses the file name.')),
   },
   mutates: true,
+  describe: (a) => `Open ${a.path.split(/[\\/]/).pop() ?? a.path}`,
   expose: { tool: 'files', console: true },
   group: 'files',
   aliases: [{ name: 'load', summary: 'Open a structure file, or a .qsc scene.' }],

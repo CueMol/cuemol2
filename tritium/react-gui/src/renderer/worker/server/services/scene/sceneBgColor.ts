@@ -5,6 +5,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface SceneBgColorArgs {
     sceneId: number;
@@ -37,6 +38,7 @@ export function setSceneBgColor(ctx: WorkerContext, args: SetSceneBgColorArgs): 
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, bgColor: 'other' };
     withUndoTxn(scene, 'Set background color', () => {
+        recordOp(ctx, scene.uid, 'set_node_prop', { nodeType: 'scene', nodeId: null, prop: 'bgcolor', value: args.colorName });
         scene.bgcolor = makeColor(ctx, args.colorName, scene.uid);
     });
     return { ok: true, bgColor: args.colorName };

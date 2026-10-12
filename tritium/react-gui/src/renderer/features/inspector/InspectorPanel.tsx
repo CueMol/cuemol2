@@ -18,7 +18,8 @@
  *
  * The inspector targets one of several context kinds. `node` targets (a
  * scene-tree node or the View) use the migrated UXP `generic-propdlg`
- * editor; `animElement` targets use `AnimElementInspector`.
+ * editor; `animElement` targets use `AnimElementInspector`; `actionStep`
+ * targets (an undo step) use the read-only `ActionStepInspector`.
  *
  * @module InspectorPanel
  */
@@ -31,6 +32,7 @@ import { SegmentField } from "@renderer/h3-kit/form";
 import { PropertiesTab } from "./PropertiesTab";
 import { GenericTab } from "./GenericTab";
 import { AnimElementInspector } from "./AnimElementInspector";
+import { ActionStepInspector } from "./ActionStepInspector";
 import { InspectorResetAllButton } from "./InspectorResetAllButton";
 import { modifiedKeys } from "./propModel";
 import { ColorPickerProvider } from "@renderer/h3-kit/colorpicker";
@@ -45,7 +47,7 @@ import { useActiveScene } from "@renderer/state/workspace";
 type InspectorMode = "properties" | "generic";
 
 /** Kind of context the inspector is currently editing. */
-export type InspectorTargetKind = "node" | "animElement";
+export type InspectorTargetKind = "node" | "animElement" | "actionStep";
 
 
 // ------------------------------------------------------------
@@ -72,6 +74,7 @@ const InspectorPanelComponent: React.FC = () => {
     close: onClose,
     clearAnimElement: onAnimElementGone,
     setAnimHeader: onAnimHeaderChange,
+    setStepHeader: onStepHeaderChange,
   } = useInspectorActions();
   const { cm } = useCueMol();
   const { activeSceneId: sceneId } = useActiveScene();
@@ -81,6 +84,10 @@ const InspectorPanelComponent: React.FC = () => {
   const nodeType = header.type;
   const nodeId = target?.kind === "node" ? target.nodeId : undefined;
   const animElement = target?.kind === "animElement" ? { sceneId: target.sceneId, uid: target.uid } : null;
+  const actionStep =
+    target?.kind === "actionStep"
+      ? { sceneId: target.sceneId, stepId: target.stepId, entryIndex: target.entryIndex }
+      : null;
 
   /**
    * Writer for the structured page. It presents a renderer group's `visible`
@@ -117,7 +124,9 @@ const InspectorPanelComponent: React.FC = () => {
       ? null
       : target.kind === "node"
         ? `node:${target.sceneId}:${target.nodeType}:${target.nodeId}`
-        : `anim:${target.sceneId}:${target.uid}`;
+        : target.kind === "animElement"
+          ? `anim:${target.sceneId}:${target.uid}`
+          : `step:${target.sceneId}:${target.stepId}:${target.entryIndex ?? ""}`;
   useEffect(() => {
     if (targetKey !== null) setMode(defaultMode);
   }, [targetKey, defaultMode]);
@@ -158,6 +167,15 @@ const InspectorPanelComponent: React.FC = () => {
 
       {!hasTarget ? (
         <div className="inspector-empty">No node selected.</div>
+      ) : actionStep ? (
+        /* -- Undo step target (read-only) -- */
+        <ActionStepInspector
+          cm={cm}
+          sceneId={actionStep.sceneId}
+          stepId={actionStep.stepId}
+          entryIndex={actionStep.entryIndex}
+          onHeaderChange={onStepHeaderChange}
+        />
       ) : isAnimElement ? (
         /* -- Animation element target (self-contained editor) -- */
         animElement && cm ? (

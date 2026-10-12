@@ -14,6 +14,8 @@
  *     other scene event on the active scene: re-pull (debounced);
  *   - after an undo/redo we run here -- C++ `undo()`/`redo()` do NOT fire
  *     `SCE_SCENE_UNDOINFO`, so we must refresh explicitly (UXP does the same);
+ *   - the worker's `actions-changed` push, which an undo / redo run from
+ *     elsewhere (a console `undo`, the Action history pane) also sends;
  *   - the undo/redo lock being taken or released (`UndoRedoLockContext`),
  *     which forces both flags false without touching the scene.
  *
@@ -55,17 +57,26 @@ export interface UndoRedoState {
   undoDescs: string[]
   /** Redo transaction descriptions, index 0 = next redo. */
   redoDescs: string[]
+  /**
+   * What each undo step did, for display, in `undoDescs` order: made from
+   * the ops the action log recorded, else the description itself.
+   */
+  undoTexts: string[]
+  /** The same for the redo side, in `redoDescs` order. */
+  redoTexts: string[]
   /** Undo `depth+1` transactions on the active scene, then refresh. */
   pickUndo: (depth?: number) => void
   /** Redo `depth+1` transactions on the active scene, then refresh. */
   pickRedo: (depth?: number) => void
 }
 
-const EMPTY: Pick<UndoRedoState, 'canUndo' | 'canRedo' | 'undoDescs' | 'redoDescs'> = {
+const EMPTY: Pick<UndoRedoState, 'canUndo' | 'canRedo' | 'undoDescs' | 'redoDescs' | 'undoTexts' | 'redoTexts'> = {
   canUndo: false,
   canRedo: false,
   undoDescs: [],
   redoDescs: [],
+  undoTexts: [],
+  redoTexts: [],
 }
 
 export function useUndoRedoState({
@@ -76,6 +87,8 @@ export function useUndoRedoState({
   const [canRedo, setCanRedo] = useState(false)
   const [undoDescs, setUndoDescs] = useState<string[]>([])
   const [redoDescs, setRedoDescs] = useState<string[]>([])
+  const [undoTexts, setUndoTexts] = useState<string[]>([])
+  const [redoTexts, setRedoTexts] = useState<string[]>([])
 
   // Latest scene for the imperative callbacks (undo / redo / clear / refresh)
   // without giving them a new identity per scene.
@@ -106,6 +119,8 @@ export function useUndoRedoState({
     setCanRedo(r)
     setUndoDescs(s.undoDescs)
     setRedoDescs(s.redoDescs)
+    setUndoTexts(s.undoTexts)
+    setRedoTexts(s.redoTexts)
     syncNativeMenu(u, r)
   }, [syncNativeMenu, lockedRef])
 
@@ -183,10 +198,19 @@ export function useUndoRedoState({
     debounceMs: EVENT_BURST_DEBOUNCE_MS,
   })
 
+  // The action log moved: an undo / redo / commit from anywhere, including
+  // paths that fire no scene event (a console `undo`).
+  useEffect(() => {
+    if (!cm || activeSceneId === undefined) return
+    return cm.subscribeActionsChanged((sceneId) => {
+      if (sceneId === activeSceneId) void refresh()
+    })
+  }, [cm, activeSceneId, refresh])
+
   // Memoized: UndoRedoProvider hands this straight to its context, and the
   // toolbar is memo'd against it.
   return useMemo(
-    () => ({ canUndo, canRedo, undoDescs, redoDescs, pickUndo, pickRedo }),
-    [canUndo, canRedo, undoDescs, redoDescs, pickUndo, pickRedo],
+    () => ({ canUndo, canRedo, undoDescs, redoDescs, undoTexts, redoTexts, pickUndo, pickRedo }),
+    [canUndo, canRedo, undoDescs, redoDescs, undoTexts, redoTexts, pickUndo, pickRedo],
   )
 }

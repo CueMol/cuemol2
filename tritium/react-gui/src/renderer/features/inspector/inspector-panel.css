@@ -93,17 +93,6 @@
   color: var(--text-muted);
 }
 
-/* Animation-element detail editor body (form-kit sections). Matches the
-   renderer property panels' content inset so the controls are not flush
-   against the panel edge; the gap between sibling FieldSections is the single
-   --form-section-gap (FieldSection carries no own margin). */
-.anim-inspector {
-  display: flex;
-  flex-direction: column;
-  gap: var(--form-section-gap);
-  padding: var(--space-3) var(--space-4) var(--space-4);
-}
-
 /* Spin "Spin axis" row: combobox + "(x, y, z)" vector of bare NumberCells.
    Dense bespoke layout (style-guide-permitted); references form-kit controls
    and spacing tokens only -- no control sizes are set here. */
@@ -483,5 +472,10 @@
 }
 
 .hatch-effective {
+  color: var(--text-muted);
+}
+
+/* Action step (undo step) target. */
+.action-step-note {
   color: var(--text-muted);
 }

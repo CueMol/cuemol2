@@ -125,6 +125,8 @@ describe('getUndoState service', () => {
             canRedo: true,
             undoDescs: ['add obj', 'color', 'rename'],
             redoDescs: ['delete'],
+            undoTexts: ['add obj', 'color', 'rename'],
+            redoTexts: ['delete'],
         })
         expect(scene.getUndoDesc).toHaveBeenNthCalledWith(1, 0)
         expect(scene.getUndoDesc).toHaveBeenNthCalledWith(3, 2)
@@ -137,6 +139,8 @@ describe('getUndoState service', () => {
             canRedo: false,
             undoDescs: [],
             redoDescs: [],
+            undoTexts: [],
+            redoTexts: [],
         })
     })
 
@@ -147,6 +151,8 @@ describe('getUndoState service', () => {
             canRedo: false,
             undoDescs: [],
             redoDescs: [],
+            undoTexts: [],
+            redoTexts: [],
         })
     })
 })
