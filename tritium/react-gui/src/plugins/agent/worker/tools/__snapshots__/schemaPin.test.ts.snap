@@ -3,10 +3,10 @@
 exports[`the tool list sent to the model > is unchanged 1`] = `
 [
   {
-    "description": "Colour part of what one renderer draws, leaving the rest as it is. Use this for "make chain A red" or "colour the ligand yellow" -- set_renderer_coloring replaces the whole renderer's colouring instead. Painting the same renderer again adds another colour on top, so several regions can be coloured one call at a time.",
+    "description": "Colour part of what one renderer (or every renderer of an object that follows its colouring) draws, leaving the rest as it is. Use this for "make chain A red" or "colour the ligand yellow" -- set_renderer_coloring replaces the whole renderer's colouring instead. Painting the same renderer again adds another colour on top, so several regions can be coloured one call at a time.",
     "mutates": true,
     "name": "add_paint",
-    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer to paint."},"selection":{"type":"string","description":"Which atoms to colour. Check it with count_selection first."},"color":{"type":"string","description":"Colour as hex (\\"#FF0000\\"), a CueMol colour name (\\"red\\"), or hsb(h,s,b). Hex is the safest."}},"required":["rendId","selection","color"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the renderer or object to paint."},"nodeType":{"type":"string","enum":["renderer","object"],"description":"What nodeId refers to: a renderer, or an object (the colouring its renderers take by default)."},"selection":{"type":"string","description":"Which atoms to colour. Check it with count_selection first."},"color":{"type":"string","description":"Colour as hex (\\"#FF0000\\"), a CueMol colour name (\\"red\\"), or hsb(h,s,b). Hex is the safest."}},"required":["nodeId","nodeType","selection","color"],"additionalProperties":false}",
   },
   {
     "description": "Find close contacts around a selection and draw them as labelled dashed lines. Use it for hydrogen bonds and for what a ligand touches; by default only polar atoms (no carbon) are paired. This adds labels to the scene.",
@@ -49,10 +49,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":["string","null"],"description":"Selection expression to centre on. Null uses the molecule's current selection."},"zoom":{"type":"boolean","description":"True also zooms to fit the selection; false only recentres."}},"required":["molId","selection","zoom"],"additionalProperties":false}",
   },
   {
-    "description": "Remove every region painted on one renderer with add_paint.",
+    "description": "Remove every region painted with add_paint on one renderer or object.",
     "mutates": true,
     "name": "clear_paint",
-    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."}},"required":["rendId"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the renderer or object to clear."},"nodeType":{"type":"string","enum":["renderer","object"],"description":"What nodeId refers to: a renderer, or an object (the colouring its renderers take by default)."}},"required":["nodeId","nodeType"],"additionalProperties":false}",
   },
   {
     "description": "Compile a selection expression and count the atoms it matches in one molecule. Do this before using an expression anywhere else: an expression can be valid and still match nothing, which looks like a renderer that did not work.",
@@ -251,10 +251,10 @@ Use \`capture_view\` to look at the view quickly instead.",
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object."},"fileName":{"type":"string","description":"The file, e.g. model.pdb."}},"required":["objId","fileName"],"additionalProperties":false}",
   },
   {
-    "description": "Set the colour a painted renderer uses where no painted region applies (its base colour).",
+    "description": "Set the colour a painted renderer or object uses where no painted region applies (its base colour).",
     "mutates": true,
     "name": "set_default_color",
-    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"color":{"type":"string","description":"The colour, e.g. white or #c0c0c0."}},"required":["rendId","color"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the renderer or object to set it on."},"nodeType":{"type":"string","enum":["renderer","object"],"description":"What nodeId refers to: a renderer, or an object (the colouring its renderers take by default)."},"color":{"type":"string","description":"The colour, e.g. white or #c0c0c0."}},"required":["nodeId","nodeType","color"],"additionalProperties":false}",
   },
   {
     "description": "Change how one map contour is drawn: its level (in sigma, or percent for an EM map), the extent of the box drawn around the view centre (angstroms), its colour and opacity. Give only what should change.",
@@ -287,10 +287,10 @@ Call \`list_node_props\` first: the property name, its type, and the allowed val
     "parameters": "{"type":"object","properties":{"perspective":{"type":["boolean","null"],"description":"True for perspective, false for orthographic. Null only reports."}},"required":["perspective"],"additionalProperties":false}",
   },
   {
-    "description": "Colour one renderer. Either give a mode -- cpk (by element), rainbow (along the chain), bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style name from list_coloring_styles.",
+    "description": "Colour one renderer, or an object (the colouring its renderers take by default; style names are for renderers only). Either give a mode -- cpk (by element), rainbow (along the chain), bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style name from list_coloring_styles.",
     "mutates": true,
     "name": "set_renderer_coloring",
-    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"mode":{"type":"string","enum":["paint-type-cpk","paint-type-rainbow","paint-type-bfac","paint-type-solid","paint-type-resetdef","style"],"description":"One of the fixed modes, or \\"style\\" to use styleName instead."},"styleName":{"type":["string","null"],"description":"Style name from list_coloring_styles. Required when mode is \\"style\\", otherwise null."}},"required":["rendId","mode","styleName"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the renderer or object to colour."},"nodeType":{"type":"string","enum":["renderer","object"],"description":"What nodeId refers to: a renderer, or an object (the colouring its renderers take by default)."},"mode":{"type":"string","enum":["paint-type-cpk","paint-type-rainbow","paint-type-bfac","paint-type-solid","paint-type-resetdef","style"],"description":"One of the fixed modes, or \\"style\\" to use styleName instead."},"styleName":{"type":["string","null"],"description":"Style name from list_coloring_styles. Required when mode is \\"style\\", otherwise null."}},"required":["nodeId","nodeType","mode","styleName"],"additionalProperties":false}",
   },
   {
     "description": "Change which atoms one renderer draws. Check the expression with count_selection first: an expression that matches nothing leaves the renderer drawing nothing.",

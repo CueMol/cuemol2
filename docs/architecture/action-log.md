@@ -121,7 +121,7 @@ helper)。
 | `applyRendererStyle` (Style サブメニュー) | `apply_renderer_style` |
 | scene tree のまとめて表示・非表示 / 削除 (`sceneTree/bulkSceneNodeOps.ts`) | node ごとの `set_visible` / `delete_node` (削除は破棄の直前に記録) |
 | `applyRendererStyleList` (Edit Style ダイアログ) | `set_renderer_styles` (style の並び全体を `,` 区切りで) |
-| renderer の着色 (`coloring/applyColoring.ts`、`colorTargets.ts`、`multiGrad.ts`) | `set_renderer_coloring` / `set_elepot_coloring` / `set_default_color`。coloring の target・elepot の property・multigrad の color map は `set_node_prop`。object の着色は記録しない (op が無い) |
+| 着色 (`coloring/applyColoring.ts`、`colorTargets.ts`、`multiGrad.ts`) | `set_renderer_coloring` / `set_elepot_coloring` / `set_default_color`。coloring の target・elepot の property・multigrad の color map は `set_node_prop`。着色と paint の op は対象を `nodeId` + `nodeType` (`renderer` / `object`) で取るので、Color pane で object を対象にした変更も記録する (style と elepot は renderer のみ) |
 | paint の表 (`coloring/paintCrud.ts`、`paintClipboard.ts`) | `add_paint` / `set_paint` / `remove_paint` (複数行は 1 行ずつ) / `move_paint` / `clear_paint`。番号は 1 始まり |
 | 分子の編集 (`molops/`) | `rename_chain`、`renumber_residues`、`delete_atoms`、`merge_molecules`、`set_secondary_structure`、`create_surface` / `recalc_surface` (backend が auto のとき)、`cut_surface`、`set_symmetry`、`show_symmetry`、`analyze_interactions` (1 分子・1 selection のとき) |
 | morph (`morph/morphMol.ts`) | `add_morph_frame` / `remove_morph_frame` |
@@ -142,7 +142,7 @@ helper)。
 - PyMOL dialect のうち、service を通らずに C++ を直接変更するもの。例: `show sticks` の
   `applyStyles`、`label`、`set_view` の回転、`orient`、`center`、`frame`。そのコマンドの行には、
   service を通った部分の op だけが入る。
-- 対応する op が無いもの: object の着色、paint の行の挿入 (`addPaintEntry`) と貼り付け、
+- 対応する op が無いもの: paint の行の挿入 (`addPaintEntry`) と貼り付け、
   coloring scheme の property、multigrad の node、symmetry copy の作成、unit cell だけの表示、
   原子名ラベルの切り替え、scene tree の並べ替え、camera の visibility flag と camera ファイルの
   読み込み、style set の作成・削除・読み込みと色・style の編集、render settings、node の貼り付け、

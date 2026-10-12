@@ -343,3 +343,14 @@ export function resolvePaintTarget(
     if (!coloring) return null;
     return { scene, rend, coloring };
 }
+
+/**
+ * The target arguments of the colouring ops (`nodeId` / `nodeType`) for a
+ * service's `rendId` / `targetKind`, for the action log.
+ */
+export function coloringOpTarget(args: { rendId: number; targetKind?: ColoringTargetKind }): {
+    nodeId: number;
+    nodeType: ColoringTargetKind;
+} {
+    return { nodeId: args.rendId, nodeType: args.targetKind ?? 'renderer' };
+}

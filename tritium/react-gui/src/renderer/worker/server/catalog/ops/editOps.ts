@@ -23,7 +23,7 @@ import { generateRendererSurfObj } from '@renderer/worker/server/services/rend/g
 import { getMolSurfRegenInfo, regenMolSurf } from '@renderer/worker/server/services/molops/regenMolSurf'
 import { listAtomIntrDefs, removeAtomIntrDefs } from '@renderer/worker/server/services/rend/atomIntrEdit'
 import { getRendererColoringState } from '@renderer/worker/server/services/coloring/deckState'
-import type { PaintEntryDto } from '@renderer/worker/server/services/coloring/types'
+import type { ColoringTargetKind, PaintEntryDto } from '@renderer/worker/server/services/coloring/types'
 import { movePaintEntry, removePaintEntry, updatePaintEntry } from '@renderer/worker/server/services/coloring/paintCrud'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
 import { setRendererElepotProp } from '@renderer/worker/server/services/coloring/elepotWriter'
@@ -36,10 +36,10 @@ import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { resolvePropPath } from '../refs'
 import { checkPosition, numbered, pickByNumber } from '@renderer/worker/shared/numbered'
-import { NO_MOLECULE, NO_RENDERER } from '../errors'
+import { NO_MOLECULE, NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
-import { atoms, boolean, enumOf, integer, moleculeId, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
+import { atoms, boolean, coloringTarget, enumOf, integer, moleculeId, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
 import type { AtomSpec } from '../params'
 import { outputPath } from '../outputFile'
 import { atomList } from '../cmlFormat'
@@ -332,23 +332,36 @@ export const removeInteraction = defineOp({
 // --- Paint entries ---
 
 /** The renderer's paint entries, or why it has none. */
-function paintEntries(ctx: Parameters<typeof getRendererColoringState>[0], sceneId: number, rendId: number): { entries: PaintEntryDto[] } | { error: string } {
-  const state = getRendererColoringState(ctx, { sceneId, rendId })
-  if (!state.ok) return { error: NO_RENDERER }
-  if (state.className !== 'PaintColoring') return { error: 'That renderer is not coloured by paint; add_paint makes it so.' }
+/** A colouring op's target, as the colouring services take it. */
+interface PaintAt {
+  sceneId: number
+  rendId: number
+  targetKind: ColoringTargetKind
+}
+
+const paintAt = (sceneId: number, args: { nodeId: number; nodeType: ColoringTargetKind }): PaintAt => ({
+  sceneId,
+  rendId: args.nodeId,
+  targetKind: args.nodeType,
+})
+
+function paintEntries(ctx: Parameters<typeof getRendererColoringState>[0], at: PaintAt): { entries: PaintEntryDto[] } | { error: string } {
+  const state = getRendererColoringState(ctx, at)
+  if (!state.ok) return { error: at.targetKind === 'object' ? NO_OBJECT : NO_RENDERER }
+  if (state.className !== 'PaintColoring') return { error: `That ${at.targetKind} is not coloured by paint; add_paint makes it so.` }
   return { entries: state.paintEntries }
 }
 
 export const listPaint = defineOp({
   name: 'list_paint',
-  description: 'List a renderer\'s paint entries (selection and colour), numbered from 1. An atom takes the colour of the first entry that matches it.',
-  params: { rendId: rendererId('Uid of the renderer.') },
+  description: 'List the paint entries (selection and colour) of a renderer or an object, numbered from 1. An atom takes the colour of the first entry that matches it.',
+  params: coloringTarget('whose paint to list'),
   mutates: false,
   expose: EXPOSE,
   group: 'coloring',
   format: (data) => (data as { entries: { number: number; selStr: string; colorValue: string }[] }).entries.map((e) => `${e.number}  ${e.colorValue}  ${e.selStr}`),
   run(ctx, args, oc) {
-    const p = paintEntries(ctx, oc.sceneId, args.rendId)
+    const p = paintEntries(ctx, paintAt(oc.sceneId, args))
     if ('error' in p) return { ok: false, error: p.error }
     return { ok: true, data: { entries: numbered(p.entries.map(({ selStr, colorValue }) => ({ selStr, colorValue }))) } }
   },
@@ -357,8 +370,8 @@ export const listPaint = defineOp({
 const PAINT_NUMBER = 'The entry\'s number in list_paint (from 1).'
 
 /** Resolve a paint entry number to its zero-based index, or fail. */
-function paintIndex(ctx: Parameters<typeof getRendererColoringState>[0], sceneId: number, rendId: number, n: number): { entry: PaintEntryDto; count: number } | { error: string } {
-  const p = paintEntries(ctx, sceneId, rendId)
+function paintIndex(ctx: Parameters<typeof getRendererColoringState>[0], at: PaintAt, n: number): { entry: PaintEntryDto; count: number } | { error: string } {
+  const p = paintEntries(ctx, at)
   if ('error' in p) return p
   const e = pickByNumber(p.entries, n, 'paint entry', 'list_paint')
   return typeof e === 'string' ? { error: e } : { entry: e, count: p.entries.length }
@@ -368,22 +381,23 @@ export const updatePaint = defineOp({
   name: 'set_paint',
   description: 'Change the selection or the colour of one paint entry.',
   params: {
-    rendId: rendererId('Uid of the renderer.'),
+    ...coloringTarget('the entry belongs to'),
     number: integer(PAINT_NUMBER),
     selection: optional(selection('New selection. Null keeps it.')),
     color: optional(string('New colour. Null keeps it.')),
   },
   mutates: true,
-  describe: (a, n) => `Change paint entry ${a.number} of ${n('rendId')}`,
+  describe: (a, n) => `Change paint entry ${a.number} of ${n('nodeId')}`,
   expose: EXPOSE,
   group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
-    const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
+    const target = paintAt(oc.sceneId, args)
+    const at = paintIndex(ctx, target, args.number)
     if ('error' in at) return { ok: false, error: at.error }
     return normalizeServiceResult(
       updatePaintEntry(ctx, {
-        sceneId: oc.sceneId, rendId: args.rendId, idx: at.entry.idx,
+        ...target, idx: at.entry.idx,
         selStr: args.selection ?? at.entry.selStr,
         colorValue: args.color ?? at.entry.colorValue,
       }),
@@ -395,17 +409,18 @@ export const updatePaint = defineOp({
 export const removePaint = defineOp({
   name: 'remove_paint',
   description: 'Remove one paint entry.',
-  params: { rendId: rendererId('Uid of the renderer.'), number: integer(PAINT_NUMBER) },
+  params: { ...coloringTarget('the entry belongs to'), number: integer(PAINT_NUMBER) },
   mutates: true,
-  describe: (a, n) => `Remove paint entry ${a.number} of ${n('rendId')}`,
+  describe: (a, n) => `Remove paint entry ${a.number} of ${n('nodeId')}`,
   expose: EXPOSE,
   group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
-    const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
+    const target = paintAt(oc.sceneId, args)
+    const at = paintIndex(ctx, target, args.number)
     if ('error' in at) return { ok: false, error: at.error }
     return normalizeServiceResult(
-      removePaintEntry(ctx, { sceneId: oc.sceneId, rendId: args.rendId, idx: at.entry.idx }),
+      removePaintEntry(ctx, { ...target, idx: at.entry.idx }),
       'The paint entry could not be removed.',
     )
   },
@@ -415,22 +430,23 @@ export const movePaint = defineOp({
   name: 'move_paint',
   description: 'Move a paint entry to another number in the list (an atom takes the colour of the first entry that matches it).',
   params: {
-    rendId: rendererId('Uid of the renderer.'),
+    ...coloringTarget('the entry belongs to'),
     number: integer(PAINT_NUMBER),
     to: integer('The number it should have.'),
   },
   mutates: true,
-  describe: (a, n) => `Move paint entry ${a.number} to ${a.to} on ${n('rendId')}`,
+  describe: (a, n) => `Move paint entry ${a.number} to ${a.to} on ${n('nodeId')}`,
   expose: EXPOSE,
   group: 'coloring',
   format: () => [],
   run(ctx, args, oc) {
-    const at = paintIndex(ctx, oc.sceneId, args.rendId, args.number)
+    const target = paintAt(oc.sceneId, args)
+    const at = paintIndex(ctx, target, args.number)
     if ('error' in at) return { ok: false, error: at.error }
     const bad = checkPosition(args.to, at.count, 'list_paint')
     if (bad) return { ok: false, error: bad }
     return normalizeServiceResult(
-      movePaintEntry(ctx, { sceneId: oc.sceneId, rendId: args.rendId, fromIdx: at.entry.idx, toIdx: args.to - 1 }),
+      movePaintEntry(ctx, { ...target, fromIdx: at.entry.idx, toIdx: args.to - 1 }),
       'The paint entry could not be moved.',
     )
   },

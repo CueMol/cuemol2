@@ -27,7 +27,7 @@ import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import type { PaintTarget } from './colorTargets';
-import { materializeColoringIfDefault, resolvePaintTarget } from './colorTargets';
+import { coloringOpTarget, materializeColoringIfDefault, resolvePaintTarget } from './colorTargets';
 import type {
     PaintClipboardEntry,
     CopyPaintEntriesArgs,
@@ -63,9 +63,8 @@ function readEntries(coloring: PaintColoring, idxs: number[]): PaintClipboardEnt
 
 /** Record one remove_paint per row, in the descending order they are removed. */
 function recordRemoveRows(ctx: WorkerContext, sceneId: number, args: CopyPaintEntriesArgs, idxs: number[]): void {
-    if (args.targetKind === 'object') return;
     for (let i = idxs.length - 1; i >= 0; --i) {
-        recordOp(ctx, sceneId, 'remove_paint', { rendId: args.rendId, number: idxs[i] + 1 }, ['rendId']);
+        recordOp(ctx, sceneId, 'remove_paint', { ...coloringOpTarget(args), number: idxs[i] + 1 }, ['nodeId']);
     }
 }
 
@@ -225,9 +224,7 @@ export function clearPaintEntries(
     const { scene, rend } = target;
 
     withUndoTxn(scene, 'Delete all paint entries', () => {
-        if (args.targetKind !== 'object') {
-            recordOp(ctx, scene.uid, 'clear_paint', { rendId: args.rendId }, ['rendId']);
-        }
+        recordOp(ctx, scene.uid, 'clear_paint', coloringOpTarget(args), ['nodeId']);
         materializeColoringIfDefault(rend);
         liveColoring(rend).clear();
     });

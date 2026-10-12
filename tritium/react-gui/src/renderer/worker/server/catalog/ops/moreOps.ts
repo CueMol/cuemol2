@@ -21,7 +21,7 @@ import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
-import { color, enumOf, nodeId, objectId, optional, path, real, rendererId, string } from '../params'
+import { color, coloringTarget, enumOf, nodeId, objectId, optional, path, real, rendererId, string } from '../params'
 import { outputPath } from '../outputFile'
 
 export const listRendererStyles = defineOp({
@@ -109,16 +109,16 @@ export const setRendererStyles = defineOp({
 
 export const clearPaint = defineOp({
   name: 'clear_paint',
-  description: 'Remove every region painted on one renderer with add_paint.',
-  params: { rendId: rendererId('Uid of the renderer.') },
+  description: 'Remove every region painted with add_paint on one renderer or object.',
+  params: coloringTarget('to clear'),
   mutates: true,
-  describe: (_a, n) => `Clear paint of ${n('rendId')}`,
+  describe: (_a, n) => `Clear paint of ${n('nodeId')}`,
   expose: { tool: 'coloring', console: true },
   group: 'coloring',
   run(ctx, args, oc) {
     return normalizeServiceResult(
-      clearPaintEntries(ctx, { sceneId: oc.sceneId, rendId: args.rendId }),
-      'That renderer has no painted regions to clear.',
+      clearPaintEntries(ctx, { sceneId: oc.sceneId, rendId: args.nodeId, targetKind: args.nodeType }),
+      `That ${args.nodeType} has no painted regions to clear.`,
     )
   },
 })
@@ -126,19 +126,19 @@ export const clearPaint = defineOp({
 export const setDefaultColor = defineOp({
   name: 'set_default_color',
   description:
-    'Set the colour a painted renderer uses where no painted region applies (its base colour).',
+    'Set the colour a painted renderer or object uses where no painted region applies (its base colour).',
   params: {
-    rendId: rendererId('Uid of the renderer.'),
+    ...coloringTarget('to set it on'),
     color: color('The colour, e.g. white or #c0c0c0.'),
   },
   mutates: true,
-  describe: (a, n) => `Set default colour of ${n('rendId')} to ${a.color}`,
+  describe: (a, n) => `Set default colour of ${n('nodeId')} to ${a.color}`,
   expose: { tool: 'coloring', console: true },
   group: 'coloring',
   run(ctx, args, oc) {
     return normalizeServiceResult(
-      setRendererDefaultColor(ctx, { sceneId: oc.sceneId, rendId: args.rendId, colorValue: args.color }),
-      'The default colour could not be set (is the renderer painted?).',
+      setRendererDefaultColor(ctx, { sceneId: oc.sceneId, rendId: args.nodeId, targetKind: args.nodeType, colorValue: args.color }),
+      `The default colour could not be set (is the ${args.nodeType} painted?).`,
     )
   },
 })

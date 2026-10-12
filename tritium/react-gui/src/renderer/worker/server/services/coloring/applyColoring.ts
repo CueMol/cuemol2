@@ -35,6 +35,7 @@ import {
     getColoringClassName,
     materializeColoringIfDefault,
     readMolFancTargetOrNull,
+    coloringOpTarget,
     findFirstMolCoordName,
 } from './colorTargets';
 import { findFirstElePotMapName } from './elepotWriter';
@@ -201,19 +202,23 @@ const OP_COLORING_MODES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Record the op that applies the same coloring to a renderer. An object's
- * coloring, the gray CPK variants, the default paint table and multigrad
- * have no op, and neither has a style list_coloring_styles does not offer.
+ * Record the op that applies the same coloring to a renderer or an object.
+ * The gray CPK variants, the default paint table and multigrad have no op,
+ * and neither has a style list_coloring_styles does not offer. Styles and
+ * the potential coloring are for renderers only.
  */
 function recordColoringChoice(ctx: WorkerContext, sceneId: number, args: SetRendererColoringArgs): void {
-    if (args.targetKind === 'object') return;
     const id: string = args.coloringId;
+    const target = coloringOpTarget(args);
+    if (OP_COLORING_MODES.has(id)) {
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: id, styleName: null }, ['nodeId']);
+        return;
+    }
+    if (args.targetKind === 'object') return;
     if (id.startsWith('style-')) {
         const styleName = id.substring('style-'.length);
         if (!getPaintColoringStyles(ctx, { sceneId }).entries.some((e) => e.name === styleName)) return;
-        recordOp(ctx, sceneId, 'set_renderer_coloring', { rendId: args.rendId, mode: 'style', styleName }, ['rendId']);
-    } else if (OP_COLORING_MODES.has(id)) {
-        recordOp(ctx, sceneId, 'set_renderer_coloring', { rendId: args.rendId, mode: id, styleName: null }, ['rendId']);
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: 'style', styleName }, ['nodeId']);
     } else if (id === 'paint-type-elepot') {
         // set_elepot_coloring with no map or range switches the mode alone.
         recordOp(ctx, sceneId, 'set_elepot_coloring', { rendId: args.rendId, map: null, low: null, high: null }, ['rendId']);
@@ -400,9 +405,7 @@ export function setRendererDefaultColor(
 
     const color = makeColor(ctx, args.colorValue, scene.uid);
     withUndoTxn(scene, 'Change default color', () => {
-        if (args.targetKind !== 'object') {
-            recordOp(ctx, scene.uid, 'set_default_color', { rendId: args.rendId, color: args.colorValue }, ['rendId']);
-        }
+        recordOp(ctx, scene.uid, 'set_default_color', { ...coloringOpTarget(args), color: args.colorValue }, ['nodeId']);
         if (isMolColorRef(color) && readColormodeOrEmpty(rend) === 'solid') {
             forceMoleculeColormode(scene, rend);
         }
