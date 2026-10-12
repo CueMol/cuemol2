@@ -23,6 +23,7 @@ import type { SelCommand } from '@cuemol/core/src/wrappers/SelCommand';
 import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import type { PaintTarget } from './colorTargets';
@@ -58,6 +59,14 @@ function readEntries(coloring: PaintColoring, idxs: number[]): PaintClipboardEnt
         out.push({ selStr: sel.toString(), colorValue: col.toString() });
     }
     return out;
+}
+
+/** Record one remove_paint per row, in the descending order they are removed. */
+function recordRemoveRows(ctx: WorkerContext, sceneId: number, args: CopyPaintEntriesArgs, idxs: number[]): void {
+    if (args.targetKind === 'object') return;
+    for (let i = idxs.length - 1; i >= 0; --i) {
+        recordOp(ctx, sceneId, 'remove_paint', { rendId: args.rendId, number: idxs[i] + 1 }, ['rendId']);
+    }
 }
 
 /**
@@ -108,6 +117,7 @@ export function cutPaintEntries(
     const { target, idxs, entries } = taken;
 
     withUndoTxn(target.scene, 'Cut paint entry', () => {
+        recordRemoveRows(ctx, target.scene.uid, args, idxs);
         materializeColoringIfDefault(target.rend);
         const live = liveColoring(target.rend);
         // Descending, so each removal leaves the lower indices valid
@@ -192,6 +202,7 @@ export function removePaintEntries(
     if (idxs.length === 0) return { ok: false };
 
     withUndoTxn(target.scene, 'Delete paint entry', () => {
+        recordRemoveRows(ctx, target.scene.uid, args, idxs);
         materializeColoringIfDefault(target.rend);
         const live = liveColoring(target.rend);
         for (let i = idxs.length - 1; i >= 0; --i) {
@@ -214,6 +225,9 @@ export function clearPaintEntries(
     const { scene, rend } = target;
 
     withUndoTxn(scene, 'Delete all paint entries', () => {
+        if (args.targetKind !== 'object') {
+            recordOp(ctx, scene.uid, 'clear_paint', { rendId: args.rendId }, ['rendId']);
+        }
         materializeColoringIfDefault(rend);
         liveColoring(rend).clear();
     });

@@ -44,6 +44,8 @@ import {
     readMapStats,
 } from './multiGrad';
 import { buildPresetNodes } from '@renderer/worker/shared/multiGradPresets';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { getPaintColoringStyles } from './panelList';
 import type {
     SetRendererColoringArgs,
     SetRendererColoringResult,
@@ -189,6 +191,35 @@ function seedEmptyGradient(rend: Renderer): void {
     mg.setNodesJSON(JSON.stringify(nodes));
 }
 
+/** The coloring ids set_renderer_coloring takes as its mode. */
+const OP_COLORING_MODES: ReadonlySet<string> = new Set([
+    'paint-type-cpk',
+    'paint-type-rainbow',
+    'paint-type-bfac',
+    'paint-type-solid',
+    'paint-type-resetdef',
+]);
+
+/**
+ * Record the op that applies the same coloring to a renderer. An object's
+ * coloring, the gray CPK variants, the default paint table and multigrad
+ * have no op, and neither has a style list_coloring_styles does not offer.
+ */
+function recordColoringChoice(ctx: WorkerContext, sceneId: number, args: SetRendererColoringArgs): void {
+    if (args.targetKind === 'object') return;
+    const id: string = args.coloringId;
+    if (id.startsWith('style-')) {
+        const styleName = id.substring('style-'.length);
+        if (!getPaintColoringStyles(ctx, { sceneId }).entries.some((e) => e.name === styleName)) return;
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { rendId: args.rendId, mode: 'style', styleName }, ['rendId']);
+    } else if (OP_COLORING_MODES.has(id)) {
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { rendId: args.rendId, mode: id, styleName: null }, ['rendId']);
+    } else if (id === 'paint-type-elepot') {
+        // set_elepot_coloring with no map or range switches the mode alone.
+        recordOp(ctx, sceneId, 'set_elepot_coloring', { rendId: args.rendId, map: null, low: null, high: null }, ['rendId']);
+    }
+}
+
 /**
  * Apply a coloring to a renderer from a Coloring-submenu selection.
  *
@@ -213,6 +244,7 @@ export function setRendererColoring(
         const styleName = args.coloringId.substring('style-'.length);
         if (!styleName) return { ok: false };
         withUndoTxn(scene, 'Change coloring style', () => {
+            recordColoringChoice(ctx, scene.uid, args);
             applyStyleColoring(scene, rend, styleName);
         });
         return { ok: true };
@@ -221,11 +253,13 @@ export function setRendererColoring(
     switch (args.coloringId) {
         case 'paint-type-bfac':
             withUndoTxn(scene, 'Change coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 applyObjColoring(ctx, scene, rend, 'BfacColoring');
             });
             return { ok: true };
         case 'paint-type-rainbow':
             withUndoTxn(scene, 'Change coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 applyObjColoring(ctx, scene, rend, 'RainbowColoring');
             });
             return { ok: true };
@@ -245,6 +279,7 @@ export function setRendererColoring(
         case 'paint-type-cpk-lightgray': {
             const carbon = CPK_CARBON_COLORS[args.coloringId];
             withUndoTxn(scene, 'Change coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 applyObjColoring(ctx, scene, rend, 'CPKColoring', (coloring) => {
                     (coloring as unknown as { col_C: AbstractColor }).col_C =
                         makeColor(ctx, carbon, scene.uid);
@@ -273,6 +308,7 @@ export function setRendererColoring(
             // molecule) stays reachable through "Reset to default style", and
             // for isosurf also through the Density map panel.
             withUndoTxn(scene, 'Change coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 applyObjColoring(ctx, scene, rend, 'SolidColoring');
             });
             return { ok: true };
@@ -281,6 +317,7 @@ export function setRendererColoring(
             // On molsurf / isosurf also reset colormode to its default
             // ("solid") so the renderer returns to its true default state.
             withUndoTxn(scene, 'Reset coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 rend.resetProp('coloring');
                 // Back to the renderer's own default mode -- "solid" for
                 // molsurf and the map renderers, "molecule" for the
@@ -320,6 +357,7 @@ export function setRendererColoring(
             // sensible default. Mirrors `setDefaultElepot` in coloring-panel.js.
             if (!isElepotCapable(rend)) return { ok: false };
             withUndoTxn(scene, 'Change to elepot coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 const r = rend as unknown as {
                     colormode: string;
                     elepot: string;
@@ -362,6 +400,9 @@ export function setRendererDefaultColor(
 
     const color = makeColor(ctx, args.colorValue, scene.uid);
     withUndoTxn(scene, 'Change default color', () => {
+        if (args.targetKind !== 'object') {
+            recordOp(ctx, scene.uid, 'set_default_color', { rendId: args.rendId, color: args.colorValue }, ['rendId']);
+        }
         if (isMolColorRef(color) && readColormodeOrEmpty(rend) === 'solid') {
             forceMoleculeColormode(scene, rend);
         }
@@ -441,6 +482,14 @@ export function setRendererColoringTarget(
     if (readMolFancTargetOrNull(rend) === null) return { ok: false };
 
     withUndoTxn(scene, 'Change coloring target', () => {
+        if (args.targetKind !== 'object') {
+            recordOp(ctx, scene.uid, 'set_node_prop', {
+                nodeType: 'renderer',
+                nodeId: args.rendId,
+                prop: 'target',
+                value: args.targetName,
+            }, ['nodeId']);
+        }
         // `target` lives directly on the renderer's native wrapper; use the
         // setProp escape hatch (same shape as setRendererElepotProp).
         (rend as unknown as { setProp: (n: string, v: unknown) => void })

@@ -18,6 +18,7 @@ import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { undoTxnResult, withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { ok, fail, failFrom } from '@renderer/worker/shared/result';
 import { getMultiGradOrNull } from './colorTargets';
 import type {
@@ -421,6 +422,12 @@ export function setMultiGradColorMap(
     if (!getMultiGradOrNull(rend)) return { ok: false };
 
     withUndoTxn(scene, 'Change color map', () => {
+        recordOp(ctx, scene.uid, 'set_node_prop', {
+            nodeType: 'renderer',
+            nodeId: args.rendId,
+            prop: 'color_mapname',
+            value: args.mapName,
+        }, ['nodeId']);
         (rend as unknown as { color_mapname: string }).color_mapname =
             args.mapName;
     });

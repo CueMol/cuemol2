@@ -29,6 +29,7 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { uniqName } from '@renderer/worker/server/services/helpers/uniqName';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface MakeMolSurfArgs {
     sceneId: number;
@@ -120,6 +121,16 @@ export function makeMolSurf(
     // let the error propagate out of `withUndoTxn` rather than swallowing it.
     try {
         withUndoTxn(scene, 'Create mol surface', () => {
+            // create_surface has no backend choice; a forced one is not recorded.
+            if (!args.backend || args.backend === 'auto') {
+                recordOp(ctx, scene.uid, 'create_surface', {
+                    molId: args.objId,
+                    selection: args.selStr.trim() !== '' ? args.selStr : null,
+                    name: surfName,
+                    probeRadius,
+                    density,
+                }, ['molId']);
+            }
             const surf = ctx.svc.createObj('MolSurfObj') as MolSurfObj;
             // `sesbackend` is an enum property: the generated wrapper types it
             // as number, but the C++ layer takes/returns the string id.

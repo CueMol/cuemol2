@@ -23,6 +23,7 @@ import { getUndoState } from '@renderer/worker/server/services/undo/undoState'
 import { undo } from '@renderer/worker/server/services/undo/undo'
 import { exportActionSteps } from '@renderer/worker/server/services/actions/actions'
 import { parseQax } from '@renderer/worker/server/actions/qax/codec'
+import { applyRendererStyleList } from '@renderer/worker/server/services/rend/rendererStyle'
 import { recordOp } from '@renderer/worker/server/actions/serviceOps'
 import { withUndoTxn, undoTxnResult } from '@renderer/worker/server/services/withUndoTxn'
 import { invokeOp, runInTxn } from '@renderer/worker/server/catalog/opRuntime'
@@ -94,7 +95,7 @@ function editWith(scene: StackScene, ctx: ReturnType<typeof makeWorkerCtx>['ctx'
 }
 
 const HIDE: [string, Record<string, unknown>] = ['set_visible', { nodeId: 5, nodeType: 'object', visible: false }]
-const CLEAR: [string, Record<string, unknown>] = ['clear_paint', { rendId: 7 }]
+const CLEAR: [string, Record<string, unknown>] = ['apply_renderer_style', { rendId: 7, style: 'Wide' }]
 
 describe('actionLog', () => {
   beforeEach(() => resetActionLog())
@@ -239,6 +240,30 @@ describe('serviceOps', () => {
     expect(entries[2]).toMatchObject({ op: 'reset_prop', args: { path: '1crn/cartoon1.width' } })
   })
 
+  it('records the Edit Style dialog as the whole style list its op takes', async () => {
+    const { findOp } = await import('@renderer/worker/server/catalog')
+    const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
+    const scene = stackScene()
+    const mol = fakeObject({ name: '1crn', scene })
+    scene.addObject(mol)
+    const rend = fakeRenderer({ type: 'cartoon', name: 'cartoon1' })
+    mol.attachRenderer(rend)
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    rend.applyStyles.mockImplementation(() => scene.touch())
+
+    applyRendererStyleList(ctx as never, { sceneId: scene.uid, rendId: rend.uid, styleNames: [' DefaultCartoon', 'EgLineCartoon '] })
+
+    const [entry] = rowsOf(scene)[0].entries
+    expect(entry).toEqual({
+      kind: 'op',
+      op: 'set_renderer_styles',
+      args: { rendId: rend.uid, styles: 'DefaultCartoon,EgLineCartoon' },
+      refs: { rendId: '1crn/cartoon1' },
+    })
+    expect(rend.applyStyles).toHaveBeenCalledWith('DefaultCartoon,EgLineCartoon')
+    expect(typeof readToolArgs(findOp('set_renderer_styles')!, (entry as { args: Record<string, unknown> }).args)).toBe('object')
+  })
+
   it('words each undo step from its ops, and falls back to the undo description', () => {
     const scene = stackScene()
     const { ctx } = makeWorkerCtx({ scenes: [scene] })
@@ -251,7 +276,7 @@ describe('serviceOps', () => {
     // describe() of the op; an op without one is its name and arguments; a
     // step of several ops is its first and a count. The undone step with no
     // op keeps its description, on the redo side.
-    expect(state.undoTexts).toEqual(['Hide #5 (+1 more)', 'Clear paint: #7', 'Hide #5'])
+    expect(state.undoTexts).toEqual(['Hide #5 (+1 more)', 'Apply renderer style: #7, Wide', 'Hide #5'])
     expect(state.redoTexts).toEqual(['bare'])
     expect(state.undoDescs).toEqual(['both', 'clear', 'hide'])
   })

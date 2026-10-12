@@ -10,6 +10,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /** The atomintr-renderer methods this service touches (not on the base type). */
 interface AtomIntrRend {
@@ -104,10 +105,18 @@ export function removeAtomIntrDefs(
 
     // `remove(id)` empties slot m_data[id] without shifting other indices
     // (ADR-0027), so the ids stay valid regardless of removal order.
+    // remove_interaction takes the number list_interactions shows, which
+    // closes up over a removed entry, so the numbers are counted as they go.
+    const listed = listAtomIntrDefs(ctx, args).entries.map((e) => e.id);
     let removed = 0;
     withUndoTxn(scene, 'Remove interaction', () => {
         for (const id of args.ids) {
-            if (rend.remove(id)) removed++;
+            if (!rend.remove(id)) continue;
+            removed++;
+            const at = listed.indexOf(id);
+            if (at < 0) continue;
+            listed.splice(at, 1);
+            recordOp(ctx, scene.uid, 'remove_interaction', { rendId: args.rendId, number: at + 1 }, ['rendId']);
         }
     });
     return { ok: true, removed };

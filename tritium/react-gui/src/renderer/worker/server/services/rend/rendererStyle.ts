@@ -319,6 +319,7 @@ export function applyRendererStyleList(
         .join(',');
 
     withUndoTxn(scene, 'Change style', () => {
+        recordOp(ctx, scene.uid, 'set_renderer_styles', { rendId: args.rendId, styles: stylestr }, ['rendId']);
         rend.applyStyles(stylestr);
     });
     return { ok: true };

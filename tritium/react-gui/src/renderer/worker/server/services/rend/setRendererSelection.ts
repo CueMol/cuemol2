@@ -17,6 +17,7 @@ import type { ChangeRendSelKind } from '@shared/types/sceneCtxMenu';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface SetRendererSelectionArgs {
     sceneId: number;
@@ -80,6 +81,10 @@ export function setRendererSelection(
     if (!sel) return { ok: false };
 
     withUndoTxn(scene, 'Set renderer sel', () => {
+        // An empty text (no current selection) has no expression to replay.
+        if (selStr !== '') {
+            recordOp(ctx, scene.uid, 'set_renderer_selection', { rendId: args.rendId, selection: selStr }, ['rendId']);
+        }
         (rend as unknown as MolRenderer).sel = sel as MolSelection;
     });
     return { ok: true, selStr };

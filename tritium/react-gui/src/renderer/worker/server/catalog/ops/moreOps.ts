@@ -8,6 +8,8 @@
 import * as nodePath from 'path'
 import {
   applyRendererStyle,
+  applyRendererStyleList,
+  getRendererStyleEditInfo,
   getRendererStyleEntries,
 } from '@renderer/worker/server/services/rend/rendererStyle'
 import { clearPaintEntries } from '@renderer/worker/server/services/coloring/paintClipboard'
@@ -71,11 +73,46 @@ export const applyRendererStyleOp = defineOp({
   },
 })
 
+export const setRendererStyles = defineOp({
+  name: 'set_renderer_styles',
+  description:
+    'Replace the whole ordered list of named styles a renderer has (what the Edit Style dialog ' +
+    'does), e.g. "DefaultCartoon EgLineThick". Later styles override earlier ones. An empty ' +
+    'list removes them all. To change one style, use apply_renderer_style.',
+  params: {
+    rendId: rendererId('Uid of the renderer.'),
+    styles: string('Style names in order, separated by commas or spaces. Empty for none.'),
+  },
+  mutates: true,
+  describe: (a, n) => (a.styles ? `Set styles of ${n('rendId')}: ${a.styles}` : `Remove the styles of ${n('rendId')}`),
+  expose: { tool: 'style', console: true },
+  group: 'renderers',
+  run(ctx, args, oc) {
+    const info = getRendererStyleEditInfo(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
+    if (!info.ok) return { ok: false, error: NO_RENDERER }
+    const names = args.styles.split(/[,\s]+/).filter((s) => s.length > 0)
+    // A name the renderer can take now, or one it already has.
+    const known = new Set([
+      ...info.currentStyles,
+      ...[...info.typeMatch, ...info.edgeMatch, ...info.coloringMatch].map((e) => e.name),
+    ])
+    const unknown = names.filter((s) => !known.has(s))
+    if (unknown.length > 0) {
+      return { ok: false, error: `No style ${unknown.join(', ')} for that renderer. Call list_renderer_styles for the names.` }
+    }
+    return normalizeServiceResult(
+      applyRendererStyleList(ctx, { sceneId: oc.sceneId, rendId: args.rendId, styleNames: names }),
+      'The styles could not be set.',
+    )
+  },
+})
+
 export const clearPaint = defineOp({
   name: 'clear_paint',
   description: 'Remove every region painted on one renderer with add_paint.',
   params: { rendId: rendererId('Uid of the renderer.') },
   mutates: true,
+  describe: (_a, n) => `Clear paint of ${n('rendId')}`,
   expose: { tool: 'coloring', console: true },
   group: 'coloring',
   run(ctx, args, oc) {
@@ -95,6 +132,7 @@ export const setDefaultColor = defineOp({
     color: color('The colour, e.g. white or #c0c0c0.'),
   },
   mutates: true,
+  describe: (a, n) => `Set default colour of ${n('rendId')} to ${a.color}`,
   expose: { tool: 'coloring', console: true },
   group: 'coloring',
   run(ctx, args, oc) {
@@ -207,6 +245,7 @@ export const focusNode = defineOp({
 export const MORE_OPS = [
   listRendererStyles,
   applyRendererStyleOp,
+  setRendererStyles,
   clearPaint,
   setDefaultColor,
   saveSceneOp,

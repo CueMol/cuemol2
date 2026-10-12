@@ -99,7 +99,7 @@ function clearPickFeedback(view: GUIView): void {
  * shared helper owns that and the undo transaction, so the mouse tool and the
  * AI agent's `measure_geometry` draw into the same label set.
  */
-function defineMeasureLabel(view: GUIView, buf: PickBuffer, target: string | undefined): string {
+function defineMeasureLabel(ctx: WorkerContext, view: GUIView, buf: PickBuffer, target: string | undefined): string {
     if (hasDegenerateAtoms(buf.mode, buf.picks)) {
         return 'Atom pick canceled (same atom).';
     }
@@ -108,7 +108,7 @@ function defineMeasureLabel(view: GUIView, buf: PickBuffer, target: string | und
     const mol = scene.getObject(buf.picks[0].objId) as MolCoord;
     if (!mol) return 'Measure: target molecule not found.';
 
-    appendMeasureLabel(scene, mol, buf.mode, buf.picks, target ?? '');
+    appendMeasureLabel(scene, mol, buf.mode, buf.picks, target ?? '', ctx);
     return `${measureLabelNoun(buf.mode)} label is defined.`;
 }
 
@@ -157,7 +157,7 @@ export function measurePick(ctx: WorkerContext, args: MeasurePickArgs): MeasureP
 
     // Sequence complete: create the label, then reset picks and crosshairs.
     if (buf.picks.length >= measureAtomCount(buf.mode)) {
-        const message = defineMeasureLabel(view, buf, args.target);
+        const message = defineMeasureLabel(ctx, view, buf, args.target);
         buf.picks = [];
         clearPickFeedback(view);
         writeMsgLog(ctx, message);

@@ -20,7 +20,11 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { AtomIntrRenderer } from '@cuemol/core/src/wrappers/AtomIntrRenderer';
+import type { MolAtom } from '@cuemol/core/src/wrappers/MolAtom';
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
+import type { AtomSpec } from '@renderer/worker/server/catalog/params';
 import { withUndoTxn, undoTxnResult } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 /** Renderer type name for distance / angle / torsion / interaction labels. */
@@ -59,6 +63,39 @@ export function measureLabelNoun(mode: MeasureMode): string {
 }
 
 /**
+ * An atom of `mol` by its chain, residue and atom name, as the atom-taking ops
+ * name it; null when that name does not lead back to the same atom (an
+ * alternate conformation, say), so the op could not find it again.
+ */
+export function atomSpecOf(mol: MolCoord, atomId: number): AtomSpec | null {
+    try {
+        const atom = mol.getAtomByID(atomId) as MolAtom | null;
+        if (!atom) return null;
+        const spec: AtomSpec = { chain: String(atom.chainName), resid: String(atom.residIndex), atomName: String(atom.name) };
+        const back = mol.getAtom(spec.chain, spec.resid, spec.atomName) as MolAtom | null;
+        return back && back.id === atomId ? spec : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * The `measure_geometry` call that draws the same label: only when every atom
+ * is on `mol` (the op takes one molecule) and can be named.
+ */
+function recordMeasure(ctx: WorkerContext, scene: Scene, mol: MolCoord, atoms: MeasureAtomRef[], label: string): void {
+    const molId = mol.uid;
+    const specs: AtomSpec[] = [];
+    for (const a of atoms) {
+        if (a.objId !== molId) return;
+        const spec = atomSpecOf(mol, a.atomId);
+        if (!spec) return;
+        specs.push(spec);
+    }
+    recordOp(ctx, scene.uid, 'measure_geometry', { molId, atoms: specs, draw: true, label }, ['molId']);
+}
+
+/**
  * Draw a measure label on `mol`, in its own undo transaction.
  *
  * Reuses the atomintr renderer named `targetName` when the molecule already
@@ -69,6 +106,8 @@ export function measureLabelNoun(mode: MeasureMode): string {
  * passes its object uid, so a measurement may span molecules (UXP parity).
  *
  * @param atoms - exactly `measureAtomCount(mode)` entries, first one on `mol`.
+ * @param ctx - given by a GUI caller, so the label is recorded in the action
+ *   log as the `measure_geometry` that draws it.
  */
 export function appendMeasureLabel(
     scene: Scene,
@@ -76,9 +115,11 @@ export function appendMeasureLabel(
     mode: MeasureMode,
     atoms: MeasureAtomRef[],
     targetName: string = ATOMINTR_DEFAULT_TARGET_NAME,
+    ctx?: WorkerContext,
 ): void {
     const name = targetName.trim() || ATOMINTR_DEFAULT_TARGET_NAME;
     withUndoTxn(scene, `Define ${measureLabelNoun(mode)} Label`, () => {
+        if (ctx) recordMeasure(ctx, scene, mol, atoms, name);
         let rend = mol.getRendererByNameType(name, ATOMINTR_TYPE) as AtomIntrRenderer | null;
         if (!rend) {
             rend = mol.createRenderer(ATOMINTR_TYPE) as AtomIntrRenderer;

@@ -27,6 +27,7 @@ export const fetchPdb = defineOp({
     selection: optional(selection('Draw only this selection. Null draws everything.')),
   },
   mutates: true,
+  describe: (a) => `Fetch ${a.pdbId}${a.rendererType !== null ? ` as ${a.rendererType}` : ''}`,
   expose: { tool: 'core', console: true },
   group: 'files',
   aliases: [

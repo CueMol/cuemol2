@@ -299,6 +299,12 @@ Call \`list_node_props\` first: the property name, its type, and the allowed val
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"selection":{"type":"string","description":"Selection expression the renderer should draw."}},"required":["rendId","selection"],"additionalProperties":false}",
   },
   {
+    "description": "Replace the whole ordered list of named styles a renderer has (what the Edit Style dialog does), e.g. "DefaultCartoon EgLineThick". Later styles override earlier ones. An empty list removes them all. To change one style, use apply_renderer_style.",
+    "mutates": true,
+    "name": "set_renderer_styles",
+    "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the renderer."},"styles":{"type":"string","description":"Style names in order, separated by commas or spaces. Empty for none."}},"required":["rendId","styles"],"additionalProperties":false}",
+  },
+  {
     "description": "Redraw one renderer as another type (for example cartoon to ribbon), keeping its name, selection and place in the list. The renderer is replaced, so it gets a NEW uid, which is returned; use that one from now on. Use this rather than creating a second renderer when the user wants the same thing drawn differently.",
     "mutates": true,
     "name": "set_renderer_type",

@@ -18,6 +18,7 @@ import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { resolveMolTool } from '@renderer/worker/server/services/molops/molAnlTool';
 import { undoTxnResult } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 export interface ChangeResidueIndexArgs {
@@ -47,6 +48,13 @@ export function changeResidueIndex(
     // renumResIndex / shiftResIndex return a boolean success flag:
     // false -> rollback (no commit).
     return undoTxnResult(scene, 'Change residue index', () => {
+        recordOp(ctx, scene.uid, 'renumber_residues', {
+            molId: args.objId,
+            mode: args.bshift ? 'shift' : 'start',
+            value: args.value,
+            selection: args.selStr.trim() === '' ? null : args.selStr,
+            renumber: args.renumber,
+        }, ['molId']);
         const m = mol as unknown as MolCoord;
         const s = sel as unknown as MolSelection;
         const done = args.renumber

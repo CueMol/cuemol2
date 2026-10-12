@@ -11,6 +11,8 @@ import { undoTxnResult } from '../withUndoTxn';
 import { streamFetchToReader } from '@renderer/worker/server/services/helpers/streamFetchToReader';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { pickMapUrl } from '@renderer/worker/shared/pdbUrls';
 const log = console;
 
 export type DensityMapReaderName = 'mmcifmap' | 'mtzmap';
@@ -52,6 +54,23 @@ function configureMtzColumns(
     }
 }
 
+/**
+ * Record the download as `fetch_map`, which only fetches from the RCSB
+ * validation reports; a map from another server (EBI MTZ) is not recorded.
+ */
+function recordFetchMap(ctx: WorkerContext, sceneId: number, args: StreamLoadDensityMapArgs): void {
+    const m = /\/validation_reports\/[0-9a-z]{2}\/([0-9][0-9a-z]{3})\//i.exec(args.url);
+    if (!m) return;
+    const pdbId = m[1].toLowerCase();
+    const spec = pickMapUrl(pdbId, 'RCSB_CIF', args.mapType);
+    if (spec.url !== args.url || spec.readerName !== args.readerName || spec.gzip !== args.gzip) return;
+    recordOp(ctx, sceneId, 'fetch_map', {
+        pdbId,
+        mapType: args.mapType,
+        name: args.objectName === `${pdbId}_${args.mapType}` ? null : args.objectName,
+    });
+}
+
 export async function streamLoadDensityMap(
     ctx: WorkerContext,
     args: StreamLoadDensityMapArgs,
@@ -91,6 +110,7 @@ export async function streamLoadDensityMap(
     if (!view) return fail(`view ${args.viewId} not found`, 'not-found');
 
     return undoTxnResult(scene, 'Get density map', () => {
+        recordFetchMap(ctx, scene.uid, args);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (obj as any).name = args.objectName;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

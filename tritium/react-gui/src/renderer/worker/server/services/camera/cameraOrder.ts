@@ -16,6 +16,7 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { undoTxnResult } from '../withUndoTxn';
 import { fail, ok, type Result } from '@renderer/worker/shared/result';
 import { CURRENT_CAMERA_NAME, type CameraEntry } from '@renderer/worker/shared/cameraTypes';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /** Undo label of a drag-and-drop reorder in the Camera pane. */
 export const REORDER_CAMERAS_UNDO_LABEL = 'Reorder cameras';
@@ -81,6 +82,28 @@ export function listCameras(ctx: WorkerContext, args: ListCamerasArgs): ListCame
 
 // --- reorderCameras ---
 
+/**
+ * The `move_camera` steps that turn `from` into `to` (the same names in
+ * another order), as `[name, index from 0]`. A single drag is one step;
+ * any other order is rebuilt front to back.
+ */
+function cameraMoves(from: readonly string[], to: readonly string[]): [string, number][] {
+    for (const name of from) {
+        const a = from.filter((n) => n !== name);
+        const b = to.filter((n) => n !== name);
+        if (a.every((n, i) => n === b[i])) return [[name, to.indexOf(name)]];
+    }
+    const cur = [...from];
+    const moves: [string, number][] = [];
+    to.forEach((name, index) => {
+        if (cur[index] === name) return;
+        cur.splice(cur.indexOf(name), 1);
+        cur.splice(index, 0, name);
+        moves.push([name, index]);
+    });
+    return moves;
+}
+
 export interface ReorderCamerasArgs {
     sceneId: number;
     /** The complete pane order after the drop, top row first. */
@@ -120,6 +143,10 @@ export function reorderCameras(ctx: WorkerContext, args: ReorderCamerasArgs): Re
     if (unchanged) return ok({ names: [...pinned, ...wanted], changed: false });
 
     return undoTxnResult(scene, REORDER_CAMERAS_UNDO_LABEL, () => {
+        // move_camera numbers the cameras as list_cameras does, pinned row included.
+        for (const [name, index] of cameraMoves(orderable, wanted)) {
+            recordOp(ctx, scene.uid, 'move_camera', { name, to: pinned.length + index + 1 });
+        }
         wanted.forEach((name, index) => {
             // getCamera returns a copy (vis settings included); writing it back
             // through setCamera is what records the undo info and fires

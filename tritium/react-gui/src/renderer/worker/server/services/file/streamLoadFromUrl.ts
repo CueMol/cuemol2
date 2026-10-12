@@ -11,6 +11,8 @@ import { streamFetchToReader, cancelStream } from '@renderer/worker/server/servi
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls';
 
 const log = console;
 
@@ -32,6 +34,43 @@ export interface CancelStreamLoadArgs {
 
 export interface CancelStreamLoadResult {
     ok: boolean;
+}
+
+/**
+ * The PDB entry and format `fetch_pdb` would download this URL as, or null
+ * when the URL is not one it builds (another server, an assembly, any URL).
+ */
+function fetchPdbSpec(args: StreamLoadFromUrlArgs): { pdbId: string; format: 'mmcif' | 'pdb' } | null {
+    const m = /\/download\/([0-9][0-9a-z]{3})\.(cif|pdb)$/i.exec(args.url);
+    if (!m) return null;
+    const pdbId = m[1].toLowerCase();
+    const format = args.readerName === 'pdb' ? 'pdb' : 'mmcif';
+    const spec = pickCoordUrl(pdbId, format === 'pdb' ? 'RCSB_PDB' : 'RCSB_CIF');
+    return spec.url === args.url && spec.readerName === args.readerName ? { pdbId, format } : null;
+}
+
+/**
+ * Record the download as `fetch_pdb`, with a `rename_node` when the object
+ * ends up named other than the entry. Only the renderer type and selection of
+ * the renderer options are carried (as `loadObject` records `load_file`).
+ * Call after the object is added under `args.objectName`, before any rename.
+ */
+function recordFetchPdb(ctx: WorkerContext, sceneId: number, objId: number, args: StreamLoadFromUrlArgs): void {
+    const fetch = fetchPdbSpec(args);
+    // fetch_pdb names the object after the entry; a rename is recorded by the
+    // path the object has now, so it must have that name here.
+    if (!fetch || args.objectName !== fetch.pdbId) return;
+    const rend = args.options.renderer;
+    recordOp(ctx, sceneId, 'fetch_pdb', {
+        pdbId: fetch.pdbId,
+        format: fetch.format,
+        rendererType: rend.presetName ? null : rend.rendererType || null,
+        selection: rend.selectionEnabled ? rend.selection : null,
+    });
+    const finalName = rend.objectName || args.objectName;
+    if (finalName !== fetch.pdbId) {
+        recordOp(ctx, sceneId, 'rename_node', { nodeId: objId, nodeType: 'object', name: finalName }, ['nodeId']);
+    }
 }
 
 export async function streamLoadFromUrl(
@@ -69,6 +108,7 @@ export async function streamLoadFromUrl(
         (obj as any).name = args.objectName;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (scene as any).addObject(obj);
+        recordFetchPdb(ctx, scene.uid, (obj as unknown as { uid: number }).uid, args);
 
         if (args.options.renderer.objectName) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

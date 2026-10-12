@@ -10,6 +10,7 @@ import type { HitTestResult } from '@renderer/types';
 import { withUndoTxn } from '../withUndoTxn';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { quoteSelName } from '@renderer/worker/server/services/helpers/selName';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 // ---- internal helpers ----
 
@@ -323,6 +324,7 @@ export function naviResidSel(ctx: WorkerContext, args: NaviResidSelArgs): NaviRe
         const sel = rrs.toSel(mol);
         mol.sel = sel;
         selStr = String(sel.toString());
+        recordOp(ctx, scene.uid, 'set_mol_selection', { molId: raw.obj_id, selection: selStr }, ['molId']);
     });
 
     return { handled: true, objId: raw.obj_id, atomId: raw.atom_id, selStr };

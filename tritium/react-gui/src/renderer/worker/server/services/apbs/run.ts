@@ -26,6 +26,7 @@ import {
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import type { ApbsJobEntry } from './types';
 import { POLL_MS, TASK_QUEUED, TASK_RUNNING } from './types';
 import { cleanupDir, emit, failJob, jobs, nextJobId, stopTimer } from './jobs';
@@ -40,6 +41,35 @@ import {
     writePqr,
 } from './inputFiles';
 import { uniqName } from './naming';
+
+// The fixed inputs of calc_elepot (the dialog's defaults).
+const OP_TEMPERATURE = 298.15;
+const OP_WATER_DIELEC = 78.54;
+const OP_PROT_DIELEC = 2.0;
+
+/**
+ * The calc_elepot arguments of each job, recorded when its map is loaded
+ * (the txn that adds it). Absent for a job the op cannot reproduce.
+ */
+const jobOpArgs = new WeakMap<ApbsJobEntry, Record<string, unknown>>();
+
+/** The calc_elepot arguments that start the same job, or null when it has none. */
+function calcElepotArgs(args: CalcApbsStartArgs, elepotName: string): Record<string, unknown> | null {
+  if (args.chargeMethod === 'internal' && args.useHydrogen) return null;
+  if (positiveOr(args.temperature, OP_TEMPERATURE) !== OP_TEMPERATURE) return null;
+  if (positiveOr(args.waterDielec, OP_WATER_DIELEC) !== OP_WATER_DIELEC) return null;
+  if (positiveOr(args.protDielec, OP_PROT_DIELEC) !== OP_PROT_DIELEC) return null;
+  return {
+    molId: args.objId,
+    selection: args.selStr.trim() !== '' ? args.selStr : null,
+    name: elepotName,
+    method: args.chargeMethod,
+    forceField: args.forceField,
+    gridSpacing: args.gridSpacing,
+    nonLinear: args.useNpbe,
+  };
+}
+
 /** Load the APBS `.dx` output as an ElePotMap object under one undo txn. */
 export function loadPotFile(
   ctx: WorkerContext,
@@ -53,6 +83,8 @@ export function loadPotFile(
 
   let newObjId = -1;
   withUndoTxn(scene, 'Open APBS pot file', () => {
+    const opArgs = jobOpArgs.get(entry);
+    if (opArgs) recordOp(ctx, scene.uid, 'calc_elepot', opArgs, ['molId']);
     const newObj = reader.createDefaultObj() as unknown as CueMolObject;
     reader.attach(newObj);
     reader.read();
@@ -241,6 +273,8 @@ export function calcApbsStart(
     cancelled: false,
   };
   jobs.set(jobId, entry);
+  const opArgs = calcElepotArgs(args, elepotName);
+  if (opArgs) jobOpArgs.set(entry, opArgs);
   emit(ctx, {
     type: 'progress',
     jobId,

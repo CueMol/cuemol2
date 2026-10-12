@@ -38,6 +38,7 @@ export const calcElepot = defineOp({
     nonLinear: optional(boolean('Solve the non-linear Poisson-Boltzmann equation. Null is false (linear).')),
   },
   mutates: true,
+  describe: (_a, n) => `Calculate electrostatic potential of ${n('molId')}`,
   expose: { tool: false, console: true, mcp: true },
   group: 'surfaces',
   async run(ctx, args, oc) {

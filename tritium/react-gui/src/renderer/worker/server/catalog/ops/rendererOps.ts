@@ -151,6 +151,7 @@ export const setRendererSelection = defineOp({
     selection: selection('Selection expression the renderer should draw.'),
   },
   mutates: true,
+  describe: (a, n) => `Draw ${a.selection} in ${n('rendId')}`,
   expose: { tool: 'core', console: true },
   group: 'renderers',
   run(ctx, args, oc) {
@@ -208,6 +209,7 @@ export const setRendererColoringOp = defineOp({
     ),
   },
   mutates: true,
+  describe: (a, n) => `Colour ${n('rendId')} by ${a.styleName ?? a.mode}`,
   expose: { tool: 'core', console: true },
   group: 'coloring',
   run(ctx, args, oc) {
@@ -255,6 +257,7 @@ export const paintSelection = defineOp({
     ),
   },
   mutates: true,
+  describe: (a, n) => `Paint ${a.selection} ${a.color} on ${n('rendId')}`,
   expose: { tool: 'core', console: true },
   group: 'coloring',
   run(ctx, args, oc): OpOutcome {

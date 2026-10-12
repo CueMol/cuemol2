@@ -370,7 +370,7 @@ render job は GUI の Render パネルと同じ in-process job で走る。待�
 | `set_secondary_structure` | molops | yes | `reassignProt2ndry` |
 | `show_symmetry` | xtal | yes | `showSymmRenderer` / `showUnitCellRenderer` |
 | `define_selection` | selection | yes | `saveSelDef` |
-| `list_renderer_styles` / `apply_renderer_style` | style | apply のみ yes | `rendererStyle` |
+| `list_renderer_styles` / `apply_renderer_style` / `set_renderer_styles` | style | apply と set のみ yes | `rendererStyle` |
 | `animate` | anim | no | `anim/transport` (`play` / `stop` / `goTime`) |
 
 core は 21 件。OpenAI の推奨 20 本を意図的に 1 本超えている。`tools/index.test.ts` の `MAX_TOOLS`

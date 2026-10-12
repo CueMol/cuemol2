@@ -42,6 +42,7 @@ import type { OpOutcome } from '../op'
 import { atoms, boolean, enumOf, integer, moleculeId, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
 import type { AtomSpec } from '../params'
 import { outputPath } from '../outputFile'
+import { atomList } from '../cmlFormat'
 
 const EXPOSE = { tool: false, console: true, mcp: true } as const
 
@@ -112,6 +113,7 @@ export const changeResid = defineOp({
     renumber: optional(boolean('Number consecutively, closing gaps. Null is false.')),
   },
   mutates: true,
+  describe: (a, n) => (a.mode === 'shift' ? `Shift residue numbers of ${n('molId')} by ${a.value}` : `Number residues of ${n('molId')} from ${a.value}`),
   expose: EXPOSE,
   group: 'molecule',
   format: () => [],
@@ -160,6 +162,7 @@ export const addBond = defineOp({
   description: 'Add a bond between two atoms of a molecule (the Add bond tool).',
   params: { molId: moleculeId('Uid of the molecule.'), atoms: atoms(BOND_ATOMS) },
   mutates: true,
+  describe: (a, n) => `Add bond ${atomList(a.atoms, ' - ')} in ${n('molId')}`,
   expose: EXPOSE,
   group: 'molecule',
   format: () => [],
@@ -181,6 +184,7 @@ export const removeBond = defineOp({
   description: 'Remove the bond between two atoms of a molecule.',
   params: { molId: moleculeId('Uid of the molecule.'), atoms: atoms(BOND_ATOMS) },
   mutates: true,
+  describe: (a, n) => `Remove bond ${atomList(a.atoms, ' - ')} in ${n('molId')}`,
   expose: EXPOSE,
   group: 'molecule',
   format: () => [],
@@ -211,6 +215,7 @@ export const setSymmetry = defineOp({
     spaceGroup: integer('Space group number, e.g. 19 for P 21 21 21.'),
   },
   mutates: true,
+  describe: (a, n) => `Set symmetry of ${n('molId')}${a.spaceGroup !== null ? `: space group ${a.spaceGroup}` : ''}`,
   expose: EXPOSE,
   group: 'molecule',
   format: () => [],
@@ -236,6 +241,7 @@ export const createGroup = defineOp({
     name: optional(string('Name of the group. Null picks group1, group2, ...')),
   },
   mutates: true,
+  describe: (a, n) => `New group${a.name !== null ? ` ${a.name}` : ''} in ${n('objId')}`,
   expose: EXPOSE,
   group: 'renderers',
   run(ctx, args, oc) {
@@ -250,6 +256,7 @@ export const genSurfaceObj = defineOp({
   description: 'Turn the contour surface of a density map (an isosurf renderer) into a surface object of its own (Generate surface obj).',
   params: { rendId: rendererId('Uid of the isosurf renderer.') },
   mutates: true,
+  describe: (_a, n) => `Make a surface object from ${n('rendId')}`,
   expose: EXPOSE,
   group: 'maps',
   run(ctx, args, oc) {
@@ -267,6 +274,7 @@ export const regenSurface = defineOp({
     density: optional(real('Points per angstrom. Null keeps the current density.')),
   },
   mutates: true,
+  describe: (_a, n) => `Recompute surface ${n('surfId')}`,
   expose: EXPOSE,
   group: 'surfaces',
   format: () => [],
@@ -307,6 +315,7 @@ export const removeInteraction = defineOp({
     number: integer('Its number in list_interactions (from 1).'),
   },
   mutates: true,
+  describe: (a, n) => `Remove interaction ${a.number} from ${n('rendId')}`,
   expose: EXPOSE,
   group: 'analysis',
   format: () => [],
@@ -365,6 +374,7 @@ export const updatePaint = defineOp({
     color: optional(string('New colour. Null keeps it.')),
   },
   mutates: true,
+  describe: (a, n) => `Change paint entry ${a.number} of ${n('rendId')}`,
   expose: EXPOSE,
   group: 'coloring',
   format: () => [],
@@ -387,6 +397,7 @@ export const removePaint = defineOp({
   description: 'Remove one paint entry.',
   params: { rendId: rendererId('Uid of the renderer.'), number: integer(PAINT_NUMBER) },
   mutates: true,
+  describe: (a, n) => `Remove paint entry ${a.number} of ${n('rendId')}`,
   expose: EXPOSE,
   group: 'coloring',
   format: () => [],
@@ -409,6 +420,7 @@ export const movePaint = defineOp({
     to: integer('The number it should have.'),
   },
   mutates: true,
+  describe: (a, n) => `Move paint entry ${a.number} to ${a.to} on ${n('rendId')}`,
   expose: EXPOSE,
   group: 'coloring',
   format: () => [],
@@ -436,6 +448,7 @@ export const colorByElepot = defineOp({
     high: optional(real('Potential (kT/e) drawn in the high colour. Null keeps it.')),
   },
   mutates: true,
+  describe: (_a, n) => `Colour ${n('rendId')} by potential`,
   expose: EXPOSE,
   group: 'coloring',
   format: () => [],

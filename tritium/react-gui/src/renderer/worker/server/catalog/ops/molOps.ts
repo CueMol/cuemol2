@@ -74,6 +74,7 @@ export const makeSurface = defineOp({
     density: optional(real(`Points per angstrom. Null uses ${SURF_DENSITY}; higher is finer and slower.`)),
   },
   mutates: true,
+  describe: (a, n) => `Make surface${a.name !== null ? ` ${a.name}` : ''} of ${n('molId')}`,
   expose: { tool: 'molops', console: true },
   group: 'surfaces',
   run(ctx, args, oc) {
@@ -99,6 +100,7 @@ export const deleteAtoms = defineOp({
     selection: selection('The atoms to delete, e.g. resn HOH.'),
   },
   mutates: true,
+  describe: (a, n) => `Delete ${a.selection} from ${n('molId')}`,
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
@@ -119,6 +121,7 @@ export const renameChain = defineOp({
     chain: string('The new chain name.'),
   },
   mutates: true,
+  describe: (a, n) => `Rename chain of ${a.selection} in ${n('molId')} to ${a.chain}`,
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
@@ -141,6 +144,7 @@ export const mergeMolecules = defineOp({
     copy: optional(boolean('True copies and leaves the source as it is; false (default) moves.')),
   },
   mutates: true,
+  describe: (a, n) => `${a.copy ? 'Copy' : 'Move'} ${a.selection} of ${n('fromId')} into ${n('toId')}`,
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
@@ -170,6 +174,7 @@ export const setSecondaryStructure = defineOp({
     helixGapAngle: optional(real('Recomputing: fill gaps in a helix up to this angle in degrees (the dialog offers 120). Null or 0 does not fill.')),
   },
   mutates: true,
+  describe: (a, n) => (a.type === null ? `Recompute secondary structure of ${n('molId')}` : `Set ${a.selection ?? 'all'} of ${n('molId')} to ${a.type}`),
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
@@ -210,6 +215,7 @@ export const showSymmetry = defineOp({
     unitCell: optional(boolean('True also draws the unit cell box.')),
   },
   mutates: true,
+  describe: (a, n) => (a.extent === null ? `Show symmetry mates of ${n('molId')} in the unit cell` : `Show symmetry mates of ${n('molId')} within ${a.extent} A`),
   expose: { tool: 'xtal', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
@@ -235,6 +241,7 @@ export const saveSelection = defineOp({
     selection: selection('The expression it stands for.'),
   },
   mutates: true,
+  describe: (a) => `Define selection ${a.name}`,
   expose: { tool: 'selection', console: true },
   group: 'selections',
   aliases: [{ name: 'define', summary: 'Name a selection: define site1, resid 10:20' }],

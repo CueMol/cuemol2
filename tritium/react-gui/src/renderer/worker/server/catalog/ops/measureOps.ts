@@ -25,6 +25,7 @@ import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import type { AtomSpec } from '../params'
 import { atoms, boolean, moleculeId, string } from '../params'
+import { atomList } from '../cmlFormat'
 
 /** What `measure_geometry` computes, by how many atoms it was given. */
 const MODE_BY_COUNT: Record<number, MeasureMode> = {
@@ -62,6 +63,7 @@ export const measureGeometry = defineOp({
   // as mutating is the safe way round: a transaction that drew a label and is
   // then rolled back would take the label with it.
   mutates: true,
+  describe: (a, n) => `Measure ${atomList(a.atoms, ' - ')} in ${n('molId')}`,
   expose: { tool: 'analysis', console: true },
   group: 'analysis',
   run(ctx, args, oc): OpOutcome {

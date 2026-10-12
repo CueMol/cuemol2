@@ -120,6 +120,19 @@ helper)。
 | 背景色 (`scene/sceneBgColor.ts`、メニューの背景色) | scene の `set_node_prop bgcolor` (色名のまま) |
 | `applyRendererStyle` (Style サブメニュー) | `apply_renderer_style` |
 | scene tree のまとめて表示・非表示 / 削除 (`sceneTree/bulkSceneNodeOps.ts`) | node ごとの `set_visible` / `delete_node` (削除は破棄の直前に記録) |
+| `applyRendererStyleList` (Edit Style ダイアログ) | `set_renderer_styles` (style の並び全体を `,` 区切りで) |
+| renderer の着色 (`coloring/applyColoring.ts`、`colorTargets.ts`、`multiGrad.ts`) | `set_renderer_coloring` / `set_elepot_coloring` / `set_default_color`。coloring の target・elepot の property・multigrad の color map は `set_node_prop`。object の着色は記録しない (op が無い) |
+| paint の表 (`coloring/paintCrud.ts`、`paintClipboard.ts`) | `add_paint` / `set_paint` / `remove_paint` (複数行は 1 行ずつ) / `move_paint` / `clear_paint`。番号は 1 始まり |
+| 分子の編集 (`molops/`) | `rename_chain`、`renumber_residues`、`delete_atoms`、`merge_molecules`、`set_secondary_structure`、`create_surface` / `recalc_surface` (backend が auto のとき)、`cut_surface`、`set_symmetry`、`show_symmetry`、`analyze_interactions` (1 分子・1 selection のとき) |
+| morph (`morph/morphMol.ts`) | `add_morph_frame` / `remove_morph_frame` |
+| APBS (`apbs/run.ts`) | `calc_elepot`。pot file を読む txn で記録する。温度・誘電率が op の固定値と違うとき、内部電荷で水素を使うときは記録しない |
+| 選択 (`select/`、3D view の右クリックメニュー、矩形・lasso 選択) | `set_mol_selection` (最終的な selection の文字列)。名前付き selection の保存は `define_selection` |
+| renderer (`rend/`) | `create_group`、`create_surface_from_map`、`set_renderer_selection`、`remove_interaction` |
+| アニメーション (`anim/`) | `add_anim` / `remove_anim` / `move_anim` / `set_anim_time` / `set_anim_prop`。要素は名前 (一意のとき) か 1 始まりの番号で指す (uid は再生で変わるので使わない) |
+| camera (`camera/`) | `save_camera` / `delete_camera` / `rename_camera` / `move_camera`。visibility 付きの camera の適用は `apply_camera` |
+| style set の selection 定義 (`style/styleSetEdit.ts`) | `define_selection` (それが書く style set のときだけ) |
+| ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | `fetch_pdb` / `fetch_map` (RCSB の標準の URL のときだけ) |
+| 計測ツールと結合の編集 (`navi/`) | `measure_geometry` / `add_bond` / `remove_bond` |
 
 表に無い service の txn は、label だけを持つ行になる。`list_actions` ではこの行に
 `# no op recorded for this edit` と出し、qax には `<note>` として書く。
@@ -129,10 +142,13 @@ helper)。
 - PyMOL dialect のうち、service を通らずに C++ を直接変更するもの。例: `show sticks` の
   `applyStyles`、`label`、`set_view` の回転、`orient`、`center`、`frame`。そのコマンドの行には、
   service を通った部分の op だけが入る。
-- paint と coloring の変更 (対応する op が無い)。
-- Edit Style ダイアログ (`applyRendererStyleList`)。`style` property は readonly
-  (`src/qsys/Renderer.qif`) なので、記録には新しい op が要る。
-- camera など、上の表に無い残りの service。
+- 対応する op が無いもの: object の着色、paint の行の挿入 (`addPaintEntry`) と貼り付け、
+  coloring scheme の property、multigrad の node、symmetry copy の作成、unit cell だけの表示、
+  原子名ラベルの切り替え、scene tree の並べ替え、camera の visibility flag と camera ファイルの
+  読み込み、style set の作成・削除・読み込みと色・style の編集、render settings、node の貼り付け、
+  アニメーション要素の property の reset。
+- 記録しても再生で同じにならないもの: selection どうしの距離計測、RCSB 以外からの取得、
+  backend を指定した surface。
 - GUI の renderer 作成の、type・name・selection 以外のオプション。ファイル読み込みの reader
   オプション。
 - reconcile で作り直した行は、op の中身を失う (label だけになる)。

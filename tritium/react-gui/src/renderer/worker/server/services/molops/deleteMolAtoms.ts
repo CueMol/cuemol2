@@ -16,6 +16,7 @@ import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { resolveMolTool } from '@renderer/worker/server/services/molops/molAnlTool';
 import { undoTxnResult } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 export interface DeleteMolAtomsArgs {
@@ -37,12 +38,16 @@ export function deleteMolAtoms(
     const { scene, mol, sel, mgr } = t;
 
     // deleteAtoms returns a boolean success flag: false -> rollback (no commit).
-    return undoTxnResult(scene, 'Delete atoms', () =>
-        mgr.deleteAtoms(
+    return undoTxnResult(scene, 'Delete atoms', () => {
+        // delete_atoms refuses an empty selection (it would delete every atom).
+        if (args.selStr.trim() !== '') {
+            recordOp(ctx, scene.uid, 'delete_atoms', { molId: args.objId, selection: args.selStr }, ['molId']);
+        }
+        return mgr.deleteAtoms(
             mol as unknown as MolCoord,
             sel as unknown as MolSelection,
         )
             ? ok()
-            : fail('atom deletion was rejected', 'native'),
-    );
+            : fail('atom deletion was rejected', 'native');
+    });
 }

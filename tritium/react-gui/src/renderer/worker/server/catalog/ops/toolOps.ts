@@ -39,6 +39,7 @@ export const cutSurface = defineOp({
     density: optional(real(`Cross-section mesh density per angstrom. Null uses ${CUT_DENSITY}.`)),
   },
   mutates: true,
+  describe: (a, n) => `Cut ${n('surfId')} by the slab plane (${a.mode})`,
   expose: { tool: false, console: true, mcp: true },
   group: 'surfaces',
   run(ctx, args, oc) {
@@ -90,6 +91,7 @@ export const morphAdd = defineOp({
     before: optional(integer('Insert before this frame, by its number in list_morph_frames (from 1). Null appends.')),
   },
   mutates: true,
+  describe: (a, n) => `Add morph frame to ${n('molId')} from ${a.file ?? n('fromMolId')}`,
   expose: { tool: false, console: true, mcp: true },
   group: 'animation',
   run(ctx, args, oc) {
@@ -128,6 +130,7 @@ export const morphRemove = defineOp({
     frame: integer('The frame\'s number in list_morph_frames (from 1).'),
   },
   mutates: true,
+  describe: (a, n) => `Remove morph frame ${a.frame} of ${n('molId')}`,
   expose: { tool: false, console: true, mcp: true },
   group: 'animation',
   run(ctx, args, oc) {
