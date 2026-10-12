@@ -14,9 +14,9 @@ op ごとの記録と qax での再生は実装済み ([action-log.md](../archit
 
 | 項目 | 内容 |
 |---|---|
-| Action pane (GUI) | action log の行を一覧・展開・範囲選択し、qax で保存 / コマンド行としてコピーする pane。plugin の構成、push channel、undo dropdown との関係を別の plan で詰める |
+| 保存した action / preset の pane | Actions view (History pane の隣) に、保存した qax と user 環境で使える preset の一覧と実行 UI を足す。History pane の仕様は [action-log.md](../architecture/action-log.md) §5 |
 | マクロ (`<macro>`) | op の組を名前付きの action として登録し、型付きの引数 (`<param>`、`<arg param="...">`) を持つ関数マクロとして呼ぶ。qax v1 では予約のみ |
-| 記録の対応表の拡充 | paint・coloring、GUI の renderer 作成と file 読み込みのオプション、PyMOL dialect で service を迂回して C++ を直接変更するコマンド (`label`、`set_view` の回転、`orient` など) を op として記録する |
+| 記録の対応表の拡充 | paint・coloring、camera など対応表に無い残りの service、Edit Style ダイアログ (readonly の `style` property を書く新しい op が要る)、GUI の renderer 作成と file 読み込みのオプション、PyMOL dialect で service を迂回して C++ を直接変更するコマンド (`label`、`set_view` の回転、`orient` など) を op として記録する |
 | undo 履歴の永続化 | action log を scene と一緒に保存するか、別ファイルにするか |
 | qax の C++ 移行 | コマンド系とあわせて qax の読み書きを C++ に移す。golden file で同じ形式を検証する |
 | context 参照の ref | 意味型の ref で「アクティブな object」「現在の selection」を指せるようにする |

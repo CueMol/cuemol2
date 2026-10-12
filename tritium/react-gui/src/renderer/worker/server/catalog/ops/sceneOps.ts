@@ -71,6 +71,7 @@ export const setVisible = defineOp({
     visible: boolean('True to show, false to hide.'),
   },
   mutates: true,
+  describe: (a, n) => `${a.visible ? 'Show' : 'Hide'} ${n('nodeId')}`,
   expose: { tool: 'core', console: true },
   group: 'nodes',
   aliases: [
@@ -102,6 +103,7 @@ export const deleteNode = defineOp({
     nodeType: enumOf(TREE_NODE_TYPES, 'What nodeId refers to. Must match what get_scene_state reported.'),
   },
   mutates: true,
+  describe: (_a, n) => `Delete ${n('nodeId')}`,
   expose: { tool: 'core', console: true },
   group: 'nodes',
   aliases: [{ name: 'delete', summary: 'Delete an object, renderer or renderer group.' }],
@@ -121,6 +123,7 @@ export const renameNode = defineOp({
     name: string('The new name. Not empty; a renderer group name must be unused in the scene.'),
   },
   mutates: true,
+  describe: (a, n) => `Rename ${n('nodeId')} to ${a.name}`,
   expose: { tool: 'core', console: true },
   group: 'nodes',
   aliases: [{ name: 'rename', summary: 'Rename an object, renderer or renderer group: rename 1crn, mol1' }],

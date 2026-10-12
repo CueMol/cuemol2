@@ -58,6 +58,12 @@ export type ActionEntry = OpEntry | NoteEntry
 
 /** One undo transaction. */
 export interface ActionRow {
+  /**
+   * Unique in the session and never reused, so a row can be named while
+   * rows before or after it come and go (a commit drops the redo side). A
+   * row rebuilt by `reconcile` gets a new one.
+   */
+  id: number
   /** The undo stack's description of it. */
   label: string
   /** Unknown when the row was rebuilt from the stack alone. */
@@ -86,6 +92,9 @@ interface SceneLog {
 }
 
 const logs = new Map<number, SceneLog>()
+
+/** The last row id handed out. */
+let lastRowId = 0
 
 /** Listeners told when a scene's rows change. */
 const listeners = new Set<(sceneId: number) => void>()
@@ -154,7 +163,7 @@ function reconcile(scene: Scene, log: SceneLog): boolean {
   if (keep < log.rows.length || keep < stack.descs.length) {
     log.rows = [
       ...log.rows.slice(0, keep),
-      ...stack.descs.slice(keep).map((label) => ({ label, source: null, time: null, entries: [], undone: false })),
+      ...stack.descs.slice(keep).map((label) => ({ id: ++lastRowId, label, source: null, time: null, entries: [], undone: false })),
     ]
     changed = true
   }
@@ -206,6 +215,7 @@ export function txnEnd(scene: Scene, committed: boolean): void {
   log.rows = log.rows.slice(0, frame.undoSizeBefore)
   if (grew) {
     log.rows.push({
+      id: ++lastRowId,
       label: frame.label,
       source: frame.source,
       time: new Date().toISOString(),
@@ -266,10 +276,23 @@ export function actionRows(scene: Scene | null, sceneId: number): readonly Actio
   return log.rows
 }
 
-/** Be told when a scene's rows change (a commit). Returns the unsubscribe. */
+/**
+ * Be told when a scene's rows change: a commit, or a reconcile that found the
+ * stack moved (undo, redo, a clear -- whoever caused it then reads the rows,
+ * see `syncActionRows`). Returns the unsubscribe.
+ */
 export function onActionsChanged(fn: (sceneId: number) => void): () => void {
   listeners.add(fn)
   return () => listeners.delete(fn)
+}
+
+/**
+ * Bring the rows of a scene in line with its stack now and tell the
+ * listeners if they moved. For a change C++ makes without a commit (undo,
+ * redo, clearing the stack), which fires no event of its own.
+ */
+export function syncActionRows(scene: Scene | null, sceneId: number): void {
+  actionRows(scene, sceneId)
 }
 
 /** Forget everything. Tests only. */

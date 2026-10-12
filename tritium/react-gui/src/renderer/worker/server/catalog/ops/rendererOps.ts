@@ -106,6 +106,7 @@ export const createRenderer = defineOp({
     ),
   },
   mutates: true,
+  describe: (a, n) => `Add ${a.rendererType}${a.name ? ` ${a.name}` : ''} to ${n('objId')}${a.selection ? ` (${a.selection})` : ''}`,
   expose: { tool: 'core', console: true },
   group: 'renderers',
   run(ctx, args, oc) {
@@ -331,6 +332,7 @@ export const changeRendererType = defineOp({
     rendererType: rendererType('The new type. Must be one the renderer can change to; a wrong one is answered with the list.'),
   },
   mutates: true,
+  describe: (a, n) => `Change ${n('rendId')} to ${a.rendererType}`,
   expose: { tool: 'core', console: true },
   group: 'renderers',
   aliases: [{ name: 'retype', summary: 'Redraw a renderer as another type: retype 1crn/cartoon1, ribbon' }],

@@ -87,6 +87,7 @@ export const loadFile = defineOp({
     name: optional(string('Name of the new object. Null uses the file name.')),
   },
   mutates: true,
+  describe: (a) => `Open ${a.path.split(/[\\/]/).pop() ?? a.path}`,
   expose: { tool: 'files', console: true },
   group: 'files',
   aliases: [{ name: 'load', summary: 'Open a structure file, or a .qsc scene.' }],

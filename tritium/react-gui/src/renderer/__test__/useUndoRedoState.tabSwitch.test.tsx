@@ -34,13 +34,14 @@ function makeCm(undoable: Record<number, boolean>) {
     invokeService: vi.fn((name: string, args: { sceneId: number }) => {
       if (name !== 'getUndoState') return Promise.resolve({ ok: true })
       const canUndo = undoable[args.sceneId] ?? false
-      return Promise.resolve({ canUndo, canRedo: false, undoDescs: canUndo ? ['edit'] : [], redoDescs: [] })
+      return Promise.resolve({ canUndo, canRedo: false, undoDescs: canUndo ? ['edit'] : [], redoDescs: [], undoTexts: canUndo ? ['edit'] : [], redoTexts: [] })
     }),
     addEventListener: vi.fn(async (_c: string, _s: number, _e: number, scope: number, fire: (a: unknown) => void) => {
       listeners.push({ scope, fire })
       return listeners.length
     }),
     removeEventListener: vi.fn(async () => undefined),
+    subscribeActionsChanged: vi.fn(() => () => undefined),
     undo: vi.fn(async () => undefined),
     redo: vi.fn(async () => undefined),
   }

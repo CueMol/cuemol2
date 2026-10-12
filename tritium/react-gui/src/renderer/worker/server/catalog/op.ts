@@ -168,6 +168,13 @@ export interface Op<P extends ParamMap = ParamMap> {
    */
   replay?: boolean | ((args: Readonly<Record<string, unknown>>) => boolean)
   /**
+   * One short line saying what a recorded call did, for the undo history
+   * (`Set width = 2.5 on 1crn/cartoon1`). `name` gives a node argument by the
+   * path it had when the call ran, or `#uid`. Without it the history shows
+   * the op's name and its main arguments (`actions/describe.ts`).
+   */
+  describe?(args: Readonly<ArgsOf<P>>, name: (param: keyof P & string) => string): string
+  /**
    * Lines a console prints for a successful result. Without it the data is
    * printed as JSON.
    */

@@ -52,10 +52,14 @@ function recordSelWrite(valueType: string, value: unknown): void {
  *   C++ property bridge.
  * - `animElement` -- an animation element selected in the AnimationPanel;
  *   keyed by stable `uid` and edited by `AnimElementInspector` itself.
+ * - `actionStep` -- one undo step from the Action history pane, or one op
+ *   of it (`entryIndex`), shown read-only by `ActionStepInspector`; keyed by
+ *   the action log's step id.
  */
 export type InspectorTarget =
   | { kind: 'node'; sceneId: number; nodeId: number; nodeType: PropTargetType }
   | { kind: 'animElement'; sceneId: number; uid: number }
+  | { kind: 'actionStep'; sceneId: number; stepId: number; entryIndex?: number }
 
 /** A property-bridge target (a scene-tree node or the View). */
 export type NodeTarget = Extract<InspectorTarget, { kind: 'node' }>
@@ -103,6 +107,13 @@ export interface InspectorActions {
   clearAnimElement: (sceneId: number) => void
   /** AnimElementInspector reports the header it fetched. */
   setAnimHeader: (name: string, type: string) => void
+  /**
+   * Show one undo step (Action history pane). Read-only: showing a step
+   * never moves the undo stack.
+   */
+  showActionStep: (sceneId: number, stepId: number, entryIndex?: number) => void
+  /** ActionStepInspector reports the header it fetched. */
+  setStepHeader: (name: string, type: string) => void
   /** Close the panel, forget the target and the per-scene memory. */
   close: () => void
   /** Set the open flag alone (a snap-collapse of the pane); the target is kept. */
@@ -170,9 +181,9 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
   const [molId, setMolId] = useState<number | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [nodeHeader, setNodeHeader] = useState(EMPTY_HEADER)
-  // The anim element's header comes from AnimElementInspector's own fetch:
-  // a tab-switch restore rewrites the target without going through the
-  // AnimationPanel, so the inspector's fetch is the one source for it.
+  // The anim element's (and an action step's) header comes from its own
+  // inspector's fetch: a tab-switch restore rewrites the target without going
+  // through the panel that picked it, so that fetch is the one source for it.
   const [animHeader, setAnimHeader] = useState<{ name: string; type: string } | null>(null)
 
   // Latest target in a ref so the writers and the event handler stay
@@ -200,9 +211,9 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
   /** Fetch the generic property list for the current target. */
   const fetchProps = useCallback(async () => {
     const t = targetRef.current
-    // Anim elements are not property-bridge nodes; AnimElementInspector
-    // self-fetches. Blank the generic state for them.
-    if (!cm || !t || t.kind === 'animElement') {
+    // Anim elements and action steps are not property-bridge nodes; their
+    // inspectors self-fetch. Blank the generic state for them.
+    if (!cm || !t || t.kind !== 'node') {
       setEntries([])
       setMolId(undefined)
       setNodeHeader(EMPTY_HEADER)
@@ -307,6 +318,15 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
         setAnimHeader(null)
       },
       setAnimHeader: (name, type) => setAnimHeader({ name, type }),
+      showActionStep: (sceneId, stepId, entryIndex) => {
+        setAnimHeader(null)
+        applyTarget(
+          entryIndex === undefined
+            ? { kind: 'actionStep', sceneId, stepId }
+            : { kind: 'actionStep', sceneId, stepId, entryIndex },
+        )
+      },
+      setStepHeader: (name, type) => setAnimHeader({ name, type }),
       close: () => {
         setOpen(false)
         setTarget(null)
@@ -400,12 +420,18 @@ export function InspectorProvider({ children }: { children: React.ReactNode }): 
   )
 
   const state = useMemo<InspectorState>(() => {
-    const isAnim = target?.kind === 'animElement'
+    const selfFetched = target?.kind === 'animElement' || target?.kind === 'actionStep'
     return {
       open,
       target,
-      category: !target ? '' : isAnim ? 'Animation' : (NODE_CATEGORY_LABELS[target.nodeType] ?? 'Node'),
-      header: isAnim ? (animHeader ?? EMPTY_HEADER) : nodeHeader,
+      category: !target
+        ? ''
+        : target.kind === 'animElement'
+          ? 'Animation'
+          : target.kind === 'actionStep'
+            ? 'Action'
+            : (NODE_CATEGORY_LABELS[target.nodeType] ?? 'Node'),
+      header: selfFetched ? (animHeader ?? EMPTY_HEADER) : nodeHeader,
       entries,
       molId,
       loading,

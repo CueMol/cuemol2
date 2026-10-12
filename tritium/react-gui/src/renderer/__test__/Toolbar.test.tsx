@@ -59,6 +59,8 @@ function makeUndoRedo(over: Partial<UndoRedoState> = {}): UndoRedoState {
     canRedo: true,
     undoDescs: ['e1'],
     redoDescs: ['e2'],
+    undoTexts: ['e1'],
+    redoTexts: ['e2'],
     pickUndo: vi.fn(),
     pickRedo: vi.fn(),
     ...over,

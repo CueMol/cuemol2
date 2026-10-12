@@ -15,7 +15,14 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import { fakeObject, fakeRenderer, fakeScene, makeWorkerCtx } from '@renderer/worker/testing'
 import type { FakeScene } from '@renderer/worker/testing'
-import { actionRows, resetActionLog } from '@renderer/worker/server/actions/actionLog'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
+import { actionRows, onActionsChanged, resetActionLog } from '@renderer/worker/server/actions/actionLog'
+import { getUndoState } from '@renderer/worker/server/services/undo/undoState'
+import { undo } from '@renderer/worker/server/services/undo/undo'
+import { exportActionSteps } from '@renderer/worker/server/services/actions/actions'
+import { parseQax } from '@renderer/worker/server/actions/qax/codec'
 import { recordOp } from '@renderer/worker/server/actions/serviceOps'
 import { withUndoTxn, undoTxnResult } from '@renderer/worker/server/services/withUndoTxn'
 import { invokeOp, runInTxn } from '@renderer/worker/server/catalog/opRuntime'
@@ -61,6 +68,10 @@ function stackScene(uid = 1): StackScene {
     undoOne: () => { redo.push(done.pop() as string) },
     redoOne: () => { done.push(redo.pop() as string) },
     clearStack: () => { done.length = 0; redo.length = 0 },
+    undo: (depth: number) => {
+      for (let i = 0; i <= depth; ++i) redo.push(done.pop() as string)
+      return true
+    },
   })
   return scene
 }
@@ -73,6 +84,17 @@ function edit(scene: StackScene, label: string): void {
 }
 
 const rowsOf = (scene: StackScene) => actionRows(asScene(scene), scene.uid)
+
+/** An edit that records the given ops, as a GUI service does. */
+function editWith(scene: StackScene, ctx: ReturnType<typeof makeWorkerCtx>['ctx'], label: string, ops: [string, Record<string, unknown>][]): void {
+  withUndoTxn(asScene(scene), label, () => {
+    scene.touch()
+    for (const [op, args] of ops) recordOp(ctx, scene.uid, op, args)
+  })
+}
+
+const HIDE: [string, Record<string, unknown>] = ['set_visible', { nodeId: 5, nodeType: 'object', visible: false }]
+const CLEAR: [string, Record<string, unknown>] = ['clear_paint', { rendId: 7 }]
 
 describe('actionLog', () => {
   beforeEach(() => resetActionLog())
@@ -128,7 +150,7 @@ describe('actionLog', () => {
     scene.startUndoTxn('loaded')
     scene.touch()
     scene.commitUndoTxn()
-    expect(rowsOf(scene)).toEqual([{ label: 'loaded', source: null, time: null, entries: [], undone: false }])
+    expect(rowsOf(scene)).toEqual([{ id: expect.any(Number), label: 'loaded', source: null, time: null, entries: [], undone: false }])
     expect(actionRows(null, scene.uid)).toEqual([])
   })
 
@@ -215,5 +237,53 @@ describe('serviceOps', () => {
       expect(typeof readToolArgs(op!, e.args), `${e.op}: ${String(readToolArgs(op!, e.args))}`).toBe('object')
     }
     expect(entries[2]).toMatchObject({ op: 'reset_prop', args: { path: '1crn/cartoon1.width' } })
+  })
+
+  it('words each undo step from its ops, and falls back to the undo description', () => {
+    const scene = stackScene()
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    editWith(scene, ctx, 'hide', [HIDE])
+    editWith(scene, ctx, 'clear', [CLEAR])
+    editWith(scene, ctx, 'both', [HIDE, CLEAR])
+    editWith(scene, ctx, 'bare', [])
+    scene.undoOne()
+    const state = getUndoState(ctx, { sceneId: scene.uid })
+    // describe() of the op; an op without one is its name and arguments; a
+    // step of several ops is its first and a count. The undone step with no
+    // op keeps its description, on the redo side.
+    expect(state.undoTexts).toEqual(['Hide #5 (+1 more)', 'Clear paint: #7', 'Hide #5'])
+    expect(state.redoTexts).toEqual(['bare'])
+    expect(state.undoDescs).toEqual(['both', 'clear', 'hide'])
+  })
+
+  it('tells the renderer the history moved after an undo, which C++ does not', () => {
+    const scene = stackScene()
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    edit(scene, 'a')
+    rowsOf(scene)
+    const changed: number[] = []
+    onActionsChanged((id) => changed.push(id))
+    undo(ctx, { sceneId: scene.uid })
+    expect(changed).toEqual([scene.uid])
+    expect(rowsOf(scene).map((r) => r.undone)).toEqual([true])
+  })
+
+  it('writes the steps named by id to a qax file, and refuses a step that is gone', () => {
+    const scene = stackScene()
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    editWith(scene, ctx, 'hide', [HIDE])
+    editWith(scene, ctx, 'clear', [CLEAR])
+    editWith(scene, ctx, 'again', [HIDE])
+    const ids = rowsOf(scene).map((r) => r.id)
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'qax-')), 'steps.qax')
+
+    expect(exportActionSteps(ctx, { sceneId: scene.uid, stepIds: [ids[2], ids[0]], filePath: file })).toEqual({ ok: true, count: 2 })
+    const doc = parseQax(fs.readFileSync(file, 'utf8'))
+    if ('error' in doc) throw new Error(doc.error)
+    expect(doc.actions.map((a) => a.label)).toEqual(['hide', 'again'])
+    expect(doc.actions[0].items).toMatchObject([{ kind: 'op', name: 'set_visible' }])
+
+    scene.clearStack()
+    expect(exportActionSteps(ctx, { sceneId: scene.uid, stepIds: [ids[0]], filePath: file })).toMatchObject({ ok: false, code: 'not-found' })
   })
 })

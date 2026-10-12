@@ -40,6 +40,7 @@ export const superpose = defineOp({
     algo: optional(enumOf(['SSM', 'LSQ'], 'SSM (default) or LSQ.')),
   },
   mutates: true,
+  describe: (_a, n) => `Superpose ${n('movId')} onto ${n('refId')}`,
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   async run(ctx, args, oc) {

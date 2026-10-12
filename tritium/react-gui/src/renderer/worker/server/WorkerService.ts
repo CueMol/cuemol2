@@ -36,6 +36,8 @@ import type {
 } from '@renderer/worker/shared/calls';
 import { forgetAnimProgress, pauseInactivePlayback, pumpAnimProgress } from '@renderer/worker/server/services/anim/anim.service';
 import { isSceneBeingRendered } from '@renderer/worker/server/services/renderjob/renderJob.service';
+import { onActionsChanged } from '@renderer/worker/server/actions/actionLog';
+import { ACTIONS_CHANGED_CHANNEL } from '@renderer/worker/shared/actionTypes';
 
 // import { createLogger } from '@cuemol/core/src/logger';
 // const log = createLogger(import.meta.url);
@@ -284,6 +286,10 @@ export class WorkerService {
         this._evtListenerId = registerWorkerEventListener(
             this._evtMgr, this._cm, this._postMessage,
         );
+
+        // The undo history moved (a commit, undo, redo, a clear): the Action
+        // history pane and the toolbar's undo menu read it again.
+        onActionsChanged((sceneId) => this.pushMessage(ACTIONS_CHANGED_CHANNEL, sceneId));
 
         return true;
     }

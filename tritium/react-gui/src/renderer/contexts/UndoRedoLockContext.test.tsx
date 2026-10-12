@@ -34,10 +34,11 @@ void React
 const undo = vi.fn(() => Promise.resolve())
 const cm = {
   invokeService: vi.fn(() =>
-    Promise.resolve({ canUndo: true, canRedo: true, undoDescs: ['edit'], redoDescs: ['edit'] }),
+    Promise.resolve({ canUndo: true, canRedo: true, undoDescs: ['edit'], redoDescs: ['edit'], undoTexts: ['edit'], redoTexts: ['edit'] }),
   ),
   undo,
   redo: vi.fn(() => Promise.resolve()),
+  subscribeActionsChanged: vi.fn(() => () => undefined),
 } as never
 
 /** Mount the undo state next to a component that can take the lock. */

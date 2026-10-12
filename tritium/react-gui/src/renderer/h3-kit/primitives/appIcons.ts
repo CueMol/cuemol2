@@ -17,6 +17,8 @@
 import type { Icon as PhosphorIcon, IconWeight } from "@phosphor-icons/react";
 import {
   Angle,
+  Scroll,
+  Target,
   ArrowClockwise,
   Bell,
   DownloadSimple,
@@ -145,6 +147,7 @@ export const APP_ICONS = {
   "activity.catalog": { lib: "phosphor", Comp: SquaresFour },
   "activity.agent": { lib: "phosphor", Comp: Sparkle },
   "activity.settings": { lib: "phosphor", Comp: Gear },
+  "activity.actions": { lib: "phosphor", Comp: Scroll },
 
   // Top toolbar.
   "toolbar.newTab": { lib: "phosphor", Comp: Plus },
@@ -199,6 +202,8 @@ export const APP_ICONS = {
   "ui.wrench": { lib: "phosphor", Comp: Wrench },
   "ui.folder": { lib: "phosphor", Comp: FolderOpen },
   "ui.filter": { lib: "phosphor", Comp: Funnel },
+  // Action history pane: undo / redo the scene to the selected step.
+  "ui.gotoStep": { lib: "phosphor", Comp: Target },
   "ui.undo": { lib: "phosphor", Comp: ArrowUUpLeft },
   "ui.redo": { lib: "phosphor", Comp: ArrowUUpRight },
   // Restore-to-default (clock + CCW arrow) -- deliberately distinct from the

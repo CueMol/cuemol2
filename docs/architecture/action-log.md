@@ -4,8 +4,8 @@ scene に加えた変更を、undo 履歴の 1 項目ごとに「実際に実行
 仕組みと、その記録を書き出して再生するファイル形式 qax の仕様。GUI・console (native / PyMOL)・
 MCP・agent の、どこから実行した変更も同じ形で記録する。
 
-確認と書き出しには、今は console の builtin (`list_actions` / `export_actions`) を使う。
-記録を一覧する GUI (Action pane) はまだ無い。
+確認と書き出しには、GUI の Actions view (History pane, §5) と、console の builtin
+(`list_actions` / `export_actions`, §4.3) を使う。
 
 関連: [op catalog と console](op-catalog.md)、[PyMOL dialect](console-pymol-dialect.md)、
 [local API server](local-api-server.md)。
@@ -20,6 +20,8 @@ MCP・agent の、どこから実行した変更も同じ形で記録する。
   - `source` は `gui` / `cmd` / `pym` / `mcp` / `ai` / `qax` のどれか。
   - `entries` はその txn の中で実行した op の並び。各 entry は、op の catalog 名・型付きの引数・
     node 引数の path を持つ。
+- 行は `id` も持つ。session 内で一意で、単調に増える (reconcile で作り直した行にも新しい id を
+  振る)。GUI の選択と Inspector の対象は、この id で持つ (行番号は redo 側が切れると変わるため)。
 - commit で行が 1 つ増え、redo 側の行は消える (C++ の `UndoManager` と同じ)。
 - undo / redo では、redo 側にある行に `undone` の印が付くだけで、行そのものは消えない。
 - session 内だけの記録で、scene と一緒には保存しない。
@@ -115,6 +117,9 @@ helper)。
 | `loadObject` | `load_file` (path・renderer type・selection・object 名のみ) |
 | `viewXform` (回転・平行移動) | 0 でない軸ごとの `rotate_view`、`pan_view` |
 | map の property (`map/props.ts`) | renderer への `set_node_prop` |
+| 背景色 (`scene/sceneBgColor.ts`、メニューの背景色) | scene の `set_node_prop bgcolor` (色名のまま) |
+| `applyRendererStyle` (Style サブメニュー) | `apply_renderer_style` |
+| scene tree のまとめて表示・非表示 / 削除 (`sceneTree/bulkSceneNodeOps.ts`) | node ごとの `set_visible` / `delete_node` (削除は破棄の直前に記録) |
 
 表に無い service の txn は、label だけを持つ行になる。`list_actions` ではこの行に
 `# no op recorded for this edit` と出し、qax には `<note>` として書く。
@@ -125,6 +130,9 @@ helper)。
   `applyStyles`、`label`、`set_view` の回転、`orient`、`center`、`frame`。そのコマンドの行には、
   service を通った部分の op だけが入る。
 - paint と coloring の変更 (対応する op が無い)。
+- Edit Style ダイアログ (`applyRendererStyleList`)。`style` property は readonly
+  (`src/qsys/Renderer.qif`) なので、記録には新しい op が要る。
+- camera など、上の表に無い残りの service。
 - GUI の renderer 作成の、type・name・selection 以外のオプション。ファイル読み込みの reader
   オプション。
 - reconcile で作り直した行は、op の中身を失う (label だけになる)。
@@ -264,10 +272,92 @@ native の builtin で、どちらも group は `edit`。
   - 拡張子 `.qax` が無ければ足す。
   - op の無い行は `<note>` になる。
 
-## 5. テスト
+## 5. GUI: Actions view と History pane
+
+activity bar の **Actions** view (built-in。`shell/ActivityBar.tsx`、`shell/SidePanel.tsx` の
+`VIEW_PANES.actions`) に、**History** pane (`renderer/features/actions/ActionHistoryPane.tsx`) を
+置く。action log と undo は core の機能なので、plugin ではなく built-in にしている。後で、保存した
+action と preset の pane を同じ view に足す。
+
+### 5.1 一覧
+
+- active scene の行を、古い順に `ListboxTree` で出す (scene tree と同じ部品)。scene のタブを
+  切り替えると、その scene の履歴に切り替わる。
+- 一番上に疑似行 **Initial state** を置く (全部 undo した状態への移動先)。
+- 行に出すのは表示文 (§5.4) と source。undone の行は `is-undone` で薄く、今の位置 (最後に有効な
+  行、または Initial state) は `is-current` で区別する。
+- op が 2 つ以上ある行だけを展開でき、子行は op ごとの表示文になる。
+- 行の id は `initial` / `s:<step id>` / `e:<step id>:<op index>`。
+- 取得は `useActionSteps` (`useLiveFetch` + `SEM_SCENE` の listener) と、§5.5 の push。
+
+### 5.2 操作
+
+操作はすべて `CmdId` 経由 (`ActionsShowStep` / `ActionsGoToStep` / `ActionsSave` / `ActionsCopy`、
+handler は `features/actions/useActionCommands.ts`)。
+
+- click / Shift / Cmd: 選択 (保存とコピーの範囲)。子行を選ぶと、その親の step として扱う。
+- **Inspector に出す**: step の行は double-click / Enter、op の子行は click。**状態は動かさない**。
+  ユーザーとの取り決めで、double-click で undo stack を動かすのは危険なので避けている。
+- **Go to step**: toolbar のボタンとコンテキストメニューだけで行う、明示的な状態移動。その step
+  の直後の状態まで `pickUndo` / `pickRedo` する。移動量は純関数 `goToStep` (`goToStep.ts`) が
+  出し、実行の直前に行を取り直してから計算する。undo/redo lock (agent の turn 中など) の間は無効。
+- **Save as qax**: `IPC.DIALOG_ACTIONS_SAVE` (既定名 `actions.qax`、filter `.qax`) で保存先を選び、
+  worker の `exportActionSteps` が step id で選んだ行を書く。console の `export_actions` と同じ
+  `writeRowsFile` を使う。
+- **Copy as commands**: `actionStepLines` が選んだ行を native のコマンド行にし、clipboard に書く。
+  op の無い行は `# <label>` になる。Edit > Copy にも `useClipboardScope('action-history')` で対応する。
+- 選んだ step が履歴から消えていたら (redo 側が切れたなど)、保存とコピーは `not-found` で失敗する。
+
+### 5.3 Inspector の step 表示
+
+`InspectorTarget` の `{ kind: 'actionStep', sceneId, stepId, entryIndex? }`
+(`state/inspector/InspectorProvider.tsx`、category `Action`)。中身は
+`features/inspector/ActionStepInspector.tsx` で、読むだけ。
+
+- 他の Inspector ページと同じ部品で組む (`FlatSection` の見出しと、`PropertyField` + readonly の
+  `TextField` の行。`docs/migration/ui-style-guide.md` §0)。
+- **Step** 欄: Undo label (C++ の説明文)、From (source)、Time、State (done / undone)。op が複数なら
+  Ops 行 (個数)。
+- **Op** 欄 (op が 1 つの step と、op の子行): Name、Command (コマンド行)、引数ごとの行。op が
+  複数の step は op を列挙せず、各 op は子行から見る。
+- header の名前は step (または op) の表示文で、本文では繰り返さない。
+- step が履歴から消えたら、閉じずに「This step is no longer in the undo history.」を出す。
+
+### 5.4 表示文
+
+undo の各 step の短い説明。History pane の行と、toolbar の Undo / Redo の dropdown が使う。
+本体は `worker/server/actions/describe.ts`。
+
+- op が自分で言う (`Op.describe(args, name)`、`name(param)` は node 引数を記録した path で、
+  無ければ `#uid` で返す)。`describe` を持つのは、GUI の記録で出る op と使う頻度が高い op の
+  15 個 (`set_node_prop`、`set_visible`、`load_file` など)。
+- `describe` の無い op は `<op 名を語に直したもの>: <主な引数>` (`Clear paint: #7`)。atoms 引数と、
+  `...Type` の enum 引数は省く。
+- op が複数の step は `<先頭> (+N more)`。op が無い step は C++ の説明文のまま。
+- 80 文字で切る。
+- C++ の説明文は書き換えない (reconcile が説明文で行を突き合わせるため)。表示文は表示だけに使う。
+- `getUndoState` は `undoDescs` / `redoDescs` と同じ並びの `undoTexts` / `redoTexts` を返す。その
+  位置の行の label が説明文と一致しなければ、説明文で埋める。
+- native の Edit メニューは固定の `Undo` / `Redo` のまま。
+
+### 5.5 push channel
+
+C++ は undo / redo で event を出さないので、変更の通知は worker の action log が出す。
+
+- undo / redo / `clearUndoData` の service は、実行の後に `syncActionRows` を呼ぶ。reconcile して
+  行が動いていれば、`onActionsChanged` の listener に scene id を渡す (commit のときも同じ)。
+- `WorkerService.initCueMol` が、これを `ACTIONS_CHANGED_CHANNEL` (`'actions-changed'`、
+  `worker/shared/actionTypes.ts`) で renderer に push する。payload は scene id。
+- renderer 側は `AsyncCueMol.subscribeActionsChanged`。History pane、step の Inspector、
+  `useUndoRedoState` (toolbar) がこれで取り直す。console の `undo` のように scene event を出さない
+  経路でも、toolbar の表示が古いまま残らない。
+
+## 6. テスト
 
 | ファイル | pin している契約 |
 |---|---|
 | `tritium/react-gui/src/renderer/__test__/actionLog.test.ts` | nest した txn が 1 行になる / rollback と空の commit では行が増えない / undo・redo への追従と redo 側の切り捨て / stack の clear と scene 破棄後の reconcile / op を実行前の path で 1 回だけ記録し、replay の op は commit 時だけ残す / service の記録が、op 側の `readToolArgs` で読める引数になっている |
+| 同上 (GUI 向け) | `getUndoState` の表示文 (`describe`、fallback、`(+N more)`、op の無い行は説明文) / undo の service の後に actions-changed を通知する / step id で選んだ行の qax 書き出しと、消えた step の拒否 |
+| `tritium/react-gui/src/renderer/__test__/actionHistoryPane.test.tsx` | 行の click / double-click / 子行の click は Inspector に出すだけで、Go to step を出さない / `goToStep` の undo・redo の量 |
 | `tritium/react-gui/src/renderer/__test__/qaxCodec.test.ts` | golden file の round-trip / 全 `ParamKind` と node 引数が、ファイルを経由して `readToolArgs` で同じ値に戻る / version 違いと `<macro>` の拒否 |
 | `tritium/react-gui/src/plugins/console/worker/runtime/runCommand.test.ts` | 1 行だけの qax は 1 action = 1 txn で、記録された label で実行する。失敗した action で止まる。長い submit の中では 1 txn にまとまる。PyMOL dialect では断る |

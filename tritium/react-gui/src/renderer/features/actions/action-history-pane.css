@@ -1,0 +1,37 @@
+/*
+ * Action history pane. Row height, hover, selection, caret and the per-depth
+ * indent come from list-kit's tree (`.h3-listbox-tree`, `_list-kit.css`) and
+ * the container inset it shares with the scene tree (`_side-panel.css`);
+ * only what is specific to an undo step lives here.
+ *
+ * A node's class lands on its `<li>`, which also holds its children, so each
+ * rule reaches only the node's own row (`> .bp5-tree-node-content`).
+ */
+
+.action-row-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Who made the step (gui / cmd / pym / mcp / ai / qax). */
+.action-row-source {
+    color: var(--text-muted);
+}
+
+/* The redo side: steps undone, still there to redo. */
+.action-history-tree .bp5-tree-node.is-undone > .bp5-tree-node-content .action-row-text {
+    color: var(--text-disabled);
+    font-style: italic;
+}
+
+/* The state the scene is in now (the last step done, or the initial state). */
+.action-history-tree .bp5-tree-node.is-current > .bp5-tree-node-content .action-row-text {
+    color: var(--accent);
+}
+
+.action-initial-text {
+    color: var(--text-muted);
+}

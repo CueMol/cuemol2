@@ -47,6 +47,7 @@ export const BUILTIN_ACTIVITY_ITEMS: readonly ActivityItemDef[] = [
   { id: "view", icon: "activity.view", label: "View" },
   { id: "selection", icon: "activity.selection", label: "Selection" },
   { id: "crystal", icon: "activity.crystal", label: "Crystal" },
+  { id: "actions", icon: "activity.actions", label: "Actions" },
 ];
 
 /**

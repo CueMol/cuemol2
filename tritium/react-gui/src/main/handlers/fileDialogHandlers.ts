@@ -11,6 +11,7 @@ import { IPC } from '@shared/ipcChannels';
 import { handleInvoke } from '../ipc/handleInvoke';
 import { handleOpenFile } from '../fileOpen';
 import {
+  handleActionsSaveDialog,
   handleCameraOpenDialog,
   handleCameraSaveDialog,
   handleObjectSaveDialog,
@@ -42,6 +43,10 @@ export function registerFileDialogHandlers(mainWindow: BrowserWindow): void {
 
   handleInvoke(IPC.DIALOG_CAMERA_SAVE, async (_event, payload) =>
     handleCameraSaveDialog(mainWindow, payload.defaultName),
+  )
+
+  handleInvoke(IPC.DIALOG_ACTIONS_SAVE, async (_event, payload) =>
+    handleActionsSaveDialog(mainWindow, payload.defaultName),
   )
 
   handleInvoke(IPC.DIALOG_SCENE_EXPORT, async (_event, payload) =>

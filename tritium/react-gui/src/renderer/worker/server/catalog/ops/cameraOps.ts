@@ -130,6 +130,7 @@ export const panView = defineOp({
     dz: optional(real('Shift along the line of sight. Null leaves the depth.')),
   },
   mutates: false,
+  describe: () => 'Pan the view',
   replay: true,
   expose: { tool: 'view', console: true },
   group: 'viewing',

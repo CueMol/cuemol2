@@ -221,6 +221,7 @@ export const setNodeProp = defineOp({
     ),
   },
   mutates: true,
+  describe: (a, n) => `Set ${a.prop} = ${a.value} on ${a.nodeType === 'scene' || a.nodeType === 'view' ? `the ${a.nodeType}` : n('nodeId')}`,
   expose: { tool: 'core', console: true },
   group: 'properties',
   run(ctx, args, oc): OpOutcome {
@@ -240,6 +241,7 @@ export const setProp = defineOp({
     value: propValue('New value as text; converted by the property type.'),
   },
   mutates: true,
+  describe: (a) => `Set ${a.path} = ${a.value}`,
   // The model addresses nodes by uid through set_node_prop; a path of names
   // is for a person at a prompt.
   expose: { tool: false, console: true },

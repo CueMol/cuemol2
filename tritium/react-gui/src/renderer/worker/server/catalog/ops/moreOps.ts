@@ -191,6 +191,7 @@ export const focusNode = defineOp({
     nodeType: enumOf(['object', 'renderer', 'rendGroup'], 'What nodeId refers to.'),
   },
   mutates: false,
+  describe: (_a, n) => `Focus on ${n('nodeId')}`,
   replay: true,
   expose: { tool: 'view', console: true },
   group: 'nodes',

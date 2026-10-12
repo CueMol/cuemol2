@@ -108,7 +108,7 @@ const ToolbarComponent: React.FC = () => {
             key={item.id}
             kind="undo"
             canExecute={undoRedo.canUndo}
-            descs={undoRedo.undoDescs}
+            descs={undoRedo.undoTexts}
             onPick={undoRedo.pickUndo}
             collapsed={collapsed}
           />
@@ -119,7 +119,7 @@ const ToolbarComponent: React.FC = () => {
             key={item.id}
             kind="redo"
             canExecute={undoRedo.canRedo}
-            descs={undoRedo.redoDescs}
+            descs={undoRedo.redoTexts}
             onPick={undoRedo.pickRedo}
             collapsed={collapsed}
           />

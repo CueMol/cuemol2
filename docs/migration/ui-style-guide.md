@@ -85,6 +85,8 @@ class は padding / 区切り線などの chrome だけを持ち、行やコン�
 
 **ラベルの階層 (これも component で強制 / 微調整しない)**: pane 内のラベルは2階層。**最上位グループ** (例: `Molecule` / `Selection` / `Term` / `Modify`) は **`FieldSection` の `title`** で出す → `.type-group-label` role (頭文字のみ大文字・semibold・`--ls-wide`)。**下位ラベル** (section 内の行ラベル, 例: `Dist` / `Apply`) は `Field` の label か `.type-label`。section 間の余白は **親 container に `gap: var(--form-section-gap)` を 1 回指定**するだけ (FieldSection 自身は margin を持たない) → 全グループが同一リズムになり、weight/大文字/letter-spacing/spacing を **consumer 側で個別調整しない**。「最上位かそうでないか」は `FieldSection` か `Field` かの**選択だけ**で決まる。
 
+**Inspector のページは Inspector の部品で組む (MUST)**: 右の Inspector に出すものは、何を表示するページでも (scene node、View、アニメーション要素、Action history の undo step など) **Scene / Renderer の Properties ページと同じ部品**で組む。上位の見出し (`Basic settings`、`Step`、`Op` など) は `features/inspector/AccordionSection.tsx` の **`AccordionSection`** (開閉させないなら **`FlatSection`**)、その中の 1 値 1 行は **`PropertyField`** (control は form-kit。読むだけの値は readonly の `TextField`)、本体は `.inspector-body` > `.insp-properties-tab` に置く。dialog や pane 用の `FieldSection` / `Field` を Inspector に持ち込まない。見出しが `.type-group-label` になり、行が 2 段組みと横並びで混ざって、Properties ページと見出しの階層・行の形が食い違う (Action step の表示で実際に起きた)。見出しの文字列に値を埋め込まない (`Op: set_visible` ではなく、見出しは `Op`、名前は `Name` の行)。
+
 **ルール**:
 - コントロール高・行高・label gap・section spacing を **consumer の CSS や inline `style` で指定しない**。サイズの単一ソースは `styles/_form-kit.css` ＋ `_variables.css` の `--field-*` / `--form-*` トークンのみ。
 - 必要なコントロールがカタログに無ければ、**先にカタログへ 1 つ追加** (`_form-kit.css` にサイズを 1 定義) してから使う。consumer 側でサイズを決めない。

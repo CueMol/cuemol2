@@ -54,6 +54,8 @@ export interface InvokeChannels {
                               res: { canceled: boolean; filePath: string } }
   [IPC.DIALOG_CAMERA_SAVE]: { req: { defaultName: string };
                               res: { canceled: boolean; filePath: string } }
+  [IPC.DIALOG_ACTIONS_SAVE]: { req: { defaultName: string };
+                               res: { canceled: boolean; filePath: string } }
   [IPC.DIALOG_SCENE_EXPORT]: { req: {
                                  defaultName: string
                                  filters: { name: string; extensions: string[] }[]
