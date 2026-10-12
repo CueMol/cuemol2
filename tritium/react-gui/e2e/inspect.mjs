@@ -49,6 +49,8 @@ Options:
   --root <selector>     element to audit and screenshot
   --click <selector>    click the first match before auditing (repeatable;
                         add shift+ / meta+ in front for a modifier click)
+  --hover <selector>    hover the first match before each shot and wait for
+                        hover UI (tooltips, expansions) to show
   --open <file>         file to open at launch (e.g. a PDB), repeatable
   --theme <list>        comma list of dark,light        (default dark,light)
   --size <list>         comma list of WxH content sizes (default 1400x900,1000x700)
@@ -69,6 +71,7 @@ const { values: opt } = parseArgs({
     plugin: { type: 'string', multiple: true, default: [] },
     root: { type: 'string' },
     click: { type: 'string', multiple: true, default: [] },
+    hover: { type: 'string' },
     open: { type: 'string', multiple: true, default: [] },
     theme: { type: 'string', default: 'dark,light' },
     size: { type: 'string', default: '1400x900,1000x700' },
@@ -336,17 +339,23 @@ try {
     for (const theme of themes) {
       await page.evaluate((t) => window.__cuemolE2E.setTheme(t), theme)
       await settle(page, plan.root)
+      if (opt.hover) {
+        await page.mouse.move(0, 0)
+        await page.locator(opt.hover).first().hover({ timeout: 10000 })
+        await page.waitForTimeout(800)
+      }
       const result = await page.evaluate(layoutAudit, { rootSelector: plan.root, ignore: opt.ignore })
       const vp = await page.evaluate(() => ({ w: window.innerWidth, h: window.innerHeight }))
       const base = `${slug}_${theme}_${vp.w}x${vp.h}`
       const image = join(outDir, `${base}.png`)
-      const all = page.locator(plan.root)
-      await all.nth((await all.count()) - 1).screenshot({ path: image, animations: 'disabled' })
+      // The window first: an element shot may scroll, which closes hover UI.
       let windowImage
       if (opt.window) {
         windowImage = join(outDir, `${base}_window.png`)
         await page.screenshot({ path: windowImage, animations: 'disabled' })
       }
+      const all = page.locator(plan.root)
+      await all.nth((await all.count()) - 1).screenshot({ path: image, animations: 'disabled' })
       const flagged = result.issues.filter((i) => i.severity !== 'info')
       flagged.forEach((it, i) => { it.n = i + 1 })
       const shown = flagged.filter((i) => !i.offscreen)

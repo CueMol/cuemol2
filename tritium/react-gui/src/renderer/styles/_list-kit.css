@@ -248,3 +248,43 @@
 .h3-list-table-row.is-drop-after > * {
   box-shadow: inset 0 -1px 0 var(--accent);
 }
+
+/* ── TruncatedText: an ellipsized label and its in-place expansion ──
+   The expansion is drawn over the cut label (same font, same left edge),
+   so its inset is cancelled by an equal negative shift; only the box is
+   chosen here. Above Blueprint portals (40) since it is only ever over a
+   list row the pointer is on. */
+.h3-truncated-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Blueprint makes every span of a tree label inline, which would leave the
+   label's own ellipsis cutting the text and this one never knowing. */
+.h3-listbox-tree .bp5-tree-node-label > .h3-truncated-text {
+  display: block;
+}
+
+.h3-expansion-tip {
+  --tip-inset: var(--space-2);
+  position: fixed;
+  z-index: 41;
+  box-sizing: content-box;
+  max-width: calc(100vw - var(--space-4));
+  padding: 0 var(--tip-inset);
+  margin-left: calc(var(--tip-inset) * -1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--bg-elevated);
+  /* An outline, not a border: it takes no room, so the text keeps the
+     label's exact position. */
+  outline: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-overlay);
+}
+

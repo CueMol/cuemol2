@@ -8,19 +8,9 @@
  * rule reaches only the node's own row (`> .bp5-tree-node-content`).
  */
 
-/* The tooltip's target wrapper takes the row's room so the text still ellipsizes. */
-.action-row-tip {
-    display: flex;
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
+/* The label takes the row's room; ellipsis and expansion are TruncatedText's. */
 .action-row-text {
     flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 /* Who made the step (gui / cmd / pym / mcp / ai / qax). */

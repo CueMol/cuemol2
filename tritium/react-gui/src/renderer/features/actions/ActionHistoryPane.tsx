@@ -25,7 +25,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Button, ButtonGroup } from '@blueprintjs/core'
 import type { TreeNodeInfo } from '@blueprintjs/core'
 import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives'
-import { ListboxTree, scrollRowIntoView, useListKeyNav } from '@renderer/h3-kit/list'
+import { ListboxTree, TruncatedText, scrollRowIntoView, useListKeyNav } from '@renderer/h3-kit/list'
 import { PaneSectionHeader } from '@renderer/shell/PaneSectionHeader'
 import { useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider'
 import type { MenuNode } from '@shared/menuNodes'
@@ -293,11 +293,10 @@ export const ActionHistoryPane: React.FC<ActionHistoryPaneProps> = ({ collapsed,
 
     const treeContents = useMemo<TreeNodeInfo[]>(() => {
         if (steps.length === 0) return []
-        // The row is usually too narrow for its text; the tooltip shows it whole.
+        // The row is usually too narrow for its text; a cut one expands in
+        // place on hover.
         const rowLabel = (id: string, text: string, className: string): React.JSX.Element => (
-            <Tooltip content={text} placement="right" className="action-row-tip">
-                <span className={`action-row-text type-row ${className}`} data-row-id={id}>{text}</span>
-            </Tooltip>
+            <TruncatedText text={text} className={`action-row-text type-row ${className}`} data-row-id={id} />
         )
         const initial: TreeNodeInfo = {
             id: INITIAL_ROW,

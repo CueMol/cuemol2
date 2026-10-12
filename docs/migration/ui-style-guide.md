@@ -24,7 +24,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 |---|---|
 | `h3-kit/primitives` | `AppIcon` / アイコン登録表 / `DisclosureCaret` (開閉 caret) / `Tooltip` / `useDarkPortalClass` |
 | `h3-kit/form` | 下表の label+control カタログ。**サイズの単一ソース** |
-| `h3-kit/list` | `Listbox` / `ListRow` / `ListboxTree` (Blueprint `Tree` の kit 版) / `useListKeyNav` |
+| `h3-kit/list` | `Listbox` / `ListRow` / `ListboxTree` (Blueprint `Tree` の kit 版) / `TruncatedText` (省略される 1 行ラベルと hover の全文表示) / `useListKeyNav` |
 | `h3-kit/gradient` | `GradientStopBar` + gradient の値/ピクセル幾何 |
 | `h3-kit/colorpicker` | 色ポップオーバーと `CueColorField` |
 | `h3-kit/MolSelList` / `h3-kit/selection` | 分子選択のピッカーと式ビルダ |
@@ -214,6 +214,12 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 - **Blueprint `Tree` は `ListboxTree`** (`h3-kit/list`) 経由で描く。Blueprint 内蔵の caret は差し替え不可の
   塗りパス (`chevron-right`) で pane header の Phosphor caret より太く見えるため、`ListboxTree` が全ノードに
   `hasCaret: false` を渡して `DisclosureCaret` を icon スロットに描く。props は Blueprint `TreeProps` そのまま。
+- **リストの行で省略 (`...`) されるラベルは `TruncatedText`** (`h3-kit/list`) で描き、全文は hover の
+  **その場展開** (in-place expansion) で見せる。省略されているときだけ、少し hover した後に、同じ font の全文を
+  見えている文字のちょうど上に重ねて出す (macOS の table / outline view、Windows の list view と同じ作法)。
+  行の横や下に吹き出しの tooltip を出さない: 横に出すと、省略される前の (見えていない) 文字列の右端を基準に
+  浮いて見え、下に出すと次の行を隠す (Action history pane で実際に起きた)。ボタンやアイコンの説明は
+  これまでどおり `Tooltip`。
 - Blueprint コンポーネント内蔵アイコン(input clear 等、CSS フォント由来)はそのまま。段階移行のため、まだ
   `AppIcon` 化していない箇所で `<Icon>` 直書きが残るのは許容(移行時にキーを足して寄せる)。
 
