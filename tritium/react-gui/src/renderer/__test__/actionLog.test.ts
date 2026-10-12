@@ -24,6 +24,7 @@ import { undo } from '@renderer/worker/server/services/undo/undo'
 import { exportActionSteps } from '@renderer/worker/server/services/actions/actions'
 import { parseQax } from '@renderer/worker/server/actions/qax/codec'
 import { applyRendererStyleList } from '@renderer/worker/server/services/rend/rendererStyle'
+import { removePaintEntries } from '@renderer/worker/server/services/coloring/paintClipboard'
 import { recordOp } from '@renderer/worker/server/actions/serviceOps'
 import { withUndoTxn, undoTxnResult } from '@renderer/worker/server/services/withUndoTxn'
 import { invokeOp, runInTxn } from '@renderer/worker/server/catalog/opRuntime'
@@ -262,6 +263,34 @@ describe('serviceOps', () => {
     })
     expect(rend.applyStyles).toHaveBeenCalledWith('DefaultCartoon,EgLineCartoon')
     expect(typeof readToolArgs(findOp('set_renderer_styles')!, (entry as { args: Record<string, unknown> }).args)).toBe('object')
+  })
+
+  it('records a paint edit on an object (the Color pane default) with the object as the target', async () => {
+    const { findOp } = await import('@renderer/worker/server/catalog')
+    const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
+    const scene = stackScene()
+    const mol = fakeObject({ name: '1crn', scene })
+    scene.addObject(mol)
+    const rows = ['sheet', 'helix', '*']
+    Object.assign(mol, {
+      coloring: {
+        getClassName: () => 'PaintColoring',
+        get size() { return rows.length },
+        removeAt: (i: number) => { rows.splice(i, 1); scene.touch() },
+      },
+      hasPropDefault: () => false,
+    })
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+
+    removePaintEntries(ctx as never, { sceneId: scene.uid, rendId: mol.uid, targetKind: 'object', idxs: [0, 2] })
+
+    const entries = rowsOf(scene)[0].entries
+    // Highest row first, as they are removed, so each number is still right on replay.
+    expect(entries).toEqual([
+      { kind: 'op', op: 'remove_paint', args: { nodeId: mol.uid, nodeType: 'object', number: 3 }, refs: { nodeId: '1crn' } },
+      { kind: 'op', op: 'remove_paint', args: { nodeId: mol.uid, nodeType: 'object', number: 1 }, refs: { nodeId: '1crn' } },
+    ])
+    expect(typeof readToolArgs(findOp('remove_paint')!, (entries[0] as { args: Record<string, unknown> }).args)).toBe('object')
   })
 
   it('words each undo step from its ops, and falls back to the undo description', () => {

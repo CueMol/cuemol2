@@ -149,6 +149,8 @@ helper)。
   アニメーション要素の property の reset。
 - 記録しても再生で同じにならないもの: selection どうしの距離計測、RCSB 以外からの取得、
   backend を指定した surface。
+- undo の txn を開かない GUI 操作: visibility を使わない camera の適用 (view を camera に合わせる
+  だけで undo 履歴に載らない)。
 - GUI の renderer 作成の、type・name・selection 以外のオプション。ファイル読み込みの reader
   オプション。
 - reconcile で作り直した行は、op の中身を失う (label だけになる)。
@@ -302,6 +304,8 @@ action と preset の pane を同じ view に足す。
 - 一番上に疑似行 **Initial state** を置く (全部 undo した状態への移動先)。
 - 行に出すのは表示文 (§5.4) と source。undone の行は `is-undone` で薄く、今の位置 (最後に有効な
   行、または Initial state) は `is-current` で区別する。
+- 表示文は行の幅で省略 (`...`) される。省略された行は、hover で全文を kit の `Tooltip` に出す
+  (list-kit の `TruncatedText`。ラベルの右側、省略されていない行には出さない)。
 - op が 2 つ以上ある行だけを展開でき、子行は op ごとの表示文になる。
 - 行の id は `initial` / `s:<step id>` / `e:<step id>:<op index>`。
 - 取得は `useActionSteps` (`useLiveFetch` + `SEM_SCENE` の listener) と、§5.5 の push。
