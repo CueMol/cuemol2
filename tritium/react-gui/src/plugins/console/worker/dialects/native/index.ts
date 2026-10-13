@@ -81,6 +81,7 @@ function subjectHelp(group: OpGroup): string {
 function typeOf(p: Param<unknown>): string {
   if (p.kind === 'enum' && p.values) return `one of ${p.values.map((v) => `\`${v}\``).join(', ')}`
   if (p.kind === 'boolean') return '`true` or `false`'
+  if (p.objClass) return `${p.objClass} object`
   return PARAM_TYPE_NAMES[p.semantic ?? p.kind] ?? p.semantic ?? p.kind
 }
 
@@ -332,8 +333,8 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): (string 
     if ('error' in target || target.scene) return []
     return getCompatibleRendererNames(ctx, { filePath: target.filePath, readerName: target.readerName }).types
   }
-  if (id === 'moleculeRendererTypes') {
-    // A downloaded structure (fetch): a molecule, whichever format.
+  if (id === 'molCoordRendererTypes') {
+    // A downloaded structure (fetch): a MolCoord object, whichever format.
     return getCompatibleRendererNames(ctx, { filePath: 'structure.pdb', readerName: 'pdb' }).types
   }
   if (id.startsWith('rendererTypes:')) {

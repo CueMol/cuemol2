@@ -69,12 +69,12 @@ export function reassignProt2ndry(
         if (args.mode === 'recalc') {
             withUndoTxn(scene, 'Recalc protein secondary str', () => {
                 recordOp(ctx, scene.uid, 'set_secondary_structure', {
-                    molId: args.objId,
+                    objId: args.objId,
                     selection: null,
                     type: null,
                     ignoreBulge: args.ignBulge ?? null,
                     helixGapAngle: args.helixGapAngle ?? null,
-                }, ['molId']);
+                }, ['objId']);
                 mgr.calcProt2ndry2(m, args.ignBulge ?? false, args.helixGapAngle ?? 0);
             });
         } else {
@@ -84,12 +84,12 @@ export function reassignProt2ndry(
                 const type = SEC_TYPES[args.secType ?? 0];
                 if (type !== undefined) {
                     recordOp(ctx, scene.uid, 'set_secondary_structure', {
-                        molId: args.objId,
+                        objId: args.objId,
                         selection: args.selStr ?? '',
                         type,
                         ignoreBulge: null,
                         helixGapAngle: null,
-                    }, ['molId']);
+                    }, ['objId']);
                 }
                 mgr.setProt2ndry(m, sel as unknown as MolSelection, args.secType ?? 0);
             });

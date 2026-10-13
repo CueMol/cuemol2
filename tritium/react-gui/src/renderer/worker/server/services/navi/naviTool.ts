@@ -324,7 +324,7 @@ export function naviResidSel(ctx: WorkerContext, args: NaviResidSelArgs): NaviRe
         const sel = rrs.toSel(mol);
         mol.sel = sel;
         selStr = String(sel.toString());
-        recordOp(ctx, scene.uid, 'set_mol_selection', { molId: raw.obj_id, selection: selStr }, ['molId']);
+        recordOp(ctx, scene.uid, 'set_mol_selection', { objId: raw.obj_id, selection: selStr }, ['objId']);
     });
 
     return { handled: true, objId: raw.obj_id, atomId: raw.atom_id, selStr };

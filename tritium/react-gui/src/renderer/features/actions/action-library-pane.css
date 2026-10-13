@@ -1,0 +1,35 @@
+/*
+ * Action library pane. Rows are list-kit's tree (`.h3-listbox-tree`), the
+ * row text and its tooltip `TruncatedText`; only what is specific to the
+ * library lives here.
+ */
+
+/* Which objects a macro of one target runs on now. */
+.action-library-target {
+    padding: var(--space-2) var(--space-4);
+    color: var(--text-muted);
+}
+
+.action-library-target-name {
+    color: var(--text-primary);
+}
+
+/* A group heading row (Presets, My Actions). */
+.action-library-group {
+    color: var(--text-secondary);
+}
+
+/* An entry that cannot run (a parameter list the pane cannot bind yet, or a
+   file that could not be read). */
+.action-library-unavailable {
+    color: var(--text-disabled);
+}
+
+.action-library-empty {
+    color: var(--text-muted);
+}
+
+/* Save to Actions dialog: what the macro choice means, or why it is off. */
+.save-action-note {
+    color: var(--text-muted);
+}

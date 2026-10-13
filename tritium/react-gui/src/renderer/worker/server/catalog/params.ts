@@ -28,7 +28,6 @@ export type ParamKind = 'boolean' | 'integer' | 'real' | 'string' | 'enum' | 've
  */
 export type ParamSemantic =
   | 'object'
-  | 'molecule'
   | 'renderer'
   | 'node'
   | 'selection'
@@ -64,6 +63,12 @@ export interface Param<T> {
    * console resolves a name to both, so it may leave that one out.
    */
   readonly typeParam?: string
+  /**
+   * For an `object` uid: the `.qif` class the object must be or derive from
+   * (`MolCoord` for anything that holds atoms). A console refuses a name that
+   * resolves to another kind of object.
+   */
+  readonly objClass?: string
   /** Phantom, for `ArgsOf`. Never set. */
   readonly __type?: T
 }
@@ -110,14 +115,13 @@ export function optional<T>(p: Param<T>): Param<T | null> {
 
 // --- semantic kinds (the .qif object<X> types) ---
 
-/** Uid of any object (`object<Object>`). */
-export function objectId(description: string): Param<number> {
-  return param('integer', description, { semantic: 'object' })
-}
-
-/** Uid of a molecule (`object<MolCoord>`). */
-export function moleculeId(description: string): Param<number> {
-  return param('integer', description, { semantic: 'molecule' })
+/**
+ * Uid of an object (`object<Object>`), or with `objClass` of an object of
+ * that class or one derived from it (`objectId('...', 'MolCoord')` for
+ * `object<MolCoord>`).
+ */
+export function objectId(description: string, objClass?: string): Param<number> {
+  return param('integer', description, objClass === undefined ? { semantic: 'object' } : { semantic: 'object', objClass })
 }
 
 /** Uid of a renderer or renderer group (`object<Renderer>`). */

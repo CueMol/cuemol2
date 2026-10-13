@@ -56,3 +56,18 @@ describe('resolvePropPath', () => {
     expect(resolveRef(ctx, 2, '#30', 'object')).toMatchObject({ ok: true, node: { id: 30 } })
   })
 })
+
+describe('resolveRef with an object class', () => {
+  // 1crn (10) is a MolCoord; 2abc (20) derives from one, which only the wrappers know.
+  const classes: Record<number, string> = { 10: 'MolCoord', 20: 'AnimMol' }
+  const classCtx = {
+    sceMgr: { getScene: () => ({ getObject: (id: number) => ({ getClassName: () => classes[id] }) }) },
+    svc: { isInstanceOf: (obj: { getClassName: () => string }, cls: string) => cls === 'MolCoord' && obj.getClassName() === 'AnimMol' },
+  } as unknown as WorkerContext
+
+  it('accepts the class or a derived one, and names the class when refusing', () => {
+    expect(resolveRef(classCtx, 1, '1crn', 'object', 'MolCoord')).toMatchObject({ ok: true, node: { id: 10 } })
+    expect(resolveRef(classCtx, 1, '2abc', 'object', 'MolCoord')).toMatchObject({ ok: true, node: { id: 20 } })
+    expect(resolveRef(classCtx, 1, '1crn', 'object', 'DensityMap')).toEqual({ ok: false, error: '"1crn" is not a DensityMap object' })
+  })
+})

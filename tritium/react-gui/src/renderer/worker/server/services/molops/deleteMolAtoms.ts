@@ -41,7 +41,7 @@ export function deleteMolAtoms(
     return undoTxnResult(scene, 'Delete atoms', () => {
         // delete_atoms refuses an empty selection (it would delete every atom).
         if (args.selStr.trim() !== '') {
-            recordOp(ctx, scene.uid, 'delete_atoms', { molId: args.objId, selection: args.selStr }, ['molId']);
+            recordOp(ctx, scene.uid, 'delete_atoms', { objId: args.objId, selection: args.selStr }, ['objId']);
         }
         return mgr.deleteAtoms(
             mol as unknown as MolCoord,

@@ -2,10 +2,9 @@
  * @file plugins/console/worker/runtime/runQax.ts
  * @description Running the actions of a qax file (CueMol actions, XML).
  *
- * An `<op>` runs as an MCP call does: its arguments are read by
- * `readToolArgs`, with node paths resolved in the current scene, and the op
- * goes through `invokeOp`. A `<cmd>` is a native console line, handed back
- * to the console runtime. A `<note>` is skipped.
+ * The items run in core (`actions/qax/run.ts`, shared with the Action
+ * library); this adapter gives it the console's context, and runs a `<cmd>`
+ * as a native console line.
  *
  * Whether each action is its own undo transaction is the caller's choice
  * (`runCommand.ts`): alone on the line, a qax file replays the transactions
@@ -14,15 +13,11 @@
  */
 
 import * as fs from 'fs'
-import { findOp, invokeOp, readToolArgs } from '@renderer/worker/server/catalog'
-import type { Param } from '@renderer/worker/server/catalog/params'
-import { resolveRef } from '@renderer/worker/server/catalog/refs'
-import type { RefKind } from '@renderer/worker/server/catalog/refs'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { parseQax } from '@renderer/worker/server/actions/qax/codec'
 import type { QaxDoc, QaxItem } from '@renderer/worker/server/actions/qax/model'
 import { QAX_EXT } from '@renderer/worker/server/actions/qax/model'
-import { qaxToInput } from '@renderer/worker/server/actions/qax/values'
+import { runQaxItems as runItems } from '@renderer/worker/server/actions/qax/run'
 import { opContextOf } from './opContext'
 import type { CmdContext } from './types'
 
@@ -53,57 +48,6 @@ export interface QaxRunner {
   error(text: string): void
 }
 
-const REF_KIND: Readonly<Record<string, RefKind>> = {
-  object: 'object',
-  molecule: 'molecule',
-  renderer: 'renderer',
-  node: 'node',
-}
-
-/** The uid a node argument names in the current scene. */
-function resolveNode(ctx: WorkerContext, sceneId: number) {
-  return (ref: { path?: string; uid?: number }, p: Param<unknown>, argName: string): number | { error: string } => {
-    const kind = REF_KIND[p.semantic ?? ''] ?? 'node'
-    // The path is what carries over to another session; the uid only when
-    // there is no path to look up.
-    const text = ref.path ?? (ref.uid !== undefined ? `#${ref.uid}` : '')
-    const hit = resolveRef(ctx, sceneId, text, kind)
-    return hit.ok ? hit.node.id : { error: `${argName}: ${hit.error}` }
-  }
-}
-
-/** Run one `<op>`. */
-async function runOp(item: Extract<QaxItem, { kind: 'op' }>, r: QaxRunner): Promise<boolean> {
-  const op = findOp(item.name)
-  if (!op) {
-    r.error(`Error: unknown op "${item.name}"`)
-    return false
-  }
-  const cc = r.cmdContext()
-  const read = qaxToInput(item, op.params, resolveNode(r.ctx, cc.sceneId))
-  if (!read.ok) {
-    r.error(`Error: ${item.name}: ${read.error}`)
-    return false
-  }
-  const input = read.input
-  if (op.outsideTxn?.(input)) {
-    r.error(`Error: ${item.name} cannot run from a qax file (it opens or saves a scene)`)
-    return false
-  }
-  const args = readToolArgs(op, input)
-  if (typeof args === 'string') {
-    r.error(`Error: ${item.name}: ${args}`)
-    return false
-  }
-  const outcome = await invokeOp(op, r.ctx, args, opContextOf(cc, 'qax'))
-  if (!outcome.ok) {
-    r.error(`Error: ${item.name}: ${outcome.error}`)
-    return false
-  }
-  if (op.mutates) cc.markMutated()
-  return true
-}
-
 /**
  * Run the items of one action in order, stopping at the first failure or at
  * Stop.
@@ -111,11 +55,13 @@ async function runOp(item: Extract<QaxItem, { kind: 'op' }>, r: QaxRunner): Prom
  * @returns whether every item ran.
  */
 export async function runQaxItems(items: readonly QaxItem[], r: QaxRunner): Promise<boolean> {
-  for (const item of items) {
-    if (r.cmdContext().stopped()) return false
-    if (item.kind === 'note') continue
-    const done = item.kind === 'op' ? await runOp(item, r) : await r.runLine(item.text)
-    if (!done) return false
-  }
-  return true
+  const cc = r.cmdContext()
+  return runItems(items, {
+    ctx: r.ctx,
+    sceneId: cc.sceneId,
+    opContext: () => opContextOf(r.cmdContext(), 'qax'),
+    stopped: () => r.cmdContext().stopped(),
+    runLine: (text) => r.runLine(text),
+    error: (text) => r.error(text),
+  })
 }

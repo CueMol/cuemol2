@@ -24,8 +24,25 @@
  * reader / writer beside it depend on nothing else in the worker, so the
  * format can be implemented again elsewhere (in C++) against the same files.
  *
- * `<macro>` is reserved for named actions with parameters; version 1
- * refuses it.
+ * A file can also define macros: named actions with parameters, run on
+ * what the caller binds them to. An argument takes a parameter's value with
+ * `param`, and a renderer under the object a parameter names with `param`
+ * plus `sub` (the renderer's name, e.g. one the macro created itself):
+ *
+ *   <macro name="cartoon" label="Cartoon" description="...">
+ *     <param name="mol" type="MolCoord" label="Target"/>
+ *     <op name="create_renderer">
+ *       <arg name="objId" param="mol"/>
+ *       <arg name="rendererType">cartoon</arg>
+ *       <arg name="name">p_cartoon</arg>
+ *     </op>
+ *     <op name="set_renderer_coloring">
+ *       <arg name="nodeId" param="mol" sub="p_cartoon"/>
+ *       ...
+ *   </macro>
+ *
+ * A parameter's `type` is a qif class name, as a qsc file names an object's
+ * class (`MolCoord`, `Object`).
  */
 
 /** The only version written and read. */
@@ -59,6 +76,10 @@ export interface QaxArg {
   path?: string
   uid?: number
   atoms?: QaxAtom[]
+  /** In a macro: the parameter whose value this is. */
+  param?: string
+  /** With `param`: the renderer of that name under the object it names. */
+  sub?: string
 }
 
 export type QaxItem =
@@ -75,7 +96,26 @@ export interface QaxAction {
   items: QaxItem[]
 }
 
+/** One parameter of a macro. */
+export interface QaxParam {
+  name: string
+  /** The qif class of the object it takes (`MolCoord`, `Object`). */
+  type: string
+  label?: string
+}
+
+/** A named action with parameters; run as one undo transaction. */
+export interface QaxMacro {
+  name: string
+  label?: string
+  description?: string
+  params: QaxParam[]
+  items: QaxItem[]
+}
+
 export interface QaxDoc {
   version: number
   actions: QaxAction[]
+  /** Macros the file defines; left out when it defines none. */
+  macros?: QaxMacro[]
 }

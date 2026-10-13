@@ -24,7 +24,7 @@ import { NO_OBJECT } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import type { AtomSpec } from '../params'
-import { atoms, boolean, moleculeId, string } from '../params'
+import { atoms, boolean, objectId, string } from '../params'
 import { atomList } from '../cmlFormat'
 
 /** What `measure_geometry` computes, by how many atoms it was given. */
@@ -49,7 +49,7 @@ export const measureGeometry = defineOp({
     '- Use `list_residues` to check a residue index first; the atom name is the PDB name, ' +
     'for example `CA`, `N`, `C`, `O`, `CB`.',
   params: {
-    molId: moleculeId('Uid of the molecule object the atoms belong to.'),
+    objId: objectId('Uid of the MolCoord object the atoms belong to.', 'MolCoord'),
     atoms: atoms(
       'Two, three or four atoms, in order. Two give a distance, three the angle at the ' +
         'second atom, four the torsion about the second-to-third bond. Any other number is ' +
@@ -63,7 +63,7 @@ export const measureGeometry = defineOp({
   // as mutating is the safe way round: a transaction that drew a label and is
   // then rolled back would take the label with it.
   mutates: true,
-  describe: (a, n) => `Measure ${atomList(a.atoms, ' - ')} in ${n('molId')}`,
+  describe: (a, n) => `Measure ${atomList(a.atoms, ' - ')} in ${n('objId')}`,
   expose: { tool: 'analysis', console: true },
   group: 'analysis',
   run(ctx, args, oc): OpOutcome {
@@ -75,8 +75,8 @@ export const measureGeometry = defineOp({
 
     const scene = getSceneOrNull(ctx, oc.sceneId)
     if (!scene) return { ok: false, error: 'The scene could not be read.' }
-    const molId = args.molId
-    const mol = scene.getObject(molId) as MolCoord | null
+    const objId = args.objId
+    const mol = scene.getObject(objId) as MolCoord | null
     if (!mol) return { ok: false, error: NO_OBJECT }
 
     // Resolve every atom before measuring anything, so a typo in the last one
@@ -93,14 +93,14 @@ export const measureGeometry = defineOp({
         return {
           ok: false,
           error:
-            `No atom ${describe(spec)} in that molecule. Check the chain and residue with ` +
+            `No atom ${describe(spec)} in that object. Check the chain and residue with ` +
             'list_chains and list_residues, and the atom name against the PDB naming.',
         }
       }
       found.push(atom)
     }
 
-    const refs: MeasureAtomRef[] = found.map((a) => ({ objId: molId, atomId: a.id }))
+    const refs: MeasureAtomRef[] = found.map((a) => ({ objId, atomId: a.id }))
     if (hasDegenerateAtoms(mode, refs)) {
       return { ok: false, error: 'The same atom was given twice; the measurement is undefined.' }
     }

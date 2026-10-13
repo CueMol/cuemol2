@@ -456,6 +456,11 @@ export function setColoringProp(
     }
 
     withUndoTxn(scene, 'Change coloring property', () => {
+        recordOp(ctx, scene.uid, 'set_coloring_prop', {
+            ...coloringOpTarget(args),
+            prop: args.propName,
+            value: String(args.propValue),
+        }, ['nodeId']);
         materializeColoringIfDefault(rend);
         const live = (rend as unknown as MolRenderer).coloring;
         if (!live) return;

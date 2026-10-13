@@ -225,11 +225,11 @@ export function changeSymmetryInfo(
     // changeXtalInfo is a void mutation: success commits, a throw rolls back.
     return undoTxnResult(scene, 'Change symminfo', () => {
         recordOp(ctx, scene.uid, 'set_symmetry', {
-            molId: args.objId,
+            objId: args.objId,
             a: args.a, b: args.b, c: args.c,
             alpha: args.alpha, beta: args.beta, gamma: args.gamma,
             spaceGroup: args.nsg,
-        }, ['molId']);
+        }, ['objId']);
         symmMgr.changeXtalInfo(
             args.objId,
             args.a, args.b, args.c,
@@ -300,10 +300,10 @@ export function showSymmRenderer(
     return undoTxnResult(scene as Scene, 'Show sym mol', () => {
         // A finite extent is centred on the view centre, as the op does.
         recordOp(ctx, scene.uid, 'show_symmetry', {
-            molId: args.objId,
+            objId: args.objId,
             extent: args.extent === 'unitcell' ? null : args.extent,
             unitCell: null,
-        }, ['molId']);
+        }, ['objId']);
         let rend = obj.getRendererByType('*symm') as Renderer | null;
         if (!rend) {
             rend = obj.createRenderer('*symm') as Renderer;

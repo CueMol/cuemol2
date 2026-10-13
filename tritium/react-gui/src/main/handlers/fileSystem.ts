@@ -53,6 +53,15 @@ export function registerFileSystemHandlers(): void {
   })
 
   // Reveal a produced file in Finder / Explorer.
+  // Deleting a user's own file goes to the trash, so it can be got back.
+  handleInvoke(IPC.SHELL_TRASH_PATH, async (_event, { path: p }) => {
+    try {
+      await shell.trashItem(p)
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) }
+    }
+  })
   handleInvoke(IPC.SHELL_REVEAL_PATH, (_event, { path: p }) => {
     shell.showItemInFolder(p)
     return { ok: true }

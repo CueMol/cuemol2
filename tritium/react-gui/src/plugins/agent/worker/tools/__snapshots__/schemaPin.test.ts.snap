@@ -12,7 +12,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "description": "Find close contacts around a selection and draw them as labelled dashed lines. Use it for hydrogen bonds and for what a ligand touches; by default only polar atoms (no carbon) are paired. This adds labels to the scene.",
     "mutates": true,
     "name": "analyze_interactions",
-    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the molecule to measure within."},"selection":{"type":"string","description":"Selection the contacts start from, for example a ligand."},"maxDist":{"type":["number","null"],"description":"Longest contact to report, in angstroms. Null uses 4."},"includeCarbon":{"type":["boolean","null"],"description":"True also reports contacts that involve a carbon atom. Null or false leaves carbon out, so only atoms that can make hydrogen bonds or salt bridges (N, O, S, ...) are reported -- which is what \\"interactions\\" usually means."}},"required":["objId","selection","maxDist","includeCarbon"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object to measure within."},"selection":{"type":"string","description":"Selection the contacts start from, for example a ligand."},"maxDist":{"type":["number","null"],"description":"Longest contact to report, in angstroms. Null uses 4."},"includeCarbon":{"type":["boolean","null"],"description":"True also reports contacts that involve a carbon atom. Null or false leaves carbon out, so only atoms that can make hydrogen bonds or salt bridges (N, O, S, ...) are reported -- which is what \\"interactions\\" usually means."}},"required":["objId","selection","maxDist","includeCarbon"],"additionalProperties":false}",
   },
   {
     "description": "Control the scene's animation (made in the Animation panel): play it, pause it, stop it, or show the frame at a time.",
@@ -43,10 +43,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"longSide":{"type":["integer","null"],"description":"Pixels on the longer side. Null uses 1024, which suits almost every check; clamped to 256-1568."}},"required":["longSide"],"additionalProperties":false}",
   },
   {
-    "description": "Move the camera to a selection. Note the side effect: this also SETS the molecule's current selection to the expression given, the same as set_mol_selection.",
+    "description": "Move the camera to a selection. Note the side effect: this also SETS the object's current selection to the expression given, the same as set_mol_selection.",
     "mutates": true,
     "name": "center_view",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":["string","null"],"description":"Selection expression to centre on. Null uses the molecule's current selection."},"zoom":{"type":"boolean","description":"True also zooms to fit the selection; false only recentres."}},"required":["molId","selection","zoom"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":["string","null"],"description":"Selection expression to centre on. Null uses the object's current selection."},"zoom":{"type":"boolean","description":"True also zooms to fit the selection; false only recentres."}},"required":["objId","selection","zoom"],"additionalProperties":false}",
   },
   {
     "description": "Remove every region painted with add_paint on one renderer or object.",
@@ -55,10 +55,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the renderer or object to clear."},"nodeType":{"type":"string","enum":["renderer","object"],"description":"What nodeId refers to: a renderer, or an object (the colouring its renderers take by default)."}},"required":["nodeId","nodeType"],"additionalProperties":false}",
   },
   {
-    "description": "Compile a selection expression and count the atoms it matches in one molecule. Do this before using an expression anywhere else: an expression can be valid and still match nothing, which looks like a renderer that did not work.",
+    "description": "Compile a selection expression and count the atoms it matches in one MolCoord object. Do this before using an expression anywhere else: an expression can be valid and still match nothing, which looks like a renderer that did not work.",
     "mutates": false,
     "name": "count_selection",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule to count against."},"selection":{"type":"string","description":"The selection expression to check."}},"required":["molId","selection"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object to count against."},"selection":{"type":"string","description":"The selection expression to check."}},"required":["objId","selection"],"additionalProperties":false}",
   },
   {
     "description": "Draw an object a new way: create a renderer of the given type on it. Returns the new renderer's uid. The type must be one list_renderer_types listed for that object.",
@@ -67,10 +67,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object to draw."},"rendererType":{"type":"string","description":"Renderer type, from list_renderer_types."},"name":{"type":["string","null"],"description":"Name for the renderer. Null picks an unused default."},"selection":{"type":["string","null"],"description":"Draw only this selection. Null draws the whole object. Check it with count_selection first."}},"required":["objId","rendererType","name","selection"],"additionalProperties":false}",
   },
   {
-    "description": "Compute the molecular (solvent excluded) surface of a molecule, or of a selection of it, as a new surface object with a renderer. Returns the new object's uid.",
+    "description": "Compute the molecular (solvent excluded) surface of a MolCoord object, or of a selection of it, as a new surface object with a renderer. Returns the new object's uid.",
     "mutates": true,
     "name": "create_surface",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule."},"selection":{"type":["string","null"],"description":"Only these atoms. Null uses the whole molecule."},"name":{"type":["string","null"],"description":"Name for the surface object. Null picks an unused one."},"probeRadius":{"type":["number","null"],"description":"Probe radius in angstroms. Null uses 1.4."},"density":{"type":["number","null"],"description":"Points per angstrom. Null uses 2; higher is finer and slower."}},"required":["molId","selection","name","probeRadius","density"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":["string","null"],"description":"Only these atoms. Null uses the whole object."},"name":{"type":["string","null"],"description":"Name for the surface object. Null picks an unused one."},"probeRadius":{"type":["number","null"],"description":"Probe radius in angstroms. Null uses 1.4."},"density":{"type":["number","null"],"description":"Points per angstrom. Null uses 2; higher is finer and slower."}},"required":["objId","selection","name","probeRadius","density"],"additionalProperties":false}",
   },
   {
     "description": "Give a selection expression a name, usable in any later selection (and listed by get_scene_state). The name stands for the expression, re-evaluated each time it is used.",
@@ -79,10 +79,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"The name, e.g. site1."},"selection":{"type":"string","description":"The expression it stands for."}},"required":["name","selection"],"additionalProperties":false}",
   },
   {
-    "description": "Delete the atoms a selection matches from a molecule. Undoable, but only use it when the user asked to remove atoms.",
+    "description": "Delete the atoms a selection matches from a MolCoord object. Undoable, but only use it when the user asked to remove atoms.",
     "mutates": true,
     "name": "delete_atoms",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule."},"selection":{"type":"string","description":"The atoms to delete, e.g. resn HOH."}},"required":["molId","selection"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":"string","description":"The atoms to delete, e.g. resn HOH."}},"required":["objId","selection"],"additionalProperties":false}",
   },
   {
     "description": "Delete a named camera.",
@@ -97,7 +97,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the object, renderer, or renderer group."},"nodeType":{"type":"string","enum":["object","renderer","rendGroup"],"description":"What nodeId refers to. Must match what get_scene_state reported."}},"required":["nodeId","nodeType"],"additionalProperties":false}",
   },
   {
-    "description": "Switch on more tools for this conversation. The tools below are always available; these groups add more once switched on, from your next step: "analysis" -- Measuring and analysing: distances, angles and torsions between named atoms, close contacts around a selection, and listing the residues of a chain. "files" -- Files on this computer: opening a structure file the user named, and saving a PNG of the view to the desktop. (Downloading from the PDB is always available.) "coloring" -- More colouring: the named styles set_renderer_coloring accepts, clearing painted regions, and a painted renderer's base colour. "view" -- Camera: saving and restoring named views, perspective or orthographic projection, sliding the view, and fitting it to one object or renderer. "map" -- Electron density maps: fetching a PDB entry's map, and setting contour level, extent and colour. "molops" -- Changing molecules: superposing one onto another, molecular surfaces, deleting atoms, renaming chains, merging molecules, and secondary structure. "xtal" -- Crystal structures: symmetry mates and the unit cell. "style" -- Named renderer styles (preset looks and outlines). "selection" -- Naming a selection expression for later use. "render" -- High-quality rendering: ray-traced images with global illumination or a hatched illustration style, saved as PNG (like PyMOL ray). "anim" -- Playing the scene's animation. Switch a group on only when the request needs it.",
+    "description": "Switch on more tools for this conversation. The tools below are always available; these groups add more once switched on, from your next step: "analysis" -- Measuring and analysing: distances, angles and torsions between named atoms, close contacts around a selection, and listing the residues of a chain. "files" -- Files on this computer: opening a structure file the user named, and saving a PNG of the view to the desktop. (Downloading from the PDB is always available.) "coloring" -- More colouring: the named styles set_renderer_coloring accepts, clearing painted regions, and a painted renderer's base colour. "view" -- Camera: saving and restoring named views, perspective or orthographic projection, sliding the view, and fitting it to one object or renderer. "map" -- Electron density maps: fetching a PDB entry's map, and setting contour level, extent and colour. "molops" -- Changing MolCoord objects: superposing one onto another, molecular surfaces, deleting atoms, renaming chains, merging MolCoord objects, and secondary structure. "xtal" -- Crystal structures: symmetry mates and the unit cell. "style" -- Named renderer styles (preset looks and outlines). "selection" -- Naming a selection expression for later use. "render" -- High-quality rendering: ray-traced images with global illumination or a hatched illustration style, saved as PNG (like PyMOL ray). "anim" -- Playing the scene's animation. Switch a group on only when the request needs it.",
     "mutates": false,
     "name": "enable_toolsets",
     "parameters": "{"type":"object","properties":{"toolsets":{"type":"array","description":"The groups to switch on.","items":{"type":"string","enum":["analysis","files","coloring","view","map","molops","xtal","style","selection","render","anim"]}}},"required":["toolsets"],"additionalProperties":false}",
@@ -139,10 +139,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{},"required":[],"additionalProperties":false}",
   },
   {
-    "description": "List the chain names of one molecule. Use before writing a chain-based selection.",
+    "description": "List the chain names of one MolCoord object. Use before writing a chain-based selection.",
     "mutates": false,
     "name": "list_chains",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object, from get_scene_state."}},"required":["molId"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object, from get_scene_state."}},"required":["objId"],"additionalProperties":false}",
   },
   {
     "description": "List the named colouring styles available in this scene. These are the style names set_renderer_coloring accepts; the fixed modes it also accepts are listed in its own description.",
@@ -178,7 +178,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "description": "List the residues of one chain: index, three-letter name, and one-letter code. The index is a STRING because it may carry an insertion code (for example "20A"), so use it verbatim in a selection.",
     "mutates": false,
     "name": "list_residues",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"chain":{"type":"string","description":"Chain name, from list_chains."},"offset":{"type":["integer","null"],"description":"Skip this many residues. Null starts at the beginning."}},"required":["molId","chain","offset"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"chain":{"type":"string","description":"Chain name, from list_chains."},"offset":{"type":["integer","null"],"description":"Skip this many residues. Null starts at the beginning."}},"required":["objId","chain","offset"],"additionalProperties":false}",
   },
   {
     "description": "Open a structure file already on this computer and add it to the scene. Only use a path the user gave you. The reader is picked as File > Open picks it (by extension, or by the content when the extension is ambiguous or unknown) and uses its default options. Creates a new object AND a default renderer, so call get_scene_state afterwards to learn their ids.",
@@ -194,13 +194,13 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
 - Use \`list_residues\` to check a residue index first; the atom name is the PDB name, for example \`CA\`, \`N\`, \`C\`, \`O\`, \`CB\`.",
     "mutates": true,
     "name": "measure_geometry",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object the atoms belong to."},"atoms":{"type":"array","description":"Two, three or four atoms, in order. Two give a distance, three the angle at the second atom, four the torsion about the second-to-third bond. Any other number is an error.","items":{"type":"object","description":"One atom, named the way the PDB file names it.","properties":{"chain":{"type":"string","description":"Chain name, for example A."},"resid":{"type":"string","description":"Residue index as a string, because it may carry an insertion code (for example \\"20\\" or \\"20A\\")."},"atomName":{"type":"string","description":"Atom name, for example CA."}},"required":["chain","resid","atomName"],"additionalProperties":false}},"draw":{"type":"boolean","description":"True also draws the labelled measurement in the 3D view; false only returns the number."},"label":{"type":"string","description":"Name of the label set to draw into. Use \\"measure\\" unless the user asked for another."}},"required":["molId","atoms","draw","label"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object the atoms belong to."},"atoms":{"type":"array","description":"Two, three or four atoms, in order. Two give a distance, three the angle at the second atom, four the torsion about the second-to-third bond. Any other number is an error.","items":{"type":"object","description":"One atom, named the way the PDB file names it.","properties":{"chain":{"type":"string","description":"Chain name, for example A."},"resid":{"type":"string","description":"Residue index as a string, because it may carry an insertion code (for example \\"20\\" or \\"20A\\")."},"atomName":{"type":"string","description":"Atom name, for example CA."}},"required":["chain","resid","atomName"],"additionalProperties":false}},"draw":{"type":"boolean","description":"True also draws the labelled measurement in the 3D view; false only returns the number."},"label":{"type":"string","description":"Name of the label set to draw into. Use \\"measure\\" unless the user asked for another."}},"required":["objId","atoms","draw","label"],"additionalProperties":false}",
   },
   {
-    "description": "Move (or copy) the atoms a selection matches from one molecule into another, e.g. a ligand into the protein it binds.",
+    "description": "Move (or copy) the atoms a selection matches from one MolCoord object into another, e.g. a ligand into the protein it binds.",
     "mutates": true,
     "name": "merge_molecules",
-    "parameters": "{"type":"object","properties":{"fromId":{"type":"integer","description":"Uid of the molecule the atoms come from."},"toId":{"type":"integer","description":"Uid of the molecule they go into."},"selection":{"type":["string","null"],"description":"Which atoms. Null takes all of them."},"copy":{"type":["boolean","null"],"description":"True copies and leaves the source as it is; false (default) moves."}},"required":["fromId","toId","selection","copy"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"fromId":{"type":"integer","description":"Uid of the MolCoord object the atoms come from."},"toId":{"type":"integer","description":"Uid of the MolCoord object they go into."},"selection":{"type":["string","null"],"description":"Which atoms. Null takes all of them."},"copy":{"type":["boolean","null"],"description":"True copies and leaves the source as it is; false (default) moves."}},"required":["fromId","toId","selection","copy"],"additionalProperties":false}",
   },
   {
     "description": "Slide the view without turning it: x moves the scene right, y up, z toward the viewer, in screen units (about one pixel each at the current zoom). Use center_view to go to a selection instead.",
@@ -212,7 +212,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "description": "Change the chain name of the atoms a selection matches (e.g. a whole chain).",
     "mutates": true,
     "name": "rename_chain",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule."},"selection":{"type":"string","description":"The atoms to rename, e.g. chain A."},"chain":{"type":"string","description":"The new chain name."}},"required":["molId","selection","chain"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":"string","description":"The atoms to rename, e.g. chain A."},"chain":{"type":"string","description":"The new chain name."}},"required":["objId","selection","chain"],"additionalProperties":false}",
   },
   {
     "description": "Rename one object, renderer, or renderer group. Renaming a group keeps its renderers in it.",
@@ -245,10 +245,16 @@ Use \`capture_view\` to look at the view quickly instead.",
     "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"Name of the camera."},"withVisibility":{"type":["boolean","null"],"description":"Also remember which objects and renderers are shown. Null is false."}},"required":["name","withVisibility"],"additionalProperties":false}",
   },
   {
-    "description": "Write one object to a file in the format its extension names (for a molecule e.g. .pdb or .cif). Give a plain file name, which is saved to the desktop, or an absolute path where the caller allows one; the full path is reported back -- tell the user where it went.",
+    "description": "Write one object to a file in the format its extension names (for a MolCoord object e.g. .pdb or .cif). Give a plain file name, which is saved to the desktop, or an absolute path where the caller allows one; the full path is reported back -- tell the user where it went.",
     "mutates": false,
     "name": "save_object",
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the object."},"fileName":{"type":"string","description":"The file, e.g. model.pdb."}},"required":["objId","fileName"],"additionalProperties":false}",
+  },
+  {
+    "description": "Set one property of the colouring a renderer or an object uses (what the CPK, Rainbow and B-factor sections of the Coloring panel change), e.g. col_C, start / end hue, mode, lowcol. A colouring still shared from a style is given its own copy first, so only this one changes.",
+    "mutates": true,
+    "name": "set_coloring_prop",
+    "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the renderer or object whose colouring to change."},"nodeType":{"type":"string","enum":["renderer","object"],"description":"What nodeId refers to: a renderer, or an object (the colouring its renderers take by default)."},"prop":{"type":"string","description":"Property name of the colouring scheme."},"value":{"type":"string","description":"The value, as text: a colour, a number, or a mode name."}},"required":["nodeId","nodeType","prop","value"],"additionalProperties":false}",
   },
   {
     "description": "Set the colour a painted renderer or object uses where no painted region applies (its base colour).",
@@ -263,10 +269,10 @@ Use \`capture_view\` to look at the view quickly instead.",
     "parameters": "{"type":"object","properties":{"rendId":{"type":"integer","description":"Uid of the contour renderer, from list_map_contours."},"level":{"type":["number","null"],"description":"Contour level in sigma (percent for an EM map). Null leaves it."},"extent":{"type":["number","null"],"description":"Half-size of the drawn box in angstroms. Null leaves it."},"color":{"type":["string","null"],"description":"Contour colour. Null leaves it."},"alpha":{"type":["number","null"],"description":"Opacity, 0 to 1. Null leaves it."}},"required":["rendId","level","extent","color","alpha"],"additionalProperties":false}",
   },
   {
-    "description": "Set one molecule's current selection, which is what the user sees highlighted. An empty expression clears it. This does not change what any renderer draws; use set_renderer_selection for that.",
+    "description": "Set one MolCoord object's current selection, which is what the user sees highlighted. An empty expression clears it. This does not change what any renderer draws; use set_renderer_selection for that.",
     "mutates": true,
     "name": "set_mol_selection",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule object."},"selection":{"type":"string","description":"Selection expression. Empty string clears the selection."}},"required":["molId","selection"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":"string","description":"Selection expression. Empty string clears the selection."}},"required":["objId","selection"],"additionalProperties":false}",
   },
   {
     "description": "Set one property of one node.
@@ -314,7 +320,7 @@ Call \`list_node_props\` first: the property name, its type, and the allowed val
     "description": "Recompute a protein's secondary structure from its coordinates (no selection given), or assign one type to the residues a selection matches.",
     "mutates": true,
     "name": "set_secondary_structure",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule."},"selection":{"type":["string","null"],"description":"Residues to assign. Null recomputes the whole molecule."},"type":{"type":["string","null"],"enum":["coil","strand","helix","helix310","helixpi",null],"description":"With a selection: the type to assign."},"ignoreBulge":{"type":["boolean","null"],"description":"Recomputing: ignore beta bulges. Null is false."},"helixGapAngle":{"type":["number","null"],"description":"Recomputing: fill gaps in a helix up to this angle in degrees (the dialog offers 120). Null or 0 does not fill."}},"required":["molId","selection","type","ignoreBulge","helixGapAngle"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":["string","null"],"description":"Residues to assign. Null recomputes the whole object."},"type":{"type":["string","null"],"enum":["coil","strand","helix","helix310","helixpi",null],"description":"With a selection: the type to assign."},"ignoreBulge":{"type":["boolean","null"],"description":"Recomputing: ignore beta bulges. Null is false."},"helixGapAngle":{"type":["number","null"],"description":"Recomputing: fill gaps in a helix up to this angle in degrees (the dialog offers 120). Null or 0 does not fill."}},"required":["objId","selection","type","ignoreBulge","helixGapAngle"],"additionalProperties":false}",
   },
   {
     "description": "Read or change the camera without moving to a selection.
@@ -322,12 +328,12 @@ Call \`list_node_props\` first: the property name, its type, and the allowed val
 - \`zoom\`: the height of the view, in angstroms.
 - \`slab\`: the depth that is drawn, about the centre; atoms outside it are clipped.
 - \`distance\`: from the eye to the centre. And the centre itself.
-- \`fitSlab\` sets the slab so every molecule (or \`objId\`) is in it while keeping the centre and zoom as they are -- use it, not \`center_view\`, when only the clipping is wrong.
+- \`fitSlab\` sets the slab so every MolCoord object (or \`objId\`) is in it while keeping the centre and zoom as they are -- use it, not \`center_view\`, when only the clipping is wrong.
 
 Give only what should change; with nothing given it just reports the current values.",
     "mutates": false,
     "name": "set_view",
-    "parameters": "{"type":"object","properties":{"zoom":{"type":["number","null"],"description":"New zoom in angstroms. Null leaves it."},"slab":{"type":["number","null"],"description":"New slab depth in angstroms. Null leaves it."},"distance":{"type":["number","null"],"description":"New eye-to-centre distance in angstroms. Null leaves it."},"center":{"type":["array","null"],"description":"New centre [x, y, z] in angstroms. Null leaves it.","items":{"type":"number"}},"fitSlab":{"type":["boolean","null"],"description":"True fits the slab to the molecules. Do not also give slab."},"objId":{"type":["integer","null"],"description":"With fitSlab: fit to this object only. Null fits every molecule."}},"required":["zoom","slab","distance","center","fitSlab","objId"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"zoom":{"type":["number","null"],"description":"New zoom in angstroms. Null leaves it."},"slab":{"type":["number","null"],"description":"New slab depth in angstroms. Null leaves it."},"distance":{"type":["number","null"],"description":"New eye-to-centre distance in angstroms. Null leaves it."},"center":{"type":["array","null"],"description":"New centre [x, y, z] in angstroms. Null leaves it.","items":{"type":"number"}},"fitSlab":{"type":["boolean","null"],"description":"True fits the slab to the MolCoord objects. Do not also give slab."},"objId":{"type":["integer","null"],"description":"With fitSlab: fit to this object only. Null fits every MolCoord object."}},"required":["zoom","slab","distance","center","fitSlab","objId"],"additionalProperties":false}",
   },
   {
     "description": "Show or hide one object, renderer, or renderer group. Hiding an object hides everything drawn from it. Use this rather than deleting something the user may want back.",
@@ -339,13 +345,13 @@ Give only what should change; with nothing given it just reports the current val
     "description": "For a crystal structure: draw its symmetry mates within a distance of the view centre, or fill the unit cell, and optionally the unit cell box.",
     "mutates": true,
     "name": "show_symmetry",
-    "parameters": "{"type":"object","properties":{"molId":{"type":"integer","description":"Uid of the molecule (it must carry crystal information)."},"extent":{"type":["number","null"],"description":"Draw mates within this many angstroms. Null fills the unit cell."},"unitCell":{"type":["boolean","null"],"description":"True also draws the unit cell box."}},"required":["molId","extent","unitCell"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object (it must carry crystal information)."},"extent":{"type":["number","null"],"description":"Draw mates within this many angstroms. Null fills the unit cell."},"unitCell":{"type":["boolean","null"],"description":"True also draws the unit cell box."}},"required":["objId","extent","unitCell"],"additionalProperties":false}",
   },
   {
-    "description": "Move one molecule onto another by superposing selected atoms. SSM matches by secondary structure and needs no alignment (proteins); LSQ fits the selected atoms in order, so the two selections must pair up atom for atom (e.g. the same residues' CA atoms). The moving molecule's coordinates change.",
+    "description": "Move one MolCoord object onto another by superposing selected atoms. SSM matches by secondary structure and needs no alignment (proteins); LSQ fits the selected atoms in order, so the two selections must pair up atom for atom (e.g. the same residues' CA atoms). The moving object's coordinates change.",
     "mutates": true,
     "name": "superpose",
-    "parameters": "{"type":"object","properties":{"movId":{"type":"integer","description":"Uid of the molecule to move."},"refId":{"type":"integer","description":"Uid of the reference molecule, which stays put."},"movSel":{"type":["string","null"],"description":"Atoms of the moving molecule to fit. Null uses all (SSM) or CA atoms (LSQ)."},"refSel":{"type":["string","null"],"description":"Atoms of the reference to fit. Null as movSel."},"algo":{"type":["string","null"],"enum":["SSM","LSQ",null],"description":"SSM (default) or LSQ."}},"required":["movId","refId","movSel","refSel","algo"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"movId":{"type":"integer","description":"Uid of the MolCoord object to move."},"refId":{"type":"integer","description":"Uid of the reference MolCoord object, which stays put."},"movSel":{"type":["string","null"],"description":"Atoms of the moving object to fit. Null uses all (SSM) or CA atoms (LSQ)."},"refSel":{"type":["string","null"],"description":"Atoms of the reference to fit. Null as movSel."},"algo":{"type":["string","null"],"enum":["SSM","LSQ",null],"description":"SSM (default) or LSQ."}},"required":["movId","refId","movSel","refSel","algo"],"additionalProperties":false}",
   },
 ]
 `;

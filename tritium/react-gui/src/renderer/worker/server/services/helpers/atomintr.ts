@@ -92,7 +92,7 @@ function recordMeasure(ctx: WorkerContext, scene: Scene, mol: MolCoord, atoms: M
         if (!spec) return;
         specs.push(spec);
     }
-    recordOp(ctx, scene.uid, 'measure_geometry', { molId, atoms: specs, draw: true, label }, ['molId']);
+    recordOp(ctx, scene.uid, 'measure_geometry', { objId: molId, atoms: specs, draw: true, label }, ['objId']);
 }
 
 /**

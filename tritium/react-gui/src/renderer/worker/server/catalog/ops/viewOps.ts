@@ -2,7 +2,7 @@
  * @file worker/server/catalog/ops/viewOps.ts
  * @description Ops that move the camera.
  *
- * The view is not part of the undo history (turning the molecule with the
+ * The view is not part of the undo history (turning the object with the
  * mouse is not an edit), so these do not mark the scene as changed.
  */
 
@@ -99,7 +99,7 @@ function fittedSlab(ctx: WorkerContext, sceneId: number, viewId: number, objId: 
       far = Math.max(far, Math.abs(rot.mulvec(v).z - cz))
     }
   }
-  if (far < 0) return objId !== null ? 'That object has no atoms to fit.' : 'There are no molecules to fit.'
+  if (far < 0) return objId !== null ? 'That object has no atoms to fit.' : 'There are no MolCoord objects to fit.'
   return 2 * far * (1 + SLAB_MARGIN)
 }
 
@@ -126,7 +126,7 @@ export const setView = defineOp({
     '- `zoom`: the height of the view, in angstroms.\n' +
     '- `slab`: the depth that is drawn, about the centre; atoms outside it are clipped.\n' +
     '- `distance`: from the eye to the centre. And the centre itself.\n' +
-    '- `fitSlab` sets the slab so every molecule (or `objId`) is in it while keeping the ' +
+    '- `fitSlab` sets the slab so every MolCoord object (or `objId`) is in it while keeping the ' +
     'centre and zoom as they are -- use it, not `center_view`, when only the clipping is ' +
     'wrong.\n\n' +
     'Give only what should change; with nothing given it just reports the current values.',
@@ -135,8 +135,8 @@ export const setView = defineOp({
     slab: optional(real('New slab depth in angstroms. Null leaves it.')),
     distance: optional(real('New eye-to-centre distance in angstroms. Null leaves it.')),
     center: optional(vec3('New centre [x, y, z] in angstroms. Null leaves it.')),
-    fitSlab: optional(boolean('True fits the slab to the molecules. Do not also give slab.')),
-    objId: optional(objectId('With fitSlab: fit to this object only. Null fits every molecule.')),
+    fitSlab: optional(boolean('True fits the slab to the MolCoord objects. Do not also give slab.')),
+    objId: optional(objectId('With fitSlab: fit to this object only. Null fits every MolCoord object.')),
   },
   // The camera is not part of the undo history, as with the mouse.
   mutates: false,
@@ -148,7 +148,7 @@ export const setView = defineOp({
   aliases: [
     { name: 'view', summary: 'Print the camera: zoom, slab, distance, centre.' },
     { name: 'slab', order: ['slab'], summary: 'Set the slab depth: slab 30' },
-    { name: 'fit_slab', fixed: { fitSlab: true }, order: ['objId'], summary: 'Fit the slab to the molecules, keeping centre and zoom.' },
+    { name: 'fit_slab', fixed: { fitSlab: true }, order: ['objId'], summary: 'Fit the slab to the MolCoord objects, keeping centre and zoom.' },
   ],
   format(data) {
     const d = data as { zoom: number; slab: number; distance: number; center: number[] }

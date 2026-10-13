@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Preset macros shipped with CueMol, listed under Presets in the Actions view.
+  A macro with a "target" parameter runs on the MolCoord object selected in the
+  scene tree; one without parameters acts on the scene. Renderers a macro makes
+  are named p_..., and later ops in it reach them with sub="p_...".
+-->
+<cuemol-actions version="1">
+  <macro name="cartoon-ligand" label="Cartoon + ligand" description="The protein as a rainbow cartoon, and ligands and ions as ball and stick. Water is not drawn.">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">cartoon</arg>
+      <arg name="name">p_cartoon</arg>
+      <arg name="selection">protein</arg>
+    </op>
+    <op name="set_renderer_coloring">
+      <arg name="nodeId" param="target" sub="p_cartoon"/>
+      <arg name="nodeType">renderer</arg>
+      <arg name="mode">paint-type-rainbow</arg>
+    </op>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">ballstick</arg>
+      <arg name="name">p_ligand</arg>
+      <arg name="selection">ligand</arg>
+    </op>
+  </macro>
+  <macro name="ligand-site" label="Ligand site" description="Ball and stick for the ligands and the residues within 5 A of them, and the view fitted to that site.">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">ballstick</arg>
+      <arg name="name">p_site</arg>
+      <arg name="selection">ligand or byres (ligand around 5)</arg>
+    </op>
+    <op name="focus_node">
+      <arg name="nodeId" param="target" sub="p_site"/>
+      <arg name="nodeType">renderer</arg>
+    </op>
+  </macro>
+  <macro name="bfactor-cartoon" label="B-factor cartoon" description="The protein as a cartoon coloured by B-factor.">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">cartoon</arg>
+      <arg name="name">p_bfactor</arg>
+      <arg name="selection">protein</arg>
+    </op>
+    <op name="set_renderer_coloring">
+      <arg name="nodeId" param="target" sub="p_bfactor"/>
+      <arg name="nodeType">renderer</arg>
+      <arg name="mode">paint-type-bfac</arg>
+    </op>
+  </macro>
+  <macro name="transparent-surface" label="Transparent surface" description="A half-transparent molecular surface over the protein, so what is drawn inside stays visible.">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">dsurface</arg>
+      <arg name="name">p_surface</arg>
+      <arg name="selection">protein</arg>
+    </op>
+    <op name="set_node_prop">
+      <arg name="nodeType">renderer</arg>
+      <arg name="nodeId" param="target" sub="p_surface"/>
+      <arg name="prop">alpha</arg>
+      <arg name="value">0.5</arg>
+    </op>
+  </macro>
+  <macro name="electrostatic-surface" label="Electrostatic surface" description="The electrostatic potential (APBS) on the molecular surface, read at the solvent-accessible surface (By SAS): red negative, blue positive. Needs APBS and pdb2pqr (Settings).">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="calc_elepot">
+      <arg name="objId" param="target"/>
+    </op>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">dsurface</arg>
+      <arg name="name">p_elepot</arg>
+    </op>
+    <op name="set_elepot_coloring">
+      <arg name="rendId" param="target" sub="p_elepot"/>
+    </op>
+    <op name="set_node_prop">
+      <arg name="nodeType">renderer</arg>
+      <arg name="nodeId" param="target" sub="p_elepot"/>
+      <arg name="prop">ramp_above</arg>
+      <arg name="value">true</arg>
+    </op>
+  </macro>
+  <macro name="contacts" label="Ligand contacts" description="Contacts and hydrogen bonds between the ligands and the rest, drawn as labelled lines.">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="analyze_interactions">
+      <arg name="objId" param="target"/>
+      <arg name="selection">ligand</arg>
+    </op>
+  </macro>
+  <macro name="symmetry-mates" label="Symmetry mates" description="The crystal's symmetry mates filling the unit cell, and the cell box. The object must carry crystal information.">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="show_symmetry">
+      <arg name="objId" param="target"/>
+      <arg name="unitCell">true</arg>
+    </op>
+  </macro>
+  <macro name="white-background" label="White background" description="A white background, for a figure on paper.">
+    <op name="set_node_prop">
+      <arg name="nodeType">scene</arg>
+      <arg name="prop">bgcolor</arg>
+      <arg name="value">white</arg>
+    </op>
+  </macro>
+  <macro name="black-background" label="Black background" description="A black background, for a slide.">
+    <op name="set_node_prop">
+      <arg name="nodeType">scene</arg>
+      <arg name="prop">bgcolor</arg>
+      <arg name="value">black</arg>
+    </op>
+  </macro>
+  <macro name="render-image" label="Render image" description="Render the view to cuemol_render.png on the desktop, at the scene's render size, with photorealistic lighting.">
+    <op name="render_image">
+      <arg name="fileName">cuemol_render.png</arg>
+    </op>
+  </macro>
+  <macro name="spin-movie" label="360 degree spin" description="Add a full turn of the view to the animation and play it.">
+    <op name="add_anim">
+      <arg name="type">spin</arg>
+    </op>
+    <op name="animate">
+      <arg name="action">play</arg>
+    </op>
+  </macro>
+  <macro name="three-views" label="Front, side and top cameras" description="Save the current view as camera front, and the views turned 90 degrees about y and x as side and top.">
+    <op name="save_camera">
+      <arg name="name">front</arg>
+    </op>
+    <op name="rotate_view">
+      <arg name="axis">y</arg>
+      <arg name="angle">90</arg>
+    </op>
+    <op name="save_camera">
+      <arg name="name">side</arg>
+    </op>
+    <op name="rotate_view">
+      <arg name="axis">y</arg>
+      <arg name="angle">-90</arg>
+    </op>
+    <op name="rotate_view">
+      <arg name="axis">x</arg>
+      <arg name="angle">90</arg>
+    </op>
+    <op name="save_camera">
+      <arg name="name">top</arg>
+    </op>
+    <op name="rotate_view">
+      <arg name="axis">x</arg>
+      <arg name="angle">-90</arg>
+    </op>
+  </macro>
+</cuemol-actions>

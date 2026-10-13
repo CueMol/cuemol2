@@ -27,9 +27,9 @@ export const TOOL_RULES: readonly string[] = [
   something, not for measuring between two atoms you already know.`,
   `- To show the structure from another side, turn it with rotate_view.`,
   `- center_view moves the centre AND (with zoom) the zoom and clipping. When
-  only one of them should change -- "make the whole molecule visible in depth",
+  only one of them should change -- "make the whole structure visible in depth",
   "zoom out a bit" -- use set_view, which changes just what you give it;
-  fitSlab fits the clipping to the molecules without moving the camera.`,
+  fitSlab fits the clipping to the MolCoord objects without moving the camera.`,
   `- To colour PART of what a renderer draws, use add_paint, once per
   region. set_renderer_coloring replaces the renderer's whole colouring and
   will undo the regions you painted.`,

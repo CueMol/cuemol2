@@ -16,7 +16,7 @@ import {
 } from '@renderer/worker/server/services/select/applyMolSelString'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { boolean, integer, moleculeId, optional, selection, string } from '../params'
+import { boolean, integer, objectId, optional, selection, string } from '../params'
 import { wrapList } from '../consoleFormat'
 
 /** Residues returned before the tail is summarised away. */
@@ -24,16 +24,16 @@ const MAX_RESIDUES = 200
 
 export const getMolChainsOp = defineOp({
   name: 'list_chains',
-  description: 'List the chain names of one molecule. Use before writing a chain-based selection.',
+  description: 'List the chain names of one MolCoord object. Use before writing a chain-based selection.',
   params: {
-    molId: moleculeId('Uid of the molecule object, from get_scene_state.'),
+    objId: objectId('Uid of the MolCoord object, from get_scene_state.', 'MolCoord'),
   },
   mutates: false,
   expose: { tool: 'core', console: true },
   group: 'selections',
   run(ctx, args, oc) {
-    const result = getMolChains(ctx, { sceneId: oc.sceneId, molId: args.molId })
-    return normalizeServiceResult(result, 'No molecule with that id, or it has no chains.')
+    const result = getMolChains(ctx, { sceneId: oc.sceneId, molId: args.objId })
+    return normalizeServiceResult(result, 'No MolCoord object with that id, or it has no chains.')
   },
 })
 
@@ -44,7 +44,7 @@ export const getMolResiduesOp = defineOp({
     'The index is a STRING because it may carry an insertion code (for example "20A"), ' +
     'so use it verbatim in a selection.',
   params: {
-    molId: moleculeId('Uid of the molecule object.'),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
     chain: string('Chain name, from list_chains.'),
     offset: optional(integer('Skip this many residues. Null starts at the beginning.')),
   },
@@ -67,11 +67,11 @@ export const getMolResiduesOp = defineOp({
   run(ctx, args, oc) {
     const result = getMolResidues(ctx, {
       sceneId: oc.sceneId,
-      molId: args.molId,
+      molId: args.objId,
       chainName: args.chain,
     })
     if (!result.ok) {
-      return { ok: false, error: 'No molecule with that id, or no such chain.' }
+      return { ok: false, error: 'No MolCoord object with that id, or no such chain.' }
     }
     const offset = args.offset ?? 0
     const page = result.residues.slice(offset, offset + MAX_RESIDUES)
@@ -90,11 +90,11 @@ export const getMolResiduesOp = defineOp({
 export const checkSelection = defineOp({
   name: 'count_selection',
   description:
-    'Compile a selection expression and count the atoms it matches in one molecule. ' +
+    'Compile a selection expression and count the atoms it matches in one MolCoord object. ' +
     'Do this before using an expression anywhere else: an expression can be valid and ' +
     'still match nothing, which looks like a renderer that did not work.',
   params: {
-    molId: moleculeId('Uid of the molecule to count against.'),
+    objId: objectId('Uid of the MolCoord object to count against.', 'MolCoord'),
     selection: selection('The selection expression to check.'),
   },
   mutates: false,
@@ -113,11 +113,11 @@ export const checkSelection = defineOp({
     }
     const hits = getSelHitCount(ctx, {
       sceneId: oc.sceneId,
-      molId: args.molId,
+      molId: args.objId,
       selStr: args.selection,
     })
     if (hits.count === null) {
-      return { ok: false, error: 'The expression compiles but could not be counted against that molecule.' }
+      return { ok: false, error: 'The expression compiles but could not be counted against that object.' }
     }
     return { ok: true, data: { valid: true, atomCount: hits.count } }
   },
@@ -126,27 +126,27 @@ export const checkSelection = defineOp({
 export const setMolSelection = defineOp({
   name: 'set_mol_selection',
   description:
-    "Set one molecule's current selection, which is what the user sees highlighted. " +
+    "Set one MolCoord object's current selection, which is what the user sees highlighted. " +
     'An empty expression clears it. This does not change what any renderer draws; ' +
     'use set_renderer_selection for that.',
   params: {
-    molId: moleculeId('Uid of the molecule object.'),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
     selection: selection('Selection expression. Empty string clears the selection.'),
   },
   mutates: true,
-  describe: (a, n) => (a.selection ? `Select ${a.selection} in ${n('molId')}` : `Clear the selection of ${n('molId')}`),
+  describe: (a, n) => (a.selection ? `Select ${a.selection} in ${n('objId')}` : `Clear the selection of ${n('objId')}`),
   expose: { tool: 'core', console: true },
   group: 'selections',
-  aliases: [{ name: 'select', summary: "Set a molecule's current selection." }],
+  aliases: [{ name: 'select', summary: "Set a MolCoord object's current selection." }],
   run(ctx, args, oc) {
     const result = applyMolSelString(ctx, {
       sceneId: oc.sceneId,
-      molId: args.molId,
+      molId: args.objId,
       selStr: args.selection,
     })
     return normalizeServiceResult(
       result,
-      'The selection could not be applied. Check the molecule id and the expression.',
+      'The selection could not be applied. Check the object id and the expression.',
     )
   },
 })
@@ -154,12 +154,12 @@ export const setMolSelection = defineOp({
 export const centerView = defineOp({
   name: 'center_view',
   description:
-    'Move the camera to a selection. Note the side effect: this also SETS the molecule\'s ' +
+    'Move the camera to a selection. Note the side effect: this also SETS the object\'s ' +
     'current selection to the expression given, the same as set_mol_selection.',
   params: {
-    molId: moleculeId('Uid of the molecule object.'),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
     selection: optional(
-      selection("Selection expression to centre on. Null uses the molecule's current selection."),
+      selection("Selection expression to centre on. Null uses the object's current selection."),
     ),
     zoom: boolean('True also zooms to fit the selection; false only recentres.'),
   },
@@ -174,13 +174,13 @@ export const centerView = defineOp({
     const svcArgs = {
       sceneId: oc.sceneId,
       viewId: oc.viewId,
-      molId: args.molId,
+      molId: args.objId,
       selStr: args.selection ?? '',
     }
     const result = args.zoom ? zoomMolSelection(ctx, svcArgs) : centerMolSelection(ctx, svcArgs)
     return normalizeServiceResult(
       result,
-      'The view could not be centred. Check the molecule id and the expression.',
+      'The view could not be centred. Check the object id and the expression.',
     )
   },
 })

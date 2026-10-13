@@ -11,7 +11,7 @@ import type { OpOutcome } from './op'
 export const NO_OBJECT = 'No object with that id in this scene.'
 export const NO_RENDERER = 'No renderer with that id in this scene.'
 export const NO_NODE = 'No node with that id and type in this scene.'
-export const NO_MOLECULE = 'No molecule with that id in this scene.'
+export const NO_MOLCOORD = 'No MolCoord object with that id in this scene.'
 export const VIEW_UNREADABLE = 'The view could not be read.'
 
 /**

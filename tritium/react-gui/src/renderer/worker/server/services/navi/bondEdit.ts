@@ -103,7 +103,7 @@ function recordBondOps(ctx: WorkerContext, sceneId: number, op: 'add_bond' | 're
         if (!a || !b) return;
         specs.push([a, b]);
     }
-    for (const atoms of specs) recordOp(ctx, sceneId, op, { molId: mol.uid, atoms }, ['molId']);
+    for (const atoms of specs) recordOp(ctx, sceneId, op, { objId: mol.uid, atoms }, ['objId']);
 }
 
 /**

@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cuemol-actions version="1">
+  <macro name="cartoon-hide" label="Cartoon &amp; hide" description="Draw &quot;it&quot; as a cartoon">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">cartoon</arg>
+      <arg name="name">p_cartoon</arg>
+    </op>
+    <op name="set_visible">
+      <arg name="nodeId" param="target" sub="p_cartoon"/>
+      <arg name="nodeType">renderer</arg>
+      <arg name="visible">false</arg>
+    </op>
+  </macro>
+  <macro name="white-bg"/>
   <action label="Change property: width" source="gui" time="2026-10-11T01:02:05.000Z">
     <op name="set_node_prop">
       <arg name="nodeType">renderer</arg>

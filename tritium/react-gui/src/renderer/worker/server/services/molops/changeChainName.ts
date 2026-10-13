@@ -42,10 +42,10 @@ export function changeChainName(
     // changeChainName is a void mutation: success commits, a throw rolls back.
     return undoTxnResult(scene, 'Change chain name', () => {
         recordOp(ctx, scene.uid, 'rename_chain', {
-            molId: args.objId,
+            objId: args.objId,
             selection: args.selStr,
             chain: args.chainName,
-        }, ['molId']);
+        }, ['objId']);
         mgr.changeChainName(
             mol as unknown as MolCoord,
             sel as unknown as MolSelection,
