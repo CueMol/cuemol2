@@ -47,6 +47,18 @@ function uniquePath(nodes: SceneNodeEntry[], id: number): string | null {
 }
 
 /**
+ * The most an op's arguments may take in the log (as JSON). Larger ones
+ * (a pasted object's XML, with its coordinates) would make a qax file of
+ * megabytes; the op is replaced by a note saying it was not kept.
+ */
+export const MAX_RECORDED_ARGS_BYTES = 64 * 1024
+
+/** `1.8 MB` / `70 KB`. */
+function sizeText(bytes: number): string {
+  return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
+}
+
+/**
  * Record one op with the given typed arguments.
  *
  * @param refParams - the arguments that are node uids, whose current paths
@@ -60,6 +72,15 @@ export function recordOp(
   refParams: readonly string[] = [],
 ): void {
   if (!recording(sceneId)) return
+  const bytes = JSON.stringify(args).length
+  if (bytes > MAX_RECORDED_ARGS_BYTES) {
+    noteEntry(sceneId, {
+      kind: 'note',
+      text: `not recorded: ${op} (${sizeText(bytes)}, over the ${sizeText(MAX_RECORDED_ARGS_BYTES)} limit)`,
+      dropped: { op, bytes },
+    })
+    return
+  }
   const refs: Record<string, string> = {}
   if (refParams.length > 0) {
     const nodes = nodesOf(ctx, sceneId)

@@ -11,7 +11,7 @@ import { createRendererOnObject } from '@renderer/worker/server/services/rend/cr
 import { changeRendererType as changeRendererTypeService } from '@renderer/worker/server/services/rend/changeRendererType'
 import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import {
-  getPaintColoringStyles,
+  coloringStyleNames,
   getRendererPaintInfo,
 } from '@renderer/worker/server/services/coloring/panelList'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
@@ -187,9 +187,7 @@ export const getColoringStyles = defineOp({
   expose: { tool: 'coloring', console: true },
   group: 'coloring',
   run(ctx, _args, oc) {
-    const result = getPaintColoringStyles(ctx, { sceneId: oc.sceneId })
-    if (!result.ok) return { ok: false, error: 'The colouring styles could not be read.' }
-    return { ok: true, data: { styles: result.entries.map((e) => e.name) } }
+    return { ok: true, data: { styles: coloringStyleNames(ctx, oc.sceneId) } }
   },
 })
 
@@ -224,8 +222,7 @@ export const setRendererColoringOp = defineOp({
       if (styleName === '') {
         return { ok: false, error: 'mode is "style" but no styleName was given.' }
       }
-      const styles = getPaintColoringStyles(ctx, { sceneId: oc.sceneId })
-      if (styles.ok && !styles.entries.some((e) => e.name === styleName)) {
+      if (!coloringStyleNames(ctx, oc.sceneId).includes(styleName)) {
         return {
           ok: false,
           error: `No colouring style named "${styleName}". Call list_coloring_styles for the list.`,

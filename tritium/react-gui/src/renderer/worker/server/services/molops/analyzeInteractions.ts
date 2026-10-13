@@ -156,17 +156,18 @@ export function analyzeInteractions(
     let count = 0;
     try {
         withUndoTxn(scene, 'Define Label(s)', () => {
-            // analyze_interactions takes one molecule and one selection, with
-            // the dialog's minimum distance, label cap and label set; other
-            // choices have no op.
-            if (!needSel2 && rmin === 0 && nmax === 100 && name === ATOMINTR_DEFAULT_TARGET_NAME) {
-                recordOp(ctx, scene.uid, 'analyze_interactions', {
-                    objId: args.objId,
-                    selection: args.selStr,
-                    maxDist: rmax,
-                    includeCarbon: !args.hbondOnly,
-                }, ['objId']);
-            }
+            recordOp(ctx, scene.uid, 'analyze_interactions', {
+                objId: args.objId,
+                selection: args.selStr,
+                maxDist: rmax,
+                includeCarbon: !args.hbondOnly,
+                minDist: rmin,
+                maxLabels: nmax,
+                labelSet: name,
+                obj2Id: mol2 ? args.objId2 : null,
+                // Without a second object, a second selection is in molecule 1.
+                selection2: needSel2 ? (args.selStr2 ?? '') : null,
+            }, ['objId', 'obj2Id']);
             let rend = (mol as unknown as MolCoord).getRendererByNameType(
                 name, ATOMINTR_TYPE,
             ) as AtomIntrRenderer | null;

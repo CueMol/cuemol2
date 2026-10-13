@@ -290,7 +290,7 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
   `clear_undo` (Edit > Clear undo data。txn の外で実行)
 - `renumber_residues objId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond objId, A/20/SG A/45/SG`、
   `set_symmetry objId, a, b, c, alpha, beta, gamma, spaceGroup`
-- `create_group objId [, name]`、`create_surface_from_map rendId` (map の isosurf のみ)、`recalc_surface surfId [, density]`
+- `create_group objId [, name]`、`create_surface_from_map rendId` (map の isosurf のみ)、`recalc_surface surfId [, density] [, backend]`
 - `list_interactions` / `remove_interaction rendId, number` (距離・角度・二面角の個別削除)
 - `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)
 - `set_elepot_coloring rendId [, map] [, low] [, high]` (molsurf / dsurface を静電ポテンシャルで色付け)

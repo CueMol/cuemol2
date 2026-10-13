@@ -46,7 +46,7 @@ import {
 } from './multiGrad';
 import { buildPresetNodes } from '@renderer/worker/shared/multiGradPresets';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
-import { getPaintColoringStyles } from './panelList';
+import { coloringStyleNames } from './panelList';
 import type {
     SetRendererColoringArgs,
     SetRendererColoringResult,
@@ -203,9 +203,9 @@ const OP_COLORING_MODES: ReadonlySet<string> = new Set([
 
 /**
  * Record the op that applies the same coloring to a renderer or an object.
- * The gray CPK variants, the default paint table and multigrad have no op,
- * and neither has a style list_coloring_styles does not offer. Styles and
- * the potential coloring are for renderers only.
+ * A gray CPK variant is CPK with its carbon colour set. The default paint
+ * table and multigrad have no op. Styles and the potential coloring are for
+ * renderers only.
  */
 function recordColoringChoice(ctx: WorkerContext, sceneId: number, args: SetRendererColoringArgs): void {
     const id: string = args.coloringId;
@@ -214,10 +214,15 @@ function recordColoringChoice(ctx: WorkerContext, sceneId: number, args: SetRend
         recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: id, styleName: null }, ['nodeId']);
         return;
     }
+    if (id === 'paint-type-cpk-darkgray' || id === 'paint-type-cpk-lightgray') {
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: 'paint-type-cpk', styleName: null }, ['nodeId']);
+        recordOp(ctx, sceneId, 'set_coloring_prop', { ...target, prop: 'col_C', value: CPK_CARBON_COLORS[id] }, ['nodeId']);
+        return;
+    }
     if (args.targetKind === 'object') return;
     if (id.startsWith('style-')) {
         const styleName = id.substring('style-'.length);
-        if (!getPaintColoringStyles(ctx, { sceneId }).entries.some((e) => e.name === styleName)) return;
+        if (!coloringStyleNames(ctx, sceneId).includes(styleName)) return;
         recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: 'style', styleName }, ['nodeId']);
     } else if (id === 'paint-type-elepot') {
         // set_elepot_coloring with no map or range switches the mode alone.

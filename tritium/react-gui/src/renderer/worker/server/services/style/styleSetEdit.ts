@@ -203,21 +203,46 @@ export interface SetStyleSetSelectionArgs {
     value: string;
 }
 
+interface StyleSetInfo {
+    name?: string;
+    scene_id?: number;
+    uid?: number;
+    readonly?: boolean;
+}
+
+function styleSetsOf(ctx: WorkerContext, sceneId: number): StyleSetInfo[] {
+    try {
+        const parsed: unknown = JSON.parse(ctx.styleMgr.getStyleSetsJSON(sceneId));
+        return Array.isArray(parsed) ? (parsed as StyleSetInfo[]) : [];
+    } catch {
+        return [];
+    }
+}
+
 /**
  * Whether `styleSetId` is the set `define_selection` writes to: the first
  * writable set of the scene's own scope (as `saveSelDef` picks it).
  */
 function isDefineSelectionSet(ctx: WorkerContext, sceneId: number, styleSetId: number): boolean {
-    try {
-        const parsed: unknown = JSON.parse(ctx.styleMgr.getStyleSetsJSON(sceneId));
-        if (!Array.isArray(parsed)) return false;
-        const entry = (parsed as { scene_id?: number; uid?: number; readonly?: boolean }[]).find(
-            (e) => e.scene_id === sceneId && e.readonly === false,
-        );
-        return entry?.uid === styleSetId;
-    } catch {
-        return false;
-    }
+    const entry = styleSetsOf(ctx, sceneId).find((e) => e.scene_id === sceneId && e.readonly === false);
+    return entry?.uid === styleSetId;
+}
+
+/**
+ * The uid of the style set a scene reaches by `name`: its own set of that
+ * name before a global one. Null when there is none, or two in one scope.
+ */
+export function styleSetByName(ctx: WorkerContext, sceneId: number, name: string): number | null {
+    const named = styleSetsOf(ctx, sceneId).filter((e) => e.name === name && typeof e.uid === 'number');
+    const own = named.filter((e) => e.scene_id === sceneId);
+    const pick = own.length > 0 ? own : named;
+    return pick.length === 1 ? (pick[0].uid as number) : null;
+}
+
+/** The name `styleSetByName` finds this set by, or null when the name does not lead back to it. */
+function styleSetNameOf(ctx: WorkerContext, sceneId: number, styleSetId: number): string | null {
+    const name = styleSetsOf(ctx, sceneId).find((e) => e.uid === styleSetId)?.name;
+    return name !== undefined && styleSetByName(ctx, sceneId, name) === styleSetId ? name : null;
 }
 
 export function setStyleSetSelection(
@@ -226,15 +251,18 @@ export function setStyleSetSelection(
 ): StyleSetEditResult {
     const name = args.name.trim();
     if (name.length === 0) return { ok: false };
-    // define_selection reproduces this only in the set it picks itself, and
-    // trims the expression it stores.
+    // define_selection trims the expression it stores, and names any set
+    // but its own by name.
+    const styleSet = isDefineSelectionSet(ctx, args.sceneId, args.styleSetId)
+        ? null
+        : styleSetNameOf(ctx, args.sceneId, args.styleSetId);
     const opEquivalent =
         args.value.trim() === args.value &&
         args.value !== '' &&
-        isDefineSelectionSet(ctx, args.sceneId, args.styleSetId);
+        (styleSet !== null || isDefineSelectionSet(ctx, args.sceneId, args.styleSetId));
     const ok = mutate(ctx, args.sceneId, args.styleSetId, `Set style selection ${name}`, (set) => {
         if (opEquivalent) {
-            recordOp(ctx, args.sceneId, 'define_selection', { name, selection: args.value });
+            recordOp(ctx, args.sceneId, 'define_selection', { name, selection: args.value, styleSet });
         }
         set.setStrData(SEL_CAT, name, args.value);
     });

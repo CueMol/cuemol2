@@ -110,48 +110,62 @@ helper)。
 | scene tree の delete / rename (`sceneTree/sceneOps.ts`) | `delete_node` / `rename_node`。scene の改名は `set_node_prop name` |
 | `focusOnNode` | `focus_node` |
 | `setNodeVisible` (`sceneTree/sceneTree.ts`) | `set_visible` |
-| `applyMolSelString` | `set_mol_selection` |
-| `superposeMol` | `superpose` (`useprop` のときは記録しない) |
+| `applyMolSelString` | `set_mol_selection`。selection への center / zoom (`centerMolSelection` / `zoomMolSelection`) は `center_view` |
+| `superposeMol` | `superpose`。transform (xformMat) として保つときは `keepAsProperty` |
 | `createRendererOnObject` | `create_renderer` (type・name・selection のみ)。group 指定があれば、続けて `group` の `set_node_prop`。preset は記録しない |
 | `changeRendererType` | `set_renderer_type` |
 | `loadObject` | `load_file` (path・renderer type・selection・object 名のみ) |
 | `viewXform` (回転・平行移動) | 0 でない軸ごとの `rotate_view`、`pan_view` |
-| map の property (`map/props.ts`) | renderer への `set_node_prop` |
-| 背景色 (`scene/sceneBgColor.ts`、メニューの背景色) | scene の `set_node_prop bgcolor` (色名のまま) |
+| map の property (`map/props.ts`) | renderer への `set_node_prop`。Re-centre は `recenter_map` (中心は再生したときの view の中心) |
+| 背景色 (`scene/sceneBgColor.ts`、メニューの背景色) | scene の `set_node_prop bgcolor` (色名のまま)。Color proofing は切り替えた後の `use_colproof` (と既定の `icc_filename`) の `set_node_prop` |
 | `applyRendererStyle` (Style サブメニュー) | `apply_renderer_style` |
 | scene tree のまとめて表示・非表示 / 削除 (`sceneTree/bulkSceneNodeOps.ts`) | node ごとの `set_visible` / `delete_node` (削除は破棄の直前に記録) |
 | `applyRendererStyleList` (Edit Style ダイアログ) | `set_renderer_styles` (style の並び全体を `,` 区切りで) |
 | coloring scheme の property (`coloring/applyColoring.ts` の `setColoringProp`。Color pane の CPK / Rainbow / B-factor の欄) | `set_coloring_prop` (対象の renderer か object、property 名、値)。style から借りた着色なら、先にその node 専用の着色に切り替えてから書く (GUI と同じ) |
-| 着色 (`coloring/applyColoring.ts`、`colorTargets.ts`、`multiGrad.ts`) | `set_renderer_coloring` / `set_elepot_coloring` / `set_default_color`。coloring の target・elepot の property・multigrad の color map は `set_node_prop`。着色と paint の op は対象を `nodeId` + `nodeType` (`renderer` / `object`) で取るので、Color pane で object を対象にした変更も記録する (style と elepot は renderer のみ) |
+| 着色 (`coloring/applyColoring.ts`、`colorTargets.ts`、`multiGrad.ts`) | `set_renderer_coloring` / `set_elepot_coloring` / `set_default_color`。coloring の target・elepot の property・multigrad の color map は `set_node_prop`。着色と paint の op は対象を `nodeId` + `nodeType` (`renderer` / `object`) で取るので、Color pane で object を対象にした変更も記録する (style と elepot は renderer のみ)。CPK の dark / light gray は CPK と `set_coloring_prop col_C` の 2 つ。style は Paint の style と CPK の style (`DefaultCPKColoring` ほか。`list_coloring_styles` が両方を出す) |
 | paint の表 (`coloring/paintCrud.ts`、`paintClipboard.ts`) | `add_paint` / `set_paint` / `remove_paint` (複数行は 1 行ずつ) / `move_paint` / `clear_paint`。番号は 1 始まり |
-| 分子の編集 (`molops/`) | `rename_chain`、`renumber_residues`、`delete_atoms`、`merge_molecules`、`set_secondary_structure`、`create_surface` / `recalc_surface` (backend が auto のとき)、`cut_surface`、`set_symmetry`、`show_symmetry`、`analyze_interactions` (1 分子・1 selection のとき) |
+| 分子の編集 (`molops/`) | `rename_chain`、`renumber_residues`、`delete_atoms`、`merge_molecules`、`set_secondary_structure`、`create_surface` / `recalc_surface` (`backend` 付き)、`cut_surface`、`set_symmetry`、`show_symmetry`、`analyze_interactions` (dialog の設定をすべて: 最小距離、最大の数、label set、2 つ目の object / selection) |
 | morph (`morph/morphMol.ts`) | `add_morph_frame` / `remove_morph_frame` |
-| APBS (`apbs/run.ts`) | `calc_elepot`。pot file を読む txn で記録する。温度・誘電率が op の固定値と違うとき、内部電荷で水素を使うときは記録しない |
+| APBS (`apbs/run.ts`) | `calc_elepot`。pot file を読む txn で記録する。温度・誘電率・水素の扱いも引数に入れる |
 | 選択 (`select/`、3D view の右クリックメニュー、矩形・lasso 選択) | `set_mol_selection` (最終的な selection の文字列)。名前付き selection の保存は `define_selection` |
 | renderer (`rend/`) | `create_group`、`create_surface_from_map`、`set_renderer_selection`、`remove_interaction` |
 | アニメーション (`anim/`) | `add_anim` / `remove_anim` / `move_anim` / `set_anim_time` / `set_anim_prop`。要素は名前 (一意のとき) か 1 始まりの番号で指す (uid は再生で変わるので使わない) |
-| camera (`camera/`) | `save_camera` / `delete_camera` / `rename_camera` / `move_camera`。visibility 付きの camera の適用は `apply_camera` |
-| style set の selection 定義 (`style/styleSetEdit.ts`) | `define_selection` (それが書く style set のときだけ) |
+| camera (`camera/`) | `save_camera` (名前は前後の空白を除いて保存する) / `delete_camera` / `rename_camera` / `move_camera`。visibility 付きの camera の適用は `apply_camera` |
+| style set の selection 定義 (`style/styleSetEdit.ts`) | `define_selection`。scene の既定の set 以外は `styleSet` (set の名前。scene の set を global より先に引く) |
 | ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | `fetch_pdb` / `fetch_map` (RCSB の標準の URL のときだけ) |
 | 計測ツールと結合の編集 (`navi/`) | `measure_geometry` / `add_bond` / `remove_bond` |
+| Sequence panel の残基の選択 (`plugins/sequence/worker/seqPanelOps.ts`) | `set_mol_selection` (選んだ後の selection の文字列) |
 
 表に無い service の txn は、label だけを持つ行になる。`list_actions` ではこの行に
-`# no op recorded for this edit` と出し、qax には `<note>` として書く。
+`# no op recorded for this edit` と出し、qax には `<note>` として書く。dev build (`__DEV_UI__`) では、
+GUI の txn が undo の行を増やしたのに op が 1 つも無いとき、`[actionLog] no op recorded: <label>` を
+console に出す (記録の漏れを見つけるため)。
+
+- **引数の大きさの上限**: op の引数が JSON で `MAX_RECORDED_ARGS_BYTES` (64 KB、`actions/serviceOps.ts`)
+  を超えたら、その op は記録しない。代わりに `dropped` の付いた note
+  (`not recorded: <op> (<大きさ>, over the 64 KB limit)`) を残す。qax が数 MB になるのを避けるため
+  (object の貼り付けの XML は座標を含む)。History の行は `<label>: not recorded: ...` と出し、この
+  step を含む選択はマクロにできない。
+- **view の property**: C++ は View の property の undo を持たないので、Inspector の view の property
+  は txn を開かずに書く (空の commit が Redo を消すため)。記録もしない (§2.3)。
 
 ### 2.3 記録できていないもの (既知)
 
 - PyMOL dialect のうち、service を通らずに C++ を直接変更するもの。例: `show sticks` の
   `applyStyles`、`label`、`set_view` の回転、`orient`、`center`、`frame`。そのコマンドの行には、
   service を通った部分の op だけが入る。
-- 対応する op が無いもの: paint の行の挿入 (`addPaintEntry`) と貼り付け、
-  multigrad の node、symmetry copy の作成、unit cell だけの表示、
+- 対応する op が無いもの: paint の行の挿入 (`addPaintEntry`) と貼り付け、既定の paint 表と
+  multigrad への切り替え、multigrad の node、symmetry copy の作成、unit cell だけの表示、
   原子名ラベルの切り替え、scene tree の並べ替え、camera の visibility flag と camera ファイルの
-  読み込み、style set の作成・削除・読み込みと色・style の編集、render settings、node の貼り付け、
-  アニメーション要素の property の reset。
-- 記録しても再生で同じにならないもの: selection どうしの距離計測、RCSB 以外からの取得、
-  backend を指定した surface。
-- undo の txn を開かない GUI 操作: visibility を使わない camera の適用 (view を camera に合わせる
-  だけで undo 履歴に載らない)。
+  読み書き、style set の作成・削除・読み書きと色・style の編集、render settings、node の貼り付け、
+  アニメーション要素の property の reset、MD trajectory。全体の一覧と対応の順序は
+  [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
+- 記録しても再生で同じにならないもの: selection どうしの距離計測、RCSB 以外からの取得。
+- **視点の変更は記録しない** (意図して): View / Camera の変化は C++ の undo の対象ではなく、History は
+  undo の履歴だから。3D view のマウス操作、View pane、projection、camera の適用 (visibility なし)、
+  focus、console の `turn` / `zoom` などは、op を記録しても undo の行ができないので残らない。
+  アニメーションの loop と start camera (`AnimMgr`) も undo に載らないので同じ。op 自体は console・
+  MCP・手で書いた qax では使える。
 - GUI の renderer 作成の、type・name・selection 以外のオプション。ファイル読み込みの reader
   オプション。
 - reconcile で作り直した行は、op の中身を失う (label だけになる)。

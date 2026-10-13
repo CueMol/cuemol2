@@ -161,10 +161,11 @@ export function regenMolSurf(
 
     const density = coerceDensity(args.density);
     return undoTxnResult(scene, 'Regenerate mol surface', () => {
-        // recalc_surface has no backend choice; a forced one is not recorded.
-        if (!args.backend || args.backend === 'auto') {
-            recordOp(ctx, scene.uid, 'recalc_surface', { surfId: args.objId, density }, ['surfId']);
-        }
+        recordOp(ctx, scene.uid, 'recalc_surface', {
+            surfId: args.objId,
+            density,
+            backend: args.backend && args.backend !== 'auto' ? args.backend : null,
+        }, ['surfId']);
         // `sesbackend` is an enum property: the generated wrapper types it as
         // number, but the C++ layer takes/returns the string id.
         if (args.backend && args.backend !== 'auto') {

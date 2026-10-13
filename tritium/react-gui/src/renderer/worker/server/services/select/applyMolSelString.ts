@@ -139,6 +139,7 @@ export function centerMolSelection(
         const pos = safeGetSelectionCenter(vsm.obj);
         if (!pos) return;
         vsm.view.setViewCenter(pos);
+        recordOp(ctx, vsm.scene.uid, 'center_view', { objId: args.molId, selection: args.selStr, zoom: false }, ['objId']);
         ok = true;
     });
     return { ok };
@@ -173,6 +174,7 @@ export function zoomMolSelection(
         if (!assignMolSel(ctx, vsm.obj, args.selStr, vsm.scene.uid)) return;
         if (!selectionHitsAny(vsm.obj)) return;
         ok = tryFitView(vsm.obj, vsm.view);
+        if (ok) recordOp(ctx, vsm.scene.uid, 'center_view', { objId: args.molId, selection: args.selStr, zoom: true }, ['objId']);
     });
     return { ok };
 }

@@ -272,6 +272,7 @@ export const regenSurface = defineOp({
   params: {
     surfId: objectId('Uid of the surface object.'),
     density: optional(real('Points per angstrom. Null keeps the current density.')),
+    backend: optional(enumOf(['auto', 'meshms', 'ball'], 'Surface algorithm. Null or auto lets CueMol choose.')),
   },
   mutates: true,
   describe: (_a, n) => `Recompute surface ${n('surfId')}`,
@@ -284,7 +285,12 @@ export const regenSurface = defineOp({
       return { ok: false, error: info.ok && !info.origMolFound ? `Its MolCoord object (${info.origMol}) is not in the scene.` : 'This object cannot be regenerated.' }
     }
     return normalizeServiceResult(
-      regenMolSurf(ctx, { sceneId: oc.sceneId, objId: args.surfId, density: args.density ?? info.density }),
+      regenMolSurf(ctx, {
+        sceneId: oc.sceneId,
+        objId: args.surfId,
+        density: args.density ?? info.density,
+        ...(args.backend !== null ? { backend: args.backend } : {}),
+      }),
       'The surface could not be regenerated.',
     )
   },

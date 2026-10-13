@@ -14,7 +14,7 @@ import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { getSceneOrNull, getViewSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { undoTxnResult } from '../withUndoTxn';
-import { recordPropWrite } from '@renderer/worker/server/actions/serviceOps';
+import { recordOp, recordPropWrite } from '@renderer/worker/server/actions/serviceOps';
 import { ok, fail, failFrom, type Result } from '@renderer/worker/shared/result';
 import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import { safeRead } from './state';
@@ -137,6 +137,8 @@ export function redrawMapCenter(
         // unwraps for the C++ side and fires the PROPCHG that
         // triggers map redraw).
         r.center = viewCenter as Vector;
+        // The centre is the view's, as the op takes it when it runs again.
+        recordOp(ctx, args.sceneId, 'recenter_map', { rendId: args.rendId }, ['rendId']);
         return ok({ moved: true });
     });
 }

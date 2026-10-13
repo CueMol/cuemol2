@@ -79,7 +79,7 @@ export function saveSelDef(ctx: WorkerContext, args: SaveSelDefArgs): SaveSelDef
             if (!isValidUid(setId)) return;
         }
         ok = styleMgr.setStrData('sel', name, expr, args.sceneId, setId);
-        if (ok) recordOp(ctx, scene.uid, 'define_selection', { name, selection: expr });
+        if (ok) recordOp(ctx, scene.uid, 'define_selection', { name, selection: expr, styleSet: null });
     });
     return { ok };
 }

@@ -56,6 +56,9 @@ export function stepsToMacro(rows: readonly ActionRow[], opts: StepsToMacroOptio
       continue
     }
     for (const entry of row.entries) {
+      if (entry.kind === 'note' && entry.dropped) {
+        return { ok: false, error: `"${row.label}" was not recorded (${entry.dropped.op}, too large), so it cannot run again.` }
+      }
       const item = entryToQax(entry)
       if (item.kind !== 'op') {
         items.push(item)

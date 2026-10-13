@@ -5,55 +5,25 @@
 History pane と Actions pane (PR #674 / #675) は、undo の各 step に記録された op を使う。op が記録されない
 step は「no op recorded」の行になり、qax への保存・マクロ・再生に使えない。
 rainbow の hue が docs の既知リストに無いまま漏れていたので、undo txn を開く全箇所
-(service 約 130 か所)・txn を開かない変更・PyMOL dialect を数え上げた (約 50 か所が記録なし、約 30 か所が一部だけ)。その結果と、潰す順序をまとめる。
+(service 約 130 か所)・txn を開かない変更・PyMOL dialect を数え上げた (約 50 か所が記録なし、約 30 か所が一部だけ)。その結果のうち、残りと潰す順序をまとめる。
+既存の op で表せるもの・引数を足すだけのもの (旧 Phase 1) は実装済みで、仕様は `../architecture/action-log.md` §2.2。
 
 ユーザーと決めたこと:
 - **視点だけの変更は記録しない**。History は undo の履歴で、View / Camera の変化は C++ の undo の対象ではないため (下の「対象にしないもの」)。
-- **貼り付け**: clipboard の XML を op の引数に入れ、再生できるようにする。ただし qax が膨らまないように、大きすぎる引数は記録せず、「記録していない」と分かる印を残す (下の「記録する引数の大きさの上限」)。
+- **貼り付け**: clipboard の XML を op の引数に入れ、再生できるようにする。ただし qax が膨らまないように、大きすぎる引数は記録せず、「記録していない」と分かる印を残す (上限は実装済み)。
 - **ファイルへの書き出し** (style set / camera の Save / Save as): op にして記録する (`render_image` と同じ扱い)。
 
-## 着手前
-- この plan を `docs/plans/261013-action-record-coverage-plan.md` に置き、`docs/plans/_index.md` に 1 行足す。
-- backlog (`261011-op-console-backlog-plan.md` §1) の「記録の対応表の拡充」の行は、この plan へのリンクにする。
-- フェーズごとに 1 PR。マージしてから次のフェーズのブランチを切る (stacked PR にしない)。
+フェーズごとに 1 PR。マージしてから次のフェーズのブランチを切る (stacked PR にしない)。
 
 ## 共通の方針
 - 記録点は今までどおり service の txn の中 (`actions/serviceOps.ts` の `recordOp` と helper)。op を足すときは
   `catalog/ops/*.ts` に定義し、service の `run` から同じ service を呼ぶ (GUI と op が同じ経路になる)。
 - toggle は「切り替えた後の値」で記録する (再生が前の状態に依存しないように)。
 - uid で持っている値 (camera の vis flag の対象など) は、記録時に path に直す。
-- **記録する引数の大きさの上限** (`recordOp` で一律に行う。貼り付けに限らない):
-  - 1 つの op の引数の、文字列の合計が上限を超えたら、op は記録しない。代わりに、その行に
-    「記録していない」印の note を入れる (`kind: 'note'`、`dropped: { op, bytes }`)。
-  - History ではこの行を「no op recorded」と同じく op の無い行として出し、理由
-    (`not recorded: paste_object (1.8 MB, over the 64 KB limit)`) を表示文と tooltip に出す。qax には `<note>` で書く。
-    マクロへの保存では、この行を含む選択は「再生できない step がある」として断る。
-  - 上限は 64 KB (定数 1 つ、`actions/serviceOps.ts`)。目安: renderer / group / style / camera の XML は数 KB から
-    数十 KB に収まり、object (原子座標を含む) の XML は小さな蛋白でも数百 KB を超える。つまり object の
-    貼り付けは、ほぼいつも印だけになる。実装時に実物の大きさを測って、上限を確かめる (目視確認で調整)。
-- **再発防止**: `actionLog.ts` の `txnEnd` で、undo stack が伸びたのに op が 1 つも無い gui の行を、dev build で
-  `console.warn('[actionLog] no op recorded: <label>')` する。テストは 1 件 (警告が出る / 出ない) だけ足す。
+- 大きすぎる引数 (64 KB 超) は `recordOp` が印の note にする (実装済み。`../architecture/action-log.md` §2.2)。
+  貼り付けの op は、この上限に任せてよい。object の XML の実際の大きさは Phase 4 で測り、上限を見直す。
 
 ## 数え上げの結果と対応 (フェーズ順)
-
-### Phase 1: 既存の op で表せるもの・引数を足すだけのもの (使う頻度が高い)
-
-| 操作 (service) | 今の状態 | 対応 |
-|---|---|---|
-| Interaction analysis ダイアログ (`analyzeInteractions`) | **ダイアログの初期値 (min 2.5、最大 30) では何も記録されない**。2 つ目の object / selection、label set も対象外 | `analyze_interactions` に `minDist` / `maxLabels` / `label` / `obj2Id` / `selection2` を足す |
-| selection に center / zoom (`applyMolSelString` の `centerMolSelection` / `zoomMolSelection`) | 記録なし | `center_view` (zoom あり / なし) |
-| map の再センタリング (`map/props.ts` の `redrawMapCenter`) | 記録なし | `recenter_map` |
-| Sequence panel の残基の選択 (`seqPanelOps` の toggle / range) | 記録なし | `set_mol_selection` (結果の selection 文字列) |
-| Color proofing (`toggleSceneColorProofing`) | 記録なし | scene の `set_node_prop use_colproof` (と `icc_filename`) |
-| CPK の dark / light gray (`setRendererColoring`) | 記録なし | `set_renderer_coloring paint-type-cpk` と `set_coloring_prop col_C` |
-| 一覧に無い coloring style (`setRendererColoring` の style-*) | 記録なし | 一覧の判定をやめ、`set_renderer_coloring mode=style` で記録する |
-| surface の backend 指定 (`makeMolSurf` / `regenMolSurf`) | auto 以外は記録なし | `create_surface` / `recalc_surface` に `backend` |
-| superpose の useprop (`superposeMol`) | 記録なし | `superpose` に `keepAsProperty` |
-| APBS の温度・誘電率・内部電荷 + 水素 (`apbs/run.ts`) | 既定値以外は記録なし | `calc_elepot` に `temperature` / `waterDielec` / `protDielec` / `useHydrogen` |
-| style set の selection 定義 (`setStyleSetSelection`) | scene の最初の書き込める set だけ | `define_selection` に `styleSet` |
-| camera の保存 (`saveViewToCamera`) | 前後に空白のある名前は記録なし | 名前を trim してから記録 |
-| アニメーションの loop / start camera (`anim/transport.ts`) | txn も記録も無い | C++ で undo に載るかを確かめる。載るなら txn を開いて `set_anim_options` を記録する。載らなければ視点と同じく対象外 |
-| view の property を Inspector で変える (`props/write.ts`) | View だけの書き込みでも txn を commit するので、undo の行は増えないのに **Redo が消える** | view だけの書き込みは txn を開かない (記録もしない) |
 
 ### Phase 2: renderer の作成とファイルの読み込みのオプション
 
@@ -98,7 +68,7 @@ rainbow の hue が docs の既知リストに無いまま漏れていたので�
 |---|---|
 | `show` / `as` の `applyStyles` | `applyRendererStyleList` の service を通して `set_renderer_styles` |
 | `label` / `hide labels` | 新しい `set_atom_labels {objId, selection, format | null}` (Phase 3 の C++ の undo 対応が前提) |
-| `distance` / `angle` / `dihedral`、`distance mode/cutoff` | Phase 1 と Phase 3 の `analyze_interactions` / `measure_geometry` |
+| `distance` / `angle` / `dihedral`、`distance mode/cutoff` | `analyze_interactions` (引数は揃っている。PyMOL 側から 2 つ目の object / selection と label set を渡す) と Phase 3 の `measure_geometry` |
 | `set_color`、`delete <sel>` / `set_name <sel>` | Phase 4 の `define_color` / `remove_selection` |
 | `fetch` (name 指定、`1abcA`、`type=pdb1`)、`load http...` | Phase 2 の `fetch_pdb` の `name` / `assembly`、`fetch_url` |
 | `isomesh` / `isosurface` の map の中心 | `recenter_map` |

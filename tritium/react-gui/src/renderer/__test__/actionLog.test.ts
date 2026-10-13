@@ -25,7 +25,9 @@ import { exportActionSteps } from '@renderer/worker/server/services/actions/acti
 import { parseQax } from '@renderer/worker/server/actions/qax/codec'
 import { applyRendererStyleList } from '@renderer/worker/server/services/rend/rendererStyle'
 import { removePaintEntries } from '@renderer/worker/server/services/coloring/paintClipboard'
-import { recordOp } from '@renderer/worker/server/actions/serviceOps'
+import { MAX_RECORDED_ARGS_BYTES, recordOp } from '@renderer/worker/server/actions/serviceOps'
+import { describeRow } from '@renderer/worker/server/actions/describe'
+import { stepsToMacro } from '@renderer/worker/server/actions/macro'
 import { withUndoTxn, undoTxnResult } from '@renderer/worker/server/services/withUndoTxn'
 import { invokeOp, runInTxn } from '@renderer/worker/server/catalog/opRuntime'
 import type { AnyOp } from '@renderer/worker/server/catalog/op'
@@ -241,6 +243,36 @@ describe('serviceOps', () => {
     expect(entries[2]).toMatchObject({ op: 'reset_prop', args: { path: '1crn/cartoon1.width' } })
   })
 
+  it('records the Interaction analysis dialog with its own settings, as arguments its op reads back', async () => {
+    const { findOp } = await import('@renderer/worker/server/catalog')
+    const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
+    const { analyzeInteractions } = await import('@renderer/worker/server/services/molops/analyzeInteractions')
+    const scene = stackScene()
+    const mol = fakeObject({ name: '1crn', scene })
+    const mol2 = fakeObject({ name: '2abc', scene })
+    scene.addObject(mol)
+    scene.addObject(mol2)
+    const labels = Object.assign(fakeRenderer({ type: 'atomintr', name: 'measure' }), { appendById: () => scene.touch() })
+    mol.attachRenderer(labels)
+    const { ctx } = makeWorkerCtx({
+      scenes: [scene],
+      createObj: () => ({ compile: () => true }),
+      getService: () => ({ calcAtomContact3JSON: () => '[[1, 2]]' }),
+    })
+
+    // The dialog's defaults (2.5 to 4 A, 30 labels), against a second object.
+    const res = analyzeInteractions(ctx, {
+      sceneId: scene.uid, objId: mol.uid, selStr: 'ligand', useMol2: true, objId2: mol2.uid, useSel2: false,
+      minDist: 2.5, maxDist: 4, maxLabels: 30, hbondOnly: true, rendName: 'measure',
+    })
+    expect(res.ok).toBe(true)
+    const [entry] = rowsOf(scene)[0].entries
+    if (entry.kind !== 'op') throw new Error('not an op')
+    expect(entry).toMatchObject({ op: 'analyze_interactions', refs: { objId: '1crn', obj2Id: '2abc' } })
+    const read = readToolArgs(findOp('analyze_interactions')!, entry.args)
+    expect(read).toMatchObject({ minDist: 2.5, maxLabels: 30, obj2Id: mol2.uid, selection2: '' })
+  })
+
   it('records the Edit Style dialog as the whole style list its op takes', async () => {
     const { findOp } = await import('@renderer/worker/server/catalog')
     const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
@@ -320,6 +352,16 @@ describe('serviceOps', () => {
     undo(ctx, { sceneId: scene.uid })
     expect(changed).toEqual([scene.uid])
     expect(rowsOf(scene).map((r) => r.undone)).toEqual([true])
+  })
+
+  it('keeps a note, not the op, when its arguments are over the size limit, and no macro takes it', () => {
+    const scene = stackScene()
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    editWith(scene, ctx, 'Paste object', [['paste_object', { xml: 'x'.repeat(MAX_RECORDED_ARGS_BYTES) }]])
+    const [row] = rowsOf(scene)
+    expect(row.entries).toEqual([expect.objectContaining({ kind: 'note', dropped: expect.objectContaining({ op: 'paste_object' }) })])
+    expect(describeRow(row)).toContain('not recorded: paste_object')
+    expect(stepsToMacro([row], { name: 'm', classOf: () => 'MolCoord' })).toEqual({ ok: false, error: expect.stringContaining('was not recorded') })
   })
 
   it('writes the steps named by id to a qax file, and refuses a step that is gone', () => {
