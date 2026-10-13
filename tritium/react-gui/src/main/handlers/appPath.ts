@@ -28,6 +28,29 @@ export function getUserStylePath(): string {
 }
 
 /**
+ * The preset macros shipped with the app (`data/default_actions.qax`, beside
+ * default_style.xml). Packaged: in the install tree's share/data. Dev: the
+ * source tree's data/, so an edit shows without reinstalling libcuemol2.
+ */
+export function getBundledActionsFile(): string {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'cuemol2', 'share', 'data', 'default_actions.qax')
+  }
+  return path.join(app.getAppPath(), '..', '..', 'data', 'default_actions.qax')
+}
+
+/** The folder of the user's own actions (qax files), made when missing. */
+export function getUserActionsDir(): string {
+  const dir = path.join(app.getPath('userData'), 'actions')
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+  } catch (e) {
+    console.warn('cannot make the actions folder:', e)
+  }
+  return dir
+}
+
+/**
  * Resolve the default external render-binary paths (POV-Ray executable +
  * include dir, blendpng). The renderer (RenderConfigContext) uses these as the
  * fallback when the user has not set an explicit path in Settings.
@@ -128,6 +151,8 @@ export function registerAppPathHandlers(): void {
       defaultRenderBinaries: getRenderBinaries(),
       defaultApbsBinaries: getApbsBinaries(),
       cliPath: getCliPath(),
+      bundledActionsFile: getBundledActionsFile(),
+      actionsDir: getUserActionsDir(),
     }
   })
 }

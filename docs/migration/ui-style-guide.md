@@ -122,7 +122,7 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 |---|---|---|
 | flex (自前 React リスト) | `<Listbox>` + `<ListRow selected>` (`h3-kit/list/`) | size props 無し。`.h3-list-row .type-row` を出す |
 | HTML `<table>` | `.h3-list-table` + `<tr class="h3-list-table-row">`、選択は `.is-selected` | 行高/hover/selected を list-kit が供給。zebra・セル境界等は consumer 固有 (例: `.insp-gt-row`) |
-| Blueprint `<Tree>` | Tree の `className` に **`h3-listbox-tree`** を足す | Blueprint 注入要素 (`.bp5-tree-node-content`) に list-kit がトークンを当てる。indent は Blueprint の depth padding に委ねる (`.bp5-tree-node-content` の `padding-left` を直接上書きしない) |
+| Blueprint `<Tree>` | Tree の `className` に **`h3-listbox-tree`** を足す | Blueprint 注入要素 (`.bp5-tree-node-content`) に list-kit がトークンを当てる。indent は 1 段 = icon 1 つ分 (`--tree-indent: var(--icon-caret)`)。list-kit が depth クラス (`.bp5-tree-node-content-<depth>`) ごとに当てる (`.bp5-tree-node-content` の `padding-left` を直接上書きしない)。scene tree・History・Actions など全ての tree で共通 |
 
 **行のテキストは選択できない** (`.h3-list-row` に `user-select: none`; 行内の `input` だけ `text` に戻す)。行ラベルは文章ではなくコントロールの名前で、行をまたぐドラッグは「行を動かす」操作であるべきだから。実害も出た: drag&drop 可能なリストで、ブラウザが行ではなく**選択されたテキスト**をドラッグし、ゴーストがポインタより下の全行ラベルと隣の pane の見出しになった。ドラッグ可能な行では併せて `dataTransfer.setDragImage(row, ...)` で**ドラッグ画像に行自身を明示**する (ブラウザ任せにしない)。
 

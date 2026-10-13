@@ -15,7 +15,7 @@ import {
   getRendererPaintInfo,
 } from '@renderer/worker/server/services/coloring/panelList'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
-import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
+import { setColoringProp, setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
 import { paintObjectSelection, paintRendererSelection } from '@renderer/worker/server/services/coloring/paintCrud'
 import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
 import { getMolFromRenderer, getObjectColoringClassName } from '@renderer/worker/server/services/coloring/colorTargets'
@@ -246,6 +246,41 @@ export const setRendererColoringOp = defineOp({
   },
 })
 
+/** A property value as typed: a number when it reads as one (hues, params), else the text. */
+function coloringPropValue(text: string): string | number {
+  const t = text.trim()
+  return t !== '' && Number.isFinite(Number(t)) ? Number(t) : text
+}
+
+export const setColoringPropOp = defineOp({
+  name: 'set_coloring_prop',
+  description:
+    'Set one property of the colouring a renderer or an object uses (what the CPK, Rainbow and ' +
+    'B-factor sections of the Coloring panel change), e.g. col_C, start / end hue, mode, lowcol. ' +
+    'A colouring still shared from a style is given its own copy first, so only this one changes.',
+  params: {
+    ...coloringTarget('whose colouring to change'),
+    prop: string('Property name of the colouring scheme.'),
+    value: string('The value, as text: a colour, a number, or a mode name.'),
+  },
+  mutates: true,
+  describe: (a, n) => `Set ${a.prop} = ${a.value} on the colouring of ${n('nodeId')}`,
+  expose: { tool: 'coloring', console: true },
+  group: 'coloring',
+  run(ctx, args, oc) {
+    return normalizeServiceResult(
+      setColoringProp(ctx, {
+        sceneId: oc.sceneId,
+        rendId: args.nodeId,
+        targetKind: args.nodeType,
+        propName: args.prop,
+        propValue: coloringPropValue(args.value),
+      }),
+      `That colouring property could not be set (does the ${args.nodeType} have a colouring with "${args.prop}"?).`,
+    )
+  },
+})
+
 export const paintSelection = defineOp({
   name: 'add_paint',
   description:
@@ -279,10 +314,10 @@ export const paintSelection = defineOp({
     if (!node) return { ok: false, error: onObject ? NO_OBJECT : NO_RENDERER }
     const mol = onObject ? (node as unknown as MolCoord) : getMolFromRenderer(node as Renderer)
     if (!mol) {
-      return { ok: false, error: `That ${args.nodeType} is not a molecule, so it cannot be painted.` }
+      return { ok: false, error: `That ${args.nodeType} is not on a MolCoord object, so it cannot be painted.` }
     }
 
-    // The paint service reads the region from the MOLECULE's current
+    // The paint service reads the region from the MolCoord object's current
     // selection rather than taking it as an argument, so it has to be set
     // first. This is a visible side effect: the user sees the selection
     // change, the same as if they had made it by hand.
@@ -365,5 +400,6 @@ export const RENDERER_OPS = [
   setRendererSelection,
   getColoringStyles,
   setRendererColoringOp,
+  setColoringPropOp,
   paintSelection,
 ]

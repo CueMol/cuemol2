@@ -22,11 +22,12 @@
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 
 /** What kind of node a parameter wants. */
-export type RefKind = 'object' | 'molecule' | 'renderer' | 'node'
+export type RefKind = 'object' | 'renderer' | 'node'
 
 /** A node as the console finds it. */
 export interface SceneNodeEntry {
@@ -74,7 +75,7 @@ export function nodePath(n: SceneNodeEntry): string {
 export type RefResult = { ok: true; node: SceneNodeEntry } | { ok: false; error: string }
 
 function accepts(kind: RefKind, n: SceneNodeEntry): boolean {
-  if (kind === 'object' || kind === 'molecule') return n.type === 'object'
+  if (kind === 'object') return n.type === 'object'
   if (kind === 'renderer') return n.type !== 'object'
   return true
 }
@@ -87,17 +88,49 @@ function one(text: string, hits: SceneNodeEntry[]): RefResult {
 }
 
 /**
+ * Whether the object `objId` is of the `.qif` class `objClass` or derives from
+ * it (an `AnimMol` is a `MolCoord`).
+ *
+ * The C++ side reports only the nearest scriptable class of an object
+ * (`getClassName`), not its ancestry, so the derivation is answered by the
+ * generated wrapper classes, which extend each other as the `.qif` classes do
+ * (`ctx.svc.isInstanceOf`). An exact class-name match is accepted on its own.
+ */
+export function isObjectOfClass(ctx: WorkerContext, sceneId: number, objId: number, objClass: string): boolean {
+  try {
+    const scene = ctx.sceMgr.getScene(sceneId) as Scene | null
+    const obj = scene?.getObject(objId) as { getClassName?: () => string } | null | undefined
+    if (!obj) return false
+    if (obj.getClassName?.() === objClass) return true
+    return ctx.svc?.isInstanceOf?.(obj, objClass) ?? false
+  } catch {
+    return false
+  }
+}
+
+/**
  * The node `text` names.
  *
  * @param kind - what the parameter accepts; an object name does not answer a
  *   renderer parameter, so `cartoon1` is looked up among renderers only.
+ * @param objClass - for an object parameter, the `.qif` class the object must
+ *   be or derive from (`Param.objClass`).
  */
 export function resolveRef(
   ctx: WorkerContext,
   sceneId: number,
   text: string,
   kind: RefKind,
+  objClass?: string,
 ): RefResult {
+  const res = findRef(ctx, sceneId, text, kind)
+  if (!res.ok || objClass === undefined || res.node.type !== 'object') return res
+  if (isObjectOfClass(ctx, sceneId, res.node.id, objClass)) return res
+  return { ok: false, error: `"${text.trim()}" is not a ${objClass} object` }
+}
+
+/** `resolveRef` before the class check. */
+function findRef(ctx: WorkerContext, sceneId: number, text: string, kind: RefKind): RefResult {
   const want = text.trim()
   const nodes = sceneNodes(ctx, sceneId)
 

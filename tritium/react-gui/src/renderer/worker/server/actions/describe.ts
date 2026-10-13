@@ -19,7 +19,7 @@ import type { ActionEntry, ActionRow, OpEntry } from './actionLog'
 const MAX_LINE = 80
 
 /** The semantic kinds whose value is a node uid. */
-const REF_SEMANTICS = new Set(['object', 'molecule', 'renderer', 'node'])
+const REF_SEMANTICS = new Set(['object', 'renderer', 'node'])
 
 function clip(text: string): string {
   const flat = text.replace(/\s+/g, ' ').trim()

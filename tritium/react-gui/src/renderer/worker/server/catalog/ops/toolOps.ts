@@ -1,7 +1,7 @@
 /**
  * @file worker/server/catalog/ops/toolOps.ts
  * @description Tools-menu dialogs as commands: the surface cutter and the
- * morphing frames of a molecule.
+ * morphing frames of a MolCoord object.
  *
  * Each runs the service its dialog commits through, with the dialog's
  * defaults, so a command and the dialog leave the scene the same way.
@@ -21,7 +21,7 @@ import { checkPosition, pickByNumber } from '@renderer/worker/shared/numbered'
 import { failedWith } from '../errors'
 import { defineOp } from '../op'
 import { callerPath } from '../outputFile'
-import { enumOf, integer, moleculeId, objectId, optional, path, real } from '../params'
+import { enumOf, integer, objectId, optional, path, real } from '../params'
 
 /** Section mesh density of the cutter dialog. */
 const CUT_DENSITY = 5.0
@@ -63,16 +63,16 @@ function frameLines(frames: readonly MorphFrameInfo[]): string[] {
 
 export const morphFrames = defineOp({
   name: 'list_morph_frames',
-  description: 'List the frames of a morphing molecule (made by add_morph_frame), in order.',
-  params: { molId: moleculeId('Uid of the molecule.') },
+  description: 'List the frames of a morphing MolCoord object (made by add_morph_frame), in order.',
+  params: { objId: objectId('Uid of the MolCoord object.', 'MolCoord') },
   mutates: false,
   expose: { tool: false, console: true, mcp: true },
   group: 'animation',
   format: (data) => frameLines((data as { frames: MorphFrameInfo[] }).frames),
   run(ctx, args, oc) {
-    const res = getMorphFrames(ctx, { sceneId: oc.sceneId, objId: args.molId })
+    const res = getMorphFrames(ctx, { sceneId: oc.sceneId, objId: args.objId })
     if (!res.ok) return { ok: false, error: 'The frames could not be read.' }
-    if (!res.isMorphMol) return { ok: false, error: 'This molecule has no morphing frames; add one with add_morph_frame.' }
+    if (!res.isMorphMol) return { ok: false, error: 'This object has no morphing frames; add one with add_morph_frame.' }
     return { ok: true, data: { frames: res.frames } }
   },
 })
@@ -80,31 +80,31 @@ export const morphFrames = defineOp({
 export const morphAdd = defineOp({
   name: 'add_morph_frame',
   description:
-    'Add a frame (another conformation of the same molecule) to a morphing animation, from a ' +
-    'PDB file or from another molecule in the scene. A plain molecule is first turned into a ' +
+    'Add a frame (another conformation of the same object) to a morphing animation, from a ' +
+    'PDB file or from another MolCoord object in the scene. A plain MolCoord object is first turned into a ' +
     'morphing one, which gives it a new uid (returned). Play it with a Mol morphing element ' +
     'in the Animation panel.',
   params: {
-    molId: moleculeId('Uid of the molecule to morph.'),
-    file: optional(path('PDB file (.pdb, .ent, optionally .gz) to add. Null uses fromMolId.')),
-    fromMolId: optional(moleculeId('Uid of a molecule whose coordinates to add. Null uses file.')),
+    objId: objectId('Uid of the MolCoord object to morph.', 'MolCoord'),
+    file: optional(path('PDB file (.pdb, .ent, optionally .gz) to add. Null uses fromObjId.')),
+    fromObjId: optional(objectId('Uid of a MolCoord object whose coordinates to add. Null uses file.', 'MolCoord')),
     before: optional(integer('Insert before this frame, by its number in list_morph_frames (from 1). Null appends.')),
   },
   mutates: true,
-  describe: (a, n) => `Add morph frame to ${n('molId')} from ${a.file ?? n('fromMolId')}`,
+  describe: (a, n) => `Add morph frame to ${n('objId')} from ${a.file ?? n('fromObjId')}`,
   expose: { tool: false, console: true, mcp: true },
   group: 'animation',
   run(ctx, args, oc) {
-    if ((args.file === null) === (args.fromMolId === null)) {
-      return { ok: false, error: 'Give either a file or fromMolId.' }
+    if ((args.file === null) === (args.fromObjId === null)) {
+      return { ok: false, error: 'Give either a file or fromObjId.' }
     }
-    let objId = args.molId
+    let objId = args.objId
     const frames = getMorphFrames(ctx, { sceneId: oc.sceneId, objId })
-    if (!frames.ok) return { ok: false, error: 'The molecule could not be read.' }
+    if (!frames.ok) return { ok: false, error: 'The object could not be read.' }
     if (!frames.isMorphMol) {
       const conv = convertToMorphMol(ctx, { sceneId: oc.sceneId, objId })
       if (!conv.ok || conv.morphObjId === undefined) {
-        return failedWith(conv, 'The molecule could not be made a morphing one.')
+        return failedWith(conv, 'The object could not be made a morphing one.')
       }
       objId = conv.morphObjId
     }
@@ -115,7 +115,7 @@ export const morphAdd = defineOp({
     const insertIndex = args.before === null ? -1 : args.before - 1
     const added = args.file !== null
       ? addMorphFrameFromFile(ctx, { sceneId: oc.sceneId, objId, path: callerPath(args.file), insertIndex })
-      : addMorphFrameFromMol(ctx, { sceneId: oc.sceneId, objId, srcObjId: args.fromMolId as number, insertIndex })
+      : addMorphFrameFromMol(ctx, { sceneId: oc.sceneId, objId, srcObjId: args.fromObjId as number, insertIndex })
     if (!added.ok) return failedWith(added, 'The frame could not be added.')
     const after = getMorphFrames(ctx, { sceneId: oc.sceneId, objId })
     return { ok: true, data: { objectId: objId, frames: after.frames.length } }
@@ -124,22 +124,22 @@ export const morphAdd = defineOp({
 
 export const morphRemove = defineOp({
   name: 'remove_morph_frame',
-  description: 'Remove one frame from a morphing molecule, by its number in list_morph_frames (from 1). The base frame, (this), cannot be removed.',
+  description: 'Remove one frame from a morphing MolCoord object, by its number in list_morph_frames (from 1). The base frame, (this), cannot be removed.',
   params: {
-    molId: moleculeId('Uid of the morphing molecule.'),
+    objId: objectId('Uid of the morphing MolCoord object.', 'MolCoord'),
     frame: integer('The frame\'s number in list_morph_frames (from 1).'),
   },
   mutates: true,
-  describe: (a, n) => `Remove morph frame ${a.frame} of ${n('molId')}`,
+  describe: (a, n) => `Remove morph frame ${a.frame} of ${n('objId')}`,
   expose: { tool: false, console: true, mcp: true },
   group: 'animation',
   run(ctx, args, oc) {
-    const frames = getMorphFrames(ctx, { sceneId: oc.sceneId, objId: args.molId })
-    if (!frames.ok || !frames.isMorphMol) return { ok: false, error: 'This molecule has no morphing frames.' }
+    const frames = getMorphFrames(ctx, { sceneId: oc.sceneId, objId: args.objId })
+    if (!frames.ok || !frames.isMorphMol) return { ok: false, error: 'This object has no morphing frames.' }
     const frame = pickByNumber(frames.frames, args.frame, 'frame', 'list_morph_frames')
     if (typeof frame === 'string') return { ok: false, error: frame }
     return normalizeServiceResult(
-      removeMorphFrame(ctx, { sceneId: oc.sceneId, objId: args.molId, frameIndex: args.frame - 1 }),
+      removeMorphFrame(ctx, { sceneId: oc.sceneId, objId: args.objId, frameIndex: args.frame - 1 }),
       'The frame could not be removed.',
     )
   },

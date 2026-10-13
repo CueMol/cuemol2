@@ -18,7 +18,7 @@
  * | View       | CameraPane, ViewPane                        |
  * | Selection  | MolStructPane, SelectionPane                |
  * | Crystal    | SymmetryPane, DensityMapPane                |
- * | Actions    | ActionHistoryPane                           |
+ * | Actions    | ActionHistoryPane, ActionLibraryPane        |
  *
  * New built-in views and panes can be added by editing `VIEW_PANES` without
  * touching the layout / persistence logic. A plugin declares its view in its
@@ -69,6 +69,7 @@ import { MolStructPane } from "@renderer/features/selection/MolStructPane";
 import { SelectionPane } from "@renderer/features/selection/SelectionPane";
 import { SymmetryPane } from "@renderer/features/density/SymmetryPane";
 import { DensityMapPane } from "@renderer/features/density/DensityMapPane";
+import { ActionLibraryPane } from "@renderer/features/actions/ActionLibraryPane";
 import { ActionHistoryPane } from "@renderer/features/actions/ActionHistoryPane";
 
 /* --- Re-export types for external consumers --- */
@@ -180,14 +181,21 @@ const VIEW_PANES: Record<string, PaneConfig[]> = {
       ),
     },
   ],
-  // The undo history of the active scene; saved actions and presets are to
-  // join it as further panes.
+  // The undo history of the active scene, and the presets and saved
+  // actions that run on it.
   actions: [
     {
       id: "history",
       defaultSize: 400,
       render: (collapsed, onToggle) => (
         <ActionHistoryPane collapsed={collapsed} onToggleCollapse={onToggle} />
+      ),
+    },
+    {
+      id: "library",
+      defaultSize: 260,
+      render: (collapsed, onToggle) => (
+        <ActionLibraryPane collapsed={collapsed} onToggleCollapse={onToggle} />
       ),
     },
   ],

@@ -241,11 +241,11 @@ export function addMorphFrameFromFile(
     try {
         return withUndoTxn(scene, 'Add PDB to MorphMol', () => {
             recordOp(ctx, scene.uid, 'add_morph_frame', {
-                molId: args.objId,
+                objId: args.objId,
                 file: args.path,
-                fromMolId: null,
+                fromObjId: null,
                 before,
-            }, ['molId']);
+            }, ['objId']);
             const reader = ctx.strMgr.createHandler(
                 'pdb', OBJREADER_CATEGORY,
             ) as unknown as PdbReaderHandle | null;
@@ -285,11 +285,11 @@ export function addMorphFrameFromMol(
     try {
         return withUndoTxn(scene, 'Add mol to MorphMol', () => {
             recordOp(ctx, scene.uid, 'add_morph_frame', {
-                molId: args.objId,
+                objId: args.objId,
                 file: null,
-                fromMolId: args.srcObjId,
+                fromObjId: args.srcObjId,
                 before,
-            }, ['molId', 'fromMolId']);
+            }, ['objId', 'fromObjId']);
             // Deep copy so later edits to the source molecule do not mutate
             // the captured frame (UXP addMolCoord toXML/fromXML round trip).
             const xml = ctx.strMgr.toXML(
@@ -324,7 +324,7 @@ export function removeMorphFrame(
 
     try {
         return withUndoTxn(scene, 'Delete MorphMol item', () => {
-            recordOp(ctx, scene.uid, 'remove_morph_frame', { molId: args.objId, frame: args.frameIndex + 1 }, ['molId']);
+            recordOp(ctx, scene.uid, 'remove_morph_frame', { objId: args.objId, frame: args.frameIndex + 1 }, ['objId']);
             morph.removeFrame(args.frameIndex);
             return { ok: true };
         });

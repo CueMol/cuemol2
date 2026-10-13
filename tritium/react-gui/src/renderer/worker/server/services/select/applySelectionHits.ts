@@ -100,7 +100,7 @@ export function applySelectionHits(
                 if (prevSelStr) selStr = `(${prevSelStr}) or (${newSelStr})`;
             }
             if (assignMolSel(ctx, mol, selStr, scene.uid)) {
-                recordOp(ctx, scene.uid, 'set_mol_selection', { molId: objId, selection: selStr }, ['molId']);
+                recordOp(ctx, scene.uid, 'set_mol_selection', { objId, selection: selStr }, ['objId']);
                 selectedObjIds.push(objId);
                 selStrs.push(selStr);
             }

@@ -60,7 +60,7 @@ function calcElepotArgs(args: CalcApbsStartArgs, elepotName: string): Record<str
   if (positiveOr(args.waterDielec, OP_WATER_DIELEC) !== OP_WATER_DIELEC) return null;
   if (positiveOr(args.protDielec, OP_PROT_DIELEC) !== OP_PROT_DIELEC) return null;
   return {
-    molId: args.objId,
+    objId: args.objId,
     selection: args.selStr.trim() !== '' ? args.selStr : null,
     name: elepotName,
     method: args.chargeMethod,
@@ -84,7 +84,7 @@ export function loadPotFile(
   let newObjId = -1;
   withUndoTxn(scene, 'Open APBS pot file', () => {
     const opArgs = jobOpArgs.get(entry);
-    if (opArgs) recordOp(ctx, scene.uid, 'calc_elepot', opArgs, ['molId']);
+    if (opArgs) recordOp(ctx, scene.uid, 'calc_elepot', opArgs, ['objId']);
     const newObj = reader.createDefaultObj() as unknown as CueMolObject;
     reader.attach(newObj);
     reader.read();

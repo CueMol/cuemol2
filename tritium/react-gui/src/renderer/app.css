@@ -14,6 +14,7 @@
 @import "./styles/_side-panel.css";
 @import "./features/camera/camera-pane.css";
 @import "./features/actions/action-history-pane.css";
+@import "./features/actions/action-library-pane.css";
 @import "./features/coloring/color-panel.css";
 @import "./styles/_colorpicker.css";
 @import "./features/coloring/multigrad.css";

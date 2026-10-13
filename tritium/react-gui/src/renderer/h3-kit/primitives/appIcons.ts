@@ -19,6 +19,8 @@ import {
   Angle,
   Scroll,
   Target,
+  BookmarkSimple,
+  PlayCircle,
   ArrowClockwise,
   Bell,
   DownloadSimple,
@@ -204,6 +206,9 @@ export const APP_ICONS = {
   "ui.filter": { lib: "phosphor", Comp: Funnel },
   // Action history pane: undo / redo the scene to the selected step.
   "ui.gotoStep": { lib: "phosphor", Comp: Target },
+  // Actions pane: run an entry; save History steps to User Actions.
+  "ui.runAction": { lib: "phosphor", Comp: PlayCircle },
+  "ui.saveToLibrary": { lib: "phosphor", Comp: BookmarkSimple },
   "ui.undo": { lib: "phosphor", Comp: ArrowUUpLeft },
   "ui.redo": { lib: "phosphor", Comp: ArrowUUpRight },
   // Restore-to-default (clock + CCW arrow) -- deliberately distinct from the

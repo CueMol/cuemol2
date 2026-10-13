@@ -39,7 +39,7 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 |---|---|---|---|
 | `.qif` スカラー | `boolean` / `integer` / `real` / `string` / `enumOf(values)` | boolean / integer / number / string / string+enum | `true`/`false`/`on`/`off`、数値、文字列 |
 | 省略可能 | `optional(p)` | `[type, "null"]` | 省略 (既定値 `''`) |
-| object uid | `objectId` / `moleculeId` / `rendererId` | integer | `1crn`、`#12` |
+| object uid | `objectId(desc, objClass?)` / `rendererId` | integer | `1crn`、`#12`。`objClass` (例 `'MolCoord'`) を付けると、その class か派生 class の object 以外を console / qax の解決時に拒否する (`"x" is not a MolCoord object`) |
 | node uid | `nodeId(desc, typeParam)` | integer + 種別 enum | `1crn`、`1crn/cartoon1`、`#12` (種別も解決される)。object と renderer の区切りは `/` だけ (object 名がファイル名由来で `.` を含むため) |
 | selection | `selection` | string | CueMol 選択式をそのまま (bind 時に `validateSelection`) |
 | colour / path | `color` / `path` | string | 色名・`#rrggbb` / cwd 基準のパス |
@@ -53,6 +53,15 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 
 - **名前の解決** (`refs.ts`): session をまたいで一意な id は持たず、名前か `#uid` で引く。CueMol の
   名前は一意でないので、複数に一致する名前は失敗にして uid を求める (`names more than one node`)。
+  CueMol に「分子」という概念は無く、原子を持つ object は class `MolCoord` (とその派生 `AnimMol` など)。
+  param 名は `objId` に統一し (`molId` は使わない)、class の制約は `objectId(desc, 'MolCoord')` の
+  `objClass` で表す。派生の判定は `refs.ts` の `isObjectOfClass` で、C++ の `getClassName` は自分の
+  class しか返さないため、生成 wrapper の継承 (`class AnimMol extends MolCoord`) を
+  `ctx.svc.isInstanceOf` (`CueMol.isInstanceOf`、`wrapper_map` の class への `instanceof`) で見る。
+  - 命名の規約: object を指す引数・型・文言では `molecule` / `mol` を使わず、`objId` と qif の class
+    名 (`MolCoord`) で書く。qax のマクロの `<param type>` も qif の class 名にする。ただし、`MolCoord`
+    の object でなければ意味が無い (または `MolCoord` に限っている) 機能の名前には `mol` / `molecule`
+    を使ってよい (例: op `merge_molecules`、help の分類 `Molecule editing`、`isMolecule`)。
 - **selection**: native・agent・MCP は CueMol の選択式をそのまま受け、PyMOL 構文への翻訳 (`sel/`) は
   通さない。PyMOL の選択式を受けるのは PyMOL dialect だけ。
 
@@ -279,8 +288,8 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
 
 - `reset_prop path` (inspector の Reset。`node.*` で Reset all = 変更済みで既定値のある property を 1 txn で)、
   `clear_undo` (Edit > Clear undo data。txn の外で実行)
-- `renumber_residues molId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond molId, A/20/SG A/45/SG`、
-  `set_symmetry molId, a, b, c, alpha, beta, gamma, spaceGroup`
+- `renumber_residues objId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond objId, A/20/SG A/45/SG`、
+  `set_symmetry objId, a, b, c, alpha, beta, gamma, spaceGroup`
 - `create_group objId [, name]`、`create_surface_from_map rendId` (map の isosurf のみ)、`recalc_surface surfId [, density]`
 - `list_interactions` / `remove_interaction rendId, number` (距離・角度・二面角の個別削除)
 - `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)

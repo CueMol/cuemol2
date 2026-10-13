@@ -69,7 +69,7 @@ function stepOf(id: string): number | null {
     return r.kind === 'initial' ? null : r.stepId
 }
 
-type RowMenuAction = 'show' | 'goto' | 'copy' | 'save'
+type RowMenuAction = 'show' | 'goto' | 'copy' | 'save' | 'library'
 
 /** The rows from `anchor` to `id` in display order (either way round). */
 function rangeOf(items: readonly string[], anchor: string | null, id: string): string[] {
@@ -191,6 +191,10 @@ export const ActionHistoryPane: React.FC<ActionHistoryPaneProps> = ({ collapsed,
         (ids: number[]) => run('save actions', dispatch(CmdId.ActionsSave, { stepIds: ids })),
         [dispatch, run],
     )
+    const saveToLibrary = useCallback(
+        (ids: number[]) => run('save to actions', dispatch(CmdId.ActionsSaveToLibrary, { stepIds: ids })),
+        [dispatch, run],
+    )
 
     const navKeyDown = useListKeyNav({
         items: rowIds,
@@ -241,6 +245,7 @@ export const ActionHistoryPane: React.FC<ActionHistoryPaneProps> = ({ collapsed,
                 { type: 'separator' },
                 { label: 'Copy as Commands', enabled: stepIds.length > 0, action: 'copy' },
                 { label: 'Save as qax...', enabled: stepIds.length > 0, action: 'save' },
+                { label: 'Save to Actions...', enabled: stepIds.length > 0, action: 'library' },
             ]
             void showContextMenu(nodes, { x, y }).then((action) => {
                 switch (action) {
@@ -248,11 +253,12 @@ export const ActionHistoryPane: React.FC<ActionHistoryPaneProps> = ({ collapsed,
                     case 'goto': goTo(id); break
                     case 'copy': copySteps(stepIds); break
                     case 'save': saveSteps(stepIds); break
+                    case 'library': saveToLibrary(stepIds); break
                     default: break
                 }
             })
         },
-        [locked, currentId, showContextMenu, showRow, goTo, copySteps, saveSteps],
+        [locked, currentId, showContextMenu, showRow, goTo, copySteps, saveSteps, saveToLibrary],
     )
 
     const handleNodeClick = useCallback(
@@ -373,6 +379,16 @@ export const ActionHistoryPane: React.FC<ActionHistoryPaneProps> = ({ collapsed,
                                 className="section-action-btn"
                                 disabled={selectedStepIds.length === 0}
                                 onClick={() => saveSteps(selectedStepIds)}
+                            />
+                        </Tooltip>
+                        <Tooltip content="Save to Actions" placement="bottom">
+                            <Button
+                                minimal
+                                small
+                                icon={<AppIcon name="ui.saveToLibrary" aria-hidden />}
+                                className="section-action-btn"
+                                disabled={selectedStepIds.length === 0}
+                                onClick={() => saveToLibrary(selectedStepIds)}
                             />
                         </Tooltip>
                     </ButtonGroup>

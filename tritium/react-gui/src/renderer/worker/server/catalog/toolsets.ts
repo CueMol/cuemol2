@@ -63,8 +63,8 @@ export const TOOLSETS: readonly Toolset[] = [
   {
     id: 'molops',
     description:
-      'Changing molecules: superposing one onto another, molecular surfaces, deleting atoms, ' +
-      'renaming chains, merging molecules, and secondary structure.',
+      'Changing MolCoord objects: superposing one onto another, molecular surfaces, deleting atoms, ' +
+      'renaming chains, merging MolCoord objects, and secondary structure.',
   },
   {
     id: 'xtal',

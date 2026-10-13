@@ -14,7 +14,7 @@ import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/
 import type { QaxArg, QaxItem } from './model'
 
 /** The semantic kinds whose value is a node uid. */
-const REF_SEMANTICS = new Set(['object', 'molecule', 'renderer', 'node'])
+const REF_SEMANTICS = new Set(['object', 'renderer', 'node'])
 
 /** Whether a parameter takes a node uid. */
 export function isRefParam(p: Param<unknown>): boolean {

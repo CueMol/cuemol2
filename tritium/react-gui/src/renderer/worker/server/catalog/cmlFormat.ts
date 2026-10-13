@@ -12,7 +12,7 @@
 import type { AtomSpec, ParamMap } from './params'
 
 /** The semantic kinds whose value is a node uid. */
-const REF_SEMANTICS = new Set(['object', 'molecule', 'renderer', 'node'])
+const REF_SEMANTICS = new Set(['object', 'renderer', 'node'])
 
 /** Whether bracket pairs in `text` close in order. */
 function balanced(text: string): boolean {

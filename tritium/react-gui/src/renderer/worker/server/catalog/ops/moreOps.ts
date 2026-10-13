@@ -166,7 +166,7 @@ export const saveSceneOp = defineOp({
 export const saveObject = defineOp({
   name: 'save_object',
   description:
-    'Write one object to a file in the format its extension names (for a molecule e.g. .pdb ' +
+    'Write one object to a file in the format its extension names (for a MolCoord object e.g. .pdb ' +
     'or .cif). ' +
     'Give a plain file name, which is saved to the desktop, or an absolute path where the ' +
     'caller allows one; the full path is reported back -- tell the user where it went.',

@@ -21,7 +21,7 @@ import { QAX_VERSION } from './qax/model'
 import { isRefParam, opToQax } from './qax/values'
 
 /** One entry as a qax item. An op the catalogue no longer has is kept as a note. */
-function entryToQax(entry: ActionEntry): QaxItem {
+export function entryToQax(entry: ActionEntry): QaxItem {
   if (entry.kind === 'note') return { kind: 'note', text: entry.text }
   const op = findOp(entry.op)
   if (!op) return { kind: 'note', text: `unknown op ${entry.op}` }

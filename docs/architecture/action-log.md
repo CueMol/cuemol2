@@ -82,7 +82,7 @@ undo / redo、`clearUndoData`、scene の読み込み (`clearAllData`) など、
     `set_projection` (perspective が非 null のとき)。引数が無ければ getter なので記録しない。
   - replay の op は、外側の txn が commit したときだけ残る。読むだけの submit は rollback する
     ので、その中で回した view は記録に残らない。
-- node 引数 (semantic が object / molecule / renderer / node) は、op を **実行する前に** path
+- node 引数 (semantic が object / renderer / node) は、op を **実行する前に** path
   (`obj` / `obj/rend`) に直して控える。こうしておくと、delete / rename した後でも元の名前で書き出せる。
   - 同じ path の node が他にもある場合は path を控えない (uid だけを持つ)。
 
@@ -121,6 +121,7 @@ helper)。
 | `applyRendererStyle` (Style サブメニュー) | `apply_renderer_style` |
 | scene tree のまとめて表示・非表示 / 削除 (`sceneTree/bulkSceneNodeOps.ts`) | node ごとの `set_visible` / `delete_node` (削除は破棄の直前に記録) |
 | `applyRendererStyleList` (Edit Style ダイアログ) | `set_renderer_styles` (style の並び全体を `,` 区切りで) |
+| coloring scheme の property (`coloring/applyColoring.ts` の `setColoringProp`。Color pane の CPK / Rainbow / B-factor の欄) | `set_coloring_prop` (対象の renderer か object、property 名、値)。style から借りた着色なら、先にその node 専用の着色に切り替えてから書く (GUI と同じ) |
 | 着色 (`coloring/applyColoring.ts`、`colorTargets.ts`、`multiGrad.ts`) | `set_renderer_coloring` / `set_elepot_coloring` / `set_default_color`。coloring の target・elepot の property・multigrad の color map は `set_node_prop`。着色と paint の op は対象を `nodeId` + `nodeType` (`renderer` / `object`) で取るので、Color pane で object を対象にした変更も記録する (style と elepot は renderer のみ) |
 | paint の表 (`coloring/paintCrud.ts`、`paintClipboard.ts`) | `add_paint` / `set_paint` / `remove_paint` (複数行は 1 行ずつ) / `move_paint` / `clear_paint`。番号は 1 始まり |
 | 分子の編集 (`molops/`) | `rename_chain`、`renumber_residues`、`delete_atoms`、`merge_molecules`、`set_secondary_structure`、`create_surface` / `recalc_surface` (backend が auto のとき)、`cut_surface`、`set_symmetry`、`show_symmetry`、`analyze_interactions` (1 分子・1 selection のとき) |
@@ -143,7 +144,7 @@ helper)。
   `applyStyles`、`label`、`set_view` の回転、`orient`、`center`、`frame`。そのコマンドの行には、
   service を通った部分の op だけが入る。
 - 対応する op が無いもの: paint の行の挿入 (`addPaintEntry`) と貼り付け、
-  coloring scheme の property、multigrad の node、symmetry copy の作成、unit cell だけの表示、
+  multigrad の node、symmetry copy の作成、unit cell だけの表示、
   原子名ラベルの切り替え、scene tree の並べ替え、camera の visibility flag と camera ファイルの
   読み込み、style set の作成・削除・読み込みと色・style の編集、render settings、node の貼り付け、
   アニメーション要素の property の reset。
@@ -188,6 +189,26 @@ helper)。
 </cuemol-actions>
 ```
 
+マクロは、引数 (`<param>`) を取る名前付きの op の並び。`<action>` と同じファイルに並べられる:
+
+```xml
+<cuemol-actions version="1">
+  <macro name="cartoon-hide" label="Cartoon &amp; hide" description="...">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">cartoon</arg>
+      <arg name="name">p_cartoon</arg>
+    </op>
+    <op name="set_visible">
+      <arg name="nodeId" param="target" sub="p_cartoon"/>
+      <arg name="nodeType">renderer</arg>
+      <arg name="visible">false</arg>
+    </op>
+  </macro>
+</cuemol-actions>
+```
+
 ### 3.1 要素
 
 | 要素 | 意味 |
@@ -198,7 +219,8 @@ helper)。
 | `<atom chain resid name/>` | `atoms` 型の引数の 1 原子 |
 | `<cmd>` | native console のコマンド行。人が手で書くための逃げ道で、記録器はこれを出力しない |
 | `<note>` | 実行しない記録 |
-| `<macro>` / `<param>` | 名前付きの action と引数のために予約している。v1 の reader は読むと拒否する |
+| `<macro name label? description?>` | 引数を取る名前付きの op の並び (§3.3)。名前はファイルの中で一意 |
+| `<param name type label?>` | マクロの引数。`<macro>` の本体より前に書く。`type` は qif の class 名 (`MolCoord`、`Object` など)。catalog の semantic 名は使わない |
 
 - 構造は汎用のものだけを決めていて、op ごとのスキーマ (XSD) は無い。どの op がどんな引数を
   取るかは catalog が正本で、検証は再生のときに行う。
@@ -215,7 +237,7 @@ helper)。
 | `string` / `enum` | text (XML エスケープ。quote の問題は起きない) |
 | `vec3` | text の `x y z` |
 | `atoms` | 子要素 `<atom>` の並び |
-| node (semantic が object / molecule / renderer / node) | 属性 `path` (記録時の `obj` / `obj/rend`) と `uid` (記録した session での uid) |
+| node (semantic が object / renderer / node) | 属性 `path` (記録時の `obj` / `obj/rend`) と `uid` (記録した session での uid)。マクロの中では `param` (引数の object) と、その下の renderer 名 `sub` でも書ける |
 | null | `<arg>` ごと書かない |
 
 - 書く順序は、catalog の param の宣言順。
@@ -223,15 +245,33 @@ helper)。
   安定しないため。
 - 読んだ値は MCP / agent と同じ `readToolArgs` に渡すので、型の読み方は tool call と一致する。
 
-### 3.3 実装の置き場所と C++ への移行
+### 3.3 マクロ
+
+- **束縛** (`actions/qax/run.ts` の `bindMacroItems`): `param` だけの arg は、引数に束縛した
+  object の path (`obj`) に、`sub` もあれば `obj/<sub>` になる。あとは `<action>` と同じく
+  `resolveRef` で解決する。`sub` は、マクロの中で作った renderer を後の op から指すために使う。
+- **検査** (`codec.ts`): マクロ名の重複、宣言の無い param への束縛、`param` の無い `sub`、
+  `<action>` の中の `param` はエラー。`param` の arg は他の値 (text・`path`・`uid`) を持てない。
+- **実行できる形** (`macroShape`): 引数なし (`none`) か、object の引数 1 つ (`target`。Actions
+  pane で選んでいる object を束縛する)。引数が 2 つ以上のマクロは読めるが、`unsupported` として
+  実行しない (引数を聞く UI がまだ無いため)。
+- **型の判定**: 束縛する object は、`type` の class か、その派生 (`MolCoord` なら `AnimMol` など)
+  でなければならない (`catalog/refs.ts` の `isObjectOfClass`)。
+- **実行**: 1 回の実行が 1 undo txn (label はマクロの label)。`<cmd>` は console の外では実行できない
+  ので断る (`QaxExec.runLine` が無い呼び出し側)。
+- console の `run x.qax` は `<action>` だけを再生し、マクロは呼ばない。
+
+### 3.4 実装の置き場所と C++ への移行
 
 - `actions/qax/model.ts`: plain なデータモデル (`QaxDoc`)。
 - `actions/qax/codec.ts`: `parseQax(text)` / `writeQax(doc)`。
   - 読み込みには `@xmldom/xmldom` を使う。worker には `DOMParser` が無いため。
   - 書き出しは、1 要素 1 行に字下げした手書きの writer。2 つの log の diff を読みやすくするため。
 - `actions/qax/values.ts`: 引数の encode / decode。catalog の param 定義を引数で受け取る。
+- `actions/qax/run.ts`: 要素の実行とマクロの束縛 (console と Actions pane が共有)。これだけは op
+  catalog を使う。
 
-この 3 つは worker の service にも catalog にも依存しないので、将来はコマンド系とあわせて C++ に
+`model` / `codec` / `values` の 3 つは worker の service にも catalog にも依存しないので、将来はコマンド系とあわせて C++ に
 移す。golden file `tritium/react-gui/src/renderer/__test__/fixtures/qax/v1.qax` で形式を pin して
 あり、C++ 版も同じファイルで検証できる。
 
@@ -247,14 +287,15 @@ helper)。
   - 最初に失敗した action で止まる。それより前の action は残る。
 - 長い submit の一部や script の中から読んだ場合は、その submit の 1 txn の中で実行する
   (他の script と同じ扱い)。
-- 各要素の実行 (`runtime/runQax.ts`):
+- 各要素の実行は core の `actions/qax/run.ts` (`runQaxItems`) が行い、console の
+  `runtime/runQax.ts` はそれに console の context を渡す adapter:
   - `<op>`: 次の順に処理する。
     1. `findOp` で op を引く。
     2. 引数を `qaxToInput` で読む。node は、今の scene で `resolveRef` を使って解決する。
     3. `outsideTxn` に当たる op (scene の open / save) は断る。
     4. `readToolArgs` で型付きの引数にする。
     5. `invokeOp` で実行する。
-  - `<cmd>`: native の parser で 1 行として実行する。
+  - `<cmd>`: native の parser で 1 行として実行する (console だけが渡す `runLine`)。
   - `<note>`: 飛ばす。
 - qax を実行できるのは native dialect だけ。PyMOL dialect は qax ファイルを断る。
 - `.qax` 以外のファイルを `run` した場合は、今までどおりコマンド行のテキストとして読む。
@@ -294,8 +335,8 @@ native の builtin で、どちらも group は `edit`。
 
 activity bar の **Actions** view (built-in。`shell/ActivityBar.tsx`、`shell/SidePanel.tsx` の
 `VIEW_PANES.actions`) に、**History** pane (`renderer/features/actions/ActionHistoryPane.tsx`) を
-置く。action log と undo は core の機能なので、plugin ではなく built-in にしている。後で、保存した
-action と preset の pane を同じ view に足す。
+置き、その下に **Actions** pane (§5.6) を置く。action log と undo は core の機能なので、plugin では
+なく built-in にしている。
 
 ### 5.1 一覧
 
@@ -326,6 +367,19 @@ handler は `features/actions/useActionCommands.ts`)。
   `writeRowsFile` を使う。
 - **Copy as commands**: `actionStepLines` が選んだ行を native のコマンド行にし、clipboard に書く。
   op の無い行は `# <label>` になる。Edit > Copy にも `useClipboardScope('action-history')` で対応する。
+- **Save to Actions**: 選んだ step を User Actions (§5.6) に保存する。`SaveActionDialog` で名前と、
+  「Run on the selected object (save as a macro)」を選ぶ。step がマクロにできるとき
+  (`canSaveAsMacro`) はチェックが最初から ON、できないときは無効にして理由を出す。下の説明文は
+  チェックの状態に合わせて変わる。
+  - マクロにしないときは、記録したときの path のまま `<action>` として書く (Save as qax と同じ)。
+  - マクロにするときの書き換えは `actions/macro.ts` の `stepsToMacro`: 選んだ step の op を古い順に
+    1 つのマクロ (引数 `target`、型は object の class) にし、その object の path を
+    `param="target"`、その下の renderer を `param="target" sub="<名前>"` にする。
+  - マクロにできないのは、次の選択: 2 つの object にまたがる、uid でしか指せない node がある、範囲の
+    外で作られた renderer を指す。範囲の中で作られたとみなすのは、それより前の `create_renderer` /
+    `create_group` が名前を指定して作ったものだけ。こうしておくと、マクロは作るところから一式に
+    なり、別の object でも確実に動く。
+  - 参照が 1 つも無い step は、引数なしのマクロになる。
 - 選んだ step が履歴から消えていたら (redo 側が切れたなど)、保存とコピーは `not-found` で失敗する。
 
 ### 5.3 Inspector の step 表示
@@ -372,12 +426,50 @@ C++ は undo / redo で event を出さないので、変更の通知は worker 
   `useUndoRedoState` (toolbar) がこれで取り直す。console の `undo` のように scene event を出さない
   経路でも、toolbar の表示が古いまま残らない。
 
+### 5.6 Actions pane (同梱の preset と User Actions)
+
+`features/actions/ActionLibraryPane.tsx`。見出しは **Actions** (コード上の名前は `Library*`)。
+worker の service は `services/actions/library.ts`。
+
+- **一覧**: 2 つの group。
+  - **Presets**: 同梱の `data/default_actions.qax` のマクロ。sysconfig.xml と同じ share の `data/`
+    に install する (packaged は `resources/cuemol2/share/data`、dev は repo の `data/`)。
+  - **User Actions**: `userData/actions/*.qax` (main の `APP_PATH` の `actionsDir`、無ければ作る)。
+    マクロ 1 つだけのファイル (Save to Actions と Copy to User Actions が作る形) は、直下に 1 行で
+    出す。それ以外は、ファイルの行の下にマクロと「recorded actions」を出す。
+  - 行のラベルは `TruncatedText`、hint に description。読めないファイルと実行できない形の行は
+    薄く出し、理由を出す。
+- **Target**: pane の上に、マクロを当てる object を出す。scene tree の選択から求める (renderer /
+  rendGroup なら親の object、重複は除く)。選択が無く、scene に object が 1 つだけならそれ。
+- **Run**: toolbar とコンテキストメニューだけ (double-click では実行しない。History pane と同じ)。
+  target が要るのに無いとき、undo/redo lock 中、実行できない形のときは無効。
+  - マクロ: 1 undo txn。target が複数なら object ごとに 1 回ずつ実行し、全体で 1 txn
+    (label は `<label> (N objects)`)。失敗した object は飛ばして続け (それまでに実行した op は
+    残る)、最後に飛ばした object と理由を一覧で出す。全部失敗したら rollback する。
+  - ファイルの recorded actions: console の `run x.qax` と同じく action ごとに 1 txn、最初の失敗で
+    止まる。
+  - op の `fileAccess` は `any` (ユーザーが選んで実行するので、preset の `render_image` などが書く
+    場所を制限しない)。
+- **コンテキストメニュー**: Run、Copy to User Actions (preset をユーザーのファイルに複製する)、
+  Rename... (ファイル名と、マクロ 1 つだけのファイルならマクロの name / label も変える)、
+  Move to Trash (`IPC.SHELL_TRASH_PATH`)、Open in Editor、Reveal in Finder。書き換え・名前の
+  変更・削除は User Actions のファイルだけ。
+- 保存・複製・名前の変更・削除の後は、一覧を自動で読み直す。toolbar の Refresh でも読み直せる。
+
+同梱の preset (12 個): Cartoon + ligand、Ligand site、B-factor cartoon、Transparent surface、
+Electrostatic surface (APBS、By SAS)、Ligand contacts、Symmetry mates、White / Black background、
+Render image、360 degree spin、Front, side and top cameras。既存の op で表せないので入れていない
+もの: chain ごとの色、初期表示 (simple) に戻す、輪郭線 (対象の renderer を一括で指す op が無い)、
+重ね合わせ (object が 2 つ要る)。
+
 ## 6. テスト
 
 | ファイル | pin している契約 |
 |---|---|
 | `tritium/react-gui/src/renderer/__test__/actionLog.test.ts` | nest した txn が 1 行になる / rollback と空の commit では行が増えない / undo・redo への追従と redo 側の切り捨て / stack の clear と scene 破棄後の reconcile / op を実行前の path で 1 回だけ記録し、replay の op は commit 時だけ残す / service の記録が、op 側の `readToolArgs` で読める引数になっている |
 | 同上 (GUI 向け) | `getUndoState` の表示文 (`describe`、fallback、`(+N more)`、op の無い行は説明文) / undo の service の後に actions-changed を通知する / step id で選んだ行の qax 書き出しと、消えた step の拒否 |
+| `tritium/react-gui/src/renderer/__test__/actionLibrary.test.ts` | step をマクロにして保存・読み込みし、別の object に束縛すると、その object と renderer の path になる / 2 object、範囲外の renderer の拒否 / 複数の target で 1 txn、型の違う object を飛ばして failures に返す |
+| `tritium/react-gui/src/renderer/__test__/defaultActions.test.ts` | 同梱の preset が読め、実行できる形で、全 op の引数を catalog が受け付ける |
 | `tritium/react-gui/src/renderer/__test__/actionHistoryPane.test.tsx` | 行の click / double-click / 子行の click は Inspector に出すだけで、Go to step を出さない / `goToStep` の undo・redo の量 |
-| `tritium/react-gui/src/renderer/__test__/qaxCodec.test.ts` | golden file の round-trip / 全 `ParamKind` と node 引数が、ファイルを経由して `readToolArgs` で同じ値に戻る / version 違いと `<macro>` の拒否 |
+| `tritium/react-gui/src/renderer/__test__/qaxCodec.test.ts` | golden file (マクロを含む) の round-trip / 全 `ParamKind` と node 引数が、ファイルを経由して `readToolArgs` で同じ値に戻る / version 違い、未宣言の param、`<action>` の中の param、重複したマクロ名の拒否 |
 | `tritium/react-gui/src/plugins/console/worker/runtime/runCommand.test.ts` | 1 行だけの qax は 1 action = 1 txn で、記録された label で実行する。失敗した action で止まる。長い submit の中では 1 txn にまとまる。PyMOL dialect では断る |

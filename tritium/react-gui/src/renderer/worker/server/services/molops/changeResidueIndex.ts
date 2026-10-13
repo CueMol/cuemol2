@@ -49,12 +49,12 @@ export function changeResidueIndex(
     // false -> rollback (no commit).
     return undoTxnResult(scene, 'Change residue index', () => {
         recordOp(ctx, scene.uid, 'renumber_residues', {
-            molId: args.objId,
+            objId: args.objId,
             mode: args.bshift ? 'shift' : 'start',
             value: args.value,
             selection: args.selStr.trim() === '' ? null : args.selStr,
             renumber: args.renumber,
-        }, ['molId']);
+        }, ['objId']);
         const m = mol as unknown as MolCoord;
         const s = sel as unknown as MolSelection;
         const done = args.renumber

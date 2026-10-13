@@ -142,6 +142,14 @@ export class WorkerService {
     }
 
     /**
+     * Whether a wrapper is of the .qif class `className` or one derived from
+     * it. Service-side facade exposed as `ctx.svc.isInstanceOf`.
+     */
+    isInstanceOf(obj: unknown, className: string): boolean {
+        return this._cm.isInstanceOf(obj, className);
+    }
+
+    /**
      * Push a message to the renderer on an out-of-band channel (no reply).
      * Used by long-running services (e.g. render jobs) to stream updates.
      */

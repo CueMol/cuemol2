@@ -124,12 +124,12 @@ export function makeMolSurf(
             // create_surface has no backend choice; a forced one is not recorded.
             if (!args.backend || args.backend === 'auto') {
                 recordOp(ctx, scene.uid, 'create_surface', {
-                    molId: args.objId,
+                    objId: args.objId,
                     selection: args.selStr.trim() !== '' ? args.selStr : null,
                     name: surfName,
                     probeRadius,
                     density,
-                }, ['molId']);
+                }, ['objId']);
             }
             const surf = ctx.svc.createObj('MolSurfObj') as MolSurfObj;
             // `sesbackend` is an enum property: the generated wrapper types it

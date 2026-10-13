@@ -89,6 +89,7 @@ export interface InvokeChannels {
   [IPC.SHELL_OPEN_PATH]:   { req: { path: string };      res: { ok: boolean; error?: string } }
   [IPC.SHELL_FILES_TAKE]:  { req: void;                  res: ShellOpenRequest }
   [IPC.SHELL_REVEAL_PATH]: { req: { path: string };      res: { ok: boolean } }
+  [IPC.SHELL_TRASH_PATH]:  { req: { path: string };      res: { ok: boolean; error?: string } }
   [IPC.LAYOUT_LOAD]:       { req: void;                  res: LayoutState | null }
   [IPC.LAYOUT_SAVE]:       { req: LayoutState;           res: void }
   [IPC.UI_LOAD]:           { req: void;                  res: UiState }

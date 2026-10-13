@@ -150,6 +150,46 @@
   color: var(--text-primary);
 }
 
+/* Indent per tree level: one icon (--icon-caret), so a child's icon sits one
+   icon to the right of its parent's. Blueprint's own step is 23px a level,
+   which put nested rows about one and a half icons in. Set per depth class,
+   as Blueprint does, so the depth structure is kept (see _side-panel.css on
+   why not to override the flat class). */
+.h3-listbox-tree {
+  --tree-indent: var(--icon-caret);
+}
+
+.h3-listbox-tree .bp5-tree-node-content-1 {
+  padding-left: calc(var(--tree-indent) * 1);
+}
+.h3-listbox-tree .bp5-tree-node-content-2 {
+  padding-left: calc(var(--tree-indent) * 2);
+}
+.h3-listbox-tree .bp5-tree-node-content-3 {
+  padding-left: calc(var(--tree-indent) * 3);
+}
+.h3-listbox-tree .bp5-tree-node-content-4 {
+  padding-left: calc(var(--tree-indent) * 4);
+}
+.h3-listbox-tree .bp5-tree-node-content-5 {
+  padding-left: calc(var(--tree-indent) * 5);
+}
+.h3-listbox-tree .bp5-tree-node-content-6 {
+  padding-left: calc(var(--tree-indent) * 6);
+}
+.h3-listbox-tree .bp5-tree-node-content-7 {
+  padding-left: calc(var(--tree-indent) * 7);
+}
+.h3-listbox-tree .bp5-tree-node-content-8 {
+  padding-left: calc(var(--tree-indent) * 8);
+}
+.h3-listbox-tree .bp5-tree-node-content-9 {
+  padding-left: calc(var(--tree-indent) * 9);
+}
+.h3-listbox-tree .bp5-tree-node-content-10 {
+  padding-left: calc(var(--tree-indent) * 10);
+}
+
 /* Tree caret slot (ListboxTree). The kit draws its own caret in the node's
    icon slot so trees and section headers share one glyph; Blueprint's caret
    never renders here (ListboxTree passes hasCaret=false) and the spacer it
@@ -256,6 +296,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Its tooltip when it carries a hint: the full line (if cut), then the hint. */
+.h3-truncated-tip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: calc(var(--notification-w));
+  white-space: normal;
 }
 
 /* Blueprint makes every span of a tree label inline, which would leave the

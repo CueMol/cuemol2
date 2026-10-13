@@ -49,4 +49,8 @@ export interface AppPathInfo {
    * (AppImage).
    */
   cliPath: string
+  /** The preset macros shipped with the app (`data/default_actions.qax`). */
+  bundledActionsFile: string
+  /** The folder of the user's own actions (`<userData>/actions`). */
+  actionsDir: string
 }

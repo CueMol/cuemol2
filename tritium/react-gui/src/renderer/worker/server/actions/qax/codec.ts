@@ -8,7 +8,7 @@
  */
 
 import { DOMParser } from '@xmldom/xmldom'
-import type { QaxAction, QaxArg, QaxAtom, QaxDoc, QaxItem } from './model'
+import type { QaxAction, QaxArg, QaxAtom, QaxDoc, QaxItem, QaxMacro, QaxParam } from './model'
 import { QAX_ROOT, QAX_VERSION } from './model'
 
 /** Escape text for an XML attribute value or element content. */
@@ -29,7 +29,7 @@ function attrs(pairs: [string, string | number | undefined][]): string {
 }
 
 function writeArg(a: QaxArg, indent: string): string[] {
-  const head = `${indent}<arg${attrs([['name', a.name], ['path', a.path], ['uid', a.uid]])}`
+  const head = `${indent}<arg${attrs([['name', a.name], ['param', a.param], ['sub', a.sub], ['path', a.path], ['uid', a.uid]])}`
   if (a.atoms) {
     return [
       `${head}>`,
@@ -58,11 +58,22 @@ function writeAction(action: QaxAction, indent: string): string[] {
   return [`${head}>`, ...action.items.flatMap((i) => writeItem(i, `${indent}  `)), `${indent}</action>`]
 }
 
+function writeMacro(macro: QaxMacro, indent: string): string[] {
+  const head = `${indent}<macro${attrs([['name', macro.name], ['label', macro.label], ['description', macro.description]])}`
+  const inner = `${indent}  `
+  const body = [
+    ...macro.params.map((p) => `${inner}<param${attrs([['name', p.name], ['type', p.type], ['label', p.label]])}/>`),
+    ...macro.items.flatMap((i) => writeItem(i, inner)),
+  ]
+  return body.length === 0 ? [`${head}/>`] : [`${head}>`, ...body, `${indent}</macro>`]
+}
+
 /** The text of a qax file. */
 export function writeQax(doc: QaxDoc): string {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<${QAX_ROOT} version="${doc.version}">`,
+    ...(doc.macros ?? []).flatMap((m) => writeMacro(m, '  ')),
     ...doc.actions.flatMap((a) => writeAction(a, '  ')),
     `</${QAX_ROOT}>`,
     '',
@@ -95,6 +106,17 @@ function readArg(el: XNode): QaxArg {
   const name = attr(el, 'name')
   if (!name) throw new QaxError('<arg> needs a name')
   const out: QaxArg = { name }
+  const param = attr(el, 'param')
+  const sub = attr(el, 'sub')
+  if (sub !== undefined && param === undefined) throw new QaxError(`<arg name="${name}">: sub needs a param`)
+  if (param !== undefined) {
+    if (attr(el, 'path') !== undefined || attr(el, 'uid') !== undefined || elements(el).length > 0) {
+      throw new QaxError(`<arg name="${name}">: a param takes no other value`)
+    }
+    out.param = param
+    if (sub !== undefined) out.sub = sub
+    return out
+  }
   const path = attr(el, 'path')
   const uid = attr(el, 'uid')
   if (path !== undefined) out.path = path
@@ -138,6 +160,42 @@ function readItem(el: XNode): QaxItem {
   }
 }
 
+/** The parameters an item's arguments name. */
+function paramsUsed(items: QaxItem[]): string[] {
+  return items.flatMap((i) => (i.kind === 'op' ? i.args.flatMap((a) => (a.param !== undefined ? [a.param] : [])) : []))
+}
+
+function readMacro(el: XNode): QaxMacro {
+  const name = attr(el, 'name')
+  if (!name) throw new QaxError('<macro> needs a name')
+  const params: QaxParam[] = []
+  const items: QaxItem[] = []
+  for (const k of elements(el)) {
+    if (k.nodeName === 'param') {
+      if (items.length > 0) throw new QaxError(`<macro name="${name}">: <param> must come before the body`)
+      const pname = attr(k, 'name')
+      const type = attr(k, 'type')
+      if (!pname || !type) throw new QaxError(`<macro name="${name}">: <param> needs a name and a type`)
+      if (params.some((p) => p.name === pname)) throw new QaxError(`<macro name="${name}">: param "${pname}" is declared twice`)
+      const p: QaxParam = { name: pname, type }
+      const label = attr(k, 'label')
+      if (label !== undefined) p.label = label
+      params.push(p)
+    } else {
+      items.push(readItem(k))
+    }
+  }
+  for (const used of paramsUsed(items)) {
+    if (!params.some((p) => p.name === used)) throw new QaxError(`<macro name="${name}">: no param "${used}"`)
+  }
+  const out: QaxMacro = { name, params, items }
+  const label = attr(el, 'label')
+  const description = attr(el, 'description')
+  if (label !== undefined) out.label = label
+  if (description !== undefined) out.description = description
+  return out
+}
+
 function readAction(el: XNode): QaxAction {
   const out: QaxAction = { items: elements(el).map(readItem) }
   const label = attr(el, 'label')
@@ -166,12 +224,21 @@ export function parseQax(text: string): QaxDoc | { error: string } {
   if (version !== QAX_VERSION) return { error: `version ${attr(root, 'version') ?? '(none)'} is not supported (only ${QAX_VERSION})` }
   try {
     const actions: QaxAction[] = []
+    const macros: QaxMacro[] = []
     for (const el of elements(root)) {
-      if (el.nodeName === 'macro') throw new QaxError('<macro> is not supported yet')
-      if (el.nodeName !== 'action') throw new QaxError(`unexpected <${el.nodeName}>`)
-      actions.push(readAction(el))
+      if (el.nodeName === 'macro') {
+        const m = readMacro(el)
+        if (macros.some((x) => x.name === m.name)) throw new QaxError(`macro "${m.name}" is defined twice`)
+        macros.push(m)
+      } else if (el.nodeName === 'action') {
+        const a = readAction(el)
+        if (paramsUsed(a.items).length > 0) throw new QaxError('<action>: a param is only allowed in a <macro>')
+        actions.push(a)
+      } else {
+        throw new QaxError(`unexpected <${el.nodeName}>`)
+      }
     }
-    return { version, actions }
+    return macros.length > 0 ? { version, actions, macros } : { version, actions }
   } catch (e) {
     if (e instanceof QaxError) return { error: e.message }
     throw e

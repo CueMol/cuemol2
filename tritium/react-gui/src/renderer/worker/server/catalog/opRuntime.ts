@@ -57,7 +57,7 @@ function invalidSelection(op: AnyOp, ctx: WorkerContext, args: Record<string, un
 }
 
 /** The semantic kinds whose value is a node uid. */
-const REF_SEMANTICS = new Set(['object', 'molecule', 'renderer', 'node'])
+const REF_SEMANTICS = new Set(['object', 'renderer', 'node'])
 
 /**
  * The path of each node argument, read before the op runs: a delete or a

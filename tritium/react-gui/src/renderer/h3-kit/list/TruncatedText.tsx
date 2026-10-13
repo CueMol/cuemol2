@@ -22,6 +22,11 @@ import { Tooltip } from '@renderer/h3-kit/primitives';
 export interface TruncatedTextProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
     /** The line. */
     text: string;
+    /**
+     * More to say about the row (a description, why it is unavailable),
+     * shown in the same tooltip whether or not the text is cut.
+     */
+    hint?: string;
 }
 
 /** Set a React ref of either kind. */
@@ -34,7 +39,7 @@ function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null): void {
  * A single-line label that ellipsizes, with a tooltip of the whole line
  * while it is cut.
  */
-export const TruncatedText: React.FC<TruncatedTextProps> = ({ text, className, ...rest }) => {
+export const TruncatedText: React.FC<TruncatedTextProps> = ({ text, hint, className, ...rest }) => {
     const el = useRef<HTMLSpanElement | null>(null);
     const [cut, setCut] = useState(false);
 
@@ -54,7 +59,14 @@ export const TruncatedText: React.FC<TruncatedTextProps> = ({ text, className, .
 
     return (
         <Tooltip
-            content={cut ? text : ''}
+            content={
+                hint ? (
+                    <div className="h3-truncated-tip">
+                        {cut && <div>{text}</div>}
+                        <div>{hint}</div>
+                    </div>
+                ) : cut ? text : ''
+            }
             // Right of the label, growing rightward: a long line centred
             // below a row near the left edge would run off the window.
             placement="right"

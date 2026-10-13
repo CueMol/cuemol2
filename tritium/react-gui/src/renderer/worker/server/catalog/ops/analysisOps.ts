@@ -17,7 +17,7 @@ import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
 import { outputPath } from '../outputFile'
-import { boolean, integer, moleculeId, optional, path, real, selection } from '../params'
+import { boolean, integer, objectId, optional, path, real, selection } from '../params'
 
 /** The dialog's own starting values, so both routes measure the same thing. */
 const MIN_CONTACT_DIST = 0
@@ -33,7 +33,7 @@ export const analyzeInteractionsOp = defineOp({
     'Use it for hydrogen bonds and for what a ligand touches; by default only polar atoms ' +
     '(no carbon) are paired. This adds labels to the scene.',
   params: {
-    objId: moleculeId('Uid of the molecule to measure within.'),
+    objId: objectId('Uid of the MolCoord object to measure within.', 'MolCoord'),
     selection: selection('Selection the contacts start from, for example a ligand.'),
     maxDist: optional(real(`Longest contact to report, in angstroms. Null uses ${DEFAULT_MAX_CONTACT_DIST}.`)),
     includeCarbon: optional(
@@ -64,7 +64,7 @@ export const analyzeInteractionsOp = defineOp({
     })
     return normalizeServiceResult(
       result,
-      'The contacts could not be computed. Check the molecule id and the selection.',
+      'The contacts could not be computed. Check the object id and the selection.',
     )
   },
 })

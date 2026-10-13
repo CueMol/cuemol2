@@ -43,7 +43,7 @@ function applyMolSel(ctx: WorkerContext, mol: MolCoord, selStr: string, sceneUid
     if (sel === null) return;
     // Same change as `set_mol_selection` (applyMolSelString), which also
     // creates the `*selection` renderer when the molecule has none.
-    recordOp(ctx, sceneUid, 'set_mol_selection', { molId: mol.uid, selection: selStr }, ['molId']);
+    recordOp(ctx, sceneUid, 'set_mol_selection', { objId: mol.uid, selection: selStr }, ['objId']);
     mol.sel = sel;
 }
 

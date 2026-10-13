@@ -41,6 +41,10 @@ describe('qax', () => {
     expect(doc.actions).toHaveLength(4)
     expect(doc.actions[1].label).toBe('cmd: measure "a" & <b>')
     expect(doc.actions[1].items[3]).toEqual({ kind: 'op', name: 'delete_node', args: [{ name: 'nodeId', uid: 31 }] })
+    expect(doc.macros?.map((m) => m.name)).toEqual(['cartoon-hide', 'white-bg'])
+    expect(doc.macros?.[0].params).toEqual([{ name: 'target', type: 'MolCoord', label: 'Target' }])
+    const sub = doc.macros?.[0].items[1]
+    expect(sub?.kind === 'op' && sub.args[0]).toEqual({ name: 'nodeId', param: 'target', sub: 'p_cartoon' })
     expect(writeQax(doc)).toBe(GOLDEN)
   })
 
@@ -68,10 +72,13 @@ describe('qax', () => {
     expect(typed).toEqual({ ...args, target: 40 })
   })
 
-  it('refuses another version and the reserved <macro>', () => {
+  it('refuses another version, a param no macro declares, and a macro defined twice', () => {
+    const v1 = (body: string) => parseQax(`<cuemol-actions version="1">${body}</cuemol-actions>`)
+    const useP = '<op name="x"><arg name="objId" param="p"/></op>'
     expect(parseQax('<cuemol-actions version="2"/>')).toEqual({ error: expect.stringContaining('version 2') })
-    expect(parseQax('<cuemol-actions version="1"><macro name="m"/></cuemol-actions>'))
-      .toEqual({ error: expect.stringContaining('<macro>') })
+    expect(v1(`<macro name="m">${useP}</macro>`)).toEqual({ error: expect.stringContaining('no param "p"') })
+    expect(v1(`<action>${useP}</action>`)).toEqual({ error: expect.stringContaining('only allowed in a <macro>') })
+    expect(v1('<macro name="m"/><macro name="m"/>')).toEqual({ error: expect.stringContaining('defined twice') })
     expect(parseQax('<cuemol-actions version="1"><action>')).toEqual({ error: expect.stringContaining('well-formed') })
   })
 })

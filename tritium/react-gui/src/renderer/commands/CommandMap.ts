@@ -165,6 +165,11 @@ export interface CommandMap {
   [CmdId.ActionsGoToStep]:      { args: { stepId: number | null }; result: void }
   [CmdId.ActionsSave]:          { args: { stepIds: number[] };   result: void }
   [CmdId.ActionsCopy]:          { args: { stepIds: number[] };   result: boolean }
+  [CmdId.ActionsSaveToLibrary]: { args: { stepIds: number[] }; result: void }
+  [CmdId.LibraryRun]:           { args: { file: string; macro?: string; targetIds?: number[] }; result: void }
+  [CmdId.LibraryCopyMacro]:     { args: { file: string; macro: string }; result: void }
+  [CmdId.LibraryRename]:        { args: { file: string }; result: void }
+  [CmdId.LibraryDelete]:        { args: { file: string }; result: void }
 }
 
 /** A style-set row: its uid, the scope it lives in, and its display name. */

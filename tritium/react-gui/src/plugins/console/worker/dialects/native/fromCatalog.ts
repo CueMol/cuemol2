@@ -79,7 +79,6 @@ function readAtoms(raw: string): AtomSpec[] | string {
 
 const REF_KIND: Readonly<Record<string, RefKind>> = {
   object: 'object',
-  molecule: 'molecule',
   renderer: 'renderer',
   node: 'node',
 }
@@ -99,7 +98,7 @@ function readArg(
   const text = unquote(raw)
   const refKind = p.semantic ? REF_KIND[p.semantic] : undefined
   if (refKind) {
-    const ref = resolveRef(ctx, cc.sceneId, text, refKind)
+    const ref = resolveRef(ctx, cc.sceneId, text, refKind, p.objClass)
     return ref.ok ? { value: ref.node.id } : `${name}: ${ref.error}`
   }
   if (p.kind === 'atoms') {
@@ -221,7 +220,6 @@ function completionOf(p: Param<unknown>, rel: RelatedParams, opens = false): Arg
   if (p.kind === 'boolean') return { source: 'enum:true|false', description: 'value' }
   switch (p.semantic) {
     case 'object':
-    case 'molecule':
       return { source: 'objects', description: 'object' }
     case 'renderer':
       return { source: 'renderers', description: 'renderer' }
@@ -235,11 +233,11 @@ function completionOf(p: Param<unknown>, rel: RelatedParams, opens = false): Arg
       // Created on an object: what that object can show. Changed on a
       // renderer: what that renderer can become. Created with what a file
       // loads (load): what its reader's object can show. With none of
-      // those (fetch): what a molecule can show.
+      // those (fetch): what a MolCoord object can show.
       if (rel.object) return { source: `rendererTypes:${rel.object}`, description: 'renderer type' }
       if (rel.renderer) return { source: `rendererChangeTypes:${rel.renderer}`, description: 'renderer type' }
       if (rel.file) return { source: `fileRendererTypes:${rel.file}`, description: 'renderer type' }
-      return { source: 'moleculeRendererTypes', description: 'renderer type' }
+      return { source: 'molCoordRendererTypes', description: 'renderer type' }
     case 'propName':
       return { source: `props:${rel.node ?? ''}`, description: 'property' }
     case 'propValue':
@@ -261,7 +259,7 @@ function completionOf(p: Param<unknown>, rel: RelatedParams, opens = false): Arg
 function related(params: ParamMap): RelatedParams {
   const named = (...kinds: string[]) => Object.keys(params).find((n) => kinds.includes(params[n].semantic ?? '')) ?? null
   return {
-    object: named('object', 'molecule'),
+    object: named('object'),
     node: named('node'),
     prop: named('propName'),
     propPath: named('propPath'),

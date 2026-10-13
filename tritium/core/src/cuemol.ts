@@ -250,6 +250,23 @@ export class CueMol {
     }
 
     /**
+     * Check if a wrapper is an instance of a scriptable class or of a class
+     * derived from it (an AnimMol is a MolCoord).
+     *
+     * The native side reports only an object's own class name, not its
+     * ancestry; the generated wrapper classes extend each other as the .qif
+     * classes do, so the wrapper class registered for `className` answers it.
+     *
+     * @param obj - Object to check
+     * @param className - The .qif class name to check against
+     * @returns False for a non-wrapper or an unknown class name
+     */
+    isInstanceOf(obj: any, className: string): boolean {
+        const Klass = wrapper_map[className];
+        return typeof Klass === 'function' && obj instanceof Klass;
+    }
+
+    /**
      * Check if an object is a Scene
      * 
      * @param obj - Object to check

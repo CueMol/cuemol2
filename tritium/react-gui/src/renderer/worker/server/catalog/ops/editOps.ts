@@ -36,10 +36,10 @@ import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { resolvePropPath } from '../refs'
 import { checkPosition, numbered, pickByNumber } from '@renderer/worker/shared/numbered'
-import { NO_MOLECULE, NO_OBJECT, NO_RENDERER } from '../errors'
+import { NO_MOLCOORD, NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
-import { atoms, boolean, coloringTarget, enumOf, integer, moleculeId, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
+import { atoms, boolean, coloringTarget, enumOf, integer, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
 import type { AtomSpec } from '../params'
 import { outputPath } from '../outputFile'
 import { atomList } from '../cmlFormat'
@@ -97,23 +97,23 @@ export const clearUndo = defineOp({
   },
 })
 
-// --- Molecules ---
+// --- MolCoord objects ---
 
 export const changeResid = defineOp({
   name: 'renumber_residues',
   description:
-    'Change residue numbers of a molecule (Edit > Change residue number): shift them by a ' +
+    'Change residue numbers of a MolCoord object (Edit > Change residue number): shift them by a ' +
     'value, or number them from a value. renumber numbers consecutively instead of keeping ' +
     'the gaps.',
   params: {
-    molId: moleculeId('Uid of the molecule.'),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
     mode: enumOf(['shift', 'start'], 'shift: add value to each number; start: the first becomes value.'),
     value: integer('The shift, or the first number.'),
     selection: optional(selection('Only these residues. Null changes them all.')),
     renumber: optional(boolean('Number consecutively, closing gaps. Null is false.')),
   },
   mutates: true,
-  describe: (a, n) => (a.mode === 'shift' ? `Shift residue numbers of ${n('molId')} by ${a.value}` : `Number residues of ${n('molId')} from ${a.value}`),
+  describe: (a, n) => (a.mode === 'shift' ? `Shift residue numbers of ${n('objId')} by ${a.value}` : `Number residues of ${n('objId')} from ${a.value}`),
   expose: EXPOSE,
   group: 'molecule',
   format: () => [],
@@ -121,7 +121,7 @@ export const changeResid = defineOp({
     return normalizeServiceResult(
       changeResidueIndex(ctx, {
         sceneId: oc.sceneId,
-        objId: args.molId,
+        objId: args.objId,
         selStr: args.selection ?? '',
         bshift: args.mode === 'shift',
         value: args.value,
@@ -142,12 +142,12 @@ function atomOf(mol: MolCoord, spec: AtomSpec): MolAtom | null {
 }
 
 /** The two atoms of a bond, or why not. */
-function bondAtoms(ctx: Parameters<typeof getSceneOrNull>[0], sceneId: number, molId: number, specs: AtomSpec[]):
+function bondAtoms(ctx: Parameters<typeof getSceneOrNull>[0], sceneId: number, objId: number, specs: AtomSpec[]):
   { mol: MolCoord; a: MolAtom; b: MolAtom; scene: NonNullable<ReturnType<typeof getSceneOrNull>> } | { error: string } {
   if (specs.length !== 2) return { error: 'Give exactly two atoms, e.g. A/20/SG A/45/SG.' }
   const scene = getSceneOrNull(ctx, sceneId)
-  const mol = scene?.getObject(molId) as MolCoord | null
-  if (!scene || !mol) return { error: NO_MOLECULE }
+  const mol = scene?.getObject(objId) as MolCoord | null
+  if (!scene || !mol) return { error: NO_MOLCOORD }
   const a = atomOf(mol, specs[0])
   const b = atomOf(mol, specs[1])
   if (!a || !b) return { error: 'An atom was not found; check the chain, residue and atom name.' }
@@ -159,15 +159,15 @@ const BOND_ATOMS = 'The two atoms, chain/resid/atom each, e.g. A/20/SG A/45/SG.'
 
 export const addBond = defineOp({
   name: 'add_bond',
-  description: 'Add a bond between two atoms of a molecule (the Add bond tool).',
-  params: { molId: moleculeId('Uid of the molecule.'), atoms: atoms(BOND_ATOMS) },
+  description: 'Add a bond between two atoms of a MolCoord object (the Add bond tool).',
+  params: { objId: objectId('Uid of the MolCoord object.', 'MolCoord'), atoms: atoms(BOND_ATOMS) },
   mutates: true,
-  describe: (a, n) => `Add bond ${atomList(a.atoms, ' - ')} in ${n('molId')}`,
+  describe: (a, n) => `Add bond ${atomList(a.atoms, ' - ')} in ${n('objId')}`,
   expose: EXPOSE,
   group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
-    const found = bondAtoms(ctx, oc.sceneId, args.molId, args.atoms)
+    const found = bondAtoms(ctx, oc.sceneId, args.objId, args.atoms)
     if ('error' in found) return { ok: false, error: found.error }
     try {
       const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager
@@ -181,15 +181,15 @@ export const addBond = defineOp({
 
 export const removeBond = defineOp({
   name: 'remove_bond',
-  description: 'Remove the bond between two atoms of a molecule.',
-  params: { molId: moleculeId('Uid of the molecule.'), atoms: atoms(BOND_ATOMS) },
+  description: 'Remove the bond between two atoms of a MolCoord object.',
+  params: { objId: objectId('Uid of the MolCoord object.', 'MolCoord'), atoms: atoms(BOND_ATOMS) },
   mutates: true,
-  describe: (a, n) => `Remove bond ${atomList(a.atoms, ' - ')} in ${n('molId')}`,
+  describe: (a, n) => `Remove bond ${atomList(a.atoms, ' - ')} in ${n('objId')}`,
   expose: EXPOSE,
   group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
-    const found = bondAtoms(ctx, oc.sceneId, args.molId, args.atoms)
+    const found = bondAtoms(ctx, oc.sceneId, args.objId, args.atoms)
     if ('error' in found) return { ok: false, error: found.error }
     try {
       const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager
@@ -203,9 +203,9 @@ export const removeBond = defineOp({
 
 export const setSymmetry = defineOp({
   name: 'set_symmetry',
-  description: 'Set the crystal symmetry of a molecule: the unit cell and the space group number.',
+  description: 'Set the crystal symmetry of a MolCoord object: the unit cell and the space group number.',
   params: {
-    molId: moleculeId('Uid of the molecule.'),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
     a: real('Cell a, in angstroms.'),
     b: real('Cell b, in angstroms.'),
     c: real('Cell c, in angstroms.'),
@@ -215,14 +215,14 @@ export const setSymmetry = defineOp({
     spaceGroup: integer('Space group number, e.g. 19 for P 21 21 21.'),
   },
   mutates: true,
-  describe: (a, n) => `Set symmetry of ${n('molId')}${a.spaceGroup !== null ? `: space group ${a.spaceGroup}` : ''}`,
+  describe: (a, n) => `Set symmetry of ${n('objId')}${a.spaceGroup !== null ? `: space group ${a.spaceGroup}` : ''}`,
   expose: EXPOSE,
   group: 'molecule',
   format: () => [],
   run(ctx, args, oc) {
     return normalizeServiceResult(
       changeSymmetryInfo(ctx, {
-        sceneId: oc.sceneId, objId: args.molId,
+        sceneId: oc.sceneId, objId: args.objId,
         a: args.a, b: args.b, c: args.c, alpha: args.alpha, beta: args.beta, gamma: args.gamma,
         nsg: args.spaceGroup,
       }),
@@ -281,7 +281,7 @@ export const regenSurface = defineOp({
   run(ctx, args, oc) {
     const info = getMolSurfRegenInfo(ctx, { sceneId: oc.sceneId, objId: args.surfId })
     if (!info.ok || !info.canRegen) {
-      return { ok: false, error: info.ok && !info.origMolFound ? `Its molecule (${info.origMol}) is not in the scene.` : 'This object cannot be regenerated.' }
+      return { ok: false, error: info.ok && !info.origMolFound ? `Its MolCoord object (${info.origMol}) is not in the scene.` : 'This object cannot be regenerated.' }
     }
     return normalizeServiceResult(
       regenMolSurf(ctx, { sceneId: oc.sceneId, objId: args.surfId, density: args.density ?? info.density }),

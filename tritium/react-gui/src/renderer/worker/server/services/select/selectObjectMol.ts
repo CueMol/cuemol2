@@ -122,7 +122,7 @@ export function selectObjectMol(
 
     withUndoTxn(scene, resolved.label, () => {
         if (applyMolSelStr(ctx, mol, resolved.selStr, scene.uid)) {
-            recordOp(ctx, scene.uid, 'set_mol_selection', { molId: args.objId, selection: resolved.selStr }, ['molId']);
+            recordOp(ctx, scene.uid, 'set_mol_selection', { objId: args.objId, selection: resolved.selStr }, ['objId']);
         }
     });
     return { ok: true, selStr: resolved.selStr };

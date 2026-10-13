@@ -17,6 +17,7 @@ import { FileOpenOptionDialogProvider } from '@renderer/dialogs/fopen-opt-dlgs/F
 import { QscWriterOptionDialogProvider } from '@renderer/dialogs/QscWriterOptionDialogProvider'
 import { StreamProgressDialogProvider } from '@renderer/dialogs/StreamProgressDialogProvider'
 import { TextPromptDialogProvider } from '@renderer/dialogs/TextPromptDialogProvider'
+import { SaveActionDialogProvider } from '@renderer/dialogs/SaveActionDialogProvider'
 import { NewRendererDialogProvider } from '@renderer/dialogs/NewRendererDialogProvider'
 import { ApplyRendStyleDialogProvider } from '@renderer/dialogs/ApplyRendStyleDialogProvider'
 import { CreateRendStyleDialogProvider } from '@renderer/dialogs/CreateRendStyleDialogProvider'
@@ -59,6 +60,7 @@ export const DialogProvider = composeProviders([
   QscWriterOptionDialogProvider,
   StreamProgressDialogProvider,
   TextPromptDialogProvider,
+  SaveActionDialogProvider,
   NewRendererDialogProvider,
   ApplyRendStyleDialogProvider,
   CreateRendStyleDialogProvider,

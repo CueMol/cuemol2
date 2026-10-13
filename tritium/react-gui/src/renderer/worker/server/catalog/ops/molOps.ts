@@ -1,6 +1,6 @@
 /**
  * @file worker/server/catalog/ops/molOps.ts
- * @description Ops that change a molecule or derive a new object from one:
+ * @description Ops that change a MolCoord object or derive a new object from one:
  * superposition, molecular surfaces, editing atoms and chains, secondary
  * structure, crystal symmetry, and named selections.
  */
@@ -16,7 +16,7 @@ import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { failedWith } from '../errors'
 import { defineOp } from '../op'
-import { boolean, enumOf, moleculeId, optional, real, selection, string } from '../params'
+import { boolean, enumOf, objectId, optional, real, selection, string } from '../params'
 
 /** The GUI dialog's defaults (`MakeMolSurfDialog`). */
 const SURF_DENSITY = 2
@@ -28,14 +28,14 @@ const SEC_TYPES = ['coil', 'strand', 'helix', 'helix310', 'helixpi'] as const
 export const superpose = defineOp({
   name: 'superpose',
   description:
-    'Move one molecule onto another by superposing selected atoms. SSM matches by secondary ' +
+    'Move one MolCoord object onto another by superposing selected atoms. SSM matches by secondary ' +
     'structure and needs no alignment (proteins); LSQ fits the selected atoms in order, so the ' +
     'two selections must pair up atom for atom (e.g. the same residues\' CA atoms). The moving ' +
-    'molecule\'s coordinates change.',
+    'object\'s coordinates change.',
   params: {
-    movId: moleculeId('Uid of the molecule to move.'),
-    refId: moleculeId('Uid of the reference molecule, which stays put.'),
-    movSel: optional(selection('Atoms of the moving molecule to fit. Null uses all (SSM) or CA atoms (LSQ).')),
+    movId: objectId('Uid of the MolCoord object to move.', 'MolCoord'),
+    refId: objectId('Uid of the reference MolCoord object, which stays put.', 'MolCoord'),
+    movSel: optional(selection('Atoms of the moving object to fit. Null uses all (SSM) or CA atoms (LSQ).')),
     refSel: optional(selection('Atoms of the reference to fit. Null as movSel.')),
     algo: optional(enumOf(['SSM', 'LSQ'], 'SSM (default) or LSQ.')),
   },
@@ -64,24 +64,24 @@ export const superpose = defineOp({
 export const makeSurface = defineOp({
   name: 'create_surface',
   description:
-    'Compute the molecular (solvent excluded) surface of a molecule, or of a selection of it, as ' +
+    'Compute the molecular (solvent excluded) surface of a MolCoord object, or of a selection of it, as ' +
     'a new surface object with a renderer. Returns the new object\'s uid.',
   params: {
-    molId: moleculeId('Uid of the molecule.'),
-    selection: optional(selection('Only these atoms. Null uses the whole molecule.')),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    selection: optional(selection('Only these atoms. Null uses the whole object.')),
     name: optional(string('Name for the surface object. Null picks an unused one.')),
     probeRadius: optional(real(`Probe radius in angstroms. Null uses ${SURF_PROBE}.`)),
     density: optional(real(`Points per angstrom. Null uses ${SURF_DENSITY}; higher is finer and slower.`)),
   },
   mutates: true,
-  describe: (a, n) => `Make surface${a.name !== null ? ` ${a.name}` : ''} of ${n('molId')}`,
+  describe: (a, n) => `Make surface${a.name !== null ? ` ${a.name}` : ''} of ${n('objId')}`,
   expose: { tool: 'molops', console: true },
   group: 'surfaces',
   run(ctx, args, oc) {
-    const name = args.name ?? proposeMolSurfName(ctx, { sceneId: oc.sceneId, objId: args.molId }).name
+    const name = args.name ?? proposeMolSurfName(ctx, { sceneId: oc.sceneId, objId: args.objId }).name
     const res = makeMolSurf(ctx, {
       sceneId: oc.sceneId,
-      objId: args.molId,
+      objId: args.objId,
       selStr: args.selection ?? '',
       surfName: name,
       density: args.density ?? SURF_DENSITY,
@@ -94,19 +94,19 @@ export const makeSurface = defineOp({
 
 export const deleteAtoms = defineOp({
   name: 'delete_atoms',
-  description: 'Delete the atoms a selection matches from a molecule. Undoable, but only use it when the user asked to remove atoms.',
+  description: 'Delete the atoms a selection matches from a MolCoord object. Undoable, but only use it when the user asked to remove atoms.',
   params: {
-    molId: moleculeId('Uid of the molecule.'),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
     selection: selection('The atoms to delete, e.g. resn HOH.'),
   },
   mutates: true,
-  describe: (a, n) => `Delete ${a.selection} from ${n('molId')}`,
+  describe: (a, n) => `Delete ${a.selection} from ${n('objId')}`,
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
     if (args.selection.trim() === '') return { ok: false, error: 'Give a selection; it would delete every atom.' }
     return normalizeServiceResult(
-      deleteMolAtoms(ctx, { sceneId: oc.sceneId, objId: args.molId, selStr: args.selection }),
+      deleteMolAtoms(ctx, { sceneId: oc.sceneId, objId: args.objId, selStr: args.selection }),
       'The atoms could not be deleted.',
     )
   },
@@ -116,17 +116,17 @@ export const renameChain = defineOp({
   name: 'rename_chain',
   description: 'Change the chain name of the atoms a selection matches (e.g. a whole chain).',
   params: {
-    molId: moleculeId('Uid of the molecule.'),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
     selection: selection('The atoms to rename, e.g. chain A.'),
     chain: string('The new chain name.'),
   },
   mutates: true,
-  describe: (a, n) => `Rename chain of ${a.selection} in ${n('molId')} to ${a.chain}`,
+  describe: (a, n) => `Rename chain of ${a.selection} in ${n('objId')} to ${a.chain}`,
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
     return normalizeServiceResult(
-      changeChainName(ctx, { sceneId: oc.sceneId, objId: args.molId, selStr: args.selection, chainName: args.chain }),
+      changeChainName(ctx, { sceneId: oc.sceneId, objId: args.objId, selStr: args.selection, chainName: args.chain }),
       'The chain could not be renamed.',
     )
   },
@@ -135,11 +135,11 @@ export const renameChain = defineOp({
 export const mergeMolecules = defineOp({
   name: 'merge_molecules',
   description:
-    'Move (or copy) the atoms a selection matches from one molecule into another, e.g. a ' +
+    'Move (or copy) the atoms a selection matches from one MolCoord object into another, e.g. a ' +
     'ligand into the protein it binds.',
   params: {
-    fromId: moleculeId('Uid of the molecule the atoms come from.'),
-    toId: moleculeId('Uid of the molecule they go into.'),
+    fromId: objectId('Uid of the MolCoord object the atoms come from.', 'MolCoord'),
+    toId: objectId('Uid of the MolCoord object they go into.', 'MolCoord'),
     selection: optional(selection('Which atoms. Null takes all of them.')),
     copy: optional(boolean('True copies and leaves the source as it is; false (default) moves.')),
   },
@@ -167,14 +167,14 @@ export const setSecondaryStructure = defineOp({
     'Recompute a protein\'s secondary structure from its coordinates (no selection given), or ' +
     'assign one type to the residues a selection matches.',
   params: {
-    molId: moleculeId('Uid of the molecule.'),
-    selection: optional(selection('Residues to assign. Null recomputes the whole molecule.')),
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    selection: optional(selection('Residues to assign. Null recomputes the whole object.')),
     type: optional(enumOf(SEC_TYPES, 'With a selection: the type to assign.')),
     ignoreBulge: optional(boolean('Recomputing: ignore beta bulges. Null is false.')),
     helixGapAngle: optional(real('Recomputing: fill gaps in a helix up to this angle in degrees (the dialog offers 120). Null or 0 does not fill.')),
   },
   mutates: true,
-  describe: (a, n) => (a.type === null ? `Recompute secondary structure of ${n('molId')}` : `Set ${a.selection ?? 'all'} of ${n('molId')} to ${a.type}`),
+  describe: (a, n) => (a.type === null ? `Recompute secondary structure of ${n('objId')}` : `Set ${a.selection ?? 'all'} of ${n('objId')} to ${a.type}`),
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
@@ -182,7 +182,7 @@ export const setSecondaryStructure = defineOp({
       return normalizeServiceResult(
         reassignProt2ndry(ctx, {
           sceneId: oc.sceneId,
-          objId: args.molId,
+          objId: args.objId,
           mode: 'recalc',
           ...(args.ignoreBulge !== null ? { ignBulge: args.ignoreBulge } : {}),
           ...(args.helixGapAngle !== null ? { helixGapAngle: args.helixGapAngle } : {}),
@@ -194,7 +194,7 @@ export const setSecondaryStructure = defineOp({
     return normalizeServiceResult(
       reassignProt2ndry(ctx, {
         sceneId: oc.sceneId,
-        objId: args.molId,
+        objId: args.objId,
         mode: 'assign',
         selStr: args.selection,
         secType: SEC_TYPES.indexOf(args.type),
@@ -210,24 +210,24 @@ export const showSymmetry = defineOp({
     'For a crystal structure: draw its symmetry mates within a distance of the view centre, ' +
     'or fill the unit cell, and optionally the unit cell box.',
   params: {
-    molId: moleculeId('Uid of the molecule (it must carry crystal information).'),
+    objId: objectId('Uid of the MolCoord object (it must carry crystal information).', 'MolCoord'),
     extent: optional(real('Draw mates within this many angstroms. Null fills the unit cell.')),
     unitCell: optional(boolean('True also draws the unit cell box.')),
   },
   mutates: true,
-  describe: (a, n) => (a.extent === null ? `Show symmetry mates of ${n('molId')} in the unit cell` : `Show symmetry mates of ${n('molId')} within ${a.extent} A`),
+  describe: (a, n) => (a.extent === null ? `Show symmetry mates of ${n('objId')} in the unit cell` : `Show symmetry mates of ${n('objId')} within ${a.extent} A`),
   expose: { tool: 'xtal', console: true },
   group: 'molecule',
   run(ctx, args, oc) {
     const res = showSymmRenderer(ctx, {
       sceneId: oc.sceneId,
-      objId: args.molId,
+      objId: args.objId,
       viewId: oc.viewId,
       extent: args.extent ?? 'unitcell',
     })
-    const norm = normalizeServiceResult(res, 'Symmetry could not be shown; does the molecule have crystal information?')
+    const norm = normalizeServiceResult(res, 'Symmetry could not be shown; does the object have crystal information?')
     if (!norm.ok || !args.unitCell) return norm
-    return normalizeServiceResult(showUnitCellRenderer(ctx, { sceneId: oc.sceneId, objId: args.molId }), 'The unit cell could not be drawn.')
+    return normalizeServiceResult(showUnitCellRenderer(ctx, { sceneId: oc.sceneId, objId: args.objId }), 'The unit cell could not be drawn.')
   },
 })
 

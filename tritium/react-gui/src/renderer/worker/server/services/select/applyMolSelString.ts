@@ -105,7 +105,7 @@ export function applyMolSelString(
     let ok = false;
     withUndoTxn(scene, 'Change mol selection', () => {
         ok = assignMolSel(ctx, mol, args.selStr, scene.uid);
-        if (ok) recordOp(ctx, scene.uid, 'set_mol_selection', { molId: args.molId, selection: args.selStr }, ['molId']);
+        if (ok) recordOp(ctx, scene.uid, 'set_mol_selection', { objId: args.molId, selection: args.selStr }, ['objId']);
     });
     return { ok };
 }
