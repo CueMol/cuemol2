@@ -6,7 +6,8 @@ History pane と Actions pane (PR #674 / #675) は、undo の各 step に記録�
 step は「no op recorded」の行になり、qax への保存・マクロ・再生に使えない。
 rainbow の hue が docs の既知リストに無いまま漏れていたので、undo txn を開く全箇所
 (service 約 130 か所)・txn を開かない変更・PyMOL dialect を数え上げた (約 50 か所が記録なし、約 30 か所が一部だけ)。その結果のうち、残りと潰す順序をまとめる。
-既存の op で表せるもの・引数を足すだけのもの (旧 Phase 1) は実装済みで、仕様は `../architecture/action-log.md` §2.2。
+既存の op で表せるもの・引数を足すだけのもの (旧 Phase 1)、renderer の作成とファイルの読み込みのオプション (旧 Phase 2) は実装済みで、
+仕様は `../architecture/action-log.md` §2.2。
 
 ユーザーと決めたこと:
 - **視点だけの変更は記録しない**。History は undo の履歴で、View / Camera の変化は C++ の undo の対象ではないため (下の「対象にしないもの」)。
@@ -24,16 +25,6 @@ rainbow の hue が docs の既知リストに無いまま漏れていたので�
   貼り付けの op は、この上限に任せてよい。object の XML の実際の大きさは Phase 4 で測り、上限を見直す。
 
 ## 数え上げの結果と対応 (フェーズ順)
-
-### Phase 2: renderer の作成とファイルの読み込みのオプション
-
-| 操作 | 今の状態 | 対応 |
-|---|---|---|
-| New Renderer の preset (`createRendererOnObject`) | **preset は記録なし**。`centerView` / `mapCenterPolicy` も落ちる | `create_renderer` に `preset` / `centerView` / `mapCenterPolicy` |
-| File > Open (`loadObject` / `recordLoadFile`) | path・type・selection・名前だけ。format のオプション (MTZ の列、CCP4 の mapType、PDB の flag など)、reader、renderer 名、preset、map の中心の扱いが落ちる | 形式ごとの既存 op (`load_pdb` / `load_mtz` / `load_ccp4` / `load_msms` / `load_namd` / `load_amber`) で記録し、`rendererName` / `preset` / `mapCenterPolicy` を足す |
-| Get PDB (`streamLoadFromUrl`) | RCSB の標準 URL で名前が id と同じときだけ | `fetch_pdb` に `name` / `assembly` / `source`。それ以外の URL は新しい `fetch_url {url, reader, name, ...}` |
-| density map の取得 (`map/streamLoad`) | RCSB の validation map だけ | `fetch_map` に `source` (RCSB / EBI) |
-| MD trajectory を開く (`loadTrajectory`)、block の追加・削除・並べ替え (`trajectory.ts`) | 記録なし | 新しい `load_trajectory` / `add_traj_block` / `remove_traj_block` / `move_traj_block` (mdtools plugin の op) |
 
 ### Phase 3: op が無い scene の編集
 
@@ -70,10 +61,16 @@ rainbow の hue が docs の既知リストに無いまま漏れていたので�
 | `label` / `hide labels` | 新しい `set_atom_labels {objId, selection, format | null}` (Phase 3 の C++ の undo 対応が前提) |
 | `distance` / `angle` / `dihedral`、`distance mode/cutoff` | `analyze_interactions` (引数は揃っている。PyMOL 側から 2 つ目の object / selection と label set を渡す) と Phase 3 の `measure_geometry` |
 | `set_color`、`delete <sel>` / `set_name <sel>` | Phase 4 の `define_color` / `remove_selection` |
-| `fetch` (name 指定、`1abcA`、`type=pdb1`)、`load http...` | Phase 2 の `fetch_pdb` の `name` / `assembly`、`fetch_url` |
+| `fetch` (name 指定、`1abcA`、`type=pdb1`)、`load http...` | `fetch_pdb` の `name`、`fetch_url` (op はある。PyMOL 側の記録を確かめる) |
 | `isomesh` / `isosurface` の map の中心 | `recenter_map` |
 | `frame` / `rewind` (`obj.frame=`) | trajectory の frame の op (`set_node_prop frame` で足りるか確かめる) |
-| `pym:<rep>` という renderer 名 | `load_file` / `fetch_pdb` に `rendererName` (Phase 2) |
+| `pym:<rep>` という renderer 名 | `load_*` / `fetch_pdb` の `rendererName` (op はある。PyMOL 側の記録を確かめる) |
+
+## 後回し (この plan の範囲外)
+- MD trajectory (mdtools plugin): 開く (`loadTrajectory`) と block の追加・削除・並べ替え (`trajectory.ts`)。
+  op catalog は core のものだけで、plugin から op を足す仕組みが無い。その仕組み (plugin の manifest に ops を
+  書くと catalog・console・MCP に出る) を作るときに、`load_trajectory` / `add_traj_block` / `remove_traj_block` /
+  `move_traj_block` を足す。
 
 ## 対象にしないもの
 - **視点だけの変更**: 3D view のマウス操作、View pane、projection、center mark、camera の適用 (visibility なし)、

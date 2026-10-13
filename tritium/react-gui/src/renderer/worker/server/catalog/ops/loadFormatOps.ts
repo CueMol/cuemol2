@@ -18,7 +18,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
 import type { LoadArgs } from '../fileLoad'
-import { formatOf, loadObjectFile, openTarget } from '../fileLoad'
+import { LOAD_RENDERER_PARAMS, formatOf, loadObjectFile, openTarget } from '../fileLoad'
 import { callerPath } from '../outputFile'
 import { boolean, enumOf, integer, optional, path, real, rendererType, selection, string } from '../params'
 
@@ -30,6 +30,7 @@ const COMMON = {
   rendererType: optional(rendererType("Renderer to create for it. Null uses the reader's default.")),
   selection: optional(selection('Draw only this selection. Null draws everything.')),
   name: optional(string('Name of the new object. Null uses the file name.')),
+  ...LOAD_RENDERER_PARAMS,
 }
 
 /** A format's options with the given (non-null) values written over them. */

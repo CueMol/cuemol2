@@ -226,11 +226,16 @@ describe('serviceOps', () => {
       ops.recordRenameNode(ctx, scene.uid, 'scene', scene.uid, 'x')
       ops.recordCreateRenderer(ctx, scene.uid, mol.uid, choice, { rendId: rend.uid, groupName: 'g' })
       ops.recordChangeRendererType(ctx, scene.uid, rend.uid, 'ribbon')
-      ops.recordLoadFile(ctx, scene.uid, '/tmp/1crn.pdb', { ...choice, objectName: '1crn' })
+      ops.recordCreateRenderer(ctx, scene.uid, mol.uid, { ...choice, presetName: 'Default1RendPreset' }, { rendId: rend.uid })
+      // The File Open dialog's MTZ options, as the MTZ load op takes them.
+      ops.recordLoadFile(ctx, scene.uid, '/tmp/1crn.mtz', {
+        format: { kind: 'mtz', options: { columnF: 'FWT', columnPhi: 'PHWT', phaseEnabled: false, columnW: 'FOM', weightEnabled: true, resolutionLimit: 2, gridSpacing: 0.5 } },
+        renderer: { ...choice, objectName: '1crn', centerView: false, mapCenterPolicy: 'setMapCenter' },
+      })
     })
 
     const entries = rowsOf(scene)[0].entries
-    expect(entries).toHaveLength(10)
+    expect(entries).toHaveLength(11)
     for (const e of entries) {
       if (e.kind !== 'op') throw new Error(`not an op: ${e.text}`)
       const op = findOp(e.op)
@@ -241,6 +246,11 @@ describe('serviceOps', () => {
       expect(typeof readToolArgs(op!, e.args), `${e.op}: ${String(readToolArgs(op!, e.args))}`).toBe('object')
     }
     expect(entries[2]).toMatchObject({ op: 'reset_prop', args: { path: '1crn/cartoon1.width' } })
+    expect(entries[9]).toMatchObject({ op: 'create_preset_renderer', args: { preset: 'Default1RendPreset', name: 'simple1' } })
+    expect(entries[10]).toMatchObject({
+      op: 'load_mtz',
+      args: { columnPhi: '', columnWeight: 'FOM', resolutionLimit: 2, centerView: false, mapCenterPolicy: 'setMapCenter' },
+    })
   })
 
   it('records the Interaction analysis dialog with its own settings, as arguments its op reads back', async () => {

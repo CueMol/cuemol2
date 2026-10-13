@@ -25,6 +25,9 @@ export const fetchMap = defineOp({
     pdbId: string('Four-character PDB accession code.'),
     mapType: optional(enumOf(['2fofc', 'fofc'], 'Which map: 2fofc (usual) or fofc (difference). Null is 2fofc.')),
     name: optional(string('Name for the map object. Null uses <pdbid>_<mapType>.')),
+    source: optional(
+      enumOf(['RCSB_CIF', 'EBI_MTZ'], 'Where from: RCSB_CIF (validation report coefficients) or EBI_MTZ (PDBe MTZ). Null is RCSB_CIF.'),
+    ),
   },
   mutates: true,
   describe: (a) => `Fetch the ${a.mapType ?? '2fofc'} map of ${a.pdbId}`,
@@ -34,7 +37,7 @@ export const fetchMap = defineOp({
     const pdbId = args.pdbId.trim().toLowerCase()
     if (!PDB_ID_RE.test(pdbId)) return { ok: false, error: `"${args.pdbId}" is not a PDB accession code.` }
     const mapType = args.mapType ?? '2fofc'
-    const spec = pickMapUrl(pdbId, 'RCSB_CIF', mapType)
+    const spec = pickMapUrl(pdbId, args.source ?? 'RCSB_CIF', mapType)
     const reqId = oc.streamId('fetch_map')
     oc.noteStream(reqId)
     const res = await streamLoadDensityMap(ctx, {

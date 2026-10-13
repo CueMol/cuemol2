@@ -112,9 +112,9 @@ helper)。
 | `setNodeVisible` (`sceneTree/sceneTree.ts`) | `set_visible` |
 | `applyMolSelString` | `set_mol_selection`。selection への center / zoom (`centerMolSelection` / `zoomMolSelection`) は `center_view` |
 | `superposeMol` | `superpose`。transform (xformMat) として保つときは `keepAsProperty` |
-| `createRendererOnObject` | `create_renderer` (type・name・selection のみ)。group 指定があれば、続けて `group` の `set_node_prop`。preset は記録しない |
+| `createRendererOnObject` | `create_renderer` (type・name・selection・`centerView`)。group 指定があれば、続けて `group` の `set_node_prop`。preset は `create_preset_renderer` (preset・group 名・`centerView`) |
 | `changeRendererType` | `set_renderer_type` |
-| `loadObject` | `load_file` (path・renderer type・selection・object 名のみ) |
+| `loadObject` (File > Open) | 形式ごとの load の op (`load_pdb` / `load_mtz` / `load_ccp4` / `load_msms` / `load_namd` / `load_amber`、どれでもなければ `load_file`) に、dialog の形式のオプションと renderer の選択 (type・selection・`rendererName`・`preset`・`centerView`・`mapCenterPolicy`) を入れる。reader は op が自分で選ぶ (dialog で別の reader を選んだときは、再生で形式が合わず断られることがある) |
 | `viewXform` (回転・平行移動) | 0 でない軸ごとの `rotate_view`、`pan_view` |
 | map の property (`map/props.ts`) | renderer への `set_node_prop`。Re-centre は `recenter_map` (中心は再生したときの view の中心) |
 | 背景色 (`scene/sceneBgColor.ts`、メニューの背景色) | scene の `set_node_prop bgcolor` (色名のまま)。Color proofing は切り替えた後の `use_colproof` (と既定の `icc_filename`) の `set_node_prop` |
@@ -132,7 +132,7 @@ helper)。
 | アニメーション (`anim/`) | `add_anim` / `remove_anim` / `move_anim` / `set_anim_time` / `set_anim_prop`。要素は名前 (一意のとき) か 1 始まりの番号で指す (uid は再生で変わるので使わない) |
 | camera (`camera/`) | `save_camera` (名前は前後の空白を除いて保存する) / `delete_camera` / `rename_camera` / `move_camera`。visibility 付きの camera の適用は `apply_camera` |
 | style set の selection 定義 (`style/styleSetEdit.ts`) | `define_selection`。scene の既定の set 以外は `styleSet` (set の名前。scene の set を global より先に引く) |
-| ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | `fetch_pdb` / `fetch_map` (RCSB の標準の URL のときだけ) |
+| ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | RCSB の標準の URL は `fetch_pdb` (名前と renderer の選択付き)、それ以外の URL は `fetch_url` (URL・reader・名前)。map は `fetch_map` (`source` が RCSB_CIF か EBI_MTZ) |
 | 計測ツールと結合の編集 (`navi/`) | `measure_geometry` / `add_bond` / `remove_bond` |
 | Sequence panel の残基の選択 (`plugins/sequence/worker/seqPanelOps.ts`) | `set_mol_selection` (選んだ後の selection の文字列) |
 
@@ -158,16 +158,14 @@ console に出す (記録の漏れを見つけるため)。
   multigrad への切り替え、multigrad の node、symmetry copy の作成、unit cell だけの表示、
   原子名ラベルの切り替え、scene tree の並べ替え、camera の visibility flag と camera ファイルの
   読み書き、style set の作成・削除・読み書きと色・style の編集、render settings、node の貼り付け、
-  アニメーション要素の property の reset、MD trajectory。全体の一覧と対応の順序は
+  アニメーション要素の property の reset、MD trajectory (mdtools plugin の service で、plugin から op を足す仕組みが無い)。全体の一覧と対応の順序は
   [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
-- 記録しても再生で同じにならないもの: selection どうしの距離計測、RCSB 以外からの取得。
+- 記録しても再生で同じにならないもの: selection どうしの距離計測。URL からの取得は、相手のファイルが変われば変わる。
 - **視点の変更は記録しない** (意図して): View / Camera の変化は C++ の undo の対象ではなく、History は
   undo の履歴だから。3D view のマウス操作、View pane、projection、camera の適用 (visibility なし)、
   focus、console の `turn` / `zoom` などは、op を記録しても undo の行ができないので残らない。
   アニメーションの loop と start camera (`AnimMgr`) も undo に載らないので同じ。op 自体は console・
   MCP・手で書いた qax では使える。
-- GUI の renderer 作成の、type・name・selection 以外のオプション。ファイル読み込みの reader
-  オプション。
 - reconcile で作り直した行は、op の中身を失う (label だけになる)。
 
 ## 3. qax 形式 (v1)

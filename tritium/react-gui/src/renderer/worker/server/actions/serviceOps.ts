@@ -20,6 +20,7 @@
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { SceneNodeEntry } from '@renderer/worker/server/catalog/refs'
 import { nodePath, sceneNodes } from '@renderer/worker/server/catalog/refs'
+import type { FileOpenOptions, FormatOptions } from '@renderer/worker/shared/fileOpenTypes'
 import { insideOp, noteEntry, txnOpen } from './actionLog'
 
 /** The node kinds the property ops address (a group is a renderer to them). */
@@ -164,12 +165,13 @@ interface RendererChoice {
   rendererName: string
   selectionEnabled: boolean
   selection: string
+  centerView?: boolean
   presetName?: string
 }
 
 /**
- * A new renderer from the New Renderer dialog. A preset (a group of
- * renderers made by a style) has no op, so it is not recorded.
+ * A new renderer from the New Renderer dialog: `create_renderer`, or
+ * `create_preset_renderer` for a preset (a group of renderers a style makes).
  */
 export function recordCreateRenderer(
   ctx: WorkerContext,
@@ -178,7 +180,11 @@ export function recordCreateRenderer(
   opts: RendererChoice,
   created: { rendId: number; groupName?: string },
 ): void {
-  if (opts.presetName) return
+  const centerView = opts.centerView === true ? true : null
+  if (opts.presetName) {
+    recordOp(ctx, sceneId, 'create_preset_renderer', { objId, preset: opts.presetName, name: opts.rendererName, centerView }, ['objId'])
+    return
+  }
   recordOp(
     ctx,
     sceneId,
@@ -188,6 +194,7 @@ export function recordCreateRenderer(
       rendererType: opts.rendererType,
       name: opts.rendererName || null,
       selection: opts.selectionEnabled ? opts.selection : null,
+      centerView,
     },
     ['objId'],
   )
@@ -201,12 +208,66 @@ export function recordChangeRendererType(ctx: WorkerContext, sceneId: number, re
   recordOp(ctx, sceneId, 'set_renderer_type', { rendId, rendererType }, ['rendId'])
 }
 
-/** A structure file opened, with the renderer it is first drawn with. */
-export function recordLoadFile(ctx: WorkerContext, sceneId: number, filePath: string, opts: RendererChoice & { objectName: string }): void {
-  recordOp(ctx, sceneId, 'load_file', {
+/** A value the dialog may leave empty, as the op's null. */
+function orNull(text: string): string | null {
+  return text !== '' ? text : null
+}
+
+/** The format load op that reads a file with these options, and those options as its arguments. */
+function formatLoad(format: FormatOptions): [string, Record<string, unknown>] {
+  switch (format.kind) {
+    case 'pdb':
+    case 'mmcif':
+      return ['load_pdb', { ...format.options }]
+    case 'mtz': {
+      const o = format.options
+      return ['load_mtz', {
+        columnF: orNull(o.columnF),
+        // An empty column turns the column off, as the dialog's checkbox does.
+        columnPhi: o.phaseEnabled ? o.columnPhi : '',
+        columnWeight: o.weightEnabled ? o.columnW : '',
+        resolutionLimit: o.resolutionLimit,
+        gridSpacing: o.gridSpacing,
+      }]
+    }
+    case 'ccp4map': {
+      const o = format.options
+      return ['load_ccp4', {
+        normalize: o.normalize,
+        truncateMin: o.truncateMinEnabled ? o.truncateMin : null,
+        truncateMax: o.truncateMaxEnabled ? o.truncateMax : null,
+        mapType: o.mapType,
+        subsample: o.subsample,
+      }]
+    }
+    case 'msms':
+      return ['load_msms', { vertFile: orNull(format.options.vertFilePath) }]
+    case 'namdcoor':
+      return ['load_namd', { psfFile: format.options.psfFilePath }]
+    case 'amberprm':
+      return ['load_amber', { coordFile: orNull(format.options.coordFilePath) }]
+    default:
+      return ['load_file', {}]
+  }
+}
+
+/**
+ * A file opened from the File Open dialog: the format's own load op with
+ * the options the dialog read it with, and the renderer it is first drawn with.
+ */
+export function recordLoadFile(ctx: WorkerContext, sceneId: number, filePath: string, options: FileOpenOptions): void {
+  const r = options.renderer
+  const [op, formatArgs] = formatLoad(options.format)
+  recordOp(ctx, sceneId, op, {
     path: filePath,
-    rendererType: opts.presetName ? null : opts.rendererType || null,
-    selection: opts.selectionEnabled ? opts.selection : null,
-    name: opts.objectName || null,
+    rendererType: r.presetName ? null : r.rendererType || null,
+    selection: r.selectionEnabled ? r.selection : null,
+    name: r.objectName || null,
+    rendererName: r.presetName || !r.rendererName ? null : r.rendererName,
+    preset: r.presetName ? r.presetName : null,
+    // The ops' defaults: the view centres on it, and a map follows its kind.
+    centerView: r.centerView ? null : false,
+    mapCenterPolicy: r.mapCenterPolicy !== 'auto' ? r.mapCenterPolicy : null,
+    ...formatArgs,
   })
 }

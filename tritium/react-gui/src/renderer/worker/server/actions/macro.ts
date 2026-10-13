@@ -6,7 +6,7 @@
  *
  * - A node argument naming that object becomes `param="target"`; one naming
  *   a renderer under it becomes `param="target" sub="<renderer>"`.
- * - Only a renderer the steps themselves create (a `create_renderer` or
+ * - Only a renderer the steps themselves create (a `create_renderer`, `create_preset_renderer` or
  *   `create_group` with an explicit name, earlier in the steps) may be named
  *   that way: one made before the steps exists under the object it was
  *   recorded on, not under another, so a macro naming it would fail there.
@@ -23,7 +23,7 @@ import type { QaxArg, QaxItem, QaxMacro, QaxParam } from './qax/model'
 export const MACRO_TARGET = 'target'
 
 /** The ops that create a named renderer under their `objId`. */
-const CREATES_RENDERER: ReadonlySet<string> = new Set(['create_renderer', 'create_group'])
+const CREATES_RENDERER: ReadonlySet<string> = new Set(['create_renderer', 'create_preset_renderer', 'create_group'])
 
 export interface StepsToMacroOptions {
   name: string
