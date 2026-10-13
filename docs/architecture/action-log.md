@@ -122,18 +122,21 @@ helper)。
 | scene tree のまとめて表示・非表示 / 削除 (`sceneTree/bulkSceneNodeOps.ts`) | node ごとの `set_visible` / `delete_node` (削除は破棄の直前に記録) |
 | `applyRendererStyleList` (Edit Style ダイアログ) | `set_renderer_styles` (style の並び全体を `,` 区切りで) |
 | coloring scheme の property (`coloring/applyColoring.ts` の `setColoringProp`。Color pane の CPK / Rainbow / B-factor の欄) | `set_coloring_prop` (対象の renderer か object、property 名、値)。style から借りた着色なら、先にその node 専用の着色に切り替えてから書く (GUI と同じ) |
-| 着色 (`coloring/applyColoring.ts`、`colorTargets.ts`、`multiGrad.ts`) | `set_renderer_coloring` / `set_elepot_coloring` / `set_default_color`。coloring の target・elepot の property・multigrad の color map は `set_node_prop`。着色と paint の op は対象を `nodeId` + `nodeType` (`renderer` / `object`) で取るので、Color pane で object を対象にした変更も記録する (style と elepot は renderer のみ)。CPK の dark / light gray は CPK と `set_coloring_prop col_C` の 2 つ。style は Paint の style と CPK の style (`DefaultCPKColoring` ほか。`list_coloring_styles` が両方を出す) |
-| paint の表 (`coloring/paintCrud.ts`、`paintClipboard.ts`) | `add_paint` / `set_paint` / `remove_paint` (複数行は 1 行ずつ) / `move_paint` / `clear_paint`。番号は 1 始まり |
-| 分子の編集 (`molops/`) | `rename_chain`、`renumber_residues`、`delete_atoms`、`merge_molecules`、`set_secondary_structure`、`create_surface` / `recalc_surface` (`backend` 付き)、`cut_surface`、`set_symmetry`、`show_symmetry`、`analyze_interactions` (dialog の設定をすべて: 最小距離、最大の数、label set、2 つ目の object / selection) |
-| morph (`morph/morphMol.ts`) | `add_morph_frame` / `remove_morph_frame` |
+| 着色 (`coloring/applyColoring.ts`、`colorTargets.ts`、`multiGrad.ts`) | `set_renderer_coloring` / `set_elepot_coloring` / `set_default_color`。coloring の target・elepot の property・multigrad の color map は `set_node_prop`。着色と paint の op は対象を `nodeId` + `nodeType` (`renderer` / `object`) で取るので、Color pane で object を対象にした変更も記録する (style と elepot は renderer のみ)。CPK の dark / light gray は CPK と `set_coloring_prop col_C` の 2 つ。既定の paint 表と multigrad への切り替えは `set_renderer_coloring` の mode `paint-type-paint` / `paint-type-multigrad`、multigrad の node の編集は `set_multigrad_nodes` (`"値 色; 値 色"`)。style は Paint の style と CPK の style (`DefaultCPKColoring` ほか。`list_coloring_styles` が両方を出す) |
+| paint の表 (`coloring/paintCrud.ts`、`paintClipboard.ts`) | `set_paint` / `remove_paint` (複数行は 1 行ずつ) / `move_paint` / `clear_paint`。行の挿入と貼り付けは行ごとの `add_paint_at` (挿入位置 `at`。`add_paint` と違い molecule の selection を変えない)。番号は 1 始まり |
+| 分子の編集 (`molops/`) | `rename_chain`、`renumber_residues`、`delete_atoms`、`merge_molecules`、`set_secondary_structure`、`create_surface` / `recalc_surface` (`backend` 付き)、`cut_surface`、`set_symmetry`、`show_symmetry`、`show_unit_cell`、`create_symmetry_copy` (operator の番号は表示範囲で変わるので 4x4 の行列で記録)、`analyze_interactions` (dialog の設定をすべて: 最小距離、最大の数、label set、2 つ目の object / selection) |
+| morph (`morph/morphMol.ts`) | `add_morph_frame` / `remove_morph_frame` / `convert_to_morph` |
 | APBS (`apbs/run.ts`) | `calc_elepot`。pot file を読む txn で記録する。温度・誘電率・水素の扱いも引数に入れる |
 | 選択 (`select/`、3D view の右クリックメニュー、矩形・lasso 選択) | `set_mol_selection` (最終的な selection の文字列)。名前付き selection の保存は `define_selection` |
 | renderer (`rend/`) | `create_group`、`create_surface_from_map`、`set_renderer_selection`、`remove_interaction` |
-| アニメーション (`anim/`) | `add_anim` / `remove_anim` / `move_anim` / `set_anim_time` / `set_anim_prop`。要素は名前 (一意のとき) か 1 始まりの番号で指す (uid は再生で変わるので使わない) |
+| アニメーション (`anim/`) | `add_anim` / `remove_anim` / `move_anim` / `set_anim_time` / `set_anim_prop`。一覧に無い property (Inspector の generic tab) は `set_anim_generic_prop`、reset は `reset_anim_prop` (まとめての reset も)。要素は名前 (一意のとき) か 1 始まりの番号で指す (uid は再生で変わるので使わない) |
 | camera (`camera/`) | `save_camera` (名前は前後の空白を除いて保存する) / `delete_camera` / `rename_camera` / `move_camera`。visibility 付きの camera の適用は `apply_camera` |
+| 並べ替え (scene tree・paint の表・アニメーション・camera) | `move_node` / `move_paint` / `move_anim` / `move_camera` を、行き先を `by` (動いた段数) で記録する。番号 (`to`) で記録すると、長さの違う一覧で再生したときに別の位置に入るため。動かす要素の指し方 (paint の番号など) は再生先で別の要素を指し得るが、GUI の操作から意図は分からないので、切り出した action を利用者が直す前提にする |
 | style set の selection 定義 (`style/styleSetEdit.ts`) | `define_selection`。scene の既定の set 以外は `styleSet` (set の名前。scene の set を global より先に引く) |
 | ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | RCSB の標準の URL は `fetch_pdb` (名前と renderer の選択付き)、それ以外の URL は `fetch_url` (URL・reader・名前)。map は `fetch_map` (`source` が RCSB_CIF か EBI_MTZ) |
-| 計測ツールと結合の編集 (`navi/`) | `measure_geometry` / `add_bond` / `remove_bond` |
+| 計測ツールと結合の編集 (`navi/`) | `measure_geometry` / `add_bond` / `remove_bond`。2 つの object にまたがる計測は `measure_geometry` の `atomObjects` (2 つ目以降の原子の object)。selection どうしの計測 (PyMOL の `distance` など) は `measure_selections`。原子は `A.20.CA` (chain.resid.atom) の形で書く |
+| 原子名ラベル (`navi/naviTool.ts`、navigate tool のクリック) | `set_atom_label` (切り替えた後の on / off)。C++ の `NameLabelRenderer` のラベルの追加・削除・書式の変更は undo に載る |
+| render settings (`renderSettings/`) | `set_render_settings` (`"key=value; ..."`) |
 | Sequence panel の残基の選択 (`plugins/sequence/worker/seqPanelOps.ts`) | `set_mol_selection` (選んだ後の selection の文字列) |
 
 表に無い service の txn は、label だけを持つ行になる。`list_actions` ではこの行に
@@ -154,13 +157,10 @@ console に出す (記録の漏れを見つけるため)。
 - PyMOL dialect のうち、service を通らずに C++ を直接変更するもの。例: `show sticks` の
   `applyStyles`、`label`、`set_view` の回転、`orient`、`center`、`frame`。そのコマンドの行には、
   service を通った部分の op だけが入る。
-- 対応する op が無いもの: paint の行の挿入 (`addPaintEntry`) と貼り付け、既定の paint 表と
-  multigrad への切り替え、multigrad の node、symmetry copy の作成、unit cell だけの表示、
-  原子名ラベルの切り替え、scene tree の並べ替え、camera の visibility flag と camera ファイルの
-  読み書き、style set の作成・削除・読み書きと色・style の編集、render settings、node の貼り付け、
-  アニメーション要素の property の reset、MD trajectory (mdtools plugin の service で、plugin から op を足す仕組みが無い)。全体の一覧と対応の順序は
+- 対応する op が無いもの: camera の visibility flag と camera ファイルの
+  読み書き、style set の作成・削除・読み書きと色・style の編集、node の貼り付け、MD trajectory (mdtools plugin の service で、plugin から op を足す仕組みが無い)。全体の一覧と対応の順序は
   [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
-- 記録しても再生で同じにならないもの: selection どうしの距離計測。URL からの取得は、相手のファイルが変われば変わる。
+- 記録しても再生で同じにならないもの: URL からの取得は、相手のファイルが変われば変わる。番号で指す要素 (paint の行など) は、再生先の一覧が違えば別の要素を指す。
 - **視点の変更は記録しない** (意図して): View / Camera の変化は C++ の undo の対象ではなく、History は
   undo の履歴だから。3D view のマウス操作、View pane、projection、camera の適用 (visibility なし)、
   focus、console の `turn` / `zoom` などは、op を記録しても undo の行ができないので残らない。

@@ -13,11 +13,17 @@ import { mergeMol } from '@renderer/worker/server/services/molops/mergeMol'
 import { reassignProt2ndry } from '@renderer/worker/server/services/molops/reassignProt2ndry'
 import { showSymmRenderer, showUnitCellRenderer } from '@renderer/worker/server/services/molops/symmetryPanelOps'
 import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
+import { copyMolByMatrix, matrixOf } from '@renderer/worker/server/services/molops/createSymmMol'
+import { LOAD_RENDERER_PARAMS } from '../fileLoad'
 import { setStyleSetSelection, styleSetByName } from '@renderer/worker/server/services/style/styleSetEdit'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { failedWith } from '../errors'
 import { defineOp } from '../op'
-import { boolean, enumOf, objectId, optional, real, selection, string } from '../params'
+import { boolean, enumOf, objectId, optional, real, rendererType, selection, string } from '../params'
+
+/** The renderer arguments of a load, without a map's centring. */
+const { mapCenterPolicy: _mapCenter, ...LOAD_RENDERER_PARAMS_NO_MAP } = LOAD_RENDERER_PARAMS
+void _mapCenter
 
 /** The GUI dialog's defaults (`MakeMolSurfDialog`). */
 const SURF_DENSITY = 2
@@ -237,6 +243,61 @@ export const showSymmetry = defineOp({
   },
 })
 
+export const createSymmetryCopy = defineOp({
+  name: 'create_symmetry_copy',
+  description:
+    'Copy a MolCoord object as a new object moved by a 4x4 matrix (a symmetry mate made a real ' +
+    'object, from the 3D view\'s Create SYMM mol), drawn with one renderer.',
+  params: {
+    objId: objectId('Uid of the MolCoord object to copy.', 'MolCoord'),
+    matrix: string('The 4x4 transform, 16 numbers row by row.'),
+    name: string('Name of the new object.'),
+    rendererType: optional(rendererType('Renderer to draw it with. Null uses simple.')),
+    selection: optional(selection('Draw only this selection. Null draws everything.')),
+    ...LOAD_RENDERER_PARAMS_NO_MAP,
+    centerView: optional(boolean('True centres the view on the new object. Null or false leaves the view.')),
+  },
+  mutates: true,
+  describe: (a, n) => `Copy ${n('objId')} as ${a.name}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'molecule',
+  run(ctx, args, oc) {
+    const matrix = matrixOf(ctx, args.matrix)
+    if (!matrix) return { ok: false, error: 'matrix must be 16 numbers.' }
+    const type = args.rendererType ?? 'simple'
+    const res = copyMolByMatrix(ctx, {
+      sceneId: oc.sceneId,
+      objId: args.objId,
+      matrix,
+      objName: args.name,
+      rendOpts: {
+        objectName: args.name,
+        rendererType: type,
+        rendererName: args.rendererName ?? `${type}1`,
+        selectionEnabled: args.selection !== null,
+        selection: args.selection ?? '*',
+        centerView: args.centerView ?? false,
+        mapCenterPolicy: 'auto',
+        ...(args.preset !== null ? { presetName: args.preset } : {}),
+      },
+    })
+    return res.ok ? { ok: true, data: { objectId: res.newObjId, name: res.newObjName } } : { ok: false, error: res.error ?? 'The copy could not be made.' }
+  },
+})
+
+export const showUnitCell = defineOp({
+  name: 'show_unit_cell',
+  description: 'For a crystal structure or map: draw its unit cell box (no symmetry mates). Does nothing when it is drawn already.',
+  params: { objId: objectId('Uid of the object (it must carry crystal information).') },
+  mutates: true,
+  describe: (_a, n) => `Show the unit cell of ${n('objId')}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'molecule',
+  run(ctx, args, oc) {
+    return normalizeServiceResult(showUnitCellRenderer(ctx, { sceneId: oc.sceneId, objId: args.objId }), 'The unit cell could not be drawn.')
+  },
+})
+
 export const saveSelection = defineOp({
   name: 'define_selection',
   description:
@@ -276,5 +337,7 @@ export const MOL_OPS = [
   mergeMolecules,
   setSecondaryStructure,
   showSymmetry,
+  showUnitCell,
+  createSymmetryCopy,
   saveSelection,
 ]

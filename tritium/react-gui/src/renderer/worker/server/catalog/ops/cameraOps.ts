@@ -15,10 +15,12 @@ import {
 import { getViewProjection, setViewProjection } from '@renderer/worker/server/services/view/viewProjection'
 import { translateView } from '@renderer/worker/server/services/view/viewXform'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
-import { checkPosition, numbered } from '@renderer/worker/shared/numbered'
+import { numbered } from '@renderer/worker/shared/numbered'
+import { CURRENT_CAMERA_NAME } from '@renderer/worker/shared/cameraTypes'
+import { MOVE_DEST_PARAMS, moveTarget, moveText } from '../moveDest'
 import { VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
-import { boolean, integer, optional, real, string } from '../params'
+import { boolean, optional, real, string } from '../params'
 
 export const listCameras = defineOp({
   name: 'list_cameras',
@@ -170,10 +172,10 @@ export const moveCamera = defineOp({
   description: 'Move a camera to another place in the camera list (its number in list_cameras, from 1).',
   params: {
     name: string('Name of the camera, from list_cameras.'),
-    to: integer('The number it should have.'),
+    ...MOVE_DEST_PARAMS,
   },
   mutates: true,
-  describe: (a) => `Move camera ${a.name} to ${a.to}`,
+  describe: (a) => `Move camera ${a.name} ${moveText(a)}`,
   expose: { tool: false, console: true, mcp: true },
   group: 'viewing',
   format: () => [],
@@ -183,10 +185,12 @@ export const moveCamera = defineOp({
     const names = list.cameras.map((c) => c.name)
     const from = names.indexOf(args.name)
     if (from < 0) return { ok: false, error: `No camera named "${args.name}".` }
-    const bad = checkPosition(args.to, names.length, 'list_cameras')
-    if (bad) return { ok: false, error: bad }
+    // The pinned current-view row stays on top, so nothing moves above it.
+    const pinned = names.filter((n) => n === CURRENT_CAMERA_NAME).length
+    const to = moveTarget(args, from, names.length, 'list_cameras', pinned)
+    if (typeof to === 'string') return { ok: false, error: to }
     names.splice(from, 1)
-    names.splice(args.to - 1, 0, args.name)
+    names.splice(to, 0, args.name)
     return normalizeServiceResult(reorderCameras(ctx, { sceneId: oc.sceneId, names }), 'The cameras could not be reordered.')
   },
 })

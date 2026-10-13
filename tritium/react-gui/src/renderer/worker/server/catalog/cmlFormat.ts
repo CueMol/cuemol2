@@ -40,9 +40,9 @@ export function quoteArg(text: string): string {
   return JSON.stringify(text)
 }
 
-/** Atoms as `chain/resid/name`, joined by `sep`. */
+/** Atoms as `chain.resid.name` (CueMol's selection form), joined by `sep`. */
 export function atomList(atoms: readonly AtomSpec[], sep = ' '): string {
-  return atoms.map((a) => `${a.chain}/${a.resid}/${a.atomName}`).join(sep)
+  return atoms.map((a) => `${a.chain}.${a.resid}.${a.atomName}`).join(sep)
 }
 
 /** One argument's value as text, or null when it is left out. */

@@ -145,4 +145,20 @@ export const morphRemove = defineOp({
   },
 })
 
-export const TOOL_MENU_OPS = [cutSurface, morphFrames, morphAdd, morphRemove]
+export const morphConvert = defineOp({
+  name: 'convert_to_morph',
+  description:
+    'Turn a MolCoord object into a MorphMol (a morphing animation), its current coordinates the ' +
+    'first frame. add_morph_frame does this by itself when it is needed.',
+  params: { objId: objectId('Uid of the MolCoord object.', 'MolCoord') },
+  mutates: true,
+  describe: (_a, n) => `Convert ${n('objId')} to MorphMol`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
+  run(ctx, args, oc) {
+    const res = convertToMorphMol(ctx, { sceneId: oc.sceneId, objId: args.objId })
+    return res.ok ? { ok: true } : { ok: false, error: res.error ?? 'The object could not be converted.' }
+  },
+})
+
+export const TOOL_MENU_OPS = [cutSurface, morphFrames, morphConvert, morphAdd, morphRemove]

@@ -83,7 +83,7 @@ const ANIM_OP_PROPS: ReadonlySet<string> = new Set<AnimElementPropKey>([
 ]);
 
 /** A property value as the text `set_anim_prop` reads back. */
-function animValueText(value: unknown): string {
+export function animValueText(value: unknown): string {
   if (typeof value === "object" && value !== null) {
     const v = value as { x: number; y: number; z: number };
     return `${v.x} ${v.y} ${v.z}`;

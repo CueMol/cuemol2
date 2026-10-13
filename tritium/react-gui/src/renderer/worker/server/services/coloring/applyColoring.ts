@@ -199,13 +199,14 @@ const OP_COLORING_MODES: ReadonlySet<string> = new Set([
     'paint-type-bfac',
     'paint-type-solid',
     'paint-type-resetdef',
+    'paint-type-paint',
+    'paint-type-multigrad',
 ]);
 
 /**
  * Record the op that applies the same coloring to a renderer or an object.
- * A gray CPK variant is CPK with its carbon colour set. The default paint
- * table and multigrad have no op. Styles and the potential coloring are for
- * renderers only.
+ * A gray CPK variant is CPK with its carbon colour set. Styles and the
+ * potential coloring are for renderers only.
  */
 function recordColoringChoice(ctx: WorkerContext, sceneId: number, args: SetRendererColoringArgs): void {
     const id: string = args.coloringId;
@@ -280,6 +281,7 @@ export function setRendererColoring(
             withUndoTxn(scene, 'Change coloring', () => {
                 const coloring = createDefPaintColoring(ctx, scene.uid);
                 if (!coloring) return;
+                recordColoringChoice(ctx, scene.uid, args);
                 forceMoleculeColormode(scene, rend);
                 (rend as unknown as MolRenderer).coloring = coloring;
             });
@@ -348,6 +350,8 @@ export function setRendererColoring(
             // paint everything black.
             if (!isMultiGradCapable(rend)) return { ok: false };
             withUndoTxn(scene, 'Change to multi gradient coloring', () => {
+                // The map and the seeded gradient are picked again on a replay, by the same rule.
+                recordColoringChoice(ctx, scene.uid, args);
                 const r = rend as unknown as {
                     color_mapname: string;
                     colormode: string;

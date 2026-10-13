@@ -232,6 +232,7 @@ function measureCommand(name: 'distance' | 'angle' | 'dihedral', mode: MeasureMo
         mode,
         sels,
         target === '' ? undefined : target,
+        ctx,
       )
       if (!res.ok) return { ok: false, error: `Error: ${res.error}` }
 

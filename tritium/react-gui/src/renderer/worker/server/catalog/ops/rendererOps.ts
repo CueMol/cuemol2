@@ -36,6 +36,8 @@ const PAINT_TYPES = [
   'paint-type-bfac',
   'paint-type-solid',
   'paint-type-resetdef',
+  'paint-type-paint',
+  'paint-type-multigrad',
 ] as const
 
 export const getRendererTypes = defineOp({
@@ -161,7 +163,7 @@ export const createPresetRenderer = defineOp({
   },
   mutates: true,
   describe: (a, n) => `Add preset ${a.preset} ${a.name} to ${n('objId')}`,
-  expose: { tool: 'core', console: true },
+  expose: { tool: 'style', console: true },
   group: 'renderers',
   run(ctx, args, oc) {
     const options = getNewRendererOptions(ctx, {
@@ -241,8 +243,9 @@ export const setRendererColoringOp = defineOp({
   description:
     'Colour one renderer, or an object (the colouring its renderers take by default; style ' +
     'names are for renderers only). Either give a mode -- cpk (by element), rainbow (along the chain), ' +
-    'bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style ' +
-    'name from list_coloring_styles.',
+    'bfac (by B-factor), solid (one colour), resetdef (back to the default), paint (a paint table ' +
+    'by secondary structure, to add_paint to), multigrad (a map or surface renderer coloured by a ' +
+    'map through a gradient) -- or a style name from list_coloring_styles.',
   params: {
     ...coloringTarget('to colour'),
     mode: enumOf(

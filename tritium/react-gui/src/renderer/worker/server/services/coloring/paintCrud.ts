@@ -133,6 +133,12 @@ export function addPaintEntry(
     const color = makeColor(ctx, args.colorValue, scene.uid);
 
     withUndoTxn(scene, 'Add paint entry', () => {
+        recordOp(ctx, scene.uid, 'add_paint_at', {
+            ...coloringOpTarget(args),
+            selection: args.selStr,
+            color: args.colorValue,
+            at: args.idx >= coloring.size ? null : args.idx + 1,
+        }, ['nodeId']);
         materializeColoringIfDefault(rend);
         const live = (rend as unknown as MolRenderer).coloring as PaintColoring;
         if (args.idx >= live.size) {
@@ -218,7 +224,7 @@ export function movePaintEntry(
     if (toIdx < 0 || toIdx > size - 1) return { ok: false };
 
     withUndoTxn(scene, 'Move paint entry', () => {
-        recordOp(ctx, scene.uid, 'move_paint', { ...coloringOpTarget(args), number: fromIdx + 1, to: toIdx + 1 }, ['nodeId']);
+        recordOp(ctx, scene.uid, 'move_paint', { ...coloringOpTarget(args), number: fromIdx + 1, by: toIdx - fromIdx, to: null, end: null }, ['nodeId']);
         materializeColoringIfDefault(rend);
         // After materialize, refetch the (possibly new) coloring instance.
         const live = (rend as unknown as MolRenderer).coloring as PaintColoring;

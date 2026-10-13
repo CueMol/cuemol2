@@ -6,7 +6,7 @@ History pane と Actions pane (PR #674 / #675) は、undo の各 step に記録�
 step は「no op recorded」の行になり、qax への保存・マクロ・再生に使えない。
 rainbow の hue が docs の既知リストに無いまま漏れていたので、undo txn を開く全箇所
 (service 約 130 か所)・txn を開かない変更・PyMOL dialect を数え上げた (約 50 か所が記録なし、約 30 か所が一部だけ)。その結果のうち、残りと潰す順序をまとめる。
-既存の op で表せるもの・引数を足すだけのもの (旧 Phase 1)、renderer の作成とファイルの読み込みのオプション (旧 Phase 2) は実装済みで、
+既存の op で表せるもの・引数を足すだけのもの、renderer の作成とファイルの読み込みのオプション、op が無かった scene の編集 (旧 Phase 1-3) は実装済みで、
 仕様は `../architecture/action-log.md` §2.2。
 
 ユーザーと決めたこと:
@@ -26,22 +26,6 @@ rainbow の hue が docs の既知リストに無いまま漏れていたので�
 
 ## 数え上げの結果と対応 (フェーズ順)
 
-### Phase 3: op が無い scene の編集
-
-| 操作 | 対応 (新しい op) |
-|---|---|
-| paint の行の挿入 (`addPaintEntry`)・貼り付け (`pastePaintEntries`) | `add_paint` に挿入位置 `at` を足す (selection を変えないようにする)。貼り付けは行ごとの `add_paint` |
-| 既定の paint 表と multigrad への切り替え (`setRendererColoring`) | `set_renderer_coloring` に `paint` / `multigrad` の mode |
-| multigrad の node の編集 (`setMultiGradNodes`) | `set_multigrad_nodes {nodeId, nodeType, nodes}` |
-| 原子のクリックでラベル (`naviClickAtom`) | `set_atom_label {objId, atom, on}`。C++ の `addLabel` が undo 情報を持たないので、まず C++ 側で undo に載せる (gtest を先に書く) |
-| unit cell だけの表示 (`showUnitCellRenderer`) | `show_unit_cell {objId}` |
-| symmetry copy の作成 (`createSymmMol`) | `create_symmetry_copy {objId, matrix, name, rendererType, ...}` (operator の番号は表示範囲に依存するので 4x4 行列で記録) |
-| MorphMol への変換 (`convertToMorphMol`) | `convert_to_morph {objId}` |
-| scene tree の並べ替え (`reorderSceneNode`) | `move_node {nodeId, nodeType, to}` (位置で指す)。group の出入りは `set_node_prop group` |
-| アニメーション要素の property の reset・一覧に無い property (`anim/genericProps`) | `reset_anim_prop {element, props}`、`set_anim_prop` を任意の property に広げる |
-| render settings (`setSceneRenderSettings`) | `set_render_settings {values}` |
-| 計測: selection どうし (`appendMeasureLabelBySel`)・2 つの object にまたがる pick (`appendMeasureLabel`) | `measure_geometry` の `atoms` を原子ごとに object を持てる形にし、selection の形も受ける |
-
 ### Phase 4: style set・camera・ファイル・貼り付け
 
 | 操作 | 対応 (新しい op) |
@@ -58,8 +42,8 @@ rainbow の hue が docs の既知リストに無いまま漏れていたので�
 | コマンド | 対応 |
 |---|---|
 | `show` / `as` の `applyStyles` | `applyRendererStyleList` の service を通して `set_renderer_styles` |
-| `label` / `hide labels` | 新しい `set_atom_labels {objId, selection, format | null}` (Phase 3 の C++ の undo 対応が前提) |
-| `distance` / `angle` / `dihedral`、`distance mode/cutoff` | `analyze_interactions` (引数は揃っている。PyMOL 側から 2 つ目の object / selection と label set を渡す) と Phase 3 の `measure_geometry` |
+| `label` / `hide labels` | 新しい `set_atom_labels {objId, selection, format | null}` (C++ の `NameLabelRenderer` はラベルの変更を undo に載せる) |
+| `distance mode/cutoff` | `analyze_interactions` (引数は揃っている。PyMOL 側から 2 つ目の object / selection と label set を渡す)。selection どうしの `distance` / `angle` / `dihedral` は `measure_selections` で記録済み |
 | `set_color`、`delete <sel>` / `set_name <sel>` | Phase 4 の `define_color` / `remove_selection` |
 | `fetch` (name 指定、`1abcA`、`type=pdb1`)、`load http...` | `fetch_pdb` の `name`、`fetch_url` (op はある。PyMOL 側の記録を確かめる) |
 | `isomesh` / `isosurface` の map の中心 | `recenter_map` |

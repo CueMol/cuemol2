@@ -129,3 +129,37 @@ TEST_F(NameLabelTest, LabelFormatRoundTrip)
     reread->writeTo2(&again);
     EXPECT_EQ(storedFormats(again), fmts);
 }
+
+// Adding, re-formatting and removing a label inside an undo txn are one undo
+// step each, which undo and redo replay; outside a txn nothing is recorded.
+TEST_F(NameLabelTest, LabelEditsAreUndoable)
+{
+    const int n = m_mol->getAtom("A", 1, "N")->getID();
+    NameLabelRenderer *labels = newLabels();
+    auto count = [&]() {
+        qlib::LDom2Node node;
+        labels->writeTo2(&node);
+        return storedFormats(node).size();
+    };
+
+    m_scene->clearUndoDataScr();
+    m_scene->startUndoTxn("Add atom label");
+    ASSERT_TRUE(labels->addLabelByID(n));
+    m_scene->commitUndoTxn();
+    m_scene->startUndoTxn("Remove atom label");
+    ASSERT_TRUE(labels->removeLabelByID(n));
+    m_scene->commitUndoTxn();
+    EXPECT_EQ(count(), 0u);
+    EXPECT_EQ(m_scene->getUndoSize(), 2);
+
+    m_scene->undo(0);  // the remove
+    EXPECT_EQ(count(), 1u);
+    m_scene->undo(0);  // the add
+    EXPECT_EQ(count(), 0u);
+    m_scene->redo(0);
+    EXPECT_EQ(count(), 1u);
+
+    m_scene->clearUndoDataScr();
+    ASSERT_TRUE(labels->setLabelFormat(n, "{resn}"));
+    EXPECT_FALSE(m_scene->isUndoable());
+}

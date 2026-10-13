@@ -25,6 +25,7 @@ import { exportActionSteps } from '@renderer/worker/server/services/actions/acti
 import { parseQax } from '@renderer/worker/server/actions/qax/codec'
 import { applyRendererStyleList } from '@renderer/worker/server/services/rend/rendererStyle'
 import { removePaintEntries } from '@renderer/worker/server/services/coloring/paintClipboard'
+import { reorderSceneNode } from '@renderer/worker/server/services/sceneTree/reorderSceneNode'
 import { MAX_RECORDED_ARGS_BYTES, recordOp } from '@renderer/worker/server/actions/serviceOps'
 import { describeRow } from '@renderer/worker/server/actions/describe'
 import { stepsToMacro } from '@renderer/worker/server/actions/macro'
@@ -333,6 +334,26 @@ describe('serviceOps', () => {
       { kind: 'op', op: 'remove_paint', args: { nodeId: mol.uid, nodeType: 'object', number: 1 }, refs: { nodeId: '1crn' } },
     ])
     expect(typeof readToolArgs(findOp('remove_paint')!, (entries[0] as { args: Record<string, unknown> }).args)).toBe('object')
+  })
+
+  it('records a drag in the scene tree by the places the node went, so a cut-out step means the same in a longer list', async () => {
+    const { findOp } = await import('@renderer/worker/server/catalog')
+    const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
+    const scene = stackScene()
+    const mols = ['a', 'b', 'c'].map((name, i) => {
+      const mol = fakeObject({ name, scene, ui_order: i })
+      mol.sets.ui_order.mockImplementation(() => scene.touch())
+      scene.addObject(mol)
+      return mol
+    })
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+
+    // Drop c before a: two places up.
+    reorderSceneNode(ctx as never, { kind: 'object', sceneId: scene.uid, sourceId: mols[2].uid, targetId: mols[0].uid, ori: -1 })
+
+    const [entry] = rowsOf(scene)[0].entries
+    expect(entry).toMatchObject({ op: 'move_node', args: { nodeId: mols[2].uid, nodeType: 'object', by: -2, to: null, end: null }, refs: { nodeId: 'c' } })
+    expect(typeof readToolArgs(findOp('move_node')!, (entry as { args: Record<string, unknown> }).args)).toBe('object')
   })
 
   it('words each undo step from its ops, and falls back to the undo description', () => {

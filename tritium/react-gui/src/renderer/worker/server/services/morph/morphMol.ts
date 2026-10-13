@@ -103,6 +103,7 @@ export function convertToMorphMol(
     let morphObjName = '';
     try {
         withUndoTxn(scene, 'Conv Mol to MorphMol', () => {
+            recordOp(ctx, scene.uid, 'convert_to_morph', { objId: args.objId }, ['objId']);
             const molName = (mol as unknown as { name: string }).name ?? '';
             // Serialize with the type overwritten to MorphMol; renderers are
             // part of the object XML, so the new object keeps them.

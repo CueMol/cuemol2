@@ -148,12 +148,12 @@ export function pastePaintEntries(
     if (!target) return empty;
     const { scene, rend, coloring } = target;
 
-    const adds: { sel: SelCommand; col: AbstractColor }[] = [];
+    const adds: { sel: SelCommand; col: AbstractColor; selStr: string; colorValue: string }[] = [];
     for (const entry of args.entries) {
         try {
             const sel = makeSel(ctx, entry.selStr, scene.uid);
             if (!sel) continue;
-            adds.push({ sel, col: makeColor(ctx, entry.colorValue, scene.uid) });
+            adds.push({ sel, col: makeColor(ctx, entry.colorValue, scene.uid), selStr: entry.selStr, colorValue: entry.colorValue });
         } catch {
             // Unresolvable named selection or colour: drop this row only.
         }
@@ -166,6 +166,15 @@ export function pastePaintEntries(
     const startIdx = append ? size : at;
 
     withUndoTxn(scene, 'Paste paint entry', () => {
+        // One insert per row, each at the place it ends up (rows in clipboard order).
+        adds.forEach((a, i) => {
+            recordOp(ctx, scene.uid, 'add_paint_at', {
+                ...coloringOpTarget(args),
+                selection: a.selStr,
+                color: a.colorValue,
+                at: append ? null : at + i + 1,
+            }, ['nodeId']);
+        });
         materializeColoringIfDefault(rend);
         const live = liveColoring(rend);
         if (append) {

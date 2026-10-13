@@ -342,6 +342,7 @@ export function showUnitCellRenderer(
     // Renderer creation is a void mutation: a throw rolls back, so
     // `created: true` only ever reports a committed renderer.
     return undoTxnResult(scene as Scene, 'Show unitcell', () => {
+        recordOp(ctx, args.sceneId, 'show_unit_cell', { objId: args.objId }, ['objId']);
         const rend = obj.createRenderer('*unitcell') as Renderer;
         rend.name = 'unitcell';
         return ok({ created: true });

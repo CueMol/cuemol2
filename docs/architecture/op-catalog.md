@@ -46,7 +46,7 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 | renderer type | `rendererType` | string | 補完は対象 object の作成可能 type |
 | property | `propName` / `propValue` / `propPath` | string | `propPath` は `obj/rend.prop` / `obj.prop` / scene の `prop` (node の後ろに `.` で property) |
 | 座標 | `vec3` | number の配列 (3 要素は読み込み時に検査) | `x y z` |
-| 原子列 | `atoms` | `{chain, resid, atomName}` の配列 | `A/20/CA A/21/CA` |
+| 原子列 | `atoms` | `{chain, resid, atomName}` の配列 | `A.20.CA A.21.CA` |
 
 `run` の引数型は DSL から推論される。console が文字列から変換できる種別だけに限っているのが、
 コマンドを自動生成できる条件 (zod などの汎用 schema を使わないのはこのため)。
@@ -231,7 +231,7 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
   | `show` / `hide` | 表示する / 隠す (この意味だけ。情報の表示には使わない) |
 
   固有の動詞 (`superpose`、`measure`、`merge`、`cut`、`rotate`、`pan`、`focus`、`center`、
-  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`quit` / `exit` など) は、
+  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`quit` / `exit` など) は、
   上の動詞と意味が重ならないものに限って使う。`make` / `gen` / `new` (→ `create`)、
   `compute` / `regen` (→ `calc` / `recalc`)、`change` / `update` (→ `set`)、一覧の `get` (→ `list`) は使わない。
 - **目的語**: `scene`、`object`、`renderer`、`group`、`camera`、`view`、`prop(s)`、`selection`、
@@ -263,6 +263,7 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
   または scene の分子から。普通の分子は先に MorphMol に変換され uid が変わる)・削除。再生の設定は
   Animation panel。
 - `set_secondary_structure` は再計算に dialog の `ignoreBulge` / `helixGapAngle` も取る。
+- `convert_to_morph objId`: MolCoord を MorphMol に変える (Morph dialog の Convert)。
 
 ### アニメーション編集の op (`ops/animOps.ts`。console と MCP)
 
@@ -273,14 +274,14 @@ Animation panel と element inspector が使う service をそのまま呼ぶの
   絶対時刻 (相対時刻と追従先)。時刻の参照が解決しないときはその理由。
 - `add_anim type [, name] [, before]`: `spin` / `camera` / `show` / `hide` / `slidein` / `slideout` /
   `mol` / `wait`。直前の要素に追従する (panel の追加と同じ)。
-- `remove_anim` / `move_anim element, to` / `set_anim_time element, startMs, endMs` (追従先からの相対 ms)。
+- `remove_anim` / `move_anim element, by|to|end` / `set_anim_time element, startMs, endMs` (追従先からの相対 ms)。
 - `set_anim_prop element, prop, value`: inspector で書ける property (`name`、`timeRefName`、`disabled`、
   `quadric`、`angle`、`axis` (`"0 1 0"`)、`endcam`、`ignore*`、`rend`、`hide`、`fade`、`tgtAlpha`、
   `direction`、`distance`、`mol`、`startValue`、`endValue`)。値は property の型に変換する。
 - `set_anim_options [loop] [, startCamera]`。
 - 要素は `list_anims` の番号、`#uid`、名前で指定する (同名が複数なら番号か uid を求める)。
   `list_morph_frames` などの番号も同じく 1 から。
-- 追加できない型 (`RealPropAnim` / `RendXformAnim`、ファイル由来) の generic property は未対応。
+- `set_anim_generic_prop element, prop, value` / `reset_anim_prop element, props`: 上の一覧に無い property (Inspector の generic tab) の書き込みと既定値への reset。
 
 ### GUI の編集操作の op (`ops/editOps.ts` ほか。console と MCP)
 
@@ -288,15 +289,23 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
 
 - `reset_prop path` (inspector の Reset。`node.*` で Reset all = 変更済みで既定値のある property を 1 txn で)、
   `clear_undo` (Edit > Clear undo data。txn の外で実行)
-- `renumber_residues objId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond objId, A/20/SG A/45/SG`、
+- `renumber_residues objId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond objId, A.20.SG A.45.SG`、
   `set_symmetry objId, a, b, c, alpha, beta, gamma, spaceGroup`
 - `create_group objId [, name]`、`create_surface_from_map rendId` (map の isosurf のみ)、`recalc_surface surfId [, density] [, backend]`
 - `list_interactions` / `remove_interaction rendId, number` (距離・角度・二面角の個別削除)
-- `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)
+- `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)、
+  `add_paint_at nodeId, selection, color [, at]` (`at` 番の前に挿入、null で末尾。`add_paint` と違い selection を変えない)、
+  `set_multigrad_nodes rendId, nodes` (`"-1 blue; 0 white; 1 red"`)
+- `set_atom_label objId, atoms, on` (原子 1 つの名前ラベル)、`measure_selections objId, selections, label` (selection どうし。`"a; b"`)、
+  `measure_geometry` の `atomObjects` (2 つ目以降の原子の object。object をまたぐ計測)
+- `show_unit_cell objId`、`create_symmetry_copy objId, matrix, name, ...` (4x4 行列を行ごとに 16 個。renderer の引数は `create_renderer` と同じ)
+- `move_node nodeId, by|to|end` (object は scene の中、renderer はその object の renderer の中で数える)、
+  `set_render_settings settings` (`"key=value; ..."`)
+- 並べ替えの op (`move_node` / `move_paint` / `move_anim` / `move_camera`) の行き先は、`by` (今の位置からの段数。負が上。端で止まる)・`to` (1 始まりの番号)・`end` (`top` / `bottom`) のどれか 1 つで指す (`catalog/moveDest.ts`)
 - `set_elepot_coloring rendId [, map] [, low] [, high]` (molsurf / dsurface を静電ポテンシャルで色付け)
 - `recenter_map rendId` (map を view の中心で描き直す)、`export_scene path [, format] [, width] [, height] [, transparent] [, dpi]`
   (png / pov / stl / mqo)
-- camera: `rename_camera`、`move_camera name, to`、`save_camera` / `apply_camera` の `withVisibility`
+- camera: `rename_camera`、`move_camera name, by|to|end`、`save_camera` / `apply_camera` の `withVisibility`
   (表示・非表示も保存・適用。適用時は txn を commit する)
 - `animate` に `pause` を追加し、`timeMs` は seek のときだけ必要
 

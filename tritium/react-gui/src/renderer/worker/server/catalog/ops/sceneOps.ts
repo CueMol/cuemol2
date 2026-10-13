@@ -9,6 +9,8 @@ import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { NO_NODE } from '../errors'
 import { defineOp } from '../op'
 import { boolean, enumOf, nodeId, string } from '../params'
+import { MOVE_DEST_PARAMS, moveText } from '../moveDest'
+import { moveNodeTo } from '@renderer/worker/server/services/sceneTree/reorderSceneNode'
 import { columns, wrapList } from '../consoleFormat'
 import { buildSceneSnapshot } from './sceneSnapshot'
 import type { SceneSnapshot } from './sceneSnapshot'
@@ -142,4 +144,24 @@ export const renameNode = defineOp({
   },
 })
 
-export const SCENE_OPS = [getSceneState, setVisible, deleteNode, renameNode]
+export const moveNode = defineOp({
+  name: 'move_node',
+  description:
+    'Move an object to a place in the scene tree, or a renderer (or renderer group) to a place among ' +
+    'the renderers of its object. Places count from 1, top first.',
+  params: {
+    nodeId: nodeId('Uid of the object, renderer, or renderer group.', 'nodeType'),
+    nodeType: enumOf(['object', 'renderer'], 'What nodeId refers to (a renderer group is a renderer here).'),
+    ...MOVE_DEST_PARAMS,
+  },
+  mutates: true,
+  describe: (a, n) => `Move ${n('nodeId')} ${moveText(a)}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'nodes',
+  run(ctx, args, oc) {
+    const res = moveNodeTo(ctx, { sceneId: oc.sceneId, nodeId: args.nodeId, nodeType: args.nodeType, dest: args })
+    return res.ok ? { ok: true } : { ok: false, error: res.error }
+  },
+})
+
+export const SCENE_OPS = [getSceneState, setVisible, deleteNode, renameNode, moveNode]

@@ -80,19 +80,30 @@ export function atomSpecOf(mol: MolCoord, atomId: number): AtomSpec | null {
 }
 
 /**
- * The `measure_geometry` call that draws the same label: only when every atom
- * is on `mol` (the op takes one molecule) and can be named.
+ * The `measure_geometry` call that draws the same label. Atoms on other
+ * objects than `mol` name those objects in `atomObjects`. Not recorded when
+ * an atom cannot be named.
  */
 function recordMeasure(ctx: WorkerContext, scene: Scene, mol: MolCoord, atoms: MeasureAtomRef[], label: string): void {
     const molId = mol.uid;
     const specs: AtomSpec[] = [];
+    const objects: string[] = [];
     for (const a of atoms) {
-        if (a.objId !== molId) return;
-        const spec = atomSpecOf(mol, a.atomId);
+        const obj = (a.objId === molId ? mol : scene.getObject(a.objId)) as MolCoord | null;
+        if (!obj) return;
+        const spec = atomSpecOf(obj, a.atomId);
         if (!spec) return;
         specs.push(spec);
+        objects.push(String(obj.name));
     }
-    recordOp(ctx, scene.uid, 'measure_geometry', { objId: molId, atoms: specs, draw: true, label }, ['objId']);
+    const spans = atoms.some((a) => a.objId !== molId);
+    recordOp(ctx, scene.uid, 'measure_geometry', {
+        objId: molId,
+        atoms: specs,
+        draw: true,
+        label,
+        atomObjects: spans ? objects.slice(1).join(' ') : null,
+    }, ['objId']);
 }
 
 /**
@@ -164,9 +175,11 @@ export function appendMeasureLabelBySel(
     mode: MeasureMode,
     sels: string[],
     targetName: string = ATOMINTR_DEFAULT_TARGET_NAME,
+    ctx?: WorkerContext,
 ): Result<{ value: number }> {
     const name = targetName.trim() || ATOMINTR_DEFAULT_TARGET_NAME;
     return undoTxnResult(scene, `Define ${measureLabelNoun(mode)} Label`, () => {
+        if (ctx) recordOp(ctx, scene.uid, 'measure_selections', { objId: mol.uid, selections: sels.join('; '), label: name }, ['objId']);
         let rend = mol.getRendererByNameType(name, ATOMINTR_TYPE) as AtomIntrRenderer | null;
         if (!rend) {
             rend = mol.createRenderer(ATOMINTR_TYPE) as AtomIntrRenderer;
