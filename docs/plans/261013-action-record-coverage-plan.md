@@ -1,72 +1,24 @@
-# 記録できない操作をなくす (action log の op 網羅) 計画
+# MD trajectory の編集を op として記録する 計画
 
 ## Context
 
-History pane と Actions pane (PR #674 / #675) は、undo の各 step に記録された op を使う。op が記録されない
-step は「no op recorded」の行になり、qax への保存・マクロ・再生に使えない。
-rainbow の hue が docs の既知リストに無いまま漏れていたので、undo txn を開く全箇所
-(service 約 130 か所)・txn を開かない変更・PyMOL dialect を数え上げた (約 50 か所が記録なし、約 30 か所が一部だけ)。その結果のうち、残りと潰す順序をまとめる。
-既存の op で表せるもの・引数を足すだけのもの、renderer の作成とファイルの読み込みのオプション、op が無かった scene の編集、style set・camera・ファイル・貼り付け (旧 Phase 1-4) は実装済みで、
-仕様は `../architecture/action-log.md` §2.2。
+History pane と Actions pane は、undo の各 step に記録された op を使う。op が記録されない step は
+「no op recorded」の行になり、qax への保存・マクロ・再生に使えない。GUI・PyMOL dialect の編集は
+service が op を記録する (仕様は `../architecture/action-log.md` §2.2)。残っているのは、plugin の
+service が行う MD trajectory の編集だけ。
 
-ユーザーと決めたこと:
-- **視点だけの変更は記録しない**。History は undo の履歴で、View / Camera の変化は C++ の undo の対象ではないため (下の「対象にしないもの」)。
+## 残りの項目
 
-残りのフェーズも同じ PR (#676) に入れ、全部済んでから 1 回だけ push する (CI を無駄に回さない)。
+- MD trajectory (mdtools plugin): 開く (`loadTrajectory`) と、block の追加・削除・並べ替え (`trajectory.ts`)。
+  - op catalog は core のものだけで、plugin から op を足す仕組みが無い。
+  - その仕組み (plugin の manifest に ops を書くと、catalog・console・MCP に出る) を作るときに、
+    `load_trajectory` / `add_traj_block` / `remove_traj_block` / `move_traj_block` を足す。
+  - 並べ替えは、ほかの一覧と同じく行き先を `by` (動いた段数) で記録する。
 
-## 共通の方針
-- 記録点は今までどおり service の txn の中 (`actions/serviceOps.ts` の `recordOp` と helper)。op を足すときは
-  `catalog/ops/*.ts` に定義し、service の `run` から同じ service を呼ぶ (GUI と op が同じ経路になる)。
-- toggle は「切り替えた後の値」で記録する (再生が前の状態に依存しないように)。
-- uid で持っている値 (camera の vis flag の対象など) は、記録時に path に直す。
-- 大きすぎる引数 (64 KB 超) は `recordOp` が印の note にする (実装済み。`../architecture/action-log.md` §2.2)。
+## 検証
 
-## 数え上げの結果と対応 (フェーズ順)
-
-### Phase 5: PyMOL dialect の残り
-
-| コマンド | 対応 |
-|---|---|
-| `show` / `as` の `applyStyles` | `applyRendererStyleList` の service を通して `set_renderer_styles` |
-| `label` / `hide labels` | 新しい `set_atom_labels {objId, selection, format | null}` (C++ の `NameLabelRenderer` はラベルの変更を undo に載せる) |
-| `distance mode/cutoff` | `analyze_interactions` (引数は揃っている。PyMOL 側から 2 つ目の object / selection と label set を渡す)。selection どうしの `distance` / `angle` / `dihedral` は `measure_selections` で記録済み |
-| `set_color`、`delete <sel>` / `set_name <sel>` | `define_color` / `remove_selection` (op はある) |
-| `fetch` (name 指定、`1abcA`、`type=pdb1`)、`load http...` | `fetch_pdb` の `name`、`fetch_url` (op はある。PyMOL 側の記録を確かめる) |
-| `isomesh` / `isosurface` の map の中心 | `recenter_map` |
-| `frame` / `rewind` (`obj.frame=`) | trajectory の frame の op (`set_node_prop frame` で足りるか確かめる) |
-| `pym:<rep>` という renderer 名 | `load_*` / `fetch_pdb` の `rendererName` (op はある。PyMOL 側の記録を確かめる) |
-
-## 後回し (この plan の範囲外)
-- MD trajectory (mdtools plugin): 開く (`loadTrajectory`) と block の追加・削除・並べ替え (`trajectory.ts`)。
-  op catalog は core のものだけで、plugin から op を足す仕組みが無い。その仕組み (plugin の manifest に ops を
-  書くと catalog・console・MCP に出る) を作るときに、`load_trajectory` / `add_traj_block` / `remove_traj_block` /
-  `move_traj_block` を足す。
-
-## 対象にしないもの
-- **視点だけの変更**: 3D view のマウス操作、View pane、projection、center mark、camera の適用 (visibility なし)、
-  focus、Center here、Sequence panel の center、console の `turn` / `move` / `zoom` / `orient` / `center` など、
-  PyMOL の `set_view` / `reset` / `view k, recall`。
-  - 今の挙動 (undo stack が伸びたときだけ行を作る) のままにする。op 自体は残るので、console・MCP・
-    手で書いた qax や preset (`three-views` など) では使える。History から保存したマクロには視点が入らない。
-  - camera の保存・削除や、selection を変える center (`center_view`) のように、undo に載る変更を伴うものは記録する。
-- 同じ property を続けて変えた行をまとめること: 1 行 = 1 undo step の対応を保つため、まとめない。
-- 原子が 0 個の selection で全原子を消す (`deleteMolAtoms`): 意図して記録しない。
-- 名前で一意に指せない原子の結合の編集 (`bondEdit`): all-or-nothing のまま。
-- 右クリックの atom モードの選択の `aid N`: 同じファイルなら再生できるので、今は変えない。
-- hover、アニメーションの再生、tree の開閉、アプリの設定 (scene のデータではない)。
-
-## docs
-- フェーズごとに `docs/architecture/action-log.md` §2.2 (記録する op の表) と §2.3 (記録できないもの) を更新する。
-  §2.3 には、視点の変更を記録しない理由を書く。
-- 新しい op は `docs/architecture/op-catalog.md` の該当の節に足す。
-- フェーズを実装したら、この plan からそのフェーズを消す。全部済んだら plan と `_index.md` の行を消す。
-
-## 検証 (フェーズごと)
-1. `task build_tritium` / `task run_tritium` (起動前に前のアプリが残っていないか確かめる)。
-2. 対象の GUI 操作をして、History の行が op の表示文になり、`list_actions` (`task run_tritium_cli`) に op が出ることを確かめる。
-   再生は、その行を Save to Actions して別の scene で Run する。dev の `[actionLog] no op recorded` の警告が出ないことも見る。
-3. ユーザーの目視確認。
-4. 確定後にテスト (契約だけ): 足した op の引数を service の記録が `readToolArgs` で読めること (`actionLog.test.ts` の既存の
-   形に 1 件ずつ)、view だけの property の書き込みで Redo が消えないこと、上限を超えた引数の op が印の note になること、C++ の label の undo は gtest。
-   `npm test`、tsc (web / node)、`npm run lint`、`lint:comments`、`task lint_tritium_style`、agent の schema snapshot の更新。
-5. commit、PR、CI が通ったら `gh pr merge --merge`。
+1. `task build_tritium` / `task run_tritium`。trajectory を開き、block を足す・消す・動かす。
+   History の行が op の表示文になり、`list_actions` に op が出ることを確かめる。
+2. その行を Save to Actions して、別の scene で Run する。
+3. ユーザーの目視確認の後に、記録の形を `actionLog.test.ts` の表に 1 件ずつ足す。
+4. docs: `../architecture/action-log.md` §2.2 / §2.3 と `../architecture/op-catalog.md` を更新し、この plan を消す。

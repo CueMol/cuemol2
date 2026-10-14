@@ -303,7 +303,7 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
 - `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)、
   `add_paint_at nodeId, selection, color [, at]` (`at` 番の前に挿入、null で末尾。`add_paint` と違い selection を変えない)、
   `set_multigrad_nodes rendId, nodes` (`"-1 blue; 0 white; 1 red"`)
-- `set_atom_label objId, atoms, on` (原子 1 つの名前ラベル)、`measure_selections objId, selections, label` (selection どうし。`"a; b"`)、
+- `set_atom_label objId, atoms, on` (原子 1 つの名前ラベル)、`set_atom_labels objId, selection, format, rendererName` (selection の原子すべてに書式付きの名前ラベル。format が null なら外す。rendererName の `*namelabel` が無ければ DefaultLabel の style で作る。null は navigate tool の名前の無い renderer。PyMOL の `label`)、`measure_selections objId, selections, label` (selection どうし。`"a; b"`)、
   `measure_geometry` の `atomObjects` (2 つ目以降の原子の object。object をまたぐ計測)
 - `show_unit_cell objId`、`create_symmetry_copy objId, matrix, name, ...` (4x4 行列を行ごとに 16 個。renderer の引数は `create_renderer` と同じ)
 - `move_node nodeId, by|to|end` (object は scene の中、renderer はその object の renderer の中で数える)、

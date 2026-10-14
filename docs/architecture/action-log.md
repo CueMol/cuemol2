@@ -99,7 +99,8 @@ helper)。
 - op の実行中は、service 側では記録しない。op を経由した呼び出しでは op 自体が記録されるので、
   二重にならない。
 - PyMOL のコマンドは、呼んだ service の分だけ native の op が並ぶ。たとえば `show sticks` は
-  `create_renderer ... name=pym:sticks, selection=...` として記録される。PyMOL の入力文字列は、
+  `create_renderer ... name=pym:sticks, selection=...` と `set_renderer_styles` として、`isomesh` は
+  `create_renderer`・`recenter_map`・`siglevel` の `set_node_prop` として記録される。PyMOL の入力文字列は、
   内部データにも qax にも持たない。行の `label` (`pym: ...`) に残るだけ。
 
 対応している service:
@@ -141,6 +142,7 @@ helper)。
 | ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | RCSB の標準の URL は `fetch_pdb` (名前と renderer の選択付き)、それ以外の URL は `fetch_url` (URL・reader・名前)。map は `fetch_map` (`source` が RCSB_CIF か EBI_MTZ) |
 | 計測ツールと結合の編集 (`navi/`) | `measure_geometry` / `add_bond` / `remove_bond`。2 つの object にまたがる計測は `measure_geometry` の `atomObjects` (2 つ目以降の原子の object)。selection どうしの計測 (PyMOL の `distance` など) は `measure_selections`。原子は `A.20.CA` (chain.resid.atom) の形で書く |
 | 原子名ラベル (`navi/naviTool.ts`、navigate tool のクリック) | `set_atom_label` (切り替えた後の on / off)。C++ の `NameLabelRenderer` のラベルの追加・削除・書式の変更は undo に載る |
+| selection の原子のラベル (`navi/atomLabels.ts`、PyMOL の `label` / `hide labels, sel`) | `set_atom_labels` (selection・書式・renderer 名。外すときは書式が null) |
 | render settings (`renderSettings/`) | `set_render_settings` (`"key=value; ..."`) |
 | Sequence panel の残基の選択 (`plugins/sequence/worker/seqPanelOps.ts`) | `set_mol_selection` (選んだ後の selection の文字列) |
 
@@ -159,11 +161,10 @@ console に出す (記録の漏れを見つけるため)。
 
 ### 2.3 記録できていないもの (既知)
 
-- PyMOL dialect のうち、service を通らずに C++ を直接変更するもの。例: `show sticks` の
-  `applyStyles`、`label`、`set_view` の回転、`orient`、`center`、`frame`。そのコマンドの行には、
-  service を通った部分の op だけが入る。
+- PyMOL dialect の `frame` / `rewind`: object の frame を動かすだけで txn を開かない
+  (アニメーションの再生と同じ扱い)。`set_view` / `orient` / `center` などの視点の変更は下の理由で記録しない。
 - 対応する op が無いもの: MD trajectory (mdtools plugin の service で、plugin から op を足す仕組みが無い)。
-  残りの一覧は [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
+  計画は [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
 - **scene を変えない操作は記録しない** (意図して): style set / camera を元のファイルへ上書きする Save は、
   scene の中が何も変わらず undo の行ができない。再生でファイルを黙って上書きしないためでもある。
   別のファイルへの Save as は、set や camera の元のファイルが変わる (undo に載る) ので記録する。

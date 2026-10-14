@@ -202,8 +202,9 @@ camera の操作は undo しない ([ADR-0025](../migration/adr/ADR-0025-view-pa
   label 書式 (`molstr/LabelFormat`、`{resn}{resi}` / `{bfac:.2f}`) に書き換えるだけで、値は C++ が評価する。
   分かる形は属性名、引用文字列、`+`、`str(x)`、`%` 書式 (`"%s-%s" % (resn, resi)`)。`{...}` を含む文字列は
   CueMol の書式としてそのまま渡す。それ以外は理由付きで断る。空の式は label を外す。1 回 2000 原子まで。
-- label の追加・削除は undo されない (クリックの label と同じく label renderer が undo 情報を持たない)。
-  renderer の作成は undo される。label の書式は `.qsc` に保存される。
+- label は `setAtomLabels` service (`services/navi/atomLabels.ts`) を通し、分子ごとに 1 つの
+  `set_atom_labels` として記録する。label の追加・削除・書式の変更は C++ が undo に載せる
+  (renderer の作成も)。label の書式は `.qsc` に保存される。
 - `show labels` / `hide labels` は label renderer の表示を切り替え、`hide labels, sel` はその原子の label を外す。
 
 ### 設定 (`settingCommands.ts` / `repSettings.ts`)

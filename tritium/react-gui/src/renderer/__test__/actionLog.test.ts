@@ -236,10 +236,12 @@ describe('serviceOps', () => {
       // The shapes clipboard/paste.ts and cameraVisFlags.ts record.
       ops.recordOp(ctx, scene.uid, 'paste_node', { kind: 'renderer', form: 'single', xml: '<renderer/>', target: mol.uid, targetType: 'object' }, ['target'])
       ops.recordOp(ctx, scene.uid, 'set_camera_visibility', { name: 'c1', entries: 'on 1crn; off 1crn/cartoon1' })
+      // navi/atomLabels.ts (PyMOL label): a null format takes the labels off.
+      ops.recordOp(ctx, scene.uid, 'set_atom_labels', { objId: mol.uid, selection: 'resi 1', format: null, rendererName: 'pym:labels' }, ['objId'])
     })
 
     const entries = rowsOf(scene)[0].entries
-    expect(entries).toHaveLength(13)
+    expect(entries).toHaveLength(14)
     for (const e of entries) {
       if (e.kind !== 'op') throw new Error(`not an op: ${e.text}`)
       const op = findOp(e.op)

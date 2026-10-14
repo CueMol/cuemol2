@@ -25,6 +25,7 @@ import { listAtomIntrDefs, removeAtomIntrDefs } from '@renderer/worker/server/se
 import { getRendererColoringState } from '@renderer/worker/server/services/coloring/deckState'
 import type { ColoringTargetKind, PaintEntryDto } from '@renderer/worker/server/services/coloring/types'
 import { setAtomLabel } from '@renderer/worker/server/services/navi/naviTool'
+import { setAtomLabels } from '@renderer/worker/server/services/navi/atomLabels'
 import { parseMultiGradNodes, setMultiGradNodes } from '@renderer/worker/server/services/coloring/multiGrad'
 import { addPaintEntry, movePaintEntry, removePaintEntry, updatePaintEntry } from '@renderer/worker/server/services/coloring/paintCrud'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
@@ -186,6 +187,28 @@ export const setAtomLabelOp = defineOp({
       return { ok: false, error: 'The label could not be changed.' }
     }
     return { ok: true }
+  },
+})
+
+export const setAtomLabelsOp = defineOp({
+  name: 'set_atom_labels',
+  description: 'Label every atom of a selection with a format, or take their labels off (PyMOL\'s label).',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    selection: selection('The atoms to label.'),
+    format: optional(string('Label format, e.g. "{resn}{resi}"; "" uses the renderer\'s default. Null takes the labels off.')),
+    rendererName: optional(string('Name of the name label renderer; made when the object has none. Null is the unnamed one the navigate tool uses.')),
+  },
+  mutates: true,
+  describe: (a, n) => `${a.format === null ? 'Unlabel' : 'Label'} ${a.selection} in ${n('objId')}`,
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    return normalizeServiceResult(
+      setAtomLabels(ctx, { sceneId: oc.sceneId, objId: args.objId, selection: args.selection, format: args.format, rendererName: args.rendererName ?? '' }),
+      'The labels could not be changed.',
+    )
   },
 })
 
@@ -641,7 +664,7 @@ export const exportSceneOp = defineOp({
 })
 
 export const EDIT_OPS = [
-  resetProp, clearUndo, changeResid, addBond, removeBond, setAtomLabelOp, setSymmetry,
+  resetProp, clearUndo, changeResid, addBond, removeBond, setAtomLabelOp, setAtomLabelsOp, setSymmetry,
   createGroup, genSurfaceObj, regenSurface, listInteractions, removeInteraction,
   listPaint, updatePaint, addPaintAt, removePaint, setMultiGradNodesOp, movePaint, colorByElepot, recenterMap, exportSceneOp,
 ]

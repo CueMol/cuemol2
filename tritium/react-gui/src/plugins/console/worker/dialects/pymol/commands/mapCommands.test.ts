@@ -27,7 +27,7 @@ const { services } = vi.hoisted(() => {
       createRendererOnObject: stub(() => ({ ok: true, newRendId: 99 })),
       setMapRendererProp: stub(() => ({ ok: true })),
       setGenericProp: stub(() => ({ ok: true, entries: [] })),
-      applyMapCenterPolicy: stub(),
+      redrawMapCenter: stub(() => ({ ok: true, moved: true })),
     } satisfies Record<string, Stub>,
   }
 })
@@ -43,10 +43,7 @@ vi.mock('@renderer/worker/server/services/map/state', () => ({
 }))
 vi.mock('@renderer/worker/server/services/map/props', () => ({
   setMapRendererProp: (...a: unknown[]) => services.setMapRendererProp(...a),
-  redrawMapCenter: vi.fn(),
-}))
-vi.mock('@renderer/worker/server/services/map/emDefaults', () => ({
-  applyMapCenterPolicy: (...a: unknown[]) => services.applyMapCenterPolicy(...a),
+  redrawMapCenter: (...a: unknown[]) => services.redrawMapCenter(...a),
 }))
 vi.mock('@renderer/worker/server/services/rend/getNewRendererOptions', () => ({
   getNewRendererOptions: (...a: unknown[]) => services.getNewRendererOptions(...a),
@@ -62,7 +59,7 @@ vi.mock('@renderer/worker/server/services/props/write', () => ({
   resetGenericProps: vi.fn(),
 }))
 vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
-  getSceneOrNull: () => ({ getObject: () => ({}), getRenderer: () => ({}) }),
+  getSceneOrNull: () => ({ getObject: () => ({ map_type_resolved: 'xtal' }), getRenderer: () => ({}) }),
 }))
 
 import { MAP_COMMANDS } from './mapCommands'
@@ -172,6 +169,6 @@ describe('carving a contour against a selection', () => {
     isomesh({})
     expect(written('bndry_molname')).toBeUndefined()
     // A boxed region is the only one that needs a centre.
-    expect(services.applyMapCenterPolicy).toHaveBeenCalled()
+    expect(services.redrawMapCenter).toHaveBeenCalled()
   })
 })
