@@ -82,7 +82,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "description": "Give a selection expression a name, usable in any later selection (and listed by get_scene_state). The name stands for the expression, re-evaluated each time it is used.",
     "mutates": true,
     "name": "define_selection",
-    "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"The name, e.g. site1."},"selection":{"type":"string","description":"The expression it stands for."},"styleSet":{"type":["string","null"],"description":"Name of the style set to keep it in (the scene's own before a global one). Null uses the scene's own writable set."}},"required":["name","selection","styleSet"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"name":{"type":"string","description":"The name, e.g. site1."},"selection":{"type":"string","description":"The expression it stands for."},"styleSet":{"type":["string","null"],"description":"Name of the style set to keep it in (the scene's own before a global one; made in the scene when there is none). Null uses the set named \\"default\\"."}},"required":["name","selection","styleSet"],"additionalProperties":false}",
   },
   {
     "description": "Delete the atoms a selection matches from a MolCoord object. Undoable, but only use it when the user asked to remove atoms.",

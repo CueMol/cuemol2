@@ -12,13 +12,16 @@ import { changeChainName } from '@renderer/worker/server/services/molops/changeC
 import { mergeMol } from '@renderer/worker/server/services/molops/mergeMol'
 import { reassignProt2ndry } from '@renderer/worker/server/services/molops/reassignProt2ndry'
 import { showSymmRenderer, showUnitCellRenderer } from '@renderer/worker/server/services/molops/symmetryPanelOps'
-import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
 import { copyMolByMatrix, matrixOf } from '@renderer/worker/server/services/molops/createSymmMol'
 import { LOAD_RENDERER_PARAMS } from '../fileLoad'
-import { setStyleSetSelection, styleSetByName } from '@renderer/worker/server/services/style/styleSetEdit'
+import { findOrCreateSceneSet, setStyleSetSelection } from '@renderer/worker/server/services/style/styleSetEdit'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
+import { DEFAULT_SCENE_STYLE_SET } from '@renderer/worker/server/services/select/saveSelDef'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { failedWith } from '../errors'
 import { defineOp } from '../op'
+import type { OpOutcome } from '../op'
 import { boolean, enumOf, objectId, optional, real, rendererType, selection, string } from '../params'
 
 /** The renderer arguments of a load, without a map's centring. */
@@ -307,7 +310,10 @@ export const saveSelection = defineOp({
     name: string('The name, e.g. site1.'),
     selection: selection('The expression it stands for.'),
     styleSet: optional(
-      string("Name of the style set to keep it in (the scene's own before a global one). Null uses the scene's own writable set."),
+      string(
+        "Name of the style set to keep it in (the scene's own before a global one; made in the scene when there is none). " +
+          'Null uses the set named "default".',
+      ),
     ),
   },
   mutates: true,
@@ -315,17 +321,18 @@ export const saveSelection = defineOp({
   expose: { tool: 'selection', console: true },
   group: 'selections',
   aliases: [{ name: 'define', summary: 'Name a selection: define site1, resid 10:20' }],
-  run(ctx, args, oc) {
-    if (args.styleSet !== null) {
-      const styleSetId = styleSetByName(ctx, oc.sceneId, args.styleSet)
-      if (styleSetId === null) return { ok: false, error: `No single style set named "${args.styleSet}".` }
-      const done = setStyleSetSelection(ctx, { sceneId: oc.sceneId, styleSetId, name: args.name, value: args.selection.trim() })
-      return done.ok ? { ok: true } : { ok: false, error: `The selection could not be kept in ${args.styleSet} (is it read only?).` }
-    }
-    return normalizeServiceResult(
-      saveSelDef(ctx, { sceneId: oc.sceneId, name: args.name, expr: args.selection }),
-      'The selection could not be named. Check the name and the expression.',
-    )
+  run(ctx, args, oc): OpOutcome {
+    const scene = getSceneOrNull(ctx, oc.sceneId)
+    if (!scene) return { ok: false, error: 'The scene could not be read.' }
+    const setName = args.styleSet ?? DEFAULT_SCENE_STYLE_SET
+    let res: OpOutcome = { ok: false, error: `No single style set named "${setName}", and none could be made.` }
+    withUndoTxn(scene, 'Define named selection', () => {
+      const set = findOrCreateSceneSet(ctx, oc.sceneId, setName)
+      if (set === null) return
+      const done = setStyleSetSelection(ctx, { sceneId: oc.sceneId, styleSetId: set.styleSetId, name: args.name, value: args.selection.trim() })
+      res = done.ok ? { ok: true } : { ok: false, error: `The selection could not be kept in ${setName} (is it read only?).` }
+    })
+    return res
   },
 })
 

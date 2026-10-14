@@ -17,9 +17,10 @@ import {
   removeStyleSetSelection,
   removeStyleSetStyle,
   setStyleSetColor,
+  findOrCreateSceneSet,
   styleSetScopeByName,
 } from '@renderer/worker/server/services/style/styleSetEdit'
-import { ensureWritableSceneSet } from '@renderer/worker/server/services/select/saveSelDef'
+import { DEFAULT_SCENE_STYLE_SET } from '@renderer/worker/server/services/select/saveSelDef'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -126,30 +127,23 @@ export const defineColor = defineOp({
   params: {
     name: string('The colour\'s name.'),
     color: color('The colour: hex ("#FF0000"), a colour name, or hsb(h,s,b).'),
-    styleSet: optional(string('The style set to keep it in. Null uses the scene\'s own writable set (made when there is none).')),
+    styleSet: optional(string('The style set to keep it in (the scene\'s own before a global one; made in the scene when there is none). Null uses the set named "default".')),
   },
   mutates: true,
   describe: (a) => `Define colour ${a.name} ${a.color}`,
   expose: EXPOSE,
   group: 'styles',
   run(ctx, args, oc): OpOutcome {
-    if (args.styleSet !== null) {
-      const set = setNamed(ctx, oc.sceneId, args.styleSet)
-      if ('error' in set) return { ok: false, error: set.error }
-      return normalizeServiceResult(
-        setStyleSetColor(ctx, { sceneId: oc.sceneId, ...set, name: args.name, colorStr: args.color }),
-        `The colour could not be kept in ${args.styleSet} (is it read only, and is the colour valid?).`,
-      )
-    }
     const scene = getSceneOrNull(ctx, oc.sceneId)
     if (!scene) return { ok: false, error: 'The scene could not be read.' }
-    let res: OpOutcome = { ok: false, error: 'The scene has no writable style set, and none could be made.' }
+    const setName = args.styleSet ?? DEFAULT_SCENE_STYLE_SET
+    let res: OpOutcome = { ok: false, error: `No single style set named "${setName}", and none could be made.` }
     withUndoTxn(scene, 'Define color', () => {
-      const styleSetId = ensureWritableSceneSet(ctx, oc.sceneId)
-      if (styleSetId === null) return
+      const set = findOrCreateSceneSet(ctx, oc.sceneId, setName)
+      if (set === null) return
       res = normalizeServiceResult(
-        setStyleSetColor(ctx, { sceneId: oc.sceneId, styleSetId, scopeId: oc.sceneId, name: args.name, colorStr: args.color }),
-        'The colour could not be defined. Check the colour.',
+        setStyleSetColor(ctx, { sceneId: oc.sceneId, ...set, name: args.name, colorStr: args.color }),
+        `The colour could not be kept in ${setName} (is it read only, and is the colour valid?).`,
       )
     })
     return res

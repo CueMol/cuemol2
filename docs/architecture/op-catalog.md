@@ -329,8 +329,10 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
   (変更済みの set は read only にできない)
 - `load_style_file path` (scene に read only の set として読む)、`save_style_file styleSet [, path]`
   (null は元のファイルへ上書き)
-- Style Editor: `define_color name, color [, styleSet]` (null は scene の最初の書き込める set。無ければ
-  作る。`define_selection` と同じ)、`remove_color` / `remove_selection` / `remove_style styleSet, name`
+- Style Editor: `define_color name, color [, styleSet]`、`remove_color` / `remove_selection` / `remove_style styleSet, name`
+- `define_color` と `define_selection` の `styleSet` は、その名前の set が無ければ scene に同じ名前で作る。
+  null は `default` という名前の set (scene の既定の set。MolSelPane が書き込める set の無い scene に作るのも
+  この名前)
 
 ### view property と reader のオプション
 

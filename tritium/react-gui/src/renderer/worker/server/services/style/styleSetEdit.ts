@@ -177,11 +177,11 @@ export interface StyleSetEditResult {
 export function setStyleSetColor(ctx: WorkerContext, args: SetStyleSetColorArgs): StyleSetEditResult {
     const name = args.name.trim();
     if (name.length === 0) return { ok: false };
-    const styleSet = recordedSetName(ctx, args.sceneId, args.styleSetId);
+    const styleSet = styleSetNameOf(ctx, args.sceneId, args.styleSetId);
     const ok = mutate(ctx, args.sceneId, args.styleSetId, `Set style color ${name}`, (set, mgr) => {
         const col = mgr.compileColor(args.colorStr, args.scopeId);
         if (!col) return;
-        if (styleSet !== undefined) recordOp(ctx, args.sceneId, 'define_color', { name, color: args.colorStr.trim(), styleSet });
+        if (styleSet !== null) recordOp(ctx, args.sceneId, 'define_color', { name, color: args.colorStr.trim(), styleSet });
         set.setColor(name, col);
     });
     return { ok };
@@ -226,15 +226,6 @@ function styleSetsOf(ctx: WorkerContext, sceneId: number): StyleSetInfo[] {
 }
 
 /**
- * Whether `styleSetId` is the set `define_selection` writes to: the first
- * writable set of the scene's own scope (as `saveSelDef` picks it).
- */
-function isDefineSelectionSet(ctx: WorkerContext, sceneId: number, styleSetId: number): boolean {
-    const entry = styleSetsOf(ctx, sceneId).find((e) => e.scene_id === sceneId && e.readonly === false);
-    return entry?.uid === styleSetId;
-}
-
-/**
  * The uid of the style set a scene reaches by `name`: its own set of that
  * name before a global one. Null when there is none, or two in one scope.
  */
@@ -265,13 +256,22 @@ export function styleSetNameOf(ctx: WorkerContext, sceneId: number, styleSetId: 
 }
 
 /**
- * How `define_color` / `define_selection` name a set: null for the scene's
- * own writable set (their default), its name otherwise, undefined when the
- * name does not lead back to it (nothing is recorded).
+ * The set `name` names for the scene (`styleSetScopeByName`), or a new set
+ * of the scene by that name when there is none. Call inside an undo txn:
+ * making one is an edit.
+ *
+ * @returns the set, or null when the name is shared or no set could be made.
  */
-function recordedSetName(ctx: WorkerContext, sceneId: number, styleSetId: number): string | null | undefined {
-    if (isDefineSelectionSet(ctx, sceneId, styleSetId)) return null;
-    return styleSetNameOf(ctx, sceneId, styleSetId) ?? undefined;
+export function findOrCreateSceneSet(
+    ctx: WorkerContext,
+    sceneId: number,
+    name: string,
+): { styleSetId: number; scopeId: number } | null {
+    const found = styleSetScopeByName(ctx, sceneId, name);
+    if (found !== null) return found;
+    if (styleSetsOf(ctx, sceneId).some((e) => e.name === name)) return null;
+    const styleSetId = ctx.styleMgr.createStyleSet(name, sceneId);
+    return styleSetId > 0 ? { styleSetId, scopeId: sceneId } : null;
 }
 
 export function setStyleSetSelection(
@@ -280,15 +280,9 @@ export function setStyleSetSelection(
 ): StyleSetEditResult {
     const name = args.name.trim();
     if (name.length === 0) return { ok: false };
-    // define_selection trims the expression it stores, and names any set
-    // but its own by name.
-    const styleSet = isDefineSelectionSet(ctx, args.sceneId, args.styleSetId)
-        ? null
-        : styleSetNameOf(ctx, args.sceneId, args.styleSetId);
-    const opEquivalent =
-        args.value.trim() === args.value &&
-        args.value !== '' &&
-        (styleSet !== null || isDefineSelectionSet(ctx, args.sceneId, args.styleSetId));
+    // define_selection trims the expression it stores.
+    const styleSet = styleSetNameOf(ctx, args.sceneId, args.styleSetId);
+    const opEquivalent = args.value.trim() === args.value && args.value !== '' && styleSet !== null;
     const ok = mutate(ctx, args.sceneId, args.styleSetId, `Set style selection ${name}`, (set) => {
         if (opEquivalent) {
             recordOp(ctx, args.sceneId, 'define_selection', { name, selection: args.value, styleSet });
