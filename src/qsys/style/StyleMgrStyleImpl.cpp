@@ -418,6 +418,14 @@ qlib::uid_t StyleMgr::loadStyleSetFromFile(qlib::uid_t nScopeID, const LString &
   // put the style-update event to the pending list
   m_pendEvts.insert(PendEventSet::value_type(nScopeID, ""));
 
+  // Record undo/redo info (StyleFile puts the loaded set at the front)
+  UndoUtil uu(nScopeID);
+  if (uu.isOK()) {
+    StyleCreateEditInfo *pInfo = MB_NEW StyleCreateEditInfo();
+    pInfo->setupCreate(nScopeID, pSet, 0);
+    uu.add(pInfo);
+  }
+
   return uid;
 }
 

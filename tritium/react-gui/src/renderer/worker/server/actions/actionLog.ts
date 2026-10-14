@@ -52,6 +52,8 @@ export interface OpEntry {
 export interface NoteEntry {
   kind: 'note'
   text: string
+  /** Set when an op ran but was not kept, its arguments being too large. */
+  dropped?: { op: string; bytes: number }
 }
 
 export type ActionEntry = OpEntry | NoteEntry
@@ -214,6 +216,11 @@ export function txnEnd(scene: Scene, committed: boolean): void {
   const grew = undoSize > frame.undoSizeBefore
   log.rows = log.rows.slice(0, frame.undoSizeBefore)
   if (grew) {
+    // A GUI edit that changed the scene without saying how: a service that
+    // records no op (docs/architecture/action-log.md 2.3).
+    if (frame.source === 'gui' && frame.entries.length === 0 && typeof __DEV_UI__ !== 'undefined' && __DEV_UI__) {
+      console.warn(`[actionLog] no op recorded: ${frame.label}`)
+    }
     log.rows.push({
       id: ++lastRowId,
       label: frame.label,

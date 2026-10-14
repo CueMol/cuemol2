@@ -64,13 +64,13 @@ function unquote(raw: string): string {
   return t
 }
 
-/** `A/20/CA A/21/CA` -> two atoms. */
+/** `A.20.CA A.21.CA` -> two atoms. */
 function readAtoms(raw: string): AtomSpec[] | string {
   const out: AtomSpec[] = []
   for (const word of raw.split(/\s+/).filter((w) => w !== '')) {
-    const parts = word.split('/')
+    const parts = word.split('.')
     if (parts.length !== 3 || parts.some((p) => p === '')) {
-      return `"${word}" is not an atom; write each as chain/residue/atom, e.g. A/20/CA`
+      return `"${word}" is not an atom; write each as chain.residue.atom, e.g. A.20.CA`
     }
     out.push({ chain: parts[0], resid: parts[1], atomName: parts[2] })
   }

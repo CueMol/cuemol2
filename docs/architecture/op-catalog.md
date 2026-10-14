@@ -46,13 +46,20 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 | renderer type | `rendererType` | string | 補完は対象 object の作成可能 type |
 | property | `propName` / `propValue` / `propPath` | string | `propPath` は `obj/rend.prop` / `obj.prop` / scene の `prop` (node の後ろに `.` で property) |
 | 座標 | `vec3` | number の配列 (3 要素は読み込み時に検査) | `x y z` |
-| 原子列 | `atoms` | `{chain, resid, atomName}` の配列 | `A/20/CA A/21/CA` |
+| 原子列 | `atoms` | `{chain, resid, atomName}` の配列 | `A.20.CA A.21.CA` |
 
 `run` の引数型は DSL から推論される。console が文字列から変換できる種別だけに限っているのが、
 コマンドを自動生成できる条件 (zod などの汎用 schema を使わないのはこのため)。
 
 - **名前の解決** (`refs.ts`): session をまたいで一意な id は持たず、名前か `#uid` で引く。CueMol の
   名前は一意でないので、複数に一致する名前は失敗にして uid を求める (`names more than one node`)。
+  - 名前が重なる node は、型名と uid を足した path でも指せる: `1crn/@*selection` (名前の無い
+    selection renderer)、`1crn/cartoon1@cartoon`、`1crn@MolCoord`、`1crn/simple1@simple#40`。
+  - `@型名` は、その文字列全体を名前に持つ node が無いときだけ型名として読む。
+  - `#uid` は、名前と型名で絞った候補から 1 つを選ぶのに使う。候補の中に無い uid は無視する
+    (別の session では uid が変わるため)。それで 1 つに決まればその node、決まらなければ失敗。
+  - 記録 (action log・qax) はこの順で path を作る (`refs.ts` の `recordedPath`): 名前で一意なら
+    `obj/rend`、だめなら型名を足し、それでも重なれば uid も足す。
   CueMol に「分子」という概念は無く、原子を持つ object は class `MolCoord` (とその派生 `AnimMol` など)。
   param 名は `objId` に統一し (`molId` は使わない)、class の制約は `objectId(desc, 'MolCoord')` の
   `objClass` で表す。派生の判定は `refs.ts` の `isObjectOfClass` で、C++ の `getClassName` は自分の
@@ -231,7 +238,7 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
   | `show` / `hide` | 表示する / 隠す (この意味だけ。情報の表示には使わない) |
 
   固有の動詞 (`superpose`、`measure`、`merge`、`cut`、`rotate`、`pan`、`focus`、`center`、
-  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`quit` / `exit` など) は、
+  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`paste` (Copy した XML から足す)、`reload` (元のファイルから読み直す)、`quit` / `exit` など) は、
   上の動詞と意味が重ならないものに限って使う。`make` / `gen` / `new` (→ `create`)、
   `compute` / `regen` (→ `calc` / `recalc`)、`change` / `update` (→ `set`)、一覧の `get` (→ `list`) は使わない。
 - **目的語**: `scene`、`object`、`renderer`、`group`、`camera`、`view`、`prop(s)`、`selection`、
@@ -263,6 +270,7 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
   または scene の分子から。普通の分子は先に MorphMol に変換され uid が変わる)・削除。再生の設定は
   Animation panel。
 - `set_secondary_structure` は再計算に dialog の `ignoreBulge` / `helixGapAngle` も取る。
+- `convert_to_morph objId`: MolCoord を MorphMol に変える (Morph dialog の Convert)。
 
 ### アニメーション編集の op (`ops/animOps.ts`。console と MCP)
 
@@ -273,14 +281,14 @@ Animation panel と element inspector が使う service をそのまま呼ぶの
   絶対時刻 (相対時刻と追従先)。時刻の参照が解決しないときはその理由。
 - `add_anim type [, name] [, before]`: `spin` / `camera` / `show` / `hide` / `slidein` / `slideout` /
   `mol` / `wait`。直前の要素に追従する (panel の追加と同じ)。
-- `remove_anim` / `move_anim element, to` / `set_anim_time element, startMs, endMs` (追従先からの相対 ms)。
+- `remove_anim` / `move_anim element, by|to|end` / `set_anim_time element, startMs, endMs` (追従先からの相対 ms)。
 - `set_anim_prop element, prop, value`: inspector で書ける property (`name`、`timeRefName`、`disabled`、
   `quadric`、`angle`、`axis` (`"0 1 0"`)、`endcam`、`ignore*`、`rend`、`hide`、`fade`、`tgtAlpha`、
   `direction`、`distance`、`mol`、`startValue`、`endValue`)。値は property の型に変換する。
 - `set_anim_options [loop] [, startCamera]`。
 - 要素は `list_anims` の番号、`#uid`、名前で指定する (同名が複数なら番号か uid を求める)。
   `list_morph_frames` などの番号も同じく 1 から。
-- 追加できない型 (`RealPropAnim` / `RendXformAnim`、ファイル由来) の generic property は未対応。
+- `set_anim_generic_prop element, prop, value` / `reset_anim_prop element, props`: 上の一覧に無い property (Inspector の generic tab) の書き込みと既定値への reset。
 
 ### GUI の編集操作の op (`ops/editOps.ts` ほか。console と MCP)
 
@@ -288,17 +296,43 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
 
 - `reset_prop path` (inspector の Reset。`node.*` で Reset all = 変更済みで既定値のある property を 1 txn で)、
   `clear_undo` (Edit > Clear undo data。txn の外で実行)
-- `renumber_residues objId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond objId, A/20/SG A/45/SG`、
+- `renumber_residues objId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond objId, A.20.SG A.45.SG`、
   `set_symmetry objId, a, b, c, alpha, beta, gamma, spaceGroup`
-- `create_group objId [, name]`、`create_surface_from_map rendId` (map の isosurf のみ)、`recalc_surface surfId [, density]`
+- `create_group objId [, name]`、`create_surface_from_map rendId` (map の isosurf のみ)、`recalc_surface surfId [, density] [, backend]`
 - `list_interactions` / `remove_interaction rendId, number` (距離・角度・二面角の個別削除)
-- `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)
+- `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)、
+  `add_paint_at nodeId, selection, color [, at]` (`at` 番の前に挿入、null で末尾。`add_paint` と違い selection を変えない)、
+  `set_multigrad_nodes rendId, nodes` (`"-1 blue; 0 white; 1 red"`)
+- `set_atom_label objId, atoms, on` (原子 1 つの名前ラベル)、`set_atom_labels objId, selection, format, rendererName` (selection の原子すべてに書式付きの名前ラベル。format が null なら外す。rendererName の `*namelabel` が無ければ DefaultLabel の style で作る。null は navigate tool の名前の無い renderer。PyMOL の `label`)、`measure_selections objId, selections, label` (selection どうし。`"a; b"`)、
+  `measure_geometry` の `atomObjects` (2 つ目以降の原子の object。object をまたぐ計測)
+- `show_unit_cell objId`、`create_symmetry_copy objId, matrix, name, ...` (4x4 行列を行ごとに 16 個。renderer の引数は `create_renderer` と同じ)
+- `move_node nodeId, by|to|end` (object は scene の中、renderer はその object の renderer の中で数える)、
+  `set_render_settings settings` (`"key=value; ..."`)
+- 並べ替えの op (`move_node` / `move_paint` / `move_anim` / `move_camera`) の行き先は、`by` (今の位置からの段数。負が上。端で止まる)・`to` (1 始まりの番号)・`end` (`top` / `bottom`) のどれか 1 つで指す (`catalog/moveDest.ts`)
 - `set_elepot_coloring rendId [, map] [, low] [, high]` (molsurf / dsurface を静電ポテンシャルで色付け)
 - `recenter_map rendId` (map を view の中心で描き直す)、`export_scene path [, format] [, width] [, height] [, transparent] [, dpi]`
   (png / pov / stl / mqo)
-- camera: `rename_camera`、`move_camera name, to`、`save_camera` / `apply_camera` の `withVisibility`
+- camera: `rename_camera`、`move_camera name, by|to|end`、`save_camera` / `apply_camera` の `withVisibility`
   (表示・非表示も保存・適用。適用時は txn を commit する)
 - `animate` に `pause` を追加し、`timeMs` は seek のときだけ必要
+- camera の visibility とファイル: `set_camera_visibility name, entries` (`"on 1crn; off 1crn/cartoon1"`。
+  ここに無い node は camera が覚えない)、`clear_camera_visibility name`、`load_camera_file path`、
+  `save_camera_file name [, path]` (null は元のファイル)、`reload_camera name`
+- 貼り付け: `paste_node kind, form, xml, target, targetType` (scene tree の Paste。Copy した XML から
+  object / renderer / group / style set / camera を足す。名前は貼り付け先で重ならないように付け直す)
+
+### style set の op (`ops/styleOps.ts`。console と MCP、help の分類は `styles`)
+
+set は名前で指す。同じ名前があれば scene の set を global (system / user) の set より先に使う。
+
+- `create_style_set name`、`delete_style_set styleSet`、`set_style_readonly styleSet, readonly`
+  (変更済みの set は read only にできない)
+- `load_style_file path` (scene に read only の set として読む)、`save_style_file styleSet [, path]`
+  (null は元のファイルへ上書き)
+- Style Editor: `define_color name, color [, styleSet]`、`remove_color` / `remove_selection` / `remove_style styleSet, name`
+- `define_color` と `define_selection` の `styleSet` は、その名前の set が無ければ scene に同じ名前で作る。
+  null は `default` という名前の set (scene の既定の set。MolSelPane が書き込める set の無い scene に作るのも
+  この名前)
 
 ### view property と reader のオプション
 

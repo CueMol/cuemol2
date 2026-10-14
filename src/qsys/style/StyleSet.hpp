@@ -109,6 +109,8 @@ namespace qsys {
     const LString &getName() const { return m_name; }
 
     void setReadOnly(bool val) { m_bReadOnly = val; }
+    /// Set the read-only flag from a script, recording it for undo
+    void setReadOnlyScr(bool val);
     bool isReadOnly() const { return m_bReadOnly; }
 
     void setModified(bool val) { m_bModified = val; }
@@ -128,6 +130,11 @@ namespace qsys {
     bool hasColor(const LString &rkey) const;
     bool setColor(const LString &rkey, const ColorPtr &pCol);
     bool removeColor(const LString &rkey);
+
+    /// Script versions of the edits above: recorded for undo while the
+    /// scene this set belongs to has an undo txn open (a global set never is)
+    bool setColorScr(const LString &rkey, const ColorPtr &pCol);
+    bool removeColorScr(const LString &rkey);
 
     /// Get color by color name (for scripting interface)
     ColorPtr getColor(const LString &key) const;
@@ -158,6 +165,9 @@ namespace qsys {
 
     bool removeStrData(const LString &cat, const LString &key);
 
+    bool setStrDataScr(const LString &cat, const LString &key, const LString &value);
+    bool removeStrDataScr(const LString &cat, const LString &key);
+
     /// Get string data names with specified category in JSON format
     /// dbname: data base name
     /// cat: category
@@ -185,6 +195,9 @@ namespace qsys {
 
     /// Remove structured data by key name
     bool removeData(const LString &key);
+
+    /// Take structured data out without deleting it (the caller owns it)
+    LDom2Node *detachData(const LString &key);
 
     typedef data_t::const_iterator data_iterator;
     data_iterator dataBegin() const { return m_data.begin(); }
@@ -214,6 +227,8 @@ namespace qsys {
     }
 
     bool removeStyle(const LString &name) { return removeStyleNode(name); }
+    /// Script version of removeStyle, recorded for undo like setColorScr
+    bool removeStyleScr(const LString &name);
     bool hasStyle(const LString &name) const {
       LString key = StyleSet::makeStyleKey(name);
       return hasData(key);

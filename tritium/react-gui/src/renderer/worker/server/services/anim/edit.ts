@@ -319,7 +319,7 @@ export function moveElement(
   if (to === from) return ok();
   return undoTxnResult(scene, "Reorder animation element", () => {
     const element = animElementSpec(mgr, args.uid);
-    if (element !== null) recordOp(ctx, scene.uid, "move_anim", { element, to: to + 1 });
+    if (element !== null) recordOp(ctx, scene.uid, "move_anim", { element, by: to - from, to: null, end: null });
     mgr.removeAt(from);
     if (to < mgr.size) mgr.insertBefore(to, found.obj);
     else mgr.append(found.obj);

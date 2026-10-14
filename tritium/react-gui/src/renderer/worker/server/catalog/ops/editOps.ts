@@ -24,7 +24,10 @@ import { getMolSurfRegenInfo, regenMolSurf } from '@renderer/worker/server/servi
 import { listAtomIntrDefs, removeAtomIntrDefs } from '@renderer/worker/server/services/rend/atomIntrEdit'
 import { getRendererColoringState } from '@renderer/worker/server/services/coloring/deckState'
 import type { ColoringTargetKind, PaintEntryDto } from '@renderer/worker/server/services/coloring/types'
-import { movePaintEntry, removePaintEntry, updatePaintEntry } from '@renderer/worker/server/services/coloring/paintCrud'
+import { setAtomLabel } from '@renderer/worker/server/services/navi/naviTool'
+import { setAtomLabels } from '@renderer/worker/server/services/navi/atomLabels'
+import { parseMultiGradNodes, setMultiGradNodes } from '@renderer/worker/server/services/coloring/multiGrad'
+import { addPaintEntry, movePaintEntry, removePaintEntry, updatePaintEntry } from '@renderer/worker/server/services/coloring/paintCrud'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
 import { setRendererElepotProp } from '@renderer/worker/server/services/coloring/elepotWriter'
 import { exportScene, getSceneExportInfo } from '@renderer/worker/server/services/scene/exportImage'
@@ -35,7 +38,8 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { resolvePropPath } from '../refs'
-import { checkPosition, numbered, pickByNumber } from '@renderer/worker/shared/numbered'
+import { numbered, pickByNumber } from '@renderer/worker/shared/numbered'
+import { MOVE_DEST_PARAMS, moveTarget, moveText } from '../moveDest'
 import { NO_MOLCOORD, NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
@@ -144,7 +148,7 @@ function atomOf(mol: MolCoord, spec: AtomSpec): MolAtom | null {
 /** The two atoms of a bond, or why not. */
 function bondAtoms(ctx: Parameters<typeof getSceneOrNull>[0], sceneId: number, objId: number, specs: AtomSpec[]):
   { mol: MolCoord; a: MolAtom; b: MolAtom; scene: NonNullable<ReturnType<typeof getSceneOrNull>> } | { error: string } {
-  if (specs.length !== 2) return { error: 'Give exactly two atoms, e.g. A/20/SG A/45/SG.' }
+  if (specs.length !== 2) return { error: 'Give exactly two atoms, e.g. A.20.SG A.45.SG.' }
   const scene = getSceneOrNull(ctx, sceneId)
   const mol = scene?.getObject(objId) as MolCoord | null
   if (!scene || !mol) return { error: NO_MOLCOORD }
@@ -155,7 +159,58 @@ function bondAtoms(ctx: Parameters<typeof getSceneOrNull>[0], sceneId: number, o
   return { mol, a, b, scene }
 }
 
-const BOND_ATOMS = 'The two atoms, chain/resid/atom each, e.g. A/20/SG A/45/SG.'
+const BOND_ATOMS = 'The two atoms, chain.resid.atom each, e.g. A.20.SG A.45.SG.'
+
+export const setAtomLabelOp = defineOp({
+  name: 'set_atom_label',
+  description: 'Show or hide the name label of one atom (a click with the navigate tool).',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    atoms: atoms('The atom, chain.resid.atom, e.g. A.20.CA.'),
+    on: boolean('True shows the label, false hides it.'),
+  },
+  mutates: true,
+  describe: (a, n) => `${a.on ? 'Label' : 'Unlabel'} ${atomList(a.atoms, ' ')} in ${n('objId')}`,
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    if (args.atoms.length !== 1) return { ok: false, error: 'Give exactly one atom, e.g. A.20.CA.' }
+    const scene = getSceneOrNull(ctx, oc.sceneId)
+    const mol = scene?.getObject(args.objId) as MolCoord | null
+    if (!scene || !mol) return { ok: false, error: NO_MOLCOORD }
+    const atom = atomOf(mol, args.atoms[0])
+    if (!atom) return { ok: false, error: 'The atom was not found; check the chain, residue and atom name.' }
+    try {
+      withUndoTxn(scene, args.on ? 'Add atom label' : 'Remove atom label', () => setAtomLabel(mol, atom.id, args.on))
+    } catch {
+      return { ok: false, error: 'The label could not be changed.' }
+    }
+    return { ok: true }
+  },
+})
+
+export const setAtomLabelsOp = defineOp({
+  name: 'set_atom_labels',
+  description: 'Label every atom of a selection with a format, or take their labels off (PyMOL\'s label).',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    selection: selection('The atoms to label.'),
+    format: optional(string('Label format, e.g. "{resn}{resi}"; "" uses the renderer\'s default. Null takes the labels off.')),
+    rendererName: optional(string('Name of the name label renderer; made when the object has none. Null is the unnamed one the navigate tool uses.')),
+  },
+  mutates: true,
+  describe: (a, n) => `${a.format === null ? 'Unlabel' : 'Label'} ${a.selection} in ${n('objId')}`,
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    return normalizeServiceResult(
+      setAtomLabels(ctx, { sceneId: oc.sceneId, objId: args.objId, selection: args.selection, format: args.format, rendererName: args.rendererName ?? '' }),
+      'The labels could not be changed.',
+    )
+  },
+})
 
 export const addBond = defineOp({
   name: 'add_bond',
@@ -272,6 +327,7 @@ export const regenSurface = defineOp({
   params: {
     surfId: objectId('Uid of the surface object.'),
     density: optional(real('Points per angstrom. Null keeps the current density.')),
+    backend: optional(enumOf(['auto', 'meshms', 'ball'], 'Surface algorithm. Null or auto lets CueMol choose.')),
   },
   mutates: true,
   describe: (_a, n) => `Recompute surface ${n('surfId')}`,
@@ -284,7 +340,12 @@ export const regenSurface = defineOp({
       return { ok: false, error: info.ok && !info.origMolFound ? `Its MolCoord object (${info.origMol}) is not in the scene.` : 'This object cannot be regenerated.' }
     }
     return normalizeServiceResult(
-      regenMolSurf(ctx, { sceneId: oc.sceneId, objId: args.surfId, density: args.density ?? info.density }),
+      regenMolSurf(ctx, {
+        sceneId: oc.sceneId,
+        objId: args.surfId,
+        density: args.density ?? info.density,
+        ...(args.backend !== null ? { backend: args.backend } : {}),
+      }),
       'The surface could not be regenerated.',
     )
   },
@@ -406,6 +467,59 @@ export const updatePaint = defineOp({
   },
 })
 
+export const addPaintAt = defineOp({
+  name: 'add_paint_at',
+  description:
+    'Insert one paint entry at a position (the paint deck\'s Add and Paste). Unlike add_paint, it ' +
+    'leaves the object\'s current selection as it is.',
+  params: {
+    ...coloringTarget('to paint'),
+    selection: selection('Which atoms the entry colours.'),
+    color: string('Colour of the entry.'),
+    at: optional(integer('Insert before this entry of list_paint (from 1). Null appends at the end.')),
+  },
+  mutates: true,
+  describe: (a, n) => `Insert paint ${a.selection} ${a.color} in ${n('nodeId')}`,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: () => [],
+  run(ctx, args, oc) {
+    const target = paintAt(oc.sceneId, args)
+    const p = paintEntries(ctx, target)
+    if ('error' in p) return { ok: false, error: p.error }
+    const count = p.entries.length
+    if (args.at !== null && (args.at < 1 || args.at > count + 1)) {
+      return { ok: false, error: `at must be from 1 to ${count + 1} (list_paint has ${count}).` }
+    }
+    return normalizeServiceResult(
+      addPaintEntry(ctx, { ...target, idx: args.at === null ? count : args.at - 1, selStr: args.selection, colorValue: args.color }),
+      'The paint entry could not be inserted. Check the selection and the colour.',
+    )
+  },
+})
+
+export const setMultiGradNodesOp = defineOp({
+  name: 'set_multigrad_nodes',
+  description:
+    'Set the whole gradient of a renderer coloured by multigrad: each node a map value and the ' +
+    'colour at it, as "value colour; value colour; ...".',
+  params: {
+    rendId: rendererId('Uid of the map or surface renderer coloured by multigrad.'),
+    nodes: string('The nodes, e.g. "-1 blue; 0 white; 1 red".'),
+  },
+  mutates: true,
+  describe: (_a, n) => `Set the gradient of ${n('rendId')}`,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: () => [],
+  run(ctx, args, oc) {
+    const nodes = parseMultiGradNodes(args.nodes)
+    if ('error' in nodes) return { ok: false, error: `nodes: ${nodes.error}` }
+    const res = setMultiGradNodes(ctx, { sceneId: oc.sceneId, rendId: args.rendId, nodes })
+    return res.ok ? { ok: true } : { ok: false, error: `The gradient could not be set: ${res.error}` }
+  },
+})
+
 export const removePaint = defineOp({
   name: 'remove_paint',
   description: 'Remove one paint entry.',
@@ -432,10 +546,10 @@ export const movePaint = defineOp({
   params: {
     ...coloringTarget('the entry belongs to'),
     number: integer(PAINT_NUMBER),
-    to: integer('The number it should have.'),
+    ...MOVE_DEST_PARAMS,
   },
   mutates: true,
-  describe: (a, n) => `Move paint entry ${a.number} to ${a.to} on ${n('nodeId')}`,
+  describe: (a, n) => `Move paint entry ${a.number} ${moveText(a)} on ${n('nodeId')}`,
   expose: EXPOSE,
   group: 'coloring',
   format: () => [],
@@ -443,10 +557,10 @@ export const movePaint = defineOp({
     const target = paintAt(oc.sceneId, args)
     const at = paintIndex(ctx, target, args.number)
     if ('error' in at) return { ok: false, error: at.error }
-    const bad = checkPosition(args.to, at.count, 'list_paint')
-    if (bad) return { ok: false, error: bad }
+    const to = moveTarget(args, args.number - 1, at.count, 'list_paint')
+    if (typeof to === 'string') return { ok: false, error: to }
     return normalizeServiceResult(
-      movePaintEntry(ctx, { ...target, fromIdx: at.entry.idx, toIdx: args.to - 1 }),
+      movePaintEntry(ctx, { ...target, fromIdx: at.entry.idx, toIdx: to }),
       'The paint entry could not be moved.',
     )
   },
@@ -550,7 +664,7 @@ export const exportSceneOp = defineOp({
 })
 
 export const EDIT_OPS = [
-  resetProp, clearUndo, changeResid, addBond, removeBond, setSymmetry,
+  resetProp, clearUndo, changeResid, addBond, removeBond, setAtomLabelOp, setAtomLabelsOp, setSymmetry,
   createGroup, genSurfaceObj, regenSurface, listInteractions, removeInteraction,
-  listPaint, updatePaint, removePaint, movePaint, colorByElepot, recenterMap, exportSceneOp,
+  listPaint, updatePaint, addPaintAt, removePaint, setMultiGradNodesOp, movePaint, colorByElepot, recenterMap, exportSceneOp,
 ]

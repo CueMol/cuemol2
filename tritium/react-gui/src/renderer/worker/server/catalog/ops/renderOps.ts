@@ -22,7 +22,8 @@ import { DEFAULT_RENDER_BINARIES } from '@renderer/worker/shared/renderTypes'
 import { failedWith } from '../errors'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
-import { enumOf, integer, optional, path } from '../params'
+import { enumOf, integer, optional, path, string } from '../params'
+import { parseRenderSettings } from '@renderer/worker/server/services/renderSettings/renderSettings.service'
 import { outputPath } from '../outputFile'
 
 /** Rendering styles, by the backend each runs on. */
@@ -128,4 +129,23 @@ async function renderTo(
   }
 }
 
-export const RENDER_OPS = [renderImage]
+export const setRenderSettings = defineOp({
+  name: 'set_render_settings',
+  description:
+    'Change render settings the scene keeps (the Rendering window\'s settings, which render_image ' +
+    'uses), as "key=value; key=value". Keys are those of the Rendering window, a block\'s with its ' +
+    'prefix (e.g. "width=1600; height=1200").',
+  params: { settings: string('The settings, e.g. "width=1600; height=1200".') },
+  mutates: true,
+  describe: (a) => `Set render settings ${a.settings}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'files',
+  run(ctx, args, oc) {
+    const values = parseRenderSettings(args.settings)
+    if ('error' in values) return { ok: false, error: `settings: ${values.error}` }
+    const res = setSceneRenderSettings(ctx, { sceneId: oc.sceneId, values })
+    return res.ok ? { ok: true, data: { changed: res.changed } } : { ok: false, error: res.error }
+  },
+})
+
+export const RENDER_OPS = [renderImage, setRenderSettings]

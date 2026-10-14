@@ -15,7 +15,9 @@ import type { WorkerContext } from "@renderer/worker/server/types/WorkerContext"
 import { fail, failFrom, ok } from "@renderer/worker/shared/result";
 import { readAnimGraph, resolveMgr, resolveSceneMgr } from "./resolve";
 import { undoTxnResult } from "../withUndoTxn";
-import { findByUid, recordAnimPropWrite } from "./detail";
+import { animElementSpec, animValueText, findByUid, recordAnimPropWrite } from "./detail";
+import { recordOp } from "@renderer/worker/server/actions/serviceOps";
+import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import { planNameWrite, planTimeRefWrite } from "./elementWrites";
 import { goneFail, noMgrFail } from "./types";
 import type {
@@ -42,6 +44,17 @@ function animOpPropOf(key: string): string | null {
   if (key === "tgt_alpha") return "tgtAlpha";
   if (key === "axis" || key === "tgtAlpha") return null;
   return key;
+}
+
+/**
+ * Record a generic property write (`set_anim_generic_prop`) or, with no
+ * value, a reset (`reset_anim_prop`). Call before the write.
+ */
+function recordGenericWrite(ctx: WorkerContext, sceneId: number, mgr: AnimMgr, uid: number, key: string, value: unknown): void {
+  const element = animElementSpec(mgr, uid);
+  if (element === null) return;
+  if (value === undefined) recordOp(ctx, sceneId, "reset_anim_prop", { element, props: key });
+  else recordOp(ctx, sceneId, "set_anim_generic_prop", { element, prop: key, value: animValueText(value) });
 }
 
 /** Read + parse the AnimObj's full property list (generic tab). */
@@ -142,9 +155,10 @@ export function setAnimElementGenericProp(
   }
   const label = args.op === "reset" ? `Reset property: ${key}` : `Change property: ${key}`;
   const r = undoTxnResult(scene, label, () => {
-    // A reset has no op.
+    // set_anim_prop for the properties it knows, the generic ops for the rest.
     const opProp = args.op === "set" ? animOpPropOf(key) : null;
     if (opProp !== null) recordAnimPropWrite(ctx, scene.uid, mgr, args.uid, opProp, args.value);
+    else recordGenericWrite(ctx, scene.uid, mgr, args.uid, key, args.op === "reset" ? undefined : args.value);
     if (args.op === "reset") obj.resetProp(key);
     else obj.setProp(key, args.value);
     return ok();
@@ -173,6 +187,8 @@ export function resetAnimElementGenericProps(
       ? `Reset property: ${args.propNames[0]}`
       : `Reset ${args.propNames.length} properties`;
   const r = undoTxnResult(scene, label, () => {
+    const element = animElementSpec(mgr, args.uid);
+    if (element !== null) recordOp(ctx, scene.uid, "reset_anim_prop", { element, props: args.propNames.join(",") });
     for (const name of args.propNames) obj.resetProp(name);
     return ok();
   });

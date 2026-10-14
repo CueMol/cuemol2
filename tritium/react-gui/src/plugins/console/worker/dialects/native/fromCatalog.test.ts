@@ -27,7 +27,8 @@ vi.mock('@renderer/worker/server/services/select/validateSelection', () => ({
 }))
 
 import { defineOp } from '@renderer/worker/server/catalog/op'
-import { boolean, enumOf, nodeId, optional, selection } from '@renderer/worker/server/catalog/params'
+import { atoms, boolean, enumOf, nodeId, optional, selection } from '@renderer/worker/server/catalog/params'
+import { formatCommand } from '@renderer/worker/server/catalog/cmlFormat'
 import { catalogCommands } from './fromCatalog'
 import { CONSOLE_COMMAND_OPS } from '@renderer/worker/server/catalog'
 import { NATIVE_BUILTINS } from './builtins'
@@ -87,6 +88,27 @@ describe('a command generated from an op', () => {
     const res = await cmd.run({} as WorkerContext, { nodeId: '1crn', nodeType: '', visible: 'maybe', sel: '' }, cc)
     expect(res.ok).toBe(false)
     expect(run).not.toHaveBeenCalled()
+  })
+})
+
+describe('an atoms argument', () => {
+  it('reads chain.residue.atom, the CueMol selection form, and writes the same text back', async () => {
+    const take = vi.fn((_ctx: unknown, _args: unknown) => ({ ok: true as const }))
+    const atomOp = defineOp({
+      name: 'measure_geometry',
+      description: 'Measure.',
+      params: { atoms: atoms('atoms') },
+      mutates: false,
+      group: 'nodes',
+      expose: { tool: false, console: true },
+      run: take,
+    })
+    const cmd = catalogCommands([atomOp])[0].command
+
+    expect(await cmd.run({} as WorkerContext, { atoms: 'A.20.CA B.12A.N' }, cc)).toEqual({ ok: true })
+    const read = take.mock.calls[0][1] as { atoms: unknown }
+    expect(read.atoms).toEqual([{ chain: 'A', resid: '20', atomName: 'CA' }, { chain: 'B', resid: '12A', atomName: 'N' }])
+    expect(formatCommand('measure_geometry', atomOp.params, read)).toBe('measure_geometry atoms=A.20.CA B.12A.N')
   })
 })
 

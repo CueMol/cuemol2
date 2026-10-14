@@ -17,16 +17,18 @@ import {
   removeElement,
 } from '@renderer/worker/server/services/anim/edit'
 import { setAnimElementProp } from '@renderer/worker/server/services/anim/detail'
+import { resetAnimElementGenericProps, setAnimElementGenericProp } from '@renderer/worker/server/services/anim/genericProps'
 import { listTimeline } from '@renderer/worker/server/services/anim/timeline'
 import { setLoop, setStartCam } from '@renderer/worker/server/services/anim/transport'
 import type { AnimElementPropKey } from '@renderer/worker/server/services/anim/types'
 import type { AnimAddType, AnimElement, AnimTimeline } from '@renderer/worker/shared/animTypes'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { parseBoolText, parseNumberText } from '../argValues'
-import { checkPosition, findBySpec, numbered } from '@renderer/worker/shared/numbered'
+import { findBySpec, numbered } from '@renderer/worker/shared/numbered'
+import { MOVE_DEST_PARAMS, moveTarget, moveText } from '../moveDest'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { boolean, enumOf, integer, optional, real, string } from '../params'
+import { boolean, enumOf, optional, real, string } from '../params'
 
 /** The element types `add_anim` takes, by the word typed. */
 const ADD_TYPES: Readonly<Record<string, AnimAddType>> = {
@@ -157,19 +159,19 @@ export const animMove = defineOp({
   description: 'Move an element to another place in the list (its number in list_anims, from 1).',
   params: {
     element: string(ELEMENT_DESC),
-    to: integer('The number it should have.'),
+    ...MOVE_DEST_PARAMS,
   },
   mutates: true,
-  describe: (a) => `Move animation ${a.element} to ${a.to}`,
+  describe: (a) => `Move animation ${a.element} ${moveText(a)}`,
   expose: { tool: false, console: true, mcp: true },
   group: 'animation',
   format: () => [],
   run(ctx, args, oc) {
     const e = element(ctx, oc.sceneId, args.element)
     if ('error' in e) return { ok: false, error: e.error }
-    const bad = checkPosition(args.to, timeline(ctx, oc.sceneId).elements.length, 'list_anims')
-    if (bad) return { ok: false, error: bad }
-    return normalizeServiceResult(moveElement(ctx, { sceneId: oc.sceneId, uid: e.uid, to: args.to - 1 }), ANIM_FAILED)
+    const to = moveTarget(args, e.index, timeline(ctx, oc.sceneId).elements.length, 'list_anims')
+    if (typeof to === 'string') return { ok: false, error: to }
+    return normalizeServiceResult(moveElement(ctx, { sceneId: oc.sceneId, uid: e.uid, to }), ANIM_FAILED)
   },
 })
 
@@ -249,6 +251,58 @@ export const animSet = defineOp({
   },
 })
 
+/** A generic property value from its text: a number, a boolean, or the text. */
+function genericValue(text: string): string | number | boolean {
+  const t = text.trim()
+  if (t === 'true' || t === 'false') return t === 'true'
+  return t !== '' && Number.isFinite(Number(t)) ? Number(t) : text
+}
+
+export const animGenericSet = defineOp({
+  name: 'set_anim_generic_prop',
+  description:
+    'Set any property of an element by its C++ name, as the inspector\'s generic tab does ' +
+    '(set_anim_prop covers the usual ones by friendlier names).',
+  params: {
+    element: string(ELEMENT_DESC),
+    prop: string('The property name, e.g. axis or tgt_alpha.'),
+    value: string('The new value, as text (a vector as "x y z").'),
+  },
+  mutates: true,
+  describe: (a) => `Set ${a.prop} of animation ${a.element}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
+  format: () => [],
+  run(ctx, args, oc) {
+    const e = element(ctx, oc.sceneId, args.element)
+    if ('error' in e) return { ok: false, error: e.error }
+    return normalizeServiceResult(setAnimElementGenericProp(ctx, {
+      sceneId: oc.sceneId, uid: e.uid, propName: args.prop, op: 'set',
+      value: genericValue(args.value), valueType: typeof genericValue(args.value),
+    }), ANIM_FAILED)
+  },
+})
+
+export const animReset = defineOp({
+  name: 'reset_anim_prop',
+  description: 'Reset properties of an element to their defaults.',
+  params: {
+    element: string(ELEMENT_DESC),
+    props: string('The property names (C++ names, as the generic tab lists them), comma separated.'),
+  },
+  mutates: true,
+  describe: (a) => `Reset ${a.props} of animation ${a.element}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'animation',
+  format: () => [],
+  run(ctx, args, oc) {
+    const e = element(ctx, oc.sceneId, args.element)
+    if ('error' in e) return { ok: false, error: e.error }
+    const propNames = args.props.split(',').map((p) => p.trim()).filter((p) => p !== '')
+    return normalizeServiceResult(resetAnimElementGenericProps(ctx, { sceneId: oc.sceneId, uid: e.uid, propNames }), ANIM_FAILED)
+  },
+})
+
 export const animOptions = defineOp({
   name: 'set_anim_options',
   description: 'Set whether the animation loops, and the camera it starts from (empty for none).',
@@ -273,4 +327,4 @@ export const animOptions = defineOp({
   },
 })
 
-export const ANIM_OPS = [animList, animAdd, animRemove, animMove, animTime, animSet, animOptions]
+export const ANIM_OPS = [animList, animAdd, animRemove, animMove, animTime, animSet, animGenericSet, animReset, animOptions]

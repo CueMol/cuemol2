@@ -18,7 +18,7 @@ op ごとの記録と qax での再生は実装済み ([action-log.md](../archit
 | ファイルへのバッチ実行 | フォルダ・マクロ・出力 (画像 / 保存) を指定するダイアログ。ファイルごとに 読み込み -> マクロ -> 出力 -> 片付け を繰り返す。進捗の表示、中断、失敗したファイルの一覧 |
 | 録画ボタン | 開始で History に印を付け、終了で印から今までを選んだ状態にして Save to Actions を開く。記録の仕組みは History と共有し、録画中であることはステータスバーに出す |
 | preset の追加 | 既存の op で表せず外したもの: chain ごとの色、初期表示 (simple) に戻す、輪郭線 (renderer を一括で指す op)、重ね合わせ (object 2 つ) |
-| 記録の対応表の拡充 | op が無いために記録できない GUI の変更 ([action-log.md](../architecture/action-log.md) §2.3 の一覧) に op を足す、GUI の renderer 作成と file 読み込みのオプション、PyMOL dialect で service を迂回して C++ を直接変更するコマンド (`label`、`set_view` の回転、`orient` など) を op として記録する |
+| 記録の対応表の拡充 | [261013-action-record-coverage-plan.md](261013-action-record-coverage-plan.md) |
 | undo 履歴の永続化 | action log を scene と一緒に保存するか、別ファイルにするか |
 | qax の C++ 移行 | コマンド系とあわせて qax の読み書きを C++ に移す。golden file で同じ形式を検証する |
 | context 参照の ref | 意味型の ref で「アクティブな object」「現在の selection」を指せるようにする |

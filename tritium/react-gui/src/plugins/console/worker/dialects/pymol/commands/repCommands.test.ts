@@ -28,7 +28,7 @@ const { services } = vi.hoisted(() => {
       listSceneObjects: stub(),
       createRendererOnObject: stub(() => ({ ok: true, newRendId: 99 })),
       getNewRendererOptions: stub(() => ({ ok: true, rendererTypes: ['ballstick'] })),
-      applyStyles: stub(),
+      applyRendererStyleList: stub(() => ({ ok: true })),
     } satisfies Record<string, Stub>,
   }
 })
@@ -37,8 +37,8 @@ vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => ({
   getSceneTree: (...a: unknown[]) => services.getSceneTree(...a),
   setNodeVisible: (...a: unknown[]) => services.setNodeVisible(...a),
 }))
-vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
-  getSceneOrNull: () => ({ getRenderer: () => ({ applyStyles: (...a: unknown[]) => services.applyStyles(...a) }) }),
+vi.mock('@renderer/worker/server/services/rend/rendererStyle', () => ({
+  applyRendererStyleList: (...a: unknown[]) => services.applyRendererStyleList(...a),
 }))
 vi.mock('@renderer/worker/server/services/props/write', () => ({
   setGenericProp: (...a: unknown[]) => services.setGenericProp(...a),
@@ -161,7 +161,9 @@ describe('show / hide on the console-owned renderer', () => {
       | undefined
     expect(opts?.rendOpts.rendererName).toBe('pym:sticks')
     // PyMOL's sticks have no balls: CueMol's Stick style, not ball-and-stick.
-    expect(services.applyStyles).toHaveBeenCalledWith('StickBallStick,DefaultCPKColoring')
+    expect(services.applyRendererStyleList).toHaveBeenCalledWith(ctx, expect.objectContaining({
+      rendId: 99, styleNames: ['StickBallStick', 'DefaultCPKColoring'],
+    }))
   })
 
   it('widens the selection of a renderer a load made, which has none', () => {

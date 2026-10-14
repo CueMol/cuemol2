@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { services } from '@renderer/worker/server/services/sceneTree/sceneTree.service'
+import { moveNodeTo } from '@renderer/worker/server/services/sceneTree/reorderSceneNode'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 /**
@@ -60,6 +61,7 @@ function makeFixture(opts: SceneFixtureOpts = {}) {
     const obj1 = objRecs[0]?.obj
     if (obj1) {
         obj1.rend_uids = rendRecs.map((r) => String(r.rend.uid)).join(',')
+        for (const r of rendRecs) Object.assign(r.rend, { getClientObj: () => obj1 })
     }
 
     const getObject = vi.fn((uid: number) => {
@@ -133,6 +135,28 @@ describe('reorderSceneNode.service — renderer move within same parent', () => 
         const orders = f.rendRecs.map((r) => r.rend.ui_order)
         // [3]->0, [0]->1, [1]->2, [2]->3
         expect(orders).toEqual([1, 2, 3, 0])
+    })
+
+    it('moving a middle row up stops at the target, leaving the rows below it alone', () => {
+        // Once moved every row up to the end of the list.
+        const f = makeFixture({ rendOrders: [0, 1, 2, 3] })
+        services.reorderSceneNode(f.ctx, {
+            kind: 'renderer', sceneId: 7, sourceId: 102, destObjId: 10, destGroupName: '', targetId: 100, ori: -1,
+        })
+        expect(f.rendRecs.map((r) => r.rend.ui_order)).toEqual([1, 2, 0, 3])
+    })
+
+    it('move_node moves by places from where the node is, stopping at the ends, and takes one destination', () => {
+        const f = makeFixture({ rendOrders: [0, 1, 2, 3] })
+        const move = (dest: { by: number | null; to: number | null; end: 'top' | 'bottom' | null }) =>
+            moveNodeTo(f.ctx, { sceneId: 7, nodeId: 102, nodeType: 'renderer', dest })
+        const orders = () => f.rendRecs.map((r) => r.rend.ui_order)
+
+        expect(move({ by: -1, to: null, end: null })).toEqual({ ok: true })
+        expect(orders()).toEqual([0, 2, 1, 3])
+        expect(move({ by: 9, to: null, end: null })).toEqual({ ok: true })
+        expect(orders()).toEqual([0, 1, 3, 2])
+        expect(move({ by: 1, to: 2, end: null })).toEqual({ ok: false, error: 'Give exactly one of by, to or end.' })
     })
 
     it('moving onto own slot (ori=0, same uid) is a no-op', () => {

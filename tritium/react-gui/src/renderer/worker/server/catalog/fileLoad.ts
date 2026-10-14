@@ -17,13 +17,14 @@ import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/f
 import { loadObject } from '@renderer/worker/server/services/file/loadObject'
 import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import type { FormatKind, FormatOptions } from '@renderer/worker/shared/fileOpenTypes'
+import type { FormatKind, FormatOptions, MapCenterPolicy, RendererOptions } from '@renderer/worker/shared/fileOpenTypes'
 import { formatKindForReader } from '@renderer/worker/shared/fileOpenDefaults'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { fileStem } from '@shared/fileExt'
 import { classifyOpenFile } from '@shared/openFileKind'
 import type { OpContext, OpOutcome } from './op'
 import { callerPath } from './outputFile'
+import { boolean, enumOf, optional, string } from './params'
 
 /** InOutHandler::IOH_CAT_SCEREADER. */
 const SCENE_READER_CATEGORY = 3
@@ -65,6 +66,31 @@ export interface LoadArgs {
   rendererType: string | null
   selection: string | null
   name: string | null
+  rendererName: string | null
+  preset: string | null
+  centerView: boolean | null
+  mapCenterPolicy: MapCenterPolicy | null
+}
+
+/** The renderer arguments of `LoadArgs`, as op parameters (each load op spreads these in). */
+export const LOAD_RENDERER_PARAMS = {
+  rendererName: optional(string('Name of the renderer. Null uses <type>1.')),
+  preset: optional(string('Draw it with this renderer preset (a group), instead of rendererType. Null draws one renderer.')),
+  centerView: optional(boolean('False leaves the view where it is. Null or true centres it on the new object.')),
+  mapCenterPolicy: optional(
+    enumOf(
+      ['auto', 'setMapCenter', 'moveViewCenter'],
+      'For a map: setMapCenter draws it around the view centre, moveViewCenter moves the view to the map. Null or auto picks by the map kind.',
+    ),
+  ),
+}
+
+/** Write the renderer arguments a load op was given over the dialog's defaults. */
+export function applyRendererArgs(renderer: RendererOptions, args: Partial<LoadArgs>): void {
+  if (args.rendererName != null) renderer.rendererName = args.rendererName
+  if (args.preset != null) renderer.presetName = args.preset
+  if (args.centerView != null) renderer.centerView = args.centerView
+  if (args.mapCenterPolicy != null) renderer.mapCenterPolicy = args.mapCenterPolicy
 }
 
 /**
@@ -87,6 +113,7 @@ export function loadObjectFile(
     selection: args.selection,
     filePath: target.filePath,
   })
+  applyRendererArgs(options.renderer, args)
   if (adjust) {
     const format = adjust(options.format)
     if ('error' in format) return { ok: false, error: format.error }

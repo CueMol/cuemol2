@@ -84,22 +84,23 @@ export function listCameras(ctx: WorkerContext, args: ListCamerasArgs): ListCame
 
 /**
  * The `move_camera` steps that turn `from` into `to` (the same names in
- * another order), as `[name, index from 0]`. A single drag is one step;
- * any other order is rebuilt front to back.
+ * another order), as `[name, places moved]` (negative is up). A single drag
+ * is one step; any other order is rebuilt front to back.
  */
 function cameraMoves(from: readonly string[], to: readonly string[]): [string, number][] {
     for (const name of from) {
         const a = from.filter((n) => n !== name);
         const b = to.filter((n) => n !== name);
-        if (a.every((n, i) => n === b[i])) return [[name, to.indexOf(name)]];
+        if (a.every((n, i) => n === b[i])) return [[name, to.indexOf(name) - from.indexOf(name)]];
     }
     const cur = [...from];
     const moves: [string, number][] = [];
     to.forEach((name, index) => {
         if (cur[index] === name) return;
-        cur.splice(cur.indexOf(name), 1);
+        const at = cur.indexOf(name);
+        cur.splice(at, 1);
         cur.splice(index, 0, name);
-        moves.push([name, index]);
+        moves.push([name, index - at]);
     });
     return moves;
 }
@@ -143,9 +144,8 @@ export function reorderCameras(ctx: WorkerContext, args: ReorderCamerasArgs): Re
     if (unchanged) return ok({ names: [...pinned, ...wanted], changed: false });
 
     return undoTxnResult(scene, REORDER_CAMERAS_UNDO_LABEL, () => {
-        // move_camera numbers the cameras as list_cameras does, pinned row included.
-        for (const [name, index] of cameraMoves(orderable, wanted)) {
-            recordOp(ctx, scene.uid, 'move_camera', { name, to: pinned.length + index + 1 });
+        for (const [name, by] of cameraMoves(orderable, wanted)) {
+            recordOp(ctx, scene.uid, 'move_camera', { name, by, to: null, end: null });
         }
         wanted.forEach((name, index) => {
             // getCamera returns a copy (vis settings included); writing it back

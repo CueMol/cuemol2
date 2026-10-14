@@ -40,10 +40,9 @@
 
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
-import { applyMapCenterPolicy } from '@renderer/worker/server/services/map/emDefaults'
 import { listMapRenderers } from '@renderer/worker/server/services/map/renderers'
 import { getMapRendererState } from '@renderer/worker/server/services/map/state'
-import { setMapRendererProp } from '@renderer/worker/server/services/map/props'
+import { redrawMapCenter, setMapRendererProp } from '@renderer/worker/server/services/map/props'
 import type { MapRendererEntry } from '@renderer/worker/server/services/map/types'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
@@ -73,16 +72,14 @@ function writeLevel(ctx: WorkerContext, sceneId: number, rendId: number, level: 
  *
  * A new renderer has its centre at the origin, which for a crystallographic
  * map is nowhere near the model, so without this the command appears to draw
- * nothing. Same call the file-open path makes, with the policy it uses for a
- * map the user is adding to a scene they are already looking at.
+ * nothing. The map pane's Re-centre, so the step is recorded as
+ * `recenter_map`. Only a DensityMap gets it, as on the file-open path; other
+ * scalar objects (ElePotMap) keep their centre.
  */
-function centreOnView(ctx: WorkerContext, sceneId: number, objId: number, rendId: number): void {
-  const scene = getSceneOrNull(ctx, sceneId)
-  if (!scene) return
-  const obj = scene.getObject(objId)
-  const rend = scene.getRenderer(rendId)
-  if (!obj || !rend) return
-  applyMapCenterPolicy(scene, obj, rend, 'setMapCenter')
+function centreOnView(ctx: WorkerContext, cc: CmdContext, objId: number, rendId: number): void {
+  const obj = getSceneOrNull(ctx, cc.sceneId)?.getObject(objId) as { map_type_resolved?: unknown } | null | undefined
+  if (typeof obj?.map_type_resolved !== 'string') return
+  redrawMapCenter(ctx, { sceneId: cc.sceneId, rendId, viewId: cc.viewId })
 }
 
 /** The map object `pattern` names, or a reason it named nothing usable. */
@@ -293,7 +290,7 @@ function meshCommand(name: 'isomesh' | 'isosurface'): PymCommand {
       }
       // Only a boxed region needs a centre; a carved one takes its place
       // from the atoms.
-      if (!boundary) centreOnView(ctx, cc.sceneId, map.objId, created.newRendId)
+      if (!boundary) centreOnView(ctx, cc, map.objId, created.newRendId)
       if (!writeLevel(ctx, cc.sceneId, created.newRendId, level)) {
         return { ok: false, error: `Error: could not set the level of "${rendName}"` }
       }

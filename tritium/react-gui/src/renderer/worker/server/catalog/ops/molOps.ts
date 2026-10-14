@@ -12,11 +12,21 @@ import { changeChainName } from '@renderer/worker/server/services/molops/changeC
 import { mergeMol } from '@renderer/worker/server/services/molops/mergeMol'
 import { reassignProt2ndry } from '@renderer/worker/server/services/molops/reassignProt2ndry'
 import { showSymmRenderer, showUnitCellRenderer } from '@renderer/worker/server/services/molops/symmetryPanelOps'
-import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
+import { copyMolByMatrix, matrixOf } from '@renderer/worker/server/services/molops/createSymmMol'
+import { LOAD_RENDERER_PARAMS } from '../fileLoad'
+import { findOrCreateSceneSet, setStyleSetSelection } from '@renderer/worker/server/services/style/styleSetEdit'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
+import { DEFAULT_SCENE_STYLE_SET } from '@renderer/worker/server/services/select/saveSelDef'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { failedWith } from '../errors'
 import { defineOp } from '../op'
-import { boolean, enumOf, objectId, optional, real, selection, string } from '../params'
+import type { OpOutcome } from '../op'
+import { boolean, enumOf, objectId, optional, real, rendererType, selection, string } from '../params'
+
+/** The renderer arguments of a load, without a map's centring. */
+const { mapCenterPolicy: _mapCenter, ...LOAD_RENDERER_PARAMS_NO_MAP } = LOAD_RENDERER_PARAMS
+void _mapCenter
 
 /** The GUI dialog's defaults (`MakeMolSurfDialog`). */
 const SURF_DENSITY = 2
@@ -38,6 +48,9 @@ export const superpose = defineOp({
     movSel: optional(selection('Atoms of the moving object to fit. Null uses all (SSM) or CA atoms (LSQ).')),
     refSel: optional(selection('Atoms of the reference to fit. Null as movSel.')),
     algo: optional(enumOf(['SSM', 'LSQ'], 'SSM (default) or LSQ.')),
+    keepAsProperty: optional(
+      boolean('True keeps the fit as the object\'s transform (xformMat) and leaves the coordinates; null or false moves the coordinates.'),
+    ),
   },
   mutates: true,
   describe: (_a, n) => `Superpose ${n('movId')} onto ${n('refId')}`,
@@ -54,7 +67,7 @@ export const superpose = defineOp({
       refSel: args.refSel ?? dflt,
       movObjId: args.movId,
       movSel: args.movSel ?? dflt,
-      useprop: false,
+      useprop: args.keepAsProperty ?? false,
       autoRecenter: false,
     })
     return normalizeServiceResult(res, 'The superposition failed. Check the ids and selections.')
@@ -72,6 +85,7 @@ export const makeSurface = defineOp({
     name: optional(string('Name for the surface object. Null picks an unused one.')),
     probeRadius: optional(real(`Probe radius in angstroms. Null uses ${SURF_PROBE}.`)),
     density: optional(real(`Points per angstrom. Null uses ${SURF_DENSITY}; higher is finer and slower.`)),
+    backend: optional(enumOf(['auto', 'meshms', 'ball'], 'Surface algorithm. Null or auto lets CueMol choose.')),
   },
   mutates: true,
   describe: (a, n) => `Make surface${a.name !== null ? ` ${a.name}` : ''} of ${n('objId')}`,
@@ -86,6 +100,7 @@ export const makeSurface = defineOp({
       surfName: name,
       density: args.density ?? SURF_DENSITY,
       probeRadius: args.probeRadius ?? SURF_PROBE,
+      ...(args.backend !== null ? { backend: args.backend } : {}),
     })
     if (!res.ok) return failedWith(res, 'The surface could not be made.')
     return { ok: true, data: { objectId: res.newObjId, name: res.newObjName } }
@@ -231,6 +246,61 @@ export const showSymmetry = defineOp({
   },
 })
 
+export const createSymmetryCopy = defineOp({
+  name: 'create_symmetry_copy',
+  description:
+    'Copy a MolCoord object as a new object moved by a 4x4 matrix (a symmetry mate made a real ' +
+    'object, from the 3D view\'s Create SYMM mol), drawn with one renderer.',
+  params: {
+    objId: objectId('Uid of the MolCoord object to copy.', 'MolCoord'),
+    matrix: string('The 4x4 transform, 16 numbers row by row.'),
+    name: string('Name of the new object.'),
+    rendererType: optional(rendererType('Renderer to draw it with. Null uses simple.')),
+    selection: optional(selection('Draw only this selection. Null draws everything.')),
+    ...LOAD_RENDERER_PARAMS_NO_MAP,
+    centerView: optional(boolean('True centres the view on the new object. Null or false leaves the view.')),
+  },
+  mutates: true,
+  describe: (a, n) => `Copy ${n('objId')} as ${a.name}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'molecule',
+  run(ctx, args, oc) {
+    const matrix = matrixOf(ctx, args.matrix)
+    if (!matrix) return { ok: false, error: 'matrix must be 16 numbers.' }
+    const type = args.rendererType ?? 'simple'
+    const res = copyMolByMatrix(ctx, {
+      sceneId: oc.sceneId,
+      objId: args.objId,
+      matrix,
+      objName: args.name,
+      rendOpts: {
+        objectName: args.name,
+        rendererType: type,
+        rendererName: args.rendererName ?? `${type}1`,
+        selectionEnabled: args.selection !== null,
+        selection: args.selection ?? '*',
+        centerView: args.centerView ?? false,
+        mapCenterPolicy: 'auto',
+        ...(args.preset !== null ? { presetName: args.preset } : {}),
+      },
+    })
+    return res.ok ? { ok: true, data: { objectId: res.newObjId, name: res.newObjName } } : { ok: false, error: res.error ?? 'The copy could not be made.' }
+  },
+})
+
+export const showUnitCell = defineOp({
+  name: 'show_unit_cell',
+  description: 'For a crystal structure or map: draw its unit cell box (no symmetry mates). Does nothing when it is drawn already.',
+  params: { objId: objectId('Uid of the object (it must carry crystal information).') },
+  mutates: true,
+  describe: (_a, n) => `Show the unit cell of ${n('objId')}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'molecule',
+  run(ctx, args, oc) {
+    return normalizeServiceResult(showUnitCellRenderer(ctx, { sceneId: oc.sceneId, objId: args.objId }), 'The unit cell could not be drawn.')
+  },
+})
+
 export const saveSelection = defineOp({
   name: 'define_selection',
   description:
@@ -239,17 +309,30 @@ export const saveSelection = defineOp({
   params: {
     name: string('The name, e.g. site1.'),
     selection: selection('The expression it stands for.'),
+    styleSet: optional(
+      string(
+        "Name of the style set to keep it in (the scene's own before a global one; made in the scene when there is none). " +
+          'Null uses the set named "default".',
+      ),
+    ),
   },
   mutates: true,
   describe: (a) => `Define selection ${a.name}`,
   expose: { tool: 'selection', console: true },
   group: 'selections',
   aliases: [{ name: 'define', summary: 'Name a selection: define site1, resid 10:20' }],
-  run(ctx, args, oc) {
-    return normalizeServiceResult(
-      saveSelDef(ctx, { sceneId: oc.sceneId, name: args.name, expr: args.selection }),
-      'The selection could not be named. Check the name and the expression.',
-    )
+  run(ctx, args, oc): OpOutcome {
+    const scene = getSceneOrNull(ctx, oc.sceneId)
+    if (!scene) return { ok: false, error: 'The scene could not be read.' }
+    const setName = args.styleSet ?? DEFAULT_SCENE_STYLE_SET
+    let res: OpOutcome = { ok: false, error: `No single style set named "${setName}", and none could be made.` }
+    withUndoTxn(scene, 'Define named selection', () => {
+      const set = findOrCreateSceneSet(ctx, oc.sceneId, setName)
+      if (set === null) return
+      const done = setStyleSetSelection(ctx, { sceneId: oc.sceneId, styleSetId: set.styleSetId, name: args.name, value: args.selection.trim() })
+      res = done.ok ? { ok: true } : { ok: false, error: `The selection could not be kept in ${setName} (is it read only?).` }
+    })
+    return res
   },
 })
 
@@ -261,5 +344,7 @@ export const MOL_OPS = [
   mergeMolecules,
   setSecondaryStructure,
   showSymmetry,
+  showUnitCell,
+  createSymmetryCopy,
   saveSelection,
 ]

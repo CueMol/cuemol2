@@ -14,6 +14,7 @@ import type { MolAtom } from '@cuemol/core/src/wrappers/MolAtom'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import {
   appendMeasureLabel,
+  appendMeasureLabelBySel,
   hasDegenerateAtoms,
   measureAtomCount,
   type MeasureAtomRef,
@@ -24,7 +25,8 @@ import { NO_OBJECT } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import type { AtomSpec } from '../params'
-import { atoms, boolean, objectId, string } from '../params'
+import { atoms, boolean, objectId, optional, string } from '../params'
+import { resolveRef } from '../refs'
 import { atomList } from '../cmlFormat'
 
 /** What `measure_geometry` computes, by how many atoms it was given. */
@@ -35,7 +37,7 @@ const MODE_BY_COUNT: Record<number, MeasureMode> = {
 }
 
 function describe(spec: AtomSpec): string {
-  return `${spec.chain}/${spec.resid}/${spec.atomName}`
+  return atomList([spec])
 }
 
 export const measureGeometry = defineOp({
@@ -57,6 +59,9 @@ export const measureGeometry = defineOp({
     ),
     draw: boolean('True also draws the labelled measurement in the 3D view; false only returns the number.'),
     label: string('Name of the label set to draw into. Use "measure" unless the user asked for another.'),
+    atomObjects: optional(
+      string('For a measurement across objects: the object of each atom after the first, by name, space separated. Null keeps every atom in objId.'),
+    ),
   },
   // Drawing a label changes the scene. A measurement that only reports a
   // number does not, but the flag is per op, not per call, and treating it
@@ -79,13 +84,30 @@ export const measureGeometry = defineOp({
     const mol = scene.getObject(objId) as MolCoord | null
     if (!mol) return { ok: false, error: NO_OBJECT }
 
+    // The object of each atom: objId, or those atomObjects names after the first.
+    const objIds: number[] = [objId]
+    const others = args.atomObjects === null ? [] : args.atomObjects.trim().split(/\s+/).filter((t) => t !== '')
+    if (args.atomObjects !== null && others.length !== specs.length - 1) {
+      return { ok: false, error: `atomObjects names ${others.length} objects; give one for each atom after the first (${specs.length - 1}).` }
+    }
+    for (let i = 1; i < specs.length; i++) {
+      if (args.atomObjects === null) {
+        objIds.push(objId)
+        continue
+      }
+      const hit = resolveRef(ctx, oc.sceneId, others[i - 1], 'object', 'MolCoord')
+      if (!hit.ok) return { ok: false, error: `atomObjects: ${hit.error}` }
+      objIds.push(hit.node.id)
+    }
+
     // Resolve every atom before measuring anything, so a typo in the last one
     // does not leave a half-drawn label behind.
     const found: MolAtom[] = []
-    for (const spec of specs) {
+    for (const [i, spec] of specs.entries()) {
       let atom: MolAtom | null = null
       try {
-        atom = mol.getAtom(spec.chain, spec.resid, spec.atomName) as MolAtom | null
+        const owner = (objIds[i] === objId ? mol : scene.getObject(objIds[i])) as MolCoord
+        atom = owner.getAtom(spec.chain, spec.resid, spec.atomName) as MolAtom | null
       } catch {
         atom = null
       }
@@ -100,7 +122,7 @@ export const measureGeometry = defineOp({
       found.push(atom)
     }
 
-    const refs: MeasureAtomRef[] = found.map((a) => ({ objId, atomId: a.id }))
+    const refs: MeasureAtomRef[] = found.map((a, i) => ({ objId: objIds[i], atomId: a.id }))
     if (hasDegenerateAtoms(mode, refs)) {
       return { ok: false, error: 'The same atom was given twice; the measurement is undefined.' }
     }
@@ -140,4 +162,30 @@ export const measureGeometry = defineOp({
   },
 })
 
-export const MEASURE_OPS = [measureGeometry]
+export const measureSelections = defineOp({
+  name: 'measure_selections',
+  description:
+    'Measure between whole selections of one MolCoord object, each one point (the centre of what ' +
+    'it matches), and draw it: two give a distance, three an angle, four a torsion.',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    selections: string('Two, three or four selections, separated by ";", e.g. "chain A; chain B".'),
+    label: string('Name of the label set to draw into. Use "measure" unless the user asked for another.'),
+  },
+  mutates: true,
+  describe: (a, n) => `Measure ${a.selections} in ${n('objId')}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'analysis',
+  run(ctx, args, oc): OpOutcome {
+    const sels = args.selections.split(';').map((t) => t.trim()).filter((t) => t !== '')
+    const mode = MODE_BY_COUNT[sels.length]
+    if (!mode) return { ok: false, error: `Give two, three or four selections; got ${sels.length}.` }
+    const scene = getSceneOrNull(ctx, oc.sceneId)
+    const mol = scene?.getObject(args.objId) as MolCoord | null
+    if (!scene || !mol) return { ok: false, error: NO_OBJECT }
+    const res = appendMeasureLabelBySel(scene, mol, mode, sels, args.label)
+    return res.ok ? { ok: true, data: { kind: mode, value: Math.round(res.value * 100) / 100 } } : { ok: false, error: res.error }
+  },
+})
+
+export const MEASURE_OPS = [measureGeometry, measureSelections]

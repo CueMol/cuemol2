@@ -11,7 +11,7 @@ import { createRendererOnObject } from '@renderer/worker/server/services/rend/cr
 import { changeRendererType as changeRendererTypeService } from '@renderer/worker/server/services/rend/changeRendererType'
 import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import {
-  getPaintColoringStyles,
+  coloringStyleNames,
   getRendererPaintInfo,
 } from '@renderer/worker/server/services/coloring/panelList'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
@@ -27,7 +27,7 @@ import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
-import { color, coloringTarget, enumOf, objectId, optional, rendererId, rendererType, selection, string } from '../params'
+import { boolean, color, coloringTarget, enumOf, objectId, optional, rendererId, rendererType, selection, string } from '../params'
 
 /** The colouring modes that are not style names. */
 const PAINT_TYPES = [
@@ -36,6 +36,8 @@ const PAINT_TYPES = [
   'paint-type-bfac',
   'paint-type-solid',
   'paint-type-resetdef',
+  'paint-type-paint',
+  'paint-type-multigrad',
 ] as const
 
 export const getRendererTypes = defineOp({
@@ -81,6 +83,7 @@ function rendererOptions(
   rendererType: string,
   rendererName: string,
   sel: string | null,
+  centerView = false,
 ): Record<string, unknown> {
   return {
     objectName,
@@ -88,10 +91,12 @@ function rendererOptions(
     rendererName,
     selectionEnabled: sel !== null,
     selection: sel ?? '*',
-    centerView: false,
+    centerView,
     mapCenterPolicy: 'auto',
   }
 }
+
+const CENTER_VIEW_DESC = 'True also centres the view on the new renderer (MolCoord objects only). Null or false leaves the view.'
 
 export const createRenderer = defineOp({
   name: 'create_renderer',
@@ -105,6 +110,7 @@ export const createRenderer = defineOp({
     selection: optional(
       selection('Draw only this selection. Null draws the whole object. Check it with count_selection first.'),
     ),
+    centerView: optional(boolean(CENTER_VIEW_DESC)),
   },
   mutates: true,
   describe: (a, n) => `Add ${a.rendererType}${a.name ? ` ${a.name}` : ''} to ${n('objId')}${a.selection ? ` (${a.selection})` : ''}`,
@@ -135,9 +141,50 @@ export const createRenderer = defineOp({
         args.rendererType,
         name,
         args.selection,
+        args.centerView ?? false,
       ) as never,
     })
     if (!result.ok) return { ok: false, error: 'The renderer could not be created.' }
+    return { ok: true, data: { rendererId: result.newRendId, name: result.newName } }
+  },
+})
+
+export const createPresetRenderer = defineOp({
+  name: 'create_preset_renderer',
+  description:
+    'Draw an object with a renderer preset: a renderer group whose renderers, selections and ' +
+    'styles the preset (a style) defines. The preset must be one list_renderer_types listed ' +
+    "for that object. Returns the group's uid.",
+  params: {
+    objId: objectId('Uid of the object to draw.'),
+    preset: string('Preset name, from the presetTypes of list_renderer_types.'),
+    name: string('Name of the group; its renderers are named after it.'),
+    centerView: optional(boolean(CENTER_VIEW_DESC)),
+  },
+  mutates: true,
+  describe: (a, n) => `Add preset ${a.preset} ${a.name} to ${n('objId')}`,
+  expose: { tool: 'style', console: true },
+  group: 'renderers',
+  run(ctx, args, oc) {
+    const options = getNewRendererOptions(ctx, {
+      sceneId: oc.sceneId,
+      sourceNodeId: args.objId,
+      sourceNodeType: 'object',
+    })
+    if (!options.ok) return { ok: false, error: NO_OBJECT }
+    const presets = options.presetTypes.map((p) => p.name)
+    if (!presets.includes(args.preset)) {
+      return {
+        ok: false,
+        error: `This object has no renderer preset "${args.preset}". Available: ${presets.join(', ') || 'none'}.`,
+      }
+    }
+    const result = createRendererOnObject(ctx, {
+      sceneId: oc.sceneId,
+      objId: args.objId,
+      rendOpts: { ...rendererOptions(options.objName, '', args.name, null, args.centerView ?? false), presetName: args.preset } as never,
+    })
+    if (!result.ok) return { ok: false, error: 'The preset renderer could not be created.' }
     return { ok: true, data: { rendererId: result.newRendId, name: result.newName } }
   },
 })
@@ -187,9 +234,7 @@ export const getColoringStyles = defineOp({
   expose: { tool: 'coloring', console: true },
   group: 'coloring',
   run(ctx, _args, oc) {
-    const result = getPaintColoringStyles(ctx, { sceneId: oc.sceneId })
-    if (!result.ok) return { ok: false, error: 'The colouring styles could not be read.' }
-    return { ok: true, data: { styles: result.entries.map((e) => e.name) } }
+    return { ok: true, data: { styles: coloringStyleNames(ctx, oc.sceneId) } }
   },
 })
 
@@ -198,8 +243,9 @@ export const setRendererColoringOp = defineOp({
   description:
     'Colour one renderer, or an object (the colouring its renderers take by default; style ' +
     'names are for renderers only). Either give a mode -- cpk (by element), rainbow (along the chain), ' +
-    'bfac (by B-factor), solid (one colour), resetdef (back to the default) -- or a style ' +
-    'name from list_coloring_styles.',
+    'bfac (by B-factor), solid (one colour), resetdef (back to the default), paint (a paint table ' +
+    'by secondary structure, to add_paint to), multigrad (a map or surface renderer coloured by a ' +
+    'map through a gradient) -- or a style name from list_coloring_styles.',
   params: {
     ...coloringTarget('to colour'),
     mode: enumOf(
@@ -224,8 +270,7 @@ export const setRendererColoringOp = defineOp({
       if (styleName === '') {
         return { ok: false, error: 'mode is "style" but no styleName was given.' }
       }
-      const styles = getPaintColoringStyles(ctx, { sceneId: oc.sceneId })
-      if (styles.ok && !styles.entries.some((e) => e.name === styleName)) {
+      if (!coloringStyleNames(ctx, oc.sceneId).includes(styleName)) {
         return {
           ok: false,
           error: `No colouring style named "${styleName}". Call list_coloring_styles for the list.`,
@@ -397,6 +442,7 @@ export const RENDERER_OPS = [
   changeRendererType,
   getRendererTypes,
   createRenderer,
+  createPresetRenderer,
   setRendererSelection,
   getColoringStyles,
   setRendererColoringOp,

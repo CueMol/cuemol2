@@ -155,18 +155,19 @@ export function saveViewToCamera(
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
 
+    // Trimmed, as save_camera takes it, so the two save the same camera.
+    const name = args.name.trim();
+    if (name.length === 0) return { ok: false };
+
     let ok = false;
-    withUndoTxn(scene, `Change camera ${args.name}`, () => {
-        // save_camera trims the name, so a padded one has no op.
-        if (args.name.trim() === args.name && args.name.length > 0) {
-            recordOp(ctx, scene.uid, 'save_camera', {
-                name: args.name,
-                withVisibility: args.withVisFlags === true ? true : null,
-            });
-        }
-        scene.saveViewToCam(args.viewId, args.name);
+    withUndoTxn(scene, `Change camera ${name}`, () => {
+        recordOp(ctx, scene.uid, 'save_camera', {
+            name,
+            withVisibility: args.withVisFlags === true ? true : null,
+        });
+        scene.saveViewToCam(args.viewId, name);
         if (args.withVisFlags) {
-            const cam = getCameraRef(scene, args.name);
+            const cam = getCameraRef(scene, name);
             cam?.saveVisSettings(scene);
         }
         ok = true;
@@ -241,6 +242,7 @@ export function clearCameraVisFlags(
 
     let ok = false;
     withUndoTxn(scene, `Clear visibility flags in ${args.name}`, () => {
+        recordOp(ctx, scene.uid, 'clear_camera_visibility', { name: args.name });
         cam.clearVisSettings();
         ok = true;
     });

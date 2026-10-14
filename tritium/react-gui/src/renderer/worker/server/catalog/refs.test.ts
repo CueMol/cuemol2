@@ -12,7 +12,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 /** Two objects named 1crn (uids 10, 30), one with renderers, and one 2abc. */
 vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => {
-  const node = (id: number, name: string, type: string, children: unknown[] = []) => ({ id, name, type, children })
+  const node = (id: number, name: string, type: string, children: unknown[] = [], className = '') => ({ id, name, type, children, className })
   return {
     getSceneTree: (_ctx: unknown, args: { sceneId: number }) => ({
       ok: true,
@@ -23,13 +23,22 @@ vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => {
                 node(10, '1crn', 'object', [node(11, 'cartoon1', 'renderer'), node(12, 'grp', 'rendGroup')]),
                 node(20, '2abc', 'object'),
               ]
-            : [node(10, '1crn', 'object'), node(30, '1crn', 'object')],
+            : args.sceneId === 3
+              ? [
+                  node(40, '1crn', 'object', [
+                    node(41, '', 'renderer', [], '*selection'),
+                    node(42, '', 'renderer', [], '*namelabel'),
+                    node(43, 'simple1', 'renderer', [], 'simple'),
+                    node(44, 'simple1', 'renderer', [], 'simple'),
+                  ], 'MolCoord'),
+                ]
+              : [node(10, '1crn', 'object'), node(30, '1crn', 'object')],
       },
     }),
   }
 })
 
-import { resolvePropPath, resolveRef } from './refs'
+import { recordedPath, resolvePropPath, resolveRef, sceneNodes } from './refs'
 
 const ctx = {} as WorkerContext
 
@@ -54,6 +63,19 @@ describe('resolvePropPath', () => {
     expect(!res.ok && res.error).toContain('#10, #30')
     expect(resolveRef(ctx, 2, '1crn', 'object').ok).toBe(false)
     expect(resolveRef(ctx, 2, '#30', 'object')).toMatchObject({ ok: true, node: { id: 30 } })
+  })
+})
+
+describe('recordedPath', () => {
+  it('tells shared names apart by type, then uid, and the path finds its node again', () => {
+    const nodes = sceneNodes(ctx, 3)
+    const paths = [40, 41, 42, 43, 44].map((id) => recordedPath(nodes, id))
+    expect(paths).toEqual(['1crn', '1crn/@*selection', '1crn/@*namelabel', '1crn/simple1@simple#43', '1crn/simple1@simple#44'])
+    paths.forEach((p, i) => expect(resolveRef(ctx, 3, p as string, 'node')).toMatchObject({ ok: true, node: { id: 40 + i } }))
+    expect(resolvePropPath(ctx, 3, '1crn/@*namelabel.visible')).toMatchObject({ ok: true, nodeId: 42, prop: 'visible' })
+    // In another session the uid names none of them: still found when the rest is unique, refused when not.
+    expect(resolveRef(ctx, 3, '1crn/@*selection#99', 'node')).toMatchObject({ ok: true, node: { id: 41 } })
+    expect(resolveRef(ctx, 3, '1crn/simple1@simple#99', 'node').ok).toBe(false)
   })
 })
 

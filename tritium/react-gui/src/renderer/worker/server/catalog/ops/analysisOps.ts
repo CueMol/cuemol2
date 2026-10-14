@@ -17,7 +17,7 @@ import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
 import { outputPath } from '../outputFile'
-import { boolean, integer, objectId, optional, path, real, selection } from '../params'
+import { boolean, integer, objectId, optional, path, real, selection, string } from '../params'
 
 /** The dialog's own starting values, so both routes measure the same thing. */
 const MIN_CONTACT_DIST = 0
@@ -43,6 +43,15 @@ export const analyzeInteractionsOp = defineOp({
           'reported -- which is what "interactions" usually means.',
       ),
     ),
+    minDist: optional(real(`Shortest contact to report, in angstroms. Null uses ${MIN_CONTACT_DIST}.`)),
+    maxLabels: optional(integer(`Most contacts to draw. Null uses ${MAX_LABELS}.`)),
+    labelSet: optional(string(`Name of the label renderer to draw into. Null uses "${MEASURE_LABEL_SET}".`)),
+    obj2Id: optional(
+      objectId('Uid of a second MolCoord object: report only contacts between the two. Null stays within objId.', 'MolCoord'),
+    ),
+    selection2: optional(
+      selection('Report only contacts between selection and this selection (in obj2Id when given). Null pairs selection with anything.'),
+    ),
   },
   mutates: true,
   describe: (a, n) => `Find contacts around ${a.selection} in ${n('objId')}`,
@@ -53,14 +62,16 @@ export const analyzeInteractionsOp = defineOp({
       sceneId: oc.sceneId,
       objId: args.objId,
       selStr: args.selection,
-      useMol2: false,
-      useSel2: false,
-      minDist: MIN_CONTACT_DIST,
+      useMol2: args.obj2Id !== null,
+      ...(args.obj2Id !== null ? { objId2: args.obj2Id } : {}),
+      useSel2: args.selection2 !== null,
+      selStr2: args.selection2 ?? '',
+      minDist: args.minDist ?? MIN_CONTACT_DIST,
       maxDist: args.maxDist ?? DEFAULT_MAX_CONTACT_DIST,
-      maxLabels: MAX_LABELS,
+      maxLabels: args.maxLabels ?? MAX_LABELS,
       // C++ `hbond` skips carbon (hydrogen is skipped either way).
       hbondOnly: !(args.includeCarbon ?? false),
-      rendName: MEASURE_LABEL_SET,
+      rendName: args.labelSet ?? MEASURE_LABEL_SET,
     })
     return normalizeServiceResult(
       result,

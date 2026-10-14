@@ -58,7 +58,7 @@ function makeCtx(scene: ReturnType<typeof makeScene> | null, newMol?: unknown) {
     return {
         sceMgr: {
             getView: vi.fn((id: number) => (id === 1 ? view : null)),
-            getScene: vi.fn(),
+            getScene: vi.fn((id: number) => (scene && id === scene.uid ? scene : null)),
         },
         svc: {
             createObj: vi.fn((name: string) => (name === 'MolCoord' ? newMol : null)),
@@ -130,7 +130,7 @@ describe('createSymmMol', () => {
     function makeHappyPath() {
         const scene = makeScene(100)
         const srcMol = { __src: true }
-        const matrix = { __matrix: true }
+        const matrix = { getAt: vi.fn(() => 0) }
         const rend = { getXformMatrix: vi.fn(() => matrix) }
         scene.getObject = vi.fn((id: number) => (id === 5 ? srcMol : null))
         scene.getRenderer = vi.fn((id: number) => (id === 10 ? rend : null))

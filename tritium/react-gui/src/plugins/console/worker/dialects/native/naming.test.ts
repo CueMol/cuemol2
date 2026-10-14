@@ -24,7 +24,7 @@ const VERBS = new Set([
   'apply', 'load', 'save', 'export', 'fetch', 'calc', 'recalc', 'show', 'hide',
   // Verbs of their own, which overlap none of the above.
   'superpose', 'measure', 'merge', 'cut', 'rotate', 'pan', 'focus', 'center', 'recenter',
-  'analyze', 'render', 'animate', 'renumber', 'define', 'count', 'capture', 'open', 'close',
+  'analyze', 'render', 'animate', 'renumber', 'define', 'count', 'capture', 'convert', 'paste', 'reload', 'open', 'close',
   'switch', 'run', 'log', 'undo', 'redo', 'help', 'quit', 'exit',
 ])
 

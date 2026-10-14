@@ -11,7 +11,8 @@ import type { OpContext } from '../op'
 
 const { loaded, reader } = vi.hoisted(() => ({ loaded: [] as FormatOptions[], reader: { name: 'mtzmap' } }))
 
-vi.mock('../fileLoad', () => ({
+vi.mock('../fileLoad', async (importOriginal) => ({
+  LOAD_RENDERER_PARAMS: (await importOriginal<typeof import('../fileLoad')>()).LOAD_RENDERER_PARAMS,
   openTarget: (_ctx: unknown, raw: string) => ({ scene: false, filePath: raw, readerName: reader.name, contentFirst: false }),
   formatOf: (name: string) => (name === 'mtzmap' ? 'mtz' : 'pdb'),
   loadObjectFile: (_c: unknown, _o: unknown, _t: unknown, _a: unknown, adjust: (f: FormatOptions) => FormatOptions) => {
@@ -26,7 +27,7 @@ vi.mock('../fileLoad', () => ({
 import { loadMtz } from './loadFormatOps'
 
 const oc = {} as OpContext
-const ARGS = { path: '/w/a.mtz', rendererType: null, selection: null, name: null, columnF: 'FWT', columnPhi: 'PHWT', columnWeight: null, resolutionLimit: null, gridSpacing: null }
+const ARGS = { path: '/w/a.mtz', rendererType: null, selection: null, name: null, columnF: 'FWT', columnPhi: 'PHWT', columnWeight: null, resolutionLimit: null, gridSpacing: null, rendererName: null, preset: null, centerView: null, mapCenterPolicy: null }
 
 describe('load_mtz', () => {
   it('writes the given options over the defaults, turns on the column it names, and refuses another format', async () => {

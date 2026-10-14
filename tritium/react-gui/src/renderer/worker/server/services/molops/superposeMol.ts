@@ -101,16 +101,14 @@ export function superposeMol(
     // superposition is rolled back (UXP `rollbackUndoTxn` on failure).
     try {
         withUndoTxn(scene, 'Mol superpose', () => {
-            // A transform kept in xformMat has no op.
-            if (!args.useprop) {
-                recordOp(ctx, scene.uid, 'superpose', {
-                    movId: args.movObjId,
-                    refId: args.refObjId,
-                    movSel: args.movSel,
-                    refSel: args.refSel,
-                    algo: args.algo,
-                }, ['movId', 'refId']);
-            }
+            recordOp(ctx, scene.uid, 'superpose', {
+                movId: args.movObjId,
+                refId: args.refObjId,
+                movSel: args.movSel,
+                refSel: args.refSel,
+                algo: args.algo,
+                keepAsProperty: args.useprop,
+            }, ['movId', 'refId']);
             if (args.algo === 'SSM') {
                 mgr.superposeSSM1(ref, rsel, mov, msel, args.useprop);
             } else {

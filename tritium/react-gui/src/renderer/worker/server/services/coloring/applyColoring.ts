@@ -46,7 +46,7 @@ import {
 } from './multiGrad';
 import { buildPresetNodes } from '@renderer/worker/shared/multiGradPresets';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
-import { getPaintColoringStyles } from './panelList';
+import { coloringStyleNames } from './panelList';
 import type {
     SetRendererColoringArgs,
     SetRendererColoringResult,
@@ -199,13 +199,14 @@ const OP_COLORING_MODES: ReadonlySet<string> = new Set([
     'paint-type-bfac',
     'paint-type-solid',
     'paint-type-resetdef',
+    'paint-type-paint',
+    'paint-type-multigrad',
 ]);
 
 /**
  * Record the op that applies the same coloring to a renderer or an object.
- * The gray CPK variants, the default paint table and multigrad have no op,
- * and neither has a style list_coloring_styles does not offer. Styles and
- * the potential coloring are for renderers only.
+ * A gray CPK variant is CPK with its carbon colour set. Styles and the
+ * potential coloring are for renderers only.
  */
 function recordColoringChoice(ctx: WorkerContext, sceneId: number, args: SetRendererColoringArgs): void {
     const id: string = args.coloringId;
@@ -214,10 +215,15 @@ function recordColoringChoice(ctx: WorkerContext, sceneId: number, args: SetRend
         recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: id, styleName: null }, ['nodeId']);
         return;
     }
+    if (id === 'paint-type-cpk-darkgray' || id === 'paint-type-cpk-lightgray') {
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: 'paint-type-cpk', styleName: null }, ['nodeId']);
+        recordOp(ctx, sceneId, 'set_coloring_prop', { ...target, prop: 'col_C', value: CPK_CARBON_COLORS[id] }, ['nodeId']);
+        return;
+    }
     if (args.targetKind === 'object') return;
     if (id.startsWith('style-')) {
         const styleName = id.substring('style-'.length);
-        if (!getPaintColoringStyles(ctx, { sceneId }).entries.some((e) => e.name === styleName)) return;
+        if (!coloringStyleNames(ctx, sceneId).includes(styleName)) return;
         recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: 'style', styleName }, ['nodeId']);
     } else if (id === 'paint-type-elepot') {
         // set_elepot_coloring with no map or range switches the mode alone.
@@ -275,6 +281,7 @@ export function setRendererColoring(
             withUndoTxn(scene, 'Change coloring', () => {
                 const coloring = createDefPaintColoring(ctx, scene.uid);
                 if (!coloring) return;
+                recordColoringChoice(ctx, scene.uid, args);
                 forceMoleculeColormode(scene, rend);
                 (rend as unknown as MolRenderer).coloring = coloring;
             });
@@ -343,6 +350,8 @@ export function setRendererColoring(
             // paint everything black.
             if (!isMultiGradCapable(rend)) return { ok: false };
             withUndoTxn(scene, 'Change to multi gradient coloring', () => {
+                // The map and the seeded gradient are picked again on a replay, by the same rule.
+                recordColoringChoice(ctx, scene.uid, args);
                 const r = rend as unknown as {
                     color_mapname: string;
                     colormode: string;

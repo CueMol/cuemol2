@@ -36,7 +36,7 @@ import { asOneOp, insideOp, noteEntry, txnBegin, txnEnd, txnOpen } from '@render
 import type { ActionSource } from '@renderer/worker/server/actions/actionLog'
 import type { AnyOp, OpContext, OpOutcome } from './op'
 import type { ParamMap } from './params'
-import { nodePath, sceneNodes } from './refs'
+import { recordedPath, sceneNodes } from './refs'
 
 const log = console
 
@@ -75,11 +75,8 @@ function refPaths(op: AnyOp, ctx: WorkerContext, args: Record<string, unknown>, 
   }
   const out: Record<string, string> = {}
   for (const name of wanted) {
-    const node = nodes.find((n) => n.id === args[name])
-    if (!node) continue
-    // A name another node shares would not find this one again.
-    const path = nodePath(node)
-    if (nodes.filter((n) => nodePath(n) === path).length === 1) out[name] = path
+    const path = recordedPath(nodes, args[name] as number)
+    if (path !== null) out[name] = path
   }
   return out
 }

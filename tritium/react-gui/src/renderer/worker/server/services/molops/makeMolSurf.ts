@@ -121,16 +121,14 @@ export function makeMolSurf(
     // let the error propagate out of `withUndoTxn` rather than swallowing it.
     try {
         withUndoTxn(scene, 'Create mol surface', () => {
-            // create_surface has no backend choice; a forced one is not recorded.
-            if (!args.backend || args.backend === 'auto') {
-                recordOp(ctx, scene.uid, 'create_surface', {
-                    objId: args.objId,
-                    selection: args.selStr.trim() !== '' ? args.selStr : null,
-                    name: surfName,
-                    probeRadius,
-                    density,
-                }, ['objId']);
-            }
+            recordOp(ctx, scene.uid, 'create_surface', {
+                objId: args.objId,
+                selection: args.selStr.trim() !== '' ? args.selStr : null,
+                name: surfName,
+                probeRadius,
+                density,
+                backend: args.backend && args.backend !== 'auto' ? args.backend : null,
+            }, ['objId']);
             const surf = ctx.svc.createObj('MolSurfObj') as MolSurfObj;
             // `sesbackend` is an enum property: the generated wrapper types it
             // as number, but the C++ layer takes/returns the string id.

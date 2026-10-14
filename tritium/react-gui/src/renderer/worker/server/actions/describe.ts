@@ -67,7 +67,11 @@ export function describeEntry(entry: ActionEntry): string {
 /** One undo step as a line: its first op (and how many more), else its label. */
 export function describeRow(row: ActionRow): string {
   const ops = row.entries.filter((e) => e.kind === 'op')
-  if (ops.length === 0) return row.label
+  if (ops.length === 0) {
+    // An op too large to keep says so.
+    const dropped = row.entries.find((e) => e.kind === 'note' && e.dropped)
+    return dropped ? clip(`${row.label}: ${describeEntry(dropped)}`) : row.label
+  }
   const first = describeEntry(ops[0])
   return ops.length === 1 ? first : `${first} (+${ops.length - 1} more)`
 }

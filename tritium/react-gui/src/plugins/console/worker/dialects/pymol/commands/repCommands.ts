@@ -22,9 +22,9 @@
  * rewrote their selection would be worse than one that does nothing.
  */
 
-import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
+import { applyRendererStyleList } from '@renderer/worker/server/services/rend/rendererStyle'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
@@ -175,13 +175,7 @@ function createOwned(
     return { ok: false, error: `Error: could not create ${rep} on "${obj.name}"` }
   }
   const style = REP_STYLES[rep]
-  if (style) {
-    const rend = getSceneOrNull(ctx, cc.sceneId)?.getRenderer(created.newRendId) as
-      | { applyStyles(style: string): void }
-      | null
-      | undefined
-    rend?.applyStyles(style)
-  }
+  if (style) applyRendererStyleList(ctx, { sceneId: cc.sceneId, rendId: created.newRendId, styleNames: style.split(',') })
   applyRememberedSettings(ctx, cc.sceneId, rep, created.newRendId)
   return { ok: true, rendId: created.newRendId }
 }

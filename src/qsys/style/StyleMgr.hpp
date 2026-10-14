@@ -302,6 +302,11 @@ namespace qsys {
     void clearPendingEvents();
     void firePendingEvents();
 
+    /// Queue a style-update event of the scope (setname ">color" for colours)
+    void addPendingEvent(qlib::uid_t nScopeID, const LString &setname) {
+      m_pendEvts.insert(PendEventSet::value_type(nScopeID, setname));
+    }
+
     //////////
     // Initializer/finalizer
 

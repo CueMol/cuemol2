@@ -25,7 +25,10 @@ import { exportActionSteps } from '@renderer/worker/server/services/actions/acti
 import { parseQax } from '@renderer/worker/server/actions/qax/codec'
 import { applyRendererStyleList } from '@renderer/worker/server/services/rend/rendererStyle'
 import { removePaintEntries } from '@renderer/worker/server/services/coloring/paintClipboard'
-import { recordOp } from '@renderer/worker/server/actions/serviceOps'
+import { reorderSceneNode } from '@renderer/worker/server/services/sceneTree/reorderSceneNode'
+import { MAX_RECORDED_ARGS_BYTES, recordOp } from '@renderer/worker/server/actions/serviceOps'
+import { describeRow } from '@renderer/worker/server/actions/describe'
+import { stepsToMacro } from '@renderer/worker/server/actions/macro'
 import { withUndoTxn, undoTxnResult } from '@renderer/worker/server/services/withUndoTxn'
 import { invokeOp, runInTxn } from '@renderer/worker/server/catalog/opRuntime'
 import type { AnyOp } from '@renderer/worker/server/catalog/op'
@@ -224,11 +227,21 @@ describe('serviceOps', () => {
       ops.recordRenameNode(ctx, scene.uid, 'scene', scene.uid, 'x')
       ops.recordCreateRenderer(ctx, scene.uid, mol.uid, choice, { rendId: rend.uid, groupName: 'g' })
       ops.recordChangeRendererType(ctx, scene.uid, rend.uid, 'ribbon')
-      ops.recordLoadFile(ctx, scene.uid, '/tmp/1crn.pdb', { ...choice, objectName: '1crn' })
+      ops.recordCreateRenderer(ctx, scene.uid, mol.uid, { ...choice, presetName: 'Default1RendPreset' }, { rendId: rend.uid })
+      // The File Open dialog's MTZ options, as the MTZ load op takes them.
+      ops.recordLoadFile(ctx, scene.uid, '/tmp/1crn.mtz', {
+        format: { kind: 'mtz', options: { columnF: 'FWT', columnPhi: 'PHWT', phaseEnabled: false, columnW: 'FOM', weightEnabled: true, resolutionLimit: 2, gridSpacing: 0.5 } },
+        renderer: { ...choice, objectName: '1crn', centerView: false, mapCenterPolicy: 'setMapCenter' },
+      })
+      // The shapes clipboard/paste.ts and cameraVisFlags.ts record.
+      ops.recordOp(ctx, scene.uid, 'paste_node', { kind: 'renderer', form: 'single', xml: '<renderer/>', target: mol.uid, targetType: 'object' }, ['target'])
+      ops.recordOp(ctx, scene.uid, 'set_camera_visibility', { name: 'c1', entries: 'on 1crn; off 1crn/cartoon1' })
+      // navi/atomLabels.ts (PyMOL label): a null format takes the labels off.
+      ops.recordOp(ctx, scene.uid, 'set_atom_labels', { objId: mol.uid, selection: 'resi 1', format: null, rendererName: 'pym:labels' }, ['objId'])
     })
 
     const entries = rowsOf(scene)[0].entries
-    expect(entries).toHaveLength(10)
+    expect(entries).toHaveLength(14)
     for (const e of entries) {
       if (e.kind !== 'op') throw new Error(`not an op: ${e.text}`)
       const op = findOp(e.op)
@@ -239,6 +252,41 @@ describe('serviceOps', () => {
       expect(typeof readToolArgs(op!, e.args), `${e.op}: ${String(readToolArgs(op!, e.args))}`).toBe('object')
     }
     expect(entries[2]).toMatchObject({ op: 'reset_prop', args: { path: '1crn/cartoon1.width' } })
+    expect(entries[9]).toMatchObject({ op: 'create_preset_renderer', args: { preset: 'Default1RendPreset', name: 'simple1' } })
+    expect(entries[10]).toMatchObject({
+      op: 'load_mtz',
+      args: { columnPhi: '', columnWeight: 'FOM', resolutionLimit: 2, centerView: false, mapCenterPolicy: 'setMapCenter' },
+    })
+  })
+
+  it('records the Interaction analysis dialog with its own settings, as arguments its op reads back', async () => {
+    const { findOp } = await import('@renderer/worker/server/catalog')
+    const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
+    const { analyzeInteractions } = await import('@renderer/worker/server/services/molops/analyzeInteractions')
+    const scene = stackScene()
+    const mol = fakeObject({ name: '1crn', scene })
+    const mol2 = fakeObject({ name: '2abc', scene })
+    scene.addObject(mol)
+    scene.addObject(mol2)
+    const labels = Object.assign(fakeRenderer({ type: 'atomintr', name: 'measure' }), { appendById: () => scene.touch() })
+    mol.attachRenderer(labels)
+    const { ctx } = makeWorkerCtx({
+      scenes: [scene],
+      createObj: () => ({ compile: () => true }),
+      getService: () => ({ calcAtomContact3JSON: () => '[[1, 2]]' }),
+    })
+
+    // The dialog's defaults (2.5 to 4 A, 30 labels), against a second object.
+    const res = analyzeInteractions(ctx, {
+      sceneId: scene.uid, objId: mol.uid, selStr: 'ligand', useMol2: true, objId2: mol2.uid, useSel2: false,
+      minDist: 2.5, maxDist: 4, maxLabels: 30, hbondOnly: true, rendName: 'measure',
+    })
+    expect(res.ok).toBe(true)
+    const [entry] = rowsOf(scene)[0].entries
+    if (entry.kind !== 'op') throw new Error('not an op')
+    expect(entry).toMatchObject({ op: 'analyze_interactions', refs: { objId: '1crn', obj2Id: '2abc' } })
+    const read = readToolArgs(findOp('analyze_interactions')!, entry.args)
+    expect(read).toMatchObject({ minDist: 2.5, maxLabels: 30, obj2Id: mol2.uid, selection2: '' })
   })
 
   it('records the Edit Style dialog as the whole style list its op takes', async () => {
@@ -293,6 +341,26 @@ describe('serviceOps', () => {
     expect(typeof readToolArgs(findOp('remove_paint')!, (entries[0] as { args: Record<string, unknown> }).args)).toBe('object')
   })
 
+  it('records a drag in the scene tree by the places the node went, so a cut-out step means the same in a longer list', async () => {
+    const { findOp } = await import('@renderer/worker/server/catalog')
+    const { readToolArgs } = await import('@renderer/worker/server/catalog/toolSchema')
+    const scene = stackScene()
+    const mols = ['a', 'b', 'c'].map((name, i) => {
+      const mol = fakeObject({ name, scene, ui_order: i })
+      mol.sets.ui_order.mockImplementation(() => scene.touch())
+      scene.addObject(mol)
+      return mol
+    })
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+
+    // Drop c before a: two places up.
+    reorderSceneNode(ctx as never, { kind: 'object', sceneId: scene.uid, sourceId: mols[2].uid, targetId: mols[0].uid, ori: -1 })
+
+    const [entry] = rowsOf(scene)[0].entries
+    expect(entry).toMatchObject({ op: 'move_node', args: { nodeId: mols[2].uid, nodeType: 'object', by: -2, to: null, end: null }, refs: { nodeId: 'c' } })
+    expect(typeof readToolArgs(findOp('move_node')!, (entry as { args: Record<string, unknown> }).args)).toBe('object')
+  })
+
   it('words each undo step from its ops, and falls back to the undo description', () => {
     const scene = stackScene()
     const { ctx } = makeWorkerCtx({ scenes: [scene] })
@@ -320,6 +388,16 @@ describe('serviceOps', () => {
     undo(ctx, { sceneId: scene.uid })
     expect(changed).toEqual([scene.uid])
     expect(rowsOf(scene).map((r) => r.undone)).toEqual([true])
+  })
+
+  it('keeps a note, not the op, when its arguments are over the size limit, and no macro takes it', () => {
+    const scene = stackScene()
+    const { ctx } = makeWorkerCtx({ scenes: [scene] })
+    editWith(scene, ctx, 'Paste object', [['paste_node', { xml: 'x'.repeat(MAX_RECORDED_ARGS_BYTES) }]])
+    const [row] = rowsOf(scene)
+    expect(row.entries).toEqual([expect.objectContaining({ kind: 'note', dropped: expect.objectContaining({ op: 'paste_node' }) })])
+    expect(describeRow(row)).toContain('not recorded: paste_node')
+    expect(stepsToMacro([row], { name: 'm', classOf: () => 'MolCoord' })).toEqual({ ok: false, error: expect.stringContaining('was not recorded') })
   })
 
   it('writes the steps named by id to a qax file, and refuses a step that is gone', () => {

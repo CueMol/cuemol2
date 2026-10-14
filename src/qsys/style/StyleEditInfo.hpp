@@ -14,9 +14,14 @@
 #include <qsys/Scene.hpp>
 
 #include <qlib/SmartPtr.hpp>
+#include <gfx/gfx.hpp>
 
 //#include <qlib/ObjectManager.hpp>
 //#include <qlib/NestedPropHandler.hpp>
+
+namespace qlib {
+  class LDom2Node;
+}
 
 namespace qsys {
 
@@ -93,6 +98,81 @@ namespace qsys {
 
   };
 
+
+  ///
+  /// Edit info for StyleSet read-only flag change
+  ///
+  class StyleReadOnlyEditInfo : public EditInfo
+  {
+  private:
+    StyleSetPtr m_pTgt;
+
+    bool m_bAfter;
+
+  public:
+
+    StyleReadOnlyEditInfo();
+    ~StyleReadOnlyEditInfo() override;
+
+    void setup(StyleSetPtr pTgt, bool bAfter);
+
+    /// perform undo
+    bool undo() override;
+
+    /// perform redo
+    bool redo() override;
+
+    bool isUndoable() const override;
+
+    bool isRedoable() const override;
+
+  };
+
+  ///
+  /// Edit info for one entry of a StyleSet: a colour, a string data, or a
+  /// style node (removal only)
+  ///
+  class StyleEntryEditInfo : public EditInfo
+  {
+  public:
+    enum Kind { COLOR, STRING, STYLE };
+
+  private:
+    StyleSetPtr m_pTgt;
+    int m_nKind;
+    LString m_key;
+
+    // value before / after the edit; m_bHas* false means no entry
+    bool m_bHasBefore, m_bHasAfter;
+    gfx::ColorPtr m_colBefore, m_colAfter;
+    LString m_strBefore, m_strAfter;
+
+    /// removed style node, owned here while it is out of the set
+    qlib::LDom2Node *m_pNode;
+
+    void apply(bool bHas, const gfx::ColorPtr &col, const LString &str);
+
+  public:
+    StyleEntryEditInfo();
+    ~StyleEntryEditInfo() override;
+
+    void setupColor(StyleSetPtr pTgt, const LString &key,
+                    bool bHasBefore, const gfx::ColorPtr &before,
+                    bool bHasAfter, const gfx::ColorPtr &after);
+
+    /// key is the full string data key (StyleSet::makeStrDataKey)
+    void setupString(StyleSetPtr pTgt, const LString &key,
+                     bool bHasBefore, const LString &before,
+                     bool bHasAfter, const LString &after);
+
+    /// takes the ownership of pNode, already detached from the set
+    void setupStyleRemove(StyleSetPtr pTgt, const LString &key, qlib::LDom2Node *pNode);
+
+    bool undo() override;
+    bool redo() override;
+    bool isUndoable() const override;
+    bool isRedoable() const override;
+  };
 
   //////////
   
