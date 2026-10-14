@@ -8,7 +8,8 @@ import { deleteNode as deleteNodeService, renameNode as renameNodeService } from
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { NO_NODE } from '../errors'
 import { defineOp } from '../op'
-import { boolean, enumOf, nodeId, string } from '../params'
+import { boolean, enumOf, nodeId, optional, string } from '../params'
+import { pasteNode } from '@renderer/worker/server/services/clipboard/paste'
 import { MOVE_DEST_PARAMS, moveText } from '../moveDest'
 import { moveNodeTo } from '@renderer/worker/server/services/sceneTree/reorderSceneNode'
 import { columns, wrapList } from '../consoleFormat'
@@ -164,4 +165,35 @@ export const moveNode = defineOp({
   },
 })
 
-export const SCENE_OPS = [getSceneState, setVisible, deleteNode, renameNode, moveNode]
+export const pasteNodeOp = defineOp({
+  name: 'paste_node',
+  description:
+    'Add an object, renderer, style set or camera from its CueMol XML (what Copy puts on the ' +
+    'clipboard), renamed when its name is taken. A renderer goes onto the target object or group.',
+  params: {
+    kind: enumOf(['object', 'renderer', 'style', 'camera'], 'What the XML holds.'),
+    form: enumOf(['single', 'rendArray'], 'single: one node; rendArray: a renderer group with its renderers.'),
+    xml: string('The XML.'),
+    target: optional(nodeId('For a renderer: the object or renderer group to add it to.', 'targetType')),
+    targetType: optional(enumOf(['object', 'rendGroup'], 'What target refers to.')),
+  },
+  mutates: true,
+  describe: (a, n) => `Paste ${a.kind}${a.target === null ? '' : ` into ${n('target')}`}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'nodes',
+  format: () => [],
+  run(ctx, args, oc) {
+    if (args.kind === 'renderer' && args.target === null) return { ok: false, error: 'A renderer needs a target object or group.' }
+    const onGroup = args.targetType === 'rendGroup'
+    const res = pasteNode(ctx, {
+      sceneId: oc.sceneId,
+      kind: args.kind,
+      form: args.form,
+      bytes: new TextEncoder().encode(args.xml),
+      ...(args.target === null ? {} : onGroup ? { targetGroupId: args.target } : { targetObjId: args.target }),
+    })
+    return res.ok ? { ok: true, data: { name: res.newName } } : { ok: false, error: `The ${args.kind} could not be pasted. Check the XML and the target.` }
+  },
+})
+
+export const SCENE_OPS = [getSceneState, setVisible, deleteNode, renameNode, moveNode, pasteNodeOp]

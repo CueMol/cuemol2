@@ -242,6 +242,7 @@ export function clearCameraVisFlags(
 
     let ok = false;
     withUndoTxn(scene, `Clear visibility flags in ${args.name}`, () => {
+        recordOp(ctx, scene.uid, 'clear_camera_visibility', { name: args.name });
         cam.clearVisSettings();
         ok = true;
     });

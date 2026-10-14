@@ -13,6 +13,13 @@
  *   after its file (`1ox1.pdb`), so a dot cannot tell the two apart;
  * - `cartoon1` -- a renderer of that name, when only one object has one.
  *
+ * Where a name is shared, a path can be told apart by the node's type and,
+ * failing that, its uid: `1crn/@*selection` (an unnamed selection renderer),
+ * `1crn/cartoon1@cartoon`, `1crn@MolCoord`, `1crn/@*namelabel#45`. The type
+ * is only read when no node has the whole text as its name. The uid picks
+ * among the nodes the rest names, and is ignored when it is none of them, so
+ * the path still finds its node in another session where uids differ.
+ *
  * and a property from the node followed by `.` and the property name:
  * `1crn/cartoon1.width`, `1crn.visible`, or a bare `bgcolor` for the scene's
  * own.
@@ -34,6 +41,8 @@ export interface SceneNodeEntry {
   id: number
   name: string
   type: 'object' | 'renderer' | 'rendGroup'
+  /** The object's class or the renderer's type (`MolCoord`, `cartoon`, `*selection`). */
+  typeName?: string
   /** For a renderer: the object it hangs from. */
   objName?: string
 }
@@ -61,14 +70,68 @@ export function objectNodes(ctx: WorkerContext, sceneId: number): SceneTreeNode[
 /** Every object, renderer and renderer group in the scene. */
 export function sceneNodes(ctx: WorkerContext, sceneId: number): SceneNodeEntry[] {
   return objectNodes(ctx, sceneId).flatMap((obj) => [
-    { id: obj.id, name: obj.name, type: 'object' as const },
-    ...rendererNodesOf(obj).map((n) => ({ id: n.id, name: n.name, type: n.type as 'renderer' | 'rendGroup', objName: obj.name })),
+    { id: obj.id, name: obj.name, type: 'object' as const, typeName: obj.className },
+    ...rendererNodesOf(obj).map((n) => ({
+      id: n.id,
+      name: n.name,
+      type: n.type as 'renderer' | 'rendGroup',
+      typeName: n.className,
+      objName: obj.name,
+    })),
   ])
 }
 
 /** How a node is written back: `obj` or `obj/rend`. */
 export function nodePath(n: SceneNodeEntry): string {
   return n.type === 'object' ? n.name : `${n.objName ?? ''}/${n.name}`
+}
+
+/** `nodePath` with the node's type: `obj@MolCoord`, `obj/@*selection`. */
+function typedPath(n: SceneNodeEntry): string {
+  return `${nodePath(n)}@${n.typeName ?? ''}`
+}
+
+/**
+ * The path that finds node `id` again (module comment): its plain path when
+ * no other node shares it, else with its type, else with its uid too.
+ * Null only when there is no such node.
+ */
+export function recordedPath(nodes: SceneNodeEntry[], id: number): string | null {
+  const node = nodes.find((n) => n.id === id)
+  if (!node) return null
+  const plain = nodePath(node)
+  if (nodes.filter((n) => nodePath(n) === plain).length === 1) return plain
+  if (!node.typeName) return `${plain}#${id}`
+  const typed = typedPath(node)
+  return nodes.filter((n) => typedPath(n) === typed).length === 1 ? typed : `${typed}#${id}`
+}
+
+/** The nodes `text` names by name, or by `name@type` when none has the whole text as its name. */
+function named(text: string, candidates: SceneNodeEntry[]): SceneNodeEntry[] {
+  const exact = candidates.filter((n) => n.name === text)
+  const at = text.lastIndexOf('@')
+  if (exact.length > 0 || at < 0) return exact
+  const name = text.slice(0, at)
+  const typeName = text.slice(at + 1)
+  return candidates.filter((n) => n.name === name && n.typeName === typeName)
+}
+
+/** Split a trailing `#uid` off a path (`obj/rend#45`); a bare `#45` is a uid on its own. */
+function uidHint(text: string): { rest: string; uid: number | null } {
+  const m = /^(.+)#(\d+)$/.exec(text)
+  return m ? { rest: m[1], uid: Number(m[2]) } : { rest: text, uid: null }
+}
+
+/** The one of `hits` the uid hint picks, or all of them when it picks none. */
+function byHint(hits: SceneNodeEntry[], uid: number | null): SceneNodeEntry[] {
+  const hit = uid === null ? undefined : hits.find((n) => n.id === uid)
+  return hit ? [hit] : hits
+}
+
+/** The objects a path names (`1crn`, `1crn@MolCoord`, `1crn#42`). */
+function objectsNamed(nodes: SceneNodeEntry[], text: string): SceneNodeEntry[] {
+  const { rest, uid } = uidHint(text)
+  return byHint(named(rest, nodes.filter((n) => n.type === 'object')), uid)
 }
 
 /** The resolved node, or why the text does not name one. */
@@ -83,7 +146,7 @@ function accepts(kind: RefKind, n: SceneNodeEntry): boolean {
 function one(text: string, hits: SceneNodeEntry[]): RefResult {
   if (hits.length === 1) return { ok: true, node: hits[0] }
   if (hits.length === 0) return { ok: false, error: `nothing named "${text}" in the scene` }
-  const which = hits.map((h) => `#${h.id} (${nodePath(h)})`).join(', ')
+  const which = hits.map((h) => `#${h.id} (${typedPath(h)})`).join(', ')
   return { ok: false, error: `"${text}" names more than one node: ${which}; give the uid instead` }
 }
 
@@ -141,21 +204,20 @@ function findRef(ctx: WorkerContext, sceneId: number, text: string, kind: RefKin
     return hit ? { ok: true, node: hit } : { ok: false, error: `no ${kind === 'node' ? 'node' : kind} with uid ${id}` }
   }
 
-  const slash = want.indexOf('/')
+  const { rest, uid: hint } = uidHint(want)
+  const slash = rest.indexOf('/')
   if (slash >= 0) {
-    const objName = want.slice(0, slash)
-    const rendName = want.slice(slash + 1)
-    return one(
-      want,
-      nodes.filter((n) => n.type !== 'object' && n.objName === objName && n.name === rendName && accepts(kind, n)),
-    )
+    const objName = rest.slice(0, slash)
+    const rendName = rest.slice(slash + 1)
+    const rends = nodes.filter((n) => n.type !== 'object' && n.objName === objName && accepts(kind, n))
+    return one(want, byHint(named(rendName, rends), hint))
   }
 
-  const objects = nodes.filter((n) => n.type === 'object' && n.name === want && accepts(kind, n))
+  const objects = objectsNamed(nodes, want).filter((n) => accepts(kind, n))
   // An object is the likelier meaning of a bare name; a renderer is only
   // looked for when no object answers.
   if (objects.length > 0) return one(want, objects)
-  return one(want, nodes.filter((n) => n.type !== 'object' && n.name === want && accepts(kind, n)))
+  return one(want, byHint(named(rest, nodes.filter((n) => n.type !== 'object' && accepts(kind, n))), hint))
 }
 
 /** The first segment of a property path that names the caller's view. */
@@ -211,7 +273,7 @@ export function resolvePropPath(
   const segs = want.split('.')
   for (let i = 1; i < segs.length; i++) {
     const objName = segs.slice(0, i).join('.')
-    const objs = nodes.filter((n) => n.type === 'object' && n.name === objName)
+    const objs = objectsNamed(nodes, objName)
     if (objs.length === 0) continue
     if (objs.length > 1) {
       const which = objs.map((o) => `#${o.id}`).join(', ')

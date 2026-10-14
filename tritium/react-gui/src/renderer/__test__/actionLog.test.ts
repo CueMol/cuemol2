@@ -233,10 +233,13 @@ describe('serviceOps', () => {
         format: { kind: 'mtz', options: { columnF: 'FWT', columnPhi: 'PHWT', phaseEnabled: false, columnW: 'FOM', weightEnabled: true, resolutionLimit: 2, gridSpacing: 0.5 } },
         renderer: { ...choice, objectName: '1crn', centerView: false, mapCenterPolicy: 'setMapCenter' },
       })
+      // The shapes clipboard/paste.ts and cameraVisFlags.ts record.
+      ops.recordOp(ctx, scene.uid, 'paste_node', { kind: 'renderer', form: 'single', xml: '<renderer/>', target: mol.uid, targetType: 'object' }, ['target'])
+      ops.recordOp(ctx, scene.uid, 'set_camera_visibility', { name: 'c1', entries: 'on 1crn; off 1crn/cartoon1' })
     })
 
     const entries = rowsOf(scene)[0].entries
-    expect(entries).toHaveLength(11)
+    expect(entries).toHaveLength(13)
     for (const e of entries) {
       if (e.kind !== 'op') throw new Error(`not an op: ${e.text}`)
       const op = findOp(e.op)
@@ -388,10 +391,10 @@ describe('serviceOps', () => {
   it('keeps a note, not the op, when its arguments are over the size limit, and no macro takes it', () => {
     const scene = stackScene()
     const { ctx } = makeWorkerCtx({ scenes: [scene] })
-    editWith(scene, ctx, 'Paste object', [['paste_object', { xml: 'x'.repeat(MAX_RECORDED_ARGS_BYTES) }]])
+    editWith(scene, ctx, 'Paste object', [['paste_node', { xml: 'x'.repeat(MAX_RECORDED_ARGS_BYTES) }]])
     const [row] = rowsOf(scene)
-    expect(row.entries).toEqual([expect.objectContaining({ kind: 'note', dropped: expect.objectContaining({ op: 'paste_object' }) })])
-    expect(describeRow(row)).toContain('not recorded: paste_object')
+    expect(row.entries).toEqual([expect.objectContaining({ kind: 'note', dropped: expect.objectContaining({ op: 'paste_node' }) })])
+    expect(describeRow(row)).toContain('not recorded: paste_node')
     expect(stepsToMacro([row], { name: 'm', classOf: () => 'MolCoord' })).toEqual({ ok: false, error: expect.stringContaining('was not recorded') })
   })
 

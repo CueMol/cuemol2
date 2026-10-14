@@ -22,6 +22,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 function getCameraRef(scene: Scene, name: string): Camera | null {
     return (safeRead(() => scene.getCameraRef(name) as Camera | null)) ?? null;
@@ -68,26 +69,23 @@ export function loadCameraFromFile(
     const wanted = safeRead(() => cam!.name) ?? 'camera';
     const finalName = uniqueCameraName(scene, wanted);
 
+    // One undo step for the load and its visibility flags, so the History
+    // has one row that replays both.
     let ok = false;
     withUndoTxn(scene, `Load camera file ${finalName}`, () => {
+        recordOp(ctx, scene.uid, 'load_camera_file', { path: args.path });
         scene.setCamera(finalName, cam);
         ok = true;
+        // UXP loadCamImpl applies the loaded camera to the active view + loads
+        // vis settings. We replicate the apply-to-view; vis flags apply only
+        // when present (mirrors aVisflags=true branch).
+        try { scene.loadViewFromCam(args.viewId, finalName); } catch { /* ignore */ }
+        try {
+            const fresh = getCameraRef(scene, finalName);
+            if (fresh && fresh.vis_size > 0) fresh.loadVisSettings(scene);
+        } catch { /* ignore vis-flag apply errors */ }
     });
     if (!ok) return empty;
-
-    // UXP loadCamImpl applies the loaded camera to the active view + loads
-    // vis settings. We replicate the apply-to-view; vis flags apply only
-    // when present (mirrors aVisflags=true branch).
-    try { scene.loadViewFromCam(args.viewId, finalName); } catch { /* ignore */ }
-    try {
-        const fresh = getCameraRef(scene, finalName);
-        if (fresh && fresh.vis_size > 0) {
-            withUndoTxn(scene, `Load camera ${finalName} settings`, () => {
-                fresh.loadVisSettings(scene);
-            });
-        }
-    } catch { /* ignore vis-flag apply errors */ }
-
     return { ok: true, name: finalName };
 }
 
@@ -116,6 +114,7 @@ export function saveCameraToFile(
     // UXP wraps Save As in an undo txn because saveCameraTo updates
     // `Camera.src` as a side-effect. Match that.
     withUndoTxn(scene, "Change camera's source", () => {
+        recordOp(ctx, scene.uid, 'save_camera_file', { name: args.name, path: args.path });
         ok = scene.saveCameraTo(args.name, args.path);
     });
     return { ok };
@@ -148,6 +147,7 @@ export function saveCameraToCurrentSrc(
 
     let ok = false;
     withUndoTxn(scene, 'Save camera file', () => {
+        recordOp(ctx, scene.uid, 'save_camera_file', { name: args.name, path: null });
         ok = scene.saveCameraTo(args.name, src);
     });
     return { ok, saved: ok };
@@ -185,6 +185,7 @@ export function reloadCameraFromSrc(
 
     let ok = false;
     withUndoTxn(scene, `Reload camera file ${args.name}`, () => {
+        recordOp(ctx, scene.uid, 'reload_camera', { name: args.name });
         scene.setCamera(args.name, newcam);
         ok = true;
     });

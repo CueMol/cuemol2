@@ -17,6 +17,8 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { isValidUid } from '@renderer/worker/shared/uid';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { styleSetNameOf } from './styleSetEdit';
 
 interface StyleManagerLike {
     loadStyleSetFromFile(scopeId: number, path: string, readOnly: boolean): number;
@@ -56,6 +58,7 @@ export function loadStyleSetFromFile(
 
     let newId = -1;
     withUndoTxn(scene, 'Load style file', () => {
+        recordOp(ctx, scene.uid, 'load_style_file', { path: args.path });
         // UXP `onStyLoadFile` always passes bReadOnly=true for the
         // file-load entry point -- external styles arrive read-only by
         // default. The user can toggle off later via the ctxmenu item.
@@ -91,10 +94,12 @@ export function saveStyleSetToFile(
     const mgr = getStyleMgr(ctx);
     if (!mgr) return { ok: false };
 
+    const name = styleSetNameOf(ctx, scene.uid, args.styleSetId);
     let ok = false;
     // UXP wraps the Save As call in a "Change style's source" undo txn
     // because `saveStyleSetToFile` updates `StyleSet.src` as a side-effect.
     withUndoTxn(scene, "Change style's source", () => {
+        if (name !== null) recordOp(ctx, scene.uid, 'save_style_file', { styleSet: name, path: args.path });
         ok = mgr.saveStyleSetToFile(args.scopeId, args.styleSetId, args.path);
     });
     return { ok };
@@ -135,8 +140,10 @@ export function saveStyleSetToCurrentSrc(
         return { ok: true, saved: false };
     }
 
+    const name = styleSetNameOf(ctx, scene.uid, args.styleSetId);
     let ok = false;
     withUndoTxn(scene, 'Save style file', () => {
+        if (name !== null) recordOp(ctx, scene.uid, 'save_style_file', { styleSet: name, path: null });
         ok = mgr.saveStyleSetToFile(args.scopeId, args.styleSetId, src);
     });
     return { ok, saved: ok };

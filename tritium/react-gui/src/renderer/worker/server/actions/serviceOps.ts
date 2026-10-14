@@ -19,7 +19,7 @@
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { SceneNodeEntry } from '@renderer/worker/server/catalog/refs'
-import { nodePath, sceneNodes } from '@renderer/worker/server/catalog/refs'
+import { recordedPath, sceneNodes } from '@renderer/worker/server/catalog/refs'
 import type { FileOpenOptions, FormatOptions } from '@renderer/worker/shared/fileOpenTypes'
 import { insideOp, noteEntry, txnOpen } from './actionLog'
 
@@ -39,12 +39,9 @@ function nodesOf(ctx: WorkerContext, sceneId: number): SceneNodeEntry[] {
   }
 }
 
-/** The unique path of a node, or null when it has none (missing, or a shared name). */
-function uniquePath(nodes: SceneNodeEntry[], id: number): string | null {
-  const node = nodes.find((n) => n.id === id)
-  if (!node) return null
-  const path = nodePath(node)
-  return nodes.filter((n) => nodePath(n) === path).length === 1 ? path : null
+/** A node's path as a recorded op names it (`recordedPath`), or null when there is no such node. */
+export function recordedNodePath(ctx: WorkerContext, sceneId: number, id: number): string | null {
+  return recordedPath(nodesOf(ctx, sceneId), id)
 }
 
 /**
@@ -88,7 +85,7 @@ export function recordOp(
     for (const name of refParams) {
       const id = args[name]
       if (typeof id !== 'number') continue
-      const path = uniquePath(nodes, id)
+      const path = recordedPath(nodes, id)
       if (path !== null) refs[name] = path
     }
   }
@@ -104,7 +101,7 @@ function valueText(value: unknown): string {
 function propPathOf(ctx: WorkerContext, sceneId: number, nodeType: PropNodeType, nodeId: number, prop: string): string {
   if (nodeType === 'scene') return prop
   if (nodeType === 'view') return `view.${prop}`
-  const path = uniquePath(nodesOf(ctx, sceneId), nodeId)
+  const path = recordedPath(nodesOf(ctx, sceneId), nodeId)
   return `${path ?? `#${nodeId}`}.${prop}`
 }
 

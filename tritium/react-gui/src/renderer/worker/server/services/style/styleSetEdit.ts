@@ -2,8 +2,9 @@
 //
 // style-set editor (UXP `style/style_editor.xul`). Style-set-scoped
 // CRUD for the three editor tabs: named colors, named selections (MolSel defs,
-// the "sel" str-data category), and style entries. Edits are live-applied (one
-// undo step each) like the ColorPane decks; the dialog refetches after each.
+// the "sel" str-data category), and style entries. Edits are live-applied like
+// the ColorPane decks; the dialog refetches after each. An edit of a scene's
+// set is one undo step; a system or user set has no scene, so it is none.
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
@@ -176,9 +177,12 @@ export interface StyleSetEditResult {
 export function setStyleSetColor(ctx: WorkerContext, args: SetStyleSetColorArgs): StyleSetEditResult {
     const name = args.name.trim();
     if (name.length === 0) return { ok: false };
+    const styleSet = recordedSetName(ctx, args.sceneId, args.styleSetId);
     const ok = mutate(ctx, args.sceneId, args.styleSetId, `Set style color ${name}`, (set, mgr) => {
         const col = mgr.compileColor(args.colorStr, args.scopeId);
-        if (col) set.setColor(name, col);
+        if (!col) return;
+        if (styleSet !== undefined) recordOp(ctx, args.sceneId, 'define_color', { name, color: args.colorStr.trim(), styleSet });
+        set.setColor(name, col);
     });
     return { ok };
 }
@@ -190,7 +194,9 @@ export interface RemoveStyleSetKeyArgs {
 }
 
 export function removeStyleSetColor(ctx: WorkerContext, args: RemoveStyleSetKeyArgs): StyleSetEditResult {
+    const styleSet = styleSetNameOf(ctx, args.sceneId, args.styleSetId);
     const ok = mutate(ctx, args.sceneId, args.styleSetId, `Remove style color ${args.name}`, (set) => {
+        if (styleSet !== null) recordOp(ctx, args.sceneId, 'remove_color', { styleSet, name: args.name });
         set.removeColor(args.name);
     });
     return { ok };
@@ -239,10 +245,33 @@ export function styleSetByName(ctx: WorkerContext, sceneId: number, name: string
     return pick.length === 1 ? (pick[0].uid as number) : null;
 }
 
-/** The name `styleSetByName` finds this set by, or null when the name does not lead back to it. */
-function styleSetNameOf(ctx: WorkerContext, sceneId: number, styleSetId: number): string | null {
-    const name = styleSetsOf(ctx, sceneId).find((e) => e.uid === styleSetId)?.name;
+/** The uid and scope (0 global, else the scene's uid) of the set `styleSetByName` finds. */
+export function styleSetScopeByName(ctx: WorkerContext, sceneId: number, name: string): { styleSetId: number; scopeId: number } | null {
+    const styleSetId = styleSetByName(ctx, sceneId, name);
+    if (styleSetId === null) return null;
+    const scopeId = styleSetsOf(ctx, sceneId).find((e) => e.uid === styleSetId)?.scene_id;
+    return typeof scopeId === 'number' ? { styleSetId, scopeId } : null;
+}
+
+/**
+ * The name a recorded op names this set by: null when it is not the scene's
+ * own set (a system or user set is not scene state, so its edits are not
+ * recorded) or the name does not lead back to it.
+ */
+export function styleSetNameOf(ctx: WorkerContext, sceneId: number, styleSetId: number): string | null {
+    const entry = styleSetsOf(ctx, sceneId).find((e) => e.uid === styleSetId);
+    const name = entry !== undefined && entry.scene_id === sceneId ? entry.name : undefined;
     return name !== undefined && styleSetByName(ctx, sceneId, name) === styleSetId ? name : null;
+}
+
+/**
+ * How `define_color` / `define_selection` name a set: null for the scene's
+ * own writable set (their default), its name otherwise, undefined when the
+ * name does not lead back to it (nothing is recorded).
+ */
+function recordedSetName(ctx: WorkerContext, sceneId: number, styleSetId: number): string | null | undefined {
+    if (isDefineSelectionSet(ctx, sceneId, styleSetId)) return null;
+    return styleSetNameOf(ctx, sceneId, styleSetId) ?? undefined;
 }
 
 export function setStyleSetSelection(
@@ -273,14 +302,18 @@ export function removeStyleSetSelection(
     ctx: WorkerContext,
     args: RemoveStyleSetKeyArgs,
 ): StyleSetEditResult {
+    const styleSet = styleSetNameOf(ctx, args.sceneId, args.styleSetId);
     const ok = mutate(ctx, args.sceneId, args.styleSetId, `Remove style selection ${args.name}`, (set) => {
+        if (styleSet !== null) recordOp(ctx, args.sceneId, 'remove_selection', { styleSet, name: args.name });
         set.removeStrData(SEL_CAT, args.name);
     });
     return { ok };
 }
 
 export function removeStyleSetStyle(ctx: WorkerContext, args: RemoveStyleSetKeyArgs): StyleSetEditResult {
+    const styleSet = styleSetNameOf(ctx, args.sceneId, args.styleSetId);
     const ok = mutate(ctx, args.sceneId, args.styleSetId, `Remove style entry ${args.name}`, (set) => {
+        if (styleSet !== null) recordOp(ctx, args.sceneId, 'remove_style', { styleSet, name: args.name });
         set.removeStyle(args.name);
     });
     return { ok };

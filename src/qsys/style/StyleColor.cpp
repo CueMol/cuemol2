@@ -81,7 +81,7 @@ bool StyleMgr::setColor(const LString &key,
     return false;
   }
 
-  bool res = pTgtSet->setColor(key, color);
+  bool res = pTgtSet->setColorScr(key, color);
 
   // set to the pending event list
   m_pendEvts.insert(PendEventSet::value_type(nScopeID, ">color"));
@@ -99,7 +99,7 @@ bool StyleMgr::removeColor(const LString &key, qlib::uid_t nScopeID, qlib::uid_t
     return false;
   }
 
-  bool res = pTgtSet->removeColor(key);
+  bool res = pTgtSet->removeColorScr(key);
 
   // set to the pending event list
   m_pendEvts.insert(PendEventSet::value_type(nScopeID, ">color"));

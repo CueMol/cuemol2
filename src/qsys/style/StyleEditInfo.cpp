@@ -13,6 +13,9 @@
 #include "StyleSet.hpp"
 #include "StyleMgr.hpp"
 
+#include <qlib/LDOM2Tree.hpp>
+#include <gfx/AbstractColor.hpp>
+
 using namespace qsys;
 
 StyleCreateEditInfo::StyleCreateEditInfo()
@@ -142,6 +145,155 @@ bool StyleSrcEditInfo::isUndoable() const
 bool StyleSrcEditInfo::isRedoable() const
 {
   // TO DO: check actually redoable
+  return true;
+}
+
+//////////////////////////////////////////////////
+
+StyleReadOnlyEditInfo::StyleReadOnlyEditInfo() : m_bAfter(false)
+{
+}
+
+StyleReadOnlyEditInfo::~StyleReadOnlyEditInfo()
+{
+}
+
+void StyleReadOnlyEditInfo::setup(StyleSetPtr pTgt, bool bAfter)
+{
+  m_pTgt = pTgt;
+  m_bAfter = bAfter;
+}
+
+bool StyleReadOnlyEditInfo::isUndoable() const
+{
+  return !m_pTgt.isnull();
+}
+
+bool StyleReadOnlyEditInfo::isRedoable() const
+{
+  return !m_pTgt.isnull();
+}
+
+StyleEntryEditInfo::StyleEntryEditInfo()
+     : m_nKind(COLOR), m_bHasBefore(false), m_bHasAfter(false), m_pNode(NULL)
+{
+}
+
+StyleEntryEditInfo::~StyleEntryEditInfo()
+{
+  if (m_pNode!=NULL)
+    delete m_pNode;
+}
+
+void StyleEntryEditInfo::setupColor(StyleSetPtr pTgt, const LString &key,
+                                    bool bHasBefore, const gfx::ColorPtr &before,
+                                    bool bHasAfter, const gfx::ColorPtr &after)
+{
+  m_pTgt = pTgt;
+  m_nKind = COLOR;
+  m_key = key;
+  m_bHasBefore = bHasBefore;
+  m_colBefore = before;
+  m_bHasAfter = bHasAfter;
+  m_colAfter = after;
+}
+
+void StyleEntryEditInfo::setupString(StyleSetPtr pTgt, const LString &key,
+                                     bool bHasBefore, const LString &before,
+                                     bool bHasAfter, const LString &after)
+{
+  m_pTgt = pTgt;
+  m_nKind = STRING;
+  m_key = key;
+  m_bHasBefore = bHasBefore;
+  m_strBefore = before;
+  m_bHasAfter = bHasAfter;
+  m_strAfter = after;
+}
+
+void StyleEntryEditInfo::setupStyleRemove(StyleSetPtr pTgt, const LString &key, qlib::LDom2Node *pNode)
+{
+  m_pTgt = pTgt;
+  m_nKind = STYLE;
+  m_key = key;
+  m_bHasBefore = true;
+  m_bHasAfter = false;
+  m_pNode = pNode;
+}
+
+void StyleEntryEditInfo::apply(bool bHas, const gfx::ColorPtr &col, const LString &str)
+{
+  LString setname;
+  if (m_nKind==COLOR) {
+    if (bHas)
+      m_pTgt->setColor(m_key, col);
+    else
+      m_pTgt->removeColor(m_key);
+    setname = ">color";
+  }
+  else if (m_nKind==STRING) {
+    if (bHas)
+      m_pTgt->setString(m_key, str);
+    else
+      m_pTgt->removeString(m_key);
+  }
+  else {
+    if (bHas) {
+      // the set owns the node again
+      if (m_pNode!=NULL && m_pTgt->putData(m_key, m_pNode))
+        m_pNode = NULL;
+    }
+    else if (m_pNode==NULL) {
+      m_pNode = m_pTgt->detachData(m_key);
+    }
+  }
+
+  StyleMgr *pSM = StyleMgr::getInstance();
+  pSM->addPendingEvent(m_pTgt->getContextID(), setname);
+  pSM->firePendingEvents();
+}
+
+bool StyleEntryEditInfo::undo()
+{
+  if (m_pTgt.isnull())
+    return false;
+  apply(m_bHasBefore, m_colBefore, m_strBefore);
+  return true;
+}
+
+bool StyleEntryEditInfo::redo()
+{
+  if (m_pTgt.isnull())
+    return false;
+  apply(m_bHasAfter, m_colAfter, m_strAfter);
+  return true;
+}
+
+bool StyleEntryEditInfo::isUndoable() const
+{
+  return !m_pTgt.isnull();
+}
+
+bool StyleEntryEditInfo::isRedoable() const
+{
+  return !m_pTgt.isnull();
+}
+
+//////////////////////////////////////////////////
+
+bool StyleReadOnlyEditInfo::undo()
+{
+  if (m_pTgt.isnull())
+    return false;
+  m_pTgt->setReadOnly(!m_bAfter);
+  return true;
+}
+
+bool StyleReadOnlyEditInfo::redo()
+{
+  if (m_pTgt.isnull())
+    return false;
+  m_pTgt->setReadOnly(m_bAfter);
   return true;
 }
 

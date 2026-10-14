@@ -117,6 +117,7 @@ export const OP_GROUPS = {
   edit: 'Undo and actions',
   renderers: 'Renderers',
   coloring: 'Colouring',
+  styles: 'Style sets',
   selections: 'Selections',
   viewing: 'View and cameras',
   properties: 'Properties',

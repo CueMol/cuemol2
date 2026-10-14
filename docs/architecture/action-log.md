@@ -84,7 +84,8 @@ undo / redo、`clearUndoData`、scene の読み込み (`clearAllData`) など、
     ので、その中で回した view は記録に残らない。
 - node 引数 (semantic が object / renderer / node) は、op を **実行する前に** path
   (`obj` / `obj/rend`) に直して控える。こうしておくと、delete / rename した後でも元の名前で書き出せる。
-  - 同じ path の node が他にもある場合は path を控えない (uid だけを持つ)。
+  - 同じ path の node が他にもある場合は、型名を足し (`1crn/@*selection`)、それでも重なれば uid も
+    足す (`1crn/simple1@simple#40`)。書き方と読み方は [op-catalog.md](op-catalog.md) の名前の解決。
 
 ### 2.2 GUI と PyMOL dialect: service が自分の op を記録する
 
@@ -132,7 +133,11 @@ helper)。
 | アニメーション (`anim/`) | `add_anim` / `remove_anim` / `move_anim` / `set_anim_time` / `set_anim_prop`。一覧に無い property (Inspector の generic tab) は `set_anim_generic_prop`、reset は `reset_anim_prop` (まとめての reset も)。要素は名前 (一意のとき) か 1 始まりの番号で指す (uid は再生で変わるので使わない) |
 | camera (`camera/`) | `save_camera` (名前は前後の空白を除いて保存する) / `delete_camera` / `rename_camera` / `move_camera`。visibility 付きの camera の適用は `apply_camera` |
 | 並べ替え (scene tree・paint の表・アニメーション・camera) | `move_node` / `move_paint` / `move_anim` / `move_camera` を、行き先を `by` (動いた段数) で記録する。番号 (`to`) で記録すると、長さの違う一覧で再生したときに別の位置に入るため。動かす要素の指し方 (paint の番号など) は再生先で別の要素を指し得るが、GUI の操作から意図は分からないので、切り出した action を利用者が直す前提にする |
-| style set の selection 定義 (`style/styleSetEdit.ts`) | `define_selection`。scene の既定の set 以外は `styleSet` (set の名前。scene の set を global より先に引く) |
+| 名前付き selection の定義 (MolSelPane の Define = `select/saveSelDef.ts`、Style Editor = `style/styleSetEdit.ts`) | `define_selection`。scene の最初の書き込める set (MolSelPane が書く先。無ければ `style_N` を作る) は `styleSet` を null にし、別の scene で再生しても同じ規則で書き込む。それ以外の set は名前で書く |
+| style set (`style/styleOps.ts`、`styleFile.ts`、scene tree の Styles) | `create_style_set` / `delete_style_set` / `set_style_readonly` (切り替えた後の値) / `load_style_file` / `save_style_file` (Save as。path 付き) |
+| Style Editor (`style/styleSetEdit.ts`) | `define_color` / `remove_color` / `remove_selection` / `remove_style`。scene の set だけ。C++ の `StyleSet` の色・文字列データ・style の削除は、script から呼ぶと set の scene の undo に載る (`StyleEntryEditInfo`)。read only の切り替え (`StyleReadOnlyEditInfo`) と style file の読み込みも同じ |
+| camera の visibility とファイル (`camera/cameraVisFlags.ts`、`cameraOps.ts`、`cameraFile.ts`) | `set_camera_visibility` (対象は uid でなく path で `"on 1crn; off 1crn/cartoon1"`) / `clear_camera_visibility` / `load_camera_file` (camera の追加と visibility の適用を 1 txn) / `save_camera_file` / `reload_camera` |
+| scene tree の貼り付け (`clipboard/paste.ts`) | `paste_node` (kind・form・XML の文字列・貼り付け先)。大きい object は 64 KB の上限を超えるので、note になる (下) |
 | ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | RCSB の標準の URL は `fetch_pdb` (名前と renderer の選択付き)、それ以外の URL は `fetch_url` (URL・reader・名前)。map は `fetch_map` (`source` が RCSB_CIF か EBI_MTZ) |
 | 計測ツールと結合の編集 (`navi/`) | `measure_geometry` / `add_bond` / `remove_bond`。2 つの object にまたがる計測は `measure_geometry` の `atomObjects` (2 つ目以降の原子の object)。selection どうしの計測 (PyMOL の `distance` など) は `measure_selections`。原子は `A.20.CA` (chain.resid.atom) の形で書く |
 | 原子名ラベル (`navi/naviTool.ts`、navigate tool のクリック) | `set_atom_label` (切り替えた後の on / off)。C++ の `NameLabelRenderer` のラベルの追加・削除・書式の変更は undo に載る |
@@ -157,9 +162,13 @@ console に出す (記録の漏れを見つけるため)。
 - PyMOL dialect のうち、service を通らずに C++ を直接変更するもの。例: `show sticks` の
   `applyStyles`、`label`、`set_view` の回転、`orient`、`center`、`frame`。そのコマンドの行には、
   service を通った部分の op だけが入る。
-- 対応する op が無いもの: camera の visibility flag と camera ファイルの
-  読み書き、style set の作成・削除・読み書きと色・style の編集、node の貼り付け、MD trajectory (mdtools plugin の service で、plugin から op を足す仕組みが無い)。全体の一覧と対応の順序は
-  [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
+- 対応する op が無いもの: MD trajectory (mdtools plugin の service で、plugin から op を足す仕組みが無い)。
+  残りの一覧は [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
+- **scene を変えない操作は記録しない** (意図して): style set / camera を元のファイルへ上書きする Save は、
+  scene の中が何も変わらず undo の行ができない。再生でファイルを黙って上書きしないためでもある。
+  別のファイルへの Save as は、set や camera の元のファイルが変わる (undo に載る) ので記録する。
+- **system / user の style set の編集は記録しない** (意図して): scene に属さない set なので、C++ は
+  undo に載せず、service も op を記録しない。
 - 記録しても再生で同じにならないもの: URL からの取得は、相手のファイルが変われば変わる。番号で指す要素 (paint の行など) は、再生先の一覧が違えば別の要素を指す。
 - **視点の変更は記録しない** (意図して): View / Camera の変化は C++ の undo の対象ではなく、History は
   undo の履歴だから。3D view のマウス操作、View pane、projection、camera の適用 (visibility なし)、
@@ -249,7 +258,7 @@ console に出す (記録の漏れを見つけるため)。
 | `string` / `enum` | text (XML エスケープ。quote の問題は起きない) |
 | `vec3` | text の `x y z` |
 | `atoms` | 子要素 `<atom>` の並び |
-| node (semantic が object / renderer / node) | 属性 `path` (記録時の `obj` / `obj/rend`) と `uid` (記録した session での uid)。マクロの中では `param` (引数の object) と、その下の renderer 名 `sub` でも書ける |
+| node (semantic が object / renderer / node) | 属性 `path` (記録時の `obj` / `obj/rend`。名前が重なれば型名や uid を足した形、§2.1) と `uid` (記録した session での uid)。マクロの中では `param` (引数の object) と、その下の renderer 名 `sub` でも書ける |
 | null | `<arg>` ごと書かない |
 
 - 書く順序は、catalog の param の宣言順。

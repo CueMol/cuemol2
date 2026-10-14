@@ -53,6 +53,13 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
 
 - **名前の解決** (`refs.ts`): session をまたいで一意な id は持たず、名前か `#uid` で引く。CueMol の
   名前は一意でないので、複数に一致する名前は失敗にして uid を求める (`names more than one node`)。
+  - 名前が重なる node は、型名と uid を足した path でも指せる: `1crn/@*selection` (名前の無い
+    selection renderer)、`1crn/cartoon1@cartoon`、`1crn@MolCoord`、`1crn/simple1@simple#40`。
+  - `@型名` は、その文字列全体を名前に持つ node が無いときだけ型名として読む。
+  - `#uid` は、名前と型名で絞った候補から 1 つを選ぶのに使う。候補の中に無い uid は無視する
+    (別の session では uid が変わるため)。それで 1 つに決まればその node、決まらなければ失敗。
+  - 記録 (action log・qax) はこの順で path を作る (`refs.ts` の `recordedPath`): 名前で一意なら
+    `obj/rend`、だめなら型名を足し、それでも重なれば uid も足す。
   CueMol に「分子」という概念は無く、原子を持つ object は class `MolCoord` (とその派生 `AnimMol` など)。
   param 名は `objId` に統一し (`molId` は使わない)、class の制約は `objectId(desc, 'MolCoord')` の
   `objClass` で表す。派生の判定は `refs.ts` の `isObjectOfClass` で、C++ の `getClassName` は自分の
@@ -231,7 +238,7 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
   | `show` / `hide` | 表示する / 隠す (この意味だけ。情報の表示には使わない) |
 
   固有の動詞 (`superpose`、`measure`、`merge`、`cut`、`rotate`、`pan`、`focus`、`center`、
-  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`quit` / `exit` など) は、
+  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`paste` (Copy した XML から足す)、`reload` (元のファイルから読み直す)、`quit` / `exit` など) は、
   上の動詞と意味が重ならないものに限って使う。`make` / `gen` / `new` (→ `create`)、
   `compute` / `regen` (→ `calc` / `recalc`)、`change` / `update` (→ `set`)、一覧の `get` (→ `list`) は使わない。
 - **目的語**: `scene`、`object`、`renderer`、`group`、`camera`、`view`、`prop(s)`、`selection`、
@@ -308,6 +315,22 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
 - camera: `rename_camera`、`move_camera name, by|to|end`、`save_camera` / `apply_camera` の `withVisibility`
   (表示・非表示も保存・適用。適用時は txn を commit する)
 - `animate` に `pause` を追加し、`timeMs` は seek のときだけ必要
+- camera の visibility とファイル: `set_camera_visibility name, entries` (`"on 1crn; off 1crn/cartoon1"`。
+  ここに無い node は camera が覚えない)、`clear_camera_visibility name`、`load_camera_file path`、
+  `save_camera_file name [, path]` (null は元のファイル)、`reload_camera name`
+- 貼り付け: `paste_node kind, form, xml, target, targetType` (scene tree の Paste。Copy した XML から
+  object / renderer / group / style set / camera を足す。名前は貼り付け先で重ならないように付け直す)
+
+### style set の op (`ops/styleOps.ts`。console と MCP、help の分類は `styles`)
+
+set は名前で指す。同じ名前があれば scene の set を global (system / user) の set より先に使う。
+
+- `create_style_set name`、`delete_style_set styleSet`、`set_style_readonly styleSet, readonly`
+  (変更済みの set は read only にできない)
+- `load_style_file path` (scene に read only の set として読む)、`save_style_file styleSet [, path]`
+  (null は元のファイルへ上書き)
+- Style Editor: `define_color name, color [, styleSet]` (null は scene の最初の書き込める set。無ければ
+  作る。`define_selection` と同じ)、`remove_color` / `remove_selection` / `remove_style styleSet, name`
 
 ### view property と reader のオプション
 

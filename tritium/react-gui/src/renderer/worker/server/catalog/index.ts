@@ -30,6 +30,7 @@ import { MAP_OPS } from './ops/mapOps'
 import { MOL_OPS } from './ops/molOps'
 import { MORE_OPS } from './ops/moreOps'
 import { RENDER_OPS } from './ops/renderOps'
+import { STYLE_OPS } from './ops/styleOps'
 import type { ToolsetId } from './toolsets'
 
 export type { AnyOp, Op, OpContext, OpImage, OpOutcome, OpAlias } from './op'
@@ -56,6 +57,7 @@ export const OPS: readonly AnyOp[] = [
   ...MEASURE_OPS,
   ...VIEW_OPS,
   ...CAMERA_OPS,
+  ...STYLE_OPS,
   ...MAP_OPS,
   ...MOL_OPS,
   ...MORE_OPS,

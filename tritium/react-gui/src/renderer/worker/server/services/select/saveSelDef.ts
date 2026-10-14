@@ -59,6 +59,23 @@ function findWritableSceneSet(styleMgr: StyleManager, sceneId: number): number |
     }
 }
 
+/**
+ * The scene's own writable style set, made (as `style<n>`) when it has none.
+ * Call inside an undo txn: making one is an edit.
+ *
+ * @returns its uid, or null when none could be made.
+ */
+export function ensureWritableSceneSet(ctx: WorkerContext, sceneId: number): number | null {
+    const found = findWritableSceneSet(ctx.styleMgr, sceneId);
+    if (found !== null) return found;
+    const { name } = proposeUniqName(ctx, { kind: 'styleSet', prefix: 'style', sceneId });
+    const setId = ctx.styleMgr.createStyleSet(name, sceneId);
+    // C++ returns qlib::invalid_uid (0) on failure, never a negative
+    // number -- the old `< 0` guard never fired and named selections
+    // were written into style-set id 0.
+    return isValidUid(setId) ? setId : null;
+}
+
 export function saveSelDef(ctx: WorkerContext, args: SaveSelDefArgs): SaveSelDefResult {
     const name = args.name.trim();
     const expr = args.expr.trim();
@@ -69,15 +86,8 @@ export function saveSelDef(ctx: WorkerContext, args: SaveSelDefArgs): SaveSelDef
 
     let ok = false;
     withUndoTxn(scene, 'Define named selection', () => {
-        let setId = findWritableSceneSet(styleMgr, args.sceneId);
-        if (setId === null) {
-            const { name } = proposeUniqName(ctx, { kind: 'styleSet', prefix: 'style', sceneId: args.sceneId });
-            setId = styleMgr.createStyleSet(name, args.sceneId);
-            // C++ returns qlib::invalid_uid (0) on failure, never a negative
-            // number -- the old `< 0` guard never fired and named selections
-            // were written into style-set id 0.
-            if (!isValidUid(setId)) return;
-        }
+        const setId = ensureWritableSceneSet(ctx, args.sceneId);
+        if (setId === null) return;
         ok = styleMgr.setStrData('sel', name, expr, args.sceneId, setId);
         if (ok) recordOp(ctx, scene.uid, 'define_selection', { name, selection: expr, styleSet: null });
     });

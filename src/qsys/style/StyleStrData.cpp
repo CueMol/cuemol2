@@ -107,7 +107,7 @@ bool StyleMgr::setStrData(const LString &cat, const LString &key,
     return false;
   }
 
-  bool res = pTgtSet->setString(ckey, value);
+  bool res = pTgtSet->setStrDataScr(cat, key, value);
 
   // set to the pending event list
   m_pendEvts.insert(PendEventSet::value_type(nScopeID, ""));
@@ -128,7 +128,7 @@ bool StyleMgr::removeStrData(const LString &cat, const LString &key,
     return false;
   }
 
-  bool res = pTgtSet->removeString(ckey);
+  bool res = pTgtSet->removeStrDataScr(cat, key);
 
   // set to the pending event list
   m_pendEvts.insert(PendEventSet::value_type(nScopeID, ""));

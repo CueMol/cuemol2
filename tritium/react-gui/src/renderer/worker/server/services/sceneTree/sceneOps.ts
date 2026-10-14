@@ -16,6 +16,7 @@ import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { SceneNodeType } from '@renderer/worker/shared/sceneTreeTypes';
 import { withUndoTxn } from '../withUndoTxn';
+import { destroyStyleSetIn } from '../style/styleOps';
 import { recordDeleteNode, recordOp, recordRenameNode } from '@renderer/worker/server/actions/serviceOps';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
@@ -176,11 +177,7 @@ export function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNode
             | { destroyStyleSet: (scopeId: number, styleSetId: number) => boolean }
             | null;
         if (!mgr) return { ok: false };
-        let ok = false;
-        withUndoTxn(scene, 'Destroy style', () => {
-            ok = mgr.destroyStyleSet(args.scopeId!, args.nodeId);
-        });
-        return { ok };
+        return destroyStyleSetIn(ctx, scene, mgr, args.scopeId, args.nodeId);
     }
 
     if (args.nodeType === 'rendGroup') {
