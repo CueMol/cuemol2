@@ -26,6 +26,15 @@
  *
  * Names are not unique in CueMol. A name that matches more than one node is
  * refused rather than guessed, with the uids to choose between.
+ *
+ * A name may instead be a pattern, `*` and `?` being wildcards, to name every
+ * node it matches (`resolveRefs`): `*` (every object), `1crn/*` (its
+ * renderers), `cartoon*` after a `*` and a slash (every object's renderers of
+ * that name). In a pattern an empty name before a type matches any name, so
+ * a `*` followed by `/@cartoon` is every cartoon renderer. Only names are patterns;
+ * the type after `@` is still matched exactly, since a type name may itself
+ * hold a `*` (`*selection`). A text one node answers exactly is never read as
+ * a pattern, so a node whose name holds a `*` stays reachable.
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -218,6 +227,140 @@ function findRef(ctx: WorkerContext, sceneId: number, text: string, kind: RefKin
   // looked for when no object answers.
   if (objects.length > 0) return one(want, objects)
   return one(want, byHint(named(rest, nodes.filter((n) => n.type !== 'object' && accepts(kind, n))), hint))
+}
+
+// --- Patterns ---
+
+/** Turn a name pattern into a matcher. `*` and `?` are wildcards; everything else matches itself. */
+export function globToRegExp(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^${escaped.replace(/\*/g, '.*').replace(/\?/g, '.')}$`)
+}
+
+const WILDCARD = /[*?]/
+
+/** One path segment split into its name and its `@type`, if it has one. */
+function splitType(seg: string): { name: string; typeName?: string } {
+  const at = seg.lastIndexOf('@')
+  return at < 0 ? { name: seg } : { name: seg.slice(0, at), typeName: seg.slice(at + 1) }
+}
+
+/**
+ * Whether a node path is a pattern: a wildcard in a name, not in a type
+ * (`1crn/@*selection` is a plain path).
+ */
+export function isWildcardRef(text: string): boolean {
+  const { rest } = uidHint(text.trim())
+  return rest.split('/').some((seg) => WILDCARD.test(splitType(seg).name))
+}
+
+/** The candidates a `name@type` segment matches as a pattern. An empty name matches any. */
+function globNamed(seg: string, candidates: SceneNodeEntry[]): SceneNodeEntry[] {
+  const { name, typeName } = splitType(seg)
+  const re = globToRegExp(name === '' && typeName !== undefined ? '*' : name)
+  return candidates.filter((n) => re.test(n.name) && (typeName === undefined || n.typeName === typeName))
+}
+
+/** The nodes a pattern names, or why it cannot name any. */
+export type RefsResult = { ok: true; nodes: SceneNodeEntry[] } | { ok: false; error: string }
+
+/** The nodes a pattern matches among `nodes`, read as `findRef` reads a path. */
+function matchPattern(nodes: SceneNodeEntry[], want: string, kind: RefKind): SceneNodeEntry[] {
+  const slash = want.indexOf('/')
+  if (slash >= 0) {
+    const objRe = globToRegExp(want.slice(0, slash))
+    const rends = nodes.filter((n) => n.type !== 'object' && objRe.test(n.objName ?? '') && accepts(kind, n))
+    return globNamed(want.slice(slash + 1), rends)
+  }
+  const objects = globNamed(want, nodes.filter((n) => n.type === 'object' && accepts(kind, n)))
+  if (objects.length > 0) return objects
+  return globNamed(want, nodes.filter((n) => n.type !== 'object' && accepts(kind, n)))
+}
+
+/**
+ * Every node a pattern (module comment) names, in scene order; none is not an
+ * error. Nodes the parameter cannot take -- of the wrong kind, or an object
+ * not of `objClass` -- are left out, so `*` means every one that applies.
+ */
+export function resolveRefs(
+  ctx: WorkerContext,
+  sceneId: number,
+  text: string,
+  kind: RefKind,
+  objClass?: string,
+): RefsResult {
+  const want = text.trim()
+  if (/#\d+$/.test(want)) return { ok: false, error: `"${want}": a pattern cannot carry a uid` }
+  const hits = matchPattern(sceneNodes(ctx, sceneId), want, kind)
+  if (objClass === undefined) return { ok: true, nodes: hits }
+  return { ok: true, nodes: hits.filter((n) => n.type !== 'object' || isObjectOfClass(ctx, sceneId, n.id, objClass)) }
+}
+
+/** One node a property-path pattern names, and the path that reaches its property. */
+export interface PropPathTarget {
+  node: SceneNodeEntry
+  /**
+   * The node's recorded path and the property (`1crn/cartoon1.width`), which
+   * is what an action log keeps; `#uid.prop` when that path would read back
+   * to another node (a dotted object name whose prefix names an object).
+   */
+  path: string
+  prop: string
+}
+
+/**
+ * The property paths a pattern in the node part of `text` stands for, or
+ * null when the node part is no pattern (`resolvePropPath` reads it then).
+ *
+ * The node part is read as `resolvePropPath` reads it: up to the first `.`
+ * after a `/`, else a dotted prefix naming objects. A pattern can match a dot
+ * (`*` against `1ox1.pdb`), so here the longest prefix that matches an object
+ * is taken (`*.pdb.visible`). A wildcard in the property part keeps its own
+ * meaning (`reset_prop 1crn.*`).
+ */
+export function expandPropPath(
+  ctx: WorkerContext,
+  sceneId: number,
+  text: string,
+): { ok: true; targets: PropPathTarget[] } | { ok: false; error: string } | null {
+  const want = text.trim()
+  const all = sceneNodes(ctx, sceneId)
+  const pathOf = (node: SceneNodeEntry, prop: string): string => {
+    const named = `${recordedPath(all, node.id)}.${prop}`
+    const back = resolvePropPath(ctx, sceneId, named)
+    return back.ok && back.nodeId === node.id ? named : `#${node.id}.${prop}`
+  }
+  const targets = (nodes: SceneNodeEntry[], prop: string) => ({
+    ok: true as const,
+    targets: nodes.map((node) => ({ node, path: pathOf(node, prop), prop })),
+  })
+
+  const slash = want.indexOf('/')
+  if (slash >= 0) {
+    const dot = want.indexOf('.', slash)
+    const nodePart = want.slice(0, dot)
+    if (dot < 0 || !isWildcardRef(nodePart) || resolveRef(ctx, sceneId, nodePart, 'node').ok) return null
+    const res = resolveRefs(ctx, sceneId, nodePart, 'node')
+    return res.ok ? targets(res.nodes, want.slice(dot + 1)) : res
+  }
+  if (want.startsWith('#')) return null
+
+  const nodes = all
+  const objects = nodes.filter((n) => n.type === 'object')
+  const segs = want.split('.')
+  // A prefix that names an object exactly is no pattern, as for a node.
+  for (let i = 1; i < segs.length; i++) {
+    if (objectsNamed(nodes, segs.slice(0, i).join('.')).length > 0) return null
+  }
+  let pattern = false
+  for (let i = segs.length - 1; i >= 1; i--) {
+    const prefix = segs.slice(0, i).join('.')
+    if (!WILDCARD.test(splitType(prefix).name)) continue
+    pattern = true
+    const hits = globNamed(prefix, objects)
+    if (hits.length > 0) return targets(hits, segs.slice(i).join('.'))
+  }
+  return pattern ? targets([], '') : null
 }
 
 /** The first segment of a property path that names the caller's view. */

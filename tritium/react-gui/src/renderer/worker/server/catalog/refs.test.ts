@@ -32,13 +32,15 @@ vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => {
                     node(44, 'simple1', 'renderer', [], 'simple'),
                   ], 'MolCoord'),
                 ]
-              : [node(10, '1crn', 'object'), node(30, '1crn', 'object')],
+              : args.sceneId === 4
+                ? [node(50, '1ox1.pdb', 'object')]
+                : [node(10, '1crn', 'object'), node(30, '1crn', 'object')],
       },
     }),
   }
 })
 
-import { recordedPath, resolvePropPath, resolveRef, sceneNodes } from './refs'
+import { expandPropPath, recordedPath, resolvePropPath, resolveRef, resolveRefs, sceneNodes } from './refs'
 
 const ctx = {} as WorkerContext
 
@@ -91,5 +93,38 @@ describe('resolveRef with an object class', () => {
     expect(resolveRef(classCtx, 1, '1crn', 'object', 'MolCoord')).toMatchObject({ ok: true, node: { id: 10 } })
     expect(resolveRef(classCtx, 1, '2abc', 'object', 'MolCoord')).toMatchObject({ ok: true, node: { id: 20 } })
     expect(resolveRef(classCtx, 1, '1crn', 'object', 'DensityMap')).toEqual({ ok: false, error: '"1crn" is not a DensityMap object' })
+  })
+})
+
+describe('a name pattern', () => {
+  const ids = (sceneId: number, text: string, kind: 'object' | 'renderer' | 'node' = 'node') => {
+    const res = resolveRefs(ctx, sceneId, text, kind)
+    return res.ok ? res.nodes.map((n) => n.id) : res.error
+  }
+
+  it('matches names, not types, and reads a path as a plain name does', () => {
+    // A bare pattern means objects; renderers only for a renderer parameter.
+    expect(ids(1, '*')).toEqual([10, 20])
+    expect(ids(1, '*', 'renderer')).toEqual([11, 12])
+    expect(ids(1, '*/c?rtoon*')).toEqual([11])
+    // The type is matched exactly (it may hold a `*`); an empty name then matches any.
+    expect(ids(3, '*/@*selection')).toEqual([41])
+    expect(ids(3, '1*/@simple')).toEqual([43, 44])
+    expect(ids(1, 'zz*')).toEqual([])
+    expect(typeof ids(1, '*#10')).toBe('string')
+  })
+
+  it('in a property path covers the node part only', () => {
+    const paths = (sceneId: number, text: string) => {
+      const res = expandPropPath(ctx, sceneId, text)
+      return res && (res.ok ? res.targets.map((t) => t.path) : res.error)
+    }
+    expect(paths(1, '*/cartoon1.width')).toEqual(['1crn/cartoon1.width'])
+    expect(paths(1, '*.coloring.col_C')).toEqual(['1crn.coloring.col_C', '2abc.coloring.col_C'])
+    // A pattern may match a dot: the longest prefix that names objects wins.
+    expect(paths(4, '*.pdb.visible')).toEqual(['1ox1.pdb.visible'])
+    // A wildcard in the property keeps its meaning, and a plain path is left to resolvePropPath.
+    expect(paths(1, '1crn.*')).toBeNull()
+    expect(paths(1, '1crn/cartoon1.width')).toBeNull()
   })
 })

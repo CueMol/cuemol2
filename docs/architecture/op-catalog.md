@@ -60,6 +60,17 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
     (別の session では uid が変わるため)。それで 1 つに決まればその node、決まらなければ失敗。
   - 記録 (action log・qax) はこの順で path を作る (`refs.ts` の `recordedPath`): 名前で一意なら
     `obj/rend`、だめなら型名を足し、それでも重なれば uid も足す。
+  - **パターン** (console だけ。`resolveRefs` / `expandPropPath`): 名前の部分に `*` (任意の文字列) と
+    `?` (任意の 1 文字) を書くと、一致する node 全部を指す。`*` (全 object)、`1crn/*`、`*/cartoon*`、
+    `*/@cartoon` (パターンの中では、型名の前の空の名前は任意の名前に一致する)。
+    - 照合するのは名前だけ。`@型名` は完全一致のまま (`*selection` のように型名に `*` が入るため)。
+      `#uid` はパターンと一緒に書けない。
+    - `/` の無いパターンは object を指し、一致する object が無く引数が renderer を取るときだけ renderer を探す
+      (名前と同じ規則)。引数が取れない node (kind 違い、`objClass` に当たらない object) は黙って除く。
+    - 1 つの node に完全に解決できる文字列はパターンとして読まない (`*` を含む名前の node も指せる)。
+    - property path ではノード部分だけがパターンになる。`/` があれば最初の `.` まで、無ければ object に
+      一致する最も長い dotted prefix (`*` は `.` にも一致するので、`*.pdb.visible` は `1ox1.pdb` の `visible`)。
+      property 部分の `*` は今までどおり (`reset_prop 1crn.*`)。
   CueMol に「分子」という概念は無く、原子を持つ object は class `MolCoord` (とその派生 `AnimMol` など)。
   param 名は `objId` に統一し (`molId` は使わない)、class の制約は `objectId(desc, 'MolCoord')` の
   `objClass` で表す。派生の判定は `refs.ts` の `isObjectOfClass` で、C++ の `getClassName` は自分の
@@ -186,6 +197,16 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   その主題のコマンドを、`help <command>` で書式と引数を出す。出力は Markdown
   ([console-help-markdown.md](console-help-markdown.md))。
 - 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
+- 引数にパターン (§2 名前の解決) を書くと、一致した node ごとに op を 1 回ずつ実行する
+  (`fromCatalog.ts` の `wildcardTarget`。node 引数は `#uid` に置き換えて、名前で書いたときと同じ
+  `readConsoleArgs` -> `invokeOp` を通す。property path は記録に uid が残らないよう `recordedPath` で
+  書いた path (`1crn/simple1.width`) に置き換える。読み直して別の node になるときだけ `#uid.prop`)。
+  - ある node で失敗したら `<path>: <error>` の warning を出して残りを続け、コマンドは成功扱い
+    (行の後続コマンドも script も止めない)。一致が 0 件なら warning だけ。
+  - 出力のある op は、node ごとに `<path>:` の見出しを付ける。
+  - パターンを書けるのは 1 コマンドに 1 引数だけ (2 つあれば直積になるので断る)。
+  - 対象は実行前に全部決める。途中で消えた node (group ごと消した子など) は、その回が失敗して warning になる。
+  - undo は submit 全体で 1 txn のまま。記録は node ごとの op になる ([action-log.md](action-log.md))。
 - **Tab 補完** (`completion/complete.ts`。候補の返し方と client 側のメニューは [console-completion.md](console-completion.md)):
   - 入力途中の行を実行時と同じ規則で読む (`scanArgs` の partial、`assignArgs`)。書きかけの括弧の中は 1 つの引数。
   - その位置に書けるものを全部出す: 次の位置の引数の値と、まだ書いていない引数の `name=` を、見出しを分けて一覧する。

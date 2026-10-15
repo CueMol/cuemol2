@@ -18,6 +18,7 @@ vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => ({
     tree: {
       children: [
         { id: 10, name: '1crn', type: 'object', children: [{ id: 11, name: 'cartoon1', type: 'renderer', children: [] }] },
+        { id: 20, name: '2abc', type: 'object', children: [] },
       ],
     },
   }),
@@ -27,7 +28,7 @@ vi.mock('@renderer/worker/server/services/select/validateSelection', () => ({
 }))
 
 import { defineOp } from '@renderer/worker/server/catalog/op'
-import { atoms, boolean, enumOf, nodeId, optional, selection } from '@renderer/worker/server/catalog/params'
+import { atoms, boolean, enumOf, nodeId, objectId, optional, selection } from '@renderer/worker/server/catalog/params'
 import { formatCommand } from '@renderer/worker/server/catalog/cmlFormat'
 import { catalogCommands } from './fromCatalog'
 import { CONSOLE_COMMAND_OPS } from '@renderer/worker/server/catalog'
@@ -62,6 +63,7 @@ const cc = {
   streamId: (tag: string) => tag,
   runScript: vi.fn(),
   openScene: vi.fn(),
+  stopped: () => false,
 } as unknown as CmdContext
 
 describe('a command generated from an op', () => {
@@ -86,6 +88,47 @@ describe('a command generated from an op', () => {
     run.mockClear()
     const cmd = catalogCommands([op]).find((c) => c.command.name === 'set_visible')!.command
     const res = await cmd.run({} as WorkerContext, { nodeId: '1crn', nodeType: '', visible: 'maybe', sel: '' }, cc)
+    expect(res.ok).toBe(false)
+    expect(run).not.toHaveBeenCalled()
+  })
+})
+
+describe('a name pattern', () => {
+  const cmd = catalogCommands([op]).find((c) => c.command.name === 'set_visible')!.command
+  const runWith = (bound: Record<string, string>) =>
+    cmd.run({} as WorkerContext, { nodeType: '', visible: 'false', sel: '', ...bound }, cc)
+
+  it('runs the op on every match and warns about one that fails without stopping', async () => {
+    run.mockClear()
+    vi.mocked(cc.warn).mockClear()
+    run.mockImplementationOnce(() => ({ ok: false, error: 'locked' }) as never)
+
+    expect(await runWith({ nodeId: '*' })).toEqual({ ok: true })
+    // Each run gets one node, with its kind filled in as for a typed name.
+    expect(run.mock.calls.map((c) => (c[1] as { nodeId: number; nodeType: string }))).toMatchObject([
+      { nodeId: 10, nodeType: 'object' },
+      { nodeId: 20, nodeType: 'object' },
+    ])
+    expect(cc.warn).toHaveBeenCalledWith('1crn: locked')
+  })
+
+  it('warns when nothing matches and refuses patterns in two arguments', async () => {
+    run.mockClear()
+    vi.mocked(cc.warn).mockClear()
+    expect(await runWith({ nodeId: 'zz*' })).toEqual({ ok: true })
+    expect(cc.warn).toHaveBeenCalledWith('nodeId: "zz*" matches nothing')
+    expect(run).not.toHaveBeenCalled()
+
+    const pair = defineOp({
+      name: 'superpose',
+      description: 'Fit.',
+      params: { movId: objectId('moving'), refId: objectId('reference') },
+      mutates: true,
+      group: 'nodes',
+      expose: { tool: false, console: true },
+      run,
+    })
+    const res = await catalogCommands([pair])[0].command.run({} as WorkerContext, { movId: '*', refId: '2*' }, cc)
     expect(res.ok).toBe(false)
     expect(run).not.toHaveBeenCalled()
   })

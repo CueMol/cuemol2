@@ -9,7 +9,7 @@
  * and paths without each command inventing its own rules.
  */
 
-import { objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/refs'
+import { globToRegExp, objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/refs'
 import { parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
@@ -20,11 +20,8 @@ import { selectionNames, translateSelection } from '../sel/translate'
 /** PyMOL's name for every object at once. */
 export const ALL = 'all'
 
-/** Turn a PyMOL name pattern into a matcher. `*` and `?` are wildcards. */
-export function globToRegExp(pattern: string): RegExp {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`^${escaped.replace(/\*/g, '.*').replace(/\?/g, '.')}$`)
-}
+/** PyMOL name patterns are the native console's: `*` and `?` are wildcards. */
+export { globToRegExp }
 
 /**
  * The objects in the scene whose names match `pattern`.
