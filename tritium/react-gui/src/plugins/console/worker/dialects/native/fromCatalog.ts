@@ -15,12 +15,15 @@
  */
 
 import { invokeOp } from '@renderer/worker/server/catalog'
-import type { AnyOp, OpOutcome, OpAlias } from '@renderer/worker/server/catalog'
+import type { AnyOp, OpOutcome, OpAlias, OpTable } from '@renderer/worker/server/catalog'
 import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/params'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { resolvePath } from '../../runtime/paths'
+import { readPathList, resolvePath, splitPathWords } from '../../runtime/paths'
+import type { PathWord } from '../../runtime/paths'
+import { SCENE_FILE_RE } from '@renderer/worker/server/catalog/fileLoad'
 import type { ArgCompletion, CmdContext, CmdOutcome, ConsoleCommand, ParamSpec } from '../../runtime/types'
 import { formatData } from './formatData'
+import { table } from '../../help/helpMarkdown'
 import { opContextOf } from '../../runtime/opContext'
 import { checkArg, parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
 import { expandPropPath, isWildcardRef, nodePath, resolveRef, resolveRefs } from '@renderer/worker/server/catalog/refs'
@@ -191,56 +194,147 @@ function readConsoleArgs(
   return out
 }
 
+/**
+ * Whether a parameter is the file a load opens. It takes a list of paths
+ * (`runtime/paths.ts`), patterns included, and the load runs once per file;
+ * a file to write takes one path, since writing several makes no sense.
+ */
+function opensFiles(op: AnyOp, name: string): boolean {
+  return name === 'path' && op.name.startsWith('load') && (op.params as ParamMap)[name]?.semantic === 'path'
+}
+
+/**
+ * The files a load's path list names: a lone path as the argument it
+ * replaces (escapes removed), or a fan over the files when there are several
+ * or a pattern. A scene file named by a pattern or among others is warned
+ * about and left out: a scene opens outside the undo transaction
+ * (`outsideTxn`), which only a lone path can ask for.
+ */
+function fileTargets(cc: CmdContext, param: string, text: string): { lone: string } | Fan {
+  const list = readPathList(cc.cwd, text)
+  for (const u of list.unmatched) cc.warn(`no matches found: ${u}`)
+  if (!list.glob && list.files.length === 1) return { lone: list.files[0] }
+  const files = list.files.filter((f) => {
+    if (!SCENE_FILE_RE.test(f)) return true
+    cc.warn(`${f}: a scene file opens on its own; load it by its name alone`)
+    return false
+  })
+  return { param, targets: files.map((f) => ({ text: f, label: f })) }
+}
+
 /** How a pattern's run names its node: by path, by type too when it has no name (`1crn/@*selection`). */
 function labelOf(n: SceneNodeEntry): string {
   return n.name === '' && n.typeName ? `${nodePath(n)}@${n.typeName}` : nodePath(n)
 }
 
-/** The nodes a pattern in one argument names: the command runs once for each. */
+/** The targets one argument names: the command runs once for each. */
 interface Fan {
   param: string
-  pattern: string
-  /** What the argument becomes for each run (`#12`, `#12.width`), and how that node is named in output. */
+  /** What the argument becomes for each run (`#12`, `#12.width`, a file), and how that run is named in output. */
   targets: { text: string; label: string }[]
 }
 
+type Target = Fan['targets'][number]
+
 /**
- * The argument holding a name pattern (`refs.ts`), with what it matches; null
- * when none does. A text one node answers exactly is not a pattern. Only one
- * argument may hold a pattern: two would mean every pair, which nobody wants
- * by accident.
+ * The nodes one word of a node or property-path list stands for when it is a
+ * pattern (`refs.ts`); null when it is a plain path, read as typed.
  */
-function wildcardTarget(
+function expandWord(ctx: WorkerContext, cc: CmdContext, p: Param<unknown>, w: PathWord): Target[] | null | string {
+  if (p.semantic === 'propPath') {
+    const ex = expandPropPath(ctx, cc.sceneId, w.pattern)
+    if (ex === null) return null
+    if (!ex.ok) return ex.error
+    return ex.targets.map((t) => ({ text: t.path, label: `${labelOf(t.node)}.${t.prop}` }))
+  }
+  const kind = p.semantic ? REF_KIND[p.semantic] : undefined
+  if (!kind || !isWildcardRef(w.pattern)) return null
+  const res = resolveRefs(ctx, cc.sceneId, w.pattern, kind, p.objClass)
+  if (!res.ok) return res.error
+  return res.nodes.map((n) => ({ text: `#${n.id}`, label: labelOf(n) }))
+}
+
+/**
+ * What a node or property-path argument names, read as a list of words
+ * (`runtime/paths.ts`): a lone plain path as the argument it replaces, or a
+ * fan over every node the words name, patterns expanded. A pattern that
+ * matches nothing is warned about.
+ */
+function refTargets(ctx: WorkerContext, cc: CmdContext, name: string, p: Param<unknown>, text: string): { lone: string } | Fan | string {
+  const words = splitPathWords(text)
+  if (words.length === 0) return { lone: '' }
+  const targets: Target[] = []
+  for (const w of words) {
+    const many = expandWord(ctx, cc, p, w)
+    if (typeof many === 'string') return `${name}: ${many}`
+    if (many === null) {
+      if (words.length === 1) return { lone: w.value }
+      targets.push({ text: w.value, label: w.value })
+      continue
+    }
+    if (many.length === 0) cc.warn(`no matches found: ${w.raw}`)
+    targets.push(...many)
+  }
+  return { param: name, targets }
+}
+
+/**
+ * The bound strings with every list argument read: a lone value in place of
+ * its text, and the one argument that names several targets, if any. Only
+ * one argument may: two would mean every pair, which nobody wants by
+ * accident.
+ *
+ * @param filesParam - the parameter holding the files a load opens, if any
+ */
+function readTargets(
   ctx: WorkerContext,
   cc: CmdContext,
   op: AnyOp,
   bound: Readonly<Record<string, string>>,
+  filesParam: string | null,
   alias?: OpAlias,
-): Fan | null | string {
+): { line: Record<string, string>; fan: Fan | null } | string {
   const fixed = alias?.fixed ?? {}
+  const line: Record<string, string> = { ...bound }
   const fans: Fan[] = []
   for (const [name, p] of Object.entries(op.params as ParamMap)) {
-    const text = unquote(bound[name] ?? '')
+    const text = (bound[name] ?? '').trim()
     if (name in fixed || text === '') continue
-    if (p.semantic === 'propPath') {
-      const ex = expandPropPath(ctx, cc.sceneId, text)
-      if (ex === null) continue
-      if (!ex.ok) return `${name}: ${ex.error}`
-      const targets = ex.targets.map((t) => ({ text: t.path, label: `${labelOf(t.node)}.${t.prop}` }))
-      fans.push({ param: name, pattern: text, targets })
-      continue
-    }
-    const kind = p.semantic ? REF_KIND[p.semantic] : undefined
-    if (!kind || !isWildcardRef(text) || resolveRef(ctx, cc.sceneId, text, kind, p.objClass).ok) continue
-    const res = resolveRefs(ctx, cc.sceneId, text, kind, p.objClass)
-    if (!res.ok) return `${name}: ${res.error}`
-    fans.push({ param: name, pattern: text, targets: res.nodes.map((n) => ({ text: `#${n.id}`, label: labelOf(n) })) })
+    const isRef = p.semantic === 'propPath' || (p.semantic !== undefined && REF_KIND[p.semantic] !== undefined)
+    if (name !== filesParam && !isRef) continue
+    const read = name === filesParam ? fileTargets(cc, name, text) : refTargets(ctx, cc, name, p, text)
+    if (typeof read === 'string') return read
+    if ('lone' in read) line[name] = read.lone
+    else fans.push(read)
   }
-  if (fans.length > 1) return `only one argument may be a pattern, not ${fans.map((f) => f.param).join(' and ')}`
-  return fans[0] ?? null
+  if (fans.length > 1) return `only one argument may name several targets, not ${fans.map((f) => f.param).join(' and ')}`
+  return { line, fan: fans[0] ?? null }
 }
 
 /** What an op needs from the console line it runs for. */
+/** Text for a Markdown table cell, shown as typed: emphasis and code marks escaped. */
+function mdText(text: string): string {
+  return text.replace(/[\\`*_]/g, '\\$&')
+}
+
+/** An op's table as Markdown: its title in bold, then the table. */
+function tableMarkdown(t: OpTable): string {
+  const body = table(t.head, t.rows.map((r) => r.map(mdText)))
+  return t.title ? `**${mdText(t.title)}**\n\n${body}` : body
+}
+
+/**
+ * The tables of a run over several targets as one: rows in run order, each
+ * after a column naming its target unless the table's first column does
+ * already (`OpTable.keyed`). Tables of another shape stay apart.
+ */
+function mergeTables(runs: readonly { label: string; table: OpTable }[]): OpTable[] {
+  const first = runs[0].table
+  if (!runs.every((r) => r.table.head.join('\0') === first.head.join('\0'))) return runs.map((r) => ({ ...r.table, title: r.label }))
+  if (first.keyed) return [{ head: first.head, rows: runs.flatMap((r) => r.table.rows) }]
+  return [{ head: ['Target', ...first.head], rows: runs.flatMap((r) => r.table.rows.map((row) => [r.label, ...row])) }]
+}
+
 /**
  * Print a successful result: the op's own way, or the generic layout.
  *
@@ -249,6 +343,10 @@ function wildcardTarget(
  */
 function printOutcome(op: AnyOp, outcome: Extract<OpOutcome, { ok: true }>, cc: CmdContext, heading?: string): void {
   if (outcome.data === undefined) return
+  if (op.table) {
+    cc.printMarkdown(tableMarkdown(op.table(outcome.data)))
+    return
+  }
   const lines = op.format ? op.format(outcome.data) : formatData(outcome.data)
   if (heading !== undefined && lines.length > 0) cc.print(heading)
   for (const line of lines) cc.print(line)
@@ -275,12 +373,13 @@ function completionOf(p: Param<unknown>, rel: RelatedParams, opens = false): Arg
   if (p.kind === 'enum' && p.values) return { source: `enum:${p.values.join('|')}`, description: 'value' }
   if (p.kind === 'boolean') return { source: 'enum:true|false', description: 'value' }
   switch (p.semantic) {
+    // Nodes and property paths are lists, and a class narrows the objects.
     case 'object':
-      return { source: 'objects', description: 'object' }
+      return { source: p.objClass ? `objects:${p.objClass}` : 'objects', description: 'object', list: true }
     case 'renderer':
-      return { source: 'renderers', description: 'renderer' }
+      return { source: 'renderers', description: 'renderer', list: true }
     case 'node':
-      return { source: 'nodes', description: 'node' }
+      return { source: 'nodes', description: 'node', list: true }
     case 'selection':
       return { source: 'selections', description: 'selection', open: true }
     case 'color':
@@ -301,9 +400,9 @@ function completionOf(p: Param<unknown>, rel: RelatedParams, opens = false): Arg
         ? { source: `propValues:${rel.prop}:${rel.node ?? ''}`, description: 'value' }
         : { source: `pathValues:${rel.propPath ?? ''}`, description: 'value' }
     case 'propPath':
-      return { source: 'propPath', description: 'property' }
+      return { source: 'propPath', description: 'property', list: true }
     case 'path':
-      return opens ? { source: 'files', description: 'file', files: 'openable' } : { source: 'files', description: 'file' }
+      return opens ? { source: 'files', description: 'file', files: 'openable', list: true } : { source: 'files', description: 'file' }
     default:
       // Free text (a name, a chain, a property) has nothing to offer, and
       // listing files for it would only mislead.
@@ -331,6 +430,17 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
   const defaults = alias?.defaults ?? {}
   const derivable = typeParamsOf(params)
   const names = orderedNames(op, alias).filter((n) => !(n in fixed))
+  const filesParam = names.find((n) => opensFiles(op, n)) ?? null
+  /**
+   * The bound strings as `outsideTxn` reads them: a path list that is one
+   * plain path as that path, any other list as no path (a scene in it is
+   * not opened; see fileTargets).
+   */
+  const loneFile = (bound: Record<string, string>): Record<string, string> => {
+    if (filesParam === null) return bound
+    const words = splitPathWords(bound[filesParam] ?? '')
+    return { ...bound, [filesParam]: words.length === 1 && !words[0].glob ? words[0].value : '' }
+  }
 
   const specs: ParamSpec[] = names.map((n) => {
     const p = params[n]
@@ -346,8 +456,8 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
     mutates: op.mutates,
     summary: alias?.summary ?? firstSentence(op.description),
     // The file a load op opens lists what it can open first.
-    completions: names.map((n) => completionOf(params[n], related(params), n === 'path' && op.name.startsWith('load'))),
-    ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(bound) ?? false } : {}),
+    completions: names.map((n) => completionOf(params[n], related(params), n === filesParam)),
+    ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(loneFile(bound)) ?? false } : {}),
     async run(ctx, bound, cc): Promise<CmdOutcome> {
       /** One run of the op; the reason it failed, or null. */
       const runOnce = async (b: Readonly<Record<string, string>>, label?: string): Promise<string | null> => {
@@ -355,24 +465,29 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
         if (typeof args === 'string') return args
         const outcome = await invokeOp(op, ctx, args, opContextOf(cc, 'call'))
         if (!outcome.ok) return outcome.error
-        printOutcome(op, outcome, cc, label === undefined ? undefined : `${label}:`)
+        // A table from a run over several targets waits, to be shown as one.
+        if (op.table && label !== undefined && outcome.data !== undefined) tables.push({ label, table: op.table(outcome.data) })
+        else printOutcome(op, outcome, cc, label === undefined ? undefined : `${label}:`)
         return null
       }
+      const tables: { label: string; table: OpTable }[] = []
 
-      const fan = wildcardTarget(ctx, cc, op, bound, alias)
-      if (typeof fan === 'string') return { ok: false, error: `Error: ${fan}` }
+      const read = readTargets(ctx, cc, op, bound, filesParam, alias)
+      if (typeof read === 'string') return { ok: false, error: `Error: ${read}` }
+      const { line, fan } = read
       if (fan === null) {
-        const error = await runOnce(bound)
+        const error = await runOnce(line)
         return error === null ? { ok: true } : { ok: false, error: `Error: ${error}` }
       }
-      // A pattern runs the op on each node it matches. One that fails is
-      // reported and the rest still run: the command, and the line, go on.
-      if (fan.targets.length === 0) cc.warn(`${fan.param}: "${fan.pattern}" matches nothing`)
+      // Several targets (a pattern, or a list) run the op once each. One that
+      // fails is reported and the rest still run: the command, and the line,
+      // go on.
       for (const t of fan.targets) {
         if (cc.stopped()) break
-        const error = await runOnce({ ...bound, [fan.param]: t.text }, t.label)
+        const error = await runOnce({ ...line, [fan.param]: t.text }, t.label)
         if (error !== null) cc.warn(`${t.label}: ${error}`)
       }
+      if (tables.length > 0) for (const t of mergeTables(tables)) cc.printMarkdown(tableMarkdown(t))
       return { ok: true }
     },
   }

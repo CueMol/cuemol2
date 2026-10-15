@@ -9,7 +9,8 @@
  * and paths without each command inventing its own rules.
  */
 
-import { globToRegExp, objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/refs'
+import { globToRegExp } from '@renderer/worker/server/catalog/glob'
+import { objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/refs'
 import { parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'

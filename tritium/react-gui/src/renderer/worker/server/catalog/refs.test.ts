@@ -40,7 +40,7 @@ vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => {
   }
 })
 
-import { expandPropPath, recordedPath, resolvePropPath, resolveRef, resolveRefs, sceneNodes } from './refs'
+import { expandPropPath, isWildcardRef, recordedPath, resolvePropPath, resolveRef, resolveRefs, sceneNodes } from './refs'
 
 const ctx = {} as WorkerContext
 
@@ -112,6 +112,8 @@ describe('a name pattern', () => {
     expect(ids(3, '1*/@simple')).toEqual([43, 44])
     expect(ids(1, 'zz*')).toEqual([])
     expect(typeof ids(1, '*#10')).toBe('string')
+    // A bare wildcard in a name is a pattern; an escaped one, or one in a type, is not.
+    expect([isWildcardRef('1c*'), isWildcardRef('1c\\*'), isWildcardRef('1crn/@*selection')]).toEqual([true, false, false])
   })
 
   it('in a property path covers the node part only', () => {

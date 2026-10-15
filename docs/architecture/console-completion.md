@@ -69,6 +69,21 @@ PyMOL ではなく zsh に合わせる:
     1 件もなければ全ファイル (zsh の `_files -g`)。native の `load` / `load_*` の `path`、
     PyMOL の `load`
   - `dirs`: ディレクトリだけ。`cd` (両 dialect)
+- `ArgCompletion.list`: 引数が空白区切りの語の列。native の `load` / `load_*` の `path` と、node
+  (object / renderer / node) と property path の引数。zsh のコマンド行と同じに読む
+  (`runtime/paths.ts` の `splitPathWords`):
+  - 空白で区切り、引用符 (`'...'` / `"..."`) と、空白・引用符・`*` `?` の前の `\` はその文字をそのまま
+    名前にする。それ以外の `\` は残す (Windows の区切り)。書き戻すときは空白と `*` `?` を `\` で
+    逃がし、`,` `;` 引用符を含む名前は引用符で囲む (`pathWord`)
+  - Tab は最後の単語を補完する。ファイルを選ぶと区切りは `, ` ではなく空白
+  - 最後の単語にパターン (`*` / `?`) があれば、zsh 既定の `expand-or-complete` と同じく、その場で一致した
+    全パスに展開する (`expandGlob`。ソート済み、`.` で始まる名前は segment が `.` で始まるときだけ、
+    ディレクトリも含む)。一致が無ければ `no matches found: <pattern>`
+  - node と property path のパターンは dialect の `expand` で展開する (native: `resolveRefs` /
+    `expandPropPath`)。各 node は `recordedPath` で書くので、展開した行を実行すれば同じ node に戻る
+    (名前が重なれば `@型名` や `#uid` が付く)。引数が取れない node (kind、`objClass`) は出さない。
+    書き戻しは `refWord` (`pathWord` と同じだが、型名の `*` は逃がさない: `1crn/@*selection`)
+  - object の候補源は class 付きの引数なら `objects:<class>` で、一覧も展開もその class に絞る
 - 色: ディレクトリは青 (CLI は太字も)、実行ファイルは緑、リンクは CLI がシアン・GUI が
   `--console-link`。GUI で太字を使わないのは、等幅フォントに太字がないと別フォントで
   描かれて幅が `ch` からずれるため
