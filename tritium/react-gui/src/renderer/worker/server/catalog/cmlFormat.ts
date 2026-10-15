@@ -40,15 +40,28 @@ export function quoteArg(text: string): string {
   return JSON.stringify(text)
 }
 
+/**
+ * A value of a list argument (a node, a property path, a file a load opens)
+ * as one word of that list: quoted when a space would split it or a wildcard
+ * would make it a pattern. A wildcard in a node's type (`1crn/@*selection`)
+ * is not one.
+ */
+function listArg(text: string, file: boolean): string {
+  const names = file ? [text] : text.split('/').map((seg) => (seg.includes('@') ? seg.slice(0, seg.lastIndexOf('@')) : seg))
+  if (!/\s/.test(text) && !names.some((n) => /[*?]/.test(n))) return quoteArg(text)
+  return text.includes('"') ? `'${text}'` : `"${text}"`
+}
+
 /** Atoms as `chain.resid.name` (CueMol's selection form), joined by `sep`. */
 export function atomList(atoms: readonly AtomSpec[], sep = ' '): string {
   return atoms.map((a) => `${a.chain}.${a.resid}.${a.atomName}`).join(sep)
 }
 
 /** One argument's value as text, or null when it is left out. */
-function argText(value: unknown, kind: string, ref: string | undefined): string | null {
+function argText(value: unknown, kind: string, ref: string | undefined, list: 'node' | 'file' | null): string | null {
   if (value === null || value === undefined) return null
-  if (ref !== undefined) return quoteArg(ref)
+  if (ref !== undefined) return listArg(ref, false)
+  if (list !== null && typeof value === 'string') return listArg(value, list === 'file')
   if (kind === 'atoms' && Array.isArray(value)) {
     return atomList(value as AtomSpec[])
   }
@@ -72,7 +85,9 @@ export function formatCommand(
   for (const [argName, p] of Object.entries(params)) {
     const isRef = REF_SEMANTICS.has(p.semantic ?? '') && typeof args[argName] === 'number'
     const ref = isRef ? (refs[argName] ?? `#${String(args[argName])}`) : undefined
-    const text = argText(args[argName], p.kind, ref)
+    // The arguments the console reads as lists (fromCatalog.ts).
+    const list = p.semantic === 'propPath' ? 'node' : argName === 'path' && p.semantic === 'path' && name.startsWith('load') ? 'file' : null
+    const text = argText(args[argName], p.kind, ref, list)
     if (text !== null) parts.push(`${argName}=${text}`)
   }
   return parts.length > 0 ? `${name} ${parts.join(', ')}` : name

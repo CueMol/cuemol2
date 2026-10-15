@@ -29,7 +29,6 @@ import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
 import { enumOf, nodeId, optional, propName, propPath, propValue } from '../params'
 import { resolvePropPath } from '../refs'
-import { columns } from '../consoleFormat'
 
 /**
  * The node kinds a caller may address.
@@ -138,6 +137,17 @@ function writeNodeProp(
   return normalizeServiceResult(result, `"${propName}" could not be written.`)
 }
 
+/** A property value as text: a string as it is, anything else as JSON. */
+function valueText(v: unknown): string {
+  return typeof v === 'string' ? v : (JSON.stringify(v) ?? '')
+}
+
+/** A value in a list of every property, cut short so one long value does not widen the table. */
+function shownValue(v: unknown): string {
+  const t = valueText(v)
+  return t.length > 40 ? `${t.slice(0, 40)}...` : t
+}
+
 export const getNodeProps = defineOp({
   name: 'list_node_props',
   description:
@@ -154,23 +164,17 @@ export const getNodeProps = defineOp({
   expose: { tool: 'core', console: true },
   group: 'properties',
   aliases: [{ name: 'props', order: ['nodeId'], summary: 'List the properties of a node, or of view (the scene when none is given).' }],
-  format(data) {
+  table(data) {
     const d = data as {
       type: string
       name: string
       properties: { key: string; type: string; value: unknown; readonly: boolean }[]
     }
-    const show = (v: unknown): string => {
-      const t = typeof v === 'string' ? v : JSON.stringify(v) ?? ''
-      return t.length > 40 ? `${t.slice(0, 40)}...` : t
+    return {
+      title: `${d.name} (${d.type})`,
+      head: ['Property', 'Value', 'Type'],
+      rows: d.properties.map((p) => [p.key, shownValue(p.value), p.readonly ? `${p.type}, read-only` : p.type]),
     }
-    return [
-      `${d.name} (${d.type})`,
-      ...columns(
-        d.properties.map((p) => [p.key, '=', show(p.value), p.readonly ? `${p.type}, read-only` : p.type]),
-        '  ',
-      ),
-    ]
   },
   run(ctx, args, oc): OpOutcome {
     const ref = nodeRefOf(args.nodeType, args.nodeId, oc)
@@ -267,9 +271,9 @@ export const getProp = defineOp({
   expose: { tool: false, console: true },
   group: 'properties',
   aliases: [{ name: 'get', summary: 'Print a property: get 1crn/cartoon1.width / get bgcolor' }],
-  format(data) {
+  table(data) {
     const d = data as { prop: string; value: unknown }
-    return [`${d.prop} = ${typeof d.value === 'string' ? d.value : JSON.stringify(d.value)}`]
+    return { head: ['Property', 'Value'], rows: [[d.prop, valueText(d.value)]], keyed: true }
   },
   run(ctx, args, oc): OpOutcome {
     const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)

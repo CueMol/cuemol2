@@ -16,7 +16,7 @@ import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
-import { resolvePath } from '../../runtime/paths'
+import { refWord, resolvePath, splitPathWords } from '../../runtime/paths'
 import { openTarget } from '@renderer/worker/server/catalog/fileLoad'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
@@ -34,7 +34,19 @@ import type { CompletionItem, ConsoleCommand, ConsoleDialect, SourceContext } fr
 import { NATIVE_BUILTINS, NATIVE_SCRIPT_EXT } from './builtins'
 import { catalogCommands } from './fromCatalog'
 import type { CommandOrigin } from './fromCatalog'
-import { nodePath, resolvePropPath, resolveRef, sceneNodes, VIEW_PREFIX } from '@renderer/worker/server/catalog/refs'
+import {
+  expandPropPath,
+  isObjectOfClass,
+  isWildcardRef,
+  nodePath,
+  recordedPath,
+  resolvePropPath,
+  resolveRef,
+  resolveRefs,
+  sceneNodes,
+  VIEW_PREFIX,
+} from '@renderer/worker/server/catalog/refs'
+import type { RefKind } from '@renderer/worker/server/catalog/refs'
 import type { PropTarget } from '@renderer/worker/server/catalog/refs'
 
 const GENERATED = catalogCommands(CONSOLE_COMMAND_OPS)
@@ -51,8 +63,10 @@ const NATIVE_SYNTAX = `# Writing commands
 - **Arguments** are separated by commas, since a selection has spaces in it:
   \`zoom 1crn, chain A and resid 10:20\`
 - **Nodes**: name a renderer as object/renderer (\`1crn/cartoon1\`), or any node by \`#uid\`.
-  \`*\` and \`?\` in a name run the command on every match (\`hide *\`, \`set */cartoon*.width, 2\`);
-  one that fails is reported as a warning and the rest still run.
+- **Lists**: nodes, property paths and files to load may be several, separated by spaces, and may be
+  patterns with \`*\` and \`?\`: \`hide 1crn 2abc\`, \`set */cartoon*.width, 2\`, \`load *.pdb\`.
+  The command runs for each; one that fails is reported as a warning and the rest still run.
+  Write a space in a name as \`my\\ mol\` (a star as \`\\*\`) or quote it; Tab expands a pattern in place.
 - **Properties** follow their node after a dot: \`set 1crn/cartoon1.width, 2\``
 
 function commandsOf(group: OpGroup): readonly ConsoleCommand[] {
@@ -203,9 +217,16 @@ function colorNames(ctx: WorkerContext, sceneId: number): string[] {
   return [...new Set(out)]
 }
 
-/** The value typed for parameter `name`, unquoted; '' when it was not typed. */
+/**
+ * The value typed for parameter `name`, unquoted; '' when it was not typed.
+ * A list argument (a node, a file) of one word reads as that word, escapes
+ * removed.
+ */
 function boundValue(sc: SourceContext, name: string): string {
-  return name === '' ? '' : unquoted(sc.bound[name] ?? '')
+  if (name === '') return ''
+  const raw = sc.bound[name] ?? ''
+  const words = splitPathWords(raw)
+  return words.length === 1 ? words[0].value : unquoted(raw)
 }
 
 /**
@@ -280,6 +301,10 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): (string 
   const hasScene = sc.sceneId > 0 && getSceneOrNull(ctx, sc.sceneId) !== null
   if (!hasScene) return id === 'colors' ? colorNames(ctx, 0) : []
   const nodes = sceneNodes(ctx, sc.sceneId)
+  if (id.startsWith('objects:')) {
+    const objClass = id.slice('objects:'.length)
+    return nodes.filter((n) => n.type === 'object' && n.name !== '' && isObjectOfClass(ctx, sc.sceneId, n.id, objClass)).map(nodePath)
+  }
   switch (id) {
     case 'objects':
       return nodes.filter((n) => n.type === 'object' && n.name !== '').map(nodePath)
@@ -356,6 +381,39 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): (string 
   return null
 }
 
+/** What a node source names, for expanding a pattern typed in it. */
+function refKindOf(id: string): { kind: RefKind; objClass?: string } | null {
+  if (id === 'objects') return { kind: 'object' }
+  if (id.startsWith('objects:')) return { kind: 'object', objClass: id.slice('objects:'.length) }
+  if (id === 'renderers') return { kind: 'renderer' }
+  if (id === 'nodes') return { kind: 'node' }
+  return null
+}
+
+/**
+ * A node or property-path pattern expanded for Tab: every node it names, each
+ * by the path that finds it again (`recordedPath`), so the line runs the same
+ * when it is read back.
+ */
+function expand(id: string, ctx: WorkerContext, sc: SourceContext): string[] | null {
+  if (id === 'propPath') {
+    const ex = expandPropPath(ctx, sc.sceneId, sc.pattern)
+    if (ex === null) return null
+    return ex.ok ? ex.targets.map((t) => refWord(t.path)) : []
+  }
+  const ref = refKindOf(id)
+  if (!ref || !isWildcardRef(sc.pattern)) return null
+  const res = resolveRefs(ctx, sc.sceneId, sc.pattern, ref.kind, ref.objClass)
+  if (!res.ok) return []
+  const nodes = sceneNodes(ctx, sc.sceneId)
+  return res.nodes.map((n) => {
+    const path = recordedPath(nodes, n.id) ?? `#${n.id}`
+    // An unnamed renderer reads better by its type (`1crn/@*selection`, not
+    // `1crn/`); the path stays unique, the type being added to a unique one.
+    return refWord(n.name === '' && n.typeName && !path.includes('@') ? `${path}@${n.typeName}` : path)
+  })
+}
+
 export const NATIVE_DIALECT: ConsoleDialect = {
   id: 'native',
   prompt: DIALECT_PROMPTS.native,
@@ -365,6 +423,7 @@ export const NATIVE_DIALECT: ConsoleDialect = {
   fileFallback: false,
   txnPrefix: 'cmd: ',
   commands: () => NATIVE_COMMANDS,
+  expand,
   refuseLine: (cmd) =>
     cmd.python ? 'Error: a line starting with "/" is Python, which this console does not run' : null,
   refuseScript: (filePath) => {

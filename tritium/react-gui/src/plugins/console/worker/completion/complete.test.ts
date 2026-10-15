@@ -294,4 +294,58 @@ describe('file completion', () => {
     expect(go('load n').replacement).toBe('load notes.txt')
     expect(listed(go('cd '))).toBe('files: Data/\nargument: path=')
   })
+
+  it('in a path list, completes the last word and expands a pattern in place, as zsh does', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cuemol-complete-'))
+    fs.mkdirSync(path.join(dir, 'My Data'))
+    for (const f of ['1crn.pdb', '1cbs.pdb', 'My Data/2abc.pdb']) fs.writeFileSync(path.join(dir, f), '')
+    const files = {
+      argRule: 'python',
+      fileFallback: false,
+      commands: () => [{
+        name: 'load',
+        params: [{ name: 'path' }, { name: 'name', default: '' }],
+        mode: 'strict',
+        mutates: false,
+        summary: 'stub',
+        completions: [{ source: 'files', description: 'file', files: 'openable', list: true }, null],
+        run: () => ({ ok: true }),
+      }],
+      candidates: () => [],
+    } as unknown as ConsoleDialect
+    const go = (line: string) => completeLine(ctx, line, { ...cc, cwd: dir, dialect: files })
+
+    // The pattern becomes every match, then a space for the next word.
+    expect(go('load 1c*').replacement).toBe('load 1cbs.pdb 1crn.pdb ')
+    expect(go('load x.pdb */*').replacement).toBe('load x.pdb My\\ Data/2abc.pdb ')
+    expect(printed(go('load zz*').messages)).toContain('no matches found: zz*')
+    // A file ends a word with a space, not a comma; a space in a name is escaped.
+    expect(go('load 1crn.pdb 1cb').replacement).toBe('load 1crn.pdb 1cbs.pdb ')
+    expect(go('load My').replacement).toBe('load My\\ Data/')
+    expect(go('load My\\ Data/').replacement).toBe('load My\\ Data/2abc.pdb ')
+  })
+
+  it('expands a node pattern through the dialect and writes names as list words', () => {
+    const expand = vi.fn((_id: string, _ctx: unknown, sc: { pattern: string }) => (sc.pattern.includes('*') ? ['1crn/cartoon1', 'my\\ mol'] : null))
+    const nodes = {
+      argRule: 'python',
+      fileFallback: false,
+      commands: () => [{
+        name: 'hide',
+        params: [{ name: 'nodeId' }],
+        mode: 'strict',
+        mutates: false,
+        summary: 'stub',
+        completions: [{ source: 'nodes', description: 'node', list: true }],
+        run: () => ({ ok: true }),
+      }],
+      candidates: () => ['my mol', '1crn'],
+      expand,
+    } as unknown as ConsoleDialect
+    const go = (line: string) => completeLine(ctx, line, { ...cc, dialect: nodes })
+
+    expect(go('hide 1crn */c*').replacement).toBe('hide 1crn 1crn/cartoon1 my\\ mol ')
+    expect(expand.mock.calls.at(-1)?.[2]).toMatchObject({ pattern: '*/c*' })
+    expect(go('hide 1crn my').replacement).toBe('hide 1crn my\\ mol ')
+  })
 })

@@ -67,7 +67,8 @@ native dialect は `dialects/pymol` を import しない (例外は dialect 表 
       `#uid` はパターンと一緒に書けない。
     - `/` の無いパターンは object を指し、一致する object が無く引数が renderer を取るときだけ renderer を探す
       (名前と同じ規則)。引数が取れない node (kind 違い、`objClass` に当たらない object) は黙って除く。
-    - 1 つの node に完全に解決できる文字列はパターンとして読まない (`*` を含む名前の node も指せる)。
+    - zsh と同じく、逃がしていない `*` / `?` は常にパターン。名前の中の文字としての `*` は `\*` か引用符で
+      書く (`glob.ts`。`\` の後の文字はそのものに一致する)。型名の部分は逃がさなくてよい。
     - property path ではノード部分だけがパターンになる。`/` があれば最初の `.` まで、無ければ object に
       一致する最も長い dotted prefix (`*` は `.` にも一致するので、`*.pdb.visible` は `1ox1.pdb` の `visible`)。
       property 部分の `*` は今までどおり (`reset_prop 1crn.*`)。
@@ -196,17 +197,31 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 - `help` は主題 (op の `group`、`OP_GROUPS`) の一覧だけを出し、`help <subject>` (`help animation` など) で
   その主題のコマンドを、`help <command>` で書式と引数を出す。出力は Markdown
   ([console-help-markdown.md](console-help-markdown.md))。
-- 結果は op の `format`、無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
-- 引数にパターン (§2 名前の解決) を書くと、一致した node ごとに op を 1 回ずつ実行する
-  (`fromCatalog.ts` の `wildcardTarget`。node 引数は `#uid` に置き換えて、名前で書いたときと同じ
+- 結果は op の `table` (Markdown の表。[console-help-markdown.md](console-help-markdown.md))、無ければ `format`、
+  それも無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
+- node (object / renderer / node) と property path の引数は、`load` のパスと同じく空白区切りの列
+  (`runtime/paths.ts` の `splitPathWords`。空白を含む名前は `my\ mol` か引用符)。
+  `hide 1crn 2abc/cartoon1`、`set 1crn/simple1.width 2abc/simple1.width, 0.5`。
+  語が 1 つでパターンでなければ今までどおり 1 回だけ実行し、失敗はエラー。
+  記録した action を console の行として見せる `cmlFormat.ts` は、これらの値に空白や名前の `*` / `?`
+  があれば引用符で囲み、貼り戻しても 1 つの node として読まれるようにする。
+- 語が 2 つ以上か、パターン (§2 名前の解決) を含むと、指す node ごとに op を 1 回ずつ実行する
+  (`fromCatalog.ts` の `readTargets`。node 引数は `#uid` に置き換えて、名前で書いたときと同じ
   `readConsoleArgs` -> `invokeOp` を通す。property path は記録に uid が残らないよう `recordedPath` で
   書いた path (`1crn/simple1.width`) に置き換える。読み直して別の node になるときだけ `#uid.prop`)。
   - ある node で失敗したら `<path>: <error>` の warning を出して残りを続け、コマンドは成功扱い
-    (行の後続コマンドも script も止めない)。一致が 0 件なら warning だけ。
+    (行の後続コマンドも script も止めない)。一致しないパターンは `no matches found: <pattern>` の warning。
   - 出力のある op は、node ごとに `<path>:` の見出しを付ける。
-  - パターンを書けるのは 1 コマンドに 1 引数だけ (2 つあれば直積になるので断る)。
+  - 複数の対象を指せるのは 1 コマンドに 1 引数だけ (2 つあれば直積になるので断る)。
   - 対象は実行前に全部決める。途中で消えた node (group ごと消した子など) は、その回が失敗して warning になる。
   - undo は submit 全体で 1 txn のまま。記録は node ごとの op になる ([action-log.md](action-log.md))。
+- `load` / `load_*` の `path` は空白区切りのパスの列で、パターン (`*` / `?`) も書ける
+  (`load *.pdb ~/pdb/1c*.pdb`。書式と Tab は [console-completion.md](console-completion.md))。
+  - 実行時に展開し、ファイルごとに op を 1 回ずつ実行する (上と同じく失敗は warning)。一致しない
+    パターンは `no matches found: <pattern>` の warning。書き出す側の path は 1 つのパスのまま。
+  - 空白を含む名前は引用符か `\ ` で書く (以前は引用符なしで書けた)。
+  - `.qsc` は txn の外で開くので、パスを 1 つだけ書いたときにしか開かない。パターンや列の中の
+    `.qsc` は warning を出して飛ばす (`outsideTxn` には列を「パスなし」として渡す)。
 - **Tab 補完** (`completion/complete.ts`。候補の返し方と client 側のメニューは [console-completion.md](console-completion.md)):
   - 入力途中の行を実行時と同じ規則で読む (`scanArgs` の partial、`assignArgs`)。書きかけの括弧の中は 1 つの引数。
   - その位置に書けるものを全部出す: 次の位置の引数の値と、まだ書いていない引数の `name=` を、見出しを分けて一覧する。

@@ -124,6 +124,13 @@
   --md-strong: #ffffff;
   --md-code: #afafff;
   --md-rule: var(--border);
+  /* Tables: a framed card with a raised head, an accent line under it, and
+     faintly striped rows, so a long property list reads row by row. */
+  --md-table-head-bg: var(--bg-elevated);
+  --md-table-head-rule: var(--accent);
+  --md-table-stripe: rgba(255, 255, 255, 0.03);
+  --md-table-hover: var(--bg-hover);
+  --md-table-key: var(--text-strong);
   /* Inline status text (a field note, a panel warning line): why-based
      aliases so a surface never picks a raw accent. */
   --text-warning: var(--log-warn);
@@ -434,6 +441,7 @@
   --text-strong: #1c2127;
   --md-strong: var(--text-strong);
   --md-code: var(--accent);
+  --md-table-stripe: rgba(0, 0, 0, 0.03);
 
   /* Accent — slightly deeper for contrast on light backgrounds */
   --accent: #2979b5;

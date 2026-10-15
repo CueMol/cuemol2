@@ -33,7 +33,7 @@ import { RENDER_OPS } from './ops/renderOps'
 import { STYLE_OPS } from './ops/styleOps'
 import type { ToolsetId } from './toolsets'
 
-export type { AnyOp, Op, OpContext, OpImage, OpOutcome, OpAlias } from './op'
+export type { AnyOp, Op, OpContext, OpImage, OpOutcome, OpAlias, OpTable } from './op'
 export { defineOp } from './op'
 export { invokeOp, runExclusive, runInTxn, TXN_BUSY_MESSAGE, txnBusy, txnLabel } from './opRuntime'
 export { MAX_ARRAY_ITEMS, MAX_OUTPUT_CHARS, serializeToolOutput } from './toolOutput'

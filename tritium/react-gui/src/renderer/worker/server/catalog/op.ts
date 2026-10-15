@@ -15,6 +15,20 @@ import type { ArgsOf, ParamMap } from './params'
 import type { ToolsetId } from './toolsets'
 
 /** A picture an op hands back next to its data (a model can look at it). */
+/** A result as a table (`Op.table`). Cells are plain text; the console escapes them. */
+export interface OpTable {
+  /** A line above the table (the node it is about). */
+  title?: string
+  head: string[]
+  rows: string[][]
+  /**
+   * The first column already names what each row is about (a property
+   * path), so rows from runs over several targets merge into one table as
+   * they are; otherwise a column naming each run's target is put first.
+   */
+  keyed?: boolean
+}
+
 export interface OpImage {
   mediaType: 'image/png'
   /** The encoded file, base64. */
@@ -180,6 +194,11 @@ export interface Op<P extends ParamMap = ParamMap> {
    * printed as JSON.
    */
   format?(data: unknown): string[]
+  /**
+   * A successful result as a table, which a console shows as Markdown
+   * (`console-help-markdown.md`); used before `format`.
+   */
+  table?(data: unknown): OpTable
   run(ctx: WorkerContext, args: ArgsOf<P>, oc: OpContext): OpOutcome | Promise<OpOutcome>
 }
 

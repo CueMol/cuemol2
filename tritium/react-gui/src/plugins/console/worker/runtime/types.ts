@@ -103,6 +103,13 @@ export interface ArgCompletion {
    * (zsh `_files -g`); `dirs` lists directories only.
    */
   files?: 'openable' | 'dirs'
+  /**
+   * The argument is a list of words separated by spaces, as a zsh command
+   * line is (`runtime/paths.ts`): files to load, nodes, property paths. Tab
+   * completes the last word and expands a pattern in place to every match
+   * (files here, anything else through `ConsoleDialect.expand`).
+   */
+  list?: boolean
 }
 
 /**
@@ -202,4 +209,11 @@ export interface ConsoleDialect {
   fileFallback: boolean
   /** The candidates for one completion source, or null when it has none to offer. */
   candidates(id: string, ctx: WorkerContext, sc: SourceContext): (string | CompletionItem)[] | null
+  /**
+   * For a list argument (`ArgCompletion.list`) of a source other than files:
+   * the words a pattern (`sc.pattern`, as `PathWord.pattern` writes it)
+   * expands to, each written as it is typed in a list; null when the word is
+   * no pattern, or the source has none.
+   */
+  expand?(id: string, ctx: WorkerContext, sc: SourceContext): string[] | null
 }

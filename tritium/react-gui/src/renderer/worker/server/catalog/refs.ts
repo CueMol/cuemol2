@@ -33,14 +33,15 @@
  * that name). In a pattern an empty name before a type matches any name, so
  * a `*` followed by `/@cartoon` is every cartoon renderer. Only names are patterns;
  * the type after `@` is still matched exactly, since a type name may itself
- * hold a `*` (`*selection`). A text one node answers exactly is never read as
- * a pattern, so a node whose name holds a `*` stays reachable.
+ * hold a `*` (`*selection`). A pattern is written as `glob.ts` reads one:
+ * a bare `*` is always a wildcard, and `\*` is a star in a name, as in zsh.
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
+import { globToRegExp, isGlob, unglob } from './glob'
 
 /** What kind of node a parameter wants. */
 export type RefKind = 'object' | 'renderer' | 'node'
@@ -231,13 +232,7 @@ function findRef(ctx: WorkerContext, sceneId: number, text: string, kind: RefKin
 
 // --- Patterns ---
 
-/** Turn a name pattern into a matcher. `*` and `?` are wildcards; everything else matches itself. */
-export function globToRegExp(pattern: string): RegExp {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`^${escaped.replace(/\*/g, '.*').replace(/\?/g, '.')}$`)
-}
 
-const WILDCARD = /[*?]/
 
 /** One path segment split into its name and its `@type`, if it has one. */
 function splitType(seg: string): { name: string; typeName?: string } {
@@ -251,14 +246,15 @@ function splitType(seg: string): { name: string; typeName?: string } {
  */
 export function isWildcardRef(text: string): boolean {
   const { rest } = uidHint(text.trim())
-  return rest.split('/').some((seg) => WILDCARD.test(splitType(seg).name))
+  return rest.split('/').some((seg) => isGlob(splitType(seg).name))
 }
 
 /** The candidates a `name@type` segment matches as a pattern. An empty name matches any. */
 function globNamed(seg: string, candidates: SceneNodeEntry[]): SceneNodeEntry[] {
   const { name, typeName } = splitType(seg)
   const re = globToRegExp(name === '' && typeName !== undefined ? '*' : name)
-  return candidates.filter((n) => re.test(n.name) && (typeName === undefined || n.typeName === typeName))
+  const type = typeName === undefined ? undefined : unglob(typeName)
+  return candidates.filter((n) => re.test(n.name) && (type === undefined || n.typeName === type))
 }
 
 /** The nodes a pattern names, or why it cannot name any. */
@@ -339,26 +335,28 @@ export function expandPropPath(
   if (slash >= 0) {
     const dot = want.indexOf('.', slash)
     const nodePart = want.slice(0, dot)
-    if (dot < 0 || !isWildcardRef(nodePart) || resolveRef(ctx, sceneId, nodePart, 'node').ok) return null
+    if (dot < 0 || !isWildcardRef(nodePart)) return null
     const res = resolveRefs(ctx, sceneId, nodePart, 'node')
-    return res.ok ? targets(res.nodes, want.slice(dot + 1)) : res
+    return res.ok ? targets(res.nodes, unglob(want.slice(dot + 1))) : res
   }
   if (want.startsWith('#')) return null
 
   const nodes = all
   const objects = nodes.filter((n) => n.type === 'object')
   const segs = want.split('.')
-  // A prefix that names an object exactly is no pattern, as for a node.
+  // A plain prefix that names an object makes the rest the property, which
+  // may hold a wildcard of its own (`reset_prop 1crn.*`).
   for (let i = 1; i < segs.length; i++) {
-    if (objectsNamed(nodes, segs.slice(0, i).join('.')).length > 0) return null
+    const prefix = segs.slice(0, i).join('.')
+    if (!isGlob(prefix) && objectsNamed(nodes, unglob(prefix)).length > 0) return null
   }
   let pattern = false
   for (let i = segs.length - 1; i >= 1; i--) {
     const prefix = segs.slice(0, i).join('.')
-    if (!WILDCARD.test(splitType(prefix).name)) continue
+    if (!isGlob(splitType(prefix).name)) continue
     pattern = true
     const hits = globNamed(prefix, objects)
-    if (hits.length > 0) return targets(hits, segs.slice(i).join('.'))
+    if (hits.length > 0) return targets(hits, unglob(segs.slice(i).join('.')))
   }
   return pattern ? targets([], '') : null
 }

@@ -29,6 +29,10 @@ const STRONG = '1'
 const BULLET = '\u2022'
 const RULE = '\u2500'
 const BAR = '\u2502'
+// A table's frame: rounded corners, and the joints where its rules meet.
+const FRAME = { tl: '\u256d', tr: '\u256e', bl: '\u2570', br: '\u256f', top: '\u252c', bottom: '\u2534', left: '\u251c', right: '\u2524', cross: '\u253c' }
+// The frame is drawn dim, so the cells stand out against it.
+const FRAME_STYLE = '38;5;240'
 
 function segsOf(parts: readonly MdInline[], style = ''): Seg[] {
   const join = (a: string, b: string) => (a && b ? `${a};${b}` : a || b)
@@ -93,42 +97,55 @@ function paint(line: readonly Seg[], colour: boolean): string {
   return line.map((s) => (colour && s.style ? `\x1b[${s.style}m${s.text}\x1b[0m` : s.text)).join('')
 }
 
-/** Column widths that fit `width`: the widest columns give way first, down to a floor. */
-function fitColumns(natural: number[], width: number, gap: number): number[] {
+/**
+ * Column widths that fit `width`: the widest columns give way first, each
+ * down to its floor (8, or its longest word, so no word is cut).
+ */
+function fitColumns(natural: number[], width: number, gap: number, words: number[] = []): number[] {
   const cols = [...natural]
-  const floor = 8
+  const floor = cols.map((n, c) => Math.min(n, Math.max(8, words[c] ?? 0)))
   const total = () => cols.reduce((a, b) => a + b, 0) + gap * (cols.length - 1)
   while (total() > width) {
-    const widest = cols.indexOf(Math.max(...cols))
-    if (cols[widest] <= floor) break
+    const shrinkable = cols.map((w, c) => (w > floor[c] ? w : -1))
+    const widest = shrinkable.indexOf(Math.max(...shrinkable))
+    if (shrinkable[widest] < 0) break
     cols[widest] -= 1
   }
   return cols
 }
 
+/**
+ * A table framed in box-drawing lines: rounded corners, a rule under the
+ * head, a bar between columns, one space of padding in each cell. Columns are
+ * fitted to `width`, frame included.
+ */
 function table(block: Extract<MdBlock, { type: 'table' }>, width: number, colour: boolean): string[] {
-  const gap = 2
   const all = [block.header, ...block.rows]
   const natural = block.header.map((_, c) => Math.max(1, ...all.map((r) => displayWidth(inlineText(r[c] ?? [])))))
-  const cols = fitColumns(natural, width, gap)
-  const out: string[] = []
+  // Each column takes its padding and a bar: 3 more than its text, plus the closing bar.
+  const words = block.header.map((_, c) =>
+    Math.max(1, ...all.flatMap((r) => inlineText(r[c] ?? []).split(/\s+/).map(displayWidth))),
+  )
+  const cols = fitColumns(natural, width - 3 * natural.length - 1, 0, words)
+  const frame = (text: string) => paint([{ text, style: FRAME_STYLE }], colour)
+  const rule = (left: string, joint: string, right: string) =>
+    frame(left + cols.map((w) => RULE.repeat(w + 2)).join(joint) + right)
+  const out: string[] = [rule(FRAME.tl, FRAME.top, FRAME.tr)]
   const row = (cells: readonly MdInline[][], head: boolean) => {
     const wrapped = cols.map((w, c) => wrap(segsOf(cells[c] ?? [], head ? STRONG : ''), w))
     const height = Math.max(...wrapped.map((l) => l.length))
     for (let i = 0; i < height; i++) {
-      const line = wrapped
-        .map((lines, c) => {
-          const l = lines[i] ?? []
-          const pad = c === cols.length - 1 ? '' : ' '.repeat(cols[c] - widthOf(l) + gap)
-          return paint(l, colour) + pad
-        })
-        .join('')
-      out.push(line.trimEnd())
+      const line = wrapped.map((lines, c) => {
+        const l = lines[i] ?? []
+        return ` ${paint(l, colour)}${' '.repeat(Math.max(0, cols[c] - widthOf(l)))} `
+      })
+      out.push(frame(BAR) + line.join(frame(BAR)) + frame(BAR))
     }
   }
   row(block.header, true)
-  out.push(cols.map((w) => RULE.repeat(w)).join(' '.repeat(gap)))
+  out.push(rule(FRAME.left, FRAME.cross, FRAME.right))
   for (const r of block.rows) row(r, false)
+  out.push(rule(FRAME.bl, FRAME.bottom, FRAME.br))
   return out
 }
 
@@ -155,8 +172,8 @@ function render(blocks: readonly MdBlock[], width: number, colour: boolean): str
         })
         break
       case 'table':
-        // Indented as far as a code block, so a table stands apart from the prose.
-        out.push(...table(b, Math.max(10, width - 4), colour).map((l) => `    ${l}`))
+        // The frame already sets a table apart from the prose: a short indent will do.
+        out.push(...table(b, Math.max(10, width - 2), colour).map((l) => `  ${l}`))
         break
       case 'quote':
         for (const l of render(b.children, Math.max(10, width - 2), colour)) {

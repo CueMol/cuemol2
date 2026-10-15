@@ -33,7 +33,7 @@ import * as path from 'path'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ConsoleEntry } from '../../shared/consoleTypes'
 import { interpretShortcut } from '../parser/shortcut'
-import { resolvePath } from '../runtime/paths'
+import { expandGlob, pathWord, refWord, resolvePath, splitPathWords } from '../runtime/paths'
 import { assignArgs, nextPositional } from '../parser/bindArgs'
 import { scanArgs } from '../parser/parseArgs'
 import type { ArgCompletion, CompletionItem, ConsoleCommand, ConsoleDialect } from '../runtime/types'
@@ -203,8 +203,19 @@ interface Group {
   plain?: boolean
 }
 
-/** Files under the typed path; a directory continues the path. */
-function fileOffers(typed: string, cwd: string, sep: string, kinds: FileKinds): Offer[] {
+/**
+ * Files under the typed path; a directory continues the path.
+ *
+ * @param write - how a path is written back: one argument quotes only what
+ *   would end it (`typeable`); a path list escapes spaces too (`pathWord`)
+ */
+function fileOffers(
+  typed: string,
+  cwd: string,
+  sep: string,
+  kinds: FileKinds,
+  write: (typedDir: string, name: string) => string = (d, n) => d + typeable(n),
+): Offer[] {
   if (typed.startsWith('$')) {
     return Object.keys(process.env)
       .filter((v) => v.startsWith(typed.slice(1)))
@@ -219,7 +230,7 @@ function fileOffers(typed: string, cwd: string, sep: string, kinds: FileKinds): 
   const typedDir = typed.slice(0, cut)
   const dir = resolvePath(cwd, typedDir === '' ? '.' : typedDir)
   return fileEntries(dir, stem, kinds).map((e) => ({
-    text: typedDir + typeable(e.name),
+    text: write(typedDir, e.name),
     sep: e.kind === 'dir' ? '' : sep,
     label: e.name,
     kind: e.kind,
@@ -305,7 +316,37 @@ function completeArgument(
           : { text: it.text, sep: sepFor(it.then), kind: 'value' },
       )
 
-    if (entry?.source === 'files') {
+    if (entry?.list) {
+      // A list, as zsh reads a command line: the last word is the one Tab
+      // works on, and a pattern there expands in place.
+      const words = splitPathWords(text)
+      const tail = words.at(-1)
+      const word = tail && tail.start + tail.raw.length === text.length ? tail : null
+      const at = current.valueStart + (word?.start ?? text.length)
+      const sc = { sceneId: cc.sceneId, viewId: cc.viewId, cwd: cc.cwd, bound, pattern: word?.pattern ?? '' }
+      const expanded = !word ? null
+        : entry.source === 'files' ? (word.glob ? expandGlob(cc.cwd, word.pattern).map(pathWord) : null)
+        : (cc.dialect.expand?.(entry.source, ctx, sc) ?? null)
+      if (expanded !== null && word) {
+        if (expanded.length === 0) {
+          complain(messages, ` parser: no matches found: ${word.raw}`)
+          return { replacement: null, messages }
+        }
+        return { replacement: `${prefixAt(line, at, spec.name)}${expanded.join(' ')} `, messages }
+      }
+      const typed = word?.value ?? ''
+      if (entry.source === 'files') {
+        const offers = fileOffers(typed, cc.cwd, ' ', kindsOf(ctx, entry), (d, n) => pathWord(d + n))
+        groups.push({ heading: 'files', pattern: word?.raw ?? '', regionStart: at, offers, plain: true })
+      } else {
+        const items = cc.dialect.candidates(entry.source, ctx, { ...sc, pattern: typed }) ?? []
+        const offers = items.map((it): Offer => {
+          const item = typeof it === 'string' ? { text: it, then: 'next' as const } : it
+          return { text: refWord(item.text), sep: item.then === 'continue' ? '' : ' ', kind: 'value' }
+        })
+        groups.push({ heading: entry.description, pattern: word?.raw ?? '', regionStart: at, offers })
+      }
+    } else if (entry?.source === 'files') {
       groups.push({ heading: 'files', pattern: text, regionStart: current.valueStart, offers: fileOffers(text, cc.cwd, sepFor('next'), kindsOf(ctx, entry)), plain: true })
     } else if (entry) {
       const ask = (pattern: string) =>

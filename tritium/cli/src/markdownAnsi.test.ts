@@ -13,9 +13,12 @@ describe('markdownToAnsi', () => {
     const md = `| Argument | Default | Description |\n|---|---|---|\n| \`slab\` | optional | ${long} |`
     const lines = markdownToAnsi(md, 40, false)
     expect(Math.max(...lines.map(displayWidth))).toBeLessThanOrEqual(40)
-    const descCol = lines[0].indexOf('Description')
-    const body = lines.slice(2)
-    expect(body[0].trimStart().startsWith('slab')).toBe(true)
-    expect(body.map((l) => l.slice(descCol).trim()).join(' ')).toBe(long)
+    // Framed: a top rule, the head, a rule, the body, a bottom rule.
+    const descCol = lines[1].indexOf('Description')
+    const body = lines.slice(3, -1)
+    expect(body[0].trimStart().slice(1).trimStart().startsWith('slab')).toBe(true)
+    // Every body line has its bars where the head has them: the columns stay aligned.
+    for (const l of body) expect(l.lastIndexOf('\u2502')).toBe(lines[1].lastIndexOf('\u2502'))
+    expect(body.map((l) => l.slice(descCol).replace('\u2502', '').trim()).join(' ')).toBe(long)
   })
 })

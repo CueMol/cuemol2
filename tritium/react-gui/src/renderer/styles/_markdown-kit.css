@@ -45,23 +45,47 @@
 }
 
 .md-table {
-  /* Indented as far as a code block, so a table stands apart from the prose. */
+  /* Indented as far as a code block, so a table stands apart from the prose.
+     `separate` with no spacing lets the frame take rounded corners. */
   margin: var(--space-2) 0 var(--space-2) var(--space-6);
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--md-rule);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .md-table th,
 .md-table td {
-  padding: 0 var(--space-5) 0 0;
+  padding: var(--space-1) var(--space-4);
   text-align: left;
   vertical-align: top;
+}
+
+.md-table th + th,
+.md-table td + td {
+  border-left: 1px solid var(--border-subtle);
 }
 
 .md-table th {
   font-weight: inherit;
   -webkit-text-stroke: var(--md-bold-stroke) currentColor;
   color: var(--md-strong);
-  border-bottom: 1px solid var(--md-rule);
+  background: var(--md-table-head-bg);
+  border-bottom: 1px solid var(--md-table-head-rule);
+}
+
+/* The first column names the row (a property, a command): brighter than the rest. */
+.md-table td:first-child {
+  color: var(--md-table-key);
+}
+
+.md-table tbody tr:nth-child(even) {
+  background: var(--md-table-stripe);
+}
+
+.md-table tbody tr:hover {
+  background: var(--md-table-hover);
 }
 
 .md-quote {
