@@ -1,7 +1,19 @@
 # Console の help と Markdown 出力
 
 console panel と `tritium_cli` は、`format: 'markdown'` の付いた出力だけを Markdown として整形する。
-今それを使うのは `help` だけで、ほかの出力はプレーンテキストのまま。
+今それを使うのは `help` と、結果を表で出す op (`Op.table`。下記) で、ほかの出力はプレーンテキストのまま。
+
+## op の結果の表
+
+- op は `format` (行) の代わりに `table(data): OpTable` (`title?` / `head` / `rows` / `keyed?`) を宣言できる。
+  native console は `fromCatalog.ts` でこれを Markdown の表にして `printMarkdown` で出す
+  (title は太字の行。セルの `*` `_` `` ` `` `\` は `\` で、`|` は `\|` で逃がし、書いたとおりに見せる)。
+- 使っているのは property の一覧と値: `list_node_props` (`props`。Property / Value / Type、title は node 名と型)
+  と `get_prop` (`get`。Property / Value、`keyed`)。
+- 複数の対象への実行 (パターンや列。[op-catalog.md](op-catalog.md) §5) では、各回の表をまとめて 1 つの表にする。
+  `keyed` の表 (1 列目が既に対象を名指す property path) は行をそのまま並べ、そうでなければ先頭に
+  `Target` 列を足す。列の違う表が混ざれば、対象ごとの表 (title が対象) のまま出す。
+- MCP と agent には今までどおり data (JSON) が渡り、`table` は使わない。
 
 ## 運ぶ形
 
@@ -22,9 +34,13 @@ console panel と `tritium_cli` は、`format: 'markdown'` の付いた出力だ
     (`--md-bold-stroke`) で太らせ、色は `--md-strong` (dark は `#fff`)。日本語 macOS では `monospace` が
     Osaka-Mono になり、それには bold の書体がなく、Chromium は bold を幅の違う Osaka で描くため。
   - code span / code block は `--md-code` (dark は薄紫)。表は code block と同じだけ字下げする。
+  - 表は枠付きのカード: 角丸の枠 (`--md-rule`、`--radius-lg`)、見出し行は `--md-table-head-bg` の背景と
+    `--md-table-head-rule` (accent) の下線、列の間は `--border-subtle` の縦線、行は `--md-table-stripe` の縞と
+    hover で `--md-table-hover`。1 列目 (property や command の名前) は `--md-table-key` で明るくする。
   - `ConsoleTranscript.tsx` は `format === 'markdown'` の entry だけ `MarkdownBlock` で描く。
 - CLI: `tritium/cli/src/markdownAnsi.ts` の `markdownToAnsi(text, width, colour)`。端末幅で段落と箇条書きを
-  折り返し、表は広い列から順に縮めて各セルを折り返す (code span は途中で切らない)。表は 4 桁字下げ。
+  折り返し、表は広い列から順に縮めて各セルを折り返す (code span も、列の中で最も長い単語も途中で切らない)。
+  表は罫線 (角丸の枠、見出しの下の線、列の間の縦線。256 色の 240 で暗く) で囲み、2 桁字下げ。
   見出し・strong は SGR の bold だけ (色は端末の前景色のまま)、code は 256 色の 147。
   stdout が TTY でないときは整形せず Markdown 原文を出す (パイプ先で再利用できるように)。
 
