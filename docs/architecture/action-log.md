@@ -86,6 +86,8 @@ undo / redo、`clearUndoData`、scene の読み込み (`clearAllData`) など、
   (`obj` / `obj/rend`) に直して控える。こうしておくと、delete / rename した後でも元の名前で書き出せる。
   - 同じ path の node が他にもある場合は、型名を足し (`1crn/@*selection`)、それでも重なれば uid も
     足す (`1crn/simple1@simple#40`)。書き方と読み方は [op-catalog.md](op-catalog.md) の名前の解決。
+  - console でパターン (`hide *`) を書いた場合は、一致した node ごとに op を実行するので、記録も
+    node ごとの具体的な path の op になる。パターンのままは残さない (再生の結果が記録時と同じになる)。
 
 ### 2.2 GUI と PyMOL dialect: service が自分の op を記録する
 

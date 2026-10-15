@@ -33,7 +33,7 @@ runtime (1 submit = 1 txn、Stop、script、log)、引数パーサ、補完、he
 ### 構成
 
 `dialects/pymol/` の下に `index.ts` (`PYMOL_DIALECT`)、`sources.ts` (補完の候補源)、`sel/` (selection 翻訳、§2)、
-`commands/` (`registry.ts` の `PYM_COMMANDS` と `help`、共通の `helpers.ts` (名前 -> uid、glob、
+`commands/` (`registry.ts` の `PYM_COMMANDS` と `help`、共通の `helpers.ts` (名前 -> uid、glob (照合は native と共通の `catalog/refs.ts` の `globToRegExp`)、
 `moleculeSelections`、`OWNED = 'pym:'`)・`namedSelections.ts`・`pymolColors.ts`、領域ごとの `*Commands.ts` (§3))。
 
 PyMOL の引数は spec にそのまま書き写し (PyMOL に無い引数は足さない)、CueMol で効かない引数

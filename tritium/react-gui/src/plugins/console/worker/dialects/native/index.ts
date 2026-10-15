@@ -51,6 +51,8 @@ const NATIVE_SYNTAX = `# Writing commands
 - **Arguments** are separated by commas, since a selection has spaces in it:
   \`zoom 1crn, chain A and resid 10:20\`
 - **Nodes**: name a renderer as object/renderer (\`1crn/cartoon1\`), or any node by \`#uid\`.
+  \`*\` and \`?\` in a name run the command on every match (\`hide *\`, \`set */cartoon*.width, 2\`);
+  one that fails is reported as a warning and the rest still run.
 - **Properties** follow their node after a dot: \`set 1crn/cartoon1.width, 2\``
 
 function commandsOf(group: OpGroup): readonly ConsoleCommand[] {

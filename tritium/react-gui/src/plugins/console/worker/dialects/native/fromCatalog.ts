@@ -23,7 +23,8 @@ import type { ArgCompletion, CmdContext, CmdOutcome, ConsoleCommand, ParamSpec }
 import { formatData } from './formatData'
 import { opContextOf } from '../../runtime/opContext'
 import { checkArg, parseBoolText, parseNumberText } from '@renderer/worker/server/catalog/argValues'
-import { resolveRef } from '@renderer/worker/server/catalog/refs'
+import { expandPropPath, isWildcardRef, nodePath, resolveRef, resolveRefs } from '@renderer/worker/server/catalog/refs'
+import type { SceneNodeEntry } from '@renderer/worker/server/catalog/refs'
 import type { RefKind } from '@renderer/worker/server/catalog/refs'
 
 /** The first sentence of a description, for `help`. */
@@ -190,11 +191,66 @@ function readConsoleArgs(
   return out
 }
 
+/** How a pattern's run names its node: by path, by type too when it has no name (`1crn/@*selection`). */
+function labelOf(n: SceneNodeEntry): string {
+  return n.name === '' && n.typeName ? `${nodePath(n)}@${n.typeName}` : nodePath(n)
+}
+
+/** The nodes a pattern in one argument names: the command runs once for each. */
+interface Fan {
+  param: string
+  pattern: string
+  /** What the argument becomes for each run (`#12`, `#12.width`), and how that node is named in output. */
+  targets: { text: string; label: string }[]
+}
+
+/**
+ * The argument holding a name pattern (`refs.ts`), with what it matches; null
+ * when none does. A text one node answers exactly is not a pattern. Only one
+ * argument may hold a pattern: two would mean every pair, which nobody wants
+ * by accident.
+ */
+function wildcardTarget(
+  ctx: WorkerContext,
+  cc: CmdContext,
+  op: AnyOp,
+  bound: Readonly<Record<string, string>>,
+  alias?: OpAlias,
+): Fan | null | string {
+  const fixed = alias?.fixed ?? {}
+  const fans: Fan[] = []
+  for (const [name, p] of Object.entries(op.params as ParamMap)) {
+    const text = unquote(bound[name] ?? '')
+    if (name in fixed || text === '') continue
+    if (p.semantic === 'propPath') {
+      const ex = expandPropPath(ctx, cc.sceneId, text)
+      if (ex === null) continue
+      if (!ex.ok) return `${name}: ${ex.error}`
+      const targets = ex.targets.map((t) => ({ text: t.path, label: `${labelOf(t.node)}.${t.prop}` }))
+      fans.push({ param: name, pattern: text, targets })
+      continue
+    }
+    const kind = p.semantic ? REF_KIND[p.semantic] : undefined
+    if (!kind || !isWildcardRef(text) || resolveRef(ctx, cc.sceneId, text, kind, p.objClass).ok) continue
+    const res = resolveRefs(ctx, cc.sceneId, text, kind, p.objClass)
+    if (!res.ok) return `${name}: ${res.error}`
+    fans.push({ param: name, pattern: text, targets: res.nodes.map((n) => ({ text: `#${n.id}`, label: labelOf(n) })) })
+  }
+  if (fans.length > 1) return `only one argument may be a pattern, not ${fans.map((f) => f.param).join(' and ')}`
+  return fans[0] ?? null
+}
+
 /** What an op needs from the console line it runs for. */
-/** Print a successful result: the op's own way, or the generic layout. */
-function printOutcome(op: AnyOp, outcome: Extract<OpOutcome, { ok: true }>, cc: CmdContext): void {
+/**
+ * Print a successful result: the op's own way, or the generic layout.
+ *
+ * @param heading - printed first, when there is anything to print (the node
+ *   a pattern's run was for)
+ */
+function printOutcome(op: AnyOp, outcome: Extract<OpOutcome, { ok: true }>, cc: CmdContext, heading?: string): void {
   if (outcome.data === undefined) return
   const lines = op.format ? op.format(outcome.data) : formatData(outcome.data)
+  if (heading !== undefined && lines.length > 0) cc.print(heading)
   for (const line of lines) cc.print(line)
 }
 
@@ -293,11 +349,30 @@ function opCommand(op: AnyOp, alias?: OpAlias): ConsoleCommand {
     completions: names.map((n) => completionOf(params[n], related(params), n === 'path' && op.name.startsWith('load'))),
     ...(op.outsideTxn ? { outsideTxn: (bound: Record<string, string>) => op.outsideTxn?.(bound) ?? false } : {}),
     async run(ctx, bound, cc): Promise<CmdOutcome> {
-      const args = readConsoleArgs(ctx, cc, op, bound, alias)
-      if (typeof args === 'string') return { ok: false, error: `Error: ${args}` }
-      const outcome = await invokeOp(op, ctx, args, opContextOf(cc, 'call'))
-      if (!outcome.ok) return { ok: false, error: `Error: ${outcome.error}` }
-      printOutcome(op, outcome, cc)
+      /** One run of the op; the reason it failed, or null. */
+      const runOnce = async (b: Readonly<Record<string, string>>, label?: string): Promise<string | null> => {
+        const args = readConsoleArgs(ctx, cc, op, b, alias)
+        if (typeof args === 'string') return args
+        const outcome = await invokeOp(op, ctx, args, opContextOf(cc, 'call'))
+        if (!outcome.ok) return outcome.error
+        printOutcome(op, outcome, cc, label === undefined ? undefined : `${label}:`)
+        return null
+      }
+
+      const fan = wildcardTarget(ctx, cc, op, bound, alias)
+      if (typeof fan === 'string') return { ok: false, error: `Error: ${fan}` }
+      if (fan === null) {
+        const error = await runOnce(bound)
+        return error === null ? { ok: true } : { ok: false, error: `Error: ${error}` }
+      }
+      // A pattern runs the op on each node it matches. One that fails is
+      // reported and the rest still run: the command, and the line, go on.
+      if (fan.targets.length === 0) cc.warn(`${fan.param}: "${fan.pattern}" matches nothing`)
+      for (const t of fan.targets) {
+        if (cc.stopped()) break
+        const error = await runOnce({ ...bound, [fan.param]: t.text }, t.label)
+        if (error !== null) cc.warn(`${t.label}: ${error}`)
+      }
       return { ok: true }
     },
   }
