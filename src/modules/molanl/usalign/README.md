@@ -21,6 +21,10 @@ are included by exactly one translation unit, `../USalignImpl.cpp`, inside
   CueMol does not call.
 - `basic_fun.h`: `PrintErrorAndQuit()` throws `std::runtime_error` instead of
   calling `exit(1)`.
+- `TMalign.h`: the 7 variable-length arrays (`k_ali`, `L_ini`, `i_ali`, `dis`;
+  a GCC/clang extension that MSVC rejects) are `std::vector`s, with `.data()` /
+  iterators where they were used as pointers. Marked `CueMol patch` in place.
+  Check with `-Wvla-extension` (clang) after an update.
 
 To update, copy the same headers from a newer upstream commit, re-apply the
 patches above, update the commit hash here, and re-check the test baselines in

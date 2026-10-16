@@ -16,10 +16,11 @@ US-align にした (後述「tritium」)。
 - 上流のヘッダは inline でない関数定義と `using namespace std;` を含む。そのため include するのは
   `USalignImpl.cpp` の 1 TU だけにし、`namespace usalign_vendor` で包んだ。外へは `USalignImpl.hpp` の
   素のデータ型 (`usalign::Chain` / `usalign::Result`) しか出さない
-- ローカルパッチは 2 点だけで、どちらも `basic_fun.h` にある (`README.md` に列挙した)
-  - `PrintErrorAndQuit()` は `exit(1)` をやめて `std::runtime_error` を投げる。
+- ローカルパッチは 3 点で、`README.md` に列挙した
+  - `TMalign.h` の可変長配列 (GCC/clang 拡張で MSVC が通さない) 7 箇所を `std::vector` にした
+  - `basic_fun.h` の `PrintErrorAndQuit()` は `exit(1)` をやめて `std::runtime_error` を投げる。
     `MolAnlManager` はそれを `qlib::RuntimeException` に変える
-  - POSIX 専用の `pstream.h` を `pstream_stub.h` に差し替えた。gzip / bz2 のファイル読み込みでしか
+  - `basic_fun.h` が include する POSIX 専用の `pstream.h` を `pstream_stub.h` に差し替えた。gzip / bz2 のファイル読み込みでしか
     使わず、CueMol はそこを呼ばない
 - CMake では `USalignImpl.cpp` にだけ警告抑制 (`-w` / `/w`) をかける。`winbuild/` の VC プロジェクトは
   更新していない
