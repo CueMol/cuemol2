@@ -270,6 +270,11 @@ architecture, it belongs here.
   `~/.cuemol/local-api.json`。console endpoint と terminal の thin client `tritium_cli`
   (native / PyMOL dialect、client が作業ディレクトリを持つ。配布物に同梱し、app が動いていなければ
   起動して接続する)。console の scene コマンド (`list_scenes` / `create_scene` / `switch_scene` / `close_scene`)。
+- [US-align による構造重ね合わせ](usalign-superpose.md) (日本語) -- libcuemol2 と tritium の既定の重ね合わせ手法。
+  vendored US-align (単量体 TM-align) を 1 TU に閉じ込め、pivot atom (auto: CA / C3') で残基を代表させて
+  タンパク質と核酸を扱う。`MolAnlManager.superposeUSalign1` / `superposeUSalignJSON`、SSM / LSQ と共通の行列適用。
+  Superpose ダイアログ (Method / Pivot atom)、catalog op、PyMOL の `align` / `super`。
+
 - [UI レイアウト検査 (`inspect_tritium_ui`)](ui-layout-inspect.md) (日本語) --
   実装中の自己検証ツール (回帰テストではない)。Playwright `_electron` でビルド済みアプリを起動し、
   pane / dialog を開いて dark/light × 複数サイズのスクリーンショットと DOM レイアウト監査
