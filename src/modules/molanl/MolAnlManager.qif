@@ -29,6 +29,16 @@ runtime_class MolAnlManager
   /// just calc RMSD using SSM
   real superposeSSM_rmsd(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean bshowlog);
 
+  /// Superpose US-align (TM-align; proteins and nucleic acids)
+  /// pivot: representative atom name ("" or "auto": CA for amino acids, C3-prime for nucleotides)
+  object<Matrix> superposeUSalign1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, string pivot, boolean useprop);
+
+  /// Superpose US-align (object ID/selection string version)
+  void superposeUSalign2(integer, string, integer, string, string);
+
+  /// just calc US-align statistics (JSON: tm_ref, tm_mov, rmsd, nalgn, seqid, nucleic)
+  string superposeUSalignJSON(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, string pivot, boolean bshowlog);
+
   /// Superpose LSQ
   void superposeLSQ1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean useprop);
 
