@@ -75,6 +75,11 @@ export interface PluginBottomTab {
   icon: AppIconKey
   /** Insert after the built-in tab with this id; appended when absent. */
   after?: string
+  /**
+   * Insert before the built-in tab with this id instead (`output` puts a tab
+   * first); appended when absent. Takes precedence over `after`.
+   */
+  before?: string
 }
 
 /**

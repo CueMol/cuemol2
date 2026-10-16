@@ -12,7 +12,7 @@
  * @module form/TextAreaField
  */
 
-import React, { useCallback, useImperativeHandle, useLayoutEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react';
 import { isImeKey } from './imeGuard';
 
 /**
@@ -131,6 +131,23 @@ export const TextAreaField = React.forwardRef<HTMLTextAreaElement, TextAreaField
     }, [minRows, maxRows]);
 
     useLayoutEffect(() => { resize(); }, [value, resize]);
+
+    // The text wraps by the box's width, so a field measured before its
+    // panel was laid out (narrow, every word on its own line) would keep the
+    // height of that wrap. Measure again when the width changes; the height
+    // `resize` sets itself is ignored, or each measure would trigger the next.
+    useEffect(() => {
+        const el = ref.current;
+        if (!el || typeof ResizeObserver === 'undefined') return;
+        let width = el.clientWidth;
+        const observer = new ResizeObserver(() => {
+            if (el.clientWidth === width) return;
+            width = el.clientWidth;
+            resize();
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [resize]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
