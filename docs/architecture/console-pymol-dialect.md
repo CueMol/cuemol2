@@ -176,8 +176,8 @@ object でない名前は named selection の参照のまま渡す。
 
 ### 重ね合わせ (`fitCommands.ts`)
 
-- `align` / `super mobile, target`: どちらも SSM (`superposeMol`。配列アライメントは無い)。調整の引数は
-  受け取って warn、`transform=0` は動かさず RMSD だけ。RMSD は `superposeSSM_rmsd`。
+- `align` / `super mobile, target`: どちらも US-align (`superposeMol`。配列アライメントは無い)。調整の引数は
+  受け取って warn、`transform=0` は動かさず RMSD だけ。RMSD・整列残基数・TM-score は `superposeUSalignJSON`。
 - `pair_fit mobile, target`: LSQ。原子数が違えば数を示して断る。RMSD は `calcRMSD`。
 - `cealign` は無い (CE アルゴリズムが無い)。
 

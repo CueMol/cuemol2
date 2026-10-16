@@ -19,6 +19,7 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
 import { DEFAULT_SCENE_STYLE_SET } from '@renderer/worker/server/services/select/saveSelDef'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { DEFAULT_SUPERPOSE_ALGO, USALIGN_PIVOTS } from '@renderer/worker/shared/superposeTypes'
 import { failedWith } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
@@ -38,16 +39,23 @@ const SEC_TYPES = ['coil', 'strand', 'helix', 'helix310', 'helixpi'] as const
 export const superpose = defineOp({
   name: 'superpose',
   description:
-    'Move one MolCoord object onto another by superposing selected atoms. SSM matches by secondary ' +
-    'structure and needs no alignment (proteins); LSQ fits the selected atoms in order, so the ' +
+    'Move one MolCoord object onto another by superposing selected atoms. USalign (the default) finds ' +
+    'the structural alignment itself and handles proteins and nucleic acids (RNA/DNA); SSM matches by ' +
+    'secondary structure (proteins only); LSQ fits the selected atoms in order, so the ' +
     'two selections must pair up atom for atom (e.g. the same residues\' CA atoms). The moving ' +
     'object\'s coordinates change.',
   params: {
     movId: objectId('Uid of the MolCoord object to move.', 'MolCoord'),
     refId: objectId('Uid of the reference MolCoord object, which stays put.', 'MolCoord'),
-    movSel: optional(selection('Atoms of the moving object to fit. Null uses all (SSM) or CA atoms (LSQ).')),
+    movSel: optional(selection('Atoms of the moving object to fit. Null uses all (USalign, SSM) or CA atoms (LSQ).')),
     refSel: optional(selection('Atoms of the reference to fit. Null as movSel.')),
-    algo: optional(enumOf(['SSM', 'LSQ'], 'SSM (default) or LSQ.')),
+    algo: optional(enumOf(['USalign', 'SSM', 'LSQ'], 'USalign (default), SSM or LSQ.')),
+    pivot: optional(
+      enumOf(
+        USALIGN_PIVOTS,
+        "USalign only: the atom that represents each residue. Null or auto uses CA for amino acids and C3' for nucleotides.",
+      ),
+    ),
     keepAsProperty: optional(
       boolean('True keeps the fit as the object\'s transform (xformMat) and leaves the coordinates; null or false moves the coordinates.'),
     ),
@@ -57,12 +65,13 @@ export const superpose = defineOp({
   expose: { tool: 'molops', console: true },
   group: 'molecule',
   async run(ctx, args, oc) {
-    const algo = args.algo ?? 'SSM'
+    const algo = args.algo ?? DEFAULT_SUPERPOSE_ALGO
     const dflt = algo === 'LSQ' ? 'name CA' : '*'
     const res = await superposeMol(ctx, {
       sceneId: oc.sceneId,
       viewId: oc.viewId,
       algo,
+      pivot: args.pivot ?? undefined,
       refObjId: args.refId,
       refSel: args.refSel ?? dflt,
       movObjId: args.movId,

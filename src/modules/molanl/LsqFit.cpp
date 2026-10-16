@@ -116,23 +116,7 @@ void MolAnlManager::superposeLSQ1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
     return;
   }
 
-  Matrix4D origmat = pmol_mov->getXformMatrix();
-  if (!origmat.isIdent()) {
-    // apply xform matrix prop and reset to it identity
-    pmol_mov->resetProperty("xformMat");
-    pmol_mov->xformByMat(origmat);
-  }
-
-  if (bUseProp) {
-    qlib::LScrMatrix4D *pscr = MB_NEW qlib::LScrMatrix4D(xfmat);
-    qlib::LVariant var(pscr);
-    pmol_mov->setProperty("xformMat", var);
-    //pmol_mov->setXformMatrix(xfmat);
-  }
-  else {
-    pmol_mov->xformByMat(xfmat);
-    pmol_mov->fireAtomsMoved();
-  }
+  applyXform(pmol_mov, xfmat, bUseProp);
 
   LOG_DPRINTLN("=== LSQ superpose result ===");
   LOG_DPRINTLN(" RMSD: %f angstrom", rmsd);

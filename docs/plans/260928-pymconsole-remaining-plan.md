@@ -30,8 +30,10 @@ Status: **未着手 / 後日**。PyMOL dialect にまだ無いコマンドと、
 
 ## 3. 重量級アルゴリズム
 
-`h_add` / `protonate` / `map_new` / `set_symmetry` / `cealign` / `usalign`。CueMol に同等の C++ 機能が
-あるかで可否が決まる (CE アルゴリズムは無い)。
+`h_add` / `protonate` / `map_new` / `set_symmetry` / `cealign`。CueMol に同等の C++ 機能が
+あるかで可否が決まる (CE アルゴリズムは無い)。`usalign` / `tmalign` は、C++ の
+US-align (`MolAnlManager.superposeUSalign1` / `superposeUSalignJSON`) を使えば足せる (`align` / `super` は既に
+US-align で動く。`../architecture/usalign-superpose.md`)。psico 互換で TM-score を表示する形が候補。
 
 ## 4. 既存コマンドの小さな改善
 

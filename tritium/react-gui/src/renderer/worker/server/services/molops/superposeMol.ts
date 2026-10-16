@@ -3,7 +3,8 @@
  * @description Worker service backing the "Molecular superposition" tool
  * dialog. Ports UXP `tools/ssm_sup.js` (`gSSMSupDlg.onDialogAccept`):
  *   - Compile the reference / moving atom-selection strings.
- *   - Call `MolAnlManager.superposeSSM1` or `superposeLSQ1` under an undo txn
+ *   - Call `MolAnlManager.superposeUSalign1`, `superposeSSM1` or `superposeLSQ1`
+ *     under an undo txn
  *     (rolling back the whole superposition on failure).
  *   - Optionally recenter the active view onto the moving selection
  *     (`MolCoord.fitView2`), matching the UXP "Auto recenter" checkbox.
@@ -27,9 +28,9 @@ import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import type { SuperposeAlgo } from '@renderer/worker/shared/superposeTypes';
 
-/** Superposition algorithm: least-squares fit or secondary-structure matching. */
-export type SuperposeAlgo = 'LSQ' | 'SSM';
+export type { SuperposeAlgo } from '@renderer/worker/shared/superposeTypes';
 
 export interface SuperposeMolArgs {
     sceneId: number;
@@ -44,6 +45,8 @@ export interface SuperposeMolArgs {
     movObjId: number;
     /** Moving atom-selection expression. */
     movSel: string;
+    /** US-align representative atom (see `USALIGN_PIVOTS`); default 'auto'. */
+    pivot?: string;
     /** Store the transform in the `xformMat` property instead of applying it. */
     useprop: boolean;
     /** Fit the active view onto the moving selection after superposition. */
@@ -107,9 +110,12 @@ export function superposeMol(
                 movSel: args.movSel,
                 refSel: args.refSel,
                 algo: args.algo,
+                ...(args.algo === 'USalign' && args.pivot ? { pivot: args.pivot } : {}),
                 keepAsProperty: args.useprop,
             }, ['movId', 'refId']);
-            if (args.algo === 'SSM') {
+            if (args.algo === 'USalign') {
+                mgr.superposeUSalign1(ref, rsel, mov, msel, args.pivot ?? 'auto', args.useprop);
+            } else if (args.algo === 'SSM') {
                 mgr.superposeSSM1(ref, rsel, mov, msel, args.useprop);
             } else {
                 mgr.superposeLSQ1(ref, rsel, mov, msel, args.useprop);

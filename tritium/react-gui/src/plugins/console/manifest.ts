@@ -45,8 +45,9 @@ export const consoleManifest: PluginManifest = {
         id: 'console',
         label: 'Console',
         icon: 'panel.console',
-        // Next to the Output tab: both are places text scrolls past.
-        after: 'output',
+        // First, and so in front by default: the console is where most text
+        // work happens now, ahead of the Output log.
+        before: 'output',
       },
     ],
   },

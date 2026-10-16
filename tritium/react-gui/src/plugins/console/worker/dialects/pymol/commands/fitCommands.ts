@@ -2,15 +2,16 @@
  * @file plugins/console/worker/dialects/pymol/commands/fitCommands.ts
  * @description `align`, `super` and `pair_fit`: moving one molecule onto another.
  *
- * CueMol has two superpositions (`superposeMol`, the Superpose dialog's
- * service): SSM, which finds the structural correspondence itself, and a
- * least-squares fit of atoms paired in order. PyMOL's `align` (sequence
- * alignment, then fit) and `super` (structure-based) both map to SSM --
- * there is no sequence aligner here -- and `pair_fit` (atoms given in
- * matching order) is the least-squares fit. `cealign` has no counterpart.
+ * CueMol's superpositions (`superposeMol`, the Superpose dialog's service)
+ * that find the structural correspondence themselves are US-align (the
+ * default; proteins and nucleic acids) and SSM; the third is a least-squares
+ * fit of atoms paired in order. PyMOL's `align` (sequence alignment, then
+ * fit) and `super` (structure-based) both map to US-align -- there is no
+ * sequence aligner here -- and `pair_fit` (atoms given in matching order) is
+ * the least-squares fit. `cealign` has no counterpart.
  *
- * The RMSD PyMOL prints comes from `superposeSSM_rmsd` (SSM) or `calcRMSD`
- * after the fit (least squares); the C++ side only writes it to the log.
+ * The RMSD PyMOL prints comes from `superposeUSalignJSON` (US-align) or
+ * `calcRMSD` after the fit (least squares).
  */
 
 import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager'
@@ -19,6 +20,7 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { SuperposeAlgo } from '@renderer/worker/shared/superposeTypes'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import { isDefaulted, resolveMolSelection } from './helpers'
 import type { MolSelection } from './helpers'
@@ -56,7 +58,7 @@ function resolvePair(
 function superpose(
   ctx: WorkerContext,
   cc: CmdContext,
-  algo: 'SSM' | 'LSQ',
+  algo: SuperposeAlgo,
   mob: MolSelection,
   ref: MolSelection,
 ): CmdOutcome {
@@ -77,7 +79,7 @@ function superpose(
 
 /**
  * align / super's arguments after mobile and target, in PyMOL's order
- * (fitting.py). SSM chooses its own alignment, so only `transform` is
+ * (fitting.py). US-align chooses its own alignment, so only `transform` is
  * honoured; the rest are accepted, and ignored with a warning when set.
  */
 function tuningParams(name: 'align' | 'super'): ReadonlyArray<readonly [string, string]> {
@@ -101,8 +103,8 @@ function tuningParams(name: 'align' | 'super'): ReadonlyArray<readonly [string, 
 /** Arguments that change nothing when given, and so earn no warning. */
 const SILENT = new Set(['quiet', 'transform'])
 
-/** `align` and `super`: both an SSM superposition here. */
-function ssmCommand(name: 'align' | 'super'): PymCommand {
+/** `align` and `super`: both a US-align superposition here. */
+function structCommand(name: 'align' | 'super'): PymCommand {
   return {
     name,
     params: [
@@ -114,32 +116,37 @@ function ssmCommand(name: 'align' | 'super'): PymCommand {
     mutates: true,
     summary:
       name === 'align'
-        ? 'Superpose mobile onto target (SSM; there is no sequence alignment here).'
-        : 'Superpose mobile onto target by structure (SSM).',
+        ? 'Superpose mobile onto target (US-align; there is no sequence alignment here).'
+        : 'Superpose mobile onto target by structure (US-align).',
     completions: [
       { source: 'objects', description: 'object', suffix: ', ' },
       { source: 'objects', description: 'object', suffix: '' },
     ],
     run(ctx, args, cc) {
       for (const [n, d] of tuningParams(name)) {
-        if (!SILENT.has(n) && !isDefaulted(args[n], d)) cc.warn(`${name}: ${n} is ignored (SSM chooses its own)`)
+        if (!SILENT.has(n) && !isDefaulted(args[n], d)) cc.warn(`${name}: ${n} is ignored (US-align chooses its own)`)
       }
       const pair = resolvePair(ctx, cc, args.mobile, args.target)
       if (!pair.ok) return pair
       // transform=0: report the RMSD without moving anything.
       if (args.transform.trim() !== '0') {
-        const fitted = superpose(ctx, cc, 'SSM', pair.mob, pair.ref)
+        const fitted = superpose(ctx, cc, 'USalign', pair.mob, pair.ref)
         if (!fitted.ok) return fitted
       }
 
-      // Reported after the move, from the same SSM correspondence.
+      // Reported after the move, from the same US-align correspondence.
       const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager | null
       const ref = nativeOf(ctx, cc.sceneId, pair.ref)
       const mob = nativeOf(ctx, cc.sceneId, pair.mob)
       if (mgr && ref && mob) {
         try {
-          const rmsd = mgr.superposeSSM_rmsd(ref.mol as never, ref.sel as never, mob.mol as never, mob.sel as never, false)
-          cc.print(` Executive: RMSD = ${rmsd.toFixed(3).padStart(8)} (SSM, "${pair.mob.obj.name}" onto "${pair.ref.obj.name}")`)
+          const stats = JSON.parse(
+            mgr.superposeUSalignJSON(ref.mol as never, ref.sel as never, mob.mol as never, mob.sel as never, 'auto', false),
+          ) as { rmsd: number; tm_ref: number; nalgn: number }
+          cc.print(
+            ` Executive: RMSD = ${stats.rmsd.toFixed(3).padStart(8)} (${stats.nalgn} residues, TM-score = ${stats.tm_ref.toFixed(4)},` +
+              ` US-align, "${pair.mob.obj.name}" onto "${pair.ref.obj.name}")`,
+          )
         } catch {
           cc.warn('the RMSD could not be computed')
         }
@@ -191,4 +198,4 @@ const pairFit: PymCommand = {
   },
 }
 
-export const FIT_COMMANDS: PymCommand[] = [ssmCommand('align'), ssmCommand('super'), pairFit]
+export const FIT_COMMANDS: PymCommand[] = [structCommand('align'), structCommand('super'), pairFit]

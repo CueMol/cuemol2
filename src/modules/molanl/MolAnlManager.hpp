@@ -6,6 +6,7 @@
 #define MOLANL_MANAGER_HPP_INCLUDE_
 
 #include "molanl.hpp"
+#include "USalignImpl.hpp"
 
 #include <qlib/LScrObjects.hpp>
 #include <qlib/SingletonBase.hpp>
@@ -33,6 +34,10 @@ namespace molanl {
     MC_SCRIPTABLE;
 
   private:
+    /// Apply a superpose result to the moving molecule: bake its current
+    /// xformMat into the coordinates, then set xfmat as the xformMat property
+    /// (bUseProp) or transform the coordinates by it.
+    void applyXform(const MolCoordPtr &pmol_mov, const Matrix4D &xfmat, bool bUseProp);
 
   public:
     MolAnlManager();
@@ -57,6 +62,28 @@ namespace molanl {
 
     double superposeSSM_rmsd(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
 			     const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov, bool bShowLog=false);
+
+    /// US-align (TM-align) superpose: run the alignment without moving anything.
+    /// pivot is the representative atom name ("" or "auto": CA for amino
+    /// acids, C3' for nucleotides).
+    usalign::Result superposeUSalign_impl(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+                                          const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov,
+                                          const LString &pivot, bool bShowLog);
+
+    /// US-align superpose (1): move pmol_mov onto pmol_ref
+    Matrix4D superposeUSalign1(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+                               const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov,
+                               const LString &pivot, bool bUseProp=false);
+
+    void superposeUSalign2(qlib::uid_t mol_ref, const LString &sel_ref,
+                           qlib::uid_t mol_mov, const LString &sel_mov,
+                           const LString &pivot);
+
+    /// US-align statistics as JSON ({"tm_ref","tm_mov","rmsd","nalgn","seqid","nucleic"});
+    /// does not move anything
+    LString superposeUSalignJSON(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+                                 const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov,
+                                 const LString &pivot, bool bShowLog=false);
 
     /// LSQ superpose
     void superposeLSQ1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,

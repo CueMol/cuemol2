@@ -10,9 +10,11 @@
  *
  * Plugins contribute tabs of their own; the Sequence panel is one. A
  * contributed tab gets the same scene / view props a built-in one does.
+ * The leftmost tab (the Console, when its plugin is on) is in front until
+ * the user picks another.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import type { AppIconKey } from "@renderer/h3-kit/primitives";
 import { PanelTabButton } from "./PanelTabButton";
 import { LogPanel } from "@renderer/features/log/LogPanel";
@@ -51,7 +53,10 @@ const BUILTIN_BOTTOM_TABS: readonly BottomTabDef[] = [
 function buildBottomTabs(contributed: readonly ResolvedPluginBottomTab[]): BottomTabDef[] {
   let tabs: BottomTabDef[] = [...BUILTIN_BOTTOM_TABS];
   for (const tab of contributed) {
-    tabs = insertAfterId(tabs, [tab], tab.after, (t) => t.id);
+    const at = tab.before === undefined ? -1 : tabs.findIndex((t) => t.id === tab.before);
+    tabs = at >= 0
+      ? [...tabs.slice(0, at), tab, ...tabs.slice(at)]
+      : insertAfterId(tabs, [tab], tab.after, (t) => t.id);
   }
   return tabs;
 }
@@ -80,15 +85,13 @@ const TabButton: React.FC<TabButtonProps> = (props) => (
 const BottomPanelComponent: React.FC = () => {
   const { cm } = useCueMol();
   const { activeSceneId, activeMolViewId } = useActiveScene();
-  const [activeTab, setActiveTab] = useState<BottomTabType>("output");
+  // The tab the user picked; until then (and when the picked tab's plugin is
+  // switched off) the leftmost tab is in front. Derived rather than set once,
+  // because plugin tabs arrive after the first render.
+  const [pickedTab, setActiveTab] = useState<BottomTabType | null>(null);
   const { bottomTabs: contributedTabs } = usePluginContributions();
   const tabs = useMemo(() => buildBottomTabs(contributedTabs), [contributedTabs]);
-
-  // Switching a plugin off while its tab is in front would leave the panel
-  // showing nothing; fall back to the Output tab, which always exists.
-  useEffect(() => {
-    if (!tabs.some((t) => t.id === activeTab)) setActiveTab("output");
-  }, [tabs, activeTab]);
+  const activeTab = pickedTab !== null && tabs.some((t) => t.id === pickedTab) ? pickedTab : tabs[0].id;
 
   // The log buffer lives in LogProvider (so renderer-side code can append via
   // useLogPanel() and it survives tab switches); the Output-tab UI state stays

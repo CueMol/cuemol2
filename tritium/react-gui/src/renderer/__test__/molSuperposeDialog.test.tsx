@@ -5,15 +5,16 @@
  * This dialog is logic-dense with zero prior component test. Pins the
  * OBSERVABLE confirm path + persistence, not the JSX:
  *   - OK calls invokeService('superposeMol', { sceneId, viewId, algo, refObjId,
- *     refSel, movObjId, movSel, useprop, autoRecenter }). Defaults: algo='LSQ',
- *     autoRecenter=true, useprop=false, sel strings empty; ref/mov default to
+ *     refSel, movObjId, movSel, useprop, autoRecenter, pivot }). Defaults:
+ *     algo='USalign', pivot='auto', autoRecenter=true, useprop=false, sel
+ *     strings empty; ref/mov default to
  *     the first/second MolCoord from listSceneObjects.
- *   - On {ok:true} it persists the molSuperposeHistory 5-field record
- *     ({refObjId, movObjId, algo, autoRecenter, useprop}) to localStorage and
+ *   - On {ok:true} it persists the molSuperposeHistory 6-field record
+ *     ({refObjId, movObjId, algo, pivot, autoRecenter, useprop}) to localStorage and
  *     resolves onConfirm({ ok: true }).
  *   - On {ok:false} it shows .h3-dialog-error, does NOT resolve success, and
  *     does NOT write history.
- *   - On open the algorithm / checkbox state is restored from history.
+ *   - On open the algorithm / pivot / checkbox state is restored from history.
  *
  * The default molecule ids come from the dialog's own listSceneObjects fetch
  * (ref=first uid, mov=second uid) -- pinned via two MolCoord objects.
@@ -122,7 +123,8 @@ describe('MolSuperposeDialog commit + history wire', () => {
         expect(commitCalls()[0][1]).toEqual({
             sceneId: 7,
             viewId: 3,
-            algo: 'LSQ',
+            algo: 'USalign',
+            pivot: 'auto',
             refObjId: 10,
             refSel: '',
             movObjId: 20,
@@ -134,7 +136,7 @@ describe('MolSuperposeDialog commit + history wire', () => {
         handle.unmount()
     })
 
-    it('on {ok:true} persists the 5-field molSuperposeHistory record', async () => {
+    it('on {ok:true} persists the 6-field molSuperposeHistory record', async () => {
         routeInvoke(() => ({ ok: true }))
         const handle = mount()
         await flushPromises()
@@ -146,7 +148,8 @@ describe('MolSuperposeDialog commit + history wire', () => {
         expect(raw && JSON.parse(raw)).toEqual({
             refObjId: 10,
             movObjId: 20,
-            algo: 'LSQ',
+            algo: 'USalign',
+            pivot: 'auto',
             autoRecenter: true,
             useprop: false,
         })
@@ -154,7 +157,8 @@ describe('MolSuperposeDialog commit + history wire', () => {
         expect(loadMolSuperposeHistory()).toEqual({
             refObjId: 10,
             movObjId: 20,
-            algo: 'LSQ',
+            algo: 'USalign',
+            pivot: 'auto',
             autoRecenter: true,
             useprop: false,
         })
@@ -180,7 +184,7 @@ describe('MolSuperposeDialog commit + history wire', () => {
     it('on open the algorithm is restored from saved history', async () => {
         globalThis.localStorage.setItem(
             STORAGE_KEY,
-            JSON.stringify({ refObjId: 10, movObjId: 20, algo: 'SSM', autoRecenter: false, useprop: true }),
+            JSON.stringify({ refObjId: 10, movObjId: 20, algo: 'SSM', pivot: 'P', autoRecenter: false, useprop: true }),
         )
         routeInvoke(() => ({ ok: true }))
         const handle = mount()
@@ -192,6 +196,7 @@ describe('MolSuperposeDialog commit + history wire', () => {
         // Restored algo / checkbox state flows into the commit payload.
         const payload = commitCalls()[0][1] as Record<string, unknown>
         expect(payload.algo).toBe('SSM')
+        expect(payload.pivot).toBe('P')
         expect(payload.autoRecenter).toBe(false)
         expect(payload.useprop).toBe(true)
         handle.unmount()

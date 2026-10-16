@@ -11,6 +11,7 @@ molanl.cpp
 MolAnlManager.cpp
 LsqFit.cpp
 ContactMap.cpp
+USalign.cpp
 )
 
 #
@@ -76,7 +77,17 @@ minpack/qrsolv.cpp
 minpack/LMMinimizer.cpp
 )
 
-LIST(APPEND MOLANL_SRCS ${MOLANL_VENDORED_SRCS} ${MOLANL_MINPACK_SRCS})
+#
+# Vendored US-align (header only, see usalign/README.md); USalignImpl.cpp is
+# the only file that includes it, so warnings are suppressed there.
+#
+SET(MOLANL_USALIGN_SRCS
+USalignImpl.cpp
+)
+set_source_files_properties(${MOLANL_USALIGN_SRCS}
+  PROPERTIES COMPILE_OPTIONS "$<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>")
+
+LIST(APPEND MOLANL_SRCS ${MOLANL_VENDORED_SRCS} ${MOLANL_MINPACK_SRCS} ${MOLANL_USALIGN_SRCS})
 
 ##########
 # CueMol interface definitions for MCWRAPGEN

@@ -55,10 +55,11 @@
 }
 
 /* Buttons inside body and footer (excluding header close button).
-   form-kit buttons (`.h3-form-btn`) are excluded: they own their compact
-   catalog size (styles/_form-kit.css) and must not be enlarged to the legacy
-   dialog-button metrics just because they render inside a dialog body. */
-.bp5-dialog-body .bp5-button:not(.h3-form-btn),
+   form-kit buttons (`.h3-form-btn`) and segments (`SegmentField`) are
+   excluded: they own their compact catalog size (styles/_form-kit.css) and
+   must not be enlarged to the legacy dialog-button metrics just because they
+   render inside a dialog body. */
+.bp5-dialog-body .bp5-button:not(.h3-form-btn):not(.h3-form-segmented > .bp5-button),
 .bp5-dialog-footer .bp5-button:not(.h3-form-btn) {
   min-height: 26px;
   padding: 3px var(--space-4);

@@ -286,6 +286,7 @@ interface PluginBottomTab {
   label: string
   icon: AppIconKey
   after?: string              // この id の built-in tab の直後。無ければ末尾
+  before?: string             // この id の built-in tab の直前 (after より優先)。無ければ末尾
 }
 ```
 
@@ -301,7 +302,8 @@ type BottomTabComponent = React.ComponentType<{
 }>
 ```
 
-無効化でそのタブが消えたとき、アクティブだったなら `output` に戻ります。
+起動時は左端のタブが前面に出ます (`console` plugin が有効なら、`before: 'output'` で左端にある Console)。
+ユーザーが選んだタブがあればそれを保ち、無効化でそのタブが消えたときは左端のタブに戻ります。
 
 ---
 
