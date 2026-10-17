@@ -117,6 +117,12 @@ public:
 
   const char *getTypeName() const override;
 
+protected:
+  /// The base pairs, sugars and the embedded ball & stick renderer draw to the
+  /// DisplayContext directly, so keep this renderer on the display-list path.
+  bool tgIsEnabled() const override { return false; }
+
+public:
   //////////////////////////////////////////////////////
 
   void beginRend(DisplayContext *pdl) override;

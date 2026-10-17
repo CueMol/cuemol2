@@ -13,6 +13,8 @@
 #include <modules/molstr/MolResidue.hpp>
 #include <modules/molstr/ResidIterator.hpp>
 
+#include <gfx/DisplayContext.hpp>
+
 //#include <molstr/ResiToppar.hpp>
 //#include <molstr/ResiLink.hpp>
 #include <qlib/Vector2D.hpp>
@@ -55,6 +57,8 @@ void TubeRenderer::preRender(DisplayContext *pdc)
 
 void TubeRenderer::beginRend(DisplayContext *pdl)
 {
+  tgBeginRend(pdl);
+
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
 
@@ -116,8 +120,14 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   }
   const double fdelta = (fend-fstart)/double(ndelta);
 
-  pdl->setLighting(true);
-  pdl->setPolygonMode(DisplayContext::POLY_FILL_NORGLN);
+  // All drawing goes through the mesh builder (pdl is null when the GPU
+  // mesh is built or updated)
+  TubeMeshBuilder *pmb = &tgBuilder();
+  const bool bColor = pmb->wantColor();
+  const bool bName = pmb->wantName();
+
+  pmb->setLighting(true);
+  pmb->setPolygonMode(DisplayContext::POLY_FILL_NORGLN);
   //pdl->setPolygonMode(DisplayContext::POLY_LINE);
 
   // ???
@@ -141,9 +151,12 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   for (i=0; i<=ndelta; i++) {
     double par = fstart + double(i)*fdelta; ///double( naxdet );
 
-    pCol = calcColor(par, pCoeff);
-    hitName = calcHitName(par, pCoeff);
-    pdl->loadName(hitName);
+    // The geometry-only update skips the color/name computation
+    if (bColor)
+      pCol = calcColor(par, pCoeff);
+    if (bName)
+      hitName = calcHitName(par, pCoeff);
+    pmb->loadName(hitName);
 
     Vector2D escl = getEScl(par, pCoeff); //Vector2D(1.0, 1.0);
 
@@ -177,8 +190,8 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
 
       if (!isSegEndFade() || !isSegEnd(par, pCoeff)) {
         // make the tube cap.
-        pdl->color(pCol);
-        m_pts->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
+        pmb->color(pCol);
+        m_pts->makeCap(pmb, true, getStartCapType(), f1, vpt, e11, e12);
       }
       continue;
     }
@@ -201,28 +214,28 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     //std::deque<Vector4D> tmpv;
     // Hit names (pick pass): one name for the whole segment strip, so the
     // residue boundary lies on a ring (see TubeSection::doTess).
-    pdl->loadName(hitName);
-    pdl->startTriangleStrip();
+    pmb->loadName(hitName);
+    pmb->startTriangleStrip();
 
     for (j=0; j<=m_pts->getSize(); j++) {
       g1 = m_pts->getVec(j, e11, e12);
       g2 = m_pts->getVec(j, e21, e22);
       dg1 = m_pts->getNormVec(j, e11, e12);
       dg2 = m_pts->getNormVec(j, e21, e22);
-      pdl->normal(dg1);
-      pdl->color(pCol);
-      pdl->vertex(f1+g1);
+      pmb->normal(dg1);
+      pmb->color(pCol);
+      pmb->vertex(f1+g1);
 
-      pdl->normal(dg2);
+      pmb->normal(dg2);
       if (isSmoothColor())
-        pdl->color(pPrevCol);
-      pdl->vertex(f2+g2);
+        pmb->color(pPrevCol);
+      pmb->vertex(f2+g2);
 
       //tmpv.push_back(f1+g1);
       //tmpv.push_back(f1+g1+dg1.scale(0.2));
     }
 
-    pdl->end();
+    pmb->end();
 
     //pdl->startLines();
     //BOOST_FOREACH (const Vector4D &elem, tmpv) {
@@ -234,8 +247,8 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     if (i==ndelta) {
       if (!isSegEndFade() || !isSegEnd(par, pCoeff)) {
         // make cap at the end point.
-        pdl->color(pCol);
-        m_pts->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
+        pmb->color(pCol);
+        m_pts->makeCap(pmb, false, getEndCapType(), f1, vpt, e11, e12);
       }
     }
 
@@ -245,7 +258,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     pPrevCol = pCol;
   }
   
-  pdl->setLighting(false);
+  pmb->setLighting(false);
 
 }
 
@@ -331,6 +344,54 @@ void TubeRenderer::propChanged(qlib::LPropEvent &ev)
     invalidateDisplayCache();
   }
 
+  if (ev.getParentName().equals("coloring")||
+      ev.getParentName().startsWith("coloring.")) {
+    // Only the colors change: the base classes' invalidateDisplayCache()
+    // calls turn into an in-place color update of the GPU mesh
+    tgBeginColorOnly();
+    super_t::propChanged(ev);
+    tgEndColorOnly();
+    return;
+  }
+
   super_t::propChanged(ev);
+}
+
+/////////////////////////////////////////////////////
+// GPU mesh
+
+void TubeRenderer::display(DisplayContext *pdc)
+{
+  if (!tgDisplay(pdc))
+    super_t::display(pdc);
+}
+
+void TubeRenderer::displayPick(DisplayContext *pdc)
+{
+  if (!tgDisplayPick(pdc))
+    super_t::displayPick(pdc);
+}
+
+void TubeRenderer::invalidateDisplayCache()
+{
+  tgOnInvalidateDisplay();
+  super_t::invalidateDisplayCache();
+}
+
+void TubeRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (tgOnAtomsMoved(ev)) {
+    // Positions changed but topology/colors did not: the vertices are
+    // rewritten in place on the next display()
+    updateMovedAtoms();
+    return;
+  }
+  super_t::objectChanged(ev);
+}
+
+void TubeRenderer::unloading()
+{
+  tgUnload();
+  super_t::unloading();
 }
 

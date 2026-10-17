@@ -51,7 +51,7 @@ namespace molvis {
 
   public:
     void setLineWidth(double d) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_dLineWidth = d;
     }
     double getLineWidth() const {
@@ -117,6 +117,15 @@ namespace molvis {
 
     void invalidateSplineCoeffs();
 
+    /// Drop the spline coeffs only (regenerated on the next traversal),
+    /// keeping the display cache.
+    void cleanupSplineCoeffs() { m_scs.cleanup(); }
+
+    /// Atoms moved and the GPU mesh is updated in place (TubeGpuSupport):
+    /// drop the spline coeffs, request a redraw and drop the hittest cache,
+    /// without invalidating the display cache.
+    void updateMovedAtoms();
+
   private:
     void getSegEndImpl(int nprev, MolResiduePtr pPrev,
                        int nnext, MolResiduePtr pNext,
@@ -142,13 +151,13 @@ namespace molvis {
 
     int getStartCapType() const { return m_nStCapType; }
     void setStartCapType(int nType) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_nStCapType = nType;
     }
 
     int getEndCapType() const { return m_nEnCapType; }
     void setEndCapType(int nType) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_nEnCapType = nType;
     }
 
@@ -158,7 +167,7 @@ namespace molvis {
 
   public:
     void setSegEndFade(bool b) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_bSegEndFade = b;
     }
     bool isSegEndFade() const { return m_bSegEndFade; }
