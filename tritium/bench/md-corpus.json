@@ -178,7 +178,7 @@
             "topology": "em.gro",
             "resname": "SOL"
           },
-          "note": "the 100 frames without water, re-encoded by MDAnalysis at the source precision (1000), so the kept integer coordinates are unchanged. Re-pinned on the M4 (MDAnalysis 2.7.0, numpy 1.26.4, Python 3.12): the file pinned on the M2 (5549afe3...) was not available, and this one differs from it in bytes. Positions and time of all 100 frames equal the source's kept atoms (check-drop-resname.py); the box differs by one float32 step (3e-5 A) in 28 frames, from MDAnalysis's nm/A round trip; the frame headers carry step 0, 1, 2, ... where the source has 0, 50000, 100000, ...",
+          "note": "the 100 frames without water, re-encoded by MDAnalysis at the source precision (1000), so the kept integer coordinates are unchanged. Re-pinned on the M4 (MDAnalysis 2.7.0, numpy 1.26.4, Python 3.12). The earlier pin (5549afe3...) is the file derived on the Windows machine; the M2 derived its own, which already differed from it in bytes with the same frames (cuemol3_paper_data molstar-compare/REPORT.md, Apple M2, Files). Neither file was available, and this one differs from the pinned one in bytes. Positions and time of all 100 frames equal the source's kept atoms (check-drop-resname.py); the box differs by one float32 step (3e-5 A) in 28 frames, from MDAnalysis's nm/A round trip; the frame headers carry step 0, 1, 2, ... where the source has 0, 50000, 100000, ...",
           "sha256": "4d1af34efa647dfb54ae78d3d266c6f2aa7b13cae8d18996275331a48a678e79"
         },
         {
