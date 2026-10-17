@@ -30,6 +30,7 @@ import type {
   ConsoleRunRequest,
   ConsoleRunResponse,
 } from '@shared/types/localApi'
+import { CONSOLE_PROTOCOL } from '@shared/types/localApi'
 import { consoleServices } from '../calls'
 import { CONSOLE_PLUGIN_ID, REMOTE_ACCESS_PREF } from '../shared/consoleTypes'
 import { beginCliRun } from './cliActivity'
@@ -57,7 +58,7 @@ export function useConsoleEndpoint(): void {
       if (!cm) throw new Error('CueMol is not ready yet.')
       if (kind === 'info') {
         const { version, build } = await cm.getAppInfo()
-        const answer: ConsoleInfoResponse = { version, build }
+        const answer: ConsoleInfoResponse = { version, build, protocol: CONSOLE_PROTOCOL }
         return answer
       }
       if (kind === 'complete') {

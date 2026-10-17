@@ -77,11 +77,20 @@ export interface ConsoleCompleteResponse {
   candidates?: CompletionCandidate[]
 }
 
+/**
+ * The console endpoint's wire revision. tritium_cli is also installed from
+ * npm, apart from the app, so the two can be from different releases; raise
+ * this when a change to the bodies above breaks an older client or app.
+ */
+export const CONSOLE_PROTOCOL = 1
+
 /** `POST /console/info` (empty body): what the client shows in its banner. */
 export interface ConsoleInfoResponse {
   /** libcuemol2's version and build, as in About. */
   version: string
   build: string
+  /** CONSOLE_PROTOCOL of the app; absent from apps that predate it. */
+  protocol?: number
 }
 
 /** `POST /app/quit`: quit the app, as its Quit menu item does. */

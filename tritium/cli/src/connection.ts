@@ -14,6 +14,7 @@ import * as path from 'node:path'
 import { spawn } from 'node:child_process'
 import { TRITIUM_CLI_FLAG } from '@cuemol/console-kit'
 import type { AppQuitResponse, LocalApiInfoFile } from '@cuemol/console-kit'
+import { DOWNLOAD_URL, locateApp } from './appLocator'
 
 /** Where the app writes its port and token. */
 export function infoFilePath(env: NodeJS.ProcessEnv = process.env): string {
@@ -23,6 +24,10 @@ export function infoFilePath(env: NodeJS.ProcessEnv = process.env): string {
 export const NOT_RUNNING =
   'CueMol is not running, or command line access is off ' +
   '(Settings > Plugins > Console > Command line access).'
+
+export const NOT_INSTALLED =
+  `CueMol3 is not installed. Download it from ${DOWNLOAD_URL}\n` +
+  '(installed somewhere unusual? set CUEMOL3_APP to the app).'
 
 /** The connection info, or an Error saying why there is none. */
 export function readInfo(file = infoFilePath()): LocalApiInfoFile | Error {
@@ -57,24 +62,34 @@ function liveInfo(file: string): LocalApiInfoFile | null {
 
 const START_TIMEOUT_MS = 90_000
 
-/** Starts a program that outlives this process. */
-export type Launch = (command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string) => void
+/** Starts a program that outlives this process; rejects when it cannot be started. */
+export type Launch = (command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string) => void | Promise<void>
 
-function spawnDetached(command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string): void {
-  spawn(command, args, { detached: true, stdio: 'ignore', env, cwd }).unref()
+function spawnDetached(command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { detached: true, stdio: 'ignore', env, cwd, windowsHide: true })
+    child.once('spawn', resolve)
+    child.once('error', (e) => reject(new Error(`Could not start ${command}: ${e.message}`)))
+    child.unref()
+  })
 }
 
 /**
- * The command that starts the app, or null when this process cannot start one.
+ * The command that starts the app, or null when no app is to be found.
  *
- * Two ways: run by the app's own executable (the shipped wrapper sets
- * ELECTRON_RUN_AS_NODE), where `execPath` is the app; or from the repo through
- * `task run_tritium_cli`, which names the react-gui directory in
+ * Three ways, first match wins: run by the app's own executable (the shipped
+ * wrapper sets ELECTRON_RUN_AS_NODE), where `execPath` is the app; from the
+ * repo through `task run_tritium_cli`, which names the react-gui directory in
  * TRITIUM_CLI_DEV_APP, where the built dev app is started the way
- * `pnpm run start` starts it (without rebuilding). electron-vite hands what
- * follows `--` to the app.
+ * `pnpm run start` starts it (without rebuilding; electron-vite hands what
+ * follows `--` to the app); or on its own (installed from npm), where an
+ * installed app is looked for.
  */
-function launchCommand(env: NodeJS.ProcessEnv, execPath: string): { command: string; args: string[]; cwd?: string } | null {
+function launchCommand(
+  env: NodeJS.ProcessEnv,
+  execPath: string,
+  locate: () => string | null,
+): { command: string; args: string[]; cwd?: string } | null {
   if (env.ELECTRON_RUN_AS_NODE) return { command: execPath, args: [TRITIUM_CLI_FLAG] }
   if (env.TRITIUM_CLI_DEV_APP) {
     return {
@@ -83,7 +98,8 @@ function launchCommand(env: NodeJS.ProcessEnv, execPath: string): { command: str
       cwd: env.TRITIUM_CLI_DEV_APP,
     }
   }
-  return null
+  const app = locate()
+  return app ? { command: app, args: [TRITIUM_CLI_FLAG] } : null
 }
 
 export interface EnsureAppOptions {
@@ -91,6 +107,8 @@ export interface EnsureAppOptions {
   execPath?: string
   file?: string
   launch?: Launch
+  /** Finds an installed app (appLocator.ts). */
+  locate?: () => string | null
   onStart?: () => void
   timeoutMs?: number
   pollMs?: number
@@ -111,18 +129,19 @@ export async function ensureApp({
   execPath = process.execPath,
   file = infoFilePath(env),
   launch = spawnDetached,
+  locate = () => locateApp(),
   onStart = () => process.stderr.write('Starting CueMol3...\n'),
   timeoutMs = START_TIMEOUT_MS,
   pollMs = 300,
 }: EnsureAppOptions = {}): Promise<void> {
   if (liveInfo(file)) return
-  const how = launchCommand(env, execPath)
-  if (!how) throw new Error(NOT_RUNNING)
+  const how = launchCommand(env, execPath, locate)
+  if (!how) throw new Error(NOT_INSTALLED)
   const appEnv = { ...env }
   delete appEnv.ELECTRON_RUN_AS_NODE
   delete appEnv.TRITIUM_CLI_DEV_APP
   onStart()
-  launch(how.command, how.args, appEnv, how.cwd)
+  await launch(how.command, how.args, appEnv, how.cwd)
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, pollMs))

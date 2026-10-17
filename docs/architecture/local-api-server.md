@@ -140,8 +140,11 @@ scene は `discardChanges: true` が無いと閉じない (説明文で「捨て
   - `POST /console/run` `{ dialect, text, cwd }` -> `{ entries, aborted, interrupted, cwd }`
   - `POST /console/complete` `{ dialect, line, cwd }` -> `{ replacement, messages, candidates? }`
     ([console-completion.md](console-completion.md))
-  - `POST /console/info` `{}` -> `{ version, build }` (libcuemol2 の version と source revision。
-    client の banner 用)
+  - `POST /console/info` `{}` -> `{ version, build, protocol }` (libcuemol2 の version と source
+    revision。client の banner 用)。`protocol` は console-kit の `CONSOLE_PROTOCOL` (wire の改訂番号)。
+    npm 版 (§5.5) の client は app と別に更新されるので、対話開始時に自分の値と比べ、違えば
+    古い側を更新するよう警告する (警告だけで続行。`protocol` の無い古い app も同じ扱い)。
+    旧 client を壊す wire 変更をしたら値を上げる。
   - body の形は main で検査し (`cwd` は絶対パス)、だめなら 400。worker の失敗 (busy 等) は 409 `{ error }`。
 - **実行**: panel と同じ worker service (`runCommand` / `complete`) を、アクティブなタブに対して
   呼ぶ。1 submission = 1 undo txn、排他 (`txnBusy()`) も panel と同じ。`load x.qsc` は panel と同じく
@@ -173,8 +176,7 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
 - 接続情報は request ごとに `~/.cuemol/local-api.json` (`CUEMOL_LOCAL_API_INFO`) から読む。
   port は MCP plugin の設定で変わり得るが、client は毎回このファイルを読むので影響しない。
 - **app の自動起動** (`ensureApp`): 情報ファイルが無い、`console` endpoint が無い、pid が
-  死んでいるときは、`ELECTRON_RUN_AS_NODE` 下 (= wrapper 経由、`process.execPath` が app) に限り
-  app を `--tritium-cli` 付きで detached 起動し (`ELECTRON_RUN_AS_NODE` は外す)、情報ファイルに
+  死んでいるときは、app を `--tritium-cli` 付きで detached 起動し (`ELECTRON_RUN_AS_NODE` は外す)、情報ファイルに
   `console` が載るまで最長 90 秒待つ (300 ms ごとに読む。endpoint は worker の初期化が終わってから
   開くので、これが準備完了の合図になる)。CLI を抜けても app は残る。動いている app (access off) に
   対しても同じで、2 個目のプロセスは single-instance lock で argv を渡して終わり、動いている app が
@@ -183,7 +185,21 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
   `task run_tritium_cli` からは、env `TRITIUM_CLI_DEV_APP` (react-gui のパス) を見て、そこで
   `pnpm exec electron-vite preview --skipBuild -- --tritium-cli` を detached 起動する (build 済みの
   dev app。electron-vite は `--` 以降を app の argv に渡す)。task は CLI の cwd を task を実行した
-  ディレクトリにする。素の `node` で起動したときと `--no-launch` では起動せず、案内を出して終わる。
+  ディレクトリにする。起動する app は次の順で最初に当たったもの (`launchCommand`):
+  1. `ELECTRON_RUN_AS_NODE` 下 (= 同梱 wrapper 経由): `process.execPath` (app 自身)
+  2. `TRITIUM_CLI_DEV_APP`: 上記の dev app
+  3. それ以外 (npm 版を system の `node` で実行): インストール済みの app (`src/appLocator.ts`
+     `locateApp()`)。env `CUEMOL3_APP` (app の実行ファイル、macOS は `.app` も可) が最優先。
+     無ければ macOS は `/Applications` と `~/Applications` の `CueMol3.app`、次に Spotlight
+     (`mdfind`、bundle id `org.cuemol.cuemol3`)。Windows は `reg query` で HKLM / HKCU の Uninstall
+     配下の `InstallLocation` を全部読み (key 名は electron-builder が appId から作る GUID なので
+     名前では引かない)、`CueMol3.exe` がある所。無ければ `%ProgramFiles%\CueMol3`。Linux は deb の
+     `/opt/CueMol3/resources/cli/tritium_cli` (wrapper) を読み、`exec "$dir/../../<exe>"` から実行
+     ファイル名を取る (名前は packager が package 名から決めるので固定できない)。AppImage は
+     `CUEMOL3_APP` で指定してもらう。
+  どれも無ければ `NOT_INSTALLED` (`https://github.com/CueMol/cuemol2/releases/latest` と
+  `CUEMOL3_APP` の案内) を出して exit 1。`--no-launch` では起動せず、案内を出して終わる。
+  spawn の失敗 (実行ファイルが無い等) は `error` event で即座に失敗にする (90 秒待たない)。
 - 対話: 起動時に banner (version、port、pid、操作の案内) を出す。prompt は `CueMol <dir> ❯` /
   `pymol <dir> ❯` (dialect 名は色分け)、`native` / `pymol` で dialect 切り替え、Tab 補完
   (zsh 式の一覧とメニュー。[console-completion.md](console-completion.md))、履歴 `~/.tritium_cli_history`、
@@ -258,10 +274,36 @@ undo txn は scene ごとに分かれる。
   ルートの無い古い app (404) には「この CueMol は CLI から終了できない」と出す。Ctrl-C は待つのを
   やめるだけで、app の dialog は残る。
 
+### 5.5 npm 配布 (`@cuemol/tritium-cli`)
+
+同梱と同じ `dist/tritium_cli.mjs` を npm に publish し、`npm i -g @cuemol/tritium-cli` で app と
+別に入れられるようにする (system の Node 18 以降で動く。app は §5.1 の探索で見つけて起動する)。
+
+- package: `tritium/cli/package.json` の `bin` (`tritium_cli` -> `dist/tritium_cli.mjs`)、`files: ["dist"]`。
+  bundle が依存 (console-kit、marked) を全部含むので runtime dependencies は無い。repo 上の
+  `version` は `0.0.0` のプレースホルダーで、publish 時に決める。
+- entry 判定は `realpath` で比べる (`isEntry()`)。npm の bin は symlink (Windows は `.cmd` shim) なので、
+  `argv[1]` と `import.meta.url` をそのまま比べると main が走らない。
+- publish は release workflow (`.github/workflows/build2.yml` の `publish_npm`、`v*` tag のみ、
+  `release_build` の後):
+  - **変わったときだけ**: build した bundle を npm 上の `latest` の `dist/tritium_cli.mjs` と
+    byte 比較し、同じなら何もしない。esbuild の出力は決定的で version 等を埋め込まないので、
+    同じ byte = 変更なし (console-kit や marked の変更も拾う)。bundle に版数や日時を埋め込むと
+    毎回 publish されるようになるので入れないこと。
+  - version は tag の先頭 3 桁 (`v2.4.0.546` -> `2.4.0`。npm は semver 3 桁)。「その app release で
+    最後に CLI が変わった」の意味になる。同じ 3 桁が publish 済みで中身だけ変わった場合
+    (build 番号だけの release) は publish できないので job を失敗させる (revision を上げて出し直す)。
+  - publish 前に `devDependencies` を消す (`workspace:` protocol は repo の外で意味を持たない)。
+  - 認証は npm trusted publishing (GitHub OIDC、`id-token: write`)。token の secret は持たない。
+    npm >= 11.5.1 が要るので job で `npm@latest` を入れる。npmjs.com の package 設定 (Trusted
+    Publisher) に repository `CueMol/cuemol2`、workflow `build2.yml` を登録しておくこと。この設定は
+    package が存在しないとできないので、最初の 1 回は手で publish した。
+
 ## 6. 既知の制約
 
 - stateless なので `tools/list_changed` を送らない。tool の追加は client の再接続で反映。
 - token の再発行・port の変更後は client を登録し直す必要がある。
 - 起動中の call を GUI 側から止める UI は無い (client 側の中断で止まる)。
 - Windows の `tritium_cli.cmd` (GUI subsystem の exe を Node として動かす) で、対話 (readline) と
-  Ctrl-C が動くかは未確認。
+  Ctrl-C が動くかは未確認。npm 版は console subsystem の `node.exe` で動くので、この問題は無い。
+- npm 版の Windows / Linux での app 探索 (§5.1) は実機で未確認。
