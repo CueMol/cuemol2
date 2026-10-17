@@ -17,6 +17,8 @@ SplineCoeffSet.cpp
 SplineRenderer.cpp
 TubeRenderer.cpp
 TubeSection.cpp
+TubeMeshBuilder.cpp
+TubeGpuSupport.cpp
 RibbonRenderer.cpp
 Ribbon2Renderer.cpp
 JctTable.cpp

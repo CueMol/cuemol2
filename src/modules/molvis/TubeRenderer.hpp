@@ -10,11 +10,12 @@
 
 #include "SplineRenderer.hpp"
 #include "TubeSection.hpp"
+#include "TubeGpuSupport.hpp"
 #include <qlib/Vector2D.hpp>
 
 namespace molvis {
 
-  class TubeRenderer : public SplineRenderer
+  class TubeRenderer : public SplineRenderer, public TubeGpuSupport
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -38,6 +39,27 @@ namespace molvis {
 
     void preRender(DisplayContext *pdc) override;
 
+    //////////////////////////////////////////////////////
+    // GPU mesh (TubeGpuSupport)
+
+    void display(DisplayContext *pdc) override;
+
+    /// The pick pass draws the same mesh with the pick program
+    void displayPick(DisplayContext *pdc) override;
+
+    void invalidateDisplayCache() override;
+
+    void objectChanged(qsys::ObjectEvent &ev) override;
+
+    void unloading() override;
+
+  protected:
+    void tgRenderMesh() override { render(nullptr); }
+    qlib::uid_t tgSceneID() const override { return getSceneID(); }
+    void tgPreRender(DisplayContext *pdc) override { preRender(pdc); }
+    void tgPostRender(DisplayContext *pdc) override { postRender(pdc); }
+
+  public:
     //////////////////////////////////////////////////////
 
     void beginRend(DisplayContext *pdl) override;

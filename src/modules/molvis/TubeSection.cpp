@@ -8,6 +8,7 @@
 
 #include "TubeSection.hpp"
 #include "SplineRenderer.hpp"
+#include "TubeMeshBuilder.hpp"
 #include <qlib/Vector4D.hpp>
 
 #include <gfx/DisplayContext.hpp>
@@ -383,7 +384,7 @@ bool TubeSection::resetProperty(const LString &propnm)
 ///////////////////////////////////////////////////////
 // Cap rendering routine
 
-void TubeSection::makeCap(DisplayContext *pdl,
+void TubeSection::makeCap(TubeMeshBuilder *pdl,
                            bool fStart, int nType,
                            const Vector4D &f, const Vector4D &vpt,
                            const Vector4D &e1, const Vector4D &e2)
@@ -407,7 +408,7 @@ void TubeSection::makeCap(DisplayContext *pdl,
   }
 }
 
-void TubeSection::makeFlatCap(DisplayContext *pdl,
+void TubeSection::makeFlatCap(TubeMeshBuilder *pdl,
                                bool fStart,
                                const Vector4D &f, const Vector4D &vpt,
                                const Vector4D &e1, const Vector4D &e2)
@@ -532,7 +533,7 @@ void TubeSection::makeFlatCap(DisplayContext *pdl,
   }
 }
 
-void TubeSection::makeSpherCap(DisplayContext *pdl,
+void TubeSection::makeSpherCap(TubeMeshBuilder *pdl,
                                 bool fStart,
                                 const Vector4D &f, const Vector4D &vpt,
                                 const Vector4D &e1, const Vector4D &e2)
@@ -623,7 +624,7 @@ void TubeSection::startTess()
   m_bTessEmpty = true;
 }
 
-void TubeSection::doTess(DisplayContext *pdl,
+void TubeSection::doTess(TubeMeshBuilder *pdl,
                          const Vector4D &f1,
                          const gfx::ColorPtr &pCol, bool bSmoothCol,
                          const Vector4D &e11, const Vector4D &e12,
@@ -684,7 +685,7 @@ void TubeSection::doTess(DisplayContext *pdl,
 
 }
 
-void TubeSection::doTess(DisplayContext *pdl,
+void TubeSection::doTess(TubeMeshBuilder *pdl,
                          const Vector4D &f1,
                          const gfx::ColorPtr &pCol, bool bSmoothCol,
                          const Vector4D &e11, const Vector4D &e12,
@@ -771,7 +772,7 @@ Vector4D TubeSection::calcDnorm(int index, const Vector4D &escl, const Vector4D 
 
 
 /// Render the partitions at the arrowhead junction
-void TubeSection::makeDisconJct(DisplayContext *pdl,
+void TubeSection::makeDisconJct(TubeMeshBuilder *pdl,
                                 const Vector4D &f1, const Vector4D &ev,
                                 const Vector4D &e11, const Vector4D &e12,
                                 const Vector4D &escl, const Vector4D &escl_prev)
@@ -804,7 +805,7 @@ void TubeSection::makeDisconJct(DisplayContext *pdl,
   pdl->end();
 }
 
-void TubeSection::makeDJEllip(DisplayContext *pdl,
+void TubeSection::makeDJEllip(TubeMeshBuilder *pdl,
                               const Vector4D &f1, const Vector4D &ev,
                               const Vector4D &pe1, const Vector4D &pe2,
                               const Vector4D &ne1, const Vector4D &ne2)

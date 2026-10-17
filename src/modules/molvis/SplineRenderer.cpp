@@ -8,6 +8,8 @@
 #include "molvis.hpp"
 
 #include "SplineRenderer.hpp"
+
+#include <qsys/Scene.hpp>
 #include "TubeSection.hpp"
 
 #include <modules/molstr/MolCoord.hpp>
@@ -78,12 +80,15 @@ void SplineRenderer::beginRend(DisplayContext *pdl)
       LOG_DPRINTLN("SplineRenderer> Fatal error: cannot create spline interpolator.");
     }
   }
-  pdl->setLineWidth(m_dLineWidth);
+  // pdl is null in the GPU mesh traversal (see TubeGpuSupport)
+  if (pdl!=NULL)
+    pdl->setLineWidth(m_dLineWidth);
 }
 
 void SplineRenderer::endRend(DisplayContext *pdl)
 {
-  pdl->setLineWidth(1.0);
+  if (pdl!=NULL)
+    pdl->setLineWidth(1.0);
 }
 
 //////////
@@ -263,6 +268,15 @@ void SplineRenderer::objectChanged(qsys::ObjectEvent &ev)
   }
 
   super_t::objectChanged(ev);
+}
+
+void SplineRenderer::updateMovedAtoms()
+{
+  cleanupSplineCoeffs();
+  qsys::ScenePtr pScene = getScene();
+  if (!pScene.isnull())
+    pScene->setUpdateFlag();
+  invalidateHittestCache();
 }
 
 void SplineRenderer::invalidateSplineCoeffs()
