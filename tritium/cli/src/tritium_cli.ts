@@ -85,6 +85,14 @@ const GLYPH = {
   boxTop: '\u256d\u2500',
   boxSide: '\u2502',
   boxBottom: '\u2570\u2500',
+  boxH: '\u2500',
+  boxTL: '\u256d',
+  boxTR: '\u256e',
+  boxBL: '\u2570',
+  boxBR: '\u256f',
+  halfUp: '\u2580',
+  halfDown: '\u2584',
+  full: '\u2588',
   spinner: ['\u280b', '\u2819', '\u2839', '\u2838', '\u283c', '\u2834', '\u2826', '\u2827', '\u2807', '\u280f'],
 }
 
@@ -334,24 +342,82 @@ function promptText(): string {
   return `${name} ${shortDir(session.cwd)} ${sgr(STYLE.bold, GLYPH.prompt)} `
 }
 
+/**
+ * The app icon (a large dark sphere and two small pale ones) as pixels, two
+ * per character cell with half blocks. Letters pick the 256-colour index in
+ * ICON_COLOUR; `.` is transparent. Drawn by hand after build/icon.png.
+ */
+const ICON = [
+  '................',
+  '.......33322....',
+  '.....33www322...',
+  '...cc333333221..',
+  '..cc33w3333221..',
+  '.ccc3333332221..',
+  '.ccc2333322211..',
+  '.cccc222222111..',
+  '..ccc22222111c..',
+  '......111111ccc.',
+  '........111cccc.',
+  '.........cccccc.',
+  '..........cccc..',
+  '................',
+]
+const ICON_COLOUR: Record<string, number> = { 1: 240, 2: 242, 3: 245, w: 255, c: 152 }
+
+/** ICON as terminal lines (colour required). */
+function iconLines(): string[] {
+  const fg = (n: number): string => `38;5;${n}`
+  const lines: string[] = []
+  for (let y = 0; y < ICON.length; y += 2) {
+    let line = ''
+    for (let x = 0; x < ICON[y].length; x++) {
+      const top = ICON_COLOUR[ICON[y][x]]
+      const bottom = ICON_COLOUR[ICON[y + 1][x]]
+      if (top === undefined && bottom === undefined) line += ' '
+      else if (top === undefined) line += sgr(fg(bottom), GLYPH.halfDown)
+      else if (bottom === undefined || bottom === top) line += sgr(fg(top), bottom === top ? GLYPH.full : GLYPH.halfUp)
+      else line += sgr(`${fg(top)};48;5;${bottom}`, GLYPH.halfUp)
+    }
+    lines.push(line)
+  }
+  return lines
+}
+
 /** The banner at the top of an interactive session. */
 function printBanner(info: LocalApiInfoFile, appInfo: ConsoleInfoResponse | null): void {
   const key = (t: string): string => sgr(STYLE.accent, t)
   const dot = ` ${GLYPH.dot} `
   // `build` is the source revision; the build number is already in `version`.
   const version = appInfo ? `${appInfo.version}${appInfo.build ? ` ${key(appInfo.build)}` : ''}` : ''
-  const lines = [
-    `${GLYPH.boxTop} ${sgr(STYLE.bold, 'CueMol3')} ${version}`,
-    `${GLYPH.boxSide}  ${['tritium_cli', key(`127.0.0.1:${info.port}`), `pid ${info.pid}`].join(dot)}`,
-    `${GLYPH.boxBottom} ${[
-      `${key('Tab')} completes`,
-      `${key('Ctrl-C')} stops a run`,
-      `${key('pymol')} / ${key('native')} switch`,
-      `${key('help')} lists commands`,
-      `${key('exit')} leaves`,
-      `${key('quit')} quits CueMol`,
-    ].join(dot)}`,
+  const title = `${sgr(STYLE.bold, 'CueMol3')} ${version}`
+  const connection = ['tritium_cli', key(`127.0.0.1:${info.port}`), `pid ${info.pid}`].join(dot)
+  const hints = [
+    [`${key('Tab')} completes`, `${key('Ctrl-C')} stops a run`, `${key('help')} lists commands`].join(dot),
+    [`${key('pymol')} / ${key('native')} switch`, `${key('exit')} leaves`, `${key('quit')} quits CueMol`].join(dot),
   ]
+
+  // The icon beside the details in a box, like Claude Code's; where it would
+  // not fit or cannot be drawn without colour, the details alone.
+  const icon = colourOn(process.stdout) ? iconLines() : []
+  const details = ['', '', title, connection, `cwd ${key(shortDir(session.cwd))}`]
+  const body = [...icon.map((l, i) => `${l}   ${details[i] ?? ''}`.trimEnd()), '', ...hints]
+  const inner = Math.max(...body.map(visibleLength))
+  let lines: string[]
+  if (icon.length > 0 && inner + 4 <= (process.stdout.columns || 80)) {
+    const frame = (t: string): string => key(t)
+    lines = [
+      frame(`${GLYPH.boxTL}${GLYPH.boxH.repeat(inner + 2)}${GLYPH.boxTR}`),
+      ...body.map((l) => `${frame(GLYPH.boxSide)} ${l}${' '.repeat(inner - visibleLength(l))} ${frame(GLYPH.boxSide)}`),
+      frame(`${GLYPH.boxBL}${GLYPH.boxH.repeat(inner + 2)}${GLYPH.boxBR}`),
+    ]
+  } else {
+    lines = [
+      `${GLYPH.boxTop} ${title}`,
+      `${GLYPH.boxSide}  ${connection}`,
+      `${GLYPH.boxBottom} ${hints.join(dot)}`,
+    ]
+  }
   process.stdout.write(`\n${lines.join('\n')}\n\n`)
   // Installed from npm, this command and the app update separately.
   if (appInfo && appInfo.protocol !== CONSOLE_PROTOCOL) {
