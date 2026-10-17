@@ -29,7 +29,7 @@ export type {
   LocalApiEndpoint,
   LocalApiInfoFile,
 } from '@cuemol/console-kit'
-export { TRITIUM_CLI_FLAG } from '@cuemol/console-kit'
+export { CONSOLE_PROTOCOL, TRITIUM_CLI_FLAG } from '@cuemol/console-kit'
 
 /** One request for the renderer to answer (main -> main window). */
 export interface LocalApiRequestPayload {

@@ -48,6 +48,11 @@ changed for them.
    `build_linux.yml` builds the Linux AppImage and deb. Only `build2.yml` sets
    the body; `build_linux.yml` passes no body, so it cannot overwrite the notes
    regardless of the order.
+   After the release, `build2.yml`'s `publish_npm` job publishes tritium_cli to
+   npm as `@cuemol/tritium-cli@<major>.<minor>.<patch>`, but only when its
+   bundle differs from the latest published one; most releases publish nothing
+   (see `docs/architecture/local-api-server.md` section 5.5). A build-only
+   release that changes the bundle fails that job: bump the revision instead.
 
 5. Check the published release: the body should be the file from step 2, and all
    the expected assets should be attached.

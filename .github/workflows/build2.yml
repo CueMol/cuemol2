@@ -568,3 +568,72 @@ jobs:
       with:
         files: artifacts/*
         body_path: release_notes.md
+
+  # Publish tritium_cli (tritium/cli) to npm as @cuemol/tritium-cli, the same
+  # bundle the app ships in <resources>/cli/, for running on its own with the
+  # system Node (it finds and starts an installed CueMol3).
+  #
+  # Only when the bundle changed: the command line rarely does, so most
+  # releases publish nothing. The bundle is compared byte for byte with the
+  # latest published one; the build is deterministic and embeds no version, so
+  # equal bytes mean nothing changed (console-kit and marked included).
+  #
+  # The npm version is the tag's x.y.z (npm takes three parts; v2.4.0.546 ->
+  # 2.4.0), so it tells the app release the command line last changed in.
+  # Authenticated by npm trusted publishing (OIDC, id-token below): no token
+  # secret. That needs npm >= 11.5.1 and the publisher registered for this
+  # workflow on npmjs.com (docs/architecture/local-api-server.md section 5.5).
+  publish_npm:
+    needs: [release_build]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        sparse-checkout: tritium
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Enable pnpm via corepack, and an npm that does trusted publishing
+      run: |
+        corepack enable
+        npm install -g npm@latest
+
+    - name: Build tritium_cli
+      working-directory: tritium
+      run: |
+        pnpm install --frozen-lockfile --filter '@cuemol/tritium-cli...'
+        pnpm --filter @cuemol/tritium-cli run build
+
+    - name: Publish if changed
+      working-directory: tritium/cli
+      run: |
+        set -euo pipefail
+        VERSION=$(echo "${GITHUB_REF_NAME#v}" | cut -d. -f1-3)
+        PKG=@cuemol/tritium-cli
+        if TARBALL=$(npm view "$PKG@latest" dist.tarball 2>/dev/null) && [ -n "$TARBALL" ]; then
+          mkdir -p _latest
+          curl -fsSL "$TARBALL" | tar -xz -C _latest
+          if cmp -s dist/tritium_cli.mjs _latest/package/dist/tritium_cli.mjs; then
+            echo "tritium_cli is unchanged since $(npm view "$PKG@latest" version); nothing to publish."
+            exit 0
+          fi
+        fi
+        if npm view "$PKG@$VERSION" version >/dev/null 2>&1; then
+          echo "::error::tritium_cli changed, but $PKG@$VERSION is already published (a build-only release?). Bump the revision to publish it."
+          exit 1
+        fi
+        npm pkg set version="$VERSION"
+        # The workspace protocol in devDependencies means nothing outside the repo.
+        npm pkg delete devDependencies
+        npm publish --provenance

@@ -46,7 +46,7 @@ import type {
   ConsoleWireEntry,
   LocalApiInfoFile,
 } from '@cuemol/console-kit'
-import { quitLine } from '@cuemol/console-kit'
+import { CONSOLE_PROTOCOL, quitLine } from '@cuemol/console-kit'
 import { ensureApp, NOT_RUNNING, post, quitApp, readInfo } from './connection'
 import { markdownToAnsi } from './markdownAnsi'
 
@@ -353,6 +353,12 @@ function printBanner(info: LocalApiInfoFile, appInfo: ConsoleInfoResponse | null
     ].join(dot)}`,
   ]
   process.stdout.write(`\n${lines.join('\n')}\n\n`)
+  // Installed from npm, this command and the app update separately.
+  if (appInfo && appInfo.protocol !== CONSOLE_PROTOCOL) {
+    const [older, newer] = (appInfo.protocol ?? 0) < CONSOLE_PROTOCOL ? ['CueMol3', 'tritium_cli'] : ['tritium_cli', 'CueMol3']
+    const text = `${older} is older than ${newer}; some commands may not work. Update ${older}.`
+    process.stderr.write(`${sgr(STYLE.yellow, text, process.stderr)}\n\n`)
+  }
 }
 
 // --- Running ---
@@ -616,7 +622,17 @@ async function main(argv: string[]): Promise<number> {
   return interactive()
 }
 
+/** Whether this module is the script Node was started with (through a symlink, as npm's bin link is). */
+function isEntry(): boolean {
+  if (!process.argv[1]) return false
+  try {
+    return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))
+  } catch {
+    return false
+  }
+}
+
 // Run only when executed, so a test can import the helpers above.
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isEntry()) {
   void main(process.argv.slice(2)).then((code) => process.exit(code))
 }
