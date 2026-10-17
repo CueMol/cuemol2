@@ -178,8 +178,8 @@
             "topology": "em.gro",
             "resname": "SOL"
           },
-          "note": "the 100 frames without water, re-encoded by MDAnalysis at the source precision (1000), so the kept integer coordinates are unchanged",
-          "sha256": "5549afe35e5695c5a7fdd51769156418ed16bbbe5a3ab7b9393fc874f9a6bbaf"
+          "note": "the 100 frames without water, re-encoded by MDAnalysis at the source precision (1000), so the kept integer coordinates are unchanged. Re-pinned on the M4 (MDAnalysis 2.7.0, numpy 1.26.4, Python 3.12): the file pinned on the M2 (5549afe3...) was not available, and this one differs from it in bytes. Positions and time of all 100 frames equal the source's kept atoms (check-drop-resname.py); the box differs by one float32 step (3e-5 A) in 28 frames, from MDAnalysis's nm/A round trip; the frame headers carry step 0, 1, 2, ... where the source has 0, 50000, 100000, ...",
+          "sha256": "4d1af34efa647dfb54ae78d3d266c6f2aa7b13cae8d18996275331a48a678e79"
         },
         {
           "name": "prod-25f-nosol.xtc",
@@ -188,8 +188,8 @@
           "params": {
             "frames": 25
           },
-          "note": "first 25 frames of the water-free trajectory",
-          "sha256": "b2538529f5fff5ab3842a56082e8362389705140f0b7d323f4444308ff6297ba"
+          "note": "first 25 frames of the water-free trajectory (re-pinned with prod-100f-nosol.xtc)",
+          "sha256": "32ef5d38ce94cd09addfd97079a79b4f2a86b214783241822293a0b24ddd758d"
         },
         {
           "name": "prod-50f-nosol.xtc",
@@ -198,8 +198,8 @@
           "params": {
             "frames": 50
           },
-          "note": "first 50 frames of the water-free trajectory",
-          "sha256": "68efb757d3797e6906e1a4792188087861d88eda38bb43065e24840079bd7601"
+          "note": "first 50 frames of the water-free trajectory (re-pinned with prod-100f-nosol.xtc)",
+          "sha256": "5c10208c502d0a7ad7bc6d1697ead176ebe41e574914875ffd0ea893818f91f7"
         }
       ]
     }
