@@ -1,0 +1,84 @@
+{
+ "started": "2026-10-17T01:53:13.256Z",
+ "seed": 1200630852,
+ "repeat": 1,
+ "gitSha": "1a736dbc3d41531185b0891033e117bd54b62523",
+ "electron": "/Users/user1/proj64/cuemol2_bench/tritium/react-gui/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+ "canvas": {
+  "cuemol": "1920x1080",
+  "molstar": "1836x1014"
+ },
+ "dprSwitch": null,
+ "files": {
+  "/Users/user1/proj64/cuemol2_bench/tritium/bench/data/md/a4tail/em.gro": {
+   "sha256": "82482eee2a32f67c077b5f16ad4f27e4f53575bbc6fe26f11ed9294dbb432268",
+   "bytes": 177342266
+  },
+  "/Users/user1/proj64/cuemol2_bench/tritium/bench/data/md/a4tail/prod-100f.xtc": {
+   "sha256": "c5f6d8be534dd84b84b3954d581a84f52db336c4eaa3d0dd9fd767101b1aff13",
+   "bytes": 1528146256
+  },
+  "/Users/user1/proj64/cuemol2_bench/tritium/bench/data/md/a4tail/em-nosol.gro": {
+   "sha256": "01d244f5c2ab72e9e508a9deb63a186dee908bdb2a88bf15bf3882429bf65436",
+   "bytes": 15688945
+  },
+  "/Users/user1/proj64/cuemol2_bench/tritium/bench/data/md/a4tail/prod-100f-nosol.xtc": {
+   "sha256": "4d1af34efa647dfb54ae78d3d266c6f2aa7b13cae8d18996275331a48a678e79",
+   "bytes": 136122128
+  },
+  "/Users/user1/proj64/cuemol2_bench/tritium/bench/data/md/ifabp/ifabp_water_0.pdb": {
+   "sha256": "8ccf5f75fd85385921c0cb77f00281a93b933fc1261c42fc9492f43983448a72",
+   "bytes": 958441
+  },
+  "/Users/user1/proj64/cuemol2_bench/tritium/bench/data/md/ifabp/rmsfit_ifabp_water_1-le.dcd": {
+   "sha256": "ad2163a9b65f4275540047229d8b04e678f3b3e5cec06c72d025a202c317124f",
+   "bytes": 74710276
+  },
+  "/Users/user1/proj64/cuemol2_bench/tritium/bench/data/md/yiip/YiiP_system.gro": {
+   "sha256": "4c71b03b4f68636e94b688ae140529cb38cdd9b3de15b1656adb3a36d2145bad",
+   "bytes": 5031759
+  },
+  "/Users/user1/proj64/cuemol2_bench/tritium/bench/data/md/yiip/YiiP_system_9ns_center.xtc": {
+   "sha256": "97f6a93acc1e330915338b290625d81d84928a7e4c1e5aed63d209881fbe268b",
+   "bytes": 372588552
+  }
+ },
+ "order": [
+  {
+   "order": 1,
+   "tool": "cuemol",
+   "spec": "yiip-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 2,
+   "tool": "cuemol",
+   "spec": "a4all-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 3,
+   "tool": "cuemol",
+   "spec": "yiip-idle",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 4,
+   "tool": "cuemol",
+   "spec": "ifabp-md",
+   "rep": 0,
+   "ok": true
+  },
+  {
+   "order": 5,
+   "tool": "cuemol",
+   "spec": "a4nosol-md",
+   "rep": 0,
+   "ok": true
+  }
+ ],
+ "finished": "2026-10-17T01:55:18.173Z"
+}
