@@ -129,6 +129,11 @@ tube / ribbon:
   `SplineRenderer::getSplineTopoGen()` が違う)
 - spline 係数の座標の部分 (`SplineCoeff::updateGeometry`) もセグメントごとに `qlib::parallel_for` で計算する
 - `tubeGpuLastPass()` は直前の更新の経路 (build / serial / chunked) を返す (検査用)
+- メッシュの頂点数が `TubeGpuSupport::TG_DEFAULT_PARALLEL_MIN_VERTS` (256 Ki) 未満なら、前処理とチャンクの更新を
+  呼び出したスレッドで順に回す (`qlib::SerialScope`、`tubeGpuLastParallel()` が false)。小さいメッシュでは仕事
+  (数 ms 以下) より、oneTBB の作業スレッドを起こし、仕事を探して空回りし (`stealing_loop_backoff`)、眠らせる
+  コストの方が大きいため。M4 で mcv448 ribbon (約 8 万頂点) のアプリ全体の CPU が 1 回の更新あたり 13.6 -> 7.9 ms、
+  worker の時間は 1.5 -> 1.9 ms。しきい値は逐次で約 2 ms になる量の見積もり
 
 4V6X (8 コア) の座標更新 1 回: ribbon 48.3 ms (逐次) -> 11.9 ms、tube 33.5 -> 8.4 ms。
 

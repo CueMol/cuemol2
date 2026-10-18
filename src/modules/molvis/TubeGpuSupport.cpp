@@ -16,6 +16,8 @@
 using namespace molvis;
 using gfx::DisplayContext;
 
+int TubeGpuSupport::s_nParallelMinVerts = TubeGpuSupport::TG_DEFAULT_PARALLEL_MIN_VERTS;
+
 namespace {
 
 /// The primitive's re-upload flags for the builder's update flags
@@ -38,7 +40,8 @@ TubeGpuSupport::TubeGpuSupport()
       m_nPolyMode(DisplayContext::POLY_FILL),
       m_bColorOnly(false),
       m_nLastPass(TG_PASS_NONE),
-      m_bChunked(false)
+      m_bChunked(false),
+      m_bParallel(false)
 {
 }
 
@@ -108,6 +111,7 @@ bool TubeGpuSupport::updateMesh()
     const int nFlags = m_nDirty;
     m_nDirty = 0;
     m_bChunked = false;
+    m_bParallel = false;
     if (!m_bTopoValid || nFlags == 0) return m_bTopoValid;
     // The update goes into the primitive's vertex array; without faces there
     // is no primitive and nothing to update
@@ -118,17 +122,22 @@ bool TubeGpuSupport::updateMesh()
         tubeGpuCanUpdateChunks() && m_mb.chunksCoverAll()) {
         // Coordinate-only update of a mesh made of independent chunks: the
         // chunks write disjoint vertex ranges, so redraw them in parallel.
-        // (Colors are not computed here; a color update goes through the
-        // serial traversal below.)
+        // A small mesh is cheaper to update (and prepare) on this thread (see
+        // TG_DEFAULT_PARALLEL_MIN_VERTS). (Colors are not computed here; a
+        // color update goes through the serial traversal below.)
+        m_bParallel = m_mb.getVertexSize() >= s_nParallelMinVerts;
+        qlib::SerialScope serial(!m_bParallel);
+
         tubeGpuPrepareChunkUpdate();
         const qlib::uid_t nSceneID = tubeGpuSceneID();
         std::atomic<bool> bOK(true);
-        qlib::parallel_for(0, m_mb.getChunks().size(), [&](std::size_t i) {
+        auto updateChunk = [&](std::size_t i) {
             TubeMeshBuilder mb;
             mb.startChunkUpdate(nSceneID, nFlags, dst, m_mb, int(i));
             tubeGpuUpdateChunk(int(i), &mb);
             if (!mb.finish()) bOK = false;
-        });
+        };
+        qlib::parallel_for(0, m_mb.getChunks().size(), updateChunk);
         m_bChunked = true;
         return bOK;
     }

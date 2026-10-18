@@ -228,6 +228,37 @@ TEST_P(TubeGpuMeshTest, RingBandsKeepTheTriangles)
     EXPECT_EQ(triangleSoup(prim(pShared)), triangleSoup(prim(build(false))));
 }
 
+// The chunked update runs its chunks in parallel only for a mesh of at least
+// TubeGpuSupport::getParallelMinVerts() vertices; a smaller one is updated on
+// the calling thread, with the same result.
+TEST_F(TubeGpuMeshTest, SmallMeshUpdatesSerially)
+{
+    struct MinVerts
+    {
+        explicit MinVerts(int n) { TubeGpuSupport::setParallelMinVerts(n); }
+        ~MinVerts()
+        {
+            TubeGpuSupport::setParallelMinVerts(
+                TubeGpuSupport::TG_DEFAULT_PARALLEL_MIN_VERTS);
+        }
+    };
+    auto updated = [&](int nMinVerts, bool bParallel) {
+        MinVerts mv(nMinVerts);
+        qsys::RendererPtr pR = newRenderer("ribbon");
+        drawnMesh(pR, m_dc);
+        moveAtoms(m_mol);
+        const PrimSnapshot snap = drawnMesh(pR, m_dc);
+        EXPECT_EQ(lastPass(pR), TubeGpuSupport::TG_PASS_CHUNKED);
+        EXPECT_EQ(dynamic_cast<TubeGpuSupport *>(pR.get())->tubeGpuLastParallel(), bParallel);
+        return snap;
+    };
+    // 1CRN is far below the default threshold (the serial result is checked
+    // against a fresh build in AtomsMovedUpdatesMeshInPlace)
+    updated(TubeGpuSupport::TG_DEFAULT_PARALLEL_MIN_VERTS, false);
+    const PrimSnapshot parallel = updated(0, true);
+    EXPECT_EQ(parallel.geom, drawnMesh(newRenderer("ribbon"), m_dc).geom);
+}
+
 // A coloring change updates only the colors in place (no rebuild), also for
 // a coloring property whose name could match the renderer's own properties.
 TEST_P(TubeGpuMeshTest, ColoringChangeUpdatesColorsInPlace)

@@ -88,6 +88,36 @@ inline int parallel_max_concurrency()
 #endif
 }
 
+namespace detail {
+  /// Number of live SerialScope objects on this thread
+  inline int &serialDepth()
+  {
+    static thread_local int n = 0;
+    return n;
+  }
+}  // namespace detail
+
+/// While an enabled SerialScope lives, parallel_for called on this thread
+/// runs serially on it. For work that is known to be too small to pay for
+/// waking the worker threads.
+class SerialScope
+{
+public:
+  explicit SerialScope(bool bEnable = true) : m_bEnable(bEnable)
+  {
+    if (m_bEnable) ++detail::serialDepth();
+  }
+  ~SerialScope()
+  {
+    if (m_bEnable) --detail::serialDepth();
+  }
+  SerialScope(const SerialScope &) = delete;
+  SerialScope &operator=(const SerialScope &) = delete;
+
+private:
+  bool m_bEnable;
+};
+
 /// Apply fn(i) for every index i in the half-open range [begin, end).
 ///
 /// When oneTBB is enabled (and more than one thread is allowed) the range is
@@ -98,8 +128,9 @@ template <typename Func>
 inline void parallel_for(std::size_t begin, std::size_t end, const Func &fn)
 {
 #if defined(HAVE_TBB)
-  if (parallel_max_concurrency() <= 1) {
-    // Forced serial (e.g. CUEMOL_TBB_THREADS=1): skip the TBB scheduler.
+  if (detail::serialDepth() > 0 || parallel_max_concurrency() <= 1) {
+    // Forced serial (SerialScope, or CUEMOL_TBB_THREADS=1): skip the TBB
+    // scheduler.
     for (std::size_t i = begin; i < end; ++i)
       fn(i);
     return;
