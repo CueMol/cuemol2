@@ -11,6 +11,11 @@
  *   node run-ablation.js --work=/path/to/abl --out=/path/to/results/ablation-m2-DATE
  *   node run-ablation.js --work=... --out=... --overhead     # section 3 check only
  *   node run-ablation.js ... --reps=3 --only=3j3q-cpk-coord-morph   # extra reps
+ *   node run-ablation.js ... --canvas=1898x1060   # window size passed to run.js
+ *
+ * --canvas is run.js's --canvases (device pixels of the window). Without it
+ * run.js uses its default 1920x1080, which draws 1832x1010 on the M2 / M4
+ * (DPR 2); on the Windows machine (DPR 1.5) 1898x1060 draws 1833x1008.
  */
 
 'use strict'
@@ -31,6 +36,7 @@ const REPS = Number(arg('reps', 3))
 // Conditions to run; --conds=D,F picks a subset or an extra condition such as
 // F (PBO upload), which lives in its own worktree next to A-D.
 const CONDS = String(arg('conds', 'A,B,C,D')).split(',')
+const CANVAS = arg('canvas', '')
 
 const SPECS = arg('only', '') ? String(arg('only')).split(',') : [
   '1crn-cpk-coord-morph', '4hhb-cpk-coord-morph', '1aon-cpk-coord-morph',
@@ -93,6 +99,7 @@ const logPath = path.join(OUT, 'run-log.json')
 const log = fs.existsSync(logPath) ? JSON.parse(fs.readFileSync(logPath, 'utf8')) : {
   started: new Date().toISOString(),
   patchSha256: patchSha,
+  canvas: CANVAS || null,
   conditions: condInfo,
   machine: {
     cpu: sh('sysctl', ['-n', 'machdep.cpu.brand_string']),
@@ -113,6 +120,7 @@ function runCond(cond, rep, specs, extraEnv = {}, tag = '') {
   const res = spawnSync(process.execPath, [
     'run.js', `--specs=${specs.join(',')}`, '--repeat=1',
     `--label=${label}`, `--out-dir=${path.join(OUT, 'raw')}`,
+    ...(CANVAS ? [`--canvases=${CANVAS}`] : []),
   ], {
     cwd: path.join(info.dir, 'tritium/bench'),
     env: {
