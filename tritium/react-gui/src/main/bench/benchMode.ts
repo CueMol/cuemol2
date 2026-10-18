@@ -95,6 +95,28 @@ export function benchContentSize(args: BenchArgs): { width: number; height: numb
  * result with its reason, since for a large trajectory the failure is the
  * finding.
  */
+/**
+ * CPU milliseconds of the whole app per update (a new trajectory / morph
+ * frame shown) in the measurement window, in all and per process type; per
+ * drawn frame for cells that do not update. Null without the CPU samples.
+ * The Mol* harness computes the same (`main.js` in cuemol3_paper_data).
+ */
+function cpuPerUpdate(result: {
+  appMetrics?: { cpuInMeasure?: { windowMs: number; totalMs: number; byType: Record<string, number> } | null }
+  updateFps?: number
+  renderFps?: number
+}): { total: number; byType: Record<string, number>; per: 'update' | 'frame' } | null {
+  const c = result.appMetrics?.cpuInMeasure
+  if (!c || c.windowMs <= 0) return null
+  const per = (result.updateFps ?? 0) > 0 ? 'update' : 'frame'
+  const rate = per === 'update' ? result.updateFps ?? 0 : result.renderFps ?? 0
+  const n = (rate * c.windowMs) / 1000
+  if (n <= 0) return null
+  const byType: Record<string, number> = {}
+  for (const [k, v] of Object.entries(c.byType)) byType[k] = v / n
+  return { total: c.totalMs / n, byType, per }
+}
+
 export function installBenchResultWatcher(win: BrowserWindow, args: BenchArgs): void {
   let done = false
   const startedAt = Date.now()
@@ -108,6 +130,7 @@ export function installBenchResultWatcher(win: BrowserWindow, args: BenchArgs): 
     try {
       const result = JSON.parse(payload)
       result.appMetrics = summarizeAppMetrics(result.phases)
+      result.cpuPerUpdateMs = cpuPerUpdate(result)
       out = JSON.stringify(result)
     } catch (e) {
       console.error('[Bench] could not attach appMetrics to the result:', e)

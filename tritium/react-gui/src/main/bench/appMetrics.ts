@@ -11,6 +11,14 @@
  *
  * `workingSetSize` and `privateBytes` are reported by Electron in kilobytes;
  * `privateBytes` exists on Windows only.
+ *
+ * CPU time: each sample also keeps every process's cumulative CPU time
+ * (`cpu.cumulativeCPUUsage`, seconds since the process started). The CPU time
+ * spent inside the measurement window, per process type, is interpolated at
+ * the window's two ends (`cpuInMeasure`). Divided by the frames or updates of
+ * the window it gives milliseconds of CPU per frame for the whole app --
+ * worker, helper threads, GPU process -- which still compares two cells or
+ * two tools when both are held at the display's 60 fps.
  */
 
 import { app } from 'electron'
@@ -21,6 +29,8 @@ interface ProcMem {
   pid: number
   workingSetMB: number
   privateMB: number
+  /** Cumulative CPU seconds of the process, or null when not reported. */
+  cpuS: number | null
 }
 
 interface Sample {
@@ -55,6 +65,15 @@ export interface AppMetricsSummary {
   measurePeak: MemPoint | null
   /** Every sample, reduced to totals and per-type values. */
   timeline: MemPoint[]
+  /** CPU milliseconds spent in the measurement window, or null without phases. */
+  cpuInMeasure: CpuInWindow | null
+}
+
+/** CPU time of a window: per process type and in all, in milliseconds. */
+export interface CpuInWindow {
+  windowMs: number
+  totalMs: number
+  byType: Record<string, number>
 }
 
 const samples: Sample[] = []
@@ -70,6 +89,7 @@ function takeSample(): void {
         pid: m.pid,
         workingSetMB: (m.memory.workingSetSize ?? 0) / 1024,
         privateMB: (m.memory.privateBytes ?? 0) / 1024,
+        cpuS: typeof m.cpu?.cumulativeCPUUsage === 'number' ? m.cpu.cumulativeCPUUsage : null,
       })),
     })
   } catch (e) {
@@ -78,7 +98,7 @@ function takeSample(): void {
 }
 
 /** Start sampling every `everyMs` milliseconds until `stopAppMetrics`. */
-export function startAppMetrics(everyMs = 250): void {
+export function startAppMetrics(everyMs = 100): void {
   if (timer) return
   intervalMs = everyMs
   takeSample()
@@ -128,5 +148,41 @@ export function summarizeAppMetrics(phases: BenchPhases | null | undefined): App
     loaded,
     measurePeak: maxBy(inMeasure),
     timeline,
+    cpuInMeasure: phases ? cpuInWindow(phases.measureStartEpochMs, phases.measureEndEpochMs) : null,
   }
+}
+
+/**
+ * Cumulative CPU seconds of process `pid` at time `t`, interpolated between
+ * the samples around it; null when the process is not in both.
+ */
+function cpuAt(pid: number, t: number): number | null {
+  let before: { t: number; cpuS: number } | null = null
+  let after: { t: number; cpuS: number } | null = null
+  for (const s of samples) {
+    const p = s.procs.find((q) => q.pid === pid)
+    if (!p || p.cpuS === null) continue
+    if (s.t <= t) before = { t: s.t, cpuS: p.cpuS }
+    if (s.t >= t && !after) after = { t: s.t, cpuS: p.cpuS }
+  }
+  if (!before || !after) return null
+  if (after.t === before.t) return before.cpuS
+  return before.cpuS + ((after.cpuS - before.cpuS) * (t - before.t)) / (after.t - before.t)
+}
+
+/** CPU time every process spent between t0 and t1 (epoch ms), by type. */
+function cpuInWindow(t0: number, t1: number): CpuInWindow {
+  const byType: Record<string, number> = {}
+  const seen = new Map<number, string>()
+  for (const s of samples) for (const p of s.procs) seen.set(p.pid, p.type)
+  let totalMs = 0
+  for (const [pid, type] of seen) {
+    const a = cpuAt(pid, t0)
+    const b = cpuAt(pid, t1)
+    if (a === null || b === null) continue
+    const ms = (b - a) * 1000
+    byType[type] = (byType[type] ?? 0) + ms
+    totalMs += ms
+  }
+  return { windowMs: t1 - t0, totalMs, byType }
 }
