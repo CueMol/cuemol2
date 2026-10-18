@@ -49,8 +49,8 @@ architecture, it belongs here.
   Update) と `TubeGpuSupport`。display list を経由せず `TrigGpuPrim` を直接構築し、`atomsMoved` と
   coloring の変更は VBO の in-place 書き換えで反映する。トポロジが座標に依存しない前提と invalidation の表。
 - [cartoon の平滑化 spline (Reinsch 法)](smooth-spline-reinsch.md) (日本語) -- `SmoothSpline` の係数を
-  Reinsch 法 (5 重対角、O(n)) で解き、alglib `spline1dfitpenalizedw` と同じ曲線を返す。rho から λ への
-  正規化の閉じた式、出力 node 配置、alglib に fallback する入力。
+  長い segment は Reinsch 法 (5 重対角、O(n))、短い segment は密な正規方程式で解く自前実装。削除した
+  ALGLIB `spline1dfitpenalizedw` と同じ曲線を返す。rho から λ への正規化の閉じた式、出力 node 配置、悪条件の入力。
 - [GPU ID-buffer picking と 3D view の hover 情報 / hover highlight](gpu-id-picking.md) (日本語) --
   tritium の 3D view で、renderer が描いた幾何そのものに対する hittest (整数 render target に
   renderer/要素 ID を描画して読み戻す、Mol* の pick pass 方式) と、マウス hover で左下ステータスに対象を

@@ -80,11 +80,11 @@ namespace {
 
 }
 
-// generate() solves the penalized fit by the Reinsch algorithm instead of
-// alglib's dense normal equations. The curve (and the derivatives the
-// renderers read) must match the alglib fit, including the lambda
-// normalization by rho, the weights and the linear extensions at both ends.
-TEST(SmoothSpline, ReinschMatchesAlglibFit)
+// generate() solves the long segments by the Reinsch algorithm (O(n)). The
+// curve (and the derivatives the renderers read) must match the dense
+// penalized fit, including the lambda normalization by rho, the weights and
+// the linear extensions at both ends.
+TEST(SmoothSpline, ReinschMatchesDenseFit)
 {
   const int nstart = 5;
   for (int n : {4, 15, 40}) {
@@ -103,7 +103,7 @@ TEST(SmoothSpline, ReinschMatchesAlglibFit)
             p->setPoint(i+nstart, v);
           }
         }
-        ASSERT_TRUE(ref.generateAlglib());
+        ASSERT_TRUE(ref.generateDense());
         ASSERT_TRUE(spl.generate());
 
         double dmax = 0.0;
@@ -120,7 +120,7 @@ TEST(SmoothSpline, ReinschMatchesAlglibFit)
   }
 }
 
-TEST(SmoothSpline1D, ReinschMatchesAlglibFit)
+TEST(SmoothSpline1D, ReinschMatchesDenseFit)
 {
   const int n = 12;
   SmoothSpline1D ref, spl;
@@ -130,7 +130,7 @@ TEST(SmoothSpline1D, ReinschMatchesAlglibFit)
     for (int i=0; i<n; ++i)
       p->setValue(i, tracePoint(i).x());
   }
-  ASSERT_TRUE(ref.generateAlglib());
+  ASSERT_TRUE(ref.generateDense());
   ASSERT_TRUE(spl.generate());
 
   for (double t = -0.5; t <= n-0.5; t += 0.05) {
@@ -139,5 +139,69 @@ TEST(SmoothSpline1D, ReinschMatchesAlglibFit)
     ASSERT_TRUE(spl.interpolate(t, &s0, &s1));
     EXPECT_NEAR(r0, s0, 1e-6);
     EXPECT_NEAR(r1, s1, 1e-6);
+  }
+}
+
+// Short segments use more basis knots than points (the dense fit). Values
+// pinned from the ALGLIB spline1dfitpenalizedw() fit the dense fit replaced:
+// a coil of three points with anchor weights at both ends (rho = -1).
+TEST(SmoothSpline, ShortSegmentKeepsAlglibFit)
+{
+  SmoothSpline spl;
+  spl.setRho(-1.0);
+  spl.setUseWeight(true);
+  spl.setStartId(3);
+  spl.setSize(3);
+  for (int i=0; i<3; ++i) {
+    Vector4D v = tracePoint(i);
+    v.w() = (i==1) ? 1.0 : 10.0;
+    spl.setPoint(i+3, v);
+  }
+  ASSERT_TRUE(spl.generate());
+
+  // t, position, first derivative
+  static const double pin[][7] = {
+    {2.5, 3.541691643962, -0.968385135221, -0.766571533894, -2.486315486859, 1.354438162091, 1.534763113180},
+    {3, 2.298533900532, -0.291166054175, 0.000810022696, -2.486315486859, 1.354438162091, 1.534763113180},
+    {3.5, 1.066756114098, 0.317483379447, 0.761904131776, -2.418035744884, 0.943020277547, 1.497038428121},
+    {4.25, -0.649619580211, 0.439366967930, 1.831006780607, -2.152503414981, -0.656938162349, 1.350331319558},
+    {5, -2.188552241364, -0.507928020087, 2.802071821969, -2.000770655037, -1.571200128004, 1.266498686093},
+    {5.5, -3.188937568882, -1.293528084089, 3.435321165016, -2.000770655037, -1.571200128004, 1.266498686093},
+  };
+  for (const auto &p : pin) {
+    Vector4D v, dv;
+    ASSERT_TRUE(spl.interpolate(p[0], &v, &dv));
+    EXPECT_NEAR(v.x(), p[1], 1e-8);
+    EXPECT_NEAR(v.y(), p[2], 1e-8);
+    EXPECT_NEAR(v.z(), p[3], 1e-8);
+    EXPECT_NEAR(dv.x(), p[4], 1e-8);
+    EXPECT_NEAR(dv.y(), p[5], 1e-8);
+    EXPECT_NEAR(dv.z(), p[6], 1e-8);
+  }
+}
+
+// The same for a short helix width spline (five points, rho = 1).
+TEST(SmoothSpline1D, ShortSegmentKeepsAlglibFit)
+{
+  SmoothSpline1D spl;
+  spl.setRho(1.0);
+  spl.setSize(5);
+  for (int i=0; i<5; ++i)
+    spl.setValue(i, tracePoint(i).x());
+  ASSERT_TRUE(spl.generate());
+
+  static const double pin[][3] = {
+    {-0.5, 3.702158856348, -2.974275797931},
+    {0, 2.215020957383, -2.974275797931},
+    {1.5, -1.420572379436, -1.151769889504},
+    {2.25, -1.154731598805, 1.875166140477},
+    {4, 1.827008713507, 0.789470004353},
+    {4.5, 2.221743715683, 0.789470004353},
+  };
+  for (const auto &p : pin) {
+    double v, dv;
+    ASSERT_TRUE(spl.interpolate(p[0], &v, &dv));
+    EXPECT_NEAR(v, p[1], 1e-8);
+    EXPECT_NEAR(dv, p[2], 1e-8);
   }
 }

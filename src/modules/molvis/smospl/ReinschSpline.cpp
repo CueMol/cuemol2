@@ -17,7 +17,7 @@ using namespace molvis;
 //   Q (n x n-2): Q_j,j = 1, Q_j+1,j = -2, Q_j+2,j = 1
 // The penalty is integral{ f''^2 } = g^T K g with K = Q R^-1 Q^T.
 //
-// alglib scales t onto [-1,1] and uses pdecay = 10^rho * fdmax / admax.
+// PenalizedSpline scales t onto [-1,1] and uses pdecay = 10^rho * fdmax / admax.
 // With the knots on the data points, fdmax = max_i w_i^2 and admax is
 // max diag(K) in the scaled coordinates. The scale factor of the penalty
 // appears in both pdecay and admax and cancels, which gives
@@ -81,7 +81,7 @@ bool ReinschSpline::factor(int n, const double *wgt, double rho)
   if (n<3)
     return false;
 
-  // rho clamp of alglib: [-v, v], v = -log10(machine epsilon)
+  // rho clamp of PenalizedSpline: [-v, v], v = -log10(machine epsilon)
   const double rhomax = -std::log(DBL_EPSILON)/std::log(10.0);
   rho = std::max(-rhomax, std::min(rho, rhomax));
 
@@ -89,7 +89,7 @@ bool ReinschSpline::factor(int n, const double *wgt, double rho)
   if (wgt!=NULL) {
     w2max = 0.0;
     for (int i=0; i<n; ++i) {
-      if (!(wgt[i]>0.0))
+      if (wgt[i]==0.0)
         return false;
       w2max = std::max(w2max, wgt[i]*wgt[i]);
     }

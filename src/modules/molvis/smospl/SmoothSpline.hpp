@@ -30,7 +30,7 @@ namespace molvis {
     double m_rho;
 
     bool fitReinsch();
-    void fitAlglib();
+    bool fitDense();
     bool generateImpl(bool bReinsch);
 
   public:
@@ -59,10 +59,10 @@ namespace molvis {
     /// Generate spline coeffs (Reinsch algorithm, O(n))
     bool generate();
 
-    /// Generate spline coeffs by the alglib penalized fit (O(n^3)).
+    /// Generate spline coeffs by the dense penalized fit (O(n^3)).
     /// Reference implementation of generate(), which also falls back to it
     /// for the inputs the Reinsch path does not reproduce.
-    bool generateAlglib();
+    bool generateDense();
 
     /// Calculate interpolation
     bool interpolate(double f, double *vec,
@@ -103,7 +103,7 @@ namespace molvis {
     //void rewriteCoeff(int i, const Vector4D &ai, const Vector4D &bi);
 
     bool fitReinsch();
-    void fitAlglib();
+    bool fitDense();
     bool generateImpl(bool bReinsch);
 
   public:
@@ -152,10 +152,10 @@ namespace molvis {
     /// Generate spline coeffs (Reinsch algorithm, O(n))
     bool generate();
 
-    /// Generate spline coeffs by the alglib penalized fit (O(n^3)).
+    /// Generate spline coeffs by the dense penalized fit (O(n^3)).
     /// Reference implementation of generate(), which also falls back to it
     /// for the inputs the Reinsch path does not reproduce.
-    bool generateAlglib();
+    bool generateDense();
 
     /// Calculate interpolation
     bool interpolate(double f, Vector4D *vec,

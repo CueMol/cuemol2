@@ -17,8 +17,8 @@ namespace molvis {
   /// Minimizes sum{ w_i^2 (y_i - f(t_i))^2 } + lambda * integral{ f''^2 dt }
   /// over natural cubic splines in O(n), solving the pentadiagonal system of
   /// the Reinsch algorithm. lambda is derived from rho in the same way as
-  /// alglib::spline1dfitpenalizedw() with M == N basis functions, so that the
-  /// fitted curve matches the alglib one up to rounding (alglib's tiny
+  /// PenalizedSpline (ALGLIB spline1dfitpenalizedw) with M == N basis functions, so
+  /// that the fitted curve matches it up to rounding (its tiny
   /// Tikhonov term is not reproduced).
   class ReinschSpline
   {
@@ -44,7 +44,7 @@ namespace molvis {
     ReinschSpline() : m_n(0), m_lambda(0.0) {}
 
     /// Factor the system for n points (n>=3).
-    /// wgt: weights w_i (NULL means all 1); every w_i must be positive.
+    /// wgt: weights w_i (NULL means all 1); every w_i must be nonzero (only w_i^2 matters).
     /// Returns false if the input is not supported or the factorization fails.
     bool factor(int n, const double *wgt, double rho);
 
