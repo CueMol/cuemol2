@@ -1,0 +1,26 @@
+{
+  "name": "ifabp (I-FABP in water, 12445 atoms, DCD, 500 frames) / ribbon (Mol* cartoon high, maxFps 240) / md-playback",
+  "file": "../data/md/ifabp/ifabp_water_0.pdb",
+  "reader": "pdb",
+  "renderer": "ribbon",
+  "scenario": "md-playback",
+  "trajectory": {
+    "files": [
+      "../data/md/ifabp/rmsfit_ifabp_water_1-le.dcd"
+    ]
+  },
+  "warmupMs": 2000,
+  "measureMs": 6000,
+  "molstarRepr": {
+    "type": "cartoon",
+    "typeParams": {
+      "quality": "high"
+    },
+    "color": "chain-id"
+  },
+  "molstarMaxFps": 240,
+  "tools": [
+    "cuemol",
+    "molstar"
+  ]
+}

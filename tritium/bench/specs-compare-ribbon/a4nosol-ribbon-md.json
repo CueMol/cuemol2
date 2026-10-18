@@ -1,0 +1,26 @@
+{
+  "name": "a4tail without water (348642 atoms, XTC, 100 frames; files written without SOL) / ribbon (Mol* cartoon high, maxFps 240) / md-playback",
+  "file": "../data/md/a4tail/em-nosol.gro",
+  "reader": "gro",
+  "renderer": "ribbon",
+  "scenario": "md-playback",
+  "trajectory": {
+    "files": [
+      "../data/md/a4tail/prod-100f-nosol.xtc"
+    ]
+  },
+  "warmupMs": 2000,
+  "measureMs": 6000,
+  "molstarRepr": {
+    "type": "cartoon",
+    "typeParams": {
+      "quality": "high"
+    },
+    "color": "chain-id"
+  },
+  "molstarMaxFps": 240,
+  "tools": [
+    "cuemol",
+    "molstar"
+  ]
+}

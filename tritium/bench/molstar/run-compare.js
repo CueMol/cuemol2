@@ -26,7 +26,10 @@ const path = require('node:path')
 const HERE = __dirname
 const BENCH = path.resolve(HERE, '..')
 const APP_DIR = path.resolve(BENCH, '../react-gui')
-const SPEC_DIR = path.join(BENCH, 'specs-compare')
+// --spec-dir=<dir> (relative to tritium/bench) runs another set of cells,
+// e.g. specs-compare-ribbon for the ribbon / cartoon comparison
+const SPEC_DIR = path.resolve(BENCH,
+  (process.argv.find((a) => a.startsWith('--spec-dir=')) || '--spec-dir=specs-compare').slice('--spec-dir='.length))
 const CELL_FILE = path.join(os.tmpdir(), `molstar-compare-cell-${process.pid}.json`)
 
 /**

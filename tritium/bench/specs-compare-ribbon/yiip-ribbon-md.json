@@ -1,0 +1,26 @@
+{
+  "name": "yiip (YiiP in membrane, 111815 atoms, XTC, 901 frames) / ribbon (Mol* cartoon high, maxFps 240) / md-playback",
+  "file": "../data/md/yiip/YiiP_system.gro",
+  "reader": "gro",
+  "renderer": "ribbon",
+  "scenario": "md-playback",
+  "trajectory": {
+    "files": [
+      "../data/md/yiip/YiiP_system_9ns_center.xtc"
+    ]
+  },
+  "warmupMs": 2000,
+  "measureMs": 6000,
+  "molstarRepr": {
+    "type": "cartoon",
+    "typeParams": {
+      "quality": "high"
+    },
+    "color": "chain-id"
+  },
+  "molstarMaxFps": 240,
+  "tools": [
+    "cuemol",
+    "molstar"
+  ]
+}
