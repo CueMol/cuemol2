@@ -115,7 +115,9 @@ void BallStickRenderer::display(DisplayContext *pdc)
       }
     }
 
-    if (m_fRing) {
+    // The ring plates are not picked: a plate stands for no single atom
+    // (NARenderer draws its base plates itself, under the residue's name)
+    if (m_fRing && !pdc->isPickDraw()) {
       // only draw rings using old displist version
       MB_DPRINTLN("Ballstick ring render");
       m_bDrawRingOnly = true;
@@ -200,6 +202,8 @@ void BallStickRenderer::beginRend(DisplayContext *pdl)
 void BallStickRenderer::endRend(DisplayContext *pdl)
 {
   if ( m_fRing && !qlib::isNear4(m_tickness, 0.0) ) {
+    // no name: a plate stands for no single atom (see display())
+    pdl->loadName(-1);
     TubeMeshBuilder mb;
     mb.startDirect(pdl);
     drawRings(&mb);
