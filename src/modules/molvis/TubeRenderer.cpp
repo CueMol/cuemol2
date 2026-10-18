@@ -58,6 +58,11 @@ void TubeRenderer::preRender(DisplayContext *pdc)
 void TubeRenderer::beginRend(DisplayContext *pdl)
 {
   tubeGpuBeginRend(pdl);
+  if (pdl==NULL && tubeGpuBuilder().getMode()==TubeMeshBuilder::MODE_BUILD) {
+    // the segments of the mesh being built (see renderSpline())
+    m_splineSegs.clear();
+    m_nSegTopoGen = -1;
+  }
 
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
@@ -110,6 +115,29 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
                                 MolResiduePtr pStartRes, double fstart,
                                 MolResiduePtr pEndRes, double fend)
 {
+  TubeMeshBuilder &mb = tubeGpuBuilder();
+  // Building the GPU mesh: record the segment as one chunk, so that a
+  // coordinate update can redraw the segments concurrently
+  const bool bRecord = (mb.getMode()==TubeMeshBuilder::MODE_BUILD);
+  if (bRecord) {
+    mb.beginChunk();
+    recordSplineSeg(pCoeff, pStartRes, fstart, pEndRes, fend);
+  }
+  renderSplineTo(&mb, pCoeff, pStartRes, fstart, pEndRes, fend);
+  if (bRecord)
+    mb.endChunk();
+}
+
+void TubeRenderer::tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb)
+{
+  const SplineSeg &seg = m_splineSegs[i];
+  renderSplineTo(pmb, seg.pCoeff, seg.pStartRes, seg.fstart, seg.pEndRes, seg.fend);
+}
+
+void TubeRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
+                                  const MolResiduePtr &pStartRes, double fstart,
+                                  const MolResiduePtr &pEndRes, double fend)
+{
   // Calculate num of drawing points "ndelta"
   const int naxdet = getAxialDetail();
   int ndelta = (int) ::floor( (fend-fstart)* naxdet );
@@ -120,9 +148,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   }
   const double fdelta = (fend-fstart)/double(ndelta);
 
-  // All drawing goes through the mesh builder (pdl is null when the GPU
-  // mesh is built or updated)
-  TubeMeshBuilder *pmb = &tubeGpuBuilder();
+  // All drawing goes through the mesh builder
   const bool bColor = pmb->wantColor();
   const bool bName = pmb->wantName();
 
@@ -274,21 +300,20 @@ qlib::Vector2D TubeRenderer::getEScl(double par, SplineCoeff *pCoeff)
   int nnext = int(::ceil(par));
   double rho = par - double(nprev);
   
-  MolResiduePtr pNext(pCoeff->getResidue(nnext));
-  MolResiduePtr pPrev(pCoeff->getResidue(nprev));
-  MolAtomPtr pAtom1, pAtom2;
+  // pivots kept in the spline topology (raw pointers: this runs in the
+  // parallel coordinate update too)
+  const MolAtom *pAtom1 = pCoeff->getPivot(nprev);
+  const MolAtom *pAtom2 = pCoeff->getPivot(nnext);
   double par1 = 1.0, par2 = 1.0;
 
-  if (!pPrev.isnull()) {
-    pAtom1 = getPivotAtom(pPrev);
+  if (pAtom1!=NULL) {
     if (m_nPuttyTgt==TBR_PUTTY_OCC)
       par1 = pAtom1->getOcc();
     else
       par1 = pAtom1->getBfac();
 
   }
-  if (!pNext.isnull()) {
-    pAtom2 = getPivotAtom(pNext);
+  if (pAtom2!=NULL) {
     if (m_nPuttyTgt==TBR_PUTTY_OCC)
       par2 = pAtom2->getOcc();
     else

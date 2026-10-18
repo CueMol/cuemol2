@@ -61,32 +61,11 @@ private:
   ColorPtr m_pHelixBackCol;
   ColorPtr m_pSheetSideCol;
 
-  ColorPtr m_pCurHBCol;
-  ColorPtr m_pCurSSCol;
-
 private:
-  bool m_bNextBnormInv;
-  bool m_bPrevBnormInv;
+  struct SegCtx;
 
-  inline bool isHelixBackCol(int ss_type, int nt) const {
-    if (!m_bHelixBackCol)
-      return false;
-    
-    if (ss_type==RB_HELIX || ss_type==RB_HELIX_TAIL) {
-      if (m_bNextBnormInv)
-        return (nt==TubeSection::TSSF_FRONT);
-      else 
-        return (nt==TubeSection::TSSF_BACK);
-    }
-    else if (ss_type==RB_HELIX_HEAD) {
-      if (m_bPrevBnormInv)
-        return (nt==TubeSection::TSSF_FRONT);
-      else 
-        return (nt==TubeSection::TSSF_BACK);
-    }
-    return false;
-  }
-  
+  inline bool isHelixBackCol(const SegCtx &c, int ss_type, int nt) const;
+
   inline bool isSheetSideCol(int ss_type, int nt) const {
     if (m_bSheetSideCol &&
         (ss_type==RB_SHEET ||
@@ -160,6 +139,14 @@ protected:
   void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
   void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
 
+  // chunked coordinate update: one chunk per segment (see renderSpline())
+  bool tubeGpuCanUpdateChunks() const override
+  {
+    return !isSegEndFade() && isSplineSegsValid();
+  }
+  void tubeGpuPrepareChunkUpdate() override { prepareSplineCoeffs(); }
+  void tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb) override;
+
 public:
 
   //////////////////////////////////////////////////////
@@ -175,6 +162,12 @@ public:
   void renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
                             MolResiduePtr pStartRes, double fstart,
                             MolResiduePtr pEndRes, double fend) override;
+
+  /// Draw one segment to pmb (renderSpline() draws to tubeGpuBuilder()).
+  /// Uses no renderer state, so segments can be drawn concurrently.
+  void renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
+                      const MolResiduePtr &pStartRes, double fstart,
+                      const MolResiduePtr &pEndRes, double fend);
 
   ////////////////////////////////////////////
   // property handling
@@ -215,54 +208,84 @@ private:
   static const char RB_SHEET_HEAD=5;
   static const char RB_SHEET_TAIL=6;
 
-  std::vector<char> m_hscTab;
+  /// State of drawing one segment (renderSplineTo()). Kept out of the
+  /// renderer so that segments can be drawn concurrently (the coordinate
+  /// update of TubeGpuSupport runs them in parallel).
+  struct SegCtx
+  {
+    /// drawing sink of this segment
+    TubeMeshBuilder *pmb = nullptr;
 
-  void makeHSCTable(SplineCoeff *pCoeff, int istart, int iend);
+    std::vector<char> hscTab;
 
-  void renderTube(DisplayContext *pdl,
+    bool bStart = true;
+    bool bMakePartition = false;
+    ColorPtr pCol, pPrevCol;
+    ColorPtr pCurHBCol, pCurSSCol;
+    /// Hit names (pick pass) of the current / previous drawing point
+    int nHitName = -1, nPrevHitName = -1;
+    bool bNextBnormInv = false;
+    bool bPrevBnormInv = false;
+    Vector4D e11, e12, e21, e22;
+    Vector4D f1, f2, bnorm, vpt;
+    Vector4D prev_e1, prev_e2, prev_f1, prev_vpt;
+    Vector4D prev_escl;
+
+    double par = 0.0, prev_par = 0.0;
+
+    void updatePrevValues() {
+      prev_par = par;
+      prev_e1 = e11;
+      prev_e2 = e12;
+      prev_f1 = f1;
+      prev_vpt = vpt;
+      pPrevCol = pCol;
+      nPrevHitName = nHitName;
+    }
+  };
+
+  void makeHSCTable(SegCtx &c, SplineCoeff *pCoeff, int istart, int iend);
+
+  void renderTube(SegCtx &c,
                   char ss_type,
                   TubeSection *pCurTs,
                   SplineCoeff *pCoeff,
                   double fcstart, double fcend, int naxdet);
   
-  void renderJct(DisplayContext *pdl,
+  void renderJct(SegCtx &c,
                  char ss_type,
                  TubeSection *pCurTs,
                  JctTable *pJct,
                  SplineCoeff *pCoeff,
                  double fcstart, double fcend, int naxdet);
 
-  //////////
-
-  bool m_bStart;
-  bool m_bMakePartition;
-  ColorPtr m_pCol, m_pPrevCol;
-  /// Hit names (pick pass) of the current / previous drawing point
-  int m_nHitName = -1, m_nPrevHitName = -1;
-  Vector4D m_e11, m_e12, m_e21, m_e22;
-  Vector4D m_f1, m_f2, m_bnorm, m_vpt;
-  Vector4D m_prev_e1, m_prev_e2, m_prev_f1, m_prev_vpt;
-  Vector4D m_prev_escl;
-
-  double m_par, m_prev_par;
-
-  bool setupHelper(DisplayContext *pdl,
+  bool setupHelper(SegCtx &c,
                    TubeSection *pCurTs,
                    int index, double par, SplineCoeff *pCoeff);
-  
-  void updatePrevValues() {
-    m_prev_par = m_par;
-    m_prev_e1 = m_e11;
-    m_prev_e2 = m_e12;
-    m_prev_f1 = m_f1;
-    m_prev_vpt = m_vpt;
-    m_pPrevCol = m_pCol;
-    m_nPrevHitName = m_nHitName;
-  }
 
   // ColorPtr calcColor(double par, SplineCoeff *pCoeff);
 
 };
+
+inline bool RibbonRenderer::isHelixBackCol(const SegCtx &c, int ss_type, int nt) const
+{
+  if (!m_bHelixBackCol)
+    return false;
+
+  if (ss_type==RB_HELIX || ss_type==RB_HELIX_TAIL) {
+    if (c.bNextBnormInv)
+      return (nt==TubeSection::TSSF_FRONT);
+    else
+      return (nt==TubeSection::TSSF_BACK);
+  }
+  else if (ss_type==RB_HELIX_HEAD) {
+    if (c.bPrevBnormInv)
+      return (nt==TubeSection::TSSF_FRONT);
+    else
+      return (nt==TubeSection::TSSF_BACK);
+  }
+  return false;
+}
 
 } // namespace molvis
 

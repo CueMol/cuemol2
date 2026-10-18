@@ -57,6 +57,10 @@ namespace molvis {
     bool m_bTopoValid;
     bool m_bGeomValid;
 
+    /// Incremented on every topology build (the SplineCoeff objects of an
+    /// older generation are gone)
+    int m_nTopoGen;
+
     MainChainRenderer *m_pParent;
 
     double m_dsmooth;
@@ -79,6 +83,9 @@ namespace molvis {
 
     /// chech current coeffs are valid
     bool isValid() const;
+
+    bool isTopoValid() const { return m_bTopoValid; }
+    int getTopoGen() const { return m_nTopoGen; }
 
     /// search coeff obj for the residue pres
     SplineCoeff *searchCoeff(MolResiduePtr pres);
@@ -218,6 +225,14 @@ namespace molvis {
     /// "secondary2" property of the residue (kept in the topology part)
     const LString &getSecondary2(int ires) const {
       return m_cache[ires].sec2;
+    }
+
+    /// Pivot atom of the residue (raw pointer kept in the topology part; no
+    /// reference counting, so it can be read from several threads)
+    MolAtom *getPivot(int ires) const {
+      if (ires<0 || ires>=int(m_cache.size()))
+        return NULL;
+      return m_cache[ires].pPiv;
     }
 
     MolAtomPtr getAtom(int ires) const {

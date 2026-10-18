@@ -208,6 +208,52 @@ TEST_F(TubeGpuMeshTest, SplineTopologyRebuiltOnSecondaryAndSmoothing)
     EXPECT_EQ(afterSmo.pos, meshOf(newRibbon(0.7)).pos);
 }
 
+// With the mesh in the GPU primitive, an atom move redraws the segments
+// concurrently (one chunk each) into the primitive's vertex array; the result
+// equals a fresh build from the moved atoms.
+TEST_P(TubeGpuMeshTest, AtomsMovedChunkedUpdateIntoPrim)
+{
+    const std::string type = GetParam();
+    if (type == "cartoon") return;  // no chunked update for cartoon
+
+    MockDisplayContext dc;
+    auto newRend = [&]() {
+        qsys::RendererPtr pR = m_mol->createRenderer(type.c_str());
+        dynamic_cast<molstr::MainChainRenderer *>(pR.get())->setPivAtomName("CA");
+        pR->display(&dc);  // builds the mesh into the primitive
+        return pR;
+    };
+    auto verts = [](qsys::RendererPtr pR) {
+        auto *pTg = dynamic_cast<TubeGpuSupport *>(pR.get());
+        const gfx::TrigGpuPrim &prim = pTg->tubeGpuPrim();
+        const auto *pv = prim.getVertexArray();
+        std::vector<float> v;
+        for (int i = 0; i < prim.getVertexSize(); ++i) {
+            v.insert(v.end(), {pv[i].x, pv[i].y, pv[i].z, pv[i].nx, pv[i].ny, pv[i].nz});
+        }
+        return v;
+    };
+
+    qsys::RendererPtr pRend = newRend();
+    auto *pTg = dynamic_cast<TubeGpuSupport *>(pRend.get());
+    ASSERT_TRUE(pTg->tubeGpuMesh().chunksCoverAll());
+    const std::vector<float> before = verts(pRend);
+    ASSERT_GT(before.size(), 0u);
+
+    for (auto it = m_mol->beginAtom(); it != m_mol->endAtom(); ++it) {
+        const double a = double(it->first);
+        it->second->setPos(it->second->getPos() +
+                           Vector4D(0.3 * std::sin(a), 0.3 * std::cos(a), 0.1));
+    }
+    m_mol->fireAtomsMoved();
+    pRend->display(&dc);  // chunked update
+    EXPECT_EQ(pTg->tubeGpuLastPass(), TubeGpuSupport::TG_PASS_CHUNKED);
+
+    const std::vector<float> updated = verts(pRend);
+    EXPECT_NE(updated, before);
+    EXPECT_EQ(updated, verts(newRend()));
+}
+
 INSTANTIATE_TEST_SUITE_P(TubeLike, TubeGpuMeshTest,
                          ::testing::Values("tube", "ribbon", "cartoon"));
 

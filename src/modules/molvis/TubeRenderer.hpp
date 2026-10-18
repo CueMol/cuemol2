@@ -59,6 +59,14 @@ namespace molvis {
     void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
     void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
 
+    // chunked coordinate update: one chunk per segment (see renderSpline())
+    bool tubeGpuCanUpdateChunks() const override
+    {
+      return !isSegEndFade() && isSplineSegsValid();
+    }
+    void tubeGpuPrepareChunkUpdate() override { prepareSplineCoeffs(); }
+    void tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb) override;
+
   public:
     //////////////////////////////////////////////////////
 
@@ -73,6 +81,12 @@ namespace molvis {
     void renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
                               MolResiduePtr pStartRes, double fstart,
                               MolResiduePtr pEndRes, double fend) override;
+
+    /// Draw one segment to pmb (renderSpline() draws to tubeGpuBuilder()).
+    /// Uses no renderer state, so segments can be drawn concurrently.
+    void renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
+                        const MolResiduePtr &pStartRes, double fstart,
+                        const MolResiduePtr &pEndRes, double fend);
 
     ////////////////////////////////////////////
     // property handling

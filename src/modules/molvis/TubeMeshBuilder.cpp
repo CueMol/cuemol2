@@ -28,7 +28,11 @@ TubeMeshBuilder::TubeMeshBuilder()
       m_pDirect(nullptr),
       m_nVertCur(0),
       m_nPrimCur(0),
-      m_bMismatch(false)
+      m_nPrimEnd(0),
+      m_bMismatch(false),
+      m_pPrimsRef(nullptr),
+      m_nChunkVert(0),
+      m_nChunkPrim(0)
 {
     m_curNorm[0] = 1.0f;
     m_curNorm[1] = 0.0f;
@@ -75,15 +79,47 @@ void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags,
     m_nPrimType = -1;
     m_nVertCur = 0;
     m_nPrimCur = 0;
+    m_nPrimEnd = int(m_prims.size());
+    m_pPrimsRef = nullptr;
     m_bMismatch = false;
+}
+
+void TubeMeshBuilder::startChunkUpdate(qlib::uid_t nSceneID, int nFlags,
+                                       gfx::TrigGpuPrim::TrigVertAttr *pDirect,
+                                       const TubeMeshBuilder &parent, int ichunk)
+{
+    MB_ASSERT(pDirect != nullptr);
+    const Chunk &ck = parent.m_chunks[ichunk];
+    m_nMode = MODE_UPDATE;
+    m_nUpdFlags = nFlags;
+    m_pdl = nullptr;
+    m_nSceneID = nSceneID;
+    m_pDirect = pDirect;
+    m_bReleased = true;  // no vertex data of its own
+    m_curCol = parent.m_curCol;
+    m_nPrimType = -1;
+    // the range of the chunk: m_nVerts is the end of the writable range
+    m_nVertCur = ck.firstVert;
+    m_nVerts = ck.firstVert + ck.nVerts;
+    m_nPrimCur = ck.firstPrim;
+    m_nPrimEnd = ck.firstPrim + ck.nPrims;
+    m_pPrimsRef = &parent.m_prims;
+    m_bMismatch = false;
+}
+
+bool TubeMeshBuilder::chunksCoverAll() const
+{
+    if (m_chunks.empty()) return false;
+    long nverts = 0;
+    for (const Chunk &ck : m_chunks) nverts += ck.nVerts;
+    return nverts == m_nVerts;
 }
 
 bool TubeMeshBuilder::finish()
 {
     bool bOK = true;
     if (m_nMode == MODE_UPDATE) {
-        bOK = !m_bMismatch && m_nVertCur == getVertexSize() &&
-              m_nPrimCur == int(m_prims.size());
+        bOK = !m_bMismatch && m_nVertCur == m_nVerts && m_nPrimCur == m_nPrimEnd;
     }
     m_nMode = MODE_NONE;
     m_pdl = nullptr;
@@ -95,6 +131,7 @@ void TubeMeshBuilder::clear()
 {
     releaseVertexData();
     m_prims.clear();
+    m_chunks.clear();
     m_nVerts = 0;
     m_bReleased = false;
 }
@@ -151,8 +188,9 @@ void TubeMeshBuilder::startPrim(int nType)
         m_nPrimFirst = getVertexSize();
     }
     else if (m_nMode == MODE_UPDATE) {
-        if (m_nPrimCur >= int(m_prims.size()) || m_prims[m_nPrimCur].type != nType ||
-            m_prims[m_nPrimCur].first != m_nVertCur)
+        const std::vector<Prim> &ps = prims();
+        if (m_nPrimCur >= m_nPrimEnd || ps[m_nPrimCur].type != nType ||
+            ps[m_nPrimCur].first != m_nVertCur)
             m_bMismatch = true;
         m_nPrimType = nType;
         m_nPrimFirst = m_nVertCur;
@@ -249,8 +287,8 @@ void TubeMeshBuilder::end()
         m_prims.push_back(Prim{m_nPrimType, m_nPrimFirst, nCount});
     }
     else if (m_nMode == MODE_UPDATE) {
-        if (m_nPrimCur >= int(m_prims.size()) ||
-            m_prims[m_nPrimCur].count != m_nVertCur - m_nPrimFirst)
+        if (m_nPrimCur >= m_nPrimEnd ||
+            prims()[m_nPrimCur].count != m_nVertCur - m_nPrimFirst)
             m_bMismatch = true;
         ++m_nPrimCur;
     }

@@ -275,6 +275,15 @@ void SplineRenderer::objectChanged(qsys::ObjectEvent &ev)
   super_t::objectChanged(ev);
 }
 
+void SplineRenderer::prepareSplineCoeffs()
+{
+  if (m_scs.isValid())
+    return;
+  MolCoordPtr pmol = getClientMol();
+  if (!pmol.isnull())
+    m_scs.generate(pmol);
+}
+
 void SplineRenderer::updateMovedAtoms()
 {
   m_scs.markMoved();

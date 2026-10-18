@@ -23,7 +23,7 @@ using namespace molstr;
 using qlib::Matrix3D;
 
 SplineCoeffSet::SplineCoeffSet()
-     : m_pCurCoeff(NULL), m_bTopoValid(false), m_bGeomValid(false)
+     : m_pCurCoeff(NULL), m_bTopoValid(false), m_bGeomValid(false), m_nTopoGen(0)
 {
   m_dsmooth = 0.0;
   m_pSmoothEval = NULL;
@@ -123,6 +123,7 @@ void SplineCoeffSet::buildTopology(MolCoordPtr pmol)
 
   m_bTopoValid = true;
   m_bGeomValid = false;
+  ++m_nTopoGen;
 }
 
 void SplineCoeffSet::beginSegment(MolResidue *pres)

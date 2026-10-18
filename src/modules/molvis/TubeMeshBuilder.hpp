@@ -66,6 +66,16 @@ public:
         int count;
     };
 
+    /// A part of the traversal that can be re-run on its own (one segment):
+    /// the vertices and primitives it wrote in build mode
+    struct Chunk
+    {
+        int firstVert;
+        int nVerts;
+        int firstPrim;
+        int nPrims;
+    };
+
     TubeMeshBuilder();
     ~TubeMeshBuilder();
 
@@ -84,9 +94,38 @@ public:
     void startUpdate(qlib::uid_t nSceneID, int nFlags,
                      gfx::TrigGpuPrim::TrigVertAttr *pDirect = nullptr);
 
+    /// Start overwriting chunk ichunk of the mesh recorded by parent, in
+    /// pDirect (the vertex array of parent's TrigGpuPrim). This builder only
+    /// writes the chunk's vertices, so builders of distinct chunks can run
+    /// concurrently. finish() reports whether the chunk was reproduced.
+    void startChunkUpdate(qlib::uid_t nSceneID, int nFlags,
+                          gfx::TrigGpuPrim::TrigVertAttr *pDirect,
+                          const TubeMeshBuilder &parent, int ichunk);
+
     /// End the current traversal. In update mode, returns false if the
     /// traversal did not reproduce the recorded topology.
     bool finish();
+
+    /// In build mode, mark the start / end of a chunk (see Chunk). No-op in
+    /// the other modes.
+    void beginChunk()
+    {
+        if (m_nMode != MODE_BUILD) return;
+        m_nChunkVert = m_nVerts;
+        m_nChunkPrim = int(m_prims.size());
+    }
+    void endChunk()
+    {
+        if (m_nMode != MODE_BUILD) return;
+        m_chunks.push_back(Chunk{m_nChunkVert, m_nVerts - m_nChunkVert, m_nChunkPrim,
+                                 int(m_prims.size()) - m_nChunkPrim});
+    }
+
+    const std::vector<Chunk> &getChunks() const { return m_chunks; }
+
+    /// True if the chunks hold every recorded vertex (the mesh can be
+    /// updated chunk by chunk).
+    bool chunksCoverAll() const;
 
     /// Drop the recorded mesh.
     void clear();
@@ -217,10 +256,20 @@ private:
     // update target in the GPU primitive (null: the own arrays)
     gfx::TrigGpuPrim::TrigVertAttr *m_pDirect;
 
-    // update cursors
+    // update cursors (and the ends of the range to update)
     int m_nVertCur;
     int m_nPrimCur;
+    int m_nPrimEnd;
     bool m_bMismatch;
+
+    // primitives to check the update against (another builder's for a
+    // chunk update, null for the own ones)
+    const std::vector<Prim> *m_pPrimsRef;
+
+    // chunks recorded in build mode
+    std::vector<Chunk> m_chunks;
+    int m_nChunkVert;
+    int m_nChunkPrim;
 
     // recorded mesh
     std::vector<float> m_pos;
@@ -228,6 +277,11 @@ private:
     std::vector<qlib::quint32> m_col;
     std::vector<qlib::quint32> m_name;
     std::vector<Prim> m_prims;
+
+    const std::vector<Prim> &prims() const
+    {
+        return (m_pPrimsRef != nullptr) ? *m_pPrimsRef : m_prims;
+    }
 
     bool isRecording() const
     {

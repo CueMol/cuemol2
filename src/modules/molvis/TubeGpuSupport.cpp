@@ -9,6 +9,9 @@
 
 #include <gfx/DisplayContext.hpp>
 #include <qsys/ObjectEvent.hpp>
+#include <qlib/parallel.hpp>
+
+#include <atomic>
 
 using namespace molvis;
 using gfx::DisplayContext;
@@ -20,7 +23,9 @@ TubeGpuSupport::TubeGpuSupport()
       m_bHasMesh(false),
       m_nDirty(0),
       m_nPolyMode(DisplayContext::POLY_FILL),
-      m_bColorOnly(false)
+      m_bColorOnly(false),
+      m_nLastPass(TG_PASS_NONE),
+      m_bChunked(false)
 {
 }
 
@@ -49,8 +54,10 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
                               : DisplayContext::POLY_FILL;
     if (m_bTopoValid && nPolyMode != m_nPolyMode) m_bTopoValid = false;
 
+    m_nLastPass = TG_PASS_NONE;
     if (!m_bTopoValid) {
         build(pdc, nPolyMode);
+        m_nLastPass = TG_PASS_BUILD;
         return true;
     }
 
@@ -59,10 +66,12 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
         // primitive (see tubeGpuUpdateMesh()): only the upload is left
         if (tubeGpuUpdateMesh()) {
             if (m_bHasMesh) m_prim.setUpdated(true);
+            m_nLastPass = m_bChunked ? TG_PASS_CHUNKED : TG_PASS_SERIAL;
         }
         else {
             MB_DPRINTLN("TubeGpuSupport> topology changed, rebuild the mesh");
             build(pdc, nPolyMode);
+            m_nLastPass = TG_PASS_BUILD;
         }
     }
     return true;
@@ -83,11 +92,32 @@ bool TubeGpuSupport::tubeGpuUpdateMesh()
 {
     const int nFlags = m_nDirty;
     m_nDirty = 0;
+    m_bChunked = false;
     if (!m_bTopoValid || nFlags == 0) return m_bTopoValid;
     // Once the mesh is in the primitive, the builder holds no vertex data of
     // its own and the update goes into the primitive's vertex array
     gfx::TrigGpuPrim::TrigVertAttr *pDirect =
         m_mb.hasVertexData() ? nullptr : m_prim.getVertexArray();
+
+    if (nFlags == TubeMeshBuilder::UPD_GEOM && pDirect != nullptr &&
+        tubeGpuCanUpdateChunks() && m_mb.chunksCoverAll()) {
+        // Coordinate-only update of a mesh made of independent chunks: the
+        // chunks write disjoint vertex ranges, so redraw them in parallel.
+        // (Colors are not computed here; a color update goes through the
+        // serial traversal below.)
+        tubeGpuPrepareChunkUpdate();
+        const qlib::uid_t nSceneID = tubeGpuSceneID();
+        std::atomic<bool> bOK(true);
+        qlib::parallel_for(0, m_mb.getChunks().size(), [&](std::size_t i) {
+            TubeMeshBuilder mb;
+            mb.startChunkUpdate(nSceneID, nFlags, pDirect, m_mb, int(i));
+            tubeGpuUpdateChunk(int(i), &mb);
+            if (!mb.finish()) bOK = false;
+        });
+        m_bChunked = true;
+        return bOK;
+    }
+
     m_mb.startUpdate(tubeGpuSceneID(), nFlags, pDirect);
     tubeGpuRenderMesh();
     return m_mb.finish();
