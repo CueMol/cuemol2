@@ -38,6 +38,7 @@ DistPickDrawObj.cpp
 #
 SET(MOLVIS_VENDORED_SRCS
 smospl/SmoothSpline.cpp
+smospl/ReinschSpline.cpp
 smospl/linalg.cpp
 smospl/spline_internal.cpp
 smospl/alglibinternal.cpp
