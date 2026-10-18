@@ -85,8 +85,9 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
 
 ## 座標更新の並列化 (チャンク単位の更新)
 
-座標だけの更新 (UPD_GEOM) は、tube と ribbon ではセグメントごとに並列に実行する (`qlib::parallel_for`、oneTBB。
-`CUEMOL_TBB_THREADS=1` で逐次):
+座標だけの更新 (UPD_GEOM) は、tube と ribbon ではセグメントごと、cartoon では helix / sheet / coil の要素ごとに
+並列に実行する (`qlib::parallel_for`、oneTBB。`CUEMOL_TBB_THREADS=1` で逐次)。cartoon は下の「cartoon の要素単位の更新」を参照。
+tube / ribbon:
 
 - Build の traversal で、`SplineTubeRenderer::renderSpline` が各セグメントを
   `TubeMeshBuilder::beginChunk()` / `endChunk()` で囲み、チャンク (書いた頂点・prim の範囲) とセグメントの引数
@@ -101,13 +102,42 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
   (ribbon のセグメント内の状態は `RibbonRenderer::SegCtx`)。共有の `TubeSection` / `JctTable` は raw pointer で
   使う (参照カウントは atomic でないので、複数スレッドから smart pointer をコピーしない)。putty の `getEScl` は
   spline トポロジの pivot (`SplineCoeff::getPivot`) を読む
-- 逐次のままのもの: 色の更新 (色スキームの評価)、cartoon、nucl (`tubeGpuCanUpdateChunks()` が false)、
+- 逐次のままのもの: 色の更新 (色スキームの評価)、nucl (`tubeGpuCanUpdateChunks()` が false)、
   seg-end fade が on のとき、spline トポロジが Build 時と変わったとき (記録した世代と
   `SplineRenderer::getSplineTopoGen()` が違う)
 - spline 係数の座標の部分 (`SplineCoeff::updateGeometry`) もセグメントごとに `qlib::parallel_for` で計算する
 - `tubeGpuLastPass()` は直前の更新の経路 (build / serial / chunked) を返す (検査用)
 
 4V6X (8 コア) の座標更新 1 回: ribbon 48.3 ms (逐次) -> 11.9 ms、tube 33.5 -> 8.4 ms。
+
+### cartoon の要素単位の更新
+
+cartoon (`Ribbon2Renderer`) は、セグメントの中の helix / sheet / coil の要素 (`detail::SecSplDat`) ごとに spline を持ち、
+要素ごとに描く。Build の traversal で作った要素を GPU mesh の寿命の間持ち続け (`detail::CartoonGpuElems`)、
+座標の更新では要素を作り直さずに座標の部分だけをやり直す:
+
+- 要素の各制御点は出所 (`detail::PtSrc`) を持つ: pivot 原子 (`PIVOT`)、隣の sheet の軸上の点 (`SHEET`、
+  coil の sheet との継ぎ目)、helix の円柱の中に引き込んだ pivot (`HELIX_JCT`、coil の helix との継ぎ目)。
+  重み (anchor) と sheet 残基の C / O 原子 (`calcProtBinormVec`) もトポロジとして持つ
+- `SecSplDat::updateGeometry()` は出所から点を計算し直して、軸・幅・binormal の spline を作り直す。
+  `tubeGpuPrepareChunkUpdate()` はこれを `qlib::parallel_for` で 2 段に回す (helix・sheet、次に coil。coil が
+  隣の helix / sheet の spline から継ぎ目の点を取るため)
+- Build の traversal (`endSegment`) は各要素を 1 チャンクとして記録し、`tubeGpuUpdateChunk()` は
+  `renderElemTo(pmb, 要素)` で描き直す。描画は renderer のメンバに書かない:
+  - `TubeSection` の tess 状態 (前のリング) は呼び出し側が持つ `TubeSection::TessState` にある。
+    cap / junction の描画も const で、section は共有の読み取り専用として使う
+  - ribbon helix モードの helix / coil の区切り表 (`HCTab`) は要素と一緒に作って持つ
+  - 色と hit name は座標の更新では計算しない (`wantColor()` / `wantName()`)
+- section / junction の表 (`setupSectionTable` / `JctTable::setup`) は traversal の最初に 1 回作る。チャンク更新は
+  それをそのまま使う (形に効くプロパティの変更は mesh を作り直す)
+- `SmoothSpline` は点数・重み・rho が変わらない間は分解済みの solver を使い回すので、座標の更新は solve だけになる
+  (`smooth-spline-reinsch.md`)
+- `getDiffVec()` (disorder renderer が使う) の表は、チャンク更新の後は最初の呼び出しで要素から作り直す
+- 要素を捨てるのは Build の traversal の開始時 (`beginRend`) と `invalidateSplineCoeffs()`。色だけの更新と
+  Direct (display list / ファイル) の traversal は一時的な要素を作って捨て、GPU mesh の要素には触らない
+
+4V6X (8 コア、M2) の cartoon の座標更新 1 フレーム: 89.5 ms (逐次) -> 26.2 ms、1AON 37.5 -> 9.7 ms
+(`bench/perf-harness` の coord-morph の cpu_ms。残りの多くは頂点バッファの転送)。
 
 ## VBO の転送
 
@@ -139,7 +169,7 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
 
 | イベント | 処理 |
 |---|---|
-| `OBE_CHANGED` + `"atomsMoved"` で mesh が有効 (`tubeGpuOnAtomsMoved()` が true) | `TubeGpuRenderer::tubeGpuHandleAtomsMoved()`: `tubeGpuMarkDirty(UPD_GEOM)`、host の `tubeGpuOnMovedAtoms()`、`Scene::setUpdateFlag()`、`invalidateHittestCache()`。`tubeGpuOnMovedAtoms()` は tube / ribbon (`SplineTubeRenderer`) では spline 係数の座標の部分を無効にし、cartoon では `m_diffvecs` を捨てる (spline は `endSegment` が毎回作り直す)。`Base` の `objectChanged` には流さない (`TraceStickRenderer` と同じ形)。`objectChanged` を override する host (cartoon) は先頭でこれを呼ぶ |
+| `OBE_CHANGED` + `"atomsMoved"` で mesh が有効 (`tubeGpuOnAtomsMoved()` が true) | `TubeGpuRenderer::tubeGpuHandleAtomsMoved()`: `tubeGpuMarkDirty(UPD_GEOM)`、host の `tubeGpuOnMovedAtoms()`、`Scene::setUpdateFlag()`、`invalidateHittestCache()`。`tubeGpuOnMovedAtoms()` は tube / ribbon (`SplineTubeRenderer`) では spline 係数の座標の部分を無効にし、cartoon では `m_diffvecs` を捨てる (要素の座標の部分はチャンク更新の準備か逐次の traversal がやり直す)。`Base` の `objectChanged` には流さない (`TraceStickRenderer` と同じ形)。`objectChanged` を override する host (cartoon) は先頭でこれを呼ぶ |
 | `coloring` / `coloring.*` の prop 変更 (`isColoringProp()`) | `TubeGpuRenderer::propChanged` が `tubeGpuBeginColorOnly()` / `tubeGpuEndColorOnly()` で囲んで `Base` の `propChanged` を回す。その間の `invalidateDisplayCache()` は `tubeGpuMarkDirty(UPD_COLOR)` になる。名前が coloring のプロパティと重なりうる host (cartoon の helix / sheet / coil) は、自前の判定より先にこれへ渡す |
 | それ以外の `invalidateDisplayCache()` | `tubeGpuInvalidate()` (次の display でフル再構築)。section や cap など形に効く変更はすべてここを通る |
 | `unloading()` | `tubeGpuUnload()` |
@@ -156,9 +186,10 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
 
 `src/tests/modules/molvis/test_tubegpumesh.cpp`。mock の DisplayContext で `display()` を回して prim まで作り、
 prim の頂点配列 (`tubeGpuPrim()`) を比べる:
-- tube / ribbon / cartoon で、原子を動かして `fireAtomsMoved()` すると Update がトポロジを保って成功し、
-  結果が動かした原子からのフル再構築と一致する (古い spline 係数が残ると落ちる)。tube / ribbon はチャンク単位、
-  cartoon は逐次の経路を通ること (`tubeGpuLastPass()`)
+- tube / ribbon / cartoon (cylinder helix と ribbon helix) で、原子を動かして `fireAtomsMoved()` すると Update が
+  トポロジを保ってチャンク単位の経路で成功し (`tubeGpuLastPass()`)、結果が動かした原子からのフル再構築と一致する
+  (古い spline 係数・要素の spline が残ると落ちる)
+- cartoon の要素が、二次構造・smoothing・anchor weight の変更で作り直される (変更後のチャンク更新がフル再構築と一致する)
 - coloring の変更が色だけの Update になり、フル再構築と一致する
 - pivot のキャッシュと spline トポロジが、pivot 名・二次構造・平滑化の変更で作り直される
 - `TubeMeshBuilder` の Update が mock の prim の指定のデータだけを上書きし、トポロジの変化を検出する
