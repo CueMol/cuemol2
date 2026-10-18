@@ -25,6 +25,7 @@ import { getBenchArgs } from '../bench/benchState'
 import { isVisibleOnAnyDisplay, trackWindowState } from './windowState'
 import { handleWindowClose } from './closeFunnel'
 import { holdUntilRevealed } from './reveal'
+import { noteMainWindowRevealed } from '../updater'
 import { createOrFocusRenderWindow, getRenderWindow } from './renderWindow'
 
 let mainWindow: BrowserWindow | null = null
@@ -135,10 +136,11 @@ export function createWindow(): void {
   // Shown when the renderer reports its first real frame (reveal.ts).
   // Restoring the maximized state waits for the same moment: `maximize()`
   // shows a window that is being held back.
-  holdUntilRevealed(win, () => {
+  holdUntilRevealed(win, (byFallback) => {
     if (saved?.isMaximized) win.maximize()
     win.show()
     win.focus()
+    noteMainWindowRevealed(byFallback)
   })
 
   // Power-save hold + renderer pid log while a render job runs (renderActivity.ts).
@@ -194,14 +196,20 @@ export function createWindow(): void {
   // renderer needs from the command line, and a query needs no IPC channel and
   // no preload surface -- both of which are files this branch would otherwise
   // conflict with develop over.
-  const query = bench ? { benchSpec: bench.specPath } : undefined
+  // CUEMOL_E2E=1 (the UI layout inspector, e2e/inspect.mjs) turns on the
+  // renderer's dev-only window.__cuemolE2E bridge through the same query.
+  const e2e = process.env['CUEMOL_E2E'] === '1'
+  const query: Record<string, string> = {}
+  if (bench) query['benchSpec'] = bench.specPath
+  if (e2e) query['e2e'] = '1'
+  const hasQuery = Object.keys(query).length > 0
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     const url = new URL(process.env['ELECTRON_RENDERER_URL'])
-    if (query) url.searchParams.set('benchSpec', query.benchSpec)
+    for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v)
     win.loadURL(url.toString())
-    if (!bench) win.webContents.openDevTools({ mode: 'undocked' })
+    if (!bench && !e2e) win.webContents.openDevTools({ mode: 'undocked' })
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'), query ? { query } : undefined)
+    win.loadFile(join(__dirname, '../renderer/index.html'), hasQuery ? { query } : undefined)
   }
 }

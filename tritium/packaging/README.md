@@ -77,6 +77,10 @@ Web からダウンロードした `.dmg` は quarantine 属性が付き、そ�
 
 （ローカルでビルドした DMG は quarantine が付かないため警告は出ない。）
 
+この手順が要るのは最初のインストールだけ。以後の更新はアプリ自身が行い
+([auto-update](../../docs/architecture/auto-update.md))、アプリが Node で取得した DMG には
+quarantine が付かないので、警告は出ない。
+
 ### Windows（SmartScreen）
 
 未署名 `.exe` を実行すると「Windows によって PC が保護されました」（発行元不明）と表示される。

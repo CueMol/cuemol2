@@ -16,6 +16,7 @@ import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { resolveMolTool } from '@renderer/worker/server/services/molops/molAnlTool';
 import { undoTxnResult } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { ok, type Result } from '@renderer/worker/shared/result';
 
 export interface ChangeChainNameArgs {
@@ -40,6 +41,11 @@ export function changeChainName(
 
     // changeChainName is a void mutation: success commits, a throw rolls back.
     return undoTxnResult(scene, 'Change chain name', () => {
+        recordOp(ctx, scene.uid, 'rename_chain', {
+            objId: args.objId,
+            selection: args.selStr,
+            chain: args.chainName,
+        }, ['objId']);
         mgr.changeChainName(
             mol as unknown as MolCoord,
             sel as unknown as MolSelection,

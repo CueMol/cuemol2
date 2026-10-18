@@ -26,6 +26,7 @@ import type { Camera } from '@cuemol/core/src/wrappers/Camera';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 // --- helpers ---
 
@@ -66,6 +67,7 @@ export function createCamera(ctx: WorkerContext, args: CreateCameraArgs): Create
     let ok = false;
     withUndoTxn(scene, overwritten ? `Change camera ${trimmed}` : `Create camera: ${trimmed}`, () => {
         ok = scene.saveViewToCam(args.viewId, trimmed);
+        if (ok) recordOp(ctx, scene.uid, 'save_camera', { name: trimmed, withVisibility: null });
     });
     return { ok, overwritten };
 }
@@ -89,6 +91,7 @@ export function destroyCamera(ctx: WorkerContext, args: DestroyCameraArgs): Dest
     let ok = false;
     withUndoTxn(scene, `Destroy camera: ${args.name}`, () => {
         ok = scene.destroyCamera(args.name);
+        if (ok) recordOp(ctx, scene.uid, 'delete_camera', { name: args.name });
     });
     return { ok };
 }
@@ -123,6 +126,7 @@ export function renameCamera(ctx: WorkerContext, args: RenameCameraArgs): Rename
 
     let ok = false;
     withUndoTxn(scene, `Rename camera ${args.oldName}`, () => {
+        recordOp(ctx, scene.uid, 'rename_camera', { name: args.oldName, newName: trimmed });
         scene.destroyCamera(args.oldName);
         scene.setCamera(trimmed, cam);
         ok = true;
@@ -151,11 +155,19 @@ export function saveViewToCamera(
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
 
+    // Trimmed, as save_camera takes it, so the two save the same camera.
+    const name = args.name.trim();
+    if (name.length === 0) return { ok: false };
+
     let ok = false;
-    withUndoTxn(scene, `Change camera ${args.name}`, () => {
-        scene.saveViewToCam(args.viewId, args.name);
+    withUndoTxn(scene, `Change camera ${name}`, () => {
+        recordOp(ctx, scene.uid, 'save_camera', {
+            name,
+            withVisibility: args.withVisFlags === true ? true : null,
+        });
+        scene.saveViewToCam(args.viewId, name);
         if (args.withVisFlags) {
-            const cam = getCameraRef(scene, args.name);
+            const cam = getCameraRef(scene, name);
             cam?.saveVisSettings(scene);
         }
         ok = true;
@@ -197,6 +209,9 @@ export function applyCameraToView(
         const cam = getCameraRef(scene, args.name);
         if (cam && cam.vis_size > 0) {
             withUndoTxn(scene, `Load camera ${args.name} settings`, () => {
+                // Only this txn is recorded; apply_camera also moves the
+                // view, as the call above did.
+                recordOp(ctx, scene.uid, 'apply_camera', { name: args.name, withVisibility: true });
                 cam.loadVisSettings(scene);
             });
         }
@@ -227,6 +242,7 @@ export function clearCameraVisFlags(
 
     let ok = false;
     withUndoTxn(scene, `Clear visibility flags in ${args.name}`, () => {
+        recordOp(ctx, scene.uid, 'clear_camera_visibility', { name: args.name });
         cam.clearVisSettings();
         ok = true;
     });

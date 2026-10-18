@@ -10,6 +10,7 @@
 
 #include "SplineRenderer.hpp"
 #include "TubeSection.hpp"
+#include "TubeGpuSupport.hpp"
 #include "JctTable.hpp"
 
 namespace molvis {
@@ -17,7 +18,7 @@ namespace molvis {
 using gfx::ColorPtr;
 class RibbonSmoothEval;
 
-class RibbonRenderer : public SplineRenderer
+class RibbonRenderer : public SplineRenderer, public TubeGpuSupport
 {
   MC_SCRIPTABLE;
   MC_CLONEABLE;
@@ -138,6 +139,28 @@ public:
   const char *getTypeName() const override;
 
   void preRender(DisplayContext *pdc) override;
+
+  //////////////////////////////////////////////////////
+  // GPU mesh (TubeGpuSupport)
+
+  void display(DisplayContext *pdc) override;
+
+  /// The pick pass draws the same mesh with the pick program
+  void displayPick(DisplayContext *pdc) override;
+
+  void invalidateDisplayCache() override;
+
+  void objectChanged(qsys::ObjectEvent &ev) override;
+
+  void unloading() override;
+
+protected:
+  void tubeGpuRenderMesh() override { render(nullptr); }
+  qlib::uid_t tubeGpuSceneID() const override { return getSceneID(); }
+  void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
+  void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
+
+public:
 
   //////////////////////////////////////////////////////
 

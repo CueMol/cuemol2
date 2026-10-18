@@ -121,6 +121,10 @@ namespace render {
     /// "_transpbg"). Default false (opaque RGB over the scene background color).
     bool m_bTransparentBackground;
 
+    /// Resolution written to the PNG (pHYs), in dots per inch; 0 = none.
+    /// Set from the render settings' dpi, which also converts the image size.
+    double m_dResDPI;
+
     /// diffuse global illumination (pt2 path-traced integrator); default off
     bool m_bGI;
 

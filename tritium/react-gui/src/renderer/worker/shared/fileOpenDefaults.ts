@@ -59,6 +59,28 @@ export function formatKindForReader(readerName: string): FormatKind {
 
 // ---- Default values ----
 
+/** The renderer a molecule starts with. */
+const MOLECULE_RENDERER = 'simple'
+
+/**
+ * The renderer a freshly loaded object starts with, when nobody chose one.
+ *
+ * `simple` when the object can show it (a molecule); otherwise the first type
+ * the object itself reports -- `contour` for a density map, `molsurf` for a
+ * surface. Never a fixed `simple` for everything: C++ `createRenderer` does
+ * not check compatibility, so a map given `simple` loads drawing nothing.
+ * One rule for the File Open dialog (when it has no history for the object
+ * type) and for every load without a dialog (console, MCP, agent).
+ *
+ * @param types - the object's compatible types, as `getCompatibleRendererNames`
+ *   lists them (already narrowed to the ones worth creating at load)
+ * @returns '' when the object reports none
+ */
+export function initialRendererType(types: readonly string[]): string {
+  if (types.includes(MOLECULE_RENDERER)) return MOLECULE_RENDERER
+  return types[0] ?? ''
+}
+
 export function getDefaultPdbOptions(): PdbOptions {
   // Placeholders only. The authoritative defaults come from the C++ reader
   // (PDBFileReader / MmcifMolReader qif), fetched by FileOpenOptionDialog via

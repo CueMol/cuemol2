@@ -25,6 +25,7 @@ import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /** Cross-section cutting mode (UXP `cuttype-list` values). */
 export type CutSurfMode = 'full' | 'separate' | 'sect' | 'body';
@@ -124,6 +125,8 @@ export function cutSurfByPlane(
     let sectObjId = -1;
     try {
         withUndoTxn(scene, 'Cut surface by plane', () => {
+            // The op cuts by the slab plane of the view it runs in, as here.
+            recordOp(ctx, scene.uid, 'cut_surface', { surfId: args.objId, mode: args.mode, density }, ['surfId']);
             if (args.mode === 'separate' && sectObj) {
                 (sectObj as unknown as { name: string }).name = sectName;
                 scene.addObject(sectObj as unknown as CueMolObject);

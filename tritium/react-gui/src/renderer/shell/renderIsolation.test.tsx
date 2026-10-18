@@ -36,6 +36,8 @@ vi.mock('@renderer/state/statusMessage', async () => {
 })
 vi.mock('@renderer/hooks/useCueMolBusy', () => ({ useCueMolBusy: () => false }))
 vi.mock('@renderer/hooks/useBusyCursor', () => ({ useBusyCursor: () => undefined }))
+// The bell reads the notification list; its own provider is not under test here.
+vi.mock('@renderer/shell/notifications', () => ({ NotificationBell: () => null, NotificationLayer: () => null }))
 vi.mock('@renderer/contexts/ActiveToolContext', () => ({
   useActiveToolDef: () => ({ id: 'navigate', label: 'Navigate', shortcut: 'V', icon: 'tool.navigate' }),
 }))

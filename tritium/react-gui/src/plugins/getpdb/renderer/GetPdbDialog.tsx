@@ -9,6 +9,7 @@ import { Checkbox, FormGroup, Radio, RadioGroup } from '@blueprintjs/core';
 import { DialogShell } from '@renderer/plugin-host/api';
 import { isImeKey, ComboBoxField } from '@renderer/h3-kit/form';
 import { getHistory } from './pdbIdHistory';
+import { PDB_ID_RE } from '@renderer/worker/shared/pdbUrls';
 
 // The coordinate server choice is shared with the worker (see
 // worker/shared/pdbUrls.ts), which builds the URL for a headless fetch.
@@ -31,7 +32,6 @@ interface Props {
 }
 
 // Same shape as UXP openPDB.js:104-111: first char digit, remaining alnum.
-const PDBID_RE = /^[0-9][0-9a-z]{3}$/i;
 
 export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX.Element {
 
@@ -62,7 +62,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
         setHistoryItems(getHistory());
     }, []);
 
-    const idValid = PDBID_RE.test(pdbid.trim());
+    const idValid = PDB_ID_RE.test(pdbid.trim());
     const anySelected = coordEnabled || map2fofcEnabled || mapFofcEnabled;
     const canSubmit = idValid && anySelected;
     const mapServerEnabled = map2fofcEnabled || mapFofcEnabled;

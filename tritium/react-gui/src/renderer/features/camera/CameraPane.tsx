@@ -20,7 +20,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, ButtonGroup } from '@blueprintjs/core'
 import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives'
-import { Listbox, ListRow, scrollRowIntoView, useListKeyNav } from '@renderer/h3-kit/list'
+import { Listbox, ListRow, scrollRowIntoView, useListKeyNav, useRowReorderDnd } from '@renderer/h3-kit/list'
 import { PaneSectionHeader } from '@renderer/shell/PaneSectionHeader'
 import { InlineRenameInput } from '@renderer/features/scene/InlineRenameInput'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
@@ -31,7 +31,6 @@ import { CmdId } from '@renderer/commands/ids'
 import { CURRENT_CAMERA_NAME } from '@renderer/worker/shared/cameraTypes'
 import { useCameraList } from './useCameraList'
 import { useCameraCtxMenu } from './useCameraCtxMenu'
-import { useCameraDragDrop } from './useCameraDragDrop'
 
 export interface CameraPaneProps {
     collapsed?: boolean
@@ -65,8 +64,10 @@ export const CameraPane: React.FC<CameraPaneProps> = ({ collapsed, onToggleColla
     const beginRename = useCallback((name: string) => setEditing(name), [])
     const openMenu = useCameraCtxMenu({ onRename: beginRename })
 
-    const dnd = useCameraDragDrop({
+    const dnd = useRowReorderDnd({
         names,
+        mime: 'application/x-cuemol-camera',
+        rowAttr: 'data-camera-name',
         pinned: CURRENT_CAMERA_NAME,
         enabled: editing === null,
         onReorder: (next) => run('reorder cameras', dispatch(CmdId.CameraReorder, { names: next })),

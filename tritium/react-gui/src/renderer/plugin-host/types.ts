@@ -75,6 +75,20 @@ export interface PluginBottomTab {
   icon: AppIconKey
   /** Insert after the built-in tab with this id; appended when absent. */
   after?: string
+  /**
+   * Insert before the built-in tab with this id instead (`output` puts a tab
+   * first); appended when absent. Takes precedence over `after`.
+   */
+  before?: string
+}
+
+/**
+ * An item on the right of the status bar, ahead of the Busy / Ready
+ * indicator. The component draws itself (an icon, usually a button that
+ * opens a popover); the host only places it.
+ */
+export interface PluginStatusBarItem {
+  id: string
 }
 
 /**
@@ -104,6 +118,7 @@ export interface PluginContributes {
   toolbar?: PluginToolbarContribution[]
   views?: PluginViewContribution[]
   bottomTabs?: PluginBottomTab[]
+  statusBar?: PluginStatusBarItem[]
   settings?: PluginSettingDecl[]
 }
 
@@ -171,6 +186,10 @@ export interface RendererPlugin {
   panes?: Record<string, PaneComponent>
   /** Tab components, keyed by the tab id declared in `contributes.bottomTabs`. */
   bottomTabs?: Record<string, BottomTabComponent>
+  /** Status bar components, keyed by the id declared in `contributes.statusBar`. */
+  statusBarItems?: Record<string, React.ComponentType>
+  /** Controls of `custom` settings rows, keyed by the setting's key. */
+  settingRows?: Record<string, React.ComponentType>
 }
 
 // ------------------------------------------------------------
@@ -187,6 +206,12 @@ export interface ResolvedPluginView extends Omit<PluginViewContribution, 'panes'
 
 export interface ResolvedPluginBottomTab extends PluginBottomTab {
   Component: BottomTabComponent
+}
+
+export interface ResolvedPluginStatusBarItem extends PluginStatusBarItem {
+  /** Unique across plugins: `<plugin id>.<item id>`. */
+  key: string
+  Component: React.ComponentType
 }
 
 /**
@@ -207,5 +232,6 @@ export interface PluginContributions {
   toolbar: PluginToolbarContribution[]
   views: ResolvedPluginView[]
   bottomTabs: ResolvedPluginBottomTab[]
+  statusBar: ResolvedPluginStatusBarItem[]
   settings: ResolvedPluginSetting[]
 }

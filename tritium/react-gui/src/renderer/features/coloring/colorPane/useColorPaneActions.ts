@@ -96,20 +96,24 @@ export function useColorPaneActions({
         setSelectedRow(null)
     }, [cm, requireTarget, selectedRows, setSelectedRow])
 
-    const onMoveRow = useCallback(
-        (dir: 'up' | 'down') => {
+    /** Move one row to `toIdx` (its index after the move) and keep it selected. */
+    const onMoveRowTo = useCallback(
+        (fromIdx: number, toIdx: number) => {
             const t = requireTarget()
-            if (!t || !cm || selectedRow === null) return
-            const toIdx = dir === 'up' ? selectedRow - 1 : selectedRow + 1
+            if (!t || !cm || fromIdx === toIdx) return
             if (toIdx < 0 || toIdx >= entries.length) return
-            fireService(cm, 'movePaintEntry', {
-                ...t,
-                fromIdx: selectedRow,
-                toIdx,
-            })
+            fireService(cm, 'movePaintEntry', { ...t, fromIdx, toIdx })
             setSelectedRow(toIdx)
         },
-        [cm, requireTarget, selectedRow, entries.length, setSelectedRow],
+        [cm, requireTarget, entries.length, setSelectedRow],
+    )
+
+    const onMoveRow = useCallback(
+        (dir: 'up' | 'down') => {
+            if (selectedRow === null) return
+            onMoveRowTo(selectedRow, dir === 'up' ? selectedRow - 1 : selectedRow + 1)
+        },
+        [selectedRow, onMoveRowTo],
     )
 
     const onRemoveAllRows = useCallback(() => {
@@ -254,7 +258,7 @@ export function useColorPaneActions({
     )
 
     return {
-        onSelectMode, onAddRow, onRemoveRow, onMoveRow, onRemoveAllRows,
+        onSelectMode, onAddRow, onRemoveRow, onMoveRow, onMoveRowTo, onRemoveAllRows,
         onClipboardTake, onPasteRows, onUpdateCell, onDefaultColorCommit,
         onSetColoringProp, onSetElepotProp, onSetColoringTarget,
     };

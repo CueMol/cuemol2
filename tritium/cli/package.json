@@ -1,0 +1,37 @@
+{
+  "name": "@cuemol/tritium-cli",
+  "version": "0.0.0",
+  "description": "tritium_cli: the console's command line for a running CueMol, over its local API server",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CueMol/cuemol2.git",
+    "directory": "tritium/cli"
+  },
+  "homepage": "https://github.com/CueMol/cuemol2",
+  "type": "module",
+  "bin": {
+    "tritium_cli": "dist/tritium_cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@cuemol/console-kit": "workspace:*",
+    "@types/node": "^20.17.6",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.6"
+  }
+}

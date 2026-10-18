@@ -436,6 +436,21 @@ button.h3-color-swatch:disabled {
   min-width: 0;
 }
 
+/* In a list row the swatch is an inline colour chip (VSCode's colour
+   decorator), not a field-height well: a field-height swatch filled the
+   whole --row-h and ran into the swatches above and below it. The same chip
+   in display and in edit mode (the cell's CueColorField), so opening the
+   picker does not make the swatch jump in size. */
+.h3-list-table-row .h3-color-swatch {
+  width: calc(var(--icon-md) + var(--space-2));
+  height: var(--icon-md);
+  border-radius: var(--radius-sm);
+}
+
+.h3-list-table-row .h3-color-view-text {
+  color: inherit;
+}
+
 /* The colour string takes the slack so the chevron stays pinned at the right
    edge, where the editable field puts it. */
 .h3-color-view-text {

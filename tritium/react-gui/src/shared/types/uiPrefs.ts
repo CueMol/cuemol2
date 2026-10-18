@@ -111,6 +111,11 @@ export interface UiState {
   /** Highlight the element under the pointer in the 3D view. Defaults to true. */
   hoverHighlight?: boolean
   /**
+   * Look for a newer release at startup and offer it in a notification.
+   * Defaults to true. Off, the app checks only from Help > Check for Updates.
+   */
+  updateCheck?: boolean
+  /**
    * Where a file dragged onto the window is loaded. 'active': into the scene
    * in the active tab (the default, and what UXP did). 'new': into a scene of
    * its own, unless the active scene is still untouched. Files dropped

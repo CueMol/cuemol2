@@ -13,6 +13,7 @@
 //#include "CubicSpline.hpp"
 #include "smospl/SmoothSpline.hpp"
 #include "TubeSection.hpp"
+#include "TubeGpuSupport.hpp"
 #include "JctTable.hpp"
 
 class Ribbon2Renderer_wrap;
@@ -129,7 +130,7 @@ using namespace molstr;
 
   } // namespace detail
 
-  class Ribbon2Renderer : public MainChainRenderer
+  class Ribbon2Renderer : public MainChainRenderer, public TubeGpuSupport
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -247,6 +248,27 @@ using namespace molstr;
 
     const char *getTypeName() const override;
 
+    //////////////////////////////////////////////////////
+    // GPU mesh (TubeGpuSupport)
+
+    void display(DisplayContext *pdc) override;
+
+    /// The pick pass draws the same mesh with the pick program
+    void displayPick(DisplayContext *pdc) override;
+
+    void invalidateDisplayCache() override;
+
+    void unloading() override;
+
+  protected:
+    void tubeGpuRenderMesh() override { render(nullptr); }
+    qlib::uid_t tubeGpuSceneID() const override { return getSceneID(); }
+    void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
+    void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
+
+  public:
+    //////////////////////////////////////////////////////
+
     void beginRend(DisplayContext *pdl) override;
     void endRend(DisplayContext *pdl) override;
 
@@ -352,7 +374,7 @@ using namespace molstr;
 
     int getStartCapType() const { return m_nStCapType; }
     void setStartCapType(int nType) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_nStCapType = nType;
     }
 
@@ -361,7 +383,7 @@ using namespace molstr;
       return m_nEnCapType;
     }
     void setEndCapType(int nType) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_nEnCapType = nType;
     }
 
@@ -417,7 +439,7 @@ using namespace molstr;
 
   public:
     void setSegEndFade(bool b) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_bSegEndFade = b;
     }
     bool isSegEndFade() const { return m_bSegEndFade; }

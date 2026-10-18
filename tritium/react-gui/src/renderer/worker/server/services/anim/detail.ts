@@ -23,7 +23,9 @@ import {
   resolveSceneMgr,
   forEachAnimObj,
   readAnimGraph,
+  collectAnimObjs,
 } from "./resolve";
+import { recordOp } from "@renderer/worker/server/actions/serviceOps";
 import { undoTxnResult } from "../withUndoTxn";
 import { checkTimeRef, type TimeRefGraph } from "./timeRefGraph";
 import { applyTiming, isTiming, planNameWrite, planTimeRefWrite } from "./elementWrites";
@@ -53,6 +55,58 @@ export function findByUid(mgr: AnimMgr, uid: number): { obj: AnimObj; index: num
       safeNum(() => obj.uid) === uid ? { obj, index: i } : undefined,
     ) ?? null
   );
+}
+
+/**
+ * How the anim ops (`set_anim_prop`, `remove_anim`, ...) name the element
+ * `uid` for the action log: its name when exactly one element carries it, so
+ * the record survives a replay into a scene with new uids, else its number
+ * from 1. Null when the element is gone.
+ */
+export function animElementSpec(mgr: AnimMgr, uid: number): string | null {
+  const objs = collectAnimObjs(mgr);
+  const at = objs.findIndex((o) => safeNum(() => o.uid) === uid);
+  if (at < 0) return null;
+  const name = safeStr(() => objs[at].name);
+  if (name !== "" && !/^#?\d+$/.test(name)) {
+    const same = objs.filter((o) => safeStr(() => o.name) === name).length;
+    if (same === 1) return name;
+  }
+  return String(at + 1);
+}
+
+/** The anim element properties `set_anim_prop` takes, by their op name. */
+const ANIM_OP_PROPS: ReadonlySet<string> = new Set<AnimElementPropKey>([
+  "name", "timeRefName", "endcam", "rend", "mol",
+  "disabled", "ignorerotate", "ignorecenter", "ignorezoom", "ignoreslab", "hide", "fade",
+  "quadric", "angle", "tgtAlpha", "direction", "distance", "startValue", "endValue", "axis",
+]);
+
+/** A property value as the text `set_anim_prop` reads back. */
+export function animValueText(value: unknown): string {
+  if (typeof value === "object" && value !== null) {
+    const v = value as { x: number; y: number; z: number };
+    return `${v.x} ${v.y} ${v.z}`;
+  }
+  return String(value);
+}
+
+/**
+ * Record one element property write as `set_anim_prop`. Call inside the
+ * write's transaction, before the write (a rename changes the spec).
+ */
+export function recordAnimPropWrite(
+  ctx: WorkerContext,
+  sceneId: number,
+  mgr: AnimMgr,
+  uid: number,
+  prop: string,
+  value: unknown,
+): void {
+  if (!ANIM_OP_PROPS.has(prop) || value === undefined) return;
+  const element = animElementSpec(mgr, uid);
+  if (element === null) return;
+  recordOp(ctx, sceneId, "set_anim_prop", { element, prop, value: animValueText(value) });
 }
 
 /** Read the subtype-specific props for the element's type. */
@@ -287,6 +341,15 @@ export function setAnimElementProp(
     }
     if (record) {
       const r = undoTxnResult(scene, "Change animation: timing", () => {
+        const element = animElementSpec(mgr, args.uid);
+        if (element !== null) {
+          // applyTiming orders the pair; set_anim_time refuses an unordered one.
+          recordOp(ctx, scene.uid, "set_anim_time", {
+            element,
+            startMs: Math.min(value.startMs, value.endMs),
+            endMs: Math.max(value.startMs, value.endMs),
+          });
+        }
         applyTiming(ctx, found.obj, value);
         return ok();
       });
@@ -306,6 +369,7 @@ export function setAnimElementProp(
     if (!plan.ok) return plan;
     if (plan.noop) return finish();
     const r = undoTxnResult(scene, `Change animation: ${args.prop}`, () => {
+      recordAnimPropWrite(ctx, scene.uid, mgr, args.uid, args.prop, args.value);
       plan.apply();
       return ok();
     });
@@ -314,6 +378,7 @@ export function setAnimElementProp(
   }
 
   const r = undoTxnResult(scene, `Change animation: ${args.prop}`, () => {
+    recordAnimPropWrite(ctx, scene.uid, mgr, args.uid, args.prop, args.value);
     applyProp(ctx, found.obj, args.prop, args.value);
     return ok();
   });

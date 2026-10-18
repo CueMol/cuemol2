@@ -472,9 +472,9 @@ describe('ColorPane wire', () => {
             className: 'PaintColoring',
             paintEntries: [],
         })
-        // The Add button is the first action button in the paint toolbar.
+        // The Add button is the first button in the paint list's toolbar bar.
         const addBtn = container.querySelector(
-            '.color-actions button',
+            '.color-paint-header button',
         ) as HTMLButtonElement
         await act(async () => { addBtn.click() })
         await flushPromises()
@@ -498,7 +498,7 @@ describe('ColorPane wire', () => {
     ]
 
     function actionBtn(container: HTMLElement, label: string): HTMLButtonElement {
-        const el = container.querySelector(`.color-actions button[aria-label="${label}"]`)
+        const el = container.querySelector(`.color-paint-header button[aria-label="${label}"]`)
         if (!el) throw new Error(`action button "${label}" not rendered`)
         return el as HTMLButtonElement
     }
@@ -630,7 +630,7 @@ describe('ColorPane wire', () => {
         // The toolbar must stay on one line, so the destructive / clipboard
         // commands are context-menu only.
         expect(
-            container.querySelector('.color-actions button[aria-label="Remove all rows"]'),
+            container.querySelector('.color-paint-header button[aria-label="Remove all rows"]'),
         ).toBeNull()
         await runCtxItem(container, 0, 'Delete all')
         expect(cm.invokeService).toHaveBeenCalledWith('clearPaintEntries', TARGET)
@@ -747,11 +747,49 @@ describe('ColorPane wire', () => {
             )
         })
         await flushPromises()
-        expect(container.querySelectorAll('.color-row.selected').length).toBe(2)
+        expect(container.querySelectorAll('.color-row.is-selected').length).toBe(2)
         await runCtxItem(container, 1, 'Copy')
         expect(cm.invokeService).toHaveBeenCalledWith('copyPaintEntries', {
             ...TARGET,
             idxs: [0, 1],
+        })
+        unmount()
+    })
+
+    // Drag-to-reorder: dropping a row on the upper half of another moves it
+    // there, through the same movePaintEntry the up / down buttons use, with
+    // toIdx as the row's index after the move.
+    it('dropping a row above another fires movePaintEntry to that index', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        const rows = container.querySelectorAll('.color-row')
+        const store = new Map<string, string>()
+        const dataTransfer = {
+            setData: (k: string, v: string) => store.set(k, v),
+            getData: (k: string) => store.get(k) ?? '',
+            setDragImage: () => {},
+            effectAllowed: '', dropEffect: '',
+        }
+        // jsdom has no DragEvent; a plain event carrying the fields React reads.
+        // clientY -1 is above the (zero-size) row's middle, i.e. "before".
+        const drag = (el: Element, type: string) => {
+            const ev = new Event(type, { bubbles: true, cancelable: true })
+            Object.assign(ev, { dataTransfer, clientY: -1 })
+            el.dispatchEvent(ev)
+        }
+        await act(async () => {
+            drag(rows[1], 'dragstart')
+            drag(rows[0], 'dragover')
+            drag(rows[0], 'drop')
+        })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('movePaintEntry', {
+            ...TARGET,
+            fromIdx: 1,
+            toIdx: 0,
         })
         unmount()
     })

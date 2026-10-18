@@ -16,6 +16,8 @@ import { installMainCrashHandlers } from './installMainCrashHandlers'
 // Benchmark harness (bench/perf-harness branch only; never merged to develop).
 import { parseBenchArgs } from './bench/benchMode'
 import { setBenchArgs } from './bench/benchState'
+import { noteCliLaunch, stopLocalApi } from './localApi'
+import { initUpdater, swapOnQuit } from './updater'
 
 // Before anything else, so a throw during the setup below is still reported
 // to the terminal and a closed stdout pipe cannot masquerade as a crash.
@@ -117,6 +119,7 @@ if (gotSingleInstanceLock) {
   // app. UXP cuemol2-cmdline.js parity: raise the running window and open into
   // it, never create a second one.
   app.on('second-instance', (_event, argv, workingDirectory) => {
+    noteCliLaunch(argv)
     focusMainWindow()
     // Pull the app forward from whichever app the user launched us from.
     if (process.platform === 'darwin') app.focus({ steal: true })
@@ -124,6 +127,8 @@ if (gotSingleInstanceLock) {
       parseFileArgs({ argv, isPackaged: app.isPackaged, cwd: workingDirectory }),
     )
   })
+
+  noteCliLaunch(process.argv)
 
   // Command-line file arguments. Read at module scope: the queue tolerates
   // being filled before any window exists.
@@ -177,6 +182,7 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler(() => true)
 
   createWindow()
+  initUpdater()
 })
 
 // The render history is per-run: its images are temp files and the settings
@@ -186,6 +192,8 @@ app.on('will-quit', () => {
   // check just keeps a losing instance from creating one on its way out.
   if (!gotSingleInstanceLock) return
   clearRenderHistory()
+  void stopLocalApi()
+  swapOnQuit()
 })
 
 app.on('window-all-closed', () => {

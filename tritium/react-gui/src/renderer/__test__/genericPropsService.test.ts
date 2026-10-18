@@ -219,6 +219,13 @@ describe('setGenericProp', () => {
     expect(setProp).toHaveBeenCalledWith('alpha', 0.7)
   })
 
+  it('writes a view property outside any txn (C++ keeps no undo for it; an empty commit drops Redo)', () => {
+    const res = call({ nodeType: 'view', propName: 'perspective', valueType: 'boolean', value: true })
+    expect(res.ok).toBe(true)
+    expect(setProp).toHaveBeenCalledWith('perspective', true)
+    expect(withUndoTxnSpy).not.toHaveBeenCalled()
+  })
+
   // --- Default-flag-aware restore (undo reverts the default state too) ---
 
   it('realtime commit of a default prop restores via resetProp before the txn', () => {

@@ -5,6 +5,7 @@
 @import "./styles/_typography.css";
 @import "./styles/_form-kit.css";
 @import "./styles/_list-kit.css";
+@import "./styles/_markdown-kit.css";
 @import "./styles/_base.css";
 @import "./styles/_menu-kit.css";
 @import "./styles/_menubar.css";
@@ -12,6 +13,8 @@
 @import "./styles/_activity-bar.css";
 @import "./styles/_side-panel.css";
 @import "./features/camera/camera-pane.css";
+@import "./features/actions/action-history-pane.css";
+@import "./features/actions/action-library-pane.css";
 @import "./features/coloring/color-panel.css";
 @import "./styles/_colorpicker.css";
 @import "./features/coloring/multigrad.css";
@@ -23,6 +26,8 @@
 @import "./features/render/render-window.css";
 @import "./features/animation/animation-panel.css";
 @import "./styles/_status-bar.css";
+@import "./styles/_notifications.css";
+@import "./features/update/update.css";
 @import "./features/molview/viewport-tool-palette.css";
 @import "./features/molview/rectsel-overlay.css";
 @import "./features/molview/molview-hover-label.css";

@@ -114,7 +114,7 @@ describe('useHoverInfoHandler', () => {
         unmount()
     })
 
-    it('a right press and the context menu hold keep the hit; the release resyncs', async () => {
+    it('a press and the context menu hold keep the hit; the release resyncs; a drag ends it', async () => {
         invokeService.mockImplementation((method: string) =>
             Promise.resolve(method === 'naviHover' ? { hit: true, label: LABEL_M } : { ok: true }),
         )
@@ -163,9 +163,22 @@ describe('useHoverInfoHandler', () => {
         expect(invokeService).toHaveBeenCalledTimes(1)
         expect(invokeService).toHaveBeenLastCalledWith('naviHover', { viewId: 7, x: 12, y: 12, highlight: true }, { quiet: true })
 
-        // A left press still ends the hover (a navigation drag follows).
+        // A left press (a click, e.g. one adding a pick label) keeps the hit,
+        // and so does a jitter inside the click range. Only a drag that moves
+        // the view (CLICK_SLOP_PX from the press point) ends the hover.
         invokeService.mockClear()
-        await press(0)
+        await act(async () => {
+            canvas.dispatchEvent(new MouseEvent('mousedown', { button: 0, buttons: 1, clientX: 12, clientY: 12, bubbles: true }))
+            canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 13, clientY: 13, buttons: 1, bubbles: true }))
+            await flushPromises()
+        })
+        expect(invokeService).not.toHaveBeenCalled()
+        expect(setter).toHaveBeenLastCalledWith(LABEL_M)
+
+        await act(async () => {
+            canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 14, clientY: 12, buttons: 1, bubbles: true }))
+            await flushPromises()
+        })
         expect(invokeService).toHaveBeenCalledTimes(1)
         expect(invokeService).toHaveBeenLastCalledWith('naviHoverClear', { viewId: 7 }, { quiet: true })
         expect(setter).toHaveBeenLastCalledWith(null)

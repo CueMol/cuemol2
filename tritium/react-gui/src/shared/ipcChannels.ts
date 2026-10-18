@@ -14,6 +14,7 @@ export const IPC = {
   DIALOG_STYLE_SAVE: 'dialog:styleSave',
   DIALOG_CAMERA_OPEN: 'dialog:cameraOpen',
   DIALOG_CAMERA_SAVE: 'dialog:cameraSave',
+  DIALOG_ACTIONS_SAVE: 'dialog:actionsSave',
   DIALOG_SCENE_EXPORT: 'dialog:sceneExport',
   DIALOG_OBJECT_SAVE: 'dialog:objectSave',
   DIALOG_PICK_PATH:   'dialog:pickPath',
@@ -22,6 +23,7 @@ export const IPC = {
   FILE_BACKUP_RENAME: 'file:backupRename',
   SHELL_OPEN_PATH:    'shell:openPath',       // invoke: open a file with the OS default app
   SHELL_REVEAL_PATH:  'shell:revealPath',     // invoke: reveal a file in Finder / Explorer
+  SHELL_TRASH_PATH:   'shell:trashPath',      // invoke: move a file to the OS trash
   // Files the OS asked US to open (Finder double-click, argv, second-instance).
   // The payload always travels by pull -- see main/shellOpenQueue.ts.
   SHELL_FILES_TAKE:   'shell-files:take',     // invoke: drain + clear the queue
@@ -137,6 +139,9 @@ export const IPC = {
   // Renderer/Worker crash reporting + fallback UI's Quit button
   CRASH_REPORT: 'app:crash-report',
   FORCE_QUIT:   'app:force-quit',
+  // The console's quit / exit: Cmd+Q, or with force a quit without the save
+  // prompts (main/appQuit.ts, shared with tritium_cli's /app/quit).
+  APP_QUIT:     'app:quit',
 
   // --- Rendering window (modeless child) relay ---
   // The render window has no CueMol worker; commands and state are relayed
@@ -163,6 +168,29 @@ export const IPC = {
   RENDER_FRAMES_CLEANUP:    'render-window:frames-cleanup',    // invoke: render window -> main (delete frames + movie)
   RENDER_MOVIE_TEMPDIR:     'render-window:movie-tempdir',     // invoke: render window -> main (app-managed output folder)
   RENDER_MOVIE_SAVE:        'render-window:movie-save',        // invoke: render window -> main (copy the movie out)
+
+  // --- Local API server (MCP, console command line) ---
+  // Main accepts a request on 127.0.0.1 and asks the main window to answer it.
+  LOCAL_API_REQUEST: 'local-api:request', // push:   main -> main window
+  LOCAL_API_REPLY:   'local-api:reply',   // invoke: main window -> main
+  LOCAL_API_CONTROL: 'local-api:control', // invoke: main window -> main (endpoint on/off, token, port)
+  LOCAL_API_STATUS:  'local-api:status',  // invoke: main window -> main
+  // Launched by tritium_cli: open command line access for this run of the app.
+  LOCAL_API_CLI_ACCESS:        'local-api:cli-access',         // invoke: main window -> main
+  LOCAL_API_CLI_ACCESS_GRANTED: 'local-api:cli-access-granted', // push:   main -> main window
+
+  // App self-update (main/updater). Main owns the flow and pushes the whole
+  // status on every change; the main window shows it and sends the user's choices.
+  UPDATE_GET_STATUS:     'update:get-status',     // invoke: main window -> main
+  UPDATE_CHECK:          'update:check',          // invoke: main window -> main (manual check)
+  UPDATE_DOWNLOAD:       'update:download',       // invoke: main window -> main
+  UPDATE_CANCEL:         'update:cancel',         // invoke: main window -> main
+  UPDATE_INSTALL:        'update:install',        // invoke: main window -> main (stage the new app)
+  UPDATE_RESTART:        'update:restart',        // invoke: main window -> main (quit and swap)
+  UPDATE_OPEN_RELEASE:   'update:open-release',   // invoke: main window -> main
+  UPDATE_DISMISS_RESULT: 'update:dismiss-result', // invoke: main window -> main
+  UPDATE_STATUS:         'update:status',         // push:   main -> main window
+  MENU_CHECK_UPDATES:    'menu:check-updates',
 
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',

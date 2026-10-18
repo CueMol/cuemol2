@@ -65,6 +65,7 @@ const DEFAULTS: StoreSchema = {
     gpuPicking: true,
     hoverInfo: true,
     hoverHighlight: true,
+    updateCheck: true,
     dropOpenTarget: 'active',
     shellOpenTarget: 'active',
   },

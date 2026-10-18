@@ -20,6 +20,8 @@ namespace gfx {
 
 namespace molvis {
 
+class TubeMeshBuilder;
+
 using gfx::DisplayContext;
 using qlib::Vector4D;
 
@@ -177,28 +179,28 @@ public:
   ////////////////////////////////////////
   // Cap rendering routines
   
-  void makeCap(DisplayContext *pdl,
+  void makeCap(TubeMeshBuilder *pdl,
                bool fStart, int nType,
                const Vector4D &f, const Vector4D &vpt,
                const Vector4D &e1, const Vector4D &e2);
 
-  void makeSpherCap(DisplayContext *pdl,
+  void makeSpherCap(TubeMeshBuilder *pdl,
                     bool fStart,
                     const Vector4D &f, const Vector4D &vpt,
                     const Vector4D &e1, const Vector4D &e2);
 
-  void makeFlatCap(DisplayContext *pdl,
+  void makeFlatCap(TubeMeshBuilder *pdl,
                    bool fStart,
                    const Vector4D &f, const Vector4D &vpt,
                    const Vector4D &e1, const Vector4D &e2);
 
-  void makeDisconJct(DisplayContext *pdl,
+  void makeDisconJct(TubeMeshBuilder *pdl,
                      const Vector4D &f1, const Vector4D &ev,
                      const Vector4D &e11, const Vector4D &e12,
                      const Vector4D &escl, const Vector4D &escl_prev);
 
 private:
-  void makeDJEllip(DisplayContext *pdl,
+  void makeDJEllip(TubeMeshBuilder *pdl,
                    const Vector4D &f1, const Vector4D &ev,
                    const Vector4D &pe1, const Vector4D &pe2,
                    const Vector4D &ne1, const Vector4D &ne2);
@@ -210,7 +212,7 @@ public:
   void startTess();
 
   // no or simple norm shift
-  void doTess(DisplayContext *pdl,
+  void doTess(TubeMeshBuilder *pdl,
               const Vector4D &f1,
               const gfx::ColorPtr &pCol, bool bSmoothCol,
               const Vector4D &e11, const Vector4D &e12,
@@ -218,7 +220,7 @@ public:
 
   // complex norm shift (for ribbon junction)
   // vpt should be normalized
-  void doTess(DisplayContext *pdl,
+  void doTess(TubeMeshBuilder *pdl,
               const Vector4D &f1,
               const gfx::ColorPtr &pCol, bool bSmoothCol,
               const Vector4D &e11, const Vector4D &e12,

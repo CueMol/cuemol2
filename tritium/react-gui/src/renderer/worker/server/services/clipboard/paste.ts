@@ -17,6 +17,7 @@ import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import type { PasteNodeArgs, PasteNodeResult } from './types';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import {
     uniqueCameraNameViaScene,
     uniqueGroupName,
@@ -50,6 +51,18 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
         xml,
         form: args.form ?? 'single',
     };
+    // Recorded with the XML as text, so the step replays without the
+    // clipboard; recordOp keeps a note instead when it is over the limit.
+    const record = (): void => {
+        const target = args.targetGroupId ?? args.targetObjId ?? null;
+        recordOp(ctx, scene.uid, 'paste_node', {
+            kind: entry.kind,
+            form: entry.form,
+            xml: new TextDecoder().decode(args.bytes),
+            target,
+            targetType: target === null ? null : args.targetGroupId !== undefined ? 'rendGroup' : 'object',
+        }, ['target']);
+    };
 
     if (entry.kind === 'camera') {
         // Paste a Camera under the destination scene (UXP `onCameraPaste`).
@@ -58,6 +71,7 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
         let newName = '';
         let ok = false;
         withUndoTxn(scene, 'Paste camera', () => {
+            record();
             const restored = ctx.strMgr.fromXML(entry.xml, args.sceneId) as
                 | LScrObject
                 | null;
@@ -100,6 +114,7 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
         let newId: number = -1;
         let ok = false;
         withUndoTxn(scene, 'Paste style', () => {
+            record();
             const restored = ctx.strMgr.fromXML(entry.xml, args.sceneId) as
                 | LScrObject
                 | null;
@@ -125,6 +140,7 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
         let newId: number = -1;
         let newName = '';
         withUndoTxn(scene, 'Paste object', () => {
+            record();
             const restored = ctx.strMgr.fromXML(entry.xml, args.sceneId) as
                 | LScrObject
                 | null;
@@ -169,6 +185,7 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
         let newName = '';
         let newId: number = -1;
         withUndoTxn(scene, 'Paste renderers', () => {
+            record();
             const arr = ctx.strMgr.rendArrayFromXML(entry.xml, args.sceneId) as
                 | unknown[]
                 | null;
@@ -222,6 +239,7 @@ export function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeRes
     let newName = '';
     let newId: number = -1;
     withUndoTxn(scene, txnLabel, () => {
+        record();
         const restored = ctx.strMgr.fromXML(entry.xml, args.sceneId) as
             | LScrObject
             | null;

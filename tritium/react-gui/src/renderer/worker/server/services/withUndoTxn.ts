@@ -1,5 +1,6 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import { failFrom, type Result } from '@renderer/worker/shared/result';
+import { txnBegin, txnEnd } from '@renderer/worker/server/actions/actionLog';
 
 /**
  * Run `fn` inside an undo transaction, committing on success and
@@ -18,12 +19,15 @@ import { failFrom, type Result } from '@renderer/worker/shared/result';
  */
 export function withUndoTxn<T>(scene: Scene, label: string, fn: () => T): T {
     scene.startUndoTxn(label);
+    txnBegin(scene, label, 'gui');
     try {
         const result = fn();
         scene.commitUndoTxn();
+        txnEnd(scene, true);
         return result;
     } catch (e) {
         scene.rollbackUndoTxn();
+        txnEnd(scene, false);
         throw e;
     }
 }
@@ -47,6 +51,9 @@ export function withUndoTxn<T>(scene: Scene, label: string, fn: () => T): T {
  * Prefer this over {@link withUndoTxn} unless the body cannot fail short of
  * throwing.
  *
+ * Both helpers tell the action log (`actions/actionLog.ts`) where the
+ * transaction starts and ends, so the row it makes holds what ran inside.
+ *
  * @param scene - Scene owning the UndoManager.
  * @param label - Undo-stack label for this edit.
  * @param fn - Mutation thunk returning the service result.
@@ -57,14 +64,17 @@ export function undoTxnResult<T extends object>(
     fn: () => Result<T>,
 ): Result<T> {
     scene.startUndoTxn(label);
+    txnBegin(scene, label, 'gui');
     let result: Result<T>;
     try {
         result = fn();
     } catch (e) {
         scene.rollbackUndoTxn();
+        txnEnd(scene, false);
         return failFrom(e);
     }
     if (result.ok) scene.commitUndoTxn();
     else scene.rollbackUndoTxn();
+    txnEnd(scene, result.ok);
     return result;
 }

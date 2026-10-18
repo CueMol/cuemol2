@@ -63,6 +63,21 @@ const EMPTY: GetNewRendererOptionsResult = {
 };
 
 /**
+ * The first of `${type}1`, `${type}2`, ... that no renderer in the scene is
+ * named, which is how a new renderer is named when nobody chose a name.
+ */
+export function unusedRendererName(
+    scene: { getRendByName(name: string): unknown },
+    type: string,
+): string {
+    for (let i = 1; i < 10000; i++) {
+        const candidate = `${type}${i}`;
+        if (!scene.getRendByName(candidate)) return candidate;
+    }
+    return `${type}${Date.now()}`;
+}
+
+/**
  * Collect renderer presets compatible with `objClassName`: styles whose
  * `type` equals `<objClassName>-rendpreset`, from the global scope (0)
  * followed by the scene-local scope -- UXP `getCompatibleRendPresetNames`
@@ -139,16 +154,7 @@ export function getNewRendererOptions(
         .map((s) => s.trim())
         .filter(isSelectableRendererType);
 
-    // Default name: `${firstType}1`, then `${firstType}2`, ... scene-wide.
-    let defaultName = '';
-    if (rendererTypes.length > 0) {
-        const prefix = rendererTypes[0];
-        for (let i = 1; i < 10000; i++) {
-            const candidate = `${prefix}${i}`;
-            if (!scene.getRendByName(candidate)) { defaultName = candidate; break; }
-        }
-        if (!defaultName) defaultName = `${prefix}${Date.now()}`;
-    }
+    const defaultName = rendererTypes.length > 0 ? unusedRendererName(scene, rendererTypes[0]) : '';
 
     let targetObjId = -1;
     try {

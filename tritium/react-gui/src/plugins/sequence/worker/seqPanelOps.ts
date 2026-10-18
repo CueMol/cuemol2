@@ -17,6 +17,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 // --- toggleResidueSelection ---
 
@@ -70,6 +71,8 @@ export function toggleResidueSelection(
         const sel = rrs.toSel(mol);
         mol.sel = sel;
         selStr = String(sel.toString());
+        // The selection it ends with, so running it again does not depend on the one before.
+        recordOp(ctx, scene.uid, 'set_mol_selection', { objId: args.molId, selection: selStr }, ['objId']);
         ok = true;
     });
     return ok ? { ok, selStr } : { ok };
@@ -133,6 +136,8 @@ export function rangeSelectResidues(
         const sel = rrs.toSel(mol);
         mol.sel = sel;
         selStr = String(sel.toString());
+        // The selection it ends with, so running it again does not depend on the one before.
+        recordOp(ctx, scene.uid, 'set_mol_selection', { objId: args.molId, selection: selStr }, ['objId']);
         ok = true;
     });
     return ok ? { ok, selStr } : { ok };

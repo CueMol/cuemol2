@@ -1,0 +1,390 @@
+# Op catalog と console (native / PyMOL dialect)
+
+CueMol を名前で操作する呼び出し元 (AI agent の tool、console のコマンド、MCP server) が
+共有する「操作の定義」の仕様。まだ実装していない項目は
+[op / console の backlog](../plans/261011-op-console-backlog-plan.md) にある。
+
+## 1. 構成
+
+```
+core   renderer/worker/server/catalog/
+         params.ts        param DSL (.qif 型 + 意味型)
+         op.ts            Op / OpContext / OpVerb / OpExposure
+         opRuntime.ts     invokeOp (唯一の実行入口)、runInTxn、txnLabel
+         toolSchema.ts    JSON Schema 生成 (toolSchema) と JSON 引数の読み込み (readToolArgs)
+         toolsets.ts      toolset の定義
+         refs.ts          名前 -> uid、property path の解決
+         consoleFormat.ts console 用の整形 helper
+         ops/*.ts         op 本体 (既存 worker service を呼ぶ adapter)
+plugin agent/worker/tools/      op -> AI SDK tool、enable_toolsets
+plugin console/worker/
+         runtime/         dialect 非依存の実行系 (1 submit = 1 txn、Stop、script、log)
+         parser/          PyMOL 由来の引数パーサ (両 dialect 共用)
+         completion/      Tab 補完 (候補源は dialect が持つ)
+         dialects/native/ op catalog から生成するコマンド + console 自前の builtin
+         dialects/pymol/  PyMOL 語彙のコマンド、selection 翻訳 (sel/)
+```
+
+op 本体は新しい層を作らず、既存の worker service 関数を呼ぶ。GUI と同じ service を通るので、
+GUI でできる操作は op を 1 つ書けば agent と console の両方に出る。
+ServiceMap から tool を自動生成はしない (service の形は UI の都合で、説明文が無く、数も多すぎる)。
+`CmdId` (renderer の UI handler) とも層が違うので共通化しない。
+
+依存の向き (ESLint で強制): `worker/server` は plugin を import しない。console の runtime と
+native dialect は `dialects/pymol` を import しない (例外は dialect 表 `dialects/index.ts`)。
+
+## 2. param DSL
+
+| 種別 | 宣言 | JSON Schema | console での書き方 |
+|---|---|---|---|
+| `.qif` スカラー | `boolean` / `integer` / `real` / `string` / `enumOf(values)` | boolean / integer / number / string / string+enum | `true`/`false`/`on`/`off`、数値、文字列 |
+| 省略可能 | `optional(p)` | `[type, "null"]` | 省略 (既定値 `''`) |
+| object uid | `objectId(desc, objClass?)` / `rendererId` | integer | `1crn`、`#12`。`objClass` (例 `'MolCoord'`) を付けると、その class か派生 class の object 以外を console / qax の解決時に拒否する (`"x" is not a MolCoord object`) |
+| node uid | `nodeId(desc, typeParam)` | integer + 種別 enum | `1crn`、`1crn/cartoon1`、`#12` (種別も解決される)。object と renderer の区切りは `/` だけ (object 名がファイル名由来で `.` を含むため) |
+| selection | `selection` | string | CueMol 選択式をそのまま (bind 時に `validateSelection`) |
+| colour / path | `color` / `path` | string | 色名・`#rrggbb` / cwd 基準のパス |
+| renderer type | `rendererType` | string | 補完は対象 object の作成可能 type |
+| property | `propName` / `propValue` / `propPath` | string | `propPath` は `obj/rend.prop` / `obj.prop` / scene の `prop` (node の後ろに `.` で property) |
+| 座標 | `vec3` | number の配列 (3 要素は読み込み時に検査) | `x y z` |
+| 原子列 | `atoms` | `{chain, resid, atomName}` の配列 | `A.20.CA A.21.CA` |
+
+`run` の引数型は DSL から推論される。console が文字列から変換できる種別だけに限っているのが、
+コマンドを自動生成できる条件 (zod などの汎用 schema を使わないのはこのため)。
+
+- **名前の解決** (`refs.ts`): session をまたいで一意な id は持たず、名前か `#uid` で引く。CueMol の
+  名前は一意でないので、複数に一致する名前は失敗にして uid を求める (`names more than one node`)。
+  - 名前が重なる node は、型名と uid を足した path でも指せる: `1crn/@*selection` (名前の無い
+    selection renderer)、`1crn/cartoon1@cartoon`、`1crn@MolCoord`、`1crn/simple1@simple#40`。
+  - `@型名` は、その文字列全体を名前に持つ node が無いときだけ型名として読む。
+  - `#uid` は、名前と型名で絞った候補から 1 つを選ぶのに使う。候補の中に無い uid は無視する
+    (別の session では uid が変わるため)。それで 1 つに決まればその node、決まらなければ失敗。
+  - 記録 (action log・qax) はこの順で path を作る (`refs.ts` の `recordedPath`): 名前で一意なら
+    `obj/rend`、だめなら型名を足し、それでも重なれば uid も足す。
+  - **パターン** (console だけ。`resolveRefs` / `expandPropPath`): 名前の部分に `*` (任意の文字列) と
+    `?` (任意の 1 文字) を書くと、一致する node 全部を指す。`*` (全 object)、`1crn/*`、`*/cartoon*`、
+    `*/@cartoon` (パターンの中では、型名の前の空の名前は任意の名前に一致する)。
+    - 照合するのは名前だけ。`@型名` は完全一致のまま (`*selection` のように型名に `*` が入るため)。
+      `#uid` はパターンと一緒に書けない。
+    - `/` の無いパターンは object を指し、一致する object が無く引数が renderer を取るときだけ renderer を探す
+      (名前と同じ規則)。引数が取れない node (kind 違い、`objClass` に当たらない object) は黙って除く。
+    - zsh と同じく、逃がしていない `*` / `?` は常にパターン。名前の中の文字としての `*` は `\*` か引用符で
+      書く (`glob.ts`。`\` の後の文字はそのものに一致する)。型名の部分は逃がさなくてよい。
+    - property path ではノード部分だけがパターンになる。`/` があれば最初の `.` まで、無ければ object に
+      一致する最も長い dotted prefix (`*` は `.` にも一致するので、`*.pdb.visible` は `1ox1.pdb` の `visible`)。
+      property 部分の `*` は今までどおり (`reset_prop 1crn.*`)。
+  CueMol に「分子」という概念は無く、原子を持つ object は class `MolCoord` (とその派生 `AnimMol` など)。
+  param 名は `objId` に統一し (`molId` は使わない)、class の制約は `objectId(desc, 'MolCoord')` の
+  `objClass` で表す。派生の判定は `refs.ts` の `isObjectOfClass` で、C++ の `getClassName` は自分の
+  class しか返さないため、生成 wrapper の継承 (`class AnimMol extends MolCoord`) を
+  `ctx.svc.isInstanceOf` (`CueMol.isInstanceOf`、`wrapper_map` の class への `instanceof`) で見る。
+  - 命名の規約: object を指す引数・型・文言では `molecule` / `mol` を使わず、`objId` と qif の class
+    名 (`MolCoord`) で書く。qax のマクロの `<param type>` も qif の class 名にする。ただし、`MolCoord`
+    の object でなければ意味が無い (または `MolCoord` に限っている) 機能の名前には `mol` / `molecule`
+    を使ってよい (例: op `merge_molecules`、help の分類 `Molecule editing`、`isMolecule`)。
+- **selection**: native・agent・MCP は CueMol の選択式をそのまま受け、PyMOL 構文への翻訳 (`sel/`) は
+  通さない。PyMOL の選択式を受けるのは PyMOL dialect だけ。
+
+## 3. Op
+
+```ts
+defineOp({
+  name, description, params, mutates,
+  expose: { tool: 'core' | ToolsetId | false, console: boolean, mcp?: boolean },
+  aliases?: [{ name, fixed?, defaults?, order?, summary? }],
+  group,                       // help の分類 (OP_GROUPS)
+  outsideTxn?(args): boolean,  // txn の外で走らせる (例: .qsc の load)。console の文字列でも JSON の値でも呼ばれる
+  format?(data): string[],     // console での表示 (無ければ汎用の key: value 表示)
+  run(ctx, args, oc: OpContext),
+})
+```
+
+- `OpContext` は `sceneId` / `viewId` / `callId` / `markMutated` / `noteStream` / `streamId` と、
+  UI を持つ呼び出し元だけが渡す `openScene`、中断を伝える `cancelled()`、書き込み先の制限
+  `fileAccess` (`'any'` = console、既定は desktop のみ。`catalog/outputFile.ts`)。
+- `invokeOp` が唯一の実行入口: selection 引数を実行前に検査し (どの呼び出し元でも同じ)、throw を
+  失敗に変え、成功した `mutates` op で `markMutated` を呼ぶ。
+- 引数の読み方: console は文字列を、MCP と agent は JSON を、それぞれ型に読んでから同じ `checkArg`
+  (`catalog/argValues.ts`) で検査する。整数に 1.5、真偽値に `maybe` は、どちらから来ても断る。
+  文字列の真偽値・数値は `parseBoolText` / `parseNumberText` (空は数値にしない) で読み、property 値・
+  アニメーションの property・reader のオプション・PyMOL dialect も同じ関数を使う。
+- 入力ファイルのパスは `callerPath` (`catalog/outputFile.ts`) で絶対パスにする: `~` は home、相対は
+  desktop から (console は自分の cwd で解決済み)。出力の `outputPath` と同じ基準。
+- 一覧の番号は 1 から (`worker/shared/numbered.ts` の `numbered` / `pickByNumber` / `checkPosition` /
+  `findBySpec`)。よく出る失敗の文言は `catalog/errors.ts`。
+- `runInTxn` が txn 規則: 変更があれば (途中で失敗しても) commit、無ければ rollback
+  (空 commit は redo を消すため)。agent の 1 turn、console の 1 submit がそれぞれ 1 txn。
+  `outsideTxn` の op は `runExclusive` で txn の外で走らせるが、その間も `txnBusy()` は busy を返す
+  (scene の保存・open の途中に他の編集が割り込まないように)。
+- 結果は op の値をそのまま返し、表示は呼び出し元が決める (agent / MCP は JSON、console は `format`)。
+- 後から足す機能のための前提: 実行は `invokeOp` 以外から呼ばない (操作の記録や入れ子の管理を
+  ここに足す)。params の順序と型は catalog に残す (引数から command 文字列を組み立て直せるように)。
+
+## 3.1 何を op にするか
+
+- **基準**: ユーザーが「〜して」と頼む単位の操作。GUI 内部の補助は op にしない: マウス操作の補助
+  (`naviHover` / `measurePick` / `rectSelect` など)、名前の提案 (`propose*`)、dialog の初期値
+  (`get*Info`)、`drainLogMessages`、`cancelAllJobs`。
+- `undo` / `redo` は op にしない。console では builtin、agent では turn 単位の txn と衝突する。
+- console 自身の機能 (`cd` / `pwd` / `ls` / `run` / log / `help`) も op にせず native dialect の
+  builtin にする (agent / MCP は使わない)。
+- **置き場所** (agent): 頻繁に使い、無いと別の tool で代用されるもの (slab だけ変えたいのに
+  `center_view` で中心とズームまで変える、など) は `core`。それ以外は toolset。`core` が上限
+  (`MAX_TOOLS`) に当たっているときは、使用頻度の低い `core` を toolset に移してから足す。
+  dialog 由来の重い操作 (Tools 系・アニメーション編集・形式ごとの load) は agent に出さず、
+  `tool: false, mcp: true` で console と MCP にだけ出す。
+- console には toolset に関係なく全ての op が出る (`expose.console`)。例外は `capture_view`
+  (画像はモデルに見せるもので、console には出す場所が無い)。
+
+## 4. AI agent への公開
+
+- `expose.tool: 'core'` は常に渡す (上限 21、`MAX_TOOLS`)。
+- toolset に属する op は、モデルが `enable_toolsets` で有効にした次の step から渡す
+  (`prepareStep` / `activeTools`)。有効化は会話の間続き、履歴から復元する。
+- 詳細は [ai-agent-plugin.md](ai-agent-plugin.md) §3.3 / §5。
+- tool の規則と selection の早見表は `catalog/guide.ts` (`TOOL_RULES`、`SELECTION_CHEAT_SHEET`) に
+  あり、agent の system prompt と MCP の `instructions` が共有する。結果の JSON 化は
+  `catalog/toolOutput.ts` の `serializeToolOutput`。
+
+## 4.1 MCP への公開
+
+- `expose.tool !== false` の op を全て MCP の tool として公開する (toolset の段階なし)。
+  `expose.mcp: true` は agent には出さず MCP にだけ出す: `outsideTxn` の op (agent の turn は全体が
+  1 txn なので実行できない) と、console で使える Tools 系・アニメーション編集の op (agent の tool 一覧は
+  短く保つが、MCP client は自分で選ぶ)。
+  1 call = 1 undo txn (`MCP: <name>`)、`fileAccess: 'any'`。
+- agent の turn・console の submit・MCP の call は `txnBusy()` で排他し、busy なら待たずに断る。
+- 詳細は [local-api-server.md](local-api-server.md)。
+
+## 5. Console
+
+**runtime**: 1 submit = 1 txn (label は dialect の接頭辞 `cmd:` / `pym:`)、失敗で以降を中止、
+lone `undo` / `redo` と `outsideTxn` のコマンドは txn の外、script は最大 8 段のネスト、Stop で
+ダウンロードも中断。
+terminal からは thin client `tritium_cli` で同じ runtime を使える (作業ディレクトリは client 側。
+[local-api-server.md](local-api-server.md) §5)。
+
+**native dialect** (既定。prompt `CueMol>`):
+
+- コマンドは `CONSOLE_COMMAND_OPS` から生成する。op 名 (`set_visible`) と各 alias (`show` / `hide`)
+  の両方で呼べる。alias は 1 つの op を呼ぶ別名で、引数を固定 (`fixed`。引数一覧に出ず、指定できない)・
+  既定 (`defaults`)・並べ替え (`order`) できる。ユーザー定義のコマンド列とは別物。
+- 引数は PyMOL と同じくカンマ区切り (`zoom 1crn, chain A and resid 10:20`)。selection が空白を
+  含むため、空白区切りは採らない。括弧と引用符の中のカンマは区切りにしない (`parser/parseArgs.ts`)。
+- 引数の割り当て規則は dialect ごと (`ConsoleDialect.argRule`、`parser/bindArgs.ts` の `assignArgs`):
+  - native は **Python の呼び出しと同じ**: 位置引数は先頭から順に埋まり、名前付き (`name=value`) の後には書けない。
+    同じ引数を 2 回書くとエラー。
+  - PyMOL dialect は PyMOL のまま: 位置引数は名前付きも数えた全体の番号の引数に入り、重複は後勝ち、LEGACY 展開あり。
+- 主な alias: `show` / `hide`、`select`、`zoom` / `center`、`turn`、`view` / `slab` / `fit_slab`、
+  `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`scene`、
+  `count`、`delete` / `rename` / `retype`、`render` (ray tracing / GI。Stop で中断)、
+  `save` / `write`、`save_view` / `restore_view` / `cameras`、`projection` / `pan` / `focus`、
+  `contour`、`define`、`style`。
+- console と MCP にだけ出す op (`tool: false, mcp: true`。agent には出さない): Tools メニューの dialog に当たる
+  `calc_elepot`・`cut_surface`・`list_morph_frames` / `add_morph_frame` / `remove_morph_frame`、
+  アニメーション編集の `list_anims` / `add_anim` / `set_anim_prop` など。
+- `show` / `hide` は `set_visible` の alias。CueMol では renderer が表現なので、PyMOL の `show`
+  (表現を足す) と意味が衝突しない。
+- console 自前の builtin: `cd` / `pwd` / `ls` / `run` / `open_log` / `close_log` / `log` /
+  `undo` / `redo` / `help`、scene (タブ) の `list_scenes` (短縮形 `scenes`) / `create_scene` /
+  `switch_scene` / `close_scene` ([local-api-server.md](local-api-server.md) §5.2)、undo の各項目が実行した op を
+  出す `list_actions` と、それを qax ファイルに書き出す `export_actions`。script は qax (`.qax`、XML) で、
+  `run x.qax` は action ごとに 1 txn で再生する。`open_log` も qax で書く。それ以外の拡張子のファイルは
+  コマンド行のテキストとして読む ([action-log.md](action-log.md))。
+- `quit` / `exit` (両 dialect 共通。`runtime/quitCommand.ts`。`exit` は引数を取らない `quit`): app を終了する。worker は
+  scene コマンドと同じく `requestScene({ op: 'quit', force })` で panel に渡し、`runSubmission` が
+  `IPC.APP_QUIT` で main (`main/appQuit.ts`) に頼む。Cmd+Q と同じ保存確認を出し、`force` (`true` /
+  `--force` / `-f`) なら確認なしで終了する。後続のコマンドは捨てる。script (`run` / `@file`) 内では使えない。
+- `help` は主題 (op の `group`、`OP_GROUPS`) の一覧だけを出し、`help <subject>` (`help animation` など) で
+  その主題のコマンドを、`help <command>` で書式と引数を出す。出力は Markdown
+  ([console-help-markdown.md](console-help-markdown.md))。
+- 結果は op の `table` (Markdown の表。[console-help-markdown.md](console-help-markdown.md))、無ければ `format`、
+  それも無ければ `formatData` (key: value、名前の列は折り返し、最大 40 行)。
+- node (object / renderer / node) と property path の引数は、`load` のパスと同じく空白区切りの列
+  (`runtime/paths.ts` の `splitPathWords`。空白を含む名前は `my\ mol` か引用符)。
+  `hide 1crn 2abc/cartoon1`、`set 1crn/simple1.width 2abc/simple1.width, 0.5`。
+  語が 1 つでパターンでなければ今までどおり 1 回だけ実行し、失敗はエラー。
+  記録した action を console の行として見せる `cmlFormat.ts` は、これらの値に空白や名前の `*` / `?`
+  があれば引用符で囲み、貼り戻しても 1 つの node として読まれるようにする。
+- 語が 2 つ以上か、パターン (§2 名前の解決) を含むと、指す node ごとに op を 1 回ずつ実行する
+  (`fromCatalog.ts` の `readTargets`。node 引数は `#uid` に置き換えて、名前で書いたときと同じ
+  `readConsoleArgs` -> `invokeOp` を通す。property path は記録に uid が残らないよう `recordedPath` で
+  書いた path (`1crn/simple1.width`) に置き換える。読み直して別の node になるときだけ `#uid.prop`)。
+  - ある node で失敗したら `<path>: <error>` の warning を出して残りを続け、コマンドは成功扱い
+    (行の後続コマンドも script も止めない)。一致しないパターンは `no matches found: <pattern>` の warning。
+  - 出力のある op は、node ごとに `<path>:` の見出しを付ける。
+  - 複数の対象を指せるのは 1 コマンドに 1 引数だけ (2 つあれば直積になるので断る)。
+  - 対象は実行前に全部決める。途中で消えた node (group ごと消した子など) は、その回が失敗して warning になる。
+  - undo は submit 全体で 1 txn のまま。記録は node ごとの op になる ([action-log.md](action-log.md))。
+- `load` / `load_*` の `path` は空白区切りのパスの列で、パターン (`*` / `?`) も書ける
+  (`load *.pdb ~/pdb/1c*.pdb`。書式と Tab は [console-completion.md](console-completion.md))。
+  - 実行時に展開し、ファイルごとに op を 1 回ずつ実行する (上と同じく失敗は warning)。一致しない
+    パターンは `no matches found: <pattern>` の warning。書き出す側の path は 1 つのパスのまま。
+  - 空白を含む名前は引用符か `\ ` で書く (以前は引用符なしで書けた)。
+  - `.qsc` は txn の外で開くので、パスを 1 つだけ書いたときにしか開かない。パターンや列の中の
+    `.qsc` は warning を出して飛ばす (`outsideTxn` には列を「パスなし」として渡す)。
+- **Tab 補完** (`completion/complete.ts`。候補の返し方と client 側のメニューは [console-completion.md](console-completion.md)):
+  - 入力途中の行を実行時と同じ規則で読む (`scanArgs` の partial、`assignArgs`)。書きかけの括弧の中は 1 つの引数。
+  - その位置に書けるものを全部出す: 次の位置の引数の値と、まだ書いていない引数の `name=` を、見出しを分けて一覧する。
+    `name=` を書いた後はその引数の値。native で名前付きの後は `name=` だけ。
+  - 値の候補源は param の意味型から (`fromCatalog.ts` の `completionOf`): enum 値、object / renderer / node 名、
+    selection (scene と app の名前)、色、renderer type (object、renderer、読み込むファイルの reader、分子)、
+    property path (階層ごと)、property 値、ファイル (path 型)。前の引数は名前で受け取る (`SourceContext.bound`)。
+  - 候補は文字列か `CompletionItem { text, then }`。確定後に付ける区切りは候補ごと: `name=`・`obj.`・ディレクトリは
+    何も付けず、値は引数が残っていれば `, `。何も入力していないときに候補が `name=` 1 つだけなら、書かずに一覧する。
+  - 照合は引数全体を先に、それで始まる候補が無ければ最後の単語 (空白・カンマ・括弧の後)。
+  - 候補が無いときのファイル名 fall back は PyMOL dialect だけ (`ConsoleDialect.fileFallback`)。native は path 型の引数だけがファイルを出す。
+
+**PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
+(CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる (詳細は
+[console-pymol-dialect.md](console-pymol-dialect.md))。
+`load` / `fetch` / `png` のように native と同じ名前のコマンドも、native の生成コマンドは再利用せず
+service を直接呼ぶ。引数と文言が PyMOL 固有で、置き換えると PyMOL との互換が崩れるため。
+`ray` は native の `render_image` で一時ファイルに描き、undo 位置とカメラを署名として覚える。
+直後の `png` (幅・高さ指定なし) は、署名が変わっていなければその画像を書き出す。`png ..., ray=1`
+はその場で ray tracing する。
+
+**panel**: toolbar の CueMol / PyMOL 切り替え、または `native` / `pymol` と打つと切り替わる。
+選択は plugin preference (`console.dialect`)、履歴は dialect ごと (PyMOL は旧 key を引き継ぐ)。
+
+## 5.1 コマンド名の規約
+
+op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は次の規約で付ける。
+`plugins/console/worker/dialects/native/naming.test.ts` が動詞と `help` の分類を検査する。
+語順を `名詞_動詞` にしないことで失う「同じ対象の op が Tab 補完で並ぶ」性質は、`help` の主題
+(`OP_GROUPS`) で補う。
+
+- **op 名は `動詞_目的語`** (snake_case): `list_cameras`、`add_paint`。`名詞_動詞` (`anim_add`) や
+  名詞だけ (`scenes`) の op 名は付けない。目的語が自明な固有の動作は動詞だけ (`superpose`、`animate`)。
+- **動詞の語彙**:
+
+  | 動詞 | 意味 |
+  |---|---|
+  | `list` | 複数のものを一覧する (目的語は複数形) |
+  | `get` | 1 つのものの状態や値を読む |
+  | `set` / `reset` | 既にあるものの属性を書き換える / 既定値に戻す |
+  | `create` / `delete` | scene の node (object・renderer・group・camera・scene) を作る / 消す |
+  | `add` / `remove` | あるものの中の項目 (bond・paint・アニメーション要素・morph frame・相互作用) を足す / 除く |
+  | `move` / `rename` | 並べ替える / 名前を変える |
+  | `clear` | 中身を全部消す |
+  | `apply` | 名前の付いたもの (style・camera) を当てる |
+  | `load` / `save` | CueMol のファイルを読み書きする |
+  | `export` | 画像や他の形式に書き出す |
+  | `fetch` | ネットワークから取ってくる |
+  | `calc` / `recalc` | 計算して結果を作る / 作り直す |
+  | `show` / `hide` | 表示する / 隠す (この意味だけ。情報の表示には使わない) |
+
+  固有の動詞 (`superpose`、`measure`、`merge`、`cut`、`rotate`、`pan`、`focus`、`center`、
+  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`paste` (Copy した XML から足す)、`reload` (元のファイルから読み直す)、`quit` / `exit` など) は、
+  上の動詞と意味が重ならないものに限って使う。`make` / `gen` / `new` (→ `create`)、
+  `compute` / `regen` (→ `calc` / `recalc`)、`change` / `update` (→ `set`)、一覧の `get` (→ `list`) は使わない。
+- **目的語**: `scene`、`object`、`renderer`、`group`、`camera`、`view`、`prop(s)`、`selection`、
+  `paint`、`anim`、`morph_frame`、`map_contour`、`surface`。分子に限るものは `mol` を付ける
+  (`set_mol_selection`) が、chain / residue には付けない (`list_chains`)。
+- **alias** (console だけの短縮形。MCP と agent には出さない):
+  - 1 語の動詞 (`load`、`save`、`write`、`delete`、`select`、`focus`、`turn`、`render`、`count`)。
+  - 名詞だけの alias は「引数なしで表示、引数ありで設定」するものに限る (`scenes`、`cameras`、`props`、
+    `scene`、`view`、`slab`、`projection`、`style`、`contour`)。作成や書き出しに名詞の alias は付けない。
+  - PyMOL の語 (`ray`、`png`) は PyMOL dialect が持ち、native には入れない。
+
+## 6. 未対応 (範囲外)
+
+- GUI 用 service のうち op になっていないものは agent / console / MCP から使えない。主なもの:
+  node の copy / paste、material の一覧、対称分子の生成 (`createSymmMol`)、原子の一覧、
+  multigrad 着色、保存できる object の一覧、POV-Ray 出力。一覧は
+  [backlog](../plans/261011-op-console-backlog-plan.md) の「op になっていない機能」。
+- アクションの記録と再生、undo 履歴 UI は未実装
+  ([backlog](../plans/261011-op-console-backlog-plan.md) の「op 基盤 (記録・再生・undo 連携)」)。
+
+### Tools 系の op (`ops/apbsOps.ts`, `ops/toolOps.ts`。console と MCP)
+
+- `calc_elepot`: APBS の job (pdb2pqr -> apbs、外部プロセス) を dialog と同じ service で
+  起動し、終わるまで待つ (`waitForApbsJob`、Stop で kill)。実行ファイルのパスと既定の force field は
+  Settings の値を `ApbsConfigProvider` が worker に送っておいたもの (`setApbsDefaults`、
+  `services/apbs/defaults.ts`)。他の値は dialog の既定 (温度 298.15、誘電率 78.54 / 2.0)。
+- `cut_surface`: view の前面 slab 面で分子表面を切る (Mol surface cutter)。
+- `list_morph_frames` / `add_morph_frame` / `remove_morph_frame`: 分子の morphing frame の一覧・追加 (PDB ファイル
+  または scene の分子から。普通の分子は先に MorphMol に変換され uid が変わる)・削除。再生の設定は
+  Animation panel。
+- `set_secondary_structure` は再計算に dialog の `ignoreBulge` / `helixGapAngle` も取る。
+- `convert_to_morph objId`: MolCoord を MorphMol に変える (Morph dialog の Convert)。
+
+### アニメーション編集の op (`ops/animOps.ts`。console と MCP)
+
+Animation panel と element inspector が使う service をそのまま呼ぶので、undo の単位も panel と同じ。
+再生・停止・時刻移動は既存の `animate`。
+
+- `list_anims`: 長さ・再生状態・loop・開始カメラと、要素ごとの番号 (1 から)・名前・型・`#uid`・
+  絶対時刻 (相対時刻と追従先)。時刻の参照が解決しないときはその理由。
+- `add_anim type [, name] [, before]`: `spin` / `camera` / `show` / `hide` / `slidein` / `slideout` /
+  `mol` / `wait`。直前の要素に追従する (panel の追加と同じ)。
+- `remove_anim` / `move_anim element, by|to|end` / `set_anim_time element, startMs, endMs` (追従先からの相対 ms)。
+- `set_anim_prop element, prop, value`: inspector で書ける property (`name`、`timeRefName`、`disabled`、
+  `quadric`、`angle`、`axis` (`"0 1 0"`)、`endcam`、`ignore*`、`rend`、`hide`、`fade`、`tgtAlpha`、
+  `direction`、`distance`、`mol`、`startValue`、`endValue`)。値は property の型に変換する。
+- `set_anim_options [loop] [, startCamera]`。
+- 要素は `list_anims` の番号、`#uid`、名前で指定する (同名が複数なら番号か uid を求める)。
+  `list_morph_frames` などの番号も同じく 1 から。
+- `set_anim_generic_prop element, prop, value` / `reset_anim_prop element, props`: 上の一覧に無い property (Inspector の generic tab) の書き込みと既定値への reset。
+
+### GUI の編集操作の op (`ops/editOps.ts` ほか。console と MCP)
+
+dialog・context menu・panel が使う service をそのまま呼ぶ (undo の単位も GUI と同じ)。一覧は 1 から番号を振る。
+
+- `reset_prop path` (inspector の Reset。`node.*` で Reset all = 変更済みで既定値のある property を 1 txn で)、
+  `clear_undo` (Edit > Clear undo data。txn の外で実行)
+- `renumber_residues objId, shift|start, value [, selection] [, renumber]`、`add_bond` / `remove_bond objId, A.20.SG A.45.SG`、
+  `set_symmetry objId, a, b, c, alpha, beta, gamma, spaceGroup`
+- `create_group objId [, name]`、`create_surface_from_map rendId` (map の isosurf のみ)、`recalc_surface surfId [, density] [, backend]`
+- `list_interactions` / `remove_interaction rendId, number` (距離・角度・二面角の個別削除)
+- `list_paint` / `set_paint` / `remove_paint` / `move_paint` (paint の各エントリー。原子は最初に一致したエントリーの色)、
+  `add_paint_at nodeId, selection, color [, at]` (`at` 番の前に挿入、null で末尾。`add_paint` と違い selection を変えない)、
+  `set_multigrad_nodes rendId, nodes` (`"-1 blue; 0 white; 1 red"`)
+- `set_atom_label objId, atoms, on` (原子 1 つの名前ラベル)、`set_atom_labels objId, selection, format, rendererName` (selection の原子すべてに書式付きの名前ラベル。format が null なら外す。rendererName の `*namelabel` が無ければ DefaultLabel の style で作る。null は navigate tool の名前の無い renderer。PyMOL の `label`)、`measure_selections objId, selections, label` (selection どうし。`"a; b"`)、
+  `measure_geometry` の `atomObjects` (2 つ目以降の原子の object。object をまたぐ計測)
+- `show_unit_cell objId`、`create_symmetry_copy objId, matrix, name, ...` (4x4 行列を行ごとに 16 個。renderer の引数は `create_renderer` と同じ)
+- `move_node nodeId, by|to|end` (object は scene の中、renderer はその object の renderer の中で数える)、
+  `set_render_settings settings` (`"key=value; ..."`)
+- 並べ替えの op (`move_node` / `move_paint` / `move_anim` / `move_camera`) の行き先は、`by` (今の位置からの段数。負が上。端で止まる)・`to` (1 始まりの番号)・`end` (`top` / `bottom`) のどれか 1 つで指す (`catalog/moveDest.ts`)
+- `set_elepot_coloring rendId [, map] [, low] [, high]` (molsurf / dsurface を静電ポテンシャルで色付け)
+- `recenter_map rendId` (map を view の中心で描き直す)、`export_scene path [, format] [, width] [, height] [, transparent] [, dpi]`
+  (png / pov / stl / mqo)
+- camera: `rename_camera`、`move_camera name, by|to|end`、`save_camera` / `apply_camera` の `withVisibility`
+  (表示・非表示も保存・適用。適用時は txn を commit する)
+- `animate` に `pause` を追加し、`timeMs` は seek のときだけ必要
+- camera の visibility とファイル: `set_camera_visibility name, entries` (`"on 1crn; off 1crn/cartoon1"`。
+  ここに無い node は camera が覚えない)、`clear_camera_visibility name`、`load_camera_file path`、
+  `save_camera_file name [, path]` (null は元のファイル)、`reload_camera name`
+- 貼り付け: `paste_node kind, form, xml, target, targetType` (scene tree の Paste。Copy した XML から
+  object / renderer / group / style set / camera を足す。名前は貼り付け先で重ならないように付け直す)
+
+### style set の op (`ops/styleOps.ts`。console と MCP、help の分類は `styles`)
+
+set は名前で指す。同じ名前があれば scene の set を global (system / user) の set より先に使う。
+
+- `create_style_set name`、`delete_style_set styleSet`、`set_style_readonly styleSet, readonly`
+  (変更済みの set は read only にできない)
+- `load_style_file path` (scene に read only の set として読む)、`save_style_file styleSet [, path]`
+  (null は元のファイルへ上書き)
+- Style Editor: `define_color name, color [, styleSet]`、`remove_color` / `remove_selection` / `remove_style styleSet, name`
+- `define_color` と `define_selection` の `styleSet` は、その名前の set が無ければ scene に同じ名前で作る。
+  null は `default` という名前の set (scene の既定の set。MolSelPane が書き込める set の無い scene に作るのも
+  この名前)
+
+### view property と reader のオプション
+
+- **view property** (View > View property の inspector と同じ generic property bridge):
+  - `list_node_props` / `set_node_prop` の `nodeType` に `view` を足した。nodeId は不要で、呼び出し元の view を指す。
+  - console では `props view`、`get view.stereoMode`、`set view.centerMark, axis` と書く。property path の補完は先頭で `view.` を出す。
+  - `view.` で始まる path は、`view` という名前の object が無いときだけ view を指す (`refs.ts` の `resolvePropPath`)。
+  - View の property には既定値が無いので (View.qif の default はコメントアウト)、`reset_prop view.xxx` は断る。
+- **ファイルの読み込みと reader のオプション** (`catalog/fileLoad.ts`、`ops/loadFormatOps.ts`):
+  - reader の選び方は GUI と同じ規則 (`shared/openFileKind.ts` の `classifyOpenFile`。File > Open・drop と共有):
+    scene reader の拡張子なら scene として開く。拡張子を受け持つ reader がちょうど 1 つならそれ、2 つ以上か
+    無ければ中身で決める (sniff)。その後は `OpenObjByPath` と同じく、選んだ reader の既定のオプションで `loadObject`。
+  - `load_file` (`load`) の引数は `path` / `rendererType` / `selection` / `name` だけで、オプションは reader の既定値。
+  - オプションを変えるときは形式ごとの op (console / MCP、agent には出さない)。引数名は `fileOpenTypes.ts` の
+    option 型と同じで、null は reader の既定値。形式の違うファイルは断る (`load_mtz f.pdb` → not an MTZ file)。
+    - `load_pdb` (PDB / mmCIF): `loadModel`、`loadAnisou`、`loadAltConf`、`loadSegid`、`build2ndry`、`autoTopology`
+    - `load_mtz`: `columnF`、`columnPhi`、`columnWeight`、`resolutionLimit`、`gridSpacing` (列を指定するとその列を使う)
+    - `load_ccp4`: `normalize`、`truncateMin`、`truncateMax` (指定すると切り捨てる)、`mapType`、`subsample`
+    - `load_msms` (`vertFile`)、`load_namd` (`psfFile`)、`load_amber` (`coordFile`)

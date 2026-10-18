@@ -22,6 +22,8 @@ class BallStickRenderer_wrap;
 
 namespace molvis {
 
+  class TubeMeshBuilder;
+
   using namespace molstr;
   using gfx::DisplayContext;
 
@@ -75,6 +77,14 @@ namespace molvis {
 
     double getRingThick() const { return m_tickness; }
     void setRingThick(double s) { m_tickness = s; }
+
+    /// Ring plates drawn by another renderer (NARenderer): mark an atom as a
+    /// ring member candidate (no-op unless rings are shown) ...
+    void collectRingAtom(int aid) { checkRing(aid); }
+
+    /// ... and draw the plates of the rings whose members were all collected,
+    /// clearing the collection.
+    void drawCollectedRings(TubeMeshBuilder *pmb);
 
   private:
     /// Valence-Bond drawing mode
@@ -131,8 +141,8 @@ namespace molvis {
     void drawVBondType1(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
                         MolBond *pMB, DisplayContext *pdl);
 
-    void drawRings(DisplayContext *pdl);
-    void drawRingImpl(const std::list<int> atoms, DisplayContext *pdl);
+    void drawRings(TubeMeshBuilder *pmb);
+    void drawRingImpl(const std::list<int> atoms, TubeMeshBuilder *pmb);
 
     bool m_bDrawRingOnly;
 

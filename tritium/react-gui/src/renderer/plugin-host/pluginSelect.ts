@@ -68,6 +68,7 @@ export const EMPTY_CONTRIBUTIONS: PluginContributions = {
   toolbar: [],
   views: [],
   bottomTabs: [],
+  statusBar: [],
   settings: [],
 }
 
@@ -80,7 +81,7 @@ export const EMPTY_CONTRIBUTIONS: PluginContributions = {
  */
 export function collectContributions(active: readonly RendererPlugin[]): PluginContributions {
   const out: PluginContributions = {
-    menus: [], toolbar: [], views: [], bottomTabs: [], settings: [],
+    menus: [], toolbar: [], views: [], bottomTabs: [], statusBar: [], settings: [],
   }
 
   for (const plugin of active) {
@@ -108,13 +109,26 @@ export function collectContributions(active: readonly RendererPlugin[]): PluginC
       out.bottomTabs.push(resolved)
     }
 
+    for (const item of contributes.statusBar ?? []) {
+      const Component = plugin.statusBarItems?.[item.id]
+      if (!Component) continue
+      out.statusBar.push({ ...item, key: `${pluginId}.${item.id}`, Component })
+    }
+
     for (const setting of contributes.settings ?? []) {
       // A secret names no namespace in the manifest: it is filled in here
       // with the plugin's own id, so a plugin cannot address another's.
-      const control: SettingControl =
-        setting.control.kind === 'secret'
-          ? { ...setting.control, namespace: pluginId }
-          : setting.control
+      // A custom row's control is the plugin's component.
+      let control: SettingControl
+      if (setting.control.kind === 'secret') {
+        control = { ...setting.control, namespace: pluginId }
+      } else if (setting.control.kind === 'custom') {
+        const Component = plugin.settingRows?.[setting.key]
+        if (!Component) continue
+        control = { kind: 'custom', Component, wide: setting.control.wide }
+      } else {
+        control = setting.control
+      }
       out.settings.push({ ...setting, control, pluginId, pluginName })
     }
   }

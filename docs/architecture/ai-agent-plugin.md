@@ -135,11 +135,14 @@ content、Anthropic の thinking signature、Gemini の thought signature) を `
 part を落とす**。text と tool 呼び出しは残るので、会話は続く。Gemini 3 は tool call に thought
 signature を要求するが、他 provider 由来の tool call には SDK が `skip_thought_signature_validator`
 を自動で入れるので 400 にはならない。
-### 3.3 ツールカタログは手書き
+### 3.3 ツールは core の op catalog から生成する
 
-TS 型 -> JSON Schema の自動生成は workspace に無く、strict が効く provider では API 側が入力形を
-保証するので、クライアント側バリデータも持たない (`strict` は全 property を `required` に
-列挙 + `additionalProperties: false`、optional は `["string","null"]` で表す)。
+tool は agent の中では宣言しない。core の op catalog (`renderer/worker/server/catalog/`、
+[op-catalog.md](op-catalog.md)) の op のうち `expose.tool` を持つものを、`tools/index.ts` が
+tool に変換する。schema は op の param DSL から `toolSchema()` が生成し (`strict` は全 property を
+`required` に列挙 + `additionalProperties: false`、optional は `["string","null"]` で表す)、
+モデルの引数は `readToolArgs()` で op の型に読み直してから catalog の `invokeOp` で実行する。
+生成結果は `tools/schemaPin.test.ts` の snapshot がバイト単位で pin している。
 
 `buildAiSdkTools` が turn ごとに `tool({ inputSchema: jsonSchema(...), strict, execute })` の
 record を組む。`execute` は **throw しない** -- 失敗は `ok:false` を payload に載せる契約を保つ。
@@ -183,12 +186,19 @@ coerce し、おかしければモデルが読める理由を返すので、往�
 キーワード集合を pin している。件数のような制約は description に書き、`run` で検証する。
 
 登録順は **name 昇順で固定** (prompt caching の prefix を安定させるため)。
-`tools/` 配下は `*.service.ts` と命名しない -- worker の glob に拾われる。
+`tools/` と `catalog/` 配下は `*.service.ts` と命名しない -- worker の glob に拾われる。
+
+**toolset**: 常に渡すのは `expose.tool: 'core'` の op と `enable_toolsets` だけ。それ以外の tool は
+toolset (`catalog/toolsets.ts`) に属し、モデルが `enable_toolsets` で有効にした次の step から
+AI SDK の `prepareStep` / `activeTools` で渡す (3 provider 共通に効く)。有効化は会話の間持続し、
+次の turn では履歴中の `enable_toolsets` 呼び出しから復元する (`toolsetsEnabledIn`)。tool 一覧は
+prompt cache の prefix に含まれるので、変わるのは toolset を有効にした時だけにしている。
+provider 側の tool search (`deferLoading`、Anthropic / OpenAI のみ) は将来の最適化として残す。
 
 ### 3.4 プロンプト
 
 `instructions` は静的テキスト 1 本 (バイト一致でキャッシュに乗せる): 役割、原則
-(ID は snapshot の値のみ使う / 選択式は `check_selection` で検証してから使う /
+(ID は snapshot の値のみ使う / 選択式は `count_selection` で検証してから使う /
 `ok:false` は失敗・2 回続いたら諦めて報告する / 曖昧なら訊く / 最後に 1〜3 文で報告)、
 そして **選択式チートシート**。
 
@@ -264,35 +274,109 @@ renderer にあり worker から import できなかった)、`worker/shared/fil
 ## 5. ツール一覧
 
 `objId` / `rendId` / `nodeId` は `get_scene_state` が返す uid。`selection` は CueMol 選択式。
-sceneId / viewId は `TurnContext` から補うのでモデルには見せない。
+sceneId / viewId は `TurnContext` から補うのでモデルには見せない。定義は op catalog
+(`catalog/ops/*.ts`) にある。
+
+**core (常に渡す)**
 
 | tool | mutates | 呼ぶ service |
 |---|---|---|
 | `get_scene_state` | no | `getSceneTree` + `getSelDefs` + scene 設定の読み取り |
 | `set_visible` | yes | `setNodeVisible` |
-| `get_mol_chains` | no | `getMolChains` |
-| `get_mol_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
-| `check_selection` | no | `validateSelection` + `getSelHitCount` |
+| `delete_node` | yes | `deleteNode` (object / renderer / group。隠すだけなら `set_visible`) |
+| `rename_node` | yes | `renameNode` |
+| `list_chains` | no | `getMolChains` |
+| `count_selection` | no | `validateSelection` + `getSelHitCount` |
 | `set_mol_selection` | yes | `applyMolSelString` |
 | `center_view` | yes | `centerMolSelection` / `zoomMolSelection` |
-| `get_renderer_types` | no | `getNewRendererOptions` |
-| `create_renderer` | yes | `createRendererOnObject` |
+| `rotate_view` | no (view は undo 対象外) | `rotateView` |
+| `set_view` | no | `getViewXform` / `setViewXform` (zoom / slab / distance / center を個別に。`fitSlab` は中心とズームを保って slab を全分子に合わせる) |
+| `list_renderer_types` | no | `getNewRendererOptions` |
+| `create_renderer` | yes | `createRendererOnObject` (名前省略時は `unusedRendererName(type)`) |
+| `set_renderer_type` | yes | `getRendererChangeTypes` で検査 -> `changeRendererType` (uid が変わるので新 uid を返す) |
 | `set_renderer_selection` | yes | `setGenericProp` (`propName: 'sel'`) |
-| `get_node_props` | no | `getGenericProps` (scene / object / renderer) |
+| `list_node_props` | no | `getGenericProps` (scene / object / renderer) |
 | `set_node_prop` | yes | `getGenericProps` -> `setGenericProp` |
-| `get_coloring_styles` | no | `getPaintColoringStyles` |
 | `set_renderer_coloring` | yes | `setRendererColoring` (レンダラ全体の着色を置き換える) |
-| `paint_selection` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` |
+| `add_paint` | yes | `applyMolSelString` -> `setRendererColoring('paint-type-paint')` -> `paintRendererSelection` (object が対象なら `paintObjectSelection`) |
 | `fetch_pdb` | yes (async) | `streamLoadFromUrl` |
-| `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` |
-| `measure_geometry` | yes | `MolCoord.getAtom` + `helpers/atomintr` の `appendMeasureLabel` |
-| `analyze_interactions` | yes | `analyzeInteractions` |
 | `capture_view` | no | `getSceneExportInfo` -> `exportScene` (一時ファイル) -> 画像を tool 結果に添付 |
-| `export_image` | no (シーン不変。ファイルは書く) | `getSceneExportInfo` -> `exportScene` |
+| `enable_toolsets` | no | (agent 側の meta tool。turn の `toolsets` に追加) |
 
-21 件。OpenAI の推奨 20 本を `capture_view` の分だけ意図的に超えている (他の tool で代わりが
-きかない唯一の tool のため)。`tools/index.test.ts` の `MAX_TOOLS` が 21 を pin しており、
-これ以上増やすなら先に畳む (候補は `center_view` を `set_mol_selection` の引数にする案)。
+**toolset `analysis`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `measure_geometry` | yes | `MolCoord.getAtom` + `helpers/atomintr` の `appendMeasureLabel` |
+| `analyze_interactions` | yes | `analyzeInteractions` (既定は炭素を含む接触を除く。`includeCarbon` で含める) |
+| `list_residues` | no | `getMolResidues` (200 件 cap + `total` / `truncated`) |
+
+**toolset `files`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `load_file` | yes | `getCompatibleRendererNames` -> `loadObject` (`.qsc` は開けない旨を返す) |
+| `export_image` | no (シーン不変。ファイルは書く) | `getSceneExportInfo` -> `exportScene` |
+| `save_object` | no (ファイルは書く) | `getObjectSaveInfo` -> `saveObjectToFile` (writer は拡張子で選ぶ) |
+
+agent が書くファイルは**ディレクトリを含まない名前だけ**を受け付け、デスクトップ
+(`os.homedir()/Desktop`) に置く (`catalog/outputFile.ts`)。結果には絶対パスを返し、説明文で
+ユーザーに full path を伝えるよう指示している。console (`fileAccess: 'any'`) は任意のパスに書ける。
+scene の保存 (`save_scene`) は console 専用 (`tool: false`)。
+
+**toolset `render`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `render_image` | no (シーン不変。ファイルは書く) | `setSceneRenderSettings` (幅・高さを一時的に) -> `renderStart` (umbreon、`gi` / `npr`) -> `waitForRenderJob` -> 設定を戻す |
+
+render job は GUI の Render パネルと同じ in-process job で走る。待つ間も view は動き、Stop
+(`turn.aborted`) で `renderCancel` する。
+
+**toolset `coloring`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `list_coloring_styles` | no | `getPaintColoringStyles` |
+| `clear_paint` | yes | `clearPaintEntries` |
+| `set_default_color` | yes | `setRendererDefaultColor` |
+
+**toolset `view`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `list_cameras` / `save_camera` / `apply_camera` / `delete_camera` | save / delete のみ yes | `listCameras` / `cameraOps` (名前付きの視点) |
+| `set_projection` | no | `getViewProjection` / `setViewProjection` |
+| `pan_view` | no | `translateView` |
+| `focus_node` | no | `focusOnNode` |
+
+**toolset `map`**
+
+| tool | mutates | 呼ぶ service |
+|---|---|---|
+| `fetch_map` | yes (async) | `streamLoadDensityMap` (既定 2fofc) |
+| `list_map_contours` | no | `listMapRenderers` + `getMapRendererState` |
+| `set_map_contour` | yes | `setMapRendererProp` |
+
+**toolset `molops` / `xtal` / `selection` / `style` / `anim`**
+
+| tool | toolset | mutates | 呼ぶ service |
+|---|---|---|---|
+| `superpose` | molops | yes | `superposeMol` |
+| `create_surface` | molops | yes | `makeMolSurf` |
+| `delete_atoms` | molops | yes | `deleteMolAtoms` |
+| `rename_chain` | molops | yes | `changeChainName` |
+| `merge_molecules` | molops | yes | `mergeMol` |
+| `set_secondary_structure` | molops | yes | `reassignProt2ndry` |
+| `show_symmetry` | xtal | yes | `showSymmRenderer` / `showUnitCellRenderer` |
+| `define_selection` | selection | yes | `saveSelDef` |
+| `list_renderer_styles` / `apply_renderer_style` / `set_renderer_styles` | style | apply と set のみ yes | `rendererStyle` |
+| `animate` | anim | no | `anim/transport` (`play` / `stop` / `goTime`) |
+
+core は 21 件。OpenAI の推奨 20 本を意図的に 1 本超えている。`tools/index.test.ts` の `MAX_TOOLS`
+が core の 21 を pin しており、新しい op は使用頻度が低ければ toolset に入れる (toolset 側は本数を
+縛らず、説明で選ばせる)。core に足すときは、使用頻度の低い core を toolset に移して枠を空ける
+(何を op にし、どこに置くかは [op-catalog.md](op-catalog.md) §3.1)。
 
 ### 5.1 表示を画像で見せる (`capture_view`)
 
@@ -318,7 +402,7 @@ token を払わないため)。
 候補は `center_view` -- 既に「選択も適用する」副作用を持っており、`set_mol_selection` の
 引数にできる。`tools/index.test.ts` が本数を pin している。
 
-`get_node_props` / `set_node_prop` は当初 `get_renderer_props` / `set_renderer_prop` だったものを
+`list_node_props` / `set_node_prop` は当初 `get_renderer_props` / `set_renderer_prop` だったものを
 **対象ノードを引数に取る形に広げた**もの。`resolvePropTarget` が scene / object / renderer を同じ
 lookup で解決するので、広げるのに必要だったのは `nodeType` 引数 1 つだけで、代わりに
 **scene 自身のプロパティが全部届くようになった** -- 背景色 (`bgcolor`)、ambient occlusion
@@ -330,14 +414,19 @@ scene を固定しているため無視する) で、それ以外で `nodeId` �
 
 scene が設定を持つこと自体をモデルに気づかせるため、毎 turn の `<scene_state>` に
 `settings: { bgcolor, aoEnabled, aa_method }` を載せている。**キー名が property 名そのもの**なので、
-モデルは `get_node_props` を挟まずに `set_node_prop` を呼べる。残りは 1 回の読みで届く。
+モデルは `list_node_props` を挟まずに `set_node_prop` を呼べる。残りは 1 回の読みで届く。
 
-`paint_selection` は 3 手を 1 本に畳んでいる。`paintRendererSelection` は塗る範囲を引数ではなく
+`add_paint` は 3 手を 1 本に畳んでいる。`paintRendererSelection` は塗る範囲を引数ではなく
 **分子の現在の選択**から読み、かつ renderer の coloring が `PaintColoring` でないと拒否するため、
 「選択を適用 -> (必要なら) PaintColoring へ切り替え -> エントリ追加」の順に呼ぶ必要がある。
 モデルにこの順序を踏ませるより 1 本にしたほうが確実で、選択が変わるのは UI で手作業した場合と
 同じ可視の副作用なので隠していない。`set_renderer_coloring` は全体を置き換えるので、
 塗った領域を消してしまう -- その使い分けは system prompt に書いてある。
+
+着色と paint の op (`add_paint` / `list_paint` / `set_paint` / `remove_paint` / `move_paint` /
+`clear_paint` / `set_default_color` / `set_renderer_coloring`) は、対象を `nodeId` + `nodeType`
+(`renderer` / `object`) で取る。object を指すと、その object の着色 (renderer が既定で従うもの) を
+変える。Color pane が既定で object を対象にするので、その操作も同じ op で記録・再生できる。
 
 `get_named_selections` は当初あったが外した。毎 turn の `<scene_state>` が
 `namedSelections` を既に載せており、同じものを取りに行くだけの往復だったため。
@@ -360,9 +449,9 @@ description に必ず書いている曖昧点:
 - uid は不透明な整数。名前から推測せず `get_scene_state` で取る
 - `residueIndex` は文字列 (挿入コード付きがある)
 - `center_view` は選択の適用も行う (副作用)
-- `set_renderer_coloring` の style 名は `get_coloring_styles` のものだけ有効
+- `set_renderer_coloring` の style 名は `list_coloring_styles` のものだけ有効
 - `fetch_pdb` / `load_file` は新しい object と既定 renderer を作る
-- `export_image` はディスクにファイルを書く (保存先は Desktop 固定、basename のみ受ける)
+- `export_image` はディスクにファイルを書く (agent からは Desktop に basename だけで書く。console / MCP はパスを指定できる。`outputPath`)
 
 `set_renderer_selection` が `setRendererSelection` ではなく `setGenericProp` を使うのは、
 前者が定型の 6 種 (`all` / `visible` / ...) しか受け付けず任意の選択式を書けないため。
@@ -431,8 +520,8 @@ panel 最上段の `Model` select (`AgentModelPicker`) は Settings の Model �
 - **CueMol の機能のうち tool にしていないものは、モデルには存在しない**。system prompt は
   機能一覧を持たず tool の説明だけを渡すので、機能を増やす唯一の経路は tool の追加。
   逆に、呼べない機能を prompt に書くと「できます」と言って失敗する。モデルが「できない」と
-  答えた操作を集めると、追加すべき tool の一覧がそのまま得られる。ラベル編集、カメラの保存、
-  結合編集、重ね合わせなどは UXP から移植済みだが未 tool 化。
+  答えた操作を集めると、追加すべき tool の一覧がそのまま得られる。ラベル編集、結合編集、
+  APBS、morph、アニメーションの編集、POV-Ray 出力などは UXP から移植済みだが未 tool 化。
 - **turn 実行中の手動編集が agent の undo txn に吸収される** (§3.1)。
 - **provider 切り替え時に chain of thought は引き継がれない**: 別 provider の reasoning part は
   `sanitizeHistory` が落とす (渡したときの挙動が未文書のため)。text と tool 呼び出しの履歴は残る。

@@ -10,6 +10,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **tritium** (`tritium/`) — CueMol desktop app (Electron + React 18 pnpm monorepo), bridging libcuemol2 via a Node.js native addon
   - `tritium/core/` — C++ native addon (`@cuemol/core`)
   - `tritium/react-gui/` — Electron + React 18 app
+  - `tritium/cli/` — `tritium_cli`, the console's command line (`@cuemol/tritium-cli`, esbuild bundle shipped with the app)
+  - `tritium/console-kit/` — code react-gui and the CLI share (`@cuemol/console-kit`, TS source, bundled by each consumer)
+  - `tritium/updater/` — the app's self-updater core (`@cuemol/updater`, Node TS source bundled into main; see `docs/architecture/auto-update.md`)
 - **UXP GUI** (`uxp_gui/`) — CueMol2 legacy desktop app built on UXP (mozilla)
 
 **Auto-generated — do not edit manually:**
@@ -28,6 +31,7 @@ Recurring operations are [Task](https://taskfile.dev) targets run from
 | `task build_libcuemol2` / `rebuild_libcuemol2` | Build / clean-rebuild libcuemol2 |
 | `task run_gtest` | C++ unit tests (ctest) |
 | `task build_tritium` / `run_tritium` | Build / run the tritium app |
+| `task run_tritium_cli` | Run `tritium_cli` against the dev app (starts it if needed; `-- -c '...'` for one-shot) |
 | `task test_tritium` | tritium tests (core Jest + react-gui Vitest) |
 | `task bump_version_build` | Bump build number `x.y.z.BUILD` (edits all 3 version files) |
 | `task bump_version_rev` | Bump revision number `x.y.REV.build` |
@@ -153,6 +157,8 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 
 1. `cd build_scripts && task build_tritium` (electron-vite production bundle — bundler レベルの依存解決を catch。既存テストの修正もこの段階ではしない)
 2. `cd build_scripts && task run_tritium` で起動し、`launch worker OK` → `CueMol2 nodejs add-on : INITIALIZED` → `bindCanvas` → `shader program created OK` まで進むか確認
+   - **起動前に必ず前のアプリが残っていないか確認し、残っていれば終了させてから起動する** (`pgrep -fl "tritium/node_modules/.pnpm/electron"` -> あれば同じ pattern で `pkill -f` して消えたのを確かめる。Electron 本体は pnpm store 配下にあり `react-gui/node_modules/electron` では一致しない)。single instance lock により新しいプロセスが即座に終了し、起動マーカーが出ないまま待ち続けることになるため
+   - UI (pane / dialog / CSS / form-kit) を変えたら、目視を依頼する前に `task inspect_tritium_ui -- --target <変更箇所>` で自己検証する (`inspect-ui` skill)。dark/light と複数サイズのスクリーンショットおよびレイアウト監査を見て、直してから 3 に進む
 3. **ユーザーによる目視確認 (E2E) を依頼し、フィードバックを反映する。挙動が確定するまで 1-3 を繰り返す**
 4. 確定後に: `cd tritium/react-gui && npm test` (Vitest) — 既存テストの追随修正と新規テストの追加
    (新規は上記「テスト方針」の最小集合に絞る)
@@ -218,9 +224,13 @@ mapping 行に関連していても、**主題が新規機能なら architecture
 **実装済みの仕様だけ**を置く (どのページも現在のコードの spec として読める状態を保つ)。
 まだ実装していないもの — 実装計画、提案中の再設計、「後でやる」設計メモ、計画作成の
 依頼書 — は `docs/plans/<YYMMDD>-<slug>-plan.md` に置き、`docs/plans/_index.md` の表に
-1 行追加する。実装が済んだらプランは履歴として plans に残したまま状態を「実装済み」に
-更新し、仕様の説明が要るなら architecture 側に書き起こす。architecture のページが
-既知の問題や未着手フェーズに触れるのは構わない (そのページの主題自体が実装済みなら可)。
+1 行追加する。**plans には未実装の項目だけを残す**: 項目を実装したら、その仕様 (現在の
+挙動、設計判断の理由、計画から変えた点) を architecture 側に書き起こしてから plan から消す。
+全項目が済んだ plan はファイルごと削除し、`_index.md` の行も消す (経緯は git 履歴で追う)。
+一部だけ済んだ plan は残りの項目だけに書き直す。「済んだ」「実装済み」の記述を plan に
+残さない (plan とコードを突き合わせないと仕様が分からない状態を作らないため)。
+architecture のページが既知の問題や未着手フェーズに触れるのは構わない (そのページの
+主題自体が実装済みなら可)。
 
 以下は `docs/migration/adr/` (移植判断) についての運用:
 - 設計判断・UXP parity 戦略・既知バグの詳細は `docs/migration/adr/ADR-NNNN-<slug>.md` に切り出す

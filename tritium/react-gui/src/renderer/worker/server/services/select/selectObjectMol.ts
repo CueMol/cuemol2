@@ -14,6 +14,7 @@ import type { SelectMolKind } from '@shared/types/sceneCtxMenu';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { invertSelStr, rewriteAround, toggleSidechainStr } from '@renderer/worker/server/services/helpers/selStrTransforms';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 
@@ -41,11 +42,12 @@ function applyMolSelStr(
     mol: MolCoord,
     selStr: string,
     sceneUid: number,
-): void {
+): boolean {
     autoCreateSelRend(mol);
     const sel = makeSel(ctx, selStr, sceneUid);
-    if (sel === null) return;
+    if (sel === null) return false;
     mol.sel = sel;
+    return true;
 }
 
 const AROUND_KIND_DIST: Record<string, { dist: number; byres: boolean }> = {
@@ -119,7 +121,9 @@ export function selectObjectMol(
     if (!resolved) return { ok: false };
 
     withUndoTxn(scene, resolved.label, () => {
-        applyMolSelStr(ctx, mol, resolved.selStr, scene.uid);
+        if (applyMolSelStr(ctx, mol, resolved.selStr, scene.uid)) {
+            recordOp(ctx, scene.uid, 'set_mol_selection', { objId: args.objId, selection: resolved.selStr }, ['objId']);
+        }
     });
     return { ok: true, selStr: resolved.selStr };
 }

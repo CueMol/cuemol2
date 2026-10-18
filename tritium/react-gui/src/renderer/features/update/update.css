@@ -1,0 +1,37 @@
+/* --- App update dialogs (features/update/) --- */
+
+.update-confirm-text {
+  margin: 0;
+}
+
+/* Release notes: a bordered well that scrolls on its own, so a long changelog
+   never pushes the dialog's buttons off screen. */
+.update-confirm-notes {
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.update-progress-label {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Settings > General > Updates: the version and state lines above its buttons. */
+.update-check-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.update-check-version {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.update-check-status {
+  color: var(--text-primary);
+}

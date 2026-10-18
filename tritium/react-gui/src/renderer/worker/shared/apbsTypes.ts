@@ -78,6 +78,12 @@ export interface CalcApbsStartResult {
   error?: string;
 }
 
+/** `setApbsDefaults`: the settings a caller without the dialog uses (the console's `apbs`). */
+export interface SetApbsDefaultsArgs {
+  binaries: ApbsBinaries;
+  forceField: Pdb2pqrForceField;
+}
+
 export interface CalcApbsCancelArgs {
   jobId: string;
 }

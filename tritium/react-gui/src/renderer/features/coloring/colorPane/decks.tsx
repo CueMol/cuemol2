@@ -33,17 +33,12 @@ import type {
 void React // classic JSX runtime (vitest)
 
 interface SolidDeckProps {
-    /** UXP-style coloring class name; empty string when coloring is null. */
-    className: string
     defaultColor: string
     onCommit: (color: string) => void
 }
 
-export const SolidDeck: React.FC<SolidDeckProps> = ({ className, defaultColor, onCommit }) => (
+export const SolidDeck: React.FC<SolidDeckProps> = ({ defaultColor, onCommit }) => (
     <div className="color-solid-deck">
-        <div className="color-section-label">
-            {className === '' ? 'Solid coloring' : className}
-        </div>
         <Field label="Default color" inline>
             <ColorField value={defaultColor} onCommit={onCommit} />
         </Field>
@@ -63,9 +58,8 @@ interface DeferredDeckProps {
  */
 export const DeferredDeck: React.FC<DeferredDeckProps> = ({ className }) => (
     <div className="color-deferred-deck">
-        <div className="color-section-label">{className}</div>
         <p className="color-deferred-note">
-            Editing this coloring mode is not yet implemented. Switch to
+            Editing {className} is not yet implemented. Switch to
             Paint or Solid via the dropdown, or use Reset to default style.
         </p>
     </div>
@@ -98,7 +92,6 @@ const CPK_ELEMENTS: { label: string; prop: string; key: keyof CpkColors }[] = [
  */
 export const CpkDeck: React.FC<CpkDeckProps> = ({ colors, onCommit }) => (
     <div className="color-deck-scroll">
-        <div className="color-section-label">CPK coloring:</div>
         <FieldGrid>
             {CPK_ELEMENTS.map(({ label, prop, key }) => (
                 <FieldGridRow key={prop} label={label}>
@@ -180,7 +173,6 @@ interface RainbowDeckProps {
  * `<numslider>` widget (slider + numeric spinbox + unit). */
 export const RainbowDeck: React.FC<RainbowDeckProps> = ({ params, onCommit }) => (
     <div className="color-deck-scroll">
-        <div className="color-section-label">Rainbow coloring:</div>
         <EnumField
             label="Mode" value={params.mode}
             options={[
@@ -227,7 +219,6 @@ export const BfacDeck: React.FC<BfacDeckProps> = ({ params, onCommit }) => {
     const manual = params.autoMode === 'none'
     return (
         <div className="color-deck-scroll">
-            <div className="color-section-label">Bfac coloring:</div>
             <EnumField
                 label="Mode" value={params.mode}
                 options={[
@@ -281,7 +272,6 @@ interface ElepotDeckProps {
  */
 export const ElepotDeck: React.FC<ElepotDeckProps> = ({ params, objects, onCommit }) => (
     <div className="color-deck-scroll">
-        <div className="color-section-label">Elepot coloring:</div>
         <Field label="Potential" inline>
             <SelectField
                 value={params.elepot}

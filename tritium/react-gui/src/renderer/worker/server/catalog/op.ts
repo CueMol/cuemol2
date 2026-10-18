@@ -1,0 +1,217 @@
+/**
+ * @file worker/server/catalog/op.ts
+ * @description What an op is: one operation on the scene, declared once and
+ * offered to every caller that drives CueMol by name.
+ *
+ * The AI agent sends an op to the model as a tool, the console makes commands
+ * of it, and an MCP server would list it. Each of those is an adapter that
+ * reads this declaration; none of them owns the op. `run` takes typed
+ * arguments and calls the existing worker services, and knows nothing about
+ * where its arguments came from.
+ */
+
+import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
+import type { ArgsOf, ParamMap } from './params'
+import type { ToolsetId } from './toolsets'
+
+/** A picture an op hands back next to its data (a model can look at it). */
+/** A result as a table (`Op.table`). Cells are plain text; the console escapes them. */
+export interface OpTable {
+  /** A line above the table (the node it is about). */
+  title?: string
+  head: string[]
+  rows: string[][]
+  /**
+   * The first column already names what each row is about (a property
+   * path), so rows from runs over several targets merge into one table as
+   * they are; otherwise a column naming each run's target is put first.
+   */
+  keyed?: boolean
+}
+
+export interface OpImage {
+  mediaType: 'image/png'
+  /** The encoded file, base64. */
+  base64: string
+}
+
+/**
+ * What an op reports. `data` goes back to the caller as is; a failure carries
+ * a reason the reader can act on.
+ */
+export type OpOutcome =
+  | { ok: true; data?: unknown; image?: OpImage }
+  | { ok: false; error: string }
+
+/** Where an op runs, and what it may ask of its caller. */
+export interface OpContext {
+  sceneId: number
+  viewId: number
+  /** Unique to this call, e.g. for a temporary file name. */
+  callId: string
+  /** Note that the scene changed when `mutates` cannot say so statically. */
+  markMutated(): void
+  /**
+   * Register a download's stream request id, so stopping the caller (a turn,
+   * a console run) aborts it too. The id should come from `streamId`.
+   */
+  noteStream(reqId: string): void
+  /** A stream request id unique to this call. */
+  streamId(tag: string): string
+  /**
+   * Ask the caller to open a scene file once the call is done. The worker
+   * cannot make a tab, so only a caller with a UI (the console) offers this;
+   * an op must say it cannot do the job when it is absent.
+   */
+  openScene?(filePath: string): void
+  /**
+   * Whether the caller has been stopped (a cancelled agent turn, the
+   * console's Stop), for an op that waits on something it can cancel.
+   */
+  cancelled?(): boolean
+  /**
+   * Where the op may write a file. `any`: the path as given (a person at a
+   * prompt chose it). Otherwise only a bare file name, written to the desktop
+   * -- a model has no file picker, and a path it chose is not the user's.
+   */
+  fileAccess?: 'any' | 'desktop'
+}
+
+/**
+ * Another name an op answers to in a console: `ray` is `render_image`.
+ * It may fix or default some arguments (`show` is `set_visible` with
+ * `visible` true), but it is always one call of this op, declared here; a
+ * user-defined command sequence would be a different thing.
+ */
+export interface OpAlias {
+  name: string
+  /** Arguments the alias supplies; the user cannot give them. */
+  fixed?: Readonly<Record<string, unknown>>
+  /**
+   * Values for arguments the user may leave out under this alias, though the
+   * op itself requires them (`fetch` defaults the format to mmCIF).
+   */
+  defaults?: Readonly<Record<string, string>>
+  /** Positional order for this alias, when the op's own order reads badly. */
+  order?: readonly string[]
+  /** One line for help; defaults to the op's first sentence. */
+  summary?: string
+}
+
+/** Which callers see an op. */
+export interface OpExposure {
+  /**
+   * `core`: always in a tool caller's list (the AI agent's, an MCP
+   * server's). A toolset id: in the list once that toolset is switched on.
+   * False: never a tool.
+   */
+  tool: 'core' | ToolsetId | false
+  /** Generated as a console command. */
+  console: boolean
+  /**
+   * Offered to MCP clients although `tool` is false. For an op that has to
+   * run outside an undo transaction (`outsideTxn`), which an agent turn --
+   * one transaction for the whole turn -- cannot give it; and for the
+   * console's Tools-menu and animation commands, which an MCP client lists
+   * and picks from itself, while the agent's short tool list leaves them out.
+   */
+  mcp?: boolean
+}
+
+/**
+ * The subjects the console's `help` lists commands under, with their headings.
+ *
+ * An id is also what `help <id>` takes, so none may be a command name (a test
+ * checks): `viewing` and `properties` rather than `view` and `props`, which
+ * are commands.
+ */
+export const OP_GROUPS = {
+  tabs: 'Scenes and tabs',
+  nodes: 'Objects and the scene tree',
+  edit: 'Undo and actions',
+  renderers: 'Renderers',
+  coloring: 'Colouring',
+  styles: 'Style sets',
+  selections: 'Selections',
+  viewing: 'View and cameras',
+  properties: 'Properties',
+  molecule: 'Molecule editing',
+  surfaces: 'Surfaces',
+  analysis: 'Measurement and analysis',
+  maps: 'Density maps',
+  animation: 'Animation',
+  files: 'Files and images',
+  console: 'Console',
+} as const
+
+export type OpGroup = keyof typeof OP_GROUPS
+
+export interface Op<P extends ParamMap = ParamMap> {
+  /**
+   * snake_case; the tool name and the console command name. Unique. A verb
+   * first, then what it acts on (`list_cameras`, `add_paint`); see the naming
+   * rules in docs/architecture/op-catalog.md.
+   */
+  name: string
+  /** The heading `help` lists it under. */
+  group: OpGroup
+  /** What it does AND when to reach for it. A model has only this. */
+  description: string
+  params: P
+  /**
+   * Whether a successful call changes the scene. A caller that ran only
+   * read-only ops rolls its undo transaction back rather than committing an
+   * empty one, which would clear the user's redo stack.
+   */
+  mutates: boolean
+  expose: OpExposure
+  aliases?: readonly OpAlias[]
+  /**
+   * Whether a call with these arguments has to run outside an undo
+   * transaction (alone on its line, at the console) -- opening or saving a
+   * scene replaces the undo stack, which cannot happen inside one. Given the
+   * console's bound text or a JSON caller's values alike, so a predicate
+   * reads only what both carry the same way (a path string).
+   */
+  outsideTxn?(args: Readonly<Record<string, unknown>>): boolean
+  /**
+   * Whether a successful call is kept in the action log although it does not
+   * change the scene (`mutates` false): a change of view, which the undo
+   * stack does not hold but which a replay has to repeat. A predicate for an
+   * op that only reads with some arguments (`set_view` with none given).
+   * Kept only when the transaction around it commits.
+   */
+  replay?: boolean | ((args: Readonly<Record<string, unknown>>) => boolean)
+  /**
+   * One short line saying what a recorded call did, for the undo history
+   * (`Set width = 2.5 on 1crn/cartoon1`). `name` gives a node argument by the
+   * path it had when the call ran, or `#uid`. Without it the history shows
+   * the op's name and its main arguments (`actions/describe.ts`).
+   */
+  describe?(args: Readonly<ArgsOf<P>>, name: (param: keyof P & string) => string): string
+  /**
+   * Lines a console prints for a successful result. Without it the data is
+   * printed as JSON.
+   */
+  format?(data: unknown): string[]
+  /**
+   * A successful result as a table, which a console shows as Markdown
+   * (`console-help-markdown.md`); used before `format`.
+   */
+  table?(data: unknown): OpTable
+  run(ctx: WorkerContext, args: ArgsOf<P>, oc: OpContext): OpOutcome | Promise<OpOutcome>
+}
+
+/**
+ * An op of any parameter shape, for catalogues and adapters.
+ *
+ * `any` because `run` is contravariant in its arguments: an `Op<{ x }>` is
+ * not assignable to an `Op<ParamMap>`, yet the adapters only ever pass it the
+ * arguments its own params describe.
+ */
+export type AnyOp = Op<any>
+
+/** Declare an op; the identity, there for inference of `run`'s arguments. */
+export function defineOp<P extends ParamMap>(op: Op<P>): Op<P> {
+  return op
+}

@@ -47,12 +47,13 @@ import { APBS_KEYS, type ApbsCalls } from './apbs'
 import { MAP_KEYS, type MapCalls } from './map'
 import { ANIM_KEYS, type AnimCalls } from './anim'
 import { MORPH_KEYS, type MorphCalls } from './morph'
+import { ACTIONS_KEYS, type ActionsCalls } from './actions'
 // Benchmark harness (bench/perf-harness branch only; never merged to develop).
 import { BENCH_KEYS, type BenchCalls } from './bench'
 
 export * from './methods'
-export type { AppCalls, SceneCalls, UndoCalls, SceneTreeCalls, PropsCalls, FileCalls, RenderCalls, ViewCalls, ColorCalls, ColoringCalls, RendCalls, StyleCalls, CameraCalls, SelectCalls, NaviCalls, MolopsCalls, ApbsCalls, MapCalls, AnimCalls, MorphCalls, BenchCalls }
-export { APP_KEYS, SCENE_KEYS, UNDO_KEYS, SCENE_TREE_KEYS, PROPS_KEYS, FILE_KEYS, RENDER_KEYS, VIEW_KEYS, COLOR_KEYS, COLORING_KEYS, REND_KEYS, STYLE_KEYS, CAMERA_KEYS, SELECT_KEYS, NAVI_KEYS, MOLOPS_KEYS, APBS_KEYS, MAP_KEYS, ANIM_KEYS, MORPH_KEYS, BENCH_KEYS }
+export type { AppCalls, SceneCalls, UndoCalls, SceneTreeCalls, PropsCalls, FileCalls, RenderCalls, ViewCalls, ColorCalls, ColoringCalls, RendCalls, StyleCalls, CameraCalls, SelectCalls, NaviCalls, MolopsCalls, ApbsCalls, MapCalls, AnimCalls, MorphCalls, ActionsCalls, BenchCalls }
+export { APP_KEYS, SCENE_KEYS, UNDO_KEYS, SCENE_TREE_KEYS, PROPS_KEYS, FILE_KEYS, RENDER_KEYS, VIEW_KEYS, COLOR_KEYS, COLORING_KEYS, REND_KEYS, STYLE_KEYS, CAMERA_KEYS, SELECT_KEYS, NAVI_KEYS, MOLOPS_KEYS, APBS_KEYS, MAP_KEYS, ANIM_KEYS, MORPH_KEYS, ACTIONS_KEYS, BENCH_KEYS }
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
@@ -77,6 +78,7 @@ export interface ServiceMap
     MapCalls,
     AnimCalls,
     MorphCalls,
+    ActionsCalls,
     BenchCalls {}
 
 export type ServiceKey = keyof ServiceMap
@@ -111,6 +113,7 @@ export const ALL_SERVICE_KEYS = [
   ...MAP_KEYS,
   ...ANIM_KEYS,
   ...MORPH_KEYS,
+  ...ACTIONS_KEYS,
   ...BENCH_KEYS,
 ] as const
 

@@ -360,6 +360,13 @@ Matrix4D MolAnlManager::superposeSSM1(const MolCoordPtr &pmol_ref, const Selecti
 
   LOG_DPRINTLN("========================");
 
+  applyXform(pmol_mov, xfmat, bUseProp);
+  
+  return xfmat;
+}
+
+void MolAnlManager::applyXform(const MolCoordPtr &pmol_mov, const Matrix4D &xfmat, bool bUseProp)
+{
   Matrix4D origmat = pmol_mov->getXformMatrix();
   if (!origmat.isIdent()) {
     // apply xform matrix prop and reset to it identity
@@ -377,8 +384,6 @@ Matrix4D MolAnlManager::superposeSSM1(const MolCoordPtr &pmol_ref, const Selecti
     pmol_mov->xformByMat(xfmat);
     pmol_mov->fireAtomsMoved();
   }
-  
-  return xfmat;
 }
 
 void MolAnlManager::superposeSSM2(qlib::uid_t mol_ref, const LString &sel_ref,

@@ -194,9 +194,9 @@ describe('ColorPane multigrad wire', () => {
             ...MAP_REND_MULTIGRAD,
             colormode: 'solid',
         })
-        const trigger = Array.from(
-            container.querySelectorAll('button'),
-        ).find((b) => b.textContent?.includes('Coloring')) as HTMLButtonElement
+        const trigger = container.querySelector(
+            'button[title="Coloring mode"]',
+        ) as HTMLButtonElement
         await act(async () => { trigger.click() })
         await flushPromises()
         const items = Array.from(

@@ -18,12 +18,14 @@
 //
 // Renderer-side setup (selection / colorscheme / render-style) stays
 // outside the reader path and runs via setupRenderer().
+import { fileStem } from '@shared/fileExt';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { setupRenderer } from '../rend/setupRenderer';
 import { undoTxnResult } from '../withUndoTxn';
+import { recordLoadFile } from '@renderer/worker/server/actions/serviceOps';
 import { pickReaderName, OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
 import { applyMapTypeChoice, applyMapCenterPolicy } from '@renderer/worker/server/services/map/emDefaults';
@@ -57,15 +59,6 @@ export interface LoadObjectArgs {
     readerName?: string;
 }
 
-/**
- * Default object name: the file's basename with its final extension removed.
- * Mirrors C++ LoadObjectCommand::createDefaultObjName (path stem).
- */
-function fileStem(filePath: string): string {
-    const base = filePath.split(/[\\/]/).pop() ?? filePath;
-    return base.replace(/\.[^.]+$/, '');
-}
-
 /** `{ objId }` of the new object on success. */
 export type LoadObjectResult = Result<{ objId: number }>;
 
@@ -97,6 +90,7 @@ export function loadObject(ctx: WorkerContext, args: LoadObjectArgs): LoadObject
     if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
 
     return undoTxnResult(scene, 'Open file', () => {
+        recordLoadFile(ctx, scene.uid, args.filePath, args.options);
         let obj: CObject | null = null;
         try {
             obj = reader.createDefaultObj() as unknown as CObject;

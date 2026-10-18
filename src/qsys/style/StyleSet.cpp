@@ -8,6 +8,7 @@
 
 #include "StyleSet.hpp"
 #include "StyleFile.hpp"
+#include "StyleEditInfo.hpp"
 
 #include <gfx/SolidColor.hpp>
 #include <gfx/NamedColor.hpp>
@@ -45,6 +46,94 @@ StyleSet::~StyleSet()
   qlib::ObjectManager::sUnregObj(m_nUID);
 
   MB_DPRINTLN("StyleSet (%d/%p) destructed", (int)m_nUID, this);
+}
+
+namespace {
+  // Add pInfo to the undo txn of the set's scene, or drop it when none is open
+  void addUndo(qlib::uid_t nSceneID, EditInfo *pInfo)
+  {
+    UndoUtil uu(nSceneID);
+    if (uu.isOK())
+      uu.add(pInfo);
+    else
+      delete pInfo;
+  }
+}
+
+bool StyleSet::setColorScr(const LString &rkey, const ColorPtr &pCol)
+{
+  LString key = rkey.toLowerCase();
+  ColorPtr before;
+  bool bHad = getColor(key, before);
+  bool res = setColor(key, pCol);
+  StyleEntryEditInfo *pInfo = MB_NEW StyleEntryEditInfo();
+  pInfo->setupColor(StyleSetPtr(this), key, bHad, before, true, pCol);
+  addUndo(m_nSceneID, pInfo);
+  return res;
+}
+
+bool StyleSet::removeColorScr(const LString &rkey)
+{
+  LString key = rkey.toLowerCase();
+  ColorPtr before;
+  if (!getColor(key, before))
+    return false;
+  removeColor(key);
+  StyleEntryEditInfo *pInfo = MB_NEW StyleEntryEditInfo();
+  pInfo->setupColor(StyleSetPtr(this), key, true, before, false, ColorPtr());
+  addUndo(m_nSceneID, pInfo);
+  return true;
+}
+
+bool StyleSet::setStrDataScr(const LString &cat, const LString &key, const LString &value)
+{
+  LString ckey = StyleSet::makeStrDataKey("string", cat, key);
+  LString before;
+  bool bHad = getString(ckey, before);
+  bool res = setString(ckey, value);
+  StyleEntryEditInfo *pInfo = MB_NEW StyleEntryEditInfo();
+  pInfo->setupString(StyleSetPtr(this), ckey, bHad, before, true, value);
+  addUndo(m_nSceneID, pInfo);
+  return res;
+}
+
+bool StyleSet::removeStrDataScr(const LString &cat, const LString &key)
+{
+  LString ckey = StyleSet::makeStrDataKey("string", cat, key);
+  LString before;
+  if (!getString(ckey, before))
+    return false;
+  removeString(ckey);
+  StyleEntryEditInfo *pInfo = MB_NEW StyleEntryEditInfo();
+  pInfo->setupString(StyleSetPtr(this), ckey, true, before, false, LString());
+  addUndo(m_nSceneID, pInfo);
+  return true;
+}
+
+bool StyleSet::removeStyleScr(const LString &name)
+{
+  LString key = StyleSet::makeStyleKey(name);
+  LDom2Node *pNode = detachData(key);
+  if (pNode==NULL)
+    return false;
+  StyleEntryEditInfo *pInfo = MB_NEW StyleEntryEditInfo();
+  pInfo->setupStyleRemove(StyleSetPtr(this), key, pNode);
+  addUndo(m_nSceneID, pInfo);
+  return true;
+}
+
+void StyleSet::setReadOnlyScr(bool val)
+{
+  if (val == m_bReadOnly)
+    return;
+  m_bReadOnly = val;
+
+  UndoUtil uu(m_nSceneID);
+  if (uu.isOK()) {
+    StyleReadOnlyEditInfo *pInfo = MB_NEW StyleReadOnlyEditInfo();
+    pInfo->setup(StyleSetPtr(this), val);
+    uu.add(pInfo);
+  }
 }
 
 //////////
@@ -302,6 +391,18 @@ bool StyleSet::removeData(const LString &key)
 
   m_data.erase(iter);
   return true;
+}
+
+LDom2Node *StyleSet::detachData(const LString &key)
+{
+  data_t::iterator iter = m_data.find(key);
+  if (iter==m_data.end())
+    return NULL;
+
+  LDom2Node *pNode = iter->second;
+  m_data.erase(iter);
+  m_bModified = true;
+  return pNode;
 }
 
 bool StyleSet::hasData(const LString &key) const

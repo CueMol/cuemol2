@@ -44,6 +44,7 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
         delete pixbuf;
         continue;
       }
+      pixbuf->setAnchor(m_anchorX, m_anchorY);
       pdc->drawPixels(pos, *pixbuf, ColorPtr());
       delete pixbuf;
     }
@@ -60,6 +61,7 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
         MB_DPRINTLN("LabelCache> render <%s> OK.", iter->str.c_str());
         iter->pPixBuf = pixbuf;
       }
+      pixbuf->setAnchor(m_anchorX, m_anchorY);
       pdc->drawPixels(pos, *pixbuf, ColorPtr());
     }
   }

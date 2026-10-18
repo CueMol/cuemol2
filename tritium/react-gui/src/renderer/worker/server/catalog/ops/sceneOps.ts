@@ -1,0 +1,199 @@
+/**
+ * @file worker/server/catalog/ops/sceneOps.ts
+ * @description Ops that read or change what the scene shows.
+ */
+
+import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
+import { deleteNode as deleteNodeService, renameNode as renameNodeService } from '@renderer/worker/server/services/sceneTree/sceneOps'
+import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { NO_NODE } from '../errors'
+import { defineOp } from '../op'
+import { boolean, enumOf, nodeId, optional, string } from '../params'
+import { pasteNode } from '@renderer/worker/server/services/clipboard/paste'
+import { MOVE_DEST_PARAMS, moveText } from '../moveDest'
+import { moveNodeTo } from '@renderer/worker/server/services/sceneTree/reorderSceneNode'
+import { columns, wrapList } from '../consoleFormat'
+import { buildSceneSnapshot } from './sceneSnapshot'
+import type { SceneSnapshot } from './sceneSnapshot'
+
+export const getSceneState = defineOp({
+  name: 'get_scene_state',
+  description:
+    'List the objects in the scene, their renderers, and the named selections available. ' +
+    'Every id you use in another tool must come from here or from a tool result. ' +
+    'Call it again after loading a file or creating a renderer, since ids are assigned then.',
+  params: {},
+  mutates: false,
+  expose: { tool: 'core', console: true },
+  group: 'nodes',
+  aliases: [{ name: 'scene', summary: 'List the objects, renderers and selections in the scene.' }],
+  format: (data) => formatSnapshot(data as SceneSnapshot),
+  run(ctx, _args, oc) {
+    return {
+      ok: true,
+      data: buildSceneSnapshot(ctx, { sceneId: oc.sceneId, viewId: oc.viewId }),
+    }
+  },
+})
+
+/**
+ * The scene as a tree a person reads: each object, its renderers under it,
+ * with the uid to address it by and whether it is hidden.
+ */
+function formatSnapshot(s: SceneSnapshot): string[] {
+  const out: string[] = []
+  if (s.settings) {
+    const st = s.settings
+    out.push(`scene: bgcolor ${st.bgcolor}, AO ${st.aoEnabled ? 'on' : 'off'}, AA ${st.aa_method}`)
+  }
+  if (s.objects.length === 0) out.push('(no objects)')
+  const rows: string[][] = []
+  for (const o of s.objects) {
+    rows.push([o.name, `#${o.id}`, o.className, o.visible ? '' : '(hidden)'])
+    for (const r of o.renderers) {
+      rows.push([`  ${o.name}/${r.name}`, `#${r.id}`, r.type, r.visible ? '' : '(hidden)'])
+    }
+    if (o.renderersOmitted) rows.push([`  ... ${o.renderersOmitted} more renderers`, '', '', ''])
+  }
+  out.push(...columns(rows))
+  if (s.namedSelections.length > 0) out.push('selections:', ...wrapList(s.namedSelections, '  '))
+  return out
+}
+
+export const setVisible = defineOp({
+  name: 'set_visible',
+  description:
+    'Show or hide one object, renderer, or renderer group. Hiding an object hides everything ' +
+    'drawn from it. Use this rather than deleting something the user may want back.',
+  params: {
+    nodeId: nodeId('Uid of the object, renderer, or renderer group.', 'nodeType'),
+    nodeType: enumOf(
+      ['object', 'renderer', 'rendGroup'],
+      'What nodeId refers to. Must match what get_scene_state reported.',
+    ),
+    visible: boolean('True to show, false to hide.'),
+  },
+  mutates: true,
+  describe: (a, n) => `${a.visible ? 'Show' : 'Hide'} ${n('nodeId')}`,
+  expose: { tool: 'core', console: true },
+  group: 'nodes',
+  aliases: [
+    { name: 'show', fixed: { visible: true }, summary: 'Show an object, renderer or renderer group.' },
+    { name: 'hide', fixed: { visible: false }, summary: 'Hide an object, renderer or renderer group.' },
+  ],
+  run(ctx, args, oc) {
+    const result = setNodeVisible(ctx, {
+      sceneId: oc.sceneId,
+      nodeId: args.nodeId,
+      nodeType: args.nodeType,
+      visible: args.visible,
+    })
+    return normalizeServiceResult(result, NO_NODE)
+  },
+})
+
+/** The node kinds the tree edits address. */
+const TREE_NODE_TYPES = ['object', 'renderer', 'rendGroup'] as const
+
+export const deleteNode = defineOp({
+  name: 'delete_node',
+  description:
+    'Delete one object, renderer, or renderer group from the scene. Deleting an object deletes ' +
+    'everything drawn from it; deleting a group deletes its renderers. Only when the user asked ' +
+    'to remove it: to take something out of view, hide it with set_visible instead.',
+  params: {
+    nodeId: nodeId('Uid of the object, renderer, or renderer group.', 'nodeType'),
+    nodeType: enumOf(TREE_NODE_TYPES, 'What nodeId refers to. Must match what get_scene_state reported.'),
+  },
+  mutates: true,
+  describe: (_a, n) => `Delete ${n('nodeId')}`,
+  expose: { tool: 'core', console: true },
+  group: 'nodes',
+  aliases: [{ name: 'delete', summary: 'Delete an object, renderer or renderer group.' }],
+  run(ctx, args, oc) {
+    const result = deleteNodeService(ctx, { sceneId: oc.sceneId, nodeId: args.nodeId, nodeType: args.nodeType })
+    return normalizeServiceResult(result, NO_NODE)
+  },
+})
+
+export const renameNode = defineOp({
+  name: 'rename_node',
+  description:
+    'Rename one object, renderer, or renderer group. Renaming a group keeps its renderers in it.',
+  params: {
+    nodeId: nodeId('Uid of the object, renderer, or renderer group.', 'nodeType'),
+    nodeType: enumOf(TREE_NODE_TYPES, 'What nodeId refers to. Must match what get_scene_state reported.'),
+    name: string('The new name. Not empty; a renderer group name must be unused in the scene.'),
+  },
+  mutates: true,
+  describe: (a, n) => `Rename ${n('nodeId')} to ${a.name}`,
+  expose: { tool: 'core', console: true },
+  group: 'nodes',
+  aliases: [{ name: 'rename', summary: 'Rename an object, renderer or renderer group: rename 1crn, mol1' }],
+  run(ctx, args, oc) {
+    const result = renameNodeService(ctx, {
+      sceneId: oc.sceneId,
+      nodeId: args.nodeId,
+      nodeType: args.nodeType,
+      newName: args.name,
+    })
+    return normalizeServiceResult(
+      result,
+      'The node could not be renamed. Check the id and type, and that the name is not empty ' +
+        '(or, for a group, not already used).',
+    )
+  },
+})
+
+export const moveNode = defineOp({
+  name: 'move_node',
+  description:
+    'Move an object to a place in the scene tree, or a renderer (or renderer group) to a place among ' +
+    'the renderers of its object. Places count from 1, top first.',
+  params: {
+    nodeId: nodeId('Uid of the object, renderer, or renderer group.', 'nodeType'),
+    nodeType: enumOf(['object', 'renderer'], 'What nodeId refers to (a renderer group is a renderer here).'),
+    ...MOVE_DEST_PARAMS,
+  },
+  mutates: true,
+  describe: (a, n) => `Move ${n('nodeId')} ${moveText(a)}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'nodes',
+  run(ctx, args, oc) {
+    const res = moveNodeTo(ctx, { sceneId: oc.sceneId, nodeId: args.nodeId, nodeType: args.nodeType, dest: args })
+    return res.ok ? { ok: true } : { ok: false, error: res.error }
+  },
+})
+
+export const pasteNodeOp = defineOp({
+  name: 'paste_node',
+  description:
+    'Add an object, renderer, style set or camera from its CueMol XML (what Copy puts on the ' +
+    'clipboard), renamed when its name is taken. A renderer goes onto the target object or group.',
+  params: {
+    kind: enumOf(['object', 'renderer', 'style', 'camera'], 'What the XML holds.'),
+    form: enumOf(['single', 'rendArray'], 'single: one node; rendArray: a renderer group with its renderers.'),
+    xml: string('The XML.'),
+    target: optional(nodeId('For a renderer: the object or renderer group to add it to.', 'targetType')),
+    targetType: optional(enumOf(['object', 'rendGroup'], 'What target refers to.')),
+  },
+  mutates: true,
+  describe: (a, n) => `Paste ${a.kind}${a.target === null ? '' : ` into ${n('target')}`}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'nodes',
+  format: () => [],
+  run(ctx, args, oc) {
+    if (args.kind === 'renderer' && args.target === null) return { ok: false, error: 'A renderer needs a target object or group.' }
+    const onGroup = args.targetType === 'rendGroup'
+    const res = pasteNode(ctx, {
+      sceneId: oc.sceneId,
+      kind: args.kind,
+      form: args.form,
+      bytes: new TextEncoder().encode(args.xml),
+      ...(args.target === null ? {} : onGroup ? { targetGroupId: args.target } : { targetObjId: args.target }),
+    })
+    return res.ok ? { ok: true, data: { name: res.newName } } : { ok: false, error: `The ${args.kind} could not be pasted. Check the XML and the target.` }
+  },
+})
+
+export const SCENE_OPS = [getSceneState, setVisible, deleteNode, renameNode, moveNode, pasteNodeOp]

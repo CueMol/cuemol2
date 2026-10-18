@@ -15,6 +15,10 @@ export const CmdId = {
   UiOpenObjDialog:    'ui.openObjDialog',    // no args
   UiOpenSceneDialog:  'ui.openSceneDialog',  // no args
   UiAboutDialog:      'ui.aboutDialog',      // no args
+  AppCheckForUpdates: 'app.checkForUpdates', // no args -- Help > Check for Updates
+  // Dev builds only: show the update UI in a given state without a release
+  // (for the UI layout inspector). args: { state }
+  DevUpdateSample:    'dev.updateSample',
   UiChangeChainIdDialog: 'ui.changeChainIdDialog', // no args
   UiDeleteMolDialog:  'ui.deleteMolDialog',  // no args
   UiChangeResidueIndexDialog: 'ui.changeResidueIndexDialog', // no args
@@ -143,6 +147,17 @@ export const CmdId = {
   CameraApplyToView:     'scene.camera.applyToView',     // args: { name; withVisFlags }
   CameraEditVisFlags:    'scene.camera.editVisFlags',    // args: { name }
   CameraClearVisFlags:   'scene.camera.clearVisFlags',   // args: { name }
+
+  // Action history (the active scene's undo steps, by action-log step id).
+  ActionsShowStep:       'actions.showStep',             // args: { stepId; entryIndex? }
+  ActionsGoToStep:       'actions.goToStep',             // args: { stepId | null }
+  ActionsSave:           'actions.save',                 // args: { stepIds }
+  ActionsCopy:           'actions.copy',                 // args: { stepIds }
+  ActionsSaveToLibrary:  'actions.saveToLibrary',        // args: { stepIds } -- into User Actions (asks name / macro)
+  LibraryRun:            'actions.library.run',          // args: { file; macro?; targetIds? }
+  LibraryCopyMacro:      'actions.library.copyMacro',    // args: { file; macro } -- a preset into User Actions
+  LibraryRename:         'actions.library.rename',       // args: { file }
+  LibraryDelete:         'actions.library.delete',       // args: { file } -- to the trash
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]

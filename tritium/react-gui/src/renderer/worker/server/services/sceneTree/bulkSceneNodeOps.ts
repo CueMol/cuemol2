@@ -15,6 +15,7 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { withUndoTxn } from '../withUndoTxn';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 import { collectGroupMemberUids } from '@renderer/worker/server/services/helpers/rendGroup';
+import { recordDeleteNode, recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface BulkSceneNodeItem {
     nodeId: number;
@@ -44,6 +45,11 @@ function isOperable(t: SceneNodeType): boolean {
     return t === 'object' || t === 'renderer' || t === 'rendGroup';
 }
 
+/** One node of a bulk show / hide, as the op that does it alone. */
+function recordVisible(ctx: WorkerContext, sceneId: number, it: BulkSceneNodeItem, visible: boolean): void {
+    recordOp(ctx, sceneId, 'set_visible', { nodeId: it.nodeId, nodeType: it.nodeType, visible }, ['nodeId']);
+}
+
 export function bulkSetNodeVisible(
     ctx: WorkerContext,
     args: BulkSetVisibleArgs,
@@ -60,6 +66,7 @@ export function bulkSetNodeVisible(
             if (it.nodeType === 'object') {
                 const obj = scene.getObject(it.nodeId) as CueMolObject | null;
                 if (!obj) continue;
+                recordVisible(ctx, scene.uid, it, args.visible);
                 if (obj.visible !== args.visible) {
                     obj.visible = args.visible;
                 }
@@ -67,6 +74,7 @@ export function bulkSetNodeVisible(
             } else {
                 const rend = scene.getRenderer(it.nodeId) as Renderer | null;
                 if (!rend) continue;
+                recordVisible(ctx, scene.uid, it, args.visible);
                 if (rend.visible !== args.visible) {
                     rend.visible = args.visible;
                 }
@@ -102,6 +110,7 @@ export function bulkDeleteNode(
             if (it.nodeType === 'object') {
                 const obj = scene.getObject(it.nodeId) as CueMolObject | null;
                 if (!obj) continue;
+                recordDeleteNode(ctx, scene.uid, it.nodeType, it.nodeId);
                 try { scene.destroyObject(it.nodeId); applied += 1; }
                 catch (e) { console.warn('destroyObject failed:', e); }
             } else if (it.nodeType === 'renderer') {
@@ -109,6 +118,7 @@ export function bulkDeleteNode(
                 if (!rend) continue;
                 const client = rend.getClientObj() as CueMolObject | null;
                 if (!client) continue;
+                recordDeleteNode(ctx, scene.uid, it.nodeType, it.nodeId);
                 try { client.destroyRenderer(it.nodeId); applied += 1; }
                 catch (e) { console.warn('destroyRenderer failed:', e); }
             } else {
@@ -119,6 +129,8 @@ export function bulkDeleteNode(
                 if (!grp) continue;
                 const client = grp.getClientObj() as CueMolObject | null;
                 if (!client) continue;
+                // delete_node on a group takes its members with it, as here.
+                recordDeleteNode(ctx, scene.uid, it.nodeType, it.nodeId);
                 // Live membership, not just the caller's tree snapshot -- see
                 // collectGroupMemberUids.
                 for (const cid of collectGroupMemberUids(scene, grp, it.childIds)) {

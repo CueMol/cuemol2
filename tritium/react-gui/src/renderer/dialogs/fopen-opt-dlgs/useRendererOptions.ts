@@ -29,6 +29,7 @@ import {
     type SetStateAction,
 } from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
+import { initialRendererType } from '@renderer/worker/shared/fileOpenDefaults';
 import type { PresetTypeEntry, RendererOptions } from './types';
 import { getDefaultRendType, setDefaultRendType } from './rendTypeHistory';
 import { pushHistory } from '@renderer/h3-kit/MolSelList';
@@ -80,7 +81,10 @@ export function useRendererOptions(
     // type. Presets are never the default without history (deliberate
     // deviation from UXP, which preselected the first preset; ADR-0046).
     const initialPick = useMemo(() => {
-        const first = rendererTypes[0] ?? '';
+        // Without history: what this kind of object starts with (`simple`
+        // for a molecule, else the object's first type), as a load without
+        // the dialog picks it.
+        const first = initialRendererType(rendererTypes);
         const hist = getDefaultRendType(objClassName);
         if (hist) {
             if (presets.some((p) => p.name === hist)) {

@@ -1,0 +1,40 @@
+/* MCP plugin: the connect dialog. The status bar item and its popover use
+   the shared .status-button / .status-pop classes (styles/_status-bar.css). */
+
+/* --- Connect dialog --- */
+
+.mcp-connect {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mcp-connect-note {
+  color: var(--text-secondary);
+}
+
+/* --- Settings: the Port row (McpPortSettingRow) --- */
+
+.mcp-port-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mcp-port-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.mcp-port-state--idle {
+  color: var(--accent-green);
+}
+
+.mcp-port-state--error {
+  color: var(--text-error);
+}
+
+.mcp-port-state--off {
+  color: var(--text-muted);
+}

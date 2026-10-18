@@ -5,6 +5,7 @@
  * Pins the observable C++ contract so a future refactor cannot silently change
  * which API is called or when the view is recentered:
  *   - algo='SSM' -> `MolAnlManager.superposeSSM1`, never `superposeLSQ1` (and vice versa)
+ *   - algo='USalign' -> `superposeUSalign1` with the pivot ('auto' when omitted)
  *   - a failed selection compile (`makeSel` -> null) aborts before any superpose call
  *   - `autoRecenter` gates the `MolCoord.fitView2(view, movSel)` call, which must
  *     receive the MOVING molecule's selection (UXP recenters the moving mol)
@@ -51,7 +52,8 @@ function makeFixture(opts: { movHasFitView2?: boolean } = {}) {
 
     const superposeSSM1 = vi.fn()
     const superposeLSQ1 = vi.fn()
-    const mgr = { superposeSSM1, superposeLSQ1 }
+    const superposeUSalign1 = vi.fn()
+    const mgr = { superposeSSM1, superposeLSQ1, superposeUSalign1 }
 
     const view = { __view: true }
 
@@ -62,7 +64,7 @@ function makeFixture(opts: { movHasFitView2?: boolean } = {}) {
     ;(getSceneOrNull as ReturnType<typeof vi.fn>).mockReturnValue(scene)
     ;(getViewOrNull as ReturnType<typeof vi.fn>).mockReturnValue(view)
 
-    return { ctx, scene, mgr, superposeSSM1, superposeLSQ1, fitView2, view, txn }
+    return { ctx, scene, mgr, superposeSSM1, superposeLSQ1, superposeUSalign1, fitView2, view, txn }
 }
 
 const baseArgs: SuperposeMolArgs = {
@@ -92,6 +94,16 @@ describe('superposeMol — algorithm dispatch', () => {
             expect.objectContaining({ uid: MOV_UID }), { __sel: 'protein' },
             false,
         )
+    })
+
+    it("algo='USalign' passes the pivot to superposeUSalign1, 'auto' when omitted", () => {
+        const { ctx, superposeSSM1, superposeLSQ1, superposeUSalign1 } = makeFixture()
+        expect(superposeMol(ctx, { ...baseArgs, algo: 'USalign', pivot: 'P' })).toEqual({ ok: true })
+        expect(superposeMol(ctx, { ...baseArgs, algo: 'USalign' })).toEqual({ ok: true })
+        expect(superposeSSM1).not.toHaveBeenCalled()
+        expect(superposeLSQ1).not.toHaveBeenCalled()
+        expect(superposeUSalign1.mock.calls.map((c) => c[4])).toEqual(['P', 'auto'])
+        expect(superposeUSalign1.mock.calls[0][5]).toBe(false)
     })
 
     it("algo='LSQ' calls superposeLSQ1 only", () => {

@@ -183,6 +183,21 @@ def ssm_fit(aRefMol, aRefSel, aMovMol, aMovSel):
     return xfmat
 
 
+def usalign_fit(aRefMol, aRefSel, aMovMol, aMovSel, aPivot="auto"):
+    """Superpose aMovMol onto aRefMol by US-align (the default method).
+
+    aPivot is the representative atom: "auto" (CA for amino acids, C3' for
+    nucleotides) or an atom name such as "P".
+    """
+    mgr = cuemol.getService("MolAnlManager")
+    refMol = cuemol.obj(aRefMol)
+    refSel = cuemol.sel(aRefSel, refMol.getScene())
+    movMol = cuemol.obj(aMovMol)
+    movSel = cuemol.sel(aMovSel, movMol.getScene())
+    xfmat = mgr.superposeUSalign1(refMol, refSel, movMol, movSel, aPivot, False)
+    return xfmat
+
+
 def calc_rmsd(aRefMol, aRefSel, aMovMol, aMovSel):
     mgr = cuemol.getService("MolAnlManager")
     refMol = cuemol.obj(aRefMol)

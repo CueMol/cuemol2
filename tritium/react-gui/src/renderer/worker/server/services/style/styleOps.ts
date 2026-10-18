@@ -11,10 +11,13 @@
 // Style nodes have no name setter and global styles (`scopeId === 0`) are
 // not editable, matching UXP `onStyToggleRo` early-return.
 
+import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { INVALID_UID, isValidUid } from '@renderer/worker/shared/uid';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { styleSetNameOf } from './styleSetEdit';
 
 interface StyleManagerLike {
     createStyleSet(name: string, scopeId: number): number;
@@ -65,6 +68,7 @@ export function createStyleSet(
 
     let newId = INVALID_UID;
     withUndoTxn(scene, 'Create style', () => {
+        recordOp(ctx, scene.uid, 'create_style_set', { name: trimmed });
         newId = mgr.createStyleSet(trimmed, args.sceneId);
     });
     if (!isValidUid(newId)) return empty;
@@ -93,9 +97,22 @@ export function destroyStyleSet(
     const mgr = getStyleMgr(ctx);
     if (!mgr) return { ok: false };
 
+    return destroyStyleSetIn(ctx, scene, mgr, args.scopeId, args.styleSetId);
+}
+
+/** Destroy a style set in one undo txn, recorded as `delete_style_set` by its name. */
+export function destroyStyleSetIn(
+    ctx: WorkerContext,
+    scene: Scene,
+    mgr: { destroyStyleSet(scopeId: number, styleSetId: number): boolean },
+    scopeId: number,
+    styleSetId: number,
+): DestroyStyleSetResult {
+    const name = styleSetNameOf(ctx, scene.uid, styleSetId);
     let ok = false;
     withUndoTxn(scene, 'Destroy style', () => {
-        ok = mgr.destroyStyleSet(args.scopeId, args.styleSetId);
+        if (name !== null) recordOp(ctx, scene.uid, 'delete_style_set', { styleSet: name });
+        ok = mgr.destroyStyleSet(scopeId, styleSetId);
     });
     return { ok };
 }
@@ -142,8 +159,10 @@ export function toggleStyleSetReadOnly(
         next = true;
     }
 
+    const name = styleSetNameOf(ctx, scene.uid, args.styleSetId);
     let assigned = false;
     withUndoTxn(scene, 'Toggle style read-only', () => {
+        if (name !== null) recordOp(ctx, scene.uid, 'set_style_readonly', { styleSet: name, readonly: next });
         set.readonly = next;
         assigned = true;
     });

@@ -23,10 +23,11 @@ import type { SelCommand } from '@cuemol/core/src/wrappers/SelCommand';
 import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import type { PaintTarget } from './colorTargets';
-import { materializeColoringIfDefault, resolvePaintTarget } from './colorTargets';
+import { coloringOpTarget, materializeColoringIfDefault, resolvePaintTarget } from './colorTargets';
 import type {
     PaintClipboardEntry,
     CopyPaintEntriesArgs,
@@ -58,6 +59,13 @@ function readEntries(coloring: PaintColoring, idxs: number[]): PaintClipboardEnt
         out.push({ selStr: sel.toString(), colorValue: col.toString() });
     }
     return out;
+}
+
+/** Record one remove_paint per row, in the descending order they are removed. */
+function recordRemoveRows(ctx: WorkerContext, sceneId: number, args: CopyPaintEntriesArgs, idxs: number[]): void {
+    for (let i = idxs.length - 1; i >= 0; --i) {
+        recordOp(ctx, sceneId, 'remove_paint', { ...coloringOpTarget(args), number: idxs[i] + 1 }, ['nodeId']);
+    }
 }
 
 /**
@@ -108,6 +116,7 @@ export function cutPaintEntries(
     const { target, idxs, entries } = taken;
 
     withUndoTxn(target.scene, 'Cut paint entry', () => {
+        recordRemoveRows(ctx, target.scene.uid, args, idxs);
         materializeColoringIfDefault(target.rend);
         const live = liveColoring(target.rend);
         // Descending, so each removal leaves the lower indices valid
@@ -139,12 +148,12 @@ export function pastePaintEntries(
     if (!target) return empty;
     const { scene, rend, coloring } = target;
 
-    const adds: { sel: SelCommand; col: AbstractColor }[] = [];
+    const adds: { sel: SelCommand; col: AbstractColor; selStr: string; colorValue: string }[] = [];
     for (const entry of args.entries) {
         try {
             const sel = makeSel(ctx, entry.selStr, scene.uid);
             if (!sel) continue;
-            adds.push({ sel, col: makeColor(ctx, entry.colorValue, scene.uid) });
+            adds.push({ sel, col: makeColor(ctx, entry.colorValue, scene.uid), selStr: entry.selStr, colorValue: entry.colorValue });
         } catch {
             // Unresolvable named selection or colour: drop this row only.
         }
@@ -157,6 +166,15 @@ export function pastePaintEntries(
     const startIdx = append ? size : at;
 
     withUndoTxn(scene, 'Paste paint entry', () => {
+        // One insert per row, each at the place it ends up (rows in clipboard order).
+        adds.forEach((a, i) => {
+            recordOp(ctx, scene.uid, 'add_paint_at', {
+                ...coloringOpTarget(args),
+                selection: a.selStr,
+                color: a.colorValue,
+                at: append ? null : at + i + 1,
+            }, ['nodeId']);
+        });
         materializeColoringIfDefault(rend);
         const live = liveColoring(rend);
         if (append) {
@@ -192,6 +210,7 @@ export function removePaintEntries(
     if (idxs.length === 0) return { ok: false };
 
     withUndoTxn(target.scene, 'Delete paint entry', () => {
+        recordRemoveRows(ctx, target.scene.uid, args, idxs);
         materializeColoringIfDefault(target.rend);
         const live = liveColoring(target.rend);
         for (let i = idxs.length - 1; i >= 0; --i) {
@@ -214,6 +233,7 @@ export function clearPaintEntries(
     const { scene, rend } = target;
 
     withUndoTxn(scene, 'Delete all paint entries', () => {
+        recordOp(ctx, scene.uid, 'clear_paint', coloringOpTarget(args), ['nodeId']);
         materializeColoringIfDefault(rend);
         liveColoring(rend).clear();
     });

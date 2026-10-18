@@ -29,7 +29,8 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { PresetTypeEntry, RendererOptions } from '@renderer/worker/shared/fileOpenTypes';
 import { getNewRendererOptions } from '../rend/getNewRendererOptions';
 import { setupRenderer } from '../rend/setupRenderer';
-import { getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { getSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { uniqName } from '@renderer/worker/server/services/helpers/uniqName';
 import { withUndoTxn } from '../withUndoTxn';
@@ -119,43 +120,66 @@ export interface CreateSymmMolResult {
     newObjName?: string;
 }
 
-export function createSymmMol(
-    ctx: WorkerContext,
-    args: CreateSymmMolArgs,
-): CreateSymmMolResult {
-    const vsm = getViewSceneObjOrNull<MolCoord>(ctx, args.viewId, args.objId);
-    if (!vsm) return { ok: false, error: 'molecule not found' };
-    const { scene, obj: mol } = vsm;
+/** A 4x4 matrix as `create_symmetry_copy` takes it: 16 numbers, row by row. */
+export function matrixText(m: Matrix): string {
+    const v: number[] = [];
+    for (let i = 1; i <= 4; i++) for (let j = 1; j <= 4; j++) v.push(m.getAt(i, j));
+    return v.join(' ');
+}
 
-    const rend = scene.getRenderer(args.rendId) as SymmRenderer | null;
-    if (!rend) return { ok: false, error: 'symm renderer not found' };
+/** The matrix `matrixText` wrote, or null when the text is not 16 numbers. */
+export function matrixOf(ctx: WorkerContext, text: string): Matrix | null {
+    const v = text.trim().split(/[\s,]+/).map(Number);
+    if (v.length !== 16 || v.some((x) => !Number.isFinite(x))) return null;
+    const m = ctx.svc.createObj('Matrix') as Matrix;
+    for (let i = 0; i < 16; i++) m.setAt(Math.floor(i / 4) + 1, (i % 4) + 1, v[i]);
+    return m;
+}
 
+export interface CopyMolByMatrixArgs {
+    sceneId: number;
+    objId: number;
+    matrix: Matrix;
+    objName: string;
+    rendOpts: RendererOptions;
+}
+
+/**
+ * Copy every atom of a MolCoord object into a new object moved by `matrix`,
+ * drawn with `rendOpts`, as one undo step.
+ */
+export function copyMolByMatrix(ctx: WorkerContext, args: CopyMolByMatrixArgs): CreateSymmMolResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    const mol = scene?.getObject(args.objId) as MolCoord | null;
+    if (!scene || !mol) return { ok: false, error: 'molecule not found' };
     const objName = args.objName.trim();
     if (!objName) return { ok: false, error: 'empty object name' };
-
     const sel = makeSel(ctx, '*', scene.uid);
     if (!sel) return { ok: false, error: 'selection compile failed' };
 
-    let matrix: Matrix;
-    try {
-        matrix = rend.getXformMatrix(args.symmId);
-    } catch (e) {
-        return { ok: false, error: String(e) };
-    }
-
     let newObjId = -1;
-
     // Roll back the whole txn on any failure (UXP wraps only addObject +
     // renderer setup, but mutations on the not-yet-added object generate no
     // undo records, so covering the whole sequence is observably identical).
     try {
         withUndoTxn(scene, 'Create symm mol', () => {
+            const r = args.rendOpts;
+            recordOp(ctx, scene.uid, 'create_symmetry_copy', {
+                objId: args.objId,
+                matrix: matrixText(args.matrix),
+                name: objName,
+                rendererType: r.presetName ? null : r.rendererType || null,
+                selection: r.selectionEnabled ? r.selection : null,
+                rendererName: r.presetName || !r.rendererName ? null : r.rendererName,
+                preset: r.presetName ? r.presetName : null,
+                centerView: r.centerView ? true : null,
+            }, ['objId']);
             const newMol = ctx.svc.createObj('MolCoord') as MolCoord;
             (newMol as unknown as { name: string }).name = objName;
             if (!newMol.copyAtoms(mol, sel as unknown as MolSelection)) {
                 throw new Error('copyAtoms failed');
             }
-            newMol.xformByMat(matrix, sel as unknown as MolSelection);
+            newMol.xformByMat(args.matrix, sel as unknown as MolSelection);
             scene.addObject(newMol as unknown as CueMolObject);
             newObjId = (newMol as unknown as { uid: number }).uid ?? -1;
             if (!setupRenderer(ctx, newMol, args.rendOpts)) {
@@ -168,4 +192,25 @@ export function createSymmMol(
 
     if (newObjId < 0) return { ok: false, error: 'object creation failed' };
     return { ok: true, newObjId, newObjName: objName };
+}
+
+export function createSymmMol(
+    ctx: WorkerContext,
+    args: CreateSymmMolArgs,
+): CreateSymmMolResult {
+    const vsm = getViewSceneObjOrNull<MolCoord>(ctx, args.viewId, args.objId);
+    if (!vsm) return { ok: false, error: 'molecule not found' };
+    const { scene } = vsm;
+
+    const rend = scene.getRenderer(args.rendId) as SymmRenderer | null;
+    if (!rend) return { ok: false, error: 'symm renderer not found' };
+
+    let matrix: Matrix;
+    try {
+        matrix = rend.getXformMatrix(args.symmId);
+    } catch (e) {
+        return { ok: false, error: String(e) };
+    }
+    // The operator index depends on what the renderer draws now; the matrix does not.
+    return copyMolByMatrix(ctx, { sceneId: scene.uid, objId: args.objId, matrix, objName: args.objName, rendOpts: args.rendOpts });
 }

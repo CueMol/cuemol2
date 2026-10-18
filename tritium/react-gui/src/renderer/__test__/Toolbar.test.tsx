@@ -36,7 +36,7 @@ vi.mock('@renderer/state/workspace', () => ({
 const pluginState = vi.hoisted(() => ({ toolbar: [] as unknown[] }))
 vi.mock('@renderer/plugin-host', () => ({
   usePluginContributions: () => ({
-    menus: [], toolbar: pluginState.toolbar, views: [], bottomTabs: [],
+    menus: [], toolbar: pluginState.toolbar, views: [], bottomTabs: [], statusBar: [],
   }),
 }))
 
@@ -59,6 +59,8 @@ function makeUndoRedo(over: Partial<UndoRedoState> = {}): UndoRedoState {
     canRedo: true,
     undoDescs: ['e1'],
     redoDescs: ['e2'],
+    undoTexts: ['e1'],
+    redoTexts: ['e2'],
     pickUndo: vi.fn(),
     pickRedo: vi.fn(),
     ...over,

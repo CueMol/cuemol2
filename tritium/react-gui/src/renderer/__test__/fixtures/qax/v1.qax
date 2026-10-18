@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cuemol-actions version="1">
+  <macro name="cartoon-hide" label="Cartoon &amp; hide" description="Draw &quot;it&quot; as a cartoon">
+    <param name="target" type="MolCoord" label="Target"/>
+    <op name="create_renderer">
+      <arg name="objId" param="target"/>
+      <arg name="rendererType">cartoon</arg>
+      <arg name="name">p_cartoon</arg>
+    </op>
+    <op name="set_visible">
+      <arg name="nodeId" param="target" sub="p_cartoon"/>
+      <arg name="nodeType">renderer</arg>
+      <arg name="visible">false</arg>
+    </op>
+  </macro>
+  <macro name="white-bg"/>
+  <action label="Change property: width" source="gui" time="2026-10-11T01:02:05.000Z">
+    <op name="set_node_prop">
+      <arg name="nodeType">renderer</arg>
+      <arg name="nodeId" path="1crn/cartoon1" uid="12"/>
+      <arg name="prop">width</arg>
+      <arg name="value">2.5</arg>
+    </op>
+  </action>
+  <action label="cmd: measure &quot;a&quot; &amp; &lt;b&gt;" source="cmd">
+    <op name="measure_distance">
+      <arg name="atoms">
+        <atom chain="A" resid="10" name="CA"/>
+        <atom chain="B" resid="12A" name="N"/>
+      </arg>
+    </op>
+    <op name="set_view">
+      <arg name="center">1.5 -2 0</arg>
+      <arg name="fitSlab">true</arg>
+    </op>
+    <op name="rotate_view"/>
+    <op name="delete_node">
+      <arg name="nodeId" uid="31"/>
+    </op>
+  </action>
+  <action label="Paint" source="gui">
+    <note>no op recorded for this edit</note>
+  </action>
+  <action>
+    <cmd>zoom 1crn, chain A</cmd>
+  </action>
+</cuemol-actions>

@@ -30,6 +30,8 @@ bash "$SCRIPT_DIR/collect-cuemol2-runtime.sh"
 # Component Catalog sidebar view -- is not built into a shipped bundle.
 cd "$REACT_GUI"
 CUEMOL_RELEASE=1 pnpm exec electron-vite build
+# tritium_cli, bundled into ../cli/dist/ (shipped through extraResources).
+pnpm --filter @cuemol/tritium-cli run build
 
 # --- 3. electron-builder ----------------------------------------------------
 # Derive the bundle version from the master QM_VERSION (single source of truth:
@@ -38,6 +40,12 @@ CUEMOL_RELEASE=1 pnpm exec electron-vite build
 # version + a separate buildVersion (-> CFBundleVersion / FileVersion).
 VERSION_FILE="$REPO_ROOT/../src/_version.h"
 QM_VERSION="$(grep '#define QM_VERSION' "$VERSION_FILE" | sed 's/.*"\(.*\)".*/\1/')"
+# CM_VERSION_OVERRIDE packages under another version, to try the self-updater
+# against a build that looks older or newer than the latest release.
+if [ -n "${CM_VERSION_OVERRIDE:-}" ]; then
+  echo "package: CM_VERSION_OVERRIDE=$CM_VERSION_OVERRIDE (instead of $QM_VERSION)"
+  QM_VERSION="$CM_VERSION_OVERRIDE"
+fi
 SEMVER="$(printf '%s' "$QM_VERSION" | cut -d. -f1-3)"
 BUILD_NO="$(printf '%s' "$QM_VERSION" | cut -d. -f4)"
 echo "package: QM_VERSION=$QM_VERSION -> version=$SEMVER buildVersion=${BUILD_NO:-<none>}"
@@ -47,7 +55,9 @@ echo "package: QM_VERSION=$QM_VERSION -> version=$SEMVER buildVersion=${BUILD_NO
 # artifactName / dmg.title, so export the unsplit value for it.
 export CM_FULL_VERSION="$QM_VERSION"
 
-EB_ARGS=("$@" --config.extraMetadata.version="$SEMVER")
+# The app's updater compares all four parts (a build-only bump is a release
+# here), so the full version also goes into the packaged package.json.
+EB_ARGS=("$@" --config.extraMetadata.version="$SEMVER" --config.extraMetadata.cuemolVersion="$QM_VERSION")
 if [ -n "$BUILD_NO" ]; then
   EB_ARGS+=(--config.buildVersion="$BUILD_NO")
 fi

@@ -72,6 +72,18 @@ export function getPaintColoringStyles(
     return { ok: true, entries };
 }
 
+/** The CPK styles the renderer Coloring submenu offers beside the Paint ones. */
+const CPK_COLORING_STYLES: readonly string[] = ['DefaultCPKColoring', 'DarkCPKColoring', 'LightCPKColoring'];
+
+/**
+ * Every colouring style name a renderer can be given by name: the Paint
+ * styles and the CPK ones, as the Coloring submenu offers them.
+ */
+export function coloringStyleNames(ctx: WorkerContext, sceneId: number): string[] {
+    const paint = getPaintColoringStyles(ctx, { sceneId });
+    return [...(paint.ok ? paint.entries.map((e) => e.name) : []), ...CPK_COLORING_STYLES];
+}
+
 /**
  * Gate query: whether the renderer Paint submenu should be shown now -
  * true iff the coloring is `PaintColoring` and the parent mol has a

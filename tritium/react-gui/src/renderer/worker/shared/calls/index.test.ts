@@ -19,7 +19,7 @@ import {
     APP_KEYS, SCENE_KEYS, UNDO_KEYS, SCENE_TREE_KEYS, PROPS_KEYS, FILE_KEYS,
     RENDER_KEYS, VIEW_KEYS, COLOR_KEYS, COLORING_KEYS, REND_KEYS, STYLE_KEYS,
     CAMERA_KEYS, SELECT_KEYS, NAVI_KEYS, MOLOPS_KEYS, APBS_KEYS, MAP_KEYS,
-    ANIM_KEYS, MORPH_KEYS,
+    ANIM_KEYS, MORPH_KEYS, ACTIONS_KEYS,
     // Benchmark harness (bench/perf-harness branch only; never merged to develop).
     BENCH_KEYS,
 } from './index';
@@ -30,6 +30,7 @@ const SLICES: Record<string, readonly string[]> = {
     color: COLOR_KEYS, coloring: COLORING_KEYS, rend: REND_KEYS, style: STYLE_KEYS,
     camera: CAMERA_KEYS, select: SELECT_KEYS, navi: NAVI_KEYS, molops: MOLOPS_KEYS,
     apbs: APBS_KEYS, map: MAP_KEYS, anim: ANIM_KEYS, morph: MORPH_KEYS,
+    actions: ACTIONS_KEYS,
     bench: BENCH_KEYS,
 };
 

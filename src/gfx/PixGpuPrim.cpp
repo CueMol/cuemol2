@@ -19,7 +19,9 @@ namespace {
 // PixGpuPrim DrawParamsBlock (binding=2, 64 bytes)
 struct PixDrawUBO {
     float frag_alpha;       // offset 0
-    float _p1, _p2, _p3;   // offset 4, 8, 12 (padding for vec3 alignment)
+    float u_anchorX;        // offset 4
+    float u_anchorY;        // offset 8
+    float _p3;              // offset 12 (padding for vec3 alignment)
     float u_position[3];    // offset 16
     float _p4;              // offset 28
     float u_size[2];        // offset 32
@@ -101,6 +103,8 @@ void PixGpuPrim::draw(DisplayContext *pDC, const qlib::Vector4D &pos,
     ubo.u_position[0]   = (float)pos.x();
     ubo.u_position[1]   = (float)pos.y();
     ubo.u_position[2]   = (float)pos.z();
+    ubo.u_anchorX       = pixbuf.getAnchorX();
+    ubo.u_anchorY       = pixbuf.getAnchorY();
     ubo.u_size[0]       = float(w);
     ubo.u_size[1]       = float(h);
     ubo.u_viewportSize[0] = view_w;

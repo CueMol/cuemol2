@@ -75,3 +75,31 @@ export const COLORING_MODE_ITEMS: ColoringModeItem[] = [
 export const PAINT_DECK_CLASS = 'PaintColoring'
 /** Coloring classes that route to the Solid deck (no class = inherited). */
 export const SOLID_DECK_CLASSES = new Set(['', 'SolidColoring'])
+
+/**
+ * Short name of the coloring a target currently uses, shown on the
+ * coloring-mode dropdown (which therefore reads like a select of the current
+ * mode, and replaces the per-deck "Xxx coloring:" captions).
+ *
+ * The colormode-routed decks (potential / multigrad) win over the class, as
+ * they do in the pane's deck routing.
+ */
+export function coloringModeLabel(opts: {
+    className: string
+    elepot: boolean
+    multiGrad: boolean
+    mapSolid: boolean
+}): string {
+    if (opts.multiGrad) return 'Multi-gradient'
+    if (opts.elepot) return 'Potential'
+    if (opts.mapSolid) return 'Solid'
+    switch (opts.className) {
+        case PAINT_DECK_CLASS: return 'Paint'
+        case '':
+        case 'SolidColoring': return 'Solid'
+        case 'CPKColoring': return 'CPK'
+        case 'BfacColoring': return 'B-factor'
+        case 'RainbowColoring': return 'Rainbow'
+        default: return opts.className.replace(/Coloring$/, '') || 'Coloring'
+    }
+}

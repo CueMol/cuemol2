@@ -11,7 +11,8 @@
 
 import { calcApbsStart, calcApbsCancel } from './run';
 import { proposeElepotName } from './naming';
-export const services = { calcApbsStart, calcApbsCancel, proposeElepotName };
+import { setApbsDefaults } from './defaults';
+export const services = { calcApbsStart, calcApbsCancel, proposeElepotName, setApbsDefaults };
 
 // Called on shutdown rather than by the renderer: the two child processes
 // are spawned by this app and outlive it unless they are killed.

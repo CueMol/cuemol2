@@ -22,7 +22,10 @@ interface UndoRedoSplitButtonProps {
   kind: "undo" | "redo";
   /** Whether a single-step undo/redo is currently possible. */
   canExecute: boolean;
-  /** Transaction descriptions, index 0 = most recent. */
+  /**
+   * What each step did, index 0 = most recent: the action log's text for it
+   * (its recorded op), else the undo stack's description.
+   */
   descs: string[];
   /** Jump `depth+1` steps (depth = the picked entry's index). */
   onPick: (depth: number) => void;

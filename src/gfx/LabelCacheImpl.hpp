@@ -45,6 +45,10 @@ namespace gfx {
     int m_nNextID;
 
     double m_dScaleFac;
+
+    /// Anchor given to every label image (see PixelBuffer::setAnchor)
+    float m_anchorX = 0.0f;
+    float m_anchorY = 0.0f;
     
   public:
     LabelCacheImpl() : m_nNextID(0), m_dScaleFac(-1.0)
@@ -57,6 +61,14 @@ namespace gfx {
     }
 
     void setFont(double fs, const LString &fn, const LString &fsty, const LString &fw);
+
+    /// Point of each label placed at its position (0..1 of the image size,
+    /// (0,0) = bottom-left). It does not change the images, so the cache stays.
+    void setAnchor(float x, float y)
+    {
+      m_anchorX = x;
+      m_anchorY = y;
+    }
 
     void setFontSize(double val);
     double getFontSize() const { return m_dFontSize; }

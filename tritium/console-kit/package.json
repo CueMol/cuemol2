@@ -1,0 +1,20 @@
+{
+  "name": "@cuemol/console-kit",
+  "version": "1.0.0",
+  "description": "Code the console panel (react-gui) and tritium_cli share: the local API wire format, the quit syntax, and Tab's completion menu",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.6"
+  },
+  "dependencies": {
+    "marked": "15.0.12"
+  }
+}

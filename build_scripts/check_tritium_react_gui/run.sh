@@ -25,5 +25,21 @@ pnpm run lint
 # Comments must stay ASCII.
 pnpm run lint:comments
 
+# UI inspector (e2e/inspect.mjs, task inspect_tritium_ui): --help exits right
+# after its imports resolve, so this catches a helper module that is missing
+# from the checkout (e2e/lib/ was once swallowed by a .gitignore rule) or a
+# playwright-core that is not installed, without launching the app.
+node e2e/inspect.mjs --help > /dev/null
+
 # Vitest (renderer, worker, main, shared).
 pnpm run test
+
+# The sibling packages the app bundles: the shared console code, tritium_cli
+# and the self-updater.
+cd $WORKSPACE/tritium
+pnpm --filter @cuemol/console-kit run typecheck
+pnpm --filter @cuemol/tritium-cli run typecheck
+pnpm --filter @cuemol/updater run typecheck
+pnpm --filter @cuemol/tritium-cli run test
+pnpm --filter @cuemol/console-kit run test
+pnpm --filter @cuemol/updater run test

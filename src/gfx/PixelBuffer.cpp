@@ -16,7 +16,8 @@ PixelBuffer::~PixelBuffer()
 }
 
 PixelBuffer::PixelBuffer(const PixelBuffer &src)
-    : m_nWidth(src.m_nWidth), m_nHeight(src.m_nHeight), m_nDepth(src.m_nDepth)
+    : m_nWidth(src.m_nWidth), m_nHeight(src.m_nHeight), m_nDepth(src.m_nDepth),
+      m_anchorX(src.m_anchorX), m_anchorY(src.m_anchorY)
 {
     // an unallocated source (TextImgBuf::clone() before any text) has no data
     m_pData = (src.m_pData != nullptr) ? new data_t(*src.m_pData) : nullptr;
@@ -34,6 +35,8 @@ PixelBuffer &PixelBuffer::operator=(const PixelBuffer &src)
     m_nWidth = src.m_nWidth;
     m_nHeight = src.m_nHeight;
     m_nDepth = src.m_nDepth;
+    m_anchorX = src.m_anchorX;
+    m_anchorY = src.m_anchorY;
     m_pData = (src.m_pData != nullptr) ? new data_t(*src.m_pData) : nullptr;
     m_pPixRep = nullptr;
     return *this;

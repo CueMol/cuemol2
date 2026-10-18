@@ -205,9 +205,9 @@ LString LString::join(const char *sep, const LString *ps, int nsize)
     return ret;
 }
 
-LString LString::vfmtFormat(std::string_view f, fmt::format_args args)
+LString LString::vfmtFormat(fmt::string_view f, fmt::format_args args)
 {
-    return LString(fmt::vformat(fmt::string_view(f.data(), f.size()), args));
+    return LString(fmt::vformat(f, args));
 }
 
 void LString::format2(const char *fmt, ...)

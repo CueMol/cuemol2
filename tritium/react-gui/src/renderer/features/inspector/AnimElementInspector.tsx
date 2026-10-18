@@ -15,6 +15,9 @@
  * bearing reads as a typed / stepped value, so it uses the catalog stepper
  * (`SliderField` with `slider={false}`) beside its cardinal presets.
  *
+ * Built from the parts every inspector page uses (the Scene page's): a
+ * `FlatSection` per settings group and a `PropertyField` row per value.
+ *
  * Identity is the stable `uid`. The component refetches on every SEM_ANIM event
  * (the payload carries no uid, so it always re-resolves), reports the element
  * name/type up via `onHeaderChange`, and signals `onGone` when the element is
@@ -25,8 +28,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  FieldSection,
-  Field,
+  PropertyField,
   TextField,
   TimeField,
   SelectField,
@@ -36,6 +38,7 @@ import {
   SwitchField,
   SegmentField,
 } from "@renderer/h3-kit/form";
+import { FlatSection } from "./AccordionSection";
 import { GenericTab } from "./GenericTab";
 import { InspectorResetAllButton } from "./InspectorResetAllButton";
 import { useAnimGenericProps } from "@renderer/features/inspector/anim/useAnimGenericProps";
@@ -452,26 +455,27 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   return (
     <>
       {modeBar}
-      <div className="inspector-body anim-inspector">
-      <FieldSection title="Common settings">
-        <Field label="Name">
+      <div className="inspector-body">
+      <div className="insp-properties-tab">
+      <FlatSection title="Common">
+        <PropertyField label="Name">
           <TextField
             value={form.name}
             onChange={(v) => setField({ name: v })}
             onBlur={() => commit("name", form.name)}
           />
-        </Field>
-        <Field label="Disabled" inline>
+        </PropertyField>
+        <PropertyField label="Disabled" inline>
           <SwitchField
             checked={detail.common.disabled}
             onChange={(c) => commit("disabled", c)}
           />
-        </Field>
+        </PropertyField>
         {/* Candidates that cannot be chosen (they would close a cycle, carry
             a duplicate name, or do not resolve) stay listed but disabled, and
             a reference that no longer exists is shown as such rather than as
             "(absolute)". A refused write is explained under the field. */}
-        <Field label="Relative to">
+        <PropertyField label="Relative to">
           <SelectField
             value={detail.common.timeRefName}
             onChange={(v) => commit("timeRefName", v)}
@@ -493,22 +497,22 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
               {refError}
             </div>
           )}
-        </Field>
+        </PropertyField>
         {/* Start / Duration preview live (the strip follows) and commit one
             undo step on release; see useAnimTimingDrag. The Start field's
             floor follows a legacy negative offset so an interaction that
             changes nothing cannot lift it to zero (the display floors at 0;
             the note states the stored value). */}
-        <Field label="Start time">
+        <PropertyField label="Start time">
           <TimeField {...timing.start} min={Math.min(0, detail.common.startMs)} />
           {startNote !== null && (
             <div className="anim-field-note is-warning type-caption">{startNote}</div>
           )}
-        </Field>
-        <Field label="Duration">
+        </PropertyField>
+        <PropertyField label="Duration">
           <TimeField {...timing.duration} min={0} />
-        </Field>
-        <Field label="Quadric">
+        </PropertyField>
+        <PropertyField label="Quadric">
           <DragNumericField
             value={form.quadricPct}
             min={0}
@@ -519,12 +523,12 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             onChange={(v) => setField({ quadricPct: v })}
             onRelease={(v) => commit("quadric", v / 100)}
           />
-        </Field>
-      </FieldSection>
+        </PropertyField>
+      </FlatSection>
 
       {type === "SimpleSpin" && (
-        <FieldSection title="SimpleSpin settings">
-          <Field label="Rotation angle">
+        <FlatSection title="SimpleSpin">
+          <PropertyField label="Rotation angle">
             <DragNumericField
               value={form.angle}
               min={0}
@@ -535,8 +539,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
               onChange={(v) => setField({ angle: v })}
               onRelease={(v) => commit("angle", wrapAngle(v))}
             />
-          </Field>
-          <Field label="Spin axis">
+          </PropertyField>
+          <PropertyField label="Spin axis">
             <div className="anim-axis-row">
               <SelectField fill={false} value={axisSel} onChange={onAxisPreset}>
                 <option value="x">X axis</option>
@@ -552,13 +556,13 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
               <NumberCell value={fmtAxis(axis.z)} onCommit={(s) => commitAxisComp("z", s)} disabled={!axisEditable} aria-label="Axis Z" />
               <span className="anim-axis-paren">)</span>
             </div>
-          </Field>
-        </FieldSection>
+          </PropertyField>
+        </FlatSection>
       )}
 
       {type === "CamMotion" && (
-        <FieldSection title="CamMotion settings">
-          <Field label="Target camera">
+        <FlatSection title="Camera motion">
+          <PropertyField label="Target camera">
             <SelectField value={t.endcam ?? ""} onChange={(v) => commit("endcam", v)}>
               <option value="">(none)</option>
               {options.cameras.map((c) => (
@@ -567,25 +571,25 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                 </option>
               ))}
             </SelectField>
-          </Field>
-          <Field label="Ignore rotation" inline>
+          </PropertyField>
+          <PropertyField label="Ignore rotation" inline>
             <SwitchField checked={!!t.ignorerotate} onChange={(c) => commit("ignorerotate", c)} />
-          </Field>
-          <Field label="Ignore center" inline>
+          </PropertyField>
+          <PropertyField label="Ignore center" inline>
             <SwitchField checked={!!t.ignorecenter} onChange={(c) => commit("ignorecenter", c)} />
-          </Field>
-          <Field label="Ignore zoom" inline>
+          </PropertyField>
+          <PropertyField label="Ignore zoom" inline>
             <SwitchField checked={!!t.ignorezoom} onChange={(c) => commit("ignorezoom", c)} />
-          </Field>
-          <Field label="Ignore slab" inline>
+          </PropertyField>
+          <PropertyField label="Ignore slab" inline>
             <SwitchField checked={!!t.ignoreslab} onChange={(c) => commit("ignoreslab", c)} />
-          </Field>
-        </FieldSection>
+          </PropertyField>
+        </FlatSection>
       )}
 
       {(type === "ShowHideAnim" || type === "SlideInOutAnim") && (
-        <FieldSection title={type === "ShowHideAnim" ? "Show/Hide settings" : "Slide in/out settings"}>
-          <Field label="Target renderers">
+        <FlatSection title={type === "ShowHideAnim" ? "Show/Hide" : "Slide in/out"}>
+          <PropertyField label="Target renderers">
             <div className="anim-rend-list">
               {options.renderers.length === 0 ? (
                 <span className="anim-rend-empty type-row">(no renderers)</span>
@@ -605,9 +609,9 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                 ))
               )}
             </div>
-          </Field>
+          </PropertyField>
           {type === "SlideInOutAnim" && (
-            <Field label="Direction angle">
+            <PropertyField label="Direction angle">
               <div className="anim-dir-row">
                 {/* A whole-degree bearing: typed or stepped, not dragged --
                     the cardinal presets beside it are what a coarse sweep is
@@ -641,10 +645,10 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                   <option value="270">Down</option>
                 </SelectField>
               </div>
-            </Field>
+            </PropertyField>
           )}
           {type === "SlideInOutAnim" && (
-            <Field label="Distance">
+            <PropertyField label="Distance">
               <DragNumericField
                 value={form.distance}
                 min={0}
@@ -655,20 +659,20 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                 onChange={(v) => setField({ distance: v })}
                 onRelease={(v) => commit("distance", v)}
               />
-            </Field>
+            </PropertyField>
           )}
-          <Field label="Show/Hide">
+          <PropertyField label="Show/Hide">
             <SelectField value={t.hide ? "true" : "false"} onChange={(v) => commit("hide", v === "true")}>
               <option value="false">Show</option>
               <option value="true">Hide</option>
             </SelectField>
-          </Field>
+          </PropertyField>
           {type === "ShowHideAnim" && (
             <>
-              <Field label="Fade" inline>
+              <PropertyField label="Fade" inline>
                 <SwitchField checked={!!t.fade} onChange={(c) => commit("fade", c)} />
-              </Field>
-              <Field label="Target opacity">
+              </PropertyField>
+              <PropertyField label="Target opacity">
                 <DragNumericField
                   value={form.tgtAlpha}
                   min={0}
@@ -678,15 +682,15 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                   onChange={(v) => setField({ tgtAlpha: v })}
                   onRelease={(v) => commit("tgtAlpha", v)}
                 />
-              </Field>
+              </PropertyField>
             </>
           )}
-        </FieldSection>
+        </FlatSection>
       )}
 
       {type === "MolAnim" && (
-        <FieldSection title="MolAnim settings">
-          <Field label="Target MorphMol">
+        <FlatSection title="Mol morphing">
+          <PropertyField label="Target MorphMol">
             <SelectField value={t.mol ?? ""} onChange={(v) => commit("mol", v)}>
               <option value="">(none)</option>
               {options.mols.map((m) => (
@@ -695,8 +699,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                 </option>
               ))}
             </SelectField>
-          </Field>
-          <Field label="Start value">
+          </PropertyField>
+          <PropertyField label="Start value">
             <DragNumericField
               value={form.startValue}
               min={0}
@@ -706,8 +710,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
               onChange={(v) => setField({ startValue: v })}
               onRelease={(v) => commit("startValue", v)}
             />
-          </Field>
-          <Field label="End value">
+          </PropertyField>
+          <PropertyField label="End value">
             <DragNumericField
               value={form.endValue}
               min={0}
@@ -717,9 +721,10 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
               onChange={(v) => setField({ endValue: v })}
               onRelease={(v) => commit("endValue", v)}
             />
-          </Field>
-        </FieldSection>
+          </PropertyField>
+        </FlatSection>
       )}
+      </div>
       </div>
     </>
   );

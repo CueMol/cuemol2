@@ -16,6 +16,9 @@
 //#include <gfx/TextRenderManager.hpp>
 #include <gfx/DisplayContext.hpp>
 #include <qsys/SceneManager.hpp>
+#include <qsys/UndoManager.hpp>
+#include <qsys/EditInfo.hpp>
+#include <qlib/ObjectManager.hpp>
 
 namespace molstr {
 
@@ -55,6 +58,37 @@ namespace molstr {
   //typedef std::list<NameLabel> NameLabelList;
   struct NameLabelList : public std::deque<NameLabel> {};
 
+  /// The labels of a renderer before and after one edit (add / remove /
+  /// format), so undo and redo put either list back whole.
+  class NameLabelEditInfo : public qsys::EditInfo
+  {
+  private:
+    qlib::uid_t m_nTgtUID;
+    NameLabelList m_before;
+    NameLabelList m_after;
+
+  public:
+    NameLabelEditInfo(qlib::uid_t uid, const NameLabelList &before, const NameLabelList &after)
+         : m_nTgtUID(uid), m_before(before), m_after(after)
+    {
+    }
+
+    bool undo() override { return restore(m_before); }
+    bool redo() override { return restore(m_after); }
+    bool isUndoable() const override { return true; }
+    bool isRedoable() const override { return true; }
+
+  private:
+    bool restore(const NameLabelList &labs) const
+    {
+      NameLabelRenderer *pRend = qlib::ObjectManager::sGetObj<NameLabelRenderer>(m_nTgtUID);
+      if (pRend == NULL)
+        return false;
+      pRend->restoreLabels(labs);
+      return true;
+    }
+  };
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -72,6 +106,9 @@ NameLabelRenderer::NameLabelRenderer()
 
   m_strFontStyle = "normal";
   m_strFontWgt = "normal";
+  m_bLabelOnTop = false;
+  m_nHAlign = HALIGN_LEFT;
+  m_nVAlign = VALIGN_BOTTOM;
 
   // will be called by RendererFactory
   //resetAllProps();
@@ -133,6 +170,8 @@ void NameLabelRenderer::preRender(DisplayContext *pdc)
     pview->convXYTrans(m_xdispl, m_ydispl, dv);
 
   pdc->enableDepthTest(false);
+  if (m_bLabelOnTop)
+    pdc->setDepthTestEnabled(false);
 
   pdc->pushMatrix();
   pdc->translate(dv);
@@ -144,6 +183,8 @@ void NameLabelRenderer::preRender(DisplayContext *pdc)
 void NameLabelRenderer::postRender(DisplayContext *pdc)
 {
   pdc->popMatrix();
+  if (m_bLabelOnTop)
+    pdc->setDepthTestEnabled(true);
   pdc->enableDepthTest(true);
 }
 
@@ -224,6 +265,8 @@ void NameLabelRenderer::render(DisplayContext *pdc)
   }
   
   m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
+  // HALIGN_* / VALIGN_* run 0, 1, 2 from left / bottom
+  m_pixCache.setAnchor(0.5f * m_nHAlign, 0.5f * m_nVAlign);
   pdc->color(m_color);
   m_pixCache.draw(pdc);
 
@@ -284,7 +327,61 @@ bool NameLabelRenderer::addLabel(MolAtomPtr patom, const LString &label /*= LStr
   return true;
 }
 
+void NameLabelRenderer::restoreLabels(const NameLabelList &labs)
+{
+  // The cached images belong to the labels being replaced.
+  BOOST_FOREACH(NameLabel &nlab, *m_pdata) {
+    if (nlab.m_nCacheID >= 0)
+      m_pixCache.remove(nlab.m_nCacheID);
+  }
+  *m_pdata = labs;
+  BOOST_FOREACH(NameLabel &nlab, *m_pdata) {
+    nlab.m_nCacheID = -1;
+  }
+  qsys::ScenePtr pScene = getScene();
+  if (!pScene.isnull())
+    pScene->setUpdateFlag();
+}
+
+void NameLabelRenderer::recordLabelEdit(const NameLabelList &before)
+{
+  qsys::ScenePtr pScene = getScene();
+  if (pScene.isnull())
+    return;
+  qsys::UndoManager *pUM = pScene->getUndoMgr();
+  if (!pUM->isOK())
+    return;
+  pUM->addEditInfo(MB_NEW NameLabelEditInfo(getUID(), before, *m_pdata));
+}
+
 bool NameLabelRenderer::addLabelByID(int aid, const LString &label /*= LString()*/)
+{
+  const NameLabelList before = *m_pdata;
+  if (!addLabelByIDImpl(aid, label))
+    return false;
+  recordLabelEdit(before);
+  return true;
+}
+
+bool NameLabelRenderer::removeLabelByID(int aid)
+{
+  const NameLabelList before = *m_pdata;
+  if (!removeLabelByIDImpl(aid))
+    return false;
+  recordLabelEdit(before);
+  return true;
+}
+
+bool NameLabelRenderer::setLabelFormat(int aid, const LString &fmtstr)
+{
+  const NameLabelList before = *m_pdata;
+  if (!setLabelFormatImpl(aid, fmtstr))
+    return false;
+  recordLabelEdit(before);
+  return true;
+}
+
+bool NameLabelRenderer::addLabelByIDImpl(int aid, const LString &label)
 {
   MolCoordPtr pobj = getClientMol();
   MB_ASSERT(!pobj.isnull());
@@ -297,7 +394,7 @@ bool NameLabelRenderer::addLabelByID(int aid, const LString &label /*= LString()
   return addLabel(pAtom, label);
 }
 
-bool NameLabelRenderer::setLabelFormat(int aid, const LString &fmtstr)
+bool NameLabelRenderer::setLabelFormatImpl(int aid, const LString &fmtstr)
 {
   // Checked here so a bad format fails the call, not a later draw.
   if (!fmtstr.isEmpty())
@@ -344,7 +441,7 @@ void NameLabelRenderer::setFormat(const LString &val)
   invalidateAll();
 }
 
-bool NameLabelRenderer::removeLabelByID(int aid)
+bool NameLabelRenderer::removeLabelByIDImpl(int aid)
 {
   MolCoordPtr pobj = getClientMol();
   MB_ASSERT(!pobj.isnull());
@@ -436,20 +533,11 @@ void NameLabelRenderer::invalidateAll()
 
 void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
 {
-  const LString propnm = ev.getName();
-  if (propnm.equals("color")) {
-    //invalidateDisplayCache();
-    // to be redrawn
-    qsys::ScenePtr pScene = getScene();
-    if (!pScene.isnull())
-      pScene->setUpdateFlag();
-  }
-
-  /*else if (propnm.startsWith("font_")) {
-    makeLabelImg();
-    //m_pixCache.invalidate();
-    //m_pixCache.render();
-  }*/
+  // Labels are drawn every frame outside any display list, so every
+  // property (color, offset, font, label_on_top, ...) only needs a redraw.
+  qsys::ScenePtr pScene = getScene();
+  if (!pScene.isnull())
+    pScene->setUpdateFlag();
 
   super_t::propChanged(ev);
 }

@@ -60,6 +60,13 @@ tools, this can be revisited. The checkbox is omitted from the ported dialog.
   contract can be designed once and shared with other "compute → write file" tools
   if/when one is actually needed.
 
+## Update 2026-10-16: US-align as the default
+
+A third algorithm, US-align (new in CueMol, not a UXP surface), was added and made
+the dialog's default; the segment now reads US-align / SSM / LSQ, with a Pivot atom
+row used by US-align. SSM and LSQ behave as described above. The design lives in
+[`docs/architecture/usalign-superpose.md`](../../architecture/usalign-superpose.md).
+
 ## Notes
 
 - Service: `worker/server/services/superposeMol.service.ts` (`superposeMol`),

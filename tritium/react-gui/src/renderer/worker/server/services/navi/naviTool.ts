@@ -10,6 +10,8 @@ import type { HitTestResult } from '@renderer/types';
 import { withUndoTxn } from '../withUndoTxn';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { quoteSelName } from '@renderer/worker/server/services/helpers/selName';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { atomSpecOf } from '@renderer/worker/server/services/helpers/atomintr';
 
 // ---- internal helpers ----
 
@@ -25,19 +27,30 @@ function runHitTest(ctx: WorkerContext, viewId: number, x: number, y: number): H
     }
 }
 
-function toggleAtomLabel(mol: MolCoord, atomId: number): void {
+/** The object's name label renderer, made (with the DefaultLabel style) when it has none. */
+function labelRendererOf(mol: MolCoord): NameLabelRenderer {
     const labelType = '*namelabel';
     let labelRend = mol.getRendererByNameType('', labelType) as NameLabelRenderer | null;
-
     if (!labelRend) {
         labelRend = mol.createRenderer(labelType) as NameLabelRenderer;
         labelRend.applyStyles('DefaultLabel');
     }
+    return labelRend;
+}
 
-    const added = labelRend.addLabel(atomId);
-    if (!added) {
-        labelRend.removeLabel(atomId);
-    }
+/** Turn the label of one atom on or off. Call inside an undo txn. */
+export function setAtomLabel(mol: MolCoord, atomId: number, on: boolean): void {
+    const labelRend = labelRendererOf(mol);
+    if (on) labelRend.addLabel(atomId);
+    else labelRend.removeLabel(atomId);
+}
+
+/** Label the atom, or take its label off when it has one; whether it is labelled now. */
+function toggleAtomLabel(mol: MolCoord, atomId: number): boolean {
+    const labelRend = labelRendererOf(mol);
+    if (labelRend.addLabel(atomId)) return true;
+    labelRend.removeLabel(atomId);
+    return false;
 }
 
 function writeMsgLog(ctx: WorkerContext, message: string): void {
@@ -113,7 +126,10 @@ export function naviClickAtom(ctx: WorkerContext, args: NaviClickAtomArgs): Navi
     const mol = scene.getObject(raw.obj_id) as MolCoord;
     if (mol) {
         withUndoTxn(scene, 'Add atom label', () => {
-            toggleAtomLabel(mol, raw.atom_id);
+            const on = toggleAtomLabel(mol, raw.atom_id);
+            // Recorded as the state it leaves, so running it again does not undo it.
+            const spec = atomSpecOf(mol, raw.atom_id);
+            if (spec) recordOp(ctx, scene.uid, 'set_atom_label', { objId: raw.obj_id, atoms: [spec], on }, ['objId']);
         });
     }
 
@@ -323,6 +339,7 @@ export function naviResidSel(ctx: WorkerContext, args: NaviResidSelArgs): NaviRe
         const sel = rrs.toSel(mol);
         mol.sel = sel;
         selStr = String(sel.toString());
+        recordOp(ctx, scene.uid, 'set_mol_selection', { objId: raw.obj_id, selection: selStr }, ['objId']);
     });
 
     return { handled: true, objId: raw.obj_id, atomId: raw.atom_id, selStr };

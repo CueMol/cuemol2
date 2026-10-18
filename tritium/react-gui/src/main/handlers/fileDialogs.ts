@@ -123,6 +123,17 @@ export async function handleCameraSaveDialog(
   ])
 }
 
+/** Where to save undo steps as a qax file (CueMol actions XML). */
+export async function handleActionsSaveDialog(
+  mainWindow: BrowserWindow,
+  defaultName: string,
+): Promise<{ canceled: boolean; filePath: string }> {
+  return saveDialog(mainWindow, 'Save Actions As', defaultName, [
+    { name: 'CueMol actions', extensions: ['qax'] },
+    { name: 'All Files', extensions: ['*'] },
+  ])
+}
+
 // The exporter (file type) is chosen by the menu item the user clicked, so
 // the renderer passes the single matching filter; we only append "All Files".
 // No filter-index recovery is needed (unlike `handleObjectSaveDialog`).

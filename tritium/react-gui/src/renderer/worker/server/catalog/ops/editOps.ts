@@ -1,0 +1,670 @@
+/**
+ * @file worker/server/catalog/ops/editOps.ts
+ * @description GUI edits that had no command: resetting properties, the undo
+ * data, residue numbers, renderer groups and surfaces, the interaction list,
+ * paint entries, other export formats, map re-centring, bonds, crystal
+ * symmetry and electrostatic surface colouring.
+ *
+ * Each runs the service its dialog, context menu or panel commits through,
+ * so a command leaves the same undo steps as the GUI. Console and MCP only
+ * (`tool: false, mcp: true`): the agent's short tool list leaves them out.
+ * Lists are numbered from 1, as the console's other lists are.
+ */
+
+import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager'
+import type { MolAtom } from '@cuemol/core/src/wrappers/MolAtom'
+import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord'
+import { getGenericProps } from '@renderer/worker/server/services/props/read'
+import { resetGenericProps } from '@renderer/worker/server/services/props/write'
+import { clearUndoData } from '@renderer/worker/server/services/undo/undo'
+import { changeResidueIndex } from '@renderer/worker/server/services/molops/changeResidueIndex'
+import { createRendererGroup } from '@renderer/worker/server/services/rend/createRendererGroup'
+import { generateRendererSurfObj } from '@renderer/worker/server/services/rend/generateRendererSurfObj'
+import { getMolSurfRegenInfo, regenMolSurf } from '@renderer/worker/server/services/molops/regenMolSurf'
+import { listAtomIntrDefs, removeAtomIntrDefs } from '@renderer/worker/server/services/rend/atomIntrEdit'
+import { getRendererColoringState } from '@renderer/worker/server/services/coloring/deckState'
+import type { ColoringTargetKind, PaintEntryDto } from '@renderer/worker/server/services/coloring/types'
+import { setAtomLabel } from '@renderer/worker/server/services/navi/naviTool'
+import { setAtomLabels } from '@renderer/worker/server/services/navi/atomLabels'
+import { parseMultiGradNodes, setMultiGradNodes } from '@renderer/worker/server/services/coloring/multiGrad'
+import { addPaintEntry, movePaintEntry, removePaintEntry, updatePaintEntry } from '@renderer/worker/server/services/coloring/paintCrud'
+import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
+import { setRendererElepotProp } from '@renderer/worker/server/services/coloring/elepotWriter'
+import { exportScene, getSceneExportInfo } from '@renderer/worker/server/services/scene/exportImage'
+import { redrawMapCenter } from '@renderer/worker/server/services/map/props'
+import { MAP_RENDERER_TYPES } from '@renderer/worker/server/services/map/types'
+import { changeSymmetryInfo } from '@renderer/worker/server/services/molops/symmetryPanelOps'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
+import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn'
+import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
+import { resolvePropPath } from '../refs'
+import { numbered, pickByNumber } from '@renderer/worker/shared/numbered'
+import { MOVE_DEST_PARAMS, moveTarget, moveText } from '../moveDest'
+import { NO_MOLCOORD, NO_OBJECT, NO_RENDERER } from '../errors'
+import { defineOp } from '../op'
+import type { OpOutcome } from '../op'
+import { atoms, boolean, coloringTarget, enumOf, integer, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
+import type { AtomSpec } from '../params'
+import { outputPath } from '../outputFile'
+import { atomList } from '../cmlFormat'
+
+const EXPOSE = { tool: false, console: true, mcp: true } as const
+
+// --- Properties and undo ---
+
+export const resetProp = defineOp({
+  name: 'reset_prop',
+  description:
+    'Put a property back to its default, named by its path as set_prop takes it ' +
+    '(1crn/cartoon1.width, bgcolor). End the path in .* to reset every changed property of ' +
+    'the node at once (Reset all in the inspector).',
+  params: { path: propPath('The property, or node.* for all of them.') },
+  mutates: true,
+  describe: (a) => `Reset ${a.path}`,
+  expose: EXPOSE,
+  group: 'properties',
+  format: () => [],
+  run(ctx, args, oc) {
+    const target = resolvePropPath(ctx, oc.sceneId, args.path, oc.viewId)
+    if (!target.ok) return { ok: false, error: target.error }
+    const node = { sceneId: oc.sceneId, nodeId: target.nodeId, nodeType: target.nodeType }
+    const props = getGenericProps(ctx, node)
+    if (!props.ok) return { ok: false, error: 'The properties could not be read.' }
+    let names = [target.prop]
+    if (target.prop === '*') {
+      names = props.entries.filter((e) => !e.isContainer && !e.readonly && e.hasdefault && !e.isdefault).map((e) => e.key)
+      if (names.length === 0) return { ok: true }
+    } else {
+      // Resetting a property with no default does nothing, so say so rather
+      // than report a reset that did not happen (every View property is one).
+      const entry = props.entries.find((e) => e.key === target.prop)
+      if (!entry) return { ok: false, error: `This ${target.nodeType} has no property "${target.prop}".` }
+      if (!entry.hasdefault) return { ok: false, error: `${args.path} has no default to reset to.` }
+    }
+    const res = resetGenericProps(ctx, { ...node, propNames: names })
+    return res.ok ? { ok: true } : { ok: false, error: `${args.path} could not be reset (does it have a default?).` }
+  },
+})
+
+export const clearUndo = defineOp({
+  name: 'clear_undo',
+  description: 'Forget the scene\'s undo and redo history (Edit > Clear undo data). Cannot be undone.',
+  params: {},
+  mutates: false,
+  expose: EXPOSE,
+  group: 'edit',
+  // It empties the undo stack, which cannot happen inside a transaction.
+  outsideTxn: () => true,
+  format: () => [],
+  run(ctx, _args, oc) {
+    return clearUndoData(ctx, { sceneId: oc.sceneId }).ok ? { ok: true } : { ok: false, error: 'The undo data could not be cleared.' }
+  },
+})
+
+// --- MolCoord objects ---
+
+export const changeResid = defineOp({
+  name: 'renumber_residues',
+  description:
+    'Change residue numbers of a MolCoord object (Edit > Change residue number): shift them by a ' +
+    'value, or number them from a value. renumber numbers consecutively instead of keeping ' +
+    'the gaps.',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    mode: enumOf(['shift', 'start'], 'shift: add value to each number; start: the first becomes value.'),
+    value: integer('The shift, or the first number.'),
+    selection: optional(selection('Only these residues. Null changes them all.')),
+    renumber: optional(boolean('Number consecutively, closing gaps. Null is false.')),
+  },
+  mutates: true,
+  describe: (a, n) => (a.mode === 'shift' ? `Shift residue numbers of ${n('objId')} by ${a.value}` : `Number residues of ${n('objId')} from ${a.value}`),
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    return normalizeServiceResult(
+      changeResidueIndex(ctx, {
+        sceneId: oc.sceneId,
+        objId: args.objId,
+        selStr: args.selection ?? '',
+        bshift: args.mode === 'shift',
+        value: args.value,
+        renumber: args.renumber ?? false,
+      }),
+      'The residue numbers could not be changed.',
+    )
+  },
+})
+
+/** The atom `spec` names in `mol`, or null. */
+function atomOf(mol: MolCoord, spec: AtomSpec): MolAtom | null {
+  try {
+    return mol.getAtom(spec.chain, spec.resid, spec.atomName) as MolAtom | null
+  } catch {
+    return null
+  }
+}
+
+/** The two atoms of a bond, or why not. */
+function bondAtoms(ctx: Parameters<typeof getSceneOrNull>[0], sceneId: number, objId: number, specs: AtomSpec[]):
+  { mol: MolCoord; a: MolAtom; b: MolAtom; scene: NonNullable<ReturnType<typeof getSceneOrNull>> } | { error: string } {
+  if (specs.length !== 2) return { error: 'Give exactly two atoms, e.g. A.20.SG A.45.SG.' }
+  const scene = getSceneOrNull(ctx, sceneId)
+  const mol = scene?.getObject(objId) as MolCoord | null
+  if (!scene || !mol) return { error: NO_MOLCOORD }
+  const a = atomOf(mol, specs[0])
+  const b = atomOf(mol, specs[1])
+  if (!a || !b) return { error: 'An atom was not found; check the chain, residue and atom name.' }
+  if (a.id === b.id) return { error: 'The two atoms are the same.' }
+  return { mol, a, b, scene }
+}
+
+const BOND_ATOMS = 'The two atoms, chain.resid.atom each, e.g. A.20.SG A.45.SG.'
+
+export const setAtomLabelOp = defineOp({
+  name: 'set_atom_label',
+  description: 'Show or hide the name label of one atom (a click with the navigate tool).',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    atoms: atoms('The atom, chain.resid.atom, e.g. A.20.CA.'),
+    on: boolean('True shows the label, false hides it.'),
+  },
+  mutates: true,
+  describe: (a, n) => `${a.on ? 'Label' : 'Unlabel'} ${atomList(a.atoms, ' ')} in ${n('objId')}`,
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    if (args.atoms.length !== 1) return { ok: false, error: 'Give exactly one atom, e.g. A.20.CA.' }
+    const scene = getSceneOrNull(ctx, oc.sceneId)
+    const mol = scene?.getObject(args.objId) as MolCoord | null
+    if (!scene || !mol) return { ok: false, error: NO_MOLCOORD }
+    const atom = atomOf(mol, args.atoms[0])
+    if (!atom) return { ok: false, error: 'The atom was not found; check the chain, residue and atom name.' }
+    try {
+      withUndoTxn(scene, args.on ? 'Add atom label' : 'Remove atom label', () => setAtomLabel(mol, atom.id, args.on))
+    } catch {
+      return { ok: false, error: 'The label could not be changed.' }
+    }
+    return { ok: true }
+  },
+})
+
+export const setAtomLabelsOp = defineOp({
+  name: 'set_atom_labels',
+  description: 'Label every atom of a selection with a format, or take their labels off (PyMOL\'s label).',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    selection: selection('The atoms to label.'),
+    format: optional(string('Label format, e.g. "{resn}{resi}"; "" uses the renderer\'s default. Null takes the labels off.')),
+    rendererName: optional(string('Name of the name label renderer; made when the object has none. Null is the unnamed one the navigate tool uses.')),
+  },
+  mutates: true,
+  describe: (a, n) => `${a.format === null ? 'Unlabel' : 'Label'} ${a.selection} in ${n('objId')}`,
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    return normalizeServiceResult(
+      setAtomLabels(ctx, { sceneId: oc.sceneId, objId: args.objId, selection: args.selection, format: args.format, rendererName: args.rendererName ?? '' }),
+      'The labels could not be changed.',
+    )
+  },
+})
+
+export const addBond = defineOp({
+  name: 'add_bond',
+  description: 'Add a bond between two atoms of a MolCoord object (the Add bond tool).',
+  params: { objId: objectId('Uid of the MolCoord object.', 'MolCoord'), atoms: atoms(BOND_ATOMS) },
+  mutates: true,
+  describe: (a, n) => `Add bond ${atomList(a.atoms, ' - ')} in ${n('objId')}`,
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    const found = bondAtoms(ctx, oc.sceneId, args.objId, args.atoms)
+    if ('error' in found) return { ok: false, error: found.error }
+    try {
+      const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager
+      withUndoTxn(found.scene, 'Add bond', () => { mgr.makeBond(found.mol, found.a.id, found.b.id) })
+    } catch {
+      return { ok: false, error: 'The bond could not be added.' }
+    }
+    return { ok: true }
+  },
+})
+
+export const removeBond = defineOp({
+  name: 'remove_bond',
+  description: 'Remove the bond between two atoms of a MolCoord object.',
+  params: { objId: objectId('Uid of the MolCoord object.', 'MolCoord'), atoms: atoms(BOND_ATOMS) },
+  mutates: true,
+  describe: (a, n) => `Remove bond ${atomList(a.atoms, ' - ')} in ${n('objId')}`,
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    const found = bondAtoms(ctx, oc.sceneId, args.objId, args.atoms)
+    if ('error' in found) return { ok: false, error: found.error }
+    try {
+      const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager
+      withUndoTxn(found.scene, 'Remove bond(s)', () => { mgr.removeBond(found.mol, found.a.id, found.b.id) })
+    } catch {
+      return { ok: false, error: 'There is no bond to remove between those atoms.' }
+    }
+    return { ok: true }
+  },
+})
+
+export const setSymmetry = defineOp({
+  name: 'set_symmetry',
+  description: 'Set the crystal symmetry of a MolCoord object: the unit cell and the space group number.',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    a: real('Cell a, in angstroms.'),
+    b: real('Cell b, in angstroms.'),
+    c: real('Cell c, in angstroms.'),
+    alpha: real('Cell alpha, in degrees.'),
+    beta: real('Cell beta, in degrees.'),
+    gamma: real('Cell gamma, in degrees.'),
+    spaceGroup: integer('Space group number, e.g. 19 for P 21 21 21.'),
+  },
+  mutates: true,
+  describe: (a, n) => `Set symmetry of ${n('objId')}${a.spaceGroup !== null ? `: space group ${a.spaceGroup}` : ''}`,
+  expose: EXPOSE,
+  group: 'molecule',
+  format: () => [],
+  run(ctx, args, oc) {
+    return normalizeServiceResult(
+      changeSymmetryInfo(ctx, {
+        sceneId: oc.sceneId, objId: args.objId,
+        a: args.a, b: args.b, c: args.c, alpha: args.alpha, beta: args.beta, gamma: args.gamma,
+        nsg: args.spaceGroup,
+      }),
+      'The symmetry could not be set.',
+    )
+  },
+})
+
+// --- Renderers and surfaces ---
+
+export const createGroup = defineOp({
+  name: 'create_group',
+  description: 'Make an empty renderer group on an object, to gather its renderers (New Group in the scene tree).',
+  params: {
+    objId: objectId('Uid of the object.'),
+    name: optional(string('Name of the group. Null picks group1, group2, ...')),
+  },
+  mutates: true,
+  describe: (a, n) => `New group${a.name !== null ? ` ${a.name}` : ''} in ${n('objId')}`,
+  expose: EXPOSE,
+  group: 'renderers',
+  run(ctx, args, oc) {
+    const res = createRendererGroup(ctx, { sceneId: oc.sceneId, objId: args.objId, name: args.name ?? undefined })
+    if (!res.ok) return { ok: false, error: 'The group could not be made (is the name taken?).' }
+    return { ok: true, data: { rendererId: res.newRendId, name: res.newName } }
+  },
+})
+
+export const genSurfaceObj = defineOp({
+  name: 'create_surface_from_map',
+  description: 'Turn the contour surface of a density map (an isosurf renderer) into a surface object of its own (Generate surface obj).',
+  params: { rendId: rendererId('Uid of the isosurf renderer.') },
+  mutates: true,
+  describe: (_a, n) => `Make a surface object from ${n('rendId')}`,
+  expose: EXPOSE,
+  group: 'maps',
+  run(ctx, args, oc) {
+    const res = generateRendererSurfObj(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
+    if (!res.ok) return { ok: false, error: 'Only a map contour drawn as a surface (an isosurf renderer) can make a surface object.' }
+    return { ok: true, data: { objectId: res.newObjId, name: res.newObjName } }
+  },
+})
+
+export const regenSurface = defineOp({
+  name: 'recalc_surface',
+  description: 'Compute a molecular surface object again from its molecule, optionally at another density.',
+  params: {
+    surfId: objectId('Uid of the surface object.'),
+    density: optional(real('Points per angstrom. Null keeps the current density.')),
+    backend: optional(enumOf(['auto', 'meshms', 'ball'], 'Surface algorithm. Null or auto lets CueMol choose.')),
+  },
+  mutates: true,
+  describe: (_a, n) => `Recompute surface ${n('surfId')}`,
+  expose: EXPOSE,
+  group: 'surfaces',
+  format: () => [],
+  run(ctx, args, oc) {
+    const info = getMolSurfRegenInfo(ctx, { sceneId: oc.sceneId, objId: args.surfId })
+    if (!info.ok || !info.canRegen) {
+      return { ok: false, error: info.ok && !info.origMolFound ? `Its MolCoord object (${info.origMol}) is not in the scene.` : 'This object cannot be regenerated.' }
+    }
+    return normalizeServiceResult(
+      regenMolSurf(ctx, {
+        sceneId: oc.sceneId,
+        objId: args.surfId,
+        density: args.density ?? info.density,
+        ...(args.backend !== null ? { backend: args.backend } : {}),
+      }),
+      'The surface could not be regenerated.',
+    )
+  },
+})
+
+const INTR_MODES: Record<number, string> = { 1: 'distance', 2: 'angle', 3: 'torsion' }
+
+export const listInteractions = defineOp({
+  name: 'list_interactions',
+  description: 'List the distances, angles and torsions an interaction renderer draws, numbered from 1.',
+  params: { rendId: rendererId('Uid of the interaction renderer.') },
+  mutates: false,
+  expose: EXPOSE,
+  group: 'analysis',
+  format: (data) => (data as { entries: { number: number; mode: string; atoms: string[] }[] }).entries.map((e) => `${e.number}  ${e.mode}  ${e.atoms.join('  ')}`),
+  run(ctx, args, oc) {
+    const res = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
+    if (!res.ok) return { ok: false, error: 'That is not an interaction renderer.' }
+    return { ok: true, data: { entries: numbered(res.entries.map((e) => ({ mode: INTR_MODES[e.mode] ?? String(e.mode), atoms: e.atoms }))) } }
+  },
+})
+
+export const removeInteraction = defineOp({
+  name: 'remove_interaction',
+  description: 'Remove one distance, angle or torsion from an interaction renderer, by its number in list_interactions.',
+  params: {
+    rendId: rendererId('Uid of the interaction renderer.'),
+    number: integer('Its number in list_interactions (from 1).'),
+  },
+  mutates: true,
+  describe: (a, n) => `Remove interaction ${a.number} from ${n('rendId')}`,
+  expose: EXPOSE,
+  group: 'analysis',
+  format: () => [],
+  run(ctx, args, oc) {
+    const list = listAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId })
+    if (!list.ok) return { ok: false, error: 'That is not an interaction renderer.' }
+    const entry = pickByNumber(list.entries, args.number, 'interaction', 'list_interactions')
+    if (typeof entry === 'string') return { ok: false, error: entry }
+    const res = removeAtomIntrDefs(ctx, { sceneId: oc.sceneId, rendId: args.rendId, ids: [entry.id] })
+    return res.ok ? { ok: true } : { ok: false, error: 'The interaction could not be removed.' }
+  },
+})
+
+// --- Paint entries ---
+
+/** The renderer's paint entries, or why it has none. */
+/** A colouring op's target, as the colouring services take it. */
+interface PaintAt {
+  sceneId: number
+  rendId: number
+  targetKind: ColoringTargetKind
+}
+
+const paintAt = (sceneId: number, args: { nodeId: number; nodeType: ColoringTargetKind }): PaintAt => ({
+  sceneId,
+  rendId: args.nodeId,
+  targetKind: args.nodeType,
+})
+
+function paintEntries(ctx: Parameters<typeof getRendererColoringState>[0], at: PaintAt): { entries: PaintEntryDto[] } | { error: string } {
+  const state = getRendererColoringState(ctx, at)
+  if (!state.ok) return { error: at.targetKind === 'object' ? NO_OBJECT : NO_RENDERER }
+  if (state.className !== 'PaintColoring') return { error: `That ${at.targetKind} is not coloured by paint; add_paint makes it so.` }
+  return { entries: state.paintEntries }
+}
+
+export const listPaint = defineOp({
+  name: 'list_paint',
+  description: 'List the paint entries (selection and colour) of a renderer or an object, numbered from 1. An atom takes the colour of the first entry that matches it.',
+  params: coloringTarget('whose paint to list'),
+  mutates: false,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: (data) => (data as { entries: { number: number; selStr: string; colorValue: string }[] }).entries.map((e) => `${e.number}  ${e.colorValue}  ${e.selStr}`),
+  run(ctx, args, oc) {
+    const p = paintEntries(ctx, paintAt(oc.sceneId, args))
+    if ('error' in p) return { ok: false, error: p.error }
+    return { ok: true, data: { entries: numbered(p.entries.map(({ selStr, colorValue }) => ({ selStr, colorValue }))) } }
+  },
+})
+
+const PAINT_NUMBER = 'The entry\'s number in list_paint (from 1).'
+
+/** Resolve a paint entry number to its zero-based index, or fail. */
+function paintIndex(ctx: Parameters<typeof getRendererColoringState>[0], at: PaintAt, n: number): { entry: PaintEntryDto; count: number } | { error: string } {
+  const p = paintEntries(ctx, at)
+  if ('error' in p) return p
+  const e = pickByNumber(p.entries, n, 'paint entry', 'list_paint')
+  return typeof e === 'string' ? { error: e } : { entry: e, count: p.entries.length }
+}
+
+export const updatePaint = defineOp({
+  name: 'set_paint',
+  description: 'Change the selection or the colour of one paint entry.',
+  params: {
+    ...coloringTarget('the entry belongs to'),
+    number: integer(PAINT_NUMBER),
+    selection: optional(selection('New selection. Null keeps it.')),
+    color: optional(string('New colour. Null keeps it.')),
+  },
+  mutates: true,
+  describe: (a, n) => `Change paint entry ${a.number} of ${n('nodeId')}`,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: () => [],
+  run(ctx, args, oc) {
+    const target = paintAt(oc.sceneId, args)
+    const at = paintIndex(ctx, target, args.number)
+    if ('error' in at) return { ok: false, error: at.error }
+    return normalizeServiceResult(
+      updatePaintEntry(ctx, {
+        ...target, idx: at.entry.idx,
+        selStr: args.selection ?? at.entry.selStr,
+        colorValue: args.color ?? at.entry.colorValue,
+      }),
+      'The paint entry could not be changed.',
+    )
+  },
+})
+
+export const addPaintAt = defineOp({
+  name: 'add_paint_at',
+  description:
+    'Insert one paint entry at a position (the paint deck\'s Add and Paste). Unlike add_paint, it ' +
+    'leaves the object\'s current selection as it is.',
+  params: {
+    ...coloringTarget('to paint'),
+    selection: selection('Which atoms the entry colours.'),
+    color: string('Colour of the entry.'),
+    at: optional(integer('Insert before this entry of list_paint (from 1). Null appends at the end.')),
+  },
+  mutates: true,
+  describe: (a, n) => `Insert paint ${a.selection} ${a.color} in ${n('nodeId')}`,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: () => [],
+  run(ctx, args, oc) {
+    const target = paintAt(oc.sceneId, args)
+    const p = paintEntries(ctx, target)
+    if ('error' in p) return { ok: false, error: p.error }
+    const count = p.entries.length
+    if (args.at !== null && (args.at < 1 || args.at > count + 1)) {
+      return { ok: false, error: `at must be from 1 to ${count + 1} (list_paint has ${count}).` }
+    }
+    return normalizeServiceResult(
+      addPaintEntry(ctx, { ...target, idx: args.at === null ? count : args.at - 1, selStr: args.selection, colorValue: args.color }),
+      'The paint entry could not be inserted. Check the selection and the colour.',
+    )
+  },
+})
+
+export const setMultiGradNodesOp = defineOp({
+  name: 'set_multigrad_nodes',
+  description:
+    'Set the whole gradient of a renderer coloured by multigrad: each node a map value and the ' +
+    'colour at it, as "value colour; value colour; ...".',
+  params: {
+    rendId: rendererId('Uid of the map or surface renderer coloured by multigrad.'),
+    nodes: string('The nodes, e.g. "-1 blue; 0 white; 1 red".'),
+  },
+  mutates: true,
+  describe: (_a, n) => `Set the gradient of ${n('rendId')}`,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: () => [],
+  run(ctx, args, oc) {
+    const nodes = parseMultiGradNodes(args.nodes)
+    if ('error' in nodes) return { ok: false, error: `nodes: ${nodes.error}` }
+    const res = setMultiGradNodes(ctx, { sceneId: oc.sceneId, rendId: args.rendId, nodes })
+    return res.ok ? { ok: true } : { ok: false, error: `The gradient could not be set: ${res.error}` }
+  },
+})
+
+export const removePaint = defineOp({
+  name: 'remove_paint',
+  description: 'Remove one paint entry.',
+  params: { ...coloringTarget('the entry belongs to'), number: integer(PAINT_NUMBER) },
+  mutates: true,
+  describe: (a, n) => `Remove paint entry ${a.number} of ${n('nodeId')}`,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: () => [],
+  run(ctx, args, oc) {
+    const target = paintAt(oc.sceneId, args)
+    const at = paintIndex(ctx, target, args.number)
+    if ('error' in at) return { ok: false, error: at.error }
+    return normalizeServiceResult(
+      removePaintEntry(ctx, { ...target, idx: at.entry.idx }),
+      'The paint entry could not be removed.',
+    )
+  },
+})
+
+export const movePaint = defineOp({
+  name: 'move_paint',
+  description: 'Move a paint entry to another number in the list (an atom takes the colour of the first entry that matches it).',
+  params: {
+    ...coloringTarget('the entry belongs to'),
+    number: integer(PAINT_NUMBER),
+    ...MOVE_DEST_PARAMS,
+  },
+  mutates: true,
+  describe: (a, n) => `Move paint entry ${a.number} ${moveText(a)} on ${n('nodeId')}`,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: () => [],
+  run(ctx, args, oc) {
+    const target = paintAt(oc.sceneId, args)
+    const at = paintIndex(ctx, target, args.number)
+    if ('error' in at) return { ok: false, error: at.error }
+    const to = moveTarget(args, args.number - 1, at.count, 'list_paint')
+    if (typeof to === 'string') return { ok: false, error: to }
+    return normalizeServiceResult(
+      movePaintEntry(ctx, { ...target, fromIdx: at.entry.idx, toIdx: to }),
+      'The paint entry could not be moved.',
+    )
+  },
+})
+
+export const colorByElepot = defineOp({
+  name: 'set_elepot_coloring',
+  description:
+    'Colour a molecular surface renderer by an electrostatic potential map (made by ' +
+    'calc_elepot): red for negative, blue for positive, white between, as in the Coloring panel.',
+  params: {
+    rendId: rendererId('Uid of the surface renderer.'),
+    map: optional(string('Name of the potential map object. Null uses the one already set, or the first in the scene.')),
+    low: optional(real('Potential (kT/e) drawn in the low colour. Null keeps it.')),
+    high: optional(real('Potential (kT/e) drawn in the high colour. Null keeps it.')),
+  },
+  mutates: true,
+  describe: (_a, n) => `Colour ${n('rendId')} by potential`,
+  expose: EXPOSE,
+  group: 'coloring',
+  format: () => [],
+  run(ctx, args, oc) {
+    const base = { sceneId: oc.sceneId, rendId: args.rendId }
+    if (!setRendererColoring(ctx, { ...base, coloringId: 'paint-type-elepot' }).ok) {
+      return { ok: false, error: 'Only a molecular surface renderer (molsurf, dsurface) can be coloured by potential.' }
+    }
+    const writes: [string, string | number][] = []
+    if (args.map !== null) writes.push(['elepot', args.map])
+    if (args.low !== null) writes.push(['lowpar', args.low])
+    if (args.high !== null) writes.push(['highpar', args.high])
+    for (const [propName, propValue] of writes) {
+      if (!setRendererElepotProp(ctx, { ...base, propName, propValue }).ok) {
+        return { ok: false, error: `${propName} could not be set.` }
+      }
+    }
+    return { ok: true }
+  },
+})
+
+// --- Maps and export ---
+
+export const recenterMap = defineOp({
+  name: 'recenter_map',
+  description: 'Redraw a density map\'s contour around the centre of the view (Re-centre in the map pane).',
+  params: { rendId: rendererId('Uid of the map renderer.') },
+  mutates: true,
+  expose: EXPOSE,
+  group: 'maps',
+  format: () => [],
+  run(ctx, args, oc) {
+    const rend = getSceneOrNull(ctx, oc.sceneId)?.getRenderer(args.rendId) as { type_name?: string } | null
+    let typeName = ''
+    try { typeName = rend?.type_name ?? '' } catch { /* not a renderer we can read */ }
+    if (!MAP_RENDERER_TYPES.has(typeName)) {
+      return { ok: false, error: 'That is not a map renderer (contour or isosurf).' }
+    }
+    return normalizeServiceResult(
+      redrawMapCenter(ctx, { sceneId: oc.sceneId, rendId: args.rendId, viewId: oc.viewId }),
+      'The map could not be re-centred.',
+    )
+  },
+})
+
+const EXPORT_EXT = { png: '.png', pov: '.pov', stl: '.stl', mqo: '.mqo' } as const
+
+export const exportSceneOp = defineOp({
+  name: 'export_scene',
+  description:
+    'Export the view or the scene to a file (File > Export): png (with transparency and a DPI ' +
+    'if asked), pov (POV-Ray scene), stl or mqo (3D models).',
+  params: {
+    path: path('The file to write.'),
+    format: optional(enumOf(['png', 'pov', 'stl', 'mqo'], 'Null takes it from the file extension, else png.')),
+    width: optional(integer('Width in pixels. Null uses the view\'s size.')),
+    height: optional(integer('Height in pixels. Null uses the view\'s size.')),
+    transparent: optional(boolean('png: a transparent background. Null is false.')),
+    dpi: optional(integer('png: the resolution written in the file. Null leaves it out.')),
+  },
+  mutates: false,
+  expose: EXPOSE,
+  group: 'files',
+  run(ctx, args, oc): OpOutcome {
+    const ext = args.path.trim().toLowerCase().match(/\.(png|pov|stl|mqo)$/)?.[1] as keyof typeof EXPORT_EXT | undefined
+    const format = args.format ?? ext ?? 'png'
+    const target = outputPath(oc, args.path, EXPORT_EXT[format])
+    if ('error' in target) return { ok: false, error: target.error }
+    const info = getSceneExportInfo(ctx, { sceneId: oc.sceneId, viewId: oc.viewId })
+    if (!info.ok) return { ok: false, error: 'The view could not be read for export.' }
+    const res = exportScene(ctx, {
+      sceneId: oc.sceneId,
+      viewId: oc.viewId,
+      filePath: target.path,
+      exporterName: format,
+      width: args.width ?? info.width,
+      height: args.height ?? info.height,
+      ...(args.transparent !== null ? { alpha: args.transparent } : {}),
+      ...(args.dpi !== null ? { resoln: args.dpi } : {}),
+    })
+    return res.ok ? { ok: true, data: { path: target.path } } : { ok: false, error: `The ${format} file could not be written.` }
+  },
+})
+
+export const EDIT_OPS = [
+  resetProp, clearUndo, changeResid, addBond, removeBond, setAtomLabelOp, setAtomLabelsOp, setSymmetry,
+  createGroup, genSurfaceObj, regenSurface, listInteractions, removeInteraction,
+  listPaint, updatePaint, addPaintAt, removePaint, setMultiGradNodesOp, movePaint, colorByElepot, recenterMap, exportSceneOp,
+]

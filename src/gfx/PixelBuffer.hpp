@@ -54,6 +54,11 @@ private:
     /// buffer ID (for impl)
     mutable PixRep *m_pPixRep;
 
+    /// Point of the image placed at the draw position, as fractions of the
+    /// width / height: (0,0) is the bottom-left corner, (1,1) the top-right.
+    float m_anchorX = 0.0f;
+    float m_anchorY = 0.0f;
+
 public:
     PixelBuffer()
         : m_nWidth(0), m_nHeight(0), m_nDepth(8), m_pData(nullptr), m_pPixRep(nullptr)
@@ -84,6 +89,20 @@ public:
     {
         return m_nHeight;
     }
+    void setAnchor(float x, float y)
+    {
+        m_anchorX = x;
+        m_anchorY = y;
+    }
+    float getAnchorX() const
+    {
+        return m_anchorX;
+    }
+    float getAnchorY() const
+    {
+        return m_anchorY;
+    }
+
     int getDepth() const
     {
         return m_nDepth;

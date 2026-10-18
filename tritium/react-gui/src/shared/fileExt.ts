@@ -53,3 +53,13 @@ export function matchExtLength(filePath: string, exts: readonly string[]): numbe
     }
     return best
 }
+
+/**
+ * A file's name without its directory or final extension (the path stem):
+ * the default name of what it loads. Mirrors C++
+ * LoadObjectCommand::createDefaultObjName.
+ */
+export function fileStem(filePath: string): string {
+  const base = filePath.split(/[\\/]/).pop() ?? filePath
+  return base.replace(/\.[^.]+$/, '')
+}

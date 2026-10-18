@@ -177,6 +177,7 @@ add_executable(test_molvis
   modules/molvis/test_tracestickrenderer.cpp
   modules/molvis/test_smoothspline.cpp
   modules/molvis/test_script_index_checks.cpp
+  modules/molvis/test_tubegpumesh.cpp
 )
 target_include_directories(test_molvis PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -186,6 +187,7 @@ target_include_directories(test_molvis PRIVATE
 )
 target_compile_definitions(test_molvis PRIVATE
   CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+  CUEMOL2_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tests/test_data"
 )
 target_link_libraries(test_molvis PRIVATE molvis molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
@@ -335,6 +337,7 @@ gtest_discover_tests(test_importers PROPERTIES LABELS "test_importers")
 add_executable(test_molanl
   modules/molanl/test_main.cpp
   modules/molanl/test_ssm_superpose.cpp
+  modules/molanl/test_usalign_superpose.cpp
   modules/molanl/test_contactmap.cpp
 )
 target_include_directories(test_molanl PRIVATE

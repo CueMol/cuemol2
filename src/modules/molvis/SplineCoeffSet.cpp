@@ -50,6 +50,7 @@ void SplineCoeffSet::cleanup()
     delete p;
   }
   m_list.erase(m_list.begin(), m_list.end());
+  m_shortResids.clear();
 
   //if (m_pSmoothEval!=NULL)
   //delete m_pSmoothEval;
@@ -124,6 +125,12 @@ void SplineCoeffSet::endSegment(MolResidue *pres)
 {
   MB_ASSERT(m_pCurCoeff!=NULL);
   if (!m_pCurCoeff->generate()) {
+    // 1 or 2 residues: no spline (see SplineCoeff::generate()); remember them
+    // so that the renderer skips the segment quietly
+    if (m_pCurCoeff->getResidCount()<=2) {
+      for (int i=0; i<m_pCurCoeff->getResidCount(); ++i)
+        m_shortResids.insert(m_pCurCoeff->getResidue(i));
+    }
     delete m_pCurCoeff;
     m_pCurCoeff = NULL;
     return;

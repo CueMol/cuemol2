@@ -10,6 +10,7 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeColor } from '@renderer/worker/server/services/helpers/makeColor';
 import { resolveColoringTarget, isElepotCapable } from './colorTargets';
@@ -107,6 +108,15 @@ export function setRendererElepotProp(
     }
 
     withUndoTxn(scene, 'Change Elepot coloring', () => {
+        // A surface property of the renderer, which set_node_prop writes too.
+        if (args.targetKind !== 'object') {
+            recordOp(ctx, scene.uid, 'set_node_prop', {
+                nodeType: 'renderer',
+                nodeId: args.rendId,
+                prop: args.propName,
+                value: String(args.propValue),
+            }, ['nodeId']);
+        }
         // Surface props live directly on the renderer's native wrapper;
         // use the wrapper's setProp escape hatch (mirrors UXP
         // `rend._wrapped.setProp(propname, val)`).

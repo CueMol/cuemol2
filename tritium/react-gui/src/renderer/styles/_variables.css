@@ -104,6 +104,33 @@
      lines overlap, and a translucent highlight shows each overlap as a darker
      stripe. */
   --console-selection-bg: #2d4f73;
+  /* The band behind an echoed command, which marks where each command's
+     output starts. An alias, so each theme takes its own hover tone. */
+  --console-echo-bg: var(--bg-hover);
+  /* Tab's candidates by kind, after ls / zsh colours: directories, programs,
+     links. Aliases, so both themes follow their own accents. */
+  --console-dir: var(--accent);
+  --console-exec: var(--accent-green);
+  --console-link: var(--accent-yellow);
+  /* Between the columns of Tab's candidates: two characters, as
+     @cuemol/console-kit GRID_GAP lays them out. */
+  --console-completion-gap: 2ch;
+  /* Markdown output (styles/_markdown-kit.css), after a terminal's: headings
+     and strong text bold in the brightest foreground, code spans lavender.
+     Bold is a stroke, not a weight: the console font (on a Japanese macOS,
+     `monospace` is Osaka-Mono) may have no bold face, and Chromium then
+     swaps in a proportional one of another size. */
+  --md-bold-stroke: 0.04em;
+  --md-strong: #ffffff;
+  --md-code: #afafff;
+  --md-rule: var(--border);
+  /* Tables: a framed card with a raised head, an accent line under it, and
+     faintly striped rows, so a long property list reads row by row. */
+  --md-table-head-bg: var(--bg-elevated);
+  --md-table-head-rule: var(--accent);
+  --md-table-stripe: rgba(255, 255, 255, 0.03);
+  --md-table-hover: var(--bg-hover);
+  --md-table-key: var(--text-strong);
   /* Inline status text (a field note, a panel warning line): why-based
      aliases so a surface never picks a raw accent. */
   --text-warning: var(--log-warn);
@@ -272,6 +299,15 @@
      the hidden-palette edge tab). One value for both themes. */
   --shadow-overlay: 0 2px 8px rgba(0, 0, 0, 0.25);
 
+  /* Status bar height; the notification overlay sits just above it. */
+  --statusbar-h: 24px;
+  /* Notification toast / center width (VS Code's is 450px at its default
+     font size; ours is narrower to match the denser UI). */
+  --notification-w: calc(340px * var(--ui-scale));
+  /* Notification overlay: above the Allotment sashes (35), below Blueprint
+     portals (40), so a dialog opened from a notification covers it. */
+  --z-notification: 38;
+
   /* Blender-style dropdown chevron. Single source for the glyph used by both
      the native-select caret (CSS mask in _form-kit.css) and the
      dropdown-trigger buttons (.h3-form-caret). Thin stroked V, drawn as a mask so
@@ -403,6 +439,9 @@
      as-is here so splitting the two changes nothing in this theme. */
   --text-disabled: #9a9da5;
   --text-strong: #1c2127;
+  --md-strong: var(--text-strong);
+  --md-code: var(--accent);
+  --md-table-stripe: rgba(0, 0, 0, 0.03);
 
   /* Accent — slightly deeper for contrast on light backgrounds */
   --accent: #2979b5;

@@ -33,6 +33,8 @@ export interface CommandMap {
   [CmdId.UiOpenObjDialog]:     { args: void;            result: void }
   [CmdId.UiOpenSceneDialog]:   { args: void;            result: void }
   [CmdId.UiAboutDialog]:       { args: void;            result: void }
+  [CmdId.AppCheckForUpdates]:  { args: void;            result: void }
+  [CmdId.DevUpdateSample]:     { args: { state: string }; result: void }
   [CmdId.UiChangeChainIdDialog]: { args: void;          result: void }
   [CmdId.UiDeleteMolDialog]:   { args: void;            result: void }
   [CmdId.UiChangeResidueIndexDialog]: { args: void;     result: void }
@@ -155,6 +157,19 @@ export interface CommandMap {
   [CmdId.CameraApplyToView]:    { args: { name: string; withVisFlags: boolean }; result: void }
   [CmdId.CameraEditVisFlags]:   { args: { name: string };        result: void }
   [CmdId.CameraClearVisFlags]:  { args: { name: string };        result: void }
+
+  // Action history. Showing a step is read-only; only GoToStep moves the
+  // undo stack (null = the initial state, every step undone).
+  // entryIndex: one op of the step (an op row) rather than the step.
+  [CmdId.ActionsShowStep]:      { args: { stepId: number; entryIndex?: number }; result: void }
+  [CmdId.ActionsGoToStep]:      { args: { stepId: number | null }; result: void }
+  [CmdId.ActionsSave]:          { args: { stepIds: number[] };   result: void }
+  [CmdId.ActionsCopy]:          { args: { stepIds: number[] };   result: boolean }
+  [CmdId.ActionsSaveToLibrary]: { args: { stepIds: number[] }; result: void }
+  [CmdId.LibraryRun]:           { args: { file: string; macro?: string; targetIds?: number[] }; result: void }
+  [CmdId.LibraryCopyMacro]:     { args: { file: string; macro: string }; result: void }
+  [CmdId.LibraryRename]:        { args: { file: string }; result: void }
+  [CmdId.LibraryDelete]:        { args: { file: string }; result: void }
 }
 
 /** A style-set row: its uid, the scope it lives in, and its display name. */

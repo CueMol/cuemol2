@@ -12,6 +12,9 @@
  */
 
 /** Which server, and therefore which format, a coordinate file comes from. */
+/** A four-character PDB accession code: a digit, then three letters or digits. */
+export const PDB_ID_RE = /^[0-9][0-9a-z]{3}$/i
+
 export type CoordServerType = 'RCSB_CIF' | 'RCSB_PDB'
 
 export interface CoordUrlSpec {

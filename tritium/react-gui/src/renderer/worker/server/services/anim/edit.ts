@@ -29,7 +29,8 @@ import {
   type AnimGraphRead,
 } from "./resolve";
 import { undoTxnResult } from "../withUndoTxn";
-import { findByUid } from "./detail";
+import { animElementSpec, findByUid } from "./detail";
+import { recordOp } from "@renderer/worker/server/actions/serviceOps";
 import { applyTiming } from "./elementWrites";
 import { readMgrState } from "./read";
 import type { TimeRefNode } from "./timeRefGraph";
@@ -57,6 +58,18 @@ function classForAddType(type: AnimAddType): string {
       return type; // SimpleSpin / CamMotion / MolAnim / NoopAnimObj
   }
 }
+
+/** The `add_anim` type word of an Add-menu type id. */
+const ADD_TYPE_WORDS: Readonly<Record<AnimAddType, string>> = {
+  SimpleSpin: "spin",
+  CamMotion: "camera",
+  ShowAnim: "show",
+  HideAnim: "hide",
+  SlideInAnim: "slidein",
+  SlideOutAnim: "slideout",
+  MolAnim: "mol",
+  NoopAnimObj: "wait",
+};
 
 /** Generate a unique element name `<base><n>` not already in the manager. */
 function uniqueElementName(mgr: AnimMgr, base: string): string {
@@ -116,6 +129,15 @@ export function setElementTime(
     return fail("start/end must be finite milliseconds", "invalid-args");
   }
   return undoTxnResult(scene, "Move animation element", () => {
+    const element = animElementSpec(mgr, args.uid);
+    if (element !== null) {
+      // applyTiming orders the pair; set_anim_time refuses an unordered one.
+      recordOp(ctx, scene.uid, "set_anim_time", {
+        element,
+        startMs: Math.min(args.startMs, args.endMs),
+        endMs: Math.max(args.startMs, args.endMs),
+      });
+    }
     applyTiming(ctx, found.obj, { startMs: args.startMs, endMs: args.endMs });
     return ok();
   });
@@ -202,6 +224,17 @@ export function addElement(ctx: WorkerContext, args: AnimAddElementArgs): AnimAd
     obj.end = tvE;
     applyAddTypeDefaults(obj, args.type);
 
+    // The name is recorded so later records that name this element find it.
+    const word = ADD_TYPE_WORDS[args.type];
+    if (word !== undefined) {
+      const beforeUid = insertAt < size ? safeNum(() => (mgr.getAt(insertAt) as AnimObj).uid) : null;
+      recordOp(ctx, scene.uid, "add_anim", {
+        type: word,
+        name: safeStr(() => obj.name),
+        before: beforeUid === null ? null : animElementSpec(mgr, beforeUid),
+      });
+    }
+
     if (insertAt < size) mgr.insertBefore(insertAt, obj);
     else mgr.append(obj);
     return ok({ uid: obj.uid, index: insertAt });
@@ -258,6 +291,8 @@ export function removeElement(
   if (!found) return goneFail();
   const read = readAnimGraph(mgr);
   return undoTxnResult(scene, "Delete animation element", () => {
+    const element = animElementSpec(mgr, args.uid);
+    if (element !== null) recordOp(ctx, scene.uid, "remove_anim", { element });
     detachDependents(ctx, read, read.graph.byUid.get(args.uid));
     if ((mgr.removeAt(found.index) as unknown) === false) return fail("removeAt failed", "native");
     return ok();
@@ -283,6 +318,8 @@ export function moveElement(
   const to = Math.max(0, Math.min(size - 1, args.to));
   if (to === from) return ok();
   return undoTxnResult(scene, "Reorder animation element", () => {
+    const element = animElementSpec(mgr, args.uid);
+    if (element !== null) recordOp(ctx, scene.uid, "move_anim", { element, by: to - from, to: null, end: null });
     mgr.removeAt(from);
     if (to < mgr.size) mgr.insertBefore(to, found.obj);
     else mgr.append(found.obj);

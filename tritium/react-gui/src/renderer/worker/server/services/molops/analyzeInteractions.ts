@@ -26,6 +26,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import {
     ATOMINTR_TYPE,
     ATOMINTR_STYLES,
@@ -155,6 +156,18 @@ export function analyzeInteractions(
     let count = 0;
     try {
         withUndoTxn(scene, 'Define Label(s)', () => {
+            recordOp(ctx, scene.uid, 'analyze_interactions', {
+                objId: args.objId,
+                selection: args.selStr,
+                maxDist: rmax,
+                includeCarbon: !args.hbondOnly,
+                minDist: rmin,
+                maxLabels: nmax,
+                labelSet: name,
+                obj2Id: mol2 ? args.objId2 : null,
+                // Without a second object, a second selection is in molecule 1.
+                selection2: needSel2 ? (args.selStr2 ?? '') : null,
+            }, ['objId', 'obj2Id']);
             let rend = (mol as unknown as MolCoord).getRendererByNameType(
                 name, ATOMINTR_TYPE,
             ) as AtomIntrRenderer | null;

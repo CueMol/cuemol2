@@ -1,0 +1,187 @@
+/* --- PyM console (bottom tab: transcript above, prompt below) --- */
+.console-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+.console-toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Says a command is in flight. The prompt cannot say it by going disabled:
+   that would take the focus away from it (see ConsolePanel.tsx). */
+.console-running {
+  color: var(--text-muted);
+}
+
+.console-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.console-transcript {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  color: var(--console-text);
+}
+
+/* Focusable only so that a click keeps focus here for Cmd+A; it is not a
+   control, so no focus ring (the prompt has none either). */
+.console-transcript:focus {
+  outline: none;
+}
+
+.console-transcript ::selection {
+  background: var(--console-selection-bg);
+}
+
+/* A scrolling flex column squashes its children by default, which turns a
+   long transcript into unreadable slivers. Length is the scrollbar's job. */
+.console-transcript > * {
+  flex-shrink: 0;
+}
+
+.console-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--console-text);
+}
+
+/* The echoed command, on a band the width of the transcript and set off from
+   the output before it, so each command and what it printed read as one
+   block. */
+.console-line-echo {
+  margin: 0 calc(-1 * var(--space-3));
+  padding: 0 var(--space-3);
+  background: var(--console-echo-bg);
+}
+
+.console-line + .console-line-echo {
+  margin-top: var(--space-4);
+}
+
+.console-line-warning {
+  color: var(--text-warning);
+}
+
+.console-line-error {
+  color: var(--text-error);
+}
+
+/* Formatted output (help): soft line breaks in its source are not breaks. */
+.md.console-line {
+  white-space: normal;
+}
+
+.console-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  height: 100%;
+  color: var(--text-muted);
+}
+
+.console-empty-text {
+  text-align: center;
+}
+
+/* What the last Tab listed: replaced by the next Tab, cleared by typing,
+   Enter or Esc. Above the prompt and out of the transcript, so it is always
+   the latest list; long lists scroll here rather than push the prompt away.
+   Candidates are a column-major grid per group (columns and rows come from
+   @cuemol/console-kit layoutSections, set inline). */
+.console-completions {
+  flex: 0 1 auto;
+  max-height: 40%;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border-top: 1px solid var(--border);
+  color: var(--console-text);
+}
+
+.console-completion-heading {
+  color: var(--console-text-dim);
+}
+
+.console-completion-grid {
+  display: grid;
+  grid-auto-flow: column;
+  column-gap: var(--console-completion-gap);
+}
+
+.console-completion {
+  white-space: pre;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* Colour only: a bold weight the console font lacks is drawn in another
+   font, wider than the ch the grid is measured in. */
+.console-completion-dir {
+  color: var(--console-dir);
+}
+
+.console-completion-exec {
+  color: var(--console-exec);
+}
+
+.console-completion-link {
+  color: var(--console-link);
+}
+
+.console-completion.is-selected {
+  background: var(--console-selection-bg);
+}
+
+.console-prompt {
+  display: flex;
+  background: var(--bg-input);
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+/* Sits on the first line of the field's text: the same top padding the
+   textarea has, so the two baselines line up whatever the console size is. */
+.console-prompt-symbol {
+  flex-shrink: 0;
+  padding-top: var(--space-2);
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.console-prompt .h3-form-textarea {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Settings: the tritium_cli row (path + Copy over a one-line hint) --- */
+.console-cli-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.console-cli-row .type-caption {
+  color: var(--text-muted);
+  user-select: text;
+}

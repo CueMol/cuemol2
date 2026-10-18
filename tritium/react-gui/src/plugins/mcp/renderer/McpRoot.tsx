@@ -1,0 +1,108 @@
+/**
+ * @file plugins/mcp/renderer/McpRoot.tsx
+ * @description The plugin's mount point: it owns the `mcp` endpoint.
+ *
+ * Renders nothing. Mounted while the plugin is enabled; the endpoint is
+ * open while the "MCP server" setting is on as well. Each request is answered
+ * by the worker; this only adds what the worker cannot know -- which tab is
+ * active -- and records the running calls for the status bar. The exceptions
+ * are the window's own: the scene tools (`sceneTools.ts`) are answered here,
+ * and a .qsc that `load_file` names is opened here, into a tab.
+ */
+
+import React, { useEffect } from 'react'
+import {
+  controlLocalApi,
+  useCueMol,
+  useEnsureActiveScene,
+  useLocalApiEndpoint,
+  useOpenSceneFile,
+  useTrackedEndpointCalls,
+} from '@renderer/plugin-host/api'
+import { mcpErrorResult, mcpOkResult } from '@shared/mcpResult'
+import { mcpServices } from '../calls'
+import type { McpCallResult } from '../shared/mcpTypes'
+import { beginMcpCall } from './mcpActivity'
+import { SCENE_TOOLS, useSceneTools } from './sceneTools'
+import { useMcpPrefs } from './useMcpPrefs'
+
+void React
+
+export const McpRoot: React.FC = () => {
+  const { cm } = useCueMol()
+  const ensureActiveScene = useEnsureActiveScene()
+  const { serverEnabled, port } = useMcpPrefs()
+  // A call holds an undo transaction open in the worker.
+  const calls = useTrackedEndpointCalls()
+  const sceneTools = useSceneTools()
+  const openFile = useOpenSceneFile()
+
+  /** `load_file` of a .qsc: opened the way File > Open does, into a tab. */
+  const openSceneFile = async (filePath: string): Promise<McpCallResult> => {
+    const opened = await openFile(filePath)
+    if (!opened.ok) return mcpErrorResult(`Could not open the scene file ${filePath}.`)
+    return mcpOkResult({ scene: filePath, sceneId: opened.sceneId, active: true })
+  }
+
+  // The port row applies a value on Enter / blur only (McpPortSettingRow),
+  // so each change reopens the server once. Declared ahead of the endpoint,
+  // so on mount the port is set before the endpoint opens.
+  useEffect(() => {
+    void controlLocalApi({ action: 'setPort', port })
+  }, [port])
+
+  useLocalApiEndpoint('mcp', cm !== null && serverEnabled, {
+    async handle({ reqId, kind, payload }) {
+      if (!cm) throw new Error('CueMol is not ready yet.')
+      switch (kind) {
+        case 'describe': {
+          const res = await mcpServices.invoke(cm, 'describe', {})
+          if (!res.ok) throw new Error(res.error)
+          return { instructions: res.instructions }
+        }
+        case 'listTools': {
+          const res = await mcpServices.invoke(cm, 'listTools', {})
+          if (!res.ok) throw new Error(res.error)
+          return { tools: [...res.tools, ...SCENE_TOOLS] }
+        }
+        case 'callTool': {
+          const p = payload as { name: string; arguments: Record<string, unknown> }
+          const callId = `mcp-${reqId}`
+          const end = beginMcpCall(p.name)
+          return calls.track(reqId, callId, async () => {
+            // Before a scene is made for it: list_scenes with no tab open
+            // should say so, not open one.
+            const sceneCall = sceneTools.call(p.name, p.arguments ?? {})
+            if (sceneCall) return await sceneCall
+            const target = await ensureActiveScene()
+            const res = await mcpServices.invoke(
+              cm,
+              'callTool',
+              {
+                callId,
+                name: p.name,
+                arguments: p.arguments,
+                sceneId: target?.scene_uid ?? 0,
+                viewId: target?.view_id ?? 0,
+              },
+              // A render can take minutes; the busy indicator is not the place.
+              { quiet: true },
+            )
+            if (!res.ok) return mcpErrorResult(res.error)
+            if (res.openScene) return await openSceneFile(res.openScene)
+            return { content: res.content, isError: res.isError }
+          }).finally(end)
+        }
+        default:
+          throw new Error(`Unknown request: ${kind}`)
+      }
+    },
+    cancel(reqId) {
+      const callId = calls.stop(reqId)
+      if (cm && callId) void mcpServices.invoke(cm, 'cancelCall', { callId })
+    },
+  })
+
+  return null
+}
+McpRoot.displayName = 'McpRoot'

@@ -21,6 +21,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface ApplyMolSelStringArgs {
     sceneId: number;
@@ -104,6 +105,7 @@ export function applyMolSelString(
     let ok = false;
     withUndoTxn(scene, 'Change mol selection', () => {
         ok = assignMolSel(ctx, mol, args.selStr, scene.uid);
+        if (ok) recordOp(ctx, scene.uid, 'set_mol_selection', { objId: args.molId, selection: args.selStr }, ['objId']);
     });
     return { ok };
 }
@@ -137,6 +139,7 @@ export function centerMolSelection(
         const pos = safeGetSelectionCenter(vsm.obj);
         if (!pos) return;
         vsm.view.setViewCenter(pos);
+        recordOp(ctx, vsm.scene.uid, 'center_view', { objId: args.molId, selection: args.selStr, zoom: false }, ['objId']);
         ok = true;
     });
     return { ok };
@@ -171,6 +174,7 @@ export function zoomMolSelection(
         if (!assignMolSel(ctx, vsm.obj, args.selStr, vsm.scene.uid)) return;
         if (!selectionHitsAny(vsm.obj)) return;
         ok = tryFitView(vsm.obj, vsm.view);
+        if (ok) recordOp(ctx, vsm.scene.uid, 'center_view', { objId: args.molId, selection: args.selStr, zoom: true }, ['objId']);
     });
     return { ok };
 }

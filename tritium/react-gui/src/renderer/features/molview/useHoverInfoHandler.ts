@@ -11,10 +11,13 @@
  * canvas because the rubber-band overlay covers the canvas while a select
  * tool is active; both the canvas and the overlay bubble to the pane.
  *
- * The hover ends on a left / middle press (a navigation drag follows), but not
- * on a right press: that opens the navi context menu, which holds the hover
- * (see hoverHold.ts) so the hit the menu is about stays visible and
- * highlighted until the menu resolves.
+ * A button press does not end the hover: a click (e.g. one that adds a pick
+ * label) leaves the view where it was, so the hit stays shown and highlighted.
+ * Sampling pauses while a button is held, and the hover ends only once the
+ * pointer leaves the click range around the press point (CLICK_SLOP_PX), i.e.
+ * when a drag starts rotating / translating the view. A right press opens the
+ * navi context menu, which holds the hover (see hoverHold.ts) so the hit the
+ * menu is about stays visible and highlighted until the menu resolves.
  */
 
 import { useEffect, useRef } from 'react';
@@ -38,6 +41,14 @@ export function hoverLabelKey(l: HoverLabel): string {
 
 /** Minimum spacing between two hover hit tests (about 30 Hz). */
 export const HOVER_INTERVAL_MS = 33;
+
+/**
+ * A pressed pointer that moved this many pixels (on either axis) from the
+ * press point is a drag. Matches the C++ drag start range
+ * (qsys::MouseEventHandler::move), so the hover ends exactly when the view
+ * starts to move and a click keeps it.
+ */
+export const CLICK_SLOP_PX = 2;
 
 export interface UseHoverInfoHandlerArgs {
     /** The `.content-pane` element: canvas AND select-overlay events bubble here. */
@@ -85,6 +96,9 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
         // during a drag). Tracked even while held, so the resync on release
         // knows where to resample.
         let lastPos: Pos | null = null;
+        // Client coordinates of the button press in progress over the view
+        // (null when no button is held or the press began elsewhere).
+        let pressAt: Pos | null = null;
         // The view currently shows a highlight set by our last reply.
         let highlighted = false;
         let disposed = false;
@@ -177,6 +191,17 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
         };
 
         const onMouseMove = (e: MouseEvent): void => {
+            if (e.buttons === 0) {
+                pressAt = null;
+            } else if (
+                pressAt !== null &&
+                Math.abs(e.clientX - pressAt.x) < CLICK_SLOP_PX &&
+                Math.abs(e.clientY - pressAt.y) < CLICK_SLOP_PX
+            ) {
+                // Still within the click range: the view has not moved, so
+                // keep the hit as it is.
+                return;
+            }
             lastPos = readPos(e);
             // A context menu owns the pointer: keep the frozen hit and send
             // nothing, but the position above is still recorded.
@@ -190,11 +215,17 @@ export function useHoverInfoHandler({ containerRef, setHoverLabel }: UseHoverInf
             pending = p;
             schedule();
         };
-        // Right press: the navi context menu it opens is about the element
-        // under the pointer, so the hit survives until the menu resolves.
+        // A press keeps the hit (a click does not move the view; a right
+        // press opens the context menu about it). Only the not yet issued
+        // sample is dropped: a request in flight is for this very position,
+        // and its reply keeps `highlighted` in step with the worker.
         const onMouseDown = (e: MouseEvent): void => {
-            if (e.button === 2) return;
-            clear();
+            pressAt = overCanvas(e) ? { x: e.clientX, y: e.clientY } : null;
+            pending = null;
+            if (timer !== null) {
+                clearTimeout(timer);
+                timer = null;
+            }
         };
         const onMouseLeave = (): void => {
             lastPos = null;

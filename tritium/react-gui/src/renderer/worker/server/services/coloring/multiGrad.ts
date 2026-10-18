@@ -18,6 +18,7 @@ import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { undoTxnResult, withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { ok, fail, failFrom } from '@renderer/worker/shared/result';
 import { getMultiGradOrNull } from './colorTargets';
 import type {
@@ -344,6 +345,25 @@ export function getMultiGradHistogram(
     return { ok: true, histo: h.histo, nmax: h.nmax, globalNmax };
 }
 
+/** Gradient nodes as `set_multigrad_nodes` takes them: `value colour; value colour; ...`. */
+export function multiGradNodesText(nodes: readonly MultiGradWriteNode[]): string {
+    return nodes.map((n) => `${n.value} ${n.color}`).join('; ');
+}
+
+/** The nodes `multiGradNodesText` wrote, or why the text is not such a list. */
+export function parseMultiGradNodes(text: string): MultiGradWriteNode[] | { error: string } {
+    const out: MultiGradWriteNode[] = [];
+    for (const part of text.split(';')) {
+        const t = part.trim();
+        if (t === '') continue;
+        const m = /^(\S+)\s+(.+)$/.exec(t);
+        const value = m ? Number(m[1]) : NaN;
+        if (!m || !Number.isFinite(value)) return { error: `"${t}" is not "<value> <colour>"` };
+        out.push({ value, color: m[2].trim() });
+    }
+    return out.length > 0 ? out : { error: 'no nodes given' };
+}
+
 function nodesToJSON(nodes: MultiGradWriteNode[]): string {
     return JSON.stringify(
         nodes.map((n) => ({ value: n.value, color: n.color })),
@@ -402,6 +422,7 @@ export function setMultiGradNodes(
         }
     }
     return undoTxnResult(scene, args.label ?? DEFAULT_LABEL, () => {
+        recordOp(ctx, scene.uid, 'set_multigrad_nodes', { rendId: args.rendId, nodes: multiGradNodesText(args.nodes) }, ['rendId']);
         mg.setNodesJSON(nodesToJSON(args.nodes));
         return ok();
     });
@@ -421,6 +442,12 @@ export function setMultiGradColorMap(
     if (!getMultiGradOrNull(rend)) return { ok: false };
 
     withUndoTxn(scene, 'Change color map', () => {
+        recordOp(ctx, scene.uid, 'set_node_prop', {
+            nodeType: 'renderer',
+            nodeId: args.rendId,
+            prop: 'color_mapname',
+            value: args.mapName,
+        }, ['nodeId']);
         (rend as unknown as { color_mapname: string }).color_mapname =
             args.mapName;
     });

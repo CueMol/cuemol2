@@ -17,6 +17,7 @@ import type { MolSurfRenderer } from '@cuemol/core/src/wrappers/MolSurfRenderer'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 export interface GenerateRendererSurfObjArgs {
     sceneId: number;
@@ -113,6 +114,7 @@ export function generateRendererSurfObj(
         const newObj = (rend as unknown as MapSurfRenderer)
             .generateSurfObj() as CueMolObject;
         if (!newObj) return;
+        recordOp(ctx, scene.uid, 'create_surface_from_map', { rendId: args.rendId }, ['rendId']);
 
         newObjName = uniqName(
             `${srcMol.name}_sf`,

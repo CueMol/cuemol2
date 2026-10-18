@@ -1414,3 +1414,11 @@
   font-weight: var(--type-group-label-fw);
   letter-spacing: var(--ls-wide);
 }
+
+/* SectionHeader: title left, optional actions pinned right -- also when the
+   bar has no title and is only a list's toolbar (the Paint entries). */
+.h3-form-section-header-actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}

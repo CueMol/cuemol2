@@ -24,7 +24,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 |---|---|
 | `h3-kit/primitives` | `AppIcon` / アイコン登録表 / `DisclosureCaret` (開閉 caret) / `Tooltip` / `useDarkPortalClass` |
 | `h3-kit/form` | 下表の label+control カタログ。**サイズの単一ソース** |
-| `h3-kit/list` | `Listbox` / `ListRow` / `ListboxTree` (Blueprint `Tree` の kit 版) / `useListKeyNav` |
+| `h3-kit/list` | `Listbox` / `ListRow` / `ListboxTree` (Blueprint `Tree` の kit 版) / `TruncatedText` (省略される 1 行ラベルと hover の全文表示) / `useListKeyNav` |
 | `h3-kit/gradient` | `GradientStopBar` + gradient の値/ピクセル幾何 |
 | `h3-kit/colorpicker` | 色ポップオーバーと `CueColorField` |
 | `h3-kit/MolSelList` / `h3-kit/selection` | 分子選択のピッカーと式ビルダ |
@@ -85,6 +85,8 @@ class は padding / 区切り線などの chrome だけを持ち、行やコン�
 
 **ラベルの階層 (これも component で強制 / 微調整しない)**: pane 内のラベルは2階層。**最上位グループ** (例: `Molecule` / `Selection` / `Term` / `Modify`) は **`FieldSection` の `title`** で出す → `.type-group-label` role (頭文字のみ大文字・semibold・`--ls-wide`)。**下位ラベル** (section 内の行ラベル, 例: `Dist` / `Apply`) は `Field` の label か `.type-label`。section 間の余白は **親 container に `gap: var(--form-section-gap)` を 1 回指定**するだけ (FieldSection 自身は margin を持たない) → 全グループが同一リズムになり、weight/大文字/letter-spacing/spacing を **consumer 側で個別調整しない**。「最上位かそうでないか」は `FieldSection` か `Field` かの**選択だけ**で決まる。
 
+**Inspector のページは Inspector の部品で組む (MUST)**: 右の Inspector に出すものは、何を表示するページでも (scene node、View、アニメーション要素、Action history の undo step など) **Scene / Renderer の Properties ページと同じ部品**で組む。上位の見出し (`Basic settings`、`Step`、`Op` など) は `features/inspector/AccordionSection.tsx` の **`AccordionSection`** (開閉させないなら **`FlatSection`**)、その中の 1 値 1 行は **`PropertyField`** (control は form-kit。読むだけの値は readonly の `TextField`)、本体は `.inspector-body` > `.insp-properties-tab` に置く。dialog や pane 用の `FieldSection` / `Field` を Inspector に持ち込まない。見出しが `.type-group-label` になり、行が 2 段組みと横並びで混ざって、Properties ページと見出しの階層・行の形が食い違う (Action step の表示で実際に起きた)。見出しの文字列に値を埋め込まない (`Op: set_visible` ではなく、見出しは `Op`、名前は `Name` の行)。
+
 **ルール**:
 - コントロール高・行高・label gap・section spacing を **consumer の CSS や inline `style` で指定しない**。サイズの単一ソースは `styles/_form-kit.css` ＋ `_variables.css` の `--field-*` / `--form-*` トークンのみ。
 - 必要なコントロールがカタログに無ければ、**先にカタログへ 1 つ追加** (`_form-kit.css` にサイズを 1 定義) してから使う。consumer 側でサイズを決めない。
@@ -120,11 +122,11 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 |---|---|---|
 | flex (自前 React リスト) | `<Listbox>` + `<ListRow selected>` (`h3-kit/list/`) | size props 無し。`.h3-list-row .type-row` を出す |
 | HTML `<table>` | `.h3-list-table` + `<tr class="h3-list-table-row">`、選択は `.is-selected` | 行高/hover/selected を list-kit が供給。zebra・セル境界等は consumer 固有 (例: `.insp-gt-row`) |
-| Blueprint `<Tree>` | Tree の `className` に **`h3-listbox-tree`** を足す | Blueprint 注入要素 (`.bp5-tree-node-content`) に list-kit がトークンを当てる。indent は Blueprint の depth padding に委ねる (`.bp5-tree-node-content` の `padding-left` を直接上書きしない) |
+| Blueprint `<Tree>` | Tree の `className` に **`h3-listbox-tree`** を足す | Blueprint 注入要素 (`.bp5-tree-node-content`) に list-kit がトークンを当てる。indent は 1 段 = icon 1 つ分 (`--tree-indent: var(--icon-caret)`)。list-kit が depth クラス (`.bp5-tree-node-content-<depth>`) ごとに当てる (`.bp5-tree-node-content` の `padding-left` を直接上書きしない)。scene tree・History・Actions など全ての tree で共通 |
 
 **行のテキストは選択できない** (`.h3-list-row` に `user-select: none`; 行内の `input` だけ `text` に戻す)。行ラベルは文章ではなくコントロールの名前で、行をまたぐドラッグは「行を動かす」操作であるべきだから。実害も出た: drag&drop 可能なリストで、ブラウザが行ではなく**選択されたテキスト**をドラッグし、ゴーストがポインタより下の全行ラベルと隣の pane の見出しになった。ドラッグ可能な行では併せて `dataTransfer.setDragImage(row, ...)` で**ドラッグ画像に行自身を明示**する (ブラウザ任せにしない)。
 
-**例外**: color swatch テーブル (`_color-panel.css`) は、色見本セル上で背景ハイライトが読めないため hover/selected を **outline 方式**で残す (SoT 公認の例外)。
+**色を表示する行**: Paint テーブルのような色のセルを持つ行も `.h3-list-table-row` で揃える。行の中の `ColorSwatch` は kit 側 (`_colorpicker.css`) で小さい色チップ (`--icon-md` 高) になるので、背景ハイライトの上でも読める。以前は色見本が行の高さいっぱいだったため outline 方式の例外を置いていたが、廃止した。
 
 **popup menu の色を pane に持ち込まない**: Blueprint の `<Menu>` を pane に埋め込むと popover 用パレットで塗られ、周りのリストから浮く。同じ component を popover と pane の両方で使う場合 (`SelMenus` の Named / History) は、**pane 文脈だけ** listbox のトークン (`--bg-input` / `--bg-hover` / `--bg-active` + `--accent`) に上書きする。popover 側は menu の色のままでよい。
 
@@ -212,6 +214,10 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 - **Blueprint `Tree` は `ListboxTree`** (`h3-kit/list`) 経由で描く。Blueprint 内蔵の caret は差し替え不可の
   塗りパス (`chevron-right`) で pane header の Phosphor caret より太く見えるため、`ListboxTree` が全ノードに
   `hasCaret: false` を渡して `DisclosureCaret` を icon スロットに描く。props は Blueprint `TreeProps` そのまま。
+- **リストの行で省略 (`...`) されるラベルは `TruncatedText`** (`h3-kit/list`) で描く。省略されているときだけ、
+  全文を kit の `Tooltip` (ツールバーのボタンと同じ吹き出し) で、ラベルの**右側** (`placement="right"`) に出す。下側中央だと、長い文が左へ伸びて window の外にはみ出す。tooltip の基準は、実際に省略して
+  いる要素 (= 画面に見えている文字の枠) にする。省略を親に任せた要素を `Tooltip` で包むと、省略される前の
+  (見えていない) 文字列の幅が基準になり、吹き出しが行の外に浮く (Action history pane で実際に起きた)。
 - Blueprint コンポーネント内蔵アイコン(input clear 等、CSS フォント由来)はそのまま。段階移行のため、まだ
   `AppIcon` 化していない箇所で `<Icon>` 直書きが残るのは許容(移行時にキーを足して寄せる)。
 
@@ -385,7 +391,7 @@ UXP機能を tritium に起こす / 新規コンポーネントを追加する�
 - [ ] **各テキスト要素に意味的 role を当てたか** (`.type-*` クラス。Blueprint 注入要素は `--type-<role>-*` 変数)。生 `--fs-*`/`--lh-*` を直書き・px 逆算で選んでいないか。同じ役割の隣接 UI と同じ role か
 - [ ] panel/section header・タブ strip・リスト行は `.panel-header` (+`-icon`/`-name`) / `.mode-bar` / `.section-header` / `.h3-list-row` を使い、box を重複定義していないか (§構造 role)
 - [ ] 既存 role に収まらない場合のみ、コンポーネントに直書きせず `_variables.css` + `_typography.css` に新 role を足したか
-- [ ] **dark / light 両テーマで確認したか** (`task run_tritium` 後にテーマ切替)
+- [ ] **dark / light 両テーマで確認したか** (`task run_tritium` 後にテーマ切替)。先に `task inspect_tritium_ui -- --target <pane/dialog>` で両テーマ・複数サイズの切れ/はみ出し/重なり/サイズ token を自動確認する ([ui-layout-inspect](../architecture/ui-layout-inspect.md))
 - [ ] `npm run lint:style` を通したか (ベースライン件数を増やしていないか)
 - [ ] 新しく `div` + CSS を書く前に、既存パターン (CLAUDE.md「新規ダイアログの追加パターン」、`SettingsPane`/`SettingRow` の宣言的UI、`components/` の既存コンポーネント) を探したか
 

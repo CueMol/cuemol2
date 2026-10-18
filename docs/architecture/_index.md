@@ -21,6 +21,21 @@ instead. If a change ports a UXP surface it belongs there; if it adds
 something UXP never had, or concerns build / packaging / internal
 architecture, it belongs here.
 
+- [アプリの自動更新 (署名なし、macOS)](auto-update.md) (日本語) -- electron-updater を使わず、
+  main が GitHub Releases API (4 桁タグ) から DMG を Node で取得して SHA-256 を照合し、staging へ展開、
+  終了後にヘルパー sh が置換して起動を確認する (起動しなければロールバック)。VS Code 風の通知と
+  Settings の行の 2 経路、`@cuemol/updater` パッケージ。
+
+- [Console の Tab 補完](console-completion.md) (日本語) -- console panel と tritium_cli で共通の
+  zsh 式補完。worker が候補ごとに「選んだときの行」を返し、`@cuemol/console-kit` の
+  `completion.ts` が段組みとメニューの状態遷移を持つ。ファイル名の一致規則 (dot file、
+  大小無視の再試行、load の拡張子優先、cd はディレクトリだけ)。
+
+- [Console の help と Markdown 出力](console-help-markdown.md) (日本語) -- `format: 'markdown'` の
+  entry を `@cuemol/console-kit` の `markdown.ts` (`marked` の lexer) で読み、panel は React、
+  tritium_cli は ANSI で描く。help は主題 -> コマンド -> 引数の 3 段で、op のコマンドの説明は
+  MCP と同じ op の description から出す。
+
 - [Camera pane と camera の表示順 (`ui_order`)](camera-pane.md) (日本語) --
   名前付き camera を scene tree の枝から独立した Camera pane に移し、View activity view
   (Camera pane + View pane) を新設した記録。Camera に `ui_order` property (nopersist) を足し、
@@ -30,6 +45,9 @@ architecture, it belongs here.
 - [Ball & stick trace renderer (`tracestick`)](tracestick-renderer.md) (日本語) --
   主鎖 pivot atom (CA / P) を sphere + cylinder で結ぶ `trace` の ball & stick 版。
   segment 判定は MainChainRenderer 共通、coordinate texture 経路と display-list 経路、style 一覧。
+- [tube / ribbon / cartoon / nucl の GPU mesh](tube-gpu-mesh.md) (日本語) -- `TubeMeshBuilder` (Direct / Build /
+  Update) と `TubeGpuSupport`。display list を経由せず `TrigGpuPrim` を直接構築し、`atomsMoved` と
+  coloring の変更は VBO の in-place 書き換えで反映する。トポロジが座標に依存しない前提と invalidation の表。
 - [GPU ID-buffer picking と 3D view の hover 情報 / hover highlight](gpu-id-picking.md) (日本語) --
   tritium の 3D view で、renderer が描いた幾何そのものに対する hittest (整数 render target に
   renderer/要素 ID を描画して読み戻す、Mol* の pick pass 方式) と、マウス hover で左下ステータスに対象を
@@ -37,6 +55,21 @@ architecture, it belongs here.
   `HitData` を GPU 経路の正式なデータ経路に昇格させた判断、頂点整数属性 / pick shader / CPU fallback 規則、
   uxp_gui を従来経路のまま保つ gating、hover UI (`naviHover` / throttle / busy 非計上)、採らなかった案
   (色に ID を埋め込む方式)。
+- [Op catalog と console (native / PyMOL dialect)](op-catalog.md) (日本語) --
+  AI agent の tool と console のコマンドを生成する core の op catalog。`.qif` 型に合わせた param DSL と
+  意味型 (node 名・property path・selection)、`invokeOp` / `runInTxn`、agent の toolset と
+  `enable_toolsets`、console runtime と native / PyMOL dialect、補完と結果整形。
+- [Action log と qax (CueMol actions XML)](action-log.md) (日本語) -- undo 履歴の 1 項目ごとに、実際に
+  実行した native の op を記録する仕組み (GUI・console・PyMOL・MCP・agent 共通)。txn helper への hook と
+  C++ undo stack との reconcile、service ごとの op 対応表、`replay` op。記録を書き出して再生する XML 形式
+  qax v1 のスキーマと値の書き方、`run x.qax` の 1 action = 1 txn、`open_log`、`list_actions` /
+  `export_actions`。GUI の Actions view と History pane (選択・Go to step・qax 保存・コピー)、
+  Inspector の step 表示、op から作る undo の表示文 (`describe`)、`actions-changed` push。
+- [Console の PyMOL dialect](console-pymol-dialect.md) (日本語) -- PyMOL のコマンド言語に部分互換の
+  63 コマンド (TS、Python embedding なし)。PyMOL 選択式の CueMol 式への翻訳 (優先順位、`-` / `+` の 2 つの
+  意味、object 名の分子ごとの展開、断る語の一覧)、object x 表現ごとの `pym:<rep>` renderer 規約、
+  コマンドごとの PyMOL との違い (align / super は SSM、`.cif` / `.pse` の保存は断る、計測は重心など)、
+  PyMOL 設定名の別名表、制約とテストの所在。
 - [react-gui 大規模リファクタリング (2026-08)](react-gui-refactoring.md)
   (日本語) -- 移行完了後の構造作り替えの設計記録。動機 (churn が 4 つのハブ
   ファイルに集中していた) と、採用した判断 (feature ディレクトリ / hook は
@@ -64,7 +97,7 @@ architecture, it belongs here.
   [internals](tritium_plugin/internals.md) (有効判定の解決順、native menu を持つ
   main へ channel に command id を載せて渡す経路、worker service の glob と
   名前空間化、dev-only と tree-shaking、寄与点の足しかた)。
-  現状の 6 つのうち 5 つ (getpdb / sequence / catalog / agent / pymconsole) は、その
+  現状の 6 つのうち 5 つ (getpdb / sequence / catalog / agent / console) は、その
   機能専用の C++ クラスを持たないことを基準に選んでいる。残る `mdtools` (MD trajectory の
   GUI) は専用の C++ module を持つ唯一の例で、C++ レーンが無いため module は常時
   ロードのまま GUI だけを既定オフにしてある。
@@ -232,3 +265,22 @@ architecture, it belongs here.
   「Use settings」のみ) と loop guard、別の app data を足す手順。レンダー時の設定 -> umbreon exporter の
   写像は C++ `UmbreonSceneExporter::applyRenderSettings` に一本化し、tritium / cuetty / Python が共有する
   (設定の無い scene は class 既定 + camera の projection)。
+- [Local API server と MCP](local-api-server.md) (日本語) --
+  GUI に内蔵した 127.0.0.1 の HTTP server (bearer token、Origin / Host 検査、endpoint を
+  plugin が `useLocalApiEndpoint` で開閉)。MCP endpoint (Streamable HTTP、stateless) で op
+  catalog を tool として公開し、1 call = 1 undo txn、agent / console と `txnBusy()` で排他。
+  status bar のアイコンと popover、client ごとの接続設定 dialog、接続情報ファイル
+  `~/.cuemol/local-api.json`。console endpoint と terminal の thin client `tritium_cli`
+  (native / PyMOL dialect、client が作業ディレクトリを持つ。配布物に同梱し、app が動いていなければ
+  起動して接続する。npm `@cuemol/tritium-cli` としても配り、インストール済みの app を探して起動する。
+  無ければ download URL を出す)。console の scene コマンド (`list_scenes` / `create_scene` / `switch_scene` / `close_scene`)。
+- [US-align による構造重ね合わせ](usalign-superpose.md) (日本語) -- libcuemol2 と tritium の既定の重ね合わせ手法。
+  vendored US-align (単量体 TM-align) を 1 TU に閉じ込め、pivot atom (auto: CA / C3') で残基を代表させて
+  タンパク質と核酸を扱う。`MolAnlManager.superposeUSalign1` / `superposeUSalignJSON`、SSM / LSQ と共通の行列適用。
+  Superpose ダイアログ (Method / Pivot atom)、catalog op、PyMOL の `align` / `super`。
+
+- [UI レイアウト検査 (`inspect_tritium_ui`)](ui-layout-inspect.md) (日本語) --
+  実装中の自己検証ツール (回帰テストではない)。Playwright `_electron` でビルド済みアプリを起動し、
+  pane / dialog を開いて dark/light × 複数サイズのスクリーンショットと DOM レイアウト監査
+  (文字の切れ・はみ出し・重なり・サイズ token 不一致) を出す。dev ビルド限定の `window.__cuemolE2E`
+  ブリッジ (`CUEMOL_E2E=1` -> `?e2e=1`)、監査の種類と除外 (`data-audit-ignore`)。

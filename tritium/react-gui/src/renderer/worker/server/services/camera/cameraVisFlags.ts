@@ -14,6 +14,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { parseSceneTreeJSON, type SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes';
+import { recordOp, recordedNodePath } from '@renderer/worker/server/actions/serviceOps';
 
 /** One scene element (object / renderer) row in the vis-flags editor. */
 export interface VisFlagEntry {
@@ -131,7 +132,15 @@ export function setCameraVisFlags(
     // Rebuild the set from the dialog state: clear, then append the included
     // rows. The dialog lists every scene element, so a clear+rebuild yields
     // exactly the desired set (and drops stale uids for deleted elements).
+    // Recorded by path (uids change on replay), with the type or uid where a
+    // name is shared (recordedPath); not at all when a row names no node.
+    const included = args.entries.filter((e) => e.included);
+    const paths = included.map((e) => recordedNodePath(ctx, scene.uid, e.tgtId));
     withUndoTxn(scene, `Edit visibility flags in ${args.cameraName}`, () => {
+        if (paths.every((p) => p !== null)) {
+            const entries = included.map((e, i) => `${e.visible ? 'on' : 'off'} ${paths[i]}`).join('; ');
+            recordOp(ctx, scene.uid, 'set_camera_visibility', { name: args.cameraName, entries });
+        }
         cam.clearVisSettings();
         for (const e of args.entries) {
             if (e.included) cam.visAppend(e.tgtId, e.visible, e.isObj);

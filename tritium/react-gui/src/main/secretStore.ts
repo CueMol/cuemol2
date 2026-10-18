@@ -101,12 +101,26 @@ export function setSecret(req: SecretSetReq): SecretSetRes {
   return { ok: true };
 }
 
-/** What a settings row may show about `ref` without revealing the value. */
+/**
+ * Whether `safeStorage` can encrypt here, asked without touching the macOS
+ * Keychain: there it always can (the Keychain is part of the OS), and the
+ * query itself may read the Keychain key, which raises the password prompt
+ * for an ad-hoc-signed build. Only an actual encrypt / decrypt should.
+ */
+function encryptionAvailable(): boolean {
+  return process.platform === 'darwin' ? true : safeStorage.isEncryptionAvailable();
+}
+
+/**
+ * What a settings row may show about `ref` without revealing the value.
+ * Decrypts only when something is stored, so a row for an unset key never
+ * reaches the Keychain.
+ */
 export function secretStatus(ref: SecretRef): SecretStatusRes {
   const resolved = getSecret(ref);
   return {
     source: resolved.source,
     last4: resolved.value ? resolved.value.slice(-4) : null,
-    encryptionAvailable: safeStorage.isEncryptionAvailable(),
+    encryptionAvailable: encryptionAvailable(),
   };
 }

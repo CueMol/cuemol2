@@ -22,7 +22,7 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 // The snapshot reads the scene through C++ JSON the fakes do not model; the
 // turn under test does not depend on what it says.
-vi.mock('./sceneSnapshot', () => ({
+vi.mock('@renderer/worker/server/catalog/ops/sceneSnapshot', () => ({
   buildSceneSnapshot: () => ({ sceneId: 1, viewId: 2, objects: [], namedSelections: [] }),
   formatSceneSnapshot: () => '<scene_state>{}</scene_state>',
 }))
@@ -31,7 +31,7 @@ import { fakeScene, fakeView, makeWorkerCtx } from '@renderer/worker/testing'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { runTurn } from './turnLoop'
 import type { TurnDeps } from './turnLoop'
-import { strictSchema } from './tools/types'
+import { emptySchema } from './tools/types'
 import type { AgentTool } from './tools/types'
 
 /** Token counts in the shape a provider reports them. */
@@ -90,7 +90,7 @@ function mockModel(steps: unknown[][], onExhausted?: () => never): MockLanguageM
 }
 
 function fakeTool(name: string, mutates: boolean, run: () => { ok: true }): AgentTool {
-  return { name, description: `${name} for tests`, parameters: strictSchema({}), mutates, run }
+  return { name, description: `${name} for tests`, parameters: emptySchema(), mutates, run }
 }
 
 function setup() {

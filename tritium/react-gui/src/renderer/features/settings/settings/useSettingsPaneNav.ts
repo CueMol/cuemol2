@@ -29,6 +29,25 @@ const store: SettingsPaneNavStore = {
   expandedIds: null,
 }
 
+/** Mounted panes, told when the selection is changed from outside. */
+const listeners = new Set<(id: string) => void>()
+
+/**
+ * Show `categoryId` the next time the pane is drawn, or now if it is open:
+ * how a command elsewhere (a status bar popover, say) opens Settings at the
+ * page it is about. Clears the search, which would otherwise hide the page,
+ * and expands the group above the page.
+ */
+export function selectSettingsCategory(categoryId: string, parentId?: string): void {
+  store.selectedCategory = categoryId
+  store.filter = ''
+  if (parentId) {
+    const expanded = store.expandedIds ?? Array.from(defaultExpanded())
+    if (!expanded.includes(parentId)) store.expandedIds = [...expanded, parentId]
+  }
+  for (const l of listeners) l(categoryId)
+}
+
 /** Default expanded set: every top-level group open. */
 function defaultExpanded(): Set<string> {
   return new Set(CATEGORY_TREE.map((n) => n.id))
@@ -53,6 +72,16 @@ export function useSettingsPaneNav(): SettingsPaneNav {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() =>
     store.expandedIds ? new Set(store.expandedIds) : defaultExpanded(),
   )
+
+  useEffect(() => {
+    const listener = (id: string) => {
+      setSelectedCategory(id)
+      setFilter('')
+      if (store.expandedIds) setExpandedIds(new Set(store.expandedIds))
+    }
+    listeners.add(listener)
+    return () => { listeners.delete(listener) }
+  }, [])
 
   // Mirror each change into the module store so the next mount restores it.
   useEffect(() => {

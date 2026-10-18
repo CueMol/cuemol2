@@ -11,7 +11,8 @@
 
 import React from 'react'
 import { PluginRoots } from '@renderer/plugin-host'
-import { AppBoot, AppCommands, AppShell, RenderWindowBridge } from './shell'
+import { AppBoot, AppCommands, AppShell, E2eBridge, RenderWindowBridge } from './shell'
+import { UpdateBridge } from './features/update/UpdateBridge'
 // Benchmark harness (bench/perf-harness branch only; never merged to develop).
 import { BenchRoot } from './bench/BenchRoot'
 
@@ -26,6 +27,10 @@ const App: React.FC = () => (
         go away with the plugin when it is switched off. */}
     <PluginRoots />
     <RenderWindowBridge />
+    {/* The app update status from main, as notifications and dialogs. */}
+    <UpdateBridge />
+    {/* Dev-only surface for the UI layout inspector; inert unless ?e2e=1. */}
+    {__DEV_UI__ && <E2eBridge />}
     <AppShell />
     <BenchRoot />
   </>

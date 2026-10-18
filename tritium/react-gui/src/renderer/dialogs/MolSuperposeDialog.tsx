@@ -2,14 +2,16 @@
  * @file dialogs/MolSuperposeDialog.tsx
  * @description Modal that superposes one molecule (moving) onto another
  * (reference). Ports the UXP `tools/ssm_sup.xul` + `ssm_sup.js` dialog:
- *   - Algorithm switch: Least-Square Fitting (LSQ) / Secondary Structure
- *     Matching (SSM).
+ *   - Algorithm: US-align (default; proteins and nucleic acids), Secondary
+ *     Structure Matching (SSM) or Least-Square Fitting (LSQ). US-align also
+ *     takes the pivot (representative) atom, e.g. P or C3' for RNA.
  *   - Reference and Moving each pick a MolCoord (`ObjectSelect`) plus an
  *     atom selection (`MolSelList`).
  *   - "Auto recenter" fits the view onto the moving selection afterwards.
  *   - "Use xformMat property" stores the transform instead of applying it.
  *   - OK commits via the `superposeMol` worker service (which calls
- *     `MolAnlManager.superposeSSM1` / `superposeLSQ1` under an undo txn).
+ *     `MolAnlManager.superposeUSalign1` / `superposeSSM1` / `superposeLSQ1`
+ *     under an undo txn).
  *
  * Last-used molecule / algorithm / checkbox state is persisted to localStorage
  * (`molSuperposeHistory`); selection-string history flows through the shared
@@ -23,13 +25,19 @@
 import React, { useEffect, useState } from 'react'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
 import { useMolEditCommit } from '@renderer/hooks/cuemol/useMolEditCommit'
-import { Field, FieldSection, SegmentField, SwitchField } from '@renderer/h3-kit/form'
+import {
+    Field, FieldGrid, FieldGridRow, FieldSection, SegmentField, SelectField, SwitchField,
+} from '@renderer/h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { objectFilters } from '@renderer/h3-kit/ObjectSelect'
 import { MolPicker } from './MolPicker'
 import { MolSelList, pushHistory } from '@renderer/h3-kit/MolSelList'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
-import type { SuperposeAlgo } from '@renderer/worker/server/services/molops/superposeMol'
+import {
+    DEFAULT_SUPERPOSE_ALGO,
+    USALIGN_PIVOTS,
+    type SuperposeAlgo,
+} from '@renderer/worker/shared/superposeTypes'
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import {
     loadMolSuperposeHistory,
@@ -50,17 +58,29 @@ interface Props {
     onCancel: () => void
 }
 
-const ALGO_OPTIONS = [
-    { label: 'Least-Square Fitting', value: 'LSQ' as const },
-    { label: 'Secondary Structure Matching', value: 'SSM' as const },
+// Short labels keep the segmented control within one form row:
+// US-align (TM-align), Secondary Structure Matching, Least-Square Fitting.
+const ALGO_OPTIONS: { label: string; value: SuperposeAlgo }[] = [
+    { label: 'US-align', value: 'USalign' },
+    { label: 'SSM', value: 'SSM' },
+    { label: 'LSQ', value: 'LSQ' },
 ]
+
+const PIVOT_LABELS: Record<(typeof USALIGN_PIVOTS)[number], string> = {
+    auto: "Auto (CA / C3')",
+    CA: 'CA',
+    "C3'": "C3'",
+    "C4'": "C4'",
+    P: 'P',
+}
 
 export function MolSuperposeDialog({
     visible, sceneId, viewId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
     const { cm } = useCueMol()
 
-    const [algo, setAlgo] = useState<SuperposeAlgo>('LSQ')
+    const [algo, setAlgo] = useState<SuperposeAlgo>(DEFAULT_SUPERPOSE_ALGO)
+    const [pivot, setPivot] = useState<string>('auto')
     const [refObjId, setRefObjId] = useState<number | undefined>(undefined)
     const [movObjId, setMovObjId] = useState<number | undefined>(undefined)
     const [refSel, setRefSel] = useState<string>('')
@@ -83,6 +103,7 @@ export function MolSuperposeDialog({
 
         const hist = loadMolSuperposeHistory()
         setAlgo(hist.algo)
+        setPivot(hist.pivot)
         setAutoRecenter(hist.autoRecenter)
         setUseprop(hist.useprop)
 
@@ -127,6 +148,7 @@ export function MolSuperposeDialog({
                         sceneId,
                         viewId,
                         algo,
+                        pivot,
                         refObjId,
                         refSel,
                         movObjId,
@@ -137,7 +159,7 @@ export function MolSuperposeDialog({
                     onSuccess: () => {
                         if (refSel.trim() !== '') pushHistory(refSel.trim())
                         if (movSel.trim() !== '') pushHistory(movSel.trim())
-                        saveMolSuperposeHistory({ refObjId, movObjId, algo, autoRecenter, useprop })
+                        saveMolSuperposeHistory({ refObjId, movObjId, algo, pivot, autoRecenter, useprop })
                         onConfirm({ ok: true })
                     },
                     fallbackError: 'Superposition failed',
@@ -159,11 +181,28 @@ export function MolSuperposeDialog({
             errorMsg={errorMsg}
         >
                     <FieldSection title="Algorithm">
-                        <SegmentField<SuperposeAlgo>
-                            value={algo}
-                            onValueChange={setAlgo}
-                            options={ALGO_OPTIONS}
-                        />
+                        <FieldGrid>
+                            <FieldGridRow label="Method">
+                                <SegmentField<SuperposeAlgo>
+                                    value={algo}
+                                    onValueChange={setAlgo}
+                                    options={ALGO_OPTIONS}
+                                    disabled={submitting}
+                                />
+                            </FieldGridRow>
+                            <FieldGridRow label="Pivot atom">
+                                <SelectField
+                                    value={pivot}
+                                    onChange={setPivot}
+                                    disabled={submitting || algo !== 'USalign'}
+                                    aria-label="US-align pivot atom"
+                                >
+                                    {USALIGN_PIVOTS.map((p) => (
+                                        <option key={p} value={p}>{PIVOT_LABELS[p]}</option>
+                                    ))}
+                                </SelectField>
+                            </FieldGridRow>
+                        </FieldGrid>
                     </FieldSection>
 
                     <FieldSection title="Reference">

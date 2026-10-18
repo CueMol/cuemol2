@@ -14,6 +14,11 @@
 #include "molvis/DistPickDrawObj.hpp"
 #include "molstr/MolCoord.hpp"
 #include "molstr/NameLabelRenderer.hpp"
+#include "molstr/SelCommand.hpp"
+
+#include <gfx/SolidColor.hpp>
+#include <qsys/Scene.hpp>
+#include <qsys/SceneManager.hpp>
 
 #include <qlib/Vector4D.hpp>
 
@@ -82,4 +87,38 @@ TEST(NameLabelRendererChecks, UnknownAtomIdReturnsFalse)
     molstr::NameLabelRenderer r;
     r.attachObj(pMol->getUID());
     EXPECT_FALSE(r.addLabelByID(12345));
+}
+
+// append() recorded the index one past the new entry, so undo's removeAt()
+// was out of range and left the entry in place (a paint row moved to the end
+// of the list came back duplicated after Undo)
+TEST(PaintColoringChecks, AppendIsUndoable)
+{
+    qsys::ScenePtr pScene = qsys::SceneManager::getInstance()->createScene();
+    molstr::MolCoordPtr pMol(MB_NEW molstr::MolCoord());
+    pMol->setName("mol");
+    pScene->addObject(pMol);
+    qsys::RendererPtr pRend = pMol->createRenderer("simple");
+
+    qlib::LScrSp<molstr::ColoringScheme> pSchm(MB_NEW molvis::PaintColoring());
+    qlib::LVariant var;
+    var.setObjectPtr(pSchm.copy());
+    ASSERT_TRUE(pRend->setProperty("coloring", var));
+    auto *pHolder = dynamic_cast<molstr::ColSchmHolder *>(pRend.get());
+    ASSERT_NE(pHolder, nullptr);
+    auto *pPC = dynamic_cast<molvis::PaintColoring *>(pHolder->getColSchm().get());
+    ASSERT_NE(pPC, nullptr);
+
+    pScene->startUndoTxn("append");
+    pPC->append(molstr::SelectionPtr(MB_NEW molstr::SelCommand("*")),
+                gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    pScene->commitUndoTxn();
+    ASSERT_EQ(pPC->getSize(), 1);
+
+    pScene->undo(0);
+    EXPECT_EQ(pPC->getSize(), 0);
+    pScene->redo(0);
+    EXPECT_EQ(pPC->getSize(), 1);
+
+    qsys::SceneManager::getInstance()->destroyScene(pScene->getUID());
 }

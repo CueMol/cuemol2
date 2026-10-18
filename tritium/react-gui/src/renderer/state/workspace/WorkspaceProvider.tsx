@@ -62,8 +62,10 @@ export interface WorkspaceDispatch {
   /**
    * Close a tab after its save prompt. Resolves true when the tab closed,
    * false when the user kept it. A molview's worker view is removed on close.
+   * `confirm: false` skips the prompt, for a caller that has already decided
+   * what happens to unsaved changes (the console's `close_scene`).
    */
-  closeTab: (id: string) => Promise<boolean>
+  closeTab: (id: string, opts?: { confirm?: boolean }) => Promise<boolean>
   reorderTabs: (fromId: string, toId: string, insertAfter?: boolean) => void
   setMolViewTitle: (viewId: number, title: string) => void
   /** Ref reads for imperative code that must not re-render on tab churn. */
@@ -133,10 +135,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }): 
   const confirmRef = useRef(confirmCloseTab)
   confirmRef.current = confirmCloseTab
 
-  const closeTab = useCallback(async (id: string): Promise<boolean> => {
+  const closeTab = useCallback(async (id: string, opts?: { confirm?: boolean }): Promise<boolean> => {
     const closing = stateRef.current.tabs.find((t) => t.id === id)
     if (!closing) return false
-    if (closing.type === 'molview' && closing.viewId !== undefined) {
+    if (closing.type === 'molview' && closing.viewId !== undefined && opts?.confirm !== false) {
       const proceed = await confirmRef.current(closing.viewId)
       if (!proceed) return false
     }

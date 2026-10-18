@@ -35,6 +35,7 @@ import {
     getColoringClassName,
     materializeColoringIfDefault,
     readMolFancTargetOrNull,
+    coloringOpTarget,
     findFirstMolCoordName,
 } from './colorTargets';
 import { findFirstElePotMapName } from './elepotWriter';
@@ -44,6 +45,8 @@ import {
     readMapStats,
 } from './multiGrad';
 import { buildPresetNodes } from '@renderer/worker/shared/multiGradPresets';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { coloringStyleNames } from './panelList';
 import type {
     SetRendererColoringArgs,
     SetRendererColoringResult,
@@ -189,6 +192,45 @@ function seedEmptyGradient(rend: Renderer): void {
     mg.setNodesJSON(JSON.stringify(nodes));
 }
 
+/** The coloring ids set_renderer_coloring takes as its mode. */
+const OP_COLORING_MODES: ReadonlySet<string> = new Set([
+    'paint-type-cpk',
+    'paint-type-rainbow',
+    'paint-type-bfac',
+    'paint-type-solid',
+    'paint-type-resetdef',
+    'paint-type-paint',
+    'paint-type-multigrad',
+]);
+
+/**
+ * Record the op that applies the same coloring to a renderer or an object.
+ * A gray CPK variant is CPK with its carbon colour set. Styles and the
+ * potential coloring are for renderers only.
+ */
+function recordColoringChoice(ctx: WorkerContext, sceneId: number, args: SetRendererColoringArgs): void {
+    const id: string = args.coloringId;
+    const target = coloringOpTarget(args);
+    if (OP_COLORING_MODES.has(id)) {
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: id, styleName: null }, ['nodeId']);
+        return;
+    }
+    if (id === 'paint-type-cpk-darkgray' || id === 'paint-type-cpk-lightgray') {
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: 'paint-type-cpk', styleName: null }, ['nodeId']);
+        recordOp(ctx, sceneId, 'set_coloring_prop', { ...target, prop: 'col_C', value: CPK_CARBON_COLORS[id] }, ['nodeId']);
+        return;
+    }
+    if (args.targetKind === 'object') return;
+    if (id.startsWith('style-')) {
+        const styleName = id.substring('style-'.length);
+        if (!coloringStyleNames(ctx, sceneId).includes(styleName)) return;
+        recordOp(ctx, sceneId, 'set_renderer_coloring', { ...target, mode: 'style', styleName }, ['nodeId']);
+    } else if (id === 'paint-type-elepot') {
+        // set_elepot_coloring with no map or range switches the mode alone.
+        recordOp(ctx, sceneId, 'set_elepot_coloring', { rendId: args.rendId, map: null, low: null, high: null }, ['rendId']);
+    }
+}
+
 /**
  * Apply a coloring to a renderer from a Coloring-submenu selection.
  *
@@ -213,6 +255,7 @@ export function setRendererColoring(
         const styleName = args.coloringId.substring('style-'.length);
         if (!styleName) return { ok: false };
         withUndoTxn(scene, 'Change coloring style', () => {
+            recordColoringChoice(ctx, scene.uid, args);
             applyStyleColoring(scene, rend, styleName);
         });
         return { ok: true };
@@ -221,11 +264,13 @@ export function setRendererColoring(
     switch (args.coloringId) {
         case 'paint-type-bfac':
             withUndoTxn(scene, 'Change coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 applyObjColoring(ctx, scene, rend, 'BfacColoring');
             });
             return { ok: true };
         case 'paint-type-rainbow':
             withUndoTxn(scene, 'Change coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 applyObjColoring(ctx, scene, rend, 'RainbowColoring');
             });
             return { ok: true };
@@ -236,6 +281,7 @@ export function setRendererColoring(
             withUndoTxn(scene, 'Change coloring', () => {
                 const coloring = createDefPaintColoring(ctx, scene.uid);
                 if (!coloring) return;
+                recordColoringChoice(ctx, scene.uid, args);
                 forceMoleculeColormode(scene, rend);
                 (rend as unknown as MolRenderer).coloring = coloring;
             });
@@ -245,6 +291,7 @@ export function setRendererColoring(
         case 'paint-type-cpk-lightgray': {
             const carbon = CPK_CARBON_COLORS[args.coloringId];
             withUndoTxn(scene, 'Change coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 applyObjColoring(ctx, scene, rend, 'CPKColoring', (coloring) => {
                     (coloring as unknown as { col_C: AbstractColor }).col_C =
                         makeColor(ctx, carbon, scene.uid);
@@ -273,6 +320,7 @@ export function setRendererColoring(
             // molecule) stays reachable through "Reset to default style", and
             // for isosurf also through the Density map panel.
             withUndoTxn(scene, 'Change coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 applyObjColoring(ctx, scene, rend, 'SolidColoring');
             });
             return { ok: true };
@@ -281,6 +329,7 @@ export function setRendererColoring(
             // On molsurf / isosurf also reset colormode to its default
             // ("solid") so the renderer returns to its true default state.
             withUndoTxn(scene, 'Reset coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 rend.resetProp('coloring');
                 // Back to the renderer's own default mode -- "solid" for
                 // molsurf and the map renderers, "molecule" for the
@@ -301,6 +350,8 @@ export function setRendererColoring(
             // paint everything black.
             if (!isMultiGradCapable(rend)) return { ok: false };
             withUndoTxn(scene, 'Change to multi gradient coloring', () => {
+                // The map and the seeded gradient are picked again on a replay, by the same rule.
+                recordColoringChoice(ctx, scene.uid, args);
                 const r = rend as unknown as {
                     color_mapname: string;
                     colormode: string;
@@ -320,6 +371,7 @@ export function setRendererColoring(
             // sensible default. Mirrors `setDefaultElepot` in coloring-panel.js.
             if (!isElepotCapable(rend)) return { ok: false };
             withUndoTxn(scene, 'Change to elepot coloring', () => {
+                recordColoringChoice(ctx, scene.uid, args);
                 const r = rend as unknown as {
                     colormode: string;
                     elepot: string;
@@ -362,6 +414,7 @@ export function setRendererDefaultColor(
 
     const color = makeColor(ctx, args.colorValue, scene.uid);
     withUndoTxn(scene, 'Change default color', () => {
+        recordOp(ctx, scene.uid, 'set_default_color', { ...coloringOpTarget(args), color: args.colorValue }, ['nodeId']);
         if (isMolColorRef(color) && readColormodeOrEmpty(rend) === 'solid') {
             forceMoleculeColormode(scene, rend);
         }
@@ -412,6 +465,11 @@ export function setColoringProp(
     }
 
     withUndoTxn(scene, 'Change coloring property', () => {
+        recordOp(ctx, scene.uid, 'set_coloring_prop', {
+            ...coloringOpTarget(args),
+            prop: args.propName,
+            value: String(args.propValue),
+        }, ['nodeId']);
         materializeColoringIfDefault(rend);
         const live = (rend as unknown as MolRenderer).coloring;
         if (!live) return;
@@ -441,6 +499,14 @@ export function setRendererColoringTarget(
     if (readMolFancTargetOrNull(rend) === null) return { ok: false };
 
     withUndoTxn(scene, 'Change coloring target', () => {
+        if (args.targetKind !== 'object') {
+            recordOp(ctx, scene.uid, 'set_node_prop', {
+                nodeType: 'renderer',
+                nodeId: args.rendId,
+                prop: 'target',
+                value: args.targetName,
+            }, ['nodeId']);
+        }
         // `target` lives directly on the renderer's native wrapper; use the
         // setProp escape hatch (same shape as setRendererElepotProp).
         (rend as unknown as { setProp: (n: string, v: unknown) => void })

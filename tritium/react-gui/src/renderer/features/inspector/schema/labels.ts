@@ -36,3 +36,15 @@ export const JCT_TYPE_LABELS: Record<string, string> = {
   arrow: "Arrow",
 };
 export const JCT_TYPE_OPTIONS = ["smooth", "flat", "arrow"];
+
+/** CSS font-style values offered by the label renderers (atomintr / namelabel). */
+export const FONT_STYLE_OPTIONS = [
+  { label: "Normal", value: "normal" },
+  { label: "Italic", value: "italic" },
+];
+
+/** CSS font-weight values offered by the label renderers (atomintr / namelabel). */
+export const FONT_WEIGHT_OPTIONS = [
+  { label: "Normal", value: "normal" },
+  { label: "Bold", value: "bold" },
+];

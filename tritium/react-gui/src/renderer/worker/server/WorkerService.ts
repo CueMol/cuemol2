@@ -36,6 +36,8 @@ import type {
 } from '@renderer/worker/shared/calls';
 import { forgetAnimProgress, pauseInactivePlayback, pumpAnimProgress } from '@renderer/worker/server/services/anim/anim.service';
 import { isSceneBeingRendered } from '@renderer/worker/server/services/renderjob/renderJob.service';
+import { onActionsChanged } from '@renderer/worker/server/actions/actionLog';
+import { ACTIONS_CHANGED_CHANNEL } from '@renderer/worker/shared/actionTypes';
 
 // import { createLogger } from '@cuemol/core/src/logger';
 // const log = createLogger(import.meta.url);
@@ -137,6 +139,14 @@ export class WorkerService {
         const obj = this._internal.getService(className);
         if (!obj) return null;
         return this._cm.createWrapper(obj);
+    }
+
+    /**
+     * Whether a wrapper is of the .qif class `className` or one derived from
+     * it. Service-side facade exposed as `ctx.svc.isInstanceOf`.
+     */
+    isInstanceOf(obj: unknown, className: string): boolean {
+        return this._cm.isInstanceOf(obj, className);
     }
 
     /**
@@ -308,6 +318,10 @@ export class WorkerService {
         this._evtListenerId = registerWorkerEventListener(
             this._evtMgr, this._cm, this._postMessage,
         );
+
+        // The undo history moved (a commit, undo, redo, a clear): the Action
+        // history pane and the toolbar's undo menu read it again.
+        onActionsChanged((sceneId) => this.pushMessage(ACTIONS_CHANGED_CHANNEL, sceneId));
 
         return true;
     }

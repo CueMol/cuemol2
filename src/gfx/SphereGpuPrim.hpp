@@ -30,7 +30,27 @@ public:
         qfloat32 dspx, dspy;        ///< Billboard corner displacement (±1)
         qfloat32 rad;               ///< Sphere radius
         qbyte r, g, b, a;           ///< RGBA colour
+        quint32 hitName;            ///< Encoded hit name (pick pass only)
     };
+
+    /**
+     * std140 DrawParamsBlock for the pick program (binding=2, 48 bytes):
+     * DrawParams followed by the pick tail (sphere2_pick_vertex.glsl /
+     * sphere_pick_frag.glsl).
+     */
+    struct PickDrawParams
+    {
+        qfloat32 frag_alpha;        // offset 0
+        qfloat32 u_edge;            // offset 4  (0 in the pick pass)
+        qint32   u_bsilh;           // offset 8
+        qfloat32 _pad;              // offset 12
+        qfloat32 u_edgecolor[4];    // offset 16
+        quint32  u_rend_idx;        // R channel (1-based renderer index)
+        quint32  u_outer_name;      // B channel (encoded outer name)
+        quint32  _pp0;
+        quint32  _pp1;
+    };
+
 
     /**
      * std140 DrawParamsBlock layout (binding=2, 32 bytes).
@@ -67,8 +87,19 @@ public:
     /**
      * Set sphere data at the given index.
      * @param devcode Pre-resolved device RGBA colour code.
+     * @param hitName Encoded hit name (gfx::encodeHitName) for the pick pass.
      */
-    void setData(int idx, const qlib::Vector4D &pos, float rad, quint32 devcode);
+    void setData(int idx, const qlib::Vector4D &pos, float rad, quint32 devcode,
+                 quint32 hitName = 0);
+
+    /**
+     * Mark the vertex data as updated so that the GPU buffer is re-uploaded
+     * on the next draw call (in-place update after setData()).
+     */
+    void setUpdated(bool b)
+    {
+        if (m_pDrawElem != nullptr) m_pDrawElem->setUpdated(b);
+    }
 
     // ─── Draw / cleanup ───────────────────────────────────────────────────────
 
@@ -98,9 +129,17 @@ private:
     static constexpr int ATTRLOC_IMPOS  = 1;
     static constexpr int ATTRLOC_RAD    = 2;
     static constexpr int ATTRLOC_COLOR  = 3;
+    // Integer attribute read by sphere2_pick_vertex.glsl only
+    static constexpr int ATTRLOC_HITNAME = 4;
 
     gfx::ShaderObject *m_pPO;
+    gfx::ShaderObject *m_pPickPO;   ///< ID-buffer pick program (lazy)
     SphElemAry32 *m_pDrawElem;
+
+    /** Load the pick program (once). Returns false if unavailable. */
+    bool initPick(DisplayContext *pDC);
+    /** Draw the spheres into the integer pick target (DisplayContext::isPickDraw). */
+    void drawPick(DisplayContext *pDC);
 
     qfloat32 m_dsps[4][2];  ///< Billboard corner displacements (±1, ±1)
 };

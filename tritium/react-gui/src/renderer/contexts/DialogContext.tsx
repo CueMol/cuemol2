@@ -17,6 +17,7 @@ import { FileOpenOptionDialogProvider } from '@renderer/dialogs/fopen-opt-dlgs/F
 import { QscWriterOptionDialogProvider } from '@renderer/dialogs/QscWriterOptionDialogProvider'
 import { StreamProgressDialogProvider } from '@renderer/dialogs/StreamProgressDialogProvider'
 import { TextPromptDialogProvider } from '@renderer/dialogs/TextPromptDialogProvider'
+import { SaveActionDialogProvider } from '@renderer/dialogs/SaveActionDialogProvider'
 import { NewRendererDialogProvider } from '@renderer/dialogs/NewRendererDialogProvider'
 import { ApplyRendStyleDialogProvider } from '@renderer/dialogs/ApplyRendStyleDialogProvider'
 import { CreateRendStyleDialogProvider } from '@renderer/dialogs/CreateRendStyleDialogProvider'
@@ -42,18 +43,24 @@ import { EditInteractionListDialogProvider } from '@renderer/dialogs/EditInterac
 import { StyleEditorDialogProvider } from '@renderer/dialogs/StyleEditorDialogProvider'
 import { composeProviders } from './composeProviders'
 import { ContextMenuProvider } from '@renderer/shell/menu/ContextMenuProvider'
+import { NotificationProvider } from '@renderer/shell/notifications'
+import { UpdateConfirmDialogProvider } from '@renderer/features/update/UpdateConfirmDialog'
 
 export const DialogProvider = composeProviders([
   // Not a dialog, but the same "mount one host, expose a useShowXxx hook"
   // shape: the React context menu host for Windows / Linux.
   ContextMenuProvider,
+  // Also not a dialog: the notification list (toasts, center, status bar bell).
+  NotificationProvider,
   AboutDialogProvider,
+  UpdateConfirmDialogProvider,
   NewTabDialogProvider,
   ConfirmCloseTabDialogProvider,
   FileOpenOptionDialogProvider,
   QscWriterOptionDialogProvider,
   StreamProgressDialogProvider,
   TextPromptDialogProvider,
+  SaveActionDialogProvider,
   NewRendererDialogProvider,
   ApplyRendStyleDialogProvider,
   CreateRendStyleDialogProvider,

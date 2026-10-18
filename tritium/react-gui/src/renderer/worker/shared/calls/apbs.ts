@@ -14,16 +14,19 @@ import type {
   CalcApbsStartResult,
   ProposeElepotNameArgs,
   ProposeElepotNameResult,
+  SetApbsDefaultsArgs,
 } from '@renderer/worker/shared/apbsTypes'
 
 export interface ApbsCalls {
   calcApbsStart:              { args: CalcApbsStartArgs; result: CalcApbsStartResult }
   calcApbsCancel:             { args: CalcApbsCancelArgs; result: CalcApbsCancelResult }
   proposeElepotName:          { args: ProposeElepotNameArgs; result: ProposeElepotNameResult }
+  setApbsDefaults:            { args: SetApbsDefaultsArgs; result: { ok: true } }
 }
 
 export const APBS_KEYS = [
   'calcApbsStart',
   'calcApbsCancel',
   'proposeElepotName',
+  'setApbsDefaults',
 ] as const satisfies readonly (keyof ApbsCalls)[]

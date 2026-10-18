@@ -341,6 +341,7 @@ ${DATA_DIR}/mono_top.xml
 ${DATA_DIR}/default_params.xml
 ${DATA_DIR}/symop.dat
 ${DATA_DIR}/default_style.xml
+${DATA_DIR}/default_actions.qax
 )
 set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
 

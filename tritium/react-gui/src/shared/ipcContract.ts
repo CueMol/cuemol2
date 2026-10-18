@@ -35,6 +35,11 @@ import type {
   RelayGetPayload, RelayReplyPayload, RelayRequestPayload, RelayKind, RelayRes, RenderWindowEditAction,
 } from './types/renderWindow'
 import type { CuemolClipWriteReq, CuemolClipReadRes, CuemolClipPeekRes } from './types/clipboard'
+import type {
+  AppQuitRequest, AppQuitResponse,
+  LocalApiControlReq, LocalApiReplyPayload, LocalApiRequestPayload, LocalApiStatus,
+} from './types/localApi'
+import type { UpdateStatus } from './types/update'
 
 export interface InvokeChannels {
   [IPC.APP_PATH]:          { req: void;                  res: AppPathInfo }
@@ -49,6 +54,8 @@ export interface InvokeChannels {
                               res: { canceled: boolean; filePath: string } }
   [IPC.DIALOG_CAMERA_SAVE]: { req: { defaultName: string };
                               res: { canceled: boolean; filePath: string } }
+  [IPC.DIALOG_ACTIONS_SAVE]: { req: { defaultName: string };
+                               res: { canceled: boolean; filePath: string } }
   [IPC.DIALOG_SCENE_EXPORT]: { req: {
                                  defaultName: string
                                  filters: { name: string; extensions: string[] }[]
@@ -82,6 +89,7 @@ export interface InvokeChannels {
   [IPC.SHELL_OPEN_PATH]:   { req: { path: string };      res: { ok: boolean; error?: string } }
   [IPC.SHELL_FILES_TAKE]:  { req: void;                  res: ShellOpenRequest }
   [IPC.SHELL_REVEAL_PATH]: { req: { path: string };      res: { ok: boolean } }
+  [IPC.SHELL_TRASH_PATH]:  { req: { path: string };      res: { ok: boolean; error?: string } }
   [IPC.LAYOUT_LOAD]:       { req: void;                  res: LayoutState | null }
   [IPC.LAYOUT_SAVE]:       { req: LayoutState;           res: void }
   [IPC.UI_LOAD]:           { req: void;                  res: UiState }
@@ -111,6 +119,19 @@ export interface InvokeChannels {
    */
   [IPC.RENDER_RELAY_GET]:   { req: RelayGetPayload; res: RelayRes<RelayKind> }
   [IPC.RENDER_RELAY_REPLY]: { req: RelayReplyPayload; res: void }
+  // Local API server: the answer to a pushed request, and the server's switches.
+  [IPC.LOCAL_API_REPLY]:   { req: LocalApiReplyPayload; res: void }
+  [IPC.LOCAL_API_CONTROL]: { req: LocalApiControlReq;   res: LocalApiStatus }
+  [IPC.LOCAL_API_STATUS]:  { req: void;                 res: LocalApiStatus }
+  [IPC.LOCAL_API_CLI_ACCESS]: { req: void;              res: boolean }
+  [IPC.UPDATE_GET_STATUS]:     { req: void; res: UpdateStatus }
+  [IPC.UPDATE_CHECK]:          { req: void; res: void }
+  [IPC.UPDATE_DOWNLOAD]:       { req: void; res: void }
+  [IPC.UPDATE_CANCEL]:         { req: void; res: void }
+  [IPC.UPDATE_INSTALL]:        { req: void; res: void }
+  [IPC.UPDATE_RESTART]:        { req: void; res: void }
+  [IPC.UPDATE_OPEN_RELEASE]:   { req: void; res: void }
+  [IPC.UPDATE_DISMISS_RESULT]: { req: void; res: void }
   /**
    * Archive a finished render's PNG under its result id (main window -> main).
    * `workDir` is the job's temp directory when it is one the app should clean
@@ -172,6 +193,7 @@ export interface InvokeChannels {
   [IPC.TEXT_CTX_ACTION]:   { req: TextEditAction;         res: void }
   [IPC.CRASH_REPORT]:      { req: CrashReport;           res: void }
   [IPC.FORCE_QUIT]:        { req: void;                  res: void }
+  [IPC.APP_QUIT]:          { req: AppQuitRequest;        res: AppQuitResponse['outcome'] }
 }
 
 export interface PushChannels {
@@ -205,6 +227,9 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_MODE_PUSH]:  RenderWindowModeRequest
   [IPC.RENDER_WINDOW_EDIT_PUSH]:  RenderWindowEditAction
   [IPC.RENDER_RELAY_REQUEST]:     RelayRequestPayload
+  [IPC.LOCAL_API_REQUEST]:        LocalApiRequestPayload
+  [IPC.LOCAL_API_CLI_ACCESS_GRANTED]: void
+  [IPC.UPDATE_STATUS]:            UpdateStatus
 }
 
 export type InvokeChannel = keyof InvokeChannels

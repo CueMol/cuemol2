@@ -60,6 +60,28 @@ private:
   /// "<chain> <resn><resi> <name>[:alt]" text.
   LString m_strFormat;
 
+  /// Draw the labels over all geometry, ignoring the depth test
+  bool m_bLabelOnTop;
+
+public:
+  /// Which point of a label sits on its anchor (atom position + dispx/dispy)
+  enum {
+    HALIGN_LEFT = 0,
+    HALIGN_CENTER = 1,
+    HALIGN_RIGHT = 2,
+  };
+  enum {
+    VALIGN_BOTTOM = 0,
+    VALIGN_MIDDLE = 1,
+    VALIGN_TOP = 2,
+  };
+
+private:
+  /// Horizontal alignment of the labels on their anchor (HALIGN_*)
+  int m_nHAlign;
+  /// Vertical alignment of the labels on their anchor (VALIGN_*)
+  int m_nVAlign;
+
   /// label pixbuf cache
   gfx::LabelCacheImpl m_pixCache;
 
@@ -111,6 +133,20 @@ public:
   bool addLabel(MolAtomPtr patom, const LString &label = LString());
 
   bool removeLabelByID(int aid);
+
+  /// Replace every label with `labs` (an undo / redo of a label edit).
+  void restoreLabels(const NameLabelList &labs);
+
+private:
+  /// Record the change from `before` to the current labels as one undo step,
+  /// when an undo txn is open.
+  void recordLabelEdit(const NameLabelList &before);
+
+  bool addLabelByIDImpl(int aid, const LString &label);
+  bool removeLabelByIDImpl(int aid);
+  bool setLabelFormatImpl(int aid, const LString &fmt);
+
+public:
 
   /// Label atom `aid` with the format `fmt` (LabelFormat): adds a label if
   /// there is none, replaces the format if there is one. An empty `fmt`

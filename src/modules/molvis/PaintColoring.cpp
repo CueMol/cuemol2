@@ -206,7 +206,8 @@ void PaintColoring::append(const SelectionPtr &psel, const ColorPtr &color)
   if (uu.isOK()) {
     PaintColorEditInfo *pInfo = MB_NEW PaintColorEditInfo();
     pInfo->m_nMode = PaintColorEditInfo::PCE_ADD;
-    pInfo->m_nInsBefore = m_coltab.size();
+    // index of the entry just appended: undo removes it from there
+    pInfo->m_nInsBefore = int(m_coltab.size()) - 1;
     pInfo->m_pSel = psel;
     pInfo->m_pCol = color;
     pInfo->setup(this);

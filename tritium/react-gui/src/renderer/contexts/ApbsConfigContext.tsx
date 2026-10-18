@@ -29,10 +29,13 @@ import React, {
 } from 'react';
 import { IPC } from '@shared/ipcChannels';
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
+import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import {
   type ApbsBinaries,
   DEFAULT_APBS_BINARIES,
   DEFAULT_PDB2PQR_FF,
+  PDB2PQR_FORCE_FIELDS,
+  type Pdb2pqrForceField,
 } from '@renderer/worker/shared/apbsTypes';
 
 /** Persistent APBS config: the two exe paths plus the default force field. */
@@ -100,6 +103,22 @@ export const ApbsConfigProvider: React.FC<ApbsConfigProviderProps> = ({
     // Persist immediately -- these change infrequently; no debounce needed.
     window.electronAPI?.invoke(IPC.UI_SAVE, { [key]: value });
   }, []);
+
+  // The worker keeps a copy for the console's `apbs`, which has no dialog to
+  // pass the paths (worker/server/services/apbs/defaults.ts).
+  const { cm } = useCueMol();
+  useEffect(() => {
+    if (!cm) return;
+    const forceField = (PDB2PQR_FORCE_FIELDS as readonly string[]).includes(config.pdb2pqrFF)
+      ? (config.pdb2pqrFF as Pdb2pqrForceField)
+      : DEFAULT_PDB2PQR_FF;
+    void cm
+      .invokeService('setApbsDefaults', {
+        binaries: { apbsExe: config.apbsExe, pdb2pqrExe: config.pdb2pqrExe },
+        forceField,
+      })
+      .catch((e: unknown) => console.warn('setApbsDefaults failed:', e));
+  }, [cm, config]);
 
   const value = useMemo<ApbsConfigContextValue>(
     () => ({ config, setValue }),

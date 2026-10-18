@@ -11,10 +11,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, ButtonGroup } from '@blueprintjs/core'
 import { AppIcon, Tooltip } from '@renderer/h3-kit/primitives'
+import { SectionHeader } from '@renderer/h3-kit/form'
 import { useShowContextMenu } from '@renderer/shell/menu/ContextMenuProvider'
 import type { MenuNode } from '@shared/menuNodes'
 import { ColorSwatch, CueColorField } from '@renderer/h3-kit/colorpicker'
-import { scrollRowIntoView, useListKeyNav } from '@renderer/h3-kit/list'
+import { scrollRowIntoView, useListKeyNav, useRowReorderDnd } from '@renderer/h3-kit/list'
 import { useColumnResize } from '@renderer/hooks/useColumnResize'
 import type { PaintEntryDto } from '@renderer/worker/server/services/coloring/coloring.service'
 import { PaintSelCell } from '@renderer/features/coloring/PaintSelCell'
@@ -43,9 +44,12 @@ interface PaintTableProps {
     /** Shift+click range from the anchor; `additive` unions instead of replacing. */
     onSelectRange: (idx: number, additive: boolean) => void
     onAdd: () => void
-    onRemove: () => void
     onMoveUp: () => void
     onMoveDown: () => void
+    /** Drag-to-reorder: move one row to `toIdx` (its index after the move). */
+    onMoveTo: (fromIdx: number, toIdx: number) => void
+    /** Delete the selected rows (toolbar, context menu, Delete / Backspace). */
+    onRemove: () => void
     onUpdate: (idx: number, field: 'selStr' | 'colorValue', value: string) => void
     /** Clear the whole list (UXP `paintpanel-delallbtn`). */
     onRemoveAll: () => void
@@ -73,9 +77,10 @@ export const PaintTable: React.FC<PaintTableProps> = ({
     onToggleSelect,
     onSelectRange,
     onAdd,
-    onRemove,
     onMoveUp,
     onMoveDown,
+    onMoveTo,
+    onRemove,
     onUpdate,
     onRemoveAll,
     onCut,
@@ -89,7 +94,6 @@ export const PaintTable: React.FC<PaintTableProps> = ({
     const rowIds = useMemo(() => entries.map((e) => String(e.idx)), [entries])
 
     const isRowSelected = selectedIdxs.size > 0
-    const isSingleRow = selectedIdxs.size === 1
     const showContextMenu = useShowContextMenu()
 
     // Drag-resizable split between the Selection and Color columns, the
@@ -267,6 +271,22 @@ export const PaintTable: React.FC<PaintTableProps> = ({
      * every other list uses (h3-kit/list). Rows carry `data-row-idx` so the
      * moved-to row can be scrolled into view.
      */
+    /**
+     * Drag a row onto another to reorder (the up / down buttons move one step;
+     * this moves anywhere). Off while a cell editor is open: the editor owns
+     * the pointer, and a drag from a text field would move the row instead of
+     * selecting text.
+     */
+    const dnd = useRowReorderDnd({
+        names: rowIds,
+        mime: 'application/x-cuemol-paint-row',
+        rowAttr: 'data-row-idx',
+        enabled: editing === null,
+        onReorder: (next, src) => onMoveTo(Number(src), next.indexOf(src)),
+    })
+    const dropClass = (idx: number): string =>
+        dnd.indicator?.name === String(idx) ? ` is-drop-${dnd.indicator.side}` : ''
+
     const navKeyDown = useListKeyNav({
         items: rowIds,
         activeId: selectedIdx === null ? null : String(selectedIdx),
@@ -278,7 +298,8 @@ export const PaintTable: React.FC<PaintTableProps> = ({
     })
 
     /**
-     * Table keys: navigation, then Enter / F2 to edit the selected row.
+     * Table keys: navigation, Enter / F2 to edit the selected row, and
+     * Delete / Backspace to delete the selection (scene tree parity).
      *
      * An open editor owns the keyboard entirely -- everything typed into it
      * bubbles here, and Enter there means "confirm", not "open an editor".
@@ -288,17 +309,39 @@ export const PaintTable: React.FC<PaintTableProps> = ({
         (e: React.KeyboardEvent<HTMLDivElement>) => {
             if (editing !== null) return
             if (navKeyDown(e)) return
+            if ((e.key === 'Delete' || e.key === 'Backspace') && isRowSelected) {
+                e.preventDefault()
+                onRemove()
+                return
+            }
             if (e.key !== 'Enter' && e.key !== 'F2') return
             if (selectedIdx === null) return
             e.preventDefault()
             beginEdit(selectedIdx, 'sel')
         },
-        [editing, navKeyDown, selectedIdx, beginEdit],
+        [editing, navKeyDown, selectedIdx, beginEdit, isRowSelected, onRemove],
     )
 
     return (
-        <>
-            <div className="color-section-label">Paint coloring:</div>
+        // Laid out like the Camera pane's list: full pane width, no frame. A
+        // bar on top carries the list's own toolbar (untitled: a title there
+        // read as a second pane title), so the edits sit right on the list
+        // they act on and the bar marks where it starts.
+        <div className="color-paint-list" data-clipboard-scope="paint-deck">
+            <SectionHeader
+                className="color-paint-header"
+                actions={
+                    <PaintHeaderActions
+                        entryCount={entries.length}
+                        selectedIdx={selectedIdx}
+                        selectedCount={selectedIdxs.size}
+                        onAdd={onAdd}
+                        onMoveUp={onMoveUp}
+                        onMoveDown={onMoveDown}
+                        onRemove={onRemove}
+                    />
+                }
+            />
             {/* Marks the paint deck as the target of Edit > Cut/Copy/Paste
                 while the user is working here. tabIndex keeps the wrapper
                 focusable so a row click parks focus inside the scope; the
@@ -309,9 +352,12 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                 tabIndex={-1}
                 data-clipboard-scope="paint-deck"
                 onKeyDown={onTableKeyDown}
+                onDragOver={dnd.onListDragOver}
+                onDrop={dnd.onListDrop}
+                onDragLeave={dnd.onListDragLeave}
                 style={{ outline: 'none' }}
             >
-                <table className="color-table">
+                <table className="color-table h3-list-table">
                     <colgroup>
                         <col style={{ width: selWidth }} />
                         {/* Color takes the remaining width */}
@@ -332,8 +378,8 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                     <tbody>
                         {entries.length === 0 ? (
                             <tr onContextMenu={(e) => onRowContextMenu(null, e)}>
-                                <td colSpan={2} className="color-empty-row">
-                                    (no paint entries — click + to add)
+                                <td colSpan={2} className="color-empty-row type-caption">
+                                    No paint entries. Click + to add one.
                                 </td>
                             </tr>
                         ) : (
@@ -341,7 +387,12 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                                 <tr
                                     key={entry.idx}
                                     data-row-idx={entry.idx}
-                                    className={`color-row ${selectedIdxs.has(entry.idx) ? 'selected' : ''}`}
+                                    className={`color-row h3-list-table-row${selectedIdxs.has(entry.idx) ? ' is-selected' : ''}${dropClass(entry.idx)}`}
+                                    draggable={editing === null}
+                                    onDragStart={(e) => dnd.onDragStart(e, String(entry.idx))}
+                                    onDragOver={(e) => dnd.onDragOver(e, String(entry.idx))}
+                                    onDrop={(e) => dnd.onDrop(e, String(entry.idx))}
+                                    onDragEnd={dnd.onDragEnd}
                                     onMouseDown={onRowMouseDown}
                                     onClick={(e) => onRowClick(entry.idx, e)}
                                     onContextMenu={(e) =>
@@ -426,53 +477,81 @@ export const PaintTable: React.FC<PaintTableProps> = ({
                     </tbody>
                 </table>
             </div>
+        </div>
+    )
+}
 
-            <div className="color-actions" data-clipboard-scope="paint-deck">
-                <ButtonGroup minimal>
-                    <Tooltip content="Add row" placement="top">
-                        <Button
-                            small
-                            icon={<AppIcon name="ui.add" aria-hidden />}
-                            aria-label="Add row"
-                            className="color-action-btn"
-                            onClick={onAdd}
-                        />
-                    </Tooltip>
-                    <Tooltip content="Remove row" placement="top">
-                        <Button
-                            small
-                            icon={<AppIcon name="ui.remove" aria-hidden />}
-                            aria-label="Remove row"
-                            className="color-action-btn"
-                            onClick={onRemove}
-                            disabled={!isRowSelected}
-                        />
-                    </Tooltip>
-                    <Tooltip content="Move up" placement="top">
-                        <Button
-                            small
-                            icon={<AppIcon name="ui.arrowUp" aria-hidden />}
-                            aria-label="Move row up"
-                            className="color-action-btn"
-                            onClick={onMoveUp}
-                            disabled={!isSingleRow || selectedIdx === 0}
-                        />
-                    </Tooltip>
-                    <Tooltip content="Move down" placement="top">
-                        <Button
-                            small
-                            icon={<AppIcon name="ui.arrowDown" aria-hidden />}
-                            aria-label="Move row down"
-                            className="color-action-btn"
-                            onClick={onMoveDown}
-                            disabled={
-                                !isSingleRow ||
-                                (selectedIdx !== null && selectedIdx >= entries.length - 1)
-                            }
-                        />
-                    </Tooltip>
-                </ButtonGroup>
-            </div>
-        </>
+interface PaintHeaderActionsProps {
+    entryCount: number
+    /** Anchor row (Move up / down act on it). */
+    selectedIdx: number | null
+    selectedCount: number
+    onAdd: () => void
+    onMoveUp: () => void
+    onMoveDown: () => void
+    onRemove: () => void
+}
+
+/**
+ * The Paint list's edits as icon buttons, in the same set and style as the
+ * Scene pane's (Add ... Delete, Delete as a trash can). Cut / Copy / Paste
+ * stay in the row context menu.
+ */
+const PaintHeaderActions: React.FC<PaintHeaderActionsProps> = ({
+    entryCount,
+    selectedIdx,
+    selectedCount,
+    onAdd,
+    onMoveUp,
+    onMoveDown,
+    onRemove,
+}) => {
+    const single = selectedCount === 1 && selectedIdx !== null
+    return (
+        <ButtonGroup minimal>
+            <Tooltip content="Add" placement="bottom">
+                <Button
+                    minimal
+                    small
+                    icon={<AppIcon name="ui.add" aria-hidden />}
+                    aria-label="Add row"
+                    className="section-action-btn"
+                    onClick={onAdd}
+                />
+            </Tooltip>
+            <Tooltip content="Move up" placement="bottom">
+                <Button
+                    minimal
+                    small
+                    icon={<AppIcon name="ui.arrowUp" aria-hidden />}
+                    aria-label="Move row up"
+                    className="section-action-btn"
+                    onClick={onMoveUp}
+                    disabled={!single || selectedIdx === 0}
+                />
+            </Tooltip>
+            <Tooltip content="Move down" placement="bottom">
+                <Button
+                    minimal
+                    small
+                    icon={<AppIcon name="ui.arrowDown" aria-hidden />}
+                    aria-label="Move row down"
+                    className="section-action-btn"
+                    onClick={onMoveDown}
+                    disabled={!single || selectedIdx >= entryCount - 1}
+                />
+            </Tooltip>
+            <Tooltip content="Delete" placement="bottom">
+                <Button
+                    minimal
+                    small
+                    icon={<AppIcon name="ui.trash" aria-hidden />}
+                    aria-label="Delete row"
+                    className="section-action-btn"
+                    onClick={onRemove}
+                    disabled={selectedCount === 0}
+                />
+            </Tooltip>
+        </ButtonGroup>
     )
 }

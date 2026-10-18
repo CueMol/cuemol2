@@ -25,6 +25,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
 import { undoTxnResult } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { ok, fail, type Result } from '@renderer/worker/shared/result';
 
 export interface GetMolSurfRegenInfoArgs {
@@ -160,6 +161,11 @@ export function regenMolSurf(
 
     const density = coerceDensity(args.density);
     return undoTxnResult(scene, 'Regenerate mol surface', () => {
+        recordOp(ctx, scene.uid, 'recalc_surface', {
+            surfId: args.objId,
+            density,
+            backend: args.backend && args.backend !== 'auto' ? args.backend : null,
+        }, ['surfId']);
         // `sesbackend` is an enum property: the generated wrapper types it as
         // number, but the C++ layer takes/returns the string id.
         if (args.backend && args.backend !== 'auto') {

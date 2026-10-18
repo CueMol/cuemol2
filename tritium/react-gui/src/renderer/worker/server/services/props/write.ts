@@ -10,6 +10,7 @@
  * `map_type` decides which default style its renderers carry.
  */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
+import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { resolvePropTarget } from './target';
@@ -22,12 +23,26 @@ import { syncMapRendererStyles } from '@renderer/worker/server/services/helpers/
 import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import { collectProps } from './read';
 import { isSceneNameWrite } from './selContext';
+import { recordOp, recordPropWrite, recordRenameNode } from '@renderer/worker/server/actions/serviceOps';
 import type {
     ResetGenericPropsArgs,
     SetGenericPropArgs,
     SetGenericPropResult,
     SetGenericPropsArgs,
 } from './types';
+
+/**
+ * Run a property write in an undo txn, except on the view: C++ keeps no undo
+ * for view properties, and an empty commit would still drop the redo side.
+ */
+function propTxn(scene: Scene, nodeType: string, label: string, body: () => void): void {
+    if (nodeType === 'view') {
+        body();
+        return;
+    }
+    withUndoTxn(scene, label, body);
+}
+
 export function setGenericProp(
     ctx: WorkerContext,
     args: SetGenericPropArgs,
@@ -152,7 +167,12 @@ export function setGenericProp(
             if (args.originalWasDefault) target.resetProp(args.propName);
             else target.setProp(args.propName, args.originalValue);
         }
-        withUndoTxn(scene, label, () => {
+        propTxn(scene, args.nodeType, label, () => {
+            // The op that does the same: a group's rename and its cascaded
+            // visibility are their own ops, which carry the members along.
+            if (grpRename) recordRenameNode(ctx, scene.uid, 'rendGroup', args.nodeId, grpRename.newName);
+            else if (grpVisibility) recordOp(ctx, scene.uid, 'set_visible', { nodeId: args.nodeId, nodeType: 'rendGroup', visible: args.value === true }, ['nodeId']);
+            else recordPropWrite(ctx, scene.uid, args);
             if (args.op === 'reset') {
                 target.resetProp(args.propName);
             } else if (isSceneNameWrite(args.nodeType, args.propName)) {
@@ -225,8 +245,9 @@ export function resetGenericProps(
             : `Reset ${propNames.length} properties`;
 
     try {
-        withUndoTxn(scene, label, () => {
+        propTxn(scene, args.nodeType, label, () => {
             for (const name of propNames) {
+                recordPropWrite(ctx, scene.uid, { nodeType: args.nodeType, nodeId: args.nodeId, propName: name, op: 'reset' });
                 // Skip props that vanished because a parent object property
                 // was swapped earlier in this very loop (e.g. resetting
                 // `coloring` before `coloring.xxx`) -- UXP resetAllToDefault's
@@ -277,8 +298,9 @@ export function setGenericProps(
             : `Change ${args.writes.length} properties`;
 
     try {
-        withUndoTxn(scene, label, () => {
+        propTxn(scene, args.nodeType, label, () => {
             for (const w of args.writes) {
+                recordPropWrite(ctx, scene.uid, { ...args, ...w });
                 if (w.op === 'reset') {
                     target.resetProp(w.propName);
                 } else if (isSceneNameWrite(args.nodeType, w.propName)) {

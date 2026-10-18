@@ -31,6 +31,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName';
 import { withUndoTxn } from '../withUndoTxn';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 const log = console;
 
@@ -102,6 +103,7 @@ export function convertToMorphMol(
     let morphObjName = '';
     try {
         withUndoTxn(scene, 'Conv Mol to MorphMol', () => {
+            recordOp(ctx, scene.uid, 'convert_to_morph', { objId: args.objId }, ['objId']);
             const molName = (mol as unknown as { name: string }).name ?? '';
             // Serialize with the type overwritten to MorphMol; renderers are
             // part of the object XML, so the new object keeps them.
@@ -190,6 +192,15 @@ export function getMorphFrames(
 
 // ---- frame edits ----
 
+/**
+ * The `before` argument of add_morph_frame for an insert index: its frame
+ * number, or null when the index appends (negative or past the last frame).
+ */
+function beforeArg(ctx: WorkerContext, sceneId: number, objId: number, insertIndex: number): number | null {
+    const count = getMorphFrames(ctx, { sceneId, objId }).frames.length;
+    return insertIndex >= 0 && insertIndex < count ? insertIndex + 1 : null;
+}
+
 export interface AddMorphFrameFromFileArgs {
     sceneId: number;
     objId: number;
@@ -226,9 +237,16 @@ export function addMorphFrameFromFile(
     const rm = resolveMorph(ctx, args.sceneId, args.objId);
     if (!rm) return { ok: false, error: 'MorphMol not found' };
     const { scene, morph } = rm;
+    const before = beforeArg(ctx, args.sceneId, args.objId, args.insertIndex);
 
     try {
         return withUndoTxn(scene, 'Add PDB to MorphMol', () => {
+            recordOp(ctx, scene.uid, 'add_morph_frame', {
+                objId: args.objId,
+                file: args.path,
+                fromObjId: null,
+                before,
+            }, ['objId']);
             const reader = ctx.strMgr.createHandler(
                 'pdb', OBJREADER_CATEGORY,
             ) as unknown as PdbReaderHandle | null;
@@ -263,9 +281,16 @@ export function addMorphFrameFromMol(
     const { scene, morph } = rm;
     const src = scene.getObject(args.srcObjId) as CueMolObject | null;
     if (!src) return { ok: false, error: 'source molecule not found' };
+    const before = beforeArg(ctx, args.sceneId, args.objId, args.insertIndex);
 
     try {
         return withUndoTxn(scene, 'Add mol to MorphMol', () => {
+            recordOp(ctx, scene.uid, 'add_morph_frame', {
+                objId: args.objId,
+                file: null,
+                fromObjId: args.srcObjId,
+                before,
+            }, ['objId', 'fromObjId']);
             // Deep copy so later edits to the source molecule do not mutate
             // the captured frame (UXP addMolCoord toXML/fromXML round trip).
             const xml = ctx.strMgr.toXML(
@@ -300,6 +325,7 @@ export function removeMorphFrame(
 
     try {
         return withUndoTxn(scene, 'Delete MorphMol item', () => {
+            recordOp(ctx, scene.uid, 'remove_morph_frame', { objId: args.objId, frame: args.frameIndex + 1 }, ['objId']);
             morph.removeFrame(args.frameIndex);
             return { ok: true };
         });

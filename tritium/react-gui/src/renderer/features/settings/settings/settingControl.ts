@@ -10,6 +10,7 @@
  * `SettingRow` draws each kind; adding a kind means adding a case there.
  */
 
+import type React from 'react'
 import type { ComboBoxOption } from '@renderer/h3-kit/form'
 
 /** How one setting is edited. */
@@ -40,6 +41,21 @@ export type SettingControl =
    * it into the app.
    */
   | { kind: 'secret'; namespace: string; envVar?: string }
+  /**
+   * A row that draws its own control (something to read or act on rather
+   * than a value to store: a path the app computed, a Check Now button). A
+   * built-in row names `Component` directly; for a plugin's row the host
+   * fills it in from the plugin's `settingRows`.
+   */
+  | {
+      kind: 'custom'
+      Component: React.ComponentType
+      /**
+       * Lift the control column's width cap (sized for one input or select),
+       * for a row that lays out text and a row of buttons.
+       */
+      wide?: boolean
+    }
 
 /**
  * What a plugin writes in `contributes.settings`.
@@ -48,5 +64,6 @@ export type SettingControl =
  * in with the plugin id, so one plugin can never address another's secret.
  */
 export type PluginSettingControl =
-  | Exclude<SettingControl, { kind: 'secret' }>
+  | Exclude<SettingControl, { kind: 'secret' } | { kind: 'custom' }>
   | { kind: 'secret'; envVar?: string }
+  | { kind: 'custom'; wide?: boolean }

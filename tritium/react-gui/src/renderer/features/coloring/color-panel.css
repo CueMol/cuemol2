@@ -1,33 +1,46 @@
 /* ─── Color Panel ─── */
 .color-panel-body {
+  /* The body itself is unpadded so the Paint list can run edge to edge (as
+     the Camera list does); the shell row and the form decks pad themselves. */
+  gap: 0;
+  padding: 0;
+}
+
+/* Form decks (Solid / CPK / Rainbow / ...): the pane's form padding. */
+.color-deck-pad {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-4);
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 .color-mol-row {
   flex-shrink: 0;
 }
 
-/* Section heading -- bumped from --text-secondary to --text-primary so
- * the "Rainbow coloring:" / "CPK coloring:" / etc. read clearly on both
- * the dark and light themes (the secondary tone fades into the panel
- * background, especially in light mode). */
-.color-section-label {
-  font-size: var(--fs-base);
-  font-weight: var(--fw-semibold);
-  color: var(--text-primary);
-  flex-shrink: 0;
+/* The Paint list: full pane width, no frame (Camera pane parity). */
+.color-paint-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Table wrapper — scrollable when there are many rows */
+/* Its toolbar bar, with the buttons at the pane header's action inset. The
+   bar's top rule closes off the form above. */
+.color-paint-header {
+  padding: 0 var(--space-2) 0 var(--list-row-pad-x);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Table wrapper -- scrollable when there are many rows. */
 .color-table-wrap {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg-input);
 }
 
 /* Fixed layout so the <colgroup> widths are authoritative. With `auto` the
@@ -38,7 +51,6 @@
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: var(--fs-lg);
 }
 
 .color-table thead {
@@ -48,15 +60,15 @@
 }
 
 .color-table th {
-  padding: 3px var(--space-4);
+  height: var(--row-h);
+  padding: 0 var(--list-row-pad-x);
   text-align: left;
-  font-size: var(--fs-sm2);
-  font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-wide);
-  color: var(--text-secondary);
-  background: var(--bg-panel-header);
-  border-bottom: 1px solid var(--border);
+  font-size: var(--type-caption-fs);
+  line-height: var(--type-caption-lh);
+  font-weight: var(--type-caption-fw);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .color-th-selection {
@@ -90,71 +102,25 @@
   opacity: 0.6;
 }
 
+/* Row height, hover and selection come from list-kit (.h3-list-table-row).
+   Rows are selected as units, so their labels are not text to sweep across;
+   the editors inside keep their own text selection. */
 .color-row {
-  cursor: pointer;
-  transition: background 0.1s;
-  /* Rows are selected as units; their labels are not text to sweep across.
-     Editable controls inside keep their own selection (`user-select: auto`
-     resolves to `contain` on editable elements), so typing into the
-     Selection cell is unaffected. */
   user-select: none;
 }
 
-/* Hover / selection ring.
-   Painted by a positioned overlay on each cell, above the cell's content.
-   Two earlier attempts failed on the Selection cell: an `outline` on the
-   <tr>, and inset box-shadows on the <td>. Both draw in the row / cell
-   background phase, and the Selection cell strips its padding so the
-   MolSelList InputGroup (a positioned element, painted later) sits flush
-   with the cell edge and covered the ring's left segment. An overlay with
-   its own z-index paints after the input, so every segment survives no
-   matter what the cell holds or how tightly it is packed. The overlay has
-   no pointer events and adds no height, so a selected row neither blocks
-   clicks nor shifts its neighbours. */
-.color-row > td {
-  --color-row-ring: transparent;
-  position: relative;
-  /* Own stacking context, so the overlay's z-index is scoped to the cell
-     and cannot rise above the sticky header (z-index 1) while scrolling. */
-  z-index: 0;
-}
-
-.color-row > td::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  border-top: 1px solid var(--color-row-ring);
-  border-bottom: 1px solid var(--color-row-ring);
-}
-
-.color-row > td:first-child::after {
-  border-left: 1px solid var(--color-row-ring);
-}
-
-.color-row > td:last-child::after {
-  border-right: 1px solid var(--color-row-ring);
-}
-
-.color-row:hover > td {
-  --color-row-ring: var(--border);
-}
-
-.color-row.selected > td {
-  --color-row-ring: var(--accent);
-}
-
-.color-cell-selection {
-  padding: var(--space-1) var(--space-2);
-  color: var(--text-primary);
-  border-right: 1px solid var(--border-subtle);
-}
-
+.color-cell-selection,
 .color-cell-color {
-  padding: var(--space-1) var(--space-2);
-  color: var(--swatch-text);
-  font-weight: var(--fw-semibold);
+  padding: 0 var(--list-row-pad-x);
+}
+
+/* The picker chevrons show on the row under the pointer and the selected
+   row only (VSCode's inline row actions), so a resting list reads as values
+   rather than a column of dropdowns. They keep their space, so nothing
+   shifts when they appear. */
+.color-row:not(:hover):not(.is-selected) .color-cell-caret,
+.color-row:not(:hover):not(.is-selected) .h3-color-caret-btn {
+  visibility: hidden;
 }
 
 /* The colour picker fills the table cell. */
@@ -176,7 +142,8 @@
 .color-cell-text {
   flex: 1;
   min-width: 0;
-  color: var(--text-primary);
+  /* Inherited, so a selected row takes list-kit's selected text tone. */
+  color: inherit;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -200,45 +167,13 @@
   width: 100%;
 }
 
-/* Bottom action buttons */
-/* One group of list edits (Add / Remove / Move up / Move down). Cut, Copy,
-   Paste and Delete all live in the row context menu, so the row stays on a
-   single line at every panel width and never wraps. */
-.color-actions {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: var(--space-2);
-  padding-top: var(--space-1);
-  border-top: 1px solid var(--border-subtle);
-}
-
-.color-action-btn.bp5-button {
-  min-height: 24px !important;
-  min-width: 26px !important;
-  padding: 0 var(--space-2) !important;
-  border-radius: var(--radius-md);
-}
-
-.color-action-btn.bp5-button .bp5-icon {
-  color: var(--text-muted);
-}
-
-.color-action-btn.bp5-button:hover {
-  background: var(--overlay-hover) !important;
-}
-
-.color-action-btn.bp5-button:hover .bp5-icon {
-  color: var(--text-secondary);
-}
-
 /* Shell row: renderer selector + coloring dropdown */
 .color-shell-row {
   display: flex;
   gap: var(--space-3);
   align-items: center;
   flex-shrink: 0;
+  padding: var(--space-4);
 }
 
 .color-shell-row .bp5-html-select {
@@ -247,11 +182,9 @@
 }
 
 /* Empty / placeholder decks */
-.color-empty-row td {
-  padding: var(--space-4) var(--space-3);
-  font-style: italic;
+.color-empty-row {
+  padding: var(--space-4) var(--list-row-pad-x);
   color: var(--text-muted);
-  text-align: center;
 }
 
 .color-undef-deck,

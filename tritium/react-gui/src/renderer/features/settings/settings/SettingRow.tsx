@@ -23,6 +23,7 @@ import {
 } from '@renderer/h3-kit/form'
 import { IPC } from '@shared/ipcChannels'
 import type { SettingDef } from './settingsConfig'
+import type { SettingControl } from './settingControl'
 import type { Mode } from '@renderer/h3-kit/colorpicker'
 import { SecretSettingControl } from './SecretSettingControl'
 import { pluginPrefFromSettingKey } from './pluginSettings'
@@ -33,6 +34,15 @@ import { pluginPrefFromSettingKey } from './pluginSettings'
  * against a scene's StyleManager) make no sense here.
  */
 const SETTING_COLOR_MODES: Mode[] = ['rgb', 'hsb', 'palette']
+
+/**
+ * Rows that need more than the control column's width cap: a path row (it
+ * sets its own, wider cap on `.config-setting-path-row`) and a custom row of
+ * text and buttons that asks for it.
+ */
+function isWide(control: SettingControl): boolean {
+  return control.kind === 'path' || (control.kind === 'custom' && !!control.wide)
+}
 
 export interface SettingRowProps {
   def: SettingDef
@@ -143,6 +153,8 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
             label={label}
           />
         )
+      case 'custom':
+        return <control.Component />
       default:
         return null
     }
@@ -164,7 +176,9 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
     <div className="config-setting">
       <div className="config-setting-label">{label}</div>
       <div className="config-setting-desc">{description}</div>
-      <div className="config-setting-control">{renderControl()}</div>
+      <div className={`config-setting-control${isWide(control) ? ' config-setting-control--wide' : ''}`}>
+        {renderControl()}
+      </div>
     </div>
   )
 }

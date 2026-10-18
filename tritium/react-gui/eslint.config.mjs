@@ -116,6 +116,23 @@ const NO_PLUGIN_INTERNALS = {
     'Core code must not import a plugin\'s internals. Contribute through the manifest, or move the shared piece into the core.',
 }
 
+/** What a plugin's worker half may not import: it runs in the Web Worker. */
+const PLUGIN_WORKER_PATTERNS = [
+  {
+    group: [
+      '@renderer/components/**', '@renderer/hooks/**', '@renderer/contexts/**',
+      '@renderer/commands/**', '@renderer/h3-kit/**', '@renderer/plugin-host/**',
+      '@plugins/*/renderer/**',
+      '**/components/**', '**/hooks/**', '**/contexts/**', '**/h3-kit/**',
+    ],
+    message: 'A plugin worker service runs in the Web Worker: import DTOs from worker/shared, never from the UI tree.',
+  },
+  {
+    group: ['react', 'react-dom', '@blueprintjs/**', '@renderer/worker/client/**', '**/worker/client/**'],
+    message: 'Wrong thread: a plugin worker service may not reach the renderer thread or React.',
+  },
+]
+
 /** Relative specifiers that climb three or more levels. */
 const NO_DEEP_RELATIVE = {
   group: ['../../../**'],
@@ -222,6 +239,10 @@ export default tseslint.config(
         group: ['react', 'react-dom', '@blueprintjs/**', '@renderer/worker/client/**', '**/worker/client/**', '../client/**'],
         message: 'Wrong thread: worker/server may not reach the renderer thread or React.',
       },
+      // The op catalogue lives here and every plugin consumes it; a core
+      // module reaching back into one would make that plugin's dialect part
+      // of the core interface.
+      NO_PLUGIN_INTERNALS,
     ),
   },
 
@@ -292,21 +313,20 @@ export default tseslint.config(
   // exactly the way the core rule exists to prevent.
   {
     files: ['src/plugins/*/worker/**/*.ts'],
-    rules: restrict(
-      {
-        group: [
-          '@renderer/components/**', '@renderer/hooks/**', '@renderer/contexts/**',
-          '@renderer/commands/**', '@renderer/h3-kit/**', '@renderer/plugin-host/**',
-          '@plugins/*/renderer/**',
-          '**/components/**', '**/hooks/**', '**/contexts/**', '**/h3-kit/**',
-        ],
-        message: 'A plugin worker service runs in the Web Worker: import DTOs from worker/shared, never from the UI tree.',
-      },
-      {
-        group: ['react', 'react-dom', '@blueprintjs/**', '@renderer/worker/client/**', '**/worker/client/**'],
-        message: 'Wrong thread: a plugin worker service may not reach the renderer thread or React.',
-      },
-    ),
+    rules: restrict(...PLUGIN_WORKER_PATTERNS),
+  },
+
+  // --- The console runtime and native dialect stay free of PyMOL ---
+  // The PyMOL dialect bends CueMol to fit PyMOL's names and selections; the
+  // runtime and the native dialect must not inherit that. Only the dialect
+  // table may name it.
+  {
+    files: ['src/plugins/console/worker/**/*.ts'],
+    ignores: ['src/plugins/console/worker/dialects/pymol/**', 'src/plugins/console/worker/dialects/index.ts'],
+    rules: restrict(...PLUGIN_WORKER_PATTERNS, {
+      group: ['**/dialects/pymol', '**/dialects/pymol/**'],
+      message: 'Only the PyMOL dialect itself (and the dialect table) may import from dialects/pymol.',
+    }),
   },
 
   // --- Layer: a plugin's renderer half is renderer code ---

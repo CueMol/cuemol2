@@ -22,6 +22,7 @@ import { collectProps } from '@renderer/worker/server/services/props/read';
 import { undoTxnResult } from '@renderer/worker/server/services/withUndoTxn';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { sameRenderValue } from '@renderer/worker/shared/renderSettingsValues';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /** Scene app-data id and class of the stored render settings. */
 export const RENDER_APP_DATA_ID = 'render';
@@ -196,6 +197,26 @@ export function getSceneRenderSettings(
     }
 }
 
+/** Render settings as `set_render_settings` takes them: `key=value; key=value`. */
+export function renderSettingsText(values: RenderSettingsValues, keys: readonly string[]): string {
+    return keys.map((k) => `${k}=${String(values[k])}`).join('; ');
+}
+
+/** The settings `renderSettingsText` wrote (numbers and booleans read back as such), or why not. */
+export function parseRenderSettings(text: string): RenderSettingsValues | { error: string } {
+    const out: RenderSettingsValues = {};
+    for (const part of text.split(';')) {
+        const t = part.trim();
+        if (t === '') continue;
+        const eq = t.indexOf('=');
+        if (eq <= 0) return { error: `"${t}" is not key=value` };
+        const raw = t.slice(eq + 1).trim();
+        out[t.slice(0, eq).trim()] =
+            raw === 'true' || raw === 'false' ? raw === 'true' : raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : raw;
+    }
+    return Object.keys(out).length > 0 ? out : { error: 'no settings given' };
+}
+
 /** Split a stored key into its block (or '' for the parent) and property name. */
 function splitKey(key: string): { block: string; prop: string } {
     const i = key.indexOf('.');
@@ -242,6 +263,7 @@ export function setSceneRenderSettings(
     if (changed.length === 0) return ok({ values: current.values, changed: [] });
 
     return undoTxnResult(scene, RENDER_SETTINGS_UNDO_LABEL, () => {
+        recordOp(ctx, scene.uid, 'set_render_settings', { settings: renderSettingsText(args.values, changed) });
         const obj = existing ?? s.getCreateAppData!(RENDER_APP_DATA_ID, RENDER_APP_DATA_CLASS);
         if (!obj) return fail(`cannot create ${RENDER_APP_DATA_CLASS} app data`, 'unsupported');
         const targets = new Map<string, BaseWrapper | null>([['', obj]]);

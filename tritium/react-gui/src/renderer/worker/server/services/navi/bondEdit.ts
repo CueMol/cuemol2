@@ -30,8 +30,11 @@ import type { DistPickDrawObj } from '@cuemol/core/src/wrappers/DistPickDrawObj'
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager';
 import type { HitTestResult } from '@renderer/types';
+import type { AtomSpec } from '@renderer/worker/server/catalog/params';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { atomSpecOf } from '@renderer/worker/server/services/helpers/atomintr';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
 /** One picked atom: the molecule object uid and the atom id within it. */
 interface PickedAtom {
@@ -85,6 +88,22 @@ function writeMsgLog(ctx: WorkerContext, message: string): void {
 
 function getAnlMgr(ctx: WorkerContext): MolAnlManager {
     return ctx.svc.getService('MolAnlManager') as MolAnlManager;
+}
+
+/**
+ * Record bond edits as `add_bond` / `remove_bond` ops, one per pair. The ops
+ * name atoms by chain / residue / atom, so when any atom cannot be named that
+ * way nothing is recorded (a partial record would replay a different edit).
+ */
+function recordBondOps(ctx: WorkerContext, sceneId: number, op: 'add_bond' | 'remove_bond', mol: MolCoord, pairs: [number, number][]): void {
+    const specs: AtomSpec[][] = [];
+    for (const [aid1, aid2] of pairs) {
+        const a = atomSpecOf(mol, aid1);
+        const b = atomSpecOf(mol, aid2);
+        if (!a || !b) return;
+        specs.push([a, b]);
+    }
+    for (const atoms of specs) recordOp(ctx, sceneId, op, { objId: mol.uid, atoms }, ['objId']);
 }
 
 /**
@@ -186,6 +205,7 @@ export function bondEditPick(ctx: WorkerContext, args: BondEditPickArgs): BondEd
     try {
         const mgr = getAnlMgr(ctx);
         withUndoTxn(scene, 'Add bond', () => {
+            recordBondOps(ctx, scene.uid, 'add_bond', mol, [[first.atomId, raw.atom_id]]);
             mgr.makeBond(mol, first.atomId, raw.atom_id);
         });
         message = 'Bond added.';
@@ -271,6 +291,7 @@ export function bondEditRemoveBond(ctx: WorkerContext, args: BondEditRemoveBondA
     try {
         const mgr = getAnlMgr(ctx);
         withUndoTxn(scene, 'Remove bond(s)', () => {
+            recordBondOps(ctx, scene.uid, 'remove_bond', mol, args.pairs);
             for (const [aid1, aid2] of args.pairs) {
                 mgr.removeBond(mol, aid1, aid2);
                 removed += 1;

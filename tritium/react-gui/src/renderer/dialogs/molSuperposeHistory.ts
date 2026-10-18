@@ -3,7 +3,7 @@
  * @description localStorage-backed history for the Molecular superposition
  * dialog. Mirrors UXP `ssm_sup.js` preference persistence
  * (`cuemol2.ui.histories.mol_superpose_*`): the last-used reference / moving
- * molecule uids, the chosen algorithm, and the two checkbox states are saved
+ * molecule uids, the chosen algorithm and US-align pivot, and the two checkbox states are saved
  * on a successful superposition and restored when the dialog reopens.
  *
  * Selection-string history is NOT stored here -- it is delegated to the
@@ -12,7 +12,11 @@
  */
 
 import { loadJSON, saveJSON } from '@renderer/utils/localStorageJSON';
-import type { SuperposeAlgo } from '@renderer/worker/server/services/molops/superposeMol';
+import {
+    DEFAULT_SUPERPOSE_ALGO,
+    USALIGN_PIVOTS,
+    type SuperposeAlgo,
+} from '@renderer/worker/shared/superposeTypes';
 
 export const STORAGE_KEY = 'cuemol2.ui.histories.mol_superpose';
 
@@ -20,12 +24,14 @@ export interface MolSuperposeHistory {
     refObjId?: number;
     movObjId?: number;
     algo: SuperposeAlgo;
+    pivot: string;
     autoRecenter: boolean;
     useprop: boolean;
 }
 
 export const DEFAULT_HISTORY: MolSuperposeHistory = {
-    algo: 'LSQ',
+    algo: DEFAULT_SUPERPOSE_ALGO,
+    pivot: 'auto',
     autoRecenter: true,
     useprop: false,
 };
@@ -33,11 +39,17 @@ export const DEFAULT_HISTORY: MolSuperposeHistory = {
 function asHistory(raw: unknown): MolSuperposeHistory | null {
     if (typeof raw !== 'object' || raw === null) return null;
     const o = raw as Record<string, unknown>;
-    const algo: SuperposeAlgo = o.algo === 'SSM' ? 'SSM' : 'LSQ';
+    const algo: SuperposeAlgo =
+        o.algo === 'SSM' || o.algo === 'LSQ' || o.algo === 'USalign' ? o.algo : DEFAULT_HISTORY.algo;
+    const pivot =
+        typeof o.pivot === 'string' && (USALIGN_PIVOTS as readonly string[]).includes(o.pivot)
+            ? o.pivot
+            : DEFAULT_HISTORY.pivot;
     return {
         refObjId: typeof o.refObjId === 'number' ? o.refObjId : undefined,
         movObjId: typeof o.movObjId === 'number' ? o.movObjId : undefined,
         algo,
+        pivot,
         autoRecenter: typeof o.autoRecenter === 'boolean' ? o.autoRecenter : DEFAULT_HISTORY.autoRecenter,
         useprop: typeof o.useprop === 'boolean' ? o.useprop : DEFAULT_HISTORY.useprop,
     };

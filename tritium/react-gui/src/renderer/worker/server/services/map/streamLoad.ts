@@ -11,6 +11,8 @@ import { undoTxnResult } from '../withUndoTxn';
 import { streamFetchToReader } from '@renderer/worker/server/services/helpers/streamFetchToReader';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { pickMapUrl, type MapServerType } from '@renderer/worker/shared/pdbUrls';
 const log = console;
 
 export type DensityMapReaderName = 'mmcifmap' | 'mtzmap';
@@ -52,6 +54,31 @@ function configureMtzColumns(
     }
 }
 
+/** The entry and server `fetch_map` downloads this URL from, or null for a URL it does not build. */
+function fetchMapSpec(args: StreamLoadDensityMapArgs): { pdbId: string; source: MapServerType } | null {
+    const m = /\/validation_reports\/[0-9a-z]{2}\/([0-9][0-9a-z]{3})\//i.exec(args.url)
+        ?? /\/pdbe\/coordinates\/files\/([0-9][0-9a-z]{3})_map\.mtz$/i.exec(args.url);
+    if (!m) return null;
+    const pdbId = m[1].toLowerCase();
+    for (const source of ['RCSB_CIF', 'EBI_MTZ'] as const) {
+        const spec = pickMapUrl(pdbId, source, args.mapType);
+        if (spec.url === args.url && spec.readerName === args.readerName && spec.gzip === args.gzip) return { pdbId, source };
+    }
+    return null;
+}
+
+/** Record the download as `fetch_map`; a URL it does not build is not recorded. */
+function recordFetchMap(ctx: WorkerContext, sceneId: number, args: StreamLoadDensityMapArgs): void {
+    const spec = fetchMapSpec(args);
+    if (!spec) return;
+    recordOp(ctx, sceneId, 'fetch_map', {
+        pdbId: spec.pdbId,
+        mapType: args.mapType,
+        name: args.objectName === `${spec.pdbId}_${args.mapType}` ? null : args.objectName,
+        source: spec.source === 'RCSB_CIF' ? null : spec.source,
+    });
+}
+
 export async function streamLoadDensityMap(
     ctx: WorkerContext,
     args: StreamLoadDensityMapArgs,
@@ -91,6 +118,7 @@ export async function streamLoadDensityMap(
     if (!view) return fail(`view ${args.viewId} not found`, 'not-found');
 
     return undoTxnResult(scene, 'Get density map', () => {
+        recordFetchMap(ctx, scene.uid, args);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (obj as any).name = args.objectName;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

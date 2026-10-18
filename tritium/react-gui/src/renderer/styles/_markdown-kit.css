@@ -1,0 +1,100 @@
+/* Markdown drawn by h3-kit/markdown/MarkdownBlock. Inherits the font and
+   size of where it is put (the console's monospace, in the transcript);
+   colours and spacing come from tokens only. */
+
+.md > :first-child {
+  margin-top: 0;
+}
+
+.md-heading {
+  margin: var(--space-4) 0 var(--space-2);
+  font-weight: inherit;
+  -webkit-text-stroke: var(--md-bold-stroke) currentColor;
+  color: var(--md-strong);
+}
+
+.md-p {
+  margin: var(--space-2) 0;
+}
+
+.md-strong {
+  font-weight: inherit;
+  -webkit-text-stroke: var(--md-bold-stroke) currentColor;
+  color: var(--md-strong);
+}
+
+.md-codespan,
+.md-code {
+  font-family: var(--font-mono);
+  color: var(--md-code);
+}
+
+.md-code {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-6);
+  white-space: pre;
+}
+
+.md-list {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-6);
+}
+
+.md-list .md-p {
+  margin: 0;
+}
+
+.md-table {
+  /* Indented as far as a code block, so a table stands apart from the prose.
+     `separate` with no spacing lets the frame take rounded corners. */
+  margin: var(--space-2) 0 var(--space-2) var(--space-6);
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--md-rule);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.md-table th,
+.md-table td {
+  padding: var(--space-1) var(--space-4);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-table th + th,
+.md-table td + td {
+  border-left: 1px solid var(--border-subtle);
+}
+
+.md-table th {
+  font-weight: inherit;
+  -webkit-text-stroke: var(--md-bold-stroke) currentColor;
+  color: var(--md-strong);
+  background: var(--md-table-head-bg);
+  border-bottom: 1px solid var(--md-table-head-rule);
+}
+
+/* The first column names the row (a property, a command): brighter than the rest. */
+.md-table td:first-child {
+  color: var(--md-table-key);
+}
+
+.md-table tbody tr:nth-child(even) {
+  background: var(--md-table-stripe);
+}
+
+.md-table tbody tr:hover {
+  background: var(--md-table-hover);
+}
+
+.md-quote {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--md-rule);
+}
+
+.md-hr {
+  border: none;
+  border-top: 1px solid var(--md-rule);
+}

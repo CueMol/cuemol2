@@ -2,12 +2,23 @@
 
 #include <common.h>
 
+#include "modules/rendering/RenderSettings.hpp"
 #include "modules/rendering/UmbreonDisplayContext.hpp"
+#include "modules/rendering/UmbreonSceneExporter.hpp"
+
+#include <qsys/Camera.hpp>
+#include <qsys/Scene.hpp>
+#include <qsys/SceneManager.hpp>
 
 #include <gfx/SolidColor.hpp>
 #include <qlib/Vector4D.hpp>
 
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <functional>
+#include <iterator>
+#include <string>
 #include <vector>
 
 using qlib::Vector4D;
@@ -2394,4 +2405,70 @@ TEST(UmbreonExport, CreaseLimitIsTheFoldAngle)
     EXPECT_EQ(runs70, 2);   // the 50 deg fold is below the limit
     EXPECT_EQ(runsOff, 2);  // no crease lines at all
     EXPECT_GT(ink30, ink70 + 30);
+}
+
+namespace {
+
+/// The pHYs pixels-per-unit (x, y, unit) of a PNG file, or false without one.
+bool readPngPhys(const std::string &path, uint32_t &x, uint32_t &y, int &unit)
+{
+    std::ifstream in(path, std::ios::binary);
+    std::vector<unsigned char> b((std::istreambuf_iterator<char>(in)),
+                                 std::istreambuf_iterator<char>());
+    auto be32 = [&b](std::size_t i) {
+        return (uint32_t(b[i]) << 24) | (uint32_t(b[i + 1]) << 16) |
+               (uint32_t(b[i + 2]) << 8) | uint32_t(b[i + 3]);
+    };
+    // chunks follow the 8-byte signature: length, type, data, CRC
+    for (std::size_t i = 8; i + 8 <= b.size();) {
+        const uint32_t len = be32(i);
+        const std::string type(b.begin() + i + 4, b.begin() + i + 8);
+        if (type == "pHYs" && len == 9 && i + 17 <= b.size()) {
+            x = be32(i + 8);
+            y = be32(i + 12);
+            unit = b[i + 16];
+            return true;
+        }
+        if (type == "IDAT") return false;  // pHYs must precede the image data
+        i += 12 + len;
+    }
+    return false;
+}
+
+}  // namespace
+
+// The render settings' dpi reaches the saved PNG as its resolution, as the
+// File > Export PNG path writes it (39.37 * dpi pixels per meter).
+TEST(UmbreonExport, WritesRenderSettingsDpiAsPngResolution)
+{
+    qlib::LScrSp<render::RenderSettings> rs(MB_NEW render::RenderSettings());
+    ASSERT_TRUE(rs->setPropStr("unit", "px"));
+    ASSERT_TRUE(rs->setPropReal("dpi", 300.0));
+    ASSERT_TRUE(rs->setPropReal("width", 16.0));
+    ASSERT_TRUE(rs->setPropReal("height", 16.0));
+
+    qsys::ScenePtr pScene = qsys::SceneManager::getInstance()->createScene();
+    const std::string path =
+        (std::filesystem::temp_directory_path() / "umbreon_dpi_test.png").string();
+    std::remove(path.c_str());
+
+    render::UmbreonSceneExporter ex;
+    ex.applyRenderSettings(rs, "umbreon");
+    ex.attach(pScene);
+    ex.setCamera(qsys::CameraPtr(MB_NEW qsys::Camera()));
+    ex.setPath(path.c_str());
+    ex.write();
+    ex.detach();
+
+    const qlib::uid_t uid = pScene->getUID();
+    pScene = qsys::ScenePtr();
+    qsys::SceneManager::getInstance()->destroyScene(uid);
+
+    uint32_t x = 0, y = 0;
+    int unit = -1;
+    ASSERT_TRUE(readPngPhys(path, x, y, unit));
+    EXPECT_EQ(x, 11811u);  // 300 dpi
+    EXPECT_EQ(y, 11811u);
+    EXPECT_EQ(unit, 1);    // PNG_RESOLUTION_METER
+    std::remove(path.c_str());
 }
