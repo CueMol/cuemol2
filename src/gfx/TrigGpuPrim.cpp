@@ -277,6 +277,22 @@ quint32 TrigGpuPrim::getHitName(int idx) const
     return m_pDrawElems->at(idx).hitName;
 }
 
+void TrigGpuPrim::getFace(int idx, int &v1, int &v2, int &v3) const
+{
+    // Wireframe stores the edges (v1,v2)(v2,v3)(v3,v1)
+    const bool bLine = (m_nPolygonMode == DisplayContext::POLY_LINE);
+    const int n = bLine ? 6 : 3;
+    auto get = [&](const auto &data) {
+        v1 = int(data.atind(idx * n));
+        v2 = int(data.atind(idx * n + (bLine ? 2 : 1)));
+        v3 = int(data.atind(idx * n + (bLine ? 4 : 2)));
+    };
+    if (m_pPackedElems != nullptr)
+        get(*m_pPackedElems);
+    else
+        get(*m_pDrawElems);
+}
+
 void TrigGpuPrim::setFace(int idx, int v1, int v2, int v3)
 {
     auto set = [&](auto &data) {

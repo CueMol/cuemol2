@@ -115,6 +115,18 @@ namespace molvis {
     /// Hit name (pivot atom ID of the owning residue) at spline parameter par.
     int calcHitName(double par, SplineCoeff *pCoeff) const;
 
+    /// True if a tube strip from spline parameter par0 to par1 may reuse the
+    /// ring at par0 drawn by the previous strip (TubeMeshBuilder ring band)
+    /// without changing any vertex. The strip takes its color and hit name at
+    /// par1; without smooth coloring both come from the nearer of the two
+    /// neighbor residues, so the ring can be shared while that residue (with
+    /// its pivot atom) stays the same. With bNeighbors, the strip also
+    /// depends on the two neighbor residues themselves (e.g. the binormal
+    /// direction flags), so they have to be the same too. The segment end
+    /// fade depends on the position between them and never shares.
+    bool canShareRing(double par0, double par1, SplineCoeff *pCoeff,
+                      bool bNeighbors = false);
+
     void invalidateSplineCoeffs();
 
     /// Spline topology: valid, and its generation (incremented on every

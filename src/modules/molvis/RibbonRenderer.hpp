@@ -213,6 +213,19 @@ private:
 
   void makeHSCTable(SegCtx &c, SplineCoeff *pCoeff, int istart, int iend);
 
+  /// True if the strip ending at c.par may reuse the ring of the previous
+  /// strip (at c.prev_par) as a TubeMeshBuilder ring band (see
+  /// SplineRenderer::canShareRing()). With smooth
+  /// coloring the helix back / sheet side colors follow the color at c.par,
+  /// so those strips keep both rings.
+  bool isRingBandOK(const SegCtx &c, SplineCoeff *pCoeff)
+  {
+    if (!c.pmb->hasRing()) return false;
+    if (isSmoothColor() && (m_bHelixBackCol || m_bSheetSideCol)) return false;
+    // the helix back color depends on the binormal flags of both neighbors
+    return canShareRing(c.prev_par, c.par, pCoeff, m_bHelixBackCol);
+  }
+
   void renderTube(SegCtx &c,
                   char ss_type,
                   TubeSection *pCurTs,

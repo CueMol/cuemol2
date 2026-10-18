@@ -369,6 +369,29 @@ ColorPtr SplineRenderer::calcColor(double par, SplineCoeff *pCoeff)
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext, bRes1Tp, bRes2Tp);
 }
 
+bool SplineRenderer::canShareRing(double par0, double par1, SplineCoeff *pCoeff,
+                                  bool bNeighbors)
+{
+  if (m_bSegEndFade)
+    return false;
+
+  const int nprev0 = int(::floor(par0)), nnext0 = int(::ceil(par0));
+  const int nprev1 = int(::floor(par1)), nnext1 = int(::ceil(par1));
+  if (bNeighbors && (nprev0 != nprev1 || nnext0 != nnext1))
+    return false;
+
+  // the nearer neighbor (as in MainChainRenderer::calcColor / calcHitName)
+  const int nres0 = (par0 - nprev0 > 0.5) ? nnext0 : nprev0;
+  const int nres1 = (par1 - nprev1 > 0.5) ? nnext1 : nprev1;
+  if (nres0 != nres1)
+    return false;
+
+  // A missing residue or pivot makes them fall back to the other neighbor
+  // (or to no color), which may differ between par0 and par1
+  MolResiduePtr pRes(pCoeff->getResidue(nres0));
+  return !pRes.isnull() && !getPivotAtom(pRes).isnull();
+}
+
 bool SplineRenderer::isSegEnd(double par, SplineCoeff *pCoeff)
 {
   int nprev = int(::floor(par));

@@ -14,6 +14,8 @@
 using namespace molvis;
 using qlib::quint32;
 
+bool TubeMeshBuilder::s_bShareRings = true;
+
 TubeMeshBuilder::TubeMeshBuilder()
     : m_nMode(MODE_NONE),
       m_nUpdFlags(0),
@@ -23,6 +25,10 @@ TubeMeshBuilder::TubeMeshBuilder()
       m_curName(0),
       m_nPrimType(-1),
       m_nPrimFirst(0),
+      m_bRingPrim(false),
+      m_nRingFirst(-1),
+      m_nRingStride(0),
+      m_nRingSize(0),
       m_nVerts(0),
       m_bReleased(false),
       m_dst{nullptr, nullptr, nullptr, nullptr},
@@ -65,6 +71,7 @@ void TubeMeshBuilder::startBuild(qlib::uid_t nSceneID)
     m_curCol = gfx::SolidColor::createRGB(0.5, 0.5, 0.5)->getDevCode(nSceneID);
     m_curName = gfx::encodeHitName(-1);
     m_nPrimType = -1;
+    resetRing();
 }
 
 void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags,
@@ -83,6 +90,7 @@ void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags,
     m_nPrimEnd = int(m_prims.size());
     m_pPrimsRef = nullptr;
     m_bMismatch = false;
+    resetRing();
 }
 
 void TubeMeshBuilder::startChunkUpdate(qlib::uid_t nSceneID, int nFlags,
@@ -106,6 +114,7 @@ void TubeMeshBuilder::startChunkUpdate(qlib::uid_t nSceneID, int nFlags,
     m_nPrimEnd = ck.firstPrim + ck.nPrims;
     m_pPrimsRef = &parent.m_prims;
     m_bMismatch = false;
+    resetRing();
 }
 
 bool TubeMeshBuilder::chunksCoverAll() const
@@ -182,8 +191,9 @@ void TubeMeshBuilder::normalSlow(const Vector4D &n)
     setCurNorm(n);
 }
 
-void TubeMeshBuilder::startPrim(int nType)
+void TubeMeshBuilder::startPrim(int nType, bool bRing)
 {
+    m_bRingPrim = bRing;
     if (m_nMode == MODE_BUILD) {
         m_nPrimType = nType;
         m_nPrimFirst = getVertexSize();
@@ -191,7 +201,8 @@ void TubeMeshBuilder::startPrim(int nType)
     else if (m_nMode == MODE_UPDATE) {
         const std::vector<Prim> &ps = prims();
         if (m_nPrimCur >= m_nPrimEnd || ps[m_nPrimCur].type != nType ||
-            ps[m_nPrimCur].first != m_nVertCur)
+            ps[m_nPrimCur].first != m_nVertCur ||
+            (nType == PRIM_BAND && ps[m_nPrimCur].ref != m_nRingFirst))
             m_bMismatch = true;
         m_nPrimType = nType;
         m_nPrimFirst = m_nVertCur;
@@ -212,6 +223,20 @@ void TubeMeshBuilder::startTriangleFan()
         m_pdl->startTriangleFan();
     else
         startPrim(PRIM_FAN);
+}
+
+void TubeMeshBuilder::startRingStrip()
+{
+    if (m_nMode == MODE_DIRECT)
+        m_pdl->startTriangleStrip();
+    else
+        startPrim(PRIM_STRIP, true);
+}
+
+void TubeMeshBuilder::startRingBand()
+{
+    MB_ASSERT(hasRing());
+    startPrim(PRIM_BAND, true);
 }
 
 void TubeMeshBuilder::vertexSlow(const Vector4D &v)
@@ -250,16 +275,40 @@ void TubeMeshBuilder::end()
         return;
     }
 
+    int nCount = 0;
     if (m_nMode == MODE_BUILD) {
-        const int nCount = getVertexSize() - m_nPrimFirst;
-        m_prims.push_back(Prim{m_nPrimType, m_nPrimFirst, nCount});
+        nCount = getVertexSize() - m_nPrimFirst;
+        Prim prim{m_nPrimType, m_nPrimFirst, nCount};
+        if (m_nPrimType == PRIM_BAND) {
+            MB_ASSERT(nCount == m_nRingSize);
+            prim.ref = m_nRingFirst;
+            prim.refStride = m_nRingStride;
+        }
+        m_prims.push_back(prim);
     }
     else if (m_nMode == MODE_UPDATE) {
-        if (m_nPrimCur >= m_nPrimEnd ||
-            prims()[m_nPrimCur].count != m_nVertCur - m_nPrimFirst)
+        nCount = m_nVertCur - m_nPrimFirst;
+        if (m_nPrimCur >= m_nPrimEnd || prims()[m_nPrimCur].count != nCount)
             m_bMismatch = true;
         ++m_nPrimCur;
     }
+
+    // The ring a following band connects to: the leading vertex of each
+    // pair of a ring strip, or every vertex of a band
+    if (m_bRingPrim && m_nPrimType == PRIM_STRIP) {
+        m_nRingFirst = m_nPrimFirst;
+        m_nRingStride = 2;
+        m_nRingSize = (nCount + 1) / 2;
+    }
+    else if (m_bRingPrim && m_nPrimType == PRIM_BAND) {
+        m_nRingFirst = m_nPrimFirst;
+        m_nRingStride = 1;
+        m_nRingSize = nCount;
+    }
+    else {
+        resetRing();
+    }
+    m_bRingPrim = false;
     m_nPrimType = -1;
 }
 
@@ -285,7 +334,9 @@ int TubeMeshBuilder::getFaceSize() const
 {
     int nFaces = 0;
     for (const Prim &p : m_prims) {
-        if (p.count >= 3) nFaces += p.count - 2;
+        // a band is the strip of its vertices paired with the previous ring's
+        const int nStrip = (p.type == PRIM_BAND) ? 2 * p.count : p.count;
+        if (nStrip >= 3) nFaces += nStrip - 2;
     }
     return nFaces;
 }
@@ -310,6 +361,21 @@ void TubeMeshBuilder::toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) con
     int iface = 0;
     for (const Prim &p : m_prims) {
         const int b = p.first;
+        if (p.type == PRIM_BAND) {
+            // strip vertex k: the new ring's k/2-th vertex (even k) or the
+            // previous ring's (k-1)/2-th (odd k)
+            auto sv = [&p](int k) {
+                return (k % 2 == 0) ? p.first + k / 2 : p.ref + (k / 2) * p.refStride;
+            };
+            for (int i = 2; i < 2 * p.count; ++i) {
+                if (i % 2 == 0)
+                    prim.setFace(iface, sv(i - 2), sv(i - 1), sv(i));
+                else
+                    prim.setFace(iface, sv(i), sv(i - 1), sv(i - 2));
+                ++iface;
+            }
+            continue;
+        }
         for (int i = 2; i < p.count; ++i) {
             if (p.type == PRIM_FAN)
                 prim.setFace(iface, b + i - 1, b + i, b);
