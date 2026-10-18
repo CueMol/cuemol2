@@ -91,3 +91,82 @@ describe('BufferStore.drawBuffer upload gate', () => {
         expect(gl.drawArrays).toHaveBeenCalled();
     });
 });
+
+describe('BufferStore vertex buffer ring', () => {
+    let gl: ReturnType<typeof makeGl>;
+    let store: BufferStore;
+    const ID = '1';
+    const ATTRS = JSON.stringify([{ nloc: 0, itype: '21', nelems: 3, npos: 0, idiv: 0 }]);
+
+    /** The vertex buffer each bufferSubData wrote, in call order. */
+    const uploadTargets = () => {
+        const bound: unknown[] = [];
+        let vbo: unknown = null;
+        const calls = [...gl.bindBuffer.mock.invocationCallOrder.map((o, i) =>
+            ({ o, kind: 'bind', args: gl.bindBuffer.mock.calls[i] })),
+            ...gl.bufferSubData.mock.invocationCallOrder.map((o) => ({ o, kind: 'sub', args: [] }))]
+            .sort((a, b) => a.o - b.o);
+        for (const c of calls) {
+            if (c.kind === 'bind' && c.args[0] === GL.ARRAY_BUFFER) vbo = c.args[1];
+            if (c.kind === 'sub') bound.push(vbo);
+        }
+        return bound;
+    };
+
+    /** The VAO bound right before each draw call, in call order. */
+    const drawnVaos = () => gl.drawArrays.mock.invocationCallOrder.map((o) => {
+        let vao: unknown = null;
+        gl.bindVertexArray.mock.invocationCallOrder.forEach((b, i) => {
+            if (b < o) vao = gl.bindVertexArray.mock.calls[i][0];
+        });
+        return vao;
+    });
+
+    beforeEach(() => {
+        gl = makeGl();
+        store = new BufferStore();
+        store.setContext(gl as never);
+    });
+
+    it('writes successive updates into alternating vertex buffers and draws the one written', () => {
+        store.createBuffer(ID, 36, 3, 0, ATTRS);
+        const draw = (updated: boolean) =>
+            store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9), null, updated, 0);
+        draw(true);
+        draw(false);
+        draw(true);
+        draw(true);
+
+        const [first, second, third] = uploadTargets();
+        expect(first).not.toBe(second);
+        expect(third).toBe(first);
+        // The drawn VAO changes with every update and stays put without one.
+        const [v1, v2, v3, v4] = drawnVaos();
+        expect(v2).toBe(v1);
+        expect(v3).not.toBe(v1);
+        expect(v4).toBe(v1);
+    });
+
+    it('keeps a single vertex buffer for a buffer that is never updated', () => {
+        store.createBuffer(ID, 36, 3, 0, ATTRS);
+        store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9), null, false, 0);
+        store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9), null, false, 0);
+        expect(gl.createBuffer).toHaveBeenCalledTimes(1);
+        expect(gl.createVertexArray).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets the extra slot read the shared index buffer and deletes every slot', () => {
+        store.createBuffer(ID, 36, 3, 12, ATTRS);
+        const ibo = gl.createBuffer.mock.results[0].value;
+        gl.bindBuffer.mockClear();
+        store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9),
+            new Uint32Array(3), true, 0);
+        // The new slot's VAO records the same element buffer.
+        expect(gl.bindBuffer).toHaveBeenCalledWith(GL.ELEMENT_ARRAY_BUFFER, ibo);
+        expect(gl.createBuffer).toHaveBeenCalledTimes(3);  // ibo + two vbos
+
+        store.deleteBuffer(ID as never);
+        expect(gl.deleteBuffer).toHaveBeenCalledTimes(3);
+        expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2);
+    });
+});

@@ -3,10 +3,15 @@
  * @description Vertex/index buffer (VAO+VBO) resource table for GfxManager.
  *
  * Owns the `_draw_data` table keyed by the buffer names C++ assigns: each
- * entry is a [VAO, vertex VBO, index VBO|null] triple. GfxManager composes one
- * of these and forwards its peer-API buffer methods (createBuffer / drawBuffer
- * / deleteBuffer) here; the public method names stay on GfxManager's prototype
- * for the C++ peer.
+ * entry holds one or more (VAO, vertex VBO) slots and an optional index VBO
+ * shared by the slots. GfxManager composes one of these and forwards its
+ * peer-API buffer methods (createBuffer / drawBuffer / deleteBuffer) here; the
+ * public method names stay on GfxManager's prototype for the C++ peer.
+ *
+ * A buffer whose vertex data is rewritten (isUpdated) rotates through
+ * VBO_RING vertex buffers, so an update never writes the buffer the GPU may
+ * still be reading for the previous frame. The extra slots are created on the
+ * first update, so a static buffer keeps a single vertex buffer.
  *
  * Console signposts ("create buffer OK") are E2E launch markers and are
  * intentionally preserved.
@@ -39,21 +44,96 @@ const convGLNorm = (itype: string): boolean => {
 };
 
 /**
+ * Number of vertex buffers an updated buffer rotates through. Two is enough
+ * for the GPU to read one while the next frame's data goes into the other.
+ */
+export const VBO_RING = 2;
+
+/** One VAO and the vertex buffer it reads. */
+interface VertexSlot {
+    vao: WebGLVertexArrayObject;
+    vbo: WebGLBuffer;
+}
+
+/** A buffer's slots, its shared index buffer and its attribute layout. */
+interface DrawEntry {
+    slots: VertexSlot[];
+    // Index of the slot the next draw reads.
+    cur: number;
+    ibo: WebGLBuffer | null;
+    // Vertex buffer size in bytes, and the per-vertex stride.
+    nsize: number;
+    stride: number;
+    elemInfo: any[];
+}
+
+/**
  * Resource table for vertex array / vertex buffer / index buffer sets.
  *
  * The GL context is injected via setContext once bindCanvas has acquired it.
  */
 export class BufferStore {
-    // VAO + vertex VBO + optional index VBO, keyed by C++ buffer name.
-    private _draw_data: {
-        [key: string]: [WebGLVertexArrayObject, WebGLBuffer, WebGLBuffer | null];
-    } = {};
+    // Vertex slots + optional index VBO, keyed by C++ buffer name.
+    private _draw_data: { [key: string]: DrawEntry } = {};
 
     private _gl!: GL;
 
     /** Inject the WebGL2 context once it has been acquired in bindCanvas. */
     setContext(gl: GL): void {
         this._gl = gl;
+    }
+
+    /**
+     * Create a VAO + vertex buffer reading `entry`'s attribute layout and
+     * index buffer, filled with `array_buf` or left uninitialized at the
+     * entry's size.
+     */
+    private _createSlot(entry: DrawEntry, array_buf: any | null): VertexSlot {
+        const gl = this._gl;
+
+        const vao = gl.createVertexArray()!;
+        gl.bindVertexArray(vao);
+
+        const vbo = gl.createBuffer()!;
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+
+        entry.elemInfo.forEach((value: any) => {
+            const aloc = value['nloc'];
+            const atype = value['itype'];
+            const gltype = convertType(gl, atype);
+            const bnorm = convGLNorm(atype);
+            gl.enableVertexAttribArray(aloc);
+            if (value['integer'] === '1') {
+                // Integer attribute (hit names for the ID-buffer pick pass):
+                // no normalization, read as uint in the shader.
+                gl.vertexAttribIPointer(aloc, value['nelems'], gltype, entry.stride, value['npos']);
+            } else {
+                gl.vertexAttribPointer(
+                    aloc,
+                    value['nelems'],
+                    gltype,
+                    bnorm,
+                    entry.stride,
+                    value['npos']
+                );
+            }
+            gl.vertexAttribDivisor(aloc, value['idiv']);
+        });
+
+        if (array_buf) {
+            gl.bufferData(gl.ARRAY_BUFFER, array_buf, gl.STATIC_DRAW);
+        } else {
+            gl.bufferData(gl.ARRAY_BUFFER, entry.nsize, gl.STATIC_DRAW);
+        }
+
+        // The element buffer binding is VAO state: every slot reads the same
+        // indices.
+        if (entry.ibo !== null) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, entry.ibo);
+        }
+
+        gl.bindVertexArray(null);
+        return { vao, vbo };
     }
 
     /**
@@ -74,61 +154,30 @@ export class BufferStore {
         const gl = this._gl;
         const elem_info = JSON.parse(elem_info_str);
 
-        // VAO
-        const vao = gl.createVertexArray()!;
-        gl.bindVertexArray(vao);
-
-        // Create buffer
-        const vertexBuffer = gl.createBuffer()!;
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-
-        const stride = nsize / num_elems;
-        elem_info.forEach((value: any) => {
-            const aloc = value['nloc'];
-            const atype = value['itype'];
-            const gltype = convertType(gl, atype);
-            const bnorm = convGLNorm(atype);
-            // console.log(`elem_info: nloc=${aloc}, atype=${atype}, gltype=${gltype}`);
-            gl.enableVertexAttribArray(aloc);
-            if (value['integer'] === '1') {
-                // Integer attribute (hit names for the ID-buffer pick pass):
-                // no normalization, read as uint in the shader.
-                gl.vertexAttribIPointer(aloc, value['nelems'], gltype, stride, value['npos']);
-            } else {
-                gl.vertexAttribPointer(
-                    aloc,
-                    value['nelems'],
-                    gltype,
-                    bnorm,
-                    stride,
-                    value['npos']
-                );
-            }
-            gl.vertexAttribDivisor(aloc, value['idiv']);
-        });
-
-        // vertex buffer
-        if (array_buf) {
-            gl.bufferData(gl.ARRAY_BUFFER, array_buf, gl.STATIC_DRAW);
-        } else {
-            gl.bufferData(gl.ARRAY_BUFFER, nsize, gl.STATIC_DRAW);
-        }
-
-        // index buffer
-        let indexBuffer = null;
+        // index buffer (shared by every vertex slot)
+        let indexBuffer: WebGLBuffer | null = null;
         if (nsize_index > 0) {
-            indexBuffer = gl.createBuffer();
+            indexBuffer = gl.createBuffer()!;
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
             if (index_buf) {
                 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index_buf, gl.STATIC_DRAW);
             } else {
                 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, nsize_index, gl.STATIC_DRAW);
             }
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         }
 
-        gl.bindVertexArray(null);
+        const entry: DrawEntry = {
+            slots: [],
+            cur: 0,
+            ibo: indexBuffer,
+            nsize,
+            stride: nsize / num_elems,
+            elemInfo: elem_info,
+        };
+        entry.slots.push(this._createSlot(entry, array_buf));
 
-        this._draw_data[name] = [vao, vertexBuffer, indexBuffer];
+        this._draw_data[name] = entry;
 
         console.log('create buffer OK, new_id=', name);
         return true;
@@ -157,9 +206,15 @@ export class BufferStore {
         // never change for the life of a buffer (a topology change allocates
         // a new draw element, hence a new buffer), so they stay as uploaded
         // by createBuffer. index_buf is still passed to pick drawElements.
+        // The new data goes into the next slot of the ring, which the GPU is
+        // not reading for the frame drawn last.
         if (isUpdated) {
-            const vbo = obj[1];
-            gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+            const next = (obj.cur + 1) % VBO_RING;
+            if (next >= obj.slots.length) {
+                obj.slots.push(this._createSlot(obj, null));
+            }
+            obj.cur = next;
+            gl.bindBuffer(gl.ARRAY_BUFFER, obj.slots[next].vbo);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, array_buf);
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
         }
@@ -170,7 +225,7 @@ export class BufferStore {
         } else if (nmode == 5) {
             nglmode = gl.TRIANGLE_STRIP;
         }
-        gl.bindVertexArray(obj[0]);
+        gl.bindVertexArray(obj.slots[obj.cur].vao);
         if (index_buf === null) {
             if (ninst <= 0) {
                 gl.drawArrays(nglmode, 0, nelems);
@@ -197,14 +252,15 @@ export class BufferStore {
         if (!obj) return false;
 
         delete this._draw_data[id];
-        // delete VBO
-        gl.deleteBuffer(obj[1]);
-        // delete index VBO
-        if (obj[2] !== null) {
-            gl.deleteBuffer(obj[2]);
+        // delete every slot's VBO and VAO
+        for (const slot of obj.slots) {
+            gl.deleteBuffer(slot.vbo);
+            gl.deleteVertexArray(slot.vao);
         }
-        // delete VAO
-        gl.deleteVertexArray(obj[0]);
+        // delete index VBO
+        if (obj.ibo !== null) {
+            gl.deleteBuffer(obj.ibo);
+        }
 
         return true;
     }
