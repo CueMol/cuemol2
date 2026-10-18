@@ -18,6 +18,7 @@
 #include "gfx/AbstDrawAttrs.hpp"
 #include "gfx/DrawAttrArray.hpp"
 #include "gfx/DrawAttrElems.hpp"
+#include "gfx/VBORep.hpp"
 #include <qlib/Matrix4D.hpp>
 #include <qlib/Matrix3D.hpp>
 #include <qlib/Vector4D.hpp>
@@ -582,6 +583,62 @@ TEST(DisplayContextAllocBuffer, ZeroIndSkipsIndAllocation)
     dc.allocBuffer(arr, 8, 0);
     EXPECT_EQ(arr.getSize(), 8);
     EXPECT_NE(arr.getData(), nullptr);
+}
+
+// ---- DisplayContext::drawElem update flag ----
+//
+// Creating the buffer uploads the current data, so the update flag set by
+// whoever filled it must not make the next draw upload the same data again.
+
+namespace {
+
+struct CountingVBORep : public gfx::VBORep
+{
+    int *pnUpdated;
+    explicit CountingVBORep(int *p) : pnUpdated(p) {}
+    void bind() override {}
+    void update(const gfx::AbstDrawAttrs &ada) override
+    {
+        if (ada.isUpdated()) ++(*pnUpdated);
+        ada.setUpdated(false);
+    }
+    void setAttrib(const gfx::AbstDrawAttrs &) override {}
+    void draw(const gfx::AbstDrawAttrs &) override {}
+    void unbind(const gfx::AbstDrawAttrs &) override {}
+};
+
+class DrawElemDC : public MockDisplayContext
+{
+public:
+    int nUpdated = 0;
+    void drawElem(const gfx::AbstDrawElem &ade) override
+    {
+        gfx::DisplayContext::drawElem(ade);
+    }
+    gfx::VBORep *createVBORep(const gfx::AbstDrawAttrs &) override
+    {
+        return new CountingVBORep(&nUpdated);
+    }
+};
+
+}  // namespace
+
+TEST(DisplayContextDrawElem, CreationClearsTheUpdateFlag)
+{
+    DrawElemDC dc;
+    TestElems arr;
+    dc.allocBuffer(arr, 4, 6);
+    arr.setUpdated(true);
+
+    dc.drawElem(arr);  // creates the buffer with the current data
+    EXPECT_FALSE(arr.isUpdated());
+    dc.drawElem(arr);
+    EXPECT_EQ(dc.nUpdated, 0);
+
+    arr.setUpdated(true);  // an in-place change uploads once
+    dc.drawElem(arr);
+    dc.drawElem(arr);
+    EXPECT_EQ(dc.nUpdated, 1);
 }
 
 // ---- DisplayList line color tracking ----

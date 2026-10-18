@@ -70,6 +70,22 @@ describe('BufferStore.drawBuffer upload gate', () => {
         expect(gl.bufferSubData).not.toHaveBeenCalled();
     });
 
+    it('re-sends only the vertex buffer of an indexed buffer', () => {
+        // The indices never change for the life of a buffer (a topology
+        // change makes a new one), so an update must not re-send them.
+        const IDX = '2';
+        store.createBuffer(
+            String(IDX), 36, 3, 12,
+            JSON.stringify([{ nloc: 0, itype: '21', nelems: 3, npos: 0, idiv: 0 }]),
+        );
+        gl.bufferSubData.mockClear();
+        store.drawBuffer(IDX as never, GL.TRIANGLES, 3, new Float32Array(9),
+            new Uint32Array(3), true, 0);
+        expect(gl.bufferSubData).toHaveBeenCalledTimes(1);
+        expect(gl.bufferSubData.mock.calls[0][0]).toBe(GL.ARRAY_BUFFER);
+        expect(gl.drawElements).toHaveBeenCalled();
+    });
+
     it('still draws the buffer it did not re-upload', () => {
         store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9), null, false, 0);
         expect(gl.drawArrays).toHaveBeenCalled();

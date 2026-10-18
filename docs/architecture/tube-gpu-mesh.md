@@ -58,6 +58,12 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
 - `MainChainRenderer::isNewSegment()` の chain 判定は、`getParentChain()` (分子と chain の検索) ではなく
   残基の chain 名の比較 (同じ分子の残基どうしなので名前で同一 chain と分かる)
 
+## VBO の転送
+
+座標・色の更新で送り直すのは頂点バッファだけ (インデックスは buffer の寿命の間変わらないので送らない。
+`BufferStore.drawBuffer` / `EcBufferRep::update`)。`DisplayContext::drawElem` は buffer の作成時に更新の印を
+消す (作成で全量を送っているため)。詳細と数字は `tritium/docs/architecture/renderer-update-cost.md`。
+
 ## TubeGpuSupport と host renderer の契約
 
 - `beginRend(pdl)` で `tubeGpuBeginRend(pdl)` を呼ぶ: pdl が非 null (display list / ファイル) なら Direct モード、

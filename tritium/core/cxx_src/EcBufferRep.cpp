@@ -164,14 +164,12 @@ void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
     // If the storage is externally backed (V8 ArrayBuffer), the renderer's
     // at(i) writes already landed in the same backing store as
     // m_arrayBufRef -- no memcpy needed. Otherwise copy from C++ heap.
+    // The indices never change for the life of a buffer (a topology change
+    // allocates a new draw element), so only the vertex data is copied; the
+    // JS side re-sends only the vertex buffer as well.
     if (ada.getExtDataHandle() == nullptr) {
         const size_t buffer_size = ada.getDataSize();
         copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
-
-        const size_t nindex_bytes = ada.getIndDataSize();
-        if (nindex_bytes > 0 && m_nIndexElems > 0) {
-            copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
-        }
     }
 
     ada.setUpdated(false);

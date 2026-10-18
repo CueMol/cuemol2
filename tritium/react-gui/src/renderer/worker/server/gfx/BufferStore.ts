@@ -153,20 +153,15 @@ export class BufferStore {
 
         // The C++ side says whether the vertex data actually changed; taking
         // its word is what keeps a static scene from re-uploading every
-        // buffer, every frame.
+        // buffer, every frame. Only the vertex buffer is re-sent: the indices
+        // never change for the life of a buffer (a topology change allocates
+        // a new draw element, hence a new buffer), so they stay as uploaded
+        // by createBuffer. index_buf is still passed to pick drawElements.
         if (isUpdated) {
-            // Transfer VBO to GPU
             const vbo = obj[1];
-            const ibo = obj[2];
             gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, array_buf);
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-            if (index_buf !== null && ibo !== null) {
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-                gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, index_buf);
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-            }
         }
 
         let nglmode: number = gl.TRIANGLES;
