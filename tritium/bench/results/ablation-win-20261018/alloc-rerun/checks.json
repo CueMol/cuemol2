@@ -1,0 +1,242 @@
+{
+  "checks": [
+    {
+      "criterion": "1. A reproduces documented values (+-5%)",
+      "pass": false,
+      "detail": {
+        "4v6x coord-morph fps": {
+          "measured": 59.993667405442274,
+          "reference": 60.0,
+          "within_5pct": true
+        },
+        "4v6x coord-morph cpu ms": {
+          "measured": 0.8872222221594441,
+          "reference": 1.58,
+          "within_5pct": false
+        },
+        "4v6x static-orbit cpu ms": {
+          "measured": null,
+          "reference": 0.3,
+          "within_5pct": false
+        },
+        "3j3q coord-morph fps": {
+          "measured": 39.7766137888215,
+          "reference": 36.4,
+          "within_5pct": false
+        },
+        "3j3q coord-morph texUpload ms": {
+          "measured": 4.77061406296104,
+          "reference": 22.0,
+          "within_5pct": false
+        }
+      }
+    },
+    {
+      "criterion": "2. B 3J3Q coord-morph 52-54 fps",
+      "pass": false,
+      "detail": {
+        "measured": 39.76802074340037,
+        "nearer": "52.4 (commit)"
+      }
+    },
+    {
+      "criterion": "3. idle: zero drawn frames and zero GL calls",
+      "pass": false,
+      "detail": {
+        "A": [],
+        "B": [],
+        "C": [],
+        "D": []
+      }
+    },
+    {
+      "criterion": "4. static-orbit CPU and GPU within +-3% across conditions",
+      "pass": false,
+      "detail": {
+        "1crn cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "1crn gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "4hhb cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "4hhb gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "1aon cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "1aon gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "4v6x cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "4v6x gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "3j3q cpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        },
+        "3j3q gpu_ms": {
+          "values": {
+            "A": null,
+            "B": null,
+            "C": null,
+            "D": null
+          },
+          "pass": false,
+          "note": "missing"
+        }
+      }
+    },
+    {
+      "criterion": "5. fitted, pinned, input isolated; rendererProps equal",
+      "pass": true,
+      "detail": {
+        "violations": [],
+        "rendererProps_mismatch": {}
+      }
+    },
+    {
+      "criterion": "6. repetition CV under 3%",
+      "pass": false,
+      "detail": {
+        "over_3pct": [
+          {
+            "cell": "A/4v6x/coord-morph",
+            "metric": "cpu_ms",
+            "cv": 0.05065047754835716,
+            "mean": 0.8872222221594441
+          },
+          {
+            "cell": "A/4v6x/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.05056668085085564,
+            "mean": 0.7498443518518516
+          },
+          {
+            "cell": "B/4v6x/coord-morph",
+            "metric": "cpu_ms",
+            "cv": 0.038842890129927476,
+            "mean": 0.9146491227616467
+          },
+          {
+            "cell": "B/4v6x/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.04383486080535284,
+            "mean": 4.032749050169282
+          },
+          {
+            "cell": "B/4v6x/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.045882154717933776,
+            "mean": 0.7591380255463221
+          },
+          {
+            "cell": "D/4v6x/coord-morph",
+            "metric": "cpu_ms",
+            "cv": 0.030106140818154915,
+            "mean": 0.5171296296158323
+          },
+          {
+            "cell": "D/4v6x/coord-morph",
+            "metric": "crd_send_ms",
+            "cv": 0.03494969555313828,
+            "mean": 0.32944194444444447
+          },
+          {
+            "cell": "A/3j3q/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.15823040248123238,
+            "mean": 7.5175481597439715
+          },
+          {
+            "cell": "A/3j3q/coord-morph",
+            "metric": "tex_upload_ms",
+            "cv": 0.048066088987051114,
+            "mean": 4.77061406296104
+          },
+          {
+            "cell": "B/3j3q/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.089535449536622,
+            "mean": 6.30867828650752
+          },
+          {
+            "cell": "C/3j3q/coord-morph",
+            "metric": "gpu_ms",
+            "cv": 0.07309443601461736,
+            "mean": 4.947185931034483
+          }
+        ]
+      }
+    }
+  ],
+  "failed_cells": {}
+}

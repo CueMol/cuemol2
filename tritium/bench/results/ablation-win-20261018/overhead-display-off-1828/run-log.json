@@ -1,0 +1,167 @@
+{
+  "started": "2026-10-18T09:28:54.396Z",
+  "patchSha256": "406cbda3066ef3666399a1519412d41cf51b73edaf77d2a57e15452ddd063cf3",
+  "canvas": "1898x1060",
+  "conditions": {
+    "A": {
+      "dir": "C:\\proj64\\abl\\A",
+      "head": "3cfd40c7807e741f20fc2823f391445f3e98b8a4",
+      "subject": "Merge pull request #625 from CueMol/perf/crdarray-source-of-truth",
+      "addon": "C:\\proj64\\abl\\A\\tritium\\core\\build\\Release\\cuemol_internal.node"
+    },
+    "B": {
+      "dir": "C:\\proj64\\abl\\B",
+      "head": "98731d7ea06451c668c5abe7deea211cd94d1cef",
+      "subject": "Merge pull request #626 from CueMol/perf/coord-tex-ring",
+      "addon": "C:\\proj64\\abl\\B\\tritium\\core\\build\\Release\\cuemol_internal.node"
+    },
+    "C": {
+      "dir": "C:\\proj64\\abl\\C",
+      "head": "d1c9c81bf7a302a5aefec49b2eb5ffed73484988",
+      "subject": "Revert \"Give the coordinate texture a second face to write into\"",
+      "addon": "C:\\proj64\\abl\\C\\tritium\\core\\build\\Release\\cuemol_internal.node"
+    },
+    "D": {
+      "dir": "C:\\proj64\\abl\\D",
+      "head": "ebb4bddb76a75ffe8ebeb5a260859bc4b1fb0e2e",
+      "subject": "Merge pull request #628 from CueMol/perf/coord-tex-staging",
+      "addon": "C:\\proj64\\abl\\D\\tritium\\core\\build\\Release\\cuemol_internal.node"
+    }
+  },
+  "machine": {
+    "cpu": "(sysctl failed: spawnSync sysctl ENOENT)",
+    "memBytes": "(sysctl failed: spawnSync sysctl ENOENT)",
+    "os": "(sw_vers failed: spawnSync sw_vers ENOENT)",
+    "power": "(pmset failed: spawnSync pmset ENOENT)",
+    "lowPowerMode": ""
+  },
+  "runs": [
+    {
+      "label": "D-r1-timers-on",
+      "cond": "D",
+      "rep": 1,
+      "tag": "-timers-on",
+      "specs": [
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 22.292,
+      "thermBefore": "(pmset failed: spawnSync pmset ENOENT)",
+      "thermAfter": "(pmset failed: spawnSync pmset ENOENT)",
+      "runner": [
+        "[runner] 1 cell(s), one process each",
+        "[runner] (1/1) 4v6x-cpk-coord-morph @1898x1060 rep=0",
+        "[runner]   render=57.3fps update=57.3fps frame=17.41ms load=10303ms updateStep=0.76ms",
+        "[runner] wrote C:\\proj64\\cuemol2_bench\\tritium\\bench\\results\\ablation-win-20261018\\overhead\\raw\\bench-2026-10-18T09-29-16-688Z-D-r1-timers-on.csv"
+      ]
+    },
+    {
+      "label": "D-r1-timers-off",
+      "cond": "D",
+      "rep": 1,
+      "tag": "-timers-off",
+      "specs": [
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {
+        "CUEMOL_BENCH_TIMERS": "0"
+      },
+      "status": 0,
+      "seconds": 20.888,
+      "thermBefore": "(pmset failed: spawnSync pmset ENOENT)",
+      "thermAfter": "(pmset failed: spawnSync pmset ENOENT)",
+      "runner": [
+        "[runner] 1 cell(s), one process each",
+        "[runner] (1/1) 4v6x-cpk-coord-morph @1898x1060 rep=0",
+        "[runner]   render=57.1fps update=57.1fps frame=17.46ms load=10203ms updateStep=0.76ms",
+        "[runner] wrote C:\\proj64\\cuemol2_bench\\tritium\\bench\\results\\ablation-win-20261018\\overhead\\raw\\bench-2026-10-18T09-29-37-575Z-D-r1-timers-off.csv"
+      ]
+    },
+    {
+      "label": "D-r2-timers-on",
+      "cond": "D",
+      "rep": 2,
+      "tag": "-timers-on",
+      "specs": [
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 20.887,
+      "thermBefore": "(pmset failed: spawnSync pmset ENOENT)",
+      "thermAfter": "(pmset failed: spawnSync pmset ENOENT)",
+      "runner": [
+        "[runner] 1 cell(s), one process each",
+        "[runner] (1/1) 4v6x-cpk-coord-morph @1898x1060 rep=0",
+        "[runner]   render=57.1fps update=57.1fps frame=17.44ms load=10093ms updateStep=0.75ms",
+        "[runner] wrote C:\\proj64\\cuemol2_bench\\tritium\\bench\\results\\ablation-win-20261018\\overhead\\raw\\bench-2026-10-18T09-29-58-466Z-D-r2-timers-on.csv"
+      ]
+    },
+    {
+      "label": "D-r2-timers-off",
+      "cond": "D",
+      "rep": 2,
+      "tag": "-timers-off",
+      "specs": [
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {
+        "CUEMOL_BENCH_TIMERS": "0"
+      },
+      "status": 0,
+      "seconds": 20.97,
+      "thermBefore": "(pmset failed: spawnSync pmset ENOENT)",
+      "thermAfter": "(pmset failed: spawnSync pmset ENOENT)",
+      "runner": [
+        "[runner] 1 cell(s), one process each",
+        "[runner] (1/1) 4v6x-cpk-coord-morph @1898x1060 rep=0",
+        "[runner]   render=57.4fps update=57.4fps frame=17.40ms load=10069ms updateStep=0.76ms",
+        "[runner] wrote C:\\proj64\\cuemol2_bench\\tritium\\bench\\results\\ablation-win-20261018\\overhead\\raw\\bench-2026-10-18T09-30-19-438Z-D-r2-timers-off.csv"
+      ]
+    },
+    {
+      "label": "D-r3-timers-on",
+      "cond": "D",
+      "rep": 3,
+      "tag": "-timers-on",
+      "specs": [
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {},
+      "status": 0,
+      "seconds": 21.099,
+      "thermBefore": "(pmset failed: spawnSync pmset ENOENT)",
+      "thermAfter": "(pmset failed: spawnSync pmset ENOENT)",
+      "runner": [
+        "[runner] 1 cell(s), one process each",
+        "[runner] (1/1) 4v6x-cpk-coord-morph @1898x1060 rep=0",
+        "[runner]   render=57.3fps update=57.3fps frame=17.44ms load=10158ms updateStep=0.77ms",
+        "[runner] wrote C:\\proj64\\cuemol2_bench\\tritium\\bench\\results\\ablation-win-20261018\\overhead\\raw\\bench-2026-10-18T09-30-40-539Z-D-r3-timers-on.csv"
+      ]
+    },
+    {
+      "label": "D-r3-timers-off",
+      "cond": "D",
+      "rep": 3,
+      "tag": "-timers-off",
+      "specs": [
+        "4v6x-cpk-coord-morph"
+      ],
+      "env": {
+        "CUEMOL_BENCH_TIMERS": "0"
+      },
+      "status": 0,
+      "seconds": 28.953,
+      "thermBefore": "(pmset failed: spawnSync pmset ENOENT)",
+      "thermAfter": "(pmset failed: spawnSync pmset ENOENT)",
+      "runner": [
+        "[runner] 1 cell(s), one process each",
+        "[runner] (1/1) 4v6x-cpk-coord-morph @1898x1060 rep=0",
+        "[runner]   render=57.0fps update=57.0fps frame=17.47ms load=10106ms updateStep=0.77ms",
+        "[runner] wrote C:\\proj64\\cuemol2_bench\\tritium\\bench\\results\\ablation-win-20261018\\overhead\\raw\\bench-2026-10-18T09-31-09-494Z-D-r3-timers-off.csv"
+      ]
+    }
+  ],
+  "finished": "2026-10-18T09:31:09.500Z"
+}
