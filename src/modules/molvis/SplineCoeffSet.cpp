@@ -17,6 +17,7 @@
 #include <modules/molstr/MainChainRenderer.hpp>
 
 #include <qlib/Matrix3D.hpp>
+#include <qlib/parallel.hpp>
 
 using namespace molvis;
 using namespace molstr;
@@ -77,10 +78,12 @@ bool SplineCoeffSet::generate(MolCoordPtr pmol)
 
   if (!m_bGeomValid) {
     // Only the positions changed (or the topology was just built): recompute
-    // the spline coeffs from the kept topology
-    std::list<SplineCoeff *>::const_iterator iter = m_list.begin();
-    for ( ; iter!=m_list.end(); iter++)
-      (*iter)->updateGeometry();
+    // the spline coeffs from the kept topology. The segments are independent
+    // (each writes its own splines and only reads the atom positions).
+    std::vector<SplineCoeff *> coeffs(m_list.begin(), m_list.end());
+    qlib::parallel_for(0, coeffs.size(), [&coeffs](std::size_t i) {
+      coeffs[i]->updateGeometry();
+    });
     m_bGeomValid = true;
   }
   return true;
