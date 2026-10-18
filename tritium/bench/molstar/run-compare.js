@@ -271,7 +271,10 @@ function main() {
     started: new Date().toISOString(), seed, repeat, gitSha: gitSha(), electron: electronBin(),
     canvas: CANVAS, dprSwitch: DPR_SWITCH, files: hashes, order: [],
   }
-  const logPath = path.join(dir, `run-log-${Date.now()}.json`)
+  // The run id prefixes the cell files too, so that later runs into the same
+  // directory do not overwrite them
+  const runId = Date.now()
+  const logPath = path.join(dir, `run-log-${runId}.json`)
   const done = []
   // A Mol* cell that fails stops longer trajectories of the same data set.
   const failedAt = {}
@@ -305,7 +308,7 @@ function main() {
       const rec = { tool: c.tool, stem: c.s.stem, rep, order, pagefileBefore, pagefileAfter, result }
       done.push(rec)
       log.order.push({ order, tool: c.tool, spec: c.s.stem, rep, ok: !!result.ok })
-      const name = `${String(order).padStart(3, '0')}-${c.tool}-${c.s.stem}-r${rep}.json`
+      const name = `${runId}-${String(order).padStart(3, '0')}-${c.tool}-${c.s.stem}-r${rep}.json`
       fs.writeFileSync(path.join(dir, 'cells', name), JSON.stringify(rec))
       if (!result.ok) {
         console.warn(`[compare]   failed: ${result.error}`)
