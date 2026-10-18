@@ -23,13 +23,21 @@ TubeMeshBuilder::TubeMeshBuilder()
       m_curName(0),
       m_nPrimType(-1),
       m_nPrimFirst(0),
+      m_nVerts(0),
+      m_bReleased(false),
+      m_dst{nullptr, nullptr, nullptr, nullptr},
       m_nVertCur(0),
       m_nPrimCur(0),
-      m_bMismatch(false)
+      m_nPrimEnd(0),
+      m_bMismatch(false),
+      m_pPrimsRef(nullptr),
+      m_nChunkVert(0),
+      m_nChunkPrim(0)
 {
     m_curNorm[0] = 1.0f;
     m_curNorm[1] = 0.0f;
     m_curNorm[2] = 0.0f;
+    m_curNormPacked = gfx::TrigGpuPrim::packNormal(1.0f, 0.0f, 0.0f);
 }
 
 TubeMeshBuilder::~TubeMeshBuilder()
@@ -59,8 +67,11 @@ void TubeMeshBuilder::startBuild(qlib::uid_t nSceneID)
     m_nPrimType = -1;
 }
 
-void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags)
+void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags,
+                                  const gfx::TrigGpuPrim::PackedArrays &dst)
 {
+    MB_ASSERT(dst.pos != nullptr);
+    m_dst = dst;
     m_nMode = MODE_UPDATE;
     m_nUpdFlags = nFlags;
     m_pdl = nullptr;
@@ -69,34 +80,77 @@ void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags)
     m_nPrimType = -1;
     m_nVertCur = 0;
     m_nPrimCur = 0;
+    m_nPrimEnd = int(m_prims.size());
+    m_pPrimsRef = nullptr;
     m_bMismatch = false;
+}
+
+void TubeMeshBuilder::startChunkUpdate(qlib::uid_t nSceneID, int nFlags,
+                                       const gfx::TrigGpuPrim::PackedArrays &dst,
+                                       const TubeMeshBuilder &parent, int ichunk)
+{
+    MB_ASSERT(dst.pos != nullptr);
+    const Chunk &ck = parent.m_chunks[ichunk];
+    m_nMode = MODE_UPDATE;
+    m_nUpdFlags = nFlags;
+    m_pdl = nullptr;
+    m_nSceneID = nSceneID;
+    m_dst = dst;
+    m_bReleased = true;  // no vertex data of its own
+    m_curCol = parent.m_curCol;
+    m_nPrimType = -1;
+    // the range of the chunk: m_nVerts is the end of the writable range
+    m_nVertCur = ck.firstVert;
+    m_nVerts = ck.firstVert + ck.nVerts;
+    m_nPrimCur = ck.firstPrim;
+    m_nPrimEnd = ck.firstPrim + ck.nPrims;
+    m_pPrimsRef = &parent.m_prims;
+    m_bMismatch = false;
+}
+
+bool TubeMeshBuilder::chunksCoverAll() const
+{
+    if (m_chunks.empty()) return false;
+    long nverts = 0;
+    for (const Chunk &ck : m_chunks) nverts += ck.nVerts;
+    return nverts == m_nVerts;
 }
 
 bool TubeMeshBuilder::finish()
 {
     bool bOK = true;
     if (m_nMode == MODE_UPDATE) {
-        bOK = !m_bMismatch && m_nVertCur == getVertexSize() &&
-              m_nPrimCur == int(m_prims.size());
+        bOK = !m_bMismatch && m_nVertCur == m_nVerts && m_nPrimCur == m_nPrimEnd;
     }
     m_nMode = MODE_NONE;
     m_pdl = nullptr;
+    m_dst = gfx::TrigGpuPrim::PackedArrays{nullptr, nullptr, nullptr, nullptr};
     return bOK;
 }
 
 void TubeMeshBuilder::clear()
 {
-    m_pos.clear();
-    m_norm.clear();
-    m_col.clear();
-    m_name.clear();
+    releaseVertexData();
     m_prims.clear();
+    m_chunks.clear();
+    m_nVerts = 0;
+    m_bReleased = false;
+}
+
+void TubeMeshBuilder::releaseVertexData()
+{
+    // swap with empty vectors to free the memory
+    std::vector<float>().swap(m_pos);
+    std::vector<float>().swap(m_norm);
+    std::vector<qlib::quint32>().swap(m_col);
+    std::vector<qlib::quint32>().swap(m_name);
+    m_bReleased = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Drawing interface
 
-void TubeMeshBuilder::color(const gfx::ColorPtr &pCol)
+void TubeMeshBuilder::colorSlow(const gfx::ColorPtr &pCol)
 {
     if (m_nMode == MODE_DIRECT) {
         m_pdl->color(pCol);
@@ -107,7 +161,7 @@ void TubeMeshBuilder::color(const gfx::ColorPtr &pCol)
         m_curCol = pCol->getDevCode(m_nSceneID);
 }
 
-void TubeMeshBuilder::loadName(int nName)
+void TubeMeshBuilder::loadNameSlow(int nName)
 {
     if (m_nMode == MODE_DIRECT) {
         m_pdl->loadName(nName);
@@ -117,7 +171,7 @@ void TubeMeshBuilder::loadName(int nName)
         m_curName = gfx::encodeHitName(nName);
 }
 
-void TubeMeshBuilder::normal(const Vector4D &n)
+void TubeMeshBuilder::normalSlow(const Vector4D &n)
 {
     if (m_nMode == MODE_DIRECT) {
         m_pdl->normal(n);
@@ -125,18 +179,7 @@ void TubeMeshBuilder::normal(const Vector4D &n)
     }
     if (!isRecording() || !(m_nUpdFlags & UPD_GEOM))
         return;
-
-    // Same normalization as gfx::DisplayList::normal()
-    const double len = n.length();
-    if (len < F_EPS4) {
-        m_curNorm[0] = 1.0f;
-        m_curNorm[1] = 0.0f;
-        m_curNorm[2] = 0.0f;
-        return;
-    }
-    m_curNorm[0] = float(n.x() / len);
-    m_curNorm[1] = float(n.y() / len);
-    m_curNorm[2] = float(n.z() / len);
+    setCurNorm(n);
 }
 
 void TubeMeshBuilder::startPrim(int nType)
@@ -146,8 +189,9 @@ void TubeMeshBuilder::startPrim(int nType)
         m_nPrimFirst = getVertexSize();
     }
     else if (m_nMode == MODE_UPDATE) {
-        if (m_nPrimCur >= int(m_prims.size()) || m_prims[m_nPrimCur].type != nType ||
-            m_prims[m_nPrimCur].first != m_nVertCur)
+        const std::vector<Prim> &ps = prims();
+        if (m_nPrimCur >= m_nPrimEnd || ps[m_nPrimCur].type != nType ||
+            ps[m_nPrimCur].first != m_nVertCur)
             m_bMismatch = true;
         m_nPrimType = nType;
         m_nPrimFirst = m_nVertCur;
@@ -170,7 +214,7 @@ void TubeMeshBuilder::startTriangleFan()
         startPrim(PRIM_FAN);
 }
 
-void TubeMeshBuilder::vertex(const Vector4D &v)
+void TubeMeshBuilder::vertexSlow(const Vector4D &v)
 {
     if (m_nMode == MODE_DIRECT) {
         m_pdl->vertex(v);
@@ -186,28 +230,17 @@ void TubeMeshBuilder::vertex(const Vector4D &v)
         m_norm.push_back(m_curNorm[2]);
         m_col.push_back(m_curCol);
         m_name.push_back(m_curName);
+        ++m_nVerts;
         return;
     }
 
     if (m_nMode != MODE_UPDATE)
         return;
 
-    const int i = m_nVertCur;
+    // The update writes are inline (vertex()); reaching here in update mode
+    // means more vertices than recorded
     ++m_nVertCur;
-    if (i >= getVertexSize()) {
-        m_bMismatch = true;
-        return;
-    }
-    if (m_nUpdFlags & UPD_GEOM) {
-        m_pos[i * 3 + 0] = float(v.x());
-        m_pos[i * 3 + 1] = float(v.y());
-        m_pos[i * 3 + 2] = float(v.z());
-        m_norm[i * 3 + 0] = m_curNorm[0];
-        m_norm[i * 3 + 1] = m_curNorm[1];
-        m_norm[i * 3 + 2] = m_curNorm[2];
-    }
-    if (m_nUpdFlags & UPD_COLOR)
-        m_col[i] = m_curCol;
+    m_bMismatch = true;
 }
 
 void TubeMeshBuilder::end()
@@ -222,8 +255,8 @@ void TubeMeshBuilder::end()
         m_prims.push_back(Prim{m_nPrimType, m_nPrimFirst, nCount});
     }
     else if (m_nMode == MODE_UPDATE) {
-        if (m_nPrimCur >= int(m_prims.size()) ||
-            m_prims[m_nPrimCur].count != m_nVertCur - m_nPrimFirst)
+        if (m_nPrimCur >= m_nPrimEnd ||
+            prims()[m_nPrimCur].count != m_nVertCur - m_nPrimFirst)
             m_bMismatch = true;
         ++m_nPrimCur;
     }
@@ -259,12 +292,19 @@ int TubeMeshBuilder::getFaceSize() const
 
 void TubeMeshBuilder::toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) const
 {
+    MB_ASSERT(!m_bReleased);
     const int nVerts = getVertexSize();
     const int nFaces = getFaceSize();
+    // The update traversal writes into the attribute blocks of this layout
+    prim.setLayout(gfx::TrigGpuPrim::LAYOUT_PACKED);
     prim.alloc(pdc, nVerts, nFaces);
 
-    updateGpuPrim(prim, UPD_GEOM | UPD_COLOR);
-    for (int i = 0; i < nVerts; ++i) prim.setHitName(i, m_name[i]);
+    for (int i = 0; i < nVerts; ++i) {
+        prim.setVertex(i, getPos(i));
+        prim.setNormal(i, getNorm(i));
+        prim.setColor(i, m_col[i]);
+        prim.setHitName(i, m_name[i]);
+    }
 
     // Same triangulation (and winding) as gfx::GrowMesh
     int iface = 0;
@@ -279,20 +319,6 @@ void TubeMeshBuilder::toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) con
                 prim.setFace(iface, b + i, b + i - 1, b + i - 2);
             ++iface;
         }
-    }
-    prim.setUpdated(true);
-}
-
-void TubeMeshBuilder::updateGpuPrim(gfx::TrigGpuPrim &prim, int nFlags) const
-{
-    const int nVerts = getVertexSize();
-    for (int i = 0; i < nVerts; ++i) {
-        if (nFlags & UPD_GEOM) {
-            prim.setVertex(i, getPos(i));
-            prim.setNormal(i, getNorm(i));
-        }
-        if (nFlags & UPD_COLOR)
-            prim.setColor(i, m_col[i]);
     }
     prim.setUpdated(true);
 }

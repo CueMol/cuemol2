@@ -11,6 +11,8 @@
 #include "MolRenderer.hpp"
 #include "ColoringScheme.hpp"
 
+#include <unordered_map>
+
 class MainChainRenderer_wrap;
 
 namespace molstr {
@@ -23,6 +25,10 @@ namespace molstr {
   private:
     //MCINFO: LString m_sPivAtomName => pivotatom
     LString m_sPivAtomName;
+
+    /// Pivot atom of each residue (see getPivotAtom()). Built lazily and
+    /// dropped on a topology change or a pivot name change; atom moves keep it.
+    mutable std::unordered_map<const MolResidue *, MolAtomPtr> m_pivCache;
 
     // //MCINFO: double m_dBondBrkDist => autobreak
     // double m_dBondBrkDist;
@@ -37,6 +43,11 @@ namespace molstr {
     // overridden methods
 
     void render(DisplayContext *pdl) override;
+
+    void objectChanged(qsys::ObjectEvent &ev) override;
+
+    void attachObj(qlib::uid_t obj_uid) override;
+    qlib::uid_t detachObj() override;
 
     // virtual void renderHitDL(DisplayContext *phl);
 
@@ -81,6 +92,12 @@ namespace molstr {
     virtual bool isNewSegment(MolResiduePtr pcur, MolResiduePtr pprev);
 
     MolAtomPtr getPivotAtom(MolResiduePtr pRes) const;
+
+  private:
+    /// getPivotAtom() without the cache
+    MolAtomPtr findPivotAtom(MolResiduePtr pRes) const;
+
+  public:
     Vector4D getPivotPos(MolResiduePtr pRes) const {
       return ensureNotNull(getPivotAtom(pRes))->getPos();
     }

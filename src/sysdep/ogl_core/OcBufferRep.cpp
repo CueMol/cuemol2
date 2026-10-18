@@ -83,6 +83,8 @@ int OcBufferRep::convGLConsts(int id)
             return GL_FLOAT;
         case qlib::type_consts::QTC_FLOAT64:
             return GL_DOUBLE;
+        case qlib::type_consts::QTC_INT_2_10_10_10_REV:
+            return GL_INT_2_10_10_10_REV;
         default:
             return -1;
     }
@@ -132,8 +134,16 @@ void OcBufferRep::update(const gfx::AbstDrawAttrs &ada)
         return;
     }
 
-    // transfer updated data to GPU by glBufferSubData
-    glBufferSubData(GL_ARRAY_BUFFER, 0, ada.getDataSize(), ada.getData());
+    // transfer the updated range (the whole data unless the owner narrowed
+    // it) to GPU by glBufferSubData
+    const size_t nlen = ada.getUpdateLength();
+    if (nlen == 0) {
+        glBufferSubData(GL_ARRAY_BUFFER, 0, ada.getDataSize(), ada.getData());
+    } else {
+        const size_t noff = ada.getUpdateOffset();
+        glBufferSubData(GL_ARRAY_BUFFER, noff, nlen,
+                        static_cast<const char *>(ada.getData()) + noff);
+    }
 
     // Indeices are always immutable in the current implementation
     // if (ada.getType() == AbstDrawElem::VA_ATTR_INDS) {
@@ -153,14 +163,14 @@ void OcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada)
         int az = ada.getAttrElemSize(i);
         int at = ada.getAttrTypeID(i);
         int ap = ada.getAttrPos(i);
+        int stride = ada.getAttrStride(i);
         if (ada.isAttrInteger(i)) {
             // Integer attribute (e.g. hit names): no normalization, read as
             // int/uint in the shader.
-            glVertexAttribIPointer(al, az, convGLConsts(at), ada.getElemSize(),
-                                   (void *)ap);
+            glVertexAttribIPointer(al, az, convGLConsts(at), stride, (void *)(size_t)ap);
         } else {
-            glVertexAttribPointer(al, az, convGLConsts(at), convGLNorm(at),
-                                  ada.getElemSize(), (void *)ap);
+            glVertexAttribPointer(al, az, convGLConsts(at), convGLNorm(at), stride,
+                                  (void *)(size_t)ap);
         }
         glVertexAttribDivisor(al, ada.getAttrDivisor(i));
         glEnableVertexAttribArray(al);

@@ -9,9 +9,25 @@
 
 #include <gfx/DisplayContext.hpp>
 #include <qsys/ObjectEvent.hpp>
+#include <qlib/parallel.hpp>
+
+#include <atomic>
 
 using namespace molvis;
 using gfx::DisplayContext;
+
+namespace {
+
+/// The primitive's re-upload flags for the builder's update flags
+int toPrimUpdateFlags(int nMeshFlags)
+{
+    int nFlags = 0;
+    if (nMeshFlags & TubeMeshBuilder::UPD_GEOM) nFlags |= gfx::TrigGpuPrim::UPD_GEOM;
+    if (nMeshFlags & TubeMeshBuilder::UPD_COLOR) nFlags |= gfx::TrigGpuPrim::UPD_COLOR;
+    return nFlags;
+}
+
+}  // namespace
 
 TubeGpuSupport::TubeGpuSupport()
     : m_bCheckShader(false),
@@ -20,7 +36,9 @@ TubeGpuSupport::TubeGpuSupport()
       m_bHasMesh(false),
       m_nDirty(0),
       m_nPolyMode(DisplayContext::POLY_FILL),
-      m_bColorOnly(false)
+      m_bColorOnly(false),
+      m_nLastPass(TG_PASS_NONE),
+      m_bChunked(false)
 {
 }
 
@@ -49,25 +67,32 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
                               : DisplayContext::POLY_FILL;
     if (m_bTopoValid && nPolyMode != m_nPolyMode) m_bTopoValid = false;
 
+    m_nLastPass = TG_PASS_NONE;
     if (!m_bTopoValid) {
         build(pdc, nPolyMode);
+        m_nLastPass = TG_PASS_BUILD;
         return true;
     }
 
     if (m_nDirty != 0) {
+        // The update traversal writes straight into the attribute blocks of
+        // the primitive (see updateMesh()): only the upload of the blocks it
+        // wrote is left
         const int nFlags = m_nDirty;
-        if (tubeGpuUpdateMesh()) {
-            if (m_bHasMesh) m_mb.updateGpuPrim(m_prim, nFlags);
+        if (updateMesh()) {
+            if (m_bHasMesh) m_prim.markUpdated(toPrimUpdateFlags(nFlags));
+            m_nLastPass = m_bChunked ? TG_PASS_CHUNKED : TG_PASS_SERIAL;
         }
         else {
             MB_DPRINTLN("TubeGpuSupport> topology changed, rebuild the mesh");
             build(pdc, nPolyMode);
+            m_nLastPass = TG_PASS_BUILD;
         }
     }
     return true;
 }
 
-void TubeGpuSupport::tubeGpuBuildMesh()
+void TubeGpuSupport::buildMesh()
 {
     m_mb.startBuild(tubeGpuSceneID());
     tubeGpuRenderMesh();
@@ -78,19 +103,44 @@ void TubeGpuSupport::tubeGpuBuildMesh()
     m_bHasMesh = m_mb.getFaceSize() > 0;
 }
 
-bool TubeGpuSupport::tubeGpuUpdateMesh()
+bool TubeGpuSupport::updateMesh()
 {
     const int nFlags = m_nDirty;
     m_nDirty = 0;
+    m_bChunked = false;
     if (!m_bTopoValid || nFlags == 0) return m_bTopoValid;
-    m_mb.startUpdate(tubeGpuSceneID(), nFlags);
+    // The update goes into the primitive's vertex array; without faces there
+    // is no primitive and nothing to update
+    if (!m_bHasMesh) return true;
+    const gfx::TrigGpuPrim::PackedArrays dst = m_prim.getPackedArrays();
+
+    if (nFlags == TubeMeshBuilder::UPD_GEOM &&
+        tubeGpuCanUpdateChunks() && m_mb.chunksCoverAll()) {
+        // Coordinate-only update of a mesh made of independent chunks: the
+        // chunks write disjoint vertex ranges, so redraw them in parallel.
+        // (Colors are not computed here; a color update goes through the
+        // serial traversal below.)
+        tubeGpuPrepareChunkUpdate();
+        const qlib::uid_t nSceneID = tubeGpuSceneID();
+        std::atomic<bool> bOK(true);
+        qlib::parallel_for(0, m_mb.getChunks().size(), [&](std::size_t i) {
+            TubeMeshBuilder mb;
+            mb.startChunkUpdate(nSceneID, nFlags, dst, m_mb, int(i));
+            tubeGpuUpdateChunk(int(i), &mb);
+            if (!mb.finish()) bOK = false;
+        });
+        m_bChunked = true;
+        return bOK;
+    }
+
+    m_mb.startUpdate(tubeGpuSceneID(), nFlags, dst);
     tubeGpuRenderMesh();
     return m_mb.finish();
 }
 
 void TubeGpuSupport::build(DisplayContext *pdc, int nPolyMode)
 {
-    tubeGpuBuildMesh();
+    buildMesh();
     m_nPolyMode = nPolyMode;
     if (!m_bHasMesh) {
         m_prim.invalidate();
@@ -98,6 +148,8 @@ void TubeGpuSupport::build(DisplayContext *pdc, int nPolyMode)
     }
     m_prim.setPolygonMode(nPolyMode);
     m_mb.toGpuPrim(pdc, m_prim);
+    // the primitive holds the vertex data from here on
+    m_mb.releaseVertexData();
 }
 
 void TubeGpuSupport::tubeGpuDraw(DisplayContext *pdc)

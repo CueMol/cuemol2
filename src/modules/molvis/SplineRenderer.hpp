@@ -117,14 +117,17 @@ namespace molvis {
 
     void invalidateSplineCoeffs();
 
-    /// Drop the spline coeffs only (regenerated on the next traversal),
-    /// keeping the display cache.
-    void cleanupSplineCoeffs() { m_scs.cleanup(); }
+    /// Spline topology: valid, and its generation (incremented on every
+    /// rebuild; the SplineCoeff objects of an older generation are gone)
+    bool isSplineTopoValid() const { return m_scs.isTopoValid(); }
+    int getSplineTopoGen() const { return m_scs.getTopoGen(); }
 
-    /// Atoms moved and the GPU mesh is updated in place (TubeGpuSupport):
-    /// drop the spline coeffs, request a redraw and drop the hittest cache,
-    /// without invalidating the display cache.
-    void updateMovedAtoms();
+    /// Recompute the stale part of the spline coeffs (after an atom move)
+    void prepareSplineCoeffs();
+
+    /// The atoms moved: mark the geometry part of the spline coeffs stale
+    /// (the topology part is kept)
+    void markSplineCoeffsMoved() { m_scs.markMoved(); }
 
   private:
     void getSegEndImpl(int nprev, MolResiduePtr pPrev,

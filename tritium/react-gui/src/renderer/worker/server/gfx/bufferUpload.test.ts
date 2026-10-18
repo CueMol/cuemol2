@@ -24,6 +24,7 @@ function makeGl() {
     return {
         ...GL,
         FLOAT: 0x1406,
+        INT_2_10_10_10_REV: 0x8d9f,
         createBuffer: vi.fn(() => ({})),
         createVertexArray: vi.fn(() => ({})),
         bindVertexArray: vi.fn(),
@@ -70,8 +71,155 @@ describe('BufferStore.drawBuffer upload gate', () => {
         expect(gl.bufferSubData).not.toHaveBeenCalled();
     });
 
+    it('re-sends only the vertex buffer of an indexed buffer', () => {
+        // The indices never change for the life of a buffer (a topology
+        // change makes a new one), so an update must not re-send them.
+        const IDX = '2';
+        store.createBuffer(
+            String(IDX), 36, 3, 12,
+            JSON.stringify([{ nloc: 0, itype: '21', nelems: 3, npos: 0, idiv: 0 }]),
+        );
+        gl.bufferSubData.mockClear();
+        store.drawBuffer(IDX as never, GL.TRIANGLES, 3, new Float32Array(9),
+            new Uint32Array(3), true, 0);
+        expect(gl.bufferSubData).toHaveBeenCalledTimes(1);
+        expect(gl.bufferSubData.mock.calls[0][0]).toBe(GL.ARRAY_BUFFER);
+        expect(gl.drawElements).toHaveBeenCalled();
+    });
+
     it('still draws the buffer it did not re-upload', () => {
         store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9), null, false, 0);
         expect(gl.drawArrays).toHaveBeenCalled();
+    });
+});
+
+describe('BufferStore vertex buffer ring', () => {
+    let gl: ReturnType<typeof makeGl>;
+    let store: BufferStore;
+    const ID = '1';
+    const ATTRS = JSON.stringify([{ nloc: 0, itype: '21', nelems: 3, npos: 0, idiv: 0 }]);
+
+    /** The vertex buffer each bufferSubData wrote, in call order. */
+    const uploadTargets = () => {
+        const bound: unknown[] = [];
+        let vbo: unknown = null;
+        const calls = [...gl.bindBuffer.mock.invocationCallOrder.map((o, i) =>
+            ({ o, kind: 'bind', args: gl.bindBuffer.mock.calls[i] })),
+            ...gl.bufferSubData.mock.invocationCallOrder.map((o) => ({ o, kind: 'sub', args: [] }))]
+            .sort((a, b) => a.o - b.o);
+        for (const c of calls) {
+            if (c.kind === 'bind' && c.args[0] === GL.ARRAY_BUFFER) vbo = c.args[1];
+            if (c.kind === 'sub') bound.push(vbo);
+        }
+        return bound;
+    };
+
+    /** The VAO bound right before each draw call, in call order. */
+    const drawnVaos = () => gl.drawArrays.mock.invocationCallOrder.map((o) => {
+        let vao: unknown = null;
+        gl.bindVertexArray.mock.invocationCallOrder.forEach((b, i) => {
+            if (b < o) vao = gl.bindVertexArray.mock.calls[i][0];
+        });
+        return vao;
+    });
+
+    beforeEach(() => {
+        gl = makeGl();
+        store = new BufferStore();
+        store.setContext(gl as never);
+    });
+
+    it('writes successive updates into alternating vertex buffers and draws the one written', () => {
+        store.createBuffer(ID, 36, 3, 0, ATTRS);
+        const draw = (updated: boolean) =>
+            store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9), null, updated, 0);
+        draw(true);
+        draw(false);
+        draw(true);
+        draw(true);
+
+        const [first, second, third] = uploadTargets();
+        expect(first).not.toBe(second);
+        expect(third).toBe(first);
+        // The drawn VAO changes with every update and stays put without one.
+        const [v1, v2, v3, v4] = drawnVaos();
+        expect(v2).toBe(v1);
+        expect(v3).not.toBe(v1);
+        expect(v4).toBe(v1);
+    });
+
+    it('keeps a single vertex buffer for a buffer that is never updated', () => {
+        store.createBuffer(ID, 36, 3, 0, ATTRS);
+        store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9), null, false, 0);
+        store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9), null, false, 0);
+        expect(gl.createBuffer).toHaveBeenCalledTimes(1);
+        expect(gl.createVertexArray).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets the extra slot read the shared index buffer and deletes every slot', () => {
+        store.createBuffer(ID, 36, 3, 12, ATTRS);
+        const ibo = gl.createBuffer.mock.results[0].value;
+        gl.bindBuffer.mockClear();
+        store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9),
+            new Uint32Array(3), true, 0);
+        // The new slot's VAO records the same element buffer.
+        expect(gl.bindBuffer).toHaveBeenCalledWith(GL.ELEMENT_ARRAY_BUFFER, ibo);
+        expect(gl.createBuffer).toHaveBeenCalledTimes(3);  // ibo + two vbos
+
+        store.deleteBuffer(ID as never);
+        expect(gl.deleteBuffer).toHaveBeenCalledTimes(3);
+        expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('BufferStore partial updates (attribute blocks)', () => {
+    let gl: ReturnType<typeof makeGl>;
+    let store: BufferStore;
+    const ID = '1';
+    // Two vertices in a block layout: 12-byte positions, then 4-byte packed
+    // normals, then 4-byte colors (24 bytes per vertex in all)
+    const TOTAL = 48;
+    const GEOM: [number, number] = [0, 32];
+    const COLOR: [number, number] = [32, 40];
+    const ATTRS = JSON.stringify([
+        { nloc: 0, itype: '21', nelems: 3, npos: 0, idiv: 0, stride: '12' },
+        { nloc: 1, itype: '61', nelems: 4, npos: 24, idiv: 0, stride: '4' },
+        { nloc: 2, itype: '1', nelems: 4, npos: 32, idiv: 0, stride: '4' },
+    ]);
+
+    /** [offset, byteLength] of each bufferSubData, in call order. */
+    const uploads = () => gl.bufferSubData.mock.calls.map(
+        (c) => [c[1], (c[2] as Uint8Array).byteLength]);
+
+    const update = (range: [number, number]) =>
+        store.drawBuffer(ID as never, GL.TRIANGLES, 2, new ArrayBuffer(TOTAL), null, true, 0,
+            range[0], range[1] - range[0]);
+
+    beforeEach(() => {
+        gl = makeGl();
+        store = new BufferStore();
+        store.setContext(gl as never);
+        store.createBuffer(ID, TOTAL, 2, 0, ATTRS);
+    });
+
+    it('gives each attribute its own stride and reads packed normals normalized', () => {
+        expect(gl.vertexAttribPointer).toHaveBeenCalledWith(0, 3, gl.FLOAT, false, 12, 0);
+        expect(gl.vertexAttribPointer).toHaveBeenCalledWith(
+            1, 4, gl.INT_2_10_10_10_REV, true, 4, 24);
+    });
+
+    it('uploads only the changed range once the slot holds the rest', () => {
+        update(GEOM);  // into the new second slot: everything
+        update(GEOM);  // back into the first slot: only the range
+        update(GEOM);
+        expect(uploads()).toEqual([[0, TOTAL], [0, 32], [0, 32]]);
+    });
+
+    it('brings a slot up to date with the ranges it missed', () => {
+        update(GEOM);   // slot 1 (all)
+        update(COLOR);  // slot 0: the color, plus the positions it missed
+        update(GEOM);   // slot 1: the positions, plus the color it missed
+        update(GEOM);   // slot 0: up to date except the positions
+        expect(uploads()).toEqual([[0, TOTAL], [0, 40], [0, 40], [0, 32]]);
     });
 });

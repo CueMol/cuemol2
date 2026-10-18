@@ -12,7 +12,8 @@
 using namespace molvis;
 
 CubicSpline::CubicSpline()
-     : m_pCoeff0(NULL), m_pCoeff1(NULL), m_pCoeff2(NULL), m_pCoeff3(NULL)
+     : m_nPoints(0),
+       m_pCoeff0(NULL), m_pCoeff1(NULL), m_pCoeff2(NULL), m_pCoeff3(NULL)
 {
 }
 
@@ -44,20 +45,25 @@ void CubicSpline::cleanup()
 bool CubicSpline::generate()
 {
   int i;
-  m_nPoints = m_veclist.size();
+  const int nPoints = m_veclist.size();
+
+  // The spline may be regenerated (SplineCoeff::updateGeometry() on every
+  // atom move): keep the coefficient tables when the size is unchanged,
+  // otherwise free them before allocating new ones.
+  if (m_pCoeff0!=NULL && nPoints!=m_nPoints)
+    cleanup();
+  m_nPoints = nPoints;
 
   if (m_nPoints==0)
     return false; // there is no interp points!!
 
   // allocate coefficient table
-  MB_ASSERT(m_pCoeff0==NULL);
-  m_pCoeff0 = MB_NEW Vector4D[m_nPoints];
-  MB_ASSERT(m_pCoeff1==NULL);
-  m_pCoeff1 = MB_NEW Vector4D[m_nPoints];
-  MB_ASSERT(m_pCoeff2==NULL);
-  m_pCoeff2 = MB_NEW Vector4D[m_nPoints];
-  MB_ASSERT(m_pCoeff3==NULL);
-  m_pCoeff3 = MB_NEW Vector4D[m_nPoints];
+  if (m_pCoeff0==NULL) {
+    m_pCoeff0 = MB_NEW Vector4D[m_nPoints];
+    m_pCoeff1 = MB_NEW Vector4D[m_nPoints];
+    m_pCoeff2 = MB_NEW Vector4D[m_nPoints];
+    m_pCoeff3 = MB_NEW Vector4D[m_nPoints];
+  }
 
   if (m_nPoints==1) {
     // Degenerated case (point)

@@ -19,6 +19,7 @@ TubeRenderer.cpp
 TubeSection.cpp
 TubeMeshBuilder.cpp
 TubeGpuSupport.cpp
+SplineTubeRenderer.cpp
 RibbonRenderer.cpp
 Ribbon2Renderer.cpp
 JctTable.cpp

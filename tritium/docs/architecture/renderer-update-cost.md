@@ -263,7 +263,15 @@ draw.
 
 The same reasoning still applies to `BufferStore`, which is still a single VBO with
 `STATIC_DRAW` and a full `bufferSubData` at offset 0 -- untouched by this work
-because the coordinate-texture renderers do not re-upload vertex buffers. It
+because the coordinate-texture renderers do not re-upload vertex buffers.
+(Since then an update re-sends only the vertex buffer: the indices never change
+for the life of a buffer, since a topology change allocates a new draw element,
+so `drawBuffer` and `EcBufferRep::update` no longer copy or send them. And
+`DisplayContext::drawElem` clears the update flag when it creates the buffer,
+which uploads the data already, so the next draw no longer sends it twice. On
+4V6X ribbon, 5.8M vertices, the per-update upload went from 14.4 ms (185 MB of
+vertices + 65 MB of indices) to 10.6 ms, and the one extra full upload after
+each rebuild, about 220 ms, is gone.) It
 matters for the mesh renderers, which reallocate four buffers every frame, and
 that is worth measuring again after candidate 2 below, which is what would make
 those rebuilds rare.

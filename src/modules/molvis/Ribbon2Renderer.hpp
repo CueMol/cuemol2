@@ -13,7 +13,7 @@
 //#include "CubicSpline.hpp"
 #include "smospl/SmoothSpline.hpp"
 #include "TubeSection.hpp"
-#include "TubeGpuSupport.hpp"
+#include "TubeGpuRenderer.hpp"
 #include "JctTable.hpp"
 
 class Ribbon2Renderer_wrap;
@@ -130,7 +130,7 @@ using namespace molstr;
 
   } // namespace detail
 
-  class Ribbon2Renderer : public MainChainRenderer, public TubeGpuSupport
+  class Ribbon2Renderer : public TubeGpuRenderer<MainChainRenderer>
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -139,7 +139,7 @@ using namespace molstr;
 
   private:
 
-    typedef MainChainRenderer super_t;
+    typedef TubeGpuRenderer<MainChainRenderer> super_t;
 
     //////////////////////////////////////////////////////
     // Properties
@@ -249,22 +249,12 @@ using namespace molstr;
     const char *getTypeName() const override;
 
     //////////////////////////////////////////////////////
-    // GPU mesh (TubeGpuSupport)
-
-    void display(DisplayContext *pdc) override;
-
-    /// The pick pass draws the same mesh with the pick program
-    void displayPick(DisplayContext *pdc) override;
-
-    void invalidateDisplayCache() override;
-
-    void unloading() override;
+    // GPU mesh (TubeGpuRenderer)
 
   protected:
-    void tubeGpuRenderMesh() override { render(nullptr); }
-    qlib::uid_t tubeGpuSceneID() const override { return getSceneID(); }
-    void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
-    void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
+    /// endSegment() rebuilds the splines on every traversal: only the
+    /// differential vectors derived from the positions are dropped
+    void tubeGpuOnMovedAtoms() override { m_diffvecs.clear(); }
 
   public:
     //////////////////////////////////////////////////////
