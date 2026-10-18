@@ -14,6 +14,8 @@
 #include "CubicSpline.hpp"
 
 #include <set>
+#include <unordered_map>
+#include <vector>
 
 using qlib::LString;
 using qlib::Vector4D;
@@ -32,12 +34,28 @@ namespace molvis {
 
   class SplineCoeff;
 
+  ///
+  /// Spline coefficients of the main chain of a molecule.
+  ///
+  /// The coefficients have a topology part (the segments, their residues,
+  /// the parameter tables and the per-residue atoms and properties) and a
+  /// geometry part (the spline coefficients computed from the positions).
+  /// Moving the atoms (markMoved()) only invalidates the geometry part,
+  /// which generate() then recomputes from the kept topology.
+  ///
   class SplineCoeffSet
   {
   private:
     std::list<SplineCoeff *> m_list;
     // double m_fBrkLimit;
     SplineCoeff *m_pCurCoeff;
+
+    /// Coeff of each residue (residues of the short segments excluded)
+    std::unordered_map<const MolResidue *, SplineCoeff *> m_residMap;
+
+    /// The topology / geometry parts are valid
+    bool m_bTopoValid;
+    bool m_bGeomValid;
 
     MainChainRenderer *m_pParent;
 
@@ -53,8 +71,11 @@ namespace molvis {
 
     ~SplineCoeffSet();
 
-    /// remove all of the coeffs
+    /// remove all of the coeffs (topology and geometry)
     void cleanup();
+
+    /// The atoms moved: only the geometry part is recomputed by generate()
+    void markMoved() { m_bGeomValid = false; }
 
     /// chech current coeffs are valid
     bool isValid() const;
@@ -68,7 +89,7 @@ namespace molvis {
       return m_shortResids.find(pres.get())!=m_shortResids.end();
     }
 
-    /// generate spline coeffs for pmol
+    /// generate the invalid parts of the spline coeffs for pmol
     bool generate(MolCoordPtr pmol);
 
     void setSmooth(double d) { m_dsmooth = d; }
@@ -86,6 +107,8 @@ namespace molvis {
 
   private:
 
+    void buildTopology(MolCoordPtr pmol);
+
     void beginSegment(MolResidue *pres);
     void rendResid(MolResidue *pRes);
     void endSegment(MolResidue *pres);
@@ -100,6 +123,27 @@ namespace molvis {
   private:
     CubicSpline m_axisInt;
     CubicSpline m_normInt;
+
+    /// Per-residue data that does not depend on the positions
+    struct ResidCache
+    {
+      /// pivot atom (owned by the molecule; the topology is dropped on any
+      /// structural change, so the pointer stays valid while it is kept)
+      MolAtom *pPiv;
+      /// smoothing weight
+      double smooth;
+      /// protein beta strand with the C and O atoms (binormal from C=O)
+      bool bSheetCO;
+      MolAtom *pC;
+      MolAtom *pO;
+    };
+    std::vector<ResidCache> m_cache;
+
+    /// Index of each residue in this segment
+    std::unordered_map<const MolResidue *, int> m_residIndex;
+
+    /// The geometry part was computed successfully
+    bool m_bGeomOK;
 
     LString m_chainname;
     int m_nStartResid;
@@ -117,9 +161,6 @@ namespace molvis {
 
     ResidArray m_resid_array;
 
-    typedef std::map<int, int> PivAidMap;
-    PivAidMap m_pivaid_map;
-
     SplineCoeffSet *m_pParent;
 
     std::vector<bool> m_bnormDirs;
@@ -129,7 +170,8 @@ namespace molvis {
 
   public:
     SplineCoeff(SplineCoeffSet *pParent)
-         : m_pParamTab(NULL), m_pParamCentTab(NULL),
+         : m_bGeomOK(false),
+           m_pParamTab(NULL), m_pParamCentTab(NULL),
            m_pParent(pParent)
     {
     }
@@ -155,7 +197,13 @@ namespace molvis {
 
     int getResidCount() const { return int(m_resid_array.size()); }
 
-    bool generate();
+    /// Build the topology part (false for a segment of 1 or 2 residues)
+    bool setupTopology();
+
+    /// Compute the spline coeffs from the current positions
+    bool updateGeometry();
+
+    bool isGeomOK() const { return m_bGeomOK; }
 
     MolResidue *getResidue(int ires) const
     {
@@ -165,7 +213,9 @@ namespace molvis {
     }
 
     MolAtomPtr getAtom(int ires) const {
-      return getPivotAtom(MolResiduePtr(getResidue(ires)));
+      if (ires<0 || ires>=int(m_cache.size()))
+        return MolAtomPtr();
+      return MolAtomPtr(m_cache[ires].pPiv);
     }
 
     bool contains(MolResidue *pres);
@@ -225,7 +275,11 @@ namespace molvis {
       return m_pParent->getPivotAtom(pRes);
     }
 
-    MolAtomPtr getSafeAtom(int nind) const;
+    MolAtom *getSafeAtom(int nind) const {
+      if (nind<0 || nind>=m_nResids)
+        return NULL;
+      return m_cache[nind].pPiv;
+    }
 
     Vector4D calcBnormVec(int nres);
 

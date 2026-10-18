@@ -23,7 +23,7 @@ using namespace molstr;
 using qlib::Matrix3D;
 
 SplineCoeffSet::SplineCoeffSet()
-     : m_pCurCoeff(NULL)
+     : m_pCurCoeff(NULL), m_bTopoValid(false), m_bGeomValid(false)
 {
   m_dsmooth = 0.0;
   m_pSmoothEval = NULL;
@@ -51,6 +51,9 @@ void SplineCoeffSet::cleanup()
   }
   m_list.erase(m_list.begin(), m_list.end());
   m_shortResids.clear();
+  m_residMap.clear();
+  m_bTopoValid = false;
+  m_bGeomValid = false;
 
   //if (m_pSmoothEval!=NULL)
   //delete m_pSmoothEval;
@@ -59,9 +62,7 @@ void SplineCoeffSet::cleanup()
 
 bool SplineCoeffSet::isValid() const
 {
-  if (m_list.size()<=0)
-    return false;
-  return true;
+  return m_bTopoValid && m_bGeomValid;
 }
 
 /**
@@ -70,6 +71,22 @@ bool SplineCoeffSet::isValid() const
   irrespective of the current selection.
  */
 bool SplineCoeffSet::generate(MolCoordPtr pmol)
+{
+  if (!m_bTopoValid)
+    buildTopology(pmol);
+
+  if (!m_bGeomValid) {
+    // Only the positions changed (or the topology was just built): recompute
+    // the spline coeffs from the kept topology
+    std::list<SplineCoeff *>::const_iterator iter = m_list.begin();
+    for ( ; iter!=m_list.end(); iter++)
+      (*iter)->updateGeometry();
+    m_bGeomValid = true;
+  }
+  return true;
+}
+
+void SplineCoeffSet::buildTopology(MolCoordPtr pmol)
 {
   // remove all previous data
   cleanup();
@@ -103,9 +120,9 @@ bool SplineCoeffSet::generate(MolCoordPtr pmol)
   
   if (!pPrevResid.isnull())
     endSegment(pPrevResid.get());
-  
-  return true;
-  // MB_DPRINTLN("SplineCoeffSet::display() end OK.");
+
+  m_bTopoValid = true;
+  m_bGeomValid = false;
 }
 
 void SplineCoeffSet::beginSegment(MolResidue *pres)
@@ -124,8 +141,8 @@ void SplineCoeffSet::rendResid(MolResidue *pRes)
 void SplineCoeffSet::endSegment(MolResidue *pres)
 {
   MB_ASSERT(m_pCurCoeff!=NULL);
-  if (!m_pCurCoeff->generate()) {
-    // 1 or 2 residues: no spline (see SplineCoeff::generate()); remember them
+  if (!m_pCurCoeff->setupTopology()) {
+    // 1 or 2 residues: no spline (see SplineCoeff::setupTopology()); remember them
     // so that the renderer skips the segment quietly
     if (m_pCurCoeff->getResidCount()<=2) {
       for (int i=0; i<m_pCurCoeff->getResidCount(); ++i)
@@ -136,6 +153,8 @@ void SplineCoeffSet::endSegment(MolResidue *pres)
     return;
   }
   m_list.push_back(m_pCurCoeff);
+  for (int i=0; i<m_pCurCoeff->getResidCount(); ++i)
+    m_residMap[m_pCurCoeff->getResidue(i)] = m_pCurCoeff;
   m_pCurCoeff = NULL;
 }
 
@@ -146,13 +165,13 @@ SplineCoeff *SplineCoeffSet::createSplineCoeff()
 
 SplineCoeff *SplineCoeffSet::searchCoeff(MolResiduePtr pres)
 {
-  std::list<SplineCoeff *>::const_iterator iter = m_list.begin();
-  for ( ; iter!=m_list.end(); iter++) {
-    SplineCoeff *pcoeff = (*iter);
-    if (pcoeff->contains(pres.get()))
-      return pcoeff;
-  }
-  return NULL;
+  auto iter = m_residMap.find(pres.get());
+  if (iter==m_residMap.end())
+    return NULL;
+  // a segment whose spline could not be computed is not drawn
+  if (!iter->second->isGeomOK())
+    return NULL;
+  return iter->second;
 }
 
 MolAtomPtr SplineCoeffSet::getPivotAtom(MolResiduePtr pRes) const
@@ -200,15 +219,7 @@ bool getPrevResid(std::list<MolResidue *> &lst,
   return true;
 }
 
-MolAtomPtr SplineCoeff::getSafeAtom(int nind) const
-{
-  if (nind<0 || nind>=m_nResids)
-    return MolAtomPtr();
-  MolResidue *pres = m_resid_array[nind];
-  return getPivotAtom(MolResiduePtr(pres));
-}
-
-bool SplineCoeff::generate()
+bool SplineCoeff::setupTopology()
 {
   if (m_resid_array.empty()) {
     // no residue
@@ -226,7 +237,7 @@ bool SplineCoeff::generate()
   }
 
   // get the chain name of this segment
-  m_chainname = m_resid_array[0]->getParentChain()->getName();
+  m_chainname = m_resid_array[0]->getChainName();
 
   //
   // initialize the parameter tables
@@ -238,7 +249,58 @@ bool SplineCoeff::generate()
     m_pParamTab[i] = -1.0;
     m_pParamCentTab[i] = -1.0;
   }
-  m_pivaid_map.clear();
+  //
+  // per-residue data that does not depend on the positions: the pivot atom,
+  // the smoothing weight and, for the protein beta strands, the C and O
+  // atoms the binormal vector is computed from (see calcProtBnormVec())
+  //
+  int nres;
+  m_cache.resize(m_nResids);
+  m_residIndex.clear();
+  for (nres=0; nres<m_nResids; ++nres) {
+    MolResidue *pres = m_resid_array[nres];
+    ResidCache &rc = m_cache[nres];
+    rc.pPiv = getPivotAtom(MolResiduePtr(pres)).get();
+    MB_ASSERT(rc.pPiv!=NULL);
+    rc.smooth = m_pParent->getSmoothByRes(pres);
+
+    rc.bSheetCO = false;
+    rc.pC = NULL;
+    rc.pO = NULL;
+    LString sec;
+    pres->getPropStr("secondary", sec);
+    if (sec.equals("sheet")) {
+      MolAtomPtr pAC = pres->getAtom("C");
+      MolAtomPtr pAO = pres->getAtom("O");
+      if (!pAC.isnull() && !pAO.isnull()) {
+        rc.bSheetCO = true;
+        rc.pC = pAC.get();
+        rc.pO = pAO.get();
+      }
+    }
+
+    m_residIndex.insert(std::make_pair(pres, nres));
+
+    // setup paramTab (depends on the residue number only)
+    const double cpar = double(nres);
+    const double centpar = cpar;
+    const double startpar = (nres==0) ? 0.0 : cpar-0.5;
+    const double endpar = (nres<m_nResids-1) ? cpar+0.5 : cpar;
+    MB_ASSERT(nres+1<m_nParamTabSz);
+    m_pParamTab[nres] = startpar;
+    m_pParamTab[nres+1] = endpar;
+    m_pParamCentTab[nres] = centpar;
+  }
+  // the last parameter is the number of interpolation intervals
+  m_pParamTab[nres+1] = double( m_nResids-1 );
+
+  m_bGeomOK = false;
+  return true;
+}
+
+bool SplineCoeff::updateGeometry()
+{
+  m_bGeomOK = false;
 
   //
   // calculate spline coeffs
@@ -248,22 +310,21 @@ bool SplineCoeff::generate()
 
   for (nres=0; nres<m_nResids; ++nres) {
     // Get atoms (cur/prev/next)
-    MolAtomPtr pAtom = getSafeAtom(nres);
-    MB_ASSERT(!pAtom.isnull());
+    MolAtom *pAtom = getSafeAtom(nres);
+    MB_ASSERT(pAtom!=NULL);
 
     // calculate axial point
     // Get current position curpos
     Vector4D curpos = pAtom->getPos();
-    bool res = m_pivaid_map.insert(PivAidMap::value_type(pAtom->getID(), nres)).second;
 
-    double smooth = m_pParent->getSmoothByRes(getResidue(nres));
+    double smooth = m_cache[nres].smooth;
     if (!qlib::isNear4(smooth, 0.0)) {
       smooth = qlib::trunc(smooth, 0.0, 1.0);
 
-      MolAtomPtr pPrevAtom = getSafeAtom(nres-1);
-      MolAtomPtr pNextAtom = getSafeAtom(nres+1);
-      if ( pPrevAtom.isnull() ||
-           pNextAtom.isnull() ) {
+      MolAtom *pPrevAtom = getSafeAtom(nres-1);
+      MolAtom *pNextAtom = getSafeAtom(nres+1);
+      if ( pPrevAtom==NULL ||
+           pNextAtom==NULL ) {
         // ignore errors
       }
       else {
@@ -279,42 +340,12 @@ bool SplineCoeff::generate()
     }
 
     // add the curpos to the axial interpolator
-    // double cpar = m_axisInt.addPoint(curpos);
     m_axisInt.setPoint(nres, curpos);
-    double cpar = double(nres);
-
-    // setup paramTab
-    double centpar = cpar;
-
-    double startpar;
-    if (nres==0)
-      startpar = 0.0;
-    else
-      startpar = cpar-0.5;
-
-    double endpar;
-    if (nres<m_nResids-1)
-      endpar = cpar+0.5;
-    else
-      endpar = cpar;
-    //endpar = 0.0f;
-    // MB_ASSERT(nres>=0);
-
-    MB_ASSERT(nres+1<m_nParamTabSz);
-    m_pParamTab[nres] = startpar;
-    m_pParamTab[nres+1] = endpar;
-    m_pParamCentTab[nres] = centpar;
   }
 
   // Generate spline coeffs
   m_axisInt.generate();
-
-  int intrmax = m_axisInt.getPoints() -1;
-  MB_ASSERT(intrmax==m_nResids-1);
-  MB_DPRINTLN("max parameter: %d", intrmax);
-
-  MB_ASSERT(nres+1<m_nParamTabSz);
-  m_pParamTab[nres+1] = double( intrmax );
+  MB_ASSERT(m_axisInt.getPoints()-1==m_nResids-1);
 
   //
   // calculate spline coeffs (binormal vector)
@@ -380,8 +411,7 @@ bool SplineCoeff::generate()
   }
   m_normInt.generate();
 
-
-
+  m_bGeomOK = true;
   return true;
 }
 
@@ -389,7 +419,7 @@ Vector4D SplineCoeff::calcBnormVec(int nres)
 {
   Vector4D rval(1.0, 0.0, 0.0);
   
-  MolAtomPtr pAtom, pPrevAtom, pNextAtom;
+  MolAtom *pAtom, *pPrevAtom, *pNextAtom;
 
   if (calcProtBnormVec(nres, rval))
     return rval;
@@ -412,7 +442,7 @@ Vector4D SplineCoeff::calcBnormVec(int nres)
     pNextAtom = getSafeAtom(nres+1);
   }
   
-  if (pAtom.isnull()||pPrevAtom.isnull()||pNextAtom.isnull()) {
+  if (pAtom==NULL||pPrevAtom==NULL||pNextAtom==NULL) {
     MB_DPRINTLN("SplineCoeff::calcBnormVec(): Error, atom is null at %d.", nres);
     return rval;
   }
@@ -436,25 +466,15 @@ Vector4D SplineCoeff::calcBnormVec(int nres)
 
 bool SplineCoeff::calcProtBnormVec(int nres, Vector4D &res)
 {
-  // check protein case
-  MolResidue *pres = m_resid_array[nres];
-  if (pres==NULL)
-    return false;
-
-  LString sec;
-  pres->getPropStr("secondary", sec);
-  if (!sec.equals("sheet"))
-    return false;
-
   // In the protein beta strands,
   // the binormal vector is calculated
   // based on the direction of the main chain >C=O group
-  MolAtomPtr pAC = pres->getAtom("C");
-  MolAtomPtr pAO = pres->getAtom("O");
-  if (pAC.isnull()||pAO.isnull())
+  // (the sheet test and the atoms are in the topology part, see setupTopology())
+  const ResidCache &rc = m_cache[nres];
+  if (!rc.bSheetCO)
     return false;
 
-  Vector4D v1 = pAO->getPos() - pAC->getPos();
+  Vector4D v1 = rc.pO->getPos() - rc.pC->getPos();
   
   // normalization
   double len = v1.length();
@@ -469,19 +489,13 @@ bool SplineCoeff::calcProtBnormVec(int nres, Vector4D &res)
 
 bool SplineCoeff::contains(MolResidue *pres)
 {
-  MolAtomPtr pAtom = getPivotAtom(MolResiduePtr(pres));  
-  int aid = pAtom->getID();
-  if (m_pivaid_map.find(aid)==m_pivaid_map.end())
-    return false;
-  return true;
+  return m_residIndex.find(pres)!=m_residIndex.end();
 }
 
 int SplineCoeff::getIndex(MolResiduePtr pRes) const
 {
-  MolAtomPtr pAtom = getPivotAtom(pRes);  
-  int aid = pAtom->getID();
-  PivAidMap::const_iterator iter = m_pivaid_map.find(aid);
-  if (iter==m_pivaid_map.end())
+  auto iter = m_residIndex.find(pRes.get());
+  if (iter==m_residIndex.end())
     return -1;
   return iter->second;
 }

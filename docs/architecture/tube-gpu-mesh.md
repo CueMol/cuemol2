@@ -57,6 +57,15 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
   spline 係数の作り直し (`SplineCoeffSet` -> `getPivotAtom`) と形状の生成の両方がこれを通る
 - `MainChainRenderer::isNewSegment()` の chain 判定は、`getParentChain()` (分子と chain の検索) ではなく
   残基の chain 名の比較 (同じ分子の残基どうしなので名前で同一 chain と分かる)
+- spline 係数 (`SplineCoeffSet`、tube / ribbon / nucl) は「トポロジの部分」と「座標の部分」に分かれている:
+  - トポロジ (`buildTopology` / `SplineCoeff::setupTopology`): セグメント分け、残基の並び、パラメータの表、chain 名、
+    残基ごとの pivot 原子・平滑化の重み・sheet なら C / O 原子 (生ポインタ)、残基 -> 番号 / 残基 -> 係数の
+    `unordered_map` (`searchCoeff` は定数時間)
+  - 座標 (`SplineCoeff::updateGeometry`): キャッシュから座標を読んで平滑化 -> 軸の spline -> 法線 -> 法線の spline
+  - 座標が動いたとき (`SplineRenderer::updateMovedAtoms` -> `SplineCoeffSet::markMoved`) は座標の部分だけを
+    やり直す。軸方向の細かさ・平滑化・pivot 名・構造の変化と二次構造の変化 (`OBE_CHANGED`、二次構造の再計算は
+    descr `"secondary"`)・`xformMat` では全部捨てる (`invalidateSplineCoeffs` -> `cleanup`)
+  - 補間に失敗したセグメントは `searchCoeff` が返さない (描かない)
 
 ## VBO の転送
 

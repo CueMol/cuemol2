@@ -13,6 +13,8 @@
 #include "molvis/TubeGpuSupport.hpp"
 #include "molvis/TubeMeshBuilder.hpp"
 #include "molvis/NARenderer.hpp"
+#include "molvis/RibbonRenderer.hpp"
+#include <qsys/ObjectEvent.hpp>
 #include "tests/gfx/mock_display_context.hpp"
 #include <gfx/TrigGpuPrim.hpp>
 #include "molstr/MolCoord.hpp"
@@ -163,6 +165,47 @@ TEST_F(TubeGpuMeshTest, PivotCacheFollowsNameAndTopology)
     m_mol->fireTopologyChanged();
     molstr::MolAtomPtr pPiv = pMC->getPivotAtom(pRes);
     EXPECT_TRUE(pPiv.isnull() || !pPiv->getName().equals("CB"));
+}
+
+// The topology part of the spline coeffs (segments, per-residue smoothing
+// weights and sheet atoms) is kept across atom moves, and rebuilt when the
+// secondary structure or the smoothing changes.
+TEST_F(TubeGpuMeshTest, SplineTopologyRebuiltOnSecondaryAndSmoothing)
+{
+    auto newRibbon = [this](double dHelixSmo) {
+        qsys::RendererPtr pR = m_mol->createRenderer("ribbon");
+        auto *pRib = dynamic_cast<molvis::RibbonRenderer *>(pR.get());
+        pRib->setPivAtomName("CA");
+        pRib->setHelixSmooth(dHelixSmo);
+        return pR;
+    };
+    auto meshOf = [](qsys::RendererPtr pR) {
+        auto *pTg = dynamic_cast<TubeGpuSupport *>(pR.get());
+        pTg->tubeGpuBuildMesh();
+        return MeshSnapshot(pTg->tubeGpuMesh());
+    };
+
+    qsys::RendererPtr pRend = newRibbon(0.0);
+    const MeshSnapshot before = meshOf(pRend);
+
+    // Secondary structure: residues 1-10 become a strand (binormal from C=O,
+    // sheet smoothing weight)
+    for (int i = 1; i <= 10; ++i)
+        m_mol->getResidue("A", molstr::ResidIndex(i))->setPropStr("secondary", "sheet");
+    qsys::ObjectEvent obe;
+    obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+    obe.setTarget(m_mol->getUID());
+    obe.setDescr("secondary");
+    m_mol->fireObjectEvent(obe);
+
+    const MeshSnapshot afterSec = meshOf(pRend);
+    EXPECT_NE(afterSec.pos, before.pos);
+    EXPECT_EQ(afterSec.pos, meshOf(newRibbon(0.0)).pos);
+
+    // Smoothing
+    dynamic_cast<molvis::RibbonRenderer *>(pRend.get())->setHelixSmooth(0.7);
+    const MeshSnapshot afterSmo = meshOf(pRend);
+    EXPECT_EQ(afterSmo.pos, meshOf(newRibbon(0.7)).pos);
 }
 
 INSTANTIATE_TEST_SUITE_P(TubeLike, TubeGpuMeshTest,

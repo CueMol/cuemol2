@@ -117,13 +117,10 @@ namespace molvis {
 
     void invalidateSplineCoeffs();
 
-    /// Drop the spline coeffs only (regenerated on the next traversal),
-    /// keeping the display cache.
-    void cleanupSplineCoeffs() { m_scs.cleanup(); }
-
     /// Atoms moved and the GPU mesh is updated in place (TubeGpuSupport):
-    /// drop the spline coeffs, request a redraw and drop the hittest cache,
-    /// without invalidating the display cache.
+    /// mark the geometry part of the spline coeffs stale (the topology part
+    /// is kept), request a redraw and drop the hittest cache, without
+    /// invalidating the display cache.
     void updateMovedAtoms();
 
   private:

@@ -277,7 +277,7 @@ void SplineRenderer::objectChanged(qsys::ObjectEvent &ev)
 
 void SplineRenderer::updateMovedAtoms()
 {
-  cleanupSplineCoeffs();
+  m_scs.markMoved();
   qsys::ScenePtr pScene = getScene();
   if (!pScene.isnull())
     pScene->setUpdateFlag();
