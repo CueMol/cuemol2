@@ -113,14 +113,60 @@ public:
     /// True if the caller has to compute hit names for this traversal.
     bool wantName() const { return m_nMode != MODE_UPDATE; }
 
-    // Drawing interface (the subset of DisplayContext the renderers use)
+    // Drawing interface (the subset of DisplayContext the renderers use).
+    // The update into the GPU primitive (every coordinate or color update)
+    // is inlined here; the other modes go to the out-of-line versions.
 
-    void color(const gfx::ColorPtr &pCol);
-    void loadName(int nName);
-    void normal(const Vector4D &n);
+    void color(const gfx::ColorPtr &pCol)
+    {
+        if (m_nMode == MODE_UPDATE && !(m_nUpdFlags & UPD_COLOR)) return;
+        colorSlow(pCol);
+    }
+
+    void loadName(int nName)
+    {
+        if (m_nMode == MODE_UPDATE) return;
+        loadNameSlow(nName);
+    }
+
+    void normal(const Vector4D &n)
+    {
+        if (m_nMode != MODE_UPDATE) {
+            normalSlow(n);
+            return;
+        }
+        if (!(m_nUpdFlags & UPD_GEOM)) return;
+        setCurNorm(n);
+    }
+
     void startTriangleStrip();
     void startTriangleFan();
-    void vertex(const Vector4D &v);
+
+    void vertex(const Vector4D &v)
+    {
+        if (m_nMode == MODE_UPDATE && m_pDirect != nullptr && m_nVertCur < m_nVerts) {
+            // write straight into the vertex array of the GPU primitive
+            gfx::TrigGpuPrim::TrigVertAttr &va = m_pDirect[m_nVertCur];
+            ++m_nVertCur;
+            if (m_nUpdFlags & UPD_GEOM) {
+                va.x = float(v.x());
+                va.y = float(v.y());
+                va.z = float(v.z());
+                va.nx = m_curNorm[0];
+                va.ny = m_curNorm[1];
+                va.nz = m_curNorm[2];
+            }
+            if (m_nUpdFlags & UPD_COLOR) {
+                va.r = gfx::getRCode(m_curCol);
+                va.g = gfx::getGCode(m_curCol);
+                va.b = gfx::getBCode(m_curCol);
+                va.a = gfx::getACode(m_curCol);
+            }
+            return;
+        }
+        vertexSlow(v);
+    }
+
     void end();
 
     /// Forwarded in direct mode only (the GPU mesh does not use them).
@@ -188,6 +234,27 @@ private:
         return m_nMode == MODE_BUILD || m_nMode == MODE_UPDATE;
     }
     void startPrim(int nType);
+
+    void colorSlow(const gfx::ColorPtr &pCol);
+    void loadNameSlow(int nName);
+    void normalSlow(const Vector4D &n);
+    void vertexSlow(const Vector4D &v);
+
+    /// Same normalization as gfx::DisplayList::normal()
+    void setCurNorm(const Vector4D &n)
+    {
+        const double len = n.length();
+        if (len < F_EPS4) {
+            m_curNorm[0] = 1.0f;
+            m_curNorm[1] = 0.0f;
+            m_curNorm[2] = 0.0f;
+            return;
+        }
+        const double rlen = 1.0 / len;
+        m_curNorm[0] = float(n.x() * rlen);
+        m_curNorm[1] = float(n.y() * rlen);
+        m_curNorm[2] = float(n.z() * rlen);
+    }
 };
 
 }  // namespace molvis

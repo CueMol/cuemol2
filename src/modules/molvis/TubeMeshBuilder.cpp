@@ -112,7 +112,7 @@ void TubeMeshBuilder::releaseVertexData()
 //////////////////////////////////////////////////////////////////////////
 // Drawing interface
 
-void TubeMeshBuilder::color(const gfx::ColorPtr &pCol)
+void TubeMeshBuilder::colorSlow(const gfx::ColorPtr &pCol)
 {
     if (m_nMode == MODE_DIRECT) {
         m_pdl->color(pCol);
@@ -123,7 +123,7 @@ void TubeMeshBuilder::color(const gfx::ColorPtr &pCol)
         m_curCol = pCol->getDevCode(m_nSceneID);
 }
 
-void TubeMeshBuilder::loadName(int nName)
+void TubeMeshBuilder::loadNameSlow(int nName)
 {
     if (m_nMode == MODE_DIRECT) {
         m_pdl->loadName(nName);
@@ -133,7 +133,7 @@ void TubeMeshBuilder::loadName(int nName)
         m_curName = gfx::encodeHitName(nName);
 }
 
-void TubeMeshBuilder::normal(const Vector4D &n)
+void TubeMeshBuilder::normalSlow(const Vector4D &n)
 {
     if (m_nMode == MODE_DIRECT) {
         m_pdl->normal(n);
@@ -141,18 +141,7 @@ void TubeMeshBuilder::normal(const Vector4D &n)
     }
     if (!isRecording() || !(m_nUpdFlags & UPD_GEOM))
         return;
-
-    // Same normalization as gfx::DisplayList::normal()
-    const double len = n.length();
-    if (len < F_EPS4) {
-        m_curNorm[0] = 1.0f;
-        m_curNorm[1] = 0.0f;
-        m_curNorm[2] = 0.0f;
-        return;
-    }
-    m_curNorm[0] = float(n.x() / len);
-    m_curNorm[1] = float(n.y() / len);
-    m_curNorm[2] = float(n.z() / len);
+    setCurNorm(n);
 }
 
 void TubeMeshBuilder::startPrim(int nType)
@@ -186,7 +175,7 @@ void TubeMeshBuilder::startTriangleFan()
         startPrim(PRIM_FAN);
 }
 
-void TubeMeshBuilder::vertex(const Vector4D &v)
+void TubeMeshBuilder::vertexSlow(const Vector4D &v)
 {
     if (m_nMode == MODE_DIRECT) {
         m_pdl->vertex(v);
