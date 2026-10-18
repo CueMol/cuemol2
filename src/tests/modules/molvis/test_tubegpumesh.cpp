@@ -13,6 +13,8 @@
 #include "molvis/TubeGpuSupport.hpp"
 #include "molvis/TubeMeshBuilder.hpp"
 #include "molvis/NARenderer.hpp"
+#include "tests/gfx/mock_display_context.hpp"
+#include <gfx/TrigGpuPrim.hpp>
 #include "molstr/MolCoord.hpp"
 #include "molstr/MolAtom.hpp"
 #include "molstr/MolResidue.hpp"
@@ -269,4 +271,40 @@ TEST(TubeMeshBuilderTest, UpdateKeepsTopologyAndDetectsChange)
     mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM);
     drawStrip(mb, 6, 0.0);
     EXPECT_FALSE(mb.finish());
+}
+
+// Once the mesh is in the GPU primitive, the update writes straight into the
+// primitive's vertex array (the builder keeps no vertex data of its own).
+TEST(TubeMeshBuilderTest, UpdateWritesIntoGpuPrim)
+{
+    auto draw = [](TubeMeshBuilder &mb, double dx) {
+        mb.loadName(3);
+        mb.normal(Vector4D(0, 1, 0));
+        mb.startTriangleStrip();
+        for (int i = 0; i < 4; ++i) mb.vertex(Vector4D(i + dx, i % 2, 0));
+        mb.end();
+    };
+
+    MockDisplayContext dc;
+    gfx::TrigGpuPrim prim;
+    ASSERT_TRUE(prim.init(&dc));
+
+    TubeMeshBuilder mb;
+    mb.startBuild(qlib::invalid_uid);
+    draw(mb, 0.0);
+    ASSERT_TRUE(mb.finish());
+    mb.toGpuPrim(&dc, prim);
+    mb.releaseVertexData();
+    EXPECT_FALSE(mb.hasVertexData());
+    EXPECT_EQ(mb.getVertexSize(), 4);
+
+    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getVertexArray());
+    draw(mb, 10.0);
+    EXPECT_TRUE(mb.finish());
+
+    const gfx::TrigGpuPrim::TrigVertAttr *pv = prim.getVertexArray();
+    EXPECT_FLOAT_EQ(pv[0].x, 10.0f);
+    EXPECT_FLOAT_EQ(pv[3].x, 13.0f);
+    EXPECT_FLOAT_EQ(pv[3].ny, 1.0f);
+    EXPECT_EQ(prim.getHitName(0), gfx::encodeHitName(3));
 }

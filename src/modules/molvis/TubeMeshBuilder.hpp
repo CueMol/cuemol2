@@ -12,11 +12,11 @@
 
 #include <gfx/gfx.hpp>
 #include <gfx/AbstractColor.hpp>
+#include <gfx/TrigGpuPrim.hpp>
 #include <qlib/Vector4D.hpp>
 
 namespace gfx {
 class DisplayContext;
-class TrigGpuPrim;
 }  // namespace gfx
 
 namespace molvis {
@@ -39,8 +39,10 @@ using qlib::Vector4D;
 ///    the strip/fan primitives) and can then be turned into a TrigGpuPrim.
 ///  - Update: the same traversal is run again over a mesh recorded by Build.
 ///    The topology (primitives, hit names) is kept and only positions/normals
-///    (UPD_GEOM) and/or colors (UPD_COLOR) are overwritten in recording order.
-///    finish() reports whether the traversal produced exactly the same
+///    (UPD_GEOM) and/or colors (UPD_COLOR) are overwritten in recording order,
+///    either in the builder's own arrays or, once the mesh is in a
+///    TrigGpuPrim (releaseVertexData()), directly in the primitive's vertex
+///    array. finish() reports whether the traversal produced exactly the same
 ///    topology; if not, the caller has to rebuild.
 ///
 class MOLVIS_API TubeMeshBuilder
@@ -75,8 +77,12 @@ public:
     /// Start recording a new mesh (drops the previous one).
     void startBuild(qlib::uid_t nSceneID);
 
-    /// Start overwriting the recorded mesh (flags: UPD_GEOM | UPD_COLOR).
-    void startUpdate(qlib::uid_t nSceneID, int nFlags);
+    /// Start overwriting the recorded mesh (flags: UPD_GEOM | UPD_COLOR):
+    /// in pDirect (the vertex array of the TrigGpuPrim filled by toGpuPrim())
+    /// if given, in the builder's own arrays otherwise. pDirect is required
+    /// after releaseVertexData().
+    void startUpdate(qlib::uid_t nSceneID, int nFlags,
+                     gfx::TrigGpuPrim::TrigVertAttr *pDirect = nullptr);
 
     /// End the current traversal. In update mode, returns false if the
     /// traversal did not reproduce the recorded topology.
@@ -84,6 +90,13 @@ public:
 
     /// Drop the recorded mesh.
     void clear();
+
+    /// Drop the vertex data (positions, normals, colors, hit names) once it
+    /// is in a TrigGpuPrim, keeping the topology for the update check.
+    void releaseVertexData();
+
+    /// True while the builder holds its own vertex data.
+    bool hasVertexData() const { return !m_bReleased; }
 
     int getMode() const { return m_nMode; }
 
@@ -117,7 +130,7 @@ public:
 
     // Recorded mesh
 
-    int getVertexSize() const { return int(m_col.size()); }
+    int getVertexSize() const { return m_nVerts; }
     int getFaceSize() const;
     const std::vector<Prim> &getPrims() const { return m_prims; }
 
@@ -136,10 +149,6 @@ public:
     /// prim must be set by the caller beforehand.
     void toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) const;
 
-    /// Rewrite the vertex data of a prim filled by toGpuPrim() (flags:
-    /// UPD_GEOM | UPD_COLOR) and mark it for upload.
-    void updateGpuPrim(gfx::TrigGpuPrim &prim, int nFlags) const;
-
 private:
     int m_nMode;
     int m_nUpdFlags;
@@ -154,6 +163,13 @@ private:
     // primitive in progress
     int m_nPrimType;
     int m_nPrimFirst;
+
+    // number of recorded vertices (kept after releaseVertexData())
+    int m_nVerts;
+    bool m_bReleased;
+
+    // update target in the GPU primitive (null: the own arrays)
+    gfx::TrigGpuPrim::TrigVertAttr *m_pDirect;
 
     // update cursors
     int m_nVertCur;

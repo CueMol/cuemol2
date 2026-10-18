@@ -113,6 +113,17 @@ public:
         return m_pDrawElems->at(idx).hitName;
     }
 
+    /**
+     * The vertex array (getVertexSize() elements, contiguous) for writing the
+     * vertex data in place. Call setUpdated(true) afterwards.
+     */
+    TrigVertAttr *getVertexArray()
+    {
+        return (m_pDrawElems != nullptr && m_pDrawElems->getSize() > 0)
+                   ? &m_pDrawElems->at(0)
+                   : nullptr;
+    }
+
     /** Set triangle face idx with vertex indices v1, v2, v3. */
     void setFace(int idx, int v1, int v2, int v3);
 

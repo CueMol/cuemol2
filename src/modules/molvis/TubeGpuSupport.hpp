@@ -59,7 +59,9 @@ public:
     /// mesh. Returns false if the traversal changed the topology.
     bool tubeGpuUpdateMesh();
 
-    /// The recorded mesh.
+    /// The recorded mesh. Its vertex data is available only while the mesh
+    /// is not in the GPU primitive (tubeGpuBuildMesh() / tubeGpuUpdateMesh()
+    /// without a DisplayContext); afterwards the primitive holds it.
     const TubeMeshBuilder &tubeGpuMesh() const { return m_mb; }
 
 protected:

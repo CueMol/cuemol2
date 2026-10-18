@@ -55,9 +55,10 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
     }
 
     if (m_nDirty != 0) {
-        const int nFlags = m_nDirty;
+        // The update traversal writes straight into the vertex array of the
+        // primitive (see tubeGpuUpdateMesh()): only the upload is left
         if (tubeGpuUpdateMesh()) {
-            if (m_bHasMesh) m_mb.updateGpuPrim(m_prim, nFlags);
+            if (m_bHasMesh) m_prim.setUpdated(true);
         }
         else {
             MB_DPRINTLN("TubeGpuSupport> topology changed, rebuild the mesh");
@@ -83,7 +84,11 @@ bool TubeGpuSupport::tubeGpuUpdateMesh()
     const int nFlags = m_nDirty;
     m_nDirty = 0;
     if (!m_bTopoValid || nFlags == 0) return m_bTopoValid;
-    m_mb.startUpdate(tubeGpuSceneID(), nFlags);
+    // Once the mesh is in the primitive, the builder holds no vertex data of
+    // its own and the update goes into the primitive's vertex array
+    gfx::TrigGpuPrim::TrigVertAttr *pDirect =
+        m_mb.hasVertexData() ? nullptr : m_prim.getVertexArray();
+    m_mb.startUpdate(tubeGpuSceneID(), nFlags, pDirect);
     tubeGpuRenderMesh();
     return m_mb.finish();
 }
@@ -98,6 +103,8 @@ void TubeGpuSupport::build(DisplayContext *pdc, int nPolyMode)
     }
     m_prim.setPolygonMode(nPolyMode);
     m_mb.toGpuPrim(pdc, m_prim);
+    // the primitive holds the vertex data from here on
+    m_mb.releaseVertexData();
 }
 
 void TubeGpuSupport::tubeGpuDraw(DisplayContext *pdc)

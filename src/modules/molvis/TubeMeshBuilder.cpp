@@ -23,6 +23,9 @@ TubeMeshBuilder::TubeMeshBuilder()
       m_curName(0),
       m_nPrimType(-1),
       m_nPrimFirst(0),
+      m_nVerts(0),
+      m_bReleased(false),
+      m_pDirect(nullptr),
       m_nVertCur(0),
       m_nPrimCur(0),
       m_bMismatch(false)
@@ -59,8 +62,11 @@ void TubeMeshBuilder::startBuild(qlib::uid_t nSceneID)
     m_nPrimType = -1;
 }
 
-void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags)
+void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags,
+                                  gfx::TrigGpuPrim::TrigVertAttr *pDirect)
 {
+    MB_ASSERT(pDirect != nullptr || !m_bReleased);
+    m_pDirect = pDirect;
     m_nMode = MODE_UPDATE;
     m_nUpdFlags = nFlags;
     m_pdl = nullptr;
@@ -81,16 +87,26 @@ bool TubeMeshBuilder::finish()
     }
     m_nMode = MODE_NONE;
     m_pdl = nullptr;
+    m_pDirect = nullptr;
     return bOK;
 }
 
 void TubeMeshBuilder::clear()
 {
-    m_pos.clear();
-    m_norm.clear();
-    m_col.clear();
-    m_name.clear();
+    releaseVertexData();
     m_prims.clear();
+    m_nVerts = 0;
+    m_bReleased = false;
+}
+
+void TubeMeshBuilder::releaseVertexData()
+{
+    // swap with empty vectors to free the memory
+    std::vector<float>().swap(m_pos);
+    std::vector<float>().swap(m_norm);
+    std::vector<qlib::quint32>().swap(m_col);
+    std::vector<qlib::quint32>().swap(m_name);
+    m_bReleased = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -186,6 +202,7 @@ void TubeMeshBuilder::vertex(const Vector4D &v)
         m_norm.push_back(m_curNorm[2]);
         m_col.push_back(m_curCol);
         m_name.push_back(m_curName);
+        ++m_nVerts;
         return;
     }
 
@@ -194,10 +211,31 @@ void TubeMeshBuilder::vertex(const Vector4D &v)
 
     const int i = m_nVertCur;
     ++m_nVertCur;
-    if (i >= getVertexSize()) {
+    if (i >= m_nVerts) {
         m_bMismatch = true;
         return;
     }
+
+    if (m_pDirect != nullptr) {
+        // write straight into the vertex array of the GPU primitive
+        gfx::TrigGpuPrim::TrigVertAttr &va = m_pDirect[i];
+        if (m_nUpdFlags & UPD_GEOM) {
+            va.x = float(v.x());
+            va.y = float(v.y());
+            va.z = float(v.z());
+            va.nx = m_curNorm[0];
+            va.ny = m_curNorm[1];
+            va.nz = m_curNorm[2];
+        }
+        if (m_nUpdFlags & UPD_COLOR) {
+            va.r = gfx::getRCode(m_curCol);
+            va.g = gfx::getGCode(m_curCol);
+            va.b = gfx::getBCode(m_curCol);
+            va.a = gfx::getACode(m_curCol);
+        }
+        return;
+    }
+
     if (m_nUpdFlags & UPD_GEOM) {
         m_pos[i * 3 + 0] = float(v.x());
         m_pos[i * 3 + 1] = float(v.y());
@@ -259,12 +297,17 @@ int TubeMeshBuilder::getFaceSize() const
 
 void TubeMeshBuilder::toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) const
 {
+    MB_ASSERT(!m_bReleased);
     const int nVerts = getVertexSize();
     const int nFaces = getFaceSize();
     prim.alloc(pdc, nVerts, nFaces);
 
-    updateGpuPrim(prim, UPD_GEOM | UPD_COLOR);
-    for (int i = 0; i < nVerts; ++i) prim.setHitName(i, m_name[i]);
+    for (int i = 0; i < nVerts; ++i) {
+        prim.setVertex(i, getPos(i));
+        prim.setNormal(i, getNorm(i));
+        prim.setColor(i, m_col[i]);
+        prim.setHitName(i, m_name[i]);
+    }
 
     // Same triangulation (and winding) as gfx::GrowMesh
     int iface = 0;
@@ -279,20 +322,6 @@ void TubeMeshBuilder::toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) con
                 prim.setFace(iface, b + i, b + i - 1, b + i - 2);
             ++iface;
         }
-    }
-    prim.setUpdated(true);
-}
-
-void TubeMeshBuilder::updateGpuPrim(gfx::TrigGpuPrim &prim, int nFlags) const
-{
-    const int nVerts = getVertexSize();
-    for (int i = 0; i < nVerts; ++i) {
-        if (nFlags & UPD_GEOM) {
-            prim.setVertex(i, getPos(i));
-            prim.setNormal(i, getNorm(i));
-        }
-        if (nFlags & UPD_COLOR)
-            prim.setColor(i, m_col[i]);
     }
     prim.setUpdated(true);
 }

@@ -27,6 +27,10 @@
 - 色は `color()` の時点で devcode に解決する (頂点ごとに `getDevCode` しない)。初期色と normal の正規化
   (長さ < 1e-4 なら (1,0,0)) は `gfx::DisplayList` と同じ
 - `toGpuPrim()` は strip / fan を `gfx::GrowMesh` と同じ順序・winding で三角形 index に展開する
+- `toGpuPrim()` の後、`TubeGpuSupport` は `releaseVertexData()` で builder 自身の頂点配列 (位置・法線・色・hit name)
+  を捨てる。頂点数と prim の区切りは Update の照合用に残す。以後の Update は `TrigGpuPrim::getVertexArray()` を
+  書き込み先として渡され、prim の頂点配列に直接書く (builder の配列から prim への写しが無い)。prim を使わない
+  経路 (テストの `tubeGpuBuildMesh()` / `tubeGpuUpdateMesh()`) では従来どおり builder の配列に書く
 - `finish()` は Update モードで、頂点数・prim の数・各 prim の型と頂点数が Build 時と一致したかを返す。
   一致しなければ呼び出し側がフル再構築する
 - renderer は `wantColor()` / `wantName()` が false のとき `calcColor` / `calcHitName` を呼ばない
