@@ -13,6 +13,8 @@
 
 #include "CubicSpline.hpp"
 
+#include <set>
+
 using qlib::LString;
 using qlib::Vector4D;
 
@@ -43,6 +45,9 @@ namespace molvis {
 
     RealNumEvaluator *m_pSmoothEval;
 
+    /// Residues of the segments too short (1 or 2 residues) to get coeffs
+    std::set<MolResidue *> m_shortResids;
+
   public:
     SplineCoeffSet();
 
@@ -56,6 +61,12 @@ namespace molvis {
 
     /// search coeff obj for the residue pres
     SplineCoeff *searchCoeff(MolResiduePtr pres);
+
+    /// true if pres belongs to a segment too short to get coeffs (no spline
+    /// is drawn there)
+    bool isShortSegment(MolResiduePtr pres) const {
+      return m_shortResids.find(pres.get())!=m_shortResids.end();
+    }
 
     /// generate spline coeffs for pmol
     bool generate(MolCoordPtr pmol);
@@ -141,6 +152,8 @@ namespace molvis {
     void addResid(MolResidue *pRes) {
       m_resid_array.push_back(pRes);
     }
+
+    int getResidCount() const { return int(m_resid_array.size()); }
 
     bool generate();
 
