@@ -57,12 +57,6 @@ void TubeRenderer::preRender(DisplayContext *pdc)
 
 void TubeRenderer::beginRend(DisplayContext *pdl)
 {
-  tubeGpuBeginRend(pdl);
-  if (pdl==NULL && tubeGpuBuilder().getMode()==TubeMeshBuilder::MODE_BUILD) {
-    // the segments of the mesh being built (see renderSpline())
-    m_splineSegs.clear();
-    m_nSegTopoGen = -1;
-  }
 
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
@@ -111,29 +105,6 @@ void TubeRenderer::beginRend(DisplayContext *pdl)
 /////////////////////////////////////////////////////
 
 //virtual
-void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
-                                MolResiduePtr pStartRes, double fstart,
-                                MolResiduePtr pEndRes, double fend)
-{
-  TubeMeshBuilder &mb = tubeGpuBuilder();
-  // Building the GPU mesh: record the segment as one chunk, so that a
-  // coordinate update can redraw the segments concurrently
-  const bool bRecord = (mb.getMode()==TubeMeshBuilder::MODE_BUILD);
-  if (bRecord) {
-    mb.beginChunk();
-    recordSplineSeg(pCoeff, pStartRes, fstart, pEndRes, fend);
-  }
-  renderSplineTo(&mb, pCoeff, pStartRes, fstart, pEndRes, fend);
-  if (bRecord)
-    mb.endChunk();
-}
-
-void TubeRenderer::tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb)
-{
-  const SplineSeg &seg = m_splineSegs[i];
-  renderSplineTo(pmb, seg.pCoeff, seg.pStartRes, seg.fstart, seg.pEndRes, seg.fend);
-}
-
 void TubeRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
                                   const MolResiduePtr &pStartRes, double fstart,
                                   const MolResiduePtr &pEndRes, double fend)

@@ -10,7 +10,7 @@
 
 #include "SplineRenderer.hpp"
 #include "TubeSection.hpp"
-#include "TubeGpuRenderer.hpp"
+#include "SplineTubeRenderer.hpp"
 #include "JctTable.hpp"
 
 namespace molvis {
@@ -18,12 +18,12 @@ namespace molvis {
 using gfx::ColorPtr;
 class RibbonSmoothEval;
 
-class RibbonRenderer : public TubeGpuRenderer<SplineRenderer>
+class RibbonRenderer : public SplineTubeRenderer
 {
   MC_SCRIPTABLE;
   MC_CLONEABLE;
 
-  typedef TubeGpuRenderer<SplineRenderer> super_t;
+  typedef SplineTubeRenderer super_t;
 private:
   //////////////////////////////////////////////////////
   // Properties
@@ -119,21 +119,6 @@ public:
 
   void preRender(DisplayContext *pdc) override;
 
-  //////////////////////////////////////////////////////
-  // GPU mesh (TubeGpuRenderer)
-
-protected:
-  void tubeGpuOnMovedAtoms() override { markSplineCoeffsMoved(); }
-
-  // chunked coordinate update: one chunk per segment (see renderSpline())
-  bool tubeGpuCanUpdateChunks() const override
-  {
-    return !isSegEndFade() && isSplineSegsValid();
-  }
-  void tubeGpuPrepareChunkUpdate() override { prepareSplineCoeffs(); }
-  void tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb) override;
-
-public:
 
   //////////////////////////////////////////////////////
 
@@ -145,15 +130,11 @@ public:
 
   //////////////////////////////////////////////////////
 
-  void renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
-                            MolResiduePtr pStartRes, double fstart,
-                            MolResiduePtr pEndRes, double fend) override;
-
-  /// Draw one segment to pmb (renderSpline() draws to tubeGpuBuilder()).
+  /// Draw one segment to pmb (see SplineTubeRenderer).
   /// Uses no renderer state, so segments can be drawn concurrently.
   void renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
                       const MolResiduePtr &pStartRes, double fstart,
-                      const MolResiduePtr &pEndRes, double fend);
+                      const MolResiduePtr &pEndRes, double fend) override;
 
   ////////////////////////////////////////////
   // property handling

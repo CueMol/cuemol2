@@ -117,33 +117,10 @@ namespace molvis {
 
     void invalidateSplineCoeffs();
 
-    /// Segments drawn by the last build traversal of the GPU mesh, in drawing
-    /// order (one TubeMeshBuilder chunk each), for the chunked coordinate
-    /// update of TubeGpuSupport
-    struct SplineSeg
-    {
-      SplineCoeff *pCoeff;
-      MolResiduePtr pStartRes;
-      double fstart;
-      MolResiduePtr pEndRes;
-      double fend;
-    };
-    std::vector<SplineSeg> m_splineSegs;
-    /// Spline topology generation the segments refer to
-    int m_nSegTopoGen = -1;
-
-    /// Record a segment drawn by the build traversal
-    void recordSplineSeg(SplineCoeff *pCoeff,
-                         const MolResiduePtr &pStartRes, double fstart,
-                         const MolResiduePtr &pEndRes, double fend) {
-      m_splineSegs.push_back(SplineSeg{pCoeff, pStartRes, fstart, pEndRes, fend});
-      m_nSegTopoGen = m_scs.getTopoGen();
-    }
-
-    /// True while m_splineSegs refer to the current spline topology
-    bool isSplineSegsValid() const {
-      return m_scs.isTopoValid() && m_scs.getTopoGen()==m_nSegTopoGen;
-    }
+    /// Spline topology: valid, and its generation (incremented on every
+    /// rebuild; the SplineCoeff objects of an older generation are gone)
+    bool isSplineTopoValid() const { return m_scs.isTopoValid(); }
+    int getSplineTopoGen() const { return m_scs.getTopoGen(); }
 
     /// Recompute the stale part of the spline coeffs (after an atom move)
     void prepareSplineCoeffs();

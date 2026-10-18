@@ -101,12 +101,6 @@ void RibbonRenderer::preRender(DisplayContext *pdc)
 
 void RibbonRenderer::beginRend(DisplayContext *pdl)
 {
-  tubeGpuBeginRend(pdl);
-  if (pdl==NULL && tubeGpuBuilder().getMode()==TubeMeshBuilder::MODE_BUILD) {
-    // the segments of the mesh being built (see renderSpline())
-    m_splineSegs.clear();
-    m_nSegTopoGen = -1;
-  }
 
   if (!m_ptsHelix->isValid()) {
     m_ptsHelix->setupSectionTable();
@@ -200,29 +194,6 @@ void RibbonRenderer::makeHSCTable(SegCtx &c, SplineCoeff *pCoeff, int istart, in
     // predefined head/tail
     c.hscTab[i] = ccurr;
   }
-}
-
-void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
-                                  MolResiduePtr pStartRes, double fstart,
-                                  MolResiduePtr pEndRes, double fend)
-{
-  TubeMeshBuilder &mb = tubeGpuBuilder();
-  // Building the GPU mesh: record the segment as one chunk, so that a
-  // coordinate update can redraw the segments concurrently
-  const bool bRecord = (mb.getMode()==TubeMeshBuilder::MODE_BUILD);
-  if (bRecord) {
-    mb.beginChunk();
-    recordSplineSeg(pCoeff, pStartRes, fstart, pEndRes, fend);
-  }
-  renderSplineTo(&mb, pCoeff, pStartRes, fstart, pEndRes, fend);
-  if (bRecord)
-    mb.endChunk();
-}
-
-void RibbonRenderer::tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb)
-{
-  const SplineSeg &seg = m_splineSegs[i];
-  renderSplineTo(pmb, seg.pCoeff, seg.pStartRes, seg.fstart, seg.pEndRes, seg.fend);
 }
 
 void RibbonRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
