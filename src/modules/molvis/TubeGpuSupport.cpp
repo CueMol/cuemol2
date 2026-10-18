@@ -16,6 +16,19 @@
 using namespace molvis;
 using gfx::DisplayContext;
 
+namespace {
+
+/// The primitive's re-upload flags for the builder's update flags
+int toPrimUpdateFlags(int nMeshFlags)
+{
+    int nFlags = 0;
+    if (nMeshFlags & TubeMeshBuilder::UPD_GEOM) nFlags |= gfx::TrigGpuPrim::UPD_GEOM;
+    if (nMeshFlags & TubeMeshBuilder::UPD_COLOR) nFlags |= gfx::TrigGpuPrim::UPD_COLOR;
+    return nFlags;
+}
+
+}  // namespace
+
 TubeGpuSupport::TubeGpuSupport()
     : m_bCheckShader(false),
       m_bUseShader(false),
@@ -62,10 +75,12 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
     }
 
     if (m_nDirty != 0) {
-        // The update traversal writes straight into the vertex array of the
-        // primitive (see updateMesh()): only the upload is left
+        // The update traversal writes straight into the attribute blocks of
+        // the primitive (see updateMesh()): only the upload of the blocks it
+        // wrote is left
+        const int nFlags = m_nDirty;
         if (updateMesh()) {
-            if (m_bHasMesh) m_prim.setUpdated(true);
+            if (m_bHasMesh) m_prim.markUpdated(toPrimUpdateFlags(nFlags));
             m_nLastPass = m_bChunked ? TG_PASS_CHUNKED : TG_PASS_SERIAL;
         }
         else {
@@ -97,7 +112,7 @@ bool TubeGpuSupport::updateMesh()
     // The update goes into the primitive's vertex array; without faces there
     // is no primitive and nothing to update
     if (!m_bHasMesh) return true;
-    gfx::TrigGpuPrim::TrigVertAttr *pDirect = m_prim.getVertexArray();
+    const gfx::TrigGpuPrim::PackedArrays dst = m_prim.getPackedArrays();
 
     if (nFlags == TubeMeshBuilder::UPD_GEOM &&
         tubeGpuCanUpdateChunks() && m_mb.chunksCoverAll()) {
@@ -110,7 +125,7 @@ bool TubeGpuSupport::updateMesh()
         std::atomic<bool> bOK(true);
         qlib::parallel_for(0, m_mb.getChunks().size(), [&](std::size_t i) {
             TubeMeshBuilder mb;
-            mb.startChunkUpdate(nSceneID, nFlags, pDirect, m_mb, int(i));
+            mb.startChunkUpdate(nSceneID, nFlags, dst, m_mb, int(i));
             tubeGpuUpdateChunk(int(i), &mb);
             if (!mb.finish()) bOK = false;
         });
@@ -118,7 +133,7 @@ bool TubeGpuSupport::updateMesh()
         return bOK;
     }
 
-    m_mb.startUpdate(tubeGpuSceneID(), nFlags, pDirect);
+    m_mb.startUpdate(tubeGpuSceneID(), nFlags, dst);
     tubeGpuRenderMesh();
     return m_mb.finish();
 }

@@ -6,7 +6,7 @@
 同じ traversal を回し直して VBO の頂点データを in-place で書き換えるだけで反映する
 (再確保なし、index buffer は再送しない)。
 
-残りの計画 (VBO 転送量のさらなる削減など) は `../plans/261017-tube-gpu-mesh-plan.md`。
+残りの計画 (再生中の詳細度など) は `../plans/261017-tube-gpu-mesh-plan.md`。
 
 ## 構成
 
@@ -114,6 +114,26 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
 座標・色の更新で送り直すのは頂点バッファだけ (インデックスは buffer の寿命の間変わらないので送らない。
 `BufferStore.drawBuffer` / `EcBufferRep::update`)。`DisplayContext::drawElem` は buffer の作成時に更新の印を
 消す (作成で全量を送っているため)。詳細と数字は `tritium/docs/architecture/renderer-update-cost.md`。
+
+### 頂点の形式 (`TrigGpuPrim::LAYOUT_PACKED`)
+
+`TubeMeshBuilder::toGpuPrim()` は `TrigGpuPrim` を `LAYOUT_PACKED` で確保する (ほかの `TrigGpuPrim` の利用者は
+従来の `LAYOUT_INTERLEAVED`、1 頂点 32 B のまま)。
+
+| 塊 (この順に並ぶ) | 1 頂点 | 形式 |
+|---|---|---|
+| 位置 | 12 B | float x3 |
+| 法線 | 4 B | `GL_INT_2_10_10_10_REV` (`TrigGpuPrim::packNormal()`、正規化、w = 1。shader は `vec4 aNormal` の `.xyz`) |
+| 色 | 4 B | RGBA (unsigned byte) |
+| hit name | 4 B | uint32 (pick pass だけが読む) |
+
+- 位置と法線が隣り合うので、座標の更新は先頭の 16 B/頂点、色の更新は色の塊 4 B/頂点だけを送る
+  (`TrigGpuPrim::markUpdated(UPD_GEOM / UPD_COLOR)` -> `AbstDrawElem::setUpdatedRange`)
+- 属性ごとの stride (`AbstDrawAttrs::setAttrStride`) と型 `QTC_INT_2_10_10_10_REV` は addon (`EcBufferRep`、
+  JSON の `stride`) / WebGL (`BufferStore`) / OpenGL (`OcBufferRep`) が解釈する
+- update の書き込み先は `TrigGpuPrim::getPackedArrays()` の各塊。法線は `normal()` のときに 1 回だけ詰める
+- WebGL の ring (2 本の VBO を交互に使う) では、slot ごとに「その slot がまだ受け取っていない範囲」を持ち、
+  slot に書くときにその範囲も合わせて送る (色の更新の直後の座標の更新でも、両方の slot が新しい色を持つ)
 
 ## TubeGpuSupport と host renderer の契約
 

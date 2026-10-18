@@ -48,11 +48,11 @@ struct PrimSnapshot
 
     explicit PrimSnapshot(const gfx::TrigGpuPrim &prim) : nfaces(prim.getFaceSize())
     {
-        const gfx::TrigGpuPrim::TrigVertAttr *pv = prim.getVertexArray();
         for (int i = 0; i < prim.getVertexSize(); ++i) {
-            geom.insert(geom.end(), {pv[i].x, pv[i].y, pv[i].z, pv[i].nx, pv[i].ny, pv[i].nz});
-            col.push_back((qlib::quint32(pv[i].r) << 24) | (qlib::quint32(pv[i].g) << 16) |
-                          (qlib::quint32(pv[i].b) << 8) | qlib::quint32(pv[i].a));
+            const Vector4D v = prim.getVertex(i), n = prim.getNormal(i);
+            geom.insert(geom.end(), {float(v.x()), float(v.y()), float(v.z()), float(n.x()),
+                                     float(n.y()), float(n.z())});
+            col.push_back(prim.getColorRGBA(i));
             name.push_back(prim.getHitName(i));
         }
     }
@@ -331,20 +331,22 @@ TEST(TubeMeshBuilderTest, UpdateWritesIntoGpuPrim)
     EXPECT_EQ(prim.getVertexSize(), 8);
     EXPECT_EQ(prim.getHitName(0), gfx::encodeHitName(5));
     EXPECT_EQ(prim.getHitName(4), gfx::encodeHitName(7));
-    const gfx::TrigGpuPrim::TrigVertAttr *pv = prim.getVertexArray();
-    EXPECT_FLOAT_EQ(pv[0].nz, 1.0f);  // normalized
+    // the mesh goes into the layout the update path writes
+    EXPECT_EQ(prim.getLayout(), gfx::TrigGpuPrim::LAYOUT_PACKED);
+    EXPECT_DOUBLE_EQ(prim.getNormal(0).z(), 1.0);  // normalized
 
     // Same topology: positions rewritten, hit names kept
-    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getVertexArray());
+    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getPackedArrays());
     drawStrip(mb, 4, 10.0, 99);
     drawFan(mb, 99);
     EXPECT_TRUE(mb.finish());
-    EXPECT_FLOAT_EQ(pv[0].x, 10.0f);
-    EXPECT_FLOAT_EQ(pv[3].x, 13.0f);
+    EXPECT_DOUBLE_EQ(prim.getVertex(0).x(), 10.0);
+    EXPECT_DOUBLE_EQ(prim.getVertex(3).x(), 13.0);
+    EXPECT_DOUBLE_EQ(prim.getNormal(0).z(), 1.0);
     EXPECT_EQ(prim.getHitName(4), gfx::encodeHitName(7));
 
     // A longer strip is a topology change
-    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getVertexArray());
+    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getPackedArrays());
     drawStrip(mb, 6, 0.0, 5);
     EXPECT_FALSE(mb.finish());
 }

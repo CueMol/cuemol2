@@ -88,16 +88,17 @@ public:
     void startBuild(qlib::uid_t nSceneID);
 
     /// Start overwriting the recorded mesh (flags: UPD_GEOM | UPD_COLOR) in
-    /// pDirect, the vertex array of the TrigGpuPrim filled by toGpuPrim().
+    /// dst, the attribute blocks of the LAYOUT_PACKED TrigGpuPrim filled by
+    /// toGpuPrim().
     void startUpdate(qlib::uid_t nSceneID, int nFlags,
-                     gfx::TrigGpuPrim::TrigVertAttr *pDirect);
+                     const gfx::TrigGpuPrim::PackedArrays &dst);
 
-    /// Start overwriting chunk ichunk of the mesh recorded by parent, in
-    /// pDirect (the vertex array of parent's TrigGpuPrim). This builder only
+    /// Start overwriting chunk ichunk of the mesh recorded by parent, in dst
+    /// (the attribute blocks of parent's TrigGpuPrim). This builder only
     /// writes the chunk's vertices, so builders of distinct chunks can run
     /// concurrently. finish() reports whether the chunk was reproduced.
     void startChunkUpdate(qlib::uid_t nSceneID, int nFlags,
-                          gfx::TrigGpuPrim::TrigVertAttr *pDirect,
+                          const gfx::TrigGpuPrim::PackedArrays &dst,
                           const TubeMeshBuilder &parent, int ichunk);
 
     /// End the current traversal. In update mode, returns false if the
@@ -178,23 +179,23 @@ public:
 
     void vertex(const Vector4D &v)
     {
-        if (m_nMode == MODE_UPDATE && m_pDirect != nullptr && m_nVertCur < m_nVerts) {
-            // write straight into the vertex array of the GPU primitive
-            gfx::TrigGpuPrim::TrigVertAttr &va = m_pDirect[m_nVertCur];
+        if (m_nMode == MODE_UPDATE && m_dst.pos != nullptr && m_nVertCur < m_nVerts) {
+            // write straight into the attribute blocks of the GPU primitive
+            const int i = m_nVertCur;
             ++m_nVertCur;
             if (m_nUpdFlags & UPD_GEOM) {
-                va.x = float(v.x());
-                va.y = float(v.y());
-                va.z = float(v.z());
-                va.nx = m_curNorm[0];
-                va.ny = m_curNorm[1];
-                va.nz = m_curNorm[2];
+                float *p = m_dst.pos + 3 * i;
+                p[0] = float(v.x());
+                p[1] = float(v.y());
+                p[2] = float(v.z());
+                m_dst.norm[i] = m_curNormPacked;
             }
             if (m_nUpdFlags & UPD_COLOR) {
-                va.r = gfx::getRCode(m_curCol);
-                va.g = gfx::getGCode(m_curCol);
-                va.b = gfx::getBCode(m_curCol);
-                va.a = gfx::getACode(m_curCol);
+                qlib::qbyte *c = m_dst.color + 4 * i;
+                c[0] = gfx::getRCode(m_curCol);
+                c[1] = gfx::getGCode(m_curCol);
+                c[2] = gfx::getBCode(m_curCol);
+                c[3] = gfx::getACode(m_curCol);
             }
             return;
         }
@@ -225,8 +226,9 @@ public:
     qlib::quint32 getColor(int i) const { return m_col[i]; }
     qlib::quint32 getHitName(int i) const { return m_name[i]; }
 
-    /// Allocate prim and fill it with the recorded mesh. The polygon mode of
-    /// prim must be set by the caller beforehand.
+    /// Allocate prim (in TrigGpuPrim::LAYOUT_PACKED, the layout the update
+    /// traversal writes) and fill it with the recorded mesh. The polygon mode
+    /// of prim must be set by the caller beforehand.
     void toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) const;
 
 private:
@@ -239,6 +241,8 @@ private:
     qlib::quint32 m_curCol;
     qlib::quint32 m_curName;
     float m_curNorm[3];
+    // m_curNorm packed for the GPU primitive (TrigGpuPrim::packNormal())
+    qlib::quint32 m_curNormPacked;
 
     // primitive in progress
     int m_nPrimType;
@@ -248,8 +252,8 @@ private:
     int m_nVerts;
     bool m_bReleased;
 
-    // update target: the vertex array of the GPU primitive
-    gfx::TrigGpuPrim::TrigVertAttr *m_pDirect;
+    // update target: the attribute blocks of the GPU primitive
+    gfx::TrigGpuPrim::PackedArrays m_dst;
 
     // update cursors (and the ends of the range to update)
     int m_nVertCur;
@@ -297,12 +301,15 @@ private:
             m_curNorm[0] = 1.0f;
             m_curNorm[1] = 0.0f;
             m_curNorm[2] = 0.0f;
-            return;
         }
-        const double rlen = 1.0 / len;
-        m_curNorm[0] = float(n.x() * rlen);
-        m_curNorm[1] = float(n.y() * rlen);
-        m_curNorm[2] = float(n.z() * rlen);
+        else {
+            const double rlen = 1.0 / len;
+            m_curNorm[0] = float(n.x() * rlen);
+            m_curNorm[1] = float(n.y() * rlen);
+            m_curNorm[2] = float(n.z() * rlen);
+        }
+        m_curNormPacked =
+            gfx::TrigGpuPrim::packUnitNormal(m_curNorm[0], m_curNorm[1], m_curNorm[2]);
     }
 };
 

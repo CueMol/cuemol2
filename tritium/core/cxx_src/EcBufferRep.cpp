@@ -62,6 +62,7 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
         json_str += LString::format("\"itype\": \"%d\",", data.getAttrTypeID(i));
         json_str += LString::format("\"npos\": \"%d\",", data.getAttrPos(i));
         json_str += LString::format("\"idiv\": \"%d\",", data.getAttrDivisor(i));
+        json_str += LString::format("\"stride\": \"%d\",", data.getAttrStride(i));
         json_str += LString::format("\"integer\": \"%d\"", data.isAttrInteger(i) ? 1 : 0);
         json_str += "}";
     }
@@ -172,6 +173,11 @@ void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
         copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
     }
 
+    // Only the changed range goes to the GPU (the whole buffer when the
+    // owner did not narrow it, see AbstDrawElem::setUpdatedRange)
+    m_nUpdOffset = ada.getUpdateOffset();
+    m_nUpdLength = ada.getUpdateLength();
+
     ada.setUpdated(false);
     m_bDataUpdated = true;
 }
@@ -208,7 +214,9 @@ void EcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
             peer,
             {Napi::String::New(env, m_bufName), Napi::Number::New(env, m_nDrawMode),
              Napi::Number::New(env, nelems), pbuf, pindbuf,
-             Napi::Boolean::New(env, isUpdated), Napi::Number::New(env, ninst)});
+             Napi::Boolean::New(env, isUpdated), Napi::Number::New(env, ninst),
+             Napi::Number::New(env, double(m_nUpdOffset)),
+             Napi::Number::New(env, double(m_nUpdLength))});
     } catch (const Napi::Error &e) {
         MB_DPRINTLN("drawBuffer failed: %s", e.Message().c_str());
         return;
