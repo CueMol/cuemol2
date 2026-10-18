@@ -139,17 +139,6 @@ void RibbonRenderer::beginRend(DisplayContext *pdl)
 
 /////////////////////////////////////////////////////
 
-namespace {
-  MolResiduePtr safeGetResid(SplineCoeff *pCoeff, int nid) {
-
-    MolAtomPtr pAtom = pCoeff->getAtom(nid);
-    if (pAtom.isnull()) {
-      return MolResiduePtr();
-    }
-    return pAtom->getParentResidue();
-  }
-}
-
 void RibbonRenderer::makeHSCTable(SplineCoeff *pCoeff, int istart, int iend)
 {
   int i;
@@ -160,12 +149,9 @@ void RibbonRenderer::makeHSCTable(SplineCoeff *pCoeff, int istart, int iend)
   for (i=0; i<nsize; ++i) {
     vtmp[i] = RB_COIL;
 
-    MolResiduePtr pRes = safeGetResid(pCoeff, i+istart);
-    if (pRes.isnull())
-      continue;
-    LString sec;
-    //pRes->getPropStr("secondary", sec);
-    pRes->getPropStr("secondary2", sec);
+    // kept in the topology part of the spline coeffs (no residue/property
+    // lookup on every traversal)
+    const LString &sec = pCoeff->getSecondary2(i+istart);
     LString pfx;
     if (sec.length()>=2)
       pfx= sec.substr(1,1);

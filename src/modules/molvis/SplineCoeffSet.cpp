@@ -279,6 +279,8 @@ bool SplineCoeff::setupTopology()
       }
     }
 
+    pres->getPropStr("secondary2", rc.sec2);
+
     m_residIndex.insert(std::make_pair(pres, nres));
 
     // setup paramTab (depends on the residue number only)

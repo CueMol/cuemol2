@@ -66,6 +66,11 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
     やり直す。軸方向の細かさ・平滑化・pivot 名・構造の変化と二次構造の変化 (`OBE_CHANGED`、二次構造の再計算は
     descr `"secondary"`)・`xformMat` では全部捨てる (`invalidateSplineCoeffs` -> `cleanup`)
   - 補間に失敗したセグメントは `searchCoeff` が返さない (描かない)
+  - 残基ごとの `secondary2` もトポロジの部分に持つ (`SplineCoeff::getSecondary2`)。ribbon の断面・junction の選択
+    (`RibbonRenderer::makeHSCTable`) はこれを読み、毎回の残基・プロパティの検索をしない
+- `TubeMeshBuilder` の描画呼び出し (`vertex` / `normal` / `color` / `loadName`) は、Update モードで prim に直接書く
+  経路だけを header で inline にしている (座標・色の更新のたびに頂点数だけ呼ばれるため)。Direct / Build と例外的な
+  経路は .cpp の `*Slow` に落ちる
 
 ## VBO の転送
 

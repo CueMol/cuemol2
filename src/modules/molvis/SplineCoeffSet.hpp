@@ -136,6 +136,9 @@ namespace molvis {
       bool bSheetCO;
       MolAtom *pC;
       MolAtom *pO;
+      /// "secondary2" property (helix/sheet with the start/end marks; used by
+      /// the ribbon to pick the sections and junctions)
+      LString sec2;
     };
     std::vector<ResidCache> m_cache;
 
@@ -210,6 +213,11 @@ namespace molvis {
       if (ires<0 || ires>=m_resid_array.size())
         return NULL;
       return m_resid_array[ires];
+    }
+
+    /// "secondary2" property of the residue (kept in the topology part)
+    const LString &getSecondary2(int ires) const {
+      return m_cache[ires].sec2;
     }
 
     MolAtomPtr getAtom(int ires) const {
