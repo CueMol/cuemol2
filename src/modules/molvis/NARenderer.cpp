@@ -598,26 +598,30 @@ bool NARenderer::prepareGpu(DisplayContext *pdc)
     if (!m_sphs.empty()) {
       m_sphPrim.alloc(pdc, int(m_sphs.size()));
       for (int i=0; i<int(m_sphs.size()); ++i)
-        m_sphPrim.setData(i, m_sphs[i].pos1, m_sphs[i].rad, m_sphs[i].col);
+        m_sphPrim.setData(i, m_sphs[i].pos1, m_sphs[i].rad, m_sphs[i].col,
+                          gfx::encodeHitName(m_sphs[i].name));
     }
     m_cylPrim.invalidate();
     if (!m_cyls.empty()) {
       m_cylPrim.alloc(pdc, int(m_cyls.size()));
       for (int i=0; i<int(m_cyls.size()); ++i)
         m_cylPrim.setData(i, m_cyls[i].pos1, m_cyls[i].pos2, m_cyls[i].rad,
-                          m_cyls[i].col);
+                          m_cyls[i].col, gfx::encodeHitName(m_cyls[i].name),
+                          gfx::encodeHitName(m_cyls[i].name));
     }
   }
   else if (m_nStickPass==TubeMeshBuilder::MODE_UPDATE) {
     if (m_sphPrim.isValid()) {
       for (int i=0; i<int(m_sphs.size()); ++i)
-        m_sphPrim.setData(i, m_sphs[i].pos1, m_sphs[i].rad, m_sphs[i].col);
+        m_sphPrim.setData(i, m_sphs[i].pos1, m_sphs[i].rad, m_sphs[i].col,
+                          gfx::encodeHitName(m_sphs[i].name));
       m_sphPrim.setUpdated(true);
     }
     if (m_cylPrim.isValid()) {
       for (int i=0; i<int(m_cyls.size()); ++i)
         m_cylPrim.setData(i, m_cyls[i].pos1, m_cyls[i].pos2, m_cyls[i].rad,
-                          m_cyls[i].col);
+                          m_cyls[i].col, gfx::encodeHitName(m_cyls[i].name),
+                          gfx::encodeHitName(m_cyls[i].name));
       m_cylPrim.setUpdated(true);
     }
   }

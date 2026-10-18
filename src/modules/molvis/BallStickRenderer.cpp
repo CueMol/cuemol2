@@ -546,7 +546,8 @@ void BallStickRenderer::renderShaderImpl(DisplayContext *pdc)
       if (pAtom.isnull()) continue; // ignore errors
 
       quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(nSceneID);
-      m_pSphGpuPrim->setData(i, pAtom->getPos(), (float)m_sphr, devcode);
+      m_pSphGpuPrim->setData(i, pAtom->getPos(), (float)m_sphr, devcode,
+                             gfx::encodeHitName(aid));
       ++i;
     }
   }
@@ -607,15 +608,19 @@ void BallStickRenderer::renderShaderImpl(DisplayContext *pdc)
 
       if ( pcol1->equals(*pcol2.get()) ) {
         // same color --> one bond
-        m_pCylGpuPrim->setData(i, pos1, pos2, (float)m_bondw, pcol1->getDevCode(nSceneID));
+        // the pick pass splits it at the midpoint (aid1 | aid2)
+        m_pCylGpuPrim->setData(i, pos1, pos2, (float)m_bondw, pcol1->getDevCode(nSceneID),
+                               gfx::encodeHitName(aid1), gfx::encodeHitName(aid2));
         ++i;
       }
       else {
         // different color --> two bonds
         const Vector4D mpos = (pos1 + pos2).divide(2.0);
-        m_pCylGpuPrim->setData(i, pos1, mpos, (float)m_bondw, pcol1->getDevCode(nSceneID));
+        m_pCylGpuPrim->setData(i, pos1, mpos, (float)m_bondw, pcol1->getDevCode(nSceneID),
+                               gfx::encodeHitName(aid1), gfx::encodeHitName(aid1));
         ++i;
-        m_pCylGpuPrim->setData(i, mpos, pos2, (float)m_bondw, pcol2->getDevCode(nSceneID));
+        m_pCylGpuPrim->setData(i, mpos, pos2, (float)m_bondw, pcol2->getDevCode(nSceneID),
+                               gfx::encodeHitName(aid2), gfx::encodeHitName(aid2));
         ++i;
       }
 

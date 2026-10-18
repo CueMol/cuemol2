@@ -18,6 +18,7 @@ using namespace gfx;
 
 SphereGpuPrim::SphereGpuPrim()
     : m_pPO(nullptr),
+      m_pPickPO(nullptr),
       m_pDrawElem(nullptr)
 {
     m_dsps[0][0] = -1.0f;
@@ -60,7 +61,7 @@ void SphereGpuPrim::alloc(DisplayContext *pDC, int nsph)
     m_pDrawElem = pdata;
     SphElemAry32 &sphdata = *pdata;
 
-    sphdata.setAttrSize(4);
+    sphdata.setAttrSize(5);
     sphdata.setAttrInfo(0, ATTRLOC_VERTEX, 3, qlib::type_consts::QTC_FLOAT32,
                         offsetof(SphElem, cenx));
     sphdata.setAttrInfo(1, ATTRLOC_IMPOS, 2, qlib::type_consts::QTC_FLOAT32,
@@ -69,13 +70,18 @@ void SphereGpuPrim::alloc(DisplayContext *pDC, int nsph)
                         offsetof(SphElem, rad));
     sphdata.setAttrInfo(3, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8,
                         offsetof(SphElem, r));
+    // Hit name: integer attribute, consumed by the pick program only (the
+    // shading program does not declare location 4).
+    sphdata.setAttrInfo(4, ATTRLOC_HITNAME, 1, qlib::type_consts::QTC_UINT32,
+                        offsetof(SphElem, hitName));
+    sphdata.setAttrInteger(4, true);
 
     pDC->allocBuffer(sphdata, nsph * 4, nsph * 6);
     sphdata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 
 void SphereGpuPrim::setData(int idx, const qlib::Vector4D &pos, float rad,
-                             quint32 devcode)
+                             quint32 devcode, quint32 hitName)
 {
     int i = idx * 4;
     int ifc = idx * 6;
@@ -91,6 +97,7 @@ void SphereGpuPrim::setData(int idx, const qlib::Vector4D &pos, float rad,
     data.g = getGCode(devcode);
     data.b = getBCode(devcode);
     data.a = getACode(devcode);
+    data.hitName = hitName;
 
     sphdata.atind(ifc) = i + 0;
     ++ifc;
@@ -115,9 +122,10 @@ void SphereGpuPrim::setData(int idx, const qlib::Vector4D &pos, float rad,
 void SphereGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
-    // No pick program for this (position-attribute) variant: never draw the
-    // vec4-output shading program into the integer pick target.
-    if (pDC->isPickDraw()) return;
+    if (pDC->isPickDraw()) {
+        drawPick(pDC);
+        return;
+    }
 
     DrawParams ubo = {};
     ubo.frag_alpha = (float)pDC->getAlpha();
@@ -143,6 +151,38 @@ void SphereGpuPrim::draw(DisplayContext *pDC)
     pDC->drawElem(*m_pDrawElem);
     m_pPO->disable();
     MB_DPRINTLN("****** SphereGpuPrim::draw: done.");
+}
+
+bool SphereGpuPrim::initPick(DisplayContext *pDC)
+{
+    if (m_pPickPO != nullptr) return true;
+
+    m_pPickPO = pDC->loadShaderObject("gpu_sphere2_pick",
+                                      "%%CONFDIR%%/data/shaders/sphere2_pick_vertex.glsl",
+                                      "%%CONFDIR%%/data/shaders/sphere_pick_frag.glsl");
+    if (m_pPickPO == nullptr) {
+        LOG_DPRINTLN("SphereGpuPrim> ERROR: cannot load pick shader.");
+        return false;
+    }
+    m_pPickPO->initDrawParamsUBO(sizeof(PickDrawParams));
+    return true;
+}
+
+void SphereGpuPrim::drawPick(DisplayContext *pDC)
+{
+    if (!initPick(pDC)) return;
+
+    // No edge ring in the pick pass (u_edge = 0).
+    PickDrawParams ubo = {};
+    ubo.u_edgecolor[3] = 1.0f;
+    ubo.u_rend_idx     = pDC->getHitRendIndex();
+    ubo.u_outer_name   = encodeHitName(pDC->getOuterName());
+
+    m_pPickPO->enable();
+    m_pPickPO->setupMat(pDC);
+    m_pPickPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
+    pDC->drawElem(*m_pDrawElem);
+    m_pPickPO->disable();
 }
 
 void SphereGpuPrim::invalidate()
