@@ -52,11 +52,24 @@ private:
     // Mirrors the role of OcBufferRep's isUpdated check-and-reset pattern.
     bool m_bDataUpdated;
 
+    // Byte range of that data to upload (length 0: the whole buffer)
+    size_t m_nUpdOffset;
+    size_t m_nUpdLength;
+
     // // material/lighting
     // bool m_bEnableLighting;
 
 public:
-    EcBufferRep() : m_nViewID(0), m_nDrawMode(-1), m_nElems(0), m_nIndexElems(0), m_bDataUpdated(false) {}
+    EcBufferRep()
+        : m_nViewID(0),
+          m_nDrawMode(-1),
+          m_nElems(0),
+          m_nIndexElems(0),
+          m_bDataUpdated(false),
+          m_nUpdOffset(0),
+          m_nUpdLength(0)
+    {
+    }
 
     virtual ~EcBufferRep();
 

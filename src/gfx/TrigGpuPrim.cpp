@@ -21,6 +21,8 @@ TrigGpuPrim::TrigGpuPrim()
       m_pEdgePO(nullptr),
       m_pPickPO(nullptr),
       m_pDrawElems(nullptr),
+      m_pPackedElems(nullptr),
+      m_nLayout(LAYOUT_INTERLEAVED),
       m_nEdgeLineType(DisplayContext::ELT_NONE),
       m_nPolygonMode(DisplayContext::POLY_FILL),
       m_bNoDepth(false)
@@ -63,24 +65,95 @@ void TrigGpuPrim::alloc(DisplayContext *pDC, int nverts, int nfaces)
 
     // Re-allocation: release the previous mesh (and its GPU buffer via the
     // VBORep dtor) instead of leaking it.
-    if (m_pDrawElems != nullptr) {
-        delete m_pDrawElems;
-        m_pDrawElems = nullptr;
-    }
-
-    m_pDrawElems = MB_NEW TrigMesh();
-    auto &data = *m_pDrawElems;
+    invalidate();
 
     // In wireframe (POLY_LINE) mode, render triangle edges as GL_LINES:
     // each face contributes 3 edges (6 indices) instead of a filled triangle.
     const bool bWire = (m_nPolygonMode == DisplayContext::POLY_LINE);
-    pDC->allocBuffer(data, nverts, bWire ? nfaces * 6 : nfaces * 3);
-    data.setDrawMode(bWire ? gfx::AbstDrawElem::DRAW_LINES
-                           : gfx::AbstDrawElem::DRAW_TRIANGLES);
+    const int nInds = bWire ? nfaces * 6 : nfaces * 3;
+    const int nMode = bWire ? gfx::AbstDrawElem::DRAW_LINES
+                            : gfx::AbstDrawElem::DRAW_TRIANGLES;
+
+    if (m_nLayout == LAYOUT_PACKED) {
+        m_pPackedElems = MB_NEW PackedMesh();
+        pDC->allocBuffer(*m_pPackedElems, nverts, nInds);
+        m_pPackedElems->setDrawMode(nMode);
+        return;
+    }
+
+    m_pDrawElems = MB_NEW TrigMesh();
+    pDC->allocBuffer(*m_pDrawElems, nverts, nInds);
+    m_pDrawElems->setDrawMode(nMode);
+}
+
+qbyte *TrigGpuPrim::packedBlock(int nWordsBefore) const
+{
+    MB_ASSERT(m_pPackedElems != nullptr && m_pPackedElems->getSize() > 0);
+    qbyte *pbase = reinterpret_cast<qbyte *>(&m_pPackedElems->at(0));
+    return pbase + size_t(nWordsBefore) * 4 * size_t(m_pPackedElems->getSize());
+}
+
+TrigGpuPrim::PackedArrays TrigGpuPrim::getPackedArrays()
+{
+    PackedArrays arrays = {nullptr, nullptr, nullptr, nullptr};
+    if (m_pPackedElems == nullptr || m_pPackedElems->getSize() == 0) return arrays;
+    arrays.pos = reinterpret_cast<qfloat32 *>(packedBlock(0));
+    arrays.norm = reinterpret_cast<quint32 *>(packedBlock(3));
+    arrays.color = packedBlock(4);
+    arrays.hitName = reinterpret_cast<quint32 *>(packedBlock(5));
+    return arrays;
+}
+
+// static
+qlib::Vector4D TrigGpuPrim::unpackNormal(quint32 w)
+{
+    // sign-extend each 10-bit field and normalize as GLES 3 does
+    auto comp = [w](int shift) {
+        int v = int((w >> shift) & 0x3FFu);
+        if (v & 0x200) v -= 0x400;
+        const double f = double(v) / 511.0;
+        return (f < -1.0) ? -1.0 : f;
+    };
+    return qlib::Vector4D(comp(0), comp(10), comp(20));
+}
+
+void TrigGpuPrim::markUpdated(int nFlags)
+{
+    if (m_pPackedElems == nullptr) {
+        setUpdated(true);
+        return;
+    }
+    const size_t nverts = size_t(m_pPackedElems->getSize());
+    if (nFlags & UPD_GEOM) {
+        // positions and normals adjoin: words 0-3 of each vertex
+        m_pPackedElems->setUpdatedRange(0, 16 * nverts);
+    }
+    if (nFlags & UPD_COLOR) {
+        m_pPackedElems->setUpdatedRange(16 * nverts, 4 * nverts);
+    }
 }
 
 void TrigGpuPrim::setupAttrs()
 {
+    if (m_pPackedElems != nullptr) {
+        auto &data = *m_pPackedElems;
+        if (data.getAttrSize() > 0) return;  // already set up
+        const int nverts = data.getSize();
+        data.setAttrSize(4);
+        data.setAttrInfo(0, ATTRLOC_VERTEX, 3, qlib::type_consts::QTC_FLOAT32, 0);
+        data.setAttrStride(0, 12);
+        data.setAttrInfo(1, ATTRLOC_NORM, 4, qlib::type_consts::QTC_INT_2_10_10_10_REV,
+                         12 * nverts);
+        data.setAttrStride(1, 4);
+        data.setAttrInfo(2, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8, 16 * nverts);
+        data.setAttrStride(2, 4);
+        data.setAttrInfo(3, ATTRLOC_HITNAME, 1, qlib::type_consts::QTC_UINT32,
+                         20 * nverts);
+        data.setAttrStride(3, 4);
+        data.setAttrInteger(3, true);
+        return;
+    }
+
     MB_ASSERT(m_pDrawElems != nullptr);
     auto &data = *m_pDrawElems;
 
@@ -102,6 +175,14 @@ void TrigGpuPrim::setupAttrs()
 
 void TrigGpuPrim::setVertex(int idx, const qlib::Vector4D &v)
 {
+    if (m_pPackedElems != nullptr) {
+        MB_ASSERT(idx >= 0 && idx < m_pPackedElems->getSize());
+        qfloat32 *p = reinterpret_cast<qfloat32 *>(packedBlock(0)) + idx * 3;
+        p[0] = (qfloat32)v.x();
+        p[1] = (qfloat32)v.y();
+        p[2] = (qfloat32)v.z();
+        return;
+    }
     auto &data = *m_pDrawElems;
     data.at(idx).x = (qfloat32)v.x();
     data.at(idx).y = (qfloat32)v.y();
@@ -110,6 +191,12 @@ void TrigGpuPrim::setVertex(int idx, const qlib::Vector4D &v)
 
 void TrigGpuPrim::setNormal(int idx, const qlib::Vector4D &n)
 {
+    if (m_pPackedElems != nullptr) {
+        MB_ASSERT(idx >= 0 && idx < m_pPackedElems->getSize());
+        reinterpret_cast<quint32 *>(packedBlock(3))[idx] =
+            packNormal(float(n.x()), float(n.y()), float(n.z()));
+        return;
+    }
     auto &data = *m_pDrawElems;
     data.at(idx).nx = (qfloat32)n.x();
     data.at(idx).ny = (qfloat32)n.y();
@@ -118,6 +205,15 @@ void TrigGpuPrim::setNormal(int idx, const qlib::Vector4D &n)
 
 void TrigGpuPrim::setColor(int idx, quint32 devcode)
 {
+    if (m_pPackedElems != nullptr) {
+        MB_ASSERT(idx >= 0 && idx < m_pPackedElems->getSize());
+        qbyte *p = packedBlock(4) + idx * 4;
+        p[0] = getRCode(devcode);
+        p[1] = getGCode(devcode);
+        p[2] = getBCode(devcode);
+        p[3] = getACode(devcode);
+        return;
+    }
     auto &data = *m_pDrawElems;
     data.at(idx).r = getRCode(devcode);
     data.at(idx).g = getGCode(devcode);
@@ -127,31 +223,86 @@ void TrigGpuPrim::setColor(int idx, quint32 devcode)
 
 void TrigGpuPrim::setHitName(int idx, quint32 name)
 {
+    if (m_pPackedElems != nullptr) {
+        MB_ASSERT(idx >= 0 && idx < m_pPackedElems->getSize());
+        reinterpret_cast<quint32 *>(packedBlock(5))[idx] = name;
+        return;
+    }
     auto &data = *m_pDrawElems;
     data.at(idx).hitName = name;
 }
 
+qlib::Vector4D TrigGpuPrim::getVertex(int idx) const
+{
+    if (m_pPackedElems != nullptr) {
+        const qfloat32 *p = reinterpret_cast<const qfloat32 *>(packedBlock(0)) + idx * 3;
+        return qlib::Vector4D(p[0], p[1], p[2]);
+    }
+    const TrigVertAttr &va = m_pDrawElems->at(idx);
+    return qlib::Vector4D(va.x, va.y, va.z);
+}
+
+qlib::Vector4D TrigGpuPrim::getNormal(int idx) const
+{
+    if (m_pPackedElems != nullptr)
+        return unpackNormal(reinterpret_cast<const quint32 *>(packedBlock(3))[idx]);
+    const TrigVertAttr &va = m_pDrawElems->at(idx);
+    return qlib::Vector4D(va.nx, va.ny, va.nz);
+}
+
+quint32 TrigGpuPrim::getColorRGBA(int idx) const
+{
+    qbyte r, g, b, a;
+    if (m_pPackedElems != nullptr) {
+        const qbyte *p = packedBlock(4) + idx * 4;
+        r = p[0];
+        g = p[1];
+        b = p[2];
+        a = p[3];
+    }
+    else {
+        const TrigVertAttr &va = m_pDrawElems->at(idx);
+        r = va.r;
+        g = va.g;
+        b = va.b;
+        a = va.a;
+    }
+    return (quint32(r) << 24) | (quint32(g) << 16) | (quint32(b) << 8) | quint32(a);
+}
+
+quint32 TrigGpuPrim::getHitName(int idx) const
+{
+    if (m_pPackedElems != nullptr)
+        return reinterpret_cast<const quint32 *>(packedBlock(5))[idx];
+    return m_pDrawElems->at(idx).hitName;
+}
+
 void TrigGpuPrim::setFace(int idx, int v1, int v2, int v3)
 {
-    auto &data = *m_pDrawElems;
-    if (m_nPolygonMode == DisplayContext::POLY_LINE) {
-        // Wireframe: 3 edges per face -> (v1,v2)(v2,v3)(v3,v1)
-        data.atind(idx * 6 + 0) = v1;
-        data.atind(idx * 6 + 1) = v2;
-        data.atind(idx * 6 + 2) = v2;
-        data.atind(idx * 6 + 3) = v3;
-        data.atind(idx * 6 + 4) = v3;
-        data.atind(idx * 6 + 5) = v1;
-        return;
-    }
-    data.atind(idx * 3) = v1;
-    data.atind(idx * 3 + 1) = v2;
-    data.atind(idx * 3 + 2) = v3;
+    auto set = [&](auto &data) {
+        if (m_nPolygonMode == DisplayContext::POLY_LINE) {
+            // Wireframe: 3 edges per face -> (v1,v2)(v2,v3)(v3,v1)
+            data.atind(idx * 6 + 0) = v1;
+            data.atind(idx * 6 + 1) = v2;
+            data.atind(idx * 6 + 2) = v2;
+            data.atind(idx * 6 + 3) = v3;
+            data.atind(idx * 6 + 4) = v3;
+            data.atind(idx * 6 + 5) = v1;
+            return;
+        }
+        data.atind(idx * 3) = v1;
+        data.atind(idx * 3 + 1) = v2;
+        data.atind(idx * 3 + 2) = v3;
+    };
+    if (m_pPackedElems != nullptr)
+        set(*m_pPackedElems);
+    else
+        set(*m_pDrawElems);
 }
 
 void TrigGpuPrim::draw(DisplayContext *pDC)
 {
-    if (m_pDrawElems == nullptr || m_pPO == nullptr) return;
+    if (attrs() == nullptr || m_pPO == nullptr) return;
 
     setupAttrs();
 
@@ -177,7 +328,7 @@ void TrigGpuPrim::draw(DisplayContext *pDC)
     m_pPO->setupMat(pDC);
     m_pPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
 
-    pDC->drawElem(*m_pDrawElems);
+    pDC->drawElem(*attrs());
     m_pPO->disable();
 }
 
@@ -206,7 +357,7 @@ void TrigGpuPrim::drawEdges(DisplayContext *pDC)
         m_pEdgePO->updateDrawParamsUBO(&ubo, sizeof(ubo));
         pDC->setCullFace(true);
         pDC->setFrontFace(false);  // GL_CW
-        pDC->drawElem(*m_pDrawElems);
+        pDC->drawElem(*attrs());
         m_pEdgePO->disable();
         pDC->setFrontFace(true);   // GL_CCW (restore)
         pDC->setCullFace(false);
@@ -243,7 +394,7 @@ void TrigGpuPrim::drawPick(DisplayContext *pDC)
     m_pPickPO->setupMat(pDC);
     m_pPickPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
 
-    pDC->drawElem(*m_pDrawElems);
+    pDC->drawElem(*attrs());
     m_pPickPO->disable();
 }
 
@@ -252,5 +403,9 @@ void TrigGpuPrim::invalidate()
     if (m_pDrawElems != nullptr) {
         delete m_pDrawElems;
         m_pDrawElems = nullptr;
+    }
+    if (m_pPackedElems != nullptr) {
+        delete m_pPackedElems;
+        m_pPackedElems = nullptr;
     }
 }

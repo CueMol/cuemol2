@@ -12,6 +12,7 @@
 #include "gfx/CylinderIdxGpuPrim.hpp"
 #include "gfx/LineIdxGpuPrim.hpp"
 #include "gfx/LineValIdxGpuPrim.hpp"
+#include "gfx/TrigGpuPrim.hpp"
 #include "gfx/FloatDataTexture.hpp"
 #include "gfx/ShaderObject.hpp"
 #include "gfx/SolidColor.hpp"
@@ -685,4 +686,206 @@ TEST_F(DisplayListLineColorTest, NoColorUsesUniformColor)
     recordOneLine(false);
     ASSERT_NE(dl.getLineObj(), nullptr);
     EXPECT_FALSE(dl.getLineObj()->isUseVertColor());
+}
+
+// ---- TrigGpuPrim::LAYOUT_PACKED ----
+
+namespace {
+
+/// One attribute as a backend sees it
+struct SeenAttr
+{
+    int loc, elems, type, pos, stride;
+    bool integer;
+};
+
+/// VBORep that records what the backend is given: the attribute table and
+/// the byte range of each upload
+struct RecordingVBORep : public gfx::VBORep
+{
+    std::vector<SeenAttr> *pAttrs;
+    std::vector<std::pair<size_t, size_t>> *pUploads;
+    RecordingVBORep(std::vector<SeenAttr> *pa, std::vector<std::pair<size_t, size_t>> *pu)
+        : pAttrs(pa), pUploads(pu)
+    {
+    }
+    void bind() override {}
+    void update(const gfx::AbstDrawAttrs &ada) override
+    {
+        if (!ada.isUpdated()) return;
+        pUploads->emplace_back(ada.getUpdateOffset(), ada.getUpdateLength());
+        ada.setUpdated(false);
+    }
+    void setAttrib(const gfx::AbstDrawAttrs &ada) override
+    {
+        pAttrs->clear();
+        for (size_t i = 0; i < ada.getAttrSize(); ++i) {
+            const int n = int(i);
+            pAttrs->push_back(SeenAttr{ada.getAttrLoc(n), ada.getAttrElemSize(n),
+                                       ada.getAttrTypeID(n), ada.getAttrPos(n),
+                                       ada.getAttrStride(n), ada.isAttrInteger(n)});
+        }
+    }
+    void draw(const gfx::AbstDrawAttrs &) override {}
+    void unbind(const gfx::AbstDrawAttrs &) override {}
+};
+
+class RecordingDC : public MockDisplayContext
+{
+public:
+    std::vector<SeenAttr> attrs;
+    std::vector<std::pair<size_t, size_t>> uploads;
+    void drawElem(const gfx::AbstDrawElem &ade) override
+    {
+        gfx::DisplayContext::drawElem(ade);
+    }
+    gfx::VBORep *createVBORep(const gfx::AbstDrawAttrs &) override
+    {
+        return new RecordingVBORep(&attrs, &uploads);
+    }
+};
+
+/// Fill a triangle with the same data in either layout
+void fillTriangle(gfx::TrigGpuPrim &prim)
+{
+    prim.setVertex(0, Vector4D(1.5, -2.25, 3.0));
+    prim.setVertex(1, Vector4D(4, 5, 6));
+    prim.setVertex(2, Vector4D(-7, 8, -9));
+    const Vector4D norms[3] = {Vector4D(0, 0, 1), Vector4D(0.6, -0.8, 0),
+                               Vector4D(0.267, 0.535, -0.802)};
+    for (int i = 0; i < 3; ++i) {
+        prim.setNormal(i, norms[i]);
+        prim.setColor(i, gfx::SolidColor::createRGB(0.2 * i, 0.5, 1.0)->getDevCode(0));
+        prim.setHitName(i, gfx::encodeHitName(10 + i));
+    }
+    prim.setFace(0, 0, 1, 2);
+}
+
+}  // namespace
+
+// The packed layout stores the same data as the interleaved one (normals to
+// within the 10-bit packing), so either can back the same renderer.
+TEST(TrigGpuPrimPacked, StoresTheSameDataAsInterleaved)
+{
+    MockDisplayContext dc;
+    gfx::TrigGpuPrim inter, packed;
+    ASSERT_TRUE(inter.init(&dc));
+    ASSERT_TRUE(packed.init(&dc));
+    packed.setLayout(gfx::TrigGpuPrim::LAYOUT_PACKED);
+    inter.alloc(&dc, 3, 1);
+    packed.alloc(&dc, 3, 1);
+    fillTriangle(inter);
+    fillTriangle(packed);
+
+    EXPECT_EQ(packed.getVertexSize(), 3);
+    EXPECT_EQ(packed.getFaceSize(), 1);
+    for (int i = 0; i < 3; ++i) {
+        EXPECT_TRUE(packed.getVertex(i).equals(inter.getVertex(i)));
+        EXPECT_EQ(packed.getColorRGBA(i), inter.getColorRGBA(i));
+        EXPECT_EQ(packed.getHitName(i), inter.getHitName(i));
+        const Vector4D d = packed.getNormal(i) - inter.getNormal(i);
+        EXPECT_LT(d.length(), 2.0e-3) << "vertex " << i;
+    }
+    // axis-aligned unit normals survive the packing exactly
+    EXPECT_DOUBLE_EQ(packed.getNormal(0).z(), 1.0);
+}
+
+// The backend gets one block per attribute (the addon and the WebGL buffer
+// store rely on these offsets and strides).
+TEST(TrigGpuPrimPacked, AttributeTableDescribesTheBlocks)
+{
+    RecordingDC dc;
+    gfx::TrigGpuPrim prim;
+    ASSERT_TRUE(prim.init(&dc));
+    prim.setLayout(gfx::TrigGpuPrim::LAYOUT_PACKED);
+    const int N = 3;
+    prim.alloc(&dc, N, 1);
+    fillTriangle(prim);
+    prim.draw(&dc);
+
+    using qlib::type_consts;
+    ASSERT_EQ(dc.attrs.size(), 4u);
+    const SeenAttr &pos = dc.attrs[0], &nrm = dc.attrs[1], &col = dc.attrs[2],
+                   &hit = dc.attrs[3];
+    EXPECT_EQ(pos.type, type_consts::QTC_FLOAT32);
+    EXPECT_EQ(pos.elems, 3);
+    EXPECT_EQ(pos.pos, 0);
+    EXPECT_EQ(pos.stride, 12);
+    EXPECT_EQ(nrm.type, type_consts::QTC_INT_2_10_10_10_REV);
+    EXPECT_EQ(nrm.elems, 4);
+    EXPECT_EQ(nrm.pos, 12 * N);
+    EXPECT_EQ(nrm.stride, 4);
+    EXPECT_EQ(col.type, type_consts::QTC_UINT8);
+    EXPECT_EQ(col.pos, 16 * N);
+    EXPECT_EQ(col.stride, 4);
+    EXPECT_EQ(hit.type, type_consts::QTC_UINT32);
+    EXPECT_EQ(hit.pos, 20 * N);
+    EXPECT_EQ(hit.stride, 4);
+    EXPECT_TRUE(hit.integer);
+
+    // the blocks the in-place writers get are the same ones
+    const gfx::TrigGpuPrim::PackedArrays a = prim.getPackedArrays();
+    const qbyte *base = reinterpret_cast<const qbyte *>(a.pos);
+    EXPECT_EQ(reinterpret_cast<const qbyte *>(a.norm) - base, 12 * N);
+    EXPECT_EQ(a.color - base, 16 * N);
+    EXPECT_EQ(reinterpret_cast<const qbyte *>(a.hitName) - base, 20 * N);
+}
+
+// markUpdated() re-uploads only the blocks of the flagged data in the packed
+// layout, and everything in the interleaved one.
+TEST(TrigGpuPrimPacked, MarkUpdatedUploadsOnlyTheFlaggedBlocks)
+{
+    using gfx::TrigGpuPrim;
+    const size_t N = 3;
+    RecordingDC dc;
+    TrigGpuPrim prim;
+    ASSERT_TRUE(prim.init(&dc));
+    prim.setLayout(TrigGpuPrim::LAYOUT_PACKED);
+    prim.alloc(&dc, int(N), 1);
+    fillTriangle(prim);
+    prim.draw(&dc);  // creates the buffer with the data
+    dc.uploads.clear();
+
+    prim.markUpdated(TrigGpuPrim::UPD_GEOM);
+    prim.draw(&dc);
+    prim.markUpdated(TrigGpuPrim::UPD_COLOR);
+    prim.draw(&dc);
+    prim.markUpdated(TrigGpuPrim::UPD_GEOM | TrigGpuPrim::UPD_COLOR);
+    prim.draw(&dc);
+    const std::vector<std::pair<size_t, size_t>> expected = {
+        {0, 16 * N}, {16 * N, 4 * N}, {0, 20 * N}};
+    EXPECT_EQ(dc.uploads, expected);
+
+    TrigGpuPrim inter;
+    ASSERT_TRUE(inter.init(&dc));
+    inter.alloc(&dc, int(N), 1);
+    fillTriangle(inter);
+    inter.draw(&dc);
+    dc.uploads.clear();
+    inter.markUpdated(TrigGpuPrim::UPD_GEOM);
+    inter.draw(&dc);
+    ASSERT_EQ(dc.uploads.size(), 1u);
+    EXPECT_EQ(dc.uploads[0].second, 0u);  // whole buffer
+}
+
+// Update ranges marked before an upload merge into one covering range; a
+// whole-data mark stays whole.
+TEST(AbstDrawElemUpdateRange, RangesMergeAndWholeWins)
+{
+    TestElems arr;
+    MockDisplayContext dc;
+    dc.allocBuffer(arr, 4, 6);
+
+    arr.setUpdatedRange(16, 8);
+    arr.setUpdatedRange(4, 4);
+    EXPECT_TRUE(arr.isUpdated());
+    EXPECT_EQ(arr.getUpdateOffset(), 4u);
+    EXPECT_EQ(arr.getUpdateLength(), 20u);
+
+    arr.setUpdated(true);
+    arr.setUpdatedRange(0, 4);
+    EXPECT_EQ(arr.getUpdateLength(), 0u);
+
+    arr.setUpdated(false);
+    EXPECT_FALSE(arr.isUpdated());
 }

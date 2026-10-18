@@ -25,6 +25,9 @@ const convertType = (gl: GL, itype: string): number => {
         case "1": return gl.UNSIGNED_BYTE;
         case "3": return gl.UNSIGNED_INT;
         case "21": return gl.FLOAT;
+        // x, y, z, w packed in one word (packed normals, see
+        // gfx::TrigGpuPrim::LAYOUT_PACKED)
+        case "61": return gl.INT_2_10_10_10_REV;
         default:
             console.error(`unknown type ${itype}`);
             throw `unknown type ${itype}`;
@@ -37,6 +40,7 @@ const convGLNorm = (itype: string): boolean => {
         case "1": return true;
         case "3": return false;
         case "21": return false;
+        case "61": return true;
         default:
             console.error(`unknown type ${itype}`);
             throw `unknown type ${itype}`;
@@ -55,13 +59,31 @@ interface VertexSlot {
     vbo: WebGLBuffer;
 }
 
+/** Byte range [begin, end). */
+type ByteRange = [number, number];
+
+/** The smallest range covering a and b (b may be null). */
+const coverRange = (a: ByteRange, b: ByteRange | null): ByteRange =>
+    b === null ? a : [Math.min(a[0], b[0]), Math.max(a[1], b[1])];
+
+/** Bytes [offset, offset + length) of an ArrayBuffer or a view of one, without copying. */
+const byteView = (buf: any, offset: number, length: number): Uint8Array =>
+    ArrayBuffer.isView(buf)
+        ? new Uint8Array(buf.buffer, buf.byteOffset + offset, length)
+        : new Uint8Array(buf, offset, length);
+
 /** A buffer's slots, its shared index buffer and its attribute layout. */
 interface DrawEntry {
     slots: VertexSlot[];
+    // Per slot, the bytes changed since that slot was last written (null:
+    // none). An update may cover only part of the data, so a slot can miss
+    // the parts the other slots received meanwhile.
+    pending: (ByteRange | null)[];
     // Index of the slot the next draw reads.
     cur: number;
     ibo: WebGLBuffer | null;
-    // Vertex buffer size in bytes, and the per-vertex stride.
+    // Vertex buffer size in bytes, and the per-vertex stride of an
+    // interleaved layout (an attribute's own stride, when given, wins).
     nsize: number;
     stride: number;
     elemInfo: any[];
@@ -102,18 +124,19 @@ export class BufferStore {
             const atype = value['itype'];
             const gltype = convertType(gl, atype);
             const bnorm = convGLNorm(atype);
+            const stride = Number(value['stride']) > 0 ? Number(value['stride']) : entry.stride;
             gl.enableVertexAttribArray(aloc);
             if (value['integer'] === '1') {
                 // Integer attribute (hit names for the ID-buffer pick pass):
                 // no normalization, read as uint in the shader.
-                gl.vertexAttribIPointer(aloc, value['nelems'], gltype, entry.stride, value['npos']);
+                gl.vertexAttribIPointer(aloc, value['nelems'], gltype, stride, value['npos']);
             } else {
                 gl.vertexAttribPointer(
                     aloc,
                     value['nelems'],
                     gltype,
                     bnorm,
-                    entry.stride,
+                    stride,
                     value['npos']
                 );
             }
@@ -169,6 +192,7 @@ export class BufferStore {
 
         const entry: DrawEntry = {
             slots: [],
+            pending: [],
             cur: 0,
             ibo: indexBuffer,
             nsize,
@@ -176,6 +200,7 @@ export class BufferStore {
             elemInfo: elem_info,
         };
         entry.slots.push(this._createSlot(entry, array_buf));
+        entry.pending.push(null);
 
         this._draw_data[name] = entry;
 
@@ -190,9 +215,12 @@ export class BufferStore {
      *
      * @remarks Re-upload is gated by the C++ side's `isUpdated`
      * is set; otherwise data is re-uploaded every frame.
+     * `upd_offset` / `upd_length` narrow the update to those bytes
+     * (length 0: the whole vertex buffer).
      */
     drawBuffer(id: number, nmode: number, nelems: number,
-        array_buf: any, index_buf: any, isUpdated: boolean, ninst: number): void {
+        array_buf: any, index_buf: any, isUpdated: boolean, ninst: number,
+        upd_offset: number = 0, upd_length: number = 0): void {
         const gl = this._gl;
         const obj = this._draw_data[id];
 
@@ -208,14 +236,27 @@ export class BufferStore {
         // by createBuffer. index_buf is still passed to pick drawElements.
         // The new data goes into the next slot of the ring, which the GPU is
         // not reading for the frame drawn last.
+        // The slot also receives what changed since it was last written, and
+        // every other slot records this update as missing.
         if (isUpdated) {
+            const total: number = array_buf.byteLength;
+            const range: ByteRange = upd_length > 0
+                ? [upd_offset, upd_offset + upd_length]
+                : [0, total];
             const next = (obj.cur + 1) % VBO_RING;
             if (next >= obj.slots.length) {
+                // a new slot holds no data yet
                 obj.slots.push(this._createSlot(obj, null));
+                obj.pending.push([0, total]);
+            }
+            const write = coverRange(range, obj.pending[next]);
+            for (let i = 0; i < obj.slots.length; ++i) {
+                obj.pending[i] = (i === next) ? null : coverRange(range, obj.pending[i]);
             }
             obj.cur = next;
             gl.bindBuffer(gl.ARRAY_BUFFER, obj.slots[next].vbo);
-            gl.bufferSubData(gl.ARRAY_BUFFER, 0, array_buf);
+            gl.bufferSubData(gl.ARRAY_BUFFER, write[0],
+                byteView(array_buf, write[0], write[1] - write[0]));
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
         }
 
