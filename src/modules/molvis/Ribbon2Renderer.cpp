@@ -466,7 +466,7 @@ const char *Ribbon2Renderer::getTypeName() const
 
 void Ribbon2Renderer::beginRend(DisplayContext *pdl)
 {
-  tgBeginRend(pdl);
+  tubeGpuBeginRend(pdl);
 
   m_diffvecs.clear();
   //super_t::beginRend(pdl);
@@ -757,10 +757,10 @@ void Ribbon2Renderer::renderHelix(DisplayContext *pdl)
     for (int j=0; j<=ndelta; ++j) {
       double t = tstart + double(j)*fdelta; ///double(naxdet);
       // The geometry-only update skips the color/name computation
-      if (tgBuilder().wantColor())
+      if (tubeGpuBuilder().wantColor())
         pCol = calcColor(t, pC);
-      if (tgBuilder().wantName())
-        tgBuilder().loadName(calcHitName(t, pC));
+      if (tubeGpuBuilder().wantName())
+        tubeGpuBuilder().loadName(calcHitName(t, pC));
       pC->m_spl.interpolate(t, &f1, &vpt);
       width = calcHelixWidth(pC, t, dwidth);
       if (j==0) {
@@ -773,16 +773,16 @@ void Ribbon2Renderer::renderHelix(DisplayContext *pdl)
       
       if (j==0) {
         // make the tube cap.
-        tgBuilder().color(pCol);
-        m_ptsHelix->makeCap(&tgBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
+        tubeGpuBuilder().color(pCol);
+        m_ptsHelix->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
       }
       
-      m_ptsHelix->doTess(&tgBuilder(), f1, pCol, isSmoothColor(), e11, e12, vpt.scale(-dwidth));
+      m_ptsHelix->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(), e11, e12, vpt.scale(-dwidth));
 
       if (j==ndelta) {
         // make cap at the end point.
-        tgBuilder().color(pCol);
-        m_ptsHelix->makeCap(&tgBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
+        tubeGpuBuilder().color(pCol);
+        m_ptsHelix->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
       }
 
       bnorm_base = e12;
@@ -991,17 +991,17 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
   
   // Draw sheet body
 
-  tgBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+  tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
   m_ptsSheet->startTess();
   
   // axial step loop
   for (int j=0; j<=ndelta; ++j) {
     const double t = tstart + double(j)*fdelta; // /double(naxdet);
-    if (tgBuilder().wantColor())
+    if (tubeGpuBuilder().wantColor())
       pCol = calcColor(t, pC);
-    if (tgBuilder().wantName())
-      tgBuilder().loadName(calcHitName(t, pC));
+    if (tubeGpuBuilder().wantName())
+      tubeGpuBuilder().loadName(calcHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     vpt = vpt.normalize();
     
@@ -1014,11 +1014,11 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
     
     if (j==0) {
       // make the tube cap.
-      tgBuilder().color(pCol);
-      m_ptsSheet->makeCap(&tgBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
+      tubeGpuBuilder().color(pCol);
+      m_ptsSheet->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
     }
     
-    m_ptsSheet->doTess(&tgBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
+    m_ptsSheet->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
     
     if (j==ndelta) {
       // update the tstart for head drawing
@@ -1040,7 +1040,7 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
   // initialize previous E scale
   m_pSheetHead->get(0, dpar, prev_escl);
 
-  tgBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+  tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   m_ptsSheet->startTess();
 
   for (int i=0; i<ndelta; i++) {
@@ -1048,10 +1048,10 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
     m_pSheetHead->get(i, dpar, escl);
     const double t = tstart + dpar;
 
-    if (tgBuilder().wantColor())
+    if (tubeGpuBuilder().wantColor())
       pCol = calcColor(t, pC);
-    if (tgBuilder().wantName())
-      tgBuilder().loadName(calcHitName(t, pC));
+    if (tubeGpuBuilder().wantName())
+      tubeGpuBuilder().loadName(calcHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     const Vector4D ev = vpt.normalize();
     
@@ -1067,13 +1067,13 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
       // make partition polygons
       m_ptsSheet->endTess();
 
-      tgBuilder().color(pCol);
-      m_ptsSheet->makeDisconJct(&tgBuilder(), f1, ev, e11, e12, prev_escl, escl);
-      tgBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+      tubeGpuBuilder().color(pCol);
+      m_ptsSheet->makeDisconJct(&tubeGpuBuilder(), f1, ev, e11, e12, prev_escl, escl);
+      tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
       m_ptsSheet->startTess();
     }
     
-    m_ptsSheet->doTess(&tgBuilder(), f1, pCol, isSmoothColor(),
+    m_ptsSheet->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(),
                        e11, e12,
                        escl, vpt);
 
@@ -1084,11 +1084,11 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
   }
 
   m_ptsSheet->endTess();
-  tgBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL);
+  tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL);
 
   // make cap at the end point.
-  tgBuilder().color(pCol);
-  m_ptsSheet->makeCap(&tgBuilder(), false, getEndCapType(), f1, vpt, xe11, xe12);
+  tubeGpuBuilder().color(pCol);
+  m_ptsSheet->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, xe11, xe12);
 
 }
 
@@ -1339,10 +1339,10 @@ void Ribbon2Renderer::renderCoil(DisplayContext *pdl, detail::SecSplDat *pC)
   for (int j=0; j<=ndelta; ++j) {
     double t = tstart + double(j) * fdelta; // /double(naxdet);
     //double col_t = t;
-    if (tgBuilder().wantColor())
+    if (tubeGpuBuilder().wantColor())
       pCol = calcCoilColor(t, pC);
-    if (tgBuilder().wantName())
-      tgBuilder().loadName(calcCoilHitName(t, pC));
+    if (tubeGpuBuilder().wantName())
+      tubeGpuBuilder().loadName(calcCoilHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     //vpt = vpt.normalize();
     
@@ -1355,16 +1355,16 @@ void Ribbon2Renderer::renderCoil(DisplayContext *pdl, detail::SecSplDat *pC)
     
     if (j==0) {
       // make the tube cap.
-      tgBuilder().color(pCol);
-      m_ptsCoil->makeCap(&tgBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
+      tubeGpuBuilder().color(pCol);
+      m_ptsCoil->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
     }
     
-    m_ptsCoil->doTess(&tgBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
+    m_ptsCoil->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
 
     if (j==ndelta) {
       // make cap at the end point.
-      tgBuilder().color(pCol);
-      m_ptsCoil->makeCap(&tgBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
+      tubeGpuBuilder().color(pCol);
+      m_ptsCoil->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
       }
     
     bntmp = e12;
@@ -1559,10 +1559,10 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         double t = tstart + double(j) * fdelta;
         MB_DPRINTLN("%s j=%d, t=%f", tp.c_str(), j, t);
 
-        if (tgBuilder().wantColor())
+        if (tubeGpuBuilder().wantColor())
           pCol = calcCoilColor(t, pC);
-        if (tgBuilder().wantName())
-          tgBuilder().loadName(calcCoilHitName(t, pC));
+        if (tubeGpuBuilder().wantName())
+          tubeGpuBuilder().loadName(calcCoilHitName(t, pC));
         pC->m_spl.interpolate(t, &f1, &vpt);
         vpt = vpt.normalize();
         
@@ -1572,16 +1572,16 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
 
         if (j==jstart && elem.flag==HC_COIL) {
           // make the tube cap.
-          tgBuilder().color(pCol);
-          pTS->makeCap(&tgBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
+          tubeGpuBuilder().color(pCol);
+          pTS->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
         }
         
-        pTS->doTess(&tgBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
+        pTS->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
         
         if (j==jend && elem.flag==HC_COIL) {
           // make cap at the end point.
-          tgBuilder().color(pCol);
-          pTS->makeCap(&tgBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
+          tubeGpuBuilder().color(pCol);
+          pTS->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
         }
         
         /*
@@ -1629,10 +1629,10 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         const double t = tbase + dpar;
         MB_DPRINTLN("%s i=%d, t=%f", tp.c_str(), i, t);
         
-        if (tgBuilder().wantColor())
+        if (tubeGpuBuilder().wantColor())
           pCol = calcCoilColor(t, pC);
-        if (tgBuilder().wantName())
-          tgBuilder().loadName(calcCoilHitName(t, pC));
+        if (tubeGpuBuilder().wantName())
+          tubeGpuBuilder().loadName(calcCoilHitName(t, pC));
         pC->m_spl.interpolate(t, &f1, &vpt);
         const Vector4D ev = vpt.normalize();
         
@@ -1652,8 +1652,8 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
           // make partition polygons
           pTS->endTess();
           
-          tgBuilder().color(pCol);
-          pTS->makeDisconJct(&tgBuilder(), f1, ev, e11, e12, prev_escl, escl);
+          tubeGpuBuilder().color(pCol);
+          pTS->makeDisconJct(&tubeGpuBuilder(), f1, ev, e11, e12, prev_escl, escl);
           //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
           pTS->startTess();
         }
@@ -1661,18 +1661,18 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
 
         if (i==0 && elem.flag==HC_HELIX_TAIL) {
           // make the tube cap.
-          tgBuilder().color(pCol);
-          pTS->makeCap(&tgBuilder(), true, getStartCapType(), f1, vpt, xe11, xe12);
+          tubeGpuBuilder().color(pCol);
+          pTS->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, xe11, xe12);
         }
         
-        pTS->doTess(&tgBuilder(), f1, pCol, isSmoothColor(),
+        pTS->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(),
                     e11, e12,
                     escl, vpt);
         
         if (i==ndelta-1 && elem.flag==HC_HELIX_HEAD) {
           // make cap at the end point.
-          tgBuilder().color(pCol);
-          pTS->makeCap(&tgBuilder(), false, getEndCapType(), f1, vpt, xe11, xe12);
+          tubeGpuBuilder().color(pCol);
+          pTS->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, xe11, xe12);
         }
 
         ////////////////
@@ -1717,10 +1717,10 @@ void Ribbon2Renderer::propChanged(qlib::LPropEvent &ev)
       ev.getParentName().startsWith("coloring.")) {
     // Only the colors change: the invalidateDisplayCache() calls turn into
     // an in-place color update of the GPU mesh
-    tgBeginColorOnly();
+    tubeGpuBeginColorOnly();
     invalidateDisplayCache();
     super_t::propChanged(ev);
-    tgEndColorOnly();
+    tubeGpuEndColorOnly();
     return;
   }
   else if (ev.getName().startsWith("helix") ||
@@ -1742,7 +1742,7 @@ void Ribbon2Renderer::propChanged(qlib::LPropEvent &ev)
 
 void Ribbon2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (tgOnAtomsMoved(ev)) {
+  if (tubeGpuOnAtomsMoved(ev)) {
     // Positions changed but topology/colors did not: the vertices are
     // rewritten in place on the next display() (endSegment() rebuilds the
     // splines on every traversal)
@@ -1775,25 +1775,25 @@ void Ribbon2Renderer::objectChanged(qsys::ObjectEvent &ev)
 
 void Ribbon2Renderer::display(DisplayContext *pdc)
 {
-  if (!tgDisplay(pdc))
+  if (!tubeGpuDisplay(pdc))
     super_t::display(pdc);
 }
 
 void Ribbon2Renderer::displayPick(DisplayContext *pdc)
 {
-  if (!tgDisplayPick(pdc))
+  if (!tubeGpuDisplayPick(pdc))
     super_t::displayPick(pdc);
 }
 
 void Ribbon2Renderer::invalidateDisplayCache()
 {
-  tgOnInvalidateDisplay();
+  tubeGpuOnInvalidateDisplay();
   super_t::invalidateDisplayCache();
 }
 
 void Ribbon2Renderer::unloading()
 {
-  tgUnload();
+  tubeGpuUnload();
   super_t::unloading();
 }
 

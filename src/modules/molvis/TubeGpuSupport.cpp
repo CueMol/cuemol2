@@ -33,9 +33,9 @@ TubeGpuSupport::~TubeGpuSupport()
 {
 }
 
-bool TubeGpuSupport::tgPrepare(DisplayContext *pdc)
+bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
 {
-    if (!tgIsEnabled() || pdc->isFile()) return false;
+    if (!tubeGpuIsEnabled() || pdc->isFile()) return false;
 
     if (!m_bCheckShader) {
         m_bUseShader = m_prim.init(pdc);
@@ -56,7 +56,7 @@ bool TubeGpuSupport::tgPrepare(DisplayContext *pdc)
 
     if (m_nDirty != 0) {
         const int nFlags = m_nDirty;
-        if (tgUpdateMesh()) {
+        if (tubeGpuUpdateMesh()) {
             if (m_bHasMesh) m_mb.updateGpuPrim(m_prim, nFlags);
         }
         else {
@@ -67,10 +67,10 @@ bool TubeGpuSupport::tgPrepare(DisplayContext *pdc)
     return true;
 }
 
-void TubeGpuSupport::tgBuildMesh()
+void TubeGpuSupport::tubeGpuBuildMesh()
 {
-    m_mb.startBuild(tgSceneID());
-    tgRenderMesh();
+    m_mb.startBuild(tubeGpuSceneID());
+    tubeGpuRenderMesh();
     m_mb.finish();
 
     m_nDirty = 0;
@@ -78,19 +78,19 @@ void TubeGpuSupport::tgBuildMesh()
     m_bHasMesh = m_mb.getFaceSize() > 0;
 }
 
-bool TubeGpuSupport::tgUpdateMesh()
+bool TubeGpuSupport::tubeGpuUpdateMesh()
 {
     const int nFlags = m_nDirty;
     m_nDirty = 0;
     if (!m_bTopoValid || nFlags == 0) return m_bTopoValid;
-    m_mb.startUpdate(tgSceneID(), nFlags);
-    tgRenderMesh();
+    m_mb.startUpdate(tubeGpuSceneID(), nFlags);
+    tubeGpuRenderMesh();
     return m_mb.finish();
 }
 
 void TubeGpuSupport::build(DisplayContext *pdc, int nPolyMode)
 {
-    tgBuildMesh();
+    tubeGpuBuildMesh();
     m_nPolyMode = nPolyMode;
     if (!m_bHasMesh) {
         m_prim.invalidate();
@@ -100,44 +100,44 @@ void TubeGpuSupport::build(DisplayContext *pdc, int nPolyMode)
     m_mb.toGpuPrim(pdc, m_prim);
 }
 
-void TubeGpuSupport::tgDraw(DisplayContext *pdc)
+void TubeGpuSupport::tubeGpuDraw(DisplayContext *pdc)
 {
     if (!m_bHasMesh) return;
     m_prim.setEdgeLineType(pdc->getEdgeLineType());
     m_prim.draw(pdc);
 }
 
-bool TubeGpuSupport::tgDisplay(DisplayContext *pdc)
+bool TubeGpuSupport::tubeGpuDisplay(DisplayContext *pdc)
 {
-    if (!tgPrepare(pdc)) return false;
+    if (!tubeGpuPrepare(pdc)) return false;
     if (!m_bHasMesh) return true;
-    tgPreRender(pdc);
-    tgDraw(pdc);
-    tgPostRender(pdc);
+    tubeGpuPreRender(pdc);
+    tubeGpuDraw(pdc);
+    tubeGpuPostRender(pdc);
     return true;
 }
 
-bool TubeGpuSupport::tgDisplayPick(DisplayContext *pdc)
+bool TubeGpuSupport::tubeGpuDisplayPick(DisplayContext *pdc)
 {
-    if (!tgPrepare(pdc)) return false;
-    tgDraw(pdc);
+    if (!tubeGpuPrepare(pdc)) return false;
+    tubeGpuDraw(pdc);
     return true;
 }
 
-void TubeGpuSupport::tgOnInvalidateDisplay()
+void TubeGpuSupport::tubeGpuOnInvalidateDisplay()
 {
-    if (!m_bColorOnly || !tgMarkDirty(TubeMeshBuilder::UPD_COLOR)) tgInvalidate();
+    if (!m_bColorOnly || !tubeGpuMarkDirty(TubeMeshBuilder::UPD_COLOR)) tubeGpuInvalidate();
 }
 
-bool TubeGpuSupport::tgOnAtomsMoved(qsys::ObjectEvent &ev)
+bool TubeGpuSupport::tubeGpuOnAtomsMoved(qsys::ObjectEvent &ev)
 {
     if (ev.getType() != qsys::ObjectEvent::OBE_CHANGED ||
         !ev.getDescr().equals("atomsMoved"))
         return false;
-    return tgMarkDirty(TubeMeshBuilder::UPD_GEOM);
+    return tubeGpuMarkDirty(TubeMeshBuilder::UPD_GEOM);
 }
 
-void TubeGpuSupport::tgInvalidate()
+void TubeGpuSupport::tubeGpuInvalidate()
 {
     m_bTopoValid = false;
     m_bHasMesh = false;
@@ -146,14 +146,14 @@ void TubeGpuSupport::tgInvalidate()
     m_prim.invalidate();
 }
 
-bool TubeGpuSupport::tgMarkDirty(int nFlags)
+bool TubeGpuSupport::tubeGpuMarkDirty(int nFlags)
 {
     if (!m_bTopoValid) return false;
     m_nDirty |= nFlags;
     return true;
 }
 
-void TubeGpuSupport::tgUnload()
+void TubeGpuSupport::tubeGpuUnload()
 {
-    tgInvalidate();
+    tubeGpuInvalidate();
 }

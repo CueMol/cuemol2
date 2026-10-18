@@ -21,23 +21,23 @@ namespace molvis {
 /// Draws a tube-like renderer from a TrigGpuPrim it fills directly, instead
 /// of compiling a display list.
 ///
-/// The host renderer draws everything through tgBuilder(). tgPrepare() runs
-/// the host's traversal (tgRenderMesh()) once in build mode to record the mesh
+/// The host renderer draws everything through tubeGpuBuilder(). tubeGpuPrepare() runs
+/// the host's traversal (tubeGpuRenderMesh()) once in build mode to record the mesh
 /// and allocate the primitive. After that, a change of the atom positions or
 /// of the colors only re-runs the traversal in update mode and rewrites the
 /// vertex data in place (no re-allocation, the index buffer is kept), as long
 /// as the topology comes out the same; otherwise the mesh is rebuilt.
 ///
 /// A host renderer inherits this next to its renderer base and
-///  - calls tgBeginRend(pdl) from beginRend() (direct mode for a display
+///  - calls tubeGpuBeginRend(pdl) from beginRend() (direct mode for a display
 ///    list or a file context),
-///  - implements tgRenderMesh() as render(nullptr) and tgPreRender() /
-///    tgPostRender() as its preRender() / postRender(),
-///  - calls tgDisplay() / tgDisplayPick() from display() / displayPick(),
+///  - implements tubeGpuRenderMesh() as render(nullptr) and tubeGpuPreRender() /
+///    tubeGpuPostRender() as its preRender() / postRender(),
+///  - calls tubeGpuDisplay() / tubeGpuDisplayPick() from display() / displayPick(),
 ///    falling back to the display-list path when they return false,
-///  - calls tgOnInvalidateDisplay() from invalidateDisplayCache(), wrapping
-///    color-only changes in tgBeginColorOnly() / tgEndColorOnly(),
-///  - calls tgOnAtomsMoved() from objectChanged() and skips the usual
+///  - calls tubeGpuOnInvalidateDisplay() from invalidateDisplayCache(), wrapping
+///    color-only changes in tubeGpuBeginColorOnly() / tubeGpuEndColorOnly(),
+///  - calls tubeGpuOnAtomsMoved() from objectChanged() and skips the usual
 ///    invalidation when it returns true.
 ///
 class MOLVIS_API TubeGpuSupport
@@ -53,86 +53,86 @@ public:
 
     /// Record the mesh by running the host's traversal in build mode (no GPU
     /// primitive is touched).
-    void tgBuildMesh();
+    void tubeGpuBuildMesh();
 
-    /// Apply the pending in-place update (see tgMarkDirty) to the recorded
+    /// Apply the pending in-place update (see tubeGpuMarkDirty) to the recorded
     /// mesh. Returns false if the traversal changed the topology.
-    bool tgUpdateMesh();
+    bool tubeGpuUpdateMesh();
 
     /// The recorded mesh.
-    const TubeMeshBuilder &tgMesh() const { return m_mb; }
+    const TubeMeshBuilder &tubeGpuMesh() const { return m_mb; }
 
 protected:
     /// The drawing sink of the current traversal.
-    TubeMeshBuilder &tgBuilder() { return m_mb; }
+    TubeMeshBuilder &tubeGpuBuilder() { return m_mb; }
 
     /// Called at the start of the host's traversal: a non-null pdl (display
     /// list or file context) selects direct mode; with a null pdl the mode set
-    /// by tgPrepare() is kept.
-    void tgBeginRend(DisplayContext *pdl)
+    /// by tubeGpuPrepare() is kept.
+    void tubeGpuBeginRend(DisplayContext *pdl)
     {
         if (pdl != nullptr) m_mb.startDirect(pdl);
     }
 
-    /// Run the host's traversal into tgBuilder() (i.e. render(nullptr)).
-    virtual void tgRenderMesh() = 0;
+    /// Run the host's traversal into tubeGpuBuilder() (i.e. render(nullptr)).
+    virtual void tubeGpuRenderMesh() = 0;
 
     /// Scene ID used to resolve the colors.
-    virtual qlib::uid_t tgSceneID() const = 0;
+    virtual qlib::uid_t tubeGpuSceneID() const = 0;
 
     /// Whether the host draws through the GPU mesh at all.
-    virtual bool tgIsEnabled() const { return true; }
+    virtual bool tubeGpuIsEnabled() const { return true; }
 
     /// The host's preRender() / postRender().
-    virtual void tgPreRender(DisplayContext *pdc) = 0;
-    virtual void tgPostRender(DisplayContext *pdc) = 0;
+    virtual void tubeGpuPreRender(DisplayContext *pdc) = 0;
+    virtual void tubeGpuPostRender(DisplayContext *pdc) = 0;
 
     /// display() of the host. Returns false if the host has to use its
     /// display-list path instead.
-    bool tgDisplay(DisplayContext *pdc);
+    bool tubeGpuDisplay(DisplayContext *pdc);
 
     /// displayPick() of the host (TrigGpuPrim switches to its pick program).
     /// Returns false if the host has to use its display-list path instead.
-    bool tgDisplayPick(DisplayContext *pdc);
+    bool tubeGpuDisplayPick(DisplayContext *pdc);
 
     /// To be called from the host's invalidateDisplayCache(): a color update
     /// inside a color-only scope, a full invalidation otherwise.
-    void tgOnInvalidateDisplay();
+    void tubeGpuOnInvalidateDisplay();
 
-    /// Mark the invalidations up to tgEndColorOnly() as color-only.
-    void tgBeginColorOnly() { m_bColorOnly = true; }
-    void tgEndColorOnly() { m_bColorOnly = false; }
+    /// Mark the invalidations up to tubeGpuEndColorOnly() as color-only.
+    void tubeGpuBeginColorOnly() { m_bColorOnly = true; }
+    void tubeGpuEndColorOnly() { m_bColorOnly = false; }
 
     /// To be called from the host's objectChanged(): for an "atomsMoved"
     /// event while a mesh is in use, requests the in-place geometry update
     /// and returns true. The host then drops its position-derived caches
     /// (spline coeffs), sets the scene update flag and invalidates its
     /// hittest cache instead of invalidating the display cache.
-    bool tgOnAtomsMoved(qsys::ObjectEvent &ev);
+    bool tubeGpuOnAtomsMoved(qsys::ObjectEvent &ev);
 
     /// Build or update the GPU mesh for pdc. Returns false if the host has to
     /// use its display-list path instead (file context, no shader).
-    bool tgPrepare(DisplayContext *pdc);
+    bool tubeGpuPrepare(DisplayContext *pdc);
 
-    /// True if there is something to draw after tgPrepare().
-    bool tgHasMesh() const { return m_bHasMesh; }
+    /// True if there is something to draw after tubeGpuPrepare().
+    bool tubeGpuHasMesh() const { return m_bHasMesh; }
 
     /// Draw the prepared mesh (the pick pass included).
-    void tgDraw(DisplayContext *pdc);
+    void tubeGpuDraw(DisplayContext *pdc);
 
-    /// Drop the mesh; the next tgPrepare() rebuilds it.
-    void tgInvalidate();
+    /// Drop the mesh; the next tubeGpuPrepare() rebuilds it.
+    void tubeGpuInvalidate();
 
     /// Request an in-place update (TubeMeshBuilder::UPD_GEOM / UPD_COLOR) of
     /// the current mesh. Returns false if there is no mesh to update, in which
     /// case the caller has to invalidate as usual.
-    bool tgMarkDirty(int nFlags);
+    bool tubeGpuMarkDirty(int nFlags);
 
     /// True while a GPU mesh is built and in use.
-    bool tgIsActive() const { return m_bTopoValid; }
+    bool tubeGpuIsActive() const { return m_bTopoValid; }
 
     /// Release the GPU buffers (renderer unloading).
-    void tgUnload();
+    void tubeGpuUnload();
 
 private:
     TubeMeshBuilder m_mb;

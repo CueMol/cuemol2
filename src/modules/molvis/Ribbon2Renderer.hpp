@@ -261,10 +261,10 @@ using namespace molstr;
     void unloading() override;
 
   protected:
-    void tgRenderMesh() override { render(nullptr); }
-    qlib::uid_t tgSceneID() const override { return getSceneID(); }
-    void tgPreRender(DisplayContext *pdc) override { preRender(pdc); }
-    void tgPostRender(DisplayContext *pdc) override { postRender(pdc); }
+    void tubeGpuRenderMesh() override { render(nullptr); }
+    qlib::uid_t tubeGpuSceneID() const override { return getSceneID(); }
+    void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
+    void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
 
   public:
     //////////////////////////////////////////////////////

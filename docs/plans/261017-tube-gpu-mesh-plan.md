@@ -13,7 +13,7 @@ in-place 書き換えで反映するようになった。仕様は `../architect
 
 ## 2. NARenderer
 
-base pair・糖・埋め込みの ball & stick を同じ `pdl` に描くので、`tgIsEnabled()` を false にして
+base pair・糖・埋め込みの ball & stick を同じ `pdl` に描くので、`tubeGpuIsEnabled()` を false にして
 display list 経路のまま残している。GPU 化するならそれらを別の prim に分ける必要がある。
 
 ## 3. 将来案

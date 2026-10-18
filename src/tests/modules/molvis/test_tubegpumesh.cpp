@@ -110,8 +110,8 @@ TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
     // (the default style that sets the pivot is not loaded in the tests)
     dynamic_cast<molstr::MainChainRenderer *>(pRend.get())->setPivAtomName("CA");
 
-    pTg->tgBuildMesh();
-    const MeshSnapshot built(pTg->tgMesh());
+    pTg->tubeGpuBuildMesh();
+    const MeshSnapshot built(pTg->tubeGpuMesh());
     ASSERT_GT(built.pos.size(), 0u);
 
     // Move every atom a little (different directions per atom)
@@ -123,8 +123,8 @@ TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
     m_mol->fireAtomsMoved();
 
     // The event requested an in-place update that keeps the topology
-    ASSERT_TRUE(pTg->tgUpdateMesh());
-    const MeshSnapshot updated(pTg->tgMesh());
+    ASSERT_TRUE(pTg->tubeGpuUpdateMesh());
+    const MeshSnapshot updated(pTg->tubeGpuMesh());
     EXPECT_TRUE(samePrims(built, updated));
     EXPECT_EQ(built.name, updated.name);
     EXPECT_EQ(built.col, updated.col);
@@ -132,8 +132,8 @@ TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
 
     // ... and gives the same mesh as a fresh build from the moved atoms
     // (no stale position-derived cache such as the spline coeffs)
-    pTg->tgBuildMesh();
-    const MeshSnapshot rebuilt(pTg->tgMesh());
+    pTg->tubeGpuBuildMesh();
+    const MeshSnapshot rebuilt(pTg->tubeGpuMesh());
     EXPECT_TRUE(samePrims(rebuilt, updated));
     EXPECT_EQ(rebuilt.pos, updated.pos);
     EXPECT_EQ(rebuilt.norm, updated.norm);

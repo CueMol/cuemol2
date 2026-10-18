@@ -45,27 +45,27 @@ Update が成り立つ前提。頂点数と prim の構成を決めるのは:
 
 ## TubeGpuSupport と host renderer の契約
 
-- `beginRend(pdl)` で `tgBeginRend(pdl)` を呼ぶ: pdl が非 null (display list / ファイル) なら Direct モード、
-  null なら `tgPrepare()` が設定したモードのまま
-- `tgRenderMesh()` は `render(nullptr)`。`SplineRenderer::beginRend` / `endRend` は null pdl を許す
-- `tgPreRender()` / `tgPostRender()` は host の `preRender()` / `postRender()`
-- `display()` / `displayPick()` は `tgDisplay()` / `tgDisplayPick()` を呼び、false (ファイル context、
-  shader なし、`tgIsEnabled()` false) なら `super_t` の display list 経路に落とす
+- `beginRend(pdl)` で `tubeGpuBeginRend(pdl)` を呼ぶ: pdl が非 null (display list / ファイル) なら Direct モード、
+  null なら `tubeGpuPrepare()` が設定したモードのまま
+- `tubeGpuRenderMesh()` は `render(nullptr)`。`SplineRenderer::beginRend` / `endRend` は null pdl を許す
+- `tubeGpuPreRender()` / `tubeGpuPostRender()` は host の `preRender()` / `postRender()`
+- `display()` / `displayPick()` は `tubeGpuDisplay()` / `tubeGpuDisplayPick()` を呼び、false (ファイル context、
+  shader なし、`tubeGpuIsEnabled()` false) なら `super_t` の display list 経路に落とす
 - pick pass は同じ prim を描く。`TrigGpuPrim` が `isPickDraw()` で pick program に切り替える。
   hit name は「strip 全体に current ring の名前」(`gpu-id-picking.md` §3.3) のまま
-- `invalidateDisplayCache()` は `tgOnInvalidateDisplay()` を呼んでから super に流す。
+- `invalidateDisplayCache()` は `tubeGpuOnInvalidateDisplay()` を呼んでから super に流す。
   setter (cap type、seg-end fade、line width など) も `super_t::invalidateDisplayCache()` ではなく
   仮想呼び出しにしてある (GPU mesh を確実に捨てるため)
-- `tgPrepare()` は polygon mode (fill / wire) が変わったら作り直す (index buffer の形が違うため)
+- `tubeGpuPrepare()` は polygon mode (fill / wire) が変わったら作り直す (index buffer の形が違うため)
 
 ### invalidation
 
 | イベント | 処理 |
 |---|---|
-| `OBE_CHANGED` + `"atomsMoved"` で mesh が有効 (`tgOnAtomsMoved()` が true) | `tgMarkDirty(UPD_GEOM)`。tube / ribbon は `SplineRenderer::updateMovedAtoms()` (spline 係数だけ破棄、`Scene::setUpdateFlag()`、`invalidateHittestCache()`)。cartoon は `m_diffvecs` を捨てる (spline は `endSegment` が毎回作り直す)。どちらも super の `objectChanged` には流さない (`TraceStickRenderer` と同じ形) |
-| `coloring` / `coloring.*` の prop 変更 | `tgBeginColorOnly()` / `tgEndColorOnly()` で囲んで super の `propChanged` を回す。その間の `invalidateDisplayCache()` は `tgMarkDirty(UPD_COLOR)` になる |
-| それ以外の `invalidateDisplayCache()` | `tgInvalidate()` (次の display でフル再構築)。section や cap など形に効く変更はすべてここを通る |
-| `unloading()` | `tgUnload()` |
+| `OBE_CHANGED` + `"atomsMoved"` で mesh が有効 (`tubeGpuOnAtomsMoved()` が true) | `tubeGpuMarkDirty(UPD_GEOM)`。tube / ribbon は `SplineRenderer::updateMovedAtoms()` (spline 係数だけ破棄、`Scene::setUpdateFlag()`、`invalidateHittestCache()`)。cartoon は `m_diffvecs` を捨てる (spline は `endSegment` が毎回作り直す)。どちらも super の `objectChanged` には流さない (`TraceStickRenderer` と同じ形) |
+| `coloring` / `coloring.*` の prop 変更 | `tubeGpuBeginColorOnly()` / `tubeGpuEndColorOnly()` で囲んで super の `propChanged` を回す。その間の `invalidateDisplayCache()` は `tubeGpuMarkDirty(UPD_COLOR)` になる |
+| それ以外の `invalidateDisplayCache()` | `tubeGpuInvalidate()` (次の display でフル再構築)。section や cap など形に効く変更はすべてここを通る |
+| `unloading()` | `tubeGpuUnload()` |
 
 ## renderer ごとの注意
 
@@ -82,9 +82,9 @@ Update が成り立つ前提。頂点数と prim の構成を決めるのは:
   結果が動かした原子からのフル再構築と一致する (古い spline 係数が残ると落ちる)
 - `TubeMeshBuilder` の Update が指定のデータだけを上書きし、トポロジの変化を検出する
 
-テストからは `tgBuildMesh()` / `tgUpdateMesh()` / `tgMesh()` (DisplayContext なしで mesh を記録・更新する公開 API) を使う。
+テストからは `tubeGpuBuildMesh()` / `tubeGpuUpdateMesh()` / `tubeGpuMesh()` (DisplayContext なしで mesh を記録・更新する公開 API) を使う。
 
 ## NARenderer
 
 `TubeRenderer` の派生だが、base pair・糖・埋め込みの ball & stick を同じ pdl に描くので
-`tgIsEnabled()` を false にして display list 経路のまま。
+`tubeGpuIsEnabled()` を false にして display list 経路のまま。
