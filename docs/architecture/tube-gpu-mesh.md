@@ -47,6 +47,17 @@ Update が成り立つ前提。頂点数と prim の構成を決めるのは:
 
 どれも座標では変わらない。万一変わった場合は `finish()` の不一致で検出され、フル再構築になる。
 
+## traversal の軽量化 (MainChainRenderer)
+
+Update traversal は座標が変わるたびに走るので、トポロジに依存する検索を毎回しないようにしている:
+
+- `MainChainRenderer::getPivotAtom()` は残基ごとの結果を `m_pivCache` に持つ (初回だけ名前で検索する。
+  検索は `MolResidue::getParent()` で SceneManager から分子を引くので重い)。pivot 名の変更
+  (`setPivAtomName`)、`atomsMoved` 以外の `OBE_CHANGED`、分子への付け外しで捨てる。
+  spline 係数の作り直し (`SplineCoeffSet` -> `getPivotAtom`) と形状の生成の両方がこれを通る
+- `MainChainRenderer::isNewSegment()` の chain 判定は、`getParentChain()` (分子と chain の検索) ではなく
+  残基の chain 名の比較 (同じ分子の残基どうしなので名前で同一 chain と分かる)
+
 ## TubeGpuSupport と host renderer の契約
 
 - `beginRend(pdl)` で `tubeGpuBeginRend(pdl)` を呼ぶ: pdl が非 null (display list / ファイル) なら Direct モード、

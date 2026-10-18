@@ -143,6 +143,28 @@ TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
     EXPECT_EQ(rebuilt.name, updated.name);
 }
 
+// The pivot atom of each residue is cached: a pivot name change and a
+// topology change drop the cache, an atom move does not need to.
+TEST_F(TubeGpuMeshTest, PivotCacheFollowsNameAndTopology)
+{
+    qsys::RendererPtr pRend = m_mol->createRenderer("tube");
+    auto *pMC = dynamic_cast<molstr::MainChainRenderer *>(pRend.get());
+    ASSERT_NE(pMC, nullptr);
+    molstr::MolResiduePtr pRes = m_mol->getResidue("A", molstr::ResidIndex(5));
+    ASSERT_FALSE(pRes.isnull());
+
+    pMC->setPivAtomName("CA");
+    EXPECT_TRUE(pMC->getPivotAtom(pRes)->getName().equals("CA"));
+    pMC->setPivAtomName("CB");
+    molstr::MolAtomPtr pCB = pMC->getPivotAtom(pRes);
+    ASSERT_TRUE(pCB->getName().equals("CB"));
+
+    m_mol->removeAtom(pCB->getID());
+    m_mol->fireTopologyChanged();
+    molstr::MolAtomPtr pPiv = pMC->getPivotAtom(pRes);
+    EXPECT_TRUE(pPiv.isnull() || !pPiv->getName().equals("CB"));
+}
+
 INSTANTIATE_TEST_SUITE_P(TubeLike, TubeGpuMeshTest,
                          ::testing::Values("tube", "ribbon", "cartoon"));
 
