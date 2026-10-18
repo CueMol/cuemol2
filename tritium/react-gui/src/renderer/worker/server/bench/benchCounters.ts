@@ -42,6 +42,8 @@ export interface GlCallCounts {
     uniform: number;
     draw: number;
     drawInstanced: number;
+    /** Triangles the draw calls rasterize (instances included); see glProxy's trianglesOf. */
+    drawTris: number;
     readPixels: number;
     total: number;
 }
@@ -79,6 +81,7 @@ function zeroCounts(): GlCallCounts {
         uniform: 0,
         draw: 0,
         drawInstanced: 0,
+        drawTris: 0,
         readPixels: 0,
         total: 0,
     };

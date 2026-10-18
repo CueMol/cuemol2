@@ -105,6 +105,23 @@ export function benchGpuTimerAvailable(): boolean {
 }
 
 /**
+ * Triangles a draw call rasterizes: `count` vertices (or indices) in `mode`,
+ * times the instance count. Lines and points count 0. The Mol* comparison
+ * harness counts the same way (`molstar-compare/harness/glcount.js` in
+ * cuemol3_paper_data), so the two tools' geometry can be matched.
+ */
+function trianglesOf(mode: unknown, count: unknown, instances: unknown): number {
+    const n = Number(count) || 0;
+    const k = Number(instances) || 0;
+    switch (Number(mode)) {
+        case 0x0004: return Math.floor(n / 3) * k;           // TRIANGLES
+        case 0x0005:                                          // TRIANGLE_STRIP
+        case 0x0006: return Math.max(0, n - 2) * k;          // TRIANGLE_FAN
+        default: return 0;
+    }
+}
+
+/**
  * Wrap a WebGL2 context so that the calls a frame makes are counted.
  *
  * Method lookups are memoised: without that, the Proxy would allocate a bound
@@ -155,9 +172,21 @@ export function installGlCounters(gl: WebGL2RenderingContext): WebGL2RenderingCo
                         break;
                     case 'getUniformLocation': c.getUniformLocation++; break;
                     case 'drawArrays':
-                    case 'drawElements': c.draw++; break;
+                        c.draw++;
+                        c.drawTris += trianglesOf(args[0], args[2], 1);
+                        break;
+                    case 'drawElements':
+                        c.draw++;
+                        c.drawTris += trianglesOf(args[0], args[1], 1);
+                        break;
                     case 'drawArraysInstanced':
-                    case 'drawElementsInstanced': c.drawInstanced++; break;
+                        c.drawInstanced++;
+                        c.drawTris += trianglesOf(args[0], args[2], args[3]);
+                        break;
+                    case 'drawElementsInstanced':
+                        c.drawInstanced++;
+                        c.drawTris += trianglesOf(args[0], args[1], args[4]);
+                        break;
                     case 'readPixels': c.readPixels++; break;
                     default:
                         if (name.startsWith('uniform')) c.uniform++;
