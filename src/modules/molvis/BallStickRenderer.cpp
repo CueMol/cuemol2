@@ -8,6 +8,7 @@
 #include "molvis.hpp"
 
 #include "BallStickRenderer.hpp"
+#include "TubeMeshBuilder.hpp"
 
 #include <vector>
 
@@ -199,7 +200,10 @@ void BallStickRenderer::beginRend(DisplayContext *pdl)
 void BallStickRenderer::endRend(DisplayContext *pdl)
 {
   if ( m_fRing && !qlib::isNear4(m_tickness, 0.0) ) {
-    drawRings(pdl);
+    TubeMeshBuilder mb;
+    mb.startDirect(pdl);
+    drawRings(&mb);
+    mb.finish();
     if (m_atoms.size()>0)
       m_atoms.clear(); //erase(m_atoms.begin(), m_atoms.end());
   }
@@ -329,7 +333,14 @@ void BallStickRenderer::drawVBondType1(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
 ////////////////////////////////////////////////
 // Ring plate drawing
 
-void BallStickRenderer::drawRings(DisplayContext *pdl)
+void BallStickRenderer::drawCollectedRings(TubeMeshBuilder *pmb)
+{
+  if ( m_fRing && !qlib::isNear4(m_tickness, 0.0) )
+    drawRings(pmb);
+  m_atoms.clear();
+}
+
+void BallStickRenderer::drawRings(TubeMeshBuilder *pdl)
 {
   int i, j;
   MolCoordPtr pMol = getClientMol();
@@ -404,7 +415,7 @@ void BallStickRenderer::drawRings(DisplayContext *pdl)
 
 }
 
-void BallStickRenderer::drawRingImpl(const std::list<int> atoms, DisplayContext *pdl)
+void BallStickRenderer::drawRingImpl(const std::list<int> atoms, TubeMeshBuilder *pdl)
 {
   MolCoordPtr pMol = getClientMol();
 

@@ -74,6 +74,15 @@ public:
     void setData(int idx, const qlib::Vector4D &pos1, const qlib::Vector4D &pos2,
                  float rad, quint32 devcode);
 
+    /**
+     * Mark the vertex data as updated so that the GPU buffer is re-uploaded
+     * on the next draw call (in-place update after setData()).
+     */
+    void setUpdated(bool b)
+    {
+        if (m_pDrawElem != nullptr) m_pDrawElem->setUpdated(b);
+    }
+
     // ─── Draw / cleanup ───────────────────────────────────────────────────────
 
     /** Upload draw parameters and issue the instanced draw call. */
