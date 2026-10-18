@@ -30,6 +30,11 @@ namespace gfx {
       /// True for integer attributes (glVertexAttribIPointer: no
       /// normalization, read as int/uint in the shader).
       bool bInteger;
+      /// Byte distance between consecutive values; 0 means the element
+      /// size (interleaved layout). A layout that keeps each attribute in a
+      /// block of its own (see TrigGpuPrim::LAYOUT_PACKED) sets it per
+      /// attribute.
+      int nStride;
     };
 
     std::vector<AttrInfo> m_attrs;
@@ -74,6 +79,16 @@ namespace gfx {
         m_attrs[ind].nStartPos = pos;
         m_attrs[ind].nDivisor = 0;
         m_attrs[ind].bInteger = false;
+        m_attrs[ind].nStride = 0;
+    }
+
+    inline void setAttrStride(int ind, int stride) {
+        MB_ASSERT(ind>=0 && ind<m_attrs.size());
+        m_attrs[ind].nStride = stride;
+    }
+    /// Byte stride of attribute ind (the element size unless set).
+    inline int getAttrStride(int ind) const {
+        return (m_attrs[ind].nStride > 0) ? m_attrs[ind].nStride : int(getElemSize());
     }
 
     inline void setAttrDivisor(int ind, int div) {

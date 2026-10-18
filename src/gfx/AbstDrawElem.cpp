@@ -13,7 +13,9 @@ AbstDrawElem::AbstDrawElem()
     : m_nSize(0),
       m_pVBORep(NULL),
       m_nDrawMode(DRAW_POINTS),
-      m_bUpdate(false)
+      m_bUpdate(false),
+      m_nUpdOffset(0),
+      m_nUpdLength(0)
 {
 }
 

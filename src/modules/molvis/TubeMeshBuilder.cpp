@@ -25,7 +25,7 @@ TubeMeshBuilder::TubeMeshBuilder()
       m_nPrimFirst(0),
       m_nVerts(0),
       m_bReleased(false),
-      m_pDirect(nullptr),
+      m_dst{nullptr, nullptr, nullptr, nullptr},
       m_nVertCur(0),
       m_nPrimCur(0),
       m_nPrimEnd(0),
@@ -37,6 +37,7 @@ TubeMeshBuilder::TubeMeshBuilder()
     m_curNorm[0] = 1.0f;
     m_curNorm[1] = 0.0f;
     m_curNorm[2] = 0.0f;
+    m_curNormPacked = gfx::TrigGpuPrim::packNormal(1.0f, 0.0f, 0.0f);
 }
 
 TubeMeshBuilder::~TubeMeshBuilder()
@@ -67,10 +68,10 @@ void TubeMeshBuilder::startBuild(qlib::uid_t nSceneID)
 }
 
 void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags,
-                                  gfx::TrigGpuPrim::TrigVertAttr *pDirect)
+                                  const gfx::TrigGpuPrim::PackedArrays &dst)
 {
-    MB_ASSERT(pDirect != nullptr);
-    m_pDirect = pDirect;
+    MB_ASSERT(dst.pos != nullptr);
+    m_dst = dst;
     m_nMode = MODE_UPDATE;
     m_nUpdFlags = nFlags;
     m_pdl = nullptr;
@@ -85,16 +86,16 @@ void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags,
 }
 
 void TubeMeshBuilder::startChunkUpdate(qlib::uid_t nSceneID, int nFlags,
-                                       gfx::TrigGpuPrim::TrigVertAttr *pDirect,
+                                       const gfx::TrigGpuPrim::PackedArrays &dst,
                                        const TubeMeshBuilder &parent, int ichunk)
 {
-    MB_ASSERT(pDirect != nullptr);
+    MB_ASSERT(dst.pos != nullptr);
     const Chunk &ck = parent.m_chunks[ichunk];
     m_nMode = MODE_UPDATE;
     m_nUpdFlags = nFlags;
     m_pdl = nullptr;
     m_nSceneID = nSceneID;
-    m_pDirect = pDirect;
+    m_dst = dst;
     m_bReleased = true;  // no vertex data of its own
     m_curCol = parent.m_curCol;
     m_nPrimType = -1;
@@ -123,7 +124,7 @@ bool TubeMeshBuilder::finish()
     }
     m_nMode = MODE_NONE;
     m_pdl = nullptr;
-    m_pDirect = nullptr;
+    m_dst = gfx::TrigGpuPrim::PackedArrays{nullptr, nullptr, nullptr, nullptr};
     return bOK;
 }
 
@@ -294,6 +295,8 @@ void TubeMeshBuilder::toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) con
     MB_ASSERT(!m_bReleased);
     const int nVerts = getVertexSize();
     const int nFaces = getFaceSize();
+    // The update traversal writes into the attribute blocks of this layout
+    prim.setLayout(gfx::TrigGpuPrim::LAYOUT_PACKED);
     prim.alloc(pdc, nVerts, nFaces);
 
     for (int i = 0; i < nVerts; ++i) {

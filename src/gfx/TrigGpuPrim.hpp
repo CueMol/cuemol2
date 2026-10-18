@@ -23,7 +23,7 @@ class GFX_API TrigGpuPrim : public GpuPrim
 public:
     // ─── Data structures ─────────────────────────────────────────────────────
 
-    /** Per-vertex attribute layout. */
+    /** Per-vertex attribute layout (LAYOUT_INTERLEAVED). */
     struct TrigVertAttr
     {
         qfloat32 x, y, z;      ///< Position
@@ -31,6 +31,55 @@ public:
         qbyte r, g, b, a;      ///< RGBA colour
         quint32 hitName;       ///< Encoded hit name (pick pass only)
     };
+
+    /**
+     * Vertex storage layouts (see setLayout()).
+     *
+     * LAYOUT_INTERLEAVED: one TrigVertAttr (32 bytes) per vertex.
+     *
+     * LAYOUT_PACKED: one block per attribute, in this order: positions
+     * (float x3, 12 bytes per vertex), normals (one GL_INT_2_10_10_10_REV
+     * word, 4 bytes), colours (RGBA bytes, 4 bytes) and hit names (4 bytes).
+     * Positions and normals come first and adjoin, so a coordinate update
+     * re-uploads 16 bytes per vertex (markUpdated(UPD_GEOM)) and a colour
+     * update 4 bytes.
+     */
+    static constexpr int LAYOUT_INTERLEAVED = 0;
+    static constexpr int LAYOUT_PACKED = 1;
+
+    /** Storage unit of LAYOUT_PACKED: the buffer holds one per vertex (24
+     *  bytes), but laid out by attribute blocks, not per vertex. */
+    struct PackedUnit
+    {
+        quint32 w[6];
+    };
+
+    /** Writable attribute blocks of a LAYOUT_PACKED primitive. */
+    struct PackedArrays
+    {
+        qfloat32 *pos;     ///< 3 floats per vertex
+        quint32 *norm;     ///< packed normal (packNormal()) per vertex
+        qbyte *color;      ///< RGBA bytes per vertex
+        quint32 *hitName;  ///< encoded hit name per vertex
+    };
+
+    /** Which data markUpdated() re-uploads. */
+    static constexpr int UPD_GEOM = 1;   ///< positions and normals
+    static constexpr int UPD_COLOR = 2;  ///< colours
+
+    /**
+     * Pack a normal into a GL_INT_2_10_10_10_REV word: x, y, z as signed
+     * normalized 10-bit values (x in the low bits) and w = 1, which is what
+     * a three-component float normal reads as in the vec4 shader input.
+     */
+    static quint32 packNormal(float x, float y, float z)
+    {
+        return packSnorm10(x) | (packSnorm10(y) << 10) | (packSnorm10(z) << 20) |
+               (quint32(1) << 30);
+    }
+
+    /** Inverse of packNormal() (x, y, z only), as the GPU decodes it. */
+    static qlib::Vector4D unpackNormal(quint32 w);
 
     /**
      * std140 DrawParamsBlock for the pick program (binding=2, 32 bytes):
@@ -75,6 +124,7 @@ public:
     };
 
     using TrigMesh = gfx::DrawAttrElems<quint32, TrigVertAttr>;
+    using PackedMesh = gfx::DrawAttrElems<quint32, PackedUnit>;
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -83,6 +133,13 @@ public:
 
     /** Load the triangle mesh and edge shaders. */
     bool init(DisplayContext *pDC) override;
+
+    /**
+     * Set the vertex storage layout (LAYOUT_INTERLEAVED, the default, or
+     * LAYOUT_PACKED). Must be set before alloc().
+     */
+    void setLayout(int n) { m_nLayout = n; }
+    int getLayout() const { return m_nLayout; }
 
     /**
      * Allocate GPU storage for nverts vertices and nfaces triangles.
@@ -107,15 +164,21 @@ public:
     /** Set the encoded hit name (gfx::encodeHitName) of vertex idx. */
     void setHitName(int idx, quint32 name);
 
-    /** Encoded hit name of vertex idx (exposed for inspection/testing). */
-    quint32 getHitName(int idx) const
-    {
-        return m_pDrawElems->at(idx).hitName;
-    }
+    // Vertex data of either layout, as stored (exposed for inspection/testing)
+
+    /** Position of vertex idx. */
+    qlib::Vector4D getVertex(int idx) const;
+    /** Normal of vertex idx (after packing in LAYOUT_PACKED). */
+    qlib::Vector4D getNormal(int idx) const;
+    /** Colour of vertex idx as (r << 24) | (g << 16) | (b << 8) | a. */
+    quint32 getColorRGBA(int idx) const;
+    /** Encoded hit name of vertex idx. */
+    quint32 getHitName(int idx) const;
 
     /**
-     * The vertex array (getVertexSize() elements, contiguous) for writing the
-     * vertex data in place. Call setUpdated(true) afterwards.
+     * The vertex array (getVertexSize() elements, contiguous) of a
+     * LAYOUT_INTERLEAVED primitive for writing the vertex data in place
+     * (nullptr in LAYOUT_PACKED). Call setUpdated(true) afterwards.
      */
     TrigVertAttr *getVertexArray()
     {
@@ -129,6 +192,13 @@ public:
                    ? &m_pDrawElems->at(0)
                    : nullptr;
     }
+
+    /**
+     * The attribute blocks of a LAYOUT_PACKED primitive for writing the
+     * vertex data in place (all nullptr in LAYOUT_INTERLEAVED or before
+     * alloc()). Call markUpdated() afterwards.
+     */
+    PackedArrays getPackedArrays();
 
     /** Set triangle face idx with vertex indices v1, v2, v3. */
     void setFace(int idx, int v1, int v2, int v3);
@@ -163,8 +233,15 @@ public:
      */
     void setUpdated(bool b)
     {
-        if (m_pDrawElems != nullptr) m_pDrawElems->setUpdated(b);
+        if (attrs() != nullptr) attrs()->setUpdated(b);
     }
+
+    /**
+     * Mark only the data in nFlags (UPD_GEOM / UPD_COLOR) as updated, so
+     * that a LAYOUT_PACKED primitive re-uploads only those attribute blocks
+     * (LAYOUT_INTERLEAVED re-uploads everything).
+     */
+    void markUpdated(int nFlags);
 
     // ─── Draw / cleanup ───────────────────────────────────────────────────────
 
@@ -179,22 +256,23 @@ public:
     /** Returns true when the shader and draw elements are ready. */
     bool isValid() const override
     {
-        return m_pPO != nullptr && m_pDrawElems != nullptr;
+        return m_pPO != nullptr && attrs() != nullptr;
     }
 
     /** Returns the number of vertices allocated. */
     int getVertexSize() const
     {
-        return (m_pDrawElems != nullptr) ? m_pDrawElems->getSize() : 0;
+        // one storage element per vertex in either layout
+        return (attrs() != nullptr) ? attrs()->getSize() : 0;
     }
 
     /** Returns the number of triangles allocated. */
     int getFaceSize() const
     {
-        if (m_pDrawElems == nullptr) return 0;
+        if (attrs() == nullptr) return 0;
         // Wireframe mode stores 6 indices per face (3 edges), fill mode stores 3.
         const int nPerFace = (m_nPolygonMode == DisplayContext::POLY_LINE) ? 6 : 3;
-        return m_pDrawElems->getIndSize() / nPerFace;
+        return int(attrs()->getIndSize()) / nPerFace;
     }
 
 private:
@@ -212,10 +290,32 @@ private:
     gfx::ShaderObject *m_pPO;       ///< Main shading program
     gfx::ShaderObject *m_pEdgePO;   ///< Edge/silhouette program
     gfx::ShaderObject *m_pPickPO;   ///< ID-buffer pick program (lazy)
-    TrigMesh *m_pDrawElems;
+    TrigMesh *m_pDrawElems;         ///< storage in LAYOUT_INTERLEAVED
+    PackedMesh *m_pPackedElems;     ///< storage in LAYOUT_PACKED
+    int m_nLayout;
     int m_nEdgeLineType;
     int m_nPolygonMode;
     bool m_bNoDepth;
+
+    /** The allocated storage of either layout (nullptr before alloc()). */
+    AbstDrawAttrs *attrs() const
+    {
+        if (m_pDrawElems != nullptr) return m_pDrawElems;
+        return m_pPackedElems;
+    }
+
+    /** Start of the LAYOUT_PACKED block that begins nWordsBefore 4-byte
+     *  words per vertex into the storage (positions 0, normals 3, colours 4,
+     *  hit names 5). */
+    qbyte *packedBlock(int nWordsBefore) const;
+
+    static quint32 packSnorm10(float c)
+    {
+        if (c > 1.0f) c = 1.0f;
+        if (c < -1.0f) c = -1.0f;
+        const int i = int(c * 511.0f + (c >= 0.0f ? 0.5f : -0.5f));
+        return quint32(i) & 0x3FFu;
+    }
 
     void setupAttrs();
     void drawEdges(DisplayContext *pDC);

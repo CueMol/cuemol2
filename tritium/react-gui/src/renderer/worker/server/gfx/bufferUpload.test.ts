@@ -24,6 +24,7 @@ function makeGl() {
     return {
         ...GL,
         FLOAT: 0x1406,
+        INT_2_10_10_10_REV: 0x8d9f,
         createBuffer: vi.fn(() => ({})),
         createVertexArray: vi.fn(() => ({})),
         bindVertexArray: vi.fn(),
@@ -168,5 +169,57 @@ describe('BufferStore vertex buffer ring', () => {
         store.deleteBuffer(ID as never);
         expect(gl.deleteBuffer).toHaveBeenCalledTimes(3);
         expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('BufferStore partial updates (attribute blocks)', () => {
+    let gl: ReturnType<typeof makeGl>;
+    let store: BufferStore;
+    const ID = '1';
+    // Two vertices in a block layout: 12-byte positions, then 4-byte packed
+    // normals, then 4-byte colors (24 bytes per vertex in all)
+    const TOTAL = 48;
+    const GEOM: [number, number] = [0, 32];
+    const COLOR: [number, number] = [32, 40];
+    const ATTRS = JSON.stringify([
+        { nloc: 0, itype: '21', nelems: 3, npos: 0, idiv: 0, stride: '12' },
+        { nloc: 1, itype: '61', nelems: 4, npos: 24, idiv: 0, stride: '4' },
+        { nloc: 2, itype: '1', nelems: 4, npos: 32, idiv: 0, stride: '4' },
+    ]);
+
+    /** [offset, byteLength] of each bufferSubData, in call order. */
+    const uploads = () => gl.bufferSubData.mock.calls.map(
+        (c) => [c[1], (c[2] as Uint8Array).byteLength]);
+
+    const update = (range: [number, number]) =>
+        store.drawBuffer(ID as never, GL.TRIANGLES, 2, new ArrayBuffer(TOTAL), null, true, 0,
+            range[0], range[1] - range[0]);
+
+    beforeEach(() => {
+        gl = makeGl();
+        store = new BufferStore();
+        store.setContext(gl as never);
+        store.createBuffer(ID, TOTAL, 2, 0, ATTRS);
+    });
+
+    it('gives each attribute its own stride and reads packed normals normalized', () => {
+        expect(gl.vertexAttribPointer).toHaveBeenCalledWith(0, 3, gl.FLOAT, false, 12, 0);
+        expect(gl.vertexAttribPointer).toHaveBeenCalledWith(
+            1, 4, gl.INT_2_10_10_10_REV, true, 4, 24);
+    });
+
+    it('uploads only the changed range once the slot holds the rest', () => {
+        update(GEOM);  // into the new second slot: everything
+        update(GEOM);  // back into the first slot: only the range
+        update(GEOM);
+        expect(uploads()).toEqual([[0, TOTAL], [0, 32], [0, 32]]);
+    });
+
+    it('brings a slot up to date with the ranges it missed', () => {
+        update(GEOM);   // slot 1 (all)
+        update(COLOR);  // slot 0: the color, plus the positions it missed
+        update(GEOM);   // slot 1: the positions, plus the color it missed
+        update(GEOM);   // slot 0: up to date except the positions
+        expect(uploads()).toEqual([[0, TOTAL], [0, 40], [0, 40], [0, 32]]);
     });
 });
