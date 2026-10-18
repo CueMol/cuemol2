@@ -1,22 +1,22 @@
 // -*-Mode: C++;-*-
 //
 // GPU mesh of the tube-like renderers (TubeMeshBuilder / TubeGpuSupport):
-// an "atomsMoved" event rewrites the recorded mesh in place, keeping its
-// topology, and the result equals a fresh build.
+// an "atomsMoved" event rewrites the mesh in the GPU primitive in place,
+// keeping its topology, and the result equals a fresh build.
 //
 
 #include <gtest/gtest.h>
 #include <common.h>
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
+#include <qsys/ObjectEvent.hpp>
 #include <qlib/StringStream.hpp>
+#include <gfx/TrigGpuPrim.hpp>
+#include "tests/gfx/mock_display_context.hpp"
 #include "molvis/TubeGpuSupport.hpp"
 #include "molvis/TubeMeshBuilder.hpp"
 #include "molvis/NARenderer.hpp"
 #include "molvis/RibbonRenderer.hpp"
-#include <qsys/ObjectEvent.hpp>
-#include "tests/gfx/mock_display_context.hpp"
-#include <gfx/TrigGpuPrim.hpp>
 #include "molstr/MolCoord.hpp"
 #include "molstr/MolAtom.hpp"
 #include "molstr/MolResidue.hpp"
@@ -38,32 +38,62 @@ using qlib::Vector4D;
 
 namespace {
 
-struct MeshSnapshot
+/// Vertex data of a GPU primitive
+struct PrimSnapshot
 {
-    std::vector<Vector4D> pos, norm;
+    std::vector<float> geom;             // position and normal
     std::vector<qlib::quint32> col, name;
-    std::vector<TubeMeshBuilder::Prim> prims;
+    int nfaces = 0;
 
-    explicit MeshSnapshot(const TubeMeshBuilder &mb) : prims(mb.getPrims())
+    explicit PrimSnapshot(const gfx::TrigGpuPrim &prim) : nfaces(prim.getFaceSize())
     {
-        for (int i = 0; i < mb.getVertexSize(); ++i) {
-            pos.push_back(mb.getPos(i));
-            norm.push_back(mb.getNorm(i));
-            col.push_back(mb.getColor(i));
-            name.push_back(mb.getHitName(i));
+        const gfx::TrigGpuPrim::TrigVertAttr *pv = prim.getVertexArray();
+        for (int i = 0; i < prim.getVertexSize(); ++i) {
+            geom.insert(geom.end(), {pv[i].x, pv[i].y, pv[i].z, pv[i].nx, pv[i].ny, pv[i].nz});
+            col.push_back((qlib::quint32(pv[i].r) << 24) | (qlib::quint32(pv[i].g) << 16) |
+                          (qlib::quint32(pv[i].b) << 8) | qlib::quint32(pv[i].a));
+            name.push_back(prim.getHitName(i));
         }
     }
 };
 
-bool samePrims(const MeshSnapshot &a, const MeshSnapshot &b)
+/// Mesh of a tube-like renderer, drawn (built or updated) into its primitive
+PrimSnapshot drawnMesh(qsys::RendererPtr pR, MockDisplayContext &dc)
 {
-    if (a.prims.size() != b.prims.size()) return false;
-    for (size_t i = 0; i < a.prims.size(); ++i) {
-        if (a.prims[i].type != b.prims[i].type || a.prims[i].first != b.prims[i].first ||
-            a.prims[i].count != b.prims[i].count)
-            return false;
+    pR->display(&dc);
+    return PrimSnapshot(dynamic_cast<TubeGpuSupport *>(pR.get())->tubeGpuPrim());
+}
+
+int lastPass(qsys::RendererPtr pR)
+{
+    return dynamic_cast<TubeGpuSupport *>(pR.get())->tubeGpuLastPass();
+}
+
+MolCoordPtr loadPDB(const char *fname, qsys::ScenePtr pScene, const char *name)
+{
+    std::ifstream ifs(std::string(CUEMOL2_TEST_DATA_DIR) + "/" + fname);
+    EXPECT_TRUE(ifs.good());
+    std::stringstream ss;
+    ss << ifs.rdbuf();
+    const std::string pdb = ss.str();
+
+    molstr::PDBFileReader reader;
+    qlib::StrInStream ins(pdb.c_str(), static_cast<int>(pdb.size()));
+    MolCoordPtr pMol(reader.load(ins));
+    pMol->setName(name);
+    pScene->addObject(pMol);
+    return pMol;
+}
+
+/// Move every atom a little (different directions per atom)
+void moveAtoms(MolCoordPtr pMol)
+{
+    for (auto it = pMol->beginAtom(); it != pMol->endAtom(); ++it) {
+        const double a = double(it->first);
+        it->second->setPos(it->second->getPos() +
+                           Vector4D(0.3 * std::sin(a), 0.3 * std::cos(a), 0.1));
     }
-    return true;
+    pMol->fireAtomsMoved();
 }
 
 class TubeGpuMeshTest : public ::testing::TestWithParam<const char *>
@@ -71,22 +101,13 @@ class TubeGpuMeshTest : public ::testing::TestWithParam<const char *>
 protected:
     qsys::ScenePtr m_scene;
     MolCoordPtr m_mol;
+    MockDisplayContext m_dc;
 
     void SetUp() override
     {
         // 1CRN: helices and a sheet, so ribbon/cartoon draw junctions and arrows
-        std::ifstream ifs(std::string(CUEMOL2_TEST_DATA_DIR) + "/1CRN.pdb");
-        ASSERT_TRUE(ifs.good());
-        std::stringstream ss;
-        ss << ifs.rdbuf();
-        const std::string pdb = ss.str();
-
         m_scene = qsys::SceneManager::getInstance()->createScene();
-        molstr::PDBFileReader reader;
-        qlib::StrInStream ins(pdb.c_str(), static_cast<int>(pdb.size()));
-        m_mol = MolCoordPtr(reader.load(ins));
-        m_mol->setName("crn");
-        m_scene->addObject(m_mol);
+        m_mol = loadPDB("1CRN.pdb", m_scene, "crn");
 
         // The test environment has no topology files to link the residues:
         // link the chain (A1-A46) as one segment
@@ -103,45 +124,41 @@ protected:
         m_scene = qsys::ScenePtr();
         qsys::SceneManager::getInstance()->destroyScene(uid);
     }
+
+    qsys::RendererPtr newRenderer(const char *type)
+    {
+        qsys::RendererPtr pR = m_mol->createRenderer(type);
+        // (the default style that sets the pivot is not loaded in the tests)
+        dynamic_cast<molstr::MainChainRenderer *>(pR.get())->setPivAtomName("CA");
+        return pR;
+    }
 };
 
 }  // namespace
 
+// An atom move rewrites the vertices in place -- chunk by chunk (in parallel)
+// for tube and ribbon, by the serial traversal for cartoon -- keeping the
+// topology, hit names and colors, and gives the same mesh as a fresh build
+// from the moved atoms (no stale position-derived cache such as the spline
+// coeffs).
 TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
 {
-    qsys::RendererPtr pRend = m_mol->createRenderer(GetParam());
-    auto *pTg = dynamic_cast<TubeGpuSupport *>(pRend.get());
-    ASSERT_NE(pTg, nullptr);
-    // (the default style that sets the pivot is not loaded in the tests)
-    dynamic_cast<molstr::MainChainRenderer *>(pRend.get())->setPivAtomName("CA");
+    const std::string type = GetParam();
+    qsys::RendererPtr pRend = newRenderer(type.c_str());
+    const PrimSnapshot built = drawnMesh(pRend, m_dc);
+    ASSERT_GT(built.geom.size(), 0u);
 
-    pTg->tubeGpuBuildMesh();
-    const MeshSnapshot built(pTg->tubeGpuMesh());
-    ASSERT_GT(built.pos.size(), 0u);
+    moveAtoms(m_mol);
+    const PrimSnapshot updated = drawnMesh(pRend, m_dc);
+    EXPECT_EQ(lastPass(pRend), type == "cartoon" ? TubeGpuSupport::TG_PASS_SERIAL
+                                                 : TubeGpuSupport::TG_PASS_CHUNKED);
+    EXPECT_EQ(updated.nfaces, built.nfaces);
+    EXPECT_EQ(updated.name, built.name);
+    EXPECT_EQ(updated.col, built.col);
+    EXPECT_NE(updated.geom, built.geom);
 
-    // Move every atom a little (different directions per atom)
-    for (auto it = m_mol->beginAtom(); it != m_mol->endAtom(); ++it) {
-        const double a = double(it->first);
-        it->second->setPos(it->second->getPos() +
-                           Vector4D(0.3 * std::sin(a), 0.3 * std::cos(a), 0.1));
-    }
-    m_mol->fireAtomsMoved();
-
-    // The event requested an in-place update that keeps the topology
-    ASSERT_TRUE(pTg->tubeGpuUpdateMesh());
-    const MeshSnapshot updated(pTg->tubeGpuMesh());
-    EXPECT_TRUE(samePrims(built, updated));
-    EXPECT_EQ(built.name, updated.name);
-    EXPECT_EQ(built.col, updated.col);
-    EXPECT_NE(built.pos, updated.pos);
-
-    // ... and gives the same mesh as a fresh build from the moved atoms
-    // (no stale position-derived cache such as the spline coeffs)
-    pTg->tubeGpuBuildMesh();
-    const MeshSnapshot rebuilt(pTg->tubeGpuMesh());
-    EXPECT_TRUE(samePrims(rebuilt, updated));
-    EXPECT_EQ(rebuilt.pos, updated.pos);
-    EXPECT_EQ(rebuilt.norm, updated.norm);
+    const PrimSnapshot rebuilt = drawnMesh(newRenderer(type.c_str()), m_dc);
+    EXPECT_EQ(rebuilt.geom, updated.geom);
     EXPECT_EQ(rebuilt.name, updated.name);
 }
 
@@ -173,20 +190,13 @@ TEST_F(TubeGpuMeshTest, PivotCacheFollowsNameAndTopology)
 TEST_F(TubeGpuMeshTest, SplineTopologyRebuiltOnSecondaryAndSmoothing)
 {
     auto newRibbon = [this](double dHelixSmo) {
-        qsys::RendererPtr pR = m_mol->createRenderer("ribbon");
-        auto *pRib = dynamic_cast<molvis::RibbonRenderer *>(pR.get());
-        pRib->setPivAtomName("CA");
-        pRib->setHelixSmooth(dHelixSmo);
+        qsys::RendererPtr pR = newRenderer("ribbon");
+        dynamic_cast<molvis::RibbonRenderer *>(pR.get())->setHelixSmooth(dHelixSmo);
         return pR;
-    };
-    auto meshOf = [](qsys::RendererPtr pR) {
-        auto *pTg = dynamic_cast<TubeGpuSupport *>(pR.get());
-        pTg->tubeGpuBuildMesh();
-        return MeshSnapshot(pTg->tubeGpuMesh());
     };
 
     qsys::RendererPtr pRend = newRibbon(0.0);
-    const MeshSnapshot before = meshOf(pRend);
+    const PrimSnapshot before = drawnMesh(pRend, m_dc);
 
     // Secondary structure: residues 1-10 become a strand (binormal from C=O,
     // sheet smoothing weight)
@@ -198,60 +208,13 @@ TEST_F(TubeGpuMeshTest, SplineTopologyRebuiltOnSecondaryAndSmoothing)
     obe.setDescr("secondary");
     m_mol->fireObjectEvent(obe);
 
-    const MeshSnapshot afterSec = meshOf(pRend);
-    EXPECT_NE(afterSec.pos, before.pos);
-    EXPECT_EQ(afterSec.pos, meshOf(newRibbon(0.0)).pos);
+    const PrimSnapshot afterSec = drawnMesh(pRend, m_dc);
+    EXPECT_NE(afterSec.geom, before.geom);
+    EXPECT_EQ(afterSec.geom, drawnMesh(newRibbon(0.0), m_dc).geom);
 
     // Smoothing
     dynamic_cast<molvis::RibbonRenderer *>(pRend.get())->setHelixSmooth(0.7);
-    const MeshSnapshot afterSmo = meshOf(pRend);
-    EXPECT_EQ(afterSmo.pos, meshOf(newRibbon(0.7)).pos);
-}
-
-// With the mesh in the GPU primitive, an atom move redraws the segments
-// concurrently (one chunk each) into the primitive's vertex array; the result
-// equals a fresh build from the moved atoms.
-TEST_P(TubeGpuMeshTest, AtomsMovedChunkedUpdateIntoPrim)
-{
-    const std::string type = GetParam();
-    if (type == "cartoon") return;  // no chunked update for cartoon
-
-    MockDisplayContext dc;
-    auto newRend = [&]() {
-        qsys::RendererPtr pR = m_mol->createRenderer(type.c_str());
-        dynamic_cast<molstr::MainChainRenderer *>(pR.get())->setPivAtomName("CA");
-        pR->display(&dc);  // builds the mesh into the primitive
-        return pR;
-    };
-    auto verts = [](qsys::RendererPtr pR) {
-        auto *pTg = dynamic_cast<TubeGpuSupport *>(pR.get());
-        const gfx::TrigGpuPrim &prim = pTg->tubeGpuPrim();
-        const auto *pv = prim.getVertexArray();
-        std::vector<float> v;
-        for (int i = 0; i < prim.getVertexSize(); ++i) {
-            v.insert(v.end(), {pv[i].x, pv[i].y, pv[i].z, pv[i].nx, pv[i].ny, pv[i].nz});
-        }
-        return v;
-    };
-
-    qsys::RendererPtr pRend = newRend();
-    auto *pTg = dynamic_cast<TubeGpuSupport *>(pRend.get());
-    ASSERT_TRUE(pTg->tubeGpuMesh().chunksCoverAll());
-    const std::vector<float> before = verts(pRend);
-    ASSERT_GT(before.size(), 0u);
-
-    for (auto it = m_mol->beginAtom(); it != m_mol->endAtom(); ++it) {
-        const double a = double(it->first);
-        it->second->setPos(it->second->getPos() +
-                           Vector4D(0.3 * std::sin(a), 0.3 * std::cos(a), 0.1));
-    }
-    m_mol->fireAtomsMoved();
-    pRend->display(&dc);  // chunked update
-    EXPECT_EQ(pTg->tubeGpuLastPass(), TubeGpuSupport::TG_PASS_CHUNKED);
-
-    const std::vector<float> updated = verts(pRend);
-    EXPECT_NE(updated, before);
-    EXPECT_EQ(updated, verts(newRend()));
+    EXPECT_EQ(drawnMesh(pRend, m_dc).geom, drawnMesh(newRibbon(0.7), m_dc).geom);
 }
 
 INSTANTIATE_TEST_SUITE_P(TubeLike, TubeGpuMeshTest,
@@ -261,18 +224,8 @@ INSTANTIATE_TEST_SUITE_P(TubeLike, TubeGpuMeshTest,
 // they are rewritten in place with the tube and ring mesh.
 TEST(NARendererGpuMeshTest, AtomsMovedUpdatesSticksInPlace)
 {
-    std::ifstream ifs(std::string(CUEMOL2_TEST_DATA_DIR) + "/1ehz_rna.pdb");
-    ASSERT_TRUE(ifs.good());
-    std::stringstream ss;
-    ss << ifs.rdbuf();
-    const std::string pdb = ss.str();
-
     qsys::ScenePtr pScene = qsys::SceneManager::getInstance()->createScene();
-    molstr::PDBFileReader reader;
-    qlib::StrInStream ins(pdb.c_str(), static_cast<int>(pdb.size()));
-    MolCoordPtr pMol(reader.load(ins));
-    pMol->setName("rna");
-    pScene->addObject(pMol);
+    MolCoordPtr pMol = loadPDB("1ehz_rna.pdb", pScene, "rna");
 
     // No topology files in the tests: link the consecutive residues and set
     // the base types by residue name
@@ -285,114 +238,66 @@ TEST(NARendererGpuMeshTest, AtomsMovedUpdatesSticksInPlace)
         if (!pNext.isnull()) pRes->setLinkNext(pNext);
     }
 
-    qsys::RendererPtr pRend = pMol->createRenderer("nucl");
-    auto *pNA = dynamic_cast<molvis::NARenderer *>(pRend.get());
-    ASSERT_NE(pNA, nullptr);
-    pNA->setPivAtomName("P");
-    pNA->setBaseType(molvis::NARenderer::NAREND_DETAIL1);
+    MockDisplayContext dc;
+    auto newNA = [&]() {
+        qsys::RendererPtr pR = pMol->createRenderer("nucl");
+        auto *pNA = dynamic_cast<molvis::NARenderer *>(pR.get());
+        pNA->setPivAtomName("P");
+        pNA->setBaseType(molvis::NARenderer::NAREND_DETAIL1);
+        return pR;
+    };
+    auto sticks = [](qsys::RendererPtr pR) {
+        auto *pNA = dynamic_cast<molvis::NARenderer *>(pR.get());
+        std::vector<double> v;
+        for (const auto &st : pNA->getSpheres())
+            v.insert(v.end(), {st.pos1.x(), st.pos1.y(), st.pos1.z(), double(st.name)});
+        for (const auto &st : pNA->getCylinders())
+            v.insert(v.end(), {st.pos1.x(), st.pos1.y(), st.pos1.z(), st.pos2.x(),
+                               st.pos2.y(), st.pos2.z(), double(st.name)});
+        return v;
+    };
 
-    pNA->tubeGpuBuildMesh();
-    const MeshSnapshot built(pNA->tubeGpuMesh());
-    const auto sphs = pNA->getSpheres();
-    const auto cyls = pNA->getCylinders();
-    ASSERT_GT(built.pos.size(), 0u);
-    ASSERT_GT(sphs.size(), 0u);
-    ASSERT_GT(cyls.size(), 0u);
+    qsys::RendererPtr pRend = newNA();
+    const PrimSnapshot built = drawnMesh(pRend, dc);
+    const std::vector<double> builtSticks = sticks(pRend);
+    ASSERT_GT(built.geom.size(), 0u);
+    ASSERT_GT(builtSticks.size(), 0u);
 
-    for (auto it = pMol->beginAtom(); it != pMol->endAtom(); ++it) {
-        const double a = double(it->first);
-        it->second->setPos(it->second->getPos() +
-                           Vector4D(0.3 * std::sin(a), 0.3 * std::cos(a), 0.1));
-    }
-    pMol->fireAtomsMoved();
-
-    ASSERT_TRUE(pNA->tubeGpuUpdateMesh());
-    const MeshSnapshot updated(pNA->tubeGpuMesh());
-    const auto usphs = pNA->getSpheres();
-    const auto ucyls = pNA->getCylinders();
-    EXPECT_TRUE(samePrims(built, updated));
-    ASSERT_EQ(usphs.size(), sphs.size());
-    ASSERT_EQ(ucyls.size(), cyls.size());
-    EXPECT_FALSE(usphs[0].pos1 == sphs[0].pos1);
-    EXPECT_EQ(usphs[0].name, sphs[0].name);
+    moveAtoms(pMol);
+    const PrimSnapshot updated = drawnMesh(pRend, dc);
+    EXPECT_EQ(lastPass(pRend), TubeGpuSupport::TG_PASS_SERIAL);
+    EXPECT_EQ(updated.name, built.name);
+    EXPECT_NE(sticks(pRend), builtSticks);
 
     // Same as a fresh build from the moved atoms
-    pNA->tubeGpuBuildMesh();
-    const MeshSnapshot rebuilt(pNA->tubeGpuMesh());
-    EXPECT_EQ(rebuilt.pos, updated.pos);
-    const auto rsphs = pNA->getSpheres();
-    const auto rcyls = pNA->getCylinders();
-    ASSERT_EQ(rsphs.size(), usphs.size());
-    ASSERT_EQ(rcyls.size(), ucyls.size());
-    for (size_t i = 0; i < rsphs.size(); ++i) {
-        EXPECT_EQ(rsphs[i].pos1, usphs[i].pos1);
-        EXPECT_EQ(rsphs[i].name, usphs[i].name);
-        EXPECT_EQ(rsphs[i].col, usphs[i].col);
-    }
-    for (size_t i = 0; i < rcyls.size(); ++i) {
-        EXPECT_EQ(rcyls[i].pos1, ucyls[i].pos1);
-        EXPECT_EQ(rcyls[i].pos2, ucyls[i].pos2);
-        EXPECT_EQ(rcyls[i].name, ucyls[i].name);
-    }
+    qsys::RendererPtr pFresh = newNA();
+    EXPECT_EQ(drawnMesh(pFresh, dc).geom, updated.geom);
+    EXPECT_EQ(sticks(pFresh), sticks(pRend));
 
     const qlib::uid_t uid = pScene->getUID();
     pRend = qsys::RendererPtr();
+    pFresh = qsys::RendererPtr();
     pMol = MolCoordPtr();
     pScene = qsys::ScenePtr();
     qsys::SceneManager::getInstance()->destroyScene(uid);
 }
 
-// Update overwrites only the flagged data and reports a topology change.
-TEST(TubeMeshBuilderTest, UpdateKeepsTopologyAndDetectsChange)
+// Once the mesh is in the GPU primitive, an update writes only the flagged
+// data straight into the primitive's vertex array (hit names kept), and
+// reports a topology change.
+TEST(TubeMeshBuilderTest, UpdateWritesIntoGpuPrim)
 {
-    auto drawStrip = [](TubeMeshBuilder &mb, int nverts, double dx) {
-        mb.loadName(5);
+    auto drawStrip = [](TubeMeshBuilder &mb, int nverts, double dx, int name) {
+        mb.loadName(name);
         mb.normal(Vector4D(0, 0, 2));
         mb.startTriangleStrip();
         for (int i = 0; i < nverts; ++i) mb.vertex(Vector4D(i + dx, i % 2, 0));
         mb.end();
     };
-
-    TubeMeshBuilder mb;
-    mb.startBuild(qlib::invalid_uid);
-    drawStrip(mb, 4, 0.0);
-    mb.loadName(7);
-    mb.startTriangleFan();
-    for (int i = 0; i < 4; ++i) mb.vertex(Vector4D(0, i, 1));
-    mb.end();
-    ASSERT_TRUE(mb.finish());
-    EXPECT_EQ(mb.getVertexSize(), 8);
-    EXPECT_EQ(mb.getFaceSize(), 4);
-    EXPECT_EQ(mb.getHitName(0), gfx::encodeHitName(5));
-    EXPECT_EQ(mb.getHitName(4), gfx::encodeHitName(7));
-    EXPECT_EQ(mb.getNorm(0), Vector4D(0, 0, 1));
-
-    // Same topology: positions rewritten, hit names kept
-    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM);
-    drawStrip(mb, 4, 10.0);
-    mb.loadName(99);
-    mb.startTriangleFan();
-    for (int i = 0; i < 4; ++i) mb.vertex(Vector4D(0, i, 1));
-    mb.end();
-    EXPECT_TRUE(mb.finish());
-    EXPECT_EQ(mb.getPos(0), Vector4D(10, 0, 0));
-    EXPECT_EQ(mb.getHitName(4), gfx::encodeHitName(7));
-
-    // A longer strip is a topology change
-    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM);
-    drawStrip(mb, 6, 0.0);
-    EXPECT_FALSE(mb.finish());
-}
-
-// Once the mesh is in the GPU primitive, the update writes straight into the
-// primitive's vertex array (the builder keeps no vertex data of its own).
-TEST(TubeMeshBuilderTest, UpdateWritesIntoGpuPrim)
-{
-    auto draw = [](TubeMeshBuilder &mb, double dx) {
-        mb.loadName(3);
-        mb.normal(Vector4D(0, 1, 0));
-        mb.startTriangleStrip();
-        for (int i = 0; i < 4; ++i) mb.vertex(Vector4D(i + dx, i % 2, 0));
+    auto drawFan = [](TubeMeshBuilder &mb, int name) {
+        mb.loadName(name);
+        mb.startTriangleFan();
+        for (int i = 0; i < 4; ++i) mb.vertex(Vector4D(0, i, 1));
         mb.end();
     };
 
@@ -402,20 +307,29 @@ TEST(TubeMeshBuilderTest, UpdateWritesIntoGpuPrim)
 
     TubeMeshBuilder mb;
     mb.startBuild(qlib::invalid_uid);
-    draw(mb, 0.0);
+    drawStrip(mb, 4, 0.0, 5);
+    drawFan(mb, 7);
     ASSERT_TRUE(mb.finish());
+    EXPECT_EQ(mb.getFaceSize(), 4);
     mb.toGpuPrim(&dc, prim);
     mb.releaseVertexData();
-    EXPECT_FALSE(mb.hasVertexData());
-    EXPECT_EQ(mb.getVertexSize(), 4);
-
-    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getVertexArray());
-    draw(mb, 10.0);
-    EXPECT_TRUE(mb.finish());
-
+    EXPECT_EQ(prim.getVertexSize(), 8);
+    EXPECT_EQ(prim.getHitName(0), gfx::encodeHitName(5));
+    EXPECT_EQ(prim.getHitName(4), gfx::encodeHitName(7));
     const gfx::TrigGpuPrim::TrigVertAttr *pv = prim.getVertexArray();
+    EXPECT_FLOAT_EQ(pv[0].nz, 1.0f);  // normalized
+
+    // Same topology: positions rewritten, hit names kept
+    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getVertexArray());
+    drawStrip(mb, 4, 10.0, 99);
+    drawFan(mb, 99);
+    EXPECT_TRUE(mb.finish());
     EXPECT_FLOAT_EQ(pv[0].x, 10.0f);
     EXPECT_FLOAT_EQ(pv[3].x, 13.0f);
-    EXPECT_FLOAT_EQ(pv[3].ny, 1.0f);
-    EXPECT_EQ(prim.getHitName(0), gfx::encodeHitName(3));
+    EXPECT_EQ(prim.getHitName(4), gfx::encodeHitName(7));
+
+    // A longer strip is a topology change
+    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getVertexArray());
+    drawStrip(mb, 6, 0.0, 5);
+    EXPECT_FALSE(mb.finish());
 }

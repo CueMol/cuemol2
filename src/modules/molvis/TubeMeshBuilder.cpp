@@ -69,7 +69,7 @@ void TubeMeshBuilder::startBuild(qlib::uid_t nSceneID)
 void TubeMeshBuilder::startUpdate(qlib::uid_t nSceneID, int nFlags,
                                   gfx::TrigGpuPrim::TrigVertAttr *pDirect)
 {
-    MB_ASSERT(pDirect != nullptr || !m_bReleased);
+    MB_ASSERT(pDirect != nullptr);
     m_pDirect = pDirect;
     m_nMode = MODE_UPDATE;
     m_nUpdFlags = nFlags;
@@ -236,43 +236,10 @@ void TubeMeshBuilder::vertexSlow(const Vector4D &v)
     if (m_nMode != MODE_UPDATE)
         return;
 
-    const int i = m_nVertCur;
+    // The update writes are inline (vertex()); reaching here in update mode
+    // means more vertices than recorded
     ++m_nVertCur;
-    if (i >= m_nVerts) {
-        m_bMismatch = true;
-        return;
-    }
-
-    if (m_pDirect != nullptr) {
-        // write straight into the vertex array of the GPU primitive
-        gfx::TrigGpuPrim::TrigVertAttr &va = m_pDirect[i];
-        if (m_nUpdFlags & UPD_GEOM) {
-            va.x = float(v.x());
-            va.y = float(v.y());
-            va.z = float(v.z());
-            va.nx = m_curNorm[0];
-            va.ny = m_curNorm[1];
-            va.nz = m_curNorm[2];
-        }
-        if (m_nUpdFlags & UPD_COLOR) {
-            va.r = gfx::getRCode(m_curCol);
-            va.g = gfx::getGCode(m_curCol);
-            va.b = gfx::getBCode(m_curCol);
-            va.a = gfx::getACode(m_curCol);
-        }
-        return;
-    }
-
-    if (m_nUpdFlags & UPD_GEOM) {
-        m_pos[i * 3 + 0] = float(v.x());
-        m_pos[i * 3 + 1] = float(v.y());
-        m_pos[i * 3 + 2] = float(v.z());
-        m_norm[i * 3 + 0] = m_curNorm[0];
-        m_norm[i * 3 + 1] = m_curNorm[1];
-        m_norm[i * 3 + 2] = m_curNorm[2];
-    }
-    if (m_nUpdFlags & UPD_COLOR)
-        m_col[i] = m_curCol;
+    m_bMismatch = true;
 }
 
 void TubeMeshBuilder::end()

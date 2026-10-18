@@ -49,15 +49,7 @@ public:
     TubeGpuSupport &operator=(const TubeGpuSupport &) = delete;
     virtual ~TubeGpuSupport();
 
-    // Mesh access without a DisplayContext (exposed for inspection/testing)
-
-    /// Record the mesh by running the host's traversal in build mode (no GPU
-    /// primitive is touched).
-    void tubeGpuBuildMesh();
-
-    /// Apply the pending in-place update (see tubeGpuMarkDirty) to the recorded
-    /// mesh. Returns false if the traversal changed the topology.
-    bool tubeGpuUpdateMesh();
+    // State exposed for inspection/testing
 
     /// How the last tubeGpuPrepare() refreshed the mesh
     static constexpr int TG_PASS_NONE = 0;     ///< nothing to do
@@ -68,11 +60,6 @@ public:
 
     /// The GPU primitive the mesh is drawn from.
     const gfx::TrigGpuPrim &tubeGpuPrim() const { return m_prim; }
-
-    /// The recorded mesh. Its vertex data is available only while the mesh
-    /// is not in the GPU primitive (tubeGpuBuildMesh() / tubeGpuUpdateMesh()
-    /// without a DisplayContext); afterwards the primitive holds it.
-    const TubeMeshBuilder &tubeGpuMesh() const { return m_mb; }
 
 protected:
     /// The drawing sink of the current traversal.
@@ -180,10 +167,17 @@ private:
     bool m_bColorOnly;
     /// See tubeGpuLastPass()
     int m_nLastPass;
-    /// Set by tubeGpuUpdateMesh() when the chunked update ran
+    /// Set by updateMesh() when the chunked update ran
     bool m_bChunked;
 
     void build(DisplayContext *pdc, int nPolyMode);
+
+    /// Record the mesh by running the host's traversal in build mode.
+    void buildMesh();
+
+    /// Apply the pending in-place update (see tubeGpuMarkDirty) to the mesh
+    /// in the primitive. Returns false if the traversal changed the topology.
+    bool updateMesh();
 };
 
 }  // namespace molvis

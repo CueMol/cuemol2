@@ -37,13 +37,13 @@ using qlib::Vector4D;
 ///    output does not change.
 ///  - Build: the mesh is recorded (positions, normals, colors, hit names and
 ///    the strip/fan primitives) and can then be turned into a TrigGpuPrim.
-///  - Update: the same traversal is run again over a mesh recorded by Build.
-///    The topology (primitives, hit names) is kept and only positions/normals
-///    (UPD_GEOM) and/or colors (UPD_COLOR) are overwritten in recording order,
-///    either in the builder's own arrays or, once the mesh is in a
-///    TrigGpuPrim (releaseVertexData()), directly in the primitive's vertex
-///    array. finish() reports whether the traversal produced exactly the same
-///    topology; if not, the caller has to rebuild.
+///  - Update: the same traversal (or one chunk of it) is run again over a
+///    mesh recorded by Build and put in a TrigGpuPrim (toGpuPrim()). The
+///    topology (primitives, hit names) is kept and only positions/normals
+///    (UPD_GEOM) and/or colors (UPD_COLOR) are overwritten in recording
+///    order, directly in the primitive's vertex array. finish() reports
+///    whether the traversal produced exactly the same topology; if not, the
+///    caller has to rebuild.
 ///
 class MOLVIS_API TubeMeshBuilder
 {
@@ -87,12 +87,10 @@ public:
     /// Start recording a new mesh (drops the previous one).
     void startBuild(qlib::uid_t nSceneID);
 
-    /// Start overwriting the recorded mesh (flags: UPD_GEOM | UPD_COLOR):
-    /// in pDirect (the vertex array of the TrigGpuPrim filled by toGpuPrim())
-    /// if given, in the builder's own arrays otherwise. pDirect is required
-    /// after releaseVertexData().
+    /// Start overwriting the recorded mesh (flags: UPD_GEOM | UPD_COLOR) in
+    /// pDirect, the vertex array of the TrigGpuPrim filled by toGpuPrim().
     void startUpdate(qlib::uid_t nSceneID, int nFlags,
-                     gfx::TrigGpuPrim::TrigVertAttr *pDirect = nullptr);
+                     gfx::TrigGpuPrim::TrigVertAttr *pDirect);
 
     /// Start overwriting chunk ichunk of the mesh recorded by parent, in
     /// pDirect (the vertex array of parent's TrigGpuPrim). This builder only
@@ -133,9 +131,6 @@ public:
     /// Drop the vertex data (positions, normals, colors, hit names) once it
     /// is in a TrigGpuPrim, keeping the topology for the update check.
     void releaseVertexData();
-
-    /// True while the builder holds its own vertex data.
-    bool hasVertexData() const { return !m_bReleased; }
 
     int getMode() const { return m_nMode; }
 
@@ -253,7 +248,7 @@ private:
     int m_nVerts;
     bool m_bReleased;
 
-    // update target in the GPU primitive (null: the own arrays)
+    // update target: the vertex array of the GPU primitive
     gfx::TrigGpuPrim::TrigVertAttr *m_pDirect;
 
     // update cursors (and the ends of the range to update)

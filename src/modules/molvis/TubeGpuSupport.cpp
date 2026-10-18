@@ -63,8 +63,8 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
 
     if (m_nDirty != 0) {
         // The update traversal writes straight into the vertex array of the
-        // primitive (see tubeGpuUpdateMesh()): only the upload is left
-        if (tubeGpuUpdateMesh()) {
+        // primitive (see updateMesh()): only the upload is left
+        if (updateMesh()) {
             if (m_bHasMesh) m_prim.setUpdated(true);
             m_nLastPass = m_bChunked ? TG_PASS_CHUNKED : TG_PASS_SERIAL;
         }
@@ -77,7 +77,7 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
     return true;
 }
 
-void TubeGpuSupport::tubeGpuBuildMesh()
+void TubeGpuSupport::buildMesh()
 {
     m_mb.startBuild(tubeGpuSceneID());
     tubeGpuRenderMesh();
@@ -88,18 +88,18 @@ void TubeGpuSupport::tubeGpuBuildMesh()
     m_bHasMesh = m_mb.getFaceSize() > 0;
 }
 
-bool TubeGpuSupport::tubeGpuUpdateMesh()
+bool TubeGpuSupport::updateMesh()
 {
     const int nFlags = m_nDirty;
     m_nDirty = 0;
     m_bChunked = false;
     if (!m_bTopoValid || nFlags == 0) return m_bTopoValid;
-    // Once the mesh is in the primitive, the builder holds no vertex data of
-    // its own and the update goes into the primitive's vertex array
-    gfx::TrigGpuPrim::TrigVertAttr *pDirect =
-        m_mb.hasVertexData() ? nullptr : m_prim.getVertexArray();
+    // The update goes into the primitive's vertex array; without faces there
+    // is no primitive and nothing to update
+    if (!m_bHasMesh) return true;
+    gfx::TrigGpuPrim::TrigVertAttr *pDirect = m_prim.getVertexArray();
 
-    if (nFlags == TubeMeshBuilder::UPD_GEOM && pDirect != nullptr &&
+    if (nFlags == TubeMeshBuilder::UPD_GEOM &&
         tubeGpuCanUpdateChunks() && m_mb.chunksCoverAll()) {
         // Coordinate-only update of a mesh made of independent chunks: the
         // chunks write disjoint vertex ranges, so redraw them in parallel.
@@ -125,7 +125,7 @@ bool TubeGpuSupport::tubeGpuUpdateMesh()
 
 void TubeGpuSupport::build(DisplayContext *pdc, int nPolyMode)
 {
-    tubeGpuBuildMesh();
+    buildMesh();
     m_nPolyMode = nPolyMode;
     if (!m_bHasMesh) {
         m_prim.invalidate();
