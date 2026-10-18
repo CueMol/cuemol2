@@ -8,6 +8,7 @@
 #include "molvis.hpp"
 
 #include "BallStickRenderer.hpp"
+#include "TubeMeshBuilder.hpp"
 
 #include <vector>
 
@@ -114,7 +115,9 @@ void BallStickRenderer::display(DisplayContext *pdc)
       }
     }
 
-    if (m_fRing) {
+    // The ring plates are not picked: a plate stands for no single atom
+    // (NARenderer draws its base plates itself, under the residue's name)
+    if (m_fRing && !pdc->isPickDraw()) {
       // only draw rings using old displist version
       MB_DPRINTLN("Ballstick ring render");
       m_bDrawRingOnly = true;
@@ -199,7 +202,12 @@ void BallStickRenderer::beginRend(DisplayContext *pdl)
 void BallStickRenderer::endRend(DisplayContext *pdl)
 {
   if ( m_fRing && !qlib::isNear4(m_tickness, 0.0) ) {
-    drawRings(pdl);
+    // no name: a plate stands for no single atom (see display())
+    pdl->loadName(-1);
+    TubeMeshBuilder mb;
+    mb.startDirect(pdl);
+    drawRings(&mb);
+    mb.finish();
     if (m_atoms.size()>0)
       m_atoms.clear(); //erase(m_atoms.begin(), m_atoms.end());
   }
@@ -329,7 +337,14 @@ void BallStickRenderer::drawVBondType1(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
 ////////////////////////////////////////////////
 // Ring plate drawing
 
-void BallStickRenderer::drawRings(DisplayContext *pdl)
+void BallStickRenderer::drawCollectedRings(TubeMeshBuilder *pmb)
+{
+  if ( m_fRing && !qlib::isNear4(m_tickness, 0.0) )
+    drawRings(pmb);
+  m_atoms.clear();
+}
+
+void BallStickRenderer::drawRings(TubeMeshBuilder *pdl)
 {
   int i, j;
   MolCoordPtr pMol = getClientMol();
@@ -404,7 +419,7 @@ void BallStickRenderer::drawRings(DisplayContext *pdl)
 
 }
 
-void BallStickRenderer::drawRingImpl(const std::list<int> atoms, DisplayContext *pdl)
+void BallStickRenderer::drawRingImpl(const std::list<int> atoms, TubeMeshBuilder *pdl)
 {
   MolCoordPtr pMol = getClientMol();
 
@@ -535,7 +550,8 @@ void BallStickRenderer::renderShaderImpl(DisplayContext *pdc)
       if (pAtom.isnull()) continue; // ignore errors
 
       quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(nSceneID);
-      m_pSphGpuPrim->setData(i, pAtom->getPos(), (float)m_sphr, devcode);
+      m_pSphGpuPrim->setData(i, pAtom->getPos(), (float)m_sphr, devcode,
+                             gfx::encodeHitName(aid));
       ++i;
     }
   }
@@ -596,15 +612,19 @@ void BallStickRenderer::renderShaderImpl(DisplayContext *pdc)
 
       if ( pcol1->equals(*pcol2.get()) ) {
         // same color --> one bond
-        m_pCylGpuPrim->setData(i, pos1, pos2, (float)m_bondw, pcol1->getDevCode(nSceneID));
+        // the pick pass splits it at the midpoint (aid1 | aid2)
+        m_pCylGpuPrim->setData(i, pos1, pos2, (float)m_bondw, pcol1->getDevCode(nSceneID),
+                               gfx::encodeHitName(aid1), gfx::encodeHitName(aid2));
         ++i;
       }
       else {
         // different color --> two bonds
         const Vector4D mpos = (pos1 + pos2).divide(2.0);
-        m_pCylGpuPrim->setData(i, pos1, mpos, (float)m_bondw, pcol1->getDevCode(nSceneID));
+        m_pCylGpuPrim->setData(i, pos1, mpos, (float)m_bondw, pcol1->getDevCode(nSceneID),
+                               gfx::encodeHitName(aid1), gfx::encodeHitName(aid1));
         ++i;
-        m_pCylGpuPrim->setData(i, mpos, pos2, (float)m_bondw, pcol2->getDevCode(nSceneID));
+        m_pCylGpuPrim->setData(i, mpos, pos2, (float)m_bondw, pcol2->getDevCode(nSceneID),
+                               gfx::encodeHitName(aid2), gfx::encodeHitName(aid2));
         ++i;
       }
 

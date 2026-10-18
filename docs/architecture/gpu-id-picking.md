@@ -48,7 +48,7 @@ renderer::render(pdl)              pdl->loadName(aid); ... vertex() ...      (�
        LineDrawAttr / TrigVertBuf / GrowMesh 頂点 / SphereList / CylinderList (name フィールド)
   -> TrigGpuPrim / LineGpuPrim      頂点構造体に uint hitName (整数属性: glVertexAttribIPointer /
                                     gl.vertexAttribIPointer)。表示用 shader はこの location を宣言しないだけ
-GpuPrim 直描き renderer             SphereIdx / CylinderIdx / LineIdx / LineValIdx の頂点に hitName を追加、
+GpuPrim 直描き renderer             Sphere / Cylinder (座標属性版と Idx 版) / LineIdx / LineValIdx の頂点に hitName を追加、
                                     setData(...) で encodeHitName(aid) を直接渡す (index -> aid の逆引き不要)
 
 pick pass (GUIView::renderPickBuffer)
@@ -111,8 +111,12 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   リングごとに name を変えると provoking vertex (LAST) により三角形が交互に前後の残基に属し、境界がノコギリ状に
   なる (hover highlight で目立った)。
 - GpuPrim 直描き (CPK2 / BallStick / Simple / Trace): `displayPick()` は `display()` を呼ぶだけ。coord-texture
-  経路の prim は pick program で描き、DL fallback 経路は名前付き DL がそのまま描かれる。pick program を持たない
-  `SphereGpuPrim` / `CylinderGpuPrim` (座標属性版) は `isPickDraw()` で何も描かない (この経路は pick 不可)。
+  経路の prim は pick program で描き、DL fallback 経路は名前付き DL がそのまま描かれる。座標属性版の
+  `SphereGpuPrim` / `CylinderGpuPrim` も pick program (`sphere2_pick_vertex.glsl` / `cylinder_pick_vertex.glsl`)
+  を持ち、cylinder は Idx 版と同じく pos1 側の半分が hitNameA、pos2 側が hitNameB。
+- BallStick の ring 板は pick しない (板は 1 原子を代表しないため)。shader 経路では ring 用の DL を pick pass で
+  描かず、DL fallback では名前なし (-1) で描く。核酸 renderer (`nucl`) の塩基の ring 板は残基の pivot 名で描く
+  (残基を代表するのが明らかなため。`tube-gpu-mesh.md`)。
 - `isPickSupported()`: `MolAtomRenderer` / `MainChainRenderer` で `isHitTestSupported()`。name を付けない
   renderer (AtomIntr / MolSurf / NameLabel / Selection / Symm / LW / UnitCell) は false のまま。
 - `dsurface` (`DirectSurfRenderer`): fill 描画モードのみ pick 対応。`buildGpuMesh()` が頂点の所有原子 id
@@ -223,8 +227,7 @@ GUIView::hitTest(x, y)   [View::hasGpuPick() && stereo == CSM_NONE]
   より優先されるため、cartoon の手前にある symm コピーは報告されない。
 - `hitTestRect` / `hitTestPolygon` は CPU の点リスト (cartoon の矩形選択は CA 位置基準)。ID buffer 化すれば
   `renderHit()` の点リストは GPU 対応 renderer で不要になる。
-- 座標属性版 GpuPrim (`SphereGpuPrim` / `CylinderGpuPrim` / 名前無しの `LineGpuPrim`) は pick 不可
-  (tritium では float data texture が常に使えるので通常この経路は通らない)。
+- 名前無しの `LineGpuPrim` は pick 不可 (tritium では float data texture が常に使えるので通常この経路は通らない)。
 - readback は同期 `readPixels`。async (PBO + fence) は未実装。
 - hover ハイライトは §10 (pick buffer からの screen-space overlay)。カーソル変更は未実装。
 - stereo (CSM_PARA / CROSS) では GPU pick を使わず CPU 経路 (hover highlight も出ない)。

@@ -8,6 +8,7 @@
 
 #include "NARenderer.hpp"
 #include "BallStickRenderer.hpp"
+#include "TubeMeshBuilder.hpp"
 
 #include <gfx/MolColorRef.hpp>
 
@@ -29,6 +30,15 @@ NARenderer::NARenderer()
   m_fRendTube = true;
   m_nBaseDetail = 3;
   m_bShowBP = true;
+
+  m_pDirectDC = NULL;
+  m_nStickPass = TubeMeshBuilder::MODE_NONE;
+  m_nStickFlags = 0;
+  m_nSphCur = 0;
+  m_nCylCur = 0;
+  m_bStickMismatch = false;
+  m_bCheckStickShader = false;
+  m_bStickShaderOK = false;
 
   m_pBSRend = MB_NEW BallStickRenderer();
   m_pBSRend->resetAllProps();
@@ -63,7 +73,24 @@ void NARenderer::beginRend(DisplayContext *pdl)
   if (m_pBpTmp!=NULL)
     delete m_pBpTmp;
   m_pBpTmp = MB_NEW std::set<MolResidue *>;
-  pdl->setDetail(m_nBaseDetail);
+
+  // pdl is null in the GPU traversal (see TubeGpuSupport)
+  m_pDirectDC = pdl;
+  if (pdl!=NULL) {
+    pdl->setDetail(m_nBaseDetail);
+  }
+  else {
+    const TubeMeshBuilder &mb = tubeGpuBuilder();
+    m_nStickPass = mb.getMode();
+    m_nStickFlags = mb.getUpdateFlags();
+    if (m_nStickPass==TubeMeshBuilder::MODE_BUILD) {
+      m_sphs.clear();
+      m_cyls.clear();
+    }
+    m_nSphCur = 0;
+    m_nCylCur = 0;
+    m_bStickMismatch = false;
+  }
 
   TubeRenderer::beginRend(pdl);
 }
@@ -80,6 +107,7 @@ void NARenderer::endRend(DisplayContext *pdl)
   m_pBpTmp = NULL;
 
   TubeRenderer::endRend(pdl);
+  m_pDirectDC = NULL;
 }
 
 void NARenderer::beginSegment(DisplayContext *pdl, MolResiduePtr pRes)
@@ -181,26 +209,20 @@ void NARenderer::rendResidBasePair(DisplayContext *pdl, MolResiduePtr pRes)
     if (pA1.isnull() || pA3.isnull())
       break;
     
-    pdl->setLighting(true);
+    tubeGpuBuilder().setLighting(true);
     ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
     ColorPtr pcol2 = ColSchmHolder::getColor(pA3);
     Vector4D pos1 = pA1->getPos();
     Vector4D pos2 = pA3->getPos();
     if ( pcol1->equals(*pcol2.get()) ) {
-      pdl->loadName(pA1->getID());
-      pdl->color(pcol1);
-      pdl->cylinder(m_bondw, pos1, pos2);
+      stickCyl(pos1, pos2, m_bondw, pcol1, pA1->getID());
     }
     else {
       const Vector4D mpos = (pos1 + pos2).divide(2.0);
-      pdl->loadName(pA1->getID());
-      pdl->color(pcol1);
-      pdl->cylinder(m_bondw, pos1, mpos);
-      pdl->loadName(pA3->getID());
-      pdl->color(pcol2);
-      pdl->cylinder(m_bondw, pos2, mpos);
+      stickCyl(pos1, mpos, m_bondw, pcol1, pA1->getID());
+      stickCyl(pos2, mpos, m_bondw, pcol2, pA3->getID());
     }
-    pdl->setLighting(false);
+    tubeGpuBuilder().setLighting(false);
     
     m_pBpTmp->insert(pPeer.get());
     return;
@@ -225,12 +247,10 @@ void NARenderer::rendResidBasePair(DisplayContext *pdl, MolResiduePtr pRes)
     //ColorPtr col = ColSchmHolder::getColor(pRes);
     // Get the pivot atom's color --> pA1 is pivot atom
     ColorPtr col = ColSchmHolder::getColor(pA1);
-    pdl->setLighting(true);
-    pdl->loadName(pA1->getID());
-    pdl->color(col);
-    pdl->cylinder(m_bondw, pA1->getPos(), pA3->getPos());
-    pdl->sphere(m_bondw, pA3->getPos());
-    pdl->setLighting(false);
+    tubeGpuBuilder().setLighting(true);
+    stickCyl(pA1->getPos(), pA3->getPos(), m_bondw, col, pA1->getID());
+    stickSphere(pA3->getPos(), m_bondw, col, pA1->getID());
+    tubeGpuBuilder().setLighting(false);
   }
 
 }
@@ -291,7 +311,7 @@ void NARenderer::rendResidSimple1(DisplayContext *pdl, MolResiduePtr pRes)
     if (pA2_1.isnull() || pA2_2.isnull()) // || pA2_3.isnull())
       break;
     
-    pdl->setLighting(true);
+    tubeGpuBuilder().setLighting(true);
     
     // Get the pivot atom's color --> pA1 is pivot atom
     ColorPtr col1 = ColSchmHolder::getColor(pA1);
@@ -301,31 +321,28 @@ void NARenderer::rendResidSimple1(DisplayContext *pdl, MolResiduePtr pRes)
     Vector4D pos2 = pA2_2->getPos();
     
     if ( col1->equals(*col2.get()) ) {
-      pdl->loadName(pA1->getID());
-      pdl->color(col1);
-      pdl->cylinder(m_bondw, pA1->getPos(), pos1);
-      pdl->cylinder(m_bondw, pos1, pos2);
-      pdl->cylinder(m_bondw, pos2, pA2_1->getPos());
-      pdl->sphere(m_bondw, pos1);
-      pdl->sphere(m_bondw, pos2);
+      const int name = pA1->getID();
+      stickCyl(pA1->getPos(), pos1, m_bondw, col1, name);
+      stickCyl(pos1, pos2, m_bondw, col1, name);
+      stickCyl(pos2, pA2_1->getPos(), m_bondw, col1, name);
+      stickSphere(pos1, m_bondw, col1, name);
+      stickSphere(pos2, m_bondw, col1, name);
     }
     else {
       Vector4D mpos = (pos1 + pos2).divide(2.0);
       
-      pdl->loadName(pA1->getID());
-      pdl->color(col1);
-      pdl->cylinder(m_bondw, pA1->getPos(), pos1);
-      pdl->cylinder(m_bondw, pos1, mpos);
-      pdl->sphere(m_bondw, pos1);
+      const int name1 = pA1->getID();
+      stickCyl(pA1->getPos(), pos1, m_bondw, col1, name1);
+      stickCyl(pos1, mpos, m_bondw, col1, name1);
+      stickSphere(pos1, m_bondw, col1, name1);
       
-      pdl->loadName(pA2_1->getID());
-      pdl->color(col2);
-      pdl->cylinder(m_bondw, mpos, pos2);
-      pdl->cylinder(m_bondw, pos2, pA2_1->getPos());
-      pdl->sphere(m_bondw, pos2);
+      const int name2 = pA2_1->getID();
+      stickCyl(mpos, pos2, m_bondw, col2, name2);
+      stickCyl(pos2, pA2_1->getPos(), m_bondw, col2, name2);
+      stickSphere(pos2, m_bondw, col2, name2);
     }
     
-    pdl->setLighting(false);
+    tubeGpuBuilder().setLighting(false);
     
     m_pBpTmp->insert(pPeer.get());
     return; // OK
@@ -338,41 +355,52 @@ void NARenderer::rendResidSimple1(DisplayContext *pdl, MolResiduePtr pRes)
   // Get the pivot atom's color --> pA1 is pivot atom
   //ColorPtr col = ColSchmHolder::getColor(pRes);
   ColorPtr col = ColSchmHolder::getColor(pA1);
-  pdl->setLighting(true);
-  pdl->loadName(pA1->getID());
-  pdl->color(col);
-  pdl->cylinder(m_bondw, pA1->getPos(), pA2->getPos());
-  pdl->cylinder(m_bondw, pA2->getPos(), pA3->getPos());
+  const int name = pA1->getID();
+  tubeGpuBuilder().setLighting(true);
+  stickCyl(pA1->getPos(), pA2->getPos(), m_bondw, col, name);
+  stickCyl(pA2->getPos(), pA3->getPos(), m_bondw, col, name);
   //pdl->sphere(m_bondw, pA1->getPos());
-  pdl->sphere(m_bondw, pA2->getPos());
-  pdl->sphere(m_bondw, pA3->getPos());
-  pdl->setLighting(false);
+  stickSphere(pA2->getPos(), m_bondw, col, name);
+  stickSphere(pA3->getPos(), m_bondw, col, name);
+  tubeGpuBuilder().setLighting(false);
 
   return;
 }
 
 
-namespace {
-  void renderBondImpl(DisplayContext *pdl, BallStickRenderer *pBSRend,
-                      const std::map<LString, MolAtomPtr> &atoms,
-                      const LString &anam1, const LString &anam2)
-  {
-    if (anam1.equals(anam2))
-      return;
-    
-    std::map<LString, MolAtomPtr>::const_iterator iter;
+void NARenderer::rendDetailBond(const std::map<LString, MolAtomPtr> &atoms,
+                                const LString &anam1, const LString &anam2,
+                                int nPivName)
+{
+  if (anam1.equals(anam2) || m_bondw<=0.0)
+    return;
 
-    iter = atoms.find(anam1);
-    if (iter==atoms.end())
-      return;
-    MolAtomPtr pA1 = iter->second;
+  std::map<LString, MolAtomPtr>::const_iterator iter;
 
-    iter = atoms.find(anam2);
-    if (iter==atoms.end())
-      return;
-    MolAtomPtr pA2 = iter->second;
+  iter = atoms.find(anam1);
+  if (iter==atoms.end())
+    return;
+  MolAtomPtr pA1 = iter->second;
 
-    pBSRend->rendBond(pdl, pA1, pA2, NULL);
+  iter = atoms.find(anam2);
+  if (iter==atoms.end())
+    return;
+  MolAtomPtr pA2 = iter->second;
+
+  // Same as BallStickRenderer::drawInterAtomLine(), with the colors of the
+  // helper renderer
+  const Vector4D pos1 = pA1->getPos();
+  const Vector4D pos2 = pA2->getPos();
+  ColorPtr pcol1 = m_pBSRend->ColSchmHolder::getColor(pA1);
+  ColorPtr pcol2 = m_pBSRend->ColSchmHolder::getColor(pA2);
+
+  if ( pcol1->equals(*pcol2.get()) ) {
+    stickCyl(pos1, pos2, m_bondw, pcol1, nPivName);
+  }
+  else {
+    const Vector4D mpos = (pos1 + pos2).divide(2.0);
+    stickCyl(pos1, mpos, m_bondw, pcol1, pA1->getID());
+    stickCyl(pos2, mpos, m_bondw, pcol2, pA2->getID());
   }
 }
 
@@ -388,16 +416,22 @@ void NARenderer::rendResidDetail1(DisplayContext *pdl, MolResiduePtr pRes)
 
   MolAtomPtr pPivAtom = getPivotAtom(pRes);
   ColorPtr col = ColSchmHolder::getColor(pPivAtom);
-  // The base ring is drawn by the helper renderer outside the atom loop:
-  // name it after the pivot atom (residue-level pick).
-  pdl->loadName(pPivAtom->getID());
+  // The base atoms, the same-color bonds and the base ring take the pivot
+  // atom's name (residue-level pick).
+  const int nPivName = pPivAtom->getID();
   m_pBSRend->setDefaultColor(col);
   m_pBSRend->setRingColor(col);
   atoms.insert(std::pair<LString, MolAtomPtr>(pPivAtom->getName(), pPivAtom));
 
-  m_pBSRend->beginRend(pdl);
+  // Same as BallStickRenderer::rendAtom() (sphere radius = bond width)
+  auto rendAtom = [&](MolAtomPtr pAtom) {
+    m_pBSRend->collectRingAtom(pAtom->getID());
+    if (m_bondw>0.0)
+      stickSphere(pAtom->getPos(), m_bondw,
+                  m_pBSRend->ColSchmHolder::getColor(pAtom), nPivName);
+  };
 
-  int i, j;
+  int i;
   for (i=0; ;i++) {
     LString nam = anames[i];
     if (nam.isEmpty())
@@ -408,37 +442,37 @@ void NARenderer::rendResidDetail1(DisplayContext *pdl, MolResiduePtr pRes)
       continue;
     atoms.insert(std::pair<LString, MolAtomPtr>(nam, pAtom));
 
-    m_pBSRend->rendAtom(pdl, pAtom, false);
+    rendAtom(pAtom);
   }
 
   LString btype;
   pRes->getPropStr("basetype", btype);
   if (btype.equals("pur")) {
-    renderBondImpl(pdl, m_pBSRend, atoms, "C1'", "N9");
-    renderBondImpl(pdl, m_pBSRend, atoms, "N9", "C8");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C8", "N7");
-    renderBondImpl(pdl, m_pBSRend, atoms, "N7", "C5");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C4", "N9");
+    rendDetailBond(atoms, "C1'", "N9", nPivName);
+    rendDetailBond(atoms, "N9", "C8", nPivName);
+    rendDetailBond(atoms, "C8", "N7", nPivName);
+    rendDetailBond(atoms, "N7", "C5", nPivName);
+    rendDetailBond(atoms, "C4", "N9", nPivName);
 
-    renderBondImpl(pdl, m_pBSRend, atoms, "N1", "C2");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C2", "N3");
-    renderBondImpl(pdl, m_pBSRend, atoms, "N3", "C4");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C4", "C5");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C5", "C6");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C6", "N1");
+    rendDetailBond(atoms, "N1", "C2", nPivName);
+    rendDetailBond(atoms, "C2", "N3", nPivName);
+    rendDetailBond(atoms, "N3", "C4", nPivName);
+    rendDetailBond(atoms, "C4", "C5", nPivName);
+    rendDetailBond(atoms, "C5", "C6", nPivName);
+    rendDetailBond(atoms, "C6", "N1", nPivName);
   }
   else if (btype.equals("pyr")) {
-    renderBondImpl(pdl, m_pBSRend, atoms, "C1'", "N1");
-    renderBondImpl(pdl, m_pBSRend, atoms, "N1", "C2");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C2", "N3");
-    renderBondImpl(pdl, m_pBSRend, atoms, "N3", "C4");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C4", "C5");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C5", "C6");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C6", "N1");
+    rendDetailBond(atoms, "C1'", "N1", nPivName);
+    rendDetailBond(atoms, "N1", "C2", nPivName);
+    rendDetailBond(atoms, "C2", "N3", nPivName);
+    rendDetailBond(atoms, "N3", "C4", nPivName);
+    rendDetailBond(atoms, "C4", "C5", nPivName);
+    rendDetailBond(atoms, "C5", "C6", nPivName);
+    rendDetailBond(atoms, "C6", "N1", nPivName);
   }
 
   if (m_nType==NAREND_DETAIL1) {
-    renderBondImpl(pdl, m_pBSRend, atoms, pPivAtom->getName(), "C1'");
+    rendDetailBond(atoms, pPivAtom->getName(), "C1'", nPivName);
   }
   else if (m_nType==NAREND_DETAIL2) {
     // draw riboses
@@ -452,20 +486,184 @@ void NARenderer::rendResidDetail1(DisplayContext *pdl, MolResiduePtr pRes)
       if (pAtom.isnull())
         continue;
       atoms.insert(std::pair<LString, MolAtomPtr>(nam, pAtom));
-      m_pBSRend->rendAtom(pdl, pAtom, false);
+      rendAtom(pAtom);
     }
 
-    renderBondImpl(pdl, m_pBSRend, atoms, "C1'", "C2'");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C2'", "C3'");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C3'", "C4'");
-    renderBondImpl(pdl, m_pBSRend, atoms, "C4'", "O4'");
-    renderBondImpl(pdl, m_pBSRend, atoms, "O4'", "C1'");
+    rendDetailBond(atoms, "C1'", "C2'", nPivName);
+    rendDetailBond(atoms, "C2'", "C3'", nPivName);
+    rendDetailBond(atoms, "C3'", "C4'", nPivName);
+    rendDetailBond(atoms, "C4'", "O4'", nPivName);
+    rendDetailBond(atoms, "O4'", "C1'", nPivName);
 
-    renderBondImpl(pdl, m_pBSRend, atoms, pPivAtom->getName(), "C4'");
+    rendDetailBond(atoms, pPivAtom->getName(), "C4'", nPivName);
   }
 
-  // draw rings
-  m_pBSRend->endRend(pdl);
+  // draw rings (to the tube mesh)
+  tubeGpuBuilder().loadName(nPivName);
+  m_pBSRend->drawCollectedRings(&tubeGpuBuilder());
+}
+
+//////////////////////////////////////////////////////
+// Base sticks
+
+void NARenderer::stickSphere(const Vector4D &pos, double rad,
+                             const ColorPtr &col, int name)
+{
+  if (m_pDirectDC!=NULL) {
+    m_pDirectDC->loadName(name);
+    m_pDirectDC->color(col);
+    m_pDirectDC->sphere(rad, pos);
+    return;
+  }
+  recordStick(m_sphs, m_nSphCur, pos, pos, rad, col, name);
+}
+
+void NARenderer::stickCyl(const Vector4D &pos1, const Vector4D &pos2, double rad,
+                          const ColorPtr &col, int name)
+{
+  if (m_pDirectDC!=NULL) {
+    m_pDirectDC->loadName(name);
+    m_pDirectDC->color(col);
+    m_pDirectDC->cylinder(rad, pos1, pos2);
+    return;
+  }
+  recordStick(m_cyls, m_nCylCur, pos1, pos2, rad, col, name);
+}
+
+void NARenderer::recordStick(std::vector<Stick> &recs, int &nCur,
+                             const Vector4D &pos1, const Vector4D &pos2,
+                             double rad, const ColorPtr &col, int name)
+{
+  if (m_nStickPass==TubeMeshBuilder::MODE_BUILD) {
+    Stick st;
+    st.pos1 = pos1;
+    st.pos2 = pos2;
+    st.rad = float(rad);
+    st.col = col->getDevCode(getSceneID());
+    st.name = name;
+    recs.push_back(st);
+    return;
+  }
+
+  if (m_nStickPass!=TubeMeshBuilder::MODE_UPDATE)
+    return;
+
+  const int i = nCur;
+  ++nCur;
+  if (i>=int(recs.size())) {
+    m_bStickMismatch = true;
+    return;
+  }
+  if (m_nStickFlags & TubeMeshBuilder::UPD_GEOM) {
+    recs[i].pos1 = pos1;
+    recs[i].pos2 = pos2;
+  }
+  if (m_nStickFlags & TubeMeshBuilder::UPD_COLOR)
+    recs[i].col = col->getDevCode(getSceneID());
+}
+
+void NARenderer::tubeGpuRenderMesh()
+{
+  render(nullptr);
+  if (m_nStickPass==TubeMeshBuilder::MODE_UPDATE &&
+      (m_nSphCur!=int(m_sphs.size()) || m_nCylCur!=int(m_cyls.size())))
+    m_bStickMismatch = true;
+}
+
+bool NARenderer::prepareGpu(DisplayContext *pdc)
+{
+  if (pdc->isFile())
+    return false;
+
+  if (!m_bCheckStickShader) {
+    m_bStickShaderOK = m_sphPrim.init(pdc) && m_cylPrim.init(pdc);
+    m_bCheckStickShader = true;
+  }
+  if (!m_bStickShaderOK)
+    return false;
+
+  if (!tubeGpuPrepare(pdc))
+    return false;
+
+  if (m_nStickPass==TubeMeshBuilder::MODE_UPDATE && m_bStickMismatch) {
+    // The sticks changed although the mesh did not: rebuild both
+    MB_DPRINTLN("NARenderer> stick topology changed, rebuild");
+    tubeGpuInvalidate();
+    if (!tubeGpuPrepare(pdc))
+      return false;
+  }
+
+  if (m_nStickPass==TubeMeshBuilder::MODE_BUILD) {
+    m_sphPrim.invalidate();
+    if (!m_sphs.empty()) {
+      m_sphPrim.alloc(pdc, int(m_sphs.size()));
+      for (int i=0; i<int(m_sphs.size()); ++i)
+        m_sphPrim.setData(i, m_sphs[i].pos1, m_sphs[i].rad, m_sphs[i].col,
+                          gfx::encodeHitName(m_sphs[i].name));
+    }
+    m_cylPrim.invalidate();
+    if (!m_cyls.empty()) {
+      m_cylPrim.alloc(pdc, int(m_cyls.size()));
+      for (int i=0; i<int(m_cyls.size()); ++i)
+        m_cylPrim.setData(i, m_cyls[i].pos1, m_cyls[i].pos2, m_cyls[i].rad,
+                          m_cyls[i].col, gfx::encodeHitName(m_cyls[i].name),
+                          gfx::encodeHitName(m_cyls[i].name));
+    }
+  }
+  else if (m_nStickPass==TubeMeshBuilder::MODE_UPDATE) {
+    if (m_sphPrim.isValid()) {
+      for (int i=0; i<int(m_sphs.size()); ++i)
+        m_sphPrim.setData(i, m_sphs[i].pos1, m_sphs[i].rad, m_sphs[i].col,
+                          gfx::encodeHitName(m_sphs[i].name));
+      m_sphPrim.setUpdated(true);
+    }
+    if (m_cylPrim.isValid()) {
+      for (int i=0; i<int(m_cyls.size()); ++i)
+        m_cylPrim.setData(i, m_cyls[i].pos1, m_cyls[i].pos2, m_cyls[i].rad,
+                          m_cyls[i].col, gfx::encodeHitName(m_cyls[i].name),
+                          gfx::encodeHitName(m_cyls[i].name));
+      m_cylPrim.setUpdated(true);
+    }
+  }
+  m_nStickPass = TubeMeshBuilder::MODE_NONE;
+  return true;
+}
+
+void NARenderer::display(DisplayContext *pdc)
+{
+  if (!prepareGpu(pdc)) {
+    // file context or no shader --> display-list path
+    SplineRenderer::display(pdc);
+    return;
+  }
+  preRender(pdc);
+  tubeGpuDraw(pdc);
+  if (m_sphPrim.isValid())
+    m_sphPrim.draw(pdc);
+  if (m_cylPrim.isValid())
+    m_cylPrim.draw(pdc);
+  postRender(pdc);
+}
+
+void NARenderer::displayPick(DisplayContext *pdc)
+{
+  if (!prepareGpu(pdc)) {
+    SplineRenderer::displayPick(pdc);
+    return;
+  }
+  // Each primitive switches to its pick program (DisplayContext::isPickDraw)
+  tubeGpuDraw(pdc);
+  if (m_sphPrim.isValid())
+    m_sphPrim.draw(pdc);
+  if (m_cylPrim.isValid())
+    m_cylPrim.draw(pdc);
+}
+
+void NARenderer::unloading()
+{
+  m_sphPrim.invalidate();
+  m_cylPrim.invalidate();
+  super_t::unloading();
 }
 
 void NARenderer::attachObj(qlib::uid_t obj_uid)

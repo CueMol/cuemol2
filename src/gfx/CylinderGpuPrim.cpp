@@ -18,6 +18,7 @@ using namespace gfx;
 
 CylinderGpuPrim::CylinderGpuPrim()
     : m_pPO(nullptr),
+      m_pPickPO(nullptr),
       m_pDrawElem(nullptr)
 {
     m_dsps[0][0] = -1.0f;
@@ -60,7 +61,7 @@ void CylinderGpuPrim::alloc(DisplayContext *pDC, int ncyl)
     m_pDrawElem = pdata;
     CylElemAry32 &cyldata = *pdata;
 
-    cyldata.setAttrSize(5);
+    cyldata.setAttrSize(7);
     cyldata.setAttrInfo(0, ATTRLOC_VERTEX, 3, qlib::type_consts::QTC_FLOAT32,
                         offsetof(CylElem, cenx));
     cyldata.setAttrInfo(1, ATTRLOC_DIR, 3, qlib::type_consts::QTC_FLOAT32,
@@ -71,13 +72,21 @@ void CylinderGpuPrim::alloc(DisplayContext *pDC, int ncyl)
                         offsetof(CylElem, rad));
     cyldata.setAttrInfo(4, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8,
                         offsetof(CylElem, r));
+    // Hit names of the two halves: integer attributes for the pick program.
+    cyldata.setAttrInfo(5, ATTRLOC_HITNAME_A, 1, qlib::type_consts::QTC_UINT32,
+                        offsetof(CylElem, hitNameA));
+    cyldata.setAttrInteger(5, true);
+    cyldata.setAttrInfo(6, ATTRLOC_HITNAME_B, 1, qlib::type_consts::QTC_UINT32,
+                        offsetof(CylElem, hitNameB));
+    cyldata.setAttrInteger(6, true);
 
     pDC->allocBuffer(cyldata, ncyl * 4, ncyl * 6);
     cyldata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 
 void CylinderGpuPrim::setData(int idx, const qlib::Vector4D &pos1,
-                               const qlib::Vector4D &pos2, float rad, quint32 devcode)
+                               const qlib::Vector4D &pos2, float rad, quint32 devcode,
+                               quint32 hitNameA, quint32 hitNameB)
 {
     qlib::Vector4D dir = pos2 - pos1;
     CylElemAry32 &cyldata = *m_pDrawElem;
@@ -110,6 +119,11 @@ void CylinderGpuPrim::setData(int idx, const qlib::Vector4D &pos1,
     data.b = getBCode(devcode);
     data.a = getACode(devcode);
 
+    // The pick shader takes A on the pos1 half and B on the pos2 half (same
+    // vertex layout as CylinderIdxGpuPrim).
+    data.hitNameA = hitNameA;
+    data.hitNameB = hitNameB;
+
     // Two vertices at pos1 side
     for (int j = 0; j < 2; ++j) {
         cyldata.at(i) = data;
@@ -137,9 +151,10 @@ void CylinderGpuPrim::setData(int idx, const qlib::Vector4D &pos1,
 void CylinderGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
-    // No pick program for this (position-attribute) variant: never draw the
-    // vec4-output shading program into the integer pick target.
-    if (pDC->isPickDraw()) return;
+    if (pDC->isPickDraw()) {
+        drawPick(pDC);
+        return;
+    }
 
     DrawParams ubo = {};
     ubo.frag_alpha = (float)pDC->getAlpha();
@@ -164,6 +179,38 @@ void CylinderGpuPrim::draw(DisplayContext *pDC)
 
     pDC->drawElem(*m_pDrawElem);
     m_pPO->disable();
+}
+
+bool CylinderGpuPrim::initPick(DisplayContext *pDC)
+{
+    if (m_pPickPO != nullptr) return true;
+
+    m_pPickPO = pDC->loadShaderObject("gpu_cylinder_pick",
+                                      "%%CONFDIR%%/data/shaders/cylinder_pick_vertex.glsl",
+                                      "%%CONFDIR%%/data/shaders/cylinder_pick_frag.glsl");
+    if (m_pPickPO == nullptr) {
+        LOG_DPRINTLN("CylinderGpuPrim> ERROR: cannot load pick shader.");
+        return false;
+    }
+    m_pPickPO->initDrawParamsUBO(sizeof(PickDrawParams));
+    return true;
+}
+
+void CylinderGpuPrim::drawPick(DisplayContext *pDC)
+{
+    if (!initPick(pDC)) return;
+
+    // No edge in the pick pass (u_edge = 0).
+    PickDrawParams ubo = {};
+    ubo.u_edgecolor[3] = 1.0f;
+    ubo.u_rend_idx     = pDC->getHitRendIndex();
+    ubo.u_outer_name   = encodeHitName(pDC->getOuterName());
+
+    m_pPickPO->enable();
+    m_pPickPO->setupMat(pDC);
+    m_pPickPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
+    pDC->drawElem(*m_pDrawElem);
+    m_pPickPO->disable();
 }
 
 void CylinderGpuPrim::invalidate()

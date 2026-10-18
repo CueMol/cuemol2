@@ -57,7 +57,7 @@ void TubeRenderer::preRender(DisplayContext *pdc)
 
 void TubeRenderer::beginRend(DisplayContext *pdl)
 {
-  tgBeginRend(pdl);
+  tubeGpuBeginRend(pdl);
 
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
@@ -122,7 +122,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
 
   // All drawing goes through the mesh builder (pdl is null when the GPU
   // mesh is built or updated)
-  TubeMeshBuilder *pmb = &tgBuilder();
+  TubeMeshBuilder *pmb = &tubeGpuBuilder();
   const bool bColor = pmb->wantColor();
   const bool bName = pmb->wantName();
 
@@ -348,9 +348,9 @@ void TubeRenderer::propChanged(qlib::LPropEvent &ev)
       ev.getParentName().startsWith("coloring.")) {
     // Only the colors change: the base classes' invalidateDisplayCache()
     // calls turn into an in-place color update of the GPU mesh
-    tgBeginColorOnly();
+    tubeGpuBeginColorOnly();
     super_t::propChanged(ev);
-    tgEndColorOnly();
+    tubeGpuEndColorOnly();
     return;
   }
 
@@ -362,25 +362,25 @@ void TubeRenderer::propChanged(qlib::LPropEvent &ev)
 
 void TubeRenderer::display(DisplayContext *pdc)
 {
-  if (!tgDisplay(pdc))
+  if (!tubeGpuDisplay(pdc))
     super_t::display(pdc);
 }
 
 void TubeRenderer::displayPick(DisplayContext *pdc)
 {
-  if (!tgDisplayPick(pdc))
+  if (!tubeGpuDisplayPick(pdc))
     super_t::displayPick(pdc);
 }
 
 void TubeRenderer::invalidateDisplayCache()
 {
-  tgOnInvalidateDisplay();
+  tubeGpuOnInvalidateDisplay();
   super_t::invalidateDisplayCache();
 }
 
 void TubeRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (tgOnAtomsMoved(ev)) {
+  if (tubeGpuOnAtomsMoved(ev)) {
     // Positions changed but topology/colors did not: the vertices are
     // rewritten in place on the next display()
     updateMovedAtoms();
@@ -391,7 +391,7 @@ void TubeRenderer::objectChanged(qsys::ObjectEvent &ev)
 
 void TubeRenderer::unloading()
 {
-  tgUnload();
+  tubeGpuUnload();
   super_t::unloading();
 }
 

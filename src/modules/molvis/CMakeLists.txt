@@ -105,6 +105,8 @@ IF (BUILD_OPENGL_SYSDEP)
     sphere_pick_frag.glsl
     cylinder_idx_pick_vertex.glsl
     cylinder_pick_frag.glsl
+    sphere2_pick_vertex.glsl
+    cylinder_pick_vertex.glsl
   )
   SET(SHADER_DEPS
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/lighting_inc.glsl

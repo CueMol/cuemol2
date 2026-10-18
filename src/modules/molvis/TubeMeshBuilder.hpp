@@ -86,6 +86,9 @@ public:
     void clear();
 
     int getMode() const { return m_nMode; }
+
+    /// Update flags (UPD_GEOM / UPD_COLOR) of the current update traversal.
+    int getUpdateFlags() const { return m_nUpdFlags; }
     bool isDirect() const { return m_nMode == MODE_DIRECT; }
 
     /// True if the caller has to compute colors for this traversal.
