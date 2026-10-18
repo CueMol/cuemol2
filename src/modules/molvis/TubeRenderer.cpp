@@ -24,7 +24,7 @@ using namespace molvis;
 using namespace molstr;
 
 TubeRenderer::TubeRenderer()
-     : SplineRenderer(), m_pts(MB_NEW TubeSection())
+     : super_t(), m_pts(MB_NEW TubeSection())
 {
   super_t::setupParentData("section");
 
@@ -369,54 +369,6 @@ void TubeRenderer::propChanged(qlib::LPropEvent &ev)
     invalidateDisplayCache();
   }
 
-  if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    // Only the colors change: the base classes' invalidateDisplayCache()
-    // calls turn into an in-place color update of the GPU mesh
-    tubeGpuBeginColorOnly();
-    super_t::propChanged(ev);
-    tubeGpuEndColorOnly();
-    return;
-  }
-
   super_t::propChanged(ev);
-}
-
-/////////////////////////////////////////////////////
-// GPU mesh
-
-void TubeRenderer::display(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplay(pdc))
-    super_t::display(pdc);
-}
-
-void TubeRenderer::displayPick(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplayPick(pdc))
-    super_t::displayPick(pdc);
-}
-
-void TubeRenderer::invalidateDisplayCache()
-{
-  tubeGpuOnInvalidateDisplay();
-  super_t::invalidateDisplayCache();
-}
-
-void TubeRenderer::objectChanged(qsys::ObjectEvent &ev)
-{
-  if (tubeGpuOnAtomsMoved(ev)) {
-    // Positions changed but topology/colors did not: the vertices are
-    // rewritten in place on the next display()
-    updateMovedAtoms();
-    return;
-  }
-  super_t::objectChanged(ev);
-}
-
-void TubeRenderer::unloading()
-{
-  tubeGpuUnload();
-  super_t::unloading();
 }
 

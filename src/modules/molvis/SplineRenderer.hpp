@@ -148,11 +148,9 @@ namespace molvis {
     /// Recompute the stale part of the spline coeffs (after an atom move)
     void prepareSplineCoeffs();
 
-    /// Atoms moved and the GPU mesh is updated in place (TubeGpuSupport):
-    /// mark the geometry part of the spline coeffs stale (the topology part
-    /// is kept), request a redraw and drop the hittest cache, without
-    /// invalidating the display cache.
-    void updateMovedAtoms();
+    /// The atoms moved: mark the geometry part of the spline coeffs stale
+    /// (the topology part is kept)
+    void markSplineCoeffsMoved() { m_scs.markMoved(); }
 
   private:
     void getSegEndImpl(int nprev, MolResiduePtr pPrev,

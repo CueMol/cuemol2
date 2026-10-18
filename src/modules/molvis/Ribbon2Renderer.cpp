@@ -1713,14 +1713,10 @@ void Ribbon2Renderer::setAxialDetail(int nlev)
 
 void Ribbon2Renderer::propChanged(qlib::LPropEvent &ev)
 {
-  if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    // Only the colors change: the invalidateDisplayCache() calls turn into
-    // an in-place color update of the GPU mesh
-    tubeGpuBeginColorOnly();
-    invalidateDisplayCache();
+  if (isColoringProp(ev)) {
+    // color-only update (TubeGpuRenderer); a coloring property may also be
+    // named helix/sheet/coil
     super_t::propChanged(ev);
-    tubeGpuEndColorOnly();
     return;
   }
   else if (ev.getName().startsWith("helix") ||
@@ -1742,17 +1738,11 @@ void Ribbon2Renderer::propChanged(qlib::LPropEvent &ev)
 
 void Ribbon2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (tubeGpuOnAtomsMoved(ev)) {
-    // Positions changed but topology/colors did not: the vertices are
-    // rewritten in place on the next display() (endSegment() rebuilds the
-    // splines on every traversal)
-    m_diffvecs.clear();
-    qsys::ScenePtr pScene = getScene();
-    if (!pScene.isnull())
-      pScene->setUpdateFlag();
-    invalidateHittestCache();
+  // Positions changed but topology/colors did not: the vertices are
+  // rewritten in place on the next display() (before the OBE_CHANGED
+  // handling below, which drops everything)
+  if (tubeGpuHandleAtomsMoved(ev))
     return;
-  }
 
   int ntyp = ev.getType();
 
@@ -1771,30 +1761,6 @@ void Ribbon2Renderer::objectChanged(qsys::ObjectEvent &ev)
   }
 
   super_t::objectChanged(ev);
-}
-
-void Ribbon2Renderer::display(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplay(pdc))
-    super_t::display(pdc);
-}
-
-void Ribbon2Renderer::displayPick(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplayPick(pdc))
-    super_t::displayPick(pdc);
-}
-
-void Ribbon2Renderer::invalidateDisplayCache()
-{
-  tubeGpuOnInvalidateDisplay();
-  super_t::invalidateDisplayCache();
-}
-
-void Ribbon2Renderer::unloading()
-{
-  tubeGpuUnload();
-  super_t::unloading();
 }
 
 void Ribbon2Renderer::invalidateSplineCoeffs()

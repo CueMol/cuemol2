@@ -284,15 +284,6 @@ void SplineRenderer::prepareSplineCoeffs()
     m_scs.generate(pmol);
 }
 
-void SplineRenderer::updateMovedAtoms()
-{
-  m_scs.markMoved();
-  qsys::ScenePtr pScene = getScene();
-  if (!pScene.isnull())
-    pScene->setUpdateFlag();
-  invalidateHittestCache();
-}
-
 void SplineRenderer::invalidateSplineCoeffs()
 {
   m_scs.cleanup();

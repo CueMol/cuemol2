@@ -10,7 +10,7 @@
 
 #include "SplineRenderer.hpp"
 #include "TubeSection.hpp"
-#include "TubeGpuSupport.hpp"
+#include "TubeGpuRenderer.hpp"
 #include "JctTable.hpp"
 
 namespace molvis {
@@ -18,12 +18,12 @@ namespace molvis {
 using gfx::ColorPtr;
 class RibbonSmoothEval;
 
-class RibbonRenderer : public SplineRenderer, public TubeGpuSupport
+class RibbonRenderer : public TubeGpuRenderer<SplineRenderer>
 {
   MC_SCRIPTABLE;
   MC_CLONEABLE;
 
-  typedef SplineRenderer super_t;
+  typedef TubeGpuRenderer<SplineRenderer> super_t;
 private:
   //////////////////////////////////////////////////////
   // Properties
@@ -120,24 +120,10 @@ public:
   void preRender(DisplayContext *pdc) override;
 
   //////////////////////////////////////////////////////
-  // GPU mesh (TubeGpuSupport)
-
-  void display(DisplayContext *pdc) override;
-
-  /// The pick pass draws the same mesh with the pick program
-  void displayPick(DisplayContext *pdc) override;
-
-  void invalidateDisplayCache() override;
-
-  void objectChanged(qsys::ObjectEvent &ev) override;
-
-  void unloading() override;
+  // GPU mesh (TubeGpuRenderer)
 
 protected:
-  void tubeGpuRenderMesh() override { render(nullptr); }
-  qlib::uid_t tubeGpuSceneID() const override { return getSceneID(); }
-  void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
-  void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
+  void tubeGpuOnMovedAtoms() override { markSplineCoeffsMoved(); }
 
   // chunked coordinate update: one chunk per segment (see renderSpline())
   bool tubeGpuCanUpdateChunks() const override

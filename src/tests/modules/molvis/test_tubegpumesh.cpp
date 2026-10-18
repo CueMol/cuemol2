@@ -11,6 +11,7 @@
 #include <qsys/SceneManager.hpp>
 #include <qsys/ObjectEvent.hpp>
 #include <qlib/StringStream.hpp>
+#include <qlib/LPropEvent.hpp>
 #include <gfx/TrigGpuPrim.hpp>
 #include "tests/gfx/mock_display_context.hpp"
 #include "molvis/TubeGpuSupport.hpp"
@@ -160,6 +161,20 @@ TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
     const PrimSnapshot rebuilt = drawnMesh(newRenderer(type.c_str()), m_dc);
     EXPECT_EQ(rebuilt.geom, updated.geom);
     EXPECT_EQ(rebuilt.name, updated.name);
+}
+
+// A coloring change updates only the colors in place (no rebuild), also for
+// a coloring property whose name could match the renderer's own properties.
+TEST_P(TubeGpuMeshTest, ColoringChangeUpdatesColorsInPlace)
+{
+    qsys::RendererPtr pRend = newRenderer(GetParam());
+    drawnMesh(pRend, m_dc);
+
+    qlib::LPropEvent ev("helix");
+    ev.setParentName("coloring");
+    pRend->propChanged(ev);
+    drawnMesh(pRend, m_dc);
+    EXPECT_EQ(lastPass(pRend), TubeGpuSupport::TG_PASS_SERIAL);
 }
 
 // The pivot atom of each residue is cached: a pivot name change and a

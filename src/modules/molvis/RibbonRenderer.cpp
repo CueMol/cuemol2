@@ -55,7 +55,7 @@ namespace molvis {
 /////////////////////////////////////////////////////
 
 RibbonRenderer::RibbonRenderer()
-     : SplineRenderer(),
+     : super_t(),
        m_ptsHelix(MB_NEW TubeSection()),
        m_ptsSheet(MB_NEW TubeSection()),
        m_ptsCoil(MB_NEW TubeSection()),
@@ -635,16 +635,6 @@ void RibbonRenderer::renderJct(SegCtx &c,
 
 void RibbonRenderer::propChanged(qlib::LPropEvent &ev)
 {
-  if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    // Only the colors change: the base classes' invalidateDisplayCache()
-    // calls turn into an in-place color update of the GPU mesh
-    tubeGpuBeginColorOnly();
-    super_t::propChanged(ev);
-    tubeGpuEndColorOnly();
-    return;
-  }
-
   if (ev.getParentName().equals("helix")||
       ev.getParentName().equals("sheet")||
       ev.getParentName().equals("coil")||
@@ -663,44 +653,6 @@ void RibbonRenderer::propChanged(qlib::LPropEvent &ev)
   }
 
   super_t::propChanged(ev);
-}
-
-/////////////////////////////////////////////////////
-// GPU mesh
-
-void RibbonRenderer::display(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplay(pdc))
-    super_t::display(pdc);
-}
-
-void RibbonRenderer::displayPick(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplayPick(pdc))
-    super_t::displayPick(pdc);
-}
-
-void RibbonRenderer::invalidateDisplayCache()
-{
-  tubeGpuOnInvalidateDisplay();
-  super_t::invalidateDisplayCache();
-}
-
-void RibbonRenderer::objectChanged(qsys::ObjectEvent &ev)
-{
-  if (tubeGpuOnAtomsMoved(ev)) {
-    // Positions changed but topology/colors did not: the vertices are
-    // rewritten in place on the next display()
-    updateMovedAtoms();
-    return;
-  }
-  super_t::objectChanged(ev);
-}
-
-void RibbonRenderer::unloading()
-{
-  tubeGpuUnload();
-  super_t::unloading();
 }
 
 void RibbonRenderer::setHelixSmooth(double d)
