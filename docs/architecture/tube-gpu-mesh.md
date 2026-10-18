@@ -72,6 +72,30 @@ Update traversal は座標が変わるたびに走るので、トポロジに依
   経路だけを header で inline にしている (座標・色の更新のたびに頂点数だけ呼ばれるため)。Direct / Build と例外的な
   経路は .cpp の `*Slow` に落ちる
 
+## 座標更新の並列化 (チャンク単位の更新)
+
+座標だけの更新 (UPD_GEOM) は、tube と ribbon ではセグメントごとに並列に実行する (`qlib::parallel_for`、oneTBB。
+`CUEMOL_TBB_THREADS=1` で逐次):
+
+- Build の traversal で、`TubeRenderer` / `RibbonRenderer` の `renderSpline` が各セグメントを
+  `TubeMeshBuilder::beginChunk()` / `endChunk()` で囲み、チャンク (書いた頂点・prim の範囲) とセグメントの引数
+  (`SplineRenderer::SplineSeg`: 係数、開始・終了残基、fstart / fend) を記録する
+- `TubeGpuSupport::tubeGpuUpdateMesh()` は、UPD_GEOM のみ、prim に直接書く状態、host が可
+  (`tubeGpuCanUpdateChunks()`)、チャンクが全頂点を覆う (`chunksCoverAll()`) のときに、
+  `tubeGpuPrepareChunkUpdate()` (spline 係数の座標の部分の再計算) の後、各チャンクをローカルの builder
+  (`startChunkUpdate`: カーソルと上限をチャンクの範囲にする) で `tubeGpuUpdateChunk()` -> `renderSplineTo()`
+  に描き直す。チャンクの範囲は重ならない。どれかが合わなければフル再構築
+- セグメントを単独で描けるよう、`renderSplineTo(TubeMeshBuilder *, …)` は renderer の状態を使わない
+  (ribbon のセグメント内の状態は `RibbonRenderer::SegCtx`)。共有の `TubeSection` / `JctTable` は raw pointer で
+  使う (参照カウントは atomic でないので、複数スレッドから smart pointer をコピーしない)。putty の `getEScl` は
+  spline トポロジの pivot (`SplineCoeff::getPivot`) を読む
+- 逐次のままのもの: 色の更新 (色スキームの評価)、cartoon、nucl (`tubeGpuCanUpdateChunks()` が false)、
+  seg-end fade が on のとき、spline トポロジが Build 時と変わったとき (`isSplineSegsValid()`)
+- spline 係数の座標の部分 (`SplineCoeff::updateGeometry`) もセグメントごとに `qlib::parallel_for` で計算する
+- `tubeGpuLastPass()` は直前の更新の経路 (build / serial / chunked) を返す (検査用)
+
+4V6X (8 コア) の座標更新 1 回: ribbon 48.3 ms (逐次) -> 11.9 ms、tube 33.5 -> 8.4 ms。
+
 ## VBO の転送
 
 座標・色の更新で送り直すのは頂点バッファだけ (インデックスは buffer の寿命の間変わらないので送らない。
