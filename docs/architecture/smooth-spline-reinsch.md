@@ -27,6 +27,10 @@ ALGLIB 版とピクセル単位で同じ描画になる。
 | Reinsch | M = n (3D は n >= 4、1D は n >= 10)、重みに 0 を含まない | knot がデータ点の上に来るので、問題は古典的な平滑化 spline になる。値 g と 2 階微分 γ について `(R + lambda Q^T W^-2 Q) gamma = Q^T y`, `g = y - lambda W^-2 Q gamma` を LDL^T で解く。x / y / z は分解を共有する |
 | dense | それ以外 (短い segment、重み 0) | 基底値行列 F、罰則行列 A を作り、`F^T W^2 F + pdecay A + tdecay I` を Cholesky で解く (ALGLIB と同じ手順) |
 
+分解 (Reinsch の LDL^T、dense の Cholesky) は点数・重み・rho (と dense では最初の t) だけで決まるので、
+`SmoothSpline` / `SmoothSpline1D` はそれが変わらない間は分解済みの solver を持ち続け (`SmoothSplineCache`)、
+`generate()` は solve だけを行う。cartoon の座標更新は要素の spline をこの形で作り直す。
+
 重みは 2 乗でしか効かないので、負の重みは正と同じに扱う。重みが全部 0 だと正規行列が正定値でなくなり、
 `generate()` は false を返す (ALGLIB 版は失敗コードを見ずに空の結果を読んでいた)。
 

@@ -126,22 +126,26 @@ protected:
         qsys::SceneManager::getInstance()->destroyScene(uid);
     }
 
+    /// type: a renderer type name, or "cartoon-ribhelix" (cartoon with
+    /// ribbon-shaped helices)
     qsys::RendererPtr newRenderer(const char *type)
     {
-        qsys::RendererPtr pR = m_mol->createRenderer(type);
+        const bool bRibHelix = std::string(type) == "cartoon-ribhelix";
+        qsys::RendererPtr pR = m_mol->createRenderer(bRibHelix ? "cartoon" : type);
         // (the default style that sets the pivot is not loaded in the tests)
         dynamic_cast<molstr::MainChainRenderer *>(pR.get())->setPivAtomName("CA");
+        if (bRibHelix) pR->setPropBool("helix_ribbon", true);
         return pR;
     }
 };
 
 }  // namespace
 
-// An atom move rewrites the vertices in place -- chunk by chunk (in parallel)
-// for tube and ribbon, by the serial traversal for cartoon -- keeping the
-// topology, hit names and colors, and gives the same mesh as a fresh build
-// from the moved atoms (no stale position-derived cache such as the spline
-// coeffs).
+// An atom move rewrites the vertices in place, chunk by chunk (in parallel;
+// a segment for tube and ribbon, a helix / sheet / coil element for cartoon),
+// keeping the topology, hit names and colors, and gives the same mesh as a
+// fresh build from the moved atoms (no stale position-derived cache such as
+// the spline coeffs or the cartoon's element splines).
 TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
 {
     const std::string type = GetParam();
@@ -151,8 +155,7 @@ TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
 
     moveAtoms(m_mol);
     const PrimSnapshot updated = drawnMesh(pRend, m_dc);
-    EXPECT_EQ(lastPass(pRend), type == "cartoon" ? TubeGpuSupport::TG_PASS_SERIAL
-                                                 : TubeGpuSupport::TG_PASS_CHUNKED);
+    EXPECT_EQ(lastPass(pRend), TubeGpuSupport::TG_PASS_CHUNKED);
     EXPECT_EQ(updated.nfaces, built.nfaces);
     EXPECT_EQ(updated.name, built.name);
     EXPECT_EQ(updated.col, built.col);
@@ -232,8 +235,50 @@ TEST_F(TubeGpuMeshTest, SplineTopologyRebuiltOnSecondaryAndSmoothing)
     EXPECT_EQ(drawnMesh(pRend, m_dc).geom, drawnMesh(newRibbon(0.7), m_dc).geom);
 }
 
+// The cartoon keeps its helix / sheet / coil elements (control point sources,
+// weights, sheet C/O atoms) across atom moves and rebuilds them when the
+// secondary structure or a smoothing / anchor property changes: the chunked
+// update after such a change gives the mesh of a fresh build.
+TEST_F(TubeGpuMeshTest, CartoonElementsRebuiltOnSecondaryAndProps)
+{
+    auto newCartoon = [this](double dCoilSmo, double dAnchorWgt) {
+        qsys::RendererPtr pR = newRenderer("cartoon");
+        pR->setPropReal("coil_smooth", dCoilSmo);
+        pR->setPropReal("anchor_weight", dAnchorWgt);
+        return pR;
+    };
+
+    qsys::RendererPtr pRend = newCartoon(-1.0, 10.0);
+    drawnMesh(pRend, m_dc);
+
+    // Secondary structure: residues 1-10 become a strand
+    for (int i = 1; i <= 10; ++i)
+        m_mol->getResidue("A", molstr::ResidIndex(i))->setPropStr("secondary", "sheet");
+    qsys::ObjectEvent obe;
+    obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+    obe.setTarget(m_mol->getUID());
+    obe.setDescr("secondary");
+    m_mol->fireObjectEvent(obe);
+    drawnMesh(pRend, m_dc);
+
+    moveAtoms(m_mol);
+    PrimSnapshot updated = drawnMesh(pRend, m_dc);
+    EXPECT_EQ(lastPass(pRend), TubeGpuSupport::TG_PASS_CHUNKED);
+    EXPECT_EQ(updated.geom, drawnMesh(newCartoon(-1.0, 10.0), m_dc).geom);
+
+    // Smoothing and anchor weight
+    pRend->setPropReal("coil_smooth", 1.0);
+    pRend->setPropReal("anchor_weight", 3.0);
+    drawnMesh(pRend, m_dc);
+
+    moveAtoms(m_mol);
+    updated = drawnMesh(pRend, m_dc);
+    EXPECT_EQ(lastPass(pRend), TubeGpuSupport::TG_PASS_CHUNKED);
+    EXPECT_EQ(updated.geom, drawnMesh(newCartoon(1.0, 3.0), m_dc).geom);
+}
+
 INSTANTIATE_TEST_SUITE_P(TubeLike, TubeGpuMeshTest,
-                         ::testing::Values("tube", "ribbon", "cartoon"));
+                         ::testing::Values("tube", "ribbon", "cartoon", "cartoon-ribhelix"));
 
 // The nucleic-acid renderer records its base sticks in the same traversal:
 // they are rewritten in place with the tube and ring mesh.

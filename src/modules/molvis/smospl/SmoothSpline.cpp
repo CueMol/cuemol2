@@ -110,9 +110,15 @@ bool SmoothSpline1D::fitReinsch()
   if (n<10)
     return false;
 
-  ReinschSpline rs;
-  if (!rs.factor(n, NULL, m_rho))
-    return false;
+  SmoothSplineCache &cc = m_cache;
+  if (!(cc.nRs==n && cc.rhoRs==m_rho)) {
+    cc.nRs = -1;
+    if (!cc.rs.factor(n, NULL, m_rho))
+      return false;
+    cc.nRs = n;
+    cc.rhoRs = m_rho;
+  }
+  const ReinschSpline &rs = cc.rs;
 
   std::vector<double> g(n), gam(n), c(4*(n+1));
   rs.solve(&m_veclist[0], 1, &g[0], &gam[0]);
@@ -142,9 +148,15 @@ bool SmoothSpline1D::fitDense()
   for (int i=0; i<n; ++i)
     t[i] = i;
 
-  PenalizedSpline ps;
-  if (!ps.setup(&t[0], NULL, n, qlib::max(10, n), m_rho))
-    return false;
+  SmoothSplineCache &cc = m_cache;
+  if (!(cc.nPs==n && cc.rhoPs==m_rho)) {
+    cc.nPs = -1;
+    if (!cc.ps.setup(&t[0], NULL, n, qlib::max(10, n), m_rho))
+      return false;
+    cc.nPs = n;
+    cc.rhoPs = m_rho;
+  }
+  const PenalizedSpline &ps = cc.ps;
 
   const int nnodes = ps.getNodes();
   std::vector<double> c(4*(nnodes-1));
@@ -336,9 +348,16 @@ bool SmoothSpline::fitReinsch()
       wgt[i] = m_veclist[i].w();
   }
 
-  ReinschSpline rs;
-  if (!rs.factor(n, m_bUseWgt ? &wgt[0] : NULL, m_rho))
-    return false;
+  SmoothSplineCache &cc = m_cache;
+  if (!(cc.nRs==n && cc.rhoRs==m_rho && cc.wgtRs==wgt)) {
+    cc.nRs = -1;
+    if (!cc.rs.factor(n, m_bUseWgt ? &wgt[0] : NULL, m_rho))
+      return false;
+    cc.nRs = n;
+    cc.rhoRs = m_rho;
+    cc.wgtRs = wgt;
+  }
+  const ReinschSpline &rs = cc.rs;
 
   // y: xyz interleaved
   std::vector<double> y(3*n);
@@ -390,9 +409,17 @@ bool SmoothSpline::fitDense()
       wgt[i] = m_veclist[i].w();
   }
 
-  PenalizedSpline ps;
-  if (!ps.setup(&t[0], m_bUseWgt ? &wgt[0] : NULL, n, qlib::max(4, n), m_rho))
-    return false;
+  SmoothSplineCache &cc = m_cache;
+  if (!(cc.nPs==n && cc.rhoPs==m_rho && cc.startPs==m_nStart && cc.wgtPs==wgt)) {
+    cc.nPs = -1;
+    if (!cc.ps.setup(&t[0], m_bUseWgt ? &wgt[0] : NULL, n, qlib::max(4, n), m_rho))
+      return false;
+    cc.nPs = n;
+    cc.rhoPs = m_rho;
+    cc.startPs = m_nStart;
+    cc.wgtPs = wgt;
+  }
+  const PenalizedSpline &ps = cc.ps;
 
   const int nnodes = ps.getNodes();
   std::vector<double> c[3];
