@@ -387,7 +387,7 @@ bool TubeSection::resetProperty(const LString &propnm)
 void TubeSection::makeCap(TubeMeshBuilder *pdl,
                            bool fStart, int nType,
                            const Vector4D &f, const Vector4D &vpt,
-                           const Vector4D &e1, const Vector4D &e2)
+                           const Vector4D &e1, const Vector4D &e2) const
 {
   switch (nType) {
   case SplineRenderer::TUBE_CAP_FLAT:
@@ -411,7 +411,7 @@ void TubeSection::makeCap(TubeMeshBuilder *pdl,
 void TubeSection::makeFlatCap(TubeMeshBuilder *pdl,
                                bool fStart,
                                const Vector4D &f, const Vector4D &vpt,
-                               const Vector4D &e1, const Vector4D &e2)
+                               const Vector4D &e1, const Vector4D &e2) const
 {
   int j;
   Vector4D norm = vpt.normalize();
@@ -536,7 +536,7 @@ void TubeSection::makeFlatCap(TubeMeshBuilder *pdl,
 void TubeSection::makeSpherCap(TubeMeshBuilder *pdl,
                                 bool fStart,
                                 const Vector4D &f, const Vector4D &vpt,
-                                const Vector4D &e1, const Vector4D &e2)
+                                const Vector4D &e1, const Vector4D &e2) const
 {
   int i,j;
 
@@ -616,83 +616,41 @@ void TubeSection::makeSpherCap(TubeMeshBuilder *pdl,
 
 //#define DEBUG_SHOW_NORMAL 1
 
-void TubeSection::startTess()
+void TubeSection::startTess(TessState &ts) const
 {
   const int nsize = getSize();
-  m_vtess.resize(nsize+1);
-  m_ntess.resize(nsize+1);
-  m_bTessEmpty = true;
+  ts.vprev.resize(nsize+1);
+  ts.nprev.resize(nsize+1);
+  ts.bEmpty = true;
 }
 
-void TubeSection::doTess(TubeMeshBuilder *pdl,
+void TubeSection::doTess(TessState &ts, TubeMeshBuilder *pdl,
                          const Vector4D &f1,
                          const gfx::ColorPtr &pCol, bool bSmoothCol,
                          const Vector4D &e11, const Vector4D &e12,
-                         const Vector4D &norm_shift)
+                         const Vector4D &norm_shift) const
 {
   const int nsize = getSize();
-  std::vector<Vector4D> vts(nsize+1), nts(nsize+1);
+  ts.vcur.resize(nsize+1);
+  ts.ncur.resize(nsize+1);
 
   for (int k=0; k<=nsize; k++) {
-    vts[k] = f1 + getVec(k, e11, e12);
-    nts[k] = ( getNormVec(k, e11, e12) + norm_shift ).normalize();
+    ts.vcur[k] = f1 + getVec(k, e11, e12);
+    ts.ncur[k] = ( getNormVec(k, e11, e12) + norm_shift ).normalize();
   }
 
-  /*{
-    double scale = 3.0;
-    pdl->setLineWidth(3.0);
-    pdl->startLines();
-    for (int k=0; k<=nsize; k++) {
-      pdl->color(1,0,0,1);
-      pdl->vertex(f1);
-      pdl->vertex(f1+e11.scale(scale));
-      pdl->color(0,1,0,1);
-      pdl->vertex(f1);
-      pdl->vertex(f1+e12.scale(scale));
-    }
-    pdl->end();
-
-  }*/
-
-  // Hit names (pick pass): every vertex of the strip between the previous
-  // and the current ring takes the caller's current name, so the name
-  // changes exactly on a ring. Per-ring names would alternate between the
-  // two rings' triangles (flat / provoking vertex) and give a sawtooth
-  // residue boundary.
-  if (!m_bTessEmpty) {
-    pdl->startTriangleStrip();
-    for (int k=0; k<=nsize; k++) {
-      pdl->normal(nts[k]);
-      pdl->color(pCol);
-      pdl->vertex(vts[k]);
-
-      pdl->normal(m_ntess[k]);
-      if (bSmoothCol)
-        pdl->color(m_pPrevCol);
-      pdl->vertex(m_vtess[k]);
-    }
-    pdl->end();
-
-  }
-
-  for (int k=0; k<=nsize; k++) {
-    m_vtess[k] = vts[k];
-    m_ntess[k] = nts[k];
-  }
-  m_pPrevCol = pCol;
-  m_bTessEmpty = false;
-
-
+  tessStrip(ts, pdl, pCol, bSmoothCol);
 }
 
-void TubeSection::doTess(TubeMeshBuilder *pdl,
+void TubeSection::doTess(TessState &ts, TubeMeshBuilder *pdl,
                          const Vector4D &f1,
                          const gfx::ColorPtr &pCol, bool bSmoothCol,
                          const Vector4D &e11, const Vector4D &e12,
-                         const Vector4D &escl, const Vector4D &vpt)
+                         const Vector4D &escl, const Vector4D &vpt) const
 {
   const int nsize = getSize();
-  std::vector<Vector4D> vts(nsize+1), nts(nsize+1);
+  ts.vcur.resize(nsize+1);
+  ts.ncur.resize(nsize+1);
 
   Vector4D xe11 = e11.scale(escl.x());
   Vector4D xe12 = e12.scale(escl.y());
@@ -700,56 +658,57 @@ void TubeSection::doTess(TubeMeshBuilder *pdl,
   Vector4D te12 = e12.scale(escl.x());
 
   for (int k=0; k<=nsize; k++) {
-    vts[k] = f1 + getVec(k, xe11, xe12);
-    nts[k] = ( getNormVec(k, te11, te12).normalize() + calcDnorm(k, escl, vpt) ).normalize();
-    //nts[k] = ( getNormVec(k, e11, e12) ).normalize();
+    ts.vcur[k] = f1 + getVec(k, xe11, xe12);
+    ts.ncur[k] = ( getNormVec(k, te11, te12).normalize() + calcDnorm(k, escl, vpt) ).normalize();
   }
+
+  tessStrip(ts, pdl, pCol, bSmoothCol);
+
+#ifdef DEBUG_SHOW_NORMAL
+  {
+    pdl->startLines();
+    for (int k=0; k<=nsize; k++) {
+      pdl->vertex(ts.vprev[k]);
+      pdl->vertex(ts.vprev[k]+ts.nprev[k].scale(0.25));
+    }
+    pdl->end();
+  }
+#endif
+}
+
+void TubeSection::tessStrip(TessState &ts, TubeMeshBuilder *pdl,
+                            const gfx::ColorPtr &pCol, bool bSmoothCol) const
+{
+  const int nsize = getSize();
 
   // Hit names (pick pass): every vertex of the strip between the previous
   // and the current ring takes the caller's current name, so the name
   // changes exactly on a ring. Per-ring names would alternate between the
   // two rings' triangles (flat / provoking vertex) and give a sawtooth
   // residue boundary.
-  if (!m_bTessEmpty) {
+  if (!ts.bEmpty) {
     pdl->startTriangleStrip();
     for (int k=0; k<=nsize; k++) {
-      pdl->normal(nts[k]);
+      pdl->normal(ts.ncur[k]);
       pdl->color(pCol);
-      pdl->vertex(vts[k]);
+      pdl->vertex(ts.vcur[k]);
 
-      pdl->normal(m_ntess[k]);
+      pdl->normal(ts.nprev[k]);
       if (bSmoothCol)
-        pdl->color(m_pPrevCol);
-      pdl->vertex(m_vtess[k]);
+        pdl->color(ts.pPrevCol);
+      pdl->vertex(ts.vprev[k]);
     }
     pdl->end();
   }
 
-#ifdef DEBUG_SHOW_NORMAL
-  {
-    pdl->startLines();
-    for (int k=0; k<=nsize; k++) {
-      pdl->vertex(vts[k]);
-      pdl->vertex(vts[k]+nts[k].scale(0.25));
-    }
-    pdl->end();
-  }
-#endif
-
-  for (int k=0; k<=nsize; k++) {
-    m_vtess[k] = vts[k];
-    m_ntess[k] = nts[k];
-  }
-  m_pPrevCol = pCol;
-  m_bTessEmpty = false;
-
+  // the current ring becomes the previous one
+  ts.vprev.swap(ts.vcur);
+  ts.nprev.swap(ts.ncur);
+  ts.pPrevCol = pCol;
+  ts.bEmpty = false;
 }
 
-void TubeSection::endTess()
-{
-}
-
-Vector4D TubeSection::calcDnorm(int index, const Vector4D &escl, const Vector4D &vpt)
+Vector4D TubeSection::calcDnorm(int index, const Vector4D &escl, const Vector4D &vpt) const
 {
   const Vector4D &sect = m_pSectTab[index%m_nSectTabSz];
 
@@ -775,7 +734,7 @@ Vector4D TubeSection::calcDnorm(int index, const Vector4D &escl, const Vector4D 
 void TubeSection::makeDisconJct(TubeMeshBuilder *pdl,
                                 const Vector4D &f1, const Vector4D &ev,
                                 const Vector4D &e11, const Vector4D &e12,
-                                const Vector4D &escl, const Vector4D &escl_prev)
+                                const Vector4D &escl, const Vector4D &escl_prev) const
 {
   const Vector4D pe1 = e11.scale(escl_prev.x());
   const Vector4D pe2 = e12.scale(escl_prev.y());
@@ -808,7 +767,7 @@ void TubeSection::makeDisconJct(TubeMeshBuilder *pdl,
 void TubeSection::makeDJEllip(TubeMeshBuilder *pdl,
                               const Vector4D &f1, const Vector4D &ev,
                               const Vector4D &pe1, const Vector4D &pe2,
-                              const Vector4D &ne1, const Vector4D &ne2)
+                              const Vector4D &ne1, const Vector4D &ne2) const
 {
   int j, nsize = getSize();
 

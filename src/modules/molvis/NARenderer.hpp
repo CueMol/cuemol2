@@ -142,6 +142,10 @@ public:
 protected:
   void tubeGpuRenderMesh() override;
 
+  /// The bases are drawn per residue, outside the segment chunks: no chunked
+  /// (parallel) coordinate update
+  bool tubeGpuCanUpdateChunks() const override { return false; }
+
 public:
   //////////////////////////////////////////////////////
 

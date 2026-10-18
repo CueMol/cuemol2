@@ -16,6 +16,7 @@
 
 #include <gfx/GradientColor.hpp>
 #include <qlib/Matrix3D.hpp>
+#include <qlib/parallel.hpp>
 #include <qsys/Scene.hpp>
 
 using namespace molvis;
@@ -25,8 +26,8 @@ using qlib::Matrix3D;
 
 /////////////////////////////
 
-SecSplDat::SecSplDat(Ribbon2Renderer *pP)
-     : m_pParent(pP)
+SecSplDat::SecSplDat(Ribbon2Renderer *pP, int nKind)
+     : m_nKind(nKind), m_bCOCached(false), m_pParent(pP)
 {
   m_bBnormSpl = false;
   m_bStartExtend = false;
@@ -37,6 +38,93 @@ SecSplDat::SecSplDat(Ribbon2Renderer *pP)
   m_nStartId = 0;
   m_bWsplValid = false;
   m_dWidthAver = 1.0;
+}
+
+void SecSplDat::addSheetPoint(SecSplDat *pSheet, double t, double wgt, Vector4D *pvpt)
+{
+  Vector4D f1;
+  pSheet->m_spl.interpolate(t, &f1, pvpt);
+  m_posvec.push_back(f1);
+  m_posvec.back().w() = wgt;
+  m_resvec.push_back(NULL);
+  m_srcs.push_back(PtSrc{PtSrc::SHEET, NULL, pSheet, t});
+}
+
+void SecSplDat::setLastSrc(const PtSrc &src)
+{
+  const double wgt = m_posvec.back().w();
+  m_srcs.back() = src;
+  m_posvec.back() = evalSrc(src);
+  m_posvec.back().w() = wgt;
+}
+
+Vector4D SecSplDat::evalSrc(const PtSrc &src) const
+{
+  switch (src.type) {
+  case PtSrc::SHEET: {
+    Vector4D f1;
+    src.pRef->m_spl.interpolate(src.t, &f1);
+    return f1;
+  }
+  case PtSrc::HELIX_JCT:
+    return m_pParent->evalHelixJct(src);
+  default:
+    return src.pAtom->getPos();
+  }
+}
+
+void SecSplDat::updateGeometry()
+{
+  const int nsize = m_posvec.size();
+  for (int i=0; i<nsize; ++i) {
+    const double wgt = m_posvec[i].w();
+    m_posvec[i] = evalSrc(m_srcs[i]);
+    m_posvec[i].w() = wgt;
+  }
+
+  switch (m_nKind) {
+  case KIND_HELIX:
+    generateHelix(m_pParent->getWidthRho());
+    break;
+  case KIND_SHEET:
+    generateSheet();
+    break;
+  default:
+    generateCoil();
+    break;
+  }
+}
+
+void SecSplDat::cacheCOAtoms()
+{
+  const std::pair<const MolAtom *, const MolAtom *> none(NULL, NULL);
+  m_coatoms.assign(m_resvec.size(), none);
+  for (int i=0; i<int(m_resvec.size()); ++i) {
+    MolResidue *pres = m_resvec[i];
+    if (pres==NULL)
+      continue;
+
+    LString sec;
+    pres->getPropStr("secondary", sec);
+    if (!sec.equals("sheet"))
+      continue;
+
+    MolAtomPtr pAC = pres->getAtom("C");
+    MolAtomPtr pAO = pres->getAtom("O");
+    if (pAC.isnull()||pAO.isnull())
+      continue;
+    m_coatoms[i] = std::make_pair(pAC.get(), pAO.get());
+  }
+  m_bCOCached = true;
+}
+
+void CartoonGpuElems::clear()
+{
+  for (std::vector<SecSplDat *> *pv : {&m_cyls, &m_sheets, &m_coils}) {
+    std::for_each(pv->begin(), pv->end(), qlib::delete_ptr<SecSplDat*>());
+    pv->clear();
+  }
+  m_chunks.clear();
 }
 
 bool SecSplDat::generate()
@@ -82,7 +170,7 @@ bool SecSplDat::generateHelix(double wrho)
     m_dWidthAver = 1.0; // XXX
 
   // The width spline needs at least three points; a shorter helix falls
-  // back to the average width in renderHelix().
+  // back to the average width in renderHelixTo().
   m_bWsplValid = m_wspl.generate();
 
   return true;
@@ -150,19 +238,12 @@ bool SecSplDat::generateSheet()
 
 bool SecSplDat::calcProtBinormVec(int nres, Vector4D &res)
 {
-  // check protein case
-  MolResidue *pres = m_resvec[nres];
-  if (pres==NULL)
-    return false;
-
-  LString sec;
-  pres->getPropStr("secondary", sec);
-  if (!sec.equals("sheet"))
-    return false;
-
-  MolAtomPtr pAC = pres->getAtom("C");
-  MolAtomPtr pAO = pres->getAtom("O");
-  if (pAC.isnull()||pAO.isnull())
+  // check protein case (the C/O atoms of a protein sheet residue)
+  if (!m_bCOCached)
+    cacheCOAtoms();
+  const MolAtom *pAC = m_coatoms[nres].first;
+  const MolAtom *pAO = m_coatoms[nres].second;
+  if (pAC==NULL||pAO==NULL)
     return false;
 
   Vector4D v1 = pAO->getPos() - pAC->getPos();
@@ -441,6 +522,8 @@ Ribbon2Renderer::Ribbon2Renderer()
 
   m_bSegEndFade = false;
 
+  m_bLazyDiffVecs = false;
+
   // setup sub properties (call LScrObjBase::setupParentData())
   super_t::setupParentData("helix");
   super_t::setupParentData("sheet");
@@ -467,13 +550,40 @@ const char *Ribbon2Renderer::getTypeName() const
 void Ribbon2Renderer::beginRend(DisplayContext *pdl)
 {
   tubeGpuBeginRend(pdl);
+  if (pdl==NULL && tubeGpuBuilder().getMode()==TubeMeshBuilder::MODE_BUILD) {
+    // the elements of the mesh being built (see endSegment())
+    m_gpuElems.clear();
+  }
 
   m_diffvecs.clear();
+  m_bLazyDiffVecs = false;
+  setupSections();
   //super_t::beginRend(pdl);
 }
 
 void Ribbon2Renderer::endRend(DisplayContext *pdl)
 {
+}
+
+void Ribbon2Renderer::setupSections()
+{
+  // The tables depend only on the section properties (a change of them
+  // rebuilds the mesh), so a chunked update reuses them
+  if (!m_bRibbonHelix) {
+    m_ptsHelix->setWidth(1.0);
+    m_ptsHelix->setupSectionTable();
+    m_ptsSheet->setupSectionTable();
+    m_pSheetHead->setup(getAxialDetail()+1, m_ptsSheet.get(), m_ptsCoil.get(), true);
+    m_ptsCoil->setupSectionTable();
+  }
+  else {
+    m_ptsSheet->setupSectionTable();
+    m_pSheetHead->setup(getAxialDetail()+1, m_ptsSheet.get(), m_ptsCoil.get(), true);
+    m_ptsCoil->setupSectionTable();
+    m_ptsRibHelix->setupSectionTable();
+    m_pRibHelixHead->setup(getAxialDetail()+1, m_ptsRibHelix.get(), m_ptsCoil.get(), true);
+    m_pRibHelixTail->setup(getAxialDetail()+1, m_ptsCoil.get(), m_ptsRibHelix.get());
+  }
 }
 
 //////////
@@ -501,55 +611,104 @@ void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
   if (!m_bRibbonHelix) {
     // Cylinder-shaped helix mode
     buildHelixData();
-    buildSheetData();
-    buildCoilData();
-    
-    m_ptsHelix->setWidth(1.0);
-    m_ptsHelix->setupSectionTable();
-    renderHelix(pdl);
-    
-    m_ptsSheet->setupSectionTable();
-    m_pSheetHead->setup(getAxialDetail()+1, m_ptsSheet.get(), m_ptsCoil.get(), true);
-    
-    BOOST_FOREACH (SecSplDat *pElem, m_sheets) {
-      renderSheet(pdl, pElem);
-    }
-    
-    m_ptsCoil->setupSectionTable();
-    BOOST_FOREACH (SecSplDat *pElem, m_coils) {
-      renderCoil(pdl, pElem);
-    }
   }
   else {
-    // ribbon-shaped helix mode
-    buildSheetData();
-    buildCoilData();
-    
-    m_ptsSheet->setupSectionTable();
-    m_pSheetHead->setup(getAxialDetail()+1, m_ptsSheet.get(), m_ptsCoil.get(), true);
-    
-    BOOST_FOREACH (SecSplDat *pElem, m_sheets) {
-      renderSheet(pdl, pElem);
-    }
-    
-    m_ptsCoil->setupSectionTable();
-    m_ptsRibHelix->setupSectionTable();
-    m_pRibHelixHead->setup(getAxialDetail()+1, m_ptsRibHelix.get(), m_ptsCoil.get(), true);
-    m_pRibHelixTail->setup(getAxialDetail()+1, m_ptsCoil.get(), m_ptsRibHelix.get());
+    // ribbon-shaped helix mode (the helices are drawn as parts of the coils)
+    clearHelixData();
+  }
+  buildSheetData();
+  buildCoilData();
 
+  if (m_bRibbonHelix) {
     BOOST_FOREACH (SecSplDat *pElem, m_coils) {
-      renderHelixCoil(pdl, pElem);
+      pElem->m_hctab = makeHCTab(pElem);
     }
   }
-  
+
+  // Building the GPU mesh: record each element as one chunk and keep the
+  // elements, so that a coordinate update redraws them concurrently
+  TubeMeshBuilder &mb = tubeGpuBuilder();
+  const bool bRecord = (pdl==NULL && mb.getMode()==TubeMeshBuilder::MODE_BUILD);
+
+  // helices, sheets, then coils
+  for (std::deque<SecSplDat *> *pList : {&m_cylinders, &m_sheets, &m_coils}) {
+    BOOST_FOREACH (SecSplDat *pElem, *pList) {
+      if (bRecord) {
+        mb.beginChunk();
+        m_gpuElems.m_chunks.push_back(pElem);
+      }
+      renderElemTo(&mb, pElem);
+      if (bRecord)
+        mb.endChunk();
+    }
+  }
+
   if (m_bDumpCurv)
     curvature();
   
   // update diffvecs table
   updateDiffVecs();
-  
+
+  if (bRecord) {
+    // the GPU mesh owns the elements from here on
+    m_gpuElems.m_cyls.insert(m_gpuElems.m_cyls.end(), m_cylinders.begin(), m_cylinders.end());
+    m_gpuElems.m_sheets.insert(m_gpuElems.m_sheets.end(), m_sheets.begin(), m_sheets.end());
+    m_gpuElems.m_coils.insert(m_gpuElems.m_coils.end(), m_coils.begin(), m_coils.end());
+    for (std::deque<SecSplDat *> *pList : {&m_cylinders, &m_sheets, &m_coils}) {
+      // (the update recomputes the geometry concurrently: no lazy lookup there)
+      BOOST_FOREACH (SecSplDat *pElem, *pList) {
+        if (!pElem->m_bCOCached)
+          pElem->cacheCOAtoms();
+      }
+      pList->clear();
+    }
+  }
+
   m_indvec.clear();
   m_resvec.clear();
+}
+
+void Ribbon2Renderer::renderElemTo(TubeMeshBuilder *pmb, SecSplDat *pC)
+{
+  switch (pC->m_nKind) {
+  case SecSplDat::KIND_HELIX:
+    renderHelixTo(pmb, pC);
+    break;
+  case SecSplDat::KIND_SHEET:
+    renderSheetTo(pmb, pC);
+    break;
+  default:
+    if (m_bRibbonHelix)
+      renderHelixCoilTo(pmb, pC);
+    else
+      renderCoilTo(pmb, pC);
+    break;
+  }
+}
+
+void Ribbon2Renderer::tubeGpuPrepareChunkUpdate()
+{
+  // The coils take points from the splines of the neighbouring helices and
+  // sheets (junctions): recompute those first, then the coils
+  const std::vector<SecSplDat *> &cyls = m_gpuElems.m_cyls;
+  const std::vector<SecSplDat *> &sheets = m_gpuElems.m_sheets;
+  const std::vector<SecSplDat *> &coils = m_gpuElems.m_coils;
+  const std::size_t ncyls = cyls.size();
+  qlib::parallel_for(0, ncyls+sheets.size(), [&](std::size_t i) {
+    (i<ncyls ? cyls[i] : sheets[i-ncyls])->updateGeometry();
+  });
+  qlib::parallel_for(0, coils.size(), [&](std::size_t i) {
+    coils[i]->updateGeometry();
+  });
+
+  // getDiffVec() rebuilds the differential vectors from the new geometry
+  m_diffvecs.clear();
+  m_bLazyDiffVecs = true;
+}
+
+void Ribbon2Renderer::tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb)
+{
+  renderElemTo(pmb, m_gpuElems.m_chunks[i]);
 }
 
 /////////////////////////////////////////////////////////////////
@@ -631,7 +790,7 @@ void Ribbon2Renderer::buildHelixData()
     if (nsw==1) {
       // start
       MB_ASSERT(pCyl==NULL);
-      pCyl = MB_NEW SecSplDat(this);
+      pCyl = MB_NEW SecSplDat(this, SecSplDat::KIND_HELIX);
       pCyl->m_spl.setRho(m_dHelixSmo);
       pCyl->m_nResDelta = i;
       if (!pPrevRes.isnull()) {
@@ -715,94 +874,74 @@ int Ribbon2Renderer::calcHitName(double at, SecSplDat *pCyl) const
   return super_t::calcHitName(rho, pPrev, pNext);
 }
 
-void Ribbon2Renderer::renderHelix(DisplayContext *pdl)
+void Ribbon2Renderer::renderHelixTo(TubeMeshBuilder *pmb, SecSplDat *pC)
 {
-  // std::deque<Vector4D> vtmp;
-
   const int naxdet = getAxialDetail();
-  int ncyls = m_cylinders.size();
-  for (int i=0; i<ncyls; ++i) {
-    SecSplDat *pC = m_cylinders[i];
+  const TubeSection *pTS = m_ptsHelix.get();
 
-    double tstart=0.0;
-    if (pC->m_bStartExtend)
-      tstart = 1.0-m_dAxExt;
+  double tstart=0.0;
+  if (pC->m_bStartExtend)
+    tstart = 1.0-m_dAxExt;
 
-    double tend = pC->m_spl.getPoints()-1.0;
-    if (pC->m_bEndExtend)
-      tend -= 1.0-m_dAxExt;
+  double tend = pC->m_spl.getPoints()-1.0;
+  if (pC->m_bEndExtend)
+    tend -= 1.0-m_dAxExt;
 
-    int ndelta = (int) ::floor( (tend-tstart)* naxdet );
-    if (ndelta<=0) {
-      // degenerated (single point)
-      // TO DO: impl
-      continue;
-    }
-    const double fdelta = (tend-tstart)/double(ndelta);
+  int ndelta = (int) ::floor( (tend-tstart)* naxdet );
+  if (ndelta<=0) {
+    // degenerated (single point)
+    // TO DO: impl
+    return;
+  }
+  const double fdelta = (tend-tstart)/double(ndelta);
 
-    Vector4D p0 = pC->m_spl.getPoint( pC->m_bStartExtend?1:0 );
-    Vector4D e11, e12;
-    
-    Vector4D f1, f2, vpt;
-    Vector4D bnorm_base;
+  Vector4D p0 = pC->m_spl.getPoint( pC->m_bStartExtend?1:0 );
+  Vector4D e11, e12;
 
-    // Color objects used in the axial-loop
-    ColorPtr pCol;
+  Vector4D f1, f2, vpt;
+  Vector4D bnorm_base;
 
-    double width, dwidth;
+  // Color objects used in the axial-loop
+  ColorPtr pCol;
 
-    m_ptsHelix->startTess();
-    
-    // axial step loop
-    for (int j=0; j<=ndelta; ++j) {
-      double t = tstart + double(j)*fdelta; ///double(naxdet);
-      // The geometry-only update skips the color/name computation
-      if (tubeGpuBuilder().wantColor())
-        pCol = calcColor(t, pC);
-      if (tubeGpuBuilder().wantName())
-        tubeGpuBuilder().loadName(calcHitName(t, pC));
-      pC->m_spl.interpolate(t, &f1, &vpt);
-      width = calcHelixWidth(pC, t, dwidth);
-      if (j==0) {
-        bnorm_base = f1-p0;
-      }
-      
-      e11 = bnorm_base.cross(vpt).normalize().scale(width);
-      e12 = ( vpt.cross(e11) ).normalize().scale(width);
+  double width, dwidth;
 
-      
-      if (j==0) {
-        // make the tube cap.
-        tubeGpuBuilder().color(pCol);
-        m_ptsHelix->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
-      }
-      
-      m_ptsHelix->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(), e11, e12, vpt.scale(-dwidth));
+  TubeSection::TessState ts;
+  pTS->startTess(ts);
 
-      if (j==ndelta) {
-        // make cap at the end point.
-        tubeGpuBuilder().color(pCol);
-        m_ptsHelix->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
-      }
-
-      bnorm_base = e12;
-      
-      //vtmp.push_back(f1);
-      //vtmp.push_back(f1+e11.scale(2.0));
-      //vtmp.push_back(f1);
-      //vtmp.push_back(f1+e12.scale(2.0));
+  // axial step loop
+  for (int j=0; j<=ndelta; ++j) {
+    double t = tstart + double(j)*fdelta; ///double(naxdet);
+    // The geometry-only update skips the color/name computation
+    if (pmb->wantColor())
+      pCol = calcColor(t, pC);
+    if (pmb->wantName())
+      pmb->loadName(calcHitName(t, pC));
+    pC->m_spl.interpolate(t, &f1, &vpt);
+    width = calcHelixWidth(pC, t, dwidth);
+    if (j==0) {
+      bnorm_base = f1-p0;
     }
 
-    m_ptsHelix->endTess();
-  }
+    e11 = bnorm_base.cross(vpt).normalize().scale(width);
+    e12 = ( vpt.cross(e11) ).normalize().scale(width);
 
-/*
-  pdl->startLines();
-  BOOST_FOREACH (const Vector4D &elem, vtmp) {
-    pdl->vertex(elem);
+    if (j==0) {
+      // make the tube cap.
+      pmb->color(pCol);
+      m_ptsHelix->makeCap(pmb, true, getStartCapType(), f1, vpt, e11, e12);
+    }
+
+    pTS->doTess(ts, pmb, f1, pCol, isSmoothColor(), e11, e12, vpt.scale(-dwidth));
+
+    if (j==ndelta) {
+      // make cap at the end point.
+      pmb->color(pCol);
+      m_ptsHelix->makeCap(pmb, false, getEndCapType(), f1, vpt, e11, e12);
+    }
+
+    bnorm_base = e12;
   }
-  pdl->end();
- */
 }
 
 double Ribbon2Renderer::calcHelixWidth(SecSplDat *pC, double t, double &dwidth) const
@@ -824,30 +963,42 @@ double Ribbon2Renderer::calcHelixWidth(SecSplDat *pC, double t, double &dwidth) 
   return width + m_dWidthPlus;
 }
 
-Vector4D Ribbon2Renderer::calcHelixJctPos(int ires)
+PtSrc Ribbon2Renderer::findHelixJct(int ires)
 {
   MolResiduePtr pRes = m_resvec[ires];
-  Vector4D pos = getPivotPos(pRes);
+  PtSrc src{PtSrc::HELIX_JCT, ensureNotNull(getPivotAtom(pRes)).get(), NULL, 0.0};
 
   // Find the cylinder that holds this residue (m_indvec is shared with the
   // sheets and may be stale, so check the residue identity as well)
   const int icyl = m_indvec[ires];
   if (icyl<0 || icyl>=int(m_cylinders.size()))
-    return pos;
+    return src;
   SecSplDat *pC = m_cylinders[icyl];
   const int ipt = ires - pC->m_nResDelta;
   if (ipt<0 || ipt>=int(pC->m_resvec.size()) || pC->m_resvec[ipt]!=pRes.get())
-    return pos;
+    return src;
 
-  // Skip the degenerated cylinder that renderHelix() does not draw
+  // Skip the degenerated cylinder that renderHelixTo() does not draw
   double tstart = pC->m_bStartExtend ? 1.0-m_dAxExt : 0.0;
   double tend = pC->m_spl.getPoints()-1.0;
   if (pC->m_bEndExtend)
     tend -= 1.0-m_dAxExt;
   if (int(::floor((tend-tstart)*getAxialDetail()))<=0)
+    return src;
+
+  src.pRef = pC;
+  src.t = double(ipt);
+  return src;
+}
+
+Vector4D Ribbon2Renderer::evalHelixJct(const PtSrc &src) const
+{
+  const Vector4D pos = src.pAtom->getPos();
+  SecSplDat *pC = src.pRef;
+  if (pC==NULL)
     return pos;
 
-  const double t = double(ipt);
+  const double t = src.t;
   Vector4D axpos;
   pC->m_spl.interpolate(t, &axpos);
   double dwidth;
@@ -926,7 +1077,7 @@ void Ribbon2Renderer::buildSheetData()
         // start of sheet (x E) or (. E)
 
         MB_ASSERT(pSh==NULL);
-        pSh = MB_NEW SecSplDat(this);
+        pSh = MB_NEW SecSplDat(this, SecSplDat::KIND_SHEET);
         pSh->m_spl.setRho(m_dSheetSmo);
         pSh->m_bnspl.setRho(m_dSheetWsmo);
         pSh->m_nResDelta = i;
@@ -958,9 +1109,12 @@ void Ribbon2Renderer::buildSheetData()
 
 }
 
-void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
+void Ribbon2Renderer::renderSheetTo(TubeMeshBuilder *pmb, detail::SecSplDat *pC)
 {
   Vector4D zerovec(0,0,0);
+  const TubeSection *pTS = m_ptsSheet.get();
+  const JctTable *pHead = m_pSheetHead.get();
+  TubeSection::TessState ts;
 
   const int naxdet = getAxialDetail();
   double tstart=0.0;
@@ -991,17 +1145,17 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
   
   // Draw sheet body
 
-  tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+  pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
-  m_ptsSheet->startTess();
+  pTS->startTess(ts);
   
   // axial step loop
   for (int j=0; j<=ndelta; ++j) {
     const double t = tstart + double(j)*fdelta; // /double(naxdet);
-    if (tubeGpuBuilder().wantColor())
+    if (pmb->wantColor())
       pCol = calcColor(t, pC);
-    if (tubeGpuBuilder().wantName())
-      tubeGpuBuilder().loadName(calcHitName(t, pC));
+    if (pmb->wantName())
+      pmb->loadName(calcHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     vpt = vpt.normalize();
     
@@ -1014,11 +1168,11 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
     
     if (j==0) {
       // make the tube cap.
-      tubeGpuBuilder().color(pCol);
-      m_ptsSheet->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
+      pmb->color(pCol);
+      m_ptsSheet->makeCap(pmb, true, getStartCapType(), f1, vpt, e11, e12);
     }
     
-    m_ptsSheet->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
+    pTS->doTess(ts, pmb, f1, pCol, isSmoothColor(), e11, e12, zerovec );
     
     if (j==ndelta) {
       // update the tstart for head drawing
@@ -1026,32 +1180,31 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
     }
   }
   
-  m_ptsSheet->endTess();
-  
+    
   /////////////////////////////////////////////
 
   // Draw arrow head
-  ndelta = m_pSheetHead->getSize();
+  ndelta = pHead->getSize();
 
   Vector4D escl, prev_escl, xe11, xe12;
   double dpar;
   double prev_dpar = -1.0;
 
   // initialize previous E scale
-  m_pSheetHead->get(0, dpar, prev_escl);
+  pHead->get(0, dpar, prev_escl);
 
-  tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
-  m_ptsSheet->startTess();
+  pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+  pTS->startTess(ts);
 
   for (int i=0; i<ndelta; i++) {
     // Get E-scale value
-    m_pSheetHead->get(i, dpar, escl);
+    pHead->get(i, dpar, escl);
     const double t = tstart + dpar;
 
-    if (tubeGpuBuilder().wantColor())
+    if (pmb->wantColor())
       pCol = calcColor(t, pC);
-    if (tubeGpuBuilder().wantName())
-      tubeGpuBuilder().loadName(calcHitName(t, pC));
+    if (pmb->wantName())
+      pmb->loadName(calcHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     const Vector4D ev = vpt.normalize();
     
@@ -1065,15 +1218,14 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
     if ( qlib::isNear4(dpar,prev_dpar) ) {
       // uncontinuous point of arrow head
       // make partition polygons
-      m_ptsSheet->endTess();
-
-      tubeGpuBuilder().color(pCol);
-      m_ptsSheet->makeDisconJct(&tubeGpuBuilder(), f1, ev, e11, e12, prev_escl, escl);
-      tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
-      m_ptsSheet->startTess();
+      
+      pmb->color(pCol);
+      m_ptsSheet->makeDisconJct(pmb, f1, ev, e11, e12, prev_escl, escl);
+      pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+      pTS->startTess(ts);
     }
     
-    m_ptsSheet->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(),
+    pTS->doTess(ts, pmb, f1, pCol, isSmoothColor(),
                        e11, e12,
                        escl, vpt);
 
@@ -1083,12 +1235,11 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
     prev_dpar = dpar;
   }
 
-  m_ptsSheet->endTess();
-  tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL);
+    pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL);
 
   // make cap at the end point.
-  tubeGpuBuilder().color(pCol);
-  m_ptsSheet->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, xe11, xe12);
+  pmb->color(pCol);
+  m_ptsSheet->makeCap(pmb, false, getEndCapType(), f1, vpt, xe11, xe12);
 
 }
 
@@ -1168,15 +1319,13 @@ void Ribbon2Renderer::extendSheetCoil(detail::SecSplDat *pCoil, int nPrevInd)
   //if (pPrevSheet->m_bEndExtend)
   //tend -= 1.0; //-m_dAxExt;
 
-  Vector4D f1, vpt;
+  Vector4D vpt;
 
-  pPrevSheet->m_spl.interpolate(tend-1.5, &f1, &vpt);
-  pCoil->addPoint( f1, m_dAnchorWgt );
+  pCoil->addSheetPoint( pPrevSheet, tend-1.5, m_dAnchorWgt, &vpt );
 
   pCoil->setStart();
 
-  pPrevSheet->m_spl.interpolate(tend-0.5, &f1, &vpt);
-  pCoil->addPoint( f1, m_dAnchorWgt );
+  pCoil->addSheetPoint( pPrevSheet, tend-0.5, m_dAnchorWgt, &vpt );
 
   //pCoil->m_bFixStart = true;
   pCoil->m_bFixStart = false;
@@ -1188,15 +1337,13 @@ void Ribbon2Renderer::extendCoilSheet(detail::SecSplDat *pCoil, int nNextInd)
   int isheet = m_indvec[nNextInd];
   SecSplDat *pNextSheet = m_sheets[isheet];
   // double tstart = 0.0;
-  Vector4D f1, vpt;
+  Vector4D vpt;
 
-  pNextSheet->m_spl.interpolate(0.5, &f1, &vpt);
-  pCoil->addPoint( f1, m_dAnchorWgt );
+  pCoil->addSheetPoint( pNextSheet, 0.5, m_dAnchorWgt, &vpt );
 
   pCoil->setEnd();
 
-  pNextSheet->m_spl.interpolate(1.5, &f1, &vpt);
-  pCoil->addPoint( f1, m_dAnchorWgt );
+  pCoil->addSheetPoint( pNextSheet, 1.5, m_dAnchorWgt, &vpt );
 
   //pCoil->m_bFixEnd = true;
   pCoil->m_bFixEnd = false;
@@ -1225,7 +1372,7 @@ void Ribbon2Renderer::buildCoilData()
       if ( !isCoil(prev_ss, !m_bRibbonHelix) ) {
         // Start of coil (x C) or (. C)
         MB_ASSERT(pCoil==NULL);
-        pCoil = MB_NEW SecSplDat(this);
+        pCoil = MB_NEW SecSplDat(this, SecSplDat::KIND_COIL);
         pCoil->m_spl.setRho(m_dCoilSmo);
         pCoil->m_nResDelta = i;
         if (pPrevRes.isnull()) {
@@ -1245,7 +1392,7 @@ void Ribbon2Renderer::buildCoilData()
             pCoil->setStart();
             pCoil->addPoint( this, pPrevRes, m_dAnchorWgt);
             if (!m_bRibbonHelix)
-              pCoil->setLastPos( calcHelixJctPos(i-1) );
+              pCoil->setLastSrc( findHelixJct(i-1) );
             pCoil->addPoint( this, pRes, m_dAnchorWgt);
           }
           pCoil->m_bStartExtend = true;
@@ -1275,7 +1422,7 @@ void Ribbon2Renderer::buildCoilData()
           pCoil->m_posvec.back().w() = m_dAnchorWgt;
           pCoil->addPoint( this, pRes, m_dAnchorWgt);
           if (!m_bRibbonHelix)
-            pCoil->setLastPos( calcHelixJctPos(i) );
+            pCoil->setLastSrc( findHelixJct(i) );
           pCoil->setEnd();
         }
         pCoil->m_bEndExtend = true;
@@ -1307,9 +1454,11 @@ void Ribbon2Renderer::buildCoilData()
 
 }
 
-void Ribbon2Renderer::renderCoil(DisplayContext *pdl, detail::SecSplDat *pC)
+void Ribbon2Renderer::renderCoilTo(TubeMeshBuilder *pmb, detail::SecSplDat *pC)
 {
   Vector4D zerovec(0,0,0);
+  const TubeSection *pTS = m_ptsCoil.get();
+  TubeSection::TessState ts;
 
   const int naxdet = getAxialDetail();
   const double tstart = 0.0;
@@ -1333,16 +1482,16 @@ void Ribbon2Renderer::renderCoil(DisplayContext *pdl, detail::SecSplDat *pC)
   
   //MB_DPRINTLN("Sheet %d (t: %f->%f)", i, tstart, tend);
   
-  m_ptsCoil->startTess();
+  pTS->startTess(ts);
   
   // axial step loop
   for (int j=0; j<=ndelta; ++j) {
     double t = tstart + double(j) * fdelta; // /double(naxdet);
     //double col_t = t;
-    if (tubeGpuBuilder().wantColor())
+    if (pmb->wantColor())
       pCol = calcCoilColor(t, pC);
-    if (tubeGpuBuilder().wantName())
-      tubeGpuBuilder().loadName(calcCoilHitName(t, pC));
+    if (pmb->wantName())
+      pmb->loadName(calcCoilHitName(t, pC));
     pC->m_spl.interpolate(t, &f1, &vpt);
     //vpt = vpt.normalize();
     
@@ -1355,30 +1504,21 @@ void Ribbon2Renderer::renderCoil(DisplayContext *pdl, detail::SecSplDat *pC)
     
     if (j==0) {
       // make the tube cap.
-      tubeGpuBuilder().color(pCol);
-      m_ptsCoil->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
+      pmb->color(pCol);
+      m_ptsCoil->makeCap(pmb, true, getStartCapType(), f1, vpt, e11, e12);
     }
     
-    m_ptsCoil->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
+    pTS->doTess(ts, pmb, f1, pCol, isSmoothColor(), e11, e12, zerovec );
 
     if (j==ndelta) {
       // make cap at the end point.
-      tubeGpuBuilder().color(pCol);
-      m_ptsCoil->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
+      pmb->color(pCol);
+      m_ptsCoil->makeCap(pmb, false, getEndCapType(), f1, vpt, e11, e12);
       }
     
     bntmp = e12;
   }
   
-  m_ptsCoil->endTess();
-}
-
-namespace {
-  struct HCTab {
-    int jst;
-    int jen;
-    int flag;
-  };
 }
 
 #define HC_COIL 0
@@ -1386,35 +1526,25 @@ namespace {
 #define HC_HELIX_TAIL 2
 #define HC_HELIX_HEAD 3
 
-void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC)
+std::vector<HCTab> Ribbon2Renderer::makeHCTab(detail::SecSplDat *pC)
 {
-  Vector4D zerovec(0,0,0);
-
   const int naxdet = getAxialDetail();
   double tstart = 0.0;
   double tend = pC->m_nRealSize -1.0;
   
   int ndelta = (int) ::floor( (tend-tstart)* naxdet );
   if (ndelta<=0) {
-    // degenerated (single point)
-    // TO DO: impl
-    return;
+    // degenerated (single point): nothing is drawn
+    return std::vector<HCTab>();
   }
   const double fdelta = (tend-tstart)/double(ndelta);
-  
-  Vector4D bntmp;
-  Vector4D e11, e12, e21, e22;
-  Vector4D f1, f2, vpt;
-  
-  // Color objects used in the axial-loop
-  ColorPtr pCol;
   
   ////////////////////////////////////////
   // make helix-coil table
 
   MB_DPRINTLN("start extend=%d", pC->m_bStartExtend);
   MB_DPRINTLN("end extend=%d", pC->m_bEndExtend);
-  std::deque<HCTab> hstabs;
+  std::vector<HCTab> hstabs;
   LString sec_prev="E";
   HCTab hstelem;
   int j;
@@ -1473,8 +1603,8 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
     MB_DPRINTLN("Axial detail = %d", naxdet);
     int ielem=0, nelem = hstabs.size();
     int isft = naxdet/2;
-    std::deque<HCTab>::iterator iter = hstabs.begin();
-    const std::deque<HCTab>::iterator eiter = hstabs.end();
+    std::vector<HCTab>::iterator iter = hstabs.begin();
+    const std::vector<HCTab>::iterator eiter = hstabs.end();
     for (; iter!=eiter; ++iter) {
       HCTab &elem = *iter;
       int jstart = elem.jst;
@@ -1513,7 +1643,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         if (jend-jstart>naxdet) {
           MB_DPRINTLN("*** HST elem %d type=%d, jst=%d, jen=%d>naxdet", ielem, elem.flag, elem.jst, elem.jen);
           elem.jen = elem.jst + naxdet;
-          std::deque<HCTab>::iterator jj = iter;
+          std::vector<HCTab>::iterator jj = iter;
           ++jj;
           if (jj!=eiter) {
             MB_DPRINTLN("overwrite jst=%d to %d", jj->jst, elem.jen);
@@ -1531,38 +1661,57 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
     }
   }
 
+  return hstabs;
+}
+
+void Ribbon2Renderer::renderHelixCoilTo(TubeMeshBuilder *pmb, detail::SecSplDat *pC)
+{
+  Vector4D zerovec(0,0,0);
+
+  const int naxdet = getAxialDetail();
+  double tstart = 0.0;
+  double tend = pC->m_nRealSize -1.0;
+  
+  int ndelta = (int) ::floor( (tend-tstart)* naxdet );
+  if (ndelta<=0) {
+    // degenerated (single point)
+    // TO DO: impl
+    return;
+  }
+  const double fdelta = (tend-tstart)/double(ndelta);
+  
+  Vector4D bntmp;
+  Vector4D e11, e12, e21, e22;
+  Vector4D f1, f2, vpt;
+  
+  // Color objects used in the axial-loop
+  ColorPtr pCol;
+  
   ////////////////////////////////////////
 
-  TubeSectionPtr pTS;
-  LString tp;
-  int ielem=0, nelem = hstabs.size();
-  int isft = naxdet/2;
-  BOOST_FOREACH (HCTab elem, hstabs) {
+  const TubeSection *pTS = NULL;
+  TubeSection::TessState ts;
+  BOOST_FOREACH (const HCTab &elem, pC->m_hctab) {
     int jstart = elem.jst;
     int jend = elem.jen;
 
     switch (elem.flag) {
     case HC_COIL:
     case HC_HELIX: {
-      if (elem.flag==HC_COIL) {
-        tp = "coil";
-        pTS = m_ptsCoil;
-      }
-      else {
-        tp = "helix";
-        pTS = m_ptsRibHelix;
-      }
+      if (elem.flag==HC_COIL)
+        pTS = m_ptsCoil.get();
+      else
+        pTS = m_ptsRibHelix.get();
 
-      pTS->startTess();
+      pTS->startTess(ts);
       // axial step loop
       for (int j=jstart; j<=jend; ++j) {
         double t = tstart + double(j) * fdelta;
-        MB_DPRINTLN("%s j=%d, t=%f", tp.c_str(), j, t);
 
-        if (tubeGpuBuilder().wantColor())
+        if (pmb->wantColor())
           pCol = calcCoilColor(t, pC);
-        if (tubeGpuBuilder().wantName())
-          tubeGpuBuilder().loadName(calcCoilHitName(t, pC));
+        if (pmb->wantName())
+          pmb->loadName(calcCoilHitName(t, pC));
         pC->m_spl.interpolate(t, &f1, &vpt);
         vpt = vpt.normalize();
         
@@ -1572,16 +1721,16 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
 
         if (j==jstart && elem.flag==HC_COIL) {
           // make the tube cap.
-          tubeGpuBuilder().color(pCol);
-          pTS->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, e11, e12);
+          pmb->color(pCol);
+          pTS->makeCap(pmb, true, getStartCapType(), f1, vpt, e11, e12);
         }
         
-        pTS->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(), e11, e12, zerovec );
+        pTS->doTess(ts, pmb, f1, pCol, isSmoothColor(), e11, e12, zerovec );
         
         if (j==jend && elem.flag==HC_COIL) {
           // make cap at the end point.
-          tubeGpuBuilder().color(pCol);
-          pTS->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, e11, e12);
+          pmb->color(pCol);
+          pTS->makeCap(pmb, false, getEndCapType(), f1, vpt, e11, e12);
         }
         
         /*
@@ -1593,21 +1742,16 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         pdl->end();
          */
       }
-      pTS->endTess();
       break;
     }
 
     case HC_HELIX_HEAD:
     case HC_HELIX_TAIL: {
-      JctTablePtr pJCT;
-      if (elem.flag == HC_HELIX_HEAD) {
-        tp = "helix head";
-        pJCT = m_pRibHelixHead;
-      }
-      else {
-        tp = "helix tail";
-        pJCT = m_pRibHelixTail;
-      }
+      const JctTable *pJCT;
+      if (elem.flag == HC_HELIX_HEAD)
+        pJCT = m_pRibHelixHead.get();
+      else
+        pJCT = m_pRibHelixTail.get();
       
       double tbase = double(jstart) * fdelta;
       ndelta = pJCT->getSize();
@@ -1619,20 +1763,19 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
       // initialize previous E scale
       pJCT->get(0, dpar, prev_escl);
       
-      pTS = m_ptsRibHelix;
+      pTS = m_ptsRibHelix.get();
       // pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
-      pTS->startTess();
+      pTS->startTess(ts);
       
       for (int i=0; i<ndelta; i++) {
         // Get E-scale value
         pJCT->get(i, dpar, escl);
         const double t = tbase + dpar;
-        MB_DPRINTLN("%s i=%d, t=%f", tp.c_str(), i, t);
         
-        if (tubeGpuBuilder().wantColor())
+        if (pmb->wantColor())
           pCol = calcCoilColor(t, pC);
-        if (tubeGpuBuilder().wantName())
-          tubeGpuBuilder().loadName(calcCoilHitName(t, pC));
+        if (pmb->wantName())
+          pmb->loadName(calcCoilHitName(t, pC));
         pC->m_spl.interpolate(t, &f1, &vpt);
         const Vector4D ev = vpt.normalize();
         
@@ -1650,29 +1793,27 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         if ( qlib::isNear4(dpar,prev_dpar) ) {
           // uncontinuous point of arrow head
           // make partition polygons
-          pTS->endTess();
-          
-          tubeGpuBuilder().color(pCol);
-          pTS->makeDisconJct(&tubeGpuBuilder(), f1, ev, e11, e12, prev_escl, escl);
+          pmb->color(pCol);
+          pTS->makeDisconJct(pmb, f1, ev, e11, e12, prev_escl, escl);
           //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
-          pTS->startTess();
+          pTS->startTess(ts);
         }
         
 
         if (i==0 && elem.flag==HC_HELIX_TAIL) {
           // make the tube cap.
-          tubeGpuBuilder().color(pCol);
-          pTS->makeCap(&tubeGpuBuilder(), true, getStartCapType(), f1, vpt, xe11, xe12);
+          pmb->color(pCol);
+          pTS->makeCap(pmb, true, getStartCapType(), f1, vpt, xe11, xe12);
         }
         
-        pTS->doTess(&tubeGpuBuilder(), f1, pCol, isSmoothColor(),
+        pTS->doTess(ts, pmb, f1, pCol, isSmoothColor(),
                     e11, e12,
                     escl, vpt);
         
         if (i==ndelta-1 && elem.flag==HC_HELIX_HEAD) {
           // make cap at the end point.
-          tubeGpuBuilder().color(pCol);
-          pTS->makeCap(&tubeGpuBuilder(), false, getEndCapType(), f1, vpt, xe11, xe12);
+          pmb->color(pCol);
+          pTS->makeCap(pmb, false, getEndCapType(), f1, vpt, xe11, xe12);
         }
 
         ////////////////
@@ -1690,14 +1831,11 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
          */
       }
       
-      pTS->endTess();
       // pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
 
     }
     }
 
-    // MB_DPRINTLN("%d -- %d type=<%s>", jstart, jend, tp.c_str());
-    ++ielem;
   }
 
 }
@@ -1713,14 +1851,10 @@ void Ribbon2Renderer::setAxialDetail(int nlev)
 
 void Ribbon2Renderer::propChanged(qlib::LPropEvent &ev)
 {
-  if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    // Only the colors change: the invalidateDisplayCache() calls turn into
-    // an in-place color update of the GPU mesh
-    tubeGpuBeginColorOnly();
-    invalidateDisplayCache();
+  if (isColoringProp(ev)) {
+    // color-only update (TubeGpuRenderer); a coloring property may also be
+    // named helix/sheet/coil
     super_t::propChanged(ev);
-    tubeGpuEndColorOnly();
     return;
   }
   else if (ev.getName().startsWith("helix") ||
@@ -1742,17 +1876,11 @@ void Ribbon2Renderer::propChanged(qlib::LPropEvent &ev)
 
 void Ribbon2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (tubeGpuOnAtomsMoved(ev)) {
-    // Positions changed but topology/colors did not: the vertices are
-    // rewritten in place on the next display() (endSegment() rebuilds the
-    // splines on every traversal)
-    m_diffvecs.clear();
-    qsys::ScenePtr pScene = getScene();
-    if (!pScene.isnull())
-      pScene->setUpdateFlag();
-    invalidateHittestCache();
+  // Positions changed but topology/colors did not: the vertices are
+  // rewritten in place on the next display() (before the OBE_CHANGED
+  // handling below, which drops everything)
+  if (tubeGpuHandleAtomsMoved(ev))
     return;
-  }
 
   int ntyp = ev.getType();
 
@@ -1773,35 +1901,13 @@ void Ribbon2Renderer::objectChanged(qsys::ObjectEvent &ev)
   super_t::objectChanged(ev);
 }
 
-void Ribbon2Renderer::display(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplay(pdc))
-    super_t::display(pdc);
-}
-
-void Ribbon2Renderer::displayPick(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplayPick(pdc))
-    super_t::displayPick(pdc);
-}
-
-void Ribbon2Renderer::invalidateDisplayCache()
-{
-  tubeGpuOnInvalidateDisplay();
-  super_t::invalidateDisplayCache();
-}
-
-void Ribbon2Renderer::unloading()
-{
-  tubeGpuUnload();
-  super_t::unloading();
-}
-
 void Ribbon2Renderer::invalidateSplineCoeffs()
 {
   // m_scs.cleanup();
   invalidateDisplayCache();
   m_diffvecs.clear();
+  m_bLazyDiffVecs = false;
+  m_gpuElems.clear();
 }
 
 void Ribbon2Renderer::dumpCyls(SecSplDat *pC)
@@ -1876,67 +1982,73 @@ void Ribbon2Renderer::curvature()
   }
 }
 
-void Ribbon2Renderer::updateDiffVecsImpl(SecSplDat *pC)
+void Ribbon2Renderer::setupDiffRes(SecSplDat *pC)
 {
-  Vector4D f1, vpt, cuv;
+  pC->m_diffres.clear();
 
-  double tstart=0.0;
-  
-  double tend = pC->m_spl.getPoints()-1.0;
-  
-  int ndelta = (int) ::floor( (tend-tstart)* 1 );
+  const double tend = pC->m_spl.getPoints()-1.0;
+  const int ndelta = (int) ::floor(tend);
   if (ndelta<=0) {
     MB_DPRINTLN("Degenerated");
     return;
   }
-  const double fdelta = (tend-tstart)/double(ndelta);
-  
+  const double fdelta = tend/double(ndelta);
+
   for (int j=0; j<=ndelta; ++j) {
-    double t = tstart + double(j)*fdelta;
-    pC->m_spl.interpolate(t, &f1, &vpt, &cuv);
+    const double t = double(j)*fdelta;
+    const int nres = int(::floor(t)) + pC->m_nResDelta;
+    MolResidue *pRes = NULL;
+    if (0<=nres && nres<int(m_resvec.size()))
+      pRes = m_resvec[nres].get();
+    pC->m_diffres.push_back(pRes);
+  }
+}
 
-    int nres = int(::floor(t));
-    nres += pC->m_nResDelta;
+void Ribbon2Renderer::updateDiffVecsImpl(SecSplDat *pC)
+{
+  const int nres = pC->m_diffres.size();
+  if (nres==0)
+    return;
 
-    MolResiduePtr pRes;
-    if (!(0<=nres && nres<m_resvec.size()))
+  // (the parameters of setupDiffRes())
+  const double tend = pC->m_spl.getPoints()-1.0;
+  const double fdelta = tend/double(nres-1);
+
+  Vector4D f1, vpt;
+  for (int j=0; j<nres; ++j) {
+    MolResidue *pRes = pC->m_diffres[j];
+    if (pRes==NULL)
       continue;
-    
-    pRes= m_resvec[nres];
-    if (pRes.isnull())
-      continue;
-
-    //MB_DPRINTLN("DiffVec %f %d (%s)", t, nres, pRes->toString().c_str());
-    m_diffvecs.insert(DiffVecMap::value_type(pRes.get(), DiffVecMap::mapped_type(f1, vpt)));
+    pC->m_spl.interpolate(double(j)*fdelta, &f1, &vpt);
+    m_diffvecs.insert(DiffVecMap::value_type(pRes, DiffVecMap::mapped_type(f1, vpt)));
   }
 }
 
 void Ribbon2Renderer::updateDiffVecs()
 {
-  int nsize;
-  
-  nsize = m_coils.size();
-  for (int i=0; i<nsize; ++i) {
-    SecSplDat *pC = m_coils[i];
-    updateDiffVecsImpl(pC);
+  // (the first entry of a residue is kept: coils, helices, then sheets)
+  for (std::deque<SecSplDat *> *pList : {&m_coils, &m_cylinders, &m_sheets}) {
+    BOOST_FOREACH (SecSplDat *pElem, *pList) {
+      setupDiffRes(pElem);
+      updateDiffVecsImpl(pElem);
+    }
   }
-
-  nsize = m_cylinders.size();
-  for (int i=0; i<nsize; ++i) {
-    SecSplDat *pC = m_cylinders[i];
-    updateDiffVecsImpl(pC);
-  }
-  
-  nsize = m_sheets.size();
-  for (int i=0; i<nsize; ++i) {
-    SecSplDat *pC = m_sheets[i];
-    updateDiffVecsImpl(pC);
-  }
-
 }
 
 bool Ribbon2Renderer::getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec)
 {
+  if (m_bLazyDiffVecs) {
+    // the elements' geometry was recomputed by a chunked update
+    m_bLazyDiffVecs = false;
+    m_diffvecs.clear();
+    for (std::vector<SecSplDat *> *pList :
+           {&m_gpuElems.m_coils, &m_gpuElems.m_cyls, &m_gpuElems.m_sheets}) {
+      BOOST_FOREACH (SecSplDat *pElem, *pList) {
+        updateDiffVecsImpl(pElem);
+      }
+    }
+  }
+
   if (m_diffvecs.empty()) {
     return false;
   }
@@ -1949,4 +2061,3 @@ bool Ribbon2Renderer::getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &r
   rvec = iter->second.second;
   return true;
 }
-

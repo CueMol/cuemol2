@@ -18,6 +18,7 @@
 #include <gfx/Hittest.hpp>
 #include <gfx/GradientColor.hpp>
 #include <qlib/RangeSet.hpp>
+#include <qsys/ObjectEvent.hpp>
 
 using namespace molstr;
 
@@ -41,12 +42,9 @@ bool MainChainRenderer::isNewSegment(MolResiduePtr pcur, MolResiduePtr pprev)
   if (pprev.isnull())
     return true;
 
-  // check chains
-  MolChainPtr pcurch = pcur->getParentChain();
-  MolChainPtr pprevch = pprev->getParentChain();
-  MB_ASSERT(!pcurch.isnull());
-  MB_ASSERT(!pprevch.isnull());
-  if (pcurch.get()!=pprevch.get())
+  // check chains (both residues are of the client mol, so the chain name
+  // tells the chain without looking it up)
+  if (!pcur->getChainName().equals(pprev->getChainName()))
     return true;
 
   //
@@ -314,6 +312,20 @@ LString MainChainRenderer::interpHit(const gfx::RawHitData &rhit)
 
 MolAtomPtr MainChainRenderer::getPivotAtom(MolResiduePtr pRes) const
 {
+  // The lookup by name goes through the scene manager for the parent mol
+  // and is repeated on every traversal (each frame during a trajectory or
+  // morph update), so remember the result per residue.
+  auto iter = m_pivCache.find(pRes.get());
+  if (iter!=m_pivCache.end())
+    return iter->second;
+
+  MolAtomPtr pPiv = findPivotAtom(pRes);
+  m_pivCache.emplace(pRes.get(), pPiv);
+  return pPiv;
+}
+
+MolAtomPtr MainChainRenderer::findPivotAtom(MolResiduePtr pRes) const
+{
   if (m_sPivAtomName.isEmpty()) {
     LString pvnm = pRes->getPivotAtomName();
     //MB_DPRINTLN("pivot: <%s>", pvnm.c_str());
@@ -384,7 +396,30 @@ void MainChainRenderer::propChanged(qlib::LPropEvent &ev)
 void MainChainRenderer::setPivAtomName(const LString &aname)
 {
   m_sPivAtomName = aname;
+  m_pivCache.clear();
   invalidateDisplayCache();
+}
+
+void MainChainRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  // Any structural change may add, remove or rename atoms and residues;
+  // moving the atoms does not change which atom is the pivot.
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
+      !ev.getDescr().equals("atomsMoved"))
+    m_pivCache.clear();
+  super_t::objectChanged(ev);
+}
+
+void MainChainRenderer::attachObj(qlib::uid_t obj_uid)
+{
+  m_pivCache.clear();
+  super_t::attachObj(obj_uid);
+}
+
+qlib::uid_t MainChainRenderer::detachObj()
+{
+  m_pivCache.clear();
+  return super_t::detachObj();
 }
 
 //////////////////////////////////////////////////////////////////////////

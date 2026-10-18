@@ -12,11 +12,11 @@
 
 #include <gfx/gfx.hpp>
 #include <gfx/AbstractColor.hpp>
+#include <gfx/TrigGpuPrim.hpp>
 #include <qlib/Vector4D.hpp>
 
 namespace gfx {
 class DisplayContext;
-class TrigGpuPrim;
 }  // namespace gfx
 
 namespace molvis {
@@ -37,11 +37,13 @@ using qlib::Vector4D;
 ///    output does not change.
 ///  - Build: the mesh is recorded (positions, normals, colors, hit names and
 ///    the strip/fan primitives) and can then be turned into a TrigGpuPrim.
-///  - Update: the same traversal is run again over a mesh recorded by Build.
-///    The topology (primitives, hit names) is kept and only positions/normals
-///    (UPD_GEOM) and/or colors (UPD_COLOR) are overwritten in recording order.
-///    finish() reports whether the traversal produced exactly the same
-///    topology; if not, the caller has to rebuild.
+///  - Update: the same traversal (or one chunk of it) is run again over a
+///    mesh recorded by Build and put in a TrigGpuPrim (toGpuPrim()). The
+///    topology (primitives, hit names) is kept and only positions/normals
+///    (UPD_GEOM) and/or colors (UPD_COLOR) are overwritten in recording
+///    order, directly in the primitive's vertex array. finish() reports
+///    whether the traversal produced exactly the same topology; if not, the
+///    caller has to rebuild.
 ///
 class MOLVIS_API TubeMeshBuilder
 {
@@ -64,6 +66,16 @@ public:
         int count;
     };
 
+    /// A part of the traversal that can be re-run on its own (one segment):
+    /// the vertices and primitives it wrote in build mode
+    struct Chunk
+    {
+        int firstVert;
+        int nVerts;
+        int firstPrim;
+        int nPrims;
+    };
+
     TubeMeshBuilder();
     ~TubeMeshBuilder();
 
@@ -75,15 +87,51 @@ public:
     /// Start recording a new mesh (drops the previous one).
     void startBuild(qlib::uid_t nSceneID);
 
-    /// Start overwriting the recorded mesh (flags: UPD_GEOM | UPD_COLOR).
-    void startUpdate(qlib::uid_t nSceneID, int nFlags);
+    /// Start overwriting the recorded mesh (flags: UPD_GEOM | UPD_COLOR) in
+    /// dst, the attribute blocks of the LAYOUT_PACKED TrigGpuPrim filled by
+    /// toGpuPrim().
+    void startUpdate(qlib::uid_t nSceneID, int nFlags,
+                     const gfx::TrigGpuPrim::PackedArrays &dst);
+
+    /// Start overwriting chunk ichunk of the mesh recorded by parent, in dst
+    /// (the attribute blocks of parent's TrigGpuPrim). This builder only
+    /// writes the chunk's vertices, so builders of distinct chunks can run
+    /// concurrently. finish() reports whether the chunk was reproduced.
+    void startChunkUpdate(qlib::uid_t nSceneID, int nFlags,
+                          const gfx::TrigGpuPrim::PackedArrays &dst,
+                          const TubeMeshBuilder &parent, int ichunk);
 
     /// End the current traversal. In update mode, returns false if the
     /// traversal did not reproduce the recorded topology.
     bool finish();
 
+    /// In build mode, mark the start / end of a chunk (see Chunk). No-op in
+    /// the other modes.
+    void beginChunk()
+    {
+        if (m_nMode != MODE_BUILD) return;
+        m_nChunkVert = m_nVerts;
+        m_nChunkPrim = int(m_prims.size());
+    }
+    void endChunk()
+    {
+        if (m_nMode != MODE_BUILD) return;
+        m_chunks.push_back(Chunk{m_nChunkVert, m_nVerts - m_nChunkVert, m_nChunkPrim,
+                                 int(m_prims.size()) - m_nChunkPrim});
+    }
+
+    const std::vector<Chunk> &getChunks() const { return m_chunks; }
+
+    /// True if the chunks hold every recorded vertex (the mesh can be
+    /// updated chunk by chunk).
+    bool chunksCoverAll() const;
+
     /// Drop the recorded mesh.
     void clear();
+
+    /// Drop the vertex data (positions, normals, colors, hit names) once it
+    /// is in a TrigGpuPrim, keeping the topology for the update check.
+    void releaseVertexData();
 
     int getMode() const { return m_nMode; }
 
@@ -100,14 +148,60 @@ public:
     /// True if the caller has to compute hit names for this traversal.
     bool wantName() const { return m_nMode != MODE_UPDATE; }
 
-    // Drawing interface (the subset of DisplayContext the renderers use)
+    // Drawing interface (the subset of DisplayContext the renderers use).
+    // The update into the GPU primitive (every coordinate or color update)
+    // is inlined here; the other modes go to the out-of-line versions.
 
-    void color(const gfx::ColorPtr &pCol);
-    void loadName(int nName);
-    void normal(const Vector4D &n);
+    void color(const gfx::ColorPtr &pCol)
+    {
+        if (m_nMode == MODE_UPDATE && !(m_nUpdFlags & UPD_COLOR)) return;
+        colorSlow(pCol);
+    }
+
+    void loadName(int nName)
+    {
+        if (m_nMode == MODE_UPDATE) return;
+        loadNameSlow(nName);
+    }
+
+    void normal(const Vector4D &n)
+    {
+        if (m_nMode != MODE_UPDATE) {
+            normalSlow(n);
+            return;
+        }
+        if (!(m_nUpdFlags & UPD_GEOM)) return;
+        setCurNorm(n);
+    }
+
     void startTriangleStrip();
     void startTriangleFan();
-    void vertex(const Vector4D &v);
+
+    void vertex(const Vector4D &v)
+    {
+        if (m_nMode == MODE_UPDATE && m_dst.pos != nullptr && m_nVertCur < m_nVerts) {
+            // write straight into the attribute blocks of the GPU primitive
+            const int i = m_nVertCur;
+            ++m_nVertCur;
+            if (m_nUpdFlags & UPD_GEOM) {
+                float *p = m_dst.pos + 3 * i;
+                p[0] = float(v.x());
+                p[1] = float(v.y());
+                p[2] = float(v.z());
+                m_dst.norm[i] = m_curNormPacked;
+            }
+            if (m_nUpdFlags & UPD_COLOR) {
+                qlib::qbyte *c = m_dst.color + 4 * i;
+                c[0] = gfx::getRCode(m_curCol);
+                c[1] = gfx::getGCode(m_curCol);
+                c[2] = gfx::getBCode(m_curCol);
+                c[3] = gfx::getACode(m_curCol);
+            }
+            return;
+        }
+        vertexSlow(v);
+    }
+
     void end();
 
     /// Forwarded in direct mode only (the GPU mesh does not use them).
@@ -117,7 +211,7 @@ public:
 
     // Recorded mesh
 
-    int getVertexSize() const { return int(m_col.size()); }
+    int getVertexSize() const { return m_nVerts; }
     int getFaceSize() const;
     const std::vector<Prim> &getPrims() const { return m_prims; }
 
@@ -132,13 +226,10 @@ public:
     qlib::quint32 getColor(int i) const { return m_col[i]; }
     qlib::quint32 getHitName(int i) const { return m_name[i]; }
 
-    /// Allocate prim and fill it with the recorded mesh. The polygon mode of
-    /// prim must be set by the caller beforehand.
+    /// Allocate prim (in TrigGpuPrim::LAYOUT_PACKED, the layout the update
+    /// traversal writes) and fill it with the recorded mesh. The polygon mode
+    /// of prim must be set by the caller beforehand.
     void toGpuPrim(DisplayContext *pdc, gfx::TrigGpuPrim &prim) const;
-
-    /// Rewrite the vertex data of a prim filled by toGpuPrim() (flags:
-    /// UPD_GEOM | UPD_COLOR) and mark it for upload.
-    void updateGpuPrim(gfx::TrigGpuPrim &prim, int nFlags) const;
 
 private:
     int m_nMode;
@@ -150,15 +241,34 @@ private:
     qlib::quint32 m_curCol;
     qlib::quint32 m_curName;
     float m_curNorm[3];
+    // m_curNorm packed for the GPU primitive (TrigGpuPrim::packNormal())
+    qlib::quint32 m_curNormPacked;
 
     // primitive in progress
     int m_nPrimType;
     int m_nPrimFirst;
 
-    // update cursors
+    // number of recorded vertices (kept after releaseVertexData())
+    int m_nVerts;
+    bool m_bReleased;
+
+    // update target: the attribute blocks of the GPU primitive
+    gfx::TrigGpuPrim::PackedArrays m_dst;
+
+    // update cursors (and the ends of the range to update)
     int m_nVertCur;
     int m_nPrimCur;
+    int m_nPrimEnd;
     bool m_bMismatch;
+
+    // primitives to check the update against (another builder's for a
+    // chunk update, null for the own ones)
+    const std::vector<Prim> *m_pPrimsRef;
+
+    // chunks recorded in build mode
+    std::vector<Chunk> m_chunks;
+    int m_nChunkVert;
+    int m_nChunkPrim;
 
     // recorded mesh
     std::vector<float> m_pos;
@@ -167,11 +277,40 @@ private:
     std::vector<qlib::quint32> m_name;
     std::vector<Prim> m_prims;
 
+    const std::vector<Prim> &prims() const
+    {
+        return (m_pPrimsRef != nullptr) ? *m_pPrimsRef : m_prims;
+    }
+
     bool isRecording() const
     {
         return m_nMode == MODE_BUILD || m_nMode == MODE_UPDATE;
     }
     void startPrim(int nType);
+
+    void colorSlow(const gfx::ColorPtr &pCol);
+    void loadNameSlow(int nName);
+    void normalSlow(const Vector4D &n);
+    void vertexSlow(const Vector4D &v);
+
+    /// Same normalization as gfx::DisplayList::normal()
+    void setCurNorm(const Vector4D &n)
+    {
+        const double len = n.length();
+        if (len < F_EPS4) {
+            m_curNorm[0] = 1.0f;
+            m_curNorm[1] = 0.0f;
+            m_curNorm[2] = 0.0f;
+        }
+        else {
+            const double rlen = 1.0 / len;
+            m_curNorm[0] = float(n.x() * rlen);
+            m_curNorm[1] = float(n.y() * rlen);
+            m_curNorm[2] = float(n.z() * rlen);
+        }
+        m_curNormPacked =
+            gfx::TrigGpuPrim::packUnitNormal(m_curNorm[0], m_curNorm[1], m_curNorm[2]);
+    }
 };
 
 }  // namespace molvis

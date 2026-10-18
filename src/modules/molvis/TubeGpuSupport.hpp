@@ -49,18 +49,17 @@ public:
     TubeGpuSupport &operator=(const TubeGpuSupport &) = delete;
     virtual ~TubeGpuSupport();
 
-    // Mesh access without a DisplayContext (exposed for inspection/testing)
+    // State exposed for inspection/testing
 
-    /// Record the mesh by running the host's traversal in build mode (no GPU
-    /// primitive is touched).
-    void tubeGpuBuildMesh();
+    /// How the last tubeGpuPrepare() refreshed the mesh
+    static constexpr int TG_PASS_NONE = 0;     ///< nothing to do
+    static constexpr int TG_PASS_BUILD = 1;    ///< (re)built
+    static constexpr int TG_PASS_SERIAL = 2;   ///< updated by the serial traversal
+    static constexpr int TG_PASS_CHUNKED = 3;  ///< updated chunk by chunk (parallel)
+    int tubeGpuLastPass() const { return m_nLastPass; }
 
-    /// Apply the pending in-place update (see tubeGpuMarkDirty) to the recorded
-    /// mesh. Returns false if the traversal changed the topology.
-    bool tubeGpuUpdateMesh();
-
-    /// The recorded mesh.
-    const TubeMeshBuilder &tubeGpuMesh() const { return m_mb; }
+    /// The GPU primitive the mesh is drawn from.
+    const gfx::TrigGpuPrim &tubeGpuPrim() const { return m_prim; }
 
 protected:
     /// The drawing sink of the current traversal.
@@ -82,6 +81,21 @@ protected:
 
     /// Whether the host draws through the GPU mesh at all.
     virtual bool tubeGpuIsEnabled() const { return true; }
+
+    /// Chunked (parallel) coordinate update. A host that records one chunk
+    /// per independently drawable part (TubeMeshBuilder::beginChunk() /
+    /// endChunk() around each segment in build mode) and can redraw a chunk
+    /// without touching its own state returns true here; a coordinate-only
+    /// update then redraws the chunks concurrently instead of re-running the
+    /// traversal.
+    virtual bool tubeGpuCanUpdateChunks() const { return false; }
+
+    /// Work done once, serially, before the chunks are redrawn (e.g.
+    /// recomputing the spline coeffs from the new positions).
+    virtual void tubeGpuPrepareChunkUpdate() {}
+
+    /// Redraw chunk i into pmb (may run concurrently for distinct chunks).
+    virtual void tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb) {}
 
     /// The host's preRender() / postRender().
     virtual void tubeGpuPreRender(DisplayContext *pdc) = 0;
@@ -151,8 +165,19 @@ private:
     int m_nPolyMode;
     /// Inside a color-only invalidation scope
     bool m_bColorOnly;
+    /// See tubeGpuLastPass()
+    int m_nLastPass;
+    /// Set by updateMesh() when the chunked update ran
+    bool m_bChunked;
 
     void build(DisplayContext *pdc, int nPolyMode);
+
+    /// Record the mesh by running the host's traversal in build mode.
+    void buildMesh();
+
+    /// Apply the pending in-place update (see tubeGpuMarkDirty) to the mesh
+    /// in the primitive. Returns false if the traversal changed the topology.
+    bool updateMesh();
 };
 
 }  // namespace molvis

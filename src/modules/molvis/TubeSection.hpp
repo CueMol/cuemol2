@@ -182,59 +182,69 @@ public:
   void makeCap(TubeMeshBuilder *pdl,
                bool fStart, int nType,
                const Vector4D &f, const Vector4D &vpt,
-               const Vector4D &e1, const Vector4D &e2);
+               const Vector4D &e1, const Vector4D &e2) const;
 
   void makeSpherCap(TubeMeshBuilder *pdl,
                     bool fStart,
                     const Vector4D &f, const Vector4D &vpt,
-                    const Vector4D &e1, const Vector4D &e2);
+                    const Vector4D &e1, const Vector4D &e2) const;
 
   void makeFlatCap(TubeMeshBuilder *pdl,
                    bool fStart,
                    const Vector4D &f, const Vector4D &vpt,
-                   const Vector4D &e1, const Vector4D &e2);
+                   const Vector4D &e1, const Vector4D &e2) const;
 
   void makeDisconJct(TubeMeshBuilder *pdl,
                      const Vector4D &f1, const Vector4D &ev,
                      const Vector4D &e11, const Vector4D &e12,
-                     const Vector4D &escl, const Vector4D &escl_prev);
+                     const Vector4D &escl, const Vector4D &escl_prev) const;
 
 private:
   void makeDJEllip(TubeMeshBuilder *pdl,
                    const Vector4D &f1, const Vector4D &ev,
                    const Vector4D &pe1, const Vector4D &pe2,
-                   const Vector4D &ne1, const Vector4D &ne2);
+                   const Vector4D &ne1, const Vector4D &ne2) const;
 
 public:
   ////////////////////////////////////////
   // Tesselation routines
 
-  void startTess();
+  /// State of one run of tessellated rings (the previous ring of the
+  /// strip). The caller owns it, so that concurrent tessellations can share
+  /// the section.
+  struct TessState
+  {
+    bool bEmpty = true;
+    /// previous ring (positions, normals) and its color
+    std::vector<Vector4D> vprev, nprev;
+    gfx::ColorPtr pPrevCol;
+    /// work area of the current ring
+    std::vector<Vector4D> vcur, ncur;
+  };
+
+  /// Start a new run of rings (the next doTess() draws no strip)
+  void startTess(TessState &ts) const;
 
   // no or simple norm shift
-  void doTess(TubeMeshBuilder *pdl,
+  void doTess(TessState &ts, TubeMeshBuilder *pdl,
               const Vector4D &f1,
               const gfx::ColorPtr &pCol, bool bSmoothCol,
               const Vector4D &e11, const Vector4D &e12,
-              const Vector4D &norm_shift);
+              const Vector4D &norm_shift) const;
 
   // complex norm shift (for ribbon junction)
   // vpt should be normalized
-  void doTess(TubeMeshBuilder *pdl,
+  void doTess(TessState &ts, TubeMeshBuilder *pdl,
               const Vector4D &f1,
               const gfx::ColorPtr &pCol, bool bSmoothCol,
               const Vector4D &e11, const Vector4D &e12,
-              const Vector4D &escl, const Vector4D &vpt);
-
-  void endTess();
+              const Vector4D &escl, const Vector4D &vpt) const;
 
 private:
-  bool m_bTessEmpty;
-
-  /// Hit name of the previous ring (pick pass), see doTess()
-  std::vector<Vector4D> m_vtess;
-  std::vector<Vector4D> m_ntess;
-  gfx::ColorPtr m_pPrevCol;
+  /// Draw the strip between the previous ring and the current one (in
+  /// ts.vcur / ts.ncur) and make the current ring the previous one
+  void tessStrip(TessState &ts, TubeMeshBuilder *pdl,
+                 const gfx::ColorPtr &pCol, bool bSmoothCol) const;
 
   ////////////////////////////////////////
 private:
@@ -244,7 +254,7 @@ private:
   void setupRectSection();
   void setupMolScrSection();
 
-  Vector4D calcDnorm(int index, const Vector4D &escl, const Vector4D &vpt);
+  Vector4D calcDnorm(int index, const Vector4D &escl, const Vector4D &vpt) const;
 };
 
 

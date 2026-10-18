@@ -457,8 +457,10 @@ export class GfxManager {
      */
     /// API
     drawBuffer(id: number, nmode: number, nelems: number,
-        array_buf: any, index_buf: any, isUpdated: boolean, ninst: number): void {
-        this.buffers.drawBuffer(id, nmode, nelems, array_buf, index_buf, isUpdated, ninst);
+        array_buf: any, index_buf: any, isUpdated: boolean, ninst: number,
+        upd_offset: number = 0, upd_length: number = 0): void {
+        this.buffers.drawBuffer(id, nmode, nelems, array_buf, index_buf, isUpdated, ninst,
+            upd_offset, upd_length);
     }
 
     /// API
