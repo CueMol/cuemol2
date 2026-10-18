@@ -7,9 +7,40 @@
 #include <modules/molvis/molvis.hpp>
 
 #include "SmoothSpline.hpp"
-#include "interpolation.hpp"
+#include "ReinschSpline.hpp"
+#include "PenalizedSpline.hpp"
 
 using namespace molvis;
+
+namespace {
+
+  /// Power-basis coefficients c[4*i+k] (k-th power of t - x_i) of the fitted
+  /// spline in the node layout of PenalizedSpline: n+2 nodes x_i = t0-1+i,
+  /// i.e. the n data knots plus one linear extension segment at each end.
+  void calcReinschCoeffs(int n, const double *g, const double *gam, double *c)
+  {
+    // interior segments (unit spacing)
+    for (int i=0; i<n-1; ++i) {
+      double *ci = c + 4*(i+1);
+      ci[0] = g[i];
+      ci[1] = g[i+1] - g[i] - (2.0*gam[i] + gam[i+1])/6.0;
+      ci[2] = 0.5*gam[i];
+      ci[3] = (gam[i+1] - gam[i])/6.0;
+    }
+
+    // linear extensions with the end slopes
+    const double d0 = c[4*1+1];
+    const double dn = g[n-1] - g[n-2] + (gam[n-2] + 2.0*gam[n-1])/6.0;
+    c[0] = g[0] - d0;
+    c[1] = d0;
+    c[2] = c[3] = 0.0;
+    double *ce = c + 4*n;
+    ce[0] = g[n-1];
+    ce[1] = dn;
+    ce[2] = ce[3] = 0.0;
+  }
+
+}
 
 SmoothSpline1D::SmoothSpline1D()
   : m_nPoints(0)
@@ -37,7 +68,16 @@ void SmoothSpline1D::cleanup()
 /** generate spline coeffs */
 bool SmoothSpline1D::generate()
 {
-  int i;
+  return generateImpl(true);
+}
+
+bool SmoothSpline1D::generateDense()
+{
+  return generateImpl(false);
+}
+
+bool SmoothSpline1D::generateImpl(bool bReinsch)
+{
   // drop the coefficients of a previous generate() so that a failure
   // below leaves interpolate() with nothing to read
   cleanup();
@@ -49,56 +89,77 @@ bool SmoothSpline1D::generate()
   if (m_nPoints<=2)
     return false; // there is no points to interpolate!!
 
-  ///////////////////////////////////////////////////
-  // calculate natural spline coeffs
-
-  const int nsize = m_nPoints;
-  alglib::real_1d_array t, x;
-
-  t.setlength(nsize);
-  x.setlength(nsize);
-
-  for (int i=0; i<nsize; ++i) {
-    t[i] = i;
-    x[i] = m_veclist[i];
+  // Reinsch for the long segments, the dense fit for the rest
+  if (!(bReinsch && fitReinsch()) && !fitDense()) {
+    m_vecx.clear();
+    m_coeff0.clear();
+    m_coeff1.clear();
+    m_coeff2.clear();
+    m_coeff3.clear();
+    return false;
   }
 
-  double v;
-  double rho;
-  alglib::ae_int_t info;
-  alglib::spline1dinterpolant sx, sy, sz;
-  alglib::spline1dfitreport rep;
+  return true;
+}
 
-  //
-  // Fit with VERY small amount of smoothing (rho = -5.0)
-  // and large number of basis functions (M=50).
-  //
-  // With such small regularization penalized spline almost fully reproduces function values
-  //
-  //rho = -5.0;
-  rho = m_rho;
-  int mseg = nsize;
-  if (mseg<10)
-    mseg = 10;
+bool SmoothSpline1D::fitReinsch()
+{
+  const int n = m_nPoints;
+  // the penalized fit uses max(10, n) basis functions; below 10 points the
+  // knots are not on the data points and PenalizedSpline solves it
+  if (n<10)
+    return false;
 
-  alglib::spline1dfitpenalized(t, x, mseg, rho, info, sx, rep);
+  ReinschSpline rs;
+  if (!rs.factor(n, NULL, m_rho))
+    return false;
 
-  alglib_impl::spline1dinterpolant *psx = sx.c_ptr();
-  const int nnodes = psx->n;
+  std::vector<double> g(n), gam(n), c(4*(n+1));
+  rs.solve(&m_veclist[0], 1, &g[0], &gam[0]);
+  calcReinschCoeffs(n, &g[0], &gam[0], &c[0]);
+
+  m_vecx.resize(n+2);
+  m_coeff0.resize(n+1);
+  m_coeff1.resize(n+1);
+  m_coeff2.resize(n+1);
+  m_coeff3.resize(n+1);
+  for (int i=0; i<n+2; ++i)
+    m_vecx[i] = double(i-1);
+  for (int i=0; i<n+1; ++i) {
+    m_coeff0[i] = c[4*i+0];
+    m_coeff1[i] = c[4*i+1];
+    m_coeff2[i] = c[4*i+2];
+    m_coeff3[i] = c[4*i+3];
+  }
+
+  return true;
+}
+
+bool SmoothSpline1D::fitDense()
+{
+  const int n = m_nPoints;
+  std::vector<double> t(n);
+  for (int i=0; i<n; ++i)
+    t[i] = i;
+
+  PenalizedSpline ps;
+  if (!ps.setup(&t[0], NULL, n, qlib::max(10, n), m_rho))
+    return false;
+
+  const int nnodes = ps.getNodes();
+  std::vector<double> c(4*(nnodes-1));
   m_vecx.resize(nnodes);
+  ps.solve(&m_veclist[0], 1, &m_vecx[0], &c[0]);
+
   m_coeff0.resize(nnodes-1);
   m_coeff1.resize(nnodes-1);
   m_coeff2.resize(nnodes-1);
   m_coeff3.resize(nnodes-1);
-  
-  for (int i=0; i<nnodes; ++i) {
-    m_vecx[i] = psx->x.ptr.p_double[i];
-    if (i<nnodes-1) {
-      m_coeff0[i] = psx->c.ptr.p_double[4*i+0];
-      m_coeff1[i] = psx->c.ptr.p_double[4*i+1];
-      m_coeff2[i] = psx->c.ptr.p_double[4*i+2];
-      m_coeff3[i] = psx->c.ptr.p_double[4*i+3];
-    }
+  for (int i=0; i<nnodes-1; ++i) {
+    m_coeff0[i] = c[4*i+0];
+    m_coeff1[i] = c[4*i+1];
+    m_coeff2[i] = c[4*i+2];
+    m_coeff3[i] = c[4*i+3];
   }
 
   return true;
@@ -199,7 +260,16 @@ void SmoothSpline::cleanup()
 /** generate spline coeffs */
 bool SmoothSpline::generate()
 {
-  int i;
+  return generateImpl(true);
+}
+
+bool SmoothSpline::generateDense()
+{
+  return generateImpl(false);
+}
+
+bool SmoothSpline::generateImpl(bool bReinsch)
+{
   m_nPoints = m_veclist.size();
 
   if (m_nPoints==0)
@@ -208,88 +278,18 @@ bool SmoothSpline::generate()
   if (m_nPoints<2)
     return false; // there is no points to interpolate!!
 
-  ///////////////////////////////////////////////////
-  // calculate natural spline coeffs
+  // Reinsch for the long segments, the dense fit for the rest
+  if (!(bReinsch && fitReinsch()) && !fitDense()) {
+    m_vecx.clear();
+    m_coeff0.clear();
+    m_coeff1.clear();
+    m_coeff2.clear();
+    m_coeff3.clear();
+    return false;
+  }
 
   const int nsize = m_nPoints;
-  alglib::real_1d_array t, x, y, z, wgt;
-
-  t.setlength(nsize);
-  x.setlength(nsize);
-  y.setlength(nsize);
-  z.setlength(nsize);
-
-  if (m_bUseWgt)
-    wgt.setlength(nsize);
-
-  for (int i=0; i<nsize; ++i) {
-    t[i] = i + m_nStart;
-    const Vector4D &p = m_veclist[i];
-    x[i] = p.x();
-    y[i] = p.y();
-    z[i] = p.z();
-  }
-
-  if (m_bUseWgt)
-    for (int i=0; i<nsize; ++i)
-      wgt[i] = m_veclist[i].w();
-
-  double v;
-  double rho;
-  alglib::ae_int_t info;
-  alglib::spline1dinterpolant sx, sy, sz;
-  alglib::spline1dfitreport rep;
-
-  //
-  // Fit with VERY small amount of smoothing (rho = -5.0)
-  // and large number of basis functions (M=50).
-  //
-  // With such small regularization penalized spline almost fully reproduces function values
-  //
-  rho = m_rho;
-  int mseg = qlib::max(4, nsize);
-
-  if (m_bUseWgt) {
-    alglib::spline1dfitpenalizedw(t, x, wgt, mseg, rho, info, sx, rep);
-    alglib::spline1dfitpenalizedw(t, y, wgt, mseg, rho, info, sy, rep);
-    alglib::spline1dfitpenalizedw(t, z, wgt, mseg, rho, info, sz, rep);
-  }
-  else {
-    alglib::spline1dfitpenalized(t, x, mseg, rho, info, sx, rep);
-    alglib::spline1dfitpenalized(t, y, mseg, rho, info, sy, rep);
-    alglib::spline1dfitpenalized(t, z, mseg, rho, info, sz, rep);
-  }
-  //fprintf(stderr, "X info: %d\n", int(info)); // EXPECTED: 1
-  //fprintf(stderr, "Y info: %d\n", int(info)); // EXPECTED: 1
-  //fprintf(stderr, "Z info: %d\n", int(info)); // EXPECTED: 1
-
-  alglib_impl::spline1dinterpolant *psx = sx.c_ptr();
-  alglib_impl::spline1dinterpolant *psy = sy.c_ptr();
-  alglib_impl::spline1dinterpolant *psz = sz.c_ptr();
-  const int nnodes = psx->n;
-  m_vecx.resize(nnodes);
-  m_coeff0.resize(nnodes-1);
-  m_coeff1.resize(nnodes-1);
-  m_coeff2.resize(nnodes-1);
-  m_coeff3.resize(nnodes-1);
-  
-  for (int i=0; i<nnodes; ++i) {
-    m_vecx[i] = psx->x.ptr.p_double[i];
-    if (i<nnodes-1) {
-      m_coeff0[i] = Vector4D(psx->c.ptr.p_double[4*i+0],
-                             psy->c.ptr.p_double[4*i+0],
-                             psz->c.ptr.p_double[4*i+0]);
-      m_coeff1[i] = Vector4D(psx->c.ptr.p_double[4*i+1],
-                             psy->c.ptr.p_double[4*i+1],
-                             psz->c.ptr.p_double[4*i+1]);
-      m_coeff2[i] = Vector4D(psx->c.ptr.p_double[4*i+2],
-                             psy->c.ptr.p_double[4*i+2],
-                             psz->c.ptr.p_double[4*i+2]);
-      m_coeff3[i] = Vector4D(psx->c.ptr.p_double[4*i+3],
-                             psy->c.ptr.p_double[4*i+3],
-                             psz->c.ptr.p_double[4*i+3]);
-    }
-  }
+  const int nnodes = m_vecx.size();
 
   if (m_bFixStart) {
     /*
@@ -316,6 +316,101 @@ bool SmoothSpline::generate()
     // Vector4D b1 = m_vEndD1.scale( scl_dot );
 
     rewriteCoeff(nnodes-2, a1);
+  }
+
+  return true;
+}
+
+bool SmoothSpline::fitReinsch()
+{
+  const int n = m_nPoints;
+  // the penalized fit uses max(4, n) basis functions; below 4 points the
+  // knots are not on the data points and PenalizedSpline solves it
+  if (n<4)
+    return false;
+
+  std::vector<double> wgt;
+  if (m_bUseWgt) {
+    wgt.resize(n);
+    for (int i=0; i<n; ++i)
+      wgt[i] = m_veclist[i].w();
+  }
+
+  ReinschSpline rs;
+  if (!rs.factor(n, m_bUseWgt ? &wgt[0] : NULL, m_rho))
+    return false;
+
+  // y: xyz interleaved
+  std::vector<double> y(3*n);
+  for (int i=0; i<n; ++i) {
+    const Vector4D &p = m_veclist[i];
+    y[3*i+0] = p.x();
+    y[3*i+1] = p.y();
+    y[3*i+2] = p.z();
+  }
+
+  std::vector<double> g(n), gam(n), c[3];
+  for (int k=0; k<3; ++k) {
+    c[k].resize(4*(n+1));
+    rs.solve(&y[k], 3, &g[0], &gam[0]);
+    calcReinschCoeffs(n, &g[0], &gam[0], &c[k][0]);
+  }
+
+  m_vecx.resize(n+2);
+  m_coeff0.resize(n+1);
+  m_coeff1.resize(n+1);
+  m_coeff2.resize(n+1);
+  m_coeff3.resize(n+1);
+  for (int i=0; i<n+2; ++i)
+    m_vecx[i] = double(i-1 + m_nStart);
+  for (int i=0; i<n+1; ++i) {
+    m_coeff0[i] = Vector4D(c[0][4*i+0], c[1][4*i+0], c[2][4*i+0]);
+    m_coeff1[i] = Vector4D(c[0][4*i+1], c[1][4*i+1], c[2][4*i+1]);
+    m_coeff2[i] = Vector4D(c[0][4*i+2], c[1][4*i+2], c[2][4*i+2]);
+    m_coeff3[i] = Vector4D(c[0][4*i+3], c[1][4*i+3], c[2][4*i+3]);
+  }
+
+  return true;
+}
+
+bool SmoothSpline::fitDense()
+{
+  const int n = m_nPoints;
+  std::vector<double> t(n), wgt, y(3*n);
+  for (int i=0; i<n; ++i) {
+    t[i] = i + m_nStart;
+    const Vector4D &p = m_veclist[i];
+    y[3*i+0] = p.x();
+    y[3*i+1] = p.y();
+    y[3*i+2] = p.z();
+  }
+  if (m_bUseWgt) {
+    wgt.resize(n);
+    for (int i=0; i<n; ++i)
+      wgt[i] = m_veclist[i].w();
+  }
+
+  PenalizedSpline ps;
+  if (!ps.setup(&t[0], m_bUseWgt ? &wgt[0] : NULL, n, qlib::max(4, n), m_rho))
+    return false;
+
+  const int nnodes = ps.getNodes();
+  std::vector<double> c[3];
+  m_vecx.resize(nnodes);
+  for (int k=0; k<3; ++k) {
+    c[k].resize(4*(nnodes-1));
+    ps.solve(&y[k], 3, &m_vecx[0], &c[k][0]);
+  }
+
+  m_coeff0.resize(nnodes-1);
+  m_coeff1.resize(nnodes-1);
+  m_coeff2.resize(nnodes-1);
+  m_coeff3.resize(nnodes-1);
+  for (int i=0; i<nnodes-1; ++i) {
+    m_coeff0[i] = Vector4D(c[0][4*i+0], c[1][4*i+0], c[2][4*i+0]);
+    m_coeff1[i] = Vector4D(c[0][4*i+1], c[1][4*i+1], c[2][4*i+1]);
+    m_coeff2[i] = Vector4D(c[0][4*i+2], c[1][4*i+2], c[2][4*i+2]);
+    m_coeff3[i] = Vector4D(c[0][4*i+3], c[1][4*i+3], c[2][4*i+3]);
   }
 
   return true;
@@ -355,6 +450,10 @@ bool SmoothSpline::interpolate(double par, Vector4D *vec,
                               Vector4D *dvec /*= NULL*/,
                               Vector4D *ddvec /*= NULL*/)
 {
+  // no coefficients: generate() has not run or failed
+  if (m_vecx.size()<2 || m_coeff0.empty())
+    return false;
+
   int l = 0;
   int r = m_vecx.size()-2+1;
   int m;

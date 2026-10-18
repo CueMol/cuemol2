@@ -29,6 +29,10 @@ namespace molvis {
 
     double m_rho;
 
+    bool fitReinsch();
+    bool fitDense();
+    bool generateImpl(bool bReinsch);
+
   public:
     SmoothSpline1D();
 
@@ -52,8 +56,13 @@ namespace molvis {
       return m_veclist[i];
     }
 
-    /// Generate spline coeffs
+    /// Generate spline coeffs (Reinsch algorithm, O(n))
     bool generate();
+
+    /// Generate spline coeffs by the dense penalized fit (O(n^3)).
+    /// Reference implementation of generate(), which also falls back to it
+    /// for the inputs the Reinsch path does not reproduce.
+    bool generateDense();
 
     /// Calculate interpolation
     bool interpolate(double f, double *vec,
@@ -92,6 +101,10 @@ namespace molvis {
 
     void rewriteCoeff(int i, const Vector4D &ai);
     //void rewriteCoeff(int i, const Vector4D &ai, const Vector4D &bi);
+
+    bool fitReinsch();
+    bool fitDense();
+    bool generateImpl(bool bReinsch);
 
   public:
     SmoothSpline();
@@ -136,8 +149,13 @@ namespace molvis {
       m_vEndD1 = vst.normalize();
     }
 
-    /// Generate spline coeffs
+    /// Generate spline coeffs (Reinsch algorithm, O(n))
     bool generate();
+
+    /// Generate spline coeffs by the dense penalized fit (O(n^3)).
+    /// Reference implementation of generate(), which also falls back to it
+    /// for the inputs the Reinsch path does not reproduce.
+    bool generateDense();
 
     /// Calculate interpolation
     bool interpolate(double f, Vector4D *vec,
