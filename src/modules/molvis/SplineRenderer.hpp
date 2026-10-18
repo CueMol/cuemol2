@@ -124,8 +124,8 @@ namespace molvis {
     /// depends on the two neighbor residues themselves (e.g. the binormal
     /// direction flags), so they have to be the same too. The segment end
     /// fade depends on the position between them and never shares.
-    bool canShareRing(double par0, double par1, SplineCoeff *pCoeff,
-                      bool bNeighbors = false);
+    bool canShareRing(double par0, double par1, const SplineCoeff *pCoeff,
+                      bool bNeighbors = false) const;
 
     void invalidateSplineCoeffs();
 

@@ -218,7 +218,7 @@ private:
   /// SplineRenderer::canShareRing()). With smooth
   /// coloring the helix back / sheet side colors follow the color at c.par,
   /// so those strips keep both rings.
-  bool isRingBandOK(const SegCtx &c, SplineCoeff *pCoeff)
+  bool isRingBandOK(const SegCtx &c, const SplineCoeff *pCoeff) const
   {
     if (!c.pmb->hasRing()) return false;
     if (isSmoothColor() && (m_bHelixBackCol || m_bSheetSideCol)) return false;

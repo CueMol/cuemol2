@@ -369,8 +369,8 @@ ColorPtr SplineRenderer::calcColor(double par, SplineCoeff *pCoeff)
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext, bRes1Tp, bRes2Tp);
 }
 
-bool SplineRenderer::canShareRing(double par0, double par1, SplineCoeff *pCoeff,
-                                  bool bNeighbors)
+bool SplineRenderer::canShareRing(double par0, double par1, const SplineCoeff *pCoeff,
+                                  bool bNeighbors) const
 {
   if (m_bSegEndFade)
     return false;
@@ -387,9 +387,10 @@ bool SplineRenderer::canShareRing(double par0, double par1, SplineCoeff *pCoeff,
     return false;
 
   // A missing residue or pivot makes them fall back to the other neighbor
-  // (or to no color), which may differ between par0 and par1
-  MolResiduePtr pRes(pCoeff->getResidue(nres0));
-  return !pRes.isnull() && !getPivotAtom(pRes).isnull();
+  // (or to no color), which may differ between par0 and par1. (The raw
+  // pivot of the spline topology: this runs once per strip, also in the
+  // parallel update, where the non-atomic smart pointers must not be copied.)
+  return pCoeff->getPivot(nres0) != nullptr;
 }
 
 bool SplineRenderer::isSegEnd(double par, SplineCoeff *pCoeff)
