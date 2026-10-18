@@ -10,6 +10,8 @@
 
 #include <qlib/Vector4D.hpp>
 
+#include <cmath>
+
 namespace gfx {
 
 /**
@@ -71,8 +73,20 @@ public:
      * Pack a normal into a GL_INT_2_10_10_10_REV word: x, y, z as signed
      * normalized 10-bit values (x in the low bits) and w = 1, which is what
      * a three-component float normal reads as in the vec4 shader input.
+     * Components outside [-1, 1] are clamped.
      */
     static quint32 packNormal(float x, float y, float z)
+    {
+        return packUnitNormal(clampUnit(x), clampUnit(y), clampUnit(z));
+    }
+
+    /**
+     * packNormal() for a unit vector (each component within [-1, 1] up to
+     * rounding), without the clamping: the per-vertex update path packs every
+     * normal it is given, so this is kept to a multiply and a rounding
+     * conversion per component. Same result as packNormal() for such input.
+     */
+    static quint32 packUnitNormal(float x, float y, float z)
     {
         return packSnorm10(x) | (packSnorm10(y) << 10) | (packSnorm10(z) << 20) |
                (quint32(1) << 30);
@@ -309,12 +323,15 @@ private:
      *  hit names 5). */
     qbyte *packedBlock(int nWordsBefore) const;
 
+    static float clampUnit(float c)
+    {
+        return (c > 1.0f) ? 1.0f : ((c < -1.0f) ? -1.0f : c);
+    }
+
+    /// Signed normalized 10-bit value of c in [-1, 1] (rounded to nearest)
     static quint32 packSnorm10(float c)
     {
-        if (c > 1.0f) c = 1.0f;
-        if (c < -1.0f) c = -1.0f;
-        const int i = int(c * 511.0f + (c >= 0.0f ? 0.5f : -0.5f));
-        return quint32(i) & 0x3FFu;
+        return quint32(std::lrintf(c * 511.0f)) & 0x3FFu;
     }
 
     void setupAttrs();

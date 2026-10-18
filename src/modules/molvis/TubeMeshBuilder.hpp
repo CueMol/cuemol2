@@ -309,7 +309,7 @@ private:
             m_curNorm[2] = float(n.z() * rlen);
         }
         m_curNormPacked =
-            gfx::TrigGpuPrim::packNormal(m_curNorm[0], m_curNorm[1], m_curNorm[2]);
+            gfx::TrigGpuPrim::packUnitNormal(m_curNorm[0], m_curNorm[1], m_curNorm[2]);
     }
 };
 
