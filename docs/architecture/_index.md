@@ -45,7 +45,7 @@ architecture, it belongs here.
 - [Ball & stick trace renderer (`tracestick`)](tracestick-renderer.md) (日本語) --
   主鎖 pivot atom (CA / P) を sphere + cylinder で結ぶ `trace` の ball & stick 版。
   segment 判定は MainChainRenderer 共通、coordinate texture 経路と display-list 経路、style 一覧。
-- [tube / ribbon / cartoon の GPU mesh](tube-gpu-mesh.md) (日本語) -- `TubeMeshBuilder` (Direct / Build /
+- [tube / ribbon / cartoon / nucl の GPU mesh](tube-gpu-mesh.md) (日本語) -- `TubeMeshBuilder` (Direct / Build /
   Update) と `TubeGpuSupport`。display list を経由せず `TrigGpuPrim` を直接構築し、`atomsMoved` と
   coloring の変更は VBO の in-place 書き換えで反映する。トポロジが座標に依存しない前提と invalidation の表。
 - [GPU ID-buffer picking と 3D view の hover 情報 / hover highlight](gpu-id-picking.md) (日本語) --

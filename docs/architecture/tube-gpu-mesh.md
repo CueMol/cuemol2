@@ -1,12 +1,12 @@
 # tube 系 renderer の GPU mesh (`TubeMeshBuilder` / `TubeGpuSupport`)
 
-`TubeRenderer` (tube)、`RibbonRenderer` (ribbon)、`Ribbon2Renderer` (cartoon) は display list を経由せず、
+`TubeRenderer` (tube)、`RibbonRenderer` (ribbon)、`Ribbon2Renderer` (cartoon)、`NARenderer` (nucl) は display list を経由せず、
 `gfx::TrigGpuPrim` を直接構築して描く。
 座標の変化 (MD trajectory / morphing の `atomsMoved`) と色の変化 (coloring の変更) は、
 同じ traversal を回し直して VBO の頂点データを in-place で書き換えるだけで反映する
 (再確保なし、index buffer は再送しない)。
 
-残りの計画 (spline 係数の in-place 再生成、NA) は `../plans/261017-tube-gpu-mesh-plan.md`。
+残りの計画 (spline 係数の in-place 再生成) は `../plans/261017-tube-gpu-mesh-plan.md`。
 
 ## 構成
 
@@ -84,7 +84,25 @@ Update が成り立つ前提。頂点数と prim の構成を決めるのは:
 
 テストからは `tubeGpuBuildMesh()` / `tubeGpuUpdateMesh()` / `tubeGpuMesh()` (DisplayContext なしで mesh を記録・更新する公開 API) を使う。
 
-## NARenderer
+## NARenderer (nucl)
 
-`TubeRenderer` の派生だが、base pair・糖・埋め込みの ball & stick を同じ pdl に描くので
-`tubeGpuIsEnabled()` を false にして display list 経路のまま。
+`TubeRenderer` の派生で、tube に加えて塩基の stick (sphere / cylinder) と ring 板を描く。すべて同じ traversal で
+記録し、座標・色の変化も同じ Update traversal で書き換える (coord texture は使わない)。
+
+| 要素 | 受け皿 |
+|---|---|
+| 主鎖 tube | TubeGpuSupport の `TrigGpuPrim` |
+| 塩基の ring 板 (detail1 / detail2) | 同じ `TrigGpuPrim`。`BallStickRenderer::collectRingAtom()` / `drawCollectedRings(TubeMeshBuilder *)` で描く (`drawRings` の描画先は builder) |
+| sphere / cylinder (全モード) | `SphereGpuPrim` / `CylinderGpuPrim` (impostor)。位置・半径・色 devcode・hit name を `NARenderer::Stick` として記録 |
+
+- `stickSphere()` / `stickCyl()` が `pdl->sphere` / `pdl->cylinder` の代わり。direct (display list / ファイル) では
+  `loadName` -> `color` -> `pdl->sphere/cylinder` (従来と同じ出力)、Build では記録を追加、Update では同じ順に
+  上書き (UPD_GEOM で位置、UPD_COLOR で色)。数が合わなければ `tubeGpuInvalidate()` して作り直す
+- 1 回の traversal の結果は `NARenderer::prepareGpu()` が `tubeGpuPrepare()` の直後に stick prim へ反映する
+  (Build なら alloc + `setData`、Update なら `setData` + `setUpdated(true)`)
+- 色の分岐 (同色なら 1 本、2 色なら中点で 2 本) がトポロジを決めるので、stick の色は Update(UPD_GEOM) でも計算する
+- detail モードの原子と bond は NA 自身が描く (補助の `BallStickRenderer` は色と ring の計算だけに使う)。
+  同色 bond と原子と ring 板の hit name は残基の pivot、2 色 bond の半分は各原子
+- stick は pick 対応の座標属性版 prim で描くので、GPU pick にも描かれる (`gpu-id-picking.md`)
+- テスト: `NARendererGpuMeshTest` (1ehz、detail1) が、atomsMoved の Update が tube・ring・stick を保ってフル再構築と
+  一致することを確認する
