@@ -12,6 +12,7 @@
  * Usage:
  *   node run.js                                    # every spec in specs/
  *   node run.js --specs=1crn-cpk-orbit             # one, by file stem
+ *   node run.js --spec-dir=specs-tube              # the specs of another directory
  *   node run.js --canvases=1920x1080,2880x1800
  *   node run.js --repeat=3
  */
@@ -25,7 +26,6 @@ const path = require('node:path')
 
 const ROOT = __dirname
 const APP_DIR = path.resolve(ROOT, '../react-gui')
-const SPEC_DIR = path.join(ROOT, 'specs')
 const RESULTS_DIR = path.join(ROOT, 'results')
 const CELL_FILE = path.join(os.tmpdir(), `cuemol-bench-cell-${process.pid}.json`)
 
@@ -42,6 +42,11 @@ function argList(name) {
   const v = argValue(name)
   return v ? v.split(',').map((s) => s.trim()).filter(Boolean) : null
 }
+
+// specs/ holds the matrix that a plain `node run.js` runs; cells too heavy or
+// too specialized for it (the tube / ribbon set, specs-tube/) live in their
+// own directory and run only when asked for
+const SPEC_DIR = path.resolve(ROOT, argValue('spec-dir') || 'specs')
 
 const filters = {
   specs: argList('specs'),

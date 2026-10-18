@@ -112,7 +112,13 @@ node run.js                              # every spec in specs/
 node run.js --specs=1crn-cpk-orbit       # one, by file stem
 node run.js --canvases=1920x1080,2880x1800
 node run.js --repeat=3
+node run.js --spec-dir=specs-tube        # the tube / ribbon set (not in a plain run)
 ```
+
+`specs-tube/` holds the tube and ribbon cells (coord-morph on 1AON / 4V6X / 3J3Q,
+md-playback on ifabp / yiip / mcv448 / a4tail). They update a GPU mesh in place
+on every coordinate change, and the 3J3Q cells are heavy, so a plain `node run.js`
+leaves them out.
 
 Results land in `results/` as CSV and JSON. A single cell can also be run by
 hand:

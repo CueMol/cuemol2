@@ -1,0 +1,10 @@
+{
+  "name": "1aon (GroEL/GroES, 58870 atoms) / ribbon / coord-morph",
+  "file": "../data/1aon.cif",
+  "morphFile": "../data/1aon-morph.cif",
+  "reader": "mmcif",
+  "renderer": "ribbon",
+  "scenario": "coord-morph",
+  "warmupMs": 2000,
+  "measureMs": 6000
+}
