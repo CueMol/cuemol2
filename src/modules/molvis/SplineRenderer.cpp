@@ -110,6 +110,11 @@ void SplineRenderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
   SplineCoeff *pCoeff = m_scs.searchCoeff(m_pStartRes);
 
   if (pCoeff==NULL) {
+    // A segment of 1 or 2 residues has no spline coeffs and is not drawn
+    // (same as a single-residue selection inside a longer segment)
+    if (m_scs.isShortSegment(m_pStartRes))
+      return;
+
     LOG_DPRINTLN("SplineRenderer> fatal error at endSegment(coeff not found for %s.%s:%s.%s)",
                  m_pStartRes->getParentChain()->getName().c_str(),
                  m_pStartRes->getIndex().toString().c_str(),
