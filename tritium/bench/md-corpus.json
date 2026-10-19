@@ -137,6 +137,14 @@
           "tarHeaderOffset": 834050560,
           "xtcFrames": 100,
           "sha256": "c5f6d8be534dd84b84b3954d581a84f52db336c4eaa3d0dd9fd767101b1aff13"
+        },
+        {
+          "name": "prod-400f.xtc",
+          "url": "https://zenodo.org/records/20275758/files/A4_portal_tail_MD.tar?download=1",
+          "tarMember": "A4_portal_tail_MD/prod.xtc",
+          "tarHeaderOffset": 834050560,
+          "xtcFrames": 400,
+          "sha256": "2314d95ab92cdca0ada1b64025d75a44f9a6453062419adc2867e979fc5b4a2e"
         }
       ],
       "derived": [
@@ -200,6 +208,16 @@
           },
           "note": "first 50 frames of the water-free trajectory (re-pinned with prod-100f-nosol.xtc)",
           "sha256": "5c10208c502d0a7ad7bc6d1697ead176ebe41e574914875ffd0ea893818f91f7"
+        },
+        {
+          "name": "prod-200f.xtc",
+          "from": "prod-400f.xtc",
+          "op": "xtc-head",
+          "params": {
+            "frames": 200
+          },
+          "note": "first 200 of the 400 frames, byte for byte, for the trajectory-length sweep beyond 100 frames (all atoms)",
+          "sha256": "6b7fa2d8154faac042563b065aa02e8b38a2d254c0ba050ca20b0be93e3da6c1"
         }
       ]
     }
