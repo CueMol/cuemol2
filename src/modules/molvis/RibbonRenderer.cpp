@@ -408,6 +408,9 @@ void RibbonRenderer::renderTube(SegCtx &c,
   // reset previous E scale
   c.prev_escl = Vector4D(1.0, 1.0, 0.0, 0.0);
 
+  // a strip of this body has been drawn (its ring can be shared)
+  bool bRingDrawn = false;
+
   for (i=0; i<=ndelta; i++) {
     const double par = fcstart + double(i)*fdelta; ///double(naxdet);
     // MB_DPRINTLN("Ribbon> i=%d par=%f", i, par);
@@ -438,7 +441,12 @@ void RibbonRenderer::renderTube(SegCtx &c,
     // Hit names (pick pass): one name for the whole segment strip, so the
     // residue boundary lies on a ring (see TubeSection::doTess).
     c.pmb->loadName(c.nHitName);
-    c.pmb->startTriangleStrip();
+    // Draw only the new ring if the previous strip's ring can be reused
+    const bool bBand = bRingDrawn && isRingBandOK(c, pCoeff);
+    if (bBand)
+      c.pmb->startRingBand();
+    else
+      c.pmb->startRingStrip();
     
     for (j=0; j<=pCurTs->getSize(); j++) {
       char nt = pCurTs->getSfType(j);
@@ -453,12 +461,13 @@ void RibbonRenderer::renderTube(SegCtx &c,
       }
 
       g1 = pCurTs->getVec(j, c.e11, c.e12);
-      g2 = pCurTs->getVec(j, c.e21, c.e22);
       dg1 = pCurTs->getNormVec(j, c.e11, c.e12);
-      dg2 = pCurTs->getNormVec(j, c.e21, c.e22);
       c.pmb->normal(dg1);
       c.pmb->vertex(c.f1+g1);
-      
+      if (bBand) continue;
+
+      g2 = pCurTs->getVec(j, c.e21, c.e22);
+      dg2 = pCurTs->getNormVec(j, c.e21, c.e22);
       if (bb && isSmoothColor())
         c.pmb->color(c.pPrevCol);
 
@@ -466,6 +475,7 @@ void RibbonRenderer::renderTube(SegCtx &c,
       c.pmb->vertex(c.f2+g2);
     }
     c.pmb->end();
+    bRingDrawn = true;
     c.pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     // pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
 
@@ -506,6 +516,9 @@ void RibbonRenderer::renderJct(SegCtx &c,
   // initialize previous E scale
   pJct->get(0, dpar, c.prev_escl);
   double prev_dpar = -1.0;
+
+  // a strip of this junction has been drawn (its ring can be shared)
+  bool bRingDrawn = false;
 
   for (i=0; i<ndelta; i++) {
     // Get E-scale value
@@ -550,7 +563,12 @@ void RibbonRenderer::renderJct(SegCtx &c,
     // Hit names (pick pass): one name for the whole segment strip, so the
     // residue boundary lies on a ring (see TubeSection::doTess).
     c.pmb->loadName(c.nHitName);
-    c.pmb->startTriangleStrip();
+    // Draw only the new ring if the previous strip's ring can be reused
+    const bool bBand = bRingDrawn && isRingBandOK(c, pCoeff);
+    if (bBand)
+      c.pmb->startRingBand();
+    else
+      c.pmb->startRingStrip();
     
     const Vector4D xe11 = c.e11.scale(escl.x());
     const Vector4D xe12 = c.e12.scale(escl.y());
@@ -575,15 +593,16 @@ void RibbonRenderer::renderJct(SegCtx &c,
       }
 
       g1 = pCurTs->getVec(j, xe11, xe12);
-      g2 = pCurTs->getVec(j, xe21, xe22);
       dg1 = pCurTs->getNormVec(j, te11, te12) +
         calcDnorm(pCurTs->getSectTab(j), escl, c.vpt);
-      dg2 = pCurTs->getNormVec(j, te21, te22) +
-        calcDnorm(pCurTs->getSectTab(j), c.prev_escl, c.prev_vpt);
 
       c.pmb->normal(dg1);
       c.pmb->vertex(c.f1+g1);
-      
+      if (bBand) continue;
+
+      g2 = pCurTs->getVec(j, xe21, xe22);
+      dg2 = pCurTs->getNormVec(j, te21, te22) +
+        calcDnorm(pCurTs->getSectTab(j), c.prev_escl, c.prev_vpt);
       if (bb && isSmoothColor())
         c.pmb->color(c.pPrevCol);
 
@@ -591,6 +610,7 @@ void RibbonRenderer::renderJct(SegCtx &c,
       c.pmb->vertex(c.f2+g2);
     }
     c.pmb->end();
+    bRingDrawn = true;
     c.pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
 
