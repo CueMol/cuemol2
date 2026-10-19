@@ -58,6 +58,32 @@ struct PrimSnapshot
     }
 };
 
+/// The triangles of a GPU primitive as drawn: per face corner, the position,
+/// normal, color and hit name of its vertex (independent of how the vertices
+/// are shared)
+std::vector<float> triangleSoup(const gfx::TrigGpuPrim &prim)
+{
+    std::vector<float> soup;
+    for (int f = 0; f < prim.getFaceSize(); ++f) {
+        int iv[3];
+        prim.getFace(f, iv[0], iv[1], iv[2]);
+        for (int i : iv) {
+            const Vector4D v = prim.getVertex(i), n = prim.getNormal(i);
+            soup.insert(soup.end(), {float(v.x()), float(v.y()), float(v.z()), float(n.x()),
+                                     float(n.y()), float(n.z()), float(prim.getColorRGBA(i)),
+                                     float(prim.getHitName(i))});
+        }
+    }
+    return soup;
+}
+
+/// Ring sharing of TubeMeshBuilder switched for the lifetime of the object
+struct RingSharing
+{
+    explicit RingSharing(bool b) { TubeMeshBuilder::setRingSharing(b); }
+    ~RingSharing() { TubeMeshBuilder::setRingSharing(true); }
+};
+
 /// Mesh of a tube-like renderer, drawn (built or updated) into its primitive
 PrimSnapshot drawnMesh(qsys::RendererPtr pR, MockDisplayContext &dc)
 {
@@ -164,6 +190,73 @@ TEST_P(TubeGpuMeshTest, AtomsMovedUpdatesMeshInPlace)
     const PrimSnapshot rebuilt = drawnMesh(newRenderer(type.c_str()), m_dc);
     EXPECT_EQ(rebuilt.geom, updated.geom);
     EXPECT_EQ(rebuilt.name, updated.name);
+}
+
+// Ring bands (tube and ribbon draw each ring of section vertices once and
+// connect it to the previous one by index) give exactly the triangles of the
+// strips that hold every ring twice, in a fresh build and after an in-place
+// update, with fewer vertices.
+TEST_P(TubeGpuMeshTest, RingBandsKeepTheTriangles)
+{
+    const std::string type = GetParam();
+    auto build = [&](bool bShare) {
+        RingSharing rs(bShare);
+        qsys::RendererPtr pR = newRenderer(type.c_str());
+        pR->display(&m_dc);
+        return pR;
+    };
+    auto prim = [](qsys::RendererPtr pR) -> const gfx::TrigGpuPrim & {
+        return dynamic_cast<TubeGpuSupport *>(pR.get())->tubeGpuPrim();
+    };
+
+    qsys::RendererPtr pShared = build(true);
+    const int nShared = prim(pShared).getVertexSize();
+    {
+        qsys::RendererPtr pStrips = build(false);
+        EXPECT_EQ(triangleSoup(prim(pShared)), triangleSoup(prim(pStrips)));
+        const int nStrips = prim(pStrips).getVertexSize();
+        if (type == "tube" || type == "ribbon")
+            EXPECT_LT(nShared, nStrips * 3 / 4);
+        else
+            EXPECT_EQ(nShared, nStrips);  // cartoon draws no ring bands
+    }
+
+    moveAtoms(m_mol);
+    pShared->display(&m_dc);
+    EXPECT_EQ(lastPass(pShared), TubeGpuSupport::TG_PASS_CHUNKED);
+    EXPECT_EQ(prim(pShared).getVertexSize(), nShared);
+    EXPECT_EQ(triangleSoup(prim(pShared)), triangleSoup(prim(build(false))));
+}
+
+// The chunked update runs its chunks in parallel only for a mesh of at least
+// TubeGpuSupport::getParallelMinVerts() vertices; a smaller one is updated on
+// the calling thread, with the same result.
+TEST_F(TubeGpuMeshTest, SmallMeshUpdatesSerially)
+{
+    struct MinVerts
+    {
+        explicit MinVerts(int n) { TubeGpuSupport::setParallelMinVerts(n); }
+        ~MinVerts()
+        {
+            TubeGpuSupport::setParallelMinVerts(
+                TubeGpuSupport::TG_DEFAULT_PARALLEL_MIN_VERTS);
+        }
+    };
+    auto updated = [&](int nMinVerts, bool bParallel) {
+        MinVerts mv(nMinVerts);
+        qsys::RendererPtr pR = newRenderer("ribbon");
+        drawnMesh(pR, m_dc);
+        moveAtoms(m_mol);
+        const PrimSnapshot snap = drawnMesh(pR, m_dc);
+        EXPECT_EQ(lastPass(pR), TubeGpuSupport::TG_PASS_CHUNKED);
+        EXPECT_EQ(dynamic_cast<TubeGpuSupport *>(pR.get())->tubeGpuLastParallel(), bParallel);
+        return snap;
+    };
+    // 1CRN is far below the default threshold (the serial result is checked
+    // against a fresh build in AtomsMovedUpdatesMeshInPlace)
+    updated(TubeGpuSupport::TG_DEFAULT_PARALLEL_MIN_VERTS, false);
+    const PrimSnapshot parallel = updated(0, true);
+    EXPECT_EQ(parallel.geom, drawnMesh(newRenderer("ribbon"), m_dc).geom);
 }
 
 // A coloring change updates only the colors in place (no rebuild), also for
@@ -394,4 +487,70 @@ TEST(TubeMeshBuilderTest, UpdateWritesIntoGpuPrim)
     mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getPackedArrays());
     drawStrip(mb, 6, 0.0, 5);
     EXPECT_FALSE(mb.finish());
+}
+
+// A ring band takes the new ring's vertices only and gives the triangles of
+// the strip pairing them with the previous ring's (the leading vertices of
+// the preceding ring strip or band). Only a ring strip or band starts a ring.
+TEST(TubeMeshBuilderTest, RingBandConnectsToPreviousRing)
+{
+    // ring r (3 vertices) at x = r
+    auto ringStrip = [](TubeMeshBuilder &mb) {
+        mb.startRingStrip();
+        for (int j = 0; j < 3; ++j) {
+            mb.vertex(Vector4D(1, j, 0));  // new ring
+            mb.vertex(Vector4D(0, j, 0));  // previous ring
+        }
+        mb.end();
+    };
+    auto band = [](TubeMeshBuilder &mb, double x) {
+        mb.startRingBand();
+        for (int j = 0; j < 3; ++j) mb.vertex(Vector4D(x, j, 0));
+        mb.end();
+    };
+
+    MockDisplayContext dc;
+    gfx::TrigGpuPrim prim;
+    ASSERT_TRUE(prim.init(&dc));
+
+    TubeMeshBuilder mb;
+    mb.startBuild(qlib::invalid_uid);
+    EXPECT_FALSE(mb.hasRing());
+    ringStrip(mb);
+    ASSERT_TRUE(mb.hasRing());
+    band(mb, 2.0);
+    band(mb, 3.0);
+    ASSERT_TRUE(mb.finish());
+    EXPECT_EQ(mb.getVertexSize(), 12);
+    EXPECT_EQ(mb.getFaceSize(), 12);
+    mb.toGpuPrim(&dc, prim);
+    mb.releaseVertexData();
+
+    // The first band is the strip new0, old0, new1, old1, ... with the old
+    // ring at the strip's leading vertices 0, 2, 4
+    int v1, v2, v3;
+    prim.getFace(4, v1, v2, v3);
+    EXPECT_EQ(std::vector<int>({v1, v2, v3}), std::vector<int>({6, 0, 7}));
+    prim.getFace(5, v1, v2, v3);
+    EXPECT_EQ(std::vector<int>({v1, v2, v3}), std::vector<int>({2, 7, 0}));
+    // The second band connects to the first band's vertices
+    prim.getFace(8, v1, v2, v3);
+    EXPECT_EQ(std::vector<int>({v1, v2, v3}), std::vector<int>({9, 6, 10}));
+
+    // The same traversal updates in place
+    mb.startUpdate(qlib::invalid_uid, TubeMeshBuilder::UPD_GEOM, prim.getPackedArrays());
+    ringStrip(mb);
+    band(mb, 5.0);
+    band(mb, 6.0);
+    EXPECT_TRUE(mb.finish());
+    EXPECT_DOUBLE_EQ(prim.getVertex(9).x(), 6.0);
+
+    // A plain strip or fan does not start a ring
+    mb.startBuild(qlib::invalid_uid);
+    ringStrip(mb);
+    mb.startTriangleFan();
+    for (int i = 0; i < 3; ++i) mb.vertex(Vector4D(0, i, 1));
+    mb.end();
+    EXPECT_FALSE(mb.hasRing());
+    mb.finish();
 }

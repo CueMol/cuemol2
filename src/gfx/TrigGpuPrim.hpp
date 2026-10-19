@@ -216,6 +216,8 @@ public:
 
     /** Set triangle face idx with vertex indices v1, v2, v3. */
     void setFace(int idx, int v1, int v2, int v3);
+    /** Vertex indices of triangle face idx (for inspection/testing). */
+    void getFace(int idx, int &v1, int &v2, int &v3) const;
 
     // ─── Properties ───────────────────────────────────────────────────────────
 

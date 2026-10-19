@@ -47,6 +47,28 @@ qif / wrapper から見た親クラス (`SplineRenderer` / `MainChainRenderer`) 
 - renderer は `wantColor()` / `wantName()` が false のとき `calcColor` / `calcHitName` を呼ばない
   (座標だけの更新で `GradientColor` を new しない)
 
+## 輪の共有 (ring band)
+
+tube の本体は断面の頂点の輪の列で、triangle strip で描くと 1 本の strip が隣り合う 2 本の輪を持つため、
+どの輪も 2 回計算されて 2 回書かれる (4V6X ribbon で三角形 1 つあたり約 1.06 頂点)。Build / Update では、
+renderer は最初の strip を `startRingStrip()` で描き、次からは `startRingBand()` で新しい輪の頂点だけを書く。
+band (`PRIM_BAND`) は直前の ring strip / band の輪 (strip なら各組の先頭の頂点、band なら全部) を index で参照し、
+置き換えた strip と同じ三角形 (同じ順序・winding) に展開される。
+
+- 共有するのは、輪の頂点の属性が両側で同じときだけ (`SplineRenderer::canShareRing()`): strip は色と hit name を
+  終点のパラメータで取り、非スムーズ着色ではどちらも「近い方の残基」(`rho > 0.5`) で決まるので、その残基 (と pivot) が
+  同じ間は共有する。ribbon の helix 裏面色は前後の残基の binormal の向きにもよるので前後の残基も同じとき、
+  seg-end fade と、スムーズ着色で helix 裏面色 / sheet 側面色のときは共有しない。その結果、1 残基に 1 か所
+  (近い方の残基が変わる所) 2 本の輪を持つ strip が残る (axialdetail 6 で 1 残基の輪の書き込みが 12 本 -> 7 本)。
+  この継ぎ目は、今後セグメントの中を残基のまとまりで並列に分けるときの切れ目に使える
+- ribbon は残基ごと・部分 (本体 / 接合部) ごとの呼び出しの中だけで共有する (断面や縮尺が呼び出しごとに変わるため)
+- 共有の判定はパラメータと残基だけで決まり座標によらないので、Update でもトポロジは変わらない。Update は
+  band の参照先が Build と同じかも照合する。チャンクの builder は輪を持たずに始まるので、チャンクの先頭は
+  必ず ring strip になる (セグメントの先頭なので Build と同じ)
+- Direct モードは従来どおり strip を転送する (`hasRing()` が false)
+- `TubeMeshBuilder::setRingSharing(false)` で全 builder の共有を止められる (テストの比較用)
+- 4V6X ribbon coord-morph (M4、各 1 回): 頂点 (転送) 92.4 -> 53.0 MB / frame、worker の 1 フレーム 12.7 -> 8.7 ms
+
 ## トポロジが座標に依存しないこと
 
 Update が成り立つ前提。頂点数と prim の構成を決めるのは:
@@ -107,6 +129,11 @@ tube / ribbon:
   `SplineRenderer::getSplineTopoGen()` が違う)
 - spline 係数の座標の部分 (`SplineCoeff::updateGeometry`) もセグメントごとに `qlib::parallel_for` で計算する
 - `tubeGpuLastPass()` は直前の更新の経路 (build / serial / chunked) を返す (検査用)
+- メッシュの頂点数が `TubeGpuSupport::TG_DEFAULT_PARALLEL_MIN_VERTS` (256 Ki) 未満なら、前処理とチャンクの更新を
+  呼び出したスレッドで順に回す (`qlib::SerialScope`、`tubeGpuLastParallel()` が false)。小さいメッシュでは仕事
+  (数 ms 以下) より、oneTBB の作業スレッドを起こし、仕事を探して空回りし (`stealing_loop_backoff`)、眠らせる
+  コストの方が大きいため。M4 で mcv448 ribbon (約 8 万頂点) のアプリ全体の CPU が 1 回の更新あたり 13.6 -> 7.9 ms、
+  worker の時間は 1.5 -> 1.9 ms。しきい値は逐次で約 2 ms になる量の見積もり
 
 4V6X (8 コア) の座標更新 1 回: ribbon 48.3 ms (逐次) -> 11.9 ms、tube 33.5 -> 8.4 ms。
 
@@ -213,6 +240,8 @@ prim の頂点配列 (`tubeGpuPrim()`) を比べる:
 - coloring の変更が色だけの Update になり、フル再構築と一致する
 - pivot のキャッシュと spline トポロジが、pivot 名・二次構造・平滑化の変更で作り直される
 - `TubeMeshBuilder` の Update が mock の prim の指定のデータだけを上書きし、トポロジの変化を検出する
+- 輪の共有の有無で三角形 (各角の位置・法線・色・hit name) が完全に一致し (Build と Update の両方)、tube / ribbon で
+  頂点が減る。ring band が直前の輪を正しい index で参照する
 
 ## NARenderer (nucl)
 
