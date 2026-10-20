@@ -28,6 +28,7 @@
 | [261011-op-console-backlog-plan.md](261011-op-console-backlog-plan.md) | op / console / MCP の未実装項目の一覧: マクロの残り・バッチ実行・録画ボタン・記録の対応表の拡充、op になっていない service、MCP の resource / introspection、console 本体の残り | **未実装 (候補の一覧)**。実装済みの仕様は `../architecture/op-catalog.md` ほか |
 | [260928-pymconsole-remaining-plan.md](260928-pymconsole-remaining-plan.md) | console の PyMOL dialect に残ったコマンドの候補: MD trajectory 系 (`load_traj`・`intra_fit`・`smooth`・`split_states` など)、picking 依存、重量級アルゴリズム、既存コマンドの小改善 | **未着手 / 後日**。実装済みの仕様は `../architecture/console-pymol-dialect.md` |
 | [261017-tube-gpu-mesh-plan.md](261017-tube-gpu-mesh-plan.md) | tube 系 renderer の GPU mesh 化の残り: spline 係数の in-place 再生成 (計測次第) | **tube / ribbon / cartoon / nucl は実装済み** (`../architecture/tube-gpu-mesh.md`)。残りは未着手 |
+| [261019-windows-clang-build-plan.md](261019-windows-clang-build-plan.md) | Windows clang-cl 化の残り: CI (full モード、uxp_gui を含む) での確認と、cl ビルドとの性能・ビルド時間の比較 (ThinLTO は効果次第) | **CI 確認待ち / 計測未着手**。clang-cl 化本体は実装済み (`../architecture/windows-clang-build.md`) |
 | [261017-tube-color-texture-plan.md](261017-tube-color-texture-plan.md) | tube 系の色を頂点色から「残基ごとの色 texture + 静的な色キー」に変え、色変更で VBO に触らないようにする案 | **未実装 / 今後実装する案**。色の更新がボトルネックになったら着手 |
 | [261017-tube-raycast-memo-plan.md](261017-tube-raycast-memo-plan.md) | tube / cartoon の GPU raycast (impostor) の設計メモ: dev201608 の rctube の経緯、掃引パラメータの 1D 求根 + 断面 SDF 案、文献調査 | **検討メモ**。着手前に CPU で試作して安定性を確かめる |
 
