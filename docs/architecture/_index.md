@@ -185,6 +185,12 @@ architecture, it belongs here.
   (全 OS) と、render job 中の powerSaveBlocker (システムスリープ抑止) + renderer pid
   ログ。`taskpolicy -B` は external darwinbg しか消せないため不採用。VS Code 方式
   (job 中だけ `setBackgroundThrottling(false)`) との比較と OSS アプリの実態調査も記載。
+- [Windows ビルドの clang-cl 化](windows-clang-build.md) (日本語) -- libcuemol2 /
+  umbreon / MeshMS / tritium core / cuetty を clang-cl + lld-link でビルドする
+  (`CUEMOL_WIN_CC` で cl に切り戻せる)。deplibs も v0.2.0 から TBB / Embree (AVX2) /
+  OIDN / FFTW / xz を clang-cl でビルドし、Boost 等と uxp_gui は MSVC のまま (MSVC ABI
+  互換なので混在できる)。cmake-js の Ninja 化、clang で表に出た未定義動作 (`WglView`
+  の範囲外ループ) の修正、検証済みの組み合わせ、umbreon で約 6〜8% 速くなった計測結果。
 - [tritium packaging / release-build renovation](tritium-packaging-renovation.md)
   (日本語) -- tritium を配布可能な形にするまでの設計記録。electron-builder による
   3 OS パッケージング、libcuemol2 ランタイムの staging、release-cadence gating、

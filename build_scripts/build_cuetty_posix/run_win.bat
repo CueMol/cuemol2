@@ -40,7 +40,12 @@ REM Build cuetty
 REM SET SCCACHE=-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 SET SCCACHE=
 
+REM Compiler (win_cc.bat); without it Ninja would pick whichever compiler is first on PATH
+call %SCRIPT_DIR%..\win_cc.bat
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 cmake -G Ninja -S %TOP_DIR%\cli -B %BUILD_DIR% ^
+ %WIN_CC_OPT% ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
  -DCMAKE_PREFIX_PATH=%BASEDIR% ^
  -DBoost_ROOT=%BASEDIR%\boost_%BOOST_VER% ^

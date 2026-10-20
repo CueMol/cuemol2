@@ -209,9 +209,11 @@ tasks:
 
   build_tritium_core:windows:
     platforms: [windows]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
-      - cmd /c build_tritium_core_posix\\run_win.bat "{{.WORKDIR}}"
+      - bash build_tritium_core_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
 #####
 

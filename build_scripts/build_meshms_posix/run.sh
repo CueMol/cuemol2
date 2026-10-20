@@ -29,10 +29,12 @@ MSVC_OPT=""
 if [[ -n "${MSYSTEM:-}" || "$OSTYPE" == msys* ]]; then
     BASEDIR=$(cygpath -u "$BASEDIR")
     MESHMS_SRC=$(cygpath -u "$MESHMS_SRC")
-    # Force MSVC even when a Strawberry Perl g++ sits ahead of cl on PATH (the
-    # Ninja generator would otherwise auto-pick g++, whose objects could not
-    # link the MSVC /MD deplibs). Requires an MSVC dev environment (cl on PATH).
-    MSVC_OPT="-DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL"
+    # Force the MSVC-ABI compiler (win_cc.sh) even when a Strawberry Perl g++
+    # sits ahead of it on PATH (the Ninja generator would otherwise auto-pick
+    # g++, whose objects could not link the MSVC /MD deplibs). Requires an MSVC
+    # dev environment.
+    . "$(dirname "$0")/../win_cc.sh"
+    MSVC_OPT="$WIN_CC_OPT"
 fi
 
 # Build out-of-source under the deplibs prefix so the MeshMS working copy (the

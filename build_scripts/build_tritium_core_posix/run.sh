@@ -32,8 +32,25 @@ pnpm install --ignore-scripts
 
 # Build the core native addon. Boost runtime libs are already copied into the
 # install lib dir by build_libcuemol2_posix/run.sh, so no copy is needed here.
+#
+# Windows (Git Bash): cmake-js defaults to the Visual Studio generator with cl.
+# For clang-cl (win_cc.sh) use Ninja instead, which needs no VS ClangCL
+# toolset; CUEMOL_WIN_CC=cl keeps the cmake-js default.
+CMAKEJS_WIN_OPT=""
+if [ -n "${MSYSTEM:-}" ] && [ "${CUEMOL_WIN_CC:-clang-cl}" != "cl" ]; then
+    . "$REPOS_DIR/build_scripts/win_cc.sh"
+    CMAKEJS_WIN_OPT="--generator Ninja $(echo "$WIN_CC_COMPILER_OPT" | sed 's/-D/--CD/g')"
+    # cmake-js skips configure when build/CMakeCache.txt exists, so a cache left
+    # by the plain "cmake-js build" install hook (pnpm install) would keep the
+    # Visual Studio generator. Drop such a cache.
+    CORE_CACHE=$WORKSPACE/tritium/core/build/CMakeCache.txt
+    if [ -f "$CORE_CACHE" ] && ! grep -q '^CMAKE_GENERATOR:INTERNAL=Ninja' "$CORE_CACHE"; then
+        rm -rf "$WORKSPACE/tritium/core/build"
+    fi
+fi
 cd $WORKSPACE/tritium/core
 npx cmake-js build \
+    $CMAKEJS_WIN_OPT \
     --CDLIBCUEMOL2_ROOT=$INST_PATH \
     --CDBoost_ROOT=$BOOST_DIR \
     --config $CONFIG
