@@ -361,10 +361,10 @@ bool WglView::initializeGLEW()
 
 bool WglView::tryMSAAPixelFormat(bool stereo, int& pixelFormat)
 {
+  // 0 = no MSAA is a valid last candidate, not a sentinel
   const int sampleCounts[] = {16, 8, 4, 2, 0};
-  
-  for (int i = 0; sampleCounts[i] >= 0; ++i) {
-    const auto smpCnt = sampleCounts[i];
+
+  for (const auto smpCnt : sampleCounts) {
     if (smpCnt > m_nMultiSamples) {
       continue;
     }

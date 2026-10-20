@@ -59,6 +59,11 @@ SET(NODEJS_LINK_LIBRARIES
   cuemol2
   ${CMAKE_JS_LIB}
   )
+if (MSVC)
+  # cmake-js links with /DELAYLOAD:NODE.EXE; the Visual Studio generator pulls
+  # in the delay-load helper implicitly, Ninja + lld-link does not.
+  list(APPEND NODEJS_LINK_LIBRARIES delayimp)
+endif()
 
 # Normal C++ source files
 SET(NODEJS_SRCS
@@ -128,6 +133,14 @@ set_target_properties(cuemol_internal PROPERTIES
   INSTALL_RPATH "${CUEMOL_NODE_RPATH}"
   BUILD_WITH_INSTALL_RPATH TRUE
 )
+# Windows: cmake-js sets CMAKE_RUNTIME_OUTPUT_DIRECTORY to build/, and only the
+# Visual Studio generator appends the config dir. Pin build/<config> so the
+# .node lands in build/Release with Ninja too (the loader and packaging
+# expect that path).
+if(WIN32)
+  set_target_properties(cuemol_internal PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>")
+endif()
 
 # Copy runtime libraries so the cuemol_internal .node addon can find them at
 # load time. Using add_custom_target(ALL) ensures this runs on every build even

@@ -74,9 +74,13 @@ if %CONFIG%=="Debug" (
   SET SCCACHE=-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 )
 
+REM Compiler (win_cc.bat). cl.exe must stay on PATH even with clang-cl: it is
+REM the preprocessor of the wrapper generator and the GLSL step.
+call %SCRIPT_DIR%win_cc.bat
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
- -DCMAKE_C_COMPILER=cl ^
- -DCMAKE_CXX_COMPILER=cl ^
+ %WIN_CC_OPT% ^
  -DPERL_EXECUTABLE=C:\Strawberry\perl\bin\perl.exe ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
  -DBoost_ROOT=%BASEDIR%\boost_%BOOST_VER% ^
