@@ -213,6 +213,40 @@ detail 32 では約 6.7 万原子、detail 16 では約 22 万原子を超える
 万一予測が外れた場合の保険として、MeshMS が返したメッシュが `MESHMS_HARD_MAX_VERTS`
 (4800 万頂点) を超えていたら格納せずに例外を投げ、distfield にフォールバックする。
 
+### MeshMS の RS 段のクラッシュ (4V6X)
+
+頂点予算はメッシュ化の段しか抑えない。その前の RS 計算 (`compute_rs_from_array`) に
+ある `data_I_Cir` は、以前は三重交点の配列を組合せ上の上限 `sum_i Row[i]*(Row[i]-1)/3`
+で `reserve` していた。この上限は実数よりはるかに大きく、human 80S ribosome (4V6X、
+237,685 原子) では `I` だけで 3.6 GB の単一確保を要求した。mesh_size に依存しないので、
+density や detail を最も粗くしても molsurf / dsurface (meshms) の両方が落ちていた。
+
+MeshMS 側で、phase 1 が記録したイベント数 (= 実際の三重交点数) で `reserve` するように
+直した。出力は変わらない (golden テスト通過)。修正後の 4V6X の単一確保の最大値
+(MeshMS 単体、`operator new` を計測):
+
+| mesh_size | 頂点数 (fuse 後) | 最大の単一確保 |
+|--:|--:|--:|
+| RS 段のみ | -- | 64 MB (修正前 3.6 GB) |
+| 1.18 (molsurf density 1) | 299 万 | 457 MB |
+| 0.59 (density 4) | 788 万 | 675 MB |
+| 0.373 (density 10、UI の上限) | 1682 万 | 1.44 GB |
+
+molsurf には頂点予算が無いので、density 10 では fuse 前のメッシュ (約 6000 万頂点) を
+まとめる `merge_local_meshes` の配列が 1.44 GB になる。4V6X では 2 GB に収まるが余裕は
+1.4 倍しかなく、これより大きな分子を density 10 で作ると再び壁に当たりうる。
+
+同じ 4V6X では、2 GB の壁を越えた先で MeshMS の別のバグも出ていた。凹面 (probe) パッチの
+境界ループを作る `loopconstruct_concave` が、ループ表を `N_segment/2` 行で確保していた。
+これは各ループが 2 セグメント以上という前提だが、両端が同一点 (EPSILON 以内) に
+まとめられるセグメントは 1 本でループを閉じる。CueMol の vdW 半径では 4V6X にそういう
+probe があり (9 セグメントが 3, 1, 3, 1, 1 のループ)、表の外に書き込んで SIGSEGV に
+なっていた。ループを見つけた順に追加する形に直した。MeshMS 側の回帰テスト
+(`test_concave_loops`) は、その probe の周囲 38 原子を入力にしている。
+
+アプリでの確認 (4V6X、Electron): molsurf density 2 は 439 万頂点 / 4.1 s、density 10 は
+1619 万頂点 / 8.6 s、dsurface (meshms、detail 6) は 490 万頂点 / 3.8 s。
+
 ### `gfx::Mesh` の頂点色: palette + 16 B/頂点
 
 display-list 経路 (ファイル書き出し、line / point 描画、shader 無し) の中間表現
