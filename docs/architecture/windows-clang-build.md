@@ -4,10 +4,16 @@ Windows の C++ ビルド (libcuemol2・umbreon・MeshMS・tritium/core addon・
 **clang-cl + lld-link** を使う。ローカル (Git Bash) と CI (`build2.yml` の
 `build_win_x64`) で同じスクリプトを通る。目的は実行性能とビルド時間。
 
-例外は次の 2 つで、どちらも従来どおり MSVC のまま:
+deplibs (別リポジトリ `CueMol/build_scripts` のビルド済みバンドル) も、v0.2.0 から
+TBB / Embree / OIDN / FFTW / xz を clang-cl でビルドしている (Embree は
+`EMBREE_MAX_ISA=AVX2`。SSE2..AVX2 のカーネルを実行時に選ぶので CPU の下限は SSE2 の
+まま)。詳細は build_scripts の `build_deplibs_windows/README.md`。
 
-- **deplibs** (boost / TBB / embree / OIDN / fftw / lcms2 / glew / xz): 別リポジトリ
-  (`CueMol/build_scripts`) の MSVC ビルド済みバンドルをそのまま使う。
+MSVC のまま残しているもの:
+
+- **deplibs の Boost / lcms2 / GLEW**: Boost は b2 の vc143 名 (`boost_*-vc143-mt-x64-1_84`)
+  を変えると利用側 (uxp_gui を含む) への影響が大きく、性能への寄与もほぼ無い。lcms2 は
+  vcxproj、GLEW は配布元のビルド済みバイナリー。
 - **uxp_gui**: Mozilla のビルド (`mozconfig_Windows`) は `cl.exe` で molwidget を
   コンパイルし、clang-cl でビルドした `cuemol2.dll` をリンクする。
 
@@ -17,7 +23,8 @@ clang-cl は target `x86_64-pc-windows-msvc` で、MSVC と C++ ABI (クラス�
 vtable・名前マングリング・例外) が同じで、STL と CRT も vcvars 環境の MSVC のものを
 使う。このため:
 
-- MSVC でビルドされた deplibs の C++ ライブラリを再ビルドせずにリンクできる。
+- MSVC でビルドされた C++ ライブラリ (deplibs の Boost など) をそのままリンクでき、
+  逆に clang-cl でビルドした deplibs を cl の利用側からリンクすることもできる。
 - `cuemol2.dll` を clang-cl、利用側 (uxp_gui の molwidget) を cl でビルドしても、
   dllimport したクラス・シングルトン・STL 型を DLL 境界越しに渡せる。
 
@@ -137,9 +144,50 @@ clang 化の時点で次を確認した (2026-10):
 - uxp_gui (cl) + `cuemol2.dll` (clang-cl): ローカルで `mach build/package/installer` が通り、
   起動・分子表示・表面・レンダリングを目視確認
 
+## 性能 (2026-10 計測)
+
+cuetty の画面なしレンダリング (`--render`、umbreon) で、次の 3 構成を比べた。
+i9-14900KF (BIOS 1840 / microcode 0x133、Intel Default Settings)、32 スレッド。
+
+| 構成 | deplibs | umbreon / MeshMS / libcuemol2 |
+|---|---|---|
+| ① | MSVC (v0.1.0 相当) | cl |
+| ② | MSVC (v0.1.0 相当) | clang-cl |
+| ③ | clang-cl、Embree AVX2 (v0.2.0 相当) | clang-cl |
+
+umbreon のテストシーン (`umbreon/data/1ab0_scene3..6.qsc`、約 1000 原子、各 3 回の
+中央値、起動と読み込みを含む全体時間):
+
+| シーン | ① | ② | ③ |
+|---|---|---|---|
+| scene3 (密度メッシュ) | 5.61 s | 5.25 s (−6.5%) | 5.21 s (−7.1%) |
+| scene4 (マテリアル) | 3.97 s | 3.68 s (−7.4%) | 3.65 s (−8.2%) |
+| scene5 (半透明) | 4.18 s | 3.93 s (−6.0%) | 3.81 s (−8.8%) |
+| scene6 (密度等値面) | 4.81 s | 4.41 s (−8.4%) | 4.42 s (−8.2%) |
+
+MeshMS の表面 (4v6x、237,685 原子、`dsurface` + umbreon、各 5 回の最小値):
+全体 49.8 s → 48.5 s (②) / 48.8 s (③)。うち MeshMS の表面生成は 3 構成とも約 38 秒で、
+差は無い。大きな分子では表面生成の大半が並列化されていない段階で、ほぼ 1 コアで動く
+(コンパイラに依らないアルゴリズム上の性質)。その 1 スレッドが E コアに載ると 48〜61 秒に
+伸びるので、比較は最小値で行った。表面生成以外 (umbreon など) は約 11.0 s → 10.3 s。
+
+出力: ② は ① と画像がビット一致した (umbreon の 4 シーン)。③ は Embree の AVX2 カーネル
+による浮動小数点差で、差が 8 を超える画素が 0.01% 未満。MeshMS は `MESHMS_FP=fast`
+(FMA の縮約) のため cl と clang-cl でメッシュがわずかに異なる (4,897,298 vs 4,897,827
+頂点、各コンパイラ内では決定的)。
+
+まとめると、効果の大半は cuemol2 側 (libcuemol2 / umbreon / MeshMS) の clang 化による
+約 6〜8% で、deplibs の clang 化と Embree AVX2 の上乗せは 0〜3% だった。
+
 ## 既知の注意点
 
 - clang-cl と cl の並列ビルドで、まれにコンパイラが落ちることがあった (clang のアクセス
   違反、cl の C1001)。単独でやり直すと通る。開発機では CPU (i9-14900KF) の訂正済み
   ハードウェアエラー (WHEA ID 19) が多発しており、BIOS 更新 (マイクロコード 0x133) 後は
   再発していない。コンパイラ由来ではないと判断している。
+- cmake-js は `tritium/core/build/CMakeCache.txt` があると configure を飛ばすので、
+  `LIBCUEMOL2_ROOT` (出力先) を切り替えたときは `tritium/core/build` を消してから
+  ビルドする。消さないと前の出力先の `cuemol2.dll` がコピーされたままになる。
+- 今後の候補: `cuemol2.dll` の ThinLTO (`-flto=thin` + lld-link)。umbreon / MeshMS の
+  静的ライブラリを LTO にするのは、それらを clang-cl の libcuemol2 だけが消費することを
+  確かめてから (uxp_gui の cl には渡らないこと)。
