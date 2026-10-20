@@ -269,6 +269,19 @@ potential / multigrad 着色では `ScalarColorSupport::rampColor()` と
 C++ 側は `detail` を 1..100 まで受けるので、スクリプトからはさらに大きな値も
 設定できる (グリッド系は上記のセル予算で頭打ちになる)。
 
+## 入力原子: 代替配座 (altconf) は A だけ
+
+`collectAtoms()` は `sel` に一致する原子のうち、**配座 ID が無いか `A` の原子だけ**を
+メッシュ生成に渡す。`MolSurfObj::createSESFromMol` (Generate surface) の `chkAltConf` と
+同じ規則で、アルゴリズム (edtsurf / distfield / meshms) によらない。
+
+- 以前は全配座を渡していた。代替配座は側鎖だけが動いて主鎖などは A と B で**同じ座標**
+  のことが多く、重なった球は MeshMS を極端に遅くする (1CRN の 3 割の原子を同一座標で
+  二重化すると detail 16 相当で 0.07 s → 2.7 s、全原子で 12 s) うえ、わずかにずれた
+  重複でも細い破片パッチで頂点が最大 2 割ほど増える。実構造 1EJG (altconf 原子 381 個)
+  では detail 16 相当で約 3 倍遅く、頂点が約 6% 多かった。
+- A を持たず B / C だけの残基は丸ごと除かれ、その部分の表面は欠ける (MolSurfObj と同じ)。
+
 ## 原子 id (`MSVert::info`) の扱い
 
 着色 (`DirectSurfRendererBase::resolveVertexColor`) と `showsel` フィルタ
@@ -342,6 +355,8 @@ pRF->registAlias("dsurf2", "dsurface", {{"surfalgor", "distfield"}});
   ノードを skip する)、新しい既定値 `distfield` で読まれる。メッシュの見た目と
   `detail` の効き方が変わる。リリースノート記載事項。
 - 旧 `dsurf2` シーンは alias 経由で見た目を保ったまま読める。
+- **代替配座 (altconf) の B 以降は表面に入らなくなった** (上の「入力原子」)。
+  altconf を含む構造では表面の形がわずかに変わる。
 
 ## click / hover (GPU ID-buffer pick)
 

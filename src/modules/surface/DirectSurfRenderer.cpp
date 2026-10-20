@@ -219,6 +219,14 @@ void DirectSurfRenderer::collectAtoms(std::vector<SurfAtom> &atoms) const
     MolAtomPtr pAtom = aiter.get();
     if (pAtom.isnull()) continue;
 
+    // Keep one conformation, as MolSurfObj does: no alternate location, or
+    // 'A'. Alternates often repeat the same coordinates (only part of the
+    // residue moves), and coincident spheres slow MeshMS down by orders of
+    // magnitude and add sliver patches.
+    const char confid = pAtom->getConfID();
+    if (confid!='\0' && confid!='A')
+      continue;
+
     SurfAtom a;
     a.pos = pAtom->getPos();
     a.rad = getVdwRadius(pAtom);
