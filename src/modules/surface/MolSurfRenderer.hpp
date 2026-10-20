@@ -253,7 +253,6 @@ namespace surface {
 
   private:
 
-    bool getColorMol(const Vector4D &v, ColorPtr &rcol);
     bool isShowVert(const Vector4D &v) const;
 
 

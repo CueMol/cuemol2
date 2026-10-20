@@ -17,7 +17,9 @@
 
 #include <modules/molstr/MolRenderer.hpp>
 
-#include <unordered_map>
+#include <modules/molstr/AtomColorMemo.hpp>
+
+#include <memory>
 
 class DirectSurfRendererBase_wrap;
 
@@ -263,21 +265,26 @@ namespace surface {
       MolCoordPtr pMol;
       qsys::ScalarObject *pSca = NULL;
       ScalarMode scaMode = SCM_NONE;
-      /// molecule mode: colour per atom id, shared by every vertex of the atom
-      std::unordered_map<int, ColorPtr> atomMemo;
+      /// showsel and molecule-mode colour of each vertex's atom, resolved
+      /// once per atom (null without a client molecule)
+      std::unique_ptr<molstr::AtomColorMemo> pAtoms;
     };
 
     /// Start the colouring schemes and resolve the scalar object for a pass.
     void beginVertexColors(VertexColorEnv &env);
 
-    /// Whether v is drawn under showsel; also returns its atom (may be null).
-    bool isVertexShown(const VertexColorEnv &env, const MSVert &v,
-                       MolAtomPtr &pAtom) const;
+    /// Whether v is drawn under showsel (a vertex with no atom is drawn).
+    bool isVertexShown(VertexColorEnv &env, const MSVert &v) const;
 
     /// Colour of a shown vertex; false when nothing resolves, in which case
     /// the caller paints defaultcolor.
-    bool resolveVertexColor(VertexColorEnv &env, const MSVert &v,
-                            const MolAtomPtr &pAtom, ColorPtr &rcol);
+    bool resolveVertexColor(VertexColorEnv &env, const MSVert &v, ColorPtr &rcol);
+
+    /// Whether v is drawn under showsel and, if so, its colour's device code
+    /// in rdev (defDev when nothing resolves): isVertexShown() and the device
+    /// code of resolveVertexColor() in one atom lookup.
+    bool resolveShownDevCode(VertexColorEnv &env, const MSVert &v, quint32 defDev,
+                             quint32 &rdev);
 
     /// End the colouring schemes started by beginVertexColors().
     void endVertexColors(VertexColorEnv &env);

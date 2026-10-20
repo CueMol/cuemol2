@@ -121,9 +121,9 @@ void DirectSurfRendererBase::beginVertexColors(VertexColorEnv &env)
 {
   env.pMol = getClientMol();
   if (!env.pMol.isnull()) {
-    // initialize the coloring scheme
-    getColSchm()->start(env.pMol, this);
-    env.pMol->getColSchm()->start(env.pMol, this);
+    startColoring(env.pMol, this);
+    env.pAtoms.reset(new molstr::AtomColorMemo(env.pMol, this, m_pShowSel, getSceneID(),
+                                               m_nMode==DS_MOLFANC));
   }
 
   env.scaMode = scaMode();
@@ -136,51 +136,29 @@ void DirectSurfRendererBase::beginVertexColors(VertexColorEnv &env)
 
 void DirectSurfRendererBase::endVertexColors(VertexColorEnv &env)
 {
-  if (!env.pMol.isnull()) {
-    // finalize the coloring scheme
-    getColSchm()->end();
-    env.pMol->getColSchm()->end();
-  }
+  if (!env.pMol.isnull())
+    endColoring(env.pMol);
 }
 
-bool DirectSurfRendererBase::isVertexShown(const VertexColorEnv &env, const MSVert &v,
-                                           MolAtomPtr &pAtom) const
+bool DirectSurfRendererBase::isVertexShown(VertexColorEnv &env, const MSVert &v) const
 {
-  pAtom = MolAtomPtr();
-  if (env.pMol.isnull())
+  // A vertex whose owning atom the mesh builder could not name (NO_ATOM_ID,
+  // which reads as -1) is drawn and painted defaultcolor.
+  if (!env.pAtoms)
     return true;
-
-  pAtom = env.pMol->getAtom((int) v.info);
-  if (pAtom.isnull()) {
-    // The mesh builder could not name the owning atom (NO_ATOM_ID). Draw the
-    // vertex; resolveVertexColor() paints it defaultcolor. The selection
-    // nodes dereference the atom, so they must not see a null one.
-    return true;
-  }
-
-  if (!m_pShowSel.isnull() &&
-      !m_pShowSel->isEmpty() &&
-      !m_pShowSel->isSelected(pAtom))
-    return false;
-
-  return true;
+  return env.pAtoms->get((int) v.info).bShown;
 }
 
 bool DirectSurfRendererBase::resolveVertexColor(VertexColorEnv &env, const MSVert &v,
-                                                const MolAtomPtr &pAtom, ColorPtr &rcol)
+                                                ColorPtr &rcol)
 {
   if (m_nMode==DS_MOLFANC) {
-    if (pAtom.isnull())
+    if (!env.pAtoms)
       return false;
-    // A surface has many vertices per atom; the scheme's answer for an atom
-    // does not change within one pass, so ask it once per atom.
-    auto memo = env.atomMemo.find(v.info);
-    if (memo!=env.atomMemo.end()) {
-      rcol = memo->second;
-      return !rcol.isnull();
-    }
-    rcol = ColSchmHolder::getColor(pAtom);
-    env.atomMemo.emplace(v.info, rcol);
+    const molstr::AtomColorMemo::Entry &e = env.pAtoms->get((int) v.info);
+    if (!e.bAtom)
+      return false;
+    rcol = e.pCol;
     return !rcol.isnull();
   }
 
@@ -188,6 +166,31 @@ bool DirectSurfRendererBase::resolveVertexColor(VertexColorEnv &env, const MSVer
     return getScalarColor(env.pSca, v.v3d(), v.n3d(), env.scaMode, rcol);
 
   return false;
+}
+
+bool DirectSurfRendererBase::resolveShownDevCode(VertexColorEnv &env, const MSVert &v,
+                                                 quint32 defDev, quint32 &rdev)
+{
+  rdev = defDev;
+  if (env.pAtoms) {
+    const molstr::AtomColorMemo::Entry &e = env.pAtoms->get((int) v.info);
+    if (!e.bShown)
+      return false;
+    if (m_nMode==DS_MOLFANC) {
+      if (e.bAtom && !e.pCol.isnull())
+        rdev = e.nDevCode;
+      return true;
+    }
+  }
+  else if (m_nMode==DS_MOLFANC) {
+    return true;
+  }
+
+  ColorPtr pcol;
+  if (env.scaMode!=SCM_NONE &&
+      getScalarColor(env.pSca, v.v3d(), v.n3d(), env.scaMode, pcol))
+    rdev = pcol->getDevCode(getSceneID());
+  return true;
 }
 
 ///////////////////////////////////////////
@@ -215,14 +218,13 @@ void DirectSurfRendererBase::render(DisplayContext *pdl)
   for (i=0, j=0; i<nverts; ++i) {
     const MSVert &v = m_verts[i];
 
-    MolAtomPtr pAtom;
-    if (!isVertexShown(env, v, pAtom)) {
+    if (!isVertexShown(env, v)) {
       vidmap[i] = -1;
       continue; // not shown --> skip
     }
     vidmap[i] = j;
 
-    mesh.color(resolveVertexColor(env, v, pAtom, pcol) ? pcol : defcol);
+    mesh.color(resolveVertexColor(env, v, pcol) ? pcol : defcol);
     mesh.normal(v.n3d());
     mesh.setVertex(j, v.v3d());
     ++j;

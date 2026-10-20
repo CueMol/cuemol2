@@ -22,6 +22,8 @@
 #include <boost/iterator/zip_iterator.hpp>
 #include <utility>
 
+#include <qlib/parallel.hpp>
+
 //typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
 typedef CGAL::Simple_cartesian<double> Kernel;
 
@@ -98,6 +100,20 @@ void AtomPosMap2::ensureBuilt()
   // CGAL builds the tree lazily on the first query, and that build is not
   // thread-safe; force it here so concurrent queries afterwards are safe.
   pTree->build();
+}
+
+void AtomPosMap2::searchNearestAtoms(std::size_t n,
+                                     const std::function<Vector4D (std::size_t)> &posAt,
+                                     std::vector<int> &aids)
+{
+  aids.assign(n, -1);
+  if (m_pKdTree==NULL || static_cast<Tree *>(m_pKdTree)->size()==0)
+    return;
+
+  ensureBuilt();
+  qlib::parallel_for(0, n, [&](std::size_t i) {
+    aids[i] = searchNearestAtom(posAt(i));
+  });
 }
 
 int AtomPosMap2::searchNearestAtom(const Vector4D &pos)
