@@ -31,6 +31,9 @@ libcuemol2 の CI ビルドは clang/gcc/MSVC の 3 コンパイラで多数の�
 | Linux Ubuntu 22 | gcc 11 | 290 | `-Wformat=` ~220 |
 | Windows | MSVC | 1,541 | C5286 enum変換 790 |
 
+2026-10 以降、Windows の CI は clang-cl でビルドする (`../architecture/windows-clang-build.md`)。
+上の MSVC の数字は切り替え前のもの。MSVC (cl) でコンパイルされるのは uxp_gui の molwidget だけになった。
+
 削減の狙い:
 1. **本物のバグを潰す**: format 文字列 (3 コンパイラ一致)、ポインタ切り詰め、演算子優先順位、UB 指摘。
 2. **ノイズを消す**: vendored (上流ライブラリ)、スタイル的警告 (enum変換・narrowing) を抑制し、実シグナルを見えやすくする。

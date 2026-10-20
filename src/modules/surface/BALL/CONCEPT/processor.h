@@ -172,7 +172,7 @@ namespace BALL
 
 	//@}
 // required for visual studio
-#ifdef BALL_COMPILER_MSVC
+#if defined(BALL_COMPILER_MSVC) && !defined(__clang__)
 class Atom;
 template class BALL_EXPORT UnaryProcessor<Atom>;
 #endif

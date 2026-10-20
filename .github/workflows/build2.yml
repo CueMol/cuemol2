@@ -259,9 +259,13 @@ jobs:
 ###############################################
 
   build_win_x64:
-    name: "Windows intel msvc"
+    name: "Windows intel clang-cl"
     runs-on: windows-2022
     env:
+      # libcuemol2 / umbreon / MeshMS / tritium core / cuetty build with clang-cl
+      # (build_scripts/win_cc.sh, win_cc.bat); the legacy UXP GUI keeps MSVC cl
+      # and links the clang-cl cuemol2.dll (same MSVC ABI).
+      CUEMOL_WIN_CC: clang-cl
       # See the build_posix job: umbreon is opted into per-workflow, not by
       # flipping the build script default.
       ENABLE_UMBREON: "ON"
@@ -277,6 +281,22 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
+
+    # The runner image ships its own LLVM, whose version moves with image
+    # updates. Pin the version used locally so the CI compiler is reproducible.
+    # The vcvars env above stays required: clang-cl uses its MSVC STL/CRT/SDK,
+    # and cl.exe is still the wrapper-generator / GLSL preprocessor.
+    - name: Install LLVM (clang-cl)
+      shell: pwsh
+      run: |
+        choco install llvm --version=22.1.8 -y --allow-downgrade --no-progress
+        echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
+
+    - name: Show clang-cl version
+      shell: bash
+      run: |
+        which clang-cl lld-link cl
+        clang-cl --version
 
     - name: Setup build envvars
       shell: bash
@@ -339,7 +359,7 @@ jobs:
         basedir: ${{ github.workspace }}\target
 
     # See the build_posix job. build_umbreon_posix/run.sh cygpath-normalizes its
-    # arguments, so the same action serves the MSVC leg.
+    # arguments, so the same action serves the Windows leg.
     - name: Read umbreon git ref
       shell: bash
       run: |
@@ -353,7 +373,7 @@ jobs:
         ref: ${{ env.UMBREON_GIT_REF }}
 
     # See the build_posix job. build_meshms_posix/run.sh cygpath-normalizes its
-    # arguments, so the same action serves the MSVC leg.
+    # arguments, so the same action serves the Windows leg.
     - name: Read meshms git ref
       shell: bash
       run: |

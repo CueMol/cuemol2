@@ -93,10 +93,12 @@ fi
 BUILD_NODEJS_BINDINGS=ON
 ENABLE_TYPESCRIPT=ON
 
-# Windows-specific cmake flags: MSVC compiler, Perl without spaces in path, LibLZMA
+# Windows-specific cmake flags: compiler (see win_cc.sh), Perl without spaces
+# in path, LibLZMA. cl.exe is still needed on PATH even with clang-cl: it is
+# the preprocessor of the wrapper generator and the GLSL step.
 if $IS_WINDOWS; then
-    WIN_OPT="-DCMAKE_C_COMPILER=cl \
-             -DCMAKE_CXX_COMPILER=cl \
+    . "$REPOS_DIR/build_scripts/win_cc.sh"
+    WIN_OPT="$WIN_CC_OPT \
              -DPERL_EXECUTABLE=C:/Strawberry/perl/bin/perl.exe \
              -DLibLZMA_ROOT=$BASEDIR/xz-$LZMA_VER"
 else
@@ -140,7 +142,7 @@ cmake -G "$GENERATOR" \
       -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
       -DCGAL_DISABLE_GMP=TRUE \
       -DCGAL_HEADER_ONLY=TRUE \
-      -DBUILD_TESTS=$(if $IS_WINDOWS; then echo OFF; else echo ON; fi)
+      -DBUILD_TESTS=ON
 
 cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
 # ctest --test-dir $BUILD_DIR --output-on-failure
