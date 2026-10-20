@@ -24,7 +24,7 @@ using namespace molvis;
 using namespace molstr;
 
 TubeRenderer::TubeRenderer()
-     : SplineRenderer(), m_pts(MB_NEW TubeSection())
+     : super_t(), m_pts(MB_NEW TubeSection())
 {
   super_t::setupParentData("section");
 
@@ -57,7 +57,6 @@ void TubeRenderer::preRender(DisplayContext *pdc)
 
 void TubeRenderer::beginRend(DisplayContext *pdl)
 {
-  tubeGpuBeginRend(pdl);
 
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
@@ -106,9 +105,9 @@ void TubeRenderer::beginRend(DisplayContext *pdl)
 /////////////////////////////////////////////////////
 
 //virtual
-void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
-                                MolResiduePtr pStartRes, double fstart,
-                                MolResiduePtr pEndRes, double fend)
+void TubeRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
+                                  const MolResiduePtr &pStartRes, double fstart,
+                                  const MolResiduePtr &pEndRes, double fend)
 {
   // Calculate num of drawing points "ndelta"
   const int naxdet = getAxialDetail();
@@ -120,9 +119,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   }
   const double fdelta = (fend-fstart)/double(ndelta);
 
-  // All drawing goes through the mesh builder (pdl is null when the GPU
-  // mesh is built or updated)
-  TubeMeshBuilder *pmb = &tubeGpuBuilder();
+  // All drawing goes through the mesh builder
   const bool bColor = pmb->wantColor();
   const bool bName = pmb->wantName();
 
@@ -142,6 +139,10 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   ColorPtr pCol, pPrevCol;
   // Hit names (pick pass) of the current and previous drawing points
   int hitName = -1;
+  // parameter of the previous drawing point, and whether a strip has been
+  // drawn (its ring can be shared)
+  double prev_par = fstart;
+  bool bRingDrawn = false;
 
   // Main loop for each drawing point
   //  i: drawing point index from 0 to ndelta
@@ -215,17 +216,23 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     // Hit names (pick pass): one name for the whole segment strip, so the
     // residue boundary lies on a ring (see TubeSection::doTess).
     pmb->loadName(hitName);
-    pmb->startTriangleStrip();
+    // Draw only the new ring if the previous strip's ring can be reused
+    const bool bBand = bRingDrawn && pmb->hasRing() && canShareRing(prev_par, par, pCoeff);
+    if (bBand)
+      pmb->startRingBand();
+    else
+      pmb->startRingStrip();
 
     for (j=0; j<=m_pts->getSize(); j++) {
       g1 = m_pts->getVec(j, e11, e12);
-      g2 = m_pts->getVec(j, e21, e22);
       dg1 = m_pts->getNormVec(j, e11, e12);
-      dg2 = m_pts->getNormVec(j, e21, e22);
       pmb->normal(dg1);
       pmb->color(pCol);
       pmb->vertex(f1+g1);
+      if (bBand) continue;
 
+      g2 = m_pts->getVec(j, e21, e22);
+      dg2 = m_pts->getNormVec(j, e21, e22);
       pmb->normal(dg2);
       if (isSmoothColor())
         pmb->color(pPrevCol);
@@ -236,6 +243,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     }
 
     pmb->end();
+    bRingDrawn = true;
 
     //pdl->startLines();
     //BOOST_FOREACH (const Vector4D &elem, tmpv) {
@@ -256,6 +264,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     prev_e2 = e12;
     prev_f = f1;
     pPrevCol = pCol;
+    prev_par = par;
   }
   
   pmb->setLighting(false);
@@ -274,21 +283,20 @@ qlib::Vector2D TubeRenderer::getEScl(double par, SplineCoeff *pCoeff)
   int nnext = int(::ceil(par));
   double rho = par - double(nprev);
   
-  MolResiduePtr pNext(pCoeff->getResidue(nnext));
-  MolResiduePtr pPrev(pCoeff->getResidue(nprev));
-  MolAtomPtr pAtom1, pAtom2;
+  // pivots kept in the spline topology (raw pointers: this runs in the
+  // parallel coordinate update too)
+  const MolAtom *pAtom1 = pCoeff->getPivot(nprev);
+  const MolAtom *pAtom2 = pCoeff->getPivot(nnext);
   double par1 = 1.0, par2 = 1.0;
 
-  if (!pPrev.isnull()) {
-    pAtom1 = getPivotAtom(pPrev);
+  if (pAtom1!=NULL) {
     if (m_nPuttyTgt==TBR_PUTTY_OCC)
       par1 = pAtom1->getOcc();
     else
       par1 = pAtom1->getBfac();
 
   }
-  if (!pNext.isnull()) {
-    pAtom2 = getPivotAtom(pNext);
+  if (pAtom2!=NULL) {
     if (m_nPuttyTgt==TBR_PUTTY_OCC)
       par2 = pAtom2->getOcc();
     else
@@ -344,54 +352,6 @@ void TubeRenderer::propChanged(qlib::LPropEvent &ev)
     invalidateDisplayCache();
   }
 
-  if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    // Only the colors change: the base classes' invalidateDisplayCache()
-    // calls turn into an in-place color update of the GPU mesh
-    tubeGpuBeginColorOnly();
-    super_t::propChanged(ev);
-    tubeGpuEndColorOnly();
-    return;
-  }
-
   super_t::propChanged(ev);
-}
-
-/////////////////////////////////////////////////////
-// GPU mesh
-
-void TubeRenderer::display(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplay(pdc))
-    super_t::display(pdc);
-}
-
-void TubeRenderer::displayPick(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplayPick(pdc))
-    super_t::displayPick(pdc);
-}
-
-void TubeRenderer::invalidateDisplayCache()
-{
-  tubeGpuOnInvalidateDisplay();
-  super_t::invalidateDisplayCache();
-}
-
-void TubeRenderer::objectChanged(qsys::ObjectEvent &ev)
-{
-  if (tubeGpuOnAtomsMoved(ev)) {
-    // Positions changed but topology/colors did not: the vertices are
-    // rewritten in place on the next display()
-    updateMovedAtoms();
-    return;
-  }
-  super_t::objectChanged(ev);
-}
-
-void TubeRenderer::unloading()
-{
-  tubeGpuUnload();
-  super_t::unloading();
 }
 

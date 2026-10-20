@@ -115,16 +115,31 @@ namespace molvis {
     /// Hit name (pivot atom ID of the owning residue) at spline parameter par.
     int calcHitName(double par, SplineCoeff *pCoeff) const;
 
+    /// True if a tube strip from spline parameter par0 to par1 may reuse the
+    /// ring at par0 drawn by the previous strip (TubeMeshBuilder ring band)
+    /// without changing any vertex. The strip takes its color and hit name at
+    /// par1; without smooth coloring both come from the nearer of the two
+    /// neighbor residues, so the ring can be shared while that residue (with
+    /// its pivot atom) stays the same. With bNeighbors, the strip also
+    /// depends on the two neighbor residues themselves (e.g. the binormal
+    /// direction flags), so they have to be the same too. The segment end
+    /// fade depends on the position between them and never shares.
+    bool canShareRing(double par0, double par1, const SplineCoeff *pCoeff,
+                      bool bNeighbors = false) const;
+
     void invalidateSplineCoeffs();
 
-    /// Drop the spline coeffs only (regenerated on the next traversal),
-    /// keeping the display cache.
-    void cleanupSplineCoeffs() { m_scs.cleanup(); }
+    /// Spline topology: valid, and its generation (incremented on every
+    /// rebuild; the SplineCoeff objects of an older generation are gone)
+    bool isSplineTopoValid() const { return m_scs.isTopoValid(); }
+    int getSplineTopoGen() const { return m_scs.getTopoGen(); }
 
-    /// Atoms moved and the GPU mesh is updated in place (TubeGpuSupport):
-    /// drop the spline coeffs, request a redraw and drop the hittest cache,
-    /// without invalidating the display cache.
-    void updateMovedAtoms();
+    /// Recompute the stale part of the spline coeffs (after an atom move)
+    void prepareSplineCoeffs();
+
+    /// The atoms moved: mark the geometry part of the spline coeffs stale
+    /// (the topology part is kept)
+    void markSplineCoeffsMoved() { m_scs.markMoved(); }
 
   private:
     void getSegEndImpl(int nprev, MolResiduePtr pPrev,

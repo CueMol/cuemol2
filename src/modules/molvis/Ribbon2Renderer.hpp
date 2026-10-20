@@ -13,7 +13,7 @@
 //#include "CubicSpline.hpp"
 #include "smospl/SmoothSpline.hpp"
 #include "TubeSection.hpp"
-#include "TubeGpuSupport.hpp"
+#include "TubeGpuRenderer.hpp"
 #include "JctTable.hpp"
 
 class Ribbon2Renderer_wrap;
@@ -29,8 +29,44 @@ using namespace molstr;
 
   namespace detail {
 
+    struct SecSplDat;
+
+    /// A run of the helix-coil table of a ribbon-helix coil
+    /// (Ribbon2Renderer::makeHCTab())
+    struct HCTab {
+      int jst;
+      int jen;
+      int flag;
+    };
+
+    /// Where a control point of a SecSplDat comes from, so that the point
+    /// can be recomputed when the atoms move (SecSplDat::updateGeometry())
+    struct PtSrc {
+      enum {
+        /// the pivot atom
+        PIVOT = 0,
+        /// the axis of the sheet pRef at the parameter t
+        SHEET = 1,
+        /// the pivot atom pulled into the cylinder pRef (NULL: not pulled)
+        /// at the parameter t (Ribbon2Renderer::evalHelixJct())
+        HELIX_JCT = 2
+      };
+      int type;
+      const MolAtom *pAtom;
+      SecSplDat *pRef;
+      double t;
+    };
+
     struct SecSplDat
     {
+      /// Kind of the element
+      enum {
+        KIND_HELIX = 0,
+        KIND_SHEET = 1,
+        KIND_COIL = 2
+      };
+      int m_nKind;
+
       SmoothSpline m_spl;
       int m_nStartId;
       int m_nRealSize;
@@ -54,33 +90,51 @@ using namespace molstr;
       std::deque<Vector4D> m_posvec;
       std::deque<MolResidue *> m_resvec;
 
+      /// Source of each point of m_posvec
+      std::vector<PtSrc> m_srcs;
+
+      /// C and O atoms of each point of a protein sheet residue (NULL
+      /// otherwise), see calcProtBinormVec()
+      std::vector<std::pair<const MolAtom *, const MolAtom *> > m_coatoms;
+      bool m_bCOCached;
+
+      /// Helix-coil table (ribbon-helix coil)
+      std::vector<HCTab> m_hctab;
+
+      /// Residue of each integer parameter of m_spl (getDiffVec())
+      std::vector<MolResidue *> m_diffres;
+
       bool m_bStartExtend;
       bool m_bEndExtend;
 
       int m_nResDelta;
 
-      void addPoint(const Vector4D &pos, double wgt=0.0)
-      {
-        m_posvec.push_back(pos);
-        m_posvec.back().w() = wgt;
-        m_resvec.push_back(NULL);
-      }
+      /// Add a point on the axis of the sheet pSheet at the parameter t
+      /// (returns the tangent there in *pvpt)
+      void addSheetPoint(SecSplDat *pSheet, double t, double wgt, Vector4D *pvpt);
 
+      /// Add the pivot position of pRes
       void addPoint(MainChainRenderer *pthat, MolResiduePtr pRes, double wgt=0.0)
       {
-        Vector4D pos = pthat->getPivotPos(pRes);
-        m_posvec.push_back(pos);
+        const MolAtom *pAtom = ensureNotNull(pthat->getPivotAtom(pRes)).get();
+        m_posvec.push_back(pAtom->getPos());
         m_posvec.back().w() = wgt;
         m_resvec.push_back(pRes.get());
+        m_srcs.push_back(PtSrc{PtSrc::PIVOT, pAtom, NULL, 0.0});
       }
 
-      /// Move the last point, keeping its weight
-      void setLastPos(const Vector4D &pos)
-      {
-        const double wgt = m_posvec.back().w();
-        m_posvec.back() = pos;
-        m_posvec.back().w() = wgt;
-      }
+      /// Replace the source of the last point (its weight is kept)
+      void setLastSrc(const PtSrc &src);
+
+      /// Position of a point source
+      Vector4D evalSrc(const PtSrc &src) const;
+
+      /// Recompute the points from their sources and regenerate the splines
+      /// (the atoms moved; the topology is the same)
+      void updateGeometry();
+
+      /// Look up the C/O atoms of calcProtBinormVec()
+      void cacheCOAtoms();
 
       void setStart()
       {
@@ -108,7 +162,26 @@ using namespace molstr;
 
       Ribbon2Renderer *m_pParent;
 
-      SecSplDat(Ribbon2Renderer *pP);
+      SecSplDat(Ribbon2Renderer *pP, int nKind);
+    };
+
+    /// The elements of the GPU mesh: owned across atom moves, so that a
+    /// coordinate update recomputes their geometry and redraws them chunk
+    /// by chunk instead of rebuilding them. A copy starts empty.
+    struct CartoonGpuElems
+    {
+      /// Elements by kind (all segments)
+      std::vector<SecSplDat *> m_cyls, m_sheets, m_coils;
+      /// Element drawn as each chunk of the mesh
+      std::vector<SecSplDat *> m_chunks;
+
+      CartoonGpuElems() {}
+      CartoonGpuElems(const CartoonGpuElems &) {}
+      CartoonGpuElems &operator=(const CartoonGpuElems &) = delete;
+      ~CartoonGpuElems() { clear(); }
+
+      void clear();
+      bool empty() const { return m_chunks.empty(); }
     };
 
     class SecStrTab
@@ -130,7 +203,7 @@ using namespace molstr;
 
   } // namespace detail
 
-  class Ribbon2Renderer : public MainChainRenderer, public TubeGpuSupport
+  class Ribbon2Renderer : public TubeGpuRenderer<MainChainRenderer>
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -139,7 +212,7 @@ using namespace molstr;
 
   private:
 
-    typedef MainChainRenderer super_t;
+    typedef TubeGpuRenderer<MainChainRenderer> super_t;
 
     //////////////////////////////////////////////////////
     // Properties
@@ -240,6 +313,12 @@ using namespace molstr;
     /// differential vectors for getDiffVec impl
     DiffVecMap m_diffvecs;
 
+    /// m_diffvecs is to be rebuilt from m_gpuElems (after a chunked update)
+    bool m_bLazyDiffVecs;
+
+    /// Elements of the GPU mesh (see CartoonGpuElems)
+    detail::CartoonGpuElems m_gpuElems;
+
     ////////////////////////////////////////////////
 
   public:
@@ -249,22 +328,18 @@ using namespace molstr;
     const char *getTypeName() const override;
 
     //////////////////////////////////////////////////////
-    // GPU mesh (TubeGpuSupport)
-
-    void display(DisplayContext *pdc) override;
-
-    /// The pick pass draws the same mesh with the pick program
-    void displayPick(DisplayContext *pdc) override;
-
-    void invalidateDisplayCache() override;
-
-    void unloading() override;
+    // GPU mesh (TubeGpuRenderer)
 
   protected:
-    void tubeGpuRenderMesh() override { render(nullptr); }
-    qlib::uid_t tubeGpuSceneID() const override { return getSceneID(); }
-    void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
-    void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
+    /// The differential vectors derived from the positions are dropped
+    /// (the elements' geometry is recomputed by tubeGpuPrepareChunkUpdate()
+    /// or by the serial traversal)
+    void tubeGpuOnMovedAtoms() override { m_diffvecs.clear(); }
+
+    /// Chunked update: one chunk per helix / sheet / coil element
+    bool tubeGpuCanUpdateChunks() const override { return !m_gpuElems.empty(); }
+    void tubeGpuPrepareChunkUpdate() override;
+    void tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb) override;
 
   public:
     //////////////////////////////////////////////////////
@@ -279,25 +354,44 @@ using namespace molstr;
   private:
     //////////////////////////////////////////////////////
 
+    /// Set up the section and junction tables (once per traversal)
+    void setupSections();
+
+    /// Draw the element pC (any kind) to pmb. Uses no renderer state that
+    /// it writes, so that elements can be drawn concurrently.
+    void renderElemTo(TubeMeshBuilder *pmb, detail::SecSplDat *pC);
+
     void buildHelixData();
     void clearHelixData();
-    void renderHelix(DisplayContext *pdl);
+    void renderHelixTo(TubeMeshBuilder *pmb, detail::SecSplDat *pC);
 
     /// Cylinder radius of the helix pC at the parameter t
     double calcHelixWidth(detail::SecSplDat *pC, double t, double &dwidth) const;
 
-    /// Coil control point for the helix residue at m_resvec[ires]
-    /// (the pivot position pulled into the cylinder when it lies outside)
-    Vector4D calcHelixJctPos(int ires);
+  public:
+    /// Source of the coil control point for the helix residue at
+    /// m_resvec[ires]: the pivot position pulled into the cylinder when it
+    /// lies outside
+    detail::PtSrc findHelixJct(int ires);
+
+    /// Position of a PtSrc::HELIX_JCT source
+    Vector4D evalHelixJct(const detail::PtSrc &src) const;
+
+    double getWidthRho() const { return m_dWidthRho; }
+
+  private:
 
     void buildSheetData();
     void clearSheetData();
-    void renderSheet(DisplayContext *pdl, detail::SecSplDat *pSh);
+    void renderSheetTo(TubeMeshBuilder *pmb, detail::SecSplDat *pSh);
 
     void buildCoilData();
     void clearCoilData();
-    void renderCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
-    void renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
+    void renderCoilTo(TubeMeshBuilder *pmb, detail::SecSplDat *pSh);
+    void renderHelixCoilTo(TubeMeshBuilder *pmb, detail::SecSplDat *pSh);
+
+    /// Helix-coil table of the ribbon-helix coil pC (current segment)
+    std::vector<detail::HCTab> makeHCTab(detail::SecSplDat *pC);
 
     void getCoilResids(double at, detail::SecSplDat *pCyl,
                        MolResiduePtr &pResPrev,
@@ -422,6 +516,9 @@ using namespace molstr;
   private:
     void updateDiffVecs();
     void updateDiffVecsImpl(detail::SecSplDat *pC);
+
+    /// Residues of the integer parameters of pC (current segment)
+    void setupDiffRes(detail::SecSplDat *pC);
 
   public:
     /// Returns 1-st differential vector as to the axial (t) parameter.

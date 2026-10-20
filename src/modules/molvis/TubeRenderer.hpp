@@ -10,19 +10,19 @@
 
 #include "SplineRenderer.hpp"
 #include "TubeSection.hpp"
-#include "TubeGpuSupport.hpp"
+#include "SplineTubeRenderer.hpp"
 #include <qlib/Vector2D.hpp>
 
 namespace molvis {
 
-  class TubeRenderer : public SplineRenderer, public TubeGpuSupport
+  class TubeRenderer : public SplineTubeRenderer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
   private:
 
-    typedef SplineRenderer super_t;
+    typedef SplineTubeRenderer super_t;
 
     /// Tube section data
     TubeSectionPtr m_pts;
@@ -40,27 +40,6 @@ namespace molvis {
     void preRender(DisplayContext *pdc) override;
 
     //////////////////////////////////////////////////////
-    // GPU mesh (TubeGpuSupport)
-
-    void display(DisplayContext *pdc) override;
-
-    /// The pick pass draws the same mesh with the pick program
-    void displayPick(DisplayContext *pdc) override;
-
-    void invalidateDisplayCache() override;
-
-    void objectChanged(qsys::ObjectEvent &ev) override;
-
-    void unloading() override;
-
-  protected:
-    void tubeGpuRenderMesh() override { render(nullptr); }
-    qlib::uid_t tubeGpuSceneID() const override { return getSceneID(); }
-    void tubeGpuPreRender(DisplayContext *pdc) override { preRender(pdc); }
-    void tubeGpuPostRender(DisplayContext *pdc) override { postRender(pdc); }
-
-  public:
-    //////////////////////////////////////////////////////
 
     void beginRend(DisplayContext *pdl) override;
 
@@ -70,9 +49,11 @@ namespace molvis {
 
     //////////////////////////////////////////////////////
 
-    void renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
-                              MolResiduePtr pStartRes, double fstart,
-                              MolResiduePtr pEndRes, double fend) override;
+    /// Draw one segment to pmb (see SplineTubeRenderer).
+    /// Uses no renderer state, so segments can be drawn concurrently.
+    void renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
+                        const MolResiduePtr &pStartRes, double fstart,
+                        const MolResiduePtr &pEndRes, double fend) override;
 
     ////////////////////////////////////////////
     // property handling

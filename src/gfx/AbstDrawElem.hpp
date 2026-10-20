@@ -54,15 +54,48 @@ private:
     /// update flag
     mutable bool m_bUpdate;
 
+    /// byte range of the data changed since the last upload (length 0: all)
+    mutable size_t m_nUpdOffset;
+    mutable size_t m_nUpdLength;
+
 public:
     bool isUpdated() const
     {
         return m_bUpdate;
     }
+
+    /// Mark the whole data changed (true), or uploaded (false).
     void setUpdated(bool b) const
     {
         m_bUpdate = b;
+        m_nUpdOffset = 0;
+        m_nUpdLength = 0;
     }
+
+    /// Mark the bytes [offset, offset+length) changed. Ranges marked before
+    /// the next upload merge into one covering range; a whole-data mark
+    /// stays whole.
+    void setUpdatedRange(size_t offset, size_t length) const
+    {
+        if (length == 0) return;
+        if (!m_bUpdate) {
+            m_bUpdate = true;
+            m_nUpdOffset = offset;
+            m_nUpdLength = length;
+            return;
+        }
+        if (m_nUpdLength == 0) return;
+        const size_t lo = (offset < m_nUpdOffset) ? offset : m_nUpdOffset;
+        const size_t hi1 = offset + length;
+        const size_t hi2 = m_nUpdOffset + m_nUpdLength;
+        m_nUpdOffset = lo;
+        m_nUpdLength = ((hi1 > hi2) ? hi1 : hi2) - lo;
+    }
+
+    /// Changed byte range (valid when isUpdated()); a length of 0 means the
+    /// whole data.
+    size_t getUpdateOffset() const { return m_nUpdOffset; }
+    size_t getUpdateLength() const { return m_nUpdLength; }
 
     //////////////////////////////////////////////////
     // Type ID definitions

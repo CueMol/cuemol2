@@ -62,6 +62,7 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
         json_str += LString::format("\"itype\": \"%d\",", data.getAttrTypeID(i));
         json_str += LString::format("\"npos\": \"%d\",", data.getAttrPos(i));
         json_str += LString::format("\"idiv\": \"%d\",", data.getAttrDivisor(i));
+        json_str += LString::format("\"stride\": \"%d\",", data.getAttrStride(i));
         json_str += LString::format("\"integer\": \"%d\"", data.isAttrInteger(i) ? 1 : 0);
         json_str += "}";
     }
@@ -164,15 +165,18 @@ void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
     // If the storage is externally backed (V8 ArrayBuffer), the renderer's
     // at(i) writes already landed in the same backing store as
     // m_arrayBufRef -- no memcpy needed. Otherwise copy from C++ heap.
+    // The indices never change for the life of a buffer (a topology change
+    // allocates a new draw element), so only the vertex data is copied; the
+    // JS side re-sends only the vertex buffer as well.
     if (ada.getExtDataHandle() == nullptr) {
         const size_t buffer_size = ada.getDataSize();
         copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
-
-        const size_t nindex_bytes = ada.getIndDataSize();
-        if (nindex_bytes > 0 && m_nIndexElems > 0) {
-            copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
-        }
     }
+
+    // Only the changed range goes to the GPU (the whole buffer when the
+    // owner did not narrow it, see AbstDrawElem::setUpdatedRange)
+    m_nUpdOffset = ada.getUpdateOffset();
+    m_nUpdLength = ada.getUpdateLength();
 
     ada.setUpdated(false);
     m_bDataUpdated = true;
@@ -210,7 +214,9 @@ void EcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
             peer,
             {Napi::String::New(env, m_bufName), Napi::Number::New(env, m_nDrawMode),
              Napi::Number::New(env, nelems), pbuf, pindbuf,
-             Napi::Boolean::New(env, isUpdated), Napi::Number::New(env, ninst)});
+             Napi::Boolean::New(env, isUpdated), Napi::Number::New(env, ninst),
+             Napi::Number::New(env, double(m_nUpdOffset)),
+             Napi::Number::New(env, double(m_nUpdLength))});
     } catch (const Napi::Error &e) {
         MB_DPRINTLN("drawBuffer failed: %s", e.Message().c_str());
         return;

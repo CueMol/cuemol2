@@ -9,9 +9,27 @@
 #include <modules/molvis/molvis.hpp>
 #include <qlib/Vector4D.hpp>
 
+#include "ReinschSpline.hpp"
+#include "PenalizedSpline.hpp"
+
 namespace molvis {
 
   using qlib::Vector4D;
+
+  /// The factorized solvers of the last fit. The factorization depends only
+  /// on the size, the weights and rho, so it is kept while they stay the same
+  /// (a coordinate update changes the values only).
+  struct SmoothSplineCache
+  {
+    ReinschSpline rs;
+    PenalizedSpline ps;
+    /// size of the factorization in rs / ps (-1: none)
+    int nRs = -1, nPs = -1;
+    double rhoRs = 0.0, rhoPs = 0.0;
+    /// first abscissa of the dense fit
+    int startPs = 0;
+    std::vector<double> wgtRs, wgtPs;
+  };
 
   /// 1D smooth spline class
   class SmoothSpline1D
@@ -28,6 +46,12 @@ namespace molvis {
     std::vector<double> m_coeff3;
 
     double m_rho;
+
+    SmoothSplineCache m_cache;
+
+    bool fitReinsch();
+    bool fitDense();
+    bool generateImpl(bool bReinsch);
 
   public:
     SmoothSpline1D();
@@ -52,8 +76,13 @@ namespace molvis {
       return m_veclist[i];
     }
 
-    /// Generate spline coeffs
+    /// Generate spline coeffs (Reinsch algorithm, O(n))
     bool generate();
+
+    /// Generate spline coeffs by the dense penalized fit (O(n^3)).
+    /// Reference implementation of generate(), which also falls back to it
+    /// for the inputs the Reinsch path does not reproduce.
+    bool generateDense();
 
     /// Calculate interpolation
     bool interpolate(double f, double *vec,
@@ -92,6 +121,12 @@ namespace molvis {
 
     void rewriteCoeff(int i, const Vector4D &ai);
     //void rewriteCoeff(int i, const Vector4D &ai, const Vector4D &bi);
+
+    SmoothSplineCache m_cache;
+
+    bool fitReinsch();
+    bool fitDense();
+    bool generateImpl(bool bReinsch);
 
   public:
     SmoothSpline();
@@ -136,8 +171,13 @@ namespace molvis {
       m_vEndD1 = vst.normalize();
     }
 
-    /// Generate spline coeffs
+    /// Generate spline coeffs (Reinsch algorithm, O(n))
     bool generate();
+
+    /// Generate spline coeffs by the dense penalized fit (O(n^3)).
+    /// Reference implementation of generate(), which also falls back to it
+    /// for the inputs the Reinsch path does not reproduce.
+    bool generateDense();
 
     /// Calculate interpolation
     bool interpolate(double f, Vector4D *vec,

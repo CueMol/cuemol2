@@ -49,18 +49,28 @@ public:
     TubeGpuSupport &operator=(const TubeGpuSupport &) = delete;
     virtual ~TubeGpuSupport();
 
-    // Mesh access without a DisplayContext (exposed for inspection/testing)
+    // State exposed for inspection/testing
 
-    /// Record the mesh by running the host's traversal in build mode (no GPU
-    /// primitive is touched).
-    void tubeGpuBuildMesh();
+    /// How the last tubeGpuPrepare() refreshed the mesh
+    static constexpr int TG_PASS_NONE = 0;     ///< nothing to do
+    static constexpr int TG_PASS_BUILD = 1;    ///< (re)built
+    static constexpr int TG_PASS_SERIAL = 2;   ///< updated by the serial traversal
+    static constexpr int TG_PASS_CHUNKED = 3;  ///< updated chunk by chunk (see tubeGpuLastParallel())
+    int tubeGpuLastPass() const { return m_nLastPass; }
+    /// True if the last chunked update ran its chunks in parallel
+    bool tubeGpuLastParallel() const { return m_bParallel; }
 
-    /// Apply the pending in-place update (see tubeGpuMarkDirty) to the recorded
-    /// mesh. Returns false if the traversal changed the topology.
-    bool tubeGpuUpdateMesh();
+    /// Below this many vertices the chunked update runs its chunks one after
+    /// another on the calling thread: the work of a small mesh (a few ms or
+    /// less) is smaller than the cost of waking the worker threads, which
+    /// then spin looking for more work before they sleep (on the M4, about
+    /// 6 ms of CPU per update for a 0.1 M vertex ribbon).
+    static constexpr int TG_DEFAULT_PARALLEL_MIN_VERTS = 256 * 1024;
+    static void setParallelMinVerts(int n) { s_nParallelMinVerts = n; }
+    static int getParallelMinVerts() { return s_nParallelMinVerts; }
 
-    /// The recorded mesh.
-    const TubeMeshBuilder &tubeGpuMesh() const { return m_mb; }
+    /// The GPU primitive the mesh is drawn from.
+    const gfx::TrigGpuPrim &tubeGpuPrim() const { return m_prim; }
 
 protected:
     /// The drawing sink of the current traversal.
@@ -82,6 +92,21 @@ protected:
 
     /// Whether the host draws through the GPU mesh at all.
     virtual bool tubeGpuIsEnabled() const { return true; }
+
+    /// Chunked (parallel) coordinate update. A host that records one chunk
+    /// per independently drawable part (TubeMeshBuilder::beginChunk() /
+    /// endChunk() around each segment in build mode) and can redraw a chunk
+    /// without touching its own state returns true here; a coordinate-only
+    /// update then redraws the chunks concurrently instead of re-running the
+    /// traversal.
+    virtual bool tubeGpuCanUpdateChunks() const { return false; }
+
+    /// Work done once, serially, before the chunks are redrawn (e.g.
+    /// recomputing the spline coeffs from the new positions).
+    virtual void tubeGpuPrepareChunkUpdate() {}
+
+    /// Redraw chunk i into pmb (may run concurrently for distinct chunks).
+    virtual void tubeGpuUpdateChunk(int i, TubeMeshBuilder *pmb) {}
 
     /// The host's preRender() / postRender().
     virtual void tubeGpuPreRender(DisplayContext *pdc) = 0;
@@ -151,8 +176,23 @@ private:
     int m_nPolyMode;
     /// Inside a color-only invalidation scope
     bool m_bColorOnly;
+    /// See tubeGpuLastPass()
+    int m_nLastPass;
+    /// Set by updateMesh() when the chunked update ran
+    bool m_bChunked;
+    /// Set by updateMesh() when the chunked update ran in parallel
+    bool m_bParallel;
+
+    static int s_nParallelMinVerts;
 
     void build(DisplayContext *pdc, int nPolyMode);
+
+    /// Record the mesh by running the host's traversal in build mode.
+    void buildMesh();
+
+    /// Apply the pending in-place update (see tubeGpuMarkDirty) to the mesh
+    /// in the primitive. Returns false if the traversal changed the topology.
+    bool updateMesh();
 };
 
 }  // namespace molvis

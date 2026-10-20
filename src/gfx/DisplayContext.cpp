@@ -329,6 +329,10 @@ void DisplayContext::drawElem(const AbstDrawElem &ade)
         pRep = createVBORep(ada);
         if (pRep == nullptr) return;
         ada.setVBO(pRep);
+        // Creating the buffer uploads the current data, so a pending update
+        // flag (set by whoever filled the data) must not upload it again on
+        // the next draw.
+        ada.setUpdated(false);
     } else {
         pRep->bind();
         pRep->update(ada);

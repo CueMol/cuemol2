@@ -55,7 +55,7 @@ namespace molvis {
 /////////////////////////////////////////////////////
 
 RibbonRenderer::RibbonRenderer()
-     : SplineRenderer(),
+     : super_t(),
        m_ptsHelix(MB_NEW TubeSection()),
        m_ptsSheet(MB_NEW TubeSection()),
        m_ptsCoil(MB_NEW TubeSection()),
@@ -80,8 +80,6 @@ RibbonRenderer::RibbonRenderer()
   m_pHelixBackCol = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
   m_pSheetSideCol = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
 
-  m_bPrevBnormInv = false;
-  m_bNextBnormInv = false;
 }
 
 RibbonRenderer::~RibbonRenderer()
@@ -103,7 +101,6 @@ void RibbonRenderer::preRender(DisplayContext *pdc)
 
 void RibbonRenderer::beginRend(DisplayContext *pdl)
 {
-  tubeGpuBeginRend(pdl);
 
   if (!m_ptsHelix->isValid()) {
     m_ptsHelix->setupSectionTable();
@@ -139,18 +136,7 @@ void RibbonRenderer::beginRend(DisplayContext *pdl)
 
 /////////////////////////////////////////////////////
 
-namespace {
-  MolResiduePtr safeGetResid(SplineCoeff *pCoeff, int nid) {
-
-    MolAtomPtr pAtom = pCoeff->getAtom(nid);
-    if (pAtom.isnull()) {
-      return MolResiduePtr();
-    }
-    return pAtom->getParentResidue();
-  }
-}
-
-void RibbonRenderer::makeHSCTable(SplineCoeff *pCoeff, int istart, int iend)
+void RibbonRenderer::makeHSCTable(SegCtx &c, SplineCoeff *pCoeff, int istart, int iend)
 {
   int i;
   int nsize = iend-istart+1;
@@ -160,12 +146,9 @@ void RibbonRenderer::makeHSCTable(SplineCoeff *pCoeff, int istart, int iend)
   for (i=0; i<nsize; ++i) {
     vtmp[i] = RB_COIL;
 
-    MolResiduePtr pRes = safeGetResid(pCoeff, i+istart);
-    if (pRes.isnull())
-      continue;
-    LString sec;
-    //pRes->getPropStr("secondary", sec);
-    pRes->getPropStr("secondary2", sec);
+    // kept in the topology part of the spline coeffs (no residue/property
+    // lookup on every traversal)
+    const LString &sec = pCoeff->getSecondary2(i+istart);
     LString pfx;
     if (sec.length()>=2)
       pfx= sec.substr(1,1);
@@ -187,10 +170,10 @@ void RibbonRenderer::makeHSCTable(SplineCoeff *pCoeff, int istart, int iend)
     }
   }
 
-  m_hscTab.resize(nsize);
+  c.hscTab.resize(nsize);
 
-  m_hscTab[0] = vtmp[0];
-  m_hscTab[nsize-1] = vtmp[nsize-1];
+  c.hscTab[0] = vtmp[0];
+  c.hscTab[nsize-1] = vtmp[nsize-1];
   
   for (i=1; i<nsize-1; ++i) {
     char cprev = vtmp[i-1];
@@ -203,21 +186,24 @@ void RibbonRenderer::makeHSCTable(SplineCoeff *pCoeff, int istart, int iend)
           cnext==RB_SHEET_TAIL) ||
          (cprev==RB_SHEET_HEAD &&
           ccurr==RB_SHEET_TAIL) ) {
-      m_hscTab[i] = RB_SHEET;
+      c.hscTab[i] = RB_SHEET;
       continue;
     }
       */
     
     // predefined head/tail
-    m_hscTab[i] = ccurr;
+    c.hscTab[i] = ccurr;
   }
 }
 
-void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
-                                  MolResiduePtr pStartRes, double fstart,
-                                  MolResiduePtr pEndRes, double fend)
+void RibbonRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
+                                    const MolResiduePtr &pStartRes, double fstart,
+                                    const MolResiduePtr &pEndRes, double fend)
 {
-  tubeGpuBuilder().setPolygonMode(DisplayContext::POLY_FILL);
+  SegCtx c;
+  c.pmb = pmb;
+
+  c.pmb->setPolygonMode(DisplayContext::POLY_FILL);
   // pdl->setPolygonMode(DisplayContext::POLY_LINE);
 
   const int naxdet = getAxialDetail();
@@ -230,11 +216,13 @@ void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   MB_DPRINTLN("Ribbon> rendering segment %d:%d", istart, iend);
 
   // make HSC table
-  makeHSCTable(pCoeff, istart, iend);
+  makeHSCTable(c, pCoeff, istart, iend);
 
-  m_bStart = true;
-  m_prev_escl = Vector4D(1.0, 1.0, 0.0, 0.0);
-  TubeSectionPtr pCurTs, pPrevTs;
+  c.bStart = true;
+  c.prev_escl = Vector4D(1.0, 1.0, 0.0, 0.0);
+  // raw pointers: the shared sections and junction tables must not be
+  // reference counted from concurrently drawn segments
+  TubeSection *pCurTs = NULL, *pPrevTs = NULL;
   bool bReqPartNext = false;
   char ccurr;
 
@@ -244,70 +232,70 @@ void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
       return;
     }
 
-    ccurr = m_hscTab[i-istart];
-    JctTablePtr pJct;
+    ccurr = c.hscTab[i-istart];
+    JctTable *pJct = NULL;
     switch (ccurr) {
     case RB_HELIX:
-      pCurTs = m_ptsHelix;
+      pCurTs = m_ptsHelix.get();
       break;
     case RB_SHEET:
-      pCurTs = m_ptsSheet;
+      pCurTs = m_ptsSheet.get();
       break;
     case RB_COIL:
-      pCurTs = m_ptsCoil;
+      pCurTs = m_ptsCoil.get();
       break;
     case RB_HELIX_HEAD:
-      pCurTs = m_ptsHelix;
-      pJct = m_pHelixHead;
+      pCurTs = m_ptsHelix.get();
+      pJct = m_pHelixHead.get();
       break;
     case RB_HELIX_TAIL:
-      pCurTs = m_ptsHelix;
-      pJct = m_pHelixTail;
+      pCurTs = m_ptsHelix.get();
+      pJct = m_pHelixTail.get();
       break;
     case RB_SHEET_HEAD:
-      pCurTs = m_ptsSheet;
-      pJct = m_pSheetHead;
+      pCurTs = m_ptsSheet.get();
+      pJct = m_pSheetHead.get();
       break;
     case RB_SHEET_TAIL:
-      pCurTs = m_ptsSheet;
-      pJct = m_pSheetTail;
+      pCurTs = m_ptsSheet.get();
+      pJct = m_pSheetTail.get();
       break;
     }
 
-    m_bMakePartition = false;
+    c.bMakePartition = false;
 
     if ( bReqPartNext ) {
-      m_bMakePartition = true;
+      c.bMakePartition = true;
       bReqPartNext = false;
     }
       
-    if (!pJct.isnull() && pJct->isReqPart() &&
+    if (pJct!=NULL && pJct->isReqPart() &&
         (ccurr==RB_HELIX_TAIL||ccurr==RB_SHEET_TAIL))
-      m_bMakePartition = true;
+      c.bMakePartition = true;
 
-    if (m_bMakePartition) {
+    if (c.bMakePartition) {
       // (the geometry-only update computes no colors)
-      if (pPrevTs.isnull() ||
-          (tubeGpuBuilder().wantColor() && m_pPrevCol.isnull())) {
+      if (pPrevTs==NULL ||
+          (c.pmb->wantColor() && c.pPrevCol.isnull())) {
         LOG_DPRINTLN("***");
       }
       else {
         // Close the previous tube section
-        tubeGpuBuilder().loadName(m_nPrevHitName);
-        tubeGpuBuilder().color(m_pPrevCol);
-        pPrevTs->makeFlatCap(&tubeGpuBuilder(), false, 
-                           m_prev_f1, m_prev_vpt,
-                           m_prev_e1.scale(m_prev_escl.x()),
-                           m_prev_e2.scale(m_prev_escl.y()));
+        c.pmb->loadName(c.nPrevHitName);
+        c.pmb->color(c.pPrevCol);
+        pPrevTs->makeFlatCap(c.pmb, false, 
+                           c.prev_f1, c.prev_vpt,
+                           c.prev_e1.scale(c.prev_escl.x()),
+                           c.prev_e2.scale(c.prev_escl.y()));
       }
     }
 
     if (ccurr==RB_HELIX||ccurr==RB_SHEET||ccurr==RB_COIL)
-      renderTube(pdl, ccurr, pCurTs.get(), pCoeff, fcstart, fcend, naxdet);
+      renderTube(c, ccurr, pCurTs, pCoeff, fcstart, fcend, naxdet);
     else
-      renderJct(pdl, ccurr, pCurTs.get(), pJct.get(), pCoeff, fcstart, fcend, naxdet);
+      renderJct(c, ccurr, pCurTs, pJct, pCoeff, fcstart, fcend, naxdet);
 
-    if (!pJct.isnull() && pJct->isReqPart() &&
+    if (pJct!=NULL && pJct->isReqPart() &&
         (ccurr==RB_HELIX_HEAD||ccurr==RB_SHEET_HEAD))
       bReqPartNext = true;
 
@@ -316,93 +304,88 @@ void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
 
 
   // postprocessing
-  if (!isSegEndFade() || !isSegEnd(m_prev_par, pCoeff)) {
-    tubeGpuBuilder().loadName(m_nPrevHitName);
-    tubeGpuBuilder().color(m_pPrevCol);
+  if (!isSegEndFade() || !isSegEnd(c.prev_par, pCoeff)) {
+    c.pmb->loadName(c.nPrevHitName);
+    c.pmb->color(c.pPrevCol);
     if (ccurr==RB_COIL)
-      pCurTs->makeCap(&tubeGpuBuilder(), false, getEndCapType(), m_prev_f1, m_prev_vpt,
-                      m_prev_e1.scale(m_prev_escl.x()),
-                      m_prev_e2.scale(m_prev_escl.y()));
+      pCurTs->makeCap(c.pmb, false, getEndCapType(), c.prev_f1, c.prev_vpt,
+                      c.prev_e1.scale(c.prev_escl.x()),
+                      c.prev_e2.scale(c.prev_escl.y()));
     else
-      pCurTs->makeFlatCap(&tubeGpuBuilder(), false, m_prev_f1, m_prev_vpt,
-                          m_prev_e1.scale(m_prev_escl.x()),
-                          m_prev_e2.scale(m_prev_escl.y()));
+      pCurTs->makeFlatCap(c.pmb, false, c.prev_f1, c.prev_vpt,
+                          c.prev_e1.scale(c.prev_escl.x()),
+                          c.prev_e2.scale(c.prev_escl.y()));
   }
   
-  m_pPrevCol = ColorPtr();
-  m_pCol = ColorPtr();
-  m_nHitName = -1;
-  m_nPrevHitName = -1;
-
   return;
 }
 
-bool RibbonRenderer::setupHelper(DisplayContext *pdl,
+bool RibbonRenderer::setupHelper(SegCtx &c,
                                  TubeSection *pCurTs,
                                  int index, double par, SplineCoeff *pCoeff)
 {
-  TubeMeshBuilder *pmb = &tubeGpuBuilder();
+  TubeMeshBuilder *pmb = c.pmb;
 
   int nprev = int(::floor(par));
   int nnext = int(::ceil(par));
-  m_bPrevBnormInv = pCoeff->getBnormDirFlag(nprev);
-  m_bNextBnormInv = pCoeff->getBnormDirFlag(nnext);
+  c.bPrevBnormInv = pCoeff->getBnormDirFlag(nprev);
+  c.bNextBnormInv = pCoeff->getBnormDirFlag(nnext);
 
   // The geometry-only update skips the color/name computation
   if (pmb->wantColor()) {
-    m_pCol = calcColor(par, pCoeff);
+    c.pCol = calcColor(par, pCoeff);
     if (m_bHelixBackCol)
-      m_pCurHBCol = evalMolColor(m_pHelixBackCol, m_pCol);
+      c.pCurHBCol = evalMolColor(m_pHelixBackCol, c.pCol);
     if (m_bSheetSideCol)
-      m_pCurSSCol = evalMolColor(m_pSheetSideCol, m_pCol);
+      c.pCurSSCol = evalMolColor(m_pSheetSideCol, c.pCol);
   }
   if (pmb->wantName())
-    m_nHitName = calcHitName(par, pCoeff);
-  pmb->loadName(m_nHitName);
+    c.nHitName = calcHitName(par, pCoeff);
+  pmb->loadName(c.nHitName);
 
-  m_par = par;
-  pCoeff->interpNormal(par, &m_bnorm);
-  pCoeff->interpAxis(par, &m_f1, &m_vpt);
+  c.par = par;
+  pCoeff->interpNormal(par, &c.bnorm);
+  pCoeff->interpAxis(par, &c.f1, &c.vpt);
 
-  m_e12 = ( m_bnorm - m_f1 );
-  m_e11 = ( m_e12.cross(m_vpt) ).normalize();
+  c.e12 = ( c.bnorm - c.f1 );
+  c.e11 = ( c.e12.cross(c.vpt) ).normalize();
 
-  if (m_bStart) {
+  if (c.bStart) {
     // Starting point of the segment:
-    m_bStart = false;
+    c.bStart = false;
     return false;
   }
 
-  m_e21 = m_prev_e1;
-  m_e22 = m_prev_e2;
-  m_f2 = m_prev_f1;
+  c.e21 = c.prev_e1;
+  c.e22 = c.prev_e2;
+  c.f2 = c.prev_f1;
   
-  if ((m_e11.isZero() || m_e12.isZero()) &&
-      (!m_e21.isZero() && !m_e22.isZero())) {
-    m_e11 = m_e21;
-    m_e12 = m_e22;
+  if ((c.e11.isZero() || c.e12.isZero()) &&
+      (!c.e21.isZero() && !c.e22.isZero())) {
+    c.e11 = c.e21;
+    c.e12 = c.e22;
   }
-  else if ((m_e21.isZero() || m_e22.isZero()) &&
-           (!m_e11.isZero() && !m_e12.isZero())) {
-    m_e21 = m_e11;
-    m_e22 = m_e12;
+  else if ((c.e21.isZero() || c.e22.isZero()) &&
+           (!c.e11.isZero() && !c.e12.isZero())) {
+    c.e21 = c.e11;
+    c.e22 = c.e12;
   }
   
   if (index>0) {
-    if (m_bMakePartition) {
-      tubeGpuBuilder().color(m_pCol);
-      pCurTs->makeFlatCap(&tubeGpuBuilder(), true, 
-                          m_prev_f1, m_prev_vpt,
-                          m_prev_e1.scale(m_prev_escl.x()),
-                          m_prev_e2.scale(m_prev_escl.y()));
-      m_bMakePartition = false;
+    if (c.bMakePartition) {
+      c.pmb->color(c.pCol);
+      pCurTs->makeFlatCap(c.pmb, true, 
+                          c.prev_f1, c.prev_vpt,
+                          c.prev_e1.scale(c.prev_escl.x()),
+                          c.prev_e2.scale(c.prev_escl.y()));
+      c.bMakePartition = false;
     }
 
   }
   return true;
 }
 
-void RibbonRenderer::renderTube(DisplayContext *pdl,
+void RibbonRenderer::renderTube(SegCtx &c,
                                 char ss_type,
                                 TubeSection *pCurTs,
                                 SplineCoeff *pCoeff,
@@ -423,71 +406,81 @@ void RibbonRenderer::renderTube(DisplayContext *pdl,
   // MB_DPRINTLN("Ribbon> fcend=%f fcstart=%f fdelta=%f", fcend, fcstart, fdelta);
 
   // reset previous E scale
-  m_prev_escl = Vector4D(1.0, 1.0, 0.0, 0.0);
+  c.prev_escl = Vector4D(1.0, 1.0, 0.0, 0.0);
+
+  // a strip of this body has been drawn (its ring can be shared)
+  bool bRingDrawn = false;
 
   for (i=0; i<=ndelta; i++) {
     const double par = fcstart + double(i)*fdelta; ///double(naxdet);
     // MB_DPRINTLN("Ribbon> i=%d par=%f", i, par);
 
-    if (!setupHelper(pdl, pCurTs, i, par, pCoeff)) {
+    if (!setupHelper(c, pCurTs, i, par, pCoeff)) {
       if (!isSegEndFade() || !isSegEnd(par, pCoeff)) {
         // Make the tube's start cap.
-        tubeGpuBuilder().color(m_pCol);
+        c.pmb->color(c.pCol);
         if (ss_type==RB_COIL)
-          pCurTs->makeCap(&tubeGpuBuilder(), true, getStartCapType(), m_f1, m_vpt, m_e11, m_e12);
+          pCurTs->makeCap(c.pmb, true, getStartCapType(), c.f1, c.vpt, c.e11, c.e12);
         else {
-          pCurTs->makeFlatCap(&tubeGpuBuilder(), true, m_f1, m_vpt, m_e11, m_e12);
+          pCurTs->makeFlatCap(c.pmb, true, c.f1, c.vpt, c.e11, c.e12);
         }
       }
       // update prev values
-      updatePrevValues();
+      c.updatePrevValues();
       continue;
     }
 
     if (i==0) {
       // update prev values
-      updatePrevValues();
+      c.updatePrevValues();
       continue;
     }
 
-    tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+    c.pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
     // Hit names (pick pass): one name for the whole segment strip, so the
     // residue boundary lies on a ring (see TubeSection::doTess).
-    tubeGpuBuilder().loadName(m_nHitName);
-    tubeGpuBuilder().startTriangleStrip();
+    c.pmb->loadName(c.nHitName);
+    // Draw only the new ring if the previous strip's ring can be reused
+    const bool bBand = bRingDrawn && isRingBandOK(c, pCoeff);
+    if (bBand)
+      c.pmb->startRingBand();
+    else
+      c.pmb->startRingStrip();
     
     for (j=0; j<=pCurTs->getSize(); j++) {
       char nt = pCurTs->getSfType(j);
       bool bb = false;
-      if (isHelixBackCol(ss_type, nt))
-        tubeGpuBuilder().color(m_pCurHBCol);
+      if (isHelixBackCol(c, ss_type, nt))
+        c.pmb->color(c.pCurHBCol);
       else if (isSheetSideCol(ss_type, nt))
-        tubeGpuBuilder().color(m_pCurSSCol);
+        c.pmb->color(c.pCurSSCol);
       else {
         bb = true;
-        tubeGpuBuilder().color(m_pCol);
+        c.pmb->color(c.pCol);
       }
 
-      g1 = pCurTs->getVec(j, m_e11, m_e12);
-      g2 = pCurTs->getVec(j, m_e21, m_e22);
-      dg1 = pCurTs->getNormVec(j, m_e11, m_e12);
-      dg2 = pCurTs->getNormVec(j, m_e21, m_e22);
-      tubeGpuBuilder().normal(dg1);
-      tubeGpuBuilder().vertex(m_f1+g1);
-      
-      if (bb && isSmoothColor())
-        tubeGpuBuilder().color(m_pPrevCol);
+      g1 = pCurTs->getVec(j, c.e11, c.e12);
+      dg1 = pCurTs->getNormVec(j, c.e11, c.e12);
+      c.pmb->normal(dg1);
+      c.pmb->vertex(c.f1+g1);
+      if (bBand) continue;
 
-      tubeGpuBuilder().normal(dg2);
-      tubeGpuBuilder().vertex(m_f2+g2);
+      g2 = pCurTs->getVec(j, c.e21, c.e22);
+      dg2 = pCurTs->getNormVec(j, c.e21, c.e22);
+      if (bb && isSmoothColor())
+        c.pmb->color(c.pPrevCol);
+
+      c.pmb->normal(dg2);
+      c.pmb->vertex(c.f2+g2);
     }
-    tubeGpuBuilder().end();
-    tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL);
+    c.pmb->end();
+    bRingDrawn = true;
+    c.pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     // pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
 
     // postprocessing
-    updatePrevValues();
+    c.updatePrevValues();
   }
   
 }
@@ -505,7 +498,7 @@ Vector4D calcDnorm(const Vector4D &sect, const Vector4D &escl, const Vector4D &v
 }
 }
 
-void RibbonRenderer::renderJct(DisplayContext *pdl,
+void RibbonRenderer::renderJct(SegCtx &c,
                                char ss_type,
                                TubeSection *pCurTs,
                                JctTable *pJct,
@@ -521,30 +514,33 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
   const int ndelta = pJct->getSize();
 
   // initialize previous E scale
-  pJct->get(0, dpar, m_prev_escl);
+  pJct->get(0, dpar, c.prev_escl);
   double prev_dpar = -1.0;
+
+  // a strip of this junction has been drawn (its ring can be shared)
+  bool bRingDrawn = false;
 
   for (i=0; i<ndelta; i++) {
     // Get E-scale value
     pJct->get(i, dpar, escl);
     const double par = fcstart + dpar;
 
-    if (!setupHelper(pdl, pCurTs, i, par, pCoeff)) {
+    if (!setupHelper(c, pCurTs, i, par, pCoeff)) {
       // make the tube's start cap
       // (junction is not a coil so always render the flat cap)
-      tubeGpuBuilder().color(m_pCol);
-      pCurTs->makeFlatCap(&tubeGpuBuilder(), true, m_f1, m_vpt, m_e11, m_e12);
+      c.pmb->color(c.pCol);
+      pCurTs->makeFlatCap(c.pmb, true, c.f1, c.vpt, c.e11, c.e12);
       // update prev values
-      updatePrevValues();
-      m_prev_escl = escl;
+      c.updatePrevValues();
+      c.prev_escl = escl;
       prev_dpar = dpar;
       continue;
     }
 
     if (i==0) {
       // update prev values
-      updatePrevValues();
-      m_prev_escl = escl;
+      c.updatePrevValues();
+      c.prev_escl = escl;
       prev_dpar = dpar;
       continue;
     }
@@ -553,67 +549,74 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
       // dpar value is degenerated (i.e. is the same as the previous one)
       // --> discontinuous part of the junction, such as the arrow head
       // --> Render the partitions at the arrowhead junction
-      tubeGpuBuilder().color(m_pCol);
-      pCurTs->makeDisconJct(&tubeGpuBuilder(), m_f1, m_vpt.normalize(), m_e11, m_e12, m_prev_escl, escl);
-      updatePrevValues();
-      m_prev_escl = escl;
+      c.pmb->color(c.pCol);
+      pCurTs->makeDisconJct(c.pmb, c.f1, c.vpt.normalize(), c.e11, c.e12, c.prev_escl, escl);
+      c.updatePrevValues();
+      c.prev_escl = escl;
       prev_dpar = dpar;
       continue;
     }
 
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
-    tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+    c.pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     // Hit names (pick pass): one name for the whole segment strip, so the
     // residue boundary lies on a ring (see TubeSection::doTess).
-    tubeGpuBuilder().loadName(m_nHitName);
-    tubeGpuBuilder().startTriangleStrip();
+    c.pmb->loadName(c.nHitName);
+    // Draw only the new ring if the previous strip's ring can be reused
+    const bool bBand = bRingDrawn && isRingBandOK(c, pCoeff);
+    if (bBand)
+      c.pmb->startRingBand();
+    else
+      c.pmb->startRingStrip();
     
-    const Vector4D xe11 = m_e11.scale(escl.x());
-    const Vector4D xe12 = m_e12.scale(escl.y());
-    const Vector4D xe21 = m_e21.scale(m_prev_escl.x());
-    const Vector4D xe22 = m_e22.scale(m_prev_escl.y());
+    const Vector4D xe11 = c.e11.scale(escl.x());
+    const Vector4D xe12 = c.e12.scale(escl.y());
+    const Vector4D xe21 = c.e21.scale(c.prev_escl.x());
+    const Vector4D xe22 = c.e22.scale(c.prev_escl.y());
 
-    const Vector4D te11 = m_e11.scale(escl.y());
-    const Vector4D te12 = m_e12.scale(escl.x());
-    const Vector4D te21 = m_e21.scale(m_prev_escl.y());
-    const Vector4D te22 = m_e22.scale(m_prev_escl.x());
+    const Vector4D te11 = c.e11.scale(escl.y());
+    const Vector4D te12 = c.e12.scale(escl.x());
+    const Vector4D te21 = c.e21.scale(c.prev_escl.y());
+    const Vector4D te22 = c.e22.scale(c.prev_escl.x());
 
     for (j=0; j<=pCurTs->getSize(); j++) {
       char nt = pCurTs->getSfType(j);
       bool bb = false;
-      if (isHelixBackCol(ss_type, nt))
-        tubeGpuBuilder().color(m_pCurHBCol);
+      if (isHelixBackCol(c, ss_type, nt))
+        c.pmb->color(c.pCurHBCol);
       else if (isSheetSideCol(ss_type, nt))
-        tubeGpuBuilder().color(m_pCurSSCol);
+        c.pmb->color(c.pCurSSCol);
       else {
         bb = true;
-        tubeGpuBuilder().color(m_pCol);
+        c.pmb->color(c.pCol);
       }
 
       g1 = pCurTs->getVec(j, xe11, xe12);
-      g2 = pCurTs->getVec(j, xe21, xe22);
       dg1 = pCurTs->getNormVec(j, te11, te12) +
-        calcDnorm(pCurTs->getSectTab(j), escl, m_vpt);
+        calcDnorm(pCurTs->getSectTab(j), escl, c.vpt);
+
+      c.pmb->normal(dg1);
+      c.pmb->vertex(c.f1+g1);
+      if (bBand) continue;
+
+      g2 = pCurTs->getVec(j, xe21, xe22);
       dg2 = pCurTs->getNormVec(j, te21, te22) +
-        calcDnorm(pCurTs->getSectTab(j), m_prev_escl, m_prev_vpt);
-
-      tubeGpuBuilder().normal(dg1);
-      tubeGpuBuilder().vertex(m_f1+g1);
-      
+        calcDnorm(pCurTs->getSectTab(j), c.prev_escl, c.prev_vpt);
       if (bb && isSmoothColor())
-        tubeGpuBuilder().color(m_pPrevCol);
+        c.pmb->color(c.pPrevCol);
 
-      tubeGpuBuilder().normal(dg2);
-      tubeGpuBuilder().vertex(m_f2+g2);
+      c.pmb->normal(dg2);
+      c.pmb->vertex(c.f2+g2);
     }
-    tubeGpuBuilder().end();
-    tubeGpuBuilder().setPolygonMode(gfx::DisplayContext::POLY_FILL);
+    c.pmb->end();
+    bRingDrawn = true;
+    c.pmb->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
 
     // postprocessing
-    updatePrevValues();
-    m_prev_escl = escl;
+    c.updatePrevValues();
+    c.prev_escl = escl;
     prev_dpar = dpar;
   }
 
@@ -623,16 +626,6 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
 
 void RibbonRenderer::propChanged(qlib::LPropEvent &ev)
 {
-  if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    // Only the colors change: the base classes' invalidateDisplayCache()
-    // calls turn into an in-place color update of the GPU mesh
-    tubeGpuBeginColorOnly();
-    super_t::propChanged(ev);
-    tubeGpuEndColorOnly();
-    return;
-  }
-
   if (ev.getParentName().equals("helix")||
       ev.getParentName().equals("sheet")||
       ev.getParentName().equals("coil")||
@@ -651,44 +644,6 @@ void RibbonRenderer::propChanged(qlib::LPropEvent &ev)
   }
 
   super_t::propChanged(ev);
-}
-
-/////////////////////////////////////////////////////
-// GPU mesh
-
-void RibbonRenderer::display(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplay(pdc))
-    super_t::display(pdc);
-}
-
-void RibbonRenderer::displayPick(DisplayContext *pdc)
-{
-  if (!tubeGpuDisplayPick(pdc))
-    super_t::displayPick(pdc);
-}
-
-void RibbonRenderer::invalidateDisplayCache()
-{
-  tubeGpuOnInvalidateDisplay();
-  super_t::invalidateDisplayCache();
-}
-
-void RibbonRenderer::objectChanged(qsys::ObjectEvent &ev)
-{
-  if (tubeGpuOnAtomsMoved(ev)) {
-    // Positions changed but topology/colors did not: the vertices are
-    // rewritten in place on the next display()
-    updateMovedAtoms();
-    return;
-  }
-  super_t::objectChanged(ev);
-}
-
-void RibbonRenderer::unloading()
-{
-  tubeGpuUnload();
-  super_t::unloading();
 }
 
 void RibbonRenderer::setHelixSmooth(double d)

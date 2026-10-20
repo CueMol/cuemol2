@@ -19,6 +19,7 @@ TubeRenderer.cpp
 TubeSection.cpp
 TubeMeshBuilder.cpp
 TubeGpuSupport.cpp
+SplineTubeRenderer.cpp
 RibbonRenderer.cpp
 Ribbon2Renderer.cpp
 JctTable.cpp
@@ -30,27 +31,10 @@ TraceStickRenderer.cpp
 RainbowColoring.cpp
 # ScriptColoring.cpp
 DistPickDrawObj.cpp
-)
-
-#
-# Vendored (ALGLIB-based smooth-spline): imported third-party, not hand-edited
-#
-SET(MOLVIS_VENDORED_SRCS
 smospl/SmoothSpline.cpp
-smospl/linalg.cpp
-smospl/spline_internal.cpp
-smospl/alglibinternal.cpp
-smospl/smoothspline_impl.cpp
-smospl/spline_util.cpp
-smospl/ap.cpp
-smospl/spline_impl2.cpp
+smospl/ReinschSpline.cpp
+smospl/PenalizedSpline.cpp
 )
-
-# Suppress warnings for vendored sources only (first-party files above keep warnings).
-set_source_files_properties(${MOLVIS_VENDORED_SRCS}
-  PROPERTIES COMPILE_OPTIONS "$<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>")
-
-LIST(APPEND MOLVIS_SRCS ${MOLVIS_VENDORED_SRCS})
 
 ##########
 # CueMol interface definitions for MCWRAPGEN
