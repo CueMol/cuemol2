@@ -150,7 +150,7 @@ meshms も 32 で頂点予算が発火している。detail 6 はどのガード
   detail で表示) は前者の領域にある。高 detail で小さい対象を見るときは meshms に
   切り替えるのが素直。
 - **MeshMS には約 9 ms の下限がある** (1CRN の detail 2-6 が頭打ちになっている)。
-  density 非依存の RS 計算で、レンダラは `MolSurfObj` と違って `RSCache` を持たない
+  density 非依存の RS 計算で、レンダラは `RSCache` を持たない (`MolSurfObj` も同様)
   ので毎回払う。大分子ではこれが上表の時間のかなりの部分を占める。
 - **EDTSurf は大きな分子では detail が効かなくなる**。`boxlength > 300` で自動的に
   スケールを落とす (`ProteinSurface::initpara`) ため、6 / 16 / 32 で頂点数も時間も
@@ -378,9 +378,9 @@ pRF->registAlias("dsurf2", "dsurface", {{"surfalgor", "distfield"}});
 
 ## 今後の課題
 
-- **MeshMS の `RSCache` は持たせない (計測して見送った)**: `MolSurfObj` は density
-  非依存の RS 成分をキャッシュして再生成を速くしている (`meshms-ses-backend.md`)。
-  レンダラにも同じものを入れるか検討し、RS と meshing を分けて計測した (Release):
+- **MeshMS の `RSCache` は持たせない (計測して見送った)**: density 非依存の RS 成分を
+  キャッシュすれば detail 変更時の再生成は速くなる。`MolSurfObj` も以前は持っていたが、
+  同じ理由で廃止した (`meshms-ses-backend.md`)。RS と meshing を分けて計測した (Release):
 
   | | 1CRN (327 原子) | 70632 原子 |
   |---|---|---|

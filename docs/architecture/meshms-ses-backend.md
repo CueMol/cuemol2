@@ -207,24 +207,36 @@ CI (Linux) は MeshMS 既定での全 ctest に加えて、`CUEMOL_SES_BACKEND=b
   とは別に MeshMS を直接呼び、density 変換係数も BALL 基準ではなく EDTSurf 基準の
   別係数を使う。RSCache は持たない。
 
-## RSCache による再生成高速化
+## RSCache は持たない
 
 MeshMS は density 非依存の計算 (SAS arrangement = RS 成分) と density 依存の
 メッシュ化を分離した API を持つ:
 `compute_rs_from_array()` → `shared_ptr<RSCache>` → `build_mesh_from_cache()`。
+`MolSurfObj` はこの 2 つを生成のたびに続けて呼び、RS は生成が終わった時点で捨てる。
 
-`MolSurfObj` はこの cache を非永続メンバで保持する
-(`m_pMeshMSCache` + 検証用の `m_meshMSCachedAry` / `m_dMeshMSCachedProbeR`):
+以前は RS をメンバに保持し、「density だけ変えた regenerateSES」
+(RegenMolSurfDialog の典型操作) でメッシュ化だけを再実行していた。これをやめた理由:
 
-- ヘッダは `namespace meshms { struct RSCache; }` の**前方宣言のみ**
-  (`shared_ptr` は不完全型メンバ可)。ENABLE_MESHMS=OFF ビルドでも null メンバ
-  として無害で、MolSurfObj.hpp は MeshMS ヘッダに依存しない。
-- **再利用条件**: probe_r が一致し、かつ入力球配列が **bit-exact** に一致
-  (自前比較。`Vector4D::operator==` は F_EPS8 許容誤差付きなので使わない)。
-  座標・選択・vdW 半径のどんな変更も配列比較で検出され、stale cache を防ぐ。
-- ヒットするのは「density だけ変えた regenerateSES」(RegenMolSurfDialog の
-  典型操作)。メッシュ化のみ再実行され大幅に速い。
-- cache はシリアライズしない。qdf 読み込み後の初回再生成はフル計算。
+- **常駐メモリが大きい**: RS は原子あたり約 3 KB で、MolSurfObj が存在する間ずっと
+  残る。一度も再生成しない表面でも、座標が変わって使えなくなった後でも解放されない。
+- **効く場面が狭い**: ヒットするのは分子・選択・probe・vdW 半径を変えずに density
+  だけ変えた再生成のみ。
+- **短縮幅が小さい**: MeshMS の高速化 (CueMol/MeshMS#12, #14) の後では、
+  再生成の時間差は小分子で数十 ms 以下。
+
+実測 (MeshMS main 9292f2f、Apple M-series 8 コア、deploy ビルド、mesh_size 0.805):
+
+| 分子 | 原子数 | RS の常駐メモリ | 再生成: cache あり → なし |
+|---|--:|--:|--:|
+| 1CRN | 327 | 2 MB | 1.9 ms → 3.6 ms |
+| 4HHB | 4779 | 17 MB | 22 ms → 45 ms |
+| 1AON | 58870 | 177 MB | 0.33 s → 0.61 s |
+| 4V6X | 237685 | 721 MB | 1.48 s → 2.75 s |
+
+「cache あり」はメッシュ化 + flap 除去のみ、「なし」は RS 計算を含む生成全体。
+
+`dsurface` (`DirectSurfRenderer`) も同じ理由で RSCache を持たない
+([direct-surface-renderer.md](direct-surface-renderer.md))。
 
 ## MeshMS 側の多成分対応 (前提条件)
 
