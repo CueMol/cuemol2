@@ -16,14 +16,6 @@
 #include <modules/molstr/Selection.hpp>
 #include <modules/molstr/molstr.hpp>
 
-#include <memory>
-
-namespace meshms {
-  // Opaque MeshMS RS-component cache (defined inside libMeshMS; only ever held
-  // through a shared_ptr here, so no MeshMS header is needed in this header).
-  struct RSCache;
-}
-
 namespace surface {
 
   using qlib::Vector4D;
@@ -236,15 +228,6 @@ namespace surface {
 
     /// Requested SES backend (SESBK_*); resolved per generation
     int m_nSesBackend;
-
-    /// MeshMS density-independent RS cache for fast re-meshing when only the
-    /// density changes (non-persistent; never serialized). Reused only when
-    /// the inputs below match the new request exactly.
-    std::shared_ptr<meshms::RSCache> m_pMeshMSCache;
-
-    /// Inputs m_pMeshMSCache was computed from (validity check on reuse)
-    std::vector<Vector4D> m_meshMSCachedAry;
-    double m_dMeshMSCachedProbeR;
 
   public:
     void setOrigMolName(const LString &nm) { m_sOrigMol = nm; }

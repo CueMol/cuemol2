@@ -647,6 +647,35 @@ TEST_P(DsurfAlgorFixture, BuildsAMeshWhoseVerticesNameRealAtoms)
     EXPECT_EQ(m_pProbe->getSurfAlgor(), nAlgor) << GetParam();
 }
 
+// Only the first conformation is surfaced (no alternate location, or 'A'), as
+// MolSurfObj does: alternates often sit on the same coordinates, which MeshMS
+// handles orders of magnitude slower. A 'B' copy of C1 placed where it would
+// bulge the surface must own no vertex.
+TEST_P(DsurfAlgorFixture, AlternateConformationsAreNotSurfaced)
+{
+    molstr::MolAtomPtr pAlt(MB_NEW molstr::MolAtom());
+    pAlt->setParentUID(m_pMol->getUID());
+    pAlt->setName("C1");
+    pAlt->setConfID('B');
+    pAlt->setElement(molstr::ElemSym::C);
+    pAlt->setChainName("A");
+    pAlt->setResIndex(molstr::ResidIndex(1));
+    pAlt->setResName("RES");
+    pAlt->setPos(Vector4D(1.5, 2.5, 0.0));
+    const int altId = m_pMol->appendAtom(pAlt);
+    ASSERT_GE(altId, 0);
+
+    m_pRend->setPropStr("surfalgor", GetParam());
+    m_pProbe->ensureMeshCache();
+
+    const int nverts = m_pProbe->m_verts.size();
+    ASSERT_GT(nverts, 0) << GetParam();
+    for (int i = 0; i < nverts; ++i) {
+        ASSERT_NE((int) m_pProbe->m_verts[i].info, altId)
+            << GetParam() << ", vertex " << i;
+    }
+}
+
 INSTANTIATE_TEST_SUITE_P(SurfAlgors, DsurfAlgorFixture,
                          ::testing::Values("edtsurf", "distfield", "meshms"));
 

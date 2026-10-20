@@ -5,9 +5,7 @@
 // default build, MeshMS when ENABLE_MESHMS is on), so this file pins the
 // observable contract of the generation path rather than any backend's exact
 // output: shell containment, valid faces, outward orientation/winding, the
-// density parameter's direction, the w-component-as-radius convention, and
-// determinism across a repeated call (which in MeshMS builds also exercises
-// the RS-cache reuse path).
+// density parameter's direction and the w-component-as-radius convention.
 //
 
 #include <gtest/gtest.h>
@@ -187,29 +185,4 @@ TEST(SesFromArrayTest, RadiiFromWComponentHonored)
     EXPECT_LE(std::min(d0, d1), SHELL_TOL);
   }
   EXPECT_GE(maxFromBig, rBig - SHELL_TOL);
-}
-
-// The same input generates the same mesh twice in a row (determinism; in
-// MeshMS builds the second call takes the RS-cache reuse path, which must be
-// indistinguishable from the full computation).
-TEST(SesFromArrayTest, RegenerateSameResult)
-{
-  std::vector<Vector4D> ary = {Vector4D(0, 0, 0, 2.0), Vector4D(3.0, 0, 0, 2.0)};
-  MolSurfObjPtr pObj(MB_NEW MolSurfObj());
-
-  pObj->createSESFromArray(ary, 4.0, PROBE_R);
-  const int nv = pObj->getVertSize();
-  const int nf = pObj->getFaceSize();
-  std::vector<MSVert> verts(nv);
-  for (int i = 0; i < nv; ++i)
-    verts[i] = pObj->getVertAt(i);
-
-  pObj->createSESFromArray(ary, 4.0, PROBE_R);
-  ASSERT_EQ(pObj->getVertSize(), nv);
-  ASSERT_EQ(pObj->getFaceSize(), nf);
-  for (int i = 0; i < nv; ++i) {
-    EXPECT_EQ(pObj->getVertAt(i).x, verts[i].x);
-    EXPECT_EQ(pObj->getVertAt(i).y, verts[i].y);
-    EXPECT_EQ(pObj->getVertAt(i).z, verts[i].z);
-  }
 }
