@@ -252,6 +252,15 @@ architecture, it belongs here.
   vertex = `defaultcolor`, separate per-mode target names,
   `setupParentData("multi_grad")` placement, `target` kept as an inert
   string) and the test map.
+- [Surface atom colouring: `AtomColorMemo` and the shared colouring pass](surface-atom-coloring.md) --
+  how `dsurface`, `molsurf` and the map isosurface colour a vertex by its
+  atom (molecule colour mode and `showsel`): the molstr pieces they share
+  (`ColSchmHolder::startColoring` / `endColoring` bracketing both the
+  renderer's and the molecule's scheme, `AtomColorMemo` resolving
+  visibility, colour and device code once per atom id,
+  `AtomPosMap2::searchNearestAtoms` in parallel), the contracts (unknown
+  atom = shown with no colour, colour only for shown atoms, one memo per
+  pass), measurements and the test map.
 - [Direct surface renderer (`dsurface`): アルゴリズム選択と detail の統一](direct-surface-renderer.md) (日本語) --
   the `surfalgor` property (`edtsurf` / `distfield` / `meshms`) that merged
   the former `dsurf2` renderer into `dsurface`: how one `detail` value is

@@ -234,8 +234,8 @@ potential / multigrad 着色では `ScalarColorSupport::rampColor()` と
 - 頂点レコード `VertCol{cid1, cid2, double rho}` = **16 B**。`rho` を float にすると
   整数境界近傍で 1 LSB ずれ、「exporter 出力バイト同一」が崩れるので double。
 - palette の dedupe は「ポインタ同一 → 値 (getCode(), getMaterial())」の 2 段。値 dedupe が
-  要るのは `MolSurfRenderer::getColorMol` のように頂点ごとに新しい同値オブジェクトが返る
-  経路のため。ポインタ比較は **Mesh が保持しているオブジェクトに対してのみ**行う
+  要るのは頂点ごとに新しい同値オブジェクトが返りうる経路 (色付けスキームが呼び出しの
+  たびに色オブジェクトを作る場合など) のため。ポインタ比較は **Mesh が保持しているオブジェクトに対してのみ**行う
   (頂点ごとに作られて即解放される GradientColor をポインタでキャッシュすると malloc の
   アドレス再利用で誤着色する)。
 - `getCol(ColorPtr&, int)` のシグネチャは不変。solid 頂点は登録されたオブジェクトそのもの、
