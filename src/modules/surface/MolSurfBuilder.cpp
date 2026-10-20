@@ -99,22 +99,6 @@ namespace {
 
 #ifdef HAVE_MESHMS
 
-namespace {
-  /// Bit-exact array comparison for the RS-cache validity check
-  /// (Vector4D::operator== compares with a tolerance, unsuitable here).
-  bool sphereArysEqual(const std::vector<Vector4D> &a, const std::vector<Vector4D> &b)
-  {
-    if (a.size()!=b.size())
-      return false;
-    for (size_t i=0; i<a.size(); ++i) {
-      if (a[i].x()!=b[i].x() || a[i].y()!=b[i].y() ||
-          a[i].z()!=b[i].z() || a[i].w()!=b[i].w())
-        return false;
-    }
-    return true;
-  }
-}
-
 /// Converts the BALL-style point density to MeshMS's target triangle edge
 /// length. BALL has no single definition of "density": it subdivides arcs at
 /// round(arc_length * sqrt(density)) -- an edge length of 1/sqrt(density) --
@@ -143,22 +127,11 @@ void MolSurfObj::buildSESWithMeshMS(const std::vector<Vector4D> &pr_ary,
   for (size_t i=0; i<pr_ary.size(); ++i)
     xyzr[i] = { pr_ary[i].x(), pr_ary[i].y(), pr_ary[i].z(), pr_ary[i].w() };
 
-  // Reuse the density-independent RS cache when the geometry and probe are
-  // unchanged (the common regenerate-with-new-density case); otherwise
-  // recompute it and remember the inputs it was built from.
-  if (m_pMeshMSCache.get()==NULL ||
-      m_dMeshMSCachedProbeR!=probe_r ||
-      !sphereArysEqual(m_meshMSCachedAry, pr_ary)) {
-    m_pMeshMSCache = meshms::compute_rs_from_array(xyzr, probe_r);
-    m_meshMSCachedAry = pr_ary;
-    m_dMeshMSCachedProbeR = probe_r;
-  }
-  else {
-    MB_DPRINTLN("MolSurfBuilder> MeshMS RS cache hit; re-meshing only");
-  }
-
-  meshms::MeshResult mesh =
-      meshms::build_mesh_from_cache(m_pMeshMSCache, mesh_size, /*fuse=*/true);
+  // The density-independent RS components are not kept: they would stay
+  // resident for the object's lifetime (~3 KB per atom) to speed up only a
+  // regenerate that changes nothing but the density.
+  meshms::MeshResult mesh = meshms::build_mesh_from_cache(
+      meshms::compute_rs_from_array(xyzr, probe_r), mesh_size, /*fuse=*/true);
   mesh = meshms::remove_flaps(mesh);
 
   const int nverts = (int) mesh.verts.size();

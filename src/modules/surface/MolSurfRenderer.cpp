@@ -15,9 +15,12 @@
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
 //#include <modules/molstr/AtomPosMap.hpp>
+#include <modules/molstr/AtomColorMemo.hpp>
 #include <modules/molstr/AtomPosMap2.hpp>
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/MolCoord.hpp>
+
+#include <memory>
 
 //#include <gfx/DisplayList.hpp>
 //#include <mbsys/QsysModule.hpp>
@@ -77,29 +80,6 @@ bool MolSurfRenderer::isCompatibleObj(qsys::ObjectPtr pobj) const
 }
 
 ///////////////////////////////////////////////
-
-bool MolSurfRenderer::getColorMol(const Vector4D &v, ColorPtr &rcol)
-{
-  //double par;
-
-  if (m_pMol.isnull())
-    return false;
-  if (m_pAmap==NULL)
-    return false;
-
-  //Vector4D pos(x, y, z);
-  int aid = m_pAmap->searchNearestAtom(v);
-  if (aid<0) {
-    MB_DPRINTLN("nearest atom is not found at (%f,%f,%f)", v.x(), v.y(), v.z());
-    return false;
-  }
-
-  MolAtomPtr pa = m_pMol->getAtom(aid);
-  rcol = molstr::ColSchmHolder::getColor(pa);
-
-  return true;
-  //pdl->color(col);
-}
 
 bool MolSurfRenderer::isShowVert(const Vector4D &v) const
 {
@@ -218,10 +198,9 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     // MOLFANC mode
     //
     if (!m_pMol.isnull()) {
-      // initialize the coloring scheme (with the target mol, but not surface obj)
-      molstr::ColoringSchemePtr pCS = getColSchm();
-      if (!pCS.isnull())
-        pCS->start(m_pMol, this);
+      // initialize the coloring schemes (this renderer's and the target
+      // mol's, both evaluated by ColSchmHolder::getColor())
+      startColoring(m_pMol, this);
     }
     else {
       LOG_DPRINTLN("MolSurfRend> object \"%d\" is not found.", m_nTgtMolID);
@@ -233,6 +212,19 @@ void MolSurfRenderer::render(DisplayContext *pdl)
 
   std::vector<int> idmap(nvsiz);
 
+  // The atom of each vertex (the nearest one of the target mol), searched
+  // once per vertex, in parallel, for both showsel and the molecule-mode
+  // colour; both are then resolved once per atom.
+  const bool bAtoms = !m_pMol.isnull() && m_pAmap!=NULL;
+  const bool bMolCol = bAtoms && m_nMode==SFREND_MOLFANC;
+  std::vector<int> aids;
+  std::unique_ptr<molstr::AtomColorMemo> pAtoms;
+  if (bAtoms && (bMolCol || !m_pShowSel->isEmpty())) {
+    m_pAmap->searchNearestAtoms(
+        nvsiz, [pSurf](size_t k) { return pSurf->getXformVertAt((int) k).v3d(); }, aids);
+    pAtoms.reset(new molstr::AtomColorMemo(m_pMol, this, m_pShowSel, getSceneID(), bMolCol));
+  }
+
   // setup verteces
   for (i=0, j=0; i<nvsiz; i++) {
     idmap[i] = j;
@@ -241,13 +233,10 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     Vector4D pos = v.v3d();
     Vector4D norm = v.n3d();
 
-    // check pos-atom map
-    if (!m_pMol.isnull()) {
-      if (!isShowVert(pos)) {
-        // skip hidden vertex by mol selection
-        idmap[i] = -1;
-        continue;
-      }
+    // skip hidden vertex by mol selection
+    if (pAtoms && !pAtoms->get(aids[i]).bShown) {
+      idmap[i] = -1;
+      continue;
     }
 
     if (m_nMode==SFREND_SCAPOT ||
@@ -257,8 +246,12 @@ void MolSurfRenderer::render(DisplayContext *pdl)
       }
     }
     else if (m_nMode==SFREND_MOLFANC) {
-      if (getColorMol(pos, col))
-        mesh.color(col);
+      // a vertex with no nearest atom keeps the previous colour
+      if (bMolCol && aids[i]>=0) {
+        const molstr::AtomColorMemo::Entry &e = pAtoms->get(aids[i]);
+        if (e.bAtom)
+          mesh.color(e.pCol);
+      }
     }
 #ifdef USE_VERT_TYPE_ID
     else {
@@ -323,10 +316,8 @@ void MolSurfRenderer::render(DisplayContext *pdl)
   // cleanup
 
   if (m_nMode==SFREND_MOLFANC && !m_pMol.isnull()) {
-    // finalize the coloring scheme
-    molstr::ColoringSchemePtr pCS = getColSchm();
-    if (!pCS.isnull())
-      pCS->end();
+    // finalize the coloring schemes
+    endColoring(m_pMol);
   }
 
   if (m_pAmap!=NULL) {
