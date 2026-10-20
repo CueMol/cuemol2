@@ -270,6 +270,12 @@ namespace xtal {
     /// Called just before this renderer is unloaded from the view
     void unloading() override;
 
+  protected:
+    /// The GPU primitive the fill draw mode uploads (tests read its colours).
+    const gfx::TrigGpuPrim &getTrigGpuPrim() const { return m_trigGpuPrim; }
+
+  public:
+
     // virtual bool isTransp() const { return true; }
 
     ///////////////////////////////////////////////////////////////
