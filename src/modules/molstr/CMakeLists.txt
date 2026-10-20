@@ -53,6 +53,7 @@ SelectionRenderer.cpp
 Prot2ndry.cpp
 AtomPosMap.cpp
 AtomPosMap2.cpp
+AtomColorMemo.cpp
 MolArrayMap.cpp
 MolXformEditInfo.cpp
 RectSelDrawObj.cpp

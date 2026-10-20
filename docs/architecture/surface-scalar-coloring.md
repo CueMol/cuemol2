@@ -102,18 +102,22 @@ The base owns:
 - `preRender` / `postRender` / `render()` (the display-list and
   file-export path) and `propChanged`;
 - the per-vertex resolver used by every path:
-  `beginVertexColors(env)` starts the colouring schemes and resolves the
-  scalar object once, `isVertexShown(env, vert, atom)` applies `showsel`,
-  `resolveVertexColor(env, vert, atom, col)` answers by mode
-  (`DS_MOLFANC`: `ColSchmHolder::getColor(atom)` memoised per atom id;
-  `DS_SCAPOT` / `DS_MULTIGRAD`: `getScalarColor`), and
-  `endVertexColors(env)` closes the schemes.
+  `beginVertexColors(env)` starts the colouring schemes
+  (`ColSchmHolder::startColoring`), creates the per-atom memo
+  (`molstr::AtomColorMemo`, see
+  [surface-atom-coloring.md](surface-atom-coloring.md)) and resolves the
+  scalar object once; `isVertexShown(env, vert)` applies `showsel` through
+  the memo; `resolveVertexColor(env, vert, col)` answers by mode
+  (`DS_MOLFANC`: the memo's colour of the vertex's atom;
+  `DS_SCAPOT` / `DS_MULTIGRAD`: `getScalarColor`);
+  `resolveShownDevCode(env, vert, defDev, dev)` does both in one atom
+  lookup and returns the device code; and `endVertexColors(env)` closes
+  the schemes.
 
 The concrete renderer implements `buildMeshCache()` (fill `m_verts` /
 `m_faces`, `MSVert::info` = atom id) and overrides `invalidateMeshCache()`
 and `onShowSelChanged()` to drop or keep its GPU primitive; its
-`computeShownColors()` is a thin loop over the resolver that turns the
-returned colours into device codes.
+`computeShownColors()` is a thin loop over `resolveShownDevCode()`.
 
 ## Contracts
 
@@ -181,7 +185,8 @@ Run them with `cd build_scripts && task build_libcuemol2 && task run_gtest`
 
 - `molsurf` still has its own vertex loop (its molecule mode maps
   positions to atoms through `AtomPosMap2`, the direct surfaces carry the
-  atom id on the vertex); it only shares the mixin, not the resolver.
+  atom id on the vertex); it shares the mixin and the per-atom memo
+  ([surface-atom-coloring.md](surface-atom-coloring.md)), not the resolver.
 - The `surfalgor` property of `dsurface` had an unimplemented `msms`
   value at the time of writing. It was dropped when the algorithms were
   reworked; see

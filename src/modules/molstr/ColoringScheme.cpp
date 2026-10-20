@@ -63,6 +63,24 @@ bool SolidColoring::getAtomColor(MolAtomPtr pAtom, ColorPtr &pcol)
 
 //////////
 
+void ColSchmHolder::startColoring(MolCoordPtr pMol, Renderer *pRend) const
+{
+  if (!m_pcoloring.isnull())
+    m_pcoloring->start(pMol, pRend);
+  ColoringSchemePtr pMolCS = pMol->getColSchm();
+  if (!pMolCS.isnull())
+    pMolCS->start(pMol, pRend);
+}
+
+void ColSchmHolder::endColoring(MolCoordPtr pMol) const
+{
+  if (!m_pcoloring.isnull())
+    m_pcoloring->end();
+  ColoringSchemePtr pMolCS = pMol->getColSchm();
+  if (!pMolCS.isnull())
+    pMolCS->end();
+}
+
 ColorPtr ColSchmHolder::getColor(MolAtomPtr pAtom, bool bRslvMol /*= true*/) const
 {
   ColorPtr pRval;

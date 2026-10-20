@@ -759,28 +759,20 @@ int DirectSurfRenderer::computeShownColors(std::vector<int> &vidmap,
   vidmap.resize(nverts);
   vcol.resize(nverts);
 
-  const qlib::uid_t nSceneID = getSceneID();
-
   VertexColorEnv env;
   beginVertexColors(env);
 
-  const quint32 defDev = getDefaultColor()->getDevCode(nSceneID);
-  ColorPtr pcol;
+  const quint32 defDev = getDefaultColor()->getDevCode(getSceneID());
 
   // Decide shown vertices (showsel mask), assign compact indices and resolve
   // per-vertex device colors through the resolver shared with render().
   int j = 0;
   for (int i=0; i<nverts; ++i) {
-    const MSVert &v = m_verts[i];
-
-    MolAtomPtr pAtom;
-    if (!isVertexShown(env, v, pAtom)) {
+    if (!resolveShownDevCode(env, m_verts[i], defDev, vcol[i])) {
       vidmap[i] = -1;
       continue; // not shown
     }
-
     vidmap[i] = j;
-    vcol[i] = resolveVertexColor(env, v, pAtom, pcol) ? pcol->getDevCode(nSceneID) : defDev;
     ++j;
   }
 

@@ -116,6 +116,13 @@ namespace molstr {
       m_defaultColor = rc;
     }
 
+    /// Start the schemes getColor() evaluates for the atoms of pMol -- this
+    /// holder's and the molecule's own -- before a colouring pass.
+    void startColoring(MolCoordPtr pMol, Renderer *pRend) const;
+
+    /// End the schemes startColoring() started.
+    void endColoring(MolCoordPtr pMol) const;
+
   };
 
 }

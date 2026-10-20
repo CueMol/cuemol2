@@ -17,13 +17,14 @@
 #include <qlib/parallel.hpp>
 #include <qlib/EventManager.hpp>
 
-#include <unordered_map>
+#include <memory>
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
+#include <modules/molstr/AtomColorMemo.hpp>
 #include <modules/molstr/AtomIterator.hpp>
 #include <modules/molstr/AtomPosMap2.hpp>
 #include <modules/molstr/MolAtom.hpp>
@@ -533,18 +534,9 @@ void MapSurfRenderer::setupColorEnv()
       // Sync the ColoringScheme fallback color with the solid color prop
       molstr::ColSchmHolder::setDefaultColor(MapRenderer::getColor());
 
-      // initialize the coloring scheme (with the target mol)
-      molstr::ColoringSchemePtr pCS = getColSchm();
-      if (!pCS.isnull())
-        pCS->start(m_pColMol, this);
-
-      // The mol-side scheme is also evaluated by ColSchmHolder::getColor()
-      // and must be bracketed too (stateful schemes such as rainbow
-      // precompute their tables in start()); every other renderer already
-      // does this.
-      molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
-      if (!pMolCS.isnull())
-        pMolCS->start(m_pColMol, this);
+      // initialize the coloring schemes (this renderer's and the target
+      // mol's, both evaluated by ColSchmHolder::getColor())
+      startColoring(m_pColMol, this);
 
       setupXformMat();
     }
@@ -560,14 +552,8 @@ void MapSurfRenderer::setupColorEnv()
 void MapSurfRenderer::cleanupColorEnv()
 {
   // cleanup for MOLFANC mode
-  if (!m_pColMol.isnull()) {
-    molstr::ColoringSchemePtr pCS = getColSchm();
-    if (!pCS.isnull())
-      pCS->end();
-    molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
-    if (!pMolCS.isnull())
-      pMolCS->end();
-  }
+  if (!m_pColMol.isnull())
+    endColoring(m_pColMol);
   // m_pAtomPosMap is intentionally kept alive here: it is cached across
   // renders and dropped only via invalidateAtomPosMap().
   m_pColMol = MolCoordPtr();
@@ -729,16 +715,17 @@ void MapSurfRenderer::resolveAidCache()
 {
   MB_ASSERT(m_pAtomPosMap!=NULL);
 
-  // The tree was built at a defined point (ensureBuilt in makeAtomPosMap),
-  // so concurrent queries are read-only and safe; each returns a plain int.
   const size_t nverts = m_meshCache.size();
-  qlib::parallel_for(0, nverts, [&](size_t i) {
-    CachedVert &cv = m_meshCache[i];
+  std::vector<int> aids;
+  m_pAtomPosMap->searchNearestAtoms(nverts, [&](size_t i) {
+    const CachedVert &cv = m_meshCache[i];
     Vector4D vv(cv.x, cv.y, cv.z);
     vv.w() = 1.0;
     m_xform.xform4D(vv);
-    cv.aid = m_pAtomPosMap->searchNearestAtom(vv);
-  });
+    return vv;
+  }, aids);
+  for (size_t i=0; i<nverts; ++i)
+    m_meshCache[i].aid = aids[i];
 
   m_bAidValid = true;
 
@@ -759,32 +746,20 @@ void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
   const bool bMolFanc = (cmode==MapRenderer::MAPREND_MOLFANC &&
                          m_bAidValid && !m_pColMol.isnull());
   const bool bColor = (cmode!=MapRenderer::MAPREND_SIMPLE);
-  std::unordered_map<int, ColorPtr> colmemo;
+  std::unique_ptr<molstr::AtomColorMemo> pAtoms;
+  if (bMolFanc)
+    pAtoms.reset(new molstr::AtomColorMemo(m_pColMol, this, SelectionPtr(), getSceneID()));
 
   const size_t nverts = m_meshCache.size();
   for (size_t i=0; i<nverts; ++i) {
     const CachedVert &cv = m_meshCache[i];
     const Vector4D pos(cv.x, cv.y, cv.z);
     if (bMolFanc) {
-      if (cv.aid>=0) {
-        std::unordered_map<int, ColorPtr>::const_iterator it =
-            colmemo.find(cv.aid);
-        ColorPtr pcol;
-        if (it==colmemo.end()) {
-          MolAtomPtr pa = m_pColMol->getAtom(cv.aid);
-          if (!pa.isnull())
-            pcol = molstr::ColSchmHolder::getColor(pa);
-          colmemo.insert(
-              std::unordered_map<int, ColorPtr>::value_type(cv.aid, pcol));
-        }
-        else {
-          pcol = it->second;
-        }
-        // on failure (null), the previously set color remains in effect --
-        // same semantics as the historical getColorMol failure path
-        if (!pcol.isnull())
-          pdl->color(pcol);
-      }
+      // on failure (no atom or no color), the previously set color remains
+      // in effect -- same semantics as the historical getColorMol failure path
+      const ColorPtr &pcol = pAtoms->get(cv.aid).pCol;
+      if (!pcol.isnull())
+        pdl->color(pcol);
     }
     else if (bColor) {
       setVertexColor(pdl, pos);
@@ -798,9 +773,8 @@ void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
   }
 
   // benchmark timing (uncomment when profiling):
-  // LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms "
-  //              "(colormode=%d, %d verts, memo %d atoms)",
-  //              replay_ms, cmode, (int) nverts, (int) colmemo.size());
+  // LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms (colormode=%d, %d verts)",
+  //              replay_ms, cmode, (int) nverts);
 }
 
 void MapSurfRenderer::invalidateMeshCache()
@@ -1201,27 +1175,10 @@ void MapSurfRenderer::resolveVertexColors(std::vector<quint32> &vcols)
     // per-atom memoized colors (schemes are evaluated once per atom);
     // unresolved vertices keep the base color, matching the DL path where
     // the baked base color remains in effect on lookup failure
-    std::unordered_map<int, quint32> memo;
+    molstr::AtomColorMemo atoms(m_pColMol, this, SelectionPtr(), nSceneID);
     for (size_t i=0; i<nverts; ++i) {
-      const qint32 aid = m_meshCache[i].aid;
-      quint32 col = basecol;
-      if (aid>=0) {
-        std::unordered_map<int, quint32>::const_iterator it = memo.find(aid);
-        if (it==memo.end()) {
-          MolAtomPtr pa = m_pColMol->getAtom(aid);
-          if (!pa.isnull()) {
-            ColorPtr pcol = molstr::ColSchmHolder::getColor(pa);
-            if (!pcol.isnull())
-              col = pcol->getDevCode(nSceneID);
-          }
-          memo.insert(
-              std::unordered_map<int, quint32>::value_type(aid, col));
-        }
-        else {
-          col = it->second;
-        }
-      }
-      vcols[i] = col;
+      const molstr::AtomColorMemo::Entry &e = atoms.get(m_meshCache[i].aid);
+      vcols[i] = e.pCol.isnull() ? basecol : e.nDevCode;
     }
   }
   else if (cmode==MapRenderer::MAPREND_MULTIGRAD &&
