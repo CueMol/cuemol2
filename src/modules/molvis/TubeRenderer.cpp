@@ -139,6 +139,10 @@ void TubeRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
   ColorPtr pCol, pPrevCol;
   // Hit names (pick pass) of the current and previous drawing points
   int hitName = -1;
+  // parameter of the previous drawing point, and whether a strip has been
+  // drawn (its ring can be shared)
+  double prev_par = fstart;
+  bool bRingDrawn = false;
 
   // Main loop for each drawing point
   //  i: drawing point index from 0 to ndelta
@@ -212,17 +216,23 @@ void TubeRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
     // Hit names (pick pass): one name for the whole segment strip, so the
     // residue boundary lies on a ring (see TubeSection::doTess).
     pmb->loadName(hitName);
-    pmb->startTriangleStrip();
+    // Draw only the new ring if the previous strip's ring can be reused
+    const bool bBand = bRingDrawn && pmb->hasRing() && canShareRing(prev_par, par, pCoeff);
+    if (bBand)
+      pmb->startRingBand();
+    else
+      pmb->startRingStrip();
 
     for (j=0; j<=m_pts->getSize(); j++) {
       g1 = m_pts->getVec(j, e11, e12);
-      g2 = m_pts->getVec(j, e21, e22);
       dg1 = m_pts->getNormVec(j, e11, e12);
-      dg2 = m_pts->getNormVec(j, e21, e22);
       pmb->normal(dg1);
       pmb->color(pCol);
       pmb->vertex(f1+g1);
+      if (bBand) continue;
 
+      g2 = m_pts->getVec(j, e21, e22);
+      dg2 = m_pts->getNormVec(j, e21, e22);
       pmb->normal(dg2);
       if (isSmoothColor())
         pmb->color(pPrevCol);
@@ -233,6 +243,7 @@ void TubeRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
     }
 
     pmb->end();
+    bRingDrawn = true;
 
     //pdl->startLines();
     //BOOST_FOREACH (const Vector4D &elem, tmpv) {
@@ -253,6 +264,7 @@ void TubeRenderer::renderSplineTo(TubeMeshBuilder *pmb, SplineCoeff *pCoeff,
     prev_e2 = e12;
     prev_f = f1;
     pPrevCol = pCol;
+    prev_par = par;
   }
   
   pmb->setLighting(false);

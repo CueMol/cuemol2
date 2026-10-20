@@ -45,6 +45,13 @@ using qlib::Vector4D;
 ///    whether the traversal produced exactly the same topology; if not, the
 ///    caller has to rebuild.
 ///
+/// Ring bands (Build and Update only): a tube body is a series of rings of
+/// section vertices. Drawn as triangle strips, every strip holds two rings,
+/// so each ring is computed and stored twice. A renderer can instead start
+/// the first strip with startRingStrip() and continue with startRingBand(),
+/// which takes the vertices of the new ring only and connects them to the
+/// previous ring by index, with the same triangles as the strip it replaces.
+///
 class MOLVIS_API TubeMeshBuilder
 {
 public:
@@ -58,12 +65,18 @@ public:
 
     static const int PRIM_STRIP = 0;
     static const int PRIM_FAN = 1;
+    /// Triangles between the previous ring (ref, refStride) and the count
+    /// vertices from first: the strip new0, old0, new1, old1, ...
+    static const int PRIM_BAND = 2;
 
     struct Prim
     {
         int type;
         int first;
         int count;
+        /// PRIM_BAND: first vertex and vertex stride of the previous ring
+        int ref = -1;
+        int refStride = 0;
     };
 
     /// A part of the traversal that can be re-run on its own (one segment):
@@ -177,6 +190,28 @@ public:
     void startTriangleStrip();
     void startTriangleFan();
 
+    /// A triangle strip of ring pairs (new ring vertex, previous ring vertex)
+    /// whose new-ring vertices a following startRingBand() can reuse.
+    void startRingStrip();
+
+    /// A band of the vertices of a new ring only, connected to the ring of
+    /// the preceding ring strip or band (hasRing() must be true). The band
+    /// must have as many vertices as that ring.
+    void startRingBand();
+
+    /// True if the last primitive was a ring strip or band whose ring
+    /// startRingBand() can connect to (never in direct mode, nor when ring
+    /// sharing is disabled).
+    bool hasRing() const
+    {
+        return s_bShareRings && isRecording() && m_nRingFirst >= 0;
+    }
+
+    /// Enable / disable ring bands for all builders (enabled by default;
+    /// disabled, the renderers draw every strip with both rings).
+    static void setRingSharing(bool b) { s_bShareRings = b; }
+    static bool isRingSharing() { return s_bShareRings; }
+
     void vertex(const Vector4D &v)
     {
         if (m_nMode == MODE_UPDATE && m_dst.pos != nullptr && m_nVertCur < m_nVerts) {
@@ -247,6 +282,16 @@ private:
     // primitive in progress
     int m_nPrimType;
     int m_nPrimFirst;
+    // the primitive in progress is a ring strip / band
+    bool m_bRingPrim;
+
+    // the ring a band can connect to: its first vertex, the stride between
+    // its vertices and their number (m_nRingFirst < 0: none)
+    int m_nRingFirst;
+    int m_nRingStride;
+    int m_nRingSize;
+
+    static bool s_bShareRings;
 
     // number of recorded vertices (kept after releaseVertexData())
     int m_nVerts;
@@ -286,7 +331,8 @@ private:
     {
         return m_nMode == MODE_BUILD || m_nMode == MODE_UPDATE;
     }
-    void startPrim(int nType);
+    void startPrim(int nType, bool bRing = false);
+    void resetRing() { m_nRingFirst = -1; }
 
     void colorSlow(const gfx::ColorPtr &pCol);
     void loadNameSlow(int nName);

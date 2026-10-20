@@ -55,8 +55,19 @@ public:
     static constexpr int TG_PASS_NONE = 0;     ///< nothing to do
     static constexpr int TG_PASS_BUILD = 1;    ///< (re)built
     static constexpr int TG_PASS_SERIAL = 2;   ///< updated by the serial traversal
-    static constexpr int TG_PASS_CHUNKED = 3;  ///< updated chunk by chunk (parallel)
+    static constexpr int TG_PASS_CHUNKED = 3;  ///< updated chunk by chunk (see tubeGpuLastParallel())
     int tubeGpuLastPass() const { return m_nLastPass; }
+    /// True if the last chunked update ran its chunks in parallel
+    bool tubeGpuLastParallel() const { return m_bParallel; }
+
+    /// Below this many vertices the chunked update runs its chunks one after
+    /// another on the calling thread: the work of a small mesh (a few ms or
+    /// less) is smaller than the cost of waking the worker threads, which
+    /// then spin looking for more work before they sleep (on the M4, about
+    /// 6 ms of CPU per update for a 0.1 M vertex ribbon).
+    static constexpr int TG_DEFAULT_PARALLEL_MIN_VERTS = 256 * 1024;
+    static void setParallelMinVerts(int n) { s_nParallelMinVerts = n; }
+    static int getParallelMinVerts() { return s_nParallelMinVerts; }
 
     /// The GPU primitive the mesh is drawn from.
     const gfx::TrigGpuPrim &tubeGpuPrim() const { return m_prim; }
@@ -169,6 +180,10 @@ private:
     int m_nLastPass;
     /// Set by updateMesh() when the chunked update ran
     bool m_bChunked;
+    /// Set by updateMesh() when the chunked update ran in parallel
+    bool m_bParallel;
+
+    static int s_nParallelMinVerts;
 
     void build(DisplayContext *pdc, int nPolyMode);
 
