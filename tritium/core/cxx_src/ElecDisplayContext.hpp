@@ -90,6 +90,15 @@ public:
     /// JS side can hand the same backing store to gl.bufferData
     /// without any C++ to V8 memcpy.
     virtual void allocBuffer(gfx::AbstDrawAttrs &ada, int nvert, int nind) override;
+
+    /// allocBuffer() takes one V8 ArrayBuffer per buffer. In the renderer's
+    /// worker of Electron 42 an ArrayBuffer of 2 GiB - 2 MiB is allocated and
+    /// one of 2 GiB - 1 byte fails (PartitionAlloc's single-allocation limit;
+    /// probed on macOS / M4, 2026-10-21). Keep a margin below that.
+    virtual size_t getMaxBufferBytes() const override
+    {
+        return (size_t(2) << 30) - (size_t(64) << 20);
+    }
 };
 
 }  // namespace node_jsbr
