@@ -34,8 +34,16 @@ call pnpm install --ignore-scripts
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 popd
 
+REM cmake-js defaults to the Visual Studio generator with cl. For clang-cl
+REM (win_cc.bat) use Ninja instead, which needs no VS ClangCL toolset;
+REM CUEMOL_WIN_CC=cl keeps the cmake-js default.
+call %SCRIPT_DIR%..\win_cc.bat
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+SET CMAKEJS_WIN_OPT=
+if /I not "%CUEMOL_WIN_CC%"=="cl" SET CMAKEJS_WIN_OPT=--generator Ninja %WIN_CC_COMPILER_OPT:-D=--CD%
+
 pushd %TOP_DIR%\tritium\core
-call npx cmake-js build --CDLIBCUEMOL2_ROOT=%INSTPATH% --CDBoost_ROOT=%BOOST_DIR% --config Release
+call npx cmake-js build %CMAKEJS_WIN_OPT% --CDLIBCUEMOL2_ROOT=%INSTPATH% --CDBoost_ROOT=%BOOST_DIR% --config Release
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo on

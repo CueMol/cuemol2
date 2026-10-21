@@ -44,6 +44,7 @@ add_executable(test_qlib
   qlib/test_line_stream.cpp
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
+  qlib/test_chunked_vector.cpp
   qlib/test_seekable_stream.cpp
   qlib/test_lvardict.cpp
   qlib/test_lbytearray.cpp
@@ -226,6 +227,7 @@ add_executable(test_surface
   modules/surface/test_ses_from_array.cpp
   modules/surface/test_reader_validation.cpp
   modules/surface/test_elepot_symop_fixes.cpp
+  modules/surface/test_surf_atom_color.cpp
 )
 target_include_directories(test_surface PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -262,6 +264,7 @@ add_executable(test_xtal
   modules/xtal/test_maprenderer_color.cpp
   modules/xtal/test_maprenderer_region.cpp
   modules/xtal/test_mapsurf_molfanc.cpp
+  modules/xtal/test_mapsurf_atom_color.cpp
   modules/xtal/test_mapsurf_pin.cpp
   modules/xtal/test_mapsurf_viewregion.cpp
   modules/xtal/test_multigrad_undo.cpp

@@ -8,6 +8,8 @@
 
 #include "gfx.hpp"
 
+#include <cstddef>
+#include <limits>
 #include <vector>
 
 #include <qlib/Vector4D.hpp>
@@ -689,6 +691,14 @@ public:
     /// land directly in V8 ArrayBuffer backing storage (no memcpy).
     /// nind == 0 means no index buffer.
     virtual void allocBuffer(AbstDrawAttrs &ada, int nvert, int nind);
+
+    /// The largest vertex or index buffer, in bytes, allocBuffer() can
+    /// allocate in one piece. A renderer whose buffer would be larger does
+    /// not draw instead of failing the allocation. Default: no limit.
+    virtual size_t getMaxBufferBytes() const
+    {
+        return std::numeric_limits<size_t>::max();
+    }
 
 protected:
     PixGpuPrim *m_pPixGpuPrim = nullptr;

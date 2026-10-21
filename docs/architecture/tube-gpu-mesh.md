@@ -180,14 +180,20 @@ cartoon (`Ribbon2Renderer`) は、セグメントの中の helix / sheet / coil 
 | 塊 (この順に並ぶ) | 1 頂点 | 形式 |
 |---|---|---|
 | 位置 | 12 B | float x3 |
-| 法線 | 4 B | `GL_INT_2_10_10_10_REV` (`TrigGpuPrim::packNormal()`、正規化、w = 1。shader は `vec4 aNormal` の `.xyz`) |
+| 法線 | 8 B | short x4 (`TrigGpuPrim::packNormal()`、符号付き正規化、w = 1。shader は `vec4 aNormal` の `.xyz`) |
 | 色 | 4 B | RGBA (unsigned byte) |
 | hit name | 4 B | uint32 (pick pass だけが読む) |
 
-- 位置と法線が隣り合うので、座標の更新は先頭の 16 B/頂点、色の更新は色の塊 4 B/頂点だけを送る
+- 位置と法線が隣り合うので、座標の更新は先頭の 20 B/頂点、色の更新は色の塊 4 B/頂点だけを送る
   (`TrigGpuPrim::markUpdated(UPD_GEOM / UPD_COLOR)` -> `AbstDrawElem::setUpdatedRange`)
-- 属性ごとの stride (`AbstDrawAttrs::setAttrStride`) と型 `QTC_INT_2_10_10_10_REV` は addon (`EcBufferRep`、
+- 属性ごとの stride (`AbstDrawAttrs::setAttrStride`) と型 (法線は `QTC_INT16`) は addon (`EcBufferRep`、
   JSON の `stride`) / WebGL (`BufferStore`) / OpenGL (`OcBufferRep`) が解釈する
+- 法線を `GL_INT_2_10_10_10_REV` (4 B) にしないのは Windows (ANGLE の D3D11 backend) のため。D3D11 には
+  符号付き 10-10-10-2 の頂点形式が無く、ANGLE はその属性を CPU で float x4 (16 B/頂点) の別バッファに
+  変換して持つ。short x4 の正規化は `DXGI_FORMAT_R16G16B16A16_SNORM` に
+  そのまま対応する。short x3 も D3D11 に 3 成分の 16 bit 形式が無いため変換されるので、w を含めて 4 成分にする。
+  4 B に戻すなら符号なしの `GL_UNSIGNED_INT_2_10_10_10_REV` (`R10G10B10A2_UNORM`、変換なし) に `n*0.5+0.5` を
+  詰め、shader で戻す
 - update の書き込み先は `TrigGpuPrim::getPackedArrays()` の各塊。法線は `normal()` のときに 1 回だけ詰める
 - WebGL の ring (2 本の VBO を交互に使う) では、slot ごとに「その slot がまだ受け取っていない範囲」を持ち、
   slot に書くときにその範囲も合わせて送る (色の更新の直後の座標の更新でも、両方の slot が新しい色を持つ)

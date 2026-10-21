@@ -259,6 +259,31 @@ TEST_F(TubeGpuMeshTest, SmallMeshUpdatesSerially)
     EXPECT_EQ(parallel.geom, drawnMesh(newRenderer("ribbon"), m_dc).geom);
 }
 
+// A mesh whose vertex buffer would exceed the buffer limit of the display
+// context is not allocated nor drawn (instead of failing the allocation, which
+// stops the Electron process), and a coordinate update does not rebuild it.
+TEST_F(TubeGpuMeshTest, TooLargeMeshIsNotDrawn)
+{
+    struct MaxBytes
+    {
+        explicit MaxBytes(size_t n) { TubeGpuSupport::setMaxBufferBytes(n); }
+        ~MaxBytes() { TubeGpuSupport::setMaxBufferBytes(0); }
+    };
+    MaxBytes mb(1024);  // 36 vertices, far below the 1CRN ribbon
+    qsys::RendererPtr pR = newRenderer("ribbon");
+    pR->display(&m_dc);
+    auto *pS = dynamic_cast<TubeGpuSupport *>(pR.get());
+    EXPECT_TRUE(pS->tubeGpuIsTooLarge());
+    EXPECT_EQ(lastPass(pR), TubeGpuSupport::TG_PASS_TOO_LARGE);
+    EXPECT_EQ(pS->tubeGpuPrim().getVertexSize(), 0);
+
+    moveAtoms(m_mol);
+    pR->display(&m_dc);
+    EXPECT_TRUE(pS->tubeGpuIsTooLarge());
+    EXPECT_NE(lastPass(pR), TubeGpuSupport::TG_PASS_BUILD);
+    EXPECT_NE(lastPass(pR), TubeGpuSupport::TG_PASS_TOO_LARGE);
+}
+
 // A coloring change updates only the colors in place (no rebuild), also for
 // a coloring property whose name could match the renderer's own properties.
 TEST_P(TubeGpuMeshTest, ColoringChangeUpdatesColorsInPlace)

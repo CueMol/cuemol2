@@ -291,7 +291,7 @@ namespace BALL
 	//@}
 
 	/** needed for windows dlls **/
-#ifdef BALL_COMPILER_MSVC
+#if defined(BALL_COMPILER_MSVC) && !defined(__clang__)
 	template class BALL_EXPORT TCircle3<float>;
 #endif
 

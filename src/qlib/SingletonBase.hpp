@@ -41,14 +41,26 @@ namespace qlib {
     }
     
   private:
+#if defined(_MSC_VER) && defined(__clang__)
+    // clang-cl instantiates the members of a dllexport-ed base class at the
+    // class definition, so a later explicit specialization is ill-formed.
+    // The inline member keeps the same mangled name as the MSVC build.
+    static inline _Type *s_pInst = nullptr;
+#else
     static _Type *s_pInst;
+#endif
   };
 
 }
 
+#if defined(_MSC_VER) && defined(__clang__)
+// clang-cl: s_pInst is an inline member (see above)
+#define SINGLETON_BASE_IMPL(classname)
+#else
 // for static object implementation
 #define SINGLETON_BASE_IMPL(classname) \
 template <> MB_PUBLIC classname *qlib::SingletonBase<classname>::s_pInst = 0;
+#endif
 
 #ifdef _MSC_VER
 // static object declaration not correctly function in msvc

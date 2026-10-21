@@ -185,6 +185,12 @@ architecture, it belongs here.
   (全 OS) と、render job 中の powerSaveBlocker (システムスリープ抑止) + renderer pid
   ログ。`taskpolicy -B` は external darwinbg しか消せないため不採用。VS Code 方式
   (job 中だけ `setBackgroundThrottling(false)`) との比較と OSS アプリの実態調査も記載。
+- [Windows ビルドの clang-cl 化](windows-clang-build.md) (日本語) -- libcuemol2 /
+  umbreon / MeshMS / tritium core / cuetty を clang-cl + lld-link でビルドする
+  (`CUEMOL_WIN_CC` で cl に切り戻せる)。deplibs も v0.2.0 から TBB / Embree (AVX2) /
+  OIDN / FFTW / xz を clang-cl でビルドし、Boost 等と uxp_gui は MSVC のまま (MSVC ABI
+  互換なので混在できる)。cmake-js の Ninja 化、clang で表に出た未定義動作 (`WglView`
+  の範囲外ループ) の修正、検証済みの組み合わせ、umbreon で約 6〜8% 速くなった計測結果。
 - [tritium packaging / release-build renovation](tritium-packaging-renovation.md)
   (日本語) -- tritium を配布可能な形にするまでの設計記録。electron-builder による
   3 OS パッケージング、libcuemol2 ランタイムの staging、release-cadence gating、
@@ -223,8 +229,8 @@ architecture, it belongs here.
 - [MeshMS SES Surface Backend](meshms-ses-backend.md) (日本語) --
   SES 生成バックエンドを外部 static lib MeshMS へ (ENABLE_MESHMS、BALL は
   フォールバックとして併存)。umbreon 1:1 のビルド配線、density → mesh_size
-  変換、例外時 BALL フォールバック、RSCache による density 変更時の再生成
-  高速化、MeshMS 側の多成分/孤立原子対応、atom_id → MSVert::info 見送りの判断。
+  変換、例外時 BALL フォールバック、RSCache を持たない判断 (常駐メモリ対
+  再生成の短縮)、MeshMS 側の多成分/孤立原子対応、atom_id → MSVert::info 見送りの判断。
 - [Cryo-EM map mode](cryo-em-map-mode.md) (日本語) --
   density map の結晶学 / cryo-EM モード分離。`DensityMap.map_type` (読込時自動判定) と
   `MapRenderer.region_mode` (box / full) の 2 層モデル、PBC 適格条件の一本化、MRC2014 ORIGIN、
@@ -246,6 +252,15 @@ architecture, it belongs here.
   vertex = `defaultcolor`, separate per-mode target names,
   `setupParentData("multi_grad")` placement, `target` kept as an inert
   string) and the test map.
+- [Surface atom colouring: `AtomColorMemo` and the shared colouring pass](surface-atom-coloring.md) --
+  how `dsurface`, `molsurf` and the map isosurface colour a vertex by its
+  atom (molecule colour mode and `showsel`): the molstr pieces they share
+  (`ColSchmHolder::startColoring` / `endColoring` bracketing both the
+  renderer's and the molecule's scheme, `AtomColorMemo` resolving
+  visibility, colour and device code once per atom id,
+  `AtomPosMap2::searchNearestAtoms` in parallel), the contracts (unknown
+  atom = shown with no colour, colour only for shown atoms, one memo per
+  pass), measurements and the test map.
 - [Direct surface renderer (`dsurface`): アルゴリズム選択と detail の統一](direct-surface-renderer.md) (日本語) --
   the `surfalgor` property (`edtsurf` / `distfield` / `meshms`) that merged
   the former `dsurf2` renderer into `dsurface`: how one `detail` value is

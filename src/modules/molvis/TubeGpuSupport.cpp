@@ -11,12 +11,15 @@
 #include <qsys/ObjectEvent.hpp>
 #include <qlib/parallel.hpp>
 
+#include <algorithm>
 #include <atomic>
+#include <limits>
 
 using namespace molvis;
 using gfx::DisplayContext;
 
 int TubeGpuSupport::s_nParallelMinVerts = TubeGpuSupport::TG_DEFAULT_PARALLEL_MIN_VERTS;
+size_t TubeGpuSupport::s_nMaxBufferBytes = 0;
 
 namespace {
 
@@ -41,7 +44,8 @@ TubeGpuSupport::TubeGpuSupport()
       m_bColorOnly(false),
       m_nLastPass(TG_PASS_NONE),
       m_bChunked(false),
-      m_bParallel(false)
+      m_bParallel(false),
+      m_bTooLarge(false)
 {
 }
 
@@ -73,7 +77,7 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
     m_nLastPass = TG_PASS_NONE;
     if (!m_bTopoValid) {
         build(pdc, nPolyMode);
-        m_nLastPass = TG_PASS_BUILD;
+        m_nLastPass = m_bTooLarge ? TG_PASS_TOO_LARGE : TG_PASS_BUILD;
         return true;
     }
 
@@ -89,15 +93,15 @@ bool TubeGpuSupport::tubeGpuPrepare(DisplayContext *pdc)
         else {
             MB_DPRINTLN("TubeGpuSupport> topology changed, rebuild the mesh");
             build(pdc, nPolyMode);
-            m_nLastPass = TG_PASS_BUILD;
+            m_nLastPass = m_bTooLarge ? TG_PASS_TOO_LARGE : TG_PASS_BUILD;
         }
     }
     return true;
 }
 
-void TubeGpuSupport::buildMesh()
+void TubeGpuSupport::buildMesh(int nMaxVerts)
 {
-    m_mb.startBuild(tubeGpuSceneID());
+    m_mb.startBuild(tubeGpuSceneID(), nMaxVerts);
     tubeGpuRenderMesh();
     m_mb.finish();
 
@@ -149,8 +153,38 @@ bool TubeGpuSupport::updateMesh()
 
 void TubeGpuSupport::build(DisplayContext *pdc, int nPolyMode)
 {
-    buildMesh();
+    // A buffer larger than the context can allocate in one piece (see
+    // DisplayContext::getMaxBufferBytes()) would fail the allocation, which
+    // in the Electron process stops it: check the vertex buffer while
+    // recording (the recording stops at the limit) and the index buffer
+    // before allocating, and do not draw such a mesh.
+    size_t nMaxBytes = pdc->getMaxBufferBytes();
+    if (s_nMaxBufferBytes > 0) nMaxBytes = std::min(nMaxBytes, s_nMaxBufferBytes);
+    const size_t nVertBytes = sizeof(gfx::TrigGpuPrim::PackedUnit);
+    const int nMaxVerts =
+        int(std::min(nMaxBytes / nVertBytes, size_t(std::numeric_limits<int>::max())));
+
+    buildMesh(nMaxVerts);
     m_nPolyMode = nPolyMode;
+
+    const size_t nIndsPerFace = (nPolyMode == DisplayContext::POLY_LINE) ? 6 : 3;
+    const size_t nIndBytes =
+        size_t(m_mb.getFaceSize()) * nIndsPerFace * sizeof(qlib::quint32);
+    m_bTooLarge = m_mb.isOverflow() || nIndBytes > nMaxBytes;
+    if (m_bTooLarge) {
+        if (m_mb.isOverflow())
+            LOG_DPRINTLN("TubeGpuSupport> mesh not drawn: more than %d vertices "
+                         "(%lld bytes), above the buffer limit of %lld bytes",
+                         nMaxVerts, (long long) (size_t(nMaxVerts) * nVertBytes),
+                         (long long) nMaxBytes);
+        else
+            LOG_DPRINTLN("TubeGpuSupport> mesh not drawn: %d faces need an index "
+                         "buffer of %lld bytes, above the buffer limit of %lld bytes",
+                         m_mb.getFaceSize(), (long long) nIndBytes,
+                         (long long) nMaxBytes);
+        m_mb.clear();
+        m_bHasMesh = false;
+    }
     if (!m_bHasMesh) {
         m_prim.invalidate();
         return;
@@ -202,6 +236,7 @@ void TubeGpuSupport::tubeGpuInvalidate()
 {
     m_bTopoValid = false;
     m_bHasMesh = false;
+    m_bTooLarge = false;
     m_nDirty = 0;
     m_mb.clear();
     m_prim.invalidate();

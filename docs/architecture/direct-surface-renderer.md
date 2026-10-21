@@ -150,7 +150,7 @@ meshms も 32 で頂点予算が発火している。detail 6 はどのガード
   detail で表示) は前者の領域にある。高 detail で小さい対象を見るときは meshms に
   切り替えるのが素直。
 - **MeshMS には約 9 ms の下限がある** (1CRN の detail 2-6 が頭打ちになっている)。
-  density 非依存の RS 計算で、レンダラは `MolSurfObj` と違って `RSCache` を持たない
+  density 非依存の RS 計算で、レンダラは `RSCache` を持たない (`MolSurfObj` も同様)
   ので毎回払う。大分子ではこれが上表の時間のかなりの部分を占める。
 - **EDTSurf は大きな分子では detail が効かなくなる**。`boxlength > 300` で自動的に
   スケールを落とす (`ProteinSurface::initpara`) ため、6 / 16 / 32 で頂点数も時間も
@@ -213,6 +213,40 @@ detail 32 では約 6.7 万原子、detail 16 では約 22 万原子を超える
 万一予測が外れた場合の保険として、MeshMS が返したメッシュが `MESHMS_HARD_MAX_VERTS`
 (4800 万頂点) を超えていたら格納せずに例外を投げ、distfield にフォールバックする。
 
+### MeshMS の RS 段のクラッシュ (4V6X)
+
+頂点予算はメッシュ化の段しか抑えない。その前の RS 計算 (`compute_rs_from_array`) に
+ある `data_I_Cir` は、以前は三重交点の配列を組合せ上の上限 `sum_i Row[i]*(Row[i]-1)/3`
+で `reserve` していた。この上限は実数よりはるかに大きく、human 80S ribosome (4V6X、
+237,685 原子) では `I` だけで 3.6 GB の単一確保を要求した。mesh_size に依存しないので、
+density や detail を最も粗くしても molsurf / dsurface (meshms) の両方が落ちていた。
+
+MeshMS 側で、phase 1 が記録したイベント数 (= 実際の三重交点数) で `reserve` するように
+直した。出力は変わらない (golden テスト通過)。修正後の 4V6X の単一確保の最大値
+(MeshMS 単体、`operator new` を計測):
+
+| mesh_size | 頂点数 (fuse 後) | 最大の単一確保 |
+|--:|--:|--:|
+| RS 段のみ | -- | 64 MB (修正前 3.6 GB) |
+| 1.18 (molsurf density 1) | 299 万 | 457 MB |
+| 0.59 (density 4) | 788 万 | 675 MB |
+| 0.373 (density 10、UI の上限) | 1682 万 | 1.44 GB |
+
+molsurf には頂点予算が無いので、density 10 では fuse 前のメッシュ (約 6000 万頂点) を
+まとめる `merge_local_meshes` の配列が 1.44 GB になる。4V6X では 2 GB に収まるが余裕は
+1.4 倍しかなく、これより大きな分子を density 10 で作ると再び壁に当たりうる。
+
+同じ 4V6X では、2 GB の壁を越えた先で MeshMS の別のバグも出ていた。凹面 (probe) パッチの
+境界ループを作る `loopconstruct_concave` が、ループ表を `N_segment/2` 行で確保していた。
+これは各ループが 2 セグメント以上という前提だが、両端が同一点 (EPSILON 以内) に
+まとめられるセグメントは 1 本でループを閉じる。CueMol の vdW 半径では 4V6X にそういう
+probe があり (9 セグメントが 3, 1, 3, 1, 1 のループ)、表の外に書き込んで SIGSEGV に
+なっていた。ループを見つけた順に追加する形に直した。MeshMS 側の回帰テスト
+(`test_concave_loops`) は、その probe の周囲 38 原子を入力にしている。
+
+アプリでの確認 (4V6X、Electron): molsurf density 2 は 439 万頂点 / 4.1 s、density 10 は
+1619 万頂点 / 8.6 s、dsurface (meshms、detail 6) は 490 万頂点 / 3.8 s。
+
 ### `gfx::Mesh` の頂点色: palette + 16 B/頂点
 
 display-list 経路 (ファイル書き出し、line / point 描画、shader 無し) の中間表現
@@ -234,8 +268,8 @@ potential / multigrad 着色では `ScalarColorSupport::rampColor()` と
 - 頂点レコード `VertCol{cid1, cid2, double rho}` = **16 B**。`rho` を float にすると
   整数境界近傍で 1 LSB ずれ、「exporter 出力バイト同一」が崩れるので double。
 - palette の dedupe は「ポインタ同一 → 値 (getCode(), getMaterial())」の 2 段。値 dedupe が
-  要るのは `MolSurfRenderer::getColorMol` のように頂点ごとに新しい同値オブジェクトが返る
-  経路のため。ポインタ比較は **Mesh が保持しているオブジェクトに対してのみ**行う
+  要るのは頂点ごとに新しい同値オブジェクトが返りうる経路 (色付けスキームが呼び出しの
+  たびに色オブジェクトを作る場合など) のため。ポインタ比較は **Mesh が保持しているオブジェクトに対してのみ**行う
   (頂点ごとに作られて即解放される GradientColor をポインタでキャッシュすると malloc の
   アドレス再利用で誤着色する)。
 - `getCol(ColorPtr&, int)` のシグネチャは不変。solid 頂点は登録されたオブジェクトそのもの、
@@ -268,6 +302,19 @@ potential / multigrad 着色では `ScalarColorSupport::rampColor()` と
 
 C++ 側は `detail` を 1..100 まで受けるので、スクリプトからはさらに大きな値も
 設定できる (グリッド系は上記のセル予算で頭打ちになる)。
+
+## 入力原子: 代替配座 (altconf) は A だけ
+
+`collectAtoms()` は `sel` に一致する原子のうち、**配座 ID が無いか `A` の原子だけ**を
+メッシュ生成に渡す。`MolSurfObj::createSESFromMol` (Generate surface) の `chkAltConf` と
+同じ規則で、アルゴリズム (edtsurf / distfield / meshms) によらない。
+
+- 以前は全配座を渡していた。代替配座は側鎖だけが動いて主鎖などは A と B で**同じ座標**
+  のことが多く、重なった球は MeshMS を極端に遅くする (1CRN の 3 割の原子を同一座標で
+  二重化すると detail 16 相当で 0.07 s → 2.7 s、全原子で 12 s) うえ、わずかにずれた
+  重複でも細い破片パッチで頂点が最大 2 割ほど増える。実構造 1EJG (altconf 原子 381 個)
+  では detail 16 相当で約 3 倍遅く、頂点が約 6% 多かった。
+- A を持たず B / C だけの残基は丸ごと除かれ、その部分の表面は欠ける (MolSurfObj と同じ)。
 
 ## 原子 id (`MSVert::info`) の扱い
 
@@ -342,6 +389,8 @@ pRF->registAlias("dsurf2", "dsurface", {{"surfalgor", "distfield"}});
   ノードを skip する)、新しい既定値 `distfield` で読まれる。メッシュの見た目と
   `detail` の効き方が変わる。リリースノート記載事項。
 - 旧 `dsurf2` シーンは alias 経由で見た目を保ったまま読める。
+- **代替配座 (altconf) の B 以降は表面に入らなくなった** (上の「入力原子」)。
+  altconf を含む構造では表面の形がわずかに変わる。
 
 ## click / hover (GPU ID-buffer pick)
 
@@ -378,9 +427,9 @@ pRF->registAlias("dsurf2", "dsurface", {{"surfalgor", "distfield"}});
 
 ## 今後の課題
 
-- **MeshMS の `RSCache` は持たせない (計測して見送った)**: `MolSurfObj` は density
-  非依存の RS 成分をキャッシュして再生成を速くしている (`meshms-ses-backend.md`)。
-  レンダラにも同じものを入れるか検討し、RS と meshing を分けて計測した (Release):
+- **MeshMS の `RSCache` は持たせない (計測して見送った)**: density 非依存の RS 成分を
+  キャッシュすれば detail 変更時の再生成は速くなる。`MolSurfObj` も以前は持っていたが、
+  同じ理由で廃止した (`meshms-ses-backend.md`)。RS と meshing を分けて計測した (Release):
 
   | | 1CRN (327 原子) | 70632 原子 |
   |---|---|---|

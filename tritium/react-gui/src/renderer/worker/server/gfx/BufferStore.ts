@@ -13,6 +13,13 @@
  * still be reading for the previous frame. The extra slots are created on the
  * first update, so a static buffer keeps a single vertex buffer.
  *
+ * The usage hint follows the same split: a vertex buffer starts STATIC_DRAW,
+ * and the first update re-specifies it DYNAMIC_DRAW along with the new
+ * slots. On ANGLE / D3D11 (Windows) rewriting a STATIC_DRAW buffer every frame
+ * cost 5-7x the CPU time of the same bufferSubData into a DYNAMIC_DRAW one
+ * (4V6X ribbon, 53 MB a frame: 124 vs 18 ms); never-updated buffers keep the
+ * STATIC_DRAW hint so the driver may place them for drawing alone.
+ *
  * Console signposts ("create buffer OK") are E2E launch markers and are
  * intentionally preserved.
  */
@@ -24,10 +31,10 @@ const convertType = (gl: GL, itype: string): number => {
     switch (itype) {
         case "1": return gl.UNSIGNED_BYTE;
         case "3": return gl.UNSIGNED_INT;
-        case "21": return gl.FLOAT;
-        // x, y, z, w packed in one word (packed normals, see
+        // signed normalized shorts (packed normals, see
         // gfx::TrigGpuPrim::LAYOUT_PACKED)
-        case "61": return gl.INT_2_10_10_10_REV;
+        case "12": return gl.SHORT;
+        case "21": return gl.FLOAT;
         default:
             console.error(`unknown type ${itype}`);
             throw `unknown type ${itype}`;
@@ -39,8 +46,8 @@ const convGLNorm = (itype: string): boolean => {
     switch (itype) {
         case "1": return true;
         case "3": return false;
+        case "12": return true;
         case "21": return false;
-        case "61": return true;
         default:
             console.error(`unknown type ${itype}`);
             throw `unknown type ${itype}`;
@@ -108,9 +115,9 @@ export class BufferStore {
     /**
      * Create a VAO + vertex buffer reading `entry`'s attribute layout and
      * index buffer, filled with `array_buf` or left uninitialized at the
-     * entry's size.
+     * entry's size, with the given usage hint.
      */
-    private _createSlot(entry: DrawEntry, array_buf: any | null): VertexSlot {
+    private _createSlot(entry: DrawEntry, array_buf: any | null, usage: number): VertexSlot {
         const gl = this._gl;
 
         const vao = gl.createVertexArray()!;
@@ -144,9 +151,9 @@ export class BufferStore {
         });
 
         if (array_buf) {
-            gl.bufferData(gl.ARRAY_BUFFER, array_buf, gl.STATIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, array_buf, usage);
         } else {
-            gl.bufferData(gl.ARRAY_BUFFER, entry.nsize, gl.STATIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, entry.nsize, usage);
         }
 
         // The element buffer binding is VAO state: every slot reads the same
@@ -199,7 +206,7 @@ export class BufferStore {
             stride: nsize / num_elems,
             elemInfo: elem_info,
         };
-        entry.slots.push(this._createSlot(entry, array_buf));
+        entry.slots.push(this._createSlot(entry, array_buf, gl.STATIC_DRAW));
         entry.pending.push(null);
 
         this._draw_data[name] = entry;
@@ -245,8 +252,16 @@ export class BufferStore {
                 : [0, total];
             const next = (obj.cur + 1) % VBO_RING;
             if (next >= obj.slots.length) {
-                // a new slot holds no data yet
-                obj.slots.push(this._createSlot(obj, null));
+                // First update: the buffer is dynamic after all. Re-specify
+                // the existing slots DYNAMIC_DRAW (their contents are dropped,
+                // so each takes the whole data on its next write) and add the
+                // new one, which holds no data yet.
+                for (let i = 0; i < obj.slots.length; ++i) {
+                    gl.bindBuffer(gl.ARRAY_BUFFER, obj.slots[i].vbo);
+                    gl.bufferData(gl.ARRAY_BUFFER, obj.nsize, gl.DYNAMIC_DRAW);
+                    obj.pending[i] = [0, total];
+                }
+                obj.slots.push(this._createSlot(obj, null, gl.DYNAMIC_DRAW));
                 obj.pending.push([0, total]);
             }
             const write = coverRange(range, obj.pending[next]);

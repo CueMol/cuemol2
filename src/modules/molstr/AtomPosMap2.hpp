@@ -10,6 +10,10 @@
 #include "molstr.hpp"
 #include <qlib/Vector4D.hpp>
 
+#include <cstddef>
+#include <functional>
+#include <vector>
+
 namespace molstr {
 
   class MolCoord;
@@ -37,6 +41,12 @@ namespace molstr {
     void ensureBuilt();
 
     int searchNearestAtom(const Vector4D &pos);
+
+    /// aids[i] = searchNearestAtom(posAt(i)) for i in [0, n), run in parallel;
+    /// posAt must be safe to call concurrently.
+    void searchNearestAtoms(std::size_t n,
+                            const std::function<Vector4D (std::size_t)> &posAt,
+                            std::vector<int> &aids);
 
   private:
 

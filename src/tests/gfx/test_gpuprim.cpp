@@ -764,7 +764,7 @@ void fillTriangle(gfx::TrigGpuPrim &prim)
 }  // namespace
 
 // The packed layout stores the same data as the interleaved one (normals to
-// within the 10-bit packing), so either can back the same renderer.
+// within the 16-bit packing), so either can back the same renderer.
 TEST(TrigGpuPrimPacked, StoresTheSameDataAsInterleaved)
 {
     MockDisplayContext dc;
@@ -784,7 +784,7 @@ TEST(TrigGpuPrimPacked, StoresTheSameDataAsInterleaved)
         EXPECT_EQ(packed.getColorRGBA(i), inter.getColorRGBA(i));
         EXPECT_EQ(packed.getHitName(i), inter.getHitName(i));
         const Vector4D d = packed.getNormal(i) - inter.getNormal(i);
-        EXPECT_LT(d.length(), 2.0e-3) << "vertex " << i;
+        EXPECT_LT(d.length(), 1.0e-4) << "vertex " << i;
     }
     // axis-aligned unit normals survive the packing exactly
     EXPECT_DOUBLE_EQ(packed.getNormal(0).z(), 1.0);
@@ -811,15 +811,16 @@ TEST(TrigGpuPrimPacked, AttributeTableDescribesTheBlocks)
     EXPECT_EQ(pos.elems, 3);
     EXPECT_EQ(pos.pos, 0);
     EXPECT_EQ(pos.stride, 12);
-    EXPECT_EQ(nrm.type, type_consts::QTC_INT_2_10_10_10_REV);
+    // four components: D3D11 (ANGLE) has no three-component 16-bit format
+    EXPECT_EQ(nrm.type, type_consts::QTC_INT16);
     EXPECT_EQ(nrm.elems, 4);
     EXPECT_EQ(nrm.pos, 12 * N);
-    EXPECT_EQ(nrm.stride, 4);
+    EXPECT_EQ(nrm.stride, 8);
     EXPECT_EQ(col.type, type_consts::QTC_UINT8);
-    EXPECT_EQ(col.pos, 16 * N);
+    EXPECT_EQ(col.pos, 20 * N);
     EXPECT_EQ(col.stride, 4);
     EXPECT_EQ(hit.type, type_consts::QTC_UINT32);
-    EXPECT_EQ(hit.pos, 20 * N);
+    EXPECT_EQ(hit.pos, 24 * N);
     EXPECT_EQ(hit.stride, 4);
     EXPECT_TRUE(hit.integer);
 
@@ -827,8 +828,8 @@ TEST(TrigGpuPrimPacked, AttributeTableDescribesTheBlocks)
     const gfx::TrigGpuPrim::PackedArrays a = prim.getPackedArrays();
     const qbyte *base = reinterpret_cast<const qbyte *>(a.pos);
     EXPECT_EQ(reinterpret_cast<const qbyte *>(a.norm) - base, 12 * N);
-    EXPECT_EQ(a.color - base, 16 * N);
-    EXPECT_EQ(reinterpret_cast<const qbyte *>(a.hitName) - base, 20 * N);
+    EXPECT_EQ(a.color - base, 20 * N);
+    EXPECT_EQ(reinterpret_cast<const qbyte *>(a.hitName) - base, 24 * N);
 }
 
 // markUpdated() re-uploads only the blocks of the flagged data in the packed
@@ -853,7 +854,7 @@ TEST(TrigGpuPrimPacked, MarkUpdatedUploadsOnlyTheFlaggedBlocks)
     prim.markUpdated(TrigGpuPrim::UPD_GEOM | TrigGpuPrim::UPD_COLOR);
     prim.draw(&dc);
     const std::vector<std::pair<size_t, size_t>> expected = {
-        {0, 16 * N}, {16 * N, 4 * N}, {0, 20 * N}};
+        {0, 20 * N}, {20 * N, 4 * N}, {0, 24 * N}};
     EXPECT_EQ(dc.uploads, expected);
 
     TrigGpuPrim inter;

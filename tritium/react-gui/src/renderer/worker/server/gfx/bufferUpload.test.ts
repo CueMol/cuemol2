@@ -17,6 +17,7 @@ const GL = {
     ARRAY_BUFFER: 0x8892,
     ELEMENT_ARRAY_BUFFER: 0x8893,
     STATIC_DRAW: 0x88e4,
+    DYNAMIC_DRAW: 0x88e8,
     TRIANGLES: 4,
 };
 
@@ -24,7 +25,7 @@ function makeGl() {
     return {
         ...GL,
         FLOAT: 0x1406,
-        INT_2_10_10_10_REV: 0x8d9f,
+        SHORT: 0x1402,
         createBuffer: vi.fn(() => ({})),
         createVertexArray: vi.fn(() => ({})),
         bindVertexArray: vi.fn(),
@@ -176,15 +177,15 @@ describe('BufferStore partial updates (attribute blocks)', () => {
     let gl: ReturnType<typeof makeGl>;
     let store: BufferStore;
     const ID = '1';
-    // Two vertices in a block layout: 12-byte positions, then 4-byte packed
+    // Two vertices in a block layout: 12-byte positions, then 8-byte packed
     // normals, then 4-byte colors (24 bytes per vertex in all)
     const TOTAL = 48;
-    const GEOM: [number, number] = [0, 32];
-    const COLOR: [number, number] = [32, 40];
+    const GEOM: [number, number] = [0, 40];
+    const COLOR: [number, number] = [40, 48];
     const ATTRS = JSON.stringify([
         { nloc: 0, itype: '21', nelems: 3, npos: 0, idiv: 0, stride: '12' },
-        { nloc: 1, itype: '61', nelems: 4, npos: 24, idiv: 0, stride: '4' },
-        { nloc: 2, itype: '1', nelems: 4, npos: 32, idiv: 0, stride: '4' },
+        { nloc: 1, itype: '12', nelems: 4, npos: 24, idiv: 0, stride: '8' },
+        { nloc: 2, itype: '1', nelems: 4, npos: 40, idiv: 0, stride: '4' },
     ]);
 
     /** [offset, byteLength] of each bufferSubData, in call order. */
@@ -205,21 +206,62 @@ describe('BufferStore partial updates (attribute blocks)', () => {
     it('gives each attribute its own stride and reads packed normals normalized', () => {
         expect(gl.vertexAttribPointer).toHaveBeenCalledWith(0, 3, gl.FLOAT, false, 12, 0);
         expect(gl.vertexAttribPointer).toHaveBeenCalledWith(
-            1, 4, gl.INT_2_10_10_10_REV, true, 4, 24);
+            1, 4, gl.SHORT, true, 8, 24);
     });
 
     it('uploads only the changed range once the slot holds the rest', () => {
         update(GEOM);  // into the new second slot: everything
-        update(GEOM);  // back into the first slot: only the range
+        update(GEOM);  // the first slot, re-specified on the first update: everything
+        update(GEOM);  // the second slot holds the rest: only the range
         update(GEOM);
-        expect(uploads()).toEqual([[0, TOTAL], [0, 32], [0, 32]]);
+        expect(uploads()).toEqual([[0, TOTAL], [0, TOTAL], [0, 40], [0, 40]]);
     });
 
     it('brings a slot up to date with the ranges it missed', () => {
         update(GEOM);   // slot 1 (all)
-        update(COLOR);  // slot 0: the color, plus the positions it missed
+        update(COLOR);  // slot 0: all (its contents were dropped on the first update)
         update(GEOM);   // slot 1: the positions, plus the color it missed
         update(GEOM);   // slot 0: up to date except the positions
-        expect(uploads()).toEqual([[0, TOTAL], [0, 40], [0, 40], [0, 32]]);
+        expect(uploads()).toEqual([[0, TOTAL], [0, TOTAL], [0, 48], [0, 40]]);
+    });
+});
+
+describe('BufferStore vertex buffer usage hint', () => {
+    let gl: ReturnType<typeof makeGl>;
+    let store: BufferStore;
+    const ID = '1';
+    const ATTRS = JSON.stringify([{ nloc: 0, itype: '21', nelems: 3, npos: 0, idiv: 0 }]);
+
+    /** The usage hint of each ARRAY_BUFFER bufferData, in call order. */
+    const vertexUsages = () => gl.bufferData.mock.calls
+        .filter((c) => c[0] === GL.ARRAY_BUFFER).map((c) => c[2]);
+
+    beforeEach(() => {
+        gl = makeGl();
+        store = new BufferStore();
+        store.setContext(gl as never);
+        store.createBuffer(ID, 36, 3, 12, ATTRS);
+    });
+
+    it('keeps a never-updated vertex buffer STATIC_DRAW', () => {
+        store.drawBuffer(ID as never, GL.TRIANGLES, 3, new Float32Array(9),
+            new Uint32Array(3), false, 0);
+        expect(vertexUsages()).toEqual([GL.STATIC_DRAW]);
+        // the index buffer is never rewritten either
+        expect(gl.bufferData.mock.calls
+            .filter((c) => c[0] === GL.ELEMENT_ARRAY_BUFFER).map((c) => c[2]))
+            .toEqual([GL.STATIC_DRAW]);
+    });
+
+    it('makes every vertex slot DYNAMIC_DRAW on the first update, and only then', () => {
+        const draw = () => store.drawBuffer(ID as never, GL.TRIANGLES, 3,
+            new Float32Array(9), new Uint32Array(3), true, 0);
+        draw();
+        // created STATIC, then the first slot re-specified and the second created DYNAMIC
+        expect(vertexUsages()).toEqual([GL.STATIC_DRAW, GL.DYNAMIC_DRAW, GL.DYNAMIC_DRAW]);
+        draw();
+        draw();
+        expect(vertexUsages()).toHaveLength(3);
+        expect(gl.createBuffer).toHaveBeenCalledTimes(3);  // ibo + two vbos
     });
 });
