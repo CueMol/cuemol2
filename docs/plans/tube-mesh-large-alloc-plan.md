@@ -94,12 +94,18 @@
 
 | | 項目 | 状態 |
 |---|---|---|
-| P-0 | 上限の確認 (M4、Electron 42.10.0): (a) renderer の中の `operator new` が止まる大きさ (2 GiB 前後を数点)、(b) `Napi::ArrayBuffer::New` が 2 GiB 前後でどうなるか (例外か停止か)。一時的なデバッグ用の関数で確かめ、結果をノートに書く。Windows でも同じか (Windows の 3J3Q tube は GPU プロセスの `GL_OUT_OF_MEMORY` で、別の上限) | [ ] |
-| P-1 | `qlib::ChunkedVector<T>` とユニットテスト (ブロックの境目の `push_back` / `operator[]`、`clear` でメモリを返す、`forEachSpan` が全要素を順に渡す) | [ ] |
-| P-2 | `TubeMeshBuilder` の記録を `ChunkedVector` に。既存のテスト (共有あり・なしで三角形が一致、build と update が一致、chunk の並列更新) がそのまま通ること | [ ] |
-| P-3 | 上限の検出 (`getMaxBufferBytes`、記録の途中の打ち切り、`toGpuPrim` の前の判定、`TG_PASS_TOO_LARGE`、ログ) | [ ] |
-| P-4 | テスト: 小さい上限を差し替えて 1CRN で、(1) 上限を超えると落ちずに何も描かず、状態が `TG_PASS_TOO_LARGE` になる、(2) その後の座標の更新で build し直さない、(3) 上限の内側では今と同じ三角形 (位置、法線、色、hit name) になる | [ ] |
-| P-5 | 実機の確認 (M4): 3J3Q cartoon coord-morph が落ちずに非表示になり、ログが 1 回出る。3J3Q ribbon は今と同じく描ける (render fps 8.3)。性能: 4V6X / a4tail の ribbon / cartoon、3J3Q tube で、build の時間 (`loadMs`、`firstDrawMs`) と更新 (render fps、worker の CPU) が変わらない (A / B を交互に 2 回ずつ) | [ ] |
+| P-0 | 上限の確認 (M4、Electron 42.10.0): (a) renderer の中の `operator new` が止まる大きさ (2 GiB 前後を数点)、(b) `Napi::ArrayBuffer::New` が 2 GiB 前後でどうなるか (例外か停止か)。一時的なデバッグ用の関数で確かめ、結果をノートに書く。Windows でも同じか (Windows の 3J3Q tube は GPU プロセスの `GL_OUT_OF_MEMORY` で、別の上限) | [x] 2026-10-21、M4、Electron 42.10.0、renderer の DedicatedWorker で `new ArrayBuffer(n)`: 2 GiB - 2 MiB まで確保できる、2 GiB - 1 バイト以上は `RangeError: Array buffer allocation failed` (プロセスは落ちない)。`operator new` (malloc) は 2 GiB + 8 バイトでプロセスが止まる (3J3Q cartoon のクラッシュレポート)。→ Electron の上限は 2 GiB - 64 MiB。Windows は未確認 |
+| P-1 | `qlib::ChunkedVector<T>` とユニットテスト (ブロックの境目の `push_back` / `operator[]`、`clear` でメモリを返す、`forEachSpan` が全要素を順に渡す) | [x] `eb39d5f1`。テストは 1 件 (ブロックをまたぐ添字と `forEachSpan`、`clear`) |
+| P-2 | `TubeMeshBuilder` の記録を `ChunkedVector` に。既存のテスト (共有あり・なしで三角形が一致、build と update が一致、chunk の並列更新) がそのまま通ること | [x] `550cc7da`。既存の tube の GPU メッシュのテストはそのまま通過 |
+| P-3 | 上限の検出 (`getMaxBufferBytes`、記録の途中の打ち切り、`toGpuPrim` の前の判定、`TG_PASS_TOO_LARGE`、ログ) | [x] `550cc7da` |
+| P-4 | テスト: 小さい上限を差し替えて 1CRN で、(1) 上限を超えると落ちずに何も描かず、状態が `TG_PASS_TOO_LARGE` になる、(2) その後の座標の更新で build し直さない、(3) 上限の内側では今と同じ三角形 (位置、法線、色、hit name) になる | [x] `550cc7da`。テストは 1 件 (`TooLargeMeshIsNotDrawn`: 上限を超えると確保せず描かず `TG_PASS_TOO_LARGE`、座標の更新で build し直さない)。(3) の上限の内側で同じ三角形になることは既存のテストが見ている。`task run_gtest` は 1690 件中 1689 件が通過。失敗の 1 件 (`MapSurfColorFixture.DisplayListAndGpuTakeTheNearestAtomColor`) は develop (#691) からのもので、Debug ビルドで CGAL の Kd-tree のアサーション (`!is_built()`) が働くため。今回の変更とは関係しない |
+| P-5 | 実機の確認 (M4): 3J3Q cartoon coord-morph が落ちずに非表示になり、ログが 1 回出る。3J3Q ribbon は今と同じく描ける (render fps 8.3)。性能: 4V6X / a4tail の ribbon / cartoon、3J3Q tube で、build の時間 (`loadMs`、`firstDrawMs`) と更新 (render fps、worker の CPU) が変わらない (A / B を交互に 2 回ずつ) | [x] 2026-10-21 (`b54547dd` に 2 コミットを当てた Release): 3J3Q cartoon は落ちずに非表示、ログ 1 回 (`mesh not drawn: more than 86682282 vertices`)、renderer の RSS の最大 6.7 GB。3J3Q ribbon は描ける (render fps 8.19)。A / B (各 2 回、4V6X / a4tail の ribbon / cartoon、3J3Q tube): render fps、worker と アプリ全体の CPU は 1% 以内、最初の描画は 1-1.5% 速い、三角形数は同じ。生データは cuemol3_paper_data の `tube-gpu-trial/raw-m4-20261021-bigmesh/` |
+
+### 実装で決めたこと
+
+- 4 (確保の失敗そのものへの備え) は入れていない。P-0 で、ArrayBuffer の確保の失敗は JS の例外 (`RangeError`) になり、プロセスは落ちないことが分かった。
+  上限の判定 (2 GiB - 64 MiB) は実測の境目 (2 GiB - 2 MiB) より内側なので、普段はこの失敗に当たらない。
+  当たったときに描かないようにするには `allocBuffer` と `TrigGpuPrim::alloc` に失敗を返す口が要るので、別の変更にする。
 
 ## 判断の材料と注意
 
