@@ -287,7 +287,7 @@ private:
     qlib::quint32 m_curName;
     float m_curNorm[3];
     // m_curNorm packed for the GPU primitive (TrigGpuPrim::packNormal())
-    qlib::quint32 m_curNormPacked;
+    gfx::TrigGpuPrim::PackedNormal m_curNormPacked;
 
     // primitive in progress
     int m_nPrimType;

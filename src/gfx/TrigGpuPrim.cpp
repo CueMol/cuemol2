@@ -98,23 +98,21 @@ TrigGpuPrim::PackedArrays TrigGpuPrim::getPackedArrays()
     PackedArrays arrays = {nullptr, nullptr, nullptr, nullptr};
     if (m_pPackedElems == nullptr || m_pPackedElems->getSize() == 0) return arrays;
     arrays.pos = reinterpret_cast<qfloat32 *>(packedBlock(0));
-    arrays.norm = reinterpret_cast<quint32 *>(packedBlock(3));
-    arrays.color = packedBlock(4);
-    arrays.hitName = reinterpret_cast<quint32 *>(packedBlock(5));
+    arrays.norm = reinterpret_cast<PackedNormal *>(packedBlock(3));
+    arrays.color = packedBlock(5);
+    arrays.hitName = reinterpret_cast<quint32 *>(packedBlock(6));
     return arrays;
 }
 
 // static
-qlib::Vector4D TrigGpuPrim::unpackNormal(quint32 w)
+qlib::Vector4D TrigGpuPrim::unpackNormal(const PackedNormal &n)
 {
-    // sign-extend each 10-bit field and normalize as GLES 3 does
-    auto comp = [w](int shift) {
-        int v = int((w >> shift) & 0x3FFu);
-        if (v & 0x200) v -= 0x400;
-        const double f = double(v) / 511.0;
+    // normalize as GLES 3 does
+    auto comp = [](qint16 v) {
+        const double f = double(v) / 32767.0;
         return (f < -1.0) ? -1.0 : f;
     };
-    return qlib::Vector4D(comp(0), comp(10), comp(20));
+    return qlib::Vector4D(comp(n.x), comp(n.y), comp(n.z));
 }
 
 void TrigGpuPrim::markUpdated(int nFlags)
@@ -125,11 +123,11 @@ void TrigGpuPrim::markUpdated(int nFlags)
     }
     const size_t nverts = size_t(m_pPackedElems->getSize());
     if (nFlags & UPD_GEOM) {
-        // positions and normals adjoin: words 0-3 of each vertex
-        m_pPackedElems->setUpdatedRange(0, 16 * nverts);
+        // positions and normals adjoin: words 0-4 of each vertex
+        m_pPackedElems->setUpdatedRange(0, 20 * nverts);
     }
     if (nFlags & UPD_COLOR) {
-        m_pPackedElems->setUpdatedRange(16 * nverts, 4 * nverts);
+        m_pPackedElems->setUpdatedRange(20 * nverts, 4 * nverts);
     }
 }
 
@@ -142,13 +140,12 @@ void TrigGpuPrim::setupAttrs()
         data.setAttrSize(4);
         data.setAttrInfo(0, ATTRLOC_VERTEX, 3, qlib::type_consts::QTC_FLOAT32, 0);
         data.setAttrStride(0, 12);
-        data.setAttrInfo(1, ATTRLOC_NORM, 4, qlib::type_consts::QTC_INT_2_10_10_10_REV,
-                         12 * nverts);
-        data.setAttrStride(1, 4);
-        data.setAttrInfo(2, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8, 16 * nverts);
+        data.setAttrInfo(1, ATTRLOC_NORM, 4, qlib::type_consts::QTC_INT16, 12 * nverts);
+        data.setAttrStride(1, 8);
+        data.setAttrInfo(2, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8, 20 * nverts);
         data.setAttrStride(2, 4);
         data.setAttrInfo(3, ATTRLOC_HITNAME, 1, qlib::type_consts::QTC_UINT32,
-                         20 * nverts);
+                         24 * nverts);
         data.setAttrStride(3, 4);
         data.setAttrInteger(3, true);
         return;
@@ -193,7 +190,7 @@ void TrigGpuPrim::setNormal(int idx, const qlib::Vector4D &n)
 {
     if (m_pPackedElems != nullptr) {
         MB_ASSERT(idx >= 0 && idx < m_pPackedElems->getSize());
-        reinterpret_cast<quint32 *>(packedBlock(3))[idx] =
+        reinterpret_cast<PackedNormal *>(packedBlock(3))[idx] =
             packNormal(float(n.x()), float(n.y()), float(n.z()));
         return;
     }
@@ -207,7 +204,7 @@ void TrigGpuPrim::setColor(int idx, quint32 devcode)
 {
     if (m_pPackedElems != nullptr) {
         MB_ASSERT(idx >= 0 && idx < m_pPackedElems->getSize());
-        qbyte *p = packedBlock(4) + idx * 4;
+        qbyte *p = packedBlock(5) + idx * 4;
         p[0] = getRCode(devcode);
         p[1] = getGCode(devcode);
         p[2] = getBCode(devcode);
@@ -225,7 +222,7 @@ void TrigGpuPrim::setHitName(int idx, quint32 name)
 {
     if (m_pPackedElems != nullptr) {
         MB_ASSERT(idx >= 0 && idx < m_pPackedElems->getSize());
-        reinterpret_cast<quint32 *>(packedBlock(5))[idx] = name;
+        reinterpret_cast<quint32 *>(packedBlock(6))[idx] = name;
         return;
     }
     auto &data = *m_pDrawElems;
@@ -245,7 +242,7 @@ qlib::Vector4D TrigGpuPrim::getVertex(int idx) const
 qlib::Vector4D TrigGpuPrim::getNormal(int idx) const
 {
     if (m_pPackedElems != nullptr)
-        return unpackNormal(reinterpret_cast<const quint32 *>(packedBlock(3))[idx]);
+        return unpackNormal(reinterpret_cast<const PackedNormal *>(packedBlock(3))[idx]);
     const TrigVertAttr &va = m_pDrawElems->at(idx);
     return qlib::Vector4D(va.nx, va.ny, va.nz);
 }
@@ -254,7 +251,7 @@ quint32 TrigGpuPrim::getColorRGBA(int idx) const
 {
     qbyte r, g, b, a;
     if (m_pPackedElems != nullptr) {
-        const qbyte *p = packedBlock(4) + idx * 4;
+        const qbyte *p = packedBlock(5) + idx * 4;
         r = p[0];
         g = p[1];
         b = p[2];
@@ -273,7 +270,7 @@ quint32 TrigGpuPrim::getColorRGBA(int idx) const
 quint32 TrigGpuPrim::getHitName(int idx) const
 {
     if (m_pPackedElems != nullptr)
-        return reinterpret_cast<const quint32 *>(packedBlock(5))[idx];
+        return reinterpret_cast<const quint32 *>(packedBlock(6))[idx];
     return m_pDrawElems->at(idx).hitName;
 }
 

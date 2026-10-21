@@ -269,7 +269,7 @@ TEST_F(TubeGpuMeshTest, TooLargeMeshIsNotDrawn)
         explicit MaxBytes(size_t n) { TubeGpuSupport::setMaxBufferBytes(n); }
         ~MaxBytes() { TubeGpuSupport::setMaxBufferBytes(0); }
     };
-    MaxBytes mb(1024);  // 42 vertices, far below the 1CRN ribbon
+    MaxBytes mb(1024);  // 36 vertices, far below the 1CRN ribbon
     qsys::RendererPtr pR = newRenderer("ribbon");
     pR->display(&m_dc);
     auto *pS = dynamic_cast<TubeGpuSupport *>(pR.get());

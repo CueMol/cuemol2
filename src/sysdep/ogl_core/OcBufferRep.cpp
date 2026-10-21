@@ -83,8 +83,6 @@ int OcBufferRep::convGLConsts(int id)
             return GL_FLOAT;
         case qlib::type_consts::QTC_FLOAT64:
             return GL_DOUBLE;
-        case qlib::type_consts::QTC_INT_2_10_10_10_REV:
-            return GL_INT_2_10_10_10_REV;
         default:
             return -1;
     }

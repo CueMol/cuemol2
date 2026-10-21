@@ -58,10 +58,6 @@ namespace qlib {
     static constexpr int QTC_RGB = 53;
     /// qbyte x 4 RGBA color
     static constexpr int QTC_RGBA = 54;
-
-    /// One 32-bit word holding signed normalized x, y, z (10 bits each) and
-    /// w (2 bits), as GL_INT_2_10_10_10_REV (vertex attributes only)
-    static constexpr int QTC_INT_2_10_10_10_REV = 61;
   };
 
   namespace detail {
