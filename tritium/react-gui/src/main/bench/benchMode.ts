@@ -125,6 +125,10 @@ export function installBenchResultWatcher(win: BrowserWindow, args: BenchArgs): 
   const finish = async (payload: string, failed: boolean): Promise<void> => {
     if (done) return
     done = true
+    // The measure window ends on the renderer's clock, which can run a few ms
+    // ahead of main's. One more sampling interval puts a CPU sample after the
+    // window's end, so cpuInMeasure can interpolate it.
+    if (!failed) await new Promise((resolve) => setTimeout(resolve, 100))
     stopAppMetrics()
     let out = payload
     try {
