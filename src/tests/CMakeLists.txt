@@ -44,6 +44,7 @@ add_executable(test_qlib
   qlib/test_line_stream.cpp
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
+  qlib/test_chunked_vector.cpp
   qlib/test_seekable_stream.cpp
   qlib/test_lvardict.cpp
   qlib/test_lbytearray.cpp
