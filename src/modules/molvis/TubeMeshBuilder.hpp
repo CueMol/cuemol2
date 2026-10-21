@@ -8,11 +8,13 @@
 
 #include "molvis.hpp"
 
+#include <limits>
 #include <vector>
 
 #include <gfx/gfx.hpp>
 #include <gfx/AbstractColor.hpp>
 #include <gfx/TrigGpuPrim.hpp>
+#include <qlib/ChunkedVector.hpp>
 #include <qlib/Vector4D.hpp>
 
 namespace gfx {
@@ -97,8 +99,14 @@ public:
     /// Forward all calls to pdl.
     void startDirect(DisplayContext *pdl);
 
-    /// Start recording a new mesh (drops the previous one).
-    void startBuild(qlib::uid_t nSceneID);
+    /// Start recording a new mesh (drops the previous one). Recording stops
+    /// at nMaxVerts vertices (isOverflow() then reports it and the mesh is
+    /// incomplete).
+    void startBuild(qlib::uid_t nSceneID,
+                    int nMaxVerts = std::numeric_limits<int>::max());
+
+    /// True if the last build reached its vertex limit.
+    bool isOverflow() const { return m_bOverflow; }
 
     /// Start overwriting the recorded mesh (flags: UPD_GEOM | UPD_COLOR) in
     /// dst, the attribute blocks of the LAYOUT_PACKED TrigGpuPrim filled by
@@ -252,11 +260,13 @@ public:
 
     Vector4D getPos(int i) const
     {
-        return Vector4D(m_pos[i * 3 + 0], m_pos[i * 3 + 1], m_pos[i * 3 + 2]);
+        const Vec3f &p = m_pos[i];
+        return Vector4D(p.x, p.y, p.z);
     }
     Vector4D getNorm(int i) const
     {
-        return Vector4D(m_norm[i * 3 + 0], m_norm[i * 3 + 1], m_norm[i * 3 + 2]);
+        const Vec3f &n = m_norm[i];
+        return Vector4D(n.x, n.y, n.z);
     }
     qlib::quint32 getColor(int i) const { return m_col[i]; }
     qlib::quint32 getHitName(int i) const { return m_name[i]; }
@@ -297,6 +307,10 @@ private:
     int m_nVerts;
     bool m_bReleased;
 
+    // build mode: the vertex limit, and whether it was reached
+    int m_nMaxVerts;
+    bool m_bOverflow;
+
     // update target: the attribute blocks of the GPU primitive
     gfx::TrigGpuPrim::PackedArrays m_dst;
 
@@ -315,11 +329,18 @@ private:
     int m_nChunkVert;
     int m_nChunkPrim;
 
-    // recorded mesh
-    std::vector<float> m_pos;
-    std::vector<float> m_norm;
-    std::vector<qlib::quint32> m_col;
-    std::vector<qlib::quint32> m_name;
+    // recorded mesh: the vertex data in blocks (a big mesh never needs one
+    // huge allocation, see qlib::ChunkedVector), the primitives (far fewer)
+    // in a vector
+    struct Vec3f
+    {
+        float x, y, z;
+    };
+    static_assert(sizeof(Vec3f) == 12, "Vec3f must be three packed floats");
+    qlib::ChunkedVector<Vec3f> m_pos;
+    qlib::ChunkedVector<Vec3f> m_norm;
+    qlib::ChunkedVector<qlib::quint32> m_col;
+    qlib::ChunkedVector<qlib::quint32> m_name;
     std::vector<Prim> m_prims;
 
     const std::vector<Prim> &prims() const

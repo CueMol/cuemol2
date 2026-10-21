@@ -31,6 +31,8 @@ TubeMeshBuilder::TubeMeshBuilder()
       m_nRingSize(0),
       m_nVerts(0),
       m_bReleased(false),
+      m_nMaxVerts(std::numeric_limits<int>::max()),
+      m_bOverflow(false),
       m_dst{nullptr, nullptr, nullptr, nullptr},
       m_nVertCur(0),
       m_nPrimCur(0),
@@ -59,10 +61,12 @@ void TubeMeshBuilder::startDirect(DisplayContext *pdl)
     m_pdl = pdl;
 }
 
-void TubeMeshBuilder::startBuild(qlib::uid_t nSceneID)
+void TubeMeshBuilder::startBuild(qlib::uid_t nSceneID, int nMaxVerts)
 {
     clear();
     m_nMode = MODE_BUILD;
+    m_nMaxVerts = nMaxVerts;
+    m_bOverflow = false;
     m_nUpdFlags = UPD_GEOM | UPD_COLOR;
     m_pdl = nullptr;
     m_nSceneID = nSceneID;
@@ -148,11 +152,10 @@ void TubeMeshBuilder::clear()
 
 void TubeMeshBuilder::releaseVertexData()
 {
-    // swap with empty vectors to free the memory
-    std::vector<float>().swap(m_pos);
-    std::vector<float>().swap(m_norm);
-    std::vector<qlib::quint32>().swap(m_col);
-    std::vector<qlib::quint32>().swap(m_name);
+    m_pos.clear();
+    m_norm.clear();
+    m_col.clear();
+    m_name.clear();
     m_bReleased = true;
 }
 
@@ -247,12 +250,13 @@ void TubeMeshBuilder::vertexSlow(const Vector4D &v)
     }
 
     if (m_nMode == MODE_BUILD) {
-        m_pos.push_back(float(v.x()));
-        m_pos.push_back(float(v.y()));
-        m_pos.push_back(float(v.z()));
-        m_norm.push_back(m_curNorm[0]);
-        m_norm.push_back(m_curNorm[1]);
-        m_norm.push_back(m_curNorm[2]);
+        if (m_nVerts >= m_nMaxVerts) {
+            // the mesh will not be used: stop recording
+            m_bOverflow = true;
+            return;
+        }
+        m_pos.push_back(Vec3f{float(v.x()), float(v.y()), float(v.z())});
+        m_norm.push_back(Vec3f{m_curNorm[0], m_curNorm[1], m_curNorm[2]});
         m_col.push_back(m_curCol);
         m_name.push_back(m_curName);
         ++m_nVerts;
@@ -276,6 +280,13 @@ void TubeMeshBuilder::end()
     }
 
     int nCount = 0;
+    if (m_nMode == MODE_BUILD && m_bOverflow) {
+        // the primitive lost vertices to the limit: do not record it
+        resetRing();
+        m_bRingPrim = false;
+        m_nPrimType = -1;
+        return;
+    }
     if (m_nMode == MODE_BUILD) {
         nCount = getVertexSize() - m_nPrimFirst;
         Prim prim{m_nPrimType, m_nPrimFirst, nCount};
