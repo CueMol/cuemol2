@@ -56,7 +56,18 @@ public:
     static constexpr int TG_PASS_BUILD = 1;    ///< (re)built
     static constexpr int TG_PASS_SERIAL = 2;   ///< updated by the serial traversal
     static constexpr int TG_PASS_CHUNKED = 3;  ///< updated chunk by chunk (see tubeGpuLastParallel())
+    /// built, but too large to draw (see tubeGpuIsTooLarge())
+    static constexpr int TG_PASS_TOO_LARGE = 4;
     int tubeGpuLastPass() const { return m_nLastPass; }
+
+    /// True if the last build gave a mesh whose vertex or index buffer would
+    /// exceed DisplayContext::getMaxBufferBytes(): nothing is drawn (instead
+    /// of failing the allocation) until the mesh is invalidated and rebuilt.
+    bool tubeGpuIsTooLarge() const { return m_bTooLarge; }
+
+    /// Override the buffer size limit of the display context (0: use the
+    /// context's, the default). For tests.
+    static void setMaxBufferBytes(size_t n) { s_nMaxBufferBytes = n; }
     /// True if the last chunked update ran its chunks in parallel
     bool tubeGpuLastParallel() const { return m_bParallel; }
 
@@ -182,13 +193,17 @@ private:
     bool m_bChunked;
     /// Set by updateMesh() when the chunked update ran in parallel
     bool m_bParallel;
+    /// See tubeGpuIsTooLarge()
+    bool m_bTooLarge;
 
     static int s_nParallelMinVerts;
+    static size_t s_nMaxBufferBytes;
 
     void build(DisplayContext *pdc, int nPolyMode);
 
-    /// Record the mesh by running the host's traversal in build mode.
-    void buildMesh();
+    /// Record the mesh by running the host's traversal in build mode, up to
+    /// nMaxVerts vertices.
+    void buildMesh(int nMaxVerts);
 
     /// Apply the pending in-place update (see tubeGpuMarkDirty) to the mesh
     /// in the primitive. Returns false if the traversal changed the topology.
