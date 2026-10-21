@@ -40,27 +40,39 @@ public:
      * LAYOUT_INTERLEAVED: one TrigVertAttr (32 bytes) per vertex.
      *
      * LAYOUT_PACKED: one block per attribute, in this order: positions
-     * (float x3, 12 bytes per vertex), normals (one GL_INT_2_10_10_10_REV
-     * word, 4 bytes), colours (RGBA bytes, 4 bytes) and hit names (4 bytes).
+     * (float x3, 12 bytes per vertex), normals (signed normalized short x4,
+     * 8 bytes), colours (RGBA bytes, 4 bytes) and hit names (4 bytes).
      * Positions and normals come first and adjoin, so a coordinate update
-     * re-uploads 16 bytes per vertex (markUpdated(UPD_GEOM)) and a colour
+     * re-uploads 20 bytes per vertex (markUpdated(UPD_GEOM)) and a colour
      * update 4 bytes.
+     *
+     * Normals use four shorts rather than GL_INT_2_10_10_10_REV: D3D11 has
+     * no signed 10-10-10-2 vertex format, so ANGLE converts that one on the
+     * CPU into an extra float x4 copy, whereas short x4 normalized maps to
+     * DXGI_FORMAT_R16G16B16A16_SNORM directly (three shorts would also be
+     * converted, there being no three-component 16-bit DXGI format).
      */
     static constexpr int LAYOUT_INTERLEAVED = 0;
     static constexpr int LAYOUT_PACKED = 1;
 
-    /** Storage unit of LAYOUT_PACKED: the buffer holds one per vertex (24
+    /** Storage unit of LAYOUT_PACKED: the buffer holds one per vertex (28
      *  bytes), but laid out by attribute blocks, not per vertex. */
     struct PackedUnit
     {
-        quint32 w[6];
+        quint32 w[7];
+    };
+
+    /** A packed normal: x, y, z as signed normalized shorts and w = 1. */
+    struct PackedNormal
+    {
+        qint16 x, y, z, w;
     };
 
     /** Writable attribute blocks of a LAYOUT_PACKED primitive. */
     struct PackedArrays
     {
         qfloat32 *pos;     ///< 3 floats per vertex
-        quint32 *norm;     ///< packed normal (packNormal()) per vertex
+        PackedNormal *norm;  ///< packed normal (packNormal()) per vertex
         qbyte *color;      ///< RGBA bytes per vertex
         quint32 *hitName;  ///< encoded hit name per vertex
     };
@@ -70,12 +82,11 @@ public:
     static constexpr int UPD_COLOR = 2;  ///< colours
 
     /**
-     * Pack a normal into a GL_INT_2_10_10_10_REV word: x, y, z as signed
-     * normalized 10-bit values (x in the low bits) and w = 1, which is what
-     * a three-component float normal reads as in the vec4 shader input.
+     * Pack a normal: x, y, z as signed normalized shorts and w = 1, which is
+     * what a three-component float normal reads as in the vec4 shader input.
      * Components outside [-1, 1] are clamped.
      */
-    static quint32 packNormal(float x, float y, float z)
+    static PackedNormal packNormal(float x, float y, float z)
     {
         return packUnitNormal(clampUnit(x), clampUnit(y), clampUnit(z));
     }
@@ -86,14 +97,13 @@ public:
      * normal it is given, so this is kept to a multiply and a rounding
      * conversion per component. Same result as packNormal() for such input.
      */
-    static quint32 packUnitNormal(float x, float y, float z)
+    static PackedNormal packUnitNormal(float x, float y, float z)
     {
-        return packSnorm10(x) | (packSnorm10(y) << 10) | (packSnorm10(z) << 20) |
-               (quint32(1) << 30);
+        return PackedNormal{packSnorm16(x), packSnorm16(y), packSnorm16(z), 32767};
     }
 
     /** Inverse of packNormal() (x, y, z only), as the GPU decodes it. */
-    static qlib::Vector4D unpackNormal(quint32 w);
+    static qlib::Vector4D unpackNormal(const PackedNormal &n);
 
     /**
      * std140 DrawParamsBlock for the pick program (binding=2, 32 bytes):
@@ -321,8 +331,8 @@ private:
     }
 
     /** Start of the LAYOUT_PACKED block that begins nWordsBefore 4-byte
-     *  words per vertex into the storage (positions 0, normals 3, colours 4,
-     *  hit names 5). */
+     *  words per vertex into the storage (positions 0, normals 3, colours 5,
+     *  hit names 6). */
     qbyte *packedBlock(int nWordsBefore) const;
 
     static float clampUnit(float c)
@@ -330,10 +340,10 @@ private:
         return (c > 1.0f) ? 1.0f : ((c < -1.0f) ? -1.0f : c);
     }
 
-    /// Signed normalized 10-bit value of c in [-1, 1] (rounded to nearest)
-    static quint32 packSnorm10(float c)
+    /// Signed normalized 16-bit value of c in [-1, 1] (rounded to nearest)
+    static qint16 packSnorm16(float c)
     {
-        return quint32(std::lrintf(c * 511.0f)) & 0x3FFu;
+        return qint16(std::lrintf(c * 32767.0f));
     }
 
     void setupAttrs();

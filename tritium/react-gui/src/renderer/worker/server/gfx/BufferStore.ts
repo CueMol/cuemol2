@@ -24,10 +24,10 @@ const convertType = (gl: GL, itype: string): number => {
     switch (itype) {
         case "1": return gl.UNSIGNED_BYTE;
         case "3": return gl.UNSIGNED_INT;
-        case "21": return gl.FLOAT;
-        // x, y, z, w packed in one word (packed normals, see
+        // signed normalized shorts (packed normals, see
         // gfx::TrigGpuPrim::LAYOUT_PACKED)
-        case "61": return gl.INT_2_10_10_10_REV;
+        case "12": return gl.SHORT;
+        case "21": return gl.FLOAT;
         default:
             console.error(`unknown type ${itype}`);
             throw `unknown type ${itype}`;
@@ -39,8 +39,8 @@ const convGLNorm = (itype: string): boolean => {
     switch (itype) {
         case "1": return true;
         case "3": return false;
+        case "12": return true;
         case "21": return false;
-        case "61": return true;
         default:
             console.error(`unknown type ${itype}`);
             throw `unknown type ${itype}`;
