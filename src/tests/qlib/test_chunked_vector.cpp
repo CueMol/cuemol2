@@ -33,7 +33,12 @@ TEST(ChunkedVectorTest, KeepsElementsAcrossBlocks)
     ASSERT_EQ(seen.size(), size_t(n));
     for (int i = 0; i < n; ++i) EXPECT_EQ(seen[i], i * 3);
 
+    // a copy owns its own elements
+    const qlib::ChunkedVector<int, 2> b(a);
     a.clear();
+    ASSERT_EQ(b.size(), size_t(n));
+    EXPECT_EQ(b[n - 1], (n - 1) * 3);
+
     EXPECT_TRUE(a.empty());
     int nspans = 0;
     a.forEachSpan([&](const int *, size_t) { ++nspans; });

@@ -73,6 +73,37 @@ namespace qlib {
     }
 
   public:
+    ChunkedVector() = default;
+
+    // A copy copies the elements (a class holding this array may be
+    // exported from a DLL, which instantiates its copy members)
+    ChunkedVector(const ChunkedVector &arg)
+    {
+      arg.forEachSpan([this](const T *p, size_t n) {
+        addBlock();
+        std::copy(p, p + n, m_blocks.back().get());
+      });
+      m_size = arg.m_size;
+    }
+
+    ChunkedVector(ChunkedVector &&arg) noexcept
+      : m_blocks(std::move(arg.m_blocks)), m_size(arg.m_size)
+    {
+      arg.m_size = 0;
+    }
+
+    ChunkedVector &operator=(ChunkedVector arg) noexcept
+    {
+      swap(arg);
+      return *this;
+    }
+
+    void swap(ChunkedVector &arg) noexcept
+    {
+      m_blocks.swap(arg.m_blocks);
+      std::swap(m_size, arg.m_size);
+    }
+
     void push_back(const T &v)
     {
       if ((m_size >> kShift) == m_blocks.size()) addBlock();
