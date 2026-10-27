@@ -499,6 +499,20 @@ describe('DragNumericField', () => {
         mouseUp()
     })
 
+    it('drops the travel past an end, so the first move back leaves it', () => {
+        // Overshooting max used to bank the extra travel: the value stuck at
+        // max until as much was dragged back. A start value already past the
+        // range (set elsewhere) began the drag that far out the same way.
+        const onChange = vi.fn()
+        render({ value: 12, min: 0, max: 10, step: 0.1, onChange })
+        mouseDownBody()
+        moveBy(80) // well past max
+        expect(onChange).toHaveBeenLastCalledWith(10)
+        moveBy(-8) // one step back
+        expect(onChange).toHaveBeenLastCalledWith(9.9)
+        mouseUp()
+    })
+
     it('is inert when disabled', () => {
         const onChange = vi.fn()
         render({ value: 1.0, disabled: true, onChange })

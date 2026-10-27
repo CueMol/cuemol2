@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import path from 'path'
 
 // Native dialog spies. fileDialogs.ts imports `dialog` from electron at module
 // load; the per-call return value is set inside each test.
@@ -215,7 +216,7 @@ describe('handleObjectSaveDialog', () => {
     const [passedWin, opts] = showSaveDialog.mock.calls[0]
     expect(passedWin).toBe(win)
     expect(opts.title).toBe('Save Object As')
-    expect(opts.defaultPath).toBe('/data/mol1.xyz')
+    expect(opts.defaultPath).toBe(path.join('/data', 'mol1.xyz'))
     expect(opts.filters).toEqual([
       ...objectFilters,
       { name: 'All Files', extensions: ['*'] },

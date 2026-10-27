@@ -17,7 +17,7 @@ import { getNewRendererOptions } from '@renderer/worker/server/services/rend/get
 import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
 import { refWord, resolvePath, splitPathWords } from '../../runtime/paths'
-import { openTarget } from '@renderer/worker/server/catalog/fileLoad'
+import { openTarget, readerTarget } from '@renderer/worker/server/catalog/fileLoad'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import type { GenericPropEntry } from '@renderer/worker/shared/genericProps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
@@ -353,10 +353,14 @@ function candidates(id: string, ctx: WorkerContext, sc: SourceContext): (string 
   }
   if (id.startsWith('fileRendererTypes:')) {
     // What the reader of the file typed earlier makes, and what that can
-    // show: the reader picked as the load will pick it.
-    const file = boundValue(sc, id.slice('fileRendererTypes:'.length))
+    // show: the reader picked as the load will pick it -- the op's own
+    // reader for a format's load op (`fileRendererTypes:<param>:<reader>`),
+    // never one sniffed from the file.
+    const [param, reader] = id.slice('fileRendererTypes:'.length).split(':')
+    const file = boundValue(sc, param)
     if (file === '') return []
-    const target = openTarget(ctx, resolvePath(sc.cwd, file))
+    const filePath = resolvePath(sc.cwd, file)
+    const target = reader ? readerTarget(ctx, filePath, reader) : openTarget(ctx, filePath)
     if ('error' in target || target.scene) return []
     return getCompatibleRendererNames(ctx, { filePath: target.filePath, readerName: target.readerName }).types
   }

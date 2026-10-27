@@ -12,6 +12,6 @@ describe('outputPath', () => {
     expect(outputPath(ctx('desktop'), '/tmp/pic.png', '.png')).toHaveProperty('error')
     expect(outputPath(ctx(), 'sub/pic.png', '.png')).toHaveProperty('error')
     expect(outputPath(ctx('any'), 'sub/pic', '.png')).toEqual({ path: nodePath.join(desktopDir(), 'sub/pic.png') })
-    expect(outputPath(ctx('any'), '/tmp/pic.png', '.png')).toEqual({ path: '/tmp/pic.png' })
+    expect(outputPath(ctx('any'), '/tmp/pic.png', '.png')).toEqual({ path: nodePath.resolve('/tmp/pic.png') })
   })
 })

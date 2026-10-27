@@ -23,8 +23,10 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = join(__dirname, '..', '..', '..')
-const builderYml = readFileSync(join(root, 'electron-builder.yml'), 'utf-8')
-const installerNsh = readFileSync(join(root, 'build', 'installer.nsh'), 'utf-8')
+/** A checked-in text file, with LF line ends whatever the checkout wrote. */
+const readText = (file: string) => readFileSync(file, 'utf-8').replace(/\r\n/g, '\n')
+const builderYml = readText(join(root, 'electron-builder.yml'))
+const installerNsh = readText(join(root, 'build', 'installer.nsh'))
 
 /** Slice the yml between a top-level `key:` line and the next top-level key. */
 function topLevelSection(src: string, key: string): string {

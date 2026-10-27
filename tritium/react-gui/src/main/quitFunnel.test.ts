@@ -44,6 +44,8 @@ const appExit = vi.fn()
 
 const app = {
   setName: vi.fn(),
+  // Called at module scope on Windows only.
+  setAppUserModelId: vi.fn(),
   commandLine: { appendSwitch: vi.fn() },
   whenReady: vi.fn(() => ({ then: vi.fn() })),
   on: vi.fn((event: string, cb: Listener) => {

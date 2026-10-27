@@ -98,6 +98,18 @@ TEST(NAMDCoorReaderSniffTest, NaNCoordReturnsUnknown)
               ObjReader::CONTENT_UNKNOWN);
 }
 
+TEST(NAMDCoorReaderSniffTest, Ccp4HeaderReturnsUnknown)
+{
+    NAMDCoorReader reader;
+    // CCP4/MRC header words NC, NR, NS, MODE, NCSTART... (240^3, mode 2).
+    // As NAMD coor: natoms=240 and the xyz doubles are pairs of small
+    // int32s, i.e. subnormal values -- not coordinates.
+    const qint32 words[7] = {240, 240, 240, 2, 0, 0, 0};
+    std::string payload(sizeof(words), '\0');
+    std::memcpy(payload.data(), words, sizeof(words));
+    EXPECT_EQ(sniff(reader, payload), ObjReader::CONTENT_UNKNOWN);
+}
+
 TEST(NAMDCoorReaderSniffTest, PdbTextReturnsUnknown)
 {
     NAMDCoorReader reader;
