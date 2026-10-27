@@ -20,7 +20,7 @@ export interface UpdateRelease {
 }
 
 /** What `install` is doing. */
-export type UpdateInstallStep = 'mount' | 'copy' | 'verify'
+export type UpdateInstallStep = 'mount' | 'copy' | 'verify' | 'stage'
 
 /** Where the update flow stands. */
 export type UpdatePhase =
