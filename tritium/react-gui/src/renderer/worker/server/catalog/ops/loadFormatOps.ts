@@ -22,7 +22,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { defineOp } from '../op'
 import type { OpContext, OpOutcome } from '../op'
 import type { LoadArgs } from '../fileLoad'
-import { LOAD_RENDERER_PARAMS, loadObjectFile, readerTarget } from '../fileLoad'
+import { LOAD_RENDERER_PARAMS, NULL_RENDERER_DOC, loadObjectFile, readerTarget } from '../fileLoad'
 import { callerPath } from '../outputFile'
 import { boolean, enumOf, integer, optional, path, real, rendererType, selection, string } from '../params'
 
@@ -31,7 +31,7 @@ const EXPOSE = { tool: false, console: true, mcp: true } as const
 /** The arguments every format's load op starts with; `readerName` reads the file. */
 const common = (readerName: string) => ({
   path: path('The file to open.', readerName),
-  rendererType: optional(rendererType("Renderer to create for it. Null uses the reader's default.")),
+  rendererType: optional(rendererType(`Renderer to create for it. ${NULL_RENDERER_DOC}`)),
   selection: optional(selection('Draw only this selection. Null draws everything.')),
   name: optional(string('Name of the new object. Null uses the file name.')),
   ...LOAD_RENDERER_PARAMS,
