@@ -21,9 +21,10 @@ instead. If a change ports a UXP surface it belongs there; if it adds
 something UXP never had, or concerns build / packaging / internal
 architecture, it belongs here.
 
-- [アプリの自動更新 (署名なし、macOS)](auto-update.md) (日本語) -- electron-updater を使わず、
-  main が GitHub Releases API (4 桁タグ) から DMG を Node で取得して SHA-256 を照合し、staging へ展開、
-  終了後にヘルパー sh が置換して起動を確認する (起動しなければロールバック)。VS Code 風の通知と
+- [アプリの自動更新 (署名なし、macOS / Windows)](auto-update.md) (日本語) -- electron-updater を使わず、
+  main が GitHub Releases API (4 桁タグ) からインストーラを Node で取得して SHA-256 を照合し、
+  終了後にヘルパーが置換して起動を確認する (起動しなければロールバック)。mac は DMG から `.app` を
+  rename で置換、Windows は `CueMol3 Updater.exe` で昇格して NSIS を silent 実行し、install dir を退避して戻す。VS Code 風の通知と
   Settings の行の 2 経路、`@cuemol/updater` パッケージ。
 
 - [Console の Tab 補完](console-completion.md) (日本語) -- console panel と tritium_cli で共通の

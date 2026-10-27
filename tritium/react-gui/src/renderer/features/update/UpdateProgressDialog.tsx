@@ -18,6 +18,7 @@ const STEP_LABEL: Record<UpdateInstallStep, string> = {
   mount: 'Opening the disk image...',
   copy: 'Copying the new version...',
   verify: 'Checking the new version...',
+  stage: 'Preparing the installer...',
 }
 
 interface Props {

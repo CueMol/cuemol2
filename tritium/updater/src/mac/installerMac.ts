@@ -57,6 +57,7 @@ export interface MacInstallerOptions {
 
 /** See the file header. */
 export class MacInstaller implements Installer {
+  readonly firstStep: InstallStep = 'mount'
   private readonly appPath: string | null
   private readonly opts: MacInstallerOptions
 
