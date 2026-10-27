@@ -370,8 +370,8 @@ void GLSLMapVolRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
     //
     // calculate the contour level
     //
-    const double siglevel = getSigLevel();
-    const double level = pMap->getRmsdDensity() * siglevel;
+    // siglevel through the map kind (top percent on a cryo-EM map)
+    const double level = resolveLevel(pMap);
     double lvtmp = floor( (level-pMap->getLevelBase()) / pMap->getLevelStep());
     unsigned int lv = (unsigned int)lvtmp;
     if (lvtmp<0) lv = 0;

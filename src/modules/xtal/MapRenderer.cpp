@@ -102,13 +102,104 @@ bool MapRenderer::isPercentLevel(const ScalarObject *pMap) const
           pXtal->getEffectiveMapType() == DensityMap::MAPTYPE_EM);
 }
 
+namespace {
+  /// Top fraction of grid points the UI range stops at (0.01%).
+  const double UI_TOP_FRACTION = 1.0e-4;
+}
+
+void MapRenderer::getUiAbsLevelRange(const ScalarObject *pMap, double &lo, double &hi) const
+{
+  const double vmin = pMap->getMinDensity();
+  const double vmax = pMap->getMaxDensity();
+  const DensityMap *pXtal = dynamic_cast<const DensityMap *>(pMap);
+
+  hi = vmax;
+  if (pXtal != NULL) {
+    const double top = pXtal->getLevelAtTopFraction(UI_TOP_FRACTION);
+    if (top < vmax)
+      hi = top;
+  }
+
+  lo = vmin;
+  if (isPercentLevel(pMap)) {
+    // mean + 1 sigma, snapped to the 8-bit bin edge the contour is drawn at
+    // (the level the capped default percent resolves to)
+    const double bg = pMap->getMeanDensity() + pMap->getRmsdDensity();
+    if (bg > vmin)
+      lo = pXtal->getLevelAtTopFraction(pXtal->getTopFractionAtLevel(bg));
+  }
+
+  // degenerate maps (flat, or everything above the background in one bin)
+  if (!(hi > lo)) {
+    lo = vmin;
+    hi = vmax;
+  }
+}
+
+double MapRenderer::getUiAbsLevelMin() const
+{
+  double lo, hi;
+  getUiAbsLevelRange(qlib::ensureNotNull(getScalarObj()), lo, hi);
+  return lo;
+}
+
+double MapRenderer::getUiAbsLevelMax() const
+{
+  double lo, hi;
+  getUiAbsLevelRange(qlib::ensureNotNull(getScalarObj()), lo, hi);
+  return hi;
+}
+
+double MapRenderer::getUiLevelMin() const
+{
+  const ScalarObject *pMap = qlib::ensureNotNull(getScalarObj());
+  // The top end in percent is the defining fraction itself: converting its
+  // level back would count the whole 8-bit bin it falls in.
+  if (isPercentLevel(pMap))
+    return UI_TOP_FRACTION * 100.0;
+  double lo, hi;
+  getUiAbsLevelRange(pMap, lo, hi);
+  const double sig = pMap->getRmsdDensity();
+  return (sig > 0.0) ? lo / sig : 0.0;
+}
+
+double MapRenderer::getUiLevelMax() const
+{
+  const ScalarObject *pMap = qlib::ensureNotNull(getScalarObj());
+  double lo, hi;
+  getUiAbsLevelRange(pMap, lo, hi);
+  if (isPercentLevel(pMap))
+    return static_cast<const DensityMap *>(pMap)->getTopFractionAtLevel(lo) * 100.0;
+  const double sig = pMap->getRmsdDensity();
+  return (sig > 0.0) ? hi / sig : 0.0;
+}
+
+double MapRenderer::getEffectiveSigLevel(const ScalarObject *pMap) const
+{
+  if (!isPercentLevel(pMap) || !isPropDefault("siglevel"))
+    return m_dSigLevel;
+
+  // The default top percent (the ChimeraX rule) lands in the background of
+  // a map that is mostly empty; start at the edge of the UI range instead.
+  double lo, hi;
+  getUiAbsLevelRange(pMap, lo, hi);
+  const double cap = static_cast<const DensityMap *>(pMap)->getTopFractionAtLevel(lo) * 100.0;
+  return (cap > 0.0 && m_dSigLevel > cap) ? cap : m_dSigLevel;
+}
+
+double MapRenderer::getEffectiveSigLevelProp() const
+{
+  return getEffectiveSigLevel(qlib::ensureNotNull(getScalarObj()));
+}
+
 double MapRenderer::resolveLevel(const ScalarObject *pMap) const
 {
+  const double siglevel = getEffectiveSigLevel(pMap);
   if (isPercentLevel(pMap)) {
     const DensityMap *pXtal = static_cast<const DensityMap *>(pMap);
-    return pXtal->getLevelAtTopFraction(m_dSigLevel / 100.0);
+    return pXtal->getLevelAtTopFraction(siglevel / 100.0);
   }
-  return pMap->getRmsdDensity() * m_dSigLevel;
+  return pMap->getRmsdDensity() * siglevel;
 }
 
 double MapRenderer::getLevel() const
