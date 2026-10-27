@@ -28,6 +28,7 @@ import { applyRendererStyleList } from '@renderer/worker/server/services/rend/re
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
+import { renameNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
 import { getRendererPaintInfo } from '@renderer/worker/server/services/coloring/panelList'
@@ -36,7 +37,7 @@ import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { OWNED, isAllSelection, moleculeSelections, renderersOf } from './helpers'
+import { OWNED, isAllSelection, moleculeSelections, molecules, renderersOf } from './helpers'
 import type { MoleculeSelection } from './helpers'
 import { removeConsoleLabels, setConsoleLabelsVisible } from './labelCommands'
 import { interpretShortcut } from '@plugins/console/worker/parser/shortcut'
@@ -56,8 +57,10 @@ const REPRESENTATIONS: Readonly<Record<string, string>> = {
   lines: 'simple',
   sticks: 'ballstick',
   spheres: 'cpk',
-  cartoon: 'cartoon',
-  ribbon: 'ribbon',
+  // PyMOL's cartoon (helix / sheet shapes) is what CueMol calls a ribbon.
+  cartoon: 'ribbon',
+  // PyMOL's ribbon is the CA trace, straight segments from atom to atom.
+  ribbon: 'tracestick',
   surface: 'dsurface',
   nonbonded: 'simple',
   nb_spheres: 'cpk',
@@ -83,6 +86,39 @@ const UNSUPPORTED_REPS: Readonly<Record<string, string>> = {
  */
 const REP_STYLES: Readonly<Record<string, string>> = {
   sticks: 'StickBallStick,DefaultCPKColoring',
+}
+
+/** A console renderer that draws one class of residues of another representation. */
+interface Companion {
+  /** Its representation name (`pym:<rep>`). */
+  rep: string
+  /** The residues it draws; the main renderer draws the rest. */
+  scope: string
+}
+
+/**
+ * Console renderers that draw part of another representation. PyMOL's
+ * cartoon covers nucleic acids too, which CueMol draws with `nucl`: the load
+ * preset makes it as `pym:nucl`, and whatever a command does to cartoon it
+ * does to that renderer as well (it is never created by a command).
+ *
+ * Each keeps to its scope, and the main renderer to the rest: `show cartoon`
+ * would otherwise widen `nucl` to the protein and the ribbon to the nucleic
+ * acid, each drawing what the other already does.
+ */
+const COMPANIONS: Readonly<Record<string, readonly Companion[]>> = {
+  cartoon: [{ rep: 'nucl', scope: 'nucleic' }],
+}
+
+/**
+ * The console name of each load-preset member, by renderer type, where the
+ * two differ (`pym:nucl` keeps its name, see COMPANIONS).
+ */
+const PRESET_MEMBER_REPS: Readonly<Record<string, string>> = {
+  ribbon: 'cartoon',
+  ballstick: 'sticks',
+  cpk: 'spheres',
+  simple: 'lines',
 }
 
 /** Read one renderer property as a string. */
@@ -264,14 +300,45 @@ function applyRep(
   whole: boolean,
 ): CmdOutcome {
   const { obj, selStr } = item
-  const existing = ownedRenderer(ctx, cc.sceneId, obj.uid, rep)
-  if (name === 'hide' && whole) {
-    if (existing) hideOwned(ctx, cc.sceneId, existing.id)
-    return { ok: true }
+  const scopes: string[] = []
+  for (const companion of COMPANIONS[rep] ?? []) {
+    const other = ownedRenderer(ctx, cc.sceneId, obj.uid, companion.rep)
+    if (!other) continue
+    scopes.push(companion.scope)
+    const res = updateOwned(ctx, cc, name, item, other, rep, whole, companion.scope)
+    if (!res.ok) return res
   }
+  const scope = scopes.length > 0 ? `not (${scopes.join(' or ')})` : undefined
+  const existing = ownedRenderer(ctx, cc.sceneId, obj.uid, rep)
   if (!existing) {
     if (name === 'hide') return { ok: true }
-    return createOwned(ctx, cc, obj, rep, REPRESENTATIONS[rep], selStr)
+    return createOwned(ctx, cc, obj, rep, REPRESENTATIONS[rep], scoped(selStr, scope))
+  }
+  return updateOwned(ctx, cc, name, item, existing, rep, whole, scope)
+}
+
+/** `selStr` kept to `scope`, when there is one. */
+function scoped(selStr: string, scope: string | undefined): string {
+  return scope === undefined ? selStr : `(${selStr}) and (${scope})`
+}
+
+/** Apply a show / hide / as to a console renderer that already exists. */
+function updateOwned(
+  ctx: WorkerContext,
+  cc: CmdContext,
+  name: 'show' | 'hide' | 'as',
+  item: MoleculeSelection,
+  existing: SceneTreeNode,
+  rep: string,
+  whole: boolean,
+  scope?: string,
+): CmdOutcome {
+  const { obj } = item
+  // A hide only narrows what is drawn, so it never leaves the scope.
+  const selStr = name === 'hide' ? item.selStr : scoped(item.selStr, scope)
+  if (name === 'hide' && whole) {
+    hideOwned(ctx, cc.sceneId, existing.id)
+    return { ok: true }
   }
   // It is there: combine with what it already draws, which is what makes
   // show additive and hide subtractive the way PyMOL's flags are.
@@ -338,9 +405,10 @@ function repCommand(name: 'show' | 'hide' | 'as', alias?: string): PymCommand {
       for (const item of sels.items) {
         if (name === 'as') {
           // Everything else this console put on the object steps aside.
+          const kept = req.reps.flatMap((r) => [r, ...(COMPANIONS[r] ?? []).map((c) => c.rep)])
           for (const other of renderersOf(ctx, cc.sceneId, item.obj.uid)) {
             const otherRep = other.name.slice(OWNED.length)
-            if (other.name.startsWith(OWNED) && !req.reps.includes(otherRep) && otherRep !== 'labels') {
+            if (other.name.startsWith(OWNED) && !kept.includes(otherRep) && otherRep !== 'labels') {
               hideOwned(ctx, cc.sceneId, other.id)
             }
           }
@@ -447,6 +515,22 @@ export function repOfRendererType(type: string): string | null {
     if (REPRESENTATIONS[rep] === type) return rep
   }
   return null
+}
+
+/**
+ * Give the members of the load preset just made on `objectName` (named
+ * `pym:<type>`, see fileCommands.ts) the console's representation names, so
+ * `hide sticks` or `set stick_radius` reach them. The newest object of that
+ * name is the one just loaded.
+ */
+export function adoptPresetRenderers(ctx: WorkerContext, sceneId: number, objectName: string): void {
+  const mol = molecules(ctx, sceneId, objectName).at(-1)
+  if (!mol) return
+  for (const rend of renderersOf(ctx, sceneId, mol.uid)) {
+    const rep = PRESET_MEMBER_REPS[rend.name.slice(OWNED.length)]
+    if (!rend.name.startsWith(OWNED) || rep === undefined) continue
+    renameNode(ctx, { sceneId, nodeId: rend.id, nodeType: 'renderer', newName: `${OWNED}${rep}` })
+  }
 }
 
 /** The representation names this console accepts, for completion. */

@@ -81,6 +81,26 @@ export function initialRendererType(types: readonly string[]): string {
   return types[0] ?? ''
 }
 
+/**
+ * The renderer preset a molecule is drawn with when a load without a dialog
+ * (console, MCP, agent) was given no renderer: PyMOL's classified display
+ * (`auto_show_classified`), defined in `data/default_style.xml`.
+ */
+export const MOLECULE_LOAD_PRESET = 'DefaultPymRendPreset'
+
+/**
+ * The default renderer-name prefix for a preset: the style id without its
+ * conventional 'RendPreset' suffix, lowercased, plus '_' so the numeric
+ * suffix reads as a counter ('Default1RendPreset' -> 'default1_' ->
+ * 'default1_1'). UXP used the raw style id, giving names like
+ * 'Default1RendPreset1' (ADR-0046). A name without the suffix falls back to
+ * its whole lowercased form.
+ */
+export function presetNamePrefix(styleName: string): string {
+  const base = styleName.replace(/RendPreset$/, '') || styleName
+  return base.toLowerCase() + '_'
+}
+
 export function getDefaultPdbOptions(): PdbOptions {
   // Placeholders only. The authoritative defaults come from the C++ reader
   // (PDBFileReader / MmcifMolReader qif), fetched by FileOpenOptionDialog via

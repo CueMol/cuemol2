@@ -324,6 +324,18 @@
     <renderer type="ballstick" sel="!nucleic&amp;!protein" style="DefaultBallStick,DefaultCPKColoring"/>
   </style>
 
+  <!-- PyMOL's auto_show_classified: polymer as cartoon (CueMol's ribbon), organic residues
+       (those with carbon) as sticks, inorganic ones as spheres, water as
+       lines (crosses). The default for a molecule loaded without a renderer
+       (console / MCP / agent). -->
+  <style id="DefaultPymRendPreset" type="MolCoord-rendpreset" desc="PyMOL-like preset">
+    <renderer type="ribbon" sel="protein" style="DefaultRibbon,DefaultHSCPaint"/>
+    <renderer type="nucl" sel="nucleic" style="DefaultNucl"/>
+    <renderer type="ballstick" sel="ligand&amp;(byres (ligand&amp;elem C))" style="StickBallStick,DefaultCPKColoring"/>
+    <renderer type="cpk" sel="ligand&amp;!(byres (ligand&amp;elem C))" style="DefaultCPK,DefaultCPKColoring"/>
+    <renderer type="simple" sel="water" style="DefaultSimple,DefaultCPKColoring"/>
+  </style>
+
   <style id="Simple1RendPreset" type="MolCoord-rendpreset" desc="Simple preset 1">
     <renderer type="trace" sel="protein|nucleic" style="DefaultCPKColoring"/>
     <renderer type="simple" sel="!nucleic&amp;!protein" style="DefaultCPKColoring"/>
