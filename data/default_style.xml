@@ -479,6 +479,21 @@ texture {
   <sel id="ligand" value="!rprop type=prot and !rprop type=nucl and !rprop type=water"/>
   <sel id="hydrogen" value="elem H"/>
 
+  <!-- The palette the default painting draws from: the n-th molecule loaded
+       into a scene takes palette_n (cycling), and its helix / sheet / coil
+       colours are modifiers of it. The Okabe-Ito (Color Universal Design)
+       set without its black: told apart with any colour vision. The paint
+       names these; the values are copied into the scene's own style set on
+       load, so a saved scene carries them. Values only (a named color
+       cannot refer to another one). -->
+  <color id="palette_1" value="#E69F00"/>
+  <color id="palette_2" value="#56B4E9"/>
+  <color id="palette_3" value="#009E73"/>
+  <color id="palette_4" value="#F0E442"/>
+  <color id="palette_5" value="#0072B2"/>
+  <color id="palette_6" value="#D55E00"/>
+  <color id="palette_7" value="#CC79A7"/>
+
   <!-- Default color names from HTML/CSS2 color table -->
   <color id="AliceBlue" value="#F0F8FF"/>
   <color id="White" value="#FFFFFF"/>

@@ -70,6 +70,8 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
         set colormode(v: string) { colormodeValue = v; setColormode(v) },
         set coloring(v: unknown) { setColoring(v) },
         get coloring() { return undefined },
+        // The molecule it draws, whose palette colour the Default paint takes.
+        getClientObjID: () => 10,
         applyStyles,
         resetProp,
         setProp,
@@ -122,7 +124,8 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
     const ctx = {
         sceMgr: { getScene: vi.fn(() => (sceneExists ? scene : null)) },
         svc: { createObj },
-        styleMgr: { getStyleNamesJSON },
+        // The scene already defines the palette, so the paint copies nothing.
+        styleMgr: { getStyleNamesJSON, getColorDefsJSON: () => JSON.stringify([1, 2, 3, 4, 5, 6, 7].map((n) => `palette_${n}`)) },
     } as unknown as WorkerContext
 
     return {
@@ -366,10 +369,10 @@ describe('setRendererColoring — Phase 1 new cases', () => {
         // makeSel / makeColor are mocked to `{ __sel }` / `{ __color }`; the
         // scene uid (7) scopes both.
         expect(appendPaint.mock.calls).toEqual([
-            [{ __sel: 'sheet', __uid: 7 }, { __color: 'SteelBlue', __uid: 7 }],
-            [{ __sel: 'helix', __uid: 7 }, { __color: 'khaki', __uid: 7 }],
-            [{ __sel: 'nucleic', __uid: 7 }, { __color: 'yellow', __uid: 7 }],
-            [{ __sel: '*', __uid: 7 }, { __color: 'FloralWhite', __uid: 7 }],
+            [{ __sel: 'sheet', __uid: 7 }, { __color: 'palette_1{mod_h:15;mod_s:-0.15}', __uid: 7 }],
+            [{ __sel: 'helix', __uid: 7 }, { __color: 'palette_1{mod_h:350}', __uid: 7 }],
+            [{ __sel: 'nucleic', __uid: 7 }, { __color: 'palette_1', __uid: 7 }],
+            [{ __sel: '*', __uid: 7 }, { __color: 'palette_1{mod_s:-0.6;mod_b:0.1}', __uid: 7 }],
         ])
         expect(setColoring).toHaveBeenCalledWith(
             expect.objectContaining({ __coloring: 'PaintColoring' }),
@@ -656,6 +659,7 @@ function makeRichFixture(opts: MakeRichOpts) {
             (spec as RendSpec).typeName ?? (spec as ObjectSpec).name ?? ''
         const rend: Record<string, unknown> = {
             type_name: typeName,
+            getClientObjID: () => 10,
             get coloring() {
                 return coloring
             },
@@ -741,7 +745,7 @@ function makeRichFixture(opts: MakeRichOpts) {
     const ctx = {
         sceMgr: { getScene: vi.fn(() => (sceneExists ? scene : null)) },
         svc: { createObj },
-        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]') },
+        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]'), getColorDefsJSON: () => JSON.stringify([1, 2, 3, 4, 5, 6, 7].map((n) => `palette_${n}`)) },
     } as unknown as WorkerContext
 
     return { ctx, scene, rendWrappers, startUndoTxn, commitUndoTxn }
@@ -1510,7 +1514,7 @@ function makeElepotFixture(opts: ElepotRendOpts = {}) {
         midcol: { toString: () => midcol },
         highcol: { toString: () => highcol },
     }
-    const rend = new Proxy({ setProp }, {
+    const rend = new Proxy({ setProp, getClientObjID: () => 10 }, {
         get(target: Record<string, unknown>, key: string) {
             if (key in target) return target[key]
             return props[key]
@@ -1543,7 +1547,7 @@ function makeElepotFixture(opts: ElepotRendOpts = {}) {
     const ctx = {
         sceMgr: { getScene: vi.fn(() => scene) },
         svc: { createObj: vi.fn() },
-        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]') },
+        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]'), getColorDefsJSON: () => JSON.stringify([1, 2, 3, 4, 5, 6, 7].map((n) => `palette_${n}`)) },
     } as unknown as WorkerContext
 
     return { ctx, scene, rend, setProp, props }
