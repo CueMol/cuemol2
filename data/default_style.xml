@@ -105,9 +105,10 @@
   </style>
 
   <style id="DefaultNucl" type="renderer"
-    axialdetail="8" pivotatom="P" defaultcolor="$molcol">
+    axialdetail="8" pivotatom="P" defaultcolor="$molcol"
+    base_size="0.3" base_thick="0.3">
     <coloring type="SolidColoring"/>
-    <section width="0.5" tuber="2.5"/>
+    <section type="roundsquare" width="0.4" tuber="2.5"/>
   </style>
 
   <style id="DefaultLabel" type="renderer"
