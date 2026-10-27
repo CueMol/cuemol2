@@ -27,7 +27,7 @@ export type UpdatePhase =
   | { phase: 'error'; message: string; release?: ReleaseInfo }
 
 /** What `Installer.prepare` is doing. */
-export type InstallStep = 'mount' | 'copy' | 'verify'
+export type InstallStep = 'mount' | 'copy' | 'verify' | 'stage'
 
 /** Everything the UI needs, sent whole on every change. */
 export interface UpdateStatus {
@@ -44,6 +44,8 @@ export interface UpdateStatus {
 
 /** The OS-specific half of an update. */
 export interface Installer {
+  /** The step `prepare` starts with, shown before its first progress report. */
+  readonly firstStep: InstallStep
   /** Whether the installed app can be replaced in place by this user. */
   canInstall(): { ok: true } | { ok: false; reason: string }
   /** Unpack `file` into a staging copy next to the running app. */
@@ -151,7 +153,7 @@ export class UpdateController {
     if (this.state.phase !== 'downloaded') return
     const release = this.state.release
     const file = path.join(this.deps.workDir, 'download', release.asset.name)
-    this.set({ phase: 'installing', release, step: 'mount', fraction: 0 })
+    this.set({ phase: 'installing', release, step: this.deps.installer.firstStep, fraction: 0 })
     try {
       await this.deps.installer.prepare(file, (step, fraction) =>
         this.set({ phase: 'installing', release, step, fraction }),

@@ -2,8 +2,9 @@
  * @file main/updater/index.ts
  * @description The app's self-update: @cuemol/updater wired to Electron.
  *
- * Runs only in a packaged macOS arm64 build (the one OS with an installer
- * so far). Main owns the flow and pushes the whole status to the main window
+ * Runs only in a packaged macOS arm64 or Windows x64 build (the OSes with
+ * an installer: MacInstaller swaps the bundle, WinInstaller runs Setup.exe
+ * elevated). Main owns the flow and pushes the whole status to the main window
  * on every change (`IPC.UPDATE_STATUS`); the window shows it as notifications
  * and dialogs and sends the user's choices back over the `UPDATE_*` invoke
  * channels.
@@ -27,9 +28,13 @@ import {
   DEFAULT_FEED_URL,
   MacInstaller,
   UpdateController,
+  WinInstaller,
+  handoverInProgress,
   markLaunched,
   parseVersion,
   takeSwapResult,
+  type Installer,
+  type UpdatePlatform,
   type UpdateStatus as ControllerStatus,
 } from '@cuemol/updater'
 import { IPC } from '@shared/ipcChannels'
@@ -48,8 +53,14 @@ const RESULT_POLL_TRIES = 40
 
 const RELEASES_PAGE = 'https://github.com/CueMol/cuemol2/releases/latest'
 
+/**
+ * How long after a handover the start-up cleanup leaves the work directory
+ * alone: longer than any helper waits (Windows: install + launch + confirm).
+ */
+const HANDOVER_MAX_AGE_MS = 30 * 60_000
+
 let controller: UpdateController | null = null
-let installer: MacInstaller | null = null
+let installer: (Installer & { cleanup(): void }) | null = null
 let workDir = ''
 let current = ''
 let lastResult: UpdateSwapResult | null = null
@@ -111,12 +122,20 @@ function push(): void {
   getMainWindow()?.webContents.send(IPC.UPDATE_STATUS, getUpdateStatus())
 }
 
+/** The installer target of this build, or null where there is none. */
+function updatePlatform(): UpdatePlatform | null {
+  if (process.platform === 'darwin' && process.arch === 'arm64') return 'darwin-arm64'
+  if (process.platform === 'win32' && process.arch === 'x64') return 'win32-x64'
+  return null
+}
+
 /**
  * Set the updater up. Call once, after the main window exists; does nothing
- * outside a packaged macOS arm64 build.
+ * outside a packaged macOS arm64 or Windows x64 build.
  */
 export function initUpdater(): void {
-  if (!app.isPackaged || process.platform !== 'darwin' || process.arch !== 'arm64') return
+  const platform = updatePlatform()
+  if (!app.isPackaged || !platform) return
   const version = readFullVersion()
   if (!version) {
     console.warn('[Updater] no cuemolVersion in package.json; updates disabled')
@@ -133,14 +152,20 @@ export function initUpdater(): void {
     if (result.outcome === 'rolledBack') fs.writeFileSync(rolledBackFile(), result.to)
   }
 
-  installer = new MacInstaller({ execPath: process.execPath, workDir, pid: process.pid })
+  const opts = { execPath: process.execPath, workDir, pid: process.pid }
+  installer =
+    platform === 'win32-x64'
+      ? new WinInstaller({ ...opts, launcherPath: path.join(process.resourcesPath, 'CueMol3 Updater.exe') })
+      : new MacInstaller(opts)
   // Whatever an earlier update left behind (download, staging, backup) is
-  // stale now: the helper has finished, or never ran.
-  installer.cleanup()
+  // stale now -- unless this is the version a helper just launched: the
+  // helper still needs the backup (and its signal files) until it hears
+  // from this start.
+  if (!handoverInProgress(workDir, HANDOVER_MAX_AGE_MS)) installer.cleanup()
 
   controller = new UpdateController({
     current: parseVersion(version)!,
-    platform: 'darwin-arm64',
+    platform,
     feedUrl: process.env.CUEMOL_UPDATE_FEED || DEFAULT_FEED_URL,
     fetchFn: fetch,
     workDir,

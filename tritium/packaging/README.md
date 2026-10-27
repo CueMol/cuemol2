@@ -88,6 +88,11 @@ quarantine が付かないので、警告は出ない。
 1. ダイアログの **「詳細情報」** をクリック
 2. 表示される **「実行」** ボタンをクリック
 
+この手順が要るのも最初のインストールだけ。以後の更新はアプリ自身が行い
+([auto-update](../../docs/architecture/auto-update.md))、アプリが Node で取得した Setup.exe には
+Mark of the Web が付かないので SmartScreen は出ない。ただし Program Files への per-machine インストールなので、
+更新のたびに UAC の確認 (`CueMol3 Updater.exe`、発行元: 不明) が出る。
+
 署名（EV/OV 証明書または Azure Trusted Signing）を導入すればこの警告は解消される。導入方針は
 [tritium packaging renovation](../../docs/architecture/tritium-packaging-renovation.md)
 の Phase 4 を参照（`electron-builder.yml` の `win.certificateFile` / `win.azureSignOptions`
