@@ -72,12 +72,13 @@
 
   <!-- ribbon styles -->
   <style id="DefaultRibbon" type="renderer" axialdetail="8" desc="Default">
-    <helix type="rectangle" tuber="6.0" width="0.2"/>
+    <helix type="rectangle" tuber="6.5" width="0.18"/>
     <helixhead type="smooth"/>
     <helixtail type="smooth"/>
-    <sheet type="rectangle" tuber="7.0" width="0.2"/>
+    <sheet type="rectangle" tuber="6.5" width="0.18"/>
     <sheethead type="arrow"/>
     <sheettail type="smooth"/>
+    <coil width="0.2"/>
   </style>
 
   <style id="RoundRibbon" type="renderer" axialdetail="8" desc="Round">
