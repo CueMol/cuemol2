@@ -9,9 +9,11 @@
  * lookup as an explicit name -- if it were merely passed alongside, the
  * lookup would sniff anyway and the argument would look like it worked.
  *
- * The renderer choice is pinned here for the same reason. C++ attaches
- * whatever type it is asked for without checking compatibility, so a map that
- * was given a molecule renderer loaded without an error and drew nothing.
+ * Also that a molecule load lands under the console's own names: the load
+ * preset's members are named `pym:<type>` and renamed to the representation
+ * they draw, or `hide sticks` / `set stick_radius` right after a `fetch`
+ * would find nothing to act on. (Which renderer a load makes is decided by
+ * `buildHeadlessFileOpenOptions`, pinned in its own test.)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -28,6 +30,7 @@ const { services } = vi.hoisted(() => {
       getCompatibleRendererNames: stub(() => ({ types: [], objType: '', readerName: 'mmcif' })),
       loadObject: stub(() => ({ ok: true })),
       deleteNode: stub(() => ({ ok: true })),
+      renameNode: stub(() => ({ ok: true })),
       getSceneTree: stub(() => ({ ok: false })),
       listSceneObjects: stub(() => ({ objects: [] })),
     } satisfies Record<string, Stub>,
@@ -46,7 +49,9 @@ vi.mock('@renderer/worker/server/services/file/headlessOpen', () => ({
   // the dialog's own tests.
   buildHeadlessFileOpenOptions: (_ctx: unknown, a: { rendererType: string | null }) => ({
     format: {},
-    renderer: { rendererType: a.rendererType ?? 'simple' },
+    renderer: a.rendererType === null
+      ? { rendererType: 'simple', presetName: 'DefaultPymRendPreset', rendererName: 'defaultpym_1' }
+      : { rendererType: a.rendererType, rendererName: `${a.rendererType}1` },
   }),
 }))
 vi.mock('@renderer/worker/server/services/file/streamLoadFromUrl', () => ({
@@ -54,7 +59,7 @@ vi.mock('@renderer/worker/server/services/file/streamLoadFromUrl', () => ({
 }))
 vi.mock('@renderer/worker/server/services/sceneTree/sceneOps', () => ({
   deleteNode: (...a: unknown[]) => services.deleteNode(...a),
-  renameNode: vi.fn(),
+  renameNode: (...a: unknown[]) => services.renameNode(...a),
 }))
 vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => ({
   getSceneTree: (...a: unknown[]) => services.getSceneTree(...a),
@@ -114,11 +119,11 @@ async function load(over: Record<string, string>): Promise<{ ok: boolean; error?
   return (await cmd.run(ctx, args, cc)) as { ok: boolean; error?: string }
 }
 
-/** The renderer type the load was told to create. */
-function rendererType(): string | undefined {
+/** The renderer options the load was given. */
+function rendererOptions(): { rendererName?: string; presetName?: string } | undefined {
   const call = services.loadObject.mock.calls[0]
-  const opts = (call?.[1] as { options?: { renderer?: { rendererType?: string } } } | undefined)
-  return opts?.options?.renderer?.rendererType
+  return (call?.[1] as { options?: { renderer?: { rendererName?: string; presetName?: string } } } | undefined)
+    ?.options?.renderer
 }
 
 /** The reader name handed to the lookup, if one was. */
@@ -168,28 +173,34 @@ describe('load with an explicit format', () => {
 })
 
 describe('the renderer a load creates', () => {
-  it('draws a molecule as lines, the way PyMOL does', async () => {
-    services.getCompatibleRendererNames.mockReturnValue({
-      types: ['anisou', 'ballstick', 'cartoon', 'simple', 'tube'],
-      objType: 'MolCoord',
-      readerName: 'pdb',
+  it("puts the load preset's members under the console's names", async () => {
+    services.listSceneObjects.mockReturnValue({ objects: [{ uid: 5, name: '1crn', className: 'MolCoord' }] })
+    const member = (id: number, name: string) => ({ id, name, type: 'renderer', children: [] })
+    services.getSceneTree.mockReturnValue({
+      ok: true,
+      tree: {
+        id: 1, name: 'scene', type: 'scene',
+        children: [{
+          id: 5, name: '1crn', type: 'object',
+          children: [{
+            id: 10, name: 'pym:', type: 'rendGroup',
+            children: [
+              member(11, 'pym:ribbon'), member(12, 'pym:nucl'), member(13, 'pym:ballstick'),
+              member(14, 'pym:cpk'), member(15, 'pym:simple'),
+            ],
+          }],
+        }],
+      },
     })
     await load({ filename: '1crn.pdb' })
-    // Not types[0]: the C++ list is alphabetical, so that would be `anisou`,
-    // which draws nothing without ANISOU records.
-    expect(rendererType()).toBe('simple')
-  })
-
-  it('gives a map a map renderer', async () => {
-    // The bug this pins: `simple` is not in the list, and C++ would attach it
-    // anyway, leaving the map invisible.
-    services.getCompatibleRendererNames.mockReturnValue({
-      types: ['contour', 'isosurf'],
-      objType: 'DensityMap',
-      readerName: 'mtzmap',
+    // The preset names its members prefix + type, so the prefix is the console's.
+    expect(rendererOptions()).toMatchObject({ presetName: 'DefaultPymRendPreset', rendererName: 'pym:' })
+    const renamed = services.renameNode.mock.calls.map((c) => {
+      const a = c[1] as { nodeId: number; newName: string }
+      return [a.nodeId, a.newName]
     })
-    await load({ filename: 'x.mtz' })
-    expect(rendererType()).toBe('contour')
+    // pym:nucl keeps its name: it is cartoon's companion, not a representation.
+    expect(renamed).toEqual([[11, 'pym:cartoon'], [13, 'pym:sticks'], [14, 'pym:spheres'], [15, 'pym:lines']])
   })
 })
 

@@ -97,8 +97,16 @@ object でない名前は named selection の参照のまま渡す。
   登録済み reader を実行時に読む。structure-factor CIF は PyMOL に名前が無いので `format=mmcifmap`。
   `.qsc` / `.pse` は scene として開き (`psefile` reader、txn の外)、`.pml` はスクリプトとして実行、
   URL (`http(s)://`) は拡張子で reader を選んでダウンロードする。object 名は `1crn.pdb.gz` -> `1crn`。
-- load / fetch が作る renderer: 分子は `simple` (PyMOL の `auto_show_lines`)、それ以外は互換 renderer の
-  先頭 (map なら `contour`)。名前は `pym:lines` などにし、直後の `hide lines` / `as` / `color` が効く。
+- load / fetch が作る renderer: 分子は PyMOL 風 preset `DefaultPymRendPreset` (現行 PyMOL の
+  `auto_show_classified` に合わせた分類表示。中身は op-catalog.md の「renderer 未指定の load」)、それ以外は
+  互換 renderer の先頭 (map なら `contour`)。preset の子の prefix を `pym:` にし、読込後に
+  `adoptPresetRenderers` が rep 名へ rename する (`pym:ribbon` -> `pym:cartoon`、`pym:ballstick` -> `pym:sticks`、
+  `pym:cpk` -> `pym:spheres`、`pym:simple` -> `pym:lines`。`pym:nucl` はそのまま、group 名は `pym:`)。直後の
+  `hide sticks` / `as` / `color` や `stick_radius` などがそのまま効く。`pym:nucl` は `cartoon` の相方で
+  (PyMOL の cartoon は核酸も描く)、`show` / `hide` / `as cartoon` は `pym:nucl` にも同じ合成をかける
+  (`repCommands.ts` の `COMPANIONS`。command が `pym:nucl` を新規に作ることはない)。show / as で足す範囲は
+  `pym:nucl` が `nucleic`、`pym:cartoon` が `not (nucleic)` に限る (限らないと `show cartoon` で nucl が
+  タンパク質を、ribbon が核酸を描き、互いに重なる)。
   `zoom=0` なら中心を動かさない。
 - `fetch code [, name, ..., type, async, ...]`: RCSB から。`type` は `cif` (既定) / `pdb` / `pdb1..`
   (生物学的集合体) / `2fofc` / `fofc` (Get PDB と同じ `streamLoadDensityMap`。構造因子の無い entry の 404 は
@@ -120,7 +128,8 @@ object でない名前は named selection の参照のまま渡す。
   scene tree で非表示の object を除く (named selection は表示状態を持たないので絞らない)。
 - **代表 renderer 規約**: object x 表現ごとに `pym:<rep>` の renderer 1 つ。表現は `lines` (`simple`)
   `sticks` (`ballstick` + Stick style、PyMOL の stick に合わせ ball なし) `spheres` (`cpk`) `cartoon`
-  `ribbon` `surface` (`dsurface`) `nonbonded` `nb_spheres` と `labels`。`pym:` の付かない renderer
+  (`ribbon`。PyMOL の cartoon の helix / sheet 形状は CueMol の ribbon にあたる) `ribbon` (`tracestick`。
+  PyMOL の ribbon は CA を直線でつなぐ trace) `surface` (`dsurface`) `nonbonded` `nb_spheres` と `labels`。`pym:` の付かない renderer
   (GUI で作ったもの) には触れない。
   - `show rep, sel`: 既存の sel との和 (`(old) or (new)`)。無ければ作る
   - `hide rep, sel`: 差 (`(old) and not (new)`)。`hide rep` (selection 無し / `all`) は sel を `none` に

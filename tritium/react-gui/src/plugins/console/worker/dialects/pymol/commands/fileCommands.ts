@@ -9,7 +9,6 @@
  * object as one opened from the menu.
  */
 
-import { initialRendererType } from '@renderer/worker/shared/fileOpenDefaults'
 import * as fs from 'fs'
 import * as path from 'path'
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
@@ -33,7 +32,7 @@ import {
   removeNamedSelection,
   renameNamedSelection,
 } from './namedSelections'
-import { repOfRendererType } from './repCommands'
+import { adoptPresetRenderers, repOfRendererType } from './repCommands'
 import { applyRememberedToObject } from './repSettings'
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes'
 import {
@@ -67,17 +66,25 @@ const FETCH_IGNORED: ReadonlyArray<[string, string]> = [
 ]
 
 /**
- * Name the renderer a load makes after the console representation it draws
- * (`pym:lines`), so `hide lines`, `as` and `color` right after a `fetch`
- * treat it as the console's own; and honour `zoom=0` (do not recentre).
+ * Name what a load makes as the console's own, so `hide lines`, `as` and
+ * `color` right after a `fetch` reach it; and honour `zoom=0` (do not
+ * recentre).
+ *
+ * A molecule is drawn with the PyMOL-like preset, as PyMOL's
+ * `auto_show_classified` does (`buildHeadlessFileOpenOptions`). The preset
+ * names its members prefix + type, so the prefix is `pym:` and
+ * `adoptPresetRenderers` renames the members whose type is not a
+ * representation name once they exist. Anything else draws one renderer,
+ * named after its representation (`pym:<rep>`).
  */
 function consoleRendererOptions(options: FileOpenOptions, zoom: string): FileOpenOptions {
   const rep = repOfRendererType(options.renderer.rendererType)
+  const rendererName = options.renderer.presetName ? OWNED : rep !== null ? `${OWNED}${rep}` : null
   return {
     ...options,
     renderer: {
       ...options.renderer,
-      ...(rep !== null ? { rendererName: `${OWNED}${rep}` } : {}),
+      ...(rendererName !== null ? { rendererName } : {}),
       centerView: zoom.trim() !== '0',
     },
   }
@@ -208,6 +215,7 @@ async function loadUrl(ctx: WorkerContext, args: Record<string, string>, cc: Cmd
   const res = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName, sceneId: cc.sceneId, options })
   const norm = normalizeServiceResult(res, `Error: could not load ${url}`)
   if (!norm.ok) return norm
+  adoptPresetRenderers(ctx, cc.sceneId, objectName)
   applyRememberedToObject(ctx, cc.sceneId, objectName)
   cc.print(` load: "${url}" loaded as "${objectName}".`)
   return { ok: true }
@@ -282,8 +290,10 @@ const load: PymCommand = {
     const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
       objectName,
-      // A molecule is drawn as lines (`simple`), as PyMOL's auto_show_lines does.
-      rendererType: initialRendererType(compat.types) || null,
+      // Not chosen: a molecule gets the PyMOL-like preset, as PyMOL's
+      // auto_show_classified does; anything else its own default renderer.
+      rendererType: null,
+      filePath,
       selection: null,
     }), args.zoom)
     const res = loadObject(ctx, {
@@ -295,6 +305,7 @@ const load: PymCommand = {
     })
     const norm = normalizeServiceResult(res, `Error: could not load ${filePath}`)
     if (!norm.ok) return norm
+    adoptPresetRenderers(ctx, cc.sceneId, objectName)
     applyRememberedToObject(ctx, cc.sceneId, objectName)
     cc.print(` load: "${filePath}" loaded as "${objectName}".`)
     return { ok: true }
@@ -449,6 +460,7 @@ const fetch: PymCommand = {
       })
       const norm = normalizeServiceResult(res, `Error: could not fetch ${pdbId}`)
       if (!norm.ok) return norm
+      adoptPresetRenderers(ctx, cc.sceneId, objectName)
       if (chain !== '') {
         const kept = keepChain(ctx, cc, objectName, chain)
         if (!kept.ok) return kept
