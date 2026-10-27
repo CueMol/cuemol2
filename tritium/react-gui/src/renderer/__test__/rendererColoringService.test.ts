@@ -124,8 +124,9 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
     const ctx = {
         sceMgr: { getScene: vi.fn(() => (sceneExists ? scene : null)) },
         svc: { createObj },
-        // The scene already defines the palette, so the paint copies nothing.
-        styleMgr: { getStyleNamesJSON, getColorDefsJSON: () => JSON.stringify([1, 2, 3, 4, 5, 6, 7].map((n) => `palette_${n}`)) },
+        // No theme named: okabe_ito, which the scene already defines, so the
+        // paint copies nothing.
+        styleMgr: { getStyleNamesJSON, getStrData: () => '', getColorDefsJSON: () => JSON.stringify(['okabe_ito_1', 'okabe_ito_2']) },
     } as unknown as WorkerContext
 
     return {
@@ -369,10 +370,10 @@ describe('setRendererColoring — Phase 1 new cases', () => {
         // makeSel / makeColor are mocked to `{ __sel }` / `{ __color }`; the
         // scene uid (7) scopes both.
         expect(appendPaint.mock.calls).toEqual([
-            [{ __sel: 'sheet', __uid: 7 }, { __color: 'palette_1', __uid: 7 }],
-            [{ __sel: 'helix', __uid: 7 }, { __color: 'palette_1', __uid: 7 }],
-            [{ __sel: 'nucleic', __uid: 7 }, { __color: 'palette_1{mod_h:15}', __uid: 7 }],
-            [{ __sel: '*', __uid: 7 }, { __color: 'palette_1{mod_s:-0.6;mod_b:0.1}', __uid: 7 }],
+            [{ __sel: 'sheet', __uid: 7 }, { __color: 'okabe_ito_1', __uid: 7 }],
+            [{ __sel: 'helix', __uid: 7 }, { __color: 'okabe_ito_1', __uid: 7 }],
+            [{ __sel: 'nucleic', __uid: 7 }, { __color: 'okabe_ito_1{mod_h:15}', __uid: 7 }],
+            [{ __sel: '*', __uid: 7 }, { __color: 'okabe_ito_1{mod_s:-0.6;mod_b:0.1}', __uid: 7 }],
         ])
         expect(setColoring).toHaveBeenCalledWith(
             expect.objectContaining({ __coloring: 'PaintColoring' }),
@@ -745,7 +746,7 @@ function makeRichFixture(opts: MakeRichOpts) {
     const ctx = {
         sceMgr: { getScene: vi.fn(() => (sceneExists ? scene : null)) },
         svc: { createObj },
-        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]'), getColorDefsJSON: () => JSON.stringify([1, 2, 3, 4, 5, 6, 7].map((n) => `palette_${n}`)) },
+        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]'), getStrData: () => '', getColorDefsJSON: () => JSON.stringify(['okabe_ito_1', 'okabe_ito_2']) },
     } as unknown as WorkerContext
 
     return { ctx, scene, rendWrappers, startUndoTxn, commitUndoTxn }
@@ -1547,7 +1548,7 @@ function makeElepotFixture(opts: ElepotRendOpts = {}) {
     const ctx = {
         sceMgr: { getScene: vi.fn(() => scene) },
         svc: { createObj: vi.fn() },
-        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]'), getColorDefsJSON: () => JSON.stringify([1, 2, 3, 4, 5, 6, 7].map((n) => `palette_${n}`)) },
+        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]'), getStrData: () => '', getColorDefsJSON: () => JSON.stringify(['okabe_ito_1', 'okabe_ito_2']) },
     } as unknown as WorkerContext
 
     return { ctx, scene, rend, setProp, props }

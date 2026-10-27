@@ -253,9 +253,9 @@ architecture, it belongs here.
   vertex = `defaultcolor`, separate per-mode target names,
   `setupParentData("multi_grad")` placement, `target` kept as an inert
   string) and the test map.
-- [分子の既定の色分け (Okabe-Ito パレット)](default-paint-palette.md) (日本語) -- 読み込んだ分子の
-  PaintColoring: n 番目の分子が `palette_n` (Okabe-Ito) を主色にし、helix / sheet / coil は
-  NamedColor の修飾子で派生させる。パレットは scene の style set に複製して qsc に保存する。
+- [分子の既定の色分け (パレットのテーマ)](default-paint-palette.md) (日本語) -- 読み込んだ分子の
+  PaintColoring: n 番目の分子が style で選んだテーマ (既定 Okabe-Ito) の n 番目の色を主色にし、
+  核酸 / coil は NamedColor の修飾子で派生させる。使った色は scene の style set に複製して qsc に保存する。
 - [Surface atom colouring: `AtomColorMemo` and the shared colouring pass](surface-atom-coloring.md) --
   how `dsurface`, `molsurf` and the map isosurface colour a vertex by its
   atom (molecule colour mode and `showsel`): the molstr pieces they share

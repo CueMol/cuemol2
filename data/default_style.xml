@@ -480,20 +480,97 @@ texture {
   <sel id="ligand" value="!rprop type=prot and !rprop type=nucl and !rprop type=water"/>
   <sel id="hydrogen" value="elem H"/>
 
-  <!-- The palette the default painting draws from: the n-th molecule loaded
-       into a scene takes palette_n (cycling), and its helix / sheet / coil
-       colours are modifiers of it. The Okabe-Ito (Color Universal Design)
-       set without its black: told apart with any colour vision. The paint
-       names these; the values are copied into the scene's own style set on
-       load, so a saved scene carries them. Values only (a named color
-       cannot refer to another one). -->
-  <color id="palette_1" value="#E69F00"/>
-  <color id="palette_2" value="#56B4E9"/>
-  <color id="palette_3" value="#009E73"/>
-  <color id="palette_4" value="#F0E442"/>
-  <color id="palette_5" value="#0072B2"/>
-  <color id="palette_6" value="#D55E00"/>
-  <color id="palette_7" value="#CC79A7"/>
+  <!-- Palette themes for the default painting of a loaded molecule, as
+       <theme>_<n> named colors. The n-th molecule loaded into a scene takes
+       the theme's n-th colour (cycling over however many it has), and its
+       structures are modifiers of it. The colour used is copied into the
+       scene's own style set on load, so a saved scene carries it. Values
+       only (a named color cannot refer to another one). -->
+
+  <!-- The theme new molecules are painted with. Override it in a user style
+       file, or in a scene's style set, with the same tag. -->
+  <palette id="default_paint" value="okabe_ito"/>
+
+  <!-- Okabe-Ito (Color Universal Design), without its black -->
+  <color id="okabe_ito_1" value="#E69F00"/>
+  <color id="okabe_ito_2" value="#56B4E9"/>
+  <color id="okabe_ito_3" value="#009E73"/>
+  <color id="okabe_ito_4" value="#F0E442"/>
+  <color id="okabe_ito_5" value="#0072B2"/>
+  <color id="okabe_ito_6" value="#D55E00"/>
+  <color id="okabe_ito_7" value="#CC79A7"/>
+
+  <!-- Paul Tol, bright -->
+  <color id="tol_bright_1" value="#4477AA"/>
+  <color id="tol_bright_2" value="#EE6677"/>
+  <color id="tol_bright_3" value="#228833"/>
+  <color id="tol_bright_4" value="#CCBB44"/>
+  <color id="tol_bright_5" value="#66CCEE"/>
+  <color id="tol_bright_6" value="#AA3377"/>
+  <color id="tol_bright_7" value="#BBBBBB"/>
+
+  <!-- Paul Tol, vibrant -->
+  <color id="tol_vibrant_1" value="#0077BB"/>
+  <color id="tol_vibrant_2" value="#33BBEE"/>
+  <color id="tol_vibrant_3" value="#009988"/>
+  <color id="tol_vibrant_4" value="#EE7733"/>
+  <color id="tol_vibrant_5" value="#CC3311"/>
+  <color id="tol_vibrant_6" value="#EE3377"/>
+  <color id="tol_vibrant_7" value="#BBBBBB"/>
+
+  <!-- Paul Tol, muted -->
+  <color id="tol_muted_1" value="#332288"/>
+  <color id="tol_muted_2" value="#88CCEE"/>
+  <color id="tol_muted_3" value="#44AA99"/>
+  <color id="tol_muted_4" value="#117733"/>
+  <color id="tol_muted_5" value="#999933"/>
+  <color id="tol_muted_6" value="#DDCC77"/>
+  <color id="tol_muted_7" value="#CC6677"/>
+  <color id="tol_muted_8" value="#882255"/>
+  <color id="tol_muted_9" value="#AA4499"/>
+
+  <!-- Paul Tol, light -->
+  <color id="tol_light_1" value="#77AADD"/>
+  <color id="tol_light_2" value="#99DDFF"/>
+  <color id="tol_light_3" value="#44BB99"/>
+  <color id="tol_light_4" value="#BBCC33"/>
+  <color id="tol_light_5" value="#AAAA00"/>
+  <color id="tol_light_6" value="#EEDD88"/>
+  <color id="tol_light_7" value="#EE8866"/>
+  <color id="tol_light_8" value="#FFAABB"/>
+  <color id="tol_light_9" value="#DDDDDD"/>
+
+  <!-- ColorBrewer, Set2 -->
+  <color id="brewer_set2_1" value="#66C2A5"/>
+  <color id="brewer_set2_2" value="#FC8D62"/>
+  <color id="brewer_set2_3" value="#8DA0CB"/>
+  <color id="brewer_set2_4" value="#E78AC3"/>
+  <color id="brewer_set2_5" value="#A6D854"/>
+  <color id="brewer_set2_6" value="#FFD92F"/>
+  <color id="brewer_set2_7" value="#E5C494"/>
+  <color id="brewer_set2_8" value="#B3B3B3"/>
+
+  <!-- ColorBrewer, Dark2 -->
+  <color id="brewer_dark2_1" value="#1B9E77"/>
+  <color id="brewer_dark2_2" value="#D95F02"/>
+  <color id="brewer_dark2_3" value="#7570B3"/>
+  <color id="brewer_dark2_4" value="#E7298A"/>
+  <color id="brewer_dark2_5" value="#66A61E"/>
+  <color id="brewer_dark2_6" value="#E6AB02"/>
+  <color id="brewer_dark2_7" value="#A6761D"/>
+  <color id="brewer_dark2_8" value="#666666"/>
+
+  <!-- Tableau 10 -->
+  <color id="tableau10_1" value="#4E79A7"/>
+  <color id="tableau10_2" value="#F28E2B"/>
+  <color id="tableau10_3" value="#E15759"/>
+  <color id="tableau10_4" value="#76B7B2"/>
+  <color id="tableau10_5" value="#59A14F"/>
+  <color id="tableau10_6" value="#EDC948"/>
+  <color id="tableau10_7" value="#B07AA1"/>
+  <color id="tableau10_8" value="#FF9DA7"/>
+  <color id="tableau10_9" value="#9C755F"/>
+  <color id="tableau10_10" value="#BAB0AC"/>
 
   <!-- Default color names from HTML/CSS2 color table -->
   <color id="AliceBlue" value="#F0F8FF"/>
