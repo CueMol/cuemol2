@@ -360,6 +360,8 @@ interface RelatedParams {
   propPath: string | null
   renderer: string | null
   file: string | null
+  /** The reader that always reads `file` (a format's load op), or null when it is picked from the file. */
+  fileReader: string | null
 }
 
 /**
@@ -391,7 +393,7 @@ function completionOf(p: Param<unknown>, rel: RelatedParams, opens = false): Arg
       // those (fetch): what a MolCoord object can show.
       if (rel.object) return { source: `rendererTypes:${rel.object}`, description: 'renderer type' }
       if (rel.renderer) return { source: `rendererChangeTypes:${rel.renderer}`, description: 'renderer type' }
-      if (rel.file) return { source: `fileRendererTypes:${rel.file}`, description: 'renderer type' }
+      if (rel.file) return { source: `fileRendererTypes:${rel.file}${rel.fileReader ? `:${rel.fileReader}` : ''}`, description: 'renderer type' }
       return { source: 'molCoordRendererTypes', description: 'renderer type' }
     case 'propName':
       return { source: `props:${rel.node ?? ''}`, description: 'property' }
@@ -413,13 +415,15 @@ function completionOf(p: Param<unknown>, rel: RelatedParams, opens = false): Arg
 /** The first parameter of each role a completion source reads. */
 function related(params: ParamMap): RelatedParams {
   const named = (...kinds: string[]) => Object.keys(params).find((n) => kinds.includes(params[n].semantic ?? '')) ?? null
+  const file = named('path')
   return {
     object: named('object'),
     node: named('node'),
     prop: named('propName'),
     propPath: named('propPath'),
     renderer: named('renderer'),
-    file: named('path'),
+    file,
+    fileReader: file === null ? null : (params[file].readerName ?? null),
   }
 }
 

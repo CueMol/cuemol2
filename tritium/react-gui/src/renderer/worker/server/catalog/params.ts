@@ -69,6 +69,8 @@ export interface Param<T> {
    * resolves to another kind of object.
    */
   readonly objClass?: string
+  /** For a `path`: the reader that always reads it (a format's load op). */
+  readonly readerName?: string
   /** Phantom, for `ArgsOf`. Never set. */
   readonly __type?: T
 }
@@ -191,9 +193,15 @@ export function propValue(description: string): Param<string> {
   return param('string', description, { semantic: 'propValue' })
 }
 
-/** A file path. */
-export function path(description: string): Param<string> {
-  return param('string', description, { semantic: 'path' })
+/**
+ * A file path.
+ *
+ * @param readerName - the one reader a format's load op reads it with, so a
+ *   console completes what that reader's object can show, not what a sniffed
+ *   reader's could
+ */
+export function path(description: string, readerName?: string): Param<string> {
+  return param('string', description, readerName === undefined ? { semantic: 'path' } : { semantic: 'path', readerName })
 }
 
 /** A point or direction (`object<Vector>`): x, y, z. */

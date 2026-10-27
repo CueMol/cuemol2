@@ -383,8 +383,17 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
     無ければ中身で決める (sniff)。その後は `OpenObjByPath` と同じく、選んだ reader の既定のオプションで `loadObject`。
   - `load_file` (`load`) の引数は `path` / `rendererType` / `selection` / `name` だけで、オプションは reader の既定値。
   - オプションを変えるときは形式ごとの op (console / MCP、agent には出さない)。引数名は `fileOpenTypes.ts` の
-    option 型と同じで、null は reader の既定値。形式の違うファイルは断る (`load_mtz f.pdb` → not an MTZ file)。
-    - `load_pdb` (PDB / mmCIF): `loadModel`、`loadAnisou`、`loadAltConf`、`loadSegid`、`build2ndry`、`autoTopology`
+    option 型と同じで、null は reader の既定値。
+  - 形式ごとの op は 1 op = 1 reader で、上の選び方 (sniff) を使わずにその reader で読む (`fileLoad.ts` の
+    `readerTarget`)。読めなければ reader の例外で失敗する (`load_ccp4 f.pdb` → Invalid file format)。
+    sniff の誤判定 (CCP4 map が NAMD coor と判定されたことがある) に左右されないため。ただし C++ reader が
+    寛容なものは失敗しないことがある (PDB reader は知らない行を読み飛ばすので、`load_pdb f.cif` は object を作る)。
+  - reader を引数で選ばせないのは、console 補完のため: `rendererType` の候補は、その前の `path` を読む reader の
+    object から作る (`fileRendererTypes`)。`reader=` 引数だと、`rendererType` を補完する時点ではまだ書かれていない。
+    形式ごとの op は path param に自分の reader を持たせ (`path(desc, readerName)`)、補完もその reader で引く。
+    - `load_pdb` (PDB): `loadModel`、`loadAnisou`、`loadAltConf`、`loadSegid`、`build2ndry`、`autoTopology`
+    - `load_mmcif` (mmCIF の座標モデル。structure factor の CIF map は `load_file` か `fetch_map`): `loadModel`、
+      `loadAnisou`、`loadAltConf`、`build2ndry`、`autoTopology`
     - `load_mtz`: `columnF`、`columnPhi`、`columnWeight`、`resolutionLimit`、`gridSpacing` (列を指定するとその列を使う)
     - `load_ccp4`: `normalize`、`truncateMin`、`truncateMax` (指定すると切り捨てる)、`mapType`、`subsample`
     - `load_msms` (`vertFile`)、`load_namd` (`psfFile`)、`load_amber` (`coordFile`)

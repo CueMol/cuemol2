@@ -250,4 +250,15 @@ describe('the native command set', () => {
     ]
     expect(names.filter((n, i) => names.indexOf(n) !== i)).toEqual([])
   })
+
+  it("completes a load's renderer types from the reader that will read the file", () => {
+    // A format's load op reads with its own reader, so Tab must not sniff the
+    // file (a CCP4 map once sniffed as NAMD coordinates); load_file does.
+    const sourceOf = (name: string) => {
+      const cmd = catalogCommands(CONSOLE_COMMAND_OPS).find((c) => c.command.name === name)!.command
+      return cmd.completions?.[cmd.params.findIndex((p) => p.name === 'rendererType')]?.source
+    }
+    expect(sourceOf('load_ccp4')).toBe('fileRendererTypes:path:ccp4map')
+    expect(sourceOf('load_file')).toBe('fileRendererTypes:path')
+  })
 })

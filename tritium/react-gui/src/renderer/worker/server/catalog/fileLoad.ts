@@ -7,8 +7,11 @@
  * reader when exactly one reader claims it, and its content otherwise. The
  * load then follows `OpenObjByPath`: the reader's own defaults for the
  * options (what the option dialog starts with), then `loadObject` with that
- * reader. `load_file` takes the defaults as they are; a format's own load op
- * (`load_pdb`, `load_mtz`, ...) changes the options it was given first.
+ * reader. `load_file` takes the defaults as they are.
+ *
+ * A format's own load op (`load_pdb`, `load_ccp4`, ...) does not pick: it
+ * reads with its one reader (`readerTarget`), changing the options it was
+ * given first, and fails when that reader cannot read the file.
  */
 
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
@@ -17,8 +20,7 @@ import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/f
 import { loadObject } from '@renderer/worker/server/services/file/loadObject'
 import { OBJREADER_CATEGORY } from '@renderer/worker/server/services/helpers/pickReaderName'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import type { FormatKind, FormatOptions, MapCenterPolicy, RendererOptions } from '@renderer/worker/shared/fileOpenTypes'
-import { formatKindForReader } from '@renderer/worker/shared/fileOpenDefaults'
+import type { FormatOptions, MapCenterPolicy, RendererOptions } from '@renderer/worker/shared/fileOpenTypes'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { fileStem } from '@shared/fileExt'
 import { classifyOpenFile } from '@shared/openFileKind'
@@ -35,6 +37,23 @@ export const SCENE_FILE_RE = /\.qsc$/i
 /** What a path opens as: a scene, or an object with the reader the GUI would pick. */
 export type OpenTarget = { scene: true; filePath: string } | { scene: false; filePath: string; readerName: string; contentFirst: boolean }
 
+/** A path as a caller gave it, resolved, and how its extension classifies it. */
+interface LoadPath {
+  filePath: string
+  kind: ReturnType<typeof classifyOpenFile>
+}
+
+/** Resolve `raw` and classify it by extension alone (no reader is asked). */
+function classifyLoadPath(ctx: WorkerContext, raw: string): LoadPath {
+  const filePath = callerPath(raw)
+  const kind = classifyOpenFile(
+    filePath,
+    getOpenFilters(ctx, { catId: OBJREADER_CATEGORY }),
+    getOpenFilters(ctx, { catId: SCENE_READER_CATEGORY }),
+  )
+  return { filePath, kind }
+}
+
 /**
  * Where `raw` (as a caller gave it) opens. A file no reader claims by
  * extension is sniffed, as File > Open does with "All Files".
@@ -42,18 +61,24 @@ export type OpenTarget = { scene: true; filePath: string } | { scene: false; fil
  * @returns the target, or why none
  */
 export function openTarget(ctx: WorkerContext, raw: string): OpenTarget | { error: string } {
-  const filePath = callerPath(raw)
-  const kind = classifyOpenFile(
-    filePath,
-    getOpenFilters(ctx, { catId: OBJREADER_CATEGORY }),
-    getOpenFilters(ctx, { catId: SCENE_READER_CATEGORY }),
-  )
+  const { filePath, kind } = classifyLoadPath(ctx, raw)
   if (kind.kind === 'scene') return { scene: true, filePath }
   // Claimed by no reader at all: let the content decide, as File > Open does.
   const contentFirst = kind.kind === 'unsupported' ? true : kind.contentFirst
   const readerName = getCompatibleRendererNames(ctx, { filePath, contentFirst }).readerName
   if (!readerName) return { error: `No reader can handle "${filePath}". Check the path and the format.` }
   return { scene: false, filePath, readerName, contentFirst }
+}
+
+/**
+ * Where `raw` opens with a format's load op: always `readerName`, never a
+ * sniffed reader, so a file that reader cannot read fails in the reader. A
+ * scene file (by extension) is still a scene, which a format op refuses.
+ */
+export function readerTarget(ctx: WorkerContext, raw: string, readerName: string): OpenTarget {
+  const { filePath, kind } = classifyLoadPath(ctx, raw)
+  if (kind.kind === 'scene') return { scene: true, filePath }
+  return { scene: false, filePath, readerName, contentFirst: false }
 }
 
 /** Every extension a load opens by (object and scene readers); console Tab lists these first. */
@@ -127,9 +152,4 @@ export function loadObjectFile(
     readerName: target.readerName,
   })
   return normalizeServiceResult(result, `"${target.filePath}" could not be opened.`)
-}
-
-/** The format a reader reads, for a format's load op to check. */
-export function formatOf(readerName: string): FormatKind {
-  return formatKindForReader(readerName)
 }
