@@ -97,10 +97,14 @@ export interface LoadArgs {
   mapCenterPolicy: MapCenterPolicy | null
 }
 
+/** What a load does when given no renderer type (`buildHeadlessFileOpenOptions`), for the rendererType docs. */
+export const NULL_RENDERER_DOC =
+  'Null draws a molecule with the PyMOL-like preset DefaultPymRendPreset (cartoon, ligand sticks, ion spheres, water lines) when no selection is given, and anything else with its own default renderer.'
+
 /** The renderer arguments of `LoadArgs`, as op parameters (each load op spreads these in). */
 export const LOAD_RENDERER_PARAMS = {
   rendererName: optional(string('Name of the renderer. Null uses <type>1.')),
-  preset: optional(string('Draw it with this renderer preset (a group), instead of rendererType. Null draws one renderer.')),
+  preset: optional(string('Draw it with this renderer preset (a group), instead of rendererType. Null leaves the choice to rendererType.')),
   centerView: optional(boolean('False leaves the view where it is. Null or true centres it on the new object.')),
   mapCenterPolicy: optional(
     enumOf(

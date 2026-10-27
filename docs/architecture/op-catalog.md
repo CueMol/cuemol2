@@ -382,6 +382,16 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
     scene reader の拡張子なら scene として開く。拡張子を受け持つ reader がちょうど 1 つならそれ、2 つ以上か
     無ければ中身で決める (sniff)。その後は `OpenObjByPath` と同じく、選んだ reader の既定のオプションで `loadObject`。
   - `load_file` (`load`) の引数は `path` / `rendererType` / `selection` / `name` だけで、オプションは reader の既定値。
+  - **renderer 未指定の load** (`load_file` / `load_<format>` / `fetch_pdb` / `fetch_url`、PyMOL console の
+    `load` / `fetch` も同じ `buildHeadlessFileOpenOptions` を通る): `rendererType` も `selection` も null の分子は
+    preset `DefaultPymRendPreset` (`data/default_style.xml`) で描く。現行 PyMOL の `auto_show_classified`
+    (load 時に residue を分類して表示を決める) に合わせたもので、protein -> `ribbon` (PyMOL の cartoon にあたる)、nucleic -> `nucl`、
+    炭素を含む ligand 残基 -> `ballstick` (Stick style)、炭素を含まない ligand 残基 (イオン等) -> `cpk`、
+    水 -> `simple` (結合の無い原子は十字)。group 名は GUI の preset と同じ命名 (`defaultpym_1`)。
+    `rendererType` か `selection` を指定すれば従来どおり renderer 1 本、分子でない object はその object の
+    既定 renderer (map なら `contour`)。明示の `preset` はこれより優先する。
+    PyMOL との差: organic の nb_spheres、50 原子未満 / 50 万原子超の特例、炭素の object 色は無い。
+    GUI の File Open は対象外 (履歴の無いときの初期値は `simple` のまま)。
   - オプションを変えるときは形式ごとの op (console / MCP、agent には出さない)。引数名は `fileOpenTypes.ts` の
     option 型と同じで、null は reader の既定値。
   - 形式ごとの op は 1 op = 1 reader で、上の選び方 (sniff) を使わずにその reader で読む (`fileLoad.ts` の
