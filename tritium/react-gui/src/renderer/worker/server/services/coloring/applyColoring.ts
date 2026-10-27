@@ -279,7 +279,10 @@ export function setRendererColoring(
             // secondary-structure rows rather than handing back an empty
             // table, which read as "the menu did nothing".
             withUndoTxn(scene, 'Change coloring', () => {
-                const coloring = createDefPaintColoring(ctx, scene.uid);
+                // The molecule's own palette colour: the target is the object
+                // itself, or a renderer drawing it.
+                const molUid = args.targetKind === 'object' ? args.rendId : rend.getClientObjID();
+                const coloring = createDefPaintColoring(ctx, scene.uid, molUid);
                 if (!coloring) return;
                 recordColoringChoice(ctx, scene.uid, args);
                 forceMoleculeColormode(scene, rend);

@@ -142,7 +142,7 @@ describe('the tube Section page', () => {
     return [
       entry({ key: 'section.type', type: 'enum', value: type, enumdef: ['elliptical', 'roundsquare', 'rectangle', 'fancy1'], depth: 1 }),
       entry({ key: 'section.detail', type: 'integer', value: 16, depth: 1 }),
-      entry({ key: 'section.width', type: 'real', value: 2, depth: 1 }),
+      entry({ key: 'section.width', type: 'real', value: 1, depth: 1 }),
       entry({ key: 'section.tuber', type: 'real', value: 0.5, depth: 1 }),
       entry({ key: 'section.sharp', type: 'real', value: 0.4, depth: 1 }),
     ]
@@ -179,11 +179,11 @@ describe('the tube Section page', () => {
     const { container, unmount } = mountTree(
       <SchemaSection section={TUBE_SECTIONS[1]} rendererType="tube" entries={sectionEntries('roundsquare')} onSet={onSet} onReset={vi.fn()} sceneId={1} />,
     )
-    // committed Width2 = tuber * width = 0.5 * 2 = 1; step 0.01 -> 1.01.
+    // committed Width2 = tuber * width = 0.5 * 1 = 0.5; step 0.01 -> 0.51.
     const incr = dragArrow(rowByLabel(container, 'Width2')!)!
     pressStepArrow(incr)
-    // tuber = 1.01 / 2 = 0.505.
-    expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(0.505, 5))
+    // tuber = 0.51 / 1 = 0.51.
+    expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(0.51, 5))
     unmount()
   })
 
@@ -200,17 +200,17 @@ describe('the tube Section page', () => {
         sceneId={1}
       />,
     )
-    // width=2, tuber=0.5 -> minor axis (Width2) = 1. Bump Width1 2 -> 2.01.
+    // width=1, tuber=0.5 -> minor axis (Width2) = 0.5. Bump Width1 1 -> 1.01.
     const incr = dragArrow(rowByLabel(container, 'Width1')!)!
     pressStepArrow(incr)
     expect(onSetMany).toHaveBeenCalledTimes(1)
     const writes = onSetMany.mock.calls[0][0]
     expect(writes[0]).toMatchObject({ key: 'section.width', valueType: 'real' })
-    expect(writes[0].value).toBeCloseTo(2.01, 5)
+    expect(writes[0].value).toBeCloseTo(1.01, 5)
     expect(writes[1]).toMatchObject({ key: 'section.tuber', valueType: 'real' })
-    // tuber rewritten so width * tuber keeps the original minor axis (1).
-    expect(writes[1].value).toBeCloseTo(1 / 2.01, 5)
-    expect(writes[0].value * writes[1].value).toBeCloseTo(1, 5)
+    // tuber rewritten so width * tuber keeps the original minor axis (0.5).
+    expect(writes[1].value).toBeCloseTo(0.5 / 1.01, 5)
+    expect(writes[0].value * writes[1].value).toBeCloseTo(0.5, 5)
     unmount()
   })
 
@@ -231,7 +231,7 @@ describe('the tube Section page', () => {
     const incr = dragArrow(rowByLabel(container, 'Width2')!)!
     pressStepArrow(incr)
     // Only the ratio moves; the major axis (Width1) is never written.
-    expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(0.505, 5))
+    expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(0.51, 5))
     expect(onSet).not.toHaveBeenCalledWith('section.width', expect.anything(), expect.anything())
     expect(onSetMany).not.toHaveBeenCalled()
     unmount()
