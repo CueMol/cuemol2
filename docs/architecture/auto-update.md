@@ -22,7 +22,7 @@ tritium (CueMol3) が GitHub Releases から新しい版を見つけ、自分で
 | `src/main/updater/index.ts` | Electron との接続。OS に応じた installer の選択、controller の生成、IPC、起動時の確認、終了時のヘルパー起動、結果の受け取り |
 | `src/renderer/features/update/` | 通知 (`UpdateBridge`)、確認 dialog、展開の modal 進捗、Settings の行 (`UpdateCheckRow`) |
 | `src/renderer/shell/notifications/` | VS Code 風の通知 (toast / center / status bar の bell)。更新以外にも使える汎用の機構 |
-| `react-gui/build/updaterLauncher.js` | Windows: afterPack で `resources/CueMol3 Updater.exe` を作る (§5) |
+| `react-gui/build/updater-launcher.nsi`、`updaterLauncher.js` | Windows: 昇格して動くランチャー `CueMol3 Updater.exe` の本体と、afterPack でそれを `resources/` に作る処理 (§5) |
 
 `@cuemol/updater` の中身:
 - `version.ts`: 4 桁バージョンの parse / compare。build 番号だけ違う版も新しいと判定する
@@ -33,7 +33,7 @@ tritium (CueMol3) が GitHub Releases から新しい版を見つけ、自分で
 - `controller.ts`: 状態遷移 (§3)。OS 固有の処理は `Installer` interface
 - `handoff.ts`: 旧 app・ヘルパー・新 app の間で受け渡すファイル
 - `mac/installerMac.ts`、`mac/swapScript.ts`: DMG の展開とヘルパー sh
-- `win/installerWin.ts`、`win/swapScript.ts`: Setup.exe の staging と 2 本の PowerShell ヘルパー
+- `win/installerWin.ts`、`win/swapScript.ts`: Setup.exe の staging と、非昇格側のヘルパー `swap.ps1`
 
 ## 3. 状態遷移
 
@@ -66,7 +66,8 @@ invoke channel: `update:get-status` / `check` / `download` / `cancel` / `install
 インストーラは NSIS の perMachine (Program Files、HKLM)。更新は**終了後に Setup.exe を昇格して silent 実行**する。
 
 - **取得**: Node で書いたファイルには `Zone.Identifier` (Mark of the Web) が付かないので、SmartScreen は出ない。
-- **staging** (`installing`): ダウンロードした Setup.exe を `userData/updater/staging/` に移すだけ (step `stage`)。
+- **staging** (`installing`): ダウンロードした Setup.exe を `userData/updater/staging/CueMol3-Setup.exe` に移し、
+  その SHA-256 を計算する (step `stage`)。
 - **in-place 更新できる条件** (`canInstall`、起動時に 1 回だけ調べる):
   `process.execPath` のディレクトリに `Uninstall CueMol3.exe` があり、
   `HKLM\Software\<GUID>\InstallLocation` がそのディレクトリと一致すること。
@@ -77,15 +78,12 @@ invoke channel: `update:get-status` / `check` / `download` / `cancel` / `install
   `C:\Program Files\CueMol3` のつもりが `C:\Program` に入った。`/D` が無ければ NSIS は記録済みの
   InstallLocation に入れ、ショートカット・Open with (`build/installer.nsh`) も保たれる。
   `--updated` は旧版の uninstaller に app data を消させない。
-- **ヘルパーは 2 本** (`win/swapScript.ts`)。新 app は**非昇格**で起動したいので、昇格する部分を分けている。
+- **非昇格のヘルパーと昇格するランチャーの 2 つ**。新 app は**非昇格**で起動したいので、昇格する部分を分けている。
   両者は `userData/updater/signals/` の空ファイルで合図する。
-  - `swap.ps1` (非昇格、'will-quit' で起動): 親 PID と install dir の全 `CueMol3.exe` (main と子) の終了を待つ ->
-    `install.ps1` を昇格して起動 -> `installed` を待つ -> 新 app を起動し `launch-ok` を待つ ->
-    `confirm-ok` / `confirm-fail` を書く
-  - `install.ps1` (昇格、1 回): install dir を robocopy `/MIR` で `userData/updater/backup/` に、
-    uninstall キーと `HKLM\Software\<GUID>` を `reg export` で退避 -> Setup.exe を実行 -> `installed` ->
-    swap.ps1 の判定を待ち、ok なら backup を消す。fail なら backup を戻して (`robocopy /MIR`、`reg import`) `restored`
-  - `reg.exe` は全部 `/reg:64` で 64 bit view に固定する (32 bit の呼び出し元だと WOW6432Node に行く)
+  - `swap.ps1` (`win/swapScript.ts`、非昇格、'will-quit' で起動): 親 PID と install dir の全 `CueMol3.exe`
+    (main と子) の終了を待つ -> ランチャーを昇格して起動 -> `installed` を待つ -> 新 app を起動し
+    `launch-ok` を待つ -> `confirm-ok` / `confirm-fail` を書く
+  - `CueMol3 Updater.exe` (`build/updater-launcher.nsi`、昇格、1 回): 下記
 - **ヘルパーの起動**: `cmd.exe /c start "" /min powershell.exe ... -File "%CUEMOL_SWAP_PS1%"` を detached で spawn する。
   - `powershell.exe` を detached (DETACHED_PROCESS、console なし) で直接 spawn すると、
     スクリプトを実行せずに exit 0 で終わる。detached でなければ app の終了と一緒に消える。
@@ -94,12 +92,28 @@ invoke channel: `update:get-status` / `check` / `download` / `cancel` / `install
     ユーザー名の `&` や `%` がそのまま通る。
   - `.ps1` は BOM 付き UTF-8 で書く (Windows PowerShell は BOM なしを ANSI code page で読み、
     非 ASCII のユーザー名が化ける)。`result.json` は BOM なし (app が `JSON.parse` で読む)。
-- **UAC**: 昇格するのは `CueMol3 Updater.exe` (`build/updaterLauncher.js` が afterPack で electron-builder と
-  同じ makensis で作る、`RequestExecutionLevel admin`)。渡された `install.ps1` を非表示の 64 bit PowerShell で
-  実行して待つだけ。powershell.exe を直接昇格させると UAC に「Windows PowerShell」と出て何が動くのか
-  分からないので、このランチャーを挟む。未署名なので UAC にはファイル名 `CueMol3 Updater.exe` と
-  「発行元: 不明」が出る。Program Files 内のものは置換中にロックされるので、userData にコピーして起動する。
-  UAC の拒否は swap.ps1 が例外で受け取り、`aborted` を書いて旧版を起動し直す。
+- **ランチャー `CueMol3 Updater.exe`**: 昇格して動く部分。NSIS で書いたプログラムで、`build/updaterLauncher.js`
+  が afterPack で electron-builder と同じ makensis (app-builder-lib の `NSIS_PATH()`) でコンパイルし、
+  `resources/` に置く。ビルド時の値 (出力先・アイコン・版・GUID) は `makensis /D...` で渡す。
+  - **引数を取らず、スクリプトも実行しない**。手順は `.nsi` に固定されている。外から読むのは、
+    インストール先 (HKLM の InstallLocation。管理者しか変えられない)、自分のディレクトリの `install.ini`
+    (`from` / `to` / `sha256`)、同じディレクトリの `staging\CueMol3-Setup.exe` だけ。
+  - 手順: `certutil -hashfile` で Setup.exe の SHA-256 を `install.ini` の値と照合 -> install dir を
+    robocopy `/MIR` で `backup\app` に、uninstall キーと `HKLM\Software\<GUID>` を `reg export` で退避 ->
+    Setup.exe を実行 -> `installed` -> swap.ps1 の判定を待つ (180 秒) -> ok なら backup を消して `result.json` に `ok`。
+    fail か時間切れなら backup を戻して (`robocopy /MIR`、`reg delete` + `reg import`) `rolledBack` と `restored`
+  - 外部コマンドは System32 の `robocopy` / `reg` / `certutil` だけで、引数は固定。ランチャーは 32 bit なので、
+    ファイルシステムのリダイレクトを切り (`$SYSDIR` を本物の System32 に)、`SetRegView 64` にし、`reg.exe` には
+    `/reg:64` を付ける (32 bit のままだと WOW6432Node を読み書きする)。
+  - powershell.exe を直接昇格させると UAC に「Windows PowerShell」と出て何が動くのか分からず、
+    渡したスクリプトを何でも管理者で実行する作りにもなる。それを避けるためにこの形にしている。
+  - 未署名なので UAC にはファイル名 `CueMol3 Updater.exe` と「発行元: 不明」が出る。
+    Program Files 内のものは置換中にロックされるので、userData にコピーして起動する
+    (作業ディレクトリは自分の置き場所 `$EXEDIR`)。UAC の拒否は swap.ps1 が例外で受け取り、
+    `aborted` を書いて旧版を起動し直す。
+  - SHA-256 の照合は、壊れたファイルや別のファイルを管理者で実行する事故を防ぐもの。`install.ini` も
+    Setup.exe も同じユーザーが書ける場所にあるので、同じユーザー権限で動く悪意あるプログラムには効かない
+    (それは自分で UAC を出せる。署名が無い限り、ここが信頼の限界)。
 
 ## 6. 起動確認とロールバック
 
@@ -113,7 +127,7 @@ mac のヘルパーの手順 (`mac/swapScript.ts`):
 4. 現れたら backup を消して `result.json` に `ok`。現れない、または 15 秒後に process が無ければ、
    新 app を終了させ、退けて backup を戻し、`rolledBack` を書いて旧 app を起動する
 
-Windows も同じ判定 (120 秒 / 15 秒) で、戻すのは昇格側の `install.ps1` (§5)。Setup.exe が失敗した場合も
+Windows も同じ判定 (120 秒 / 15 秒) で、戻すのは昇格側のランチャー (§5)。Setup.exe が失敗した場合も
 backup を戻して `failed` を書き、旧 app を起動する。backup から戻せなかった場合だけ旧 app を起動しない。
 
 新 app が `launch-ok` を書く条件: main window の reveal が **renderer の signal で**起きた
@@ -156,8 +170,11 @@ backup を戻して `failed` を書き、旧 app を起動する。backup から
   (marker を書かないので戻る)。
 - dev ビルドでは updater は動かない。UI は `dev.updateSample` (args `{ state }`) で状態を作って
   `task inspect_tritium_ui` で検査する。
-- Windows のヘルパーは実機でしか確かめられない (UAC・Program Files)。生成した `.ps1` が PowerShell で
-  parse でき、空白・`'`・非 ASCII を含むパスが崩れないことだけを `win/swapScript.test.ts` で見る。
+- Windows のヘルパーとランチャーは実機でしか確かめられない (UAC・Program Files)。テストで見るのは、
+  生成した `swap.ps1` が PowerShell で parse でき、空白・`'`・非 ASCII を含むパスが崩れないこと
+  (`win/swapScript.test.ts`)と、ランチャーとアプリの契約 (GUID が appId から導いた値と一致する、
+  staging の名前、`/S --updated` で `/D=` を渡さない。react-gui の `__test__/updaterLauncher.test.ts`)。
+  `.nsi` のコンパイルはパッケージングで確かめる。
 
 ## 9. 既知の制約
 

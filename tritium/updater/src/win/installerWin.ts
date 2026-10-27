@@ -3,10 +3,15 @@
  * @description Windows {@link Installer}: run the downloaded NSIS Setup.exe after quit, elevated.
  *
  * The app is installed per machine (Program Files, HKLM), so every update
- * goes through UAC: the prompt names "CueMol3 Updater" (the launcher shipped
- * in the app's resources) from an unknown publisher, and a standard user is
- * asked for an administrator's credentials. A refusal leaves the old version
- * running. The helpers are win/swapScript.ts.
+ * goes through UAC: the prompt names "CueMol3 Updater.exe" (the launcher
+ * shipped in the app's resources) from an unknown publisher, and a standard
+ * user is asked for an administrator's credentials. A refusal leaves the old
+ * version running. swap.ps1 (win/swapScript.ts) drives the update; the
+ * launcher (react-gui/build/updater-launcher.nsi) does the elevated part.
+ *
+ * What the launcher reads from the work directory is fixed here: the
+ * installer at `staging/CueMol3-Setup.exe`, and `install.ini` with the two
+ * versions and the installer's SHA-256, which it checks before running it.
  *
  * Verified on Windows 11 with the unsigned installer: a Setup.exe written by
  * Node has no Zone.Identifier (so no SmartScreen prompt), `/S --updated`
@@ -16,33 +21,32 @@
  */
 
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 import { execFileSync, spawn } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, createReadStream, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import type { Installer, InstallStep } from '../controller'
 import { handoffPaths, writePending } from '../handoff'
-import { buildInstallPs1, buildSwapPs1 } from './swapScript'
+import { buildSwapPs1 } from './swapScript'
 
 /**
  * The NSIS app GUID: electron-builder derives it from the appId
- * (`org.cuemol.cuemol3`) as a UUID v5 in its own namespace. It names both
- * registry keys the installer writes. A changed appId makes the
- * InstallLocation check in `canInstall` fail, which only turns in-place
- * updates off.
+ * (`org.cuemol.cuemol3`) as a UUID v5 in its own namespace, and names the
+ * installer's registry keys with it. react-gui/build/updaterLauncher.js
+ * derives the same value for the launcher (a react-gui test pins the two
+ * together). A changed appId makes the InstallLocation check in
+ * `canInstall` fail, which only turns in-place updates off.
  */
 export const WIN_APP_GUID = '5b87087f-2593-5995-97e1-71545168d052'
 
-/** The HKLM keys the installer owns: uninstall entry and install location. */
-export const WIN_REGISTRY_KEYS = [
-  `HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${WIN_APP_GUID}`,
-  `HKLM\\Software\\${WIN_APP_GUID}`,
-]
-
 const UNINSTALLER = 'Uninstall CueMol3.exe'
+
+/** The UTF-8 byte order mark, as a string. */
+const BOM = String.fromCharCode(0xfeff)
 
 /** The InstallLocation the installer recorded, or null. */
 function readInstallLocation(): string | null {
   try {
-    const out = execFileSync('reg.exe', ['query', WIN_REGISTRY_KEYS[1], '/v', 'InstallLocation'], {
+    const out = execFileSync('reg.exe', ['query', `HKLM\\Software\\${WIN_APP_GUID}`, '/v', 'InstallLocation', '/reg:64'], {
       encoding: 'utf8',
       windowsHide: true,
     })
@@ -53,6 +57,17 @@ function readInstallLocation(): string | null {
   }
 }
 
+/** SHA-256 of a file, in lowercase hex. */
+function sha256Of(file: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const h = createHash('sha256')
+    createReadStream(file)
+      .on('data', (d) => h.update(d))
+      .on('error', reject)
+      .on('end', () => resolve(h.digest('hex')))
+  })
+}
+
 /** Options of {@link WinInstaller}. */
 export interface WinInstallerOptions {
   /** `process.execPath` of the running app. */
@@ -61,7 +76,7 @@ export interface WinInstallerOptions {
   workDir: string
   /** PID the helper waits for (the main process). */
   pid: number
-  /** `CueMol3 Updater.exe` in the app's resources (see swapScript.ts). */
+  /** `CueMol3 Updater.exe` in the app's resources. */
   launcherPath: string
 }
 
@@ -71,7 +86,8 @@ export class WinInstaller implements Installer {
   private readonly appDir: string
   private readonly opts: WinInstallerOptions
   private readonly can: { ok: true } | { ok: false; reason: string }
-  private staged: string | null = null
+  /** SHA-256 of the staged installer, once `prepare` has run. */
+  private stagedDigest: string | null = null
 
   constructor(opts: WinInstallerOptions) {
     this.opts = opts
@@ -79,16 +95,18 @@ export class WinInstaller implements Installer {
     this.can = this.probe()
   }
 
+  /** The names the launcher expects (updater-launcher.nsi) are fixed here. */
   private get paths() {
     const w = this.opts.workDir
     return {
       stagingDir: path.join(w, 'staging'),
-      backup: path.join(w, 'backup'),
+      staged: path.join(w, 'staging', 'CueMol3-Setup.exe'),
+      ini: path.join(w, 'install.ini'),
       signals: path.join(w, 'signals'),
       swapScript: path.join(w, 'swap.ps1'),
-      installScript: path.join(w, 'install.ps1'),
       // Run from a copy: the installer replaces everything under the app
-      // directory, which a running launcher there would hold locked.
+      // directory, which a running launcher there would hold locked. The
+      // launcher also takes its work directory from where it runs.
       launcher: path.join(w, 'CueMol3 Updater.exe'),
     }
   }
@@ -122,32 +140,31 @@ export class WinInstaller implements Installer {
     onProgress('stage', 0)
     rmSync(p.stagingDir, { recursive: true, force: true })
     mkdirSync(p.stagingDir, { recursive: true })
-    const dest = path.join(p.stagingDir, path.basename(file))
-    renameSync(file, dest)
-    this.staged = dest
+    renameSync(file, p.staged)
+    // The download was checked against the release digest; the launcher
+    // checks the staged file against this one before it runs it elevated.
+    this.stagedDigest = await sha256Of(p.staged)
     onProgress('stage', 1)
   }
 
   async discard(): Promise<void> {
     rmSync(this.paths.stagingDir, { recursive: true, force: true })
-    this.staged = null
+    this.stagedDigest = null
   }
 
   launchSwap(from: string, to: string): void {
-    if (!this.staged) return
+    if (!this.stagedDigest) return
     const p = this.paths
     const h = handoffPaths(this.opts.workDir)
     writePending(this.opts.workDir, from, to)
     rmSync(p.signals, { recursive: true, force: true })
     mkdirSync(p.signals, { recursive: true })
     copyFileSync(this.opts.launcherPath, p.launcher)
-    const params = {
+    // ASCII only: NSIS's ReadINIStr reads it in the ANSI code page.
+    writeFileSync(p.ini, `[install]\r\nfrom=${from}\r\nto=${to}\r\nsha256=${this.stagedDigest}\r\n`, 'ascii')
+    const script = buildSwapPs1({
       parentPid: this.opts.pid,
       appDir: this.appDir,
-      setupPath: this.staged,
-      backupDir: p.backup,
-      registryKeys: WIN_REGISTRY_KEYS,
-      installScriptPath: p.installScript,
       launcherPath: p.launcher,
       signalDir: p.signals,
       markerPath: h.marker,
@@ -160,13 +177,11 @@ export class WinInstaller implements Installer {
       installTimeout: 600,
       launchTimeout: 120,
       processGrace: 15,
-      confirmTimeout: 180,
       restoreTimeout: 120,
-    }
+    })
     // Windows PowerShell reads a script without a BOM in the ANSI code page,
     // which would garble a non-ASCII user name in the paths.
-    writeFileSync(p.swapScript, '\uFEFF' + buildSwapPs1(params), 'utf8')
-    writeFileSync(p.installScript, '\uFEFF' + buildInstallPs1(params), 'utf8')
+    writeFileSync(p.swapScript, BOM + script, 'utf8')
     const env: NodeJS.ProcessEnv = { ...process.env, CUEMOL_SWAP_PS1: p.swapScript }
     delete env.ELECTRON_RUN_AS_NODE
     // powershell.exe spawned detached (DETACHED_PROCESS, no console) exits 0
@@ -185,16 +200,15 @@ export class WinInstaller implements Installer {
   cleanup(): void {
     const w = this.opts.workDir
     for (const d of ['staging', 'download', 'signals', 'backup']) {
-      // The backup is written by the elevated helper, which also removes it;
-      // a leftover this user cannot delete is not worth failing the start.
+      // The backup is written by the elevated launcher, which also removes
+      // it; a leftover this user cannot delete is not worth failing the start.
       try {
         rmSync(path.join(w, d), { recursive: true, force: true })
       } catch {
         /* see above */
       }
     }
-    rmSync(this.paths.swapScript, { force: true })
-    rmSync(this.paths.installScript, { force: true })
-    rmSync(this.paths.launcher, { force: true })
+    const p = this.paths
+    for (const f of [p.swapScript, p.ini, p.launcher]) rmSync(f, { force: true })
   }
 }
