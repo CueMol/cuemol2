@@ -66,15 +66,15 @@ describe('the default painting', () => {
     const { ctx, append } = makeCtx([])
     createDefPaintColoring(ctx, 1, 20)
     expect(painted(append)).toEqual({
-      sheet: 'palette_2{mod_h:15;mod_s:-0.15}',
-      helix: 'palette_2{mod_h:350}',
-      nucleic: 'palette_2',
+      sheet: 'palette_2',
+      helix: 'palette_2',
+      nucleic: 'palette_2{mod_h:15}',
       '*': 'palette_2{mod_s:-0.6;mod_b:0.1}',
     })
     append.mockClear()
     // The eighth molecule wraps round to the first colour.
     createDefPaintColoring(ctx, 1, 80)
-    expect(painted(append).nucleic).toBe('palette_1')
+    expect(painted(append).helix).toBe('palette_1')
   })
 
   it("copies the global palette into the scene, keeping the scene's own colours", () => {

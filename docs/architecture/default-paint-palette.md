@@ -24,16 +24,21 @@ UXP の `createDefPaintColoring` は helix / sheet / nucleic / coil を固定の
 
   | sel | 色 | 意味 |
   |---|---|---|
-  | `sheet` | `palette_n{mod_h:15;mod_s:-0.15}` | 色相 +15 度、彩度を少し下げる |
-  | `helix` | `palette_n{mod_h:350}` | 色相 -10 度 |
-  | `nucleic` | `palette_n` | 主色そのまま |
+  | `sheet` | `palette_n` | 主色そのまま |
+  | `helix` | `palette_n` | 主色そのまま |
+  | `nucleic` | `palette_n{mod_h:15}` | 色相を +15 度ずらす |
   | `*` (coil など) | `palette_n{mod_s:-0.6;mod_b:0.1}` | 白っぽくする |
 
-  helix と sheet は形が違うので、近い色でも見分けられる。coil は白背景でも陰影で見える。
+  helix と sheet は形が違うので同じ色にする。核酸は色相でずらす: 3D 表示では陰影
+  (lighting / AO) がすでに明暗を変えているので、彩度や明度の差は「同じ色の陰」と区別
+  されにくく、別の色として認識させるには色相の差が要る。5 度では見分けられず、15 度で
+  分子の色の系統を保ったまま違いが分かる。coil は白背景でも陰影で見える。
 
-修飾子の注意: 色相のずらしは正の値で書く (-10 度は `350`)。C++ の `decodeModSet` は色相を
-`fmod` で 0-1 に戻すので、負の値は負のまま残り、`HSBtoRGB` が正しい色を返さない。
-彩度と明度は 0-1 に丸められるので、はみ出しても構わない。
+修飾子の注意: 彩度と明度の修飾子は足し算で、結果は 0-1 に丸められる。同じ値でも主色の
+彩度・明度によって効き方が違う (`mod_s:-0.6` は彩度 1.0 の orange を 0.4 の淡い色に、
+彩度 0.63 の sky blue をほぼ灰白色にする)。色相の修飾子 (`mod_h`) は正の値で書く
+(-10 度は `350`)。C++ の `decodeModSet` は色相を `fmod` で戻すので、負の値は負のまま残り、
+正しい色にならない。
 
 ## scene への色の複製
 
@@ -47,7 +52,7 @@ paint は `palette_n` を名前で参照する。名前の解決先を全体 (gl
   開いた qsc の色はそのまま残る。
 - 外部ファイルを参照しない style set は `Scene::stylesWriteTo` が qsc に埋め込む。qsc には
   パレットの定義 (`<styles id="default"><color id="palette_1" value="#E69F00"/>...`) と、
-  それを参照する paint (`<paint sel="helix" color="palette_1{mod_h:350}"/>`) の両方が入る。
+  それを参照する paint (`<paint sel="nucleic" color="palette_1{mod_h:15}"/>`) の両方が入る。
 - 名前は scene の定義が全体より優先して解決される。全体の値を後から変えても、保存済みの
   図の色は変わらない。scene のパレットを書き換えれば (`define_color palette_1, ...`)、
   その scene の分子がまとめて塗り変わる。

@@ -13,9 +13,11 @@
  *
  * Each molecule is painted in one colour family: the n-th molecule of the
  * scene (in load order) takes the palette colour `palette_n`, cycling, and
- * its helix / sheet / coil colours are that colour with a modifier
- * (`palette_2{mod_h:350}`) -- the helix and sheet slightly shifted, the coil
- * washed out to near white.
+ * the other structures' colours are that colour with a modifier: helix and
+ * sheet take it as it is (their shapes tell them apart), the nucleic acid
+ * shifts its hue (`palette_2{mod_h:15}`), and the coil is washed out to near
+ * white. A difference in brightness alone does not read as another colour in
+ * 3D, where the shading already varies it; a hue difference does.
  *
  * The palette's values are global named colours in `data/default_style.xml`
  * (the Okabe-Ito set), and building the painting copies them into the
@@ -47,9 +49,9 @@ const PALETTE: readonly string[] = [1, 2, 3, 4, 5, 6, 7].map((n) => `palette_${n
  * negative.
  */
 const DEFAULT_PAINT_ENTRIES: { sel: string; modifier: string }[] = [
-    { sel: 'sheet', modifier: '{mod_h:15;mod_s:-0.15}' },
-    { sel: 'helix', modifier: '{mod_h:350}' },
-    { sel: 'nucleic', modifier: '' },
+    { sel: 'sheet', modifier: '' },
+    { sel: 'helix', modifier: '' },
+    { sel: 'nucleic', modifier: '{mod_h:15}' },
     { sel: '*', modifier: '{mod_s:-0.6;mod_b:0.1}' },
 ];
 

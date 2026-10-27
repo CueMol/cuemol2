@@ -369,9 +369,9 @@ describe('setRendererColoring — Phase 1 new cases', () => {
         // makeSel / makeColor are mocked to `{ __sel }` / `{ __color }`; the
         // scene uid (7) scopes both.
         expect(appendPaint.mock.calls).toEqual([
-            [{ __sel: 'sheet', __uid: 7 }, { __color: 'palette_1{mod_h:15;mod_s:-0.15}', __uid: 7 }],
-            [{ __sel: 'helix', __uid: 7 }, { __color: 'palette_1{mod_h:350}', __uid: 7 }],
-            [{ __sel: 'nucleic', __uid: 7 }, { __color: 'palette_1', __uid: 7 }],
+            [{ __sel: 'sheet', __uid: 7 }, { __color: 'palette_1', __uid: 7 }],
+            [{ __sel: 'helix', __uid: 7 }, { __color: 'palette_1', __uid: 7 }],
+            [{ __sel: 'nucleic', __uid: 7 }, { __color: 'palette_1{mod_h:15}', __uid: 7 }],
             [{ __sel: '*', __uid: 7 }, { __color: 'palette_1{mod_s:-0.6;mod_b:0.1}', __uid: 7 }],
         ])
         expect(setColoring).toHaveBeenCalledWith(
