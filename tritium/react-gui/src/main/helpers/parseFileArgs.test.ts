@@ -9,10 +9,15 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import path from 'path'
+import { pathToFileURL } from 'url'
 import { parseFileArgs } from '@main/helpers/parseFileArgs'
 
 /** Treat every path as an existing file unless it is listed as absent. */
 const allExist = () => true
+
+/** A POSIX-style path as this platform resolves it ('/d/x' is 'C:\d\x' on Windows). */
+const abs = (p: string) => path.resolve(p)
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -33,7 +38,7 @@ describe('parseFileArgs', () => {
       cwd: '/work',
       isFile: allExist,
     })
-    expect(packaged).toEqual({ paths: ['/d/1crn.pdb'], missing: [] })
+    expect(packaged).toEqual({ paths: [abs('/d/1crn.pdb')], missing: [] })
     expect(dev).toEqual(packaged)
   })
 
@@ -52,7 +57,7 @@ describe('parseFileArgs', () => {
         cwd: '/work',
         isFile: allExist,
       }).paths,
-    ).toEqual(['/d/1crn.pdb'])
+    ).toEqual([abs('/d/1crn.pdb')])
   })
 
   it('drops switch-style arguments', () => {
@@ -67,7 +72,7 @@ describe('parseFileArgs', () => {
       cwd: '/work',
       isFile: allExist,
     })
-    expect(r.paths).toEqual(['/d/1crn.pdb'])
+    expect(r.paths).toEqual([abs('/d/1crn.pdb')])
     expect(r.missing).toEqual([])
   })
 
@@ -79,7 +84,7 @@ describe('parseFileArgs', () => {
         cwd: '/work',
         isFile: allExist,
       }).paths,
-    ).toEqual(['/work/sub/1crn.pdb'])
+    ).toEqual([abs('/work/sub/1crn.pdb')])
   })
 
   it('de-duplicates after resolving', () => {
@@ -90,7 +95,7 @@ describe('parseFileArgs', () => {
         cwd: '/d',
         isFile: allExist,
       }).paths,
-    ).toEqual(['/d/1crn.pdb'])
+    ).toEqual([abs('/d/1crn.pdb')])
   })
 
   it('separates files that do not exist without mixing them into paths', () => {
@@ -98,10 +103,10 @@ describe('parseFileArgs', () => {
       argv: ['exe', '/d/gone.pdb', '/d/1crn.pdb'],
       isPackaged: true,
       cwd: '/work',
-      isFile: (p) => p !== '/d/gone.pdb',
+      isFile: (p) => p !== abs('/d/gone.pdb'),
     })
-    expect(r.paths).toEqual(['/d/1crn.pdb'])
-    expect(r.missing).toEqual(['/d/gone.pdb'])
+    expect(r.paths).toEqual([abs('/d/1crn.pdb')])
+    expect(r.missing).toEqual([abs('/d/gone.pdb')])
   })
 
   it('treats a directory as not openable', () => {
@@ -113,7 +118,7 @@ describe('parseFileArgs', () => {
       isFile: () => false,
     })
     expect(r.paths).toEqual([])
-    expect(r.missing).toEqual(['/d/somedir'])
+    expect(r.missing).toEqual([abs('/d/somedir')])
   })
 
   it('treats a Windows drive-letter path as a path, not a URL scheme', () => {
@@ -133,12 +138,12 @@ describe('parseFileArgs', () => {
   it('resolves a file: URL and discards any other scheme', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const r = parseFileArgs({
-      argv: ['exe', 'file:///d/1crn.pdb', 'http://example.com/2abc.pdb'],
+      argv: ['exe', pathToFileURL(abs('/d/1crn.pdb')).href, 'http://example.com/2abc.pdb'],
       isPackaged: true,
       cwd: '/work',
       isFile: allExist,
     })
-    expect(r.paths).toEqual(['/d/1crn.pdb'])
+    expect(r.paths).toEqual([abs('/d/1crn.pdb')])
     // A non-file URL names no local file, so it is neither opened nor
     // reported as missing (UXP discarded these silently too).
     expect(r.missing).toEqual([])

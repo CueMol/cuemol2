@@ -37,6 +37,7 @@ vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
 }))
 
 import * as fs from 'fs'
+import * as path from 'path'
 import { services } from '@renderer/worker/server/services/apbs/apbs.service'
 
 const { calcApbsStart, calcApbsCancel } = services
@@ -180,8 +181,9 @@ describe('calcApbsStart', () => {
         const [exe, argStr, waitfor, wdir] = pm.queueTask2.mock.calls[0]
         expect(exe).toBe('/opt/pdb2pqr')
         expect(argStr).toContain('--ff CHARMM')
-        expect(argStr).toContain('"/tmp/cuemol-apbs-test/apbs_tmp.pdb"')
-        expect(argStr).toContain('"/tmp/cuemol-apbs-test/apbs_tmp.pqr"')
+        // Joined with this platform's separator, as run.ts joins them.
+        expect(argStr).toContain(`"${path.join('/tmp/cuemol-apbs-test', 'apbs_tmp.pdb')}"`)
+        expect(argStr).toContain(`"${path.join('/tmp/cuemol-apbs-test', 'apbs_tmp.pqr')}"`)
         expect(waitfor).toBe('')
         expect(wdir).toBe('/tmp/cuemol-apbs-test')
         // apbs.in written with the linear PBE + dielectric defaults.
