@@ -79,7 +79,7 @@ function sectionShapeRows(prefix: string, opts: SectionShapeOpts): PropRowDef[] 
       label: 'Section width',
       min: 0,
       max: opts.width.max,
-      step: 0.05,
+      step: 0.01,
       decimals: 2,
       unit: 'Å',
     })
@@ -167,7 +167,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
         rows: [
           ...sectionShapeRows('ribhelix', {
             allowFancy: true,
-            width: { max: 5 },
+            width: { max: 1.5 },
             detailMin: 4,
           }),
           ...junctionRows(['ribhelix_head', 'ribhelix_tail'], CARTOON_JCT_LABELS),
@@ -211,7 +211,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
     rows: [
       smoothingRow('sheet_smooth'),
       ...sectionShapeRows('sheet', {
-        width: { max: 3 },
+        width: { max: 1.5 },
         detailMin: 2,
         gateSharp: true,
       }),
@@ -226,7 +226,7 @@ export const CARTOON_SECTIONS: SchemaSectionDef[] = [
     rows: [
       smoothingRow('coil_smooth'),
       ...sectionShapeRows('coil', {
-        width: { max: 3 },
+        width: { max: 1.5 },
         detailMin: 4,
         gateSharp: true,
       }),
