@@ -1,7 +1,8 @@
 /**
  * @file build/afterPack.js
  * @description electron-builder afterPack hook: writes the tritium_cli command
- * (every platform, see cliWrapper.js), then applies a deep ad-hoc code
+ * (every platform, see cliWrapper.js), builds the self-updater's elevation
+ * launcher (Windows, see updaterLauncher.js), then applies a deep ad-hoc code
  * signature to the packaged macOS .app.
  *
  * Why this hook exists instead of `mac.identity`:
@@ -22,11 +23,14 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { writeCliWrapper } = require('./cliWrapper');
+const { buildUpdaterLauncher } = require('./updaterLauncher');
 
 exports.default = async function afterPack(context) {
   const { appOutDir, electronPlatformName, packager } = context;
   // Before signing, so the seal covers it.
   console.log(`afterPack: wrote ${writeCliWrapper(context)}`);
+  const launcher = await buildUpdaterLauncher(context);
+  if (launcher) console.log(`afterPack: wrote ${launcher}`);
   if (electronPlatformName !== 'darwin') return;
 
   const appPath = path.join(appOutDir, `${packager.appInfo.productFilename}.app`);
