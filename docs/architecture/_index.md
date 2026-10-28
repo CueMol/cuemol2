@@ -242,6 +242,10 @@ architecture, it belongs here.
   結晶 (2Fo-Fc / Fo-Fc) と cryo-EM (EMDB map) に出し分ける。map 種類の判定と推奨 contour level の
   規則 (Mol* 準拠)、照会失敗時の fallback、`streamLoadDensityMap` の em 経路 (`map_type` を renderer
   作成前に確定、推奨 level を絶対値で設定)、推奨 level が高すぎる map の既知の問題。
+- [Get PDB のキーワード検索](get-pdb-keyword-search.md) (日本語) --
+  ID 欄にキーワードも入れ、RCSB Search API の全文検索から entry を選んで取得する。1 入力欄で ID /
+  キーワードを自動判定する UI、Method の絞り込みとサーバー側の Sort、More による追加と件数表示、
+  GraphQL で行を埋めて検索順に並べ直す処理、検索語も入る入力履歴。
 - [Renderer identity: the `name` default and name-based group membership](renderer-group-identity.md) --
   why `name` carries a declared default that a bare `setName()` never clears
   (a locked "default" name in the inspector; the name dropped on save), why
