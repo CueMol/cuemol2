@@ -51,6 +51,8 @@ Options:
                         add shift+ / meta+ in front for a modifier click)
   --fill <sel>=<text>   type text into the first match of sel, after the
                         clicks (repeatable)
+  --press <key>         press a key on the focused element after the fills,
+                        e.g. Enter, ArrowDown (repeatable, in order)
   --wait <ms>           pause before the first shot, after the fills, e.g. for
                         a lookup the typed text starts (default 0)
   --hover <selector>    hover the first match before each shot and wait for
@@ -76,6 +78,7 @@ const { values: opt } = parseArgs({
     root: { type: 'string' },
     click: { type: 'string', multiple: true, default: [] },
     fill: { type: 'string', multiple: true, default: [] },
+    press: { type: 'string', multiple: true, default: [] },
     wait: { type: 'string', default: '0' },
     hover: { type: 'string' },
     open: { type: 'string', multiple: true, default: [] },
@@ -332,6 +335,11 @@ try {
     const eq = spec.indexOf('=')
     if (eq < 0) throw new Error(`--fill expects <selector>=<text>, got ${spec}`)
     await page.locator(spec.slice(0, eq)).first().fill(spec.slice(eq + 1), { timeout: 10000 })
+  }
+  for (const key of opt.press) {
+    await page.keyboard.press(key)
+    // Let a key that starts async work (a search) settle before the next one.
+    await new Promise((r) => setTimeout(r, 500))
   }
   const waitMs = Number(opt.wait)
   if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs))
