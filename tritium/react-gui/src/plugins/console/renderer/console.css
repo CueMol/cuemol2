@@ -82,9 +82,13 @@
   color: var(--text-error);
 }
 
-/* Formatted output (help): soft line breaks in its source are not breaks. */
+/* Formatted output (help): soft line breaks in its source are not breaks.
+   `anywhere` also counts every character as a break when a table sizes its
+   columns, so the table squeezed each column down to a letter's width and
+   split words like "required"; `break-word` breaks only what overflows. */
 .md.console-line {
   white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .console-empty {
