@@ -11,10 +11,31 @@
  * where the density-map reader wins over the coordinate one by JSON order.
  */
 
-/** Which server, and therefore which format, a coordinate file comes from. */
 /** A four-character PDB accession code: a digit, then three letters or digits. */
 export const PDB_ID_RE = /^[0-9][0-9a-z]{3}$/i
 
+/**
+ * An EMDB accession code: `EMD-` (or `emd_`, `emd`) and four or more digits.
+ * The prefix is required, since four bare digits are also a PDB ID.
+ */
+export const EMDB_ID_RE = /^emd[-_]?(\d{4,})$/i
+
+/** What an accession code typed into Get PDB names. */
+export type Accession =
+  | { kind: 'pdb'; id: string }
+  /** `id` is the canonical `EMD-<num>` form; `num` the digits alone. */
+  | { kind: 'emdb'; id: string; num: string }
+
+/** Parse a PDB ID (lowercased) or an EMDB ID (`EMD-<num>`), or null for neither. */
+export function parseAccession(text: string): Accession | null {
+  const t = text.trim()
+  if (PDB_ID_RE.test(t)) return { kind: 'pdb', id: t.toLowerCase() }
+  const m = EMDB_ID_RE.exec(t)
+  if (m) return { kind: 'emdb', id: `EMD-${m[1]}`, num: m[1] }
+  return null
+}
+
+/** Which server, and therefore which format, a coordinate file comes from. */
 export type CoordServerType = 'RCSB_CIF' | 'RCSB_PDB'
 
 export interface CoordUrlSpec {
@@ -70,6 +91,27 @@ export function pickMapUrl(
   return {
     url: `https://files.rcsb.org/pub/pdb/validation_reports/${mid}/${pdbid}/${pdbid}_validation_${suffix}_map_coef.cif.gz`,
     readerName: 'mmcifmap',
+    gzip: true,
+  }
+}
+
+/** Which mirror an EMDB map is downloaded from. */
+export type EmdbServerType = 'WWPDB' | 'EBI'
+
+export interface EmdbMapUrlSpec {
+  url: string
+  readerName: 'ccp4map'
+  gzip: true
+}
+
+/** The primary map of EMDB entry `EMD-<num>` (a gzipped CCP4/MRC file). */
+export function pickEmdbMapUrl(num: string, server: EmdbServerType): EmdbMapUrlSpec {
+  const base = server === 'EBI'
+    ? 'https://ftp.ebi.ac.uk/pub/databases/emdb/structures'
+    : 'https://files.wwpdb.org/pub/emdb/structures'
+  return {
+    url: `${base}/EMD-${num}/map/emd_${num}.map.gz`,
+    readerName: 'ccp4map',
     gzip: true,
   }
 }

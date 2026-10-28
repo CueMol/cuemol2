@@ -12,5 +12,5 @@
  * JSON order.
  */
 
-export { pickCoordUrl, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
-export type { CoordServerType, CoordUrlSpec, MapUrlSpec } from '@renderer/worker/shared/pdbUrls'
+export { pickCoordUrl, pickEmdbMapUrl, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
+export type { CoordServerType, CoordUrlSpec, EmdbMapUrlSpec, MapUrlSpec } from '@renderer/worker/shared/pdbUrls'
