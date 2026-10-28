@@ -20,6 +20,7 @@ import { OBJREADER_CATEGORY, pickReaderName } from '@renderer/worker/server/serv
 import { isHiddenObjReader } from '@renderer/worker/server/services/helpers/readerFilter'
 import { pickCoordUrl, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
 import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
+import { fetchEmdbMap } from '@renderer/worker/server/services/map/fetchEmdbMap'
 import { deleteMolAtoms } from '@renderer/worker/server/services/molops/deleteMolAtoms'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import type { CoordServerType } from '@renderer/worker/shared/pdbUrls'
@@ -331,6 +332,8 @@ type FetchKind =
   | { kind: 'coord'; server: CoordServerType }
   | { kind: 'assembly'; n: number }
   | { kind: 'map'; mapType: '2fofc' | 'fofc' }
+  /** A cryo-EM map from EMDB; the code is its number. */
+  | { kind: 'emd' }
 
 export function fetchKind(type: string): FetchKind | null {
   const t = type.trim().toLowerCase()
@@ -340,7 +343,45 @@ export function fetchKind(type: string): FetchKind | null {
   const assembly = /^pdb([1-9][0-9]*)$/.exec(t)
   if (assembly) return { kind: 'assembly', n: Number(assembly[1]) }
   if (t === '2fofc' || t === 'fofc') return { kind: 'map', mapType: t }
+  if (t === 'emd') return { kind: 'emd' }
   return null
+}
+
+/**
+ * The EMDB number of a code that names an EMDB entry by itself, as PyMOL
+ * reads it (`EMD-3489` / `emd_3489`, whatever the `type`), or null.
+ */
+export function parseEmdbFetchCode(code: string): string | null {
+  return /^emd[-_](\d+)$/i.exec(code)?.[1] ?? null
+}
+
+/**
+ * Fetch one EMDB map for `fetch`, named as PyMOL names it: the code as typed
+ * when it carries the prefix, `emd_<number>` when it is bare digits with
+ * `type=emd`.
+ */
+async function fetchEmdbCode(ctx: WorkerContext, cc: CmdContext, code: string, name: string): Promise<CmdOutcome> {
+  const prefixed = parseEmdbFetchCode(code)
+  const num = prefixed ?? (/^\d{4,}$/.test(code) ? code : null)
+  if (num === null) return { ok: false, error: `Error: "${code}" is not an EMDB code` }
+  const objectName = name !== '' ? name : prefixed !== null ? code : `emd_${num}`
+  const reqId = cc.streamId(`fetch-emd-${num}`)
+  cc.noteStream(reqId)
+  const res = await fetchEmdbMap(ctx, {
+    reqId,
+    emdbId: num,
+    server: 'WWPDB',
+    objectName,
+    sceneId: cc.sceneId,
+    viewId: cc.viewId,
+  })
+  const norm = normalizeServiceResult(res, `Error: could not fetch EMD-${num}`)
+  if (!norm.ok) {
+    if (/\b404\b|not found/.test(norm.error)) return { ok: false, error: `Error: EMDB has no entry EMD-${num}` }
+    return norm
+  }
+  cc.print(` fetch: "${objectName}" fetched.`)
+  return { ok: true }
 }
 
 /**
@@ -380,7 +421,7 @@ const fetch: PymCommand = {
   ],
   mode: 'strict',
   mutates: true,
-  summary: 'Download an entry from RCSB (coordinates, an assembly, or a density map) and load it.',
+  summary: 'Download an entry from RCSB (coordinates, an assembly, or a density map) or a cryo-EM map from EMDB, and load it.',
   async run(ctx, args, cc) {
     if (!isDefaulted(args.path, '')) cc.warn('fetch: path is ignored (not supported)')
     for (const [name, def] of FETCH_IGNORED) {
@@ -388,7 +429,7 @@ const fetch: PymCommand = {
     }
     const kind = fetchKind(args.type)
     if (kind === null) {
-      return { ok: false, error: `Error: unsupported fetch type "${args.type}" (cif, pdb, pdb1.., 2fofc or fofc)` }
+      return { ok: false, error: `Error: unsupported fetch type "${args.type}" (cif, pdb, pdb1.., 2fofc, fofc or emd)` }
     }
     // PyMOL accepts several codes at once.
     const codes = args.code
@@ -401,6 +442,12 @@ const fetch: PymCommand = {
     }
 
     for (const code of codes) {
+      // An EMD- / emd_ code is an EMDB map whatever the type, as in PyMOL.
+      if (kind.kind === 'emd' || parseEmdbFetchCode(code) !== null) {
+        const done = await fetchEmdbCode(ctx, cc, code, args.name)
+        if (!done.ok) return done
+        continue
+      }
       const parsed = parseFetchCode(code)
       if (!parsed) return { ok: false, error: `Error: "${code}" is not a PDB id` }
       const { pdbId, chain } = parsed

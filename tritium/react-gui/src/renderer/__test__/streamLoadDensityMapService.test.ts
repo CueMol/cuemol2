@@ -22,8 +22,13 @@ vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
     undoTxnResult: (_s: unknown, _l: string, fn: () => unknown) => fn(),
 }))
 
+vi.mock('@renderer/worker/server/actions/serviceOps', () => ({ recordOp: vi.fn() }))
+
 import { services } from '@renderer/worker/server/services/map/map.service'
 import { setupDensityMapRenderers } from '@renderer/worker/server/services/map/setupRenderers'
+import { recordOp } from '@renderer/worker/server/actions/serviceOps'
+import { findOp } from '@renderer/worker/server/catalog'
+import { readToolArgs } from '@renderer/worker/server/catalog/toolSchema'
 
 const { streamLoadDensityMap } = services
 
@@ -178,7 +183,7 @@ describe('streamLoadDensityMap — reader configuration', () => {
         expect(env.reader.clmn_PHI).toBe('PHDELWT')
     })
 
-    it('ccp4map + em: gzip only, map marked cryo-EM before the renderer, level passed through', async () => {
+    it('ccp4map + em: gzip only, map marked cryo-EM before the renderer, level passed through, recorded as fetch_emdb', async () => {
         const env = makeEnv({ readerName: 'ccp4map' })
         globalThis.fetch = fetchYieldingChunks([new Uint8Array([1])]) as unknown as typeof fetch
         // The renderer takes its default style from the map kind, so the kind
@@ -205,6 +210,12 @@ describe('streamLoadDensityMap — reader configuration', () => {
         expect(env.reader.clmn_F).toBeUndefined()
         expect(kindAtSetup).toBe('em')
         expect(setupDensityMapRenderers).toHaveBeenCalledWith(env.ctx, env.scene, env.obj, 'em', 0.116)
+
+        // The Get PDB dialog's download replays as the op, at the level it
+        // was drawn at; defaults (name, mirror) are left out.
+        const recorded = { id: 'EMD-11638', name: null, source: null, level: 0.116 }
+        expect(recordOp).toHaveBeenCalledWith(env.ctx, 7, 'fetch_emdb', recorded)
+        expect(typeof readToolArgs(findOp('fetch_emdb')!, recorded)).toBe('object')
     })
 })
 
