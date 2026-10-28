@@ -30,6 +30,8 @@ task inspect_tritium_ui -- --target catalog
 | `--target pane:<selector>` | 既に表示されている任意の要素を監査する |
 | `--dispatch` / `--args` / `--view` / `--plugin` / `--root` | target の構成要素を個別に指定する (組み合わせ可) |
 | `--click <selector>` | 監査の前に最初に一致した要素をクリックする (複数可。`shift+` / `meta+` を前に付けると修飾キー付き) |
+| `--fill <selector>=<text>` | click の後、最初に一致した入力欄に文字列を入れる (複数可)。入力で中身が変わる dialog (Get PDB の entry 照会など) を検査するとき |
+| `--wait <ms>` | fill の後、最初の撮影までに待つ時間 (既定 0)。入力が起動した非同期処理 (ネットワーク照会など) の完了待ち |
 | `--open <file>` | 起動時に開くファイル。File Open オプションダイアログは primary ボタンで閉じる |
 | `--theme dark,light` / `--size 1400x900,1000x700` | 撮影する組み合わせ (表は既定値) |
 | `--ignore <selector>` | 監査から外す subtree |

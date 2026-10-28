@@ -29,6 +29,7 @@
 | [261017-tube-gpu-mesh-plan.md](261017-tube-gpu-mesh-plan.md) | tube 系 renderer の GPU mesh 化の残り: VBO 転送量のさらなる削減 (4b / 4c、計測次第)、再生中だけ詳細度を落とす案 (4d、方針判断が要る) | **tube / ribbon / cartoon / nucl の GPU mesh と座標更新の高速化は実装済み** (`../architecture/tube-gpu-mesh.md`)。残りは未着手 |
 | [261017-tube-color-texture-plan.md](261017-tube-color-texture-plan.md) | tube 系の色を頂点色から「残基ごとの色 texture + 静的な色キー」に変え、色変更で VBO に触らないようにする案 | **未実装 / 今後実装する案**。色の更新がボトルネックになったら着手 |
 | [261027-palette-set-switch-plan.md](261027-palette-set-switch-plan.md) | 分子の既定の色分けのテーマ (`default_paint`) を GUI から選ぶ | **未実装 / 今後の課題**。テーマの定義と style での手動切り替えは実装済み (`../architecture/default-paint-palette.md`) |
+| [261028-get-pdb-keyword-search-plan.md](261028-get-pdb-keyword-search-plan.md) | Get PDB のキーワード検索 (RCSB Search API、UI 3 案) と EMDB 対応で後回しにした項目 (`fetch_emdb` op、subsample、half map、boundary の自動設定、検証値の表示など) | **未実装**。検索の UI 方式は EMDB 対応の UI を見てから決める。EMDB 対応は実装済み (`../architecture/get-pdb-emdb.md`) |
 | [261017-tube-raycast-memo-plan.md](261017-tube-raycast-memo-plan.md) | tube / cartoon の GPU raycast (impostor) の設計メモ: dev201608 の rctube の経緯、掃引パラメータの 1D 求根 + 断面 SDF 案、文献調査 | **検討メモ**。着手前に CPU で試作して安定性を確かめる |
 
 ## 実装済み (旧ルールで残っているもの)

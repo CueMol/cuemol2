@@ -9,6 +9,12 @@
 
 import type { ElectronFileFilter } from '@shared/types/fileDialog'
 import type {
+  FetchEmdbMapInfoArgs,
+  FetchEmdbMapInfoResult,
+  FetchEntryInfoArgs,
+  FetchEntryInfoResult,
+} from '@renderer/worker/server/services/file/entryInfo'
+import type {
   GetCompatibleRendererNamesArgs,
   GetCompatibleRendererNamesResult,
 } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
@@ -63,6 +69,8 @@ export interface FileCalls {
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs; result: StreamLoadFromUrlResult }
   streamLoadDensityMap:       { args: StreamLoadDensityMapArgs; result: StreamLoadDensityMapResult }
   cancelStreamLoad:           { args: CancelStreamLoadArgs; result: CancelStreamLoadResult }
+  fetchEntryInfo:             { args: FetchEntryInfoArgs; result: FetchEntryInfoResult }
+  fetchEmdbMapInfo:           { args: FetchEmdbMapInfoArgs; result: FetchEmdbMapInfoResult }
   getObjectSaveInfo:          { args: GetObjectSaveInfoArgs; result: GetObjectSaveInfoResult }
   saveObjectToFile:           { args: SaveObjectToFileArgs; result: SaveObjectToFileResult }
   listSavableObjects:         { args: ListSavableObjectsArgs; result: ListSavableObjectsResult }
@@ -80,6 +88,8 @@ export const FILE_KEYS = [
   'streamLoadFromUrl',
   'streamLoadDensityMap',
   'cancelStreamLoad',
+  'fetchEntryInfo',
+  'fetchEmdbMapInfo',
   'getObjectSaveInfo',
   'saveObjectToFile',
   'listSavableObjects',

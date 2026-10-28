@@ -49,6 +49,10 @@ Options:
   --root <selector>     element to audit and screenshot
   --click <selector>    click the first match before auditing (repeatable;
                         add shift+ / meta+ in front for a modifier click)
+  --fill <sel>=<text>   type text into the first match of sel, after the
+                        clicks (repeatable)
+  --wait <ms>           pause before the first shot, after the fills, e.g. for
+                        a lookup the typed text starts (default 0)
   --hover <selector>    hover the first match before each shot and wait for
                         hover UI (tooltips, expansions) to show
   --open <file>         file to open at launch (e.g. a PDB), repeatable
@@ -71,6 +75,8 @@ const { values: opt } = parseArgs({
     plugin: { type: 'string', multiple: true, default: [] },
     root: { type: 'string' },
     click: { type: 'string', multiple: true, default: [] },
+    fill: { type: 'string', multiple: true, default: [] },
+    wait: { type: 'string', default: '0' },
     hover: { type: 'string' },
     open: { type: 'string', multiple: true, default: [] },
     theme: { type: 'string', default: 'dark,light' },
@@ -322,6 +328,13 @@ try {
     const sel = spec.slice(m.length)
     await page.locator(sel).first().click({ modifiers, timeout: 10000 })
   }
+  for (const spec of opt.fill) {
+    const eq = spec.indexOf('=')
+    if (eq < 0) throw new Error(`--fill expects <selector>=<text>, got ${spec}`)
+    await page.locator(spec.slice(0, eq)).first().fill(spec.slice(eq + 1), { timeout: 10000 })
+  }
+  const waitMs = Number(opt.wait)
+  if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs))
 
   const shots = []
   for (const size of sizes) {
