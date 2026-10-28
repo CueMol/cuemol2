@@ -237,6 +237,11 @@ architecture, it belongs here.
   `MapRenderer.region_mode` (box / full) の 2 層モデル、PBC 適格条件の一本化、MRC2014 ORIGIN、
   full モードの budget 由来 stride (ChimeraX `limit_voxels` 流) とノード整列、却下案とロードマップ
   (chunk メモリ、reader streaming、zoom 連動 refine)。
+- [Get PDB の cryo-EM (EMDB) 対応](get-pdb-emdb.md) (日本語) --
+  Get PDB で PDB ID / EMDB ID を受け、RCSB GraphQL と EMDB API で entry を照会して map セクションを
+  結晶 (2Fo-Fc / Fo-Fc) と cryo-EM (EMDB map) に出し分ける。map 種類の判定と推奨 contour level の
+  規則 (Mol* 準拠)、照会失敗時の fallback、`streamLoadDensityMap` の em 経路 (`map_type` を renderer
+  作成前に確定、推奨 level を絶対値で設定)、推奨 level が高すぎる map の既知の問題。
 - [Renderer identity: the `name` default and name-based group membership](renderer-group-identity.md) --
   why `name` carries a declared default that a bare `setName()` never clears
   (a locked "default" name in the inspector; the name dropped on save), why
