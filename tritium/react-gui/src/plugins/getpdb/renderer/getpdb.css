@@ -1,0 +1,16 @@
+/* --- Get PDB: keyword search result rows ---
+   Layout only: the row height, padding and state colours come from the
+   list-kit (ListRow), the text sizes from the .type-* roles. */
+.getpdb-result-id {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+}
+
+.getpdb-result-title {
+  flex: 1 1 auto;
+}
+
+.getpdb-result-meta {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}

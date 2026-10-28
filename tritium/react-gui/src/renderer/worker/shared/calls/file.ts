@@ -13,6 +13,8 @@ import type {
   FetchEmdbMapInfoResult,
   FetchEntryInfoArgs,
   FetchEntryInfoResult,
+  SearchPdbEntriesArgs,
+  SearchPdbEntriesResult,
 } from '@renderer/worker/server/services/file/entryInfo'
 import type {
   GetCompatibleRendererNamesArgs,
@@ -71,6 +73,7 @@ export interface FileCalls {
   cancelStreamLoad:           { args: CancelStreamLoadArgs; result: CancelStreamLoadResult }
   fetchEntryInfo:             { args: FetchEntryInfoArgs; result: FetchEntryInfoResult }
   fetchEmdbMapInfo:           { args: FetchEmdbMapInfoArgs; result: FetchEmdbMapInfoResult }
+  searchPdbEntries:           { args: SearchPdbEntriesArgs; result: SearchPdbEntriesResult }
   getObjectSaveInfo:          { args: GetObjectSaveInfoArgs; result: GetObjectSaveInfoResult }
   saveObjectToFile:           { args: SaveObjectToFileArgs; result: SaveObjectToFileResult }
   listSavableObjects:         { args: ListSavableObjectsArgs; result: ListSavableObjectsResult }
@@ -90,6 +93,7 @@ export const FILE_KEYS = [
   'cancelStreamLoad',
   'fetchEntryInfo',
   'fetchEmdbMapInfo',
+  'searchPdbEntries',
   'getObjectSaveInfo',
   'saveObjectToFile',
   'listSavableObjects',

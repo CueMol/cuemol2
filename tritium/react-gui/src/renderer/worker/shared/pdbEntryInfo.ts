@@ -122,3 +122,68 @@ export function parseEmdbMap(emdbId: string, mapJson: unknown, adminJson?: unkno
       : null,
   }
 }
+
+/** Which entries a keyword search keeps, by experimental method. */
+export type SearchMethodFilter = 'all' | 'xray' | 'em'
+
+/** How keyword search hits are ordered. */
+export type SearchSort = 'score' | 'resolution' | 'date'
+
+/** RCSB sort clause per order; relevance is the API's default (no clause). */
+const SORT_CLAUSES: Record<Exclude<SearchSort, 'score'>, { sort_by: string; direction: 'asc' | 'desc' }> = {
+  resolution: { sort_by: 'rcsb_entry_info.resolution_combined', direction: 'asc' },
+  date: { sort_by: 'rcsb_accession_info.initial_release_date', direction: 'desc' },
+}
+
+const METHOD_VALUES: Record<Exclude<SearchMethodFilter, 'all'>, string> = {
+  xray: 'X-RAY DIFFRACTION',
+  em: 'ELECTRON MICROSCOPY',
+}
+
+/**
+ * The RCSB Search API request for a full-text search in the given order,
+ * optionally restricted to one experimental method. Sorting is done by the
+ * server, so every page continues the same order.
+ */
+export function rcsbSearchRequest(
+  query: string,
+  method: SearchMethodFilter,
+  sort: SearchSort,
+  start: number,
+  rows: number,
+): unknown {
+  const text = { type: 'terminal', service: 'full_text', parameters: { value: query } }
+  const node = method === 'all'
+    ? text
+    : {
+        type: 'group',
+        logical_operator: 'and',
+        nodes: [
+          text,
+          {
+            type: 'terminal',
+            service: 'text',
+            parameters: { attribute: 'exptl.method', operator: 'exact_match', value: METHOD_VALUES[method] },
+          },
+        ],
+      }
+  return {
+    query: node,
+    return_type: 'entry',
+    request_options: {
+      paginate: { start, rows },
+      ...(sort === 'score' ? {} : { sort: [SORT_CLAUSES[sort]] }),
+    },
+  }
+}
+
+/** The hit count and the entry IDs (lowercased, in rank order) of a search response. */
+export function parseRcsbSearch(json: unknown): { total: number; ids: string[] } {
+  const o = asObj(json)
+  const total = typeof o?.total_count === 'number' ? o.total_count : 0
+  const ids = asArr(o?.result_set)
+    .map((r) => asObj(r)?.identifier)
+    .filter((id): id is string => typeof id === 'string')
+    .map((id) => id.toLowerCase())
+  return { total, ids }
+}

@@ -5,6 +5,7 @@ import {
     getHistory,
     pushHistory,
     clearHistory,
+    MAX_ENTRY_LENGTH,
 } from './pdbIdHistory'
 
 describe('pdbIdHistory', () => {
@@ -50,14 +51,13 @@ describe('pdbIdHistory', () => {
         expect(getHistory()).toEqual(['1mbn'])
     })
 
-    it('skips invalid IDs (wrong length, leading non-digit, special chars)', () => {
+    it('keeps searched keywords alongside IDs; skips blank and over-long input', () => {
         pushHistory('')
         pushHistory('   ')
-        pushHistory('abc')             // too short
-        pushHistory('12345')           // too long
-        pushHistory('abcd')            // first char not digit
-        pushHistory('1!bn')            // special char
-        expect(getHistory()).toEqual([])
+        pushHistory('x'.repeat(MAX_ENTRY_LENGTH + 1))
+        pushHistory('  photosystem   I ')   // whitespace collapsed
+        pushHistory('emd_11638')            // canonical EMDB form
+        expect(getHistory()).toEqual(['EMD-11638', 'photosystem I'])
     })
 
     it('caps at MAX_ENTRIES', () => {
@@ -78,16 +78,15 @@ describe('pdbIdHistory', () => {
     })
 
     it('filters out malformed entries when reading (defense against corrupt storage)', () => {
-        // Manually write a payload mixing valid IDs and garbage.
+        // Manually write a payload mixing valid entries and garbage.
         globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify([
             '1mbn',
-            'garbage',     // does not match PDBID_RE
-            '6vxx',
             123,           // not a string
             null,          // not a string
-            'abcd',        // first char not digit
+            '',            // blank
+            'photosystem I',
         ]))
-        expect(getHistory()).toEqual(['1mbn', '6vxx'])
+        expect(getHistory()).toEqual(['1mbn', 'photosystem I'])
     })
 
     it('clearHistory removes the storage entry', () => {

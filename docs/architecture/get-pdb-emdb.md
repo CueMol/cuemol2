@@ -35,7 +35,7 @@ EMDB 側は `EMD` prefix を必須にする。数字 4 桁 (`1234`) は PDB ID �
 
 どの API も `Access-Control-Allow-Origin: *` を返すので worker の `fetch` で直接呼べる。
 `fetchEntryInfo` が ID の配列を受けるのは、検索結果の一覧を 1 リクエストで埋められるようにするため
-(キーワード検索は [plan](../plans/261028-get-pdb-keyword-search-plan.md))。
+([キーワード検索](get-pdb-keyword-search.md))。
 
 ### 規則 (Mol* と同じ)
 

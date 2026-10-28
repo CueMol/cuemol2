@@ -48,6 +48,9 @@
   align-items: center;
   gap: var(--list-row-gap);
   height: var(--row-h);
+  /* The listbox is a flex column: without this a framed (height-capped)
+     list with more rows than fit shrinks every row instead of scrolling. */
+  flex-shrink: 0;
   padding: 0 var(--list-row-pad-x);
   color: var(--text-primary);
   font-size: var(--type-row-fs);
