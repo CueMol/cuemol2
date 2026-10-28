@@ -141,7 +141,7 @@ helper)。
 | Style Editor (`style/styleSetEdit.ts`) | `define_color` / `remove_color` / `remove_selection` / `remove_style`。scene の set だけ。C++ の `StyleSet` の色・文字列データ・style の削除は、script から呼ぶと set の scene の undo に載る (`StyleEntryEditInfo`)。read only の切り替え (`StyleReadOnlyEditInfo`) と style file の読み込みも同じ |
 | camera の visibility とファイル (`camera/cameraVisFlags.ts`、`cameraOps.ts`、`cameraFile.ts`) | `set_camera_visibility` (対象は uid でなく path で `"on 1crn; off 1crn/cartoon1"`) / `clear_camera_visibility` / `load_camera_file` (camera の追加と visibility の適用を 1 txn) / `save_camera_file` / `reload_camera` |
 | scene tree の貼り付け (`clipboard/paste.ts`) | `paste_node` (kind・form・XML の文字列・貼り付け先)。大きい object は 64 KB の上限を超えるので、note になる (下) |
-| ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | RCSB の標準の URL は `fetch_pdb` (名前と renderer の選択付き)、それ以外の URL は `fetch_url` (URL・reader・名前)。map は `fetch_map` (`source` が RCSB_CIF か EBI_MTZ) |
+| ファイルと map の取得 (`file/streamLoadFromUrl.ts`、`map/streamLoad.ts`) | RCSB の標準の URL は `fetch_pdb` (名前と renderer の選択付き)、それ以外の URL は `fetch_url` (URL・reader・名前)。map は `fetch_map` (`source` が RCSB_CIF か EBI_MTZ)、EMDB の map は `fetch_emdb` (描いた level 付き。[get-pdb-emdb](get-pdb-emdb.md)) |
 | 計測ツールと結合の編集 (`navi/`) | `measure_geometry` / `add_bond` / `remove_bond`。2 つの object にまたがる計測は `measure_geometry` の `atomObjects` (2 つ目以降の原子の object)。selection どうしの計測 (PyMOL の `distance` など) は `measure_selections`。原子は `A.20.CA` (chain.resid.atom) の形で書く |
 | 原子名ラベル (`navi/naviTool.ts`、navigate tool のクリック) | `set_atom_label` (切り替えた後の on / off)。C++ の `NameLabelRenderer` のラベルの追加・削除・書式の変更は undo に載る |
 | selection の原子のラベル (`navi/atomLabels.ts`、PyMOL の `label` / `hide labels, sel`) | `set_atom_labels` (selection・書式・renderer 名。外すときは書式が null) |

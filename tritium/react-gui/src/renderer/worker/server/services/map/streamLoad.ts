@@ -13,7 +13,7 @@ import { streamFetchToReader } from '@renderer/worker/server/services/helpers/st
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
-import { pickMapUrl, type MapServerType } from '@renderer/worker/shared/pdbUrls';
+import { pickEmdbMapUrl, pickMapUrl, type EmdbServerType, type MapServerType } from '@renderer/worker/shared/pdbUrls';
 const log = console;
 
 export type DensityMapReaderName = 'mmcifmap' | 'mtzmap' | 'ccp4map';
@@ -74,11 +74,37 @@ function fetchMapSpec(args: StreamLoadDensityMapArgs): { pdbId: string; source: 
     return null;
 }
 
-/** Record the download as `fetch_map`; a URL it does not build is not recorded. */
+/** The EMDB entry and mirror `fetch_emdb` downloads this URL from, or null for a URL it does not build. */
+function fetchEmdbSpec(args: StreamLoadDensityMapArgs): { num: string; source: EmdbServerType } | null {
+    const m = /\/EMD-(\d+)\/map\/emd_\d+\.map\.gz$/.exec(args.url);
+    if (!m) return null;
+    for (const source of ['WWPDB', 'EBI'] as const) {
+        const spec = pickEmdbMapUrl(m[1], source);
+        if (spec.url === args.url && spec.readerName === args.readerName) return { num: m[1], source };
+    }
+    return null;
+}
+
+/**
+ * Record the download: `fetch_emdb` for a cryo-EM map, with the level it was
+ * drawn at (so a replay draws it the same even if EMDB's recommendation
+ * changes), `fetch_map` for a crystallographic one. A URL neither op builds
+ * is not recorded.
+ */
 function recordFetchMap(ctx: WorkerContext, sceneId: number, args: StreamLoadDensityMapArgs): void {
+    if (args.mapType === 'em') {
+        const em = fetchEmdbSpec(args);
+        if (!em) return;
+        recordOp(ctx, sceneId, 'fetch_emdb', {
+            id: `EMD-${em.num}`,
+            name: args.objectName === `emd_${em.num}` ? null : args.objectName,
+            source: em.source === 'WWPDB' ? null : em.source,
+            level: args.contourLevel ?? null,
+        });
+        return;
+    }
     const spec = fetchMapSpec(args);
-    // No op builds an EMDB download yet, so a cryo-EM map is not recorded.
-    if (!spec || args.mapType === 'em') return;
+    if (!spec) return;
     recordOp(ctx, sceneId, 'fetch_map', {
         pdbId: spec.pdbId,
         mapType: args.mapType,

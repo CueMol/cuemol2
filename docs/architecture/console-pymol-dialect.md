@@ -112,6 +112,9 @@ object でない名前は named selection の参照のまま渡す。
   (生物学的集合体) / `2fofc` / `fofc` (Get PDB と同じ `streamLoadDensityMap`。構造因子の無い entry の 404 は
   理由付き)。複数 code 可。`1abcA` / `1abc_A` は読込後に他の chain を消し、object 名は `1abcA`、chain が
   無ければ `no such chain` (PyMOL と同じ)。ダウンロードは Stop で中断できる。
+  `EMD-3489` / `emd_3489` は `type` に関係なく EMDB の cryo-EM map (PyMOL と同じ)。object 名は入力したコードの
+  まま、数字だけは `type=emd` のときに限り `emd_3489`。取得元は wwPDB、level は EMDB の推奨値
+  ([get-pdb-emdb](get-pdb-emdb.md))。EMDB に無いコードは `EMDB has no entry EMD-<n>`。
 - `save filename [, selection, state, format, ...]`: `.pdb` / `.sdf` / `.mol` / `.pqr` は 1 分子
   (selection は writer の `sel`)。`convToLink` を立てないので object の参照先は変わらない。一致 0 原子は
   書かずに断る。`.qsc` は scene 保存で txn の外 (undo 履歴を消し scene 名を変えるため)。`.png` / `.pov` /
@@ -274,5 +277,5 @@ camera の操作は undo しない ([ADR-0025](../migration/adr/ADR-0025-view-pa
   `repSettings.test.ts`、`fileCommands.test.ts` (format、load の renderer、delete の探索順)、
   `saveCommands.test.ts` (部分保存と `convToLink`)、`measureCommands.test.ts`、`mapCommands.test.ts` (carve)、
   `colorCommands.test.ts`、`labelExpr.test.ts`、`viewMatrix.test.ts` (往復)、`pymolArgs.test.ts`
-  (PyMOL の位置引数の順)、`pymolModes.test.ts` (fetch type、distance mode、object 名)
+  (PyMOL の位置引数の順)、`pymolModes.test.ts` (fetch type と EMDB コード、distance mode、object 名)
 - C++: `src/tests/modules/molstr/test_namelabel.cpp` (label 書式)、`test_selscope_fitview.cpp` (`orientView`)

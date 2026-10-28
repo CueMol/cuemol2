@@ -355,6 +355,7 @@ render job は GUI の Render パネルと同じ in-process job で走る。待�
 | tool | mutates | 呼ぶ service |
 |---|---|---|
 | `fetch_map` | yes (async) | `streamLoadDensityMap` (既定 2fofc) |
+| `fetch_emdb` | yes (async) | `fetchEmdbMap` (EMDB の cryo-EM map、推奨 level。PDB ID も可) |
 | `list_map_contours` | no | `listMapRenderers` + `getMapRendererState` |
 | `set_map_contour` | yes | `setMapRendererProp` |
 

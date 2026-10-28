@@ -115,6 +115,12 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"path":{"type":"string","description":"The file, e.g. overview.png."},"width":{"type":["integer","null"],"description":"Image width in pixels. Null uses the size of the view on screen."},"height":{"type":["integer","null"],"description":"Image height in pixels. Null uses the size of the view on screen."}},"required":["path","width","height"],"additionalProperties":false}",
   },
   {
+    "description": "Download a cryo-EM map from EMDB and add it to the scene as an isosurface at the authors' recommended contour level. Give the EMDB code (EMD-11638), or the PDB ID of a cryo-EM entry to fetch the map its model was built into. Maps are large (tens to hundreds of MB), so this can take a while. Fetch the model itself with fetch_pdb.",
+    "mutates": true,
+    "name": "fetch_emdb",
+    "parameters": "{"type":"object","properties":{"id":{"type":"string","description":"EMDB code such as EMD-11638, or the PDB ID of a cryo-EM entry."},"name":{"type":["string","null"],"description":"Name for the map object. Null uses emd_<number>."},"source":{"type":["string","null"],"enum":["WWPDB","EBI",null],"description":"Which mirror: WWPDB (files.wwpdb.org) or EBI. Null is WWPDB."},"level":{"type":["number","null"],"description":"Contour level in the map's own density units. Null uses the level EMDB recommends (the top 1% of grid points when it gives none)."}},"required":["id","name","source","level"],"additionalProperties":false}",
+  },
+  {
     "description": "Download the electron density map of a PDB entry (from its deposited structure factors) and add it to the scene with a contour. 2fofc is the usual map; fofc is the difference map, drawn at +/-3 sigma in two colours. Fetch the structure itself with fetch_pdb.",
     "mutates": true,
     "name": "fetch_map",

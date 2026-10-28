@@ -1,13 +1,14 @@
 /**
  * @file worker/server/catalog/ops/mapOps.ts
- * @description Ops for electron density maps: fetching one from the PDB and
- * setting how its contour is drawn.
+ * @description Ops for electron density maps: fetching one from the PDB or
+ * EMDB and setting how its contour is drawn.
  */
 
 import { listMapRenderers as listMapRenderersService } from '@renderer/worker/server/services/map/renderers'
 import { getMapRendererState } from '@renderer/worker/server/services/map/state'
 import { setMapRendererProp } from '@renderer/worker/server/services/map/props'
 import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
+import { fetchEmdbMap, resolveEmdbId } from '@renderer/worker/server/services/map/fetchEmdbMap'
 import { PDB_ID_RE, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
@@ -52,6 +53,42 @@ export const fetchMap = defineOp({
     })
     if (!res.ok) return { ok: false, error: res.error || `The ${mapType} map of ${pdbId.toUpperCase()} could not be downloaded.` }
     return { ok: true, data: { objectId: res.objId } }
+  },
+})
+
+export const fetchEmdb = defineOp({
+  name: 'fetch_emdb',
+  description:
+    'Download a cryo-EM map from EMDB and add it to the scene as an isosurface at the authors\' ' +
+    'recommended contour level. Give the EMDB code (EMD-11638), or the PDB ID of a cryo-EM ' +
+    'entry to fetch the map its model was built into. Maps are large (tens to hundreds of MB), ' +
+    'so this can take a while. Fetch the model itself with fetch_pdb.',
+  params: {
+    id: string('EMDB code such as EMD-11638, or the PDB ID of a cryo-EM entry.'),
+    name: optional(string('Name for the map object. Null uses emd_<number>.')),
+    source: optional(enumOf(['WWPDB', 'EBI'], 'Which mirror: WWPDB (files.wwpdb.org) or EBI. Null is WWPDB.')),
+    level: optional(real('Contour level in the map\'s own density units. Null uses the level EMDB recommends (the top 1% of grid points when it gives none).')),
+  },
+  mutates: true,
+  describe: (a) => `Fetch the EMDB map of ${a.id}`,
+  expose: { tool: 'map', console: true },
+  group: 'maps',
+  async run(ctx, args, oc) {
+    const resolved = await resolveEmdbId(ctx, args.id)
+    if (!resolved.ok) return { ok: false, error: resolved.error }
+    const reqId = oc.streamId('fetch_emdb')
+    oc.noteStream(reqId)
+    const res = await fetchEmdbMap(ctx, {
+      reqId,
+      emdbId: resolved.emdbId,
+      server: args.source ?? 'WWPDB',
+      objectName: args.name ?? undefined,
+      contourLevel: args.level,
+      sceneId: oc.sceneId,
+      viewId: oc.viewId,
+    })
+    if (!res.ok) return { ok: false, error: res.error || `The map of ${resolved.emdbId} could not be downloaded.` }
+    return { ok: true, data: { objectId: res.objId, emdbId: res.emdbId } }
   },
 })
 
@@ -114,4 +151,4 @@ export const setMapContour = defineOp({
   },
 })
 
-export const MAP_OPS = [fetchMap, listMapRenderers, setMapContour]
+export const MAP_OPS = [fetchMap, fetchEmdb, listMapRenderers, setMapContour]

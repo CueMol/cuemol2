@@ -82,7 +82,26 @@ EMDB map を足しただけ)。EMDB map は file-open option ダイアログを�
 - renderer は isosurface 1 つ (`CryoEMIsoSurf`)。推奨 level があれば `level` (絶対値) に書く。C++ が native
   の `siglevel` (EM では top %) に逆変換して modified にするので、reset すれば style の既定 (top 1%) に戻る
 - 最後に `fitView` (EM map は ORIGIN 配置なので、view を map に合わせる)
-- object 名は `emd_<n>`。op の記録はしない (EMDB 用の op が無い。「op が作らない URL は記録しない」既存規則)
+- object 名は `emd_<n>`
+- op `fetch_emdb` として記録する (下)。`id` は `EMD-<n>`、描いた level を `level` に入れるので、後で EMDB の
+  推奨値が変わっても再生すると同じ見た目になる。`name` (`emd_<n>` のとき) と `source` (wwPDB のとき) は既定値
+  なので null にする。URL が `pickEmdbMapUrl` の作るものでなければ記録しない (結晶 map の `fetch_map` と同じ規則)
+
+## console と AI agent からの取得
+
+ダイアログを通さない取得は `worker/server/services/map/fetchEmdbMap.ts` の `fetchEmdbMap` に集める。推奨
+level を EMDB API で引いてから (level の指定があれば引かない) `streamLoadDensityMap` を呼ぶので、読込後の
+見た目はダイアログと同じ。EMDB に entry が無ければ (404) 失敗、それ以外で API が引けなければ level 無し
+(top 1%) で読む。
+
+- **op `fetch_emdb`** (`catalog/ops/mapOps.ts`、toolset `map`、native console / AI agent / MCP 共通):
+  `id` / `name` / `source` (`WWPDB` / `EBI`) / `level` (map の密度の単位、絶対値)。`id` は EMDB コード
+  (`EMD-11638`、`emd_11638`、数字だけも可) か cryo-EM の PDB ID。PDB ID は `resolveEmdbId` が
+  `fetchEntryInfo` で引き、entry の最初の EMDB map を取る (モデルを組んだ map)。EMDB map の無い entry は
+  `has no EMDB map (not a cryo-EM entry)` で失敗する。座標は `fetch_pdb` で別に取る
+- **PyMOL の `fetch`**: 本家 (`importing.py`) に合わせ、`EMD-3489` / `emd_3489` は `type` に関係なく EMDB map
+  として取り、object 名は入力したコードのまま。数字だけは `type=emd` のときに限り、名前は `emd_3489`。
+  取得元は wwPDB。詳細は [console-pymol-dialect](console-pymol-dialect.md)
 
 ## 既知の問題・限界
 
@@ -98,6 +117,7 @@ EMDB map を足しただけ)。EMDB map は file-open option ダイアログを�
 
 - `worker/shared/pdbUrls.test.ts` — accession の正規化 (`EMD` prefix 必須)、EMDB map URL
 - `worker/shared/pdbEntryInfo.test.ts` — map 種類の判定順 (EMDB 優先)、存在しない ID の除外、推奨 level の fallback
-- `__test__/streamLoadDensityMapService.test.ts` — em: gzip のみ設定、renderer 作成前に `map_type = 'em'`、level の受け渡し
+- `__test__/streamLoadDensityMapService.test.ts` — em: gzip のみ設定、renderer 作成前に `map_type = 'em'`、level の受け渡し、`fetch_emdb` として op が読める引数で記録
+- `__test__/resolveEmdbId.test.ts` — `fetch_emdb` の `id`: コードはそのまま、PDB ID は最初の EMDB map、map の無い entry は失敗
 - `__test__/setupEmMapRenderer.test.ts` — isosurface 1 つ、`CryoEMIsoSurf`、level は `level` に書く (`siglevel` ではない)
 - `plugins/getpdb/renderer/GetPdbDialog.test.tsx` — EM entry で Cryo-EM maps が出て、PDB 形式が無い entry は mmCIF に固定され、結果の `emMaps` に推奨 level が入る
